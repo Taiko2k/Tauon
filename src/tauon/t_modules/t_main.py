@@ -41,7 +41,9 @@ import io
 import json
 import locale as py_locale
 import logging
+#import magic
 import math
+#import mimetypes
 import os
 import pickle
 import platform
@@ -262,6 +264,7 @@ builtins._ = lambda x: x
 from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
 from tauon.t_modules.t_db_migrate import database_migrate
+from tauon.t_modules.t_dbus import Gnome
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw
 from tauon.t_modules.t_extra import (
 	ColourGenCache,
@@ -327,6 +330,7 @@ from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_launch import Launch
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping
 from tauon.t_modules.t_phazor import phazor_exists, player4
+from tauon.t_modules.t_prefs import Prefs
 from tauon.t_modules.t_search import bandcamp_search
 from tauon.t_modules.t_spot import SpotCtl
 from tauon.t_modules.t_stream import StreamEnc
@@ -337,8 +341,6 @@ from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webs
 #from tauon.t_modules.guitar_chords import GuitarChords
 
 if TYPE_CHECKING:
-	# TODO(Martin): These two classes are within player4(), rip them out and put them as a top level?
-	from tauon.t_modules.t_phazor import Cachement, LibreSpot
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
@@ -461,7 +463,8 @@ window_opacity         = holder.window_opacity
 draw_border            = holder.draw_border
 transfer_args_and_exit = holder.transfer_args_and_exit
 old_window_position    = holder.old_window_position
-install_directory      = str(holder.install_directory) # TODO(Martin): Convert to Path proper
+install_directory      = holder.install_directory
+user_directory         = holder.user_directory
 pyinstaller_mode       = holder.pyinstaller_mode
 phone                  = holder.phone
 window_default_size    = holder.window_default_size
@@ -490,8 +493,9 @@ if not windows_native:
 	import gi
 	from gi.repository import GLib
 
-	font_folder = os.path.join(install_directory, "fonts")
+	font_folder = str(install_directory / "fonts")
 	if os.path.isdir(font_folder):
+		logging.info(f"Fonts directory:           {font_folder}")
 		import ctypes
 
 		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
@@ -502,23 +506,22 @@ if not windows_native:
 		config.contents = fc.FcConfigGetCurrent()
 		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
 
-# SSL setup (needed for frozen installs)
+# TLS setup (needed for frozen installs)
 def get_cert_path() -> str:
 	if pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
-	else:
-		# Running as script
-		return certifi.where()
+	# Running as script
+	return certifi.where()
 
 
 def setup_ssl() -> ssl.SSLContext:
 	# Set the SSL certificate path environment variable
 	cert_path = get_cert_path()
-	logging.debug(f"Found SSL cert file at: {cert_path}")
+	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ['SSL_CERT_FILE'] = cert_path
 	os.environ['REQUESTS_CA_BUNDLE'] = cert_path
 
-	# Create default SSL context
+	# Create default TLS context
 	ssl_context = ssl.create_default_context(cafile=get_cert_path())
 	return ssl_context
 
@@ -536,7 +539,7 @@ left_window_control = False
 xdpi = 0
 
 detect_macstyle = False
-gtk_settings = None
+gtk_settings: Settings | None = None
 mac_close = (253, 70, 70, 255)
 mac_maximize = (254, 176, 36, 255)
 mac_minimize = (42, 189, 49, 255)
@@ -567,13 +570,12 @@ except Exception:
 	logging.exception("Error accessing GTK settings")
 
 # Set data folders (portable mode)
-user_directory = install_directory
-config_directory = Path(user_directory)
-cache_directory = Path(user_directory) / "cache"
+config_directory = user_directory
+cache_directory = user_directory / "cache"
 home_directory = os.path.join(os.path.expanduser("~"))
 
-asset_directory = os.path.join(install_directory, "assets")
-svg_directory = os.path.join(install_directory, "assets/svg")
+asset_directory = install_directory / "assets"
+svg_directory = install_directory / "assets" / "svg"
 scaled_asset_directory = asset_directory
 
 music_directory = Path("~").expanduser() / "Music"
@@ -586,11 +588,11 @@ download_directory = Path("~").expanduser() / "Downloads"
 install_mode = False
 flatpak_mode = False
 snap_mode = False
-if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
+if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 	install_mode = True
-	if install_directory[:6] == "/snap/":
+	if str(install_directory)[:6] == "/snap/":
 		snap_mode = True
-	if install_directory[:5] == "/app/":
+	if str(install_directory)[:5] == "/app/":
 		# Flatpak mode
 		logging.info("Detected running as Flatpak")
 
@@ -616,11 +618,11 @@ if install_directory.startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 # If we're installed, use home data locations
 if (install_mode and system == "Linux") or macos or msys:
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
-	user_directory   = str(Path(GLib.get_user_data_dir()) / "TauonMusicBox")
-	config_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+	#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+	config_directory = user_directory
 
-	if not Path(user_directory).is_dir():
-		os.makedirs(user_directory)
+#	if not user_directory.is_dir():
+#		os.makedirs(user_directory)
 
 	if not config_directory.is_dir():
 		os.makedirs(config_directory)
@@ -632,10 +634,8 @@ if (install_mode and system == "Linux") or macos or msys:
 	else:
 		logging.info("Running from installed location")
 
-	logging.info(f"User files location:       {user_directory}")
-
-	if not Path(Path(user_directory) / "encoder").is_dir():
-		os.makedirs(Path(user_directory) / "encoder")
+	if not (user_directory / "encoder").is_dir():
+		os.makedirs(user_directory / "encoder")
 
 
 # elif (system == 'Windows' or msys) and (
@@ -652,14 +652,9 @@ if (install_mode and system == "Linux") or macos or msys:
 
 else:
 	logging.info("Running in portable mode")
+	config_directory = user_directory
 
-	user_directory = str(Path(install_directory) / "user-data")
-	config_directory = Path(user_directory)
-
-	if not Path(user_directory).is_dir():
-		os.makedirs(user_directory)
-
-if not Path(Path(user_directory) / "state.p").is_file() and cache_directory.is_dir():
+if not (user_directory / "state.p").is_file() and cache_directory.is_dir():
 	logging.info("Clearing old cache directory")
 	logging.info(cache_directory)
 	shutil.rmtree(str(cache_directory))
@@ -669,7 +664,7 @@ e_cache_dir = str(cache_directory / "export")
 g_cache_dir = str(cache_directory / "gallery")
 a_cache_dir = str(cache_directory / "artist")
 r_cache_dir = str(cache_directory / "radio-thumbs")
-b_cache_dir = str(Path(user_directory) / "artist-backgrounds")
+b_cache_dir = str(user_directory / "artist-backgrounds")
 
 if not os.path.isdir(n_cache_dir):
 	os.makedirs(n_cache_dir)
@@ -684,11 +679,11 @@ if not os.path.isdir(b_cache_dir):
 if not os.path.isdir(r_cache_dir):
 	os.makedirs(r_cache_dir)
 
-if not os.path.isdir(os.path.join(user_directory, "artist-pictures")):
-	os.makedirs(os.path.join(user_directory, "artist-pictures"))
+if not (user_directory / "artist-pictures").is_dir():
+	os.makedirs(user_directory / "artist-pictures")
 
-if not os.path.isdir(os.path.join(user_directory, "theme")):
-	os.makedirs(os.path.join(user_directory, "theme"))
+if not (user_directory / "theme").is_dir():
+	os.makedirs(user_directory / "theme")
 
 
 if platform_system == "Linux":
@@ -700,21 +695,21 @@ if platform_system == "Linux":
 			for line in f:
 				if line.startswith("XDG_MUSIC_DIR="):
 					music_directory = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
-					logging.info(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
+					logging.debug(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
 				if line.startswith("XDG_DOWNLOAD_DIR="):
 					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
 					if Path(target).is_dir():
 						download_directory = target
-					logging.info(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
+					logging.debug(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
 
 
 if os.getenv("XDG_MUSIC_DIR"):
 	music_directory = Path(os.getenv("XDG_MUSIC_DIR"))
-	logging.info("Override music to: " + music_directory)
+	logging.debug("Override music to: " + music_directory)
 
 if os.getenv("XDG_DOWNLOAD_DIR"):
 	download_directory = Path(os.getenv("XDG_DOWNLOAD_DIR"))
-	logging.info("Override downloads to: " + download_directory)
+	logging.debug("Override downloads to: " + download_directory)
 
 if music_directory:
 	music_directory = Path(os.path.expandvars(music_directory))
@@ -724,27 +719,26 @@ if download_directory:
 if not music_directory.is_dir():
 	music_directory = None
 
-locale_directory = Path(install_directory) / "locale"
-if flatpak_mode:
-	locale_directory = Path("/app/share/locale")
-elif install_directory.startswith(("/opt/", "/usr/")):
-	locale_directory = Path("/usr/share/locale")
+locale_directory = install_directory / "locale"
+#if flatpak_mode:
+#	locale_directory = Path("/app/share/locale")
+#elif str(install_directory).startswith(("/opt/", "/usr/")):
+#	locale_directory = Path("/usr/share/locale")
 
 logging.info(f"Install directory:         {install_directory}")
+#logging.info(f"SVG directory:             {svg_directory}")
+logging.info(f"Asset directory:           {asset_directory}")
+#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
+if locale_directory.exists():
+	logging.info(f"Locale directory:          {locale_directory}")
+else:
+	logging.error(f"Locale directory MISSING:  {locale_directory}")
+logging.info(f"Userdata directory:        {user_directory}")
 logging.info(f"Config directory:          {config_directory}")
 logging.info(f"Cache directory:           {cache_directory}")
 logging.info(f"Home directory:            {home_directory}")
 logging.info(f"Music directory:           {music_directory}")
-logging.info(f"Download directory:        {download_directory}")
-logging.info(f"Asset directory:           {asset_directory}")
-if locale_directory.exists():
-	logging.info(f"Locale directory:          {locale_directory}")
-else:
-	logging.error(f"Locale directory MISSING: {locale_directory}")
-#logging.info(f"SVG directory:             {svg_directory}")
-#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
-
-old_backend = 2
+logging.info(f"Downloads directory:       {download_directory}")
 
 # Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target: str) -> bool | str | None:
@@ -768,9 +762,9 @@ if flatpak_mode:
 pid = os.getpid()
 
 if not macos:
-	icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+	icon = IMG_Load(str(asset_directory / "icon-64.png").encode())
 else:
-	icon = IMG_Load(os.path.join(asset_directory, "tau-mac.png").encode())
+	icon = IMG_Load(str(asset_directory / "tau-mac.png").encode())
 
 SDL_SetWindowIcon(t_window, icon)
 
@@ -832,12 +826,13 @@ SDL_RenderClear(renderer)
 class LoadImageAsset:
 	assets: list[LoadImageAsset] = []
 
-	def __init__(self, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
+	def __init__(self, *, scaled_asset_directory: Path, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
 			self.assets.append(self)
 
 		self.path = path
 		self.scale_name = scale_name
+		self.scaled_asset_directory: Path = scaled_asset_directory
 
 		raw_image = IMG_Load(self.path.encode())
 		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
@@ -857,8 +852,8 @@ class LoadImageAsset:
 	def reload(self) -> None:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
-			self.path = os.path.join(scaled_asset_directory, self.scale_name)
-		self.__init__(self.path, reload=True, scale_name=self.scale_name)
+			self.path = str(self.scaled_asset_directory / self.scale_name)
+		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour=None) -> None:
 		self.rect.x = round(x)
@@ -869,11 +864,13 @@ class LoadImageAsset:
 class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
 
-	def __init__(self, path: str, reload: bool = False, scale_name: str = ""):
+	def __init__(self, *, scaled_asset_directory: Path, path: str, reload: bool = False, scale_name: str = ""):
 		if not reload:
 			self.assets.append(self)
 		self.path = path
 		self.scale_name = scale_name
+		self.scaled_asset_directory: Path = scaled_asset_directory
+
 		raw_image = IMG_Load(path.encode())
 		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
 		self.colour = [255, 255, 255, 255]
@@ -888,8 +885,8 @@ class WhiteModImageAsset:
 	def reload(self) -> None:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
-			self.path = os.path.join(scaled_asset_directory, self.scale_name)
-		self.__init__(self.path, reload=True, scale_name=self.scale_name)
+			self.path = str(self.scaled_asset_directory / self.scale_name)
+		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour) -> None:
 		if colour != self.colour:
@@ -901,23 +898,25 @@ class WhiteModImageAsset:
 		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
 
-loaded_asset_dc = {}
+loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset] = {}
 
 
-def asset_loader(name: str, mod: bool = False) -> WhiteModImageAsset | LoadImageAsset:
+def asset_loader(
+	scaled_asset_directory: Path, loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset], name: str, mod: bool = False,
+) -> WhiteModImageAsset | LoadImageAsset:
 	if name in loaded_asset_dc:
 		return loaded_asset_dc[name]
 
-	target = os.path.join(scaled_asset_directory, name)
+	target = str(scaled_asset_directory / name)
 	if mod:
-		item = WhiteModImageAsset(target, scale_name=name)
+		item = WhiteModImageAsset(scaled_asset_directory=scaled_asset_directory, path=target, scale_name=name)
 	else:
-		item = LoadImageAsset(target, scale_name=name)
+		item = LoadImageAsset(scaled_asset_directory=scaled_asset_directory, path=target, scale_name=name)
 	loaded_asset_dc[name] = item
 	return item
 
 
-# loading_image = asset_loader('loading.png')
+# loading_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "loading.png")
 
 if maximized:
 	i_x = pointer(c_int(0))
@@ -935,11 +934,11 @@ if maximized:
 # loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
 # SDL_RenderPresent(renderer)
 
-if install_directory != config_directory and not Path(config_directory / "input.txt").is_file():
+if install_directory != config_directory and not (config_directory / "input.txt").is_file():
 	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
 	#logging.warning(install_directory)
 	#logging.warning(config_directory)
-	shutil.copy(Path(install_directory) / "templates" / "input.txt", config_directory)
+	shutil.copy(install_directory / "templates" / "input.txt", config_directory)
 
 
 if snap_mode:
@@ -960,7 +959,7 @@ except Exception:
 # ------------------------------------------------
 
 if system == "Windows":
-	os.environ["PYSDL2_DLL_PATH"] = install_directory + "\\lib"
+	os.environ["PYSDL2_DLL_PATH"] = str(install_directory / "lib")
 elif not msys and not macos:
 	try:
 		gi.require_version("Notify", "0.7")
@@ -1161,19 +1160,16 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 }
 
 # These will be the extensions of files to be added when importing
-DA_Formats = {
-	"mp3", "wav", "opus", "flac", "ape", "aiff",
-	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
-}
-
 VID_Formats = {"mp4", "webm"}
 
 MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
 
 GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
 
-DA_Formats |= MOD_Formats
-DA_Formats |= GME_Formats
+DA_Formats = {
+	"mp3", "wav", "opus", "flac", "ape", "aiff",
+	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
+} | MOD_Formats | GME_Formats
 
 Archive_Formats = {"zip"}
 
@@ -1298,418 +1294,21 @@ latest_db_version: float = 69
 albums = []
 album_position = 0
 
-
-class Prefs:
-	"""Used to hold any kind of settings"""
-
-	def __init__(self) -> None:
-		self.colour_from_image:       bool = False
-		self.dim_art:                 bool = False
-		self.prefer_side:             bool = True  # Saves whether side panel is shown or not
-		self.pause_fade_time:          int = 400
-		self.change_volume_fade_time:  int = 400
-		self.cross_fade_time:          int = 700
-		self.volume_wheel_increment:   int = 2
-		self.encoder_output:          Path = Path(user_directory) / "encoder"
-		if music_directory is not None:
-			self.encoder_output:        Path = music_directory / "encode-output"
-		self.rename_folder_template:   str = "<albumartist> - <album>"
-		self.rename_tracks_template:   str = "<tn>. <artist> - <title>.<ext>"
-
-		self.enable_web:   bool = False
-		self.allow_remote: bool = False
-		self.expose_web:   bool = True
-
-		self.enable_transcode:    bool = True
-		self.show_rym:            bool = False
-		self.show_band:           bool = False
-		self.show_wiki:           bool = False
-		self.show_transfer:       bool = True
-		self.show_queue:          bool = True
-		self.prefer_bottom_title: bool = True
-		self.append_date:         bool = True
-
-		self.transcode_codec:   str = "opus"
-		self.transcode_mode:    str = "single"
-		self.transcode_bitrate: int = 64
-
-		# self.line_style: int = 1
-		self.device:      int = 1
-		self.device_name: str = ""
-
-		self.cache_gallery:           bool = True
-		self.gallery_row_scroll:      bool = True
-		self.gallery_scroll_wheel_px: int = 90
-
-		self.playlist_font_size:  int = 15
-		self.playlist_row_height: int = 27
-
-		self.tag_editor_name:   str = ""
-		self.tag_editor_target: str = ""
-		self.tag_editor_path:   str = ""
-
-		self.use_title:    bool = False
-		self.auto_extract: bool = False
-		self.auto_del_zip: bool = False
-		self.pl_thumb:     bool = False
-
-		self.use_custom_fonts:          bool = False
-		self.linux_font:                str = "Noto Sans, Noto Sans CJK JP, Arial,"
-		self.linux_font_semibold:       str = "Noto Sans, Noto Sans CJK JP, Arial, Medium"
-		self.linux_font_bold:           str = "Noto Sans, Noto Sans CJK JP, Bold"
-		self.linux_font_condensed:      str = "Noto Sans, Extra-Condensed"
-		self.linux_font_condensed_bold: str = "Noto Sans, Extra-Condensed Bold"
-
-		self.spec2_scroll: bool = True
-
-		self.spec2_p_base:     list[float] = [10, 10, 100]
-		self.spec2_p_multiply: list[float] = [0.5, 1, 1]
-
-		self.spec2_base:           list[float] = [10, 10, 100]
-		self.spec2_multiply:       list[float] = [0.5, 1, 1]
-		self.spec2_colour_setting: str = "custom"
-
-		self.auto_lfm:      bool = False
-		self.scrobble_mark: bool = False
-		self.enable_mpris:  bool = True
-
-		self.replay_gain:       int  = 0  # 0=off 1=track 2=album
-		self.replay_preamp:     int  = 0  # db
-		self.radio_page_lyrics: bool = True
-
-		self.show_gimage:      bool = False
-		self.end_setting:      str  = "stop"
-		self.show_gen:         bool = False
-		self.show_lyrics_side: bool = True
-
-		self.log_vol: bool = False
-
-		self.ui_scale: float = scale
-
-		# if flatpak_mode:
-
-		self.transcode_opus_as: bool = False
-
-		self.discord_active:     bool = False
-		self.discord_ready:      bool = False
-		self.disconnect_discord: bool = False
-
-		self.monitor_downloads: bool = True
-		self.extract_to_music:  bool = False
-
-		self.enable_lb: bool = False
-		self.lb_token:  str  = ""
-
-		self.use_jump_crossfade:       bool = True
-		self.use_transition_crossfade: bool = False
-		self.use_pause_fade:           bool = True
-
-		self.show_notifications: bool = True
-
-		self.true_shuffle:      bool = True
-		self.append_total_time: bool = False
-		self.backend:           int  = 4  # 2 gstreamer, 4 phazor
-
-		self.album_repeat_mode:  bool = False  # passed to pctl
-		self.album_shuffle_mode: bool = False  # passed to pctl
-
-		self.finish_current: bool = False  # Finish current album when adding to queue
-
-		self.reload_play_state: bool = False  # Resume playback on app restart
-		self.resume_play_wake:  bool = False  # Resume playback on wake
-		self.reload_state: tuple[int, float] | None = None
-
-		self.mono: bool = False
-
-		self.last_fm_token = None
-		self.last_fm_username = ""
-
-		self.use_card_style = True
-
-		self.plex_username = ""
-		self.plex_password = ""
-		self.plex_servername = ""
-
-		self.koel_username = "admin@example.com"
-		self.koel_password = "admin"
-		self.koel_server_url = "http://localhost:8050"
-
-		self.auto_lyrics = False  # Function has been disabled
-		self.jelly_username = ""
-		self.jelly_password = ""
-		self.jelly_server_url = "http://localhost:8096"
-
-		self.auto_lyrics_checked = []
-
-		self.show_side_art = True
-		self.always_pin_playlists = True
-
-		self.user_directory:   str = user_directory
-		self.cache_directory: Path = cache_directory
-
-		self.window_opacity = window_opacity
-		self.gallery_single_click = True
-		self.custom_bg_opacity = 40
-
-		self.tabs_on_top = True
-		self.desktop = desktop
-
-		self.dc_device = False  # (BASS) Disconnect device on pause
-		if desktop == "KDE":
-			self.dc_device = True
-
-		self.showcase_vis = True
-		self.show_lyrics_showcase = True
-
-		self.spec2_colour_mode = 0
-		self.flatpak_mode = flatpak_mode
-
-		self.device_buffer = 80
-
-		self.eq = [0.0] * 10
-		self.use_eq = False
-
-		self.bio_large = False
-		self.discord_allow = discord_allow
-		self.discord_show = False
-
-		self.min_to_tray = False
-
-		self.guitar_chords = False
-		self.prefer_synced_lyrics = True
-		self.sync_lyrics_time_offset = 0
-
-		self.playback_follow_cursor = False
-		self.short_buffer = False
-
-		self.gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
-
-		self.art_bg = False
-		self.art_bg_stronger = 1
-		self.art_bg_opacity = 10
-		self.art_bg_blur = 9
-		self.art_bg_always_blur = False
-
-		self.random_mode = False
-		self.repeat_mode = False
-
-		self.failed_artists = []
-		self.failed_background_artists = []
-
-		self.artist_list = False
-		self.auto_sort = False
-
-		self.transcode_inplace = False
-
-		self.bg_showcase_only = False
-
-		self.lyrics_enables = []
-
-		self.fatvap = "6b2a9499238ce6416783fc8129b8ac67"
-
-		self.fanart_notify = True
-		self.discogs_pat = ""
-
-		self.artist_list_prefer_album_artist = True
-
-		self.mini_mode_mode = 0
-		self.dc_device_setting = "on"
-
-		self.download_dir1 = ""
-		self.dd_index = False
-
-		self.metadata_page_port = 7590
-
-		self.custom_encoder_output = ""
-		self.column_aa_fallback_artist = False
-
-		self.meta_persists_stop = False
-		self.meta_shows_selected = False
-		self.meta_shows_selected_always = False
-
-		self.left_align_album_artist_title = False
-		self.stop_notifications_mini_mode = False
-		self.scale_want = 1
-		self.x_scale = True
-		self.hide_queue = True
-		self.show_playlist_list = True
-		self.thin_gallery_borders = False
-		self.show_current_on_transition = False
-
-		self.force_subpixel_text = False
-		if gtk_settings:
-			if gtk_settings.get_property("gtk-xft-rgba") == "rgb":
-				self.force_subpixel_text = True
-
-		self.chart_rows = 3
-		self.chart_columns = 3
-		self.chart_bg = [7, 7, 7]
-		self.chart_text = True
-		self.chart_font = "Monospace 10"
-		self.chart_tile = False
-
-		self.chart_cascade = False
-		self.chart_c1 = 5
-		self.chart_c2 = 6
-		self.chart_c3 = 10
-		self.chart_d1 = 2
-		self.chart_d2 = 2
-		self.chart_d3 = 2
-
-		self.art_in_top_panel = True
-		self.always_art_header = False
-
-		# self.center_bg = True
-		self.ui_lang: str = "auto"
-		self.side_panel_layout = 0
-		self.use_absolute_track_index = False
-
-		self.hide_bottom_title = True
-		self.auto_goto_playing = False
-
-		self.diacritic_search = True
-		self.increase_gallery_row_spacing = False
-		self.center_gallery_text = False
-
-		self.tracklist_y_text_offset = 0
-		self.theme_name = "Turbo"
-		self.left_panel_mode = "playlist"
-
-		self.folder_tree_codec_colours = False
-
-		self.network_stream_bitrate = 0  # 0 is off
-
-		self.show_side_lyrics_art_panel = True
-
-		self.gst_use_custom_output = False
-
-		self.notify_include_album = True
-
-		self.auto_dl_artist_data = False
-
-		self.enable_fanart_artist = False
-		self.enable_fanart_bg = False
-		self.enable_fanart_cover = False
-
-		self.always_auto_update_playlists = False
-
-		self.subsonic_server = "http://localhost:4040"
-		self.subsonic_user = ""
-		self.subsonic_password = ""
-		self.subsonic_password_plain = False
-
-		self.subsonic_playlists = {}
-
-		self.write_ratings = False
-		self.rating_playtime_stars = False
-
-		self.lyrics_subs = {}
-
-		self.radio_urls = []
-
-		self.lyric_metadata_panel_top = False
-		self.showcase_overlay_texture = False
-
-		self.sync_target = ""
-		self.sync_deletes = False
-		self.sync_playlist: int | None = None
-		self.download_playlist: int | None = None
-
-		self.sep_genre_multi = False
-		self.topchart_sorts_played = True
-
-		self.spot_client = ""
-		self.spot_secret = ""
-		self.spot_username = ""
-		self.spot_password = ""
-		self.spot_mode = False
-		self.launch_spotify_web = False
-		self.launch_spotify_local = False
-		self.remove_network_tracks = False
-		self.bypass_transcode = False
-		self.force_hide_max_button = False
-		self.zoom_art = False
-		self.auto_rec = False
-		self.radio_record_codec = "OPUS"
-		self.pa_fast_seek = False
-		self.precache = False
-		self.cache_list = []
-		self.cache_limit = 2000  # in mb
-		self.save_window_position = True
-		self.spotify_token = ""
-		self.always_ffmpeg = False
-
-		self.use_libre_fm = False
-		self.back_restarts = False
-
-		self.old_playlist_box_position = 0
-		self.listenbrainz_url = ""
-		self.maloja_enable = False
-		self.maloja_url = ""
-		self.maloja_key = ""
-
-		self.scrobble_hold = False
-
-		self.artist_list_sort_mode = "alpha"
-
-		self.phazor_device_selected = "Default"
-		self.phazor_devices = ["Default"]
-		self.bg_flips = set()
-		self.use_tray = False
-		self.tray_show_title = False
-		self.drag_to_unpin = True
-		self.enable_remote = False
-
-		self.artist_list_style = 1
-		self.discord_enable = False
-		self.stop_end_queue = False
-
-		self.block_suspend = False
-		self.smart_bypass = True
-		self.seek_interval = 15
-		self.shuffle_lock = False
-		self.album_shuffle_lock_mode = False
-		self.premium = False
-		self.power_save = False
-		if macos or phone:
-			self.power_save = True
-		self.left_window_control = macos or left_window_control
-		self.macstyle = macos or detect_macstyle
-		self.radio_thumb_bans = []
-		self.show_nag = False
-
-		self.playlist_exports = {}
-		self.show_chromecast = False
-
-		self.samplerate = 48000
-		self.resample = 1
-		self.volume_power = 2
-
-		self.tmp_cache = True
-
-		self.sat_url = ""
-		self.lyrics_font_size = 15
-
-		self.use_gamepad = True
-		self.avoid_resampling = False
-		self.use_scancodes = False
-
-		self.artist_list_threshold = 4
-		self.allow_video_formats = True
-		self.mini_mode_on_top = True
-		self.tray_theme = "pink"
-
-		self.lastfm_pull_love = False
-		self.row_title_format = 1
-		self.row_title_genre = False
-		self.row_title_separator_type = 1
-		self.search_on_letter = True
-
-		self.gallery_combine_disc = False
-		self.pipewire = False
-		self.tidal_quality = 1
-
-prefs = Prefs()
+prefs = Prefs(
+	user_directory=user_directory,
+	music_directory=music_directory,
+	cache_directory=cache_directory,
+	macos=macos,
+	phone=phone,
+	left_window_control=left_window_control,
+	detect_macstyle=detect_macstyle,
+	gtk_settings=gtk_settings,
+	discord_allow=discord_allow,
+	flatpak_mode=flatpak_mode,
+	desktop=desktop,
+	window_opacity=window_opacity,
+	scale=scale,
+)
 
 
 def open_uri(uri:str) -> None:
@@ -1849,7 +1448,7 @@ class GuiVar:
 
 		self.level_update = False
 		self.level_time = Timer()
-		self.level_peak = [0, 0]
+		self.level_peak: list[float] = [0, 0]
 		self.level = 0
 		self.time_passed = 0
 		self.level_meter_colour_mode = 3
@@ -2092,8 +1691,8 @@ class GuiVar:
 		self.column_d_click_timer = Timer(10)
 		self.column_d_click_on = -1
 		self.column_sort_ani_timer = Timer(10)
-		self.column_sort_down_icon = asset_loader("sort-down.png", True)
-		self.column_sort_up_icon = asset_loader("sort-up.png", True)
+		self.column_sort_down_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "sort-down.png", True)
+		self.column_sort_up_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "sort-up.png", True)
 		self.column_sort_ani_direction = 1
 		self.column_sort_ani_x = 0
 
@@ -2127,7 +1726,7 @@ class GuiVar:
 
 		self.backend_reloading = False
 
-		self.spot_info_icon = asset_loader("spot-info.png", True)
+		self.spot_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot-info.png", True)
 		self.tray_active = False
 		self.buffering = False
 		self.buffering_text = ""
@@ -2208,23 +1807,18 @@ def set_drag_source():
 
 # Functions for reading and setting play counts
 class StarStore:
-
-	def __init__(self):
-
+	def __init__(self) -> None:
 		self.db = {}
 
-	def key(self, track_id: int):
-
+	def key(self, track_id: int) -> tuple[str, str, str]:
 		track_object = pctl.master_library[track_id]
 		return track_object.artist, track_object.title, track_object.filename
 
 	def object_key(self, track: TrackClass) -> tuple[str, str, str]:
-
 		return track.artist, track.title, track.filename
 
-	# Increments the play time
-	def add(self, index, value):
-
+	def add(self, index: int, value):
+		"""Increments the play time"""
 		track_object = pctl.master_library[index]
 
 		if after_scan:
@@ -2240,22 +1834,22 @@ class StarStore:
 		else:
 			self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
 
-	# Returns the track play time
 	def get(self, index: int):
+		"""Returns the track play time"""
 		if index < 0:
 			return 0
 		return self.db.get(self.key(index), (0,))[0]
 
-	# Returns the track user rating
 	def get_rating(self, index: int):
+		"""Returns the track user rating"""
 		key = self.key(index)
 		if key in self.db:
 			# self.db[key]
 			return self.db[key][2]
 		return 0
 
-	# Sets the track user rating
-	def set_rating(self, index, value, write=False):
+	def set_rating(self, index: int, value: int, write: bool = False) -> None:
+		"""Sets the track user rating"""
 		key = self.key(index)
 		if key not in self.db:
 			self.db[key] = self.new_object()
@@ -2422,7 +2016,7 @@ fonts = Fonts()
 class Input:
 	"""Used to keep track of button states (or should be)"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.mouse_click = False
 		# self.right_click = False
 		self.level_2_enter = False
@@ -2432,23 +2026,23 @@ class Input:
 
 		self.media_key = ""
 
-	def m_key_play(self):
+	def m_key_play(self) -> None:
 		self.media_key = "Play"
 		gui.update += 1
 
-	def m_key_pause(self):
+	def m_key_pause(self) -> None:
 		self.media_key = "Pause"
 		gui.update += 1
 
-	def m_key_stop(self):
+	def m_key_stop(self) -> None:
 		self.media_key = "Stop"
 		gui.update += 1
 
-	def m_key_next(self):
+	def m_key_next(self) -> None:
 		self.media_key = "Next"
 		gui.update += 1
 
-	def m_key_previous(self):
+	def m_key_previous(self) -> None:
 		self.media_key = "Previous"
 		gui.update += 1
 
@@ -2888,9 +2482,9 @@ def set_colour(colour):
 def get_themes(deco: bool = False):
 	themes = []  # full, name
 	decos = {}
-	direcs = [install_directory + "/theme"]
+	direcs = [str(install_directory / "theme")]
 	if user_directory != install_directory:
-		direcs.append(user_directory + "/theme")
+		direcs.append(str(user_directory / "theme"))
 
 	def scan_folders(folders: list[str]) -> None:
 		for folder in folders:
@@ -3036,8 +2630,8 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 gbc.disable()
 ggc = 2
 
-star_path1 = Path(user_directory) / "star.p"
-star_path2 = Path(user_directory) / "star.p.backup"
+star_path1 = user_directory / "star.p"
+star_path2 = user_directory / "star.p.backup"
 star_size1 = 0
 star_size2 = 0
 to_load = star_path1
@@ -3058,7 +2652,7 @@ else:
 		logging.exception("Unknown error loading star.p file")
 
 
-album_star_path = Path(user_directory) / "album-star.p"
+album_star_path = user_directory / "album-star.p"
 if album_star_path.is_file():
 	try:
 		with album_star_path.open("rb") as file:
@@ -3068,9 +2662,9 @@ if album_star_path.is_file():
 else:
 	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
-if os.path.isfile(user_directory + "/lyrics_substitutions.json"):
+if (user_directory / "lyrics_substitutions.json").is_file():
 	try:
-		with open(user_directory + "/lyrics_substitutions.json") as f:
+		with (user_directory / "lyrics_substitutions.json").open() as f:
 			prefs.lyrics_subs = json.load(f)
 	except FileNotFoundError:
 		logging.error("No existing lyrics_substitutions.json file")
@@ -3136,10 +2730,10 @@ shoot_pump = threading.Thread(target=pumper)
 shoot_pump.daemon = True
 shoot_pump.start()
 
-state_path1 = Path(user_directory) / "state.p"
-state_path2 = Path(user_directory) / "state.p.backup"
+state_path1 = user_directory / "state.p"
+state_path2 = user_directory / "state.p.backup"
 for t in range(2):
-	#	 os.path.getsize(user_directory + "/state.p") < 100
+	#	 os.path.getsize(user_directory / "state.p") < 100
 	try:
 		if t == 0:
 			if not state_path1.is_file():
@@ -4287,13 +3881,13 @@ smtc = False
 if msys and win_ver >= 10:
 
 	#logging.info(sss.info.win.window)
-	SMTC_path = Path(install_directory) / "lib" / "TauonSMTC.dll"
+	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 	if SMTC_path.exists():
 		try:
 			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
 
 			def SMTC_button_callback(button: int) -> None:
-
+				logging.debug(f"SMTC sent key ID: {button}")
 				if button == 1:
 					inp.media_key = "Play"
 				if button == 2:
@@ -4358,9 +3952,9 @@ auto_scale()
 def scale_assets(scale_want: int, force: bool = False) -> None:
 	global scaled_asset_directory
 	if scale_want != 1:
-		scaled_asset_directory = os.path.join(user_directory, "scaled-icons")
-		if not os.path.exists(scaled_asset_directory) or len(os.listdir(svg_directory)) != len(
-				os.listdir(scaled_asset_directory)):
+		scaled_asset_directory = user_directory / "scaled-icons"
+		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
+				os.listdir(str(scaled_asset_directory))):
 			logging.info("Force rerender icons")
 			force = True
 	else:
@@ -4369,13 +3963,13 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 	if scale_want != prefs.ui_scale or force:
 
 		if scale_want != 1:
-			if os.path.isdir(scaled_asset_directory) and scaled_asset_directory != asset_directory:
-				shutil.rmtree(scaled_asset_directory)
+			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
+				shutil.rmtree(str(scaled_asset_directory))
 			from tauon.t_modules.t_svgout import render_icons
 
 			if scaled_asset_directory != asset_directory:
 				logging.info("Rendering icons...")
-				render_icons(svg_directory, scaled_asset_directory, scale_want)
+				render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
 
 		logging.info("Done rendering icons")
 
@@ -4791,161 +4385,157 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 			del MOD1
 
 		elif nt.file_ext == "FLAC":
-
-			audio = Flac(nt.fullpath)
-			audio.read()
-
-			nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.composer = audio.composer
-			nt.date = audio.date
-			nt.samplerate = audio.sample_rate
-			nt.bit_depth = audio.bit_depth
-			nt.size = os.path.getsize(nt.fullpath)
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.disc_number = audio.disc_number
-			nt.lyrics = audio.lyrics
-			if nt.length:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.cue_sheet = audio.cue_sheet
-			nt.misc = audio.misc
-
-		elif nt.file_ext == "WAV":
-
-			try:
-				audio = Wav(nt.fullpath)
+			with Flac(nt.fullpath) as audio:
 				audio.read()
 
-				nt.samplerate = audio.sample_rate
 				nt.length = audio.length
 				nt.title = audio.title
 				nt.artist = audio.artist
 				nt.album = audio.album
-				nt.track_number = audio.track_number
-
-			except Exception:
-				logging.exception("Failed saving WAV file as a Track, will try again differently")
-				audio = mutagen.File(nt.fullpath)
-				nt.samplerate = audio.info.sample_rate
-				nt.bitrate = audio.info.bitrate // 1000
-				nt.length = audio.info.length
+				nt.composer = audio.composer
+				nt.date = audio.date
+				nt.samplerate = audio.sample_rate
+				nt.bit_depth = audio.bit_depth
 				nt.size = os.path.getsize(nt.fullpath)
-			audio = mutagen.File(nt.fullpath)
-			if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
-				use_id3(audio.tags, nt)
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.disc_number = audio.disc_number
+				nt.lyrics = audio.lyrics
+				if nt.length:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.cue_sheet = audio.cue_sheet
+				nt.misc = audio.misc
+
+		elif nt.file_ext == "WAV":
+			with Wav(nt.fullpath) as audio:
+				try:
+					audio.read()
+
+					nt.samplerate = audio.sample_rate
+					nt.length = audio.length
+					nt.title = audio.title
+					nt.artist = audio.artist
+					nt.album = audio.album
+					nt.track_number = audio.track_number
+
+				except Exception:
+					logging.exception("Failed saving WAV file as a Track, will try again differently")
+					audio = mutagen.File(nt.fullpath)
+					nt.samplerate = audio.info.sample_rate
+					nt.bitrate = audio.info.bitrate // 1000
+					nt.length = audio.info.length
+					nt.size = os.path.getsize(nt.fullpath)
+				audio = mutagen.File(nt.fullpath)
+				if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
+					use_id3(audio.tags, nt)
 
 		elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
 
 			#logging.info("get opus")
-			audio = Opus(nt.fullpath)
-			audio.read()
+			with Opus(nt.fullpath) as audio:
+				audio.read()
 
-			#logging.info(audio.title)
+				#logging.info(audio.title)
 
-			nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.composer = audio.composer
-			nt.date = audio.date
-			nt.samplerate = audio.sample_rate
-			nt.size = os.path.getsize(nt.fullpath)
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.bitrate = audio.bit_rate
-			nt.lyrics = audio.lyrics
-			nt.disc_number = audio.disc_number
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.misc = audio.misc
-			if nt.bitrate == 0 and nt.length > 0:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				nt.length = audio.length
+				nt.title = audio.title
+				nt.artist = audio.artist
+				nt.album = audio.album
+				nt.composer = audio.composer
+				nt.date = audio.date
+				nt.samplerate = audio.sample_rate
+				nt.size = os.path.getsize(nt.fullpath)
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.bitrate = audio.bit_rate
+				nt.lyrics = audio.lyrics
+				nt.disc_number = audio.disc_number
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.misc = audio.misc
+				if nt.bitrate == 0 and nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
 		elif nt.file_ext == "APE":
+			with mutagen.File(nt.fullpath) as audio:
+				nt.length = audio.info.length
+				nt.bit_depth = audio.info.bits_per_sample
+				nt.samplerate = audio.info.sample_rate
+				nt.size = os.path.getsize(nt.fullpath)
+				if nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
-			audio = mutagen.File(nt.fullpath)
-			nt.length = audio.info.length
-			nt.bit_depth = audio.info.bits_per_sample
-			nt.samplerate = audio.info.sample_rate
-			nt.size = os.path.getsize(nt.fullpath)
-			if nt.length > 0:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				# # def getter(audio, key, type):
+				# #	 if
+				# t = audio.tags
+				# logging.info(t.keys())
+				# nt.size = os.path.getsize(nt.fullpath)
+				# nt.title = str(t.get("title", ""))
+				# nt.album = str(t.get("album", ""))
+				# nt.date = str(t.get("year", ""))
+				# nt.disc_number = str(t.get("discnumber", ""))
+				# nt.comment = str(t.get("comment", ""))
+				# nt.artist = str(t.get("artist", ""))
+				# nt.composer = str(t.get("composer", ""))
+				# nt.composer = str(t.get("composer", ""))
 
-			# # def getter(audio, key, type):
-			# #	 if
-			# t = audio.tags
-			# logging.info(t.keys())
-			# nt.size = os.path.getsize(nt.fullpath)
-			# nt.title = str(t.get("title", ""))
-			# nt.album = str(t.get("album", ""))
-			# nt.date = str(t.get("year", ""))
-			# nt.disc_number = str(t.get("discnumber", ""))
-			# nt.comment = str(t.get("comment", ""))
-			# nt.artist = str(t.get("artist", ""))
-			# nt.composer = str(t.get("composer", ""))
-			# nt.composer = str(t.get("composer", ""))
+			with Ape(nt.fullpath) as audio:
+				audio.read()
 
-			audio = Ape(nt.fullpath)
-			audio.read()
+				# logging.info(audio.title)
 
-			# logging.info(audio.title)
-
-			# nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.date = audio.date
-			nt.composer = audio.composer
-			# nt.bit_depth = audio.bit_depth
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.disc_number = audio.disc_number
-			nt.lyrics = audio.lyrics
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.misc = audio.misc
+				# nt.length = audio.length
+				nt.title = audio.title
+				nt.artist = audio.artist
+				nt.album = audio.album
+				nt.date = audio.date
+				nt.composer = audio.composer
+				# nt.bit_depth = audio.bit_depth
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.disc_number = audio.disc_number
+				nt.lyrics = audio.lyrics
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.misc = audio.misc
 
 		elif nt.file_ext == "WV" or nt.file_ext == "TTA":
 
-			audio = Ape(nt.fullpath)
-			audio.read()
+			with Ape(nt.fullpath) as audio:
+				audio.read()
 
-			# logging.info(audio.title)
+				# logging.info(audio.title)
 
-			nt.length = audio.length
-			nt.title = audio.title
-			nt.artist = audio.artist
-			nt.album = audio.album
-			nt.date = audio.date
-			nt.composer = audio.composer
-			nt.samplerate = audio.sample_rate
-			nt.bit_depth = audio.bit_depth
-			nt.size = os.path.getsize(nt.fullpath)
-			nt.track_number = audio.track_number
-			nt.genre = audio.genre
-			nt.album_artist = audio.album_artist
-			nt.disc_number = audio.disc_number
-			nt.lyrics = audio.lyrics
-			if nt.length > 0:
-				nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-			nt.track_total = audio.track_total
-			nt.disc_total = audio.disc_total
-			nt.comment = audio.comment
-			nt.misc = audio.misc
+				nt.length = audio.length
+				nt.title = audio.title
+				nt.artist = audio.artist
+				nt.album = audio.album
+				nt.date = audio.date
+				nt.composer = audio.composer
+				nt.samplerate = audio.sample_rate
+				nt.bit_depth = audio.bit_depth
+				nt.size = os.path.getsize(nt.fullpath)
+				nt.track_number = audio.track_number
+				nt.genre = audio.genre
+				nt.album_artist = audio.album_artist
+				nt.disc_number = audio.disc_number
+				nt.lyrics = audio.lyrics
+				if nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				nt.track_total = audio.track_total
+				nt.disc_total = audio.disc_total
+				nt.comment = audio.comment
+				nt.misc = audio.misc
 
 		else:
-
 			# Use MUTAGEN
 			try:
 				if nt.file_ext.lower() in VID_Formats:
@@ -5064,7 +4654,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 	return nt
 
 
-def get_radio_art():
+def get_radio_art() -> None:
 	if radiobox.loaded_url in radiobox.websocket_source_urls:
 		return
 	if "ggdrasil" in radiobox.playing_title:
@@ -5158,7 +4748,7 @@ class PlayerCtl:
 
 		self.running:           bool = True
 		self.prefs:             Prefs = prefs
-		self.install_directory: str  = install_directory
+		self.install_directory: Path  = install_directory
 
 		# Database
 
@@ -5242,7 +4832,8 @@ class PlayerCtl:
 		self.gst_devices = []  # Display names
 		self.gst_outputs = {}  # Display name : (sink, device)
 
-		self.mpris = None
+#		TODO(Martin) : Fix this by moving the class to root of the module
+		self.mpris: Gnome.main.MPRIS | None = None
 		self.tray_update = None
 		self.eq = [0] * 2  # not used
 		self.enable_eq = True  # not used
@@ -5426,7 +5017,7 @@ class PlayerCtl:
 
 	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
-			return tidal.resolve_stream(track_object), None
+			return tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
 			return plex.resolve_stream(track_object.url_key), None
 
@@ -5581,7 +5172,7 @@ class PlayerCtl:
 
 		global shift_selection
 
-		if spot_ctl.coasting:
+		if tauon.spot_ctl.coasting:
 			sptr = tauon.dummy_track.misc.get("spotify-track-url")
 			if sptr:
 
@@ -5724,7 +5315,7 @@ class PlayerCtl:
 
 	def set_volume(self, notify: bool = True) -> None:
 
-		if (spot_ctl.coasting or spot_ctl.playing) and not spot_ctl.local and mouse_down:
+		if (tauon.spot_ctl.coasting or tauon.spot_ctl.playing) and not tauon.spot_ctl.local and mouse_down:
 			# Rate limit network volume change
 			t = self.volume_update_timer.get()
 			if t < 0.3:
@@ -5916,9 +5507,9 @@ class PlayerCtl:
 			self.render_playlist()
 			return
 
-		if spot_ctl.coasting:
-			spot_ctl.control("previous")
-			spot_ctl.update_timer.set()
+		if tauon.spot_ctl.coasting:
+			tauon.spot_ctl.control("previous")
+			tauon.spot_ctl.update_timer.set()
 			self.playing_time = -2
 			self.decode_time = -2
 			return
@@ -6015,9 +5606,9 @@ class PlayerCtl:
 			if tauon.stream_proxy.download_running:
 				sleep_timeout(lambda: tauon.stream_proxy.download_running, 2)
 
-		if spot_ctl.playing or spot_ctl.coasting:
+		if tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
 			logging.info("Spotify stop")
-			spot_ctl.control("stop")
+			tauon.spot_ctl.control("stop")
 
 		self.notify_update()
 		lfm_scrobbler.start_queue()
@@ -6025,7 +5616,7 @@ class PlayerCtl:
 
 	def pause(self) -> None:
 
-		if tauon.spotc and tauon.spotc.running and spot_ctl.playing:
+		if tauon.spotc and tauon.spotc.running and tauon.spot_ctl.playing:
 			if self.playing_state == 1:
 				self.playerCommand = "pauseon"
 				self.playerCommandReady = True
@@ -6034,19 +5625,19 @@ class PlayerCtl:
 				self.playerCommandReady = True
 
 		if self.playing_state == 3:
-			if spot_ctl.coasting:
-				if spot_ctl.paused:
-					spot_ctl.control("resume")
+			if tauon.spot_ctl.coasting:
+				if tauon.spot_ctl.paused:
+					tauon.spot_ctl.control("resume")
 				else:
-					spot_ctl.control("pause")
+					tauon.spot_ctl.control("pause")
 			return
 
-		if spot_ctl.playing:
+		if tauon.spot_ctl.playing:
 			if self.playing_state == 2:
-				spot_ctl.control("resume")
+				tauon.spot_ctl.control("resume")
 				self.playing_state = 1
 			elif self.playing_state == 1:
-				spot_ctl.control("pause")
+				tauon.spot_ctl.control("pause")
 				self.playing_state = 2
 			self.render_playlist()
 			return
@@ -6084,7 +5675,7 @@ class PlayerCtl:
 	def seek_decimal(self, decimal: int) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
 			if decimal > 1:
 				decimal = 1
 			elif decimal < 0:
@@ -6104,7 +5695,7 @@ class PlayerCtl:
 	def seek_time(self, new: float) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
 
 			if new > self.playing_length - 0.5:
 				self.advance()
@@ -6124,7 +5715,7 @@ class PlayerCtl:
 
 	def play(self) -> None:
 
-		if spot_ctl.playing:
+		if tauon.spot_ctl.playing:
 			if self.playing_state == 2:
 				self.play_pause()
 			return
@@ -6159,38 +5750,38 @@ class PlayerCtl:
 		self.render_playlist()
 
 	def spot_test_progress(self) -> None:
-		if self.playing_state in (1, 2) and spot_ctl.playing:
+		if self.playing_state in (1, 2) and tauon.spot_ctl.playing:
 			th = 5  # the rate to poll the spotify API
 			if self.playing_time > self.playing_length:
 				th = 1
-			if not spot_ctl.paused:
-				if spot_ctl.start_timer.get() < 0.5:
-					spot_ctl.progress_timer.set()
+			if not tauon.spot_ctl.paused:
+				if tauon.spot_ctl.start_timer.get() < 0.5:
+					tauon.spot_ctl.progress_timer.set()
 					return
-				add_time = spot_ctl.progress_timer.get()
+				add_time = tauon.spot_ctl.progress_timer.get()
 				if add_time > 5:
 					add_time = 0
 				self.playing_time += add_time
 				self.decode_time = self.playing_time
 				# self.test_progress()
-				spot_ctl.progress_timer.set()
+				tauon.spot_ctl.progress_timer.set()
 				if len(self.track_queue) > 0 and 2 > add_time > 0:
 					star_store.add(self.track_queue[self.queue_step], add_time)
-			if spot_ctl.update_timer.get() > th:
-				spot_ctl.update_timer.set()
-				shooter(spot_ctl.monitor)
+			if tauon.spot_ctl.update_timer.get() > th:
+				tauon.spot_ctl.update_timer.set()
+				shooter(tauon.spot_ctl.monitor)
 			else:
 				self.test_progress()
 
-		elif self.playing_state == 3 and spot_ctl.coasting:
+		elif self.playing_state == 3 and tauon.spot_ctl.coasting:
 			th = 7
 			if self.playing_time > self.playing_length or self.playing_time < 2.5:
 				th = 1
-			if spot_ctl.update_timer.get() < th:
-				if not spot_ctl.paused:
-					self.playing_time += spot_ctl.progress_timer.get()
+			if tauon.spot_ctl.update_timer.get() < th:
+				if not tauon.spot_ctl.paused:
+					self.playing_time += tauon.spot_ctl.progress_timer.get()
 					self.decode_time = self.playing_time
-				spot_ctl.progress_timer.set()
+				tauon.spot_ctl.progress_timer.set()
 
 			else:
 				tauon.spot_ctl.update_timer.set()
@@ -6232,7 +5823,7 @@ class PlayerCtl:
 
 		gap_extra = 2  # 2
 
-		if spot_ctl.playing or tauon.chrome_mode:
+		if tauon.spot_ctl.playing or tauon.chrome_mode:
 			gap_extra = 3
 
 		if msys and taskbar_progress and self.windows_progress:
@@ -6249,13 +5840,13 @@ class PlayerCtl:
 		if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
 			# Allow some time for spotify playing time to update?
-			if spot_ctl.playing and spot_ctl.start_timer.get() < 3:
+			if tauon.spot_ctl.playing and tauon.spot_ctl.start_timer.get() < 3:
 				return
 
 			# Allow some time for backend to provide a length
 			if self.playing_time < 6 and self.playing_length == 0:
 				return
-			if not spot_ctl.playing and self.a_time < 2:
+			if not tauon.spot_ctl.playing and self.a_time < 2:
 				return
 
 			self.decode_time = 0
@@ -6386,7 +5977,7 @@ class PlayerCtl:
 				# self.advance(quiet=True, end=True)
 
 				id = self.advance(quiet=True, end=True, dry=True)
-				if id is not None and not spot_ctl.playing:
+				if id is not None and not tauon.spot_ctl.playing:
 					#logging.info("Commit")
 					self.start_commit(id)
 					return
@@ -6412,9 +6003,9 @@ class PlayerCtl:
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
 		# Spotify remote control mode
-		if not dry and spot_ctl.coasting:
-			spot_ctl.control("next")
-			spot_ctl.update_timer.set()
+		if not dry and tauon.spot_ctl.coasting:
+			tauon.spot_ctl.control("next")
+			tauon.spot_ctl.update_timer.set()
 			self.playing_time = -2
 			self.decode_time = -2
 			return None
@@ -6933,8 +6524,8 @@ class PlayerCtl:
 
 		self.render_playlist()
 
-		if spot_ctl.playing and end_of_playlist:
-			spot_ctl.control("stop")
+		if tauon.spot_ctl.playing and end_of_playlist:
+			tauon.spot_ctl.control("stop")
 
 		self.notify_update()
 		lfm_scrobbler.start_queue()
@@ -6952,7 +6543,7 @@ pctl = PlayerCtl()
 notify_change = pctl.notify_change
 
 
-def auto_name_pl(target_pl):
+def auto_name_pl(target_pl: int) -> None:
 	if not pctl.multi_playlist[target_pl].playlist_ids:
 		return
 
@@ -7085,7 +6676,7 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 		i_path = ""
 		try:
 			if not notify_of_end:
-				i_path = thumb_tracks.path(track)
+				i_path = tauon.thumb_tracks.path(track)
 		except Exception:
 			logging.exception(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
 			logging.error("Thumbnail error")
@@ -8377,7 +7968,7 @@ class Menu:
 		self.down = False
 		self.font = 412
 		self.show_icons: bool = show_icons
-		self.sub_arrow = MenuIcon(asset_loader("sub.png", True))
+		self.sub_arrow = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "sub.png", True))
 
 		self.id = Menu.count
 		self.break_height = round(4 * gui.scale)
@@ -8797,28 +8388,326 @@ class Menu:
 
 		self.active = True
 
-class Tauon:
+class GallClass:
+	def __init__(self, size=250, save_out=True):
+		self.gall = {}
+		self.size = size
+		self.queue = []
+		self.key_list = []
+		self.save_out = save_out
+		self.i = 0
+		self.lock = threading.Lock()
+		self.limit = 60
 
+	def get_file_source(self, track_object: TrackClass):
+
+		global album_art_gen
+
+		sources = album_art_gen.get_sources(track_object)
+
+		if len(sources) == 0:
+			return False, 0
+
+		offset = album_art_gen.get_offset(track_object.fullpath, sources)
+		return sources[offset], offset
+
+	def worker_render(self):
+
+		self.lock.acquire()
+		# time.sleep(0.1)
+
+		if search_over.active:
+			while QuickThumbnail.queue:
+				img = QuickThumbnail.queue.pop(0)
+				response = urllib.request.urlopen(img.url, context=ssl_context)
+				source_image = io.BytesIO(response.read())
+				img.read_and_thumbnail(source_image, img.size, img.size)
+				source_image.close()
+				gui.update += 1
+
+		while len(self.queue) > 0:
+
+			source_image = None
+
+			if gui.halt_image_rendering:
+				self.queue.clear()
+				break
+
+			self.i += 1
+
+			try:
+				# key = self.queue[0]
+				key = self.queue.pop(0)
+			except Exception:
+				logging.exception("thumb queue empty")
+				break
+
+			if key not in self.gall:
+				order = [1, None, None, None]
+				self.gall[key] = order
+			else:
+				order = self.gall[key]
+
+			size = key[1]
+
+			slow_load = False
+			cache_load = False
+
+			try:
+
+				if True:
+					offset = 0
+					parent_folder = key[0].parent_folder_path
+					if parent_folder in folder_image_offsets:
+						offset = folder_image_offsets[parent_folder]
+					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
+					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
+						# logging.info('load from cache')
+						cache_load = True
+					else:
+						slow_load = True
+
+				if slow_load:
+
+					source, c_offset = self.get_file_source(key[0])
+
+					if source is False:
+						order[0] = 0
+						self.gall[key] = order
+						# del self.queue[0]
+						continue
+
+					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(c_offset)
+
+					# gall_render_last_timer.set()
+
+					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
+						logging.info("slow load image")
+						cache_load = True
+
+					# elif source[0] == 1:
+					#	 #logging.info('tag')
+					#	 source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+					#
+					# elif source[0] == 2:
+					#	 try:
+					#		 url = get_network_thumbnail_url(key[0])
+					#		 response = urllib.request.urlopen(url)
+					#		 source_image = response
+					#	 except Exception:
+					#		 logging.exception("IMAGE NETWORK LOAD ERROR")
+					# else:
+					#	 source_image = open(source[1], 'rb')
+					source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
+
+				g = io.BytesIO()
+				g.seek(0)
+
+				if cache_load:
+					g.write(source_image.read())
+
+				else:
+					error = False
+					try:
+						# Process image
+						im = Image.open(source_image)
+						if im.mode != "RGB":
+							im = im.convert("RGB")
+						im.thumbnail((size, size), Image.Resampling.LANCZOS)
+					except Exception:
+						logging.exception("Failed to work with thumbnail")
+						im = album_art_gen.get_error_img(size)
+						error = True
+
+					im.save(g, "BMP")
+
+					if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
+							os.path.join(g_cache_dir, img_name + ".jpg")):
+						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
+
+				g.seek(0)
+
+				# source_image.close()
+
+				order = [2, g, None, None]
+				self.gall[key] = order
+
+				gui.update += 1
+				if source_image:
+					source_image.close()
+					source_image = None
+				# del self.queue[0]
+
+				time.sleep(0.001)
+
+			except Exception:
+				logging.exception("Image load failed on track: " + key[0].fullpath)
+				order = [0, None, None, None]
+				self.gall[key] = order
+				gui.update += 1
+				# del self.queue[0]
+
+			if size < 150:
+				random.shuffle(self.queue)
+
+		if self.i > 0:
+			self.i = 0
+			return True
+		return False
+
+	def render(self, track: TrackClass, location, size=None, force_offset=None) -> bool | None:
+		if gallery_load_delay.get() < 0.5:
+			return None
+
+		x = round(location[0])
+		y = round(location[1])
+
+		# time.sleep(0.1)
+		if size is None:
+			size = self.size
+
+		size = round(size)
+
+		# offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
+		if track.parent_folder_path in folder_image_offsets:
+			offset = folder_image_offsets[track.parent_folder_path]
+		else:
+			offset = 0
+
+		if force_offset is not None:
+			offset = force_offset
+
+		key = (track, size, offset)
+
+		if key in self.gall:
+			#logging.info("old")
+
+			order = self.gall[key]
+
+			if order[0] == 0:
+				# broken
+				return False
+
+			if order[0] == 1:
+				# not done yet
+				return False
+
+			if order[0] == 2:
+				# finish processing
+
+				wop = rw_from_object(order[1])
+				s_image = IMG_Load_RW(wop, 0)
+				c = SDL_CreateTextureFromSurface(renderer, s_image)
+				SDL_FreeSurface(s_image)
+				tex_w = pointer(c_int(size))
+				tex_h = pointer(c_int(size))
+				SDL_QueryTexture(c, None, None, tex_w, tex_h)
+				dst = SDL_Rect(x, y)
+				dst.w = int(tex_w.contents.value)
+				dst.h = int(tex_h.contents.value)
+
+
+				order[0] = 3
+				order[1].close()
+				order[1] = None
+				order[2] = c
+				order[3] = dst
+				self.gall[(track, size, offset)] = order
+
+			if order[0] == 3:
+				# ready
+
+				order[3].x = x
+				order[3].y = y
+				order[3].x = int((size - order[3].w) / 2) + order[3].x
+				order[3].y = int((size - order[3].h) / 2) + order[3].y
+				SDL_RenderCopy(renderer, order[2], None, order[3])
+
+				if (track, size, offset) in self.key_list:
+					self.key_list.remove((track, size, offset))
+				self.key_list.append((track, size, offset))
+
+				# Remove old images to conserve RAM usage
+				if len(self.key_list) > self.limit:
+					gui.update += 1
+					key = self.key_list[0]
+					# while key in self.queue:
+					#	 self.queue.remove(key)
+					if self.gall[key][2] is not None:
+						SDL_DestroyTexture(self.gall[key][2])
+					del self.gall[key]
+					del self.key_list[0]
+
+				return True
+
+		else:
+			if key not in self.queue:
+				self.queue.append(key)
+				if self.lock.locked():
+					try:
+						self.lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked lock")
+						else:
+							logging.exception("Unknown RuntimeError trying to release lock")
+					except Exception:
+						logging.exception("Unknown error trying to release lock")
+		return False
+
+class ThumbTracks:
+	def __init__(self) -> None:
+		pass
+
+	def path(self, track: TrackClass) -> str:
+		source, offset = tauon.gall_ren.get_file_source(track)
+
+		if source is False:  # No art
+			return None
+
+		image_name = track.album + track.parent_folder_path + str(offset)
+		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
+
+		t_path = os.path.join(e_cache_dir, image_name + ".jpg")
+
+		if os.path.isfile(t_path):
+			return t_path
+
+		source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
+
+		with Image.open(source_image) as im:
+			if im.mode != "RGB":
+				im = im.convert("RGB")
+			im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
+			im.save(t_path, "JPEG")
+		source_image.close()
+		return t_path
+
+class Tauon:
+	"""Root class for everything Tauon"""
 	def __init__(self):
 
 		self.t_title = t_title
 		self.t_version = t_version
 		self.t_agent = t_agent
 		self.t_id = t_id
-		self.desktop = desktop
+		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
 
-		self.cachement: Cachement | None = None
-		self.dummy_event = SDL_Event()
+#		TODO(Martin) : Fix this by moving the class to root of the module
+		self.cachement: player4.Cachement | None = None
+		self.dummy_event: SDL_Event = SDL_Event()
 		self.translate = _
-		self.strings = strings
-		self.pctl = pctl
-		self.lfm_scrobbler = lfm_scrobbler
-		self.star_store = star_store
-		self.gui = gui
-		self.prefs = prefs
+		self.strings: Strings = strings
+		self.pctl:  PlayerCtl = pctl
+		self.lfm_scrobbler: LastScrob = lfm_scrobbler
+		self.star_store:    StarStore = star_store
+		self.gui:  GuiVar = gui
+		self.prefs: Prefs = prefs
 		self.cache_directory:          Path = cache_directory
-		self.user_directory:     str | None = user_directory
+		self.user_directory:    Path | None = user_directory
 		self.music_directory:   Path | None = music_directory
 		self.locale_directory:         Path = locale_directory
 		self.worker_save_state:        bool = False
@@ -8833,14 +8722,16 @@ class Tauon:
 		self.msys = msys
 		self.TrackClass = TrackClass
 		self.pl_gen = pl_gen
+		self.gall_ren = GallClass(album_mode_art_size)
 		self.QuickThumbnail = QuickThumbnail
+		self.thumb_tracks = ThumbTracks()
 		self.pl_to_id = pl_to_id
 		self.id_to_pl = id_to_pl
 		self.chunker = Chunker()
 		self.thread_manager: ThreadManager = ThreadManager()
 		self.stream_proxy = None
 		self.stream_proxy = StreamEnc(self)
-		self.level_train = []
+		self.level_train: list[list[float]] = []
 		self.radio_server = None
 		self.mod_formats = MOD_Formats
 		self.listen_alongers = {}
@@ -8868,24 +8759,26 @@ class Tauon:
 		self.remote_limited = True
 		self.enable_librespot = shutil.which("librespot")
 
-		self.spotc: LibreSpot | None = None
+#		TODO(Martin) : Fix this by moving the class to root of the module
+		self.spotc: player4.LibreSpot | None = None
 		self.librespot_p = None
 		self.MenuItem = MenuItem
 		self.tag_scan = tag_scan
 
 		self.gme_formats = GME_Formats
 
-		self.spot_ctl: SpotCtl | None = None
+		self.spot_ctl: SpotCtl = SpotCtl(self)
+		self.tidal: Tidal = Tidal(self)
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
 		self.ssl_context = ssl_context
 
-	def start_remote(self):
+	def start_remote(self) -> None:
 
 		if not self.web_running:
 			self.web_thread = threading.Thread(
-				target=webserve2, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+				target=webserve2, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
 			self.web_thread.daemon = True
 			self.web_thread.start()
 			self.web_running = True
@@ -8921,11 +8814,11 @@ class Tauon:
 			f.seek(0)
 			z = zipfile.ZipFile(f, mode="r")
 			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
-			with (Path(user_directory) / "ffmpeg.exe").open("wb") as file:
+			with (user_directory / "ffmpeg.exe").open("wb") as file:
 				file.write(exe.read())
 
 			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
-			with (Path(user_directory) / "ffprobe.exe").open("wb") as file:
+			with (user_directory / "ffprobe.exe").open("wb") as file:
 				file.write(exe.read())
 
 			exe.close()
@@ -8935,14 +8828,14 @@ class Tauon:
 
 	def set_tray_icons(self, force: bool = False):
 
-		indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play.svg")
-		indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause.svg")
-		indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default.svg")
+		indicator_icon_play =    str(pctl.install_directory / "assets/svg/tray-indicator-play.svg")
+		indicator_icon_pause =   str(pctl.install_directory / "assets/svg/tray-indicator-pause.svg")
+		indicator_icon_default = str(pctl.install_directory / "assets/svg/tray-indicator-default.svg")
 
 		if prefs.tray_theme == "gray":
-			indicator_icon_play = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-play-g1.svg")
-			indicator_icon_pause = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-pause-g1.svg")
-			indicator_icon_default = os.path.join(pctl.install_directory, "assets/svg/tray-indicator-default-g1.svg")
+			indicator_icon_play =    str(pctl.install_directory / "assets/svg/tray-indicator-play-g1.svg")
+			indicator_icon_pause =   str(pctl.install_directory / "assets/svg/tray-indicator-pause-g1.svg")
+			indicator_icon_default = str(pctl.install_directory / "assets/svg/tray-indicator-default-g1.svg")
 
 		user_icon_dir = self.cache_directory / "icon-export"
 		def install_tray_icon(src: str, name: str) -> None:
@@ -8976,7 +8869,7 @@ class Tauon:
 		p = shutil.which("ffmpeg")
 		if p:
 			return p
-		p = os.path.join(user_directory, "ffmpeg.exe")
+		p = str(user_directory / "ffmpeg.exe")
 		if msys and os.path.isfile(p):
 			return p
 		return None
@@ -8985,7 +8878,7 @@ class Tauon:
 		p = shutil.which("ffprobe")
 		if p:
 			return p
-		p = os.path.join(user_directory, "ffprobe.exe")
+		p = str(user_directory / "ffprobe.exe")
 		if msys and os.path.isfile(p):
 			return p
 		return None
@@ -9899,11 +9792,11 @@ def get_network_thumbnail_url(track_object: TrackClass):
 		url = plex.resolve_thumbnail(track_object.art_url_key)
 		assert url is not None
 		return url
-	if track_object.file_ext == "JELY":
-		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
-		assert url is not None
-		assert url != ""
-		return url
+#	if track_object.file_ext == "JELY":
+#		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+#		assert url is not None
+#		assert url != ""
+#		return url
 	if track_object.file_ext == "KOEL":
 		url = track_object.art_url_key
 		assert url
@@ -10031,7 +9924,7 @@ class STray:
 						("Forward", None, self.advance),
 						("Back", None, self.back))
 		self.systray = SysTrayIcon(
-			install_directory + "\\assets\\" + "icon.ico", "Tauon Music Box",
+			str(install_directory / "assets" / "icon.ico"), "Tauon Music Box",
 			menu_options, on_quit=self.on_quit_callback)
 		self.systray.start()
 		self.active = True
@@ -10060,6 +9953,7 @@ if (system == "Windows" or msys):
 	tray.start()
 
 	if win_ver < 10:
+		logging.warning("Unsupported Windows version older than W10, hooking media keys the old way without SMTC!")
 		import keyboard
 
 		def key_callback(event):
@@ -10282,7 +10176,7 @@ def do_minimize_button():
 	drag_mode = False
 
 
-mac_circle = asset_loader("macstyle.png", True)
+mac_circle = asset_loader(scaled_asset_directory, loaded_asset_dc, "macstyle.png", True)
 
 
 def draw_window_tools():
@@ -10697,7 +10591,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 			self.updated_state = 0
 			self.window_id = gui.window_id
 			import comtypes.client as cc
-			cc.GetModule(install_directory + "\\TaskbarLib.tlb")
+			cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
 			import comtypes.gen.TaskbarLib as tbl
 			self.taskbar = cc.CreateObject(
 				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
@@ -10736,7 +10630,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 					self.taskbar.SetProgressValue(self.window_id, 0, 100)
 
 
-	if os.path.isfile(install_directory + "/TaskbarLib.tlb"):
+	if (install_directory / "TaskbarLib.tlb").is_file():
 		logging.info("Taskbar progress enabled")
 		pctl.windows_progress = WinTask()
 
@@ -12256,321 +12150,6 @@ if rename_folder_previous:
 
 temp_dest = SDL_Rect(0, 0)
 
-
-class GallClass:
-	def __init__(self, size=250, save_out=True):
-		self.gall = {}
-		self.size = size
-		self.queue = []
-		self.key_list = []
-		self.save_out = save_out
-		self.i = 0
-		self.lock = threading.Lock()
-		self.limit = 60
-
-	def get_file_source(self, track_object: TrackClass):
-
-		global album_art_gen
-
-		sources = album_art_gen.get_sources(track_object)
-
-		if len(sources) == 0:
-			return False, 0
-
-		offset = album_art_gen.get_offset(track_object.fullpath, sources)
-		return sources[offset], offset
-
-	def worker_render(self):
-
-		self.lock.acquire()
-		# time.sleep(0.1)
-
-		if search_over.active:
-			while QuickThumbnail.queue:
-				img = QuickThumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, context=ssl_context)
-				source_image = io.BytesIO(response.read())
-				img.read_and_thumbnail(source_image, img.size, img.size)
-				source_image.close()
-				gui.update += 1
-
-		while len(self.queue) > 0:
-
-			source_image = None
-
-			if gui.halt_image_rendering:
-				self.queue.clear()
-				break
-
-			self.i += 1
-
-			try:
-				# key = self.queue[0]
-				key = self.queue.pop(0)
-			except Exception:
-				logging.exception("thumb queue empty")
-				break
-
-			if key not in self.gall:
-				order = [1, None, None, None]
-				self.gall[key] = order
-			else:
-				order = self.gall[key]
-
-			size = key[1]
-
-			slow_load = False
-			cache_load = False
-
-			try:
-
-				if True:
-					offset = 0
-					parent_folder = key[0].parent_folder_path
-					if parent_folder in folder_image_offsets:
-						offset = folder_image_offsets[parent_folder]
-					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
-						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
-						# logging.info('load from cache')
-						cache_load = True
-					else:
-						slow_load = True
-
-				if slow_load:
-
-					source, c_offset = self.get_file_source(key[0])
-
-					if source is False:
-						order[0] = 0
-						self.gall[key] = order
-						# del self.queue[0]
-						continue
-
-					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(c_offset)
-
-					# gall_render_last_timer.set()
-
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
-						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
-						logging.info("slow load image")
-						cache_load = True
-
-					# elif source[0] == 1:
-					#	 #logging.info('tag')
-					#	 source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
-					#
-					# elif source[0] == 2:
-					#	 try:
-					#		 url = get_network_thumbnail_url(key[0])
-					#		 response = urllib.request.urlopen(url)
-					#		 source_image = response
-					#	 except Exception:
-					#		 logging.exception("IMAGE NETWORK LOAD ERROR")
-					# else:
-					#	 source_image = open(source[1], 'rb')
-					source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
-
-				g = io.BytesIO()
-				g.seek(0)
-
-				if cache_load:
-					g.write(source_image.read())
-
-				else:
-					error = False
-					try:
-						# Process image
-						im = Image.open(source_image)
-						if im.mode != "RGB":
-							im = im.convert("RGB")
-						im.thumbnail((size, size), Image.Resampling.LANCZOS)
-					except Exception:
-						logging.exception("Failed to work with thumbnail")
-						im = album_art_gen.get_error_img(size)
-						error = True
-
-					im.save(g, "BMP")
-
-					if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
-							os.path.join(g_cache_dir, img_name + ".jpg")):
-						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
-
-				g.seek(0)
-
-				# source_image.close()
-
-				order = [2, g, None, None]
-				self.gall[key] = order
-
-				gui.update += 1
-				if source_image:
-					source_image.close()
-					source_image = None
-				# del self.queue[0]
-
-				time.sleep(0.001)
-
-			except Exception:
-				logging.exception("Image load failed on track: " + key[0].fullpath)
-				order = [0, None, None, None]
-				self.gall[key] = order
-				gui.update += 1
-				# del self.queue[0]
-
-			if size < 150:
-				random.shuffle(self.queue)
-
-		if self.i > 0:
-			self.i = 0
-			return True
-		return False
-
-	def render(self, track: TrackClass, location, size=None, force_offset=None) -> bool | None:
-
-		if gallery_load_delay.get() < 0.5:
-			return None
-
-		x = round(location[0])
-		y = round(location[1])
-
-		# time.sleep(0.1)
-		if size is None:
-			size = self.size
-
-		size = round(size)
-
-		# offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
-		if track.parent_folder_path in folder_image_offsets:
-			offset = folder_image_offsets[track.parent_folder_path]
-		else:
-			offset = 0
-
-		if force_offset is not None:
-			offset = force_offset
-
-		key = (track, size, offset)
-
-		if key in self.gall:
-			#logging.info("old")
-
-			order = self.gall[key]
-
-			if order[0] == 0:
-				# broken
-				return False
-
-			if order[0] == 1:
-				# not done yet
-				return False
-
-			if order[0] == 2:
-				# finish processing
-
-				wop = rw_from_object(order[1])
-				s_image = IMG_Load_RW(wop, 0)
-				c = SDL_CreateTextureFromSurface(renderer, s_image)
-				SDL_FreeSurface(s_image)
-				tex_w = pointer(c_int(size))
-				tex_h = pointer(c_int(size))
-				SDL_QueryTexture(c, None, None, tex_w, tex_h)
-				dst = SDL_Rect(x, y)
-				dst.w = int(tex_w.contents.value)
-				dst.h = int(tex_h.contents.value)
-
-
-				order[0] = 3
-				order[1].close()
-				order[1] = None
-				order[2] = c
-				order[3] = dst
-				self.gall[(track, size, offset)] = order
-
-			if order[0] == 3:
-				# ready
-
-				order[3].x = x
-				order[3].y = y
-				order[3].x = int((size - order[3].w) / 2) + order[3].x
-				order[3].y = int((size - order[3].h) / 2) + order[3].y
-				SDL_RenderCopy(renderer, order[2], None, order[3])
-
-				if (track, size, offset) in self.key_list:
-					self.key_list.remove((track, size, offset))
-				self.key_list.append((track, size, offset))
-
-				# Remove old images to conserve RAM usage
-				if len(self.key_list) > self.limit:
-					gui.update += 1
-					key = self.key_list[0]
-					# while key in self.queue:
-					#	 self.queue.remove(key)
-					if self.gall[key][2] is not None:
-						SDL_DestroyTexture(self.gall[key][2])
-					del self.gall[key]
-					del self.key_list[0]
-
-				return True
-
-		else:
-
-			if key not in self.queue:
-				self.queue.append(key)
-				if self.lock.locked():
-					try:
-						self.lock.release()
-					except RuntimeError as e:
-						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked lock")
-						else:
-							logging.exception("Unknown RuntimeError trying to release lock")
-					except Exception:
-						logging.exception("Unknown error trying to release lock")
-
-		return False
-
-
-gall_ren = GallClass(album_mode_art_size)
-tauon.gall_ren = gall_ren
-
-pl_thumbnail = GallClass(save_out=False)
-
-
-class ThumbTracks:
-	def __init__(self):
-		pass
-
-	def path(self, track: TrackClass) -> str:
-
-		source, offset = gall_ren.get_file_source(track)
-
-		if source is False:  # No art
-			return None
-
-		image_name = track.album + track.parent_folder_path + str(offset)
-		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
-
-		t_path = os.path.join(e_cache_dir, image_name + ".jpg")
-
-		if os.path.isfile(t_path):
-			return t_path
-
-		source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
-
-		im = Image.open(source_image)
-		if im.mode != "RGB":
-			im = im.convert("RGB")
-		im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-
-		im.save(t_path, "JPEG")
-
-		return t_path
-
-
-thumb_tracks = ThumbTracks()
-tauon.thumb_tracks = thumb_tracks
-
-
 def img_slide_update_gall(value, pause: bool = True) -> None:
 	global album_mode_art_size
 	gui.halt_image_rendering = True
@@ -12584,7 +12163,7 @@ def img_slide_update_gall(value, pause: bool = True) -> None:
 	gui.halt_image_rendering = False
 
 	# Update sizes
-	gall_ren.size = album_mode_art_size
+	tauon.gall_ren.size = album_mode_art_size
 
 	if album_mode_art_size > 150:
 		prefs.thin_gallery_borders = False
@@ -12595,18 +12174,18 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 	album_art_gen.clear_cache()
 	prefs.failed_artists.clear()
 	prefs.failed_background_artists.clear()
-	gall_ren.key_list = []
+	tauon.gall_ren.key_list = []
 
 	i = 0
-	while len(gall_ren.queue) > 0:
+	while len(tauon.gall_ren.queue) > 0:
 		time.sleep(0.01)
 		i += 1
 		if i > 5 / 0.01:
 			break
 
-	for key, value in gall_ren.gall.items():
+	for key, value in tauon.gall_ren.gall.items():
 		SDL_DestroyTexture(value[2])
-	gall_ren.gall = {}
+	tauon.gall_ren.gall = {}
 
 	if delete_disk:
 		dirs = [g_cache_dir, n_cache_dir, e_cache_dir]
@@ -12626,11 +12205,11 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 
 def clear_track_image_cache(track: TrackClass):
 	gui.halt_image_rendering = True
-	if gall_ren.queue:
+	if tauon.gall_ren.queue:
 		time.sleep(0.05)
-	if gall_ren.queue:
+	if tauon.gall_ren.queue:
 		time.sleep(0.2)
-	if gall_ren.queue:
+	if tauon.gall_ren.queue:
 		time.sleep(0.5)
 
 	direc = os.path.join(g_cache_dir)
@@ -12642,15 +12221,15 @@ def clear_track_image_cache(track: TrackClass):
 				logging.info("Cleared cache thumbnail: " + os.path.join(direc, item))
 
 	keys = set()
-	for key, value in gall_ren.gall.items():
+	for key, value in tauon.gall_ren.gall.items():
 		if key[0] == track:
 			SDL_DestroyTexture(value[2])
 			if key not in keys:
 				keys.add(key)
 	for key in keys:
-		del gall_ren.gall[key]
-		if key in gall_ren.key_list:
-			gall_ren.key_list.remove(key)
+		del tauon.gall_ren.gall[key]
+		if key in tauon.gall_ren.key_list:
+			tauon.gall_ren.key_list.remove(key)
 
 	gui.halt_image_rendering = False
 	album_art_gen.clear_cache()
@@ -12800,7 +12379,7 @@ class AlbumArt:
 		return source_list
 
 	def get_error_img(self, size: float) -> ImageFile:
-		im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+		im = Image.open(str(install_directory / "assets" / "load-error.png"))
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
@@ -12967,38 +12546,37 @@ class AlbumArt:
 				if frame:
 					pic = frame[0].data
 			except Exception:
-				logging.debug(f"Failed to get tags on file: {filepath}")
+				logging.exception(f"Failed to get tags on file: {filepath}")
 
 			if pic is not None and len(pic) < 30:
 				pic = None
 
 		elif track.file_ext == "FLAC":
-			tag = Flac(filepath)
-			tag.read(True)
-			if tag.has_picture and len(tag.picture) > 30:
-				pic = tag.picture
+			with Flac(filepath) as tag:
+				tag.read(True)
+				if tag.has_picture and len(tag.picture) > 30:
+					pic = tag.picture
 
 		elif track.file_ext == "APE":
-			tag = Ape(filepath)
-			tag.read()
-			if tag.has_picture and len(tag.picture) > 30:
-				pic = tag.picture
+			with Ape(filepath) as tag:
+				tag.read()
+				if tag.has_picture and len(tag.picture) > 30:
+					pic = tag.picture
 
 		elif track.file_ext == "M4A":
-			tag = M4a(filepath)
-			tag.read(True)
-			if tag.has_picture and len(tag.picture) > 30:
-				pic = tag.picture
+			with M4a(filepath) as tag:
+				tag.read(True)
+				if tag.has_picture and len(tag.picture) > 30:
+					pic = tag.picture
 
 		elif track.file_ext == "OPUS" or track.file_ext == "OGG" or track.file_ext == "OGA":
-			tag = Opus(filepath)
-			tag.read()
-			if tag.has_picture and len(tag.picture) > 30:
-				a = io.BytesIO(base64.b64decode(tag.picture))
-				a.seek(0)
-				image = parse_picture_block(a)
-				a.close()
-				pic = image
+			with Opus(filepath) as tag:
+				tag.read()
+				if tag.has_picture and len(tag.picture) > 30:
+					with io.BytesIO(base64.b64decode(tag.picture)) as a:
+						a.seek(0)
+						image = parse_picture_block(a)
+					pic = image
 
 		# self.embed_cached = (track, pic)
 		return pic
@@ -13301,7 +12879,6 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 
 	def display(self, track: TrackClass, location, box, fast: bool = False, theme_only: bool = False) -> int | None:
-
 		index = track.index
 		filepath = track.fullpath
 
@@ -13405,8 +12982,10 @@ class AlbumArt:
 			except Exception:
 				logging.exception("Failed to convert image")
 				if theme_only:
+					source_image.close()
+					g.close()
 					return None
-				im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+				im = Image.open(str(install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
 
@@ -13418,7 +12997,7 @@ class AlbumArt:
 						im = im.resize(new_size, Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to resize image")
-						im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+						im = Image.open(str(install_directory / "assets" / "load-error.png"))
 						o_size = im.size
 						new_size = fit_box(o_size, box)
 						im = im.resize(new_size, Image.Resampling.LANCZOS)
@@ -13427,7 +13006,7 @@ class AlbumArt:
 						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to convert image to thumbnail")
-						im = Image.open(os.path.join(install_directory, "assets", "load-error.png"))
+						im = Image.open(str(install_directory / "assets" / "load-error.png"))
 						o_size = im.size
 						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
 				im.save(g, "BMP")
@@ -13441,6 +13020,8 @@ class AlbumArt:
 					im.thumbnail((50, 50), Image.Resampling.LANCZOS)
 				except Exception:
 					logging.exception("theme gen error")
+					source_image.close()
+					g.close()
 					return None
 				pixels = im.getcolors(maxcolors=2500)
 				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
@@ -13587,6 +13168,8 @@ class AlbumArt:
 				gui.theme_temp_current = track.album
 
 			if theme_only:
+				source_image.close()
+				g.close()
 				return None
 
 			wop = rw_from_object(g)
@@ -13606,6 +13189,7 @@ class AlbumArt:
 
 			# Clean uo
 			SDL_FreeSurface(s_image)
+			source_image.close()
 			g.close()
 			# if close:
 			#	 source_image.close()
@@ -13828,7 +13412,7 @@ class StyleOverlay:
 		if self.stage == 2:
 			track = pctl.playing_object()
 
-			if pctl.playing_state == 3 and not spot_ctl.coasting:
+			if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
 				if self.radio_meta != pctl.tag_meta:
 					self.radio_meta = pctl.tag_meta
 					self.current_track_id = -1
@@ -14475,13 +14059,13 @@ transfer_setting = 0
 b_panel_size = 300
 b_info_bar = False
 
-message_info_icon = asset_loader("notice.png")
-message_warning_icon = asset_loader("warning.png")
-message_tick_icon = asset_loader("done.png")
-message_arrow_icon = asset_loader("ext.png")
-message_error_icon = asset_loader("error.png")
-message_bubble_icon = asset_loader("bubble.png")
-message_download_icon = asset_loader("ddl.png")
+message_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "notice.png")
+message_warning_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "warning.png")
+message_tick_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "done.png")
+message_arrow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ext.png")
+message_error_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "error.png")
+message_bubble_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "bubble.png")
+message_download_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ddl.png")
 
 
 class ToolTip:
@@ -15292,7 +14876,7 @@ class ExportPlaylistBox:
 		self.id = None
 		self.directory_text_box = TextBox2()
 		self.default = {
-			"path": str(music_directory) if music_directory else os.path.join(user_directory, "playlists"),
+			"path": str(music_directory) if music_directory else str(user_directory / "playlists"),
 			"type": "xspf",
 			"relative": False,
 			"auto": False,
@@ -15312,8 +14896,7 @@ class ExportPlaylistBox:
 			if key not in ids:
 				del prefs.playlist_exports[key]
 
-	def render(self):
-
+	def render(self) -> None:
 		if not self.active:
 			return
 
@@ -15375,7 +14958,7 @@ class ExportPlaylistBox:
 		if draw.button(_("Export"), x, y, press=gui.level_2_click):
 			self.run_export(current, self.id, warnings=True)
 
-	def run_export(self, current, id, warnings=True):
+	def run_export(self, current, id, warnings=True) -> None:
 		logging.info("Export playlist")
 		path = current["path"]
 		if not os.path.isdir(path):
@@ -15395,7 +14978,7 @@ class ExportPlaylistBox:
 export_playlist_box = ExportPlaylistBox()
 
 
-def toggle_repeat():
+def toggle_repeat() -> None:
 	gui.update += 1
 	pctl.repeat_mode ^= True
 	if pctl.mpris is not None:
@@ -15405,21 +14988,21 @@ def toggle_repeat():
 tauon.toggle_repeat = toggle_repeat
 
 
-def menu_repeat_off():
+def menu_repeat_off() -> None:
 	pctl.repeat_mode = False
 	pctl.album_repeat_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
 
 
-def menu_set_repeat():
+def menu_set_repeat() -> None:
 	pctl.repeat_mode = True
 	pctl.album_repeat_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
 
 
-def menu_album_repeat():
+def menu_album_repeat() -> None:
 	pctl.repeat_mode = True
 	pctl.album_repeat_mode = True
 	if pctl.mpris is not None:
@@ -15590,17 +15173,17 @@ def show_in_playlist():
 	pctl.render_playlist()
 
 
-filter_icon = MenuIcon(asset_loader("filter.png", True))
+filter_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "filter.png", True))
 filter_icon.colour = [43, 213, 255, 255]
 filter_icon.xoff = 1
 
-folder_icon = MenuIcon(asset_loader("folder.png", True))
-info_icon = MenuIcon(asset_loader("info.png", True))
+folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "folder.png", True))
+info_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "info.png", True))
 
 folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
 
-power_bar_icon = asset_loader("power.png", True)
+power_bar_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "power.png", True)
 
 
 def open_folder_stem(path):
@@ -16230,7 +15813,7 @@ def paste_lyrics(track_object: TrackClass):
 #	return gui.combo_mode and prefs.guitar_chords
 # showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
-#guitar_chords = GuitarChords(user_directory=Path(user_directory))
+#guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl)
 #showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 #showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
@@ -16674,7 +16257,7 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 		pctl.revert()
 
 
-del_icon = asset_loader("del.png", True)
+del_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "del.png", True)
 delete_icon = MenuIcon(del_icon)
 
 
@@ -17059,9 +16642,9 @@ def lock_colour_callback():
 	return None
 
 
-lock_asset = asset_loader("lock.png", True)
+lock_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "lock.png", True)
 lock_icon = MenuIcon(lock_asset)
-lock_icon.base_asset_mod = asset_loader("unlock.png", True)
+lock_icon.base_asset_mod = asset_loader(scaled_asset_directory, loaded_asset_dc, "unlock.png", True)
 lock_icon.colour = [240, 190, 10, 255]
 lock_icon.colour_callback = lock_colour_callback
 lock_icon.xoff = 4
@@ -17077,7 +16660,7 @@ def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: 
 		return 1
 
 	if not direc:
-		direc = os.path.join(user_directory, "playlists")
+		direc = str(user_directory / "playlists")
 		if not os.path.exists(direc):
 			os.makedirs(direc)
 	target = os.path.join(direc, pctl.multi_playlist[pl].title + ".m3u")
@@ -17114,13 +16697,13 @@ def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: 
 	return target
 
 
-def export_xspf(pl: int, direc=None, relative=False, show: bool = True) -> int | str:
+def export_xspf(pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
 		show_message(_("There are no tracks in this playlist. Nothing to export"))
 		return 1
 
 	if not direc:
-		direc = os.path.join(user_directory, "playlists")
+		direc = str(user_directory / "playlists")
 		if not os.path.exists(direc):
 			os.makedirs(direc)
 
@@ -17550,7 +17133,7 @@ def sort_tracK_numbers_album_only(pl: int, custom_list=None):
 	gui.pl_update += 1
 
 
-def sort_track_2(pl: int, custom_list=None):
+def sort_track_2(pl: int, custom_list: list[int] | None = None) -> None:
 	current_folder = ""
 	current_album = ""
 	current_date = ""
@@ -17616,8 +17199,8 @@ def sort_path_pl(pl: int, custom_list=None):
 
 
 def append_current_playing(index: int):
-	if spot_ctl.coasting:
-		spot_ctl.append_playing(index)
+	if tauon.spot_ctl.coasting:
+		tauon.spot_ctl.append_playing(index)
 		gui.pl_update = 1
 		return
 
@@ -17786,10 +17369,10 @@ def export_stats(pl: int) -> None:
 		line += str(i + 1) + ".\t" + stt2(item[1]) + "\t" + item[0] + "\n"
 
 	line = line.encode("utf-8")
-	xport = open(user_directory + "/stats.txt", "wb")
+	xport = (user_directory / "stats.txt").open("wb")
 	xport.write(line)
 	xport.close()
-	target = os.path.join(user_directory, "stats.txt")
+	target = str(user_directory / "stats.txt")
 	if system == "Windows" or msys:
 		os.startfile(target)
 	elif macos:
@@ -17972,14 +17555,14 @@ def new_playlist(switch: bool = True) -> int | None:
 	return len(pctl.multi_playlist) - 1
 
 
-heartx_icon = MenuIcon(asset_loader("heart-menu.png", True))
-spot_heartx_icon = MenuIcon(asset_loader("heart-menu.png", True))
-transcode_icon = MenuIcon(asset_loader("transcode.png", True))
-mod_folder_icon = MenuIcon(asset_loader("mod_folder.png", True))
-settings_icon = MenuIcon(asset_loader("settings2.png", True))
-rename_tracks_icon = MenuIcon(asset_loader("pen.png", True))
-add_icon = MenuIcon(asset_loader("new.png", True))
-spot_asset = asset_loader("spot.png", True)
+heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+spot_heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+transcode_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "transcode.png", True))
+mod_folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "mod_folder.png", True))
+settings_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "settings2.png", True))
+rename_tracks_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "pen.png", True))
+add_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "new.png", True))
+spot_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot.png", True)
 spot_icon = MenuIcon(spot_asset)
 spot_icon.colour = [30, 215, 96, 255]
 spot_icon.xoff = 5
@@ -18000,7 +17583,7 @@ def append_deco():
 		line_colour = colours.menu_text_disabled
 
 	text = None
-	if spot_ctl.coasting:
+	if tauon.spot_ctl.coasting:
 		text = _("Add Spotify Album")
 
 	return [line_colour, colours.menu_background, text]
@@ -18113,7 +17696,7 @@ def upload_spotify_playlist(pl: int):
 	if id is None:
 		name = pctl.multi_playlist[pl].title.split(" by ")[0]
 		show_message(_("Created new Spotify playlist"), name, mode="done")
-		id = spot_ctl.create_playlist(name)
+		id = tauon.spot_ctl.create_playlist(name)
 		if id:
 			new = True
 			pctl.gen_codes[p_id] = "spl\"" + id + "\""
@@ -18122,7 +17705,7 @@ def upload_spotify_playlist(pl: int):
 		return
 	if not new:
 		show_message(_("Updated Spotify playlist"), mode="done")
-	spot_ctl.upload_playlist(id, urls)
+	tauon.spot_ctl.upload_playlist(id, urls)
 
 
 def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = None) -> None:
@@ -18194,28 +17777,28 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 			pass
 
 		elif cm.startswith("spl\""):
-			playlist.extend(spot_ctl.playlist(quote, return_list=True))
+			playlist.extend(tauon.spot_ctl.playlist(quote, return_list=True))
 
 		elif cm.startswith("tpl\""):
-			playlist.extend(tidal.playlist(quote, return_list=True))
+			playlist.extend(tauon.tidal.playlist(quote, return_list=True))
 
 		elif cm == "tfa":
-			playlist.extend(tidal.fav_albums(return_list=True))
+			playlist.extend(tauon.tidal.fav_albums(return_list=True))
 
 		elif cm == "tft":
-			playlist.extend(tidal.fav_tracks(return_list=True))
+			playlist.extend(tauon.tidal.fav_tracks(return_list=True))
 
 		elif cm.startswith("tar\""):
-			playlist.extend(tidal.artist(quote, return_list=True))
+			playlist.extend(tauon.tidal.artist(quote, return_list=True))
 
 		elif cm.startswith("tmix\""):
-			playlist.extend(tidal.mix(quote, return_list=True))
+			playlist.extend(tauon.tidal.mix(quote, return_list=True))
 
 		elif cm == "sal":
-			playlist.extend(spot_ctl.get_library_albums(return_list=True))
+			playlist.extend(tauon.spot_ctl.get_library_albums(return_list=True))
 
 		elif cm == "slt":
-			playlist.extend(spot_ctl.get_library_likes(return_list=True))
+			playlist.extend(tauon.spot_ctl.get_library_likes(return_list=True))
 
 		elif cm == "plex":
 			if not plex.scanning:
@@ -20066,7 +19649,7 @@ def open_file(target):
 
 
 def open_data_directory():
-	target = user_directory
+	target = str(user_directory)
 	if system == "Windows" or msys:
 		os.startfile(target)
 	elif macos:
@@ -20400,31 +19983,31 @@ def paste(playlist_no=None, track_id=None):
 		num = clip.split("/")[-1].split("?")[0]
 		if num and num.isnumeric():
 			logging.info(num)
-			tidal.append_album(num)
+			tauon.tidal.append_album(num)
 		clip = False
 
 	elif "tidal.com/playlist/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.playlist(num)
+		tauon.tidal.playlist(num)
 		clip = False
 
 	elif "tidal.com/mix/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.mix(num)
+		tauon.tidal.mix(num)
 		clip = False
 
 	elif "tidal.com/browse/track/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.track(num)
+		tauon.tidal.track(num)
 		clip = False
 
 	elif "tidal.com/browse/artist/" in clip:
 		logging.info(clip)
 		num = clip.split("/")[-1].split("?")[0]
-		tidal.artist(num)
+		tauon.tidal.artist(num)
 		clip = False
 
 	elif "spotify" in clip:
@@ -20433,13 +20016,13 @@ def paste(playlist_no=None, track_id=None):
 			logging.info(link)
 			link = link.strip()
 			if clip.startswith(("https://open.spotify.com/track/", "spotify:track:")):
-				spot_ctl.append_track(link)
+				tauon.spot_ctl.append_track(link)
 			elif clip.startswith(("https://open.spotify.com/album/", "spotify:album:")):
-				l = spot_ctl.append_album(link, return_list=True)
+				l = tauon.spot_ctl.append_album(link, return_list=True)
 				if l:
 					cargo.extend(l)
 			elif clip.startswith("https://open.spotify.com/playlist/"):
-				spot_ctl.playlist(link)
+				tauon.spot_ctl.playlist(link)
 		if album_mode:
 			reload_albums()
 		gui.pl_update += 1
@@ -20486,22 +20069,22 @@ playlist_menu.add(MenuItem("Paste", paste, paste_deco))
 
 def paste_playlist_coast_fire():
 	url = None
-	if spot_ctl.coasting and pctl.playing_state == 3:
-		url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+	if tauon.spot_ctl.coasting and pctl.playing_state == 3:
+		url = tauon.spot_ctl.get_album_url_from_local(pctl.playing_object())
 	elif pctl.playing_ready() and "spotify-album-url" in pctl.playing_object().misc:
 		url = pctl.playing_object().misc["spotify-album-url"]
 	if url:
-		default_playlist.extend(spot_ctl.append_album(url, return_list=True))
+		default_playlist.extend(tauon.spot_ctl.append_album(url, return_list=True))
 	gui.pl_update += 1
 
 def paste_playlist_track_coast_fire():
 	url = None
-	# if spot_ctl.coasting and pctl.playing_state == 3:
-	#	 url = spot_ctl.get_album_url_from_local(pctl.playing_object())
+	# if tauon.spot_ctl.coasting and pctl.playing_state == 3:
+	#	 url = tauon.spot_ctl.get_album_url_from_local(pctl.playing_object())
 	if pctl.playing_ready() and "spotify-track-url" in pctl.playing_object().misc:
 		url = pctl.playing_object().misc["spotify-track-url"]
 	if url:
-		spot_ctl.append_track(url)
+		tauon.spot_ctl.append_track(url)
 	gui.pl_update += 1
 
 
@@ -20515,7 +20098,7 @@ def paste_playlist_coast_track():
 	shoot_dl.start()
 
 def paste_playlist_coast_album_deco():
-	if spot_ctl.coasting or spot_ctl.playing:
+	if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
 		line_colour = colours.menu_text
 	else:
 		line_colour = colours.menu_text_disabled
@@ -20711,7 +20294,7 @@ def spot_heart_menu_colour():
 		return [30, 215, 96, 255]
 	return None
 
-heart_spot_icon = MenuIcon(asset_loader("heart-menu.png", True))
+heart_spot_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
 heart_spot_icon.colour = [30, 215, 96, 255]
 heart_spot_icon.xoff = 1
 heart_spot_icon.yoff = 0
@@ -21465,8 +21048,8 @@ def launch_editor_selection(index: int):
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
 track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), reload_metadata, pass_ref=True))
 
-mbp_icon = MenuIcon(asset_loader("mbp-g.png"))
-mbp_icon.base_asset = asset_loader("mbp-gs.png")
+mbp_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "mbp-g.png"))
+mbp_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "mbp-gs.png")
 
 mbp_icon.xoff = 2
 mbp_icon.yoff = -1
@@ -21721,20 +21304,15 @@ gallery_menu.add(MenuItem(_("Transcode Folder"), convert_folder, transcode_deco,
 	show_test=toggle_transcode))
 folder_menu.br()
 
-spot_ctl = SpotCtl(tauon)
-tidal = Tidal(tauon)
-tauon.spot_ctl = spot_ctl
-tauon.tidal = tidal
-
-spot_ctl.cache_saved_albums = spot_cache_saved_albums
+tauon.spot_ctl.cache_saved_albums = spot_cache_saved_albums
 
 # Copy album title text to clipboard
 folder_menu.add(MenuItem(_('Copy "Artist - Album"'), clip_title, pass_ref=True))
 
 
-def get_album_spot_url(track_id):
+def get_album_spot_url(track_id: int):
 	track_object = pctl.get_track(track_id)
-	url = spot_ctl.get_album_url_from_local(track_object)
+	url = tauon.spot_ctl.get_album_url_from_local(track_object)
 	if url:
 		copy_to_clipboard(url)
 		show_message(_("URL copied to clipboard"), mode="done")
@@ -21742,7 +21320,7 @@ def get_album_spot_url(track_id):
 		show_message(_("No results found"))
 
 
-def get_album_spot_url_deco(track_id):
+def get_album_spot_url_deco(track_id: int):
 	track_object = pctl.get_track(track_id)
 	if "spotify-album-url" in track_object.misc:
 		text = _("Copy Spotify Album URL")
@@ -21755,24 +21333,24 @@ folder_menu.add(MenuItem("Lookup Spotify Album URL", get_album_spot_url, get_alb
 	pass_ref_deco=True, show_test=spotify_show_test, icon=spot_icon))
 
 
-def add_to_spotify_library_deco(track_id):
+def add_to_spotify_library_deco(track_id: int):
 	track_object = pctl.get_track(track_id)
 	text = _("Save Album to Spotify")
 	if track_object.file_ext != "SPTY":
 		return (colours.menu_text_disabled, colours.menu_background, text)
 
 	album_url = track_object.misc.get("spotify-album-url")
-	if album_url and album_url in spot_ctl.cache_saved_albums:
+	if album_url and album_url in tauon.spot_ctl.cache_saved_albums:
 		text = _("Un-save Spotify Album")
 
 	return (colours.menu_text, colours.menu_background, text)
 
 
-def add_to_spotify_library2(album_url):
-	if album_url in spot_ctl.cache_saved_albums:
-		spot_ctl.remove_album_from_library(album_url)
+def add_to_spotify_library2(album_url: str) -> None:
+	if album_url in tauon.spot_ctl.cache_saved_albums:
+		tauon.spot_ctl.remove_album_from_library(album_url)
 	else:
-		spot_ctl.add_album_to_library(album_url)
+		tauon.spot_ctl.add_album_to_library(album_url)
 
 	for i, p in enumerate(pctl.multi_playlist):
 		code = pctl.gen_codes.get(p.uuid_int)
@@ -21781,7 +21359,7 @@ def add_to_spotify_library2(album_url):
 			regenerate_playlist(i, silent=True)
 
 
-def add_to_spotify_library(track_id):
+def add_to_spotify_library(track_id: int) -> None:
 	track_object = pctl.get_track(track_id)
 	album_url = track_object.misc.get("spotify-album-url")
 	if track_object.file_ext != "SPTY" or not album_url:
@@ -21963,13 +21541,13 @@ track_menu.add(MenuItem(_("Search Artist on Wikipedia"), ser_wiki, pass_ref=True
 
 track_menu.add(MenuItem(_("Search Track on Genius"), ser_gen, pass_ref=True, show_test=toggle_gen))
 
-son_icon = MenuIcon(asset_loader("sonemic-g.png"))
-son_icon.base_asset = asset_loader("sonemic-gs.png")
+son_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "sonemic-g.png"))
+son_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "sonemic-gs.png")
 
 son_icon.xoff = 1
 track_menu.add(MenuItem(_("Search Artist on Sonemic"), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym))
 
-band_icon = MenuIcon(asset_loader("band.png", True))
+band_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "band.png", True))
 band_icon.xoff = 0
 band_icon.yoff = 1
 band_icon.colour = [96, 147, 158, 255]
@@ -21977,7 +21555,7 @@ band_icon.colour = [96, 147, 158, 255]
 track_menu.add(MenuItem(_("Search Artist on Bandcamp"), ser_band, pass_ref=True, icon=band_icon, show_test=toggle_band))
 
 
-def clip_ar_tr(index: int):
+def clip_ar_tr(index: int) -> None:
 	line = pctl.master_library[index].artist + " - " + pctl.master_library[index].title
 
 	SDL_SetClipboardText(line.encode("utf-8"))
@@ -21988,7 +21566,7 @@ def clip_ar_tr(index: int):
 # Copy metadata to clipboard
 track_menu.add(MenuItem(_('Copy "Artist - Track"'), clip_ar_tr, pass_ref=True))
 
-def tidal_copy_album(index: int):
+def tidal_copy_album(index: int) -> None:
 	t = pctl.master_library.get(index)
 	if t and t.file_ext == "TIDAL":
 		id = t.misc.get("tidal_album")
@@ -21996,7 +21574,7 @@ def tidal_copy_album(index: int):
 			url = "https://listen.tidal.com/album/" + str(id)
 			copy_to_clipboard(url)
 
-def is_tidal_track(_):
+def is_tidal_track(_) -> bool:
 	return pctl.master_library[r_menu_index].file_ext == "TIDAL"
 
 
@@ -22037,11 +21615,11 @@ def get_album_spot_active(tr: TrackClass | None = None) -> None:
 		tr = pctl.playing_object()
 	if not tr:
 		return
-	url = spot_ctl.get_album_url_from_local(tr)
+	url = tauon.spot_ctl.get_album_url_from_local(tr)
 	if not url:
 		show_message(_("No results found"))
 		return
-	l = spot_ctl.append_album(url, return_list=True)
+	l = tauon.spot_ctl.append_album(url, return_list=True)
 	if len(l) < 2:
 		show_message(_("Looks like that's the only track in the album"))
 		return
@@ -22068,14 +21646,14 @@ track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), get_track_spot_url, get_t
 # 		tr = pctl.playing_object()
 # 	if not tr:
 # 		return
-# 	url = spot_ctl.get_artist_url_from_local(tr)
+# 	url = tauon.spot_ctl.get_artist_url_from_local(tr)
 # 	if not url:
 # 		show_message(_("No results found"))
 # 		return
 # 	track_url = tr.misc.get("spotify-track-url")
 #
 # 	show_message(_("Fetching..."))
-# 	shooter(spot_ctl.rec_playlist, (url, track_url))
+# 	shooter(tauon.spot_ctl.rec_playlist, (url, track_url))
 #
 # def get_spot_recs_track(index: int):
 # 	get_spot_recs(pctl.get_track(index))
@@ -23059,12 +22637,12 @@ x_menu.add(MenuItem(_("Clean Database!"), clean_db_fast, clean_db_deco, show_tes
 tauon.switch_playlist = switch_playlist
 
 
-def import_spotify_playlist():
+def import_spotify_playlist() -> None:
 	clip = copy_from_clipboard()
 	for line in clip.split("\n"):
 		if line.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 			clip = clip.strip()
-			spot_ctl.playlist(line)
+			tauon.spot_ctl.playlist(line)
 
 	if album_mode:
 		reload_albums()
@@ -23146,7 +22724,7 @@ def stt2(sec):
 
 
 def export_database():
-	path = user_directory + "/DatabaseExport.csv"
+	path = str(user_directory / "DatabaseExport.csv")
 	xport = open(path, "w")
 
 	xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
@@ -23371,6 +22949,8 @@ mode_menu.add(MenuItem(_("Square Large"), set_mini_mode_B2))
 
 def copy_bb_metadata() -> str | None:
 	tr = pctl.playing_object()
+	if tr is None:
+		return None
 	if not tr.title and not tr.artist and pctl.playing_state == 3:
 		return pctl.tag_meta
 	text = f"{tr.artist} - {tr.title}".strip(" -")
@@ -23422,8 +23002,8 @@ def radio_random() -> None:
 	pctl.advance(rr=True)
 
 
-radiorandom_icon = MenuIcon(asset_loader("radiorandom.png", True))
-revert_icon = MenuIcon(asset_loader("revert.png", True))
+radiorandom_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "radiorandom.png", True))
+revert_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "revert.png", True))
 
 radiorandom_icon.xoff = 1
 radiorandom_icon.yoff = 0
@@ -23454,14 +23034,14 @@ def heart_menu_colour() -> list[int] | None:
 	return None
 
 
-heart_icon = MenuIcon(asset_loader("heart-menu.png", True))
-heart_row_icon = asset_loader("heart-track.png", True)
-heart_notify_icon = asset_loader("heart-notify.png", True)
-heart_notify_break_icon = asset_loader("heart-notify-break.png", True)
-# spotify_row_icon = asset_loader('spotify-row.png', True)
-star_pc_icon = asset_loader("star-pc.png", True)
-star_row_icon = asset_loader("star.png", True)
-star_half_row_icon = asset_loader("star-half.png", True)
+heart_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+heart_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-track.png", True)
+heart_notify_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-notify.png", True)
+heart_notify_break_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-notify-break.png", True)
+# spotify_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spotify-row.png", True)
+star_pc_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "star-pc.png", True)
+star_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "star.png", True)
+star_half_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "star-half.png", True)
 
 
 def draw_rating_widget(x: int, y: int, n_track: TrackClass, album: bool = False):
@@ -23578,9 +23158,9 @@ extra_menu.add(MenuItem("Love", bar_love_notify, love_deco, icon=heart_icon))
 def toggle_spotify_like_active2(tr: TrackClass) -> None:
 	if "spotify-track-url" in tr.misc:
 		if "spotify-liked" in tr.misc:
-			spot_ctl.unlike_track(tr)
+			tauon.spot_ctl.unlike_track(tr)
 		else:
-			spot_ctl.like_track(tr)
+			tauon.spot_ctl.like_track(tr)
 	gui.pl_update += 1
 	for i, p in enumerate(pctl.multi_playlist):
 		code = pctl.gen_codes.get(p.uuid_int)
@@ -23677,7 +23257,7 @@ extra_menu.add(MenuItem(_("Global Search"), activate_search_overlay, hint="Ctrl+
 def get_album_spot_url_active() -> None:
 	tr = pctl.playing_object()
 	if tr:
-		url = spot_ctl.get_album_url_from_local(tr)
+		url = tauon.spot_ctl.get_album_url_from_local(tr)
 
 		if url:
 			copy_to_clipboard(url)
@@ -23707,30 +23287,30 @@ extra_menu.add(MenuItem(_("Locate Artist"), locate_artist))
 extra_menu.add(MenuItem(_("Go To Playing"), goto_playing_extra, hint="'"))
 
 def show_spot_playing_deco():
-	if not (spot_ctl.coasting or spot_ctl.playing):
+	if not (tauon.spot_ctl.coasting or tauon.spot_ctl.playing):
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
 def show_spot_coasting_deco():
-	if spot_ctl.coasting:
+	if tauon.spot_ctl.coasting:
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
 
 def show_spot_playing() -> None:
-	if pctl.playing_state != 0 and pctl.playing_state != 3 and not spot_ctl.coasting and not spot_ctl.playing:
+	if pctl.playing_state != 0 and pctl.playing_state != 3 and not tauon.spot_ctl.coasting and not tauon.spot_ctl.playing:
 		pctl.stop()
-	spot_ctl.update(start=True)
+	tauon.spot_ctl.update(start=True)
 
 
 def spot_transfer_playback_here() -> None:
 	tauon.spot_ctl.preparing_spotify = True
-	if not (spot_ctl.playing or spot_ctl.coasting):
-		spot_ctl.update(start=True)
+	if not (tauon.spot_ctl.playing or tauon.spot_ctl.coasting):
+		tauon.spot_ctl.update(start=True)
 	pctl.playerCommand = "spotcon"
 	pctl.playerCommandReady = True
 	pctl.playing_state = 3
-	shooter(spot_ctl.transfer_to_tauon)
+	shooter(tauon.spot_ctl.transfer_to_tauon)
 
 
 extra_menu.br()
@@ -23738,9 +23318,9 @@ extra_menu.add(MenuItem("Spotify Like Track", toggle_spotify_like_active, toggle
 	show_test=spotify_show_test, icon=spot_heartx_icon))
 
 def spot_import_albums() -> None:
-	if not spot_ctl.spotify_com:
-		spot_ctl.spotify_com = True
-		shoot = threading.Thread(target=spot_ctl.get_library_albums)
+	if not tauon.spot_ctl.spotify_com:
+		tauon.spot_ctl.spotify_com = True
+		shoot = threading.Thread(target=tauon.spot_ctl.get_library_albums)
 		shoot.daemon = True
 		shoot.start()
 	else:
@@ -23751,9 +23331,9 @@ extra_menu.add_sub(_("Import Spotify…"), 140, show_test=spotify_show_test)
 extra_menu.add_to_sub(0, MenuItem(_("Liked Albums"), spot_import_albums, show_test=spotify_show_test, icon=spot_icon))
 
 def spot_import_tracks() -> None:
-	if not spot_ctl.spotify_com:
-		spot_ctl.spotify_com = True
-		shoot = threading.Thread(target=spot_ctl.get_library_likes)
+	if not tauon.spot_ctl.spotify_com:
+		tauon.spot_ctl.spotify_com = True
+		shoot = threading.Thread(target=tauon.spot_ctl.get_library_likes)
 		shoot.daemon = True
 		shoot.start()
 	else:
@@ -23762,9 +23342,9 @@ def spot_import_tracks() -> None:
 extra_menu.add_to_sub(0, MenuItem(_("Liked Tracks"), spot_import_tracks, show_test=spotify_show_test, icon=spot_icon))
 
 def spot_import_playlists() -> None:
-	if not spot_ctl.spotify_com:
+	if not tauon.spot_ctl.spotify_com:
 		show_message(_("Importing Spotify playlists..."))
-		shoot_dl = threading.Thread(target=spot_ctl.import_all_playlists)
+		shoot_dl = threading.Thread(target=tauon.spot_ctl.import_all_playlists)
 		shoot_dl.daemon = True
 		shoot_dl.start()
 	else:
@@ -23774,12 +23354,12 @@ def spot_import_playlists() -> None:
 #extra_menu.add_to_sub(_("Import All Playlists"), 0, spot_import_playlists, show_test=spotify_show_test, icon=spot_icon)
 
 def spot_import_playlist_menu() -> None:
-	if not spot_ctl.spotify_com:
-		playlists = spot_ctl.get_playlist_list()
+	if not tauon.spot_ctl.spotify_com:
+		playlists = tauon.spot_ctl.get_playlist_list()
 		spotify_playlist_menu.items.clear()
 		if playlists:
 			for item in playlists:
-				spotify_playlist_menu.add(MenuItem(item[0], spot_ctl.playlist, pass_ref=True, set_ref=item[1]))
+				spotify_playlist_menu.add(MenuItem(item[0], tauon.spot_ctl.playlist, pass_ref=True, set_ref=item[1]))
 
 			spotify_playlist_menu.add(MenuItem(_("> Import All Playlists"), spot_import_playlists))
 			spotify_playlist_menu.activate(position=(extra_menu.pos[0], window_size[1] - gui.panelBY))
@@ -23790,7 +23370,7 @@ extra_menu.add_to_sub(0, MenuItem(_("Playlist…"), spot_import_playlist_menu, s
 
 
 def spot_import_context() -> None:
-	shooter(spot_ctl.import_context)
+	shooter(tauon.spot_ctl.import_context)
 
 extra_menu.add_to_sub(0, MenuItem(_("Current Context"), spot_import_context, show_spot_coasting_deco, show_test=spotify_show_test, icon=spot_icon))
 
@@ -23815,12 +23395,12 @@ def get_artist_spot(tr: TrackClass = None) -> None:
 		tr = pctl.playing_object()
 	if not tr:
 		return
-	url = spot_ctl.get_artist_url_from_local(tr)
+	url = tauon.spot_ctl.get_artist_url_from_local(tr)
 	if not url:
 		show_message(_("No results found"))
 		return
 	show_message(_("Fetching..."))
-	shooter(spot_ctl.artist_playlist, (url,))
+	shooter(tauon.spot_ctl.artist_playlist, (url,))
 
 extra_menu.add(MenuItem(_("Show Full Artist"), get_artist_spot,
 	show_test=spotify_show_test, icon=spot_icon))
@@ -23839,7 +23419,7 @@ extra_menu.add(MenuItem(_("Start Spotify Remote"), show_spot_playing, show_spot_
 #     return [colours.menu_text, colours.menu_background, text]
 
 
-extra_menu.add(MenuItem("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (spot_ctl.coasting or spot_ctl.playing),
+extra_menu.add(MenuItem("Transfer audio here", spot_transfer_playback_here, show_test=lambda x:spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (tauon.spot_ctl.coasting or tauon.spot_ctl.playing),
 	icon=spot_icon))
 
 def toggle_auto_theme(mode: int = 0) -> None:
@@ -23990,7 +23570,7 @@ def level_meter_special_2():
 	gui.level_meter_colour_mode = 2
 
 
-theme_files = os.listdir(install_directory + "/theme")
+theme_files = os.listdir(str(install_directory / "theme"))
 theme_files.sort()
 
 
@@ -24018,7 +23598,7 @@ def lastfm_colour() -> list[int] | None:
 	return None
 
 
-last_fm_icon = asset_loader("as.png", True)
+last_fm_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "as.png", True)
 lastfm_icon = MenuIcon(last_fm_icon)
 
 if gui.scale == 2 or gui.scale == 1.25:
@@ -24038,8 +23618,8 @@ def lastfm_menu_test(a) -> bool:
 	return False
 
 
-lb_icon = MenuIcon(asset_loader("lb-g.png"))
-lb_icon.base_asset = asset_loader("lb-gs.png")
+lb_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "lb-g.png"))
+lb_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "lb-gs.png")
 
 
 def lb_mode() -> bool:
@@ -24174,11 +23754,12 @@ def get_album_art_url(tr: TrackClass):
 	return None
 
 
-def discord_loop():
+def discord_loop() -> None:
 	prefs.discord_active = True
 
 	try:
-		if not pctl.playing_ready(): return
+		if not pctl.playing_ready():
+			return
 		asyncio.set_event_loop(asyncio.new_event_loop())
 
 		# logging.info("Attempting to connect to Discord...")
@@ -24308,6 +23889,9 @@ def discord_loop():
 		prefs.disconnect_discord = False
 
 	finally:
+		loop = asyncio.get_event_loop()
+		if not loop.is_closed():
+			loop.close()
 		prefs.discord_active = False
 
 
@@ -25305,17 +24889,17 @@ class SearchOverlay:
 				if n in (1, 2):
 					thl = thumbnail_rx - album_art_size
 					ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
-					gall_ren.render(pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
+					tauon.gall_ren.render(pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
 					if fade != 1:
 						ddt.rect((thl, yy + pad, album_art_size, album_art_size), [0, 0, 0, 70])
 				if n in (11,):
 					thl = thumbnail_rx - album_art_size
 					ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
-					# gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
+					# tauon.gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
 					if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
-						if gall_ren.lock.locked():
+						if tauon.gall_ren.lock.locked():
 							try:
-								gall_ren.lock.release()
+								tauon.gall_ren.lock.release()
 							except RuntimeError as e:
 								if str(e) == "release unlocked lock":
 									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
@@ -25437,7 +25021,7 @@ class SearchOverlay:
 						case 8:
 							default_playlist.extend(pctl.multi_playlist[pl].playlist_ids)
 						case 12:
-							spot_ctl.append_track(item[2])
+							tauon.spot_ctl.append_track(item[2])
 							reload_albums()
 
 					gui.pl_update += 1
@@ -25458,7 +25042,7 @@ class SearchOverlay:
 							self.click_artist(item[1])
 						case 10:
 							show_message(_("Searching for albums by artist: ") + item[1], _("This may take a moment"))
-							shoot = threading.Thread(target=spot_ctl.artist_playlist, args=([item[2]]))
+							shoot = threading.Thread(target=tauon.spot_ctl.artist_playlist, args=([item[2]]))
 							shoot.daemon = True
 							shoot.start()
 						case 1 | 2:
@@ -25478,10 +25062,10 @@ class SearchOverlay:
 							if pl:
 								switch_playlist(pl)
 						case 11:
-							spot_ctl.album_playlist(item[2])
+							tauon.spot_ctl.album_playlist(item[2])
 							reload_albums()
 						case 12:
-							spot_ctl.append_track(item[2])
+							tauon.spot_ctl.append_track(item[2])
 							reload_albums()
 
 				if n in (2,) and keymaps.test("add-to-queue") and fade == 1:
@@ -25687,7 +25271,7 @@ def worker3():
 		#     return
 		# time.sleep(1)
 
-		gall_ren.worker_render()
+		tauon.gall_ren.worker_render()
 
 
 def worker4():
@@ -25720,7 +25304,7 @@ def worker2():
 					spot_search_rate_timer.set()
 				logging.info("Spotify search")
 				search_over.results.clear()
-				results = spot_ctl.search(search_over.search_text.text)
+				results = tauon.spot_ctl.search(search_over.search_text.text)
 				if results is not None:
 					search_over.results = results
 				else:
@@ -27348,7 +26932,7 @@ tauon.reload_albums = reload_albums
 # WEBSERVER
 if prefs.enable_web is True:
 	webThread = threading.Thread(
-		target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+		target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
 	webThread.daemon = True
 	webThread.start()
 
@@ -27641,7 +27225,7 @@ def toggle_enable_web(mode: int = 0) -> bool | None:
 
 	if prefs.enable_web and not gui.web_running:
 		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, album_art_gen, install_directory, strings, tauon])
+			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
 		webThread.daemon = True
 		webThread.start()
 		show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
@@ -28029,13 +27613,13 @@ class Over:
 
 		self.init2done = False
 
-		self.about_image = asset_loader("v4-a.png")
-		self.about_image2 = asset_loader("v4-b.png")
-		self.about_image3 = asset_loader("v4-c.png")
-		self.about_image4 = asset_loader("v4-d.png")
-		self.about_image5 = asset_loader("v4-e.png")
-		self.about_image6 = asset_loader("v4-f.png")
-		self.title_image = asset_loader("title.png", True)
+		self.about_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-a.png")
+		self.about_image2 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-b.png")
+		self.about_image3 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-c.png")
+		self.about_image4 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-d.png")
+		self.about_image5 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-e.png")
+		self.about_image6 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-f.png")
+		self.title_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "title.png", True)
 
 		# self.tab_width = round(115 * gui.scale)
 		self.w = 100
@@ -29063,16 +28647,16 @@ class Over:
 
 			y += round(30 * gui.scale)
 
-			if os.path.isfile(tidal.save_path):
+			if os.path.isfile(tauon.tidal.save_path):
 				if self.button2(x, y, _("Logout"), width=84 * gui.scale):
-					tidal.logout()
-			elif tidal.login_stage == 0:
+					tauon.tidal.logout()
+			elif tauon.tidal.login_stage == 0:
 				if self.button2(x, y, _("Login"), width=84 * gui.scale):
 					# webThread = threading.Thread(target=authserve, args=[tauon])
 					# webThread.daemon = True
 					# webThread.start()
 					# time.sleep(0.1)
-					tidal.login1()
+					tauon.tidal.login1()
 			else:
 				ddt.text(
 					(x + 0 * gui.scale, y), _("Copy the full URL of the resulting 'oops' page"), colours.box_text_label, 11)
@@ -29080,20 +28664,20 @@ class Over:
 				if self.button2(x, y, _("Paste Redirect URL"), width=84 * gui.scale):
 					text = copy_from_clipboard()
 					if text:
-						tidal.login2(text)
+						tauon.tidal.login2(text)
 
-			if os.path.isfile(tidal.save_path):
+			if os.path.isfile(tauon.tidal.save_path):
 				y += round(30 * gui.scale)
 				ddt.text((x + 0 * gui.scale, y), _("Paste TIDAL URL's into Tauon using ctrl+v"), colours.box_text_label, 11)
 				y += round(30 * gui.scale)
 				if self.button(x, y, _("Import Albums")):
 					show_message(_("Fetching playlist..."))
-					shooter(tidal.fav_albums)
+					shooter(tauon.tidal.fav_albums)
 
 				y += round(30 * gui.scale)
 				if self.button(x, y, _("Import Tracks")):
 					show_message(_("Fetching playlist..."))
-					shooter(tidal.fav_tracks)
+					shooter(tauon.tidal.fav_tracks)
 
 		if self.account_view == 11:
 			ddt.text((x, y), "Tauon Satellite", colours.box_sub_text, 213)
@@ -29268,8 +28852,8 @@ class Over:
 
 			if prefs.spotify_token:
 				if self.button(x, y, _("Forget Account")):
-					spot_ctl.delete_token()
-					spot_ctl.cache_saved_albums.clear()
+					tauon.spot_ctl.delete_token()
+					tauon.spot_ctl.cache_saved_albums.clear()
 					prefs.spot_username = ""
 					if not prefs.launch_spotify_local:
 						prefs.spot_password = ""
@@ -29279,7 +28863,7 @@ class Over:
 				webThread.start()
 				time.sleep(0.1)
 
-				spot_ctl.auth()
+				tauon.spot_ctl.auth()
 
 			y += round(31 * gui.scale)
 			prefs.launch_spotify_web = self.toggle_square(
@@ -30082,7 +29666,7 @@ class Over:
 
 		y += round(25 * gui.scale)
 		if not msys and not macos:
-			x11_path = os.path.join(user_directory, "x11")
+			x11_path = str(user_directory / "x11")
 			x11 = os.path.exists(x11_path)
 			old = x11
 			x11 = self.toggle_square(x, y, x11, _("Prefer x11 when running in Wayland"))
@@ -31093,9 +30677,9 @@ def update_playlist_call():
 
 pref_box = Over()
 
-inc_arrow = asset_loader("inc.png", True)
-dec_arrow = asset_loader("dec.png", True)
-corner_icon = asset_loader("corner.png", True)
+inc_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "inc.png", True)
+dec_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "dec.png", True)
+corner_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "corner.png", True)
 
 
 # ----------------------------------------------------------------------------------------
@@ -31158,16 +30742,16 @@ class TopPanel:
 		self.index_playing = -1
 		self.drag_zone_start_x = 300 * gui.scale
 
-		self.exit_button = asset_loader("ex.png", True)
-		self.maximize_button = asset_loader("max.png", True)
-		self.restore_button = asset_loader("restore.png", True)
-		self.restore_button = asset_loader("restore.png", True)
-		self.playlist_icon = asset_loader("playlist.png", True)
-		self.return_icon = asset_loader("return.png", True)
-		self.artist_list_icon = asset_loader("artist-list.png", True)
-		self.folder_list_icon = asset_loader("folder-list.png", True)
-		self.dl_button = asset_loader("dl.png", True)
-		self.overflow_icon = asset_loader("overflow.png", True)
+		self.exit_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "ex.png", True)
+		self.maximize_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "max.png", True)
+		self.restore_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "restore.png", True)
+		self.restore_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "restore.png", True)
+		self.playlist_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "playlist.png", True)
+		self.return_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "return.png", True)
+		self.artist_list_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "artist-list.png", True)
+		self.folder_list_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "folder-list.png", True)
+		self.dl_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "dl.png", True)
+		self.overflow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "overflow.png", True)
 
 		self.drag_slide_timer = Timer(100)
 		self.tab_d_click_timer = Timer(10)
@@ -31221,7 +30805,7 @@ class TopPanel:
 						after_scan or \
 						move_in_progress or \
 						plex.scanning or \
-						transcode_list or spot_ctl.launching_spotify or spot_ctl.spotify_com or subsonic.scanning or \
+						transcode_list or tauon.spot_ctl.launching_spotify or tauon.spot_ctl.spotify_com or subsonic.scanning or \
 						koel.scanning or gui.sync_progress or lastfm.scanning_scrobbles:
 					ddt.rect(
 						(window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2),
@@ -31981,13 +31565,13 @@ class TopPanel:
 			if gui.to_got:
 				text += f" {gui.to_got}"
 			bg = [229, 160, 13, 255]
-		elif spot_ctl.launching_spotify:
+		elif tauon.spot_ctl.launching_spotify:
 			text = _("Launching Spotify...")
 			bg = [30, 215, 96, 255]
-		elif spot_ctl.preparing_spotify:
+		elif tauon.spot_ctl.preparing_spotify:
 			text = _("Preparing Spotify Playback...")
 			bg = [30, 215, 96, 255]
-		elif spot_ctl.spotify_com:
+		elif tauon.spot_ctl.spotify_com:
 			text = _("Accessing Spotify library...")
 			bg = [30, 215, 96, 255]
 		elif subsonic.scanning:
@@ -32127,17 +31711,17 @@ class BottomBarType1:
 		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
 		self.volume_bar_position = [0, 45 * gui.scale]
 
-		self.play_button = asset_loader("play.png", True)
-		self.forward_button = asset_loader("ff.png", True)
-		self.back_button = asset_loader("bb.png", True)
-		self.repeat_button = asset_loader("tauon_repeat.png", True)
-		self.repeat_button_off = asset_loader("tauon_repeat_off.png", True)
-		self.shuffle_button_off = asset_loader("tauon_shuffle_off.png", True)
-		self.shuffle_button = asset_loader("tauon_shuffle.png", True)
-		self.repeat_button_a = asset_loader("tauon_repeat_a.png", True)
-		self.shuffle_button_a = asset_loader("tauon_shuffle_a.png", True)
+		self.play_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "play.png", True)
+		self.forward_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "ff.png", True)
+		self.back_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "bb.png", True)
+		self.repeat_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_repeat.png", True)
+		self.repeat_button_off = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_repeat_off.png", True)
+		self.shuffle_button_off = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_shuffle_off.png", True)
+		self.shuffle_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_shuffle.png", True)
+		self.repeat_button_a = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_repeat_a.png", True)
+		self.shuffle_button_a = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_shuffle_a.png", True)
 
-		self.buffer_shard = asset_loader("shard.png", True)
+		self.buffer_shard = asset_loader(scaled_asset_directory, loaded_asset_dc, "shard.png", True)
 
 		self.scrob_stick = 0
 
@@ -32665,7 +32249,7 @@ class BottomBarType1:
 			if pctl.auto_stop:
 				stop_colour = colours.media_buttons_active
 
-			if pctl.playing_state == 2 or (spot_ctl.coasting and spot_ctl.paused):
+			if pctl.playing_state == 2 or (tauon.spot_ctl.coasting and tauon.spot_ctl.paused):
 				pause_colour = colours.media_buttons_active
 				play_colour = colours.media_buttons_active
 			elif pctl.playing_state == 3:
@@ -32683,7 +32267,7 @@ class BottomBarType1:
 					if inp.mouse_click:
 						if compact and pctl.playing_state == 1:
 							pctl.pause()
-						elif pctl.playing_state == 1 or spot_ctl.coasting:
+						elif pctl.playing_state == 1 or tauon.spot_ctl.coasting:
 							pctl.show_current(highlight=True)
 						else:
 							pctl.play()
@@ -32707,7 +32291,7 @@ class BottomBarType1:
 
 				rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
 				fields.add(rect)
-				if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
+				if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 					pause_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						pctl.pause()
@@ -32741,7 +32325,7 @@ class BottomBarType1:
 			rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
 			fields.add(rect)
-			if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
+			if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 				forward_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.advance()
@@ -32776,7 +32360,7 @@ class BottomBarType1:
 			rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
 			fields.add(rect)
-			if coll(rect) and not (pctl.playing_state == 3 and not spot_ctl.coasting):
+			if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 				back_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.back()
@@ -32988,9 +32572,9 @@ class BottomBarType_ao1:
 		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
 		self.volume_bar_position = [0, 45 * gui.scale]
 
-		self.play_button = asset_loader("play.png", True)
-		self.forward_button = asset_loader("ff.png", True)
-		self.back_button = asset_loader("bb.png", True)
+		self.play_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "play.png", True)
+		self.forward_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "ff.png", True)
+		self.back_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "bb.png", True)
 
 		self.scrob_stick = 0
 
@@ -33345,23 +32929,25 @@ bottom_bar_ao1 = BottomBarType_ao1()
 
 
 class MiniMode:
-
 	def __init__(self):
-
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader("left-slide.png", True)
-		self.right_slide = asset_loader("right-slide.png", True)
-		self.repeat = asset_loader("repeat-mini-mode.png", True)
-		self.shuffle = asset_loader("shuffle-mini-mode.png", True)
+		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "right-slide.png", True)
+		self.repeat = asset_loader(scaled_asset_directory, loaded_asset_dc, "repeat-mini-mode.png", True)
+		self.shuffle = asset_loader(scaled_asset_directory, loaded_asset_dc, "shuffle-mini-mode.png", True)
 
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
 
 	def render(self):
+		# We only set seek_r and seek_w if track is currently on, but use it anyway later, so make sure it exists
+		if 'seek_r' not in locals():
+			seek_r = [0, 0, 0, 0]
+			seek_w = 0
 
 		w = window_size[0]
 		h = window_size[1]
@@ -33597,8 +33183,8 @@ class MiniMode2:
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader("left-slide.png", True)
-		self.right_slide = asset_loader("right-slide.png", True)
+		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "right-slide.png", True)
 
 	def render(self):
 
@@ -33727,13 +33313,19 @@ class MiniMode3:
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader("left-slide.png", True)
-		self.right_slide = asset_loader("right-slide.png", True)
+		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "right-slide.png", True)
 
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
 
 	def render(self):
+		# We only set seek_r and seek_w if track is currently on, but use it anyway later, so make sure it exists
+		if 'seek_r' not in locals():
+			seek_r = [0, 0, 0, 0]
+			seek_w = 0
+			volume_r = [0, 0, 0, 0]
+			volume_w = 0
 
 		w = window_size[0]
 		h = window_size[1]
@@ -34446,8 +34038,9 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 
 
 pl_bg = None
-if os.path.exists(user_directory + "/bg.png"):
-	pl_bg = LoadImageAsset(user_directory + "/bg.png", True)
+if (user_directory / "bg.png").exists():
+	pl_bg = LoadImageAsset(
+		scaled_asset_directory=scaled_asset_directory, path=str(user_directory / "bg.png"), is_full_path=True)
 
 
 class StandardPlaylist:
@@ -35194,7 +34787,7 @@ class StandardPlaylist:
 				ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
 
 			if tr.file_ext == "SPTY":
-				# if not spot_ctl.started_once:
+				# if not tauon.spot_ctl.started_once:
 				#     ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20])
 				#     ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
 				ddt.rect((track_box[0] + track_box[2] - round(2 * gui.scale), track_box[1] + round(2 * gui.scale), round(2 * gui.scale), track_box[3] - round(3 * gui.scale)), [40, 190, 40, 230])
@@ -35486,7 +35079,7 @@ class StandardPlaylist:
 
 							# if n_track.track_number == 1 or n_track.track_number == "1":
 							#     ss = wid - (wid % 15)
-							#     gall_ren.render(n_track, (run, y), ss)
+							#     tauon.gall_ren.render(n_track, (run, y), ss)
 
 
 						elif item[0] == "P":
@@ -35987,8 +35580,8 @@ class RadioBox:
 		if self.load_connecting:
 			return
 
-		if spot_ctl.playing or spot_ctl.coasting:
-			spot_ctl.control("stop")
+		if tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
+			tauon.spot_ctl.control("stop")
 
 		try:
 			self.websocket.close()
@@ -37048,10 +36641,10 @@ class PlaylistBox:
 
 		self.indicate_w = round(2 * gui.scale)
 
-		self.lock_icon = asset_loader("lock-corner.png", True)
-		self.pin_icon = asset_loader("dia-pin.png", True)
-		self.gen_icon = asset_loader("gen-gear.png", True)
-		self.spot_icon = asset_loader("spot-playlist.png", True)
+		self.lock_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "lock-corner.png", True)
+		self.pin_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "dia-pin.png", True)
+		self.gen_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "gen-gear.png", True)
+		self.spot_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot-playlist.png", True)
 
 
 		# if gui.scale == 1.25:
@@ -38005,7 +37598,7 @@ class ArtistList:
 		if not drawn:
 			track = self.sample_tracks.get(artist)
 			if track:
-				gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
+				tauon.gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
 
 		if thin_mode:
 			text = artist[:2].title()
@@ -39226,7 +38819,7 @@ class QueueBox:
 			text_colour1 = [0, 0, 0, 130]
 			text_colour2 = [0, 0, 0, 230]
 
-		gall_ren.render(track, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
+		tauon.gall_ren.render(track, (rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale), round(28 * gui.scale))
 
 		ddt.rect((rect[0] + 4 * gui.scale, rect[1] + 4 * gui.scale, 26, 26), [0, 0, 0, 6])
 
@@ -40036,7 +39629,7 @@ class ArtistInfoBox:
 		self.w = 0
 		self.lock = False
 
-		self.mini_box = asset_loader("mini-box.png", True)
+		self.mini_box = asset_loader(scaled_asset_directory, loaded_asset_dc, "mini-box.png", True)
 
 	def manual_dl(self):
 
@@ -40245,9 +39838,9 @@ class ArtistInfoBox:
 
 		standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
 		image_paths = [
-			os.path.join(user_directory, "artist-pictures/" + f_artist + ".png"),
-			os.path.join(user_directory, "artist-pictures/" + f_artist + ".jpg"),
-			os.path.join(user_directory, "artist-pictures/" + f_artist + ".webp"),
+			str(user_directory / "artist-pictures" / f_artist + ".png"),
+			str(user_directory / "artist-pictures" / f_artist + ".jpg"),
+			str(user_directory / "artist-pictures" / f_artist + ".webp"),
 			os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.png"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.jpg"),
@@ -40469,9 +40062,8 @@ class RadioThumbGen:
 						prefs.radio_thumb_bans.append(station.get("icon"))
 					continue
 				src.seek(0)
-				f = open(cache_path, "wb")
-				f.write(src.read())
-				f.close()
+				with open(cache_path, "wb") as f:
+					f.write(src.read())
 				src.seek(0)
 			else:
 				# logging.info("no icon")
@@ -40488,6 +40080,8 @@ class RadioThumbGen:
 				if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
 					prefs.radio_thumb_bans.append(station.get("icon"))
 				continue
+			if src is not None:
+				src.close()
 
 			im = im.resize((size, size), Image.Resampling.LANCZOS)
 			g = io.BytesIO()
@@ -40577,10 +40171,10 @@ radio_context_menu.add(MenuItem(_("Remove"), remove_station, pass_ref=True))
 
 class RadioView:
 	def __init__(self):
-		self.add_icon = asset_loader("add-station.png", True)
-		self.search_icon = asset_loader("station-search.png", True)
-		self.save_icon = asset_loader("save-station.png", True)
-		self.menu_icon = asset_loader("radio-menu.png", True)
+		self.add_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "add-station.png", True)
+		self.search_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "station-search.png", True)
+		self.save_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "save-station.png", True)
+		self.menu_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "radio-menu.png", True)
 		self.drag = None
 		self.click_point = (0, 0)
 
@@ -41047,7 +40641,7 @@ class Showcase:
 				gui.spec4_rec.y = y + round(50 * gui.scale)
 
 				if prefs.showcase_vis and window_size[1] > 369 and not search_over.active and not (
-						spot_ctl.coasting or spot_ctl.playing):
+						tauon.spot_ctl.coasting or tauon.spot_ctl.playing):
 
 					if gui.message_box or not is_level_zero(include_menus=True):
 						self.render_vis()
@@ -41222,16 +40816,16 @@ class ViewBox:
 
 		self.border = 3 * gui.scale
 
-		self.tracks_img = asset_loader("tracks.png", True)
-		self.side_img = asset_loader("tracks+side.png", True)
-		self.gallery1_img = asset_loader("gallery1.png", True)
-		self.gallery2_img = asset_loader("gallery2.png", True)
-		self.combo_img = asset_loader("combo.png", True)
-		self.lyrics_img = asset_loader("lyrics.png", True)
-		self.gallery2_img = asset_loader("gallery2.png", True)
-		self.radio_img = asset_loader("radio.png", True)
-		self.col_img = asset_loader("col.png", True)
-		# self.artist_img = asset_loader("artist.png", True)
+		self.tracks_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "tracks.png", True)
+		self.side_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "tracks+side.png", True)
+		self.gallery1_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "gallery1.png", True)
+		self.gallery2_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "gallery2.png", True)
+		self.combo_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "combo.png", True)
+		self.lyrics_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "lyrics.png", True)
+		self.gallery2_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "gallery2.png", True)
+		self.radio_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "radio.png", True)
+		self.col_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "col.png", True)
+		# self.artist_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "artist.png", True)
 
 		# _ .15 0
 		self.tracks_colour = ColourPulse2()  # (0.5) # .5 .6 .75
@@ -41863,17 +41457,15 @@ def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 		if info.get_content_maintype() == "image":
 			if info.get_content_subtype() == "jpeg":
 				save_target = os.path.join(target_dir, "image.jpg")
-				f = open(save_target, "wb")
-				f.write(response.read())
-				f.close()
+				with open(save_target, "wb") as f:
+					f.write(response.read())
 				# clear_img_cache()
 				clear_track_image_cache(track)
 
 			elif info.get_content_subtype() == "png":
 				save_target = os.path.join(target_dir, "image.png")
-				f = open(save_target, "wb")
-				f.write(response.read())
-				f.close()
+				with open(save_target, "wb") as f:
+					f.write(response.read())
 				# clear_img_cache()
 				clear_track_image_cache(track)
 			else:
@@ -42928,7 +42520,7 @@ def save_state() -> None:
 		prefs.spot_secret,
 		prefs.show_band,
 		prefs.download_playlist,
-		spot_ctl.cache_saved_albums,
+		tauon.spot_ctl.cache_saved_albums,
 		prefs.auto_rec,
 		prefs.spotify_token,
 		prefs.use_libre_fm,
@@ -42963,10 +42555,10 @@ def save_state() -> None:
 	]
 
 	try:
-		with (Path(user_directory) / "state.p.backup").open("wb") as file:
+		with (user_directory / "state.p.backup").open("wb") as file:
 			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 		# if not pctl.running:
-		with (Path(user_directory) / "state.p").open("wb") as file:
+		with (user_directory / "state.p").open("wb") as file:
 			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		old_position = old_window_position
@@ -42983,12 +42575,12 @@ def save_state() -> None:
 		]
 
 		if not fs_mode:
-			with (Path(user_directory) / "window.p").open("wb") as file:
+			with (user_directory / "window.p").open("wb") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-		spot_ctl.save_token()
+		tauon.spot_ctl.save_token()
 
-		with (Path(user_directory) / "lyrics_substitutions.json").open("w") as file:
+		with (user_directory / "lyrics_substitutions.json").open("w") as file:
 			json.dump(prefs.lyrics_subs, file)
 
 		save_prefs()
@@ -43884,7 +43476,7 @@ while pctl.running:
 		time.sleep(0.03)
 
 		if (
-				pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not gall_ren.queue and not transcode_list and not gui.frame_callback_list:
+				pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
 			pass
 		else:
 			sleep_timer.set()
@@ -44390,7 +43982,7 @@ while pctl.running:
 
 				if key_a_press and key_ctrl_down:
 					gui.pl_update = 1
-					shift_selection = range(len(default_playlist))
+					shift_selection = range(len(default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
 
 				if keymaps.test("revert"):
 					pctl.revert()
@@ -45004,8 +44596,8 @@ while pctl.running:
 					if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
 
 						if gallery_scroll.held:
-							while len(gall_ren.queue) > 2:
-								gall_ren.queue.pop()
+							while len(tauon.gall_ren.queue) > 2:
+								tauon.gall_ren.queue.pop()
 
 						# Draw power bar button
 						if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
@@ -45434,7 +45026,7 @@ while pctl.running:
 										xx = pp / math.sqrt(2)
 
 										xx -= size / 2
-										drawn_art = gall_ren.render(
+										drawn_art = tauon.gall_ren.render(
 											pctl.get_track(default_playlist[p]), (x + xx, y + xx),
 											size=size, force_offset=0)
 										if not drawn_art:
@@ -45445,9 +45037,9 @@ while pctl.running:
 
 								else:
 									album_count += 1
-									if (album_count * 1.5) + 10 > gall_ren.limit:
-										gall_ren.limit = round((album_count * 1.5) + 30)
-									drawn_art = gall_ren.render(track, (x, y))
+									if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
+										tauon.gall_ren.limit = round((album_count * 1.5) + 30)
+									drawn_art = tauon.gall_ren.render(track, (x, y))
 
 								# Determine mouse collision
 								rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
@@ -48206,7 +47798,7 @@ while pctl.running:
 		try:
 			if should_save_state:
 				logging.info("Auto save playtime")
-				with (Path(user_directory) / "star.p").open("wb") as file:
+				with (user_directory / "star.p").open("wb") as file:
 					pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 			else:
 				logging.info("Dev mode, skip auto saving playtime")
@@ -48227,8 +47819,8 @@ while pctl.running:
 	if gui.lowered:
 		time.sleep(0.2)
 
-if spot_ctl.playing:
-	spot_ctl.control("stop")
+if tauon.spot_ctl.playing:
+	tauon.spot_ctl.control("stop")
 
 # Send scrobble if pending
 if lfm_scrobbler.queue and not lfm_scrobbler.running:
@@ -48257,9 +47849,9 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
 	prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
 if should_save_state:
-	with (Path(user_directory) / "star.p").open("wb") as file:
+	with (user_directory / "star.p").open("wb") as file:
 		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (Path(user_directory) / "album-star.p").open("wb") as file:
+	with (user_directory / "album-star.p").open("wb") as file:
 		pickle.dump(album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
@@ -48267,9 +47859,9 @@ save_state()
 
 date = datetime.date.today()
 if should_save_state:
-	with (Path(user_directory) / "star.p.backup").open("wb") as file:
+	with (user_directory / "star.p.backup").open("wb") as file:
 		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (Path(user_directory) / f"star.p.backup{str(date.month)}").open("wb") as file:
+	with (user_directory / f"star.p.backup{str(date.month)}").open("wb") as file:
 		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 if tauon.stream_proxy and tauon.stream_proxy.download_running:
@@ -48320,11 +47912,6 @@ SDL_Quit()
 exit_timer = Timer()
 exit_timer.set()
 
-cache_dir = tmp_cache_dir()
-if os.path.isdir(cache_dir):
-	logging.info("Clearing tmp cache")
-	shutil.rmtree(cache_dir)
-
 if not tauon.quick_close:
 	while tauon.thread_manager.check_playback_running():
 		time.sleep(0.2)
@@ -48351,5 +47938,15 @@ if tauon.librespot_p:
 	logging.info("Killing librespot")
 	tauon.librespot_p.kill()
 	#tauon.librespot_p.communicate()
+
+cache_dir = tmp_cache_dir()
+if os.path.isdir(cache_dir):
+	# This check can be Windows only, lazy deletes are fine on Linux/macOS
+	if sys.platform == "win32":
+		while tauon.cachement.running:
+			logging.warning("Waiting for caching to stop before deleting cache directory…")
+			time.sleep(0.2)
+	logging.info("Clearing tmp cache")
+	shutil.rmtree(cache_dir)
 
 logging.info("Bye!")

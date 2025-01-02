@@ -83,6 +83,7 @@ logging.basicConfig(
 	],
 )
 # INFO+ to std_err
+# TODO(Martin): This hereabout section is wonk, setting INFO on streamhandler removes formatting for DEBUG
 logging.getLogger().handlers[0].setLevel(logging.DEBUG if (install_directory / "debug").is_file() else logging.INFO)
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
@@ -103,7 +104,7 @@ t_id = "tauonmb"
 t_agent = "TauonMusicBox/" + n_version
 
 logging.info(f"{t_title} {t_version}")
-logging.info("Copyright 2015-2024 Taiko2k captain.gxj@gmail.com\n")
+logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
 
 # Early arg processing
 def transfer_args_and_exit() -> None:
@@ -154,7 +155,7 @@ if "--no-start" in sys.argv:
 
 
 pyinstaller_mode = False
-if hasattr(sys, "_MEIPASS") or getattr(sys, 'frozen', False) or install_directory.name.endswith("_internal"):
+if hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"):
 	pyinstaller_mode = True
 
 # If we're installed, use home data locations
@@ -166,26 +167,33 @@ if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")) or s
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
 	install_directory = Path("/usr/share/TauonMusicBox")
 
-user_directory = install_directory / "user-data"
-config_directory = user_directory
-asset_directory = install_directory / "assets"
-
 if str(install_directory).startswith("/app/"):
 	# Its Flatpak
 	t_id = "com.github.taiko2k.tauonmb"
 os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
 os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
 
-if Path(install_directory / "portable").is_file():
+if (install_directory / "portable").is_file():
 	install_mode = False
 
+# Handle regular install, running from a directory and finally a portable install, usually a venv
 if install_mode:
+#	logging.info("Running in installed mode")
 	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+elif install_directory.parent.name == "src":
+#	logging.info("Running in portable mode from cloned dir")
+	user_directory = install_directory.parent.parent / "user-data"
+else:
+#	logging.info("Running in portable mode")
+	user_directory = install_directory / "user-data"
+
+asset_directory = install_directory / "assets"
+
 if not user_directory.is_dir():
 	user_directory.mkdir(parents=True)
 
 fp = None
-dev_mode = Path(install_directory / ".dev").is_file()
+dev_mode = (install_directory / ".dev").is_file()
 if dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
@@ -412,6 +420,7 @@ holder.draw_border            = draw_border
 holder.window_opacity         = window_opacity
 holder.old_window_position    = old_window_position
 holder.install_directory      = install_directory
+holder.user_directory         = user_directory
 holder.pyinstaller_mode       = pyinstaller_mode
 holder.phone                  = phone
 holder.window_title           = window_title
@@ -433,7 +442,12 @@ del rect
 del flags
 del img_path
 
-from tauon.t_modules import t_main
+def main() -> None:
+	"""Launch Tauon by means of importing t_main.py"""
+	from tauon.t_modules import t_main
+
+if __name__ == "__main__":
+	main()
 
 # if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 # 	from tauon.t_modules import t_main

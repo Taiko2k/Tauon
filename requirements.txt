@@ -7,6 +7,7 @@ PyGObject
 pylast>=3.1.0
 PySDL2
 pysdl2-dll # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#requirements
+#python-magic # optional
 requests
 Send2Trash
 unidecode
@@ -23,7 +24,7 @@ natsort # optional
 PyChromecast # optional
 setproctitle # optional
 tidalapi # optional
-colored_traceback # very optional
+colored_traceback;           sys_platform != 'win32' # optional - Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 #pyinstaller
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
 #picard - Waiting for release newer than 2.12.3 which has a fix for this: picard

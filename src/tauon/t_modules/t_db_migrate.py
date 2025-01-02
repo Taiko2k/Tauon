@@ -23,8 +23,8 @@ def database_migrate(
 	a_cache_dir: str,
 	cache_directory: Path,
 	config_directory: Path,
-	install_directory: str,
-	user_directory: str,
+	install_directory: Path,
+	user_directory: Path,
 	gui: GuiVar,
 	gen_codes: dict[int, str],
 	prefs: Prefs,
@@ -97,14 +97,14 @@ def database_migrate(
 		logging.info("Updating preferences to 1.7")
 		# gui.show_stars = False
 		if install_mode:
-			# shutil.copy(install_directory + "/config.txt", user_directory)
+			# shutil.copy(install_directory / "config.txt", user_directory)
 			logging.info("Rewrote user config file")
 
 	if db_version <= 1.7:
 		logging.info("Updating database to version 1.8")
 		if install_mode:
 			logging.info(".... Overwriting user config file")
-			# shutil.copy(install_directory + "/config.txt", user_directory)
+			# shutil.copy(install_directory / "config.txt", user_directory)
 
 		try:
 			logging.info(".... Updating playtime database")
@@ -196,7 +196,7 @@ def database_migrate(
 		for key, value in master_library.items():
 			setattr(master_library[key], "composer", "")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("global-search G Ctrl\n")
 				f.write("cycle-theme-reverse\n")
@@ -214,7 +214,7 @@ def database_migrate(
 
 	if db_version <= 31:
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("love-selected\n")
 		gui.set_bar = True
@@ -236,14 +236,14 @@ def database_migrate(
 	if db_version <= 35:
 		logging.info("Updating database to version 36")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("toggle-show-art H Ctrl\n")
 
 	if db_version <= 37:
 		logging.info("Updating database to version 38")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("toggle-console `\n")
 
@@ -259,13 +259,13 @@ def database_migrate(
 	if db_version <= 39:
 		logging.info("Updating database to version 40")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			f = Path(config_directory / "input.txt").open("r")
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			f = (config_directory / "input.txt").open("r")
 			text = f.read()
 			f.close()
 			lines = text.splitlines()
 			if "l ctrl" not in text.lower():
-				f = Path(config_directory / "input.txt").open("w")
+				f = (config_directory / "input.txt").open("w")
 				for line in lines:
 					line = line.strip()
 					if line == "love-selected":
@@ -290,13 +290,13 @@ def database_migrate(
 		for key, value in gen_codes.items():
 			gen_codes[key] = value.replace("f\"", "p\"")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			f = Path(config_directory / "input.txt").open("r")
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			f = (config_directory / "input.txt").open("r")
 			text = f.read()
 			f.close()
 			lines = text.splitlines()
 
-			f = Path(config_directory / "input.txt").open("w")
+			f = Pth(config_directory / "input.txt").open("w")
 			for line in lines:
 				line = line.strip()
 				if "rename-playlist" in line:
@@ -359,7 +359,7 @@ def database_migrate(
 
 	if db_version <= 47:
 		logging.info("Updating database to version 48")
-		if Path(Path(user_directory) / "spot-r-token").is_file():
+		if (user_directory / "spot-r-token").is_file():
 			show_message(
 			_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
 			_("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"))
@@ -374,11 +374,11 @@ def database_migrate(
 
 	if db_version <= 49:
 		logging.info("Updating database to version 50")
-		if os.path.isfile(os.path.join(user_directory, "spot-r-token")):
+		if (user_directory / "spot-r-token").is_file():
 			show_message(
 				_("Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"),
 				_("You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"))
-			os.remove(os.path.join(user_directory, "spot-r-token"))
+			(user_directory / "spot-r-token").unlink()
 
 	if db_version <= 54:
 		logging.info("Updating database to version 55")
@@ -399,8 +399,8 @@ def database_migrate(
 					value.misc["replaygain_album_gain"] = value.album_gain
 				del value.album_gain
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("a") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("a") as f:
 				f.write("toggle-right-panel MB5\n")
 				f.write("toggle-gallery MB4\n")
 
@@ -413,8 +413,8 @@ def database_migrate(
 	if db_version <= 57:
 		logging.info("Updating database to version 58")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("a") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("a") as f:
 				f.write("\nregenerate-playlist R Alt\n")
 				f.write("clear-queue Q Shift Alt\n")
 				f.write("resize-window-16:9 F11 Alt\n")
@@ -423,8 +423,8 @@ def database_migrate(
 	if db_version <= 58:
 		logging.info("Updating database to version 59")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("a") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("a") as f:
 				f.write("\nrandom-album ; Alt\n")
 
 	if db_version <= 59:
@@ -439,10 +439,10 @@ def database_migrate(
 	if db_version <= 60:
 		logging.info("Updating database to version 61")
 
-		token_path = os.path.join(user_directory, "spot-token-pkce")
-		if os.path.exists(token_path):
+		token_path = user_directory / "spot-token-pkce"
+		if token_path.exists():
 			prefs.spotify_token = ""
-			os.remove(token_path)
+			token_path.unlink()
 			show_message(
 				_("Upgrade to v6.5.3 complete"),
 				_("It looks like you are using Spotify. Please re-setup Spotify again in the settings"))
@@ -450,8 +450,8 @@ def database_migrate(
 	if db_version <= 61:
 		logging.info("Updating database to version 62")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("a") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("a") as f:
 				f.write("\ntransfer-playtime-to P Ctrl Shift\n")
 
 	if db_version <= 62:
@@ -460,10 +460,10 @@ def database_migrate(
 			if item[0] == "T":
 				item[0] = "#"
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("r") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("r") as f:
 				lines = f.readlines()
-			with Path(config_directory / "input.txt").open("w") as f:
+			with (config_directory / "input.txt").open("w") as f:
 				for line in lines:
 					if line == "vol-up Up Shift\n" or line == "vol-down Down Shift\n":
 						continue
@@ -484,16 +484,16 @@ def database_migrate(
 	if db_version <= 64:
 		logging.info("Updating database to version 65")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("a") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("a") as f:
 				f.write("\nescape Escape\n")
 				f.write("toggle-mute M Ctrl\n")
 
 	if db_version <= 65:
 		logging.info("Updating database to version 66")
 
-		if install_directory != config_directory and Path(config_directory / "input.txt").is_file():
-			with Path(config_directory / "input.txt").open("a") as f:
+		if install_directory != config_directory and (config_directory / "input.txt").is_file():
+			with (config_directory / "input.txt").open("a") as f:
 				f.write("\ntoggle-artistinfo O Ctrl\n")
 				f.write("cycle-theme ] Ctrl\n")
 				f.write("cycle-theme-reverse [ Ctrl\n")

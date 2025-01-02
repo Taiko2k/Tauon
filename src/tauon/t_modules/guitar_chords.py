@@ -14,20 +14,22 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_draw import TDraw
 from tauon.t_modules.t_extra import filename_safe
 from tauon.t_modules.t_main import copy_from_clipboard
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import TrackClass
-
-ddt = TDraw()
+	from tauon.t_modules.t_draw import TDraw
+	from tauon.t_modules.t_main import GuiVar, Input, PlayerCtl, TrackClass
 
 class GuitarChords:
 
-	def __init__(self, user_directory: Path):
+	def __init__(self, user_directory: Path, inp: Input, ddt: TDraw, gui: GuiVar, pctl: PlayerCtl) -> None:
 		self.store_a:         Path = user_directory / "guitar-chords-a"  # inline format
 		self.store_b:         Path = user_directory / "guitar-chords-b"  # 2 lines format
+		self.inp:            Input = inp
+		self.ddt:            TDraw = ddt
+		self.gui:           GuiVar = gui
+		self.pctl:       PlayerCtl = pctl
 		self.data:            list = []
 		self.current:          str = ""
 		self.auto_scroll:     bool = True
@@ -71,7 +73,7 @@ class GuitarChords:
 		t = copy_from_clipboard()
 		if not t:
 			show_message(_("Clipboard has no text"))
-			inp.mouse_click = False
+			self.inp.mouse_click = False
 			return
 
 		cache_title = self.get_cache_title(track)
@@ -132,7 +134,7 @@ class GuitarChords:
 						on += 1
 						continue
 					mode = 1
-					distance = ddt.get_text_w(line[:on], 16)
+					distance = self.ddt.get_text_w(line[:on], 16)
 
 				on2 = on
 				while on2 < len(last) and last[on2] != " ":
@@ -182,7 +184,7 @@ class GuitarChords:
 		except Exception:
 			logging.exception("Could not find matching track on GuitarParty")
 			show_message(_("Could not find matching track on GuitarParty"))
-			inp.mouse_click = False
+			self.inp.mouse_click = False
 			self.ready[cache_title] = 2
 
 	def test_ready_status(self, track: TrackClass) -> int:
@@ -252,7 +254,7 @@ class GuitarChords:
 
 					distance = 0
 					if on > 0:
-						distance = ddt.get_text_w("".join(w[:on]), 16)
+						distance = self.ddt.get_text_w("".join(w[:on]), 16)
 
 					chords.append(("".join(chord_part), distance))
 					chord_part = []
@@ -301,16 +303,16 @@ class GuitarChords:
 
 		if self.auto_scroll:
 
-			if pctl.playing_length > 20:
-				progress = max(0, pctl.playing_time - 12) / (pctl.playing_length - 3)
-				height = len(self.data) * (18 + 15) * gui.scale
+			if self.pctl.playing_length > 20:
+				progress = max(0, self.pctl.playing_time - 12) / (self.pctl.playing_length - 3)
+				height = len(self.data) * (18 + 15) * self.gui.scale
 
 				self.scroll_position = height * progress
 				# gui.update += 1
-				gui.frame_callback_list.append(TestTimer(0.3))
+				self.gui.frame_callback_list.append(TestTimer(0.3))
 				# time.sleep(0.032)
 
-		if mouse_wheel and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY:
+		if mouse_wheel and self.gui.panelY < mouse_position[1] < window_size[1] - self.gui.panelBY:
 			self.scroll_position += int(mouse_wheel * 30 * gui.scale * -1)
 			self.auto_scroll = False
 		y -= self.scroll_position
@@ -327,18 +329,18 @@ class GuitarChords:
 						xx = max(x + ch[1], min_space)
 
 						if len(ch[0]) == 2 and ch[0][1].lower() == "x":
-							min_space = 1 + xx + ddt.text((xx, y), ch[0], [220, 120, 240, 255], 214)
+							min_space = 1 + xx + self.ddt.text((xx, y), ch[0], [220, 120, 240, 255], 214)
 						else:
-							min_space = 1 + xx + ddt.text((xx, y), ch[0], [140, 120, 240, 255], 213)
-				y += 15 * gui.scale
+							min_space = 1 + xx + self.ddt.text((xx, y), ch[0], [140, 120, 240, 255], 213)
+				y += 15 * self.gui.scale
 
 				if window_size[0] > y > 0:
 					colour = colours.lyrics
 					if colours.lm:
 						colour = [30, 30, 30, 255]
-					ddt.text((x, y), line[0], colour, 16)
+					self.ddt.text((x, y), line[0], colour, 16)
 
-				y += 18 * gui.scale
+				y += 18 * self.gui.scale
 
 			return True
 		return False

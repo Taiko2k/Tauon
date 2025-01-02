@@ -6,7 +6,6 @@ Changelog
 
 - **Added** TIDAL support
 - **Added** Linux/macOS/Windows CI builds, restoring Windows and macOS build support
-- **Changed** portable installations now save `cache` and `user-data` directiories in `src/tauon/`, move existing directories there if necessary
 - **Fixed** crashes related to PipeWire [#1250](https://github.com/Taiko2k/Tauon/issues/1250)
 - **Fixed** audio cutting out on the PipeWire backend with specific custom quantum settings [#1245](https://github.com/Taiko2k/Tauon/issues/1245)
 - **Fixed** wrong encoding used for some tags in XSPF exports [#1331](https://github.com/Taiko2k/Tauon/issues/1331)
@@ -15,7 +14,8 @@ Changelog
 - **Fixed** mishandling display change event, this fixes the "Grr" errors in the log
 - **Fixed** loading configuration with negative integers, this fixes setting a negative baseline offset
 - **Fixed** playlist being able to skip to next song even when current song was looped due to a race condition
-- **Fixed** leaking file handlers when handling themes and databases, this may fix potential memory leaks
+- **Fixed** leaking Resource handlers, this may fix potential memory leaks
+- **Improved** Jellyfin integration - cover art now loads even for albumless tracks
 - **Improved** Various changes to build system, Migrated to pyproject.toml
 - ***Removed*** guitar chords feature - api.guitarchords.com it partially relied on is dead, replaced by newer API that would need implementing, and the chords feature was unmaintained
 - ***Removed*** Spotify recommendations feature (API deprecated by Spotify)
