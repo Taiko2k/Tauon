@@ -916,7 +916,7 @@ def asset_loader(
 	return item
 
 
-# loading_image = asset_loader(scaled_asset_directory, loaded_asset_dc, name="loading.png")
+# loading_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "loading.png")
 
 if maximized:
 	i_x = pointer(c_int(0))
@@ -1691,8 +1691,8 @@ class GuiVar:
 		self.column_d_click_timer = Timer(10)
 		self.column_d_click_on = -1
 		self.column_sort_ani_timer = Timer(10)
-		self.column_sort_down_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="sort-down.png", mod=True)
-		self.column_sort_up_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="sort-up.png", mod=True)
+		self.column_sort_down_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "sort-down.png", True)
+		self.column_sort_up_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "sort-up.png", True)
 		self.column_sort_ani_direction = 1
 		self.column_sort_ani_x = 0
 
@@ -1726,7 +1726,7 @@ class GuiVar:
 
 		self.backend_reloading = False
 
-		self.spot_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="spot-info.png", mod=True)
+		self.spot_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot-info.png", True)
 		self.tray_active = False
 		self.buffering = False
 		self.buffering_text = ""
@@ -7968,7 +7968,7 @@ class Menu:
 		self.down = False
 		self.font = 412
 		self.show_icons: bool = show_icons
-		self.sub_arrow = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="sub.png", mod=True))
+		self.sub_arrow = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "sub.png", True))
 
 		self.id = Menu.count
 		self.break_height = round(4 * gui.scale)
@@ -10176,7 +10176,7 @@ def do_minimize_button():
 	drag_mode = False
 
 
-mac_circle = asset_loader(scaled_asset_directory, loaded_asset_dc, name="macstyle.png", mod=True)
+mac_circle = asset_loader(scaled_asset_directory, loaded_asset_dc, "macstyle.png", True)
 
 
 def draw_window_tools():
@@ -14059,13 +14059,13 @@ transfer_setting = 0
 b_panel_size = 300
 b_info_bar = False
 
-message_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="notice.png")
-message_warning_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="warning.png")
-message_tick_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="done.png")
-message_arrow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="ext.png")
-message_error_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="error.png")
-message_bubble_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="bubble.png")
-message_download_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="ddl.png")
+message_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "notice.png")
+message_warning_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "warning.png")
+message_tick_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "done.png")
+message_arrow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ext.png")
+message_error_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "error.png")
+message_bubble_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "bubble.png")
+message_download_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ddl.png")
 
 
 class ToolTip:
@@ -15173,17 +15173,17 @@ def show_in_playlist():
 	pctl.render_playlist()
 
 
-filter_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="filter.png", mod=True))
+filter_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "filter.png", True))
 filter_icon.colour = [43, 213, 255, 255]
 filter_icon.xoff = 1
 
-folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="folder.png", mod=True))
-info_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="info.png", mod=True))
+folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "folder.png", True))
+info_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "info.png", True))
 
 folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
 
-power_bar_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="power.png", mod=True)
+power_bar_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "power.png", True)
 
 
 def open_folder_stem(path):
@@ -16257,7 +16257,7 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 		pctl.revert()
 
 
-del_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="del.png", mod=True)
+del_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "del.png", True)
 delete_icon = MenuIcon(del_icon)
 
 
@@ -16642,9 +16642,9 @@ def lock_colour_callback():
 	return None
 
 
-lock_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, name="lock.png", mod=True)
+lock_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "lock.png", True)
 lock_icon = MenuIcon(lock_asset)
-lock_icon.base_asset_mod = asset_loader(scaled_asset_directory, loaded_asset_dc, name="unlock.png", mod=True)
+lock_icon.base_asset_mod = asset_loader(scaled_asset_directory, loaded_asset_dc, "unlock.png", True)
 lock_icon.colour = [240, 190, 10, 255]
 lock_icon.colour_callback = lock_colour_callback
 lock_icon.xoff = 4
@@ -17555,14 +17555,14 @@ def new_playlist(switch: bool = True) -> int | None:
 	return len(pctl.multi_playlist) - 1
 
 
-heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-menu.png", mod=True))
-spot_heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-menu.png", mod=True))
-transcode_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="transcode.png", mod=True))
-mod_folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="mod_folder.png", mod=True))
-settings_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="settings2.png", mod=True))
-rename_tracks_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="pen.png", mod=True))
-add_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="new.png", mod=True))
-spot_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, name="spot.png", mod=True)
+heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+spot_heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+transcode_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "transcode.png", True))
+mod_folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "mod_folder.png", True))
+settings_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "settings2.png", True))
+rename_tracks_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "pen.png", True))
+add_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "new.png", True))
+spot_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot.png", True)
 spot_icon = MenuIcon(spot_asset)
 spot_icon.colour = [30, 215, 96, 255]
 spot_icon.xoff = 5
@@ -20294,7 +20294,7 @@ def spot_heart_menu_colour():
 		return [30, 215, 96, 255]
 	return None
 
-heart_spot_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-menu.png", mod=True))
+heart_spot_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
 heart_spot_icon.colour = [30, 215, 96, 255]
 heart_spot_icon.xoff = 1
 heart_spot_icon.yoff = 0
@@ -21048,8 +21048,8 @@ def launch_editor_selection(index: int):
 # track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
 track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), reload_metadata, pass_ref=True))
 
-mbp_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="mbp-g.png"))
-mbp_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, name="mbp-gs.png")
+mbp_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "mbp-g.png"))
+mbp_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "mbp-gs.png")
 
 mbp_icon.xoff = 2
 mbp_icon.yoff = -1
@@ -21541,13 +21541,13 @@ track_menu.add(MenuItem(_("Search Artist on Wikipedia"), ser_wiki, pass_ref=True
 
 track_menu.add(MenuItem(_("Search Track on Genius"), ser_gen, pass_ref=True, show_test=toggle_gen))
 
-son_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="sonemic-g.png"))
-son_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, name="sonemic-gs.png")
+son_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "sonemic-g.png"))
+son_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "sonemic-gs.png")
 
 son_icon.xoff = 1
 track_menu.add(MenuItem(_("Search Artist on Sonemic"), ser_rym, pass_ref=True, icon=son_icon, show_test=toggle_rym))
 
-band_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="band.png", mod=True))
+band_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "band.png", True))
 band_icon.xoff = 0
 band_icon.yoff = 1
 band_icon.colour = [96, 147, 158, 255]
@@ -23002,8 +23002,8 @@ def radio_random() -> None:
 	pctl.advance(rr=True)
 
 
-radiorandom_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="radiorandom.png", mod=True))
-revert_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="revert.png", mod=True))
+radiorandom_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "radiorandom.png", True))
+revert_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "revert.png", True))
 
 radiorandom_icon.xoff = 1
 radiorandom_icon.yoff = 0
@@ -23034,14 +23034,14 @@ def heart_menu_colour() -> list[int] | None:
 	return None
 
 
-heart_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-menu.png", mod=True))
-heart_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-track.png", mod=True)
-heart_notify_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-notify.png", mod=True)
-heart_notify_break_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="heart-notify-break.png", mod=True)
-# spotify_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="spotify-row.png", mod=True)
-star_pc_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="star-pc.png", mod=True)
-star_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="star.png", mod=True)
-star_half_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="star-half.png", mod=True)
+heart_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+heart_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-track.png", True)
+heart_notify_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-notify.png", True)
+heart_notify_break_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-notify-break.png", True)
+# spotify_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spotify-row.png", True)
+star_pc_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "star-pc.png", True)
+star_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "star.png", True)
+star_half_row_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "star-half.png", True)
 
 
 def draw_rating_widget(x: int, y: int, n_track: TrackClass, album: bool = False):
@@ -23598,7 +23598,7 @@ def lastfm_colour() -> list[int] | None:
 	return None
 
 
-last_fm_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="as.png", mod=True)
+last_fm_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "as.png", True)
 lastfm_icon = MenuIcon(last_fm_icon)
 
 if gui.scale == 2 or gui.scale == 1.25:
@@ -23618,8 +23618,8 @@ def lastfm_menu_test(a) -> bool:
 	return False
 
 
-lb_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, name="lb-g.png"))
-lb_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, name="lb-gs.png")
+lb_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "lb-g.png"))
+lb_icon.base_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "lb-gs.png")
 
 
 def lb_mode() -> bool:
@@ -27613,13 +27613,13 @@ class Over:
 
 		self.init2done = False
 
-		self.about_image = asset_loader(scaled_asset_directory, loaded_asset_dc, name="v4-a.png")
-		self.about_image2 = asset_loader(scaled_asset_directory, loaded_asset_dc, name="v4-b.png")
-		self.about_image3 = asset_loader(scaled_asset_directory, loaded_asset_dc, name="v4-c.png")
-		self.about_image4 = asset_loader(scaled_asset_directory, loaded_asset_dc, name="v4-d.png")
-		self.about_image5 = asset_loader(scaled_asset_directory, loaded_asset_dc, name="v4-e.png")
-		self.about_image6 = asset_loader(scaled_asset_directory, loaded_asset_dc, name="v4-f.png")
-		self.title_image = asset_loader(scaled_asset_directory, loaded_asset_dc, name="title.png", mod=True)
+		self.about_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-a.png")
+		self.about_image2 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-b.png")
+		self.about_image3 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-c.png")
+		self.about_image4 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-d.png")
+		self.about_image5 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-e.png")
+		self.about_image6 = asset_loader(scaled_asset_directory, loaded_asset_dc, "v4-f.png")
+		self.title_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "title.png", True)
 
 		# self.tab_width = round(115 * gui.scale)
 		self.w = 100
@@ -30677,9 +30677,9 @@ def update_playlist_call():
 
 pref_box = Over()
 
-inc_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, name="inc.png", mod=True)
-dec_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, name="dec.png", mod=True)
-corner_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="corner.png", mod=True)
+inc_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "inc.png", True)
+dec_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "dec.png", True)
+corner_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "corner.png", True)
 
 
 # ----------------------------------------------------------------------------------------
@@ -30742,16 +30742,16 @@ class TopPanel:
 		self.index_playing = -1
 		self.drag_zone_start_x = 300 * gui.scale
 
-		self.exit_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="ex.png", mod=True)
-		self.maximize_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="max.png", mod=True)
-		self.restore_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="restore.png", mod=True)
-		self.restore_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="restore.png", mod=True)
-		self.playlist_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="playlist.png", mod=True)
-		self.return_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="return.png", mod=True)
-		self.artist_list_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="artist-list.png", mod=True)
-		self.folder_list_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="folder-list.png", mod=True)
-		self.dl_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="dl.png", mod=True)
-		self.overflow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="overflow.png", mod=True)
+		self.exit_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "ex.png", True)
+		self.maximize_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "max.png", True)
+		self.restore_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "restore.png", True)
+		self.restore_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "restore.png", True)
+		self.playlist_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "playlist.png", True)
+		self.return_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "return.png", True)
+		self.artist_list_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "artist-list.png", True)
+		self.folder_list_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "folder-list.png", True)
+		self.dl_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "dl.png", True)
+		self.overflow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "overflow.png", True)
 
 		self.drag_slide_timer = Timer(100)
 		self.tab_d_click_timer = Timer(10)
@@ -31711,17 +31711,17 @@ class BottomBarType1:
 		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
 		self.volume_bar_position = [0, 45 * gui.scale]
 
-		self.play_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="play.png", mod=True)
-		self.forward_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="ff.png", mod=True)
-		self.back_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="bb.png", mod=True)
-		self.repeat_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tauon_repeat.png", mod=True)
-		self.repeat_button_off = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tauon_repeat_off.png", mod=True)
-		self.shuffle_button_off = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tauon_shuffle_off.png", mod=True)
-		self.shuffle_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tauon_shuffle.png", mod=True)
-		self.repeat_button_a = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tauon_repeat_a.png", mod=True)
-		self.shuffle_button_a = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tauon_shuffle_a.png", mod=True)
+		self.play_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "play.png", True)
+		self.forward_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "ff.png", True)
+		self.back_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "bb.png", True)
+		self.repeat_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_repeat.png", True)
+		self.repeat_button_off = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_repeat_off.png", True)
+		self.shuffle_button_off = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_shuffle_off.png", True)
+		self.shuffle_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_shuffle.png", True)
+		self.repeat_button_a = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_repeat_a.png", True)
+		self.shuffle_button_a = asset_loader(scaled_asset_directory, loaded_asset_dc, "tauon_shuffle_a.png", True)
 
-		self.buffer_shard = asset_loader(scaled_asset_directory, loaded_asset_dc, name="shard.png", mod=True)
+		self.buffer_shard = asset_loader(scaled_asset_directory, loaded_asset_dc, "shard.png", True)
 
 		self.scrob_stick = 0
 
@@ -32572,9 +32572,9 @@ class BottomBarType_ao1:
 		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
 		self.volume_bar_position = [0, 45 * gui.scale]
 
-		self.play_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="play.png", mod=True)
-		self.forward_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="ff.png", mod=True)
-		self.back_button = asset_loader(scaled_asset_directory, loaded_asset_dc, name="bb.png", mod=True)
+		self.play_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "play.png", True)
+		self.forward_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "ff.png", True)
+		self.back_button = asset_loader(scaled_asset_directory, loaded_asset_dc, "bb.png", True)
 
 		self.scrob_stick = 0
 
@@ -32935,10 +32935,10 @@ class MiniMode:
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, name="left-slide.png", mod=True)
-		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, name="right-slide.png", mod=True)
-		self.repeat = asset_loader(scaled_asset_directory, loaded_asset_dc, name="repeat-mini-mode.png", mod=True)
-		self.shuffle = asset_loader(scaled_asset_directory, loaded_asset_dc, name="shuffle-mini-mode.png", mod=True)
+		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "right-slide.png", True)
+		self.repeat = asset_loader(scaled_asset_directory, loaded_asset_dc, "repeat-mini-mode.png", True)
+		self.shuffle = asset_loader(scaled_asset_directory, loaded_asset_dc, "shuffle-mini-mode.png", True)
 
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
@@ -33313,8 +33313,8 @@ class MiniMode3:
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, name="left-slide.png", mod=True)
-		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, name="right-slide.png", mod=True)
+		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "right-slide.png", True)
 
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
@@ -36641,10 +36641,10 @@ class PlaylistBox:
 
 		self.indicate_w = round(2 * gui.scale)
 
-		self.lock_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="lock-corner.png", mod=True)
-		self.pin_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="dia-pin.png", mod=True)
-		self.gen_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="gen-gear.png", mod=True)
-		self.spot_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="spot-playlist.png", mod=True)
+		self.lock_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "lock-corner.png", True)
+		self.pin_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "dia-pin.png", True)
+		self.gen_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "gen-gear.png", True)
+		self.spot_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot-playlist.png", True)
 
 
 		# if gui.scale == 1.25:
@@ -39629,7 +39629,7 @@ class ArtistInfoBox:
 		self.w = 0
 		self.lock = False
 
-		self.mini_box = asset_loader(scaled_asset_directory, loaded_asset_dc, name="mini-box.png", mod=True)
+		self.mini_box = asset_loader(scaled_asset_directory, loaded_asset_dc, "mini-box.png", True)
 
 	def manual_dl(self):
 
@@ -40171,10 +40171,10 @@ radio_context_menu.add(MenuItem(_("Remove"), remove_station, pass_ref=True))
 
 class RadioView:
 	def __init__(self):
-		self.add_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="add-station.png", mod=True)
-		self.search_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="station-search.png", mod=True)
-		self.save_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="save-station.png", mod=True)
-		self.menu_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, name="radio-menu.png", mod=True)
+		self.add_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "add-station.png", True)
+		self.search_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "station-search.png", True)
+		self.save_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "save-station.png", True)
+		self.menu_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "radio-menu.png", True)
 		self.drag = None
 		self.click_point = (0, 0)
 
@@ -40816,16 +40816,16 @@ class ViewBox:
 
 		self.border = 3 * gui.scale
 
-		self.tracks_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tracks.png", mod=True)
-		self.side_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="tracks+side.png", mod=True)
-		self.gallery1_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="gallery1.png", mod=True)
-		self.gallery2_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="gallery2.png", mod=True)
-		self.combo_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="combo.png", mod=True)
-		self.lyrics_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="lyrics.png", mod=True)
-		self.gallery2_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="gallery2.png", mod=True)
-		self.radio_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="radio.png", mod=True)
-		self.col_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="col.png", mod=True)
-		# self.artist_img = asset_loader(scaled_asset_directory, loaded_asset_dc, name="artist.png", mod=True)
+		self.tracks_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "tracks.png", True)
+		self.side_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "tracks+side.png", True)
+		self.gallery1_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "gallery1.png", True)
+		self.gallery2_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "gallery2.png", True)
+		self.combo_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "combo.png", True)
+		self.lyrics_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "lyrics.png", True)
+		self.gallery2_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "gallery2.png", True)
+		self.radio_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "radio.png", True)
+		self.col_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "col.png", True)
+		# self.artist_img = asset_loader(scaled_asset_directory, loaded_asset_dc, "artist.png", True)
 
 		# _ .15 0
 		self.tracks_colour = ColourPulse2()  # (0.5) # .5 .6 .75
