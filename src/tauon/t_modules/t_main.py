@@ -33183,8 +33183,8 @@ class MiniMode2:
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, name="left-slide.png", mod=True)
-		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, name="right-slide.png", mod=True)
+		self.left_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(scaled_asset_directory, loaded_asset_dc, "right-slide.png", True)
 
 	def render(self):
 
