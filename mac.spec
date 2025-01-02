@@ -1,9 +1,11 @@
 import os
 import subprocess
 import certifi
+import sys
 
+python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+python_ver_dotless = f"{sys.version_info.major}{sys.version_info.minor}"
 block_cipher = None
-
 # default PATH=/usr/bin:/bin:/usr/sbin:/sbin:/Applications/TauonMusicBox.app/Contents/Frameworks
 
 # Should resolve as /opt/homebrew
@@ -14,11 +16,11 @@ libs = [
 	"libharfbuzz.0.dylib",
 	"libgobject-2.0.0.dylib",
 	"libgio-2.0.0.dylib",
-	"librsvg-2.2.dylib"
+	"librsvg-2.2.dylib",
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
-phazor_path = f"build/lib.macosx-10.13-universal2-cpython-313/phazor.cpython-313-darwin.so"
+phazor_path = f"build/lib.macosx-10.13-universal2-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
 
 a = Analysis(
 	["src/tauon/__main__.py"],
@@ -34,9 +36,9 @@ a = Analysis(
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 		# This could only have SDL2.framework and SDL2_image.framework to save space...
-		(".venv/lib/python3.13/site-packages/sdl2dll/dll", "sdl2dll/dll"),
-#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2.framework", "sdl2dll/dll/SDL2.framework"),
-#		(".venv/lib/python3.13/site-packages/sdl2dll/dll/SDL2_image.framework", "sdl2dll/dll/SDL2_image.framework"),
+		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll/SDL2.framework", "sdl2dll/dll/SDL2.framework"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll/SDL2_image.framework", "sdl2dll/dll/SDL2_image.framework"),
 	],
 	hiddenimports=[
 		"sdl2",

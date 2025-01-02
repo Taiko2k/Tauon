@@ -16,7 +16,6 @@ fonts/
 *.mp3
 build/
 *.bat
-*.idl
 *.tlb
 *.mo
 prime/

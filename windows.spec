@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import certifi
+import sys
 
 def find_msys64_path() -> Path:
 	"""Check common paths for MSYS2 installations"""
@@ -14,6 +16,7 @@ def find_msys64_path() -> Path:
 			return path
 	raise FileNotFoundError("MSYS2 base path not found in common locations")
 
+python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 msys64_path = find_msys64_path()
 print(f"Found msys64 path: {msys64_path}")
 
@@ -41,8 +44,12 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
+		("fonts", "fonts"),
+		("librespot.exe", "."),
+		("TaskbarLib.tlb", "."),
+		("TauonSMTC.dll", "lib"),
 		# This could only have SDL2.framework and SDL2_image.framework to save space...
-		(".venv/lib/python3.12/site-packages/sdl2dll/dll", "sdl2dll/dll"),
+		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
 	],
 	hiddenimports=[
 		"pylast",

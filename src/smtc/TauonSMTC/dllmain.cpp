@@ -44,7 +44,7 @@ int OnButtonPressed(ISystemMediaTransportControls*, ISystemMediaTransportControl
 
     switch (btn)
     {
-    	case SystemMediaTransportControlsButton_Play:
+        case SystemMediaTransportControlsButton_Play:
             ext_button_callback(1);
             return 0;
         case SystemMediaTransportControlsButton_Pause:
@@ -103,7 +103,7 @@ extern "C" {
                 return 1;
             }
 
-            
+
             hr = smtcInterop->GetForWindow(windowHandle, IID_PPV_ARGS(&smtc));
 
             if (!SUCCEEDED(hr)){
@@ -117,7 +117,7 @@ extern "C" {
             hr = smtc->get_DisplayUpdater(&displayUpdater);
             if (!SUCCEEDED(hr)){
                 printf("SMTC: get DisplayUpdater failed\n");
-                 return 1;
+                return 1;
             }
 
             smtc->put_IsEnabled(true);
@@ -129,7 +129,7 @@ extern "C" {
             displayUpdater->put_Type(MediaPlaybackType_Music);
             displayUpdater->Update();
 
-            
+
             hr = displayUpdater->get_MusicProperties(&musicProperties);
             if (!SUCCEEDED(hr)) {
                 printf("Error: get music properties failed!\n");
@@ -175,7 +175,7 @@ extern "C" {
         hr = WindowsCreateString(title, title_len + 1, &hString);
         if (!SUCCEEDED(hr)) {
             DWORD lasterror = GetLastError();
-            printf("Error: creat string propertiest\n");
+            printf("Error: creat string properties\n");
             printf("Last error reported: %lu\n", lasterror);
             return;
         }
@@ -185,20 +185,20 @@ extern "C" {
         hr = WindowsCreateString(artist, artist_len + 1, &hString);
         if (!SUCCEEDED(hr)) {
             DWORD lasterror = GetLastError();
-            printf("Error: creat string propertiest\n");
+            printf("Error: creat string properties\n");
             printf("Last error reported: %lu\n", lasterror);
             return;
         }
         musicProperties->put_Artist(hString);
         WindowsDeleteString(hString);
 
-        // todo: There is also put_AlbumArtist to impliment
+        // todo: There is also put_AlbumArtist to implement
 
         // todo: Add support for thumbnails  https://learn.microsoft.com/en-us/previous-versions/windows/desktop/mediatransport/isystemmediatransportcontrolsdisplayupdater-put-thumbnail
 
 
         displayUpdater->Update();
- 
+
         return;
     }
 }

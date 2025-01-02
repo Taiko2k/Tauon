@@ -26,6 +26,7 @@ class Holder:
 	transfer_args_and_exit: Callable[[]]            # transfer_args_and_exit() - TODO(Martin): This should probably be moved to extra module
 	old_window_position:    tuple [int, int] | None # X Y res
 	install_directory:      Path
+	user_directory:         Path
 	pyinstaller_mode:       bool
 	phone:                  bool
 	window_default_size:    tuple[int, int]         # X Y res

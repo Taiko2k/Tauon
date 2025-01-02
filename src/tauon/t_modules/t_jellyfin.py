@@ -367,7 +367,7 @@ class Jellyfin:
 			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
 			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f"jelly\"{p['Id']}\""
 
-	def ingest_library(self, return_list: bool = False) -> list | None:
+	def ingest_library(self, return_list: bool = False) -> list[int] | None:
 		self.gui.update += 1
 		self.scanning = True
 		self.gui.to_got = 0
@@ -383,7 +383,7 @@ class Jellyfin:
 				self.tauon.gui.show_message(_("Error connecting to Jellyfin"))
 			return []
 
-		playlist = []
+		playlist: list[int] = []
 
 		# This code is to identify if a track has already been imported
 		existing = {}
@@ -466,8 +466,15 @@ class Jellyfin:
 
 				nt.is_network = True
 				nt.url_key = track.get("Id")
-				nt.art_url_key = (track.get("AlbumId")
-					if track.get("AlbumPrimaryImageTag", False) else None)
+				nt.art_url_key = None
+				if track.get("AlbumPrimaryImageTag", False):
+					nt.art_url_key = track.get("AlbumId")
+				else:
+					for source in track.get("MediaSources"):
+						if any(stream.get("Type") == "EmbeddedImage" for stream in source.get("MediaStreams", [])):
+							nt.art_url_key = nt.url_key
+#							logging.debug(f"Found EmbeddedImage in MediaStreams.")
+
 
 				artists = track.get("Artists", [])
 				nt.artist = "; ".join(artists)

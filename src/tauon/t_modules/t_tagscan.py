@@ -27,14 +27,18 @@ import logging
 import os
 import struct
 import wave
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tauon.t_modules.t_extra import process_odat
 
 if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
-def parse_mbids_from_vorbis(obj: Ape | Flac | Opus, key: str, value: str | bytes) -> bool:
+	from types import TracebackType
 
+	from typing_extensions import Self
+
+def parse_mbids_from_vorbis(obj: Ape | Flac | Opus, key: str, value: str | bytes) -> bool:
 	if key == "musicbrainz_artistid":
 		if "musicbrainz_artistids" not in obj.misc:
 			obj.misc["musicbrainz_artistids"] = []
@@ -103,9 +107,8 @@ def parse_picture_block(f: BufferedReader) -> bytes:
 	return f.read(a)
 
 class Flac:
-
 	def __init__(self, file: str) -> None:
-
+		self.file = None
 		self.filepath = file
 		self.has_picture = False
 		self.picture = ""
@@ -136,9 +139,20 @@ class Flac:
 		self.track_gain = None
 		self.album_gain = None
 
+	def __enter__(self) -> Self:
+		"""Open the file when entering the context"""
+		self.file = Path(self.filepath).open("rb")
+		return self
+
+	def __exit__(
+		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
+	) -> None:
+		"""Close the file when exiting the context"""
+		if self.file:
+			self.file.close()
+		self.file = None
 
 	def read_vorbis(self, f: BufferedReader) -> None:
-
 		block_position = 0
 
 		buffer = f.read(4)
@@ -251,7 +265,6 @@ class Flac:
 		process_odat(self, odat)
 
 	def read_seek_table(self, f: BufferedReader) -> None:
-
 		f.read(10)
 		buffer = f.read(8)
 		a = (int.from_bytes(buffer, byteorder="big"))
@@ -268,13 +281,15 @@ class Flac:
 		f.seek(-18, 1)
 
 	def read(self, get_picture: bool = False) -> None:
+		if not self.file:
+			self.file = Path(self.filepath).open("rb")
+		f = self.file
 
 		# Very helpful: https://xiph.org/flac/format.html
 		size = os.path.getsize(self.filepath) / 8
 		if size < 100:
 			return
 
-		f = open(self.filepath, "rb")
 		s = f.read(4)
 
 		# Find start of FLAC stream
@@ -324,10 +339,7 @@ class Flac:
 			if z[0] == 1:
 				break
 
-		f.close()
-
 	def read_block(self, f: BufferedReader) -> tuple[int, int, int]:
-
 		q = f.read(1)
 		a = (int.from_bytes(q, byteorder="big"))
 		k = bin(a)[2:].zfill(8)
@@ -348,11 +360,9 @@ class Flac:
 # item = Flac(file)
 # item.read()
 
-
 class Opus:
-
 	def __init__(self, file: str) -> None:
-
+		self.file = None
 		self.filepath = file
 		self.has_picture = False
 
@@ -379,8 +389,20 @@ class Opus:
 		self.bit_rate = 0
 		self.length = 0
 
-	def get_more(self, f: BufferedReader, v: BytesIO) -> int:
+	def __enter__(self) -> Self:
+		"""Open the file when entering the context"""
+		self.file = Path(self.filepath).open("rb")
+		return self
 
+	def __exit__(
+		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
+	) -> None:
+		"""Close the file when exiting the context"""
+		if self.file:
+			self.file.close()
+		self.file = None
+
+	def get_more(self, f: BufferedReader, v: BytesIO) -> int:
 		header = struct.unpack("<4sBBqIIiB", f.read(27))
 
 		segs = struct.unpack("B" * header[7], f.read(header[7]))
@@ -394,8 +416,9 @@ class Opus:
 		return l
 
 	def read(self) -> None:
-
-		f = open(self.filepath, "rb")
+		if not self.file:
+			self.file = Path(self.filepath).open("rb")
+		f = self.file
 
 		header = struct.unpack("<4sBBqIIiB", f.read(27))
 
@@ -577,8 +600,6 @@ class Opus:
 				self.length = header[3] / self.sample_rate
 				break
 
-		f.close()
-
 # file = 'a.ogg'
 #
 # item = Opus(file)
@@ -586,9 +607,8 @@ class Opus:
 
 
 class Ape:
-
 	def __init__(self, file: str) -> None:
-
+		self.file = None
 		self.filepath = file
 		self.has_picture = False
 		self.picture = ""
@@ -619,9 +639,23 @@ class Ape:
 		self.bit_depth = 0
 		self.length = 0
 
-	def read(self) -> None:
+	def __enter__(self) -> Self:
+		"""Open the file when entering the context"""
+		self.file = Path(self.filepath).open("rb")
+		return self
 
-		a = open(self.filepath, "rb")
+	def __exit__(
+		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
+	) -> None:
+		"""Close the file when exiting the context"""
+		if self.file:
+			self.file.close()
+		self.file = None
+
+	def read(self) -> None:
+		if not self.file:
+			self.file = Path(self.filepath).open("rb")
+		a = self.file
 
 		# Check size of file
 		a.seek(0, 2)
@@ -659,7 +693,6 @@ class Ape:
 		if found == 0:
 			logging.info("Tag Scanner: Cant find APE tag")
 		else:
-
 			self.found_tag = True
 			tag_len = footer[9]  # The size of the tag data (excludes header)
 			num_items = footer[10]  # Number of fields in tag
@@ -795,7 +828,6 @@ class Ape:
 				logging.info("Note: Old APE file format version")
 
 		elif ".tta" in self.filepath:
-
 			a.seek(0)
 			header = struct.unpack("<4c3H3L", a.read(22))
 
@@ -838,14 +870,9 @@ class Ape:
 
 		else:
 			logging.info("Tag Scanner: Does not appear to be an APE file")
-
-		a.close()
-
-
 class Wav:
-
 	def __init__(self, file: str) -> None:
-
+		self.file = None
 		self.filepath = file
 		self.sample_rate = 48000
 		self.length = 0
@@ -856,49 +883,63 @@ class Wav:
 		self.genre = ""
 		self.track_number = ""
 
+	def __enter__(self) -> Self:
+		"""Open the file when entering the context"""
+		self.file = Path(self.filepath).open("rb")
+		return self
+
+	def __exit__(
+		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
+	) -> None:
+		"""Close the file when exiting the context"""
+		if self.file:
+			self.file.close()
+		self.file = None
+
 	def read(self) -> None:
+		if not self.file:
+			self.file = Path(self.filepath).open("rb")
+		f = self.file
 
-		with open(self.filepath, "rb") as f:
-			f.read(12)
+		f.read(12)
 
-			while True:
-				type = f.read(4)
-				if not type:
-					break
-				remain = int.from_bytes(f.read(4), "little")
+		while True:
+			type = f.read(4)
+			if not type:
+				break
+			remain = int.from_bytes(f.read(4), "little")
 
-				if type != b"LIST":
-					f.seek(remain, io.SEEK_CUR)
-				else:
+			if type != b"LIST":
+				f.seek(remain, io.SEEK_CUR)
+			else:
 
-					INFO = f.read(4)
-					if INFO == b"INFO":
-						remain -= 4
-						while remain > 0:
-							id = f.read(4).decode()
-							size = int.from_bytes(f.read(4), "little")
-							value = f.read(size)[:-1].decode("unicode_escape")
-							if id == "ITRK":
-								self.track_number = value
-							if id == "IGNR":
-								self.genre = value
-							if id == "IART":
-								self.artist = value
-							if id == "INAM":
-								self.title = value
-							if id == "IPRD":
-								self.album = value
+				INFO = f.read(4)
+				if INFO == b"INFO":
+					remain -= 4
+					while remain > 0:
+						id = f.read(4).decode()
+						size = int.from_bytes(f.read(4), "little")
+						value = f.read(size)[:-1].decode("unicode_escape")
+						if id == "ITRK":
+							self.track_number = value
+						if id == "IGNR":
+							self.genre = value
+						if id == "IART":
+							self.artist = value
+						if id == "INAM":
+							self.title = value
+						if id == "IPRD":
+							self.album = value
 
-							if size % 2 == 1:
-								size += 1
-								f.read(1)
+						if size % 2 == 1:
+							size += 1
+							f.read(1)
 
-							remain -= (8 + size)
+						remain -= (8 + size)
 
-		wav = wave.open(self.filepath, "rb")
-		self.sample_rate = wav.getframerate()
-		self.length = wav.getnframes() / self.sample_rate
-		wav.close()
+		with wave.open(self.filepath, "rb") as wav:
+			self.sample_rate = wav.getframerate()
+			self.length = wav.getnframes() / self.sample_rate
 
 
 genre_dict = {
@@ -1053,10 +1094,9 @@ genre_dict = {
 	148 : "Unknown",
 }
 
-
 class M4a:
-
 	def __init__(self, file: str) -> None:
+		self.file = None
 		self.filepath = file
 		self.has_picture = False
 
@@ -1083,9 +1123,23 @@ class M4a:
 		self.bit_rate = 0
 		self.length = 0
 
-	def read(self, get_picture: bool = False) -> None:
+	def __enter__(self) -> Self:
+		"""Open the file when entering the context"""
+		self.file = Path(self.filepath).open("rb")
+		return self
 
-		f = open(self.filepath, "rb")
+	def __exit__(
+		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
+	) -> None:
+		"""Close the file when exiting the context"""
+		if self.file:
+			self.file.close()
+		self.file = None
+
+	def read(self, get_picture: bool = False) -> None:
+		if not self.file:
+			self.file = Path(self.filepath).open("rb")
+		f = self.file
 
 		k = [
 			b"moov",
@@ -1228,4 +1282,3 @@ class M4a:
 
 		while atom(f):
 			pass
-		f.close()
