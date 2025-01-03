@@ -33,7 +33,7 @@ jobs:
 
       # https://github.com/marketplace/actions/flatpak-builder
       - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        uses: flatpak/flatpak-github-actions@v6.3
         with:
           bundle: tauonmb.flatpak
           manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
