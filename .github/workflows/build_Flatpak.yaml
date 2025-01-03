@@ -21,7 +21,7 @@ jobs:
       - name: Run rustup
         run: |
           . "$HOME/.cargo/env"
-          rustup toolchain -y install stable
+          rustup toolchain install stable
 #          apt-get update
 #          apt-get install -y flatpak-builder
 
@@ -37,3 +37,21 @@ jobs:
           bundle: tauonmb.flatpak
           manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
           cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: "[DEBUG] List all files"
+        run: find .
+
+      - name: Create 7z
+        run: |
+          mkdir -p dist/zip
+          APP_NAME="TauonMusicBox"
+          APP_PATH="dist/${APP_NAME}"
+          ZIP_PATH="dist/zip/${APP_NAME}.7z"
+
+          zip -r "${ZIP_PATH}" "${APP_PATH}"
+
+      - name: Upload 7z artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauonMusicBox-flatpak
+          path: TauonMusicBox.7z
