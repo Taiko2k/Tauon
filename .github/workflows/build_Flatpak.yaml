@@ -28,7 +28,7 @@ jobs:
       - name: Clone Flatpak repo
         run: |
           git clone --recurse-submodules https://github.com/C0rn3j/com.github.taiko2k.tauonmb.git tauon-flatpak
-          cd tauon-flatpak; git checkout flatfix
+          cd tauon-flatpak; git checkout tekoreless
 
       # https://github.com/marketplace/actions/flatpak-builder
       - name: Build Flatpak
