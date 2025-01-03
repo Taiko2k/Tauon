@@ -9,10 +9,10 @@ mingw-w64-x86_64-libopenmpt
 mingw-w64-x86_64-libsamplerate
 mingw-w64-x86_64-opusfile
 mingw-w64-x86_64-pkgconf
-mingw-w64-x86_64-python3
-mingw-w64-x86_64-python3-gobject
-mingw-w64-x86_64-python3-pillow
-mingw-w64-x86_64-python3-pip
+mingw-w64-x86_64-python
+mingw-w64-x86_64-python-gobject
+mingw-w64-x86_64-python-pillow
+mingw-w64-x86_64-python-pip
 mingw-w64-x86_64-python-websocket-client
 mingw-w64-x86_64-rust
 mingw-w64-x86_64-SDL2
