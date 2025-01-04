@@ -354,8 +354,9 @@ if not t_window:
 	logging.error(f"Size 0: {logical_size[0]}")
 	logging.error(f"Size 1: {logical_size[1]}")
 	logging.error(f"Flags: {flags}")
-	logging.error(f"SDL Error: {SDL_GetError()}")
-	if str(SDL_GetError()) == "x11 not available":
+	sdl_err: bytes = SDL_GetError()
+	logging.error(f"SDL Error: {sdl_err}")
+	if str(sdl_err) == "x11 not available":
 		x11_path = user_directory / "x11"
 		if x11_path.exists():
 			logging.critical("Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034")
