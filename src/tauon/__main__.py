@@ -355,7 +355,22 @@ if not t_window:
 	logging.error(f"Size 1: {logical_size[1]}")
 	logging.error(f"Flags: {flags}")
 	logging.error(f"SDL Error: {SDL_GetError()}")
-	sys.exit(1)
+	if str(SDL_GetError()) == "x11 not available":
+		x11_path = user_directory / "x11"
+		if x11_path.exists():
+			logging.critical("Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034")
+			x11_path.unlink()
+			os.environ["SDL_VIDEODRIVER"] = "wayland"
+			t_window = SDL_CreateWindow(
+				window_title,
+				o_x, o_y,
+				logical_size[0], logical_size[1],
+				flags)
+			if not t_window:
+				logging.error(f"Failed to create Wayland fallback window - SDL Error: {SDL_GetError()}")
+				sys.exit(1)
+	else:
+		sys.exit(1)
 
 if maximized:
 	SDL_MaximizeWindow(t_window)
