@@ -7,7 +7,8 @@ if [ "$1" == "--no-start" ]; then
 	elif [ "$2" == "--stop" ]; then       curl http://localhost:7813/stop/
 	elif [ "$2" == "--next" ]; then       curl http://localhost:7813/next/
 	elif [ "$2" == "--previous" ]; then   curl http://localhost:7813/previous/
-	else python3 /app/bin/src/tauon/__main__.py "$@";
+	else
+		python3 /app/bin/src/tauon/__main__.py "$@";
 	fi
 else
 	python3 /app/bin/src/tauon/__main__.py "$@"
