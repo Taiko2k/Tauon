@@ -4119,8 +4119,8 @@ try:
 except Exception:
 	logging.exception("Cannot find libgme")
 
-def use_id3(tags, nt):
-	def natural_get(tag, track, frame, attr):
+def use_id3(tags: ID3, nt: TrackClass):
+	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
 		frames = tag.getall(frame)
 		if frames and frames[0].text:
 			if track is None:
@@ -4226,7 +4226,12 @@ def use_id3(tags, nt):
 			if item.desc == "MusicBrainz Release Group Id":
 				nt.misc["musicbrainz_releasegroupid"] = item.text[0]
 			if item.desc == "MusicBrainz Artist Id":
-				nt.misc["musicbrainz_artistids"] = list(item.text)
+				artist_id_list: list[str] = []
+				for uuid in item.text:
+					split_uuids = uuid.split("/") # UUIDs can be split by a special character
+					for split_uuid in split_uuids:
+						artist_id_list.append(split_uuid)
+				nt.misc["musicbrainz_artistids"] = artist_id_list
 
 			try:
 				desc = item.desc.lower()
