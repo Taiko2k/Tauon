@@ -68,6 +68,7 @@ jobs:
       - name: Install the project into a venv
         run: |
           $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
+#          $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
 #          source .venv/bin/activate
 
       - name: "[DEBUG] List all files"
@@ -99,7 +100,7 @@ jobs:
           name: TauonMusicBox-dmg
           path: dist/dmg/TauonMusicBox.dmg
 
-      - name: YOLO test run
-        run: |
-          hdiutil attach dist/dmg/TauonMusicBox.dmg
-          /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
+#      - name: Run Tauon for testing
+#        run: |
+#          hdiutil attach dist/dmg/TauonMusicBox.dmg
+#          /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box

@@ -17,8 +17,6 @@ libs = [
 	"libgobject-2.0.0.dylib",
 	"libgio-2.0.0.dylib",
 	"librsvg-2.2.dylib",
-#	"libgdk-3.0.dylib",
-#	"libSDL2-2.0.0.dylib",
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
