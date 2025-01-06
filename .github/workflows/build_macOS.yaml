@@ -25,7 +25,6 @@ jobs:
       - name: Install brew dependencies
         run: |
           brew install \
-            python \
             gobject-introspection \
             gtk+3 \
             pango \
@@ -40,8 +39,9 @@ jobs:
             wavpack \
             game-music-emu
 
-      - name: "[DEBUG] List all Cellar files"
-        run: find /opt/homebrew/Cellar
+# This generates 30MB of logs, enable it only when actively debugging something
+#      - name: "[DEBUG] List all Cellar files"
+#        run: find /opt/homebrew/Cellar
 
       - name: Install Python dependencies and setup venv
         run: |
