@@ -21,7 +21,7 @@ libs = [
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
-phazor_path = f"build/lib.macosx-10.13-universal2-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+phazor_path = f"build/lib.macosx-14.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
 
 a = Analysis(
 	["src/tauon/__main__.py"],
