@@ -25,7 +25,6 @@ jobs:
       - name: Install brew dependencies
         run: |
           brew install \
-            harfbuzz \
             gobject-introspection \
             gtk+3 \
             pango \
@@ -46,8 +45,9 @@ jobs:
 
       - name: Install Python dependencies and setup venv
         run: |
+          command -v python
           python -m pip install --upgrade pip
-          python -m venv .venv
+          python -m venv --system-site-packages .venv
           source .venv/bin/activate
           export CXXFLAGS="-I/opt/homebrew/include"
           export LDFLAGS="-L/opt/homebrew/lib"
