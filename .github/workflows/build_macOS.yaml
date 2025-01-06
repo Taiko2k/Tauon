@@ -98,3 +98,8 @@ jobs:
         with:
           name: TauonMusicBox-dmg
           path: dist/dmg/TauonMusicBox.dmg
+
+      - name: YOLO test run
+        run: |
+          hdiutil attach dist/dmg/TauonMusicBox.dmg
+          /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
