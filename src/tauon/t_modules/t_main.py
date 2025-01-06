@@ -2543,7 +2543,7 @@ class TrackClass:
 		self.album_artist: str = ""
 		self.title:        str = ""
 		self.composer:     str = ""
-		self.length:       int = 0
+		self.length:     float = 0
 		self.bitrate:      int = 0
 		self.samplerate:   int = 0
 		self.bit_depth:    int = 0
@@ -4119,8 +4119,8 @@ try:
 except Exception:
 	logging.exception("Cannot find libgme")
 
-def use_id3(tags, nt):
-	def natural_get(tag, track, frame, attr):
+def use_id3(tags: ID3, nt: TrackClass):
+	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
 		frames = tag.getall(frame)
 		if frames and frames[0].text:
 			if track is None:
@@ -4226,7 +4226,12 @@ def use_id3(tags, nt):
 			if item.desc == "MusicBrainz Release Group Id":
 				nt.misc["musicbrainz_releasegroupid"] = item.text[0]
 			if item.desc == "MusicBrainz Artist Id":
-				nt.misc["musicbrainz_artistids"] = list(item.text)
+				artist_id_list: list[str] = []
+				for uuid in item.text:
+					split_uuids = uuid.split("/") # UUIDs can be split by a special character
+					for split_uuid in split_uuids:
+						artist_id_list.append(split_uuid)
+				nt.misc["musicbrainz_artistids"] = artist_id_list
 
 			try:
 				desc = item.desc.lower()
@@ -4246,7 +4251,7 @@ def use_id3(tags, nt):
 				nt.misc["FMPS_Rating"] = float(item.text[0])
 
 
-def scan_ffprobe(nt):
+def scan_ffprobe(nt: TrackClass):
 	startupinfo = None
 	if system == "Windows" or msys:
 		startupinfo = subprocess.STARTUPINFO()
@@ -4617,7 +4622,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 							tags).decode()
 					if "----:com.apple.iTunes:MusicBrainz Artist Id" in tags:
 						nt.misc["musicbrainz_artistids"] = [x.decode() for x in
-															tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
+							tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
 
 
 				elif type(audio.tags) == mutagen.id3.ID3:
@@ -7285,7 +7290,7 @@ class ListenBrainz:
 		if prefs.scrobble_hold is True:
 			return True
 		if prefs.lb_token is None:
-			show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
+			show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
 
 		title = track_object.title
 		album = track_object.album
@@ -7334,7 +7339,7 @@ class ListenBrainz:
 		if prefs.scrobble_hold is True:
 			return
 		if prefs.lb_token is None:
-			show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
+			show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
 		title = track_object.title
 		album = track_object.album
 		artist = get_artist_strip_feat(track_object)
@@ -7365,12 +7370,12 @@ class ListenBrainz:
 
 		if track_object.track_number:
 			try:
-				additional = str(int(track_object.track_number))
+				additional["tracknumber"] = str(int(track_object.track_number))
 			except Exception:
 				logging.exception("Error trying to get track_number")
 
 		if track_object.length:
-			additional["duration"] = str(track_object.length)
+			additional["duration"] = str(int(track_object.length))
 
 		additional["media_player"] = t_title
 		additional["submission_client"] = t_title
