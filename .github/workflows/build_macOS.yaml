@@ -28,6 +28,7 @@ jobs:
             gobject-introspection \
             gtk+3 \
             pango \
+            pillow \
             sdl2 \
             sdl2_image \
             jpeg-xl \
