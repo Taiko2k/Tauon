@@ -4617,7 +4617,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 							tags).decode()
 					if "----:com.apple.iTunes:MusicBrainz Artist Id" in tags:
 						nt.misc["musicbrainz_artistids"] = [x.decode() for x in
-															tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
+							tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
 
 
 				elif type(audio.tags) == mutagen.id3.ID3:
@@ -7285,7 +7285,7 @@ class ListenBrainz:
 		if prefs.scrobble_hold is True:
 			return True
 		if prefs.lb_token is None:
-			show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
+			show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
 
 		title = track_object.title
 		album = track_object.album
@@ -7334,7 +7334,7 @@ class ListenBrainz:
 		if prefs.scrobble_hold is True:
 			return
 		if prefs.lb_token is None:
-			show_message(_("ListenBrains is enabled but there is no token."), _("How did this even happen."), mode="error")
+			show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
 		title = track_object.title
 		album = track_object.album
 		artist = get_artist_strip_feat(track_object)
@@ -7365,7 +7365,7 @@ class ListenBrainz:
 
 		if track_object.track_number:
 			try:
-				additional = str(int(track_object.track_number))
+				additional["tracknumber"] = str(int(track_object.track_number))
 			except Exception:
 				logging.exception("Error trying to get track_number")
 
