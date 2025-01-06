@@ -40,8 +40,8 @@ jobs:
             game-music-emu
 
 # This generates 30MB of logs, enable it only when actively debugging something
-      - name: "[DEBUG] List all Cellar files"
-        run: find /opt/homebrew/Cellar
+#      - name: "[DEBUG] List all Cellar files"
+#        run: find /opt/homebrew/Cellar
 
       - name: Install Python dependencies and setup venv
         run: |
