@@ -14,10 +14,10 @@ jobs:
         with:
           submodules: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+#      - name: Set up Python
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.13'
 
       - name: brew update and upgrade
         run: brew update && brew upgrade
@@ -25,6 +25,7 @@ jobs:
       - name: Install brew dependencies
         run: |
           brew install \
+            python \
             gobject-introspection \
             gtk+3 \
             pango \
