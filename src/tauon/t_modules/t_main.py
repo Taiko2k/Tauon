@@ -2543,7 +2543,7 @@ class TrackClass:
 		self.album_artist: str = ""
 		self.title:        str = ""
 		self.composer:     str = ""
-		self.length:       int = 0
+		self.length:     float = 0
 		self.bitrate:      int = 0
 		self.samplerate:   int = 0
 		self.bit_depth:    int = 0
@@ -4246,7 +4246,7 @@ def use_id3(tags, nt):
 				nt.misc["FMPS_Rating"] = float(item.text[0])
 
 
-def scan_ffprobe(nt):
+def scan_ffprobe(nt: TrackClass):
 	startupinfo = None
 	if system == "Windows" or msys:
 		startupinfo = subprocess.STARTUPINFO()
@@ -7370,7 +7370,7 @@ class ListenBrainz:
 				logging.exception("Error trying to get track_number")
 
 		if track_object.length:
-			additional["duration"] = str(track_object.length)
+			additional["duration"] = str(int(track_object.length))
 
 		additional["media_player"] = t_title
 		additional["submission_client"] = t_title
