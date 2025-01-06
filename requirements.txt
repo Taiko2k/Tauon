@@ -1,7 +1,7 @@
 beautifulsoup4
 musicbrainzngs
 mutagen
-Pillow # ;                      sys_platform != 'darwin' # Install Pillow from brew on macOS
+#Pillow # ;                      sys_platform != 'darwin' # Install Pillow from brew on macOS
 PlexAPI
 PyGObject
 pylast>=3.1.0
