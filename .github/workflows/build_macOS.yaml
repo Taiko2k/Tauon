@@ -39,6 +39,9 @@ jobs:
             wavpack \
             game-music-emu
 
+      - name: "[DEBUG] List all Cellar files"
+        run: find /opt/homebrew/Cellar
+
       - name: Install Python dependencies and setup venv
         run: |
           python -m pip install --upgrade pip
