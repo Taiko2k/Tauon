@@ -39838,9 +39838,9 @@ class ArtistInfoBox:
 
 		standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
 		image_paths = [
-			str(user_directory / "artist-pictures" / f_artist + ".png"),
-			str(user_directory / "artist-pictures" / f_artist + ".jpg"),
-			str(user_directory / "artist-pictures" / f_artist + ".webp"),
+			str(user_directory / "artist-pictures" / (f_artist + ".png")),
+			str(user_directory / "artist-pictures" / (f_artist + ".jpg")),
+			str(user_directory / "artist-pictures" / (f_artist + ".webp")),
 			os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.png"),
 			os.path.join(a_cache_dir, f_artist + "-lfm.jpg"),
