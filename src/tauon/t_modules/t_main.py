@@ -7610,9 +7610,9 @@ def maloja_scrobble(track: TrackClass, timestamp: int | None = None) -> bool | N
 	d["artists"] = [track.artist] # let Maloja parse/fix artists
 	d["title"] = track.title
 
-	if len(track.album) > 0:
+	if track.album:
 		d["album"] = track.album
-	if len(track.album_artist) > 0:
+	if track.album_artist:
 		d["albumartists"] = [track.album_artist] # let Maloja parse/fix artists
 	
 	d["length"] = int(track.length)
