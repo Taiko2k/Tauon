@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2024-12-07 15:00+0000\n"
-"Last-Translator: Lorsoen <fashim99@gmail.com>\n"
+"PO-Revision-Date: 2025-01-09 13:00+0000\n"
+"Last-Translator: Martin <spleefer90@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -319,11 +319,11 @@ msgstr "Vérifiez peut-être votre connexion Internet et réessayer ?"
 
 #: src/tauon/t_modules/t_main.py:7910
 msgid "There was an error with the Maloja server"
-msgstr "Une erreur s'est produite avec le serveur Majola"
+msgstr "Une erreur s'est produite avec le serveur Maloja"
 
 #: src/tauon/t_modules/t_main.py:7915
 msgid "There was an error reaching the Maloja server"
-msgstr "Une erreur s’est produite lors de l'accès au serveur Majola"
+msgstr "Une erreur s’est produite lors de l'accès au serveur Maloja"
 
 #: src/tauon/t_modules/t_main.py:7950
 msgid "There was an error parsing the data"
@@ -331,7 +331,7 @@ msgstr "Une erreur s’est produite à l'analyse des données"
 
 #: src/tauon/t_modules/t_main.py:7976 src/tauon/t_modules/t_main.py:7980
 msgid "There was an error submitting data to Maloja server"
-msgstr "Une erreur s’est produite à l'envoi de données au serveur Majola"
+msgstr "Une erreur s’est produite à l'envoi de données au serveur Maloja"
 
 #: src/tauon/t_modules/t_main.py:8138
 msgid "Spotify Likes"
@@ -3452,7 +3452,7 @@ msgstr "Une opération est déjà en cours"
 
 #: src/tauon/t_modules/t_main.py:28970
 msgid "Maloja Server"
-msgstr "Serveur Majola"
+msgstr "Serveur Maloja"
 
 #: src/tauon/t_modules/t_main.py:28972
 msgid "Maloja is a self-hosted scrobble server."
@@ -3481,7 +3481,7 @@ msgstr "La connexion a réussie mais la clé API est invalide"
 
 #: src/tauon/t_modules/t_main.py:29029
 msgid "Connection to Maloja server was successful."
-msgstr "Connexion au serveur Majola réussie."
+msgstr "Connexion au serveur Maloja réussie."
 
 #: src/tauon/t_modules/t_main.py:29031
 msgid "The Maloja server returned an error"
@@ -3489,7 +3489,7 @@ msgstr "Une erreur est survenue côté serveur"
 
 #: src/tauon/t_modules/t_main.py:29034
 msgid "Could not communicate with the Maloja server"
-msgstr "Communication avec le serveur Majola impossible"
+msgstr "Communication avec le serveur Maloja impossible"
 
 #: src/tauon/t_modules/t_main.py:29038 src/tauon/t_modules/t_main.py:29040
 #: src/tauon/t_modules/t_main.py:29540 src/tauon/t_modules/t_main.py:29557
