@@ -7609,7 +7609,7 @@ def maloja_scrobble(track: TrackClass) -> bool | None:
 	d["key"] = prefs.maloja_key
 
 	try:
-		r = requests.post(url, data=d, timeout=10)
+		r = requests.post(url, json=d, timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
 			return False
