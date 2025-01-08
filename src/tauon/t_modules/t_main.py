@@ -7592,7 +7592,7 @@ def maloja_get_scrobble_counts():
 	tauon.bg_save()
 
 
-def maloja_scrobble(track: TrackClass) -> bool | None:
+def maloja_scrobble(track: TrackClass, timestamp: int | None = None) -> bool | None:
 	url = prefs.maloja_url
 
 	if not track.artist or not track.title:
@@ -7603,9 +7603,20 @@ def maloja_scrobble(track: TrackClass) -> bool | None:
 			url += "/"
 		url += "apis/mlj_1/newscrobble"
 
+	if timestamp is None:
+		timestamp = int(time.time())
+
 	d = {}
-	d["artist"] = track.artist
+	d["artists"] = [track.artist] # let Maloja parse/fix artists
 	d["title"] = track.title
+
+	if len(track.album) > 0:
+		d["album"] = track.album
+	if len(track.album_artist) > 0:
+		d["albumartists"] = [track.album_artist] # let Maloja parse/fix artists
+	
+	d["length"] = int(track.length)
+	d["time"] = timestamp
 	d["key"] = prefs.maloja_key
 
 	try:
@@ -7656,7 +7667,7 @@ class LastScrob:
 				elif tr[2] == "lb" and lb.enable:
 					success = lb.listen_full(tr[0], tr[1])
 				elif tr[2] == "maloja":
-					success = maloja_scrobble(tr[0])
+					success = maloja_scrobble(tr[0], tr[1])
 				elif tr[2] == "air":
 					success = subsonic.listen(tr[0], submit=True)
 				elif tr[2] == "koel":
