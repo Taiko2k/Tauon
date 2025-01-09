@@ -132,6 +132,7 @@ def player4(tauon: Tauon) -> None:
 	fade_time = 400
 
 	aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
+	logging.debug("Loaded Phazor path at: " + str(get_phazor_path(pctl)))
 
 	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
