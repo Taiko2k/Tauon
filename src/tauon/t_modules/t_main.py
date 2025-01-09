@@ -41710,8 +41710,9 @@ mouse_moved = False
 power = 0
 
 for item in sys.argv:
-	if (os.path.isdir(item) or os.path.isfile(
-			item) or "file://" in item) and ".py" not in item and "tauon.exe" not in item:
+	if (os.path.isdir(item) or os.path.isfile(item) or "file://" in item) \
+			and not item.endswith(".py") and not item.endswith("tauon.exe") and not item.endswith("tauonmb") \
+			and not item.startswith("-"):
 		open_uri(item)
 
 sv = SDL_version()
