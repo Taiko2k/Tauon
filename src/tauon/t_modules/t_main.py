@@ -7592,7 +7592,7 @@ def maloja_get_scrobble_counts():
 	tauon.bg_save()
 
 
-def maloja_scrobble(track: TrackClass) -> bool | None:
+def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> bool | None:
 	url = prefs.maloja_url
 
 	if not track.artist or not track.title:
@@ -7604,12 +7604,20 @@ def maloja_scrobble(track: TrackClass) -> bool | None:
 		url += "apis/mlj_1/newscrobble"
 
 	d = {}
-	d["artist"] = track.artist
+	d["artists"] = [track.artist] # let Maloja parse/fix artists
 	d["title"] = track.title
+
+	if track.album:
+		d["album"] = track.album
+	if track.album_artist:
+		d["albumartists"] = [track.album_artist] # let Maloja parse/fix artists
+	
+	d["length"] = int(track.length)
+	d["time"] = timestamp
 	d["key"] = prefs.maloja_key
 
 	try:
-		r = requests.post(url, data=d, timeout=10)
+		r = requests.post(url, json=d, timeout=10)
 		if r.status_code != 200:
 			show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
 			return False
@@ -7656,7 +7664,7 @@ class LastScrob:
 				elif tr[2] == "lb" and lb.enable:
 					success = lb.listen_full(tr[0], tr[1])
 				elif tr[2] == "maloja":
-					success = maloja_scrobble(tr[0])
+					success = maloja_scrobble(tr[0], tr[1])
 				elif tr[2] == "air":
 					success = subsonic.listen(tr[0], submit=True)
 				elif tr[2] == "koel":
