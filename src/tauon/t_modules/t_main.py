@@ -7592,7 +7592,7 @@ def maloja_get_scrobble_counts():
 	tauon.bg_save()
 
 
-def maloja_scrobble(track: TrackClass, timestamp: int | None = None) -> bool | None:
+def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> bool | None:
 	url = prefs.maloja_url
 
 	if not track.artist or not track.title:
@@ -7602,9 +7602,6 @@ def maloja_scrobble(track: TrackClass, timestamp: int | None = None) -> bool | N
 		if not url.endswith("/"):
 			url += "/"
 		url += "apis/mlj_1/newscrobble"
-
-	if timestamp is None:
-		timestamp = int(time.time())
 
 	d = {}
 	d["artists"] = [track.artist] # let Maloja parse/fix artists
