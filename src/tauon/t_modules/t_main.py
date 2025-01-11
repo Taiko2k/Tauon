@@ -18918,7 +18918,7 @@ def gen_folder_top(pl: int, get_sets: bool = False, custom_list=None):
 		pl_gen(
 			title=pctl.multi_playlist[pl].title + add_pl_tag(_("Top Played Albums")),
 			playlist_ids=copy.deepcopy(playlist),
-			hide_title=True))
+			hide_title=False))
 
 	pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl].title + "\" a pa>"
 
@@ -18975,7 +18975,7 @@ def gen_folder_top_rating(pl: int, get_sets: bool = False, custom_list=None):
 		pl_gen(
 			title=pctl.multi_playlist[pl].title + add_pl_tag(_("Top Rated Albums")),
 			playlist_ids=copy.deepcopy(playlist),
-			hide_title=True))
+			hide_title=False))
 
 	pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl].title + "\" a rata>"
 
