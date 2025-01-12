@@ -1333,7 +1333,7 @@ def open_uri(uri:str) -> None:
 	load_orders.append(copy.deepcopy(load_order))
 	gui.update += 1
 
-gui = GuiVar()
+gui = GuiVar(prefs=prefs)
 
 
 def toast(text: str) -> None:
