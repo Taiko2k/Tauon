@@ -409,7 +409,7 @@ class GuiVar:
 		show_message(line1, line2, line3, mode=mode)
 
 	def delay_frame(self, t):
-		gui.frame_callback_list.append(TestTimer(t))
+		self.frame_callback_list.append(TestTimer(t))
 
 	def destroy_textures(self):
 		SDL_DestroyTexture(self.spec4_tex)
@@ -481,7 +481,7 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self):
+	def __init__(self, prefs: Prefs):
 
 		self.scale = prefs.ui_scale
 
@@ -1511,7 +1511,7 @@ class PlayerCtl:
 
 	# C-PC
 	def __init__(self):
-
+#		self.tauon =
 		self.running:           bool = True
 		self.prefs:             Prefs = prefs
 		self.install_directory: Path  = install_directory
