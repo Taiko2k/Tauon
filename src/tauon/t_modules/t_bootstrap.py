@@ -23,7 +23,7 @@ class Holder:
 		fs_mode: bool, t_title: str, n_version: str, t_version: str, t_id: str, t_agent: str, dev_mode: bool,
 		instance_lock: TextIOWrapper | None, log: LogHistoryHandler,
 	) -> None:
-		self.t_window = t_window     # SDL_CreateWindow() return type (???)
+		self.t_window               = t_window     # SDL_CreateWindow() return type (???)
 		self.renderer               = renderer     # SDL_CreateRenderer() return type (???)
 		self.logical_size           = logical_size # X Y res
 		self.window_size            = window_size  # X Y res
