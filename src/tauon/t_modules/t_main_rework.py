@@ -1303,10 +1303,10 @@ class ColoursClass:
 
 		self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, 0.29, 0)
 
-		if test_lumi(colours.bottom_panel_colour) < 0.2:
+		if test_lumi(self.bottom_panel_colour) < 0.2:
 			# self.time_sub = [0, 0, 0, 80]
 			self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, -0.15, -0.3)
-		elif test_lumi(colours.bottom_panel_colour) < 0.8:
+		elif test_lumi(self.bottom_panel_colour) < 0.8:
 			self.time_sub = [255, 255, 255, 135]
 		# self.time_sub = self.mode_button_off
 
