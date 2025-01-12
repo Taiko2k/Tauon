@@ -7611,7 +7611,7 @@ def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> boo
 		d["album"] = track.album
 	if track.album_artist:
 		d["albumartists"] = [track.album_artist] # let Maloja parse/fix artists
-	
+
 	d["length"] = int(track.length)
 	d["time"] = timestamp
 	d["key"] = prefs.maloja_key
@@ -45369,7 +45369,7 @@ while pctl.running:
 						if order.play and order.tracks:
 
 							for p, plst in enumerate(pctl.multi_playlist):
-								if order.tracks[0] in plst[2]:
+								if order.tracks[0] in plst.playlist_ids:
 									target_pl = p
 									break
 
