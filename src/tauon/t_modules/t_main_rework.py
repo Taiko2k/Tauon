@@ -44,6 +44,9 @@ from ctypes import Structure, byref, c_char_p, c_double, c_int, c_uint32, c_void
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+	from tauon.t_modules.t_bootstrap import Holder
+
 import musicbrainzngs
 import mutagen
 import mutagen.flac
@@ -1510,8 +1513,8 @@ class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 
 	# C-PC
-	def __init__(self):
-#		self.tauon =
+	def __init__(self, prefs: Prefs):
+		#self.tauon =
 		self.running:           bool = True
 		self.prefs:             Prefs = prefs
 		self.install_directory: Path  = install_directory
@@ -3844,7 +3847,7 @@ class LastFMapi:
 
 class ListenBrainz:
 
-	def __init__(self):
+	def __init__(self, prefs: Prefs):
 
 		self.enable = prefs.enable_lb
 		# self.url = "https://api.listenbrainz.org/1/submit-listens"
@@ -5011,12 +5014,12 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self):
+	def __init__(self, holder: Holder):
 
-		self.t_title = t_title
-		self.t_version = t_version
-		self.t_agent = t_agent
-		self.t_id = t_id
+		self.t_title = holder.t_title
+		self.t_version = holder.t_version
+		self.t_agent = holder.t_agent
+		self.t_id = holder.t_id
 		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
 
@@ -5991,7 +5994,7 @@ class Drawing:
 
 class DropShadow:
 
-	def __init__(self):
+	def __init__(self, gui: GuiVar):
 		self.readys = {}
 		self.underscan = int(15 * gui.scale)
 		self.radius = 4
