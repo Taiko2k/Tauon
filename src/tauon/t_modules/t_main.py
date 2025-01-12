@@ -261,7 +261,6 @@ from unidecode import unidecode
 
 builtins._ = lambda x: x
 
-from tauon.t_modules import t_bootstrap
 from tauon.t_modules.t_config import Config
 from tauon.t_modules.t_db_migrate import database_migrate
 from tauon.t_modules.t_dbus import Gnome
@@ -432,6 +431,7 @@ if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
 	from PIL.ImageFile import ImageFile
+	from tauon.t_modules.t_bootstrap import Holder
 
 # Log to debug as we don't care at all when user does not have this
 try:
@@ -25001,50 +25001,50 @@ try:
 except Exception:
 	logging.exception("No lock object to close")
 
+def main(holder: Holder):
+	IMG_Quit()
+	SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
+	SDL_Quit()
+	#logging.info("SDL unloaded")
 
-IMG_Quit()
-SDL_QuitSubSystem(SDL_INIT_EVERYTHING)
-SDL_Quit()
-#logging.info("SDL unloaded")
+	exit_timer = Timer()
+	exit_timer.set()
 
-exit_timer = Timer()
-exit_timer.set()
-
-if not tauon.quick_close:
-	while tauon.thread_manager.check_playback_running():
-		time.sleep(0.2)
-		if exit_timer.get() > 2:
-			logging.warning("Phazor unload timeout")
-			break
-
-	while lfm_scrobbler.running:
-		time.sleep(0.2)
-		lfm_scrobbler.running = False
-		if exit_timer.get() > 15:
-			logging.warning("Scrobble wait timeout")
-			break
-
-if tauon.sleep_lock is not None:
-	del tauon.sleep_lock
-if tauon.shutdown_lock is not None:
-	del tauon.shutdown_lock
-if tauon.play_lock is not None:
-	del tauon.play_lock
-
-if tauon.librespot_p:
-	time.sleep(1)
-	logging.info("Killing librespot")
-	tauon.librespot_p.kill()
-	#tauon.librespot_p.communicate()
-
-cache_dir = tmp_cache_dir()
-if os.path.isdir(cache_dir):
-	# This check can be Windows only, lazy deletes are fine on Linux/macOS
-	if sys.platform == "win32":
-		while tauon.cachement.running:
-			logging.warning("Waiting for caching to stop before deleting cache directory…")
+	if not tauon.quick_close:
+		while tauon.thread_manager.check_playback_running():
 			time.sleep(0.2)
-	logging.info("Clearing tmp cache")
-	shutil.rmtree(cache_dir)
+			if exit_timer.get() > 2:
+				logging.warning("Phazor unload timeout")
+				break
 
-logging.info("Bye!")
+		while lfm_scrobbler.running:
+			time.sleep(0.2)
+			lfm_scrobbler.running = False
+			if exit_timer.get() > 15:
+				logging.warning("Scrobble wait timeout")
+				break
+
+	if tauon.sleep_lock is not None:
+		del tauon.sleep_lock
+	if tauon.shutdown_lock is not None:
+		del tauon.shutdown_lock
+	if tauon.play_lock is not None:
+		del tauon.play_lock
+
+	if tauon.librespot_p:
+		time.sleep(1)
+		logging.info("Killing librespot")
+		tauon.librespot_p.kill()
+		#tauon.librespot_p.communicate()
+
+	cache_dir = tmp_cache_dir()
+	if os.path.isdir(cache_dir):
+		# This check can be Windows only, lazy deletes are fine on Linux/macOS
+		if sys.platform == "win32":
+			while tauon.cachement.running:
+				logging.warning("Waiting for caching to stop before deleting cache directory…")
+				time.sleep(0.2)
+		logging.info("Clearing tmp cache")
+		shutil.rmtree(cache_dir)
+
+	logging.info("Bye!")
