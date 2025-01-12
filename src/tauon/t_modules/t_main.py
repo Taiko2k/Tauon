@@ -1379,28 +1379,10 @@ def set_drag_source():
 
 
 # Functions for reading and setting play counts
-
-
 star_store = StarStore()
-
-
-
-
 album_star_store = AlbumStarStore()
-
-
-
-
 fonts = Fonts()
-
-
-
-
 inp = Input()
-
-
-
-
 keymaps = KeyMap()
 
 
@@ -17800,25 +17782,17 @@ def gen_chart() -> None:
 
 	show_message(_("Chart generated"), mode="done")
 
-
-
-
-
-
 fields = Fields()
-
 
 def update_playlist_call():
 	gui.update + 2
 	gui.pl_update = 2
-
 
 pref_box = Over()
 
 inc_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "inc.png", True)
 dec_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "dec.png", True)
 corner_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "corner.png", True)
-
 
 # ----------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------
@@ -17847,34 +17821,11 @@ def clear_gen_ask(id: int) -> None:
 	gui.message_box_confirm_reference = (id,)
 	show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
 
-
-
-
 top_panel = TopPanel()
-
-
-
-
 bottom_bar1 = BottomBarType1()
-
-
-
-
 bottom_bar_ao1 = BottomBarType_ao1()
-
-
-
-
 mini_mode = MiniMode()
-
-
-
-
 mini_mode2 = MiniMode2()
-
-
-
-
 mini_mode3 = MiniMode3()
 
 def set_mini_mode():
@@ -17948,10 +17899,8 @@ def set_mini_mode():
 
 	gui.update += 3
 
-
 restore_ignore_timer = Timer()
 restore_ignore_timer.force_set(100)
-
 
 def restore_full_mode():
 	logging.info("RESTORE FULL")
@@ -18308,22 +18257,13 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 
 		f_store.recall_all()
 
-
 pl_bg = None
 if (user_directory / "bg.png").exists():
 	pl_bg = LoadImageAsset(
 		scaled_asset_directory=scaled_asset_directory, path=str(user_directory / "bg.png"), is_full_path=True)
 
-
-
-
 playlist_render = StandardPlaylist()
-
-
-
-
 art_box = ArtBox()
-
 mini_lyrics_scroll = ScrollBox()
 playlist_panel_scroll = ScrollBox()
 artist_info_scroll = ScrollBox()
@@ -18332,15 +18272,12 @@ artist_list_scroll = ScrollBox()
 gallery_scroll = ScrollBox()
 tree_view_scroll = ScrollBox()
 radio_view_scroll = ScrollBox()
-
-
 radiobox = RadioBox()
 tauon.radiobox = radiobox
 tauon.dummy_track = radiobox.dummy_track
 
-
 # def visit_radio_site_show_test(p):
-#     return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
+# 	return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
 #
 
 def visit_radio_site_deco(item):
@@ -18348,42 +18285,28 @@ def visit_radio_site_deco(item):
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
-
 def visit_radio_station_site_deco(item):
 	return visit_radio_site_deco(item[1])
-
 
 def visit_radio_site(item):
 	if "website_url" in item and item["website_url"]:
 		webbrowser.open(item["website_url"], new=2, autoraise=True)
 
-
 def visit_radio_station(item):
 	visit_radio_site(item[1])
 
-
 def radio_saved_panel_test(_):
 	return radiobox.tab == 0
-
 
 def save_to_radios(item):
 	pctl.radio_playlists[pctl.radio_playlist_viewing]["items"].append(item)
 	toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
 
-
 radio_entry_menu.add(MenuItem(_("Visit Website"), visit_radio_site, visit_radio_site_deco, pass_ref=True, pass_ref_deco=True))
 radio_entry_menu.add(MenuItem(_("Save"), save_to_radios, pass_ref=True))
 
-
-
-
 rename_playlist_box = RenamePlaylistBox()
-
-
-
-
 playlist_box = PlaylistBox()
-
 
 def create_artist_pl(artist: str, replace: bool = False):
 	source_pl = pctl.active_playlist_viewing
@@ -18437,33 +18360,26 @@ def create_artist_pl(artist: str, replace: bool = False):
 
 		switch_playlist(len(pctl.multi_playlist) - 1)
 
-
 artist_list_menu.add(MenuItem(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon))
-
 artist_list_menu.add_sub(_("View..."), 140)
-
 
 def aa_sort_alpha():
 	prefs.artist_list_sort_mode = "alpha"
 	artist_list_box.saves.clear()
 
-
 def aa_sort_popular():
 	prefs.artist_list_sort_mode = "popular"
 	artist_list_box.saves.clear()
 
-
 def aa_sort_play():
 	prefs.artist_list_sort_mode = "play"
 	artist_list_box.saves.clear()
-
 
 def toggle_artist_list_style():
 	if prefs.artist_list_style == 1:
 		prefs.artist_list_style = 2
 	else:
 		prefs.artist_list_style = 1
-
 
 def toggle_artist_list_threshold():
 	if prefs.artist_list_threshold > 0:
@@ -18486,10 +18402,8 @@ artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Playtime"), aa_sort_play))
 artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Thumbnails"), toggle_artist_list_style))
 artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Filter"), toggle_artist_list_threshold, toggle_artist_list_threshold_deco))
 
-
 def verify_discogs():
 	return len(prefs.discogs_pat) == 40
-
 
 def save_discogs_artist_thumb(artist, filepath):
 	logging.info("Searching discogs for artist image...")
@@ -18543,7 +18457,6 @@ def save_discogs_artist_thumb(artist, filepath):
 	im.close()
 	logging.info("Found artist image from Discogs")
 
-
 def save_fanart_artist_thumb(mbid, filepath, preview=False):
 	logging.info("Searching fanart.tv for image...")
 	#logging.info("mbid is " + mbid)
@@ -18576,22 +18489,13 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
 				_("They encourage you to contribute at {link}").format(link="https://fanart.tv"), mode="link")
 		logging.info("Found artist thumbnail from fanart.tv")
 
-
-
-
 artist_list_box = ArtistList()
-
-
-
-
 tree_view_box = TreeView()
-
 
 def queue_pause_deco():
 	if pctl.pause_queue:
 		return [colours.menu_text, colours.menu_background, _("Resume Queue")]
 	return [colours.menu_text, colours.menu_background, _("Pause Queue")]
-
 
 # def finish_current_deco():
 #
@@ -18605,10 +18509,7 @@ def queue_pause_deco():
 #
 #     return [colour, colours.menu_background, line]
 
-
-
 queue_box = QueueBox()
-
 
 def art_metadata_overlay(right, bottom, showc):
 	if not showc:
@@ -18669,37 +18570,22 @@ def art_metadata_overlay(right, bottom, showc):
 		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
 		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
 
-
-
-
 meta_box = MetaBox()
-
-
-
-
 artist_picture_render = PictureRender()
 artist_preview_render = PictureRender()
 
-
-
-
 # artist info box def
 artist_info_box = ArtistInfoBox()
-
 
 def artist_dl_deco():
 	if artist_info_box.status == "Ready":
 		return [colours.menu_text_disabled, colours.menu_background, None]
 	return [colours.menu_text, colours.menu_background, None]
 
-
 artist_info_menu.add(MenuItem(_("Download Artist Data"), artist_info_box.manual_dl, artist_dl_deco, show_test=test_artist_dl))
 artist_info_menu.add(MenuItem(_("Clear Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift))
 
-
-
 radio_thumb_gen = RadioThumbGen()
-
 
 def station_browse():
 	radiobox.active = True
@@ -18707,7 +18593,6 @@ def station_browse():
 	radiobox.add_mode = False
 	radiobox.center = True
 	radiobox.tab = 1
-
 
 def add_station():
 	radiobox.active = True
@@ -18717,7 +18602,6 @@ def add_station():
 	radiobox.radio_field_title.text = ""
 	radiobox.station_editing = None
 	radiobox.center = True
-
 
 def rename_station(item):
 	station = item[1]
@@ -18729,68 +18613,37 @@ def rename_station(item):
 	radiobox.radio_field_title.text = station.get("title", "")
 	radiobox.station_editing = station
 
-
 radio_context_menu.add(MenuItem(_("Edit..."), rename_station, pass_ref=True))
 radio_context_menu.add(
 	MenuItem(_("Visit Website"), visit_radio_station, visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
-
 
 def remove_station(item):
 	index = item[0]
 	del pctl.radio_playlists[pctl.radio_playlist_viewing]["items"][index]
 
-
 radio_context_menu.add(MenuItem(_("Remove"), remove_station, pass_ref=True))
 
-
-
-
 radio_view = RadioView()
-
-
-
 showcase = Showcase()
-
-
-
 cctest = ColourPulse2()
-
-
-
-
 view_box = ViewBox()
-
-
-
-
 dl_mon = DLMon()
 tauon.dl_mon = dl_mon
-
 
 def dismiss_dl():
 	dl_mon.ready.clear()
 	dl_mon.done.update(dl_mon.watching)
 	dl_mon.watching.clear()
 
-
 dl_menu.add(MenuItem("Dismiss", dismiss_dl))
 
-
-
-
 fader = Fader()
-
-
-
-
-
 edge_playlist2 = EdgePulse2()
 bottom_playlist2 = EdgePulse2()
 gallery_pulse_top = EdgePulse2()
 tab_pulse = EdgePulse()
 lyric_side_top_pulse = EdgePulse2()
 lyric_side_bottom_pulse = EdgePulse2()
-
 
 def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 	try:
@@ -18820,7 +18673,6 @@ def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 		logging.exception("Image download failed")
 		show_message(_("Image download failed."), str(e), mode="warning")
 		gui.image_downloading = False
-
 
 def display_you_heart(x: int, yy: int, just: int = 0) -> None:
 	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
@@ -18895,7 +18747,6 @@ def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
 		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
 		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
 		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
-
 
 # Set SDL window drag areas
 # if system != 'windows':
@@ -18987,13 +18838,10 @@ def hit_callback(win, point, data):
 		return SDL_HITTEST_NORMAL
 	return SDL_HITTEST_NORMAL
 
-
 c_hit_callback = SDL_HitTest(hit_callback)
 SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
-
 # --------------------------------------------------------------------------------------------
-
 
 # caster = threading.Thread(target=enc, args=[tauon])
 # caster.daemon = True
@@ -19063,11 +18911,7 @@ logging.info("Using SDL version: " + str(sv.major) + "." + str(sv.minor) + "." +
 if prefs.backend == 0:
 	show_message(_("ERROR: No backend found"), mode="error")
 
-
-
-
 undo = Undo()
-
 
 def reload_scale():
 	auto_scale()
@@ -19583,7 +19427,6 @@ gal_right = False
 
 get_sdl_input = GetSDLInput()
 
-
 def window_is_focused() -> bool:
 	"""Thread safe?"""
 	if SDL_GetWindowFlags(t_window) & SDL_WINDOW_INPUT_FOCUS:
@@ -19859,9 +19702,7 @@ def save_state() -> None:
 	except Exception:
 		logging.exception("Unknown error encountered while writing database")
 
-
 SDL_StartTextInput()
-
 
 # SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 # SDL_EventState(SDL_SYSWMEVENT, 1)
@@ -19878,7 +19719,6 @@ def test_show_add_home_music() -> None:
 		if item.last_folder == str(music_directory):
 			gui.add_music_folder_ready = False
 			break
-
 
 test_show_add_home_music()
 
