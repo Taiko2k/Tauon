@@ -4325,7 +4325,6 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 		nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
 		if nt.file_ext.lower() in GME_Formats and gme:
-
 			emu = ctypes.c_void_p()
 			track_info = ctypes.POINTER(GMETrackInfo)()
 			err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
@@ -4374,21 +4373,19 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 										break
 			if not nt.title:
 				nt.title = "Track " + str(nt.subtrack + 1)
-
 		elif nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
 			with Path(nt.fullpath).open("rb") as file:
 				data = file.read()
 			MOD1 = MOD.from_address(
 				mpt.openmpt_module_create_from_memory(
 					ctypes.c_char_p(data), ctypes.c_size_t(len(data)), None, None, None))
+			# The function may return infinity if the pattern data is too complex to evaluate
 			nt.length = mpt.openmpt_module_get_duration_seconds(byref(MOD1))
 			nt.title = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"title")).decode()
 			nt.artist = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"artist")).decode()
 			nt.comment = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"message_raw")).decode()
-
 			mpt.openmpt_module_destroy(byref(MOD1))
 			del MOD1
-
 		elif nt.file_ext == "FLAC":
 			with Flac(nt.fullpath) as audio:
 				audio.read()
@@ -4644,8 +4641,6 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 						nt.misc["artists"] = []
 					if a not in nt.misc["artists"]:
 						nt.misc["artists"].append(a)
-
-
 	except Exception:
 		try:
 			if Exception is UnicodeDecodeError:
@@ -4655,9 +4650,12 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 		except Exception:
 			logging.exception("Error printing error. Non utf8 not allowed:", nt.fullpath.encode("utf-8", "surrogateescape").decode("utf-8", "replace"), "\n")
 		return nt
-
+	# This check won't guarantee that all codepaths above are checked as some return early, but it's better than nothing
+	# And importantly it does catch openmpt which can actually return such
+	if math.isinf(nt.length) or math.isnan(nt.length):
+		logging.error(f"Infinite/NaN found(autocorrected to 0) when scanning tags in file: {vars(nt)}!")
+		nt.length = 0
 	return nt
-
 
 def get_radio_art() -> None:
 	if radiobox.loaded_url in radiobox.websocket_source_urls:
@@ -43484,18 +43482,15 @@ while pctl.running:
 		power += 400
 
 	if power < 500:
-
 		time.sleep(0.03)
-
-		if (
-				pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
+		if (pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 \
+		and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
 			pass
 		else:
 			sleep_timer.set()
 		if sleep_timer.get() > 2:
 			SDL_WaitEventTimeout(None, 1000)
 		continue
-
 	else:
 		power = 0
 
