@@ -24349,7 +24349,7 @@ def cue_scan(content: str, tn: TrackClass) -> int | None:
 			pctl.master_library[pctl.master_count] = nt
 
 			cued.append(pctl.master_count)
-			# loaded_pathes_cache[filepath.replace('\\', '/')] = pctl.master_count
+			# loaded_paths_cache[filepath.replace('\\', '/')] = pctl.master_count
 			# added.append(pctl.master_count)
 
 			pctl.master_count += 1
@@ -25707,7 +25707,7 @@ def worker1():
 	global to_get
 	global to_got
 
-	loaded_pathes_cache = {}
+	loaded_paths_cache = {}
 	loaded_cue_cache = {}
 	added = []
 
@@ -26000,7 +26000,7 @@ def worker1():
 					pctl.master_library[track.index] = track
 					if track.fullpath not in cue_list:
 						cue_list.append(track.fullpath)
-					loaded_pathes_cache[track.fullpath] = track.index
+					loaded_paths_cache[track.fullpath] = track.index
 					added.append(track.index)
 
 		except Exception:
@@ -26152,8 +26152,8 @@ def worker1():
 
 		path = path.replace("\\", "/")
 
-		if path in loaded_pathes_cache:
-			de = loaded_pathes_cache[path]
+		if path in loaded_paths_cache:
+			de = loaded_paths_cache[path]
 
 			if pctl.master_library[de].fullpath in cue_list:
 				logging.info("File has an associated .cue file... Skipping")
@@ -26628,14 +26628,14 @@ def worker1():
 					if loaderCommand == LC_Folder:
 						to_get = 0
 						to_got = 0
-						loaded_pathes_cache, loaded_cue_cache = cache_paths()
+						loaded_paths_cache, loaded_cue_cache = cache_paths()
 						# pre_get(order.target)
 						if order.force_scan:
 							gets(order.target, force_scan=True)
 						else:
 							gets(order.target)
 					elif loaderCommand == LC_File:
-						loaded_pathes_cache, loaded_cue_cache = cache_paths()
+						loaded_paths_cache, loaded_cue_cache = cache_paths()
 						add_file(order.target)
 
 					if gui.im_cancel:
@@ -33867,9 +33867,7 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 
 			star_x += round(70 * gui.scale)
 
-		if gui.star_mode == "star" and total > 0 and pctl.master_library[
-			index].length != 0:
-
+		if gui.star_mode == "star" and total > 0 and pctl.master_library[index].length != 0:
 			sx = width + start_x - 40 * gui.scale - offset_font_extra
 			sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
 			# if gui.scale == 1.25:
@@ -35103,7 +35101,7 @@ class StandardPlaylist:
 									total += 2
 								ratio = total / (n_track.length - 1)
 
-							text = str(str(int(ratio)))
+							text = str(int(ratio))
 							if text == "0":
 								text = ""
 							colour = colours.index_text
