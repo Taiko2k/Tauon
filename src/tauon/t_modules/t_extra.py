@@ -180,7 +180,7 @@ def get_display_time(seconds: float) -> str:
 	"""Returns a string from seconds to a compact time format, e.g 2h:23"""
 	if math.isinf(seconds) or math.isnan(seconds):
 		logging.error("Infinite/NaN time passed to get_display_time()!")
-		return "∞"
+		return "??:??"
 	result = divmod(int(seconds), 60)
 	if result[0] > 99:
 		result = divmod(result[0], 60)
