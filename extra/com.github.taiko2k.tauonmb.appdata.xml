@@ -61,10 +61,11 @@
   <releases>
 
 
-    <release version="7.8.3" date="2024-08-30">
+    <release version="7.9.0" date="2025-01-16">
       <description>
         <ul>
-          <li>Improved Pipewire support</li>
+          <li>Added Tidal support</li>
+          <li>Many bug fixes</li>
         </ul>
       </description>
     </release>
