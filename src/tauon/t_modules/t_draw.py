@@ -82,7 +82,7 @@ class QuickThumbnail:
 
 	def destruct(self) -> None:
 		if self.surface:
-			sdl3.SDL_FreeSurface(self.surface)
+			sdl3.SDL_DestroySurface(self.surface)
 			self.surface = None
 		if self.texture:
 			sdl3.SDL_DestroyTexture(self.texture)
@@ -105,7 +105,7 @@ class QuickThumbnail:
 	def prime(self) -> None:
 
 		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
-		sdl3.SDL_FreeSurface(self.surface)
+		sdl3.SDL_DestroySurface(self.surface)
 		self.surface = None
 		tex_w = pointer(c_int(0))
 		tex_h = pointer(c_int(0))
@@ -685,7 +685,7 @@ class TDraw:
 			sdl3.SDL_SetColorKey(sdl3.SDL_surface, True, ke)
 
 		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, sdl3.SDL_surface)
-		sdl3.SDL_FreeSurface(sdl3.SDL_surface)
+		sdl3.SDL_DestroySurface(sdl3.SDL_surface)
 
 		if alpha_bg:
 			blend_mode = sdl3.SDL_ComposeCustomBlendMode(sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD, sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD)
@@ -805,7 +805,7 @@ class TDraw:
 		dst.w = int(tex_w.contents.value)
 		dst.h = int(tex_h.contents.value)
 
-		sdl3.SDL_FreeSurface(s_image)
+		sdl3.SDL_DestroySurface(s_image)
 		#im.close()
 
 		if align == 1:
