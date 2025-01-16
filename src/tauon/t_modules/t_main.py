@@ -4759,7 +4759,7 @@ class GallClass:
 				wop = rw_from_object(order[1])
 				s_image = sdl3.IMG_Load_RW(wop, 0)
 				c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
-				sdl3.SDL_FreeSurface(s_image)
+				sdl3.SDL_DestroySurface(s_image)
 				tex_w = pointer(c_int(size))
 				tex_h = pointer(c_int(size))
 				sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
@@ -6186,7 +6186,7 @@ class DropShadow:
 		dst.w = int(tex_w.contents.value)
 		dst.h = int(tex_h.contents.value)
 
-		sdl3.SDL_FreeSurface(s_image)
+		sdl3.SDL_DestroySurface(s_image)
 		g.close()
 		im.close()
 
@@ -8170,7 +8170,7 @@ class AlbumArt:
 			dst.h = int(tex_h.contents.value)
 
 			# Clean uo
-			sdl3.SDL_FreeSurface(s_image)
+			sdl3.SDL_DestroySurface(s_image)
 			source_image.close()
 			g.close()
 			# if close:
@@ -8368,7 +8368,7 @@ class StyleOverlay:
 			dst.h = int(tex_h.contents.value)
 
 			# Clean uo
-			sdl3.SDL_FreeSurface(s_image)
+			sdl3.SDL_DestroySurface(s_image)
 			self.im.close()
 
 			# sdl3.SDL_SetTextureAlphaMod(c, 10)
@@ -18998,7 +18998,7 @@ class ArtistList:
 				wop = rw_from_object(g)
 				s_image = sdl3.IMG_Load_RW(wop, 0)
 				texture = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
-				sdl3.SDL_FreeSurface(s_image)
+				sdl3.SDL_DestroySurface(s_image)
 				tex_w = pointer(c_int(0))
 				tex_h = pointer(c_int(0))
 				sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
@@ -21243,7 +21243,7 @@ class PictureRender:
 			wop = rw_from_object(self.image_data)
 			s_image = sdl3.IMG_Load_RW(wop, 0)
 			self.texture = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
-			sdl3.SDL_FreeSurface(s_image)
+			sdl3.SDL_DestroySurface(s_image)
 			tex_w = pointer(c_int(0))
 			tex_h = pointer(c_int(0))
 			sdl3.SDL_QueryTexture(self.texture, None, None, tex_w, tex_h)
@@ -21740,7 +21740,7 @@ class RadioThumbGen:
 			return 0
 		if r[0] == 2:
 			texture = sdl3.SDL_CreateTextureFromSurface(renderer, r[3])
-			sdl3.SDL_FreeSurface(r[3])
+			sdl3.SDL_DestroySurface(r[3])
 			tex_w = pointer(c_int(0))
 			tex_h = pointer(c_int(0))
 			sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
@@ -40182,10 +40182,10 @@ elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURS
 			xcursor_theme = os.environ["XCURSOR_THEME"]
 			xcursor_size = os.environ["XCURSOR_SIZE"]
 			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
-			sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, sdl3.SDL_PIXELFORMAT_ARGB8888)
+			sdl3.SDL_surface = sdl3.SDL_CreateSurfaceFrom(c1.width, c1.height, sdl3.SDL_PIXELFORMAT_ARGB8888, c1.pixels, c1.width * 4)
 			cursor = sdl3.SDL_CreateColorCursor(sdl3.SDL_surface, round(c1.xhot), round(c1.yhot))
 			xcu.XcursorImageDestroy(ctypes.byref(c1))
-			sdl3.SDL_FreeSurface(sdl3.SDL_surface)
+			sdl3.SDL_DestroySurface(sdl3.SDL_surface)
 			return cursor
 
 		cursor_br_corner = get_xcursor("se-resize")
@@ -41979,7 +41979,7 @@ while pctl.running:
 				keymaps.hits.append("MB4")
 			elif event.button.button == sdl3.SDL_BUTTON_X2:
 				keymaps.hits.append("MB5")
-		elif event.type == sdl3.SDL_MOUSEBUTTONUP:
+		elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_UP:
 			k_input = True
 			power += 5
 			gui.update += 1
@@ -41993,7 +41993,7 @@ while pctl.running:
 
 				mouse_down = False
 				gui.update += 1
-		elif event.type == sdl3.SDL_KEYDOWN and key_focused == 0:
+		elif event.type == sdl3.SDL_EVENT_KEY_DOWN and key_focused == 0:
 			k_input = True
 			power += 5
 			gui.update += 2
@@ -42066,7 +42066,7 @@ while pctl.running:
 					key_meta = True
 					key_focused = 1
 
-		elif event.type == sdl3.SDL_KEYUP:
+		elif event.type == sdl3.SDL_EVENT_KEY_UP:
 
 			k_input = True
 			power += 5
@@ -42092,7 +42092,7 @@ while pctl.running:
 					key_meta = False
 					key_focused = 1
 
-		elif event.type == sdl3.SDL_TEXTINPUT:
+		elif event.type == sdl3.SDL_EVENT_TEXT_INPUT:
 			k_input = True
 			power += 5
 			input_text += event.text.text.decode("utf-8")
@@ -42100,17 +42100,17 @@ while pctl.running:
 			gui.update += 1
 			#logging.info(input_text)
 
-		elif event.type == sdl3.SDL_MOUSEWHEEL:
+		elif event.type == sdl3.SDL_EVENT_MOUSE_WHEEL:
 			k_input = True
 			power += 6
 			mouse_wheel += event.wheel.y
 			gui.update += 1
-		elif event.type == sdl3.SDL_WINDOWEVENT:
+		elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST :
 
 			power += 5
-			#logging.info(event.window.event)
+			#logging.info(event.type)
 
-			if event.window.event == sdl3.SDL_WINDOWEVENT_FOCUS_GAINED:
+			if event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_GAINED:
 				#logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
 				if system == "Linux" and not macos and not msys:
@@ -42126,15 +42126,15 @@ while pctl.running:
 				gui.pl_update = 1
 				gui.update += 1
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_FOCUS_LOST:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_LOST:
 				close_all_menus()
 				key_focused = 1
 				gui.update += 1
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 				# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
 				pass
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_RESIZED:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
 				# sdl3.SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
 				if event.window.data1 < 500:
 					logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
@@ -42159,25 +42159,25 @@ while pctl.running:
 					update_layout = True
 
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_ENTER:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_MOUSE_ENTER:
 				#logging.info("ENTER")
 				mouse_enter_window = True
 				gui.mouse_in_window = True
 				gui.update += 1
 
-			# elif event.window.event == sdl3.SDL_WINDOWEVENT_HIDDEN:
+			# elif event.type == sdl3.SDL_WINDOWEVENT_HIDDEN:
 			#
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_EXPOSED:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_EXPOSED:
 				#logging.info("expose")
 				gui.lowered = False
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_MINIMIZED:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_MINIMIZED:
 				gui.lowered = True
 				# if prefs.min_to_tray:
 				#     tray.down()
 				# tauon.thread_manager.sleep()
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_RESTORED:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_RESTORED:
 
 				gui.lowered = False
 				gui.maximized = False
@@ -42188,25 +42188,25 @@ while pctl.running:
 					update_title_do()
 					#logging.info("restore")
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_SHOWN:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_SHOWN:
 				focused = True
 				gui.pl_update = 1
 				gui.update += 1
 
-			# elif event.window.event == sdl3.SDL_WINDOWEVENT_FOCUS_GAINED:
+			# elif event.type == sdl3.SDL_WINDOWEVENT_FOCUS_GAINED:
 			#     logging.info("FOCUS GAINED")
 			#     # input.mouse_enter_event = True
 			#     # gui.update += 1
 			#     # k_input = True
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_MAXIMIZED:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_MAXIMIZED:
 				if gui.mode != 3:  # workaround. sdl bug? gives event on window size set
 					gui.maximized = True
 				update_layout = True
 				gui.pl_update = 1
 				gui.update += 1
 
-			elif event.window.event == sdl3.SDL_WINDOWEVENT_LEAVE:
+			elif event.type == sdl3.SDL_EVENT_WINDOW_MOUSE_LEAVE:
 				gui.mouse_in_window = False
 				gui.update += 1
 				power = 1000
