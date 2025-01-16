@@ -63,6 +63,7 @@ import ssl
 import socket
 import subprocess
 import sys
+
 import threading
 import time
 import urllib.parse
@@ -2456,7 +2457,7 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
-gbc.disable()
+#gbc.disable()
 ggc = 2
 
 star_path1 = user_directory / "star.p"
@@ -42713,6 +42714,7 @@ rt = 0
 while pctl.running:
 	# bm.get('main')
 	# time.sleep(100)
+
 	if k_input:
 
 		keymaps.hits.clear()
@@ -44301,6 +44303,7 @@ while pctl.running:
 					gui.pref_gallery_w = target
 
 				update_layout_do()
+
 
 			# ALBUM GALLERY RENDERING:
 			# Gallery view
