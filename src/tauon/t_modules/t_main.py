@@ -63,6 +63,7 @@ import ssl
 import socket
 import subprocess
 import sys
+
 import threading
 import time
 import urllib.parse
@@ -41710,6 +41711,7 @@ pctl.total_playtime = star_store.get_total()
 while pctl.running:
 	# bm.get('main')
 	# time.sleep(100)
+
 	if k_input:
 
 		keymaps.hits.clear()
@@ -43298,6 +43300,7 @@ while pctl.running:
 					gui.pref_gallery_w = target
 
 				update_layout_do()
+
 
 			# ALBUM GALLERY RENDERING:
 			# Gallery view

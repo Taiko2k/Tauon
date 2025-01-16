@@ -383,6 +383,7 @@ class TDraw:
 		self.sdlrect.w = float(rectangle[2])
 		self.sdlrect.h = float(rectangle[3])
 
+
 		#if fill:
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 		# else:
