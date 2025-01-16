@@ -23,7 +23,12 @@ I would highly recommend not using this project as an example on how to code cle
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 from __future__ import annotations
+
+
+import faulthandler
+faulthandler.enable()
 
 import base64
 import builtins
@@ -4756,13 +4761,12 @@ class GallClass:
 			if order[0] == 2:
 				# finish processing
 
-				wop = rw_from_object(order[1])
-				s_image = sdl3.IMG_Load_RW(wop, 0)
+				s_image = ddt.load_image(order[1])
 				c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 				sdl3.SDL_DestroySurface(s_image)
-				tex_w = pointer(c_int(size))
-				tex_h = pointer(c_int(size))
-				sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
+				tex_w = pointer(c_float(0))
+				tex_h = pointer(c_float(0))
+				sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
 				dst = sdl3.SDL_FRect(x, y)
 				dst.w = int(tex_w.contents.value)
 				dst.h = int(tex_h.contents.value)
@@ -4824,7 +4828,7 @@ class ThumbTracks:
 
 	def path(self, track: TrackClass) -> str:
 
-		source, offset = gall_ren.get_file_source(track)
+		source, offset = tauon.gall_ren.get_file_source(track)
 
 		if source is False:  # No art
 			return None
@@ -8161,10 +8165,9 @@ class AlbumArt:
 
 			c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 
-			tex_w = pointer(c_int(0))
-			tex_h = pointer(c_int(0))
-
-			sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
+			tex_w = pointer(c_float(0))
+			tex_h = pointer(c_float(0))
+			sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
 
 			dst = sdl3.SDL_FRect(round(location[0]), round(location[1]))
 			dst.w = int(tex_w.contents.value)
@@ -8359,10 +8362,9 @@ class StyleOverlay:
 
 			c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 
-			tex_w = pointer(c_int(0))
-			tex_h = pointer(c_int(0))
-
-			sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
+			tex_w = pointer(c_float(0))
+			tex_h = pointer(c_float(0))
+			sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
 
 			dst = sdl3.SDL_FRect(round(-40, 0))
 			dst.w = int(tex_w.contents.value)
@@ -16129,10 +16131,10 @@ class StandardPlaylist:
 				mx = 3
 			if gui.playlist_view_length < 10:
 				mx = 2
-			pctl.playlist_view_position -= mouse_wheel * mx
+			pctl.playlist_view_position -= int(mouse_wheel) * mx
 
 			if gui.playlist_view_length > 40:
-				pctl.playlist_view_position -= mouse_wheel
+				pctl.playlist_view_position -= int(mouse_wheel)
 
 			#if mouse_wheel:
 				#logging.debug("Position changed by mouse wheel scroll: " + str(mouse_wheel))
@@ -19000,9 +19002,9 @@ class ArtistList:
 				s_image = sdl3.IMG_Load_RW(wop, 0)
 				texture = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 				sdl3.SDL_DestroySurface(s_image)
-				tex_w = pointer(c_int(0))
-				tex_h = pointer(c_int(0))
-				sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+				tex_w = pointer(c_float(0))
+				tex_h = pointer(c_float(0))
+				sdl3.SDL_GetTextureSize(texture, tex_w, tex_h)
 				rect = sdl3.SDL_FRect(0, 0)
 				rect.w = int(tex_w.contents.value)
 				rect.h = int(tex_h.contents.value)
@@ -21245,9 +21247,9 @@ class PictureRender:
 			s_image = sdl3.IMG_Load_RW(wop, 0)
 			self.texture = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 			sdl3.SDL_DestroySurface(s_image)
-			tex_w = pointer(c_int(0))
-			tex_h = pointer(c_int(0))
-			sdl3.SDL_QueryTexture(self.texture, None, None, tex_w, tex_h)
+			tex_w = pointer(c_float(0))
+			tex_h = pointer(c_float(0))
+			sdl3.SDL_GetTextureSize(self.texture, tex_w, tex_h)
 			self.srect = sdl3.SDL_FRect(round(x), round(y))
 			self.srect.w = int(tex_w.contents.value)
 			self.srect.h = int(tex_h.contents.value)
@@ -21742,9 +21744,9 @@ class RadioThumbGen:
 		if r[0] == 2:
 			texture = sdl3.SDL_CreateTextureFromSurface(renderer, r[3])
 			sdl3.SDL_DestroySurface(r[3])
-			tex_w = pointer(c_int(0))
-			tex_h = pointer(c_int(0))
-			sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
+			tex_w = pointer(c_float(0))
+			tex_h = pointer(c_float(0))
+			sdl3.SDL_GetTextureSize(texture, tex_w, tex_h)
 			rect = sdl3.SDL_FRect(0, 0)
 			rect.w = int(tex_w.contents.value)
 			rect.h = int(tex_h.contents.value)
@@ -23053,8 +23055,8 @@ class Undo:
 class GetSDLInput:
 
 	def __init__(self):
-		self.i_y = pointer(c_int(0))
-		self.i_x = pointer(c_int(0))
+		self.i_y = pointer(c_float(0))
+		self.i_x = pointer(c_float(0))
 
 		self.mouse_capture_want = False
 		self.mouse_capture = False
@@ -46159,7 +46161,7 @@ while pctl.running:
 			elif gui.cursor_is == 11:
 				sdl3.SDL_SetCursor(cursor_bottom_side)
 
-		input_sdl.test_capture_mouse()
+		#input_sdl.test_capture_mouse() # todo enable me?
 		input_sdl.mouse_capture_want = False
 
 		# # Quick view
