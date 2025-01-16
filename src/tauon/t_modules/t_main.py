@@ -221,18 +221,18 @@ class WhiteModImageAsset:
 		self.scaled_asset_directory: Path = scaled_asset_directory
 
 		raw_image = sdl3.IMG_Load(path.encode())
-		self.SDL_texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
+		self.texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
 		self.colour = [255, 255, 255, 255]
 		p_w = pointer(c_float(0.0))
 		p_h = pointer(c_float(0.0))
-		sdl3.SDL_GetTextureSize(self.SDL_texture, p_w, p_h)
+		sdl3.SDL_GetTextureSize(self.texture, p_w, p_h)
 		self.rect = sdl3.SDL_FRect(0, 0, p_w.contents.value, p_h.contents.value)
 		sdl3.SDL_DestroySurface(raw_image)
 		self.w = p_w.contents.value
 		self.h = p_h.contents.value
 
 	def reload(self) -> None:
-		sdl3.SDL_DestroyTexture(self.SDL_texture)
+		sdl3.SDL_DestroyTexture(self.texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
 		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
@@ -244,7 +244,7 @@ class WhiteModImageAsset:
 			self.colour = colour
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderCopy(renderer, self.texture, None, self.rect)
+		sdl3.SDL_RenderTexture(renderer, self.texture, None, self.rect)
 
 class DConsole:
 	"""GUI console with logs"""
@@ -286,15 +286,15 @@ class GuiVar:
 		self.spec_y = int(round(5 * self.scale))
 		self.spec_w = int(round(80 * self.scale))
 		self.spec_h = int(round(20 * self.scale))
-		self.spec1_rec = sdl3.SDL_Rect(0, self.spec_y, self.spec_w, self.spec_h)
+		self.spec1_rec = sdl3.SDL_FRect(0, self.spec_y, self.spec_w, self.spec_h)
 
 		self.spec4_y = int(round(200 * self.scale))
 		self.spec4_w = int(round(322 * self.scale))
 		self.spec4_h = int(round(100 * self.scale))
-		self.spec4_rec = sdl3.SDL_Rect(0, self.spec4_y, self.spec4_w, self.spec4_h)
+		self.spec4_rec = sdl3.SDL_FRect(0, self.spec4_y, self.spec4_w, self.spec4_h)
 
-		self.bar = sdl3.SDL_Rect(10, 10, round(3 * self.scale), 10)  # spec bar bin
-		self.bar4 = sdl3.SDL_Rect(10, 10, round(3 * self.scale), 10)  # spec bar bin
+		self.bar = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
+		self.bar4 = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
 		self.set_height = round(25 * self.scale)
 		self.panelBY = round(51 * self.scale)
 		self.panelY = round(30 * self.scale)
@@ -308,9 +308,9 @@ class GuiVar:
 		self.spec2 = [0] * self.spec2_y
 		self.spec2_phase = 0
 		self.spec2_buffers = []
-		self.spec2_rec = sdl3.SDL_Rect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
-		self.spec2_source = sdl3.SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
-		self.spec2_dest = sdl3.SDL_Rect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_rec = sdl3.SDL_FRect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_source = sdl3.SDL_FRect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_dest = sdl3.SDL_FRect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
 		self.spec2_position = 0
 		self.spec2_timer = Timer()
 		self.spec2_timer.set()
@@ -320,7 +320,7 @@ class GuiVar:
 		self.level_s = 1 * self.scale
 		self.level_ww = round(79 * self.scale)
 		self.level_hh = round(18 * self.scale)
-		self.spec_level_rec = sdl3.SDL_Rect(
+		self.spec_level_rec = sdl3.SDL_FRect(
 			0, round(self.level_y - 10 * self.scale), round(self.level_ww),round(self.level_hh))
 
 		self.spec2_tex = sdl3.SDL_CreateTexture(
@@ -4763,7 +4763,7 @@ class GallClass:
 				tex_w = pointer(c_int(size))
 				tex_h = pointer(c_int(size))
 				sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
-				dst = sdl3.SDL_Rect(x, y)
+				dst = sdl3.SDL_FRect(x, y)
 				dst.w = int(tex_w.contents.value)
 				dst.h = int(tex_h.contents.value)
 
@@ -4782,7 +4782,7 @@ class GallClass:
 				order[3].y = y
 				order[3].x = int((size - order[3].w) / 2) + order[3].x
 				order[3].y = int((size - order[3].h) / 2) + order[3].y
-				sdl3.SDL_RenderCopy(renderer, order[2], None, order[3])
+				sdl3.SDL_RenderTexture(renderer, order[2], None, order[3])
 
 				if (track, size, offset) in self.key_list:
 					self.key_list.remove((track, size, offset))
@@ -6163,8 +6163,8 @@ class DropShadow:
 		fw = w + self.underscan
 
 		im = Image.new("RGBA", (round(fw), round(fh)), 0x00000000)
-		draw = ImageDraw.Draw(im)
-		draw.rectangle(((self.underscan, self.underscan), (w + 2, h + 2)), fill="black")
+		d = ImageDraw.Draw(im)
+		d.rectangle(((self.underscan, self.underscan), (w + 2, h + 2)), fill="black")
 
 		im = im.filter(ImageFilter.GaussianBlur(self.radius))
 
@@ -6173,16 +6173,17 @@ class DropShadow:
 		im.save(g, "PNG")
 		g.seek(0)
 
-		wop = rw_from_object(g)
-		s_image = sdl3.IMG_Load_RW(wop, 0)
+
+		s_image = ddt.load_image(g)
+
 		c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 		sdl3.SDL_SetTextureAlphaMod(c, self.opacity)
 
-		tex_w = pointer(c_int(0))
-		tex_h = pointer(c_int(0))
-		sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
+		tex_w = pointer(c_float(0))
+		tex_h = pointer(c_float(0))
+		sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
 
-		dst = sdl3.SDL_Rect(0, 0)
+		dst = sdl3.SDL_FRect(0, 0)
 		dst.w = int(tex_w.contents.value)
 		dst.h = int(tex_h.contents.value)
 
@@ -6200,7 +6201,7 @@ class DropShadow:
 		unit = self.readys[(w, h)]
 		unit[0].x = round(x) - round(self.underscan)
 		unit[0].y = round(y) - round(self.underscan)
-		sdl3.SDL_RenderCopy(renderer, unit[1], None, unit[0])
+		sdl3.SDL_RenderTexture(renderer, unit[1], None, unit[0])
 
 class LyricsRenMini:
 
@@ -6820,7 +6821,7 @@ class TextBox2:
 			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
 			ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255])
 
-			rect = sdl3.SDL_Rect(pixel_to_logical(x + space + tw + (5 * gui.scale)), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
+			rect = sdl3.SDL_FRect(pixel_to_logical(x + space + tw + (5 * gui.scale)), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
 			sdl3.SDL_SetTextInputRect(rect)
 
 		animate_monitor_timer.set()
@@ -6845,7 +6846,7 @@ class TextBox2:
 
 		text_box_canvas_rect.x = round(x)
 		text_box_canvas_rect.y = round(y)
-		sdl3.SDL_RenderCopy(renderer, text_box_canvas, None, text_box_canvas_rect)
+		sdl3.SDL_RenderTexture(renderer, text_box_canvas, None, text_box_canvas_rect)
 
 class TextBox:
 	cursor = True
@@ -7213,7 +7214,7 @@ class TextBox:
 			ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
 				[245, 245, 245, 255])
 
-			rect = sdl3.SDL_Rect(pixel_to_logical(x + space + tw + 5 * gui.scale), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
+			rect = sdl3.SDL_FRect(pixel_to_logical(x + space + tw + 5 * gui.scale), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
 			sdl3.SDL_SetTextInputRect(rect)
 
 		animate_monitor_timer.set()
@@ -7414,7 +7415,7 @@ class AlbumArt:
 		temp_dest.y = int((box[1] - temp_dest.h) / 2) + temp_dest.y
 
 		# render the image
-		sdl3.SDL_RenderCopy(renderer, unit.texture, None, temp_dest)
+		sdl3.SDL_RenderTexture(renderer, unit.texture, None, temp_dest)
 		style_overlay.hole_punches.append(temp_dest)
 
 		gui.art_drawn_rect = (temp_dest.x, temp_dest.y, temp_dest.w, temp_dest.h)
@@ -8165,7 +8166,7 @@ class AlbumArt:
 
 			sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
 
-			dst = sdl3.SDL_Rect(round(location[0]), round(location[1]))
+			dst = sdl3.SDL_FRect(round(location[0]), round(location[1]))
 			dst.w = int(tex_w.contents.value)
 			dst.h = int(tex_h.contents.value)
 
@@ -8229,7 +8230,7 @@ class AlbumArt:
 
 		style_overlay.hole_punches.append(rect)
 
-		sdl3.SDL_RenderCopy(renderer, unit.texture, None, rect)
+		sdl3.SDL_RenderTexture(renderer, unit.texture, None, rect)
 
 		gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
@@ -8363,7 +8364,7 @@ class StyleOverlay:
 
 			sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
 
-			dst = sdl3.SDL_Rect(round(-40, 0))
+			dst = sdl3.SDL_FRect(round(-40, 0))
 			dst.w = int(tex_w.contents.value)
 			dst.h = int(tex_h.contents.value)
 
@@ -8430,7 +8431,7 @@ class StyleOverlay:
 
 			if t < 0.4:
 
-				sdl3.SDL_RenderCopy(renderer, self.b_texture, None, self.b_rect)
+				sdl3.SDL_RenderTexture(renderer, self.b_texture, None, self.b_rect)
 
 			else:
 				sdl3.SDL_DestroyTexture(self.b_texture)
@@ -8464,8 +8465,8 @@ class StyleOverlay:
 					return
 
 			if prefs.bg_showcase_only and not (prefs.mini_mode_mode == 5 and gui.mode == 3):
-				tb = sdl3.SDL_Rect(0, 0, window_size[0], gui.panelY)
-				bb = sdl3.SDL_Rect(0, window_size[1] - gui.panelBY, window_size[0], gui.panelBY)
+				tb = sdl3.SDL_FRect(0, 0, window_size[0], gui.panelY)
+				bb = sdl3.SDL_FRect(0, window_size[1] - gui.panelBY, window_size[0], gui.panelBY)
 				self.hole_punches.append(tb)
 				self.hole_punches.append(bb)
 
@@ -8478,7 +8479,7 @@ class StyleOverlay:
 			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
 
 			sdl3.SDL_SetTextureAlphaMod(self.a_texture, fade)
-			sdl3.SDL_RenderCopy(renderer, self.a_texture, None, self.a_rect)
+			sdl3.SDL_RenderTexture(renderer, self.a_texture, None, self.a_rect)
 
 			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 
@@ -8494,7 +8495,7 @@ class StyleOverlay:
 				opacity = 255
 
 			sdl3.SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, opacity)
-			sdl3.SDL_RenderCopy(renderer, gui.main_texture_overlay_temp, None, None)
+			sdl3.SDL_RenderTexture(renderer, gui.main_texture_overlay_temp, None, None)
 
 			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 
@@ -17185,7 +17186,7 @@ class StandardPlaylist:
 			playlist_menu.activate()
 
 		sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-		sdl3.SDL_RenderCopy(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
+		sdl3.SDL_RenderTexture(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
 
 		if mouse_down is False:
 			playlist_hold = False
@@ -17195,7 +17196,7 @@ class StandardPlaylist:
 
 	def cache_render(self):
 
-		sdl3.SDL_RenderCopy(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
+		sdl3.SDL_RenderTexture(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
 
 class ArtBox:
 
@@ -19002,11 +19003,11 @@ class ArtistList:
 				tex_w = pointer(c_int(0))
 				tex_h = pointer(c_int(0))
 				sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-				sdl3.SDL_rect = sdl3.SDL_Rect(0, 0)
-				sdl3.SDL_rect.w = int(tex_w.contents.value)
-				sdl3.SDL_rect.h = int(tex_h.contents.value)
+				rect = sdl3.SDL_FRect(0, 0)
+				rect.w = int(tex_w.contents.value)
+				rect.h = int(tex_h.contents.value)
 
-				self.thumb_cache[artist] = [texture, sdl3.SDL_rect]
+				self.thumb_cache[artist] = [texture, rect]
 			except Exception:
 				logging.exception("Artist thumbnail processing error")
 				self.thumb_cache[artist] = None
@@ -19287,7 +19288,7 @@ class ArtistList:
 			tab_rect = (x, y - round(2 * gui.scale), round(190 * gui.scale), self.tab_h - round(1 * gui.scale))
 
 			for r in subtract_rect(tab_rect, rect):
-				r = sdl3.SDL_Rect(r[0], r[1], r[2], r[3])
+				r = sdl3.SDL_FRect(r[0], r[1], r[2], r[3])
 				style_overlay.hole_punches.append(r)
 
 			ddt.rect(tab_rect, back_colour_2)
@@ -19334,10 +19335,10 @@ class ArtistList:
 			if thumb is not None:
 				thumb[1].x = thumb_x
 				thumb[1].y = round(y)
-				sdl3.SDL_RenderCopy(renderer, thumb[0], None, thumb[1])
+				sdl3.SDL_RenderTexture(renderer, thumb[0], None, thumb[1])
 				drawn = True
 				if prefs.art_bg:
-					rect = sdl3.SDL_Rect(thumb_x, round(y), self.thumb_size, self.thumb_size)
+					rect = sdl3.SDL_FRect(thumb_x, round(y), self.thumb_size, self.thumb_size)
 					if (rect.y + rect.h) > window_size[1] - gui.panelBY:
 						diff = (rect.y + rect.h) - (window_size[1] - gui.panelBY)
 						rect.h -= round(diff)
@@ -21247,7 +21248,7 @@ class PictureRender:
 			tex_w = pointer(c_int(0))
 			tex_h = pointer(c_int(0))
 			sdl3.SDL_QueryTexture(self.texture, None, None, tex_w, tex_h)
-			self.srect = sdl3.SDL_Rect(round(x), round(y))
+			self.srect = sdl3.SDL_FRect(round(x), round(y))
 			self.srect.w = int(tex_w.contents.value)
 			self.srect.h = int(tex_h.contents.value)
 			self.image_data = None
@@ -21255,7 +21256,7 @@ class PictureRender:
 		if self.texture is not None:
 			self.srect.x = round(x)
 			self.srect.y = round(y)
-			sdl3.SDL_RenderCopy(renderer, self.texture, None, self.srect)
+			sdl3.SDL_RenderTexture(renderer, self.texture, None, self.srect)
 			style_overlay.hole_punches.append(self.srect)
 
 class ArtistInfoBox:
@@ -21402,8 +21403,8 @@ class ArtistInfoBox:
 			#     self.th = th
 			#     self.w = w
 			p_off = round(5 * gui.scale)
-			if artist_picture_render.show and artist_picture_render.sdl3.SDL_rect:
-				p_off += artist_picture_render.sdl3.SDL_rect.w + round(12 * gui.scale)
+			if artist_picture_render.show and artist_picture_render.srect:
+				p_off += artist_picture_render.srect.w + round(12 * gui.scale)
 
 			text_max_w = w - (round(55 * gui.scale) + p_off)
 
@@ -21744,16 +21745,16 @@ class RadioThumbGen:
 			tex_w = pointer(c_int(0))
 			tex_h = pointer(c_int(0))
 			sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-			sdl3.SDL_rect = sdl3.SDL_Rect(0, 0)
-			sdl3.SDL_rect.w = int(tex_w.contents.value)
-			sdl3.SDL_rect.h = int(tex_h.contents.value)
+			rect = sdl3.SDL_FRect(0, 0)
+			rect.w = int(tex_w.contents.value)
+			rect.h = int(tex_h.contents.value)
 			r[2] = texture
-			r[1] = sdl3.SDL_rect
+			r[1] = rect
 			r[0] = 1
 		if r[0] == 1:
 			r[1].x = round(x)
 			r[1].y = round(y)
-			sdl3.SDL_RenderCopy(renderer, r[2], None, r[1])
+			sdl3.SDL_RenderTexture(renderer, r[2], None, r[1])
 			return 1
 		return 0
 
@@ -22041,7 +22042,7 @@ class Showcase:
 
 			# Draw textured background
 			if not light_mode and not colours.lm and prefs.showcase_overlay_texture:
-				rect = sdl3.SDL_Rect()
+				rect = sdl3.SDL_FRect()
 				rect.x = 0
 				rect.y = 0
 				rect.w = 300
@@ -22054,7 +22055,7 @@ class Showcase:
 					while xx < window_size[0]:
 						rect.x = xx
 						rect.y = yy
-						sdl3.SDL_RenderCopy(renderer, overlay_texture_texture, None, rect)
+						sdl3.SDL_RenderTexture(renderer, overlay_texture_texture, None, rect)
 						xx += 300
 					yy += 300
 
@@ -22123,7 +22124,7 @@ class Showcase:
 					(x - round(2 * gui.scale), y - round(2 * gui.scale), box + round(4 * gui.scale),
 					box + round(4 * gui.scale)), [60, 60, 60, 135])
 				ddt.rect((x, y, box, box), colours.playlist_panel_background)
-				rect = sdl3.SDL_Rect(round(x), round(y), round(box), round(box))
+				rect = sdl3.SDL_FRect(round(x), round(y), round(box), round(box))
 				style_overlay.hole_punches.append(rect)
 
 				# Draw album art in box
@@ -22311,7 +22312,7 @@ class Showcase:
 			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 
 		# sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_RenderCopy(renderer, gui.spec4_tex, None, gui.spec4_rec)
+		sdl3.SDL_RenderTexture(renderer, gui.spec4_tex, None, gui.spec4_rec)
 
 class ColourPulse2:
 	"""Animates colour between two colours"""
@@ -38042,7 +38043,7 @@ def update_layout_do():
 			while window_size[1] > gui.max_window_tex:
 				gui.max_window_tex += 1000
 
-			gui.tracklist_texture_rect = sdl3.SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+			gui.tracklist_texture_rect = sdl3.SDL_FRect(0, 0, gui.max_window_tex, gui.max_window_tex)
 
 			sdl3.SDL_DestroyTexture(gui.tracklist_texture)
 			sdl3.SDL_RenderClear(renderer)
@@ -40397,8 +40398,8 @@ tauon.synced_to_static_lyrics = TimedLyricsToStatic()
 
 timed_lyrics_ren = TimedLyricsRen()
 
-text_box_canvas_rect = sdl3.SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-text_box_canvas_hide_rect = sdl3.SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+text_box_canvas_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 text_box_canvas = sdl3.SDL_CreateTexture(
 	renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, text_box_canvas_rect.w, text_box_canvas_rect.h)
 sdl3.SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
@@ -40452,7 +40453,7 @@ rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
 	rename_folder.text = rename_folder_previous
 
-temp_dest = sdl3.SDL_Rect(0, 0)
+temp_dest = sdl3.SDL_FRect(0, 0)
 
 album_art_gen = AlbumArt()
 style_overlay = StyleOverlay()
@@ -43896,7 +43897,7 @@ while pctl.running:
 										bg=alpha_blend(back_colour, colours.gallery_background))
 
 								if prefs.art_bg and drawn_art:
-									rect = sdl3.SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
+									rect = sdl3.SDL_FRect(round(x), round(y), album_mode_art_size, album_mode_art_size)
 									if rect.y < gui.panelY:
 										diff = round(gui.panelY - rect.y)
 										rect.y += diff
@@ -46240,7 +46241,7 @@ while pctl.running:
 		gui.present = True
 
 		sdl3.SDL_SetRenderTarget(renderer, None)
-		sdl3.SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+		sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 
 		if gui.turbo:
 			gui.level_update = True
@@ -46267,7 +46268,7 @@ while pctl.running:
 
 		sdl3.SDL_SetRenderTarget(renderer, None)
 		if not gui.present:
-			sdl3.SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+			sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 			gui.present = True
 
 		if gui.vis == 3:
@@ -46313,18 +46314,18 @@ while pctl.running:
 				gui.spec2_source.w = gui.spec2_position
 				gui.spec2_dest.x = gui.spec2_rec.x + gui.spec2_rec.w - gui.spec2_position
 				gui.spec2_dest.w = gui.spec2_position
-				sdl3.SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+				sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
 
 				gui.spec2_source.x = gui.spec2_position
 				gui.spec2_source.y = 0
 				gui.spec2_source.w = gui.spec2_rec.w - gui.spec2_position
 				gui.spec2_dest.x = gui.spec2_rec.x
 				gui.spec2_dest.w = gui.spec2_rec.w - gui.spec2_position
-				sdl3.SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+				sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
 
 			else:
 
-				sdl3.SDL_RenderCopy(renderer, gui.spec2_tex, None, gui.spec2_rec)
+				sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
 			if pref_box.enabled:
 				ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90])
@@ -46426,7 +46427,7 @@ while pctl.running:
 					ddt.rect((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90])
 
 				sdl3.SDL_SetRenderTarget(renderer, None)
-				sdl3.SDL_RenderCopy(renderer, gui.spec1_tex, None, gui.spec1_rec)
+				sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
 		if gui.vis == 1:
 
@@ -46601,7 +46602,7 @@ while pctl.running:
 				ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
 
 			sdl3.SDL_SetRenderTarget(renderer, None)
-			sdl3.SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
+			sdl3.SDL_RenderTexture(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
 
 	if gui.present:
 		# Possible bug older version of SDL (2.0.16) Wayland, setting render target to None causer last copy

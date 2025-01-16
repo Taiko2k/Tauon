@@ -74,7 +74,7 @@ class QuickThumbnail:
 	queue: list[QuickThumbnail] = []
 
 	def __init__(self) -> None:
-		self.rect = sdl3.SDL_Rect(0, 0)
+		self.rect = sdl3.FSDL_Rect(0., 0.)
 		self.texture = None
 		self.surface = None
 		self.size = 50
@@ -338,6 +338,14 @@ class TDraw:
 
 		self.was_truncated = False
 
+	def load_image(self, g: io.BinaryIO) -> sdl3.SDL_Surface:
+
+		size = g.getbuffer().nbytes
+		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
+		stream = sdl3.SDL_IOFromMem(pointer, size)
+
+		return sdl3.IMG_Load_IO(stream, closeio=True)
+
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 		x, y, w, h = (round(x) for x in rectangle)
@@ -590,7 +598,7 @@ class TDraw:
 		data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
 
 		if real_bg:
-			box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
+			box = sdl3.SDL_FRect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
 			if align == 1:
 				box.x = x - box.w
@@ -697,7 +705,7 @@ class TDraw:
 			blend_mode = sdl3.SDL_ComposeCustomBlendMode(sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD, sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD)
 			sdl3.SDL_SetTextureBlendMode(c, blend_mode)
 
-		dst = sdl3.SDL_Rect(round(x), round(y))
+		dst = sdl3.SDL_FRect(round(x), round(y))
 		dst.w = round(w)
 		dst.h = round(h)
 		dst.y = round(y) - y_off
@@ -807,7 +815,7 @@ class TDraw:
 		tex_w = pointer(c_int(0))
 		tex_h = pointer(c_int(0))
 		sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
-		dst = sdl3.SDL_Rect(round(x), round(y))
+		dst = sdl3.SDL_FRect(round(x), round(y))
 		dst.w = int(tex_w.contents.value)
 		dst.h = int(tex_h.contents.value)
 
