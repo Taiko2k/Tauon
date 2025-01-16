@@ -2457,7 +2457,7 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
-#gbc.disable()
+gbc.disable()
 ggc = 2
 
 star_path1 = user_directory / "star.p"
