@@ -66,6 +66,7 @@ else:
 	import win32ui
 
 
+
 class QuickThumbnail:
 
 	renderer: sdl3.SDL_Renderer | None = None
@@ -166,9 +167,9 @@ if system == "Windows":
 			raise OSError("native_bmp_to_pil failed: GetDIBits")
 
 		# TODO(Martin): Add the rest of the types in this function:
-		logging.debug(f"IF YOU SEE THIS MESSAGE, ADD THESE TYPES TO native_bmp_to_sdl(): HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , sdl3.SDL_PIXELFORMAT_BGR24))}")
+		logging.debug(f"IF YOU SEE THIS MESSAGE, ADD THESE TYPES TO native_bmp_to_sdl(): HDC: {type(hdc)}, bitmap_handle: {type(bitmap_handle)}, returnType:{type(sdl3.SDL_CreateSurfaceFrom(width, height, sdl3.SDL_PIXELFORMAT_BGR24, ctypes.pointer(c_bits), (width*3 + 3) & -4))}")
 		# We need to keep c_bits pass else it may be garbage collected
-		return sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(c_bits), width, height, 24, (width*3 + 3) & -4 , sdl3.SDL_PIXELFORMAT_BGR24), c_bits
+		return sdl3.SDL_CreateSurfaceFrom(width, height, sdl3.SDL_PIXELFORMAT_BGR24, ctypes.pointer(c_bits), (width*3 + 3) & -4), c_bits
 
 
 	class Win32Font:
@@ -496,10 +497,11 @@ class TDraw:
 			self.dest_rect.w = sd[0].w
 			self.dest_rect.h = round(range_height)
 
-			sdl3.SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
+			#sdl3.SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
+			sdl3.SDL_RenderTexture(self.renderer, sd[1], self.source_rect, self.dest_rect)
 			return
 
-		sdl3.SDL_RenderCopy(self.renderer, sd[1], None, sd[0])
+		sdl3.SDL_RenderTexture(self.renderer, sd[1], None, sd[0])
 
 
 	def __draw_text_cairo(
@@ -675,17 +677,21 @@ class TDraw:
 		self.was_truncated = layout.is_ellipsized()
 
 		if alpha_bg:
-			sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, sdl3.SDL_PIXELFORMAT_ARGB8888)
+			#sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, sdl3.SDL_PIXELFORMAT_ARGB8888)
+			format = sdl3.SDL_PIXELFORMAT_ARGB8888
+			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ctypes.pointer(data), w * 4)
 		else:
-			sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 24, w * 4, sdl3.SDL_PIXELFORMAT_RGB888)
+			format = sdl3.SDL_PIXELFORMAT_XRGB8888
+			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ctypes.pointer(data), w * 4)
 
 		# Here the background colour is keyed out allowing lines to overlap slightly
 		if not real_bg and not alpha_bg:
-			ke = sdl3.SDL_MapRGB(sdl3.SDL_surface.contents.format, bg[0], bg[1], bg[2])
-			sdl3.SDL_SetColorKey(sdl3.SDL_surface, True, ke)
+			format_details = sdl3.SDL_GetPixelFormatDetails(format)
+			ke = sdl3.SDL_MapRGB(format_details, None, bg[0], bg[1], bg[2])
+			sdl3.SDL_SetSurfaceColorKey(surface, True, ke)
 
-		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, sdl3.SDL_surface)
-		sdl3.SDL_DestroySurface(sdl3.SDL_surface)
+		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
+		sdl3.SDL_DestroySurface(surface)
 
 		if alpha_bg:
 			blend_mode = sdl3.SDL_ComposeCustomBlendMode(sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD, sdl3.SDL_BLENDFACTOR_ONE, sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, sdl3.SDL_BLENDOPERATION_ADD)
