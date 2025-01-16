@@ -23055,17 +23055,17 @@ class Undo:
 class GetSDLInput:
 
 	def __init__(self):
-		self.i_y = pointer(c_float(0))
-		self.i_x = pointer(c_float(0))
 
 		self.mouse_capture_want = False
 		self.mouse_capture = False
 
 	def mouse(self):
-		SDL_PumpEvents()
-		SDL_GetMouseState(self.i_x, self.i_y)
+		sdl3.SDL_PumpEvents()
+		i_y = pointer(c_float(0))
+		i_x = pointer(c_float(0))
+		sdl3.SDL_GetMouseState(i_x, i_y)
 		return int(self.i_x.contents.value / logical_size[0] * window_size[0]), int(
-			self.i_y.contents.value / logical_size[0] * window_size[0])
+			i_y.contents.value / logical_size[0] * window_size[0])
 
 	def test_capture_mouse(self):
 		if not self.mouse_capture and self.mouse_capture_want:
@@ -42107,6 +42107,7 @@ while pctl.running:
 			k_input = True
 			power += 6
 			mouse_wheel += event.wheel.y
+
 			gui.update += 1
 		elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST :
 
@@ -43203,6 +43204,7 @@ while pctl.running:
 			elif ggc == 1:
 				ggc = 0
 				gbc.enable()
+
 				#logging.info("Enabling garbage collecting")
 
 		if gui.mode == 4:
@@ -46161,7 +46163,7 @@ while pctl.running:
 			elif gui.cursor_is == 11:
 				sdl3.SDL_SetCursor(cursor_bottom_side)
 
-		#input_sdl.test_capture_mouse() # todo enable me?
+		input_sdl.test_capture_mouse()
 		input_sdl.mouse_capture_want = False
 
 		# # Quick view
@@ -46742,8 +46744,8 @@ except Exception:
 	logging.exception("No lock object to close")
 
 
-sdl3.IMG_Quit()
-sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)
+#sdl3.IMG_Quit()
+#sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)
 sdl3.SDL_Quit()
 #logging.info("SDL unloaded")
 

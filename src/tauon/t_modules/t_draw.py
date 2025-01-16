@@ -344,7 +344,7 @@ class TDraw:
 		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
 		stream = sdl3.SDL_IOFromMem(pointer, size)
 
-		return sdl3.IMG_Load_IO(stream, closeio=False)  # todo memory leak? (closeio true will segfault GC)
+		return sdl3.IMG_Load_IO(stream, closeio=True)
 
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
@@ -376,13 +376,12 @@ class TDraw:
 
 	def rect(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int]) -> None:
 
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+
 		self.sdlrect.x = float(rectangle[0])
 		self.sdlrect.y = float(rectangle[1])
 		self.sdlrect.w = float(rectangle[2])
 		self.sdlrect.h = float(rectangle[3])
-
-
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
 
 		#if fill:
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
@@ -407,7 +406,7 @@ class TDraw:
 	def line(self, x1: int, y1: int, x2: int, y2: int, colour: list[int]) -> None:
 
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
-		sdl3.SDL_RenderDrawLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
+		sdl3.SDL_RenderLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
 	def get_text_w(self, text: str, font: int, height: bool = False) -> int:
 
