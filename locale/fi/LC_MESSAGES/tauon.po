@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-17 12:00+0000\n"
+"PO-Revision-Date: 2025-01-18 12:02+0000\n"
 "Last-Translator: Ricky Tigg <ricky.tigg@gmail.com>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fi/>\n"
@@ -3965,7 +3965,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30949
 msgid "Okay, it's a normal playlist now."
-msgstr ""
+msgstr "Selvä, se on nyt tavallinen soittolista."
 
 #: src/tauon/t_modules/t_main.py:30964
 msgid ""
