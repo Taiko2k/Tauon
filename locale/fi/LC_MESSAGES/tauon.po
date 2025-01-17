@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2024-04-03 09:02+0000\n"
-"Last-Translator: Roosa Huovinen <roosa.h@proton.me>\n"
+"PO-Revision-Date: 2025-01-17 12:00+0000\n"
+"Last-Translator: Ricky Tigg <ricky.tigg@gmail.com>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fi/>\n"
 "Language: fi\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.5-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -65,9 +65,8 @@ msgid "Upgrade to v6.5.1. It looks like you are using Spotify."
 msgstr ""
 
 #: src/tauon/t_modules/t_db_migrate.py:425
-#, fuzzy
 msgid "Please click 'Authorise' again in the settings"
-msgstr "Valtuutathan Spotifyn asetuksissa!"
+msgstr "Napsauta \"Valtuuta\" uudelleen asetuksista"
 
 #: src/tauon/t_modules/t_db_migrate.py:436
 msgid "Upgrade to v6.5.3 complete"
@@ -196,9 +195,8 @@ msgid "Already connected to Last.fm"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:7155
-#, fuzzy
 msgid "Authorise an account in settings"
-msgstr "Valtuutathan Spotifyn asetuksissa!"
+msgstr "Valtuuta tili asetuksissa"
 
 #: src/tauon/t_modules/t_main.py:7155
 msgid "No Last.Fm account registered"
@@ -1210,9 +1208,8 @@ msgid "Generated:"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:17638
-#, fuzzy
 msgid "Tracks in playlist:"
-msgstr "Kappale on jo tykätty"
+msgstr "Kappaleet soittolistalla:"
 
 #: src/tauon/t_modules/t_main.py:17640
 msgid "Repeats in playlist:"
@@ -4882,14 +4879,12 @@ msgid "Dependency Tekore not found"
 msgstr ""
 
 #: src/tauon/t_modules/t_spot.py:151
-#, fuzzy
 msgid "Please re-authenticate Spotify in settings"
-msgstr "Valtuutathan Spotifyn asetuksissa!"
+msgstr "Todenna Spotify uudelleen asetuksissa"
 
 #: src/tauon/t_modules/t_spot.py:154
-#, fuzzy
 msgid "Please authenticate Spotify in settings"
-msgstr "Valtuutathan Spotifyn asetuksissa!"
+msgstr "Todenna Spotify asetuksissa"
 
 #: src/tauon/t_modules/t_spot.py:165
 msgid "python-tekore not installed"
