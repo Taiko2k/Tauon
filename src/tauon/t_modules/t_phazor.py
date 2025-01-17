@@ -95,10 +95,7 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	base_path = Path(pctl.install_directory).parent.parent / "build"
 
 	# Define the library name and extensions in priority order
-	if pctl.prefs.pipewire:
-		lib_name = "phazor-pw"
-	else:
-		lib_name = "phazor"
+	lib_name = "phazor-pw" if pctl.prefs.pipewire else "phazor"
 
 	extensions = [".so", ".dll", ".pyd", ".dynlib"]
 
