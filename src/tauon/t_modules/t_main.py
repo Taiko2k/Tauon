@@ -18978,7 +18978,7 @@ def gen_folder_top_rating(pl: int, get_sets: bool = False, custom_list=None):
 	pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl].title + "\" a rata>"
 
 
-def gen_lyrics(plpl: int, custom_list=None):
+def gen_lyrics(pl: int, custom_list=None):
 	playlist = []
 
 	source = custom_list
@@ -19009,7 +19009,7 @@ tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), gen_folder_top_rating, pa
 extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), gen_folder_top_rating, pass_ref=True))
 
 
-def gen_incomplete(plpl: int, custom_list=None):
+def gen_incomplete(pl: int, custom_list=None) -> list | None:
 	playlist = []
 
 	source = custom_list
@@ -19061,10 +19061,9 @@ def gen_incomplete(plpl: int, custom_list=None):
 				hide_title=False))
 
 		# pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[pl].title + "\" a ly"
-
 	else:
 		show_message(_("No incomplete albums were found."))
-
+	return None
 
 def gen_codec_pl(codec):
 	playlist = []
