@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
 "PO-Revision-Date: 2025-01-18 12:02+0000\n"
-"Last-Translator: ΔLΣISTΣR <pacoe1000@gmail.com>\n"
+"Last-Translator: Patricio Carrau <duckycb@proton.me>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
 "Language: es\n"
@@ -243,7 +243,7 @@ msgstr "Escaneo de scrobbles completado"
 
 #: src/tauon/t_modules/t_main.py:7463
 msgid "Removed {N} loves."
-msgstr "{N} favoritos borrados."
+msgstr "{N} favoritos eliminados."
 
 #: src/tauon/t_modules/t_main.py:7476
 msgid "There was an error, try re-log in"
