@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-18 12:02+0000\n"
-"Last-Translator: Patricio Carrau <duckycb@proton.me>\n"
+"PO-Revision-Date: 2025-01-19 13:14+0000\n"
+"Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
 "Language: es\n"
@@ -24,18 +24,17 @@ msgid ""
 "updating? Oh well."
 msgstr ""
 "Error al cargar la base de datos antigua ¿Se cerró correctamente el programa "
-"al actualizar?"
+"al actualizar? Ah, bueno."
 
 #: src/tauon/t_modules/t_db_migrate.py:129
 msgid "Upgrade complete. Run a tag rescan if you want enable ReplayGain"
 msgstr ""
-"Actualización completada. Reescanea la pestaña si quieres activar ReplayGain."
+"Actualización completada. Reescanea la pestaña si quieres activar ReplayGain"
 
 #: src/tauon/t_modules/t_db_migrate.py:135
-#, fuzzy
 msgid "Upgrade complete. New sorting option may require tag rescan."
 msgstr ""
-"Actualización completada. Las nuevas op. de ordenado pueden necesitar "
+"Actualización completada. Las nuevas op. de ordenado pueden necesitar de "
 "reescanear la pestaña."
 
 #: src/tauon/t_modules/t_db_migrate.py:142
@@ -43,11 +42,10 @@ msgid "Updated to v2.6.3"
 msgstr "Actualizado a la versión 2.6.3"
 
 #: src/tauon/t_modules/t_db_migrate.py:194
-#, fuzzy
 msgid ""
 "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."
 msgstr ""
-"Bienvenid@ a la versión 4.4.0. Reescanea las etiquetas para usar etiquetas "
+"Bienvenidx a la versión 4.4.0. Reescanea las etiquetas para usar etiquetas "
 "de compositor."
 
 #: src/tauon/t_modules/t_db_migrate.py:353
@@ -83,7 +81,7 @@ msgstr "Actualizado a la versión 6.5.1. Parece que estas usando Spotify."
 
 #: src/tauon/t_modules/t_db_migrate.py:425
 msgid "Please click 'Authorise' again in the settings"
-msgstr "¡Favor autoriza Spotify en los ajustes!"
+msgstr "Por favor selecciona 'Autorizar' Spotify en los ajustes"
 
 #: src/tauon/t_modules/t_db_migrate.py:436
 msgid "Upgrade to v6.5.3 complete"
@@ -99,7 +97,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_dbus.py:72
 msgid "Failed to start indicator"
-msgstr "¡Error al iniciar el indicador!"
+msgstr "Error al iniciar el indicador"
 
 #: src/tauon/t_modules/t_extra.py:147 src/tauon/t_modules/t_extra.py:163
 msgid " B"
@@ -292,8 +290,9 @@ msgid "This doesn't seem to be working :("
 msgstr "Esto no parece estar funcionando :("
 
 #: src/tauon/t_modules/t_main.py:7653 src/tauon/t_modules/t_main.py:7702
+#, fuzzy
 msgid "How did this even happen."
-msgstr "¿Cómo es esto posible?"
+msgstr "Cómo es esto posible."
 
 #: src/tauon/t_modules/t_main.py:7653 src/tauon/t_modules/t_main.py:7702
 msgid "ListenBrains is enabled but there is no token."
@@ -571,7 +570,7 @@ msgstr "Error al guardar la imagen."
 
 #: src/tauon/t_modules/t_main.py:13779
 msgid "Error importing XSPF playlist."
-msgstr "Error al importar la lista de reproducción XSPF"
+msgstr "Error al importar la lista de reproducción XSPF."
 
 #: src/tauon/t_modules/t_main.py:13779
 msgid "Sorry about that."
@@ -1142,7 +1141,7 @@ msgstr "Eliminar Incrustado | Pista"
 msgid "This will erase any embedded image in {N} files. Are you sure?"
 msgstr ""
 "Esto borrará cualquier imagen incrustada en los {N} archivo(s). ¿Estás "
-"segur@?"
+"segurx?"
 
 #: src/tauon/t_modules/t_main.py:16680 src/tauon/t_modules/t_main.py:16718
 msgid "Quick-Fetch Cover Art"
@@ -1268,7 +1267,7 @@ msgstr "Porcentaje de pistas de tipo CUE:"
 
 #: src/tauon/t_modules/t_main.py:17677
 msgid "MP3 bitrates (kbps):"
-msgstr "Bitrate MP3 (kb/s):"
+msgstr "Bitrate MP3 (kbps):"
 
 #: src/tauon/t_modules/t_main.py:17691 src/tauon/t_modules/t_main.py:17710
 msgid "Others"
@@ -1276,7 +1275,7 @@ msgstr "Otros"
 
 #: src/tauon/t_modules/t_main.py:17696
 msgid "OGG bitrates (kbps):"
-msgstr "Bitrate OGG (kb/s):"
+msgstr "Bitrate OGG (kbps):"
 
 #: src/tauon/t_modules/t_main.py:17734
 msgid "Top Artists"
@@ -1389,7 +1388,7 @@ msgstr "Ordenar los números de pista"
 
 #: src/tauon/t_modules/t_main.py:18801
 msgid "Sort Year per Artist"
-msgstr "Ordenar año por Artista"
+msgstr "Ordenar por Año y Artista"
 
 #: src/tauon/t_modules/t_main.py:18802
 msgid "Make Playlist Auto-Sorting"
@@ -1406,7 +1405,7 @@ msgstr "Agregar a Reproducción"
 
 #: src/tauon/t_modules/t_main.py:18814
 msgid "Export…"
-msgstr "Exportando…"
+msgstr "Exportar…"
 
 #: src/tauon/t_modules/t_main.py:18832
 msgid "No duplicates were found"
@@ -1595,7 +1594,7 @@ msgstr "Codec: "
 #: src/tauon/t_modules/t_main.py:19461 src/tauon/t_modules/t_main.py:19468
 #: src/tauon/t_modules/t_main.py:19469
 msgid "File Modified"
-msgstr "Archivo Modificado"
+msgstr "Archivos Modificados"
 
 #: src/tauon/t_modules/t_main.py:19494 src/tauon/t_modules/t_main.py:19884
 #: src/tauon/t_modules/t_main.py:19885 src/tauon/t_modules/t_main.py:22430
@@ -1668,7 +1667,7 @@ msgstr "Inverso"
 
 #: src/tauon/t_modules/t_main.py:19787 src/tauon/t_modules/t_main.py:19788
 msgid "Reverse Tracks"
-msgstr "Pistas Inversas"
+msgstr "Pistas Invertidas"
 
 #: src/tauon/t_modules/t_main.py:19815
 msgid "Reversed Albums"
@@ -2010,7 +2009,7 @@ msgstr "No se puede limpiar"
 
 #: src/tauon/t_modules/t_main.py:21091
 msgid "Error deleting files."
-msgstr "Error al borrar los archivos"
+msgstr "Error borrando los archivos."
 
 #: src/tauon/t_modules/t_main.py:21091
 msgid "May not have permission or file may be set to read-only"
@@ -2342,7 +2341,7 @@ msgstr "Número del disco"
 
 #: src/tauon/t_modules/t_main.py:22441
 msgid "Is CUE Sheet"
-msgstr "¿Es la hoja CUE?"
+msgstr "Es una lista CUE"
 
 #: src/tauon/t_modules/t_main.py:22955
 msgid "Done! {N} old items were removed."
@@ -2451,9 +2450,8 @@ msgid "Find Incomplete Albums"
 msgstr "Encontrar Álbumes Incompletos"
 
 #: src/tauon/t_modules/t_main.py:23198
-#, fuzzy
 msgid "Mark Missing as Found"
-msgstr "Marcar Desparecido como Encontrado"
+msgstr "Marcar Desparecidos como Encontrado"
 
 #: src/tauon/t_modules/t_main.py:23204
 msgid "Stop Cast"
@@ -2978,11 +2976,13 @@ msgstr "Usar carátula del álbum como fondo"
 
 #: src/tauon/t_modules/t_main.py:27972
 msgid "Prefer artist backgrounds"
-msgstr "Prefiero fondos de artistas"
+msgstr "Usar preferentemente fondos de artistas"
 
 #: src/tauon/t_modules/t_main.py:27976
 msgid "Also enabling 'auto-fech artist data' to scrape last.fm."
 msgstr ""
+"Activa también 'obtención automática de datos de artistas' para buscar en "
+"last.fm."
 
 #: src/tauon/t_modules/t_main.py:27976
 msgid "You can toggle this back off under Settings > Function"
@@ -2994,7 +2994,7 @@ msgstr "Intenso"
 
 #: src/tauon/t_modules/t_main.py:27985
 msgid "Blur"
-msgstr "Desenfocar"
+msgstr "Desenfocado"
 
 #: src/tauon/t_modules/t_main.py:27988
 msgid "Showcase only"
@@ -3316,7 +3316,7 @@ msgstr "Habilitar el uso del gamepad como entrada"
 
 #: src/tauon/t_modules/t_main.py:28617 src/tauon/t_modules/t_main.py:28624
 msgid "Change requires restart"
-msgstr "Requiere reiniciar"
+msgstr "Requiere reiniciar Tauon"
 
 #: src/tauon/t_modules/t_main.py:28623
 msgid "Enable remote control"
@@ -3366,7 +3366,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:28646
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr "Las pistas se guardaran en la lista \"Pistas de Radio Guardadas\""
+msgstr "Las pistas se guardaran en la lista \"Pistas de Radio Guardadas\"."
 
 #: src/tauon/t_modules/t_main.py:28660
 msgid "Enable Discord Rich Presence"
@@ -3665,7 +3665,7 @@ msgstr "Obtener los favoritos de tus amigos"
 
 #: src/tauon/t_modules/t_main.py:29565
 msgid "Pull love on scrobble/rescan"
-msgstr "Enviar favoritos al escanear/volver a escanear"
+msgstr "Extraer favoritos al registrar/reescanear"
 
 #: src/tauon/t_modules/t_main.py:29567
 msgid ""
@@ -3688,7 +3688,6 @@ msgid "Cleared all loves"
 msgstr "Lista de Favoritos Limpiada"
 
 #: src/tauon/t_modules/t_main.py:29622
-#, fuzzy
 msgid "Error, not  connected to last.fm"
 msgstr "Error, no  conectado a last.fm"
 
@@ -3877,7 +3876,6 @@ msgstr "Software de código abierto utilizado"
 
 #: src/tauon/t_modules/t_main.py:30100 src/tauon/t_modules/t_main.py:30141
 #: src/tauon/t_modules/t_main.py:30183
-#, fuzzy
 msgid "Open source software used (cont'd)"
 msgstr "Software de código abierto usado (continuación)"
 
@@ -3972,7 +3970,7 @@ msgstr "Generador de los gráficos…"
 
 #: src/tauon/t_modules/t_main.py:30388 src/tauon/t_modules/t_main.py:30428
 msgid "Tracks in playlist"
-msgstr "Pistas de la lista de reproducción"
+msgstr "Pistas en la lista de reproducción"
 
 #: src/tauon/t_modules/t_main.py:30389 src/tauon/t_modules/t_main.py:30431
 msgid "Albums in playlist"
@@ -4159,9 +4157,8 @@ msgid "Scanning: "
 msgstr "Escaneando: "
 
 #: src/tauon/t_modules/t_main.py:31867
-#, fuzzy
 msgid "Scanning Scrobbles..."
-msgstr "Escaneando registros de escucha (scrobbles)..."
+msgstr "Escaneando registros de escucha..."
 
 #: src/tauon/t_modules/t_main.py:31870
 msgid "Buffering... "
@@ -4301,7 +4298,7 @@ msgstr "¡Error al conectar!"
 
 #: src/tauon/t_modules/t_main.py:36290
 msgid "kbps"
-msgstr "kb/s"
+msgstr "kbps"
 
 #: src/tauon/t_modules/t_main.py:36323
 msgid "Name / Title"
@@ -4371,7 +4368,6 @@ msgid "Select source playlist by name"
 msgstr "Seleccionar lista de origen por nombre"
 
 #: src/tauon/t_modules/t_main.py:36705
-#, fuzzy
 msgid "Select playlist itself"
 msgstr "Seleccionar la lista misma"
 
@@ -4699,7 +4695,7 @@ msgstr "No se descargan los datos de los artistas"
 
 #: src/tauon/t_modules/t_main.py:40157
 msgid "No artist bio found"
-msgstr "No se ha encontrado ninguna biografía del artista."
+msgstr "No se encontró ninguna biografía del artista"
 
 #: src/tauon/t_modules/t_main.py:40244
 msgid "Load Failed"
@@ -4820,7 +4816,6 @@ msgid "Track already has lyrics"
 msgstr "La pista ya tiene letra"
 
 #: src/tauon/t_modules/t_main.py:44916
-#, fuzzy
 msgid "Error loading theme file"
 msgstr "Error al cargar el archivo de tema"
 
@@ -4858,7 +4853,7 @@ msgstr "Velocidad de Muestreo"
 
 #: src/tauon/t_modules/t_main.py:47120
 msgid " kbps"
-msgstr " kb/s"
+msgstr " kbps"
 
 #: src/tauon/t_modules/t_main.py:47162 src/tauon/t_modules/t_main.py:47184
 msgid " of "
