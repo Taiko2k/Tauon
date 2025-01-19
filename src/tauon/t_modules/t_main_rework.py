@@ -4277,8 +4277,8 @@ class Menu:
 		if gui.scale == 2:
 			self.w += 15
 
-	def __init__(self, width: int, show_icons: bool = False) -> None:
-
+	def __init__(self, tauon: Tauon, width: int, show_icons: bool = False) -> None:
+		self.tauon = tauon
 		self.base_v_size = 22
 		self.active = False
 		self.request_width: int = width
@@ -9101,6 +9101,107 @@ class TransEditBox:
 				gui.tag_write_count = 0
 				gui.write_tag_in_progress = True
 				shooter(write_tag_go)
+
+class SubLyricsBox:
+
+	def __init__(self):
+
+		self.active = False
+		self.target_track = None
+		self.active_field = 1
+
+	def activate(self, track: TrackClass):
+
+		self.active = True
+		gui.box_over = True
+		self.target_track = track
+
+		sub_lyrics_a.text = prefs.lyrics_subs.get(self.target_track.artist, "")
+		sub_lyrics_b.text = prefs.lyrics_subs.get(self.target_track.title, "")
+
+		if not sub_lyrics_a.text:
+			sub_lyrics_a.text = self.target_track.artist
+		if not sub_lyrics_b.text:
+			sub_lyrics_b.text = self.target_track.title
+
+	def render(self):
+
+		if not self.active:
+			return
+
+		if gui.level_2_click:
+			inp.mouse_click = True
+		gui.level_2_click = False
+
+		w = 400 * gui.scale
+		h = 155 * gui.scale
+		x = int(window_size[0] / 2) - int(w / 2)
+		y = int(window_size[1] / 2) - int(h / 2)
+
+		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
+		ddt.rect_a((x, y), (w, h), colours.box_background)
+		ddt.text_background_colour = colours.box_background
+
+		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+			self.active = False
+			gui.box_over = False
+
+			if sub_lyrics_a.text and sub_lyrics_a.text != self.target_track.artist:
+				prefs.lyrics_subs[self.target_track.artist] = sub_lyrics_a.text
+			elif self.target_track.artist in prefs.lyrics_subs:
+				del prefs.lyrics_subs[self.target_track.artist]
+
+			if sub_lyrics_b.text and sub_lyrics_b.text != self.target_track.title:
+				prefs.lyrics_subs[self.target_track.title] = sub_lyrics_b.text
+			elif self.target_track.title in prefs.lyrics_subs:
+				del prefs.lyrics_subs[self.target_track.title]
+
+		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Substitute Lyric Search"), colours.grey(230), 213)
+
+		y += round(35 * gui.scale)
+		x += round(23 * gui.scale)
+
+		xx = x
+		xx += ddt.text(
+			(x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.box_text_label, 212)
+		xx += round(6 * gui.scale)
+		ddt.text((xx, y + round(0 * gui.scale)), self.target_track.artist, colours.box_sub_text, 312)
+
+		y += round(19 * gui.scale)
+		xx = x
+		xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.box_text_label, 212)
+		xx += round(6 * gui.scale)
+		rect1 = (xx, y, round(250 * gui.scale), round(17 * gui.scale))
+		fields.add(rect1)
+		ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+		if (coll(rect1) and inp.mouse_click) or (inp.key_tab_press and self.active_field == 2):
+			self.active_field = 1
+			inp.key_tab_press = False
+
+		sub_lyrics_a.draw(
+			xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 1,
+			width=rect1[2] - 8 * gui.scale)
+
+		y += round(28 * gui.scale)
+
+		xx = x
+		xx += ddt.text(
+			(x + round(0 * gui.scale), y + round(0 * gui.scale)), _("Substitute"), colours.box_text_label, 212)
+		xx += round(6 * gui.scale)
+		ddt.text((xx, y + round(0 * gui.scale)), self.target_track.title, colours.box_sub_text, 312)
+
+		y += round(19 * gui.scale)
+		xx = x
+		xx += ddt.text((xx + round(0 * gui.scale), y + round(0 * gui.scale)), _("with"), colours.box_text_label, 212)
+		xx += round(6 * gui.scale)
+		rect1 = (xx, y, round(250 * gui.scale), round(16 * gui.scale))
+		fields.add(rect1)
+		if (coll(rect1) and inp.mouse_click) or (inp.key_tab_press and self.active_field == 1):
+			self.active_field = 2
+		# ddt.rect(rect1, [40, 40, 40, 255], True)
+		ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+		sub_lyrics_b.draw(
+			xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 2, width=rect1[2] - 8 * gui.scale)
 
 class ExportPlaylistBox:
 
