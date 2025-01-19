@@ -23002,3 +23002,30 @@ class Undo:
 
 	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
+
+class Directories:
+	def __init__(self, *,
+		install_directory: Path,
+		svg_directory: Path,
+		asset_directory: Path,
+		scaled_asset_directory: Path,
+		locale_directory: Path,
+		user_directory: Path,
+		config_directory: Path,
+		cache_directory: Path,
+		home_directory: Path,
+		music_directory: Path,
+		download_directory: Path,
+	) -> None:
+
+		self.install_directory      = install_directory
+		self.svg_directory          = svg_directory
+		self.asset_directory        = asset_directory
+		self.scaled_asset_directory = scaled_asset_directory
+		self.locale_directory       = locale_directory
+		self.user_directory         = user_directory
+		self.config_directory       = config_directory
+		self.cache_directory        = cache_directory
+		self.home_directory         = home_directory
+		self.music_directory        = music_directory
+		self.download_directory     = download_directory

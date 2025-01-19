@@ -338,6 +338,7 @@ from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
 from tauon.t_modules.t_main_rework import (
+	Directories,
 	LoadImageAsset,
 	WhiteModImageAsset,
 	DConsole,
@@ -433,112 +434,6 @@ if TYPE_CHECKING:
 	from pylast import Artist, LibreFMNetwork
 	from PIL.ImageFile import ImageFile
 	from tauon.t_modules.t_bootstrap import Holder
-
-# Log to debug as we don't care at all when user does not have this
-try:
-	import colored_traceback.always
-	logging.debug("Found colored_traceback for colored crash tracebacks")
-except ModuleNotFoundError:
-	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:
-	logging.exception("Unknown error trying to import colored_traceback, tracebacks will be dull.")
-
-try:
-	from jxlpy import JXLImagePlugin
-	# We've already logged this once to INFO from t_draw, so just log to DEBUG
-	logging.debug("Found jxlpy for JPEG XL support")
-except ModuleNotFoundError:
-	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
-
-try:
-	import setproctitle
-except ModuleNotFoundError:
-	logging.warning("Unable to import setproctitle, won't be setting process title.")
-except Exception:
-	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
-else:
-	setproctitle.setproctitle("tauonmb")
-
-# try:
-#	 import rpc
-#	 discord_allow = True
-# except Exception:
-#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
-discord_allow = False
-try:
-	from pypresence import Presence
-except ModuleNotFoundError:
-	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
-else:
-	import asyncio
-	discord_allow = True
-
-use_cc = False
-try:
-	import opencc
-except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-except Exception:
-	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-else:
-	s2t = opencc.OpenCC("s2t")
-	t2s = opencc.OpenCC("t2s")
-	use_cc = True
-
-use_natsort = False
-try:
-	import natsort
-except ModuleNotFoundError:
-	logging.warning("Unable to import natsort, playlists may not sort as intended!")
-except Exception:
-	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
-else:
-	use_natsort = True
-
-# Detect platform
-windows_native = False
-macos = False
-msys = False
-system = "Linux"
-arch = platform.machine()
-platform_release = platform.release()
-platform_system = platform.system()
-win_ver = 0
-if platform_system == "Windows":
-	try:
-		win_ver = int(platform_release)
-	except Exception:
-		logging.exception("Failed getting Windows version from platform.release()")
-
-if sys.platform == "win32":
-	# system = 'Windows'
-	# windows_native = False
-	system = "Linux"
-	msys = True
-else:
-	system = "Linux"
-	import fcntl
-
-if sys.platform == "darwin":
-	macos = True
-
-if system == "Windows":
-	import win32con
-	import win32api
-	import win32gui
-	import win32ui
-	import comtypes
-	import atexit
-
-if system == "Linux":
-	from tauon.t_modules import t_topchart
-
-if system == "Linux" and not macos and not msys:
-	from tauon.t_modules.t_dbus import Gnome
 
 # 1REWORK
 
@@ -2822,35 +2717,6 @@ def open_encode_out() -> None:
 def g_open_encode_out(a, b, c) -> None:
 	open_encode_out()
 
-
-
-if system == "Linux" and not macos and not msys:
-	try:
-		Notify.init("Tauon Music Box")
-		g_tc_notify = Notify.Notification.new(
-			"Tauon Music Box",
-			"Transcoding has finished.")
-		value = GLib.Variant("s", t_id)
-		g_tc_notify.set_hint("desktop-entry", value)
-
-		g_tc_notify.add_action(
-			"action_click",
-			"Open Output Folder",
-			g_open_encode_out,
-			None,
-		)
-
-		de_notify_support = True
-
-	except Exception:
-		logging.exception("Failed init notifications")
-
-	if de_notify_support:
-		song_notification = Notify.Notification.new("Next track notification")
-		value = GLib.Variant("s", t_id)
-		song_notification.set_hint("desktop-entry", value)
-
-
 def notify_song_fire(notification, delay, id) -> None:
 	time.sleep(delay)
 	notification.show()
@@ -2860,7 +2726,6 @@ def notify_song_fire(notification, delay, id) -> None:
 	time.sleep(8)
 	if id == gui.notify_main_id:
 		notification.close()
-
 
 def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 	if not de_notify_support:
@@ -2913,9 +2778,7 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
-
 # Last.FM -----------------------------------------------------------------
-
 
 def get_backend_time(path):
 	pctl.time_to_get = path
@@ -2927,9 +2790,6 @@ def get_backend_time(path):
 		time.sleep(0.005)
 
 	return pctl.time_to_get
-
-
-lastfm = LastFMapi()
 
 #19REWORK
 
@@ -3142,18 +3002,7 @@ def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> boo
 		return False
 	return True
 
-
-
-
-lfm_scrobbler = LastScrob()
-
 #20REWORK
-
-
-
-
-strings = Strings()
-
 
 def id_to_pl(id: int):
 	for i, item in enumerate(pctl.multi_playlist):
@@ -3190,14 +3039,11 @@ def encode_folder_name(track_object: TrackClass) -> str:
 
 	return folder_name
 
-
 #21REWORK
 
 def signal_handler(signum, frame):
 	signal.signal(signum, signal.SIG_IGN) # ignore additional signals
 	tauon.exit(reason="SIGINT recieved")
-
-signal.signal(signal.SIGINT, signal_handler)
 
 #22REWORK
 
@@ -3226,7 +3072,6 @@ def get_network_thumbnail_url(track_object: TrackClass):
 
 	return None
 
-
 def jellyfin_get_playlists_thread() -> None:
 	if jellyfin.scanning:
 		inp.mouse_click = False
@@ -3250,7 +3095,6 @@ def jellyfin_get_library_thread() -> None:
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-
 def plex_get_album_thread() -> None:
 	pref_box.close()
 	save_prefs()
@@ -3263,7 +3107,6 @@ def plex_get_album_thread() -> None:
 	shoot_dl = threading.Thread(target=plex.get_albums)
 	shoot_dl.daemon = True
 	shoot_dl.start()
-
 
 def sub_get_album_thread() -> None:
 	# if prefs.backend != 1:
@@ -3282,7 +3125,6 @@ def sub_get_album_thread() -> None:
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-
 def koel_get_album_thread() -> None:
 	# if prefs.backend != 1:
 	#	 show_message("This feature is currently only available with the BASS backend")
@@ -3300,20 +3142,6 @@ def koel_get_album_thread() -> None:
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-
-if system == "Windows" or msys:
-	from lynxtray import SysTrayIcon
-
-
-
-
-tray = STray()
-
-#23REWORK
-
-stats_gen = GStats()
-
-
 def do_exit_button() -> None:
 	if mouse_up or ab_click:
 		if gui.tray_active and prefs.min_to_tray:
@@ -3325,7 +3153,6 @@ def do_exit_button() -> None:
 			show_message(_("Stop the sync before exiting!"))
 		else:
 			tauon.exit("User clicked X button")
-
 
 def do_maximize_button() -> None:
 	global mouse_down
@@ -3344,7 +3171,6 @@ def do_maximize_button() -> None:
 	inp.mouse_click = False
 	drag_mode = False
 
-
 def do_minimize_button():
 
 	global mouse_down
@@ -3360,8 +3186,6 @@ def do_minimize_button():
 	mouse_down = False
 	inp.mouse_click = False
 	drag_mode = False
-
-#24REWORK
 
 def draw_window_tools():
 	global mouse_down
@@ -3551,7 +3375,6 @@ def draw_window_tools():
 			else:
 				top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
-
 def draw_window_border():
 	corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
@@ -3588,152 +3411,6 @@ def draw_window_border():
 	ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
 	ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
 
-
-# -------------------------------------------------------------------------------------------
-# initiate SDL2 --------------------------------------------------------------------C-IS-----
-
-cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
-cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
-cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
-cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
-
-cursor_br_corner = cursor_standard
-cursor_right_side = cursor_standard
-cursor_top_side = cursor_standard
-cursor_left_side = cursor_standard
-cursor_bottom_side = cursor_standard
-
-if msys:
-	cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
-	cursor_right_side = cursor_shift
-	cursor_left_side = cursor_shift
-	cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
-	cursor_bottom_side = cursor_top_side
-elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
-	try:
-		class XcursorImage(ctypes.Structure):
-			_fields_ = [
-					("version", c_uint32),
-					("size", c_uint32),
-					("width", c_uint32),
-					("height", c_uint32),
-					("xhot", c_uint32),
-					("yhot", c_uint32),
-					("delay", c_uint32),
-					("pixels", c_void_p),
-				]
-
-		try:
-			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
-		except Exception:
-			logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
-			xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
-		xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
-
-		def get_xcursor(name: str):
-			if "XCURSOR_THEME" not in os.environ:
-				raise ValueError("Missing XCURSOR_THEME in env")
-			if "XCURSOR_SIZE" not in os.environ:
-				raise ValueError("Missing XCURSOR_SIZE in env")
-			xcursor_theme = os.environ["XCURSOR_THEME"]
-			xcursor_size = os.environ["XCURSOR_SIZE"]
-			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
-			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
-			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
-			xcu.XcursorImageDestroy(ctypes.byref(c1))
-			SDL_FreeSurface(sdl_surface)
-			return cursor
-
-		cursor_br_corner = get_xcursor("se-resize")
-		cursor_right_side = get_xcursor("right_side")
-		cursor_top_side = get_xcursor("top_side")
-		cursor_left_side = get_xcursor("left_side")
-		cursor_bottom_side = get_xcursor("bottom_side")
-
-		if SDL_GetCurrentVideoDriver() == b"wayland":
-			cursor_standard = get_xcursor("left_ptr")
-			cursor_text = get_xcursor("xterm")
-			cursor_shift = get_xcursor("sb_h_double_arrow")
-			cursor_hand = get_xcursor("hand2")
-			SDL_SetCursor(cursor_standard)
-
-	except Exception:
-		logging.exception("Error loading xcursor")
-
-#25REWORK
-
-# try:
-#	 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-#
-# except Exception:
-#	 logging.exception("old version of SDL detected")
-
-# get window surface and set up renderer
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
-
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
-#
-# # window_surface = SDL_GetWindowSurface(t_window)
-#
-# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-#
-# display_index = SDL_GetWindowDisplayIndex(t_window)
-# display_bounds = SDL_Rect(0, 0)
-# SDL_GetDisplayBounds(display_index, display_bounds)
-#
-# icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
-# SDL_SetWindowIcon(t_window, icon)
-# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
-#
-# SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
-#
-#
-# gui.max_window_tex = 1000
-# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-#
-#	 while window_size[0] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#	 while window_size[1] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#
-# gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# # gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
-#
-# SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
-#
-# gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
-# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-#
-# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
-#
-# SDL_SetRenderTarget(renderer, None)
-#
-# gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-# gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# SDL_SetRenderTarget(renderer, gui.main_texture)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-# SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# SDL_RenderClear(renderer)
-#
-# gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
-# gui.pl_update = 2
-#
-# SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
-
-
 def bass_player_thread(player):
 	# logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
 	#					 format='%(asctime)s %(levelname)s %(name)s %(message)s')
@@ -3748,64 +3425,6 @@ def bass_player_thread(player):
 		time.sleep(1)
 		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
 		raise
-
-
-if (system == "Windows" or msys) and taskbar_progress:
-
-	class WinTask:
-
-		def __init__(self):
-			self.start = time.time()
-			self.updated_state = 0
-			self.window_id = gui.window_id
-			import comtypes.client as cc
-			cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
-			import comtypes.gen.TaskbarLib as tbl
-			self.taskbar = cc.CreateObject(
-				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
-				interface=tbl.ITaskbarList3)
-			self.taskbar.HrInit()
-
-			self.d_timer = Timer()
-
-		def update(self, force=False):
-			if self.d_timer.get() > 2 or force:
-				self.d_timer.set()
-
-				if pctl.playing_state == 1 and self.updated_state != 1:
-					self.taskbar.SetProgressState(self.window_id, 0x2)
-
-				if pctl.playing_state == 1:
-					self.updated_state = 1
-					if pctl.playing_length > 2:
-						perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
-						if perc < 2:
-							perc = 1
-						elif perc > 100:
-							prec = 100
-					else:
-						perc = 0
-
-					self.taskbar.SetProgressValue(self.window_id, perc, 100)
-
-				elif pctl.playing_state == 2 and self.updated_state != 2:
-					self.updated_state = 2
-					self.taskbar.SetProgressState(self.window_id, 0x8)
-
-				elif pctl.playing_state == 0 and self.updated_state != 0:
-					self.updated_state = 0
-					self.taskbar.SetProgressState(self.window_id, 0x2)
-					self.taskbar.SetProgressValue(self.window_id, 0, 100)
-
-
-	if (install_directory / "TaskbarLib.tlb").is_file():
-		logging.info("Taskbar progress enabled")
-		pctl.windows_progress = WinTask()
-
-	else:
-		pctl.taskbar_progress = False
-		logging.warning("Could not find TaskbarLib.tlb")
-
 
 # ---------------------------------------------------------------------------------------------
 # ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
@@ -16696,12 +16315,6 @@ def save_state() -> None:
 	except Exception:
 		logging.exception("Unknown error encountered while writing database")
 
-SDL_StartTextInput()
-
-# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
-# SDL_EventState(SDL_SYSWMEVENT, 1)
-
-
 def test_show_add_home_music() -> None:
 	gui.add_music_folder_ready = True
 
@@ -16714,37 +16327,11 @@ def test_show_add_home_music() -> None:
 			gui.add_music_folder_ready = False
 			break
 
-test_show_add_home_music()
-
-if gui.restart_album_mode:
-	toggle_album_mode(True)
-
-if gui.remember_library_mode:
-	toggle_library_mode()
-
-quick_import_done = []
-
-if reload_state:
-	if reload_state[0] == 1:
-		pctl.jump_time = reload_state[1]
-		pctl.play()
-
-pctl.notify_update()
-
-key_focused = 0
-
-theme = get_theme_number(prefs.theme_name)
-
-if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
-	gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
-
-
 def menu_is_open():
 	for menu in Menu.instances:
 		if menu.active:
 			return True
 	return False
-
 
 def is_level_zero(include_menus: bool = True) -> bool:
 	if include_menus:
@@ -16762,47 +16349,6 @@ def is_level_zero(include_menus: bool = True) -> bool:
 		and not search_over.active \
 		and not gui.box_over \
 		and not trans_edit_box.active
-
-
-# Hold the splash/loading screen for a minimum duration
-# while core_timer.get() < 0.5:
-#     time.sleep(0.01)
-
-# Resize menu widths to text length (length can vary due to translations)
-for menu in Menu.instances:
-
-	w = 0
-	icon_space = 0
-
-	if menu.show_icons:
-		icon_space = 25 * gui.scale
-
-	for item in menu.items:
-		if item is None:
-			continue
-		test_width = ddt.get_text_w(item.title, menu.font) + icon_space + 21 * gui.scale
-		if not item.is_sub_menu and item.hint:
-			test_width += ddt.get_text_w(item.hint, menu.font) + 4 * gui.scale
-
-		w = max(test_width, w)
-
-		# sub
-		if item.is_sub_menu:
-			ww = 0
-			sub_icon_space = 0
-			for sub_item in menu.subs[item.sub_menu_number]:
-				if sub_item.icon is not None:
-					sub_icon_space = 25 * gui.scale
-					break
-			for sub_item in menu.subs[item.sub_menu_number]:
-
-				test_width = ddt.get_text_w(sub_item.title, menu.font) + sub_icon_space + 23 * gui.scale
-				ww = max(test_width, ww)
-
-			item.sub_menu_width = max(ww, item.sub_menu_width)
-
-	menu.w = max(w, menu.w)
-
 
 def drop_file(target):
 	global new_playlist_cooldown
@@ -16904,5097 +16450,6 @@ def drop_file(target):
 	mouse_down = False
 	drag_mode = False
 
-
-if gui.restore_showcase_view:
-	enter_showcase_view()
-if gui.restore_radio_view:
-	enter_radio_view()
-
-# switch_playlist(len(pctl.multi_playlist) - 1)
-
-SDL_SetRenderTarget(renderer, overlay_texture_texture)
-
-block_size = 3
-
-x = 0
-y = 0
-while y < 300:
-	x = 0
-	while x < 300:
-		ddt.rect((x, y, 1, 1), [0, 0, 0, 70])
-		ddt.rect((x + 2, y + 0, 1, 1), [0, 0, 0, 70])
-		ddt.rect((x + 2, y + 2, 1, 1), [0, 0, 0, 70])
-		ddt.rect((x + 0, y + 2, 1, 1), [0, 0, 0, 70])
-
-		x += block_size
-	y += block_size
-
-sync_target.text = prefs.sync_target
-SDL_SetRenderTarget(renderer, None)
-
-if msys:
-	SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
-
-# Generate theme buttons
-pref_box.themes.append((ColoursClass(), "Mindaro", 0))
-theme_files = get_themes()
-for i, theme in enumerate(theme_files):
-	c = ColoursClass()
-	load_theme(c, Path(theme[0]))
-	pref_box.themes.append((c, theme[1], i + 1))
-
-pctl.total_playtime = star_store.get_total()
-
-mouse_up = False
-mouse_wheel = 0
-reset_render = False
-c_yax = 0
-c_yax_timer = Timer()
-c_xax = 0
-c_xax_timer = Timer()
-c_xay = 0
-c_xay_timer = Timer()
-rt = 0
-
-# MAIN LOOP
-
-while pctl.running:
-	# bm.get('main')
-	# time.sleep(100)
-	if k_input:
-
-		keymaps.hits.clear()
-
-		d_mouse_click = False
-		right_click = False
-		level_2_right_click = False
-		inp.mouse_click = False
-		middle_click = False
-		mouse_up = False
-		inp.key_return_press = False
-		key_down_press = False
-		key_up_press = False
-		key_right_press = False
-		key_left_press = False
-		key_esc_press = False
-		key_del = False
-		inp.backspace_press = 0
-		key_backspace_press = False
-		inp.key_tab_press = False
-		key_c_press = False
-		key_v_press = False
-		key_a_press = False
-		key_z_press = False
-		key_x_press = False
-		key_home_press = False
-		key_end_press = False
-		mouse_wheel = 0
-		pref_box.scroll = 0
-		new_playlist_cooldown = False
-		input_text = ""
-		inp.level_2_enter = False
-
-		mouse_enter_window = False
-		gui.mouse_in_window = True
-		if key_focused:
-			key_focused -= 1
-
-	# f not mouse_down:
-	k_input = False
-	clicked = False
-	focused = False
-	mouse_moved = False
-	gui.level_2_click = False
-
-	# gui.update = 2
-
-	while SDL_PollEvent(ctypes.byref(event)) != 0:
-
-		# if event.type == SDL_SYSWMEVENT:
-		#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
-
-		if event.type == SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
-			if SDL_IsGameController(event.cdevice.which):
-				SDL_GameControllerOpen(event.cdevice.which)
-				try:
-					logging.info(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
-				except Exception:
-					logging.exception("Error getting game controller")
-
-		if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
-			if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
-				rt = event.caxis.value > 5000
-			if event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY:
-				if event.caxis.value < -10000:
-					new = -1
-				elif event.caxis.value > 10000:
-					new = 1
-				else:
-					new = 0
-				if new != c_yax:
-					c_yax_timer.force_set(1)
-				c_yax = new
-				power += 5
-				gui.update += 1
-			if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX:
-				if event.caxis.value < -15000:
-					new = -1
-				elif event.caxis.value > 15000:
-					new = 1
-				else:
-					new = 0
-				if new != c_xax:
-					c_xax_timer.force_set(1)
-				c_xax = new
-				power += 5
-				gui.update += 1
-			if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY:
-				if event.caxis.value < -15000:
-					new = -1
-				elif event.caxis.value > 15000:
-					new = 1
-				else:
-					new = 0
-				if new != c_xay:
-					c_xay_timer.force_set(1)
-				c_xay = new
-				power += 5
-				gui.update += 1
-
-		if event.type == SDL_CONTROLLERBUTTONDOWN and prefs.use_gamepad:
-			k_input = True
-			power += 5
-			gui.update += 2
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-				if rt:
-					toggle_random()
-				else:
-					pctl.advance()
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-				if rt:
-					toggle_repeat()
-				else:
-					pctl.back()
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_A:
-				if rt:
-					pctl.show_current(highlight=True)
-				elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
-						pctl.selected_ready() and default_playlist[
-					pctl.selected_in_playlist] == pctl.playing_object().index:
-					pctl.play_pause()
-				else:
-					inp.key_return_press = True
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_X:
-				if rt:
-					random_track()
-				else:
-					toggle_gallery_keycontrol(always_exit=True)
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_Y:
-				if rt:
-					pctl.advance(rr=True)
-				else:
-					pctl.play_pause()
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_B:
-				if rt:
-					pctl.revert()
-				elif is_level_zero():
-					pctl.stop()
-				else:
-					key_esc_press = True
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP:
-				key_up_press = True
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-				key_down_press = True
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-				if gui.album_tab_mode:
-					key_left_press = True
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(1)
-			if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-				if gui.album_tab_mode:
-					key_right_press = True
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(-1)
-
-		if event.type == SDL_RENDER_TARGETS_RESET and not msys:
-			reset_render = True
-
-		if event.type == SDL_DROPTEXT:
-
-			power += 5
-
-			link = event.drop.file.decode()
-			#logging.info(link)
-
-			if pctl.playing_ready() and link.startswith("http"):
-				if system != "windows" and sdl_version >= 204:
-					gmp = get_global_mouse()
-					gwp = get_window_position()
-					i_x = gmp[0] - gwp[0]
-					i_x = max(i_x, 0)
-					i_x = min(i_x, window_size[0])
-					i_y = gmp[1] - gwp[1]
-					i_y = max(i_y, 0)
-					i_y = min(i_y, window_size[1])
-				else:
-					i_y = pointer(c_int(0))
-					i_x = pointer(c_int(0))
-
-					SDL_GetMouseState(i_x, i_y)
-					i_y = i_y.contents.value / logical_size[0] * window_size[0]
-					i_x = i_x.contents.value / logical_size[0] * window_size[0]
-
-				if coll_point((i_x, i_y), gui.main_art_box):
-					logging.info("Drop picture...")
-					#logging.info(link)
-					gui.image_downloading = True
-					track = pctl.playing_object()
-					target_dir = track.parent_folder_path
-
-					shoot_dl = threading.Thread(target=download_img, args=(link, target_dir, track))
-					shoot_dl.daemon = True
-					shoot_dl.start()
-
-					gui.update = True
-
-			elif link.startswith("file:///"):
-				link = link.replace("\r", "")
-				for line in link.split("\n"):
-					target = str(urllib.parse.unquote(line)).replace("file:///", "/")
-					drop_file(target)
-
-		if event.type == SDL_DROPFILE:
-
-			power += 5
-			dropped_file_sdl = event.drop.file
-			#logging.info(dropped_file_sdl)
-			target = str(urllib.parse.unquote(
-				dropped_file_sdl.decode("utf-8", errors="surrogateescape"))).replace("file:///", "/").replace("\r", "")
-			#logging.info(target)
-			drop_file(target)
-
-
-		elif event.type == 8192:
-			gui.pl_update = 1
-			gui.update += 2
-
-		elif event.type == SDL_QUIT:
-			power += 5
-
-			if gui.tray_active and prefs.min_to_tray and not key_shift_down:
-				tauon.min_to_tray()
-			else:
-				tauon.exit("Window received exit signal")
-				break
-		elif event.type == SDL_TEXTEDITING:
-			power += 5
-			#logging.info("edit text")
-			editline = event.edit.text
-			#logging.info(editline)
-			editline = editline.decode("utf-8", "ignore")
-			k_input = True
-			gui.update += 1
-
-		elif event.type == SDL_MOUSEMOTION:
-
-			mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
-			mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
-			mouse_moved = True
-			gui.mouse_unknown = False
-		elif event.type == SDL_MOUSEBUTTONDOWN:
-
-			k_input = True
-			focused = True
-			power += 5
-			gui.update += 1
-			gui.mouse_in_window = True
-
-			if ggc == 2:  # dont click on first full frame
-				continue
-
-			if event.button.button == SDL_BUTTON_RIGHT:
-				right_click = True
-				right_down = True
-				#logging.info("RIGHT DOWN")
-			elif event.button.button == SDL_BUTTON_LEFT:
-				#logging.info("LEFT DOWN")
-
-				# if mouse_position[1] > 1 and mouse_position[0] > 1:
-				#     mouse_down = True
-
-				inp.mouse_click = True
-
-				mouse_down = True
-			elif event.button.button == SDL_BUTTON_MIDDLE:
-				if not search_over.active:
-					middle_click = True
-				gui.update += 1
-			elif event.button.button == SDL_BUTTON_X1:
-				keymaps.hits.append("MB4")
-			elif event.button.button == SDL_BUTTON_X2:
-				keymaps.hits.append("MB5")
-		elif event.type == SDL_MOUSEBUTTONUP:
-			k_input = True
-			power += 5
-			gui.update += 1
-			if event.button.button == SDL_BUTTON_RIGHT:
-				right_down = False
-			elif event.button.button == SDL_BUTTON_LEFT:
-				if mouse_down:
-					mouse_up = True
-					mouse_up_position[0] = event.motion.x / logical_size[0] * window_size[0]
-					mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
-
-				mouse_down = False
-				gui.update += 1
-		elif event.type == SDL_KEYDOWN and key_focused == 0:
-			k_input = True
-			power += 5
-			gui.update += 2
-			if prefs.use_scancodes:
-				keymaps.hits.append(event.key.keysym.scancode)
-			else:
-				keymaps.hits.append(event.key.keysym.sym)
-
-			if prefs.use_scancodes:
-				if event.key.keysym.scancode == SDL_SCANCODE_V:
-					key_v_press = True
-				elif event.key.keysym.scancode == SDL_SCANCODE_A:
-					key_a_press = True
-				elif event.key.keysym.scancode == SDL_SCANCODE_C:
-					key_c_press = True
-				elif event.key.keysym.scancode == SDL_SCANCODE_Z:
-					key_z_press = True
-				elif event.key.keysym.scancode == SDL_SCANCODE_X:
-					key_x_press = True
-			elif event.key.keysym.sym == SDLK_v:
-				key_v_press = True
-			elif event.key.keysym.sym == SDLK_a:
-				key_a_press = True
-			elif event.key.keysym.sym == SDLK_c:
-				key_c_press = True
-			elif event.key.keysym.sym == SDLK_z:
-				key_z_press = True
-			elif event.key.keysym.sym == SDLK_x:
-				key_x_press = True
-
-			if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
-				inp.key_return_press = True
-			elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
-				inp.key_return_press = True
-			elif event.key.keysym.sym == SDLK_TAB:
-				inp.key_tab_press = True
-			elif event.key.keysym.sym == SDLK_BACKSPACE:
-				inp.backspace_press += 1
-				key_backspace_press = True
-			elif event.key.keysym.sym == SDLK_DELETE:
-				key_del = True
-			elif event.key.keysym.sym == SDLK_RALT:
-				key_ralt = True
-			elif event.key.keysym.sym == SDLK_LALT:
-				key_lalt = True
-			elif event.key.keysym.sym == SDLK_DOWN:
-				key_down_press = True
-			elif event.key.keysym.sym == SDLK_UP:
-				key_up_press = True
-			elif event.key.keysym.sym == SDLK_LEFT:
-				key_left_press = True
-			elif event.key.keysym.sym == SDLK_RIGHT:
-				key_right_press = True
-			elif event.key.keysym.sym == SDLK_LSHIFT:
-				key_shift_down = True
-			elif event.key.keysym.sym == SDLK_RSHIFT:
-				key_shiftr_down = True
-			elif event.key.keysym.sym == SDLK_LCTRL:
-				key_ctrl_down = True
-			elif event.key.keysym.sym == SDLK_RCTRL:
-				key_rctrl_down = True
-			elif event.key.keysym.sym == SDLK_HOME:
-				key_home_press = True
-			elif event.key.keysym.sym == SDLK_END:
-				key_end_press = True
-			elif event.key.keysym.sym == SDLK_LGUI:
-				if macos:
-					key_ctrl_down = True
-				else:
-					key_meta = True
-					key_focused = 1
-
-		elif event.type == SDL_KEYUP:
-
-			k_input = True
-			power += 5
-			gui.update += 2
-			if event.key.keysym.sym == SDLK_LSHIFT:
-				key_shift_down = False
-			elif event.key.keysym.sym == SDLK_LCTRL:
-				key_ctrl_down = False
-			elif event.key.keysym.sym == SDLK_RCTRL:
-				key_rctrl_down = False
-			elif event.key.keysym.sym == SDLK_RSHIFT:
-				key_shiftr_down = False
-			elif event.key.keysym.sym == SDLK_RALT:
-				gui.album_tab_mode = False
-				key_ralt = False
-			elif event.key.keysym.sym == SDLK_LALT:
-				gui.album_tab_mode = False
-				key_lalt = False
-			elif event.key.keysym.sym == SDLK_LGUI:
-				if macos:
-					key_ctrl_down = False
-				else:
-					key_meta = False
-					key_focused = 1
-
-		elif event.type == SDL_TEXTINPUT:
-			k_input = True
-			power += 5
-			input_text += event.text.text.decode("utf-8")
-
-			gui.update += 1
-			#logging.info(input_text)
-
-		elif event.type == SDL_MOUSEWHEEL:
-			k_input = True
-			power += 6
-			mouse_wheel += event.wheel.y
-			gui.update += 1
-		elif event.type == SDL_WINDOWEVENT:
-
-			power += 5
-			#logging.info(event.window.event)
-
-			if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-				#logging.info("SDL_WINDOWEVENT_FOCUS_GAINED")
-
-				if system == "Linux" and not macos and not msys:
-					gnome.focus()
-				k_input = True
-
-				mouse_enter_window = True
-				focused = True
-				gui.lowered = False
-				key_focused = 1
-				mouse_down = False
-				gui.album_tab_mode = False
-				gui.pl_update = 1
-				gui.update += 1
-
-			elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
-				close_all_menus()
-				key_focused = 1
-				gui.update += 1
-
-			elif event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
-				# SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
-				pass
-			elif event.window.event == SDL_WINDOWEVENT_RESIZED:
-				# SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
-				if event.window.data1 < 500:
-					logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
-					SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-				elif restore_ignore_timer.get() > 1:  # Hacky
-					gui.update = 2
-
-					logical_size[0] = event.window.data1
-					logical_size[1] = event.window.data2
-
-					if gui.mode != 3:
-						logical_size[0] = max(300, logical_size[0])
-						logical_size[1] = max(300, logical_size[1])
-
-					i_x = pointer(c_int(0))
-					i_y = pointer(c_int(0))
-					SDL_GL_GetDrawableSize(t_window, i_x, i_y)
-					window_size[0] = i_x.contents.value
-					window_size[1] = i_y.contents.value
-
-					auto_scale(prefs)
-					update_layout = True
-
-
-			elif event.window.event == SDL_WINDOWEVENT_ENTER:
-				#logging.info("ENTER")
-				mouse_enter_window = True
-				gui.mouse_in_window = True
-				gui.update += 1
-
-			# elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
-			#
-			elif event.window.event == SDL_WINDOWEVENT_EXPOSED:
-				#logging.info("expose")
-				gui.lowered = False
-
-			elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
-				gui.lowered = True
-				# if prefs.min_to_tray:
-				#     tray.down()
-				# tauon.thread_manager.sleep()
-
-			elif event.window.event == SDL_WINDOWEVENT_RESTORED:
-
-				gui.lowered = False
-				gui.maximized = False
-				gui.pl_update = 1
-				gui.update += 2
-
-				if update_title:
-					update_title_do()
-					#logging.info("restore")
-
-			elif event.window.event == SDL_WINDOWEVENT_SHOWN:
-				focused = True
-				gui.pl_update = 1
-				gui.update += 1
-
-			# elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
-			#     logging.info("FOCUS GAINED")
-			#     # input.mouse_enter_event = True
-			#     # gui.update += 1
-			#     # k_input = True
-
-			elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
-				if gui.mode != 3:  # workaround. sdl bug? gives event on window size set
-					gui.maximized = True
-				update_layout = True
-				gui.pl_update = 1
-				gui.update += 1
-
-			elif event.window.event == SDL_WINDOWEVENT_LEAVE:
-				gui.mouse_in_window = False
-				gui.update += 1
-				power = 1000
-
-	if mouse_moved:
-		if fields.test():
-			gui.update += 1
-
-	if gui.request_raise:
-		gui.request_raise = False
-		logging.info("Raise")
-		SDL_ShowWindow(t_window)
-		SDL_RestoreWindow(t_window)
-		SDL_RaiseWindow(t_window)
-		gui.lowered = False
-
-	# if tauon.thread_manager.sleeping:
-	#     if not gui.lowered:
-	#         tauon.thread_manager.wake()
-	if gui.lowered:
-		gui.update = 0
-	# ----------------
-	# This section of code controls the internal processing speed or 'frame-rate'
-	# It's pretty messy
-	# if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
-	#     logging.warning("The playlist failed to render at the latest position!!!!")
-
-	power += 1
-
-	if pctl.playerCommandReady:
-		if tauon.thread_manager.player_lock.locked():
-			try:
-				tauon.thread_manager.player_lock.release()
-			except RuntimeError as e:
-				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
-				else:
-					logging.exception("Unknown RuntimeError trying to release player_lock")
-			except Exception:
-				logging.exception("Unknown exception trying to release player_lock")
-
-	if gui.frame_callback_list:
-		i = len(gui.frame_callback_list) - 1
-		while i >= 0:
-			if gui.frame_callback_list[i].test():
-				gui.update = 1
-				power = 1000
-				del gui.frame_callback_list[i]
-			i -= 1
-
-	if animate_monitor_timer.get() < 1 or load_orders:
-
-		if cursor_blink_timer.get() > 0.65:
-			cursor_blink_timer.set()
-			TextBox.cursor ^= True
-			gui.update = 1
-
-		if k_input:
-			cursor_blink_timer.set()
-			TextBox.cursor = True
-
-		SDL_Delay(3)
-		power = 1000
-
-	if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds:  # or mouse_moved:
-		power = 1000
-
-	if prefs.art_bg and core_timer.get() < 3:
-		power = 1000
-
-	if mouse_down and mouse_moved:
-		power = 1000
-		if gui.update_on_drag:
-			gui.update += 1
-		if gui.pl_update_on_drag:
-			gui.pl_update += 1
-
-	if pctl.wake_past_time:
-
-		if get_real_time() > pctl.wake_past_time:
-			pctl.wake_past_time = 0
-			power = 1000
-			gui.update += 1
-
-	if gui.level_update and not album_scroll_hold and not scroll_hold:
-		power = 500
-
-	# if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
-	#     power = 500
-	#     if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
-	#         gui.spec2_timer.set()
-	#         gui.level_update = True
-	#         vis_update = True
-	#     else:
-	#         SDL_Delay(5)
-
-	if not pctl.running:
-		break
-
-	if pctl.playing_state > 0:
-		power += 400
-
-	if power < 500:
-
-		time.sleep(0.03)
-
-		if (
-				pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
-			pass
-		else:
-			sleep_timer.set()
-		if sleep_timer.get() > 2:
-			SDL_WaitEventTimeout(None, 1000)
-		continue
-
-	else:
-		power = 0
-
-	gui.pl_update = min(gui.pl_update, 2)
-
-	new_playlist_cooldown = False
-
-	if prefs.auto_extract and prefs.monitor_downloads:
-		dl_mon.scan()
-
-	if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
-		#logging.info(SDL_GetMouseState(None, None))
-		if SDL_GetGlobalMouseState(None, None) == 0:
-			mouse_down = False
-			mouse_up = True
-			quick_drag = False
-
-	#logging.info(window_size)
-	# if window_size[0] / window_size[1] == 16 / 9:
-	#     logging.info('OK')
-	# if window_size[0] / window_size[1] > 16 / 9:
-	#     logging.info("A")
-
-	if key_meta:
-		input_text = ""
-		k_input = False
-		inp.key_return_press = False
-		inp.key_tab_press = False
-
-	if k_input:
-		if inp.mouse_click or right_click or mouse_up:
-			last_click_location = copy.deepcopy(click_location)
-			click_location = copy.deepcopy(mouse_position)
-
-		if key_focused != 0:
-			keymaps.hits.clear()
-
-			# d_mouse_click = False
-			# right_click = False
-			# level_2_right_click = False
-			# inp.mouse_click = False
-			# middle_click = False
-			mouse_up = False
-			inp.key_return_press = False
-			key_down_press = False
-			key_up_press = False
-			key_right_press = False
-			key_left_press = False
-			key_esc_press = False
-			key_del = False
-			inp.backspace_press = 0
-			key_backspace_press = False
-			inp.key_tab_press = False
-			key_c_press = False
-			key_v_press = False
-			# key_f_press = False
-			key_a_press = False
-			# key_t_press = False
-			key_z_press = False
-			key_x_press = False
-			key_home_press = False
-			key_end_press = False
-			mouse_wheel = 0
-			pref_box.scroll = 0
-			input_text = ""
-			inp.level_2_enter = False
-
-	if c_yax != 0:
-		if c_yax_timer.get() >= 0:
-			if c_yax == -1:
-				key_up_press = True
-			if c_yax == 1:
-				key_down_press = True
-			c_yax_timer.force_set(-0.01)
-			gui.delay_frame(0.02)
-			k_input = True
-	if c_xax != 0:
-		if c_xax_timer.get() >= 0:
-			if c_xax == 1:
-				pctl.seek_time(pctl.playing_time + 2)
-			if c_xax == -1:
-				pctl.seek_time(pctl.playing_time - 2)
-			c_xax_timer.force_set(-0.01)
-			gui.delay_frame(0.02)
-			k_input = True
-	if c_xay != 0:
-		if c_xay_timer.get() >= 0:
-			if c_xay == -1:
-				pctl.player_volume += 1
-				pctl.player_volume = min(pctl.player_volume, 100)
-				pctl.set_volume()
-			if c_xay == 1:
-				if pctl.player_volume > 1:
-					pctl.player_volume -= 1
-				else:
-					pctl.player_volume = 0
-				pctl.set_volume()
-			c_xay_timer.force_set(-0.01)
-			gui.delay_frame(0.02)
-			k_input = True
-
-	if k_input and key_focused == 0:
-
-		if keymaps.hits:
-			n = 1
-			while n < 10:
-				if keymaps.test(f"jump-playlist-{n}"):
-					if len(pctl.multi_playlist) > n - 1:
-						switch_playlist(n - 1)
-				n += 1
-
-			if keymaps.test("cycle-playlist-left"):
-				if gui.album_tab_mode and key_left_press:
-					pass
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(1)
-			if keymaps.test("cycle-playlist-right"):
-				if gui.album_tab_mode and key_right_press:
-					pass
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(-1)
-
-			if keymaps.test("toggle-console"):
-				console.toggle()
-
-			if keymaps.test("toggle-fullscreen"):
-				if not gui.fullscreen and gui.mode != 3:
-					gui.fullscreen = True
-					SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
-				elif gui.fullscreen:
-					gui.fullscreen = False
-					SDL_SetWindowFullscreen(t_window, 0)
-
-			if keymaps.test("playlist-toggle-breaks"):
-				# Toggle force off folder break for viewed playlist
-				pctl.multi_playlist[pctl.active_playlist_viewing].hide_title ^= 1
-				gui.pl_update = 1
-
-			if keymaps.test("find-playing-artist"):
-				# standard_size()
-				if len(pctl.track_queue) > 0:
-					quick_search_mode = True
-					search_text.text = ""
-					input_text = pctl.playing_object().artist
-
-			if keymaps.test("show-encode-folder"):
-				open_encode_out()
-
-			if keymaps.test("toggle-left-panel"):
-				gui.lsp ^= True
-				update_layout_do()
-
-			if keymaps.test("toggle-last-left-panel"):
-				toggle_left_last()
-				update_layout_do()
-
-			if keymaps.test("escape"):
-				key_esc_press = True
-
-		if key_ctrl_down:
-			gui.pl_update += 1
-
-		if mouse_enter_window:
-			inp.key_return_press = False
-
-		if gui.fullscreen and key_esc_press:
-			gui.fullscreen = False
-			SDL_SetWindowFullscreen(t_window, 0)
-
-		# Disable keys for text cursor control
-		if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not trans_edit_box.active:
-
-			if not quick_search_mode and not search_over.active:
-				if album_mode and gui.album_tab_mode \
-						and not key_ctrl_down \
-						and not key_meta \
-						and not key_lalt:
-					if key_left_press:
-						gal_left = True
-						key_left_press = False
-					if key_right_press:
-						gal_right = True
-						key_right_press = False
-					if key_up_press:
-						gal_up = True
-						key_up_press = False
-					if key_down_press:
-						gal_down = True
-						key_down_press = False
-
-			if not search_over.active:
-				if key_del:
-					close_all_menus()
-					del_selected()
-
-				# Arrow keys to change playlist
-				if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
-					gui.pl_update = 1
-					gui.update += 1
-
-			if keymaps.test("start"):
-				if pctl.playing_time < 4:
-					pctl.back()
-				else:
-					pctl.new_time = 0
-					pctl.playing_time = 0
-					pctl.decode_time = 0
-					pctl.playerCommand = "seek"
-					pctl.playerCommandReady = True
-
-			if keymaps.test("goto-top"):
-				pctl.playlist_view_position = 0
-				logging.debug("Position changed by key")
-				pctl.selected_in_playlist = 0
-				gui.pl_update = 1
-
-			if keymaps.test("goto-bottom"):
-				n = len(default_playlist) - gui.playlist_view_length + 1
-				n = max(n, 0)
-				pctl.playlist_view_position = n
-				logging.debug("Position changed by key")
-				pctl.selected_in_playlist = len(default_playlist) - 1
-				gui.pl_update = 1
-
-		if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
-				and not gui.rename_folder_box \
-				and not gui.rename_playlist_box and not search_over.active and not gui.box_over and not trans_edit_box.active:
-
-			if quick_search_mode:
-				if keymaps.test("add-to-queue") and pctl.selected_ready():
-					add_selected_to_queue()
-					input_text = ""
-
-			else:
-
-				if key_c_press and key_ctrl_down:
-					gui.pl_update = 1
-					s_copy()
-
-				if key_x_press and key_ctrl_down:
-					gui.pl_update = 1
-					s_cut()
-
-				if key_v_press and key_ctrl_down:
-					gui.pl_update = 1
-					paste()
-
-				if keymaps.test("playpause"):
-					pctl.play_pause()
-
-
-		if inp.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
-			inp.key_return_press = False
-			inp.level_2_enter = True
-
-		if key_ctrl_down and key_z_press:
-			undo.undo()
-
-		if keymaps.test("quit"):
-			tauon.exit("Quit keyboard shortcut pressed")
-
-		if keymaps.test("testkey"):  # F7: test
-			pass
-
-		if gui.mode < 3:
-			if keymaps.test("toggle-auto-theme"):
-				prefs.colour_from_image ^= True
-				if prefs.colour_from_image:
-					show_message(_("Enabled auto theme"))
-				else:
-					show_message(_("Disabled auto theme"))
-					gui.reload_theme = True
-					gui.theme_temp_current = -1
-
-			if keymaps.test("transfer-playtime-to"):
-				if len(cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
-						default_playlist):
-					fr = pctl.get_track(tauon.copied_track)
-					to = pctl.get_track(default_playlist[pctl.selected_in_playlist])
-
-					fr_s = star_store.full_get(fr.index)
-					to_s = star_store.full_get(to.index)
-
-					fr_scr = fr.lfm_scrobbles
-					to_scr = to.lfm_scrobbles
-
-					undo.bk_playtime_transfer(fr, fr_s, fr_scr, to, to_s, to_scr)
-
-					if to_s is None:
-						to_s = star_store.new_object()
-					if fr_s is None:
-						fr_s = star_store.new_object()
-
-					new = star_store.new_object()
-
-					new[0] = fr_s[0] + to_s[0]  # playtime
-					new[1] = fr_s[1]  # flags
-					if to_s[1]:
-						new[1] = to_s[1]  # keep target flags
-					new[2] = fr_s[2]  # raiting
-					if to_s[2] > 0 and fr_s[2] == 0:
-						new[2] = to_s[2]  # keep target rating
-					to.lfm_scrobbles = fr.lfm_scrobbles
-
-					star_store.remove(fr.index)
-					star_store.remove(to.index)
-					if new[0] or new[1] or new[2]:
-						star_store.insert(to.index, new)
-
-					tauon.copied_track = None
-					gui.pl_update += 1
-					logging.info("Transferred track stats!")
-				elif tauon.copied_track is None:
-					show_message(_("First select a source track by copying it into clipboard"))
-
-			if keymaps.test("toggle-gallery"):
-				toggle_album_mode()
-
-			if keymaps.test("toggle-right-panel"):
-				if gui.combo_mode:
-					exit_combo()
-				elif not album_mode:
-					toggle_side_panel()
-				else:
-					toggle_album_mode()
-
-			if keymaps.test("toggle-minimode"):
-				set_mini_mode()
-				gui.update += 1
-
-			if keymaps.test("cycle-layouts"):
-
-				if view_box.tracks():
-					view_box.side(True)
-				elif view_box.side():
-					view_box.gallery1(True)
-				elif view_box.gallery1():
-					view_box.lyrics(True)
-				else:
-					view_box.tracks(True)
-
-			if keymaps.test("cycle-layouts-reverse"):
-
-				if view_box.tracks():
-					view_box.lyrics(True)
-				elif view_box.lyrics():
-					view_box.gallery1(True)
-				elif view_box.gallery1():
-					view_box.side(True)
-				else:
-					view_box.tracks(True)
-
-			if keymaps.test("toggle-columns"):
-				view_box.col(True)
-
-			if keymaps.test("toggle-artistinfo"):
-				view_box.artist_info(True)
-
-			if keymaps.test("toggle-showcase"):
-				view_box.lyrics(True)
-
-			if keymaps.test("toggle-gallery-keycontrol"):
-				toggle_gallery_keycontrol()
-
-			if keymaps.test("toggle-show-art"):
-				toggle_side_art()
-
-		elif gui.mode == 3:
-			if keymaps.test("toggle-minimode"):
-				restore_full_mode()
-				gui.update += 1
-
-		ab_click = False
-
-		if keymaps.test("new-playlist"):
-			new_playlist()
-
-		if keymaps.test("edit-generator"):
-			edit_generator_box(pctl.active_playlist_viewing)
-
-		if keymaps.test("new-generator-playlist"):
-			new_playlist()
-			edit_generator_box(pctl.active_playlist_viewing)
-
-		if keymaps.test("delete-playlist"):
-			delete_playlist(pctl.active_playlist_viewing)
-
-		if keymaps.test("delete-playlist-force"):
-			delete_playlist(pctl.active_playlist_viewing, force=True)
-
-		if keymaps.test("rename-playlist"):
-			if gui.radio_view:
-				rename_playlist(pctl.radio_playlist_viewing)
-			else:
-				rename_playlist(pctl.active_playlist_viewing)
-			rename_playlist_box.x = 60 * gui.scale
-			rename_playlist_box.y = 60 * gui.scale
-
-		# Transfer click register to menus
-		if inp.mouse_click:
-			for instance in Menu.instances:
-				if instance.active:
-					instance.click()
-					inp.mouse_click = False
-					ab_click = True
-			if view_box.active:
-				view_box.clicked = True
-
-		if inp.mouse_click and (
-				prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active):  # and not gui.message_box:
-			inp.mouse_click = False
-			gui.level_2_click = True
-		else:
-			gui.level_2_click = False
-
-		if track_box and inp.mouse_click:
-			w = 540
-			h = 240
-			x = int(window_size[0] / 2) - int(w / 2)
-			y = int(window_size[1] / 2) - int(h / 2)
-			if coll([x, y, w, h]):
-				inp.mouse_click = False
-				gui.level_2_click = True
-
-		if right_click:
-			level_2_right_click = True
-
-		if pref_box.enabled:
-
-			if pref_box.inside():
-				if inp.mouse_click:  # and not gui.message_box:
-					pref_box.click = True
-					inp.mouse_click = False
-				if right_click:
-					right_click = False
-					pref_box.right_click = True
-
-				pref_box.scroll = mouse_wheel
-				mouse_wheel = 0
-			else:
-				if inp.mouse_click:
-					pref_box.close()
-				if right_click:
-					pref_box.close()
-				if pref_box.lock is False:
-					pass
-
-		if right_click and (
-				radiobox.active or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
-			right_click = False
-
-		if mouse_wheel != 0:
-			gui.update += 1
-		if mouse_down is True:
-			gui.update += 1
-
-		if keymaps.test("pagedown"):  # key_PGD:
-			if len(default_playlist) > 10:
-				pctl.playlist_view_position += gui.playlist_view_length - 4
-				if pctl.playlist_view_position > len(default_playlist):
-					pctl.playlist_view_position = len(default_playlist) - 2
-				gui.pl_update = 1
-				pctl.selected_in_playlist = pctl.playlist_view_position
-				logging.debug("Position changed by page key")
-				shift_selection.clear()
-		if keymaps.test("pageup"):
-			if len(default_playlist) > 0:
-				pctl.playlist_view_position -= gui.playlist_view_length - 4
-				pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
-				gui.pl_update = 1
-				pctl.selected_in_playlist = pctl.playlist_view_position
-				logging.debug("Position changed by page key")
-				shift_selection.clear()
-
-		if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
-
-			if keymaps.test("info-playing"):
-				if pctl.selected_in_playlist < len(default_playlist):
-					r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
-					track_box = True
-
-			if keymaps.test("info-show"):
-				if pctl.selected_in_playlist < len(default_playlist):
-					r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
-					track_box = True
-
-			# These need to be disabled when text fields are active
-			if not search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
-				if keymaps.test("advance"):
-					key_right_press = False
-					pctl.advance()
-
-				if keymaps.test("previous"):
-					key_left_press = False
-					pctl.back()
-
-				if key_a_press and key_ctrl_down:
-					gui.pl_update = 1
-					shift_selection = range(len(default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
-
-				if keymaps.test("revert"):
-					pctl.revert()
-
-				if keymaps.test("random-track-start"):
-					pctl.advance(rr=True)
-
-				if keymaps.test("vol-down"):
-					if pctl.player_volume > 3:
-						pctl.player_volume -= 3
-					else:
-						pctl.player_volume = 0
-					pctl.set_volume()
-
-				if keymaps.test("toggle-mute"):
-					pctl.toggle_mute()
-
-				if keymaps.test("vol-up"):
-					pctl.player_volume += 3
-					pctl.player_volume = min(pctl.player_volume, 100)
-					pctl.set_volume()
-
-				if keymaps.test("shift-down") and len(default_playlist) > 0:
-					gui.pl_update += 1
-					if pctl.selected_in_playlist > len(default_playlist) - 1:
-						pctl.selected_in_playlist = 0
-
-					if not shift_selection:
-						shift_selection.append(pctl.selected_in_playlist)
-					if pctl.selected_in_playlist < len(default_playlist) - 1:
-						r = pctl.selected_in_playlist
-						pctl.selected_in_playlist += 1
-						if pctl.selected_in_playlist not in shift_selection:
-							shift_selection.append(pctl.selected_in_playlist)
-						else:
-							shift_selection.remove(r)
-
-				if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
-					gui.pl_update += 1
-					if pctl.selected_in_playlist > len(default_playlist) - 1:
-						pctl.selected_in_playlist = 0
-
-					if not shift_selection:
-						shift_selection.append(pctl.selected_in_playlist)
-					if pctl.selected_in_playlist < len(default_playlist) - 1:
-						r = pctl.selected_in_playlist
-						pctl.selected_in_playlist -= 1
-						if pctl.selected_in_playlist not in shift_selection:
-							shift_selection.insert(0, pctl.selected_in_playlist)
-						else:
-							shift_selection.remove(r)
-
-				if keymaps.test("toggle-shuffle"):
-					# pctl.random_mode ^= True
-					toggle_random()
-
-				if keymaps.test("goto-playing"):
-					pctl.show_current()
-				if keymaps.test("goto-previous"):
-					if pctl.queue_step > 1:
-						pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
-
-				if keymaps.test("toggle-repeat"):
-					toggle_repeat()
-
-				if keymaps.test("random-track"):
-					random_track()
-
-				if keymaps.test("random-album"):
-					random_album()
-
-				if keymaps.test("opacity-up"):
-					prefs.window_opacity += .05
-					prefs.window_opacity = min(prefs.window_opacity, 1)
-					SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-				if keymaps.test("opacity-down"):
-					prefs.window_opacity -= .05
-					prefs.window_opacity = max(prefs.window_opacity, .30)
-					SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-				if keymaps.test("seek-forward"):
-					pctl.seek_time(pctl.playing_time + prefs.seek_interval)
-
-				if keymaps.test("seek-back"):
-					pctl.seek_time(pctl.playing_time - prefs.seek_interval)
-
-				if keymaps.test("play"):
-					pctl.play()
-
-				if keymaps.test("stop"):
-					pctl.stop()
-
-				if keymaps.test("pause"):
-					pctl.pause_only()
-
-				if keymaps.test("love-playing"):
-					bar_love(notify=True)
-
-				if keymaps.test("love-selected"):
-					select_love(notify=True)
-
-				if keymaps.test("search-lyrics-selected"):
-					if pctl.selected_ready():
-						track = pctl.get_track(default_playlist[pctl.selected_in_playlist])
-						if track.lyrics:
-							show_message(_("Track already has lyrics"))
-						else:
-							get_lyric_wiki(track)
-
-				if keymaps.test("substitute-search-selected"):
-					if pctl.selected_ready():
-						show_sub_search(pctl.get_track(default_playlist[pctl.selected_in_playlist]))
-
-				if keymaps.test("global-search"):
-					activate_search_overlay()
-
-				if keymaps.test("add-to-queue") and pctl.selected_ready():
-					add_selected_to_queue()
-
-				if keymaps.test("clear-queue"):
-					clear_queue()
-
-				if keymaps.test("regenerate-playlist"):
-					regenerate_playlist(pctl.active_playlist_viewing)
-
-		if keymaps.test("cycle-theme"):
-			gui.reload_theme = True
-			gui.theme_temp_current = -1
-			gui.temp_themes.clear()
-			theme += 1
-
-		if keymaps.test("cycle-theme-reverse"):
-			gui.theme_temp_current = -1
-			gui.temp_themes.clear()
-			pref_box.devance_theme()
-
-		if keymaps.test("reload-theme"):
-			gui.reload_theme = True
-
-	# if mouse_position[1] < 1:
-	#     mouse_down = False
-
-	if mouse_down is False:
-		scroll_hold = False
-
-	# if focused is True:
-	#     mouse_down = False
-
-	if inp.media_key:
-		if inp.media_key == "Play":
-			if pctl.playing_state == 0:
-				pctl.play()
-			else:
-				pctl.pause()
-		elif inp.media_key == "Pause":
-			pctl.pause_only()
-		elif inp.media_key == "Stop":
-			pctl.stop()
-		elif inp.media_key == "Next":
-			pctl.advance()
-		elif inp.media_key == "Previous":
-			pctl.back()
-
-		elif inp.media_key == "Rewind":
-			pctl.seek_time(pctl.playing_time - 10)
-		elif inp.media_key == "FastForward":
-			pctl.seek_time(pctl.playing_time + 10)
-		elif inp.media_key == "Repeat":
-			toggle_repeat()
-		elif inp.media_key == "Shuffle":
-			toggle_random()
-
-		inp.media_key = ""
-
-	if len(load_orders) > 0:
-		loading_in_progress = True
-		pctl.after_import_flag = True
-		tauon.thread_manager.ready("worker")
-		if loaderCommand == LC_None:
-
-			# Fliter out files matching CUE filenames
-			# This isnt the only mechanism that does this. This one helps in the situation
-			# where the user drags and drops multiple files at onec. CUEs in folders are handled elsewhere
-			if len(load_orders) > 1:
-				for order in load_orders:
-					if order.stage == 0 and order.target.endswith(".cue"):
-						for order2 in load_orders:
-							if not order2.target.endswith(".cue") and\
-									os.path.splitext(order2.target)[0] == os.path.splitext(order.target)[0] and\
-									os.path.isfile(order2.target):
-								order2.stage = -1
-				for i in reversed(range(len(load_orders))):
-					order = load_orders[i]
-					if order.stage == -1:
-						del load_orders[i]
-
-			# Prepare loader thread with load order
-			for order in load_orders:
-				if order.stage == 0:
-					order.traget = order.target.replace("\\", "/")
-					order.stage = 1
-					if os.path.isdir(order.traget):
-						loaderCommand = LC_Folder
-					else:
-						loaderCommand = LC_File
-						if order.traget.endswith(".xspf"):
-							to_got = "xspf"
-							to_get = 0
-						else:
-							to_got = 1
-							to_get = 1
-					loaderCommandReady = True
-					tauon.thread_manager.ready("worker")
-					break
-
-	elif loading_in_progress is True:
-		loading_in_progress = False
-		pctl.notify_change()
-
-	if loaderCommand == LC_Done:
-		loaderCommand = LC_None
-		gui.update += 1
-		# gui.pl_update = 1
-		# loading_in_progress = False
-
-	if update_layout:
-		update_layout_do()
-		update_layout = False
-
-	# if tauon.worker_save_state and\
-	#         not gui.pl_pulse and\
-	#         not loading_in_progress and\
-	#         not to_scan and\
-	#         not plex.scanning and\
-	#         not cm_clean_db and\
-	#         not lastfm.scanning_friends and\
-	#         not move_in_progress:
-	#     save_state()
-	#     cue_list.clear()
-	#     tauon.worker_save_state = False
-
-	# -----------------------------------------------------
-	# THEME SWITCHER--------------------------------------------------------------------
-
-	if gui.reload_theme is True:
-
-		gui.pl_update = 1
-		theme_files = get_themes()
-
-		if theme > len(theme_files):  # sic
-			theme = 0
-
-		if theme > 0:
-			theme_number = theme - 1
-			try:
-
-				colours.column_colours.clear()
-				colours.column_colours_playing.clear()
-
-				theme_item = theme_files[theme_number]
-
-				gui.theme_name = theme_item[1]
-				colours.lm = False
-				colours.__init__()
-
-				load_theme(colours, Path(theme_item[0]))
-				deco.load(colours.deco)
-				logging.info("Applying theme: " + gui.theme_name)
-
-				if colours.lm:
-					info_icon.colour = [60, 60, 60, 255]
-				else:
-					info_icon.colour = [61, 247, 163, 255]
-
-				if colours.lm:
-					folder_icon.colour = [255, 190, 80, 255]
-				else:
-					folder_icon.colour = [244, 220, 66, 255]
-
-				if colours.lm:
-					settings_icon.colour = [85, 187, 250, 255]
-				else:
-					settings_icon.colour = [232, 200, 96, 255]
-
-				if colours.lm:
-					radiorandom_icon.colour = [120, 200, 120, 255]
-				else:
-					radiorandom_icon.colour = [153, 229, 133, 255]
-
-			except Exception:
-				logging.exception("Error loading theme file")
-				raise
-				show_message(_("Error loading theme file"), "", mode="warning")
-
-		if theme == 0:
-			gui.theme_name = "Mindaro"
-			logging.info("Applying default theme: Mindaro")
-			colours.lm = False
-			colours.__init__()
-			colours.post_config()
-			deco.unload()
-
-		prefs.theme_name = gui.theme_name
-
-		#logging.info("Theme number: " + str(theme))
-		gui.reload_theme = False
-		ddt.text_background_colour = colours.playlist_panel_background
-
-	# ---------------------------------------------------------------------------------------------------------
-	# GUI DRAWING------
-	#logging.info(gui.update)
-	#logging.info(gui.lowered)
-	if gui.mode == 3:
-		gui.pl_update = 0
-
-	if gui.pl_update and not gui.update:
-		gui.update = 1
-
-	if gui.update > 0 and not resize_mode:
-		gui.update = min(gui.update, 2)
-
-		if reset_render:
-			logging.info("Reset render targets!")
-			clear_img_cache(delete_disk=False)
-			ddt.clear_text_cache()
-			for item in WhiteModImageAsset.assets:
-				item.reload()
-			reset_render = False
-
-		SDL_SetRenderTarget(renderer, None)
-		SDL_SetRenderDrawColor(
-			renderer, colours.top_panel_background[0], colours.top_panel_background[1],
-			colours.top_panel_background[2], colours.top_panel_background[3])
-		SDL_RenderClear(renderer)
-		SDL_SetRenderTarget(renderer, gui.main_texture)
-		SDL_RenderClear(renderer)
-
-		# perf_timer.set()
-		gui.update_on_drag = False
-		gui.pl_update_on_drag = False
-
-		# mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
-		gui.showed_title = False
-
-		if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
-			mouse_position[0] = -300
-			mouse_position[1] = -300
-
-		if gui.clear_image_cache_next:
-			gui.clear_image_cache_next -= 1
-			album_art_gen.clear_cache()
-			style_overlay.radio_meta = None
-			if prefs.art_bg:
-				tauon.thread_manager.ready("style")
-
-		fields.clear()
-		gui.cursor_want = 0
-
-		gui.layer_focus = 0
-
-		if inp.mouse_click or mouse_wheel or right_click:
-			mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
-
-		if inp.mouse_click:
-			n_click_time = time.time()
-			if n_click_time - click_time < 0.42:
-				d_mouse_click = True
-			click_time = n_click_time
-
-			# Don't register bottom level click when closing message box
-			if gui.message_box and pref_box.enabled and not key_focused and not coll(message_box.get_rect()):
-				inp.mouse_click = False
-				gui.message_box = False
-
-		# Enable the garbage collecter (since we disabled it during startup)
-		if ggc > 0:
-			if ggc == 2:
-				ggc = 1
-			elif ggc == 1:
-				ggc = 0
-				gbc.enable()
-				#logging.info("Enabling garbage collecting")
-
-		if gui.mode == 4:
-			launch.render()
-		elif gui.mode == 1 or gui.mode == 2:
-
-			ddt.text_background_colour = colours.playlist_panel_background
-
-			# Side Bar Draging----------
-
-			if not mouse_down:
-				side_drag = False
-
-			rect = (window_size[0] - gui.rspw - 5 * gui.scale, gui.panelY, 12 * gui.scale,
-					window_size[1] - gui.panelY - gui.panelBY)
-			fields.add(rect)
-
-			if (coll(rect) or side_drag is True) \
-				and rename_track_box.active is False \
-				and radiobox.active is False \
-				and gui.rename_playlist_box is False \
-				and gui.message_box is False \
-				and pref_box.enabled is False \
-				and track_box is False \
-				and not gui.rename_folder_box \
-				and not Menu.active \
-				and (gui.rsp or album_mode) \
-				and not artist_info_scroll.held \
-				and gui.layer_focus == 0 and gui.show_playlist:
-
-				if side_drag is True:
-					draw_sep_hl = True
-					# gui.update += 1
-					gui.update_on_drag = True
-
-				if inp.mouse_click:
-					side_drag = True
-					gui.side_bar_drag_source = mouse_position[0]
-					gui.side_bar_drag_original = gui.rspw
-
-				if not quick_drag:
-					gui.cursor_want = 1
-
-			# side drag update
-			if side_drag:
-
-				offset = gui.side_bar_drag_source - mouse_position[0]
-
-				target = gui.side_bar_drag_original + offset
-
-				# Snap to album mode position if close
-				if not album_mode and prefs.side_panel_layout == 1:
-					if abs(target - gui.pref_gallery_w) < 35 * gui.scale:
-						target = gui.pref_gallery_w
-
-				# Reset max ratio if drag drops below ratio width
-				if prefs.side_panel_layout == 0:
-					if target < round((window_size[1] - gui.panelY - gui.panelBY) * gui.art_aspect_ratio):
-						gui.art_max_ratio_lock = gui.art_aspect_ratio
-
-					max_w = round(((window_size[
-										1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
-					# 17 here is the art box inset value
-
-				else:
-					max_w = window_size[0]
-
-				if not album_mode and target > max_w - 12 * gui.scale:
-					target = max_w
-					gui.rspw = target
-					gui.rsp_full_lock = True
-
-				else:
-					gui.rspw = target
-					gui.rsp_full_lock = False
-
-				if album_mode:
-					pass
-					# gui.rspw = target
-
-				if album_mode and gui.rspw < album_mode_art_size + 50 * gui.scale:
-					target = album_mode_art_size + 50 * gui.scale
-
-				# Prevent side bar getting too small
-				target = max(target, 120 * gui.scale)
-
-				# Remember size for this view mode
-				if not album_mode:
-					gui.pref_rspw = target
-				else:
-					gui.pref_gallery_w = target
-
-				update_layout_do()
-
-			# ALBUM GALLERY RENDERING:
-			# Gallery view
-			# C-AR
-
-			if album_mode:
-				try:
-					# Arrow key input
-					if gal_right:
-						gal_right = False
-						gal_jump_select(False, 1)
-						goto_album(pctl.selected_in_playlist)
-						pctl.playlist_view_position = pctl.selected_in_playlist
-						logging.debug("Position changed by gallery key press")
-						gui.pl_update = 1
-					if gal_down:
-						gal_down = False
-						gal_jump_select(False, row_len)
-						goto_album(pctl.selected_in_playlist, down=True)
-						pctl.playlist_view_position = pctl.selected_in_playlist
-						logging.debug("Position changed by gallery key press")
-						gui.pl_update = 1
-					if gal_left:
-						gal_left = False
-						gal_jump_select(True, 1)
-						goto_album(pctl.selected_in_playlist)
-						pctl.playlist_view_position = pctl.selected_in_playlist
-						logging.debug("Position changed by gallery key press")
-						gui.pl_update = 1
-					if gal_up:
-						gal_up = False
-						gal_jump_select(True, row_len)
-						goto_album(pctl.selected_in_playlist)
-						pctl.playlist_view_position = pctl.selected_in_playlist
-						logging.debug("Position changed by gallery key press")
-						gui.pl_update = 1
-
-					w = gui.rspw
-
-					if window_size[0] < 750 * gui.scale:
-						w = window_size[0] - 20 * gui.scale
-						if gui.lsp:
-							w -= gui.lspw
-
-					x = window_size[0] - w
-					h = window_size[1] - gui.panelY - gui.panelBY
-
-					if not gui.show_playlist and inp.mouse_click:
-						left = 0
-						if gui.lsp:
-							left = gui.lspw
-
-						if left < mouse_position[0] < left + 20 * gui.scale and window_size[1] - gui.panelBY > \
-								mouse_position[1] > gui.panelY:
-							toggle_album_mode()
-							inp.mouse_click = False
-							mouse_down = False
-
-					rect = [x, gui.panelY, w, h]
-					ddt.rect(rect, colours.gallery_background)
-					# ddt.rect_r(rect, [255, 0, 0, 200], True)
-
-					area_x = w + 38 * gui.scale
-					# area_x = w - 40 * gui.scale
-
-					row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
-
-					#logging.info(row_len)
-
-					compact = 40 * gui.scale
-					a_offset = 7 * gui.scale
-
-					l_area = x
-					r_area = w
-					c_area = r_area // 2 + l_area
-
-					ddt.text_background_colour = colours.gallery_background
-
-					line1_colour = colours.gallery_artist_line
-					line2_colour = colours.grey(240)  # colours.side_bar_line1
-
-					if colours.side_panel_background != colours.gallery_background:
-						line2_colour = [240, 240, 240, 255]
-						line1_colour = alpha_mod([220, 220, 220, 255], 120)
-
-					if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
-						line1_colour = colours.grey(80)
-						line2_colour = colours.grey(40)
-
-					if row_len == 0:
-						row_len = 1
-
-					dev = int((r_area - compact) / (row_len + 0))
-
-					render_pos = 0
-					album_on = 0
-
-					max_scroll = round(
-						(math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(
-						50 * gui.scale)
-
-					# Mouse wheel scrolling
-					if not search_over.active and not radiobox.active \
-							and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[
-						1] - gui.panelBY:
-
-						if mouse_wheel != 0:
-							scroll_gallery_hide_timer.set()
-							gui.frame_callback_list.append(TestTimer(0.9))
-
-						if prefs.gallery_row_scroll:
-							gui.album_scroll_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
-						else:
-							gui.album_scroll_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
-
-						if gui.album_scroll_px < round(album_v_slide_value * -1):
-							gui.album_scroll_px = round(album_v_slide_value * -1)
-							if album_dex:
-								gallery_pulse_top.pulse()
-
-						if gui.album_scroll_px > max_scroll:
-							gui.album_scroll_px = max_scroll
-							gui.album_scroll_px = max(gui.album_scroll_px, round(album_v_slide_value * -1))
-
-					rect = (
-					gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
-
-					card_mode = False
-					if prefs.use_card_style and colours.lm and gui.gallery_show_text:
-						card_mode = True
-
-					rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
-					fields.add(rect)
-
-					# Show scroll area
-					if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
-
-						if gallery_scroll.held:
-							while len(tauon.gall_ren.queue) > 2:
-								tauon.gall_ren.queue.pop()
-
-						# Draw power bar button
-						if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
-							rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale,
-									24 * gui.scale)
-							fields.add(rect)
-							colour = [255, 255, 255, 35]
-							if colours.lm:
-								colour = [0, 0, 0, 30]
-							if coll(rect) and not gallery_scroll.held:
-								colour = [255, 220, 100, 245]
-								if colours.lm:
-									colour = [250, 100, 0, 255]
-								if inp.mouse_click:
-									gui.pt = 1
-
-							power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
-
-						# Draw scroll bar
-						if gui.pt == 0:
-							gui.album_scroll_px = gallery_scroll.draw(
-								window_size[0] - 16 * gui.scale, gui.panelY,
-								15 * gui.scale,
-								window_size[1] - (gui.panelY + gui.panelBY),
-								gui.album_scroll_px + album_v_slide_value,
-								max_scroll + album_v_slide_value,
-								jump_distance=1400 * gui.scale,
-								r_click=right_click,
-								extend_field=15 * gui.scale) - album_v_slide_value
-
-					if last_row != row_len:
-						last_row = row_len
-
-						if pctl.selected_in_playlist < len(pctl.playing_playlist()):
-							goto_album(pctl.selected_in_playlist)
-						# else:
-						#     goto_album(pctl.playlist_playing_position)
-
-					extend = 0
-					if card_mode:  # gui.gallery_show_text:
-						extend = 40 * gui.scale
-
-					# Process inputs first
-					if (inp.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
-						while render_pos < gui.album_scroll_px + window_size[1]:
-
-							if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
-								break
-
-							if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
-								# Skip row
-								render_pos += album_mode_art_size + album_v_gap
-								album_on += row_len
-							else:
-								# render row
-								y = render_pos - gui.album_scroll_px
-								row_x = 0
-								for a in range(row_len):
-									if album_on > len(album_dex) - 1:
-										break
-
-									x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
-										compact / 2) - a_offset
-
-									if album_dex[album_on] > len(default_playlist):
-										break
-
-									rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-									# fields.add(rect)
-									m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-
-									# if m_in:
-									#     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
-
-									# Quick drag and drop
-									if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
-
-										info = get_album_info(album_dex[album_on])
-										if info[1]:
-
-											track_position = info[1][0]
-
-											if track_position > shift_selection[0]:
-												track_position = info[1][-1] + 1
-
-											ref = []
-											for item in shift_selection:
-												ref.append(default_playlist[item])
-
-											for item in shift_selection:
-												default_playlist[item] = "old"
-
-											for item in shift_selection:
-												default_playlist.insert(track_position, "new")
-
-											for b in reversed(range(len(default_playlist))):
-												if default_playlist[b] == "old":
-													del default_playlist[b]
-											shift_selection = []
-											for b in range(len(default_playlist)):
-												if default_playlist[b] == "new":
-													shift_selection.append(b)
-													default_playlist[b] = ref.pop(0)
-
-											pctl.selected_in_playlist = shift_selection[0]
-											gui.pl_update += 1
-											playlist_hold = False
-
-											reload_albums(True)
-											pctl.notify_change()
-
-									elif not side_drag and is_level_zero():
-
-										if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < \
-												window_size[1] - gui.panelBY:
-											info = get_album_info(album_dex[album_on])
-
-											if m_in and mouse_up and prefs.gallery_single_click:
-
-												if is_level_zero() and gui.d_click_ref == album_dex[album_on]:
-
-													if info[0] == 1 and pctl.playing_state == 2:
-														pctl.play()
-													elif info[0] == 1 and pctl.playing_state > 0:
-														pctl.playlist_view_position = album_dex[album_on]
-														logging.debug("Position changed by gallery click")
-													else:
-														pctl.playlist_view_position = album_dex[album_on]
-														logging.debug("Position changed by gallery click")
-														pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-
-													pctl.show_current()
-
-											elif mouse_down and not m_in:
-												info = get_album_info(album_dex[album_on])
-												quick_drag = True
-												if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
-													playlist_hold = True
-												shift_selection = info[1]
-												gui.pl_update += 1
-												click_location = [0, 0]
-
-									if m_in:
-
-										info = get_album_info(album_dex[album_on])
-										if inp.mouse_click:
-
-											if prefs.gallery_single_click:
-												gui.d_click_ref = album_dex[album_on]
-
-											else:
-
-												if d_click_timer.get() < 0.5 and gui.d_click_ref == album_dex[album_on]:
-
-													if info[0] == 1 and pctl.playing_state == 2:
-														pctl.play()
-													elif info[0] == 1 and pctl.playing_state > 0:
-														pctl.playlist_view_position = album_dex[album_on]
-														logging.debug("Position changed by gallery click")
-													else:
-														pctl.playlist_view_position = album_dex[album_on]
-														logging.debug("Position changed by gallery click")
-														pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
-
-												else:
-													gui.d_click_ref = album_dex[album_on]
-													d_click_timer.set()
-
-												pctl.playlist_view_position = album_dex[album_on]
-												logging.debug("Position changed by gallery click")
-												pctl.selected_in_playlist = album_dex[album_on]
-												gui.pl_update += 1
-
-										elif middle_click and is_level_zero():
-											# Middle click to add album to queue
-											if key_ctrl_down:
-												# Add to queue ungrouped
-												album = get_album_info(album_dex[album_on])[1]
-												for item in album:
-													pctl.force_queue.append(
-														queue_item_gen(default_playlist[item], item, pl_to_id(
-															pctl.active_playlist_viewing)))
-												queue_timer_set(plural=True)
-												if prefs.stop_end_queue:
-													pctl.auto_stop = False
-											else:
-												# Add to queue grouped
-												add_album_to_queue(default_playlist[album_dex[album_on]])
-
-										elif right_click:
-											if pctl.quick_add_target:
-
-												pl = id_to_pl(pctl.quick_add_target)
-												if pl is not None:
-													parent = pctl.get_track(
-														default_playlist[album_dex[album_on]]).parent_folder_path
-													# remove from target pl
-													if default_playlist[album_dex[album_on]] in pctl.multi_playlist[pl].playlist_ids:
-														for i in reversed(range(len(pctl.multi_playlist[pl].playlist_ids))):
-															if pctl.get_track(pctl.multi_playlist[pl].playlist_ids[i]).parent_folder_path == parent:
-																del pctl.multi_playlist[pl].playlist_ids[i]
-													else:
-														# add
-														for i in range(len(default_playlist)):
-															if pctl.get_track(default_playlist[i]).parent_folder_path == parent:
-																pctl.multi_playlist[pl].playlist_ids.append(default_playlist[i])
-
-												reload_albums(True)
-
-											else:
-												pctl.selected_in_playlist = album_dex[album_on]
-												# playlist_position = pctl.playlist_selected
-												shift_selection = [pctl.selected_in_playlist]
-												gallery_menu.activate(default_playlist[pctl.selected_in_playlist])
-												r_menu_position = pctl.selected_in_playlist
-
-												shift_selection = []
-												u = pctl.selected_in_playlist
-												while u < len(default_playlist) and pctl.master_library[
-													default_playlist[u]].parent_folder_path == \
-														pctl.master_library[
-															default_playlist[pctl.selected_in_playlist]].parent_folder_path:
-													shift_selection.append(u)
-													u += 1
-												pctl.render_playlist()
-
-									album_on += 1
-
-								if album_on > len(album_dex):
-									break
-								render_pos += album_mode_art_size + album_v_gap
-
-					render_pos = 0
-					album_on = 0
-					album_count = 0
-
-					if not pref_box.enabled or mouse_wheel != 0:
-						gui.first_in_grid = None
-
-					# Render album grid
-					while render_pos < gui.album_scroll_px + window_size[1] and default_playlist:
-
-						if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
-							break
-
-						if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
-							# Skip row
-							render_pos += album_mode_art_size + album_v_gap
-							album_on += row_len
-						else:
-							# render row
-							y = render_pos - gui.album_scroll_px
-
-							row_x = 0
-
-							if y > window_size[1] - gui.panelBY - 30 * gui.scale and window_size[1] < 340 * gui.scale:
-								break
-							# if y >
-
-							for a in range(row_len):
-
-								if album_on > len(album_dex) - 1:
-									break
-
-								x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
-									compact / 2) - a_offset
-
-								if album_dex[album_on] > len(default_playlist):
-									break
-
-								track = pctl.master_library[default_playlist[album_dex[album_on]]]
-
-								info = get_album_info(album_dex[album_on])
-								album = info[1]
-								# info = (0, 0, 0)
-
-								# rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-								# fields.add(rect)
-								# m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-
-								if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
-									gui.first_in_grid = album_dex[album_on]
-
-								# artisttitle = colours.side_bar_line2
-								# albumtitle = colours.side_bar_line1  # grey(220)
-
-								if card_mode:
-									ddt.text_background_colour = colours.grey(250)
-									drop_shadow.render(
-										x + 3 * gui.scale, y + 3 * gui.scale,
-										album_mode_art_size + 11 * gui.scale,
-										album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
-									ddt.rect(
-										(x, y, album_mode_art_size, album_mode_art_size + 45 * gui.scale), colours.grey(250))
-
-								# White background needs extra border
-								if colours.lm and not card_mode:
-									ddt.rect_a((x - 2, y - 2), (album_mode_art_size + 4, album_mode_art_size + 4), colours.grey(200))
-
-								if a == row_len - 1:
-									gui.gallery_scroll_field_left = max(
-										x + album_mode_art_size,
-										window_size[0] - round(50 * gui.scale))
-
-								if info[0] == 1 and 0 < pctl.playing_state < 3:
-									ddt.rect_a(
-										(x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
-										colours.gallery_highlight)
-									# ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-									#            colours.gallery_background, True)
-
-								# Draw quick add highlight
-								if pctl.quick_add_target:
-									pl = id_to_pl(pctl.quick_add_target)
-									if pl is not None and default_playlist[album_dex[album_on]] in \
-											pctl.multi_playlist[pl].playlist_ids:
-										c = [110, 233, 90, 255]
-										if colours.lm:
-											c = [66, 244, 66, 255]
-										ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8), c)
-
-								# Draw transcode highlight
-								if transcode_list and os.path.isdir(prefs.encoder_output):
-
-									tr = False
-
-									if (encode_folder_name(track) in os.listdir(prefs.encoder_output)):
-										tr = True
-									else:
-										for folder in transcode_list:
-											if pctl.get_track(folder[0]).parent_folder_path == track.parent_folder_path:
-												tr = True
-												break
-									if tr:
-										c = [244, 212, 66, 255]
-										if colours.lm:
-											c = [244, 64, 244, 255]
-										ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8), c)
-										# ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-										#            colours.gallery_background, True)
-
-								# Draw selection
-
-								if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
-									c = colours.gallery_highlight
-									c = [c[1], c[2], c[0], c[3]]
-									ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8), c)  # [150, 80, 222, 255]
-									# ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
-									#            colours.gallery_background, True)
-
-								# Draw selection animation
-								if gui.gallery_animate_highlight_on == album_dex[
-									album_on] and gallery_select_animate_timer.get() < 1.5:
-
-									t = gallery_select_animate_timer.get()
-									c = colours.gallery_highlight
-									if t < 0.2:
-										a = int(255 * (t / 0.2))
-									elif t < 0.5:
-										a = 255
-									else:
-										a = int(255 - 255 * (t - 0.5))
-
-									c = [c[1], c[2], c[0], a]
-									ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10), c)  # [150, 80, 222, 255]
-
-									gui.update += 1
-
-								# Draw faint outline
-								ddt.rect(
-									(x - 1, y - 1, album_mode_art_size + 2, album_mode_art_size + 2),
-									[255, 255, 255, 11])
-
-								if gui.album_tab_mode or gallery_menu.active:
-									if info[2] is False and info[0] != 1 and not colours.lm:
-										ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110])
-										albumtitle = colours.grey(160)
-
-								elif info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-									ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110])
-									albumtitle = colours.grey(160)
-
-								# Determine meta info
-								singles = False
-								artists = 0
-								last_album = ""
-								last_artist = ""
-								s = 0
-								ones = 0
-								for id in album:
-									tr = pctl.get_track(default_playlist[id])
-									if tr.album != last_album:
-										if last_album:
-											s += 1
-										last_album = tr.album
-										if str(tr.track_number) == "1":
-											ones += 1
-									if tr.artist != last_artist:
-										artists += 1
-								if s > 2 or ones > 2:
-									singles = True
-
-								# Draw blank back colour
-								back_colour = [40, 40, 40, 50]
-								if colours.lm:
-									back_colour = [10, 10, 10, 15]
-
-								back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
-
-								ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour)
-
-								# Draw album art
-								if singles:
-									dia = math.sqrt(album_mode_art_size * album_mode_art_size * 2)
-									ran = dia * 0.25
-									off = (dia - ran) / 2
-									albs = min(len(album), 5)
-									spacing = ran / (albs - 1)
-									size = round(album_mode_art_size * 0.5)
-
-									i = 0
-									for p in album[:albs]:
-
-										pp = spacing * i
-										pp += off
-										xx = pp / math.sqrt(2)
-
-										xx -= size / 2
-										drawn_art = tauon.gall_ren.render(
-											pctl.get_track(default_playlist[p]), (x + xx, y + xx),
-											size=size, force_offset=0)
-										if not drawn_art:
-											g = 50 + round(100 / albs) * i
-											ddt.rect((x + xx, y + xx, size, size), [g, g, g, 100])
-										drawn_art = True
-										i += 1
-
-								else:
-									album_count += 1
-									if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
-										tauon.gall_ren.limit = round((album_count * 1.5) + 30)
-									drawn_art = tauon.gall_ren.render(track, (x, y))
-
-								# Determine mouse collision
-								rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-								m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-								fields.add(rect)
-
-								# Draw mouse-over highlight
-								if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
-									if is_level_zero():
-										ddt.rect(rect, [255, 255, 255, 10])
-
-								if drawn_art is False and gui.gallery_show_text is False:
-									ddt.text(
-										(x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
-										pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
-										colours.gallery_artist_line,
-										13,
-										album_mode_art_size - 15 * gui.scale,
-										bg=alpha_blend(back_colour, colours.gallery_background))
-
-								if prefs.art_bg and drawn_art:
-									rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
-									if rect.y < gui.panelY:
-										diff = round(gui.panelY - rect.y)
-										rect.y += diff
-										rect.h -= diff
-									elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
-										diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
-										rect.h -= diff
-
-									if rect.h > 0:
-										style_overlay.hole_punches.append(rect)
-
-								# # Drag over highlight
-								# if quick_drag and playlist_hold and mouse_down:
-								#     rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
-								#     m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
-								#     if m_in:
-								#         ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [120, 10, 255, 100], True)
-
-								if gui.gallery_show_text:
-									c_index = default_playlist[album_dex[album_on]]
-
-									if c_index in album_artist_dict:
-										pass
-									else:
-										i = album_dex[album_on]
-										if pctl.master_library[default_playlist[i]].album_artist:
-											album_artist_dict[c_index] = pctl.master_library[
-												default_playlist[i]].album_artist
-										else:
-											while i < len(default_playlist) - 1:
-												if pctl.master_library[default_playlist[i]].parent_folder_name != \
-														pctl.master_library[
-															default_playlist[album_dex[album_on]]].parent_folder_name:
-													album_artist_dict[c_index] = pctl.master_library[
-														default_playlist[album_dex[album_on]]].artist
-													break
-												if pctl.master_library[default_playlist[i]].artist != \
-														pctl.master_library[
-															default_playlist[album_dex[album_on]]].artist:
-													album_artist_dict[c_index] = _("Various Artists")
-
-													break
-												i += 1
-											else:
-												album_artist_dict[c_index] = pctl.master_library[
-													default_playlist[album_dex[album_on]]].artist
-
-									line = album_artist_dict[c_index]
-									line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
-									if singles:
-										line2 = pctl.master_library[
-											default_playlist[album_dex[album_on]]].parent_folder_name
-										if artists > 1:
-											line = _("Various Artists")
-
-									text_align = 0
-									if prefs.center_gallery_text:
-										x += album_mode_art_size // 2
-										text_align = 2
-									elif card_mode:
-										x += round(6 * gui.scale)
-
-									if card_mode:
-
-										if line2 == "":
-
-											ddt.text(
-												(x, y + album_mode_art_size + 8 * gui.scale, text_align),
-												line,
-												line1_colour,
-												310,
-												album_mode_art_size - 18 * gui.scale)
-										else:
-
-											ddt.text(
-												(x, y + album_mode_art_size + 7 * gui.scale, text_align),
-												line2,
-												line2_colour,
-												311,
-												album_mode_art_size - 18 * gui.scale)
-
-											ddt.text(
-												(x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
-												line,
-												line1_colour,
-												10,
-												album_mode_art_size - 18 * gui.scale)
-									elif line2 == "":
-
-										ddt.text(
-											(x, y + album_mode_art_size + 9 * gui.scale, text_align),
-											line,
-											line1_colour,
-											311,
-											album_mode_art_size - 5 * gui.scale)
-									else:
-
-										ddt.text(
-											(x, y + album_mode_art_size + 8 * gui.scale, text_align),
-											line2,
-											line2_colour,
-											212,
-											album_mode_art_size)
-
-										ddt.text(
-											(x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
-											line,
-											line1_colour,
-											311,
-											album_mode_art_size - 5 * gui.scale)
-
-								album_on += 1
-
-							if album_on > len(album_dex):
-								break
-							render_pos += album_mode_art_size + album_v_gap
-
-					# POWER TAG BAR --------------
-
-					if gui.pt > 0:  # gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
-
-						top = gui.panelY
-						run_y = top + 1
-
-						hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
-						fields.add(hot_r)
-
-						if gui.pt == 0:  # mouse moves in
-							if coll(hot_r) and window_is_focused():
-								gui.pt_on.set()
-								gui.pt = 1
-						elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
-							if not coll(hot_r):
-								gui.pt = 0
-							elif gui.pt_on.get() > 0.2:
-								gui.pt = 2
-
-								off = 0
-								for item in gui.power_bar:
-									item.ani_timer.force_set(off)
-									off -= 0.005
-
-						elif gui.pt == 2:  # wait to turn off
-
-							if coll(hot_r):
-								gui.pt_off.set()
-							if gui.pt_off.get() > 0.6 and not lightning_menu.active:
-								gui.pt = 3
-
-								off = 0
-								for item in gui.power_bar:
-									item.ani_timer.force_set(off)
-									off -= 0.01
-
-						done = True
-						# Animate tages on
-						if gui.pt == 2:
-							for item in gui.power_bar:
-								t = item.ani_timer.get()
-								if t < 0:
-									break
-								if t > 0.2:
-									item.peak_x = 9 * gui.scale
-								else:
-									item.peak_x = (t / 0.2) * 9 * gui.scale
-
-						# Animate tags off
-						if gui.pt == 3:
-							for item in gui.power_bar:
-								t = item.ani_timer.get()
-								if t < 0:
-									done = False
-									break
-								if t > 0.2:
-									item.peak_x = 0
-								else:
-									item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
-									done = False
-							if done:
-								gui.pt = 0
-								gui.update += 1
-
-						# Keep draw loop running while on
-						if gui.pt > 0:
-							gui.update = 2
-
-						# Draw tags
-
-						block_h = round(27 * gui.scale)
-						block_gap = 1 * gui.scale
-						if gui.scale == 1.25:
-							block_gap = 1
-
-						if coll(hot_r) or gui.pt > 0:
-
-							for i, item in enumerate(gui.power_bar):
-
-								if run_y + block_h > top + h:
-									break
-
-								rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
-								i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
-								fields.add(i_rect)
-
-								if (coll(i_rect) or (
-									lightning_menu.active and lightning_menu.reference == item)) and item.peak_x == 9 * gui.scale:
-
-									if not lightning_menu.active or lightning_menu.reference == item or right_click:
-
-										minx = 100 * gui.scale
-										maxx = minx * 2
-
-										ww = ddt.get_text_w(item.name, 213)
-
-										w = max(minx, ww)
-										w = min(maxx, w)
-
-										ddt.rect(
-											(rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h),
-											[230, 230, 230, 255])
-										ddt.text(
-											(rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name,
-											[5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
-
-										if inp.mouse_click:
-											goto_album(item.position)
-										if right_click:
-											lightning_menu.activate(item, position=(
-											window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
-										if middle_click:
-											path_stem_to_playlist(item.path, item.name)
-
-								ddt.rect(rect, item.colour)
-								run_y += block_h + block_gap
-
-					gallery_pulse_top.render(
-						window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale)
-				except Exception:
-					logging.exception("Gallery render error!")
-				# END POWER BAR ------------------------
-
-			# End of gallery view
-			# --------------------------------------------------------------------------
-			# Main Playlist:
-			if len(load_orders) > 0:
-
-				for i, order in enumerate(load_orders):
-					if order.stage == 2:
-						target_pl = 0
-
-						# Sort the tracks by track number
-						sort_track_2(None, order.tracks)
-
-						for p, playlist in enumerate(pctl.multi_playlist):
-							if playlist.uuid_int == order.playlist:
-								target_pl = p
-								break
-						else:
-							del load_orders[i]
-							logging.error("Target playlist lost")
-							break
-
-						if order.replace_stem:
-							for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl].playlist_ids))):
-								pfp = pctl.get_track(id).parent_folder_path
-								if pfp.startswith(order.target.replace("\\", "/")):
-									if pfp.rstrip("/\\") == order.target.rstrip("/\\") or \
-											(len(pfp) > len(order.target) and pfp[
-												len(order.target.rstrip("/\\"))] in ("/", "\\")):
-										del pctl.multi_playlist[target_pl].playlist_ids[ii]
-
-						#logging.info(order.tracks)
-						if order.playlist_position is not None:
-							#logging.info(order.playlist_position)
-							pctl.multi_playlist[target_pl].playlist_ids[
-							order.playlist_position:order.playlist_position] = order.tracks
-						# else:
-
-						else:
-							pctl.multi_playlist[target_pl].playlist_ids += order.tracks
-
-						pctl.update_shuffle_pool(pctl.multi_playlist[target_pl].uuid_int)
-
-						gui.update += 2
-						gui.pl_update += 2
-						if order.notify and gui.message_box and len(load_orders) == 1:
-							show_message(_("Rescan folders complete."), mode="done")
-						reload()
-						tree_view_box.clear_target_pl(target_pl)
-
-						if order.play and order.tracks:
-
-							for p, plst in enumerate(pctl.multi_playlist):
-								if order.tracks[0] in plst.playlist_ids:
-									target_pl = p
-									break
-
-							switch_playlist(target_pl)
-
-							pctl.active_playlist_playing = pctl.active_playlist_viewing
-
-							# If already in playlist, delete latest add
-							if pctl.multi_playlist[target_pl].title == "Default":
-								if default_playlist.count(order.tracks[0]) > 1:
-									for q in reversed(range(len(default_playlist))):
-										if default_playlist[q] == order.tracks[0]:
-											del default_playlist[q]
-											break
-
-							pctl.jump(order.tracks[0], pl_position=default_playlist.index(order.tracks[0]))
-
-							pctl.show_current(True, True, True, True, True)
-
-						del load_orders[i]
-
-						# Are there more orders for this playlist?
-						# If not, decide on a name for the playlist
-						for item in load_orders:
-							if item.playlist == order.playlist:
-								break
-						else:
-
-							if _("New Playlist") in pctl.multi_playlist[target_pl].title:
-								auto_name_pl(target_pl)
-
-							if prefs.auto_sort:
-								if pctl.multi_playlist[target_pl].locked:
-									show_message(_("Auto sort skipped because playlist is locked."))
-								else:
-									logging.info("Auto sorting")
-									standard_sort(target_pl)
-									year_sort(target_pl)
-
-						if not load_orders:
-							loading_in_progress = False
-							pctl.notify_change()
-							gui.auto_play_import = False
-							album_artist_dict.clear()
-						break
-
-			if gui.show_playlist:
-
-				# playlist hit test
-				if coll((
-						gui.playlist_left, gui.playlist_top, gui.plw,
-						window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
-						inp.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
-					gui.pl_update = 1
-
-				if gui.combo_mode and mouse_wheel != 0:
-					gui.pl_update = 1
-
-				# MAIN PLAYLIST
-				# C-PR
-
-				top = gui.panelY
-				if gui.artist_info_panel:
-					top += gui.artist_panel_height
-
-				if gui.set_mode and not gui.set_bar:
-					left = 0
-					if gui.lsp:
-						left = gui.lspw
-					rect = [left, top, gui.plw, 12 * gui.scale]
-					if right_click and coll(rect):
-						set_menu_hidden.activate()
-						right_click = False
-
-				width = gui.plw
-				if gui.set_bar and gui.set_mode:
-					left = 0
-					if gui.lsp:
-						left = gui.lspw
-
-					if gui.tracklist_center_mode:
-						left = gui.tracklist_inset_left - round(20 * gui.scale)
-						width = gui.tracklist_inset_width + round(20 * gui.scale)
-
-					rect = [left, top, width, gui.set_height]
-					start = left + 16 * gui.scale
-					run = 0
-					in_grip = False
-
-					if not mouse_down and gui.set_hold != -1:
-						gui.set_hold = -1
-
-					for h, item in enumerate(gui.pl_st):
-						box = (start + run, rect[1], item[1], rect[3])
-						grip = (start + run, rect[1], 3 * gui.scale, rect[3])
-						m_grip = (grip[0] - 4 * gui.scale, grip[1], grip[2] + 8 * gui.scale, grip[3])
-						l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
-						fields.add(m_grip)
-
-						if coll(l_grip):
-							if mouse_up and gui.set_label_hold != -1:
-								if point_distance(mouse_position, gui.set_label_point) < 8 * gui.scale:
-									sort_direction = 0
-									if h != gui.column_d_click_on or gui.column_d_click_timer.get() > 2.5:
-										gui.column_d_click_timer.set()
-										gui.column_d_click_on = h
-
-										sort_direction = 1
-
-										gui.column_sort_ani_direction = 1
-										gui.column_sort_ani_x = start + run + item[1]
-
-									elif gui.column_d_click_on == h:
-										gui.column_d_click_on = -1
-										gui.column_d_click_timer.force_set(10)
-
-										sort_direction = -1
-
-										gui.column_sort_ani_direction = -1
-										gui.column_sort_ani_x = start + run + item[1]
-
-									if sort_direction:
-
-										if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "S", "Time", "Date"}:
-											sort_direction *= -1
-
-										if sort_direction == 1:
-											sort_ass(h)
-										else:
-											sort_ass(h, True)
-										gui.column_sort_ani_timer.set()
-
-								else:
-									gui.column_d_click_on = -1
-									if h != gui.set_label_hold:
-										dest = h
-										if dest > gui.set_label_hold:
-											dest += 1
-										temp = gui.pl_st[gui.set_label_hold]
-										gui.pl_st[gui.set_label_hold] = "old"
-										gui.pl_st.insert(dest, temp)
-										gui.pl_st.remove("old")
-
-										gui.pl_update = 1
-										gui.set_label_hold = -1
-										#logging.info("MOVE")
-										break
-
-									gui.set_label_hold = -1
-
-							if inp.mouse_click:
-								gui.set_label_hold = h
-								gui.set_label_point = copy.deepcopy(mouse_position)
-							if right_click:
-								set_menu.activate(h)
-
-						if h != 0:
-							if coll(m_grip):
-								in_grip = True
-								if inp.mouse_click:
-									gui.set_hold = h
-									gui.set_point = mouse_position[0]
-									gui.set_old = gui.pl_st[h - 1][1]
-
-							if mouse_down and gui.set_hold == h:
-								gui.pl_st[h - 1][1] = gui.set_old + (mouse_position[0] - gui.set_point)
-								gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
-
-								gui.update = 1
-								# gui.pl_update = 1
-
-								total = 0
-								for i in range(len(gui.pl_st) - 1):
-									total += gui.pl_st[i][1]
-
-								wid = gui.plw - round(16 * gui.scale)
-								if gui.tracklist_center_mode:
-									wid = gui.tracklist_highlight_width - round(16 * gui.scale)
-								gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
-
-						run += item[1]
-
-					if not mouse_down:
-						gui.set_label_hold = -1
-					#logging.info(in_grip)
-					if gui.set_label_hold == -1:
-						if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
-							gui.cursor_want = 1
-						if gui.set_hold != -1:
-							gui.cursor_want = 1
-							gui.pl_update_on_drag = True
-
-				# heart field test
-				if gui.heart_fields:
-					for field in gui.heart_fields:
-						fields.add(field, update_playlist_call)
-
-				if gui.pl_update > 0:
-					gui.rendered_playlist_position = playlist_view_position
-
-					gui.pl_update -= 1
-					if gui.combo_mode:
-						if gui.radio_view:
-							radio_view.render()
-						elif gui.showcase_mode:
-							showcase.render()
-
-
-						# else:
-						#     combo_pl_render.full_render()
-					else:
-						gui.heart_fields.clear()
-						playlist_render.full_render()
-
-				elif gui.combo_mode:
-					if gui.radio_view:
-						radio_view.render()
-					elif gui.showcase_mode:
-						showcase.render()
-					# else:
-					#     combo_pl_render.cache_render()
-				else:
-					playlist_render.cache_render()
-
-				if gui.combo_mode and key_esc_press and is_level_zero():
-					exit_combo()
-
-				if not gui.set_bar and gui.set_mode and not gui.combo_mode:
-					width = gui.plw
-					left = 0
-					if gui.lsp:
-						left = gui.lspw
-					if gui.tracklist_center_mode:
-						left = gui.tracklist_highlight_left
-						width = gui.tracklist_highlight_width
-					rect = [left, top, width, gui.set_height // 2.5]
-					fields.add(rect)
-					gui.delay_frame(0.26)
-
-					if coll(rect) and gui.bar_hover_timer.get() > 0.25:
-						ddt.rect(rect, colours.column_bar_background)
-						if inp.mouse_click:
-							gui.set_bar = True
-							update_layout_do()
-					if not coll(rect):
-						gui.bar_hover_timer.set()
-
-				if gui.set_bar and gui.set_mode and not gui.combo_mode:
-
-					x = 0
-					if gui.lsp:
-						x = gui.lspw
-
-					width = gui.plw
-
-					if gui.tracklist_center_mode:
-						x = gui.tracklist_highlight_left
-						width = gui.tracklist_highlight_width
-
-					rect = [x, top, width, gui.set_height]
-
-					c_bar_background = colours.column_bar_background
-
-					# if colours.lm:
-					#     c_bar_background = [235, 110, 160, 255]
-
-					if gui.tracklist_center_mode:
-						ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background)
-					else:
-						ddt.rect(rect, c_bar_background)
-
-					start = x + 16 * gui.scale
-					c_width = width - 16 * gui.scale
-
-					run = 0
-
-					for i, item in enumerate(gui.pl_st):
-
-						# if run > rect[2] - 55 * gui.scale:
-						#     break
-
-						wid = item[1]
-
-						if run + wid > c_width:
-							wid = c_width - run
-
-						if run > c_width - 22 * gui.scale:
-							break
-
-						# if run > c_width - 20 * gui.scale:
-						#     run = run - 20 * gui.scale
-
-						wid = max(0, wid)
-
-						# ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
-						box = (start + run, rect[1], wid, rect[3])
-
-						grip = (start + run, rect[1], 3 * gui.scale, rect[3])
-
-						bg = c_bar_background
-
-						if coll(box) and gui.set_label_hold != -1:
-							bg = [39, 39, 39, 255]
-
-						if i == gui.set_label_hold:
-							bg = [22, 22, 22, 255]
-
-						ddt.rect(box, bg)
-						ddt.rect(grip, colours.column_grip)
-
-						line = _(item[0])
-						ddt.text_background_colour = bg
-
-						# # Remove columns if positioned out of view
-						# if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
-						#
-						#     if box[0] + 10 * gui.scale > start + gui.plw:
-						#         del gui.pl_st[i]
-						#
-						#     i += 1
-						#     while i < len(gui.pl_st):
-						#         del gui.pl_st[i]
-						#         i += 1
-						#
-						#     break
-						if line == "❤":
-							heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, colours.column_bar_text)
-						else:
-							ddt.text(
-								(box[0] + 10 * gui.scale, top + 4 * gui.scale), line, colours.column_bar_text, 312,
-								bg=bg, max_w=box[2] - 25 * gui.scale)
-
-						run += box[2]
-
-					t = gui.column_sort_ani_timer.get()
-					if t < 0.30:
-						gui.update += 1
-						x = round(gui.column_sort_ani_x - 22 * gui.scale)
-						p = t / 0.30
-
-						if gui.column_sort_ani_direction == 1:
-							y = top + 8 * p + 3 * gui.scale
-							gui.column_sort_down_icon.render(x, round(y), [255, 255, 255, 90])
-						else:
-							p = 1 - p
-							y = top + 8 * p + 2 * gui.scale
-							gui.column_sort_up_icon.render(x, round(y), [255, 255, 255, 90])
-
-				# Switch Vis:
-				if right_click and coll(
-					(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale,
-					gui.panelY)) and not gui.top_bar_mode2:
-					vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
-				elif right_click and top_panel.tabs_right_x < mouse_position[0] and \
-						mouse_position[1] < gui.panelY and \
-						mouse_position[0] > top_panel.tabs_right_x and \
-						mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra:
-
-					window_menu.activate(None, (mouse_position[0], 30 * gui.scale))
-
-				elif middle_click and top_panel.tabs_right_x < mouse_position[0] and \
-						mouse_position[1] < gui.panelY and \
-						mouse_position[0] > top_panel.tabs_right_x and \
-						mouse_position[0] < window_size[0] - gui.offset_extra:
-
-					do_minimize_button()
-
-				# edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
-
-				bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY, gui.plw, 25 * gui.scale,
-										bottom=True)
-				# --------------------------------------------
-				# ALBUM ART
-
-				# Right side panel drawing
-
-				if gui.rsp and not album_mode:
-					gui.showing_l_panel = False
-					target_track = pctl.show_object()
-
-					if middle_click:
-						if coll(
-							(window_size[0] - gui.rspw, gui.panelY, gui.rspw,
-							window_size[1] - gui.panelY - gui.panelBY)):
-
-							if (target_track and target_track.lyrics and prefs.show_lyrics_side) or \
-									(
-											prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(
-										target_track)):
-
-								prefs.show_lyrics_side ^= True
-								prefs.side_panel_layout = 1
-							else:
-
-								if prefs.side_panel_layout == 0:
-
-									if (target_track and target_track.lyrics and not prefs.show_lyrics_side) or \
-											(
-													prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(
-												target_track)):
-										prefs.show_lyrics_side = True
-										prefs.side_panel_layout = 1
-									else:
-										prefs.side_panel_layout = 1
-								else:
-									prefs.side_panel_layout = 0
-
-					if prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(
-							target_track):
-
-						if prefs.show_side_lyrics_art_panel:
-							l_panel_h = round(200 * gui.scale)
-							l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
-							gui.showing_l_panel = True
-
-							if not prefs.lyric_metadata_panel_top:
-								timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-														gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
-														h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
-								meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
-							else:
-								timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-														gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True,
-														w=gui.rspw,
-														h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
-								meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track)
-						else:
-							timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-													gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
-													h=window_size[1] - gui.panelY - gui.panelBY)
-
-							if right_click and coll(
-								(window_size[0] - gui.rspw, gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
-								center_info_menu.activate(target_track)
-
-					elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
-
-						if prefs.show_side_lyrics_art_panel:
-							l_panel_h = round(200 * gui.scale)
-							l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
-							gui.showing_l_panel = True
-
-							if not prefs.lyric_metadata_panel_top:
-								meta_box.lyrics(
-									window_size[0] - gui.rspw, gui.panelY, gui.rspw,
-									window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
-								meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
-							else:
-								meta_box.lyrics(
-									window_size[0] - gui.rspw, gui.panelY + l_panel_h, gui.rspw,
-									window_size[1] - (gui.panelY + gui.panelBY + l_panel_h), target_track)
-
-								meta_box.l_panel(
-									window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h,
-									target_track, top_border=False)
-						else:
-							meta_box.lyrics(
-								window_size[0] - gui.rspw, gui.panelY, gui.rspw,
-								window_size[1] - gui.panelY - gui.panelBY, target_track)
-
-					elif prefs.side_panel_layout == 0:
-
-						boxw = gui.rspw
-						boxh = gui.rspw
-
-						if prefs.show_side_art:
-
-							meta_box.draw(
-								window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
-								window_size[1] - gui.panelY - gui.panelBY - boxh, track=target_track)
-
-							boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
-
-							art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh, target_track=target_track)
-
-						else:
-							meta_box.draw(
-								window_size[0] - gui.rspw, gui.panelY, gui.rspw,
-								window_size[1] - gui.panelY - gui.panelBY, track=target_track)
-
-					elif prefs.side_panel_layout == 1:
-
-						h = window_size[1] - (gui.panelY + gui.panelBY)
-						x = window_size[0] - gui.rspw
-						y = gui.panelY
-						w = gui.rspw
-
-						ddt.rect((x, y, w, h), colours.side_panel_background)
-						test_auto_lyrics(target_track)
-						# Draw lyrics if avaliable
-						if prefs.show_lyrics_side and target_track and target_track.lyrics != "":  # and not prefs.show_side_art:
-							# meta_box.lyrics(x, y, w, h, target_track)
-							if right_click and coll((x, y, w, h)) and target_track:
-								center_info_menu.activate(target_track)
-						else:
-
-							box_wide_w = round(w * 0.98)
-							boxx = round(min(h * 0.7, w * 0.9))
-							boxy = round(min(h * 0.7, w * 0.9))
-
-							bx = (x + w // 2) - (boxx // 2)
-							bx_wide = (x + w // 2) - (box_wide_w // 2)
-							by = round(h * 0.1)
-
-							bby = by + boxy
-
-							# We want the text in the center, but slightly raised when area is large
-							text_y = y + by + boxy + ((h - bby) // 2) - 44 * gui.scale - round(
-								(h - bby - 94 * gui.scale) * 0.08)
-
-							small_mode = False
-							if window_size[1] < 550 * gui.scale:
-								small_mode = True
-								text_y = y + by + boxy + ((h - bby) // 2) - 38 * gui.scale
-
-							text_x = x + w // 2
-
-							if prefs.show_side_art:
-								gui.art_drawn_rect = None
-								default_border = (bx, by, boxx, boxy)
-								coll_border = default_border
-
-								art_box.draw(
-									bx_wide, by, box_wide_w, boxy, target_track=target_track,
-									tight_border=True, default_border=default_border)
-
-								if gui.art_drawn_rect:
-									coll_border = gui.art_drawn_rect
-
-								if right_click and coll((x, y, w, h)) and not coll(coll_border):
-									if is_level_zero(include_menus=False) and target_track:
-										center_info_menu.activate(target_track)
-
-							else:
-								text_y = y + round(h * 0.40)
-								if right_click and coll((x, y, w, h)) and target_track:
-									center_info_menu.activate(target_track)
-
-							ww = w - 25 * gui.scale
-
-							gui.showed_title = True
-
-							if target_track:
-								ddt.text_background_colour = colours.side_panel_background
-
-								if pctl.playing_state == 3 and not radiobox.dummy_track.title:
-									title = pctl.tag_meta
-								else:
-									title = target_track.title
-									if not title:
-										title = clean_string(target_track.filename)
-
-								if small_mode:
-									ddt.text(
-										(text_x, text_y - 15 * gui.scale, 2), target_track.artist,
-										colours.side_bar_line1, 315, max_w=ww)
-
-									ddt.text(
-										(text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
-
-									line = " | ".join(
-										filter(None, (target_track.album, target_track.date, target_track.genre)))
-									ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
-
-								else:
-									ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
-
-									ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
-
-									line = " | ".join(
-										filter(None, (target_track.album, target_track.date, target_track.genre)))
-									ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
-
-				# Seperation Line Drawing
-				if gui.rsp:
-
-					# Draw Highlight when mouse over
-					if draw_sep_hl:
-						ddt.line(
-							window_size[0] - gui.rspw + 1 * gui.scale, gui.panelY + 1 * gui.scale,
-							window_size[0] - gui.rspw + 1 * gui.scale,
-							window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
-						draw_sep_hl = False
-
-			if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
-				artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
-
-			if gui.lsp and not gui.combo_mode:
-
-				# left side panel
-
-				h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(
-					pctl.multi_playlist)) + 13 * gui.scale
-
-				full = (window_size[1] - (gui.panelY + gui.panelBY))
-				half = int(round(full / 2))
-
-				pl_box_h = full
-
-				panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
-				fields.add(panel_rect)
-
-				if gui.force_side_on_drag and not quick_drag and not coll(panel_rect):
-					gui.force_side_on_drag = False
-					update_layout_do()
-
-				if quick_drag and not coll_point(gui.drag_source_position_persist, panel_rect) and \
-					not point_proximity_test(
-						gui.drag_source_position,
-						mouse_position,
-						10 * gui.scale):
-					gui.force_side_on_drag = True
-					if mouse_up:
-						update_layout_do()
-
-				if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
-					tree_view_box.render(0, gui.panelY, gui.lspw, pl_box_h)
-				elif prefs.left_panel_mode == "artist list" and not gui.force_side_on_drag:
-					artist_list_box.render(*panel_rect)
-				else:
-
-					preview_queue = False
-					if quick_drag and coll(
-							panel_rect) and not pctl.force_queue and prefs.show_playlist_list and prefs.hide_queue:
-						preview_queue = True
-
-					if pctl.force_queue or preview_queue or not prefs.hide_queue:
-
-						if h_estimate < half:
-							pl_box_h = h_estimate
-						else:
-							pl_box_h = half
-
-						if preview_queue:
-							pl_box_h = int(round(full * 5 / 6))
-
-					if prefs.left_panel_mode != "queue":
-
-						playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
-					else:
-						pl_box_h = 0
-
-					if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
-
-						queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
-					elif prefs.left_panel_mode == "queue":
-						text = _("Queue is Empty")
-						rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
-						ddt.rect(rect, colours.queue_background)
-						ddt.text_background_colour = colours.queue_background
-						ddt.text(
-							(0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2),
-							text, alpha_mod(colours.index_text, 200), 212)
-
-			# ------------------------------------------------
-			# Scroll Bar
-
-			# if not scroll_enable:
-			top = gui.panelY
-			if gui.artist_info_panel:
-				top += gui.artist_panel_height
-
-			edge_top = top
-			if gui.set_bar and gui.set_mode:
-				edge_top += gui.set_height
-			edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
-
-			width = 15 * gui.scale
-
-			x = 0
-			if gui.lsp:  # Move left so it sits over panel divide
-
-				x = gui.lspw - 1 * gui.scale
-				if not gui.set_mode:
-					width = 11 * gui.scale
-			if gui.set_mode and prefs.left_align_album_artist_title:
-				width = 11 * gui.scale
-
-			# x = gui.plw
-			# width = round(14 * gui.scale)
-			# if gui.lsp:
-			#     x += gui.lspw
-			# x -= width
-
-			gui.scroll_hide_box = (
-				x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
-
-			fields.add(gui.scroll_hide_box)
-			if scroll_hide_timer.get() < 0.9 or ((coll(
-					gui.scroll_hide_box) or scroll_hold or quick_search_mode) and \
-					not menu_is_open() and \
-					not pref_box.enabled and \
-					not gui.rename_playlist_box \
-					and gui.layer_focus == 0 and gui.show_playlist and not search_over.active):
-
-				scroll_opacity = 255
-
-				if not gui.combo_mode:
-					sy = 31 * gui.scale
-					ey = window_size[1] - (30 + 22) * gui.scale
-
-					if len(default_playlist) < 50:
-						sbl = 85 * gui.scale
-						if len(default_playlist) == 0:
-							sbp = top
-					else:
-						sbl = 105 * gui.scale
-
-					fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
-					if coll((x, top, 28 * gui.scale, ey - top)) and (
-							mouse_down or right_click) \
-							and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
-
-						gui.pl_update = 1
-						if right_click:
-
-							sbp = mouse_position[1] - int(sbl / 2)
-							if sbp + sbl > ey:
-								sbp = ey - sbl
-							elif sbp < top:
-								sbp = top
-							per = (sbp - top) / (ey - top - sbl)
-							pctl.playlist_view_position = int(len(default_playlist) * per)
-							logging.debug("Position set by scroll bar (right click)")
-							pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
-
-							# if playlist_position == len(default_playlist):
-							#     logging.info("END")
-
-						# elif mouse_position[1] < sbp:
-						#     pctl.playlist_view_position -= 2
-						# elif mouse_position[1] > sbp + sbl:
-						#     pctl.playlist_view_position += 2
-						elif inp.mouse_click:
-
-							if mouse_position[1] < sbp:
-								gui.scroll_direction = -1
-							elif mouse_position[1] > sbp + sbl:
-								gui.scroll_direction = 1
-							else:
-								# p_y = pointer(c_int(0))
-								# p_x = pointer(c_int(0))
-								# SDL_GetGlobalMouseState(p_x, p_y)
-								get_sdl_input.mouse_capture_want = True
-
-								scroll_hold = True
-								# scroll_point = p_y.contents.value  # mouse_position[1]
-								scroll_point = mouse_position[1]
-								scroll_bpoint = sbp
-						else:
-							# gui.update += 1
-							if sbp < mouse_position[1] < sbp + sbl:
-								gui.scroll_direction = 0
-							pctl.playlist_view_position += gui.scroll_direction * 2
-							logging.debug("Position set by scroll bar (slide)")
-							pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
-							pctl.playlist_view_position = min(pctl.playlist_view_position, len(default_playlist))
-
-							if sbp + sbl > ey:
-								sbp = ey - sbl
-							elif sbp < top:
-								sbp = top
-
-					if not mouse_down:
-						scroll_hold = False
-
-					if scroll_hold and not inp.mouse_click:
-						gui.pl_update = 1
-						# p_y = pointer(c_int(0))
-						# p_x = pointer(c_int(0))
-						# SDL_GetGlobalMouseState(p_x, p_y)
-						get_sdl_input.mouse_capture_want = True
-
-						sbp = mouse_position[1] - (scroll_point - scroll_bpoint)
-						if sbp + sbl > ey:
-							sbp = ey - sbl
-						elif sbp < top:
-							sbp = top
-						per = (sbp - top) / (ey - top - sbl)
-						pctl.playlist_view_position = int(len(default_playlist) * per)
-						logging.debug("Position set by scroll bar (drag)")
-
-
-					elif len(default_playlist) > 0:
-						per = pctl.playlist_view_position / len(default_playlist)
-						sbp = int((ey - top - sbl) * per) + top + 1
-
-					bg = [255, 255, 255, 6]
-					fg = colours.scroll_colour
-
-					if colours.lm:
-						bg = [200, 200, 200, 100]
-						fg = [100, 100, 100, 200]
-
-					ddt.rect_a((x, top), (width + 1 * gui.scale, window_size[1] - top - gui.panelBY), bg)
-					ddt.rect_a((x + 1, sbp), (width, sbl), alpha_mod(fg, scroll_opacity))
-
-					if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[
-						0] != 0) or scroll_hold:
-						ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), [255, 255, 255, 19])
-
-			# NEW TOP BAR
-			# C-TBR
-
-			if gui.mode == 1:
-				top_panel.render()
-
-			# RENDER EXTRA FRAME DOUBLE
-			if colours.lm:
-				if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
-					ddt.rect(
-						(0 + gui.lspw - 6 * gui.scale, gui.panelY, 6 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
-					ddt.rect(
-						(0 + gui.lspw - 5 * gui.scale, gui.panelY - 1, 4 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
-				if gui.rsp and gui.show_playlist:
-					w = window_size[0] - gui.rspw
-					ddt.rect(
-						(w - round(3 * gui.scale), gui.panelY, 6 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
-					ddt.rect(
-						(w - round(2 * gui.scale), gui.panelY - 1, 4 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
-				if gui.queue_frame_draw is not None:
-					if gui.lsp:
-						ddt.rect((0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200))
-						ddt.rect(
-							(0, gui.queue_frame_draw + 1 * gui.scale, gui.lspw - 5 * gui.scale, 4 * gui.scale), colours.grey(250))
-
-					gui.queue_frame_draw = None
-
-			# BOTTOM BAR!
-			# C-BB
-
-			ddt.text_background_colour = colours.bottom_panel_colour
-
-			if prefs.shuffle_lock:
-				bottom_bar_ao1.render()
-			else:
-				bottom_bar1.render()
-
-			if prefs.art_bg and not prefs.bg_showcase_only:
-				style_overlay.display()
-				# if key_shift_down:
-				#     ddt.rect_r(gui.seek_bar_rect,
-				#                alpha_mod([150, 150, 150 ,255], 20), True)
-				#     ddt.rect_r(gui.volume_bar_rect,
-				#                alpha_mod(colours.volume_bar_fill, 100), True)
-
-			style_overlay.hole_punches.clear()
-
-			if gui.set_mode:
-				if rename_track_box.active is False \
-						and radiobox.active is False \
-						and gui.rename_playlist_box is False \
-						and gui.message_box is False \
-						and pref_box.enabled is False \
-						and track_box is False \
-						and not gui.rename_folder_box \
-						and not Menu.active \
-						and not artist_info_scroll.held:
-
-					columns_tool_tip.render()
-				else:
-					columns_tool_tip.show = False
-
-			# Overlay GUI ----------------------
-
-			if gui.rename_playlist_box:
-				rename_playlist_box.render()
-
-			if gui.preview_artist:
-
-				border = round(4 * gui.scale)
-				ddt.rect(
-					(gui.preview_artist_location[0] - border,
-					gui.preview_artist_location[1] - border,
-					artist_preview_render.size[0] + border * 2,
-					artist_preview_render.size[0] + border * 2), (20, 20, 20, 255))
-
-				artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
-				if inp.mouse_click or right_click or mouse_wheel:
-					gui.preview_artist = ""
-
-			if track_box:
-				if inp.key_return_press or right_click or key_esc_press or inp.backspace_press or keymaps.test(
-						"quick-find"):
-					track_box = False
-
-					inp.key_return_press = False
-
-				if gui.level_2_click:
-					inp.mouse_click = True
-				gui.level_2_click = False
-
-				tc = pctl.master_library[r_menu_index]
-
-				w = round(540 * gui.scale)
-				h = round(240 * gui.scale)
-				comment_mode = 0
-
-				if len(tc.comment) > 0:
-					h += 22 * gui.scale
-					if window_size[0] > 599:
-						w += 25 * gui.scale
-					if ddt.get_text_w(tc.comment, 12) > 330 * gui.scale or "\n" in tc.comment:
-						h += 80 * gui.scale
-						if window_size[0] > 599:
-							w += 30 * gui.scale
-						comment_mode = 1
-
-				x = round((window_size[0] / 2) - (w / 2))
-				y = round((window_size[1] / 2) - (h / 2))
-
-				x1 = int(x + 18 * gui.scale)
-				x2 = int(x + 98 * gui.scale)
-
-				value_font_a = 312
-				value_font = 12
-
-				# if key_shift_down:
-				#     value_font = 12
-				key_colour_off = colours.box_text_label  # colours.grey_blend_bg(90)
-				key_colour_on = colours.box_title_text
-				value_colour = colours.box_sub_text
-				path_colour = alpha_mod(value_colour, 240)
-
-				# if colours.lm:
-				#     key_colour_off = colours.grey(80)
-				#     key_colour_on = colours.grey(120)
-				#     value_colour = colours.grey(50)
-				#     path_colour = colours.grey(70)
-
-				ddt.rect_a(
-					(x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale),
-					colours.box_border)
-				ddt.rect_a((x, y), (w, h), colours.box_background)
-				ddt.text_background_colour = colours.box_background
-
-				if inp.mouse_click and not coll([x, y, w, h]):
-					track_box = False
-
-				else:
-					art_size = int(115 * gui.scale)
-
-					# if not tc.is_network: # Don't draw album art if from network location for better performance
-					if comment_mode == 1:
-						album_art_gen.display(
-							tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)),
-							(art_size, art_size))  # Mirror this size in auto theme #mark2233
-					else:
-						album_art_gen.display(
-							tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)),
-							(art_size, art_size))
-
-					y -= int(24 * gui.scale)
-					y1 = int(y + (40 * gui.scale))
-
-					ext_rect = [x + w - round(38 * gui.scale), y + round(44 * gui.scale), round(38 * gui.scale),
-								round(12 * gui.scale)]
-
-					line = tc.file_ext
-					ex_colour = [130, 130, 130, 255]
-					if line in format_colours:
-						ex_colour = format_colours[line]
-
-					# Spotify icon rendering
-					if line == "SPTY":
-						colour = [30, 215, 96, 255]
-						h, l, s = rgb_to_hls(colour[0], colour[1], colour[2])
-
-						rect = (x + w - round(35 * gui.scale), y + round(30 * gui.scale), round(30 * gui.scale),
-								round(30 * gui.scale))
-						fields.add(rect)
-						if coll(rect):
-							l += 0.1
-							gui.cursor_want = 3
-
-							if inp.mouse_click:
-								url = tc.misc.get("spotify-album-url")
-								if url is None:
-									url = tc.misc.get("spotify-track-url")
-								if url:
-									webbrowser.open(url, new=2, autoraise=True)
-
-						colour = hls_to_rgb(h, l, s)
-
-						gui.spot_info_icon.render(x + w - round(33 * gui.scale), y + round(35 * gui.scale), colour)
-
-					# Codec tag rendering
-					else:
-						if tc.file_ext in ("JELY", "TIDAL"):
-							e_colour = [130, 130, 130, 255]
-							if "container" in tc.misc:
-								line = tc.misc["container"].upper()
-								if line in format_colours:
-									e_colour = format_colours[line]
-
-							ddt.rect(ext_rect, e_colour)
-							colour = alpha_blend([10, 10, 10, 235], e_colour)
-							if colour_value(e_colour) < 180:
-								colour = alpha_blend([200, 200, 200, 235], e_colour)
-							ddt.text(
-								(int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)), line, colour, 211, bg=e_colour)
-							ext_rect[1] += 16 * gui.scale
-							y += 16 * gui.scale
-
-						ddt.rect(ext_rect, ex_colour)
-						colour = alpha_blend([10, 10, 10, 235], ex_colour)
-						if colour_value(ex_colour) < 180:
-							colour = alpha_blend([200, 200, 200, 235], ex_colour)
-						ddt.text(
-							(int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), tc.file_ext, colour, 211, bg=ex_colour)
-
-						if tc.is_cue:
-							ext_rect[1] += 16 * gui.scale
-							colour = [218, 222, 73, 255]
-							if tc.is_embed_cue:
-								colour = [252, 199, 55, 255]
-							ddt.rect(ext_rect, colour)
-							ddt.text(
-								(int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE",
-								alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
-
-
-					rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
-					fields.add(rect)
-					if coll(rect):
-						ddt.text((x1, y1), _("Title"), key_colour_on, 212)
-						if inp.mouse_click:
-							show_message(_("Copied text to clipboard"))
-							copy_to_clipboard(tc.title)
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Title"), key_colour_off, 212)
-					q = ddt.text(
-						(x2, y1 - int(2 * gui.scale)), tc.title,
-						value_colour, 314, max_w=w - 170 * gui.scale)
-
-					if coll(rect):
-						ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.title, 314)
-
-					y1 += int(16 * gui.scale)
-
-					rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
-					fields.add(rect)
-					if coll(rect):
-						ddt.text((x1, y1), _("Artist"), key_colour_on, 212)
-						if inp.mouse_click:
-							show_message(_("Copied text to clipboard"))
-							copy_to_clipboard(tc.artist)
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Artist"), key_colour_off, 212)
-
-					q = ddt.text(
-						(x2, y1 - (1 * gui.scale)), tc.artist,
-						value_colour, value_font_a, max_w=390 * gui.scale)
-
-					if coll(rect):
-						ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.artist, value_font_a)
-
-					y1 += int(16 * gui.scale)
-
-					rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
-					fields.add(rect)
-					if coll(rect):
-						ddt.text((x1, y1), _("Album"), key_colour_on, 212)
-						if inp.mouse_click:
-							show_message(_("Copied text to clipboard"))
-							copy_to_clipboard(tc.album)
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Album"), key_colour_off, 212)
-
-					q = ddt.text(
-						(x2, y1 - 1 * gui.scale), tc.album,
-						value_colour,
-						value_font_a, max_w=390 * gui.scale)
-
-					if coll(rect):
-						ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album, value_font_a)
-
-					y1 += int(26 * gui.scale)
-
-					rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
-					fields.add(rect)
-					path = tc.fullpath
-					if msys:
-						path = path.replace("/", "\\")
-					if coll(rect):
-						ddt.text((x1, y1), _("Path"), key_colour_on, 212)
-						if inp.mouse_click:
-							show_message(_("Copied text to clipboard"))
-							copy_to_clipboard(path)
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Path"), key_colour_off, 212)
-
-					q = ddt.text(
-						(x2, y1 - int(3 * gui.scale)), clean_string(path),
-						path_colour, 210, max_w=425 * gui.scale)
-
-					if coll(rect):
-						gui.frame_callback_list.append(TestTimer(0.71))
-						if track_box_path_tool_timer.get() > 0.7:
-							ex_tool_tip(x2 + 185 * gui.scale, y1, q, clean_string(tc.fullpath), 210)
-					else:
-						track_box_path_tool_timer.set()
-
-					y1 += int(15 * gui.scale)
-
-					if tc.samplerate != 0:
-						ddt.text((x1, y1), _("Samplerate"), key_colour_off, 212, max_w=70 * gui.scale)
-
-						line = str(tc.samplerate) + " Hz"
-
-						off = ddt.text((x2, y1), line, value_colour, value_font)
-
-						if tc.bit_depth > 0:
-							line = str(tc.bit_depth) + " bit"
-							ddt.text((x2 + off + 9 * gui.scale, y1), line, value_colour, 311)
-
-					y1 += int(15 * gui.scale)
-
-					if tc.bitrate not in (0, "", "0"):
-						ddt.text((x1, y1), _("Bitrate"), key_colour_off, 212, max_w=70 * gui.scale)
-						line = str(tc.bitrate)
-						if tc.file_ext in ("FLAC", "OPUS", "APE", "WV"):
-							line = "≈" + line
-						line += _(" kbps")
-						ddt.text((x2, y1), line, value_colour, 312)
-
-					# -----------
-					if tc.artist != tc.album_artist != "":
-						x += int(170 * gui.scale)
-						rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
-						fields.add(rect)
-						if coll(rect):
-							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_on, 212)
-							if inp.mouse_click:
-								show_message(_("Copied text to clipboard"))
-								copy_to_clipboard(tc.album_artist)
-								inp.mouse_click = False
-						else:
-							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_off, 212)
-
-						q = ddt.text(
-							(x + (8 + 88) * gui.scale, y1), tc.album_artist,
-							value_colour, value_font, max_w=120 * gui.scale)
-						if coll(rect):
-							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album_artist, value_font)
-
-						x -= int(170 * gui.scale)
-
-					y1 += int(15 * gui.scale)
-
-					rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
-					fields.add(rect)
-					if coll(rect):
-						ddt.text((x1, y1), _("Duration"), key_colour_on, 212)
-						if inp.mouse_click:
-							copy_to_clipboard(time.strftime("%M:%S", time.gmtime(tc.length)).lstrip("0"))
-							show_message(_("Copied text to clipboard"))
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Duration"), key_colour_off, 212)
-					line = time.strftime("%M:%S", time.gmtime(tc.length))
-					ddt.text((x2, y1), line, value_colour, value_font)
-
-					# -----------
-					if tc.track_total not in ("", "0"):
-						x += int(170 * gui.scale)
-						line = str(tc.track_number) + _(" of ") + str(
-							tc.track_total)
-						ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Track"), key_colour_off, 212)
-						ddt.text((x + (8 + 88) * gui.scale, y1), line, value_colour, value_font)
-						x -= int(170 * gui.scale)
-
-					y1 += int(15 * gui.scale)
-					#logging.info(tc.size)
-					if tc.is_cue and tc.misc.get("parent-length", 0) > 0 and tc.misc.get("parent-size", 0) > 0:
-						ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
-						estimate = (tc.length / tc.misc.get("parent-length")) * tc.misc.get("parent-size")
-						line = f"≈{get_filesize_string(estimate, rounding=0)} / {get_filesize_string(tc.misc.get('parent-size'))}"
-						ddt.text((x2, y1), line, value_colour, value_font)
-
-					elif tc.size != 0:
-						ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
-						ddt.text((x2, y1), get_filesize_string(tc.size), value_colour, value_font)
-
-					# -----------
-					if tc.disc_total not in ("", "0", 0):
-						x += int(170 * gui.scale)
-						line = str(tc.disc_number) + _(" of ") + str(
-							tc.disc_total)
-						ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Disc"), key_colour_off, 212)
-						ddt.text((x + (8 + 88) * gui.scale, y1), line, value_colour, value_font)
-						x -= int(170 * gui.scale)
-
-					y1 += int(23 * gui.scale)
-
-					rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
-					fields.add(rect)
-					if coll(rect):
-						ddt.text((x1, y1), _("Genre"), key_colour_on, 212)
-						if inp.mouse_click:
-							show_message(_("Copied text to clipboard"))
-							copy_to_clipboard(tc.genre)
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Genre"), key_colour_off, 212)
-					ddt.text(
-						(x2, y1), tc.genre, value_colour,
-						value_font, max_w=290 * gui.scale)
-
-					y1 += int(15 * gui.scale)
-
-					rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
-					fields.add(rect)
-					if coll(rect):
-						ddt.text((x1, y1), _("Date"), key_colour_on, 212)
-						if inp.mouse_click:
-							show_message(_("Copied text to clipboard"))
-							copy_to_clipboard(tc.date)
-							inp.mouse_click = False
-					else:
-						ddt.text((x1, y1), _("Date"), key_colour_off, 212)
-					ddt.text((x2, y1), d_date_display(tc), value_colour, value_font)
-
-					if tc.composer and tc.composer != tc.artist:
-						x += int(170 * gui.scale)
-						rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
-						fields.add(rect)
-						if coll(rect):
-							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_on, 212)
-							if inp.mouse_click:
-								show_message(_("Copied text to clipboard"))
-								copy_to_clipboard(tc.album_artist)
-								inp.mouse_click = False
-						else:
-							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_off, 212)
-						q = ddt.text(
-							(x + (8 + 88) * gui.scale, y1), tc.composer,
-							value_colour, value_font, max_w=120 * gui.scale)
-						if coll(rect):
-							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.composer, value_font_a)
-
-						x -= int(170 * gui.scale)
-
-					y1 += int(23 * gui.scale)
-
-					total = star_store.get(r_menu_index)
-
-					ratio = 0
-
-					if total > 0 and pctl.master_library[
-						r_menu_index].length > 1:
-						ratio = total / (tc.length - 1)
-
-					ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70 * gui.scale)
-					ddt.text((x2, y1), str(int(ratio)), value_colour, value_font)
-
-					y1 += int(15 * gui.scale)
-
-					rect = [x1, y1, 150, 14]
-
-					if coll(rect) and key_shift_down and mouse_wheel != 0:
-						star_store.add(r_menu_index, 60 * mouse_wheel)
-
-					line = time.strftime("%H:%M:%S", time.gmtime(total))
-
-					ddt.text((x1, y1), _("Play time"), key_colour_off, 212, max_w=70 * gui.scale)
-					ddt.text((x2, y1), str(line), value_colour, value_font)
-
-					# -------
-					if tc.lyrics != "":
-
-						if draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
-							prefs.show_lyrics_showcase = True
-							track_box = False
-							enter_showcase_view(track_id=r_menu_index)
-							inp.mouse_click = False
-
-					if len(tc.comment) > 0:
-						y1 += 20 * gui.scale
-						rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
-						# ddt.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
-						fields.add(rect)
-						if coll(rect):
-							ddt.text((x1, y1), _("Comment"), key_colour_on, 212)
-							if inp.mouse_click:
-								show_message(_("Copied text to clipboard"))
-								copy_to_clipboard(tc.comment)
-								inp.mouse_click = False
-						else:
-							ddt.text((x1, y1), _("Comment"), key_colour_off, 212)
-						# ddt.draw_text((x1, y1), "Comment", key_colour_off, 12)
-
-						if "\n" not in tc.comment and (
-								"http://" in tc.comment or "www." in tc.comment or "https://" in tc.comment) and ddt.get_text_w(
-								tc.comment, 12) < 335 * gui.scale:
-
-							link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 12)
-							link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
-
-							fields.add(link_rect)
-							if coll(link_rect):
-								if not inp.mouse_click:
-									gui.cursor_want = 3
-								if inp.mouse_click:
-									webbrowser.open(link_pa[2], new=2, autoraise=True)
-									track_box = True
-
-						elif comment_mode == 1:
-							ddt.text(
-								(x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale),
-								tc.comment, value_colour, 12)
-						else:
-							ddt.text((x2, y1), tc.comment, value_colour, 12)
-
-			if draw_border and gui.mode != 3:
-
-				tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
-				if prefs.left_window_control:
-					tool_rect[0] = 0
-				fields.add(tool_rect)
-				if not gui.top_bar_mode2 or coll(tool_rect):
-					draw_window_tools()
-
-				if not gui.fullscreen and not gui.maximized:
-					draw_window_border()
-
-			fader.render()
-			if pref_box.enabled:
-				# rect = [0, 0, window_size[0], window_size[1]]
-				# ddt.rect_r(rect, [0, 0, 0, 90], True)
-				pref_box.render()
-
-			if gui.rename_folder_box:
-
-				if gui.level_2_click:
-					inp.mouse_click = True
-
-				gui.level_2_click = False
-
-				w = 500 * gui.scale
-				h = 127 * gui.scale
-				x = int(window_size[0] / 2) - int(w / 2)
-				y = int(window_size[1] / 2) - int(h / 2)
-
-				ddt.rect_a(
-					(x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
-				ddt.rect_a((x, y), (w, h), colours.box_background)
-
-				ddt.text_background_colour = colours.box_background
-
-				if key_esc_press or (
-						(inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
-					gui.rename_folder_box = False
-
-				p = ddt.text(
-					(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), colours.box_title_text, 213)
-
-				if rename_folder.text != prefs.rename_folder_template and draw.button(
-					_("Default"),
-					x + (300 - 63) * gui.scale,
-					y + 11 * gui.scale,
-					70 * gui.scale):
-					rename_folder.text = prefs.rename_folder_template
-
-				rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.box_input_text, width=300)
-
-				ddt.rect_s(
-					(x + 8 * gui.scale, y + 38 * gui.scale, 300 * gui.scale, 22 * gui.scale),
-					colours.box_text_border, 1 * gui.scale)
-
-				if draw.button(
-					_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
-					tooltip=_("Renames the physical folder based on the template")) or inp.level_2_enter:
-					rename_parent(rename_index, rename_folder.text)
-					gui.rename_folder_box = False
-					inp.mouse_click = False
-
-				text = _("Trash")
-				tt = _("Moves folder to system trash")
-				if key_shift_down:
-					text = _("Delete")
-					tt = _("Physically deletes folder from disk")
-				if draw.button(
-					text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale,
-					text_highlight_colour=colours.grey(255), background_highlight_colour=[180, 60, 60, 255],
-					press=mouse_up, tooltip=tt):
-					if key_shift_down:
-						delete_folder(rename_index, True)
-					else:
-						delete_folder(rename_index)
-					gui.rename_folder_box = False
-					inp.mouse_click = False
-
-				if move_folder_up(rename_index):
-					if draw.button(
-						_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
-						tooltip=_("Moves folder up 2 levels and deletes the old container folder")):
-						move_folder_up(rename_index, True)
-						inp.mouse_click = False
-
-				to_clean = clean_folder(rename_index)
-				if to_clean > 0:
-					if draw.button(
-						"Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
-						80 * gui.scale, tooltip=_("Deletes some unnecessary files from folder")):
-						clean_folder(rename_index, True)
-						inp.mouse_click = False
-
-				ddt.text((x + 10 * gui.scale, y + 65 * gui.scale), _("PATH"), colours.box_text_label, 212)
-				line = os.path.dirname(
-					pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\","/") + "/"
-				line = right_trunc(line, 12, 420 * gui.scale)
-				line = clean_string(line)
-				ddt.text((x + 60 * gui.scale, y + 65 * gui.scale), line, colours.grey(220), 211)
-
-				ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("OLD"), colours.box_text_label, 212)
-				line = pctl.master_library[rename_index].parent_folder_name
-				line = clean_string(line)
-				ddt.text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
-
-				ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), _("NEW"), colours.box_text_label, 212)
-				line = parse_template2(rename_folder.text, pctl.master_library[rename_index])
-				ddt.text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
-
-			if rename_track_box.active:
-				rename_track_box.render()
-
-			if sub_lyrics_box.active:
-				sub_lyrics_box.render()
-
-			if export_playlist_box.active:
-				export_playlist_box.render()
-
-			if trans_edit_box.active:
-				trans_edit_box.render()
-
-			if radiobox.active:
-				radiobox.render()
-
-			if gui.message_box:
-				message_box.render()
-
-			if prefs.show_nag:
-				nagbox.draw()
-
-			# SEARCH
-			# if key_ctrl_down and key_v_press:
-
-			#     search_over.active = True
-
-			search_over.render()
-
-			if keymaps.test("quick-find") and quick_search_mode is False:
-				if not search_over.active and not gui.box_over:
-					quick_search_mode = True
-				if search_clear_timer.get() > 3:
-					search_text.text = ""
-				input_text = ""
-			elif (keymaps.test("quick-find") or (
-					key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
-				quick_search_mode = False
-				search_text.text = ""
-
-			# if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
-			#     if not search_over.active:
-			#         quick_search_mode = True
-			#     if search_clear_timer.get() > 3:
-			#         search_text.text = ""
-			#     input_text = ""
-			# elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
-			#             key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
-			#     quick_search_mode = False
-			#     search_text.text = ""
-
-			if quick_search_mode is True:
-
-				rect2 = [0, window_size[1] - 85 * gui.scale, 420 * gui.scale, 25 * gui.scale]
-				rect = [0, window_size[1] - 125 * gui.scale, 420 * gui.scale, 65 * gui.scale]
-				rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
-				rect2[0] = rect[0]
-
-				ddt.rect((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), colours.box_border)  # [220, 100, 5, 255]
-				# ddt.rect_r((rect[0], rect[1], rect[2], rect[3]), [255,120,5,255], True)
-
-				ddt.text_background_colour = colours.box_background
-				# ddt.text_background_colour = [255,120,5,255]
-				# ddt.text_background_colour = [220,100,5,255]
-				ddt.rect(rect, colours.box_background)
-
-				if len(input_text) > 0:
-					search_index = -1
-
-				if inp.backspace_press and search_text.text == "":
-					quick_search_mode = False
-
-				if len(search_text.text) == 0:
-					gui.search_error = False
-
-				if len(search_text.text) != 0 and search_text.text[0] == "/":
-					# if "/love" in search_text.text:
-					#     line = "last.fm loved tracks from user. Format: /love <username>"
-					# else:
-					line = _("Folder filter mode. Enter path segment.")
-					ddt.text((rect[0] + 23 * gui.scale, window_size[1] - 87 * gui.scale), line, (220, 220, 220, 100), 312)
-				else:
-					line = _("UP / DOWN to navigate. SHIFT + RETURN for new playlist.")
-					if len(search_text.text) == 0:
-						line = _("Quick find")
-					ddt.text((rect[0] + int(rect[2] / 2), window_size[1] - 87 * gui.scale, 2), line, colours.box_text_label, 312)
-
-					# ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
-					#           colours.grey(90), 214)
-
-				# if len(pctl.track_queue) > 0:
-
-				# if input_text == 'A':
-				#     search_text.text = pctl.playing_object().artist
-				#     input_text = ""
-
-				if gui.search_error:
-					ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255])
-					ddt.text_background_colour = [180, 40, 40, 255]  # alpha_blend([255,0,0,25], ddt.text_background_colour)
-				# if input.backspace_press:
-				#     gui.search_error = False
-
-				search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213)
-
-				if (key_shift_down or (
-						len(search_text.text) > 0 and search_text.text[0] == "/")) and inp.key_return_press:
-					inp.key_return_press = False
-					playlist = []
-					if len(search_text.text) > 0:
-						if search_text.text[0] == "/":
-
-							if search_text.text.lower() == "/random" or search_text.text.lower() == "/shuffle":
-								gen_500_random(pctl.active_playlist_viewing)
-							elif search_text.text.lower() == "/top" or search_text.text.lower() == "/most":
-								gen_top_100(pctl.active_playlist_viewing)
-							elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration" \
-									or search_text.text.lower() == "/len":
-								gen_sort_len(pctl.active_playlist_viewing)
-							else:
-
-								if search_text.text[-1] == "/":
-									tt_title = search_text.text.replace("/", "")
-								else:
-									search_text.text = search_text.text.replace("/", "")
-									tt_title = search_text.text
-								search_text.text = search_text.text.lower()
-								for item in default_playlist:
-									if search_text.text in pctl.master_library[item].parent_folder_path.lower():
-										playlist.append(item)
-								if len(playlist) > 0:
-									pctl.multi_playlist.append(pl_gen(title=tt_title, playlist_ids=copy.deepcopy(playlist)))
-									switch_playlist(len(pctl.multi_playlist) - 1)
-
-						else:
-							search_terms = search_text.text.lower().split()
-							for item in default_playlist:
-								tr = pctl.get_track(item)
-								line = " ".join(
-									[
-										tr.title, tr.artist, tr.album, tr.fullpath,
-										tr.composer, tr.comment, tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
-
-								# if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
-								#     line = str(unidecode(line))
-
-								if all(word in line for word in search_terms):
-									playlist.append(item)
-							if len(playlist) > 0:
-								pctl.multi_playlist.append(pl_gen(
-									title=_("Search Results"),
-									playlist_ids=copy.deepcopy(playlist)))
-								pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[
-									pctl.active_playlist_viewing].title + "\" f\"" + search_text.text + "\""
-								switch_playlist(len(pctl.multi_playlist) - 1)
-						search_text.text = ""
-						quick_search_mode = False
-
-				if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or inp.backspace_press \
-						or gui.force_search:
-
-					gui.pl_update = 1
-
-					if gui.force_search:
-						search_index = 0
-
-					if inp.backspace_press:
-						search_index = 0
-
-					if len(search_text.text) > 0 and search_text.text[0] != "/":
-						oi = search_index
-
-						while search_index < len(default_playlist) - 1:
-							search_index += 1
-							if search_index > len(default_playlist) - 1:
-								search_index = 0
-
-							search_terms = search_text.text.lower().split()
-							tr = pctl.get_track(default_playlist[search_index])
-							line = " ".join(
-								[tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
-								tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
-
-							# if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
-							#     line = str(unidecode(line))
-
-							if all(word in line for word in search_terms):
-
-								pctl.selected_in_playlist = search_index
-								if len(default_playlist) > 10 and search_index > 10:
-									pctl.playlist_view_position = search_index - 7
-									logging.debug("Position changed by search")
-								else:
-									pctl.playlist_view_position = 0
-
-								if gui.combo_mode:
-									pctl.show_selected()
-								gui.search_error = False
-
-								break
-
-						else:
-							search_index = oi
-							if len(input_text) > 0 or gui.force_search:
-								gui.search_error = True
-							if key_down_press:
-								bottom_playlist2.pulse()
-
-						gui.force_search = False
-
-				if key_up_press is True \
-						and not key_shiftr_down \
-						and not key_shift_down \
-						and not key_ctrl_down \
-						and not key_rctrl_down \
-						and not key_meta \
-						and not key_lalt \
-						and not key_ralt:
-
-					gui.pl_update = 1
-					oi = search_index
-
-					while search_index > 1:
-						search_index -= 1
-						search_index = min(search_index, len(default_playlist) - 1)
-						search_terms = search_text.text.lower().split()
-						line = pctl.master_library[default_playlist[search_index]].title.lower() + \
-							pctl.master_library[default_playlist[search_index]].artist.lower() \
-							+ pctl.master_library[default_playlist[search_index]].album.lower() + \
-							pctl.master_library[default_playlist[search_index]].filename.lower()
-
-						if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
-							line = str(unidecode(line))
-
-						if all(word in line for word in search_terms):
-
-							pctl.selected_in_playlist = search_index
-							if len(default_playlist) > 10 and search_index > 10:
-								pctl.playlist_view_position = search_index - 7
-								logging.debug("Position changed by search")
-							else:
-								pctl.playlist_view_position = 0
-							if gui.combo_mode:
-								pctl.show_selected()
-							break
-					else:
-						search_index = oi
-
-						edge_playlist2.pulse()
-
-				if inp.key_return_press is True and search_index > -1:
-					gui.pl_update = 1
-					pctl.jump(default_playlist[search_index], search_index)
-					if album_mode:
-						goto_album(pctl.playlist_playing_position)
-					quick_search_mode = False
-					search_clear_timer.set()
-
-			elif not search_over.active:
-
-				if key_up_press and ((
-					not key_shiftr_down \
-					and not key_shift_down \
-					and not key_ctrl_down \
-					and not key_rctrl_down \
-					and not key_meta \
-					and not key_lalt \
-					and not key_ralt) or (keymaps.test("shift-up"))):
-
-					pctl.show_selected()
-					gui.pl_update = 1
-
-					if not keymaps.test("shift-up"):
-						if pctl.selected_in_playlist > 0:
-							pctl.selected_in_playlist -= 1
-							r_menu_index = default_playlist[pctl.selected_in_playlist]
-						shift_selection = []
-
-					if pctl.playlist_view_position > 0 and pctl.selected_in_playlist < pctl.playlist_view_position + 2:
-						pctl.playlist_view_position -= 1
-						logging.debug("Position changed by key up")
-
-						scroll_hide_timer.set()
-						gui.frame_callback_list.append(TestTimer(0.9))
-
-					pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(default_playlist))
-
-				if pctl.selected_in_playlist < len(default_playlist) and (
-					(key_down_press and \
-					not key_shiftr_down \
-					and not key_shift_down \
-					and not key_ctrl_down \
-					and not key_rctrl_down \
-					and not key_meta \
-					and not key_lalt \
-					and not key_ralt) or keymaps.test("shift-down")):
-
-					pctl.show_selected()
-					gui.pl_update = 1
-
-					if not keymaps.test("shift-down"):
-						if pctl.selected_in_playlist < len(default_playlist) - 1:
-							pctl.selected_in_playlist += 1
-							r_menu_index = default_playlist[pctl.selected_in_playlist]
-						shift_selection = []
-
-					if pctl.playlist_view_position < len(
-							default_playlist) and pctl.selected_in_playlist > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
-						pctl.playlist_view_position += 1
-						logging.debug("Position changed by key down")
-
-						scroll_hide_timer.set()
-						gui.frame_callback_list.append(TestTimer(0.9))
-
-					pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
-
-				if inp.key_return_press and not pref_box.enabled and not radiobox.active and not trans_edit_box.active:
-					gui.pl_update = 1
-					if pctl.selected_in_playlist > len(default_playlist) - 1:
-						pctl.selected_in_playlist = 0
-						shift_selection = []
-					if default_playlist:
-						pctl.jump(default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
-						if album_mode:
-							goto_album(pctl.playlist_playing_position)
-
-
-		elif gui.mode == 3:
-
-			if (key_shift_down and inp.mouse_click) or middle_click:
-				if prefs.mini_mode_mode == 4:
-					prefs.mini_mode_mode = 1
-					window_size[0] = int(330 * gui.scale)
-					window_size[1] = int(330 * gui.scale)
-					SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
-					SDL_SetWindowSize(t_window, window_size[0], window_size[1])
-				else:
-					prefs.mini_mode_mode = 4
-					window_size[0] = int(320 * gui.scale)
-					window_size[1] = int(90 * gui.scale)
-					SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
-					SDL_SetWindowSize(t_window, window_size[0], window_size[1])
-
-			if prefs.mini_mode_mode == 5:
-				mini_mode3.render()
-			elif prefs.mini_mode_mode == 4:
-				mini_mode2.render()
-			else:
-				mini_mode.render()
-
-		t = toast_love_timer.get()
-		if t < 1.8 and gui.toast_love_object is not None:
-			track = gui.toast_love_object
-
-			ww = 0
-			if gui.lsp:
-				ww = gui.lspw
-
-			rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
-			fields.add(rect)
-
-			if coll(rect):
-				toast_love_timer.force_set(10)
-			else:
-				ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
-				ddt.rect(rect, colours.queue_card_background)
-
-				# fqo = copy.copy(pctl.force_queue[-1])
-
-				ddt.text_background_colour = colours.queue_card_background
-
-				if gui.toast_love_added:
-					text = _("Loved track")
-					heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, [250, 100, 100, 255])
-				else:
-					text = _("Un-Loved track")
-					heart_notify_break_icon.render(
-						rect[0] + 9 * gui.scale, rect[1] + 7 * gui.scale,
-						[150, 150, 150, 255])
-
-				ddt.text_background_colour = colours.queue_card_background
-				ddt.text((rect[0] + 42 * gui.scale, rect[1] + 3 * gui.scale), text, colours.box_text, 313)
-				ddt.text(
-					(rect[0] + 42 * gui.scale, rect[1] + 20 * gui.scale),
-					f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label,
-					13, max_w=rect[2] - 50 * gui.scale)
-
-		t = queue_add_timer.get()
-		if t < 2.5 and gui.toast_queue_object:
-			track = pctl.get_track(gui.toast_queue_object.track_id)
-
-			ww = 0
-			if gui.lsp:
-				ww = gui.lspw
-			if search_over.active:
-				ww = window_size[0] // 2 - (215 * gui.scale // 2)
-
-			rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
-			fields.add(rect)
-
-			if coll(rect):
-				queue_add_timer.force_set(10)
-			elif len(pctl.force_queue) > 0:
-
-				fqo = copy.copy(pctl.force_queue[-1])
-
-				ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
-				ddt.rect(rect, colours.queue_card_background)
-
-				ddt.text_background_colour = colours.queue_card_background
-				top_text = _("Track")
-				if gui.queue_toast_plural:
-					top_text = "Album"
-					fqo.type = 1
-				if pctl.force_queue[-1].type == 1:
-					top_text = "Album"
-
-				queue_box.draw_card(
-					rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale,
-					rect[1] + 1 * gui.scale, track, fqo, True, False)
-
-				ddt.text_background_colour = colours.queue_card_background
-				ddt.text(
-					(rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added",
-					colours.box_text_label, 11)
-				ddt.text(
-					(rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue",
-					colours.box_text_label, 11)
-
-		t = toast_mode_timer.get()
-		if t < 0.98:
-
-			wid = ddt.get_text_w(gui.mode_toast_text, 313)
-			wid = max(round(68 * gui.scale), wid)
-
-			ww = round(7 * gui.scale)
-			if gui.lsp and not gui.combo_mode:
-				ww += gui.lspw
-
-			rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
-			fields.add(rect)
-
-			if coll(rect):
-				toast_mode_timer.force_set(10)
-			else:
-				ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60))
-				ddt.rect(rect, colours.queue_card_background)
-
-				ddt.text_background_colour = colours.queue_card_background
-				ddt.text((rect[0] + (rect[2] // 2), rect[1] + 4 * gui.scale, 2), gui.mode_toast_text, colours.grey(230), 313)
-
-		# Render Menus-------------------------------
-		for instance in Menu.instances:
-			instance.render()
-
-		if view_box.active:
-			view_box.render()
-
-		tool_tip.render()
-		tool_tip2.render()
-
-		if console.show:
-			rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
-			ddt.rect(rect, [0, 0, 0, 245])
-
-			yy = rect[3] + 15 * gui.scale
-			u = False
-			for record in reversed(log.log_history):
-
-				if yy < rect[1] + 5 * gui.scale:
-					break
-
-				text_colour = [60, 255, 60, 255]
-				message = log.format(record)
-
-				t = record.created
-				d = time.time() - t
-				dt = time.localtime(t)
-
-				fade = 255
-				if d > 2:
-					fade = 200
-
-				text_colour = [120, 120, 120, fade]
-				if record.levelno == 10:
-					text_colour = [80, 80, 80, fade]
-				if record.levelno == 30:
-					text_colour = [230, 190, 90, fade]
-				if record.levelno == 40:
-					text_colour = [255, 120, 90, fade]
-				if record.levelno == 50:
-					text_colour = [255, 90, 90, fade]
-
-				time_colour = [255, 80, 160, fade]
-
-				w = ddt.text(
-					(rect[0] + 10 * gui.scale, yy), time.strftime("%H:%M:%S", dt), time_colour, 311,
-					rect[2] - 60 * gui.scale, bg=[5,5,5,255])
-
-				ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
-				yy -= 14 * gui.scale
-			if u:
-				gui.delay_frame(5)
-
-			if draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
-
-				text = ""
-				for record in log.log_history[-50:]:
-					t = record.created
-					dt = time.localtime(t)
-					text += time.strftime("%H:%M:%S", dt) + " " + log.format(record) + "\n"
-				copy_to_clipboard(text)
-				show_message(_("Lines copied to clipboard"), mode="done")
-
-		if gui.cursor_is != gui.cursor_want:
-
-			gui.cursor_is = gui.cursor_want
-
-			if gui.cursor_is == 0:
-				SDL_SetCursor(cursor_standard)
-			elif gui.cursor_is == 1:
-				SDL_SetCursor(cursor_shift)
-			elif gui.cursor_is == 2:
-				SDL_SetCursor(cursor_text)
-			elif gui.cursor_is == 3:
-				SDL_SetCursor(cursor_hand)
-			elif gui.cursor_is == 4:
-				SDL_SetCursor(cursor_br_corner)
-			elif gui.cursor_is == 8:
-				SDL_SetCursor(cursor_right_side)
-			elif gui.cursor_is == 9:
-				SDL_SetCursor(cursor_top_side)
-			elif gui.cursor_is == 10:
-				SDL_SetCursor(cursor_left_side)
-			elif gui.cursor_is == 11:
-				SDL_SetCursor(cursor_bottom_side)
-
-		get_sdl_input.test_capture_mouse()
-		get_sdl_input.mouse_capture_want = False
-
-		# # Quick view
-		# quick_view_box.render()
-
-		# Drag icon next to cursor
-		if quick_drag and mouse_down and not point_proximity_test(
-			gui.drag_source_position, mouse_position, 15 * gui.scale):
-			i_x, i_y = get_sdl_input.mouse()
-			gui.drag_source_position = (0, 0)
-
-			block_size = round(10 * gui.scale)
-			x_offset = round(20 * gui.scale)
-			y_offset = round(1 * gui.scale)
-
-			if len(shift_selection) == 1:  # Single track
-				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, block_size), [160, 140, 235, 240])
-			elif key_ctrl_down:  # Add to queue undrouped
-				small_block = round(6 * gui.scale)
-				spacing = round(2 * gui.scale)
-				ddt.rect((i_x + x_offset, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
-				ddt.rect(
-					(i_x + x_offset + spacing + small_block, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
-				ddt.rect(
-					(i_x + x_offset, i_y + y_offset + spacing + small_block, small_block, small_block), [160, 140, 235, 240])
-				ddt.rect(
-					(i_x + x_offset + spacing + small_block, i_y + y_offset + spacing + small_block, small_block, small_block),
-					[160, 140, 235, 240])
-				ddt.rect(
-					(i_x + x_offset, i_y + y_offset + spacing + small_block + spacing + small_block, small_block, small_block),
-					[160, 140, 235, 240])
-				ddt.rect(
-					(i_x + x_offset + spacing + small_block,
-					i_y + y_offset + spacing + small_block + spacing + small_block,
-					small_block, small_block), [160, 140, 235, 240])
-
-			else:  # Multiple tracks
-				long_block = round(25 * gui.scale)
-				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), [160, 140, 235, 240])
-
-			# gui.update += 1
-			gui.update_on_drag = True
-
-		# Drag pl tab next to cursor
-		if (playlist_box.drag) and mouse_down and not point_proximity_test(
-			gui.drag_source_position, mouse_position, 10 * gui.scale):
-			i_x, i_y = get_sdl_input.mouse()
-			gui.drag_source_position = (0, 0)
-			ddt.rect(
-				(i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225])
-			# ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
-			# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[playlist_box.drag_on].title, [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
-		if radio_view.drag and not point_proximity_test(radio_view.click_point, mouse_position, round(4 * gui.scale)):
-			ddt.rect((
-				mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
-				14 * gui.scale), colours.grey(70))
-		if (gui.set_label_hold != -1) and mouse_down:
-
-			gui.update_on_drag = True
-
-			if not point_proximity_test(gui.set_label_point, mouse_position, 3):
-				i_x, i_y = get_sdl_input.mouse()
-				gui.set_label_point = (0, 0)
-
-				w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
-				w = max(w, 45 * gui.scale)
-				ddt.rect(
-					(i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)),
-					[240, 240, 240, 255])
-				ddt.text(
-					(i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1),
-					gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
-
-		input_text = ""
-		gui.update -= 1
-
-		# logging.info("FRAME " + str(core_timer.get()))
-		gui.update = min(gui.update, 1)
-		gui.present = True
-
-		SDL_SetRenderTarget(renderer, None)
-		SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
-
-		if gui.turbo:
-			gui.level_update = True
-
-	# if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
-	#
-	#     # logging.info(gui.level_peak)
-	#     gui.time_passed = gui.level_time.hit()
-	#     if gui.time_passed > 1:
-	#         gui.time_passed = 0
-	#     while gui.time_passed > 0.01:
-	#         gui.level_peak[1] -= 0.5
-	#         if gui.level_peak[1] < 0:
-	#             gui.level_peak[1] = 0
-	#         gui.level_peak[0] -= 0.5
-	#         if gui.level_peak[0] < 0:
-	#             gui.level_peak[0] = 0
-	#         gui.time_passed -= 0.020
-	#
-	#     gui.level_update = True
-
-	if gui.level_update is True and not resize_mode and gui.mode != 3:
-		gui.level_update = False
-
-		SDL_SetRenderTarget(renderer, None)
-		if not gui.present:
-			SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
-			gui.present = True
-
-		if gui.vis == 3:
-			# Scrolling spectrogram
-
-			# if not vis_update:
-			#     logging.info("No UPDATE " + str(random.randint(1,50)))
-			if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
-				# gui.spec2_timer.force_set(gui.spec2_timer.get() - 0.04)
-				gui.spec2_timer.set()
-				vis_update = True
-
-			if len(gui.spec2_buffers) > 0 and vis_update:
-				vis_update = False
-
-				SDL_SetRenderTarget(renderer, gui.spec2_tex)
-				for i, value in enumerate(gui.spec2_buffers[0]):
-					ddt.rect(
-						[gui.spec2_position, i, 1, 1],
-						[
-							min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
-							min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
-							min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
-							255])
-
-				del gui.spec2_buffers[0]
-
-				gui.spec2_position += 1
-
-				if gui.spec2_position > gui.spec2_w - 1:
-					gui.spec2_position = 0
-
-				SDL_SetRenderTarget(renderer, None)
-
-			#
-			# else:
-			#     logging.info("animation stall" + str(random.randint(1, 10)))
-
-			if prefs.spec2_scroll:
-
-				gui.spec2_source.x = 0
-				gui.spec2_source.y = 0
-				gui.spec2_source.w = gui.spec2_position
-				gui.spec2_dest.x = gui.spec2_rec.x + gui.spec2_rec.w - gui.spec2_position
-				gui.spec2_dest.w = gui.spec2_position
-				SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
-
-				gui.spec2_source.x = gui.spec2_position
-				gui.spec2_source.y = 0
-				gui.spec2_source.w = gui.spec2_rec.w - gui.spec2_position
-				gui.spec2_dest.x = gui.spec2_rec.x
-				gui.spec2_dest.w = gui.spec2_rec.w - gui.spec2_position
-				SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
-
-			else:
-
-				SDL_RenderCopy(renderer, gui.spec2_tex, None, gui.spec2_rec)
-
-			if pref_box.enabled:
-				ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90])
-
-		if gui.vis == 4 and gui.draw_vis4_top:
-			showcase.render_vis(True)
-			# gui.level_update = False
-
-		if gui.vis == 2 and gui.spec is not None:
-
-			# Standard spectrum visualiser
-
-			if gui.update_spec == 0 and pctl.playing_state != 2:
-				if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
-					vis_decay_timer.set()
-					for i in range(len(gui.spec)):
-						if gui.s_spec[i] > 0:
-							if gui.spec[i] > 0:
-								gui.spec[i] -= 1
-							gui.level_update = True
-				else:
-					gui.level_update = True
-
-			if vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
-				vis_rate_timer.set()
-
-				if spec_smoothing and pctl.playing_state > 0:
-
-					for i in range(len(gui.spec)):
-						if gui.spec[i] > gui.s_spec[i]:
-							gui.s_spec[i] += 1
-							if abs(gui.spec[i] - gui.s_spec[i]) > 4:
-								gui.s_spec[i] += 1
-							if abs(gui.spec[i] - gui.s_spec[i]) > 6:
-								gui.s_spec[i] += 1
-							if abs(gui.spec[i] - gui.s_spec[i]) > 8:
-								gui.s_spec[i] += 1
-
-						elif gui.spec[i] == gui.s_spec[i]:
-							pass
-						elif gui.spec[i] < gui.s_spec[i] > 0:
-							gui.s_spec[i] -= 1
-							if abs(gui.spec[i] - gui.s_spec[i]) > 4:
-								gui.s_spec[i] -= 1
-							if abs(gui.spec[i] - gui.s_spec[i]) > 6:
-								gui.s_spec[i] -= 1
-							if abs(gui.spec[i] - gui.s_spec[i]) > 8:
-								gui.s_spec[i] -= 1
-
-					if pctl.playing_state == 0 and check_equal(gui.s_spec):
-						gui.level_update = True
-						time.sleep(0.008)
-				else:
-					gui.s_spec = gui.spec
-			else:
-				pass
-
-			if not gui.test:
-
-				SDL_SetRenderTarget(renderer, gui.spec1_tex)
-
-				# ddt.rect_r(gui.spec_rect, colours.top_panel_background, True)
-				ddt.rect((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg)
-
-				# xx = 0
-				gui.bar.x = 0
-				on = 0
-
-				SDL_SetRenderDrawColor(
-					renderer, colours.vis_colour[0],
-					colours.vis_colour[1], colours.vis_colour[2],
-					colours.vis_colour[3])
-
-				for item in gui.s_spec:
-
-					if on > 19:
-						break
-					on += 1
-
-					item -= 1
-
-					if item < 1:
-						gui.bar.x += round(4 * gui.scale)
-						continue
-
-					item = min(item, 20)
-
-					if gui.scale >= 2:
-						item = round(item * gui.scale)
-
-					gui.bar.y = 0 + gui.spec_h - item
-					gui.bar.h = item
-
-					SDL_RenderFillRect(renderer, gui.bar)
-
-					gui.bar.x += round(4 * gui.scale)
-
-				if pref_box.enabled:
-					ddt.rect((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90])
-
-				SDL_SetRenderTarget(renderer, None)
-				SDL_RenderCopy(renderer, gui.spec1_tex, None, gui.spec1_rec)
-
-		if gui.vis == 1:
-
-			if prefs.backend == 2 or True:
-				if pctl.playing_state == 1 or pctl.playing_state == 3:
-					# gui.level_update = True
-					while tauon.level_train and tauon.level_train[0][0] < time.time():
-
-						l = tauon.level_train[0][1]
-						r = tauon.level_train[0][2]
-
-						gui.level_peak[0] = max(r, gui.level_peak[0])
-						gui.level_peak[1] = max(l, gui.level_peak[1])
-
-						del tauon.level_train[0]
-
-				else:
-					tauon.level_train.clear()
-
-			SDL_SetRenderTarget(renderer, gui.spec_level_tex)
-
-			x = window_size[0] - 20 * gui.scale - gui.offset_extra
-			y = gui.level_y
-			w = gui.level_w
-			s = gui.level_s
-
-			y = 0
-
-			gui.spec_level_rec.x = round(x - 70 * gui.scale)
-			ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10))
-
-			x = round(gui.level_ww - 9 * gui.scale)
-			y = 10 * gui.scale
-
-			if prefs.backend == 2 or True:
-				if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
-					# gui.level_update = True
-					if pctl.playing_time < 1:
-						gui.delay_frame(0.032)
-
-					if pctl.playing_state == 1 or pctl.playing_state == 3:
-						t = gui.level_decay_timer.hit()
-						decay = 14 * t
-						gui.level_peak[1] -= decay
-						gui.level_peak[0] -= decay
-					elif pctl.playing_state == 0 or pctl.playing_state == 2:
-						gui.level_update = True
-						time.sleep(0.016)
-						t = gui.level_decay_timer.hit()
-						decay = 16 * t
-						gui.level_peak[1] -= decay
-						gui.level_peak[0] -= decay
-
-			for t in range(12):
-
-				if gui.level_peak[0] < t:
-					met = False
-				else:
-					met = True
-				if gui.level_peak[0] < 0.2:
-					met = False
-
-				if gui.level_meter_colour_mode == 1:
-
-					if not met:
-						cc = [15, 10, 20, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				elif gui.level_meter_colour_mode == 2:
-
-					if not met:
-						cc = [11, 11, 13, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				elif gui.level_meter_colour_mode == 3:
-
-					if not met:
-						cc = [12, 6, 0, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				elif gui.level_meter_colour_mode == 4:
-
-					if not met:
-						cc = [10, 10, 10, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				else:
-
-					if t < 7:
-						cc = colours.level_green
-						if met is False:
-							cc = colours.level_1_bg
-					elif t < 10:
-						cc = colours.level_yellow
-						if met is False:
-							cc = colours.level_2_bg
-					else:
-						cc = colours.level_red
-						if met is False:
-							cc = colours.level_3_bg
-				if gui.level > 0 and pctl.playing_state > 0:
-					pass
-				ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
-
-			y -= 7 * gui.scale
-			for t in range(12):
-
-				if gui.level_peak[1] < t:
-					met = False
-				else:
-					met = True
-				if gui.level_peak[1] < 0.2:
-					met = False
-
-				if gui.level_meter_colour_mode == 1:
-
-					if not met:
-						cc = [15, 10, 20, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				elif gui.level_meter_colour_mode == 2:
-
-					if not met:
-						cc = [11, 11, 13, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				elif gui.level_meter_colour_mode == 3:
-
-					if not met:
-						cc = [12, 6, 0, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				elif gui.level_meter_colour_mode == 4:
-
-					if not met:
-						cc = [10, 10, 10, 255]
-					else:
-						cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
-				else:
-
-					if t < 7:
-						cc = colours.level_green
-						if met is False:
-							cc = colours.level_1_bg
-					elif t < 10:
-						cc = colours.level_yellow
-						if met is False:
-							cc = colours.level_2_bg
-					else:
-						cc = colours.level_red
-						if met is False:
-							cc = colours.level_3_bg
-
-				if gui.level > 0 and pctl.playing_state > 0:
-					pass
-				ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
-
-			SDL_SetRenderTarget(renderer, None)
-			SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
-
-	if gui.present:
-		# Possible bug older version of SDL (2.0.16) Wayland, setting render target to None causer last copy
-		# to fail when resizing? Not a big deal as it doesn't matter what the target is when presenting, just
-		# set to something else
-		# SDL_SetRenderTarget(renderer, None)
-		SDL_SetRenderTarget(renderer, gui.main_texture)
-		SDL_RenderPresent(renderer)
-
-		gui.present = False
-
-	# -------------------------------------------------------------------------------------------
-	# Misc things to update every tick
-
-	# Update d-bus metadata on Linux
-	if (pctl.playing_state == 1 or pctl.playing_state == 3) and pctl.mpris is not None:
-		pctl.mpris.update_progress()
-
-	# GUI time ticker update
-	if (pctl.playing_state == 1 or pctl.playing_state == 3) and gui.lowered is False:
-		if int(pctl.playing_time) != int(pctl.last_playing_time):
-			pctl.last_playing_time = pctl.playing_time
-			bottom_bar1.seek_time = pctl.playing_time
-			if not prefs.power_save or window_is_focused():
-				gui.update = 1
-
-	# Auto save play times to disk
-	if pctl.total_playtime - time_last_save > 600:
-		try:
-			if should_save_state:
-				logging.info("Auto save playtime")
-				with (user_directory / "star.p").open("wb") as file:
-					pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-			else:
-				logging.info("Dev mode, skip auto saving playtime")
-		except PermissionError:
-			logging.exception("Permission error encountered while writing database")
-			show_message(_("Permission error encountered while writing database"), "error")
-		except Exception:
-			logging.exception("Unknown error encountered while writing database")
-		time_last_save = pctl.total_playtime
-
-	# Always render at least one frame per minute (to avoid SDL bugs I guess)
-	if min_render_timer.get() > 60:
-		min_render_timer.set()
-		gui.pl_update = 1
-		gui.update += 1
-
-	# Save power if the window is minimized
-	if gui.lowered:
-		time.sleep(0.2)
-
-if tauon.spot_ctl.playing:
-	tauon.spot_ctl.control("stop")
-
-# Send scrobble if pending
-if lfm_scrobbler.queue and not lfm_scrobbler.running:
-	lfm_scrobbler.start_queue()
-	logging.info("Sending scrobble before close...")
-
-if gui.mode < 3:
-	old_window_position = get_window_position()
-
-
-SDL_DestroyTexture(gui.main_texture)
-SDL_DestroyTexture(gui.tracklist_texture)
-SDL_DestroyTexture(gui.spec2_tex)
-SDL_DestroyTexture(gui.spec1_tex)
-SDL_DestroyTexture(gui.spec_level_tex)
-ddt.clear_text_cache()
-clear_img_cache(False)
-
-SDL_DestroyWindow(t_window)
-
-pctl.playerCommand = "unload"
-pctl.playerCommandReady = True
-
-if prefs.reload_play_state and pctl.playing_state in (1, 2):
-	logging.info("Saving play state...")
-	prefs.reload_state = (pctl.playing_state, pctl.playing_time)
-
-if should_save_state:
-	with (user_directory / "star.p").open("wb") as file:
-		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (user_directory / "album-star.p").open("wb") as file:
-		pickle.dump(album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
-save_state()
-
-date = datetime.date.today()
-if should_save_state:
-	with (user_directory / "star.p.backup").open("wb") as file:
-		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (user_directory / f"star.p.backup{str(date.month)}").open("wb") as file:
-		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-if tauon.stream_proxy and tauon.stream_proxy.download_running:
-	logging.info("Stopping stream...")
-	tauon.stream_proxy.stop()
-	time.sleep(2)
-
-try:
-	if tauon.thread_manager.player_lock.locked():
-		tauon.thread_manager.player_lock.release()
-except RuntimeError as e:
-	if str(e) == "release unlocked lock":
-		logging.error("RuntimeError: Attempted to release already unlocked player_lock")
-	else:
-		logging.exception("Unknown RuntimeError trying to release player_lock")
-except Exception:
-	logging.exception("Unknown error trying to release player_lock")
-
-if tauon.radio_server is not None:
-	try:
-		tauon.radio_server.server_close()
-	except Exception:
-		logging.exception("Failed to close radio server")
-
-if system == "Windows" or msys:
-	tray.stop()
-	if smtc:
-		sm.unload()
-elif de_notify_support:
-	try:
-		song_notification.close()
-		g_tc_notify.close()
-		Notify.uninit()
-	except Exception:
-		logging.exception("uninit notification error")
-
-try:
-	instance_lock.close()
-except Exception:
-	logging.exception("No lock object to close")
-
 def main(holder: Holder):
 	t_window               = holder.t_window
 	renderer               = holder.renderer
@@ -22025,6 +16480,15 @@ def main(holder: Holder):
 
 	should_save_state = True
 
+	# Detect platform
+	windows_native = False
+	macos = False
+	msys = False
+	system = "Linux"
+	arch = platform.machine()
+	platform_release = platform.release()
+	platform_system = platform.system()
+	win_ver = 0
 
 	try:
 		import pylast
@@ -22049,6 +16513,104 @@ def main(holder: Holder):
 			config = ctypes.c_void_p()
 			config.contents = fc.FcConfigGetCurrent()
 			fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
+
+	# Log to debug as we don't care at all when user does not have this
+	try:
+		import colored_traceback.always
+		logging.debug("Found colored_traceback for colored crash tracebacks")
+	except ModuleNotFoundError:
+		logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
+	except Exception:
+		logging.exception("Unknown error trying to import colored_traceback, tracebacks will be dull.")
+
+	try:
+		from jxlpy import JXLImagePlugin
+		# We've already logged this once to INFO from t_draw, so just log to DEBUG
+		logging.debug("Found jxlpy for JPEG XL support")
+	except ModuleNotFoundError:
+		logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
+	except Exception:
+		logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
+
+	try:
+		import setproctitle
+	except ModuleNotFoundError:
+		logging.warning("Unable to import setproctitle, won't be setting process title.")
+	except Exception:
+		logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
+	else:
+		setproctitle.setproctitle("tauonmb")
+
+	# try:
+	#	 import rpc
+	#	 discord_allow = True
+	# except Exception:
+	#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+	discord_allow = False
+	try:
+		from pypresence import Presence
+	except ModuleNotFoundError:
+		logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
+	except Exception:
+		logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
+	else:
+		import asyncio
+		discord_allow = True
+
+	use_cc = False
+	try:
+		import opencc
+	except ModuleNotFoundError:
+		logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	except Exception:
+		logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	else:
+		s2t = opencc.OpenCC("s2t")
+		t2s = opencc.OpenCC("t2s")
+		use_cc = True
+
+	use_natsort = False
+	try:
+		import natsort
+	except ModuleNotFoundError:
+		logging.warning("Unable to import natsort, playlists may not sort as intended!")
+	except Exception:
+		logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
+	else:
+		use_natsort = True
+
+	if platform_system == "Windows":
+		try:
+			win_ver = int(platform_release)
+		except Exception:
+			logging.exception("Failed getting Windows version from platform.release()")
+
+	if sys.platform == "win32":
+		# system = 'Windows'
+		# windows_native = False
+		system = "Linux"
+		msys = True
+	else:
+		system = "Linux"
+		import fcntl
+
+	if sys.platform == "darwin":
+		macos = True
+
+	if system == "Windows":
+		import win32con
+		import win32api
+		import win32gui
+		import win32ui
+		import comtypes
+		import atexit
+
+	if system == "Linux":
+		from tauon.t_modules import t_topchart
+
+	if system == "Linux" and not macos and not msys:
+		from tauon.t_modules.t_dbus import Gnome
+
 	#1REWORK
 
 	ssl_context = setup_ssl(holder)
@@ -22210,20 +16772,20 @@ def main(holder: Holder):
 	#elif str(install_directory).startswith(("/opt/", "/usr/")):
 	#	locale_directory = Path("/usr/share/locale")
 
-	class Directories:
-		self.install_directory      = install_directory
-		self.svg_directory          = svg_directory
-		self.asset_directory        = asset_directory
-		self.scaled_asset_directory = scaled_asset_directory
-		self.locale_directory       = locale_directory
-		self.user_directory         = user_directory
-		self.config_directory       = config_directory
-		self.cache_directory        = cache_directory
-		self.home_directory         = home_directory
-		self.music_directory        = music_directory
-		self.download_directory     = download_directory
+	dirs = Directories(
+		install_directory=install_directory,
+		svg_directory=svg_directory,
+		asset_directory=asset_directory,
+		scaled_asset_directory=scaled_asset_directory,
+		locale_directory=locale_directory,
+		user_directory=user_directory,
+		config_directory=config_directory,
+		cache_directory=cache_directory,
+		home_directory=home_directory,
+		music_directory=music_directory,
+		download_directory=download_directory,
+	)
 
-	dirs = Directories()
 	logging.critical(dirs.download_directory)
 
 
@@ -22949,8 +17511,48 @@ def main(holder: Holder):
 	#18REWORK
 	lb = ListenBrainz(prefs)
 	#19REWORK
+
+	if system == "Linux" and not macos and not msys:
+		try:
+			Notify.init("Tauon Music Box")
+			g_tc_notify = Notify.Notification.new(
+				"Tauon Music Box",
+				"Transcoding has finished.")
+			value = GLib.Variant("s", t_id)
+			g_tc_notify.set_hint("desktop-entry", value)
+
+			g_tc_notify.add_action(
+				"action_click",
+				"Open Output Folder",
+				g_open_encode_out,
+				None,
+			)
+
+			de_notify_support = True
+
+		except Exception:
+			logging.exception("Failed init notifications")
+
+		if de_notify_support:
+			song_notification = Notify.Notification.new("Next track notification")
+			value = GLib.Variant("s", t_id)
+			song_notification.set_hint("desktop-entry", value)
+	lastfm = LastFMapi()
+
 	QuickThumbnail.renderer = holder.renderer
+
 	#20REWORK
+	lfm_scrobbler = LastScrob()
+	strings = Strings()
+	signal.signal(signal.SIGINT, signal_handler)
+
+	if system == "Windows" or msys:
+		from lynxtray import SysTrayIcon
+
+	tray = STray()
+
+	stats_gen = GStats()
+
 	tauon = Tauon(holder)
 	#21REWORK
 	deco = Deco(tauon)
@@ -23042,7 +17644,212 @@ def main(holder: Holder):
 
 	if system == "Windows" or msys:
 		gui.window_id = sss.info.win.window
+
+
+
+	# -------------------------------------------------------------------------------------------
+	# initiate SDL2 --------------------------------------------------------------------C-IS-----
+
+	cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
+	cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
+	cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
+	cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
+
+	cursor_br_corner = cursor_standard
+	cursor_right_side = cursor_standard
+	cursor_top_side = cursor_standard
+	cursor_left_side = cursor_standard
+	cursor_bottom_side = cursor_standard
+
+	if msys:
+		cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
+		cursor_right_side = cursor_shift
+		cursor_left_side = cursor_shift
+		cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
+		cursor_bottom_side = cursor_top_side
+	elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
+		try:
+			class XcursorImage(ctypes.Structure):
+				_fields_ = [
+						("version", c_uint32),
+						("size", c_uint32),
+						("width", c_uint32),
+						("height", c_uint32),
+						("xhot", c_uint32),
+						("yhot", c_uint32),
+						("delay", c_uint32),
+						("pixels", c_void_p),
+					]
+
+			try:
+				xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
+			except Exception:
+				logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
+				xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
+			xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
+
+			def get_xcursor(name: str):
+				if "XCURSOR_THEME" not in os.environ:
+					raise ValueError("Missing XCURSOR_THEME in env")
+				if "XCURSOR_SIZE" not in os.environ:
+					raise ValueError("Missing XCURSOR_SIZE in env")
+				xcursor_theme = os.environ["XCURSOR_THEME"]
+				xcursor_size = os.environ["XCURSOR_SIZE"]
+				c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
+				sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
+				cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
+				xcu.XcursorImageDestroy(ctypes.byref(c1))
+				SDL_FreeSurface(sdl_surface)
+				return cursor
+
+			cursor_br_corner = get_xcursor("se-resize")
+			cursor_right_side = get_xcursor("right_side")
+			cursor_top_side = get_xcursor("top_side")
+			cursor_left_side = get_xcursor("left_side")
+			cursor_bottom_side = get_xcursor("bottom_side")
+
+			if SDL_GetCurrentVideoDriver() == b"wayland":
+				cursor_standard = get_xcursor("left_ptr")
+				cursor_text = get_xcursor("xterm")
+				cursor_shift = get_xcursor("sb_h_double_arrow")
+				cursor_hand = get_xcursor("hand2")
+				SDL_SetCursor(cursor_standard)
+
+		except Exception:
+			logging.exception("Error loading xcursor")
+
 	#25REWORK
+
+	# try:
+	#	 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+	#
+	# except Exception:
+	#	 logging.exception("old version of SDL detected")
+
+	# get window surface and set up renderer
+	# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+
+	# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+	#
+	# # window_surface = SDL_GetWindowSurface(t_window)
+	#
+	# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+	#
+	# display_index = SDL_GetWindowDisplayIndex(t_window)
+	# display_bounds = SDL_Rect(0, 0)
+	# SDL_GetDisplayBounds(display_index, display_bounds)
+	#
+	# icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+	# SDL_SetWindowIcon(t_window, icon)
+	# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
+	#
+	# SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
+	#
+	#
+	# gui.max_window_tex = 1000
+	# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
+	#
+	#	 while window_size[0] > gui.max_window_tex:
+	#		 gui.max_window_tex += 1000
+	#	 while window_size[1] > gui.max_window_tex:
+	#		 gui.max_window_tex += 1000
+	#
+	# gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+	#
+	# # gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
+	#
+	# SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+	#
+	# gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+	# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+	# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
+	# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
+	#
+	# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
+	#
+	# SDL_SetRenderTarget(renderer, None)
+	#
+	# gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+	# gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+	#
+	# SDL_SetRenderTarget(renderer, gui.main_texture)
+	# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+	#
+	# SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+	# SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+	# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+	#
+	# SDL_RenderClear(renderer)
+	#
+	# gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+	# gui.pl_update = 2
+	#
+	# SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+	# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+	# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
+	# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
+	# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
+
+
+	if (system == "Windows" or msys) and taskbar_progress:
+
+		class WinTask:
+
+			def __init__(self):
+				self.start = time.time()
+				self.updated_state = 0
+				self.window_id = gui.window_id
+				import comtypes.client as cc
+				cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
+				import comtypes.gen.TaskbarLib as tbl
+				self.taskbar = cc.CreateObject(
+					"{56FDF344-FD6D-11d0-958A-006097C9A090}",
+					interface=tbl.ITaskbarList3)
+				self.taskbar.HrInit()
+
+				self.d_timer = Timer()
+
+			def update(self, force=False):
+				if self.d_timer.get() > 2 or force:
+					self.d_timer.set()
+
+					if pctl.playing_state == 1 and self.updated_state != 1:
+						self.taskbar.SetProgressState(self.window_id, 0x2)
+
+					if pctl.playing_state == 1:
+						self.updated_state = 1
+						if pctl.playing_length > 2:
+							perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
+							if perc < 2:
+								perc = 1
+							elif perc > 100:
+								prec = 100
+						else:
+							perc = 0
+
+						self.taskbar.SetProgressValue(self.window_id, perc, 100)
+
+					elif pctl.playing_state == 2 and self.updated_state != 2:
+						self.updated_state = 2
+						self.taskbar.SetProgressState(self.window_id, 0x8)
+
+					elif pctl.playing_state == 0 and self.updated_state != 0:
+						self.updated_state = 0
+						self.taskbar.SetProgressState(self.window_id, 0x2)
+						self.taskbar.SetProgressValue(self.window_id, 0, 100)
+
+
+		if (install_directory / "TaskbarLib.tlb").is_file():
+			logging.info("Taskbar progress enabled")
+			pctl.windows_progress = WinTask()
+
+		else:
+			pctl.taskbar_progress = False
+			logging.warning("Could not find TaskbarLib.tlb")
+
+	#25REWORK
+
 	ddt = TDraw(renderer)
 	ddt.scale = gui.scale
 	ddt.force_subpixel_text = prefs.force_subpixel_text
@@ -24260,6 +19067,5164 @@ def main(holder: Holder):
 	gal_right = False
 
 	get_sdl_input = GetSDLInput()
+
+	SDL_StartTextInput()
+
+	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
+	# SDL_EventState(SDL_SYSWMEVENT, 1)
+	test_show_add_home_music()
+
+	if gui.restart_album_mode:
+		toggle_album_mode(True)
+
+	if gui.remember_library_mode:
+		toggle_library_mode()
+
+	quick_import_done = []
+
+	if reload_state:
+		if reload_state[0] == 1:
+			pctl.jump_time = reload_state[1]
+			pctl.play()
+
+	pctl.notify_update()
+
+	key_focused = 0
+
+	theme = get_theme_number(prefs.theme_name)
+
+	if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
+		gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
+
+
+	# Hold the splash/loading screen for a minimum duration
+	# while core_timer.get() < 0.5:
+	#     time.sleep(0.01)
+
+	# Resize menu widths to text length (length can vary due to translations)
+	for menu in Menu.instances:
+
+		w = 0
+		icon_space = 0
+
+		if menu.show_icons:
+			icon_space = 25 * gui.scale
+
+		for item in menu.items:
+			if item is None:
+				continue
+			test_width = ddt.get_text_w(item.title, menu.font) + icon_space + 21 * gui.scale
+			if not item.is_sub_menu and item.hint:
+				test_width += ddt.get_text_w(item.hint, menu.font) + 4 * gui.scale
+
+			w = max(test_width, w)
+
+			# sub
+			if item.is_sub_menu:
+				ww = 0
+				sub_icon_space = 0
+				for sub_item in menu.subs[item.sub_menu_number]:
+					if sub_item.icon is not None:
+						sub_icon_space = 25 * gui.scale
+						break
+				for sub_item in menu.subs[item.sub_menu_number]:
+
+					test_width = ddt.get_text_w(sub_item.title, menu.font) + sub_icon_space + 23 * gui.scale
+					ww = max(test_width, ww)
+
+				item.sub_menu_width = max(ww, item.sub_menu_width)
+
+		menu.w = max(w, menu.w)
+
+	if gui.restore_showcase_view:
+		enter_showcase_view()
+	if gui.restore_radio_view:
+		enter_radio_view()
+
+	# switch_playlist(len(pctl.multi_playlist) - 1)
+
+	SDL_SetRenderTarget(renderer, overlay_texture_texture)
+
+	block_size = 3
+
+	x = 0
+	y = 0
+	while y < 300:
+		x = 0
+		while x < 300:
+			ddt.rect((x, y, 1, 1), [0, 0, 0, 70])
+			ddt.rect((x + 2, y + 0, 1, 1), [0, 0, 0, 70])
+			ddt.rect((x + 2, y + 2, 1, 1), [0, 0, 0, 70])
+			ddt.rect((x + 0, y + 2, 1, 1), [0, 0, 0, 70])
+
+			x += block_size
+		y += block_size
+
+	sync_target.text = prefs.sync_target
+	SDL_SetRenderTarget(renderer, None)
+
+	if msys:
+		SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
+
+	# Generate theme buttons
+	pref_box.themes.append((ColoursClass(), "Mindaro", 0))
+	theme_files = get_themes()
+	for i, theme in enumerate(theme_files):
+		c = ColoursClass()
+		load_theme(c, Path(theme[0]))
+		pref_box.themes.append((c, theme[1], i + 1))
+
+	pctl.total_playtime = star_store.get_total()
+
+	mouse_up = False
+	mouse_wheel = 0
+	reset_render = False
+	c_yax = 0
+	c_yax_timer = Timer()
+	c_xax = 0
+	c_xax_timer = Timer()
+	c_xay = 0
+	c_xay_timer = Timer()
+	rt = 0
+
+	# MAIN LOOP
+
+	while pctl.running:
+		# bm.get('main')
+		# time.sleep(100)
+		if k_input:
+
+			keymaps.hits.clear()
+
+			d_mouse_click = False
+			right_click = False
+			level_2_right_click = False
+			inp.mouse_click = False
+			middle_click = False
+			mouse_up = False
+			inp.key_return_press = False
+			key_down_press = False
+			key_up_press = False
+			key_right_press = False
+			key_left_press = False
+			key_esc_press = False
+			key_del = False
+			inp.backspace_press = 0
+			key_backspace_press = False
+			inp.key_tab_press = False
+			key_c_press = False
+			key_v_press = False
+			key_a_press = False
+			key_z_press = False
+			key_x_press = False
+			key_home_press = False
+			key_end_press = False
+			mouse_wheel = 0
+			pref_box.scroll = 0
+			new_playlist_cooldown = False
+			input_text = ""
+			inp.level_2_enter = False
+
+			mouse_enter_window = False
+			gui.mouse_in_window = True
+			if key_focused:
+				key_focused -= 1
+
+		# f not mouse_down:
+		k_input = False
+		clicked = False
+		focused = False
+		mouse_moved = False
+		gui.level_2_click = False
+
+		# gui.update = 2
+
+		while SDL_PollEvent(ctypes.byref(event)) != 0:
+
+			# if event.type == SDL_SYSWMEVENT:
+			#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
+
+			if event.type == SDL_CONTROLLERDEVICEADDED and prefs.use_gamepad:
+				if SDL_IsGameController(event.cdevice.which):
+					SDL_GameControllerOpen(event.cdevice.which)
+					try:
+						logging.info(f"Found game controller: {SDL_GameControllerNameForIndex(event.cdevice.which).decode()}")
+					except Exception:
+						logging.exception("Error getting game controller")
+
+			if event.type == SDL_CONTROLLERAXISMOTION and prefs.use_gamepad:
+				if event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+					rt = event.caxis.value > 5000
+				if event.caxis.axis == SDL_CONTROLLER_AXIS_LEFTY:
+					if event.caxis.value < -10000:
+						new = -1
+					elif event.caxis.value > 10000:
+						new = 1
+					else:
+						new = 0
+					if new != c_yax:
+						c_yax_timer.force_set(1)
+					c_yax = new
+					power += 5
+					gui.update += 1
+				if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTX:
+					if event.caxis.value < -15000:
+						new = -1
+					elif event.caxis.value > 15000:
+						new = 1
+					else:
+						new = 0
+					if new != c_xax:
+						c_xax_timer.force_set(1)
+					c_xax = new
+					power += 5
+					gui.update += 1
+				if event.caxis.axis == SDL_CONTROLLER_AXIS_RIGHTY:
+					if event.caxis.value < -15000:
+						new = -1
+					elif event.caxis.value > 15000:
+						new = 1
+					else:
+						new = 0
+					if new != c_xay:
+						c_xay_timer.force_set(1)
+					c_xay = new
+					power += 5
+					gui.update += 1
+
+			if event.type == SDL_CONTROLLERBUTTONDOWN and prefs.use_gamepad:
+				k_input = True
+				power += 5
+				gui.update += 2
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+					if rt:
+						toggle_random()
+					else:
+						pctl.advance()
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+					if rt:
+						toggle_repeat()
+					else:
+						pctl.back()
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_A:
+					if rt:
+						pctl.show_current(highlight=True)
+					elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
+							pctl.selected_ready() and default_playlist[
+						pctl.selected_in_playlist] == pctl.playing_object().index:
+						pctl.play_pause()
+					else:
+						inp.key_return_press = True
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_X:
+					if rt:
+						random_track()
+					else:
+						toggle_gallery_keycontrol(always_exit=True)
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_Y:
+					if rt:
+						pctl.advance(rr=True)
+					else:
+						pctl.play_pause()
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_B:
+					if rt:
+						pctl.revert()
+					elif is_level_zero():
+						pctl.stop()
+					else:
+						key_esc_press = True
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP:
+					key_up_press = True
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+					key_down_press = True
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+					if gui.album_tab_mode:
+						key_left_press = True
+					elif is_level_zero() or quick_search_mode:
+						cycle_playlist_pinned(1)
+				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+					if gui.album_tab_mode:
+						key_right_press = True
+					elif is_level_zero() or quick_search_mode:
+						cycle_playlist_pinned(-1)
+
+			if event.type == SDL_RENDER_TARGETS_RESET and not msys:
+				reset_render = True
+
+			if event.type == SDL_DROPTEXT:
+
+				power += 5
+
+				link = event.drop.file.decode()
+				#logging.info(link)
+
+				if pctl.playing_ready() and link.startswith("http"):
+					if system != "windows" and sdl_version >= 204:
+						gmp = get_global_mouse()
+						gwp = get_window_position()
+						i_x = gmp[0] - gwp[0]
+						i_x = max(i_x, 0)
+						i_x = min(i_x, window_size[0])
+						i_y = gmp[1] - gwp[1]
+						i_y = max(i_y, 0)
+						i_y = min(i_y, window_size[1])
+					else:
+						i_y = pointer(c_int(0))
+						i_x = pointer(c_int(0))
+
+						SDL_GetMouseState(i_x, i_y)
+						i_y = i_y.contents.value / logical_size[0] * window_size[0]
+						i_x = i_x.contents.value / logical_size[0] * window_size[0]
+
+					if coll_point((i_x, i_y), gui.main_art_box):
+						logging.info("Drop picture...")
+						#logging.info(link)
+						gui.image_downloading = True
+						track = pctl.playing_object()
+						target_dir = track.parent_folder_path
+
+						shoot_dl = threading.Thread(target=download_img, args=(link, target_dir, track))
+						shoot_dl.daemon = True
+						shoot_dl.start()
+
+						gui.update = True
+
+				elif link.startswith("file:///"):
+					link = link.replace("\r", "")
+					for line in link.split("\n"):
+						target = str(urllib.parse.unquote(line)).replace("file:///", "/")
+						drop_file(target)
+
+			if event.type == SDL_DROPFILE:
+
+				power += 5
+				dropped_file_sdl = event.drop.file
+				#logging.info(dropped_file_sdl)
+				target = str(urllib.parse.unquote(
+					dropped_file_sdl.decode("utf-8", errors="surrogateescape"))).replace("file:///", "/").replace("\r", "")
+				#logging.info(target)
+				drop_file(target)
+
+
+			elif event.type == 8192:
+				gui.pl_update = 1
+				gui.update += 2
+
+			elif event.type == SDL_QUIT:
+				power += 5
+
+				if gui.tray_active and prefs.min_to_tray and not key_shift_down:
+					tauon.min_to_tray()
+				else:
+					tauon.exit("Window received exit signal")
+					break
+			elif event.type == SDL_TEXTEDITING:
+				power += 5
+				#logging.info("edit text")
+				editline = event.edit.text
+				#logging.info(editline)
+				editline = editline.decode("utf-8", "ignore")
+				k_input = True
+				gui.update += 1
+
+			elif event.type == SDL_MOUSEMOTION:
+
+				mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
+				mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
+				mouse_moved = True
+				gui.mouse_unknown = False
+			elif event.type == SDL_MOUSEBUTTONDOWN:
+
+				k_input = True
+				focused = True
+				power += 5
+				gui.update += 1
+				gui.mouse_in_window = True
+
+				if ggc == 2:  # dont click on first full frame
+					continue
+
+				if event.button.button == SDL_BUTTON_RIGHT:
+					right_click = True
+					right_down = True
+					#logging.info("RIGHT DOWN")
+				elif event.button.button == SDL_BUTTON_LEFT:
+					#logging.info("LEFT DOWN")
+
+					# if mouse_position[1] > 1 and mouse_position[0] > 1:
+					#     mouse_down = True
+
+					inp.mouse_click = True
+
+					mouse_down = True
+				elif event.button.button == SDL_BUTTON_MIDDLE:
+					if not search_over.active:
+						middle_click = True
+					gui.update += 1
+				elif event.button.button == SDL_BUTTON_X1:
+					keymaps.hits.append("MB4")
+				elif event.button.button == SDL_BUTTON_X2:
+					keymaps.hits.append("MB5")
+			elif event.type == SDL_MOUSEBUTTONUP:
+				k_input = True
+				power += 5
+				gui.update += 1
+				if event.button.button == SDL_BUTTON_RIGHT:
+					right_down = False
+				elif event.button.button == SDL_BUTTON_LEFT:
+					if mouse_down:
+						mouse_up = True
+						mouse_up_position[0] = event.motion.x / logical_size[0] * window_size[0]
+						mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
+
+					mouse_down = False
+					gui.update += 1
+			elif event.type == SDL_KEYDOWN and key_focused == 0:
+				k_input = True
+				power += 5
+				gui.update += 2
+				if prefs.use_scancodes:
+					keymaps.hits.append(event.key.keysym.scancode)
+				else:
+					keymaps.hits.append(event.key.keysym.sym)
+
+				if prefs.use_scancodes:
+					if event.key.keysym.scancode == SDL_SCANCODE_V:
+						key_v_press = True
+					elif event.key.keysym.scancode == SDL_SCANCODE_A:
+						key_a_press = True
+					elif event.key.keysym.scancode == SDL_SCANCODE_C:
+						key_c_press = True
+					elif event.key.keysym.scancode == SDL_SCANCODE_Z:
+						key_z_press = True
+					elif event.key.keysym.scancode == SDL_SCANCODE_X:
+						key_x_press = True
+				elif event.key.keysym.sym == SDLK_v:
+					key_v_press = True
+				elif event.key.keysym.sym == SDLK_a:
+					key_a_press = True
+				elif event.key.keysym.sym == SDLK_c:
+					key_c_press = True
+				elif event.key.keysym.sym == SDLK_z:
+					key_z_press = True
+				elif event.key.keysym.sym == SDLK_x:
+					key_x_press = True
+
+				if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
+					inp.key_return_press = True
+				elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
+					inp.key_return_press = True
+				elif event.key.keysym.sym == SDLK_TAB:
+					inp.key_tab_press = True
+				elif event.key.keysym.sym == SDLK_BACKSPACE:
+					inp.backspace_press += 1
+					key_backspace_press = True
+				elif event.key.keysym.sym == SDLK_DELETE:
+					key_del = True
+				elif event.key.keysym.sym == SDLK_RALT:
+					key_ralt = True
+				elif event.key.keysym.sym == SDLK_LALT:
+					key_lalt = True
+				elif event.key.keysym.sym == SDLK_DOWN:
+					key_down_press = True
+				elif event.key.keysym.sym == SDLK_UP:
+					key_up_press = True
+				elif event.key.keysym.sym == SDLK_LEFT:
+					key_left_press = True
+				elif event.key.keysym.sym == SDLK_RIGHT:
+					key_right_press = True
+				elif event.key.keysym.sym == SDLK_LSHIFT:
+					key_shift_down = True
+				elif event.key.keysym.sym == SDLK_RSHIFT:
+					key_shiftr_down = True
+				elif event.key.keysym.sym == SDLK_LCTRL:
+					key_ctrl_down = True
+				elif event.key.keysym.sym == SDLK_RCTRL:
+					key_rctrl_down = True
+				elif event.key.keysym.sym == SDLK_HOME:
+					key_home_press = True
+				elif event.key.keysym.sym == SDLK_END:
+					key_end_press = True
+				elif event.key.keysym.sym == SDLK_LGUI:
+					if macos:
+						key_ctrl_down = True
+					else:
+						key_meta = True
+						key_focused = 1
+
+			elif event.type == SDL_KEYUP:
+
+				k_input = True
+				power += 5
+				gui.update += 2
+				if event.key.keysym.sym == SDLK_LSHIFT:
+					key_shift_down = False
+				elif event.key.keysym.sym == SDLK_LCTRL:
+					key_ctrl_down = False
+				elif event.key.keysym.sym == SDLK_RCTRL:
+					key_rctrl_down = False
+				elif event.key.keysym.sym == SDLK_RSHIFT:
+					key_shiftr_down = False
+				elif event.key.keysym.sym == SDLK_RALT:
+					gui.album_tab_mode = False
+					key_ralt = False
+				elif event.key.keysym.sym == SDLK_LALT:
+					gui.album_tab_mode = False
+					key_lalt = False
+				elif event.key.keysym.sym == SDLK_LGUI:
+					if macos:
+						key_ctrl_down = False
+					else:
+						key_meta = False
+						key_focused = 1
+
+			elif event.type == SDL_TEXTINPUT:
+				k_input = True
+				power += 5
+				input_text += event.text.text.decode("utf-8")
+
+				gui.update += 1
+				#logging.info(input_text)
+
+			elif event.type == SDL_MOUSEWHEEL:
+				k_input = True
+				power += 6
+				mouse_wheel += event.wheel.y
+				gui.update += 1
+			elif event.type == SDL_WINDOWEVENT:
+
+				power += 5
+				#logging.info(event.window.event)
+
+				if event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
+					#logging.info("SDL_WINDOWEVENT_FOCUS_GAINED")
+
+					if system == "Linux" and not macos and not msys:
+						gnome.focus()
+					k_input = True
+
+					mouse_enter_window = True
+					focused = True
+					gui.lowered = False
+					key_focused = 1
+					mouse_down = False
+					gui.album_tab_mode = False
+					gui.pl_update = 1
+					gui.update += 1
+
+				elif event.window.event == SDL_WINDOWEVENT_FOCUS_LOST:
+					close_all_menus()
+					key_focused = 1
+					gui.update += 1
+
+				elif event.window.event == SDL_WINDOWEVENT_DISPLAY_CHANGED:
+					# SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
+					pass
+				elif event.window.event == SDL_WINDOWEVENT_RESIZED:
+					# SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
+					if event.window.data1 < 500:
+						logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
+						SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+					elif restore_ignore_timer.get() > 1:  # Hacky
+						gui.update = 2
+
+						logical_size[0] = event.window.data1
+						logical_size[1] = event.window.data2
+
+						if gui.mode != 3:
+							logical_size[0] = max(300, logical_size[0])
+							logical_size[1] = max(300, logical_size[1])
+
+						i_x = pointer(c_int(0))
+						i_y = pointer(c_int(0))
+						SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+						window_size[0] = i_x.contents.value
+						window_size[1] = i_y.contents.value
+
+						auto_scale(prefs)
+						update_layout = True
+
+
+				elif event.window.event == SDL_WINDOWEVENT_ENTER:
+					#logging.info("ENTER")
+					mouse_enter_window = True
+					gui.mouse_in_window = True
+					gui.update += 1
+
+				# elif event.window.event == SDL_WINDOWEVENT_HIDDEN:
+				#
+				elif event.window.event == SDL_WINDOWEVENT_EXPOSED:
+					#logging.info("expose")
+					gui.lowered = False
+
+				elif event.window.event == SDL_WINDOWEVENT_MINIMIZED:
+					gui.lowered = True
+					# if prefs.min_to_tray:
+					#     tray.down()
+					# tauon.thread_manager.sleep()
+
+				elif event.window.event == SDL_WINDOWEVENT_RESTORED:
+
+					gui.lowered = False
+					gui.maximized = False
+					gui.pl_update = 1
+					gui.update += 2
+
+					if update_title:
+						update_title_do()
+						#logging.info("restore")
+
+				elif event.window.event == SDL_WINDOWEVENT_SHOWN:
+					focused = True
+					gui.pl_update = 1
+					gui.update += 1
+
+				# elif event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED:
+				#     logging.info("FOCUS GAINED")
+				#     # input.mouse_enter_event = True
+				#     # gui.update += 1
+				#     # k_input = True
+
+				elif event.window.event == SDL_WINDOWEVENT_MAXIMIZED:
+					if gui.mode != 3:  # workaround. sdl bug? gives event on window size set
+						gui.maximized = True
+					update_layout = True
+					gui.pl_update = 1
+					gui.update += 1
+
+				elif event.window.event == SDL_WINDOWEVENT_LEAVE:
+					gui.mouse_in_window = False
+					gui.update += 1
+					power = 1000
+
+		if mouse_moved:
+			if fields.test():
+				gui.update += 1
+
+		if gui.request_raise:
+			gui.request_raise = False
+			logging.info("Raise")
+			SDL_ShowWindow(t_window)
+			SDL_RestoreWindow(t_window)
+			SDL_RaiseWindow(t_window)
+			gui.lowered = False
+
+		# if tauon.thread_manager.sleeping:
+		#     if not gui.lowered:
+		#         tauon.thread_manager.wake()
+		if gui.lowered:
+			gui.update = 0
+		# ----------------
+		# This section of code controls the internal processing speed or 'frame-rate'
+		# It's pretty messy
+		# if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
+		#     logging.warning("The playlist failed to render at the latest position!!!!")
+
+		power += 1
+
+		if pctl.playerCommandReady:
+			if tauon.thread_manager.player_lock.locked():
+				try:
+					tauon.thread_manager.player_lock.release()
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					else:
+						logging.exception("Unknown RuntimeError trying to release player_lock")
+				except Exception:
+					logging.exception("Unknown exception trying to release player_lock")
+
+		if gui.frame_callback_list:
+			i = len(gui.frame_callback_list) - 1
+			while i >= 0:
+				if gui.frame_callback_list[i].test():
+					gui.update = 1
+					power = 1000
+					del gui.frame_callback_list[i]
+				i -= 1
+
+		if animate_monitor_timer.get() < 1 or load_orders:
+
+			if cursor_blink_timer.get() > 0.65:
+				cursor_blink_timer.set()
+				TextBox.cursor ^= True
+				gui.update = 1
+
+			if k_input:
+				cursor_blink_timer.set()
+				TextBox.cursor = True
+
+			SDL_Delay(3)
+			power = 1000
+
+		if mouse_wheel or k_input or gui.pl_update or gui.update or top_panel.adds:  # or mouse_moved:
+			power = 1000
+
+		if prefs.art_bg and core_timer.get() < 3:
+			power = 1000
+
+		if mouse_down and mouse_moved:
+			power = 1000
+			if gui.update_on_drag:
+				gui.update += 1
+			if gui.pl_update_on_drag:
+				gui.pl_update += 1
+
+		if pctl.wake_past_time:
+
+			if get_real_time() > pctl.wake_past_time:
+				pctl.wake_past_time = 0
+				power = 1000
+				gui.update += 1
+
+		if gui.level_update and not album_scroll_hold and not scroll_hold:
+			power = 500
+
+		# if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
+		#     power = 500
+		#     if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
+		#         gui.spec2_timer.set()
+		#         gui.level_update = True
+		#         vis_update = True
+		#     else:
+		#         SDL_Delay(5)
+
+		if not pctl.running:
+			break
+
+		if pctl.playing_state > 0:
+			power += 400
+
+		if power < 500:
+
+			time.sleep(0.03)
+
+			if (
+					pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
+				pass
+			else:
+				sleep_timer.set()
+			if sleep_timer.get() > 2:
+				SDL_WaitEventTimeout(None, 1000)
+			continue
+
+		else:
+			power = 0
+
+		gui.pl_update = min(gui.pl_update, 2)
+
+		new_playlist_cooldown = False
+
+		if prefs.auto_extract and prefs.monitor_downloads:
+			dl_mon.scan()
+
+		if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
+			#logging.info(SDL_GetMouseState(None, None))
+			if SDL_GetGlobalMouseState(None, None) == 0:
+				mouse_down = False
+				mouse_up = True
+				quick_drag = False
+
+		#logging.info(window_size)
+		# if window_size[0] / window_size[1] == 16 / 9:
+		#     logging.info('OK')
+		# if window_size[0] / window_size[1] > 16 / 9:
+		#     logging.info("A")
+
+		if key_meta:
+			input_text = ""
+			k_input = False
+			inp.key_return_press = False
+			inp.key_tab_press = False
+
+		if k_input:
+			if inp.mouse_click or right_click or mouse_up:
+				last_click_location = copy.deepcopy(click_location)
+				click_location = copy.deepcopy(mouse_position)
+
+			if key_focused != 0:
+				keymaps.hits.clear()
+
+				# d_mouse_click = False
+				# right_click = False
+				# level_2_right_click = False
+				# inp.mouse_click = False
+				# middle_click = False
+				mouse_up = False
+				inp.key_return_press = False
+				key_down_press = False
+				key_up_press = False
+				key_right_press = False
+				key_left_press = False
+				key_esc_press = False
+				key_del = False
+				inp.backspace_press = 0
+				key_backspace_press = False
+				inp.key_tab_press = False
+				key_c_press = False
+				key_v_press = False
+				# key_f_press = False
+				key_a_press = False
+				# key_t_press = False
+				key_z_press = False
+				key_x_press = False
+				key_home_press = False
+				key_end_press = False
+				mouse_wheel = 0
+				pref_box.scroll = 0
+				input_text = ""
+				inp.level_2_enter = False
+
+		if c_yax != 0:
+			if c_yax_timer.get() >= 0:
+				if c_yax == -1:
+					key_up_press = True
+				if c_yax == 1:
+					key_down_press = True
+				c_yax_timer.force_set(-0.01)
+				gui.delay_frame(0.02)
+				k_input = True
+		if c_xax != 0:
+			if c_xax_timer.get() >= 0:
+				if c_xax == 1:
+					pctl.seek_time(pctl.playing_time + 2)
+				if c_xax == -1:
+					pctl.seek_time(pctl.playing_time - 2)
+				c_xax_timer.force_set(-0.01)
+				gui.delay_frame(0.02)
+				k_input = True
+		if c_xay != 0:
+			if c_xay_timer.get() >= 0:
+				if c_xay == -1:
+					pctl.player_volume += 1
+					pctl.player_volume = min(pctl.player_volume, 100)
+					pctl.set_volume()
+				if c_xay == 1:
+					if pctl.player_volume > 1:
+						pctl.player_volume -= 1
+					else:
+						pctl.player_volume = 0
+					pctl.set_volume()
+				c_xay_timer.force_set(-0.01)
+				gui.delay_frame(0.02)
+				k_input = True
+
+		if k_input and key_focused == 0:
+
+			if keymaps.hits:
+				n = 1
+				while n < 10:
+					if keymaps.test(f"jump-playlist-{n}"):
+						if len(pctl.multi_playlist) > n - 1:
+							switch_playlist(n - 1)
+					n += 1
+
+				if keymaps.test("cycle-playlist-left"):
+					if gui.album_tab_mode and key_left_press:
+						pass
+					elif is_level_zero() or quick_search_mode:
+						cycle_playlist_pinned(1)
+				if keymaps.test("cycle-playlist-right"):
+					if gui.album_tab_mode and key_right_press:
+						pass
+					elif is_level_zero() or quick_search_mode:
+						cycle_playlist_pinned(-1)
+
+				if keymaps.test("toggle-console"):
+					console.toggle()
+
+				if keymaps.test("toggle-fullscreen"):
+					if not gui.fullscreen and gui.mode != 3:
+						gui.fullscreen = True
+						SDL_SetWindowFullscreen(t_window, SDL_WINDOW_FULLSCREEN_DESKTOP)
+					elif gui.fullscreen:
+						gui.fullscreen = False
+						SDL_SetWindowFullscreen(t_window, 0)
+
+				if keymaps.test("playlist-toggle-breaks"):
+					# Toggle force off folder break for viewed playlist
+					pctl.multi_playlist[pctl.active_playlist_viewing].hide_title ^= 1
+					gui.pl_update = 1
+
+				if keymaps.test("find-playing-artist"):
+					# standard_size()
+					if len(pctl.track_queue) > 0:
+						quick_search_mode = True
+						search_text.text = ""
+						input_text = pctl.playing_object().artist
+
+				if keymaps.test("show-encode-folder"):
+					open_encode_out()
+
+				if keymaps.test("toggle-left-panel"):
+					gui.lsp ^= True
+					update_layout_do()
+
+				if keymaps.test("toggle-last-left-panel"):
+					toggle_left_last()
+					update_layout_do()
+
+				if keymaps.test("escape"):
+					key_esc_press = True
+
+			if key_ctrl_down:
+				gui.pl_update += 1
+
+			if mouse_enter_window:
+				inp.key_return_press = False
+
+			if gui.fullscreen and key_esc_press:
+				gui.fullscreen = False
+				SDL_SetWindowFullscreen(t_window, 0)
+
+			# Disable keys for text cursor control
+			if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not trans_edit_box.active:
+
+				if not quick_search_mode and not search_over.active:
+					if album_mode and gui.album_tab_mode \
+							and not key_ctrl_down \
+							and not key_meta \
+							and not key_lalt:
+						if key_left_press:
+							gal_left = True
+							key_left_press = False
+						if key_right_press:
+							gal_right = True
+							key_right_press = False
+						if key_up_press:
+							gal_up = True
+							key_up_press = False
+						if key_down_press:
+							gal_down = True
+							key_down_press = False
+
+				if not search_over.active:
+					if key_del:
+						close_all_menus()
+						del_selected()
+
+					# Arrow keys to change playlist
+					if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+						gui.pl_update = 1
+						gui.update += 1
+
+				if keymaps.test("start"):
+					if pctl.playing_time < 4:
+						pctl.back()
+					else:
+						pctl.new_time = 0
+						pctl.playing_time = 0
+						pctl.decode_time = 0
+						pctl.playerCommand = "seek"
+						pctl.playerCommandReady = True
+
+				if keymaps.test("goto-top"):
+					pctl.playlist_view_position = 0
+					logging.debug("Position changed by key")
+					pctl.selected_in_playlist = 0
+					gui.pl_update = 1
+
+				if keymaps.test("goto-bottom"):
+					n = len(default_playlist) - gui.playlist_view_length + 1
+					n = max(n, 0)
+					pctl.playlist_view_position = n
+					logging.debug("Position changed by key")
+					pctl.selected_in_playlist = len(default_playlist) - 1
+					gui.pl_update = 1
+
+			if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
+					and not gui.rename_folder_box \
+					and not gui.rename_playlist_box and not search_over.active and not gui.box_over and not trans_edit_box.active:
+
+				if quick_search_mode:
+					if keymaps.test("add-to-queue") and pctl.selected_ready():
+						add_selected_to_queue()
+						input_text = ""
+
+				else:
+
+					if key_c_press and key_ctrl_down:
+						gui.pl_update = 1
+						s_copy()
+
+					if key_x_press and key_ctrl_down:
+						gui.pl_update = 1
+						s_cut()
+
+					if key_v_press and key_ctrl_down:
+						gui.pl_update = 1
+						paste()
+
+					if keymaps.test("playpause"):
+						pctl.play_pause()
+
+
+			if inp.key_return_press and (gui.rename_folder_box or rename_track_box.active or radiobox.active):
+				inp.key_return_press = False
+				inp.level_2_enter = True
+
+			if key_ctrl_down and key_z_press:
+				undo.undo()
+
+			if keymaps.test("quit"):
+				tauon.exit("Quit keyboard shortcut pressed")
+
+			if keymaps.test("testkey"):  # F7: test
+				pass
+
+			if gui.mode < 3:
+				if keymaps.test("toggle-auto-theme"):
+					prefs.colour_from_image ^= True
+					if prefs.colour_from_image:
+						show_message(_("Enabled auto theme"))
+					else:
+						show_message(_("Disabled auto theme"))
+						gui.reload_theme = True
+						gui.theme_temp_current = -1
+
+				if keymaps.test("transfer-playtime-to"):
+					if len(cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
+							default_playlist):
+						fr = pctl.get_track(tauon.copied_track)
+						to = pctl.get_track(default_playlist[pctl.selected_in_playlist])
+
+						fr_s = star_store.full_get(fr.index)
+						to_s = star_store.full_get(to.index)
+
+						fr_scr = fr.lfm_scrobbles
+						to_scr = to.lfm_scrobbles
+
+						undo.bk_playtime_transfer(fr, fr_s, fr_scr, to, to_s, to_scr)
+
+						if to_s is None:
+							to_s = star_store.new_object()
+						if fr_s is None:
+							fr_s = star_store.new_object()
+
+						new = star_store.new_object()
+
+						new[0] = fr_s[0] + to_s[0]  # playtime
+						new[1] = fr_s[1]  # flags
+						if to_s[1]:
+							new[1] = to_s[1]  # keep target flags
+						new[2] = fr_s[2]  # raiting
+						if to_s[2] > 0 and fr_s[2] == 0:
+							new[2] = to_s[2]  # keep target rating
+						to.lfm_scrobbles = fr.lfm_scrobbles
+
+						star_store.remove(fr.index)
+						star_store.remove(to.index)
+						if new[0] or new[1] or new[2]:
+							star_store.insert(to.index, new)
+
+						tauon.copied_track = None
+						gui.pl_update += 1
+						logging.info("Transferred track stats!")
+					elif tauon.copied_track is None:
+						show_message(_("First select a source track by copying it into clipboard"))
+
+				if keymaps.test("toggle-gallery"):
+					toggle_album_mode()
+
+				if keymaps.test("toggle-right-panel"):
+					if gui.combo_mode:
+						exit_combo()
+					elif not album_mode:
+						toggle_side_panel()
+					else:
+						toggle_album_mode()
+
+				if keymaps.test("toggle-minimode"):
+					set_mini_mode()
+					gui.update += 1
+
+				if keymaps.test("cycle-layouts"):
+
+					if view_box.tracks():
+						view_box.side(True)
+					elif view_box.side():
+						view_box.gallery1(True)
+					elif view_box.gallery1():
+						view_box.lyrics(True)
+					else:
+						view_box.tracks(True)
+
+				if keymaps.test("cycle-layouts-reverse"):
+
+					if view_box.tracks():
+						view_box.lyrics(True)
+					elif view_box.lyrics():
+						view_box.gallery1(True)
+					elif view_box.gallery1():
+						view_box.side(True)
+					else:
+						view_box.tracks(True)
+
+				if keymaps.test("toggle-columns"):
+					view_box.col(True)
+
+				if keymaps.test("toggle-artistinfo"):
+					view_box.artist_info(True)
+
+				if keymaps.test("toggle-showcase"):
+					view_box.lyrics(True)
+
+				if keymaps.test("toggle-gallery-keycontrol"):
+					toggle_gallery_keycontrol()
+
+				if keymaps.test("toggle-show-art"):
+					toggle_side_art()
+
+			elif gui.mode == 3:
+				if keymaps.test("toggle-minimode"):
+					restore_full_mode()
+					gui.update += 1
+
+			ab_click = False
+
+			if keymaps.test("new-playlist"):
+				new_playlist()
+
+			if keymaps.test("edit-generator"):
+				edit_generator_box(pctl.active_playlist_viewing)
+
+			if keymaps.test("new-generator-playlist"):
+				new_playlist()
+				edit_generator_box(pctl.active_playlist_viewing)
+
+			if keymaps.test("delete-playlist"):
+				delete_playlist(pctl.active_playlist_viewing)
+
+			if keymaps.test("delete-playlist-force"):
+				delete_playlist(pctl.active_playlist_viewing, force=True)
+
+			if keymaps.test("rename-playlist"):
+				if gui.radio_view:
+					rename_playlist(pctl.radio_playlist_viewing)
+				else:
+					rename_playlist(pctl.active_playlist_viewing)
+				rename_playlist_box.x = 60 * gui.scale
+				rename_playlist_box.y = 60 * gui.scale
+
+			# Transfer click register to menus
+			if inp.mouse_click:
+				for instance in Menu.instances:
+					if instance.active:
+						instance.click()
+						inp.mouse_click = False
+						ab_click = True
+				if view_box.active:
+					view_box.clicked = True
+
+			if inp.mouse_click and (
+					prefs.show_nag or gui.box_over or radiobox.active or search_over.active or gui.rename_folder_box or gui.rename_playlist_box or rename_track_box.active or view_box.active or trans_edit_box.active):  # and not gui.message_box:
+				inp.mouse_click = False
+				gui.level_2_click = True
+			else:
+				gui.level_2_click = False
+
+			if track_box and inp.mouse_click:
+				w = 540
+				h = 240
+				x = int(window_size[0] / 2) - int(w / 2)
+				y = int(window_size[1] / 2) - int(h / 2)
+				if coll([x, y, w, h]):
+					inp.mouse_click = False
+					gui.level_2_click = True
+
+			if right_click:
+				level_2_right_click = True
+
+			if pref_box.enabled:
+
+				if pref_box.inside():
+					if inp.mouse_click:  # and not gui.message_box:
+						pref_box.click = True
+						inp.mouse_click = False
+					if right_click:
+						right_click = False
+						pref_box.right_click = True
+
+					pref_box.scroll = mouse_wheel
+					mouse_wheel = 0
+				else:
+					if inp.mouse_click:
+						pref_box.close()
+					if right_click:
+						pref_box.close()
+					if pref_box.lock is False:
+						pass
+
+			if right_click and (
+					radiobox.active or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or search_over.active):
+				right_click = False
+
+			if mouse_wheel != 0:
+				gui.update += 1
+			if mouse_down is True:
+				gui.update += 1
+
+			if keymaps.test("pagedown"):  # key_PGD:
+				if len(default_playlist) > 10:
+					pctl.playlist_view_position += gui.playlist_view_length - 4
+					if pctl.playlist_view_position > len(default_playlist):
+						pctl.playlist_view_position = len(default_playlist) - 2
+					gui.pl_update = 1
+					pctl.selected_in_playlist = pctl.playlist_view_position
+					logging.debug("Position changed by page key")
+					shift_selection.clear()
+			if keymaps.test("pageup"):
+				if len(default_playlist) > 0:
+					pctl.playlist_view_position -= gui.playlist_view_length - 4
+					pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
+					gui.pl_update = 1
+					pctl.selected_in_playlist = pctl.playlist_view_position
+					logging.debug("Position changed by page key")
+					shift_selection.clear()
+
+			if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
+
+				if keymaps.test("info-playing"):
+					if pctl.selected_in_playlist < len(default_playlist):
+						r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
+						track_box = True
+
+				if keymaps.test("info-show"):
+					if pctl.selected_in_playlist < len(default_playlist):
+						r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
+						track_box = True
+
+				# These need to be disabled when text fields are active
+				if not search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
+					if keymaps.test("advance"):
+						key_right_press = False
+						pctl.advance()
+
+					if keymaps.test("previous"):
+						key_left_press = False
+						pctl.back()
+
+					if key_a_press and key_ctrl_down:
+						gui.pl_update = 1
+						shift_selection = range(len(default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
+
+					if keymaps.test("revert"):
+						pctl.revert()
+
+					if keymaps.test("random-track-start"):
+						pctl.advance(rr=True)
+
+					if keymaps.test("vol-down"):
+						if pctl.player_volume > 3:
+							pctl.player_volume -= 3
+						else:
+							pctl.player_volume = 0
+						pctl.set_volume()
+
+					if keymaps.test("toggle-mute"):
+						pctl.toggle_mute()
+
+					if keymaps.test("vol-up"):
+						pctl.player_volume += 3
+						pctl.player_volume = min(pctl.player_volume, 100)
+						pctl.set_volume()
+
+					if keymaps.test("shift-down") and len(default_playlist) > 0:
+						gui.pl_update += 1
+						if pctl.selected_in_playlist > len(default_playlist) - 1:
+							pctl.selected_in_playlist = 0
+
+						if not shift_selection:
+							shift_selection.append(pctl.selected_in_playlist)
+						if pctl.selected_in_playlist < len(default_playlist) - 1:
+							r = pctl.selected_in_playlist
+							pctl.selected_in_playlist += 1
+							if pctl.selected_in_playlist not in shift_selection:
+								shift_selection.append(pctl.selected_in_playlist)
+							else:
+								shift_selection.remove(r)
+
+					if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
+						gui.pl_update += 1
+						if pctl.selected_in_playlist > len(default_playlist) - 1:
+							pctl.selected_in_playlist = 0
+
+						if not shift_selection:
+							shift_selection.append(pctl.selected_in_playlist)
+						if pctl.selected_in_playlist < len(default_playlist) - 1:
+							r = pctl.selected_in_playlist
+							pctl.selected_in_playlist -= 1
+							if pctl.selected_in_playlist not in shift_selection:
+								shift_selection.insert(0, pctl.selected_in_playlist)
+							else:
+								shift_selection.remove(r)
+
+					if keymaps.test("toggle-shuffle"):
+						# pctl.random_mode ^= True
+						toggle_random()
+
+					if keymaps.test("goto-playing"):
+						pctl.show_current()
+					if keymaps.test("goto-previous"):
+						if pctl.queue_step > 1:
+							pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
+
+					if keymaps.test("toggle-repeat"):
+						toggle_repeat()
+
+					if keymaps.test("random-track"):
+						random_track()
+
+					if keymaps.test("random-album"):
+						random_album()
+
+					if keymaps.test("opacity-up"):
+						prefs.window_opacity += .05
+						prefs.window_opacity = min(prefs.window_opacity, 1)
+						SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+					if keymaps.test("opacity-down"):
+						prefs.window_opacity -= .05
+						prefs.window_opacity = max(prefs.window_opacity, .30)
+						SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+					if keymaps.test("seek-forward"):
+						pctl.seek_time(pctl.playing_time + prefs.seek_interval)
+
+					if keymaps.test("seek-back"):
+						pctl.seek_time(pctl.playing_time - prefs.seek_interval)
+
+					if keymaps.test("play"):
+						pctl.play()
+
+					if keymaps.test("stop"):
+						pctl.stop()
+
+					if keymaps.test("pause"):
+						pctl.pause_only()
+
+					if keymaps.test("love-playing"):
+						bar_love(notify=True)
+
+					if keymaps.test("love-selected"):
+						select_love(notify=True)
+
+					if keymaps.test("search-lyrics-selected"):
+						if pctl.selected_ready():
+							track = pctl.get_track(default_playlist[pctl.selected_in_playlist])
+							if track.lyrics:
+								show_message(_("Track already has lyrics"))
+							else:
+								get_lyric_wiki(track)
+
+					if keymaps.test("substitute-search-selected"):
+						if pctl.selected_ready():
+							show_sub_search(pctl.get_track(default_playlist[pctl.selected_in_playlist]))
+
+					if keymaps.test("global-search"):
+						activate_search_overlay()
+
+					if keymaps.test("add-to-queue") and pctl.selected_ready():
+						add_selected_to_queue()
+
+					if keymaps.test("clear-queue"):
+						clear_queue()
+
+					if keymaps.test("regenerate-playlist"):
+						regenerate_playlist(pctl.active_playlist_viewing)
+
+			if keymaps.test("cycle-theme"):
+				gui.reload_theme = True
+				gui.theme_temp_current = -1
+				gui.temp_themes.clear()
+				theme += 1
+
+			if keymaps.test("cycle-theme-reverse"):
+				gui.theme_temp_current = -1
+				gui.temp_themes.clear()
+				pref_box.devance_theme()
+
+			if keymaps.test("reload-theme"):
+				gui.reload_theme = True
+
+		# if mouse_position[1] < 1:
+		#     mouse_down = False
+
+		if mouse_down is False:
+			scroll_hold = False
+
+		# if focused is True:
+		#     mouse_down = False
+
+		if inp.media_key:
+			if inp.media_key == "Play":
+				if pctl.playing_state == 0:
+					pctl.play()
+				else:
+					pctl.pause()
+			elif inp.media_key == "Pause":
+				pctl.pause_only()
+			elif inp.media_key == "Stop":
+				pctl.stop()
+			elif inp.media_key == "Next":
+				pctl.advance()
+			elif inp.media_key == "Previous":
+				pctl.back()
+
+			elif inp.media_key == "Rewind":
+				pctl.seek_time(pctl.playing_time - 10)
+			elif inp.media_key == "FastForward":
+				pctl.seek_time(pctl.playing_time + 10)
+			elif inp.media_key == "Repeat":
+				toggle_repeat()
+			elif inp.media_key == "Shuffle":
+				toggle_random()
+
+			inp.media_key = ""
+
+		if len(load_orders) > 0:
+			loading_in_progress = True
+			pctl.after_import_flag = True
+			tauon.thread_manager.ready("worker")
+			if loaderCommand == LC_None:
+
+				# Fliter out files matching CUE filenames
+				# This isnt the only mechanism that does this. This one helps in the situation
+				# where the user drags and drops multiple files at onec. CUEs in folders are handled elsewhere
+				if len(load_orders) > 1:
+					for order in load_orders:
+						if order.stage == 0 and order.target.endswith(".cue"):
+							for order2 in load_orders:
+								if not order2.target.endswith(".cue") and\
+										os.path.splitext(order2.target)[0] == os.path.splitext(order.target)[0] and\
+										os.path.isfile(order2.target):
+									order2.stage = -1
+					for i in reversed(range(len(load_orders))):
+						order = load_orders[i]
+						if order.stage == -1:
+							del load_orders[i]
+
+				# Prepare loader thread with load order
+				for order in load_orders:
+					if order.stage == 0:
+						order.traget = order.target.replace("\\", "/")
+						order.stage = 1
+						if os.path.isdir(order.traget):
+							loaderCommand = LC_Folder
+						else:
+							loaderCommand = LC_File
+							if order.traget.endswith(".xspf"):
+								to_got = "xspf"
+								to_get = 0
+							else:
+								to_got = 1
+								to_get = 1
+						loaderCommandReady = True
+						tauon.thread_manager.ready("worker")
+						break
+
+		elif loading_in_progress is True:
+			loading_in_progress = False
+			pctl.notify_change()
+
+		if loaderCommand == LC_Done:
+			loaderCommand = LC_None
+			gui.update += 1
+			# gui.pl_update = 1
+			# loading_in_progress = False
+
+		if update_layout:
+			update_layout_do()
+			update_layout = False
+
+		# if tauon.worker_save_state and\
+		#         not gui.pl_pulse and\
+		#         not loading_in_progress and\
+		#         not to_scan and\
+		#         not plex.scanning and\
+		#         not cm_clean_db and\
+		#         not lastfm.scanning_friends and\
+		#         not move_in_progress:
+		#     save_state()
+		#     cue_list.clear()
+		#     tauon.worker_save_state = False
+
+		# -----------------------------------------------------
+		# THEME SWITCHER--------------------------------------------------------------------
+
+		if gui.reload_theme is True:
+
+			gui.pl_update = 1
+			theme_files = get_themes()
+
+			if theme > len(theme_files):  # sic
+				theme = 0
+
+			if theme > 0:
+				theme_number = theme - 1
+				try:
+
+					colours.column_colours.clear()
+					colours.column_colours_playing.clear()
+
+					theme_item = theme_files[theme_number]
+
+					gui.theme_name = theme_item[1]
+					colours.lm = False
+					colours.__init__()
+
+					load_theme(colours, Path(theme_item[0]))
+					deco.load(colours.deco)
+					logging.info("Applying theme: " + gui.theme_name)
+
+					if colours.lm:
+						info_icon.colour = [60, 60, 60, 255]
+					else:
+						info_icon.colour = [61, 247, 163, 255]
+
+					if colours.lm:
+						folder_icon.colour = [255, 190, 80, 255]
+					else:
+						folder_icon.colour = [244, 220, 66, 255]
+
+					if colours.lm:
+						settings_icon.colour = [85, 187, 250, 255]
+					else:
+						settings_icon.colour = [232, 200, 96, 255]
+
+					if colours.lm:
+						radiorandom_icon.colour = [120, 200, 120, 255]
+					else:
+						radiorandom_icon.colour = [153, 229, 133, 255]
+
+				except Exception:
+					logging.exception("Error loading theme file")
+					raise
+					show_message(_("Error loading theme file"), "", mode="warning")
+
+			if theme == 0:
+				gui.theme_name = "Mindaro"
+				logging.info("Applying default theme: Mindaro")
+				colours.lm = False
+				colours.__init__()
+				colours.post_config()
+				deco.unload()
+
+			prefs.theme_name = gui.theme_name
+
+			#logging.info("Theme number: " + str(theme))
+			gui.reload_theme = False
+			ddt.text_background_colour = colours.playlist_panel_background
+
+		# ---------------------------------------------------------------------------------------------------------
+		# GUI DRAWING------
+		#logging.info(gui.update)
+		#logging.info(gui.lowered)
+		if gui.mode == 3:
+			gui.pl_update = 0
+
+		if gui.pl_update and not gui.update:
+			gui.update = 1
+
+		if gui.update > 0 and not resize_mode:
+			gui.update = min(gui.update, 2)
+
+			if reset_render:
+				logging.info("Reset render targets!")
+				clear_img_cache(delete_disk=False)
+				ddt.clear_text_cache()
+				for item in WhiteModImageAsset.assets:
+					item.reload()
+				reset_render = False
+
+			SDL_SetRenderTarget(renderer, None)
+			SDL_SetRenderDrawColor(
+				renderer, colours.top_panel_background[0], colours.top_panel_background[1],
+				colours.top_panel_background[2], colours.top_panel_background[3])
+			SDL_RenderClear(renderer)
+			SDL_SetRenderTarget(renderer, gui.main_texture)
+			SDL_RenderClear(renderer)
+
+			# perf_timer.set()
+			gui.update_on_drag = False
+			gui.pl_update_on_drag = False
+
+			# mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
+			gui.showed_title = False
+
+			if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
+				mouse_position[0] = -300
+				mouse_position[1] = -300
+
+			if gui.clear_image_cache_next:
+				gui.clear_image_cache_next -= 1
+				album_art_gen.clear_cache()
+				style_overlay.radio_meta = None
+				if prefs.art_bg:
+					tauon.thread_manager.ready("style")
+
+			fields.clear()
+			gui.cursor_want = 0
+
+			gui.layer_focus = 0
+
+			if inp.mouse_click or mouse_wheel or right_click:
+				mouse_position[0], mouse_position[1] = get_sdl_input.mouse()
+
+			if inp.mouse_click:
+				n_click_time = time.time()
+				if n_click_time - click_time < 0.42:
+					d_mouse_click = True
+				click_time = n_click_time
+
+				# Don't register bottom level click when closing message box
+				if gui.message_box and pref_box.enabled and not key_focused and not coll(message_box.get_rect()):
+					inp.mouse_click = False
+					gui.message_box = False
+
+			# Enable the garbage collecter (since we disabled it during startup)
+			if ggc > 0:
+				if ggc == 2:
+					ggc = 1
+				elif ggc == 1:
+					ggc = 0
+					gbc.enable()
+					#logging.info("Enabling garbage collecting")
+
+			if gui.mode == 4:
+				launch.render()
+			elif gui.mode == 1 or gui.mode == 2:
+
+				ddt.text_background_colour = colours.playlist_panel_background
+
+				# Side Bar Draging----------
+
+				if not mouse_down:
+					side_drag = False
+
+				rect = (window_size[0] - gui.rspw - 5 * gui.scale, gui.panelY, 12 * gui.scale,
+						window_size[1] - gui.panelY - gui.panelBY)
+				fields.add(rect)
+
+				if (coll(rect) or side_drag is True) \
+					and rename_track_box.active is False \
+					and radiobox.active is False \
+					and gui.rename_playlist_box is False \
+					and gui.message_box is False \
+					and pref_box.enabled is False \
+					and track_box is False \
+					and not gui.rename_folder_box \
+					and not Menu.active \
+					and (gui.rsp or album_mode) \
+					and not artist_info_scroll.held \
+					and gui.layer_focus == 0 and gui.show_playlist:
+
+					if side_drag is True:
+						draw_sep_hl = True
+						# gui.update += 1
+						gui.update_on_drag = True
+
+					if inp.mouse_click:
+						side_drag = True
+						gui.side_bar_drag_source = mouse_position[0]
+						gui.side_bar_drag_original = gui.rspw
+
+					if not quick_drag:
+						gui.cursor_want = 1
+
+				# side drag update
+				if side_drag:
+
+					offset = gui.side_bar_drag_source - mouse_position[0]
+
+					target = gui.side_bar_drag_original + offset
+
+					# Snap to album mode position if close
+					if not album_mode and prefs.side_panel_layout == 1:
+						if abs(target - gui.pref_gallery_w) < 35 * gui.scale:
+							target = gui.pref_gallery_w
+
+					# Reset max ratio if drag drops below ratio width
+					if prefs.side_panel_layout == 0:
+						if target < round((window_size[1] - gui.panelY - gui.panelBY) * gui.art_aspect_ratio):
+							gui.art_max_ratio_lock = gui.art_aspect_ratio
+
+						max_w = round(((window_size[
+											1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
+						# 17 here is the art box inset value
+
+					else:
+						max_w = window_size[0]
+
+					if not album_mode and target > max_w - 12 * gui.scale:
+						target = max_w
+						gui.rspw = target
+						gui.rsp_full_lock = True
+
+					else:
+						gui.rspw = target
+						gui.rsp_full_lock = False
+
+					if album_mode:
+						pass
+						# gui.rspw = target
+
+					if album_mode and gui.rspw < album_mode_art_size + 50 * gui.scale:
+						target = album_mode_art_size + 50 * gui.scale
+
+					# Prevent side bar getting too small
+					target = max(target, 120 * gui.scale)
+
+					# Remember size for this view mode
+					if not album_mode:
+						gui.pref_rspw = target
+					else:
+						gui.pref_gallery_w = target
+
+					update_layout_do()
+
+				# ALBUM GALLERY RENDERING:
+				# Gallery view
+				# C-AR
+
+				if album_mode:
+					try:
+						# Arrow key input
+						if gal_right:
+							gal_right = False
+							gal_jump_select(False, 1)
+							goto_album(pctl.selected_in_playlist)
+							pctl.playlist_view_position = pctl.selected_in_playlist
+							logging.debug("Position changed by gallery key press")
+							gui.pl_update = 1
+						if gal_down:
+							gal_down = False
+							gal_jump_select(False, row_len)
+							goto_album(pctl.selected_in_playlist, down=True)
+							pctl.playlist_view_position = pctl.selected_in_playlist
+							logging.debug("Position changed by gallery key press")
+							gui.pl_update = 1
+						if gal_left:
+							gal_left = False
+							gal_jump_select(True, 1)
+							goto_album(pctl.selected_in_playlist)
+							pctl.playlist_view_position = pctl.selected_in_playlist
+							logging.debug("Position changed by gallery key press")
+							gui.pl_update = 1
+						if gal_up:
+							gal_up = False
+							gal_jump_select(True, row_len)
+							goto_album(pctl.selected_in_playlist)
+							pctl.playlist_view_position = pctl.selected_in_playlist
+							logging.debug("Position changed by gallery key press")
+							gui.pl_update = 1
+
+						w = gui.rspw
+
+						if window_size[0] < 750 * gui.scale:
+							w = window_size[0] - 20 * gui.scale
+							if gui.lsp:
+								w -= gui.lspw
+
+						x = window_size[0] - w
+						h = window_size[1] - gui.panelY - gui.panelBY
+
+						if not gui.show_playlist and inp.mouse_click:
+							left = 0
+							if gui.lsp:
+								left = gui.lspw
+
+							if left < mouse_position[0] < left + 20 * gui.scale and window_size[1] - gui.panelBY > \
+									mouse_position[1] > gui.panelY:
+								toggle_album_mode()
+								inp.mouse_click = False
+								mouse_down = False
+
+						rect = [x, gui.panelY, w, h]
+						ddt.rect(rect, colours.gallery_background)
+						# ddt.rect_r(rect, [255, 0, 0, 200], True)
+
+						area_x = w + 38 * gui.scale
+						# area_x = w - 40 * gui.scale
+
+						row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
+
+						#logging.info(row_len)
+
+						compact = 40 * gui.scale
+						a_offset = 7 * gui.scale
+
+						l_area = x
+						r_area = w
+						c_area = r_area // 2 + l_area
+
+						ddt.text_background_colour = colours.gallery_background
+
+						line1_colour = colours.gallery_artist_line
+						line2_colour = colours.grey(240)  # colours.side_bar_line1
+
+						if colours.side_panel_background != colours.gallery_background:
+							line2_colour = [240, 240, 240, 255]
+							line1_colour = alpha_mod([220, 220, 220, 255], 120)
+
+						if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
+							line1_colour = colours.grey(80)
+							line2_colour = colours.grey(40)
+
+						if row_len == 0:
+							row_len = 1
+
+						dev = int((r_area - compact) / (row_len + 0))
+
+						render_pos = 0
+						album_on = 0
+
+						max_scroll = round(
+							(math.ceil((len(album_dex)) / row_len) - 1) * (album_mode_art_size + album_v_gap)) - round(
+							50 * gui.scale)
+
+						# Mouse wheel scrolling
+						if not search_over.active and not radiobox.active \
+								and mouse_position[0] > window_size[0] - w and gui.panelY < mouse_position[1] < window_size[
+							1] - gui.panelBY:
+
+							if mouse_wheel != 0:
+								scroll_gallery_hide_timer.set()
+								gui.frame_callback_list.append(TestTimer(0.9))
+
+							if prefs.gallery_row_scroll:
+								gui.album_scroll_px -= mouse_wheel * (album_mode_art_size + album_v_gap)  # 90
+							else:
+								gui.album_scroll_px -= mouse_wheel * prefs.gallery_scroll_wheel_px
+
+							if gui.album_scroll_px < round(album_v_slide_value * -1):
+								gui.album_scroll_px = round(album_v_slide_value * -1)
+								if album_dex:
+									gallery_pulse_top.pulse()
+
+							if gui.album_scroll_px > max_scroll:
+								gui.album_scroll_px = max_scroll
+								gui.album_scroll_px = max(gui.album_scroll_px, round(album_v_slide_value * -1))
+
+						rect = (
+						gui.gallery_scroll_field_left, gui.panelY, window_size[0] - gui.gallery_scroll_field_left - 2, h)
+
+						card_mode = False
+						if prefs.use_card_style and colours.lm and gui.gallery_show_text:
+							card_mode = True
+
+						rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
+						fields.add(rect)
+
+						# Show scroll area
+						if coll(rect) or gallery_scroll.held or scroll_gallery_hide_timer.get() < 0.9 or gui.album_tab_mode:
+
+							if gallery_scroll.held:
+								while len(tauon.gall_ren.queue) > 2:
+									tauon.gall_ren.queue.pop()
+
+							# Draw power bar button
+							if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
+								rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale,
+										24 * gui.scale)
+								fields.add(rect)
+								colour = [255, 255, 255, 35]
+								if colours.lm:
+									colour = [0, 0, 0, 30]
+								if coll(rect) and not gallery_scroll.held:
+									colour = [255, 220, 100, 245]
+									if colours.lm:
+										colour = [250, 100, 0, 255]
+									if inp.mouse_click:
+										gui.pt = 1
+
+								power_bar_icon.render(rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour)
+
+							# Draw scroll bar
+							if gui.pt == 0:
+								gui.album_scroll_px = gallery_scroll.draw(
+									window_size[0] - 16 * gui.scale, gui.panelY,
+									15 * gui.scale,
+									window_size[1] - (gui.panelY + gui.panelBY),
+									gui.album_scroll_px + album_v_slide_value,
+									max_scroll + album_v_slide_value,
+									jump_distance=1400 * gui.scale,
+									r_click=right_click,
+									extend_field=15 * gui.scale) - album_v_slide_value
+
+						if last_row != row_len:
+							last_row = row_len
+
+							if pctl.selected_in_playlist < len(pctl.playing_playlist()):
+								goto_album(pctl.selected_in_playlist)
+							# else:
+							#     goto_album(pctl.playlist_playing_position)
+
+						extend = 0
+						if card_mode:  # gui.gallery_show_text:
+							extend = 40 * gui.scale
+
+						# Process inputs first
+						if (inp.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
+							while render_pos < gui.album_scroll_px + window_size[1]:
+
+								if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
+									break
+
+								if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
+									# Skip row
+									render_pos += album_mode_art_size + album_v_gap
+									album_on += row_len
+								else:
+									# render row
+									y = render_pos - gui.album_scroll_px
+									row_x = 0
+									for a in range(row_len):
+										if album_on > len(album_dex) - 1:
+											break
+
+										x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
+											compact / 2) - a_offset
+
+										if album_dex[album_on] > len(default_playlist):
+											break
+
+										rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+										# fields.add(rect)
+										m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+
+										# if m_in:
+										#     ddt.rect_r((x - 7, y - 7, album_mode_art_size + 14, album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
+
+										# Quick drag and drop
+										if mouse_up and (playlist_hold and m_in) and not side_drag and shift_selection:
+
+											info = get_album_info(album_dex[album_on])
+											if info[1]:
+
+												track_position = info[1][0]
+
+												if track_position > shift_selection[0]:
+													track_position = info[1][-1] + 1
+
+												ref = []
+												for item in shift_selection:
+													ref.append(default_playlist[item])
+
+												for item in shift_selection:
+													default_playlist[item] = "old"
+
+												for item in shift_selection:
+													default_playlist.insert(track_position, "new")
+
+												for b in reversed(range(len(default_playlist))):
+													if default_playlist[b] == "old":
+														del default_playlist[b]
+												shift_selection = []
+												for b in range(len(default_playlist)):
+													if default_playlist[b] == "new":
+														shift_selection.append(b)
+														default_playlist[b] = ref.pop(0)
+
+												pctl.selected_in_playlist = shift_selection[0]
+												gui.pl_update += 1
+												playlist_hold = False
+
+												reload_albums(True)
+												pctl.notify_change()
+
+										elif not side_drag and is_level_zero():
+
+											if coll_point(click_location, rect) and gui.panelY < mouse_position[1] < \
+													window_size[1] - gui.panelBY:
+												info = get_album_info(album_dex[album_on])
+
+												if m_in and mouse_up and prefs.gallery_single_click:
+
+													if is_level_zero() and gui.d_click_ref == album_dex[album_on]:
+
+														if info[0] == 1 and pctl.playing_state == 2:
+															pctl.play()
+														elif info[0] == 1 and pctl.playing_state > 0:
+															pctl.playlist_view_position = album_dex[album_on]
+															logging.debug("Position changed by gallery click")
+														else:
+															pctl.playlist_view_position = album_dex[album_on]
+															logging.debug("Position changed by gallery click")
+															pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+														pctl.show_current()
+
+												elif mouse_down and not m_in:
+													info = get_album_info(album_dex[album_on])
+													quick_drag = True
+													if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+														playlist_hold = True
+													shift_selection = info[1]
+													gui.pl_update += 1
+													click_location = [0, 0]
+
+										if m_in:
+
+											info = get_album_info(album_dex[album_on])
+											if inp.mouse_click:
+
+												if prefs.gallery_single_click:
+													gui.d_click_ref = album_dex[album_on]
+
+												else:
+
+													if d_click_timer.get() < 0.5 and gui.d_click_ref == album_dex[album_on]:
+
+														if info[0] == 1 and pctl.playing_state == 2:
+															pctl.play()
+														elif info[0] == 1 and pctl.playing_state > 0:
+															pctl.playlist_view_position = album_dex[album_on]
+															logging.debug("Position changed by gallery click")
+														else:
+															pctl.playlist_view_position = album_dex[album_on]
+															logging.debug("Position changed by gallery click")
+															pctl.jump(default_playlist[album_dex[album_on]], album_dex[album_on])
+
+													else:
+														gui.d_click_ref = album_dex[album_on]
+														d_click_timer.set()
+
+													pctl.playlist_view_position = album_dex[album_on]
+													logging.debug("Position changed by gallery click")
+													pctl.selected_in_playlist = album_dex[album_on]
+													gui.pl_update += 1
+
+											elif middle_click and is_level_zero():
+												# Middle click to add album to queue
+												if key_ctrl_down:
+													# Add to queue ungrouped
+													album = get_album_info(album_dex[album_on])[1]
+													for item in album:
+														pctl.force_queue.append(
+															queue_item_gen(default_playlist[item], item, pl_to_id(
+																pctl.active_playlist_viewing)))
+													queue_timer_set(plural=True)
+													if prefs.stop_end_queue:
+														pctl.auto_stop = False
+												else:
+													# Add to queue grouped
+													add_album_to_queue(default_playlist[album_dex[album_on]])
+
+											elif right_click:
+												if pctl.quick_add_target:
+
+													pl = id_to_pl(pctl.quick_add_target)
+													if pl is not None:
+														parent = pctl.get_track(
+															default_playlist[album_dex[album_on]]).parent_folder_path
+														# remove from target pl
+														if default_playlist[album_dex[album_on]] in pctl.multi_playlist[pl].playlist_ids:
+															for i in reversed(range(len(pctl.multi_playlist[pl].playlist_ids))):
+																if pctl.get_track(pctl.multi_playlist[pl].playlist_ids[i]).parent_folder_path == parent:
+																	del pctl.multi_playlist[pl].playlist_ids[i]
+														else:
+															# add
+															for i in range(len(default_playlist)):
+																if pctl.get_track(default_playlist[i]).parent_folder_path == parent:
+																	pctl.multi_playlist[pl].playlist_ids.append(default_playlist[i])
+
+													reload_albums(True)
+
+												else:
+													pctl.selected_in_playlist = album_dex[album_on]
+													# playlist_position = pctl.playlist_selected
+													shift_selection = [pctl.selected_in_playlist]
+													gallery_menu.activate(default_playlist[pctl.selected_in_playlist])
+													r_menu_position = pctl.selected_in_playlist
+
+													shift_selection = []
+													u = pctl.selected_in_playlist
+													while u < len(default_playlist) and pctl.master_library[
+														default_playlist[u]].parent_folder_path == \
+															pctl.master_library[
+																default_playlist[pctl.selected_in_playlist]].parent_folder_path:
+														shift_selection.append(u)
+														u += 1
+													pctl.render_playlist()
+
+										album_on += 1
+
+									if album_on > len(album_dex):
+										break
+									render_pos += album_mode_art_size + album_v_gap
+
+						render_pos = 0
+						album_on = 0
+						album_count = 0
+
+						if not pref_box.enabled or mouse_wheel != 0:
+							gui.first_in_grid = None
+
+						# Render album grid
+						while render_pos < gui.album_scroll_px + window_size[1] and default_playlist:
+
+							if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
+								break
+
+							if render_pos < gui.album_scroll_px - album_mode_art_size - album_v_gap:
+								# Skip row
+								render_pos += album_mode_art_size + album_v_gap
+								album_on += row_len
+							else:
+								# render row
+								y = render_pos - gui.album_scroll_px
+
+								row_x = 0
+
+								if y > window_size[1] - gui.panelBY - 30 * gui.scale and window_size[1] < 340 * gui.scale:
+									break
+								# if y >
+
+								for a in range(row_len):
+
+									if album_on > len(album_dex) - 1:
+										break
+
+									x = (l_area + dev * a) - int(album_mode_art_size / 2) + int(dev / 2) + int(
+										compact / 2) - a_offset
+
+									if album_dex[album_on] > len(default_playlist):
+										break
+
+									track = pctl.master_library[default_playlist[album_dex[album_on]]]
+
+									info = get_album_info(album_dex[album_on])
+									album = info[1]
+									# info = (0, 0, 0)
+
+									# rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+									# fields.add(rect)
+									# m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+
+									if gui.first_in_grid is None and y > gui.panelY:  # This marks what track is the first in the grid
+										gui.first_in_grid = album_dex[album_on]
+
+									# artisttitle = colours.side_bar_line2
+									# albumtitle = colours.side_bar_line1  # grey(220)
+
+									if card_mode:
+										ddt.text_background_colour = colours.grey(250)
+										drop_shadow.render(
+											x + 3 * gui.scale, y + 3 * gui.scale,
+											album_mode_art_size + 11 * gui.scale,
+											album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
+										ddt.rect(
+											(x, y, album_mode_art_size, album_mode_art_size + 45 * gui.scale), colours.grey(250))
+
+									# White background needs extra border
+									if colours.lm and not card_mode:
+										ddt.rect_a((x - 2, y - 2), (album_mode_art_size + 4, album_mode_art_size + 4), colours.grey(200))
+
+									if a == row_len - 1:
+										gui.gallery_scroll_field_left = max(
+											x + album_mode_art_size,
+											window_size[0] - round(50 * gui.scale))
+
+									if info[0] == 1 and 0 < pctl.playing_state < 3:
+										ddt.rect_a(
+											(x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8),
+											colours.gallery_highlight)
+										# ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+										#            colours.gallery_background, True)
+
+									# Draw quick add highlight
+									if pctl.quick_add_target:
+										pl = id_to_pl(pctl.quick_add_target)
+										if pl is not None and default_playlist[album_dex[album_on]] in \
+												pctl.multi_playlist[pl].playlist_ids:
+											c = [110, 233, 90, 255]
+											if colours.lm:
+												c = [66, 244, 66, 255]
+											ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8), c)
+
+									# Draw transcode highlight
+									if transcode_list and os.path.isdir(prefs.encoder_output):
+
+										tr = False
+
+										if (encode_folder_name(track) in os.listdir(prefs.encoder_output)):
+											tr = True
+										else:
+											for folder in transcode_list:
+												if pctl.get_track(folder[0]).parent_folder_path == track.parent_folder_path:
+													tr = True
+													break
+										if tr:
+											c = [244, 212, 66, 255]
+											if colours.lm:
+												c = [244, 64, 244, 255]
+											ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8), c)
+											# ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+											#            colours.gallery_background, True)
+
+									# Draw selection
+
+									if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
+										c = colours.gallery_highlight
+										c = [c[1], c[2], c[0], c[3]]
+										ddt.rect_a((x - 4, y - 4), (album_mode_art_size + 8, album_mode_art_size + 8), c)  # [150, 80, 222, 255]
+										# ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size),
+										#            colours.gallery_background, True)
+
+									# Draw selection animation
+									if gui.gallery_animate_highlight_on == album_dex[
+										album_on] and gallery_select_animate_timer.get() < 1.5:
+
+										t = gallery_select_animate_timer.get()
+										c = colours.gallery_highlight
+										if t < 0.2:
+											a = int(255 * (t / 0.2))
+										elif t < 0.5:
+											a = 255
+										else:
+											a = int(255 - 255 * (t - 0.5))
+
+										c = [c[1], c[2], c[0], a]
+										ddt.rect_a((x - 5, y - 5), (album_mode_art_size + 10, album_mode_art_size + 10), c)  # [150, 80, 222, 255]
+
+										gui.update += 1
+
+									# Draw faint outline
+									ddt.rect(
+										(x - 1, y - 1, album_mode_art_size + 2, album_mode_art_size + 2),
+										[255, 255, 255, 11])
+
+									if gui.album_tab_mode or gallery_menu.active:
+										if info[2] is False and info[0] != 1 and not colours.lm:
+											ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110])
+											albumtitle = colours.grey(160)
+
+									elif info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
+										ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [0, 0, 0, 110])
+										albumtitle = colours.grey(160)
+
+									# Determine meta info
+									singles = False
+									artists = 0
+									last_album = ""
+									last_artist = ""
+									s = 0
+									ones = 0
+									for id in album:
+										tr = pctl.get_track(default_playlist[id])
+										if tr.album != last_album:
+											if last_album:
+												s += 1
+											last_album = tr.album
+											if str(tr.track_number) == "1":
+												ones += 1
+										if tr.artist != last_artist:
+											artists += 1
+									if s > 2 or ones > 2:
+										singles = True
+
+									# Draw blank back colour
+									back_colour = [40, 40, 40, 50]
+									if colours.lm:
+										back_colour = [10, 10, 10, 15]
+
+									back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
+
+									ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), back_colour)
+
+									# Draw album art
+									if singles:
+										dia = math.sqrt(album_mode_art_size * album_mode_art_size * 2)
+										ran = dia * 0.25
+										off = (dia - ran) / 2
+										albs = min(len(album), 5)
+										spacing = ran / (albs - 1)
+										size = round(album_mode_art_size * 0.5)
+
+										i = 0
+										for p in album[:albs]:
+
+											pp = spacing * i
+											pp += off
+											xx = pp / math.sqrt(2)
+
+											xx -= size / 2
+											drawn_art = tauon.gall_ren.render(
+												pctl.get_track(default_playlist[p]), (x + xx, y + xx),
+												size=size, force_offset=0)
+											if not drawn_art:
+												g = 50 + round(100 / albs) * i
+												ddt.rect((x + xx, y + xx, size, size), [g, g, g, 100])
+											drawn_art = True
+											i += 1
+
+									else:
+										album_count += 1
+										if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
+											tauon.gall_ren.limit = round((album_count * 1.5) + 30)
+										drawn_art = tauon.gall_ren.render(track, (x, y))
+
+									# Determine mouse collision
+									rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+									m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+									fields.add(rect)
+
+									# Draw mouse-over highlight
+									if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
+										if is_level_zero():
+											ddt.rect(rect, [255, 255, 255, 10])
+
+									if drawn_art is False and gui.gallery_show_text is False:
+										ddt.text(
+											(x + int(album_mode_art_size / 2), y + album_mode_art_size - 22 * gui.scale, 2),
+											pctl.master_library[default_playlist[album_dex[album_on]]].parent_folder_name,
+											colours.gallery_artist_line,
+											13,
+											album_mode_art_size - 15 * gui.scale,
+											bg=alpha_blend(back_colour, colours.gallery_background))
+
+									if prefs.art_bg and drawn_art:
+										rect = SDL_Rect(round(x), round(y), album_mode_art_size, album_mode_art_size)
+										if rect.y < gui.panelY:
+											diff = round(gui.panelY - rect.y)
+											rect.y += diff
+											rect.h -= diff
+										elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
+											diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
+											rect.h -= diff
+
+										if rect.h > 0:
+											style_overlay.hole_punches.append(rect)
+
+									# # Drag over highlight
+									# if quick_drag and playlist_hold and mouse_down:
+									#     rect = (x, y, album_mode_art_size, album_mode_art_size + extend * gui.scale)
+									#     m_in = coll(rect) and gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY
+									#     if m_in:
+									#         ddt.rect_a((x, y), (album_mode_art_size, album_mode_art_size), [120, 10, 255, 100], True)
+
+									if gui.gallery_show_text:
+										c_index = default_playlist[album_dex[album_on]]
+
+										if c_index in album_artist_dict:
+											pass
+										else:
+											i = album_dex[album_on]
+											if pctl.master_library[default_playlist[i]].album_artist:
+												album_artist_dict[c_index] = pctl.master_library[
+													default_playlist[i]].album_artist
+											else:
+												while i < len(default_playlist) - 1:
+													if pctl.master_library[default_playlist[i]].parent_folder_name != \
+															pctl.master_library[
+																default_playlist[album_dex[album_on]]].parent_folder_name:
+														album_artist_dict[c_index] = pctl.master_library[
+															default_playlist[album_dex[album_on]]].artist
+														break
+													if pctl.master_library[default_playlist[i]].artist != \
+															pctl.master_library[
+																default_playlist[album_dex[album_on]]].artist:
+														album_artist_dict[c_index] = _("Various Artists")
+
+														break
+													i += 1
+												else:
+													album_artist_dict[c_index] = pctl.master_library[
+														default_playlist[album_dex[album_on]]].artist
+
+										line = album_artist_dict[c_index]
+										line2 = pctl.master_library[default_playlist[album_dex[album_on]]].album
+										if singles:
+											line2 = pctl.master_library[
+												default_playlist[album_dex[album_on]]].parent_folder_name
+											if artists > 1:
+												line = _("Various Artists")
+
+										text_align = 0
+										if prefs.center_gallery_text:
+											x += album_mode_art_size // 2
+											text_align = 2
+										elif card_mode:
+											x += round(6 * gui.scale)
+
+										if card_mode:
+
+											if line2 == "":
+
+												ddt.text(
+													(x, y + album_mode_art_size + 8 * gui.scale, text_align),
+													line,
+													line1_colour,
+													310,
+													album_mode_art_size - 18 * gui.scale)
+											else:
+
+												ddt.text(
+													(x, y + album_mode_art_size + 7 * gui.scale, text_align),
+													line2,
+													line2_colour,
+													311,
+													album_mode_art_size - 18 * gui.scale)
+
+												ddt.text(
+													(x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
+													line,
+													line1_colour,
+													10,
+													album_mode_art_size - 18 * gui.scale)
+										elif line2 == "":
+
+											ddt.text(
+												(x, y + album_mode_art_size + 9 * gui.scale, text_align),
+												line,
+												line1_colour,
+												311,
+												album_mode_art_size - 5 * gui.scale)
+										else:
+
+											ddt.text(
+												(x, y + album_mode_art_size + 8 * gui.scale, text_align),
+												line2,
+												line2_colour,
+												212,
+												album_mode_art_size)
+
+											ddt.text(
+												(x, y + album_mode_art_size + (10 + 14) * gui.scale, text_align),
+												line,
+												line1_colour,
+												311,
+												album_mode_art_size - 5 * gui.scale)
+
+									album_on += 1
+
+								if album_on > len(album_dex):
+									break
+								render_pos += album_mode_art_size + album_v_gap
+
+						# POWER TAG BAR --------------
+
+						if gui.pt > 0:  # gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
+
+							top = gui.panelY
+							run_y = top + 1
+
+							hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
+							fields.add(hot_r)
+
+							if gui.pt == 0:  # mouse moves in
+								if coll(hot_r) and window_is_focused():
+									gui.pt_on.set()
+									gui.pt = 1
+							elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
+								if not coll(hot_r):
+									gui.pt = 0
+								elif gui.pt_on.get() > 0.2:
+									gui.pt = 2
+
+									off = 0
+									for item in gui.power_bar:
+										item.ani_timer.force_set(off)
+										off -= 0.005
+
+							elif gui.pt == 2:  # wait to turn off
+
+								if coll(hot_r):
+									gui.pt_off.set()
+								if gui.pt_off.get() > 0.6 and not lightning_menu.active:
+									gui.pt = 3
+
+									off = 0
+									for item in gui.power_bar:
+										item.ani_timer.force_set(off)
+										off -= 0.01
+
+							done = True
+							# Animate tages on
+							if gui.pt == 2:
+								for item in gui.power_bar:
+									t = item.ani_timer.get()
+									if t < 0:
+										break
+									if t > 0.2:
+										item.peak_x = 9 * gui.scale
+									else:
+										item.peak_x = (t / 0.2) * 9 * gui.scale
+
+							# Animate tags off
+							if gui.pt == 3:
+								for item in gui.power_bar:
+									t = item.ani_timer.get()
+									if t < 0:
+										done = False
+										break
+									if t > 0.2:
+										item.peak_x = 0
+									else:
+										item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
+										done = False
+								if done:
+									gui.pt = 0
+									gui.update += 1
+
+							# Keep draw loop running while on
+							if gui.pt > 0:
+								gui.update = 2
+
+							# Draw tags
+
+							block_h = round(27 * gui.scale)
+							block_gap = 1 * gui.scale
+							if gui.scale == 1.25:
+								block_gap = 1
+
+							if coll(hot_r) or gui.pt > 0:
+
+								for i, item in enumerate(gui.power_bar):
+
+									if run_y + block_h > top + h:
+										break
+
+									rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
+									i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
+									fields.add(i_rect)
+
+									if (coll(i_rect) or (
+										lightning_menu.active and lightning_menu.reference == item)) and item.peak_x == 9 * gui.scale:
+
+										if not lightning_menu.active or lightning_menu.reference == item or right_click:
+
+											minx = 100 * gui.scale
+											maxx = minx * 2
+
+											ww = ddt.get_text_w(item.name, 213)
+
+											w = max(minx, ww)
+											w = min(maxx, w)
+
+											ddt.rect(
+												(rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h),
+												[230, 230, 230, 255])
+											ddt.text(
+												(rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name,
+												[5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
+
+											if inp.mouse_click:
+												goto_album(item.position)
+											if right_click:
+												lightning_menu.activate(item, position=(
+												window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
+											if middle_click:
+												path_stem_to_playlist(item.path, item.name)
+
+									ddt.rect(rect, item.colour)
+									run_y += block_h + block_gap
+
+						gallery_pulse_top.render(
+							window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale)
+					except Exception:
+						logging.exception("Gallery render error!")
+					# END POWER BAR ------------------------
+
+				# End of gallery view
+				# --------------------------------------------------------------------------
+				# Main Playlist:
+				if len(load_orders) > 0:
+
+					for i, order in enumerate(load_orders):
+						if order.stage == 2:
+							target_pl = 0
+
+							# Sort the tracks by track number
+							sort_track_2(None, order.tracks)
+
+							for p, playlist in enumerate(pctl.multi_playlist):
+								if playlist.uuid_int == order.playlist:
+									target_pl = p
+									break
+							else:
+								del load_orders[i]
+								logging.error("Target playlist lost")
+								break
+
+							if order.replace_stem:
+								for ii, id in reversed(list(enumerate(pctl.multi_playlist[target_pl].playlist_ids))):
+									pfp = pctl.get_track(id).parent_folder_path
+									if pfp.startswith(order.target.replace("\\", "/")):
+										if pfp.rstrip("/\\") == order.target.rstrip("/\\") or \
+												(len(pfp) > len(order.target) and pfp[
+													len(order.target.rstrip("/\\"))] in ("/", "\\")):
+											del pctl.multi_playlist[target_pl].playlist_ids[ii]
+
+							#logging.info(order.tracks)
+							if order.playlist_position is not None:
+								#logging.info(order.playlist_position)
+								pctl.multi_playlist[target_pl].playlist_ids[
+								order.playlist_position:order.playlist_position] = order.tracks
+							# else:
+
+							else:
+								pctl.multi_playlist[target_pl].playlist_ids += order.tracks
+
+							pctl.update_shuffle_pool(pctl.multi_playlist[target_pl].uuid_int)
+
+							gui.update += 2
+							gui.pl_update += 2
+							if order.notify and gui.message_box and len(load_orders) == 1:
+								show_message(_("Rescan folders complete."), mode="done")
+							reload()
+							tree_view_box.clear_target_pl(target_pl)
+
+							if order.play and order.tracks:
+
+								for p, plst in enumerate(pctl.multi_playlist):
+									if order.tracks[0] in plst.playlist_ids:
+										target_pl = p
+										break
+
+								switch_playlist(target_pl)
+
+								pctl.active_playlist_playing = pctl.active_playlist_viewing
+
+								# If already in playlist, delete latest add
+								if pctl.multi_playlist[target_pl].title == "Default":
+									if default_playlist.count(order.tracks[0]) > 1:
+										for q in reversed(range(len(default_playlist))):
+											if default_playlist[q] == order.tracks[0]:
+												del default_playlist[q]
+												break
+
+								pctl.jump(order.tracks[0], pl_position=default_playlist.index(order.tracks[0]))
+
+								pctl.show_current(True, True, True, True, True)
+
+							del load_orders[i]
+
+							# Are there more orders for this playlist?
+							# If not, decide on a name for the playlist
+							for item in load_orders:
+								if item.playlist == order.playlist:
+									break
+							else:
+
+								if _("New Playlist") in pctl.multi_playlist[target_pl].title:
+									auto_name_pl(target_pl)
+
+								if prefs.auto_sort:
+									if pctl.multi_playlist[target_pl].locked:
+										show_message(_("Auto sort skipped because playlist is locked."))
+									else:
+										logging.info("Auto sorting")
+										standard_sort(target_pl)
+										year_sort(target_pl)
+
+							if not load_orders:
+								loading_in_progress = False
+								pctl.notify_change()
+								gui.auto_play_import = False
+								album_artist_dict.clear()
+							break
+
+				if gui.show_playlist:
+
+					# playlist hit test
+					if coll((
+							gui.playlist_left, gui.playlist_top, gui.plw,
+							window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
+							inp.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
+						gui.pl_update = 1
+
+					if gui.combo_mode and mouse_wheel != 0:
+						gui.pl_update = 1
+
+					# MAIN PLAYLIST
+					# C-PR
+
+					top = gui.panelY
+					if gui.artist_info_panel:
+						top += gui.artist_panel_height
+
+					if gui.set_mode and not gui.set_bar:
+						left = 0
+						if gui.lsp:
+							left = gui.lspw
+						rect = [left, top, gui.plw, 12 * gui.scale]
+						if right_click and coll(rect):
+							set_menu_hidden.activate()
+							right_click = False
+
+					width = gui.plw
+					if gui.set_bar and gui.set_mode:
+						left = 0
+						if gui.lsp:
+							left = gui.lspw
+
+						if gui.tracklist_center_mode:
+							left = gui.tracklist_inset_left - round(20 * gui.scale)
+							width = gui.tracklist_inset_width + round(20 * gui.scale)
+
+						rect = [left, top, width, gui.set_height]
+						start = left + 16 * gui.scale
+						run = 0
+						in_grip = False
+
+						if not mouse_down and gui.set_hold != -1:
+							gui.set_hold = -1
+
+						for h, item in enumerate(gui.pl_st):
+							box = (start + run, rect[1], item[1], rect[3])
+							grip = (start + run, rect[1], 3 * gui.scale, rect[3])
+							m_grip = (grip[0] - 4 * gui.scale, grip[1], grip[2] + 8 * gui.scale, grip[3])
+							l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
+							fields.add(m_grip)
+
+							if coll(l_grip):
+								if mouse_up and gui.set_label_hold != -1:
+									if point_distance(mouse_position, gui.set_label_point) < 8 * gui.scale:
+										sort_direction = 0
+										if h != gui.column_d_click_on or gui.column_d_click_timer.get() > 2.5:
+											gui.column_d_click_timer.set()
+											gui.column_d_click_on = h
+
+											sort_direction = 1
+
+											gui.column_sort_ani_direction = 1
+											gui.column_sort_ani_x = start + run + item[1]
+
+										elif gui.column_d_click_on == h:
+											gui.column_d_click_on = -1
+											gui.column_d_click_timer.force_set(10)
+
+											sort_direction = -1
+
+											gui.column_sort_ani_direction = -1
+											gui.column_sort_ani_x = start + run + item[1]
+
+										if sort_direction:
+
+											if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "S", "Time", "Date"}:
+												sort_direction *= -1
+
+											if sort_direction == 1:
+												sort_ass(h)
+											else:
+												sort_ass(h, True)
+											gui.column_sort_ani_timer.set()
+
+									else:
+										gui.column_d_click_on = -1
+										if h != gui.set_label_hold:
+											dest = h
+											if dest > gui.set_label_hold:
+												dest += 1
+											temp = gui.pl_st[gui.set_label_hold]
+											gui.pl_st[gui.set_label_hold] = "old"
+											gui.pl_st.insert(dest, temp)
+											gui.pl_st.remove("old")
+
+											gui.pl_update = 1
+											gui.set_label_hold = -1
+											#logging.info("MOVE")
+											break
+
+										gui.set_label_hold = -1
+
+								if inp.mouse_click:
+									gui.set_label_hold = h
+									gui.set_label_point = copy.deepcopy(mouse_position)
+								if right_click:
+									set_menu.activate(h)
+
+							if h != 0:
+								if coll(m_grip):
+									in_grip = True
+									if inp.mouse_click:
+										gui.set_hold = h
+										gui.set_point = mouse_position[0]
+										gui.set_old = gui.pl_st[h - 1][1]
+
+								if mouse_down and gui.set_hold == h:
+									gui.pl_st[h - 1][1] = gui.set_old + (mouse_position[0] - gui.set_point)
+									gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
+
+									gui.update = 1
+									# gui.pl_update = 1
+
+									total = 0
+									for i in range(len(gui.pl_st) - 1):
+										total += gui.pl_st[i][1]
+
+									wid = gui.plw - round(16 * gui.scale)
+									if gui.tracklist_center_mode:
+										wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+									gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
+
+							run += item[1]
+
+						if not mouse_down:
+							gui.set_label_hold = -1
+						#logging.info(in_grip)
+						if gui.set_label_hold == -1:
+							if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
+								gui.cursor_want = 1
+							if gui.set_hold != -1:
+								gui.cursor_want = 1
+								gui.pl_update_on_drag = True
+
+					# heart field test
+					if gui.heart_fields:
+						for field in gui.heart_fields:
+							fields.add(field, update_playlist_call)
+
+					if gui.pl_update > 0:
+						gui.rendered_playlist_position = playlist_view_position
+
+						gui.pl_update -= 1
+						if gui.combo_mode:
+							if gui.radio_view:
+								radio_view.render()
+							elif gui.showcase_mode:
+								showcase.render()
+
+
+							# else:
+							#     combo_pl_render.full_render()
+						else:
+							gui.heart_fields.clear()
+							playlist_render.full_render()
+
+					elif gui.combo_mode:
+						if gui.radio_view:
+							radio_view.render()
+						elif gui.showcase_mode:
+							showcase.render()
+						# else:
+						#     combo_pl_render.cache_render()
+					else:
+						playlist_render.cache_render()
+
+					if gui.combo_mode and key_esc_press and is_level_zero():
+						exit_combo()
+
+					if not gui.set_bar and gui.set_mode and not gui.combo_mode:
+						width = gui.plw
+						left = 0
+						if gui.lsp:
+							left = gui.lspw
+						if gui.tracklist_center_mode:
+							left = gui.tracklist_highlight_left
+							width = gui.tracklist_highlight_width
+						rect = [left, top, width, gui.set_height // 2.5]
+						fields.add(rect)
+						gui.delay_frame(0.26)
+
+						if coll(rect) and gui.bar_hover_timer.get() > 0.25:
+							ddt.rect(rect, colours.column_bar_background)
+							if inp.mouse_click:
+								gui.set_bar = True
+								update_layout_do()
+						if not coll(rect):
+							gui.bar_hover_timer.set()
+
+					if gui.set_bar and gui.set_mode and not gui.combo_mode:
+
+						x = 0
+						if gui.lsp:
+							x = gui.lspw
+
+						width = gui.plw
+
+						if gui.tracklist_center_mode:
+							x = gui.tracklist_highlight_left
+							width = gui.tracklist_highlight_width
+
+						rect = [x, top, width, gui.set_height]
+
+						c_bar_background = colours.column_bar_background
+
+						# if colours.lm:
+						#     c_bar_background = [235, 110, 160, 255]
+
+						if gui.tracklist_center_mode:
+							ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background)
+						else:
+							ddt.rect(rect, c_bar_background)
+
+						start = x + 16 * gui.scale
+						c_width = width - 16 * gui.scale
+
+						run = 0
+
+						for i, item in enumerate(gui.pl_st):
+
+							# if run > rect[2] - 55 * gui.scale:
+							#     break
+
+							wid = item[1]
+
+							if run + wid > c_width:
+								wid = c_width - run
+
+							if run > c_width - 22 * gui.scale:
+								break
+
+							# if run > c_width - 20 * gui.scale:
+							#     run = run - 20 * gui.scale
+
+							wid = max(0, wid)
+
+							# ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
+							box = (start + run, rect[1], wid, rect[3])
+
+							grip = (start + run, rect[1], 3 * gui.scale, rect[3])
+
+							bg = c_bar_background
+
+							if coll(box) and gui.set_label_hold != -1:
+								bg = [39, 39, 39, 255]
+
+							if i == gui.set_label_hold:
+								bg = [22, 22, 22, 255]
+
+							ddt.rect(box, bg)
+							ddt.rect(grip, colours.column_grip)
+
+							line = _(item[0])
+							ddt.text_background_colour = bg
+
+							# # Remove columns if positioned out of view
+							# if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
+							#
+							#     if box[0] + 10 * gui.scale > start + gui.plw:
+							#         del gui.pl_st[i]
+							#
+							#     i += 1
+							#     while i < len(gui.pl_st):
+							#         del gui.pl_st[i]
+							#         i += 1
+							#
+							#     break
+							if line == "❤":
+								heart_row_icon.render(box[0] + 9 * gui.scale, top + 8 * gui.scale, colours.column_bar_text)
+							else:
+								ddt.text(
+									(box[0] + 10 * gui.scale, top + 4 * gui.scale), line, colours.column_bar_text, 312,
+									bg=bg, max_w=box[2] - 25 * gui.scale)
+
+							run += box[2]
+
+						t = gui.column_sort_ani_timer.get()
+						if t < 0.30:
+							gui.update += 1
+							x = round(gui.column_sort_ani_x - 22 * gui.scale)
+							p = t / 0.30
+
+							if gui.column_sort_ani_direction == 1:
+								y = top + 8 * p + 3 * gui.scale
+								gui.column_sort_down_icon.render(x, round(y), [255, 255, 255, 90])
+							else:
+								p = 1 - p
+								y = top + 8 * p + 2 * gui.scale
+								gui.column_sort_up_icon.render(x, round(y), [255, 255, 255, 90])
+
+					# Switch Vis:
+					if right_click and coll(
+						(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale,
+						gui.panelY)) and not gui.top_bar_mode2:
+						vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
+					elif right_click and top_panel.tabs_right_x < mouse_position[0] and \
+							mouse_position[1] < gui.panelY and \
+							mouse_position[0] > top_panel.tabs_right_x and \
+							mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra:
+
+						window_menu.activate(None, (mouse_position[0], 30 * gui.scale))
+
+					elif middle_click and top_panel.tabs_right_x < mouse_position[0] and \
+							mouse_position[1] < gui.panelY and \
+							mouse_position[0] > top_panel.tabs_right_x and \
+							mouse_position[0] < window_size[0] - gui.offset_extra:
+
+						do_minimize_button()
+
+					# edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
+
+					bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY, gui.plw, 25 * gui.scale,
+											bottom=True)
+					# --------------------------------------------
+					# ALBUM ART
+
+					# Right side panel drawing
+
+					if gui.rsp and not album_mode:
+						gui.showing_l_panel = False
+						target_track = pctl.show_object()
+
+						if middle_click:
+							if coll(
+								(window_size[0] - gui.rspw, gui.panelY, gui.rspw,
+								window_size[1] - gui.panelY - gui.panelBY)):
+
+								if (target_track and target_track.lyrics and prefs.show_lyrics_side) or \
+										(
+												prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(
+											target_track)):
+
+									prefs.show_lyrics_side ^= True
+									prefs.side_panel_layout = 1
+								else:
+
+									if prefs.side_panel_layout == 0:
+
+										if (target_track and target_track.lyrics and not prefs.show_lyrics_side) or \
+												(
+														prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(
+													target_track)):
+											prefs.show_lyrics_side = True
+											prefs.side_panel_layout = 1
+										else:
+											prefs.side_panel_layout = 1
+									else:
+										prefs.side_panel_layout = 0
+
+						if prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and timed_lyrics_ren.generate(
+								target_track):
+
+							if prefs.show_side_lyrics_art_panel:
+								l_panel_h = round(200 * gui.scale)
+								l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+								gui.showing_l_panel = True
+
+								if not prefs.lyric_metadata_panel_top:
+									timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
+															gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
+															h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
+									meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+								else:
+									timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
+															gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True,
+															w=gui.rspw,
+															h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
+									meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track)
+							else:
+								timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
+														gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
+														h=window_size[1] - gui.panelY - gui.panelBY)
+
+								if right_click and coll(
+									(window_size[0] - gui.rspw, gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
+									center_info_menu.activate(target_track)
+
+						elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
+
+							if prefs.show_side_lyrics_art_panel:
+								l_panel_h = round(200 * gui.scale)
+								l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+								gui.showing_l_panel = True
+
+								if not prefs.lyric_metadata_panel_top:
+									meta_box.lyrics(
+										window_size[0] - gui.rspw, gui.panelY, gui.rspw,
+										window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
+									meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+								else:
+									meta_box.lyrics(
+										window_size[0] - gui.rspw, gui.panelY + l_panel_h, gui.rspw,
+										window_size[1] - (gui.panelY + gui.panelBY + l_panel_h), target_track)
+
+									meta_box.l_panel(
+										window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h,
+										target_track, top_border=False)
+							else:
+								meta_box.lyrics(
+									window_size[0] - gui.rspw, gui.panelY, gui.rspw,
+									window_size[1] - gui.panelY - gui.panelBY, target_track)
+
+						elif prefs.side_panel_layout == 0:
+
+							boxw = gui.rspw
+							boxh = gui.rspw
+
+							if prefs.show_side_art:
+
+								meta_box.draw(
+									window_size[0] - gui.rspw, gui.panelY + boxh, gui.rspw,
+									window_size[1] - gui.panelY - gui.panelBY - boxh, track=target_track)
+
+								boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
+
+								art_box.draw(window_size[0] - gui.rspw, gui.panelY, boxw, boxh, target_track=target_track)
+
+							else:
+								meta_box.draw(
+									window_size[0] - gui.rspw, gui.panelY, gui.rspw,
+									window_size[1] - gui.panelY - gui.panelBY, track=target_track)
+
+						elif prefs.side_panel_layout == 1:
+
+							h = window_size[1] - (gui.panelY + gui.panelBY)
+							x = window_size[0] - gui.rspw
+							y = gui.panelY
+							w = gui.rspw
+
+							ddt.rect((x, y, w, h), colours.side_panel_background)
+							test_auto_lyrics(target_track)
+							# Draw lyrics if avaliable
+							if prefs.show_lyrics_side and target_track and target_track.lyrics != "":  # and not prefs.show_side_art:
+								# meta_box.lyrics(x, y, w, h, target_track)
+								if right_click and coll((x, y, w, h)) and target_track:
+									center_info_menu.activate(target_track)
+							else:
+
+								box_wide_w = round(w * 0.98)
+								boxx = round(min(h * 0.7, w * 0.9))
+								boxy = round(min(h * 0.7, w * 0.9))
+
+								bx = (x + w // 2) - (boxx // 2)
+								bx_wide = (x + w // 2) - (box_wide_w // 2)
+								by = round(h * 0.1)
+
+								bby = by + boxy
+
+								# We want the text in the center, but slightly raised when area is large
+								text_y = y + by + boxy + ((h - bby) // 2) - 44 * gui.scale - round(
+									(h - bby - 94 * gui.scale) * 0.08)
+
+								small_mode = False
+								if window_size[1] < 550 * gui.scale:
+									small_mode = True
+									text_y = y + by + boxy + ((h - bby) // 2) - 38 * gui.scale
+
+								text_x = x + w // 2
+
+								if prefs.show_side_art:
+									gui.art_drawn_rect = None
+									default_border = (bx, by, boxx, boxy)
+									coll_border = default_border
+
+									art_box.draw(
+										bx_wide, by, box_wide_w, boxy, target_track=target_track,
+										tight_border=True, default_border=default_border)
+
+									if gui.art_drawn_rect:
+										coll_border = gui.art_drawn_rect
+
+									if right_click and coll((x, y, w, h)) and not coll(coll_border):
+										if is_level_zero(include_menus=False) and target_track:
+											center_info_menu.activate(target_track)
+
+								else:
+									text_y = y + round(h * 0.40)
+									if right_click and coll((x, y, w, h)) and target_track:
+										center_info_menu.activate(target_track)
+
+								ww = w - 25 * gui.scale
+
+								gui.showed_title = True
+
+								if target_track:
+									ddt.text_background_colour = colours.side_panel_background
+
+									if pctl.playing_state == 3 and not radiobox.dummy_track.title:
+										title = pctl.tag_meta
+									else:
+										title = target_track.title
+										if not title:
+											title = clean_string(target_track.filename)
+
+									if small_mode:
+										ddt.text(
+											(text_x, text_y - 15 * gui.scale, 2), target_track.artist,
+											colours.side_bar_line1, 315, max_w=ww)
+
+										ddt.text(
+											(text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
+
+										line = " | ".join(
+											filter(None, (target_track.album, target_track.date, target_track.genre)))
+										ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
+
+									else:
+										ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+
+										ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+
+										line = " | ".join(
+											filter(None, (target_track.album, target_track.date, target_track.genre)))
+										ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
+
+					# Seperation Line Drawing
+					if gui.rsp:
+
+						# Draw Highlight when mouse over
+						if draw_sep_hl:
+							ddt.line(
+								window_size[0] - gui.rspw + 1 * gui.scale, gui.panelY + 1 * gui.scale,
+								window_size[0] - gui.rspw + 1 * gui.scale,
+								window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
+							draw_sep_hl = False
+
+				if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and album_mode):
+					artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
+
+				if gui.lsp and not gui.combo_mode:
+
+					# left side panel
+
+					h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(
+						pctl.multi_playlist)) + 13 * gui.scale
+
+					full = (window_size[1] - (gui.panelY + gui.panelBY))
+					half = int(round(full / 2))
+
+					pl_box_h = full
+
+					panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
+					fields.add(panel_rect)
+
+					if gui.force_side_on_drag and not quick_drag and not coll(panel_rect):
+						gui.force_side_on_drag = False
+						update_layout_do()
+
+					if quick_drag and not coll_point(gui.drag_source_position_persist, panel_rect) and \
+						not point_proximity_test(
+							gui.drag_source_position,
+							mouse_position,
+							10 * gui.scale):
+						gui.force_side_on_drag = True
+						if mouse_up:
+							update_layout_do()
+
+					if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
+						tree_view_box.render(0, gui.panelY, gui.lspw, pl_box_h)
+					elif prefs.left_panel_mode == "artist list" and not gui.force_side_on_drag:
+						artist_list_box.render(*panel_rect)
+					else:
+
+						preview_queue = False
+						if quick_drag and coll(
+								panel_rect) and not pctl.force_queue and prefs.show_playlist_list and prefs.hide_queue:
+							preview_queue = True
+
+						if pctl.force_queue or preview_queue or not prefs.hide_queue:
+
+							if h_estimate < half:
+								pl_box_h = h_estimate
+							else:
+								pl_box_h = half
+
+							if preview_queue:
+								pl_box_h = int(round(full * 5 / 6))
+
+						if prefs.left_panel_mode != "queue":
+
+							playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+						else:
+							pl_box_h = 0
+
+						if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
+
+							queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+						elif prefs.left_panel_mode == "queue":
+							text = _("Queue is Empty")
+							rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+							ddt.rect(rect, colours.queue_background)
+							ddt.text_background_colour = colours.queue_background
+							ddt.text(
+								(0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2),
+								text, alpha_mod(colours.index_text, 200), 212)
+
+				# ------------------------------------------------
+				# Scroll Bar
+
+				# if not scroll_enable:
+				top = gui.panelY
+				if gui.artist_info_panel:
+					top += gui.artist_panel_height
+
+				edge_top = top
+				if gui.set_bar and gui.set_mode:
+					edge_top += gui.set_height
+				edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
+
+				width = 15 * gui.scale
+
+				x = 0
+				if gui.lsp:  # Move left so it sits over panel divide
+
+					x = gui.lspw - 1 * gui.scale
+					if not gui.set_mode:
+						width = 11 * gui.scale
+				if gui.set_mode and prefs.left_align_album_artist_title:
+					width = 11 * gui.scale
+
+				# x = gui.plw
+				# width = round(14 * gui.scale)
+				# if gui.lsp:
+				#     x += gui.lspw
+				# x -= width
+
+				gui.scroll_hide_box = (
+					x + 1 if not gui.maximized else x, top, 28 * gui.scale, window_size[1] - gui.panelBY - top)
+
+				fields.add(gui.scroll_hide_box)
+				if scroll_hide_timer.get() < 0.9 or ((coll(
+						gui.scroll_hide_box) or scroll_hold or quick_search_mode) and \
+						not menu_is_open() and \
+						not pref_box.enabled and \
+						not gui.rename_playlist_box \
+						and gui.layer_focus == 0 and gui.show_playlist and not search_over.active):
+
+					scroll_opacity = 255
+
+					if not gui.combo_mode:
+						sy = 31 * gui.scale
+						ey = window_size[1] - (30 + 22) * gui.scale
+
+						if len(default_playlist) < 50:
+							sbl = 85 * gui.scale
+							if len(default_playlist) == 0:
+								sbp = top
+						else:
+							sbl = 105 * gui.scale
+
+						fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
+						if coll((x, top, 28 * gui.scale, ey - top)) and (
+								mouse_down or right_click) \
+								and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
+
+							gui.pl_update = 1
+							if right_click:
+
+								sbp = mouse_position[1] - int(sbl / 2)
+								if sbp + sbl > ey:
+									sbp = ey - sbl
+								elif sbp < top:
+									sbp = top
+								per = (sbp - top) / (ey - top - sbl)
+								pctl.playlist_view_position = int(len(default_playlist) * per)
+								logging.debug("Position set by scroll bar (right click)")
+								pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
+
+								# if playlist_position == len(default_playlist):
+								#     logging.info("END")
+
+							# elif mouse_position[1] < sbp:
+							#     pctl.playlist_view_position -= 2
+							# elif mouse_position[1] > sbp + sbl:
+							#     pctl.playlist_view_position += 2
+							elif inp.mouse_click:
+
+								if mouse_position[1] < sbp:
+									gui.scroll_direction = -1
+								elif mouse_position[1] > sbp + sbl:
+									gui.scroll_direction = 1
+								else:
+									# p_y = pointer(c_int(0))
+									# p_x = pointer(c_int(0))
+									# SDL_GetGlobalMouseState(p_x, p_y)
+									get_sdl_input.mouse_capture_want = True
+
+									scroll_hold = True
+									# scroll_point = p_y.contents.value  # mouse_position[1]
+									scroll_point = mouse_position[1]
+									scroll_bpoint = sbp
+							else:
+								# gui.update += 1
+								if sbp < mouse_position[1] < sbp + sbl:
+									gui.scroll_direction = 0
+								pctl.playlist_view_position += gui.scroll_direction * 2
+								logging.debug("Position set by scroll bar (slide)")
+								pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
+								pctl.playlist_view_position = min(pctl.playlist_view_position, len(default_playlist))
+
+								if sbp + sbl > ey:
+									sbp = ey - sbl
+								elif sbp < top:
+									sbp = top
+
+						if not mouse_down:
+							scroll_hold = False
+
+						if scroll_hold and not inp.mouse_click:
+							gui.pl_update = 1
+							# p_y = pointer(c_int(0))
+							# p_x = pointer(c_int(0))
+							# SDL_GetGlobalMouseState(p_x, p_y)
+							get_sdl_input.mouse_capture_want = True
+
+							sbp = mouse_position[1] - (scroll_point - scroll_bpoint)
+							if sbp + sbl > ey:
+								sbp = ey - sbl
+							elif sbp < top:
+								sbp = top
+							per = (sbp - top) / (ey - top - sbl)
+							pctl.playlist_view_position = int(len(default_playlist) * per)
+							logging.debug("Position set by scroll bar (drag)")
+
+
+						elif len(default_playlist) > 0:
+							per = pctl.playlist_view_position / len(default_playlist)
+							sbp = int((ey - top - sbl) * per) + top + 1
+
+						bg = [255, 255, 255, 6]
+						fg = colours.scroll_colour
+
+						if colours.lm:
+							bg = [200, 200, 200, 100]
+							fg = [100, 100, 100, 200]
+
+						ddt.rect_a((x, top), (width + 1 * gui.scale, window_size[1] - top - gui.panelBY), bg)
+						ddt.rect_a((x + 1, sbp), (width, sbl), alpha_mod(fg, scroll_opacity))
+
+						if (coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and mouse_position[
+							0] != 0) or scroll_hold:
+							ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), [255, 255, 255, 19])
+
+				# NEW TOP BAR
+				# C-TBR
+
+				if gui.mode == 1:
+					top_panel.render()
+
+				# RENDER EXTRA FRAME DOUBLE
+				if colours.lm:
+					if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
+						ddt.rect(
+							(0 + gui.lspw - 6 * gui.scale, gui.panelY, 6 * gui.scale,
+							int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
+						ddt.rect(
+							(0 + gui.lspw - 5 * gui.scale, gui.panelY - 1, 4 * gui.scale,
+							int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
+					if gui.rsp and gui.show_playlist:
+						w = window_size[0] - gui.rspw
+						ddt.rect(
+							(w - round(3 * gui.scale), gui.panelY, 6 * gui.scale,
+							int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
+						ddt.rect(
+							(w - round(2 * gui.scale), gui.panelY - 1, 4 * gui.scale,
+							int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
+					if gui.queue_frame_draw is not None:
+						if gui.lsp:
+							ddt.rect((0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200))
+							ddt.rect(
+								(0, gui.queue_frame_draw + 1 * gui.scale, gui.lspw - 5 * gui.scale, 4 * gui.scale), colours.grey(250))
+
+						gui.queue_frame_draw = None
+
+				# BOTTOM BAR!
+				# C-BB
+
+				ddt.text_background_colour = colours.bottom_panel_colour
+
+				if prefs.shuffle_lock:
+					bottom_bar_ao1.render()
+				else:
+					bottom_bar1.render()
+
+				if prefs.art_bg and not prefs.bg_showcase_only:
+					style_overlay.display()
+					# if key_shift_down:
+					#     ddt.rect_r(gui.seek_bar_rect,
+					#                alpha_mod([150, 150, 150 ,255], 20), True)
+					#     ddt.rect_r(gui.volume_bar_rect,
+					#                alpha_mod(colours.volume_bar_fill, 100), True)
+
+				style_overlay.hole_punches.clear()
+
+				if gui.set_mode:
+					if rename_track_box.active is False \
+							and radiobox.active is False \
+							and gui.rename_playlist_box is False \
+							and gui.message_box is False \
+							and pref_box.enabled is False \
+							and track_box is False \
+							and not gui.rename_folder_box \
+							and not Menu.active \
+							and not artist_info_scroll.held:
+
+						columns_tool_tip.render()
+					else:
+						columns_tool_tip.show = False
+
+				# Overlay GUI ----------------------
+
+				if gui.rename_playlist_box:
+					rename_playlist_box.render()
+
+				if gui.preview_artist:
+
+					border = round(4 * gui.scale)
+					ddt.rect(
+						(gui.preview_artist_location[0] - border,
+						gui.preview_artist_location[1] - border,
+						artist_preview_render.size[0] + border * 2,
+						artist_preview_render.size[0] + border * 2), (20, 20, 20, 255))
+
+					artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
+					if inp.mouse_click or right_click or mouse_wheel:
+						gui.preview_artist = ""
+
+				if track_box:
+					if inp.key_return_press or right_click or key_esc_press or inp.backspace_press or keymaps.test(
+							"quick-find"):
+						track_box = False
+
+						inp.key_return_press = False
+
+					if gui.level_2_click:
+						inp.mouse_click = True
+					gui.level_2_click = False
+
+					tc = pctl.master_library[r_menu_index]
+
+					w = round(540 * gui.scale)
+					h = round(240 * gui.scale)
+					comment_mode = 0
+
+					if len(tc.comment) > 0:
+						h += 22 * gui.scale
+						if window_size[0] > 599:
+							w += 25 * gui.scale
+						if ddt.get_text_w(tc.comment, 12) > 330 * gui.scale or "\n" in tc.comment:
+							h += 80 * gui.scale
+							if window_size[0] > 599:
+								w += 30 * gui.scale
+							comment_mode = 1
+
+					x = round((window_size[0] / 2) - (w / 2))
+					y = round((window_size[1] / 2) - (h / 2))
+
+					x1 = int(x + 18 * gui.scale)
+					x2 = int(x + 98 * gui.scale)
+
+					value_font_a = 312
+					value_font = 12
+
+					# if key_shift_down:
+					#     value_font = 12
+					key_colour_off = colours.box_text_label  # colours.grey_blend_bg(90)
+					key_colour_on = colours.box_title_text
+					value_colour = colours.box_sub_text
+					path_colour = alpha_mod(value_colour, 240)
+
+					# if colours.lm:
+					#     key_colour_off = colours.grey(80)
+					#     key_colour_on = colours.grey(120)
+					#     value_colour = colours.grey(50)
+					#     path_colour = colours.grey(70)
+
+					ddt.rect_a(
+						(x - 3 * gui.scale, y - 3 * gui.scale), (w + 6 * gui.scale, h + 6 * gui.scale),
+						colours.box_border)
+					ddt.rect_a((x, y), (w, h), colours.box_background)
+					ddt.text_background_colour = colours.box_background
+
+					if inp.mouse_click and not coll([x, y, w, h]):
+						track_box = False
+
+					else:
+						art_size = int(115 * gui.scale)
+
+						# if not tc.is_network: # Don't draw album art if from network location for better performance
+						if comment_mode == 1:
+							album_art_gen.display(
+								tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)),
+								(art_size, art_size))  # Mirror this size in auto theme #mark2233
+						else:
+							album_art_gen.display(
+								tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)),
+								(art_size, art_size))
+
+						y -= int(24 * gui.scale)
+						y1 = int(y + (40 * gui.scale))
+
+						ext_rect = [x + w - round(38 * gui.scale), y + round(44 * gui.scale), round(38 * gui.scale),
+									round(12 * gui.scale)]
+
+						line = tc.file_ext
+						ex_colour = [130, 130, 130, 255]
+						if line in format_colours:
+							ex_colour = format_colours[line]
+
+						# Spotify icon rendering
+						if line == "SPTY":
+							colour = [30, 215, 96, 255]
+							h, l, s = rgb_to_hls(colour[0], colour[1], colour[2])
+
+							rect = (x + w - round(35 * gui.scale), y + round(30 * gui.scale), round(30 * gui.scale),
+									round(30 * gui.scale))
+							fields.add(rect)
+							if coll(rect):
+								l += 0.1
+								gui.cursor_want = 3
+
+								if inp.mouse_click:
+									url = tc.misc.get("spotify-album-url")
+									if url is None:
+										url = tc.misc.get("spotify-track-url")
+									if url:
+										webbrowser.open(url, new=2, autoraise=True)
+
+							colour = hls_to_rgb(h, l, s)
+
+							gui.spot_info_icon.render(x + w - round(33 * gui.scale), y + round(35 * gui.scale), colour)
+
+						# Codec tag rendering
+						else:
+							if tc.file_ext in ("JELY", "TIDAL"):
+								e_colour = [130, 130, 130, 255]
+								if "container" in tc.misc:
+									line = tc.misc["container"].upper()
+									if line in format_colours:
+										e_colour = format_colours[line]
+
+								ddt.rect(ext_rect, e_colour)
+								colour = alpha_blend([10, 10, 10, 235], e_colour)
+								if colour_value(e_colour) < 180:
+									colour = alpha_blend([200, 200, 200, 235], e_colour)
+								ddt.text(
+									(int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)), line, colour, 211, bg=e_colour)
+								ext_rect[1] += 16 * gui.scale
+								y += 16 * gui.scale
+
+							ddt.rect(ext_rect, ex_colour)
+							colour = alpha_blend([10, 10, 10, 235], ex_colour)
+							if colour_value(ex_colour) < 180:
+								colour = alpha_blend([200, 200, 200, 235], ex_colour)
+							ddt.text(
+								(int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), tc.file_ext, colour, 211, bg=ex_colour)
+
+							if tc.is_cue:
+								ext_rect[1] += 16 * gui.scale
+								colour = [218, 222, 73, 255]
+								if tc.is_embed_cue:
+									colour = [252, 199, 55, 255]
+								ddt.rect(ext_rect, colour)
+								ddt.text(
+									(int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE",
+									alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
+
+
+						rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
+						fields.add(rect)
+						if coll(rect):
+							ddt.text((x1, y1), _("Title"), key_colour_on, 212)
+							if inp.mouse_click:
+								show_message(_("Copied text to clipboard"))
+								copy_to_clipboard(tc.title)
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Title"), key_colour_off, 212)
+						q = ddt.text(
+							(x2, y1 - int(2 * gui.scale)), tc.title,
+							value_colour, 314, max_w=w - 170 * gui.scale)
+
+						if coll(rect):
+							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.title, 314)
+
+						y1 += int(16 * gui.scale)
+
+						rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
+						fields.add(rect)
+						if coll(rect):
+							ddt.text((x1, y1), _("Artist"), key_colour_on, 212)
+							if inp.mouse_click:
+								show_message(_("Copied text to clipboard"))
+								copy_to_clipboard(tc.artist)
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Artist"), key_colour_off, 212)
+
+						q = ddt.text(
+							(x2, y1 - (1 * gui.scale)), tc.artist,
+							value_colour, value_font_a, max_w=390 * gui.scale)
+
+						if coll(rect):
+							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.artist, value_font_a)
+
+						y1 += int(16 * gui.scale)
+
+						rect = [x1, y1 + (2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
+						fields.add(rect)
+						if coll(rect):
+							ddt.text((x1, y1), _("Album"), key_colour_on, 212)
+							if inp.mouse_click:
+								show_message(_("Copied text to clipboard"))
+								copy_to_clipboard(tc.album)
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Album"), key_colour_off, 212)
+
+						q = ddt.text(
+							(x2, y1 - 1 * gui.scale), tc.album,
+							value_colour,
+							value_font_a, max_w=390 * gui.scale)
+
+						if coll(rect):
+							ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album, value_font_a)
+
+						y1 += int(26 * gui.scale)
+
+						rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
+						fields.add(rect)
+						path = tc.fullpath
+						if msys:
+							path = path.replace("/", "\\")
+						if coll(rect):
+							ddt.text((x1, y1), _("Path"), key_colour_on, 212)
+							if inp.mouse_click:
+								show_message(_("Copied text to clipboard"))
+								copy_to_clipboard(path)
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Path"), key_colour_off, 212)
+
+						q = ddt.text(
+							(x2, y1 - int(3 * gui.scale)), clean_string(path),
+							path_colour, 210, max_w=425 * gui.scale)
+
+						if coll(rect):
+							gui.frame_callback_list.append(TestTimer(0.71))
+							if track_box_path_tool_timer.get() > 0.7:
+								ex_tool_tip(x2 + 185 * gui.scale, y1, q, clean_string(tc.fullpath), 210)
+						else:
+							track_box_path_tool_timer.set()
+
+						y1 += int(15 * gui.scale)
+
+						if tc.samplerate != 0:
+							ddt.text((x1, y1), _("Samplerate"), key_colour_off, 212, max_w=70 * gui.scale)
+
+							line = str(tc.samplerate) + " Hz"
+
+							off = ddt.text((x2, y1), line, value_colour, value_font)
+
+							if tc.bit_depth > 0:
+								line = str(tc.bit_depth) + " bit"
+								ddt.text((x2 + off + 9 * gui.scale, y1), line, value_colour, 311)
+
+						y1 += int(15 * gui.scale)
+
+						if tc.bitrate not in (0, "", "0"):
+							ddt.text((x1, y1), _("Bitrate"), key_colour_off, 212, max_w=70 * gui.scale)
+							line = str(tc.bitrate)
+							if tc.file_ext in ("FLAC", "OPUS", "APE", "WV"):
+								line = "≈" + line
+							line += _(" kbps")
+							ddt.text((x2, y1), line, value_colour, 312)
+
+						# -----------
+						if tc.artist != tc.album_artist != "":
+							x += int(170 * gui.scale)
+							rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
+							fields.add(rect)
+							if coll(rect):
+								ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_on, 212)
+								if inp.mouse_click:
+									show_message(_("Copied text to clipboard"))
+									copy_to_clipboard(tc.album_artist)
+									inp.mouse_click = False
+							else:
+								ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Album Artist"), key_colour_off, 212)
+
+							q = ddt.text(
+								(x + (8 + 88) * gui.scale, y1), tc.album_artist,
+								value_colour, value_font, max_w=120 * gui.scale)
+							if coll(rect):
+								ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.album_artist, value_font)
+
+							x -= int(170 * gui.scale)
+
+						y1 += int(15 * gui.scale)
+
+						rect = [x1, y1, 150 * gui.scale, 16 * gui.scale]
+						fields.add(rect)
+						if coll(rect):
+							ddt.text((x1, y1), _("Duration"), key_colour_on, 212)
+							if inp.mouse_click:
+								copy_to_clipboard(time.strftime("%M:%S", time.gmtime(tc.length)).lstrip("0"))
+								show_message(_("Copied text to clipboard"))
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Duration"), key_colour_off, 212)
+						line = time.strftime("%M:%S", time.gmtime(tc.length))
+						ddt.text((x2, y1), line, value_colour, value_font)
+
+						# -----------
+						if tc.track_total not in ("", "0"):
+							x += int(170 * gui.scale)
+							line = str(tc.track_number) + _(" of ") + str(
+								tc.track_total)
+							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Track"), key_colour_off, 212)
+							ddt.text((x + (8 + 88) * gui.scale, y1), line, value_colour, value_font)
+							x -= int(170 * gui.scale)
+
+						y1 += int(15 * gui.scale)
+						#logging.info(tc.size)
+						if tc.is_cue and tc.misc.get("parent-length", 0) > 0 and tc.misc.get("parent-size", 0) > 0:
+							ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
+							estimate = (tc.length / tc.misc.get("parent-length")) * tc.misc.get("parent-size")
+							line = f"≈{get_filesize_string(estimate, rounding=0)} / {get_filesize_string(tc.misc.get('parent-size'))}"
+							ddt.text((x2, y1), line, value_colour, value_font)
+
+						elif tc.size != 0:
+							ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
+							ddt.text((x2, y1), get_filesize_string(tc.size), value_colour, value_font)
+
+						# -----------
+						if tc.disc_total not in ("", "0", 0):
+							x += int(170 * gui.scale)
+							line = str(tc.disc_number) + _(" of ") + str(
+								tc.disc_total)
+							ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Disc"), key_colour_off, 212)
+							ddt.text((x + (8 + 88) * gui.scale, y1), line, value_colour, value_font)
+							x -= int(170 * gui.scale)
+
+						y1 += int(23 * gui.scale)
+
+						rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
+						fields.add(rect)
+						if coll(rect):
+							ddt.text((x1, y1), _("Genre"), key_colour_on, 212)
+							if inp.mouse_click:
+								show_message(_("Copied text to clipboard"))
+								copy_to_clipboard(tc.genre)
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Genre"), key_colour_off, 212)
+						ddt.text(
+							(x2, y1), tc.genre, value_colour,
+							value_font, max_w=290 * gui.scale)
+
+						y1 += int(15 * gui.scale)
+
+						rect = [x1, y1 + (2 * gui.scale), 150 * gui.scale, 14 * gui.scale]
+						fields.add(rect)
+						if coll(rect):
+							ddt.text((x1, y1), _("Date"), key_colour_on, 212)
+							if inp.mouse_click:
+								show_message(_("Copied text to clipboard"))
+								copy_to_clipboard(tc.date)
+								inp.mouse_click = False
+						else:
+							ddt.text((x1, y1), _("Date"), key_colour_off, 212)
+						ddt.text((x2, y1), d_date_display(tc), value_colour, value_font)
+
+						if tc.composer and tc.composer != tc.artist:
+							x += int(170 * gui.scale)
+							rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
+							fields.add(rect)
+							if coll(rect):
+								ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_on, 212)
+								if inp.mouse_click:
+									show_message(_("Copied text to clipboard"))
+									copy_to_clipboard(tc.album_artist)
+									inp.mouse_click = False
+							else:
+								ddt.text((x + (8 + 75) * gui.scale, y1, 1), _("Composer"), key_colour_off, 212)
+							q = ddt.text(
+								(x + (8 + 88) * gui.scale, y1), tc.composer,
+								value_colour, value_font, max_w=120 * gui.scale)
+							if coll(rect):
+								ex_tool_tip(x2 + 185 * gui.scale, y1, q, tc.composer, value_font_a)
+
+							x -= int(170 * gui.scale)
+
+						y1 += int(23 * gui.scale)
+
+						total = star_store.get(r_menu_index)
+
+						ratio = 0
+
+						if total > 0 and pctl.master_library[
+							r_menu_index].length > 1:
+							ratio = total / (tc.length - 1)
+
+						ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70 * gui.scale)
+						ddt.text((x2, y1), str(int(ratio)), value_colour, value_font)
+
+						y1 += int(15 * gui.scale)
+
+						rect = [x1, y1, 150, 14]
+
+						if coll(rect) and key_shift_down and mouse_wheel != 0:
+							star_store.add(r_menu_index, 60 * mouse_wheel)
+
+						line = time.strftime("%H:%M:%S", time.gmtime(total))
+
+						ddt.text((x1, y1), _("Play time"), key_colour_off, 212, max_w=70 * gui.scale)
+						ddt.text((x2, y1), str(line), value_colour, value_font)
+
+						# -------
+						if tc.lyrics != "":
+
+							if draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
+								prefs.show_lyrics_showcase = True
+								track_box = False
+								enter_showcase_view(track_id=r_menu_index)
+								inp.mouse_click = False
+
+						if len(tc.comment) > 0:
+							y1 += 20 * gui.scale
+							rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
+							# ddt.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
+							fields.add(rect)
+							if coll(rect):
+								ddt.text((x1, y1), _("Comment"), key_colour_on, 212)
+								if inp.mouse_click:
+									show_message(_("Copied text to clipboard"))
+									copy_to_clipboard(tc.comment)
+									inp.mouse_click = False
+							else:
+								ddt.text((x1, y1), _("Comment"), key_colour_off, 212)
+							# ddt.draw_text((x1, y1), "Comment", key_colour_off, 12)
+
+							if "\n" not in tc.comment and (
+									"http://" in tc.comment or "www." in tc.comment or "https://" in tc.comment) and ddt.get_text_w(
+									tc.comment, 12) < 335 * gui.scale:
+
+								link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 12)
+								link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
+
+								fields.add(link_rect)
+								if coll(link_rect):
+									if not inp.mouse_click:
+										gui.cursor_want = 3
+									if inp.mouse_click:
+										webbrowser.open(link_pa[2], new=2, autoraise=True)
+										track_box = True
+
+							elif comment_mode == 1:
+								ddt.text(
+									(x + 18 * gui.scale, y1 + 18 * gui.scale, 4, w - 36 * gui.scale, 90 * gui.scale),
+									tc.comment, value_colour, 12)
+							else:
+								ddt.text((x2, y1), tc.comment, value_colour, 12)
+
+				if draw_border and gui.mode != 3:
+
+					tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
+					if prefs.left_window_control:
+						tool_rect[0] = 0
+					fields.add(tool_rect)
+					if not gui.top_bar_mode2 or coll(tool_rect):
+						draw_window_tools()
+
+					if not gui.fullscreen and not gui.maximized:
+						draw_window_border()
+
+				fader.render()
+				if pref_box.enabled:
+					# rect = [0, 0, window_size[0], window_size[1]]
+					# ddt.rect_r(rect, [0, 0, 0, 90], True)
+					pref_box.render()
+
+				if gui.rename_folder_box:
+
+					if gui.level_2_click:
+						inp.mouse_click = True
+
+					gui.level_2_click = False
+
+					w = 500 * gui.scale
+					h = 127 * gui.scale
+					x = int(window_size[0] / 2) - int(w / 2)
+					y = int(window_size[1] / 2) - int(h / 2)
+
+					ddt.rect_a(
+						(x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
+					ddt.rect_a((x, y), (w, h), colours.box_background)
+
+					ddt.text_background_colour = colours.box_background
+
+					if key_esc_press or (
+							(inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+						gui.rename_folder_box = False
+
+					p = ddt.text(
+						(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), colours.box_title_text, 213)
+
+					if rename_folder.text != prefs.rename_folder_template and draw.button(
+						_("Default"),
+						x + (300 - 63) * gui.scale,
+						y + 11 * gui.scale,
+						70 * gui.scale):
+						rename_folder.text = prefs.rename_folder_template
+
+					rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.box_input_text, width=300)
+
+					ddt.rect_s(
+						(x + 8 * gui.scale, y + 38 * gui.scale, 300 * gui.scale, 22 * gui.scale),
+						colours.box_text_border, 1 * gui.scale)
+
+					if draw.button(
+						_("Rename"), x + (8 + 300 + 10) * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
+						tooltip=_("Renames the physical folder based on the template")) or inp.level_2_enter:
+						rename_parent(rename_index, rename_folder.text)
+						gui.rename_folder_box = False
+						inp.mouse_click = False
+
+					text = _("Trash")
+					tt = _("Moves folder to system trash")
+					if key_shift_down:
+						text = _("Delete")
+						tt = _("Physically deletes folder from disk")
+					if draw.button(
+						text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale,
+						text_highlight_colour=colours.grey(255), background_highlight_colour=[180, 60, 60, 255],
+						press=mouse_up, tooltip=tt):
+						if key_shift_down:
+							delete_folder(rename_index, True)
+						else:
+							delete_folder(rename_index)
+						gui.rename_folder_box = False
+						inp.mouse_click = False
+
+					if move_folder_up(rename_index):
+						if draw.button(
+							_("Raise"), x + 408 * gui.scale, y + 38 * gui.scale, 80 * gui.scale,
+							tooltip=_("Moves folder up 2 levels and deletes the old container folder")):
+							move_folder_up(rename_index, True)
+							inp.mouse_click = False
+
+					to_clean = clean_folder(rename_index)
+					if to_clean > 0:
+						if draw.button(
+							"Clean (" + str(to_clean) + ")", x + 408 * gui.scale, y + 11 * gui.scale,
+							80 * gui.scale, tooltip=_("Deletes some unnecessary files from folder")):
+							clean_folder(rename_index, True)
+							inp.mouse_click = False
+
+					ddt.text((x + 10 * gui.scale, y + 65 * gui.scale), _("PATH"), colours.box_text_label, 212)
+					line = os.path.dirname(
+						pctl.master_library[rename_index].parent_folder_path.rstrip("\\/")).replace("\\","/") + "/"
+					line = right_trunc(line, 12, 420 * gui.scale)
+					line = clean_string(line)
+					ddt.text((x + 60 * gui.scale, y + 65 * gui.scale), line, colours.grey(220), 211)
+
+					ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("OLD"), colours.box_text_label, 212)
+					line = pctl.master_library[rename_index].parent_folder_name
+					line = clean_string(line)
+					ddt.text((x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
+
+					ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), _("NEW"), colours.box_text_label, 212)
+					line = parse_template2(rename_folder.text, pctl.master_library[rename_index])
+					ddt.text((x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale)
+
+				if rename_track_box.active:
+					rename_track_box.render()
+
+				if sub_lyrics_box.active:
+					sub_lyrics_box.render()
+
+				if export_playlist_box.active:
+					export_playlist_box.render()
+
+				if trans_edit_box.active:
+					trans_edit_box.render()
+
+				if radiobox.active:
+					radiobox.render()
+
+				if gui.message_box:
+					message_box.render()
+
+				if prefs.show_nag:
+					nagbox.draw()
+
+				# SEARCH
+				# if key_ctrl_down and key_v_press:
+
+				#     search_over.active = True
+
+				search_over.render()
+
+				if keymaps.test("quick-find") and quick_search_mode is False:
+					if not search_over.active and not gui.box_over:
+						quick_search_mode = True
+					if search_clear_timer.get() > 3:
+						search_text.text = ""
+					input_text = ""
+				elif (keymaps.test("quick-find") or (
+						key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
+					quick_search_mode = False
+					search_text.text = ""
+
+				# if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
+				#     if not search_over.active:
+				#         quick_search_mode = True
+				#     if search_clear_timer.get() > 3:
+				#         search_text.text = ""
+				#     input_text = ""
+				# elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
+				#             key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
+				#     quick_search_mode = False
+				#     search_text.text = ""
+
+				if quick_search_mode is True:
+
+					rect2 = [0, window_size[1] - 85 * gui.scale, 420 * gui.scale, 25 * gui.scale]
+					rect = [0, window_size[1] - 125 * gui.scale, 420 * gui.scale, 65 * gui.scale]
+					rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
+					rect2[0] = rect[0]
+
+					ddt.rect((rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), colours.box_border)  # [220, 100, 5, 255]
+					# ddt.rect_r((rect[0], rect[1], rect[2], rect[3]), [255,120,5,255], True)
+
+					ddt.text_background_colour = colours.box_background
+					# ddt.text_background_colour = [255,120,5,255]
+					# ddt.text_background_colour = [220,100,5,255]
+					ddt.rect(rect, colours.box_background)
+
+					if len(input_text) > 0:
+						search_index = -1
+
+					if inp.backspace_press and search_text.text == "":
+						quick_search_mode = False
+
+					if len(search_text.text) == 0:
+						gui.search_error = False
+
+					if len(search_text.text) != 0 and search_text.text[0] == "/":
+						# if "/love" in search_text.text:
+						#     line = "last.fm loved tracks from user. Format: /love <username>"
+						# else:
+						line = _("Folder filter mode. Enter path segment.")
+						ddt.text((rect[0] + 23 * gui.scale, window_size[1] - 87 * gui.scale), line, (220, 220, 220, 100), 312)
+					else:
+						line = _("UP / DOWN to navigate. SHIFT + RETURN for new playlist.")
+						if len(search_text.text) == 0:
+							line = _("Quick find")
+						ddt.text((rect[0] + int(rect[2] / 2), window_size[1] - 87 * gui.scale, 2), line, colours.box_text_label, 312)
+
+						# ddt.draw_text((rect[0] + int(rect[2] / 2), window_size[1] - 118 * gui.scale, 2), "Find",
+						#           colours.grey(90), 214)
+
+					# if len(pctl.track_queue) > 0:
+
+					# if input_text == 'A':
+					#     search_text.text = pctl.playing_object().artist
+					#     input_text = ""
+
+					if gui.search_error:
+						ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255])
+						ddt.text_background_colour = [180, 40, 40, 255]  # alpha_blend([255,0,0,25], ddt.text_background_colour)
+					# if input.backspace_press:
+					#     gui.search_error = False
+
+					search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213)
+
+					if (key_shift_down or (
+							len(search_text.text) > 0 and search_text.text[0] == "/")) and inp.key_return_press:
+						inp.key_return_press = False
+						playlist = []
+						if len(search_text.text) > 0:
+							if search_text.text[0] == "/":
+
+								if search_text.text.lower() == "/random" or search_text.text.lower() == "/shuffle":
+									gen_500_random(pctl.active_playlist_viewing)
+								elif search_text.text.lower() == "/top" or search_text.text.lower() == "/most":
+									gen_top_100(pctl.active_playlist_viewing)
+								elif search_text.text.lower() == "/length" or search_text.text.lower() == "/duration" \
+										or search_text.text.lower() == "/len":
+									gen_sort_len(pctl.active_playlist_viewing)
+								else:
+
+									if search_text.text[-1] == "/":
+										tt_title = search_text.text.replace("/", "")
+									else:
+										search_text.text = search_text.text.replace("/", "")
+										tt_title = search_text.text
+									search_text.text = search_text.text.lower()
+									for item in default_playlist:
+										if search_text.text in pctl.master_library[item].parent_folder_path.lower():
+											playlist.append(item)
+									if len(playlist) > 0:
+										pctl.multi_playlist.append(pl_gen(title=tt_title, playlist_ids=copy.deepcopy(playlist)))
+										switch_playlist(len(pctl.multi_playlist) - 1)
+
+							else:
+								search_terms = search_text.text.lower().split()
+								for item in default_playlist:
+									tr = pctl.get_track(item)
+									line = " ".join(
+										[
+											tr.title, tr.artist, tr.album, tr.fullpath,
+											tr.composer, tr.comment, tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
+
+									# if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+									#     line = str(unidecode(line))
+
+									if all(word in line for word in search_terms):
+										playlist.append(item)
+								if len(playlist) > 0:
+									pctl.multi_playlist.append(pl_gen(
+										title=_("Search Results"),
+										playlist_ids=copy.deepcopy(playlist)))
+									pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[
+										pctl.active_playlist_viewing].title + "\" f\"" + search_text.text + "\""
+									switch_playlist(len(pctl.multi_playlist) - 1)
+							search_text.text = ""
+							quick_search_mode = False
+
+					if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or inp.backspace_press \
+							or gui.force_search:
+
+						gui.pl_update = 1
+
+						if gui.force_search:
+							search_index = 0
+
+						if inp.backspace_press:
+							search_index = 0
+
+						if len(search_text.text) > 0 and search_text.text[0] != "/":
+							oi = search_index
+
+							while search_index < len(default_playlist) - 1:
+								search_index += 1
+								if search_index > len(default_playlist) - 1:
+									search_index = 0
+
+								search_terms = search_text.text.lower().split()
+								tr = pctl.get_track(default_playlist[search_index])
+								line = " ".join(
+									[tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
+									tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
+
+								# if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+								#     line = str(unidecode(line))
+
+								if all(word in line for word in search_terms):
+
+									pctl.selected_in_playlist = search_index
+									if len(default_playlist) > 10 and search_index > 10:
+										pctl.playlist_view_position = search_index - 7
+										logging.debug("Position changed by search")
+									else:
+										pctl.playlist_view_position = 0
+
+									if gui.combo_mode:
+										pctl.show_selected()
+									gui.search_error = False
+
+									break
+
+							else:
+								search_index = oi
+								if len(input_text) > 0 or gui.force_search:
+									gui.search_error = True
+								if key_down_press:
+									bottom_playlist2.pulse()
+
+							gui.force_search = False
+
+					if key_up_press is True \
+							and not key_shiftr_down \
+							and not key_shift_down \
+							and not key_ctrl_down \
+							and not key_rctrl_down \
+							and not key_meta \
+							and not key_lalt \
+							and not key_ralt:
+
+						gui.pl_update = 1
+						oi = search_index
+
+						while search_index > 1:
+							search_index -= 1
+							search_index = min(search_index, len(default_playlist) - 1)
+							search_terms = search_text.text.lower().split()
+							line = pctl.master_library[default_playlist[search_index]].title.lower() + \
+								pctl.master_library[default_playlist[search_index]].artist.lower() \
+								+ pctl.master_library[default_playlist[search_index]].album.lower() + \
+								pctl.master_library[default_playlist[search_index]].filename.lower()
+
+							if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
+								line = str(unidecode(line))
+
+							if all(word in line for word in search_terms):
+
+								pctl.selected_in_playlist = search_index
+								if len(default_playlist) > 10 and search_index > 10:
+									pctl.playlist_view_position = search_index - 7
+									logging.debug("Position changed by search")
+								else:
+									pctl.playlist_view_position = 0
+								if gui.combo_mode:
+									pctl.show_selected()
+								break
+						else:
+							search_index = oi
+
+							edge_playlist2.pulse()
+
+					if inp.key_return_press is True and search_index > -1:
+						gui.pl_update = 1
+						pctl.jump(default_playlist[search_index], search_index)
+						if album_mode:
+							goto_album(pctl.playlist_playing_position)
+						quick_search_mode = False
+						search_clear_timer.set()
+
+				elif not search_over.active:
+
+					if key_up_press and ((
+						not key_shiftr_down \
+						and not key_shift_down \
+						and not key_ctrl_down \
+						and not key_rctrl_down \
+						and not key_meta \
+						and not key_lalt \
+						and not key_ralt) or (keymaps.test("shift-up"))):
+
+						pctl.show_selected()
+						gui.pl_update = 1
+
+						if not keymaps.test("shift-up"):
+							if pctl.selected_in_playlist > 0:
+								pctl.selected_in_playlist -= 1
+								r_menu_index = default_playlist[pctl.selected_in_playlist]
+							shift_selection = []
+
+						if pctl.playlist_view_position > 0 and pctl.selected_in_playlist < pctl.playlist_view_position + 2:
+							pctl.playlist_view_position -= 1
+							logging.debug("Position changed by key up")
+
+							scroll_hide_timer.set()
+							gui.frame_callback_list.append(TestTimer(0.9))
+
+						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(default_playlist))
+
+					if pctl.selected_in_playlist < len(default_playlist) and (
+						(key_down_press and \
+						not key_shiftr_down \
+						and not key_shift_down \
+						and not key_ctrl_down \
+						and not key_rctrl_down \
+						and not key_meta \
+						and not key_lalt \
+						and not key_ralt) or keymaps.test("shift-down")):
+
+						pctl.show_selected()
+						gui.pl_update = 1
+
+						if not keymaps.test("shift-down"):
+							if pctl.selected_in_playlist < len(default_playlist) - 1:
+								pctl.selected_in_playlist += 1
+								r_menu_index = default_playlist[pctl.selected_in_playlist]
+							shift_selection = []
+
+						if pctl.playlist_view_position < len(
+								default_playlist) and pctl.selected_in_playlist > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
+							pctl.playlist_view_position += 1
+							logging.debug("Position changed by key down")
+
+							scroll_hide_timer.set()
+							gui.frame_callback_list.append(TestTimer(0.9))
+
+						pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
+
+					if inp.key_return_press and not pref_box.enabled and not radiobox.active and not trans_edit_box.active:
+						gui.pl_update = 1
+						if pctl.selected_in_playlist > len(default_playlist) - 1:
+							pctl.selected_in_playlist = 0
+							shift_selection = []
+						if default_playlist:
+							pctl.jump(default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
+							if album_mode:
+								goto_album(pctl.playlist_playing_position)
+
+
+			elif gui.mode == 3:
+
+				if (key_shift_down and inp.mouse_click) or middle_click:
+					if prefs.mini_mode_mode == 4:
+						prefs.mini_mode_mode = 1
+						window_size[0] = int(330 * gui.scale)
+						window_size[1] = int(330 * gui.scale)
+						SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+						SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+					else:
+						prefs.mini_mode_mode = 4
+						window_size[0] = int(320 * gui.scale)
+						window_size[1] = int(90 * gui.scale)
+						SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
+						SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+
+				if prefs.mini_mode_mode == 5:
+					mini_mode3.render()
+				elif prefs.mini_mode_mode == 4:
+					mini_mode2.render()
+				else:
+					mini_mode.render()
+
+			t = toast_love_timer.get()
+			if t < 1.8 and gui.toast_love_object is not None:
+				track = gui.toast_love_object
+
+				ww = 0
+				if gui.lsp:
+					ww = gui.lspw
+
+				rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
+				fields.add(rect)
+
+				if coll(rect):
+					toast_love_timer.force_set(10)
+				else:
+					ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
+					ddt.rect(rect, colours.queue_card_background)
+
+					# fqo = copy.copy(pctl.force_queue[-1])
+
+					ddt.text_background_colour = colours.queue_card_background
+
+					if gui.toast_love_added:
+						text = _("Loved track")
+						heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, [250, 100, 100, 255])
+					else:
+						text = _("Un-Loved track")
+						heart_notify_break_icon.render(
+							rect[0] + 9 * gui.scale, rect[1] + 7 * gui.scale,
+							[150, 150, 150, 255])
+
+					ddt.text_background_colour = colours.queue_card_background
+					ddt.text((rect[0] + 42 * gui.scale, rect[1] + 3 * gui.scale), text, colours.box_text, 313)
+					ddt.text(
+						(rect[0] + 42 * gui.scale, rect[1] + 20 * gui.scale),
+						f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label,
+						13, max_w=rect[2] - 50 * gui.scale)
+
+			t = queue_add_timer.get()
+			if t < 2.5 and gui.toast_queue_object:
+				track = pctl.get_track(gui.toast_queue_object.track_id)
+
+				ww = 0
+				if gui.lsp:
+					ww = gui.lspw
+				if search_over.active:
+					ww = window_size[0] // 2 - (215 * gui.scale // 2)
+
+				rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
+				fields.add(rect)
+
+				if coll(rect):
+					queue_add_timer.force_set(10)
+				elif len(pctl.force_queue) > 0:
+
+					fqo = copy.copy(pctl.force_queue[-1])
+
+					ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
+					ddt.rect(rect, colours.queue_card_background)
+
+					ddt.text_background_colour = colours.queue_card_background
+					top_text = _("Track")
+					if gui.queue_toast_plural:
+						top_text = "Album"
+						fqo.type = 1
+					if pctl.force_queue[-1].type == 1:
+						top_text = "Album"
+
+					queue_box.draw_card(
+						rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale,
+						rect[1] + 1 * gui.scale, track, fqo, True, False)
+
+					ddt.text_background_colour = colours.queue_card_background
+					ddt.text(
+						(rect[0] + rect[2] - 50 * gui.scale, rect[1] + 3 * gui.scale, 2), f"{top_text} added",
+						colours.box_text_label, 11)
+					ddt.text(
+						(rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue",
+						colours.box_text_label, 11)
+
+			t = toast_mode_timer.get()
+			if t < 0.98:
+
+				wid = ddt.get_text_w(gui.mode_toast_text, 313)
+				wid = max(round(68 * gui.scale), wid)
+
+				ww = round(7 * gui.scale)
+				if gui.lsp and not gui.combo_mode:
+					ww += gui.lspw
+
+				rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
+				fields.add(rect)
+
+				if coll(rect):
+					toast_mode_timer.force_set(10)
+				else:
+					ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60))
+					ddt.rect(rect, colours.queue_card_background)
+
+					ddt.text_background_colour = colours.queue_card_background
+					ddt.text((rect[0] + (rect[2] // 2), rect[1] + 4 * gui.scale, 2), gui.mode_toast_text, colours.grey(230), 313)
+
+			# Render Menus-------------------------------
+			for instance in Menu.instances:
+				instance.render()
+
+			if view_box.active:
+				view_box.render()
+
+			tool_tip.render()
+			tool_tip2.render()
+
+			if console.show:
+				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
+				ddt.rect(rect, [0, 0, 0, 245])
+
+				yy = rect[3] + 15 * gui.scale
+				u = False
+				for record in reversed(log.log_history):
+
+					if yy < rect[1] + 5 * gui.scale:
+						break
+
+					text_colour = [60, 255, 60, 255]
+					message = log.format(record)
+
+					t = record.created
+					d = time.time() - t
+					dt = time.localtime(t)
+
+					fade = 255
+					if d > 2:
+						fade = 200
+
+					text_colour = [120, 120, 120, fade]
+					if record.levelno == 10:
+						text_colour = [80, 80, 80, fade]
+					if record.levelno == 30:
+						text_colour = [230, 190, 90, fade]
+					if record.levelno == 40:
+						text_colour = [255, 120, 90, fade]
+					if record.levelno == 50:
+						text_colour = [255, 90, 90, fade]
+
+					time_colour = [255, 80, 160, fade]
+
+					w = ddt.text(
+						(rect[0] + 10 * gui.scale, yy), time.strftime("%H:%M:%S", dt), time_colour, 311,
+						rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+
+					ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+					yy -= 14 * gui.scale
+				if u:
+					gui.delay_frame(5)
+
+				if draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
+
+					text = ""
+					for record in log.log_history[-50:]:
+						t = record.created
+						dt = time.localtime(t)
+						text += time.strftime("%H:%M:%S", dt) + " " + log.format(record) + "\n"
+					copy_to_clipboard(text)
+					show_message(_("Lines copied to clipboard"), mode="done")
+
+			if gui.cursor_is != gui.cursor_want:
+
+				gui.cursor_is = gui.cursor_want
+
+				if gui.cursor_is == 0:
+					SDL_SetCursor(cursor_standard)
+				elif gui.cursor_is == 1:
+					SDL_SetCursor(cursor_shift)
+				elif gui.cursor_is == 2:
+					SDL_SetCursor(cursor_text)
+				elif gui.cursor_is == 3:
+					SDL_SetCursor(cursor_hand)
+				elif gui.cursor_is == 4:
+					SDL_SetCursor(cursor_br_corner)
+				elif gui.cursor_is == 8:
+					SDL_SetCursor(cursor_right_side)
+				elif gui.cursor_is == 9:
+					SDL_SetCursor(cursor_top_side)
+				elif gui.cursor_is == 10:
+					SDL_SetCursor(cursor_left_side)
+				elif gui.cursor_is == 11:
+					SDL_SetCursor(cursor_bottom_side)
+
+			get_sdl_input.test_capture_mouse()
+			get_sdl_input.mouse_capture_want = False
+
+			# # Quick view
+			# quick_view_box.render()
+
+			# Drag icon next to cursor
+			if quick_drag and mouse_down and not point_proximity_test(
+				gui.drag_source_position, mouse_position, 15 * gui.scale):
+				i_x, i_y = get_sdl_input.mouse()
+				gui.drag_source_position = (0, 0)
+
+				block_size = round(10 * gui.scale)
+				x_offset = round(20 * gui.scale)
+				y_offset = round(1 * gui.scale)
+
+				if len(shift_selection) == 1:  # Single track
+					ddt.rect((i_x + x_offset, i_y + y_offset, block_size, block_size), [160, 140, 235, 240])
+				elif key_ctrl_down:  # Add to queue undrouped
+					small_block = round(6 * gui.scale)
+					spacing = round(2 * gui.scale)
+					ddt.rect((i_x + x_offset, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
+					ddt.rect(
+						(i_x + x_offset + spacing + small_block, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
+					ddt.rect(
+						(i_x + x_offset, i_y + y_offset + spacing + small_block, small_block, small_block), [160, 140, 235, 240])
+					ddt.rect(
+						(i_x + x_offset + spacing + small_block, i_y + y_offset + spacing + small_block, small_block, small_block),
+						[160, 140, 235, 240])
+					ddt.rect(
+						(i_x + x_offset, i_y + y_offset + spacing + small_block + spacing + small_block, small_block, small_block),
+						[160, 140, 235, 240])
+					ddt.rect(
+						(i_x + x_offset + spacing + small_block,
+						i_y + y_offset + spacing + small_block + spacing + small_block,
+						small_block, small_block), [160, 140, 235, 240])
+
+				else:  # Multiple tracks
+					long_block = round(25 * gui.scale)
+					ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), [160, 140, 235, 240])
+
+				# gui.update += 1
+				gui.update_on_drag = True
+
+			# Drag pl tab next to cursor
+			if (playlist_box.drag) and mouse_down and not point_proximity_test(
+				gui.drag_source_position, mouse_position, 10 * gui.scale):
+				i_x, i_y = get_sdl_input.mouse()
+				gui.drag_source_position = (0, 0)
+				ddt.rect(
+					(i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225])
+				# ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
+				# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[playlist_box.drag_on].title, [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+			if radio_view.drag and not point_proximity_test(radio_view.click_point, mouse_position, round(4 * gui.scale)):
+				ddt.rect((
+					mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
+					14 * gui.scale), colours.grey(70))
+			if (gui.set_label_hold != -1) and mouse_down:
+
+				gui.update_on_drag = True
+
+				if not point_proximity_test(gui.set_label_point, mouse_position, 3):
+					i_x, i_y = get_sdl_input.mouse()
+					gui.set_label_point = (0, 0)
+
+					w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
+					w = max(w, 45 * gui.scale)
+					ddt.rect(
+						(i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)),
+						[240, 240, 240, 255])
+					ddt.text(
+						(i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1),
+						gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+
+			input_text = ""
+			gui.update -= 1
+
+			# logging.info("FRAME " + str(core_timer.get()))
+			gui.update = min(gui.update, 1)
+			gui.present = True
+
+			SDL_SetRenderTarget(renderer, None)
+			SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+
+			if gui.turbo:
+				gui.level_update = True
+
+		# if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
+		#
+		#     # logging.info(gui.level_peak)
+		#     gui.time_passed = gui.level_time.hit()
+		#     if gui.time_passed > 1:
+		#         gui.time_passed = 0
+		#     while gui.time_passed > 0.01:
+		#         gui.level_peak[1] -= 0.5
+		#         if gui.level_peak[1] < 0:
+		#             gui.level_peak[1] = 0
+		#         gui.level_peak[0] -= 0.5
+		#         if gui.level_peak[0] < 0:
+		#             gui.level_peak[0] = 0
+		#         gui.time_passed -= 0.020
+		#
+		#     gui.level_update = True
+
+		if gui.level_update is True and not resize_mode and gui.mode != 3:
+			gui.level_update = False
+
+			SDL_SetRenderTarget(renderer, None)
+			if not gui.present:
+				SDL_RenderCopy(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+				gui.present = True
+
+			if gui.vis == 3:
+				# Scrolling spectrogram
+
+				# if not vis_update:
+				#     logging.info("No UPDATE " + str(random.randint(1,50)))
+				if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
+					# gui.spec2_timer.force_set(gui.spec2_timer.get() - 0.04)
+					gui.spec2_timer.set()
+					vis_update = True
+
+				if len(gui.spec2_buffers) > 0 and vis_update:
+					vis_update = False
+
+					SDL_SetRenderTarget(renderer, gui.spec2_tex)
+					for i, value in enumerate(gui.spec2_buffers[0]):
+						ddt.rect(
+							[gui.spec2_position, i, 1, 1],
+							[
+								min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
+								min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
+								min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
+								255])
+
+					del gui.spec2_buffers[0]
+
+					gui.spec2_position += 1
+
+					if gui.spec2_position > gui.spec2_w - 1:
+						gui.spec2_position = 0
+
+					SDL_SetRenderTarget(renderer, None)
+
+				#
+				# else:
+				#     logging.info("animation stall" + str(random.randint(1, 10)))
+
+				if prefs.spec2_scroll:
+
+					gui.spec2_source.x = 0
+					gui.spec2_source.y = 0
+					gui.spec2_source.w = gui.spec2_position
+					gui.spec2_dest.x = gui.spec2_rec.x + gui.spec2_rec.w - gui.spec2_position
+					gui.spec2_dest.w = gui.spec2_position
+					SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+
+					gui.spec2_source.x = gui.spec2_position
+					gui.spec2_source.y = 0
+					gui.spec2_source.w = gui.spec2_rec.w - gui.spec2_position
+					gui.spec2_dest.x = gui.spec2_rec.x
+					gui.spec2_dest.w = gui.spec2_rec.w - gui.spec2_position
+					SDL_RenderCopy(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+
+				else:
+
+					SDL_RenderCopy(renderer, gui.spec2_tex, None, gui.spec2_rec)
+
+				if pref_box.enabled:
+					ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90])
+
+			if gui.vis == 4 and gui.draw_vis4_top:
+				showcase.render_vis(True)
+				# gui.level_update = False
+
+			if gui.vis == 2 and gui.spec is not None:
+
+				# Standard spectrum visualiser
+
+				if gui.update_spec == 0 and pctl.playing_state != 2:
+					if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
+						vis_decay_timer.set()
+						for i in range(len(gui.spec)):
+							if gui.s_spec[i] > 0:
+								if gui.spec[i] > 0:
+									gui.spec[i] -= 1
+								gui.level_update = True
+					else:
+						gui.level_update = True
+
+				if vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
+					vis_rate_timer.set()
+
+					if spec_smoothing and pctl.playing_state > 0:
+
+						for i in range(len(gui.spec)):
+							if gui.spec[i] > gui.s_spec[i]:
+								gui.s_spec[i] += 1
+								if abs(gui.spec[i] - gui.s_spec[i]) > 4:
+									gui.s_spec[i] += 1
+								if abs(gui.spec[i] - gui.s_spec[i]) > 6:
+									gui.s_spec[i] += 1
+								if abs(gui.spec[i] - gui.s_spec[i]) > 8:
+									gui.s_spec[i] += 1
+
+							elif gui.spec[i] == gui.s_spec[i]:
+								pass
+							elif gui.spec[i] < gui.s_spec[i] > 0:
+								gui.s_spec[i] -= 1
+								if abs(gui.spec[i] - gui.s_spec[i]) > 4:
+									gui.s_spec[i] -= 1
+								if abs(gui.spec[i] - gui.s_spec[i]) > 6:
+									gui.s_spec[i] -= 1
+								if abs(gui.spec[i] - gui.s_spec[i]) > 8:
+									gui.s_spec[i] -= 1
+
+						if pctl.playing_state == 0 and check_equal(gui.s_spec):
+							gui.level_update = True
+							time.sleep(0.008)
+					else:
+						gui.s_spec = gui.spec
+				else:
+					pass
+
+				if not gui.test:
+
+					SDL_SetRenderTarget(renderer, gui.spec1_tex)
+
+					# ddt.rect_r(gui.spec_rect, colours.top_panel_background, True)
+					ddt.rect((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg)
+
+					# xx = 0
+					gui.bar.x = 0
+					on = 0
+
+					SDL_SetRenderDrawColor(
+						renderer, colours.vis_colour[0],
+						colours.vis_colour[1], colours.vis_colour[2],
+						colours.vis_colour[3])
+
+					for item in gui.s_spec:
+
+						if on > 19:
+							break
+						on += 1
+
+						item -= 1
+
+						if item < 1:
+							gui.bar.x += round(4 * gui.scale)
+							continue
+
+						item = min(item, 20)
+
+						if gui.scale >= 2:
+							item = round(item * gui.scale)
+
+						gui.bar.y = 0 + gui.spec_h - item
+						gui.bar.h = item
+
+						SDL_RenderFillRect(renderer, gui.bar)
+
+						gui.bar.x += round(4 * gui.scale)
+
+					if pref_box.enabled:
+						ddt.rect((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90])
+
+					SDL_SetRenderTarget(renderer, None)
+					SDL_RenderCopy(renderer, gui.spec1_tex, None, gui.spec1_rec)
+
+			if gui.vis == 1:
+
+				if prefs.backend == 2 or True:
+					if pctl.playing_state == 1 or pctl.playing_state == 3:
+						# gui.level_update = True
+						while tauon.level_train and tauon.level_train[0][0] < time.time():
+
+							l = tauon.level_train[0][1]
+							r = tauon.level_train[0][2]
+
+							gui.level_peak[0] = max(r, gui.level_peak[0])
+							gui.level_peak[1] = max(l, gui.level_peak[1])
+
+							del tauon.level_train[0]
+
+					else:
+						tauon.level_train.clear()
+
+				SDL_SetRenderTarget(renderer, gui.spec_level_tex)
+
+				x = window_size[0] - 20 * gui.scale - gui.offset_extra
+				y = gui.level_y
+				w = gui.level_w
+				s = gui.level_s
+
+				y = 0
+
+				gui.spec_level_rec.x = round(x - 70 * gui.scale)
+				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10))
+
+				x = round(gui.level_ww - 9 * gui.scale)
+				y = 10 * gui.scale
+
+				if prefs.backend == 2 or True:
+					if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
+						# gui.level_update = True
+						if pctl.playing_time < 1:
+							gui.delay_frame(0.032)
+
+						if pctl.playing_state == 1 or pctl.playing_state == 3:
+							t = gui.level_decay_timer.hit()
+							decay = 14 * t
+							gui.level_peak[1] -= decay
+							gui.level_peak[0] -= decay
+						elif pctl.playing_state == 0 or pctl.playing_state == 2:
+							gui.level_update = True
+							time.sleep(0.016)
+							t = gui.level_decay_timer.hit()
+							decay = 16 * t
+							gui.level_peak[1] -= decay
+							gui.level_peak[0] -= decay
+
+				for t in range(12):
+
+					if gui.level_peak[0] < t:
+						met = False
+					else:
+						met = True
+					if gui.level_peak[0] < 0.2:
+						met = False
+
+					if gui.level_meter_colour_mode == 1:
+
+						if not met:
+							cc = [15, 10, 20, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					elif gui.level_meter_colour_mode == 2:
+
+						if not met:
+							cc = [11, 11, 13, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					elif gui.level_meter_colour_mode == 3:
+
+						if not met:
+							cc = [12, 6, 0, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					elif gui.level_meter_colour_mode == 4:
+
+						if not met:
+							cc = [10, 10, 10, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					else:
+
+						if t < 7:
+							cc = colours.level_green
+							if met is False:
+								cc = colours.level_1_bg
+						elif t < 10:
+							cc = colours.level_yellow
+							if met is False:
+								cc = colours.level_2_bg
+						else:
+							cc = colours.level_red
+							if met is False:
+								cc = colours.level_3_bg
+					if gui.level > 0 and pctl.playing_state > 0:
+						pass
+					ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
+
+				y -= 7 * gui.scale
+				for t in range(12):
+
+					if gui.level_peak[1] < t:
+						met = False
+					else:
+						met = True
+					if gui.level_peak[1] < 0.2:
+						met = False
+
+					if gui.level_meter_colour_mode == 1:
+
+						if not met:
+							cc = [15, 10, 20, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					elif gui.level_meter_colour_mode == 2:
+
+						if not met:
+							cc = [11, 11, 13, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					elif gui.level_meter_colour_mode == 3:
+
+						if not met:
+							cc = [12, 6, 0, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					elif gui.level_meter_colour_mode == 4:
+
+						if not met:
+							cc = [10, 10, 10, 255]
+						else:
+							cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
+							cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+
+					else:
+
+						if t < 7:
+							cc = colours.level_green
+							if met is False:
+								cc = colours.level_1_bg
+						elif t < 10:
+							cc = colours.level_yellow
+							if met is False:
+								cc = colours.level_2_bg
+						else:
+							cc = colours.level_red
+							if met is False:
+								cc = colours.level_3_bg
+
+					if gui.level > 0 and pctl.playing_state > 0:
+						pass
+					ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
+
+				SDL_SetRenderTarget(renderer, None)
+				SDL_RenderCopy(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
+
+		if gui.present:
+			# Possible bug older version of SDL (2.0.16) Wayland, setting render target to None causer last copy
+			# to fail when resizing? Not a big deal as it doesn't matter what the target is when presenting, just
+			# set to something else
+			# SDL_SetRenderTarget(renderer, None)
+			SDL_SetRenderTarget(renderer, gui.main_texture)
+			SDL_RenderPresent(renderer)
+
+			gui.present = False
+
+		# -------------------------------------------------------------------------------------------
+		# Misc things to update every tick
+
+		# Update d-bus metadata on Linux
+		if (pctl.playing_state == 1 or pctl.playing_state == 3) and pctl.mpris is not None:
+			pctl.mpris.update_progress()
+
+		# GUI time ticker update
+		if (pctl.playing_state == 1 or pctl.playing_state == 3) and gui.lowered is False:
+			if int(pctl.playing_time) != int(pctl.last_playing_time):
+				pctl.last_playing_time = pctl.playing_time
+				bottom_bar1.seek_time = pctl.playing_time
+				if not prefs.power_save or window_is_focused():
+					gui.update = 1
+
+		# Auto save play times to disk
+		if pctl.total_playtime - time_last_save > 600:
+			try:
+				if should_save_state:
+					logging.info("Auto save playtime")
+					with (user_directory / "star.p").open("wb") as file:
+						pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+				else:
+					logging.info("Dev mode, skip auto saving playtime")
+			except PermissionError:
+				logging.exception("Permission error encountered while writing database")
+				show_message(_("Permission error encountered while writing database"), "error")
+			except Exception:
+				logging.exception("Unknown error encountered while writing database")
+			time_last_save = pctl.total_playtime
+
+		# Always render at least one frame per minute (to avoid SDL bugs I guess)
+		if min_render_timer.get() > 60:
+			min_render_timer.set()
+			gui.pl_update = 1
+			gui.update += 1
+
+		# Save power if the window is minimized
+		if gui.lowered:
+			time.sleep(0.2)
+
+	if tauon.spot_ctl.playing:
+		tauon.spot_ctl.control("stop")
+
+	# Send scrobble if pending
+	if lfm_scrobbler.queue and not lfm_scrobbler.running:
+		lfm_scrobbler.start_queue()
+		logging.info("Sending scrobble before close...")
+
+	if gui.mode < 3:
+		old_window_position = get_window_position()
+
+
+	SDL_DestroyTexture(gui.main_texture)
+	SDL_DestroyTexture(gui.tracklist_texture)
+	SDL_DestroyTexture(gui.spec2_tex)
+	SDL_DestroyTexture(gui.spec1_tex)
+	SDL_DestroyTexture(gui.spec_level_tex)
+	ddt.clear_text_cache()
+	clear_img_cache(False)
+
+	SDL_DestroyWindow(t_window)
+
+	pctl.playerCommand = "unload"
+	pctl.playerCommandReady = True
+
+	if prefs.reload_play_state and pctl.playing_state in (1, 2):
+		logging.info("Saving play state...")
+		prefs.reload_state = (pctl.playing_state, pctl.playing_time)
+
+	if should_save_state:
+		with (user_directory / "star.p").open("wb") as file:
+			pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+		with (user_directory / "album-star.p").open("wb") as file:
+			pickle.dump(album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+	gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
+	save_state()
+
+	date = datetime.date.today()
+	if should_save_state:
+		with (user_directory / "star.p.backup").open("wb") as file:
+			pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+		with (user_directory / f"star.p.backup{str(date.month)}").open("wb") as file:
+			pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+	if tauon.stream_proxy and tauon.stream_proxy.download_running:
+		logging.info("Stopping stream...")
+		tauon.stream_proxy.stop()
+		time.sleep(2)
+
+	try:
+		if tauon.thread_manager.player_lock.locked():
+			tauon.thread_manager.player_lock.release()
+	except RuntimeError as e:
+		if str(e) == "release unlocked lock":
+			logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+		else:
+			logging.exception("Unknown RuntimeError trying to release player_lock")
+	except Exception:
+		logging.exception("Unknown error trying to release player_lock")
+
+	if tauon.radio_server is not None:
+		try:
+			tauon.radio_server.server_close()
+		except Exception:
+			logging.exception("Failed to close radio server")
+
+	if system == "Windows" or msys:
+		tray.stop()
+		if smtc:
+			sm.unload()
+	elif de_notify_support:
+		try:
+			song_notification.close()
+			g_tc_notify.close()
+			Notify.uninit()
+		except Exception:
+			logging.exception("uninit notification error")
+
+	try:
+		instance_lock.close()
+	except Exception:
+		logging.exception("No lock object to close")
 
 	#28REWORK
 
