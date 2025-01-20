@@ -202,6 +202,7 @@ if debug:
 	file_handler.setLevel(logging.DEBUG)
 	file_handler.setFormatter(formatter)
 	logging.getLogger().addHandler(file_handler)
+	logging.info("Debug mode enabled!")
 
 fp = None
 dev_mode = (install_directory / ".dev").is_file()
