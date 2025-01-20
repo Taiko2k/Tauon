@@ -11125,7 +11125,6 @@ class StyleOverlay:
 		0 - blank
 		1 - preparing first
 		2 - render first
-		3 - preparing 2nd
 	"""
 
 	def __init__(self):
