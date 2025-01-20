@@ -346,175 +346,14 @@ if TYPE_CHECKING:
 	from pylast import Artist, LibreFMNetwork
 	from PIL.ImageFile import ImageFile
 
-# Log to debug as we don't care at all when user does not have this
-try:
-	import colored_traceback.always
-	logging.debug("Found colored_traceback for colored crash tracebacks")
-except ModuleNotFoundError:
-	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:
-	logging.exception("Unknown error trying to import colored_traceback, tracebacks will be dull.")
-
-try:
-	from jxlpy import JXLImagePlugin
-	# We've already logged this once to INFO from t_draw, so just log to DEBUG
-	logging.debug("Found jxlpy for JPEG XL support")
-except ModuleNotFoundError:
-	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
-
-try:
-	import setproctitle
-except ModuleNotFoundError:
-	logging.warning("Unable to import setproctitle, won't be setting process title.")
-except Exception:
-	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
-else:
-	setproctitle.setproctitle("tauonmb")
-
-# try:
-#	 import rpc
-#	 discord_allow = True
-# except Exception:
-#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
-discord_allow = False
-try:
-	from pypresence import Presence
-except ModuleNotFoundError:
-	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
-else:
-	import asyncio
-	discord_allow = True
-
-use_cc = False
-try:
-	import opencc
-except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-except Exception:
-	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-else:
-	s2t = opencc.OpenCC("s2t")
-	t2s = opencc.OpenCC("t2s")
-	use_cc = True
-
-use_natsort = False
-try:
-	import natsort
-except ModuleNotFoundError:
-	logging.warning("Unable to import natsort, playlists may not sort as intended!")
-except Exception:
-	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
-else:
-	use_natsort = True
-
-# Detect platform
-windows_native = False
-macos = False
-msys = False
-system = "Linux"
-arch = platform.machine()
-platform_release = platform.release()
-platform_system = platform.system()
-win_ver = 0
-if platform_system == "Windows":
-	try:
-		win_ver = int(platform_release)
-	except Exception:
-		logging.exception("Failed getting Windows version from platform.release()")
-
-if sys.platform == "win32":
-	# system = 'Windows'
-	# windows_native = False
-	system = "Linux"
-	msys = True
-else:
-	system = "Linux"
-	import fcntl
-
-if sys.platform == "darwin":
-	macos = True
-
-if system == "Windows":
-	import win32con
-	import win32api
-	import win32gui
-	import win32ui
-	import comtypes
-	import atexit
-
-if system == "Linux":
-	from tauon.t_modules import t_topchart
-
-if system == "Linux" and not macos and not msys:
-	from tauon.t_modules.t_dbus import Gnome
-
-holder                 = t_bootstrap.holder
-t_window               = holder.t_window
-renderer               = holder.renderer
-logical_size           = holder.logical_size
-window_size            = holder.window_size
-maximized              = holder.maximized
-scale                  = holder.scale
-window_opacity         = holder.window_opacity
-draw_border            = holder.draw_border
-transfer_args_and_exit = holder.transfer_args_and_exit
-old_window_position    = holder.old_window_position
-install_directory      = holder.install_directory
-user_directory         = holder.user_directory
-pyinstaller_mode       = holder.pyinstaller_mode
-phone                  = holder.phone
-window_default_size    = holder.window_default_size
-window_title           = holder.window_title
-fs_mode                = holder.fs_mode
-t_title                = holder.t_title
-n_version              = holder.n_version
-t_version              = holder.t_version
-t_id                   = holder.t_id
-t_agent                = holder.t_agent
-dev_mode               = holder.dev_mode
-instance_lock          = holder.instance_lock
-log                    = holder.log
-logging.info(f"Window size: {window_size}")
-
-should_save_state = True
-
-try:
-	import pylast
-	last_fm_enable = True
-except Exception:
-	logging.exception("PyLast module not found, last fm will be disabled.")
-	last_fm_enable = False
-
-if not windows_native:
-	import gi
-	from gi.repository import GLib
-
-	font_folder = str(install_directory / "fonts")
-	if os.path.isdir(font_folder):
-		logging.info(f"Fonts directory:           {font_folder}")
-		import ctypes
-
-		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
-		fc.FcConfigReference.restype = ctypes.c_void_p
-		fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
-		fc.FcConfigAppFontAddDir.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
-		config = ctypes.c_void_p()
-		config.contents = fc.FcConfigGetCurrent()
-		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
-
-# TLS setup (needed for frozen installs)
 def get_cert_path() -> str:
 	if pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
 	# Running as script
 	return certifi.where()
 
-
 def setup_ssl() -> ssl.SSLContext:
+	"""TLS setup (needed for frozen installs)"""
 	# Set the SSL certificate path environment variable
 	cert_path = get_cert_path()
 	logging.debug(f"Found TLS cert file at: {cert_path}")
@@ -525,223 +364,8 @@ def setup_ssl() -> ssl.SSLContext:
 	ssl_context = ssl.create_default_context(cafile=get_cert_path())
 	return ssl_context
 
-ssl_context = setup_ssl()
-
-
-
-# Detect what desktop environment we are in to enable specific features
-desktop = os.environ.get("XDG_CURRENT_DESKTOP")
-# de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
-de_notify_support = False
-draw_min_button = True
-draw_max_button = True
-left_window_control = False
-xdpi = 0
-
-detect_macstyle = False
-gtk_settings: Settings | None = None
-mac_close = (253, 70, 70, 255)
-mac_maximize = (254, 176, 36, 255)
-mac_minimize = (42, 189, 49, 255)
-try:
-	# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
-	gi.require_version("Gtk", "3.0")
-	from gi.repository import Gtk
-
-	gtk_settings = Gtk.Settings().get_default()
-	xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
-	if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-		draw_min_button = False
-	if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-		draw_max_button = False
-	if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
-		left_window_control = True
-	gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-	#logging.info(f"GTK theme is: {gtk_theme}")
-	for k, v in mac_styles.items():
-		if k in gtk_theme:
-			detect_macstyle = True
-			if v is not None:
-				mac_close = v[0]
-				mac_maximize = v[1]
-				mac_minimize = v[2]
-
-except Exception:
-	logging.exception("Error accessing GTK settings")
-
-# Set data folders (portable mode)
-config_directory = user_directory
-cache_directory = user_directory / "cache"
-home_directory = os.path.join(os.path.expanduser("~"))
-
-asset_directory = install_directory / "assets"
-svg_directory = install_directory / "assets" / "svg"
-scaled_asset_directory = asset_directory
-
-music_directory = Path("~").expanduser() / "Music"
-if not music_directory.is_dir():
-	music_directory = Path("~").expanduser() / "music"
-
-download_directory = Path("~").expanduser() / "Downloads"
-
-# Detect if we are installed or running portable
-install_mode = False
-flatpak_mode = False
-snap_mode = False
-if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
-	install_mode = True
-	if str(install_directory)[:6] == "/snap/":
-		snap_mode = True
-	if str(install_directory)[:5] == "/app/":
-		# Flatpak mode
-		logging.info("Detected running as Flatpak")
-
-		# [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
-		if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
-
-			host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
-			flatpak_fcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
-
-			if os.path.exists(host_fcfg):
-
-				# if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
-				#	 shutil.rmtree(flatpak_fcfg)
-				if os.path.islink(flatpak_fcfg):
-					logging.info("-- Symlink to fonconfig exists, removing")
-					os.unlink(flatpak_fcfg)
-				# else:
-				#	 logging.info("-- Symlinking user fonconfig")
-				#	 #os.symlink(host_fcfg, flatpak_fcfg)
-
-		flatpak_mode = True
-
-# If we're installed, use home data locations
-if (install_mode and system == "Linux") or macos or msys:
-	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
-	#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
-	config_directory = user_directory
-
-#	if not user_directory.is_dir():
-#		os.makedirs(user_directory)
-
-	if not config_directory.is_dir():
-		os.makedirs(config_directory)
-
-	if snap_mode:
-		logging.info("Installed as Snap")
-	elif flatpak_mode:
-		logging.info("Installed as Flatpak")
-	else:
-		logging.info("Running from installed location")
-
-	if not (user_directory / "encoder").is_dir():
-		os.makedirs(user_directory / "encoder")
-
-
-# elif (system == 'Windows' or msys) and (
-# 	'Program Files' in install_directory or
-# 	os.path.isfile(install_directory + '\\unins000.exe')):
-#
-#	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
-#	 config_directory = user_directory
-#	 cache_directory = user_directory / "cache"
-#	 logging.info(f"User Directory: {user_directory}")
-#	 install_mode = True
-#	 if not os.path.isdir(user_directory):
-#		 os.makedirs(user_directory)
-
-else:
-	logging.info("Running in portable mode")
-	config_directory = user_directory
-
-if not (user_directory / "state.p").is_file() and cache_directory.is_dir():
-	logging.info("Clearing old cache directory")
-	logging.info(cache_directory)
-	shutil.rmtree(str(cache_directory))
-
-n_cache_dir = str(cache_directory / "network")
-e_cache_dir = str(cache_directory / "export")
-g_cache_dir = str(cache_directory / "gallery")
-a_cache_dir = str(cache_directory / "artist")
-r_cache_dir = str(cache_directory / "radio-thumbs")
-b_cache_dir = str(user_directory / "artist-backgrounds")
-
-if not os.path.isdir(n_cache_dir):
-	os.makedirs(n_cache_dir)
-if not os.path.isdir(e_cache_dir):
-	os.makedirs(e_cache_dir)
-if not os.path.isdir(g_cache_dir):
-	os.makedirs(g_cache_dir)
-if not os.path.isdir(a_cache_dir):
-	os.makedirs(a_cache_dir)
-if not os.path.isdir(b_cache_dir):
-	os.makedirs(b_cache_dir)
-if not os.path.isdir(r_cache_dir):
-	os.makedirs(r_cache_dir)
-
-if not (user_directory / "artist-pictures").is_dir():
-	os.makedirs(user_directory / "artist-pictures")
-
-if not (user_directory / "theme").is_dir():
-	os.makedirs(user_directory / "theme")
-
-
-if platform_system == "Linux":
-	system_config_directory = Path(GLib.get_user_config_dir())
-	xdg_dir_file = system_config_directory / "user-dirs.dirs"
-
-	if xdg_dir_file.is_file():
-		with xdg_dir_file.open() as f:
-			for line in f:
-				if line.startswith("XDG_MUSIC_DIR="):
-					music_directory = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
-					logging.debug(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
-				if line.startswith("XDG_DOWNLOAD_DIR="):
-					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
-					if Path(target).is_dir():
-						download_directory = target
-					logging.debug(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
-
-
-if os.getenv("XDG_MUSIC_DIR"):
-	music_directory = Path(os.getenv("XDG_MUSIC_DIR"))
-	logging.debug("Override music to: " + music_directory)
-
-if os.getenv("XDG_DOWNLOAD_DIR"):
-	download_directory = Path(os.getenv("XDG_DOWNLOAD_DIR"))
-	logging.debug("Override downloads to: " + download_directory)
-
-if music_directory:
-	music_directory = Path(os.path.expandvars(music_directory))
-if download_directory:
-	download_directory = Path(os.path.expandvars(download_directory))
-
-if not music_directory.is_dir():
-	music_directory = None
-
-locale_directory = install_directory / "locale"
-#if flatpak_mode:
-#	locale_directory = Path("/app/share/locale")
-#elif str(install_directory).startswith(("/opt/", "/usr/")):
-#	locale_directory = Path("/usr/share/locale")
-
-logging.info(f"Install directory:         {install_directory}")
-#logging.info(f"SVG directory:             {svg_directory}")
-logging.info(f"Asset directory:           {asset_directory}")
-#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
-if locale_directory.exists():
-	logging.info(f"Locale directory:          {locale_directory}")
-else:
-	logging.error(f"Locale directory MISSING:  {locale_directory}")
-logging.info(f"Userdata directory:        {user_directory}")
-logging.info(f"Config directory:          {config_directory}")
-logging.info(f"Cache directory:           {cache_directory}")
-logging.info(f"Home directory:            {home_directory}")
-logging.info(f"Music directory:           {music_directory}")
-logging.info(f"Downloads directory:       {download_directory}")
-
-# Things for detecting and launching programs outside of flatpak sandbox
 def whicher(target: str) -> bool | str | None:
+	"""Detect and launch programs outside of flatpak sandbox"""
 	try:
 		if flatpak_mode:
 			complete = subprocess.run(
@@ -753,75 +377,6 @@ def whicher(target: str) -> bool | str | None:
 	except Exception:
 		logging.exception("Failed to run flatpak-spawn")
 		return False
-
-
-launch_prefix = ""
-if flatpak_mode:
-	launch_prefix = "flatpak-spawn --host "
-
-pid = os.getpid()
-
-if not macos:
-	icon = IMG_Load(str(asset_directory / "icon-64.png").encode())
-else:
-	icon = IMG_Load(str(asset_directory / "tau-mac.png").encode())
-
-SDL_SetWindowIcon(t_window, icon)
-
-if not phone:
-	if window_size[0] != logical_size[0]:
-		SDL_SetWindowMinimumSize(t_window, 560, 330)
-	else:
-		SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
-
-max_window_tex = 1000
-if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
-
-	while window_size[0] > max_window_tex:
-		max_window_tex += 1000
-	while window_size[1] > max_window_tex:
-		max_window_tex += 1000
-
-main_texture = SDL_CreateTexture(
-	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
-	max_window_tex)
-main_texture_overlay_temp = SDL_CreateTexture(
-	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
-	max_window_tex, max_window_tex)
-
-overlay_texture_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, 300, 300)
-SDL_SetTextureBlendMode(overlay_texture_texture, SDL_BLENDMODE_BLEND)
-SDL_SetRenderTarget(renderer, overlay_texture_texture)
-SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-SDL_RenderClear(renderer)
-SDL_SetRenderTarget(renderer, None)
-
-tracklist_texture = SDL_CreateTexture(
-	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
-	max_window_tex)
-tracklist_texture_rect = SDL_Rect(0, 0, max_window_tex, max_window_tex)
-SDL_SetTextureBlendMode(tracklist_texture, SDL_BLENDMODE_BLEND)
-
-SDL_SetRenderTarget(renderer, None)
-
-# Paint main texture
-SDL_SetRenderTarget(renderer, main_texture)
-SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-
-SDL_SetRenderTarget(renderer, main_texture_overlay_temp)
-SDL_SetTextureBlendMode(main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
-SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-SDL_RenderClear(renderer)
-
-
-#
-# SDL_SetRenderTarget(renderer, None)
-# SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
-# SDL_RenderClear(renderer)
-# #SDL_RenderPresent(renderer)
-#
-# SDL_SetWindowOpacity(t_window, window_opacity)
-
 
 class LoadImageAsset:
 	assets: list[LoadImageAsset] = []
@@ -860,7 +415,6 @@ class LoadImageAsset:
 		self.rect.y = round(y)
 		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
-
 class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
 
@@ -897,10 +451,6 @@ class WhiteModImageAsset:
 		self.rect.y = round(y)
 		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
 
-
-loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset] = {}
-
-
 def asset_loader(
 	scaled_asset_directory: Path, loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset], name: str, mod: bool = False,
 ) -> WhiteModImageAsset | LoadImageAsset:
@@ -915,119 +465,9 @@ def asset_loader(
 	loaded_asset_dc[name] = item
 	return item
 
-
-# loading_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "loading.png")
-
-if maximized:
-	i_x = pointer(c_int(0))
-	i_y = pointer(c_int(0))
-
-	time.sleep(0.02)
-	SDL_PumpEvents()
-	SDL_GetWindowSize(t_window, i_x, i_y)
-	logical_size[0] = i_x.contents.value
-	logical_size[1] = i_y.contents.value
-	SDL_GL_GetDrawableSize(t_window, i_x, i_y)
-	window_size[0] = i_x.contents.value
-	window_size[1] = i_y.contents.value
-
-# loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
-# SDL_RenderPresent(renderer)
-
-if install_directory != config_directory and not (config_directory / "input.txt").is_file():
-	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
-	#logging.warning(install_directory)
-	#logging.warning(config_directory)
-	shutil.copy(install_directory / "templates" / "input.txt", config_directory)
-
-
-if snap_mode:
-	discord_allow = False
-
-
-musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
-
-# logging.info(arch)
-# -----------------------------------------------------------
-# Detect locale for translations
-
-try:
-	py_locale.setlocale(py_locale.LC_ALL, "")
-except Exception:
-	logging.exception("SET LOCALE ERROR")
-
-# ------------------------------------------------
-
-if system == "Windows":
-	os.environ["PYSDL2_DLL_PATH"] = str(install_directory / "lib")
-elif not msys and not macos:
-	try:
-		gi.require_version("Notify", "0.7")
-	except Exception:
-		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
-		gi.require_version("Notify", "0.8")
-	from gi.repository import Notify
-
-
-
 def no_padding() -> int:
 	"""This will remove all padding"""
 	return 0
-
-wayland = True
-if os.environ.get("SDL_VIDEODRIVER") != "wayland":
-	wayland = False
-	os.environ["GDK_BACKEND"] = "x11"
-
-
-# Setting various timers
-
-message_box_min_timer = Timer()
-cursor_blink_timer = Timer()
-animate_monitor_timer = Timer()
-min_render_timer = Timer()
-check_file_timer = Timer()
-vis_rate_timer = Timer()
-vis_decay_timer = Timer()
-scroll_timer = Timer()
-perf_timer = Timer()
-quick_d_timer = Timer()
-core_timer = Timer()
-sleep_timer = Timer()
-gallery_select_animate_timer = Timer()
-gallery_select_animate_timer.force_set(10)
-search_clear_timer = Timer()
-gall_pl_switch_timer = Timer()
-gall_pl_switch_timer.force_set(999)
-d_click_timer = Timer()
-d_click_timer.force_set(10)
-lyrics_check_timer = Timer()
-scroll_hide_timer = Timer(100)
-scroll_gallery_hide_timer = Timer(100)
-get_lfm_wait_timer = Timer(10)
-lyrics_fetch_timer = Timer(10)
-gallery_load_delay = Timer(10)
-queue_add_timer = Timer(100)
-toast_love_timer = Timer(100)
-toast_mode_timer = Timer(100)
-scrobble_warning_timer = Timer(1000)
-sync_file_timer = Timer(1000)
-sync_file_update_timer = Timer(1000)
-sync_get_device_click_timer = Timer(100)
-
-f_store = FunctionStore()
-
-after_scan = []
-
-search_string_cache = {}
-search_dia_string_cache = {}
-
-vis_update = False
-
-
-# GUI Variables -------------------------------------------------------------------------------------------
-
-# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
 
 class DConsole:
 	"""GUI console with logs"""
@@ -1038,190 +478,8 @@ class DConsole:
 		"""Toggle the GUI console with logs on and off"""
 		self.show ^= True
 
-console = DConsole()
-
-spot_cache_saved_albums = []
-
-resize_mode = False
-
-side_panel_text_align = 0
-
-album_mode = False
-spec_smoothing = True
-
-# gui.offset_extra = 0
-
-old_album_pos = -55
-
-album_dex = []
-album_artist_dict = {}
-row_len = 5
-last_row = 0
-album_v_gap = 66
-album_h_gap = 30
-album_v_slide_value = 50
-
-album_mode_art_size = int(200 * scale)
-
-time_last_save = 0
-
-b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
-
-volume_store = 50  # Used to save the previous volume when muted
-
-# row_alt = False
-
-to_get = 0  # Used to store temporary import count display
-to_got = 0
-
-editline = ""
-# gui.rsp = True
-quick_drag = False
-
-# Playlist Panel
-pl_view_offset = 0
-pl_rect = (2, 12, 10, 10)
-
-theme = 7
-scroll_enable = True
-scroll_timer = Timer()
-scroll_timer.set()
-scroll_opacity = 0
-break_enable = True
-
-source = None
-
-album_playlist_width = 430
-
-update_title = False
-
-playlist_hold_position = 0
-playlist_hold = False
-selection_stage = 0
-
-selected_in_playlist = -1
-
-shift_selection = []
-
-gen_codes: dict[int, str] = {}
-# Control Variables--------------------------------------------------------------------------
-
-mouse_down = False
-right_down = False
-click_location = [200, 200]
-last_click_location = [0, 0]
-mouse_position = [0, 0]
-mouse_up_position = [0, 0]
-
-k_input = True
-key_shift_down = False
-drag_mode = False
-side_drag = False
-clicked = False
-
-# Player Variables----------------------------------------------------------------------------
-
-format_colours = {  # These are the colours used for the label icon in UI 'track info box'
-	"MP3":   [255, 130, 80,  255],  # Burnt orange
-	"FLAC":  [156, 249, 79,  255],  # Bright lime green
-	"M4A":   [81,  220, 225, 255],  # Soft cyan
-	"AIFF":  [81,  220, 225, 255],  # Soft cyan
-	"OGG":   [244, 244, 78,  255],  # Light yellow
-	"OGA":   [244, 244, 78,  255],  # Light yellow
-	"WMA":   [213, 79,  247, 255],  # Magenta
-	"APE":   [247, 79,  79,  255],  # Deep pink
-	"TTA":   [94,  78,  244, 255],  # Purple
-	"OPUS":  [247, 79,  146, 255],  # Pink
-	"AAC":   [79,  247, 168, 255],  # Teal
-	"WV":    [229, 23,  18,  255],  # Deep red
-	"PLEX":  [229, 160, 13,  255],  # Orange-brown
-	"KOEL":  [111, 98,  190, 255],  # Lavender
-	"TAU":   [111, 98,  190, 255],  # Lavender
-	"SUB":   [235, 140, 20,  255],  # Golden yellow
-	"SPTY":  [30,  215, 96,  255],  # Bright green
-	"TIDAL": [0,   0,   0,   255],  # Black
-	"JELY":  [190, 100, 210, 255],  # Fuchsia
-	"XM":    [50,  50,  50,  255],  # Grey
-	"MOD":   [50,  50,  50,  255],  # Grey
-	"S3M":   [50,  50,  50,  255],  # Grey
-	"IT":    [50,  50,  50,  255],  # Grey
-	"MPTM":  [50,  50,  50,  255],  # Grey
-	"AY":    [237, 212, 255, 255],  # Pastel purple
-	"GBS":   [255, 165, 0,   255],  # Vibrant orange
-	"GYM":   [0,   191, 255, 255],  # Bright blue
-	"HES":   [176, 224, 230, 255],  # Light blue-green
-	"KSS":   [255, 255, 153, 255],  # Bright yellow
-	"NSF":   [255, 140, 0,   255],  # Deep orange
-	"NSFE":  [255, 140, 0,   255],  # Deep orange
-	"SAP":   [152, 255, 152, 255],  # Light green
-	"SPC":   [255, 128, 0,   255],  # Bright orange
-	"VGM":   [0,   128, 255, 255],  # Deep blue
-	"VGZ":   [0,   128, 255, 255],  # Deep blue
-}
-
-# These will be the extensions of files to be added when importing
-VID_Formats = {"mp4", "webm"}
-
-MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
-
-GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
-
-DA_Formats = {
-	"mp3", "wav", "opus", "flac", "ape", "aiff",
-	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
-} | MOD_Formats | GME_Formats
-
-Archive_Formats = {"zip"}
-
-if whicher("unrar"):
-	Archive_Formats.add("rar")
-
-if whicher("7z"):
-	Archive_Formats.add("7z")
-
-cargo = []
-
-# ---------------------------------------------------------------------
-# Player variables
-
-# pl_follow = False
-
-# List of encodings to check for with the fix mojibake function
-encodings = ["cp932", "utf-8", "big5hkscs", "gbk"]  # These seem to be the most common for Japanese
-
-track_box = False
-
-transcode_list: list[list[int]] = []
-transcode_state = ""
-
-taskbar_progress = True
-track_queue: list[int] = []
-
-playing_in_queue = 0
-draw_sep_hl = False
-
-# -------------------------------------------------------------------------------
-# Playlist Variables
-playlist_view_position = 0
-playlist_playing = -1
-
-loading_in_progress = False
-
-core_use = 0
-dl_use = 0
-
-random_mode = False
-repeat_mode = False
-
-
-
-
 def uid_gen() -> int:
 	return random.randrange(1, 100000000)
-
-
-notify_change = lambda: None
-
 
 def pl_gen(
 	title:        str = "Default",
@@ -1242,74 +500,15 @@ def pl_gen(
 
 	notify_change()
 
-#	return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
+	#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
 	return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False)
-
-multi_playlist: list[TauonPlaylist] = [pl_gen()]
-
 
 def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, album_stage: int = 0) -> TauonQueueItem:
 	# type; 0 is track, 1 is album
 	auto_stop = False
 
-#	return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
 	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
-
-
-default_playlist: list[int] = multi_playlist[0].playlist_ids
-playlist_active: int = 0
-
-quick_search_mode = False
-search_index = 0
-
-# ----------------------------------------
-# Playlist right click menu
-
-r_menu_index = 0
-r_menu_position = 0
-
-# Library and loader Variables--------------------------------------------------------
-master_library: dict[int, TrackClass] = {}
-
-cue_list = []
-
-LC_None = 0
-LC_Done = 1
-LC_Folder = 2
-LC_File = 3
-
-loaderCommand = LC_None
-loaderCommandReady = False
-
-master_count = 0
-
-load_orders = []
-
-volume = 75
-
-folder_image_offsets: dict[str, int] = {}
-db_version: float = 0.0
-latest_db_version: float = 69
-
-albums = []
-album_position = 0
-
-prefs = Prefs(
-	user_directory=user_directory,
-	music_directory=music_directory,
-	cache_directory=cache_directory,
-	macos=macos,
-	phone=phone,
-	left_window_control=left_window_control,
-	detect_macstyle=detect_macstyle,
-	gtk_settings=gtk_settings,
-	discord_allow=discord_allow,
-	flatpak_mode=flatpak_mode,
-	desktop=desktop,
-	window_opacity=window_opacity,
-	scale=scale,
-)
-
 
 def open_uri(uri:str) -> None:
 	logging.info("OPEN URI")
@@ -1333,7 +532,6 @@ def open_uri(uri:str) -> None:
 
 	load_orders.append(copy.deepcopy(load_order))
 	gui.update += 1
-
 
 class GuiVar:
 	"""Use to hold any variables for use in relation to UI"""
@@ -1759,15 +957,10 @@ class GuiVar:
 		# self.text_input_active = False
 		self.center_blur_pixel = (0, 0, 0)
 
-
-gui = GuiVar()
-
-
 def toast(text: str) -> None:
 	gui.mode_toast_text = text
 	toast_mode_timer.set()
 	gui.frame_callback_list.append(TestTimer(1.5))
-
 
 def set_artist_preview(path, artist, x, y):
 	m = min(round(500 * gui.scale), window_size[1] - (gui.panelY + gui.panelBY + 50 * gui.scale))
@@ -1781,7 +974,6 @@ def set_artist_preview(path, artist, x, y):
 		ay = window_size[1] - (gui.panelBY + ah + round(5 * gui.scale))
 	gui.preview_artist = artist
 	gui.preview_artist_location = (x + 15 * gui.scale, ay)
-
 
 def get_artist_preview(artist, x, y):
 	# show_message(_("Loading artist image..."))
@@ -1799,14 +991,12 @@ def get_artist_preview(artist, x, y):
 	gui.message_box = False
 	gui.preview_artist_loading = ""
 
-
 def set_drag_source():
 	gui.drag_source_position = tuple(click_location)
 	gui.drag_source_position_persist = tuple(click_location)
 
-
-# Functions for reading and setting play counts
 class StarStore:
+	"""Functions for reading and setting play counts"""
 	def __init__(self) -> None:
 		self.db = {}
 
@@ -1960,10 +1150,6 @@ class StarStore:
 				if cha not in self.db[key][1]:
 					self.db[key][1] += cha
 
-
-star_store = StarStore()
-
-
 class AlbumStarStore:
 
 	def __init__(self) -> None:
@@ -1990,10 +1176,6 @@ class AlbumStarStore:
 	def get_rating_artist_title(self, artist: str, album: str):
 		return self.db.get(artist + ":" + album, 0)
 
-
-album_star_store = AlbumStarStore()
-
-
 class Fonts:
 	"""Used to hold font sizes (I forget to use this)"""
 
@@ -2008,10 +1190,6 @@ class Fonts:
 
 		# if system == 'Windows':
 		#	 self.bottom_panel_time = 12  # The Arial bold font is too big so just leaving this as normal. (lazy)
-
-
-fonts = Fonts()
-
 
 class Input:
 	"""Used to keep track of button states (or should be)"""
@@ -2045,10 +1223,6 @@ class Input:
 	def m_key_previous(self) -> None:
 		self.media_key = "Previous"
 		gui.update += 1
-
-
-inp = Input()
-
 
 class KeyMap:
 
@@ -2114,10 +1288,6 @@ class KeyMap:
 
 		return False
 
-
-keymaps = KeyMap()
-
-
 def update_set():
 	"""This is used to scale columns when windows is resized or items added/removed"""
 	wid = gui.plw - round(16 * gui.scale)
@@ -2136,7 +1306,6 @@ def update_set():
 	for i in range(len(gui.pl_st)):
 		if gui.pl_st[i][2] is False and total:
 			gui.pl_st[i][1] = int(round((gui.pl_st[i][1] / total) * wid))  # + 1
-
 
 def auto_size_columns():
 	fixed_n = 0
@@ -2199,7 +1368,6 @@ def auto_size_columns():
 
 	gui.pl_update += 1
 	update_set()
-
 
 class ColoursClass:
 	"""Used to store colour values for UI elements
@@ -2470,14 +1638,8 @@ class ColoursClass:
 
 		# view_box.off_colour = self.grey(200)
 
-
-colours = ColoursClass()
-colours.post_config()
-
-
 def set_colour(colour):
 	SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
-
 
 def get_themes(deco: bool = False):
 	themes = []  # full, name
@@ -2507,19 +1669,6 @@ def get_themes(deco: bool = False):
 	if deco:
 		return decos
 	return themes
-
-
-# This is legacy. New settings are added straight to the save list (need to overhaul)
-view_prefs = {
-	"split-line": True,
-	"update-title": False,
-	"star-lines": False,
-	"side-panel": True,
-	"dim-art": False,
-	"pl-follow": False,
-	"scroll-enable": True,
-}
-
 
 class TrackClass:
 	"""This is the fundamental object/data structure of a track"""
@@ -2595,14 +1744,6 @@ class LoadClass:
 		self.play:              bool = False
 		self.force_scan:        bool = False
 
-# url_saves = []
-rename_files_previous = ""
-rename_folder_previous = ""
-p_force_queue: list[TauonQueueItem] = []
-
-reload_state = None
-
-
 def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
 	gui.message_box = True
 	gui.message_text = line1
@@ -2623,101 +1764,6 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 			logging.error(f"Unknown mode '{mode}' for message: " + line1 + line2 + line3)
 	gui.update = 1
 
-
-# -----------------------------------------------------
-# STATE LOADING
-# Loading of program data from previous run
-gbc.disable()
-ggc = 2
-
-star_path1 = user_directory / "star.p"
-star_path2 = user_directory / "star.p.backup"
-star_size1 = 0
-star_size2 = 0
-to_load = star_path1
-if star_path1.is_file():
-	star_size1 = star_path1.stat().st_size
-if star_path2.is_file():
-	star_size2 = star_path2.stat().st_size
-if star_size2 > star_size1:
-	logging.warning("Loading backup star.p as it was bigger than regular file!")
-	to_load = star_path2
-if star_size1 == 0 and star_size2 == 0:
-	logging.warning("Star database file is missing, first run? Will create one anew!")
-else:
-	try:
-		with to_load.open("rb") as file:
-			star_store.db = pickle.load(file)
-	except Exception:
-		logging.exception("Unknown error loading star.p file")
-
-
-album_star_path = user_directory / "album-star.p"
-if album_star_path.is_file():
-	try:
-		with album_star_path.open("rb") as file:
-			album_star_store.db = pickle.load(file)
-	except Exception:
-		logging.exception("Unknown error loading album-star.p file")
-else:
-	logging.warning("Album star database file is missing, first run? Will create one anew!")
-
-if (user_directory / "lyrics_substitutions.json").is_file():
-	try:
-		with (user_directory / "lyrics_substitutions.json").open() as f:
-			prefs.lyrics_subs = json.load(f)
-	except FileNotFoundError:
-		logging.error("No existing lyrics_substitutions.json file")
-	except Exception:
-		logging.exception("Unknown error loading lyrics_substitutions.json")
-
-perf_timer.set()
-
-radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
-
-primary_stations: list[dict[str, str]] = []
-station = {
-	"title": "SomaFM Groove Salad",
-	"stream_url": "https://ice3.somafm.com/groovesalad-128-mp3",
-	"country": "USA",
-	"website_url": "https://somafm.com/groovesalad",
-	"icon": "https://somafm.com/logos/120/groovesalad120.png",
-}
-primary_stations.append(station)
-station = {
-	"title": "SomaFM PopTron",
-	"stream_url": "https://ice3.somafm.com/poptron-128-mp3",
-	"country": "USA",
-	"website_url": "https://somafm.com/poptron/",
-	"icon": "https://somafm.com/logos/120/poptron120.jpg",
-}
-primary_stations.append(station)
-station = {
-	"title": "SomaFM Vaporwaves",
-	"stream_url": "https://ice4.somafm.com/vaporwaves-128-mp3",
-	"country": "USA",
-	"website_url": "https://somafm.com/vaporwaves",
-	"icon": "https://somafm.com/img3/vaporwaves400.png",
-}
-primary_stations.append(station)
-
-station = {
-	"title": "DKFM Shoegaze Radio",
-	"stream_url": "https://kathy.torontocast.com:2005/stream",
-	"country": "Canada",
-	"website_url": "https://decayfm.com",
-	"icon": "https://cdn-profiles.tunein.com/s193842/images/logod.png",
-}
-primary_stations.append(station)
-
-for item in primary_stations:
-	radio_playlists[0]["items"].append(item)
-
-radio_playlist_viewing = 0
-
-pump = True
-
-
 def pumper():
 	if macos:
 		return
@@ -2725,452 +1771,17 @@ def pumper():
 		time.sleep(0.005)
 		SDL_PumpEvents()
 
-
-shoot_pump = threading.Thread(target=pumper)
-shoot_pump.daemon = True
-shoot_pump.start()
-
-state_path1 = user_directory / "state.p"
-state_path2 = user_directory / "state.p.backup"
-for t in range(2):
-	#	 os.path.getsize(user_directory / "state.p") < 100
-	try:
-		if t == 0:
-			if not state_path1.is_file():
-				continue
-			with state_path1.open("rb") as file:
-				save = pickle.load(file)
-		if t == 1:
-			if not state_path2.is_file():
-				logging.warning("State database file is missing, first run? Will create one anew!")
-				break
-			logging.warning("Loading backup state.p!")
-			with state_path2.open("rb") as file:
-				save = pickle.load(file)
-
-		# def tt():
-		#	 while True:
-		#		 logging.info(state_file.tell())
-		#		 time.sleep(0.01)
-		# shooter(tt)
-
-		db_version = save[17]
-		if db_version != latest_db_version:
-			if db_version > latest_db_version:
-				logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!\nAre you running an out of date Tauon version using Configuration directory from a newer one?")
-				sys.exit(42)
-			logging.warning(f"Loaded older DB version: {db_version}")
-		if save[63] is not None:
-			prefs.ui_scale = save[63]
-			# prefs.ui_scale = 1.3
-			# gui.__init__()
-
-		if save[0] is not None:
-			master_library = save[0]
-		master_count = save[1]
-		playlist_playing = save[2]
-		playlist_active = save[3]
-		playlist_view_position = save[4]
-		if save[5] is not None:
-			if db_version > 68:
-				multi_playlist = []
-				tauonplaylist_jar = save[5]
-				for d in tauonplaylist_jar:
-					nt = TauonPlaylist(**d)
-					multi_playlist.append(nt)
-			else:
-				multi_playlist = save[5]
-		volume = save[6]
-		track_queue = save[7]
-		playing_in_queue = save[8]
-		default_playlist = save[9]
-		# playlist_playing = save[10]
-		# cue_list = save[11]
-		# radio_field_text = save[12]
-		theme = save[13]
-		folder_image_offsets = save[14]
-		# lfm_username = save[15]
-		# lfm_hash = save[16]
-		view_prefs = save[18]
-		# window_size = save[19]
-		gui.save_size = copy.copy(save[19])
-		gui.rspw = save[20]
-		# savetime = save[21]
-		gui.vis_want = save[22]
-		selected_in_playlist = save[23]
-		if save[24] is not None:
-			album_mode_art_size = save[24]
-		if save[25] is not None:
-			draw_border = save[25]
-		if save[26] is not None:
-			prefs.enable_web = save[26]
-		if save[27] is not None:
-			prefs.allow_remote = save[27]
-		if save[28] is not None:
-			prefs.expose_web = save[28]
-		if save[29] is not None:
-			prefs.enable_transcode = save[29]
-		if save[30] is not None:
-			prefs.show_rym = save[30]
-		# if save[31] is not None:
-		#	 combo_mode_art_size = save[31]
-		if save[32] is not None:
-			gui.maximized = save[32]
-		if save[33] is not None:
-			prefs.prefer_bottom_title = save[33]
-		if save[34] is not None:
-			gui.display_time_mode = save[34]
-		# if save[35] is not None:
-		#	 prefs.transcode_mode = save[35]
-		if save[36] is not None:
-			prefs.transcode_codec = save[36]
-		if save[37] is not None:
-			prefs.transcode_bitrate = save[37]
-		# if save[38] is not None:
-		#	 prefs.line_style = save[38]
-		# if save[39] is not None:
-		#	 prefs.cache_gallery = save[39]
-		if save[40] is not None:
-			prefs.playlist_font_size = save[40]
-		if save[41] is not None:
-			prefs.use_title = save[41]
-		if save[42] is not None:
-			gui.pl_st = save[42]
-		# if save[43] is not None:
-		#	 gui.set_mode = save[43]
-		#	 gui.set_bar = gui.set_mode
-		if save[45] is not None:
-			prefs.playlist_row_height = save[45]
-		if save[46] is not None:
-			prefs.show_wiki = save[46]
-		if save[47] is not None:
-			prefs.auto_extract = save[47]
-		if save[48] is not None:
-			prefs.colour_from_image = save[48]
-		if save[49] is not None:
-			gui.set_bar = save[49]
-		if save[50] is not None:
-			gui.gallery_show_text = save[50]
-		if save[51] is not None:
-			gui.bb_show_art = save[51]
-		# if save[52] is not None:
-		#	 gui.show_stars = save[52]
-		if save[53] is not None:
-			prefs.auto_lfm = save[53]
-		if save[54] is not None:
-			prefs.scrobble_mark = save[54]
-		if save[55] is not None:
-			prefs.replay_gain = save[55]
-		# if save[56] is not None:
-		#	 prefs.radio_page_lyrics = save[56]
-		if save[57] is not None:
-			prefs.show_gimage = save[57]
-		if save[58] is not None:
-			prefs.end_setting = save[58]
-		if save[59] is not None:
-			prefs.show_gen = save[59]
-		# if save[60] is not None:
-		#	 url_saves = save[60]
-		if save[61] is not None:
-			prefs.auto_del_zip = save[61]
-		if save[62] is not None:
-			gui.level_meter_colour_mode = save[62]
-		if save[64] is not None:
-			prefs.show_lyrics_side = save[64]
-		# if save[65] is not None:
-		#	 prefs.last_device = save[65]
-		if save[66] is not None:
-			gui.restart_album_mode = save[66]
-		if save[67] is not None:
-			album_playlist_width = save[67]
-		if save[68] is not None:
-			prefs.transcode_opus_as = save[68]
-		if save[69] is not None:
-			gui.star_mode = save[69]
-		if save[70] is not None:
-			gui.rsp = save[70]
-		if save[71] is not None:
-			gui.lsp = save[71]
-		if save[72] is not None:
-			gui.rspw = save[72]
-		if save[73] is not None:
-			gui.pref_gallery_w = save[73]
-		if save[74] is not None:
-			gui.pref_rspw = save[74]
-		if save[75] is not None:
-			gui.show_hearts = save[75]
-		if save[76] is not None:
-			prefs.monitor_downloads = save[76]
-		if save[77] is not None:
-			gui.artist_info_panel = save[77]
-		if save[78] is not None:
-			prefs.extract_to_music = save[78]
-		if save[79] is not None:
-			prefs.enable_lb = save[79]
-		# if save[80] is not None:
-		#	 prefs.lb_token = save[80]
-		#	 if prefs.lb_token is None:
-		#		 prefs.lb_token = ""
-		if save[81] is not None:
-			rename_files_previous = save[81]
-		if save[82] is not None:
-			rename_folder_previous = save[82]
-		if save[83] is not None:
-			prefs.use_jump_crossfade = save[83]
-		if save[84] is not None:
-			prefs.use_transition_crossfade = save[84]
-		if save[85] is not None:
-			prefs.show_notifications = save[85]
-		# if save[86] is not None:
-		#	 prefs.true_shuffle = save[86]
-		if save[87] is not None:
-			gui.remember_library_mode = save[87]
-		# if save[88] is not None:
-		#	 prefs.show_queue = save[88]
-		# if save[89] is not None:
-		#	 prefs.show_transfer = save[89]
-		if save[90] is not None:
-			if db_version > 68:
-				tauonqueueitem_jar = save[90]
-				for d in tauonqueueitem_jar:
-					nt = TauonQueueItem(**d)
-					p_force_queue.append(nt)
-			else:
-				p_force_queue = save[90]
-		if save[91] is not None:
-			prefs.use_pause_fade = save[91]
-		if save[92] is not None:
-			prefs.append_total_time = save[92]
-		if save[93] is not None:
-			prefs.backend = save[93]  # moved to config file
-		if save[94] is not None:
-			prefs.album_shuffle_mode = save[94]
-		if save[95] is not None:
-			prefs.album_repeat_mode = save[95]
-		# if save[96] is not None:
-		#	 prefs.finish_current = save[96]
-		if save[97] is not None:
-			reload_state = save[97]
-		# if save[98] is not None:
-		#	 prefs.reload_play_state = save[98]
-		if save[99] is not None:
-			prefs.last_fm_token = save[99]
-		if save[100] is not None:
-			prefs.last_fm_username = save[100]
-		# if save[101] is not None:
-		#	 prefs.use_card_style = save[101]
-		# if save[102] is not None:
-		#	 prefs.auto_lyrics = save[102]
-		if save[103] is not None:
-			prefs.auto_lyrics_checked = save[103]
-		if save[104] is not None:
-			prefs.show_side_art = save[104]
-		if save[105] is not None:
-			prefs.window_opacity = save[105]
-		if save[106] is not None:
-			prefs.gallery_single_click = save[106]
-		if save[107] is not None:
-			prefs.tabs_on_top = save[107]
-		if save[108] is not None:
-			prefs.showcase_vis = save[108]
-		if save[109] is not None:
-			prefs.spec2_colour_mode = save[109]
-		# if save[110] is not None:
-		#	 prefs.device_buffer = save[110]
-		if save[111] is not None:
-			prefs.use_eq = save[111]
-		if save[112] is not None:
-			prefs.eq = save[112]
-		if save[113] is not None:
-			prefs.bio_large = save[113]
-		if save[114] is not None:
-			prefs.discord_show = save[114]
-		if save[115] is not None:
-			prefs.min_to_tray = save[115]
-		if save[116] is not None:
-			prefs.guitar_chords = save[116]
-		if save[117] is not None:
-			prefs.playback_follow_cursor = save[117]
-		if save[118] is not None:
-			prefs.art_bg = save[118]
-		if save[119] is not None:
-			prefs.random_mode = save[119]
-		if save[120] is not None:
-			prefs.repeat_mode = save[120]
-		if save[121] is not None:
-			prefs.art_bg_stronger = save[121]
-		if save[122] is not None:
-			prefs.art_bg_always_blur = save[122]
-		if save[123] is not None:
-			prefs.failed_artists = save[123]
-		if save[124] is not None:
-			prefs.artist_list = save[124]
-		if save[125] is not None:
-			prefs.auto_sort = save[125]
-		if save[126] is not None:
-			prefs.lyrics_enables = save[126]
-		if save[127] is not None:
-			prefs.fanart_notify = save[127]
-		if save[128] is not None:
-			prefs.bg_showcase_only = save[128]
-		if save[129] is not None:
-			prefs.discogs_pat = save[129]
-		if save[130] is not None:
-			prefs.mini_mode_mode = save[130]
-		if save[131] is not None:
-			after_scan = save[131]
-		if save[132] is not None:
-			gui.gallery_positions = save[132]
-		if save[133] is not None:
-			prefs.chart_bg = save[133]
-		if save[134] is not None:
-			prefs.left_panel_mode = save[134]
-		if save[135] is not None:
-			gui.last_left_panel_mode = save[135]
-		# if save[136] is not None:
-		#	 prefs.gst_device = save[136]
-		if save[137] is not None:
-			search_string_cache = save[137]
-		if save[138] is not None:
-			search_dia_string_cache = save[138]
-		if save[139] is not None:
-			gen_codes = save[139]
-		if save[140] is not None:
-			gui.show_ratings = save[140]
-		if save[141] is not None:
-			gui.show_album_ratings = save[141]
-		if save[142] is not None:
-			prefs.radio_urls = save[142]
-		if save[143] is not None:
-			gui.restore_showcase_view = save[143]
-		if save[144] is not None:
-			gui.saved_prime_tab = save[144]
-		if save[145] is not None:
-			gui.saved_prime_direction = save[145]
-		if save[146] is not None:
-			prefs.sync_playlist = save[146]
-		if save[147] is not None:
-			prefs.spot_client = save[147]
-		if save[148] is not None:
-			prefs.spot_secret = save[148]
-		if save[149] is not None:
-			prefs.show_band = save[149]
-		if save[150] is not None:
-			prefs.download_playlist = save[150]
-		if save[151] is not None:
-			spot_cache_saved_albums = save[151]
-		if save[152] is not None:
-			prefs.auto_rec = save[152]
-		if save[153] is not None:
-			prefs.spotify_token = save[153]
-		if save[154] is not None:
-			prefs.use_libre_fm = save[154]
-		if save[155] is not None:
-			prefs.old_playlist_box_position = save[155]
-		if save[156] is not None:
-			prefs.artist_list_sort_mode = save[156]
-		if save[157] is not None:
-			prefs.phazor_device_selected = save[157]
-		if save[158] is not None:
-			prefs.failed_background_artists = save[158]
-		if save[159] is not None:
-			prefs.bg_flips = save[159]
-		if save[160] is not None:
-			prefs.tray_show_title = save[160]
-		if save[161] is not None:
-			prefs.artist_list_style = save[161]
-		if save[162] is not None:
-			trackclass_jar = save[162]
-			for d in trackclass_jar:
-				nt = TrackClass()
-				nt.__dict__.update(d)
-				master_library[d["index"]] = nt
-		if save[163] is not None:
-			prefs.premium = save[163]
-		if save[164] is not None:
-			gui.restore_radio_view = save[164]
-		if save[165] is not None:
-			radio_playlists = save[165]
-		if save[166] is not None:
-			radio_playlist_viewing = save[166]
-		if save[167] is not None:
-			prefs.radio_thumb_bans = save[167]
-		if save[168] is not None:
-			prefs.playlist_exports = save[168]
-		if save[169] is not None:
-			prefs.show_chromecast = save[169]
-		if save[170] is not None:
-			prefs.cache_list = save[170]
-		if save[171] is not None:
-			prefs.shuffle_lock = save[171]
-		if save[172] is not None:
-			prefs.album_shuffle_lock_mode = save[172]
-		if save[173] is not None:
-			gui.was_radio = save[173]
-		if save[174] is not None:
-			prefs.spot_username = save[174]
-		# if save[175] is not None:
-		# 	prefs.spot_password = save[175]
-		if save[176] is not None:
-			prefs.artist_list_threshold = save[176]
-		if save[177] is not None:
-			prefs.tray_theme = save[177]
-		if save[178] is not None:
-			prefs.row_title_format = save[178]
-		if save[179] is not None:
-			prefs.row_title_genre = save[179]
-		if save[180] is not None:
-			prefs.row_title_separator_type = save[180]
-		if save[181] is not None:
-			prefs.replay_preamp = save[181]
-		if save[182] is not None:
-			prefs.gallery_combine_disc = save[182]
-
-		del save
-		break
-
-	except IndexError:
-		logging.exception("Index error")
-		break
-	except Exception:
-		logging.exception("Failed to load save file")
-
-core_timer.set()
-logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
-
-perf_timer.set()
-keys = set(master_library.keys())
-for pl in multi_playlist:
-	if db_version > 68 or db_version == 0:
-		keys -= set(pl.playlist_ids)
-	else:
-		keys -= set(pl[2])
-if len(keys) > 5000:
-	gui.suggest_clean_db = True
-# logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
-
-pump = False
-shoot_pump.join()
-
-# temporary
-if window_size is None:
-	window_size = window_default_size
-	gui.rspw = 200
-
-
 def track_number_process(line: str) -> str:
 	line = str(line).split("/", 1)[0].lstrip("0")
 	if prefs.dd_index and len(line) == 1:
 		return "0" + line
 	return line
 
-
 def advance_theme() -> None:
 	global theme
 
 	theme += 1
 	gui.reload_theme = True
-
 
 def get_theme_number(name: str) -> int:
 	if name == "Mindaro":
@@ -3181,7 +1792,6 @@ def get_theme_number(name: str) -> int:
 			return i + 1
 	return 0
 
-
 def get_theme_name(number: int) -> str:
 	if number == 0:
 		return "Mindaro"
@@ -3191,52 +1801,6 @@ def get_theme_name(number: int) -> str:
 	if len(themes) > number:
 		return themes[number][1]
 	return ""
-
-# Run upgrades if we're behind the current DB standard
-if db_version > 0 and db_version < latest_db_version:
-	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
-	try:
-		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
-			db_version=db_version,
-			master_library=master_library,
-			install_mode=install_mode,
-			multi_playlist=multi_playlist,
-			star_store=star_store,
-			install_directory=install_directory,
-			a_cache_dir=a_cache_dir,
-			cache_directory=cache_directory,
-			config_directory=config_directory,
-			user_directory=user_directory,
-			gui=gui,
-			gen_codes=gen_codes,
-			prefs=prefs,
-			radio_playlists=radio_playlists,
-			theme=theme,
-			p_force_queue=p_force_queue,
-		)
-	except ValueError:
-		logging.exception("That should not happen")
-	except Exception:
-		logging.exception("Unknown error running database migration!")
-
-playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
-
-shoot = threading.Thread(target=keymaps.load)
-shoot.daemon = True
-shoot.start()
-
-# Loading Config -----------------
-
-download_directories: list[str] = []
-
-if download_directory.is_dir():
-	download_directories.append(str(download_directory))
-
-if music_directory is not None and music_directory.is_dir():
-	download_directories.append(str(music_directory))
-
-cf = Config()
-
 
 def save_prefs():
 	cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
@@ -3404,7 +1968,6 @@ def save_prefs():
 		cf.dump(str(config_directory / "tauon.conf"))
 	else:
 		logging.error("Missing config directory")
-
 
 def load_prefs():
 	cf.reset()
@@ -3836,79 +2399,6 @@ def load_prefs():
 		"string", "chart-font", prefs.chart_font,
 		"Format is fontname + size. Default is Monospace 10")
 
-
-load_prefs()
-save_prefs()
-
-# Temporary
-if 0 < db_version <= 34:
-	prefs.theme_name = get_theme_name(theme)
-if 0 < db_version <= 66:
-	prefs.device_buffer = 80
-if 0 < db_version <= 53:
-	logging.info("Resetting fonts to defaults")
-	prefs.linux_font = "Noto Sans"
-	prefs.linux_font_semibold = "Noto Sans Medium"
-	prefs.linux_font_bold = "Noto Sans Bold"
-	save_prefs()
-
-# Auto detect lang
-lang: list[str] | None = None
-if prefs.ui_lang != "auto" or prefs.ui_lang == "":
-	# Force set lang
-	lang = [prefs.ui_lang]
-
-f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
-if f:
-	translation = gettext.translation("tauon", localedir=str(locale_directory), languages=lang)
-	translation.install()
-	builtins._ = translation.gettext
-
-	logging.info(f"Translation file for '{lang}' loaded")
-elif lang:
-	logging.error(f"No translation file available for '{lang}'")
-
-# ----
-
-sss = SDL_SysWMinfo()
-SDL_GetWindowWMInfo(t_window, sss)
-
-if prefs.use_gamepad:
-	SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
-
-smtc = False
-
-if msys and win_ver >= 10:
-
-	#logging.info(sss.info.win.window)
-	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
-	if SMTC_path.exists():
-		try:
-			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
-
-			def SMTC_button_callback(button: int) -> None:
-				logging.debug(f"SMTC sent key ID: {button}")
-				if button == 1:
-					inp.media_key = "Play"
-				if button == 2:
-					inp.media_key = "Pause"
-				if button == 3:
-					inp.media_key = "Next"
-				if button == 4:
-					inp.media_key = "Previous"
-				if button == 5:
-					inp.media_key = "Stop"
-				gui.update += 1
-				tauon.wake()
-
-			close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
-			smtc = sm.init(close_callback) == 0
-		except Exception:
-			logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
-	else:
-		logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
-
-
 def auto_scale() -> None:
 
 	old = prefs.scale_want
@@ -3945,9 +2435,6 @@ def auto_scale() -> None:
 		logging.info("Window overscale!")
 		show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
 		prefs.scale_want = 1.0
-
-auto_scale()
-
 
 def scale_assets(scale_want: int, force: bool = False) -> None:
 	global scaled_asset_directory
@@ -3994,43 +2481,11 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 		global album_mode_art_size
 		album_mode_art_size = int(album_mode_art_size * diff_ratio)
 
-
-scale_assets(scale_want=prefs.scale_want)
-
-try:
-	#star_lines        = view_prefs['star-lines']
-	update_title      = view_prefs["update-title"]
-	prefs.prefer_side = view_prefs["side-panel"]
-	prefs.dim_art     = False  # view_prefs['dim-art']
-	#gui.turbo         = view_prefs['level-meter']
-	#pl_follow         = view_prefs['pl-follow']
-	scroll_enable     = view_prefs["scroll-enable"]
-	if "break-enable" in view_prefs:
-		break_enable    = view_prefs["break-enable"]
-	else:
-		logging.warning("break-enable not found in view_prefs[] when trying to load settings! First run?")
-	#dd_index          = view_prefs['dd-index']
-	#custom_line_mode  = view_prefs['custom-line']
-	#thick_lines       = view_prefs['thick-lines']
-	if "append-date" in view_prefs:
-		prefs.append_date = view_prefs["append-date"]
-	else:
-		logging.warning("append-date not found in view_prefs[] when trying to load settings! First run?")
-except KeyError:
-	logging.exception("Failed to load settings - pref not found!")
-except Exception:
-	logging.exception("Failed to load settings!")
-
-if prefs.prefer_side is False:
-	gui.rsp = False
-
-
 def get_global_mouse():
 	i_y = pointer(c_int(0))
 	i_x = pointer(c_int(0))
 	SDL_GetGlobalMouseState(i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
-
 
 def get_window_position():
 	i_y = pointer(c_int(0))
@@ -4038,29 +2493,9 @@ def get_window_position():
 	SDL_GetWindowPosition(t_window, i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
 
-
-# Access functions from libopenmpt for scanning tracker files
 class MOD(Structure):
+	"""Access functions from libopenmpt for scanning tracker files"""
 	_fields_ = [("ctl", c_char_p), ("value", c_char_p)]
-
-
-mpt = None
-try:
-	p = ctypes.util.find_library("libopenmpt")
-	if p:
-		mpt = ctypes.cdll.LoadLibrary(p)
-	elif msys:
-		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-	else:
-		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
-
-	mpt.openmpt_module_create_from_memory.restype = c_void_p
-	mpt.openmpt_module_get_metadata.restype = c_char_p
-	mpt.openmpt_module_get_duration_seconds.restype = c_double
-except Exception:
-	logging.exception("Failed to load libopenmpt!")
-
-
 
 class GMETrackInfo(Structure):
 	_fields_ = [
@@ -4097,27 +2532,6 @@ class GMETrackInfo(Structure):
 		("s14", c_char_p),
 		("s15", c_char_p),
 	]
-
-
-gme = None
-p = None
-try:
-	p = ctypes.util.find_library("libgme")
-	if p:
-		gme = ctypes.cdll.LoadLibrary(p)
-	elif msys:
-		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
-	else:
-		gme = ctypes.cdll.LoadLibrary("libgme.so")
-
-	gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
-	gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
-	gme.gme_track_info.restype = ctypes.c_char_p
-	gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
-	gme.gme_open_file.restype = ctypes.c_char_p
-
-except Exception:
-	logging.exception("Cannot find libgme")
 
 def use_id3(tags: ID3, nt: TrackClass):
 	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
@@ -4250,7 +2664,6 @@ def use_id3(tags: ID3, nt: TrackClass):
 			if item.desc == "FMPS_RATING":
 				nt.misc["FMPS_Rating"] = float(item.text[0])
 
-
 def scan_ffprobe(nt: TrackClass):
 	startupinfo = None
 	if system == "Windows" or msys:
@@ -4298,8 +2711,6 @@ def scan_ffprobe(nt: TrackClass):
 		nt.track_number = str(result.stdout.decode())
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a track")
-
-
 
 def tag_scan(nt: TrackClass) -> TrackClass | None:
 	"""This function takes a track object and scans metadata for it. (Filepath needs to be set)"""
@@ -4835,7 +3246,7 @@ class PlayerCtl:
 		self.gst_devices = []  # Display names
 		self.gst_outputs = {}  # Display name : (sink, device)
 
-#		TODO(Martin) : Fix this by moving the class to root of the module
+		#TODO(Martin) : Fix this by moving the class to root of the module
 		self.mpris: Gnome.main.MPRIS | None = None
 		self.tray_update = None
 		self.eq = [0] * 2  # not used
@@ -6541,11 +4952,6 @@ class PlayerCtl:
 			value.found = True
 		gui.pl_update += 1
 
-pctl = PlayerCtl()
-
-notify_change = pctl.notify_change
-
-
 def auto_name_pl(target_pl: int) -> None:
 	if not pctl.multi_playlist[target_pl].playlist_ids:
 		return
@@ -6584,10 +4990,8 @@ def auto_name_pl(target_pl: int) -> None:
 
 	pctl.multi_playlist[target_pl].title = nt
 
-
 def get_object(index: int) -> TrackClass:
 	return pctl.master_library[index]
-
 
 def update_title_do() -> None:
 	if pctl.playing_state > 0:
@@ -6602,7 +5006,6 @@ def update_title_do() -> None:
 		line = line.encode("utf-8")
 		SDL_SetWindowTitle(t_window, line)
 
-
 def open_encode_out() -> None:
 	if not prefs.encoder_output.exists():
 		prefs.encoder_output.mkdir()
@@ -6615,39 +5018,8 @@ def open_encode_out() -> None:
 		else:
 			subprocess.Popen(["xdg-open", prefs.encoder_output])
 
-
 def g_open_encode_out(a, b, c) -> None:
 	open_encode_out()
-
-
-
-if system == "Linux" and not macos and not msys:
-
-	try:
-		Notify.init("Tauon Music Box")
-		g_tc_notify = Notify.Notification.new(
-			"Tauon Music Box",
-			"Transcoding has finished.")
-		value = GLib.Variant("s", t_id)
-		g_tc_notify.set_hint("desktop-entry", value)
-
-		g_tc_notify.add_action(
-			"action_click",
-			"Open Output Folder",
-			g_open_encode_out,
-			None,
-		)
-
-		de_notify_support = True
-
-	except Exception:
-		logging.exception("Failed init notifications")
-
-	if de_notify_support:
-		song_notification = Notify.Notification.new("Next track notification")
-		value = GLib.Variant("s", t_id)
-		song_notification.set_hint("desktop-entry", value)
-
 
 def notify_song_fire(notification, delay, id) -> None:
 	time.sleep(delay)
@@ -6658,7 +5030,6 @@ def notify_song_fire(notification, delay, id) -> None:
 	time.sleep(8)
 	if id == gui.notify_main_id:
 		notification.close()
-
 
 def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 	if not de_notify_support:
@@ -6711,8 +5082,6 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
-
-# Last.FM -----------------------------------------------------------------
 class LastFMapi:
 	API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
 	connected = False
@@ -7250,7 +5619,6 @@ class LastFMapi:
 			pctl.b_time -= 5000
 			return 1
 
-
 def get_backend_time(path):
 	pctl.time_to_get = path
 
@@ -7261,10 +5629,6 @@ def get_backend_time(path):
 		time.sleep(0.005)
 
 	return pctl.time_to_get
-
-
-lastfm = LastFMapi()
-
 
 class ListenBrainz:
 
@@ -7412,10 +5776,6 @@ class ListenBrainz:
 		save_prefs()
 		self.enable = False
 
-
-lb = ListenBrainz()
-
-
 def get_love(track_object: TrackClass) -> bool:
 	star = star_store.full_get(track_object.index)
 	if star is None:
@@ -7424,7 +5784,6 @@ def get_love(track_object: TrackClass) -> bool:
 	if "L" in star[1]:
 		return True
 	return False
-
 
 def get_love_index(index: int) -> bool:
 	star = star_store.full_get(index)
@@ -7529,7 +5888,6 @@ def love(set=True, track_id=None, no_delay=False, notify=False, sync=True):
 	if sync and pctl.mpris is not None:
 		pctl.mpris.update(force=True)
 
-
 def maloja_get_scrobble_counts():
 	if lastfm.scanning_scrobbles is True or not prefs.maloja_url:
 		return
@@ -7589,7 +5947,6 @@ def maloja_get_scrobble_counts():
 	lastfm.scanning_scrobbles = False
 	tauon.bg_save()
 
-
 def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> bool | None:
 	url = prefs.maloja_url
 
@@ -7624,7 +5981,6 @@ def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> boo
 		show_message(_("There was an error submitting data to Maloja server"), mode="warning")
 		return False
 	return True
-
 
 class LastScrob:
 
@@ -7770,12 +6126,6 @@ class LastScrob:
 			if prefs.maloja_url and prefs.maloja_enable:
 				self.queue.append((track_object, int(time.time()), "maloja"))
 
-
-lfm_scrobbler = LastScrob()
-
-QuickThumbnail.renderer = renderer
-
-
 class Strings:
 
 	def __init__(self):
@@ -7808,21 +6158,14 @@ class Strings:
 		self.menu_previous = _("Previous Track")
 		self.menu_quit = _("Quit")
 
-
-
-strings = Strings()
-
-
 def id_to_pl(id: int):
 	for i, item in enumerate(pctl.multi_playlist):
 		if item.uuid_int == id:
 			return i
 	return None
 
-
 def pl_to_id(pl: int) -> int:
 	return pctl.multi_playlist[pl].uuid_int
-
 
 class Chunker:
 
@@ -7885,14 +6228,12 @@ class MenuItem:
 		self.sub_menu_number = sub_menu_number
 		self.sub_menu_width = sub_menu_width
 
-
 def encode_track_name(track_object: TrackClass) -> str:
 	if track_object.is_cue or not track_object.filename:
 		out_line = str(track_object.track_number) + ". "
 		out_line += track_object.artist + " - " + track_object.title
 		return filename_safe(out_line)
 	return os.path.splitext(track_object.filename)[0]
-
 
 def encode_folder_name(track_object: TrackClass) -> str:
 	folder_name = track_object.artist + " - " + track_object.album
@@ -8707,7 +7048,7 @@ class Tauon:
 		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
 
-#		TODO(Martin) : Fix this by moving the class to root of the module
+		#TODO(Martin) : Fix this by moving the class to root of the module
 		self.cachement: player4.Cachement | None = None
 		self.dummy_event: SDL_Event = SDL_Event()
 		self.translate = _
@@ -8770,7 +7111,7 @@ class Tauon:
 		self.remote_limited = True
 		self.enable_librespot = shutil.which("librespot")
 
-#		TODO(Martin) : Fix this by moving the class to root of the module
+		#TODO(Martin) : Fix this by moving the class to root of the module
 		self.spotc: player4.LibreSpot | None = None
 		self.librespot_p = None
 		self.MenuItem = MenuItem
@@ -8923,36 +7264,9 @@ class Tauon:
 	def wake(self) -> None:
 		SDL_PushEvent(ctypes.byref(self.dummy_event))
 
-
-tauon = Tauon()
-
 def signal_handler(signum, frame):
 	signal.signal(signum, signal.SIG_IGN) # ignore additional signals
 	tauon.exit(reason="SIGINT recieved")
-
-signal.signal(signal.SIGINT, signal_handler)
-
-deco = Deco(tauon)
-deco.get_themes = get_themes
-deco.renderer = renderer
-
-if prefs.backend != 4:
-	prefs.backend = 4
-
-chrome = None
-
-try:
-	from tauon.t_modules.t_chrome import Chrome
-	chrome = Chrome(tauon)
-except ModuleNotFoundError as e:
-	logging.debug(f"pychromecast import error: {e}")
-	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
-finally:
-	logging.debug("Found Chrome(pychromecast) for chromecast support")
-
-tauon.chrome = chrome
 
 class PlexService:
 
@@ -9101,14 +7415,6 @@ class PlexService:
 		pctl.multi_playlist.append(pl_gen(title=_("PLEX Collection"), playlist_ids=playlist))
 		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex path"
 		switch_playlist(len(pctl.multi_playlist) - 1)
-
-
-plex = PlexService()
-tauon.plex = plex
-
-jellyfin = Jellyfin(tauon)
-tauon.jellyfin = jellyfin
-
 
 class SubsonicService:
 
@@ -9472,10 +7778,6 @@ class SubsonicService:
 	#	 pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
 	#	 switch_playlist(len(pctl.multi_playlist) - 1)
 
-
-subsonic = SubsonicService()
-
-
 class KoelService:
 
 	def __init__(self) -> None:
@@ -9680,11 +7982,6 @@ class KoelService:
 		standard_sort(len(pctl.multi_playlist) - 1)
 		switch_playlist(len(pctl.multi_playlist) - 1)
 
-
-koel = KoelService()
-tauon.koel = koel
-
-
 class TauService:
 	def __init__(self) -> None:
 		self.processing = False
@@ -9789,11 +8086,6 @@ class TauService:
 		switch_playlist(len(pctl.multi_playlist) - 1)
 		self.processing = False
 
-
-tau = TauService()
-tauon.tau = tau
-
-
 def get_network_thumbnail_url(track_object: TrackClass):
 	if track_object.file_ext == "TIDAL":
 		return track_object.art_url_key
@@ -9803,11 +8095,11 @@ def get_network_thumbnail_url(track_object: TrackClass):
 		url = plex.resolve_thumbnail(track_object.art_url_key)
 		assert url is not None
 		return url
-#	if track_object.file_ext == "JELY":
-#		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
-#		assert url is not None
-#		assert url != ""
-#		return url
+	#if track_object.file_ext == "JELY":
+	#	url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+	#	assert url is not None
+	#	assert url != ""
+	#	return url
 	if track_object.file_ext == "KOEL":
 		url = track_object.art_url_key
 		assert url
@@ -9818,7 +8110,6 @@ def get_network_thumbnail_url(track_object: TrackClass):
 		return url
 
 	return None
-
 
 def jellyfin_get_playlists_thread() -> None:
 	if jellyfin.scanning:
@@ -9843,7 +8134,6 @@ def jellyfin_get_library_thread() -> None:
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-
 def plex_get_album_thread() -> None:
 	pref_box.close()
 	save_prefs()
@@ -9856,7 +8146,6 @@ def plex_get_album_thread() -> None:
 	shoot_dl = threading.Thread(target=plex.get_albums)
 	shoot_dl.daemon = True
 	shoot_dl.start()
-
 
 def sub_get_album_thread() -> None:
 	# if prefs.backend != 1:
@@ -9875,7 +8164,6 @@ def sub_get_album_thread() -> None:
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-
 def koel_get_album_thread() -> None:
 	# if prefs.backend != 1:
 	#	 show_message("This feature is currently only available with the BASS backend")
@@ -9892,11 +8180,6 @@ def koel_get_album_thread() -> None:
 	shoot_dl = threading.Thread(target=koel.get_albums)
 	shoot_dl.daemon = True
 	shoot_dl.start()
-
-
-if system == "Windows" or msys:
-	from lynxtray import SysTrayIcon
-
 
 class STray:
 
@@ -9944,48 +8227,6 @@ class STray:
 	def stop(self) -> None:
 		self.systray.shutdown()
 		self.active = False
-
-
-tray = STray()
-
-if system == "Linux" and not macos and not msys:
-
-	gnome = Gnome(tauon)
-
-	try:
-		gnomeThread = threading.Thread(target=gnome.main)
-		gnomeThread.daemon = True
-		gnomeThread.start()
-	except Exception:
-		logging.exception("Could not start Dbus thread")
-
-if (system == "Windows" or msys):
-
-	tray.start()
-
-	if win_ver < 10:
-		logging.warning("Unsupported Windows version older than W10, hooking media keys the old way without SMTC!")
-		import keyboard
-
-		def key_callback(event):
-
-			if event.event_type == "down":
-				if event.scan_code == -179:
-					inp.media_key = "Play"
-				elif event.scan_code == -178:
-					inp.media_key = "Stop"
-				elif event.scan_code == -177:
-					inp.media_key = "Previous"
-				elif event.scan_code == -176:
-					inp.media_key = "Next"
-				gui.update += 1
-				tauon.wake()
-
-		keyboard.hook_key(-179, key_callback)
-		keyboard.hook_key(-178, key_callback)
-		keyboard.hook_key(-177, key_callback)
-		keyboard.hook_key(-176, key_callback)
-
 
 class GStats:
 	def __init__(self):
@@ -10135,10 +8376,6 @@ class GStats:
 
 			self.album_list = copy.deepcopy(sorted_list)
 
-
-stats_gen = GStats()
-
-
 def do_exit_button() -> None:
 	if mouse_up or ab_click:
 		if gui.tray_active and prefs.min_to_tray:
@@ -10150,7 +8387,6 @@ def do_exit_button() -> None:
 			show_message(_("Stop the sync before exiting!"))
 		else:
 			tauon.exit("User clicked X button")
-
 
 def do_maximize_button() -> None:
 	global mouse_down
@@ -10169,7 +8405,6 @@ def do_maximize_button() -> None:
 	inp.mouse_click = False
 	drag_mode = False
 
-
 def do_minimize_button():
 
 	global mouse_down
@@ -10185,10 +8420,6 @@ def do_minimize_button():
 	mouse_down = False
 	inp.mouse_click = False
 	drag_mode = False
-
-
-mac_circle = asset_loader(scaled_asset_directory, loaded_asset_dc, "macstyle.png", True)
-
 
 def draw_window_tools():
 	global mouse_down
@@ -10378,7 +8609,6 @@ def draw_window_tools():
 			else:
 				top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
-
 def draw_window_border():
 	corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
@@ -10415,168 +8645,6 @@ def draw_window_border():
 	ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
 	ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
 
-
-# -------------------------------------------------------------------------------------------
-# initiate SDL2 --------------------------------------------------------------------C-IS-----
-
-cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
-cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
-cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
-cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
-
-cursor_br_corner = cursor_standard
-cursor_right_side = cursor_standard
-cursor_top_side = cursor_standard
-cursor_left_side = cursor_standard
-cursor_bottom_side = cursor_standard
-
-if msys:
-	cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
-	cursor_right_side = cursor_shift
-	cursor_left_side = cursor_shift
-	cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
-	cursor_bottom_side = cursor_top_side
-elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
-	try:
-		class XcursorImage(ctypes.Structure):
-			_fields_ = [
-					("version", c_uint32),
-					("size", c_uint32),
-					("width", c_uint32),
-					("height", c_uint32),
-					("xhot", c_uint32),
-					("yhot", c_uint32),
-					("delay", c_uint32),
-					("pixels", c_void_p),
-				]
-
-		try:
-			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
-		except Exception:
-			logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
-			xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
-		xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
-
-		def get_xcursor(name: str):
-			if "XCURSOR_THEME" not in os.environ:
-				raise ValueError("Missing XCURSOR_THEME in env")
-			if "XCURSOR_SIZE" not in os.environ:
-				raise ValueError("Missing XCURSOR_SIZE in env")
-			xcursor_theme = os.environ["XCURSOR_THEME"]
-			xcursor_size = os.environ["XCURSOR_SIZE"]
-			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
-			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
-			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
-			xcu.XcursorImageDestroy(ctypes.byref(c1))
-			SDL_FreeSurface(sdl_surface)
-			return cursor
-
-		cursor_br_corner = get_xcursor("se-resize")
-		cursor_right_side = get_xcursor("right_side")
-		cursor_top_side = get_xcursor("top_side")
-		cursor_left_side = get_xcursor("left_side")
-		cursor_bottom_side = get_xcursor("bottom_side")
-
-		if SDL_GetCurrentVideoDriver() == b"wayland":
-			cursor_standard = get_xcursor("left_ptr")
-			cursor_text = get_xcursor("xterm")
-			cursor_shift = get_xcursor("sb_h_double_arrow")
-			cursor_hand = get_xcursor("hand2")
-			SDL_SetCursor(cursor_standard)
-
-	except Exception:
-		logging.exception("Error loading xcursor")
-
-
-if not maximized and gui.maximized:
-	SDL_MaximizeWindow(t_window)
-
-# logging.error(SDL_GetError())
-
-# t_window = SDL_CreateShapedWindow(
-# window_title,
-#	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-#	window_size[0], window_size[1],
-#	flags)
-
-# logging.error(SDL_GetError())
-
-if system == "Windows" or msys:
-	gui.window_id = sss.info.win.window
-
-
-# try:
-#	 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-#
-# except Exception:
-#	 logging.exception("old version of SDL detected")
-
-# get window surface and set up renderer
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
-
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
-#
-# # window_surface = SDL_GetWindowSurface(t_window)
-#
-# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-#
-# display_index = SDL_GetWindowDisplayIndex(t_window)
-# display_bounds = SDL_Rect(0, 0)
-# SDL_GetDisplayBounds(display_index, display_bounds)
-#
-# icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
-# SDL_SetWindowIcon(t_window, icon)
-# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
-#
-# SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
-#
-#
-# gui.max_window_tex = 1000
-# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-#
-#	 while window_size[0] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#	 while window_size[1] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#
-# gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# # gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
-#
-# SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
-#
-# gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
-# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-#
-# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
-#
-# SDL_SetRenderTarget(renderer, None)
-#
-# gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-# gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# SDL_SetRenderTarget(renderer, gui.main_texture)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-# SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# SDL_RenderClear(renderer)
-#
-# gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
-# gui.pl_update = 2
-#
-# SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
-
-
 def bass_player_thread(player):
 	# logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
 	#					 format='%(asctime)s %(levelname)s %(name)s %(message)s')
@@ -10592,67 +8660,8 @@ def bass_player_thread(player):
 		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
 		raise
 
-
-if (system == "Windows" or msys) and taskbar_progress:
-
-	class WinTask:
-
-		def __init__(self):
-			self.start = time.time()
-			self.updated_state = 0
-			self.window_id = gui.window_id
-			import comtypes.client as cc
-			cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
-			import comtypes.gen.TaskbarLib as tbl
-			self.taskbar = cc.CreateObject(
-				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
-				interface=tbl.ITaskbarList3)
-			self.taskbar.HrInit()
-
-			self.d_timer = Timer()
-
-		def update(self, force=False):
-			if self.d_timer.get() > 2 or force:
-				self.d_timer.set()
-
-				if pctl.playing_state == 1 and self.updated_state != 1:
-					self.taskbar.SetProgressState(self.window_id, 0x2)
-
-				if pctl.playing_state == 1:
-					self.updated_state = 1
-					if pctl.playing_length > 2:
-						perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
-						if perc < 2:
-							perc = 1
-						elif perc > 100:
-							prec = 100
-					else:
-						perc = 0
-
-					self.taskbar.SetProgressValue(self.window_id, perc, 100)
-
-				elif pctl.playing_state == 2 and self.updated_state != 2:
-					self.updated_state = 2
-					self.taskbar.SetProgressState(self.window_id, 0x8)
-
-				elif pctl.playing_state == 0 and self.updated_state != 0:
-					self.updated_state = 0
-					self.taskbar.SetProgressState(self.window_id, 0x2)
-					self.taskbar.SetProgressValue(self.window_id, 0, 100)
-
-
-	if (install_directory / "TaskbarLib.tlb").is_file():
-		logging.info("Taskbar progress enabled")
-		pctl.windows_progress = WinTask()
-
-	else:
-		pctl.taskbar_progress = False
-		logging.warning("Could not find TaskbarLib.tlb")
-
-
 # ---------------------------------------------------------------------------------------------
 # ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
-
 
 def coll_point(l, r):
 	# rect point collision detection
@@ -40625,6 +38634,1869 @@ def drop_file(target: str):
 	gui.update += 1
 	mouse_down = False
 	drag_mode = False
+
+# Log to debug as we don't care at all when user does not have this
+try:
+	import colored_traceback.always
+	logging.debug("Found colored_traceback for colored crash tracebacks")
+except ModuleNotFoundError:
+	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
+except Exception:
+	logging.exception("Unknown error trying to import colored_traceback, tracebacks will be dull.")
+
+try:
+	from jxlpy import JXLImagePlugin
+	# We've already logged this once to INFO from t_draw, so just log to DEBUG
+	logging.debug("Found jxlpy for JPEG XL support")
+except ModuleNotFoundError:
+	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
+
+try:
+	import setproctitle
+except ModuleNotFoundError:
+	logging.warning("Unable to import setproctitle, won't be setting process title.")
+except Exception:
+	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
+else:
+	setproctitle.setproctitle("tauonmb")
+
+# try:
+#	 import rpc
+#	 discord_allow = True
+# except Exception:
+#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+discord_allow = False
+try:
+	from pypresence import Presence
+except ModuleNotFoundError:
+	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
+else:
+	import asyncio
+	discord_allow = True
+
+use_cc = False
+try:
+	import opencc
+except ModuleNotFoundError:
+	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+except Exception:
+	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+else:
+	s2t = opencc.OpenCC("s2t")
+	t2s = opencc.OpenCC("t2s")
+	use_cc = True
+
+use_natsort = False
+try:
+	import natsort
+except ModuleNotFoundError:
+	logging.warning("Unable to import natsort, playlists may not sort as intended!")
+except Exception:
+	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
+else:
+	use_natsort = True
+
+# Detect platform
+windows_native = False
+macos = False
+msys = False
+system = "Linux"
+arch = platform.machine()
+platform_release = platform.release()
+platform_system = platform.system()
+win_ver = 0
+if platform_system == "Windows":
+	try:
+		win_ver = int(platform_release)
+	except Exception:
+		logging.exception("Failed getting Windows version from platform.release()")
+
+if sys.platform == "win32":
+	# system = 'Windows'
+	# windows_native = False
+	system = "Linux"
+	msys = True
+else:
+	system = "Linux"
+	import fcntl
+
+if sys.platform == "darwin":
+	macos = True
+
+if system == "Windows":
+	import win32con
+	import win32api
+	import win32gui
+	import win32ui
+	import comtypes
+	import atexit
+
+if system == "Linux":
+	from tauon.t_modules import t_topchart
+
+if system == "Linux" and not macos and not msys:
+	from tauon.t_modules.t_dbus import Gnome
+
+holder                 = t_bootstrap.holder
+t_window               = holder.t_window
+renderer               = holder.renderer
+logical_size           = holder.logical_size
+window_size            = holder.window_size
+maximized              = holder.maximized
+scale                  = holder.scale
+window_opacity         = holder.window_opacity
+draw_border            = holder.draw_border
+transfer_args_and_exit = holder.transfer_args_and_exit
+old_window_position    = holder.old_window_position
+install_directory      = holder.install_directory
+user_directory         = holder.user_directory
+pyinstaller_mode       = holder.pyinstaller_mode
+phone                  = holder.phone
+window_default_size    = holder.window_default_size
+window_title           = holder.window_title
+fs_mode                = holder.fs_mode
+t_title                = holder.t_title
+n_version              = holder.n_version
+t_version              = holder.t_version
+t_id                   = holder.t_id
+t_agent                = holder.t_agent
+dev_mode               = holder.dev_mode
+instance_lock          = holder.instance_lock
+log                    = holder.log
+logging.info(f"Window size: {window_size}")
+
+should_save_state = True
+
+try:
+	import pylast
+	last_fm_enable = True
+except Exception:
+	logging.exception("PyLast module not found, last fm will be disabled.")
+	last_fm_enable = False
+
+if not windows_native:
+	import gi
+	from gi.repository import GLib
+
+	font_folder = str(install_directory / "fonts")
+	if os.path.isdir(font_folder):
+		logging.info(f"Fonts directory:           {font_folder}")
+		import ctypes
+
+		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
+		fc.FcConfigReference.restype = ctypes.c_void_p
+		fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
+		fc.FcConfigAppFontAddDir.argtypes = (ctypes.c_void_p, ctypes.c_char_p)
+		config = ctypes.c_void_p()
+		config.contents = fc.FcConfigGetCurrent()
+		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
+
+ssl_context = setup_ssl()
+
+# Detect what desktop environment we are in to enable specific features
+desktop = os.environ.get("XDG_CURRENT_DESKTOP")
+# de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
+de_notify_support = False
+draw_min_button = True
+draw_max_button = True
+left_window_control = False
+xdpi = 0
+
+detect_macstyle = False
+gtk_settings: Settings | None = None
+mac_close = (253, 70, 70, 255)
+mac_maximize = (254, 176, 36, 255)
+mac_minimize = (42, 189, 49, 255)
+try:
+	# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
+	gi.require_version("Gtk", "3.0")
+	from gi.repository import Gtk
+
+	gtk_settings = Gtk.Settings().get_default()
+	xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+	if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+		draw_min_button = False
+	if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+		draw_max_button = False
+	if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
+		left_window_control = True
+	gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
+	#logging.info(f"GTK theme is: {gtk_theme}")
+	for k, v in mac_styles.items():
+		if k in gtk_theme:
+			detect_macstyle = True
+			if v is not None:
+				mac_close = v[0]
+				mac_maximize = v[1]
+				mac_minimize = v[2]
+
+except Exception:
+	logging.exception("Error accessing GTK settings")
+
+# Set data folders (portable mode)
+config_directory = user_directory
+cache_directory = user_directory / "cache"
+home_directory = os.path.join(os.path.expanduser("~"))
+
+asset_directory = install_directory / "assets"
+svg_directory = install_directory / "assets" / "svg"
+scaled_asset_directory = asset_directory
+
+music_directory = Path("~").expanduser() / "Music"
+if not music_directory.is_dir():
+	music_directory = Path("~").expanduser() / "music"
+
+download_directory = Path("~").expanduser() / "Downloads"
+
+# Detect if we are installed or running portable
+install_mode = False
+flatpak_mode = False
+snap_mode = False
+if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
+	install_mode = True
+	if str(install_directory)[:6] == "/snap/":
+		snap_mode = True
+	if str(install_directory)[:5] == "/app/":
+		# Flatpak mode
+		logging.info("Detected running as Flatpak")
+
+		# [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
+		if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
+
+			host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
+			flatpak_fcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
+
+			if os.path.exists(host_fcfg):
+
+				# if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
+				#	 shutil.rmtree(flatpak_fcfg)
+				if os.path.islink(flatpak_fcfg):
+					logging.info("-- Symlink to fonconfig exists, removing")
+					os.unlink(flatpak_fcfg)
+				# else:
+				#	 logging.info("-- Symlinking user fonconfig")
+				#	 #os.symlink(host_fcfg, flatpak_fcfg)
+
+		flatpak_mode = True
+
+# If we're installed, use home data locations
+if (install_mode and system == "Linux") or macos or msys:
+	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
+	#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
+	config_directory = user_directory
+
+#	if not user_directory.is_dir():
+#		os.makedirs(user_directory)
+
+	if not config_directory.is_dir():
+		os.makedirs(config_directory)
+
+	if snap_mode:
+		logging.info("Installed as Snap")
+	elif flatpak_mode:
+		logging.info("Installed as Flatpak")
+	else:
+		logging.info("Running from installed location")
+
+	if not (user_directory / "encoder").is_dir():
+		os.makedirs(user_directory / "encoder")
+
+
+# elif (system == 'Windows' or msys) and (
+# 	'Program Files' in install_directory or
+# 	os.path.isfile(install_directory + '\\unins000.exe')):
+#
+#	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
+#	 config_directory = user_directory
+#	 cache_directory = user_directory / "cache"
+#	 logging.info(f"User Directory: {user_directory}")
+#	 install_mode = True
+#	 if not os.path.isdir(user_directory):
+#		 os.makedirs(user_directory)
+
+else:
+	logging.info("Running in portable mode")
+	config_directory = user_directory
+
+if not (user_directory / "state.p").is_file() and cache_directory.is_dir():
+	logging.info("Clearing old cache directory")
+	logging.info(cache_directory)
+	shutil.rmtree(str(cache_directory))
+
+n_cache_dir = str(cache_directory / "network")
+e_cache_dir = str(cache_directory / "export")
+g_cache_dir = str(cache_directory / "gallery")
+a_cache_dir = str(cache_directory / "artist")
+r_cache_dir = str(cache_directory / "radio-thumbs")
+b_cache_dir = str(user_directory / "artist-backgrounds")
+
+if not os.path.isdir(n_cache_dir):
+	os.makedirs(n_cache_dir)
+if not os.path.isdir(e_cache_dir):
+	os.makedirs(e_cache_dir)
+if not os.path.isdir(g_cache_dir):
+	os.makedirs(g_cache_dir)
+if not os.path.isdir(a_cache_dir):
+	os.makedirs(a_cache_dir)
+if not os.path.isdir(b_cache_dir):
+	os.makedirs(b_cache_dir)
+if not os.path.isdir(r_cache_dir):
+	os.makedirs(r_cache_dir)
+
+if not (user_directory / "artist-pictures").is_dir():
+	os.makedirs(user_directory / "artist-pictures")
+
+if not (user_directory / "theme").is_dir():
+	os.makedirs(user_directory / "theme")
+
+
+if platform_system == "Linux":
+	system_config_directory = Path(GLib.get_user_config_dir())
+	xdg_dir_file = system_config_directory / "user-dirs.dirs"
+
+	if xdg_dir_file.is_file():
+		with xdg_dir_file.open() as f:
+			for line in f:
+				if line.startswith("XDG_MUSIC_DIR="):
+					music_directory = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
+					logging.debug(f"Found XDG-Music:     {music_directory}     in {xdg_dir_file}")
+				if line.startswith("XDG_DOWNLOAD_DIR="):
+					target = Path(os.path.expandvars(line.split("=")[1].strip().replace('"', ""))).expanduser()
+					if Path(target).is_dir():
+						download_directory = target
+					logging.debug(f"Found XDG-Downloads: {download_directory} in {xdg_dir_file}")
+
+
+if os.getenv("XDG_MUSIC_DIR"):
+	music_directory = Path(os.getenv("XDG_MUSIC_DIR"))
+	logging.debug("Override music to: " + music_directory)
+
+if os.getenv("XDG_DOWNLOAD_DIR"):
+	download_directory = Path(os.getenv("XDG_DOWNLOAD_DIR"))
+	logging.debug("Override downloads to: " + download_directory)
+
+if music_directory:
+	music_directory = Path(os.path.expandvars(music_directory))
+if download_directory:
+	download_directory = Path(os.path.expandvars(download_directory))
+
+if not music_directory.is_dir():
+	music_directory = None
+
+locale_directory = install_directory / "locale"
+#if flatpak_mode:
+#	locale_directory = Path("/app/share/locale")
+#elif str(install_directory).startswith(("/opt/", "/usr/")):
+#	locale_directory = Path("/usr/share/locale")
+
+logging.info(f"Install directory:         {install_directory}")
+#logging.info(f"SVG directory:             {svg_directory}")
+logging.info(f"Asset directory:           {asset_directory}")
+#logging.info(f"Scaled Asset Directory:    {scaled_asset_directory}")
+if locale_directory.exists():
+	logging.info(f"Locale directory:          {locale_directory}")
+else:
+	logging.error(f"Locale directory MISSING:  {locale_directory}")
+logging.info(f"Userdata directory:        {user_directory}")
+logging.info(f"Config directory:          {config_directory}")
+logging.info(f"Cache directory:           {cache_directory}")
+logging.info(f"Home directory:            {home_directory}")
+logging.info(f"Music directory:           {music_directory}")
+logging.info(f"Downloads directory:       {download_directory}")
+
+launch_prefix = ""
+if flatpak_mode:
+	launch_prefix = "flatpak-spawn --host "
+
+pid = os.getpid()
+
+if not macos:
+	icon = IMG_Load(str(asset_directory / "icon-64.png").encode())
+else:
+	icon = IMG_Load(str(asset_directory / "tau-mac.png").encode())
+
+SDL_SetWindowIcon(t_window, icon)
+
+if not phone:
+	if window_size[0] != logical_size[0]:
+		SDL_SetWindowMinimumSize(t_window, 560, 330)
+	else:
+		SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+
+max_window_tex = 1000
+if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
+
+	while window_size[0] > max_window_tex:
+		max_window_tex += 1000
+	while window_size[1] > max_window_tex:
+		max_window_tex += 1000
+
+main_texture = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
+	max_window_tex)
+main_texture_overlay_temp = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET,
+	max_window_tex, max_window_tex)
+
+overlay_texture_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, 300, 300)
+SDL_SetTextureBlendMode(overlay_texture_texture, SDL_BLENDMODE_BLEND)
+SDL_SetRenderTarget(renderer, overlay_texture_texture)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+SDL_RenderClear(renderer)
+SDL_SetRenderTarget(renderer, None)
+
+tracklist_texture = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, max_window_tex,
+	max_window_tex)
+tracklist_texture_rect = SDL_Rect(0, 0, max_window_tex, max_window_tex)
+SDL_SetTextureBlendMode(tracklist_texture, SDL_BLENDMODE_BLEND)
+
+SDL_SetRenderTarget(renderer, None)
+
+# Paint main texture
+SDL_SetRenderTarget(renderer, main_texture)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+
+SDL_SetRenderTarget(renderer, main_texture_overlay_temp)
+SDL_SetTextureBlendMode(main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+SDL_RenderClear(renderer)
+
+
+
+# SDL_SetRenderTarget(renderer, None)
+# SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
+# SDL_RenderClear(renderer)
+# #SDL_RenderPresent(renderer)
+
+# SDL_SetWindowOpacity(t_window, window_opacity)
+
+loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset] = {}
+
+
+# loading_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "loading.png")
+
+if maximized:
+	i_x = pointer(c_int(0))
+	i_y = pointer(c_int(0))
+
+	time.sleep(0.02)
+	SDL_PumpEvents()
+	SDL_GetWindowSize(t_window, i_x, i_y)
+	logical_size[0] = i_x.contents.value
+	logical_size[1] = i_y.contents.value
+	SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+	window_size[0] = i_x.contents.value
+	window_size[1] = i_y.contents.value
+
+# loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
+# SDL_RenderPresent(renderer)
+
+if install_directory != config_directory and not (config_directory / "input.txt").is_file():
+	logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
+	#logging.warning(install_directory)
+	#logging.warning(config_directory)
+	shutil.copy(install_directory / "templates" / "input.txt", config_directory)
+
+
+if snap_mode:
+	discord_allow = False
+
+
+musicbrainzngs.set_useragent("TauonMusicBox", n_version, "https://github.com/Taiko2k/Tauon")
+
+# logging.info(arch)
+# -----------------------------------------------------------
+# Detect locale for translations
+
+try:
+	py_locale.setlocale(py_locale.LC_ALL, "")
+except Exception:
+	logging.exception("SET LOCALE ERROR")
+
+# ------------------------------------------------
+
+if system == "Windows":
+	os.environ["PYSDL2_DLL_PATH"] = str(install_directory / "lib")
+elif not msys and not macos:
+	try:
+		gi.require_version("Notify", "0.7")
+	except Exception:
+		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
+		gi.require_version("Notify", "0.8")
+	from gi.repository import Notify
+
+
+wayland = True
+if os.environ.get("SDL_VIDEODRIVER") != "wayland":
+	wayland = False
+	os.environ["GDK_BACKEND"] = "x11"
+
+
+# Setting various timers
+
+message_box_min_timer = Timer()
+cursor_blink_timer = Timer()
+animate_monitor_timer = Timer()
+min_render_timer = Timer()
+check_file_timer = Timer()
+vis_rate_timer = Timer()
+vis_decay_timer = Timer()
+scroll_timer = Timer()
+perf_timer = Timer()
+quick_d_timer = Timer()
+core_timer = Timer()
+sleep_timer = Timer()
+gallery_select_animate_timer = Timer()
+gallery_select_animate_timer.force_set(10)
+search_clear_timer = Timer()
+gall_pl_switch_timer = Timer()
+gall_pl_switch_timer.force_set(999)
+d_click_timer = Timer()
+d_click_timer.force_set(10)
+lyrics_check_timer = Timer()
+scroll_hide_timer = Timer(100)
+scroll_gallery_hide_timer = Timer(100)
+get_lfm_wait_timer = Timer(10)
+lyrics_fetch_timer = Timer(10)
+gallery_load_delay = Timer(10)
+queue_add_timer = Timer(100)
+toast_love_timer = Timer(100)
+toast_mode_timer = Timer(100)
+scrobble_warning_timer = Timer(1000)
+sync_file_timer = Timer(1000)
+sync_file_update_timer = Timer(1000)
+sync_get_device_click_timer = Timer(100)
+
+f_store = FunctionStore()
+
+after_scan = []
+
+search_string_cache = {}
+search_dia_string_cache = {}
+
+vis_update = False
+
+
+# GUI Variables -------------------------------------------------------------------------------------------
+
+# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
+
+console = DConsole()
+
+spot_cache_saved_albums = []
+
+resize_mode = False
+
+side_panel_text_align = 0
+
+album_mode = False
+spec_smoothing = True
+
+# gui.offset_extra = 0
+
+old_album_pos = -55
+
+album_dex = []
+album_artist_dict = {}
+row_len = 5
+last_row = 0
+album_v_gap = 66
+album_h_gap = 30
+album_v_slide_value = 50
+
+album_mode_art_size = int(200 * scale)
+
+time_last_save = 0
+
+b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
+
+volume_store = 50  # Used to save the previous volume when muted
+
+# row_alt = False
+
+to_get = 0  # Used to store temporary import count display
+to_got = 0
+
+editline = ""
+# gui.rsp = True
+quick_drag = False
+
+# Playlist Panel
+pl_view_offset = 0
+pl_rect = (2, 12, 10, 10)
+
+theme = 7
+scroll_enable = True
+scroll_timer = Timer()
+scroll_timer.set()
+scroll_opacity = 0
+break_enable = True
+
+source = None
+
+album_playlist_width = 430
+
+update_title = False
+
+playlist_hold_position = 0
+playlist_hold = False
+selection_stage = 0
+
+selected_in_playlist = -1
+
+shift_selection = []
+
+gen_codes: dict[int, str] = {}
+# Control Variables--------------------------------------------------------------------------
+
+mouse_down = False
+right_down = False
+click_location = [200, 200]
+last_click_location = [0, 0]
+mouse_position = [0, 0]
+mouse_up_position = [0, 0]
+
+k_input = True
+key_shift_down = False
+drag_mode = False
+side_drag = False
+clicked = False
+
+# Player Variables----------------------------------------------------------------------------
+
+format_colours = {  # These are the colours used for the label icon in UI 'track info box'
+	"MP3":   [255, 130, 80,  255],  # Burnt orange
+	"FLAC":  [156, 249, 79,  255],  # Bright lime green
+	"M4A":   [81,  220, 225, 255],  # Soft cyan
+	"AIFF":  [81,  220, 225, 255],  # Soft cyan
+	"OGG":   [244, 244, 78,  255],  # Light yellow
+	"OGA":   [244, 244, 78,  255],  # Light yellow
+	"WMA":   [213, 79,  247, 255],  # Magenta
+	"APE":   [247, 79,  79,  255],  # Deep pink
+	"TTA":   [94,  78,  244, 255],  # Purple
+	"OPUS":  [247, 79,  146, 255],  # Pink
+	"AAC":   [79,  247, 168, 255],  # Teal
+	"WV":    [229, 23,  18,  255],  # Deep red
+	"PLEX":  [229, 160, 13,  255],  # Orange-brown
+	"KOEL":  [111, 98,  190, 255],  # Lavender
+	"TAU":   [111, 98,  190, 255],  # Lavender
+	"SUB":   [235, 140, 20,  255],  # Golden yellow
+	"SPTY":  [30,  215, 96,  255],  # Bright green
+	"TIDAL": [0,   0,   0,   255],  # Black
+	"JELY":  [190, 100, 210, 255],  # Fuchsia
+	"XM":    [50,  50,  50,  255],  # Grey
+	"MOD":   [50,  50,  50,  255],  # Grey
+	"S3M":   [50,  50,  50,  255],  # Grey
+	"IT":    [50,  50,  50,  255],  # Grey
+	"MPTM":  [50,  50,  50,  255],  # Grey
+	"AY":    [237, 212, 255, 255],  # Pastel purple
+	"GBS":   [255, 165, 0,   255],  # Vibrant orange
+	"GYM":   [0,   191, 255, 255],  # Bright blue
+	"HES":   [176, 224, 230, 255],  # Light blue-green
+	"KSS":   [255, 255, 153, 255],  # Bright yellow
+	"NSF":   [255, 140, 0,   255],  # Deep orange
+	"NSFE":  [255, 140, 0,   255],  # Deep orange
+	"SAP":   [152, 255, 152, 255],  # Light green
+	"SPC":   [255, 128, 0,   255],  # Bright orange
+	"VGM":   [0,   128, 255, 255],  # Deep blue
+	"VGZ":   [0,   128, 255, 255],  # Deep blue
+}
+
+# These will be the extensions of files to be added when importing
+VID_Formats = {"mp4", "webm"}
+
+MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
+
+GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
+
+DA_Formats = {
+	"mp3", "wav", "opus", "flac", "ape", "aiff",
+	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
+} | MOD_Formats | GME_Formats
+
+Archive_Formats = {"zip"}
+
+if whicher("unrar"):
+	Archive_Formats.add("rar")
+
+if whicher("7z"):
+	Archive_Formats.add("7z")
+
+cargo = []
+
+# ---------------------------------------------------------------------
+# Player variables
+
+# pl_follow = False
+
+# List of encodings to check for with the fix mojibake function
+encodings = ["cp932", "utf-8", "big5hkscs", "gbk"]  # These seem to be the most common for Japanese
+
+track_box = False
+
+transcode_list: list[list[int]] = []
+transcode_state = ""
+
+taskbar_progress = True
+track_queue: list[int] = []
+
+playing_in_queue = 0
+draw_sep_hl = False
+
+# -------------------------------------------------------------------------------
+# Playlist Variables
+playlist_view_position = 0
+playlist_playing = -1
+
+loading_in_progress = False
+
+core_use = 0
+dl_use = 0
+
+random_mode = False
+repeat_mode = False
+
+notify_change = lambda: None
+
+multi_playlist: list[TauonPlaylist] = [pl_gen()]
+default_playlist: list[int] = multi_playlist[0].playlist_ids
+playlist_active: int = 0
+
+quick_search_mode = False
+search_index = 0
+
+# ----------------------------------------
+# Playlist right click menu
+
+r_menu_index = 0
+r_menu_position = 0
+
+# Library and loader Variables--------------------------------------------------------
+master_library: dict[int, TrackClass] = {}
+
+cue_list = []
+
+LC_None = 0
+LC_Done = 1
+LC_Folder = 2
+LC_File = 3
+
+loaderCommand = LC_None
+loaderCommandReady = False
+
+master_count = 0
+
+load_orders = []
+
+volume = 75
+
+folder_image_offsets: dict[str, int] = {}
+db_version: float = 0.0
+latest_db_version: float = 69
+
+albums = []
+album_position = 0
+
+prefs = Prefs(
+	user_directory=user_directory,
+	music_directory=music_directory,
+	cache_directory=cache_directory,
+	macos=macos,
+	phone=phone,
+	left_window_control=left_window_control,
+	detect_macstyle=detect_macstyle,
+	gtk_settings=gtk_settings,
+	discord_allow=discord_allow,
+	flatpak_mode=flatpak_mode,
+	desktop=desktop,
+	window_opacity=window_opacity,
+	scale=scale,
+)
+
+gui = GuiVar()
+star_store = StarStore()
+album_star_store = AlbumStarStore()
+fonts = Fonts()
+inp = Input()
+keymaps = KeyMap()
+
+colours = ColoursClass()
+colours.post_config()
+
+
+# This is legacy. New settings are added straight to the save list (need to overhaul)
+view_prefs = {
+	"split-line": True,
+	"update-title": False,
+	"star-lines": False,
+	"side-panel": True,
+	"dim-art": False,
+	"pl-follow": False,
+	"scroll-enable": True,
+}
+
+# url_saves = []
+rename_files_previous = ""
+rename_folder_previous = ""
+p_force_queue: list[TauonQueueItem] = []
+
+reload_state = None
+
+# -----------------------------------------------------
+# STATE LOADING
+# Loading of program data from previous run
+gbc.disable()
+ggc = 2
+
+star_path1 = user_directory / "star.p"
+star_path2 = user_directory / "star.p.backup"
+star_size1 = 0
+star_size2 = 0
+to_load = star_path1
+if star_path1.is_file():
+	star_size1 = star_path1.stat().st_size
+if star_path2.is_file():
+	star_size2 = star_path2.stat().st_size
+if star_size2 > star_size1:
+	logging.warning("Loading backup star.p as it was bigger than regular file!")
+	to_load = star_path2
+if star_size1 == 0 and star_size2 == 0:
+	logging.warning("Star database file is missing, first run? Will create one anew!")
+else:
+	try:
+		with to_load.open("rb") as file:
+			star_store.db = pickle.load(file)
+	except Exception:
+		logging.exception("Unknown error loading star.p file")
+
+
+album_star_path = user_directory / "album-star.p"
+if album_star_path.is_file():
+	try:
+		with album_star_path.open("rb") as file:
+			album_star_store.db = pickle.load(file)
+	except Exception:
+		logging.exception("Unknown error loading album-star.p file")
+else:
+	logging.warning("Album star database file is missing, first run? Will create one anew!")
+
+if (user_directory / "lyrics_substitutions.json").is_file():
+	try:
+		with (user_directory / "lyrics_substitutions.json").open() as f:
+			prefs.lyrics_subs = json.load(f)
+	except FileNotFoundError:
+		logging.error("No existing lyrics_substitutions.json file")
+	except Exception:
+		logging.exception("Unknown error loading lyrics_substitutions.json")
+
+perf_timer.set()
+
+radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+
+primary_stations: list[dict[str, str]] = []
+station = {
+	"title": "SomaFM Groove Salad",
+	"stream_url": "https://ice3.somafm.com/groovesalad-128-mp3",
+	"country": "USA",
+	"website_url": "https://somafm.com/groovesalad",
+	"icon": "https://somafm.com/logos/120/groovesalad120.png",
+}
+primary_stations.append(station)
+station = {
+	"title": "SomaFM PopTron",
+	"stream_url": "https://ice3.somafm.com/poptron-128-mp3",
+	"country": "USA",
+	"website_url": "https://somafm.com/poptron/",
+	"icon": "https://somafm.com/logos/120/poptron120.jpg",
+}
+primary_stations.append(station)
+station = {
+	"title": "SomaFM Vaporwaves",
+	"stream_url": "https://ice4.somafm.com/vaporwaves-128-mp3",
+	"country": "USA",
+	"website_url": "https://somafm.com/vaporwaves",
+	"icon": "https://somafm.com/img3/vaporwaves400.png",
+}
+primary_stations.append(station)
+
+station = {
+	"title": "DKFM Shoegaze Radio",
+	"stream_url": "https://kathy.torontocast.com:2005/stream",
+	"country": "Canada",
+	"website_url": "https://decayfm.com",
+	"icon": "https://cdn-profiles.tunein.com/s193842/images/logod.png",
+}
+primary_stations.append(station)
+
+for item in primary_stations:
+	radio_playlists[0]["items"].append(item)
+
+radio_playlist_viewing = 0
+
+pump = True
+
+shoot_pump = threading.Thread(target=pumper)
+shoot_pump.daemon = True
+shoot_pump.start()
+
+state_path1 = user_directory / "state.p"
+state_path2 = user_directory / "state.p.backup"
+for t in range(2):
+	#	 os.path.getsize(user_directory / "state.p") < 100
+	try:
+		if t == 0:
+			if not state_path1.is_file():
+				continue
+			with state_path1.open("rb") as file:
+				save = pickle.load(file)
+		if t == 1:
+			if not state_path2.is_file():
+				logging.warning("State database file is missing, first run? Will create one anew!")
+				break
+			logging.warning("Loading backup state.p!")
+			with state_path2.open("rb") as file:
+				save = pickle.load(file)
+
+		# def tt():
+		#	 while True:
+		#		 logging.info(state_file.tell())
+		#		 time.sleep(0.01)
+		# shooter(tt)
+
+		db_version = save[17]
+		if db_version != latest_db_version:
+			if db_version > latest_db_version:
+				logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!\nAre you running an out of date Tauon version using Configuration directory from a newer one?")
+				sys.exit(42)
+			logging.warning(f"Loaded older DB version: {db_version}")
+		if save[63] is not None:
+			prefs.ui_scale = save[63]
+			# prefs.ui_scale = 1.3
+			# gui.__init__()
+
+		if save[0] is not None:
+			master_library = save[0]
+		master_count = save[1]
+		playlist_playing = save[2]
+		playlist_active = save[3]
+		playlist_view_position = save[4]
+		if save[5] is not None:
+			if db_version > 68:
+				multi_playlist = []
+				tauonplaylist_jar = save[5]
+				for d in tauonplaylist_jar:
+					nt = TauonPlaylist(**d)
+					multi_playlist.append(nt)
+			else:
+				multi_playlist = save[5]
+		volume = save[6]
+		track_queue = save[7]
+		playing_in_queue = save[8]
+		default_playlist = save[9]
+		# playlist_playing = save[10]
+		# cue_list = save[11]
+		# radio_field_text = save[12]
+		theme = save[13]
+		folder_image_offsets = save[14]
+		# lfm_username = save[15]
+		# lfm_hash = save[16]
+		view_prefs = save[18]
+		# window_size = save[19]
+		gui.save_size = copy.copy(save[19])
+		gui.rspw = save[20]
+		# savetime = save[21]
+		gui.vis_want = save[22]
+		selected_in_playlist = save[23]
+		if save[24] is not None:
+			album_mode_art_size = save[24]
+		if save[25] is not None:
+			draw_border = save[25]
+		if save[26] is not None:
+			prefs.enable_web = save[26]
+		if save[27] is not None:
+			prefs.allow_remote = save[27]
+		if save[28] is not None:
+			prefs.expose_web = save[28]
+		if save[29] is not None:
+			prefs.enable_transcode = save[29]
+		if save[30] is not None:
+			prefs.show_rym = save[30]
+		# if save[31] is not None:
+		#	 combo_mode_art_size = save[31]
+		if save[32] is not None:
+			gui.maximized = save[32]
+		if save[33] is not None:
+			prefs.prefer_bottom_title = save[33]
+		if save[34] is not None:
+			gui.display_time_mode = save[34]
+		# if save[35] is not None:
+		#	 prefs.transcode_mode = save[35]
+		if save[36] is not None:
+			prefs.transcode_codec = save[36]
+		if save[37] is not None:
+			prefs.transcode_bitrate = save[37]
+		# if save[38] is not None:
+		#	 prefs.line_style = save[38]
+		# if save[39] is not None:
+		#	 prefs.cache_gallery = save[39]
+		if save[40] is not None:
+			prefs.playlist_font_size = save[40]
+		if save[41] is not None:
+			prefs.use_title = save[41]
+		if save[42] is not None:
+			gui.pl_st = save[42]
+		# if save[43] is not None:
+		#	 gui.set_mode = save[43]
+		#	 gui.set_bar = gui.set_mode
+		if save[45] is not None:
+			prefs.playlist_row_height = save[45]
+		if save[46] is not None:
+			prefs.show_wiki = save[46]
+		if save[47] is not None:
+			prefs.auto_extract = save[47]
+		if save[48] is not None:
+			prefs.colour_from_image = save[48]
+		if save[49] is not None:
+			gui.set_bar = save[49]
+		if save[50] is not None:
+			gui.gallery_show_text = save[50]
+		if save[51] is not None:
+			gui.bb_show_art = save[51]
+		# if save[52] is not None:
+		#	 gui.show_stars = save[52]
+		if save[53] is not None:
+			prefs.auto_lfm = save[53]
+		if save[54] is not None:
+			prefs.scrobble_mark = save[54]
+		if save[55] is not None:
+			prefs.replay_gain = save[55]
+		# if save[56] is not None:
+		#	 prefs.radio_page_lyrics = save[56]
+		if save[57] is not None:
+			prefs.show_gimage = save[57]
+		if save[58] is not None:
+			prefs.end_setting = save[58]
+		if save[59] is not None:
+			prefs.show_gen = save[59]
+		# if save[60] is not None:
+		#	 url_saves = save[60]
+		if save[61] is not None:
+			prefs.auto_del_zip = save[61]
+		if save[62] is not None:
+			gui.level_meter_colour_mode = save[62]
+		if save[64] is not None:
+			prefs.show_lyrics_side = save[64]
+		# if save[65] is not None:
+		#	 prefs.last_device = save[65]
+		if save[66] is not None:
+			gui.restart_album_mode = save[66]
+		if save[67] is not None:
+			album_playlist_width = save[67]
+		if save[68] is not None:
+			prefs.transcode_opus_as = save[68]
+		if save[69] is not None:
+			gui.star_mode = save[69]
+		if save[70] is not None:
+			gui.rsp = save[70]
+		if save[71] is not None:
+			gui.lsp = save[71]
+		if save[72] is not None:
+			gui.rspw = save[72]
+		if save[73] is not None:
+			gui.pref_gallery_w = save[73]
+		if save[74] is not None:
+			gui.pref_rspw = save[74]
+		if save[75] is not None:
+			gui.show_hearts = save[75]
+		if save[76] is not None:
+			prefs.monitor_downloads = save[76]
+		if save[77] is not None:
+			gui.artist_info_panel = save[77]
+		if save[78] is not None:
+			prefs.extract_to_music = save[78]
+		if save[79] is not None:
+			prefs.enable_lb = save[79]
+		# if save[80] is not None:
+		#	 prefs.lb_token = save[80]
+		#	 if prefs.lb_token is None:
+		#		 prefs.lb_token = ""
+		if save[81] is not None:
+			rename_files_previous = save[81]
+		if save[82] is not None:
+			rename_folder_previous = save[82]
+		if save[83] is not None:
+			prefs.use_jump_crossfade = save[83]
+		if save[84] is not None:
+			prefs.use_transition_crossfade = save[84]
+		if save[85] is not None:
+			prefs.show_notifications = save[85]
+		# if save[86] is not None:
+		#	 prefs.true_shuffle = save[86]
+		if save[87] is not None:
+			gui.remember_library_mode = save[87]
+		# if save[88] is not None:
+		#	 prefs.show_queue = save[88]
+		# if save[89] is not None:
+		#	 prefs.show_transfer = save[89]
+		if save[90] is not None:
+			if db_version > 68:
+				tauonqueueitem_jar = save[90]
+				for d in tauonqueueitem_jar:
+					nt = TauonQueueItem(**d)
+					p_force_queue.append(nt)
+			else:
+				p_force_queue = save[90]
+		if save[91] is not None:
+			prefs.use_pause_fade = save[91]
+		if save[92] is not None:
+			prefs.append_total_time = save[92]
+		if save[93] is not None:
+			prefs.backend = save[93]  # moved to config file
+		if save[94] is not None:
+			prefs.album_shuffle_mode = save[94]
+		if save[95] is not None:
+			prefs.album_repeat_mode = save[95]
+		# if save[96] is not None:
+		#	 prefs.finish_current = save[96]
+		if save[97] is not None:
+			reload_state = save[97]
+		# if save[98] is not None:
+		#	 prefs.reload_play_state = save[98]
+		if save[99] is not None:
+			prefs.last_fm_token = save[99]
+		if save[100] is not None:
+			prefs.last_fm_username = save[100]
+		# if save[101] is not None:
+		#	 prefs.use_card_style = save[101]
+		# if save[102] is not None:
+		#	 prefs.auto_lyrics = save[102]
+		if save[103] is not None:
+			prefs.auto_lyrics_checked = save[103]
+		if save[104] is not None:
+			prefs.show_side_art = save[104]
+		if save[105] is not None:
+			prefs.window_opacity = save[105]
+		if save[106] is not None:
+			prefs.gallery_single_click = save[106]
+		if save[107] is not None:
+			prefs.tabs_on_top = save[107]
+		if save[108] is not None:
+			prefs.showcase_vis = save[108]
+		if save[109] is not None:
+			prefs.spec2_colour_mode = save[109]
+		# if save[110] is not None:
+		#	 prefs.device_buffer = save[110]
+		if save[111] is not None:
+			prefs.use_eq = save[111]
+		if save[112] is not None:
+			prefs.eq = save[112]
+		if save[113] is not None:
+			prefs.bio_large = save[113]
+		if save[114] is not None:
+			prefs.discord_show = save[114]
+		if save[115] is not None:
+			prefs.min_to_tray = save[115]
+		if save[116] is not None:
+			prefs.guitar_chords = save[116]
+		if save[117] is not None:
+			prefs.playback_follow_cursor = save[117]
+		if save[118] is not None:
+			prefs.art_bg = save[118]
+		if save[119] is not None:
+			prefs.random_mode = save[119]
+		if save[120] is not None:
+			prefs.repeat_mode = save[120]
+		if save[121] is not None:
+			prefs.art_bg_stronger = save[121]
+		if save[122] is not None:
+			prefs.art_bg_always_blur = save[122]
+		if save[123] is not None:
+			prefs.failed_artists = save[123]
+		if save[124] is not None:
+			prefs.artist_list = save[124]
+		if save[125] is not None:
+			prefs.auto_sort = save[125]
+		if save[126] is not None:
+			prefs.lyrics_enables = save[126]
+		if save[127] is not None:
+			prefs.fanart_notify = save[127]
+		if save[128] is not None:
+			prefs.bg_showcase_only = save[128]
+		if save[129] is not None:
+			prefs.discogs_pat = save[129]
+		if save[130] is not None:
+			prefs.mini_mode_mode = save[130]
+		if save[131] is not None:
+			after_scan = save[131]
+		if save[132] is not None:
+			gui.gallery_positions = save[132]
+		if save[133] is not None:
+			prefs.chart_bg = save[133]
+		if save[134] is not None:
+			prefs.left_panel_mode = save[134]
+		if save[135] is not None:
+			gui.last_left_panel_mode = save[135]
+		# if save[136] is not None:
+		#	 prefs.gst_device = save[136]
+		if save[137] is not None:
+			search_string_cache = save[137]
+		if save[138] is not None:
+			search_dia_string_cache = save[138]
+		if save[139] is not None:
+			gen_codes = save[139]
+		if save[140] is not None:
+			gui.show_ratings = save[140]
+		if save[141] is not None:
+			gui.show_album_ratings = save[141]
+		if save[142] is not None:
+			prefs.radio_urls = save[142]
+		if save[143] is not None:
+			gui.restore_showcase_view = save[143]
+		if save[144] is not None:
+			gui.saved_prime_tab = save[144]
+		if save[145] is not None:
+			gui.saved_prime_direction = save[145]
+		if save[146] is not None:
+			prefs.sync_playlist = save[146]
+		if save[147] is not None:
+			prefs.spot_client = save[147]
+		if save[148] is not None:
+			prefs.spot_secret = save[148]
+		if save[149] is not None:
+			prefs.show_band = save[149]
+		if save[150] is not None:
+			prefs.download_playlist = save[150]
+		if save[151] is not None:
+			spot_cache_saved_albums = save[151]
+		if save[152] is not None:
+			prefs.auto_rec = save[152]
+		if save[153] is not None:
+			prefs.spotify_token = save[153]
+		if save[154] is not None:
+			prefs.use_libre_fm = save[154]
+		if save[155] is not None:
+			prefs.old_playlist_box_position = save[155]
+		if save[156] is not None:
+			prefs.artist_list_sort_mode = save[156]
+		if save[157] is not None:
+			prefs.phazor_device_selected = save[157]
+		if save[158] is not None:
+			prefs.failed_background_artists = save[158]
+		if save[159] is not None:
+			prefs.bg_flips = save[159]
+		if save[160] is not None:
+			prefs.tray_show_title = save[160]
+		if save[161] is not None:
+			prefs.artist_list_style = save[161]
+		if save[162] is not None:
+			trackclass_jar = save[162]
+			for d in trackclass_jar:
+				nt = TrackClass()
+				nt.__dict__.update(d)
+				master_library[d["index"]] = nt
+		if save[163] is not None:
+			prefs.premium = save[163]
+		if save[164] is not None:
+			gui.restore_radio_view = save[164]
+		if save[165] is not None:
+			radio_playlists = save[165]
+		if save[166] is not None:
+			radio_playlist_viewing = save[166]
+		if save[167] is not None:
+			prefs.radio_thumb_bans = save[167]
+		if save[168] is not None:
+			prefs.playlist_exports = save[168]
+		if save[169] is not None:
+			prefs.show_chromecast = save[169]
+		if save[170] is not None:
+			prefs.cache_list = save[170]
+		if save[171] is not None:
+			prefs.shuffle_lock = save[171]
+		if save[172] is not None:
+			prefs.album_shuffle_lock_mode = save[172]
+		if save[173] is not None:
+			gui.was_radio = save[173]
+		if save[174] is not None:
+			prefs.spot_username = save[174]
+		# if save[175] is not None:
+		# 	prefs.spot_password = save[175]
+		if save[176] is not None:
+			prefs.artist_list_threshold = save[176]
+		if save[177] is not None:
+			prefs.tray_theme = save[177]
+		if save[178] is not None:
+			prefs.row_title_format = save[178]
+		if save[179] is not None:
+			prefs.row_title_genre = save[179]
+		if save[180] is not None:
+			prefs.row_title_separator_type = save[180]
+		if save[181] is not None:
+			prefs.replay_preamp = save[181]
+		if save[182] is not None:
+			prefs.gallery_combine_disc = save[182]
+
+		del save
+		break
+
+	except IndexError:
+		logging.exception("Index error")
+		break
+	except Exception:
+		logging.exception("Failed to load save file")
+
+core_timer.set()
+logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
+
+perf_timer.set()
+keys = set(master_library.keys())
+for pl in multi_playlist:
+	if db_version > 68 or db_version == 0:
+		keys -= set(pl.playlist_ids)
+	else:
+		keys -= set(pl[2])
+if len(keys) > 5000:
+	gui.suggest_clean_db = True
+# logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
+
+pump = False
+shoot_pump.join()
+
+# temporary
+if window_size is None:
+	window_size = window_default_size
+	gui.rspw = 200
+
+# Run upgrades if we're behind the current DB standard
+if db_version > 0 and db_version < latest_db_version:
+	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
+	try:
+		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
+			db_version=db_version,
+			master_library=master_library,
+			install_mode=install_mode,
+			multi_playlist=multi_playlist,
+			star_store=star_store,
+			install_directory=install_directory,
+			a_cache_dir=a_cache_dir,
+			cache_directory=cache_directory,
+			config_directory=config_directory,
+			user_directory=user_directory,
+			gui=gui,
+			gen_codes=gen_codes,
+			prefs=prefs,
+			radio_playlists=radio_playlists,
+			theme=theme,
+			p_force_queue=p_force_queue,
+		)
+	except ValueError:
+		logging.exception("That should not happen")
+	except Exception:
+		logging.exception("Unknown error running database migration!")
+
+playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
+
+shoot = threading.Thread(target=keymaps.load)
+shoot.daemon = True
+shoot.start()
+
+# Loading Config -----------------
+
+download_directories: list[str] = []
+
+if download_directory.is_dir():
+	download_directories.append(str(download_directory))
+
+if music_directory is not None and music_directory.is_dir():
+	download_directories.append(str(music_directory))
+
+cf = Config()
+
+load_prefs()
+save_prefs()
+
+# Temporary
+if 0 < db_version <= 34:
+	prefs.theme_name = get_theme_name(theme)
+if 0 < db_version <= 66:
+	prefs.device_buffer = 80
+if 0 < db_version <= 53:
+	logging.info("Resetting fonts to defaults")
+	prefs.linux_font = "Noto Sans"
+	prefs.linux_font_semibold = "Noto Sans Medium"
+	prefs.linux_font_bold = "Noto Sans Bold"
+	save_prefs()
+
+# Auto detect lang
+lang: list[str] | None = None
+if prefs.ui_lang != "auto" or prefs.ui_lang == "":
+	# Force set lang
+	lang = [prefs.ui_lang]
+
+f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
+if f:
+	translation = gettext.translation("tauon", localedir=str(locale_directory), languages=lang)
+	translation.install()
+	builtins._ = translation.gettext
+
+	logging.info(f"Translation file for '{lang}' loaded")
+elif lang:
+	logging.error(f"No translation file available for '{lang}'")
+
+# ----
+
+sss = SDL_SysWMinfo()
+SDL_GetWindowWMInfo(t_window, sss)
+
+if prefs.use_gamepad:
+	SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
+
+smtc = False
+
+if msys and win_ver >= 10:
+
+	#logging.info(sss.info.win.window)
+	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
+	if SMTC_path.exists():
+		try:
+			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
+
+			def SMTC_button_callback(button: int) -> None:
+				logging.debug(f"SMTC sent key ID: {button}")
+				if button == 1:
+					inp.media_key = "Play"
+				if button == 2:
+					inp.media_key = "Pause"
+				if button == 3:
+					inp.media_key = "Next"
+				if button == 4:
+					inp.media_key = "Previous"
+				if button == 5:
+					inp.media_key = "Stop"
+				gui.update += 1
+				tauon.wake()
+
+			close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
+			smtc = sm.init(close_callback) == 0
+		except Exception:
+			logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
+	else:
+		logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
+
+auto_scale()
+
+scale_assets(scale_want=prefs.scale_want)
+
+try:
+	#star_lines        = view_prefs['star-lines']
+	update_title      = view_prefs["update-title"]
+	prefs.prefer_side = view_prefs["side-panel"]
+	prefs.dim_art     = False  # view_prefs['dim-art']
+	#gui.turbo         = view_prefs['level-meter']
+	#pl_follow         = view_prefs['pl-follow']
+	scroll_enable     = view_prefs["scroll-enable"]
+	if "break-enable" in view_prefs:
+		break_enable    = view_prefs["break-enable"]
+	else:
+		logging.warning("break-enable not found in view_prefs[] when trying to load settings! First run?")
+	#dd_index          = view_prefs['dd-index']
+	#custom_line_mode  = view_prefs['custom-line']
+	#thick_lines       = view_prefs['thick-lines']
+	if "append-date" in view_prefs:
+		prefs.append_date = view_prefs["append-date"]
+	else:
+		logging.warning("append-date not found in view_prefs[] when trying to load settings! First run?")
+except KeyError:
+	logging.exception("Failed to load settings - pref not found!")
+except Exception:
+	logging.exception("Failed to load settings!")
+
+if prefs.prefer_side is False:
+	gui.rsp = False
+
+mpt = None
+try:
+	p = ctypes.util.find_library("libopenmpt")
+	if p:
+		mpt = ctypes.cdll.LoadLibrary(p)
+	elif msys:
+		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
+	else:
+		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+
+	mpt.openmpt_module_create_from_memory.restype = c_void_p
+	mpt.openmpt_module_get_metadata.restype = c_char_p
+	mpt.openmpt_module_get_duration_seconds.restype = c_double
+except Exception:
+	logging.exception("Failed to load libopenmpt!")
+
+gme = None
+p = None
+try:
+	p = ctypes.util.find_library("libgme")
+	if p:
+		gme = ctypes.cdll.LoadLibrary(p)
+	elif msys:
+		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
+	else:
+		gme = ctypes.cdll.LoadLibrary("libgme.so")
+
+	gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
+	gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
+	gme.gme_track_info.restype = ctypes.c_char_p
+	gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
+	gme.gme_open_file.restype = ctypes.c_char_p
+
+except Exception:
+	logging.exception("Cannot find libgme")
+
+pctl = PlayerCtl()
+
+notify_change = pctl.notify_change
+
+if system == "Linux" and not macos and not msys:
+
+	try:
+		Notify.init("Tauon Music Box")
+		g_tc_notify = Notify.Notification.new(
+			"Tauon Music Box",
+			"Transcoding has finished.")
+		value = GLib.Variant("s", t_id)
+		g_tc_notify.set_hint("desktop-entry", value)
+
+		g_tc_notify.add_action(
+			"action_click",
+			"Open Output Folder",
+			g_open_encode_out,
+			None,
+		)
+
+		de_notify_support = True
+
+	except Exception:
+		logging.exception("Failed init notifications")
+
+	if de_notify_support:
+		song_notification = Notify.Notification.new("Next track notification")
+		value = GLib.Variant("s", t_id)
+		song_notification.set_hint("desktop-entry", value)
+
+lastfm = LastFMapi()
+
+lb = ListenBrainz()
+
+lfm_scrobbler = LastScrob()
+
+QuickThumbnail.renderer = renderer
+
+strings = Strings()
+
+tauon = Tauon()
+
+signal.signal(signal.SIGINT, signal_handler)
+
+deco = Deco(tauon)
+deco.get_themes = get_themes
+deco.renderer = renderer
+
+if prefs.backend != 4:
+	prefs.backend = 4
+
+chrome = None
+
+try:
+	from tauon.t_modules.t_chrome import Chrome
+	chrome = Chrome(tauon)
+except ModuleNotFoundError as e:
+	logging.debug(f"pychromecast import error: {e}")
+	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+finally:
+	logging.debug("Found Chrome(pychromecast) for chromecast support")
+
+tauon.chrome = chrome
+
+plex = PlexService()
+tauon.plex = plex
+
+jellyfin = Jellyfin(tauon)
+tauon.jellyfin = jellyfin
+
+subsonic = SubsonicService()
+
+koel = KoelService()
+tauon.koel = koel
+
+tau = TauService()
+tauon.tau = tau
+
+if system == "Windows" or msys:
+	from lynxtray import SysTrayIcon
+
+tray = STray()
+
+if system == "Linux" and not macos and not msys:
+
+	gnome = Gnome(tauon)
+
+	try:
+		gnomeThread = threading.Thread(target=gnome.main)
+		gnomeThread.daemon = True
+		gnomeThread.start()
+	except Exception:
+		logging.exception("Could not start Dbus thread")
+
+if (system == "Windows" or msys):
+
+	tray.start()
+
+	if win_ver < 10:
+		logging.warning("Unsupported Windows version older than W10, hooking media keys the old way without SMTC!")
+		import keyboard
+
+		def key_callback(event):
+
+			if event.event_type == "down":
+				if event.scan_code == -179:
+					inp.media_key = "Play"
+				elif event.scan_code == -178:
+					inp.media_key = "Stop"
+				elif event.scan_code == -177:
+					inp.media_key = "Previous"
+				elif event.scan_code == -176:
+					inp.media_key = "Next"
+				gui.update += 1
+				tauon.wake()
+
+		keyboard.hook_key(-179, key_callback)
+		keyboard.hook_key(-178, key_callback)
+		keyboard.hook_key(-177, key_callback)
+		keyboard.hook_key(-176, key_callback)
+
+stats_gen = GStats()
+mac_circle = asset_loader(scaled_asset_directory, loaded_asset_dc, "macstyle.png", True)
+
+# -------------------------------------------------------------------------------------------
+# initiate SDL2 --------------------------------------------------------------------C-IS-----
+
+cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND)
+cursor_standard = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW)
+cursor_shift = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE)
+cursor_text = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM)
+
+cursor_br_corner = cursor_standard
+cursor_right_side = cursor_standard
+cursor_top_side = cursor_standard
+cursor_left_side = cursor_standard
+cursor_bottom_side = cursor_standard
+
+if msys:
+	cursor_br_corner = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE)
+	cursor_right_side = cursor_shift
+	cursor_left_side = cursor_shift
+	cursor_top_side = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS)
+	cursor_bottom_side = cursor_top_side
+elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
+	try:
+		class XcursorImage(ctypes.Structure):
+			_fields_ = [
+					("version", c_uint32),
+					("size", c_uint32),
+					("width", c_uint32),
+					("height", c_uint32),
+					("xhot", c_uint32),
+					("yhot", c_uint32),
+					("delay", c_uint32),
+					("pixels", c_void_p),
+				]
+
+		try:
+			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
+		except Exception:
+			logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
+			xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
+		xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
+
+		def get_xcursor(name: str):
+			if "XCURSOR_THEME" not in os.environ:
+				raise ValueError("Missing XCURSOR_THEME in env")
+			if "XCURSOR_SIZE" not in os.environ:
+				raise ValueError("Missing XCURSOR_SIZE in env")
+			xcursor_theme = os.environ["XCURSOR_THEME"]
+			xcursor_size = os.environ["XCURSOR_SIZE"]
+			c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
+			sdl_surface = SDL_CreateRGBSurfaceWithFormatFrom(c1.pixels, c1.width, c1.height, 32, c1.width * 4, SDL_PIXELFORMAT_ARGB8888)
+			cursor = SDL_CreateColorCursor(sdl_surface, round(c1.xhot), round(c1.yhot))
+			xcu.XcursorImageDestroy(ctypes.byref(c1))
+			SDL_FreeSurface(sdl_surface)
+			return cursor
+
+		cursor_br_corner = get_xcursor("se-resize")
+		cursor_right_side = get_xcursor("right_side")
+		cursor_top_side = get_xcursor("top_side")
+		cursor_left_side = get_xcursor("left_side")
+		cursor_bottom_side = get_xcursor("bottom_side")
+
+		if SDL_GetCurrentVideoDriver() == b"wayland":
+			cursor_standard = get_xcursor("left_ptr")
+			cursor_text = get_xcursor("xterm")
+			cursor_shift = get_xcursor("sb_h_double_arrow")
+			cursor_hand = get_xcursor("hand2")
+			SDL_SetCursor(cursor_standard)
+
+	except Exception:
+		logging.exception("Error loading xcursor")
+
+
+if not maximized and gui.maximized:
+	SDL_MaximizeWindow(t_window)
+
+# logging.error(SDL_GetError())
+
+# t_window = SDL_CreateShapedWindow(
+# window_title,
+#	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+#	window_size[0], window_size[1],
+#	flags)
+
+# logging.error(SDL_GetError())
+
+if system == "Windows" or msys:
+	gui.window_id = sss.info.win.window
+
+
+# try:
+#	 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+#
+# except Exception:
+#	 logging.exception("old version of SDL detected")
+
+# get window surface and set up renderer
+# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+
+# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
+#
+# # window_surface = SDL_GetWindowSurface(t_window)
+#
+# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+#
+# display_index = SDL_GetWindowDisplayIndex(t_window)
+# display_bounds = SDL_Rect(0, 0)
+# SDL_GetDisplayBounds(display_index, display_bounds)
+#
+# icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
+# SDL_SetWindowIcon(t_window, icon)
+# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
+#
+# SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
+#
+#
+# gui.max_window_tex = 1000
+# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
+#
+#	 while window_size[0] > gui.max_window_tex:
+#		 gui.max_window_tex += 1000
+#	 while window_size[1] > gui.max_window_tex:
+#		 gui.max_window_tex += 1000
+#
+# gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+#
+# # gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
+#
+# SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
+#
+# gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
+# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
+# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
+#
+# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
+#
+# SDL_SetRenderTarget(renderer, None)
+#
+# gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+# gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
+#
+# SDL_SetRenderTarget(renderer, gui.main_texture)
+# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+#
+# SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+# SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
+# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+#
+# SDL_RenderClear(renderer)
+#
+# gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
+# gui.pl_update = 2
+#
+# SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+
+# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
+# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
+# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
+# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
+
+
+if (system == "Windows" or msys) and taskbar_progress:
+
+	class WinTask:
+
+		def __init__(self):
+			self.start = time.time()
+			self.updated_state = 0
+			self.window_id = gui.window_id
+			import comtypes.client as cc
+			cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
+			import comtypes.gen.TaskbarLib as tbl
+			self.taskbar = cc.CreateObject(
+				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
+				interface=tbl.ITaskbarList3)
+			self.taskbar.HrInit()
+
+			self.d_timer = Timer()
+
+		def update(self, force=False):
+			if self.d_timer.get() > 2 or force:
+				self.d_timer.set()
+
+				if pctl.playing_state == 1 and self.updated_state != 1:
+					self.taskbar.SetProgressState(self.window_id, 0x2)
+
+				if pctl.playing_state == 1:
+					self.updated_state = 1
+					if pctl.playing_length > 2:
+						perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
+						if perc < 2:
+							perc = 1
+						elif perc > 100:
+							prec = 100
+					else:
+						perc = 0
+
+					self.taskbar.SetProgressValue(self.window_id, perc, 100)
+
+				elif pctl.playing_state == 2 and self.updated_state != 2:
+					self.updated_state = 2
+					self.taskbar.SetProgressState(self.window_id, 0x8)
+
+				elif pctl.playing_state == 0 and self.updated_state != 0:
+					self.updated_state = 0
+					self.taskbar.SetProgressState(self.window_id, 0x2)
+					self.taskbar.SetProgressValue(self.window_id, 0, 100)
+
+
+	if (install_directory / "TaskbarLib.tlb").is_file():
+		logging.info("Taskbar progress enabled")
+		pctl.windows_progress = WinTask()
+
+	else:
+		pctl.taskbar_progress = False
+		logging.warning("Could not find TaskbarLib.tlb")
 
 ddt = TDraw(renderer)
 ddt.scale = gui.scale
