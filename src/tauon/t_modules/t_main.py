@@ -2611,7 +2611,7 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 	gui.message_subtext2 = line3
 	message_box_min_timer.set()
 	match mode:
-		case "done" | "confirm":
+		case "done" | "confirm" | "arrow" | "download" | "bubble" | "link":
 			logging.debug("Message: " + line1 + line2 + line3)
 		case "info":
 			logging.info("Message: " + line1 + line2 + line3)
