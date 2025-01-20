@@ -408,7 +408,9 @@ class Jellyfin:
 					"mediaTypes": ["Audio"],
 					"recursive": True,
 				},
-				timeout=10,
+				# Someone had a local setup with 36k songs where sync took 31s,
+				# so let's wait a nice while before timing out
+				timeout=120,
 				#stream=True,
 			)
 
