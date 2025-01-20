@@ -69,6 +69,10 @@ from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
 
 from tauon.t_modules import t_bootstrap
 
+debug = False
+if (install_directory / "debug").is_file():
+	debug = True
+
 log = LogHistoryHandler()
 formatter = logging.Formatter('[%(levelname)s] %(message)s')
 log.setFormatter(formatter)
@@ -84,7 +88,7 @@ logging.basicConfig(
 )
 # INFO+ to std_err
 # TODO(Martin): This hereabout section is wonk, setting INFO on streamhandler removes formatting for DEBUG
-logging.getLogger().handlers[0].setLevel(logging.DEBUG if (install_directory / "debug").is_file() else logging.INFO)
+logging.getLogger().handlers[0].setLevel(logging.DEBUG if debug else logging.INFO)
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 # https://docs.python.org/3/library/warnings.html
@@ -192,6 +196,12 @@ asset_directory = install_directory / "assets"
 
 if not user_directory.is_dir():
 	user_directory.mkdir(parents=True)
+
+if debug:
+	file_handler = logging.FileHandler(user_directory / "tauon.log")
+	file_handler.setLevel(logging.DEBUG)
+	file_handler.setFormatter(formatter)
+	logging.getLogger().addHandler(file_handler)
 
 fp = None
 dev_mode = (install_directory / ".dev").is_file()
