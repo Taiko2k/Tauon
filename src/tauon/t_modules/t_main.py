@@ -10658,17 +10658,8 @@ def coll_point(l, r):
 	# rect point collision detection
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
-
 def coll(r):
 	return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
-
-
-ddt = TDraw(renderer)
-ddt.scale = gui.scale
-ddt.force_subpixel_text = prefs.force_subpixel_text
-
-launch = Launch(tauon, pctl, gui, ddt)
-
 
 class Drawing:
 
@@ -10717,10 +10708,6 @@ class Drawing:
 			ddt.text(
 				(rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_colour, font, bg=background_colour)
 		return click
-
-
-draw = Drawing()
-
 
 def prime_fonts():
 	standard_font = prefs.linux_font
@@ -10797,76 +10784,6 @@ def prime_fonts():
 	ddt.prime_font(standard_font, 12, 515)
 	ddt.prime_font(standard_font, 13, 516)
 
-
-if system == "Linux":
-	prime_fonts()
-
-else:
-	# standard_font = "Meiryo"
-	standard_font = "Arial"
-	# semibold_font = "Meiryo Semibold"
-	semibold_font = "Arial Bold"
-	standard_weight = 500
-	bold_weight = 600
-	ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
-	ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 15, 11.5, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
-	ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
-	ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
-	ddt.win_prime_font(standard_font, 20, 17, weight=standard_weight, y_offset=-1)
-
-	ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
-	ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font("Arial", 10 + 4, 210, weight=600, y_offset=2)
-	ddt.win_prime_font("Arial", 11 + 3, 211, weight=600, y_offset=2)
-	ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
-	ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 17 + 2, 218, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 18 + 2, 218, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
-	ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
-
-	standard_weight = 550
-	ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 15, 311, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 16, 312, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 17, 313, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 18, 314, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
-
-	standard_font = "Arial Narrow"
-	standard_weight = 500
-
-	ddt.win_prime_font(standard_font, 14, 410, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 15, 411, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 16, 412, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 17, 413, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 18, 414, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 19, 415, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 20, 416, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 21, 417, weight=standard_weight, y_offset=1)
-
-	standard_weight = 600
-
-	ddt.win_prime_font(standard_font, 14, 510, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 15, 511, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 16, 512, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 17, 513, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 18, 514, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
-	ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
-
-
 class DropShadow:
 
 	def __init__(self):
@@ -10920,10 +10837,6 @@ class DropShadow:
 		unit[0].y = round(y) - round(self.underscan)
 		SDL_RenderCopy(renderer, unit[1], None, unit[0])
 
-
-drop_shadow = DropShadow()
-
-
 class LyricsRenMini:
 
 	def __init__(self):
@@ -10951,10 +10864,6 @@ class LyricsRenMini:
 
 		ddt.text((x, y, 4, w), self.text, colour, prefs.lyrics_font_size, w - (w % 2), colours.side_panel_background)
 
-
-lyrics_ren_mini = LyricsRenMini()
-
-
 class LyricsRen:
 
 	def __init__(self):
@@ -10979,10 +10888,6 @@ class LyricsRen:
 
 		ddt.text((x, y, 4, w), self.text, colour, 17, w, colours.playlist_panel_background)
 
-
-lyrics_ren = LyricsRen()
-
-
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 	if track.is_network:
 		return None
@@ -11004,7 +10909,6 @@ def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 		return None
 
 	return data
-
 
 class TimedLyricsToStatic:
 
@@ -11040,10 +10944,6 @@ class TimedLyricsToStatic:
 		self.cache_key = track
 		return text
 
-
-tauon.synced_to_static_lyrics = TimedLyricsToStatic()
-
-
 def get_real_time():
 	offset = pctl.decode_time - (prefs.sync_lyrics_time_offset / 1000)
 	if prefs.backend == 4:
@@ -11051,7 +10951,6 @@ def get_real_time():
 	elif prefs.backend == 2:
 		offset += 0.1
 	return max(0, offset)
-
 
 class TimedLyricsRen:
 
@@ -11192,9 +11091,6 @@ class TimedLyricsRen:
 				yy += spacing
 		return None
 
-timed_lyrics_ren = TimedLyricsRen()
-
-
 def draw_internel_link(x, y, text, colour, font):
 	tweak = font
 	while tweak > 100:
@@ -11220,9 +11116,8 @@ def draw_internel_link(x, y, text, colour, font):
 			return True
 	return False
 
-
-# No hit detect
 def draw_linked_text(location, text, colour, font, force=False, replace=""):
+	"""No hit detect"""
 	base = ""
 	link_text = ""
 	rest = ""
@@ -11278,7 +11173,6 @@ def draw_linked_text(location, text, colour, font, force=False, replace=""):
 
 	return left, right - left, target_link
 
-
 def draw_linked_text2(x, y, text, colour, font, click=False, replace=""):
 	link_pa = draw_linked_text(
 		(x, y), text, colour, font, replace=replace)
@@ -11289,7 +11183,6 @@ def draw_linked_text2(x, y, text, colour, font, click=False, replace=""):
 		if click:
 			webbrowser.open(link_pa[2], new=2, autoraise=True)
 	fields.add(link_rect)
-
 
 def link_activate(x, y, link_pa, click=None):
 	link_rect = [x + link_pa[0], y - 2 * gui.scale, link_pa[1], 20 * gui.scale]
@@ -11304,14 +11197,6 @@ def link_activate(x, y, link_pa, click=None):
 		if click:
 			webbrowser.open(link_pa[2], new=2, autoraise=True)
 			track_box = True
-
-
-text_box_canvas_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-text_box_canvas_hide_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-text_box_canvas = SDL_CreateTexture(
-	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, text_box_canvas_rect.w, text_box_canvas_rect.h)
-SDL_SetTextureBlendMode(text_box_canvas, SDL_BLENDMODE_BLEND)
-
 
 def pixel_to_logical(x):
 	return round((x / window_size[0]) * logical_size[0])
@@ -11737,7 +11622,6 @@ class TextBox2:
 		text_box_canvas_rect.y = round(y)
 		SDL_RenderCopy(renderer, text_box_canvas, None, text_box_canvas_rect)
 
-
 class TextBox:
 	cursor = True
 
@@ -12109,58 +11993,6 @@ class TextBox:
 
 		animate_monitor_timer.set()
 
-
-rename_text_area = TextBox()
-gst_output_field = TextBox2()
-gst_output_field.text = prefs.gst_output
-search_text = TextBox()
-rename_files = TextBox2()
-sub_lyrics_a = TextBox2()
-sub_lyrics_b = TextBox2()
-sync_target = TextBox2()
-edit_artist = TextBox2()
-edit_album = TextBox2()
-edit_title = TextBox2()
-edit_album_artist = TextBox2()
-
-rename_files.text = prefs.rename_tracks_template
-if rename_files_previous:
-	rename_files.text = rename_files_previous
-
-text_plex_usr = TextBox2()
-text_plex_pas = TextBox2()
-text_plex_ser = TextBox2()
-
-text_jelly_usr = TextBox2()
-text_jelly_pas = TextBox2()
-text_jelly_ser = TextBox2()
-
-text_koel_usr = TextBox2()
-text_koel_pas = TextBox2()
-text_koel_ser = TextBox2()
-
-text_air_usr = TextBox2()
-text_air_pas = TextBox2()
-text_air_ser = TextBox2()
-
-text_spot_client = TextBox2()
-text_spot_secret = TextBox2()
-text_spot_username = TextBox2()
-text_spot_password = TextBox2()
-
-text_maloja_url = TextBox2()
-text_maloja_key = TextBox2()
-
-text_sat_url = TextBox2()
-text_sat_playlist = TextBox2()
-
-rename_folder = TextBox2()
-rename_folder.text = prefs.rename_folder_template
-if rename_folder_previous:
-	rename_folder.text = rename_folder_previous
-
-temp_dest = SDL_Rect(0, 0)
-
 def img_slide_update_gall(value, pause: bool = True) -> None:
 	global album_mode_art_size
 	gui.halt_image_rendering = True
@@ -12178,7 +12010,6 @@ def img_slide_update_gall(value, pause: bool = True) -> None:
 
 	if album_mode_art_size > 150:
 		prefs.thin_gallery_borders = False
-
 
 def clear_img_cache(delete_disk: bool = True) -> None:
 	global album_art_gen
@@ -12213,7 +12044,6 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 	artist_list_box.thumb_cache.clear()
 	gui.update += 1
 
-
 def clear_track_image_cache(track: TrackClass):
 	gui.halt_image_rendering = True
 	if tauon.gall_ren.queue:
@@ -12245,7 +12075,6 @@ def clear_track_image_cache(track: TrackClass):
 	gui.halt_image_rendering = False
 	album_art_gen.clear_cache()
 
-
 class ImageObject:
 	def __init__(self) -> None:
 		self.index = 0
@@ -12258,7 +12087,6 @@ class ImageObject:
 		self.offset = 0
 		self.stats = True
 		self.format = ""
-
 
 class AlbumArt:
 	def __init__(self):
@@ -13282,16 +13110,14 @@ class AlbumArt:
 		gui.theme_temp_current = -1
 		colours.last_album = ""
 
-
-album_art_gen = AlbumArt()
-
-
-# 0 - blank
-# 1 - preparing first
-# 2 - render first
-# 3 - preparing 2nd
-
 class StyleOverlay:
+	"""
+	Stage:
+		0 - blank
+		1 - preparing first
+		2 - render first
+		3 - preparing 2nd
+	"""
 
 	def __init__(self):
 
@@ -13533,10 +13359,6 @@ class StyleOverlay:
 		else:
 			SDL_SetRenderTarget(renderer, gui.main_texture)
 
-
-style_overlay = StyleOverlay()
-
-
 def trunc_line(line: str, font: str, px: int, dots: bool = True) -> str:
 	"""This old function is slow and should be avoided"""
 	if ddt.get_text_w(line, font) < px + 10:
@@ -13556,7 +13378,6 @@ def trunc_line(line: str, font: str, px: int, dots: bool = True) -> str:
 			break
 
 	return line
-
 
 def right_trunc(line: str, font: str, px: int, dots: bool = True) -> str:
 	if ddt.get_text_w(line, font) < px + 10:
@@ -13578,37 +13399,23 @@ def right_trunc(line: str, font: str, px: int, dots: bool = True) -> str:
 	#	 line = line.rstrip(" ") + gui.trunk_end
 	return line
 
-
 # def trunc_line2(line, font, px):
-#	 trunk = False
-#	 p = ddt.get_text_w(line, font)
-#	 if p == 0 or p < px + 15:
-#		 return line
+# 	 trunk = False
+# 	 p = ddt.get_text_w(line, font)
+# 	 if p == 0 or p < px + 15:
+# 		 return line
 #
-#	 tl = line[0:(int(px / p * len(line)) + 3)]
+# 	 tl = line[0:(int(px / p * len(line)) + 3)]
 #
-#	 if ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px:
-#		 line = tl
+# 	 if ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px:
+# 		 line = tl
 #
-#	 while ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
-#		 trunk = True
-#		 line = line[:-1]
-#		 if len(line) < 1:
-#			 break
-#
-#	 return line.rstrip(" ") + gui.trunk_end
-
-
-click_time = time.time()
-scroll_hold = False
-scroll_point = 0
-scroll_bpoint = 0
-sbl = 50
-sbp = 100
-
-asbp = 50
-album_scroll_hold = False
-
+# 	 while ddt.get_text_w(line.rstrip(" ") + gui.trunk_end, font) > px + 10:
+# 		 trunk = True
+# 		 line = line[:-1]
+# 		 if len(line) < 1:
+# 			 break
+# 	 return line.rstrip(" ") + gui.trunk_end
 
 def fix_encoding(index, mode, enc):
 	global default_playlist
@@ -13658,7 +13465,6 @@ def fix_encoding(index, mode, enc):
 		#		 pctl.star_library[newkey] = copy.deepcopy(pctl.star_library[key])
 		#		 # del pctl.star_library[key]
 
-
 def transfer_tracks(index, mode, to):
 	todo = []
 
@@ -13674,7 +13480,6 @@ def transfer_tracks(index, mode, to):
 
 	pctl.multi_playlist[to].playlist_ids += todo
 
-
 def prep_gal():
 	global albums
 	albums = []
@@ -13686,7 +13491,6 @@ def prep_gal():
 		if folder != pctl.master_library[index].parent_folder_name:
 			albums.append([index, 0])
 			folder = pctl.master_library[index].parent_folder_name
-
 
 def add_stations(stations: list[dict[str, int | str]], name: str):
 	if len(stations) == 1:
@@ -13714,7 +13518,6 @@ def add_stations(stations: list[dict[str, int | str]], name: str):
 		pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
 	if not gui.radio_view:
 		enter_radio_view()
-
 
 def load_m3u(path: str) -> None:
 	name = os.path.basename(path)[:-4]
@@ -13799,7 +13602,6 @@ def load_m3u(path: str) -> None:
 
 	gui.update = 1
 
-
 def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 	ids = []
 	urls = {}
@@ -13850,14 +13652,12 @@ def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 	if stations:
 		add_stations(stations, os.path.basename(path))
 
-
 def load_pls(path: str) -> None:
 	if os.path.isfile(path):
 		f = open(path)
 		lines = f.readlines()
 		read_pls(lines, path)
 		f.close()
-
 
 def load_xspf(path: str) -> None:
 	global to_got
@@ -14053,32 +13853,6 @@ def load_xspf(path: str) -> None:
 
 	# tauon.log("Finished importing XSPF")
 
-
-bb_type = 0
-
-# gui.scroll_hide_box = (0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
-
-encoding_menu = False
-enc_index = 0
-enc_setting = 0
-enc_field = "All"
-
-gen_menu = False
-
-transfer_setting = 0
-
-b_panel_size = 300
-b_info_bar = False
-
-message_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "notice.png")
-message_warning_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "warning.png")
-message_tick_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "done.png")
-message_arrow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ext.png")
-message_error_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "error.png")
-message_bubble_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "bubble.png")
-message_download_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ddl.png")
-
-
 class ToolTip:
 
 	def __init__(self) -> None:
@@ -14131,13 +13905,6 @@ class ToolTip:
 
 		self.called = False
 
-
-tool_tip = ToolTip()
-tool_tip2 = ToolTip()
-tool_tip2.trigger = 1.8
-track_box_path_tool_timer = Timer()
-
-
 def ex_tool_tip(x, y, text1_width, text, font):
 	text2_width = ddt.get_text_w(text, font)
 	if text2_width == text1_width:
@@ -14154,7 +13921,6 @@ def ex_tool_tip(x, y, text1_width, text, font):
 	ddt.rect((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
 	ddt.rect((x, y, w, h), colours.menu_background)
 	p = ddt.text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.menu_text, 312, bg=colours.menu_background)
-
 
 class ToolTip3:
 
@@ -14225,16 +13991,10 @@ class ToolTip3:
 		if not coll(self.rect):
 			self.show = False
 
-
-columns_tool_tip = ToolTip3()
-
-tool_tip_instant = ToolTip3()
-
 def close_all_menus():
 	for menu in Menu.instances:
 		menu.active = False
 	Menu.active = False
-
 
 def menu_standard_or_grey(bool: bool):
 	if bool:
@@ -14244,38 +14004,12 @@ def menu_standard_or_grey(bool: bool):
 
 	return [line_colour, colours.menu_background, None]
 
-
-# Create empty area menu
-playlist_menu = Menu(130)
-radio_entry_menu = Menu(125)
-showcase_menu = Menu(135)
-center_info_menu = Menu(125)
-cancel_menu = Menu(100)
-gallery_menu = Menu(175, show_icons=True)
-artist_info_menu = Menu(135)
-queue_menu = Menu(150)
-repeat_menu = Menu(120)
-shuffle_menu = Menu(120)
-artist_list_menu = Menu(165, show_icons=True)
-lightning_menu = Menu(165)
-lsp_menu = Menu(145)
-folder_tree_menu = Menu(175, show_icons=True)
-folder_tree_stem_menu = Menu(190, show_icons=True)
-overflow_menu = Menu(175)
-spotify_playlist_menu = Menu(175)
-radio_context_menu = Menu(175)
-#chrome_menu = Menu(175)
-
-
-
-
 def enable_artist_list():
 	if prefs.left_panel_mode != "artist list":
 		gui.last_left_panel_mode = prefs.left_panel_mode
 	prefs.left_panel_mode = "artist list"
 	gui.lsp = True
 	gui.update_layout()
-
 
 def enable_playlist_list():
 	if prefs.left_panel_mode != "playlist":
@@ -14284,14 +14018,12 @@ def enable_playlist_list():
 	gui.lsp = True
 	gui.update_layout()
 
-
 def enable_queue_panel():
 	if prefs.left_panel_mode != "queue":
 		gui.last_left_panel_mode = prefs.left_panel_mode
 	prefs.left_panel_mode = "queue"
 	gui.lsp = True
 	gui.update_layout()
-
 
 def enable_folder_list():
 	if prefs.left_panel_mode != "folder view":
@@ -14300,30 +14032,25 @@ def enable_folder_list():
 	gui.lsp = True
 	gui.update_layout()
 
-
 def lsp_menu_test_queue():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "queue"
-
 
 def lsp_menu_test_playlist():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "playlist"
 
-
 def lsp_menu_test_tree():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "folder view"
 
-
 def lsp_menu_test_artist():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "artist list"
-
 
 def toggle_left_last():
 	gui.lsp = True
@@ -14331,17 +14058,6 @@ def toggle_left_last():
 	if t != gui.last_left_panel_mode:
 		prefs.left_panel_mode = gui.last_left_panel_mode
 		gui.last_left_panel_mode = t
-
-
-# . Menu entry: A side panel view layout
-
-lsp_menu.add(MenuItem(_("Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist))
-lsp_menu.add(MenuItem(_("Queue"), enable_queue_panel, disable_test=lsp_menu_test_queue))
-# . Menu entry: Side panel view layout showing a list of artists with thumbnails
-lsp_menu.add(MenuItem(_("Artist List"), enable_artist_list, disable_test=lsp_menu_test_artist))
-# . Menu entry: A side panel view layout. Alternative name: Folder Tree
-lsp_menu.add(MenuItem(_("Folder Navigator"), enable_folder_list, disable_test=lsp_menu_test_tree))
-
 
 class RenameTrackBox:
 
@@ -14547,10 +14263,6 @@ class RenameTrackBox:
 					_("{N} / {T} filenames were written.")
 					.format(N=str(total_todo), T=str(len(r_todo))), mode="done")
 			pctl.notify_change()
-
-
-rename_track_box = RenameTrackBox()
-
 
 class TransEditBox:
 
@@ -14771,9 +14483,6 @@ class TransEditBox:
 				gui.write_tag_in_progress = True
 				shooter(write_tag_go)
 
-trans_edit_box = TransEditBox()
-
-
 class SubLyricsBox:
 
 	def __init__(self):
@@ -14874,10 +14583,6 @@ class SubLyricsBox:
 		ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 		sub_lyrics_b.draw(
 			xx + round(4 * gui.scale), y, colours.box_input_text, self.active_field == 2, width=rect1[2] - 8 * gui.scale)
-
-
-sub_lyrics_box = SubLyricsBox()
-
 
 class ExportPlaylistBox:
 
@@ -14985,19 +14690,11 @@ class ExportPlaylistBox:
 		if warnings and target != 1:
 			show_message(_("Playlist exported"), target, mode="done")
 
-
-export_playlist_box = ExportPlaylistBox()
-
-
 def toggle_repeat() -> None:
 	gui.update += 1
 	pctl.repeat_mode ^= True
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
-
-
-tauon.toggle_repeat = toggle_repeat
-
 
 def menu_repeat_off() -> None:
 	pctl.repeat_mode = False
@@ -15005,13 +14702,11 @@ def menu_repeat_off() -> None:
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
 
-
 def menu_set_repeat() -> None:
 	pctl.repeat_mode = True
 	pctl.album_repeat_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
-
 
 def menu_album_repeat() -> None:
 	pctl.repeat_mode = True
@@ -15019,37 +14714,21 @@ def menu_album_repeat() -> None:
 	if pctl.mpris is not None:
 		pctl.mpris.update_loop()
 
-
-tauon.menu_album_repeat = menu_album_repeat
-tauon.menu_repeat_off = menu_repeat_off
-tauon.menu_set_repeat = menu_set_repeat
-
-repeat_menu.add(MenuItem(_("Repeat OFF"), menu_repeat_off))
-repeat_menu.add(MenuItem(_("Repeat Track"), menu_set_repeat))
-repeat_menu.add(MenuItem(_("Repeat Album"), menu_album_repeat))
-
-
 def toggle_random():
 	gui.update += 1
 	pctl.random_mode ^= True
 	if pctl.mpris is not None:
 		pctl.mpris.update_shuffle()
 
-
-tauon.toggle_random = toggle_random
-
-
 def toggle_random_on():
 	pctl.random_mode = True
 	if pctl.mpris is not None:
 		pctl.mpris.update_shuffle()
 
-
 def toggle_random_off():
 	pctl.random_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_shuffle()
-
 
 def menu_shuffle_off():
 	pctl.random_mode = False
@@ -15057,20 +14736,17 @@ def menu_shuffle_off():
 	if pctl.mpris is not None:
 		pctl.mpris.update_shuffle()
 
-
 def menu_set_random():
 	pctl.random_mode = True
 	pctl.album_shuffle_mode = False
 	if pctl.mpris is not None:
 		pctl.mpris.update_shuffle()
 
-
 def menu_album_random():
 	pctl.random_mode = True
 	pctl.album_shuffle_mode = True
 	if pctl.mpris is not None:
 		pctl.mpris.update_shuffle()
-
 
 def toggle_shuffle_layout(albums=False):
 	prefs.shuffle_lock ^= True
@@ -15095,22 +14771,11 @@ def toggle_shuffle_layout(albums=False):
 		if not gui.shuffle_was_showcase:
 			exit_combo()
 
-
 def toggle_shuffle_layout_albums():
 	toggle_shuffle_layout(albums=True)
 
-
 def exit_shuffle_layout(_):
 	return prefs.shuffle_lock
-
-
-shuffle_menu.add(MenuItem(_("Shuffle Lockdown"), toggle_shuffle_layout))
-shuffle_menu.add(MenuItem(_("Shuffle Lockdown Albums"), toggle_shuffle_layout_albums))
-shuffle_menu.br()
-shuffle_menu.add(MenuItem(_("Shuffle OFF"), menu_shuffle_off))
-shuffle_menu.add(MenuItem(_("Shuffle Tracks"), menu_set_random))
-shuffle_menu.add(MenuItem(_("Random Albums"), menu_album_random))
-
 
 def bio_set_large():
 	# if window_size[0] >= round(1000 * gui.scale):
@@ -15119,7 +14784,6 @@ def bio_set_large():
 	if gui.artist_info_panel:
 		artist_info_box.get_data(artist_info_box.artist_on)
 
-
 def bio_set_small():
 	# gui.artist_panel_height = 200 * gui.scale
 	prefs.bio_large = False
@@ -15127,11 +14791,9 @@ def bio_set_small():
 	if gui.artist_info_panel:
 		artist_info_box.get_data(artist_info_box.artist_on)
 
-
 def artist_info_panel_close():
 	gui.artist_info_panel ^= True
 	gui.update_layout()
-
 
 def toggle_bio_size_deco():
 	line = _("Make Large Size")
@@ -15139,7 +14801,6 @@ def toggle_bio_size_deco():
 		line = _("Make Compact Size")
 
 	return [colours.menu_text, colours.menu_background, line]
-
 
 def toggle_bio_size():
 	if prefs.bio_large:
@@ -15153,25 +14814,17 @@ def toggle_bio_size():
 		# bio_set_large()
 	# gui.update_layout()
 
-
 def flush_artist_bio(artist):
 	if os.path.isfile(os.path.join(a_cache_dir, artist + "-lfm.txt")):
 		os.remove(os.path.join(a_cache_dir, artist + "-lfm.txt"))
 	artist_info_box.text = ""
 	artist_info_box.artist_on = None
 
-
 def test_shift(_):
 	return key_shift_down or key_shiftr_down
 
-
 def test_artist_dl(_):
 	return not prefs.auto_dl_artist_data
-
-
-artist_info_menu.add(MenuItem(_("Close Panel"), artist_info_panel_close))
-artist_info_menu.add(MenuItem(_("Make Large"), toggle_bio_size, toggle_bio_size_deco))
-
 
 def show_in_playlist():
 	if album_mode and window_size[0] < 750 * gui.scale:
@@ -15182,20 +14835,6 @@ def show_in_playlist():
 	shift_selection.clear()
 	shift_selection.append(pctl.selected_in_playlist)
 	pctl.render_playlist()
-
-
-filter_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "filter.png", True))
-filter_icon.colour = [43, 213, 255, 255]
-filter_icon.xoff = 1
-
-folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "folder.png", True))
-info_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "info.png", True))
-
-folder_icon.colour = [244, 220, 66, 255]
-info_icon.colour = [61, 247, 163, 255]
-
-power_bar_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "power.png", True)
-
 
 def open_folder_stem(path):
 	if system == "Windows" or msys:
@@ -15209,7 +14848,6 @@ def open_folder_stem(path):
 			subprocess.Popen(["open", line])
 		else:
 			subprocess.Popen(["xdg-open", line])
-
 
 def open_folder_disable_test(index: int):
 	track = pctl.master_library[index]
@@ -15234,27 +14872,18 @@ def open_folder(index: int):
 		else:
 			subprocess.Popen(["xdg-open", line])
 
-
 def tag_to_new_playlist(tag_item):
 	path_stem_to_playlist(tag_item.path, tag_item.name)
-
 
 def folder_to_new_playlist_by_track_id(track_id: int) -> None:
 	track = pctl.get_track(track_id)
 	path_stem_to_playlist(track.parent_folder_path, track.parent_folder_name)
 
-
 def stem_to_new_playlist(path: str) -> None:
 	path_stem_to_playlist(path, os.path.basename(path))
 
-
-move_jobs = []
-move_in_progress = False
-
-
 def move_playing_folder_to_tree_stem(path: str) -> None:
 	move_playing_folder_to_stem(path, pl_id=tree_view_box.get_pl_id())
-
 
 def move_playing_folder_to_stem(path: str, pl_id: int | None = None) -> None:
 	if not pl_id:
@@ -15361,10 +14990,8 @@ def move_playing_folder_to_stem(path: str, pl_id: int | None = None) -> None:
 		track.parent_folder_name, load_order))
 	tauon.thread_manager.ready("worker")
 
-
 def move_playing_folder_to_tag(tag_item):
 	move_playing_folder_to_stem(tag_item.path)
-
 
 def re_import4(id):
 	p = None
@@ -15385,7 +15012,6 @@ def re_import4(id):
 	load_orders.append(copy.deepcopy(load_order))
 	show_message(_("Rescanning folder..."), pctl.get_track(id).parent_folder_path, mode="info")
 
-
 def re_import3(stem):
 	p = None
 	for i, id in enumerate(default_playlist):
@@ -15405,7 +15031,6 @@ def re_import3(stem):
 	load_orders.append(copy.deepcopy(load_order))
 	show_message(_("Rescanning folder..."), stem, mode="info")
 
-
 def collapse_tree_deco():
 	pl_id = tree_view_box.get_pl_id()
 
@@ -15413,10 +15038,8 @@ def collapse_tree_deco():
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
-
 def collapse_tree():
 	tree_view_box.collapse_all()
-
 
 def lock_folder_tree():
 	if tree_view_box.lock_pl:
@@ -15424,36 +15047,10 @@ def lock_folder_tree():
 	else:
 		tree_view_box.lock_pl = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
-
 def lock_folder_tree_deco():
 	if tree_view_box.lock_pl:
 		return [colours.menu_text, colours.menu_background, _("Unlock Panel")]
 	return [colours.menu_text, colours.menu_background, _("Lock Panel")]
-
-
-folder_tree_stem_menu.add(MenuItem(_("Open Folder"), open_folder_stem, pass_ref=True, icon=folder_icon))
-folder_tree_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
-
-lightning_menu.add(MenuItem(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon))
-folder_tree_menu.add(MenuItem(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon))
-folder_tree_stem_menu.add(MenuItem(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True, icon=filter_icon))
-folder_tree_stem_menu.add(MenuItem(_("Rescan Folder"), re_import3, pass_ref=True))
-folder_tree_menu.add(MenuItem(_("Rescan Folder"), re_import4, pass_ref=True))
-lightning_menu.add(MenuItem(_("Move Playing Folder Here"), move_playing_folder_to_tag, pass_ref=True))
-
-folder_tree_stem_menu.add(MenuItem(_("Move Playing Folder Here"), move_playing_folder_to_tree_stem, pass_ref=True))
-
-folder_tree_stem_menu.br()
-
-folder_tree_stem_menu.add(MenuItem(_("Collapse All"), collapse_tree, collapse_tree_deco))
-
-folder_tree_stem_menu.add(MenuItem("lock", lock_folder_tree, lock_folder_tree_deco))
-# folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
-
-gallery_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
-
-gallery_menu.add(MenuItem(_("Show in Playlist"), show_in_playlist))
-
 
 def finish_current():
 	playing_object = pctl.playing_object()
@@ -15465,7 +15062,6 @@ def finish_current():
 			0, queue_item_gen(playing_object.index,
 			pctl.playlist_playing_position,
 			pl_to_id(pctl.active_playlist_playing), 1, 1))
-
 
 def add_album_to_queue(ref, position=None, playlist_id=None):
 	if position is None:
@@ -15484,7 +15080,6 @@ def add_album_to_queue(ref, position=None, playlist_id=None):
 	queue_timer_set(queue_object=queue_object)
 	if prefs.stop_end_queue:
 		pctl.auto_stop = False
-
 
 def add_album_to_queue_fc(ref):
 	playing_object = pctl.playing_object()
@@ -15531,13 +15126,6 @@ def add_album_to_queue_fc(ref):
 	if prefs.stop_end_queue:
 		pctl.auto_stop = False
 
-
-
-gallery_menu.add_sub(_("Image…"), 160)
-gallery_menu.add(MenuItem(_("Add Album to Queue"), add_album_to_queue, pass_ref=True))
-gallery_menu.add(MenuItem(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True))
-
-
 def cancel_import():
 	if transcode_list:
 		del transcode_list[1:]
@@ -15548,13 +15136,8 @@ def cancel_import():
 		gui.stop_sync = True
 		gui.sync_progress = _("Aborting Sync")
 
-
-cancel_menu.add(MenuItem(_("Cancel"), cancel_import))
-
-
 def toggle_lyrics_show(a):
 	return not gui.combo_mode
-
 
 def toggle_side_art_deco():
 	colour = colours.menu_text
@@ -15568,7 +15151,6 @@ def toggle_side_art_deco():
 
 	return [colour, colours.menu_background, line]
 
-
 def toggle_lyrics_panel_position_deco():
 	colour = colours.menu_text
 	if prefs.lyric_metadata_panel_top:
@@ -15581,20 +15163,16 @@ def toggle_lyrics_panel_position_deco():
 
 	return [colour, colours.menu_background, line]
 
-
 def toggle_lyrics_panel_position():
 	prefs.lyric_metadata_panel_top ^= True
-
 
 def lyrics_in_side_show(track_object: TrackClass):
 	if gui.combo_mode or not prefs.show_lyrics_side:
 		return False
 	return True
 
-
 def toggle_side_art():
 	prefs.show_side_lyrics_art_panel ^= True
-
 
 def toggle_lyrics_deco(track_object: TrackClass):
 	colour = colours.menu_text
@@ -15626,7 +15204,6 @@ def toggle_lyrics_deco(track_object: TrackClass):
 		colour = colours.menu_text_disabled
 	return [colour, colours.menu_background, line]
 
-
 def toggle_lyrics(track_object: TrackClass):
 	if not track_object:
 		return
@@ -15650,7 +15227,6 @@ def toggle_lyrics(track_object: TrackClass):
 			prefs.prefer_synced_lyrics = True
 		# if prefs.show_lyrics_side and track_object.lyrics == "":
 		#	 show_message("No lyrics for this track")
-
 
 def get_lyric_fire(track_object: TrackClass, silent: bool = False) -> str | None:
 	lyrics_ren.lyrics_position = 0
@@ -15726,7 +15302,6 @@ def get_lyric_fire(track_object: TrackClass, silent: bool = False) -> str | None
 		lyrics_ren.lyrics_position = 0
 		pctl.notify_change()
 
-
 def get_lyric_wiki(track_object: TrackClass):
 	if track_object.artist == "" or track_object.title == "":
 		show_message(_("Insufficient metadata to get lyrics"), mode="warning")
@@ -15737,7 +15312,6 @@ def get_lyric_wiki(track_object: TrackClass):
 	shoot_dl.start()
 
 	logging.info("..Done")
-
 
 def get_lyric_wiki_silent(track_object: TrackClass):
 	logging.info("Searching for lyrics...")
@@ -15750,7 +15324,6 @@ def get_lyric_wiki_silent(track_object: TrackClass):
 	shoot_dl.start()
 
 	logging.info("..Done")
-
 
 def test_auto_lyrics(track_object: TrackClass):
 	if not track_object:
@@ -15765,11 +15338,9 @@ def test_auto_lyrics(track_object: TrackClass):
 				lyrics_check_timer.set()
 				prefs.auto_lyrics_checked.append(track_object.index)
 
-
 def get_bio(track_object: TrackClass):
 	if track_object.artist != "":
 		lastfm.get_bio(track_object.artist)
-
 
 def search_lyrics_deco(track_object: TrackClass):
 	if not track_object.lyrics:
@@ -15778,10 +15349,6 @@ def search_lyrics_deco(track_object: TrackClass):
 		line_colour = colours.menu_text_disabled
 
 	return [line_colour, colours.menu_background, None]
-
-
-showcase_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
 
 def toggle_synced_lyrics(tr):
 	prefs.prefer_synced_lyrics ^= True
@@ -15802,8 +15369,6 @@ def toggle_synced_lyrics_deco(track):
 
 	return [line_colour, colours.menu_background, text]
 
-showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
 def paste_lyrics_deco():
 	if SDL_HasClipboardText():
 		line_colour = colours.menu_text
@@ -15820,14 +15385,8 @@ def paste_lyrics(track_object: TrackClass):
 	else:
 		logging.warning("NO TEXT TO PASTE")
 
-#def chord_lyrics_paste_show_test(_) -> bool:
-#	return gui.combo_mode and prefs.guitar_chords
-# showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
-
-#guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl)
-#showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
-#showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
-
+# def chord_lyrics_paste_show_test(_) -> bool:
+# 	return gui.combo_mode and prefs.guitar_chords
 
 def copy_lyrics_deco(track_object: TrackClass):
 	if track_object.lyrics:
@@ -15837,14 +15396,11 @@ def copy_lyrics_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, None]
 
-
 def copy_lyrics(track_object: TrackClass):
 	copy_to_clipboard(track_object.lyrics)
 
-
 def clear_lyrics(track_object: TrackClass):
 	track_object.lyrics = ""
-
 
 def clear_lyrics_deco(track_object: TrackClass):
 	if track_object.lyrics:
@@ -15854,38 +15410,14 @@ def clear_lyrics_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, None]
 
-
 def split_lyrics(track_object: TrackClass):
 	if track_object.lyrics != "":
 		track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
 	else:
 		pass
 
-
 def show_sub_search(track_object: TrackClass):
 	sub_lyrics_box.activate(track_object)
-
-
-showcase_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-showcase_menu.add_sub(_("Misc…"), 150)
-showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), show_sub_search, pass_ref=True))
-showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, paste_lyrics_deco, pass_ref=True))
-showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show))
-showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
-	toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show))
-
-center_info_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-center_info_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-center_info_menu.add_sub(_("Misc…"), 150)
-center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), show_sub_search, pass_ref=True))
-center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, paste_lyrics_deco, pass_ref=True))
-center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show))
-center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
-	toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show))
 
 def save_embed_img_disable_test(track_object: TrackClass):
 	if type(track_object) is int:
@@ -15931,10 +15463,6 @@ def save_embed_img(track_object: TrackClass):
 		logging.exception("Unknown error trying to save an image")
 		show_message(_("Image save error."), _("A mysterious error occurred"), mode="error")
 
-
-picture_menu = Menu(175)
-
-
 def open_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
@@ -15947,7 +15475,6 @@ def open_image_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, None]
 
-
 def open_image_disable_test(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
@@ -15957,7 +15484,6 @@ def open_image(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	album_art_gen.open_external(track_object)
-
 
 def extract_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
@@ -15973,10 +15499,6 @@ def extract_image_deco(track_object: TrackClass):
 		line_colour = colours.menu_text_disabled
 
 	return [line_colour, colours.menu_background, None]
-
-
-picture_menu.add(MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
-
 
 def cycle_image_deco(track_object: TrackClass):
 	info = album_art_gen.get_info(track_object)
@@ -16005,20 +15527,10 @@ def cycle_offset(track_object: TrackClass):
 		track_object = pctl.master_library[track_object]
 	album_art_gen.cycle_offset(track_object)
 
-
 def cycle_offset_back(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
 	album_art_gen.cycle_offset_reverse(track_object)
-
-
-# Next and previous pictures
-picture_menu.add(MenuItem(_("Next Image"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True))
-#picture_menu.add(_("Previous"), cycle_offset_back, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
-
-# Extract embedded artwork from file
-picture_menu.add(MenuItem(_("Extract Image"), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
-
 
 def dl_art_deco(track_object: TrackClass):
 	if type(track_object) is int:
@@ -16026,7 +15538,6 @@ def dl_art_deco(track_object: TrackClass):
 	if not track_object.album or not track_object.artist:
 		return [colours.menu_text_disabled, colours.menu_background, None]
 	return [colours.menu_text, colours.menu_background, None]
-
 
 def download_art1(tr):
 	if tr.is_network:
@@ -16162,7 +15673,6 @@ def download_art1(tr):
 		logging.exception("Matching cover art or ID could not be found.")
 		show_message(_("Matching cover art or ID could not be found."))
 
-
 def download_art1_fire_disable_test(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
@@ -16174,7 +15684,6 @@ def download_art1_fire(track_object: TrackClass):
 	shoot_dl = threading.Thread(target=download_art1, args=[track_object])
 	shoot_dl.daemon = True
 	shoot_dl.start()
-
 
 def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | None:
 	"""Return amount of removed objects or None"""
@@ -16267,11 +15776,6 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 	if pr == 1:
 		pctl.revert()
 
-
-del_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "del.png", True)
-delete_icon = MenuIcon(del_icon)
-
-
 def delete_file_image(track_object: TrackClass):
 	try:
 		showc = album_art_gen.get_info(track_object)
@@ -16284,7 +15788,6 @@ def delete_file_image(track_object: TrackClass):
 	except Exception:
 		logging.exception("Failed to delete file")
 		show_message(_("Something went wrong"), mode="error")
-
 
 def delete_track_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
@@ -16312,7 +15815,6 @@ def delete_track_image_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, text]
 
-
 def delete_track_image(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
@@ -16327,21 +15829,11 @@ def delete_track_image(track_object: TrackClass):
 		gui.message_box_confirm_reference = (track_object, False)
 		show_message(_("This will erase any embedded image in {N} files. Are you sure?").format(N=n), mode="confirm")
 
-
-
-picture_menu.add(
-	MenuItem(_("Delete Image File"), delete_track_image, delete_track_image_deco, pass_ref=True,
-	pass_ref_deco=True, icon=delete_icon))
-
-picture_menu.add(MenuItem(_("Quick-Fetch Cover Art"), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
-
-
 def toggle_gimage(mode: int = 0) -> bool:
 	if mode == 1:
 		return prefs.show_gimage
 	prefs.show_gimage ^= True
 	return None
-
 
 def search_image_deco(track_object: TrackClass):
 	if track_object.artist and track_object.album:
@@ -16351,33 +15843,16 @@ def search_image_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, None]
 
-
 def ser_gimage(track_object: TrackClass):
 	if track_object.artist and track_object.album:
 		line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(
 			track_object.artist + " " + track_object.album)
 		webbrowser.open(line, new=2, autoraise=True)
 
-
-# picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
-
-# picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
-
-picture_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-picture_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
-gallery_menu.add_to_sub(0, MenuItem(_("Next"), cycle_offset, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
-gallery_menu.add_to_sub(0, MenuItem(_("Previous"), cycle_offset_back, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
-gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
-gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
-gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), delete_track_image, delete_track_image_deco, pass_ref=True, pass_ref_deco=True)) #, icon=delete_icon)
-gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
-
 def append_here():
 	global cargo
 	global default_playlist
 	default_playlist += cargo
-
 
 def paste_deco():
 	active = False
@@ -16399,10 +15874,8 @@ def paste_deco():
 
 	return [line_colour, colours.menu_background, line]
 
-
 def lightning_move_test(discard):
 	return gui.lightning_copy and prefs.show_transfer
-
 
 # def copy_deco():
 #	 line = "Copy"
@@ -16410,12 +15883,7 @@ def lightning_move_test(discard):
 #		 line = "Copy" #Folder From Library"
 #	 else:
 #		 line = "Copy"
-#
-#
 #	 return [colours.menu_text, colours.menu_background, line]
-
-
-# playlist_menu.add('Paste', append_here, paste_deco)
 
 def unique_template(string):
 	return "<t>" in string or \
@@ -16427,7 +15895,6 @@ def unique_template(string):
 		"<sn>" in string or \
 		"<singlenumber>" in string or \
 		"<s>" in string or "%t" in string or "%tn" in string
-
 
 def re_template_word(word, tr):
 	if word == "aa" or word == "albumartist":
@@ -16473,7 +15940,6 @@ def re_template_word(word, tr):
 
 	return ""
 
-
 def parse_template2(string: str, track_object: TrackClass, strict: bool = False):
 	temp = ""
 	out = ""
@@ -16509,7 +15975,6 @@ def parse_template2(string: str, track_object: TrackClass, strict: bool = False)
 		out = out.replace(" ", "_")
 
 	return parse_template(out, track_object, strict=strict)
-
 
 def parse_template(string, track_object: TrackClass, up_ext: bool = False, strict: bool = False):
 	set = 0
@@ -16569,12 +16034,6 @@ def parse_template(string, track_object: TrackClass, up_ext: bool = False, stric
 
 	return output
 
-
-# Create playlist tab menu
-tab_menu = Menu(160, show_icons=True)
-radio_tab_menu = Menu(160, show_icons=True)
-
-
 def rename_playlist(index, generator: bool = False) -> None:
 	gui.rename_playlist_box = True
 	rename_playlist_box.edit_generator = False
@@ -16601,18 +16060,11 @@ def rename_playlist(index, generator: bool = False) -> None:
 	if generator:
 		rename_playlist_box.toggle_edit_gen()
 
-
 def edit_generator_box(index: int) -> None:
 	rename_playlist(index, generator=True)
 
-
-tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
-radio_tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
-
-
 def pin_playlist_toggle(pl: int) -> None:
 	pctl.multi_playlist[pl].hidden ^= True
-
 
 def pl_pin_deco(pl: int):
 	# if pctl.multi_playlist[pl].hidden == True and tab_menu.pos[1] >
@@ -16621,29 +16073,21 @@ def pl_pin_deco(pl: int):
 		return [colours.menu_text, colours.menu_background, _("Pin")]
 	return [colours.menu_text, colours.menu_background, _("Unpin")]
 
-
-tab_menu.add(MenuItem("Pin", pin_playlist_toggle, pl_pin_deco, pass_ref=True, pass_ref_deco=True))
-
-
 def pl_lock_deco(pl: int):
 	if pctl.multi_playlist[pl].locked == True:
 		return [colours.menu_text, colours.menu_background, _("Unlock")]
 	return [colours.menu_text, colours.menu_background, _("Lock")]
 
-
 def view_pl_is_locked(_) -> bool:
 	return pctl.multi_playlist[pctl.active_playlist_viewing].locked
-
 
 def pl_is_locked(pl: int) -> bool:
 	if not pctl.multi_playlist:
 		return False
 	return pctl.multi_playlist[pl].locked
 
-
 def lock_playlist_toggle(pl: int) -> None:
 	pctl.multi_playlist[pl].locked ^= True
-
 
 def lock_colour_callback():
 	if pctl.multi_playlist[gui.tab_menu_pl].locked:
@@ -16651,19 +16095,6 @@ def lock_colour_callback():
 			return [230, 180, 60, 255]
 		return [240, 190, 10, 255]
 	return None
-
-
-lock_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "lock.png", True)
-lock_icon = MenuIcon(lock_asset)
-lock_icon.base_asset_mod = asset_loader(scaled_asset_directory, loaded_asset_dc, "unlock.png", True)
-lock_icon.colour = [240, 190, 10, 255]
-lock_icon.colour_callback = lock_colour_callback
-lock_icon.xoff = 4
-lock_icon.yoff = -1
-
-tab_menu.add(MenuItem(_("Lock"), lock_playlist_toggle, pl_lock_deco,
-	pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=test_shift))
-
 
 def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
@@ -16706,7 +16137,6 @@ def export_m3u(pl: int, direc: str | None = None, relative: bool = False, show: 
 		else:
 			subprocess.Popen(["xdg-open", line])
 	return target
-
 
 def export_xspf(pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
 	if len(pctl.multi_playlist[pl].playlist_ids) < 1:
@@ -16759,7 +16189,6 @@ def export_xspf(pl: int, direc: str | None = None, relative: bool = False, show:
 
 	return target
 
-
 def reload():
 	if album_mode:
 		reload_albums(quiet=True)
@@ -16768,7 +16197,6 @@ def reload():
 	# elif gui.combo_mode:
 	#	 reload_albums(quiet=True)
 	#	 combo_pl_render.prep()
-
 
 def clear_playlist(index: int):
 	global default_playlist
@@ -16801,7 +16229,6 @@ def clear_playlist(index: int):
 
 	gui.pl_update = 1
 
-
 def convert_playlist(pl: int, get_list: bool = False) -> list[list[int]]| None:
 	global transcode_list
 
@@ -16833,7 +16260,6 @@ def convert_playlist(pl: int, get_list: bool = False) -> list[list[int]]| None:
 
 	transcode_list.extend(folders)
 
-
 def get_folder_tracks_local(pl_in: int) -> list[int]:
 	selection = []
 	parent = os.path.normpath(pctl.master_library[default_playlist[pl_in]].parent_folder_path)
@@ -16843,16 +16269,10 @@ def get_folder_tracks_local(pl_in: int) -> list[int]:
 		pl_in += 1
 	return selection
 
-
 def test_pl_tab_locked(pl: int) -> bool:
 	if gui.radio_view:
 		return False
 	return pctl.multi_playlist[pl].locked
-
-
-# Clear playlist
-tab_menu.add(MenuItem(_("Clear"), clear_playlist, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True))
-
 
 def move_radio_playlist(source, dest):
 	if dest > source:
@@ -16865,7 +16285,6 @@ def move_radio_playlist(source, dest):
 		pctl.radio_playlist_viewing = pctl.radio_playlists.index(temp)
 	except Exception:
 		logging.exception("Playlist move error")
-
 
 def move_playlist(source, dest):
 	global default_playlist
@@ -16885,7 +16304,6 @@ def move_playlist(source, dest):
 		default_playlist = default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 	except Exception:
 		logging.exception("Playlist move error")
-
 
 def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -> None:
 	if gui.radio_view:
@@ -16992,16 +16410,11 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 
 	pctl.db_inc += 1
 
-to_scan = []
-
-
 def delete_playlist_force(index: int):
 	delete_playlist(index, force=True, check_lock=True)
 
-
 def delete_playlist_by_id(id: int, force: bool = False, check_lock: bool = False) -> None:
 	delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
-
 
 def delete_playlist_ask(index: int):
 	print("ark")
@@ -17017,16 +16430,13 @@ def delete_playlist_ask(index: int):
 	gui.message_box_confirm_reference = (pl_to_id(index), True, True)
 	show_message(_("Are you sure you want to delete playlist: {name}?").format(name=pctl.multi_playlist[index].title), mode="confirm")
 
-
 def rescan_tags(pl: int) -> None:
 	for track in pctl.multi_playlist[pl].playlist_ids:
 		if pctl.master_library[track].is_cue is False:
 			to_scan.append(track)
 	tauon.thread_manager.ready("worker")
 
-
 # def re_import(pl: int) -> None:
-#
 #	 path = pctl.multi_playlist[pl].last_folder
 #	 if path == "":
 #		 return
@@ -17039,7 +16449,6 @@ def rescan_tags(pl: int) -> None:
 #	 load_order.target = path
 #	 load_order.playlist = pctl.multi_playlist[pl].uuid_int
 #	 load_orders.append(copy.deepcopy(load_order))
-
 
 def re_import2(pl: int) -> None:
 	paths = pctl.multi_playlist[pl].last_folder
@@ -17058,14 +16467,12 @@ def re_import2(pl: int) -> None:
 	if paths:
 		show_message(_("Rescanning folders..."), mode="info")
 
-
 def rescan_all_folders():
 	for i, p in enumerate(pctl.multi_playlist):
 		re_import2(i)
 
 def s_append(index: int):
 	paste(playlist_no=index)
-
 
 def append_playlist(index: int):
 	global cargo
@@ -17117,7 +16524,6 @@ def index_key(index: int):
 		logging.exception("Failed to parse as int, returning 'a'")
 		return "a"
 
-
 def sort_tracK_numbers_album_only(pl: int, custom_list=None):
 	current_folder = ""
 	albums = []
@@ -17142,7 +16548,6 @@ def sort_tracK_numbers_album_only(pl: int, custom_list=None):
 		playlist[albums[i]:] = sorted(playlist[albums[i]:], key=index_key)
 
 	gui.pl_update += 1
-
 
 def sort_track_2(pl: int, custom_list: list[int] | None = None) -> None:
 	current_folder = ""
@@ -17179,23 +16584,16 @@ def sort_track_2(pl: int, custom_list: list[int] | None = None) -> None:
 
 	gui.pl_update += 1
 
-
-tauon.sort_track_2 = sort_track_2
-
-
 def key_filepath(index: int):
 	track = pctl.master_library[index]
 	return track.parent_folder_path.lower(), track.filename
 
-
 def key_fullpath(index: int):
 	return pctl.master_library[index].fullpath
-
 
 def key_filename(index: int):
 	track = pctl.master_library[index]
 	return track.filename
-
 
 def sort_path_pl(pl: int, custom_list=None):
 	if custom_list is not None:
@@ -17208,7 +16606,6 @@ def sort_path_pl(pl: int, custom_list=None):
 	else:
 		target.sort(key=key_filepath)
 
-
 def append_current_playing(index: int):
 	if tauon.spot_ctl.coasting:
 		tauon.spot_ctl.append_playing(index)
@@ -17218,7 +16615,6 @@ def append_current_playing(index: int):
 	if pctl.playing_state > 0 and len(pctl.track_queue) > 0:
 		pctl.multi_playlist[index].playlist_ids.append(pctl.track_queue[pctl.queue_step])
 		gui.pl_update = 1
-
 
 def export_stats(pl: int) -> None:
 	playlist_time = 0
@@ -17391,7 +16787,6 @@ def export_stats(pl: int) -> None:
 	else:
 		subprocess.call(["xdg-open", target])
 
-
 def imported_sort(pl: int) -> None:
 	if pl_is_locked(pl):
 		show_message(_("Playlist is locked"))
@@ -17432,7 +16827,6 @@ def standard_sort(pl: int) -> None:
 	reload_albums()
 	tree_view_box.clear_target_pl(pl)
 
-
 def year_s(plt):
 	sorted_temp = sorted(plt, key=lambda x: x[1])
 	temp = []
@@ -17440,7 +16834,6 @@ def year_s(plt):
 	for album in sorted_temp:
 		temp += album[0]
 	return temp
-
 
 def year_sort(pl: int, custom_list=None):
 	if custom_list:
@@ -17512,20 +16905,9 @@ def year_sort(pl: int, custom_list=None):
 	reload_albums()
 	tree_view_box.clear_target_pl(pl)
 
-
 def pl_toggle_playlist_break(ref):
 	pctl.multi_playlist[ref].hide_title ^= 1
 	gui.pl_update = 1
-
-
-delete_icon.xoff = 3
-delete_icon.colour = [249, 70, 70, 255]
-
-tab_menu.add(MenuItem(_("Delete"),
-	delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True))
-radio_tab_menu.add(MenuItem(_("Delete"),
-	delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True))
-
 
 def gen_unique_pl_title(base: str, extra: str="", start: int = 1) -> str:
 	ex = start
@@ -17543,7 +16925,6 @@ def gen_unique_pl_title(base: str, extra: str="", start: int = 1) -> str:
 			break
 
 	return title
-
 
 def new_playlist(switch: bool = True) -> int | None:
 	if gui.radio_view:
@@ -17565,28 +16946,6 @@ def new_playlist(switch: bool = True) -> int | None:
 		switch_playlist(len(pctl.multi_playlist) - 1)
 	return len(pctl.multi_playlist) - 1
 
-
-heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
-spot_heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
-transcode_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "transcode.png", True))
-mod_folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "mod_folder.png", True))
-settings_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "settings2.png", True))
-rename_tracks_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "pen.png", True))
-add_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "new.png", True))
-spot_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot.png", True)
-spot_icon = MenuIcon(spot_asset)
-spot_icon.colour = [30, 215, 96, 255]
-spot_icon.xoff = 5
-spot_icon.yoff = 2
-
-jell_icon = MenuIcon(spot_asset)
-jell_icon.colour = [190, 100, 210, 255]
-jell_icon.xoff = 5
-jell_icon.yoff = 2
-
-tab_menu.br()
-
-
 def append_deco():
 	if pctl.playing_state > 0:
 		line_colour = colours.menu_text
@@ -17599,7 +16958,6 @@ def append_deco():
 
 	return [line_colour, colours.menu_background, text]
 
-
 def rescan_deco(pl: int):
 	if pctl.multi_playlist[pl].last_folder:
 		line_colour = colours.menu_text
@@ -17609,7 +16967,6 @@ def rescan_deco(pl: int):
 	# base = os.path.basename(pctl.multi_playlist[pl].last_folder)
 
 	return [line_colour, colours.menu_background, None]
-
 
 def regenerate_deco(pl: int):
 	id = pl_to_id(pl)
@@ -17621,31 +16978,6 @@ def regenerate_deco(pl: int):
 		line_colour = colours.menu_text_disabled
 
 	return [line_colour, colours.menu_background, None]
-
-
-column_names = (
-	"Artist",
-	"Album Artist",
-	"Album",
-	"Title",
-	"Composer",
-	"Time",
-	"Date",
-	"Genre",
-	"#",
-	"P",
-	"Starline",
-	"Rating",
-	"Comment",
-	"Codec",
-	"Lyrics",
-	"Bitrate",
-	"S",
-	"Filename",
-	"Disc",
-	"CUE",
-)
-
 
 def parse_generator(string: str):
 	cmds = []
@@ -17674,7 +17006,6 @@ def parse_generator(string: str):
 		quotes.append(q_string)
 
 	return cmds, quotes, inquote
-
 
 def upload_spotify_playlist(pl: int):
 	p_id = pl_to_id(pl)
@@ -17717,7 +17048,6 @@ def upload_spotify_playlist(pl: int):
 	if not new:
 		show_message(_("Updated Spotify playlist"), mode="done")
 	tauon.spot_ctl.upload_playlist(id, urls)
-
 
 def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = None) -> None:
 	if id is None and pl == -1:
@@ -18389,18 +17719,11 @@ def regenerate_playlist(pl: int = -1, silent: bool = False, id: int | None = Non
 
 	#logging.info(cmds)
 
-
 def make_auto_sorting(pl: int) -> None:
 	pctl.gen_codes[pl_to_id(pl)] = "self a path tn ypa auto"
 	show_message(
 		_("OK. This playlist will automatically sort on import from now on"),
 		_("You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""), mode="done")
-
-
-extra_tab_menu = Menu(155, show_icons=True)
-
-extra_tab_menu.add(MenuItem(_("New Playlist"), new_playlist, icon=add_icon))
-
 
 def spotify_show_test(_):
 	return prefs.spot_mode
@@ -18408,18 +17731,10 @@ def spotify_show_test(_):
 def jellyfin_show_test(_):
 	return prefs.jelly_password and prefs.jelly_username
 
-
-tab_menu.add(MenuItem(_("Upload"),
-	upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=spotify_show_test))
-
 def upload_jellyfin_playlist(pl: TauonPlaylist) -> None:
 	if jellyfin.scanning:
 		return
 	shooter(jellyfin.upload_playlist, [pl])
-
-tab_menu.add(MenuItem(_("Upload"),
-	upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=jellyfin_show_test))
-
 
 def regen_playlist_async(pl: int) -> None:
 	if pctl.regen_in_progress:
@@ -18429,40 +17744,8 @@ def regen_playlist_async(pl: int) -> None:
 	shoot_dl.daemon = True
 	shoot_dl.start()
 
-
-tab_menu.add(MenuItem(_("Regenerate"), regen_playlist_async, regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
-tab_menu.add_sub(_("Generate…"), 150)
-tab_menu.add_sub(_("Sort…"), 170)
-extra_tab_menu.add_sub(_("From Current…"), 133)
-# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
-# tab_menu.add(_("Sort Track Numbers"), sort_track_2, pass_ref=True)
-# tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
-
-tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), imported_sort, pass_ref=True))
-tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), imported_sort_folders, pass_ref=True))
-tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), standard_sort, pass_ref=True))
-tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), sort_track_2, pass_ref=True))
-tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), year_sort, pass_ref=True))
-tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), make_auto_sorting, pass_ref=True))
-
-tab_menu.br()
-
-tab_menu.add(MenuItem(_("Rescan Folder"), re_import2, rescan_deco, pass_ref=True, pass_ref_deco=True))
-
-tab_menu.add(MenuItem(_("Paste"), s_append, paste_deco, pass_ref=True))
-tab_menu.add(MenuItem(_("Append Playing"), append_current_playing, append_deco, pass_ref=True))
-tab_menu.br()
-
-# tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
-
-tab_menu.add(MenuItem(_("Export…"), export_playlist_box.activate, pass_ref=True))
-
-tab_menu.add_sub(_("Misc…"), 175)
-
-
 def forget_pl_import_folder(pl: int) -> None:
 	pctl.multi_playlist[pl].last_folder = []
-
 
 def remove_duplicates(pl: int) -> None:
 	playlist = []
@@ -18479,13 +17762,11 @@ def remove_duplicates(pl: int) -> None:
 
 	pctl.multi_playlist[pl].playlist_ids[:] = playlist[:]
 
-
 def start_quick_add(pl: int) -> None:
 	pctl.quick_add_target = pl_to_id(pl)
 	show_message(
 		_("You can now add/remove albums to this playlist by right clicking in gallery of any playlist"),
 		_("To exit this mode, click \"Disengage\" from main MENU"))
-
 
 def auto_get_sync_targets():
 	search_paths = [
@@ -18495,7 +17776,6 @@ def auto_get_sync_targets():
 	for item in search_paths:
 		result_paths.extend(glob.glob(item))
 	return result_paths
-
 
 def auto_sync_thread(pl: int) -> None:
 	if prefs.transcode_inplace:
@@ -18669,12 +17949,10 @@ def auto_sync_thread(pl: int) -> None:
 	gui.update += 1
 	show_message(_("Sync completed"), mode="done")
 
-
 def auto_sync(pl: int) -> None:
 	shoot_dl = threading.Thread(target=auto_sync_thread, args=([pl]))
 	shoot_dl.daemon = True
 	shoot_dl.start()
-
 
 def set_sync_playlist(pl: int) -> None:
 	id = pl_to_id(pl)
@@ -18683,14 +17961,12 @@ def set_sync_playlist(pl: int) -> None:
 	else:
 		prefs.sync_playlist = pl_to_id(pl)
 
-
 def sync_playlist_deco(pl: int):
 	text = _("Set as Sync Playlist")
 	id = pl_to_id(pl)
 	if id == prefs.sync_playlist:
 		text = _("Un-set as Sync Playlist")
 	return [colours.menu_text, colours.menu_background, text]
-
 
 def set_download_playlist(pl: int) -> None:
 	id = pl_to_id(pl)
@@ -18701,7 +17977,6 @@ def set_download_playlist(pl: int) -> None:
 
 def set_podcast_playlist(pl: int) -> None:
 	pctl.multi_playlist[pl].persist_time_positioning ^= True
-
 
 def set_download_deco(pl: int):
 	text = _("Set as Downloads Playlist")
@@ -18715,12 +17990,10 @@ def set_podcast_deco(pl: int):
 		text = _("Un-set Use Persistent Time")
 	return [colours.menu_text, colours.menu_background, text]
 
-
 def csv_string(item):
 	item = str(item)
 	item.replace("\"", "\"\"")
 	return f"\"{item}\""
-
 
 def export_playlist_albums(pl: int) -> None:
 	p = pctl.multi_playlist[pl]
@@ -41352,6 +40625,471 @@ def drop_file(target: str):
 	gui.update += 1
 	mouse_down = False
 	drag_mode = False
+
+ddt = TDraw(renderer)
+ddt.scale = gui.scale
+ddt.force_subpixel_text = prefs.force_subpixel_text
+
+launch = Launch(tauon, pctl, gui, ddt)
+
+draw = Drawing()
+
+if system == "Linux":
+	prime_fonts()
+
+else:
+	# standard_font = "Meiryo"
+	standard_font = "Arial"
+	# semibold_font = "Meiryo Semibold"
+	semibold_font = "Arial Bold"
+	standard_weight = 500
+	bold_weight = 600
+	ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
+	ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 11.5, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
+	ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
+	ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
+	ddt.win_prime_font(standard_font, 20, 17, weight=standard_weight, y_offset=-1)
+
+	ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
+	ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font("Arial", 10 + 4, 210, weight=600, y_offset=2)
+	ddt.win_prime_font("Arial", 11 + 3, 211, weight=600, y_offset=2)
+	ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
+	ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 17 + 2, 218, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 18 + 2, 218, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
+	ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
+
+	standard_weight = 550
+	ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 311, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 312, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 313, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 18, 314, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
+
+	standard_font = "Arial Narrow"
+	standard_weight = 500
+
+	ddt.win_prime_font(standard_font, 14, 410, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 411, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 412, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 413, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 18, 414, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 19, 415, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 20, 416, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 21, 417, weight=standard_weight, y_offset=1)
+
+	standard_weight = 600
+
+	ddt.win_prime_font(standard_font, 14, 510, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 15, 511, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 16, 512, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 17, 513, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 18, 514, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
+	ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
+
+drop_shadow = DropShadow()
+lyrics_ren_mini = LyricsRenMini()
+lyrics_ren = LyricsRen()
+
+tauon.synced_to_static_lyrics = TimedLyricsToStatic()
+
+timed_lyrics_ren = TimedLyricsRen()
+
+text_box_canvas_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+text_box_canvas_hide_rect = SDL_Rect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+text_box_canvas = SDL_CreateTexture(
+	renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, text_box_canvas_rect.w, text_box_canvas_rect.h)
+SDL_SetTextureBlendMode(text_box_canvas, SDL_BLENDMODE_BLEND)
+
+rename_text_area = TextBox()
+gst_output_field = TextBox2()
+gst_output_field.text = prefs.gst_output
+search_text = TextBox()
+rename_files = TextBox2()
+sub_lyrics_a = TextBox2()
+sub_lyrics_b = TextBox2()
+sync_target = TextBox2()
+edit_artist = TextBox2()
+edit_album = TextBox2()
+edit_title = TextBox2()
+edit_album_artist = TextBox2()
+
+rename_files.text = prefs.rename_tracks_template
+if rename_files_previous:
+	rename_files.text = rename_files_previous
+
+text_plex_usr = TextBox2()
+text_plex_pas = TextBox2()
+text_plex_ser = TextBox2()
+
+text_jelly_usr = TextBox2()
+text_jelly_pas = TextBox2()
+text_jelly_ser = TextBox2()
+
+text_koel_usr = TextBox2()
+text_koel_pas = TextBox2()
+text_koel_ser = TextBox2()
+
+text_air_usr = TextBox2()
+text_air_pas = TextBox2()
+text_air_ser = TextBox2()
+
+text_spot_client = TextBox2()
+text_spot_secret = TextBox2()
+text_spot_username = TextBox2()
+text_spot_password = TextBox2()
+
+text_maloja_url = TextBox2()
+text_maloja_key = TextBox2()
+
+text_sat_url = TextBox2()
+text_sat_playlist = TextBox2()
+
+rename_folder = TextBox2()
+rename_folder.text = prefs.rename_folder_template
+if rename_folder_previous:
+	rename_folder.text = rename_folder_previous
+
+temp_dest = SDL_Rect(0, 0)
+
+album_art_gen = AlbumArt()
+style_overlay = StyleOverlay()
+
+click_time = time.time()
+scroll_hold = False
+scroll_point = 0
+scroll_bpoint = 0
+sbl = 50
+sbp = 100
+
+asbp = 50
+album_scroll_hold = False
+
+bb_type = 0
+
+# gui.scroll_hide_box = (0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
+
+encoding_menu = False
+enc_index = 0
+enc_setting = 0
+enc_field = "All"
+
+gen_menu = False
+
+transfer_setting = 0
+
+b_panel_size = 300
+b_info_bar = False
+
+message_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "notice.png")
+message_warning_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "warning.png")
+message_tick_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "done.png")
+message_arrow_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ext.png")
+message_error_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "error.png")
+message_bubble_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "bubble.png")
+message_download_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "ddl.png")
+
+tool_tip = ToolTip()
+tool_tip2 = ToolTip()
+tool_tip2.trigger = 1.8
+track_box_path_tool_timer = Timer()
+
+columns_tool_tip = ToolTip3()
+
+tool_tip_instant = ToolTip3()
+
+# Create empty area menu
+playlist_menu = Menu(130)
+radio_entry_menu = Menu(125)
+showcase_menu = Menu(135)
+center_info_menu = Menu(125)
+cancel_menu = Menu(100)
+gallery_menu = Menu(175, show_icons=True)
+artist_info_menu = Menu(135)
+queue_menu = Menu(150)
+repeat_menu = Menu(120)
+shuffle_menu = Menu(120)
+artist_list_menu = Menu(165, show_icons=True)
+lightning_menu = Menu(165)
+lsp_menu = Menu(145)
+folder_tree_menu = Menu(175, show_icons=True)
+folder_tree_stem_menu = Menu(190, show_icons=True)
+overflow_menu = Menu(175)
+spotify_playlist_menu = Menu(175)
+radio_context_menu = Menu(175)
+#chrome_menu = Menu(175)
+
+# . Menu entry: A side panel view layout
+
+lsp_menu.add(MenuItem(_("Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist))
+lsp_menu.add(MenuItem(_("Queue"), enable_queue_panel, disable_test=lsp_menu_test_queue))
+# . Menu entry: Side panel view layout showing a list of artists with thumbnails
+lsp_menu.add(MenuItem(_("Artist List"), enable_artist_list, disable_test=lsp_menu_test_artist))
+# . Menu entry: A side panel view layout. Alternative name: Folder Tree
+lsp_menu.add(MenuItem(_("Folder Navigator"), enable_folder_list, disable_test=lsp_menu_test_tree))
+
+rename_track_box = RenameTrackBox()
+trans_edit_box = TransEditBox()
+sub_lyrics_box = SubLyricsBox()
+export_playlist_box = ExportPlaylistBox()
+
+tauon.toggle_repeat = toggle_repeat
+tauon.menu_album_repeat = menu_album_repeat
+tauon.menu_repeat_off = menu_repeat_off
+tauon.menu_set_repeat = menu_set_repeat
+
+repeat_menu.add(MenuItem(_("Repeat OFF"), menu_repeat_off))
+repeat_menu.add(MenuItem(_("Repeat Track"), menu_set_repeat))
+repeat_menu.add(MenuItem(_("Repeat Album"), menu_album_repeat))
+
+tauon.toggle_random = toggle_random
+
+shuffle_menu.add(MenuItem(_("Shuffle Lockdown"), toggle_shuffle_layout))
+shuffle_menu.add(MenuItem(_("Shuffle Lockdown Albums"), toggle_shuffle_layout_albums))
+shuffle_menu.br()
+shuffle_menu.add(MenuItem(_("Shuffle OFF"), menu_shuffle_off))
+shuffle_menu.add(MenuItem(_("Shuffle Tracks"), menu_set_random))
+shuffle_menu.add(MenuItem(_("Random Albums"), menu_album_random))
+
+artist_info_menu.add(MenuItem(_("Close Panel"), artist_info_panel_close))
+artist_info_menu.add(MenuItem(_("Make Large"), toggle_bio_size, toggle_bio_size_deco))
+
+filter_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "filter.png", True))
+filter_icon.colour = [43, 213, 255, 255]
+filter_icon.xoff = 1
+
+folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "folder.png", True))
+info_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "info.png", True))
+
+folder_icon.colour = [244, 220, 66, 255]
+info_icon.colour = [61, 247, 163, 255]
+
+power_bar_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "power.png", True)
+
+move_jobs = []
+move_in_progress = False
+
+folder_tree_stem_menu.add(MenuItem(_("Open Folder"), open_folder_stem, pass_ref=True, icon=folder_icon))
+folder_tree_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
+
+lightning_menu.add(MenuItem(_("Filter to New Playlist"), tag_to_new_playlist, pass_ref=True, icon=filter_icon))
+folder_tree_menu.add(MenuItem(_("Filter to New Playlist"), folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon))
+folder_tree_stem_menu.add(MenuItem(_("Filter to New Playlist"), stem_to_new_playlist, pass_ref=True, icon=filter_icon))
+folder_tree_stem_menu.add(MenuItem(_("Rescan Folder"), re_import3, pass_ref=True))
+folder_tree_menu.add(MenuItem(_("Rescan Folder"), re_import4, pass_ref=True))
+lightning_menu.add(MenuItem(_("Move Playing Folder Here"), move_playing_folder_to_tag, pass_ref=True))
+
+folder_tree_stem_menu.add(MenuItem(_("Move Playing Folder Here"), move_playing_folder_to_tree_stem, pass_ref=True))
+
+folder_tree_stem_menu.br()
+
+folder_tree_stem_menu.add(MenuItem(_("Collapse All"), collapse_tree, collapse_tree_deco))
+
+folder_tree_stem_menu.add(MenuItem("lock", lock_folder_tree, lock_folder_tree_deco))
+# folder_tree_menu.add("lock", lock_folder_tree, lock_folder_tree_deco)
+
+gallery_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
+
+gallery_menu.add(MenuItem(_("Show in Playlist"), show_in_playlist))
+
+gallery_menu.add_sub(_("Image…"), 160)
+gallery_menu.add(MenuItem(_("Add Album to Queue"), add_album_to_queue, pass_ref=True))
+gallery_menu.add(MenuItem(_("Enqueue Album Next"), add_album_to_queue_fc, pass_ref=True))
+
+cancel_menu.add(MenuItem(_("Cancel"), cancel_import))
+showcase_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+# showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+
+#guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl)
+#showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+#showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+
+showcase_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+showcase_menu.add_sub(_("Misc…"), 150)
+showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), show_sub_search, pass_ref=True))
+showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, paste_lyrics_deco, pass_ref=True))
+showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show))
+showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
+	toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show))
+
+center_info_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+center_info_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+center_info_menu.add_sub(_("Misc…"), 150)
+center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), show_sub_search, pass_ref=True))
+center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, paste_lyrics_deco, pass_ref=True))
+center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), toggle_side_art, toggle_side_art_deco, show_test=lyrics_in_side_show))
+center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
+	toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show))
+
+picture_menu = Menu(175)
+
+picture_menu.add(MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
+
+# Next and previous pictures
+picture_menu.add(MenuItem(_("Next Image"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True))
+#picture_menu.add(_("Previous"), cycle_offset_back, cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+
+# Extract embedded artwork from file
+picture_menu.add(MenuItem(_("Extract Image"), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
+
+del_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "del.png", True)
+delete_icon = MenuIcon(del_icon)
+
+picture_menu.add(
+	MenuItem(_("Delete Image File"), delete_track_image, delete_track_image_deco, pass_ref=True,
+	pass_ref_deco=True, icon=delete_icon))
+
+picture_menu.add(MenuItem(_("Quick-Fetch Cover Art"), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
+# picture_menu.add(_('Search Google for Images'), ser_gimage, search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=toggle_gimage)
+# picture_menu.add(_('Toggle art box'), toggle_side_art, toggle_side_art_deco)
+
+picture_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+picture_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+gallery_menu.add_to_sub(0, MenuItem(_("Next"), cycle_offset, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
+gallery_menu.add_to_sub(0, MenuItem(_("Previous"), cycle_offset_back, cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
+gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
+gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), save_embed_img, extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=save_embed_img_disable_test))
+gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), delete_track_image, delete_track_image_deco, pass_ref=True, pass_ref_deco=True)) #, icon=delete_icon)
+gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), download_art1_fire, dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=download_art1_fire_disable_test))
+
+# playlist_menu.add('Paste', append_here, paste_deco)
+
+# Create playlist tab menu
+tab_menu = Menu(160, show_icons=True)
+radio_tab_menu = Menu(160, show_icons=True)
+
+tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
+radio_tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
+
+tab_menu.add(MenuItem("Pin", pin_playlist_toggle, pl_pin_deco, pass_ref=True, pass_ref_deco=True))
+
+lock_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "lock.png", True)
+lock_icon = MenuIcon(lock_asset)
+lock_icon.base_asset_mod = asset_loader(scaled_asset_directory, loaded_asset_dc, "unlock.png", True)
+lock_icon.colour = [240, 190, 10, 255]
+lock_icon.colour_callback = lock_colour_callback
+lock_icon.xoff = 4
+lock_icon.yoff = -1
+
+tab_menu.add(MenuItem(_("Lock"), lock_playlist_toggle, pl_lock_deco,
+	pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=test_shift))
+
+# Clear playlist
+tab_menu.add(MenuItem(_("Clear"), clear_playlist, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True))
+
+to_scan = []
+tauon.sort_track_2 = sort_track_2
+
+delete_icon.xoff = 3
+delete_icon.colour = [249, 70, 70, 255]
+
+tab_menu.add(MenuItem(_("Delete"),
+	delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True))
+radio_tab_menu.add(MenuItem(_("Delete"),
+	delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=test_pl_tab_locked, pass_ref_deco=True))
+
+heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+spot_heartx_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "heart-menu.png", True))
+transcode_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "transcode.png", True))
+mod_folder_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "mod_folder.png", True))
+settings_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "settings2.png", True))
+rename_tracks_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "pen.png", True))
+add_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "new.png", True))
+spot_asset = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot.png", True)
+spot_icon = MenuIcon(spot_asset)
+spot_icon.colour = [30, 215, 96, 255]
+spot_icon.xoff = 5
+spot_icon.yoff = 2
+
+jell_icon = MenuIcon(spot_asset)
+jell_icon.colour = [190, 100, 210, 255]
+jell_icon.xoff = 5
+jell_icon.yoff = 2
+
+tab_menu.br()
+
+column_names = (
+	"Artist",
+	"Album Artist",
+	"Album",
+	"Title",
+	"Composer",
+	"Time",
+	"Date",
+	"Genre",
+	"#",
+	"P",
+	"Starline",
+	"Rating",
+	"Comment",
+	"Codec",
+	"Lyrics",
+	"Bitrate",
+	"S",
+	"Filename",
+	"Disc",
+	"CUE",
+)
+
+extra_tab_menu = Menu(155, show_icons=True)
+
+extra_tab_menu.add(MenuItem(_("New Playlist"), new_playlist, icon=add_icon))
+
+tab_menu.add(MenuItem(_("Upload"),
+	upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=spotify_show_test))
+tab_menu.add(MenuItem(_("Upload"),
+	upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=jellyfin_show_test))
+
+tab_menu.add(MenuItem(_("Regenerate"), regen_playlist_async, regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
+tab_menu.add_sub(_("Generate…"), 150)
+tab_menu.add_sub(_("Sort…"), 170)
+extra_tab_menu.add_sub(_("From Current…"), 133)
+# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+# tab_menu.add(_("Sort Track Numbers"), sort_track_2, pass_ref=True)
+# tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
+
+tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), imported_sort, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), imported_sort_folders, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), standard_sort, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), sort_track_2, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), year_sort, pass_ref=True))
+tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), make_auto_sorting, pass_ref=True))
+
+tab_menu.br()
+
+tab_menu.add(MenuItem(_("Rescan Folder"), re_import2, rescan_deco, pass_ref=True, pass_ref_deco=True))
+
+tab_menu.add(MenuItem(_("Paste"), s_append, paste_deco, pass_ref=True))
+tab_menu.add(MenuItem(_("Append Playing"), append_current_playing, append_deco, pass_ref=True))
+tab_menu.br()
+
+# tab_menu.add("Sort By Filepath", sort_path_pl, pass_ref=True)
+
+tab_menu.add(MenuItem(_("Export…"), export_playlist_box.activate, pass_ref=True))
+
+tab_menu.add_sub(_("Misc…"), 175)
 
 tab_menu.add_to_sub(2, MenuItem(_("Export Playlist Stats"), export_stats, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Export Albums CSV"), export_playlist_albums, pass_ref=True))
