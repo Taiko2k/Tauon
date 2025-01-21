@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-19 13:14+0000\n"
+"PO-Revision-Date: 2025-01-22 13:01+0000\n"
 "Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -3544,7 +3544,7 @@ msgstr "Contraseña de Spofify"
 
 #: src/tauon/t_modules/t_main.py:29152
 msgid "Airsonic/Subsonic network streaming"
-msgstr "Streaming através de Airsonic/Subsonic"
+msgstr "Streaming mediante Airsonic/Subsonic"
 
 #: src/tauon/t_modules/t_main.py:29162 src/tauon/t_modules/t_main.py:29296
 #: src/tauon/t_modules/t_main.py:29353
@@ -3571,7 +3571,7 @@ msgstr "Necesitado por Nextcloud Music"
 
 #: src/tauon/t_modules/t_main.py:29213
 msgid "Jellyfin network streaming"
-msgstr "Streaming através de Jellyfin"
+msgstr "Streaming mediante Jellyfin"
 
 #: src/tauon/t_modules/t_main.py:29223
 msgid "Username"
@@ -3587,11 +3587,11 @@ msgstr "Ejecutar la importación primero"
 
 #: src/tauon/t_modules/t_main.py:29286
 msgid "koel network streaming"
-msgstr "Streaming através de koel"
+msgstr "Streaming mediante koel"
 
 #: src/tauon/t_modules/t_main.py:29343
 msgid "PLEX network streaming"
-msgstr "Streaming através de PLEX"
+msgstr "Streaming mediante PLEX"
 
 #: src/tauon/t_modules/t_main.py:29381
 msgid "Server name"
