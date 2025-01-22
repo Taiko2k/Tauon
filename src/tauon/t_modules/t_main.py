@@ -348,21 +348,20 @@ if TYPE_CHECKING:
 
 def get_cert_path() -> str:
 	if pyinstaller_mode:
-		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
+		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
 	# Running as script
 	return certifi.where()
 
-def setup_ssl() -> ssl.SSLContext:
+def setup_tls() -> ssl.SSLContext:
 	"""TLS setup (needed for frozen installs)"""
 	# Set the SSL certificate path environment variable
 	cert_path = get_cert_path()
 	logging.debug(f"Found TLS cert file at: {cert_path}")
-	os.environ['SSL_CERT_FILE'] = cert_path
-	os.environ['REQUESTS_CA_BUNDLE'] = cert_path
+	os.environ["SSL_CERT_FILE"] = cert_path
+	os.environ["REQUESTS_CA_BUNDLE"] = cert_path
 
 	# Create default TLS context
-	ssl_context = ssl.create_default_context(cafile=get_cert_path())
-	return ssl_context
+	return ssl.create_default_context(cafile=get_cert_path())
 
 def whicher(target: str) -> bool | str | None:
 	"""Detect and launch programs outside of flatpak sandbox"""
@@ -495,7 +494,7 @@ def pl_gen(
 
 	Creates a default playlist when called without parameters
 	"""
-	if playlist_ids == None:
+	if playlist_ids is None:
 		playlist_ids = []
 
 	notify_change()
@@ -1055,7 +1054,7 @@ class StarStore:
 			assert value <= 10
 			assert value >= 0
 
-			if tr.file_ext == "OGG" or tr.file_ext == "OPUS":
+			if tr.file_ext in ("OGG", "OPUS"):
 				tag = mutagen.oggvorbis.OggVorbis(tr.fullpath)
 				if value == 0:
 					if "FMPS_RATING" in tag:
@@ -2843,10 +2842,10 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 					nt.length = audio.info.length
 					nt.size = os.path.getsize(nt.fullpath)
 				audio = mutagen.File(nt.fullpath)
-				if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
+				if audio.tags and type(audio.tags) is mutagen.wave._WaveID3:
 					use_id3(audio.tags, nt)
 
-		elif nt.file_ext == "OPUS" or nt.file_ext == "OGG" or nt.file_ext == "OGA":
+		elif nt.file_ext in ("OPUS", "OGG", "OGA"):
 
 			#logging.info("get opus")
 			with Opus(nt.fullpath) as audio:
@@ -2920,7 +2919,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 				nt.comment = audio.comment
 				nt.misc = audio.misc
 
-		elif nt.file_ext == "WV" or nt.file_ext == "TTA":
+		elif nt.file_ext in ("WV", "TTA"):
 
 			with Ape(nt.fullpath) as audio:
 				audio.read()
@@ -3246,7 +3245,7 @@ class PlayerCtl:
 		self.gst_devices = []  # Display names
 		self.gst_outputs = {}  # Display name : (sink, device)
 
-		#TODO(Martin) : Fix this by moving the class to root of the module
+		#TODO(Martin): Fix this by moving the class to root of the module
 		self.mpris: Gnome.main.MPRIS | None = None
 		self.tray_update = None
 		self.eq = [0] * 2  # not used
@@ -6771,7 +6770,7 @@ class GallClass:
 		if search_over.active:
 			while QuickThumbnail.queue:
 				img = QuickThumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, context=ssl_context)
+				response = urllib.request.urlopen(img.url, context=tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
@@ -7048,7 +7047,7 @@ class Tauon:
 		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
 
-		#TODO(Martin) : Fix this by moving the class to root of the module
+		#TODO(Martin): Fix this by moving the class to root of the module
 		self.cachement: player4.Cachement | None = None
 		self.dummy_event: SDL_Event = SDL_Event()
 		self.translate = _
@@ -7111,7 +7110,7 @@ class Tauon:
 		self.remote_limited = True
 		self.enable_librespot = shutil.which("librespot")
 
-		#TODO(Martin) : Fix this by moving the class to root of the module
+		#TODO(Martin): Fix this by moving the class to root of the module
 		self.spotc: player4.LibreSpot | None = None
 		self.librespot_p = None
 		self.MenuItem = MenuItem
@@ -7124,7 +7123,7 @@ class Tauon:
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
-		self.ssl_context = ssl_context
+		self.tls_context = tls_context
 
 	def start_remote(self) -> None:
 
@@ -9301,7 +9300,7 @@ class TextBox2:
 		if click is False:
 			click = inp.mouse_click
 		if mouse_down:
-			gui.update = 2  # TODO, more elegant fix
+			gui.update = 2  # TODO: more elegant fix
 
 		rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
 		select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
@@ -10457,7 +10456,7 @@ class AlbumArt:
 					elif track.file_ext == "JELY":
 						source_image = jellyfin.get_cover(track)
 					else:
-						response = urllib.request.urlopen(get_network_thumbnail_url(track), context=ssl_context)
+						response = urllib.request.urlopen(get_network_thumbnail_url(track), context=tls_context)
 						source_image = io.BytesIO(response.read())
 					if source_image:
 						with Path(cached_path).open("wb") as file:
@@ -10560,7 +10559,7 @@ class AlbumArt:
 
 			artlink = r.json()["artistbackground"][0]["url"]
 
-			response = urllib.request.urlopen(artlink, context=ssl_context)
+			response = urllib.request.urlopen(artlink, context=tls_context)
 			info = response.info()
 
 			assert info.get_content_maintype() == "image"
@@ -13113,7 +13112,7 @@ def add_album_to_queue_fc(ref):
 		if pctl.playing_ready():
 			p = pctl.playing_object().parent_folder_path
 
-		# fixme for network tracks
+		# TODO: fixme for network tracks
 
 		for i, item in enumerate(pctl.force_queue):
 
@@ -13622,7 +13621,7 @@ def download_art1(tr):
 				artlink = r.json()["albums"][album_id]["albumcover"][0]["url"]
 				id = r.json()["albums"][album_id]["albumcover"][0]["id"]
 
-				response = urllib.request.urlopen(artlink, context=ssl_context)
+				response = urllib.request.urlopen(artlink, context=tls_context)
 				info = response.info()
 
 				t = io.BytesIO()
@@ -27838,12 +27837,12 @@ class TopPanel:
 		if status:
 			x += ddt.text((x, y), text, bg, 311)
 			# x += ddt.get_text_w(text, 11)
-		# TODO list listenieng clients
+		# TODO: list listening clients
 		elif transcode_list:
 			bg = colours.status_info_text
 			# if key_ctrl_down and key_c_press:
-			#     del transcode_list[1:]
-			#     gui.tc_cancel = True
+			# 	del transcode_list[1:]
+			# 	gui.tc_cancel = True
 			if right_click and coll([x, y, 280 * gui.scale, 18 * gui.scale]):
 				cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 
@@ -27857,9 +27856,9 @@ class TopPanel:
 				# c3 = [130, 130, 130, 255]
 				#
 				# if colours.lm:
-				#     c1 = [100, 100, 100, 255]
-				#     c2 = [130, 130, 130, 255]
-				#     c3 = [180, 180, 180, 255]
+				# 	c1 = [100, 100, 100, 255]
+				# 	c2 = [130, 130, 130, 255]
+				# 	c3 = [180, 180, 180, 255]
 
 				c1 = [40, 40, 40, 255]
 				c2 = [100, 59, 200, 200]
@@ -32079,7 +32078,7 @@ class RadioBox:
 		req = urllib.request.Request(uri)
 		req.add_header("User-Agent", t_agent)
 		req.add_header("Content-Type", "application/json")
-		response = urllib.request.urlopen(req, context=ssl_context)
+		response = urllib.request.urlopen(req, context=tls_context)
 		data = response.read()
 		data = json.loads(data.decode())
 		self.parse_data(data)
@@ -33237,7 +33236,7 @@ def save_discogs_artist_thumb(artist, filepath):
 	else:
 		url = images[0]["uri"]
 
-	response = urllib.request.urlopen(url, context=ssl_context)
+	response = urllib.request.urlopen(url, context=tls_context)
 	im = Image.open(response)
 
 	width, height = im.size
@@ -33268,7 +33267,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
 	if preview:
 		thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
-	response = urllib.request.urlopen(thumblink, timeout=10, context=ssl_context)
+	response = urllib.request.urlopen(thumblink, timeout=10, context=tls_context)
 	info = response.info()
 
 	t = io.BytesIO()
@@ -37471,7 +37470,7 @@ class EdgePulse2:
 
 def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 	try:
-		response = urllib.request.urlopen(link, context=ssl_context)
+		response = urllib.request.urlopen(link, context=tls_context)
 		info = response.info()
 		if info.get_content_maintype() == "image":
 			if info.get_content_subtype() == "jpeg":
@@ -38794,7 +38793,7 @@ if not windows_native:
 		config.contents = fc.FcConfigGetCurrent()
 		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
 
-ssl_context = setup_ssl()
+tls_context = setup_tls()
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get("XDG_CURRENT_DESKTOP")
@@ -41475,7 +41474,7 @@ theme_files.sort()
 last_fm_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "as.png", True)
 lastfm_icon = MenuIcon(last_fm_icon)
 
-if gui.scale == 2 or gui.scale == 1.25:
+if gui.scale in (1.25, 2):
 	lastfm_icon.xoff = 0
 else:
 	lastfm_icon.xoff = -1
@@ -42508,7 +42507,7 @@ while pctl.running:
 
 	if power < 500:
 		time.sleep(0.03)
-		if (pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 \
+		if (pctl.playing_state in (0, 2)) and not load_orders and gui.update == 0 \
 		and not tauon.gall_ren.queue and not transcode_list and not gui.frame_callback_list:
 			pass
 		else:
@@ -43401,7 +43400,7 @@ while pctl.running:
 
 		if gui.mode == 4:
 			launch.render()
-		elif gui.mode == 1 or gui.mode == 2:
+		elif gui.mode in (1, 2):
 
 			ddt.text_background_colour = colours.playlist_panel_background
 
@@ -46628,7 +46627,7 @@ while pctl.running:
 		if gui.vis == 1:
 
 			if prefs.backend == 2 or True:
-				if pctl.playing_state == 1 or pctl.playing_state == 3:
+				if pctl.playing_state in (1, 3):
 					# gui.level_update = True
 					while tauon.level_train and tauon.level_train[0][0] < time.time():
 
@@ -46664,12 +46663,12 @@ while pctl.running:
 					if pctl.playing_time < 1:
 						gui.delay_frame(0.032)
 
-					if pctl.playing_state == 1 or pctl.playing_state == 3:
+					if pctl.playing_state in (1, 3):
 						t = gui.level_decay_timer.hit()
 						decay = 14 * t
 						gui.level_peak[1] -= decay
 						gui.level_peak[0] -= decay
-					elif pctl.playing_state == 0 or pctl.playing_state == 2:
+					elif pctl.playing_state in (0, 2):
 						gui.level_update = True
 						time.sleep(0.016)
 						t = gui.level_decay_timer.hit()
@@ -46814,11 +46813,11 @@ while pctl.running:
 	# Misc things to update every tick
 
 	# Update d-bus metadata on Linux
-	if (pctl.playing_state == 1 or pctl.playing_state == 3) and pctl.mpris is not None:
+	if (pctl.playing_state in (1, 3)) and pctl.mpris is not None:
 		pctl.mpris.update_progress()
 
 	# GUI time ticker update
-	if (pctl.playing_state == 1 or pctl.playing_state == 3) and gui.lowered is False:
+	if (pctl.playing_state in (1, 3)) and gui.lowered is False:
 		if int(pctl.playing_time) != int(pctl.last_playing_time):
 			pctl.last_playing_time = pctl.playing_time
 			bottom_bar1.seek_time = pctl.playing_time
