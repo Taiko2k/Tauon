@@ -15,11 +15,17 @@ from typing import TYPE_CHECKING
 import requests
 
 from tauon.t_modules.t_extra import TestTimer, filename_safe
-from tauon.t_modules.t_main import copy_from_clipboard
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_draw import TDraw
 	from tauon.t_modules.t_main import ColoursClass, GuiVar, Input, PlayerCtl, TrackClass
+
+# TODO(Martin): Dupe code here to make things work in a dirty fashion until t_main gets a bigger rework
+#from tauon.t_modules.t_main import copy_from_clipboard
+from sdl2 import SDL_GetClipboardText
+def copy_from_clipboard():
+	return SDL_GetClipboardText().decode()
+# ENDTODO
 
 class GuitarChords:
 	def __init__(
@@ -60,6 +66,17 @@ class GuitarChords:
 				(self.store_b / cache_title).unlink()
 
 	def search_guitarparty(self, track_object: TrackClass):
+		"""Search guitarparty.com for the lyrics with guitar chords.
+
+		[2025-01-22] Note from site owners:
+			We stopped maintaining a public facing Api with API keys in our latest version as of about late 2020.
+			We have focused on providing our own features and services for our subscribers instead.
+			You can use the internal public API intended for the frontend as you are doing, but it is undocumented and might not be stable.
+			That being said, you can search for songs using the search api: https://www.guitarparty.com/api/v3/core/search/?q=jolene
+			There is no filtering available in the core/songs url
+			The search API does search in title as well as lyrics, it's the exact same search function as the frontpage and header of the site use.
+			If you find a match in the search API, then you can fetch the song detail using the id, we have chords in all of our songs.
+		"""
 		if not track_object.title:
 			self.gui.show_message(_("Insufficient metadata to search"))
 		self.fetch(track_object)
@@ -164,24 +181,75 @@ class GuitarChords:
 		cache_title = self.get_cache_title(track)
 
 		try:
-			r = requests.get(
-				"https://www.guitarparty.com/api/v3/core/songs/?query=" + urllib.parse.quote(cache_title),
-				headers={"Guitarparty-Api-Key": "e9c0e543798c4249c24f698022ced5dd0c583ec7"},
-				timeout=10)
-			d = r.json()["objects"][0]["body"]
-
-			self.prep_folders()
-			f = (self.store_a / cache_title).open("w")
-			f.write(d)
-			f.close()
-
-			self.ready[cache_title] = 1
-
+			response = requests.get(
+				f"https://www.guitarparty.com/api/v3/core/search/?format=json&q={urllib.parse.quote(cache_title)}",
+				timeout=15)
 		except Exception:
-			logging.exception("Could not find matching track on GuitarParty")
-			self.gui.show_message(_("Could not find matching track on GuitarParty"))
+			logging.exception("Error finding matching track on GuitarParty")
+			self.gui.show_message(_("Error finding matching track on GuitarParty"))
 			self.inp.mouse_click = False
 			self.ready[cache_title] = 2
+			return
+
+		try:
+			parsed_response = response.json()
+		except Exception:
+			logging.exception("Failed to parse search response from www.guitarparty.com")
+			logging.debug(response)
+			self.inp.mouse_click = False
+			self.ready[cache_title] = 2
+			return
+
+		if len(parsed_response) == 0:
+			logging.info("Track not found on GuitarParty")
+			self.gui.show_message(_("Track not found on GuitarParty"))
+			self.inp.mouse_click = False
+			self.ready[cache_title] = 2
+			return
+
+		logging.debug(f"Found {len(parsed_response)} results from guitarparty.com, using the first one")
+
+		song = parsed_response[0]
+
+		try:
+			response = requests.get(
+				f"https://www.guitarparty.com/api/v3/core/songs/{song['id']}/?format=json&q={urllib.parse.quote(cache_title)}",
+				timeout=15)
+		except Exception:
+			logging.exception("Error getting song from GuitarParty")
+			self.gui.show_message(_("Error getting song from GuitarParty"))
+			self.inp.mouse_click = False
+			self.ready[cache_title] = 2
+			return
+
+		try:
+			parsed_response = response.json()
+		except Exception:
+			logging.exception("Failed to parse response from www.guitarparty.com")
+			logging.debug(response)
+			self.inp.mouse_click = False
+			self.ready[cache_title] = 2
+			return
+
+		if "song" not in parsed_response:
+			logging.error("Field 'song' from guitarparty.com is empty!")
+			logging.debug(parsed_response)
+			self.inp.mouse_click = False
+			self.ready[cache_title] = 2
+			return
+
+		result = parsed_response["song"]
+
+		self.prep_folders()
+		with (self.store_a / cache_title).open("w") as file:
+			file.write(result)
+		self.ready[cache_title] = 1
+
+		if "title" in parsed_response:
+			logging.debug(f"Wrote chords for found song title: {parsed_response['title']}")
+		else:
+			logging.error(f"Song had no title?!")
+			logging.debug(parsed_response)
 
 	def test_ready_status(self, track: TrackClass) -> int:
 		"""Return:
