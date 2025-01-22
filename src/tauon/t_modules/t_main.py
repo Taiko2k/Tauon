@@ -326,6 +326,7 @@ from tauon.t_modules.t_extra import (
 	uri_parse,
 	year_search,
 )
+from tauon.t_modules.guitar_chords import GuitarChords
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_launch import Launch
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping
@@ -338,7 +339,6 @@ from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_b
 from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
-#from tauon.t_modules.guitar_chords import GuitarChords
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -13393,8 +13393,8 @@ def paste_lyrics(track_object: TrackClass):
 	else:
 		logging.warning("NO TEXT TO PASTE")
 
-# def chord_lyrics_paste_show_test(_) -> bool:
-# 	return gui.combo_mode and prefs.guitar_chords
+def chord_lyrics_paste_show_test(_) -> bool:
+	return gui.combo_mode and prefs.guitar_chords
 
 def copy_lyrics_deco(track_object: TrackClass):
 	if track_object.lyrics:
@@ -23579,11 +23579,11 @@ def toggle_top_tabs(mode: int = 0) -> bool | None:
 	prefs.tabs_on_top ^= True
 	return None
 
-# def toggle_guitar_chords(mode: int = 0) -> bool | None:
-# 	if mode == 1:
-# 		return prefs.guitar_chords
-# 	prefs.guitar_chords ^= True
-# 	return None
+def toggle_guitar_chords(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.guitar_chords
+	prefs.guitar_chords ^= True
+	return None
 
 # def toggle_auto_lyrics(mode: int = 0) -> bool | None:
 # 	if mode == 1:
@@ -24336,7 +24336,6 @@ class Over:
 				pctl.playerCommandReady = True
 
 	def reload_device(self, _):
-
 		pctl.playerCommand = "reload"
 		pctl.playerCommandReady = True
 
@@ -24344,7 +24343,6 @@ class Over:
 		self.lyrics_panel ^= True
 
 	def lyrics(self, x0, y0, w0, h0):
-
 		x = x0 + 25 * gui.scale
 		y = y0 - 10 * gui.scale
 		y += 30 * gui.scale
@@ -24358,7 +24356,7 @@ class Over:
 					prefs.auto_lyrics_checked.clear()
 			y += 30 * gui.scale
 
-		# self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
+		self.toggle_square(x, y, toggle_guitar_chords, _("Enable chord lyrics"))
 
 		y += 40 * gui.scale
 		ddt.text((x, y), _("Sources:"), colours.box_text_label, 11)
@@ -36641,20 +36639,17 @@ class Showcase:
 
 				timed_ready = prefs.prefer_synced_lyrics
 
-			#if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
-			#	if not guitar_chords.auto_scroll:
-			#		if draw.button(
-			#			_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
-			#			text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-			#			background_highlight_colour=bfg):
-			#			guitar_chords.auto_scroll = True
-
-			if True and prefs.show_lyrics_showcase and timed_ready:
+			if prefs.guitar_chords and track.title and prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
+				if not guitar_chords.auto_scroll:
+					if draw.button(
+						_("Auto-Scroll"), 25 * gui.scale, window_size[1] - gui.panelBY - 70 * gui.scale,
+						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+						background_highlight_colour=bfg):
+						guitar_chords.auto_scroll = True
+			elif True and prefs.show_lyrics_showcase and timed_ready:
 				w = window_size[0] - (x + box) - round(30 * gui.scale)
 				timed_lyrics_ren.render(track.index, gcx, y, w=w)
-
 			elif track.lyrics == "" or not prefs.show_lyrics_showcase:
-
 				w = window_size[0] - (x + box) - round(30 * gui.scale)
 				x = int(x + box + (window_size[0] - x - box) / 2)
 
@@ -36668,11 +36663,8 @@ class Showcase:
 					y -= round(30 * gui.scale)
 
 				if track.artist == "" and track.title == "":
-
 					ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w)
-
 				else:
-
 					ddt.text((x, y, 2), track.artist, t1, 20, w)
 
 					y += round(48 * gui.scale)
@@ -36702,7 +36694,6 @@ class Showcase:
 						self.render_vis()
 					else:
 						gui.draw_vis4_top = True
-
 			else:
 				x += box + int(window_size[0] * 0.15) + 10 * gui.scale
 				x -= 100 * gui.scale
@@ -38634,6 +38625,9 @@ def drop_file(target: str):
 	mouse_down = False
 	drag_mode = False
 
+
+# BEGIN CODE
+
 # Log to debug as we don't care at all when user does not have this
 try:
 	import colored_traceback.always
@@ -40440,11 +40434,19 @@ if system == "Windows" or msys:
 # gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
 # SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
 
+mouse_up = False
+mouse_wheel = 0
+reset_render = False
+c_yax = 0
+c_yax_timer = Timer()
+c_xax = 0
+c_xax_timer = Timer()
+c_xay = 0
+c_xay_timer = Timer()
+rt = 0
 
 if (system == "Windows" or msys) and taskbar_progress:
-
 	class WinTask:
-
 		def __init__(self):
 			self.start = time.time()
 			self.updated_state = 0
@@ -40786,11 +40788,11 @@ cancel_menu.add(MenuItem(_("Cancel"), cancel_import))
 showcase_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
-# showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
-#guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl)
-#showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
-#showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl, colours=colours, mouse_wheel=mouse_wheel, mouse_position=mouse_position, window_size=window_size)
+showcase_menu.add(MenuItem(_("Search GuitarParty"), guitar_chords.search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
 showcase_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 showcase_menu.add_sub(_("Misc…"), 150)
@@ -41887,17 +41889,6 @@ for i, theme in enumerate(theme_files):
 	pref_box.themes.append((c, theme[1], i + 1))
 
 pctl.total_playtime = star_store.get_total()
-
-mouse_up = False
-mouse_wheel = 0
-reset_render = False
-c_yax = 0
-c_yax_timer = Timer()
-c_xax = 0
-c_xax_timer = Timer()
-c_xay = 0
-c_xay_timer = Timer()
-rt = 0
 
 # MAIN LOOP
 
