@@ -7216,22 +7216,35 @@ class Tauon:
 		return False
 
 	def get_ffmpeg(self) -> str | None:
+		path = user_directory / "ffmpeg.exe"
+		if msys and path.is_file():
+			return str(path)
+
+		# macOS
+		path = install_directory / "ffmpeg"
+		if path.is_file():
+			return str(path)
+
 		logging.debug(f"Looking for ffmpeg in PATH: {os.environ.get('PATH')}")
-		p = shutil.which("ffmpeg")
-		if p:
-			return p
-		p = str(user_directory / "ffmpeg.exe")
-		if msys and os.path.isfile(p):
-			return p
+		path = shutil.which("ffmpeg")
+		if path:
+			return path
 		return None
 
 	def get_ffprobe(self) -> str | None:
-		p = shutil.which("ffprobe")
-		if p:
-			return p
-		p = str(user_directory / "ffprobe.exe")
-		if msys and os.path.isfile(p):
-			return p
+		path = user_directory / "ffprobe.exe"
+		if msys and path.is_file():
+			return str(path)
+
+		# macOS
+		path = install_directory / "ffprobe"
+		if path.is_file():
+			return str(path)
+
+		logging.debug(f"Looking for ffprobe in PATH: {os.environ.get('PATH')}")
+		path = shutil.which("ffprobe")
+		if path:
+			return path
 		return None
 
 	def bg_save(self) -> None:
