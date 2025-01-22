@@ -281,7 +281,8 @@ if Path(user_directory / "x11").exists():
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
 
-sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO)
+sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
+
 err = sdl3.SDL_GetError()
 if err and "GLX" in err.decode():
 	logging.error(f"SDL init error: {err.decode()}")

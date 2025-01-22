@@ -63,7 +63,6 @@ import ssl
 import socket
 import subprocess
 import sys
-
 import threading
 import time
 import urllib.parse
@@ -214,7 +213,7 @@ class LoadImageAsset:
 	def render(self, x: int, y: int, colour=None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderCopy(renderer, self.texture, None, self.rect)
+		sdl3.SDL_RenderTexture(renderer, self.texture, None, self.rect)
 
 class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
@@ -41542,8 +41541,6 @@ d_border = 1
 
 update_layout = True
 
-event = sdl3.SDL_Event()
-
 mouse_moved = False
 
 power = 0
@@ -41707,6 +41704,9 @@ for i, theme in enumerate(theme_files):
 pctl.total_playtime = star_store.get_total()
 
 # MAIN LOOP
+
+event = sdl3.SDL_Event()
+event_ptr = ctypes.pointer(event)
 
 while pctl.running:
 	# bm.get('main')
@@ -42157,7 +42157,7 @@ while pctl.running:
 
 					i_x = pointer(c_int(0))
 					i_y = pointer(c_int(0))
-					sdl3.SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+					sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 					window_size[0] = i_x.contents.value
 					window_size[1] = i_y.contents.value
 
@@ -43170,8 +43170,8 @@ while pctl.running:
 		gui.showed_title = False
 
 		if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
-			mouse_position[0] = -300
-			mouse_position[1] = -300
+			mouse_position[0] = -300.
+			mouse_position[1] = -300.
 
 		if gui.clear_image_cache_next:
 			gui.clear_image_cache_next -= 1
