@@ -129,7 +129,7 @@ class StreamEnc:
 					r.add_header("Icy-MetaData", "1")
 				r.add_header("User-Agent", self.tauon.t_agent)
 				logging.info("Open URL.....")
-				r = urllib.request.urlopen(r, timeout=20, context=self.tauon.ssl_context)
+				r = urllib.request.urlopen(r, timeout=20, context=self.tauon.tls_context)
 				logging.info("URL opened.")
 
 			except Exception as e:
