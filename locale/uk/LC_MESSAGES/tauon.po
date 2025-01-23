@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-22 17:29+0000\n"
+"PO-Revision-Date: 2025-01-23 13:57+0000\n"
 "Last-Translator: Kosťantin Horovij <lg096066587039@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/uk/>\n"
@@ -373,7 +373,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8148
 msgid "Please authorise and click the enable toggle first!"
-msgstr ""
+msgstr "Будь ласка, спочатку авторизуйтесь і натисніть на перемикач увімкнення!"
 
 #: src/tauon/t_modules/t_main.py:8149
 msgid "Spotify import complete"
@@ -521,7 +521,7 @@ msgstr "Немає назви списку відтворення"
 
 #: src/tauon/t_modules/t_main.py:9290
 msgid "Playlist not found on target"
-msgstr ""
+msgstr "Список відтворення не знайдено"
 
 #: src/tauon/t_modules/t_main.py:9385 src/tauon/t_modules/t_main.py:9397
 msgid "Job already in progress!"
@@ -561,7 +561,7 @@ msgstr "Помилка збереження зображення."
 
 #: src/tauon/t_modules/t_main.py:13779
 msgid "Error importing XSPF playlist."
-msgstr ""
+msgstr "Помилка імпортування списку відтворення XSPF."
 
 #: src/tauon/t_modules/t_main.py:13779
 msgid "Sorry about that."
@@ -573,7 +573,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:14667
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Списки відтворення + черга"
 
 #: src/tauon/t_modules/t_main.py:14668 src/tauon/t_modules/t_main.py:39161
 msgid "Queue"
@@ -728,7 +728,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:15255
 msgid "Export Playlist"
-msgstr ""
+msgstr "Експортувати список відтворення"
 
 #: src/tauon/t_modules/t_main.py:15260
 msgid "Save directory"
@@ -752,7 +752,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:15307
 msgid "Playlist exported"
-msgstr ""
+msgstr "Список відтворення експортовано"
 
 #: src/tauon/t_modules/t_main.py:15348
 msgid "Repeat OFF"
@@ -768,19 +768,19 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:15428
 msgid "Shuffle Lockdown"
-msgstr ""
+msgstr "Заблокувати перемішування"
 
 #: src/tauon/t_modules/t_main.py:15429
 msgid "Shuffle Lockdown Albums"
-msgstr ""
+msgstr "Заблокувати перемішуавння альбомів"
 
 #: src/tauon/t_modules/t_main.py:15431
 msgid "Shuffle OFF"
-msgstr ""
+msgstr "Перемішування вимкруто"
 
 #: src/tauon/t_modules/t_main.py:15432
 msgid "Shuffle Tracks"
-msgstr ""
+msgstr "Перемішати композиції"
 
 #: src/tauon/t_modules/t_main.py:15433
 msgid "Random Albums"
@@ -836,7 +836,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:15638 src/tauon/t_modules/t_main.py:20217
 msgid "Folder size safety limit reached! (3GB)"
-msgstr ""
+msgstr "Досягнуто безпечної межі розміру теки! (3 ГБ)"
 
 #: src/tauon/t_modules/t_main.py:15705 src/tauon/t_modules/t_main.py:15725
 msgid "Rescanning folder..."
@@ -1224,7 +1224,7 @@ msgstr "Композиції в списку відтворення:"
 
 #: src/tauon/t_modules/t_main.py:17640
 msgid "Repeats in playlist:"
-msgstr "Повторюється у списку відтворення:"
+msgstr "Повтори у списку відтворення:"
 
 #: src/tauon/t_modules/t_main.py:17644
 msgid "Total local size:"
@@ -1296,7 +1296,7 @@ msgstr "Додати альбом Spotify"
 
 #: src/tauon/t_modules/t_main.py:18070
 msgid "Playlist contains non-Spotify tracks"
-msgstr "Список відтворення містить треки не з Spotify"
+msgstr "Список відтворення містить композиції не з Spotify"
 
 #: src/tauon/t_modules/t_main.py:18076
 msgid "Created new Spotify playlist"
@@ -1311,9 +1311,8 @@ msgid "Updated Spotify playlist"
 msgstr "Оновлений список відтворення Spotify"
 
 #: src/tauon/t_modules/t_main.py:18106
-#, fuzzy
 msgid "This playlist has no generator"
-msgstr "Цей список відтворення не має виробника"
+msgstr "Цей список відтворення не має генератора"
 
 #: src/tauon/t_modules/t_main.py:18752
 msgid "OK. This playlist will automatically sort on import from now on"
@@ -1491,7 +1490,7 @@ msgstr "Збережено як: "
 
 #: src/tauon/t_modules/t_main.py:19105
 msgid "Export Playlist Stats"
-msgstr "Статистика експортованого списку відтворення"
+msgstr "Експортувати статистику списку відтворення"
 
 #: src/tauon/t_modules/t_main.py:19106
 msgid "Export Albums CSV"
@@ -1576,7 +1575,7 @@ msgstr "Кодек: "
 #: src/tauon/t_modules/t_main.py:19461 src/tauon/t_modules/t_main.py:19468
 #: src/tauon/t_modules/t_main.py:19469
 msgid "File Modified"
-msgstr "Файл змінено"
+msgstr "Зміни файла"
 
 #: src/tauon/t_modules/t_main.py:19494 src/tauon/t_modules/t_main.py:19884
 #: src/tauon/t_modules/t_main.py:19885 src/tauon/t_modules/t_main.py:22430
@@ -1631,12 +1630,12 @@ msgstr "За останніми роками"
 #: src/tauon/t_modules/t_main.py:19699 src/tauon/t_modules/t_main.py:19706
 #: src/tauon/t_modules/t_main.py:19707
 msgid "Shuffled Tracks"
-msgstr "Перетасовані композиції"
+msgstr "Перемішані композиції"
 
 #: src/tauon/t_modules/t_main.py:19735 src/tauon/t_modules/t_main.py:19742
 #: src/tauon/t_modules/t_main.py:19743
 msgid "Shuffled Albums"
-msgstr "Перетасовані альбоми"
+msgstr "Перемішані альбоми"
 
 #: src/tauon/t_modules/t_main.py:19758 src/tauon/t_modules/t_main.py:19766
 #: src/tauon/t_modules/t_main.py:19767
@@ -1838,7 +1837,7 @@ msgstr "Видалити файл композиції"
 
 #: src/tauon/t_modules/t_main.py:20766
 msgid "Rename (Single track)"
-msgstr "Перейменувати (окрему композицію)"
+msgstr "Перейменувати (композицію)"
 
 #: src/tauon/t_modules/t_main.py:20768 src/tauon/t_modules/t_main.py:20775
 #: src/tauon/t_modules/t_main.py:21556 src/tauon/t_modules/t_main.py:21558
@@ -2017,11 +2016,11 @@ msgstr "Неможливо редагувати теги мережевої до
 
 #: src/tauon/t_modules/t_main.py:21384 src/tauon/t_modules/t_main.py:21719
 msgid "Edit with "
-msgstr "Редагувати за допомогою "
+msgstr "Редагувати через "
 
 #: src/tauon/t_modules/t_main.py:21389
 msgid "Edit with"
-msgstr "Редагувати за допомогою"
+msgstr "Редагувати через"
 
 #: src/tauon/t_modules/t_main.py:21399
 msgid "Lyrics..."
@@ -2491,6 +2490,8 @@ msgstr "Очистити чергу"
 #: src/tauon/t_modules/t_main.py:23567
 msgid "No exact matching artist could be found in this playlist"
 msgstr ""
+"У списку відтворення не знайдено жодного виконавця, який би точно відповідав "
+"запиту"
 
 #: src/tauon/t_modules/t_main.py:23576
 msgid "Please wait for cleaning process to finish"
@@ -2535,11 +2536,11 @@ msgstr "Уподобані копмпозиції"
 
 #: src/tauon/t_modules/t_main.py:23679
 msgid "Importing Spotify playlists..."
-msgstr ""
+msgstr "Імпортування списків відтворення Spotify..."
 
 #: src/tauon/t_modules/t_main.py:23697
 msgid "> Import All Playlists"
-msgstr ""
+msgstr "> Імпортувати всі списки відтворення"
 
 #: src/tauon/t_modules/t_main.py:23702
 msgid "Playlist…"
@@ -2587,7 +2588,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:24228
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Вийти з болкування перемішування"
 
 #: src/tauon/t_modules/t_main.py:24234
 msgid "Donate"
@@ -2701,7 +2702,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:26346
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Пропуск надвеликих zip-файлів (>4 ГБ)"
 
 #: src/tauon/t_modules/t_main.py:26362 src/tauon/t_modules/t_main.py:26366
 #: src/tauon/t_modules/t_main.py:26373
@@ -2970,7 +2971,7 @@ msgstr "Автоматично"
 
 #: src/tauon/t_modules/t_main.py:28112
 msgid "Preserve album dynamics"
-msgstr "Збережена різниця маж альбомами"
+msgstr "Зберегти різницю маж альбомами"
 
 #: src/tauon/t_modules/t_main.py:28114
 msgid "Tracks equal loudness"
@@ -2988,7 +2989,7 @@ msgstr "Преамп"
 msgid "Lower pre-amp values improve normalisation but will require a higher system volume."
 msgstr ""
 "Менші значення преампа покращують нормалізацію, але вимагають більшої "
-"гучності системи."
+"системної гучності."
 
 #: src/tauon/t_modules/t_main.py:28188 src/tauon/t_modules/t_main.py:28827
 #: src/tauon/t_modules/t_main.py:28833 src/tauon/t_modules/t_main.py:28839
@@ -3089,7 +3090,7 @@ msgstr "Галерея"
 
 #: src/tauon/t_modules/t_main.py:28441
 msgid "Single click to play"
-msgstr "ВІдтворювати одним кліком"
+msgstr "Відтворювати одним кліком"
 
 #: src/tauon/t_modules/t_main.py:28443
 msgid "Combine multi-discs"
@@ -3201,11 +3202,11 @@ msgstr "Повторити список відтворення"
 
 #: src/tauon/t_modules/t_main.py:28572
 msgid "Play next playlist"
-msgstr "Відтворити наступний список відтворення"
+msgstr "Запускати наступний список відтворення"
 
 #: src/tauon/t_modules/t_main.py:28574
 msgid "Cycle all playlists"
-msgstr "Циклічно відтворювати всі списки відтворення"
+msgstr "Зациклити всі списки відтворення"
 
 #: src/tauon/t_modules/t_main.py:28580
 msgid "Extract archives"
@@ -3221,8 +3222,7 @@ msgstr "Увімкнути монітор завантаження"
 
 #: src/tauon/t_modules/t_main.py:28584
 msgid "One click import new archives and folders from downloads folder"
-msgstr ""
-"Імпортувати нові архіви та теки з каталогу завантажень одним клацанням миші"
+msgstr "Імпортувати архіви та теки з завантажень одним клацанням миші"
 
 #: src/tauon/t_modules/t_main.py:28586
 msgid "Trash archive after extraction"
@@ -3242,7 +3242,7 @@ msgstr "Закривати до трея"
 
 #: src/tauon/t_modules/t_main.py:28598
 msgid "Show title text"
-msgstr "Показати текст заголовка"
+msgstr "Показати заголовок"
 
 #: src/tauon/t_modules/t_main.py:28601
 msgid "Monochrome"
@@ -3292,13 +3292,11 @@ msgstr "Продовження відтворення після пробудж�
 
 #: src/tauon/t_modules/t_main.py:28642
 msgid "Record Radio"
-msgstr ""
+msgstr "Записувати радіо"
 
 #: src/tauon/t_modules/t_main.py:28643
 msgid "Record and split songs when playing internet radio"
-msgstr ""
-"Записувати та розбивати пісні на частини під час прослуховування "
-"інтернет-радіо"
+msgstr "Записувати та розбивати на частини відтворюючи інтернет-радіо"
 
 #: src/tauon/t_modules/t_main.py:28645
 msgid "Tracks will now be recorded. Restart any playback for change to take effect."
@@ -3308,7 +3306,9 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:28646
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr "Треки будуть збережені до списку відтворення «Збережені радіо-треки»."
+msgstr ""
+"Композиції будуть збережені до списку відтворення «Збережені "
+"радіо-композиції»."
 
 #: src/tauon/t_modules/t_main.py:28660
 msgid "Enable Discord Rich Presence"
@@ -3643,11 +3643,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:29685
 msgid "Selected playlist:"
-msgstr ""
+msgstr "Вибраний список відтворення:"
 
 #: src/tauon/t_modules/t_main.py:29689
 msgid "No sync playlist selected!"
-msgstr ""
+msgstr "Не вибрано список відтворення для синхронізації!"
 
 #: src/tauon/t_modules/t_main.py:29692
 msgid "Path to device music folder:   "
@@ -3691,7 +3691,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:29740
 msgid "Select a source playlist"
-msgstr ""
+msgstr "Виберіть вихідний список відтворення"
 
 #: src/tauon/t_modules/t_main.py:29741
 msgid "Right click tab > Misc... > Set as sync playlist"
@@ -3812,7 +3812,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30247
 msgid "Target playlist:   "
-msgstr ""
+msgstr "Перемкнути список відтворення:   "
 
 #: src/tauon/t_modules/t_main.py:30256
 msgid "Level 1"
@@ -3881,7 +3881,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30361
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "У списку відтворення недостатньо альбомів!"
 
 #: src/tauon/t_modules/t_main.py:30380 src/tauon/t_modules/t_main.py:30381
 msgid "Chart generator..."
@@ -3889,7 +3889,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30388 src/tauon/t_modules/t_main.py:30428
 msgid "Tracks in playlist"
-msgstr ""
+msgstr "Композиції у списку відтворення"
 
 #: src/tauon/t_modules/t_main.py:30389 src/tauon/t_modules/t_main.py:30431
 msgid "Albums in playlist"
@@ -3909,7 +3909,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30393 src/tauon/t_modules/t_main.py:30469
 msgid "Total playtime"
-msgstr ""
+msgstr "Загальний час відтворення"
 
 #: src/tauon/t_modules/t_main.py:30530
 msgid "Track ratings"
@@ -3921,7 +3921,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30540
 msgid "Show track loves"
-msgstr "Показати вподобані треки"
+msgstr "Показати вподобані композиції"
 
 #: src/tauon/t_modules/t_main.py:30548
 msgid "Represent playtime as stars"
@@ -3929,7 +3929,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30557
 msgid "Represent playcount as lines"
-msgstr ""
+msgstr "Відображати кількість відтворень у вигляді ліній"
 
 #: src/tauon/t_modules/t_main.py:30575
 msgid "Left align title style"
@@ -3949,11 +3949,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30600
 msgid "Font Size"
-msgstr ""
+msgstr "Розмір шрифту"
 
 #: src/tauon/t_modules/t_main.py:30602
 msgid "Row Size"
-msgstr ""
+msgstr "Розмір рядка"
 
 #: src/tauon/t_modules/t_main.py:30604
 msgid "Baseline offset"
@@ -4014,11 +4014,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:31810
 msgid "Importing...  "
-msgstr ""
+msgstr "Імпортування...  "
 
 #: src/tauon/t_modules/t_main.py:31816
 msgid "Scanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Сканування тегів...  {N} залишилося"
 
 #: src/tauon/t_modules/t_main.py:31818
 msgid "File copy in progress..."
@@ -4030,7 +4030,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:31825
 msgid "Rescanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Повторне сканування тегів...  {N} залишилося"
 
 #: src/tauon/t_modules/t_main.py:31828
 msgid "Accessing PLEX library..."
@@ -4094,15 +4094,15 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:31943
 msgid "{N} Folder Remaining {T}"
-msgstr ""
+msgstr "{N} Тек, залишилася {T}"
 
 #: src/tauon/t_modules/t_main.py:31945
 msgid "{N} Folders Remaining {T}"
-msgstr ""
+msgstr "{N} Тека, залишилася {T}"
 
 #: src/tauon/t_modules/t_main.py:32527 src/tauon/t_modules/t_main.py:33125
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Грати, ПК: до відтворюваного"
 
 #: src/tauon/t_modules/t_main.py:32552 src/tauon/t_modules/t_main.py:33150
 msgid "Pause"
@@ -4110,15 +4110,15 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:32568
 msgid "Stop, RC: Toggle auto-stop"
-msgstr ""
+msgstr "Зупинити, ПК: увімкнути автоматичну зупинку"
 
 #: src/tauon/t_modules/t_main.py:32591 src/tauon/t_modules/t_main.py:33171
 msgid "Shuffle On"
-msgstr ""
+msgstr "Перемішування ввімкнуто"
 
 #: src/tauon/t_modules/t_main.py:32594 src/tauon/t_modules/t_main.py:33174
 msgid "Shuffle Off"
-msgstr ""
+msgstr "Перемішування вимкнуто"
 
 #: src/tauon/t_modules/t_main.py:32625
 msgid "Repeat On"
@@ -4130,7 +4130,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:32635
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Назад, ПК: перемкнути повторення, СК: відмінити"
 
 #: src/tauon/t_modules/t_main.py:32652
 msgid "Playback menu"
@@ -4138,7 +4138,7 @@ msgstr "Меню відтворення"
 
 #: src/tauon/t_modules/t_main.py:32693 src/tauon/t_modules/t_main.py:32695
 msgid "Shuffle"
-msgstr ""
+msgstr "Перемішування"
 
 #: src/tauon/t_modules/t_main.py:32753 src/tauon/t_modules/t_main.py:32761
 msgid "Repeat album"
@@ -4319,7 +4319,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:36742
 msgid "Play count: >, <"
-msgstr ""
+msgstr "Відтворень: >, <"
 
 #: src/tauon/t_modules/t_main.py:36745
 msgid "Duration (seconds): >, <"
@@ -4351,11 +4351,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:36778
 msgid "Shuffle tracks"
-msgstr ""
+msgstr "Перемішати композиції"
 
 #: src/tauon/t_modules/t_main.py:36781
 msgid "Shuffle albums"
-msgstr ""
+msgstr "Перемішати альбоми"
 
 #: src/tauon/t_modules/t_main.py:36784
 msgid "Year: >, <"
@@ -4367,11 +4367,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:36790
 msgid "Track Playtime: >, <"
-msgstr ""
+msgstr "Відтворення композиції: >, <"
 
 #: src/tauon/t_modules/t_main.py:36793
 msgid "Album playtime: >, <"
-msgstr ""
+msgstr "Відтворення альбому: >, <"
 
 #: src/tauon/t_modules/t_main.py:36796
 msgid "Invert tracks"
@@ -4451,15 +4451,15 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:37347
 msgid "Sort by Playtime"
-msgstr ""
+msgstr "Сортувати за часом відтворення"
 
 #: src/tauon/t_modules/t_main.py:37348
 msgid "Toggle Thumbnails"
-msgstr ""
+msgstr "Перемкнути ескізи"
 
 #: src/tauon/t_modules/t_main.py:37349
 msgid "Toggle Filter"
-msgstr ""
+msgstr "Перемкнути фільтри"
 
 #: src/tauon/t_modules/t_main.py:37438
 msgid "Notice: Artist image sourced from fanart.tv"
@@ -4657,11 +4657,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41705
 msgid "Radio"
-msgstr ""
+msgstr "Радіо"
 
 #: src/tauon/t_modules/t_main.py:41719
 msgid "Toggle columns"
-msgstr ""
+msgstr "Перемкнути колонки"
 
 #: src/tauon/t_modules/t_main.py:42051
 msgid "Image types other than PNG or JPEG are currently not supported"
@@ -4775,7 +4775,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:47172 src/tauon/t_modules/t_main.py:47178
 msgid "File size"
-msgstr ""
+msgstr "Розмір файлу"
 
 #: src/tauon/t_modules/t_main.py:47186
 msgid "Disc"
@@ -4787,7 +4787,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:47263
 msgid "Play time"
-msgstr ""
+msgstr "Час відтворення"
 
 #: src/tauon/t_modules/t_main.py:47352
 msgid "Folder Modification"
