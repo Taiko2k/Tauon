@@ -27,8 +27,6 @@ I would highly recommend not using this project as an example on how to code cle
 from __future__ import annotations
 
 
-import faulthandler
-faulthandler.enable()
 
 import base64
 import builtins
@@ -174,6 +172,9 @@ if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
 	from PIL.ImageFile import ImageFile
+
+gbc.disable()
+ggc = 2
 
 # Log to debug as we don't care at all when user does not have this
 try:
@@ -2456,8 +2457,6 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 # -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
-gbc.disable()
-ggc = 2
 
 star_path1 = user_directory / "star.p"
 star_path2 = user_directory / "star.p.backup"
@@ -13021,8 +13020,7 @@ class AlbumArt:
 				g.close()
 				return None
 
-			wop = rw_from_object(g)
-			s_image = sdl3.IMG_Load_RW(wop, 0)
+			s_image = ddt.load_image(g)
 			#logging.error(IMG_GetError())
 
 			c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
@@ -33928,7 +33926,7 @@ class StandardPlaylist:
 		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 		sdl3.SDL_RenderClear(renderer)
 
-		rect = (left, gui.panelY, width, window_size[1])
+		rect = (left, gui.panelY, width, window_size[1] - (gui.panelBY + gui.panelY))
 		ddt.rect(rect, colours.playlist_panel_background)
 
 		# This draws an optional background image
@@ -42711,7 +42709,6 @@ rt = 0
 # MAIN LOOP
 
 event = sdl3.SDL_Event()
-event_ptr = ctypes.pointer(event)
 
 while pctl.running:
 	# bm.get('main')
@@ -43004,6 +43001,7 @@ while pctl.running:
 				mouse_down = False
 				gui.update += 1
 		elif event.type == sdl3.SDL_EVENT_KEY_DOWN and key_focused == 0:
+			continue   # TODO fix me
 			k_input = True
 			power += 5
 			gui.update += 2
@@ -43077,7 +43075,7 @@ while pctl.running:
 					key_focused = 1
 
 		elif event.type == sdl3.SDL_EVENT_KEY_UP:
-
+			continue
 			k_input = True
 			power += 5
 			gui.update += 2
@@ -43977,6 +43975,15 @@ while pctl.running:
 
 	# if focused is True:
 	#     mouse_down = False
+
+	# TODO testing only, remove me later
+	# gg = 5
+	# aa = 80
+	# colours.top_panel_background = [gg,gg,gg,aa]
+	# colours.side_panel_background = [gg,gg,gg,aa]
+	#colours.bottom_panel_colour = [gg,gg,gg,aa]
+	#colours.playlist_panel_background = [gg,gg,gg,aa]
+	#colours.playlist_box_background  = [0, 0, 0, 100]
 
 	if inp.media_key:
 		if inp.media_key == "Play":
