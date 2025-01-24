@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-02-11 00:02+0000\n"
+"PO-Revision-Date: 2025-05-04 09:07+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -660,16 +660,15 @@ msgstr "?"
 
 #: src/tauon/t_modules/t_main.py:14946
 msgid "Press Enter in each field to apply its changes to local database."
-msgstr ""
-"Premi invio su ogni campo per applicare cambiamenti al database locale."
+msgstr "Premi invio su ogni campo per applicare cambiamenti al database locale."
 
 #: src/tauon/t_modules/t_main.py:14947
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
-"Quando fatto, premi SCRIVI METADATI per salvare i metadati nei file. "
-"(Facoltativo ma raccomandato)"
+"Quando fatto, premi SCRIVI METADATI per salvare i metadati nei file. ("
+"Facoltativo ma raccomandato)"
 
 #: src/tauon/t_modules/t_main.py:14951
 msgid "Number of tracks selected: {N}"
@@ -1333,8 +1332,8 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Puoi rimuovere o configurare questo comportamento andando su \"Gen..."
-"\">\"Modifica generator...\""
+"Puoi rimuovere o configurare questo comportamento andando su \"Gen...\">"
+"\"Modifica generator...\""
 
 #: src/tauon/t_modules/t_main.py:18768 src/tauon/t_modules/t_main.py:18776
 msgid "Upload"
@@ -2847,8 +2846,7 @@ msgstr "Codifica completata."
 #: src/tauon/t_modules/t_main.py:27320
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
-msgstr ""
-"Nota che i giudizi sono salvati nel database locale e non nei metadati."
+msgstr "Nota che i giudizi sono salvati nel database locale e non nei metadati."
 
 #: src/tauon/t_modules/t_main.py:27371 src/tauon/t_modules/t_main.py:27385
 #: src/tauon/t_modules/t_main.py:27423
