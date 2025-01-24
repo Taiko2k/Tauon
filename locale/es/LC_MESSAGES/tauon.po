@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-22 13:01+0000\n"
+"PO-Revision-Date: 2025-01-24 17:01+0000\n"
 "Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -2676,7 +2676,7 @@ msgstr "(Incluir resultados multi-etiqueta)"
 #: src/tauon/t_modules/t_main.py:25227 src/tauon/t_modules/t_main.py:25235
 #: src/tauon/t_modules/t_main.py:25248 src/tauon/t_modules/t_main.py:25266
 msgid "BY"
-msgstr "POR"
+msgstr "DE"
 
 #: src/tauon/t_modules/t_main.py:25254
 msgid "FROM"
