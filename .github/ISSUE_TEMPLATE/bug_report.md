@@ -9,7 +9,9 @@ assignees: ''
 
 **Desktop (please complete the following information):**
  - OS: [e.g. Arch Linux/Windows/macOS]
- - Tauon Version [e.g. 7.9.0, see Menu->Settings->About]
+ - OS version: [e.g. rolling/11/15.2]
+ - Tauon Version: [e.g. 7.9.0, see Menu->Settings->About]
+ - Installation method: [e.g. Flatpak/OS packager/portable binary/from source]
 
 **Describe the bug**
 A clear and concise description of what the bug is.
@@ -24,8 +26,8 @@ Steps to reproduce the behavior:
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Screenshots/Videos**
+If applicable, add screenshots/videos to help explain your problem.
 
 **Tauon log**
 
