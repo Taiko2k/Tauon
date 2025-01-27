@@ -23030,17 +23030,17 @@ class Undo:
 @dataclass
 class Directories:
 	"""Hold directories"""
-	install_directory      : Path
-	svg_directory          : Path
-	asset_directory        : Path
-	scaled_asset_directory : Path
-	locale_directory       : Path
-	user_directory         : Path
-	config_directory       : Path
-	cache_directory        : Path
-	home_directory         : Path
-	music_directory        : Path
-	download_directory     : Path
+	install_directory:      Path
+	svg_directory:          Path
+	asset_directory:        Path
+	scaled_asset_directory: Path
+	locale_directory:       Path
+	user_directory:         Path
+	config_directory:       Path
+	cache_directory:        Path
+	home_directory:         Path
+	music_directory:        Path
+	download_directory:     Path
 
 @dataclass
 class Bag:
