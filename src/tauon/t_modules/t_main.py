@@ -77,6 +77,7 @@ import mutagen.mp4
 import mutagen.oggvorbis
 import requests
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from sdl2 import (
 	SDL_BLENDMODE_BLEND,
@@ -337,96 +338,6 @@ from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_b
 from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
-from tauon.t_modules.t_main_rework import (
-	Directories,
-	LoadImageAsset,
-	WhiteModImageAsset,
-	DConsole,
-	Config,
-	GuiVar,
-	StarStore,
-	AlbumStarStore,
-	Fonts,
-	Input,
-	KeyMap,
-	ColoursClass,
-	TrackClass,
-	LoadClass,
-	GetSDLInput,
-	MOD,
-	GMETrackInfo,
-	PlayerCtl,
-	LastFMapi,
-	ListenBrainz,
-	LastScrob,
-	Strings,
-	Chunker,
-	MenuIcon,
-	MenuItem,
-	ThreadManager,
-	Menu,
-	GallClass,
-	ThumbTracks,
-	Tauon,
-	PlexService,
-	SubsonicService,
-	STray,
-	GStats,
-	Drawing,
-	DropShadow,
-	LyricsRenMini,
-	LyricsRen,
-	TimedLyricsToStatic,
-	TimedLyricsRen,
-	TextBox2,
-	TextBox,
-	ImageObject,
-	AlbumArt,
-	StyleOverlay,
-	ToolTip,
-	ToolTip3,
-	SubLyricsBox,
-	RenameTrackBox,
-	TransEditBox,
-	TransEditBox,
-	ExportPlaylistBox,
-	KoelService,
-	TauService,
-	SearchOverlay,
-	MessageBox,
-	NagBox,
-	PowerTag,
-	Over,
-	Fields,
-	TopPanel,
-	BottomBarType1,
-	BottomBarType_ao1,
-	MiniMode,
-	MiniMode2,
-	MiniMode3,
-	StandardPlaylist,
-	ArtBox,
-	ScrollBox,
-	RadioBox,
-	RenamePlaylistBox,
-	PlaylistBox,
-	ArtistList,
-	TreeView,
-	QueueBox,
-	MetaBox,
-	PictureRender,
-	PictureRender,
-	RadioThumbGen,
-	RadioThumbGen,
-	Showcase,
-	ColourPulse2,
-	ViewBox,
-	DLMon,
-	Fader,
-	EdgePulse,
-	EdgePulse2,
-	Undo,
-)
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -439,13 +350,13 @@ if TYPE_CHECKING:
 class LoadImageAsset:
 	assets: list[LoadImageAsset] = []
 
-	def __init__(self, *, config: Config, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
+	def __init__(self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
 			self.assets.append(self)
 
 		self.path = path
 		self.scale_name = scale_name
-		self.scaled_asset_directory: Path = config.dirs.scaled_asset_directory
+		self.scaled_asset_directory: Path = bag.dirs.scaled_asset_directory
 
 		raw_image = IMG_Load(self.path.encode())
 		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
@@ -455,7 +366,7 @@ class LoadImageAsset:
 		SDL_QueryTexture(self.sdl_texture, None, None, p_w, p_h)
 
 		if is_full_path:
-			SDL_SetTextureAlphaMod(self.sdl_texture, prefs.custom_bg_opacity)
+			SDL_SetTextureAlphaMod(self.sdl_texture, bag.prefs.custom_bg_opacity)
 
 		self.rect = SDL_Rect(0, 0, p_w.contents.value, p_h.contents.value)
 		SDL_FreeSurface(raw_image)
@@ -476,15 +387,16 @@ class LoadImageAsset:
 class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
 
-	def __init__(self, *, config: Config, path: str, reload: bool = False, scale_name: str = ""):
+	def __init__(self, *, bag: Bag, path: str, reload: bool = False, scale_name: str = ""):
+		self.bag = bag
 		if not reload:
 			self.assets.append(self)
 		self.path = path
 		self.scale_name = scale_name
-		self.scaled_asset_directory: Path = config.dirs.scaled_asset_directory
+		self.scaled_asset_directory: Path = self.bag.dirs.scaled_asset_directory
 
 		raw_image = IMG_Load(path.encode())
-		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+		self.sdl_texture = SDL_CreateTextureFromSurface(self.bag.renderer, raw_image)
 		self.colour = [255, 255, 255, 255]
 		p_w = pointer(c_int(0))
 		p_h = pointer(c_int(0))
@@ -565,7 +477,7 @@ class GuiVar:
 		self.panelY2 = round(30 * self.scale)
 		self.playlist_top = self.panelY + (8 * self.scale)
 		self.playlist_top_bk = self.playlist_top
-		self.scroll_hide_box = (0, self.panelY, 28, self.config.window_size[1] - self.panelBY - self.panelY)
+		self.scroll_hide_box = (0, self.panelY, 28, self.bag.window_size[1] - self.panelBY - self.panelY)
 
 		self.spec2_y = int(round(22 * self.scale))
 		self.spec2_w = int(round(140 * self.scale))
@@ -588,13 +500,13 @@ class GuiVar:
 			0, round(self.level_y - 10 * self.scale), round(self.level_ww),round(self.level_hh))
 
 		self.spec2_tex = SDL_CreateTexture(
-			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
+			self.bag.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
 		self.spec4_tex = SDL_CreateTexture(
-			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
+			self.bag.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
 		self.spec1_tex = SDL_CreateTexture(
-			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
+			self.bag.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
 		self.spec_level_tex = SDL_CreateTexture(
-			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
+			self.bag.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
 		SDL_SetTextureBlendMode(self.spec4_tex, SDL_BLENDMODE_BLEND)
 		self.artist_panel_height = 320 * self.scale
 		self.last_artist_panel_height = self.artist_panel_height
@@ -602,9 +514,9 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self, config: Config, tracklist_texture_rect: SDL_Rect, tracklist_texture, album_v_slide_value: int, console: Console, main_texture_overlay_temp, main_texture, max_window_tex):
-		self.config = config
-		self.scale = self.config.prefs.ui_scale
+	def __init__(self, bag: Bag, tracklist_texture_rect: SDL_Rect, tracklist_texture, album_v_slide_value: int, console: Console, main_texture_overlay_temp, main_texture, max_window_tex):
+		self.bag = bag
+		self.scale = self.bag.prefs.ui_scale
 
 		self.window_id = 0
 		self.update = 2  # UPDATE
@@ -665,7 +577,7 @@ class GuiVar:
 		self.universal_y_text_offset = 0
 
 		self.star_text_y_offset = 0
-		if self.config.system == "Windows":
+		if self.bag.system == "Windows":
 			self.star_text_y_offset = -2
 
 		self.set_bar = True
@@ -746,7 +658,7 @@ class GuiVar:
 		self.web_running = False
 
 		self.rsp = True
-		if self.config.phone:
+		if self.bag.phone:
 			self.rsp = False
 		self.rspw = round(300 * self.scale)
 		self.lsp = False
@@ -875,8 +787,8 @@ class GuiVar:
 		self.column_d_click_timer = Timer(10)
 		self.column_d_click_on = -1
 		self.column_sort_ani_timer = Timer(10)
-		self.column_sort_down_icon = asset_loader(self.config.dirs.scaled_asset_directory, loaded_asset_dc, "sort-down.png", True)
-		self.column_sort_up_icon = asset_loader(self.config.dirs.scaled_asset_directory, loaded_asset_dc, "sort-up.png", True)
+		self.column_sort_down_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "sort-down.png", True)
+		self.column_sort_up_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "sort-up.png", True)
 		self.column_sort_ani_direction = 1
 		self.column_sort_ani_x = 0
 
@@ -910,7 +822,7 @@ class GuiVar:
 
 		self.backend_reloading = False
 
-		self.spot_info_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "spot-info.png", True)
+		self.spot_info_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "spot-info.png", True)
 		self.tray_active = False
 		self.buffering = False
 		self.buffering_text = ""
@@ -920,7 +832,7 @@ class GuiVar:
 		self.drop_playlist_target = 0
 		self.discord_status = "Standby"
 		self.mouse_unknown = False
-		self.macstyle = prefs.macstyle
+		self.macstyle = self.bag.prefs.macstyle
 		if macos or detect_macstyle:
 			self.macstyle = True
 		self.radio_view = False
@@ -23133,15 +23045,16 @@ class Directories:
 	download_directory     : Path
 
 @dataclass
-class Config:
+class Bag:
 	"""Holder object for all configs"""
 	dirs: Directories
 	prefs: Prefs
 	renderer: renderer
 	system: str
+	macos: bool
 	phone: bool
 	window_size: list[int] # X Y
-
+	loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset]
 
 # TLS setup (needed for frozen installs)
 def get_cert_path(holder: Holder) -> str:
@@ -23176,16 +23089,16 @@ def whicher(target: str, flatpak_mode: bool) -> bool | str | None:
 		return False
 
 def asset_loader(
-	scaled_asset_directory: Path, loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset], name: str, mod: bool = False,
+	bag: Bag, loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset], name: str, mod: bool = False,
 ) -> WhiteModImageAsset | LoadImageAsset:
 	if name in loaded_asset_dc:
 		return loaded_asset_dc[name]
 
-	target = str(scaled_asset_directory / name)
+	target = str(bag.dirs.scaled_asset_directory / name)
 	if mod:
-		item = WhiteModImageAsset(scaled_asset_directory=scaled_asset_directory, path=target, scale_name=name)
+		item = WhiteModImageAsset(bag=bag, path=target, scale_name=name)
 	else:
-		item = LoadImageAsset(scaled_asset_directory=scaled_asset_directory, path=target, scale_name=name)
+		item = LoadImageAsset(bag=bag, path=target, scale_name=name)
 	loaded_asset_dc[name] = item
 	return item
 
@@ -39280,13 +39193,15 @@ def main(holder: Holder):
 		scale=scale,
 	)
 
-	config = Config(
+	bag = Bag(
 		dirs=dirs,
 		prefs=prefs,
 		renderer=renderer,
 		system=system,
+		macos=macos,
 		phone=phone,
 		window_size=window_size,
+		loaded_asset_dc=loaded_asset_dc,
 	)
 
 	multi_playlist: list[TauonPlaylist] = [pl_gen()]
@@ -39328,7 +39243,7 @@ def main(holder: Holder):
 	albums = []
 	album_position = 0
 	gui = GuiVar(
-		config=config,
+		bag=bag,
 		tracklist_texture_rect=tracklist_texture_rect,
 		tracklist_texture=tracklist_texture,
 		album_v_slide_value=album_v_slide_value,
