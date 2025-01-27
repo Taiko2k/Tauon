@@ -834,7 +834,7 @@ class GuiVar:
 		self.mouse_unknown = False
 		self.macstyle = self.bag.prefs.macstyle
 		self.radio_view = False
-		self.window_size = window_size
+		self.window_size = self.bag.window_size
 		self.box_over = False
 		self.suggest_clean_db = False
 		self.style_worker_timer = Timer()
@@ -39782,7 +39782,7 @@ def main(holder: Holder):
 
 	shoot_pump = threading.Thread(target=pumper)
 	shoot_pump.daemon = True
-	shoot_pump.start()	# temporary
+	shoot_pump.start() # temporary
 
 	if window_size is None:
 		window_size = window_default_size
@@ -39803,13 +39803,6 @@ def main(holder: Holder):
 
 	pump = False
 	shoot_pump.join()
-
-	if download_directory.is_dir():
-		download_directories.append(str(download_directory))
-
-	if music_directory is not None and music_directory.is_dir():
-		download_directories.append(str(music_directory))
-
 
 	# Run upgrades if we're behind the current DB standard
 	if db_version > 0 and db_version < latest_db_version:
@@ -39851,6 +39844,12 @@ def main(holder: Holder):
 
 	load_prefs()
 	save_prefs()
+
+	if download_directory.is_dir():
+		download_directories.append(str(download_directory))
+
+	if music_directory is not None and music_directory.is_dir():
+		download_directories.append(str(music_directory))
 
 	# Temporary
 	if 0 < db_version <= 34:
