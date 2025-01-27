@@ -23248,6 +23248,62 @@ class GetSDLInput:
 			SDL_CaptureMouse(SDL_FALSE)
 			self.mouse_capture = False
 
+class WinTask:
+	def __init__(self):
+		self.start = time.time()
+		self.updated_state = 0
+		self.window_id = gui.window_id
+		import comtypes.client as cc
+		cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
+		import comtypes.gen.TaskbarLib as tbl
+		self.taskbar = cc.CreateObject(
+			"{56FDF344-FD6D-11d0-958A-006097C9A090}",
+			interface=tbl.ITaskbarList3)
+		self.taskbar.HrInit()
+
+		self.d_timer = Timer()
+
+	def update(self, force=False):
+		if self.d_timer.get() > 2 or force:
+			self.d_timer.set()
+
+			if pctl.playing_state == 1 and self.updated_state != 1:
+				self.taskbar.SetProgressState(self.window_id, 0x2)
+
+			if pctl.playing_state == 1:
+				self.updated_state = 1
+				if pctl.playing_length > 2:
+					perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
+					if perc < 2:
+						perc = 1
+					elif perc > 100:
+						prec = 100
+				else:
+					perc = 0
+
+				self.taskbar.SetProgressValue(self.window_id, perc, 100)
+
+			elif pctl.playing_state == 2 and self.updated_state != 2:
+				self.updated_state = 2
+				self.taskbar.SetProgressState(self.window_id, 0x8)
+
+			elif pctl.playing_state == 0 and self.updated_state != 0:
+				self.updated_state = 0
+				self.taskbar.SetProgressState(self.window_id, 0x2)
+				self.taskbar.SetProgressValue(self.window_id, 0, 100)
+
+class XcursorImage(ctypes.Structure):
+	_fields_ = [
+			("version", c_uint32),
+			("size", c_uint32),
+			("width", c_uint32),
+			("height", c_uint32),
+			("xhot", c_uint32),
+			("yhot", c_uint32),
+			("delay", c_uint32),
+			("pixels", c_void_p),
+		]
+
 def get_cert_path() -> str:
 	if pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
@@ -40308,18 +40364,6 @@ if msys:
 	cursor_bottom_side = cursor_top_side
 elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 	try:
-		class XcursorImage(ctypes.Structure):
-			_fields_ = [
-					("version", c_uint32),
-					("size", c_uint32),
-					("width", c_uint32),
-					("height", c_uint32),
-					("xhot", c_uint32),
-					("yhot", c_uint32),
-					("delay", c_uint32),
-					("pixels", c_void_p),
-				]
-
 		try:
 			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
 		except Exception:
@@ -40458,51 +40502,6 @@ c_xay_timer = Timer()
 rt = 0
 
 if (system == "Windows" or msys) and taskbar_progress:
-	class WinTask:
-		def __init__(self):
-			self.start = time.time()
-			self.updated_state = 0
-			self.window_id = gui.window_id
-			import comtypes.client as cc
-			cc.GetModule(str(install_directory / "TaskbarLib.tlb"))
-			import comtypes.gen.TaskbarLib as tbl
-			self.taskbar = cc.CreateObject(
-				"{56FDF344-FD6D-11d0-958A-006097C9A090}",
-				interface=tbl.ITaskbarList3)
-			self.taskbar.HrInit()
-
-			self.d_timer = Timer()
-
-		def update(self, force=False):
-			if self.d_timer.get() > 2 or force:
-				self.d_timer.set()
-
-				if pctl.playing_state == 1 and self.updated_state != 1:
-					self.taskbar.SetProgressState(self.window_id, 0x2)
-
-				if pctl.playing_state == 1:
-					self.updated_state = 1
-					if pctl.playing_length > 2:
-						perc = int(pctl.playing_time * 100 / int(pctl.playing_length))
-						if perc < 2:
-							perc = 1
-						elif perc > 100:
-							prec = 100
-					else:
-						perc = 0
-
-					self.taskbar.SetProgressValue(self.window_id, perc, 100)
-
-				elif pctl.playing_state == 2 and self.updated_state != 2:
-					self.updated_state = 2
-					self.taskbar.SetProgressState(self.window_id, 0x8)
-
-				elif pctl.playing_state == 0 and self.updated_state != 0:
-					self.updated_state = 0
-					self.taskbar.SetProgressState(self.window_id, 0x2)
-					self.taskbar.SetProgressValue(self.window_id, 0, 100)
-
-
 	if (install_directory / "TaskbarLib.tlb").is_file():
 		logging.info("Taskbar progress enabled")
 		pctl.windows_progress = WinTask()
