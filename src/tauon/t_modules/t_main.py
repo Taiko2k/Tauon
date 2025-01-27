@@ -38866,7 +38866,7 @@ left_window_control = False
 xdpi = 0
 
 detect_macstyle = False
-gtk_settings: Settings | None = None
+gtk_settings: Gtk.Settings | None = None
 mac_close = (253, 70, 70, 255)
 mac_maximize = (254, 176, 36, 255)
 mac_minimize = (42, 189, 49, 255)
