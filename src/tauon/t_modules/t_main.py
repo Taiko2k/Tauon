@@ -1541,11 +1541,11 @@ class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 
 	# C-PC
-	def __init__(self, prefs: Prefs):
+	def __init__(self, bag: Bag):
 		#self.tauon =
 		self.running:           bool = True
-		self.prefs:             Prefs = prefs
-		self.install_directory: Path  = install_directory
+		self.prefs:             Prefs = bag.prefs
+		self.install_directory: Path  = bag.dirs.install_directory
 
 		# Database
 
@@ -5088,7 +5088,7 @@ class Tauon:
 		self.stream_proxy = StreamEnc(self)
 		self.level_train: list[list[float]] = []
 		self.radio_server = None
-		self.mod_formats = MOD_Formats
+		self.mod_formats = bag.formats.MOD_Formats
 		self.listen_alongers = {}
 		self.encode_folder_name = encode_folder_name
 		self.encode_track_name = encode_track_name
@@ -5120,7 +5120,7 @@ class Tauon:
 		self.MenuItem = MenuItem
 		self.tag_scan = tag_scan
 
-		self.gme_formats = GME_Formats
+		self.gme_formats = bag.formats.GME_Formats
 
 		self.spot_ctl: SpotCtl = SpotCtl(self)
 		self.tidal: Tidal = Tidal(self)
@@ -12599,7 +12599,7 @@ class Over:
 		if mode == 1:
 			return prefs.x_scale
 		prefs.x_scale ^= True
-		auto_scale()
+		auto_scale(bag)
 		gui.update_layout()
 
 	def about(self, x0, y0, w0, h0):
@@ -22771,7 +22771,7 @@ class DLMon:
 				if msys and "TauonMusicBox" in path:
 					continue
 
-				if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
+				if min_age < 240 and os.path.isfile(path) and ext in bag.formats.Archive_Formats:
 					size = os.path.getsize(path)
 					#logging.info("Check: " + path)
 					if path in self.watching:
@@ -22791,7 +22791,7 @@ class DLMon:
 								pass
 								#logging.info("Target folder for archive already exists")
 
-							elif archive_file_scan(path, DA_Formats, launch_prefix) >= 0.4:
+							elif archive_file_scan(path, bag.formats.DA_Formats, launch_prefix) >= 0.4:
 								self.ready.add(path)
 								gui.update += 1
 								#logging.info("Archive detected as music")
@@ -22823,7 +22823,7 @@ class DLMon:
 						# Check if size is stable, then scan for audio files
 						if size == self.watching[path]:
 							del self.watching[path]
-							if folder_file_scan(path, DA_Formats) > 0.5:
+							if folder_file_scan(path, bag.formats.DA_Formats) > 0.5:
 
 								# Check if folder not already imported
 								imported = False
@@ -23045,14 +23045,33 @@ class Directories:
 @dataclass
 class Bag:
 	"""Holder object for all configs"""
-	dirs: Directories
-	prefs: Prefs
+	dirs:     Directories
+	prefs:    Prefs
+	formats:  Formats
 	renderer: renderer
-	system: str
-	macos: bool
-	phone: bool
-	window_size: list[int] # X Y
+	system:   str
+	macos:    bool
+	msys:     bool
+	phone:    bool
+	logical_size:    list[int] # X Y
+	window_size:     list[int] # X Y
+	sdl_syswminfo:   SDL_SysWMinfo
 	loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset]
+
+@dataclass
+class Formats:
+	"""Contains:
+
+	* Colours used for the label icon in UI 'track info box'
+	* Extensions of files to be added when importing
+	"""
+
+	format_colours:  dict[str, tuple[int, int, int, int]]
+	VID_Formats:     set[str]
+	MOD_Formats:     set[str]
+	GME_Formats:     set[str]
+	DA_Formats:      set[str]
+	Archive_Formats: set[str]
 
 # TLS setup (needed for frozen installs)
 def get_cert_path(holder: Holder) -> str:
@@ -23386,7 +23405,8 @@ def get_theme_name(number: int) -> str:
 		return themes[number][1]
 	return ""
 
-def save_prefs():
+def save_prefs(bag: Bag, cf: Config):
+	prefs = bag.prefs
 	cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
 	cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
 	cf.update_value("radio-record-codec", prefs.radio_record_codec)
@@ -23548,14 +23568,15 @@ def save_prefs():
 	cf.update_value("chart-font", prefs.chart_font)
 	cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
 
-	if config_directory.is_dir():
-		cf.dump(str(config_directory / "tauon.conf"))
+	if bag.dirs.config_directory.is_dir():
+		cf.dump(str(bag.dirs.config_directory / "tauon.conf"))
 	else:
 		logging.error("Missing config directory")
 
-def load_prefs():
+def load_prefs(bag: Bag, cf: Config):
+	prefs = bag.prefs
 	cf.reset()
-	cf.load(str(config_directory / "tauon.conf"))
+	cf.load(str(bag.dirs.config_directory / "tauon.conf"))
 
 	cf.add_comment("Tauon Music Box configuration file")
 	cf.br()
@@ -23642,7 +23663,7 @@ def load_prefs():
 
 	cf.br()
 	cf.add_text("[tag-editor]")
-	if system == "Windows" or msys:
+	if bag.system == "Windows" or bag.msys:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target",
@@ -23678,9 +23699,9 @@ def load_prefs():
 		"bool", "allow-video-formats", prefs.allow_video_formats,
 		"Allow the import of MP4 and WEBM formats")
 	if prefs.allow_video_formats:
-		for item in VID_Formats:
-			if item not in DA_Formats:
-				DA_Formats.add(item)
+		for item in bag.formats.VID_Formats:
+			if item not in bag.formats.DA_Formats:
+				bag.formats.DA_Formats.add(item)
 
 	cf.br()
 	cf.add_text("[HiDPI]")
@@ -23778,7 +23799,7 @@ def load_prefs():
 	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
 	# show-current-on-transition", prefs.show_current_on_transition)
-	if system != "windows":
+	if bag.system != "windows":
 		cf.br()
 		cf.add_text("[fonts]")
 		cf.add_comment("Changes will require app restart.")
@@ -23983,15 +24004,16 @@ def load_prefs():
 		"string", "chart-font", prefs.chart_font,
 		"Format is fontname + size. Default is Monospace 10")
 
-def auto_scale(prefs: Prefs) -> None:
+def auto_scale(bag: Bag) -> None:
+	prefs = bag.prefs
 	old = prefs.scale_want
 
 	if prefs.x_scale:
-		if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
-			prefs.scale_want = window_size[0] / logical_size[0]
+		if bag.sdl_syswminfo.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
+			prefs.scale_want = bag.window_size[0] / bag.logical_size[0]
 			if old != prefs.scale_want:
 				logging.info("Applying scale based on buffer size")
-		elif sss.subsystem == SDL_SYSWM_X11:
+		elif bag.sdl_syswminfo.subsystem == SDL_SYSWM_X11:
 			if xdpi > 40:
 				prefs.scale_want = xdpi / 96
 				if old != prefs.scale_want:
@@ -24014,13 +24036,17 @@ def auto_scale(prefs: Prefs) -> None:
 	if prefs.scale_want < 0.5:
 		prefs.scale_want = 1.0
 
-	if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
+	if bag.window_size[0] < (560 * prefs.scale_want) * 0.9 or bag.window_size[1] < (330 * prefs.scale_want) * 0.9:
 		logging.info("Window overscale!")
 		show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
 		prefs.scale_want = 1.0
 
-def scale_assets(scale_want: int, force: bool = False) -> None:
-	global scaled_asset_directory
+def scale_assets(bag: Bag, scale_want: int, force: bool = False) -> None:
+	asset_directory        = bag.dirs.asset_directory
+	scaled_asset_directory = bag.dirs.scaled_asset_directory
+	user_directory         = bag.dirs.user_directory
+	svg_directory          = bag.dirs.svg_directory
+	prefs = bag.prefs
 	if scale_want != 1:
 		scaled_asset_directory = user_directory / "scaled-icons"
 		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
@@ -24031,7 +24057,6 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 		scaled_asset_directory = asset_directory
 
 	if scale_want != prefs.ui_scale or force:
-
 		if scale_want != 1:
 			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
 				shutil.rmtree(str(scaled_asset_directory))
@@ -24278,7 +24303,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 
 		nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
-		if nt.file_ext.lower() in GME_Formats and gme:
+		if nt.file_ext.lower() in bag.formats.GME_Formats and gme:
 
 			emu = ctypes.c_void_p()
 			track_info = ctypes.POINTER(GMETrackInfo)()
@@ -24497,7 +24522,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 		else:
 			# Use MUTAGEN
 			try:
-				if nt.file_ext.lower() in VID_Formats:
+				if nt.file_ext.lower() in bag.formats.VID_Formats:
 					scan_ffprobe(nt)
 					return nt
 
@@ -25120,7 +25145,7 @@ def jellyfin_get_playlists_thread() -> None:
 
 def jellyfin_get_library_thread() -> None:
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag=bag, cf=cf)
 	if jellyfin.scanning:
 		inp.mouse_click = False
 		show_message(_("Job already in progress!"))
@@ -25133,7 +25158,7 @@ def jellyfin_get_library_thread() -> None:
 
 def plex_get_album_thread() -> None:
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag=bag, cf=cf)
 	if plex.scanning:
 		inp.mouse_click = False
 		show_message(_("Already scanning!"))
@@ -25150,7 +25175,7 @@ def sub_get_album_thread() -> None:
 	#	 return
 
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag=bag, cf=cf)
 	if subsonic.scanning:
 		inp.mouse_click = False
 		show_message(_("Already scanning!"))
@@ -25167,7 +25192,7 @@ def koel_get_album_thread() -> None:
 	#	 return
 
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag=bag, cf=cf)
 	if koel.scanning:
 		inp.mouse_click = False
 		show_message(_("Already scanning!"))
@@ -30420,7 +30445,7 @@ def reload_config_file():
 	gui.update_layout()
 
 def open_config_file():
-	save_prefs()
+	save_prefs(bag=bag, cf=cf)
 	target = str(config_directory / "tauon.conf")
 	if system == "Windows" or msys:
 		os.startfile(target)
@@ -34791,7 +34816,6 @@ def worker1():
 	global cue_list
 	global loaderCommand
 	global loaderCommandReady
-	global DA_Formats
 	global home
 	global loading_in_progress
 	global added
@@ -34958,7 +34982,7 @@ def worker1():
 							logging.info("-- The referenced source file wasn't found. Searching for matching file name...")
 							for item in os.listdir(os.path.dirname(path)):
 								if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
-									if ".cue" not in item.lower() and item.split(".")[-1].lower() in DA_Formats:
+									if ".cue" not in item.lower() and item.split(".")[-1].lower() in bag.formats.DA_Formats:
 										file_name = item
 										file_path = os.path.join(os.path.dirname(path), file_name)
 										logging.info("-- Source found at: " + file_path)
@@ -35099,7 +35123,6 @@ def worker1():
 
 	def add_file(path, force_scan: bool = False) -> int | None:
 		# bm.get("add file start")
-		global DA_Formats
 		global to_got
 
 		if not os.path.isfile(path):
@@ -35123,8 +35146,8 @@ def worker1():
 			load_pls(path)
 			return 0
 
-		if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
-			if os.path.splitext(path)[1][1:].lower() in Archive_Formats:
+		if os.path.splitext(path)[1][1:].lower() not in bag.formats.DA_Formats:
+			if os.path.splitext(path)[1][1:].lower() in bag.formats.Archive_Formats:
 				if not prefs.auto_extract:
 					show_message(
 						_("You attempted to drop an archive."),
@@ -35250,7 +35273,7 @@ def worker1():
 				logging.info("File has an associated .cue file... Skipping")
 				return None
 
-			if pctl.master_library[de].file_ext.lower() in GME_Formats:
+			if pctl.master_library[de].file_ext.lower() in bag.formats.GME_Formats:
 				# Skip cache for subtrack formats
 				pass
 			else:
@@ -35284,7 +35307,7 @@ def worker1():
 			cue_scan(nt.cue_sheet, nt)
 			del nt
 
-		elif nt.file_ext.lower() in GME_Formats and gme:
+		elif nt.file_ext.lower() in bag.formats.GME_Formats and gme:
 
 			emu = ctypes.c_void_p()
 			err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
@@ -35321,9 +35344,6 @@ def worker1():
 			gui.update = 3
 
 	def gets(direc, force_scan=False):
-
-		global DA_Formats
-
 		if os.path.basename(direc) == "__MACOSX":
 			return
 
@@ -35361,7 +35381,7 @@ def worker1():
 				continue
 			if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
-				if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
+				if os.path.splitext(items_in_dir[q])[1][1:].lower() in bag.formats.DA_Formats:
 
 					if len(items_in_dir[q]) > 2 and items_in_dir[q][0:2] == "._":
 						continue
@@ -37548,8 +37568,8 @@ def hit_callback(win, point, data):
 		return SDL_HITTEST_NORMAL
 	return SDL_HITTEST_NORMAL
 
-def reload_scale(prefs: Prefs):
-	auto_scale(prefs)
+def reload_scale(bag: Bag):
+	auto_scale(bag)
 
 	scale = prefs.scale_want
 
@@ -37557,7 +37577,7 @@ def reload_scale(prefs: Prefs):
 	ddt.scale = gui.scale
 	prime_fonts(prefs)
 	ddt.clear_text_cache()
-	scale_assets(scale_want=scale, force=True)
+	scale_assets(bag=bag, scale_want=scale, force=True)
 	img_slide_update_gall(album_mode_art_size)
 
 	for item in WhiteModImageAsset.assets:
@@ -37573,9 +37593,9 @@ def reload_scale(prefs: Prefs):
 	queue_box.recalc()
 	playlist_box.recalc()
 
-def update_layout_do(prefs: Prefs):
+def update_layout_do(bag: Bag):
 	if prefs.scale_want != gui.scale:
-		reload_scale(prefs)
+		reload_scale(bag)
 
 	w = window_size[0]
 	h = window_size[1]
@@ -38285,7 +38305,7 @@ def save_state() -> None:
 		with (user_directory / "lyrics_substitutions.json").open("w") as file:
 			json.dump(prefs.lyrics_subs, file)
 
-		save_prefs()
+		save_prefs(bag=bag, cf=cf)
 
 		for key, item in prefs.playlist_exports.items():
 			pl = id_to_pl(key)
@@ -38900,6 +38920,9 @@ def main(holder: Holder):
 	#
 	# SDL_SetWindowOpacity(t_window, window_opacity)
 
+	sss = SDL_SysWMinfo()
+	SDL_GetWindowWMInfo(t_window, sss)
+
 	loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset] = {}
 	# loading_image = asset_loader(scaled_asset_directory, loaded_asset_dc, "loading.png")
 
@@ -39081,57 +39104,6 @@ def main(holder: Holder):
 	clicked = False
 
 	# Player Variables----------------------------------------------------------------------------
-
-	format_colours = {  # These are the colours used for the label icon in UI 'track info box'
-		"MP3":   [255, 130, 80,  255],  # Burnt orange
-		"FLAC":  [156, 249, 79,  255],  # Bright lime green
-		"M4A":   [81,  220, 225, 255],  # Soft cyan
-		"AIFF":  [81,  220, 225, 255],  # Soft cyan
-		"OGG":   [244, 244, 78,  255],  # Light yellow
-		"OGA":   [244, 244, 78,  255],  # Light yellow
-		"WMA":   [213, 79,  247, 255],  # Magenta
-		"APE":   [247, 79,  79,  255],  # Deep pink
-		"TTA":   [94,  78,  244, 255],  # Purple
-		"OPUS":  [247, 79,  146, 255],  # Pink
-		"AAC":   [79,  247, 168, 255],  # Teal
-		"WV":    [229, 23,  18,  255],  # Deep red
-		"PLEX":  [229, 160, 13,  255],  # Orange-brown
-		"KOEL":  [111, 98,  190, 255],  # Lavender
-		"TAU":   [111, 98,  190, 255],  # Lavender
-		"SUB":   [235, 140, 20,  255],  # Golden yellow
-		"SPTY":  [30,  215, 96,  255],  # Bright green
-		"TIDAL": [0,   0,   0,   255],  # Black
-		"JELY":  [190, 100, 210, 255],  # Fuchsia
-		"XM":    [50,  50,  50,  255],  # Grey
-		"MOD":   [50,  50,  50,  255],  # Grey
-		"S3M":   [50,  50,  50,  255],  # Grey
-		"IT":    [50,  50,  50,  255],  # Grey
-		"MPTM":  [50,  50,  50,  255],  # Grey
-		"AY":    [237, 212, 255, 255],  # Pastel purple
-		"GBS":   [255, 165, 0,   255],  # Vibrant orange
-		"GYM":   [0,   191, 255, 255],  # Bright blue
-		"HES":   [176, 224, 230, 255],  # Light blue-green
-		"KSS":   [255, 255, 153, 255],  # Bright yellow
-		"NSF":   [255, 140, 0,   255],  # Deep orange
-		"NSFE":  [255, 140, 0,   255],  # Deep orange
-		"SAP":   [152, 255, 152, 255],  # Light green
-		"SPC":   [255, 128, 0,   255],  # Bright orange
-		"VGM":   [0,   128, 255, 255],  # Deep blue
-		"VGZ":   [0,   128, 255, 255],  # Deep blue
-	}
-
-	# These will be the extensions of files to be added when importing
-	VID_Formats = {"mp4", "webm"}
-
-	MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
-
-	GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
-
-	DA_Formats = {
-		"mp3", "wav", "opus", "flac", "ape", "aiff",
-		"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
-	} | MOD_Formats | GME_Formats
-
 	Archive_Formats = {"zip"}
 
 	if whicher("unrar", flatpak_mode):
@@ -39139,6 +39111,56 @@ def main(holder: Holder):
 
 	if whicher("7z", flatpak_mode):
 		Archive_Formats.add("7z")
+
+	MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
+	GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
+	formats = Formats(
+		format_colours = {
+			"MP3":   [255, 130, 80,  255],  # Burnt orange
+			"FLAC":  [156, 249, 79,  255],  # Bright lime green
+			"M4A":   [81,  220, 225, 255],  # Soft cyan
+			"AIFF":  [81,  220, 225, 255],  # Soft cyan
+			"OGG":   [244, 244, 78,  255],  # Light yellow
+			"OGA":   [244, 244, 78,  255],  # Light yellow
+			"WMA":   [213, 79,  247, 255],  # Magenta
+			"APE":   [247, 79,  79,  255],  # Deep pink
+			"TTA":   [94,  78,  244, 255],  # Purple
+			"OPUS":  [247, 79,  146, 255],  # Pink
+			"AAC":   [79,  247, 168, 255],  # Teal
+			"WV":    [229, 23,  18,  255],  # Deep red
+			"PLEX":  [229, 160, 13,  255],  # Orange-brown
+			"KOEL":  [111, 98,  190, 255],  # Lavender
+			"TAU":   [111, 98,  190, 255],  # Lavender
+			"SUB":   [235, 140, 20,  255],  # Golden yellow
+			"SPTY":  [30,  215, 96,  255],  # Bright green
+			"TIDAL": [0,   0,   0,   255],  # Black
+			"JELY":  [190, 100, 210, 255],  # Fuchsia
+			"XM":    [50,  50,  50,  255],  # Grey
+			"MOD":   [50,  50,  50,  255],  # Grey
+			"S3M":   [50,  50,  50,  255],  # Grey
+			"IT":    [50,  50,  50,  255],  # Grey
+			"MPTM":  [50,  50,  50,  255],  # Grey
+			"AY":    [237, 212, 255, 255],  # Pastel purple
+			"GBS":   [255, 165, 0,   255],  # Vibrant orange
+			"GYM":   [0,   191, 255, 255],  # Bright blue
+			"HES":   [176, 224, 230, 255],  # Light blue-green
+			"KSS":   [255, 255, 153, 255],  # Bright yellow
+			"NSF":   [255, 140, 0,   255],  # Deep orange
+			"NSFE":  [255, 140, 0,   255],  # Deep orange
+			"SAP":   [152, 255, 152, 255],  # Light green
+			"SPC":   [255, 128, 0,   255],  # Bright orange
+			"VGM":   [0,   128, 255, 255],  # Deep blue
+			"VGZ":   [0,   128, 255, 255],  # Deep blue
+		},
+		VID_Formats = {"mp4", "webm"},
+		MOD_Formats = MOD_Formats,
+		GME_Formats = GME_Formats,
+		DA_Formats = {
+			"mp3", "wav", "opus", "flac", "ape", "aiff",
+			"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
+		} | MOD_Formats | GME_Formats,
+		Archive_Formats = Archive_Formats
+	)
 
 	cargo = []
 
@@ -39194,11 +39216,15 @@ def main(holder: Holder):
 	bag = Bag(
 		dirs=dirs,
 		prefs=prefs,
+		formats=formats,
 		renderer=renderer,
 		system=system,
 		macos=macos,
+		msys=msys,
 		phone=phone,
+		logical_size=logical_size,
 		window_size=window_size,
+		sdl_syswminfo=sss,
 		loaded_asset_dc=loaded_asset_dc,
 	)
 
@@ -39842,8 +39868,8 @@ def main(holder: Holder):
 	download_directories: list[str] = []
 	cf = Config()
 
-	load_prefs()
-	save_prefs()
+	load_prefs(bag=bag, cf=cf)
+	save_prefs(bag=bag, cf=cf)
 
 	if download_directory.is_dir():
 		download_directories.append(str(download_directory))
@@ -39861,7 +39887,7 @@ def main(holder: Holder):
 		prefs.linux_font = "Noto Sans"
 		prefs.linux_font_semibold = "Noto Sans Medium"
 		prefs.linux_font_bold = "Noto Sans Bold"
-		save_prefs()
+		save_prefs(bag=bag, cf=cf)
 
 	# Auto detect lang
 	lang: list[str] | None = None
@@ -39880,17 +39906,12 @@ def main(holder: Holder):
 		logging.error(f"No translation file available for '{lang}'")
 
 	# ----
-
-	sss = SDL_SysWMinfo()
-	SDL_GetWindowWMInfo(t_window, sss)
-
 	if prefs.use_gamepad:
 		SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
 
 	smtc = False
 
 	if msys and win_ver >= 10:
-
 		#logging.info(sss.info.win.window)
 		SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 		if SMTC_path.exists():
@@ -39918,8 +39939,8 @@ def main(holder: Holder):
 				logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
 		else:
 			logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
-	auto_scale(prefs)
-	scale_assets(scale_want=prefs.scale_want)
+	auto_scale(bag)
+	scale_assets(bag=bag, scale_want=prefs.scale_want)
 
 	try:
 		#star_lines        = view_prefs['star-lines']
@@ -39987,7 +40008,7 @@ def main(holder: Holder):
 
 	except Exception:
 		logging.exception("Cannot find libgme")
-	pctl = PlayerCtl(prefs)
+	pctl = PlayerCtl(bag)
 	lb = ListenBrainz(prefs)
 
 	if system == "Linux" and not macos and not msys:
@@ -42119,7 +42140,7 @@ def main(holder: Holder):
 						window_size[0] = i_x.contents.value
 						window_size[1] = i_y.contents.value
 
-						auto_scale(prefs)
+						auto_scale(bag)
 						update_layout = True
 
 
