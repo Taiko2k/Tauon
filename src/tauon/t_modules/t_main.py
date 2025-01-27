@@ -342,6 +342,7 @@ from tauon.t_modules.t_main_rework import (
 	LoadImageAsset,
 	WhiteModImageAsset,
 	DConsole,
+	Config,
 	GuiVar,
 	StarStore,
 	AlbumStarStore,
@@ -452,7 +453,7 @@ def setup_ssl(holder: Holder) -> ssl.SSLContext:
 	ssl_context = ssl.create_default_context(cafile=get_cert_path(holder))
 	return ssl_context
 
-def whicher(target: str) -> bool | str | None:
+def whicher(target: str, flatpak_mode: bool) -> bool | str | None:
 	"""Detect and launch programs outside of flatpak sandbox"""
 	try:
 		if flatpak_mode:
@@ -8988,7 +8989,7 @@ def editor(index: int | None) -> None:
 	prefix = launch_prefix
 
 	if system == "Linux":
-		ok = whicher(prefs.tag_editor_target)
+		ok = whicher(prefs.tag_editor_target, flatpak_mode)
 	else:
 
 		if not os.path.isfile(prefs.tag_editor_target.strip('"')):
@@ -16401,7 +16402,7 @@ def main(holder: Holder):
 	last_row = 0
 	album_v_gap = 66
 	album_h_gap = 30
-	album_v_slide_value = 50
+	album_v_slide_value: int = 50
 	album_mode_art_size = int(200 * scale)
 
 	time_last_save = 0
@@ -16514,10 +16515,10 @@ def main(holder: Holder):
 
 	Archive_Formats = {"zip"}
 
-	if whicher("unrar"):
+	if whicher("unrar", flatpak_mode):
 		Archive_Formats.add("rar")
 
-	if whicher("7z"):
+	if whicher("7z", flatpak_mode):
 		Archive_Formats.add("7z")
 
 	cargo = []
@@ -16571,6 +16572,15 @@ def main(holder: Holder):
 		scale=scale,
 	)
 
+	config = Config(
+		dirs=dirs,
+		prefs=prefs,
+		renderer=renderer,
+		system=system,
+		phone=phone,
+		window_size=window_size,
+	)
+
 	multi_playlist: list[TauonPlaylist] = [pl_gen()]
 	default_playlist: list[int] = multi_playlist[0].playlist_ids
 	playlist_active: int = 0
@@ -16609,7 +16619,16 @@ def main(holder: Holder):
 
 	albums = []
 	album_position = 0
-	gui = GuiVar(prefs=prefs)
+	gui = GuiVar(
+		config=config,
+		tracklist_texture_rect=tracklist_texture_rect,
+		tracklist_texture=tracklist_texture,
+		album_v_slide_value=album_v_slide_value,
+		console=console,
+		main_texture_overlay_temp=main_texture_overlay_temp,
+		main_texture=main_texture,
+		max_window_tex=max_window_tex,
+	)
 	# Functions for reading and setting play counts
 	star_store = StarStore()
 	album_star_store = AlbumStarStore()

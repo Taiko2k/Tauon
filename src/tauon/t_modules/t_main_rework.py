@@ -41,6 +41,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -321,13 +322,13 @@ from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webs
 class LoadImageAsset:
 	assets: list[LoadImageAsset] = []
 
-	def __init__(self, *, scaled_asset_directory: Path, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
+	def __init__(self, *, config: Config, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
 			self.assets.append(self)
 
 		self.path = path
 		self.scale_name = scale_name
-		self.scaled_asset_directory: Path = scaled_asset_directory
+		self.scaled_asset_directory: Path = config.dirs.scaled_asset_directory
 
 		raw_image = IMG_Load(self.path.encode())
 		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
@@ -348,7 +349,7 @@ class LoadImageAsset:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
-		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
+		self.__init__(scaled_asset_directory=self.scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour=None) -> None:
 		self.rect.x = round(x)
@@ -358,12 +359,12 @@ class LoadImageAsset:
 class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
 
-	def __init__(self, *, scaled_asset_directory: Path, path: str, reload: bool = False, scale_name: str = ""):
+	def __init__(self, *, config: Config, path: str, reload: bool = False, scale_name: str = ""):
 		if not reload:
 			self.assets.append(self)
 		self.path = path
 		self.scale_name = scale_name
-		self.scaled_asset_directory: Path = scaled_asset_directory
+		self.scaled_asset_directory: Path = config.dirs.scaled_asset_directory
 
 		raw_image = IMG_Load(path.encode())
 		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
@@ -380,7 +381,7 @@ class WhiteModImageAsset:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
-		self.__init__(scaled_asset_directory=scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
+		self.__init__(scaled_asset_directory=self.scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour) -> None:
 		if colour != self.colour:
@@ -447,7 +448,7 @@ class GuiVar:
 		self.panelY2 = round(30 * self.scale)
 		self.playlist_top = self.panelY + (8 * self.scale)
 		self.playlist_top_bk = self.playlist_top
-		self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
+		self.scroll_hide_box = (0, self.panelY, 28, self.config.window_size[1] - self.panelBY - self.panelY)
 
 		self.spec2_y = int(round(22 * self.scale))
 		self.spec2_w = int(round(140 * self.scale))
@@ -470,13 +471,13 @@ class GuiVar:
 			0, round(self.level_y - 10 * self.scale), round(self.level_ww),round(self.level_hh))
 
 		self.spec2_tex = SDL_CreateTexture(
-					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
+			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
 		self.spec4_tex = SDL_CreateTexture(
-					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
+			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
 		self.spec1_tex = SDL_CreateTexture(
-					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
+			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
 		self.spec_level_tex = SDL_CreateTexture(
-					renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
+			self.config.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
 		SDL_SetTextureBlendMode(self.spec4_tex, SDL_BLENDMODE_BLEND)
 		self.artist_panel_height = 320 * self.scale
 		self.last_artist_panel_height = self.artist_panel_height
@@ -484,9 +485,11 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self, prefs: Prefs):
+	def __init__(self, config: Config, tracklist_texture_rect: SDL_Rect, tracklist_texture, album_v_slide_value: int, console: Console, main_texture_overlay_temp, main_texture, max_window_tex):
+#		print(vars(config))
 
-		self.scale = prefs.ui_scale
+		self.config = config
+		self.scale = self.config.prefs.ui_scale
 
 		self.window_id = 0
 		self.update = 2  # UPDATE
@@ -547,7 +550,7 @@ class GuiVar:
 		self.universal_y_text_offset = 0
 
 		self.star_text_y_offset = 0
-		if system == "Windows":
+		if self.config.system == "Windows":
 			self.star_text_y_offset = -2
 
 		self.set_bar = True
@@ -571,7 +574,7 @@ class GuiVar:
 		self.playlist_text_offset: int = 0
 		self.row_font_size: int = 13
 		self.compact_bar = False
-		self.tracklist_texture_rect = tracklist_texture_rect
+		self.tracklist_texture_rect: SDL_Rect = tracklist_texture_rect
 		self.tracklist_texture = tracklist_texture
 
 		self.trunk_end = "..."  # "…"
@@ -628,7 +631,7 @@ class GuiVar:
 		self.web_running = False
 
 		self.rsp = True
-		if phone:
+		if self.config.phone:
 			self.rsp = False
 		self.rspw = round(300 * self.scale)
 		self.lsp = False
@@ -757,8 +760,8 @@ class GuiVar:
 		self.column_d_click_timer = Timer(10)
 		self.column_d_click_on = -1
 		self.column_sort_ani_timer = Timer(10)
-		self.column_sort_down_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "sort-down.png", True)
-		self.column_sort_up_icon = asset_loader(scaled_asset_directory, loaded_asset_dc, "sort-up.png", True)
+		self.column_sort_down_icon = asset_loader(self.config.dirs.scaled_asset_directory, loaded_asset_dc, "sort-down.png", True)
+		self.column_sort_up_icon = asset_loader(self.config.dirs.scaled_asset_directory, loaded_asset_dc, "sort-up.png", True)
 		self.column_sort_ani_direction = 1
 		self.column_sort_ani_x = 0
 
@@ -23003,29 +23006,27 @@ class Undo:
 	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
+@dataclass
 class Directories:
-	def __init__(self, *,
-		install_directory: Path,
-		svg_directory: Path,
-		asset_directory: Path,
-		scaled_asset_directory: Path,
-		locale_directory: Path,
-		user_directory: Path,
-		config_directory: Path,
-		cache_directory: Path,
-		home_directory: Path,
-		music_directory: Path,
-		download_directory: Path,
-	) -> None:
+	"""Hold directories"""
+	install_directory      : Path
+	svg_directory          : Path
+	asset_directory        : Path
+	scaled_asset_directory : Path
+	locale_directory       : Path
+	user_directory         : Path
+	config_directory       : Path
+	cache_directory        : Path
+	home_directory         : Path
+	music_directory        : Path
+	download_directory     : Path
 
-		self.install_directory      = install_directory
-		self.svg_directory          = svg_directory
-		self.asset_directory        = asset_directory
-		self.scaled_asset_directory = scaled_asset_directory
-		self.locale_directory       = locale_directory
-		self.user_directory         = user_directory
-		self.config_directory       = config_directory
-		self.cache_directory        = cache_directory
-		self.home_directory         = home_directory
-		self.music_directory        = music_directory
-		self.download_directory     = download_directory
+@dataclass
+class Config:
+	"""Holder object for all configs"""
+	dirs: Directories
+	prefs: Prefs
+	renderer: renderer
+	system: str
+	phone: bool
+	window_size: list[int] # X Y
