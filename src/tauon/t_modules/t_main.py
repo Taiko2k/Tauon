@@ -833,8 +833,6 @@ class GuiVar:
 		self.discord_status = "Standby"
 		self.mouse_unknown = False
 		self.macstyle = self.bag.prefs.macstyle
-		if macos or detect_macstyle:
-			self.macstyle = True
 		self.radio_view = False
 		self.window_size = window_size
 		self.box_over = False
