@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-25 18:01+0000\n"
+"PO-Revision-Date: 2025-01-29 14:02+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -3677,6 +3677,8 @@ msgid ""
 "Note that this will overwrite the local loved status if different to last.fm "
 "status"
 msgstr ""
+"Nota che questo sovrascriverà il mi piace locale se lo stato è diverso da "
+"quello di last.fm"
 
 #: src/tauon/t_modules/t_main.py:29579 src/tauon/t_modules/t_main.py:29581
 msgid "Paste Token"
@@ -3691,16 +3693,14 @@ msgid "Cleared all loves"
 msgstr "Pulito tutti i cuori"
 
 #: src/tauon/t_modules/t_main.py:29622
-#, fuzzy
 msgid "Error, not  connected to last.fm"
-msgstr "Errore nell'aggiornare cuori da last.fm!"
+msgstr "Errore, non  connesso a last.fm"
 
 #: src/tauon/t_modules/t_main.py:29624
-#, fuzzy
 msgid "Warning: This process will take approximately {T} minutes to complete."
 msgstr ""
-"Attenzione: Questo processo potrebbe richiedere molto tempo! (anche un'ora o "
-"più)"
+"Attenzione: Questo processo potrebbe richiedere circa {T} minuti per "
+"completare."
 
 #: src/tauon/t_modules/t_main.py:29625 src/tauon/t_modules/t_main.py:29647
 msgid "Press again while holding Shift if you understand"
@@ -3709,7 +3709,7 @@ msgstr "Premi di nuovo mentre tieni premuto Shift se hai compreso"
 #: src/tauon/t_modules/t_main.py:29633 src/tauon/t_modules/t_main.py:29656
 #: src/tauon/t_modules/t_main.py:29665
 msgid "A process is already running. Wait for it to finish."
-msgstr ""
+msgstr "Un processo è già in esecuzione. Aspetta che finisca."
 
 #: src/tauon/t_modules/t_main.py:29640
 msgid "Cleared all scrobble counts"
