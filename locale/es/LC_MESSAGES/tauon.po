@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-24 17:01+0000\n"
+"PO-Revision-Date: 2025-01-29 14:01+0000\n"
 "Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -290,7 +290,6 @@ msgid "This doesn't seem to be working :("
 msgstr "Esto no parece estar funcionando :("
 
 #: src/tauon/t_modules/t_main.py:7653 src/tauon/t_modules/t_main.py:7702
-#, fuzzy
 msgid "How did this even happen."
 msgstr "Cómo es esto posible."
 
@@ -1392,7 +1391,7 @@ msgstr "Ordenar por Año y Artista"
 
 #: src/tauon/t_modules/t_main.py:18802
 msgid "Make Playlist Auto-Sorting"
-msgstr "Hacer que la lista de reproducción se ordene automáticamente"
+msgstr "Ordenar lista automáticamente"
 
 #: src/tauon/t_modules/t_main.py:18808 src/tauon/t_modules/t_main.py:20716
 #: src/tauon/t_modules/t_main.py:22063
@@ -2936,7 +2935,7 @@ msgstr "Audio"
 
 #: src/tauon/t_modules/t_main.py:27911
 msgid "Tracklist"
-msgstr "Lista de pistas"
+msgstr "Pistas"
 
 #: src/tauon/t_modules/t_main.py:27912 src/tauon/t_modules/t_main.py:27962
 msgid "Theme"
@@ -3619,7 +3618,6 @@ msgid "Flip current"
 msgstr "Voltear el actual"
 
 #: src/tauon/t_modules/t_main.py:29428
-#, fuzzy
 msgid "Reset flips"
 msgstr "Restablecer volteados"
 
@@ -5012,7 +5010,6 @@ msgid "Spotify upload error!"
 msgstr "¡Error de subida a Spotify!"
 
 #: src/tauon/t_modules/t_spot.py:1243
-#, fuzzy
 msgid "No Spotify context found"
 msgstr "No se encontró contexto de Spotify"
 
