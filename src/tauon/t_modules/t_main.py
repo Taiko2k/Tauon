@@ -41996,73 +41996,73 @@ while pctl.running:
 				mouse_down = False
 				gui.update += 1
 		elif event.type == sdl3.SDL_EVENT_KEY_DOWN and key_focused == 0:
-			continue   # TODO fix me
+
 			k_input = True
 			power += 5
 			gui.update += 2
 			if prefs.use_scancodes:
-				keymaps.hits.append(event.key.keysym.scancode)
+				keymaps.hits.append(event.key.scancode)
 			else:
-				keymaps.hits.append(event.key.keysym.sym)
+				keymaps.hits.append(event.key.key)
 
 			if prefs.use_scancodes:
-				if event.key.keysym.scancode == sdl3.SDL_SCANCODE_V:
+				if event.key.scancode == sdl3.SDL_SCANCODE_V:
 					key_v_press = True
-				elif event.key.keysym.scancode == sdl3.SDL_SCANCODE_A:
+				elif event.key.scancode == sdl3.SDL_SCANCODE_A:
 					key_a_press = True
-				elif event.key.keysym.scancode == sdl3.SDL_SCANCODE_C:
+				elif event.key.scancode == sdl3.SDL_SCANCODE_C:
 					key_c_press = True
-				elif event.key.keysym.scancode == sdl3.SDL_SCANCODE_Z:
+				elif event.key.scancode == sdl3.SDL_SCANCODE_Z:
 					key_z_press = True
-				elif event.key.keysym.scancode == sdl3.SDL_SCANCODE_X:
+				elif event.key.scancode == sdl3.SDL_SCANCODE_X:
 					key_x_press = True
-			elif event.key.keysym.sym == SDLK_v:
+			elif event.key.key == sdl3.SDLK_V:
 				key_v_press = True
-			elif event.key.keysym.sym == SDLK_a:
+			elif event.key.key == sdl3.SDLK_A:
 				key_a_press = True
-			elif event.key.keysym.sym == SDLK_c:
+			elif event.key.key == sdl3.SDLK_C:
 				key_c_press = True
-			elif event.key.keysym.sym == SDLK_z:
+			elif event.key.key == sdl3.SDLK_Z:
 				key_z_press = True
-			elif event.key.keysym.sym == SDLK_x:
+			elif event.key.key == sdl3.SDLK_X:
 				key_x_press = True
 
-			if event.key.keysym.sym == (SDLK_RETURN or SDLK_RETURN2) and len(editline) == 0:
+			if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(editline) == 0:
 				inp.key_return_press = True
-			elif event.key.keysym.sym == SDLK_KP_ENTER and len(editline) == 0:
+			elif event.key.key == sdl3.SDLK_KP_ENTER and len(editline) == 0:
 				inp.key_return_press = True
-			elif event.key.keysym.sym == SDLK_TAB:
+			elif event.key.key == sdl3.SDLK_TAB:
 				inp.key_tab_press = True
-			elif event.key.keysym.sym == SDLK_BACKSPACE:
+			elif event.key.key == sdl3.SDLK_BACKSPACE:
 				inp.backspace_press += 1
 				key_backspace_press = True
-			elif event.key.keysym.sym == SDLK_DELETE:
+			elif event.key.key == sdl3.SDLK_DELETE:
 				key_del = True
-			elif event.key.keysym.sym == SDLK_RALT:
+			elif event.key.key == sdl3.SDLK_RALT:
 				key_ralt = True
-			elif event.key.keysym.sym == SDLK_LALT:
+			elif event.key.key == sdl3.SDLK_LALT:
 				key_lalt = True
-			elif event.key.keysym.sym == SDLK_DOWN:
+			elif event.key.key == sdl3.SDLK_DOWN:
 				key_down_press = True
-			elif event.key.keysym.sym == SDLK_UP:
+			elif event.key.key == sdl3.SDLK_UP:
 				key_up_press = True
-			elif event.key.keysym.sym == SDLK_LEFT:
+			elif event.key.key == sdl3.SDLK_LEFT:
 				key_left_press = True
-			elif event.key.keysym.sym == SDLK_RIGHT:
+			elif event.key.key == sdl3.SDLK_RIGHT:
 				key_right_press = True
-			elif event.key.keysym.sym == SDLK_LSHIFT:
+			elif event.key.key == sdl3.SDLK_LSHIFT:
 				key_shift_down = True
-			elif event.key.keysym.sym == SDLK_RSHIFT:
+			elif event.key.key == sdl3.SDLK_RSHIFT:
 				key_shiftr_down = True
-			elif event.key.keysym.sym == SDLK_LCTRL:
+			elif event.key.key == sdl3.SDLK_LCTRL:
 				key_ctrl_down = True
-			elif event.key.keysym.sym == SDLK_RCTRL:
+			elif event.key.key == sdl3.SDLK_RCTRL:
 				key_rctrl_down = True
-			elif event.key.keysym.sym == SDLK_HOME:
+			elif event.key.key == sdl3.SDLK_HOME:
 				key_home_press = True
-			elif event.key.keysym.sym == SDLK_END:
+			elif event.key.key == sdl3.SDLK_END:
 				key_end_press = True
-			elif event.key.keysym.sym == SDLK_LGUI:
+			elif event.key.key == sdl3.SDLK_LGUI:
 				if macos:
 					key_ctrl_down = True
 				else:
@@ -42070,25 +42070,25 @@ while pctl.running:
 					key_focused = 1
 
 		elif event.type == sdl3.SDL_EVENT_KEY_UP:
-			continue
+
 			k_input = True
 			power += 5
 			gui.update += 2
-			if event.key.keysym.sym == SDLK_LSHIFT:
+			if event.key.key == sdl3.SDLK_LSHIFT:
 				key_shift_down = False
-			elif event.key.keysym.sym == SDLK_LCTRL:
+			elif event.key.key == sdl3.SDLK_LCTRL:
 				key_ctrl_down = False
-			elif event.key.keysym.sym == SDLK_RCTRL:
+			elif event.key.key == sdl3.SDLK_RCTRL:
 				key_rctrl_down = False
-			elif event.key.keysym.sym == SDLK_RSHIFT:
+			elif event.key.key == sdl3.SDLK_RSHIFT:
 				key_shiftr_down = False
-			elif event.key.keysym.sym == SDLK_RALT:
+			elif event.key.key == sdl3.SDLK_RALT:
 				gui.album_tab_mode = False
 				key_ralt = False
-			elif event.key.keysym.sym == SDLK_LALT:
+			elif event.key.key == sdl3.SDLK_LALT:
 				gui.album_tab_mode = False
 				key_lalt = False
-			elif event.key.keysym.sym == SDLK_LGUI:
+			elif event.key.key == sdl3.SDLK_LGUI:
 				if macos:
 					key_ctrl_down = False
 				else:
@@ -42976,8 +42976,8 @@ while pctl.running:
 	# aa = 80
 	# colours.top_panel_background = [gg,gg,gg,aa]
 	# colours.side_panel_background = [gg,gg,gg,aa]
-	#colours.bottom_panel_colour = [gg,gg,gg,aa]
-	#colours.playlist_panel_background = [gg,gg,gg,aa]
+	# colours.bottom_panel_colour = [gg,gg,gg,aa]
+	# colours.playlist_panel_background = [gg,gg,gg,aa]
 	#colours.playlist_box_background  = [0, 0, 0, 100]
 
 	if inp.media_key:
