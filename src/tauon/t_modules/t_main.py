@@ -1083,14 +1083,14 @@ class Input:
 
 class KeyMap:
 
-	def __init__(self):
-
+	def __init__(self, bag: Bag):
+		self.bag = bag
 		self.hits = []  # The keys hit this frame
 		self.maps = {}  # Loaded from input.txt
 
 	def load(self):
 
-		path = config_directory / "input.txt"
+		path = self.bag.dirs.config_directory / "input.txt"
 		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
 			for p in content:
@@ -1106,7 +1106,7 @@ class KeyMap:
 					if items[1] in ("MB4", "MB5"):
 						key = items[1]
 					else:
-						if prefs.use_scancodes:
+						if self.bag.prefs.use_scancodes:
 							key = SDL_GetScancodeFromName(items[1].encode())
 						else:
 							key = SDL_GetKeyFromName(items[1].encode())
@@ -1542,6 +1542,7 @@ class PlayerCtl:
 
 	# C-PC
 	def __init__(self, bag: Bag):
+		prefs = bag.prefs
 		#self.tauon =
 		self.running:           bool = True
 		self.prefs:             Prefs = bag.prefs
@@ -1603,13 +1604,13 @@ class PlayerCtl:
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
 		self.multi_playlist = multi_playlist
-		self.active_playlist_viewing: int = playlist_active  # the playlist index that is being viewed
-		self.active_playlist_playing: int = playlist_active  # the playlist index that is playing from
+		self.active_playlist_viewing: int = bag.playlist_active  # the playlist index that is being viewed # TODO(Martin): Rename playlist_active and active_playlist?
+		self.active_playlist_playing: int = bag.playlist_active  # the playlist index that is playing from
 		self.force_queue: list[TauonQueueItem] = p_force_queue
 		self.pause_queue: bool = False
 		self.left_time = 0
 		self.left_index = 0
-		self.player_volume: float = volume
+		self.player_volume: float = bag.volume
 		self.new_time = 0
 		self.time_to_get = []
 		self.a_time = 0
@@ -1668,8 +1669,6 @@ class PlayerCtl:
 		self.spot_playing = False
 
 		self.buffering_percent = 0
-
-
 
 	def notify_change(self) -> None:
 		self.db_inc += 1
@@ -23045,18 +23044,32 @@ class Directories:
 @dataclass
 class Bag:
 	"""Holder object for all configs"""
-	dirs:     Directories
-	prefs:    Prefs
-	formats:  Formats
-	renderer: renderer
-	system:   str
-	macos:    bool
-	msys:     bool
-	phone:    bool
-	logical_size:    list[int] # X Y
-	window_size:     list[int] # X Y
-	sdl_syswminfo:   SDL_SysWMinfo
-	loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset]
+	dirs:                   Directories
+	prefs:                  Prefs
+	formats:                Formats
+	renderer:               renderer
+	sdl_syswminfo:          SDL_SysWMinfo
+	macos:                  bool
+	msys:                   bool
+	phone:                  bool
+	system:                 str
+	xdpi:                   int
+	master_count:           int
+	playing_in_queue:       int
+	playlist_active:        int
+	playlist_playing:       int
+	playlist_view_position: int
+	selected_in_playlist:   int
+	volume:                 float
+	track_queue:            list[int]
+	logical_size:           list[int] # X Y
+	window_size:            list[int] # X Y
+	multi_playlist:         list[TauonPlaylist]
+	p_force_queue:          list[TauonQueueItem]
+	gen_codes:              dict[int, str]
+	master_library:         dict[int, TrackClass]
+	loaded_asset_dc:        dict[str, WhiteModImageAsset | LoadImageAsset]
+
 
 @dataclass
 class Formats:
@@ -24014,8 +24027,8 @@ def auto_scale(bag: Bag) -> None:
 			if old != prefs.scale_want:
 				logging.info("Applying scale based on buffer size")
 		elif bag.sdl_syswminfo.subsystem == SDL_SYSWM_X11:
-			if xdpi > 40:
-				prefs.scale_want = xdpi / 96
+			if bag.xdpi > 40:
+				prefs.scale_want = bag.xdpi / 96
 				if old != prefs.scale_want:
 					logging.info("Applying scale based on xft setting")
 
@@ -39196,38 +39209,6 @@ def main(holder: Holder):
 	random_mode = False
 	repeat_mode = False
 
-
-	prefs = Prefs(
-		user_directory=user_directory,
-		music_directory=music_directory,
-		cache_directory=cache_directory,
-		macos=macos,
-		phone=phone,
-		left_window_control=left_window_control,
-		detect_macstyle=detect_macstyle,
-		gtk_settings=gtk_settings,
-		discord_allow=discord_allow,
-		flatpak_mode=flatpak_mode,
-		desktop=desktop,
-		window_opacity=window_opacity,
-		scale=scale,
-	)
-
-	bag = Bag(
-		dirs=dirs,
-		prefs=prefs,
-		formats=formats,
-		renderer=renderer,
-		system=system,
-		macos=macos,
-		msys=msys,
-		phone=phone,
-		logical_size=logical_size,
-		window_size=window_size,
-		sdl_syswminfo=sss,
-		loaded_asset_dc=loaded_asset_dc,
-	)
-
 	multi_playlist: list[TauonPlaylist] = [pl_gen()]
 	default_playlist: list[int] = multi_playlist[0].playlist_ids
 	playlist_active: int = 0
@@ -39266,6 +39247,58 @@ def main(holder: Holder):
 
 	albums = []
 	album_position = 0
+
+	# url_saves = []
+	rename_files_previous = ""
+	rename_folder_previous = ""
+	p_force_queue: list[TauonQueueItem] = []
+
+	reload_state = None
+
+	prefs = Prefs(
+		user_directory=user_directory,
+		music_directory=music_directory,
+		cache_directory=cache_directory,
+		macos=macos,
+		phone=phone,
+		left_window_control=left_window_control,
+		detect_macstyle=detect_macstyle,
+		gtk_settings=gtk_settings,
+		discord_allow=discord_allow,
+		flatpak_mode=flatpak_mode,
+		desktop=desktop,
+		window_opacity=window_opacity,
+		scale=scale,
+	)
+
+	bag = Bag(
+		dirs=dirs,
+		prefs=prefs,
+		formats=formats,
+		renderer=renderer,
+		sdl_syswminfo=sss,
+		system=system,
+		macos=macos,
+		msys=msys,
+		phone=phone,
+		xdpi=xdpi,
+		master_count=master_count,
+		playlist_active=playlist_active,
+		playing_in_queue=playing_in_queue,
+		playlist_playing=playlist_playing,
+		playlist_view_position=playlist_view_position,
+		selected_in_playlist=selected_in_playlist,
+		track_queue=track_queue,
+		volume=volume,
+		multi_playlist=multi_playlist,
+		p_force_queue=p_force_queue,
+		logical_size=logical_size,
+		window_size=window_size,
+		gen_codes=gen_codes,
+		master_library=master_library,
+		loaded_asset_dc=loaded_asset_dc,
+	)
+
 	gui = GuiVar(
 		bag=bag,
 		tracklist_texture_rect=tracklist_texture_rect,
@@ -39276,12 +39309,13 @@ def main(holder: Holder):
 		main_texture=main_texture,
 		max_window_tex=max_window_tex,
 	)
+
 	# Functions for reading and setting play counts
 	star_store = StarStore()
 	album_star_store = AlbumStarStore()
 	fonts = Fonts()
 	inp = Input()
-	keymaps = KeyMap()
+	keymaps = KeyMap(bag=bag)
 
 	colours = ColoursClass()
 	colours.post_config()
@@ -39297,14 +39331,6 @@ def main(holder: Holder):
 		"scroll-enable": True,
 	}
 
-
-
-	# url_saves = []
-	rename_files_previous = ""
-	rename_folder_previous = ""
-	p_force_queue: list[TauonQueueItem] = []
-
-	reload_state = None
 
 	# STATE LOADING
 	# Loading of program data from previous run
