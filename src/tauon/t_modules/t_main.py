@@ -18254,8 +18254,9 @@ class RadioBox:
 				if self.add_mode:
 					radio: RadioStation = RadioStation()
 				radio.title = self.radio_field_title.text
-				radio.stream_url = self.radio_field.text
-				radio.website_url = ""
+				if radio.stream_url != self.radio_field.text:
+					radio.stream_url = self.radio_field.text
+					radio.website_url = "" # Different URL, null the website # TODO(Martin): no way to edit for now
 
 				if self.add_mode:
 					pctl.radio_playlists[pctl.radio_playlist_viewing].stations.append(radio)
