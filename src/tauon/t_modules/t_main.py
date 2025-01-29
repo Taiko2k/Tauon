@@ -39831,7 +39831,7 @@ def main(holder: Holder):
 
 	shoot_pump = threading.Thread(target=pumper, args=(bag,))
 	shoot_pump.daemon = True
-	shoot_pump.start() # temporary
+	shoot_pump.start()
 
 	if window_size is None:
 		window_size = window_default_size
