@@ -66,6 +66,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -1636,8 +1637,8 @@ class PlayerCtl:
 		self.regen_in_progress = False
 		self.notify_in_progress = False
 
-		self.radio_playlists: list[RadioPlaylist] = bag.radio_playlists
-		self.radio_playlist_viewing: int = bag.radio_playlist_viewing
+		self.radio_playlists: list[RadioPlaylist] = radio_playlists
+		self.radio_playlist_viewing: int = radio_playlist_viewing
 		self.tag_history = {}
 
 		self.commit: int | None = None
@@ -23227,17 +23228,17 @@ class Undo:
 class RadioStation:
 	title: str
 	stream_url: str
-	stream_url_fallback: str
 	country: str
 	website_url: str
-	icon_url: str
+	icon: str
+	stream_url_fallback: str = ""
 
 @dataclass
 class RadioPlaylist:
 	uid: int
 	name: str
-	scroll: int
-	stations: list[RadioStation]
+	scroll: int = 0
+	stations: list[RadioStation] = field(default_factory=list)
 
 class GetSDLInput:
 
@@ -39556,7 +39557,7 @@ if (user_directory / "lyrics_substitutions.json").is_file():
 
 perf_timer.set()
 
-radio_playlists: list[RadioPlaylist] = [RadioPlayList(uid=uid_gen(), name="Default", stations=[])]
+radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
 # radio_playlists: list[dict[str, int | str | list[dict[str, str]]]]
 
 primary_stations: list[RadioStation] = []
@@ -39582,12 +39583,12 @@ primary_stations.append(RadioStation(
 	website_url="https://somafm.com/vaporwaves",
 	icon="https://somafm.com/img3/vaporwaves400.png"))
 
-rimary_stations.append(RadioStation(
-title="DKFM Shoegaze Radio",
-stream_url="https://kathy.torontocast.com:2005/stream",
-country="Canada",
-website_url="https://decayfm.com",
-icon="https://cdn-profiles.tunein.com/s193842/images/logod.png"))
+primary_stations.append(RadioStation(
+	title="DKFM Shoegaze Radio",
+	stream_url="https://kathy.torontocast.com:2005/stream",
+	country="Canada",
+	website_url="https://decayfm.com",
+	icon="https://cdn-profiles.tunein.com/s193842/images/logod.png"))
 
 for station in primary_stations:
 	radio_playlists[0].stations.append(station)
