@@ -23064,12 +23064,14 @@ class Bag:
 	playlist_active:        int
 	playlist_playing:       int
 	playlist_view_position: int
+	radio_playlist_viewing: int
 	selected_in_playlist:   int
 	volume:                 float
 	track_queue:            list[int]
 	logical_size:           list[int] # X Y
 	window_size:            list[int] # X Y
 	multi_playlist:         list[TauonPlaylist]
+	radio_playlists:        list[RadioPlaylist]
 	p_force_queue:          list[TauonQueueItem]
 	gen_codes:              dict[int, str]
 	master_library:         dict[int, TrackClass]
