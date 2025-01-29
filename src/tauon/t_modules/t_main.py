@@ -1636,8 +1636,8 @@ class PlayerCtl:
 		self.regen_in_progress = False
 		self.notify_in_progress = False
 
-		self.radio_playlists = radio_playlists
-		self.radio_playlist_viewing = radio_playlist_viewing
+		self.radio_playlists: list[RadioPlaylist] = bag.radio_playlists
+		self.radio_playlist_viewing: int = bag.radio_playlist_viewing
 		self.tag_history = {}
 
 		self.commit: int | None = None
@@ -13553,7 +13553,7 @@ class TopPanel:
 
 		if gui.radio_view:
 			for item in pctl.radio_playlists:
-				le = ddt.get_text_w(item["name"], self.tab_text_font)
+				le = ddt.get_text_w(item.name, self.tab_text_font)
 				self.tab_text_spaces.append(le)
 		else:
 			for i, item in enumerate(pctl.multi_playlist):
@@ -13688,7 +13688,7 @@ class TopPanel:
 					for tab in reversed(left_overflow):
 						if gui.radio_view:
 							overflow_menu.add(
-								MenuItem(pctl.radio_playlists[tab]["name"], self.left_overflow_switch_playlist,
+								MenuItem(pctl.radio_playlists[tab].name, self.left_overflow_switch_playlist,
 								pass_ref=True, set_ref=tab))
 						else:
 							overflow_menu.add(
@@ -13712,7 +13712,7 @@ class TopPanel:
 						if gui.radio_view:
 							overflow_menu.add(
 								MenuItem(
-									pctl.radio_playlists[tab]["name"], self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab))
+									pctl.radio_playlists[tab].name, self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab))
 						else:
 							overflow_menu.add(
 								MenuItem(
@@ -13869,8 +13869,8 @@ class TopPanel:
 						tauon.thread_manager.ready("worker")
 
 				if mouse_up and radio_view.drag:
-					pctl.radio_playlists[i]["items"].append(radio_view.drag)
-					toast(_("Added station to: ") + pctl.radio_playlists[i]["name"])
+					pctl.radio_playlists[i].stations.append(radio_view.drag)
+					toast(_("Added station to: ") + pctl.radio_playlists[i].name)
 
 					radio_view.drag = None
 
@@ -13900,7 +13900,7 @@ class TopPanel:
 
 		if gui.radio_view:
 			for item in pctl.radio_playlists:
-				le = ddt.get_text_w(item["name"], self.tab_text_font)
+				le = ddt.get_text_w(item.name, self.tab_text_font)
 				self.tab_text_spaces.append(le)
 		else:
 			for i, item in enumerate(pctl.multi_playlist):
@@ -18260,13 +18260,13 @@ class RadioBox:
 			elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
 				radio = self.station_editing
 				if self.add_mode:
-					radio: dict[str, int | str] = {}
-				radio["title"] = self.radio_field_title.text
-				radio["stream_url"] = self.radio_field.text
-				radio["website_url"] = ""
+					radio: RadioStation = RadioStation()
+				radio.title = self.radio_field_title.text
+				radio.stream_url = self.radio_field.text
+				radio.website_url = ""
 
 				if self.add_mode:
-					pctl.radio_playlists[pctl.radio_playlist_viewing]["items"].append(radio)
+					pctl.radio_playlists[pctl.radio_playlist_viewing].stations.append(radio)
 				self.active = False
 
 			else:
@@ -18732,7 +18732,7 @@ class RenamePlaylistBox:
 				pass
 			elif len(rename_text_area.text) > 0:
 				if gui.radio_view:
-					pctl.radio_playlists[self.playlist_index]["name"] = rename_text_area.text
+					pctl.radio_playlists[self.playlist_index].name = rename_text_area.text
 				else:
 					pctl.multi_playlist[self.playlist_index].title = rename_text_area.text
 			inp.key_return_press = False
@@ -23223,6 +23223,22 @@ class Undo:
 	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
+@dataclass
+class RadioStation:
+	title: str
+	stream_url: str
+	stream_url_fallback: str
+	country: str
+	website_url: str
+	icon_url: str
+
+@dataclass
+class RadioPlaylist:
+	uid: int
+	name: str
+	scroll: int
+	stations: list[RadioStation]
+
 class GetSDLInput:
 
 	def __init__(self):
@@ -26145,29 +26161,19 @@ def prep_gal():
 			albums.append([index, 0])
 			folder = pctl.master_library[index].parent_folder_name
 
-def add_stations(stations: list[dict[str, int | str]], name: str):
+def add_stations(stations: list[RadioStation], name: str) -> None:
 	if len(stations) == 1:
 		for i, s in enumerate(pctl.radio_playlists):
-			if s["name"] == "Default":
-				s["items"].insert(0, stations[0])
-				s["scroll"] = 0
+			if s.name == "Default":
+				s.stations.insert(0, stations[0])
+				s.scroll = 0
 				pctl.radio_playlist_viewing = i
 				break
 		else:
-			r = {}
-			r["uid"] = uid_gen()
-			r["name"] = "Default"
-			r["items"] = stations
-			r["scroll"] = 0
-			pctl.radio_playlists.append(r)
+			pctl.radio_playlists.append(RadioPlaylist(uid=uid_gen(), name="Default", stations=stations, scroll=0))
 			pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
 	else:
-		r = {}
-		r["uid"] = uid_gen()
-		r["name"] = name
-		r["items"] = stations
-		r["scroll"] = 0
-		pctl.radio_playlists.append(r)
+		pctl.radio_playlists.append(RadioPlaylist(uid=uid_gen(), name=name, stations=stations, scroll=0))
 		pctl.radio_playlist_viewing = len(pctl.radio_playlists) - 1
 	if not gui.radio_view:
 		enter_radio_view()
@@ -27952,7 +27958,7 @@ def rename_playlist(index, generator: bool = False) -> None:
 		rename_playlist_box.y = gui.panelY + 10 * gui.scale
 
 	if gui.radio_view:
-		rename_text_area.set_text(pctl.radio_playlists[index]["name"])
+		rename_text_area.set_text(pctl.radio_playlists[index].name)
 	else:
 		rename_text_area.set_text(pctl.multi_playlist[index].title)
 	rename_text_area.highlight_all()
@@ -28210,7 +28216,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 	if gui.radio_view:
 		del pctl.radio_playlists[index]
 		if not pctl.radio_playlists:
-			pctl.radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+			pctl.radio_playlists = [RadioPlaylist(uid=uid_gen(),name ="Default", stations=[])]
 		return
 
 	global default_playlist
@@ -28829,12 +28835,7 @@ def gen_unique_pl_title(base: str, extra: str="", start: int = 1) -> str:
 
 def new_playlist(switch: bool = True) -> int | None:
 	if gui.radio_view:
-		r = {}
-		r["uid"] = uid_gen()
-		r["name"] = _("New Radio List")
-		r["items"] = []  # copy.copy(prefs.radio_urls)
-		r["scroll"] = 0
-		pctl.radio_playlists.append(r)
+		pctl.radio_playlists.append(RadioPlaylist(uid=uid_gen(), name=_("New Radio List"), stations=[], scroll=0))
 		return None
 
 	title = gen_unique_pl_title(_("New Playlist"))
@@ -37300,29 +37301,29 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 		f_store.recall_all()
 
 # def visit_radio_site_show_test(p):
-# 	return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p]["website_url"]
+# 	return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p].["website_url"]
 
-def visit_radio_site_deco(item):
-	if "website_url" in item and item["website_url"]:
+def visit_radio_site_deco(station: RadioStation):
+	if station.website_url is not None:
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
-def visit_radio_station_site_deco(item):
-	return visit_radio_site_deco(item[1])
+def visit_radio_station_site_deco(station: RadioStation):
+	return visit_radio_site_deco(station.stream_url)
 
-def visit_radio_site(item):
-	if "website_url" in item and item["website_url"]:
-		webbrowser.open(item["website_url"], new=2, autoraise=True)
+def visit_radio_site(station: RadioStation):
+	if station.website_url is not None:
+		webbrowser.open(station.website_url, new=2, autoraise=True)
 
-def visit_radio_station(item):
-	visit_radio_site(item[1])
+def visit_radio_station(station: RadioStation):
+	visit_radio_site(station.stream_url)
 
 def radio_saved_panel_test(_):
 	return radiobox.tab == 0
 
-def save_to_radios(item):
-	pctl.radio_playlists[pctl.radio_playlist_viewing]["items"].append(item)
-	toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
+def save_to_radios(station: RadioStation):
+	pctl.radio_playlists[pctl.radio_playlist_viewing].stations.append(station)
+	toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing].name)
 
 def create_artist_pl(artist: str, replace: bool = False):
 	source_pl = pctl.active_playlist_viewing
@@ -37592,19 +37593,19 @@ def add_station():
 	radiobox.station_editing = None
 	radiobox.center = True
 
-def rename_station(item):
+def rename_station(station: list[RadioStation]):
 	station = item[1]
 	radiobox.active = True
 	radiobox.center = False
 	radiobox.edit_mode = True
 	radiobox.add_mode = False
-	radiobox.radio_field.text = station["stream_url"]
-	radiobox.radio_field_title.text = station.get("title", "")
+	radiobox.radio_field.text = station.stream_url
+	radiobox.radio_field_title.text = station.title if station.title is not None else ""
 	radiobox.station_editing = station
 
-def remove_station(item):
-	index = item[0]
-	del pctl.radio_playlists[pctl.radio_playlist_viewing]["items"][index]
+def remove_station(stations: list[RadioStation]):
+	index = station[0]
+	del pctl.radio_playlists[pctl.radio_playlist_viewing].stations[index]
 
 def dismiss_dl():
 	dl_mon.ready.clear()
@@ -39555,45 +39556,41 @@ if (user_directory / "lyrics_substitutions.json").is_file():
 
 perf_timer.set()
 
-radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+radio_playlists: list[RadioPlaylist] = [RadioPlayList(uid=uid_gen(), name="Default", stations=[])]
+# radio_playlists: list[dict[str, int | str | list[dict[str, str]]]]
 
-primary_stations: list[dict[str, str]] = []
-station = {
-	"title": "SomaFM Groove Salad",
-	"stream_url": "https://ice3.somafm.com/groovesalad-128-mp3",
-	"country": "USA",
-	"website_url": "https://somafm.com/groovesalad",
-	"icon": "https://somafm.com/logos/120/groovesalad120.png",
-}
-primary_stations.append(station)
-station = {
-	"title": "SomaFM PopTron",
-	"stream_url": "https://ice3.somafm.com/poptron-128-mp3",
-	"country": "USA",
-	"website_url": "https://somafm.com/poptron/",
-	"icon": "https://somafm.com/logos/120/poptron120.jpg",
-}
-primary_stations.append(station)
-station = {
-	"title": "SomaFM Vaporwaves",
-	"stream_url": "https://ice4.somafm.com/vaporwaves-128-mp3",
-	"country": "USA",
-	"website_url": "https://somafm.com/vaporwaves",
-	"icon": "https://somafm.com/img3/vaporwaves400.png",
-}
-primary_stations.append(station)
+primary_stations: list[RadioStation] = []
 
-station = {
-	"title": "DKFM Shoegaze Radio",
-	"stream_url": "https://kathy.torontocast.com:2005/stream",
-	"country": "Canada",
-	"website_url": "https://decayfm.com",
-	"icon": "https://cdn-profiles.tunein.com/s193842/images/logod.png",
-}
-primary_stations.append(station)
+primary_stations.append(RadioStation(
+	title="SomaFM Groove Salad",
+	stream_url="https://ice3.somafm.com/groovesalad-128-mp3",
+	country="USA",
+	website_url="https://somafm.com/groovesalad",
+	icon="https://somafm.com/logos/120/groovesalad120.png"))
 
-for item in primary_stations:
-	radio_playlists[0]["items"].append(item)
+primary_stations.append(RadioStation(
+	title="SomaFM PopTron",
+	stream_url="https://ice3.somafm.com/poptron-128-mp3",
+	country="USA",
+	website_url="https://somafm.com/poptron/",
+	icon="https://somafm.com/logos/120/poptron120.jpg"))
+
+primary_stations.append(RadioStation(
+	title="SomaFM Vaporwaves",
+	stream_url="https://ice4.somafm.com/vaporwaves-128-mp3",
+	country="USA",
+	website_url="https://somafm.com/vaporwaves",
+	icon="https://somafm.com/img3/vaporwaves400.png"))
+
+rimary_stations.append(RadioStation(
+title="DKFM Shoegaze Radio",
+stream_url="https://kathy.torontocast.com:2005/stream",
+country="Canada",
+website_url="https://decayfm.com",
+icon="https://cdn-profiles.tunein.com/s193842/images/logod.png"))
+
+for station in primary_stations:
+	radio_playlists[0].stations.append(station)
 
 radio_playlist_viewing = 0
 
