@@ -35,7 +35,7 @@ import threading
 import time
 import urllib.parse
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from gi.repository import GLib
@@ -45,6 +45,21 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import TrackClass
 
+@dataclass
+class RadioStation:
+	title: str
+	stream_url: str
+	country: str
+	website_url: str
+	icon: str
+	stream_url_fallback: str = ""
+
+@dataclass
+class RadioPlaylist:
+	uid: int
+	name: str
+	scroll: int = 0
+	stations: list[RadioStation] = field(default_factory=list)
 
 @dataclass
 class TauonQueueItem:

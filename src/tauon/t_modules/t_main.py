@@ -274,6 +274,8 @@ from tauon.t_modules.t_extra import (
 	TauonQueueItem,
 	TestTimer,
 	Timer,
+	RadioPlaylist,
+	RadioStation,
 	alpha_blend,
 	alpha_mod,
 	archive_file_scan,
@@ -23224,22 +23226,6 @@ class Undo:
 	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
-@dataclass
-class RadioStation:
-	title: str
-	stream_url: str
-	country: str
-	website_url: str
-	icon: str
-	stream_url_fallback: str = ""
-
-@dataclass
-class RadioPlaylist:
-	uid: int
-	name: str
-	scroll: int = 0
-	stations: list[RadioStation] = field(default_factory=list)
-
 class GetSDLInput:
 
 	def __init__(self):
@@ -38309,19 +38295,15 @@ def save_state() -> None:
 	view_prefs["append-date"] = prefs.append_date
 
 	tauonplaylist_jar = []
+	radioplaylist_jar = []
 	tauonqueueitem_jar = []
-	#if db_version > 68:
-	for v in pctl.multi_playlist:
-	#	logging.warning(f"Playlist: {v}")
-		tauonplaylist_jar.append(v.__dict__)
-	for v in pctl.force_queue:
-	#	logging.warning(f"Queue: {v}")
-		tauonqueueitem_jar.append(v.__dict__)
-	#else:
-	#	tauonplaylist_jar = pctl.multi_playlist
-	#	tauonqueueitem_jar = pctl.track_queue
-
 	trackclass_jar = []
+	for v in pctl.multi_playlist:
+		tauonplaylist_jar.append(v.__dict__)
+	for v in pctl.radio_playlists:
+		radioplaylist_jar.append(v.__dict__)
+	for v in pctl.force_queue:
+		tauonqueueitem_jar.append(v.__dict__)
 	for v in pctl.master_library.values():
 		trackclass_jar.append(v.__dict__)
 
@@ -38491,7 +38473,7 @@ def save_state() -> None:
 		trackclass_jar,
 		prefs.premium,
 		gui.radio_view,
-		pctl.radio_playlists,
+		radioplaylist_jar, # pctl.radio_playlists,
 		pctl.radio_playlist_viewing,
 		prefs.radio_thumb_bans,
 		prefs.playlist_exports,
@@ -39458,7 +39440,7 @@ volume = 75
 
 folder_image_offsets: dict[str, int] = {}
 db_version: float = 0.0
-latest_db_version: float = 69
+latest_db_version: float = 70
 
 albums = []
 album_position = 0
@@ -39961,7 +39943,14 @@ for t in range(2):
 		if save[164] is not None:
 			gui.restore_radio_view = save[164]
 		if save[165] is not None:
-			radio_playlists = save[165]
+			if db_version > 69:
+				radio_playlists = []
+				radioplaylist_jar = save[165]
+				for d in radioplaylist_jar:
+					nt = RadioPlaylist(**d)
+					radio_playlists.append(nt)
+			else:
+				radio_playlists = save[165]
 		if save[166] is not None:
 			radio_playlist_viewing = save[166]
 		if save[167] is not None:
@@ -40052,8 +40041,10 @@ if db_version > 0 and db_version < latest_db_version:
 		)
 	except ValueError:
 		logging.exception("That should not happen")
+		sys.exit(42)
 	except Exception:
 		logging.exception("Unknown error running database migration!")
+		sys.exit(42)
 
 playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
 
