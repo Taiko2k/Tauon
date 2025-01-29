@@ -6,6 +6,10 @@ Welcome to the Tauon Music Box source code. I started this project when I was fi
 learning python, as a result this code can be quite messy. No doubt I have
 written some things terribly wrong or inefficiently in places.
 I would highly recommend not using this project as an example on how to code cleanly or correctly.
+
+TODO
+
+Verify the rework actually uses copies where copies should be used!
 """
 
 # Copyright © 2015-2024, Taiko2k captain(dot)gxj(at)gmail.com
@@ -23052,6 +23056,7 @@ class Bag:
 	macos:                  bool
 	msys:                   bool
 	phone:                  bool
+	pump:                   bool
 	system:                 str
 	xdpi:                   int
 	master_count:           int
@@ -23380,10 +23385,10 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 			logging.error(f"Unknown mode '{mode}' for message: " + line1 + line2 + line3)
 	gui.update = 1
 
-def pumper():
-	if macos:
+def pumper(bag: Bag):
+	if bag.macos:
 		return
-	while pump:
+	while bag.pump:
 		time.sleep(0.005)
 		SDL_PumpEvents()
 
@@ -38803,13 +38808,6 @@ def main(holder: Holder):
 		download_directory=download_directory,
 	)
 
-	logging.critical(dirs.download_directory)
-
-
-
-
-
-
 	logging.info(f"Install directory:         {install_directory}")
 	#logging.info(f"SVG directory:             {svg_directory}")
 	logging.info(f"Asset directory:           {asset_directory}")
@@ -39278,6 +39276,7 @@ def main(holder: Holder):
 		renderer=renderer,
 		sdl_syswminfo=sss,
 		system=system,
+		pump=True,
 		macos=macos,
 		msys=msys,
 		phone=phone,
@@ -39423,8 +39422,6 @@ def main(holder: Holder):
 		radio_playlists[0]["items"].append(item)
 
 	radio_playlist_viewing = 0
-
-	pump = True
 
 	state_path1 = user_directory / "state.p"
 	state_path2 = user_directory / "state.p.backup"
@@ -39832,7 +39829,7 @@ def main(holder: Holder):
 			logging.exception("Failed to load save file")
 	logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
-	shoot_pump = threading.Thread(target=pumper)
+	shoot_pump = threading.Thread(target=pumper, args=(bag,))
 	shoot_pump.daemon = True
 	shoot_pump.start() # temporary
 
@@ -39853,7 +39850,7 @@ def main(holder: Holder):
 		gui.suggest_clean_db = True
 	# logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
-	pump = False
+	bag.pump = False
 	shoot_pump.join()
 
 	# Run upgrades if we're behind the current DB standard
