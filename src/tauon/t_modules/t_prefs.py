@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from pathlib import Path
+
+	import gi
+	gi.require_version("Gtk", "3.0")
+	from gi.repository import Gtk
 
 class Prefs:
 	"""Used to hold any kind of settings"""
@@ -8,7 +15,7 @@ class Prefs:
 	def __init__(
 		self, *, user_directory: Path, music_directory: Path | None, cache_directory: Path,
 		macos: bool, phone: bool, left_window_control: bool, detect_macstyle: bool,
-		gtk_settings: Settings | None, discord_allow: bool,
+		gtk_settings: Gtk.Settings | None, discord_allow: bool,
 		flatpak_mode: bool, desktop: str | None, window_opacity: float, scale: float,
 	) -> None:
 		self.colour_from_image:       bool = False

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 #@dataclass
 class Holder:
-	"""Class that holds variables for forwarding them from tauon.py to t_main.py"""
+	"""Class that holds variables for forwarding them from __main__.py to t_main.py"""
 
 	t_window:               Any                     # SDL_CreateWindow() return type (???)
 	renderer:               Any                     # SDL_CreateRenderer() return type (???)
