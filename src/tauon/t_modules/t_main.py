@@ -1550,15 +1550,15 @@ class PlayerCtl:
 
 		# Database
 
-		self.master_count = master_count
+		self.master_count:   int = bag.master_count
 		self.total_playtime: float = 0
-		self.master_library = master_library
+		self.master_library: dict[int, TrackClass] = bag.master_library
 		# Lets clients know when to invalidate cache
 		self.db_inc = random.randint(0, 10000)
 		# self.star_library = star_library
 		self.LoadClass = LoadClass
 
-		self.gen_codes = gen_codes
+		self.gen_codes: dict[int, str] = bag.gen_codes
 
 		self.shuffle_pools = {}
 		self.after_import_flag = False
@@ -1578,14 +1578,14 @@ class PlayerCtl:
 
 		# Playback
 
-		self.track_queue = track_queue
-		self.queue_step = playing_in_queue
+		self.track_queue: list[int] = bag.track_queue
+		self.queue_step:  int = bag.playing_in_queue
 		self.playing_time = 0
-		self.playlist_playing_position = playlist_playing  # track in playlist that is playing
+		self.playlist_playing_position: int = bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
-		self.playlist_view_position = playlist_view_position
-		self.selected_in_playlist = selected_in_playlist
+		self.playlist_view_position: int = bag.playlist_view_position
+		self.selected_in_playlist: int = bag.selected_in_playlist
 		self.target_open = ""
 		self.target_object = None
 		self.start_time = 0
@@ -1603,10 +1603,10 @@ class PlayerCtl:
 		# self.album_shuffle_pool = []
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
-		self.multi_playlist = multi_playlist
+		self.multi_playlist: list[TauonPlaylist] = bag.multi_playlist
 		self.active_playlist_viewing: int = bag.playlist_active  # the playlist index that is being viewed # TODO(Martin): Rename playlist_active and active_playlist?
 		self.active_playlist_playing: int = bag.playlist_active  # the playlist index that is playing from
-		self.force_queue: list[TauonQueueItem] = p_force_queue
+		self.force_queue: list[TauonQueueItem] = bag.p_force_queue
 		self.pause_queue: bool = False
 		self.left_time = 0
 		self.left_index = 0
@@ -39193,7 +39193,7 @@ def main(holder: Holder):
 	taskbar_progress = True
 	track_queue: list[int] = []
 
-	playing_in_queue = 0
+	playing_in_queue: int = 0
 	draw_sep_hl = False
 
 	# -------------------------------------------------------------------------------
