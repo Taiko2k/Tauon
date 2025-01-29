@@ -37278,19 +37278,19 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 # 	return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p].["website_url"]
 
 def visit_radio_site_deco(station: RadioStation):
-	if station.website_url is not None:
+	if station.website_url:
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
-def visit_radio_station_site_deco(station: RadioStation):
-	return visit_radio_site_deco(station.stream_url)
+def visit_radio_station_site_deco(item: tuple[int, RadioStation]):
+	return visit_radio_site_deco(item[1])
 
 def visit_radio_site(station: RadioStation):
-	if station.website_url is not None:
+	if station.website_url:
 		webbrowser.open(station.website_url, new=2, autoraise=True)
 
-def visit_radio_station(station: RadioStation):
-	visit_radio_site(station.stream_url)
+def visit_radio_station(item: tuple[int, RadioStation]):
+	visit_radio_site(item[1])
 
 def radio_saved_panel_test(_):
 	return radiobox.tab == 0
@@ -37567,7 +37567,7 @@ def add_station():
 	radiobox.station_editing = None
 	radiobox.center = True
 
-def rename_station(station: list[RadioStation]):
+def rename_station(item: tuple[int, RadioStation]):
 	station = item[1]
 	radiobox.active = True
 	radiobox.center = False
@@ -37577,8 +37577,8 @@ def rename_station(station: list[RadioStation]):
 	radiobox.radio_field_title.text = station.title if station.title is not None else ""
 	radiobox.station_editing = station
 
-def remove_station(stations: list[RadioStation]):
-	index = station[0]
+def remove_station(item: tuple[int, RadioStation]):
+	index = item[0]
 	del pctl.radio_playlists[pctl.radio_playlist_viewing].stations[index]
 
 def dismiss_dl():
