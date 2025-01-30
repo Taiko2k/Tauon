@@ -10329,90 +10329,9 @@ elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURS
 if not maximized and gui.maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-# logging.error(sdl3.SDL_GetError())
-
-# t_window = sdl3.SDL_CreateShapedWindow(
-# window_title,
-#	sdl3.SDL_WINDOWPOS_CENTERED, sdl3.SDL_WINDOWPOS_CENTERED,
-#	window_size[0], window_size[1],
-#	flags)
-
-# logging.error(sdl3.SDL_GetError())
 
 if system == "Windows" or msys:
 	gui.window_id = sss.info.win.window
-
-
-# try:
-#	 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-#
-# except Exception:
-#	 logging.exception("old version of SDL detected")
-
-# get window surface and set up renderer
-# renderer = sdl3.SDL_CreateRenderer(t_window, 0, sdl3.SDL_RENDERER_ACCELERATED | sdl3.SDL_RENDERER_PRESENTVSYNC)
-
-# renderer = sdl3.SDL_CreateRenderer(t_window, 0, sdl3.SDL_RENDERER_ACCELERATED)
-#
-# # window_surface = sdl3.SDL_GetWindowSurface(t_window)
-#
-# sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-#
-# display_index = sdl3.SDL_GetWindowDisplayIndex(t_window)
-# display_bounds = sdl3.SDL_FRect(0, 0)
-# sdl3.SDL_GetDisplayBounds(display_index, display_bounds)
-#
-# icon = sdl3.IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
-# sdl3.SDL_SetWindowIcon(t_window, icon)
-# sdl3.SDL_SetHint(sdl3.SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
-#
-# sdl3.SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
-#
-#
-# gui.max_window_tex = 1000
-# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-#
-#	 while window_size[0] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#	 while window_size[1] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#
-# gui.ttext = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# # gui.pl_surf = sdl3.SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, sdl3.SDL_PIXELFORMAT_RGB888)
-#
-# sdl3.SDL_SetTextureBlendMode(gui.ttext, sdl3.SDL_BLENDMODE_BLEND)
-#
-# gui.spec2_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
-# gui.spec1_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-#
-# sdl3.SDL_SetTextureBlendMode(gui.spec4_tex, sdl3.SDL_BLENDMODE_BLEND)
-#
-# sdl3.SDL_SetRenderTarget(renderer, None)
-#
-# gui.main_texture = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-# gui.main_texture_overlay_temp = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-# sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-# sdl3.SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
-# sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# sdl3.SDL_RenderClear(renderer)
-#
-# gui.abc = sdl3.SDL_FRect(0, 0, gui.max_window_tex, gui.max_window_tex)
-# gui.pl_update = 2
-#
-# sdl3.SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-# gui.spec1_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-# sdl3.SDL_SetTextureBlendMode(gui.spec4_tex, sdl3.SDL_BLENDMODE_BLEND)
 
 
 def bass_player_thread(player):
