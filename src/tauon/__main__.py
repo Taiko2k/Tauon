@@ -210,9 +210,9 @@ allow_hidpi = True
 if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(user_directory / "nohidpi").is_file():
 	allow_hidpi = False
 
-sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER.encode(), b"1")
-sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH.encode(), b"1")
-sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR.encode(), b"0")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
 # sdl3.SDL_SetHint(b"SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR", b"0")
 
 draw_border = True
