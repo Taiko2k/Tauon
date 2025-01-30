@@ -525,6 +525,7 @@ class TDraw:
 		if key:
 			force_cache = True
 
+		self.pretty_rect = None  # todo SDL3 upgrade fix me
 
 		self.was_truncated = False
 
