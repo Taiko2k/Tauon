@@ -8355,8 +8355,7 @@ class StyleOverlay:
 
 		if self.stage == 1:
 
-			wop = rw_from_object(self.im)
-			s_image = sdl3.IMG_Load_RW(wop, 0)
+			s_image = ddt.load_image(self.im)
 
 			c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 
@@ -10234,6 +10233,8 @@ class Over:
 		y += 25 * gui.scale
 
 		self.toggle_square(x, y, toggle_auto_bg, _("Use album art as background"))
+
+		self.toggle_square(x + round(280 * gui.scale), y, toggle_transparent_accent, _("Transparent accent"))
 
 		y += 23 * gui.scale
 
@@ -23522,6 +23523,7 @@ def save_prefs():
 	cf.update_value("auto-scale", prefs.x_scale)
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
+	cf.update_value("transparent-style", prefs.transparent_mode)
 	cf.update_value("mac-style", prefs.macstyle)
 	cf.update_value("allow-art-zoom", prefs.zoom_art)
 
@@ -23766,6 +23768,7 @@ def load_prefs():
 	cf.add_text("[ui]")
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
+	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
 	macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
 	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
 	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
@@ -33585,6 +33588,21 @@ def toggle_auto_theme(mode: int = 0) -> None:
 	# if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
 	#     toggle_auto_bg()
 
+def toggle_transparent_accent(mode: int= 0) -> bool | None:
+	if mode == 1:
+		return prefs.transparent_mode == 1
+
+	if prefs.transparent_mode == 1:
+		prefs.transparent_mode = 0
+	else:
+		prefs.transparent_mode = 1
+
+	gui.reload_theme = True
+	gui.update += 1
+	gui.pl_update += 1
+
+	return None
+
 def toggle_auto_bg(mode: int= 0) -> bool | None:
 	if mode == 1:
 		return prefs.art_bg
@@ -42971,15 +42989,6 @@ while pctl.running:
 	# if focused is True:
 	#     mouse_down = False
 
-	# TODO testing only, remove me later
-	# gg = 5
-	# aa = 80
-	# colours.top_panel_background = [gg,gg,gg,aa]
-	# colours.side_panel_background = [gg,gg,gg,aa]
-	# colours.bottom_panel_colour = [gg,gg,gg,aa]
-	# colours.playlist_panel_background = [gg,gg,gg,aa]
-	#colours.playlist_box_background  = [0, 0, 0, 100]
-
 	if inp.media_key:
 		if inp.media_key == "Play":
 			if pctl.playing_state == 0:
@@ -43133,6 +43142,15 @@ while pctl.running:
 			colours.__init__()
 			colours.post_config()
 			deco.unload()
+
+		if prefs.transparent_mode:
+			colours.top_panel_background[3] = 80
+			colours.side_panel_background[3] = 80
+			colours.art_box[3] = 100
+			colours.window_frame[3] = 100
+			colours.bottom_panel_colour[3] = 190
+			#colours.playlist_panel_background = aa
+			#colours.playlist_box_background  = [0, 0, 0, 100]
 
 		prefs.theme_name = gui.theme_name
 
@@ -46282,6 +46300,10 @@ while pctl.running:
 
 		sdl3.SDL_SetRenderTarget(renderer, None)
 		if not gui.present:
+			sdl3.SDL_SetRenderDrawColor(
+				renderer, colours.top_panel_background[0], colours.top_panel_background[1],
+				colours.top_panel_background[2], colours.top_panel_background[3])
+			sdl3.SDL_RenderClear(renderer)
 			sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 			gui.present = True
 
