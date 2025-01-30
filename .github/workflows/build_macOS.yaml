@@ -29,8 +29,7 @@ jobs:
             gtk+3 \
             pango \
             pillow \
-            sdl2 \
-            sdl2_image \
+            sdl3 \
             jpeg-xl \
             ffmpeg \
             librsvg \
@@ -38,6 +37,7 @@ jobs:
             libopenmpt \
             wavpack \
             game-music-emu
+#            sdl2_image \
 
 # This generates 30MB of logs, enable it only when actively debugging something
 #      - name: "[DEBUG] List all Cellar files"

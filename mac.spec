@@ -35,14 +35,14 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
-		# This could only have SDL2.framework and SDL2_image.framework to save space...
-		(f"{prefix}/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
-#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
-#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll/SDL2.framework", "sdl2dll/dll/SDL2.framework"),
-#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll/SDL2_image.framework", "sdl2dll/dll/SDL2_image.framework"),
+		# This could only have SDL3.framework and SDL3_image.framework to save space...
+#		(f"{prefix}/lib/python{python_ver}/site-packages/sdl3dll/dll", "sdl3dll/dll"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl3dll/dll", "sdl3dll/dll"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl3dll/dll/SDL3.framework", "sdl3dll/dll/SDL3.framework"),
+#		(f".venv/lib/python{python_ver}/site-packages/sdl3dll/dll/SDL3_image.framework", "sdl3dll/dll/SDL3_image.framework"),
 	],
 	hiddenimports=[
-		"sdl2",
+		"sdl3",
 		"phazor",
 		"pylast",
 		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840
