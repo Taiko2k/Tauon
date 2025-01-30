@@ -3344,6 +3344,8 @@ class LastFMapi:
 
 		self.sg = pylast.SessionKeyGenerator(self.network)
 		self.url = self.sg.get_web_auth_url()
+		logging.info(str(self.url))
+		copy_to_clipboard(self.url)
 		show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
 		webbrowser.open(self.url, new=2, autoraise=True)
 
@@ -11955,7 +11957,7 @@ class Over:
 				y += 25 * gui.scale
 				ddt.text(
 					(x + 2 * gui.scale, y, 4, 270 * gui.scale, 300 * gui.scale),
-					_("Click login to open the last.fm web authorisation page and follow prompt. Then return here and click \"Done\"."),
+					_("Click login to open the last.fm web authorisation page (paste from clipboard if it didn't open) and follow prompt. Then return here and click \"Done\"."),
 					colours.box_text_label, 11, max_w=270 * gui.scale)
 
 			else:
