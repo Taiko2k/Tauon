@@ -532,6 +532,12 @@ class TDraw:
 		max_x = round(max_x)
 
 		alpha_bg = self.alpha_bg
+		force_gray = self.force_gray
+		#real_bg = True
+
+		if bg[3] < 200:
+			alpha_bg = True
+			force_gray = True
 
 		x = round(location[0])
 		y = round(location[1])
@@ -599,7 +605,7 @@ class TDraw:
 		data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
 
 		if real_bg:
-			box = sdl3.SDL_FRect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
+			box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
 			if align == 1:
 				box.x = x - box.w
@@ -607,7 +613,8 @@ class TDraw:
 			elif align == 2:
 				box.x -= int(box.w / 2)
 
-			sdl3.SDL_RenderReadPixels(self.renderer, box, sdl3.SDL_PIXELFORMAT_RGB888, ctypes.pointer(data), (w * 4))
+			ssurf = sdl3.SDL_RenderReadPixels(self.renderer, box) #, sdl3.SDL_PIXELFORMAT_XRGB8888, ctypes.pointer(data), (w * 4))
+			data = ssurf.contents.pixels
 
 		if alpha_bg:
 			surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
@@ -616,9 +623,10 @@ class TDraw:
 
 		context = cairo.Context(surf)
 
-		if self.force_gray:
+		if force_gray:
 			options = context.get_font_options()
 			options.set_antialias(cairo.ANTIALIAS_GRAY)
+			#options.set_hint_style(cairo.HINT_STYLE_NONE)
 			context.set_font_options(options)
 		elif self.force_subpixel_text:
 			options = context.get_font_options()

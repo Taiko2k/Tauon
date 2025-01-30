@@ -4923,7 +4923,7 @@ class PlayerCtl:
 		if playlist_index == -1:
 			playlist_index = self.active_playlist_viewing
 		try:
-			playlist = self.multi_playlist[playlist_index].playlist
+			playlist = self.multi_playlist[playlist_index].playlist_ids
 			return self.get_track(playlist[track_index])
 		except IndexError:
 			logging.exception("Failed getting track object by playlist_index and track_index!")
@@ -36698,6 +36698,9 @@ class PlaylistBox:
 
 			# Background is insivible by default (for hightlighting if selected)
 			bg = [0, 0, 0, 0]
+			if prefs.transparent_mode:
+				bg = rgb_add_hls(colours.playlist_box_background, 0, 0.09, 0)
+				bg[3] = 255
 
 			# Highlight if playlist selected (viewing)
 			if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
@@ -36707,6 +36710,9 @@ class PlaylistBox:
 				bg = rgb_add_hls(colours.playlist_box_background, 0, 0.06, 0)
 				if light_mode:
 					bg = [0, 0, 0, 25]
+				if prefs.transparent_mode:
+					bg = rgb_add_hls(colours.playlist_box_background, 0, 0.03, 0)
+					bg[3] = 255
 
 			# Highlight target playlist when tragging tracks over
 			if coll(
@@ -37537,6 +37543,10 @@ class ArtistList:
 					True):  # or pctl.get_track(default_playlist[pctl.playlist_view_position]).artist == artist:
 				ddt.rect(area, [50, 50, 50, 50])
 				bg = alpha_blend([50, 50, 50, 50], colours.side_panel_background)
+				if prefs.transparent_mode:
+					bg = rgb_add_hls(colours.playlist_box_background, 0, 0.2, 0)
+					ddt.rect(area, bg)
+
 			else:
 
 				fade = 0
@@ -37552,6 +37562,8 @@ class ArtistList:
 					ddt.rect(area, [50, 50, 50, fade])
 
 				bg = alpha_blend([50, 50, 50, fade], colours.side_panel_background)
+				if prefs.transparent_mode:
+					bg = colours.side_panel_background
 
 		if prefs.artist_list_style == 1:
 			self.draw_card_with_thumbnail(artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg)
@@ -44153,7 +44165,7 @@ while pctl.running:
 			colours.art_box[3] = 100
 			colours.window_frame[3] = 100
 			colours.bottom_panel_colour[3] = 190
-			#colours.playlist_panel_background = aa
+			#colours.playlist_panel_background[3] = 220
 			#colours.playlist_box_background  = [0, 0, 0, 100]
 
 		prefs.theme_name = gui.theme_name
