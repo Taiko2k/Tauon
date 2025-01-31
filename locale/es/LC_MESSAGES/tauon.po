@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-29 14:01+0000\n"
+"PO-Revision-Date: 2025-02-01 01:01+0000\n"
 "Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
@@ -4927,8 +4927,7 @@ msgstr "Modo de filtro de carpeta. Ingrese el segmento de ruta."
 
 #: src/tauon/t_modules/t_main.py:47498
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
-msgstr ""
-"ARRIBA / ABAJO para la navegación. SHIFT + INTRO para una nueva playlist."
+msgstr "Navegación: ARRIBA/ABAJO. Crear playlist: SHIFT + INTRO."
 
 #: src/tauon/t_modules/t_main.py:47500
 msgid "Quick find"
