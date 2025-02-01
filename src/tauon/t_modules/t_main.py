@@ -363,7 +363,7 @@ class LoadImageAsset:
 		self.scaled_asset_directory: Path = bag.dirs.scaled_asset_directory
 
 		raw_image = IMG_Load(self.path.encode())
-		self.sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
+		self.sdl_texture = SDL_CreateTextureFromSurface(bag.renderer, raw_image)
 
 		p_w = pointer(c_int(0))
 		p_h = pointer(c_int(0))
@@ -4302,13 +4302,13 @@ class Menu:
 	active = False
 
 	def rescale(self):
-		self.vertical_size = round(self.base_v_size * gui.scale)
+		self.vertical_size = round(self.base_v_size * self.tauon.gui.scale)
 		self.h = self.vertical_size
-		self.w = self.request_width * gui.scale
-		if gui.scale == 2:
+		self.w = self.request_width * self.tauon.gui.scale
+		if self.tauon.gui.scale == 2:
 			self.w += 15
 
-	def __init__(self, tauon: Tauon, width: int, show_icons: bool = False) -> None:
+	def __init__(self, tauon: Tauon, bag: Bag, width: int, show_icons: bool = False) -> None:
 		self.tauon = tauon
 		self.base_v_size = 22
 		self.active = False
@@ -4326,10 +4326,10 @@ class Menu:
 		self.down = False
 		self.font = 412
 		self.show_icons: bool = show_icons
-		self.sub_arrow = MenuIcon(asset_loader(bag, loaded_asset_dc, "sub.png", True))
+		self.sub_arrow = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sub.png", True))
 
 		self.id = Menu.count
-		self.break_height = round(4 * gui.scale)
+		self.break_height = round(4 * tauon.gui.scale)
 
 		Menu.count += 1
 
@@ -8371,10 +8371,12 @@ class StyleOverlay:
 
 class ToolTip:
 
-	def __init__(self) -> None:
+	def __init__(self, bag: Bag, gui: GuiVar) -> None:
+		self.bag = bag
+		self.gui = gui
 		self.text = ""
-		self.h = 24 * gui.scale
-		self.w = 62 * gui.scale
+		self.h = 24 * self.gui.scale
+		self.w = 62 * self.gui.scale
 		self.x = 0
 		self.y = 0
 		self.timer = Timer()
@@ -8392,7 +8394,7 @@ class ToolTip:
 
 			self.x = x
 			self.y = y
-			self.w = ddt.get_text_w(text, self.font) + 20 * gui.scale
+			self.w = ddt.get_text_w(text, self.font) + 20 * self.gui.scale
 
 		self.called = True
 
@@ -8423,7 +8425,8 @@ class ToolTip:
 
 class ToolTip3:
 
-	def __init__(self) -> None:
+	def __init__(self, bag: Bag, gui: GuiVar) -> None:
+		self.gui = gui
 		self.x = 0
 		self.y = 0
 		self.text = ""
@@ -9236,13 +9239,13 @@ class SubLyricsBox:
 
 class ExportPlaylistBox:
 
-	def __init__(self):
+	def __init__(self, bag: Bag):
 
 		self.active = False
 		self.id = None
 		self.directory_text_box = TextBox2()
 		self.default = {
-			"path": str(music_directory) if music_directory else str(user_directory / "playlists"),
+			"path": str(bag.dirs.music_directory) if bag.dirs.music_directory else str(bag.dirs.user_directory / "playlists"),
 			"type": "xspf",
 			"relative": False,
 			"auto": False,
@@ -17894,7 +17897,7 @@ class RadioBox:
 		self.hosts = None
 		self.host = None
 
-		self.search_menu = Menu(170)
+		self.search_menu = Menu(tauon, bag, 170)
 		self.search_menu.add(MenuItem(_("Search Tag"), self.search_tag, pass_ref=True))
 		self.search_menu.add(MenuItem(_("Search Country Code"), self.search_country, pass_ref=True))
 		self.search_menu.add(MenuItem(_("Search Title"), self.search_title, pass_ref=True))
@@ -18969,35 +18972,35 @@ class RenamePlaylistBox:
 class PlaylistBox:
 
 	def recalc(self):
-		self.tab_h = round(25 * gui.scale)
-		self.gap = round(2 * gui.scale)
+		self.tab_h = round(25 * self.gui.scale)
+		self.gap = round(2 * self.gui.scale)
 
-		self.text_offset = 2 * gui.scale
-		if gui.scale == 1.25:
+		self.text_offset = 2 * self.gui.scale
+		if self.gui.scale == 1.25:
 			self.text_offset = 3
 
-	def __init__(self):
-
-		self.scroll_on = prefs.old_playlist_box_position
+	def __init__(self, bag: Bag, tauon: Tauon):
+		self.gui = tauon.gui
+		self.scroll_on = bag.prefs.old_playlist_box_position
 		self.drag = False
 		self.drag_source = 0
 		self.drag_on = -1
 
 		self.adds = []
 
-		self.indicate_w = round(2 * gui.scale)
+		self.indicate_w = round(2 * self.gui.scale)
 
-		self.lock_icon = asset_loader(bag, loaded_asset_dc, "lock-corner.png", True)
-		self.pin_icon = asset_loader(bag, loaded_asset_dc, "dia-pin.png", True)
-		self.gen_icon = asset_loader(bag, loaded_asset_dc, "gen-gear.png", True)
-		self.spot_icon = asset_loader(bag, loaded_asset_dc, "spot-playlist.png", True)
+		self.lock_icon = asset_loader(bag, bag.loaded_asset_dc, "lock-corner.png", True)
+		self.pin_icon = asset_loader(bag, bag.loaded_asset_dc, "dia-pin.png", True)
+		self.gen_icon = asset_loader(bag, bag.loaded_asset_dc, "gen-gear.png", True)
+		self.spot_icon = asset_loader(bag, bag.loaded_asset_dc, "spot-playlist.png", True)
 
 
 		# if gui.scale == 1.25:
 		self.tab_h = 0
 		self.gap = 0
 
-		self.text_offset = 2 * gui.scale
+		self.text_offset = 2 * self.gui.scale
 		self.recalc()
 
 	def draw(self, x, y, w, h):
@@ -19008,7 +19011,7 @@ class PlaylistBox:
 		ddt.rect((x, y, w, h), colours.playlist_box_background)
 		ddt.text_background_colour = colours.playlist_box_background
 
-		max_tabs = (h - 10 * gui.scale) // (self.gap + self.tab_h)
+		max_tabs = (h - 10 * self.gui.scale) // (self.gap + self.tab_h)
 
 		tab_title_colour = [230, 230, 230, 255]
 
@@ -19029,10 +19032,10 @@ class PlaylistBox:
 			indicate_w = round(2 * gui.scale)
 
 		show_scroll = False
-		tab_start = x + 10 * gui.scale
+		tab_start = x + 10 * self.gui.scale
 
-		if window_size[0] < 700 * gui.scale:
-			tab_start = x + 4 * gui.scale
+		if window_size[0] < 700 * self.gui.scale:
+			tab_start = x + 4 * self.gui.scale
 
 		if mouse_wheel != 0 and coll((x, y, w, h)):
 			self.scroll_on -= mouse_wheel
@@ -19047,7 +19050,7 @@ class PlaylistBox:
 			self.scroll_on = 0
 
 		if show_scroll:
-			tab_start += 15 * gui.scale
+			tab_start += 15 * self.gui.scale
 
 		if colours.lm:
 			w -= round(6 * gui.scale)
@@ -19055,8 +19058,8 @@ class PlaylistBox:
 
 		# Draw scroll bar
 		if show_scroll:
-			self.scroll_on = playlist_panel_scroll.draw(x + 2, y + 1, 15 * gui.scale, h, self.scroll_on,
-														len(pctl.multi_playlist) - max_tabs + 1)
+			self.scroll_on = playlist_panel_scroll.draw(
+				x + 2, y + 1, 15 * self.gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
 
 		draw_pin_indicator = False  # prefs.tabs_on_top
 
@@ -23050,6 +23053,7 @@ class Bag:
 	prefs:                  Prefs
 	formats:                Formats
 	renderer:               renderer
+	ddt:                    TDraw
 	tls_context:            SSLContext
 	sdl_syswminfo:          SDL_SysWMinfo
 	macos:                  bool
@@ -25521,8 +25525,9 @@ def coll_point(l, r):
 def coll(r):
 	return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
-def prime_fonts(prefs: Prefs):
-	standard_font = prefs.linux_font
+def prime_fonts(bag: Bag) -> None:
+	standard_font = bag.prefs.linux_font
+	ddt = bag.ddt
 	# if msys:
 	#	 standard_font = prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
 	ddt.prime_font(standard_font, 8, 9)
@@ -25544,7 +25549,7 @@ def prime_fonts(prefs: Prefs):
 	ddt.prime_font(standard_font, 9, 412)
 	ddt.prime_font(standard_font, 10, 413)
 
-	standard_font = prefs.linux_font_semibold
+	standard_font = bag.prefs.linux_font_semibold
 	# if msys:
 	#	 standard_font = prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
 
@@ -25561,7 +25566,7 @@ def prime_fonts(prefs: Prefs):
 	ddt.prime_font(standard_font, 13, 319)
 	ddt.prime_font(standard_font, 24, 330)
 
-	standard_font = prefs.linux_font_bold
+	standard_font = bag.prefs.linux_font_bold
 	# if msys:
 	#	 standard_font = prefs.linux_font_bold + ", Noto Sans, Sans Bold"
 
@@ -25579,7 +25584,7 @@ def prime_fonts(prefs: Prefs):
 	ddt.prime_font(standard_font, 20, 220)
 	ddt.prime_font(standard_font, 25, 228)
 
-	standard_font = prefs.linux_font_condensed
+	standard_font = bag.prefs.linux_font_condensed
 	# if msys:
 	#	 standard_font = "Noto Sans ExtCond, Sans"
 	ddt.prime_font(standard_font, 10, 413)
@@ -25587,7 +25592,7 @@ def prime_fonts(prefs: Prefs):
 	ddt.prime_font(standard_font, 12, 415)
 	ddt.prime_font(standard_font, 13, 416)
 
-	standard_font = prefs.linux_font_condensed_bold  # "Noto Sans, ExtraCondensed Bold"
+	standard_font = bag.prefs.linux_font_condensed_bold  # "Noto Sans, ExtraCondensed Bold"
 	# if msys:
 	#	 standard_font = "Noto Sans ExtCond, Sans Bold"
 	# ddt.prime_font(standard_font, 9, 512)
@@ -37599,7 +37604,7 @@ def reload_scale(bag: Bag):
 
 	gui.scale = scale
 	ddt.scale = gui.scale
-	prime_fonts(prefs)
+	prime_fonts(bag)
 	ddt.clear_text_cache()
 	scale_assets(bag=bag, scale_want=scale, force=True)
 	img_slide_update_gall(album_mode_art_size)
@@ -39262,6 +39267,8 @@ def main(holder: Holder):
 	radio_playlist_viewing = 0
 	radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 
+	ddt = TDraw(renderer)
+
 	prefs = Prefs(
 		user_directory=user_directory,
 		music_directory=music_directory,
@@ -39282,6 +39289,7 @@ def main(holder: Holder):
 		console=console,
 		dirs=dirs,
 		prefs=prefs,
+		ddt=ddt,
 		formats=formats,
 		renderer=renderer,
 		sdl_syswminfo=sss,
@@ -40377,15 +40385,13 @@ def main(holder: Holder):
 			pctl.taskbar_progress = False
 			logging.warning("Could not find TaskbarLib.tlb")
 
-
-	ddt = TDraw(renderer)
 	ddt.scale = gui.scale
 	ddt.force_subpixel_text = prefs.force_subpixel_text
 
 	launch = Launch(tauon, pctl, gui, ddt)
 	draw = Drawing()
 	if system == "Linux":
-		prime_fonts(prefs)
+		prime_fonts(bag)
 	else:
 		# standard_font = "Meiryo"
 		standard_font = "Arial"
@@ -40541,34 +40547,34 @@ def main(holder: Holder):
 
 
 
-	tool_tip = ToolTip()
-	tool_tip2 = ToolTip()
+	tool_tip = ToolTip(bag, gui)
+	tool_tip2 = ToolTip(bag, gui)
 	tool_tip2.trigger = 1.8
 	track_box_path_tool_timer = Timer()
 
-	columns_tool_tip = ToolTip3()
-	tool_tip_instant = ToolTip3()
+	columns_tool_tip = ToolTip3(bag, gui)
+	tool_tip_instant = ToolTip3(bag, gui)
 
 	# Create empty area menu
-	playlist_menu = Menu(tauon, 130)
-	radio_entry_menu = Menu(tauon, 125)
-	showcase_menu = Menu(tauon, 135)
-	center_info_menu = Menu(tauon, 125)
-	cancel_menu = Menu(tauon, 100)
-	gallery_menu = Menu(tauon, 175, show_icons=True)
-	artist_info_menu = Menu(tauon, 135)
-	queue_menu = Menu(tauon, 150)
-	repeat_menu = Menu(tauon, 120)
-	shuffle_menu = Menu(tauon, 120)
-	artist_list_menu = Menu(tauon, 165, show_icons=True)
-	lightning_menu = Menu(tauon, 165)
-	lsp_menu = Menu(tauon, 145)
-	folder_tree_menu = Menu(tauon, 175, show_icons=True)
-	folder_tree_stem_menu = Menu(tauon, 190, show_icons=True)
-	overflow_menu = Menu(tauon, 175)
-	spotify_playlist_menu = Menu(tauon, 175)
-	radio_context_menu = Menu(tauon, 175)
-	#chrome_menu = Menu(tauon, 175)
+	playlist_menu = Menu(tauon, bag, 130)
+	radio_entry_menu = Menu(tauon, bag, 125)
+	showcase_menu = Menu(tauon, bag, 135)
+	center_info_menu = Menu(tauon, bag, 125)
+	cancel_menu = Menu(tauon, bag, 100)
+	gallery_menu = Menu(tauon, bag, 175, show_icons=True)
+	artist_info_menu = Menu(tauon, bag, 135)
+	queue_menu = Menu(tauon, bag, 150)
+	repeat_menu = Menu(tauon, bag, 120)
+	shuffle_menu = Menu(tauon, bag, 120)
+	artist_list_menu = Menu(tauon, bag, 165, show_icons=True)
+	lightning_menu = Menu(tauon, bag, 165)
+	lsp_menu = Menu(tauon, bag, 145)
+	folder_tree_menu = Menu(tauon, bag, 175, show_icons=True)
+	folder_tree_stem_menu = Menu(tauon, bag, 190, show_icons=True)
+	overflow_menu = Menu(tauon, bag, 175)
+	spotify_playlist_menu = Menu(tauon, bag, 175)
+	radio_context_menu = Menu(tauon, bag, 175)
+	#chrome_menu = Menu(tauon, bag, 175)
 
 	# . Menu entry: A side panel view layout
 	lsp_menu.add(MenuItem(_("Playlists + Queue"), enable_playlist_list, disable_test=lsp_menu_test_playlist))
@@ -40584,9 +40590,9 @@ def main(holder: Holder):
 	rename_track_box = RenameTrackBox()
 	trans_edit_box = TransEditBox()
 	sub_lyrics_box = SubLyricsBox()
-	export_playlist_box = ExportPlaylistBox()
+	export_playlist_box = ExportPlaylistBox(bag)
 	rename_playlist_box = RenamePlaylistBox()
-	playlist_box = PlaylistBox()
+	playlist_box = PlaylistBox(bag, tauon)
 
 	tauon.toggle_repeat = toggle_repeat
 	tauon.menu_album_repeat = menu_album_repeat
@@ -40679,7 +40685,7 @@ def main(holder: Holder):
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		toggle_lyrics_panel_position, toggle_lyrics_panel_position_deco, show_test=lyrics_in_side_show))
 
-	picture_menu = Menu(tauon, 175)
+	picture_menu = Menu(tauon, bag, 175)
 	picture_menu.add(MenuItem(_("Open Image"), open_image, open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=open_image_disable_test))
 	# Next and previous pictures
 	picture_menu.add(MenuItem(_("Next Image"), cycle_offset, cycle_image_deco, pass_ref=True, pass_ref_deco=True))
@@ -40712,10 +40718,10 @@ def main(holder: Holder):
 	# playlist_menu.add('Paste', append_here, paste_deco)
 
 	# Create playlist tab menu
-	tab_menu = Menu(tauon, 160, show_icons=True)
+	tab_menu = Menu(tauon, bag, 160, show_icons=True)
 	tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
-	radio_tab_menu = Menu(tauon, 160, show_icons=True)
+	radio_tab_menu = Menu(tauon, bag, 160, show_icons=True)
 	radio_tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
 	tab_menu.add(MenuItem("Pin", pin_playlist_toggle, pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
@@ -40788,7 +40794,7 @@ def main(holder: Holder):
 		"CUE",
 	)
 
-	extra_tab_menu = Menu(tauon, 155, show_icons=True)
+	extra_tab_menu = Menu(tauon, bag, 155, show_icons=True)
 
 	extra_tab_menu.add(MenuItem(_("New Playlist"), new_playlist, icon=add_icon))
 
@@ -40915,7 +40921,7 @@ def main(holder: Holder):
 		show_test=spotify_show_test))
 
 	# Create track context menu
-	track_menu = Menu(tauon, 195, show_icons=True)
+	track_menu = Menu(tauon, bag, 195, show_icons=True)
 
 	track_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
 	track_menu.add(MenuItem(_("Track Info…"), activate_track_box, pass_ref=True, icon=info_icon))
@@ -41005,8 +41011,8 @@ def main(holder: Holder):
 	track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), intel_moji, pass_ref=True))
 	# track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
 
-	selection_menu = Menu(tauon, 200, show_icons=False)
-	folder_menu = Menu(tauon, 193, show_icons=True)
+	selection_menu = Menu(tauon, bag, 200, show_icons=False)
+	folder_menu = Menu(tauon, bag, 193, show_icons=True)
 
 	folder_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
 
@@ -41120,16 +41126,16 @@ def main(holder: Holder):
 
 
 	# Create top menu
-	x_menu: Menu = Menu(tauon, 190, show_icons=True)
-	view_menu = Menu(tauon, 170)
-	set_menu = Menu(tauon, 150)
-	set_menu_hidden = Menu(tauon, 100)
-	vis_menu = Menu(tauon, 140)
-	window_menu = Menu(tauon, 140)
-	field_menu = Menu(tauon, 140)
-	dl_menu = Menu(tauon, 90)
+	x_menu: Menu = Menu(tauon, bag, 190, show_icons=True)
+	view_menu = Menu(tauon, bag, 170)
+	set_menu = Menu(tauon, bag, 150)
+	set_menu_hidden = Menu(tauon, bag, 100)
+	vis_menu = Menu(tauon, bag, 140)
+	window_menu = Menu(tauon, bag, 140)
+	field_menu = Menu(tauon, bag, 140)
+	dl_menu = Menu(tauon, bag, 90)
 
-	window_menu = Menu(tauon, 140)
+	window_menu = Menu(tauon, bag, 140)
 	window_menu.add(MenuItem(_("Minimize"), do_minimize_button))
 	window_menu.add(MenuItem(_("Maximize"), do_maximize_button))
 	window_menu.add(MenuItem(_("Exit"), do_exit_button))
@@ -41253,7 +41259,7 @@ def main(holder: Holder):
 
 	#x_menu.add(_("Cast…"), cast_search, cast_deco)
 
-	mode_menu = Menu(tauon, 175)
+	mode_menu = Menu(tauon, bag, 175)
 
 	mode_menu.add(MenuItem(_("Tab"), set_mini_mode_D))
 	mode_menu.add(MenuItem(_("Mini"), set_mini_mode_A1))
@@ -41265,7 +41271,7 @@ def main(holder: Holder):
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), copy_bb_metadata))
 
-	extra_menu = Menu(tauon, 175, show_icons=True)
+	extra_menu = Menu(tauon, bag, 175, show_icons=True)
 	extra_menu.add(MenuItem(_("Random Track"), random_track, hint=";"))
 
 	radiorandom_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "radiorandom.png", True))
