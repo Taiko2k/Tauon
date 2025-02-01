@@ -1665,8 +1665,8 @@ class PlayerCtl:
 		self.regen_in_progress = False
 		self.notify_in_progress = False
 
-		self.radio_playlists = radio_playlists
-		self.radio_playlist_viewing = radio_playlist_viewing
+		self.radio_playlists = bag.radio_playlists
+		self.radio_playlist_viewing = bag.radio_playlist_viewing
 		self.tag_history = {}
 
 		self.commit: int | None = None
@@ -39255,6 +39255,9 @@ def main(holder: Holder):
 
 	reload_state = None
 
+	radio_playlist_viewing = 0
+	radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
+
 	prefs = Prefs(
 		user_directory=user_directory,
 		music_directory=music_directory,
@@ -39298,6 +39301,8 @@ def main(holder: Holder):
 		gen_codes=gen_codes,
 		master_library=master_library,
 		loaded_asset_dc=loaded_asset_dc,
+		radio_playlist_viewing=radio_playlist_viewing,
+		radio_playlists=radio_playlists,
 	)
 
 	gui = GuiVar(
@@ -39383,8 +39388,6 @@ def main(holder: Holder):
 
 	perf_timer.set()
 
-	radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
-
 	primary_stations: list[dict[str, str]] = []
 	station = {
 		"title": "SomaFM Groove Salad",
@@ -39422,8 +39425,6 @@ def main(holder: Holder):
 
 	for item in primary_stations:
 		radio_playlists[0]["items"].append(item)
-
-	radio_playlist_viewing = 0
 
 	state_path1 = user_directory / "state.p"
 	state_path2 = user_directory / "state.p.backup"
