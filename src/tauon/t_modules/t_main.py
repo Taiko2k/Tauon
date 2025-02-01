@@ -4777,7 +4777,7 @@ class GallClass:
 		if search_over.active:
 			while QuickThumbnail.queue:
 				img = QuickThumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, context=ssl_context)
+				response = urllib.request.urlopen(img.url, context=tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
@@ -5076,11 +5076,11 @@ class Tauon:
 		self.open_uri                            = open_uri
 		self.love                                = love
 		self.snap_mode:                     bool = bag.snap_mode
-		self.console                             = console
-		self.msys                                = msys
+		self.console                             = bag.console
+		self.msys                                = bag.msys
 		self.TrackClass                          = TrackClass
 		self.pl_gen                              = pl_gen
-		self.gall_ren                            = GallClass(album_mode_art_size)
+		self.gall_ren                            = GallClass(bag.album_mode_art_size)
 		self.QuickThumbnail                      = QuickThumbnail
 		self.thumb_tracks                        = ThumbTracks()
 		self.pl_to_id                            = pl_to_id
@@ -5106,7 +5106,7 @@ class Tauon:
 		self.quick_close = False
 
 		self.copied_track = None
-		self.macos = macos
+		self.macos = bag.macos
 		self.aud: CDLL | None = None
 
 		self.recorded_songs = []
@@ -5130,7 +5130,7 @@ class Tauon:
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
-		self.ssl_context = ssl_context
+		self.tls_context = bag.tls_context
 
 	def start_remote(self) -> None:
 
@@ -7465,7 +7465,7 @@ class AlbumArt:
 					elif track.file_ext == "JELY":
 						source_image = jellyfin.get_cover(track)
 					else:
-						response = urllib.request.urlopen(get_network_thumbnail_url(track), context=ssl_context)
+						response = urllib.request.urlopen(get_network_thumbnail_url(track), context=tls_context)
 						source_image = io.BytesIO(response.read())
 					if source_image:
 						with Path(cached_path).open("wb") as file:
@@ -7568,7 +7568,7 @@ class AlbumArt:
 
 			artlink = r.json()["artistbackground"][0]["url"]
 
-			response = urllib.request.urlopen(artlink, context=ssl_context)
+			response = urllib.request.urlopen(artlink, context=tls_context)
 			info = response.info()
 
 			assert info.get_content_maintype() == "image"
@@ -13304,21 +13304,18 @@ class Over:
 			return True if prefs.end_setting == "repeat" else False
 		prefs.end_setting = "repeat"
 
-	def small_preset(self):
-
+	def small_preset(self) -> None:
 		prefs.playlist_row_height = round(22 * prefs.ui_scale)
 		prefs.playlist_font_size = 15
 		prefs.tracklist_y_text_offset = 0
 		gui.update_layout()
 
-	def large_preset(self):
-
+	def large_preset(self) -> None:
 		prefs.playlist_row_height = round(27 * prefs.ui_scale)
 		prefs.playlist_font_size = 15
 		gui.update_layout()
 
-	def slide_control(self, x, y, label, units, value, lower_limit, upper_limit, step=1, callback=None, width=58):
-
+	def slide_control(self, x: int, y: int, label: str, units: str, value: int, lower_limit: int, upper_limit: int, step: int = 1, callback=None, width: int = 58) -> int:
 		width = round(width * gui.scale)
 
 		if label is not None:
@@ -18322,7 +18319,7 @@ class RadioBox:
 		req = urllib.request.Request(uri)
 		req.add_header("User-Agent", t_agent)
 		req.add_header("Content-Type", "application/json")
-		response = urllib.request.urlopen(req, context=ssl_context)
+		response = urllib.request.urlopen(req, context=tls_context)
 		data = response.read()
 		data = json.loads(data.decode())
 		self.parse_data(data)
@@ -23048,10 +23045,12 @@ class Directories:
 @dataclass
 class Bag:
 	"""Holder object for all configs"""
+	console:                Console
 	dirs:                   Directories
 	prefs:                  Prefs
 	formats:                Formats
 	renderer:               renderer
+	tls_context:            SSLContext
 	sdl_syswminfo:          SDL_SysWMinfo
 	macos:                  bool
 	msys:                   bool
@@ -23061,6 +23060,7 @@ class Bag:
 	desktop:                str | None
 	system:                 str
 	launch_prefix:          str
+	album_mode_art_size:    int
 	xdpi:                   int
 	master_count:           int
 	playing_in_queue:       int
@@ -23104,16 +23104,16 @@ def get_cert_path(holder: Holder) -> str:
 	# Running as script
 	return certifi.where()
 
-def setup_ssl(holder: Holder) -> ssl.SSLContext:
-	# Set the SSL certificate path environment variable
+def setup_tls(holder: Holder) -> ssl.SSLContext:
+	# Set the TLS certificate path environment variable
 	cert_path = get_cert_path(holder)
 	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ['SSL_CERT_FILE'] = cert_path
 	os.environ['REQUESTS_CA_BUNDLE'] = cert_path
 
 	# Create default TLS context
-	ssl_context = ssl.create_default_context(cafile=get_cert_path(holder))
-	return ssl_context
+	tls_context = ssl.create_default_context(cafile=get_cert_path(holder))
+	return tls_context
 
 def whicher(target: str, flatpak_mode: bool) -> bool | str | None:
 	"""Detect and launch programs outside of flatpak sandbox"""
@@ -27331,7 +27331,7 @@ def download_art1(tr):
 				artlink = r.json()["albums"][album_id]["albumcover"][0]["url"]
 				id = r.json()["albums"][album_id]["albumcover"][0]["id"]
 
-				response = urllib.request.urlopen(artlink, context=ssl_context)
+				response = urllib.request.urlopen(artlink, context=tls_context)
 				info = response.info()
 
 				t = io.BytesIO()
@@ -37229,7 +37229,7 @@ def save_discogs_artist_thumb(artist, filepath):
 	else:
 		url = images[0]["uri"]
 
-	response = urllib.request.urlopen(url, context=ssl_context)
+	response = urllib.request.urlopen(url, context=tls_context)
 	im = Image.open(response)
 
 	width, height = im.size
@@ -37260,7 +37260,7 @@ def save_fanart_artist_thumb(mbid, filepath, preview=False):
 	if preview:
 		thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
-	response = urllib.request.urlopen(thumblink, timeout=10, context=ssl_context)
+	response = urllib.request.urlopen(thumblink, timeout=10, context=tls_context)
 	info = response.info()
 
 	t = io.BytesIO()
@@ -37401,7 +37401,7 @@ def dismiss_dl():
 
 def download_img(link: str, target_folder: str, track: TrackClass) -> None:
 	try:
-		response = urllib.request.urlopen(link, context=ssl_context)
+		response = urllib.request.urlopen(link, context=tls_context)
 		info = response.info()
 		if info.get_content_maintype() == "image":
 			if info.get_content_subtype() == "jpeg":
@@ -38643,7 +38643,7 @@ def main(holder: Holder):
 	if system == "Linux" and not macos and not msys:
 		from tauon.t_modules.t_dbus import Gnome
 
-	ssl_context = setup_ssl(holder)
+	tls_context = setup_tls(holder)
 
 	# Set data folders (portable mode)
 	config_directory = user_directory
@@ -39279,6 +39279,7 @@ def main(holder: Holder):
 	)
 
 	bag = Bag(
+		console=console,
 		dirs=dirs,
 		prefs=prefs,
 		formats=formats,
@@ -39300,6 +39301,8 @@ def main(holder: Holder):
 		playlist_playing=playlist_playing,
 		playlist_view_position=playlist_view_position,
 		selected_in_playlist=selected_in_playlist,
+		album_mode_art_size=album_mode_art_size,
+		tls_context=tls_context,
 		track_queue=track_queue,
 		volume=volume,
 		multi_playlist=multi_playlist,
