@@ -5045,56 +5045,56 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, holder: Holder):
+	def __init__(self, holder: Holder, bag: Bag, strings: Strings, lfm_scrobbler: LastScrob, star_store: StarStore, gui: GuiVar):
 
-		self.t_title = holder.t_title
-		self.t_version = holder.t_version
-		self.t_agent = holder.t_agent
-		self.t_id = holder.t_id
-		self.desktop: str | None = desktop
-		self.device = socket.gethostname()
+		self.t_title             = holder.t_title
+		self.t_version           = holder.t_version
+		self.t_agent             = holder.t_agent
+		self.t_id                = holder.t_id
+		self.desktop: str | None = bag.desktop
+		self.device              = socket.gethostname()
 
 		#TODO(Martin) : Fix this by moving the class to root of the module
 		self.cachement: player4.Cachement | None = None
-		self.dummy_event: SDL_Event = SDL_Event()
-		self.translate = _
-		self.strings: Strings = strings
-		self.pctl:  PlayerCtl = pctl
-		self.lfm_scrobbler: LastScrob = lfm_scrobbler
-		self.star_store:    StarStore = star_store
-		self.gui:  GuiVar = gui
-		self.prefs: Prefs = prefs
-		self.cache_directory:          Path = cache_directory
-		self.user_directory:    Path | None = user_directory
-		self.music_directory:   Path | None = music_directory
-		self.locale_directory:         Path = locale_directory
-		self.worker_save_state:        bool = False
-		self.launch_prefix:             str = launch_prefix
-		self.whicher = whicher
-		self.load_orders: list[LoadClass] = load_orders
-		self.switch_playlist = None
-		self.open_uri = open_uri
-		self.love = love
-		self.snap_mode = snap_mode
-		self.console = console
-		self.msys = msys
-		self.TrackClass = TrackClass
-		self.pl_gen = pl_gen
-		self.gall_ren = GallClass(album_mode_art_size)
-		self.QuickThumbnail = QuickThumbnail
-		self.thumb_tracks = ThumbTracks()
-		self.pl_to_id = pl_to_id
-		self.id_to_pl = id_to_pl
-		self.chunker = Chunker()
-		self.thread_manager: ThreadManager = ThreadManager()
-		self.stream_proxy = None
-		self.stream_proxy = StreamEnc(self)
-		self.level_train: list[list[float]] = []
-		self.radio_server = None
-		self.mod_formats = bag.formats.MOD_Formats
-		self.listen_alongers = {}
-		self.encode_folder_name = encode_folder_name
-		self.encode_track_name = encode_track_name
+		self.dummy_event:              SDL_Event = SDL_Event()
+		self.translate                           = _
+		self.strings:                    Strings = strings
+		self.pctl:                     PlayerCtl = PlayerCtl(bag)
+		self.lfm_scrobbler:            LastScrob = lfm_scrobbler
+		self.star_store:               StarStore = star_store
+		self.gui:                         GuiVar = gui
+		self.prefs:                        Prefs = bag.prefs
+		self.cache_directory:               Path = bag.dirs.cache_directory
+		self.user_directory:         Path | None = bag.dirs.user_directory
+		self.music_directory:        Path | None = bag.dirs.music_directory
+		self.locale_directory:              Path = bag.dirs.locale_directory
+		self.worker_save_state:             bool = False
+		self.launch_prefix:                  str = bag.launch_prefix
+		self.whicher                             = whicher
+		self.load_orders:        list[LoadClass] = bag.load_orders
+		self.switch_playlist                     = None
+		self.open_uri                            = open_uri
+		self.love                                = love
+		self.snap_mode:                     bool = bag.snap_mode
+		self.console                             = console
+		self.msys                                = msys
+		self.TrackClass                          = TrackClass
+		self.pl_gen                              = pl_gen
+		self.gall_ren                            = GallClass(album_mode_art_size)
+		self.QuickThumbnail                      = QuickThumbnail
+		self.thumb_tracks                        = ThumbTracks()
+		self.pl_to_id                            = pl_to_id
+		self.id_to_pl                            = id_to_pl
+		self.chunker                             = Chunker()
+		self.thread_manager:       ThreadManager = ThreadManager()
+		self.stream_proxy                        = None
+		self.stream_proxy                        = StreamEnc(self)
+		self.level_train:      list[list[float]] = []
+		self.radio_server                        = None
+		self.mod_formats                         = bag.formats.MOD_Formats
+		self.listen_alongers                     = {}
+		self.encode_folder_name                  = encode_folder_name
+		self.encode_track_name                   = encode_track_name
 
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
@@ -23057,7 +23057,10 @@ class Bag:
 	msys:                   bool
 	phone:                  bool
 	pump:                   bool
+	snap_mode:              bool
+	desktop:                str | None
 	system:                 str
+	launch_prefix:          str
 	xdpi:                   int
 	master_count:           int
 	playing_in_queue:       int
@@ -23070,6 +23073,7 @@ class Bag:
 	track_queue:            list[int]
 	logical_size:           list[int] # X Y
 	window_size:            list[int] # X Y
+	load_orders:            list[LoadClass]
 	multi_playlist:         list[TauonPlaylist]
 	radio_playlists:        list[RadioPlaylist]
 	p_force_queue:          list[TauonQueueItem]
@@ -39237,7 +39241,7 @@ def main(holder: Holder):
 
 	master_count = 0
 
-	load_orders = []
+	load_orders: list[LoadClass] = []
 
 	volume = 75
 
@@ -39286,6 +39290,10 @@ def main(holder: Holder):
 		msys=msys,
 		phone=phone,
 		xdpi=xdpi,
+		desktop=desktop,
+		launch_prefix=launch_prefix,
+		load_orders=load_orders,
+		snap_mode=snap_mode,
 		master_count=master_count,
 		playlist_active=playlist_active,
 		playing_in_queue=playing_in_queue,
@@ -40011,10 +40019,6 @@ def main(holder: Holder):
 	except Exception:
 		logging.exception("Failed to load libopenmpt!")
 
-
-
-
-
 	gme = None
 	p = None
 	try:
@@ -40031,11 +40035,8 @@ def main(holder: Holder):
 		gme.gme_track_info.restype = ctypes.c_char_p
 		gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
 		gme.gme_open_file.restype = ctypes.c_char_p
-
 	except Exception:
 		logging.exception("Cannot find libgme")
-	pctl = PlayerCtl(bag)
-	lb = ListenBrainz(prefs)
 
 	if system == "Linux" and not macos and not msys:
 		try:
@@ -40052,9 +40053,7 @@ def main(holder: Holder):
 				g_open_encode_out,
 				None,
 			)
-
 			de_notify_support = True
-
 		except Exception:
 			logging.exception("Failed init notifications")
 
@@ -40077,7 +40076,15 @@ def main(holder: Holder):
 
 	stats_gen = GStats()
 
-	tauon = Tauon(holder)
+	tauon = Tauon(
+		holder=holder,
+		bag=bag,
+		strings=strings,
+		lfm_scrobbler=lfm_scrobbler,
+		star_store=star_store,
+		gui=gui)
+	pctl = tauon.pctl
+	lb = ListenBrainz(prefs)
 	deco = Deco(tauon)
 	deco.get_themes = get_themes
 	deco.renderer = renderer
