@@ -912,7 +912,7 @@ class StarStore:
 		tr = self.pctl.get_track(index)
 		if tr.file_ext == "SUB":
 			self.db[key][2] = math.ceil(value / 2) * 2
-			shooter(subsonic.set_rating, (tr, value))
+			shooter(self.tauon.subsonic.set_rating, (tr, value))
 
 		if self.bag.prefs.write_ratings and write:
 			logging.info("Writing rating..")
@@ -1016,8 +1016,9 @@ class StarStore:
 
 class AlbumStarStore:
 
-	def __init__(self) -> None:
+	def __init__(self, subsonic: SubsonicService) -> None:
 		self.db = {}
+		self.subsonic: SubsonicService = subsonic
 
 	def get_key(self, track_object: TrackClass) -> str:
 		artist = track_object.album_artist
@@ -1032,7 +1033,7 @@ class AlbumStarStore:
 		self.db[self.get_key(track_object)] = rating
 		if track_object.file_ext == "SUB":
 			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
-			subsonic.set_album_rating(track_object, rating)
+			self.subsonic.set_album_rating(track_object, rating)
 
 	def set_rating_artist_title(self, artist: str, album: str, rating):
 		self.db[artist + ":" + album] = rating
@@ -1837,19 +1838,19 @@ class PlayerCtl:
 		if track_object.file_ext == "TIDAL":
 			return self.tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
-			return plex.resolve_stream(track_object.url_key), None
+			return self.tauon.plex.resolve_stream(track_object.url_key), None
 
 		if track_object.file_ext == "JELY":
-			return jellyfin.resolve_stream(track_object.url_key)
+			return self.tauon.jellyfin.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "KOEL":
-			return koel.resolve_stream(track_object.url_key)
+			return self.tauon.koel.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "SUB":
-			return subsonic.resolve_stream(track_object.url_key)
+			return self.tauon.subsonic.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "TAU":
-			return tau.resolve_stream(track_object.url_key), None
+			return self.tauon.tau.resolve_stream(track_object.url_key), None
 
 		return None, None
 
@@ -2502,7 +2503,7 @@ class PlayerCtl:
 	def seek_time(self, new: float) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and self.tauon.spot_ctl.coasting):
 
 			if new > self.playing_length - 0.5:
 				self.advance()
@@ -2522,7 +2523,7 @@ class PlayerCtl:
 
 	def play(self) -> None:
 
-		if tauon.spot_ctl.playing:
+		if self.tauon.spot_ctl.playing:
 			if self.playing_state == 2:
 				self.play_pause()
 			return
@@ -3156,7 +3157,7 @@ class PlayerCtl:
 				elif self.prefs.end_setting in ("advance", "cycle"):
 					# If at end playlist and not cycle mode, stop playback
 					if self.active_playlist_playing == len(
-							self.multi_playlist) - 1 and prefs.end_setting != "cycle":
+							self.multi_playlist) - 1 and self.prefs.end_setting != "cycle":
 						self.playing_state = 0
 						self.playerCommand = "runstop"
 						self.playerCommandReady = True
@@ -39797,7 +39798,6 @@ def main(holder: Holder):
 	)
 
 	# Functions for reading and setting play counts
-	album_star_store = AlbumStarStore()
 	inp = Input(gui=gui)
 	keymaps = KeyMap(bag=bag)
 
@@ -40517,6 +40517,7 @@ def main(holder: Holder):
 	deco.get_themes = get_themes
 	deco.renderer = renderer
 
+	album_star_store = AlbumStarStore(subsonic=tauon.subsonic)
 	star_path1 = user_directory / "star.p"
 	star_path2 = user_directory / "star.p.backup"
 	star_size1 = 0
