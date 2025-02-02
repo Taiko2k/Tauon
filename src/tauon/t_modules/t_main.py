@@ -23586,7 +23586,6 @@ class Bag:
 	master_library:         dict[int, TrackClass]
 	loaded_asset_dc:        dict[str, WhiteModImageAsset | LoadImageAsset]
 
-
 @dataclass
 class Formats:
 	"""Contains:
@@ -23602,7 +23601,6 @@ class Formats:
 	DA_Formats:      set[str]
 	Archive_Formats: set[str]
 
-# TLS setup (needed for frozen installs)
 def get_cert_path(holder: Holder) -> str:
 	if holder.pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, 'certifi', 'cacert.pem')
@@ -23610,6 +23608,7 @@ def get_cert_path(holder: Holder) -> str:
 	return certifi.where()
 
 def setup_tls(holder: Holder) -> ssl.SSLContext:
+	"""TLS setup (needed for frozen installs)"""
 	# Set the TLS certificate path environment variable
 	cert_path = get_cert_path(holder)
 	logging.debug(f"Found TLS cert file at: {cert_path}")
@@ -23678,14 +23677,14 @@ def pl_gen(
 	#TODO(Martin): Change to pctl.notify_change()
 	notify_change()
 
-#	return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
+	#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
 	return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False)
 
 def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, album_stage: int = 0) -> TauonQueueItem:
 	# type; 0 is track, 1 is album
 	auto_stop = False
 
-#	return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
 	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
 
 def open_uri(uri:str) -> None:
@@ -25646,11 +25645,11 @@ def get_network_thumbnail_url(track_object: TrackClass):
 		url = plex.resolve_thumbnail(track_object.art_url_key)
 		assert url is not None
 		return url
-#	if track_object.file_ext == "JELY":
-#		url = jellyfin.resolve_thumbnail(track_object.art_url_key)
-#		assert url is not None
-#		assert url != ""
-#		return url
+	#if track_object.file_ext == "JELY":
+	#	url = jellyfin.resolve_thumbnail(track_object.art_url_key)
+	#	assert url is not None
+	#	assert url != ""
+	#	return url
 	if track_object.file_ext == "KOEL":
 		url = track_object.art_url_key
 		assert url
@@ -26016,9 +26015,6 @@ def bass_player_thread(player):
 		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
 		raise
 
-# ---------------------------------------------------------------------------------------------
-# ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
-
 def coll_point(l, r):
 	# rect point collision detection
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
@@ -26343,7 +26339,6 @@ def trunc_line(line: str, font: str, px: int, dots: bool = True) -> str:
 
 	return line
 
-
 def right_trunc(line: str, font: str, px: int, dots: bool = True) -> str:
 	if ddt.get_text_w(line, font) < px + 10:
 		return line
@@ -26363,7 +26358,6 @@ def right_trunc(line: str, font: str, px: int, dots: bool = True) -> str:
 	# if trunk and dots:
 	#	 line = line.rstrip(" ") + gui.trunk_end
 	return line
-
 
 # def trunc_line2(line, font, px):
 #	 trunk = False
@@ -26820,7 +26814,6 @@ def load_xspf(path: str) -> None:
 
 	# tauon.log("Finished importing XSPF")
 
-
 def ex_tool_tip(x, y, text1_width, text, font):
 	text2_width = ddt.get_text_w(text, font)
 	if text2_width == text1_width:
@@ -26843,7 +26836,6 @@ def close_all_menus():
 		menu.active = False
 	Menu.active = False
 
-
 def menu_standard_or_grey(bool: bool):
 	if bool:
 		line_colour = colours.menu_text
@@ -26852,14 +26844,12 @@ def menu_standard_or_grey(bool: bool):
 
 	return [line_colour, colours.menu_background, None]
 
-
 def enable_artist_list():
 	if prefs.left_panel_mode != "artist list":
 		gui.last_left_panel_mode = prefs.left_panel_mode
 	prefs.left_panel_mode = "artist list"
 	gui.lsp = True
 	gui.update_layout()
-
 
 def enable_playlist_list():
 	if prefs.left_panel_mode != "playlist":
@@ -26868,14 +26858,12 @@ def enable_playlist_list():
 	gui.lsp = True
 	gui.update_layout()
 
-
 def enable_queue_panel():
 	if prefs.left_panel_mode != "queue":
 		gui.last_left_panel_mode = prefs.left_panel_mode
 	prefs.left_panel_mode = "queue"
 	gui.lsp = True
 	gui.update_layout()
-
 
 def enable_folder_list():
 	if prefs.left_panel_mode != "folder view":
@@ -26884,30 +26872,25 @@ def enable_folder_list():
 	gui.lsp = True
 	gui.update_layout()
 
-
 def lsp_menu_test_queue():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "queue"
-
 
 def lsp_menu_test_playlist():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "playlist"
 
-
 def lsp_menu_test_tree():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "folder view"
 
-
 def lsp_menu_test_artist():
 	if not gui.lsp:
 		return False
 	return prefs.left_panel_mode == "artist list"
-
 
 def toggle_left_last():
 	gui.lsp = True
@@ -27608,7 +27591,7 @@ def paste_lyrics(track_object: TrackClass):
 
 #def chord_lyrics_paste_show_test(_) -> bool:
 #	return gui.combo_mode and prefs.guitar_chords
-# showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
+#showcase_menu.add(MenuItem(_("Search GuitarParty"), search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 
 #guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl)
 #showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
@@ -32780,7 +32763,6 @@ def spec2_def() -> None:
 	prefs.spec2_colour_setting = "custom"
 	gui.update_layout()
 
-
 def sa_remove(h: int) -> None:
 	if len(gui.pl_st) > 1:
 		del gui.pl_st[h]
@@ -34503,18 +34485,17 @@ def view_tracks() -> None:
 		toggle_side_panel()
 
 # def view_standard_full():
-#     # if gui.show_playlist is False:
-#     #     gui.show_playlist = True
-#
-#     if album_mode:
-#         toggle_album_mode()
-#     if gui.combo_mode:
-#         toggle_combo_view(off=True)
-#     if not gui.rsp:
-#         toggle_side_panel()
-#     global update_layout
-#     update_layout = True
-#     gui.rspw = window_size[0]
+# 	# if gui.show_playlist is False:
+# 	# 	gui.show_playlist = True
+# 	if album_mode:
+# 		toggle_album_mode()
+# 	if gui.combo_mode:
+# 		toggle_combo_view(off=True)
+# 	if not gui.rsp:
+# 		toggle_side_panel()
+# 	global update_layout
+# 	update_layout = True
+# 	gui.rspw = window_size[0]
 
 def view_standard_meta() -> None:
 	# if gui.show_playlist is False:
@@ -34550,17 +34531,17 @@ def standard_view_deco():
 	return [line_colour, colours.menu_background, None]
 
 # def gallery_only_view():
-#     if gui.show_playlist is False:
-#         return
-#     if not album_mode:
-#         toggle_album_mode()
-#     gui.show_playlist = False
-#     global album_playlist_width
-#     global update_layout
-#     update_layout = True
-#     gui.rspw = window_size[0]
-#     album_playlist_width = gui.playlist_width
-#     #gui.playlist_width = -19
+# 	if gui.show_playlist is False:
+# 		return
+# 	if not album_mode:
+# 		toggle_album_mode()
+# 	gui.show_playlist = False
+# 	global album_playlist_width
+# 	global update_layout
+# 	update_layout = True
+# 	gui.rspw = window_size[0]
+# 	album_playlist_width = gui.playlist_width
+# 	#gui.playlist_width = -19
 
 def toggle_library_mode() -> None:
 	if gui.set_mode:
@@ -36676,7 +36657,6 @@ def scale125(mode: int = 0) -> bool | None:
 		show_message(_("Change will be applied on restart."))
 	return None
 
-
 def toggle_use_tray(mode: int = 0) -> bool | None:
 	if mode == 1:
 		return prefs.use_tray
@@ -37140,8 +37120,6 @@ def update_playlist_call():
 	gui.update + 2
 	gui.pl_update = 2
 
-# ----------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------
 def pl_is_mut(pl: int) -> bool:
 	id = pl_to_id(pl)
 	if id is None:
@@ -37795,16 +37773,13 @@ def queue_pause_deco():
 	return [colours.menu_text, colours.menu_background, _("Pause Queue")]
 
 # def finish_current_deco():
-#
-#     colour = colours.menu_text
-#     line = "Finish Playing Album"
-#
-#     if pctl.playing_object() is None:
-#         colour = colours.menu_text_disabled
-#     if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
-#         colour = colours.menu_text_disabled
-#
-#     return [colour, colours.menu_background, line]
+# 	colour = colours.menu_text
+# 	line = "Finish Playing Album"
+# 	if pctl.playing_object() is None:
+# 		colour = colours.menu_text_disabled
+# 	if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
+# 		colour = colours.menu_text_disabled
+# 	return [colour, colours.menu_background, line]
 
 def art_metadata_overlay(right, bottom, showc):
 	if not showc:
@@ -38007,9 +37982,6 @@ def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
 		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
 		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
 		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
-
-# Set SDL window drag areas
-# if system != 'windows':
 
 def hit_callback(win, point, data):
 	x = point.contents.x / logical_size[0] * window_size[0]
@@ -38605,16 +38577,16 @@ def save_state() -> None:
 
 	tauonplaylist_jar = []
 	tauonqueueitem_jar = []
-#	if db_version > 68:
+	#if db_version > 68:
 	for v in pctl.multi_playlist:
-#		logging.warning(f"Playlist: {v}")
+	#	logging.warning(f"Playlist: {v}")
 		tauonplaylist_jar.append(v.__dict__)
 	for v in pctl.force_queue:
-#		logging.warning(f"Queue: {v}")
+	#	logging.warning(f"Queue: {v}")
 		tauonqueueitem_jar.append(v.__dict__)
-#	else:
-#		tauonplaylist_jar = pctl.multi_playlist
-#		tauonqueueitem_jar = pctl.track_queue
+	#else:
+	#	tauonplaylist_jar = pctl.multi_playlist
+	#	tauonqueueitem_jar = pctl.track_queue
 
 	trackclass_jar = []
 	for v in pctl.master_library.values():
