@@ -858,11 +858,14 @@ class GuiVar:
 		self.center_blur_pixel = (0, 0, 0)
 
 class StarStore:
-	def __init__(self) -> None:
+	def __init__(self, bag: Bag, tauon: Tauon) -> None:
+		self.bag = bag
+		self.tauon = tauon
+		self.pctl = self.tauon.pctl
 		self.db = {}
 
 	def key(self, track_id: int) -> tuple[str, str, str]:
-		track_object = pctl.master_library[track_id]
+		track_object = self.pctl.master_library[track_id]
 		return track_object.artist, track_object.title, track_object.filename
 
 	def object_key(self, track: TrackClass) -> tuple[str, str, str]:
@@ -870,7 +873,7 @@ class StarStore:
 
 	def add(self, index: int, value):
 		"""Increments the play time"""
-		track_object = pctl.master_library[index]
+		track_object = self.pctl.master_library[index]
 
 		if after_scan:
 			if track_object in after_scan:
@@ -906,12 +909,12 @@ class StarStore:
 			self.db[key] = self.new_object()
 		self.db[key][2] = value
 
-		tr = pctl.get_track(index)
+		tr = self.pctl.get_track(index)
 		if tr.file_ext == "SUB":
 			self.db[key][2] = math.ceil(value / 2) * 2
 			shooter(subsonic.set_rating, (tr, value))
 
-		if prefs.write_ratings and write:
+		if self.bag.prefs.write_ratings and write:
 			logging.info("Writing rating..")
 			assert value <= 10
 			assert value >= 0
@@ -1055,7 +1058,8 @@ class Fonts:
 class Input:
 	"""Used to keep track of button states (or should be)"""
 
-	def __init__(self) -> None:
+	def __init__(self, gui: GuiVar) -> None:
+		self.gui = gui
 		self.mouse_click = False
 		# self.right_click = False
 		self.level_2_enter = False
@@ -1067,23 +1071,23 @@ class Input:
 
 	def m_key_play(self) -> None:
 		self.media_key = "Play"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_pause(self) -> None:
 		self.media_key = "Pause"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_stop(self) -> None:
 		self.media_key = "Stop"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_next(self) -> None:
 		self.media_key = "Next"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_previous(self) -> None:
 		self.media_key = "Previous"
-		gui.update += 1
+		self.gui.update += 1
 
 class KeyMap:
 
@@ -4364,6 +4368,7 @@ class Menu:
 	def add_to_sub(self, sub_menu_index: int, menu_item: MenuItem) -> None:
 		if menu_item.render_func is None:
 			menu_item.render_func = self.deco
+		logging.debug(sub_menu_index)
 		self.subs[sub_menu_index].append(menu_item)
 
 	def test_item_active(self, item):
@@ -5045,7 +5050,7 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, holder: Holder, bag: Bag, strings: Strings, lfm_scrobbler: LastScrob, star_store: StarStore, gui: GuiVar):
+	def __init__(self, holder: Holder, bag: Bag, strings: Strings, lfm_scrobbler: LastScrob, gui: GuiVar):
 
 		self.t_title             = holder.t_title
 		self.t_version           = holder.t_version
@@ -5061,7 +5066,7 @@ class Tauon:
 		self.strings:                    Strings = strings
 		self.pctl:                     PlayerCtl = PlayerCtl(bag)
 		self.lfm_scrobbler:            LastScrob = lfm_scrobbler
-		self.star_store:               StarStore = star_store
+		self.star_store:               StarStore = StarStore(bag, self)
 		self.gui:                         GuiVar = gui
 		self.prefs:                        Prefs = bag.prefs
 		self.cache_directory:               Path = bag.dirs.cache_directory
@@ -39336,10 +39341,9 @@ def main(holder: Holder):
 	)
 
 	# Functions for reading and setting play counts
-	star_store = StarStore()
 	album_star_store = AlbumStarStore()
 	fonts = Fonts()
-	inp = Input()
+	inp = Input(gui=gui)
 	keymaps = KeyMap(bag=bag)
 
 	colours = ColoursClass()
@@ -39362,46 +39366,6 @@ def main(holder: Holder):
 	gbc.disable()
 	ggc = 2
 
-	star_path1 = user_directory / "star.p"
-	star_path2 = user_directory / "star.p.backup"
-	star_size1 = 0
-	star_size2 = 0
-	to_load = star_path1
-	if star_path1.is_file():
-		star_size1 = star_path1.stat().st_size
-	if star_path2.is_file():
-		star_size2 = star_path2.stat().st_size
-	if star_size2 > star_size1:
-		logging.warning("Loading backup star.p as it was bigger than regular file!")
-		to_load = star_path2
-	if star_size1 == 0 and star_size2 == 0:
-		logging.warning("Star database file is missing, first run? Will create one anew!")
-	else:
-		try:
-			with to_load.open("rb") as file:
-				star_store.db = pickle.load(file)
-		except Exception:
-			logging.exception("Unknown error loading star.p file")
-
-
-	album_star_path = user_directory / "album-star.p"
-	if album_star_path.is_file():
-		try:
-			with album_star_path.open("rb") as file:
-				album_star_store.db = pickle.load(file)
-		except Exception:
-			logging.exception("Unknown error loading album-star.p file")
-	else:
-		logging.warning("Album star database file is missing, first run? Will create one anew!")
-
-	if (user_directory / "lyrics_substitutions.json").is_file():
-		try:
-			with (user_directory / "lyrics_substitutions.json").open() as f:
-				prefs.lyrics_subs = json.load(f)
-		except FileNotFoundError:
-			logging.error("No existing lyrics_substitutions.json file")
-		except Exception:
-			logging.exception("Unknown error loading lyrics_substitutions.json")
 
 
 
@@ -40092,13 +40056,54 @@ def main(holder: Holder):
 		bag=bag,
 		strings=strings,
 		lfm_scrobbler=lfm_scrobbler,
-		star_store=star_store,
 		gui=gui)
+	star_store=tauon.star_store
 	pctl = tauon.pctl
 	lb = ListenBrainz(prefs)
 	deco = Deco(tauon)
 	deco.get_themes = get_themes
 	deco.renderer = renderer
+
+	star_path1 = user_directory / "star.p"
+	star_path2 = user_directory / "star.p.backup"
+	star_size1 = 0
+	star_size2 = 0
+	to_load = star_path1
+	if star_path1.is_file():
+		star_size1 = star_path1.stat().st_size
+	if star_path2.is_file():
+		star_size2 = star_path2.stat().st_size
+	if star_size2 > star_size1:
+		logging.warning("Loading backup star.p as it was bigger than regular file!")
+		to_load = star_path2
+	if star_size1 == 0 and star_size2 == 0:
+		logging.warning("Star database file is missing, first run? Will create one anew!")
+	else:
+		try:
+			with to_load.open("rb") as file:
+				star_store.db = pickle.load(file)
+		except Exception:
+			logging.exception("Unknown error loading star.p file")
+
+
+	album_star_path = user_directory / "album-star.p"
+	if album_star_path.is_file():
+		try:
+			with album_star_path.open("rb") as file:
+				album_star_store.db = pickle.load(file)
+		except Exception:
+			logging.exception("Unknown error loading album-star.p file")
+	else:
+		logging.warning("Album star database file is missing, first run? Will create one anew!")
+
+	if (user_directory / "lyrics_substitutions.json").is_file():
+		try:
+			with (user_directory / "lyrics_substitutions.json").open() as f:
+				prefs.lyrics_subs = json.load(f)
+		except FileNotFoundError:
+			logging.error("No existing lyrics_substitutions.json file")
+		except Exception:
+			logging.exception("Unknown error loading lyrics_substitutions.json")
 
 	if prefs.backend != 4:
 		prefs.backend = 4
@@ -40604,6 +40609,8 @@ def main(holder: Holder):
 	repeat_menu.add(MenuItem(_("Repeat Track"), menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), menu_album_repeat))
 
+	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon))
+	artist_list_menu.add_sub(_("View..."), 140)
 	artist_list_menu.add_to_sub(0, MenuItem(_("Sort Alphabetically"), aa_sort_alpha))
 	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Popularity"), aa_sort_popular))
 	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Playtime"), aa_sort_play))
@@ -41463,8 +41470,6 @@ def main(holder: Holder):
 	tauon.radiobox = radiobox
 	tauon.dummy_track = radiobox.dummy_track
 
-	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon))
-	artist_list_menu.add_sub(_("View..."), 140)
 	artist_list_box = ArtistList()
 	tree_view_box = TreeView()
 
