@@ -38546,8 +38546,6 @@ def main(holder: Holder):
 		font_folder = str(install_directory / "fonts")
 		if os.path.isdir(font_folder):
 			logging.info(f"Fonts directory:           {font_folder}")
-			import ctypes
-
 			fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
 			fc.FcConfigReference.restype = ctypes.c_void_p
 			fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
