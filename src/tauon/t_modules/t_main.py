@@ -4264,9 +4264,9 @@ class MenuItem:
 		self.sub_menu_width = sub_menu_width
 
 class ThreadManager:
-
-	def __init__(self):
-
+	def __init__(self, bag: Bag, tauon: Tauon):
+		self.prefs = bag.prefs
+		self.tauon = tauon
 		self.worker1:  Thread | None = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
 		self.worker2:  Thread | None = None  # Art bg, search
 		self.worker3:  Thread | None = None  # Gallery rendering
@@ -4284,11 +4284,11 @@ class ThreadManager:
 
 	def ready_playback(self) -> None:
 		if self.playback is None or not self.playback.is_alive():
-			if prefs.backend == 4:
-				self.playback = threading.Thread(target=player4, args=[tauon])
-			# elif prefs.backend == 2:
-			#     from tauon.t_modules.t_gstreamer import player3
-			#     self.playback = threading.Thread(target=player3, args=[tauon])
+			if self.prefs.backend == 4:
+				self.playback = threading.Thread(target=player4, args=[self.tauon])
+			# elif self.prefs.backend == 2:
+			# 	from tauon.t_modules.t_gstreamer import player3
+			# 	self.playback = threading.Thread(target=player3, args=[tauon])
 			self.playback.daemon = True
 			self.playback.start()
 
@@ -5060,46 +5060,47 @@ class Tauon:
 		self.device              = socket.gethostname()
 
 		#TODO(Martin) : Fix this by moving the class to root of the module
-		self.cachement: player4.Cachement | None = None
-		self.dummy_event:              SDL_Event = SDL_Event()
-		self.translate                           = _
-		self.strings:                    Strings = strings
-		self.pctl:                     PlayerCtl = PlayerCtl(bag)
-		self.lfm_scrobbler:            LastScrob = lfm_scrobbler
-		self.star_store:               StarStore = StarStore(bag, self)
-		self.gui:                         GuiVar = gui
-		self.prefs:                        Prefs = bag.prefs
-		self.cache_directory:               Path = bag.dirs.cache_directory
-		self.user_directory:         Path | None = bag.dirs.user_directory
-		self.music_directory:        Path | None = bag.dirs.music_directory
-		self.locale_directory:              Path = bag.dirs.locale_directory
-		self.worker_save_state:             bool = False
-		self.launch_prefix:                  str = bag.launch_prefix
-		self.whicher                             = whicher
-		self.load_orders:        list[LoadClass] = bag.load_orders
-		self.switch_playlist                     = None
-		self.open_uri                            = open_uri
-		self.love                                = love
-		self.snap_mode:                     bool = bag.snap_mode
-		self.console                             = bag.console
-		self.msys                                = bag.msys
-		self.TrackClass                          = TrackClass
-		self.pl_gen                              = pl_gen
-		self.gall_ren                            = GallClass(bag.album_mode_art_size)
-		self.QuickThumbnail                      = QuickThumbnail
-		self.thumb_tracks                        = ThumbTracks()
-		self.pl_to_id                            = pl_to_id
-		self.id_to_pl                            = id_to_pl
-		self.chunker                             = Chunker()
-		self.thread_manager:       ThreadManager = ThreadManager()
-		self.stream_proxy                        = None
-		self.stream_proxy                        = StreamEnc(self)
-		self.level_train:      list[list[float]] = []
-		self.radio_server                        = None
-		self.mod_formats                         = bag.formats.MOD_Formats
-		self.listen_alongers                     = {}
-		self.encode_folder_name                  = encode_folder_name
-		self.encode_track_name                   = encode_track_name
+		self.cachement:  player4.Cachement | None = None
+		self.dummy_event:               SDL_Event = SDL_Event()
+		self.translate                            = _
+		self.strings:                     Strings = strings
+		self.pctl:                      PlayerCtl = PlayerCtl(bag)
+		self.lfm_scrobbler:             LastScrob = lfm_scrobbler
+		self.star_store:                StarStore = StarStore(bag, self)
+		self.gui:                          GuiVar = gui
+		self.prefs:                         Prefs = bag.prefs
+		self.cache_directory:                Path = bag.dirs.cache_directory
+		self.user_directory:          Path | None = bag.dirs.user_directory
+		self.music_directory:         Path | None = bag.dirs.music_directory
+		self.locale_directory:               Path = bag.dirs.locale_directory
+		self.worker_save_state:              bool = False
+		self.launch_prefix:                   str = bag.launch_prefix
+		self.whicher                              = whicher
+		self.load_orders:         list[LoadClass] = bag.load_orders
+		self.switch_playlist                      = None
+		self.open_uri                             = open_uri
+		self.love                                 = love
+		self.snap_mode:                      bool = bag.snap_mode
+		self.console                              = bag.console
+		self.msys                                 = bag.msys
+		self.TrackClass                           = TrackClass
+		self.pl_gen                               = pl_gen
+		self.gall_ren                             = GallClass(bag.album_mode_art_size)
+		self.QuickThumbnail                       = QuickThumbnail
+		self.thumb_tracks                         = ThumbTracks()
+		self.pl_to_id                             = pl_to_id
+		self.id_to_pl                             = id_to_pl
+		self.chunker                              = Chunker()
+		self.thread_manager: ThreadManager | None = None # Avoid NameError
+		self.thread_manager:        ThreadManager = ThreadManager(bag=bag, tauon=self)
+		self.stream_proxy                         = None
+		self.stream_proxy                         = StreamEnc(self)
+		self.level_train:       list[list[float]] = []
+		self.radio_server                         = None
+		self.mod_formats                          = bag.formats.MOD_Formats
+		self.listen_alongers                      = {}
+		self.encode_folder_name                   = encode_folder_name
+		self.encode_track_name                    = encode_track_name
 
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
@@ -17860,7 +17861,7 @@ class ScrollBox:
 
 class RadioBox:
 
-	def __init__(self):
+	def __init__(self, bag: Bag, tauon: Tauon):
 
 		self.active = False
 		self.station_editing = None
@@ -19350,7 +19351,7 @@ class PlaylistBox:
 
 class ArtistList:
 
-	def __init__(self):
+	def __init__(self, bag: Bag, gui: GuiVar):
 
 		self.tab_h = round(60 * gui.scale)
 		self.thumb_size = round(55 * gui.scale)
@@ -19440,9 +19441,7 @@ class ArtistList:
 				self.thumb_cache[artist] = None
 
 	def worker(self):
-
 		if self.load:
-
 			if after_scan:
 				return
 
@@ -19451,7 +19450,6 @@ class ArtistList:
 			return
 
 		if self.to_fetch:
-
 			if get_lfm_wait_timer.get() < 2:
 				return
 
@@ -20737,10 +20735,8 @@ class TreeView:
 
 class QueueBox:
 
-	def recalc(self):
-		self.tab_h = 34 * gui.scale
-	def __init__(self):
-
+	def __init__(self, gui: GuiVar, queue_menu: Menu):
+		self.gui = gui
 		self.dragging = None
 		self.fq = []
 		self.drag_start_y = 0
@@ -20762,6 +20758,9 @@ class QueueBox:
 
 		queue_menu.add(MenuItem(_("Queue to New Playlist"), self.make_as_playlist, queue_deco))
 		# queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+
+	def recalc(self):
+		self.tab_h = 34 * self.gui.scale
 
 	def except_for_this_show_test(self, _):
 		return self.queue_remove_show(_) and test_shift(_)
@@ -21734,6 +21733,387 @@ class PictureRender:
 			SDL_RenderCopy(renderer, self.texture, None, self.sdl_rect)
 			style_overlay.hole_punches.append(self.sdl_rect)
 
+class ArtistInfoBox:
+
+	def __init__(self, bag: Bag) -> None:
+		self.artist_on = None
+		self.min_rq_timer = Timer()
+		self.min_rq_timer.force_set(10)
+
+		self.text = ""
+
+		self.status = ""
+
+		self.scroll_y = 0
+
+		self.process_text_artist = ""
+		self.processed_text = ""
+		self.th = 0
+		self.w = 0
+		self.lock = False
+
+		self.mini_box = asset_loader(bag, bag.loaded_asset_dc, "mini-box.png", True)
+
+	def manual_dl(self) -> None:
+		track = pctl.playing_object()
+		if track is None or not track.artist:
+			show_message(_("No artist name found"), mode="warning")
+			return
+
+		# Check if the artist has changed
+		self.artist_on = track.artist
+
+		if not self.lock and self.artist_on:
+			self.lock = True
+			# self.min_rq_timer.set()
+
+			self.scroll_y = 0
+			self.status = _("Looking up...")
+			self.process_text_artist = ""
+
+			shoot_dl = threading.Thread(target=self.get_data, args=([self.artist_on, False, True]))
+			shoot_dl.daemon = True
+			shoot_dl.start()
+
+	def draw(self, x, y, w, h):
+
+		if gui.artist_panel_height > 300 and w < 500 * gui.scale:
+			bio_set_small()
+
+		if w < 300 * gui.scale:
+			gui.artist_info_panel = False
+			gui.update_layout()
+			return
+
+		track = pctl.playing_object()
+		if track is None:
+			return
+
+		# Check if the artist has changed
+		artist = track.artist
+		wait = False
+
+		# Activate menu
+		if right_click and coll((x, y, w, h)):
+			artist_info_menu.activate(in_reference=artist)
+
+		background = colours.artist_bio_background
+		text_colour = colours.artist_bio_text
+		ddt.rect((x + 10, y + 5, w - 15, h - 5), background)
+
+		if artist != self.artist_on:
+
+			if artist == "":
+				return
+
+			if self.min_rq_timer.get() < 10:  # Limit rate
+				if os.path.isfile(os.path.join(a_cache_dir, artist + "-lfm.txt")):
+					pass
+				else:
+					self.status = _("Cooldown...")
+					wait = True
+
+			if pctl.playing_time < 2:
+				if os.path.isfile(os.path.join(a_cache_dir, artist + "-lfm.txt")):
+					pass
+				else:
+					self.status = "..."
+					wait = True
+
+			if not wait and not self.lock:
+				self.lock = True
+				# self.min_rq_timer.set()
+
+				self.scroll_y = 0
+				self.status = _("Loading...")
+
+				shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
+				shoot_dl.daemon = True
+				shoot_dl.start()
+
+		if self.process_text_artist != self.artist_on:
+			self.process_text_artist = self.artist_on
+
+			text = self.text
+			lic = ""
+			link = ""
+
+			if "<a" in text:
+				text, ex = text.split('<a href="', 1)
+
+				link, ex = ex.split('">', 1)
+
+				lic = ex.split("</a>. ", 1)[1]
+
+			text += "\n"
+
+			self.urls = [(link, [200, 60, 60, 255], "L")]
+			for word in text.replace("\n", " ").split(" "):
+				if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
+					word = word.rstrip(".")
+					if word.strip()[:4] == "www.":
+						word = "http://" + word
+					if "bandcamp" in word:
+						self.urls.append((word.strip(), [200, 150, 70, 255], "B"))
+					elif "soundcloud" in word:
+						self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
+					elif "twitter" in word:
+						self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
+					elif "facebook" in word:
+						self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
+					elif "youtube" in word:
+						self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
+					else:
+						self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
+
+			self.processed_text = text
+			self.w = -1  # trigger text recalc
+
+		if self.status == "Ready":
+
+			# if self.w != w:
+			#     tw, th = ddt.get_text_wh(self.processed_text, 14.5, w - 250 * gui.scale, True)
+			#     self.th = th
+			#     self.w = w
+			p_off = round(5 * gui.scale)
+			if artist_picture_render.show and artist_picture_render.sdl_rect:
+				p_off += artist_picture_render.sdl_rect.w + round(12 * gui.scale)
+
+			text_max_w = w - (round(55 * gui.scale) + p_off)
+
+			if self.w != w:
+				tw, th = ddt.get_text_wh(self.processed_text, 14.5, text_max_w - (text_max_w % 20), True)
+				self.th = th
+				self.w = w
+
+			scroll_max = self.th - (h - 26)
+
+			if coll((x, y, w, h)):
+				self.scroll_y += mouse_wheel * -20
+			self.scroll_y = max(self.scroll_y, 0)
+			self.scroll_y = min(self.scroll_y, scroll_max)
+
+			right = x + w - 25 * gui.scale
+
+			if self.th > h - 26:
+				self.scroll_y = artist_info_scroll.draw(
+					x + w - 20, y + 5, 15, h - 5,
+					self.scroll_y, scroll_max, True, jump_distance=250 * gui.scale)
+				right -= 15
+				# text_max_w -= 15
+
+			artist_picture_render.draw(x + 20 * gui.scale, y + 10 * gui.scale)
+			width = text_max_w - (text_max_w % 20)
+			if width > 20 * gui.scale:
+				ddt.text(
+					(x + p_off + round(15 * gui.scale), y + 14 * gui.scale, 4, width, 14000), self.processed_text,
+					text_colour, 14.5, bg=background, range_height=h - 22 * gui.scale, range_top=self.scroll_y)
+
+			yy = y + 12
+			for item in self.urls:
+
+				rect = (right - 2, yy - 2, 16, 16)
+
+				fields.add(rect)
+				self.mini_box.render(right, yy, alpha_mod(item[1], 100))
+				if coll(rect):
+					if not inp.mouse_click:
+						gui.cursor_want = 3
+					if inp.mouse_click:
+						webbrowser.open(item[0], new=2, autoraise=True)
+					gui.pl_update += 1
+					w = ddt.get_text_w(item[0], 13)
+					xx = (right - w) - 17 * gui.scale
+					ddt.rect(
+						(xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale),
+						[15, 15, 15, 255])
+					ddt.rect(
+						(xx - 10 * gui.scale, yy - 4 * gui.scale, w + 20 * gui.scale, 24 * gui.scale),
+						[50, 50, 50, 255])
+
+					ddt.text((xx, yy), item[0], [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+					self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
+				# ddt.rect_r(rect, [210, 80, 80, 255], True)
+
+				yy += 19 * gui.scale
+
+		else:
+			ddt.text((x + w // 2, y + h // 2 - 7 * gui.scale, 2), self.status, [255, 255, 255, 60], 313, bg=background)
+
+	def get_data(self, artist: str, get_img_path: bool = False, force_dl: bool = False) -> str | None:
+
+		if not get_img_path:
+			logging.info("Load Bio Data")
+
+		if artist is None and not get_img_path:
+			self.artist_on = artist
+			self.lock = False
+			return ""
+
+		f_artist = filename_safe(artist)
+
+		img_filename = f_artist + "-ftv-full.jpg"
+		text_filename = f_artist + "-lfm.txt"
+		img_filepath_dcg = os.path.join(a_cache_dir, f_artist + "-dcg.jpg")
+		img_filepath = os.path.join(a_cache_dir, img_filename)
+		text_filepath = os.path.join(a_cache_dir, text_filename)
+
+		standard_path = os.path.join(a_cache_dir, f_artist + "-lfm.webp")
+		image_paths = [
+			str(user_directory / "artist-pictures" / (f_artist + ".png")),
+			str(user_directory / "artist-pictures" / (f_artist + ".jpg")),
+			str(user_directory / "artist-pictures" / (f_artist + ".webp")),
+			os.path.join(a_cache_dir, f_artist + "-ftv-full.jpg"),
+			os.path.join(a_cache_dir, f_artist + "-lfm.png"),
+			os.path.join(a_cache_dir, f_artist + "-lfm.jpg"),
+			os.path.join(a_cache_dir, f_artist + "-lfm.webp"),
+			os.path.join(a_cache_dir, f_artist + "-dcg.jpg"),
+		]
+
+		if get_img_path:
+			for path in image_paths:
+				if os.path.isfile(path):
+					return path
+			return ""
+
+		# Check for cache
+		box_size = (
+		round(gui.artist_panel_height - 20 * gui.scale) * 2, round(gui.artist_panel_height - 20 * gui.scale))
+		try:
+
+			if os.path.isfile(text_filepath):
+				logging.info("Load cached bio and image")
+
+				artist_picture_render.show = False
+
+				for path in image_paths:
+					if os.path.isfile(path):
+						filepath = path
+						artist_picture_render.load(filepath, box_size)
+						artist_picture_render.show = True
+						break
+
+				with open(text_filepath, encoding="utf-8") as f:
+					self.text = f.read()
+				self.status = "Ready"
+				gui.update = 2
+				self.artist_on = artist
+				self.lock = False
+
+				return ""
+
+			if not force_dl and not prefs.auto_dl_artist_data:
+				# . Alt: No artist data has been downloaded (try imply this needs to be manually triggered)
+				self.status = _("No artist data downloaded")
+				self.artist_on = artist
+				artist_picture_render.show = False
+				self.lock = False
+				return None
+
+			# Get new from last.fm
+			# . Alt: Looking up artist data
+			self.status = _("Looking up...")
+			gui.update += 1
+			data = lastfm.artist_info(artist)
+			self.text = ""
+			if data[0] is False:
+				artist_picture_render.show = False
+				self.status = _("No artist bio found")
+				self.artist_on = artist
+				self.lock = False
+				return None
+			if data[1]:
+				self.text = data[1]
+			# cover_link = data[2]
+			# Save text as file
+			f = open(text_filepath, "w", encoding="utf-8")
+			f.write(self.text)
+			f.close()
+			logging.info("Save bio text")
+
+			artist_picture_render.show = False
+			if data[3] and prefs.enable_fanart_artist:
+				try:
+					save_fanart_artist_thumb(data[3], img_filepath)
+					artist_picture_render.load(img_filepath, box_size)
+
+					artist_picture_render.show = True
+				except Exception:
+					logging.exception("Failed to find image from fanart.tv")
+			if not artist_picture_render.show:
+				if verify_discogs():
+					try:
+						save_discogs_artist_thumb(artist, img_filepath_dcg)
+						artist_picture_render.load(img_filepath_dcg, box_size)
+
+						artist_picture_render.show = True
+					except Exception:
+						logging.exception("Failed to find image from discogs")
+			if not artist_picture_render.show and data[4]:
+				try:
+					r = requests.get(data[4], timeout=10)
+					html = BeautifulSoup(r.text, "html.parser")
+					tag = html.find("meta", property="og:image")
+					url = tag["content"]
+					if url:
+						r = requests.get(url, timeout=10)
+						assert len(r.content) > 1000
+						with open(standard_path, "wb") as f:
+							f.write(r.content)
+						artist_picture_render.load(standard_path, box_size)
+						artist_picture_render.show = True
+				except Exception:
+					logging.exception("Failed to scrape art")
+
+			# Trigger reload of thumbnail in artist list box
+			for key, value in list(artist_list_box.thumb_cache.items()):
+				if key is None and key == artist:
+					del artist_list_box.thumb_cache[artist]
+					break
+
+			self.status = "Ready"
+			gui.update = 2
+
+			# if cover_link and 'http' in cover_link:
+			#     # Fetch cover_link
+			#     try:
+			#         #logging.info("Fetching artist image...")
+			#         response = urllib.request.urlopen(cover_link)
+			#         info = response.info()
+			#         #logging.info("got response")
+			#         if info.get_content_maintype() == 'image':
+			#
+			#             f = open(filepath, 'wb')
+			#             f.write(response.read())
+			#             f.close()
+			#
+			#             #logging.info("written file, now loading...")
+			#
+			#             artist_picture_render.load(filepath, round(gui.artist_panel_height - 20 * gui.scale))
+			#             artist_picture_render.show = True
+			#
+			#             self.status = "Ready"
+			#             gui.update = 2
+			#     # except HTTPError as e:
+			#     #     self.status = e
+			#     #     logging.exception("request failed")
+			#     except Exception:
+			#         logging.exception("request failed")
+			#         self.status = "Request Failed"
+
+
+		except Exception:
+			logging.exception("Failed to load bio")
+			self.status = _("Load Failed")
+
+		self.artist_on = artist
+		self.processed_text = ""
+		self.process_text_artist = ""
+		self.min_rq_timer.set()
+		self.lock = False
+		gui.update = 2
+		return ""
+
 class RadioThumbGen:
 	def __init__(self):
 		self.cache = {}
@@ -21851,127 +22231,234 @@ class RadioThumbGen:
 			return 1
 		return 0
 
-class RadioThumbGen:
-	def __init__(self):
-		self.cache = {}
-		self.requests = []
-		self.size = 100
+class RadioView:
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.add_icon    = asset_loader(bag, bag.loaded_asset_dc, "add-station.png", True)
+		self.search_icon = asset_loader(bag, bag.loaded_asset_dc, "station-search.png", True)
+		self.save_icon   = asset_loader(bag, bag.loaded_asset_dc, "save-station.png", True)
+		self.menu_icon   = asset_loader(bag, bag.loaded_asset_dc, "radio-menu.png", True)
+		self.drag = None
+		self.click_point = (0, 0)
 
-	def loader(self):
+	def render(self):
+		# box = int(window_size[1] * 0.4 + 120 * gui.scale)
+		# box = min(window_size[0] // 2, box)
+		bg = colours.playlist_panel_background
+		ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), bg)
+		#logging.info(prefs.radio_urls)
 
-		while self.requests:
-			item = self.requests[0]
-			del self.requests[0]
-			station = item[0]
-			size = item[1]
-			key = (station["title"], size)
-			src = None
-			filename = filename_safe(station["title"])
+		# Add station button
+		x = window_size[0] - round(60 * gui.scale)
+		y = gui.panelY + round(30 * gui.scale)
+		rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
+		fields.add(rect)
 
-			cache_path = os.path.join(r_cache_dir, filename + ".jpg")
-			if os.path.isfile(cache_path):
-				src = open(cache_path, "rb")
+		# right buttions colours
+		a_colour = rgb_add_hls(bg, l=0.2, s=-0.3) #colours.box_button_text_highlight
+		b_colour = rgb_add_hls(bg, l=0.4, s=-0.3) #colours.box_button_text_highlight
+		if test_lumi(bg) < 0.38:
+			a_colour = [20, 20, 20, 200]
+			b_colour = [60, 60, 60, 200]
+
+		if coll(rect):
+			colour = b_colour
+			if inp.mouse_click:
+				add_station()
+		else:
+			colour = a_colour
+
+		self.add_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
+
+		y += round(33 * gui.scale)
+		rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
+		fields.add(rect)
+
+		if not coll(rect):
+			colour = a_colour
+		else:
+			colour = b_colour
+			if inp.mouse_click:
+				station_browse()
+		self.search_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
+
+		if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
+			pctl.radio_playlist_viewing = 0
+		if not pctl.radio_playlists:
+			return
+		radios = pctl.radio_playlists[pctl.radio_playlist_viewing]["items"]
+
+		y += round(32 * gui.scale)
+		if pctl.playing_state == 3 and radiobox.loaded_station not in radios:
+			rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
+			fields.add(rect)
+
+			if not coll(rect):
+				colour = a_colour
 			else:
-				cache_path = os.path.join(r_cache_dir, filename + ".png")
-				if os.path.isfile(cache_path):
-					src = open(cache_path, "rb")
+				colour = b_colour
+				if inp.mouse_click:
+					radios.append(radiobox.loaded_station)
+					toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
+
+			self.save_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colour)
+
+		x = round(30 * gui.scale)
+		y = gui.panelY + round(30 * gui.scale)
+		yy = y
+
+		rbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, -0.03)
+		tbg = rgb_add_hls(colours.playlist_panel_background, 0, 0.07, -0.05)
+		if contrast_ratio(bg, rbg) < 1.05:
+			rbg = [30, 30, 30, 255]
+			tbg = [60, 60, 60, 255]
+
+		w = round(400 * gui.scale)
+		h = round(55 * gui.scale)
+		gap = round(7 * gui.scale)
+
+		mm = (window_size[1] - (gui.panelBY + yy + h + round(15 * gui.scale))) // (h + gap) + 1
+
+		count = 0
+		scroll = pctl.radio_playlists[pctl.radio_playlist_viewing].get("scroll", 0)
+		if not radiobox.active or (radiobox.active and not coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
+			if gui.panelY < mouse_position[1] < window_size[1] - gui.panelBY and mouse_position[0] < w + round(
+					70 * gui.scale):
+				scroll += mouse_wheel * -1
+		scroll = min(scroll, len(radios) - mm + 1)
+		scroll = max(scroll, 0)
+		if len(radios) > mm:
+			scroll = radio_view_scroll.draw(round(7 * gui.scale), yy, round(15 * gui.scale), (mm * (h + gap)) - gap,
+											scroll, len(radios) - mm + 1)
+		else:
+			scroll = 0
+
+		pctl.radio_playlists[pctl.radio_playlist_viewing]["scroll"] = scroll
+		insert = None
+
+		for i, radio in enumerate(radios):
+			if count == mm:
+				break
+			if i < scroll:
+				continue
+			count += 1
+			rect = (x, yy, w, h)
+			ddt.rect(rect, rbg)
+			yyy = yy
+			pic_rect = (
+			x + round(5 * gui.scale), yy + round(5 * gui.scale), h - round(10 * gui.scale), h - round(10 * gui.scale))
+			ddt.rect(pic_rect, tbg)
+			radio_thumb_gen.draw(radio, pic_rect[0], pic_rect[1], pic_rect[2])
+
+			l1_colour = [10, 10, 10, 210]
+			if test_lumi(rbg) > 0.45:
+				l1_colour = [255, 255, 255, 220]
+			l2_colour = [30, 30, 30, 200]
+			if test_lumi(rbg) > 0.45:
+				l2_colour = [245, 245, 245, 200]
+
+			toff = h + round(2 * gui.scale)
+			yyy += round(9 * gui.scale)
+			ddt.text(
+				(x + toff, yyy), radio["title"], l1_colour, 212,
+				max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
+			yyy += round(19 * gui.scale)
+			ddt.text(
+				(x + toff, yyy), radio.get("country", ""), l2_colour, 312,
+				max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
+
+			hit = False
+			start_rect = (
+				x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
+				round(42 * gui.scale))
+			# ddt.rect(hit_rect, [255, 255, 255, 3])
+			fields.add(start_rect)
+			colour = rgb_add_hls(tbg, l=0.05)
+			if coll(start_rect):
+				if inp.mouse_click:
+					radiobox.start(radio)
+					hit = True
+				colour = rgb_add_hls(colour, l=0.3)
+
+			bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
+
+			extra_rect = (
+				x + (w - round(82 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
+				round(35 * gui.scale))
+			# ddt.rect(extra_rect, [255, 255, 255, 2])
+			fields.add(extra_rect)
+			colour = rgb_add_hls(tbg, l=0.05)
+			if coll(extra_rect):
+				colour = rgb_add_hls(colour, l=0.3) #alpha_mod(colours.side_bar_line1, 47)
+				if inp.mouse_click:
+					hit = True
+					radiobox.x = extra_rect[0] + extra_rect[2]
+					radiobox.y = extra_rect[1]
+					radio_context_menu.activate((i, radio), position=(radiobox.x, yy + round(20 * gui.scale)))
+
+			self.menu_icon.render(x + (w - round(75 * gui.scale)), yy + round(26 * gui.scale), colour)
+
+			# bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
+			if mouse_up and self.drag and coll(rect):
+				if radiobox.active and coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h)):
+					pass
 				else:
-					cache_path = os.path.join(r_cache_dir, filename)
-					if os.path.isfile(cache_path):
-						src = open(cache_path, "rb")
+					insert = i
+				if not radiobox.active and self.drag in radios and radios.index(self.drag) < i:
+					insert += 1
+			elif coll(rect) and not hit and inp.mouse_click:
+				self.drag = radio
+				self.click_point = copy.copy(mouse_position)
 
-			if src:
-				pass
-				#logging.info("found cached")
-			elif station.get("icon") and station["icon"] not in prefs.radio_thumb_bans:
-				try:
-					r = requests.get(station.get("icon"), headers={"User-Agent": t_agent}, timeout=5, stream=True)
-					if r.status_code != 200 or int(r.headers.get("Content-Length", 0)) > 2000000:
-						raise Exception("Error get radio thumb")
-				except Exception:
-					logging.exception("error get radio thumb")
-					self.cache[key] = [0]
-					if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
-						prefs.radio_thumb_bans.append(station.get("icon"))
-					continue
-				src = io.BytesIO()
-				length = 0
-				for chunk in r.iter_content(1024):
-					src.write(chunk)
-					length += len(chunk)
-					if length > 2000000:
-						scr = None
-				if src is None:
-					self.cache[key] = [0]
-					if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
-						prefs.radio_thumb_bans.append(station.get("icon"))
-					continue
-				src.seek(0)
-				with open(cache_path, "wb") as f:
-					f.write(src.read())
-				src.seek(0)
+			yy += round(h + gap)
+
+		if mouse_up and self.drag and not insert and self.drag not in radios:
+			if not (radiobox.active and coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
+				if mouse_position[1] > gui.panelY:
+					insert = len(radios)
+
+		count = ((window_size[0] - w) / 2) + w
+		boxx = round(200 * gui.scale)
+		art_rect = (count - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
+
+		if window_size[0] > round(700 * gui.scale):
+			if pctl.playing_state == 3 and radiobox.loaded_station:
+				r = album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+				if r:
+					r = radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
+					# if not r:
+					#     ddt.rect(art_rect, colours.b)
+			# else:
+			#     ddt.rect(art_rect, [40, 40, 40, 255])
+
+			yy = window_size[1] / 3 - boxx / 2
+			yy += boxx + round(30 * gui.scale)
+
+			if radiobox.loaded_station and pctl.playing_state == 3:
+				space = window_size[0] - round(500 * gui.scale)
+				ddt.text(
+					(count, yy, 2), radiobox.loaded_station.get("title", ""), [230, 230, 230, 255], 213, max_w=space)
+				yy += round(25 * gui.scale)
+				ddt.text((count, yy, 2), radiobox.song_key, [230, 230, 230, 255], 313, max_w=space)
+				if radiobox.dummy_track.album:
+					yy += round(21 * gui.scale)
+					ddt.text((count, yy, 2), radiobox.dummy_track.album, [230, 230, 230, 255], 313, max_w=space)
+
+		if self.drag:
+			gui.update_on_drag = True
+
+		if insert is not None:
+			radios.insert(insert, "New")
+			if self.drag in radios:
+				radios.remove(self.drag)
 			else:
-				# logging.info("no icon")
-				self.cache[key] = [0]
-				continue
+				toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
 
-			try:
-				im = Image.open(src)
-				if im.mode != "RGBA":
-					im = im.convert("RGBA")
-			except Exception:
-				logging.exception("malform get radio thumb")
-				self.cache[key] = [0]
-				if station.get("icon") and station.get("icon") not in prefs.radio_thumb_bans:
-					prefs.radio_thumb_bans.append(station.get("icon"))
-				continue
-			if src is not None:
-				src.close()
-
-			im = im.resize((size, size), Image.Resampling.LANCZOS)
-			g = io.BytesIO()
-			g.seek(0)
-			im.save(g, "PNG")
-			g.seek(0)
-			wop = rw_from_object(g)
-			s_image = IMG_Load_RW(wop, 0)
-			self.cache[key] = [2, None, None, s_image]
+			radios[radios.index("New")] = self.drag
+			self.drag = None
 			gui.update += 1
-
-	def draw(self, station, x, y, w):
-		if not station.get("title"):
-			return 0
-		key = (station["title"], w)
-
-		r = self.cache.get(key)
-		if r is None:
-			if len(self.requests) < 3:
-				self.requests.append((station, w))
-				tauon.thread_manager.ready("radio-thumb")
-			return 0
-		if r[0] == 2:
-			texture = SDL_CreateTextureFromSurface(renderer, r[3])
-			SDL_FreeSurface(r[3])
-			tex_w = pointer(c_int(0))
-			tex_h = pointer(c_int(0))
-			SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-			sdl_rect = SDL_Rect(0, 0)
-			sdl_rect.w = int(tex_w.contents.value)
-			sdl_rect.h = int(tex_h.contents.value)
-			r[2] = texture
-			r[1] = sdl_rect
-			r[0] = 1
-		if r[0] == 1:
-			r[1].x = round(x)
-			r[1].y = round(y)
-			SDL_RenderCopy(renderer, r[2], None, r[1])
-			return 1
-		return 0
 
 class Showcase:
-
 	def __init__(self):
-
 		self.lastfm_artist = None
 		self.artist_mode = False
 
@@ -22368,7 +22855,8 @@ class ColourPulse2:
 
 class ViewBox:
 
-	def __init__(self, reload=False):
+	def __init__(self, bag: Bag, gui: GuiVar, reload=False) -> None:
+		self.colours = bag.colours
 		self.x = 0
 		self.y = gui.panelY
 		self.w = 52 * gui.scale
@@ -22377,31 +22865,31 @@ class ViewBox:
 
 		self.border = 3 * gui.scale
 
-		self.tracks_img = asset_loader(bag, loaded_asset_dc, "tracks.png", True)
-		self.side_img = asset_loader(bag, loaded_asset_dc, "tracks+side.png", True)
-		self.gallery1_img = asset_loader(bag, loaded_asset_dc, "gallery1.png", True)
-		self.gallery2_img = asset_loader(bag, loaded_asset_dc, "gallery2.png", True)
-		self.combo_img = asset_loader(bag, loaded_asset_dc, "combo.png", True)
-		self.lyrics_img = asset_loader(bag, loaded_asset_dc, "lyrics.png", True)
-		self.gallery2_img = asset_loader(bag, loaded_asset_dc, "gallery2.png", True)
-		self.radio_img = asset_loader(bag, loaded_asset_dc, "radio.png", True)
-		self.col_img = asset_loader(bag, loaded_asset_dc, "col.png", True)
-		# self.artist_img = asset_loader(bag, loaded_asset_dc, "artist.png", True)
+		self.tracks_img   = asset_loader(bag, bag.loaded_asset_dc, "tracks.png", True)
+		self.side_img     = asset_loader(bag, bag.loaded_asset_dc, "tracks+side.png", True)
+		self.gallery1_img = asset_loader(bag, bag.loaded_asset_dc, "gallery1.png", True)
+		self.gallery2_img = asset_loader(bag, bag.loaded_asset_dc, "gallery2.png", True)
+		self.combo_img    = asset_loader(bag, bag.loaded_asset_dc, "combo.png", True)
+		self.lyrics_img   = asset_loader(bag, bag.loaded_asset_dc, "lyrics.png", True)
+		self.gallery2_img = asset_loader(bag, bag.loaded_asset_dc, "gallery2.png", True)
+		self.radio_img    = asset_loader(bag, bag.loaded_asset_dc, "radio.png", True)
+		self.col_img      = asset_loader(bag, bag.loaded_asset_dc, "col.png", True)
+		# self.artist_img = asset_loader(bag, bag.loaded_asset_dc, "artist.png", True)
 
 		# _ .15 0
-		self.tracks_colour = ColourPulse2()  # (0.5) # .5 .6 .75
-		self.side_colour = ColourPulse2()  # (0.55) # .55 .6 .75
-		self.gallery1_colour = ColourPulse2()  # (0.6) # .6 .6 .75
-		self.radio_colour = ColourPulse2()  # (0.6) # .6 .6 .75
-		# self.combo_colour = ColourPulse(0.75)
-		self.lyrics_colour = ColourPulse2()  # (0.7)
+		self.tracks_colour     = ColourPulse2()  # (0.5) # .5 .6 .75
+		self.side_colour       = ColourPulse2()  # (0.55) # .55 .6 .75
+		self.gallery1_colour   = ColourPulse2()  # (0.6) # .6 .6 .75
+		self.radio_colour      = ColourPulse2()  # (0.6) # .6 .6 .75
+		# self.combo_colour    = ColourPulse(0.75)
+		self.lyrics_colour     = ColourPulse2()  # (0.7)
 		# self.gallery2_colour = ColourPulse(0.65)
-		self.col_colour = ColourPulse2()  # (0.14)
-		self.artist_colour = ColourPulse2()  # (0.2)
+		self.col_colour        = ColourPulse2()  # (0.14)
+		self.artist_colour     = ColourPulse2()  # (0.2)
 
 		self.on_colour = [255, 190, 50, 255]
 		self.over_colour = [255, 190, 50, 255]
-		self.off_colour = colours.grey(40)
+		self.off_colour = self.colours.grey(40)
 
 		if not reload:
 			gui.combo_was_album = False
@@ -23059,6 +23547,7 @@ class Directories:
 @dataclass
 class Bag:
 	"""Holder object for all configs"""
+	colours:                ColoursClass
 	console:                DConsole
 	dirs:                   Directories
 	prefs:                  Prefs
@@ -39279,6 +39768,8 @@ def main(holder: Holder):
 
 	ddt = TDraw(renderer)
 	fonts = Fonts()
+	colours = ColoursClass()
+	colours.post_config()
 
 	prefs = Prefs(
 		user_directory=user_directory,
@@ -39297,6 +39788,7 @@ def main(holder: Holder):
 	)
 
 	bag = Bag(
+		colours=colours,
 		console=console,
 		dirs=dirs,
 		prefs=prefs,
@@ -39351,9 +39843,6 @@ def main(holder: Holder):
 	album_star_store = AlbumStarStore()
 	inp = Input(gui=gui)
 	keymaps = KeyMap(bag=bag)
-
-	colours = ColoursClass()
-	colours.post_config()
 
 	# This is legacy. New settings are added straight to the save list (need to overhaul)
 	view_prefs = {
@@ -41472,21 +41961,21 @@ def main(holder: Holder):
 	gallery_scroll = ScrollBox()
 	tree_view_scroll = ScrollBox()
 	radio_view_scroll = ScrollBox()
-	radiobox = RadioBox()
+	radiobox = RadioBox(bag=bag, tauon=tauon)
 	tauon.radiobox = radiobox
 	tauon.dummy_track = radiobox.dummy_track
 
-	artist_list_box = ArtistList()
+	artist_list_box = ArtistList(bag=bag, gui=gui)
 	tree_view_box = TreeView()
 
-	queue_box = QueueBox()
+	queue_box = QueueBox(gui=gui, queue_menu=queue_menu)
 
 	meta_box = MetaBox()
 	artist_picture_render = PictureRender()
 	artist_preview_render = PictureRender()
 
 	# artist info box def
-	artist_info_box = ArtistInfoBox()
+	artist_info_box = ArtistInfoBox(bag=bag)
 
 	artist_info_menu.add(MenuItem(_("Download Artist Data"), artist_info_box.manual_dl, artist_dl_deco, show_test=test_artist_dl))
 	artist_info_menu.add(MenuItem(_("Clear Bio"), flush_artist_bio, pass_ref=True, show_test=test_shift))
@@ -41498,10 +41987,10 @@ def main(holder: Holder):
 		MenuItem(_("Visit Website"), visit_radio_station, visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
 	radio_context_menu.add(MenuItem(_("Remove"), remove_station, pass_ref=True))
 
-	radio_view = RadioView()
+	radio_view = RadioView(bag=bag, gui=gui)
 	showcase = Showcase()
 	cctest = ColourPulse2()
-	view_box = ViewBox()
+	view_box = ViewBox(bag=bag, gui=gui)
 	dl_mon = DLMon()
 	tauon.dl_mon = dl_mon
 	dl_menu.add(MenuItem("Dismiss", dismiss_dl))
