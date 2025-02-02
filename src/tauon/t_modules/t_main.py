@@ -771,9 +771,9 @@ class GuiVar:
 		self.main_texture = main_texture
 		self.main_texture_overlay_temp = main_texture_overlay_temp
 
-		self.preview_artist = ""
+		self.preview_artist: str = ""
 		self.preview_artist_location = (0, 0)
-		self.preview_artist_loading = ""
+		self.preview_artist_loading: str = ""
 		self.mouse_left_window = False
 
 		self.rendered_playlist_position = 0
@@ -11845,7 +11845,6 @@ class Over:
 				subtitle=_("Needed for Nextcloud Music"))
 
 		if self.account_view == 10:
-
 			ddt.text((x, y), _("Jellyfin network streaming"), colours.box_sub_text, 213)
 
 			if inp.key_tab_press:
@@ -12447,7 +12446,7 @@ class Over:
 		y += 25 * gui.scale
 		self.toggle_square(x, y, toggle_transcode_inplace, _("Save and overwrite files inplace"))
 
-	def devance_theme(self):
+	def previous_theme(self):
 		global theme
 
 		theme -= 1
@@ -23693,7 +23692,7 @@ def set_artist_preview(path, artist, x, y):
 	gui.preview_artist = artist
 	gui.preview_artist_location = (x + 15 * gui.scale, ay)
 
-def get_artist_preview(artist, x, y):
+def get_artist_preview(artist: str, x, y) -> None:
 	# show_message(_("Loading artist image..."))
 
 	gui.preview_artist_loading = artist
@@ -23784,7 +23783,6 @@ def auto_size_columns():
 	vr = len(gui.pl_st) - fixed_n
 
 	if vr > 0 and total > 50:
-
 		space = round(total / vr)
 
 		for item in gui.pl_st:
@@ -23797,7 +23795,7 @@ def auto_size_columns():
 def set_colour(colour):
 	SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
 
-def get_themes(deco: bool = False):
+def get_themes(dirs: Directories, deco: bool = False) -> list | dict:
 	themes = []  # full, name
 	decos = {}
 	direcs = [str(install_directory / "theme")]
@@ -23826,7 +23824,33 @@ def get_themes(deco: bool = False):
 		return decos
 	return themes
 
-def get_end_folder(direc):
+# 2025-02-02 - commented out as it was not used
+#def advance_theme() -> None:
+#	global theme
+#
+#	theme += 1
+#	gui.reload_theme = True
+
+def get_theme_number(name: str) -> int:
+	if name == "Mindaro":
+		return 0
+	themes = get_themes()
+	for i, theme in enumerate(themes):
+		if theme[1] == name:
+			return i + 1
+	return 0
+
+def get_theme_name(number: int) -> str:
+	if number == 0:
+		return "Mindaro"
+	number -= 1
+	themes = get_themes()
+	logging.info((number, themes))
+	if len(themes) > number:
+		return themes[number][1]
+	return ""
+
+def get_end_folder(direc: str) -> str | None:
 	for w in range(len(direc)):
 		if direc[-w - 1] == "\\" or direc[-w - 1] == "/":
 			direc = direc[-w:]
@@ -23872,31 +23896,6 @@ def track_number_process(line: str) -> str:
 	if prefs.dd_index and len(line) == 1:
 		return "0" + line
 	return line
-
-def advance_theme() -> None:
-	global theme
-
-	theme += 1
-	gui.reload_theme = True
-
-def get_theme_number(name: str) -> int:
-	if name == "Mindaro":
-		return 0
-	themes = get_themes()
-	for i, theme in enumerate(themes):
-		if theme[1] == name:
-			return i + 1
-	return 0
-
-def get_theme_name(number: int) -> str:
-	if number == 0:
-		return "Mindaro"
-	number -= 1
-	themes = get_themes()
-	logging.info((number, themes))
-	if len(themes) > number:
-		return themes[number][1]
-	return ""
 
 def save_prefs(bag: Bag, cf: Config):
 	prefs = bag.prefs
@@ -43423,7 +43422,7 @@ def main(holder: Holder):
 			if keymaps.test("cycle-theme-reverse"):
 				gui.theme_temp_current = -1
 				gui.temp_themes.clear()
-				pref_box.devance_theme()
+				pref_box.previous_theme()
 
 			if keymaps.test("reload-theme"):
 				gui.reload_theme = True
