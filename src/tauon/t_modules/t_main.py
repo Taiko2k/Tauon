@@ -10536,19 +10536,21 @@ class PowerTag:
 		self.ani_timer.force_set(10)
 
 class Over:
-	def __init__(self):
+	def __init__(self, bag: Bag, gui: GuiVar):
 
 		global window_size
 
+		self.prefs = bag.prefs
+		self.gui = gui
 		self.init2done = False
 
-		self.about_image = asset_loader(bag, loaded_asset_dc, "v4-a.png")
-		self.about_image2 = asset_loader(bag, loaded_asset_dc, "v4-b.png")
-		self.about_image3 = asset_loader(bag, loaded_asset_dc, "v4-c.png")
-		self.about_image4 = asset_loader(bag, loaded_asset_dc, "v4-d.png")
-		self.about_image5 = asset_loader(bag, loaded_asset_dc, "v4-e.png")
-		self.about_image6 = asset_loader(bag, loaded_asset_dc, "v4-f.png")
-		self.title_image = asset_loader(bag, loaded_asset_dc, "title.png", True)
+		self.about_image  = asset_loader(bag, bag.loaded_asset_dc, "v4-a.png")
+		self.about_image2 = asset_loader(bag, bag.loaded_asset_dc, "v4-b.png")
+		self.about_image3 = asset_loader(bag, bag.loaded_asset_dc, "v4-c.png")
+		self.about_image4 = asset_loader(bag, bag.loaded_asset_dc, "v4-d.png")
+		self.about_image5 = asset_loader(bag, bag.loaded_asset_dc, "v4-e.png")
+		self.about_image6 = asset_loader(bag, bag.loaded_asset_dc, "v4-f.png")
+		self.title_image  = asset_loader(bag, bag.loaded_asset_dc, "title.png", True)
 
 		# self.tab_width = round(115 * gui.scale)
 		self.w = 100
@@ -10556,7 +10558,7 @@ class Over:
 
 		self.box_x = 100
 		self.box_y = 100
-		self.item_x_offset = round(25 * gui.scale)
+		self.item_x_offset = round(25 * self.gui.scale)
 
 		self.current_path = os.path.expanduser("~")
 		self.view_offset = 0
@@ -10640,12 +10642,14 @@ class Over:
 		y += 23 * gui.scale
 
 		old = prefs.enable_fanart_bg
-		prefs.enable_fanart_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.enable_fanart_bg,
-													_("Prefer artist backgrounds"))
+		prefs.enable_fanart_bg = self.toggle_square(
+			x + 10 * self.gui.scale, y, prefs.enable_fanart_bg, _("Prefer artist backgrounds"))
 		if prefs.enable_fanart_bg and prefs.enable_fanart_bg != old:
 			if not prefs.auto_dl_artist_data:
 				prefs.auto_dl_artist_data = True
-				show_message(_("Also enabling 'auto-fech artist data' to scrape last.fm."), _("You can toggle this back off under Settings > Function"))
+				show_message(
+					_("Also enabling 'auto-fech artist data' to scrape last.fm."),
+					_("You can toggle this back off under Settings > Function"))
 		y += 23 * gui.scale
 
 		self.toggle_square(x + 10 * gui.scale, y, toggle_auto_bg_strong, _("Stronger"))
@@ -13593,47 +13597,48 @@ class Fields:
 		self.field_array = []
 
 class TopPanel:
-	def __init__(self):
-
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.fonts = bag.fonts
+		self.gui = gui
 		self.height = gui.panelY
 		self.ty = 0
 
-		self.start_space_left = round(46 * gui.scale)
-		self.start_space_compact_left = 46 * gui.scale
+		self.start_space_left = round(46 * self.gui.scale)
+		self.start_space_compact_left = 46 * self.gui.scale
 
-		self.tab_text_font = fonts.tabs
-		self.tab_extra_width = round(17 * gui.scale)
-		self.tab_text_start_space = 8 * gui.scale
-		self.tab_text_y_offset = 7 * gui.scale
+		self.tab_text_font = self.fonts.tabs
+		self.tab_extra_width = round(17 * self.gui.scale)
+		self.tab_text_start_space = 8 * self.gui.scale
+		self.tab_text_y_offset = 7 * self.gui.scale
 		self.tab_spacing = 0
 
-		self.ini_menu_space = 17 * gui.scale  # 17
-		self.menu_space = 17 * gui.scale
-		self.click_buffer = 4 * gui.scale
+		self.ini_menu_space = 17 * self.gui.scale  # 17
+		self.menu_space = 17 * self.gui.scale
+		self.click_buffer = 4 * self.gui.scale
 
 		self.tabs_right_x = 0  # computed for drag and drop code elsewhere (hacky)
 		self.tabs_left_x = 1
 
-		self.prime_tab = gui.saved_prime_tab
-		self.prime_side = gui.saved_prime_direction  # 0=left, 1=right
+		self.prime_tab = self.gui.saved_prime_tab
+		self.prime_side = self.gui.saved_prime_direction  # 0=left, 1=right
 		self.shown_tabs = []
 
 		# ---
 		self.space_left = 0
 		self.tab_text_spaces = []
 		self.index_playing = -1
-		self.drag_zone_start_x = 300 * gui.scale
+		self.drag_zone_start_x = 300 * self.gui.scale
 
-		self.exit_button = asset_loader(bag, loaded_asset_dc, "ex.png", True)
-		self.maximize_button = asset_loader(bag, loaded_asset_dc, "max.png", True)
-		self.restore_button = asset_loader(bag, loaded_asset_dc, "restore.png", True)
-		self.restore_button = asset_loader(bag, loaded_asset_dc, "restore.png", True)
-		self.playlist_icon = asset_loader(bag, loaded_asset_dc, "playlist.png", True)
-		self.return_icon = asset_loader(bag, loaded_asset_dc, "return.png", True)
-		self.artist_list_icon = asset_loader(bag, loaded_asset_dc, "artist-list.png", True)
-		self.folder_list_icon = asset_loader(bag, loaded_asset_dc, "folder-list.png", True)
-		self.dl_button = asset_loader(bag, loaded_asset_dc, "dl.png", True)
-		self.overflow_icon = asset_loader(bag, loaded_asset_dc, "overflow.png", True)
+		self.exit_button      = asset_loader(bag, bag.loaded_asset_dc, "ex.png", True)
+		self.maximize_button  = asset_loader(bag, bag.loaded_asset_dc, "max.png", True)
+		self.restore_button   = asset_loader(bag, bag.loaded_asset_dc, "restore.png", True)
+		self.restore_button   = asset_loader(bag, bag.loaded_asset_dc, "restore.png", True)
+		self.playlist_icon    = asset_loader(bag, bag.loaded_asset_dc, "playlist.png", True)
+		self.return_icon      = asset_loader(bag, bag.loaded_asset_dc, "return.png", True)
+		self.artist_list_icon = asset_loader(bag, bag.loaded_asset_dc, "artist-list.png", True)
+		self.folder_list_icon = asset_loader(bag, bag.loaded_asset_dc, "folder-list.png", True)
+		self.dl_button        = asset_loader(bag, bag.loaded_asset_dc, "dl.png", True)
+		self.overflow_icon    = asset_loader(bag, bag.loaded_asset_dc, "overflow.png", True)
 
 		self.drag_slide_timer = Timer(100)
 		self.tab_d_click_timer = Timer(10)
@@ -14570,8 +14575,9 @@ class TopPanel:
 			ddt.rect((0, int(gui.panelY - 1 * gui.scale), window_size[0], int(1 * gui.scale)), colours.tb_line)
 
 class BottomBarType1:
-	def __init__(self):
-
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.window_size = bag.window_size
+		self.gui = gui
 		self.mode = 0
 
 		self.seek_time = 0
@@ -14580,41 +14586,41 @@ class BottomBarType1:
 		self.seek_hit = False
 		self.volume_hit = False
 		self.volume_bar_being_dragged = False
-		self.control_line_bottom = 35 * gui.scale
+		self.control_line_bottom = 35 * self.gui.scale
 		self.repeat_click_off = False
 		self.random_click_off = False
 
-		self.seek_bar_position = [300 * gui.scale, window_size[1] - gui.panelBY]
-		self.seek_bar_size = [window_size[0] - (300 * gui.scale), 15 * gui.scale]
-		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
-		self.volume_bar_position = [0, 45 * gui.scale]
+		self.seek_bar_position = [300 * self.gui.scale, self.window_size[1] - self.gui.panelBY]
+		self.seek_bar_size = [self.window_size[0] - (300 * self.gui.scale), 15 * self.gui.scale]
+		self.volume_bar_size = [135 * self.gui.scale, 14 * self.gui.scale]
+		self.volume_bar_position = [0, 45 * self.gui.scale]
 
-		self.play_button = asset_loader(bag, loaded_asset_dc, "play.png", True)
-		self.forward_button = asset_loader(bag, loaded_asset_dc, "ff.png", True)
-		self.back_button = asset_loader(bag, loaded_asset_dc, "bb.png", True)
-		self.repeat_button = asset_loader(bag, loaded_asset_dc, "tauon_repeat.png", True)
-		self.repeat_button_off = asset_loader(bag, loaded_asset_dc, "tauon_repeat_off.png", True)
-		self.shuffle_button_off = asset_loader(bag, loaded_asset_dc, "tauon_shuffle_off.png", True)
-		self.shuffle_button = asset_loader(bag, loaded_asset_dc, "tauon_shuffle.png", True)
-		self.repeat_button_a = asset_loader(bag, loaded_asset_dc, "tauon_repeat_a.png", True)
-		self.shuffle_button_a = asset_loader(bag, loaded_asset_dc, "tauon_shuffle_a.png", True)
+		self.play_button        = asset_loader(bag, bag.loaded_asset_dc, "play.png", True)
+		self.forward_button     = asset_loader(bag, bag.loaded_asset_dc, "ff.png", True)
+		self.back_button        = asset_loader(bag, bag.loaded_asset_dc, "bb.png", True)
+		self.repeat_button      = asset_loader(bag, bag.loaded_asset_dc, "tauon_repeat.png", True)
+		self.repeat_button_off  = asset_loader(bag, bag.loaded_asset_dc, "tauon_repeat_off.png", True)
+		self.shuffle_button_off = asset_loader(bag, bag.loaded_asset_dc, "tauon_shuffle_off.png", True)
+		self.shuffle_button     = asset_loader(bag, bag.loaded_asset_dc, "tauon_shuffle.png", True)
+		self.repeat_button_a    = asset_loader(bag, bag.loaded_asset_dc, "tauon_repeat_a.png", True)
+		self.shuffle_button_a   = asset_loader(bag, bag.loaded_asset_dc, "tauon_shuffle_a.png", True)
 
-		self.buffer_shard = asset_loader(bag, loaded_asset_dc, "shard.png", True)
+		self.buffer_shard       = asset_loader(bag, bag.loaded_asset_dc, "shard.png", True)
 
 		self.scrob_stick = 0
 
 	def update(self):
 
 		if self.mode == 0:
-			self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
-			self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
-			self.seek_bar_position[1] = window_size[1] - gui.panelBY
+			self.volume_bar_position[0] = self.window_size[0] - (210 * self.gui.scale)
+			self.volume_bar_position[1] = self.window_size[1] - (27 * self.gui.scale)
+			self.seek_bar_position[1]   = self.window_size[1] - self.gui.panelBY
 
-			seek_bar_x = 300 * gui.scale
-			if window_size[0] < 600 * gui.scale:
-				seek_bar_x = 250 * gui.scale
+			seek_bar_x = 300 * self.gui.scale
+			if self.window_size[0] < 600 * self.gui.scale:
+				seek_bar_x = 250 * self.gui.scale
 
-			self.seek_bar_size[0] = window_size[0] - seek_bar_x
+			self.seek_bar_size[0] = self.window_size[0] - seek_bar_x
 			self.seek_bar_position[0] = seek_bar_x
 
 			# if gui.bb_show_art:
@@ -14630,16 +14636,16 @@ class BottomBarType1:
 		global clicked
 		global right_click
 
-		ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour)
+		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
 
 		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background)
 
 		right_offset = 0
 		if gui.display_time_mode >= 2:
-			right_offset = 22 * gui.scale
+			right_offset = 22 * self.gui.scale
 
-		if window_size[0] < 670 * gui.scale:
-			right_offset -= 90 * gui.scale
+		if window_size[0] < 670 * self.gui.scale:
+			right_offset -= 90 * self.gui.scale
 		# Scrobble marker
 
 		if prefs.scrobble_mark and (
@@ -14659,7 +14665,7 @@ class BottomBarType1:
 					l_x = self.scrob_stick
 				else:
 					self.scrob_stick = l_x
-				ddt.rect((self.scrob_stick, self.seek_bar_position[1], 2 * gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80])
+				ddt.rect((self.scrob_stick, self.seek_bar_position[1], 2 * self.gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80])
 
 		# # MINI ALBUM ART
 		# if gui.bb_show_art:
@@ -15427,43 +15433,43 @@ class BottomBarType1:
 				# ddt.rect_a((x + round(50 * gui.scale) - w, y + w), (w, round(4 * gui.scale)), rpbc, True)
 
 class BottomBarType_ao1:
-	def __init__(self):
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.window_size = bag.window_size
+		self.gui = gui
 
 		self.mode = 0
-
 		self.seek_time = 0
-
 		self.seek_down = False
 		self.seek_hit = False
 		self.volume_hit = False
 		self.volume_bar_being_dragged = False
-		self.control_line_bottom = 35 * gui.scale
+		self.control_line_bottom = 35 * self.gui.scale
 		self.repeat_click_off = False
 		self.random_click_off = False
 
-		self.seek_bar_position = [300 * gui.scale, window_size[1] - gui.panelBY]
-		self.seek_bar_size = [window_size[0] - (300 * gui.scale), 15 * gui.scale]
-		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
-		self.volume_bar_position = [0, 45 * gui.scale]
+		self.seek_bar_position = [300 * self.gui.scale, self.window_size[1] - self.gui.panelBY]
+		self.seek_bar_size = [self.window_size[0] - (300 * self.gui.scale), 15 * self.gui.scale]
+		self.volume_bar_size = [135 * self.gui.scale, 14 * self.gui.scale]
+		self.volume_bar_position = [0, 45 * self.gui.scale]
 
-		self.play_button = asset_loader(bag, loaded_asset_dc, "play.png", True)
-		self.forward_button = asset_loader(bag, loaded_asset_dc, "ff.png", True)
-		self.back_button = asset_loader(bag, loaded_asset_dc, "bb.png", True)
+		self.play_button    = asset_loader(bag, bag.loaded_asset_dc, "play.png", True)
+		self.forward_button = asset_loader(bag, bag.loaded_asset_dc, "ff.png", True)
+		self.back_button    = asset_loader(bag, bag.loaded_asset_dc, "bb.png", True)
 
 		self.scrob_stick = 0
 
 	def update(self):
 
 		if self.mode == 0:
-			self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
-			self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
-			self.seek_bar_position[1] = window_size[1] - gui.panelBY
+			self.volume_bar_position[0] = self.window_size[0] - (210 * self.gui.scale)
+			self.volume_bar_position[1] = self.window_size[1] - (27 * self.gui.scale)
+			self.seek_bar_position[1]   = self.window_size[1] - self.gui.panelBY
 
-			seek_bar_x = 300 * gui.scale
-			if window_size[0] < 600 * gui.scale:
-				seek_bar_x = 250 * gui.scale
+			seek_bar_x = 300 * self.gui.scale
+			if self.window_size[0] < 600 * self.gui.scale:
+				seek_bar_x = 250 * self.gui.scale
 
-			self.seek_bar_size[0] = window_size[0] - seek_bar_x
+			self.seek_bar_size[0] = self.window_size[0] - seek_bar_x
 			self.seek_bar_position[0] = seek_bar_x
 
 			# if gui.bb_show_art:
@@ -15474,19 +15480,18 @@ class BottomBarType_ao1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self):
-
 		global volume_store
 		global clicked
 		global right_click
 
-		ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour)
+		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
 
 		right_offset = 0
 		if gui.display_time_mode >= 2:
-			right_offset = 22 * gui.scale
+			right_offset = 22 * self.gui.scale
 
-		if window_size[0] < 670 * gui.scale:
-			right_offset -= 90 * gui.scale
+		if self.window_size[0] < 670 * self.gui.scale:
+			right_offset -= 90 * self.gui.scale
 
 		# # MINI ALBUM ART
 		# if gui.bb_show_art:
@@ -15799,16 +15804,18 @@ class BottomBarType_ao1:
 				1 + window_size[1] - self.control_line_bottom, forward_colour)
 
 class MiniMode:
-	def __init__(self):
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.window_size = bag.window_size
+		self.gui = gui
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader(bag, loaded_asset_dc, "left-slide.png", True)
-		self.right_slide = asset_loader(bag, loaded_asset_dc, "right-slide.png", True)
-		self.repeat = asset_loader(bag, loaded_asset_dc, "repeat-mini-mode.png", True)
-		self.shuffle = asset_loader(bag, loaded_asset_dc, "shuffle-mini-mode.png", True)
+		self.left_slide  = asset_loader(bag, bag.loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(bag, bag.loaded_asset_dc, "right-slide.png", True)
+		self.repeat      = asset_loader(bag, bag.loaded_asset_dc, "repeat-mini-mode.png", True)
+		self.shuffle     = asset_loader(bag, bag.loaded_asset_dc, "shuffle-mini-mode.png", True)
 
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
@@ -15819,12 +15826,12 @@ class MiniMode:
 			seek_r = [0, 0, 0, 0]
 			seek_w = 0
 
-		w = window_size[0]
-		h = window_size[1]
+		w = self.window_size[0]
+		h = self.window_size[1]
 
 		y1 = w
 		if w == h:
-			y1 -= 79 * gui.scale
+			y1 -= 79 * self.gui.scale
 
 		h1 = h - y1
 
@@ -16041,19 +16048,18 @@ class MiniMode:
 				ddt.rect_s((2, 2, w - 4, h - 4), colours.mini_mode_border, 1 * gui.scale)
 
 class MiniMode2:
-
-	def __init__(self):
-
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.window_size = bag.window_size
+		self.gui = gui
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader(bag, loaded_asset_dc, "left-slide.png", True)
-		self.right_slide = asset_loader(bag, loaded_asset_dc, "right-slide.png", True)
+		self.left_slide  = asset_loader(bag, bag.loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(bag, bag.loaded_asset_dc, "right-slide.png", True)
 
 	def render(self):
-
 		w = window_size[0]
 		h = window_size[1]
 
@@ -16166,16 +16172,16 @@ class MiniMode2:
 				ddt.rect(seek_rect, colour)
 
 class MiniMode3:
-
-	def __init__(self):
-
+	def __init__(self, bag: Bag, gui: GuiVar):
+		self.window_size = bag.window_size
+		self.gui = gui
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
 		self.volume_timer.force_set(100)
 
-		self.left_slide = asset_loader(bag, loaded_asset_dc, "left-slide.png", True)
-		self.right_slide = asset_loader(bag, loaded_asset_dc, "right-slide.png", True)
+		self.left_slide  = asset_loader(bag, bag.loaded_asset_dc, "left-slide.png", True)
+		self.right_slide = asset_loader(bag, bag.loaded_asset_dc, "right-slide.png", True)
 
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
@@ -23053,12 +23059,13 @@ class Directories:
 @dataclass
 class Bag:
 	"""Holder object for all configs"""
-	console:                Console
+	console:                DConsole
 	dirs:                   Directories
 	prefs:                  Prefs
 	formats:                Formats
 	renderer:               renderer
 	ddt:                    TDraw
+	fonts:                  Fonts
 	tls_context:            SSLContext
 	sdl_syswminfo:          SDL_SysWMinfo
 	macos:                  bool
@@ -39271,6 +39278,7 @@ def main(holder: Holder):
 	radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
 
 	ddt = TDraw(renderer)
+	fonts = Fonts()
 
 	prefs = Prefs(
 		user_directory=user_directory,
@@ -39293,6 +39301,7 @@ def main(holder: Holder):
 		dirs=dirs,
 		prefs=prefs,
 		ddt=ddt,
+		fonts=fonts,
 		formats=formats,
 		renderer=renderer,
 		sdl_syswminfo=sss,
@@ -39340,7 +39349,6 @@ def main(holder: Holder):
 
 	# Functions for reading and setting play counts
 	album_star_store = AlbumStarStore()
-	fonts = Fonts()
 	inp = Input(gui=gui)
 	keymaps = KeyMap(bag=bag)
 
@@ -40607,6 +40615,10 @@ def main(holder: Holder):
 	repeat_menu.add(MenuItem(_("Repeat Track"), menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), menu_album_repeat))
 
+	filter_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "filter.png", True))
+	filter_icon.colour = [43, 213, 255, 255]
+	filter_icon.xoff = 1
+
 	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), create_artist_pl, pass_ref=True, icon=filter_icon))
 	artist_list_menu.add_sub(_("View..."), 140)
 	artist_list_menu.add_to_sub(0, MenuItem(_("Sort Alphabetically"), aa_sort_alpha))
@@ -40624,10 +40636,6 @@ def main(holder: Holder):
 
 	artist_info_menu.add(MenuItem(_("Close Panel"), artist_info_panel_close))
 	artist_info_menu.add(MenuItem(_("Make Large"), toggle_bio_size, toggle_bio_size_deco))
-
-	filter_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "filter.png", True))
-	filter_icon.colour = [43, 213, 255, 255]
-	filter_icon.xoff = 1
 
 	folder_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "folder.png", True))
 	info_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "info.png", True))
@@ -41433,18 +41441,18 @@ def main(holder: Holder):
 
 	fields = Fields()
 
-	pref_box = Over()
+	pref_box = Over(bag=bag, gui=gui)
 
 	inc_arrow = asset_loader(bag, loaded_asset_dc, "inc.png", True)
 	dec_arrow = asset_loader(bag, loaded_asset_dc, "dec.png", True)
 	corner_icon = asset_loader(bag, loaded_asset_dc, "corner.png", True)
 
-	top_panel = TopPanel()
-	bottom_bar1 = BottomBarType1()
-	bottom_bar_ao1 = BottomBarType_ao1()
-	mini_mode = MiniMode()
-	mini_mode2 = MiniMode2()
-	mini_mode3 = MiniMode3()
+	top_panel = TopPanel(bag=bag, gui=gui)
+	bottom_bar1 = BottomBarType1(bag=bag, gui=gui)
+	bottom_bar_ao1 = BottomBarType_ao1(bag=bag, gui=gui)
+	mini_mode = MiniMode(bag=bag, gui=gui)
+	mini_mode2 = MiniMode2(bag=bag, gui=gui)
+	mini_mode3 = MiniMode3(bag=bag, gui=gui)
 
 	restore_ignore_timer = Timer()
 	restore_ignore_timer.force_set(100)
