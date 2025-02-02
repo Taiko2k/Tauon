@@ -1549,10 +1549,11 @@ class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 
 	# C-PC
-	def __init__(self, bag: Bag):
-		prefs = bag.prefs
-		#self.tauon =
-		self.running:           bool = True
+	def __init__(self, bag: Bag, tauon: Tauon):
+		self.tauon                    = tauon
+		self.gui                      = tauon.gui
+		self.smtc:               bool = tauon.bag.smtc
+		self.running:            bool = True
 		self.prefs:             Prefs = bag.prefs
 		self.install_directory: Path  = bag.dirs.install_directory
 
@@ -1603,11 +1604,11 @@ class PlayerCtl:
 		self.playerCommandReady = False
 		self.playing_state:    int = 0
 		self.playing_length: float = 0
-		self.jump_time = 0
-		self.random_mode = prefs.random_mode
-		self.repeat_mode = prefs.repeat_mode
-		self.album_repeat_mode = prefs.album_repeat_mode
-		self.album_shuffle_mode = prefs.album_shuffle_mode
+		self.jump_time             = 0
+		self.random_mode           = self.prefs.random_mode
+		self.repeat_mode           = self.prefs.repeat_mode
+		self.album_repeat_mode     = self.prefs.album_repeat_mode
+		self.album_shuffle_mode    = self.prefs.album_shuffle_mode
 		# self.album_shuffle_pool = []
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
@@ -1773,8 +1774,8 @@ class PlayerCtl:
 		self.notify_in_progress = False
 
 	def notify_update(self, mpris: bool = True) -> None:
-		tauon.tray_releases += 1
-		if tauon.tray_lock.locked():
+		self.tauon.tray_releases += 1
+		if self.tauon.tray_lock.locked():
 			try:
 					tauon.tray_lock.release()
 			except RuntimeError as e:
@@ -1785,7 +1786,7 @@ class PlayerCtl:
 			except Exception:
 				logging.exception("Failed to release tray_lock")
 
-		if mpris and smtc:
+		if mpris and self.smtc:
 			tr = self.playing_object()
 			if tr:
 				state = 0
@@ -1817,7 +1818,7 @@ class PlayerCtl:
 			shoot = threading.Thread(target=self.notify_update_fire)
 			shoot.daemon = True
 			shoot.start()
-		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
+		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
 			tauon.thread_manager.ready("style")
 
 	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
@@ -5051,7 +5052,7 @@ class ThumbTracks:
 class Tauon:
 	"""Root class for everything Tauon"""
 	def __init__(self, holder: Holder, bag: Bag, strings: Strings, lfm_scrobbler: LastScrob, gui: GuiVar):
-
+		self.bag = bag
 		self.t_title             = holder.t_title
 		self.t_version           = holder.t_version
 		self.t_agent             = holder.t_agent
@@ -5064,10 +5065,10 @@ class Tauon:
 		self.dummy_event:               SDL_Event = SDL_Event()
 		self.translate                            = _
 		self.strings:                     Strings = strings
-		self.pctl:                      PlayerCtl = PlayerCtl(bag)
+		self.gui:                          GuiVar = gui
+		self.pctl:                      PlayerCtl = PlayerCtl(bag, self)
 		self.lfm_scrobbler:             LastScrob = lfm_scrobbler
 		self.star_store:                StarStore = StarStore(bag, self)
-		self.gui:                          GuiVar = gui
 		self.prefs:                         Prefs = bag.prefs
 		self.cache_directory:                Path = bag.dirs.cache_directory
 		self.user_directory:          Path | None = bag.dirs.user_directory
@@ -23555,13 +23556,14 @@ class Bag:
 	renderer:               renderer
 	ddt:                    TDraw
 	fonts:                  Fonts
-	tls_context:            SSLContext
+	tls_context:            ssl.SSLContext
 	sdl_syswminfo:          SDL_SysWMinfo
 	macos:                  bool
 	msys:                   bool
 	phone:                  bool
 	pump:                   bool
 	snap_mode:              bool
+	smtc:                   bool
 	desktop:                str | None
 	system:                 str
 	launch_prefix:          str
@@ -28596,7 +28598,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 		pctl.active_playlist_playing = pctl.active_playlist_viewing
 		pctl.playlist_playing_position = -1
 
-	test_show_add_home_music()
+	test_show_add_home_music(tauon=tauon)
 
 	# Cleanup
 	ids = []
@@ -38825,7 +38827,10 @@ def save_state() -> None:
 	except Exception:
 		logging.exception("Unknown error encountered while writing database")
 
-def test_show_add_home_music() -> None:
+def test_show_add_home_music(tauon: Tauon) -> None:
+	gui = tauon.gui
+	pctl = tauon.pctl
+	music_directory = tauon.bag.dirs.music_directory
 	gui.add_music_folder_ready = True
 
 	if music_directory is None:
@@ -39734,6 +39739,7 @@ def main(holder: Holder):
 	p_force_queue: list[TauonQueueItem] = []
 
 	reload_state = None
+	smtc = False
 
 	radio_playlist_viewing = 0
 	radio_playlists = [{"uid": uid_gen(), "name": "Default", "items": []}]
@@ -39771,6 +39777,7 @@ def main(holder: Holder):
 		sdl_syswminfo=sss,
 		system=system,
 		pump=True,
+		smtc=smtc,
 		macos=macos,
 		msys=msys,
 		phone=phone,
@@ -40385,7 +40392,6 @@ def main(holder: Holder):
 	if prefs.use_gamepad:
 		SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)
 
-	smtc = False
 
 	if msys and win_ver >= 10:
 		#logging.info(sss.info.win.window)
@@ -42086,7 +42092,7 @@ def main(holder: Holder):
 
 	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 	# SDL_EventState(SDL_SYSWMEVENT, 1)
-	test_show_add_home_music()
+	test_show_add_home_music(tauon=tauon)
 
 	if gui.restart_album_mode:
 		toggle_album_mode(True)
