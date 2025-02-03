@@ -47,17 +47,17 @@ if TYPE_CHECKING:
 
 @dataclass
 class RadioStation:
-	title: str
-	stream_url: str
-	country: str
-	website_url: str
-	icon: str
+	title:               str
+	stream_url:          str
+	country:             str = ""
+	website_url:         str = ""
+	icon:                str = ""
 	stream_url_fallback: str = ""
 
 @dataclass
 class RadioPlaylist:
-	uid: int
-	name: str
+	name:   str
+	uid:    int
 	scroll: int = 0
 	stations: list[RadioStation] = field(default_factory=list)
 

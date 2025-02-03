@@ -18252,7 +18252,9 @@ class RadioBox:
 			elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
 				radio = self.station_editing
 				if self.add_mode:
-					radio: RadioStation = RadioStation()
+					radio: RadioStation = RadioStation(
+						title=self.radio_field_title.text,
+						stream_url=self.radio_field.text)
 				radio.title = self.radio_field_title.text
 				if radio.stream_url != self.radio_field.text:
 					radio.stream_url = self.radio_field.text
@@ -26181,14 +26183,10 @@ def load_m3u(path: str) -> None:
 					line_title = bline.split(",", 1)[1].strip("\r\n").strip()
 
 			if line.startswith("http"):
-				radio: RadioStation = RadioStation()
-				radio.stream_url = line
-
-				if line_title:
-					radio.title = line_title
-				else:
-					radio.title = os.path.splitext(os.path.basename(path))[0].strip()
-
+				radio: RadioStation = RadioStation(
+					stream_url=line
+					title=line_title if line_title or os.path.splitext(os.path.basename(path))[0].strip()
+				)
 				stations.append(radio)
 
 				if gui.auto_play_import:
