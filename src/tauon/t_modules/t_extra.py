@@ -52,7 +52,7 @@ class RadioStation:
 	country: str
 	website_url: str
 	icon: str
-	stream_url_fallback: str = ""
+	stream_url_fallback: str
 
 @dataclass
 class RadioPlaylist:

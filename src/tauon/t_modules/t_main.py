@@ -28191,7 +28191,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 	if gui.radio_view:
 		del pctl.radio_playlists[index]
 		if not pctl.radio_playlists:
-			pctl.radio_playlists = [RadioPlaylist(uid=uid_gen(),name ="Default", stations=[])]
+			pctl.radio_playlists = [RadioPlaylist(uid=uid_gen(),name="Default", stations=[])]
 		return
 
 	global default_playlist
@@ -38540,7 +38540,7 @@ def test_show_add_home_music() -> None:
 			gui.add_music_folder_ready = False
 			break
 
-def menu_is_open():
+def menu_is_open() -> bool:
 	for menu in Menu.instances:
 		if menu.active:
 			return True
