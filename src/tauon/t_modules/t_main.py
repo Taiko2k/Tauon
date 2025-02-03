@@ -33194,7 +33194,7 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 
 	gui.update += 1 # TODO(Martin): WTF Unreachable??
 
-def toggle_album_mode(force_on=False):
+def toggle_album_mode(force_on: bool = False) -> None:
 	global album_mode
 	global window_size
 	global update_layout
@@ -33204,7 +33204,6 @@ def toggle_album_mode(force_on=False):
 	gui.gall_tab_enter = False
 
 	if album_mode is True:
-
 		album_mode = False
 		# album_playlist_width = gui.playlist_width
 		# old_album_pos = gui.album_scroll_px
@@ -33217,7 +33216,6 @@ def toggle_album_mode(force_on=False):
 			exit_combo()
 
 		gui.rsp = True
-
 		gui.rspw = gui.pref_gallery_w
 
 	space = window_size[0] - gui.rspw
@@ -35852,7 +35850,7 @@ def worker1(tauon: Tauon) -> None:
 			if gui.im_cancel:
 				return
 
-	def cache_paths():
+	def cache_paths() -> tuple[dict, dict]:
 		dic = {}
 		dic2 = {}
 		for key, value in pctl.master_library.items():
@@ -35876,7 +35874,6 @@ def worker1(tauon: Tauon) -> None:
 
 	active_timer = Timer()
 	while True:
-
 		if not tauon.bag.after_scan:
 			time.sleep(0.1)
 
@@ -38075,12 +38072,12 @@ def update_layout_do(tauon: Tauon):
 		gui.rspw = 100 * gui.scale
 
 	# Lock right side panel to full size if fully extended -----
-	if prefs.side_panel_layout == 0 and not album_mode:
+	if prefs.side_panel_layout == 0 and not prefs.album_mode:
 		max_w = round(
 			((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
 		# 17 here is the art box inset value
 
-		if not album_mode and gui.rspw > max_w - 12 * gui.scale and side_drag:
+		if not prefs.album_mode and gui.rspw > max_w - 12 * gui.scale and side_drag:
 			gui.rsp_full_lock = True
 	# ----------------------------------------------------------
 
@@ -38140,12 +38137,11 @@ def update_layout_do(tauon: Tauon):
 	# -----
 
 	# Adjust for for compact window sizes ----
-	if (prefs.always_art_header or (w < 600 * gui.scale and not gui.rsp and prefs.art_in_top_panel)) and not album_mode:
+	if (prefs.always_art_header or (w < 600 * gui.scale and not gui.rsp and prefs.art_in_top_panel)) and not prefs.album_mode:
 		gui.top_bar_mode2 = True
 		gui.panelY = round(100 * gui.scale)
 		gui.playlist_top = gui.panelY + (8 * gui.scale)
 		gui.playlist_top_bk = gui.playlist_top
-
 	else:
 		gui.top_bar_mode2 = False
 		gui.panelY = round(30 * gui.scale)
@@ -38161,7 +38157,6 @@ def update_layout_do(tauon: Tauon):
 		gui.artist_panel_height = 320 * gui.scale
 		if window_size[0] < 600 * gui.scale:
 			gui.artist_panel_height = 200 * gui.scale
-
 	else:
 		gui.artist_panel_height = 200 * gui.scale
 		if window_size[0] < 600 * gui.scale:
@@ -38220,8 +38215,8 @@ def update_layout_do(tauon: Tauon):
 
 	if gui.mode == 1:
 		if not gui.maximized and not gui.lowered and gui.mode != 3:
-			gui.save_size[0] = logical_size[0]
-			gui.save_size[1] = logical_size[1]
+			gui.save_size[0] = tauon.bag.logical_size[0]
+			gui.save_size[1] = tauon.bag.logical_size[1]
 
 		bottom_bar1.update()
 
@@ -38243,7 +38238,6 @@ def update_layout_do(tauon: Tauon):
 
 		gui.offset_extra = 0
 		if draw_border and not prefs.left_window_control:
-
 			offset = 61 * gui.scale
 			if not draw_min_button:
 				offset -= 35 * gui.scale
@@ -38271,7 +38265,6 @@ def update_layout_do(tauon: Tauon):
 			album_v_gap = 25 * gui.scale
 
 		if prefs.thin_gallery_borders:
-
 			if gui.gallery_show_text:
 				album_h_gap = 20 * gui.scale
 				album_v_gap = 55 * gui.scale
@@ -38304,7 +38297,6 @@ def update_layout_do(tauon: Tauon):
 		if gui.scale != 1:
 			real_font_px = ddt.f_dict[gui.row_font_size][2]
 			# gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("AbcD", gui.row_font_size, 100) + round(1.3 * gui.scale)
-
 			if gui.scale < 1.3:
 				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.9 * gui.scale)
 			elif gui.scale < 1.5:
