@@ -13585,6 +13585,7 @@ class TopPanel:
 	def __init__(self, bag: Bag, gui: GuiVar):
 		self.fonts = bag.fonts
 		self.gui = gui
+		self.draw_max_button = bag.draw_max_button
 		self.height = gui.panelY
 		self.ty = 0
 
@@ -13706,17 +13707,17 @@ class TopPanel:
 			if gui.macstyle:
 				wwx = 24
 				# wwx = round(64 * gui.scale)
-				if draw_min_button:
+				if self.draw_min_button:
 					wwx += 20
-				if draw_max_button:
+				if self.draw_max_button:
 					wwx += 20
 				wwx = round(wwx * gui.scale)
 			else:
 				wwx = 26
 				# wwx = round(90 * gui.scale)
-				if draw_min_button:
+				if self.draw_min_button:
 					wwx += 35
-				if draw_max_button:
+				if self.draw_max_button:
 					wwx += 33
 				wwx = round(wwx * gui.scale)
 
@@ -13794,7 +13795,7 @@ class TopPanel:
 		offset = 15 * gui.scale
 		if draw_border and not prefs.left_window_control:
 			offset += 61 * gui.scale
-			if draw_max_button:
+			if self.draw_max_button:
 				offset += 61 * gui.scale
 		if gui.turbo:
 			offset += 90 * gui.scale
@@ -19748,7 +19749,6 @@ class ArtistList:
 
 		# Draw labels
 		if not thin_mode or (coll(area) and is_level_zero() and y + self.tab_h < window_size[1] - gui.panelBY):
-
 			album_mode = False
 			for albums in self.current_album_counts.values():
 				if len(albums) > 1:
@@ -19795,7 +19795,6 @@ class ArtistList:
 		if gui.compact_artist_list:
 			thin_mode = True
 			line2_colour = [115, 115, 115, 255]
-
 		elif test_lumi(colours.side_panel_background) < 0.55 and not thin_mode:
 			light_mode = True
 			fade_max = 20
@@ -19805,9 +19804,8 @@ class ArtistList:
 		# Fade on click
 		bg = colours.side_panel_background
 		if not thin_mode:
-
-			if coll(area) and is_level_zero(
-					True):  # or pctl.get_track(default_playlist[pctl.playlist_view_position]).artist == artist:
+			if coll(area) and is_level_zero(True):
+			# or pctl.get_track(default_playlist[pctl.playlist_view_position]).artist == artist:
 				ddt.rect(area, [50, 50, 50, 50])
 				bg = alpha_blend([50, 50, 50, 50], colours.side_panel_background)
 			else:
@@ -19815,7 +19813,6 @@ class ArtistList:
 				fade = 0
 				t = self.click_highlight_timer.get()
 				if self.click_ref == artist and (t < 2.2 or artist_list_menu.active):
-
 					if t < 1.9 or artist_list_menu.active:
 						fade = fade_max
 					else:
@@ -23535,6 +23532,8 @@ class Bag:
 	pump:                   bool
 	snap_mode:              bool
 	smtc:                   bool
+	draw_min_button:        bool
+	draw_max_button:        bool
 	desktop:                str | None
 	system:                 str
 	launch_prefix:          str
@@ -25824,7 +25823,7 @@ def draw_window_tools():
 
 	# maximize
 
-	if draw_max_button and gui.mode != 3:
+	if self.draw_max_button and gui.mode != 3:
 		if macstyle:
 			if r:
 				xx -= round(20 * gui.scale)
@@ -25861,7 +25860,6 @@ def draw_window_tools():
 	# minimize
 
 	if draw_min_button:
-
 		# x = window_size[0] - round(65 * gui.scale)
 		# if draw_max_button and not gui.mode == 3:
 		#	 x -= round(34 * gui.scale)
@@ -25880,7 +25878,6 @@ def draw_window_tools():
 			if coll(rect) and not gui.mouse_unknown:
 				if (mouse_up or ab_click) and coll_point(last_click_location, rect):
 					do_maximize_button()
-
 		else:
 			if r:
 				xx -= mi_width
@@ -38063,9 +38060,8 @@ def update_layout_do(tauon: Tauon):
 		gui.switch_showcase_off = False
 		exit_combo(restore=True)
 
-	global draw_max_button
-	if draw_max_button and prefs.force_hide_max_button:
-		draw_max_button = False
+	if tauon.bag.draw_max_button and prefs.force_hide_max_button:
+		tauon.bag.draw_max_button = False
 
 	if gui.theme_name != prefs.theme_name:
 		gui.reload_theme = True
@@ -39428,38 +39424,38 @@ def main(holder: Holder):
 
 
 	# Setting various timers
-	message_box_min_timer = Timer()
-	cursor_blink_timer = Timer()
-	animate_monitor_timer = Timer()
-	min_render_timer = Timer()
-	check_file_timer = Timer()
-	vis_rate_timer = Timer()
-	vis_decay_timer = Timer()
-	scroll_timer = Timer()
-	perf_timer = Timer()
-	quick_d_timer = Timer()
-	core_timer = Timer()
-	sleep_timer = Timer()
+	message_box_min_timer        = Timer()
+	cursor_blink_timer           = Timer()
+	animate_monitor_timer        = Timer()
+	min_render_timer             = Timer()
+	check_file_timer             = Timer()
+	vis_rate_timer               = Timer()
+	vis_decay_timer              = Timer()
+	scroll_timer                 = Timer()
+	perf_timer                   = Timer()
+	quick_d_timer                = Timer()
+	core_timer                   = Timer()
+	sleep_timer                  = Timer()
 	gallery_select_animate_timer = Timer()
 	gallery_select_animate_timer.force_set(10)
-	search_clear_timer = Timer()
-	gall_pl_switch_timer = Timer()
+	search_clear_timer           = Timer()
+	gall_pl_switch_timer         = Timer()
 	gall_pl_switch_timer.force_set(999)
-	d_click_timer = Timer()
+	d_click_timer                = Timer()
 	d_click_timer.force_set(10)
-	lyrics_check_timer = Timer()
-	scroll_hide_timer = Timer(100)
-	scroll_gallery_hide_timer = Timer(100)
-	get_lfm_wait_timer = Timer(10)
-	lyrics_fetch_timer = Timer(10)
-	gallery_load_delay = Timer(10)
-	queue_add_timer = Timer(100)
-	toast_love_timer = Timer(100)
-	toast_mode_timer = Timer(100)
-	scrobble_warning_timer = Timer(1000)
-	sync_file_timer = Timer(1000)
-	sync_file_update_timer = Timer(1000)
-	sync_get_device_click_timer = Timer(100)
+	lyrics_check_timer           = Timer()
+	scroll_hide_timer            = Timer(100)
+	scroll_gallery_hide_timer    = Timer(100)
+	get_lfm_wait_timer           = Timer(10)
+	lyrics_fetch_timer           = Timer(10)
+	gallery_load_delay           = Timer(10)
+	queue_add_timer              = Timer(100)
+	toast_love_timer             = Timer(100)
+	toast_mode_timer             = Timer(100)
+	scrobble_warning_timer       = Timer(1000)
+	sync_file_timer              = Timer(1000)
+	sync_file_update_timer       = Timer(1000)
+	sync_get_device_click_timer  = Timer(100)
 
 	f_store = FunctionStore()
 
@@ -39471,8 +39467,8 @@ def main(holder: Holder):
 
 	# GUI Variables -------------------------------------------------------------------------------------------
 
-	# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
-
+	# Variables now go in the GuiVar, PlayerCtl, Input, Prefs and Bag class instances.
+	# The following just haven't been moved yet:
 	console = DConsole()
 
 	spot_cache_saved_albums = []
@@ -39481,7 +39477,6 @@ def main(holder: Holder):
 
 	side_panel_text_align = 0
 
-	album_mode = False
 	spec_smoothing = True
 
 	# gui.offset_extra = 0
@@ -39701,20 +39696,38 @@ def main(holder: Holder):
 	colours = ColoursClass()
 	colours.post_config()
 
+	force_subpixel_text = False
+	if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
+		force_subpixel_text = True
+	dc_device = False  # (BASS) Disconnect device on pause
+	if desktop == "KDE":
+		dc_device = True
+	encoder_output = music_directory / "encode-output"
+	if music_directory is None:
+		encoder_output = user_directory / "encoder"
+	power_save = False
+	if macos or phone:
+		power_save = True
+
 	prefs = Prefs(
-		user_directory=user_directory,
-		music_directory=music_directory,
-		cache_directory=cache_directory,
+		power_save=power_save,
+		encoder_output=encoder_output,
+	#	user_directory=user_directory,
+	#	music_directory=music_directory,
+	#	cache_directory=cache_directory,
+		force_subpixel_text=force_subpixel_text,
+		dc_device=dc_device,
 		macos=macos,
+	#	detect_macstyle=detect_macstyle,
+		macstyle=macos or detect_macstyle,
+		left_window_control=macos or left_window_control,
 		phone=phone,
-		left_window_control=left_window_control,
-		detect_macstyle=detect_macstyle,
-		gtk_settings=gtk_settings,
+	#	gtk_settings=gtk_settings,
 		discord_allow=discord_allow,
 		flatpak_mode=flatpak_mode,
 		desktop=desktop,
 		window_opacity=window_opacity,
-		scale=scale,
+		ui_scale=scale,
 	)
 
 	bag = Bag(
@@ -39729,6 +39742,8 @@ def main(holder: Holder):
 		sdl_syswminfo=sss,
 		system=system,
 		pump=True,
+		draw_min_button=draw_min_button,
+		draw_max_button=draw_max_button,
 		smtc=smtc,
 		macos=macos,
 		msys=msys,
