@@ -7213,7 +7213,6 @@ class TextBox:
 				else:
 					ddt.rect((xx, yy, 1 * gui.scale, 14 * gui.scale), colour)
 
-		print((active, editline, input_text))
 		if active:
 			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
 			if editline != "" and editline != input_text:
