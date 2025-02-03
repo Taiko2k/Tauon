@@ -26185,7 +26185,7 @@ def load_m3u(path: str) -> None:
 			if line.startswith("http"):
 				radio: RadioStation = RadioStation(
 					stream_url=line
-					title=line_title if line_title or os.path.splitext(os.path.basename(path))[0].strip()
+					title=line_title if line_title else os.path.splitext(os.path.basename(path))[0].strip()
 				)
 				stations.append(radio)
 
