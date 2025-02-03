@@ -4729,20 +4729,21 @@ class Menu:
 		self.active = True
 
 class GallClass:
-	def __init__(self, size=250, save_out=True):
-		self.gall = {}
-		self.size = size
-		self.queue = []
-		self.key_list = []
-		self.save_out = save_out
-		self.i = 0
-		self.lock = threading.Lock()
-		self.limit = 60
+	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True) -> None:
+		self.gui         = tauon.gui
+		self.prefs       = tauon.prefs
+		self.search_over = tauon.search_over
+		self.gall        = {}
+		self.size        = size
+		self.queue       = []
+		self.key_list    = []
+		self.save_out    = save_out
+		self.i           = 0
+		self.lock        = threading.Lock()
+		self.limit       = 60
 
 	def get_file_source(self, track_object: TrackClass):
-
 		global album_art_gen
-
 		sources = album_art_gen.get_sources(track_object)
 
 		if len(sources) == 0:
@@ -4751,25 +4752,23 @@ class GallClass:
 		offset = album_art_gen.get_offset(track_object.fullpath, sources)
 		return sources[offset], offset
 
-	def worker_render(self):
-
+	def worker_render(self) -> None:
 		self.lock.acquire()
 		# time.sleep(0.1)
 
-		if search_over.active:
+		if self.search_over.active:
 			while QuickThumbnail.queue:
 				img = QuickThumbnail.queue.pop(0)
 				response = urllib.request.urlopen(img.url, context=tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
-				gui.update += 1
+				self.gui.update += 1
 
 		while len(self.queue) > 0:
-
 			source_image = None
 
-			if gui.halt_image_rendering:
+			if self.gui.halt_image_rendering:
 				self.queue.clear()
 				break
 
@@ -4794,14 +4793,13 @@ class GallClass:
 			cache_load = False
 
 			try:
-
 				if True:
 					offset = 0
 					parent_folder = key[0].parent_folder_path
 					if parent_folder in folder_image_offsets:
 						offset = folder_image_offsets[parent_folder]
 					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+					if self.prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
 						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
 						# logging.info('load from cache')
 						cache_load = True
@@ -4822,7 +4820,7 @@ class GallClass:
 
 					# gall_render_last_timer.set()
 
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+					if self.prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
 						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
 						logging.info("slow load image")
 						cache_load = True
@@ -4863,7 +4861,7 @@ class GallClass:
 
 					im.save(g, "BMP")
 
-					if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
+					if not error and self.save_out and self.prefs.cache_gallery and not os.path.isfile(
 							os.path.join(g_cache_dir, img_name + ".jpg")):
 						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
 
@@ -4874,7 +4872,7 @@ class GallClass:
 				order = [2, g, None, None]
 				self.gall[key] = order
 
-				gui.update += 1
+				self.gui.update += 1
 				if source_image:
 					source_image.close()
 					source_image = None
@@ -4886,7 +4884,7 @@ class GallClass:
 				logging.exception("Image load failed on track: " + key[0].fullpath)
 				order = [0, None, None, None]
 				self.gall[key] = order
-				gui.update += 1
+				self.gui.update += 1
 				# del self.queue[0]
 
 			if size < 150:
@@ -5036,12 +5034,15 @@ class Tauon:
 		self.desktop:          str | None = bag.desktop
 		self.device                       = socket.gethostname()
 		self.after_scan: list[TrackClass] = []
+		self.worker2_lock                 = threading.Lock()
 		#TODO(Martin) : Fix this by moving the class to root of the module
 		self.cachement:  player4.Cachement | None = None
 		self.dummy_event:               SDL_Event = SDL_Event()
 		self.translate                            = _
 		self.strings:                     Strings = strings
 		self.gui:                          GuiVar = gui
+		self.artist_list_box                      = ArtistList(tauon=self)
+		self.search_over                          = SearchOverlay(tauon=self)
 		self.radiobox                             = RadioBox(tauon=self)
 		self.lfm_scrobbler:             LastScrob = lfm_scrobbler
 		self.pctl:                      PlayerCtl = PlayerCtl(tauon=self)
@@ -5063,7 +5064,7 @@ class Tauon:
 		self.msys                                 = bag.msys
 		self.TrackClass                           = TrackClass
 		self.pl_gen                               = pl_gen
-		self.gall_ren                             = GallClass(bag.album_mode_art_size)
+		self.gall_ren                             = GallClass(tauon=self, size=bag.album_mode_art_size)
 		self.QuickThumbnail                       = QuickThumbnail
 		self.thumb_tracks                         = ThumbTracks()
 		self.chunker                              = Chunker()
@@ -5078,7 +5079,7 @@ class Tauon:
 		self.encode_folder_name                   = encode_folder_name
 		self.encode_track_name                    = encode_track_name
 
-		self.worker2_lock = threading.Lock()
+
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
 
@@ -19332,11 +19333,10 @@ class PlaylistBox:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
 
 class ArtistList:
+	def __init__(self, tauon: Tauon) -> None:
 
-	def __init__(self, bag: Bag, gui: GuiVar):
-
-		self.tab_h = round(60 * gui.scale)
-		self.thumb_size = round(55 * gui.scale)
+		self.tab_h = round(60 * tauon.gui.scale)
+		self.thumb_size = round(55 * tauon.gui.scale)
 
 		self.current_artists = []
 		self.current_album_counts = {}
@@ -19369,11 +19369,9 @@ class ArtistList:
 		self.sample_tracks = {}
 
 	def load_img(self, artist):
-
 		filepath = artist_info_box.get_data(artist, get_img_path=True)
 
 		if filepath and os.path.isfile(filepath):
-
 			try:
 				g = io.BytesIO()
 				g.seek(0)
@@ -19497,7 +19495,6 @@ class ArtistList:
 		b = 0
 
 		try:
-
 			for item in current_pl.playlist_ids:
 				b += 1
 				if b % 100 == 0:
@@ -19520,9 +19517,7 @@ class ArtistList:
 					pp = star_store.get(item)
 
 				for artist in artists:
-
 					if artist:
-
 						# Add play time
 						if prefs.artist_list_sort_mode == "play":
 							p = play_time.get(artist, 0)
@@ -19556,7 +19551,6 @@ class ArtistList:
 				all.sort(key=play_time.get, reverse=True)
 			else:
 				all.sort(key=lambda y: y.lower().removeprefix("the "))
-
 		except Exception:
 			logging.exception("Album scan failure")
 			time.sleep(4)
@@ -19583,7 +19577,6 @@ class ArtistList:
 		gui.update += 1
 
 	def locate_artist_letter(self, text):
-
 		if not text or prefs.artist_list_sort_mode != "alpha":
 			return
 
@@ -19605,7 +19598,6 @@ class ArtistList:
 			self.saves[viewing_pl_id][2] = self.scroll_position
 
 	def locate_artist(self, track: TrackClass):
-
 		for i, item in enumerate(self.current_artists):
 			if item == track.artist or item == track.album_artist or (
 					"artists" in track.misc and item in track.misc["artists"]):
@@ -19617,7 +19609,6 @@ class ArtistList:
 			self.saves[viewing_pl_id][2] = self.scroll_position
 
 	def draw_card_text_only(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg):
-
 		album_mode = False
 		for albums in self.current_album_counts.values():
 			if len(albums) > 1:
@@ -19652,7 +19643,6 @@ class ArtistList:
 		#          extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
 	def draw_card_with_thumbnail(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg):
-
 		if artist not in self.thumb_cache:
 			self.load_img(artist)
 
@@ -19790,7 +19780,6 @@ class ArtistList:
 				extra_text_space + w - x_text - 15 * gui.scale, bg=bg)
 
 	def draw_card(self, artist, x, y, w):
-
 		area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 2)
 		if prefs.artist_list_style == 2:
 			area = (4 * gui.scale, y, w - 26 * gui.scale, self.tab_h - 1)
@@ -34911,11 +34900,10 @@ def worker4(tauon: Tauon) -> None:
 			return
 
 def worker2(tauon: Tauon) -> None:
+	search_over = tauon.search_over
 	while True:
 		tauon.worker2_lock.acquire()
-
 		if search_over.search_text.text and not (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text[0]) < 128):
-
 			if search_over.spotify_mode:
 				t = spot_search_rate_timer.get()
 				if t < 1:
@@ -34933,10 +34921,8 @@ def worker2(tauon: Tauon) -> None:
 						mode="warning")
 				search_over.searched_text = search_over.search_text.text
 				search_over.sip = False
-
 			elif True:
 				# perf_timer.set()
-
 				temp_results = []
 
 				search_over.searched_text = search_over.search_text.text
@@ -34995,13 +34981,11 @@ def worker2(tauon: Tauon) -> None:
 				searched = set()
 
 				for playlist in pctl.multi_playlist:
-
 					# if "<" in playlist.title:
-					#     #logging.info("Skipping search on derivative playlist: " + playlist.title)
-					#     continue
+					# 	#logging.info("Skipping search on derivative playlist: " + playlist.title)
+					# 	continue
 
 					for track in playlist.playlist_ids:
-
 						if track in searched:
 							continue
 						searched.add(track)
@@ -35077,7 +35061,6 @@ def worker2(tauon: Tauon) -> None:
 
 						if len(s_text) > 2 and s_text in stem.replace("-", "").lower():
 							# if search_over.all_folders or (artist not in stem.lower() and album not in stem.lower()):
-
 							if stem in metas:
 								metas[stem] += 2
 							else:
@@ -35085,12 +35068,9 @@ def worker2(tauon: Tauon) -> None:
 								metas[stem] = 2
 
 						if s_text in genre:
-
 							if "/" in genre or "," in genre or ";" in genre:
-
 								for split in genre.replace(";", "/").replace(",", "/").split("/"):
 									if s_text in split:
-
 										split = genre_correct(split)
 										if prefs.sep_genre_multi:
 											split += "+"
@@ -35108,7 +35088,6 @@ def worker2(tauon: Tauon) -> None:
 									genres[name] = 1
 
 						if s_text in composer:
-
 							if t.composer in composers:
 								composers[t.composer] += 2
 							else:
@@ -35116,10 +35095,8 @@ def worker2(tauon: Tauon) -> None:
 								composers[t.composer] = 2
 
 						if s_text in date:
-
 							year = get_year_from_string(date)
 							if year:
-
 								if year in years:
 									years[year] += 1
 								else:
@@ -35127,7 +35104,6 @@ def worker2(tauon: Tauon) -> None:
 									years[year] = 1000
 
 						if search_magic(s_text, title + artist + filename + album + sartist + album_artist):
-
 							if "artists" in t.misc and t.misc["artists"]:
 								for a in t.misc["artists"]:
 									if search_magic(s_text, a.lower()):
@@ -35150,7 +35126,6 @@ def worker2(tauon: Tauon) -> None:
 											albums[t.album] = 1
 
 							elif search_magic(s_text, artist + sartist):
-
 								value = 1
 								if artist.startswith(s_text):
 									value = 10
@@ -35169,7 +35144,6 @@ def worker2(tauon: Tauon) -> None:
 									albums[t.album] = 1
 
 							elif search_magic(s_text, album_artist):
-
 								# Add album artist
 								value = 1
 								if t.album_artist.startswith(s_text):
@@ -35315,11 +35289,11 @@ def worker1(tauon: Tauon) -> None:
 	loaded_cue_cache = {}
 	added = []
 
-	def get_quoted_from_line(line):
+	def get_quoted_from_line(line: str) -> str:
+		"""Extract quoted or unquoted string from a line
 
-		# Extract quoted or unquoted string from a line
-		# e.g., 'FILE "01 - Track01.wav" WAVE' or 'TITLE Track01' or "PERFORMER 'Artist Name'"
-
+		e.g., 'FILE "01 - Track01.wav" WAVE' or 'TITLE Track01' or "PERFORMER 'Artist Name'"
+		"""
 		parts = line.split(None, 1)
 		if len(parts) < 2:
 			return ""
@@ -35335,15 +35309,13 @@ def worker1(tauon: Tauon) -> None:
 		# If not quoted, return the first word
 		return content.split()[0]
 
-	def add_from_cue(path):
-
+	def add_from_cue(path: str):
 		global added
 
 		if not msys:  # Windows terminal doesn't like unicode
 			logging.info("Reading CUE file: " + path)
 
 		try:
-
 			try:
 				with open(path, encoding="utf_8") as f:
 					content = f.readlines()
@@ -35911,18 +35883,19 @@ def worker1(tauon: Tauon) -> None:
 		if not tauon.bag.after_scan:
 			time.sleep(0.1)
 
-		if tauon.bag.after_scan or tauon.bag.load_orders or \
-				artist_list_box.load or \
-				artist_list_box.to_fetch or \
-				gui.regen_single_id or \
-				gui.regen_single > -1 or \
-				pctl.after_import_flag or \
-				tauon.worker_save_state or \
-				move_jobs or \
-				cm_clean_db or \
-				transcode_list or \
-				to_scan or \
-				loaderCommandReady:
+		if tauon.bag.after_scan \
+		or tauon.bag.load_orders \
+		or tauon.artist_list_box.load \
+		or tauon.artist_list_box.to_fetch \
+		or tauon.gui.regen_single_id \
+		or tauon.gui.regen_single > -1 \
+		or tauon.pctl.after_import_flag \
+		or tauon.worker_save_state \
+		or move_jobs \
+		or cm_clean_db \
+		or transcode_list \
+		or to_scan \
+		or loaderCommandReady:
 			active_timer.set()
 		elif active_timer.get() > 5:
 			return
@@ -41815,7 +41788,6 @@ def main(holder: Holder):
 	x_menu.add(MenuItem(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add))
 
 	added = []
-	search_over = SearchOverlay(tauon=tauon)
 	message_box = MessageBox()
 	nagbox = NagBox()
 
@@ -41892,7 +41864,6 @@ def main(holder: Holder):
 	tree_view_scroll = ScrollBox()
 	radio_view_scroll = ScrollBox()
 
-	artist_list_box = ArtistList(bag=bag, gui=gui)
 	tree_view_box = TreeView()
 
 	queue_box = QueueBox(gui=gui, queue_menu=queue_menu)
