@@ -6819,13 +6819,14 @@ class TextBox2:
 			if coll(rect) and not field_menu.active:
 				gui.cursor_want = 2
 
-		if active and editline != "" and editline != input_text:
-			ex = ddt.text((space + round(4 * gui.scale), 0), editline, [240, 230, 230, 255], font)
+		if active:
 			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
-			ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255])
+			if editline != "" and editline != input_text:
+				ex = ddt.text((space + round(4 * gui.scale), 0), editline, [240, 230, 230, 255], font)
+				ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255])
 
-			rect = sdl3.SDL_FRect(pixel_to_logical(x + space + tw + (5 * gui.scale)), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
-			sdl3.SDL_SetTextInputRect(rect)
+			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
+			sdl3.SDL_SetTextInputArea(t_window, rect, pixel_to_logical(space))
 
 		animate_monitor_timer.set()
 
@@ -7147,6 +7148,7 @@ class TextBox:
 						self.selection = 0
 
 			a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+
 			# logging.info("")
 			# logging.info(self.selection)
 			# logging.info(self.cursor_position)
@@ -7211,14 +7213,18 @@ class TextBox:
 				else:
 					ddt.rect((xx, yy, 1 * gui.scale, 14 * gui.scale), colour)
 
-		if active and editline != "" and editline != input_text:
-			ex = ddt.text((x + space + round(4 * gui.scale), y), editline, [240, 230, 230, 255], font)
+		print((active, editline, input_text))
+		if active:
 			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
-			ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
-				[245, 245, 245, 255])
+			if editline != "" and editline != input_text:
+				print("OK")
+				ex = ddt.text((x + space + round(4 * gui.scale), y), editline, [240, 230, 230, 255], font)
 
-			rect = sdl3.SDL_FRect(pixel_to_logical(x + space + tw + 5 * gui.scale), pixel_to_logical(y + th + 4 * gui.scale), 1, 1)
-			sdl3.SDL_SetTextInputRect(rect)
+				ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
+					[245, 245, 245, 255])
+
+			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
+			sdl3.SDL_SetTextInputArea(t_window, rect, pixel_to_logical(space))
 
 		animate_monitor_timer.set()
 
@@ -41849,17 +41855,18 @@ while pctl.running:
 			k_input = True
 			power += 5
 			gui.update += 2
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+			#print(event.gbutton.button)
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
 				if rt:
 					toggle_random()
 				else:
 					pctl.advance()
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
 				if rt:
 					toggle_repeat()
 				else:
 					pctl.back()
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
 				if rt:
 					pctl.show_current(highlight=True)
 				elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
@@ -41868,33 +41875,33 @@ while pctl.running:
 					pctl.play_pause()
 				else:
 					inp.key_return_press = True
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
 				if rt:
 					random_track()
 				else:
 					toggle_gallery_keycontrol(always_exit=True)
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_NORTH:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_NORTH:
 				if rt:
 					pctl.advance(rr=True)
 				else:
 					pctl.play_pause()
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_EAST:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_EAST:
 				if rt:
 					pctl.revert()
 				elif is_level_zero():
 					pctl.stop()
 				else:
 					key_esc_press = True
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
 				key_up_press = True
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 				key_down_press = True
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 				if gui.album_tab_mode:
 					key_left_press = True
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(1)
-			if event.cbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 				if gui.album_tab_mode:
 					key_right_press = True
 				elif is_level_zero() or quick_search_mode:
@@ -44067,8 +44074,6 @@ while pctl.running:
 							if album_on > len(album_dex):
 								break
 							render_pos += album_mode_art_size + album_v_gap
-
-
 
 
 					# POWER TAG BAR --------------
