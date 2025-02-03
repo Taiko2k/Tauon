@@ -13265,7 +13265,9 @@ class TopPanel:
 			gui.update_on_drag = True
 
 		# Draw the background
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		if prefs.shuffle_lock and not gui.compact_bar:
 			colour = [250, 250, 250, 255]
@@ -14229,7 +14231,9 @@ class BottomBarType1:
 		global clicked
 		global right_click
 
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background)
 
@@ -15078,7 +15082,9 @@ class BottomBarType_ao1:
 		global clicked
 		global right_click
 
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		right_offset = 0
 		if gui.display_time_mode >= 2:
@@ -43160,7 +43166,7 @@ while pctl.running:
 			colours.side_panel_background[3] = 80
 			colours.art_box[3] = 100
 			colours.window_frame[3] = 100
-			colours.bottom_panel_colour[3] = 190
+			colours.bottom_panel_colour[3] = 200
 			#colours.playlist_panel_background[3] = 220
 			#colours.playlist_box_background  = [0, 0, 0, 100]
 
@@ -43383,6 +43389,8 @@ while pctl.running:
 							w -= gui.lspw
 
 					x = window_size[0] - w
+					sx = x
+					sw = w
 					h = window_size[1] - gui.panelY - gui.panelBY
 
 					if not gui.show_playlist and inp.mouse_click:
@@ -43398,6 +43406,7 @@ while pctl.running:
 
 					rect = [x, gui.panelY, w, h]
 					ddt.rect(rect, colours.gallery_background)
+
 					# ddt.rect_r(rect, [255, 0, 0, 200], True)
 
 					area_x = w + 38 * gui.scale
@@ -44059,6 +44068,9 @@ while pctl.running:
 								break
 							render_pos += album_mode_art_size + album_v_gap
 
+
+
+
 					# POWER TAG BAR --------------
 
 					if gui.pt > 0:  # gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
@@ -44182,6 +44194,7 @@ while pctl.running:
 				except Exception:
 					logging.exception("Gallery render error!")
 				# END POWER BAR ------------------------
+
 
 			# End of gallery view
 			# --------------------------------------------------------------------------
