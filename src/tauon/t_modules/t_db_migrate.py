@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tauon.t_modules.t_extra import TauonPlaylist, TauonQueueItem
+from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, TauonPlaylist, TauonQueueItem
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TrackClass
@@ -28,7 +28,7 @@ def database_migrate(
 	gui: GuiVar,
 	gen_codes: dict[int, str],
 	prefs: Prefs,
-	radio_playlists: list[TauonPlaylist],
+	radio_playlists: list[dict[str, int | str | list[dict[str, str]]]] | list[RadioPlaylist],
 	p_force_queue: list | list[TauonQueueItem],
 	theme: int,
 ) -> tuple[
@@ -40,7 +40,7 @@ def database_migrate(
 	Prefs,
 	GuiVar,
 	dict[int, str],
-	list[TauonPlaylist]]:
+	list[RadioPlaylist]]:
 	"""Migrate database to a newer version if we're behind
 
 	Returns all the objects that could've been possibly changed:
@@ -542,5 +542,29 @@ def database_migrate(
 						auto_stop=queue[6]))
 		multi_playlist = new_multi_playlist
 		p_force_queue = new_queue
+
+	if db_version <= 69:
+		logging.info("Updating database to version 69")
+		new_radio_playlists: list[RadioPlaylist] = []
+		for playlist in radio_playlists:
+			stations: list[RadioStation] = []
+
+			for station in playlist["items"]:
+				stations.append(
+					RadioStation(
+						title=station["title"],
+						stream_url=station["stream_url"],
+						country=station["country"],
+						website_url=station["website_url"],
+						icon=station["icon"],
+						stream_url_fallback=station["stream_url_unresolved"] if "stream_url_unresolved" in station else ""))
+			new_radio_playlists.append(
+				RadioPlaylist(
+					uid=playlist["uid"],
+					name=playlist["name"],
+					scroll=playlist["scroll"] if "scroll" in playlist else 0,
+					stations=stations))
+		radio_playlists = new_radio_playlists
+
 
 	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
