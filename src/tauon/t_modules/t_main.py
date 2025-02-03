@@ -26354,8 +26354,8 @@ def load_xspf(path: str) -> None:
 		item = a[i]
 		if item["location"].startswith("http"):
 			radio = RadioStation(
-			stream_url=item["location"],
-			title=item["name"])
+				stream_url=item["location"],
+				title=item["name"])
 #			radio.scroll = 0 # TODO(Martin): This was here wrong as scrolling is meant to be for RadioPlaylist?
 			if item["info"].startswith("http"):
 				radio.website_url = item["info"]
