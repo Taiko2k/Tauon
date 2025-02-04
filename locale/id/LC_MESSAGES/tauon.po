@@ -6,16 +6,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2024-10-23 10:15+0000\n"
+"PO-Revision-Date: 2025-02-04 21:01+0000\n"
 "Last-Translator: Lieba Natur Brilian <gingalibadeidara@gmail.com>\n"
-"Language-Team: Indonesian <https://hosted.weblate.org/projects/tauon-music-"
-"box/tauon-music-box/id/>\n"
+"Language-Team: Indonesian <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/id/>\n"
 "Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.8.2-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -23,55 +23,69 @@ msgid ""
 "Error loading old database, did the program not exit properly after "
 "updating? Oh well."
 msgstr ""
+"Kesalahan saat memuat database lama, apakah program tidak menutup dengan "
+"benar setelah diperbarui? Oh tidak."
 
 #: src/tauon/t_modules/t_db_migrate.py:129
 msgid "Upgrade complete. Run a tag rescan if you want enable ReplayGain"
 msgstr ""
+"Pemutakhiran selesai, Jalankan pemindaian ulang tag jika anda ingin "
+"mengaktifkan ReplayGain"
 
 #: src/tauon/t_modules/t_db_migrate.py:135
 msgid "Upgrade complete. New sorting option may require tag rescan."
 msgstr ""
+"Pemutakhiran selesai. Opsi pengurutan baru membutuhkan tag pemindaian ulang."
 
 #: src/tauon/t_modules/t_db_migrate.py:142
 msgid "Updated to v2.6.3"
-msgstr ""
+msgstr "Diperbarui ke v2.6.3"
 
 #: src/tauon/t_modules/t_db_migrate.py:194
 msgid ""
 "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."
 msgstr ""
+"Selamat datang di v4.4.0. Jalankan pemindaian ulang tag jika anda ingin "
+"mengaktifkan metadata Composer."
 
 #: src/tauon/t_modules/t_db_migrate.py:353
 msgid "Welcome to v6.1.0. Due to changes, please re-authorise Spotify"
 msgstr ""
+"Selamat datang di v6.1.0. Karena adanya perubahan, silahkan autorisasikan "
+"ulang Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:354
 msgid ""
 "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > "
 "Accounts > Spotify"
 msgstr ""
+"Anda melakukan ini dengan mengklik 'Ingat Akun', kemudian 'Autorisasi' di "
+"Pengaturan > Akun > Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:368
 msgid "Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"
 msgstr ""
+"Selamat datang di v6.3.0. Karena adanya pemutakhiran, silahkan autorisasikan "
+"ulang Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:369
 msgid ""
 "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"
 msgstr ""
+"Anda bisa melakukan ini dengan mengklik 'Autorisasi' di Pengaturan > Akun > "
+"Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:424
 msgid "Upgrade to v6.5.1. It looks like you are using Spotify."
-msgstr ""
+msgstr "Tingkatkan ke v6.5.1. Itu seperti anda menggunakan Spotify."
 
 #: src/tauon/t_modules/t_db_migrate.py:425
-#, fuzzy
 msgid "Please click 'Authorise' again in the settings"
-msgstr "Mohon izinkan Spotify di pengaturan!"
+msgstr "Silahkan klik 'Autorisasi' lagi di pengaturan"
 
 #: src/tauon/t_modules/t_db_migrate.py:436
 msgid "Upgrade to v6.5.3 complete"
-msgstr ""
+msgstr "Pembaruan ke v6.5.3 selesai"
 
 #: src/tauon/t_modules/t_db_migrate.py:437
 msgid ""
@@ -80,69 +94,64 @@ msgid ""
 msgstr ""
 
 #: src/tauon/t_modules/t_dbus.py:72
-#, fuzzy
 msgid "Failed to start indicator"
-msgstr "Gagal menyambungkan!"
+msgstr "Gagal memulai indikator"
 
 #: src/tauon/t_modules/t_extra.py:147 src/tauon/t_modules/t_extra.py:163
 msgid " B"
-msgstr ""
+msgstr " B"
 
 #: src/tauon/t_modules/t_extra.py:150 src/tauon/t_modules/t_extra.py:166
 msgid " KB"
-msgstr ""
+msgstr " KB"
 
 #: src/tauon/t_modules/t_extra.py:153 src/tauon/t_modules/t_extra.py:169
 msgid " MB"
-msgstr ""
+msgstr " MB"
 
 #: src/tauon/t_modules/t_extra.py:156 src/tauon/t_modules/t_main.py:28287
 msgid " GB"
-msgstr ""
+msgstr " GB"
 
 #: src/tauon/t_modules/t_jellyfin.py:88
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "Periksa jika peladen dan URL benar."
 
 #: src/tauon/t_modules/t_jellyfin.py:88
-#, fuzzy
 msgid "Could not establish connection to server."
-msgstr "Tidak dapat membuat sambungan"
+msgstr "Tidak dapat mengestabilisasikan sambungan ke peladen."
 
 #: src/tauon/t_modules/t_jellyfin.py:97
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Sambungan dan otorisasi berhasil"
 
 #: src/tauon/t_modules/t_jellyfin.py:99
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Autentikasi gagal"
 
 #: src/tauon/t_modules/t_jellyfin.py:99
 msgid "Check username and password."
-msgstr ""
+msgstr "Periksa nama pengguna dan kata sandi."
 
 #: src/tauon/t_modules/t_jellyfin.py:101
 msgid "Jellyfin auth error"
-msgstr ""
+msgstr "Kesalahan otorisasi Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:383
-#, fuzzy
 msgid "Error connecting to Jellyfin"
-msgstr "Error saat menyambungkan ke server PLEX"
+msgstr "Kesalahan saat menyambungkan ke Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:417
-#, fuzzy
 msgid "Error connecting to Jellyfin for Import"
-msgstr "Error saat menyambungkan ke server PLEX"
+msgstr "Kesalahan saat menyambungkan ke Jellyfin untuk Impor"
 
 #: src/tauon/t_modules/t_jellyfin.py:435
-#, fuzzy
 msgid "Error accessing Jellyfin"
-msgstr "Kesalahan saat menghapus berkas"
+msgstr "Kesalahan saat mengakses Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:546
 msgid "Jellyfin Collection"
-msgstr ""
+msgstr "Koleksi Jellyfin"
 
 #: src/tauon/t_modules/t_main.py:2137 src/tauon/t_modules/t_main.py:2139
 msgid "No artist image found."
@@ -158,7 +167,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:4277
 msgid "Scaling setting reset to 1x"
-msgstr ""
+msgstr "Pengaturan skala dikembalikan ke 1x"
 
 #: src/tauon/t_modules/t_main.py:7058
 msgid "End of playlist"
@@ -166,7 +175,7 @@ msgstr "Akhir Daftar Putar"
 
 #: src/tauon/t_modules/t_main.py:7095 src/tauon/t_modules/t_main.py:27538
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Modul opsional python-pylast tidak terpasang"
 
 #: src/tauon/t_modules/t_main.py:7104
 msgid "Once authorised click the 'done' button."
@@ -182,46 +191,43 @@ msgstr "Kamu harus masuk terlebih dahulu"
 
 #: src/tauon/t_modules/t_main.py:7128
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Kesalahan - Tidak diautorisasikan"
 
 #: src/tauon/t_modules/t_main.py:7131
 msgid "Unknown error."
-msgstr ""
+msgstr "Kesalahan tidak diketahui."
 
 #: src/tauon/t_modules/t_main.py:7131 src/tauon/t_modules/t_phazor.py:579
 msgid "Error"
-msgstr ""
+msgstr "Kesalahan"
 
 #: src/tauon/t_modules/t_main.py:7142
-#, fuzzy
 msgid "Logout will complete on app restart."
-msgstr "Perubahan akan diterapkan setelah di mulai ulang."
+msgstr "Log keluar akan diselesaikan saat aplikasi dimulai ulang."
 
 #: src/tauon/t_modules/t_main.py:7151
 msgid "Already connected to Last.fm"
-msgstr ""
+msgstr "Sudah terhubung ke Last,fm"
 
 #: src/tauon/t_modules/t_main.py:7155
-#, fuzzy
 msgid "Authorise an account in settings"
-msgstr "Mohon izinkan Spotify di pengaturan!"
+msgstr "Autorisasikan akun di pengaturan"
 
 #: src/tauon/t_modules/t_main.py:7155
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "Tidak ada akun Last.Fm yang terdaftar"
 
 #: src/tauon/t_modules/t_main.py:7167
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Koneksi ke Last.fm berhasil."
 
 #: src/tauon/t_modules/t_main.py:7174
-#, fuzzy
 msgid "Error connecting to Last.fm network"
-msgstr "Error saat menyambungkan ke server PLEX"
+msgstr "Kesalahan saat menyambungkan ke jaringan Last.fm"
 
 #: src/tauon/t_modules/t_main.py:7196 src/tauon/t_modules/t_main.py:7209
 msgid "Error communicating with Last.fm network"
-msgstr ""
+msgstr "Kesalahan komunikasi dengan jaringan Last.fm"
 
 #: src/tauon/t_modules/t_main.py:7272
 msgid "Scanning failed. Try again?"
@@ -233,12 +239,11 @@ msgstr "Pemindaian scrobble selesai"
 
 #: src/tauon/t_modules/t_main.py:7463
 msgid "Removed {N} loves."
-msgstr ""
+msgstr "Hapus {N} loves."
 
 #: src/tauon/t_modules/t_main.py:7476
-#, fuzzy
 msgid "There was an error, try re-log in"
-msgstr "Terjadi kesalahan saat membuat chart"
+msgstr "Terjadi kesalahan, coba masuk kembali"
 
 #: src/tauon/t_modules/t_main.py:7485
 msgid "Getting friend data..."
@@ -249,9 +254,8 @@ msgid "This may take a very long time."
 msgstr "Ini mungkin membutuhkan waktu yang lama."
 
 #: src/tauon/t_modules/t_main.py:7508
-#, fuzzy
 msgid "There was an error getting friends loves"
-msgstr "Terjadi kesalahan saat membuat chart"
+msgstr "Terjadi kesalahan saat mendapatkan loves teman"
 
 #: src/tauon/t_modules/t_main.py:7516
 msgid "Scanning loved tracks for: {username}"

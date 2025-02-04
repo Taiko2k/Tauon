@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-29 14:02+0000\n"
+"PO-Revision-Date: 2025-02-04 21:02+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -3866,28 +3866,28 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30031
 msgid "See the {link} license for details."
-msgstr ""
+msgstr "Vedi la {link} licenza per i dettagli."
 
 #: src/tauon/t_modules/t_main.py:30045
 msgid "Created by"
-msgstr ""
+msgstr "Creato da"
 
 #: src/tauon/t_modules/t_main.py:30050
 msgid "Contributors"
-msgstr ""
+msgstr "Contributori"
 
 #: src/tauon/t_modules/t_main.py:30063
 msgid "Open source software used"
-msgstr ""
+msgstr "Software open source usato"
 
 #: src/tauon/t_modules/t_main.py:30100 src/tauon/t_modules/t_main.py:30141
 #: src/tauon/t_modules/t_main.py:30183
 msgid "Open source software used (cont'd)"
-msgstr ""
+msgstr "Software open source usato (cont'd)"
 
 #: src/tauon/t_modules/t_main.py:30105
 msgid "Public Domain"
-msgstr ""
+msgstr "Dominio pubblico"
 
 #: src/tauon/t_modules/t_main.py:30227 src/tauon/t_modules/t_main.py:30230
 msgid "Credits"
@@ -3902,24 +3902,21 @@ msgid "Target playlist:   "
 msgstr "Scaletta di destinazione:   "
 
 #: src/tauon/t_modules/t_main.py:30256
-#, fuzzy
 msgid "Level 1"
-msgstr "Misuratore di Livello"
+msgstr "Livello 1"
 
 #: src/tauon/t_modules/t_main.py:30259
-#, fuzzy
 msgid "Level 2"
-msgstr "Misuratore di Livello"
+msgstr "Livello 2"
 
 #: src/tauon/t_modules/t_main.py:30262
-#, fuzzy
 msgid "Level 3"
-msgstr "Misuratore di Livello"
+msgstr "Livello 3"
 
 #: src/tauon/t_modules/t_main.py:30266 src/tauon/t_modules/t_main.py:30268
 #: src/tauon/t_modules/t_main.py:30270
 msgid "by"
-msgstr ""
+msgstr "da"
 
 #: src/tauon/t_modules/t_main.py:30275
 msgid "Rows"
@@ -3955,11 +3952,11 @@ msgstr "Genera"
 
 #: src/tauon/t_modules/t_main.py:30336
 msgid "Be patient!"
-msgstr ""
+msgstr "Sii paziente!"
 
 #: src/tauon/t_modules/t_main.py:30339
 msgid "No font set in config"
-msgstr ""
+msgstr "Nessun font impostato nella configurazione"
 
 #: src/tauon/t_modules/t_main.py:30348
 msgid "Generating..."
@@ -4068,14 +4065,12 @@ msgstr ""
 "Hai aggiunto tracce al generatore di scalette. Vuoi pulire il generatore?"
 
 #: src/tauon/t_modules/t_main.py:31047
-#, fuzzy
 msgid "Tauon Music Box SHUFFLE!"
-msgstr "Apri Tauon Music Box"
+msgstr "Tauon Music Box MISCHIA!"
 
 #: src/tauon/t_modules/t_main.py:31049
-#, fuzzy
 msgid "Tauon Music Box ALBUM SHUFFLE!"
-msgstr "Apri Tauon Music Box"
+msgstr "Tauon Music Box MISCHIA ALBUM!"
 
 #: src/tauon/t_modules/t_main.py:31482 src/tauon/t_modules/t_main.py:36588
 #: src/tauon/t_modules/t_main.py:40819 src/tauon/t_modules/t_main.py:40968
@@ -4084,50 +4079,47 @@ msgstr "Aggiunta stazione a: "
 
 #: src/tauon/t_modules/t_main.py:31697
 msgid "MENU"
-msgstr ""
+msgstr "MENU"
 
 #: src/tauon/t_modules/t_main.py:31777
 msgid "It looks like something is being downloaded..."
-msgstr ""
+msgstr "Sembra tu stia scaricando qualcosa..."
 
 #: src/tauon/t_modules/t_main.py:31777
 msgid "Let's check back later..."
-msgstr ""
+msgstr "Controlliamo dopo..."
 
 #: src/tauon/t_modules/t_main.py:31804
-#, fuzzy
 msgid "Importing XSPF playlist"
-msgstr "Importa scalette"
+msgstr "Importando scaletta XSPF"
 
 #: src/tauon/t_modules/t_main.py:31806
-#, fuzzy
 msgid "Importing XSPF playlist..."
-msgstr "Sto importando le Scalette da Spotify..."
+msgstr "Importando scalette XSPF..."
 
 #: src/tauon/t_modules/t_main.py:31808
-#, fuzzy
 msgid "Extracting Archive..."
-msgstr "Estrai archivio"
+msgstr "Estrazione archivio..."
 
 #: src/tauon/t_modules/t_main.py:31810
 msgid "Importing...  "
-msgstr ""
+msgstr "Importazione...  "
 
 #: src/tauon/t_modules/t_main.py:31816
 msgid "Scanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Scansione Metadati....  {N} rimanenti"
 
 #: src/tauon/t_modules/t_main.py:31818
 msgid "File copy in progress..."
-msgstr ""
+msgstr "Copia del file in corso..."
 
 #: src/tauon/t_modules/t_main.py:31822
 msgid "Cleaning db...  "
-msgstr ""
+msgstr "Pulizia db...  "
 
 #: src/tauon/t_modules/t_main.py:31825
 msgid "Rescanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Ricontrollo metadati...  {N} rimanenti"
 
 #: src/tauon/t_modules/t_main.py:31828
 msgid "Accessing PLEX library..."
