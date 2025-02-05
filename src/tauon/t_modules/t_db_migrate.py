@@ -554,15 +554,15 @@ def database_migrate(
 					RadioStation(
 						title=station["title"],
 						stream_url=station["stream_url"],
-						country=station["country"],
-						website_url=station["website_url"],
-						icon=station["icon"],
-						stream_url_fallback=station["stream_url_unresolved"] if "stream_url_unresolved" in station else ""))
+						country=station.get("country", ""),
+						website_url=station.get("website_url", ""),
+						icon=station.get("icon", ""),
+						stream_url_fallback=station.get("stream_url_unresolved", "")))
 			new_radio_playlists.append(
 				RadioPlaylist(
 					uid=playlist["uid"],
 					name=playlist["name"],
-					scroll=playlist["scroll"] if "scroll" in playlist else 0,
+					scroll=playlist.get("scroll", 0),
 					stations=stations))
 		radio_playlists = new_radio_playlists
 
