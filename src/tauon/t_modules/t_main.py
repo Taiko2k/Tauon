@@ -71,6 +71,7 @@ import zipfile
 from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -1078,6 +1079,7 @@ class Input:
 	def __init__(self, gui: GuiVar) -> None:
 		self.gui = gui
 		self.mouse_click:      bool = False
+		self.middle_click:     bool = False
 		self.right_click:      bool = False
 		self.level_2_enter:    bool = False
 		self.backspace_press:   int = 0
@@ -1522,20 +1524,22 @@ class LoadClass:
 
 class GetSDLInput:
 
-	def __init__(self):
+	def __init__(self, tauon: Tauon) -> None:
+		self.logical_size = tauon.bag.logical_size
+		self.window_size = tauon.bag.window_size
 		self.i_y = pointer(c_int(0))
 		self.i_x = pointer(c_int(0))
 
 		self.mouse_capture_want = False
 		self.mouse_capture = False
 
-	def mouse(self):
+	def mouse(self) -> tuple[int, int]:
 		SDL_PumpEvents()
 		SDL_GetMouseState(self.i_x, self.i_y)
-		return int(self.i_x.contents.value / logical_size[0] * window_size[0]), int(
-			self.i_y.contents.value / logical_size[0] * window_size[0])
+		return (int(self.i_x.contents.value / self.logical_size[0] * self.window_size[0]),
+			int(self.i_y.contents.value / self.logical_size[0] * self.window_size[0]))
 
-	def test_capture_mouse(self):
+	def test_capture_mouse(self) -> None:
 		if not self.mouse_capture and self.mouse_capture_want:
 			SDL_CaptureMouse(SDL_TRUE)
 			self.mouse_capture = True
@@ -2160,7 +2164,7 @@ class PlayerCtl:
 		self.set_volume()
 
 	def set_volume(self, notify: bool = True) -> None:
-		if (self.tauon.spot_ctl.coasting or self.tauon.spot_ctl.playing) and not self.tauon.spot_ctl.local and self.tauon.inp.mouse_down:
+		if (self.tauon.spot_ctl.coasting or self.tauon.spot_ctl.playing) and not self.tauon.spot_ctl.local and self.tauon.gui.inp.mouse_down:
 			# Rate limit network volume change
 			t = self.volume_update_timer.get()
 			if t < 0.3:
@@ -4546,7 +4550,7 @@ class Menu:
 							to_call = i
 							if self.items[i].set_ref is not None:
 								self.reference = self.items[i].set_ref
-							self.tauon.inp.mouse_down = False
+							self.tauon.gui.inp.mouse_down = False
 
 						else:
 							self.clicked = False
@@ -5081,7 +5085,7 @@ class Tauon:
 		self.strings:                     Strings = strings
 		self.gui:                          GuiVar = gui
 		self.prefs:                         Prefs = bag.prefs
-		self.fields                               = Fields()
+		self.fields                               = Fields(tauon=self)
 		self.artist_list_box                      = ArtistList(tauon=self)
 		self.radiobox                             = RadioBox(tauon=self)
 		self.pctl:                      PlayerCtl = PlayerCtl(tauon=self)
@@ -5092,6 +5096,7 @@ class Tauon:
 		self.bottom_bar1                          = BottomBarType1(tauon=self)
 		self.top_panel                            = TopPanel(tauon=self)
 		self.playlist_box                         = PlaylistBox(tauon=self)
+		self.radio_view                           = RadioView(tauon=self)
 		self.cache_directory:                Path = bag.dirs.cache_directory
 		self.user_directory:          Path | None = bag.dirs.user_directory
 		self.music_directory:         Path | None = bag.dirs.music_directory
@@ -5143,6 +5148,8 @@ class Tauon:
 		self.extra_menu      = Menu(self, 175, show_icons=True)
 		self.shuffle_menu    = Menu(self, 120)
 		self.repeat_menu     = Menu(self, 120)
+		self.tab_menu        = Menu(self, 160, show_icons=True)
+
 
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
@@ -13585,17 +13592,18 @@ class Over:
 		ddt.text_background_colour = colours.box_background
 
 class Fields:
-	def __init__(self) -> None:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
 		self.id = []
 		self.last_id = []
 
 		self.field_array = []
 		self.force = False
 
-	def add(self, rect, callback=None):
+	def add(self, rect, callback=None) -> None:
 		self.field_array.append((rect, callback))
 
-	def test(self):
+	def test(self) -> bool:
 		if self.force:
 			self.force = False
 			return True
@@ -13605,7 +13613,7 @@ class Fields:
 		self.id = []
 
 		for f in self.field_array:
-			if tauon.coll(f[0]):
+			if self.tauon.coll(f[0]):
 				self.id.append(1)  # += "1"
 				if f[1] is not None:  # Call callback if present
 					f[1]()
@@ -13614,11 +13622,9 @@ class Fields:
 
 		if self.last_id == self.id:
 			return False
-
 		return True
 
-	def clear(self):
-
+	def clear(self) -> None:
 		self.field_array = []
 
 class TopPanel:
@@ -13794,7 +13800,7 @@ class TopPanel:
 				update_layout = True
 				gui.update += 1
 
-			if middle_click:
+			if inp.middle_click:
 				toggle_left_last()
 				update_layout = True
 				gui.update += 1
@@ -14113,7 +14119,7 @@ class TopPanel:
 					gui.update += 1
 
 				# Delete playlist on wheel click
-				elif tab_menu.active is False and middle_click:
+				elif tauon.tab_menu.active is False and inp.middle_click:
 					# delete_playlist(i)
 					delete_playlist_ask(i)
 					break
@@ -14123,7 +14129,7 @@ class TopPanel:
 					if gui.radio_view:
 						radio_tab_menu.activate(copy.deepcopy(i))
 					else:
-						tab_menu.activate(copy.deepcopy(i))
+						tauon.tab_menu.activate(copy.deepcopy(i))
 					gui.tab_menu_pl = i
 
 				# Quick drop tracks
@@ -14151,11 +14157,11 @@ class TopPanel:
 						tree_view_box.clear_target_pl(i)
 						tauon.thread_manager.ready("worker")
 
-				if inp.mouse_up and radio_view.drag:
-					pctl.radio_playlists[i].stations.append(radio_view.drag)
+				if inp.mouse_up and tauon.radio_view.drag:
+					pctl.radio_playlists[i].stations.append(tauon.radio_view.drag)
 					toast(_("Added station to: ") + pctl.radio_playlists[i].name)
 
-					radio_view.drag = None
+					tauon.radio_view.drag = None
 
 			x += tab_width + self.tab_spacing
 
@@ -14232,7 +14238,7 @@ class TopPanel:
 					bg = colours.tab_background_active
 					active = True
 				elif (
-						tab_menu.active is True and tab_menu.reference == i) or (tab_menu.active is False and tab_hit and not tauon.playlist_box.drag):
+						tauon.tab_menu.active is True and tauon.tab_menu.reference == i) or (tauon.tab_menu.active is False and tab_hit and not tauon.playlist_box.drag):
 					bg = colours.tab_highlight
 				elif i == pctl.active_playlist_playing:
 					bg = colours.tab_background
@@ -14332,7 +14338,7 @@ class TopPanel:
 		if inp.mouse_up:
 			inp.quick_drag = False
 			tauon.playlist_box.drag = False
-			radio_view.drag = None
+			tauon.radio_view.drag = None
 
 		# Scroll anywhere on panel to cycle playlist
 		# (This is a bit complicated because we need to skip over hidden playlists)
@@ -14747,7 +14753,7 @@ class BottomBarType1:
 		tauon.fields.add(self.seek_bar_position + self.seek_bar_size)
 		if tauon.coll(self.seek_bar_position + self.seek_bar_size):
 
-			if middle_click and pctl.playing_state > 0:
+			if inp.middle_click and pctl.playing_state > 0:
 				gui.seek_cur_show = True
 
 			clicked = True
@@ -15268,7 +15274,7 @@ class BottomBarType1:
 						gui.mode_toast_text = _("Shuffle Off")
 					toast_mode_timer.set()
 					gui.delay_frame(1)
-				if middle_click:
+				if inp.middle_click:
 					pctl.advance(rr=True)
 					gui.tool_tip_lock_off_f = True
 				# tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
@@ -15302,7 +15308,7 @@ class BottomBarType1:
 						gui.mode_toast_text = _("Repeat Off")
 					toast_mode_timer.set()
 					gui.delay_frame(1)
-				if middle_click:
+				if inp.middle_click:
 					pctl.revert()
 					gui.tool_tip_lock_off_b = True
 				if not gui.tool_tip_lock_off_b:
@@ -15829,7 +15835,7 @@ class BottomBarType_ao1:
 						gui.mode_toast_text = _("Shuffle Off")
 					toast_mode_timer.set()
 					gui.delay_frame(1)
-				if middle_click:
+				if inp.middle_click:
 					pctl.advance(rr=True)
 					gui.tool_tip_lock_off_f = True
 				# tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
@@ -16710,7 +16716,7 @@ class StandardPlaylist:
 							move_on_title = True
 
 					# Ignore click in ratings box
-					click_title = (inp.mouse_click or right_click or middle_click) and tauon.coll(input_box)
+					click_title = (inp.mouse_click or right_click or inp.middle_click) and tauon.coll(input_box)
 					if click_title and gui.show_album_ratings:
 						if inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
 							click_title = False
@@ -16720,7 +16726,7 @@ class StandardPlaylist:
 
 						gui.pl_update += 1
 						# Add folder to queue if middle click
-						if middle_click and is_level_zero():
+						if inp.middle_click and is_level_zero():
 							if inp.key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
 								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
@@ -16830,7 +16836,7 @@ class StandardPlaylist:
 			line_hit = False
 			if tauon.coll(input_box) and inp.mouse_position[1] < window_size[1] - gui.panelBY:
 				line_over = True
-				if (inp.mouse_click or right_click or (middle_click and is_level_zero())):
+				if (inp.mouse_click or right_click or (inp.middle_click and is_level_zero())):
 					line_hit = True
 					gui.pl_update += 1
 
@@ -16864,7 +16870,7 @@ class StandardPlaylist:
 					this_line_playing = True
 
 			# Add to queue on middle click
-			if middle_click and line_hit:
+			if inp.middle_click and line_hit:
 				pctl.force_queue.append(
 					queue_item_gen(track_id,
 					track_position, pl_to_id(pctl.active_playlist_viewing)))
@@ -17648,7 +17654,7 @@ class StandardPlaylist:
 		ddt.alpha_bg = False
 
 	def cache_render(self):
-		SDL_RenderCopy(self.renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
+		SDL_RenderCopy(self.renderer, self.gui.tracklist_texture, None, self.gui.tracklist_texture_rect)
 
 class ArtBox:
 
@@ -18615,8 +18621,8 @@ class RadioBox:
 				text_colour = colours.tab_text_active
 				ddt.rect(rect, bg)
 
-			if radio_view.drag:
-				if station == radio_view.drag:
+			if tauon.radio_view.drag:
+				if station == tauon.radio_view.drag:
 					text_colour = colours.box_sub_text
 					bg = [255, 255, 255, 10]
 					ddt.rect(rect, bg)
@@ -18631,15 +18637,15 @@ class RadioBox:
 				if gui.level_2_click:
 					# self.drag = p
 					# self.click_point = copy.copy(inp.mouse_position)
-					radio_view.drag = station
-					radio_view.click_point = copy.copy(inp.mouse_position)
+					tauon.radio_view.drag = station
+					tauon.radio_view.click_point = copy.copy(inp.mouse_position)
 				if inp.mouse_up:  # gui.level_2_click:
 					gui.update += 1
 					# if self.drag is not None and p != self.drag:
 					#     swap = p
-					if point_proximity_test(radio_view.click_point, inp.mouse_position, round(4 * gui.scale)):
+					if point_proximity_test(tauon.radio_view.click_point, inp.mouse_position, round(4 * gui.scale)):
 						self.start(station)
-				if middle_click:
+				if inp.middle_click:
 					to_delete = p
 				if level_2_right_click:
 					self.right_clicked_station = station
@@ -19140,10 +19146,10 @@ class PlaylistBox:
 					if gui.radio_view:
 						radio_tab_menu.activate(i, inp.mouse_position)
 					else:
-						tab_menu.activate(i, inp.mouse_position)
+						tauon.tab_menu.activate(i, inp.mouse_position)
 					gui.tab_menu_pl = i
 
-				if tab_menu.active is False and middle_click:
+				if tauon.tab_menu.active is False and inp.middle_click:
 					delete_pl = i
 					# delete_playlist(i)
 					# break
@@ -19238,7 +19244,7 @@ class PlaylistBox:
 			bg = [0, 0, 0, 0]
 
 			# Highlight if playlist selected (viewing)
-			if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
+			if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
 				# bg = [255, 255, 255, 25]
 
 				# Adjust highlight for different background brightnesses
@@ -20051,7 +20057,7 @@ class ArtistList:
 					if prefs.album_mode:
 						goto_album(select)
 
-			if middle_click:
+			if inp.middle_click:
 				self.click_ref = artist
 				self.click_highlight_timer.set()
 				create_artist_pl(artist)
@@ -20476,14 +20482,10 @@ class TreeView:
 					inp.quick_drag and not point_proximity_test(gui.drag_source_position, inp.mouse_position, 15))
 
 			if mouse_in and not tree_view_scroll.held:
-
-				if middle_click:
+				if inp.middle_click:
 					stem_to_new_playlist(full_folder_path)
-
 				elif right_click:
-
 					if item[3]:
-
 						for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)].playlist_ids):
 							if msys:
 								if pctl.get_track(id).fullpath.startswith(target.lstrip("/")):
@@ -20503,7 +20505,6 @@ class TreeView:
 
 				elif inp.mouse_click:
 					# inp.quick_drag = True
-
 					if not self.click_drag_source:
 						self.click_drag_source = item
 						set_drag_source()
@@ -21197,7 +21198,7 @@ class QueueBox:
 				self.right_click_id = fq[i].uuid_int
 				qb_right_click = 2
 
-			if middle_click and tauon.coll(rect):
+			if inp.middle_click and tauon.coll(rect):
 				pctl.force_queue.remove(fq[i])
 				gui.pl_update += 1
 
@@ -25775,6 +25776,7 @@ def do_minimize_button():
 def draw_window_tools(tauon: Tauon) -> None:
 	bag         = tauon.bag
 	gui         = tauon.gui
+	inp         = tauon.gui.inp
 	colours     = tauon.bag.colours
 	window_size = tauon.bag.window_size
 	ddt         = tauon.bag.ddt
@@ -28251,7 +28253,7 @@ def pin_playlist_toggle(pl: int) -> None:
 	pctl.multi_playlist[pl].hidden ^= True
 
 def pl_pin_deco(pl: int):
-	# if pctl.multi_playlist[pl].hidden == True and tab_menu.pos[1] >
+	# if pctl.multi_playlist[pl].hidden == True and tauon.tab_menu.pos[1] >
 	if pctl.multi_playlist[pl].hidden == True:
 		return [colours.menu_text, colours.menu_background, _("Pin")]
 	return [colours.menu_text, colours.menu_background, _("Unpin")]
@@ -37898,13 +37900,22 @@ def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
 		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
 		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
 
-def hit_callback(win, point, data):
+def hit_callback_wrapper(win, point, data, tauon: Tauon):
+	"""A wrapper function that captures Tauon"""
+	return hit_callback(tauon, win, point, data)
+
+def hit_callback(win, point, data, tauon: Tauon):
+	logical_size = tauon.bag.logical_size
+	window_size  = tauon.bag.window_size
+	gui          = tauon.gui
+	prefs        = tauon.prefs
+	inp          = tauon.gui.inp
+
 	x = point.contents.x / logical_size[0] * window_size[0]
 	y = point.contents.y / logical_size[0] * window_size[0]
 
 	# Special layout modes
 	if gui.mode == 3:
-
 		if inp.key_shift_down or inp.key_shiftr_down:
 			return SDL_HITTEST_NORMAL
 
@@ -37929,7 +37940,6 @@ def hit_callback(win, point, data):
 			y1 = window_size[1] - 79 * gui.scale
 		if y0 < y < y1 and not tauon.search_over.active:
 			return SDL_HITTEST_DRAGGABLE
-
 		return SDL_HITTEST_NORMAL
 
 	# Standard player mode
@@ -37944,9 +37954,7 @@ def hit_callback(win, point, data):
 		#     return SDL_HITTEST_RESIZE_TOP
 
 	if y < gui.panelY:
-
 		if gui.top_bar_mode2:
-
 			if y < gui.panelY - gui.panelY2:
 				if prefs.left_window_control and x < 100 * gui.scale:
 					return SDL_HITTEST_NORMAL
@@ -37954,20 +37962,17 @@ def hit_callback(win, point, data):
 				if x > window_size[0] - 100 * gui.scale and y < 30 * gui.scale:
 					return SDL_HITTEST_NORMAL
 				return SDL_HITTEST_DRAGGABLE
-			if top_panel.drag_zone_start_x > x or tab_menu.active:
+			if tauon.top_panel.drag_zone_start_x > x or tauon.tab_menu.active:
 				return SDL_HITTEST_NORMAL
 			return SDL_HITTEST_DRAGGABLE
 
-		if top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
-
-			if tab_menu.active or inp.mouse_up or inp.mouse_down:  # mouse up/down is workaround for Wayland
+		if tauon.top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
+			if tauon.tab_menu.active or inp.mouse_up or inp.mouse_down:  # mouse up/down is workaround for Wayland
 				return SDL_HITTEST_NORMAL
 
-			if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (
-					macos or system == "Windows" or msys)) or (not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (
-					macos or system == "Windows" or msys)):
+			if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (macos or system == "Windows" or msys)) \
+			or (not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (macos or system == "Windows" or msys)):
 				return SDL_HITTEST_NORMAL
-
 			return SDL_HITTEST_DRAGGABLE
 
 	if not gui.maximized:
@@ -38005,7 +38010,7 @@ def reload_scale(bag: Bag):
 		menu.rescale()
 	bottom_bar1.__init__()
 	bottom_bar_ao1.__init__()
-	top_panel.__init__()
+	tauon.top_panel.__init__()
 	view_box.__init__(reload=True)
 	queue_box.recalc()
 	tauon.playlist_box.recalc()
@@ -38191,10 +38196,10 @@ def update_layout_do(tauon: Tauon):
 		# if system != 'windows':
 		#     if draw_border:
 		#         gui.panelY = 30 * gui.scale + 3 * gui.scale
-		#         top_panel.ty = 3 * gui.scale
+		#         tauon.top_panel.ty = 3 * gui.scale
 		#     else:
 		#         gui.panelY = 30 * gui.scale
-		#         top_panel.ty = 0
+		#         tauon.top_panel.ty = 0
 
 		if gui.set_bar and gui.set_mode:
 			gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
@@ -38645,8 +38650,8 @@ def save_state() -> None:
 		gui.show_album_ratings,
 		prefs.radio_urls,
 		gui.showcase_mode,  # gui.combo_mode,
-		top_panel.prime_tab,
-		top_panel.prime_side,
+		tauon.top_panel.prime_tab,
+		tauon.top_panel.prime_side,
 		prefs.sync_playlist,
 		prefs.spot_client,
 		prefs.spot_secret,
@@ -38796,9 +38801,9 @@ def drop_file(target):
 	#logging.info(event.drop)
 
 	if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
-		x = top_panel.tabs_left_x
-		for tab in top_panel.shown_tabs:
-			wid = top_panel.tab_text_spaces[tab] + top_panel.tab_extra_width
+		x = tauon.top_panel.tabs_left_x
+		for tab in tauon.top_panel.shown_tabs:
+			wid = tauon.top_panel.tab_text_spaces[tab] + tauon.top_panel.tab_extra_width
 
 			if x < i_x < x + wid:
 				gui.drop_playlist_target = tab
@@ -41061,7 +41066,7 @@ def main(holder: Holder):
 	# playlist_menu.add('Paste', append_here, paste_deco)
 
 	# Create playlist tab menu
-	tab_menu = Menu(tauon, 160, show_icons=True)
+	tab_menu = tauon.tab_menu
 	tab_menu.add(MenuItem(_("Rename"), rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
 	radio_tab_menu = Menu(tauon, 160, show_icons=True)
@@ -41804,7 +41809,6 @@ def main(holder: Holder):
 		MenuItem(_("Visit Website"), visit_radio_station, visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
 	radio_context_menu.add(MenuItem(_("Remove"), remove_station, pass_ref=True))
 
-	radio_view = RadioView(tauon=tauon)
 	showcase = Showcase()
 	cctest = ColourPulse2()
 	view_box = ViewBox(tauon=tauon)
@@ -41820,7 +41824,7 @@ def main(holder: Holder):
 	lyric_side_top_pulse = EdgePulse2()
 	lyric_side_bottom_pulse = EdgePulse2()
 
-	c_hit_callback = SDL_HitTest(hit_callback)
+	c_hit_callback = SDL_HitTest(partial(hit_callback, tauon=tauon))
 	SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 	# --------------------------------------------------------------------------------------------
@@ -41925,7 +41929,7 @@ def main(holder: Holder):
 	gal_left = False
 	gal_right = False
 
-	get_sdl_input = GetSDLInput()
+	get_sdl_input = GetSDLInput(tauon=tauon)
 
 	SDL_StartTextInput()
 
@@ -42053,7 +42057,7 @@ def main(holder: Holder):
 			right_click = False
 			level_2_right_click = False
 			inp.mouse_click = False
-			middle_click = False
+			inp.middle_click = False
 			inp.mouse_up = False
 			inp.key_return_press = False
 			key_down_press = False
@@ -42306,7 +42310,7 @@ def main(holder: Holder):
 					inp.mouse_down = True
 				elif event.button.button == SDL_BUTTON_MIDDLE:
 					if not tauon.search_over.active:
-						middle_click = True
+						inp.middle_click = True
 					gui.update += 1
 				elif event.button.button == SDL_BUTTON_X1:
 					keymaps.hits.append("MB4")
@@ -42638,11 +42642,10 @@ def main(holder: Holder):
 			power += 400
 
 		if power < 500:
-
 			time.sleep(0.03)
 
-			if (
-					pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders and gui.update == 0 and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
+			if (pctl.playing_state == 0 or pctl.playing_state == 2) and not load_orders \
+			and gui.update == 0 and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
 				pass
 			else:
 				sleep_timer.set()
@@ -42692,7 +42695,7 @@ def main(holder: Holder):
 				# right_click = False
 				# level_2_right_click = False
 				# inp.mouse_click = False
-				# middle_click = False
+				# inp.middle_click = False
 				inp.mouse_up = False
 				inp.key_return_press = False
 				key_down_press = False
@@ -43804,7 +43807,7 @@ def main(holder: Holder):
 							extend = 40 * gui.scale
 
 						# Process inputs first
-						if (inp.mouse_click or right_click or middle_click or inp.mouse_down or inp.mouse_up) and pctl.default_playlist:
+						if (inp.mouse_click or right_click or inp.middle_click or inp.mouse_down or inp.mouse_up) and pctl.default_playlist:
 							while render_pos < gui.album_scroll_px + window_size[1]:
 
 								if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
@@ -43919,7 +43922,7 @@ def main(holder: Holder):
 													logging.debug("Position changed by gallery click")
 													pctl.selected_in_playlist = album_dex[album_on]
 													gui.pl_update += 1
-											elif middle_click and is_level_zero():
+											elif inp.middle_click and is_level_zero():
 												# Middle click to add album to queue
 												if inp.key_ctrl_down:
 													# Add to queue ungrouped
@@ -44432,7 +44435,7 @@ def main(holder: Holder):
 											if right_click:
 												lightning_menu.activate(item, position=(
 												window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
-											if middle_click:
+											if inp.middle_click:
 												path_stem_to_playlist(item.path, item.name)
 
 									ddt.rect(rect, item.colour)
@@ -44700,7 +44703,7 @@ def main(holder: Holder):
 						gui.pl_update -= 1
 						if gui.combo_mode:
 							if gui.radio_view:
-								radio_view.render()
+								tauon.radio_view.render()
 							elif gui.showcase_mode:
 								showcase.render()
 
@@ -44713,7 +44716,7 @@ def main(holder: Holder):
 
 					elif gui.combo_mode:
 						if gui.radio_view:
-							radio_view.render()
+							tauon.radio_view.render()
 						elif gui.showcase_mode:
 							showcase.render()
 						# else:
@@ -44850,16 +44853,16 @@ def main(holder: Holder):
 						(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale,
 						gui.panelY)) and not gui.top_bar_mode2:
 						vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
-					elif right_click and top_panel.tabs_right_x < inp.mouse_position[0] and \
+					elif right_click and tauon.top_panel.tabs_right_x < inp.mouse_position[0] and \
 							inp.mouse_position[1] < gui.panelY and \
-							inp.mouse_position[0] > top_panel.tabs_right_x and \
+							inp.mouse_position[0] > tauon.top_panel.tabs_right_x and \
 							inp.mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra:
 
 						window_menu.activate(None, (inp.mouse_position[0], 30 * gui.scale))
 
-					elif middle_click and top_panel.tabs_right_x < inp.mouse_position[0] and \
+					elif inp.middle_click and tauon.top_panel.tabs_right_x < inp.mouse_position[0] and \
 							inp.mouse_position[1] < gui.panelY and \
-							inp.mouse_position[0] > top_panel.tabs_right_x and \
+							inp.mouse_position[0] > tauon.top_panel.tabs_right_x and \
 							inp.mouse_position[0] < window_size[0] - gui.offset_extra:
 
 						do_minimize_button()
@@ -44877,7 +44880,7 @@ def main(holder: Holder):
 						gui.showing_l_panel = False
 						target_track = pctl.show_object()
 
-						if middle_click:
+						if inp.middle_click:
 							if tauon.coll(
 								(window_size[0] - gui.rspw, gui.panelY, gui.rspw,
 								window_size[1] - gui.panelY - gui.panelBY)):
@@ -46246,11 +46249,8 @@ def main(holder: Holder):
 							pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
 							if prefs.album_mode:
 								goto_album(pctl.playlist_playing_position)
-
-
 			elif gui.mode == 3:
-
-				if (inp.key_shift_down and inp.mouse_click) or middle_click:
+				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 					if prefs.mini_mode_mode == 4:
 						prefs.mini_mode_mode = 1
 						window_size[0] = int(330 * gui.scale)
@@ -46511,7 +46511,7 @@ def main(holder: Holder):
 					(i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225])
 				# ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
 				# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[tauon.playlist_box.drag_on].title, [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
-			if radio_view.drag and not point_proximity_test(radio_view.click_point, inp.mouse_position, round(4 * gui.scale)):
+			if tauon.radio_view.drag and not point_proximity_test(tauon.radio_view.click_point, inp.mouse_position, round(4 * gui.scale)):
 				ddt.rect((
 					inp.mouse_position[0] + round(8 * gui.scale), inp.mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
 					14 * gui.scale), colours.grey(70))
