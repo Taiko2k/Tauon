@@ -1913,7 +1913,7 @@ class PlayerCtl:
 		return len(self.track_queue) > 0
 
 	def selected_ready(self) -> bool:
-		return pctl.default_playlist and self.selected_in_playlist < len(pctl.default_playlist)
+		return self.default_playlist and self.selected_in_playlist < len(self.default_playlist)
 
 	def render_playlist(self) -> None:
 		if taskbar_progress and self.msys and self.windows_progress:
@@ -2036,7 +2036,7 @@ class PlayerCtl:
 		if self.tauon.spot_ctl.coasting:
 			sptr = self.tauon.dummy_track.misc.get("spotify-track-url")
 			if sptr:
-				for p in pctl.default_playlist:
+				for p in self.default_playlist:
 					tr = self.get_track(p)
 					if tr.misc.get("spotify-track-url") == sptr:
 						index = tr.index
@@ -4363,7 +4363,8 @@ class Menu:
 		Menu.instances.append(self)
 
 	@staticmethod
-	def deco(_=_):
+	def deco(_=_, tauon: Tauon | None = None):
+		colours = tauon.bag.colours
 		return [colours.menu_text, colours.menu_background, None]
 
 	def click(self) -> None:
@@ -4522,7 +4523,7 @@ class Menu:
 					else:
 						fx = self.items[i].render_func(tauon=self.tauon)
 				else:
-					fx = self.deco()
+					fx = self.deco(tauon=self.tauon)
 
 				if fx[2] is not None:
 					label = fx[2]
@@ -5068,7 +5069,7 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, holder: Holder, bag: Bag, strings: Strings, gui: GuiVar):
+	def __init__(self, holder: Holder, bag: Bag, gui: GuiVar):
 		self.bag                          = bag
 		self.t_window                     = holder.t_window
 		self.t_title                      = holder.t_title
@@ -5087,12 +5088,26 @@ class Tauon:
 		self.cachement:  player4.Cachement | None = None
 		self.dummy_event:               SDL_Event = SDL_Event()
 		self.translate                            = _
-		self.strings:                     Strings = strings
+		self.strings                              = Strings()
 		self.gui:                          GuiVar = gui
 		self.prefs:                         Prefs = bag.prefs
+		# Create top menu
+		self.x_menu                = Menu(self, 190, show_icons=True)
+		self.set_menu              = Menu(self, 150)
+		self.field_menu            = Menu(self, 140)
+		self.dl_menu               = Menu(self, 90)
+
+		self.cancel_menu           = Menu(self, 100)
+		self.extra_menu            = Menu(self, 175, show_icons=True)
+		self.shuffle_menu          = Menu(self, 120)
+		self.repeat_menu           = Menu(self, 120)
+		self.tab_menu              = Menu(self, 160, show_icons=True)
+		self.playlist_menu         = Menu(self, 130)
+		self.spotify_playlist_menu = Menu(self, 175)
 		self.fields                               = Fields(tauon=self)
 		self.artist_list_box                      = ArtistList(tauon=self)
 		self.radiobox                             = RadioBox(tauon=self)
+		self.dummy_track                          = self.radiobox.dummy_track
 		self.pctl:                      PlayerCtl = PlayerCtl(tauon=self)
 		self.search_over                          = SearchOverlay(tauon=self)
 		self.deco                                 = Deco(tauon=self)
@@ -5103,6 +5118,8 @@ class Tauon:
 		self.playlist_box                         = PlaylistBox(tauon=self)
 		self.radio_view                           = RadioView(tauon=self)
 		self.view_box                             = ViewBox(tauon=self)
+		self.pref_box                             = Over(tauon=self)
+		self.fader                                = Fader(tauon=self)
 		self.cache_directory:                Path = bag.dirs.cache_directory
 		self.user_directory:          Path | None = bag.dirs.user_directory
 		self.music_directory:         Path | None = bag.dirs.music_directory
@@ -5146,19 +5163,6 @@ class Tauon:
 		self.listen_alongers                      = {}
 		self.encode_folder_name                   = encode_folder_name
 		self.encode_track_name                    = encode_track_name
-		# Create top menu
-		self.x_menu                = Menu(self, 190, show_icons=True)
-		self.set_menu              = Menu(self, 150)
-		self.field_menu            = Menu(self, 140)
-		self.dl_menu               = Menu(self, 90)
-
-		self.cancel_menu           = Menu(self, 100)
-		self.extra_menu            = Menu(self, 175, show_icons=True)
-		self.shuffle_menu          = Menu(self, 120)
-		self.repeat_menu           = Menu(self, 120)
-		self.tab_menu              = Menu(self, 160, show_icons=True)
-		self.playlist_menu         = Menu(self, 130)
-		self.spotify_playlist_menu = Menu(self, 175)
 
 
 		self.tray_lock = threading.Lock()
@@ -5218,10 +5222,33 @@ class Tauon:
 		inp = self.gui.inp
 		return r[0] < inp.mouse_position[0] <= r[0] + r[2] and r[1] <= inp.mouse_position[1] <= r[1] + r[3]
 
+	def toggle_enable_web(self, mode: int = 0) -> bool | None:
+		prefs = self.prefs
+		gui   = self.gui
+		if mode == 1:
+			return prefs.enable_web
+
+		prefs.enable_web ^= True
+
+		if prefs.enable_web and not gui.web_running:
+			webThread = threading.Thread(
+				target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), self.strings, self])
+			webThread.daemon = True
+			webThread.start()
+			show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
+
+		elif prefs.enable_web is False:
+			if self.radio_server is not None:
+				self.radio_server.shutdown()
+				gui.web_running = False
+
+			time.sleep(0.25)
+		return None
+
 	def start_remote(self) -> None:
 		if not self.web_running:
 			self.web_thread = threading.Thread(
-				target=webserve2, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
+				target=webserve2, args=[pctl, prefs, gui, album_art_gen, str(install_directory), self.strings, self])
 			self.web_thread.daemon = True
 			self.web_thread.start()
 			self.web_running = True
@@ -10652,13 +10679,17 @@ class PowerTag:
 		self.ani_timer.force_set(10)
 
 class Over:
-	def __init__(self, bag: Bag, gui: GuiVar):
-
-		global window_size
-		self.dirs = bag.dirs
-		self.prefs = bag.prefs
-		self.gui = gui
-		self.init2done = False
+	def __init__(self, tauon: Tauon) -> None:
+		bag              = tauon.bag
+		self.tauon       = tauon
+		self.colours     = tauon.bag.colours
+		self.dirs        = tauon.bag.dirs
+		self.prefs       = tauon.bag.prefs
+		self.gui         = tauon.gui
+		self.inp         = tauon.gui.inp
+		self.ddt         = tauon.bag.ddt
+		self.window_size = tauon.bag.window_size
+		self.init2done   = False
 
 		self.about_image  = asset_loader(bag, bag.loaded_asset_dc, "v4-a.png")
 		self.about_image2 = asset_loader(bag, bag.loaded_asset_dc, "v4-b.png")
@@ -11248,7 +11279,11 @@ class Over:
 			x + 25 * gui.scale, y, _("Thumbnail size"), "px", bag.album_mode_art_size, 70, 400, 10, img_slide_update_gall)
 
 	def funcs(self, x0, y0, w0, h0):
-
+		tauon   = self.tauon
+		prefs   = self.prefs
+		gui     = self.gui
+		ddt     = self.ddt
+		colours = self.colours
 		x = x0 + 25 * gui.scale
 		y = y0 - 10 * gui.scale
 
@@ -11259,10 +11294,9 @@ class Over:
 			y += 23 * gui.scale
 
 			self.toggle_square(
-				x, y, toggle_enable_web, _("Enable Listen Along"), subtitle=_("Start server for remote web playback"))
+				x, y, tauon.toggle_enable_web, _("Enable Listen Along"), subtitle=_("Start server for remote web playback"))
 
-			if toggle_enable_web(1):
-
+			if tauon.toggle_enable_web(1):
 				link_pa2 = draw_linked_text(
 					(x + 300 * gui.scale, y - 1 * gui.scale),
 					f"http://localhost:{prefs.metadata_page_port!s}/listenalong",
@@ -11394,7 +11428,6 @@ class Over:
 				if prefs.tray_theme != old:
 					tauon.set_tray_icons(force=True)
 					show_message(_("Restart Tauon for change to take effect"))
-
 			else:
 				self.toggle_square(x, y, toggle_min_tray, _("Close to tray"))
 
@@ -11555,6 +11588,8 @@ class Over:
 		return hit
 
 	def toggle_square(self, x, y, function, text: str , click: bool = False, subtitle: str = "") -> bool:
+		gui     = self.gui
+		colours = self.colours
 		x = round(x)
 		y = round(y)
 
@@ -11565,19 +11600,19 @@ class Over:
 		full_w = border * 2 + gap * 2 + inner_square
 
 		if subtitle:
-			le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
-			se = ddt.text((x + 20 * gui.scale, y + 14 * gui.scale), subtitle, colours.box_text_label, 13)
+			le = self.ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
+			se = self.ddt.text((x + 20 * gui.scale, y + 14 * gui.scale), subtitle, colours.box_text_label, 13)
 			hit_rect = (x - 10 * gui.scale, y - 3 * gui.scale, max(le, se) + 30 * gui.scale, 34 * gui.scale)
 			y += round(8 * gui.scale)
 
 		else:
-			le = ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
+			le = self.ddt.text((x + 20 * gui.scale, y - 1 * gui.scale), text, colours.box_text, 13)
 			hit_rect = (x - 10 * gui.scale, y - 3 * gui.scale, le + 30 * gui.scale, 22 * gui.scale)
 
 		# Border outline
-		ddt.rect_a((x, y), (full_w, full_w), colours.box_check_border)
+		self.ddt.rect_a((x, y), (full_w, full_w), colours.box_check_border)
 		# Inner background
-		ddt.rect_a(
+		self.ddt.rect_a(
 			(x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square),
 			alpha_blend([255, 255, 255, 14], colours.box_background))
 
@@ -11602,7 +11637,7 @@ class Over:
 
 		# Draw inner check mark if enabled
 		if active:
-			ddt.rect_a((x + border + gap, y + border + gap), (inner_square, inner_square), colours.toggle_box_on)
+			self.ddt.rect_a((x + border + gap, y + border + gap), (inner_square, inner_square), colours.toggle_box_on)
 
 		return active
 
@@ -13292,7 +13327,6 @@ class Over:
 				logging.exception("Error draw ext bar")
 
 	def config_v(self, x0, y0, w0, h0):
-
 		ddt.text_background_colour = colours.box_background
 
 		x = x0 + self.item_x_offset
@@ -13482,18 +13516,23 @@ class Over:
 	#         prefs.line_style = 1
 
 	def inside(self):
-		return tauon.coll((self.box_x, self.box_y, self.w, self.h))
+		return self.tauon.coll((self.box_x, self.box_y, self.w, self.h))
 
-	def init2(self):
+	def init2(self) -> None:
 		self.init2done = True
 
-	def close(self):
+	def close(self) -> None:
 		self.enabled = False
 		fader.fall()
 		if gui.opened_config_file:
 			reload_config_file()
 
-	def render(self):
+	def render(self) -> None:
+		tauon   = self.tauon
+		inp     = self.inp
+		gui     = self.gui
+		ddt     = self.ddt
+		colours = self.colours
 		if self.init2done is False:
 			self.init2()
 
@@ -13506,7 +13545,7 @@ class Over:
 		header_width = 0
 
 		top_mode = False
-		if window_size[0] < 700 * gui.scale:
+		if self.window_size[0] < 700 * gui.scale:
 			top_mode = True
 			side_width = 0 * gui.scale
 			header_width = round(48 * gui.scale)  # 48
@@ -13519,8 +13558,8 @@ class Over:
 		full_width += side_width
 		full_height += header_width
 
-		x = int(window_size[0] / 2) - int(full_width / 2)
-		y = int(window_size[1] / 2) - int(full_height / 2)
+		x = int(self.window_size[0] / 2) - int(full_width / 2)
+		y = int(self.window_size[1] / 2) - int(full_height / 2)
 
 		self.box_x = x
 		self.box_y = y
@@ -13621,8 +13660,7 @@ class Over:
 					ddt.text(
 						(box[0] + (tab_width // 2), yy, 2), item[0], alpha_blend(colours.tab_text_active, ddt.text_background_colour), 213)
 				else:
-					ddt.text(
-						(box[0] + (tab_width // 2), yy, 2), item[0], tab_text, 213)
+					ddt.text((box[0] + (tab_width // 2), yy, 2), item[0], tab_text, 213)
 
 				current_tab += 1
 
@@ -22908,8 +22946,11 @@ class ColourPulse2:
 class ViewBox:
 
 	def __init__(self, tauon: Tauon, reload: bool = False) -> None:
-		self.tauon = tauon
-		self.gui = tauon.gui
+		self.tauon   = tauon
+		self.x_menu  = tauon.x_menu
+		self.prefs   = tauon.prefs
+		self.gui     = tauon.gui
+		self.ddt     = tauon.bag.ddt
 		self.colours = tauon.bag.colours
 		self.x = 0
 		self.y = tauon.gui.panelY
@@ -22978,29 +23019,27 @@ class ViewBox:
 		# self.gui.level_2_click = False
 		self.gui.update = 2
 
-	def button(self, x, y, asset, test, colour_get=None, name="Unknown", animate=True, low=0, high=0):
-
+	def button(self, x, y, asset, test, colour_get=None, name: str = "Unknown", animate: bool = True, low: int = 0, high: int = 0):
 		on = test()
-		rect = [x - 8 * gui.scale,
-				y - 8 * gui.scale,
-				asset.w + 16 * gui.scale,
-				asset.h + 16 * gui.scale]
-		tauon.fields.add(rect)
+		rect = [
+			x - 8 * self.gui.scale,
+			y - 8 * self.gui.scale,
+			asset.w + 16 * self.gui.scale,
+			asset.h + 16 * self.gui.scale]
+		self.tauon.fields.add(rect)
 
 		if on:
 			colour = self.on_colour
-
 		else:
 			colour = self.off_colour
 
 		fun = None
 		col = False
-		if tauon.coll(rect):
-
-			tool_tip.test(x + asset.w + 10 * gui.scale, y - 15 * gui.scale, name)
+		if self.tauon.coll(rect):
+			tool_tip.test(x + asset.w + 10 * self.gui.scale, y - 15 * self.gui.scale, name)
 
 			col = True
-			if gui.level_2_click:
+			if self.gui.level_2_click:
 				fun = test
 			if colour_get is None:
 				colour = self.over_colour
@@ -23018,109 +23057,104 @@ class ViewBox:
 
 		return fun
 
-	def tracks(self, hit=False):
-
+	def tracks(self, hit: bool =False) -> bool | None:
 		if hit is False:
-			return prefs.album_mode is False and \
-				gui.combo_mode is False and \
-				gui.rsp is False
+			return self.prefs.album_mode is False and \
+				self.gui.combo_mode is False and \
+				self.gui.rsp is False
 
 		if not (album_mode is False and \
-			gui.combo_mode is False and \
-			gui.rsp is False):
-			if x_menu.active:
-				x_menu.close_next_frame = True
+			self.gui.combo_mode is False and \
+			self.gui.rsp is False):
+			if self.x_menu.active:
+				self.x_menu.close_next_frame = True
 
 		view_tracks()
 
-	def side(self, hit=False):
-
+	def side(self, hit: bool = False) -> bool | None:
 		if hit is False:
-			return prefs.album_mode is False and \
-				gui.combo_mode is False and \
-				gui.rsp is True
-		if not (prefs.album_mode is False and \
-			gui.combo_mode is False and \
-			gui.rsp is True):
-			if x_menu.active:
-				x_menu.close_next_frame = True
+			return self.prefs.album_mode is False and \
+				self.gui.combo_mode is False and \
+				self.gui.rsp is True
+		if not (self.prefs.album_mode is False and \
+			self.gui.combo_mode is False and \
+			self.gui.rsp is True):
+			if self.x_menu.active:
+				self.x_menu.close_next_frame = True
 
 		view_standard_meta()
 
 	def gallery1(self, hit: bool = False) -> bool | None:
-
 		if hit is False:
-			return prefs.album_mode is True  # and gui.show_playlist is True
+			return self.prefs.album_mode is True  # and self.gui.show_playlist is True
 
-		if prefs.album_mode and not gui.combo_mode:
-			gui.hide_tracklist_in_gallery ^= True
-			gui.rspw = gui.pref_gallery_w
-			gui.update_layout()
-			# x_menu.active = False
-			x_menu.close_next_frame = True
+		if self.prefs.album_mode and not self.gui.combo_mode:
+			self.gui.hide_tracklist_in_gallery ^= True
+			self.gui.rspw = self.gui.pref_gallery_w
+			self.gui.update_layout()
+			# self.x_menu.active = False
+			self.x_menu.close_next_frame = True
 			# Menu.active = False
 			return None
 
-		if x_menu.active:
-			x_menu.close_next_frame = True
+		if self.x_menu.active:
+			self.x_menu.close_next_frame = True
 
 		force_album_view()
 
-	def radio(self, hit=False):
-
+	def radio(self, hit: bool = False) -> bool | None:
 		if hit is False:
-			return gui.radio_view
+			return self.gui.radio_view
 
-		if not gui.radio_view:
-			enter_radio_view(tauon=tauon)
+		if not self.gui.radio_view:
+			enter_radio_view(tauon=self.tauon)
 		else:
 			exit_combo(restore=True)
 
-		if x_menu.active:
-			x_menu.close_next_frame = True
+		if self.x_menu.active:
+			self.x_menu.close_next_frame = True
 
-	def lyrics(self, hit=False):
-
+	def lyrics(self, hit: bool = False) -> bool | None:
 		if hit is False:
-			return gui.showcase_mode
+			return self.gui.showcase_mode
 
-		if not gui.showcase_mode:
-			if gui.radio_view:
-				gui.was_radio = True
+		if not self.gui.showcase_mode:
+			if self.gui.radio_view:
+				self.gui.was_radio = True
 			enter_showcase_view()
 
-		elif gui.was_radio:
-			enter_radio_view(tauon=tauon)
+		elif self.gui.was_radio:
+			enter_radio_view(tauon=self.tauon)
 		else:
 			exit_combo(restore=True)
-		if x_menu.active:
-			x_menu.close_next_frame = True
+		if self.x_menu.active:
+			self.x_menu.close_next_frame = True
 
-	def col(self, hit=False):
-
+	def col(self, hit: bool = False) -> bool | None:
 		if hit is False:
-			return gui.set_mode
+			return self.gui.set_mode
 
-		if not gui.set_mode:
-			if gui.combo_mode:
+		if not self.gui.set_mode:
+			if self.gui.combo_mode:
 				exit_combo()
 
-		if prefs.album_mode and gui.plw < 550 * gui.scale:
-			toggle_album_mode(tauon=tauon)
+		if self.prefs.album_mode and self.gui.plw < 550 * self.gui.scale:
+			toggle_album_mode(tauon=self.tauon)
 
 		toggle_library_mode()
 
-	def artist_info(self, hit=False):
-
+	def artist_info(self, hit: bool = False) -> bool:
 		if hit is False:
-			return gui.artist_info_panel
+			return self.gui.artist_info_panel
 
-		gui.artist_info_panel ^= True
-		gui.update_layout()
+		self.gui.artist_info_panel ^= True
+		self.gui.update_layout()
 
-	def render(self):
-
-		if prefs.shuffle_lock:
+	def render(self) -> None:
+		gui     = self.gui
+		ddt     = self.ddt
+		colours = self.colours
+		if self.prefs.shuffle_lock:
 			self.active = False
 			self.clicked = False
 			return
@@ -23268,11 +23302,11 @@ class ViewBox:
 		if func is not None:
 			func(True)
 
-		if gui.level_2_click and tauon.coll(vr):
+		if gui.level_2_click and self.tauon.coll(vr):
 			x_menu.clicked = False
 
 		gui.level_2_click = False
-		if not x_menu.active:
+		if not self.x_menu.active:
 			self.active = False
 
 class DLMon:
@@ -33431,14 +33465,14 @@ def cycle_playlist_pinned(step):
 				break
 			on += 1
 
-def activate_info_box():
-	fader.rise()
-	pref_box.enabled = True
+def activate_info_box(tauon: Tauon) -> None:
+	tauon.fader.rise()
+	tauon.pref_box.enabled = True
 
-def activate_radio_box():
-	radiobox.active = True
-	radiobox.radio_field.clear()
-	radiobox.radio_field_title.clear()
+def activate_radio_box(tauon: Tauon) -> None:
+	tauon.radiobox.active = True
+	tauon.radiobox.radio_field.clear()
+	tauon.radiobox.radio_field_title.clear()
 
 def new_playlist_colour_callback(tauon: Tauon) -> list[int]:
 	if tauon.gui.radio_view:
@@ -36686,27 +36720,6 @@ def toggle_auto_artist_dl(mode: int = 0) -> bool | None:
 	for artist, value in list(artist_list_box.thumb_cache.items()):
 		if value is None:
 			del artist_list_box.thumb_cache[artist]
-	return None
-
-def toggle_enable_web(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.enable_web
-
-	prefs.enable_web ^= True
-
-	if prefs.enable_web and not gui.web_running:
-		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
-		webThread.daemon = True
-		webThread.start()
-		show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
-
-	elif prefs.enable_web is False:
-		if tauon.radio_server is not None:
-			tauon.radio_server.shutdown()
-			gui.web_running = False
-
-		time.sleep(0.25)
 	return None
 
 def toggle_scrobble_mark(mode: int = 0) -> bool | None:
@@ -40402,7 +40415,6 @@ def main(holder: Holder):
 
 	QuickThumbnail.renderer = holder.renderer
 
-	strings = Strings()
 	signal.signal(signal.SIGINT, signal_handler)
 
 	if system == "Windows" or msys:
@@ -40415,10 +40427,8 @@ def main(holder: Holder):
 	tauon = Tauon(
 		holder=holder,
 		bag=bag,
-		strings=strings,
 		gui=gui)
 	radiobox = tauon.radiobox
-	tauon.dummy_track = radiobox.dummy_track
 	star_store=tauon.star_store
 	pctl = tauon.pctl
 	pctl.default_playlist = multi_playlist[0].playlist_ids
@@ -41750,7 +41760,7 @@ def main(holder: Holder):
 		tauon.remote_limited = False
 	# --------------------------------------------------------------
 
-	pref_box = Over(bag=bag, gui=gui)
+	pref_box = tauon.pref_box
 
 	bottom_bar_ao1 = BottomBarType_ao1(bag=bag, gui=gui)
 	mini_mode = MiniMode(bag=bag, gui=gui)
@@ -41803,7 +41813,7 @@ def main(holder: Holder):
 	tauon.dl_mon = dl_mon
 	dl_menu.add(MenuItem("Dismiss", dismiss_dl))
 
-	fader = Fader(tauon=tauon)
+	fader = tauon.fader
 	edge_playlist2 = EdgePulse2()
 	bottom_playlist2 = EdgePulse2()
 	gallery_pulse_top = EdgePulse2()
@@ -44892,20 +44902,23 @@ def main(holder: Holder):
 								gui.showing_l_panel = True
 
 								if not prefs.lyric_metadata_panel_top:
-									timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-															gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
-															h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
+									timed_lyrics_ren.render(
+										target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
+										gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
+										h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
 									meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
 								else:
-									timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-															gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True,
-															w=gui.rspw,
-															h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
+									timed_lyrics_ren.render(
+										target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
+										gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True,
+										w=gui.rspw,
+										h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
 									meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track)
 							else:
-								timed_lyrics_ren.render(target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-														gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
-														h=window_size[1] - gui.panelY - gui.panelBY)
+								timed_lyrics_ren.render(
+									target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
+									gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
+									h=window_size[1] - gui.panelY - gui.panelBY)
 
 								if inp.right_click and tauon.coll(
 									(window_size[0] - gui.rspw, gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
