@@ -33148,15 +33148,14 @@ def enter_radio_view(tauon: Tauon) -> None:
 	tauon.gui.update_layout()
 
 def standard_size(tauon: Tauon) -> None:
-	global window_size
 	global update_layout
 
 	prefs.album_mode = False
 	tauon.gui.rsp = True
-	window_size = window_default_size
+	tauon.bag.window_size = window_default_size
 	SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
-	gui.rspw = 80 + int(window_size[0] * 0.18)
+	gui.rspw = 80 + int(tauon.bag.window_size[0] * 0.18)
 	update_layout = True
 	bag.album_mode_art_size = 130
 	# clear_img_cache()
