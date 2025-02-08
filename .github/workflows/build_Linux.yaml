@@ -84,9 +84,6 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
 
-      - name: Remove libwayland*.so files due to https://github.com/pyinstaller/pyinstaller/issues/8963
-        run: rm ./dist/TauonMusicBox/_internal/libwayland*
-
       - name: Create 7Z
         run: |
           APP_NAME="TauonMusicBox"
