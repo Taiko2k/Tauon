@@ -86,6 +86,7 @@ from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from sdl2 import (
+	SDL_Renderer,
 	SDL_BLENDMODE_BLEND,
 	SDL_BLENDMODE_NONE,
 	SDL_BUTTON_LEFT,
@@ -568,6 +569,7 @@ class GuiVar:
 		self.s4_spec = [0] * 45
 		self.update_spec = 0
 
+		self.new_playlist_cooldown = False
 		self.playlist_hold_position = 0
 		self.playlist_hold = False
 		self.selection_stage = 0
@@ -1676,6 +1678,7 @@ class PlayerCtl:
 		self.left_time = 0
 		self.left_index = 0
 		self.player_volume: float = self.bag.volume
+		self.volume_store: float = 50  # Used to save the previous volume when muted
 		self.new_time = 0
 		self.time_to_get = []
 		self.a_time = 0
@@ -2162,12 +2165,11 @@ class PlayerCtl:
 		return 0
 
 	def toggle_mute(self) -> None:
-		global volume_store
 		if self.player_volume > 0:
-			volume_store = self.player_volume
+			self.volume_store = self.player_volume
 			self.player_volume = 0
 		else:
-			self.player_volume = volume_store
+			self.player_volume = self.volume_store
 
 		self.set_volume()
 
@@ -14763,7 +14765,6 @@ class BottomBarType1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self):
-		global volume_store
 		global clicked
 
 		window_size = self.window_size
@@ -15061,10 +15062,10 @@ class BottomBarType1:
 					self.volume_bar_size[1] + 20 * gui.scale)):
 
 				if pctl.player_volume > 0:
-					volume_store = pctl.player_volume
+					pctl.volume_store = pctl.player_volume
 					pctl.player_volume = 0
 				else:
-					pctl.player_volume = volume_store
+					pctl.player_volume = pctl.volume_store
 
 				pctl.set_volume()
 
@@ -15608,7 +15609,6 @@ class BottomBarType_ao1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self):
-		global volume_store
 		global clicked
 
 		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
@@ -15673,10 +15673,10 @@ class BottomBarType_ao1:
 			if inp.right_click and tauon.coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
 				if inp.right_click:
 					if pctl.player_volume > 0:
-						volume_store = pctl.player_volume
+						pctl.volume_store = pctl.player_volume
 						pctl.player_volume = 0
 					else:
-						pctl.player_volume = volume_store
+						pctl.player_volume = pctl.volume_store
 
 					pctl.set_volume()
 
@@ -23639,7 +23639,7 @@ class Bag:
 	dirs:                   Directories
 	prefs:                  Prefs
 	formats:                Formats
-	renderer:               renderer
+	renderer:               SDL_Renderer
 	ddt:                    TDraw
 	fonts:                  Fonts
 	tls_context:            ssl.SSLContext
@@ -23919,8 +23919,8 @@ def auto_size_columns():
 	gui.pl_update += 1
 	update_set()
 
-def set_colour(colour):
-	SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
+def set_colour(colour: list[int]) -> None:
+	SDL_SetRenderDrawColor(tauon.bag.renderer, colour[0], colour[1], colour[2], colour[3])
 
 def get_themes(dirs: Directories, deco: bool = False) -> list[str] | dict[str, str]:
 	themes: list[str] = []  # full, name
@@ -38164,8 +38164,6 @@ def update_layout_do(tauon: Tauon):
 
 	# input.mouse_click = False
 
-	global renderer
-
 	if prefs.spec2_colour_mode == 0:
 		prefs.spec2_base = [10, 10, 100]
 		prefs.spec2_multiply = [0.5, 1, 1]
@@ -38427,14 +38425,13 @@ def update_layout_do(tauon: Tauon):
 		# --------------------------------------------------------------------
 
 		if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-
 			while window_size[0] > gui.max_window_tex:
 				gui.max_window_tex += 1000
 			while window_size[1] > gui.max_window_tex:
 				gui.max_window_tex += 1000
 
 			gui.tracklist_texture_rect = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
-
+			renderer = tauon.bag.renderer
 			SDL_DestroyTexture(gui.tracklist_texture)
 			SDL_RenderClear(renderer)
 			gui.tracklist_texture = SDL_CreateTexture(
@@ -38786,8 +38783,6 @@ def is_level_zero(include_menus: bool = True) -> bool:
 		and not trans_edit_box.active
 
 def drop_file(target):
-	global new_playlist_cooldown
-
 	if system != "windows" and sdl_version >= 204:
 		gmp = get_global_mouse()
 		gwp = get_window_position()
@@ -38809,7 +38804,7 @@ def drop_file(target):
 	gui.drop_playlist_target = 0
 	#logging.info(event.drop)
 
-	if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
+	if i_y < gui.panelY and not gui.new_playlist_cooldown and gui.mode == 1:
 		x = tauon.top_panel.tabs_left_x
 		for tab in tauon.top_panel.shown_tabs:
 			wid = tauon.top_panel.tab_text_spaces[tab] + tauon.top_panel.tab_extra_width
@@ -38825,15 +38820,13 @@ def drop_file(target):
 			x += wid
 		else:
 			logging.info("MISS")
-			if new_playlist_cooldown:
+			if gui.new_playlist_cooldown:
 				gui.drop_playlist_target = pctl.active_playlist_viewing
 			else:
 				if not target.lower().endswith(".xspf"):
 					gui.drop_playlist_target = new_playlist()
-				new_playlist_cooldown = True
-
+				gui.new_playlist_cooldown = True
 	elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
-
 		y = gui.panelY
 		y += 5 * gui.scale
 		y += tauon.playlist_box.tab_h + tauon.playlist_box.gap
@@ -38848,12 +38841,12 @@ def drop_file(target):
 				break
 			y += tauon.playlist_box.tab_h + tauon.playlist_box.gap
 		else:
-			if new_playlist_cooldown:
+			if gui.new_playlist_cooldown:
 				gui.drop_playlist_target = pctl.active_playlist_viewing
 			else:
 				if not target.lower().endswith(".xspf"):
 					gui.drop_playlist_target = new_playlist()
-				new_playlist_cooldown = True
+				gui.new_playlist_cooldown = True
 
 
 	else:
@@ -38883,7 +38876,7 @@ def drop_file(target):
 	inp.mouse_down = False
 	inp.drag_mode = False
 
-def main(holder: Holder):
+def main(holder: Holder) -> None:
 	t_window               = holder.t_window
 	renderer               = holder.renderer
 	logical_size           = holder.logical_size
@@ -39461,7 +39454,6 @@ def main(holder: Holder):
 
 	b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
 
-	volume_store = 50  # Used to save the previous volume when muted
 
 	# row_alt = False
 
@@ -42075,7 +42067,7 @@ def main(holder: Holder):
 			key_end_press = False
 			inp.mouse_wheel = 0
 			pref_box.scroll = 0
-			new_playlist_cooldown = False
+			gui.new_playlist_cooldown = False
 			input_text = ""
 			inp.level_2_enter = False
 
@@ -42649,13 +42641,12 @@ def main(holder: Holder):
 			if sleep_timer.get() > 2:
 				SDL_WaitEventTimeout(None, 1000)
 			continue
-
 		else:
 			power = 0
 
 		gui.pl_update = min(gui.pl_update, 2)
 
-		new_playlist_cooldown = False
+		gui.new_playlist_cooldown = False
 
 		if prefs.auto_extract and prefs.monitor_downloads:
 			dl_mon.scan()

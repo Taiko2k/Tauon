@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 	from collections.abc import Callable
 	from io import TextIOWrapper
 	from pathlib import Path
-	from sdl2 import render, video
+	from sdl2 import SDL_Renderer, SDL_Window
 
 	from tauon.__main__ import LogHistoryHandler
 
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 class Holder:
 	"""Class that holds variables for forwarding them from __main__.py to t_main.py"""
 
-	t_window:               video.LP_SDL_Window    # SDL_CreateWindow()   return type
-	renderer:               render.LP_SDL_Renderer # SDL_CreateRenderer() return type
+	t_window:               SDL_Window    # SDL_CreateWindow()   return type
+	renderer:               SDL_Renderer # SDL_CreateRenderer() return type
 	logical_size:           list[int] # X Y res
 	window_size:            list[int] # X Y res
 	maximized:              bool
