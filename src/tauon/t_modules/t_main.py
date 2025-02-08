@@ -1079,22 +1079,23 @@ class Input:
 
 	def __init__(self, gui: GuiVar) -> None:
 		self.gui = gui
-		self.mouse_click:      bool = False
-		self.middle_click:     bool = False
-		self.right_click:      bool = False
-		self.level_2_enter:    bool = False
-		self.backspace_press:   int = 0
-		self.mouse_wheel:       int = 0
-		self.mouse_down:       bool = False
-		self.mouse_up:         bool = False
-		self.right_down:       bool = False
-		self.click_location         = [200, 200]
-		self.last_click_location    = [0, 0]
-		self.mouse_position         = [0, 0]
-		self.mouse_up_position      = [0, 0]
-		self.drag_mode:        bool = False
-		self.quick_drag:       bool = False
-		self.clicked:          bool = False
+		self.mouse_click:         bool = False
+		self.middle_click:        bool = False
+		self.right_click:         bool = False
+		self.level_2_right_click: bool = False
+		self.level_2_enter:       bool = False
+		self.backspace_press:      int = 0
+		self.mouse_wheel:          int = 0
+		self.mouse_down:          bool = False
+		self.mouse_up:            bool = False
+		self.right_down:          bool = False
+		self.click_location            = [200, 200]
+		self.last_click_location       = [0, 0]
+		self.mouse_position            = [0, 0]
+		self.mouse_up_position         = [0, 0]
+		self.drag_mode:           bool = False
+		self.quick_drag:          bool = False
+		self.clicked:             bool = False
 
 		self.k_input:          bool = True
 		self.key_return_press: bool = False
@@ -1601,7 +1602,7 @@ class PlayerCtl:
 		self.install_directory:   Path = self.bag.dirs.install_directory
 		self.loading_in_progress: bool = False
 
-
+		self.cargo: list[int]          = []
 		# Database
 
 		self.master_count:     int = self.bag.master_count
@@ -2132,11 +2133,11 @@ class PlayerCtl:
 		#	 logging.info("Run Over")
 
 		if select:
-			gui.shift_selection = []
+			self.gui.shift_selection = []
 
 		self.render_playlist()
 
-		if prefs.album_mode and not quiet:
+		if self.prefs.album_mode and not quiet:
 			if highlight:
 				self.gui.gallery_animate_highlight_on = goto_album(self.selected_in_playlist)
 				gallery_select_animate_timer.set()
@@ -3396,7 +3397,7 @@ class LastFMapi:
 		webbrowser.open(self.url, new=2, autoraise=True)
 
 	def auth2(self) -> None:
-		"""This is step 2 where the user clicks "Done""""
+		"""This is step 2 where the user clicks \"Done\""""
 
 		if self.sg is None:
 			show_message(_("You need to log in first"))
@@ -4317,7 +4318,12 @@ class Menu:
 			self.w += 15
 
 	def __init__(self, tauon: Tauon, width: int, show_icons: bool = False) -> None:
-		self.tauon = tauon
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.inp         = tauon.gui.inp
+		self.ddt         = tauon.bag.ddt
+		self.window_size = tauon.bag.window_size
+
 		self.base_v_size = 22
 		self.active = False
 		self.request_width: int = width
@@ -4375,7 +4381,7 @@ class Menu:
 
 	def test_item_active(self, item):
 		if item.show_test is not None:
-			if item.show_test(1) is False:
+			if item.show_test(1, self.tauon) is False:
 				return False
 		return True
 
@@ -4440,8 +4446,8 @@ class Menu:
 					icon.base_asset.render(x, y)
 
 	def render(self):
+		gui = self.gui
 		if self.active:
-
 			if Menu.switch != self.id:
 				self.active = False
 
@@ -4711,7 +4717,8 @@ class Menu:
 				# Render the menu outline
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
-	def activate(self, in_reference=0, position=None):
+	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
+		inp = self.inp
 
 		Menu.active = True
 
@@ -4726,7 +4733,7 @@ class Menu:
 
 		# Reposition the menu if it would otherwise intersect with far edge of window
 		if not position:
-			if self.pos[0] + self.w > window_size[0]:
+			if self.pos[0] + self.w > self.window_size[0]:
 				self.pos[0] -= round(self.w + 3 * gui.scale)
 
 		# Get height size of menu
@@ -4742,7 +4749,7 @@ class Menu:
 					shown_h += self.h
 
 		# Flip menu up if would intersect with bottom of window
-		if self.pos[1] + full_h > window_size[1]:
+		if self.pos[1] + full_h > self.window_size[1]:
 			self.pos[1] -= shown_h
 
 			# Prevent moving outside top of window
@@ -5125,16 +5132,18 @@ class Tauon:
 		self.encode_folder_name                   = encode_folder_name
 		self.encode_track_name                    = encode_track_name
 		# Create top menu
-		self.x_menu          = Menu(self, 190, show_icons=True)
-		self.set_menu        = Menu(self, 150)
-		self.field_menu      = Menu(self, 140)
-		self.dl_menu         = Menu(self, 90)
+		self.x_menu                = Menu(self, 190, show_icons=True)
+		self.set_menu              = Menu(self, 150)
+		self.field_menu            = Menu(self, 140)
+		self.dl_menu               = Menu(self, 90)
 
-		self.cancel_menu     = Menu(self, 100)
-		self.extra_menu      = Menu(self, 175, show_icons=True)
-		self.shuffle_menu    = Menu(self, 120)
-		self.repeat_menu     = Menu(self, 120)
-		self.tab_menu        = Menu(self, 160, show_icons=True)
+		self.cancel_menu           = Menu(self, 100)
+		self.extra_menu            = Menu(self, 175, show_icons=True)
+		self.shuffle_menu          = Menu(self, 120)
+		self.repeat_menu           = Menu(self, 120)
+		self.tab_menu              = Menu(self, 160, show_icons=True)
+		self.playlist_menu         = Menu(self, 130)
+		self.spotify_playlist_menu = Menu(self, 175)
 
 
 		self.tray_lock = threading.Lock()
@@ -6295,7 +6304,7 @@ class TimedLyricsRen:
 			self.ready = False
 			self.generate(pctl.master_library[index])
 
-		if right_click and x and y and tauon.coll((x, y, w, h)):
+		if inp.right_click and x and y and tauon.coll((x, y, w, h)):
 			showcase_menu.activate(pctl.master_library[index])
 
 		if not self.ready:
@@ -6461,7 +6470,7 @@ class TextBox2:
 
 		# Activate Menu
 		if tauon.coll(rect):
-			if right_click or level_2_right_click:
+			if inp.right_click or inp.level_2_right_click:
 				field_menu.activate(self)
 
 		if width > 0 and active:
@@ -6882,7 +6891,7 @@ class TextBox:
 
 			# Activate Menu
 			if tauon.coll(rect):
-				if right_click or level_2_right_click:
+				if inp.right_click or inp.level_2_right_click:
 					field_menu.activate(self)
 
 			if click and field_menu.active:
@@ -8601,7 +8610,7 @@ class RenameTrackBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			rename_track_box.active = False
 
 		r_todo = []
@@ -8783,7 +8792,7 @@ class TransEditBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			self.active = False
 
 		select = list(set(gui.shift_selection))
@@ -9002,7 +9011,7 @@ class TransEditBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			self.active = False
 
 		select = list(set(gui.shift_selection))
@@ -9235,7 +9244,7 @@ class SubLyricsBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			self.active = False
 			gui.box_over = False
 
@@ -9337,7 +9346,7 @@ class ExportPlaylistBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or gui.level_2_click or right_click or level_2_right_click) and not tauon.coll(
+		if key_esc_press or ((inp.mouse_click or gui.level_2_click or inp.right_click or inp.level_2_right_click) and not tauon.coll(
 				(x, y, w, h))):
 			self.active = False
 			gui.box_over = False
@@ -10314,7 +10323,7 @@ class SearchOverlay:
 							clear = True
 
 
-					if level_2_right_click:
+					if inp.level_2_right_click:
 						show = True
 						clear = True
 
@@ -10449,7 +10458,7 @@ class MessageBox:
 
 	def render(self):
 
-		if inp.mouse_click or inp.key_return_press or right_click or key_esc_press or inp.backspace_press \
+		if inp.mouse_click or inp.key_return_press or inp.right_click or key_esc_press or inp.backspace_press \
 				or keymaps.test("quick-find") or (inp.k_input and message_box_min_timer.get() > 1.2):
 
 			if not key_focused and message_box_min_timer.get() > 0.4:
@@ -11666,7 +11675,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_sat_url.text = prefs.sat_url
@@ -11684,7 +11693,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_sat_playlist.draw(
@@ -11721,7 +11730,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_maloja_url.text = prefs.maloja_url
@@ -11737,7 +11746,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_maloja_key.text = prefs.maloja_key
@@ -11800,7 +11809,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_spot_client.text = prefs.spot_client
@@ -11816,7 +11825,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_spot_secret.text = prefs.spot_secret
@@ -11875,7 +11884,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_air_usr.text = prefs.subsonic_user
@@ -11889,7 +11898,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_air_pas.text = prefs.subsonic_password
@@ -11903,7 +11912,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_air_ser.text = prefs.subsonic_server
@@ -11936,7 +11945,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_jelly_usr.text = prefs.jelly_username
@@ -11950,7 +11959,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_jelly_pas.text = prefs.jelly_password
@@ -11964,7 +11973,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_jelly_ser.text = prefs.jelly_server_url
@@ -12009,7 +12018,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_koel_usr.text = prefs.koel_username
@@ -12023,7 +12032,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_koel_pas.text = prefs.koel_password
@@ -12037,7 +12046,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_koel_ser.text = prefs.koel_server_url
@@ -12066,7 +12075,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 0
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_plex_usr.text = prefs.plex_username
@@ -12080,7 +12089,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 1
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_plex_pas.text = prefs.plex_password
@@ -12094,7 +12103,7 @@ class Over:
 			y += round(19 * gui.scale)
 			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
 			tauon.fields.add(rect1)
-			if tauon.coll(rect1) and (self.click or level_2_right_click):
+			if tauon.coll(rect1) and (self.click or inp.level_2_right_click):
 				self.account_text_field = 2
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 			text_plex_ser.text = prefs.plex_servername
@@ -14111,7 +14120,7 @@ class TopPanel:
 					break
 
 				# Activate menu on right click
-				elif right_click:
+				elif inp.right_click:
 					if gui.radio_view:
 						radio_tab_menu.activate(copy.deepcopy(i))
 					else:
@@ -14391,7 +14400,7 @@ class TopPanel:
 				# if colours.lm:
 				#     colour = [40, 40, 40, 255]
 				if dl > 0 or watching > 0:
-					if right_click:
+					if inp.right_click:
 						tauon.dl_menu.activate(position=(inp.mouse_position[0], gui.panelY))
 				if dl > 0:
 					if inp.mouse_click:
@@ -14462,7 +14471,7 @@ class TopPanel:
 				text = _("Extracting Archive...")
 			else:
 				text = _("Importing...  ") + str(to_got)  # + "/" + str(to_get)
-				if right_click and tauon.coll([x, y, 180 * gui.scale, 18 * gui.scale]):
+				if inp.right_click and tauon.coll([x, y, 180 * gui.scale, 18 * gui.scale]):
 					tauon.cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 		elif tauon.after_scan:
 			# bg = colours.status_info_text
@@ -14509,7 +14518,7 @@ class TopPanel:
 		elif gui.sync_progress and not tauon.transcode_list:
 			text = gui.sync_progress
 			bg = [100, 200, 100, 255]
-			if right_click and tauon.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
+			if inp.right_click and tauon.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
 				cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 		elif tauon.transcode_list and gui.tc_cancel:
 			bg = [150, 150, 150, 255]
@@ -14551,7 +14560,7 @@ class TopPanel:
 			# if inp.key_ctrl_down and key_c_press:
 			#     del transcode_list[1:]
 			#     gui.tc_cancel = True
-			if right_click and tauon.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
+			if inp.right_click and tauon.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
 				cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 
 			w = 100 * gui.scale
@@ -14875,8 +14884,8 @@ class BottomBarType1:
 			min_h = round(4 * gui.scale)
 			spacing = round(5 * gui.scale)
 
-			if right_click and tauon.coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
-				if right_click:
+			if inp.right_click and tauon.coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
+				if inp.right_click:
 					pctl.toggle_mute()
 
 			for bar in range(8):
@@ -15192,7 +15201,7 @@ class BottomBarType1:
 						inp.mouse_click = False
 					tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
-					if right_click:
+					if inp.right_click:
 						pctl.show_current(highlight=True)
 
 				self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
@@ -15213,7 +15222,7 @@ class BottomBarType1:
 					pause_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						pctl.pause()
-					if right_click:
+					if inp.right_click:
 						pctl.show_current(highlight=True)
 					tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
@@ -15229,7 +15238,7 @@ class BottomBarType1:
 				stop_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.stop()
-				if right_click:
+				if inp.right_click:
 					pctl.auto_stop ^= True
 				tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
@@ -15248,7 +15257,7 @@ class BottomBarType1:
 				if inp.mouse_click:
 					pctl.advance()
 					gui.tool_tip_lock_off_f = True
-				if right_click:
+				if inp.right_click:
 					# pctl.random_mode ^= True
 					toggle_random()
 					gui.tool_tip_lock_off_f = True
@@ -15283,7 +15292,7 @@ class BottomBarType1:
 				if inp.mouse_click:
 					pctl.back()
 					gui.tool_tip_lock_off_b = True
-				if right_click:
+				if inp.right_click:
 					toggle_repeat()
 					gui.tool_tip_lock_off_b = True
 					# if window_size[0] < 600 * gui.scale:
@@ -15770,7 +15779,7 @@ class BottomBarType_ao1:
 						inp.mouse_click = False
 					tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
-					if right_click:
+					if inp.right_click:
 						pctl.show_current(highlight=True)
 
 				self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
@@ -15791,7 +15800,7 @@ class BottomBarType_ao1:
 					pause_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						pctl.pause()
-					if right_click:
+					if inp.right_click:
 						pctl.show_current(highlight=True)
 					tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
@@ -15809,7 +15818,7 @@ class BottomBarType_ao1:
 				if inp.mouse_click:
 					pctl.advance()
 					gui.tool_tip_lock_off_f = True
-				if right_click:
+				if inp.right_click:
 					# pctl.random_mode ^= True
 					toggle_random()
 					gui.tool_tip_lock_off_f = True
@@ -15878,7 +15887,7 @@ class MiniMode:
 		mouse_in = tauon.coll(detect_mouse_rect)
 
 		# Play / Pause when right clicking below art
-		if right_click:  # and inp.mouse_position[1] > y1:
+		if inp.right_click:  # and inp.mouse_position[1] > y1:
 			pctl.play_pause()
 
 		# Volume change on scroll
@@ -16105,7 +16114,7 @@ class MiniMode2:
 		mouse_in = tauon.coll(detect_mouse_rect)
 
 		# Play / Pause when right clicking below art
-		if right_click:  # and inp.mouse_position[1] > y1:
+		if inp.right_click:  # and inp.mouse_position[1] > y1:
 			pctl.play_pause()
 
 		# Volume change on scroll
@@ -16254,7 +16263,7 @@ class MiniMode3:
 		mouse_in = tauon.coll(detect_mouse_rect)
 
 		# Play / Pause when right clicking below art
-		if right_click:  # and inp.mouse_position[1] > y1:
+		if inp.right_click:  # and inp.mouse_position[1] > y1:
 			pctl.play_pause()
 
 		# Volume change on scroll
@@ -16702,7 +16711,7 @@ class StandardPlaylist:
 							move_on_title = True
 
 					# Ignore click in ratings box
-					click_title = (inp.mouse_click or right_click or inp.middle_click) and tauon.coll(input_box)
+					click_title = (inp.mouse_click or inp.right_click or inp.middle_click) and tauon.coll(input_box)
 					if click_title and gui.show_album_ratings:
 						if inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
 							click_title = False
@@ -16743,7 +16752,7 @@ class StandardPlaylist:
 								goto_album(pctl.playlist_playing_position)
 
 						# Show selection menu if right clicked after select
-						if right_click:
+						if inp.right_click:
 							folder_menu.activate(track_id)
 							r_menu_position = track_position
 							gui.selection_stage = 2
@@ -16822,10 +16831,9 @@ class StandardPlaylist:
 			line_hit = False
 			if tauon.coll(input_box) and inp.mouse_position[1] < window_size[1] - gui.panelBY:
 				line_over = True
-				if (inp.mouse_click or right_click or (inp.middle_click and is_level_zero())):
+				if (inp.mouse_click or inp.right_click or (inp.middle_click and is_level_zero())):
 					line_hit = True
 					gui.pl_update += 1
-
 				else:
 					line_hit = False
 			else:
@@ -16945,8 +16953,7 @@ class StandardPlaylist:
 					drag_highlight = True
 
 			# Right click menu activation
-			if right_click and line_hit and inp.mouse_position[0] > gui.playlist_left + 10:
-
+			if inp.right_click and line_hit and inp.mouse_position[0] > gui.playlist_left + 10:
 				if len(gui.shift_selection) > 1 and track_position in gui.shift_selection:
 					selection_menu.activate(pctl.default_playlist[track_position])
 					gui.selection_stage = 2
@@ -17626,9 +17633,8 @@ class StandardPlaylist:
 		gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
 		if (inp.right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * len(list_items) <
-				inp.mouse_position[1] < window_size[
-					1] - 55 and width + left > inp.mouse_position[0] > gui.playlist_left + 15):
-			playlist_menu.activate()
+				inp.mouse_position[1] < window_size[1] - 55 and width + left > inp.mouse_position[0] > gui.playlist_left + 15):
+			tauon.playlist_menu.activate()
 
 		SDL_SetRenderTarget(self.renderer, gui.main_texture)
 		SDL_RenderCopy(self.renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
@@ -18633,7 +18639,7 @@ class RadioBox:
 						self.start(station)
 				if inp.middle_click:
 					to_delete = p
-				if level_2_right_click:
+				if inp.level_2_right_click:
 					self.right_clicked_station = station
 					self.right_clicked_station_p = p
 					radio_entry_menu.activate(station)
@@ -19000,7 +19006,7 @@ class RenamePlaylistBox:
 
 		# If enter or click outside of box: save and close
 		if inp.key_return_press or (key_esc_press and len(editline) == 0) \
-				or ((inp.mouse_click or level_2_right_click) and not tauon.coll(rect)):
+				or ((inp.mouse_click or inp.level_2_right_click) and not tauon.coll(rect)):
 			gui.rename_playlist_box = False
 
 			if self.edit_generator:
@@ -19128,7 +19134,7 @@ class PlaylistBox:
 			tab_on += 1
 
 			if tauon.coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
-				if right_click:
+				if inp.right_click:
 					if gui.radio_view:
 						radio_tab_menu.activate(i, inp.mouse_position)
 					else:
@@ -19354,7 +19360,7 @@ class PlaylistBox:
 				if inp.mouse_up:
 					drop_tracks_to_new_playlist(gui.shift_selection)
 
-			if right_click:
+			if inp.right_click:
 				extra_tab_menu.activate(pctl.active_playlist_viewing)
 
 			# Move tab to end playlist if dragged past end
@@ -20048,7 +20054,7 @@ class ArtistList:
 				self.click_highlight_timer.set()
 				create_artist_pl(artist)
 
-			if right_click:
+			if inp.right_click:
 				self.click_ref = artist
 				self.click_highlight_timer.set()
 
@@ -20132,7 +20138,7 @@ class ArtistList:
 			else:
 				self.scroll_position = artist_list_scroll.draw(
 					scroll_x, y + 1, scroll_width, h, self.scroll_position,
-					len(self.current_artists) - range, r_click=right_click,
+					len(self.current_artists) - range, r_click=inp.right_click,
 					jump_distance=35, extend_field=6 * gui.scale)
 
 		if not self.current_artists:
@@ -20394,7 +20400,7 @@ class TreeView:
 			scroll_position = tree_view_scroll.draw(
 				x + w - round(12 * gui.scale), y + 1, round(11 * gui.scale), h,
 				scroll_position,
-				max_scroll, r_click=right_click, jump_distance=40)
+				max_scroll, r_click=inp.right_click, jump_distance=40)
 
 		self.scroll_positions[pl_id] = scroll_position
 
@@ -20461,7 +20467,7 @@ class TreeView:
 					if light_mode:
 						text_colour = [0, 0, 0, 255]
 
-			if right_click:
+			if inp.right_click:
 				mouse_in = tauon.coll(rect) and is_level_zero(False)
 			else:
 				mouse_in = tauon.coll(rect) and focused and not (
@@ -20470,7 +20476,7 @@ class TreeView:
 			if mouse_in and not tree_view_scroll.held:
 				if inp.middle_click:
 					stem_to_new_playlist(full_folder_path)
-				elif right_click:
+				elif inp.right_click:
 					if item[3]:
 						for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)].playlist_ids):
 							if msys:
@@ -21036,7 +21042,7 @@ class QueueBox:
 			self.scroll_position += inp.mouse_wheel * -1
 			self.scroll_position = max(self.scroll_position, 0)
 
-			if right_click:
+			if inp.right_click:
 				qb_right_click = 1
 
 		# text_colour = [255, 255, 255, 91]
@@ -21371,16 +21377,16 @@ class MetaBox:
 		border_rect = (
 			art_rect[0] - border, art_rect[1] - border, art_rect[2] + (border * 2), art_rect[3] + (border * 2))
 
-		if (inp.mouse_click or right_click) and is_level_zero(False):
+		if (inp.mouse_click or inp.right_click) and is_level_zero(False):
 			if tauon.coll(border_rect):
 				if inp.mouse_click:
 					album_art_gen.cycle_offset(target_track)
-				if right_click:
+				if inp.right_click:
 					picture_menu.activate(in_reference=target_track)
 			elif tauon.coll(rect):
 				if inp.mouse_click:
 					pctl.show_current()
-				if right_click:
+				if inp.right_click:
 					showcase_menu.activate(track)
 
 		ddt.rect(border_rect, border_colour)
@@ -21417,7 +21423,7 @@ class MetaBox:
 
 		# Test for show lyric menu on right ckick
 		if tauon.coll((x + 10, y, w - 10, h)):
-			if right_click:  # and 3 > pctl.playing_state > 0:
+			if inp.right_click:  # and 3 > pctl.playing_state > 0:
 				gui.force_showcase_index = -1
 				showcase_menu.activate(track)
 
@@ -21476,7 +21482,7 @@ class MetaBox:
 
 		# Test for show lyric menu on right ckick
 		if tauon.coll((x + 10, y, w - 10, h)):
-			if right_click:  # and 3 > pctl.playing_state > 0:
+			if inp.right_click:  # and 3 > pctl.playing_state > 0:
 				gui.force_showcase_index = -1
 				showcase_menu.activate(track)
 
@@ -21789,7 +21795,7 @@ class ArtistInfoBox:
 		wait = False
 
 		# Activate menu
-		if right_click and tauon.coll((x, y, w, h)):
+		if inp.right_click and tauon.coll((x, y, w, h)):
 			artist_info_menu.activate(in_reference=artist)
 
 		background = colours.artist_bio_background
@@ -26953,8 +26959,8 @@ def toggle_shuffle_layout(albums: bool = False):
 def toggle_shuffle_layout_albums():
 	toggle_shuffle_layout(albums=True)
 
-def exit_shuffle_layout(_):
-	return prefs.shuffle_lock
+def exit_shuffle_layout(_: int, tauon: Tauon) -> bool:
+	return tauon.prefs.shuffle_lock
 
 def bio_set_large():
 	# if window_size[0] >= round(1000 * gui.scale):
@@ -28024,32 +28030,31 @@ def ser_gimage(track_object: TrackClass):
 			track_object.artist + " " + track_object.album)
 		webbrowser.open(line, new=2, autoraise=True)
 
-def append_here():
-	global cargo
-	pctl.default_playlist += cargo
+def append_here(pctl: PlayerCtl) -> None:
+	pctl.default_playlist += pctl.cargo
 
-def paste_deco():
+def paste_deco(tauon: Tauon) -> list[list[int] | str | None]:
 	active = False
 	line = None
-	if len(cargo) > 0:
+	if len(tauon.pctl.cargo) > 0:
 		active = True
 	elif SDL_HasClipboardText():
 		text = copy_from_clipboard()
 		if text.startswith(("/", "spotify")) or "file://" in text:
 			active = True
-		elif prefs.spot_mode and text.startswith("https://open.spotify.com/album/"):  # or text.startswith("https://open.spotify.com/track/"):
+		elif tauon.prefs.spot_mode and text.startswith("https://open.spotify.com/album/"):  # or text.startswith("https://open.spotify.com/track/"):
 			active = True
 			line = _("Paste Spotify Album")
 
 	if active:
-		line_colour = colours.menu_text
+		line_colour = tauon.bag.colours.menu_text
 	else:
-		line_colour = colours.menu_text_disabled
+		line_colour = tauon.bag.colours.menu_text_disabled
 
-	return [line_colour, colours.menu_background, line]
+	return [line_colour, tauon.bag.colours.menu_background, line]
 
-def lightning_move_test(discard):
-	return gui.lightning_copy and prefs.show_transfer
+def lightning_move_test(_: int, tauon: Tauon) -> bool:
+	return tauon.gui.lightning_copy and tauon.prefs.show_transfer
 
 # def copy_deco():
 #	 line = "Copy"
@@ -28643,8 +28648,7 @@ def s_append(index: int):
 	paste(playlist_no=index)
 
 def append_playlist(index: int):
-	global cargo
-	pctl.multi_playlist[index].playlist_ids += cargo
+	pctl.multi_playlist[index].playlist_ids += pctl.cargo
 
 	gui.pl_update = 1
 	reload()
@@ -29886,11 +29890,11 @@ def make_auto_sorting(pl: int) -> None:
 		_("OK. This playlist will automatically sort on import from now on"),
 		_("You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""), mode="done")
 
-def spotify_show_test(_):
-	return prefs.spot_mode
+def spotify_show_test(_: int, tauon: Tauon) -> bool:
+	return tauon.prefs.spot_mode
 
-def jellyfin_show_test(_):
-	return prefs.jelly_password and prefs.jelly_username
+def jellyfin_show_test(_: int, tauon: Tauon) -> bool:
+	return tauon.prefs.jelly_password and tauon.prefs.jelly_username
 
 def upload_jellyfin_playlist(pl: TauonPlaylist) -> None:
 	if jellyfin.scanning:
@@ -31024,13 +31028,12 @@ def convert_folder(index: int):
 	transcode_list.append(folder)
 	tauon.thread_manager.ready("worker")
 
-def transfer(index: int, args) -> None:
-	global cargo
-	old_cargo = copy.deepcopy(cargo)
+def transfer(index: int, args: list[int]) -> None:
+	old_cargo = copy.deepcopy(pctl.cargo)
 
 	if args[0] == 1 or args[0] == 0:  # copy
 		if args[1] == 1:  # single track
-			cargo.append(index)
+			pctl.cargo.append(index)
 			if args[0] == 0:  # cut
 				del pctl.default_playlist[pctl.selected_in_playlist]
 
@@ -31038,7 +31041,7 @@ def transfer(index: int, args) -> None:
 			for b in range(len(pctl.default_playlist)):
 				if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == pctl.master_library[
 					index].parent_folder_name:
-					cargo.append(pctl.default_playlist[b])
+					pctl.cargo.append(pctl.default_playlist[b])
 			if args[0] == 0:  # cut
 				for b in reversed(range(len(pctl.default_playlist))):
 					if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == pctl.master_library[
@@ -31046,7 +31049,7 @@ def transfer(index: int, args) -> None:
 						del pctl.default_playlist[b]
 
 		elif args[1] == 3:  # playlist
-			cargo += pctl.default_playlist
+			pctl.cargo += pctl.default_playlist
 			if args[0] == 0:  # cut
 				pctl.default_playlist = []
 
@@ -31062,8 +31065,8 @@ def transfer(index: int, args) -> None:
 			else:
 				insert += 1
 
-			while len(cargo) > 0:
-				pctl.default_playlist.insert(insert, cargo.pop())
+			while len(pctl.cargo) > 0:
+				pctl.default_playlist.insert(insert, pctl.cargo.pop())
 
 		elif args[1] == 2:  # After
 			insert = pctl.selected_in_playlist
@@ -31072,18 +31075,17 @@ def transfer(index: int, args) -> None:
 					pctl.master_library[index].parent_folder_name:
 				insert += 1
 
-			while len(cargo) > 0:
-				pctl.default_playlist.insert(insert, cargo.pop())
+			while len(pctl.cargo) > 0:
+				pctl.default_playlist.insert(insert, pctl.cargo.pop())
 		elif args[1] == 3:  # End
-			pctl.default_playlist += cargo
-			# cargo = []
+			pctl.default_playlist += pctl.cargo
+			# pctl.cargo = []
 
-		cargo = old_cargo
+		pctl.cargo = old_cargo
 	reload()
 
-def temp_copy_folder(ref):
-	global cargo
-	cargo = []
+def temp_copy_folder(ref: int, pctl: PlayerCtl) -> None:
+	pctl.cargo = []
 	transfer(ref, args=[1, 2])
 
 def activate_track_box(index: int):
@@ -31106,19 +31108,18 @@ def s_copy():
 	if "file://" in clip:
 		copy_to_clipboard("")
 
-	global cargo
-	cargo = []
+	pctl.cargo = []
 	if pctl.default_playlist:
 		for item in gui.shift_selection:
-			cargo.append(pctl.default_playlist[item])
+			pctl.cargo.append(pctl.default_playlist[item])
 
-	if not cargo and -1 < pctl.selected_in_playlist < len(pctl.default_playlist):
-		cargo.append(pctl.default_playlist[pctl.selected_in_playlist])
+	if not pctl.cargo and -1 < pctl.selected_in_playlist < len(pctl.default_playlist):
+		pctl.cargo.append(pctl.default_playlist[pctl.selected_in_playlist])
 
 	tauon.copied_track = None
 
-	if len(cargo) == 1:
-		tauon.copied_track = cargo[0]
+	if len(pctl.cargo) == 1:
+		tauon.copied_track = pctl.cargo[0]
 
 def directory_size(path: str) -> int:
 	total = 0
@@ -31133,10 +31134,10 @@ def lightning_paste():
 	# if not inp.key_shift_down:
 	#	 move = False
 
-	move_track = pctl.get_track(cargo[0])
+	move_track = pctl.get_track(pctl.cargo[0])
 	move_path = move_track.parent_folder_path
 
-	for item in cargo:
+	for item in pctl.cargo:
 		if move_path != pctl.get_track(item).parent_folder_path:
 			show_message(
 				_("More than one folder is in the clipboard"),
@@ -31264,7 +31265,7 @@ def lightning_paste():
 		prep_gal()
 		reload_albums(True)
 
-	cargo.clear()
+	pctl.cargo.clear()
 	gui.lightning_copy = False
 
 def paste(playlist_no=None, track_id=None):
@@ -31303,7 +31304,7 @@ def paste(playlist_no=None, track_id=None):
 		clip = False
 
 	elif "spotify" in clip:
-		cargo.clear()
+		pctl.cargo.clear()
 		for link in clip.split("\n"):
 			logging.info(link)
 			link = link.strip()
@@ -31312,7 +31313,7 @@ def paste(playlist_no=None, track_id=None):
 			elif clip.startswith(("https://open.spotify.com/album/", "spotify:album:")):
 				l = tauon.spot_ctl.append_album(link, return_list=True)
 				if l:
-					cargo.extend(l)
+					pctl.cargo.extend(l)
 			elif clip.startswith("https://open.spotify.com/playlist/"):
 				tauon.spot_ctl.playlist(link)
 		if prefs.album_mode:
@@ -32033,11 +32034,11 @@ def reload_metadata(input, keep_star: bool = True) -> None:
 	tauon.thread_manager.ready("worker")
 
 def reload_metadata_selection(tauon: Tauon) -> None:
-	cargo = []
+	pctl.cargo = []
 	for item in gui.shift_selection:
-		cargo.append(pctl.default_playlist[item])
+		pctl.cargo.append(pctl.default_playlist[item])
 
-	for k in cargo:
+	for k in pctl.cargo:
 		if tauon.pctl.master_library[k].is_cue == False:
 			tauon.to_scan.append(k)
 	tauon.thread_manager.ready("worker")
@@ -32320,10 +32321,10 @@ def intel_moji(index: int):
 		show_message(_("Autodetect failed"))
 
 def sel_to_car():
-	cargo = []
+	pctl.cargo = []
 
 	for item in gui.shift_selection:
-		cargo.append(pctl.default_playlist[item])
+		pctl.cargo.append(pctl.default_playlist[item])
 
 def cut_selection():
 	sel_to_car()
@@ -33002,7 +33003,6 @@ def toggle_galler_text(mode: int = 0) -> bool:
 
 	# Jump to playing album
 	if prefs.album_mode and gui.first_in_grid is not None:
-
 		if gui.first_in_grid < len(pctl.default_playlist):
 			goto_album(gui.first_in_grid, force=True)
 
@@ -33401,20 +33401,21 @@ def new_playlist_deco():
 		text = _("New Playlist")
 	return [colours.menu_text, colours.menu_background, text]
 
-def clean_db_show_test(_):
-	return gui.suggest_clean_db
+def clean_db_show_test(_: int, tauon: Tauon) -> bool:
+	return tauon.gui.suggest_clean_db
 
-def clean_db_fast():
+def clean_db_fast(tauon: Tauon) -> None:
+	pctl = tauon.pctl
 	keys = set(pctl.master_library.keys())
 	for pl in pctl.multi_playlist:
 		keys -= set(pl.playlist_ids)
 	for item in keys:
 		pctl.purge_track(item, fast=True)
-	gui.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
-	gui.suggest_clean_db = False
+	tauon.gui.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
+	tauon.gui.suggest_clean_db = False
 
-def clean_db_deco():
-	return [colours.menu_text, [30, 150, 120, 255], _("Clean Database!")]
+def clean_db_deco(tauon: Tauon) -> list[list[int] | str]:
+	return [tauon.bag.colours.menu_text, [30, 150, 120, 255], _("Clean Database!")]
 
 def import_spotify_playlist() -> None:
 	clip = copy_from_clipboard()
@@ -33433,8 +33434,8 @@ def import_spotify_playlist_deco():
 		return [colours.menu_text, colours.menu_background, None]
 	return [colours.menu_text_disabled, colours.menu_background, None]
 
-def show_import_music(_):
-	return gui.add_music_folder_ready
+def show_import_music(_: int, tauon: Tauon) -> bool:
+	return tauon.gui.add_music_folder_ready
 
 def import_music():
 	pl = pl_gen(_("Music"))
@@ -33933,16 +33934,16 @@ def spot_import_playlists() -> None:
 	else:
 		show_message(_("Please wait until current job is finished"))
 
-def spot_import_playlist_menu() -> None:
+def spot_import_playlist_menu(tauon: Tauon) -> None:
 	if not tauon.spot_ctl.spotify_com:
 		playlists = tauon.spot_ctl.get_playlist_list()
-		spotify_playlist_menu.items.clear()
+		tauon.spotify_playlist_menu.items.clear()
 		if playlists:
 			for item in playlists:
-				spotify_playlist_menu.add(MenuItem(item[0], tauon.spot_ctl.playlist, pass_ref=True, set_ref=item[1]))
+				tauon.spotify_playlist_menu.add(MenuItem(item[0], tauon.spot_ctl.playlist, pass_ref=True, set_ref=item[1]))
 
-			spotify_playlist_menu.add(MenuItem(_("> Import All Playlists"), spot_import_playlists))
-			spotify_playlist_menu.activate(position=(tauon.extra_menu.pos[0], window_size[1] - gui.panelBY))
+			tauon.spotify_playlist_menu.add(MenuItem(_("> Import All Playlists"), spot_import_playlists))
+			tauon.spotify_playlist_menu.activate(position=(tauon.extra_menu.pos[0], window_size[1] - gui.panelBY))
 	else:
 		show_message(_("Please wait until current job is finished"))
 
@@ -34137,7 +34138,8 @@ def lastfm_colour() -> list[int] | None:
 		return [250, 50, 50, 255]
 	return None
 
-def lastfm_menu_test(a) -> bool:
+def lastfm_menu_test(_: int, tauon: Tauon) -> bool:
+	prefs = tauon.prefs
 	if (prefs.auto_lfm and prefs.last_fm_token is not None) or prefs.enable_lb or prefs.maloja_enable:
 		return True
 	return False
@@ -34404,8 +34406,8 @@ def open_donate_link() -> None:
 def stop_quick_add() -> None:
 	pctl.quick_add_target = None
 
-def show_stop_quick_add(_) -> bool:
-	return pctl.quick_add_target is not None
+def show_stop_quick_add(_: int, tauon: Tauon) -> bool:
+	return tauon. pctl.quick_add_target is not None
 
 def view_tracks(tauon: Tauon) -> None:
 	# if gui.show_playlist is False:
@@ -39532,7 +39534,6 @@ def main(holder: Holder):
 		Archive_Formats = Archive_Formats
 	)
 
-	cargo = []
 
 	# ---------------------------------------------------------------------
 	# Player variables
@@ -40892,7 +40893,7 @@ def main(holder: Holder):
 	tool_tip_instant = ToolTip3(bag, gui)
 
 	# Create empty area menu
-	playlist_menu         = Menu(tauon, 130)
+	playlist_menu         = tauon.playlist_menu
 	radio_entry_menu      = Menu(tauon, 125)
 	showcase_menu         = Menu(tauon, 135)
 	center_info_menu      = Menu(tauon, 125)
@@ -40908,7 +40909,7 @@ def main(holder: Holder):
 	folder_tree_menu      = Menu(tauon, 175, show_icons=True)
 	folder_tree_stem_menu = Menu(tauon, 190, show_icons=True)
 	overflow_menu         = Menu(tauon, 175)
-	spotify_playlist_menu = Menu(tauon, 175)
+	spotify_playlist_menu = tauon.spotify_playlist_menu
 	radio_context_menu    = Menu(tauon, 175)
 	#chrome_menu          = Menu(tauon, 175)
 
@@ -42040,8 +42041,8 @@ def main(holder: Holder):
 			keymaps.hits.clear()
 
 			d_mouse_click = False
-			right_click = False
-			level_2_right_click = False
+			inp.right_click = False
+			inp.level_2_right_click = False
 			inp.mouse_click = False
 			inp.middle_click = False
 			inp.mouse_up = False
@@ -42282,7 +42283,7 @@ def main(holder: Holder):
 					continue
 
 				if event.button.button == SDL_BUTTON_RIGHT:
-					right_click = True
+					inp.right_click = True
 					inp.right_down = True
 					#logging.info("RIGHT DOWN")
 				elif event.button.button == SDL_BUTTON_LEFT:
@@ -42670,7 +42671,7 @@ def main(holder: Holder):
 
 		if inp.k_input:
 			# TODO(Martin): Check if commenting this out is the correct thing to do
-			#if inp.mouse_click or right_click or inp.mouse_up:
+			#if inp.mouse_click or inp.right_click or inp.mouse_up:
 			#	last_click_location = copy.deepcopy(inp.click_location)
 			#	click_location = copy.deepcopy(inp.inp.mouse_position)
 
@@ -42678,8 +42679,8 @@ def main(holder: Holder):
 				keymaps.hits.clear()
 
 				# d_mouse_click = False
-				# right_click = False
-				# level_2_right_click = False
+				# inp.right_click = False
+				# inp.level_2_right_click = False
 				# inp.mouse_click = False
 				# inp.middle_click = False
 				inp.mouse_up = False
@@ -42914,7 +42915,7 @@ def main(holder: Holder):
 						gui.theme_temp_current = -1
 
 				if keymaps.test("transfer-playtime-to"):
-					if len(cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
+					if len(pctl.cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
 							pctl.default_playlist):
 						fr = pctl.get_track(tauon.copied_track)
 						to = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist])
@@ -43063,8 +43064,8 @@ def main(holder: Holder):
 					inp.mouse_click = False
 					gui.level_2_click = True
 
-			if right_click:
-				level_2_right_click = True
+			if inp.right_click:
+				inp.level_2_right_click = True
 
 			if pref_box.enabled:
 
@@ -43072,8 +43073,8 @@ def main(holder: Holder):
 					if inp.mouse_click:  # and not gui.message_box:
 						pref_box.click = True
 						inp.mouse_click = False
-					if right_click:
-						right_click = False
+					if inp.right_click:
+						inp.right_click = False
 						pref_box.right_click = True
 
 					pref_box.scroll = inp.mouse_wheel
@@ -43081,14 +43082,14 @@ def main(holder: Holder):
 				else:
 					if inp.mouse_click:
 						pref_box.close()
-					if right_click:
+					if inp.right_click:
 						pref_box.close()
 					if pref_box.lock is False:
 						pass
 
-			if right_click and (
+			if inp.right_click and (
 					radiobox.active or rename_track_box.active or gui.rename_playlist_box or gui.rename_folder_box or tauon.search_over.active):
-				right_click = False
+				inp.right_click = False
 
 			if inp.mouse_wheel != 0:
 				gui.update += 1
@@ -43497,7 +43498,7 @@ def main(holder: Holder):
 
 			gui.layer_focus = 0
 
-			if inp.mouse_click or inp.mouse_wheel or right_click:
+			if inp.mouse_click or inp.mouse_wheel or inp.right_click:
 				inp.mouse_position[0], inp.mouse_position[1] = get_sdl_input.mouse()
 
 			if inp.mouse_click:
@@ -43777,7 +43778,7 @@ def main(holder: Holder):
 									gui.album_scroll_px + album_v_slide_value,
 									max_scroll + album_v_slide_value,
 									jump_distance=1400 * gui.scale,
-									r_click=right_click,
+									r_click=inp.right_click,
 									extend_field=15 * gui.scale) - album_v_slide_value
 
 						if last_row != row_len:
@@ -43793,7 +43794,7 @@ def main(holder: Holder):
 							extend = 40 * gui.scale
 
 						# Process inputs first
-						if (inp.mouse_click or right_click or inp.middle_click or inp.mouse_down or inp.mouse_up) and pctl.default_playlist:
+						if (inp.mouse_click or inp.right_click or inp.middle_click or inp.mouse_down or inp.mouse_up) and pctl.default_playlist:
 							while render_pos < gui.album_scroll_px + window_size[1]:
 
 								if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
@@ -43923,7 +43924,7 @@ def main(holder: Holder):
 												else:
 													# Add to queue grouped
 													add_album_to_queue(pctl.default_playlist[album_dex[album_on]])
-											elif right_click:
+											elif inp.right_click:
 												if pctl.quick_add_target:
 													pl = id_to_pl(pctl.quick_add_target)
 													if pl is not None:
@@ -44386,9 +44387,7 @@ def main(holder: Holder):
 								block_gap = 1
 
 							if tauon.coll(hot_r) or gui.pt > 0:
-
 								for i, item in enumerate(gui.power_bar):
-
 									if run_y + block_h > top + h:
 										break
 
@@ -44396,9 +44395,8 @@ def main(holder: Holder):
 									i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
 									tauon.fields.add(i_rect)
 
-									if (tauon.coll(i_rect) or (
-										lightning_menu.active and lightning_menu.reference == item)) and item.peak_x == 9 * gui.scale:
-
+									if (tauon.coll(i_rect) or (lightning_menu.active and lightning_menu.reference == item)) \
+									and item.peak_x == 9 * gui.scale:
 										if not lightning_menu.active or lightning_menu.reference == item or right_click:
 
 											minx = 100 * gui.scale
@@ -44418,7 +44416,7 @@ def main(holder: Holder):
 
 											if inp.mouse_click:
 												goto_album(item.position)
-											if right_click:
+											if inp.right_click:
 												lightning_menu.activate(item, position=(
 												window_size[0] - 180 * gui.scale, rect[1] + rect[3] + 5 * gui.scale))
 											if inp.middle_click:
@@ -44556,9 +44554,9 @@ def main(holder: Holder):
 						if gui.lsp:
 							left = gui.lspw
 						rect = [left, top, gui.plw, 12 * gui.scale]
-						if right_click and tauon.coll(rect):
+						if inp.right_click and tauon.coll(rect):
 							set_menu_hidden.activate()
-							right_click = False
+							inp.right_click = False
 
 					width = gui.plw
 					if gui.set_bar and gui.set_mode:
@@ -44639,7 +44637,7 @@ def main(holder: Holder):
 								if inp.mouse_click:
 									gui.set_label_hold = h
 									gui.set_label_point = copy.deepcopy(inp.mouse_position)
-								if right_click:
+								if inp.right_click:
 									set_menu.activate(h)
 
 							if h != 0:
@@ -44835,11 +44833,11 @@ def main(holder: Holder):
 								gui.column_sort_up_icon.render(x, round(y), [255, 255, 255, 90])
 
 					# Switch Vis:
-					if right_click and tauon.coll(
+					if inp.right_click and tauon.coll(
 						(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale,
 						gui.panelY)) and not gui.top_bar_mode2:
 						vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
-					elif right_click and tauon.top_panel.tabs_right_x < inp.mouse_position[0] and \
+					elif inp.right_click and tauon.top_panel.tabs_right_x < inp.mouse_position[0] and \
 							inp.mouse_position[1] < gui.panelY and \
 							inp.mouse_position[0] > tauon.top_panel.tabs_right_x and \
 							inp.mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra:
@@ -44917,7 +44915,7 @@ def main(holder: Holder):
 														gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
 														h=window_size[1] - gui.panelY - gui.panelBY)
 
-								if right_click and tauon.coll(
+								if inp.right_click and tauon.coll(
 									(window_size[0] - gui.rspw, gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
 									center_info_menu.activate(target_track)
 
@@ -44978,7 +44976,7 @@ def main(holder: Holder):
 							# Draw lyrics if avaliable
 							if prefs.show_lyrics_side and target_track and target_track.lyrics != "":  # and not prefs.show_side_art:
 								# meta_box.lyrics(x, y, w, h, target_track)
-								if right_click and tauon.coll((x, y, w, h)) and target_track:
+								if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
 									center_info_menu.activate(target_track)
 							else:
 
@@ -45015,13 +45013,13 @@ def main(holder: Holder):
 									if gui.art_drawn_rect:
 										coll_border = gui.art_drawn_rect
 
-									if right_click and tauon.coll((x, y, w, h)) and not tauon.coll(coll_border):
+									if inp.right_click and tauon.coll((x, y, w, h)) and not tauon.coll(coll_border):
 										if is_level_zero(include_menus=False) and target_track:
 											center_info_menu.activate(target_track)
 
 								else:
 									text_y = y + round(h * 0.40)
-									if right_click and tauon.coll((x, y, w, h)) and target_track:
+									if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
 										center_info_menu.activate(target_track)
 
 								ww = w - 25 * gui.scale
@@ -45192,12 +45190,11 @@ def main(holder: Holder):
 
 						tauon.fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
 						if tauon.coll((x, top, 28 * gui.scale, ey - top)) and (
-								inp.mouse_down or right_click) \
+								inp.mouse_down or inp.right_click) \
 								and coll_point(inp.click_location, (x, top, 28 * gui.scale, ey - top)):
 
 							gui.pl_update = 1
-							if right_click:
-
+							if inp.right_click:
 								sbp = inp.mouse_position[1] - int(sbl / 2)
 								if sbp + sbl > ey:
 									sbp = ey - sbl
@@ -45364,11 +45361,11 @@ def main(holder: Holder):
 						artist_preview_render.size[0] + border * 2), (20, 20, 20, 255))
 
 					artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
-					if inp.mouse_click or right_click or inp.mouse_wheel:
+					if inp.mouse_click or inp.right_click or inp.mouse_wheel:
 						gui.preview_artist = ""
 
 				if track_box:
-					if inp.key_return_press or right_click or key_esc_press or inp.backspace_press or keymaps.test(
+					if inp.key_return_press or inp.right_click or key_esc_press or inp.backspace_press or keymaps.test(
 							"quick-find"):
 						track_box = False
 
@@ -45841,7 +45838,7 @@ def main(holder: Holder):
 					ddt.text_background_colour = colours.box_background
 
 					if key_esc_press or (
-							(inp.mouse_click or right_click or level_2_right_click) and not tauon.coll((x, y, w, h))):
+							(inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 						gui.rename_folder_box = False
 
 					p = ddt.text(
