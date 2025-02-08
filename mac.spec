@@ -49,7 +49,6 @@ a = Analysis(
 		"zeroconf._utils.ipaddress",
 		"zeroconf._handlers.answers",
 	],
-	# TODO(Martin): Rsvg hooks are a hack until pyinstaller releases something newer than 6.11.1 - https://github.com/pyinstaller/pyinstaller/releases
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
 	runtime_hooks=[],
