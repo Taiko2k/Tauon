@@ -1862,7 +1862,7 @@ class PlayerCtl:
 		if playlist_index == -1:
 			playlist_index = self.active_playlist_viewing
 		try:
-			playlist = self.multi_playlist[playlist_index].playlist
+			playlist = self.multi_playlist[playlist_index].playlist_ids
 			return self.get_track(playlist[track_index])
 		except IndexError:
 			logging.exception("Failed getting track object by playlist_index and track_index!")
