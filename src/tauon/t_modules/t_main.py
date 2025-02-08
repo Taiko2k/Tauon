@@ -1103,6 +1103,12 @@ class Input:
 		self.k_input:          bool = True
 		self.key_return_press: bool = False
 		self.key_tab_press:    bool = False
+		self.key_down_press:   bool = False
+		self.key_up_press:     bool = False
+		self.key_right_press:  bool = False
+		self.key_left_press:   bool = False
+		self.key_esc_press:    bool = False
+
 		self.key_shift_down:   bool = False
 		self.key_shiftr_down:  bool = False
 		self.key_ctrl_down:    bool = False
@@ -4704,7 +4710,7 @@ class Menu:
 					else:
 						self.items[to_call].func()
 
-			if self.clicked or key_esc_press or self.close_next_frame:
+			if self.clicked or inp.key_esc_press or self.close_next_frame:
 				self.close_next_frame = False
 				self.active = False
 				self.clicked = False
@@ -6559,7 +6565,7 @@ class TextBox2:
 					d()
 
 			# Ctrl + left to move cursor back a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and key_left_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_left_press:
 				while g() == " ":
 					self.cursor_position += 1
 					if not inp.key_shift_down:
@@ -6575,7 +6581,7 @@ class TextBox2:
 						break
 
 			# Ctrl + right to move cursor forward a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and key_right_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_up_press:
 				while g2() == " ":
 					self.cursor_position -= 1
 					if not inp.key_shift_down:
@@ -6603,13 +6609,13 @@ class TextBox2:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if key_right_press:
+			if inp.key_up_press:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if key_left_press:
+			if inp.key_left_press:
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
@@ -6978,7 +6984,7 @@ class TextBox:
 					d()
 
 			# Ctrl + left to move cursor back a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and key_left_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_left_press:
 				while g() == " ":
 					self.cursor_position += 1
 					if not inp.key_shift_down:
@@ -6994,7 +7000,7 @@ class TextBox:
 						break
 
 			# Ctrl + right to move cursor forward a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and key_right_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_up_press:
 				while g2() == " ":
 					self.cursor_position -= 1
 					if not inp.key_shift_down:
@@ -7022,13 +7028,13 @@ class TextBox:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if key_right_press:
+			if inp.key_up_press:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if key_left_press:
+			if inp.key_left_press:
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
@@ -8659,7 +8665,7 @@ class RenameTrackBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if inp.key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			rename_track_box.active = False
 
 		r_todo = []
@@ -8841,7 +8847,7 @@ class TransEditBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if inp.key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			self.active = False
 
 		select = list(set(gui.shift_selection))
@@ -9060,7 +9066,7 @@ class TransEditBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if inp.key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			self.active = False
 
 		select = list(set(gui.shift_selection))
@@ -9293,7 +9299,7 @@ class SubLyricsBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
+		if inp.key_esc_press or ((inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 			self.active = False
 			gui.box_over = False
 
@@ -9395,7 +9401,7 @@ class ExportPlaylistBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or gui.level_2_click or inp.right_click or inp.level_2_right_click) and not tauon.coll(
+		if inp.key_esc_press or ((inp.mouse_click or gui.level_2_click or inp.right_click or inp.level_2_right_click) and not tauon.coll(
 				(x, y, w, h))):
 			self.active = False
 			gui.box_over = False
@@ -10011,7 +10017,7 @@ class SearchOverlay:
 					self.searched_text = ""
 					return
 
-			if key_esc_press:
+			if inp.key_esc_press:
 				if self.delay_enter:
 					self.delay_enter = False
 				else:
@@ -10136,16 +10142,14 @@ class SearchOverlay:
 
 			yy = 110 * gui.scale
 
-			if key_down_press:
-
+			if inp.key_down_press:
 				self.force_select += 1
 				if self.force_select > 4:
 					self.on = self.force_select - 4
 				self.force_select = min(self.force_select, len(self.results) - 1)
 				self.old_mouse = copy.deepcopy(inp.mouse_position)
 
-			if key_up_press:
-
+			if inp.key_up_press:
 				if self.force_select > -1:
 					self.force_select -= 1
 					self.force_select = max(self.force_select, 0)
@@ -10168,7 +10172,6 @@ class SearchOverlay:
 			if self.delay_enter and not self.sip and self.search_text.text == self.searched_text:
 				enter = True
 				self.delay_enter = False
-
 			elif inp.key_return_press:
 				if self.results:
 					enter = True
@@ -10507,7 +10510,7 @@ class MessageBox:
 
 	def render(self):
 
-		if inp.mouse_click or inp.key_return_press or inp.right_click or key_esc_press or inp.backspace_press \
+		if inp.mouse_click or inp.key_return_press or inp.right_click or inp.key_esc_press or inp.backspace_press \
 				or keymaps.test("quick-find") or (inp.k_input and message_box_min_timer.get() > 1.2):
 
 			if not key_focused and message_box_min_timer.get() > 0.4:
@@ -13497,7 +13500,7 @@ class Over:
 		if self.init2done is False:
 			self.init2()
 
-		if key_esc_press:
+		if inp.key_esc_press:
 			self.close()
 
 		tab_width = 115 * gui.scale
@@ -18475,7 +18478,7 @@ class RadioBox:
 			ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
 			ddt.rect_a((x, y), (w, h), colours.box_background)
 			ddt.text_background_colour = colours.box_background
-			if key_esc_press or (gui.level_2_click and not tauon.coll((x, y, w, h))):
+			if inp.key_esc_press or (gui.level_2_click and not tauon.coll((x, y, w, h))):
 				self.active = False
 
 			if self.add_mode:
@@ -18503,7 +18506,7 @@ class RadioBox:
 
 		ddt.text_background_colour = colours.box_background
 
-		if key_esc_press or (gui.level_2_click and not tauon.coll((x, y, w, h))):
+		if inp.key_esc_press or (gui.level_2_click and not tauon.coll((x, y, w, h))):
 			self.active = False
 
 		ddt.text((x + 10 * gui.scale, yy + 8 * gui.scale), _("Station Browser"), colours.box_title_text, 213)
@@ -19054,7 +19057,7 @@ class RenamePlaylistBox:
 		# ddt.pretty_rect = None
 
 		# If enter or click outside of box: save and close
-		if inp.key_return_press or (key_esc_press and len(editline) == 0) \
+		if inp.key_return_press or (inp.key_esc_press and len(editline) == 0) \
 				or ((inp.mouse_click or inp.level_2_right_click) and not tauon.coll(rect)):
 			gui.rename_playlist_box = False
 
@@ -19160,7 +19163,7 @@ class PlaylistBox:
 		draw_pin_indicator = False  # prefs.tabs_on_top
 
 		# if not gui.album_tab_mode:
-		#     if key_left_press or key_right_press:
+		#     if inp.key_left_press or inp.key_up_press:
 		#         if pctl.active_playlist_viewing < self.scroll_on:
 		#             self.scroll_on = pctl.active_playlist_viewing
 		#         elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
@@ -22763,9 +22766,9 @@ class Showcase:
 				x -= 100 * gui.scale
 				w = window_size[0] - x - 30 * gui.scale
 
-				if key_up_press and not (inp.key_ctrl_down or inp.key_shift_down or inp.key_shiftr_down):
+				if inp.key_up_press and not (inp.key_ctrl_down or inp.key_shift_down or inp.key_shiftr_down):
 					lyrics_ren.lyrics_position += 35 * gui.scale
-				if key_down_press and not (inp.key_ctrl_down or inp.key_shift_down or inp.key_shiftr_down):
+				if inp.key_down_press and not (inp.key_ctrl_down or inp.key_shift_down or inp.key_shiftr_down):
 					lyrics_ren.lyrics_position -= 35 * gui.scale
 
 				lyrics_ren.test_update(track)
@@ -42047,11 +42050,11 @@ def main(holder: Holder):
 			inp.middle_click = False
 			inp.mouse_up = False
 			inp.key_return_press = False
-			key_down_press = False
-			key_up_press = False
-			key_right_press = False
-			key_left_press = False
-			key_esc_press = False
+			inp.key_down_press = False
+			inp.key_up_press = False
+			inp.key_up_press = False
+			inp.key_left_press = False
+			inp.key_esc_press = False
 			key_del = False
 			inp.backspace_press = 0
 			key_backspace_press = False
@@ -42174,19 +42177,19 @@ def main(holder: Holder):
 					elif is_level_zero():
 						pctl.stop()
 					else:
-						key_esc_press = True
+						inp.key_esc_press = True
 				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_UP:
-					key_up_press = True
+					inp.key_up_press = True
 				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-					key_down_press = True
+					inp.key_down_press = True
 				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT:
 					if gui.album_tab_mode:
-						key_left_press = True
+						inp.key_left_press = True
 					elif is_level_zero() or quick_search_mode:
 						cycle_playlist_pinned(1)
 				if event.cbutton.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
 					if gui.album_tab_mode:
-						key_right_press = True
+						inp.key_up_press = True
 					elif is_level_zero() or quick_search_mode:
 						cycle_playlist_pinned(-1)
 
@@ -42364,13 +42367,13 @@ def main(holder: Holder):
 				elif event.key.keysym.sym == SDLK_LALT:
 					inp.key_lalt = True
 				elif event.key.keysym.sym == SDLK_DOWN:
-					key_down_press = True
+					inp.key_down_press = True
 				elif event.key.keysym.sym == SDLK_UP:
-					key_up_press = True
+					inp.key_up_press = True
 				elif event.key.keysym.sym == SDLK_LEFT:
-					key_left_press = True
+					inp.key_left_press = True
 				elif event.key.keysym.sym == SDLK_RIGHT:
-					key_right_press = True
+					inp.key_up_press = True
 				elif event.key.keysym.sym == SDLK_LSHIFT:
 					inp.key_shift_down = True
 				elif event.key.keysym.sym == SDLK_RSHIFT:
@@ -42685,11 +42688,11 @@ def main(holder: Holder):
 				# inp.middle_click = False
 				inp.mouse_up = False
 				inp.key_return_press = False
-				key_down_press = False
-				key_up_press = False
-				key_right_press = False
-				key_left_press = False
-				key_esc_press = False
+				inp.key_down_press = False
+				inp.key_up_press = False
+				inp.key_right_press = False
+				inp.key_left_press = False
+				inp.key_esc_press = False
 				key_del = False
 				inp.backspace_press = 0
 				key_backspace_press = False
@@ -42711,9 +42714,9 @@ def main(holder: Holder):
 		if c_yax != 0:
 			if c_yax_timer.get() >= 0:
 				if c_yax == -1:
-					key_up_press = True
+					inp.key_up_press = True
 				if c_yax == 1:
-					key_down_press = True
+					inp.key_down_press = True
 				c_yax_timer.force_set(-0.01)
 				gui.delay_frame(0.02)
 				inp.k_input = True
@@ -42752,12 +42755,12 @@ def main(holder: Holder):
 					n += 1
 
 				if keymaps.test("cycle-playlist-left"):
-					if gui.album_tab_mode and key_left_press:
+					if gui.album_tab_mode and inp.key_left_press:
 						pass
 					elif is_level_zero() or quick_search_mode:
 						cycle_playlist_pinned(1)
 				if keymaps.test("cycle-playlist-right"):
-					if gui.album_tab_mode and key_right_press:
+					if gui.album_tab_mode and inp.key_up_press:
 						pass
 					elif is_level_zero() or quick_search_mode:
 						cycle_playlist_pinned(-1)
@@ -42797,7 +42800,7 @@ def main(holder: Holder):
 					update_layout_do(tauon=tauon)
 
 				if keymaps.test("escape"):
-					key_esc_press = True
+					inp.key_esc_press = True
 
 			if inp.key_ctrl_down:
 				gui.pl_update += 1
@@ -42805,7 +42808,7 @@ def main(holder: Holder):
 			if mouse_enter_window:
 				inp.key_return_press = False
 
-			if gui.fullscreen and key_esc_press:
+			if gui.fullscreen and inp.key_esc_press:
 				gui.fullscreen = False
 				SDL_SetWindowFullscreen(t_window, 0)
 
@@ -42817,18 +42820,18 @@ def main(holder: Holder):
 							and not inp.key_ctrl_down \
 							and not inp.key_meta \
 							and not inp.key_lalt:
-						if key_left_press:
+						if inp.key_left_press:
 							gal_left = True
-							key_left_press = False
-						if key_right_press:
+							inp.key_left_press = False
+						if inp.key_up_press:
 							gal_right = True
-							key_right_press = False
-						if key_up_press:
+							inp.key_up_press = False
+						if inp.key_up_press:
 							gal_up = True
-							key_up_press = False
-						if key_down_press:
+							inp.key_up_press = False
+						if inp.key_down_press:
 							gal_down = True
-							key_down_press = False
+							inp.key_down_press = False
 
 				if not tauon.search_over.active:
 					if key_del:
@@ -42836,7 +42839,7 @@ def main(holder: Holder):
 						del_selected()
 
 					# Arrow keys to change playlist
-					if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+					if (inp.key_left_press or inp.key_up_press) and len(pctl.multi_playlist) > 1:
 						gui.pl_update = 1
 						gui.update += 1
 
@@ -43129,11 +43132,11 @@ def main(holder: Holder):
 				# These need to be disabled when text fields are active
 				if not tauon.search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
 					if keymaps.test("advance"):
-						key_right_press = False
+						inp.key_up_press = False
 						pctl.advance()
 
 					if keymaps.test("previous"):
-						key_left_press = False
+						inp.key_left_press = False
 						pctl.back()
 
 					if key_a_press and inp.key_ctrl_down:
@@ -44708,7 +44711,7 @@ def main(holder: Holder):
 					else:
 						playlist_render.cache_render()
 
-					if gui.combo_mode and key_esc_press and is_level_zero():
+					if gui.combo_mode and inp.key_esc_press and is_level_zero():
 						exit_combo()
 
 					if not gui.set_bar and gui.set_mode and not gui.combo_mode:
@@ -45365,7 +45368,7 @@ def main(holder: Holder):
 						gui.preview_artist = ""
 
 				if track_box:
-					if inp.key_return_press or inp.right_click or key_esc_press or inp.backspace_press or keymaps.test(
+					if inp.key_return_press or inp.right_click or inp.key_esc_press or inp.backspace_press or keymaps.test(
 							"quick-find"):
 						track_box = False
 
@@ -45837,7 +45840,7 @@ def main(holder: Holder):
 
 					ddt.text_background_colour = colours.box_background
 
-					if key_esc_press or (
+					if inp.key_esc_press or (
 							(inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))):
 						gui.rename_folder_box = False
 
@@ -45946,7 +45949,7 @@ def main(holder: Holder):
 						search_text.text = ""
 					input_text = ""
 				elif (keymaps.test("quick-find") or (
-						key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
+						inp.key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
 					quick_search_mode = False
 					search_text.text = ""
 
@@ -45957,7 +45960,7 @@ def main(holder: Holder):
 				#         search_text.text = ""
 				#     input_text = ""
 				# elif ((key_backslash_press or (inp.key_ctrl_down and key_f_press)) or (
-				#             key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
+				#             inp.key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
 				#     quick_search_mode = False
 				#     search_text.text = ""
 
@@ -46067,7 +46070,7 @@ def main(holder: Holder):
 							search_text.text = ""
 							quick_search_mode = False
 
-					if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or inp.backspace_press \
+					if (len(input_text) > 0 and not gui.search_error) or inp.key_down_press is True or inp.backspace_press \
 							or gui.force_search:
 
 						gui.pl_update = 1
@@ -46114,12 +46117,12 @@ def main(holder: Holder):
 								search_index = oi
 								if len(input_text) > 0 or gui.force_search:
 									gui.search_error = True
-								if key_down_press:
+								if inp.key_down_press:
 									bottom_playlist2.pulse()
 
 							gui.force_search = False
 
-					if key_up_press is True \
+					if inp.key_up_press is True \
 							and not inp.key_shiftr_down \
 							and not inp.key_shift_down \
 							and not inp.key_ctrl_down \
@@ -46167,7 +46170,7 @@ def main(holder: Holder):
 						quick_search_mode = False
 						search_clear_timer.set()
 				elif not tauon.search_over.active:
-					if key_up_press and ((
+					if inp.key_up_press and ((
 						not inp.key_shiftr_down \
 						and not inp.key_shift_down \
 						and not inp.key_ctrl_down \
@@ -46195,7 +46198,7 @@ def main(holder: Holder):
 						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist))
 
 					if pctl.selected_in_playlist < len(pctl.default_playlist) and (
-						(key_down_press and \
+						(inp.key_down_press and \
 						not inp.key_shiftr_down \
 						and not inp.key_shift_down \
 						and not inp.key_ctrl_down \
