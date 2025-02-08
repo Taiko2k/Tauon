@@ -696,6 +696,8 @@ class GuiVar:
 
 		self.show_hearts = True
 
+		self.search_index: int = 0
+
 		self.cursor_is = 0
 		self.cursor_want = 0
 		# 0 standard
@@ -2321,12 +2323,12 @@ class PlayerCtl:
 
 		self.lfm_scrobbler.start_queue()
 
-		if (prefs.album_mode or not self.gui.rsp) and (self.gui.theme_name == "Carbon" or self.prefs.colour_from_image):
+		if (self.prefs.album_mode or not self.gui.rsp) and (self.gui.theme_name == "Carbon" or self.prefs.colour_from_image):
 			target = self.playing_object()
 			if target and self.prefs.colour_from_image and target.parent_folder_path == colours.last_album:
 				return
 
-			album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
+			self.tauon.album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
 
 	def jump(self, index: int, pl_position: int = None, jump: bool = True) -> None:
 		self.lfm_scrobbler.start_queue()
@@ -4776,26 +4778,26 @@ class Menu:
 
 class GallClass:
 	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True) -> None:
-		self.gui         = tauon.gui
-		self.prefs       = tauon.prefs
-		self.search_over = tauon.search_over
-		self.gall        = {}
-		self.size        = size
-		self.queue       = []
-		self.key_list    = []
-		self.save_out    = save_out
-		self.i           = 0
-		self.lock        = threading.Lock()
-		self.limit       = 60
+		self.gui           = tauon.gui
+		self.prefs         = tauon.prefs
+		self.search_over   = tauon.search_over
+		self.album_art_gen = tauon.album_art_gen
+		self.gall          = {}
+		self.size          = size
+		self.queue         = []
+		self.key_list      = []
+		self.save_out      = save_out
+		self.i             = 0
+		self.lock          = threading.Lock()
+		self.limit         = 60
 
 	def get_file_source(self, track_object: TrackClass):
-		global album_art_gen
-		sources = album_art_gen.get_sources(track_object)
+		sources = self.album_art_gen.get_sources(track_object)
 
 		if len(sources) == 0:
 			return False, 0
 
-		offset = album_art_gen.get_offset(track_object.fullpath, sources)
+		offset = self.album_art_gen.get_offset(track_object.fullpath, sources)
 		return sources[offset], offset
 
 	def worker_render(self) -> None:
@@ -5042,11 +5044,12 @@ class GallClass:
 		return False
 
 class ThumbTracks:
-	def __init__(self) -> None:
-		pass
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.album_art_gen = tauon.album_art_gen
 
 	def path(self, track: TrackClass) -> str:
-		source, offset = tauon.gall_ren.get_file_source(track)
+		source, offset = self.tauon.gall_ren.get_file_source(track)
 
 		if source is False:  # No art
 			return None
@@ -5059,7 +5062,7 @@ class ThumbTracks:
 		if os.path.isfile(t_path):
 			return t_path
 
-		source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
+		source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
 
 		with Image.open(source_image) as im:
 			if im.mode != "RGB":
@@ -5122,6 +5125,7 @@ class Tauon:
 		self.view_box                             = ViewBox(tauon=self)
 		self.pref_box                             = Over(tauon=self)
 		self.fader                                = Fader(tauon=self)
+		self.album_art_gen                        = AlbumArt(tauon=self)
 		self.cache_directory:                Path = bag.dirs.cache_directory
 		self.user_directory:          Path | None = bag.dirs.user_directory
 		self.music_directory:         Path | None = bag.dirs.music_directory
@@ -5153,7 +5157,7 @@ class Tauon:
 		self.pl_gen                               = pl_gen
 		self.gall_ren                             = GallClass(tauon=self, size=bag.album_mode_art_size)
 		self.QuickThumbnail                       = QuickThumbnail
-		self.thumb_tracks                         = ThumbTracks()
+		self.thumb_tracks                         = ThumbTracks(tauon=self)
 		self.chunker                              = Chunker()
 		self.thread_manager: ThreadManager | None = None # Avoid NameError
 		self.thread_manager:        ThreadManager = ThreadManager(tauon=self)
@@ -5234,7 +5238,7 @@ class Tauon:
 
 		if prefs.enable_web and not gui.web_running:
 			webThread = threading.Thread(
-				target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), self.strings, self])
+				target=webserve, args=[pctl, prefs, gui, self.album_art_gen, str(install_directory), self.strings, self])
 			webThread.daemon = True
 			webThread.start()
 			show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
@@ -5250,7 +5254,7 @@ class Tauon:
 	def start_remote(self) -> None:
 		if not self.web_running:
 			self.web_thread = threading.Thread(
-				target=webserve2, args=[pctl, prefs, gui, album_art_gen, str(install_directory), self.strings, self])
+				target=webserve2, args=[pctl, prefs, gui, self.album_art_gen, str(install_directory), self.strings, self])
 			self.web_thread.daemon = True
 			self.web_thread.start()
 			self.web_running = True
@@ -7263,7 +7267,8 @@ class ImageObject:
 		self.format = ""
 
 class AlbumArt:
-	def __init__(self):
+	def __init__(self, tauon: Tauon) -> None:
+		self.gui           = tauon.gui
 		self.image_types = {"jpg", "JPG", "jpeg", "JPEG", "PNG", "png", "BMP", "bmp", "GIF", "gif", "jxl", "JXL"}
 		self.art_folder_names = {
 			"art", "scans", "scan", "booklet", "images", "image", "cover",
@@ -7289,14 +7294,12 @@ class AlbumArt:
 		self.embed_cached = (None, None)
 
 	def async_download_image(self, track: TrackClass, subsource: list[tuple[int, str]]) -> None:
-
-		self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=subsource)
+		self.downloaded_image = self.get_source_raw(0, 0, track, subsource=subsource)
 		self.downloaded_track = track
 		self.download_in_progress = False
-		gui.update += 1
+		self.gui.update += 1
 
 	def get_info(self, track_object: TrackClass) -> list[tuple[str, int, int, int, str]]:
-
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
 			return None
@@ -7323,7 +7326,6 @@ class AlbumArt:
 		return [sources[offset][0], len(sources), offset, o_size, format]
 
 	def get_sources(self, tr: TrackClass) -> list[tuple[int, str]]:
-
 		filepath = tr.fullpath
 		ext = tr.file_ext
 
@@ -7453,7 +7455,6 @@ class AlbumArt:
 		return 0
 
 	def open_external(self, track_object: TrackClass) -> int:
-
 		index = track_object.index
 
 		source = self.get_sources(track_object)
@@ -7466,7 +7467,7 @@ class AlbumArt:
 			show_message(_("Saving network images not implemented"))
 			return 0
 		if source[offset][0] > 0:
-			pic = album_art_gen.get_embed(track_object)
+			pic = self.get_embed(track_object)
 			if not pic:
 				show_message(_("Image save error."), _("No embedded album art."), mode="warning")
 				return 0
@@ -7500,7 +7501,6 @@ class AlbumArt:
 		return 0
 
 	def cycle_offset(self, track_object: TrackClass, reverse: bool = False) -> int:
-
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
@@ -7521,12 +7521,10 @@ class AlbumArt:
 		self.cycle_offset(track_object, True)
 
 	def get_offset(self, filepath: str, source: list[tuple[int, str]]) -> int:
-
 		# Check if folder offset already exsts, if not, make it
 		parent_folder = os.path.dirname(filepath)
 
 		if parent_folder in folder_image_offsets:
-
 			# Reset the offset if greater than number of images available
 			if folder_image_offsets[parent_folder] > len(source) - 1:
 				folder_image_offsets[parent_folder] = 0
@@ -7536,7 +7534,6 @@ class AlbumArt:
 		return folder_image_offsets[parent_folder]
 
 	def get_embed(self, track: TrackClass):
-
 		# cached = self.embed_cached
 		# if cached[0] == track:
 		#	#logging.info("used cached")
@@ -7595,7 +7592,6 @@ class AlbumArt:
 		return pic
 
 	def get_source_raw(self, offset: int, sources: list[tuple[int, str]] | int, track: TrackClass, subsource: list[tuple[int, str]] | None = None):
-
 		source_image = None
 
 		if subsource is None:
@@ -7606,7 +7602,6 @@ class AlbumArt:
 			pic = self.get_embed(track)
 			assert pic
 			source_image = io.BytesIO(pic)
-
 		elif subsource[0] == 2:
 			try:
 				if track.file_ext == "RADIO" or track.file_ext == "Spotify":
@@ -7628,17 +7623,14 @@ class AlbumArt:
 						with Path(cached_path).open("wb") as file:
 							file.write(source_image.read())
 						source_image.seek(0)
-
 			except Exception:
 				logging.exception("Failed to get source")
-
 		else:
 			source_image = open(subsource[1], "rb")
 
 		return source_image
 
 	def get_base64(self, track: TrackClass, size):
-
 		# Wait if an identical track is already being processed
 		if self.processing64on == track:
 			t = 0
@@ -8315,9 +8307,7 @@ class StyleOverlay:
 		self.current_track_id = -1
 
 	def worker(self) -> None:
-
 		if self.stage == 0:
-
 			if (gui.mode == 3 and prefs.mini_mode_mode == 5):
 				pass
 			elif prefs.bg_showcase_only and not gui.combo_mode:
@@ -8333,7 +8323,7 @@ class StyleOverlay:
 				self.current_track_album = track.album
 
 				try:
-					self.im = album_art_gen.get_blur_im(track)
+					self.im = tauon.album_art_gen.get_blur_im(track)
 				except Exception:
 					logging.exception("Blur blackground error")
 					raise
@@ -8404,7 +8394,7 @@ class StyleOverlay:
 
 			self.a_texture = c
 			self.a_rect = dst
-			self.a_type = album_art_gen.loaded_bg_type
+			self.a_type = tauon.album_art_gen.loaded_bg_type
 
 			self.stage = 2
 			self.radio_meta = None
@@ -11245,7 +11235,7 @@ class Over:
 		old = prefs.zoom_art
 		prefs.zoom_art = self.toggle_square(x, y, prefs.zoom_art, _("Zoom album art to fit"))
 		if prefs.zoom_art != old:
-			album_art_gen.clear_cache()
+			tauon.album_art_gen.clear_cache()
 
 		global update_layout
 		y += 35 * gui.scale
@@ -13815,16 +13805,16 @@ class TopPanel:
 		if gui.top_bar_mode2:
 			tr = pctl.playing_object()
 			if tr:
-				album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY))
+				tauon.album_art_gen.display(tr, (window_size[0] - gui.panelY - 1, 0), (gui.panelY, gui.panelY))
 				if pctl.loading_in_progress or \
 						tauon.to_scan or \
 						tauon.cm_clean_db or \
-						lastfm.scanning_friends or \
+						tauon.lastfm.scanning_friends or \
 						tauon.after_scan or \
 						tauon.move_in_progress or \
 						tauon.plex.scanning or \
 						tauon.transcode_list or tauon.spot_ctl.launching_spotify or tauon.spot_ctl.spotify_com or tauon.subsonic.scanning or \
-						tauon.koel.scanning or gui.sync_progress or lastfm.scanning_scrobbles:
+						tauon.koel.scanning or gui.sync_progress or tauon.lastfm.scanning_scrobbles:
 					ddt.rect(
 						(window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2),
 						colours.top_panel_background)
@@ -14813,7 +14803,7 @@ class BottomBarType1:
 		#     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
 		#     ddt.rect_r(rect, [255, 255, 255, 8], True)
 		#     if 3 > pctl.playing_state > 0:
-		#         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+		#         tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, [255, 255, 255, 20])
 
@@ -15625,7 +15615,7 @@ class BottomBarType_ao1:
 		#     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
 		#     ddt.rect_r(rect, [255, 255, 255, 8], True)
 		#     if 3 > pctl.playing_state > 0:
-		#         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+		#         tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, [255, 255, 255, 20])
 
@@ -15998,9 +15988,8 @@ class MiniMode:
 
 		ddt.rect((0, 0, w, w), (0, 0, 0, 45))
 		if track is not None:
-
 			# Render album art
-			album_art_gen.display(track, (0, 0), (w, w))
+			tauon.album_art_gen.display(track, (0, 0), (w, w))
 
 			line1c = colours.mini_mode_text_1
 			line2c = colours.mini_mode_text_2
@@ -16220,9 +16209,8 @@ class MiniMode2:
 		track = pctl.playing_object()
 
 		if track is not None:
-
 			# Render album art
-			album_art_gen.display(track, (0, 0), (h, h))
+			tauon.album_art_gen.display(track, (0, 0), (h, h))
 
 			text_hit_area = (x1, 0, w, h)
 
@@ -16383,7 +16371,7 @@ class MiniMode3:
 
 			drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
 			ddt.rect((ins, ins, wid, wid), [20, 20, 20, 255])
-			album_art_gen.display(track, (ins, ins), (wid, wid))
+			tauon.album_art_gen.display(track, (ins, ins), (wid, wid))
 
 			line1c = [255, 255, 255, 255] #colours.mini_mode_text_1
 			line2c = [255, 255, 255, 255] #colours.mini_mode_text_2
@@ -17776,8 +17764,8 @@ class ArtBox:
 		result = 1
 
 		if target_track:  # Only show if song playing or paused
-			result = album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
-			showc = album_art_gen.get_info(target_track)
+			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
+			showc = tauon.album_art_gen.get_info(target_track)
 
 		# Draw faint border on album art
 		if tight_border:
@@ -17805,12 +17793,9 @@ class ArtBox:
 
 		# Input for album art
 		if target_track:
-
 			# Cycle images on click
-
 			if tauon.coll(gui.main_art_box) and inp.mouse_click is True and key_focused == 0:
-
-				album_art_gen.cycle_offset(target_track)
+				tauon.album_art_gen.cycle_offset(target_track)
 
 				if pctl.mpris:
 					pctl.mpris.update(force=True)
@@ -18137,7 +18122,7 @@ class RadioBox:
 		self.dummy_track.date = ""
 		pctl.radio_meta_on = ""
 
-		album_art_gen.clear_cache()
+		tauon.album_art_gen.clear_cache()
 
 		if not tauon.test_ffmpeg():
 			prefs.auto_rec = False
@@ -21467,7 +21452,7 @@ class MetaBox:
 		if (inp.mouse_click or inp.right_click) and is_level_zero(False):
 			if tauon.coll(border_rect):
 				if inp.mouse_click:
-					album_art_gen.cycle_offset(target_track)
+					tauon.album_art_gen.cycle_offset(target_track)
 				if inp.right_click:
 					picture_menu.activate(in_reference=target_track)
 			elif tauon.coll(rect):
@@ -21478,11 +21463,11 @@ class MetaBox:
 
 		ddt.rect(border_rect, border_colour)
 		ddt.rect(art_rect, colours.gallery_background)
-		album_art_gen.display(track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+		tauon.album_art_gen.display(track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
 
 		tauon.fields.add(border_rect)
 		if tauon.coll(border_rect) and is_level_zero(True):
-			showc = album_art_gen.get_info(target_track)
+			showc = tauon.album_art_gen.get_info(target_track)
 			art_metadata_overlay(
 				art_rect[0] + art_rect[2] + 2 * gui.scale, art_rect[1] + art_rect[3] + 12 * gui.scale, showc)
 
@@ -22522,7 +22507,7 @@ class RadioView:
 
 		if window_size[0] > round(700 * gui.scale):
 			if pctl.playing_state == 3 and radiobox.loaded_station:
-				r = album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
+				r = tauon.album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
 				if r:
 					r = radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
 					# if not r:
@@ -22677,7 +22662,6 @@ class Showcase:
 				index = gui.force_showcase_index
 				track = pctl.master_library[index]
 			else:
-
 				if pctl.playing_state == 3:
 					track = radiobox.dummy_track
 				else:
@@ -22685,7 +22669,6 @@ class Showcase:
 					track = pctl.master_library[index]
 
 			if not hide_art:
-
 				# Draw frame around art box
 				# drop_shadow.render(x + 5 * gui.scale, y + 5 * gui.scale, box + 10 * gui.scale, box + 10 * gui.scale)
 				ddt.rect(
@@ -22696,12 +22679,12 @@ class Showcase:
 				style_overlay.hole_punches.append(rect)
 
 				# Draw album art in box
-				album_art_gen.display(track, (x, y), (box, box))
+				tauon.album_art_gen.display(track, (x, y), (box, box))
 
 				# Click art to cycle
 				if tauon.coll((x, y, box, box)):
 					if inp.mouse_click is True:
-						album_art_gen.cycle_offset(track)
+						tauon.album_art_gen.cycle_offset(track)
 					if inp.right_click:
 						picture_menu.activate(in_reference=track)
 						inp.right_click = False
@@ -26334,8 +26317,7 @@ def img_slide_update_gall(value, pause: bool = True) -> None:
 		prefs.thin_gallery_borders = False
 
 def clear_img_cache(delete_disk: bool = True) -> None:
-	global album_art_gen
-	album_art_gen.clear_cache()
+	tauon.album_art_gen.clear_cache()
 	prefs.failed_artists.clear()
 	prefs.failed_background_artists.clear()
 	tauon.gall_ren.key_list = []
@@ -26395,7 +26377,7 @@ def clear_track_image_cache(track: TrackClass):
 			tauon.gall_ren.key_list.remove(key)
 
 	gui.halt_image_rendering = False
-	album_art_gen.clear_cache()
+	tauon.album_art_gen.clear_cache()
 
 def trunc_line(line: str, font: str, px: int, dots: bool = True) -> str:
 	"""This old function is slow and should be avoided"""
@@ -27703,7 +27685,7 @@ def save_embed_img(track_object: TrackClass):
 		return
 
 	try:
-		pic = album_art_gen.get_embed(track_object)
+		pic = tauon.album_art_gen.get_embed(track_object)
 
 		if not pic:
 			show_message(_("Image save error."), _("No embedded album art found file."), mode="warning")
@@ -27733,7 +27715,7 @@ def save_embed_img(track_object: TrackClass):
 def open_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if info is None:
 		return [colours.menu_text_disabled, colours.menu_background, None]
@@ -27749,12 +27731,12 @@ def open_image_disable_test(track_object: TrackClass):
 def open_image(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	album_art_gen.open_external(track_object)
+	tauon.album_art_gen.open_external(track_object)
 
 def extract_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if info is None:
 		return [colours.menu_text_disabled, colours.menu_background, None]
@@ -27767,7 +27749,7 @@ def extract_image_deco(track_object: TrackClass):
 	return [line_colour, colours.menu_background, None]
 
 def cycle_image_deco(track_object: TrackClass):
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if pctl.playing_state != 0 and (info is not None and info[1] > 1):
 		line_colour = colours.menu_text
@@ -27779,7 +27761,7 @@ def cycle_image_deco(track_object: TrackClass):
 def cycle_image_gal_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if info is not None and info[1] > 1:
 		line_colour = colours.menu_text
@@ -27791,12 +27773,12 @@ def cycle_image_gal_deco(track_object: TrackClass):
 def cycle_offset(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	album_art_gen.cycle_offset(track_object)
+	tauon.album_art_gen.cycle_offset(track_object)
 
 def cycle_offset_back(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	album_art_gen.cycle_offset_reverse(track_object)
+	tauon.album_art_gen.cycle_offset_reverse(track_object)
 
 def dl_art_deco(track_object: TrackClass):
 	if type(track_object) is int:
@@ -28044,9 +28026,9 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 
 def delete_file_image(track_object: TrackClass):
 	try:
-		showc = album_art_gen.get_info(track_object)
+		showc = tauon.album_art_gen.get_info(track_object)
 		if showc is not None and showc[0] == 0:
-			source = album_art_gen.get_sources(track_object)[showc[2]][1]
+			source = tauon.album_art_gen.get_sources(track_object)[showc[2]][1]
 			os.remove(source)
 			# clear_img_cache()
 			clear_track_image_cache(track_object)
@@ -28058,7 +28040,7 @@ def delete_file_image(track_object: TrackClass):
 def delete_track_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	text = _("Delete Image File")
 	line_colour = colours.menu_text
@@ -28085,7 +28067,7 @@ def delete_track_image(track_object: TrackClass):
 		track_object = pctl.master_library[track_object]
 	if track_object.is_network:
 		return
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 	if info and info[0] == 0:
 		delete_file_image(track_object)
 	elif info and info[0] == 1:
@@ -33343,9 +33325,7 @@ def check_auto_update_okay(code, pl=None):
 		"tmix\"" not in code and
 		"r"      not in cmds)
 
-def switch_playlist(number, cycle=False, quiet=False):
-	global search_index
-
+def switch_playlist(number: int, cycle: bool = False, quiet: bool = False) -> None:
 	# Close any active menus
 	# for instance in Menu.instances:
 	#     instance.active = False
@@ -33362,7 +33342,7 @@ def switch_playlist(number, cycle=False, quiet=False):
 	gui.previous_playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
 	gui.pl_update = 1
-	search_index = 0
+	gui.search_index = 0
 	gui.column_d_click_on = -1
 	gui.search_error = False
 	if quick_search_mode:
@@ -35922,7 +35902,6 @@ def worker1(tauon: Tauon) -> None:
 
 	#logging.info(pctl.master_library)
 
-	global album_art_gen
 	global to_got
 	global to_get
 
@@ -36193,7 +36172,7 @@ def worker1(tauon: Tauon) -> None:
 						logging.exception("Encode folder not removed")
 					reload_metadata(folder_items[0])
 				else:
-					album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
+					tauon.album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
 
 				#logging.info(transcode_list[0])
 
@@ -37005,7 +36984,7 @@ def reload_backend() -> None:
 
 def gen_chart() -> None:
 	try:
-		topchart = t_topchart.TopChart(tauon, album_art_gen)
+		topchart = t_topchart.TopChart(tauon)
 
 		tracks = []
 
@@ -38782,7 +38761,7 @@ def is_level_zero(include_menus: bool = True) -> bool:
 		and not gui.box_over \
 		and not trans_edit_box.active
 
-def drop_file(target):
+def drop_file(target: str) -> None:
 	if system != "windows" and sdl_version >= 204:
 		gmp = get_global_mouse()
 		gwp = get_window_position()
@@ -39574,7 +39553,6 @@ def main(holder: Holder) -> None:
 	playlist_active: int = 0
 
 	quick_search_mode = False
-	search_index = 0
 
 	# ----------------------------------------
 	# Playlist right click menu
@@ -40861,7 +40839,7 @@ def main(holder: Holder) -> None:
 
 	temp_dest = SDL_Rect(0, 0)
 
-	album_art_gen = AlbumArt()
+	album_art_gen = tauon.album_art_gen
 
 	# 0 - blank
 	# 1 - preparing first
@@ -45973,7 +45951,7 @@ def main(holder: Holder) -> None:
 					ddt.rect(rect, colours.box_background)
 
 					if len(input_text) > 0:
-						search_index = -1
+						gui.search_index = -1
 
 					if inp.backspace_press and search_text.text == "":
 						quick_search_mode = False
@@ -46069,21 +46047,21 @@ def main(holder: Holder) -> None:
 						gui.pl_update = 1
 
 						if gui.force_search:
-							search_index = 0
+							gui.search_index = 0
 
 						if inp.backspace_press:
-							search_index = 0
+							gui.search_index = 0
 
 						if len(search_text.text) > 0 and search_text.text[0] != "/":
-							oi = search_index
+							oi = gui.search_index
 
-							while search_index < len(pctl.default_playlist) - 1:
-								search_index += 1
-								if search_index > len(pctl.default_playlist) - 1:
-									search_index = 0
+							while gui.search_index < len(pctl.default_playlist) - 1:
+								gui.search_index += 1
+								if gui.search_index > len(pctl.default_playlist) - 1:
+									gui.search_index = 0
 
 								search_terms = search_text.text.lower().split()
-								tr = pctl.get_track(pctl.default_playlist[search_index])
+								tr = pctl.get_track(pctl.default_playlist[gui.search_index])
 								line = " ".join(
 									[tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
 									tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
@@ -46093,9 +46071,9 @@ def main(holder: Holder) -> None:
 
 								if all(word in line for word in search_terms):
 
-									pctl.selected_in_playlist = search_index
-									if len(pctl.default_playlist) > 10 and search_index > 10:
-										pctl.playlist_view_position = search_index - 7
+									pctl.selected_in_playlist = gui.search_index
+									if len(pctl.default_playlist) > 10 and gui.search_index > 10:
+										pctl.playlist_view_position = gui.search_index - 7
 										logging.debug("Position changed by search")
 									else:
 										pctl.playlist_view_position = 0
@@ -46107,7 +46085,7 @@ def main(holder: Holder) -> None:
 									break
 
 							else:
-								search_index = oi
+								gui.search_index = oi
 								if len(input_text) > 0 or gui.force_search:
 									gui.search_error = True
 								if inp.key_down_press:
@@ -46125,25 +46103,25 @@ def main(holder: Holder) -> None:
 							and not inp.key_ralt:
 
 						gui.pl_update = 1
-						oi = search_index
+						oi = gui.search_index
 
-						while search_index > 1:
-							search_index -= 1
-							search_index = min(search_index, len(pctl.default_playlist) - 1)
+						while gui.search_index > 1:
+							gui.search_index -= 1
+							gui.search_index = min(gui.search_index, len(pctl.default_playlist) - 1)
 							search_terms = search_text.text.lower().split()
-							line = pctl.master_library[pctl.default_playlist[search_index]].title.lower() + \
-								pctl.master_library[pctl.default_playlist[search_index]].artist.lower() \
-								+ pctl.master_library[pctl.default_playlist[search_index]].album.lower() + \
-								pctl.master_library[pctl.default_playlist[search_index]].filename.lower()
+							line = pctl.master_library[pctl.default_playlist[gui.search_index]].title.lower() + \
+								pctl.master_library[pctl.default_playlist[gui.search_index]].artist.lower() \
+								+ pctl.master_library[pctl.default_playlist[gui.search_index]].album.lower() + \
+								pctl.master_library[pctl.default_playlist[gui.search_index]].filename.lower()
 
 							if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
 								line = str(unidecode(line))
 
 							if all(word in line for word in search_terms):
 
-								pctl.selected_in_playlist = search_index
-								if len(pctl.default_playlist) > 10 and search_index > 10:
-									pctl.playlist_view_position = search_index - 7
+								pctl.selected_in_playlist = gui.search_index
+								if len(pctl.default_playlist) > 10 and gui.search_index > 10:
+									pctl.playlist_view_position = gui.search_index - 7
 									logging.debug("Position changed by search")
 								else:
 									pctl.playlist_view_position = 0
@@ -46151,13 +46129,13 @@ def main(holder: Holder) -> None:
 									pctl.show_selected()
 								break
 						else:
-							search_index = oi
+							gui.search_index = oi
 
 							edge_playlist2.pulse()
 
-					if inp.key_return_press is True and search_index > -1:
+					if inp.key_return_press is True and gui.search_index > -1:
 						gui.pl_update = 1
-						pctl.jump(pctl.default_playlist[search_index], search_index)
+						pctl.jump(pctl.default_playlist[gui.search_index], gui.search_index)
 						if prefs.album_mode:
 							goto_album(pctl.playlist_playing_position)
 						quick_search_mode = False
