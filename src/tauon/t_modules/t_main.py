@@ -639,6 +639,9 @@ class GuiVar:
 		self.present = False
 		self.drag_source_position = (0, 0)
 		self.drag_source_position_persist = (0, 0)
+		self.old_album_pos: int = -55
+		self.album_playlist_width: int = 430
+
 		self.album_tab_mode = False
 		self.main_art_box = (0, 0, 10, 10)
 		self.gall_tab_enter = False
@@ -2088,7 +2091,7 @@ class PlayerCtl:
 						quiet and self.playing_object().length < 15):  # or (abs(self.playlist_view_position - i) < vl - 1)):
 
 					# Align to album if in view range (and folder titles are active)
-					ap = get_album_info(i)[1][0]
+					ap = self.tauon.get_album_info(i)[1][0]
 
 					if not (quiet and self.playlist_view_position <= i <= self.playlist_view_position + vl) and (
 					not abs(i - ap) > vl - 2) and not self.multi_playlist[self.active_playlist_viewing].hide_title:
@@ -5112,6 +5115,8 @@ class Tauon:
 		self.switch_playlist                      = None
 		self.open_uri                             = open_uri
 		self.love                                 = love
+		self.album_info_cache                     = {}
+		self.album_info_cache_key                 = (-1, -1)
 		self.album_mode:                     bool = False
 		self.snap_mode:                      bool = bag.snap_mode
 		self.console                              = bag.console
@@ -5211,6 +5216,49 @@ class Tauon:
 			self.web_thread.daemon = True
 			self.web_thread.start()
 			self.web_running = True
+
+	def get_album_info(self, position: int, pl: int | None = None):
+		pctl     = self.pctl
+		playlist = pctl.default_playlist
+		prefs    = self.prefs
+		if pl is not None:
+			playlist = pctl.multi_playlist[pl].playlist_ids
+
+		if self.album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
+			self.album_info_cache.clear()
+			self.album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
+
+		if position in self.album_info_cache:
+			return self.album_info_cache[position]
+
+		if album_dex and prefs.album_mode and (pl is None or pl == pctl.active_playlist_viewing):
+			dex = album_dex
+		else:
+			dex = reload_albums(custom_list=playlist)
+
+		end = len(playlist)
+		start = 0
+
+		for i, p in enumerate(reversed(dex)):
+			if p <= position:
+				start = p
+				break
+			end = p
+
+		album = list(range(start, end))
+
+		playing = 0
+		select = False
+
+		if pctl.selected_in_playlist in album:
+			select = True
+
+		if len(pctl.track_queue) > 0 and p < len(playlist):
+			if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
+				playing = 1
+
+		self.album_info_cache[position] = playing, album, select
+		return playing, album, select
 
 	def download_ffmpeg(self, x):
 		def go():
@@ -31541,18 +31589,22 @@ def spot_heart_menu_colour():
 		return [30, 215, 96, 255]
 	return None
 
-def add_to_queue(ref):
+def add_to_queue(ref: int) -> None:
 	pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 	queue_timer_set()
 	if prefs.stop_end_queue:
 		pctl.auto_stop = False
 
-def add_selected_to_queue():
+def add_selected_to_queue(tauon: Tauon) -> None:
+	gui = tauon.gui
+	prefs = tauon.prefs
+	pctl = tauon.pctl
+
 	gui.pl_update += 1
 	if prefs.stop_end_queue:
 		pctl.auto_stop = False
 	if gui.album_tab_mode:
-		add_album_to_queue(pctl.default_playlist[get_album_info(pctl.selected_in_playlist)[1][0]], pctl.selected_in_playlist)
+		add_album_to_queue(pctl.default_playlist[tauon.get_album_info(pctl.selected_in_playlist)[1][0]], pctl.selected_in_playlist)
 		queue_timer_set()
 	else:
 		pctl.force_queue.append(
@@ -33177,16 +33229,14 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 
 def toggle_album_mode(tauon: Tauon, force_on: bool = False) -> None:
 	global update_layout
-	global album_playlist_width
-	global old_album_pos
 	gui = tauon.gui
 	pctl = tauon.pctl
 	gui.gall_tab_enter = False
 
 	if prefs.album_mode is True:
 		prefs.album_mode = False
-		# album_playlist_width = gui.playlist_width
-		# old_album_pos = gui.album_scroll_px
+		# gui.album_playlist_width = gui.playlist_width
+		# gui.old_album_pos = gui.album_scroll_px
 		gui.rspw = gui.pref_rspw
 		gui.rsp = prefs.prefer_side
 		gui.album_tab_mode = False
@@ -34473,7 +34523,7 @@ def standard_view_deco():
 # 	gui.show_playlist = False
 # 	update_layout = True
 # 	gui.rspw = window_size[0]
-# 	album_playlist_width = gui.playlist_width
+# 	gui.album_playlist_width = gui.playlist_width
 # 	#gui.playlist_width = -19
 
 def toggle_library_mode() -> None:
@@ -36197,49 +36247,6 @@ def worker1(tauon: Tauon) -> None:
 					#logging.info("DONE LOADING")
 					break
 
-def get_album_info(position, pl: int | None = None):
-	playlist = pctl.default_playlist
-	if pl is not None:
-		playlist = pctl.multi_playlist[pl].playlist_ids
-
-	global album_info_cache_key
-
-	if album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
-		album_info_cache.clear()
-		album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
-
-	if position in album_info_cache:
-		return album_info_cache[position]
-
-	if album_dex and prefs.album_mode and (pl is None or pl == pctl.active_playlist_viewing):
-		dex = album_dex
-	else:
-		dex = reload_albums(custom_list=playlist)
-
-	end = len(playlist)
-	start = 0
-
-	for i, p in enumerate(reversed(dex)):
-		if p <= position:
-			start = p
-			break
-		end = p
-
-	album = list(range(start, end))
-
-	playing = 0
-	select = False
-
-	if pctl.selected_in_playlist in album:
-		select = True
-
-	if len(pctl.track_queue) > 0 and p < len(playlist):
-		if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
-			playing = 1
-
-	album_info_cache[position] = playing, album, select
-	return playing, album, select
-
 def get_folder_list(index: int):
 	playlist = []
 
@@ -36281,18 +36288,18 @@ def gal_jump_select(up=False, num=1):
 				pctl.selected_in_playlist = old_selected
 				return
 
-			alb = get_album_info(pctl.selected_in_playlist)
+			alb = tauon.get_album_info(pctl.selected_in_playlist)
 			if alb[1][0] in album_dex[:num]:
 				pctl.selected_in_playlist = old_selected
 				return
 
 		while num > 0:
-			alb = get_album_info(pctl.selected_in_playlist)
+			alb = tauon.get_album_info(pctl.selected_in_playlist)
 
 			if alb[1][0] > -1:
 				on = alb[1][0] - 1
 
-			pctl.selected_in_playlist = max(get_album_info(on)[1][0], 0)
+			pctl.selected_in_playlist = max(tauon.get_album_info(on)[1][0], 0)
 			num -= 1
 
 def gen_power2():
@@ -36369,7 +36376,6 @@ def gen_power2():
 def reload_albums(tauon: Tauon, quiet: bool = False, return_playlist: int = -1, custom_list=None) -> list[int] | None:
 	global album_dex
 	global update_layout
-	global old_album_pos
 
 	if tauon.cm_clean_db:
 		# Doing reload while things are being removed may cause crash
@@ -36422,7 +36428,7 @@ def reload_albums(tauon: Tauon, quiet: bool = False, return_playlist: int = -1, 
 		return dex
 
 	album_dex = dex
-	album_info_cache.clear()
+	tauon.album_info_cache.clear()
 	gui.update += 2
 	gui.pl_update = 1
 	update_layout = True
@@ -38562,7 +38568,7 @@ def save_state() -> None:
 		prefs.show_lyrics_side,
 		None, #prefs.last_device,
 		album_mode,
-		None,  # album_playlist_width
+		None,  # gui.album_playlist_width
 		prefs.transcode_opus_as,
 		gui.star_mode,
 		prefs.prefer_side,  # gui.rsp,
@@ -39429,8 +39435,6 @@ def main(holder: Holder):
 
 	# gui.offset_extra = 0
 
-	old_album_pos = -55
-
 	album_dex = []
 	album_artist_dict = {}
 	row_len = 5
@@ -39465,8 +39469,6 @@ def main(holder: Holder):
 	break_enable = True
 
 	source = None
-
-	album_playlist_width = 430
 
 	update_title = False
 
@@ -39913,7 +39915,7 @@ def main(holder: Holder):
 			if save[66] is not None:
 				gui.restart_album_mode = save[66]
 			if save[67] is not None:
-				album_playlist_width = save[67]
+				gui.album_playlist_width = save[67]
 			if save[68] is not None:
 				prefs.transcode_opus_as = save[68]
 			if save[69] is not None:
@@ -41720,10 +41722,7 @@ def main(holder: Holder):
 
 	spot_search_rate_timer = Timer()
 
-	album_info_cache = {}
 	perfs = []
-	album_info_cache_key = (-1, -1)
-	tauon.get_album_info = get_album_info
 
 	power_tag_colours = ColourGenCache(0.5, 0.8)
 
@@ -43828,7 +43827,7 @@ def main(holder: Holder):
 
 										# Quick drag and drop
 										if inp.mouse_up and (gui.playlist_hold and m_in) and not gui.side_drag and gui.shift_selection:
-											info = get_album_info(album_dex[album_on])
+											info = tauon.get_album_info(album_dex[album_on])
 											if info[1]:
 												track_position = info[1][0]
 
@@ -43863,7 +43862,7 @@ def main(holder: Holder):
 										elif not gui.side_drag and is_level_zero():
 											if coll_point(inp.click_location, rect) and gui.panelY < inp.mouse_position[1] < \
 													window_size[1] - gui.panelBY:
-												info = get_album_info(album_dex[album_on])
+												info = tauon.get_album_info(album_dex[album_on])
 
 												if m_in and inp.mouse_up and prefs.gallery_single_click:
 													if is_level_zero() and gui.d_click_ref == album_dex[album_on]:
@@ -43878,7 +43877,7 @@ def main(holder: Holder):
 															pctl.jump(pctl.default_playlist[album_dex[album_on]], album_dex[album_on])
 														pctl.show_current()
 												elif inp.mouse_down and not m_in:
-													info = get_album_info(album_dex[album_on])
+													info = tauon.get_album_info(album_dex[album_on])
 													inp.quick_drag = True
 													if not pl_is_locked(pctl.active_playlist_viewing) or inp.key_shift_down:
 														gui.playlist_hold = True
@@ -43887,7 +43886,7 @@ def main(holder: Holder):
 													inp.click_location = [0, 0]
 
 										if m_in:
-											info = get_album_info(album_dex[album_on])
+											info = tauon.get_album_info(album_dex[album_on])
 											if inp.mouse_click:
 												if prefs.gallery_single_click:
 													gui.d_click_ref = album_dex[album_on]
@@ -43914,7 +43913,7 @@ def main(holder: Holder):
 												# Middle click to add album to queue
 												if inp.key_ctrl_down:
 													# Add to queue ungrouped
-													album = get_album_info(album_dex[album_on])[1]
+													album = tauon.get_album_info(album_dex[album_on])[1]
 													for item in album:
 														pctl.force_queue.append(
 															queue_item_gen(pctl.default_playlist[item], item, pl_to_id(
@@ -44003,7 +44002,7 @@ def main(holder: Holder):
 
 									track = pctl.master_library[pctl.default_playlist[album_dex[album_on]]]
 
-									info = get_album_info(album_dex[album_on])
+									info = tauon.get_album_info(album_dex[album_on])
 									album = info[1]
 									# info = (0, 0, 0)
 
