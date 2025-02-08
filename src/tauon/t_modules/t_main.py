@@ -361,13 +361,14 @@ class LoadImageAsset:
 	def __init__(self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
 			self.assets.append(self)
-
+		self.bag = bag
+		self.renderer = bag.renderer
 		self.path = path
 		self.scale_name = scale_name
 		self.scaled_asset_directory: Path = bag.dirs.scaled_asset_directory
 
 		raw_image = IMG_Load(self.path.encode())
-		self.sdl_texture = SDL_CreateTextureFromSurface(bag.renderer, raw_image)
+		self.sdl_texture = SDL_CreateTextureFromSurface(self.renderer, raw_image)
 
 		p_w = pointer(c_int(0))
 		p_h = pointer(c_int(0))
@@ -385,12 +386,12 @@ class LoadImageAsset:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
-		self.__init__(scaled_asset_directory=self.scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
+		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: int, y: int, colour=None) -> None:
+	def render(self, x: int, y: int, colour: list[int] | None = None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		SDL_RenderCopy(renderer, self.sdl_texture, None, self.rect)
+		SDL_RenderCopy(self.renderer, self.sdl_texture, None, self.rect)
 
 class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
@@ -418,9 +419,9 @@ class WhiteModImageAsset:
 		SDL_DestroyTexture(self.sdl_texture)
 		if self.scale_name:
 			self.path = str(self.scaled_asset_directory / self.scale_name)
-		self.__init__(scaled_asset_directory=self.scaled_asset_directory, path=self.path, reload=True, scale_name=self.scale_name)
+		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: int, y: int, colour) -> None:
+	def render(self, x: int, y: int, colour: list[int]) -> None:
 		if colour != self.colour:
 			SDL_SetTextureColorMod(self.sdl_texture, colour[0], colour[1], colour[2])
 			SDL_SetTextureAlphaMod(self.sdl_texture, colour[3])
@@ -449,7 +450,7 @@ class GuiVar:
 	def show_message(self, line1: str, line2: str = "", line3: str = "", mode: str = "info") -> None:
 		show_message(line1, line2, line3, mode=mode)
 
-	def delay_frame(self, t):
+	def delay_frame(self, t: float) -> None:
 		self.frame_callback_list.append(TestTimer(t))
 
 	def destroy_textures(self):
@@ -1131,13 +1132,13 @@ class Input:
 
 class KeyMap:
 
-	def __init__(self, bag: Bag):
+	def __init__(self, bag: Bag, inp: Input):
 		self.bag = bag
+		self.inp = inp
 		self.hits = []  # The keys hit this frame
 		self.maps = {}  # Loaded from input.txt
 
 	def load(self):
-
 		path = self.bag.dirs.config_directory / "input.txt"
 		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
@@ -1173,24 +1174,21 @@ class KeyMap:
 					else:
 						self.maps[function] = [(key, mod)]
 
-	def test(self, function):
-
+	def test(self, function) -> bool:
+		inp = self.inp
 		if not self.hits:
 			return False
 		if function not in self.maps:
 			return False
 
 		for code, mod in self.maps[function]:
-
 			if code in self.hits:
-
 				ctrl = (inp.key_ctrl_down or inp.key_rctrl_down) * 1
 				shift = (inp.key_shift_down or inp.key_shiftr_down) * 10
 				alt = (inp.key_lalt or inp.key_ralt) * 100
 
 				if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
 					return True
-
 		return False
 
 class ColoursClass:
@@ -1816,7 +1814,7 @@ class PlayerCtl:
 				self.lfm_scrobbler.scrob_full_track(copy.deepcopy(self.radiobox.dummy_track))
 
 	def update_shuffle_pool(self, pl_id: int) -> None:
-		new_pool = copy.deepcopy(self.multi_playlist[id_to_pl(pl_id)].playlist_ids)
+		new_pool = copy.deepcopy(self.multi_playlist[self.id_to_pl(pl_id)].playlist_ids)
 		random.shuffle(new_pool)
 		self.shuffle_pools[pl_id] = new_pool
 		logging.info("Refill shuffle pool")
@@ -2406,7 +2404,6 @@ class PlayerCtl:
 		self.gui.pl_update += 1
 
 	def stop(self, block: bool = False, run : bool = False) -> None:
-
 		self.playerCommand = "stop"
 		if run:
 			self.playerCommand = "runstop"
@@ -2460,7 +2457,6 @@ class PlayerCtl:
 		return previous_state
 
 	def pause(self) -> None:
-
 		if self.tauon.spotc and self.tauon.spotc.running and self.tauon.spot_ctl.playing:
 			if self.playing_state == 1:
 				self.playerCommand = "pauseon"
@@ -2559,7 +2555,6 @@ class PlayerCtl:
 				self.mpris.seek_do(self.playing_time)
 
 	def play(self) -> None:
-
 		if self.tauon.spot_ctl.playing:
 			if self.playing_state == 2:
 				self.play_pause()
@@ -3180,7 +3175,6 @@ class PlayerCtl:
 
 		# If not random mode, Step down 1 on the playlist
 		elif self.random_mode is False and len(self.playing_playlist()) > 0:
-
 			# Stop at end of playlist
 			if self.playlist_playing_position == len(self.playing_playlist()) - 1:
 				if dry:
@@ -3402,8 +3396,7 @@ class LastFMapi:
 		webbrowser.open(self.url, new=2, autoraise=True)
 
 	def auth2(self) -> None:
-
-		# This is step 2 where the user clicks "Done"
+		"""This is step 2 where the user clicks "Done""""
 
 		if self.sg is None:
 			show_message(_("You need to log in first"))
@@ -3437,7 +3430,6 @@ class LastFMapi:
 		show_message(_("Logout will complete on app restart."))
 
 	def connect(self, m_notify: bool = True) -> bool | None:
-
 		if not last_fm_enable:
 			return False
 
@@ -3453,7 +3445,6 @@ class LastFMapi:
 		logging.info("Attempting to connect to Last.fm network")
 
 		try:
-
 			self.network = self.get_network()(
 				api_key=self.API_KEY, api_secret=self.API_SECRET, session_key=self.prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
 
@@ -3504,7 +3495,6 @@ class LastFMapi:
 			return False
 
 	def get_all_scrobbles_estimate_time(self) -> float | None:
-
 		if not self.connected:
 			self.connect(False)
 		if not self.connected or not self.prefs.last_fm_username:
@@ -3518,7 +3508,6 @@ class LastFMapi:
 		return 0
 
 	def get_all_scrobbles(self) -> None:
-
 		if not self.connected:
 			self.connect(False)
 		if not self.connected or not self.prefs.last_fm_username:
@@ -3573,7 +3562,6 @@ class LastFMapi:
 		show_message(_("Scanning scrobbles complete"), mode="done")
 
 	def artist_info(self, artist: str):
-
 		if self.lastfm_network is None:
 			if self.last_fm_only_connect() is False:
 				return False, "", ""
@@ -3682,8 +3670,6 @@ class LastFMapi:
 				# Pull loved status
 
 				self.sync_pull_love(track_object)
-
-
 			else:
 				logging.warning("Not sent, incomplete metadata")
 
@@ -39713,7 +39699,7 @@ def main(holder: Holder):
 
 	# Functions for reading and setting play counts
 	inp = gui.inp
-	keymaps = KeyMap(bag=bag)
+	keymaps = KeyMap(bag=bag, inp=inp)
 
 	# This is legacy. New settings are added straight to the save list (need to overhaul)
 	view_prefs = {
