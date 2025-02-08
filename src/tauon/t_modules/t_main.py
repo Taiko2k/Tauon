@@ -4322,6 +4322,7 @@ class Menu:
 		self.gui         = tauon.gui
 		self.inp         = tauon.gui.inp
 		self.ddt         = tauon.bag.ddt
+		self.colours     = tauon.bag.colours
 		self.window_size = tauon.bag.window_size
 
 		self.base_v_size = 22
@@ -4359,7 +4360,7 @@ class Menu:
 	def click(self) -> None:
 		self.clicked = True
 		# cheap hack to prevent scroll bar from being activated when closing menu
-		inp.click_location = [0, 0]
+		self.inp.click_location = [0, 0]
 
 	def add(self, menu_item: MenuItem) -> None:
 		if menu_item.render_func is None:
@@ -4392,12 +4393,10 @@ class Menu:
 			return item.disable_test()
 
 	def render_icon(self, x, y, icon, selected, fx):
-
 		if colours.lm:
 			selected = True
 
 		if icon is not None:
-
 			x += icon.xoff * gui.scale
 			y += icon.yoff * gui.scale
 
@@ -4405,10 +4404,8 @@ class Menu:
 
 			if icon.base_asset is None:
 				# Colourise mode
-
 				if icon.colour_callback is not None:  # and icon.colour_callback() is not None:
 					colour = icon.colour_callback()
-
 				elif selected and fx[0] != colours.menu_text_disabled:
 					colour = icon.colour
 
@@ -4425,7 +4422,6 @@ class Menu:
 					# colour = [50, 50, 50, 255]
 
 				icon.asset.render(x, y, colour)
-
 			else:
 				if not is_grey(colours.menu_background):
 					return  # Since these are currently pre-rendered greyscale, they are
@@ -4445,8 +4441,13 @@ class Menu:
 				else:
 					icon.base_asset.render(x, y)
 
-	def render(self):
-		gui = self.gui
+	def render(self) -> None:
+		tauon   = self.tauon
+		gui     = self.gui
+		ddt     = self.ddt
+		inp     = self.inp
+		colours = self.colours
+
 		if self.active:
 			if Menu.switch != self.id:
 				self.active = False
@@ -4506,9 +4507,9 @@ class Menu:
 				# Get properties for menu item
 				if self.items[i].render_func is not None:
 					if self.items[i].pass_ref_deco:
-						fx = self.items[i].render_func(self.reference)
+						fx = self.items[i].render_func(self.reference, self.tauon)
 					else:
-						fx = self.items[i].render_func()
+						fx = self.items[i].render_func(tauon=self.tauon)
 				else:
 					fx = self.deco()
 
@@ -4598,9 +4599,9 @@ class Menu:
 
 				y_run += self.h
 
-				if y_run > window_size[1] - self.h:
+				if y_run > self.window_size[1] - self.h:
 					direc = 1
-					if self.pos[0] > window_size[0] // 2:
+					if self.pos[0] > self.window_size[0] // 2:
 						direc = -1
 					x_run += self.w * direc
 					y_run = self.pos[1]
@@ -4612,14 +4613,14 @@ class Menu:
 					sub_pos = [x_run + self.w, self.sub_y_postion]
 					sub_w = self.items[i].sub_menu_width * gui.scale
 
-					if sub_pos[0] + sub_w > window_size[0]:
+					if sub_pos[0] + sub_w > self.window_size[0]:
 						sub_pos[0] = x_run - sub_w
 						if view_box.active:
 							sub_pos[0] -= view_box.w
 
 					fx = self.deco()
 
-					minY = window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
+					minY = self.window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
 					sub_pos[1] = min(sub_pos[1], minY)
 
 					xoff = 0
