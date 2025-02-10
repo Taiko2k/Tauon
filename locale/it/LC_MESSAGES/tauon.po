@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-02-06 00:01+0000\n"
+"PO-Revision-Date: 2025-02-11 00:02+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -36,7 +36,7 @@ msgstr ""
 msgid "Upgrade complete. New sorting option may require tag rescan."
 msgstr ""
 "Aggiornamento completato. Le nuove opzioni di ordinamento potrebbero avere "
-"bisogno di una nuova scansione dei tag."
+"bisogno di una nuova scansione dei metadati."
 
 #: src/tauon/t_modules/t_db_migrate.py:142
 msgid "Updated to v2.6.3"
@@ -46,7 +46,7 @@ msgstr "Aggiornato alla v2.6.3"
 msgid ""
 "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."
 msgstr ""
-"Benvenuto alla v4.4.0. Effettua una nuova scansione dei tag se vuoi "
+"Benvenuto alla v4.4.0. Effettua una nuova scansione dei metadati se vuoi "
 "abilitare i metadati dei compositori."
 
 #: src/tauon/t_modules/t_db_migrate.py:353
@@ -120,7 +120,7 @@ msgstr "Controlla se il server è in esecuizione e l'URL è corretto."
 
 #: src/tauon/t_modules/t_jellyfin.py:88
 msgid "Could not establish connection to server."
-msgstr "Impossibile stabilire una connessione al server"
+msgstr "Impossibile stabilire una connessione al server."
 
 #: src/tauon/t_modules/t_jellyfin.py:97
 msgid "Connection and authorisation successful"
@@ -552,7 +552,7 @@ msgstr "Il processo di riproduzione è crashato. Ci dispiace."
 
 #: src/tauon/t_modules/t_main.py:12328 src/tauon/t_modules/t_main.py:16249
 msgid "Saving network images not implemented"
-msgstr "Salvare immagini dalla rete non è ancora stato implementato"
+msgstr "Salvare immagini dalla rete ancora non è stato implementato"
 
 #: src/tauon/t_modules/t_main.py:12333
 msgid "No embedded album art."
@@ -890,7 +890,7 @@ msgstr "Mostra nella Scaletta"
 
 #: src/tauon/t_modules/t_main.py:15856
 msgid "Image…"
-msgstr "Immagine…"
+msgstr "Copertina…"
 
 #: src/tauon/t_modules/t_main.py:15857 src/tauon/t_modules/t_main.py:21551
 #: src/tauon/t_modules/t_main.py:21564
@@ -1040,11 +1040,11 @@ msgstr "Errore sconosciuto"
 
 #: src/tauon/t_modules/t_main.py:16324 src/tauon/t_modules/t_main.py:16714
 msgid "Open Image"
-msgstr "Apri Immagine"
+msgstr "Apri Copertina"
 
 #: src/tauon/t_modules/t_main.py:16362
 msgid "Next Image"
-msgstr "Prossima Immagine"
+msgstr "Prossima Copertina"
 
 #: src/tauon/t_modules/t_main.py:16366 src/tauon/t_modules/t_main.py:16715
 msgid "Extract Image"
@@ -1101,11 +1101,11 @@ msgstr "Rimozione immagine vorbis non implementata"
 
 #: src/tauon/t_modules/t_main.py:16599
 msgid "Image remove error"
-msgstr "Rimozione immagine fallita"
+msgstr "Errore rimozione copertina"
 
 #: src/tauon/t_modules/t_main.py:16606
 msgid "Image removal failed."
-msgstr "Rimozione immagine fallita."
+msgstr "Rimozione copertina fallita."
 
 #: src/tauon/t_modules/t_main.py:16609
 msgid "Deleted embedded picture from file"
@@ -2331,7 +2331,7 @@ msgstr "È un file CUE"
 
 #: src/tauon/t_modules/t_main.py:22955
 msgid "Done! {N} old items were removed."
-msgstr ""
+msgstr "Fatto! {N} oggetti vecchi rimossi."
 
 #: src/tauon/t_modules/t_main.py:22960 src/tauon/t_modules/t_main.py:22963
 msgid "Clean Database!"
@@ -2358,14 +2358,12 @@ msgid "Database…"
 msgstr "Database…"
 
 #: src/tauon/t_modules/t_main.py:23023
-#, fuzzy
 msgid "Enabled saving state"
-msgstr "Abilità Stato Salvataggio"
+msgstr "Stato salvataggio abilitato"
 
 #: src/tauon/t_modules/t_main.py:23028
-#, fuzzy
 msgid "Disabled saving state"
-msgstr "Disabilità Stato Salvataggio"
+msgstr "Stato salvataggio disabilitato"
 
 #: src/tauon/t_modules/t_main.py:23030
 msgid "Dev Mode"
@@ -2380,9 +2378,8 @@ msgid "Disable Saving State"
 msgstr "Disabilità Stato Salvataggio"
 
 #: src/tauon/t_modules/t_main.py:23088
-#, fuzzy
 msgid "Play History"
-msgstr "Riproduci Cronologia su Scaletta"
+msgstr "Riproduci Cronologia"
 
 #: src/tauon/t_modules/t_main.py:23096
 msgid "Export as CSV"
@@ -2409,9 +2406,8 @@ msgid "Remove Missing Tracks"
 msgstr "Rimuovi Tracce Mancanti"
 
 #: src/tauon/t_modules/t_main.py:23133
-#, fuzzy
 msgid "{N} ratings imported"
-msgstr "Organizza per Durata"
+msgstr "{N} voti importati"
 
 #: src/tauon/t_modules/t_main.py:23137
 msgid "Import FMPS Ratings"
@@ -2445,21 +2441,19 @@ msgstr "Trova Dischi Incompleti"
 
 #: src/tauon/t_modules/t_main.py:23198
 msgid "Mark Missing as Found"
-msgstr ""
+msgstr "Segna Mancante come Trovato"
 
 #: src/tauon/t_modules/t_main.py:23204
 msgid "Stop Cast"
 msgstr "Ferma Invio"
 
 #: src/tauon/t_modules/t_main.py:23218
-#, fuzzy
 msgid "pychromecast not found"
-msgstr "Nessun dispositivo Chromecast trovato"
+msgstr "Pychromecast non trovato"
 
 #: src/tauon/t_modules/t_main.py:23220
-#, fuzzy
 msgid "Searching for Chomecasts..."
-msgstr "Sto cercando Chromecast..."
+msgstr "Sto cercando per un Chromecast..."
 
 #: src/tauon/t_modules/t_main.py:23225
 msgid "Chromecast…"
@@ -2510,14 +2504,12 @@ msgid "Clear Queue"
 msgstr "Pulisci Coda"
 
 #: src/tauon/t_modules/t_main.py:23567
-#, fuzzy
 msgid "No exact matching artist could be found in this playlist"
-msgstr "Nessun artista corrispondente trovato"
+msgstr "Nessun artista corrispondente trovato nella scaletta"
 
 #: src/tauon/t_modules/t_main.py:23576
-#, fuzzy
 msgid "Please wait for cleaning process to finish"
-msgstr "Per favore aspetta che il lavoro corrente sia finito"
+msgstr "Per favore aspetta che il lavoro di pulizia sia finito"
 
 #: src/tauon/t_modules/t_main.py:23585
 msgid "Global Search"
@@ -2578,7 +2570,7 @@ msgstr "Avvia controllo di Spotify"
 
 #: src/tauon/t_modules/t_main.py:23845
 msgid "Notifications for this DE not supported"
-msgstr ""
+msgstr "Le notifiche non sono supportate su questo DE"
 
 #: src/tauon/t_modules/t_main.py:23905
 msgid "ListenBrainz is Paused"
@@ -2597,18 +2589,16 @@ msgid "Scrobbling is Active"
 msgstr "L'invio è Attivo"
 
 #: src/tauon/t_modules/t_main.py:24162 src/tauon/t_modules/t_main.py:24167
-#, fuzzy
 msgid "Unknown Track"
-msgstr "Rimuovi Cuore Traccia"
+msgstr "Traccia sconosciuta"
 
 #: src/tauon/t_modules/t_main.py:24172
-#, fuzzy
 msgid "Unknown Album"
-msgstr "Riproduzione Dischi Casuali"
+msgstr "Album sconosciuto"
 
 #: src/tauon/t_modules/t_main.py:24213
 msgid "Error - Discord not running?"
-msgstr ""
+msgstr "Errore - Discord è in esecuzione?"
 
 #: src/tauon/t_modules/t_main.py:24228
 msgid "Exit Shuffle Lockdown"
@@ -2623,71 +2613,62 @@ msgid "Disengage Quick Add"
 msgstr "Rimuovi Aggiunta Veloce"
 
 #: src/tauon/t_modules/t_main.py:24343
-#, fuzzy
 msgid "Disable Columns"
-msgstr "Colonne"
+msgstr "Disabilita Colonne"
 
 #: src/tauon/t_modules/t_main.py:24345
-#, fuzzy
 msgid "Enable Columns"
-msgstr "Colonne"
+msgstr "Abilita Colonne"
 
 #: src/tauon/t_modules/t_main.py:24356
-#, fuzzy
 msgid "Disable Title Breaks"
-msgstr "Attiva/Disattiva Separatori"
+msgstr "Disabilita Separatori"
 
 #: src/tauon/t_modules/t_main.py:24358
-#, fuzzy
 msgid "Enable Title Breaks"
-msgstr "Attiva/Disattiva Separatori"
+msgstr "Attiva Separatori"
 
 #: src/tauon/t_modules/t_main.py:24410
-#, fuzzy
 msgid "Encoding warning: Missing one or more files"
-msgstr "Permesso negato nell'accedere uno o più file"
+msgstr "Attenzione : La codifica manca di uno o più file"
 
 #: src/tauon/t_modules/t_main.py:24416
 msgid "output"
-msgstr ""
+msgstr "Risultato"
 
 #: src/tauon/t_modules/t_main.py:24757 src/tauon/t_modules/t_main.py:37272
 #: src/tauon/t_modules/t_main.py:37291
-#, fuzzy
 msgid "Artist: "
-msgstr "Artista"
+msgstr "Artista: "
 
 #: src/tauon/t_modules/t_main.py:24780
 msgid "Year: "
-msgstr ""
+msgstr "Anno: "
 
 #: src/tauon/t_modules/t_main.py:24803
-#, fuzzy
 msgid "Composer: "
-msgstr "Compositore"
+msgstr "Compositore: "
 
 #: src/tauon/t_modules/t_main.py:24874
-#, fuzzy
 msgid "Genre: "
-msgstr "Genere"
+msgstr "Genere: "
 
 #: src/tauon/t_modules/t_main.py:25021
 msgid "Press Tab key to switch to Spotify search"
 msgstr "Premi Tab per cercare su Spotify"
 
 #: src/tauon/t_modules/t_main.py:25222
-#, fuzzy
 msgid "(Include multi-tag results)"
-msgstr "Includi Tutti gli Artisti"
+msgstr "(Includi artisti con più metadati)"
 
 #: src/tauon/t_modules/t_main.py:25227 src/tauon/t_modules/t_main.py:25235
 #: src/tauon/t_modules/t_main.py:25248 src/tauon/t_modules/t_main.py:25266
 msgid "BY"
-msgstr ""
+msgstr "DA"
 
 #: src/tauon/t_modules/t_main.py:25254
 msgid "FROM"
-msgstr ""
+msgstr "PER"
 
 #: src/tauon/t_modules/t_main.py:25348
 msgid "Searching for albums by artist: "
@@ -2699,88 +2680,90 @@ msgstr "Potrebbe volerci un attimo"
 
 #: src/tauon/t_modules/t_main.py:25530
 msgid "Welcome to v7.2.0!"
-msgstr ""
+msgstr "Benvenuto alla 7.2.0!"
 
 #: src/tauon/t_modules/t_main.py:25534
 msgid "You can check out the release notes on the https://"
-msgstr ""
+msgstr "Puoi controllare le note di rilascio su https://"
 
 #: src/tauon/t_modules/t_main.py:25535
 msgid "Github release page."
-msgstr ""
+msgstr "Pagina di rilascio Github."
 
 #: src/tauon/t_modules/t_main.py:25541
 msgid "New supporter bonuses!"
-msgstr ""
+msgstr "Nuovi bonus supporter!"
 
 #: src/tauon/t_modules/t_main.py:25545
 msgid ""
 "A new supporter bonus theme is now available! Check it out at the above link!"
 msgstr ""
+"Un nuovo bonus per i support è disponibile! Controlla al collegamento "
+"seguente!"
 
 #: src/tauon/t_modules/t_main.py:25550
 msgid "Your support means a lot! Love you!"
-msgstr ""
+msgstr "Il tuo supporto significa molto! Grazie, davvero!"
 
 #: src/tauon/t_modules/t_main.py:25615
 msgid ""
 "Global search + Tab triggers Spotify search but Spotify is not enabled in "
 "settings!"
 msgstr ""
+"Ricerca globale + scheda triggera la ricerca di Spotify ma Spotify non è "
+"abilitato nelle impostazioni!"
 
 #: src/tauon/t_modules/t_main.py:26335
 msgid "You attempted to drop an archive."
-msgstr ""
+msgstr "Hai provato a rilasciare un archivio."
 
 #: src/tauon/t_modules/t_main.py:26336
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "Solo che la funzione \"estrai archivio\" non è abilitata."
 
 #: src/tauon/t_modules/t_main.py:26346
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Salto un file zip troppo grande (>4GB)"
 
 #: src/tauon/t_modules/t_main.py:26362 src/tauon/t_modules/t_main.py:26366
 #: src/tauon/t_modules/t_main.py:26373
-#, fuzzy
 msgid "Failed to extract zip archive."
-msgstr "Estrai archivio"
+msgstr "Non posso estrarre l'archivio zip."
 
 #: src/tauon/t_modules/t_main.py:26363
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
 msgstr ""
+"Questo archivio è crittografato. Devi estrarlo manualmente con una password."
 
 #: src/tauon/t_modules/t_main.py:26367 src/tauon/t_modules/t_main.py:26374
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
 msgstr ""
+"Forse l'archivio è corrotto? Controllato lo spazio sul disco ed i permessi "
+"di scrittura?"
 
 #: src/tauon/t_modules/t_main.py:26390
-#, fuzzy
 msgid "Failed to extract rar archive."
-msgstr "Estrai archivio"
+msgstr "Non posso estrarre l'archivio rar."
 
 #: src/tauon/t_modules/t_main.py:26406
-#, fuzzy
 msgid "Failed to extract 7z archive."
-msgstr "Estrai archivio"
+msgstr "Non posso estrarre l'archivio 7z."
 
 #: src/tauon/t_modules/t_main.py:26434
-#, fuzzy
 msgid "Could not move archive to trash"
-msgstr "File spostato nel cestino"
+msgstr "Non posso spostare l'archivio nel cestino"
 
 #: src/tauon/t_modules/t_main.py:26541
 msgid "Permission error accessing one or more files."
 msgstr "Permesso negato nell'accedere uno o più file."
 
 #: src/tauon/t_modules/t_main.py:26542
-#, fuzzy
 msgid "If this location is on external media, see https://"
-msgstr "Se il percorso è su di un disco esterno, vedi"
+msgstr "Se il percorso è su di un disco esterno, vedi https://"
 
 #: src/tauon/t_modules/t_main.py:26545
 msgid "Permission error accessing one or more files"
@@ -2788,79 +2771,74 @@ msgstr "Permesso negato nell'accedere uno o più file"
 
 #: src/tauon/t_modules/t_main.py:26694
 msgid "Folder copy error."
-msgstr ""
+msgstr "Errore di copia della cartella."
 
 #: src/tauon/t_modules/t_main.py:26694
-#, fuzzy
 msgid "The target and source are the same."
-msgstr "Non ci sono fornitori di testi abilitati."
+msgstr "La destinazione e l'origine sono le stesse."
 
 #: src/tauon/t_modules/t_main.py:26705
-#, fuzzy
 msgid "Some files may have been written."
-msgstr " Nomi file scritti."
+msgstr "Alcuni file potrebbero essere stati scritti."
 
 #: src/tauon/t_modules/t_main.py:26705
 msgid "The folder copy has failed!"
-msgstr ""
+msgstr "La copia della cartella è fallita!"
 
 #: src/tauon/t_modules/t_main.py:26714
 msgid "Could not delete {name}"
-msgstr ""
+msgstr "Non posso eliminare {name}"
 
 #: src/tauon/t_modules/t_main.py:26714
 msgid "Something has gone horribly wrong!"
-msgstr ""
+msgstr "Qualcosa è andato terribilmente storto!"
 
 #: src/tauon/t_modules/t_main.py:26719
-#, fuzzy
 msgid "Folder move complete."
-msgstr "Rinomina completato."
+msgstr "Spostamento cartella completato."
 
 #: src/tauon/t_modules/t_main.py:26719 src/tauon/t_modules/t_main.py:26721
-#, fuzzy
 msgid "Folder name: {name}"
-msgstr "Elenco Cartelle"
+msgstr "Nome cartella: {name}"
 
 #: src/tauon/t_modules/t_main.py:26721
-#, fuzzy
 msgid "Folder copy complete."
-msgstr "Ricontrollo cartelle completato."
+msgstr "Copia cartella completata."
 
 #: src/tauon/t_modules/t_main.py:26767
-#, fuzzy
 msgid "Cleaning complete."
-msgstr "Rinomina completato."
+msgstr "Pulizia completata."
 
 #: src/tauon/t_modules/t_main.py:26767
 msgid "{N} items were removed from the database."
-msgstr ""
+msgstr "{N} oggetti sono stati rimossi dal database."
 
 #: src/tauon/t_modules/t_main.py:26881
 msgid "An error was encountered."
-msgstr ""
+msgstr "È stato riscontrato un errore."
 
 #: src/tauon/t_modules/t_main.py:26881
-#, fuzzy
 msgid "Transcode failed."
-msgstr "Codifica file"
+msgstr "Codifica fallita."
 
 #: src/tauon/t_modules/t_main.py:26889
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "I file incompleti rimarranno."
 
 #: src/tauon/t_modules/t_main.py:26889
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "La codifica è stata cancellata prima del completamento."
 
 #: src/tauon/t_modules/t_main.py:26892
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "Premi F9 per vedere il risultato."
 
 #: src/tauon/t_modules/t_main.py:26894
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
 msgstr ""
+"Nota che ogni immagine associata al risultato è una miniatura e non una "
+"copia esatta."
 
 #: src/tauon/t_modules/t_main.py:26897
 msgid "Encoding complete."
@@ -3417,26 +3395,23 @@ msgstr "Copia l'URL completo della pagina 'oops' relativa"
 
 #: src/tauon/t_modules/t_main.py:28906
 msgid "Paste Redirect URL"
-msgstr ""
+msgstr "Copia URL di reindirizzamento"
 
 #: src/tauon/t_modules/t_main.py:28913
 msgid "Paste TIDAL URL's into Tauon using ctrl+v"
-msgstr ""
+msgstr "Copia l'URL di TIDAL su Tauon con ctrl+v"
 
 #: src/tauon/t_modules/t_main.py:28916
-#, fuzzy
 msgid "Import Albums"
-msgstr "Dischi di Spotify"
+msgstr "Importa Album"
 
 #: src/tauon/t_modules/t_main.py:28917 src/tauon/t_modules/t_main.py:28922
-#, fuzzy
 msgid "Fetching playlist..."
-msgstr "Sto recuperando..."
+msgstr "Sto recuperando la scaletta..."
 
 #: src/tauon/t_modules/t_main.py:28921
-#, fuzzy
 msgid "Import Tracks"
-msgstr "Ordina per Tracce Importate"
+msgstr "Importa Tracce"
 
 #: src/tauon/t_modules/t_main.py:28931
 msgid "IP"
@@ -3452,7 +3427,7 @@ msgstr "Ottieni scaletta"
 
 #: src/tauon/t_modules/t_main.py:28964
 msgid "An operation is already running"
-msgstr ""
+msgstr "Un'operazione è già in corso"
 
 #: src/tauon/t_modules/t_main.py:28970
 msgid "Maloja Server"
@@ -3463,9 +3438,8 @@ msgid "Maloja is a self-hosted scrobble server."
 msgstr "Maloja è un server di invii hostato personalmente."
 
 #: src/tauon/t_modules/t_main.py:28973
-#, fuzzy
 msgid "See here to learn more: {link}"
-msgstr "Per saperne di più: %s"
+msgstr "Per saperne di più: {link}"
 
 #: src/tauon/t_modules/t_main.py:28983 src/tauon/t_modules/t_main.py:29190
 #: src/tauon/t_modules/t_main.py:29251 src/tauon/t_modules/t_main.py:29324
@@ -3482,19 +3456,19 @@ msgstr "Test connettività"
 
 #: src/tauon/t_modules/t_main.py:29027
 msgid "Connection appeared successful but the API key was invalid"
-msgstr ""
+msgstr "La connessione sembrava avvenuta ma la chiave API è invalida"
 
 #: src/tauon/t_modules/t_main.py:29029
 msgid "Connection to Maloja server was successful."
-msgstr ""
+msgstr "Connessione al server Maloja avvenuta con successo."
 
 #: src/tauon/t_modules/t_main.py:29031
 msgid "The Maloja server returned an error"
-msgstr ""
+msgstr "Il server Maloja ha restituito un errore"
 
 #: src/tauon/t_modules/t_main.py:29034
 msgid "Could not communicate with the Maloja server"
-msgstr ""
+msgstr "Non posso comunicare con il server Maloja"
 
 #: src/tauon/t_modules/t_main.py:29038 src/tauon/t_modules/t_main.py:29040
 #: src/tauon/t_modules/t_main.py:29540 src/tauon/t_modules/t_main.py:29557
@@ -3533,16 +3507,20 @@ msgstr "Abilita riproduzione audio locale"
 msgid ""
 "Due to Spotify authentication changes, local audio playback may be broken"
 msgstr ""
+"A causa di cambiamenti nell'accesso a Spotify, la riproduzione locale audio "
+"potrebbe non funzionare"
 
 #: src/tauon/t_modules/t_main.py:29114 src/tauon/t_modules/t_main.py:43487
 msgid ""
 "It is highly recommended to disable this setting to avoid your account being "
 "locked."
 msgstr ""
+"È altamente raccomandato di disabilitare questa impostazione per non correre "
+"il rischio di vedersi l'account bloccato."
 
 #: src/tauon/t_modules/t_main.py:29117
 msgid "Librespot not installed?"
-msgstr ""
+msgstr "Librespot è installato?"
 
 #: src/tauon/t_modules/t_main.py:29137
 msgid "Spofify password"
@@ -3589,7 +3567,7 @@ msgstr "Importa scalette"
 
 #: src/tauon/t_modules/t_main.py:29276
 msgid "Run music import first"
-msgstr ""
+msgstr "Importa la musica prima"
 
 #: src/tauon/t_modules/t_main.py:29286
 msgid "koel network streaming"
@@ -3608,9 +3586,8 @@ msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr "Puoi usare Fanart.tv per cercare copertine e immagini artista."
 
 #: src/tauon/t_modules/t_main.py:29410 src/tauon/t_modules/t_main.py:37439
-#, fuzzy
 msgid "They encourage you to contribute at {link}"
-msgstr "Contribuisci su https://fanart.tv"
+msgstr "Ti incoraggiano a contribuire a {link}"
 
 #: src/tauon/t_modules/t_main.py:29416
 msgid "Cover art (Manual only)"
@@ -3626,11 +3603,11 @@ msgstr "Cambia contenuto corrente"
 
 #: src/tauon/t_modules/t_main.py:29428
 msgid "Reset flips"
-msgstr ""
+msgstr "Ripristina cambi"
 
 #: src/tauon/t_modules/t_main.py:29438 src/tauon/t_modules/t_main.py:36843
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/tauon/t_modules/t_main.py:29507 src/tauon/t_modules/t_main.py:29508
 msgid "Username:"
@@ -3790,7 +3767,7 @@ msgstr "Ferma"
 
 #: src/tauon/t_modules/t_main.py:29753
 msgid "See here for detailed instructions"
-msgstr ""
+msgstr "Vedi qui per istruzioni più dettagliate"
 
 #: src/tauon/t_modules/t_main.py:29760
 msgid "Output codec setting:"
@@ -3834,11 +3811,11 @@ msgstr "Modalità mini sempre in vista"
 
 #: src/tauon/t_modules/t_main.py:29840
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr ""
+msgstr "Funzione sempre in primo piano ancora non implementata per Wayland"
 
 #: src/tauon/t_modules/t_main.py:29840
 msgid "You can enable the x11 setting below as a workaround"
-msgstr ""
+msgstr "Puoi abilitare x11 come rimedio nelle impostazioni seguenti"
 
 #: src/tauon/t_modules/t_main.py:29843
 msgid "Top-panel visualiser"
@@ -3862,7 +3839,7 @@ msgstr "Preferisci x11 anche su Wayland"
 
 #: src/tauon/t_modules/t_main.py:30028
 msgid "This program comes with absolutely no warranty."
-msgstr ""
+msgstr "Questo programma viene fornito senza nessuna garanzia."
 
 #: src/tauon/t_modules/t_main.py:30031
 msgid "See the {link} license for details."
@@ -4123,53 +4100,47 @@ msgstr "Ricontrollo metadati...  {N} rimanenti"
 
 #: src/tauon/t_modules/t_main.py:31828
 msgid "Accessing PLEX library..."
-msgstr ""
+msgstr "Accesso alla libreria PLEX..."
 
 #: src/tauon/t_modules/t_main.py:31833
 msgid "Launching Spotify..."
-msgstr ""
+msgstr "Sto avviando Spotify..."
 
 #: src/tauon/t_modules/t_main.py:31836
-#, fuzzy
 msgid "Preparing Spotify Playback..."
-msgstr "Sto importando le Scalette da Spotify..."
+msgstr "Sto preparando la riproduzione da Spotify..."
 
 #: src/tauon/t_modules/t_main.py:31839
-#, fuzzy
 msgid "Accessing Spotify library..."
-msgstr "Sto importando le Scalette da Spotify..."
+msgstr "Sto effettuando l'accesso alla libreria di Spotify..."
 
 #: src/tauon/t_modules/t_main.py:31842
 msgid "Accessing AIRSONIC library..."
-msgstr ""
+msgstr "Sto effettuando l'accesso alla libreria di AIRSONIC..."
 
 #: src/tauon/t_modules/t_main.py:31847
 msgid "Accessing KOEL library..."
-msgstr ""
+msgstr "Sto effettuando l'accesso alla libreria KOEL..."
 
 #: src/tauon/t_modules/t_main.py:31850
 msgid "Accessing JELLYFIN library..."
-msgstr ""
+msgstr "Sto effettuando l'accesso alla libreria JELLYFIN..."
 
 #: src/tauon/t_modules/t_main.py:31853
-#, fuzzy
 msgid "Chromecast Mode"
-msgstr "Chromecast…"
+msgstr "Modalità Chromecast"
 
 #: src/tauon/t_modules/t_main.py:31862
-#, fuzzy
 msgid "Stopping transcode..."
-msgstr "Sto fermando..."
+msgstr "Sto interrompendo la codifica..."
 
 #: src/tauon/t_modules/t_main.py:31864
-#, fuzzy
 msgid "Scanning: "
-msgstr "Avviso di sincronizzazione"
+msgstr "Scansione: "
 
 #: src/tauon/t_modules/t_main.py:31867
-#, fuzzy
 msgid "Scanning Scrobbles..."
-msgstr "Ricontrollo cartelle..."
+msgstr "Scansione Invii..."
 
 #: src/tauon/t_modules/t_main.py:31870
 msgid "Buffering... "
@@ -4177,26 +4148,23 @@ msgstr "Sto caricando... "
 
 #: src/tauon/t_modules/t_main.py:31875
 msgid "Network error. Will try again later."
-msgstr ""
+msgstr "Errore di rete. Riproverò più tardi."
 
 #: src/tauon/t_modules/t_main.py:31886
 msgid "{N} listening along"
-msgstr ""
+msgstr "{N} ascolti insieme"
 
 #: src/tauon/t_modules/t_main.py:31904
-#, fuzzy
 msgid "Transcoding"
-msgstr "Converti Traccia"
+msgstr "Codifica"
 
 #: src/tauon/t_modules/t_main.py:31943
-#, fuzzy
 msgid "{N} Folder Remaining {T}"
-msgstr "Cartella Rimanente"
+msgstr "{N} Cartella Rimanente {T}"
 
 #: src/tauon/t_modules/t_main.py:31945
-#, fuzzy
 msgid "{N} Folders Remaining {T}"
-msgstr "Cartelle Rimanenti"
+msgstr "{N} Cartelle Rimanenti {T}"
 
 #: src/tauon/t_modules/t_main.py:32527 src/tauon/t_modules/t_main.py:33125
 msgid "Play, RC: Go to playing"
@@ -4231,9 +4199,8 @@ msgid "Back, RC: Toggle repeat, MC: Revert"
 msgstr "Indietro, RC: Cambia ripeti, MC: Annulla"
 
 #: src/tauon/t_modules/t_main.py:32652
-#, fuzzy
 msgid "Playback menu"
-msgstr "Tempo Riproduzioni"
+msgstr "Menu riproduzione"
 
 #: src/tauon/t_modules/t_main.py:32693 src/tauon/t_modules/t_main.py:32695
 msgid "Shuffle"
@@ -4260,9 +4227,8 @@ msgid "End of Playlist"
 msgstr "Fine della Scaletta"
 
 #: src/tauon/t_modules/t_main.py:35481
-#, fuzzy
 msgid "Fetching image..."
-msgstr "Sto recuperando..."
+msgstr "Sto recuperando la copertina..."
 
 #: src/tauon/t_modules/t_main.py:35748
 msgid "Search Tag"
@@ -4314,7 +4280,7 @@ msgstr "Connessione fallita!"
 
 #: src/tauon/t_modules/t_main.py:36290
 msgid "kbps"
-msgstr ""
+msgstr "kbps"
 
 #: src/tauon/t_modules/t_main.py:36323
 msgid "Name / Title"
@@ -4372,30 +4338,28 @@ msgstr "Visita Sito"
 #: src/tauon/t_modules/t_main.py:36696
 msgid "Type codes separated by spaces. Codes will be executed left to right."
 msgstr ""
+"Scrivi i codici separati da spazi. I codici verranno eseguiti da sinistra a "
+"destra."
 
 #: src/tauon/t_modules/t_main.py:36699
-#, fuzzy
 msgid "Select sources: (default: all playlists)"
-msgstr "Scegli una scaletta come fonte"
+msgstr "Scegli fonte: (predefinito: tutte le scalette)"
 
 #: src/tauon/t_modules/t_main.py:36702
-#, fuzzy
 msgid "Select source playlist by name"
-msgstr "Scegli una scaletta come fonte"
+msgstr "Scegli fonte scaletta dal nome"
 
 #: src/tauon/t_modules/t_main.py:36705
-#, fuzzy
 msgid "Select playlist itself"
-msgstr "Scaletta selezionata:"
+msgstr "Scegli la scaletta da sola"
 
 #: src/tauon/t_modules/t_main.py:36708
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr ""
+msgstr "Aggiungi tracce dalle fonti: (almeno 1 richiesta)"
 
 #: src/tauon/t_modules/t_main.py:36712
-#, fuzzy
 msgid "Search artist name"
-msgstr "Cerca Artista su Bandcamp"
+msgstr "Cerca nome artista"
 
 #: src/tauon/t_modules/t_main.py:36715
 msgid "Search genre"
@@ -4427,36 +4391,31 @@ msgstr "Conteggio Riproduzioni: >, <"
 
 #: src/tauon/t_modules/t_main.py:36745
 msgid "Duration (seconds): >, <"
-msgstr ""
+msgstr "Durata (secondi): >, <"
 
 #: src/tauon/t_modules/t_main.py:36748
-#, fuzzy
 msgid "Track rating 0-5: >, <, ="
-msgstr "Voti tracce"
+msgstr "Voto traccia 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:36751
-#, fuzzy
 msgid "Loved tracks"
 msgstr "Tracce piaciute"
 
 #: src/tauon/t_modules/t_main.py:36754
-#, fuzzy
 msgid "Has lyrics"
-msgstr "Ha testi"
+msgstr "Ha il testo"
 
 #: src/tauon/t_modules/t_main.py:36757
-#, fuzzy
 msgid "Search and keep"
-msgstr "Cerca Metadato"
+msgstr "Cerca e mantieni"
 
 #: src/tauon/t_modules/t_main.py:36760
-#, fuzzy
 msgid "Search and exclude"
-msgstr "Cerca Traccia su Genius"
+msgstr "Cerca ed escludi"
 
 #: src/tauon/t_modules/t_main.py:36774
 msgid "Sorters"
-msgstr ""
+msgstr "Ordinatori"
 
 #: src/tauon/t_modules/t_main.py:36778
 msgid "Shuffle tracks"
@@ -4610,15 +4569,15 @@ msgstr "Fine del percorso {N} di {T} ({Nb} album)"
 
 #: src/tauon/t_modules/t_main.py:38113
 msgid "Start of location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Inizio di posizione 1 di {N} ({Nb} album)"
 
 #: src/tauon/t_modules/t_main.py:38116
 msgid "Location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Posizione 1 di {N} ({Nb} album)"
 
 #: src/tauon/t_modules/t_main.py:38119
 msgid "Location 1 of {N}"
-msgstr ""
+msgstr "Posizione 1 di {N}"
 
 #: src/tauon/t_modules/t_main.py:38225
 msgid "No artists in playlist"
@@ -4665,9 +4624,8 @@ msgid "Queue to New Playlist"
 msgstr "Accoda su Nuova Scaletta"
 
 #: src/tauon/t_modules/t_main.py:38938
-#, fuzzy
 msgid "Queued Tracks"
-msgstr "Tracce preferite"
+msgstr "Tracce in coda"
 
 #: src/tauon/t_modules/t_main.py:39044
 msgid "Cancel Auto-Stop"
@@ -4679,31 +4637,27 @@ msgstr "Ferma Automatico"
 
 #: src/tauon/t_modules/t_main.py:39057
 msgid "Eh?"
-msgstr ""
+msgstr "Eh?"
 
 #: src/tauon/t_modules/t_main.py:39065
 msgid "Looks like it's gone now anyway"
-msgstr ""
+msgstr "Sembra che sia sparito comunque"
 
 #: src/tauon/t_modules/t_main.py:39180
-#, fuzzy
 msgid "Up Next:"
-msgstr "Prossima"
+msgstr "Prossimo:"
 
 #: src/tauon/t_modules/t_main.py:39431
-#, fuzzy
 msgid "{N} Track"
-msgstr "Prossima Traccia"
+msgstr "{N} Traccia"
 
 #: src/tauon/t_modules/t_main.py:39434
-#, fuzzy
 msgid "{N} Tracks"
-msgstr "Prossima Traccia"
+msgstr "{N} Tracce"
 
 #: src/tauon/t_modules/t_main.py:39898
-#, fuzzy
 msgid "No artist name found"
-msgstr "Nessun immagine dell'artista trovata."
+msgstr "Nome artista non trovato"
 
 #: src/tauon/t_modules/t_main.py:39909 src/tauon/t_modules/t_main.py:40151
 msgid "Looking up..."
@@ -4727,7 +4681,7 @@ msgstr "Nessuna biografia artista trovato"
 
 #: src/tauon/t_modules/t_main.py:40244
 msgid "Load Failed"
-msgstr ""
+msgstr "Caricamento fallito"
 
 #: src/tauon/t_modules/t_main.py:40266
 msgid "Download Artist Data"
@@ -4739,11 +4693,11 @@ msgstr "Pulisci Biografia"
 
 #: src/tauon/t_modules/t_main.py:40307
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "Nessun testo negli appunti"
 
 #: src/tauon/t_modules/t_main.py:40420
 msgid "Could not find matching track on GuitarParty"
-msgstr ""
+msgstr "Non posso trovare una traccia corrispondente su GuitarParty"
 
 #: src/tauon/t_modules/t_main.py:40739
 msgid "Edit..."
@@ -4779,39 +4733,35 @@ msgstr "Modifica colonne"
 
 #: src/tauon/t_modules/t_main.py:42051
 msgid "Image types other than PNG or JPEG are currently not supported"
-msgstr ""
+msgstr "Formati di immagine oltre a PNG e JPEG non sono attualmente supportati"
 
 #: src/tauon/t_modules/t_main.py:42053
-#, fuzzy
 msgid "The link does not appear to refer to an image file."
-msgstr "Applicazione per modificare i metadati non installata."
+msgstr "Il collegamento non sembra riferirsi ad un file immagine."
 
 #: src/tauon/t_modules/t_main.py:42058
-#, fuzzy
 msgid "Image download failed."
-msgstr "Rimozione immagine fallita."
+msgstr "Scaricamento copertina fallito."
 
 #: src/tauon/t_modules/t_main.py:42068 src/tauon/t_modules/t_main.py:42083
 msgid "You"
-msgstr ""
+msgstr "Tu"
 
 #: src/tauon/t_modules/t_main.py:42094 src/tauon/t_modules/t_main.py:42109
 msgid "Liked on Spotify"
-msgstr ""
+msgstr "Piaciuto su Spotify"
 
 #: src/tauon/t_modules/t_main.py:42346
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "Errore: nessun backend trovato"
 
 #: src/tauon/t_modules/t_main.py:42358
-#, fuzzy
 msgid "There are no more steps to undo."
-msgstr "Non ci sono fornitori di testi abilitati."
+msgstr "Non ci sono azioni da cui tornare indietro."
 
 #: src/tauon/t_modules/t_main.py:43208 src/tauon/t_modules/t_main.py:48415
-#, fuzzy
 msgid "Permission error encountered while writing database"
-msgstr "Permesso negato nell'accedere uno o più file"
+msgstr "Permesso negato nello scrivere il database"
 
 #: src/tauon/t_modules/t_main.py:43410
 msgid "Could not access! Possible insufficient Flatpak permissions."
@@ -4822,10 +4772,14 @@ msgid ""
 "Due to Spotify authentication changes, local Spotify audio playback may be "
 "broken"
 msgstr ""
+"A causa di cambiamenti nell'accesso a Spotify, la riproduzione locale su "
+"Spotify potrebbe non funzionare"
 
 #: src/tauon/t_modules/t_main.py:43487
 msgid "See MENU > SETTINGS > ACCOUNT > SPOTIFY > Enable local audio playback."
 msgstr ""
+"Vedi MENU > IMPOSTAZIONI > ACCOUNT > SPOTIFY > Abilita riproduzione locale "
+"audio."
 
 #: src/tauon/t_modules/t_main.py:44388
 msgid "Enabled auto theme"
@@ -4840,18 +4794,16 @@ msgid "First select a source track by copying it into clipboard"
 msgstr "Scegli prima una traccia sorgente copiandola negli appunti"
 
 #: src/tauon/t_modules/t_main.py:44729
-#, fuzzy
 msgid "Track already has lyrics"
-msgstr "Traccia già piaciuta"
+msgstr "La traccia ha già il testo"
 
 #: src/tauon/t_modules/t_main.py:44916
-#, fuzzy
 msgid "Error loading theme file"
-msgstr "Errore nel cancellare il file"
+msgstr "Errore nel caricare il file del tema"
 
 #: src/tauon/t_modules/t_main.py:45748 src/tauon/t_modules/t_main.py:45762
 msgid "Various Artists"
-msgstr ""
+msgstr "Artisti Vari"
 
 #: src/tauon/t_modules/t_main.py:45994
 msgid "Rescan folders complete."
@@ -4859,7 +4811,7 @@ msgstr "Ricontrollo cartelle completato."
 
 #: src/tauon/t_modules/t_main.py:46035
 msgid "Auto sort skipped because playlist is locked."
-msgstr ""
+msgstr "Ordinamento automatico saltato perché la scaletta è bloccata."
 
 #: src/tauon/t_modules/t_main.py:46644
 msgid "Queue is Empty"
@@ -4883,7 +4835,7 @@ msgstr "Campione qualità"
 
 #: src/tauon/t_modules/t_main.py:47120
 msgid " kbps"
-msgstr ""
+msgstr " kbps"
 
 #: src/tauon/t_modules/t_main.py:47162 src/tauon/t_modules/t_main.py:47184
 msgid " of "
@@ -4945,32 +4897,31 @@ msgstr "Cancella alcuni file non necessari dalla cartella"
 
 #: src/tauon/t_modules/t_main.py:47400
 msgid "PATH"
-msgstr ""
+msgstr "PERCORSO"
 
 #: src/tauon/t_modules/t_main.py:47407
 msgid "OLD"
-msgstr ""
+msgstr "VECCHIO"
 
 #: src/tauon/t_modules/t_main.py:47412
 msgid "NEW"
-msgstr ""
+msgstr "NUOVO"
 
 #: src/tauon/t_modules/t_main.py:47494
 msgid "Folder filter mode. Enter path segment."
-msgstr ""
+msgstr "Modalità filtro cartelle. Inserisci segmento percorso."
 
 #: src/tauon/t_modules/t_main.py:47498
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
-msgstr ""
+msgstr "SU / GIÙ per navigare. MAIUSC + INVIO per una nuova scaletta."
 
 #: src/tauon/t_modules/t_main.py:47500
 msgid "Quick find"
-msgstr ""
+msgstr "Ricerca veloce"
 
 #: src/tauon/t_modules/t_main.py:47565
-#, fuzzy
 msgid "Search Results"
-msgstr "Cerca testo…"
+msgstr "Risultati Ricerca"
 
 #: src/tauon/t_modules/t_main.py:47788
 msgid "Loved track"
@@ -4981,92 +4932,91 @@ msgid "Un-Loved track"
 msgstr "Tracce non piaciute"
 
 #: src/tauon/t_modules/t_main.py:47913
-#, fuzzy
 msgid "Lines copied to clipboard"
-msgstr "URL copiato negli appunti"
+msgstr "Linee copiate negli appunti"
 
 #: src/tauon/t_modules/t_phazor.py:172
 msgid "SPP: Error, librespot not found"
-msgstr ""
+msgstr "SPP: Errore, librespot non trovato"
 
 #: src/tauon/t_modules/t_phazor.py:1175
 msgid "Error loading track"
-msgstr ""
+msgstr "Errore caricamento traccia"
 
 #: src/tauon/t_modules/t_spot.py:85
 msgid "Dependency Tekore not found"
-msgstr ""
+msgstr "Dipendenza Tekore non trovata"
 
 #: src/tauon/t_modules/t_spot.py:151
-#, fuzzy
 msgid "Please re-authenticate Spotify in settings"
-msgstr "Per favore autorizzare Spotify nelle impostazioni!"
+msgstr "Per favore autorizza Spotify di nuovo nelle impostazioni"
 
 #: src/tauon/t_modules/t_spot.py:154
-#, fuzzy
 msgid "Please authenticate Spotify in settings"
-msgstr "Per favore autorizzare Spotify nelle impostazioni!"
+msgstr "Per favore autorizza Spotify nelle impostazioni"
 
 #: src/tauon/t_modules/t_spot.py:165
 msgid "python-tekore not installed"
-msgstr ""
+msgstr "python-tekore non installato"
 
 #: src/tauon/t_modules/t_spot.py:166
 msgid ""
 "If you installed via AUR, you'll need to install this optional dependency, "
 "then restart Tauon."
 msgstr ""
+"Se hai installato l'app con AUR, devi installare anche questa dipendenza, "
+"poi riavviare Tauon."
 
 #: src/tauon/t_modules/t_spot.py:169
 msgid "Invalid client ID. See Spotify tab in settings."
-msgstr ""
+msgstr "ID client invalido. Vedi la scheda Spotify nelle impostazioni."
 
 #: src/tauon/t_modules/t_spot.py:232
 msgid "It looks like there are no more active Spotify devices"
-msgstr ""
+msgstr "Sembra non ci siano dispositivi Spotify attivi"
 
 #: src/tauon/t_modules/t_spot.py:437
 msgid "Nothing playing"
-msgstr ""
+msgstr "Niente in riproduzione"
 
 #: src/tauon/t_modules/t_spot.py:448
 msgid "Error - Tauon device not found"
-msgstr ""
+msgstr "Errore - dispositivo Tauon non trovato"
 
 #: src/tauon/t_modules/t_spot.py:462
 msgid ""
 "Error. You may need to click Authorise in Settings > Accounts > Spotify."
 msgstr ""
+"Errore. Potresti dover cliccare Autorizza in Impostazioni > Account > "
+"Spotify."
 
 #: src/tauon/t_modules/t_spot.py:909
 msgid "Spotify upload error!"
-msgstr ""
+msgstr "Errore di invio per Spotify!"
 
 #: src/tauon/t_modules/t_spot.py:1243
-#, fuzzy
 msgid "No Spotify context found"
-msgstr "Account Spotify connesso"
+msgstr "Nessun contesto di Spotify trovato"
 
 #: src/tauon/t_modules/t_stream.py:146
-#, fuzzy
 msgid "Failed to establish a connection"
 msgstr "Impossibile stabilire una connessione"
 
 #: src/tauon/t_modules/t_stream.py:524
 msgid "Data malformation detected. Stream aborted."
-msgstr ""
+msgstr "Malformazione dei dati rilevata. Stream interrotto."
 
 #: src/tauon/t_modules/t_tidal.py:41 src/tauon/t_modules/t_tidal.py:64
 msgid "Tidalapi package not loaded"
-msgstr ""
+msgstr "Pacchetto tidalapi non caricato"
 
 #: src/tauon/t_modules/t_tidal.py:91
 msgid "Failed to load TIDAL login, please try log in again"
-msgstr ""
+msgstr "Errore di accesso a TIDAL, per favore prova di nuovo"
 
 #: src/tauon/t_modules/t_webserve.py:761
 msgid "You can close this now and return to Tauon Music Box"
-msgstr ""
+msgstr "Puoi chiudere questa finestra adesso e ritornare a Tauon Music Box"
 
 #~ msgid "Queue %d"
 #~ msgstr "Coda %d"
