@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import os
 import urllib.parse
+import sdl3
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -22,9 +23,9 @@ if TYPE_CHECKING:
 
 # TODO(Martin): Dupe code here to make things work in a dirty fashion until t_main gets a bigger rework
 #from tauon.t_modules.t_main import copy_from_clipboard
-from sdl2 import SDL_GetClipboardText
+
 def copy_from_clipboard():
-	return SDL_GetClipboardText().decode()
+	return sdl3.SDL_GetClipboardText().decode()
 # ENDTODO
 
 class GuitarChords:

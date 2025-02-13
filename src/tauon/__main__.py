@@ -20,47 +20,11 @@ import logging
 import os
 import pickle
 import sys
-from ctypes import c_int, pointer
+from ctypes import c_int, pointer, c_float, byref
 from pathlib import Path
 
 from gi.repository import GLib
-from sdl2 import (
-	SDL_BLENDMODE_BLEND,
-	SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH,
-	SDL_HINT_RENDER_SCALE_QUALITY,
-	SDL_HINT_VIDEO_ALLOW_SCREENSAVER,
-	SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR,
-	SDL_INIT_VIDEO,
-	SDL_MESSAGEBOX_ERROR,
-	SDL_RENDERER_ACCELERATED,
-	SDL_RENDERER_PRESENTVSYNC,
-	SDL_WINDOW_ALLOW_HIGHDPI,
-	SDL_WINDOW_BORDERLESS,
-	SDL_WINDOW_FULLSCREEN_DESKTOP,
-	SDL_WINDOW_HIDDEN,
-	SDL_WINDOW_RESIZABLE,
-	SDL_WINDOWPOS_UNDEFINED,
-	SDL_CreateRenderer,
-	SDL_CreateTextureFromSurface,
-	SDL_CreateWindow,
-	SDL_DestroyTexture,
-	SDL_FreeSurface,
-	SDL_GetError,
-	SDL_GetWindowSize,
-	SDL_GL_GetDrawableSize,
-	SDL_Init,
-	SDL_MaximizeWindow,
-	SDL_Rect,
-	SDL_RenderClear,
-	SDL_RenderCopy,
-	SDL_RenderPresent,
-	SDL_SetHint,
-	SDL_SetRenderDrawBlendMode,
-	SDL_SetRenderDrawColor,
-	SDL_SetWindowOpacity,
-	SDL_ShowSimpleMessageBox,
-)
-from sdl2.sdlimage import IMG_Load
+import sdl3
 
 install_directory: Path = Path(__file__).resolve().parent
 sys.path.append(str(install_directory.parent))
@@ -109,7 +73,6 @@ t_agent = "TauonMusicBox/" + n_version
 
 logging.info(f"{t_title} {t_version}")
 logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
-logging.info("Arguments: " + " ".join(sys.argv))
 
 # Early arg processing
 def transfer_args_and_exit() -> None:
@@ -247,11 +210,10 @@ allow_hidpi = True
 if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(user_directory / "nohidpi").is_file():
 	allow_hidpi = False
 
-SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
-SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
-SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
-# SDL_SetHint(b"SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR", b"0")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
+# sdl3.SDL_SetHint(b"SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR", b"0")
 
 draw_border = True
 w = 1120
@@ -318,45 +280,44 @@ if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == 
 if Path(user_directory / "x11").exists():
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
-SDL_Init(SDL_INIT_VIDEO)
-err = SDL_GetError()
+
+sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
+
+err = sdl3.SDL_GetError()
 if err and "GLX" in err.decode():
 	logging.error(f"SDL init error: {err.decode()}")
-	SDL_ShowSimpleMessageBox(
-		SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
+	sdl3.SDL_ShowSimpleMessageBox(
+		sdl3.SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
 		b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
 	sys.exit(1)
 
 window_title = t_title
 window_title = window_title.encode("utf-8")
 
-flags = SDL_WINDOW_RESIZABLE
-
-if allow_hidpi:
-	flags |= SDL_WINDOW_ALLOW_HIGHDPI
+flags = sdl3.SDL_WINDOW_RESIZABLE | sdl3.SDL_WINDOW_TRANSPARENT
 
 if draw_border and not fs_mode:
-	flags |= SDL_WINDOW_BORDERLESS
+	flags |= sdl3.SDL_WINDOW_BORDERLESS
 
 if fs_mode:
-	flags |= SDL_WINDOW_FULLSCREEN_DESKTOP
+	flags |= sdl3.SDL_WINDOW_FULLSCREEN_DESKTOP
 
 if old_window_position is None:
-	o_x = SDL_WINDOWPOS_UNDEFINED
-	o_y = SDL_WINDOWPOS_UNDEFINED
+	o_x = sdl3.SDL_WINDOWPOS_UNDEFINED
+	o_y = sdl3.SDL_WINDOWPOS_UNDEFINED
 else:
 	o_x = old_window_position[0]
 	o_y = old_window_position[1]
 
 if "--tray" in sys.argv:
-	flags |= SDL_WINDOW_HIDDEN
+	flags |= sdl3.SDL_WINDOW_HIDDEN
 
 
-t_window = SDL_CreateWindow(
+t_window = sdl3.SDL_CreateWindow(  # todo use SDL_CreateWindowAndRenderer()
 	window_title,
-	o_x, o_y,
+	# o_x, o_y,
 	logical_size[0], logical_size[1],
-	flags) # | SDL_WINDOW_FULLSCREEN)
+	flags)
 
 if not t_window:
 	logging.error("ERROR CREATING WINDOW!")
@@ -366,52 +327,45 @@ if not t_window:
 	logging.error(f"Size 0: {logical_size[0]}")
 	logging.error(f"Size 1: {logical_size[1]}")
 	logging.error(f"Flags: {flags}")
-	sdl_err = SDL_GetError().decode()
-	logging.error(f"SDL Error: {sdl_err}")
-	if sdl_err == "x11 not available":
-		x11_path = user_directory / "x11"
-		if x11_path.exists():
-			logging.critical("Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034")
-			x11_path.unlink()
-			os.environ["SDL_VIDEODRIVER"] = "wayland"
-			t_window = SDL_CreateWindow(
-				window_title,
-				o_x, o_y,
-				logical_size[0], logical_size[1],
-				flags)
-			if not t_window:
-				logging.error(f"Failed to create Wayland fallback window - SDL Error: {SDL_GetError()}")
-				sys.exit(1)
-		else:
-			logging.critical(f"Failed to find {x11_path} but got 'x11 not available' error, hm?")
-			sys.exit(1)
-	else:
-		sys.exit(1)
+	logging.error(f"SDL Error: {sdl3.SDL_GetError()}")
+	sys.exit(1)
 
 if maximized:
-	SDL_MaximizeWindow(t_window)
+	sdl3.SDL_MaximizeWindow(t_window)
 
-renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
+drivers = []
+i = 0
+while True:
+	x = sdl3.SDL_GetRenderDriver(i)
+	i += 1
+	if x is None:
+		break
+	drivers.append(x)
+
+logging.debug(f"SDL availiable drivers: {drivers}")
+
+renderer = sdl3.SDL_CreateRenderer(t_window, b"opengl")  # sdl3.SDL_RENDERER_PRESENTVSYNC
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")
 	logging.error(f"SDL Error: {SDL_GetError()}")
 	sys.exit(1)
 
-SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-SDL_SetWindowOpacity(t_window, window_opacity)
+sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+sdl3.SDL_SetWindowOpacity(t_window, window_opacity)
 
-SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
-SDL_RenderClear(renderer)
+sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+sdl3.SDL_RenderClear(renderer)
 
+logging.info(f"SDL window system: {sdl3.SDL_GetCurrentVideoDriver().decode()}")
 
 i_x = pointer(c_int(0))
 i_y = pointer(c_int(0))
-SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 window_size[0] = i_x.contents.value
 window_size[1] = i_y.contents.value
 
-SDL_GetWindowSize(t_window, i_x, i_y)
+sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
@@ -425,18 +379,26 @@ if scale != 1:
 		img_path = img_path2
 	del img_path2
 
-raw_image = IMG_Load(str(img_path).encode())
-sdl_texture = SDL_CreateTextureFromSurface(renderer, raw_image)
-w = raw_image.contents.w
-h = raw_image.contents.h
-rect = SDL_Rect(window_size[0] // 2 - w // 2, window_size[1] // 2 - h // 2, w, h)
+sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
+sdl3.SDL_RenderFillRect(renderer, None)
 
-SDL_RenderCopy(renderer, sdl_texture, None, rect)
+raw_image = sdl3.IMG_Load(str(img_path).encode())
+texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
+i_x = c_float(0.0)
+i_y = c_float(0.0)
+sdl3.SDL_GetTextureSize(texture, byref(i_x), byref(i_y))
+w = i_x.value
+h = i_y.value
+rect = sdl3.SDL_FRect(window_size[0] // 2 - w // 2, window_size[1] // 2 - h // 2, w, h)
+sdl3.SDL_RenderTexture(renderer, texture, None, rect)
 
-SDL_RenderPresent(renderer)
 
-SDL_FreeSurface(raw_image)
-SDL_DestroyTexture(sdl_texture)
+
+
+sdl3.SDL_RenderPresent(renderer)
+
+sdl3.SDL_DestroySurface(raw_image)
+sdl3.SDL_DestroyTexture(texture)
 
 holder                        = t_bootstrap.holder
 holder.t_window               = t_window
@@ -466,12 +428,13 @@ holder.instance_lock          = fp
 holder.log                    = log
 
 del raw_image
-del sdl_texture
+del texture
 del w
 del h
 del rect
 del flags
 del img_path
+
 
 def main() -> None:
 	"""Launch Tauon by means of importing t_main.py"""
