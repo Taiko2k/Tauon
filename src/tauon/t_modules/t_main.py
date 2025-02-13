@@ -8354,6 +8354,8 @@ class ToolTip:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.gui = tauon.gui
+		self.ddt = tauon.bag.ddt
+		self.colours = tauon.bag.colours
 		self.text = ""
 		self.h = 24 * self.gui.scale
 		self.w = 62 * self.gui.scale
@@ -8373,25 +8375,25 @@ class ToolTip:
 
 			self.x = x
 			self.y = y
-			self.w = ddt.get_text_w(text, self.font) + 20 * self.gui.scale
+			self.w = self.ddt.get_text_w(text, self.font) + 20 * self.gui.scale
 
 		self.called = True
 
 		if self.a is False:
 			self.timer.set()
-			gui.frame_callback_list.append(TestTimer(self.trigger))
+			self.gui.frame_callback_list.append(TestTimer(self.trigger))
 		self.a = True
 
 	def render(self) -> None:
 		if self.called is True:
 			if self.timer.get() > self.trigger:
-				ddt.rect((self.x, self.y, self.w, self.h), colours.box_button_background)
-				# ddt.rect((self.x, self.y, self.w, self.h), colours.grey(45))
-				ddt.text(
-					(self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text,
-					colours.menu_text, self.font, bg=colours.box_button_background)
+				self.ddt.rect((self.x, self.y, self.w, self.h), self.colours.box_button_background)
+				# ddt.rect((self.x, self.y, self.w, self.h), self.colours.grey(45))
+				self.ddt.text(
+					(self.x + int(self.w / 2), self.y + 4 * self.gui.scale, 2), self.text,
+					self.colours.menu_text, self.font, bg=self.colours.box_button_background)
 			else:
-				# gui.update += 1
+				# self.gui.update += 1
 				pass
 		else:
 			self.timer.set()
