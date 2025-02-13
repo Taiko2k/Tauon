@@ -24162,8 +24162,8 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 		album_mode_art_size = int(album_mode_art_size * diff_ratio)
 
 def get_global_mouse():
-	i_y = pointer(c_int(0))
-	i_x = pointer(c_int(0))
+	i_y = pointer(c_float(0))
+	i_x = pointer(c_float(0))
 	sdl3.SDL_GetGlobalMouseState(i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
 
@@ -38438,7 +38438,7 @@ def drop_file(target: str):
 	global mouse_down
 	global drag_mode
 
-	if system != "windows" and sdl3.SDL_version >= 204:
+	if system != "windows":
 		gmp = get_global_mouse()
 		gwp = get_window_position()
 		i_x = gmp[0] - gwp[0]
@@ -41956,8 +41956,8 @@ while pctl.running:
 		if event.type == sdl3.SDL_EVENT_DROP_FILE:
 
 			power += 5
-			dropped_file_sdl = event.drop.file
-			#logging.info(dropped_file_sdl)
+			dropped_file_sdl = event.drop.data
+			logging.info(f"Dropped data: {dropped_file_sdl}")
 			target = str(urllib.parse.unquote(
 				dropped_file_sdl.decode("utf-8", errors="surrogateescape"))).replace("file:///", "/").replace("\r", "")
 			#logging.info(target)
