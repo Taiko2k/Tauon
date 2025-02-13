@@ -4957,6 +4957,9 @@ class Tauon:
 		self.pref_box                             = Over(tauon=self)
 		self.fader                                = Fader(tauon=self)
 		self.album_art_gen                        = AlbumArt(tauon=self)
+		self.tool_tip                             = ToolTip(tauon=self)
+		self.tool_tip2                            = ToolTip(tauon=self)
+		self.tool_tip2.trigger                    = 1.8
 		self.cache_directory:                Path = bag.dirs.cache_directory
 		self.user_directory:          Path | None = bag.dirs.user_directory
 		self.music_directory:         Path | None = bag.dirs.music_directory
@@ -5997,7 +6000,7 @@ class Drawing:
 
 		if tauon.coll(rect):
 			if tooltip:
-				tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
+				tauon.tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
 			ddt.rect(rect, background_highlight_colour)
 
 			# if background_highlight_colour[3] != 255:
@@ -15118,7 +15121,7 @@ class BottomBarType1:
 						else:
 							pctl.play()
 						inp.mouse_click = False
-					tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
+					tauon.tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
 					if inp.right_click:
 						pctl.show_current(highlight=True)
@@ -15143,7 +15146,7 @@ class BottomBarType1:
 						pctl.pause()
 					if inp.right_click:
 						pctl.show_current(highlight=True)
-					tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
 				# ddt.rect_r(rect,[255,0,0,255], True)
 				ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
@@ -15159,7 +15162,7 @@ class BottomBarType1:
 					pctl.stop()
 				if inp.right_click:
 					pctl.auto_stop ^= True
-				tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
+				tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
 			# ddt.rect_r(rect,[255,0,0,255], True)
@@ -15191,9 +15194,9 @@ class BottomBarType1:
 				if inp.middle_click:
 					pctl.advance(rr=True)
 					gui.tool_tip_lock_off_f = True
-				# tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
+				# tauon.tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
 				# if not gui.tool_tip_lock_off_f:
-				#     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+				# 	tauon.tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
 			else:
 				gui.tool_tip_lock_off_f = False
 
@@ -15226,7 +15229,7 @@ class BottomBarType1:
 					pctl.revert()
 					gui.tool_tip_lock_off_b = True
 				if not gui.tool_tip_lock_off_b:
-					tool_tip2.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
+					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
 			else:
 				gui.tool_tip_lock_off_b = False
 
@@ -15243,7 +15246,7 @@ class BottomBarType1:
 			tauon.fields.add(rect)
 			if tauon.coll(rect):
 				if not tauon.extra_menu.active:
-					tool_tip.test(x, y - 28 * gui.scale, _("Playback menu"))
+					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Playback menu"))
 				rpbc = colours.mode_button_over
 				if inp.mouse_click:
 					tauon.extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
@@ -15283,9 +15286,9 @@ class BottomBarType1:
 					rpbc = colours.mode_button_active
 					off = False
 					if tauon.coll(rect):
-						tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
+						tauon.tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
 				elif tauon.coll(rect):
-					tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
+					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
 					if self.random_click_off is True:
 						rpbc = colours.mode_button_off
 					elif pctl.random_mode is True:
@@ -15341,17 +15344,17 @@ class BottomBarType1:
 					off = False
 					if tauon.coll(rect):
 						if pctl.album_repeat_mode:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
 						else:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
 				elif tauon.coll(rect):
 
 					# Tooltips. But don't show tooltips if menus open
 					if not tauon.repeat_menu.active and not tauon.shuffle_menu.active:
 						if pctl.album_repeat_mode:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
 						else:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
 
 					if self.repeat_click_off is True:
 						rpbc = colours.mode_button_off
@@ -15697,7 +15700,7 @@ class BottomBarType_ao1:
 						else:
 							pctl.play()
 						inp.mouse_click = False
-					tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
+					tauon.tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
 					if inp.right_click:
 						pctl.show_current(highlight=True)
@@ -15722,7 +15725,7 @@ class BottomBarType_ao1:
 						pctl.pause()
 					if inp.right_click:
 						pctl.show_current(highlight=True)
-					tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
 				# ddt.rect_r(rect,[255,0,0,255], True)
 				ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
@@ -15755,7 +15758,7 @@ class BottomBarType_ao1:
 					gui.tool_tip_lock_off_f = True
 				# tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
 				# if not gui.tool_tip_lock_off_f:
-				#     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+				# 	tauon.tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
 			else:
 				gui.tool_tip_lock_off_f = False
 
@@ -22816,7 +22819,7 @@ class ViewBox:
 		fun = None
 		col = False
 		if self.tauon.coll(rect):
-			tool_tip.test(x + asset.w + 10 * self.gui.scale, y - 15 * self.gui.scale, name)
+			self.tauon.tool_tip.test(x + asset.w + 10 * self.gui.scale, y - 15 * self.gui.scale, name)
 
 			col = True
 			if self.gui.level_2_click:
@@ -40733,9 +40736,6 @@ def main(holder: Holder) -> None:
 
 
 
-	tool_tip = ToolTip(tauon)
-	tool_tip2 = ToolTip(tauon)
-	tool_tip2.trigger = 1.8
 	track_box_path_tool_timer = Timer()
 
 	columns_tool_tip = ToolTip3(tauon)
@@ -46207,8 +46207,8 @@ def main(holder: Holder) -> None:
 			if tauon.view_box.active:
 				tauon.view_box.render()
 
-			tool_tip.render()
-			tool_tip2.render()
+			tauon.tool_tip.render()
+			tauon.tool_tip2.render()
 
 			if console.show:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
