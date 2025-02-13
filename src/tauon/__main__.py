@@ -206,9 +206,6 @@ if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	fs_mode = True
 	logging.info("Running in GAMESCOPE MODE")
 
-allow_hidpi = True
-if sys.platform == "win32" and sys.getwindowsversion().major < 10 or Path(user_directory / "nohidpi").is_file():
-	allow_hidpi = False
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
@@ -294,7 +291,7 @@ if err and "GLX" in err.decode():
 window_title = t_title
 window_title = window_title.encode("utf-8")
 
-flags = sdl3.SDL_WINDOW_RESIZABLE | sdl3.SDL_WINDOW_TRANSPARENT
+flags = sdl3.SDL_WINDOW_RESIZABLE | sdl3.SDL_WINDOW_TRANSPARENT | sdl3.SDL_WINDOW_HIGH_PIXEL_DENSITY
 
 if draw_border and not fs_mode:
 	flags |= sdl3.SDL_WINDOW_BORDERLESS
