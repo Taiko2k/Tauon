@@ -40252,88 +40252,12 @@ if not maximized and gui.maximized:
 
 # logging.error(SDL_GetError())
 
-# t_window = SDL_CreateShapedWindow(
-# window_title,
-#	SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-#	window_size[0], window_size[1],
-#	flags)
-
-# logging.error(SDL_GetError())
+props = sdl3.SDL_GetWindowProperties(t_window)
 
 if system == "Windows" or msys:
-	gui.window_id = sss.info.win.window
+	gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
+	#gui.window_id = sss.info.win.window
 
-
-# try:
-#	 SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-#
-# except Exception:
-#	 logging.exception("old version of SDL detected")
-
-# get window surface and set up renderer
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC)
-
-# renderer = SDL_CreateRenderer(t_window, 0, SDL_RENDERER_ACCELERATED)
-#
-# # window_surface = SDL_GetWindowSurface(t_window)
-#
-# SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
-#
-# display_index = SDL_GetWindowDisplayIndex(t_window)
-# display_bounds = SDL_Rect(0, 0)
-# SDL_GetDisplayBounds(display_index, display_bounds)
-#
-# icon = IMG_Load(os.path.join(asset_directory, "icon-64.png").encode())
-# SDL_SetWindowIcon(t_window, icon)
-# SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best".encode())
-#
-# SDL_SetWindowMinimumSize(t_window, round(560 * gui.scale), round(330 * gui.scale))
-#
-#
-# gui.max_window_tex = 1000
-# if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-#
-#	 while window_size[0] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#	 while window_size[1] > gui.max_window_tex:
-#		 gui.max_window_tex += 1000
-#
-# gui.ttext = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# # gui.pl_surf = SDL_CreateRGBSurfaceWithFormat(0, gui.max_window_tex, gui.max_window_tex, 32, SDL_PIXELFORMAT_RGB888)
-#
-# SDL_SetTextureBlendMode(gui.ttext, SDL_BLENDMODE_BLEND)
-#
-# gui.spec2_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec2_w, gui.spec2_y)
-# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-#
-# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
-#
-# SDL_SetRenderTarget(renderer, None)
-#
-# gui.main_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-# gui.main_texture_overlay_temp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.max_window_tex, gui.max_window_tex)
-#
-# SDL_SetRenderTarget(renderer, gui.main_texture)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-# SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, SDL_BLENDMODE_BLEND)
-# SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-#
-# SDL_RenderClear(renderer)
-#
-# gui.abc = SDL_Rect(0, 0, gui.max_window_tex, gui.max_window_tex)
-# gui.pl_update = 2
-#
-# SDL_SetWindowOpacity(t_window, prefs.window_opacity)
-
-# gui.spec1_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec_w, gui.spec_h)
-# gui.spec4_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.spec4_w, gui.spec4_h)
-# gui.spec_level_tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, gui.level_ww, gui.level_hh)
-# SDL_SetTextureBlendMode(gui.spec4_tex, SDL_BLENDMODE_BLEND)
 
 mouse_up = False
 mouse_wheel = 0
