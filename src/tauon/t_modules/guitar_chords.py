@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import os
 import urllib.parse
+import sdl3
 from pathlib import Path
 from typing import TYPE_CHECKING
 

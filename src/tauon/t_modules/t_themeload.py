@@ -26,16 +26,6 @@ import os
 from typing import TYPE_CHECKING
 
 from PIL import Image
-from sdl2 import (
-	SDL_CreateTextureFromSurface,
-	SDL_DestroyTexture,
-	SDL_FreeSurface,
-	SDL_Rect,
-	SDL_RenderCopy,
-	SDL_SetTextureAlphaMod,
-	rw_from_object,
-)
-from sdl2.sdlimage import IMG_Load_RW
 
 from tauon.t_modules.t_extra import rgb_add_hls, test_lumi
 
