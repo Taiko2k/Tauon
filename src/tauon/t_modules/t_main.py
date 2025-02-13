@@ -1372,8 +1372,10 @@ class GetSDLInput:
 		self.mouse_capture = False
 
 	def mouse(self) -> tuple[int, int]:
-		SDL_PumpEvents()
-		SDL_GetMouseState(self.i_x, self.i_y)
+		sdl3.SDL_PumpEvents()
+		i_y = pointer(c_float(0))
+		i_x = pointer(c_float(0))
+		sdl3.SDL_GetMouseState(i_x, i_y)
 		return (int(self.i_x.contents.value / self.logical_size[0] * self.window_size[0]),
 			int(self.i_y.contents.value / self.logical_size[0] * self.window_size[0]))
 
@@ -13545,6 +13547,7 @@ class TopPanel:
 		self.fonts           = tauon.bag.fonts
 		self.colours         = tauon.bag.colours
 		self.ddt             = tauon.bag.ddt
+		self.renderer        = tauon.bag.renderer
 		self.draw_max_button = bag.draw_max_button
 		self.window_size     = bag.window_size
 		self.height          = self.gui.panelY
@@ -13625,9 +13628,9 @@ class TopPanel:
 			gui.update_on_drag = True
 
 		# Draw the background
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		if prefs.shuffle_lock and not gui.compact_bar:
 			colour = [250, 250, 250, 255]
@@ -13714,7 +13717,7 @@ class TopPanel:
 				update_layout = True
 				gui.update += 1
 
-			if right_click:
+			if inp.right_click:
 				# prefs.artist_list ^= True
 				lsp_menu.activate(position=(5 * gui.scale, gui.panelY))
 				update_layout_do(tauon=tauon)
@@ -14538,6 +14541,7 @@ class BottomBarType1:
 		self.colours     = tauon.bag.colours
 		self.window_size = tauon.bag.window_size
 		self.ddt         = tauon.bag.ddt
+		self.renderer    = tauon.bag.renderer
 		self.mode        = 0
 
 		self.seek_time = 0
@@ -14602,9 +14606,9 @@ class BottomBarType1:
 		colours     = self.colours
 		fonts       = self.tauon.bag.fonts
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background)
 
@@ -23392,31 +23396,6 @@ class Undo:
 	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
-class GetSDLInput:
-
-	def __init__(self):
-		self.i_y = pointer(c_int(0))
-		self.i_x = pointer(c_int(0))
-
-		self.mouse_capture_want = False
-		self.mouse_capture = False
-
-	def mouse(self):
-		sdl3.SDL_PumpEvents()
-		i_y = pointer(c_float(0))
-		i_x = pointer(c_float(0))
-		sdl3.SDL_GetMouseState(i_x, i_y)
-		return int(i_x.contents.value / logical_size[0] * window_size[0]), int(
-			i_y.contents.value / logical_size[0] * window_size[0])
-
-	def test_capture_mouse(self):
-		if not self.mouse_capture and self.mouse_capture_want:
-			SDL_CaptureMouse(SDL_TRUE)
-			self.mouse_capture = True
-		elif self.mouse_capture and not self.mouse_capture_want:
-			SDL_CaptureMouse(SDL_FALSE)
-			self.mouse_capture = False
-
 class WinTask:
 	def __init__(self):
 		self.start = time.time()
@@ -23496,11 +23475,11 @@ class Bag:
 	dirs:                   Directories
 	prefs:                  Prefs
 	formats:                Formats
-	renderer:               SDL_Renderer
+	renderer:               sdl3.SDL_Renderer
 	ddt:                    TDraw
 	fonts:                  Fonts
 	tls_context:            ssl.SSLContext
-	sdl_syswminfo:          SDL_SysWMinfo
+	#sdl_syswminfo:          SDL_SysWMinfo
 	macos:                  bool
 	msys:                   bool
 	phone:                  bool
@@ -39526,7 +39505,7 @@ def main(holder: Holder) -> None:
 		fonts=fonts,
 		formats=formats,
 		renderer=renderer,
-		sdl_syswminfo=sss,
+		#sdl_syswminfo=sss,
 		system=system,
 		pump=True,
 		draw_min_button=draw_min_button,
@@ -40153,8 +40132,8 @@ def main(holder: Holder) -> None:
 	# sss = SDL_SysWMinfo()
 	# SDL_GetWindowWMInfo(t_window, sss)
 
-if prefs.use_gamepad:
-	sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
+	if prefs.use_gamepad:
+		sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
 
 	if msys and win_ver >= 10:
@@ -40392,8 +40371,8 @@ if prefs.use_gamepad:
 
 	# logging.error(SDL_GetError())
 
-	if system == "Windows" or msys:
-		gui.window_id = sss.info.win.window
+	#if system == "Windows" or msys:
+	#	gui.window_id = sss.info.win.window
 
 
 
@@ -40672,7 +40651,7 @@ if prefs.use_gamepad:
 	text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 	text_box_canvas = sdl3.SDL_CreateTexture(
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(text_box_canvas_rect.w), round(text_box_canvas_rect.h))
-sdl3.	SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+	sdl3.SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 
 	rename_text_area = TextBox()
 	gst_output_field = TextBox2()
@@ -41892,7 +41871,7 @@ sdl3.	SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 		# bm.get('main')
 		# time.sleep(100)
 
-	if inp.k_input:
+		if inp.k_input:
 			keymaps.hits.clear()
 
 			d_mouse_click = False
@@ -41996,24 +41975,24 @@ sdl3.	SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 				gui.update += 2
 				#print(event.gbutton.button)
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-					if rt:
-						toggle_random()
-					else:
-						pctl.advance()
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-					if rt:
-						toggle_repeat()
-					else:
-						pctl.back()
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
-					if rt:
-						pctl.show_current(highlight=True)
-					elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
-							pctl.selected_ready() and pctl.default_playlist[
-						pctl.selected_in_playlist] == pctl.playing_object().index:
-						pctl.play_pause()
-					else:
-						inp.key_return_press = True
+				if rt:
+					toggle_random()
+				else:
+					pctl.advance()
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+				if rt:
+					toggle_repeat()
+				else:
+					pctl.back()
+			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
+				if rt:
+					pctl.show_current(highlight=True)
+				elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
+						pctl.selected_ready() and pctl.default_playlist[
+					pctl.selected_in_playlist] == pctl.playing_object().index:
+					pctl.play_pause()
+				else:
+					inp.key_return_press = True
 				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
 					if rt:
 						random_track()
@@ -42285,8 +42264,8 @@ sdl3.	SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 				power += 6
 				inp.mouse_wheel += event.wheel.y
 
-			gui.update += 1
-			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST :
+				gui.update += 1
+			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST:
 				power += 5
 				#logging.info(event.type)
 
@@ -46419,8 +46398,8 @@ sdl3.	SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 				sdl3.SDL_SetRenderDrawColor(
 				renderer, colours.top_panel_background[0], colours.top_panel_background[1],
 				colours.top_panel_background[2], colours.top_panel_background[3])
-			sdl3.SDL_RenderClear(renderer)
-			sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+				sdl3.SDL_RenderClear(renderer)
+				sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 				gui.present = True
 
 			if gui.vis == 3:
