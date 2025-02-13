@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tauon Music Box"""
 
-# Copyright © 2015-2024, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2025, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
