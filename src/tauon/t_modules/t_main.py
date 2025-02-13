@@ -4864,7 +4864,7 @@ class Tauon:
 
 		#TODO(Martin): Fix this by moving the class to root of the module
 		self.cachement: player4.Cachement | None = None
-		self.dummy_event: SDL_Event = sdl3.SDL_Event()
+		self.dummy_event: sdl3.SDL_Event = sdl3.SDL_Event()
 		self.translate = _
 		self.strings: Strings = strings
 		self.pctl:  PlayerCtl = pctl
@@ -25816,7 +25816,7 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 			break
 
 	for key, value in tauon.gall_ren.gall.items():
-		SDL_DestroyTexture(value[2])
+		sdl3.SDL_DestroyTexture(value[2])
 	tauon.gall_ren.gall = {}
 
 	if delete_disk:
@@ -25830,7 +25830,7 @@ def clear_img_cache(delete_disk: bool = True) -> None:
 	prefs.failed_artists.clear()
 	for key, value in artist_list_box.thumb_cache.items():
 		if value:
-			SDL_DestroyTexture(value[0])
+			sdl3.SDL_DestroyTexture(value[0])
 	artist_list_box.thumb_cache.clear()
 	gui.update += 1
 
@@ -25854,7 +25854,7 @@ def clear_track_image_cache(track: TrackClass):
 	keys = set()
 	for key, value in tauon.gall_ren.gall.items():
 		if key[0] == track:
-			SDL_DestroyTexture(value[2])
+			sdl3.SDL_DestroyTexture(value[2])
 			if key not in keys:
 				keys.add(key)
 	for key in keys:
@@ -36178,7 +36178,7 @@ def toggle_titlebar_line(mode: int = 0) -> bool | None:
 		return update_title
 
 	line = window_title
-	SDL_SetWindowTitle(t_window, line)
+	sdl3.SDL_SetWindowTitle(t_window, line)
 	update_title ^= True
 	if update_title:
 		update_title_do()

@@ -348,7 +348,7 @@ renderer = sdl3.SDL_CreateRenderer(t_window, b"opengl")  # sdl3.SDL_RENDERER_PRE
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")
-	logging.error(f"SDL Error: {SDL_GetError()}")
+	logging.error(f"SDL Error: {sdl3.SDL_GetError()}")
 	sys.exit(1)
 
 sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
