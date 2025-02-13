@@ -23086,7 +23086,7 @@ class GetSDLInput:
 		i_y = pointer(c_float(0))
 		i_x = pointer(c_float(0))
 		sdl3.SDL_GetMouseState(i_x, i_y)
-		return int(self.i_x.contents.value / logical_size[0] * window_size[0]), int(
+		return int(i_x.contents.value / logical_size[0] * window_size[0]), int(
 			i_y.contents.value / logical_size[0] * window_size[0])
 
 	def test_capture_mouse(self):
@@ -23447,7 +23447,7 @@ def pumper():
 		return
 	while pump:
 		time.sleep(0.005)
-		SDL_PumpEvents()
+		sdl3.SDL_PumpEvents()
 
 def track_number_process(line: str) -> str:
 	line = str(line).split("/", 1)[0].lstrip("0")
@@ -24084,15 +24084,15 @@ def auto_scale() -> None:
 	old = prefs.scale_want
 
 	if prefs.x_scale:
-		if sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
+		if True: #sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
 			prefs.scale_want = window_size[0] / logical_size[0]
 			if old != prefs.scale_want:
 				logging.info("Applying scale based on buffer size")
-		elif sss.subsystem == SDL_SYSWM_X11:
-			if xdpi > 40:
-				prefs.scale_want = xdpi / 96
-				if old != prefs.scale_want:
-					logging.info("Applying scale based on xft setting")
+		# elif sss.subsystem == SDL_SYSWM_X11:
+		# 	if xdpi > 40:
+		# 		prefs.scale_want = xdpi / 96
+		# 		if old != prefs.scale_want:
+		# 			logging.info("Applying scale based on xft setting")
 
 	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
 
@@ -24164,13 +24164,13 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 def get_global_mouse():
 	i_y = pointer(c_int(0))
 	i_x = pointer(c_int(0))
-	SDL_GetGlobalMouseState(i_x, i_y)
+	sdl3.SDL_GetGlobalMouseState(i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
 
 def get_window_position():
 	i_y = pointer(c_int(0))
 	i_x = pointer(c_int(0))
-	SDL_GetWindowPosition(t_window, i_x, i_y)
+	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
 
 def use_id3(tags: ID3, nt: TrackClass):
@@ -27596,7 +27596,7 @@ def paste_deco():
 	line = None
 	if len(cargo) > 0:
 		active = True
-	elif SDL_HasClipboardText():
+	elif sdl3.SDL_HasClipboardText():
 		text = copy_from_clipboard()
 		if text.startswith(("/", "spotify")) or "file://" in text:
 			active = True
@@ -38916,9 +38916,9 @@ if flatpak_mode:
 pid = os.getpid()
 
 if not macos:
-	icon = IMG_Load(str(asset_directory / "icon-64.png").encode())
+	icon = sdl3.IMG_Load(str(asset_directory / "icon-64.png").encode())
 else:
-	icon = IMG_Load(str(asset_directory / "tau-mac.png").encode())
+	icon = sdl3.IMG_Load(str(asset_directory / "tau-mac.png").encode())
 
 sdl3.SDL_SetWindowIcon(t_window, icon)
 
@@ -38953,7 +38953,7 @@ sdl3.SDL_SetRenderTarget(renderer, None)
 tracklist_texture = sdl3.SDL_CreateTexture(
 	renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, max_window_tex,
 	max_window_tex)
-tracklist_texture_rect = sdl3.SDL_Rect(0, 0, max_window_tex, max_window_tex)
+tracklist_texture_rect = sdl3.SDL_FRect(0, 0, max_window_tex, max_window_tex)
 sdl3.SDL_SetTextureBlendMode(tracklist_texture, sdl3.SDL_BLENDMODE_BLEND)
 
 sdl3.SDL_SetRenderTarget(renderer, None)
@@ -40442,7 +40442,7 @@ timed_lyrics_ren = TimedLyricsRen()
 text_box_canvas_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 text_box_canvas = sdl3.SDL_CreateTexture(
-	renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, text_box_canvas_rect.w, text_box_canvas_rect.h)
+	renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(text_box_canvas_rect.w), round(text_box_canvas_rect.h))
 sdl3.SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 
 rename_text_area = TextBox()
@@ -41528,8 +41528,8 @@ lyric_side_bottom_pulse = EdgePulse2()
 # Set SDL window drag areas
 # if system != 'windows':
 
-c_hit_callback = SDL_HitTest(hit_callback)
-SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
+c_hit_callback = sdl3.SDL_HitTest(hit_callback)
+sdl3.SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
 
 
 # --------------------------------------------------------------------------------------------
@@ -41632,7 +41632,7 @@ gal_down = False
 gal_left = False
 gal_right = False
 
-get_sdl3.SDL_input = Getsdl3.SDLInput()
+input_sdl = GetSDLInput()
 
 sdl3.SDL_StartTextInput(t_window)
 
