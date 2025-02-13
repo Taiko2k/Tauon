@@ -49,8 +49,6 @@ a = Analysis(
 		("librespot.exe", "."),
 		("TaskbarLib.tlb", "."),
 		("TauonSMTC.dll", "lib"),
-		# This could only have SDL3.framework and SDL3_image.framework to save space...
-#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
 	],
 	hiddenimports=[
 		"pylast",

@@ -23,7 +23,6 @@
 #		"Send2Trash",
 #		"unidecode",
 #		"dbus-python;                 sys_platform == 'linux'",
-#		"pysdl3-dll;                  sys_platform == 'darwin'", # Don't rely on system https://github.com/Aermoss/PySDL3
 #		"comtypes;                    sys_platform == 'win32'",
 #		"lynxtray;                    sys_platform == 'win32'",
 #		"keyboard;                    sys_platform == 'win32'",
