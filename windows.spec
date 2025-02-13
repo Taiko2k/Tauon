@@ -37,6 +37,7 @@ a = Analysis(
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libwavpack-1.dll"),    "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3.dll"),            "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3_image.dll"),      "."),
+		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3_ttf.dll"),      "."),
 	],
 	datas=[
 		(certifi.where(), "certifi"),
