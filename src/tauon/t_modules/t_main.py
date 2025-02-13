@@ -12382,10 +12382,10 @@ class Over:
 			font = 12
 			spacing = round(18 * gui.scale)
 			y += spacing
-			ddt.text((x, y), "PySDL2", colours.box_sub_text, font)
+			ddt.text((x, y), "PySDL3", colours.box_sub_text, font)
 			ddt.text((xx, y), _("Public Domain"), colours.box_text_label, font)
 			draw_linked_text2(
-				xxx, y, "https://github.com/marcusva/py-sdl2", colours.box_sub_text, font, click=self.click, replace="github")
+				xxx, y, "https://github.com/Aermoss/PySDL3", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
 			ddt.text((x, y), "Tekore", colours.box_sub_text, font)
@@ -39022,7 +39022,7 @@ except Exception:
 # ------------------------------------------------
 
 if system == "Windows":
-	os.environ["PYSDL2_DLL_PATH"] = str(install_directory / "lib")
+	os.environ["SDL_BINARY_PATH"] = str(install_directory / "lib")
 elif not msys and not macos:
 	try:
 		gi.require_version("Notify", "0.7")

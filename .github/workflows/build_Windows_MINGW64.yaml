@@ -44,11 +44,11 @@ jobs:
           python -m pip install --break-system-packages --upgrade pip
           python -m venv .venv
           export CFLAGS="-I/mingw64/include"
-          export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
           .venv/bin/python -m pip install \
             -r requirements.txt \
             build \
             pyinstaller
+#          export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
       - name: Build the project using python-build
         shell: msys2 {0}
@@ -67,18 +67,18 @@ jobs:
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe
+          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
           curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TaskbarLib.tlb
           curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TauonSMTC.dll
           mkdir fonts
-          curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf # 800KB
+          curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
           curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
-          curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf # 800KB
-          curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf # 800KB
-          curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf # 800KB
-          curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf # 16MB
-          curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf # 16MB
-          curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf # 16MB
+          curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf               # 800KB
+          curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf             # 800KB
+          curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf            # 800KB
+          curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf                           # 16MB
+          curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf                         # 16MB
+          curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf                        # 16MB
 
       - name: "[DEBUG] List all files"
         shell: msys2 {0}

@@ -199,7 +199,7 @@ if d in ["GNOME:Phosh"]:
 	phone = True
 
 if pyinstaller_mode: # and sys.platform == 'darwin':
-	os.environ["PYSDL2_DLL_PATH"] = str(install_directory)
+	os.environ["SDL_BINARY_PATH"] = str(install_directory)
 
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
