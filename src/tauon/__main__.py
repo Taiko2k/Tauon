@@ -341,7 +341,11 @@ while True:
 
 logging.debug(f"SDL availiable drivers: {drivers}")
 
-renderer = sdl3.SDL_CreateRenderer(t_window, b"opengl")  # sdl3.SDL_RENDERER_PRESENTVSYNC
+driver = None
+if "opengl" in drivers:
+	driver = b"opengl"
+
+renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")
