@@ -39317,7 +39317,6 @@ power_save = False
 if macos or phone:
 	power_save = True
 
-multi_playlist: list[TauonPlaylist] = [pl_gen()]
 prefs = Prefs(
 	power_save=power_save,
 	encoder_output=encoder_output,
