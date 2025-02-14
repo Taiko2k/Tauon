@@ -38990,7 +38990,7 @@ if maximized:
 	sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
 	logical_size[0] = i_x.contents.value
 	logical_size[1] = i_y.contents.value
-	sdl3.SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+	sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 	window_size[0] = i_x.contents.value
 	window_size[1] = i_y.contents.value
 
