@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tauon Music Box"""
 
-# Copyright © 2015-2024, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2025, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -199,7 +199,7 @@ if d in ["GNOME:Phosh"]:
 	phone = True
 
 if pyinstaller_mode: # and sys.platform == 'darwin':
-	os.environ["PYSDL2_DLL_PATH"] = str(install_directory)
+	os.environ["SDL_BINARY_PATH"] = str(install_directory)
 
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:

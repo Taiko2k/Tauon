@@ -35,8 +35,9 @@ a = Analysis(
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libvorbis-0.dll"),     "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libvorbisfile-3.dll"), "."),
 		(str(Path(msys64_path) / "mingw64" / "bin" / "libwavpack-1.dll"),    "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL2.dll"),            "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL2_image.dll"),      "."),
+		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3.dll"),            "."),
+		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3_image.dll"),      "."),
+		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3_ttf.dll"),      "."),
 	],
 	datas=[
 		(certifi.where(), "certifi"),
@@ -48,8 +49,6 @@ a = Analysis(
 		("librespot.exe", "."),
 		("TaskbarLib.tlb", "."),
 		("TauonSMTC.dll", "lib"),
-		# This could only have SDL2.framework and SDL2_image.framework to save space...
-#		(f".venv/lib/python{python_ver}/site-packages/sdl2dll/dll", "sdl2dll/dll"),
 	],
 	hiddenimports=[
 		"pylast",
