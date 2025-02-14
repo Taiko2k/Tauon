@@ -39265,6 +39265,8 @@ repeat_mode = False
 
 notify_change = lambda: None
 
+multi_playlist: list[TauonPlaylist] = [pl_gen()]
+default_playlist: list[int] = multi_playlist[0].playlist_ids
 playlist_active: int = 0
 
 quick_search_mode = False
@@ -40080,8 +40082,7 @@ except Exception:
 	logging.exception("Cannot find libgme")
 
 pctl = PlayerCtl()
-pctl.default_playlist = multi_playlist[0].playlist_ids
-default_playlist = pctl.default_playlist
+pctl.default_playlist = default_playlist
 
 notify_change = pctl.notify_change
 
