@@ -38874,11 +38874,11 @@ if platform_system == "Linux":
 
 if os.getenv("XDG_MUSIC_DIR"):
 	music_directory = Path(os.getenv("XDG_MUSIC_DIR"))
-	logging.debug("Override music to: " + music_directory)
+	logging.debug(f"Override music to: {music_directory}")
 
 if os.getenv("XDG_DOWNLOAD_DIR"):
 	download_directory = Path(os.getenv("XDG_DOWNLOAD_DIR"))
-	logging.debug("Override downloads to: " + download_directory)
+	logging.debug(f"Override downloads to: {download_directory}")
 
 if music_directory:
 	music_directory = Path(os.path.expandvars(music_directory))
