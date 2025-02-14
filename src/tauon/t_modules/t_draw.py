@@ -371,6 +371,31 @@ class TDraw:
 		self.sdlrect.h = h + th
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # right
 
+	def rect_si(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+		x, y, w, h = (round(x) for x in rectangle)
+		th = math.floor(thickness)
+		self.sdlrect.x = x
+		self.sdlrect.y = y
+		self.sdlrect.w = th
+		self.sdlrect.h = h
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # left
+		self.sdlrect.x = x
+		self.sdlrect.y = y + (h - th)
+		self.sdlrect.w = w
+		self.sdlrect.h = th
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # bottom
+		self.sdlrect.x = x
+		self.sdlrect.y = y
+		self.sdlrect.w = w
+		self.sdlrect.h = th
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # top
+		self.sdlrect.x = x + (w - th)
+		self.sdlrect.y = y
+		self.sdlrect.w = th
+		self.sdlrect.h = h
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # right
+
 	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: tuple[int, int, int, int]) -> None:
 		self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
