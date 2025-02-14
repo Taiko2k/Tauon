@@ -35,11 +35,6 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
-		# This could only have SDL3.framework and SDL3_image.framework to save space...
-#		(f"{prefix}/lib/python{python_ver}/site-packages/sdl3dll/dll", "sdl3dll/dll"),
-#		(f".venv/lib/python{python_ver}/site-packages/sdl3dll/dll", "sdl3dll/dll"),
-#		(f".venv/lib/python{python_ver}/site-packages/sdl3dll/dll/SDL3.framework", "sdl3dll/dll/SDL3.framework"),
-#		(f".venv/lib/python{python_ver}/site-packages/sdl3dll/dll/SDL3_image.framework", "sdl3dll/dll/SDL3_image.framework"),
 	],
 	hiddenimports=[
 		"sdl3",
