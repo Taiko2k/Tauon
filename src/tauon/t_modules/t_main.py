@@ -39421,6 +39421,8 @@ def main(holder: Holder) -> None:
 	random_mode = False
 	repeat_mode = False
 
+	multi_playlist: list[TauonPlaylist] = [pl_gen()]
+	default_playlist: list[int] = multi_playlist[0].playlist_ids
 	playlist_active: int = 0
 
 	quick_search_mode = False
@@ -39478,7 +39480,6 @@ def main(holder: Holder) -> None:
 	if macos or phone:
 		power_save = True
 
-	multi_playlist: list[TauonPlaylist] = [pl_gen()]
 	prefs = Prefs(
 		power_save=power_save,
 		encoder_output=encoder_output,
@@ -39661,17 +39662,17 @@ def main(holder: Holder) -> None:
 			playlist_view_position = save[4]
 			if save[5] is not None:
 				if db_version > 68:
-					multi_playlist = []
+					bag.multi_playlist = []
 					tauonplaylist_jar = save[5]
 					for d in tauonplaylist_jar:
 						nt = TauonPlaylist(**d)
-						multi_playlist.append(nt)
+						bag.multi_playlist.append(nt)
 				else:
-					multi_playlist = save[5]
+					bag.multi_playlist = save[5]
 			volume = save[6]
 			track_queue = save[7]
 			playing_in_queue = save[8]
-			pctl.default_playlist = save[9]
+			default_playlist = save[9]
 			# playlist_playing = save[10]
 			# cue_list = save[11]
 			# radio_field_text = save[12]
@@ -40276,7 +40277,7 @@ def main(holder: Holder) -> None:
 	radiobox = tauon.radiobox
 	star_store=tauon.star_store
 	pctl = tauon.pctl
-	pctl.default_playlist = multi_playlist[0].playlist_ids
+	pctl.default_playlist = default_playlist
 	lb = ListenBrainz(prefs)
 	deco = tauon.deco
 	deco.get_themes = get_themes
