@@ -297,7 +297,7 @@ if draw_border and not fs_mode:
 	flags |= sdl3.SDL_WINDOW_BORDERLESS
 
 if fs_mode:
-	flags |= sdl3.SDL_WINDOW_FULLSCREEN_DESKTOP
+	flags |= sdl3.SDL_WINDOW_FULLSCREEN
 
 if old_window_position is None:
 	o_x = sdl3.SDL_WINDOWPOS_UNDEFINED
