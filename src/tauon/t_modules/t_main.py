@@ -19014,8 +19014,7 @@ class ArtistList:
 				im.save(g, "PNG")
 				g.seek(0)
 
-				wop = rw_from_object(g)
-				s_image = sdl3.IMG_Load_RW(wop, 0)
+				s_image = ddt.load_image(g)
 				texture = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 				sdl3.SDL_DestroySurface(s_image)
 				tex_w = pointer(c_float(0))
@@ -21265,8 +21264,7 @@ class PictureRender:
 
 			# Convert raw image to sdl texture
 			#logging.info("Create Texture")
-			wop = rw_from_object(self.image_data)
-			s_image = sdl3.IMG_Load_RW(wop, 0)
+			s_image = ddt.load_image(self.image_data)
 			self.texture = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
 			sdl3.SDL_DestroySurface(s_image)
 			tex_w = pointer(c_float(0))
@@ -21747,8 +21745,7 @@ class RadioThumbGen:
 			g.seek(0)
 			im.save(g, "PNG")
 			g.seek(0)
-			wop = rw_from_object(g)
-			s_image = sdl3.IMG_Load_RW(wop, 0)
+			s_image = ddt.load_image(g)
 			self.cache[key] = [2, None, None, s_image]
 			gui.update += 1
 
