@@ -42414,10 +42414,11 @@ while pctl.running:
 			if keymaps.test("toggle-fullscreen"):
 				if not gui.fullscreen and gui.mode != 3:
 					gui.fullscreen = True
-					sdl3.SDL_SetWindowFullscreen(t_window, sdl3.SDL_WINDOW_FULLSCREEN_DESKTOP)
+					sdl3.SDL_SetWindowFullscreenMode(t_window, None)
+					sdl3.SDL_SetWindowFullscreen(t_window, True)
 				elif gui.fullscreen:
 					gui.fullscreen = False
-					sdl3.SDL_SetWindowFullscreen(t_window, 0)
+					sdl3.SDL_SetWindowFullscreen(t_window, False)
 
 			if keymaps.test("playlist-toggle-breaks"):
 				# Toggle force off folder break for viewed playlist
