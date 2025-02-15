@@ -323,7 +323,8 @@ jobs:
         echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   pre-release:
-    if: github.ref == 'refs/heads/master' && github.repository == 'C0rn3j/Tauon' && github.event_name == 'push'
+    # TODO: Fix branch name to master, fix C0rn3j to Taiko2K
+    if: github.ref == 'refs/heads/prerelease' && github.repository == 'C0rn3j/Tauon' && github.event_name == 'push'
     needs: [get-info, build-linux, build-windows, build-macos]
     runs-on: ubuntu-24.04
     steps:
