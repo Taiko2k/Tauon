@@ -630,7 +630,7 @@ class TDraw:
 
 		data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
 
-		if real_bg:
+		if real_bg and False: # todo fix me for sdl3
 			box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
 			if align == 1:
