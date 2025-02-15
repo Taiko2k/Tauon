@@ -2,6 +2,13 @@
 Changelog
 ---------
 
+### v8.0.0
+
+ - **Added** Transparent accent theme mode
+ - **Added** Drag and drop from file zone highlight
+ - **Fixed** Mini mode always on top not working on Wayland
+
+
 ### v7.9.0
 
 - **Added** TIDAL support
