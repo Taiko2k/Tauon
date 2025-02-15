@@ -6,7 +6,6 @@ PlexAPI
 PyGObject
 pylast>=3.1.0
 PySDL3
-#pysdl3-dll # Don't rely on system SDL2 https://github.com/py-sdl/py-sdl2#requirements
 #python-magic # optional
 requests
 Send2Trash
