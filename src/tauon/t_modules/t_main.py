@@ -36738,14 +36738,14 @@ def set_mini_mode():
 	inp.mouse_click = False
 
 	if gui.maximized:
-		sdl3.SDLRestoreWindow(t_window)
+		sdl3.SDL_RestoreWindow(t_window)
 		update_layout_do()
 
 	if gui.mode < 3:
 		old_window_position = get_window_position()
 
 	if prefs.mini_mode_on_top:
-		sdl3.SDLSetWindowAlwaysOnTop(t_window, True)
+		sdl3.SDL_SetWindowAlwaysOnTop(t_window, True)
 
 	gui.mode = 3
 	gui.vis = 0
@@ -36755,11 +36755,11 @@ def set_mini_mode():
 
 	i_y = pointer(c_int(0))
 	i_x = pointer(c_int(0))
-	sdl3.SDLGetWindowPosition(t_window, i_x, i_y)
+	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
 	gui.save_position = (i_x.contents.value, i_y.contents.value)
 
 	mini_mode.was_borderless = draw_border
-	sdl3.SDLSetWindowBordered(t_window, False)
+	sdl3.SDL_SetWindowBordered(t_window, False)
 
 	size = (350, 429)
 	if prefs.mini_mode_mode == 1:
@@ -36781,17 +36781,20 @@ def set_mini_mode():
 	logical_size[0] = size[0]
 	logical_size[1] = size[1]
 
-	sdl3.SDLSetWindowMinimumSize(t_window, 100, 100)
+	sdl3.SDL_SetWindowMinimumSize(t_window, 100, 80)
 
-	sdl3.SDLSetWindowResizable(t_window, False)
-	sdl3.SDLSetWindowSize(t_window, logical_size[0], logical_size[1])
+	sdl3.SDL_SetWindowResizable(t_window, False)
+	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+	sdl3.SDL_SyncWindow(t_window)
+	time.sleep(0.05)
 
 	if mini_mode.save_position:
-		sdl3.SDLSetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
+		sdl3.SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
 
+	sdl3.SDL_PumpEvents()
 	i_x = pointer(c_int(0))
 	i_y = pointer(c_int(0))
-	sdl3.SDLGL_GetDrawableSize(t_window, i_x, i_y)
+	sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 	window_size[0] = i_x.contents.value
 	window_size[1] = i_y.contents.value
 
@@ -36801,30 +36804,34 @@ def restore_full_mode():
 	logging.info("RESTORE FULL")
 	i_y = pointer(c_int(0))
 	i_x = pointer(c_int(0))
-	sdl3.SDLGetWindowPosition(t_window, i_x, i_y)
+	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
 	mini_mode.save_position = [i_x.contents.value, i_y.contents.value]
 
 	if not mini_mode.was_borderless:
-		sdl3.SDLSetWindowBordered(t_window, True)
+		sdl3.SDL_SetWindowBordered(t_window, True)
 
 	logical_size[0] = gui.save_size[0]
 	logical_size[1] = gui.save_size[1]
 
-	sdl3.SDLSetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
+	sdl3.SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
 
 
-	sdl3.SDLSetWindowResizable(t_window, True)
-	sdl3.SDLSetWindowSize(t_window, logical_size[0], logical_size[1])
-	sdl3.SDLSetWindowAlwaysOnTop(t_window, False)
+	sdl3.SDL_SetWindowResizable(t_window, True)
+	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+	sdl3.SDL_SetWindowAlwaysOnTop(t_window, False)
 
 	# if macos:
 	#     sdl3.SDLSetWindowMinimumSize(t_window, 560, 330)
 	# else:
-	sdl3.SDLSetWindowMinimumSize(t_window, 560, 330)
+	sdl3.SDL_SetWindowMinimumSize(t_window, 560, 330)
 
 	restore_ignore_timer.set()  # Hacky
 
 	gui.mode = 1
+
+	sdl3.SDL_SyncWindow(t_window)
+	time.sleep(0.05)
+	sdl3.SDL_PumpEvents()
 
 	global mouse_down
 	global mouse_up
@@ -36833,17 +36840,17 @@ def restore_full_mode():
 	inp.mouse_click = False
 
 	if gui.maximized:
-		sdl3.SDLMaximizeWindow(t_window)
+		sdl3.SDL_MaximizeWindow(t_window)
 		time.sleep(0.05)
-		sdl3.SDLPumpEvents()
-		sdl3.SDLGetWindowSize(t_window, i_x, i_y)
+		sdl3.SDL_PumpEvents()
+		sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
 		logical_size[0] = i_x.contents.value
 		logical_size[1] = i_y.contents.value
 
 		#logging.info(window_size)
 
-	sdl3.SDLPumpEvents()
-	sdl3.SDLGL_GetDrawableSize(t_window, i_x, i_y)
+	sdl3.SDL_PumpEvents()
+	sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 	window_size[0] = i_x.contents.value
 	window_size[1] = i_y.contents.value
 
@@ -41362,6 +41369,7 @@ top_panel = TopPanel()
 bottom_bar1 = BottomBarType1()
 bottom_bar_ao1 = BottomBarType_ao1()
 
+mini_mode = MiniMode()
 mini_mode2 = MiniMode2()
 mini_mode2 = MiniMode2()
 mini_mode3 = MiniMode3()
