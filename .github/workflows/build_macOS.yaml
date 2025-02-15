@@ -30,6 +30,7 @@ jobs:
             pango \
             pillow \
             sdl3 \
+            sdl3_image \
             jpeg-xl \
             ffmpeg \
             librsvg \
@@ -37,7 +38,6 @@ jobs:
             libopenmpt \
             wavpack \
             game-music-emu
-#            sdl2_image \
 
 # This generates 30MB of logs, enable it only when actively debugging something
 #      - name: "[DEBUG] List all Cellar files"

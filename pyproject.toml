@@ -18,12 +18,11 @@
 #		"PlexAPI", # OPTDEP
 #		"PyGObject",
 #		"pylast>=3.1.0",
-#		"PySDL2",
+#		"PySDL3",
 #		"requests",
 #		"Send2Trash",
 #		"unidecode",
 #		"dbus-python;                 sys_platform == 'linux'",
-#		"pysdl2-dll;                  sys_platform == 'darwin'", # Don't rely on system https://github.com/py-sdl/py-sdl2#requirements
 #		"comtypes;                    sys_platform == 'win32'",
 #		"lynxtray;                    sys_platform == 'win32'",
 #		"keyboard;                    sys_platform == 'win32'",
