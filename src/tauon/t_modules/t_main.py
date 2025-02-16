@@ -23080,13 +23080,11 @@ class Undo:
 		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
 
 class GetSDLInput:
-
-	def __init__(self):
-
+	def __init__(self) -> None:
 		self.mouse_capture_want = False
 		self.mouse_capture = False
 
-	def mouse(self):
+	def mouse(self) -> tuple[int, int]:
 		sdl3.SDL_PumpEvents()
 		i_y = pointer(c_float(0))
 		i_x = pointer(c_float(0))
@@ -23094,12 +23092,12 @@ class GetSDLInput:
 		return int(i_x.contents.value / logical_size[0] * window_size[0]), int(
 			i_y.contents.value / logical_size[0] * window_size[0])
 
-	def test_capture_mouse(self):
+	def test_capture_mouse(self) -> None:
 		if not self.mouse_capture and self.mouse_capture_want:
-			SDL_CaptureMouse(SDL_TRUE)
+			sdl3.SDL_CaptureMouse(sdl3.SDL_TRUE)
 			self.mouse_capture = True
 		elif self.mouse_capture and not self.mouse_capture_want:
-			SDL_CaptureMouse(SDL_FALSE)
+			sdl3.SDL_CaptureMouse(sdl3.SDL_FALSE)
 			self.mouse_capture = False
 
 class WinTask:
