@@ -323,8 +323,7 @@ jobs:
         echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   pre-release:
-    # TODO: Fix branch name to master, fix C0rn3j to Taiko2K
-    if: github.ref == 'refs/heads/prerelease' && github.repository == 'C0rn3j/Tauon' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
     needs: [get-info, build-linux, build-windows, build-macos]
     runs-on: ubuntu-24.04
     steps:
@@ -370,7 +369,7 @@ jobs:
         tag: "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
         draft: false
         prerelease: true
-#        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/C0rn3j/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
+#        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/Taiko2k/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
         bodyFile: ${{ github.workspace }}/.github/release_body.md
         artifacts: ~/artifacts/*.zip
 
@@ -379,9 +378,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ARTIFACTS_DIR=~/artifacts
-        REPO_WINDOWS="C0rn3j/Tauon"
-        REPO_LINUX="C0rn3j/Tauon"
-        REPO_MAC="C0rn3j/Tauon"
+        REPO_WINDOWS="Taiko2k/Tauon"
+        REPO_LINUX="Taiko2k/Tauon"
+        REPO_MAC="Taiko2k/Tauon"
 
         for file in "$ARTIFACTS_DIR"/*.zip; do
           filename=$(basename "$file")
@@ -415,7 +414,7 @@ jobs:
                 "name": "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
                 "draft": false,
                 "prerelease": true,
-                "body": "Commit: [${{ needs.get-info.outputs.fullhash }}](https://github.com/C0rn3j/Tauon/commit/${{ needs.get-info.outputs.fullhash }})"
+                "body": "Commit: [${{ needs.get-info.outputs.fullhash }}](https://github.com/Taiko2k/Tauon/commit/${{ needs.get-info.outputs.fullhash }})"
               }' "https://api.github.com/repos/$REPO/releases" | jq -r '.id')
           else
             echo "Release already exists in $REPO with ID $release_id"
