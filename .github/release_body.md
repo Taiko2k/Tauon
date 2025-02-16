@@ -19,7 +19,8 @@
 			<tr>
 				<td>Windows</td>
 				<td>
-					<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/TauonMusicBox-windows.zip"><img src="https://img.shields.io/badge/Portable-x64-0078d7.svg?logo=windows"></a><br>
+					<!-- MS Logos were removed from Simpleicons so just ship the singular SVG here -->
+					<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/TauonMusicBox-windows.zip"><img src="https://img.shields.io/badge/Portable-x64-0078d7.svg?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTAgMGgxMS4zNzd2MTEuMzcySDBabTEyLjYyMyAwSDI0djExLjM3MkgxMi42MjNaTTAgMTIuNjIzaDExLjM3N1YyNEgwWm0xMi42MjMgMEgyNFYyNEgxMi42MjMiLz48L3N2Zz4="></a><br>
 				</td>
 			</tr>
 			<tr>
