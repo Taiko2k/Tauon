@@ -331,11 +331,11 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: ./artifacts
+        path: ~/artifacts
 
     - name: Compress individual directories (without parent directory)
       run: |
-        cd ./artifacts
+        cd ~/artifacts
         for dir in */; do
           if [ -d "$dir" ]; then
             dir_name=${dir%/}
@@ -367,13 +367,13 @@ jobs:
         prerelease: true
 #        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/C0rn3j/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
         bodyFile: ${{ github.workspace }}/.github/release_body.md
-        artifacts: ./artifacts/*.zip
+        artifacts: ~/artifacts/*.zip
 
     - name: Publish to Release Repository
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ARTIFACTS_DIR=./artifacts
+        ARTIFACTS_DIR=~/artifacts
         REPO_WINDOWS="C0rn3j/Tauon"
         REPO_LINUX="C0rn3j/Tauon"
         REPO_MAC="C0rn3j/Tauon"
