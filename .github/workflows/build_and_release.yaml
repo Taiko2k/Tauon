@@ -363,7 +363,7 @@ jobs:
         draft: false
         prerelease: true
 #        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/C0rn3j/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
-        bodyFile: ${{ github.workspace }}/.github/release_body.md
+        bodyFile: ${{ github.workspace }}/../.github/release_body.md
         artifacts: ./artifacts/*.zip
 
     - name: Publish to Release Repository
