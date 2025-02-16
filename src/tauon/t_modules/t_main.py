@@ -1385,6 +1385,7 @@ class PlayerCtl:
 		# Playback
 
 		self.track_queue = track_queue
+		self.default_playlist: list[int] = []
 		self.queue_step = playing_in_queue
 		self.playing_time = 0
 		self.playlist_playing_position = playlist_playing  # track in playlist that is playing
@@ -28042,7 +28043,7 @@ def move_playlist(source, dest):
 
 		pctl.active_playlist_playing = pctl.multi_playlist.index(active)
 		pctl.active_playlist_viewing = pctl.multi_playlist.index(view)
-		default_playlist = default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
+		default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 	except Exception:
 		logging.exception("Playlist move error")
 
@@ -39315,21 +39316,40 @@ latest_db_version: float = 70
 albums = []
 album_position = 0
 
+force_subpixel_text = False
+if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
+	force_subpixel_text = True
+dc_device = False  # (BASS) Disconnect device on pause
+if desktop == "KDE":
+	dc_device = True
+encoder_output = music_directory / "encode-output"
+if music_directory is None:
+	encoder_output = user_directory / "encoder"
+power_save = False
+if macos or phone:
+	power_save = True
+
 prefs = Prefs(
-	user_directory=user_directory,
-	music_directory=music_directory,
-	cache_directory=cache_directory,
+	power_save=power_save,
+	encoder_output=encoder_output,
+#	user_directory=user_directory,
+#	music_directory=music_directory,
+#	cache_directory=cache_directory,
+	force_subpixel_text=force_subpixel_text,
+	dc_device=dc_device,
 	macos=macos,
+#	detect_macstyle=detect_macstyle,
+	macstyle=macos or detect_macstyle,
+	left_window_control=macos or left_window_control,
 	phone=phone,
-	left_window_control=left_window_control,
-	detect_macstyle=detect_macstyle,
-	gtk_settings=gtk_settings,
+#	gtk_settings=gtk_settings,
 	discord_allow=discord_allow,
 	flatpak_mode=flatpak_mode,
 	desktop=desktop,
 	window_opacity=window_opacity,
-	scale=scale,
+	ui_scale=scale,
 )
+prefs.theme = get_theme_number(prefs.theme_name)
 
 gui = GuiVar()
 star_store = StarStore()
@@ -40073,6 +40093,7 @@ except Exception:
 	logging.exception("Cannot find libgme")
 
 pctl = PlayerCtl()
+pctl.default_playlist = default_playlist
 
 notify_change = pctl.notify_change
 
