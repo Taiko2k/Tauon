@@ -13280,9 +13280,9 @@ class TopPanel:
 			colour = [250, 250, 250, 255]
 			if colours.lm:
 				colour = [10, 10, 10, 255]
-			text = _("Tauon Music Box SHUFFLE!")
+			text = _("Tauon SHUFFLE!")
 			if prefs.album_shuffle_lock_mode:
-				text = _("Tauon Music Box ALBUM SHUFFLE!")
+				text = _("ALBUM SHUFFLE")
 			ddt.text((window_size[0] // 2, 8 * gui.scale, 2), text, colour, 212, bg=colours.top_panel_background)
 		if gui.top_bar_mode2:
 			tr = pctl.playing_object()
@@ -26510,6 +26510,11 @@ def toggle_shuffle_layout(albums=False):
 		prefs.album_shuffle_lock_mode = False
 		if not gui.shuffle_was_showcase:
 			exit_combo()
+
+def toggle_shuffle_layout_deco():
+	if not prefs.shuffle_lock:
+		return [colours.menu_text, colours.menu_background, _("Shuffle Lockdown")]
+	return [colours.menu_text, colours.menu_background, _("Exit Shuffle Lockdown")]
 
 def toggle_shuffle_layout_albums():
 	toggle_shuffle_layout(albums=True)
@@ -41318,7 +41323,7 @@ else:
 
 x_menu.add(MenuItem("LFM", lastfm.toggle, last_fm_menu_deco, icon=listen_icon, show_test=lastfm_menu_test))
 
-x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), toggle_shuffle_layout, show_test=exit_shuffle_layout))
+x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), toggle_shuffle_layout, toggle_shuffle_layout_deco)) #show_test=exit_shuffle_layout))
 
 x_menu.add(MenuItem(_("Donate"), open_donate_link))
 
