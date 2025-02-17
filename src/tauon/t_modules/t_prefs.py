@@ -50,6 +50,10 @@ class Prefs:
 	prefer_bottom_title: bool = True
 	append_date:         bool = True
 
+	update_title:  bool = False
+	scroll_enable: bool = True
+	break_enable:  bool = True
+
 	transcode_codec:   str = "opus"
 	transcode_mode:    str = "single"
 	transcode_bitrate: int = 64
