@@ -34,7 +34,7 @@ from typing import TYPE_CHECKING
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Tauon, TrackClass
+	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
 
 
 def send_file(path: str, mime: str, server) -> None:
@@ -75,7 +75,7 @@ def send_file(path: str, mime: str, server) -> None:
 				break
 			server.wfile.write(data)
 
-def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings, tauon: Tauon) -> int | None:
+def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings: Strings, tauon: Tauon) -> int | None:
 
 	if prefs.enable_web is False:
 		return 0
@@ -231,7 +231,7 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 		logging.exception("Failed starting radio page server!")
 
 
-def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings, tauon: Tauon) -> None:
+def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings: Strings, tauon: Tauon) -> None:
 
 	play_timer = Timer()
 
