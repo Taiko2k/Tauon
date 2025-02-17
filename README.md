@@ -26,6 +26,10 @@
 
 ## Download and Install :dizzy:
 
+### macOS
+
+For macOS DMG see the [releases](https://github.com/Taiko2k/TauonMusicBox/releases) page.
+
 ### Windows
 
 For Windows installer see the [releases](https://github.com/Taiko2k/TauonMusicBox/releases) page.
