@@ -13826,8 +13826,6 @@ class TopPanel:
 			ddt.text((x + self.tab_text_start_space, y + self.tab_text_y_offset), text, fg, self.tab_text_font, bg=bg)
 
 			# Drop pulse
-			if gui.ext_drop_mode and coll(rect):
-				ddt.rect_si(rect, [50, 230, 250, 255], round(3 * gui.scale))
 
 			if gui.pl_pulse and gui.drop_playlist_target == i:
 				if tab_pulse.render(x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size, r=200,
@@ -13845,7 +13843,7 @@ class TopPanel:
 					else:
 						ddt.rect((x, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
 
-				elif quick_drag is True and pl_is_mut(i):
+				elif (quick_drag or gui.ext_drop_mode) is True and pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 200, 180, 255])
 			# Drag yellow line highlight if single track already in playlist
 			elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
@@ -13876,7 +13874,7 @@ class TopPanel:
 
 		# Quick drag single track onto bar to create new playlist function and indicator
 		if prefs.tabs_on_top:
-			if quick_drag and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
+			if (quick_drag or gui.ext_drop_mode) and mouse_position[0] > x and mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
 				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 200, 180, 255])
 
 				if mouse_up:
@@ -16121,9 +16119,6 @@ class StandardPlaylist:
 
 		rect = (left, gui.panelY, width, window_size[1] - (gui.panelBY + gui.panelY))
 		ddt.rect(rect, colours.playlist_panel_background)
-
-		if gui.ext_drop_mode and coll(rect):
-			ddt.rect(rect, [255,0,0,255])
 
 		# This draws an optional background image
 		if pl_bg:
@@ -18873,7 +18868,7 @@ class PlaylistBox:
 			# # If mouse over
 			if hit:
 				# Draw indicator for dragging tracks
-				if quick_drag and pl_is_mut(i):
+				if (quick_drag or gui.ext_drop_mode) and pl_is_mut(i):
 					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [80, 200, 180, 255])
 
 				# Draw indicators for moving tab
@@ -18929,7 +18924,7 @@ class PlaylistBox:
 		fields.add(rect)
 
 		if coll(rect):
-			if quick_drag:
+			if quick_drag or gui.ext_drop_mode:
 				ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
 				if mouse_up:
 					drop_tracks_to_new_playlist(shift_selection)
@@ -41922,6 +41917,8 @@ while pctl.running:
 			mouse_moved = True
 			gui.mouse_unknown = False
 			gui.ext_drop_mode = True
+			gui.pl_update += 1
+			gui.update += 2
 		elif event.type == sdl3.SDL_EVENT_DROP_COMPLETE:
 			gui.ext_drop_mode = False
 		elif event.type == sdl3.SDL_EVENT_DROP_FILE:
@@ -43182,7 +43179,6 @@ while pctl.running:
 		sdl3.SDL_RenderClear(renderer)
 		sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 		sdl3.SDL_RenderClear(renderer)
-
 		# perf_timer.set()
 		gui.update_on_drag = False
 		gui.pl_update_on_drag = False
@@ -43190,7 +43186,7 @@ while pctl.running:
 		# mouse_position[0], mouse_position[1] = input_sdl.mouse()
 		gui.showed_title = False
 
-		if not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
+		if not gui.ext_drop_mode and not gui.mouse_in_window and not bottom_bar1.volume_bar_being_dragged and not bottom_bar1.volume_hit and not bottom_bar1.seek_hit:
 			mouse_position[0] = -300.
 			mouse_position[1] = -300.
 
@@ -44454,7 +44450,7 @@ while pctl.running:
 				rect = (gui.playlist_left, gui.panelY, gui.plw, window_size[1] - (gui.panelBY + gui.panelY))
 
 				if gui.ext_drop_mode and coll(rect):
-					ddt.rect_si(rect, [50, 230, 250, 255], round(5 * gui.scale))
+					ddt.rect_si(rect, [80, 200, 180, 255], round(3 * gui.scale))
 				fields.add(rect)
 
 				if gui.combo_mode and key_esc_press and is_level_zero():
