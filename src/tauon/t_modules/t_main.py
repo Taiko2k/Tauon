@@ -1285,6 +1285,7 @@ class TrackClass:
 		self.disc_number:  str = ""
 		self.disc_total:   str = ""
 		self.lyrics:       str = ""
+		self.synced:       str = ""
 
 		self.lfm_friend_likes = set()
 		self.lfm_scrobbles: int = 0
@@ -6392,7 +6393,7 @@ class TimedLyricsRen:
 			bg = colours.playlist_panel_background
 			font_size = 17
 			spacing = round(23 * gui.scale)
-
+		bg[3] = 255
 		test_time = get_real_time()
 
 		if pctl.track_queue[pctl.queue_step] == index:
@@ -21025,8 +21026,10 @@ class MetaBox:
 
 	def lyrics(self, x, y, w, h, track: TrackClass):
 
-		ddt.rect((x, y, w, h), colours.side_panel_background)
-		ddt.text_background_colour = colours.side_panel_background
+		bg = colours.side_panel_background
+		bg[3] = 255
+		ddt.rect((x, y, w, h), bg)
+		ddt.text_background_colour = bg
 
 		if not track:
 			return
@@ -21084,7 +21087,10 @@ class MetaBox:
 
 	def draw(self, x, y, w, h, track=None):
 
-		ddt.rect((x, y, w, h), colours.side_panel_background)
+		bg = colours.side_panel_background
+		bg[3] = 255
+		ddt.text_background_colour = bg
+		ddt.rect((x, y, w, h), bg)
 
 		if not track:
 			return
@@ -25642,6 +25648,8 @@ def prime_fonts():
 	ddt.prime_font(standard_font, 13, 516)
 
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
+	if track.synced:
+		return track.synced.splitlines()
 	if track.is_network:
 		return None
 
@@ -27019,10 +27027,14 @@ def get_lyric_fire(track_object: TrackClass, silent: bool = False) -> str | None
 			func = lyric_sources[name]
 
 			try:
-				lyrics = func(s_artist, s_title)
-				if lyrics:
-					logging.info(f"Found lyrics from {name}")
-					track_object.lyrics = lyrics
+				lyrics, synced = func(s_artist, s_title)
+				if lyrics or synced:
+					if lyrics:
+						logging.info(f"Found lyrics from {name}")
+						track_object.lyrics = lyrics
+					if synced:
+						logging.info(f"Found synced lyrics")
+						track_object.synced = synced
 					found = True
 					break
 			except Exception:
