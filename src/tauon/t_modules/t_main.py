@@ -24086,19 +24086,12 @@ def load_prefs():
 def auto_scale() -> None:
 
 	old = prefs.scale_want
-
 	if prefs.x_scale:
-		if True: #sss.subsystem in (SDL_SYSWM_WAYLAND, SDL_SYSWM_COCOA, SDL_SYSWM_UNKNOWN):
-			prefs.scale_want = window_size[0] / logical_size[0]
-			if old != prefs.scale_want:
-				logging.info("Applying scale based on buffer size")
-		# elif sss.subsystem == SDL_SYSWM_X11:
-		# 	if xdpi > 40:
-		# 		prefs.scale_want = xdpi / 96
-		# 		if old != prefs.scale_want:
-		# 			logging.info("Applying scale based on xft setting")
+		prefs.scale_want = window_size[0] / logical_size[0]
 
 	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
+	if prefs.x_scale and old != prefs.scale_want:
+		logging.info("Applying scale based on buffer size")
 
 	if prefs.scale_want == 0.95:
 		prefs.scale_want = 1.0
@@ -24113,12 +24106,12 @@ def auto_scale() -> None:
 		logging.info(f"Using UI scale: {prefs.scale_want}")
 
 	if prefs.scale_want < 0.5:
-		prefs.scale_want = 1.0
+		prefs.scale_want = 0.5
 
-	if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
-		logging.info("Window overscale!")
-		show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
-		prefs.scale_want = 1.0
+	# if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
+	# 	logging.info("Window overscale!")
+	# 	show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
+	# 	prefs.scale_want = 1.0
 
 def scale_assets(scale_want: int, force: bool = False) -> None:
 	global scaled_asset_directory
@@ -36796,18 +36789,9 @@ def set_mini_mode():
 
 	sdl3.SDL_SetWindowResizable(t_window, False)
 	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-	sdl3.SDL_SyncWindow(t_window)
-	time.sleep(0.05)
 
 	if mini_mode.save_position:
 		sdl3.SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
-
-	sdl3.SDL_PumpEvents()
-	i_x = pointer(c_int(0))
-	i_y = pointer(c_int(0))
-	sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
-	window_size[0] = i_x.contents.value
-	window_size[1] = i_y.contents.value
 
 	gui.update += 3
 
@@ -36841,7 +36825,6 @@ def restore_full_mode():
 	gui.mode = 1
 
 	sdl3.SDL_SyncWindow(t_window)
-	time.sleep(0.05)
 	sdl3.SDL_PumpEvents()
 
 	global mouse_down
@@ -36859,11 +36842,6 @@ def restore_full_mode():
 		logical_size[1] = i_y.contents.value
 
 		#logging.info(window_size)
-
-	sdl3.SDL_PumpEvents()
-	sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
-	window_size[0] = i_x.contents.value
-	window_size[1] = i_y.contents.value
 
 	gui.update_layout()
 	if prefs.art_bg:
@@ -42160,30 +42138,36 @@ while pctl.running:
 			elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 				# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
 				pass
+			elif event.type == sdl3.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+				i_x = pointer(c_int(0))
+				i_y = pointer(c_int(0))
+				sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
+				window_size[0] = i_x.contents.value
+				window_size[1] = i_y.contents.value
+				auto_scale()
+				update_layout = True
+				gui.update = 2
+
 			elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
 				# sdl3.SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
-				if event.window.data1 < 500:
-					logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
-					sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-				elif restore_ignore_timer.get() > 1:  # Hacky
-					gui.update = 2
+				# if event.window.data1 < 500:
+				# 	logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
+				# 	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+				# elif restore_ignore_timer.get() > 1:  # Hacky
+				# 	gui.update = 2
+				#
+				# 	logical_size[0] = event.window.data1
+				# 	logical_size[1] = event.window.data2
+				#
+				# 	if gui.mode != 3:
+				# 		logical_size[0] = max(300, logical_size[0])
+				# 		logical_size[1] = max(300, logical_size[1])
 
-					logical_size[0] = event.window.data1
-					logical_size[1] = event.window.data2
-
-					if gui.mode != 3:
-						logical_size[0] = max(300, logical_size[0])
-						logical_size[1] = max(300, logical_size[1])
-
-					i_x = pointer(c_int(0))
-					i_y = pointer(c_int(0))
-					sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
-					window_size[0] = i_x.contents.value
-					window_size[1] = i_y.contents.value
-
-					auto_scale()
-					update_layout = True
-
+				gui.update = 2
+				logical_size[0] = event.window.data1
+				logical_size[1] = event.window.data2
+				#auto_scale()
+				#update_layout = True
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_MOUSE_ENTER:
 				#logging.info("ENTER")
