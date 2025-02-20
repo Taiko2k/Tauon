@@ -550,8 +550,6 @@ class TDraw:
 		if key:
 			force_cache = True
 
-		self.pretty_rect = None  # todo SDL3 upgrade fix me
-
 		self.was_truncated = False
 
 		max_x += 12  # Hack
@@ -629,8 +627,9 @@ class TDraw:
 			w = max_x + 1
 
 		data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
+		ptr = pointer(data)
 
-		if real_bg and False: # todo fix me for sdl3
+		if real_bg:
 			box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
 			if align == 1:
@@ -640,7 +639,10 @@ class TDraw:
 				box.x -= int(box.w / 2)
 
 			ssurf = sdl3.SDL_RenderReadPixels(self.renderer, box) #, sdl3.SDL_PIXELFORMAT_XRGB8888, ctypes.pointer(data), (w * 4))
-			data = ssurf.contents.pixels
+			ptr = ssurf.contents.pixels
+			size = w * h * 4
+			data_array = (ctypes.c_ubyte * size).from_address(ptr)
+			data = memoryview(data_array)
 
 		if alpha_bg:
 			surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
@@ -722,10 +724,10 @@ class TDraw:
 		if alpha_bg:
 			#sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, sdl3.SDL_PIXELFORMAT_ARGB8888)
 			format = sdl3.SDL_PIXELFORMAT_ARGB8888
-			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ctypes.pointer(data), w * 4)
+			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ptr, w * 4)
 		else:
 			format = sdl3.SDL_PIXELFORMAT_XRGB8888
-			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ctypes.pointer(data), w * 4)
+			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ptr, w * 4)
 
 		# Here the background colour is keyed out allowing lines to overlap slightly
 		if not real_bg and not alpha_bg:
