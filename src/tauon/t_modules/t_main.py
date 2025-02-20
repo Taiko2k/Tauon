@@ -15863,7 +15863,7 @@ class MiniMode3:
 			off = round(4 * gui.scale)
 
 			drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
-			ddt.rect((ins, ins, wid, wid), [20, 20, 20, 255])
+			ddt.rect((ins + 1, ins + 1, wid - 1, wid - 1), [20, 20, 20, 255])
 			album_art_gen.display(track, (ins, ins), (wid, wid))
 
 			line1c = [255, 255, 255, 255] #colours.mini_mode_text_1
