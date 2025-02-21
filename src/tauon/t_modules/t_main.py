@@ -43138,7 +43138,7 @@ while pctl.running:
 
 		if prefs.transparent_mode:
 			colours.top_panel_background[3] = 80
-			colours.side_panel_background[3] = 100
+			colours.side_panel_background[3] = 130
 			colours.art_box[3] = 100
 			colours.window_frame[3] = 100
 			colours.bottom_panel_colour[3] = 200
