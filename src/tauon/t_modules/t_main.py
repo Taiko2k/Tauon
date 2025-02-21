@@ -4874,6 +4874,7 @@ class Tauon:
 		self.lfm_scrobbler: LastScrob = lfm_scrobbler
 		self.star_store:    StarStore = star_store
 		self.gui:  GuiVar = gui
+		self.ddt: TDraw | None = None
 		self.prefs: Prefs = prefs
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:    Path | None = user_directory
@@ -40301,6 +40302,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 		logging.warning("Could not find TaskbarLib.tlb")
 
 ddt = TDraw(renderer)
+tauon.ddt = ddt
 ddt.scale = gui.scale
 ddt.force_subpixel_text = prefs.force_subpixel_text
 
