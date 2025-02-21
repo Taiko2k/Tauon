@@ -399,6 +399,20 @@ class TDraw:
 	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: tuple[int, int, int, int]) -> None:
 		self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
+
+	def clear_rect(self, rectangle: tuple[int, int, int, int]) -> None:
+
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+
+		self.sdlrect.x = float(rectangle[0])
+		self.sdlrect.y = float(rectangle[1])
+		self.sdlrect.w = float(rectangle[2])
+		self.sdlrect.h = float(rectangle[3])
+
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+
 	def rect(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int]) -> None:
 
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
