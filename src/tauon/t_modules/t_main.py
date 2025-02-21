@@ -871,7 +871,7 @@ class Fonts:
 		self.panel_title = 213
 
 		self.side_panel_line1 = 214
-		self.side_panel_line2 = 13
+		self.side_panel_line2 = 313
 
 		self.bottom_panel_time = 212
 
@@ -6394,7 +6394,8 @@ class TimedLyricsRen:
 			bg = colours.playlist_panel_background
 			font_size = 17
 			spacing = round(23 * gui.scale)
-		bg[3] = 255
+
+		bg = (bg[0], bg[1], bg[2], 255)
 		test_time = get_real_time()
 
 		if pctl.track_queue[pctl.queue_step] == index:
@@ -17223,6 +17224,7 @@ class ArtBox:
 	def draw(self, x, y, w, h, target_track=None, tight_border=False, default_border=None):
 
 		# Draw a background for whole area
+		ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), colours.side_panel_background)
 		# ddt.rect_r((x, y, w ,h), [255, 0, 0, 200], True)
 
@@ -18801,7 +18803,7 @@ class PlaylistBox:
 			bg = [0, 0, 0, 0]
 			if prefs.transparent_mode:
 				bg = rgb_add_hls(colours.playlist_box_background, 0, 0.09, 0)
-				bg[3] = 255
+				bg = (bg[0], bg[1], bg[2], 255)
 
 			# Highlight if playlist selected (viewing)
 			if i == pctl.active_playlist_viewing or (tab_menu.active and tab_menu.reference == i):
@@ -18813,7 +18815,7 @@ class PlaylistBox:
 					bg = [0, 0, 0, 25]
 				if prefs.transparent_mode:
 					bg = rgb_add_hls(colours.playlist_box_background, 0, 0.03, 0)
-					bg[3] = 255
+					bg = (bg[0], bg[1], bg[2], 255)
 
 			# Highlight target playlist when tragging tracks over
 			if coll(
@@ -21028,7 +21030,7 @@ class MetaBox:
 	def lyrics(self, x, y, w, h, track: TrackClass):
 
 		bg = colours.side_panel_background
-		bg[3] = 255
+		bg = (bg[0], bg[1], bg[2], 255)
 		ddt.rect((x, y, w, h), bg)
 		ddt.text_background_colour = bg
 
@@ -21089,8 +21091,9 @@ class MetaBox:
 	def draw(self, x, y, w, h, track=None):
 
 		bg = colours.side_panel_background
-		bg[3] = 255
+		#bg = (bg[0], bg[1], bg[2], 255)
 		ddt.text_background_colour = bg
+		ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), bg)
 
 		if not track:
@@ -43123,7 +43126,6 @@ while pctl.running:
 
 			except Exception:
 				logging.exception("Error loading theme file")
-				raise
 				show_message(_("Error loading theme file"), "", mode="warning")
 
 		if theme == 0:
@@ -43136,7 +43138,7 @@ while pctl.running:
 
 		if prefs.transparent_mode:
 			colours.top_panel_background[3] = 80
-			colours.side_panel_background[3] = 80
+			colours.side_panel_background[3] = 100
 			colours.art_box[3] = 100
 			colours.window_frame[3] = 100
 			colours.bottom_panel_colour[3] = 200
@@ -44714,6 +44716,7 @@ while pctl.running:
 						y = gui.panelY
 						w = gui.rspw
 
+						ddt.clear_rect((x, y, w, h))
 						ddt.rect((x, y, w, h), colours.side_panel_background)
 						test_auto_lyrics(target_track)
 						# Draw lyrics if avaliable
