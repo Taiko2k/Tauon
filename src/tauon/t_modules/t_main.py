@@ -34044,8 +34044,8 @@ def hit_discord() -> None:
 		discord_t.daemon = True
 		discord_t.start()
 
-def open_donate_link() -> None:
-	webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
+# def open_donate_link() -> None:
+# 	webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
 
 def stop_quick_add() -> None:
 	pctl.quick_add_target = None
@@ -41315,7 +41315,7 @@ x_menu.add(MenuItem("LFM", lastfm.toggle, last_fm_menu_deco, icon=listen_icon, s
 
 x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), toggle_shuffle_layout, toggle_shuffle_layout_deco)) #show_test=exit_shuffle_layout))
 
-x_menu.add(MenuItem(_("Donate"), open_donate_link))
+#x_menu.add(MenuItem(_("Donate"), open_donate_link))
 
 x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 
