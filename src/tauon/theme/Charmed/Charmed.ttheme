@@ -1,0 +1,105 @@
+﻿#Tauon Music Box theme file
+
+deco=Charmed
+
+#-Backgrounds-----
+
+111,41,53		player background (top panel)
+28,23,27	  	playlist panel
+#68,48,61		side panel
+65,50,60		side panel
+105,45,59		bottom panel
+#117,53,80		bottom panel
+18,18,18        queue panel
+20,14,18        gallery background
+
+#-Playlist-------
+
+130,130,130		track line
+120,120,120		track time
+100,100,100		track index
+133,80,95		track artist
+156,120,80		album line
+
+175,175,175		track playing
+175,165,175		index playing
+200,90,110		artist playing
+190,180,115		album playing
+175,165,175		time playing
+
+85,85,85		track missing
+
+180,180,180		fav line
+255,250,255,20		folder line
+150,150,150		folder title
+
+255,245,245,9		playing highlight
+138,128,128,30		select highlight
+185,100,135		gallery highlight
+
+#-Menu-------------
+
+25,18,22        menu background
+60,40,45       menu highlight
+230,230,230     menu text
+50,50,50        menu disable text
+100,40,50       menu border
+
+#-Dialog box---------
+
+25,18,22        box background
+100,40,50    box border
+
+255,245,245     box title text
+112,90,112     box text label
+
+255,245,245     box text normal
+255,248,248     box sub text
+255,248,248     box input text
+55,52,52        box text border
+
+#        box button text normal
+#        box button text highlight
+50,38,40        box button background normal
+110,99,99       box button background highlight
+#        box button border
+
+#-Bottom panel------
+
+255,255,255,50		buttons off
+233,233,233		buttons over
+245,245,245,245		buttons active
+
+220,205,200		playing time
+
+185,100,135		seek bar
+185,100,135		volume bar
+82,39,53		seek bg
+82,39,48		volume bg
+50,40,40		scroll bar
+
+255,255,255,40		mode off
+220,220,220		mode over
+225,140,148,230		mode on
+
+240,240,240		bottom title
+
+#-Top panel---------
+
+245,245,245		tab active line
+235,235,235		tab line
+68,32,45		tab background
+92,47,69		tab over
+130,40,80		tab active background
+220,120,140		music vis
+
+#-Side panel--------
+
+240,240,240		title info
+215,215,215		extra info
+26,26,26		art border
+
+#-Mini Mode---------
+
+40,22,22        mini bg
+170,50,60        mini border

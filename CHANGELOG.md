@@ -7,9 +7,11 @@ Changelog
  - **Added** Transparent accent theme mode
  - **Added** Drag and drop from file zone highlight
  - **Added** Lyric provider "LRCLIB" including synced lyrics
+ - **Added** Theme Charmed as built in
  - **Fixed** Mini mode always on top not working on Wayland
  - **Fixed** Drag and drop feedback when dragging external file
- - **Added** Shuffle lockdown shortcut to main menu
+ - **Tweaked** Shuffle lockdown shortcut added to main menu
+ - **Tweaked** Theme Ash colours
 
 
 ### v7.9.0
