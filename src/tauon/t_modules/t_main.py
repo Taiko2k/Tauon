@@ -1142,6 +1142,15 @@ class ColoursClass:
 		self.artist_bio_background = [27, 27, 27, 255]
 		self.artist_bio_text = [230, 230, 230, 255]
 
+	def apply_transparancy(self):
+		self.top_panel_background[3] = 80
+		self.side_panel_background[3] = 130
+		self.art_box[3] = 100
+		self.window_frame[3] = 100
+		self.bottom_panel_colour[3] = 200
+
+		# colours.playlist_panel_background[3] = 220
+		# colours.playlist_box_background  = [0, 0, 0, 100]
 	def post_config(self):
 
 		if self.box_thumb_background is None:
@@ -8089,6 +8098,8 @@ class AlbumArt:
 							if len(x_colours) > 4:
 								colours.playlist_box_background = x_colours[4] + (255,)
 
+				colours.playlist_panel_background = list(colours.playlist_panel_background)
+				colours.side_panel_background = list(colours.side_panel_background)
 				colours.queue_background = colours.side_panel_background
 				# Check artist text colour
 				if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
@@ -8122,7 +8133,7 @@ class AlbumArt:
 					colours.title_text = choice
 					colours.title_playing = choice
 
-				if test_lumi(colours.side_panel_background) < 0.50:
+				if test_lumi(colours.side_panel_background) < 0.50 and not prefs.transparent_mode:
 					colours.side_bar_line1 = [25, 25, 25, 255]
 					colours.side_bar_line2 = [35, 35, 35, 255]
 				else:
@@ -8162,6 +8173,9 @@ class AlbumArt:
 				gui.temp_themes[track.album] = copy.deepcopy(colours)
 				colours = gui.temp_themes[track.album]
 				gui.theme_temp_current = track.album
+
+				if prefs.transparent_mode:
+					colours.apply_transparancy()
 
 			if theme_only:
 				source_image.close()
@@ -43137,13 +43151,7 @@ while pctl.running:
 			deco.unload()
 
 		if prefs.transparent_mode:
-			colours.top_panel_background[3] = 80
-			colours.side_panel_background[3] = 130
-			colours.art_box[3] = 100
-			colours.window_frame[3] = 100
-			colours.bottom_panel_colour[3] = 200
-			#colours.playlist_panel_background[3] = 220
-			#colours.playlist_box_background  = [0, 0, 0, 100]
+			colours.apply_transparancy()
 
 		prefs.theme_name = gui.theme_name
 
