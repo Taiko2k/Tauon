@@ -509,7 +509,13 @@ void (*ff_close)();
 void (*on_device_unavailable)();
 
 void start_ffmpeg(char uri[], int start_ms) {
-	int status = ff_start(uri, start_ms, sample_rate_out);
+	int status = 0;
+	if (ff_start != NULL) status = ff_start(uri, start_ms, sample_rate_out);
+	else {
+		printf("pa: FFMPEG callback is NULL\n");
+		return;
+	}
+
 	if (status != 0) {
 		printf("pa: Error starting FFMPEG\n");
 		return;
@@ -521,7 +527,7 @@ void start_ffmpeg(char uri[], int start_ms) {
 }
 
 void stop_ffmpeg() {
-	ff_close();
+	if (ff_close != NULL) ff_close();
 }
 
 
@@ -567,8 +573,11 @@ int wave_error = 0;
 int16_t wave_16 = 0;
 
 int wave_open(char *filename) {
-
 	wave_file = fopen(filename, "rb");
+	if (wave_file == NULL) {
+		printf("pa: Error opening WAVE file: %s\n", strerror(errno));
+		return 1;
+	}
 
 	char b[16];
 	int i;
@@ -585,6 +594,7 @@ int wave_open(char *filename) {
 	//printf("pa: head: %s\n", b);
 	if (memcmp(b, "WAVE", 4) == 1) {
 		printf("pa: Invalid WAVE file\n");
+		fclose(wave_file);
 		return 1;
 	}
 
@@ -627,6 +637,7 @@ int wave_open(char *filename) {
 	//printf("pa: type: %d\n", i);
 	if (i != 1) {
 		printf("pa: Unsupported WAVE file\n");
+		fclose(wave_file);
 		return 1;
 	}
 
@@ -634,6 +645,7 @@ int wave_open(char *filename) {
 	//printf("pa: chan: %d\n", i);
 	if (i != 1 && i != 2) {
 		printf("pa: Unsupported WAVE channels\n");
+		fclose(wave_file);
 		return 1;
 	}
 	wave_channels = i;
@@ -649,6 +661,7 @@ int wave_open(char *filename) {
 	//printf("pa: bitd: %d\n", i);
 	if (i != 16) {
 		printf("pa: Unsupported WAVE depth\n");
+		fclose(wave_file);
 		return 1;
 	}
 	wave_depth = i;
@@ -735,7 +748,7 @@ int wave_seek(int frame_position) {
 }
 
 void wave_close() {
-	fclose(wave_file);
+	if (wave_file != NULL) fclose(wave_file);
 }
 
 void read_to_buffer_24in32_fs(int32_t src[], int n_samples) {
@@ -1746,7 +1759,7 @@ int load_next() {
 	// Peak into file and try to detect signature
 
 	if ((fptr = uni_fopen(loaded_target_file)) == NULL) {
-		printf("pa: Error opening file - 1\n");
+		printf("pa: Error opening file: %s\n", strerror(errno));
 		perror("Error");
 		return 1;
 	}
@@ -1913,6 +1926,11 @@ int load_next() {
 		mod = openmpt_module_create2(openmpt_stream_get_file_callbacks2(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		src_channels = 2;
 		fclose(mod_file);
+
+		if (mod == NULL) {
+			printf("pa: Error creating MPT modules\n");
+			return 1;
+		}
 		pthread_mutex_lock(&buffer_mutex);
 		sample_rate_src = 48000;
 		current_length_count = openmpt_module_get_duration_seconds(mod) * 48000;
@@ -2005,11 +2023,16 @@ int load_next() {
 			break;
 		case VORBIS:
 			d_file = uni_fopen(loaded_target_file);
+			if (d_file == NULL) {
+				printf("pa: Error opening VORBIS file: %s\n", strerror(errno));
+				return 1;
+			}
 			//e = ov_fopen(loaded_target_file, &vf);
 			e = ov_open(d_file, &vf, NULL, 0);
 			decoder_allocated = 1;
 			if (e != 0) {
 				printf("pa: Error reading ogg file (expecting vorbis)\n");
+				fclose(d_file);
 
 				return 1;
 			} else {
@@ -2058,7 +2081,11 @@ int load_next() {
 
 				return 0;
 
-			} else return 1;
+			} else {
+				FLAC__stream_decoder_delete(dec);
+				fclose(d_file);
+				return 1;
+			}
 
 			break;
 
@@ -2092,9 +2119,9 @@ int load_next() {
 			break;
 
 		case MPG:
-
 			mpg123_open(mh, loaded_target_file);
 			decoder_allocated = 1;
+
 			mpg123_getformat(mh, &rate, &channels, &encoding);
 			mpg123_scan(mh);
 			//printf("pa: %lu. / %d. / %d\n", rate, channels, encoding);
@@ -2227,9 +2254,7 @@ void pump_decode() {
 		pthread_mutex_lock(&buffer_mutex);
 		result = wave_decode(1024 * 2);
 		pthread_mutex_unlock(&buffer_mutex);
-		if (result == 1) {
-			decoder_eos();
-		}
+		if (result == 1) decoder_eos();
 
 	} else if (codec == MPT) {
 		int count;
@@ -2244,73 +2269,72 @@ void pump_decode() {
 		}
 
 	} else if (codec == GME) {
+		if (emu != NULL) {
+			gme_play(emu, 1024, temp16l);
 
-		gme_play(emu, 1024, temp16l);
+			pthread_mutex_lock(&buffer_mutex);
+			read_to_buffer_s16int(temp16l, 1024);
+			samples_decoded += 1024;
+			pthread_mutex_unlock(&buffer_mutex);
 
-		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_s16int(temp16l, 1024);
-		samples_decoded += 1024;
-		pthread_mutex_unlock(&buffer_mutex);
-
-		if (gme_track_ended(emu)) {
-			decoder_eos();
+			if (gme_track_ended(emu)) decoder_eos();
 		}
 
 
 	} else if (codec == FLAC) {
 		// FLAC decoding
+		if (dec != NULL) {
+			switch (FLAC__stream_decoder_get_state(dec)) {
+				case FLAC__STREAM_DECODER_END_OF_STREAM:
+					decoder_eos();
+					break;
 
-		switch (FLAC__stream_decoder_get_state(dec)) {
-			case FLAC__STREAM_DECODER_END_OF_STREAM:
-				decoder_eos();
-				break;
+				default:
+					FLAC__stream_decoder_process_single(dec);
 
-			default:
-				FLAC__stream_decoder_process_single(dec);
-
-		}
-
-		if (load_target_seek > 0 && flac_got_rate == 1) {
-			//printf("pa: Set start position %d\n", load_target_seek);
-
-			FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
-			pthread_mutex_lock(&buffer_mutex);
-			reset_set = true;
-			reset_set_byte = high;
-			load_target_seek = 0;
-			pthread_mutex_unlock(&buffer_mutex);
-		}
-
-	} else if (codec == OPUS) {
-
-		unsigned int done;
-
-		if (src_channels == 1) {
-			done = op_read(opus_dec, opus_buffer, 4096, NULL);
-		}
-		else {
-			done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
-		}
-
-		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_s16int(opus_buffer, done);
-		samples_decoded += done;
-
-		pthread_mutex_unlock(&buffer_mutex);
-		if (done == 0) {
-
-			// Check if file was appended to...
-			stat(loaded_target_file, &st);
-			if (load_file_size != st.st_size) {
-				printf("pa: Ogg file size changed!\n");
-				int e = 0;
-				op_free(opus_dec);
-				opus_dec = op_open_file(loaded_target_file, &e);
-				op_pcm_seek(opus_dec, samples_decoded / 2);
-				return;
 			}
 
-			decoder_eos();
+			if (load_target_seek > 0 && flac_got_rate == 1) {
+				//printf("pa: Set start position %d\n", load_target_seek);
+
+				FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
+				pthread_mutex_lock(&buffer_mutex);
+				reset_set = true;
+				reset_set_byte = high;
+				load_target_seek = 0;
+				pthread_mutex_unlock(&buffer_mutex);
+			}
+		} else decoder_eos();
+
+	} else if (codec == OPUS) {
+		if (opus_dec != NULL) {
+			unsigned int done;
+
+			if (src_channels == 1) {
+				done = op_read(opus_dec, opus_buffer, 4096, NULL);
+			}
+			else done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
+
+			pthread_mutex_lock(&buffer_mutex);
+			read_to_buffer_s16int(opus_buffer, done);
+			samples_decoded += done;
+
+			pthread_mutex_unlock(&buffer_mutex);
+			if (done == 0) {
+
+				// Check if file was appended to...
+				stat(loaded_target_file, &st);
+				if (load_file_size != st.st_size) {
+					printf("pa: Ogg file size changed!\n");
+					int e = 0;
+					op_free(opus_dec);
+					opus_dec = op_open_file(loaded_target_file, &e);
+					op_pcm_seek(opus_dec, samples_decoded / 2);
+					return;
+				}
+
+				decoder_eos();
+			}
 		}
 
 
@@ -2323,39 +2347,42 @@ void pump_decode() {
 		pthread_mutex_lock(&buffer_mutex);
 		read_to_buffer_char16(parse_buffer, done);
 		pthread_mutex_unlock(&buffer_mutex);
-		if (done == 0) {
-			decoder_eos();
-		}
+		if (done == 0) decoder_eos();
 
 	} else if (codec == WAVPACK) {
-		int samples;
-		int32_t buffer[4 * 1024 * 2];
-		samples = WavpackUnpackSamples(wpc, buffer, 1024);
-		if (wp_bit == 16) {
-			read_to_buffer_16in32_fs(buffer, samples);
-		} else if (wp_bit == 24) {
-			read_to_buffer_24in32_fs(buffer, samples);
+		if (wpc != NULL) {
+			int samples;
+			int32_t buffer[4 * 1024 * 2];
+			samples = WavpackUnpackSamples(wpc, buffer, 1024);
+			if (wp_bit == 16) {
+				read_to_buffer_16in32_fs(buffer, samples);
+			} else if (wp_bit == 24) {
+				read_to_buffer_24in32_fs(buffer, samples);
+			}
+			samples_decoded += samples;
 		}
-		samples_decoded += samples;
 
 	} else if (codec == MPG) {
 		// MP3 decoding
+		if (mh != NULL) {
+			size_t done;
 
-		size_t done;
+			mpg123_read(mh, parse_buffer, 2048 * 2, &done);
 
-		mpg123_read(mh, parse_buffer, 2048 * 2, &done);
-
-		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_char16(parse_buffer, done);
-		pthread_mutex_unlock(&buffer_mutex);
-		if (done == 0) {
-			decoder_eos();
+			pthread_mutex_lock(&buffer_mutex);
+			read_to_buffer_char16(parse_buffer, done);
+			pthread_mutex_unlock(&buffer_mutex);
+			if (done == 0) decoder_eos();
 		}
 	} else if (codec == FFMPEG) {
 
 		int b = 0;
-
-		b = ff_read(ffm_buffer, 2048);
+		if (ff_read != NULL) b = ff_read(ffm_buffer, 2048);
+		else {
+			printf("pa: FFMPEG read callback is NULL\n");
+			decoder_eos();
+			return;
+		}
 
 		if (b % 4 != 0) {
 			printf("pa: Uneven data\n");
@@ -2386,8 +2413,23 @@ int main_running = 0;
 void *main_loop(void *thread_id) {
 
 	rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
+	if (rbuf == NULL) {
+		printf("pa: Error allocating memory for rbuf\n");
+		return thread_id;
+	}
 	cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
+	if (cbuf == NULL) {
+		printf("pa: Error allocating memory for cbuf\n");
+		free(rbuf);
+		return thread_id;
+	}
 	ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
+	if (ffta == NULL) {
+		printf("pa: Error allocating memory for ffta\n");
+		free(rbuf);
+		free(cbuf);
+		return thread_id;
+	}
 
 	int error = 0;
 
@@ -2397,6 +2439,13 @@ void *main_loop(void *thread_id) {
 	// SRC ----------------------------
 
 	src = src_new(config_resample_quality, 2, &error);
+	if (src == NULL) {
+		printf("pa: Error creating SRC state\n");
+		free(rbuf);
+		free(cbuf);
+		kiss_fftr_free(ffta);
+		return thread_id;
+	}
 	// printf("pa: SRC error code %d", error);
 	error = 0;
 
@@ -2404,6 +2453,7 @@ void *main_loop(void *thread_id) {
 
 	mpg123_init();
 	mh = mpg123_new(NULL, &error);
+
 	mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_QUIET | MPG123_SKIP_ID3V2, 0);
 	mpg123_param(mh, MPG123_RESYNC_LIMIT, 10000, 0);
 
@@ -2630,10 +2680,13 @@ void *main_loop(void *thread_id) {
 	buff_reset();
 
 	//disconnect_pulse();
-	FLAC__stream_decoder_finish(dec);
+	if (dec != NULL) FLAC__stream_decoder_finish(dec);
 	FLAC__stream_decoder_delete(dec);
 	mpg123_delete(mh);
 	src_delete(src);
+	free(rbuf);
+	free(cbuf);
+	kiss_fftr_free(ffta);
 
 	pthread_mutex_unlock(&buffer_mutex);
 
