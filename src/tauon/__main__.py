@@ -138,8 +138,7 @@ if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox
 if str(install_directory).startswith("/app/"):
 	# Its Flatpak
 	t_id = "com.github.taiko2k.tauonmb"
-os.environ["SDL_VIDEO_WAYLAND_WMCLASS"] = t_id
-os.environ["SDL_VIDEO_X11_WMCLASS"] = t_id
+
 
 if (install_directory / "portable").is_file():
 	install_mode = False
@@ -210,7 +209,8 @@ if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
-# sdl3.SDL_SetHint(b"SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR", b"0")
+sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_ID, t_id.encode("utf-8"))
+sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_NAME, t_title.encode("utf-8"))
 
 draw_border = True
 w = 1120
