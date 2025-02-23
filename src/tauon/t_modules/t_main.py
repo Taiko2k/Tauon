@@ -1143,8 +1143,8 @@ class ColoursClass:
 		self.artist_bio_text = [230, 230, 230, 255]
 
 	def apply_transparancy(self):
-		self.top_panel_background[3] = 80
-		self.side_panel_background[3] = 130
+		self.top_panel_background[3] = 140
+		self.side_panel_background[3] = 140
 		self.art_box[3] = 100
 		self.window_frame[3] = 100
 		self.bottom_panel_colour[3] = 200
@@ -13289,9 +13289,9 @@ class TopPanel:
 			gui.update_on_drag = True
 
 		# Draw the background
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		ddt.clear_rect((0, 0, window_size[0], gui.panelY))
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+
 
 		if prefs.shuffle_lock and not gui.compact_bar:
 			colour = [250, 250, 250, 255]
@@ -43181,9 +43181,12 @@ while pctl.running:
 			reset_render = False
 
 		sdl3.SDL_SetRenderTarget(renderer, None)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 		sdl3.SDL_SetRenderDrawColor(
-			renderer, colours.top_panel_background[0], colours.top_panel_background[1],
-			colours.top_panel_background[2], colours.top_panel_background[3])
+			renderer, 0, 0,
+			0, 0)
+		sdl3.SDL_RenderClear(renderer)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.SDL_RenderClear(renderer)
 		sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 		sdl3.SDL_RenderClear(renderer)
@@ -46314,10 +46317,12 @@ while pctl.running:
 
 		sdl3.SDL_SetRenderTarget(renderer, None)
 		if not gui.present:
+			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 			sdl3.SDL_SetRenderDrawColor(
-				renderer, colours.top_panel_background[0], colours.top_panel_background[1],
-				colours.top_panel_background[2], colours.top_panel_background[3])
+				renderer, 0, 0,
+				0, 0)
 			sdl3.SDL_RenderClear(renderer)
+			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 			sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 			gui.present = True
 
