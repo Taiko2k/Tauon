@@ -4837,6 +4837,25 @@ class ThumbTracks:
 	def __init__(self):
 		pass
 
+	def pixbuf(self, track: TrackClass) -> GdkPixbuf | None:
+
+		try:
+			source, offset = tauon.gall_ren.get_file_source(track)
+			if source is False:  # No art
+				return None
+			source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
+			im = Image.open(source_image)
+			if im.mode != "RGB":
+				im = im.convert("RGB")
+			im.thumbnail((512, 512), Image.Resampling.LANCZOS)
+			width, height = im.size
+			data = im.tobytes()
+			pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 3)
+			return pixbuf
+		except:
+			logging.exception("Error create pixbuf of album art")
+			return None
+
 	def path(self, track: TrackClass) -> str:
 
 		source, offset = tauon.gall_ren.get_file_source(track)
@@ -24904,13 +24923,13 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 		if not track or not (track.title or track.artist or track.album or track.filename):
 			return  # only display if we have at least one piece of metadata avaliable
 
-		i_path = ""
-		try:
-			if not notify_of_end:
-				i_path = tauon.thumb_tracks.path(track)
-		except Exception:
-			logging.exception(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
-			logging.error("Thumbnail error")
+		# i_path = ""
+		# try:
+		# 	if not notify_of_end:
+		# 		i_path = tauon.thumb_tracks.path(track)
+		# except Exception:
+		# 	logging.exception(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
+		# 	logging.error("Thumbnail error")
 
 		top_line = track.title
 
@@ -24933,7 +24952,12 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 			top_line = (_("End of playlist"))
 			id = None
 
-		song_notification.update(top_line, bottom_line, i_path)
+		song_notification.update(top_line, bottom_line) #, i_path)
+		tauon.notify_image = tauon.thumb_tracks.pixbuf(track)
+		if tauon.notify_image:
+			song_notification.set_image_from_pixbuf(tauon.notify_image)
+		else:
+			song_notification.update(top_line, bottom_line, None)
 
 		shoot_dl = threading.Thread(target=notify_song_fire, args=([song_notification, delay, id]))
 		shoot_dl.daemon = True
@@ -39049,7 +39073,7 @@ elif not msys and not macos:
 		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
 		gi.require_version("Notify", "0.8")
 	from gi.repository import Notify
-
+	from gi.repository import GdkPixbuf
 
 wayland = True
 if os.environ.get("SDL_VIDEODRIVER") != "wayland":
