@@ -23097,7 +23097,7 @@ class Undo:
 					pctl.playlist_view_position = i
 					logging.debug("Position changed by undo")
 		elif job[0] == "ptt":
-			j, fr, fr_s, fr_scr, so, to_s, to_scr = job
+			j, fr, fr_s, fr_scr, to, to_s, to_scr = job
 			star_store.insert(fr.index, fr_s)
 			star_store.insert(to.index, to_s)
 			to.lfm_scrobbles = to_scr
@@ -23114,8 +23114,8 @@ class Undo:
 		uid = pctl.multi_playlist[pl_index].uuid_int
 		self.e.append(("tracks", uid, indis))
 
-	def bk_playtime_transfer(self, fr, fr_s, fr_scr, so, to_s, to_scr) -> None:
-		self.e.append(("ptt", fr, fr_s, fr_scr, so, to_s, to_scr))
+	def bk_playtime_transfer(self, fr, fr_s, fr_scr, to, to_s, to_scr) -> None:
+		self.e.append(("ptt", fr, fr_s, fr_scr, to, to_s, to_scr))
 
 class GetSDLInput:
 	def __init__(self) -> None:
