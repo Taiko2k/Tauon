@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING
 import requests
 
 from tauon.t_modules.t_extra import Timer
+from tauon.t_modules.t_draw import QuickThumbnail
 
 if TYPE_CHECKING:
 	from tekore._auth.refreshing import RefreshingCredentials
@@ -52,9 +53,9 @@ else:
 class SpotCtl:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon:            Tauon = tauon
-		self.strings:        Strings = tauon.strings
-		self.start_timer:      Timer = Timer()
+		self.tauon                   = tauon
+		self.strings                 = tauon.strings
+		self.start_timer             = Timer()
 		self.status:             int = 0
 		self.spotify: Spotify | None = None
 		self.loaded_art:         str = ""
@@ -363,18 +364,18 @@ class SpotCtl:
 
 		finds = []
 
-		self.tauon.QuickThumbnail.queue.clear()
+		self.tauon.quickthumbnail.queue.clear()
 
 		if results[0]:
 
 			for i, album in enumerate(results[0].items[1:]):
 
-				img = self.tauon.QuickThumbnail()
+				img = QuickThumbnail(self.tauon)
 				img.url = album.images[-1].url
 				img.size = round(50 * self.tauon.gui.scale)
-				self.tauon.QuickThumbnail().items.append(img)
+				self.tauon.quickthumbnail.items.append(img)
 				if i < 10:
-					self.tauon.QuickThumbnail().queue.append(img)
+					self.tauon.quickthumbnail.queue.append(img)
 				try:
 					self.tauon.gall_ren.lock.release()
 				except Exception:
