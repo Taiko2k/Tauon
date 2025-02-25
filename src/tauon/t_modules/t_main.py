@@ -20985,7 +20985,7 @@ class QueueBox:
 
 class MetaBox:
 
-	def l_panel(self, x, y, w, h, track, top_border=True):
+	def l_panel(self, x: int, y: int, w: int, h: int, track: TrackClass, top_border: bool = True) -> None:
 
 		if not track:
 			return
@@ -21027,9 +21027,9 @@ class MetaBox:
 		if (inp.mouse_click or right_click) and is_level_zero(False):
 			if coll(border_rect):
 				if inp.mouse_click:
-					album_art_gen.cycle_offset(target_track)
+					album_art_gen.cycle_offset(track)
 				if right_click:
-					picture_menu.activate(in_reference=target_track)
+					picture_menu.activate(in_reference=track)
 			elif coll(rect):
 				if inp.mouse_click:
 					pctl.show_current()
@@ -21042,7 +21042,7 @@ class MetaBox:
 
 		fields.add(border_rect)
 		if coll(border_rect) and is_level_zero(True):
-			showc = album_art_gen.get_info(target_track)
+			showc = album_art_gen.get_info(track)
 			art_metadata_overlay(
 				art_rect[0] + art_rect[2] + 2 * gui.scale, art_rect[1] + art_rect[3] + 12 * gui.scale, showc)
 
