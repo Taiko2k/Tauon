@@ -4563,7 +4563,8 @@ class Menu:
 		self.active = True
 
 class GallClass:
-	def __init__(self, size=250, save_out=True):
+	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True):
+		self.quickthumbnail = tauon.quickthumbnail
 		self.gall = {}
 		self.size = size
 		self.queue = []
@@ -4591,8 +4592,8 @@ class GallClass:
 		# time.sleep(0.1)
 
 		if search_over.active:
-			while QuickThumbnail.queue:
-				img = QuickThumbnail.queue.pop(0)
+			while quickthumbnail.queue:
+				img = quickthumbnail.queue.pop(0)
 				response = urllib.request.urlopen(img.url, context=tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
@@ -4884,8 +4885,8 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self):
-
+	def __init__(self, renderer: sdl3.SDL_Renderer) -> None:
+		self.renderer = renderer
 		self.t_title = t_title
 		self.t_version = t_version
 		self.t_agent = t_agent
@@ -4920,8 +4921,8 @@ class Tauon:
 		self.msys = msys
 		self.TrackClass = TrackClass
 		self.pl_gen = pl_gen
-		self.gall_ren = GallClass(album_mode_art_size)
-		self.QuickThumbnail = QuickThumbnail
+		self.quickthumbnail = QuickThumbnail(self)
+		self.gall_ren = GallClass(self, album_mode_art_size)
 		self.thumb_tracks = ThumbTracks()
 		self.pl_to_id = pl_to_id
 		self.id_to_pl = id_to_pl
@@ -27157,7 +27158,7 @@ def toggle_synced_lyrics_deco(track):
 	return [line_colour, colours.menu_background, text]
 
 def paste_lyrics_deco():
-	if SDL_HasClipboardText():
+	if sdl3.SDL_HasClipboardText():
 		line_colour = colours.menu_text
 	else:
 		line_colour = colours.menu_text_disabled
@@ -27165,8 +27166,8 @@ def paste_lyrics_deco():
 	return [line_colour, colours.menu_background, None]
 
 def paste_lyrics(track_object: TrackClass):
-	if SDL_HasClipboardText():
-		clip = SDL_GetClipboardText()
+	if sdl3.SDL_HasClipboardText():
+		clip = sdl3.SDL_GetClipboardText()
 		#logging.info(clip)
 		track_object.lyrics = clip.decode("utf-8")
 	else:
@@ -32742,7 +32743,7 @@ def standard_size():
 	album_mode = False
 	gui.rsp = True
 	window_size = window_default_size
-	SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
 	gui.rspw = 80 + int(window_size[0] * 0.18)
 	update_layout = True
@@ -40158,11 +40159,9 @@ lb = ListenBrainz()
 
 lfm_scrobbler = LastScrob()
 
-QuickThumbnail.renderer = renderer
-
 strings = Strings()
 
-tauon = Tauon()
+tauon = Tauon(renderer=renderer)
 
 signal.signal(signal.SIGINT, signal_handler)
 

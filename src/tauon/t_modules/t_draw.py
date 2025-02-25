@@ -31,6 +31,9 @@ import sdl3
 
 from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
 
+if TYPE_CHECKING:
+	from tauon.t_modules.t_main import Tauon
+
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -69,12 +72,12 @@ else:
 
 class QuickThumbnail:
 
-	renderer: sdl3.SDL_Renderer | None = None
-	items: list[QuickThumbnail] = []
-	queue: list[QuickThumbnail] = []
-
-	def __init__(self) -> None:
-		self.rect = sdl3.FSDL_Rect(0., 0.)
+	def __init__(self, tauon: Tauon) -> None:
+		self.ddt      = tauon.ddt
+		self.renderer = tauon.renderer
+		self.items: list[QuickThumbnail] = []
+		self.queue: list[QuickThumbnail] = []
+		self.rect = sdl3.SDL_FRect(0., 0.)
 		self.texture = None
 		self.surface = None
 		self.size = 50
@@ -98,8 +101,7 @@ class QuickThumbnail:
 		im.thumbnail((width, height), Image.Resampling.LANCZOS)
 		im.save(g, "PNG")
 		g.seek(0)
-		wop = rw_from_object(g)
-		self.surface = IMG_Load_RW(wop, 0)
+		self.surface = self.ddt.load_image(g)
 		#self.items.append(self)
 		self.alive = True
 
