@@ -37498,7 +37498,7 @@ def dismiss_dl():
 	dl_mon.done.update(dl_mon.watching)
 	dl_mon.watching.clear()
 
-def download_img(link: str, target_folder: str, track: TrackClass) -> None:
+def download_img(link: str, target_dir: str, track: TrackClass) -> None:
 	try:
 		response = urllib.request.urlopen(link, context=tls_context)
 		info = response.info()
