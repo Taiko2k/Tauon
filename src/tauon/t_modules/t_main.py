@@ -4592,8 +4592,8 @@ class GallClass:
 		# time.sleep(0.1)
 
 		if search_over.active:
-			while quickthumbnail.queue:
-				img = quickthumbnail.queue.pop(0)
+			while self.quickthumbnail.queue:
+				img = self.quickthumbnail.queue.pop(0)
 				response = urllib.request.urlopen(img.url, context=tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
