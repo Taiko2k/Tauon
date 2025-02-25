@@ -36,13 +36,12 @@ For Windows installer see the [releases](https://github.com/Taiko2k/TauonMusicBo
 
 ### Linux
 
-Installation is available as a Flatpak.
+Installation is available as a Flatpak. You can also install from the [**AUR**](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
+
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
 Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.
-
-You can also install from the [AUR](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
 
 #### Unofficial packages
 
