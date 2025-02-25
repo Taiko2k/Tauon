@@ -34194,7 +34194,7 @@ def toggle_playlist_break() -> None:
 	pctl.multi_playlist[pctl.active_playlist_viewing].hide_title ^= 1
 	gui.pl_update = 1
 
-def transcode_single(item: list[tuple[int, str]], manual_directory: str | None = None, manual_name: str | None = None):
+def transcode_single(item: list[tuple[int, str]], manual_directory: Path | None = None, manual_name: str | None = None):
 	global core_use
 	global dl_use
 
@@ -34241,9 +34241,7 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: str | None =
 
 	out_line = encode_track_name(t)
 
-	if not (output / _("output")).exists():
-		(output / _("output")).mkdir()
-	target_out = str(output / _("output") / (str(track) + "." + codec))
+	target_out = str(output / f"output{track}.{codec})")
 
 	command = tauon.get_ffmpeg() + " "
 
@@ -35789,7 +35787,7 @@ def worker1():
 					q = 0
 					while True:
 						if core_use < cores and q < len(folder_items):
-							agg = [[folder_items[q], folder_name]]
+							agg = [[folder_items[q], Path(folder_name)]]
 							if agg not in dones:
 								core_use += 1
 								dones.append(agg)
