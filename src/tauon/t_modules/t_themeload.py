@@ -27,7 +27,6 @@ import sdl3
 from typing import TYPE_CHECKING
 
 from PIL import Image
-from sdl3 import SDL_RenderTexture
 
 from tauon.t_modules.t_extra import rgb_add_hls, test_lumi
 
