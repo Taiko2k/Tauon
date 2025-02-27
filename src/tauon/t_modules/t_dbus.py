@@ -419,7 +419,7 @@ class Gnome:
 								logging.exception("Uri encode error")
 
 							try:
-								i_path = tauon.thumb_tracks.path(track) # TODO(Martin): Leak
+								i_path = tauon.thumb_tracks.path(track)
 								if i_path is not None:
 									d["mpris:artUrl"] = "file://" + urllib.parse.quote(i_path)
 							except Exception:
