@@ -36702,7 +36702,7 @@ def reload_backend() -> None:
 def gen_chart() -> None:
 	try:
 
-		topchart = t_topchart.TopChart(tauon, album_art_gen)
+		topchart = t_topchart.TopChart(tauon)
 
 		tracks = []
 
