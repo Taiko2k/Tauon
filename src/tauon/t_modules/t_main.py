@@ -23974,7 +23974,7 @@ def load_prefs():
 		"string", "encode-output-dir", prefs.custom_encoder_output,
 		"E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
 	if prefs.custom_encoder_output:
-		prefs.encoder_output = prefs.custom_encoder_output
+		prefs.encoder_output = Path(prefs.custom_encoder_output)
 	prefs.download_dir1 = cf.sync_add(
 		"string", "add_download_directory", prefs.download_dir1,
 		"Add another folder to monitor in addition to home downloads and music.")
