@@ -4563,16 +4563,26 @@ class Menu:
 		self.active = True
 
 class GallClass:
-	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True):
-		self.quickthumbnail = tauon.quickthumbnail
-		self.gall = {}
-		self.size = size
-		self.queue = []
-		self.key_list = []
-		self.save_out = save_out
-		self.i = 0
-		self.lock = threading.Lock()
-		self.limit = 60
+	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True) -> None:
+		self.tauon                = tauon
+		self.tls_context          = tauon.tls_context
+		self.renderer             = tauon.renderer
+		self.ddt                  = tauon.ddt
+		self.quickthumbnail       = tauon.quickthumbnail
+#		self.folder_image_offsets = tauon.folder_image_offsets
+#		self.g_cache_directory    = tauon.g_cache_directory
+		self.gui                  = tauon.gui
+		self.prefs                = tauon.prefs
+#		self.search_over          = tauon.search_over
+#		self.album_art_gen        = tauon.album_art_gen
+		self.gall                 = {}
+		self.size                 = size
+		self.queue                = []
+		self.key_list             = []
+		self.save_out             = save_out
+		self.i                    = 0
+		self.lock                 = threading.Lock()
+		self.limit                = 60
 
 	def get_file_source(self, track_object: TrackClass):
 
@@ -4586,25 +4596,23 @@ class GallClass:
 		offset = album_art_gen.get_offset(track_object.fullpath, sources)
 		return sources[offset], offset
 
-	def worker_render(self):
-
+	def worker_render(self) -> bool:
 		self.lock.acquire()
 		# time.sleep(0.1)
 
 		if search_over.active:
 			while self.quickthumbnail.queue:
 				img = self.quickthumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, context=tls_context)
+				response = urllib.request.urlopen(img.url, context=self.tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
-				gui.update += 1
+				self.gui.update += 1
 
 		while len(self.queue) > 0:
-
 			source_image = None
 
-			if gui.halt_image_rendering:
+			if self.gui.halt_image_rendering:
 				self.queue.clear()
 				break
 
@@ -4629,7 +4637,6 @@ class GallClass:
 			cache_load = False
 
 			try:
-
 				if True:
 					offset = 0
 					parent_folder = key[0].parent_folder_path
@@ -4657,7 +4664,7 @@ class GallClass:
 
 					# gall_render_last_timer.set()
 
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
+					if self.prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
 						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
 						logging.info("slow load image")
 						cache_load = True
@@ -4698,7 +4705,7 @@ class GallClass:
 
 					im.save(g, "BMP")
 
-					if not error and self.save_out and prefs.cache_gallery and not os.path.isfile(
+					if not error and self.save_out and self.prefs.cache_gallery and not os.path.isfile(
 							os.path.join(g_cache_dir, img_name + ".jpg")):
 						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
 
@@ -4709,7 +4716,7 @@ class GallClass:
 				order = [2, g, None, None]
 				self.gall[key] = order
 
-				gui.update += 1
+				self.gui.update += 1
 				if source_image:
 					source_image.close()
 					source_image = None
@@ -4721,7 +4728,7 @@ class GallClass:
 				logging.exception("Image load failed on track: " + key[0].fullpath)
 				order = [0, None, None, None]
 				self.gall[key] = order
-				gui.update += 1
+				self.gui.update += 1
 				# del self.queue[0]
 
 			if size < 150:
@@ -4733,7 +4740,6 @@ class GallClass:
 		return False
 
 	def render(self, track: TrackClass, location, size=None, force_offset=None) -> bool | None:
-
 		if gallery_load_delay.get() < 0.5:
 			return None
 
@@ -4773,8 +4779,8 @@ class GallClass:
 			if order[0] == 2:
 				# finish processing
 
-				s_image = ddt.load_image(order[1])
-				c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
+				s_image = self.ddt.load_image(order[1])
+				c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 				sdl3.SDL_DestroySurface(s_image)
 				tex_w = pointer(c_float(0))
 				tex_h = pointer(c_float(0))
@@ -4798,7 +4804,7 @@ class GallClass:
 				order[3].y = y
 				order[3].x = int((size - order[3].w) / 2) + order[3].x
 				order[3].y = int((size - order[3].h) / 2) + order[3].y
-				sdl3.SDL_RenderTexture(renderer, order[2], None, order[3])
+				sdl3.SDL_RenderTexture(self.renderer, order[2], None, order[3])
 
 				if (track, size, offset) in self.key_list:
 					self.key_list.remove((track, size, offset))
@@ -4806,7 +4812,7 @@ class GallClass:
 
 				# Remove old images to conserve RAM usage
 				if len(self.key_list) > self.limit:
-					gui.update += 1
+					self.gui.update += 1
 					key = self.key_list[0]
 					# while key in self.queue:
 					#	 self.queue.remove(key)
@@ -4816,9 +4822,7 @@ class GallClass:
 					del self.key_list[0]
 
 				return True
-
 		else:
-
 			if key not in self.queue:
 				self.queue.append(key)
 				if self.lock.locked():
@@ -4893,6 +4897,7 @@ class Tauon:
 		self.t_id = t_id
 		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
+		self.tls_context = tls_context
 
 		#TODO(Martin): Fix this by moving the class to root of the module
 		self.cachement: player4.Cachement | None = None
@@ -4903,7 +4908,7 @@ class Tauon:
 		self.lfm_scrobbler: LastScrob = lfm_scrobbler
 		self.star_store:    StarStore = star_store
 		self.gui:  GuiVar = gui
-		self.ddt: TDraw | None = None
+		self.ddt:     ddt = TDraw(self.renderer)
 		self.prefs: Prefs = prefs
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:    Path | None = user_directory
@@ -4970,8 +4975,6 @@ class Tauon:
 		self.tidal: Tidal = Tidal(self)
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
-
-		self.tls_context = tls_context
 
 	def start_remote(self) -> None:
 
@@ -40339,8 +40342,7 @@ if (system == "Windows" or msys) and taskbar_progress:
 		pctl.taskbar_progress = False
 		logging.warning("Could not find TaskbarLib.tlb")
 
-ddt = TDraw(renderer)
-tauon.ddt = ddt
+ddt = tauon.ddt
 ddt.scale = gui.scale
 ddt.force_subpixel_text = prefs.force_subpixel_text
 
