@@ -367,9 +367,7 @@ class SpotCtl:
 		self.tauon.quickthumbnail.queue.clear()
 
 		if results[0]:
-
 			for i, album in enumerate(results[0].items[1:]):
-
 				img = QuickThumbnail(self.tauon)
 				img.url = album.images[-1].url
 				img.size = round(50 * self.tauon.gui.scale)
