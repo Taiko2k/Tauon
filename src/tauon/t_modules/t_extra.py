@@ -921,25 +921,19 @@ id3_genre_dict = {
 	192: "Unknown",
 }
 
-
 class FunctionStore:
 	"""Stores functions and arguments for calling later"""
 
 	def __init__(self) -> None:
-
 		self.items = []
 
 	def store(self, function: Callable[..., None], args: tuple = ()) -> None:
-
 		self.items.append((function, args))
 
 	def recall_all(self) -> None:
-
 		while self.items:
 			item = self.items.pop()
 			item[0](*item[1])
-
-
 
 def grow_rect(rect: tuple[int, int, int, int], px: int) -> tuple[int, int, int, int]:
 	return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
@@ -981,7 +975,6 @@ genre_corrections = [
 genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
 
 def genre_correct(text: str) -> str:
-
 	parsed = text.lower().replace("-", "").replace(" ", "").strip()
 	if parsed.startswith("post"):
 		return ("Post-" + parsed[4:]).title()

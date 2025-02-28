@@ -23195,6 +23195,107 @@ class XcursorImage(ctypes.Structure):
 			("pixels", c_void_p),
 		]
 
+@dataclass
+class Directories:
+	"""Hold directories"""
+	install_directory:      Path
+	svg_directory:          Path
+	asset_directory:        Path
+	scaled_asset_directory: Path
+	locale_directory:       Path
+	user_directory:         Path
+	config_directory:       Path
+	cache_directory:        Path
+	home_directory:         Path
+	music_directory:        Path
+	download_directory:     Path
+	n_cache_directory:      Path
+	e_cache_directory:      Path
+	g_cache_directory:      Path
+	a_cache_directory:      Path
+	r_cache_directory:      Path
+	b_cache_directory:      Path
+
+@dataclass
+class Bag:
+	"""Holder object for all configs"""
+	mpt:                     CDLL | None
+	gme:                     CDLL | None
+	cf:                      Config
+	colours:                 ColoursClass
+	console:                 DConsole
+	dirs:                    Directories
+	prefs:                   Prefs
+	formats:                 Formats
+	renderer:                sdl3.LP_SDL_Renderer
+	overlay_texture_texture: sdl3.LP_SDL_Texture
+	fonts:                   Fonts
+	tls_context:             ssl.SSLContext
+	macos:                   bool
+	msys:                    bool
+	phone:                   bool
+	pump:                    bool
+	snap_mode:               bool
+	flatpak_mode:            bool
+	smtc:                    bool
+	draw_min_button:         bool
+	draw_max_button:         bool
+	last_fm_enable:          bool
+	de_notify_support:       bool
+	wayland:                 bool
+	use_natsort:             bool
+	should_save_state:       bool
+	desktop:                 str | None
+	system:                  str
+	launch_prefix:           str
+	platform_system:         str
+	album_mode_art_size:     int
+	xdpi:                    int
+	master_count:            int
+	playing_in_queue:        int
+	playlist_active:         int
+	playlist_playing:        int
+	playlist_view_position:  int
+	radio_playlist_viewing:  int
+	selected_in_playlist:    int
+	latest_db_version:       int
+	volume:                  float
+	mac_close:               tuple[int, int, int, int]
+	mac_maximize:            tuple[int, int, int, int]
+	mac_minimize:            tuple[int, int, int, int]
+	track_queue:             list[int]
+	logical_size:            list[int] # X Y
+	window_size:             list[int] # X Y
+	old_window_position:     tuple[int, int] # X Y res
+	cue_list:                list[str]
+	download_directories:    list[str]
+	load_orders:             list[LoadClass]
+	multi_playlist:          list[TauonPlaylist]
+	radio_playlists:         list[RadioPlaylist]
+	primary_stations:        list[RadioStation]
+	p_force_queue:           list[TauonQueueItem]
+	folder_image_offsets:    dict[str, int]
+	gen_codes:               dict[int, str]
+	master_library:          dict[int, TrackClass]
+	loaded_asset_dc:         dict[str, WhiteModImageAsset | LoadImageAsset]
+	sm:                      CDLL | None = None
+	song_notification:       None = None
+
+@dataclass
+class Formats:
+	"""Contains:
+
+	* Colours used for the label icon in UI 'track info box'
+	* Extensions of files to be added when importing
+	"""
+
+	colours: dict[str, tuple[int, int, int, int]]
+	VID:     set[str]
+	MOD:     set[str]
+	GME:     set[str]
+	DA:      set[str]
+	Archive: set[str]
+
 def get_cert_path() -> str:
 	if pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
@@ -39358,22 +39459,28 @@ power_save = False
 if macos or phone:
 	power_save = True
 
+# This is legacy. New settings are added straight to the save list (need to overhaul)
+view_prefs = {
+	"split-line": True,
+	"update-title": False,
+	"star-lines": False,
+	"side-panel": True,
+	"dim-art": False,
+	"pl-follow": False,
+	"scroll-enable": True,
+}
+
 prefs = Prefs(
+	view_prefs=view_prefs,
 	power_save=power_save,
 	encoder_output=encoder_output,
-#	user_directory=user_directory,
-#	music_directory=music_directory,
-#	cache_directory=cache_directory,
 	force_subpixel_text=force_subpixel_text,
 	dc_device=dc_device,
 	macos=macos,
-#	detect_macstyle=detect_macstyle,
 	macstyle=macos or detect_macstyle,
 	left_window_control=macos or left_window_control,
 	phone=phone,
-#	gtk_settings=gtk_settings,
 	discord_allow=discord_allow,
-	flatpak_mode=flatpak_mode,
 	desktop=desktop,
 	window_opacity=window_opacity,
 	ui_scale=scale,
@@ -39389,18 +39496,6 @@ keymaps = KeyMap()
 
 colours = ColoursClass()
 colours.post_config()
-
-
-# This is legacy. New settings are added straight to the save list (need to overhaul)
-view_prefs = {
-	"split-line": True,
-	"update-title": False,
-	"star-lines": False,
-	"side-panel": True,
-	"dim-art": False,
-	"pl-follow": False,
-	"scroll-enable": True,
-}
 
 # url_saves = []
 rename_files_previous = ""
