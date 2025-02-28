@@ -4908,7 +4908,7 @@ class Tauon:
 		self.lfm_scrobbler: LastScrob = lfm_scrobbler
 		self.star_store:    StarStore = star_store
 		self.gui:  GuiVar = gui
-		self.ddt:     ddt = TDraw(self.renderer)
+		self.ddt          = TDraw(self.renderer)
 		self.prefs: Prefs = prefs
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:    Path | None = user_directory
