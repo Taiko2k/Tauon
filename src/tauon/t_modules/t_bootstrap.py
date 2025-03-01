@@ -24,7 +24,7 @@ class Holder:
 	window_opacity:         float
 	draw_border:            bool
 	transfer_args_and_exit: Callable[[]] # transfer_args_and_exit() - TODO(Martin): This should probably be moved to extra module
-	old_window_position:    tuple [int, int] | None # X Y res
+	old_window_position:    tuple[int, int] | None # X Y res
 	install_directory:      Path
 	user_directory:         Path
 	pyinstaller_mode:       bool
