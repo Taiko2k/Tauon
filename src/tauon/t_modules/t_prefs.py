@@ -10,14 +10,11 @@ if TYPE_CHECKING:
 class Prefs:
 	"""Used to hold any kind of settings"""
 
-#	music_directory:         Path | None
+	view_prefs:              dict[str, bool]
 	encoder_output:          Path
-#	user_directory:          Path
-#	cache_directory:         Path
 	window_opacity:          float
 	ui_scale:                float
 	power_save:              bool
-	flatpak_mode:            bool
 	discord_allow:           bool
 	left_window_control:     bool
 	macstyle:                bool
@@ -49,6 +46,10 @@ class Prefs:
 	show_queue:          bool = True
 	prefer_bottom_title: bool = True
 	append_date:         bool = True
+
+	update_title:  bool = False
+	scroll_enable: bool = True
+	break_enable:  bool = True
 
 	transcode_codec:   str = "opus"
 	transcode_mode:    str = "single"
