@@ -42909,11 +42909,11 @@ while pctl.running:
 				if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
 					gui.pl_update += 1
 					if pctl.selected_in_playlist > len(default_playlist) - 1:
-						pctl.selected_in_playlist = 0
+						pctl.selected_in_playlist = len(default_playlist) - 1
 
 					if not shift_selection:
 						shift_selection.append(pctl.selected_in_playlist)
-					if pctl.selected_in_playlist < len(default_playlist) - 1:
+					if pctl.selected_in_playlist > 0:
 						r = pctl.selected_in_playlist
 						pctl.selected_in_playlist -= 1
 						if pctl.selected_in_playlist not in shift_selection:
