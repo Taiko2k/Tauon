@@ -36,12 +36,12 @@ if TYPE_CHECKING:
 
 class TopChart:
 
-	def __init__(self, tauon: Tauon, album_art_gen: AlbumArt) -> None:
+	def __init__(self, tauon: Tauon) -> None:
 
 		self.pctl = tauon.pctl
 		self.cache_dir = tauon.cache_directory
 		self.user_dir = tauon.user_directory
-		self.album_art_gen = album_art_gen
+		self.album_art_gen = tauon.album_art_gen
 
 	def generate(
 		self, tracks: list[TrackClass], bg: tuple[int, int, int] = (10,10,10), rows: int = 3, columns: int = 3,
