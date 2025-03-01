@@ -4835,31 +4835,30 @@ class GallClass:
 		return False
 
 class ThumbTracks:
-	def __init__(self):
-		pass
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.album_art_gen = tauon.album_art_gen
 
 	def pixbuf(self, track: TrackClass) -> GdkPixbuf | None:
-
 		try:
-			source, offset = tauon.gall_ren.get_file_source(track)
+			source, offset = self.tauon.gall_ren.get_file_source(track)
 			if source is False:  # No art
 				return None
-			source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
-			im = Image.open(source_image)
-			if im.mode != "RGB":
-				im = im.convert("RGB")
-			im.thumbnail((512, 512), Image.Resampling.LANCZOS)
-			width, height = im.size
-			data = im.tobytes()
+			source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
+			with Image.open(source_image) as im:
+				if im.mode != "RGB":
+					im = im.convert("RGB")
+				im.thumbnail((512, 512), Image.Resampling.LANCZOS)
+				width, height = im.size
+				data = im.tobytes()
 			pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 3)
 			return pixbuf
 		except:
 			logging.exception("Error create pixbuf of album art")
 			return None
 
-	def path(self, track: TrackClass) -> str:
-
-		source, offset = tauon.gall_ren.get_file_source(track)
+	def path(self, track: TrackClass) -> str | None:
+		source, offset = self.tauon.gall_ren.get_file_source(track)
 
 		if source is False:  # No art
 			return None
@@ -4867,25 +4866,25 @@ class ThumbTracks:
 		image_name = track.album + track.parent_folder_path + str(offset)
 		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
 
-		t_path = os.path.join(e_cache_dir, image_name + ".jpg")
+		t_path = os.path.join(self.tauon.e_cache_directory, image_name + ".jpg")
 
 		if os.path.isfile(t_path):
 			return t_path
 
-		source_image = album_art_gen.get_source_raw(0, 0, track, subsource=source)
+		source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
 
-		im = Image.open(source_image)
-		if im.mode != "RGB":
-			im = im.convert("RGB")
-		im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
+		with Image.open(source_image) as im:
+			if im.mode != "RGB":
+				im = im.convert("RGB")
+			im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
 
-		im.save(t_path, "JPEG")
+			im.save(t_path, "JPEG")
 
 		return t_path
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, renderer: sdl3.SDL_Renderer) -> None:
+	def __init__(self, renderer: sdl3.SDL_Renderer, e_cache_directory: Path) -> None:
 		self.renderer = renderer
 		self.t_title = t_title
 		self.t_version = t_version
@@ -4923,7 +4922,9 @@ class Tauon:
 		self.pl_gen = pl_gen
 		self.quickthumbnail = QuickThumbnail(self)
 		self.gall_ren = GallClass(self, album_mode_art_size)
-		self.thumb_tracks = ThumbTracks()
+		self.e_cache_directory = e_cache_directory
+		self.album_art_gen = AlbumArt(self)
+		self.thumb_tracks = ThumbTracks(self)
 		self.pl_to_id = pl_to_id
 		self.id_to_pl = id_to_pl
 		self.chunker = Chunker()
@@ -7275,7 +7276,7 @@ class ImageObject:
 		self.format = ""
 
 class AlbumArt:
-	def __init__(self):
+	def __init__(self, tauon: Tauon) -> None:
 		self.image_types = {"jpg", "JPG", "jpeg", "JPEG", "PNG", "png", "BMP", "bmp", "GIF", "gif", "jxl", "JXL"}
 		self.art_folder_names = {
 			"art", "scans", "scan", "booklet", "images", "image", "cover",
@@ -36701,7 +36702,7 @@ def reload_backend() -> None:
 def gen_chart() -> None:
 	try:
 
-		topchart = t_topchart.TopChart(tauon, album_art_gen)
+		topchart = t_topchart.TopChart(tauon)
 
 		tracks = []
 
@@ -40161,7 +40162,7 @@ lfm_scrobbler = LastScrob()
 
 strings = Strings()
 
-tauon = Tauon(renderer=renderer)
+tauon = Tauon(renderer=renderer, e_cache_directory=Path(e_cache_dir))
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -40481,7 +40482,7 @@ if rename_folder_previous:
 
 temp_dest = sdl3.SDL_FRect(0, 0)
 
-album_art_gen = AlbumArt()
+album_art_gen = tauon.album_art_gen
 style_overlay = StyleOverlay()
 
 click_time = time.time()
