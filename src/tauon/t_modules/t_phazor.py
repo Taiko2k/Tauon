@@ -505,9 +505,8 @@ def find_library(libname: str) -> Path | None:
 			logging.debug(f"Lib {libname} found in {path!s}")
 			return path
 
-#	raise OSError(f"Can't find library '{libname}'. Searched at:\n" + "\n".join(str(p) for p in search_paths))
+	#raise OSError(f"Can't find library '{libname}'. Searched at:\n" + "\n".join(str(p) for p in search_paths))
 	return None
-
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
 	"""Locate the PHaZOR library in the specified priority order.
@@ -544,39 +543,6 @@ def phazor_exists(pctl: PlayerCtl) -> bool:
 	return get_phazor_path(pctl).exists()
 
 def player4(tauon: Tauon) -> None:
-	gui   = tauon.gui
-	pctl  = tauon.pctl
-	prefs = tauon.prefs
-	state = tauon.player4_state
-
-	logging.debug("Starting PHAzOR backend…")
-
-	player_timer = Timer()
-	loaded_track = None
-	fade_time = 400
-
-	aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
-	logging.debug("Loaded Phazor path at: " + str(get_phazor_path(pctl)))
-
-	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
-
-	aud.init()
-
-	aud.get_device.restype = ctypes.c_char_p
-
-	aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
-	aud.feed_raw.restype = None
-	tauon.aud = aud
-	aud.set_volume(int(pctl.player_volume))
-
-	bins1 = (ctypes.c_float * 24)()
-	bins2 = (ctypes.c_float * 45)()
-
-	aud.get_level_peak_l.restype = ctypes.c_float
-	aud.get_level_peak_r.restype = ctypes.c_float
-
-	active_timer = Timer()
-
 	def scan_device() -> None:
 		n = aud.scan_devices()
 		devices = ["Default"]
@@ -588,22 +554,8 @@ def player4(tauon: Tauon) -> None:
 		if prefs.phazor_device_selected not in devices:
 			prefs.phazor_device_selected = devices[0]
 
-	scan_device()
-	spotc = tauon.spotc
-	ff_run = FFRun(tauon)
-
 	def pause_when_device_unavailable() -> None:
 		pctl.pause_only()
-
-	if sys.platform == "win32":
-		FUNCTYPE = WINFUNCTYPE
-	else:
-		FUNCTYPE = CFUNCTYPE
-	start_callback = FUNCTYPE(c_int, c_char_p, c_int, c_int)(ff_run.start)
-	read_callback = FUNCTYPE(c_int, c_void_p, c_int)(ff_run.read)
-	close_callback = FUNCTYPE(c_void_p)(ff_run.close)
-	device_unavailable_callback = FUNCTYPE(c_void_p)(pause_when_device_unavailable)
-	aud.set_callbacks(start_callback, read_callback, close_callback, device_unavailable_callback)
 
 	def calc_rg(track: TrackClass | None) -> float:
 		if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
@@ -649,8 +601,6 @@ def player4(tauon: Tauon) -> None:
 		pctl.active_replaygain = g
 		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
-	cachement = tauon.cachement
-
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)
 		aud.config_set_fade_duration(prefs.cross_fade_time)
@@ -668,12 +618,6 @@ def player4(tauon: Tauon) -> None:
 			prefs.volume_power = 2
 		aud.config_set_volume_power(prefs.volume_power)
 		aud.config_set_resample(prefs.avoid_resampling ^ True)
-
-	#aud.config_set_samplerate(prefs.samplerate)
-	aud.config_set_resample_quality(prefs.resample)
-
-
-	set_config()
 
 	def run_vis() -> None:
 		if gui.turbo:  # and pctl.playing_time > 0.5:
@@ -699,9 +643,6 @@ def player4(tauon: Tauon) -> None:
 				gui.level_update = True
 				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
 					gui.update_spec = 1
-
-	stall_timer = Timer()
-	wall_timer = Timer()
 
 	def track(end: bool = True) -> None:
 		run_vis()
@@ -736,10 +677,6 @@ def player4(tauon: Tauon) -> None:
 		if end and pctl.playing_time > 1:
 			pctl.test_progress()
 
-	chrome_update = 0
-	chrome_cool_timer = Timer()
-	chrome_mode = False
-
 	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> None:
 		track = pctl.get_track(track_id)
 		# if track.is_cue:
@@ -766,8 +703,70 @@ def player4(tauon: Tauon) -> None:
 		if not spotc.running:
 			shooter(spotc.worker)
 
+	gui   = tauon.gui
+	pctl  = tauon.pctl
+	prefs = tauon.prefs
+	state = tauon.player4_state
+
+	logging.debug("Starting PHAzOR backend…")
+
+	player_timer = Timer()
+	loaded_track = None
+	fade_time = 400
+
+	aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
+	logging.debug("Loaded Phazor path at: " + str(get_phazor_path(pctl)))
+
+	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
+
+	aud.init()
+
+	aud.get_device.restype = ctypes.c_char_p
+
+	aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
+	aud.feed_raw.restype = None
+	tauon.aud = aud
+	aud.set_volume(int(pctl.player_volume))
+
+	bins1 = (ctypes.c_float * 24)()
+	bins2 = (ctypes.c_float * 45)()
+
+	aud.get_level_peak_l.restype = ctypes.c_float
+	aud.get_level_peak_r.restype = ctypes.c_float
+
+	active_timer = Timer()
+
+	scan_device()
+	spotc = tauon.spotc
+	ff_run = FFRun(tauon)
+
+
+	if sys.platform == "win32":
+		FUNCTYPE = WINFUNCTYPE
+	else:
+		FUNCTYPE = CFUNCTYPE
+	start_callback = FUNCTYPE(c_int, c_char_p, c_int, c_int)(ff_run.start)
+	read_callback = FUNCTYPE(c_int, c_void_p, c_int)(ff_run.read)
+	close_callback = FUNCTYPE(c_void_p)(ff_run.close)
+	device_unavailable_callback = FUNCTYPE(c_void_p)(pause_when_device_unavailable)
+	aud.set_callbacks(start_callback, read_callback, close_callback, device_unavailable_callback)
+
+	cachement = tauon.cachement
+
+	#aud.config_set_samplerate(prefs.samplerate)
+	aud.config_set_resample_quality(prefs.resample)
+
+	set_config()
+
+	stall_timer = Timer()
+	wall_timer = Timer()
+
+	chrome_update = 0
+	chrome_cool_timer = Timer()
+	chrome_mode = False
+
 	while True:
-#		logging.error(aud.print_status())
+		#logging.error(aud.print_status())
 		time.sleep(0.016)
 		if state == 2:
 			time.sleep(0.05)
@@ -1073,8 +1072,8 @@ def player4(tauon: Tauon) -> None:
 					position = aud.get_position_ms() / 1000
 					remain = length - position
 
-#					TODO(Martin): The GUI logger does not support multiline
-#					logging.info(f"{loaded_track.title} -> {target_object.title}\nlength: {length!s}\nposition: {position!s}\nWe are {remain!s} from end")
+					#TODO(Martin): The GUI logger does not support multiline
+					#logging.info(f"{loaded_track.title} -> {target_object.title}\nlength: {length!s}\nposition: {position!s}\nWe are {remain!s} from end")
 					logging.info(loaded_track.title + " -> " + target_object.title)
 					logging.info(" --- length: " + str(length))
 					logging.info(" --- position: " + str(position))
