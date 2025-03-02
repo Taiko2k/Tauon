@@ -34704,6 +34704,22 @@ def worker2():
 
 				o_text = search_over.search_text.text.lower().replace("-", "")
 
+				# Now users can add more special search terms to these.
+				n2_pairs = [
+					(" and", [" &"]), (" &", [" and"]),
+					(" to", [" 2"]), (" 2", [" to"]),
+					(" two", [" 2"]), (" 2", [" two"]),
+				]
+
+				n2_mode = False
+				if any(n2 in o_text for n2, _ in n2_pairs):
+					n2_mode = True
+					c = o_text.lower()
+					for n2, words in n2_pairs:
+						for word in words:
+							c = c.replace(word, n2)
+					o_text = c.lower()
+
 				dia_mode = False
 				if all([ord(c) < 128 for c in o_text]):
 					dia_mode = True
@@ -34750,6 +34766,12 @@ def worker2():
 							continue
 						searched.add(track)
 
+						if n2_mode:
+							s_text = o_text
+							cache_string = search_string_cache.get(track)
+							if cache_string is not None:
+								if not search_magic_any(s_text, cache_string):
+									continue
 
 						if cn_mode:
 							s_text = o_text
@@ -34769,6 +34791,7 @@ def worker2():
 									continue
 								# if s_text not in cache_string:
 								#     continue
+						
 						else:
 							cache_string = search_string_cache.get(track)
 							if cache_string is not None:
