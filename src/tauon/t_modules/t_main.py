@@ -72,7 +72,7 @@ from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer, c_float
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import musicbrainzngs
 import mutagen
@@ -169,6 +169,20 @@ from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_b
 from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
+
+if sys.platform == "linux":
+	from tauon.t_modules import t_topchart
+
+if sys.platform not in ("win32", "darwin"):
+	import gi
+	try:
+		gi.require_version("Notify", "0.7")
+	except Exception:
+		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
+		gi.require_version("Notify", "0.8")
+	from gi.repository import Notify
+	from gi.repository import GdkPixbuf
+	from gi.repository import GLib
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -1151,8 +1165,8 @@ class ColoursClass:
 
 		# colours.playlist_panel_background[3] = 220
 		# colours.playlist_box_background  = [0, 0, 0, 100]
-	def post_config(self):
 
+	def post_config(self):
 		if self.box_thumb_background is None:
 			self.box_thumb_background = alpha_mod(self.box_button_background, 175)
 
@@ -1208,7 +1222,6 @@ class ColoursClass:
 			self.column_grip = [255, 255, 255, 20]
 
 	def light_mode(self):
-
 		self.lm = True
 		self.star_line_playing = [255, 255, 255, 255]
 		self.sys_tab_bg = self.grey(25)
@@ -38783,9 +38796,6 @@ if system == "Windows":
 	import comtypes
 	import atexit
 
-if system == "Linux":
-	from tauon.t_modules import t_topchart
-
 if system == "Linux" and not macos and not msys:
 	from tauon.t_modules.t_dbus import Gnome
 
@@ -38827,9 +38837,6 @@ except Exception:
 	last_fm_enable = False
 
 if not windows_native:
-	import gi
-	from gi.repository import GLib
-
 	font_folder = str(install_directory / "fonts")
 	if os.path.isdir(font_folder):
 		logging.info(f"Fonts directory:           {font_folder}")
@@ -39170,14 +39177,6 @@ except Exception:
 
 if system == "Windows":
 	os.environ["SDL_BINARY_PATH"] = str(install_directory / "lib")
-elif not msys and not macos:
-	try:
-		gi.require_version("Notify", "0.7")
-	except Exception:
-		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
-		gi.require_version("Notify", "0.8")
-	from gi.repository import Notify
-	from gi.repository import GdkPixbuf
 
 wayland = True
 if os.environ.get("SDL_VIDEODRIVER") != "wayland":
