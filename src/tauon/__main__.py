@@ -205,6 +205,14 @@ if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
 	fs_mode = True
 	logging.info("Running in GAMESCOPE MODE")
 
+if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
+	# Force Wayland, as SDL3 otherwise requires the compositor to support specific protocols
+	# and defaults to X11 - https://github.com/libsdl-org/SDL/pull/9383
+	# We should be able to remove this in 2026+
+	os.environ["SDL_VIDEODRIVER"] = "wayland"
+if Path(user_directory / "x11").exists():
+	logging.debug("Forcing X11 due to user prefs")
+	os.environ["SDL_VIDEODRIVER"] = "x11"
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
@@ -271,13 +279,6 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 		os.environ["XCURSOR_SIZE"] = str(xsize)
 	except Exception:
 		logging.exception("Failed to set cursor")
-
-if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
-	os.environ["SDL_VIDEODRIVER"] = "wayland"
-if Path(user_directory / "x11").exists():
-	os.environ["SDL_VIDEODRIVER"] = "x11"
-
-
 sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
 
 err = sdl3.SDL_GetError()
