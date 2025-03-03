@@ -24835,11 +24835,11 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 	except Exception:
 		try:
 			if Exception is UnicodeDecodeError:
-				logging.exception("Unicode decode error on file:", nt.fullpath, "\n")
+				logging.exception(f"Unicode decode error on file: {nt.fullpath}")
 			else:
-				logging.exception("Error: Tag read failed on file:", nt.fullpath, "\n")
+				logging.exception(f"Error: Tag read failed on file: {nt.fullpath}")
 		except Exception:
-			logging.exception("Error printing error. Non utf8 not allowed:", nt.fullpath.encode("utf-8", "surrogateescape").decode("utf-8", "replace"), "\n")
+			logging.exception(f"Error printing error. Non utf8 not allowed: {nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')}")
 		return nt
 	# This check won't guarantee that all codepaths above are checked as some return early, but it's better than nothing
 	# And importantly it does catch openmpt which can actually return such
