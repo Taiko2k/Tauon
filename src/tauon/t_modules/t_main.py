@@ -1142,7 +1142,7 @@ class ColoursClass:
 		self.artist_bio_background = [27, 27, 27, 255]
 		self.artist_bio_text = [230, 230, 230, 255]
 
-	def apply_transparancy(self):
+	def apply_transparency(self) -> None:
 		self.top_panel_background[3] = 140
 		self.side_panel_background[3] = 140
 		self.art_box[3] = 100
@@ -8199,7 +8199,7 @@ class AlbumArt:
 				gui.theme_temp_current = track.album
 
 				if prefs.transparent_mode:
-					colours.apply_transparancy()
+					colours.apply_transparency()
 
 			if theme_only:
 				source_image.close()
@@ -43270,7 +43270,7 @@ while pctl.running:
 			deco.unload()
 
 		if prefs.transparent_mode:
-			colours.apply_transparancy()
+			colours.apply_transparency()
 
 		prefs.theme_name = gui.theme_name
 
