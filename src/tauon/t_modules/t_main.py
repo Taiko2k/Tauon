@@ -2,9 +2,9 @@
 
 Preamble
 
-Welcome to the Tauon Music Box source code. I started this project when I was first
-learning python, as a result this code can be quite messy. No doubt I have
-written some things terribly wrong or inefficiently in places.
+Welcome to the Tauon Music Box source code.
+I started this project when I was first learning python, as a result this code can be quite messy.
+No doubt I have written some things terribly wrong or inefficiently in places.
 I would highly recommend not using this project as an example on how to code cleanly or correctly.
 """
 
@@ -25,7 +25,6 @@ I would highly recommend not using this project as an example on how to code cle
 
 
 from __future__ import annotations
-
 
 
 import base64
@@ -63,6 +62,7 @@ import subprocess
 import sys
 import threading
 import time
+#import type_enforced
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -46960,3 +46960,5 @@ if os.path.isdir(cache_dir):
 	shutil.rmtree(cache_dir)
 
 logging.info("Bye!")
+
+#type_enforced.Enforcer(sys.modules[__name__])
