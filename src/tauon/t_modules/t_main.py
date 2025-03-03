@@ -2407,9 +2407,9 @@ class PlayerCtl:
 		# Remove from all playlists
 		if not fast:
 			for playlist in self.multi_playlist:
-				while track_id in playlist.playlist:
+				while track_id in playlist.playlist_ids:
 					album_dex.clear()
-					playlist.playlist.remove(track_id)
+					playlist.playlist_ids.remove(track_id)
 		# Stop if track is playing track
 		if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
 			self.stop(block=True)
@@ -2520,7 +2520,7 @@ class PlayerCtl:
 					self.jump(pp[i], i, jump=False)
 
 				elif prefs.playback_follow_cursor and self.playing_ready() \
-						and self.multi_playlist[self.active_playlist_viewing].playlist[
+						and self.multi_playlist[self.active_playlist_viewing].playlist_ids[
 					self.selected_in_playlist] != self.playing_object().index \
 						and -1 < self.selected_in_playlist < len(default_playlist):
 
