@@ -1,5 +1,3 @@
-**Download Tauon:**
-
 <div align=left>
 	<table>
 		<thead align=left>
