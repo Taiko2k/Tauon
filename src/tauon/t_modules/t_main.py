@@ -23307,8 +23307,11 @@ def get_cert_path() -> str:
 	return certifi.where()
 
 def setup_tls() -> ssl.SSLContext:
-	"""TLS setup (needed for frozen installs)"""
-	# Set the SSL certificate path environment variable
+	"""TLS setup (needed for frozen installs)
+
+	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast)
+	"""
+	# Set the TLS certificate path environment variable
 	cert_path = get_cert_path()
 	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ["SSL_CERT_FILE"] = cert_path
@@ -38819,7 +38822,10 @@ logging.info(f"Window size: {window_size}")
 
 should_save_state = True
 
+tls_context = setup_tls()
+
 try:
+	# Pylast needs to be imported AFTER setup_tls() else pyinstaller breaks
 	import pylast
 	last_fm_enable = True
 except Exception:
@@ -38842,8 +38848,6 @@ if not windows_native:
 		config = ctypes.c_void_p()
 		config.contents = fc.FcConfigGetCurrent()
 		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
-
-tls_context = setup_tls()
 
 # Detect what desktop environment we are in to enable specific features
 desktop = os.environ.get("XDG_CURRENT_DESKTOP")
