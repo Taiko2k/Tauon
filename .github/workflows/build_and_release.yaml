@@ -53,7 +53,7 @@ jobs:
           wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
           wget http://mirrors.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
           sudo dpkg -i *.deb
-#            libsdl2-image-dev \
+        #    libsdl2-image-dev \
 
       - name: Install Python dependencies and setup venv
         run: |
@@ -109,10 +109,10 @@ jobs:
         with:
           submodules: true
 
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.13'
+      #- name: Set up Python
+      #  uses: actions/setup-python@v5
+      #  with:
+      #    python-version: '3.13'
 
       - name: brew update and upgrade
         run: brew update && brew upgrade
@@ -134,9 +134,9 @@ jobs:
             wavpack \
             game-music-emu
 
-# This generates 30MB of logs, enable it only when actively debugging something
-#      - name: "[DEBUG] List all Cellar files"
-#        run: find /opt/homebrew/Cellar
+      # This generates 30MB of logs, enable it only when actively debugging something
+      #- name: "[DEBUG] List all Cellar files"
+      #  run: find /opt/homebrew/Cellar
 
       - name: Install Python dependencies and setup venv
         run: |
@@ -148,22 +148,22 @@ jobs:
             -r requirements.txt \
             build \
             pyinstaller
-#          $(brew --prefix python)/libexec/bin/pip install --break-system-packages https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-#          $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
-#          source .venv/bin/activate
-#          CFLAGS: "-I/opt/homebrew/include"
+        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
+        #  source .venv/bin/activate
+        #  CFLAGS: "-I/opt/homebrew/include"
 
       - name: Build the project using python-build
         run: |
           $(brew --prefix python)/libexec/bin/python -m compile_translations
           $(brew --prefix python)/libexec/bin/python -m build --wheel
-#          source .venv/bin/activate
+        #  source .venv/bin/activate
 
       - name: Install the project into a venv
         run: |
           $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
-#          $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
-#          source .venv/bin/activate
+        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
+        #  source .venv/bin/activate
 
       - name: "[DEBUG] List all files"
         run: find .
@@ -171,7 +171,7 @@ jobs:
       - name: Build macOS app with PyInstaller
         run: |
           pyinstaller --log-level=DEBUG mac.spec
-#          source .venv/bin/activate
+        #  source .venv/bin/activate
         env:
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
 
@@ -194,10 +194,10 @@ jobs:
           name: TauonMusicBox-dmg
           path: dist/dmg/TauonMusicBox.dmg
 
-#      - name: Run Tauon for testing
-#        run: |
-#          hdiutil attach dist/dmg/TauonMusicBox.dmg
-#          /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
+      #- name: Run Tauon for testing
+      #  run: |
+      #    hdiutil attach dist/dmg/TauonMusicBox.dmg
+      #    /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
 
 
   build-windows:
@@ -223,9 +223,9 @@ jobs:
           msystem: mingw64
           update: true
           install: ${{ env.packages }}
-#            ca-certificates
-#            mingw-w64-x86_64-python-zeroconf
-#            mingw-w64-x86_64-zlib
+          #  ca-certificates
+          #  mingw-w64-x86_64-python-zeroconf
+          #  mingw-w64-x86_64-zlib
 
       - name: Update CA trust and hack opusfile
         shell: msys2 {0}
@@ -245,7 +245,7 @@ jobs:
             -r requirements.txt \
             build \
             pyinstaller
-#          export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
+        #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
       - name: Build the project using python-build
         shell: msys2 {0}
@@ -297,9 +297,9 @@ jobs:
 
           7z a -r "${ARCHIVE_PATH}" "."
 
-#      - name: "[DEBUG] List all files after pyinstaller"
-#        shell: msys2 {0}
-#        run: find .
+      #- name: "[DEBUG] List all files after pyinstaller"
+      #  shell: msys2 {0}
+      #  run: find .
 
       - name: Upload 7Z artifact
         uses: actions/upload-artifact@v4
@@ -317,9 +317,9 @@ jobs:
           path: extra/setup.iss
           options: /O+
 
-#      - name: "[DEBUG] List all files after Inno"
-#        shell: msys2 {0}
-#        run: find .
+      #- name: "[DEBUG] List all files after Inno"
+      #  shell: msys2 {0}
+      #  run: find .
 
       - name: Upload EXE installer
         uses: actions/upload-artifact@v4
@@ -392,7 +392,7 @@ jobs:
         tag: "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
         draft: false
         prerelease: true
-#        body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/Taiko2k/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
+        #body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/Taiko2k/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
         bodyFile: ${{ github.workspace }}/.github/release_body.md
         artifacts: ~/artifacts/*.zip
 
