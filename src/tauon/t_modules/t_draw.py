@@ -23,7 +23,7 @@ import io
 import logging
 import math
 import sys
-from ctypes import c_bool, c_int, c_ulong, pointer
+from ctypes import c_bool, c_int, c_size_t, pointer
 from typing import TYPE_CHECKING
 
 from PIL import Image
@@ -344,7 +344,7 @@ class TDraw:
 
 		size = g.getbuffer().nbytes
 		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
-		stream = sdl3.SDL_IOFromMem(pointer, c_ulong(size))
+		stream = sdl3.SDL_IOFromMem(pointer, c_size_t(size))
 		return sdl3.IMG_Load_IO(stream, c_bool(True))
 
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
