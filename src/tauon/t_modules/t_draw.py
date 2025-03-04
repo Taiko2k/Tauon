@@ -23,7 +23,7 @@ import io
 import logging
 import math
 import sys
-from ctypes import c_int, pointer
+from ctypes import c_bool, c_int, c_ulong, pointer
 from typing import TYPE_CHECKING
 
 from PIL import Image
@@ -304,7 +304,7 @@ perf = Timer()
 
 class TDraw:
 
-	def __init__(self, renderer: sdl3.SDL_Renderer | None = None) -> None:
+	def __init__(self, renderer: sdl3.SDL_Renderer) -> None:
 
 		# All
 		self.renderer = renderer
@@ -344,9 +344,8 @@ class TDraw:
 
 		size = g.getbuffer().nbytes
 		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
-		stream = sdl3.SDL_IOFromMem(pointer, size)
-
-		return sdl3.IMG_Load_IO(stream, closeio=True)
+		stream = sdl3.SDL_IOFromMem(pointer, c_ulong(size))
+		return sdl3.IMG_Load_IO(stream, c_bool(True))
 
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
