@@ -26,14 +26,15 @@ import sys
 from ctypes import c_bool, c_int, c_size_t, pointer
 from typing import TYPE_CHECKING
 
-from PIL import Image
 import sdl3
+from PIL import Image
 
 from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
 	from io import BytesIO
+
+	from tauon.t_modules.t_main import Tauon
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -50,23 +51,23 @@ if sys.platform == "win32":
 	import os
 	os.environ["PANGOCAIRO_BACKEND"] = "fc"
 
-if system == "Linux":
-	import struct
+#if system == "Linux":
+import struct
 
-	import cairo
-	import gi
-	gi.require_version("Pango", "1.0")
-	gi.require_version("PangoCairo", "1.0")
-	from gi.repository import Pango, PangoCairo
+import cairo
+import gi
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
+from gi.repository import Pango, PangoCairo
 
-else:
-	import struct
-	from ctypes import CFUNCTYPE, POINTER, byref, c_void_p, windll
-
-	import win32api
-	import win32con
-	import win32gui
-	import win32ui
+#else:
+#	import struct
+#	from ctypes import CFUNCTYPE, POINTER, byref, c_void_p, windll
+#
+#	import win32api
+#	import win32con
+#	import win32gui
+#	import win32ui
 
 
 
@@ -135,7 +136,7 @@ class QuickThumbnail:
 		return True
 
 # TODO(Martin): This block never executes - https://github.com/Taiko2k/Tauon/issues/1318
-if system == "Windows":
+if sys.platform == "win32":
 	class RECT(ctypes.Structure):
 		_fields_ = [
 			("left", ctypes.c_long),
@@ -304,7 +305,7 @@ perf = Timer()
 
 class TDraw:
 
-	def __init__(self, renderer: sdl3.SDL_Renderer) -> None:
+	def __init__(self, renderer: sdl3.LP_SDL_Renderer) -> None:
 
 		# All
 		self.renderer = renderer

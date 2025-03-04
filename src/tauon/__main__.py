@@ -31,7 +31,7 @@ sys.path.append(str(install_directory.parent))
 
 from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
 
-from tauon.t_modules import t_bootstrap
+from tauon.t_modules.t_bootstrap import Holder
 
 debug = False
 if (install_directory / "debug").is_file():
@@ -402,32 +402,33 @@ sdl3.SDL_RenderPresent(renderer)
 sdl3.SDL_DestroySurface(raw_image)
 sdl3.SDL_DestroyTexture(texture)
 
-holder                        = t_bootstrap.holder
-holder.t_window               = t_window
-holder.renderer               = renderer
-holder.logical_size           = logical_size
-holder.window_size            = window_size
-holder.window_default_size    = window_default_size
-holder.scale                  = scale
-holder.maximized              = maximized
-holder.transfer_args_and_exit = transfer_args_and_exit
-holder.draw_border            = draw_border
-holder.window_opacity         = window_opacity
-holder.old_window_position    = old_window_position
-holder.install_directory      = install_directory
-holder.user_directory         = user_directory
-holder.pyinstaller_mode       = pyinstaller_mode
-holder.phone                  = phone
-holder.window_title           = window_title
-holder.fs_mode                = fs_mode
-holder.t_title                = t_title
-holder.n_version              = n_version
-holder.t_version              = t_version
-holder.t_id                   = t_id
-holder.t_agent                = t_agent
-holder.dev_mode               = dev_mode
-holder.instance_lock          = fp
-holder.log                    = log
+holder = Holder(
+	t_window=t_window,
+	renderer=renderer,
+	logical_size=logical_size,
+	window_size=window_size,
+	window_default_size=window_default_size,
+	scale=scale,
+	maximized=maximized,
+	transfer_args_and_exit=transfer_args_and_exit,
+	draw_border=draw_border,
+	window_opacity=window_opacity,
+	old_window_position=old_window_position,
+	install_directory=install_directory,
+	user_directory=user_directory,
+	pyinstaller_mode=pyinstaller_mode,
+	phone=phone,
+	window_title=window_title,
+	fs_mode=fs_mode,
+	t_title=t_title,
+	n_version=n_version,
+	t_version=t_version,
+	t_id=t_id,
+	t_agent=t_agent,
+	dev_mode=dev_mode,
+	instance_lock=fp,
+	log=log,
+)
 
 del raw_image
 del texture
@@ -440,7 +441,8 @@ del img_path
 
 def main() -> None:
 	"""Launch Tauon by means of importing t_main.py"""
-	from tauon.t_modules import t_main
+	from tauon.t_modules.t_main import main as t_main
+	t_main(holder)
 
 if __name__ == "__main__":
 	main()
