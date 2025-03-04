@@ -115,7 +115,6 @@ def genius(artist: str, title: str, return_url: bool=False) -> tuple[str, str] |
 
 
 def lrclib(artist: str, title: str) -> tuple[str, str]:
-
 	h = {
 		"User-Agent": "TauonMusicBox/1.0",
 	}
@@ -125,7 +124,7 @@ def lrclib(artist: str, title: str) -> tuple[str, str]:
 		"artist_name": artist,
 	}
 
-	r = requests.get("https://lrclib.net/api/get", headers=h, params=p)
+	r = requests.get("https://lrclib.net/api/get", headers=h, params=p, timeout=10)
 	if r.status_code == HTTPStatus.OK:
 		p = r.json().get("plainLyrics")
 		s = r.json().get("syncedLyrics")
