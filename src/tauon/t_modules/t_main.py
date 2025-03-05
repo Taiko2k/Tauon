@@ -34196,6 +34196,8 @@ def discord_loop() -> None:
 			if len(album) == 1:
 				album += " "
 
+			end_time = start_time + tr.length
+
 			if state == 1:
 				#logging.info("PLAYING: " + title)
 				#logging.info(start_time)
@@ -34212,6 +34214,7 @@ def discord_loop() -> None:
 					state=album,
 					details=title,
 					start=int(start_time),
+					end=int(end_time),
 					large_image=large_image,
 					small_image=small_image)
 
