@@ -10,9 +10,11 @@ Changelog
  - **Added** Theme Charmed as built in
  - **Fixed** Mini mode always on top not working on Wayland
  - **Fixed** Drag and drop feedback when dragging external file
+ - **Fixed** Various crash and other bugs
  - **Tweaked** Shuffle lockdown shortcut added to main menu
  - **Tweaked** Theme Ash colours
-
+ - **Restored** guitar chords, including support for new guitarchords.com API
+ 
 
 ### v7.9.0
 
