@@ -17,27 +17,27 @@ def find_msys64_path() -> Path:
 	raise FileNotFoundError("MSYS2 base path not found in common locations")
 
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
-msys64_path = find_msys64_path()
+msys64_path = Path(find_msys64_path())
 print(f"Found msys64 path: {msys64_path}")
 
 a = Analysis(
 	["src/tauon/__main__.py"],
 	pathex=[],
 	binaries=[
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libFLAC.dll"),         "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libgme.dll"),          "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libmpg123-0.dll"),     "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libogg-0.dll"),        "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libopenmpt-0.dll"),    "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libopus-0.dll"),       "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libopusfile-0.dll"),   "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libsamplerate-0.dll"), "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libvorbis-0.dll"),     "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libvorbisfile-3.dll"), "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "libwavpack-1.dll"),    "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3.dll"),            "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3_image.dll"),      "."),
-		(str(Path(msys64_path) / "mingw64" / "bin" / "SDL3_ttf.dll"),      "."),
+		(str(msys64_path / "mingw64" / "bin" / "libFLAC.dll"),         "."),
+		(str(msys64_path / "mingw64" / "bin" / "libgme.dll"),          "."),
+		(str(msys64_path / "mingw64" / "bin" / "libmpg123-0.dll"),     "."),
+		(str(msys64_path / "mingw64" / "bin" / "libogg-0.dll"),        "."),
+		(str(msys64_path / "mingw64" / "bin" / "libopenmpt-0.dll"),    "."),
+		(str(msys64_path / "mingw64" / "bin" / "libopus-0.dll"),       "."),
+		(str(msys64_path / "mingw64" / "bin" / "libopusfile-0.dll"),   "."),
+		(str(msys64_path / "mingw64" / "bin" / "libsamplerate-0.dll"), "."),
+		(str(msys64_path / "mingw64" / "bin" / "libvorbis-0.dll"),     "."),
+		(str(msys64_path / "mingw64" / "bin" / "libvorbisfile-3.dll"), "."),
+		(str(msys64_path / "mingw64" / "bin" / "libwavpack-1.dll"),    "."),
+		(str(msys64_path / "mingw64" / "bin" / "SDL3.dll"),            "."),
+		(str(msys64_path / "mingw64" / "bin" / "SDL3_image.dll"),      "."),
+		(str(msys64_path / "mingw64" / "bin" / "SDL3_ttf.dll"),        "."),
 	],
 	datas=[
 		(certifi.where(), "certifi"),
