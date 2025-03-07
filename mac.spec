@@ -39,7 +39,6 @@ a = Analysis(
 		("src/tauon/templates", "templates"),
 	],
 	hiddenimports=[
-		"sdl3",
 		"phazor",
 		"pylast",
 		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840
