@@ -134,9 +134,9 @@ jobs:
             wavpack \
             game-music-emu
 
-      # This generates 30MB of logs, enable it only when actively debugging something
-      #- name: "[DEBUG] List all Cellar files"
-      #  run: find /opt/homebrew/Cellar
+       This generates 30MB of logs, enable it only when actively debugging something
+      - name: "[DEBUG] List all Cellar files"
+        run: find /opt/homebrew/Cellar
 
       - name: Install Python dependencies and setup venv
         run: |
@@ -194,10 +194,10 @@ jobs:
           name: TauonMusicBox-dmg
           path: dist/dmg/TauonMusicBox.dmg
 
-      #- name: Run Tauon for testing
-      #  run: |
-      #    hdiutil attach dist/dmg/TauonMusicBox.dmg
-      #    /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
+      - name: Run Tauon for testing
+        run: |
+          hdiutil attach dist/dmg/TauonMusicBox.dmg
+          /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
 
 
   build-windows:

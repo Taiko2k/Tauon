@@ -24,7 +24,7 @@ from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
 # We currently only properly package SDL3 on Windows, remove the if check when macOS and Linux is fixed
-if sys.platform == "win32":
+if sys.platform in ("win32", "darwin"):
 	os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
 	os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
 	os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
