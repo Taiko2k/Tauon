@@ -23,18 +23,21 @@ import sys
 from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
-# We currently only properly package SDL3 on Windows, remove the if check when macOS and Linux is fixed
+install_directory: Path = Path(__file__).resolve().parent
+sys.path.append(str(install_directory.parent))
+pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
+
+# We currently only properly package SDL3 on Windows and macOS, remove the if check when Linux is fixed
 if sys.platform in ("win32", "darwin"):
 	os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
 	os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
 	os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
 	os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
+if pyinstaller_mode:
 	os.environ["SDL_FIND_BINARIES"]            = "0" # Search for binaries in the system libraries, "1"        by default.
+
 import sdl3
 from gi.repository import GLib
-
-install_directory: Path = Path(__file__).resolve().parent
-sys.path.append(str(install_directory.parent))
 
 from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
 
@@ -127,16 +130,8 @@ def transfer_args_and_exit() -> None:
 if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
-
-
-pyinstaller_mode = False
-if hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"):
-	pyinstaller_mode = True
-
 # If we're installed, use home data locations
-install_mode = False
-if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.platform == "darwin" or sys.platform == "win32":
-	install_mode = True
+install_mode = bool(str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")) or sys.platform in ("darwin", "win32"))
 
 # Assume that it's a classic Linux install, use standard paths
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
