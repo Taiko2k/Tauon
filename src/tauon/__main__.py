@@ -20,11 +20,18 @@ import logging
 import os
 import pickle
 import sys
-from ctypes import c_int, pointer, c_float, byref
+from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
-from gi.repository import GLib
+# We currently only properly package SDL3 on Windows, remove the if check when macOS and Linux is fixed
+if sys.platform == "win32":
+	os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
+	os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
+	os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
+	os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
+	os.environ["SDL_FIND_BINARIES"]            = "0" # Search for binaries in the system libraries, "1"        by default.
 import sdl3
+from gi.repository import GLib
 
 install_directory: Path = Path(__file__).resolve().parent
 sys.path.append(str(install_directory.parent))
