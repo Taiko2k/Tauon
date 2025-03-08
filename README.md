@@ -45,8 +45,8 @@ Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wik
 
 #### Unofficial packages
 
- - [SlackBuilds](https://slackbuilds.org/repository/15.0/audio/tauonmb/)
- - NixPkgs: tauon
+ - [SlackBuilds](https://slackbuilds.org/result/?search=tauonmb)
+ - NixPkgs: [tauon](https://search.nixos.org/packages?show=tauon)
  - GURU: TauonMusicBox
 
 
