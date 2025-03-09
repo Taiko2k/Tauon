@@ -10181,7 +10181,34 @@ class PowerTag:
 		self.ani_timer.force_set(10)
 
 class Over:
-	def __init__(self):
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon               = tauon
+		#self.bag                 = tauon.bag
+		self.gui                 = tauon.gui
+		#self.inp                 = tauon.inp
+		self.ddt                 = tauon.ddt
+		#self.coll                = tauon.coll
+		self.pctl                = tauon.pctl
+		#self.dirs                = tauon.dirs
+		self.prefs               = tauon.prefs
+		#self.fields              = tauon.fields
+		#self.lastfm              = tauon.lastfm
+		#self.formats             = tauon.formats
+		#self.colours             = tauon.colours
+		#self.window_size         = tauon.window_size
+		#self.show_message        = tauon.show_message
+		#self.album_mode_art_size = tauon.album_mode_art_size
+		#self.platform_system     = tauon.platform_system
+		self.user_directory      = tauon.user_directory
+		#self.flatpak_mode        = tauon.flatpak_mode
+		self.star_store          = tauon.star_store
+		self.snap_mode           = tauon.snap_mode
+		#self.t_version           = tauon.t_version
+		#self.wayland             = tauon.wayland
+		#self.system              = tauon.system
+		self.macos               = tauon.macos
+		self.msys                = tauon.msys
+		self.phazor_found        = phazor_exists(tauon.pctl)
 
 		global window_size
 
@@ -10568,12 +10595,10 @@ class Over:
 		colour = colours.box_sub_text
 
 		# if system == "Linux":
-		if not phazor_exists(tauon.pctl):
+		if not self.phazor_found:
 			x += round(20 * gui.scale)
 			ddt.text((x, y - 25 * gui.scale), _("PHAzOR DLL not found!"), colour, 213)
-
 		elif prefs.backend == 4:
-
 			y = y0 + round(20 * gui.scale)
 			x = x0 + 20 * gui.scale
 
@@ -41510,7 +41535,7 @@ key_lalt = False
 
 fields = Fields()
 
-pref_box = Over()
+pref_box = Over(tauon)
 
 inc_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "inc.png", True)
 dec_arrow = asset_loader(scaled_asset_directory, loaded_asset_dc, "dec.png", True)
