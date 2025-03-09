@@ -34170,6 +34170,8 @@ def discord_loop() -> None:
 			if len(album) == 1:
 				album += " "
 
+			end_time = start_time + tr.length
+
 			if state == 1:
 				#logging.info("PLAYING: " + title)
 				#logging.info(start_time)
@@ -34181,16 +34183,19 @@ def discord_loop() -> None:
 					large_image = url
 					small_image = "tauon-standard"
 				RPC.update(
+					activity_type = ActivityType.LISTENING,
 					pid=pid,
 					state=album,
 					details=title,
 					start=int(start_time),
+					end=int(end_time),
 					large_image=large_image,
 					small_image=small_image)
 
 			else:
 				#logging.info("Discord RPC - Stop")
 				RPC.update(
+					activity_type = ActivityType.LISTENING,
 					pid=pid,
 					state="Idle",
 					large_image="tauon-standard")
@@ -38750,7 +38755,7 @@ else:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 discord_allow = False
 try:
-	from pypresence import Presence
+	from pypresence import Presence, ActivityType
 except ModuleNotFoundError:
 	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
 except Exception:
