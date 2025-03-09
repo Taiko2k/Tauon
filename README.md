@@ -26,6 +26,8 @@
 
 ## Download and Install :dizzy:
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/tauon-music-box.svg?exclude_unsupported=1)](https://repology.org/project/tauon-music-box/versions)
+
 ### macOS
 
 For macOS DMG see the [releases](https://github.com/Taiko2k/TauonMusicBox/releases) page.
@@ -42,13 +44,6 @@ Installation is available as a Flatpak. You can also install from the [**AUR**](
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
 Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.
-
-#### Unofficial packages
-
- - [SlackBuilds](https://slackbuilds.org/repository/15.0/audio/tauonmb/)
- - NixPkgs: tauon
- - GURU: TauonMusicBox
-
 
 ___
 
