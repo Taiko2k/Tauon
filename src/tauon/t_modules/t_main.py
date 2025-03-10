@@ -11277,9 +11277,11 @@ class Tauon:
 						if self.pctl.a_time > 4 or current_state != 1:
 							state = current_state
 							index = current_index
-							start_time = time.time() - self.pctl.playing_time
-
 							break
+					if abs(start_time - (time.time() - self.pctl.playing_time)) > 1:
+						start_time = time.time() - self.pctl.playing_time
+					else:
+						break
 
 					if current_state == 0 and idle_time.get() > 13:
 						logging.info("Pause discord RPC...")
