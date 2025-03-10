@@ -28,7 +28,9 @@ jobs:
             gir1.2-rsvg-2.0 \
             kde-config-gtk-style \
             libcanberra-gtk3-module \
+            libgirepository1.0-dev \
             libgirepository-2.0-dev \
+            libglib2.0-dev \
             python3-gi-cairo \
             libayatana-appindicator3-dev \
             libcairo2-dev \
@@ -286,9 +288,6 @@ jobs:
           msystem: mingw64
           update: true
           install: ${{ env.packages }}
-          #  ca-certificates
-          #  mingw-w64-x86_64-python-zeroconf
-          #  mingw-w64-x86_64-zlib
 
       - name: Update CA trust and hack opusfile
         shell: msys2 {0}
