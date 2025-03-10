@@ -11,7 +11,7 @@
 				<td>Linux</td>
 				<td>
 					<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/TauonMusicBox-linux.zip"><img src="https://img.shields.io/badge/Portable-x64-f84e29.svg?logo=linux"> </a><br>
-				<!--	<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/Tauon-Flatpak-x64.deb"><img src="https://img.shields.io/badge/Flatpak-x64-FF9966.svg?logo=flatpak"> </a><br> -->
+					<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/tauonmb-x86_64"><img src="https://img.shields.io/badge/Flatpak-x64-FF9966.svg?logo=flatpak"> </a><br>
 				</td>
 			</tr>
 			<tr>
