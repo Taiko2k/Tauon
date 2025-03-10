@@ -6,6 +6,7 @@ on:
 
 jobs:
   build-linux:
+    name: "Linux"
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
@@ -27,7 +28,7 @@ jobs:
             gir1.2-rsvg-2.0 \
             kde-config-gtk-style \
             libcanberra-gtk3-module \
-            libgirepository1.0-dev \
+            libgirepository-2.0-dev \
             python3-gi-cairo \
             libayatana-appindicator3-dev \
             libcairo2-dev \
@@ -99,10 +100,71 @@ jobs:
           name: TauonMusicBox-linux
           path: TauonMusicBox.7z
 
+  build-flatpak:
+    name: "Flatpak"
+    runs-on: ubuntu-24.04
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-24.08
+      options: --privileged
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download jq
+        run: |
+          mkdir -p $HOME/bin
+          curl -Lo $HOME/bin/jq https://github.com/stedolan/jq/releases/latest/download/jq-linux64
+          chmod +x $HOME/bin/jq
+          echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Install rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+      - name: Run rustup
+        run: |
+          . "$HOME/.cargo/env"
+          rustup toolchain install stable
+
+      - name: Clone Flatpak repo
+        run: |
+          git clone --recurse-submodules https://github.com/flathub/com.github.taiko2k.tauonmb.git tauon-flatpak
+#          cd tauon-flatpak; git checkout tekoreless
+
+      - name: "[DEBUG] List all files"
+        run: find .
+
+      - name: Get repository and commit info
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}.git"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            COMMIT_SHA="${{ github.sha }}"
+          fi
+          echo "Repository URL: $REPO_URL"
+          echo "Commit SHA: $COMMIT_SHA"
+
+          # Modify JSON file
+          jq --arg repo "$REPO_URL" --arg commit "$COMMIT_SHA" '
+            (.modules[] | select(type == "object" and .name == "tauonmb-git").sources[] | select(.type == "git")) |= {type: "git", url: $repo, commit: $commit}
+          ' tauon-flatpak/com.github.taiko2k.tauonmb.json > updated.json
+          mv updated.json tauon-flatpak/com.github.taiko2k.tauonmb.json
+
+      - name: Verify JSON changes
+        run: cat tauon-flatpak/com.github.taiko2k.tauonmb.json
+
+      # https://github.com/marketplace/actions/flatpak-builder
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.4
+        with:
+          bundle: tauonmb.flatpak
+          manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
+          cache-key: flatpak-builder-${{ github.sha }}
 
   build-macos:
+    name: "macOS"
     runs-on: macos-latest
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -201,6 +263,7 @@ jobs:
 
 
   build-windows:
+    name: "Windows"
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -347,7 +410,7 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux, build-windows, build-macos]
+    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos]
     runs-on: ubuntu-24.04
     steps:
     - name: Download all artifacts
@@ -401,29 +464,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ARTIFACTS_DIR=~/artifacts
-        REPO_WINDOWS="Taiko2k/Tauon"
-        REPO_LINUX="Taiko2k/Tauon"
-        REPO_MAC="Taiko2k/Tauon"
+        REPO="Taiko2k/Tauon"
 
         for file in "$ARTIFACTS_DIR"/*.zip; do
           filename=$(basename "$file")
-          REPO=""
-
-          # Determine repository based on file name
-          if [[ "$filename" == *"windows"* ]]; then
-            REPO=$REPO_WINDOWS
-          elif [[ "$filename" == *"linux"* ]]; then
-            REPO=$REPO_LINUX
-          elif [[ "$filename" == *"macos"* ]]; then
-            REPO=$REPO_MAC
-          fi
-
-          # If REPO is empty, skip file
-          if [[ -z "$REPO" ]]; then
-            echo "No matching repository for $filename"
-            continue
-          fi
-
           # Check if release already exists and get ID
           release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/releases/tags/Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}" | jq -r '.id')
