@@ -34135,12 +34135,12 @@ def discord_loop() -> None:
 							RPC.connect()
 							gui.discord_status = "Connected"
 							break
-						time.sleep(2)
+						time.sleep(1)
 
 					if not prefs.disconnect_discord:
 						continue
 
-				time.sleep(2)
+				time.sleep(1)
 
 				if prefs.disconnect_discord:
 					RPC.clear(pid)
@@ -34195,7 +34195,7 @@ def discord_loop() -> None:
 					state="Idle",
 					large_image="tauon-standard")
 
-			time.sleep(5)
+			time.sleep(2)
 
 			if prefs.disconnect_discord:
 				RPC.clear(pid)
