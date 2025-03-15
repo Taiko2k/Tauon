@@ -1101,7 +1101,7 @@ def player4(tauon: Tauon) -> None:
 					r_timer = Timer()
 					r_timer.set()
 
-					if loaded_track and loaded_track.file_ext.lower() in tauon.gme_formats:
+					if loaded_track and loaded_track.file_ext.lower() in tauon.formats.GME:
 						# GME formats dont have a physical end so we don't do gapless
 						while r_timer.get() <= remain - prefs.device_buffer / 1000:
 							if pctl.commit:
