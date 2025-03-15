@@ -4982,7 +4982,7 @@ class Tauon:
 		self.stream_proxy = StreamEnc(self)
 		self.level_train: list[list[float]] = []
 		self.radio_server = None
-		self.mod_formats = MOD_Formats
+		self.mod_formats = formats.MOD
 		self.listen_alongers = {}
 		self.encode_folder_name = encode_folder_name
 		self.encode_track_name = encode_track_name
@@ -5016,8 +5016,6 @@ class Tauon:
 
 		self.MenuItem = MenuItem
 		self.tag_scan = tag_scan
-
-		self.gme_formats = GME_Formats
 
 		self.tidal                 = Tidal(self)
 		self.chrome: Chrome | None = None
@@ -22952,7 +22950,7 @@ class DLMon:
 				if msys and "TauonMusicBox" in path:
 					continue
 
-				if min_age < 240 and os.path.isfile(path) and ext in Archive_Formats:
+				if min_age < 240 and os.path.isfile(path) and ext in formats.Archive:
 					size = os.path.getsize(path)
 					#logging.info("Check: " + path)
 					if path in self.watching:
@@ -22972,7 +22970,7 @@ class DLMon:
 								pass
 								#logging.info("Target folder for archive already exists")
 
-							elif archive_file_scan(path, DA_Formats, launch_prefix) >= 0.4:
+							elif archive_file_scan(path, formats.DA, launch_prefix) >= 0.4:
 								self.ready.add(path)
 								gui.update += 1
 								#logging.info("Archive detected as music")
@@ -23004,7 +23002,7 @@ class DLMon:
 						# Check if size is stable, then scan for audio files
 						if size == self.watching[path]:
 							del self.watching[path]
-							if folder_file_scan(path, DA_Formats) > 0.5:
+							if folder_file_scan(path, formats.DA) > 0.5:
 
 								# Check if folder not already imported
 								imported = False
@@ -24014,9 +24012,9 @@ def load_prefs():
 		"bool", "allow-video-formats", prefs.allow_video_formats,
 		"Allow the import of MP4 and WEBM formats")
 	if prefs.allow_video_formats:
-		for item in VID_Formats:
-			if item not in DA_Formats:
-				DA_Formats.add(item)
+		for item in formats.VID:
+			if item not in formats.DA:
+				formats.DA.add(item)
 
 	cf.br()
 	cf.add_text("[HiDPI]")
@@ -24609,7 +24607,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 
 		nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
-		if nt.file_ext.lower() in GME_Formats and gme:
+		if nt.file_ext.lower() in formats.GME and gme:
 			emu = ctypes.c_void_p()
 			track_info = ctypes.POINTER(GMETrackInfo)()
 			err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
@@ -24825,7 +24823,7 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 		else:
 			# Use MUTAGEN
 			try:
-				if nt.file_ext.lower() in VID_Formats:
+				if nt.file_ext.lower() in formats.VID:
 					scan_ffprobe(nt)
 					return nt
 
@@ -35190,7 +35188,7 @@ def worker1():
 	global cue_list
 	global loaderCommand
 	global loaderCommandReady
-	global DA_Formats
+	global formats
 	global home
 	global loading_in_progress
 	global added
@@ -35357,7 +35355,7 @@ def worker1():
 							logging.info("-- The referenced source file wasn't found. Searching for matching file name...")
 							for item in os.listdir(os.path.dirname(path)):
 								if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
-									if ".cue" not in item.lower() and item.split(".")[-1].lower() in DA_Formats:
+									if ".cue" not in item.lower() and item.split(".")[-1].lower() in formats.DA:
 										file_name = item
 										file_path = os.path.join(os.path.dirname(path), file_name)
 										logging.info("-- Source found at: " + file_path)
@@ -35498,7 +35496,7 @@ def worker1():
 
 	def add_file(path, force_scan: bool = False) -> int | None:
 		# bm.get("add file start")
-		global DA_Formats
+		global formats
 		global to_got
 
 		if not os.path.isfile(path):
@@ -35522,8 +35520,8 @@ def worker1():
 			load_pls(path)
 			return 0
 
-		if os.path.splitext(path)[1][1:].lower() not in DA_Formats:
-			if os.path.splitext(path)[1][1:].lower() in Archive_Formats:
+		if os.path.splitext(path)[1][1:].lower() not in formats.DA:
+			if os.path.splitext(path)[1][1:].lower() in formats.Archive:
 				if not prefs.auto_extract:
 					show_message(
 						_("You attempted to drop an archive."),
@@ -35649,7 +35647,7 @@ def worker1():
 				logging.info("File has an associated .cue file... Skipping")
 				return None
 
-			if pctl.master_library[de].file_ext.lower() in GME_Formats:
+			if pctl.master_library[de].file_ext.lower() in formats.GME:
 				# Skip cache for subtrack formats
 				pass
 			else:
@@ -35683,7 +35681,7 @@ def worker1():
 			cue_scan(nt.cue_sheet, nt)
 			del nt
 
-		elif nt.file_ext.lower() in GME_Formats and gme:
+		elif nt.file_ext.lower() in formats.GME and gme:
 
 			emu = ctypes.c_void_p()
 			err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
@@ -35721,7 +35719,7 @@ def worker1():
 
 	def gets(direc, force_scan=False):
 
-		global DA_Formats
+		global formats
 
 		if os.path.basename(direc) == "__MACOSX":
 			return
@@ -35760,7 +35758,7 @@ def worker1():
 				continue
 			if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
 
-				if os.path.splitext(items_in_dir[q])[1][1:].lower() in DA_Formats:
+				if os.path.splitext(items_in_dir[q])[1][1:].lower() in formats.DA:
 
 					if len(items_in_dir[q]) > 2 and items_in_dir[q][0:2] == "._":
 						continue
@@ -39472,18 +39470,6 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 	"VGZ":   [0,   128, 255, 255],  # Deep blue
 }
 
-# These will be the extensions of files to be added when importing
-VID_Formats = {"mp4", "webm"}
-
-MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
-
-GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
-
-DA_Formats = {
-	"mp3", "wav", "opus", "flac", "ape", "aiff",
-	"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
-} | MOD_Formats | GME_Formats
-
 Archive_Formats = {"zip"}
 
 if whicher("unrar"):
@@ -39491,6 +39477,56 @@ if whicher("unrar"):
 
 if whicher("7z"):
 	Archive_Formats.add("7z")
+
+MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
+GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
+formats = Formats(
+	colours = {
+		"MP3":   [255, 130, 80,  255],  # Burnt orange
+		"FLAC":  [156, 249, 79,  255],  # Bright lime green
+		"M4A":   [81,  220, 225, 255],  # Soft cyan
+		"AIFF":  [81,  220, 225, 255],  # Soft cyan
+		"OGG":   [244, 244, 78,  255],  # Light yellow
+		"OGA":   [244, 244, 78,  255],  # Light yellow
+		"WMA":   [213, 79,  247, 255],  # Magenta
+		"APE":   [247, 79,  79,  255],  # Deep pink
+		"TTA":   [94,  78,  244, 255],  # Purple
+		"OPUS":  [247, 79,  146, 255],  # Pink
+		"AAC":   [79,  247, 168, 255],  # Teal
+		"WV":    [229, 23,  18,  255],  # Deep red
+		"PLEX":  [229, 160, 13,  255],  # Orange-brown
+		"KOEL":  [111, 98,  190, 255],  # Lavender
+		"TAU":   [111, 98,  190, 255],  # Lavender
+		"SUB":   [235, 140, 20,  255],  # Golden yellow
+		"SPTY":  [30,  215, 96,  255],  # Bright green
+		"TIDAL": [0,   0,   0,   255],  # Black
+		"JELY":  [190, 100, 210, 255],  # Fuchsia
+		"XM":    [50,  50,  50,  255],  # Grey
+		"MOD":   [50,  50,  50,  255],  # Grey
+		"S3M":   [50,  50,  50,  255],  # Grey
+		"IT":    [50,  50,  50,  255],  # Grey
+		"MPTM":  [50,  50,  50,  255],  # Grey
+		"AY":    [237, 212, 255, 255],  # Pastel purple
+		"GBS":   [255, 165, 0,   255],  # Vibrant orange
+		"GYM":   [0,   191, 255, 255],  # Bright blue
+		"HES":   [176, 224, 230, 255],  # Light blue-green
+		"KSS":   [255, 255, 153, 255],  # Bright yellow
+		"NSF":   [255, 140, 0,   255],  # Deep orange
+		"NSFE":  [255, 140, 0,   255],  # Deep orange
+		"SAP":   [152, 255, 152, 255],  # Light green
+		"SPC":   [255, 128, 0,   255],  # Bright orange
+		"VGM":   [0,   128, 255, 255],  # Deep blue
+		"VGZ":   [0,   128, 255, 255],  # Deep blue
+	},
+	VID = {"mp4", "webm"},
+	MOD = MOD_Formats,
+	GME = GME_Formats,
+	DA = {
+		"mp3", "wav", "opus", "flac", "ape", "aiff",
+		"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
+	} | MOD_Formats | GME_Formats,
+	Archive = Archive_Formats,
+)
 
 cargo = []
 
