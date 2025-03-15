@@ -69,7 +69,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
-from ctypes import Structure, byref, c_char_p, c_double, c_int, c_uint32, c_void_p, pointer, c_float
+from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -281,10 +281,14 @@ class GuiVar:
 	def show_message(self, line1: str, line2: str = "", line3: str = "", mode: str = "info") -> None:
 		show_message(line1, line2, line3, mode=mode)
 
-	def delay_frame(self, t):
+	def set_drag_source(self) -> None:
+		self.drag_source_position = tuple(self.inp.click_location)
+		self.drag_source_position_persist = tuple(self.inp.click_location)
+
+	def delay_frame(self, t: float) -> None:
 		self.frame_callback_list.append(TestTimer(t))
 
-	def destroy_textures(self):
+	def destroy_textures(self) -> None:
 		sdl3.SDL_DestroyTexture(self.spec4_tex)
 		sdl3.SDL_DestroyTexture(self.spec1_tex)
 		sdl3.SDL_DestroyTexture(self.spec2_tex)
@@ -298,7 +302,7 @@ class GuiVar:
 	#		 sdl3.SDL_StopTextInput()
 	#	 self.text_input_request = False
 
-	def rescale(self):
+	def rescale(self) -> None:
 		self.spec_y = int(round(5 * self.scale))
 		self.spec_w = int(round(80 * self.scale))
 		self.spec_h = int(round(20 * self.scale))
@@ -317,7 +321,7 @@ class GuiVar:
 		self.panelY2 = round(30 * self.scale)
 		self.playlist_top = self.panelY + (8 * self.scale)
 		self.playlist_top_bk = self.playlist_top
-		self.scroll_hide_box = (0, self.panelY, 28, window_size[1] - self.panelBY - self.panelY)
+		self.scroll_hide_box = (0, self.panelY, 28, self.bag.window_size[1] - self.panelBY - self.panelY)
 
 		self.spec2_y = int(round(22 * self.scale))
 		self.spec2_w = int(round(140 * self.scale))
@@ -340,13 +344,13 @@ class GuiVar:
 			0, round(self.level_y - 10 * self.scale), round(self.level_ww),round(self.level_hh))
 
 		self.spec2_tex = sdl3.SDL_CreateTexture(
-					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
+			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
 		self.spec4_tex = sdl3.SDL_CreateTexture(
-					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
+			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
 		self.spec1_tex = sdl3.SDL_CreateTexture(
-					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
+			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
 		self.spec_level_tex = sdl3.SDL_CreateTexture(
-					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
+			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
 		sdl3.SDL_SetTextureBlendMode(self.spec4_tex, sdl3.SDL_BLENDMODE_BLEND)
 		self.artist_panel_height = 320 * self.scale
 		self.last_artist_panel_height = self.artist_panel_height
@@ -354,19 +358,40 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self):
+	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture, main_texture_overlay_temp, main_texture, max_window_tex) -> None:
+		self.bag     = bag
+		self.console = bag.console
+		self.inp     = Input(gui=self)
+		self.keymaps = KeyMap(bag=bag, inp=self.inp)
 
-		self.scale = prefs.ui_scale
+		self.scale = self.bag.prefs.ui_scale
 
 		self.window_id = 0
-		self.update = 2  # UPDATE
-		self.turbo = True
+		self.update    = 2  # UPDATE
+		#self.update_layout: bool = True
+		self.turbo      = True
 		self.turbo_next = 0
-		self.pl_update = 1
-		self.lowered = False
-		self.request_raise = False
-		self.maximized = False
-		self.ext_drop_mode = False
+		self.pl_update  = 1
+		self.lowered           = False
+		self.request_raise     = False
+		self.maximized         = False
+		self.side_drag         = False
+		self.ext_drop_mode     = False
+		self.quick_search_mode = False
+		self.b_info_bar        = False
+		self.editline = ""
+		self.rename_index:        int = 0
+		self.last_row:            int = 0
+		self.album_v_gap:       float = 66
+		self.album_h_gap:       float = 30
+		self.album_v_slide_value: int = 50
+		self.album_scroll_px = self.album_v_slide_value # TODO(Martin): This looks weird, do we really need both? They should always have the same value no?
+		# Playlist Panel
+		self.pl_rect = (2, 12, 10, 10)
+
+		self.track_box   = False
+
+		self.move_on_title = False
 
 		self.message_box = False
 		self.message_text = ""
@@ -397,6 +422,13 @@ class GuiVar:
 		self.s4_spec = [0] * 45
 		self.update_spec = 0
 
+		self.new_playlist_cooldown = False
+		self.playlist_hold_position = 0
+		self.playlist_hold = False
+		self.selection_stage = 0
+
+		self.shift_selection: list[int] = []
+
 		# self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
 
 		self.spec4_array = []
@@ -418,7 +450,7 @@ class GuiVar:
 		self.universal_y_text_offset = 0
 
 		self.star_text_y_offset = 0
-		if system == "Windows":
+		if self.bag.system == "Windows":
 			self.star_text_y_offset = -2
 
 		self.set_bar = True
@@ -438,15 +470,15 @@ class GuiVar:
 
 		self.offset_extra: int = 0
 
-		self.playlist_row_height: int = 16
-		self.playlist_text_offset: int = 0
-		self.row_font_size: int = 13
+		self.playlist_row_height:    int = 16
+		self.playlist_text_offset: float = 0
+		self.row_font_size:          int = 13
 		self.compact_bar = False
-		self.tracklist_texture_rect = tracklist_texture_rect
+		self.tracklist_texture_rect: sdl3.SDL_Rect = tracklist_texture_rect
 		self.tracklist_texture = tracklist_texture
 
 		self.trunk_end = "..."  # "…"
-		self.temp_themes = {}
+		self.temp_themes: dict[str, ColoursClass] = {}
 		self.theme_temp_current = -1
 
 		self.pl_title_y_offset = 0
@@ -462,6 +494,9 @@ class GuiVar:
 		self.present = False
 		self.drag_source_position = (0, 0)
 		self.drag_source_position_persist = (0, 0)
+		self.old_album_pos: int = -55
+		self.album_playlist_width: int = 430
+
 		self.album_tab_mode = False
 		self.main_art_box = (0, 0, 10, 10)
 		self.gall_tab_enter = False
@@ -499,7 +534,7 @@ class GuiVar:
 		self.web_running = False
 
 		self.rsp = True
-		if phone:
+		if self.bag.phone:
 			self.rsp = False
 		self.rspw = round(300 * self.scale)
 		self.lsp = False
@@ -510,9 +545,12 @@ class GuiVar:
 
 		self.pref_gallery_w = 600
 
-		self.artist_info_panel = False
+		self.artist_info_panel: bool = False
+		self.album_artist_dict: dict[int, str] = {}
 
 		self.show_hearts = True
+
+		self.search_index: int = 0
 
 		self.cursor_is = 0
 		self.cursor_want = 0
@@ -589,7 +627,6 @@ class GuiVar:
 
 		self.rsp_full_lock = False
 
-		self.album_scroll_px = album_v_slide_value
 		self.queue_toast_plural = False
 		self.reload_theme = False
 		self.theme_number = 0
@@ -608,14 +645,14 @@ class GuiVar:
 		self.main_texture = main_texture
 		self.main_texture_overlay_temp = main_texture_overlay_temp
 
-		self.preview_artist = ""
+		self.preview_artist: str = ""
 		self.preview_artist_location = (0, 0)
-		self.preview_artist_loading = ""
+		self.preview_artist_loading: str = ""
 		self.mouse_left_window = False
 
 		self.rendered_playlist_position = 0
+		self.playlist_view_length: int = 0
 
-		self.console = console
 		self.show_album_ratings = False
 		self.gen_code_errors = False
 
@@ -624,6 +661,8 @@ class GuiVar:
 
 		self.tracklist_bg_is_light = False
 		self.clear_image_cache_next = 0
+
+		self.click_time = time.time()
 
 		self.column_d_click_timer = Timer(10)
 		self.column_d_click_on = -1
@@ -640,6 +679,7 @@ class GuiVar:
 		self.tracklist_inset_left = 0
 		self.tracklist_inset_width = 0
 		self.tracklist_highlight_width = 0
+		self.highlight_left = 0
 		self.tracklist_highlight_left = 0
 
 		self.hide_tracklist_in_gallery = False
@@ -658,7 +698,7 @@ class GuiVar:
 		self.showed_title = False
 
 		self.to_get = 0
-		self.to_got = 0
+		self.to_got: int | str = 0
 		self.switch_showcase_off = False
 
 		self.backend_reloading = False
@@ -673,9 +713,9 @@ class GuiVar:
 		self.drop_playlist_target = 0
 		self.discord_status = "Standby"
 		self.mouse_unknown = False
-		self.macstyle = prefs.macstyle
+		self.macstyle = self.bag.prefs.macstyle
 		self.radio_view = False
-		self.window_size = window_size
+		self.window_size = self.bag.window_size
 		self.box_over = False
 		self.suggest_clean_db = False
 		self.style_worker_timer = Timer()
@@ -696,7 +736,7 @@ class GuiVar:
 
 class StarStore:
 	"""Functions for reading and setting play counts"""
-	def __init__(self) -> None:
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
 		self.db = {}
 
 	def key(self, track_id: int) -> tuple[str, str, str]:
@@ -863,13 +903,13 @@ class AlbumStarStore:
 	def get_rating(self, track_object: TrackClass):
 		return self.db.get(self.get_key(track_object), 0)
 
-	def set_rating(self, track_object: TrackClass, rating):
+	def set_rating(self, track_object: TrackClass, rating) -> None:
 		self.db[self.get_key(track_object)] = rating
 		if track_object.file_ext == "SUB":
 			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
 			subsonic.set_album_rating(track_object, rating)
 
-	def set_rating_artist_title(self, artist: str, album: str, rating):
+	def set_rating_artist_title(self, artist: str, album: str, rating) -> None:
 		self.db[artist + ":" + album] = rating
 
 	def get_rating_artist_title(self, artist: str, album: str):
@@ -878,7 +918,7 @@ class AlbumStarStore:
 class Fonts:
 	"""Used to hold font sizes (I forget to use this)"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.tabs = 211
 		self.panel_title = 213
 
@@ -893,46 +933,96 @@ class Fonts:
 class Input:
 	"""Used to keep track of button states (or should be)"""
 
-	def __init__(self) -> None:
-		self.mouse_click = False
-		# self.right_click = False
-		self.level_2_enter = False
-		self.key_return_press = False
-		self.key_tab_press = False
-		self.backspace_press = 0
+	def __init__(self, gui: GuiVar) -> None:
+		self.gui = gui
+		self.ab_click:            bool = False
+		self.d_mouse_click:       bool = False
+		self.mouse_click:         bool = False
+		self.middle_click:        bool = False
+		self.right_click:         bool = False
+		self.level_2_right_click: bool = False
+		self.level_2_enter:       bool = False
+		self.backspace_press:      int = 0
+		self.mouse_wheel:          int = 0
+		self.mouse_down:          bool = False
+		self.mouse_up:            bool = False
+		self.right_down:          bool = False
+		self.click_location            = [200, 200]
+		self.last_click_location       = [0, 0]
+		self.mouse_position            = [0, 0]
+		self.mouse_up_position         = [0, 0]
+		self.drag_mode:           bool = False
+		self.quick_drag:          bool = False
+		self.clicked:             bool = False
+
+		self.key_del:             bool = False
+		self.key_c_press:         bool = False
+		self.key_v_press:         bool = False
+		#self.key_f_press:        bool = False
+		self.key_a_press:         bool = False
+		#self.key_t_press:        bool = False
+		self.key_z_press:         bool = False
+		self.key_x_press:         bool = False
+		self.key_backspace_press: bool = False
+		self.key_home_press:      bool = False
+		self.key_end_press:       bool = False
+
+		self.k_input:             bool = True
+		self.key_return_press:    bool = False
+		self.key_tab_press:       bool = False
+		self.key_down_press:      bool = False
+		self.key_up_press:        bool = False
+		self.key_right_press:     bool = False
+		self.key_left_press:      bool = False
+		self.key_esc_press:       bool = False
+
+		self.key_shift_down:      bool = False
+		self.key_shiftr_down:     bool = False
+		self.key_ctrl_down:       bool = False
+		self.key_rctrl_down:      bool = False
+		self.key_meta:            bool = False
+		self.key_ralt:            bool = False
+		self.key_lalt:            bool = False
+
+		self.global_clicked:      bool = False
 
 		self.media_key = ""
+		self.input_text = ""
+		self.key_focused = 0
+
+	def test_shift(self, _) -> bool:
+		return self.key_shift_down or self.key_shiftr_down
 
 	def m_key_play(self) -> None:
 		self.media_key = "Play"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_pause(self) -> None:
 		self.media_key = "Pause"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_stop(self) -> None:
 		self.media_key = "Stop"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_next(self) -> None:
 		self.media_key = "Next"
-		gui.update += 1
+		self.gui.update += 1
 
 	def m_key_previous(self) -> None:
 		self.media_key = "Previous"
-		gui.update += 1
+		self.gui.update += 1
 
 class KeyMap:
 
-	def __init__(self):
-
+	def __init__(self, bag: Bag, inp: Input) -> None:
+		self.bag = bag
+		self.inp = inp
 		self.hits = []  # The keys hit this frame
 		self.maps = {}  # Loaded from input.txt
 
-	def load(self):
-
-		path = config_directory / "input.txt"
+	def load(self) -> None:
+		path = self.bag.dirs.config_directory / "input.txt"
 		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
 			for p in content:
@@ -948,7 +1038,7 @@ class KeyMap:
 					if items[1] in ("MB4", "MB5"):
 						key = items[1]
 					else:
-						if prefs.use_scancodes:
+						if self.bag.prefs.use_scancodes:
 							key = sdl3.SDL_GetScancodeFromName(items[1].encode())
 						else:
 							key = sdl3.SDL_GetKeyFromName(items[1].encode())
@@ -967,8 +1057,8 @@ class KeyMap:
 					else:
 						self.maps[function] = [(key, mod)]
 
-	def test(self, function):
-
+	def test(self, function) -> bool:
+		inp = self.inp
 		if not self.hits:
 			return False
 		if function not in self.maps:
@@ -984,7 +1074,6 @@ class KeyMap:
 
 				if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
 					return True
-
 		return False
 
 class ColoursClass:
@@ -4986,9 +5075,11 @@ class Tauon:
 		self.strings: Strings = strings
 		self.pctl:  PlayerCtl = pctl
 		self.lfm_scrobbler: LastScrob = lfm_scrobbler
-		self.star_store:    StarStore = star_store
-		self.gui:  GuiVar = gui
-		self.prefs: Prefs = prefs
+		self.star_store   = StarStore(self, self.pctl)
+		self.gui                                  = gui
+		self.prefs                                = bag.prefs
+		self.snap_mode                            = bag.snap_mode
+		self.flatpak_mode                         = bag.flatpak_mode
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:    Path | None = user_directory
 		self.music_directory:   Path | None = music_directory
@@ -23561,7 +23652,7 @@ def get_artist_preview(artist, x, y):
 	gui.message_box = False
 	gui.preview_artist_loading = ""
 
-def set_drag_source():
+def set_drag_source(): # TODO(Martin): Delete, now in GuiVar
 	gui.drag_source_position = tuple(click_location)
 	gui.drag_source_position_persist = tuple(click_location)
 
@@ -26837,7 +26928,7 @@ def flush_artist_bio(artist):
 	artist_info_box.text = ""
 	artist_info_box.artist_on = None
 
-def test_shift(_):
+def test_shift(_): # TODO(Martin): DELETE, now under Input
 	return key_shift_down or key_shiftr_down
 
 def test_artist_dl(_):
@@ -39812,10 +39903,17 @@ bag = Bag(
 	folder_image_offsets=folder_image_offsets,
 )
 
-gui = GuiVar()
-star_store = StarStore()
-inp = Input()
-keymaps = KeyMap()
+gui = GuiVar(
+	bag=bag,
+	tracklist_texture_rect=tracklist_texture_rect,
+	tracklist_texture=tracklist_texture,
+	main_texture_overlay_temp=main_texture_overlay_temp,
+	main_texture=main_texture,
+	max_window_tex=max_window_tex,
+)
+
+inp = gui.inp
+keymaps = gui.keymaps
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -40310,35 +40408,6 @@ if window_size is None:
 	window_size = window_default_size
 	gui.rspw = 200
 
-# Run upgrades if we're behind the current DB standard
-if db_version > 0 and db_version < latest_db_version:
-	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
-	try:
-		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
-			db_version=db_version,
-			master_library=master_library,
-			install_mode=install_mode,
-			multi_playlist=multi_playlist,
-			star_store=star_store,
-			install_directory=install_directory,
-			a_cache_dir=a_cache_dir,
-			cache_directory=cache_directory,
-			config_directory=config_directory,
-			user_directory=user_directory,
-			gui=gui,
-			gen_codes=gen_codes,
-			prefs=prefs,
-			radio_playlists=radio_playlists,
-			theme=theme,
-			p_force_queue=p_force_queue,
-		)
-	except ValueError:
-		logging.exception("That should not happen")
-		sys.exit(42)
-	except Exception:
-		logging.exception("Unknown error running database migration!")
-		sys.exit(42)
-
 playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
 
 shoot = threading.Thread(target=keymaps.load)
@@ -40536,6 +40605,36 @@ strings = Strings()
 tauon = Tauon(
 	bag=bag,
 )
+star_store = tauon.star_store
+
+# Run upgrades if we're behind the current DB standard
+if db_version > 0 and db_version < latest_db_version:
+	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
+	try:
+		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
+			db_version=db_version,
+			master_library=master_library,
+			install_mode=install_mode,
+			multi_playlist=multi_playlist,
+			star_store=star_store,
+			install_directory=install_directory,
+			a_cache_dir=a_cache_dir,
+			cache_directory=cache_directory,
+			config_directory=config_directory,
+			user_directory=user_directory,
+			gui=gui,
+			gen_codes=gen_codes,
+			prefs=prefs,
+			radio_playlists=radio_playlists,
+			theme=theme,
+			p_force_queue=p_force_queue,
+		)
+	except ValueError:
+		logging.exception("That should not happen")
+		sys.exit(42)
+	except Exception:
+		logging.exception("Unknown error running database migration!")
+		sys.exit(42)
 
 star_path1 = user_directory / "star.p"
 star_path2 = user_directory / "star.p.backup"
