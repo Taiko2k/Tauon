@@ -410,6 +410,7 @@ class Cachement:
 				p.wait()
 
 				logging.info("Done loading track")
+				#self.ready = track
 				self.files.append(key)
 				self.list.append(key)
 				return None
@@ -445,7 +446,7 @@ class Cachement:
 				for chunk in part.iter_content(chunk_size=1024):
 					if chunk:  # filter out keep-alive new chunks
 						a += 1
-						if a == 1500:  # kilobyes~
+						if a == 3000:  # kilobyes~
 							self.ready = track
 						if a % 32 == 0:
 							#time.sleep(0.03)
@@ -468,6 +469,7 @@ class Cachement:
 
 						f.write(chunk)
 			logging.info("Done loading track")
+			self.ready = track
 			self.files.append(key)
 			self.list.append(key)
 		except Exception:
