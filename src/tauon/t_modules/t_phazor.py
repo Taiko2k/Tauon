@@ -1206,7 +1206,7 @@ def player4(tauon: Tauon) -> None:
 
 				player_timer.set()
 				pctl.jump_time = 0
-				if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.mod_formats:
+				if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.formats.MOD:
 					i = 0
 					t = 0
 					while t == 0:
