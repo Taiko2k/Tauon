@@ -851,7 +851,7 @@ class StarStore:
 
 class AlbumStarStore:
 
-	def __init__(self) -> None:
+	def __init__(self, tauon: Tauon) -> None:
 		self.db = {}
 
 	def get_key(self, track_object: TrackClass) -> str:
@@ -4934,15 +4934,52 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, renderer: sdl3.SDL_Renderer, e_cache_directory: Path) -> None:
-		self.renderer = renderer
+	def __init__(self, bag: Bag) -> None:
+		self.bag                          = bag
+		self.mpt                          = bag.mpt
+		self.gme                          = bag.gme
+		self.renderer                     = bag.renderer
+		self.ddt                          = TDraw(bag.renderer)
+		self.fonts                        = bag.fonts
+		self.formats                      = bag.formats
+		self.macos                        = bag.macos
+		self.mac_close                    = bag.mac_close
+		self.mac_maximize                 = bag.mac_maximize
+		self.mac_minimize                 = bag.mac_minimize
+		self.system                       = bag.system
+		self.platform_system              = bag.platform_system
+		self.primary_stations             = bag.primary_stations
+		self.wayland                      = bag.wayland
+		self.dirs                         = bag.dirs
+		self.colours                      = bag.colours
+		self.download_directories         = bag.download_directories
+		self.launch_prefix                = bag.launch_prefix
+		self.overlay_texture_texture      = bag.overlay_texture_texture
+		self.de_notify_support            = bag.de_notify_support
+		self.old_window_position          = bag.old_window_position
+		self.cache_directory              = bag.dirs.cache_directory
+		self.config_directory             = bag.dirs.config_directory
+		self.user_directory               = bag.dirs.user_directory
+		self.install_directory            = bag.dirs.install_directory
+		self.music_directory              = bag.dirs.music_directory
+		self.locale_directory             = bag.dirs.locale_directory
+		self.n_cache_directory            = bag.dirs.n_cache_directory
+		self.e_cache_directory            = bag.dirs.e_cache_directory
+		self.g_cache_directory            = bag.dirs.g_cache_directory
+		self.a_cache_directory            = bag.dirs.a_cache_directory
+		self.r_cache_directory            = bag.dirs.r_cache_directory
+		self.b_cache_directory            = bag.dirs.b_cache_directory
+		self.draw_max_button              = bag.draw_max_button
+		self.draw_min_button              = bag.draw_min_button
+		self.song_notification            = bag.song_notification
+		self.tls_context                  = bag.tls_context
+		self.folder_image_offsets         = bag.folder_image_offsets
 		self.t_title = t_title
 		self.t_version = t_version
 		self.t_agent = t_agent
 		self.t_id = t_id
 		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
-		self.tls_context = tls_context
 
 		self.dummy_event: sdl3.SDL_Event = sdl3.SDL_Event()
 		self.translate = _
@@ -4951,7 +4988,6 @@ class Tauon:
 		self.lfm_scrobbler: LastScrob = lfm_scrobbler
 		self.star_store:    StarStore = star_store
 		self.gui:  GuiVar = gui
-		self.ddt          = TDraw(self.renderer)
 		self.prefs: Prefs = prefs
 		self.cache_directory:          Path = cache_directory
 		self.user_directory:    Path | None = user_directory
@@ -4971,7 +5007,6 @@ class Tauon:
 		self.pl_gen = pl_gen
 		self.quickthumbnail = QuickThumbnail(self)
 		self.gall_ren = GallClass(self, album_mode_art_size)
-		self.e_cache_directory = e_cache_directory
 		self.album_art_gen = AlbumArt(self)
 		self.thumb_tracks = ThumbTracks(self)
 		self.pl_to_id = pl_to_id
@@ -4982,7 +5017,6 @@ class Tauon:
 		self.stream_proxy = StreamEnc(self)
 		self.level_train: list[list[float]] = []
 		self.radio_server = None
-		self.mod_formats = formats.MOD
 		self.listen_alongers = {}
 		self.encode_folder_name = encode_folder_name
 		self.encode_track_name = encode_track_name
@@ -5020,6 +5054,8 @@ class Tauon:
 		self.tidal                 = Tidal(self)
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
+
+		self.album_star_store  = AlbumStarStore(self)
 
 	def start_remote(self) -> None:
 
@@ -39778,7 +39814,6 @@ bag = Bag(
 
 gui = GuiVar()
 star_store = StarStore()
-album_star_store = AlbumStarStore()
 inp = Input()
 keymaps = KeyMap()
 
@@ -39787,38 +39822,6 @@ keymaps = KeyMap()
 # Loading of program data from previous run
 gbc.disable()
 ggc = 2
-
-star_path1 = user_directory / "star.p"
-star_path2 = user_directory / "star.p.backup"
-star_size1 = 0
-star_size2 = 0
-to_load = star_path1
-if star_path1.is_file():
-	star_size1 = star_path1.stat().st_size
-if star_path2.is_file():
-	star_size2 = star_path2.stat().st_size
-if star_size2 > star_size1:
-	logging.warning("Loading backup star.p as it was bigger than regular file!")
-	to_load = star_path2
-if star_size1 == 0 and star_size2 == 0:
-	logging.warning("Star database file is missing, first run? Will create one anew!")
-else:
-	try:
-		with to_load.open("rb") as file:
-			star_store.db = pickle.load(file)
-	except Exception:
-		logging.exception("Unknown error loading star.p file")
-
-
-album_star_path = user_directory / "album-star.p"
-if album_star_path.is_file():
-	try:
-		with album_star_path.open("rb") as file:
-			album_star_store.db = pickle.load(file)
-	except Exception:
-		logging.exception("Unknown error loading album-star.p file")
-else:
-	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
 if (user_directory / "lyrics_substitutions.json").is_file():
 	try:
@@ -40530,7 +40533,41 @@ lfm_scrobbler = LastScrob()
 
 strings = Strings()
 
-tauon = Tauon(renderer=renderer, e_cache_directory=Path(e_cache_dir))
+tauon = Tauon(
+	bag=bag,
+)
+
+star_path1 = user_directory / "star.p"
+star_path2 = user_directory / "star.p.backup"
+star_size1 = 0
+star_size2 = 0
+to_load = star_path1
+if star_path1.is_file():
+	star_size1 = star_path1.stat().st_size
+if star_path2.is_file():
+	star_size2 = star_path2.stat().st_size
+if star_size2 > star_size1:
+	logging.warning("Loading backup star.p as it was bigger than regular file!")
+	to_load = star_path2
+if star_size1 == 0 and star_size2 == 0:
+	logging.warning("Star database file is missing, first run? Will create one anew!")
+else:
+	try:
+		with to_load.open("rb") as file:
+			star_store.db = pickle.load(file)
+	except Exception:
+		logging.exception("Unknown error loading star.p file")
+
+album_star_store = tauon.album_star_store
+album_star_path = user_directory / "album-star.p"
+if album_star_path.is_file():
+	try:
+		with album_star_path.open("rb") as file:
+			album_star_store.db = pickle.load(file)
+	except Exception:
+		logging.exception("Unknown error loading album-star.p file")
+else:
+	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
 signal.signal(signal.SIGINT, signal_handler)
 
