@@ -322,7 +322,7 @@ if "--tray" in sys.argv:
 	flags |= sdl3.SDL_WINDOW_HIDDEN
 
 
-t_window = sdl3.SDL_CreateWindow(  # todo use SDL_CreateWindowAndRenderer()
+t_window = sdl3.SDL_CreateWindow(  # TODO(Taiko): use SDL_CreateWindowAndRenderer()
 	window_title,
 	# o_x, o_y,
 	logical_size[0], logical_size[1],
