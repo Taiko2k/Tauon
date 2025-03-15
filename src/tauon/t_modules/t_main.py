@@ -39164,6 +39164,26 @@ if flatpak_mode:
 #elif str(install_directory).startswith(("/opt/", "/usr/")):
 #	locale_directory = Path("/usr/share/locale")
 
+dirs = Directories(
+	install_directory=install_directory,
+	svg_directory=svg_directory,
+	asset_directory=asset_directory,
+	scaled_asset_directory=scaled_asset_directory,
+	locale_directory=locale_directory,
+	user_directory=user_directory,
+	config_directory=config_directory,
+	cache_directory=cache_directory,
+	home_directory=home_directory,
+	music_directory=music_directory,
+	download_directory=download_directory,
+	n_cache_directory=n_cache_dir,
+	e_cache_directory=e_cache_dir,
+	g_cache_directory=g_cache_dir,
+	a_cache_directory=a_cache_dir,
+	r_cache_directory=r_cache_dir,
+	b_cache_directory=b_cache_dir,
+)
+
 logging.info(f"Install directory:         {install_directory}")
 #logging.info(f"SVG directory:             {svg_directory}")
 logging.info(f"Asset directory:           {asset_directory}")
