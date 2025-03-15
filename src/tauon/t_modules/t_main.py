@@ -39623,6 +39623,56 @@ latest_db_version: float = 70
 albums = []
 album_position = 0
 
+# url_saves = []
+rename_files_previous = ""
+rename_folder_previous = ""
+p_force_queue: list[TauonQueueItem] = []
+
+reload_state = None
+smtc = False
+
+radio_playlist_viewing = 0
+radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
+
+fonts = Fonts()
+colours = ColoursClass()
+colours.post_config()
+
+mpt: CDLL | None = None
+try:
+	p = ctypes.util.find_library("libopenmpt")
+	if p:
+		mpt = ctypes.cdll.LoadLibrary(p)
+	elif msys:
+		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
+	else:
+		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+
+	mpt.openmpt_module_create_from_memory.restype = c_void_p
+	mpt.openmpt_module_get_metadata.restype = c_char_p
+	mpt.openmpt_module_get_duration_seconds.restype = c_double
+except Exception:
+	logging.exception("Failed to load libopenmpt!")
+
+gme: CDLL | None = None
+p = None
+try:
+	p = ctypes.util.find_library("libgme")
+	if p:
+		gme = ctypes.cdll.LoadLibrary(p)
+	elif msys:
+		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
+	else:
+		gme = ctypes.cdll.LoadLibrary("libgme.so")
+
+	gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
+	gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
+	gme.gme_track_info.restype = ctypes.c_char_p
+	gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
+	gme.gme_open_file.restype = ctypes.c_char_p
+except Exception:
+	logging.exception("Cannot find libgme")
+
 force_subpixel_text = False
 if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
 	force_subpixel_text = True
@@ -39662,22 +39712,75 @@ prefs = Prefs(
 )
 prefs.theme = get_theme_number(prefs.theme_name)
 
+bag = Bag(
+	cf=Config(),
+	gme=gme,
+	mpt=mpt,
+	colours=colours,
+	console=console,
+	dirs=dirs,
+	prefs=prefs,
+	fonts=fonts,
+	formats=formats,
+	renderer=renderer,
+	#sdl_syswminfo=sss,
+	system=system,
+	pump=True,
+	wayland=wayland,
+	# de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
+	de_notify_support=False,
+	draw_min_button=draw_min_button,
+	draw_max_button=draw_max_button,
+	download_directories=[],
+	overlay_texture_texture=overlay_texture_texture,
+	smtc=smtc,
+	macos=macos,
+	mac_close=mac_close,
+	mac_maximize=mac_maximize,
+	mac_minimize=mac_minimize,
+	msys=msys,
+	phone=phone,
+	use_natsort=use_natsort,
+	should_save_state=should_save_state,
+	old_window_position=old_window_position,
+	xdpi=xdpi,
+	desktop=desktop,
+	platform_system=platform_system,
+	last_fm_enable=last_fm_enable,
+	launch_prefix=launch_prefix,
+	latest_db_version=latest_db_version,
+	load_orders=load_orders,
+	flatpak_mode=flatpak_mode,
+	snap_mode=snap_mode,
+	master_count=master_count,
+	playlist_active=playlist_active,
+	playing_in_queue=playing_in_queue,
+	playlist_playing=playlist_playing,
+	playlist_view_position=playlist_view_position,
+	selected_in_playlist=selected_in_playlist,
+	album_mode_art_size=int(200 * scale),
+	primary_stations=[],
+	tls_context=tls_context,
+	track_queue=track_queue,
+	volume=volume,
+	multi_playlist=multi_playlist,
+	cue_list=cue_list,
+	p_force_queue=p_force_queue,
+	logical_size=logical_size,
+	window_size=window_size,
+	gen_codes=gen_codes,
+	master_library=master_library,
+	loaded_asset_dc=loaded_asset_dc,
+	radio_playlist_viewing=radio_playlist_viewing,
+	radio_playlists=radio_playlists,
+	folder_image_offsets=folder_image_offsets,
+)
+
 gui = GuiVar()
 star_store = StarStore()
 album_star_store = AlbumStarStore()
-fonts = Fonts()
 inp = Input()
 keymaps = KeyMap()
-
-colours = ColoursClass()
-colours.post_config()
-
-# url_saves = []
-rename_files_previous = ""
-rename_folder_previous = ""
-p_force_queue: list[TauonQueueItem] = []
-
-reload_state = None
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -39763,8 +39866,6 @@ primary_stations.append(RadioStation(
 
 for station in primary_stations:
 	radio_playlists[0].stations.append(station)
-
-radio_playlist_viewing = 0
 
 pump = True
 
@@ -40291,8 +40392,6 @@ elif lang:
 
 if prefs.use_gamepad:
 	sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
-
-smtc = False
 
 if msys and win_ver >= 10:
 
