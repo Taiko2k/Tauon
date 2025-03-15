@@ -26,14 +26,15 @@ import sys
 from ctypes import c_bool, c_int, c_size_t, pointer
 from typing import TYPE_CHECKING
 
-from PIL import Image
 import sdl3
+from PIL import Image
 
 from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
 	from io import BytesIO
+
+	from tauon.t_modules.t_main import Tauon
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -304,7 +305,7 @@ perf = Timer()
 
 class TDraw:
 
-	def __init__(self, renderer: sdl3.SDL_Renderer) -> None:
+	def __init__(self, renderer: sdl3.LP_SDL_Renderer) -> None:
 
 		# All
 		self.renderer = renderer
