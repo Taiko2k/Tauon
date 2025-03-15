@@ -90,6 +90,7 @@ from unidecode import unidecode
 builtins._ = lambda x: x
 
 from tauon.t_modules import t_bootstrap
+from tauon.t_modules.guitar_chords import GuitarChords
 from tauon.t_modules.t_config import Config
 from tauon.t_modules.t_db_migrate import database_migrate
 from tauon.t_modules.t_dbus import Gnome
@@ -97,12 +98,12 @@ from tauon.t_modules.t_draw import QuickThumbnail, TDraw
 from tauon.t_modules.t_extra import (
 	ColourGenCache,
 	FunctionStore,
+	RadioPlaylist,
+	RadioStation,
 	TauonPlaylist,
 	TauonQueueItem,
 	TestTimer,
 	Timer,
-	RadioPlaylist,
-	RadioStation,
 	alpha_blend,
 	alpha_mod,
 	archive_file_scan,
@@ -156,11 +157,10 @@ from tauon.t_modules.t_extra import (
 	uri_parse,
 	year_search,
 )
-from tauon.t_modules.guitar_chords import GuitarChords
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_launch import Launch
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping
-from tauon.t_modules.t_phazor import phazor_exists, player4, Cachement, LibreSpot
+from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4
 from tauon.t_modules.t_prefs import Prefs
 from tauon.t_modules.t_search import bandcamp_search
 from tauon.t_modules.t_spot import SpotCtl
@@ -4997,8 +4997,9 @@ class Tauon:
 		self.quick_close = False
 
 		self.copied_track = None
+		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
+		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.macos = macos
-		self.aud:                 CDLL | None = None
 		self.player4_state:               int = 0
 		self.librespot_p: Popen[bytes] | None = None
 		self.spot_ctl                         = SpotCtl(self)
