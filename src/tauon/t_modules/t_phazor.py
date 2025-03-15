@@ -716,8 +716,7 @@ def player4(tauon: Tauon) -> None:
 	loaded_track = None
 	fade_time = 400
 
-	aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
-	logging.debug("Loaded Phazor path at: " + str(get_phazor_path(pctl)))
+	aud = tauon.aud
 
 	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
@@ -727,7 +726,6 @@ def player4(tauon: Tauon) -> None:
 
 	aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
 	aud.feed_raw.restype = None
-	tauon.aud = aud
 	aud.set_volume(int(pctl.player_volume))
 
 	bins1 = (ctypes.c_float * 24)()
