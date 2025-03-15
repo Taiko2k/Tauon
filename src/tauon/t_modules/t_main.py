@@ -160,7 +160,7 @@ from tauon.t_modules.guitar_chords import GuitarChords
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_launch import Launch
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping
-from tauon.t_modules.t_phazor import phazor_exists, player4
+from tauon.t_modules.t_phazor import phazor_exists, player4, Cachement, LibreSpot
 from tauon.t_modules.t_prefs import Prefs
 from tauon.t_modules.t_search import bandcamp_search
 from tauon.t_modules.t_spot import SpotCtl
@@ -189,7 +189,7 @@ if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
 	from PIL.ImageFile import ImageFile
-
+	from subprocess import Popen
 
 class LoadImageAsset:
 	assets: list[LoadImageAsset] = []
@@ -1443,8 +1443,8 @@ class PlayerCtl:
 		self.player_volume: float = volume
 		self.new_time = 0
 		self.time_to_get = []
-		self.a_time = 0
-		self.b_time = 0
+		self.a_time: float = 0
+		self.b_time: float = 0
 		# self.playlist_backup = []
 		self.active_replaygain = 0
 		self.auto_stop = False
@@ -3907,8 +3907,7 @@ class LastScrob:
 
 		self.running = False
 
-	def update(self, add_time):
-
+	def update(self, add_time: float) -> None:
 		if pctl.queue_step > len(pctl.track_queue) - 1:
 			logging.info("Queue step error 1")
 			return
@@ -4911,8 +4910,6 @@ class Tauon:
 		self.device = socket.gethostname()
 		self.tls_context = tls_context
 
-		#TODO(Martin): Fix this by moving the class to root of the module
-		self.cachement: player4.Cachement | None = None
 		self.dummy_event: sdl3.SDL_Event = sdl3.SDL_Event()
 		self.translate = _
 		self.strings: Strings = strings
@@ -4967,7 +4964,12 @@ class Tauon:
 
 		self.copied_track = None
 		self.macos = macos
-		self.aud: CDLL | None = None
+		self.aud:                 CDLL | None = None
+		self.player4_state:               int = 0
+		self.librespot_p: Popen[bytes] | None = None
+		self.spot_ctl                         = SpotCtl(self)
+		self.cachement                        = Cachement(self)
+		self.spotc                            = LibreSpot(self)
 
 		self.recorded_songs = []
 
@@ -4977,16 +4979,12 @@ class Tauon:
 		self.remote_limited = True
 		self.enable_librespot = shutil.which("librespot")
 
-		#TODO(Martin): Fix this by moving the class to root of the module
-		self.spotc: player4.LibreSpot | None = None
-		self.librespot_p = None
 		self.MenuItem = MenuItem
 		self.tag_scan = tag_scan
 
 		self.gme_formats = GME_Formats
 
-		self.spot_ctl: SpotCtl = SpotCtl(self)
-		self.tidal: Tidal = Tidal(self)
+		self.tidal                 = Tidal(self)
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
