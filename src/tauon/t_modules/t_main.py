@@ -173,16 +173,15 @@ from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webs
 if sys.platform == "linux":
 	from tauon.t_modules import t_topchart
 
-if sys.platform == "linux":
-	import gi
-	from gi.repository import GLib
-	try:
-		gi.require_version("Notify", "0.7")
-	except Exception:
-		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
-		gi.require_version("Notify", "0.8")
-	from gi.repository import Notify
-	from gi.repository import GdkPixbuf
+import gi
+from gi.repository import GLib
+try:
+	gi.require_version("Notify", "0.7")
+except Exception:
+	logging.exception("Failed importing gi Notify 0.7, will try 0.8")
+	gi.require_version("Notify", "0.8")
+from gi.repository import Notify
+from gi.repository import GdkPixbuf
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
