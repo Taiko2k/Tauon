@@ -32295,7 +32295,11 @@ def copy_to_clipboard(text: str) -> None:
 	sdl3.SDL_SetClipboardText(text.encode(errors="surrogateescape"))
 
 def copy_from_clipboard():
-	return sdl3.SDL_GetClipboardText().decode()
+	try:
+		return sdl3.SDL_GetClipboardText().decode()
+	except UnicodeDecodeError as e:
+		logging.warning("Clipboard text decode error")
+		return ""
 
 def clip_aar_al(index: int):
 	if pctl.master_library[index].album_artist == "":
