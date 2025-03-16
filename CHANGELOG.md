@@ -13,6 +13,7 @@ Changelog
  - **Fixed** Various crash and other bugs
  - **Tweaked** Shuffle lockdown shortcut added to main menu
  - **Tweaked** Theme Ash colours
+ - **Tweaked** Developer radio pics to be non-hidden
  - **Restored** guitar chords, including support for new guitarchords.com API
  
 
