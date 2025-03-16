@@ -17941,8 +17941,59 @@ class RadioBox:
 
 		ww = ddt.get_text_w(_("Get Top Voted"), 212)
 
-		if draw.button(_("Tauon Defaults"), x + ww + round(35 * gui.scale), yy + round(30 * gui.scale), press=gui.level_2_click):
+		if draw.button(_("Developer Picks"), x + ww + round(35 * gui.scale), yy + round(30 * gui.scale), press=gui.level_2_click):
 			self.temp_list.clear()
+
+			self.temp_list.append(
+				RadioStation(
+					title="Nightwave Plaza",
+					stream_url_fallback="https://radio.plaza.one/ogg",
+					stream_url="https://radio.plaza.one/ogg",
+					website_url="https://plaza.one/",
+					icon="https://plaza.one/icons/apple-touch-icon.png",
+					country="Japan"))
+
+			self.temp_list.append(
+				RadioStation(
+					title="Gensokyo Radio",
+					stream_url_fallback="https://stream.gensokyoradio.net/GensokyoRadio-enhanced.m3u",
+					stream_url="https://stream.gensokyoradio.net/1",
+					website_url="https://gensokyoradio.net/",
+					icon="https://gensokyoradio.net/favicon.ico",
+					country="Japan"))
+
+			self.temp_list.append(
+				RadioStation(
+					title="Listen.moe | Jpop",
+					stream_url_fallback="https://listen.moe/stream",
+					stream_url="https://listen.moe/stream",
+					website_url="https://listen.moe/",
+					icon="https://avatars.githubusercontent.com/u/26034028?s=200&v=4",
+					country="Japan"))
+
+			self.temp_list.append(
+				RadioStation(
+					title="Listen.moe | Kpop",
+					stream_url_fallback="https://listen.moe/kpop/stream",
+					stream_url="https://listen.moe/kpop/stream",
+					website_url="https://listen.moe/",
+					icon="https://avatars.githubusercontent.com/u/26034028?s=200&v=4",
+					country="Korea"))
+
+			self.temp_list.append(
+				RadioStation(
+					title="HBR1 Dream Factory | Ambient",
+					stream_url_fallback="http://radio.hbr1.com:19800/ambient.ogg",
+					stream_url="http://radio.hbr1.com:19800/ambient.ogg",
+					website_url="http://www.hbr1.com/"))
+
+			self.temp_list.append(
+				RadioStation(
+					title="Yggdrasil Radio | Anime & Jpop",
+					stream_url_fallback="http://shirayuki.org:9200/",
+					stream_url="http://shirayuki.org:9200/",
+					website_url="https://yggdrasilradio.net/"))
+			
 			for station in primary_stations:
 				self.temp_list.append(station)
 
