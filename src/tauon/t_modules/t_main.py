@@ -173,7 +173,7 @@ from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webs
 if sys.platform == "linux":
 	from tauon.t_modules import t_topchart
 
-if sys.platform not in ("win32", "darwin"):
+if sys.platform == "linux":
 	import gi
 	try:
 		gi.require_version("Notify", "0.7")
@@ -17993,7 +17993,7 @@ class RadioBox:
 					stream_url_fallback="http://shirayuki.org:9200/",
 					stream_url="http://shirayuki.org:9200/",
 					website_url="https://yggdrasilradio.net/"))
-			
+
 			for station in primary_stations:
 				self.temp_list.append(station)
 

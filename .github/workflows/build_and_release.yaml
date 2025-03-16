@@ -105,6 +105,11 @@ jobs:
           name: TauonMusicBox-linux
           path: TauonMusicBox.7z
 
+      - name: Run Tauon for testing
+        run: |
+          source .venv/bin/activate
+          tauonmb
+
   build-flatpak:
     name: "Flatpak"
     runs-on: ubuntu-24.04
