@@ -57,9 +57,6 @@ a = Analysis(
 		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840
 		"zeroconf._utils.ipaddress",
 		"zeroconf._handlers.answers",
-		# TODO(Martin): THIS IS A HACK, remove after pyinstaller 6.12.1+ is released
-		# https://github.com/pyinstaller/pyinstaller/issues/9052
-		"gi._enum",
 	],
 	hookspath=["extra\\pyinstaller-hooks"],
 	hooksconfig={},

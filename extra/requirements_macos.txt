@@ -3,7 +3,7 @@ musicbrainzngs
 mutagen
 Pillow
 PlexAPI
-PyGObject==3.50.0 # https://github.com/Taiko2k/Tauon/issues/1493
+PyGObject
 pylast>=3.1.0
 PySDL3
 requests
