@@ -1066,7 +1066,6 @@ class KeyMap:
 			return False
 
 		for code, mod in self.maps[function]:
-
 			if code in self.hits:
 
 				ctrl = (key_ctrl_down or key_rctrl_down) * 1
@@ -1590,6 +1589,93 @@ class PlayerCtl:
 		self.spot_playing = False
 
 		self.buffering_percent = 0
+
+	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
+		# Close any active menus
+		# for instance in Menu.instances:
+		# 	instance.active = False
+		close_all_menus()
+		if self.gui.radio_view:
+			if cycle:
+				self.radio_playlist_viewing += number
+			else:
+				self.radio_playlist_viewing = number
+			if self.radio_playlist_viewing > len(self.radio_playlists) - 1:
+				self.radio_playlist_viewing = 0
+			return
+
+		self.gui.previous_playlist_id = self.multi_playlist[self.active_playlist_viewing].uuid_int
+
+		self.gui.pl_update = 1
+		self.gui.search_index = 0
+		self.gui.column_d_click_on = -1
+		self.gui.search_error = False
+		if self.gui.quick_search_mode:
+			self.gui.force_search = True
+
+		# if pl_follow:
+		# 	self.multi_playlist[self.playlist_active][1] = copy.deepcopy(self.playlist_playing)
+
+		if self.gui.showcase_mode and self.gui.combo_mode and not quiet:
+			self.tauon.view_standard()
+
+		self.multi_playlist[self.active_playlist_viewing].playlist_ids = self.default_playlist
+		self.multi_playlist[self.active_playlist_viewing].position = self.playlist_view_position
+		self.multi_playlist[self.active_playlist_viewing].selected = self.selected_in_playlist
+
+		if self.tauon.gall_pl_switch_timer.get() > 240:
+			self.gui.gallery_positions.clear()
+		self.tauon.gall_pl_switch_timer.set()
+
+		self.gui.gallery_positions[self.gui.previous_playlist_id] = self.gui.album_scroll_px
+
+		if cycle:
+			self.active_playlist_viewing += number
+		else:
+			self.active_playlist_viewing = number
+
+		while self.active_playlist_viewing > len(self.multi_playlist) - 1:
+			self.active_playlist_viewing -= len(self.multi_playlist)
+		while self.active_playlist_viewing < 0:
+			self.active_playlist_viewing += len(self.multi_playlist)
+
+		self.default_playlist = self.multi_playlist[self.active_playlist_viewing].playlist_ids
+		self.playlist_view_position = self.multi_playlist[self.active_playlist_viewing].position
+		self.selected_in_playlist = self.multi_playlist[self.active_playlist_viewing].selected
+		logging.debug("Position changed by playlist change")
+		self.gui.shift_selection = [self.selected_in_playlist]
+
+		id = self.multi_playlist[self.active_playlist_viewing].uuid_int
+
+		code = self.gen_codes.get(id)
+		if code is not None and self.tauon.check_auto_update_okay(code, self.active_playlist_viewing):
+			self.gui.regen_single_id = id
+			self.tauon.thread_manager.ready("worker")
+
+		if self.prefs.album_mode:
+			self.tauon.reload_albums(True)
+			if id in self.gui.gallery_positions:
+				self.gui.album_scroll_px = self.gui.gallery_positions[id]
+			else:
+				self.tauon.goto_album(self.playlist_view_position)
+
+		if self.prefs.auto_goto_playing:
+			self.show_current(this_only=True, playing=False, highlight=True, no_switch=True)
+
+		if self.prefs.shuffle_lock:
+			self.tauon.view_box.lyrics(hit=True)
+			if self.active_playlist_viewing:
+				self.active_playlist_playing = self.active_playlist_viewing
+				self.tauon.random_track()
+
+	def id_to_pl(self, id: int):
+		for i, item in enumerate(self.multi_playlist):
+			if item.uuid_int == id:
+				return i
+		return None
+
+	def pl_to_id(self, pl: int) -> int:
+		return self.multi_playlist[pl].uuid_int
 
 	def notify_change(self) -> None:
 		self.db_inc += 1
@@ -5025,6 +5111,9 @@ class ThumbTracks:
 class Tauon:
 	"""Root class for everything Tauon"""
 	def __init__(self, bag: Bag, gui: GuiVar) -> None:
+		# Workarounds for now
+		self.standard_sort = standard_sort
+
 		self.bag                          = bag
 		self.mpt                          = bag.mpt
 		self.gme                          = bag.gme
@@ -5131,13 +5220,12 @@ class Tauon:
 		self.console = console
 		self.msys = msys
 		self.TrackClass = TrackClass
-		self.pl_gen = pl_gen
 		self.quickthumbnail = QuickThumbnail(self)
 		self.gall_ren = GallClass(self, album_mode_art_size)
 		self.album_art_gen = AlbumArt(self)
 		self.thumb_tracks = ThumbTracks(self)
-		self.pl_to_id = pl_to_id
-		self.id_to_pl = id_to_pl
+		self.pl_to_id = self.pctl.pl_to_id
+		self.id_to_pl = self.pctl.id_to_pl
 		self.chunker = Chunker()
 		self.thread_manager: ThreadManager = ThreadManager()
 		self.stream_proxy = None
@@ -5188,6 +5276,31 @@ class Tauon:
 		self.tau               = TauService(self)
 		self.album_star_store  = AlbumStarStore(self)
 		self.subsonic          = self.album_star_store.subsonic
+
+		self.text_sat_playlist = TextBox2()
+
+	def pl_gen(self,
+		title:        str = "Default",
+		playing:      int = 0,
+		playlist_ids: list[int] | None = None,
+		position:     int = 0,
+		hide_title:   bool = False,
+		selected:     int = 0,
+		parent:       str = "",
+		hidden:       bool = False,
+		notify:       bool = True, # Allows us to generate initial playlist before worker thread is ready
+	) -> TauonPlaylist:
+		"""Generate a TauonPlaylist
+
+		Creates a default playlist when called without parameters
+		"""
+		if playlist_ids is None:
+			playlist_ids = []
+		if notify:
+			self.pctl.notify_change()
+
+		#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
+		return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False)
 
 	def show_message(self, line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
 		self.gui.message_box = True
@@ -5372,10 +5485,9 @@ class PlexService:
 		self.resource = None
 		self.scanning = False
 
-	def connect(self):
-
-		if not prefs.plex_username or not prefs.plex_password or not prefs.plex_servername:
-			show_message(_("Missing username, password and/or server name"), mode="warning")
+	def connect(self) -> None:
+		if not self.prefs.plex_username or not self.prefs.plex_password or not self.prefs.plex_servername:
+			self.show_message(_("Missing username, password and/or server name"), mode="warning")
 			self.scanning = False
 			return
 
@@ -5385,16 +5497,16 @@ class PlexService:
 			logging.warning("Unable to import python-plexapi, plex support will be disabled.")
 		except Exception:
 			logging.exception("Unknown error to import python-plexapi, plex support will be disabled.")
-			show_message(_("Error importing python-plexapi"), mode="error")
+			self.show_message(_("Error importing python-plexapi"), mode="error")
 			self.scanning = False
 			return
 
 		try:
-			account = MyPlexAccount(prefs.plex_username, prefs.plex_password)
-			self.resource = account.resource(prefs.plex_servername).connect()  # returns a PlexServer instance
+			account = MyPlexAccount(self.prefs.plex_username, self.prefs.plex_password)
+			self.resource = account.resource(self.prefs.plex_servername).connect()  # returns a PlexServer instance
 		except Exception:
 			logging.exception("Error connecting to PLEX server, check login credentials and server accessibility.")
-			show_message(
+			self.show_message(
 				_("Error connecting to PLEX server"),
 				_("Try checking login credentials and that the server is accessible."), mode="error")
 			self.scanning = False
@@ -5424,9 +5536,8 @@ class PlexService:
 			return self.resource.url(location, True)
 		return None
 
-	def get_albums(self, return_list=False):
-
-		gui.update += 1
+	def get_albums(self, return_list: bool = False) -> list[int] | None:
+		self.gui.update += 1
 		self.scanning = True
 
 		if not self.connected:
@@ -5436,15 +5547,15 @@ class PlexService:
 			self.scanning = False
 			return []
 
-		playlist = []
+		playlist: list[int] = []
 
 		existing = {}
-		for track_id, track in pctl.master_library.items():
+		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
 		albums = self.resource.library.section("Music").albums()
-		gui.to_got = 0
+		self.gui.to_got = 0
 
 		for album in albums:
 			year = album.year
@@ -5454,12 +5565,11 @@ class PlexService:
 			parent = (album_artist + " - " + album_title).strip("- ")
 
 			for track in album.tracks():
-
 				if not track.duration:
-					logging.warning("Skipping track with invalid duration - " + track.title + " - " + track.grandparentTitle)
+					logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
 					continue
 
-				id = pctl.master_count
+				id = self.pctl.master_count
 				replace_existing = False
 
 				e = existing.get(track.key)
@@ -5493,25 +5603,26 @@ class PlexService:
 				nt.url_key = track.key
 				nt.date = str(year)
 
-				pctl.master_library[id] = nt
+				self.pctl.master_library[id] = nt
 
 				if not replace_existing:
-					pctl.master_count += 1
+					self.pctl.master_count += 1
 
 				playlist.append(nt.index)
 
-			gui.to_got += 1
-			gui.update += 1
-			gui.pl_update += 1
+			self.gui.to_got += 1
+			self.gui.update += 1
+			self.gui.pl_update += 1
 
 		self.scanning = False
 
 		if return_list:
 			return playlist
 
-		pctl.multi_playlist.append(pl_gen(title=_("PLEX Collection"), playlist_ids=playlist))
-		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "plex path"
-		switch_playlist(len(pctl.multi_playlist) - 1)
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("PLEX Collection"), playlist_ids=playlist))
+		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "plex path"
+		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
+		return None
 
 class SubsonicService:
 
@@ -5890,10 +6001,9 @@ class KoelService:
 		self.token:      str = ""
 
 	def connect(self) -> None:
-
 		logging.info("Connect to koel...")
-		if not prefs.koel_username or not prefs.koel_password or not prefs.koel_server_url:
-			show_message(_("Missing username, password and/or server URL"), mode="warning")
+		if not self.prefs.koel_username or not self.prefs.koel_password or not self.prefs.koel_server_url:
+			self.show_message(_("Missing username, password and/or server URL"), mode="warning")
 			self.scanning = False
 			return
 
@@ -5902,9 +6012,9 @@ class KoelService:
 			logging.info("Already authorised")
 			return
 
-		password = prefs.koel_password
-		username = prefs.koel_username
-		server = prefs.koel_server_url
+		password = self.prefs.koel_password
+		username = self.prefs.koel_username
+		server   = self.prefs.koel_server_url
 		self.server = server
 
 		target = server + "/api/me"
@@ -5922,7 +6032,7 @@ class KoelService:
 			r = requests.post(target, json=body, headers=headers, timeout=10)
 		except Exception:
 			logging.exception("Could not establish connection")
-			gui.show_message(_("Could not establish connection"), mode="error")
+			self.show_message(_("Could not establish connection"), mode="error")
 			return
 
 		if r.status_code == 200:
@@ -5941,16 +6051,14 @@ class KoelService:
 			if "message" in j:
 				error = j["message"]
 
-			gui.show_message(_("Could not establish connection/authorisation"), error, mode="error")
-
+			self.show_message(_("Could not establish connection/authorisation"), error, mode="error")
 
 	def resolve_stream(self, id: str) -> tuple[str, dict[str, str]]:
-
 		if not self.connected:
 			self.connect()
 
-		if prefs.network_stream_bitrate > 0:
-			target = f"{self.server}/api/{id}/play/1/{prefs.network_stream_bitrate}"
+		if self.prefs.network_stream_bitrate > 0:
+			target = f"{self.server}/api/{id}/play/1/{self.prefs.network_stream_bitrate}"
 		else:
 			target = f"{self.server}/api/{id}/play/0/0"
 		params = {"jwt-token": self.token }
@@ -5987,8 +6095,7 @@ class KoelService:
 				logging.exception("error submitting listen to koel")
 
 	def get_albums(self, return_list: bool = False) -> list[int] | None:
-
-		gui.update += 1
+		self.gui.update += 1
 		self.scanning = True
 
 		if not self.connected:
@@ -6031,13 +6138,12 @@ class KoelService:
 
 		existing = {}
 
-		for track_id, track in pctl.master_library.items():
+		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "KOEL":
 				existing[track.url_key] = track_id
 
 		for song in songs:
-
-			id = pctl.master_count
+			id = self.pctl.master_count
 			replace_existing = False
 
 			e = existing.get(song["id"])
@@ -6066,10 +6172,10 @@ class KoelService:
 			nt.is_network = True
 			nt.file_ext = "KOEL"
 
-			pctl.master_library[id] = nt
+			self.pctl.master_library[id] = nt
 
 			if not replace_existing:
-				pctl.master_count += 1
+				self.pctl.master_count += 1
 
 			playlist.append(nt.index)
 
@@ -6078,10 +6184,11 @@ class KoelService:
 		if return_list:
 			return playlist
 
-		pctl.multi_playlist.append(pl_gen(title=_("Koel Collection"), playlist_ids=playlist))
-		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "koel path tn"
-		standard_sort(len(pctl.multi_playlist) - 1)
-		switch_playlist(len(pctl.multi_playlist) - 1)
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Koel Collection"), playlist_ids=playlist))
+		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "koel path tn"
+		self.tauon.standard_sort(len(self.pctl.multi_playlist) - 1)
+		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
+		return None
 
 class TauService:
 	def __init__(self, tauon: Tauon) -> None:
@@ -6093,24 +6200,23 @@ class TauService:
 		self.processing        = False
 
 	def resolve_stream(self, key: str) -> str:
-		return "http://" + prefs.sat_url + ":7814/api1/file/" + key
+		return "http://" + self.prefs.sat_url + ":7814/api1/file/" + key
 
 	def resolve_picture(self, key: str) -> str:
-		return "http://" + prefs.sat_url + ":7814/api1/pic/medium/" + key
+		return "http://" + self.prefs.sat_url + ":7814/api1/pic/medium/" + key
 
 	def get(self, point: str):
-		url = "http://" + prefs.sat_url + ":7814/api1/"
+		url = "http://" + self.prefs.sat_url + ":7814/api1/"
 		data = None
 		try:
 			r = requests.get(url + point, timeout=10)
 			data = r.json()
 		except Exception as e:
 			logging.exception("Network error")
-			show_message(_("Network error"), str(e), mode="error")
+			self.show_message(_("Network error"), str(e), mode="error")
 		return data
 
 	def get_playlist(self, playlist_name: str | None = None, return_list: bool = False) -> list[int] | None:
-
 		p = self.get("playlists")
 
 		if not p or not p["playlists"]:
@@ -6118,9 +6224,9 @@ class TauService:
 			return []
 
 		if playlist_name is None:
-			playlist_name = text_sat_playlist.text.strip()
+			playlist_name = self.tauon.text_sat_playlist.text.strip()
 		if not playlist_name:
-			show_message(_("No playlist name"))
+			self.show_message(_("No playlist name"))
 			return []
 
 		id = None
@@ -6131,7 +6237,7 @@ class TauService:
 				name = pp["name"]
 
 		if id is None:
-			show_message(_("Playlist not found on target"), mode="error")
+			self.show_message(_("Playlist not found on target"), mode="error")
 			self.processing = False
 			return []
 
@@ -6143,7 +6249,7 @@ class TauService:
 		at = t["tracks"]
 
 		exist = {}
-		for k, v in pctl.master_library.items():
+		for k, v in self.pctl.master_library.items():
 			if v.is_network and v.file_ext == "TAU":
 				exist[v.url_key] = k
 
@@ -6154,7 +6260,7 @@ class TauService:
 			tid = item["id"]
 			id = exist.get(str(tid))
 			if id is None:
-				id = pctl.master_count
+				id = self.pctl.master_count
 				replace_existing = False
 
 			nt = TrackClass()
@@ -6176,21 +6282,22 @@ class TauService:
 
 			nt.is_network = True
 			nt.file_ext = "TAU"
-			pctl.master_library[id] = nt
+			self.pctl.master_library[id] = nt
 
 			if not replace_existing:
-				pctl.master_count += 1
+				self.pctl.master_count += 1
 			playlist.append(nt.index)
 
 		if return_list:
 			self.processing = False
 			return playlist
 
-		pctl.multi_playlist.append(pl_gen(title=name, playlist_ids=playlist))
-		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "tau path tn"
-		standard_sort(len(pctl.multi_playlist) - 1)
-		switch_playlist(len(pctl.multi_playlist) - 1)
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
+		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "tau path tn"
+		self.tauon.standard_sort(len(self.pctl.multi_playlist) - 1)
+		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		self.processing = False
+		return None
 
 class STray:
 
@@ -23650,7 +23757,7 @@ def pl_gen(
 	selected:     int = 0,
 	parent:       str = "",
 	hidden:       bool = False,
-) -> TauonPlaylist:
+) -> TauonPlaylist: # TODO(Martin): Now in Tauon
 	"""Generate a TauonPlaylist
 
 	Creates a default playlist when called without parameters
@@ -25580,13 +25687,13 @@ def maloja_scrobble(track: TrackClass, timestamp: int = int(time.time())) -> boo
 		return False
 	return True
 
-def id_to_pl(id: int):
+def id_to_pl(id: int): # TODO(Martin): Now in PlayerCtl
 	for i, item in enumerate(pctl.multi_playlist):
 		if item.uuid_int == id:
 			return i
 	return None
 
-def pl_to_id(pl: int) -> int:
+def pl_to_id(pl: int) -> int: # TODO(Martin): Now in PlayerCtl
 	return pctl.multi_playlist[pl].uuid_int
 
 def encode_track_name(track_object: TrackClass) -> str:
@@ -33323,7 +33430,7 @@ def check_auto_update_okay(code, pl=None):
 		"tmix\"" not in code and
 		"r"      not in cmds)
 
-def switch_playlist(number, cycle=False, quiet=False):
+def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in PlayerCtl
 	global default_playlist
 
 	global search_index
@@ -41045,7 +41152,7 @@ text_maloja_url = TextBox2()
 text_maloja_key = TextBox2()
 
 text_sat_url = TextBox2()
-text_sat_playlist = TextBox2()
+text_sat_playlist = tauon.text_sat_playlist
 
 rename_folder = TextBox2()
 rename_folder.text = prefs.rename_folder_template
