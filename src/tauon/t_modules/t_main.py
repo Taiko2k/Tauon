@@ -175,6 +175,7 @@ if sys.platform == "linux":
 
 if sys.platform == "linux":
 	import gi
+	from gi.repository import GLib
 	try:
 		gi.require_version("Notify", "0.7")
 	except Exception:
@@ -182,7 +183,6 @@ if sys.platform == "linux":
 		gi.require_version("Notify", "0.8")
 	from gi.repository import Notify
 	from gi.repository import GdkPixbuf
-	from gi.repository import GLib
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
