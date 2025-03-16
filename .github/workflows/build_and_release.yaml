@@ -26,6 +26,8 @@ jobs:
             gettext \
             gobject-introspection \
             gir1.2-rsvg-2.0 \
+            gir1.2-notify-0.7 \
+            gir1.2-girepository-3.0-dev \
             kde-config-gtk-style \
             libcanberra-gtk3-module \
             libgirepository1.0-dev \
@@ -66,7 +68,8 @@ jobs:
           pip install \
             -r requirements.txt \
             build \
-            pyinstaller
+            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #    pyinstaller
 
       - name: Build the project using python-build
         run: |
@@ -101,6 +104,11 @@ jobs:
         with:
           name: TauonMusicBox-linux
           path: TauonMusicBox.7z
+
+      #- name: Run Tauon for testing
+      #  run: |
+      #    source .venv/bin/activate
+      #    tauonmb
 
   build-flatpak:
     name: "Flatpak"
@@ -211,8 +219,8 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
             -r requirements.txt \
             build \
-            pyinstaller
-        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #   pyinstaller
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
         #  source .venv/bin/activate
         #  CFLAGS: "-I/opt/homebrew/include"
@@ -306,7 +314,8 @@ jobs:
           .venv/bin/python -m pip install \
             -r requirements.txt \
             build \
-            pyinstaller
+            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #    pyinstaller
         #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
       - name: Build the project using python-build

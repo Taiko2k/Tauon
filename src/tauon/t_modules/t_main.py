@@ -171,9 +171,6 @@ from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
 
 if sys.platform == "linux":
-	from tauon.t_modules import t_topchart
-
-if sys.platform not in ("win32", "darwin"):
 	import gi
 	try:
 		gi.require_version("Notify", "0.7")
@@ -183,6 +180,7 @@ if sys.platform not in ("win32", "darwin"):
 	from gi.repository import Notify
 	from gi.repository import GdkPixbuf
 	from gi.repository import GLib
+	from tauon.t_modules import t_topchart
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -17993,7 +17991,7 @@ class RadioBox:
 					stream_url_fallback="http://shirayuki.org:9200/",
 					stream_url="http://shirayuki.org:9200/",
 					website_url="https://yggdrasilradio.net/"))
-			
+
 			for station in primary_stations:
 				self.temp_list.append(station)
 
