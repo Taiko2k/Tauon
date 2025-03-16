@@ -187,7 +187,13 @@ if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 	from pylast import Artist, LibreFMNetwork
 	from PIL.ImageFile import ImageFile
+	from tauon.t_modules.t_bootstrap import Holder
+	from websocket import WebSocketApp
+	if sys.platform == "win32":
+		from lynxtray import SysTrayIcon
+	from mutagen.id3 import ID3
 	from subprocess import Popen
+	from pylast import LastFMNetwork
 
 class LoadImageAsset:
 	assets: list[LoadImageAsset] = []
@@ -1458,23 +1464,51 @@ class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 
 	# C-PC
-	def __init__(self):
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon                     = tauon
+		self.gui                       = self.tauon.gui
+		self.bag                       = self.tauon.bag
+		self.colours                   = self.tauon.colours
+		self.smtc                      = self.tauon.bag.smtc
+		self.show_message              = self.tauon.show_message
+		self.star_store                = StarStore(tauon=tauon, pctl=self)
+		self.draw                      = Drawing(tauon=tauon, pctl=self)
+		self.radiobox                  = RadioBox(tauon=tauon, pctl=self)
+		self.mini_lyrics_scroll        = ScrollBox(tauon=tauon, pctl=self)
+		self.playlist_panel_scroll     = ScrollBox(tauon=tauon, pctl=self)
+		self.artist_info_scroll        = ScrollBox(tauon=tauon, pctl=self)
+		self.device_scroll             = ScrollBox(tauon=tauon, pctl=self)
+		self.artist_list_scroll        = ScrollBox(tauon=tauon, pctl=self)
+		self.gallery_scroll            = ScrollBox(tauon=tauon, pctl=self)
+		self.tree_view_scroll          = ScrollBox(tauon=tauon, pctl=self)
+		self.radio_view_scroll         = ScrollBox(tauon=tauon, pctl=self)
+		self.tree_view_box             = TreeView(tauon=tauon, pctl=self)
+		self.msys                      = self.tauon.msys
+		self.queue_box                 = QueueBox(tauon=tauon, pctl=self)
+		self.running:             bool = True
+		self.prefs                     = self.bag.prefs
+		self.sm                        = self.bag.sm
+		self.lastfm                    = LastFMapi(tauon=tauon, pctl=self)
+		self.lfm_scrobbler             = LastScrob(tauon=tauon, pctl=self)
+		#self.artist_info_box           = ArtistInfoBox(tauon=tauon, pctl=self)
+		#self.artist_list_box           = ArtistList(tauon=tauon, pctl=self)
+		self.install_directory         = self.bag.dirs.install_directory
+		self.loading_in_progress: bool = False
+		self.taskbar_progress:    bool = True
+		#self.album_dex                 = self.tauon.album_dex
 
-		self.running:           bool = True
-		self.prefs:             Prefs = prefs
-		self.install_directory: Path  = install_directory
-
+		self.cargo: list[int]          = []
 		# Database
 
-		self.master_count = master_count
+		self.master_count = self.bag.master_count
 		self.total_playtime: float = 0
-		self.master_library = master_library
+		self.master_library = self.bag.master_library
 		# Lets clients know when to invalidate cache
 		self.db_inc = random.randint(0, 10000)
 		# self.star_library = star_library
 		self.LoadClass = LoadClass
 
-		self.gen_codes = gen_codes
+		self.gen_codes = self.bag.gen_codes
 
 		self.shuffle_pools = {}
 		self.after_import_flag = False
@@ -1483,6 +1517,12 @@ class PlayerCtl:
 		self.album_mbid_release_cache = {}
 		self.album_mbid_release_group_cache = {}
 		self.mbid_image_url_cache = {}
+
+		# ----------------------------------------
+		# Playlist right click menu
+
+		self.r_menu_index = 0
+		self.r_menu_position = 0
 
 		# Misc player control
 
@@ -1494,15 +1534,15 @@ class PlayerCtl:
 
 		# Playback
 
-		self.track_queue = track_queue
+		self.track_queue = self.bag.track_queue
 		self.default_playlist: list[int] = []
-		self.queue_step = playing_in_queue
+		self.queue_step = self.bag.playing_in_queue
 		self.playing_time = 0
-		self.playlist_playing_position = playlist_playing  # track in playlist that is playing
+		self.playlist_playing_position = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
-		self.playlist_view_position = playlist_view_position
-		self.selected_in_playlist = selected_in_playlist
+		self.playlist_view_position = self.bag.playlist_view_position
+		self.selected_in_playlist = self.bag.selected_in_playlist
 		self.target_open = ""
 		self.target_object = None
 		self.start_time = 0
@@ -1512,22 +1552,23 @@ class PlayerCtl:
 		self.playerCommandReady = False
 		self.playing_state:    int = 0
 		self.playing_length: float = 0
-		self.jump_time = 0
-		self.random_mode = prefs.random_mode
-		self.repeat_mode = prefs.repeat_mode
-		self.album_repeat_mode = prefs.album_repeat_mode
-		self.album_shuffle_mode = prefs.album_shuffle_mode
+		self.jump_time             = 0
+		self.random_mode           = self.prefs.random_mode
+		self.repeat_mode           = self.prefs.repeat_mode
+		self.album_repeat_mode     = self.prefs.album_repeat_mode
+		self.album_shuffle_mode    = self.prefs.album_shuffle_mode
 		# self.album_shuffle_pool = []
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
-		self.multi_playlist = multi_playlist
-		self.active_playlist_viewing: int = playlist_active  # the playlist index that is being viewed
-		self.active_playlist_playing: int = playlist_active  # the playlist index that is playing from
-		self.force_queue: list[TauonQueueItem] = p_force_queue
+		self.multi_playlist = self.bag.multi_playlist
+		self.active_playlist_viewing = self.bag.playlist_active  # the playlist index that is being viewed # TODO(Martin): Rename playlist_active and active_playlist?
+		self.active_playlist_playing = self.bag.playlist_active  # the playlist index that is playing from
+		self.force_queue = self.bag.p_force_queue
 		self.pause_queue: bool = False
 		self.left_time = 0
 		self.left_index = 0
-		self.player_volume: float = volume
+		self.player_volume = self.bag.volume
+		self.volume_store: float = 50  # Used to save the previous volume when muted
 		self.new_time = 0
 		self.time_to_get = []
 		self.a_time: float = 0
@@ -1548,7 +1589,6 @@ class PlayerCtl:
 
 		self.gst_devices = []  # Display names
 		self.gst_outputs = {}  # Display name : (sink, device)
-
 		#TODO(Martin): Fix this by moving the class to root of the module
 		self.mpris: Gnome.main.MPRIS | None = None
 		self.tray_update = None
@@ -1581,14 +1621,93 @@ class PlayerCtl:
 		self.regen_in_progress = False
 		self.notify_in_progress = False
 
-		self.radio_playlists: list[RadioPlaylist] = radio_playlists
-		self.radio_playlist_viewing: int = radio_playlist_viewing
+		self.radio_playlists: list[RadioPlaylist] = self.bag.radio_playlists
+		self.radio_playlist_viewing: int = self.bag.radio_playlist_viewing
 		self.tag_history = {}
 
 		self.commit: int | None = None
 		self.spot_playing = False
 
 		self.buffering_percent = 0
+
+	# def re_import(pl: int) -> None:
+	#
+	#	 path = pctl.multi_playlist[pl].last_folder
+	#	 if path == "":
+	#		 return
+	#	 for i in reversed(range(len(pctl.multi_playlist[pl].playlist_ids))):
+	#		 if path.replace('\\', '/') in pctl.master_library[pctl.multi_playlist[pl].playlist_ids[i]].parent_folder_path:
+	#			 del pctl.multi_playlist[pl].playlist_ids[i]
+	#
+	#	 load_order = LoadClass()
+	#	 load_order.replace_stem = True
+	#	 load_order.target = path
+	#	 load_order.playlist = pctl.multi_playlist[pl].uuid_int
+	#	 tauon.load_orders.append(copy.deepcopy(load_order))
+
+	def index_key(self, index: int) -> (list[int | str] | Literal["a"]):
+		tr = self.master_library[index]
+		s = str(tr.track_number)
+		d = str(tr.disc_number)
+
+		if "/" in d:
+			d = d.split("/")[0]
+
+		# Make sure the value for disc number is an int, make 1 if 0, otherwise ignore
+		if d:
+			try:
+				dd = int(d)
+				if dd < 2:
+					dd = 1
+				d = str(dd)
+			except Exception:
+				logging.exception("Failed to parse as index as int")
+				d = ""
+
+
+		# Add the disc number for sorting by CD, make it '1' if theres isnt one
+		if s or d:
+			if not d:
+				s = "1" + "d" + s
+			else:
+				s = d + "d" + s
+
+		# Use the filename if we dont have any metadata to sort by,
+		# since it could likely have the track number in it
+		else:
+			s = tr.filename
+
+		if (not tr.disc_number or tr.disc_number == "0") and tr.is_cue:
+			s = tr.filename + "-" + s
+
+		# This splits the line by groups of numbers, causing the sorting algorithum to sort
+		# by those numbers. Should work for filenames, even with the disc number in the name
+		try:
+			return [tryint(c) for c in re.split("([0-9]+)", s)]
+		except Exception:
+			logging.exception("Failed to parse as int, returning 'a'")
+			return "a"
+
+	def re_import2(self, pl: int) -> None:
+		paths = self.multi_playlist[pl].last_folder
+
+		reduce_paths(paths)
+
+		for path in paths:
+			if os.path.isdir(path):
+				load_order = LoadClass()
+				load_order.replace_stem = True
+				load_order.target = path
+				load_order.notify = True
+				load_order.playlist = self.multi_playlist[pl].uuid_int
+				self.tauon.load_orders.append(copy.deepcopy(load_order))
+
+		if paths:
+			self.show_message(_("Rescanning folders..."), mode="info")
+
+	def rescan_all_folders(self) -> None:
+		for i, p in enumerate(self.multi_playlist):
+			self.re_import2(i)
 
 	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
 		# Close any active menus
@@ -1668,6 +1787,198 @@ class PlayerCtl:
 				self.active_playlist_playing = self.active_playlist_viewing
 				self.tauon.random_track()
 
+	def cycle_playlist_pinned(self, step: int) -> None:
+		if self.gui.radio_view:
+			self.radio_playlist_viewing += step * -1
+			if self.radio_playlist_viewing > len(self.radio_playlists) - 1:
+				self.radio_playlist_viewing = 0
+			if self.radio_playlist_viewing < 0:
+				self.radio_playlist_viewing = len(self.radio_playlists) - 1
+			return
+
+		if step > 0:
+			p = self.active_playlist_viewing
+			le = len(self.multi_playlist)
+			on = p
+			on -= 1
+			while True:
+				if on < 0:
+					on = le - 1
+				if on == p:
+					break
+				if self.multi_playlist[on].hidden is False or not self.prefs.tabs_on_top or (
+						self.gui.lsp and self.prefs.left_panel_mode == "playlist"):
+					self.switch_playlist(on)
+					break
+				on -= 1
+
+		elif step < 0:
+			p = self.active_playlist_viewing
+			le = len(self.multi_playlist)
+			on = p
+			on += 1
+			while True:
+				if on == le:
+					on = 0
+				if on == p:
+					break
+				if self.multi_playlist[on].hidden is False or not self.prefs.tabs_on_top or (
+						self.gui.lsp and self.prefs.left_panel_mode == "playlist"):
+					self.switch_playlist(on)
+					break
+				on += 1
+
+	def move_radio_playlist(self, source: int, dest: int) -> None:
+		if dest > source:
+			dest += 1
+		try:
+			temp = self.radio_playlists[source]
+			self.radio_playlists[source] = "old"
+			self.radio_playlists.insert(dest, temp)
+			self.radio_playlists.remove("old")
+			self.radio_playlist_viewing = self.radio_playlists.index(temp)
+		except Exception:
+			logging.exception("Playlist move error")
+
+	def move_playlist(self, source: int, dest: int) -> None:
+		if dest > source:
+			dest += 1
+		try:
+			active = self.multi_playlist[self.active_playlist_playing]
+			view = self.multi_playlist[self.active_playlist_viewing]
+
+			temp = self.multi_playlist[source]
+			self.multi_playlist[source] = "old"
+			self.multi_playlist.insert(dest, temp)
+			self.multi_playlist.remove("old")
+
+			self.active_playlist_playing = self.multi_playlist.index(active)
+			self.active_playlist_viewing = self.multi_playlist.index(view)
+			self.default_playlist = self.multi_playlist[self.active_playlist_viewing].playlist_ids
+		except Exception:
+			logging.exception("Playlist move error")
+
+	def delete_playlist(self, index: int, force: bool = False, check_lock: bool = False) -> None:
+		if self.gui.radio_view:
+			del self.radio_playlists[index]
+			if not self.radio_playlists:
+				self.radio_playlists = [RadioPlaylist(uid=uid_gen(),name="Default", stations=[])]
+			return
+
+		if check_lock and self.tauon.pl_is_locked(index):
+			self.show_message(_("Playlist is locked to prevent accidental deletion"))
+			return
+
+		if not force and self.tauon.pl_is_locked(index):
+			self.show_message(_("Playlist is locked to prevent accidental deletion"))
+			return
+
+		if self.gui.rename_playlist_box:
+			return
+
+		# Set screen to be redrawn
+		self.gui.pl_update = 1
+		self.gui.update += 1
+
+		# Backup the playlist to be deleted
+		# self.playlist_backup.append(self.multi_playlist[index])
+		# self.playlist_backup.append(self.multi_playlist[index])
+		self.tauon.undo.bk_playlist(index)
+
+		# If we're deleting the final playlist, delete it and create a blank one in place
+		if len(self.multi_playlist) == 1:
+			logging.warning("Deleting final playlist and creating a new Default one")
+			self.multi_playlist.clear()
+			self.multi_playlist.append(self.tauon.pl_gen())
+			self.default_playlist = self.multi_playlist[0].playlist_ids
+			self.active_playlist_playing = 0
+			return
+
+		# Take note of the id of the playing playlist
+		old_playing_id = self.multi_playlist[self.active_playlist_playing].uuid_int
+
+		# Take note of the id of the viewed open playlist
+		old_view_id = self.multi_playlist[self.active_playlist_viewing].uuid_int
+
+		# Delete the requested playlist
+		del self.multi_playlist[index]
+
+		# Re-set the open viewed playlist number by uid
+		for i, pl in enumerate(self.multi_playlist):
+			if pl.uuid_int == old_view_id:
+				self.active_playlist_viewing = i
+				break
+		else:
+			# logging.info("Lost the viewed playlist!")
+			# Try find the playing playlist and make it the viewed playlist
+			for i, pl in enumerate(self.multi_playlist):
+				if pl.uuid_int == old_playing_id:
+					self.active_playlist_viewing = i
+					break
+			else:
+				# Playing playlist was deleted, lets just move down one playlist
+				if self.active_playlist_viewing > 0:
+					self.active_playlist_viewing -= 1
+
+		# Re-initiate the now viewed playlist
+		if old_view_id != self.multi_playlist[self.active_playlist_viewing].uuid_int:
+			self.default_playlist = self.multi_playlist[self.active_playlist_viewing].playlist_ids
+			self.playlist_view_position = self.multi_playlist[self.active_playlist_viewing].position
+			logging.debug("Position reset by playlist delete")
+			self.selected_in_playlist = self.multi_playlist[self.active_playlist_viewing].selected
+			self.gui.shift_selection = [self.selected_in_playlist]
+
+			if self.prefs.album_mode:
+				self.tauon.reload_albums(True)
+				self.tauon.goto_album(self.playlist_view_position)
+
+		# Re-set the playing playlist number by uid
+		for i, pl in enumerate(self.multi_playlist):
+
+			if pl.uuid_int == old_playing_id:
+				self.active_playlist_playing = i
+				break
+		else:
+			logging.info("Lost the playing playlist!")
+			self.active_playlist_playing = self.active_playlist_viewing
+			self.playlist_playing_position = -1
+
+		self.tauon.test_show_add_home_music()
+
+		# Cleanup
+		ids = []
+		for p in self.multi_playlist:
+			ids.append(p.uuid_int)
+
+		for key in list(self.gui.gallery_positions.keys()):
+			if key not in ids:
+				del self.gui.gallery_positions[key]
+		for key in list(self.gen_codes.keys()):
+			if key not in ids:
+				del self.gen_codes[key]
+
+		self.db_inc += 1
+
+	def delete_playlist_force(self, index: int) -> None:
+		self.delete_playlist(index, force=True, check_lock=True)
+
+	def delete_playlist_by_id(self, id: int, force: bool = False, check_lock: bool = False) -> None:
+		self.delete_playlist(self.id_to_pl(id), force=force, check_lock=check_lock)
+
+	def delete_playlist_ask(self, index: int) -> None:
+		print("ark")
+		if self.gui.radio_view:
+			self.delete_playlist_force(index)
+			return
+		gen = self.gen_codes.get(self.pl_to_id(index), "")
+		if (gen and not gen.startswith("self ")) or len(self.multi_playlist[index].playlist_ids) < 2:
+			self.delete_playlist(index)
+			return
+
+		self.gui.message_box_confirm_callback = self.delete_playlist_by_id
+		self.gui.message_box_confirm_reference = (self.pl_to_id(index), True, True)
+		self.show_message(_("Are you sure you want to delete playlist: {name}?").format(name=self.multi_playlist[index].title), mode="confirm")
+
 	def id_to_pl(self, id: int):
 		for i, item in enumerate(self.multi_playlist):
 			if item.uuid_int == id:
@@ -1679,19 +1990,19 @@ class PlayerCtl:
 
 	def notify_change(self) -> None:
 		self.db_inc += 1
-		tauon.bg_save()
+		self.tauon.bg_save()
 
 	def update_tag_history(self) -> None:
-		if prefs.auto_rec:
-			self.tag_history[radiobox.song_key] = {
-				"title": radiobox.dummy_track.title,
-				"artist": radiobox.dummy_track.artist,
-				"album": radiobox.dummy_track.album,
+		if self.prefs.auto_rec:
+			self.tag_history[self.radiobox.song_key] = {
+				"title": self.radiobox.dummy_track.title,
+				"artist": self.radiobox.dummy_track.artist,
+				"album": self.radiobox.dummy_track.album,
 				# "image": self.radio_image_bin
 			}
 
 	def radio_progress(self) -> None:
-		if radiobox.loaded_url and "radio.plaza.one" in radiobox.loaded_url and self.radio_poll_timer.get() > 0:
+		if self.radiobox.loaded_url and "radio.plaza.one" in self.radiobox.loaded_url and self.radio_poll_timer.get() > 0:
 			self.radio_poll_timer.force_set(-10)
 			response = requests.get("https://api.plaza.one/status", timeout=10)
 
@@ -1706,37 +2017,37 @@ class PlayerCtl:
 				self.radio_scrobble_trip = False
 				self.radio_meta_on = self.tag_meta
 
-				radiobox.dummy_track.art_url_key = ""
-				radiobox.dummy_track.title = ""
-				radiobox.dummy_track.date = ""
-				radiobox.dummy_track.artist = ""
-				radiobox.dummy_track.album = ""
-				radiobox.dummy_track.lyrics = ""
-				radiobox.dummy_track.date = ""
+				self.radiobox.dummy_track.art_url_key = ""
+				self.radiobox.dummy_track.title = ""
+				self.radiobox.dummy_track.date = ""
+				self.radiobox.dummy_track.artist = ""
+				self.radiobox.dummy_track.album = ""
+				self.radiobox.dummy_track.lyrics = ""
+				self.radiobox.dummy_track.date = ""
 
 				tags = self.found_tags
 				if "title" in tags:
-					radiobox.dummy_track.title = tags["title"]
+					self.radiobox.dummy_track.title = tags["title"]
 					if "artist" in tags:
-						radiobox.dummy_track.artist = tags["artist"]
+						self.radiobox.dummy_track.artist = tags["artist"]
 					if "year" in tags:
-						radiobox.dummy_track.date = tags["year"]
+						self.radiobox.dummy_track.date = tags["year"]
 					if "album" in tags:
-						radiobox.dummy_track.album = tags["album"]
+						self.radiobox.dummy_track.album = tags["album"]
 
 				elif self.tag_meta.count(
 						"-") == 1 and ":" not in self.tag_meta and "advert" not in self.tag_meta.lower():
 					artist, title = self.tag_meta.split("-")
-					radiobox.dummy_track.title = title.strip()
-					radiobox.dummy_track.artist = artist.strip()
+					self.radiobox.dummy_track.title = title.strip()
+					self.radiobox.dummy_track.artist = artist.strip()
 
 				if self.tag_meta:
-					radiobox.song_key = self.tag_meta
+					self.radiobox.song_key = self.tag_meta
 				else:
-					radiobox.song_key = radiobox.dummy_track.artist + " - " + radiobox.dummy_track.title
+					self.radiobox.song_key = self.radiobox.dummy_track.artist + " - " + self.radiobox.dummy_track.title
 
 				self.update_tag_history()
-				if radiobox.loaded_url not in radiobox.websocket_source_urls:
+				if self.radiobox.loaded_url not in self.radiobox.websocket_source_urls:
 					self.radio_image_bin = None
 				logging.info("NEXT RADIO TRACK")
 
@@ -1816,26 +2127,26 @@ class PlayerCtl:
 			shoot = threading.Thread(target=self.notify_update_fire)
 			shoot.daemon = True
 			shoot.start()
-		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
-			tauon.thread_manager.ready("style")
+		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
+			self.tauon.thread_manager.ready("style")
 
 	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
-			return tauon.tidal.resolve_stream(track_object), None
+			return self.tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
-			return plex.resolve_stream(track_object.url_key), None
+			return self.tauon.plex.resolve_stream(track_object.url_key), None
 
 		if track_object.file_ext == "JELY":
-			return jellyfin.resolve_stream(track_object.url_key)
+			return self.tauon.jellyfin.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "KOEL":
-			return koel.resolve_stream(track_object.url_key)
+			return self.tauon.koel.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "SUB":
-			return subsonic.resolve_stream(track_object.url_key)
+			return self.tauon.subsonic.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "TAU":
-			return tau.resolve_stream(track_object.url_key), None
+			return self.tauon.tau.resolve_stream(track_object.url_key), None
 
 		return None, None
 
@@ -1886,7 +2197,7 @@ class PlayerCtl:
 		"""Get track object by track_index"""
 		return self.master_library[track_index]
 
-	def get_track_in_playlist(self, track_index: int, playlist_index: int) -> TrackClass:
+	def get_track_in_playlist(self, track_index: int, playlist_index: int) -> TrackClass | None:
 		"""Get track object by playlist_index and track_index"""
 		if playlist_index == -1:
 			playlist_index = self.active_playlist_viewing
@@ -1899,33 +2210,32 @@ class PlayerCtl:
 			logging.exception("Unknown error getting track object by playlist_index and track_index!")
 		return None
 
-	def show_object(self) -> None:
+	def show_object(self) -> TrackClass | None:
 		"""The track to show in the metadata side panel"""
 		target_track = None
 
 		if self.playing_state == 3:
-			return radiobox.dummy_track
+			return self.radiobox.dummy_track
 
 		if 3 > self.playing_state > 0:
 			target_track = self.playing_object()
 
-		elif self.playing_state == 0 and prefs.meta_shows_selected:
+		elif self.playing_state == 0 and self.prefs.meta_shows_selected:
 			if -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
 				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
-		elif self.playing_state == 0 and prefs.meta_persists_stop:
+		elif self.playing_state == 0 and self.prefs.meta_persists_stop:
 			target_track = self.master_library[self.track_queue[self.queue_step]]
 
-		if prefs.meta_shows_selected_always:
+		if self.prefs.meta_shows_selected_always:
 			if -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
 				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
 		return target_track
 
 	def playing_object(self) -> TrackClass | None:
-
 		if self.playing_state == 3:
-			return radiobox.dummy_track
+			return self.radiobox.dummy_track
 
 		if len(self.track_queue) > 0:
 			return self.master_library[self.track_queue[self.queue_step]]
@@ -2373,8 +2683,7 @@ class PlayerCtl:
 		lfm_scrobbler.start_queue()
 		gui.pl_update += 1
 
-	def stop(self, block: bool = False, run : bool = False) -> None:
-
+	def stop(self, block: bool = False, run : bool = False) -> int:
 		self.playerCommand = "stop"
 		if run:
 			self.playerCommand = "runstop"
@@ -2383,9 +2692,9 @@ class PlayerCtl:
 
 		self.playerCommandReady = True
 
-		if tauon.thread_manager.player_lock.locked():
+		if self.tauon.thread_manager.player_lock.locked():
 			try:
-				tauon.thread_manager.player_lock.release()
+				self.tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
 					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
@@ -2410,26 +2719,25 @@ class PlayerCtl:
 		if update_title:
 			update_title_do()  # Update title bar text
 
-		if tauon.stream_proxy and tauon.stream_proxy.download_running:
-			tauon.stream_proxy.stop()
+		if self.tauon.stream_proxy and self.tauon.stream_proxy.download_running:
+			self.tauon.stream_proxy.stop()
 
 		if block:
 			loop = 0
 			sleep_timeout(lambda: self.playerSubCommand != "stopped", 2)
-			if tauon.stream_proxy.download_running:
-				sleep_timeout(lambda: tauon.stream_proxy.download_running, 2)
+			if self.tauon.stream_proxy.download_running:
+				sleep_timeout(lambda: self.tauon.stream_proxy.download_running, 2)
 
-		if tauon.spot_ctl.playing or tauon.spot_ctl.coasting:
+		if self.tauon.spot_ctl.playing or self.tauon.spot_ctl.coasting:
 			logging.info("Spotify stop")
-			tauon.spot_ctl.control("stop")
+			self.tauon.spot_ctl.control("stop")
 
 		self.notify_update()
-		lfm_scrobbler.start_queue()
+		self.lfm_scrobbler.start_queue()
 		return previous_state
 
 	def pause(self) -> None:
-
-		if tauon.spotc and tauon.spotc.running and tauon.spot_ctl.playing:
+		if self.tauon.spotc and self.tauon.spotc.running and self.tauon.spot_ctl.playing:
 			if self.playing_state == 1:
 				self.playerCommand = "pauseon"
 				self.playerCommandReady = True
@@ -2438,19 +2746,19 @@ class PlayerCtl:
 				self.playerCommandReady = True
 
 		if self.playing_state == 3:
-			if tauon.spot_ctl.coasting:
-				if tauon.spot_ctl.paused:
-					tauon.spot_ctl.control("resume")
+			if self.tauon.spot_ctl.coasting:
+				if self.tauon.spot_ctl.paused:
+					self.tauon.spot_ctl.control("resume")
 				else:
-					tauon.spot_ctl.control("pause")
+					self.tauon.spot_ctl.control("pause")
 			return
 
-		if tauon.spot_ctl.playing:
+		if self.tauon.spot_ctl.playing:
 			if self.playing_state == 2:
-				tauon.spot_ctl.control("resume")
+				self.tauon.spot_ctl.control("resume")
 				self.playing_state = 1
 			elif self.playing_state == 1:
-				tauon.spot_ctl.control("pause")
+				self.tauon.spot_ctl.control("pause")
 				self.playing_state = 2
 			self.render_playlist()
 			return
@@ -2488,7 +2796,7 @@ class PlayerCtl:
 	def seek_decimal(self, decimal: int) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and self.tauon.spot_ctl.coasting):
 			if decimal > 1:
 				decimal = 1
 			elif decimal < 0:
@@ -2499,7 +2807,7 @@ class PlayerCtl:
 			self.playerCommandReady = True
 			self.playing_time = self.new_time
 
-			if msys and taskbar_progress and self.windows_progress:
+			if self.msys and self.taskbar_progress and self.windows_progress:
 				self.windows_progress.update(True)
 
 			if self.mpris is not None:
@@ -2508,7 +2816,7 @@ class PlayerCtl:
 	def seek_time(self, new: float) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and tauon.spot_ctl.coasting):
+		if self.playing_state in (1, 2) or (self.playing_state == 3 and self.tauon.spot_ctl.coasting):
 
 			if new > self.playing_length - 0.5:
 				self.advance()
@@ -2527,8 +2835,7 @@ class PlayerCtl:
 				self.mpris.seek_do(self.playing_time)
 
 	def play(self) -> None:
-
-		if tauon.spot_ctl.playing:
+		if self.tauon.spot_ctl.playing:
 			if self.playing_state == 2:
 				self.play_pause()
 			return
@@ -2543,8 +2850,8 @@ class PlayerCtl:
 		# If stopped
 		elif self.playing_state == 0:
 
-			if radiobox.loaded_station:
-				radiobox.start(radiobox.loaded_station)
+			if self.radiobox.loaded_station:
+				self.radiobox.start(self.radiobox.loaded_station)
 				return
 
 			# If the queue is empty
@@ -2566,42 +2873,42 @@ class PlayerCtl:
 		self.render_playlist()
 
 	def spot_test_progress(self) -> None:
-		if self.playing_state in (1, 2) and tauon.spot_ctl.playing:
+		if self.playing_state in (1, 2) and self.tauon.spot_ctl.playing:
 			th = 5  # the rate to poll the spotify API
 			if self.playing_time > self.playing_length:
 				th = 1
-			if not tauon.spot_ctl.paused:
-				if tauon.spot_ctl.start_timer.get() < 0.5:
-					tauon.spot_ctl.progress_timer.set()
+			if not self.tauon.spot_ctl.paused:
+				if self.tauon.spot_ctl.start_timer.get() < 0.5:
+					self.tauon.spot_ctl.progress_timer.set()
 					return
-				add_time = tauon.spot_ctl.progress_timer.get()
+				add_time = self.tauon.spot_ctl.progress_timer.get()
 				if add_time > 5:
 					add_time = 0
 				self.playing_time += add_time
 				self.decode_time = self.playing_time
 				# self.test_progress()
-				tauon.spot_ctl.progress_timer.set()
+				self.tauon.spot_ctl.progress_timer.set()
 				if len(self.track_queue) > 0 and 2 > add_time > 0:
-					star_store.add(self.track_queue[self.queue_step], add_time)
-			if tauon.spot_ctl.update_timer.get() > th:
-				tauon.spot_ctl.update_timer.set()
-				shooter(tauon.spot_ctl.monitor)
+					self.star_store.add(self.track_queue[self.queue_step], add_time)
+			if self.tauon.spot_ctl.update_timer.get() > th:
+				self.tauon.spot_ctl.update_timer.set()
+				shooter(self.tauon.spot_ctl.monitor)
 			else:
 				self.test_progress()
 
-		elif self.playing_state == 3 and tauon.spot_ctl.coasting:
+		elif self.playing_state == 3 and self.tauon.spot_ctl.coasting:
 			th = 7
 			if self.playing_time > self.playing_length or self.playing_time < 2.5:
 				th = 1
-			if tauon.spot_ctl.update_timer.get() < th:
-				if not tauon.spot_ctl.paused:
-					self.playing_time += tauon.spot_ctl.progress_timer.get()
+			if self.tauon.spot_ctl.update_timer.get() < th:
+				if not self.tauon.spot_ctl.paused:
+					self.playing_time += self.tauon.spot_ctl.progress_timer.get()
 					self.decode_time = self.playing_time
-				tauon.spot_ctl.progress_timer.set()
+				self.tauon.spot_ctl.progress_timer.set()
 
 			else:
-				tauon.spot_ctl.update_timer.set()
-				tauon.spot_ctl.update()
+				self.tauon.spot_ctl.update_timer.set()
+				self.tauon.spot_ctl.update()
 
 	def purge_track(self, track_id: int, fast: bool = False) -> None:
 		"""Remove a track from the database"""
@@ -2626,23 +2933,23 @@ class PlayerCtl:
 
 	def test_progress(self) -> None:
 		# Fuzzy reload lastfm for rescrobble
-		if lfm_scrobbler.a_sc and self.playing_time < 1:
-			lfm_scrobbler.a_sc = False
+		if self.lfm_scrobbler.a_sc and self.playing_time < 1:
+			self.lfm_scrobbler.a_sc = False
 			self.a_time = 0
 
 		# Update the UI if playing time changes a whole number
 		# next_round = int(self.playing_time)
 		# if self.playing_time_int != next_round:
 		#	 #if not prefs.power_save:
-		#	 #gui.update += 1
+		#	 #self.gui.update += 1
 		#	 self.playing_time_int = next_round
 
 		gap_extra = 2  # 2
 
-		if tauon.spot_ctl.playing or tauon.chrome_mode:
+		if self.tauon.spot_ctl.playing or self.tauon.chrome_mode:
 			gap_extra = 3
 
-		if msys and taskbar_progress and self.windows_progress:
+		if self.msys and self.taskbar_progress and self.windows_progress:
 			self.windows_progress.update(True)
 
 		if self.commit is not None:
@@ -2656,13 +2963,13 @@ class PlayerCtl:
 		if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
 			# Allow some time for spotify playing time to update?
-			if tauon.spot_ctl.playing and tauon.spot_ctl.start_timer.get() < 3:
+			if self.tauon.spot_ctl.playing and self.tauon.spot_ctl.start_timer.get() < 3:
 				return
 
 			# Allow some time for backend to provide a length
 			if self.playing_time < 6 and self.playing_length == 0:
 				return
-			if not tauon.spot_ctl.playing and self.a_time < 2:
+			if not self.tauon.spot_ctl.playing and self.a_time < 2:
 				return
 
 			self.decode_time = 0
@@ -2695,7 +3002,7 @@ class PlayerCtl:
 				if stopped is True:
 					if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
 						self.advance(play=False)
-					gui.update += 2
+					self.gui.update += 2
 					return
 
 			if self.force_queue and not self.pause_queue:
@@ -2705,12 +3012,8 @@ class PlayerCtl:
 					return
 				self.advance(end=True, quiet=True)
 
-
-
 			elif self.repeat_mode is True:
-
 				if self.album_repeat_mode:
-
 					if self.playlist_playing_position > len(pp) - 1:
 						self.playlist_playing_position = 0  # Hack fix, race condition bug?
 
@@ -2742,10 +3045,10 @@ class PlayerCtl:
 
 					self.jump(pp[i], i, jump=False)
 
-				elif prefs.playback_follow_cursor and self.playing_ready() \
+				elif self.prefs.playback_follow_cursor and self.playing_ready() \
 						and self.multi_playlist[self.active_playlist_viewing].playlist_ids[
 					self.selected_in_playlist] != self.playing_object().index \
-						and -1 < self.selected_in_playlist < len(default_playlist):
+						and -1 < self.selected_in_playlist < len(self.default_playlist):
 
 					logging.info("Repeat follow cursor")
 
@@ -2754,7 +3057,7 @@ class PlayerCtl:
 					self.active_playlist_playing = self.active_playlist_viewing
 					self.playlist_playing_position = self.selected_in_playlist
 
-					self.track_queue.append(default_playlist[self.selected_in_playlist])
+					self.track_queue.append(self.default_playlist[self.selected_in_playlist])
 					self.queue_step = len(self.track_queue) - 1
 					self.play_target(jump=False)
 					self.render_playlist()
@@ -2841,9 +3144,9 @@ class PlayerCtl:
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
 		# Spotify remote control mode
-		if not dry and tauon.spot_ctl.coasting:
-			tauon.spot_ctl.control("next")
-			tauon.spot_ctl.update_timer.set()
+		if not dry and self.tauon.spot_ctl.coasting:
+			self.tauon.spot_ctl.control("next")
+			self.tauon.spot_ctl.update_timer.set()
 			self.playing_time = -2
 			self.decode_time = -2
 			return None
@@ -3046,25 +3349,25 @@ class PlayerCtl:
 			return 0
 
 		# Playback follow cursor
-		elif prefs.playback_follow_cursor and self.playing_ready() \
+		elif self.prefs.playback_follow_cursor and self.playing_ready() \
 				and self.multi_playlist[self.active_playlist_viewing].playlist_ids[
 			self.selected_in_playlist] != self.playing_object().index \
-				and -1 < self.selected_in_playlist < len(default_playlist):
+				and -1 < self.selected_in_playlist < len(self.default_playlist):
 
 			if dry:
-				return default_playlist[self.selected_in_playlist]
+				return self.default_playlist[self.selected_in_playlist]
 
 			self.active_playlist_playing = self.active_playlist_viewing
 			self.playlist_playing_position = self.selected_in_playlist
 
-			self.track_queue.append(default_playlist[self.selected_in_playlist])
+			self.track_queue.append(self.default_playlist[self.selected_in_playlist])
 			self.queue_step = len(self.track_queue) - 1
 			if play:
 				self.play_target(jump=not end)
 
 		# If random, jump to random track
 		elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not (
-				self.album_shuffle_mode or prefs.album_shuffle_lock_mode):
+				self.album_shuffle_mode or self.prefs.album_shuffle_lock_mode):
 			# self.queue_step += 1
 			new_step = self.queue_step + 1
 
@@ -3096,13 +3399,10 @@ class PlayerCtl:
 
 						i, p = random.choice(matches)  # not used
 
-						if prefs.true_shuffle:
-
+						if self.prefs.true_shuffle:
 							id = ti.parent_folder_path
-
 							while True:
 								if id in self.shuffle_pools:
-
 									pool = self.shuffle_pools[id]
 
 									if not pool:
@@ -3130,22 +3430,17 @@ class PlayerCtl:
 
 						self.playlist_playing_position = i
 						self.track_queue.append(p)
-
 				else:
 					# Normal select from playlist
-
-					if prefs.true_shuffle:
+					if self.prefs.true_shuffle:
 						# True shuffle avoids repeats by using a pool
-
 						pl = self.multi_playlist[self.active_playlist_playing]
 						id = pl.uuid_int
 
 						while True:
 
 							if id in self.shuffle_pools:
-
 								pool = self.shuffle_pools[id]
-
 								if not pool:
 									del self.shuffle_pools[id]  # Trigger a refill
 									continue
@@ -3165,7 +3460,6 @@ class PlayerCtl:
 
 							# Refill the pool
 							self.update_shuffle_pool(pl.uuid_int)
-
 					else:
 						random_jump = random.randrange(len(self.playing_playlist()))  # not used
 
@@ -3189,29 +3483,26 @@ class PlayerCtl:
 
 		# If not random mode, Step down 1 on the playlist
 		elif self.random_mode is False and len(self.playing_playlist()) > 0:
-
 			# Stop at end of playlist
 			if self.playlist_playing_position == len(self.playing_playlist()) - 1:
 				if dry:
 					return None
-				if prefs.end_setting == "stop":
+				if self.prefs.end_setting == "stop":
 					self.playing_state = 0
 					self.playerCommand = "runstop"
 					self.playerCommandReady = True
 					end_of_playlist = True
 
-				elif prefs.end_setting in ("advance", "cycle"):
-
+				elif self.prefs.end_setting in ("advance", "cycle"):
 					# If at end playlist and not cycle mode, stop playback
 					if self.active_playlist_playing == len(
-							self.multi_playlist) - 1 and prefs.end_setting != "cycle":
+							self.multi_playlist) - 1 and self.prefs.end_setting != "cycle":
 						self.playing_state = 0
 						self.playerCommand = "runstop"
 						self.playerCommandReady = True
 						end_of_playlist = True
 
 					else:
-
 						p = self.active_playlist_playing
 						for i in range(len(self.multi_playlist)):
 
@@ -3222,7 +3513,7 @@ class PlayerCtl:
 								continue
 
 							# Skip a playlist if hidden
-							if self.multi_playlist[k].hidden and prefs.tabs_on_top:
+							if self.multi_playlist[k].hidden and self.prefs.tabs_on_top:
 								continue
 
 							# Set found playlist as playing the first track
@@ -3238,12 +3529,12 @@ class PlayerCtl:
 
 						return None
 
-				elif prefs.end_setting == "repeat":
+				elif self.prefs.end_setting == "repeat":
 					self.playlist_playing_position = -1
 					self.advance(end=end, force=True, play=play)
 					return None
 
-				gui.update += 3
+				self.gui.update += 3
 
 			else:
 				if self.playlist_playing_position > len(self.playing_playlist()) - 1:
@@ -3279,18 +3570,14 @@ class PlayerCtl:
 				if play:
 					self.play_target(jump=not end)
 
-		elif self.random_mode and (self.album_shuffle_mode or prefs.album_shuffle_lock_mode):
-
+		elif self.random_mode and (self.album_shuffle_mode or self.prefs.album_shuffle_lock_mode):
 			# Album shuffle mode
 			logging.info("Album shuffle mode")
-
 			po = self.playing_object()
-
 			redraw = False
 
 			# Checks
 			if po is not None and len(self.playing_playlist()) > 0:
-
 				# If we at end of playlist, we'll go to a new album
 				if len(self.playing_playlist()) == self.playlist_playing_position + 1:
 					redraw = True
@@ -3299,7 +3586,7 @@ class PlayerCtl:
 						self.playing_playlist()[self.playlist_playing_position + 1]).parent_folder_path:
 					redraw = True
 				# Always redraw on press in album shuffle lockdown
-				if prefs.album_shuffle_lock_mode and not end:
+				if self.prefs.album_shuffle_lock_mode and not end:
 					redraw = True
 
 				if not redraw:
@@ -3311,9 +3598,7 @@ class PlayerCtl:
 					# self.queue_target = len(self.track_queue) - 1
 					if play:
 						self.play_target(jump=not end)
-
 				else:
-
 					if dry:
 						return None
 					albums = []
@@ -3345,7 +3630,6 @@ class PlayerCtl:
 							self.play_target(jump=not end)
 						# logging.info("THERE IS ONLY ONE ALBUM IN THE PLAYLIST")
 						# self.stop()
-
 		else:
 			logging.error("ADVANCE ERROR - NO CASE!")
 
@@ -3374,7 +3658,7 @@ class PlayerCtl:
 	def reset_missing_flags(self) -> None:
 		for value in self.master_library.values():
 			value.found = True
-		gui.pl_update += 1
+		self.gui.pl_update += 1
 
 class LastFMapi:
 	API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
@@ -3390,9 +3674,28 @@ class LastFMapi:
 	scanning_loves = False
 	scanning_scrobbles = False
 
-	def __init__(self) -> None:
-		self.sg = None
-		self.url = None
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon          = tauon
+		self.star_store     = pctl.star_store
+		self.show_message   = tauon.show_message
+		self.last_fm_enable = tauon.bag.last_fm_enable
+		self.gui            = self.tauon.gui
+		self.pctl           = pctl
+		self.prefs          = self.tauon.prefs
+		self.sg             = None
+		self.url            = None
+		#self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
+		#self.connected = False
+		#self.API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
+		#self.scanning_username = ""
+
+		#self.network: LibreFMNetwork | None = None
+		#self.lastfm_network: LastFMNetwork | None = None
+		#self.tries = 0
+
+		#self.scanning_friends = False
+		#self.scanning_loves = False
+		#self.scanning_scrobbles = False
 
 	def get_network(self) -> LibreFMNetwork:
 		if prefs.use_libre_fm:
@@ -3917,9 +4220,13 @@ class LastFMapi:
 
 class ListenBrainz:
 
-	def __init__(self):
-
-		self.enable = prefs.enable_lb
+	def __init__(self, tauon: Tauon) -> None:
+		self.bag          = tauon.bag
+		self.prefs        = tauon.prefs
+		self.t_title      = tauon.t_title
+		self.n_version    = tauon.n_version
+		self.show_message = tauon.show_message
+		self.enable       = tauon.prefs.enable_lb
 		# self.url = "https://api.listenbrainz.org/1/submit-listens"
 
 	def url(self):
@@ -4063,12 +4370,17 @@ class ListenBrainz:
 
 class LastScrob:
 
-	def __init__(self):
-
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon   = tauon
+		self.pctl    = pctl
+		self.lb      = tauon.lb
+		self.gui     = tauon.gui
+		self.prefs   = tauon.prefs
+		self.lastfm  = pctl.lastfm
 		self.a_index = -1
-		self.a_sc = False
-		self.a_pt = False
-		self.queue = []
+		self.a_sc    = False
+		self.a_pt    = False
+		self.queue   = []
 		self.running = False
 
 	def start_queue(self):
@@ -5110,10 +5422,7 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, bag: Bag, gui: GuiVar) -> None:
-		# Workarounds for now
-		self.standard_sort = standard_sort
-
+	def __init__(self, holder: Holder, bag: Bag, gui: GuiVar) -> None:
 		self.bag                          = bag
 		self.mpt                          = bag.mpt
 		self.gme                          = bag.gme
@@ -5154,11 +5463,19 @@ class Tauon:
 		self.tls_context                  = bag.tls_context
 		self.folder_image_offsets         = bag.folder_image_offsets
 		self.inp                          = gui.inp
-		self.t_title = t_title
-		self.t_version = t_version
-		self.t_agent = t_agent
-		self.t_id = t_id
-		self.desktop: str | None = desktop
+		self.n_version                    = holder.n_version
+		self.t_window                     = holder.t_window
+		self.t_title                      = holder.t_title
+		self.t_version                    = holder.t_version
+		self.t_agent                      = holder.t_agent
+		self.t_id                         = holder.t_id
+		self.fs_mode                      = holder.fs_mode
+		self.window_default_size          = holder.window_default_size
+		self.window_title                 = holder.window_title
+		self.logical_size                 = bag.logical_size
+		self.window_size                  = bag.window_size
+		self.draw_border                  = holder.draw_border
+		self.desktop                      = bag.desktop
 		self.device = socket.gethostname()
 
 		# Setting various timers
@@ -5196,12 +5513,43 @@ class Tauon:
 		#self.sync_file_timer              = Timer(1000)
 		#self.sync_file_update_timer       = Timer(1000)
 
+		self.fields = Fields(self)
+		# Create top menu
+		self.x_menu                = Menu(190, show_icons=True)
+		self.set_menu              = Menu(150)
+		self.field_menu            = Menu(140)
+		self.dl_menu               = Menu(90)
+
+		self.cancel_menu           = Menu(100)
+		self.extra_menu            = Menu(175, show_icons=True)
+		self.shuffle_menu          = Menu(120)
+		self.repeat_menu           = Menu(120)
+		self.tab_menu              = Menu(160, show_icons=True)
+		self.playlist_menu         = Menu(130)
+		self.showcase_menu         = Menu(135)
+		self.spotify_playlist_menu = Menu(175)
+		self.queue_menu            = Menu(150)
+		self.radio_entry_menu      = Menu(125)
+		self.center_info_menu      = Menu(125)
+		self.gallery_menu          = Menu(175, show_icons=True)
+		self.artist_info_menu      = Menu(135)
+		self.artist_list_menu      = Menu(165, show_icons=True)
+		self.lightning_menu        = Menu(165)
+		self.lsp_menu              = Menu(145)
+		self.folder_tree_menu      = Menu(175, show_icons=True)
+		self.folder_tree_stem_menu = Menu(190, show_icons=True)
+		self.overflow_menu         = Menu(175)
+		self.radio_context_menu    = Menu(175)
+		self.radio_tab_menu        = Menu(160, show_icons=True)
+		self.mode_menu             = Menu(175)
+		self.track_menu            = Menu(195, show_icons=True)
+		self.picture_menu          = Menu(175)
+		self.selection_menu        = Menu(200, show_icons=False)
+		self.folder_menu           = Menu(193, show_icons=True)
+		self.extra_tab_menu        = Menu(155, show_icons=True)
+
 		self.dummy_event: sdl3.SDL_Event = sdl3.SDL_Event()
 		self.translate = _
-		self.strings: Strings = strings
-		self.pctl:  PlayerCtl = pctl
-		self.lfm_scrobbler: LastScrob = lfm_scrobbler
-		self.star_store   = StarStore(self, self.pctl)
 		self.gui                                  = gui
 		self.prefs                                = bag.prefs
 		self.snap_mode                            = bag.snap_mode
@@ -5224,9 +5572,9 @@ class Tauon:
 		self.gall_ren = GallClass(self, album_mode_art_size)
 		self.album_art_gen = AlbumArt(self)
 		self.thumb_tracks = ThumbTracks(self)
-		self.pl_to_id = self.pctl.pl_to_id
-		self.id_to_pl = self.pctl.id_to_pl
 		self.chunker = Chunker()
+		self.strings           = Strings()
+		self.lb                                   = ListenBrainz(tauon=self)
 		self.thread_manager: ThreadManager = ThreadManager()
 		self.stream_proxy = None
 		self.stream_proxy = StreamEnc(self)
@@ -5244,6 +5592,14 @@ class Tauon:
 		self.sleep_lock = None
 		self.shutdown_lock = None
 		self.quick_close = False
+
+		self.input_sdl = GetSDLInput(self)
+		self.pctl                                 = PlayerCtl(tauon=self)
+		self.pl_to_id = self.pctl.pl_to_id
+		self.id_to_pl = self.pctl.id_to_pl
+		self.lastfm                               = self.pctl.lastfm
+		self.lfm_scrobbler                        = self.pctl.lfm_scrobbler
+		self.star_store   = self.pctl.star_store
 
 		self.copied_track = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
@@ -5269,6 +5625,7 @@ class Tauon:
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
+		self.lb                = ListenBrainz(self)
 		self.tidal             = Tidal(self)
 		self.plex              = PlexService(self)
 		self.jellyfin          = Jellyfin(self)
@@ -5278,6 +5635,13 @@ class Tauon:
 		self.subsonic          = self.album_star_store.subsonic
 
 		self.text_sat_playlist = TextBox2()
+
+		# Workarounds for now
+		self.standard_sort = standard_sort
+
+	def coll(self, r: list[int]) -> bool:
+		inp = self.gui.inp
+		return r[0] < inp.mouse_position[0] <= r[0] + r[2] and r[1] <= inp.mouse_position[1] <= r[1] + r[3]
 
 	def pl_gen(self,
 		title:        str = "Default",
@@ -6495,34 +6859,43 @@ class GStats:
 			self.album_list = copy.deepcopy(sorted_list)
 
 class Drawing:
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon      = tauon
+		self.gui        = tauon.gui
+		self.inp        = tauon.inp
+		self.ddt        = tauon.ddt
+		self.coll       = tauon.coll
+		self.fields     = tauon.fields
+		self.colours    = tauon.colours
+		self.star_store = pctl.star_store
 
 	def button(
 		self, text, x, y, w=None, h=None, font=212, text_highlight_colour=None, text_colour=None,
 		background_colour=None, background_highlight_colour=None, press=None, tooltip=""):
 
 		if w is None:
-			w = ddt.get_text_w(text, font) + 18 * gui.scale
+			w = self.ddt.get_text_w(text, font) + 18 * self.gui.scale
 		if h is None:
-			h = 22 * gui.scale
+			h = 22 * self.gui.scale
 
 		rect = (x, y, w, h)
-		fields.add(rect)
+		self.fields.add(rect)
 
 		if text_highlight_colour is None:
-			text_highlight_colour = colours.box_button_text_highlight
+			text_highlight_colour = self.colours.box_button_text_highlight
 		if text_colour is None:
-			text_colour = colours.box_button_text
+			text_colour = self.colours.box_button_text
 		if background_colour is None:
-			background_colour = colours.box_button_background
+			background_colour = self.colours.box_button_background
 		if background_highlight_colour is None:
-			background_highlight_colour = colours.box_button_background_highlight
+			background_highlight_colour = self.colours.box_button_background_highlight
 
 		click = False
 
 		if press is None:
-			press = inp.mouse_click
+			press = self.inp.mouse_click
 
-		if coll(rect):
+		if self.coll(rect):
 			if tooltip:
 				tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
 			ddt.rect(rect, background_highlight_colour)
@@ -10546,25 +10919,25 @@ class Over:
 		self.gui                 = tauon.gui
 		self.inp                 = tauon.inp
 		self.ddt                 = tauon.ddt
-		#self.coll                = tauon.coll
+		self.coll                = tauon.coll
 		self.pctl                = tauon.pctl
-		#self.dirs                = tauon.dirs
+		self.dirs                = tauon.dirs
 		self.prefs               = tauon.prefs
-		#self.fields              = tauon.fields
+		self.fields              = tauon.fields
 		#self.lastfm              = tauon.lastfm
-		#self.formats             = tauon.formats
-		#self.colours             = tauon.colours
-		#self.window_size         = tauon.window_size
+		self.formats             = tauon.formats
+		self.colours             = tauon.colours
+		self.window_size         = tauon.window_size
 		self.show_message        = tauon.show_message
 		#self.album_mode_art_size = tauon.album_mode_art_size
-		#self.platform_system     = tauon.platform_system
+		self.platform_system     = tauon.platform_system
 		self.user_directory      = tauon.user_directory
-		#self.flatpak_mode        = tauon.flatpak_mode
+		self.flatpak_mode        = tauon.flatpak_mode
 		self.star_store          = tauon.star_store
 		self.snap_mode           = tauon.snap_mode
-		#self.t_version           = tauon.t_version
-		#self.wayland             = tauon.wayland
-		#self.system              = tauon.system
+		self.t_version           = tauon.t_version
+		self.wayland             = tauon.wayland
+		self.system              = tauon.system
 		self.macos               = tauon.macos
 		self.msys                = tauon.msys
 		self.phazor_found        = phazor_exists(tauon.pctl)
@@ -13584,20 +13957,19 @@ class Over:
 		ddt.text_background_colour = colours.box_background
 
 class Fields:
-	def __init__(self):
-
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.coll  = tauon.coll
 		self.id = []
 		self.last_id = []
 
 		self.field_array = []
 		self.force = False
 
-	def add(self, rect, callback=None):
-
+	def add(self, rect, callback=None) -> None:
 		self.field_array.append((rect, callback))
 
-	def test(self):
-
+	def test(self) -> bool:
 		if self.force:
 			self.force = False
 			return True
@@ -13607,20 +13979,16 @@ class Fields:
 		self.id = []
 
 		for f in self.field_array:
-			if coll(f[0]):
+			if self.coll(f[0]):
 				self.id.append(1)  # += "1"
 				if f[1] is not None:  # Call callback if present
 					f[1]()
 			else:
 				self.id.append(0)  # += "0"
 
-		if self.last_id == self.id:
-			return False
+		return self.last_id != self.id
 
-		return True
-
-	def clear(self):
-
+	def clear(self) -> None:
 		self.field_array = []
 
 class TopPanel:
@@ -17740,8 +18108,16 @@ class ArtBox:
 
 class ScrollBox:
 
-	def __init__(self):
-
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.pctl      = pctl
+		self.gui       = tauon.gui
+		self.inp       = tauon.inp
+		self.ddt       = tauon.ddt
+		self.coll      = tauon.coll
+		self.fields    = tauon.fields
+		self.colours   = tauon.colours
+		self.t_window  = tauon.t_window
+		self.input_sdl = tauon.input_sdl
 		self.held = False
 		self.slide_hold = False
 		self.source_click_y = 0
@@ -17751,30 +18127,29 @@ class ScrollBox:
 
 	def draw(
 		self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=4, extend_field=0):
-
 		if max_value < 2:
 			return 0
 
 		if click is None:
-			click = inp.mouse_click
+			click = self.inp.mouse_click
 
-		bar_height = round(90 * gui.scale)
+		bar_height = round(90 * self.gui.scale)
 
-		if h > 400 * gui.scale and max_value < 20:
-			bar_height = round(180 * gui.scale)
+		if h > 400 * self.gui.scale and max_value < 20:
+			bar_height = round(180 * self.gui.scale)
 
 		bg = [255, 255, 255, 7]
 		fg = [255, 255, 255, 30]
 		fg_h = [255, 255, 255, 40]
 		fg_off = [255, 255, 255, 15]
 
-		if colours.lm and not force_dark_theme:
+		if self.colours.lm and not force_dark_theme:
 			bg = [0, 0, 0, 15]
 			fg_off = [0, 0, 0, 30]
 			fg = [0, 0, 0, 60]
 			fg_h = [0, 0, 0, 70]
 
-		ddt.rect((x, y, w, h), bg)
+		self.ddt.rect((x, y, w, h), bg)
 
 		half = bar_height // 2
 
@@ -17812,7 +18187,7 @@ class ScrollBox:
 				position = int(round(distance * ratio))
 
 			in_bar = False
-			if coll((x, mi + position - half, w, bar_height)):
+			if self.coll((x, mi + position - half, w, bar_height)):
 				in_bar = True
 				if click:
 					self.held = True
@@ -17879,13 +18254,13 @@ class ScrollBox:
 
 		colour = fg_off
 		rect = (x, mi + position - half, w, bar_height)
-		fields.add(rect)
-		if coll(rect):
+		self.fields.add(rect)
+		if self.coll(rect):
 			colour = fg
 		if self.held:
 			colour = fg_h
 
-		ddt.rect(rect, colour)
+		self.ddt.rect(rect, colour)
 
 		if self.slide_hold:
 			return round(max_value * self.d_position)
@@ -17894,16 +18269,28 @@ class ScrollBox:
 
 class RadioBox:
 
-	def __init__(self):
-
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.pctl           = pctl
+		self.tauon          = tauon
+		self.ddt            = tauon.ddt
+		self.inp            = tauon.inp
+		self.gui            = tauon.gui
+		self.coll           = tauon.coll
+		self.draw           = pctl.draw
+		self.prefs          = tauon.prefs
+		self.fields         = tauon.fields
+		self.colours        = tauon.colours
+		self.window_size    = tauon.window_size
+		self.show_message   = tauon.show_message
+		self.thread_manager = tauon.thread_manager
 		self.active = False
 		self.station_editing = None
 		self.edit_mode = True
 		self.add_mode = False
 		self.radio_field_active = 1
-		self.radio_field = TextBox2()
-		self.radio_field_title = TextBox2()
-		self.radio_field_search = TextBox2()
+		#self.radio_field        = TextBox2(tauon)
+		#self.radio_field_title  = TextBox2(tauon)
+		#self.radio_field_search = TextBox2(tauon)
 
 		self.x = 1
 		self.y = 1
@@ -17912,7 +18299,7 @@ class RadioBox:
 		self.center = False
 
 		self.scroll_position = 0
-		self.scroll = ScrollBox()
+		self.scroll = ScrollBox(tauon=tauon, pctl=pctl)
 
 		self.dummy_track = TrackClass()
 		self.dummy_track.index = -2
@@ -20218,8 +20605,19 @@ class ArtistList:
 
 class TreeView:
 
-	def __init__(self):
-
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon                 = tauon
+		self.pctl                  = pctl
+		self.inp                   = tauon.inp
+		self.gui                   = tauon.gui
+		self.coll                  = tauon.coll
+		self.msys                  = tauon.msys
+		self.prefs                 = tauon.prefs
+		self.formats               = tauon.formats
+		self.window_size           = tauon.window_size
+		self.tree_view_scroll      = pctl.tree_view_scroll
+		#self.folder_tree_menu      = tauon.folder_tree_menu
+		#self.folder_tree_stem_menu = tauon.folder_tree_stem_menu
 		self.trees = {}  # Per playlist tree
 		self.rows = []  # For display (parsed from tree)
 		self.rows_id = ""
@@ -20246,7 +20644,7 @@ class TreeView:
 		self.tooltip_on = ""
 		self.tooltip_timer = Timer(10)
 
-		self.lock_pl = None
+		self.lock_pl: int | None = None
 
 		# self.bold_colours = ColourGenCache(0.6, 0.7)
 
@@ -20774,10 +21172,16 @@ class TreeView:
 
 class QueueBox:
 
-	def recalc(self):
-		self.tab_h = 34 * gui.scale
-	def __init__(self):
-
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon       = tauon
+		self.pctl        = pctl
+		self.ddt         = tauon.ddt
+		self.gui         = tauon.gui
+		self.inp         = tauon.inp
+		self.coll        = tauon.coll
+		self.colours     = tauon.colours
+		self.window_size = tauon.window_size
+		self.queue_menu  = tauon.queue_menu
 		self.dragging = None
 		self.fq = []
 		self.drag_start_y = 0
@@ -20788,17 +21192,20 @@ class QueueBox:
 		self.d_click_ref = None
 		self.recalc()
 
-		queue_menu.add(MenuItem(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show))
-		queue_menu.add(MenuItem(_("Play Now"), self.play_now, show_test=self.queue_remove_show))
-		queue_menu.add(MenuItem("Auto-Stop Here", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
+		self.queue_menu.add(MenuItem(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show))
+		self.queue_menu.add(MenuItem(_("Play Now"), self.play_now, show_test=self.queue_remove_show))
+		self.queue_menu.add(MenuItem("Auto-Stop Here", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
 
-		queue_menu.add(MenuItem("Pause Queue", self.toggle_pause, queue_pause_deco))
-		queue_menu.add(MenuItem(_("Clear Queue"), clear_queue, queue_deco, hint="Alt+Shift+Q"))
+		self.queue_menu.add(MenuItem("Pause Queue", self.toggle_pause, queue_pause_deco))
+		self.queue_menu.add(MenuItem(_("Clear Queue"), clear_queue, queue_deco, hint="Alt+Shift+Q"))
 
-		queue_menu.add(MenuItem(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test))
+		self.queue_menu.add(MenuItem(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test))
 
-		queue_menu.add(MenuItem(_("Queue to New Playlist"), self.make_as_playlist, queue_deco))
-		# queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+		self.queue_menu.add(MenuItem(_("Queue to New Playlist"), self.make_as_playlist, queue_deco))
+		# self.queue_menu.add("Finish Playing Album", finish_current, finish_current_deco)
+
+	def recalc(self):
+		self.tab_h = 34 * gui.scale
 
 	def except_for_this_show_test(self, _):
 		return self.queue_remove_show(_) and test_shift(_)
@@ -23516,7 +23923,9 @@ class Undo:
 		self.e.append(("ptt", fr, fr_s, fr_scr, to, to_s, to_scr))
 
 class GetSDLInput:
-	def __init__(self) -> None:
+	def __init__(self, tauon: Tauon) -> None:
+		self.logical_size = tauon.logical_size
+		self.window_size = tauon.window_size
 		self.mouse_capture_want = False
 		self.mouse_capture = False
 
@@ -23525,8 +23934,8 @@ class GetSDLInput:
 		i_y = pointer(c_float(0))
 		i_x = pointer(c_float(0))
 		sdl3.SDL_GetMouseState(i_x, i_y)
-		return int(i_x.contents.value / logical_size[0] * window_size[0]), int(
-			i_y.contents.value / logical_size[0] * window_size[0])
+		return (int(i_x.contents.value / self.logical_size[0] * self.window_size[0]),
+			int(i_y.contents.value / self.logical_size[0] * self.window_size[0]))
 
 	def test_capture_mouse(self) -> None:
 		if not self.mouse_capture and self.mouse_capture_want:
@@ -28568,7 +28977,7 @@ def test_pl_tab_locked(pl: int) -> bool:
 		return False
 	return pctl.multi_playlist[pl].locked
 
-def move_radio_playlist(source, dest):
+def move_radio_playlist(source, dest): # TODO(Martin): Now in PlayerCtl
 	if dest > source:
 		dest += 1
 	try:
@@ -28580,7 +28989,7 @@ def move_radio_playlist(source, dest):
 	except Exception:
 		logging.exception("Playlist move error")
 
-def move_playlist(source, dest):
+def move_playlist(source, dest): # TODO(Martin): Now in PlayerCtl
 	global default_playlist
 	if dest > source:
 		dest += 1
@@ -28599,7 +29008,7 @@ def move_playlist(source, dest):
 	except Exception:
 		logging.exception("Playlist move error")
 
-def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -> None:
+def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -> None: # TODO(Martin): Now in PlayerCtl
 	if gui.radio_view:
 		del pctl.radio_playlists[index]
 		if not pctl.radio_playlists:
@@ -28704,13 +29113,13 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 
 	pctl.db_inc += 1
 
-def delete_playlist_force(index: int):
+def delete_playlist_force(index: int): # TODO(Martin): Now in PlayerCtl
 	delete_playlist(index, force=True, check_lock=True)
 
-def delete_playlist_by_id(id: int, force: bool = False, check_lock: bool = False) -> None:
+def delete_playlist_by_id(id: int, force: bool = False, check_lock: bool = False) -> None: # TODO(Martin): Now in PlayerCtl
 	delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
 
-def delete_playlist_ask(index: int):
+def delete_playlist_ask(index: int): # TODO(Martin): Now in PlayerCtl
 	if gui.radio_view:
 		delete_playlist_force(index)
 		return
@@ -28743,7 +29152,7 @@ def rescan_tags(pl: int) -> None:
 #	 load_order.playlist = pctl.multi_playlist[pl].uuid_int
 #	 load_orders.append(copy.deepcopy(load_order))
 
-def re_import2(pl: int) -> None:
+def re_import2(pl: int) -> None: # TODO(Martin): Now in PlayerCtl
 	paths = pctl.multi_playlist[pl].last_folder
 
 	reduce_paths(paths)
@@ -28760,7 +29169,7 @@ def re_import2(pl: int) -> None:
 	if paths:
 		show_message(_("Rescanning folders..."), mode="info")
 
-def rescan_all_folders():
+def rescan_all_folders(): # TODO(Martin): Now in PlayerCtl
 	for i, p in enumerate(pctl.multi_playlist):
 		re_import2(i)
 
@@ -28774,7 +29183,7 @@ def append_playlist(index: int):
 	gui.pl_update = 1
 	reload()
 
-def index_key(index: int):
+def index_key(index: int): # TODO(Martin): Now in PlayerCtl
 	tr = pctl.master_library[index]
 	s = str(tr.track_number)
 	d = str(tr.disc_number)
@@ -33513,7 +33922,7 @@ def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in Pl
 			pctl.active_playlist_playing = pctl.active_playlist_viewing
 			random_track()
 
-def cycle_playlist_pinned(step):
+def cycle_playlist_pinned(step): # TODO(Martin): Now in PlayerCtl
 	if gui.radio_view:
 
 		pctl.radio_playlist_viewing += step * -1
@@ -34567,7 +34976,7 @@ def discord_loop() -> None:
 				album = radiobox.loaded_station["title"]
 			else:
 				album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
-					
+
 
 			if album and len(album) == 1:
 				album += " "
@@ -40711,13 +41120,7 @@ try:
 except Exception:
 	logging.exception("Cannot find libgme")
 
-pctl = PlayerCtl()
-pctl.default_playlist = default_playlist
-
-notify_change = pctl.notify_change
-
 if system == "Linux" and not macos and not msys:
-
 	try:
 		Notify.init("Tauon Music Box")
 		g_tc_notify = Notify.Notification.new(
@@ -40743,19 +41146,22 @@ if system == "Linux" and not macos and not msys:
 		value = GLib.Variant("s", t_id)
 		song_notification.set_hint("desktop-entry", value)
 
-lastfm = LastFMapi()
-
-lb = ListenBrainz()
-
-lfm_scrobbler = LastScrob()
-
-strings = Strings()
-
 tauon = Tauon(
+	holder=holder,
 	bag=bag,
 	gui=gui,
 )
+pctl = tauon.pctl
+pctl.default_playlist = default_playlist
+
+notify_change = pctl.notify_change
+
 star_store = tauon.star_store
+
+lastfm = tauon.lastfm
+lb = tauon.lb
+lfm_scrobbler = tauon.lfm_scrobbler
+strings = tauon.strings
 
 # Setting various timers
 message_box_min_timer = tauon.message_box_min_timer
@@ -41026,7 +41432,7 @@ ddt.force_subpixel_text = prefs.force_subpixel_text
 
 launch = Launch(tauon, pctl, gui, ddt)
 
-draw = Drawing()
+draw = pctl.draw
 
 if system == "Linux":
 	prime_fonts()
@@ -41208,25 +41614,24 @@ columns_tool_tip = ToolTip3()
 tool_tip_instant = ToolTip3()
 
 # Create empty area menu
-playlist_menu = Menu(130)
-radio_entry_menu = Menu(125)
-showcase_menu = Menu(135)
-center_info_menu = Menu(125)
-cancel_menu = Menu(100)
-gallery_menu = Menu(175, show_icons=True)
-artist_info_menu = Menu(135)
-queue_menu = Menu(150)
-repeat_menu = Menu(120)
-shuffle_menu = Menu(120)
-artist_list_menu = Menu(165, show_icons=True)
-lightning_menu = Menu(165)
-lsp_menu = Menu(145)
-folder_tree_menu = Menu(175, show_icons=True)
-folder_tree_stem_menu = Menu(190, show_icons=True)
-overflow_menu = Menu(175)
-spotify_playlist_menu = Menu(175)
-radio_context_menu = Menu(175)
-#chrome_menu = Menu(175)
+playlist_menu         = tauon.playlist_menu
+radio_entry_menu      = tauon.radio_entry_menu
+showcase_menu         = tauon.showcase_menu
+center_info_menu      = tauon.center_info_menu
+cancel_menu           = tauon.cancel_menu
+gallery_menu          = tauon.gallery_menu
+artist_info_menu      = tauon.artist_info_menu
+queue_menu            = tauon.queue_menu
+repeat_menu           = tauon.repeat_menu
+shuffle_menu          = tauon.shuffle_menu
+artist_list_menu      = tauon.artist_list_menu
+lightning_menu        = tauon.lightning_menu
+lsp_menu              = tauon.lsp_menu
+folder_tree_menu      = tauon.folder_tree_menu
+folder_tree_stem_menu = tauon.folder_tree_stem_menu
+overflow_menu         = tauon.overflow_menu
+spotify_playlist_menu = tauon.spotify_playlist_menu
+radio_context_menu    = tauon.radio_context_menu
 
 # . Menu entry: A side panel view layout
 
@@ -42094,7 +42499,7 @@ key_meta = False
 key_ralt = False
 key_lalt = False
 
-fields = Fields()
+fields = tauon.fields
 
 pref_box = Over(tauon)
 
@@ -42123,16 +42528,16 @@ playlist_render = StandardPlaylist()
 
 art_box = ArtBox()
 
-mini_lyrics_scroll = ScrollBox()
-playlist_panel_scroll = ScrollBox()
-artist_info_scroll = ScrollBox()
-device_scroll = ScrollBox()
-artist_list_scroll = ScrollBox()
-gallery_scroll = ScrollBox()
-tree_view_scroll = ScrollBox()
-radio_view_scroll = ScrollBox()
+mini_lyrics_scroll    = pctl.mini_lyrics_scroll
+playlist_panel_scroll = pctl.playlist_panel_scroll
+artist_info_scroll    = pctl.artist_info_scroll
+device_scroll         = pctl.device_scroll
+artist_list_scroll    = pctl.artist_list_scroll
+gallery_scroll        = pctl.gallery_scroll
+tree_view_scroll      = pctl.tree_view_scroll
+radio_view_scroll     = pctl.radio_view_scroll
 
-radiobox = RadioBox()
+radiobox = pctl.radiobox
 tauon.radiobox = radiobox
 tauon.dummy_track = radiobox.dummy_track
 
@@ -42155,9 +42560,9 @@ artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Filter"), toggle_artist_list_t
 
 artist_list_box = ArtistList()
 
-tree_view_box = TreeView()
+tree_view_box = pctl.tree_view_box
 
-queue_box = QueueBox()
+queue_box = pctl.queue_box
 
 meta_box = MetaBox()
 
@@ -42306,7 +42711,7 @@ gal_down = False
 gal_left = False
 gal_right = False
 
-input_sdl = GetSDLInput()
+input_sdl = tauon.input_sdl
 
 sdl3.SDL_StartTextInput(t_window)
 
