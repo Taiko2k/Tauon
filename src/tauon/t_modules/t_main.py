@@ -17940,62 +17940,11 @@ class RadioBox:
 			self.search_radio_browser("/json/stations?order=votes&limit=250&reverse=true")
 
 		ww = ddt.get_text_w(_("Get Top Voted"), 212)
-		if key_shift_down:
-			if draw.button(_("Developer Picks"), x + ww + round(35 * gui.scale), yy + round(30 * gui.scale), press=gui.level_2_click):
-				self.temp_list.clear()
 
-				self.temp_list.append(
-					RadioStation(
-						title="Nightwave Plaza",
-						stream_url_fallback="https://radio.plaza.one/ogg",
-						stream_url="https://radio.plaza.one/ogg",
-						website_url="https://plaza.one/",
-						icon="https://plaza.one/icons/apple-touch-icon.png",
-						country="Japan"))
-
-				self.temp_list.append(
-					RadioStation(
-						title="Gensokyo Radio",
-						stream_url_fallback="https://stream.gensokyoradio.net/GensokyoRadio-enhanced.m3u",
-						stream_url="https://stream.gensokyoradio.net/1",
-						website_url="https://gensokyoradio.net/",
-						icon="https://gensokyoradio.net/favicon.ico",
-						country="Japan"))
-
-				self.temp_list.append(
-					RadioStation(
-						title="Listen.moe | Jpop",
-						stream_url_fallback="https://listen.moe/stream",
-						stream_url="https://listen.moe/stream",
-						website_url="https://listen.moe/",
-						icon="https://avatars.githubusercontent.com/u/26034028?s=200&v=4",
-						country="Japan"))
-
-				self.temp_list.append(
-					RadioStation(
-						title="Listen.moe | Kpop",
-						stream_url_fallback="https://listen.moe/kpop/stream",
-						stream_url="https://listen.moe/kpop/stream",
-						website_url="https://listen.moe/",
-						icon="https://avatars.githubusercontent.com/u/26034028?s=200&v=4",
-						country="Korea"))
-
-				self.temp_list.append(
-					RadioStation(
-						title="HBR1 Dream Factory | Ambient",
-						stream_url_fallback="http://radio.hbr1.com:19800/ambient.ogg",
-						stream_url="http://radio.hbr1.com:19800/ambient.ogg",
-						website_url="http://www.hbr1.com/"))
-
-				self.temp_list.append(
-					RadioStation(
-						title="Yggdrasil Radio | Anime & Jpop",
-						stream_url_fallback="http://shirayuki.org:9200/",
-						stream_url="http://shirayuki.org:9200/",
-						website_url="https://yggdrasilradio.net/"))
-
-				for station in primary_stations:
-					self.temp_list.append(station)
+		if draw.button(_("Tauon Defaults"), x + ww + round(35 * gui.scale), yy + round(30 * gui.scale), press=gui.level_2_click):
+			self.temp_list.clear()
+			for station in primary_stations:
+				self.temp_list.append(station)
 
 	def search_radio_browser(self, param):
 		if self.searching:
@@ -18238,7 +18187,7 @@ class RadioBox:
 				break
 
 			xx = x + offset
-			item = radio_list[p]
+			station = radio_list[p]
 
 			rect = (xx, yy, round(233 * gui.scale), round(40 * gui.scale))
 			fields.add(rect)
@@ -18246,7 +18195,7 @@ class RadioBox:
 			bg = colours.box_background
 			text_colour = colours.box_input_text
 
-			playing = pctl.playing_state == 3 and self.loaded_url == item.stream_url
+			playing = pctl.playing_state == 3 and self.loaded_url == station.stream_url
 
 			if playing:
 				# bg = colours.box_sub_highlight
@@ -21828,8 +21777,7 @@ class RadioThumbGen:
 				if station.icon and station.icon not in prefs.radio_thumb_bans:
 					prefs.radio_thumb_bans.append(station.icon)
 				continue
-			if src is not None:
-				src.close()
+
 
 			im = im.resize((size, size), Image.Resampling.LANCZOS)
 			g = io.BytesIO()
@@ -21839,6 +21787,10 @@ class RadioThumbGen:
 			s_image = ddt.load_image(g)
 			self.cache[key] = [2, None, None, s_image]
 			gui.update += 1
+
+			if src is not None:
+				src.close()
+
 
 	def draw(self, station: RadioStation, x, y, w):
 		if not station.title:
