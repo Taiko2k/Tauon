@@ -28353,7 +28353,6 @@ def delete_playlist_by_id(id: int, force: bool = False, check_lock: bool = False
 	delete_playlist(id_to_pl(id), force=force, check_lock=check_lock)
 
 def delete_playlist_ask(index: int):
-	print("ark")
 	if gui.radio_view:
 		delete_playlist_force(index)
 		return
@@ -38637,24 +38636,8 @@ def drop_file(target: str):
 	global mouse_down
 	global drag_mode
 
-	if system != "windows":
-		gmp = get_global_mouse()
-		gwp = get_window_position()
-		i_x = gmp[0] - gwp[0]
-		i_x = max(i_x, 0)
-		i_x = min(i_x, window_size[0])
-		i_y = gmp[1] - gwp[1]
-		i_y = max(i_y, 0)
-		i_y = min(i_y, window_size[1])
-	else:
-		i_y = pointer(c_int(0))
-		i_x = pointer(c_int(0))
-
-		sdl3.SDL_GetMouseState(i_x, i_y)
-		i_y = i_y.contents.value / logical_size[0] * window_size[0]
-		i_x = i_x.contents.value / logical_size[0] * window_size[0]
-
-	#logging.info((i_x, i_y))
+	i_x = mouse_position[0]
+	i_y = mouse_position[1]
 	gui.drop_playlist_target = 0
 	#logging.info(event.drop)
 
@@ -42092,6 +42075,8 @@ while pctl.running:
 			gui.ext_drop_mode = False
 			power += 5
 			dropped_file_sdl = event.drop.data
+			mouse_position[0] = int(event.drop.x / logical_size[0] * window_size[0])
+			mouse_position[1] = int(event.drop.y / logical_size[0] * window_size[0])
 			logging.info(f"Dropped data: {dropped_file_sdl}")
 			target = str(urllib.parse.unquote(
 				dropped_file_sdl.decode("utf-8", errors="surrogateescape"))).replace("file:///", "/").replace("\r", "")
