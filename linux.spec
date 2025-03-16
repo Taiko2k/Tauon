@@ -10,10 +10,11 @@ a = Analysis(
 	binaries=[],
 	datas=[
 		(certifi.where(), "certifi"),
-		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcolorreload-gtk-module.so", "lib/gtk-3.0/modules"),
+		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcolorreload-gtk-module.so",        "lib/gtk-3.0/modules"),
 		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libwindow-decorations-gtk-module.so", "lib/gtk-3.0/modules"),
-		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcanberra-gtk-module.so", "lib/gtk-3.0/modules"),
-		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcanberra-gtk3-module.so", "lib/gtk-3.0/modules"),
+		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcanberra-gtk-module.so",           "lib/gtk-3.0/modules"),
+		("/usr/lib/x86_64-linux-gnu/gtk-3.0/modules/libcanberra-gtk3-module.so",          "lib/gtk-3.0/modules"),
+		("/usr/lib/x86_64-linux-gnu/girepository-1.0/Notify-0.7.typelib", "gi_typelibs"),
 		("src/tauon/assets", "assets"),
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
@@ -26,9 +27,6 @@ a = Analysis(
 		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840
 		"zeroconf._utils.ipaddress",
 		"zeroconf._handlers.answers",
-		# TODO(Martin): THIS IS A HACK, remove after pyinstaller 6.12.1+ is released
-		# https://github.com/pyinstaller/pyinstaller/issues/9052
-		"gi._enum",
 	],
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
