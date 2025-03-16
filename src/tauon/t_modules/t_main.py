@@ -893,6 +893,7 @@ class AlbumStarStore:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.db = {}
+		self.subsonic = SubsonicService(tauon=tauon, album_star_store=self)
 
 	def get_key(self, track_object: TrackClass) -> str:
 		artist = track_object.album_artist
@@ -907,7 +908,7 @@ class AlbumStarStore:
 		self.db[self.get_key(track_object)] = rating
 		if track_object.file_ext == "SUB":
 			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
-			subsonic.set_album_rating(track_object, rating)
+			self.subsonic.set_album_rating(track_object, rating)
 
 	def set_rating_artist_title(self, artist: str, album: str, rating) -> None:
 		self.db[artist + ":" + album] = rating
@@ -5023,7 +5024,7 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
-	def __init__(self, bag: Bag) -> None:
+	def __init__(self, bag: Bag, gui: GuiVar) -> None:
 		self.bag                          = bag
 		self.mpt                          = bag.mpt
 		self.gme                          = bag.gme
@@ -5063,12 +5064,48 @@ class Tauon:
 		self.song_notification            = bag.song_notification
 		self.tls_context                  = bag.tls_context
 		self.folder_image_offsets         = bag.folder_image_offsets
+		self.inp                          = gui.inp
 		self.t_title = t_title
 		self.t_version = t_version
 		self.t_agent = t_agent
 		self.t_id = t_id
 		self.desktop: str | None = desktop
 		self.device = socket.gethostname()
+
+		# Setting various timers
+		#self.spot_search_rate_timer       = Timer()
+		#self.track_box_path_tool_timer    = Timer()
+		self.message_box_min_timer        = Timer()
+		#self.cursor_blink_timer           = Timer()
+		#self.animate_monitor_timer        = Timer()
+		#self.min_render_timer             = Timer()
+		#self.vis_rate_timer               = Timer()
+		#self.vis_decay_timer              = Timer()
+		#self.scroll_timer                 = Timer()
+		#self.scroll_timer.set()
+		#self.perf_timer                   = Timer() # Reassigned later
+		#self.quick_d_timer                = Timer()
+		#self.core_timer                   = Timer() # Reassigned later
+		#self.sleep_timer                  = Timer()
+		#self.gallery_select_animate_timer = Timer()
+		#self.gallery_select_animate_timer.force_set(10)
+		#self.search_clear_timer           = Timer()
+		#self.gall_pl_switch_timer         = Timer()
+		#self.gall_pl_switch_timer.force_set(999)
+		#self.d_click_timer                = Timer()
+		#self.d_click_timer.force_set(10)
+		#self.lyrics_check_timer           = Timer()
+		#self.scroll_hide_timer            = Timer(100)
+		#self.scroll_gallery_hide_timer    = Timer(100)
+		#self.get_lfm_wait_timer           = Timer(10)
+		#self.lyrics_fetch_timer           = Timer(10)
+		#self.gallery_load_delay           = Timer(10)
+		#self.queue_add_timer              = Timer(100)
+		#self.toast_love_timer             = Timer(100)
+		#self.toast_mode_timer             = Timer(100)
+		#self.scrobble_warning_timer       = Timer(1000)
+		#self.sync_file_timer              = Timer(1000)
+		#self.sync_file_update_timer       = Timer(1000)
 
 		self.dummy_event: sdl3.SDL_Event = sdl3.SDL_Event()
 		self.translate = _
@@ -5091,7 +5128,6 @@ class Tauon:
 		self.switch_playlist = None
 		self.open_uri = open_uri
 		self.love = love
-		self.snap_mode = snap_mode
 		self.console = console
 		self.msys = msys
 		self.TrackClass = TrackClass
@@ -5142,11 +5178,36 @@ class Tauon:
 		self.MenuItem = MenuItem
 		self.tag_scan = tag_scan
 
-		self.tidal                 = Tidal(self)
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
+		self.tidal             = Tidal(self)
+		self.plex              = PlexService(self)
+		self.jellyfin          = Jellyfin(self)
+		self.koel              = KoelService(self)
+		self.tau               = TauService(self)
 		self.album_star_store  = AlbumStarStore(self)
+		self.subsonic          = self.album_star_store.subsonic
+
+	def show_message(self, line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
+		self.gui.message_box = True
+		self.gui.message_text = line1
+		self.gui.message_mode = mode
+		self.gui.message_subtext = line2
+		self.gui.message_subtext2 = line3
+		self.message_box_min_timer.set()
+		match mode:
+			case "done" | "confirm" | "arrow" | "download" | "bubble" | "link":
+				logging.debug(f"Message: {line1} {line2} {line3}")
+			case "info":
+				logging.info(f"Message: {line1} {line2} {line3}")
+			case "warning":
+				logging.warning(f"Message: {line1} {line2} {line3}")
+			case "error":
+				logging.error(f"Message: {line1} {line2} {line3}")
+			case _:
+				logging.error(f"Unknown mode '{mode}' for message: {line1} {line2} {line3}")
+		self.gui.update = 1
 
 	def start_remote(self) -> None:
 
@@ -5301,7 +5362,12 @@ class Tauon:
 
 class PlexService:
 
-	def __init__(self):
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon        = tauon
+		self.gui          = tauon.gui
+		self.pctl         = tauon.pctl
+		self.prefs        = tauon.prefs
+		self.show_message = tauon.show_message
 		self.connected = False
 		self.resource = None
 		self.scanning = False
@@ -5449,25 +5515,31 @@ class PlexService:
 
 class SubsonicService:
 
-	def __init__(self):
-		self.scanning = False
-		self.playlists = prefs.subsonic_playlists
+	def __init__(self, tauon: Tauon, album_star_store: AlbumStarStore) -> None:
+		self.gui              = tauon.gui
+		self.prefs            = tauon.prefs
+		self.t_title          = tauon.t_title
+		self.star_store       = tauon.star_store
+		self.album_star_store = album_star_store
+		self.show_message     = tauon.show_message
+		self.playlists        = tauon.prefs.subsonic_playlists
+		self.scanning         = False
 
-	def r(self, point, p=None, binary: bool = False, get_url: bool = False):
+	def r(self, point: str, p: dict[str, str] | None = None, binary: bool = False, get_url: bool = False):
 		salt = secrets.token_hex(8)
-		server = prefs.subsonic_server.rstrip("/") + "/"
+		server = self.prefs.subsonic_server.rstrip("/") + "/"
 
 		params = {
-			"u": prefs.subsonic_user,
+			"u": self.prefs.subsonic_user,
 			"v": "1.13.0",
-			"c": t_title,
+			"c": self.t_title,
 			"f": "json",
 		}
 
-		if prefs.subsonic_password_plain:
-			params["p"] = prefs.subsonic_password
+		if self.prefs.subsonic_password_plain:
+			params["p"] = self.prefs.subsonic_password
 		else:
-			params["t"] = hashlib.md5((prefs.subsonic_password + salt).encode()).hexdigest()
+			params["t"] = hashlib.md5((self.prefs.subsonic_password + salt).encode()).hexdigest()
 			params["s"] = salt
 
 		if p:
@@ -5489,8 +5561,8 @@ class SubsonicService:
 		# logging.info(d)
 
 		if d["subsonic-response"]["status"] != "ok":
-			show_message(_("Subsonic Error: ") + response.text, mode="warning")
-			logging.error("Subsonic Error: " + response.text)
+			self.show_message(_("Subsonic Error: ") + response.text, mode="warning")
+			logging.error(f"Subsonic Error: {response.text}")
 
 		return d
 
@@ -5499,15 +5571,14 @@ class SubsonicService:
 		return io.BytesIO(response)
 
 	def resolve_stream(self, key):
-
 		p = {"id": key}
-		if prefs.network_stream_bitrate > 0:
-			p["maxBitRate"] = prefs.network_stream_bitrate
+		if self.prefs.network_stream_bitrate > 0:
+			p["maxBitRate"] = self.prefs.network_stream_bitrate
 
 		return self.r("stream", p={"id": key}, get_url=True)
 		# logging.info(response.content)
 
-	def listen(self, track_object: TrackClass, submit: bool = False):
+	def listen(self, track_object: TrackClass, submit: bool = False) -> bool:
 
 		try:
 			a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
@@ -5515,15 +5586,14 @@ class SubsonicService:
 			logging.exception("Error connecting for scrobble on airsonic")
 		return True
 
-	def set_rating(self, track_object: TrackClass, rating):
-
+	def set_rating(self, track_object: TrackClass, rating) -> bool:
 		try:
 			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
 		except Exception:
 			logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def set_album_rating(self, track_object: TrackClass, rating):
+	def set_album_rating(self, track_object: TrackClass, rating) -> bool:
 		id = track_object.misc.get("subsonic-folder-id")
 		if id is not None:
 			try:
@@ -5533,13 +5603,12 @@ class SubsonicService:
 		return True
 
 	def get_music3(self, return_list: bool = False):
-
 		self.scanning = True
-		gui.to_got = 0
+		self.gui.to_got = 0
 
 		existing = {}
 
-		for track_id, track in pctl.master_library.items():
+		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "SUB":
 				existing[track.url_key] = track_id
 
@@ -5547,7 +5616,7 @@ class SubsonicService:
 			a = self.r("getIndexes")
 		except Exception:
 			logging.exception("Error connecting to Airsonic server")
-			show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.show_message(_("Error connecting to Airsonic server"), mode="error")
 			self.scanning = False
 			return []
 
@@ -5564,15 +5633,13 @@ class SubsonicService:
 				))
 
 		playlist = []
-
 		songsets = []
 		for i in range(len(folders)):
 			songsets.append([])
 		statuses = [0] * len(folders)
 		dupes = []
 
-		def getsongs(index, folder_id, name: str, inner: bool = False, parent=None):
-
+		def getsongs(index, folder_id, name: str, inner: bool = False, parent=None) -> None:
 			try:
 				d = self.r("getMusicDirectory", p={"id": folder_id})
 				if "child" not in d["subsonic-response"]["directory"]:
@@ -5584,30 +5651,28 @@ class SubsonicService:
 				logging.exception("Error reading Airsonic directory")
 				if not inner:
 					statuses[index] = 2
-				show_message(_("Error reading Airsonic directory!"), mode="warning")
+				self.show_message(_("Error reading Airsonic directory!"), mode="warning")
 				return
 			except Exception:
 				logging.exception("Unknown Error reading Airsonic directory")
 
 			items = d["subsonic-response"]["directory"]["child"]
 
-			gui.update = 2
+			self.gui.update = 2
 
 			for item in items:
-
 				if item["isDir"]:
-
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
-						if album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
+						if self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
 							pass
 						else:
-							album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
+							self.album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
 
 					getsongs(index, item["id"], item["title"], inner=True, parent=item)
 					continue
 
-				gui.to_got += 1
+				self.gui.to_got += 1
 				song = item
 				nt = TrackClass()
 
@@ -5664,8 +5729,7 @@ class SubsonicService:
 
 		for sset in songsets:
 			for nt, name, song_id, rating in sset:
-
-				id = pctl.master_count
+				id = self.pctl.master_count
 
 				replace_existing = False
 				ex = existing.get(song_id)
@@ -5674,24 +5738,25 @@ class SubsonicService:
 					replace_existing = True
 
 				nt.index = id
-				pctl.master_library[id] = nt
+				self.pctl.master_library[id] = nt
 				if not replace_existing:
-					pctl.master_count += 1
+					self.pctl.master_count += 1
 
 				playlist.append(nt.index)
 
-				if star_store.get_rating(nt.index) == 0 and rating == 0:
+				if self.star_store.get_rating(nt.index) == 0 and rating == 0:
 					pass
 				else:
-					star_store.set_rating(nt.index, rating * 2)
+					self.star_store.set_rating(nt.index, rating * 2)
 
 		self.scanning = False
 		if return_list:
 			return playlist
 
-		pctl.multi_playlist.append(pl_gen(title=_("Airsonic Collection"), playlist_ids=playlist))
-		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
-		switch_playlist(len(pctl.multi_playlist) - 1)
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Airsonic Collection"), playlist_ids=playlist))
+		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "air"
+		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
+		return None
 
 	# def get_music2(self, return_list=False):
 	#
@@ -5707,7 +5772,7 @@ class SubsonicService:
 	#	 try:
 	#		 a = self.r("getIndexes")
 	#	 except Exception:
-	#		 show_message(_("Error connecting to Airsonic server"), mode="error")
+	#		 self.show_message(_("Error connecting to Airsonic server"), mode="error")
 	#		 self.scanning = False
 	#		 return []
 	#
@@ -5734,7 +5799,7 @@ class SubsonicService:
 	#
 	#		 except json.decoder.JSONDecodeError:
 	#			 logging.error("Error reading Airsonic directory")
-	#			 show_message(_("Error reading Airsonic directory!)", mode="warning")
+	#			 self.show_message(_("Error reading Airsonic directory!)", mode="warning")
 	#			 return
 	#
 	#		 items = d["subsonic-response"]["directory"]["child"]
@@ -5805,13 +5870,18 @@ class SubsonicService:
 	#	 if return_list:
 	#		 return playlist
 	#
-	#	 pctl.multi_playlist.append(pl_gen(title="Airsonic Collection", playlist_ids=playlist))
-	#	 pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
-	#	 switch_playlist(len(pctl.multi_playlist) - 1)
+	#	 pctl.multi_playlist.append(self.tauon.pl_gen(title="Airsonic Collection", playlist_ids=playlist))
+	#	 pctl.gen_codes[pctl.pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
+	#	 pctl.switch_playlist(len(pctl.multi_playlist) - 1)
 
 class KoelService:
 
-	def __init__(self) -> None:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon        = tauon
+		self.gui          = tauon.gui
+		self.pctl         = tauon.pctl
+		self.prefs        = tauon.prefs
+		self.show_message = tauon.show_message
 		self.connected: bool = False
 		self.resource = None
 		self.scanning:  bool = False
@@ -6014,8 +6084,13 @@ class KoelService:
 		switch_playlist(len(pctl.multi_playlist) - 1)
 
 class TauService:
-	def __init__(self) -> None:
-		self.processing = False
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon             = tauon
+		self.pctl              = tauon.pctl
+		self.prefs             = tauon.prefs
+		self.show_message      = tauon.show_message
+		self.install_directory = tauon.install_directory
+		self.processing        = False
 
 	def resolve_stream(self, key: str) -> str:
 		return "http://" + prefs.sat_url + ":7814/api1/file/" + key
@@ -10360,9 +10435,9 @@ class PowerTag:
 class Over:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon               = tauon
-		#self.bag                 = tauon.bag
+		self.bag                 = tauon.bag
 		self.gui                 = tauon.gui
-		#self.inp                 = tauon.inp
+		self.inp                 = tauon.inp
 		self.ddt                 = tauon.ddt
 		#self.coll                = tauon.coll
 		self.pctl                = tauon.pctl
@@ -10373,7 +10448,7 @@ class Over:
 		#self.formats             = tauon.formats
 		#self.colours             = tauon.colours
 		#self.window_size         = tauon.window_size
-		#self.show_message        = tauon.show_message
+		self.show_message        = tauon.show_message
 		#self.album_mode_art_size = tauon.album_mode_art_size
 		#self.platform_system     = tauon.platform_system
 		self.user_directory      = tauon.user_directory
@@ -23783,7 +23858,7 @@ def set_path(nt: TrackClass, path: str) -> None:
 	nt.parent_folder_name = get_end_folder(os.path.dirname(path))
 	nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
-def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
+def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None: # TODO(Martin): To be removed, now within Tauon
 	gui.message_box = True
 	gui.message_text = line1
 	gui.message_mode = mode
@@ -39447,41 +39522,6 @@ if os.environ.get("SDL_VIDEODRIVER") != "wayland":
 	os.environ["GDK_BACKEND"] = "x11"
 
 
-# Setting various timers
-
-message_box_min_timer = Timer()
-cursor_blink_timer = Timer()
-animate_monitor_timer = Timer()
-min_render_timer = Timer()
-check_file_timer = Timer()
-vis_rate_timer = Timer()
-vis_decay_timer = Timer()
-scroll_timer = Timer()
-perf_timer = Timer()
-quick_d_timer = Timer()
-core_timer = Timer()
-sleep_timer = Timer()
-gallery_select_animate_timer = Timer()
-gallery_select_animate_timer.force_set(10)
-search_clear_timer = Timer()
-gall_pl_switch_timer = Timer()
-gall_pl_switch_timer.force_set(999)
-d_click_timer = Timer()
-d_click_timer.force_set(10)
-lyrics_check_timer = Timer()
-scroll_hide_timer = Timer(100)
-scroll_gallery_hide_timer = Timer(100)
-get_lfm_wait_timer = Timer(10)
-lyrics_fetch_timer = Timer(10)
-gallery_load_delay = Timer(10)
-queue_add_timer = Timer(100)
-toast_love_timer = Timer(100)
-toast_mode_timer = Timer(100)
-scrobble_warning_timer = Timer(1000)
-sync_file_timer = Timer(1000)
-sync_file_update_timer = Timer(1000)
-sync_get_device_click_timer = Timer(100)
-
 f_store = FunctionStore()
 
 after_scan = []
@@ -39930,6 +39970,7 @@ if (user_directory / "lyrics_substitutions.json").is_file():
 	except Exception:
 		logging.exception("Unknown error loading lyrics_substitutions.json")
 
+perf_timer = Timer()
 perf_timer.set()
 
 radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
@@ -40386,6 +40427,7 @@ for t in range(2):
 	except Exception:
 		logging.exception("Failed to load save file")
 
+core_timer = Timer()
 core_timer.set()
 logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
@@ -40604,8 +40646,43 @@ strings = Strings()
 
 tauon = Tauon(
 	bag=bag,
+	gui=gui,
 )
 star_store = tauon.star_store
+
+# Setting various timers
+message_box_min_timer = tauon.message_box_min_timer
+cursor_blink_timer = Timer()
+animate_monitor_timer = Timer()
+min_render_timer = Timer()
+check_file_timer = Timer()
+vis_rate_timer = Timer()
+vis_decay_timer = Timer()
+scroll_timer = Timer()
+perf_timer = Timer()
+quick_d_timer = Timer()
+core_timer = Timer()
+sleep_timer = Timer()
+gallery_select_animate_timer = Timer()
+gallery_select_animate_timer.force_set(10)
+search_clear_timer = Timer()
+gall_pl_switch_timer = Timer()
+gall_pl_switch_timer.force_set(999)
+d_click_timer = Timer()
+d_click_timer.force_set(10)
+lyrics_check_timer = Timer()
+scroll_hide_timer = Timer(100)
+scroll_gallery_hide_timer = Timer(100)
+get_lfm_wait_timer = Timer(10)
+lyrics_fetch_timer = Timer(10)
+gallery_load_delay = Timer(10)
+queue_add_timer = Timer(100)
+toast_love_timer = Timer(100)
+toast_mode_timer = Timer(100)
+scrobble_warning_timer = Timer(1000)
+sync_file_timer = Timer(1000)
+sync_file_update_timer = Timer(1000)
+sync_get_device_click_timer = Timer(100)
 
 # Run upgrades if we're behind the current DB standard
 if db_version > 0 and db_version < latest_db_version:
@@ -40692,19 +40769,11 @@ finally:
 
 tauon.chrome = chrome
 
-plex = PlexService()
-tauon.plex = plex
-
-jellyfin = Jellyfin(tauon)
-tauon.jellyfin = jellyfin
-
-subsonic = SubsonicService()
-
-koel = KoelService()
-tauon.koel = koel
-
-tau = TauService()
-tauon.tau = tau
+plex     = tauon.plex
+jellyfin = tauon.jellyfin
+subsonic = tauon.subsonic
+koel     = tauon.koel
+tau      = tauon.tau
 
 if system == "Windows" or msys:
 	from lynxtray import SysTrayIcon
