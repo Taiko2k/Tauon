@@ -26,6 +26,7 @@ jobs:
             gettext \
             gobject-introspection \
             gir1.2-rsvg-2.0 \
+            gir1.2-girepository-3.0-dev \
             kde-config-gtk-style \
             libcanberra-gtk3-module \
             libgirepository1.0-dev \
