@@ -38785,7 +38785,7 @@ else:
 	use_natsort = True
 
 # Detect platform
-windows_native = False
+windows_native = False # False = MSYS
 macos = False
 msys = False
 system = "Linux"
@@ -38804,20 +38804,21 @@ if sys.platform == "win32":
 	# windows_native = False
 	system = "Linux"
 	msys = True
-else:
-	system = "Linux"
-	import fcntl
-
-if sys.platform == "darwin":
-	macos = True
-
-if system == "Windows":
+	if not windows_native:
+		import gi
+		from gi.repository import GLib
 	import win32con
 	import win32api
 	import win32gui
 	import win32ui
 	import comtypes
 	import atexit
+else:
+	system = "Linux"
+	import fcntl
+
+if sys.platform == "darwin":
+	macos = True
 
 if system == "Linux" and not macos and not msys:
 	from tauon.t_modules.t_dbus import Gnome
