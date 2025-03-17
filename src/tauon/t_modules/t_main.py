@@ -38785,7 +38785,6 @@ else:
 	use_natsort = True
 
 # Detect platform
-windows_native = False # False = MSYS
 macos = False
 msys = False
 system = "Linux"
@@ -38801,18 +38800,18 @@ if platform_system == "Windows":
 
 if sys.platform == "win32":
 	# system = 'Windows'
-	# windows_native = False
 	system = "Linux"
 	msys = True
-	if not windows_native:
+	if msys:
 		import gi
 		from gi.repository import GLib
-	import win32con
-	import win32api
-	import win32gui
-	import win32ui
-	import comtypes
-	import atexit
+	else:
+		import win32con
+		import win32api
+		import win32gui
+		import win32ui
+		import comtypes
+		import atexit
 else:
 	system = "Linux"
 	import fcntl
@@ -38863,7 +38862,7 @@ except Exception:
 	logging.exception("PyLast module not found, last fm will be disabled.")
 	last_fm_enable = False
 
-if not windows_native:
+if sys.platform == "win32" and msys:
 	font_folder = str(install_directory / "fonts")
 	if os.path.isdir(font_folder):
 		logging.info(f"Fonts directory:           {font_folder}")
