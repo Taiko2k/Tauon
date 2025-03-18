@@ -18413,9 +18413,9 @@ class KoelService:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon        = tauon
+		self.gui          = tauon.gui
 		self.pctl         = tauon.pctl
 		self.prefs        = tauon.prefs
-		self.gui          = tauon.gui
 		self.show_message = tauon.show_message
 		self.connected: bool = False
 		self.resource = None
