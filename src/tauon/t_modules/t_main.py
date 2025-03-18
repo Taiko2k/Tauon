@@ -18726,10 +18726,12 @@ class TauService:
 class STray:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon    = tauon
-		self.pctl     = tauon.pctl
-		self.gui      = tauon.gui
-		self.t_window = tauon.t_window
+		self.tauon             = tauon
+		self.gui               = tauon.gui
+		self.pctl              = tauon.pctl
+		self.t_window          = tauon.t_window
+		self.install_directory = tauon.install_directory
+		self.systray: SysTrayIcon | None = None
 		self.active = False
 
 	def up(self, systray: SysTrayIcon) -> None:
