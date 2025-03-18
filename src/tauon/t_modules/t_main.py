@@ -1545,11 +1545,11 @@ class PlayerCtl:
 	# C-PC
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon                     = tauon
-		self.show_message              = self.tauon.show_message
 		self.gui                       = self.tauon.gui
 		self.bag                       = self.tauon.bag
 		self.colours                   = self.tauon.colours
 		self.smtc                      = self.tauon.bag.smtc
+		self.show_message              = self.tauon.show_message
 		self.star_store                = StarStore(tauon=tauon, pctl=self)
 		self.draw                      = Drawing(tauon=tauon, pctl=self)
 		self.radiobox                  = RadioBox(tauon=tauon, pctl=self)
@@ -1579,15 +1579,15 @@ class PlayerCtl:
 		self.cargo: list[int]          = []
 		# Database
 
-		self.master_count:     int = self.bag.master_count
+		self.master_count = self.bag.master_count
 		self.total_playtime: float = 0
-		self.master_library: dict[int, TrackClass] = self.bag.master_library
+		self.master_library = self.bag.master_library
 		# Lets clients know when to invalidate cache
 		self.db_inc = random.randint(0, 10000)
 		# self.star_library = star_library
 		self.LoadClass = LoadClass
 
-		self.gen_codes: dict[int, str] = self.bag.gen_codes
+		self.gen_codes = self.bag.gen_codes
 
 		self.shuffle_pools = {}
 		self.after_import_flag = False
@@ -1613,15 +1613,15 @@ class PlayerCtl:
 
 		# Playback
 
-		self.track_queue: list[int] = self.bag.track_queue
+		self.track_queue = self.bag.track_queue
 		self.default_playlist: list[int] = []
-		self.queue_step:  int = self.bag.playing_in_queue
+		self.queue_step = self.bag.playing_in_queue
 		self.playing_time = 0
-		self.playlist_playing_position: int = self.bag.playlist_playing  # track in playlist that is playing
+		self.playlist_playing_position = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
-		self.playlist_view_position: int = self.bag.playlist_view_position
-		self.selected_in_playlist: int = self.bag.selected_in_playlist
+		self.playlist_view_position = self.bag.playlist_view_position
+		self.selected_in_playlist = self.bag.selected_in_playlist
 		self.target_open = ""
 		self.target_object = None
 		self.start_time = 0
@@ -1639,14 +1639,14 @@ class PlayerCtl:
 		# self.album_shuffle_pool = []
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
-		self.multi_playlist: list[TauonPlaylist] = self.bag.multi_playlist
-		self.active_playlist_viewing: int = self.bag.playlist_active  # the playlist index that is being viewed # TODO(Martin): Rename playlist_active and active_playlist?
-		self.active_playlist_playing: int = self.bag.playlist_active  # the playlist index that is playing from
-		self.force_queue: list[TauonQueueItem] = self.bag.p_force_queue
+		self.multi_playlist = self.bag.multi_playlist
+		self.active_playlist_viewing = self.bag.playlist_active  # the playlist index that is being viewed # TODO(Martin): Rename playlist_active and active_playlist?
+		self.active_playlist_playing = self.bag.playlist_active  # the playlist index that is playing from
+		self.force_queue = self.bag.p_force_queue
 		self.pause_queue: bool = False
 		self.left_time = 0
 		self.left_index = 0
-		self.player_volume: float = self.bag.volume
+		self.player_volume = self.bag.volume
 		self.volume_store: float = 50  # Used to save the previous volume when muted
 		self.new_time = 0
 		self.time_to_get = []
