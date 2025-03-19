@@ -418,7 +418,7 @@ class GuiVar:
 		self.window_control_hit_area_h = 30 * self.scale
 
 	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture, main_texture_overlay_temp, main_texture, max_window_tex) -> None:
-		self.bag = bag
+		self.bag     = bag
 		self.console = bag.console
 		self.inp     = Input(gui=self)
 		self.keymaps = KeyMap(bag=bag, inp=self.inp)
