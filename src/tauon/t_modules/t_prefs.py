@@ -407,3 +407,5 @@ class Prefs:
 	gallery_combine_disc = False
 	pipewire = False
 	tidal_quality = 1
+
+	jump_start = True
