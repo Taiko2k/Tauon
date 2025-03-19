@@ -23178,10 +23178,10 @@ class GetSDLInput:
 
 	def test_capture_mouse(self) -> None:
 		if not self.mouse_capture and self.mouse_capture_want:
-			sdl3.SDL_CaptureMouse(sdl3.SDL_TRUE)
+			sdl3.SDL_CaptureMouse(True)
 			self.mouse_capture = True
 		elif self.mouse_capture and not self.mouse_capture_want:
-			sdl3.SDL_CaptureMouse(sdl3.SDL_FALSE)
+			sdl3.SDL_CaptureMouse(False)
 			self.mouse_capture = False
 
 class WinTask:
