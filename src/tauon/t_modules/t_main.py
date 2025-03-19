@@ -19132,12 +19132,13 @@ class TimedLyricsRen:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
 		self.gui           = tauon.gui
-		self.showcase_menu = tauon.showcase_menu
-		self.top_panel     = tauon.top_panel
+		self.inp           = tauon.inp
+		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
 		self.colours       = tauon.colours
+		self.top_panel     = tauon.top_panel
 		self.window_size   = tauon.window_size
-		self.inp           = tauon.gui.inp
+		self.showcase_menu = tauon.showcase_menu
 		self.index         = -1
 
 		self.scanned = {}
