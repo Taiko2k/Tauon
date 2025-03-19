@@ -6,10 +6,6 @@ Welcome to the Tauon Music Box source code.
 I started this project when I was first learning python, as a result this code can be quite messy.
 No doubt I have written some things terribly wrong or inefficiently in places.
 I would highly recommend not using this project as an example on how to code cleanly or correctly.
-
-TODO
-
-Verify the rework actually uses copies where copies should be used!
 """
 
 # Copyright © 2015-2025, Taiko2k captain(dot)gxj(at)gmail.com
@@ -1789,7 +1785,7 @@ class PlayerCtl:
 	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
 		# Close any active menus
 		# for instance in Menu.instances:
-		#     instance.active = False
+		# 	instance.active = False
 		close_all_menus()
 		if self.gui.radio_view:
 			if cycle:
@@ -1810,7 +1806,7 @@ class PlayerCtl:
 			self.gui.force_search = True
 
 		# if pl_follow:
-		#     self.multi_playlist[self.playlist_active][1] = copy.deepcopy(self.playlist_playing)
+		# 	self.multi_playlist[self.playlist_active][1] = copy.deepcopy(self.playlist_playing)
 
 		if self.gui.showcase_mode and self.gui.combo_mode and not quiet:
 			self.tauon.view_standard()
