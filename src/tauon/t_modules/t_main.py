@@ -1434,9 +1434,9 @@ class TrackClass:
 		self.lyrics:       str = ""
 		self.synced:       str = ""
 
-		self.lfm_friend_likes = set()
+		self.lfm_friend_likes   = set()
 		self.lfm_scrobbles: int = 0
-		self.misc: list = {}
+		self.misc:         dict = {}
 
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
@@ -1528,7 +1528,7 @@ class PlayerCtl:
 		self.install_directory         = self.bag.dirs.install_directory
 		self.loading_in_progress: bool = False
 		self.taskbar_progress:    bool = True
-		#self.album_dex                 = self.tauon.album_dex
+		self.album_dex                 = self.tauon.album_dex
 
 		self.cargo: list[int]          = []
 		# Database
@@ -4467,7 +4467,7 @@ class LastScrob:
 
 class Strings:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.spotify_likes = _("Spotify Likes")
 		self.spotify_albums = _("Spotify Albums")
 		self.spotify_un_liked = _("Track removed from liked tracks")
@@ -4499,7 +4499,7 @@ class Strings:
 
 class Chunker:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.master_count = 0
 		self.chunks = {}
 		self.header = None
@@ -4510,7 +4510,7 @@ class Chunker:
 
 class MenuIcon:
 
-	def __init__(self, asset):
+	def __init__(self, asset) -> None:
 		self.asset = asset
 		self.colour = [170, 170, 170, 255]
 		self.base_asset = None
@@ -4539,9 +4539,9 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
-		pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0,
-	):
+		self, title: str, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
+		pass_ref_deco: bool = False, disable_test=None, set_ref=None, is_sub_menu: bool = False, args=None, sub_menu_number=None, sub_menu_width: int = 0,
+	) -> None:
 		self.title = title
 		self.is_sub_menu = is_sub_menu
 		self.func = func
@@ -19267,6 +19267,7 @@ class TimedLyricsRen:
 		return None
 
 class TextBox2:
+	# TODO(Martin): Global class var!
 	cursor = True
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -19286,13 +19287,11 @@ class TextBox2:
 		self.paste_text = ""
 
 	def paste(self) -> None:
-
 		if sdl3.SDL_HasClipboardText():
 			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
 			self.paste_text = clip
 
 	def copy(self) -> None:
-
 		text = self.get_selection()
 		if not text:
 			text = self.text
@@ -19300,7 +19299,6 @@ class TextBox2:
 			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 
 	def set_text(self, text: str) -> None:
-
 		self.text = text
 		if self.cursor_position > len(text):
 			self.cursor_position = 0
@@ -19314,7 +19312,6 @@ class TextBox2:
 		self.selection = self.cursor_position
 
 	def highlight_all(self) -> None:
-
 		self.selection = len(self.text)
 		self.cursor_position = 0
 
@@ -19327,7 +19324,7 @@ class TextBox2:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
 				self.cursor_position = self.selection
 
-	def get_selection(self, p: int = 1) -> str:
+	def get_selection(self, p: int = 1) -> str | None:
 		if self.selection != self.cursor_position:
 			if p == 1:
 				if self.selection > self.cursor_position:
@@ -19338,28 +19335,26 @@ class TextBox2:
 				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
 			if p == 2:
 				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
-
-		else:
-			return ""
+			return None
+		return ""
 
 	def draw(
-			self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False):
+			self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False) -> None:
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
+		sdl3.SDL_SetRenderTarget(self.renderer, self.tauon.text_box_canvas)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
 
-		sdl3.SDL_SetRenderTarget(renderer, text_box_canvas)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		self.tauon.text_box_canvas_rect.x = 0
+		self.tauon.text_box_canvas_rect.y = 0
+		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_rect)
 
-		text_box_canvas_rect.x = 0
-		text_box_canvas_rect.y = 0
-		sdl3.SDL_RenderFillRect(renderer, text_box_canvas_rect)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-
-		selection_height *= gui.scale
+		selection_height *= self.gui.scale
 
 		if click is False:
 			click = inp.mouse_click
