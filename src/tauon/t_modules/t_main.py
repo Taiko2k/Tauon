@@ -23713,6 +23713,7 @@ def save_prefs():
 	cf.update_value("cache-limit", prefs.cache_limit)
 	cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
 	cf.update_value("volume-curve", prefs.volume_power)
+	cf.update_value("jump-start-dl", prefs.jump_start)
 	# cf.update_value("force-mono", prefs.mono)
 	# cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
 	# cf.update_value("use-short-buffering", prefs.short_buffer)
@@ -23897,6 +23898,10 @@ def load_prefs():
 	prefs.volume_power = cf.sync_add(
 		"int", "volume-curve", prefs.volume_power,
 		"1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
+
+	prefs.jump_start = cf.sync_add(
+		"bool", "jump-start-dl", prefs.jump_start,
+		"Start playing a network track before it has finished downloading")
 
 	# prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
 	# prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
