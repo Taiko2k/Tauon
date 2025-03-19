@@ -26,10 +26,8 @@ I would highly recommend not using this project as an example on how to code cle
 
 from __future__ import annotations
 
-
 import base64
 import builtins
-import certifi
 import colorsys
 import copy
 import ctypes
@@ -43,25 +41,27 @@ import io
 import json
 import locale as py_locale
 import logging
+
 #import magic
 import math
+
 #import mimetypes
 import os
 import pickle
 import platform
 import random
 import re
-import sdl3
 import secrets
 import shlex
 import shutil
 import signal
-import ssl
 import socket
+import ssl
 import subprocess
 import sys
 import threading
 import time
+
 #import type_enforced
 import urllib.parse
 import urllib.request
@@ -74,6 +74,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+import certifi
 import musicbrainzngs
 import mutagen
 import mutagen.flac
@@ -81,9 +82,9 @@ import mutagen.id3
 import mutagen.mp4
 import mutagen.oggvorbis
 import requests
+import sdl3
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
-
 from send2trash import send2trash
 from unidecode import unidecode
 
@@ -274,6 +275,7 @@ class WhiteModImageAsset:
 
 class DConsole:
 	"""GUI console with logs"""
+
 	def __init__(self) -> None:
 		self.show:     bool      = False
 
@@ -677,10 +679,34 @@ class GuiVar:
 		self.column_d_click_timer = Timer(10)
 		self.column_d_click_on = -1
 		self.column_sort_ani_timer = Timer(10)
-		self.column_sort_down_icon = asset_loader(bag, bag.loaded_asset_dc, "sort-down.png", True)
-		self.column_sort_up_icon = asset_loader(bag, bag.loaded_asset_dc, "sort-up.png", True)
+		self.column_sort_down_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "sort-down.png", True)
+		self.column_sort_up_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "sort-up.png", True)
 		self.column_sort_ani_direction = 1
 		self.column_sort_ani_x = 0
+
+		self.inc_arrow               = asset_loader(self.bag, self.bag.loaded_asset_dc, "inc.png", True)
+		self.dec_arrow               = asset_loader(self.bag, self.bag.loaded_asset_dc, "dec.png", True)
+		self.corner_icon             = asset_loader(self.bag, self.bag.loaded_asset_dc, "corner.png", True)
+		self.heart_icon              = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-menu.png", True))
+		self.heart_row_icon          = asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-track.png", True)
+		self.heart_notify_icon       = asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-notify.png", True)
+		self.heart_notify_break_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-notify-break.png", True)
+		# self.spotify_row_icon      = asset_loader(self.bag, self.bag.loaded_asset_dc, "spotify-row.png", True)
+		self.star_pc_icon            = asset_loader(self.bag, self.bag.loaded_asset_dc, "star-pc.png", True)
+		self.star_row_icon           = asset_loader(self.bag, self.bag.loaded_asset_dc, "star.png", True)
+		self.star_half_row_icon      = asset_loader(self.bag, self.bag.loaded_asset_dc, "star-half.png", True)
+
+		self.heartx_icon        = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-menu.png", True))
+		self.spot_heartx_icon   = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-menu.png", True))
+		self.transcode_icon     = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "transcode.png", True))
+		self.mod_folder_icon    = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "mod_folder.png", True))
+		self.settings_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "settings2.png", True))
+		self.rename_tracks_icon = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "pen.png", True))
+		self.add_icon           = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "new.png", True))
+
+		self.last_fm_icon       = asset_loader(self.bag, self.bag.loaded_asset_dc, "as.png", True)
+		self.power_bar_icon     = asset_loader(self.bag, self.bag.loaded_asset_dc, "power.png", True)
+		self.mac_circle         = asset_loader(self.bag, self.bag.loaded_asset_dc, "macstyle.png", True)
 
 		self.restore_showcase_view = False
 		self.restore_radio_view = False
@@ -713,7 +739,7 @@ class GuiVar:
 
 		self.backend_reloading = False
 
-		self.spot_info_icon = asset_loader(bag, bag.loaded_asset_dc, "spot-info.png", True)
+		self.spot_info_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "spot-info.png", True)
 		self.tray_active = False
 		self.buffering = False
 		self.buffering_text = ""
@@ -746,23 +772,27 @@ class GuiVar:
 
 class StarStore:
 	"""Functions for reading and setting play counts"""
+
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon      = tauon
+		self.pctl       = pctl
+		self.prefs      = tauon.prefs
+		self.after_scan = tauon.after_scan
 		self.db = {}
 
 	def key(self, track_id: int) -> tuple[str, str, str]:
-		track_object = pctl.master_library[track_id]
+		track_object = self.pctl.master_library[track_id]
 		return track_object.artist, track_object.title, track_object.filename
 
 	def object_key(self, track: TrackClass) -> tuple[str, str, str]:
 		return track.artist, track.title, track.filename
 
-	def add(self, index: int, value):
+	def add(self, index: int, value: float) -> None:
 		"""Increments the play time"""
-		track_object = pctl.master_library[index]
+		track_object = self.pctl.master_library[index]
 
-		if after_scan:
-			if track_object in after_scan:
-				return
+		if self.after_scan and track_object in self.after_scan:
+			return
 
 		key = track_object.artist, track_object.title, track_object.filename
 
@@ -794,12 +824,12 @@ class StarStore:
 			self.db[key] = self.new_object()
 		self.db[key][2] = value
 
-		tr = pctl.get_track(index)
+		tr = self.pctl.get_track(index)
 		if tr.file_ext == "SUB":
 			self.db[key][2] = math.ceil(value / 2) * 2
-			shooter(subsonic.set_rating, (tr, value))
+			shooter(self.tauon.subsonic.set_rating, (tr, value))
 
-		if prefs.write_ratings and write:
+		if self.prefs.write_ratings and write:
 			logging.info("Writing rating..")
 			assert value <= 10
 			assert value >= 0
@@ -867,26 +897,24 @@ class StarStore:
 		return [0, "", 0, 0]
 
 	def get_by_object(self, track: TrackClass):
-
 		return self.db.get(self.object_key(track), (0,))[0]
 
 	def get_total(self):
-
 		return sum(item[0] for item in self.db.values())
 
 	def full_get(self, index: int):
 		return self.db.get(self.key(index))
 
-	def remove(self, index: int):
+	def remove(self, index: int) -> None:
 		key = self.key(index)
 		if key in self.db:
 			del self.db[key]
 
-	def insert(self, index: int, object):
+	def insert(self, index: int, object) -> None:
 		key = self.key(index)
 		self.db[key] = object
 
-	def merge(self, index: int, object):
+	def merge(self, index: int, object) -> None:
 		if object is None or object == self.new_object():
 			return
 		key = self.key(index)
@@ -1263,7 +1291,7 @@ class ColoursClass:
 		# colours.playlist_panel_background[3] = 220
 		# colours.playlist_box_background  = [0, 0, 0, 100]
 
-	def post_config(self):
+	def post_config(self) -> None:
 		if self.box_thumb_background is None:
 			self.box_thumb_background = alpha_mod(self.box_button_background, 175)
 
@@ -1318,7 +1346,7 @@ class ColoursClass:
 			self.column_bar_text = [40, 40, 40, 200]
 			self.column_grip = [255, 255, 255, 20]
 
-	def light_mode(self):
+	def light_mode(self) -> None:
 		self.lm = True
 		self.star_line_playing = [255, 255, 255, 255]
 		self.sys_tab_bg = self.grey(25)
@@ -1361,7 +1389,7 @@ class ColoursClass:
 		self.gallery_artist_line = self.grey(40)
 		self.pluse_colour = [212, 66, 244, 255]
 
-		# view_box.off_colour = self.grey(200)
+		# tauon.view_box.off_colour = self.grey(200)
 
 class TrackClass:
 	"""This is the fundamental object/data structure of a track"""
@@ -1426,6 +1454,7 @@ class LoadClass:
 
 class MOD(Structure):
 	"""Access functions from libopenmpt for scanning tracker files"""
+
 	_fields_ = [("ctl", c_char_p), ("value", c_char_p)]
 
 class GMETrackInfo(Structure):
@@ -1970,7 +1999,6 @@ class PlayerCtl:
 		self.delete_playlist(self.id_to_pl(id), force=force, check_lock=check_lock)
 
 	def delete_playlist_ask(self, index: int) -> None:
-		print("ark")
 		if self.gui.radio_view:
 			self.delete_playlist_force(index)
 			return
@@ -3650,19 +3678,6 @@ class PlayerCtl:
 		self.gui.pl_update += 1
 
 class LastFMapi:
-	API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
-	connected = False
-	API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
-	scanning_username = ""
-
-	network = None
-	lastfm_network = None
-	tries = 0
-
-	scanning_friends = False
-	scanning_loves = False
-	scanning_scrobbles = False
-
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
 		self.tauon          = tauon
 		self.star_store     = pctl.star_store
@@ -3673,27 +3688,27 @@ class LastFMapi:
 		self.prefs          = self.tauon.prefs
 		self.sg             = None
 		self.url            = None
-		#self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
-		#self.connected = False
-		#self.API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
-		#self.scanning_username = ""
+		self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
+		self.connected = False
+		self.API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
+		self.scanning_username = ""
 
-		#self.network: LibreFMNetwork | None = None
-		#self.lastfm_network: LastFMNetwork | None = None
-		#self.tries = 0
+		self.network: LibreFMNetwork | None = None
+		self.lastfm_network: LastFMNetwork | None = None
+		self.tries = 0
 
-		#self.scanning_friends = False
-		#self.scanning_loves = False
-		#self.scanning_scrobbles = False
+		self.scanning_friends = False
+		self.scanning_loves = False
+		self.scanning_scrobbles = False
 
-	def get_network(self) -> LibreFMNetwork:
-		if prefs.use_libre_fm:
+	def get_network(self) -> type[LibreFMNetwork]:
+		if self.prefs.use_libre_fm:
 			return pylast.LibreFMNetwork
 		return pylast.LastFMNetwork
 
 	def auth1(self) -> None:
-		if not last_fm_enable:
-			show_message(_("Optional module python-pylast not installed"), mode="warning")
+		if not self.last_fm_enable:
+			self.show_message(_("Optional module python-pylast not installed"), mode="warning")
 			return
 		# This is step one where the user clicks "login"
 
@@ -3704,87 +3719,81 @@ class LastFMapi:
 		self.url = self.sg.get_web_auth_url()
 		logging.info(str(self.url))
 		copy_to_clipboard(self.url)
-		show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
+		self.show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
 		webbrowser.open(self.url, new=2, autoraise=True)
 
 	def auth2(self) -> None:
-
-		# This is step 2 where the user clicks "Done"
-
+		"""This is step 2 where the user clicks \"Done\""""
 		if self.sg is None:
-			show_message(_("You need to log in first"))
+			self.show_message(_("You need to log in first"))
 			return
 
 		try:
 			# session_key = self.sg.get_web_auth_session_key(self.url)
 			session_key, username = self.sg.get_web_auth_session_key_username(self.url)
-			prefs.last_fm_token = session_key
+			self.prefs.last_fm_token = session_key
 			self.network = self.get_network()(api_key=self.API_KEY, api_secret=
-			self.API_SECRET, session_key=prefs.last_fm_token)
+			self.API_SECRET, session_key=self.prefs.last_fm_token)
 			# user = self.network.get_authenticated_user()
 			# username = user.get_name()
-			prefs.last_fm_username = username
+			self.prefs.last_fm_username = username
 
 		except Exception as e:
 			if "Unauthorized Token" in str(e):
 				logging.exception("Not authorized")
-				show_message(_("Error - Not authorized"), mode="error")
+				self.show_message(_("Error - Not authorized"), mode="error")
 			else:
 				logging.exception("Unknown error")
-				show_message(_("Error"), _("Unknown error."), mode="error")
+				self.show_message(_("Error"), _("Unknown error."), mode="error")
 
 		if not toggle_lfm_auto(mode=1):
 			toggle_lfm_auto()
 
 	def auth3(self) -> None:
 		"""This is used for 'logout'"""
-		prefs.last_fm_token = None
-		prefs.last_fm_username = ""
-		show_message(_("Logout will complete on app restart."))
+		self.prefs.last_fm_token = None
+		self.prefs.last_fm_username = ""
+		self.show_message(_("Logout will complete on app restart."))
 
 	def connect(self, m_notify: bool = True) -> bool | None:
-
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return False
 
 		if self.connected is True:
 			if m_notify:
-				show_message(_("Already connected to Last.fm"))
+				self.show_message(_("Already connected to Last.fm"))
 			return True
 
-		if prefs.last_fm_token is None:
-			show_message(_("No Last.Fm account registered"), _("Authorise an account in settings"), mode="info")
+		if self.prefs.last_fm_token is None:
+			self.show_message(_("No Last.Fm account registered"), _("Authorise an account in settings"), mode="info")
 			return None
 
 		logging.info("Attempting to connect to Last.fm network")
 
 		try:
-
 			self.network = self.get_network()(
-				api_key=self.API_KEY, api_secret=self.API_SECRET, session_key=prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
+				api_key=self.API_KEY, api_secret=self.API_SECRET, session_key=self.prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
 
 			self.connected = True
 			if m_notify:
-				show_message(_("Connection to Last.fm was successful."), mode="done")
+				self.show_message(_("Connection to Last.fm was successful."), mode="done")
 
 			logging.info("Connection to lastfm appears successful")
 			return True
 
 		except Exception as e:
 			logging.exception("Error connecting to Last.fm network")
-			show_message(_("Error connecting to Last.fm network"), str(e), mode="warning")
+			self.show_message(_("Error connecting to Last.fm network"), str(e), mode="warning")
 			return False
 
 	def toggle(self) -> None:
-		prefs.scrobble_hold ^= True
+		self.prefs.scrobble_hold ^= True
 
 	def details_ready(self) -> bool:
-		if prefs.last_fm_token:
-			return True
-		return False
+		return bool(self.prefs.last_fm_token)
 
 	def last_fm_only_connect(self) -> bool:
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return False
 		try:
 			self.lastfm_network = pylast.LastFMNetwork(api_key=self.API_KEY, api_secret=self.API_SECRET)
@@ -3793,11 +3802,11 @@ class LastFMapi:
 
 		except Exception as e:
 			logging.exception("Error communicating with Last.fm network")
-			show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
+			self.show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
 			return False
 
 	def no_user_connect(self) -> bool:
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return False
 		try:
 			self.network = self.get_network()(api_key=self.API_KEY, api_secret=self.API_SECRET)
@@ -3806,17 +3815,16 @@ class LastFMapi:
 
 		except Exception as e:
 			logging.exception("Error communicating with Last.fm network")
-			show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
+			self.show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
 			return False
 
 	def get_all_scrobbles_estimate_time(self) -> float | None:
-
 		if not self.connected:
 			self.connect(False)
-		if not self.connected or not prefs.last_fm_username:
+		if not self.connected or not self.prefs.last_fm_username:
 			return None
 
-		user = pylast.User(prefs.last_fm_username, self.network)
+		user = pylast.User(self.prefs.last_fm_username, self.network)
 		total = user.get_playcount()
 
 		if total:
@@ -3824,16 +3832,15 @@ class LastFMapi:
 		return 0
 
 	def get_all_scrobbles(self) -> None:
-
 		if not self.connected:
 			self.connect(False)
-		if not self.connected or not prefs.last_fm_username:
+		if not self.connected or not self.prefs.last_fm_username:
 			return
 
 		try:
 			self.scanning_scrobbles = True
 			self.network.enable_rate_limit()
-			user = pylast.User(prefs.last_fm_username, self.network)
+			user = pylast.User(self.prefs.last_fm_username, self.network)
 			# username = user.get_name()
 			perf_timer.set()
 			tracks = user.get_recent_tracks(None)
@@ -3953,11 +3960,11 @@ class LastFMapi:
 			logging.exception("Failed to pull love")
 
 	def scrobble(self, track_object: TrackClass, timestamp: float | None = None) -> bool:
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return True
-		if prefs.scrobble_hold:
+		if self.prefs.scrobble_hold:
 			return True
-		if prefs.auto_lfm:
+		if self.prefs.auto_lfm:
 			self.connect(False)
 
 		if timestamp is None:
@@ -3988,8 +3995,6 @@ class LastFMapi:
 				# Pull loved status
 
 				self.sync_pull_love(track_object)
-
-
 			else:
 				logging.warning("Not sent, incomplete metadata")
 
@@ -4006,7 +4011,7 @@ class LastFMapi:
 				except Exception:
 					logging.exception("Failed to retry!")
 
-			# show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
+			# self.show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
 			logging.error("Error connecting to last.fm")
 			scrobble_warning_timer.set()
 			gui.update += 1
@@ -4016,10 +4021,8 @@ class LastFMapi:
 		return True
 
 	def get_bio(self, artist: str) -> str:
-
-		if self.lastfm_network is None:
-			if self.last_fm_only_connect() is False:
-				return ""
+		if self.lastfm_network is None and self.last_fm_only_connect() is False:
+			return ""
 
 		artist_object = pylast.Artist(artist, self.lastfm_network)
 		bio = artist_object.get_bio_summary(language="en")
@@ -4032,47 +4035,45 @@ class LastFMapi:
 		# else:
 		#	return ""
 
-	def love(self, artist: str, title: str):
-
-		if not self.connected and prefs.auto_lfm:
+	def love(self, artist: str, title: str) -> None:
+		if not self.connected and self.prefs.auto_lfm:
 			self.connect(False)
-			prefs.scrobble_hold = True
+			self.prefs.scrobble_hold = True
 		if self.connected and artist != "" and title != "":
 			track = self.network.get_track(artist, title)
 			track.love()
 
-	def unlove(self, artist: str, title: str):
-		if not last_fm_enable:
+	def unlove(self, artist: str, title: str) -> None:
+		if not self.last_fm_enable:
 			return
-		if not self.connected and prefs.auto_lfm:
+		if not self.connected and self.prefs.auto_lfm:
 			self.connect(False)
-			prefs.scrobble_hold = True
+			self.prefs.scrobble_hold = True
 		if self.connected and artist != "" and title != "":
 			track = self.network.get_track(artist, title)
 			track.love()
 			track.unlove()
 
 	def clear_friends_love(self) -> None:
-
 		count = 0
-		for index, tr in pctl.master_library.items():
+		for index, tr in self.pctl.master_library.items():
 			count += len(tr.lfm_friend_likes)
 			tr.lfm_friend_likes.clear()
 
-		show_message(_("Removed {N} loves.").format(N=count))
+		self.show_message(_("Removed {N} loves.").format(N=count))
 
-	def get_friends_love(self):
-		if not last_fm_enable:
+	def get_friends_love(self) -> None:
+		if not self.last_fm_enable:
 			return
 		self.scanning_friends = True
 
 		try:
-			username = prefs.last_fm_username
+			username = self.prefs.last_fm_username
 			logging.info(f"Username is {username}")
 
 			if not username:
 				self.scanning_friends = False
-				show_message(_("There was an error, try re-log in"))
+				self.show_message(_("There was an error, try re-log in"))
 				return
 
 			if self.network is None:
@@ -4081,10 +4082,10 @@ class LastFMapi:
 			self.network.enable_rate_limit()
 			lastfm_user = self.network.get_user(username)
 			friends = lastfm_user.get_friends(limit=None)
-			show_message(_("Getting friend data..."), _("This may take a very long time."), mode="info")
+			self.show_message(_("Getting friend data..."), _("This may take a very long time."), mode="info")
 			for friend in friends:
 				self.scanning_username = friend.name
-				logging.info("Getting friend loves: " + friend.name)
+				logging.info(f"Getting friend loves: {friend.name}")
 
 				try:
 					loves = friend.get_loved_tracks(limit=None)
@@ -4094,29 +4095,29 @@ class LastFMapi:
 				for track in loves:
 					title = track.track.title.casefold()
 					artist = track.track.artist.name.casefold()
-					for index, tr in pctl.master_library.items():
+					for index, tr in self.pctl.master_library.items():
 
 						if tr.title.casefold() == title and tr.artist.casefold() == artist:
 							tr.lfm_friend_likes.add(friend.name)
 							logging.info("MATCH")
-							logging.info("     " + artist + " - " + title)
-							logging.info("      ----- " + friend.name)
+							logging.info(f"     {artist} - {title}")
+							logging.info(f"      ----- {friend.name}")
 
 		except Exception:
 			logging.exception("There was an error getting friends loves")
-			show_message(_("There was an error getting friends loves"), "", mode="warning")
+			self.show_message(_("There was an error getting friends loves"), "", mode="warning")
 
 		self.scanning_friends = False
 
 	def dl_love(self) -> None:
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return
-		username = prefs.last_fm_username
-		show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
+		username = self.prefs.last_fm_username
+		self.show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
 		self.scanning_username = username
 
 		if not username:
-			show_message(_("No username found"), mode="error")
+			self.show_message(_("No username found"), mode="error")
 			return
 
 		if len(username) > 25:
@@ -4143,46 +4144,46 @@ class LastFMapi:
 				title = track.track.title.casefold()
 				artist = track.track.artist.name.casefold()
 
-				for index, tr in pctl.master_library.items():
+				for index, tr in self.pctl.master_library.items():
 					if tr.title.casefold() == title and tr.artist.casefold() == artist:
 						matches += 1
 						logging.info("MATCH:")
-						logging.info("     " + artist + " - " + title)
-						star = star_store.full_get(index)
+						logging.info(f"     {artist} - {title}")
+						star = self.star_store.full_get(index)
 						if star is None:
-							star = star_store.new_object()
+							star = self.star_store.new_object()
 						if "L" not in star[1]:
 							updated += 1
 							logging.info("     NEW LOVE")
 							star[1] += "L"
 
-						star_store.insert(index, star)
+						self.star_store.insert(index, star)
 
 			self.scanning_loves = False
 			if len(tracks) == 0:
-				show_message(_("User has no loved tracks."))
+				self.show_message(_("User has no loved tracks."))
 				return
 			if matches > 0 and updated == 0:
-				show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
+				self.show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
 				return
 			if matches > 0 and updated > 0:
-				show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
+				self.show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
 				return
-			show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
+			self.show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
 			return
 		except Exception:
 			logging.exception("This doesn't seem to be working :(")
-			show_message(_("This doesn't seem to be working :("), mode="error")
+			self.show_message(_("This doesn't seem to be working :("), mode="error")
 		self.scanning_loves = False
 
 	def update(self, track_object: TrackClass) -> int | None:
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return None
-		if prefs.scrobble_hold:
+		if self.prefs.scrobble_hold:
 			return 0
-		if prefs.auto_lfm:
+		if self.prefs.auto_lfm:
 			if self.connect(False) is False:
-				prefs.auto_lfm = False
+				self.prefs.auto_lfm = False
 		else:
 			return 0
 
@@ -4203,8 +4204,8 @@ class LastFMapi:
 			logging.exception("Error connecting to last.fm.")
 			if "retry" in str(e):
 				return 2
-				# show_message(_("Could not update Last.fm. ", str(e), mode='warning')
-			pctl.b_time -= 5000
+				# self.show_message(_("Could not update Last.fm. ", str(e), mode='warning')
+			self.pctl.b_time -= 5000
 			return 1
 
 class ListenBrainz:
@@ -4218,8 +4219,8 @@ class ListenBrainz:
 		self.enable       = tauon.prefs.enable_lb
 		# self.url = "https://api.listenbrainz.org/1/submit-listens"
 
-	def url(self):
-		url = prefs.listenbrainz_url
+	def url(self) -> str:
+		url = self.prefs.listenbrainz_url
 		if not url:
 			url = "https://api.listenbrainz.org/"
 		if not url.endswith("/"):
@@ -4227,13 +4228,12 @@ class ListenBrainz:
 		return url + "1/submit-listens"
 
 	def listen_full(self, track_object: TrackClass, time) -> bool:
-
 		if self.enable is False:
 			return True
-		if prefs.scrobble_hold is True:
+		if self.prefs.scrobble_hold is True:
 			return True
-		if prefs.lb_token is None:
-			show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
+		if self.prefs.lb_token is None:
+			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
 
 		title = track_object.title
 		album = track_object.album
@@ -4270,19 +4270,19 @@ class ListenBrainz:
 		data["payload"].append({"track_metadata": metadata})
 		data["payload"][0]["listened_at"] = time
 
-		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data), timeout=10)
+		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
-			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
 			return False
 		return True
 
 	def listen_playing(self, track_object: TrackClass) -> None:
 		if self.enable is False:
 			return
-		if prefs.scrobble_hold is True:
+		if self.prefs.scrobble_hold is True:
 			return
-		if prefs.lb_token is None:
-			show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
+		if self.prefs.lb_token is None:
+			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
 		title = track_object.title
 		album = track_object.album
 		artist = get_artist_strip_feat(track_object)
@@ -4320,36 +4320,35 @@ class ListenBrainz:
 		if track_object.length:
 			additional["duration"] = str(int(track_object.length))
 
-		additional["media_player"] = t_title
-		additional["submission_client"] = t_title
-		additional["media_player_version"] = str(n_version)
+		additional["media_player"] = self.t_title
+		additional["submission_client"] = self.t_title
+		additional["media_player_version"] = str(self.n_version)
 
 		metadata["additional_info"] = additional
 		data["payload"].append({"track_metadata": metadata})
 		# data["payload"][0]["listened_at"] = int(time.time())
 
-		r = requests.post(self.url(), headers={"Authorization": "Token " + prefs.lb_token}, data=json.dumps(data), timeout=10)
+		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
-			show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
 			logging.error("There was an error submitting data to ListenBrainz")
 			logging.error(r.status_code)
 			logging.error(r.json())
 
-	def paste_key(self):
-
+	def paste_key(self) -> None:
 		text = copy_from_clipboard()
 		if text == "":
-			show_message(_("There is no text in the clipboard"), mode="error")
+			self.show_message(_("There is no text in the clipboard"), mode="error")
 			return
 
-		if prefs.listenbrainz_url:
-			prefs.lb_token = text
+		if self.prefs.listenbrainz_url:
+			self.prefs.lb_token = text
 			return
 
 		if len(text) == 36 and text[8] == "-":
-			prefs.lb_token = text
+			self.prefs.lb_token = text
 		else:
-			show_message(_("That is not a valid token."), mode="error")
+			self.show_message(_("That is not a valid token."), mode="error")
 
 	def clear_key(self):
 
@@ -4372,37 +4371,34 @@ class LastScrob:
 		self.queue   = []
 		self.running = False
 
-	def start_queue(self):
-
+	def start_queue(self) -> None:
 		self.running = True
 		mini_t = threading.Thread(target=self.process_queue)
 		mini_t.daemon = True
 		mini_t.start()
 
-	def process_queue(self):
-
+	def process_queue(self) -> None:
 		time.sleep(0.4)
 
 		while self.queue:
-
 			try:
 				tr = self.queue.pop()
 
-				gui.pl_update = 1
-				logging.info("Submit Scrobble " + tr[0].artist + " - " + tr[0].title)
+				self.gui.pl_update = 1
+				logging.info(f"Submit Scrobble {tr[0].artist} - {tr[0].title}")
 
 				success = True
 
-				if tr[2] == "lfm" and prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-					success = lastfm.scrobble(tr[0], tr[1])
-				elif tr[2] == "lb" and lb.enable:
-					success = lb.listen_full(tr[0], tr[1])
+				if tr[2] == "lfm" and self.prefs.auto_lfm and (self.lastfm.connected or self.lastfm.details_ready()):
+					success = self.lastfm.scrobble(tr[0], tr[1])
+				elif tr[2] == "lb" and self.lb.enable:
+					success = self.lb.listen_full(tr[0], tr[1])
 				elif tr[2] == "maloja":
-					success = maloja_scrobble(tr[0], tr[1])
+					success = self.tauon.maloja_scrobble(tr[0], tr[1])
 				elif tr[2] == "air":
-					success = subsonic.listen(tr[0], submit=True)
+					success = self.tauon.subsonic.listen(tr[0], submit=True)
 				elif tr[2] == "koel":
-					success = koel.listen(tr[0], submit=True)
+					success = self.tauon.koel.listen(tr[0], submit=True)
 
 				if not success:
 					logging.info("Re-queue scrobble")
@@ -4419,26 +4415,26 @@ class LastScrob:
 		self.running = False
 
 	def update(self, add_time: float) -> None:
-		if pctl.queue_step > len(pctl.track_queue) - 1:
+		if self.pctl.queue_step > len(self.pctl.track_queue) - 1:
 			logging.info("Queue step error 1")
 			return
 
-		if self.a_index != pctl.track_queue[pctl.queue_step]:
-			pctl.a_time = 0
-			pctl.b_time = 0
-			self.a_index = pctl.track_queue[pctl.queue_step]
+		if self.a_index != self.pctl.track_queue[self.pctl.queue_step]:
+			self.pctl.a_time = 0
+			self.pctl.b_time = 0
+			self.a_index = self.pctl.track_queue[self.pctl.queue_step]
 			self.a_pt = False
 			self.a_sc = False
-		if pctl.playing_time == 0 and self.a_sc is True:
+		if self.pctl.playing_time == 0 and self.a_sc is True:
 			logging.info("Reset scrobble timer")
-			pctl.a_time = 0
-			pctl.b_time = 0
+			self.pctl.a_time = 0
+			self.pctl.b_time = 0
 			self.a_pt = False
 			self.a_sc = False
 
-		if pctl.a_time > 6 and self.a_pt is False and pctl.master_library[self.a_index].length > 30:
+		if self.pctl.a_time > 6 and self.a_pt is False and self.pctl.master_library[self.a_index].length > 30:
 			self.a_pt = True
-			self.listen_track(pctl.master_library[self.a_index])
+			self.listen_track(self.pctl.master_library[self.a_index])
 			# if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()) and not prefs.scrobble_hold:
 			#	 mini_t = threading.Thread(target=lastfm.update, args=([pctl.master_library[self.a_index]]))
 			#	 mini_t.daemon = True
@@ -4449,24 +4445,24 @@ class LastScrob:
 			#	 mini_t.daemon = True
 			#	 mini_t.start()
 
-		if pctl.a_time > 6 and self.a_pt:
-			pctl.b_time += add_time
-			if pctl.b_time > 20:
-				pctl.b_time = 0
-				self.listen_track(pctl.master_library[self.a_index])
+		if self.pctl.a_time > 6 and self.a_pt:
+			self.pctl.b_time += add_time
+			if self.pctl.b_time > 20:
+				self.pctl.b_time = 0
+				self.listen_track(self.pctl.master_library[self.a_index])
 
 		send_full = False
-		if pctl.master_library[self.a_index].length > 30 and pctl.a_time > pctl.master_library[self.a_index].length \
+		if self.pctl.master_library[self.a_index].length > 30 and self.pctl.a_time > self.pctl.master_library[self.a_index].length \
 				* 0.50 and self.a_sc is False:
 			self.a_sc = True
 			send_full = True
 
-		if self.a_sc is False and pctl.master_library[self.a_index].length > 30 and pctl.a_time > 240:
+		if self.a_sc is False and self.pctl.master_library[self.a_index].length > 30 and self.pctl.a_time > 240:
 			self.a_sc = True
 			send_full = True
 
 		if send_full:
-			self.scrob_full_track(pctl.master_library[self.a_index])
+			self.scrob_full_track(self.pctl.master_library[self.a_index])
 
 	def listen_track(self, track_object: TrackClass):
 		# logging.info("LISTEN")
@@ -18758,46 +18754,53 @@ class TauService:
 
 class STray:
 
-	def __init__(self) -> None:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon             = tauon
+		self.gui               = tauon.gui
+		self.pctl              = tauon.pctl
+		self.t_window          = tauon.t_window
+		self.install_directory = tauon.install_directory
+		self.systray: SysTrayIcon | None = None
 		self.active = False
 
-	def up(self, systray: SysTrayIcon):
-		sdl3.SDL_ShowWindow(t_window)
-		sdl3.SDL_RaiseWindow(t_window)
-		sdl3.SDL_RestoreWindow(t_window)
-		gui.lowered = False
+	def up(self, systray: SysTrayIcon) -> None:
+		sdl3.SDL_ShowWindow(self.t_window)
+		sdl3.SDL_RaiseWindow(self.t_window)
+		sdl3.SDL_RestoreWindow(self.t_window)
+		self.gui.lowered = False
 
 	def down(self) -> None:
 		if self.active:
-			sdl3.SDL_HideWindow(t_window)
+			sdl3.SDL_HideWindow(self.t_window)
 
 	def advance(self, systray: SysTrayIcon) -> None:
-		pctl.advance()
+		self.pctl.advance()
 
 	def back(self, systray: SysTrayIcon) -> None:
-		pctl.back()
+		self.pctl.back()
 
 	def pause(self, systray: SysTrayIcon) -> None:
-		pctl.play_pause()
+		self.pctl.play_pause()
 
 	def track_stop(self, systray: SysTrayIcon) -> None:
-		pctl.stop()
+		self.pctl.stop()
 
 	def on_quit_callback(self, systray: SysTrayIcon) -> None:
-		tauon.exit("Exit called from tray.")
+		self.tauon.exit("Exit called from tray.")
 
 	def start(self) -> None:
-		menu_options = (("Show", None, self.up),
-						("Play/Pause", None, self.pause),
-						("Stop", None, self.track_stop),
-						("Forward", None, self.advance),
-						("Back", None, self.back))
+		menu_options = (
+			("Show", None, self.up),
+			("Play/Pause", None, self.pause),
+			("Stop", None, self.track_stop),
+			("Forward", None, self.advance),
+			("Back", None, self.back))
 		self.systray = SysTrayIcon(
-			str(install_directory / "assets" / "icon.ico"), "Tauon Music Box",
+			str(self.install_directory / "assets" / "icon.ico"), "Tauon Music Box",
 			menu_options, on_quit=self.on_quit_callback)
 		self.systray.start()
 		self.active = True
-		gui.tray_active = True
+		self.gui.tray_active = True
 
 	def stop(self) -> None:
 		self.systray.shutdown()
@@ -18814,23 +18817,22 @@ class GStats:
 		self.genre_list = []
 		self.genre_dict = {}
 
-	def update(self, playlist):
-
+	def update(self, playlist) -> None:
 		pt = 0
 
-		if pctl.master_count != self.last_db or self.last_pl != playlist:
-			self.last_db = pctl.master_count
+		if self.pctl.master_count != self.last_db or self.last_pl != playlist:
+			self.last_db = self.pctl.master_count
 			self.last_pl = playlist
 
 			artists = {}
 
-			for index in pctl.multi_playlist[playlist].playlist_ids:
-				artist = pctl.master_library[index].artist
+			for index in self.pctl.multi_playlist[playlist].playlist_ids:
+				artist = self.pctl.master_library[index].artist
 
 				if artist == "":
 					artist = "<Artist Unspecified>"
 
-				pt = int(star_store.get(index))
+				pt = int(self.star_store.get(index))
 				if pt < 30:
 					continue
 
@@ -18848,10 +18850,10 @@ class GStats:
 			genres = {}
 			genre_dict = {}
 
-			for index in pctl.multi_playlist[playlist].playlist_ids:
-				genre_r = pctl.master_library[index].genre
+			for index in self.pctl.multi_playlist[playlist].playlist_ids:
+				genre_r = self.pctl.master_library[index].genre
 
-				pt = int(star_store.get(index))
+				pt = int(self.star_store.get(index))
 
 				gn = []
 				if "," in genre_r:
@@ -18930,13 +18932,13 @@ class GStats:
 
 			g_albums = {}
 
-			for index in pctl.multi_playlist[playlist].playlist_ids:
-				album = pctl.master_library[index].album
+			for index in self.pctl.multi_playlist[playlist].playlist_ids:
+				album = self.pctl.master_library[index].album
 
 				if album == "":
 					album = "<Album Unspecified>"
 
-				pt = int(star_store.get(index))
+				pt = int(self.star_store.get(index))
 
 				if pt < 30:
 					continue
@@ -18991,22 +18993,22 @@ class Drawing:
 
 		if self.coll(rect):
 			if tooltip:
-				tool_tip.test(x + 15 * gui.scale, y - 28 * gui.scale, tooltip)
-			ddt.rect(rect, background_highlight_colour)
+				self.tauon.tool_tip.test(x + 15 * self.gui.scale, y - 28 * self.gui.scale, tooltip)
+			self.ddt.rect(rect, background_highlight_colour)
 
 			# if background_highlight_colour[3] != 255:
 			#	 background_highlight_colour = None
 
-			ddt.text(
-				(rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
+			self.ddt.text(
+				(rect[0] + int(rect[2] / 2), rect[1] + 2 * self.gui.scale, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
 			if press:
 				click = True
 		else:
-			ddt.rect(rect, background_colour)
+			self.ddt.rect(rect, background_colour)
 			if background_highlight_colour[3] != 255:
 				background_colour = None
-			ddt.text(
-				(rect[0] + int(rect[2] / 2), rect[1] + 2 * gui.scale, 2), text, text_colour, font, bg=background_colour)
+			self.ddt.text(
+				(rect[0] + int(rect[2] / 2), rect[1] + 2 * self.gui.scale, 2), text, text_colour, font, bg=background_colour)
 		return click
 
 class DropShadow:
@@ -19021,7 +19023,7 @@ class DropShadow:
 		self.grow = 2 * tauon.gui.scale
 		self.opacity = 90
 
-	def prepare(self, w, h):
+	def prepare(self, w, h) -> None:
 		fh = h + self.underscan
 		fw = w + self.underscan
 
@@ -19037,9 +19039,9 @@ class DropShadow:
 		g.seek(0)
 
 
-		s_image = ddt.load_image(g)
+		s_image = self.ddt.load_image(g)
 
-		c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
+		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 		sdl3.SDL_SetTextureAlphaMod(c, self.opacity)
 
 		tex_w = pointer(c_float(0))
@@ -19057,14 +19059,14 @@ class DropShadow:
 		unit = (dst, c)
 		self.readys[(w, h)] = unit
 
-	def render(self, x, y, w, h):
+	def render(self, x: int, y: int, w: int, h: int) -> None:
 		if (w, h) not in self.readys:
 			self.prepare(w, h)
 
 		unit = self.readys[(w, h)]
 		unit[0].x = round(x) - round(self.underscan)
 		unit[0].y = round(y) - round(self.underscan)
-		sdl3.SDL_RenderTexture(renderer, unit[1], None, unit[0])
+		sdl3.SDL_RenderTexture(self.renderer, unit[1], None, unit[0])
 
 class LyricsRenMini:
 
@@ -19078,24 +19080,24 @@ class LyricsRenMini:
 
 		self.lyrics_position = 0
 
-	def generate(self, index, w):
-		self.text = pctl.master_library[index].lyrics
+	def generate(self, index, w) -> None:
+		self.text = self.pctl.master_library[index].lyrics
 		self.lyrics_position = 0
 
-	def render(self, index, x, y, w, h, p):
-		if index != self.index or self.text != pctl.master_library[index].lyrics:
+	def render(self, index, x, y, w, h, p) -> None:
+		if index != self.index or self.text != self.pctl.master_library[index].lyrics:
 			self.index = index
 			self.generate(index, w)
 
-		colour = colours.side_bar_line1
+		colour = self.colours.side_bar_line1
 
-		# if key_ctrl_down:
-		#	 if mouse_wheel < 0:
+		# if inp.key_ctrl_down:
+		#	 if inp.mouse_wheel < 0:
 		#		 prefs.lyrics_font_size += 1
-		#	 if mouse_wheel > 0:
+		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		ddt.text((x, y, 4, w), self.text, colour, prefs.lyrics_font_size, w - (w % 2), colours.side_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.side_panel_background)
 
 class LyricsRen:
 
@@ -19107,20 +19109,18 @@ class LyricsRen:
 
 		self.lyrics_position = 0
 
-	def test_update(self, track_object: TrackClass):
-
+	def test_update(self, track_object: TrackClass) -> None:
 		if track_object.index != self.index or self.text != track_object.lyrics:
 			self.index = track_object.index
 			self.text = track_object.lyrics
 			self.lyrics_position = 0
 
-	def render(self, x, y, w, h, p):
+	def render(self, x, y, w, h, p) -> None:
+		colour = self.colours.lyrics
+		if test_lumi(self.colours.gallery_background) < 0.5:
+			colour = self.colours.grey(40)
 
-		colour = colours.lyrics
-		if test_lumi(colours.gallery_background) < 0.5:
-			colour = colours.grey(40)
-
-		ddt.text((x, y, 4, w), self.text, colour, 17, w, colours.playlist_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.playlist_panel_background)
 
 class TimedLyricsToStatic:
 
@@ -19128,7 +19128,7 @@ class TimedLyricsToStatic:
 		self.cache_key = None
 		self.cache_lyrics = ""
 
-	def get(self, track: TrackClass):
+	def get(self, track: TrackClass) -> str:
 		if track.lyrics:
 			return track.lyrics
 		if track.is_network:
@@ -19160,13 +19160,15 @@ class TimedLyricsRen:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
+		self.ddt           = tauon.ddt
 		self.gui           = tauon.gui
-		self.showcase_menu = tauon.showcase_menu
-		self.top_panel     = tauon.top_panel
+		self.inp           = tauon.inp
+		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
 		self.colours       = tauon.colours
+		self.top_panel     = tauon.top_panel
 		self.window_size   = tauon.window_size
-		self.inp           = tauon.gui.inp
+		self.showcase_menu = tauon.showcase_menu
 		self.index         = -1
 
 		self.scanned = {}
@@ -19176,7 +19178,6 @@ class TimedLyricsRen:
 		self.scroll_position = 0
 
 	def generate(self, track: TrackClass) -> bool | None:
-
 		if self.index == track.index:
 			return self.ready
 
@@ -19197,12 +19198,10 @@ class TimedLyricsRen:
 				continue
 
 			try:
-
 				text = line.split("]")[-1].rstrip("\n")
 				t = line
 
 				while t[0] == "[" and t[9] == "]" and ":" in t and "." in t:
-
 					a = t.lstrip("[")
 					t = t.split("]")[1] + "]"
 
@@ -53678,7 +53677,7 @@ tau      = tauon.tau
 if system == "Windows" or msys:
 	from lynxtray import SysTrayIcon
 
-tray = STray()
+tray = STray(tauon)
 
 if system == "Linux" and not macos and not msys:
 
