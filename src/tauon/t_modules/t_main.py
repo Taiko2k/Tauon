@@ -19131,6 +19131,7 @@ class TimedLyricsRen:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
+		self.ddt           = tauon.ddt
 		self.gui           = tauon.gui
 		self.inp           = tauon.inp
 		self.coll          = tauon.coll
