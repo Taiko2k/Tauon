@@ -11040,7 +11040,7 @@ class Over:
 					show_message(_("Sorry, this feature is unavailable with snap"), mode="error")
 					prefs.discord_enable = False
 				elif not discord_allow:
-					show_message(_("Missing dependency python-pypresence"))
+					show_message(_("Missing dependency python-lynxpresence"))
 					prefs.discord_enable = False
 				else:
 					hit_discord()
@@ -12559,10 +12559,10 @@ class Over:
 				xxx, y, "https://github.com/avian2/unidecode", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
-			ddt.text((x, y), "pypresence", colours.box_sub_text, font)
+			ddt.text((x, y), "lynxpresence", colours.box_sub_text, font)
 			ddt.text((xx, y), "MIT", colours.box_text_label, font)
 			draw_linked_text2(
-				xxx, y, "https://github.com/qwertyquerty/pypresence", colours.box_sub_text, font, click=self.click, replace="github")
+				xxx, y, "https://github.com/C0rn3j/lynxpresence", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
 			ddt.text((x, y), "musicbrainzngs", colours.box_sub_text, font)
@@ -32266,7 +32266,7 @@ def toggle_wiki(mode: int = 0) -> bool:
 # 	if mode == 1:
 # 		return prefs.discord_show
 # 	if prefs.discord_show is False and discord_allow is False:
-# 		show_message(_("Warning: pypresence package not installed"))
+# 		show_message(_("Warning: lynxpresence package not installed"))
 # 	prefs.discord_show ^= True
 
 def toggle_gen(mode: int = 0) -> bool:
@@ -34196,6 +34196,8 @@ def discord_loop() -> None:
 			if len(album) == 1:
 				album += " "
 
+			end_time = start_time + tr.length
+
 			if state == 1:
 				#logging.info("PLAYING: " + title)
 				#logging.info(start_time)
@@ -34207,16 +34209,19 @@ def discord_loop() -> None:
 					large_image = url
 					small_image = "tauon-standard"
 				RPC.update(
+					activity_type = ActivityType.LISTENING,
 					pid=pid,
 					state=album,
 					details=title,
 					start=int(start_time),
+					end=int(end_time),
 					large_image=large_image,
 					small_image=small_image)
 
 			else:
 				#logging.info("Discord RPC - Stop")
 				RPC.update(
+					activity_type = ActivityType.LISTENING,
 					pid=pid,
 					state="Idle",
 					large_image="tauon-standard")
@@ -38760,11 +38765,11 @@ else:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 discord_allow = False
 try:
-	from pypresence import Presence
+	from lynxpresence import Presence, ActivityType
 except ModuleNotFoundError:
-	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
+	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
 except Exception:
-	logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
+	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
 else:
 	import asyncio
 	discord_allow = True

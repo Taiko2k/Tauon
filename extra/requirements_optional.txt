@@ -8,7 +8,7 @@ opencc-python-reimplemented; sys_platform == 'win32'
 plexapi
 PyChromecast
 #python-magic # WIP
-pypresence
+lynxpresence>=4.4.1
 setproctitle
 tekore
 tidalapi
