@@ -34181,22 +34181,24 @@ def discord_loop() -> None:
 
 			title = _("Unknown Track")
 			tr = pctl.playing_object()
-			if tr.artist != "" and tr.title != "":
+			if tr.artist != "" and tr.title != "" and pctl.playing_state == 3:
 				title = tr.title + " | " + tr.artist
-				if len(title) > 150:
-					title = _("Unknown Track")
-
-			if tr.album:
-				album = tr.album
 			else:
-				album = _("Unknown Album")
-				if pctl.playing_state == 3:
-					album = radiobox.loaded_station["title"]
+				title = tr.title
 
-			if len(album) == 1:
+			if len(title) > 150:
+				title = _("Unknown Track")
+
+			artist = tr.artist if tr.artist != "" else _("Unknown Artist")
+
+			if pctl.playing_state == 3 and tr.album:
+				album = radiobox.loaded_station["title"]
+			else:
+				album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
+					
+
+			if album and len(album) == 1:
 				album += " "
-
-			end_time = start_time + tr.length
 
 			if state == 1:
 				#logging.info("PLAYING: " + title)
@@ -34211,12 +34213,13 @@ def discord_loop() -> None:
 				RPC.update(
 					activity_type = ActivityType.LISTENING,
 					pid=pid,
-					state=album,
+					**({"state": artist} if not pctl.playing_state == 3 else {"state": album}),
 					details=title,
 					start=int(start_time),
-					end=int(end_time),
+					**({"end": int(start_time + tr.length)} if not pctl.playing_state == 3 else {}),
+					**({"large_text": album} if album and not pctl.playing_state == 3 else {}),
 					large_image=large_image,
-					small_image=small_image)
+					small_image=small_image )
 
 			else:
 				#logging.info("Discord RPC - Stop")
