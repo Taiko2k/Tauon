@@ -39486,9 +39486,7 @@ if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
 dc_device = False  # (BASS) Disconnect device on pause
 if desktop == "KDE":
 	dc_device = True
-encoder_output = music_directory / "encode-output"
-if music_directory is None:
-	encoder_output = user_directory / "encoder"
+encoder_output = user_directory / "encoder" if music_directory is None else music_directory / "encode-output"
 power_save = False
 if macos or phone:
 	power_save = True
