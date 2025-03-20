@@ -34433,6 +34433,15 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: Path | None 
 
 	if codec != "flac":
 		command += " -b:a " + str(bitrate) + "k -vn "
+	if codec == "opus":
+		command += "-c:a libopus -f opus "
+	if codec == "ogg":
+		command += "-c:a libvorbis -f ogg "
+	if codec == "flac":
+		command += " -c:a flac -f flac "
+	if codec == "mp3":
+		command += " -c:a libmp3lame -f mp3 "
+
 
 	command += '"' + target_out.replace('"', '\\"') + '"'
 
