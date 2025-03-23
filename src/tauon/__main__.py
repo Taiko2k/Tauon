@@ -27,16 +27,6 @@ install_directory: Path = Path(__file__).resolve().parent
 sys.path.append(str(install_directory.parent))
 pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
 
-# We currently only properly package SDL3 on Windows and macOS, remove the if check when Linux is fixed
-if sys.platform in ("win32", "darwin"):
-	os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
-	os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
-	os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
-	os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
-if pyinstaller_mode:
-	os.environ["SDL_FIND_BINARIES"]            = "0" # Search for binaries in the system libraries, "1"        by default.
-
-import sdl3
 from gi.repository import GLib
 
 from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
@@ -215,6 +205,18 @@ if os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == 
 if Path(user_directory / "x11").exists():
 	logging.debug("Forcing X11 due to user prefs")
 	os.environ["SDL_VIDEODRIVER"] = "x11"
+
+# We currently only properly package SDL3 on Windows and macOS, remove the if check when Linux is fixed
+#if sys.platform in ("win32", "darwin"):
+os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
+os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
+os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
+os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
+if pyinstaller_mode:
+	os.environ["SDL_FIND_BINARIES"]            = "0" # Search for binaries in the system libraries, "1"        by default.
+
+import sdl3
+
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
