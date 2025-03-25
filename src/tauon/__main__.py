@@ -211,13 +211,16 @@ if Path(user_directory / "x11").exists():
 # os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
 if str(install_directory).startswith("/app/"):
 	os.environ["SDL_BINARY_PATH"] = "/app/lib"
-os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
-os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,                    "1"        by default.
-os.environ["SDL_DOC_GENERATOR"]            = "1" # [Disabling causes crash on AUR package]      "1"        by default.
-os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
-os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
+	# Disabling causes crash with AUR package as it ships docs and disabling them attempts a removal on system libraries
+	# Enabling crashes our Flatpak builds as we don't ship the docs there and it attempts a generation on a read-only fs
+	# So just disable it on Flatpak until https://github.com/Aermoss/PySDL3/issues/22 is resolved
+	os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation                       "1"        by default.
 if pyinstaller_mode:
 	os.environ["SDL_FIND_BINARIES"]            = "0" # Search for binaries in the system libraries, "1"        by default.
+os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
+os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,                    "1"        by default.
+os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
+os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
 
 import sdl3
 
