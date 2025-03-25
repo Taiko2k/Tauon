@@ -8,6 +8,7 @@ Changelog
  - **Added** Drag and drop from file zone highlight
  - **Added** Lyric provider "LRCLIB" including synced lyrics
  - **Added** Theme Charmed as built in
+ - **Improved** Support for Discord RPC to show listening activity
  - **Fixed** Mini mode always on top not working on Wayland
  - **Fixed** Drag and drop feedback when dragging external file
  - **Fixed** Various crash and other bugs

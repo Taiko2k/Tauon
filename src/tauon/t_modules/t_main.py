@@ -38747,7 +38747,7 @@ try:
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
 except Exception:
-	logging.exception("Unknown error trying to import colored_traceback, tracebacks will be dull.")
+	logging.warning("Error trying to import colored_traceback, tracebacks will be dull.")
 
 try:
 	from jxlpy import JXLImagePlugin
