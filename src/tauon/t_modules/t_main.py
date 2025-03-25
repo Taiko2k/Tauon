@@ -19480,9 +19480,9 @@ class ArtistList:
 			else:
 				album_count = len(self.current_album_counts[artist])
 				if album_count > 1:
-					text = _("{N} tracks").format(N=str(album_count))
+					text = _("{N} albums").format(N=str(album_count))
 				else:
-					text = _("{N} track").format(N=str(album_count))
+					text = _("{N} album").format(N=str(album_count))
 
 			if gui.preview_artist_loading == artist:
 				# . Max 20 chars. Alt: Downloading image, Loading image
@@ -37469,9 +37469,9 @@ def toggle_artist_list_threshold():
 def toggle_artist_list_threshold_deco():
 	if prefs.artist_list_threshold == 0:
 		return [colours.menu_text, colours.menu_background, _("Filter Small Artists")]
-	save = artist_list_box.saves.get(pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int)
-	if save and save[5] == 0:
-		return [colours.menu_text_disabled, colours.menu_background, _("Include All Artists")]
+	# save = artist_list_box.saves.get(pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int)
+	# if save and save[5] == 0:
+	# 	return [colours.menu_text_disabled, colours.menu_background, _("Include All Artists")]
 	return [colours.menu_text, colours.menu_background, _("Include All Artists")]
 
 def verify_discogs():
