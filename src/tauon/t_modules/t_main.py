@@ -38983,6 +38983,11 @@ if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
 
 		flatpak_mode = True
 
+logging.info(f"Platform: {sys.platform}")
+
+if pyinstaller_mode:
+	logging.info("Pyinstaller mode")
+
 # If we're installed, use home data locations
 if (install_mode and system == "Linux") or macos or msys:
 	cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
