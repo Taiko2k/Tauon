@@ -213,7 +213,7 @@ if str(install_directory).startswith("/app/"):
 	os.environ["SDL_BINARY_PATH"] = "/app/lib"
 os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
 os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,                    "1"        by default.
-os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation                       "1"        by default.
+os.environ["SDL_DOC_GENERATOR"]            = "1" # Disable doc generation                       "1"        by default.
 os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
 os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
 if pyinstaller_mode:
