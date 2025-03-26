@@ -2086,7 +2086,7 @@ class PlayerCtl:
 				logging.info("NEXT RADIO TRACK")
 
 				try:
-					get_radio_art()
+					self.tauon.get_radio_art()
 				except Exception:
 					logging.exception("Get art error")
 
@@ -19225,10 +19225,9 @@ class TimedLyricsRen:
 		return True
 
 	def render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
-
 		if index != self.index:
 			self.ready = False
-			self.generate(pctl.master_library[index])
+			self.generate(self.pctl.master_library[index])
 
 		if right_click and x and y and coll((x, y, w, h)):
 			showcase_menu.activate(pctl.master_library[index])
@@ -19249,52 +19248,49 @@ class TimedLyricsRen:
 		highlight = True
 
 		if side_panel:
-			bg = colours.side_panel_background
+			bg = self.colours.side_panel_background
 			bg = (bg[0],bg[1], bg[2], 255)
 			font_size = 15
 			spacing = round(17 * gui.scale)
 			ddt.rect((window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h), bg)
 		else:
-			bg = colours.playlist_panel_background
+			bg = self.colours.playlist_panel_background
 			font_size = 17
-			spacing = round(23 * gui.scale)
+			spacing = round(23 * self.gui.scale)
 
 		bg = (bg[0], bg[1], bg[2], 255)
 		test_time = get_real_time()
 
-		if pctl.track_queue[pctl.queue_step] == index:
-
+		if self.pctl.track_queue[self.pctl.queue_step] == index:
 			for i, line in enumerate(self.data):
 				if line[0] < test_time:
 					last = i
 
 				if line[0] > test_time:
-					pctl.wake_past_time = line[0]
+					self.pctl.wake_past_time = line[0]
 					line_active = last
 					break
 			else:
 				line_active = len(self.data) - 1
 
-			if pctl.playing_state == 1:
+			if self.pctl.playing_state == 1:
 				self.scroll_position = (max(0, line_active)) * spacing * -1
 
 		yy = y + self.scroll_position
 
 		for i, line in enumerate(self.data):
-
-			if 0 < yy < window_size[1]:
-
-				colour = colours.lyrics
-				if test_lumi(colours.gallery_background) < 0.5:
-					colour = colours.grey(40)
+			if 0 < yy < self.window_size[1]:
+				colour = self.colours.lyrics
+				if test_lumi(self.colours.gallery_background) < 0.5:
+					colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
 					colour = [255, 210, 50, 255]
-					if colours.lm:
+					if self.colours.lm:
 						colour = [180, 130, 210, 255]
 
-				h = ddt.text((x, yy, 4, w - 20 * gui.scale), line[1], colour, font_size, w - 20 * gui.scale, bg)
-				yy += max(h - round(6 * gui.scale), spacing)
+				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
+				yy += max(h - round(6 * self.gui.scale), spacing)
 			else:
 				yy += spacing
 		return None
@@ -19397,16 +19393,14 @@ class TextBox2:
 		rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
 		select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
 
-		fields.add(rect)
+		self.fields.add(rect)
 
 		# Activate Menu
-		if coll(rect):
-			if right_click or level_2_right_click:
-				field_menu.activate(self)
+		if self.coll(rect) and (right_click or level_2_right_click):
+			self.tauon.field_menu.activate(self)
 
 		if width > 0 and active:
-
-			if click and field_menu.active:
+			if click and self.tauon.field_menu.active:
 				# field_menu.click()
 				click = False
 
@@ -19426,7 +19420,7 @@ class TextBox2:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
 
-			def d():
+			def d() -> None:
 				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
 					self.text) - self.cursor_position:]
 				self.selection = self.cursor_position
@@ -19559,14 +19553,14 @@ class TextBox2:
 			if active and editline and editline != input_text:
 				t_len += ddt.get_text_w(editline, font)
 			if not click and not self.down_lock:
-				cursor_x = ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
+				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
 				if self.cursor_position == 0 or cursor_x < self.offset + round(
-						15 * gui.scale) or cursor_x > self.offset + width:
+						15 * self.gui.scale) or cursor_x > self.offset + width:
 					if t_len > width:
 						self.offset = t_len - width
 
 						if cursor_x < self.offset:
-							self.offset = cursor_x - round(15 * gui.scale)
+							self.offset = cursor_x - round(15 * self.gui.scale)
 
 							self.offset = max(self.offset, 0)
 					else:
@@ -19574,7 +19568,7 @@ class TextBox2:
 
 			x -= self.offset
 
-			if coll(select_rect):  # coll((x - 15, y, width + 16, selection_height + 1)):
+			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
 				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
 				if click:
 					pre = 0
@@ -19583,7 +19577,7 @@ class TextBox2:
 						self.cursor_position = len(self.text)
 					else:
 						for i in range(len(self.text)):
-							post = ddt.get_text_w(self.text[0:i + 1], font)
+							post = self.ddt.get_text_w(self.text[0:i + 1], font)
 							# pre_half = int((post - pre) / 2)
 
 							if x + pre - 0 <= mouse_position[0] <= x + post + 0:
@@ -19612,7 +19606,7 @@ class TextBox2:
 				else:
 
 					for i in range(len(text)):
-						post = ddt.get_text_w(text[0:i + 1], font)
+						post = self.ddt.get_text_w(text[0:i + 1], font)
 						# pre_half = int((post - pre) / 2)
 
 						if x + pre - 0 <= mouse_position[0] <= x + post + 0:
@@ -19633,62 +19627,60 @@ class TextBox2:
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
 				text = "●" * len(text)
-			a = ddt.get_text_w(text, font)
+			a = self.ddt.get_text_w(text, font)
 
 			text = self.text[0: len(self.text) - self.selection]
 			if secret:
 				text = "●" * len(text)
-			b = ddt.get_text_w(text, font)
+			b = self.ddt.get_text_w(text, font)
 
 			top = y
 			if big:
-				top -= 12 * gui.scale
+				top -= 12 * self.gui.scale
 
-			ddt.rect([a, 0, b - a, selection_height], [40, 120, 180, 255])
+			self.ddt.rect([a, 0, b - a, selection_height], [40, 120, 180, 255])
 
 			if self.selection != self.cursor_position:
 				inf_comp = 0
 				text = self.get_selection(0)
 				if secret:
 					text = "●" * len(text)
-				space = ddt.text((0, 0), text, colour, font)
+				space = self.ddt.text((0, 0), text, colour, font)
 				text = self.get_selection(1)
 				if secret:
 					text = "●" * len(text)
-				space += ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font, bg=[40, 120, 180, 255])
+				space += self.ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font, bg=[40, 120, 180, 255])
 				text = self.get_selection(2)
 				if secret:
 					text = "●" * len(text)
-				ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
+				self.ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
 			else:
 				text = self.text
 				if secret:
 					text = "●" * len(text)
-				ddt.text((0, 0), text, colour, font)
+				self.ddt.text((0, 0), text, colour, font)
 
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
 				text = "●" * len(text)
-			space = ddt.get_text_w(text, font)
+			space = self.ddt.get_text_w(text, font)
 
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
-
-				ddt.rect((0 + space, 0 + 2, 1 * gui.scale, 14 * gui.scale), colour)
+				self.ddt.rect((0 + space, 0 + 2, 1 * self.gui.scale, 14 * self.gui.scale), colour)
 
 			if click:
 				self.selection = self.cursor_position
-
 		else:
-			width -= round(15 * gui.scale)
+			width -= round(15 * self.gui.scale)
 			text = self.text
 			if secret:
 				text = "●" * len(text)
-			t_len = ddt.get_text_w(text, font)
-			ddt.text((0, 0), text, colour, font)
+			t_len = self.ddt.get_text_w(text, font)
+			self.ddt.text((0, 0), text, colour, font)
 			self.offset = 0
-			if coll(rect) and not field_menu.active:
-				gui.cursor_want = 2
+			if self.coll(rect) and not self.tauon.field_menu.active:
+				self.gui.cursor_want = 2
 
 		if active:
 			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
@@ -19724,6 +19716,7 @@ class TextBox2:
 		sdl3.SDL_RenderTexture(renderer, text_box_canvas, None, text_box_canvas_rect)
 
 class TextBox:
+	# TODO(Martin): Global class var!
 	cursor = True
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -19741,7 +19734,6 @@ class TextBox:
 		self.down_lock = False
 
 	def paste(self) -> None:
-
 		if sdl3.SDL_HasClipboardText():
 			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
 
@@ -19756,15 +19748,13 @@ class TextBox:
 				self.text) - self.cursor_position:]
 
 	def copy(self) -> None:
-
 		text = self.get_selection()
 		if not text:
 			text = self.text
 		if text != "":
 			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 
-	def set_text(self, text):
-
+	def set_text(self, text) -> None:
 		self.text = text
 		self.cursor_position = 0
 		self.selection = 0
@@ -19773,7 +19763,6 @@ class TextBox:
 		self.text = ""
 
 	def highlight_all(self) -> None:
-
 		self.selection = len(self.text)
 		self.cursor_position = 0
 
@@ -19803,22 +19792,25 @@ class TextBox:
 				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
 			if p == 2:
 				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
-
 		else:
 			return ""
+		return None
 
 	def draw(
 		self, x: int, y: int, colour: list[int], active: bool = True, secret: bool = False,
-		font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False):
+		font: int = 13, width: int = 0, click: bool = False, selection_height: float = 18, big: bool = False) -> None:
+		inp = self.inp
+		ddt = self.ddt
+		gui = self.gui
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
 
-		selection_height *= gui.scale
+		selection_height *= self.gui.scale
 
 		if click is False:
-			click = inp.mouse_click
+			click = self.inp.mouse_click
 
 		if width > 0 and active:
 
@@ -19829,11 +19821,10 @@ class TextBox:
 				select_rect = (x - 50 * gui.scale, y - 15 * gui.scale, width + 50 * gui.scale, 35 * gui.scale)
 
 			# Activate Menu
-			if coll(rect):
-				if right_click or level_2_right_click:
-					field_menu.activate(self)
+			if self.coll(rect) and (right_click or level_2_right_click):
+				self.tauon.field_menu.activate(self)
 
-			if click and field_menu.active:
+			if click and self.tauon.field_menu.active:
 				# field_menu.click()
 				click = False
 
@@ -19853,7 +19844,7 @@ class TextBox:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
 
-			def d():
+			def d() -> None:
 				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
 					len(self.text) - self.cursor_position:]
 				self.selection = self.cursor_position
@@ -19864,7 +19855,7 @@ class TextBox:
 				self.text):
 				while g() == " ":
 					d()
-				while g() != " " and g() != None:
+				while g() != " " and g() is not None:
 					d()
 
 			# Ctrl + left to move cursor back a word
@@ -19889,7 +19880,7 @@ class TextBox:
 					self.cursor_position -= 1
 					if not key_shift_down:
 						self.selection = self.cursor_position
-				while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
 					self.cursor_position -= 1
 					if not key_shift_down:
 						self.selection = self.cursor_position
@@ -19946,10 +19937,10 @@ class TextBox:
 				self.selection = len(self.text)
 
 			# ddt.rect_r(rect, [255, 50, 50, 80], True)
-			if coll(rect) and not field_menu.active:
+			if self.coll(rect) and not self.tauon.field_menu.active:
 				gui.cursor_want = 2
 
-			fields.add(rect)
+			self.fields.add(rect)
 
 			# Delete key to remove text in front of cursor
 			if key_del:
@@ -19971,7 +19962,7 @@ class TextBox:
 				if not key_shift_down and not key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if coll(select_rect):
+			if self.coll(select_rect):
 				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
 				if click:
 					pre = 0
@@ -20015,7 +20006,6 @@ class TextBox:
 
 							if mouse_position[0] >= x + pre + int(diff / 2):
 								self.selection = len(self.text) - i - 1
-
 							else:
 								self.selection = len(self.text) - i
 
@@ -20100,8 +20090,9 @@ class TextBox:
 				ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
 					[245, 245, 245, 255])
 
+			pixel_to_logical = self.tauon.pixel_to_logical
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.SDL_SetTextInputArea(t_window, rect, pixel_to_logical(space))
+			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
 		animate_monitor_timer.set()
 
@@ -20165,14 +20156,12 @@ class AlbumArt:
 		self.embed_cached = (None, None)
 
 	def async_download_image(self, track: TrackClass, subsource: list[tuple[int, str]]) -> None:
-
-		self.downloaded_image = album_art_gen.get_source_raw(0, 0, track, subsource=subsource)
+		self.downloaded_image = self.get_source_raw(0, 0, track, subsource=subsource)
 		self.downloaded_track = track
 		self.download_in_progress = False
-		gui.update += 1
+		self.gui.update += 1
 
-	def get_info(self, track_object: TrackClass) -> list[tuple[str, int, int, int, str]]:
-
+	def get_info(self, track_object: TrackClass) -> list[tuple[str, int, int, int, str]] | None:
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
 			return None
@@ -20199,7 +20188,6 @@ class AlbumArt:
 		return [sources[offset][0], len(sources), offset, o_size, format]
 
 	def get_sources(self, tr: TrackClass) -> list[tuple[int, str]]:
-
 		filepath = tr.fullpath
 		ext = tr.file_ext
 
@@ -20329,7 +20317,6 @@ class AlbumArt:
 		return 0
 
 	def open_external(self, track_object: TrackClass) -> int:
-
 		index = track_object.index
 
 		source = self.get_sources(track_object)
@@ -20339,12 +20326,12 @@ class AlbumArt:
 		offset = self.get_offset(track_object.fullpath, source)
 
 		if track_object.is_network:
-			show_message(_("Saving network images not implemented"))
+			self.show_message(_("Saving network images not implemented"))
 			return 0
 		if source[offset][0] > 0:
-			pic = album_art_gen.get_embed(track_object)
+			pic = self.get_embed(track_object)
 			if not pic:
-				show_message(_("Image save error."), _("No embedded album art."), mode="warning")
+				self.show_message(_("Image save error."), _("No embedded album art."), mode="warning")
 				return 0
 
 			source_image = io.BytesIO(pic)
@@ -20354,7 +20341,7 @@ class AlbumArt:
 			ext = "." + im.format.lower()
 			if im.format == "JPEG":
 				ext = ".jpg"
-			target = str(cache_directory / "open-image")
+			target = str(self.cache_directory / "open-image")
 			if not os.path.exists(target):
 				os.makedirs(target)
 			target = os.path.join(target, "embed-" + str(im.height) + "px-" + str(track_object.index) + ext)
@@ -20366,9 +20353,9 @@ class AlbumArt:
 		else:
 			target = source[offset][1]
 
-		if system == "Windows" or msys:
+		if self.system == "Windows" or self.msys:
 			os.startfile(target)
-		elif macos:
+		elif self.macos:
 			subprocess.call(["open", target])
 		else:
 			subprocess.call(["xdg-open", target])
@@ -20376,43 +20363,39 @@ class AlbumArt:
 		return 0
 
 	def cycle_offset(self, track_object: TrackClass, reverse: bool = False) -> int:
-
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
 			return 0
 		parent_folder = os.path.dirname(filepath)
 		# Find cached offset
-		if parent_folder in folder_image_offsets:
+		if parent_folder in self.folder_image_offsets:
 
 			if reverse:
-				folder_image_offsets[parent_folder] -= 1
+				self.folder_image_offsets[parent_folder] -= 1
 			else:
-				folder_image_offsets[parent_folder] += 1
+				self.folder_image_offsets[parent_folder] += 1
 
-			folder_image_offsets[parent_folder] %= len(sources)
+			self.folder_image_offsets[parent_folder] %= len(sources)
 		return 0
 
 	def cycle_offset_reverse(self, track_object: TrackClass) -> None:
 		self.cycle_offset(track_object, True)
 
 	def get_offset(self, filepath: str, source: list[tuple[int, str]]) -> int:
-
 		# Check if folder offset already exsts, if not, make it
 		parent_folder = os.path.dirname(filepath)
 
-		if parent_folder in folder_image_offsets:
-
+		if parent_folder in self.folder_image_offsets:
 			# Reset the offset if greater than number of images available
-			if folder_image_offsets[parent_folder] > len(source) - 1:
-				folder_image_offsets[parent_folder] = 0
+			if self.folder_image_offsets[parent_folder] > len(source) - 1:
+				self.folder_image_offsets[parent_folder] = 0
 		else:
-			folder_image_offsets[parent_folder] = 0
+			self.folder_image_offsets[parent_folder] = 0
 
-		return folder_image_offsets[parent_folder]
+		return self.folder_image_offsets[parent_folder]
 
 	def get_embed(self, track: TrackClass):
-
 		# cached = self.embed_cached
 		# if cached[0] == track:
 		#	#logging.info("used cached")
@@ -20421,8 +20404,8 @@ class AlbumArt:
 		filepath = track.fullpath
 
 		# Use cached file if present
-		if prefs.precache and tauon.cachement:
-			path = tauon.cachement.get_file_cached_only(track)
+		if self.prefs.precache and self.tauon.cachement:
+			path = self.tauon.cachement.get_file_cached_only(track)
 			if path:
 				filepath = path
 
@@ -20439,26 +20422,22 @@ class AlbumArt:
 
 			if pic is not None and len(pic) < 30:
 				pic = None
-
 		elif track.file_ext == "FLAC":
 			with Flac(filepath) as tag:
 				tag.read(True)
 				if tag.has_picture and len(tag.picture) > 30:
 					pic = tag.picture
-
 		elif track.file_ext == "APE":
 			with Ape(filepath) as tag:
 				tag.read()
 				if tag.has_picture and len(tag.picture) > 30:
 					pic = tag.picture
-
 		elif track.file_ext == "M4A":
 			with M4a(filepath) as tag:
 				tag.read(True)
 				if tag.has_picture and len(tag.picture) > 30:
 					pic = tag.picture
-
-		elif track.file_ext == "OPUS" or track.file_ext == "OGG" or track.file_ext == "OGA":
+		elif track.file_ext in ("OPUS", "OGG", "OGA"):
 			with Opus(filepath) as tag:
 				tag.read()
 				if tag.has_picture and len(tag.picture) > 30:
@@ -20471,7 +20450,6 @@ class AlbumArt:
 		return pic
 
 	def get_source_raw(self, offset: int, sources: list[tuple[int, str]] | int, track: TrackClass, subsource: list[tuple[int, str]] | None = None):
-
 		source_image = None
 
 		if subsource is None:
@@ -20482,39 +20460,34 @@ class AlbumArt:
 			pic = self.get_embed(track)
 			assert pic
 			source_image = io.BytesIO(pic)
-
 		elif subsource[0] == 2:
 			try:
-				if track.file_ext == "RADIO" or track.file_ext == "Spotify":
-					if pctl.radio_image_bin:
-						return pctl.radio_image_bin
+				if track.file_ext in ("RADIO", "Spotify") and self.pctl.radio_image_bin:
+					return self.pctl.radio_image_bin
 
-				cached_path = os.path.join(n_cache_dir, hashlib.md5(track.art_url_key.encode()).hexdigest()[:12])
+				cached_path = os.path.join(self.tauon.n_cache_directory, hashlib.md5(track.art_url_key.encode()).hexdigest()[:12])
 				if os.path.isfile(cached_path):
 					source_image = open(cached_path, "rb")
 				else:
 					if track.file_ext == "SUB":
-						source_image = subsonic.get_cover(track)
+						source_image = self.tauon.subsonic.get_cover(track)
 					elif track.file_ext == "JELY":
-						source_image = jellyfin.get_cover(track)
+						source_image = self.tauon.jellyfin.get_cover(track)
 					else:
-						response = urllib.request.urlopen(get_network_thumbnail_url(track), context=tls_context)
+						response = urllib.request.urlopen(self.tauon.get_network_thumbnail_url(track), context=self.tls_context)
 						source_image = io.BytesIO(response.read())
 					if source_image:
 						with Path(cached_path).open("wb") as file:
 							file.write(source_image.read())
 						source_image.seek(0)
-
 			except Exception:
 				logging.exception("Failed to get source")
-
 		else:
 			source_image = open(subsource[1], "rb")
 
 		return source_image
 
 	def get_base64(self, track: TrackClass, size):
-
 		# Wait if an identical track is already being processed
 		if self.processing64on == track:
 			t = 0
@@ -30568,9 +30541,9 @@ class RadioBox:
 		self.edit_mode = True
 		self.add_mode = False
 		self.radio_field_active = 1
-		#self.radio_field        = TextBox2(tauon)
-		#self.radio_field_title  = TextBox2(tauon)
-		#self.radio_field_search = TextBox2(tauon)
+		self.radio_field        = TextBox2(tauon)
+		self.radio_field_title  = TextBox2(tauon)
+		self.radio_field_search = TextBox2(tauon)
 
 		self.x = 1
 		self.y = 1
@@ -38029,92 +38002,6 @@ def tag_scan(nt: TrackClass) -> TrackClass | None:
 		logging.error(f"Infinite/NaN found(autocorrected to 0) when scanning tags in file: {vars(nt)}!")
 		nt.length = 0
 	return nt
-
-def get_radio_art() -> None:
-	if radiobox.loaded_url in radiobox.websocket_source_urls:
-		return
-	if "ggdrasil" in radiobox.playing_title:
-		time.sleep(3)
-		url = "https://yggdrasilradio.net/data.php?"
-		response = requests.get(url, timeout=10)
-		if response.status_code == 200:
-			lines = response.content.decode().split("|")
-			if len(lines) > 11 and lines[11]:
-				art_id = lines[11].strip().strip("*")
-				art_url = "https://yggdrasilradio.net/images/albumart/" + art_id
-				art_response = requests.get(art_url, timeout=10)
-				if art_response.status_code == 200:
-					if pctl.radio_image_bin:
-						pctl.radio_image_bin.close()
-						pctl.radio_image_bin = None
-					pctl.radio_image_bin = io.BytesIO(art_response.content)
-					pctl.radio_image_bin.seek(0)
-					radiobox.dummy_track.art_url_key = "ok"
-			pctl.update_tag_history()
-
-	elif "gensokyoradio.net" in radiobox.loaded_url:
-
-		response = requests.get("https://gensokyoradio.net/api/station/playing/", timeout=10)
-
-		if response.status_code == 200:
-			d = json.loads(response.text)
-			song_info = d.get("SONGINFO")
-			if song_info:
-				radiobox.dummy_track.artist = song_info.get("ARTIST", "")
-				radiobox.dummy_track.title = song_info.get("TITLE", "")
-				radiobox.dummy_track.album = song_info.get("ALBUM", "")
-
-			misc = d.get("MISC")
-			if misc:
-				art = misc.get("ALBUMART")
-				if art:
-					art_url = "https://gensokyoradio.net/images/albums/500/" + art
-					art_response = requests.get(art_url, timeout=10)
-					if art_response.status_code == 200:
-						if pctl.radio_image_bin:
-							pctl.radio_image_bin.close()
-							pctl.radio_image_bin = None
-						pctl.radio_image_bin = io.BytesIO(art_response.content)
-						pctl.radio_image_bin.seek(0)
-						radiobox.dummy_track.art_url_key = "ok"
-			pctl.update_tag_history()
-
-	elif "radio.plaza.one" in radiobox.loaded_url:
-		time.sleep(3)
-		logging.info("Fetching plaza art")
-		response = requests.get("https://api.plaza.one/status", timeout=10)
-		if response.status_code == 200:
-			d = json.loads(response.text)
-			if "song" in d:
-				tr = d["song"]["length"] - d["song"]["position"]
-				tr += 1
-				tr = max(tr, 10)
-				pctl.radio_poll_timer.force_set(tr * -1)
-
-				if "artist" in d["song"]:
-					radiobox.dummy_track.artist = d["song"]["artist"]
-				if "title" in d["song"]:
-					radiobox.dummy_track.title = d["song"]["title"]
-				if "album" in d["song"]:
-					radiobox.dummy_track.album = d["song"]["album"]
-				if "artwork_src" in d["song"]:
-					art_url = d["song"]["artwork_src"]
-					art_response = requests.get(art_url, timeout=10)
-					if art_response.status_code == 200:
-						if pctl.radio_image_bin:
-							pctl.radio_image_bin.close()
-							pctl.radio_image_bin = None
-						pctl.radio_image_bin = io.BytesIO(art_response.content)
-						pctl.radio_image_bin.seek(0)
-						radiobox.dummy_track.art_url_key = "ok"
-				pctl.update_tag_history()
-
-	# Failure
-	elif pctl.radio_image_bin:
-		pctl.radio_image_bin.close()
-		pctl.radio_image_bin = None
-
-	gui.clear_image_cache_next += 1
 
 def auto_name_pl(target_pl: int) -> None:
 	if not pctl.multi_playlist[target_pl].playlist_ids:
@@ -52864,9 +52751,6 @@ if (user_directory / "lyrics_substitutions.json").is_file():
 
 perf_timer = Timer()
 perf_timer.set()
-
-radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
-# radio_playlists: list[dict[str, int | str | list[dict[str, str]]]]
 
 primary_stations: list[RadioStation] = []
 
