@@ -4350,7 +4350,7 @@ class ListenBrainz:
 
 	def clear_key(self) -> None:
 		self.prefs.lb_token = ""
-		save_prefs()
+		save_prefs(self.bag)
 		self.enable = False
 
 class LastScrob:
@@ -24751,7 +24751,7 @@ class Over:
 		#         if not prefs.discogs_pat:
 		#             show_message(_("There wasn't any token saved.")
 		#         prefs.discogs_pat = ""
-		#         save_prefs()
+		#         save_prefs(bag)
 		#
 		#     y += 30 * gui.scale
 		#     if prefs.discogs_pat:
@@ -30485,7 +30485,7 @@ class ScrollBox:
 		if (self.held and mouse_up) or not mouse_down:
 			self.held = False
 
-		if self.held and not window_is_focused():
+		if self.held and not window_is_focused(self.t_window):
 			self.held = False
 
 		if self.held:
@@ -36775,7 +36775,9 @@ def get_theme_name(number: int) -> str:
 		return themes[number][1]
 	return ""
 
-def save_prefs():
+def save_prefs(bag: Bag) -> None:
+	cf    = bag.cf
+	prefs = bag.prefs
 	cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
 	cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
 	cf.update_value("radio-record-codec", prefs.radio_record_codec)
@@ -36939,14 +36941,16 @@ def save_prefs():
 	cf.update_value("chart-font", prefs.chart_font)
 	cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
 
-	if config_directory.is_dir():
-		cf.dump(str(config_directory / "tauon.conf"))
+	if bag.dirs.config_directory.is_dir():
+		cf.dump(str(bag.dirs.config_directory / "tauon.conf"))
 	else:
 		logging.error("Missing config directory")
 
-def load_prefs():
+def load_prefs(bag: Bag) -> None:
+	cf    = bag.cf
+	prefs = bag.prefs
 	cf.reset()
-	cf.load(str(config_directory / "tauon.conf"))
+	cf.load(str(bag.dirs.config_directory / "tauon.conf"))
 
 	cf.add_comment("Tauon Music Box configuration file")
 	cf.br()
@@ -37037,7 +37041,7 @@ def load_prefs():
 
 	cf.br()
 	cf.add_text("[tag-editor]")
-	if system == "Windows" or msys:
+	if bag.system == "Windows" or bag.msys:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target",
@@ -37073,9 +37077,9 @@ def load_prefs():
 		"bool", "allow-video-formats", prefs.allow_video_formats,
 		"Allow the import of MP4 and WEBM formats")
 	if prefs.allow_video_formats:
-		for item in formats.VID:
-			if item not in formats.DA:
-				formats.DA.add(item)
+		for item in bag.formats.VID:
+			if item not in bag.formats.DA:
+				bag.formats.DA.add(item)
 
 	cf.br()
 	cf.add_text("[HiDPI]")
@@ -37174,7 +37178,7 @@ def load_prefs():
 	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
 	# show-current-on-transition", prefs.show_current_on_transition)
-	if system != "Windows":
+	if bag.system != "Windows":
 		cf.br()
 		cf.add_text("[fonts]")
 		cf.add_comment("Changes will require app restart.")
@@ -37236,9 +37240,9 @@ def load_prefs():
 	prefs.download_dir1 = cf.sync_add(
 		"string", "add_download_directory", prefs.download_dir1,
 		"Add another folder to monitor in addition to home downloads and music.")
-	if prefs.download_dir1 and prefs.download_dir1 not in download_directories:
+	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
 		if os.path.isdir(prefs.download_dir1):
-			download_directories.append(prefs.download_dir1)
+			bag.download_directories.append(prefs.download_dir1)
 		else:
 			logging.warning("Invalid download directory in config")
 
@@ -37421,7 +37425,6 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 		scaled_asset_directory = asset_directory
 
 	if scale_want != prefs.ui_scale or force:
-
 		if scale_want != 1:
 			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
 				shutil.rmtree(str(scaled_asset_directory))
@@ -37454,19 +37457,19 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 		global album_mode_art_size
 		album_mode_art_size = int(album_mode_art_size * diff_ratio)
 
-def get_global_mouse():
+def get_global_mouse() -> tuple[float, float]:
 	i_y = pointer(c_float(0))
 	i_x = pointer(c_float(0))
 	sdl3.SDL_GetGlobalMouseState(i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
 
-def get_window_position():
+def get_window_position(t_window: sdl3.LP_SDL_Window) -> tuple[int, int]:
 	i_y = pointer(c_int(0))
 	i_x = pointer(c_int(0))
 	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
 
-def use_id3(tags: ID3, nt: TrackClass):
+def use_id3(tags: ID3, nt: TrackClass) -> None:
 	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
 		frames = tag.getall(frame)
 		if frames and frames[0].text:
@@ -38428,7 +38431,7 @@ def jellyfin_get_playlists_thread() -> None:
 
 def jellyfin_get_library_thread() -> None:
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag)
 	if jellyfin.scanning:
 		inp.mouse_click = False
 		show_message(_("Job already in progress!"))
@@ -38441,7 +38444,7 @@ def jellyfin_get_library_thread() -> None:
 
 def plex_get_album_thread() -> None:
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag)
 	if plex.scanning:
 		inp.mouse_click = False
 		show_message(_("Already scanning!"))
@@ -38458,7 +38461,7 @@ def sub_get_album_thread() -> None:
 	#	 return
 
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag)
 	if subsonic.scanning:
 		inp.mouse_click = False
 		show_message(_("Already scanning!"))
@@ -38475,7 +38478,7 @@ def koel_get_album_thread() -> None:
 	#	 return
 
 	pref_box.close()
-	save_prefs()
+	save_prefs(bag)
 	if koel.scanning:
 		inp.mouse_click = False
 		show_message(_("Already scanning!"))
@@ -38561,7 +38564,7 @@ def draw_window_tools():
 	xx = 0
 	l = prefs.left_window_control
 	r = not l
-	focused = window_is_focused()
+	focused = window_is_focused(t_window)
 
 	# Close
 	if r:
@@ -43700,7 +43703,7 @@ def reload_config_file():
 		show_message(_("Cannot reload while a transcode is in progress!"), mode="error")
 		return
 
-	load_prefs()
+	load_prefs(bag)
 	gui.opened_config_file = False
 
 	ddt.force_subpixel_text = prefs.force_subpixel_text
@@ -43711,7 +43714,7 @@ def reload_config_file():
 	gui.update_layout()
 
 def open_config_file():
-	save_prefs()
+	save_prefs(bag)
 	target = str(config_directory / "tauon.conf")
 	if system == "Windows" or msys:
 		os.startfile(target)
@@ -48842,16 +48845,16 @@ def worker1():
 
 		if tauon.worker_save_state and \
 				not gui.pl_pulse and \
-				not loading_in_progress and \
-				not to_scan and not after_scan and \
-				not plex.scanning and \
-				not jellyfin.scanning and \
-				not cm_clean_db and \
-				not lastfm.scanning_friends and \
-				not move_in_progress and \
-				(gui.lowered or not window_is_focused() or not gui.mouse_in_window):
+				not pctl.loading_in_progress and \
+				not tauon.to_scan and not tauon.after_scan and \
+				not tauon.plex.scanning and \
+				not tauon.jellyfin.scanning and \
+				not tauon.cm_clean_db and \
+				not tauon.lastfm.scanning_friends and \
+				not tauon.move_in_progress and \
+				(gui.lowered or not window_is_focused(tauon.t_window) or not gui.mouse_in_window):
 			save_state()
-			cue_list.clear()
+			bag.cue_list.clear()
 			tauon.worker_save_state = False
 
 		# Folder moving
@@ -50006,7 +50009,7 @@ def set_mini_mode():
 		update_layout_do()
 
 	if gui.mode < 3:
-		old_window_position = get_window_position()
+		old_window_position = get_window_position(t_window)
 
 	if prefs.mini_mode_on_top:
 		sdl3.SDL_SetWindowAlwaysOnTop(t_window, True)
@@ -51388,11 +51391,9 @@ def update_layout_do():
 	if prefs.art_bg:
 		tauon.thread_manager.ready("style")
 
-def window_is_focused() -> bool:
+def window_is_focused(t_window: sdl3.LP_SDL_Window) -> bool:
 	"""Thread safe?"""
-	if sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS:
-		return True
-	return False
+	return bool(sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
 
 def save_state() -> None:
 	if should_save_state:
@@ -51640,7 +51641,7 @@ def save_state() -> None:
 		with (user_directory / "lyrics_substitutions.json").open("w") as file:
 			json.dump(prefs.lyrics_subs, file)
 
-		save_prefs()
+		save_prefs(bag)
 
 		for key, item in prefs.playlist_exports.items():
 			pl = id_to_pl(key)
@@ -53238,8 +53239,8 @@ if music_directory is not None and music_directory.is_dir():
 
 cf = Config()
 
-load_prefs()
-save_prefs()
+load_prefs(bag)
+save_prefs(bag)
 
 # Temporary
 if 0 < db_version <= 34:
@@ -53251,7 +53252,7 @@ if 0 < db_version <= 53:
 	prefs.linux_font = "Noto Sans"
 	prefs.linux_font_semibold = "Noto Sans Medium"
 	prefs.linux_font_bold = "Noto Sans Bold"
-	save_prefs()
+	save_prefs(bag)
 
 # Auto detect lang
 lang: list[str] | None = None
@@ -55234,7 +55235,6 @@ while pctl.running:
 			reset_render = True
 
 		if event.type == sdl3.SDL_EVENT_DROP_TEXT:
-
 			power += 5
 
 			link = event.drop.file.decode()
@@ -55243,7 +55243,7 @@ while pctl.running:
 			if pctl.playing_ready() and link.startswith("http"):
 				if system != "Windows" and sdl3.SDL_version >= 204:
 					gmp = get_global_mouse()
-					gwp = get_window_position()
+					gwp = get_window_position(t_window)
 					i_x = gmp[0] - gwp[0]
 					i_x = max(i_x, 0)
 					i_x = min(i_x, window_size[0])
@@ -57423,14 +57423,14 @@ while pctl.running:
 						run_y = top + 1
 
 						hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
-						fields.add(hot_r)
+						tauon.fields.add(hot_r)
 
 						if gui.pt == 0:  # mouse moves in
-							if coll(hot_r) and window_is_focused():
+							if tauon.coll(hot_r) and window_is_focused(t_window):
 								gui.pt_on.set()
 								gui.pt = 1
 						elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
-							if not coll(hot_r):
+							if not tauon.coll(hot_r):
 								gui.pt = 0
 							elif gui.pt_on.get() > 0.2:
 								gui.pt = 2
@@ -57442,7 +57442,7 @@ while pctl.running:
 
 						elif gui.pt == 2:  # wait to turn off
 
-							if coll(hot_r):
+							if tauon.coll(hot_r):
 								gui.pt_off.set()
 							if gui.pt_off.get() > 0.6 and not lightning_menu.active:
 								gui.pt = 3
@@ -60041,29 +60041,29 @@ while pctl.running:
 	if (pctl.playing_state in (1, 3)) and gui.lowered is False:
 		if int(pctl.playing_time) != int(pctl.last_playing_time):
 			pctl.last_playing_time = pctl.playing_time
-			bottom_bar1.seek_time = pctl.playing_time
-			if not prefs.power_save or window_is_focused():
+			tauon.bottom_bar1.seek_time = pctl.playing_time
+			if not prefs.power_save or window_is_focused(tauon.t_window):
 				gui.update = 1
 
 	# Auto save play times to disk
 	if pctl.total_playtime - time_last_save > 600:
 		try:
-			if should_save_state:
+			if bag.should_save_state:
 				logging.info("Auto save playtime")
 				with (user_directory / "star.p").open("wb") as file:
-					pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+					pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 			else:
 				logging.info("Dev mode, skip auto saving playtime")
 		except PermissionError:
 			logging.exception("Permission error encountered while writing database")
-			show_message(_("Permission error encountered while writing database"), "error")
+			tauon.show_message(_("Permission error encountered while writing database"), "error")
 		except Exception:
 			logging.exception("Unknown error encountered while writing database")
 		time_last_save = pctl.total_playtime
 
 	# Always render at least one frame per minute (to avoid SDL bugs I guess)
-	if min_render_timer.get() > 60:
-		min_render_timer.set()
+	if tauon.min_render_timer.get() > 60:
+		tauon.min_render_timer.set()
 		gui.pl_update = 1
 		gui.update += 1
 
@@ -60075,12 +60075,12 @@ if tauon.spot_ctl.playing:
 	tauon.spot_ctl.control("stop")
 
 # Send scrobble if pending
-if lfm_scrobbler.queue and not lfm_scrobbler.running:
-	lfm_scrobbler.start_queue()
+if tauon.lfm_scrobbler.queue and not tauon.lfm_scrobbler.running:
+	tauon.lfm_scrobbler.start_queue()
 	logging.info("Sending scrobble before close...")
 
 if gui.mode < 3:
-	old_window_position = get_window_position()
+	tauon.old_window_position = get_window_position(t_window)
 
 
 sdl3.SDL_DestroyTexture(gui.main_texture)
@@ -60089,7 +60089,7 @@ sdl3.SDL_DestroyTexture(gui.spec2_tex)
 sdl3.SDL_DestroyTexture(gui.spec1_tex)
 sdl3.SDL_DestroyTexture(gui.spec_level_tex)
 ddt.clear_text_cache()
-clear_img_cache(False)
+tauon.clear_img_cache(False)
 
 sdl3.SDL_DestroyWindow(t_window)
 
@@ -60100,21 +60100,21 @@ if prefs.reload_play_state and pctl.playing_state in (1, 2):
 	logging.info("Saving play state...")
 	prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 
-if should_save_state:
+if bag.should_save_state:
 	with (user_directory / "star.p").open("wb") as file:
-		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+		pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 	with (user_directory / "album-star.p").open("wb") as file:
-		pickle.dump(album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+		pickle.dump(tauon.album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
-save_state()
+gui.gallery_positions[pctl.pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
+tauon.save_state()
 
 date = datetime.date.today()
-if should_save_state:
+if bag.should_save_state:
 	with (user_directory / "star.p.backup").open("wb") as file:
-		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-	with (user_directory / f"star.p.backup{str(date.month)}").open("wb") as file:
-		pickle.dump(star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+		pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+	with (user_directory / f"star.p.backup{date.month!s}").open("wb") as file:
+		pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 if tauon.stream_proxy and tauon.stream_proxy.download_running:
 	logging.info("Stopping stream...")
@@ -60138,13 +60138,13 @@ if tauon.radio_server is not None:
 	except Exception:
 		logging.exception("Failed to close radio server")
 
-if system == "Windows" or msys:
+if sys.platform == "win32":
 	tray.stop()
 	if smtc:
-		sm.unload()
-elif de_notify_support:
+		tauon.sm.unload()
+elif tauon.de_notify_support:
 	try:
-		song_notification.close()
+		tauon.song_notification.close()
 		g_tc_notify.close()
 		Notify.uninit()
 	except Exception:
@@ -60171,9 +60171,9 @@ if not tauon.quick_close:
 			logging.warning("Phazor unload timeout")
 			break
 
-	while lfm_scrobbler.running:
+	while tauon.lfm_scrobbler.running:
 		time.sleep(0.2)
-		lfm_scrobbler.running = False
+		tauon.lfm_scrobbler.running = False
 		if exit_timer.get() > 15:
 			logging.warning("Scrobble wait timeout")
 			break
