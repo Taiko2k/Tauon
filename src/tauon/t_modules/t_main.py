@@ -649,6 +649,8 @@ class GuiVar:
 		self.force_side_on_drag = False
 		self.last_left_panel_mode = "playlist"
 		self.showing_l_panel = False
+		self.l_panel_h: int = 0
+		self.l_panel_y: int = 0
 
 		self.downloading_bass = False
 		self.d_click_ref = -1
@@ -1434,9 +1436,9 @@ class TrackClass:
 		self.lyrics:       str = ""
 		self.synced:       str = ""
 
-		self.lfm_friend_likes = set()
+		self.lfm_friend_likes   = set()
 		self.lfm_scrobbles: int = 0
-		self.misc: list = {}
+		self.misc:         dict = {}
 
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
@@ -1528,7 +1530,7 @@ class PlayerCtl:
 		self.install_directory         = self.bag.dirs.install_directory
 		self.loading_in_progress: bool = False
 		self.taskbar_progress:    bool = True
-		#self.album_dex                 = self.tauon.album_dex
+		self.album_dex                 = self.tauon.album_dex
 
 		self.cargo: list[int]          = []
 		# Database
@@ -2936,7 +2938,7 @@ class PlayerCtl:
 		if not fast:
 			for playlist in self.multi_playlist:
 				while track_id in playlist.playlist_ids:
-					album_dex.clear()
+					self.album_dex.clear()
 					playlist.playlist_ids.remove(track_id)
 		# Stop if track is playing track
 		if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
@@ -3658,8 +3660,8 @@ class PlayerCtl:
 		elif self.prefs.auto_goto_playing:
 			self.show_current(quiet=quiet, this_only=True, playing=False, highlight=True, no_switch=True)
 
-		# if album_mode:
-		#	 goto_album(self.playlist_playing)
+		# if self.prefs.album_mode:
+		#	 self.tauon.goto_album(self.playlist_playing)
 
 		self.render_playlist()
 
@@ -3861,7 +3863,7 @@ class LastFMapi:
 				artist = artist.lower()
 				title = title.lower()
 
-				for track in pctl.master_library.values():
+				for track in self.pctl.master_library.values():
 					t_artist = track.artist.lower()
 					artists = [x.lower() for x in get_split_artists(track)]
 					if t_artist == artist or artist in artists or (
@@ -3874,7 +3876,7 @@ class LastFMapi:
 								touched.append(track.index)
 		except Exception:
 			logging.exception("Scanning failed. Try again?")
-			gui.pl_update += 1
+			self.gui.pl_update += 1
 			self.scanning_scrobbles = False
 			show_message(_("Scanning failed. Try again?"), mode="error")
 			return
@@ -3886,10 +3888,8 @@ class LastFMapi:
 		show_message(_("Scanning scrobbles complete"), mode="done")
 
 	def artist_info(self, artist: str):
-
-		if self.lastfm_network is None:
-			if self.last_fm_only_connect() is False:
-				return False, "", ""
+		if self.lastfm_network is None and self.last_fm_only_connect() is False:
+			return False, "", ""
 
 		try:
 			if artist != "":
@@ -3908,10 +3908,8 @@ class LastFMapi:
 		return False, "", "", "", ""
 
 	def artist_mbid(self, artist: str):
-
-		if self.lastfm_network is None:
-			if self.last_fm_only_connect() is False:
-				return ""
+		if self.lastfm_network is None and self.last_fm_only_connect() is False:
+			return ""
 
 		try:
 			if artist != "":
@@ -3926,11 +3924,11 @@ class LastFMapi:
 		return ""
 
 	def sync_pull_love(self, track_object: TrackClass) -> None:
-		if not prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
+		if not self.prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
 			return
-		if not last_fm_enable:
+		if not self.last_fm_enable:
 			return
-		if prefs.auto_lfm:
+		if self.prefs.auto_lfm:
 			self.connect(False)
 		if not self.connected:
 			return
@@ -3940,7 +3938,7 @@ class LastFMapi:
 			if not track:
 				logging.error("Get love: track not found")
 				return
-			track.username = prefs.last_fm_username
+			track.username = self.prefs.last_fm_username
 
 			remote_loved = track.get_userloved()
 
@@ -4350,17 +4348,16 @@ class ListenBrainz:
 		else:
 			self.show_message(_("That is not a valid token."), mode="error")
 
-	def clear_key(self):
-
-		prefs.lb_token = ""
+	def clear_key(self) -> None:
+		self.prefs.lb_token = ""
 		save_prefs()
 		self.enable = False
 
 class LastScrob:
 
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
-		self.tauon   = tauon
 		self.pctl    = pctl
+		self.tauon   = tauon
 		self.lb      = tauon.lb
 		self.gui     = tauon.gui
 		self.prefs   = tauon.prefs
@@ -4464,12 +4461,11 @@ class LastScrob:
 		if send_full:
 			self.scrob_full_track(self.pctl.master_library[self.a_index])
 
-	def listen_track(self, track_object: TrackClass):
+	def listen_track(self, track_object: TrackClass) -> None:
 		# logging.info("LISTEN")
 
-		if track_object.is_network:
-			if track_object.file_ext == "SUB":
-				subsonic.listen(track_object, submit=False)
+		if track_object.is_network and track_object.file_ext == "SUB":
+			self.tauon.subsonic.listen(track_object, submit=False)
 
 		if not prefs.scrobble_hold:
 			if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
@@ -4477,15 +4473,15 @@ class LastScrob:
 				mini_t.daemon = True
 				mini_t.start()
 
-			if lb.enable:
-				mini_t = threading.Thread(target=lb.listen_playing, args=([track_object]))
+			if self.lb.enable:
+				mini_t = threading.Thread(target=self.lb.listen_playing, args=([track_object]))
 				mini_t.daemon = True
 				mini_t.start()
 
-	def scrob_full_track(self, track_object: TrackClass):
+	def scrob_full_track(self, track_object: TrackClass) -> None:
 		# logging.info("SCROBBLE")
 		track_object.lfm_scrobbles += 1
-		gui.pl_update += 1
+		self.gui.pl_update += 1
 
 		if track_object.is_network:
 			if track_object.file_ext == "SUB":
@@ -4493,17 +4489,17 @@ class LastScrob:
 			if track_object.file_ext == "KOEL":
 				self.queue.append((track_object, int(time.time()), "koel"))
 
-		if not prefs.scrobble_hold:
-			if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
+		if not self.prefs.scrobble_hold:
+			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
 				self.queue.append((track_object, int(time.time()), "lfm"))
-			if lb.enable:
+			if self.lb.enable:
 				self.queue.append((track_object, int(time.time()), "lb"))
-			if prefs.maloja_url and prefs.maloja_enable:
+			if self.prefs.maloja_url and self.prefs.maloja_enable:
 				self.queue.append((track_object, int(time.time()), "maloja"))
 
 class Strings:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.spotify_likes = _("Spotify Likes")
 		self.spotify_albums = _("Spotify Albums")
 		self.spotify_un_liked = _("Track removed from liked tracks")
@@ -4535,7 +4531,7 @@ class Strings:
 
 class Chunker:
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.master_count = 0
 		self.chunks = {}
 		self.header = None
@@ -4546,7 +4542,7 @@ class Chunker:
 
 class MenuIcon:
 
-	def __init__(self, asset):
+	def __init__(self, asset) -> None:
 		self.asset = asset
 		self.colour = [170, 170, 170, 255]
 		self.base_asset = None
@@ -4575,9 +4571,9 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
-		pass_ref_deco=False, disable_test=None, set_ref=None, is_sub_menu=False, args=None, sub_menu_number=None, sub_menu_width=0,
-	):
+		self, title: str, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
+		pass_ref_deco: bool = False, disable_test=None, set_ref=None, is_sub_menu: bool = False, args=None, sub_menu_number=None, sub_menu_width: int = 0,
+	) -> None:
 		self.title = title
 		self.is_sub_menu = is_sub_menu
 		self.func = func
@@ -4709,11 +4705,8 @@ class Menu:
 			menu_item.render_func = self.deco
 		self.subs[sub_menu_index].append(menu_item)
 
-	def test_item_active(self, item):
-		if item.show_test is not None:
-			if item.show_test(1) is False:
-				return False
-		return True
+	def test_item_active(self, item) -> bool:
+		return not (item.show_test is not None and item.show_test(1) is False)
 
 	def is_item_disabled(self, item):
 		if item.disable_test is not None:
@@ -5018,7 +5011,11 @@ class Menu:
 						# ddt.rect_a(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
 
 			# Process Click Actions
-			if to_call is not None:
+			if to_call is not None and not self.is_item_disabled(self.items[to_call]):
+				if self.items[to_call].pass_ref:
+					self.items[to_call].func(self.reference)
+				else:
+					self.items[to_call].func()
 
 				if not self.is_item_disabled(self.items[to_call]):
 					if self.items[to_call].pass_ref:
@@ -5043,11 +5040,11 @@ class Menu:
 				# Render the menu outline
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
-	def activate(self, in_reference=0, position=None):
+	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
 
 		Menu.active = True
 
-		if position != None:
+		if position is not None:
 			self.pos = [position[0], position[1]]
 		else:
 			self.pos = [copy.deepcopy(mouse_position[0]), copy.deepcopy(mouse_position[1])]
@@ -5090,12 +5087,12 @@ class GallClass:
 		self.renderer             = tauon.renderer
 		self.ddt                  = tauon.ddt
 		self.quickthumbnail       = tauon.quickthumbnail
-#		self.folder_image_offsets = tauon.folder_image_offsets
-#		self.g_cache_directory    = tauon.g_cache_directory
+		self.folder_image_offsets = tauon.folder_image_offsets
+		self.g_cache_directory    = tauon.g_cache_directory
 		self.gui                  = tauon.gui
 		self.prefs                = tauon.prefs
-#		self.search_over          = tauon.search_over
-#		self.album_art_gen        = tauon.album_art_gen
+		self.search_over          = tauon.search_over
+		self.album_art_gen        = tauon.album_art_gen
 		self.gall                 = {}
 		self.size                 = size
 		self.queue                = []
@@ -5121,7 +5118,7 @@ class GallClass:
 		self.lock.acquire()
 		# time.sleep(0.1)
 
-		if search_over.active:
+		if self.search_over.active:
 			while self.quickthumbnail.queue:
 				img = self.quickthumbnail.queue.pop(0)
 				response = urllib.request.urlopen(img.url, context=self.tls_context)
@@ -5161,11 +5158,11 @@ class GallClass:
 				if True:
 					offset = 0
 					parent_folder = key[0].parent_folder_path
-					if parent_folder in folder_image_offsets:
-						offset = folder_image_offsets[parent_folder]
+					if parent_folder in self.folder_image_offsets:
+						offset = self.folder_image_offsets[parent_folder]
 					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
-					if prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
-						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
+					if self.prefs.cache_gallery and os.path.isfile(os.path.join(self.g_cache_directory, img_name + ".jpg")):
+						source_image = open(os.path.join(self.g_cache_directory, img_name + ".jpg"), "rb")
 						# logging.info('load from cache')
 						cache_load = True
 					else:
@@ -5185,18 +5182,18 @@ class GallClass:
 
 					# gall_render_last_timer.set()
 
-					if self.prefs.cache_gallery and os.path.isfile(os.path.join(g_cache_dir, img_name + ".jpg")):
-						source_image = open(os.path.join(g_cache_dir, img_name + ".jpg"), "rb")
+					if self.prefs.cache_gallery and os.path.isfile(os.path.join(self.g_cache_directory, img_name + ".jpg")):
+						source_image = open(os.path.join(self.g_cache_directory, img_name + ".jpg"), "rb")
 						logging.info("slow load image")
 						cache_load = True
 
 					# elif source[0] == 1:
 					#	 #logging.info('tag')
-					#	 source_image = io.BytesIO(album_art_gen.get_embed(key[0]))
+					#	 source_image = io.BytesIO(self.album_art_gen.get_embed(key[0]))
 					#
 					# elif source[0] == 2:
 					#	 try:
-					#		 url = get_network_thumbnail_url(key[0])
+					#		 url = tauon.get_network_thumbnail_url(key[0])
 					#		 response = urllib.request.urlopen(url)
 					#		 source_image = response
 					#	 except Exception:
@@ -5227,8 +5224,8 @@ class GallClass:
 					im.save(g, "BMP")
 
 					if not error and self.save_out and self.prefs.cache_gallery and not os.path.isfile(
-							os.path.join(g_cache_dir, img_name + ".jpg")):
-						im.save(os.path.join(g_cache_dir, img_name + ".jpg"), "JPEG", quality=95)
+							os.path.join(self.g_cache_directory, img_name + ".jpg")):
+						im.save(os.path.join(self.g_cache_directory, img_name + ".jpg"), "JPEG", quality=95)
 
 				g.seek(0)
 
@@ -5246,7 +5243,7 @@ class GallClass:
 				time.sleep(0.001)
 
 			except Exception:
-				logging.exception("Image load failed on track: " + key[0].fullpath)
+				logging.exception(f"Image load failed on track: {key[0].fullpath}")
 				order = [0, None, None, None]
 				self.gall[key] = order
 				self.gui.update += 1
@@ -5260,7 +5257,7 @@ class GallClass:
 			return True
 		return False
 
-	def render(self, track: TrackClass, location, size=None, force_offset=None) -> bool | None:
+	def render(self, track: TrackClass, location, size: int | None = None, force_offset=None) -> bool | None:
 		if gallery_load_delay.get() < 0.5:
 			return None
 
@@ -5274,8 +5271,8 @@ class GallClass:
 		size = round(size)
 
 		# offset = self.get_offset(pctl.master_library[index].fullpath, self.get_sources(index))
-		if track.parent_folder_path in folder_image_offsets:
-			offset = folder_image_offsets[track.parent_folder_path]
+		if track.parent_folder_path in self.folder_image_offsets:
+			offset = self.folder_image_offsets[track.parent_folder_path]
 		else:
 			offset = 0
 
@@ -5343,19 +5340,18 @@ class GallClass:
 					del self.key_list[0]
 
 				return True
-		else:
-			if key not in self.queue:
-				self.queue.append(key)
-				if self.lock.locked():
-					try:
-						self.lock.release()
-					except RuntimeError as e:
-						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked lock")
-						else:
-							logging.exception("Unknown RuntimeError trying to release lock")
-					except Exception:
-						logging.exception("Unknown error trying to release lock")
+		elif key not in self.queue:
+			self.queue.append(key)
+			if self.lock.locked():
+				try:
+					self.lock.release()
+				except RuntimeError as e:
+					if str(e) == "release unlocked lock":
+						logging.error("RuntimeError: Attempted to release already unlocked lock")
+					else:
+						logging.exception("Unknown RuntimeError trying to release lock")
+				except Exception:
+					logging.exception("Unknown error trying to release lock")
 
 		return False
 
@@ -5376,8 +5372,7 @@ class ThumbTracks:
 				im.thumbnail((512, 512), Image.Resampling.LANCZOS)
 				width, height = im.size
 				data = im.tobytes()
-			pixbuf = GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 3)
-			return pixbuf
+			return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 3)
 		except:
 			logging.exception("Error create pixbuf of album art")
 			return None
@@ -19305,6 +19300,7 @@ class TimedLyricsRen:
 		return None
 
 class TextBox2:
+	# TODO(Martin): Global class var!
 	cursor = True
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -19324,13 +19320,11 @@ class TextBox2:
 		self.paste_text = ""
 
 	def paste(self) -> None:
-
 		if sdl3.SDL_HasClipboardText():
 			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
 			self.paste_text = clip
 
 	def copy(self) -> None:
-
 		text = self.get_selection()
 		if not text:
 			text = self.text
@@ -19338,7 +19332,6 @@ class TextBox2:
 			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 
 	def set_text(self, text: str) -> None:
-
 		self.text = text
 		if self.cursor_position > len(text):
 			self.cursor_position = 0
@@ -19352,7 +19345,6 @@ class TextBox2:
 		self.selection = self.cursor_position
 
 	def highlight_all(self) -> None:
-
 		self.selection = len(self.text)
 		self.cursor_position = 0
 
@@ -19365,7 +19357,7 @@ class TextBox2:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
 				self.cursor_position = self.selection
 
-	def get_selection(self, p: int = 1) -> str:
+	def get_selection(self, p: int = 1) -> str | None:
 		if self.selection != self.cursor_position:
 			if p == 1:
 				if self.selection > self.cursor_position:
@@ -19376,28 +19368,26 @@ class TextBox2:
 				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
 			if p == 2:
 				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
-
-		else:
-			return ""
+			return None
+		return ""
 
 	def draw(
-			self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False):
+			self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False) -> None:
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
+		sdl3.SDL_SetRenderTarget(self.renderer, self.tauon.text_box_canvas)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
 
-		sdl3.SDL_SetRenderTarget(renderer, text_box_canvas)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		self.tauon.text_box_canvas_rect.x = 0
+		self.tauon.text_box_canvas_rect.y = 0
+		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_rect)
 
-		text_box_canvas_rect.x = 0
-		text_box_canvas_rect.y = 0
-		sdl3.SDL_RenderFillRect(renderer, text_box_canvas_rect)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-
-		selection_height *= gui.scale
+		selection_height *= self.gui.scale
 
 		if click is False:
 			click = inp.mouse_click
