@@ -38717,7 +38717,7 @@ def visit_radio_site(station: RadioStation) -> None:
 def visit_radio_station(item: tuple[int, RadioStation]) -> None:
 	visit_radio_site(item[1])
 
-def window_is_focused(t_window) -> bool:
+def window_is_focused(t_window: sdl3.LP_SDL_Window) -> bool:
 	"""Thread safe?"""
 	return bool(sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
 
