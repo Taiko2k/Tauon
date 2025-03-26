@@ -217,8 +217,6 @@ except Exception:
 if sys.platform == "linux":
 	from tauon.t_modules import t_topchart
 	from tauon.t_modules.t_dbus import Gnome
-
-if sys.platform not in ("win32", "darwin"):
 	import gi
 	try:
 		gi.require_version("Notify", "0.7")
@@ -4207,11 +4205,11 @@ class ListenBrainz:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.bag          = tauon.bag
+		self.prefs        = tauon.prefs
 		self.t_title      = tauon.t_title
 		self.n_version    = tauon.n_version
-		self.prefs        = tauon.prefs
-		self.enable       = tauon.prefs.enable_lb
 		self.show_message = tauon.show_message
+		self.enable       = tauon.prefs.enable_lb
 		# self.url = "https://api.listenbrainz.org/1/submit-listens"
 
 	def url(self) -> str:
@@ -4353,12 +4351,12 @@ class ListenBrainz:
 class LastScrob:
 
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.pctl    = pctl
 		self.tauon   = tauon
 		self.lb      = tauon.lb
-		self.lastfm  = pctl.lastfm
 		self.gui     = tauon.gui
-		self.pctl    = pctl
 		self.prefs   = tauon.prefs
+		self.lastfm  = pctl.lastfm
 		self.a_index = -1
 		self.a_sc    = False
 		self.a_pt    = False
@@ -4589,8 +4587,8 @@ class MenuItem:
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
-		self.prefs = tauon.prefs
 		self.tauon = tauon
+		self.prefs = tauon.prefs
 		self.worker1:  threading.Thread | None = None  # Artist list, download monitor, folder move, importing, db cleaning, transcoding
 		self.worker2:  threading.Thread | None = None  # Art bg, search
 		self.worker3:  threading.Thread | None = None  # Gallery rendering
@@ -4631,10 +4629,10 @@ class Menu:
 	active = False
 
 	def rescale(self) -> None:
-		self.vertical_size = round(self.base_v_size * self.tauon.gui.scale)
+		self.vertical_size = round(self.base_v_size * self.gui.scale)
 		self.h = self.vertical_size
-		self.w = self.request_width * self.tauon.gui.scale
-		if self.tauon.gui.scale == 2:
+		self.w = self.request_width * self.gui.scale
+		if self.gui.scale == 2:
 			self.w += 15
 
 	def __init__(self, tauon: Tauon, width: int, show_icons: bool = False) -> None:
@@ -4859,7 +4857,7 @@ class Menu:
 							to_call = i
 							if self.items[i].set_ref is not None:
 								self.reference = self.items[i].set_ref
-							self.tauon.gui.inp.mouse_down = False
+							self.inp.mouse_down = False
 
 						else:
 							self.clicked = False
@@ -5012,6 +5010,12 @@ class Menu:
 				else:
 					self.items[to_call].func()
 
+				if not self.is_item_disabled(self.items[to_call]):
+					if self.items[to_call].pass_ref:
+						self.items[to_call].func(self.reference)
+					else:
+						self.items[to_call].func()
+
 			if self.clicked or inp.key_esc_press or self.close_next_frame:
 				self.close_next_frame = False
 				self.active = False
@@ -5030,14 +5034,12 @@ class Menu:
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
 	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
-		inp = self.inp
-
 		Menu.active = True
 
 		if position is not None:
 			self.pos = [position[0], position[1]]
 		else:
-			self.pos = [copy.deepcopy(inp.mouse_position[0]), copy.deepcopy(inp.mouse_position[1])]
+			self.pos = [copy.deepcopy(self.inp.mouse_position[0]), copy.deepcopy(self.inp.mouse_position[1])]
 
 		self.reference = in_reference
 		Menu.switch = self.id
@@ -5334,7 +5336,7 @@ class GallClass:
 					self.lock.release()
 				except RuntimeError as e:
 					if str(e) == "release unlocked lock":
-						logging.exception("RuntimeError: Attempted to release already unlocked lock")
+						logging.error("RuntimeError: Attempted to release already unlocked lock")
 					else:
 						logging.exception("Unknown RuntimeError trying to release lock")
 				except Exception:
@@ -38766,7 +38768,7 @@ def main(holder: Holder) -> None:
 
 	last_fm_enable = is_module_loaded("pylast")
 
-	if not windows_native:
+	if sys.platform == "win32" and msys:
 		font_folder = str(install_directory / "fonts")
 		if os.path.isdir(font_folder):
 			logging.info(f"Fonts directory:           {font_folder}")
@@ -38822,6 +38824,9 @@ def main(holder: Holder) -> None:
 	else:
 		system = "Linux"
 		import fcntl
+		# TODO(Martin): why can't the import be called on top
+		import gi
+		from gi.repository import GLib
 
 	if sys.platform == "darwin":
 		macos = True
