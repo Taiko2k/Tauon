@@ -11323,6 +11323,8 @@ class Tauon:
 				if len(album) == 1:
 					album += " "
 
+				end_time = start_time + tr.length
+
 				if state == 1:
 					#logging.info("PLAYING: " + title)
 					#logging.info(start_time)
@@ -11334,16 +11336,19 @@ class Tauon:
 						large_image = url
 						small_image = "tauon-standard"
 					RPC.update(
+						activity_type = ActivityType.LISTENING,
 						pid=pid,
 						state=album,
 						details=title,
 						start=int(start_time),
+						end=int(end_time),
 						large_image=large_image,
 						small_image=small_image)
 
 				else:
 					#logging.info("Discord RPC - Stop")
 					RPC.update(
+						activity_type = ActivityType.LISTENING,
 						pid=pid,
 						state="Idle",
 						large_image="tauon-standard")
@@ -23836,7 +23841,7 @@ class Over:
 					self.show_message(_("Sorry, this feature is unavailable with snap"), mode="error")
 					prefs.discord_enable = False
 				elif not self.prefs.discord_allow:
-					self.show_message(_("Missing dependency python-pypresence"))
+					self.show_message(_("Missing dependency python-lynxpresence"))
 					prefs.discord_enable = False
 				else:
 					tauon.hit_discord()
@@ -25342,10 +25347,10 @@ class Over:
 				xxx, y, "https://github.com/avian2/unidecode", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
-			ddt.text((x, y), "pypresence", colours.box_sub_text, font)
+			ddt.text((x, y), "lynxpresence", colours.box_sub_text, font)
 			ddt.text((xx, y), "MIT", colours.box_text_label, font)
 			self.tauon.draw_linked_text2(
-				xxx, y, "https://github.com/qwertyquerty/pypresence", colours.box_sub_text, font, click=self.click, replace="github")
+				xxx, y, "https://github.com/C0rn3j/lynxpresence", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
 			ddt.text((x, y), "musicbrainzngs", colours.box_sub_text, font)
@@ -38778,11 +38783,11 @@ def main(holder: Holder) -> None:
 
 	discord_allow = False
 	try:
-		from pypresence import Presence
+		from lynxpresence import Presence, ActivityType
 	except ModuleNotFoundError:
-		logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
+		logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
 	except Exception:
-		logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
+		logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
 	else:
 		import asyncio
 		discord_allow = True
