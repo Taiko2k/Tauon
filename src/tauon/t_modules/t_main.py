@@ -11720,9 +11720,9 @@ class Tauon:
 	def toggle_artist_list_threshold_deco(self):
 		if self.prefs.artist_list_threshold == 0:
 			return [self.colours.menu_text, self.colours.menu_background, _("Filter Small Artists")]
-		save = self.artist_list_box.saves.get(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int)
-		if save and save[5] == 0:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, _("Include All Artists")]
+		# save = self.artist_list_box.saves.get(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int)
+		# if save and save[5] == 0:
+		# 	return [self.colours.menu_text_disabled, self.colours.menu_background, _("Include All Artists")]
 		return [self.colours.menu_text, self.colours.menu_background, _("Include All Artists")]
 
 	def verify_discogs(self) -> bool:
@@ -32243,9 +32243,9 @@ class ArtistList:
 			else:
 				album_count = len(self.current_album_counts[artist])
 				if album_count > 1:
-					text = _("{N} tracks").format(N=str(album_count))
+					text = _("{N} albums").format(N=str(album_count))
 				else:
-					text = _("{N} track").format(N=str(album_count))
+					text = _("{N} album").format(N=str(album_count))
 
 			if self.gui.preview_artist_loading == artist:
 				# . Max 20 chars. Alt: Downloading image, Loading image
