@@ -9,13 +9,14 @@ Changelog
  - **Added** Lyric provider "LRCLIB" including synced lyrics
  - **Added** Theme Charmed as built in
  - **Fixed** Mini mode always on top not working on Wayland
+ - **Improved** Support for Discord RPC to show listening activity
  - **Fixed** Drag and drop feedback when dragging external file
  - **Fixed** Various crash and other bugs
  - **Tweaked** Shuffle lockdown shortcut added to main menu
  - **Tweaked** Theme Ash colours
  - **Tweaked** Developer radio pics to be non-hidden
  - **Restored** guitar chords, including support for new guitarchords.com API
- 
+
 
 ### v7.9.0
 
