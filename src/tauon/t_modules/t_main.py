@@ -30333,9 +30333,9 @@ class RadioBox:
 		self.edit_mode = True
 		self.add_mode = False
 		self.radio_field_active = 1
-		self.radio_field        = TextBox2(tauon=tauon)
-		self.radio_field_title  = TextBox2(tauon=tauon)
-		self.radio_field_search = TextBox2(tauon=tauon)
+		self.radio_field        = TextBox2(tauon)
+		self.radio_field_title  = TextBox2(tauon)
+		self.radio_field_search = TextBox2(tauon)
 
 		self.x = 1
 		self.y = 1
