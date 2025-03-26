@@ -692,6 +692,8 @@ class GuiVar:
 		self.force_side_on_drag = False
 		self.last_left_panel_mode = "playlist"
 		self.showing_l_panel = False
+		self.l_panel_h: int = 0
+		self.l_panel_y: int = 0
 
 		self.downloading_bass = False
 		self.d_click_ref = -1
@@ -19220,9 +19222,11 @@ class TimedLyricsRen:
 		highlight = True
 
 		if side_panel:
-			bg = self.colours.top_panel_background
+			bg = self.colours.side_panel_background
+			bg = (bg[0],bg[1], bg[2], 255)
 			font_size = 15
 			spacing = round(17 * self.gui.scale)
+			self.ddt.rect((self.window_size[0] - self.gui.rspw, self.gui.panelY, self.gui.rspw, self.window_size[1] - self.gui.panelY - self.gui.panelBY - self.gui.l_panel_h), bg)
 		else:
 			bg = self.colours.playlist_panel_background
 			font_size = 17
@@ -44366,23 +44370,23 @@ def main(holder: Holder) -> None:
 						if prefs.show_lyrics_side and prefs.prefer_synced_lyrics and target_track is not None and tauon.timed_lyrics_ren.generate(
 								target_track):
 							if prefs.show_side_lyrics_art_panel:
-								l_panel_h = round(200 * gui.scale)
-								l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+								gui.l_panel_h = round(200 * gui.scale)
+								gui.l_panel_y = window_size[1] - (gui.panelBY + gui.l_panel_h)
 								gui.showing_l_panel = True
 
 								if not prefs.lyric_metadata_panel_top:
 									tauon.timed_lyrics_ren.render(
 										target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
 										gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
-										h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
-									meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+										h=window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h)
+									meta_box.l_panel(window_size[0] - gui.rspw, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track)
 								else:
 									tauon.timed_lyrics_ren.render(
 										target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-										gui.panelY + 25 * gui.scale + l_panel_h, side_panel=True,
+										gui.panelY + 25 * gui.scale + gui.l_panel_h, side_panel=True,
 										w=gui.rspw,
-										h=window_size[1] - gui.panelY - gui.panelBY - l_panel_h)
-									meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h, target_track)
+										h=window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h)
+									meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, gui.l_panel_h, target_track)
 							else:
 								tauon.timed_lyrics_ren.render(
 									target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
@@ -44394,22 +44398,22 @@ def main(holder: Holder) -> None:
 									center_info_menu.activate(target_track)
 						elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
 							if prefs.show_side_lyrics_art_panel:
-								l_panel_h = round(200 * gui.scale)
-								l_panel_y = window_size[1] - (gui.panelBY + l_panel_h)
+								gui.l_panel_h = round(200 * gui.scale)
+								gui.l_panel_y = window_size[1] - (gui.panelBY + gui.l_panel_h)
 								gui.showing_l_panel = True
 
 								if not prefs.lyric_metadata_panel_top:
 									meta_box.lyrics(
 										window_size[0] - gui.rspw, gui.panelY, gui.rspw,
-										window_size[1] - gui.panelY - gui.panelBY - l_panel_h, target_track)
-									meta_box.l_panel(window_size[0] - gui.rspw, l_panel_y, gui.rspw, l_panel_h, target_track)
+										window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h, target_track)
+									meta_box.l_panel(window_size[0] - gui.rspw, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track)
 								else:
 									meta_box.lyrics(
-										window_size[0] - gui.rspw, gui.panelY + l_panel_h, gui.rspw,
-										window_size[1] - (gui.panelY + gui.panelBY + l_panel_h), target_track)
+										window_size[0] - gui.rspw, gui.panelY + gui.l_panel_h, gui.rspw,
+										window_size[1] - (gui.panelY + gui.panelBY + gui.l_panel_h), target_track)
 
 									meta_box.l_panel(
-										window_size[0] - gui.rspw, gui.panelY, gui.rspw, l_panel_h,
+										window_size[0] - gui.rspw, gui.panelY, gui.rspw, gui.l_panel_h,
 										target_track, top_border=False)
 							else:
 								meta_box.lyrics(
