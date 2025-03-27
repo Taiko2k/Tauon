@@ -42,7 +42,7 @@ class Chrome:
 
 		if True: #not self.services:
 			try:
-				#self.tauon.gui.show_message(self.tauon.strings.scan_chrome)
+				#self.tauon.show_message(self.tauon.strings.scan_chrome)
 				services, browser = pychromecast.discovery.discover_chromecasts()
 				browser.stop_discovery()
 				menu = self.tauon.chrome_menu

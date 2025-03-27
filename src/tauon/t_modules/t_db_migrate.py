@@ -3,18 +3,18 @@ from __future__ import annotations
 
 import copy
 import logging
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, TauonPlaylist, TauonQueueItem
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, TrackClass
+	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, Tauon, TrackClass
 
 
 def database_migrate(
 	*,
+	tauon: Tauon,
 	db_version: float,
 	master_library: dict[int, TrackClass],
 	install_mode: bool,
@@ -46,7 +46,8 @@ def database_migrate(
 	Returns all the objects that could've been possibly changed:
 		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
 	"""
-	from tauon.t_modules.t_main import show_message, uid_gen
+	from tauon.t_modules.t_main import uid_gen
+	show_message = tauon.show_message
 
 	if db_version <= 0:
 		logging.error("Called database_migrate with db_version equal to or below 0!")
@@ -296,7 +297,7 @@ def database_migrate(
 			f.close()
 			lines = text.splitlines()
 
-			f = Pth(config_directory / "input.txt").open("w")
+			f = Path(config_directory / "input.txt").open("w")
 			for line in lines:
 				line = line.strip()
 				if "rename-playlist" in line:
