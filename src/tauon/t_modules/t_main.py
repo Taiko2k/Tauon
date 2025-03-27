@@ -37145,7 +37145,7 @@ def notify_song(notify_of_end: bool = False, delay: float = 0.0) -> None:
 	if notify_of_end and prefs.end_setting != "stop":
 		return
 
-	if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused():
+	if prefs.show_notifications and pctl.playing_object() is not None and not window_is_focused(t_window):
 		if prefs.stop_notifications_mini_mode and gui.mode == 3:
 			return
 
@@ -55543,7 +55543,7 @@ while pctl.running:
 				window_size[0] = i_x.contents.value
 				window_size[1] = i_y.contents.value
 				auto_scale(bag)
-				update_layout = True
+				gui.update_layout = True
 				gui.update = 2
 			elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
 				# sdl3.SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
