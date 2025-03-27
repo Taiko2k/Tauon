@@ -52479,6 +52479,10 @@ key_meta        = inp.key_meta
 key_ralt        = inp.key_ralt
 key_lalt        = inp.key_lalt
 
+d_mouse_click       = inp.d_mouse_click
+right_click         = inp.right_click
+level_2_right_click = inp.level_2_right_click
+middle_click        = inp.middle_click
 mouse_up            = inp.mouse_up
 mouse_wheel         = inp.mouse_wheel
 key_down_press      = inp.key_down_press
@@ -52532,6 +52536,7 @@ editline = gui.editline
 quick_drag = inp.quick_drag
 quick_search_mode = gui.quick_search_mode
 search_index = gui.search_index
+new_playlist_cooldown = gui.new_playlist_cooldown
 
 # Playlist Panel
 scroll_timer = Timer() # TODO(Martin): Move
