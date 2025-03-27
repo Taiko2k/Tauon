@@ -5017,12 +5017,6 @@ class Menu:
 				else:
 					self.items[to_call].func()
 
-				if not self.is_item_disabled(self.items[to_call]):
-					if self.items[to_call].pass_ref:
-						self.items[to_call].func(self.reference)
-					else:
-						self.items[to_call].func()
-
 			if self.clicked or key_esc_press or self.close_next_frame:
 				self.close_next_frame = False
 				self.active = False
@@ -23273,7 +23267,7 @@ class Over:
 		border = round(4 * gui.scale)
 		outer_border = round(2 * gui.scale)
 
-		# theme_files = get_themes()
+		# theme_files = get_themes(dirs)
 		xx = x
 		yy = y
 		hover_name = None
@@ -25077,7 +25071,7 @@ class Over:
 		theme -= 1
 		gui.reload_theme = True
 		if theme < 0:
-			theme = len(get_themes())
+			theme = len(get_themes(self.dirs))
 
 	def config_b(self, x0, y0, w0, h0):
 
@@ -25204,7 +25198,7 @@ class Over:
 		if mode == 1:
 			return prefs.x_scale
 		prefs.x_scale ^= True
-		auto_scale()
+		auto_scale(self.bag)
 		gui.update_layout()
 
 	def about(self, x0, y0, w0, h0):
@@ -43670,7 +43664,7 @@ def editor(index: int | None) -> None:
 	prefix = launch_prefix
 
 	if system == "Linux":
-		ok = whicher(prefs.tag_editor_target)
+		ok = whicher(prefs.tag_editor_target, flatpak_mode)
 	else:
 
 		if not os.path.isfile(prefs.tag_editor_target.strip('"')):
@@ -48257,7 +48251,7 @@ def hit_callback(win, point, data):
 	return sdl3.SDL_HITTEST_NORMAL
 
 def reload_scale():
-	auto_scale()
+	auto_scale(bag)
 
 	scale = prefs.scale_want
 
@@ -48265,7 +48259,7 @@ def reload_scale():
 	ddt.scale = gui.scale
 	prime_fonts()
 	ddt.clear_text_cache()
-	scale_assets(scale_want=scale, force=True)
+	scale_assets(bag=bag, gui=gui, scale_want=scale, force=True)
 	img_slide_update_gall(album_mode_art_size)
 
 	for item in WhiteModImageAsset.assets:
@@ -48300,7 +48294,7 @@ def update_layout_do():
 	if gui.theme_name != prefs.theme_name:
 		gui.reload_theme = True
 		global theme
-		theme = get_theme_number(prefs.theme_name)
+		theme = get_theme_number(dirs, prefs.theme_name)
 		#logging.info("Config reload theme...")
 
 	# Restore in case of error
@@ -49124,27 +49118,27 @@ def drop_file(target: str):
 def is_module_loaded(module_name: str) -> bool:
 	return module_name in sys.modules
 
-def get_cert_path() -> str:
-	if pyinstaller_mode:
+def get_cert_path(holder: Holder) -> str:
+	if holder.pyinstaller_mode:
 		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
 	# Running as script
 	return certifi.where()
 
-def setup_tls() -> ssl.SSLContext:
+def setup_tls(holder: Holder) -> ssl.SSLContext:
 	"""TLS setup (needed for frozen installs)
 
 	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast)
 	"""
 	# Set the TLS certificate path environment variable
-	cert_path = get_cert_path()
+	cert_path = get_cert_path(holder)
 	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ["SSL_CERT_FILE"] = cert_path
 	os.environ["REQUESTS_CA_BUNDLE"] = cert_path
 
 	# Create default TLS context
-	return ssl.create_default_context(cafile=get_cert_path())
+	return ssl.create_default_context(cafile=get_cert_path(holder))
 
-def whicher(target: str) -> bool | str | None:
+def whicher(target: str, flatpak_mode: bool) -> bool | str | None:
 	"""Detect and launch programs outside of flatpak sandbox"""
 	try:
 		if flatpak_mode:
@@ -49186,12 +49180,12 @@ def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, albu
 	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
 	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
 
-def get_themes(deco: bool = False):
-	themes = []  # full, name
-	decos = {}
-	direcs = [str(install_directory / "theme")]
-	if user_directory != install_directory:
-		direcs.append(str(user_directory / "theme"))
+def get_themes(dirs: Directories, deco: bool = False) -> list[str] | dict[str, str]:
+	themes: list[str] = []  # full, name
+	decos: dict[str, str] = {}
+	direcs = [str(dirs.install_directory / "theme")]
+	if dirs.user_directory != dirs.install_directory:
+		direcs.append(str(dirs.user_directory / "theme"))
 
 	def scan_folders(folders: list[str]) -> None:
 		for folder in folders:
@@ -49215,20 +49209,20 @@ def get_themes(deco: bool = False):
 		return decos
 	return themes
 
-def get_theme_number(name: str) -> int:
+def get_theme_number(dirs: Directories, name: str) -> int:
 	if name == "Mindaro":
 		return 0
-	themes = get_themes()
+	themes = get_themes(dirs)
 	for i, theme in enumerate(themes):
 		if theme[1] == name:
 			return i + 1
 	return 0
 
-def get_theme_name(number: int) -> str:
+def get_theme_name(dirs: Directories, number: int) -> str:
 	if number == 0:
 		return "Mindaro"
 	number -= 1
-	themes = get_themes()
+	themes = get_themes(dirs)
 	logging.info((number, themes))
 	if len(themes) > number:
 		return themes[number][1]
@@ -49247,10 +49241,10 @@ def set_path(nt: TrackClass, path: str) -> None:
 	nt.parent_folder_name = get_end_folder(os.path.dirname(path))
 	nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
-def pumper():
-	if macos:
+def pumper(bag: Bag) -> None:
+	if bag.macos:
 		return
-	while pump:
+	while bag.pump:
 		time.sleep(0.005)
 		sdl3.SDL_PumpEvents()
 
@@ -49862,10 +49856,12 @@ def load_prefs(bag: Bag) -> None:
 		"string", "chart-font", prefs.chart_font,
 		"Format is fontname + size. Default is Monospace 10")
 
-def auto_scale() -> None:
+def auto_scale(bag: Bag) -> None:
+	prefs = bag.prefs
 	old = prefs.scale_want
+
 	if prefs.x_scale:
-		prefs.scale_want = window_size[0] / logical_size[0]
+		prefs.scale_want = bag.window_size[0] / bag.logical_size[0]
 
 	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
 	if prefs.x_scale and old != prefs.scale_want:
@@ -49883,16 +49879,19 @@ def auto_scale() -> None:
 	if old != prefs.scale_want:
 		logging.info(f"Using UI scale: {prefs.scale_want}")
 
-	if prefs.scale_want < 0.5:
-		prefs.scale_want = 0.5
+	prefs.scale_want = max(prefs.scale_want, 0.5)
 
-	# if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
-	# 	logging.info("Window overscale!")
-	# 	show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
-	# 	prefs.scale_want = 1.0
+	#if bag.window_size[0] < (560 * prefs.scale_want) * 0.9 or bag.window_size[1] < (330 * prefs.scale_want) * 0.9:
+	#	logging.info("Window overscale!")
+	#	self.show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
+	#	prefs.scale_want = 1.0
 
-def scale_assets(scale_want: int, force: bool = False) -> None:
-	global scaled_asset_directory
+def scale_assets(bag: Bag, gui: GuiVar, scale_want: int, force: bool = False) -> None:
+	asset_directory        = bag.dirs.asset_directory
+	scaled_asset_directory = bag.dirs.scaled_asset_directory
+	user_directory         = bag.dirs.user_directory
+	svg_directory          = bag.dirs.svg_directory
+	prefs = bag.prefs
 	if scale_want != 1:
 		bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
 		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
@@ -49932,8 +49931,7 @@ def scale_assets(scale_want: int, force: bool = False) -> None:
 			item[1] *= diff_ratio
 		gui.pref_rspw = rspw * diff_ratio
 		gui.pref_gallery_w = grspw * diff_ratio
-		global album_mode_art_size
-		album_mode_art_size = int(album_mode_art_size * diff_ratio)
+		bag.album_mode_art_size = int(bag.album_mode_art_size * diff_ratio)
 
 def get_global_mouse() -> tuple[float, float]:
 	i_y = pointer(c_float(0))
@@ -50103,7 +50101,7 @@ def encode_folder_name(track_object: TrackClass) -> str:
 
 	return folder_name
 
-def coll_point(l, r):
+def coll_point(l: list[int], r: list[int]) -> bool:
 	# rect point collision detection
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
@@ -50131,12 +50129,12 @@ def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 
 	return data
 
-def close_all_menus():
+def close_all_menus() -> None:
 	for menu in Menu.instances:
 		menu.active = False
 	Menu.active = False
 
-def paste_lyrics(track_object: TrackClass):
+def paste_lyrics(track_object: TrackClass) -> None:
 	if sdl3.SDL_HasClipboardText():
 		clip = sdl3.SDL_GetClipboardText()
 		#logging.info(clip)
@@ -50144,25 +50142,23 @@ def paste_lyrics(track_object: TrackClass):
 	else:
 		logging.warning("NO TEXT TO PASTE")
 
-def copy_lyrics(track_object: TrackClass):
+def copy_lyrics(track_object: TrackClass) -> None:
 	copy_to_clipboard(track_object.lyrics)
 
-def clear_lyrics(track_object: TrackClass):
+def clear_lyrics(track_object: TrackClass) -> None:
 	track_object.lyrics = ""
 
-def split_lyrics(track_object: TrackClass):
+def split_lyrics(track_object: TrackClass) -> None:
 	if track_object.lyrics != "":
 		track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
-	else:
-		pass
 
-def ser_gimage(track_object: TrackClass):
+def ser_gimage(track_object: TrackClass) -> None:
 	if track_object.artist and track_object.album:
 		line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(
 			track_object.artist + " " + track_object.album)
 		webbrowser.open(line, new=2, autoraise=True)
 
-def unique_template(string):
+def unique_template(string: str) -> bool:
 	return "<t>" in string or \
 		"<title>" in string or \
 		"<n>" in string or \
@@ -50173,7 +50169,7 @@ def unique_template(string):
 		"<singlenumber>" in string or \
 		"<s>" in string or "%t" in string or "%tn" in string
 
-def re_template_word(word, tr):
+def re_template_word(word: str, tr: TrackClass) -> str:
 	if word == "aa" or word == "albumartist":
 
 		if tr.album_artist:
@@ -50214,46 +50210,38 @@ def re_template_word(word, tr):
 
 	if "comment" in word:
 		return tr.comment.replace("\n", "").replace("\r", "")
-
 	return ""
 
-def parse_template2(string: str, track_object: TrackClass, strict: bool = False):
+def parse_template2(string: str, track_object: TrackClass, strict: bool = False) -> str:
 	temp = ""
 	out = ""
 
 	mode = 0
 
 	for c in string:
-
 		if mode == 0:
-
 			if c == "<":
 				mode = 1
 			else:
 				out += c
 
+		elif c == ">":
+			test = re_template_word(temp, track_object)
+			if strict:
+				assert test
+			out += test
+
+			mode = 0
+			temp = ""
+
 		else:
-
-			if c == ">":
-
-				test = re_template_word(temp, track_object)
-				if strict:
-					assert test
-				out += test
-
-				mode = 0
-				temp = ""
-
-			else:
-
-				temp += c
+			temp += c
 
 	if "<und" in string:
 		out = out.replace(" ", "_")
-
 	return parse_template(out, track_object, strict=strict)
 
-def parse_template(string, track_object: TrackClass, up_ext: bool = False, strict: bool = False):
+def parse_template(string: str, track_object: TrackClass, up_ext: bool = False, strict: bool = False) -> str:
 	set = 0
 	underscore = False
 	output = ""
@@ -50345,7 +50333,7 @@ def parse_generator(string: str):
 
 	return cmds, quotes, inquote
 
-def auto_get_sync_targets():
+def auto_get_sync_targets() -> list[str]:
 	search_paths = [
 		"/run/user/*/gvfs/*/*/[Mm]usic",
 		"/run/media/*/*/[Mm]usic"]
@@ -50354,12 +50342,12 @@ def auto_get_sync_targets():
 		result_paths.extend(glob.glob(item))
 	return result_paths
 
-def csv_string(item):
+def csv_string(item: str) -> str:
 	item = str(item)
 	item.replace("\"", "\"\"")
 	return f"\"{item}\""
 
-def add_pl_tag(text):
+def add_pl_tag(text: str) -> str:
 	return f" <{text}>"
 
 def directory_size(path: str) -> int:
@@ -50370,17 +50358,20 @@ def directory_size(path: str) -> int:
 			total += os.path.getsize(path)
 	return total
 
-def recode(text, enc):
+def recode(text: str, enc: str) -> str:
 	return text.encode("Latin-1", "ignore").decode(enc, "ignore")
 
 def copy_to_clipboard(text: str) -> None:
 	sdl3.SDL_SetClipboardText(text.encode(errors="surrogateescape"))
 
-def copy_from_clipboard():
+def copy_from_clipboard() -> str:
 	try:
 		return sdl3.SDL_GetClipboardText().decode()
-	except UnicodeDecodeError as e:
-		logging.warning("Clipboard text decode error")
+	except UnicodeDecodeError:
+		logging.exception("Clipboard text decode error")
+		return ""
+	except Exception:
+		logging.exception("Unknown clipboard text decode error")
 		return ""
 
 def field_copy(text_field) -> None:
@@ -50392,7 +50383,7 @@ def field_paste(text_field) -> None:
 def field_clear(text_field) -> None:
 	text_field.clear()
 
-def worker3():
+def worker3(tauon: Tauon) -> None:
 	while True:
 		# time.sleep(0.04)
 
@@ -50403,11 +50394,14 @@ def worker3():
 
 		tauon.gall_ren.worker_render()
 
-def worker4():
+def worker4(tauon: Tauon) -> None:
+	gui = tauon.gui
+	prefs = tauon.prefs
+	pctl = tauon.pctl
 	gui.style_worker_timer.set()
 	while True:
 		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
-			style_overlay.worker()
+			tauon.style_overlay.worker()
 
 		time.sleep(0.01)
 		if pctl.playing_state > 0 and pctl.playing_time < 5:
@@ -50415,7 +50409,8 @@ def worker4():
 		if gui.style_worker_timer.get() > 5:
 			return
 
-def worker2():
+def worker2(tauon: Tauon) -> None:
+	search_over = tauon.search_over
 	while True:
 		worker2_lock.acquire()
 
@@ -50806,7 +50801,7 @@ def worker2():
 				search_over.force_select = 0
 				#logging.info(perf_timer.get())
 
-def worker1():
+def worker1(tauon: Tauon) -> None:
 	global cue_list
 	global loaderCommand
 	global loaderCommandReady
@@ -50821,11 +50816,11 @@ def worker1():
 	loaded_cue_cache = {}
 	added = []
 
-	def get_quoted_from_line(line):
+	def get_quoted_from_line(line: str) -> str:
+		"""Extract quoted or unquoted string from a line
 
-		# Extract quoted or unquoted string from a line
-		# e.g., 'FILE "01 - Track01.wav" WAVE' or 'TITLE Track01' or "PERFORMER 'Artist Name'"
-
+		e.g., 'FILE "01 - Track01.wav" WAVE' or 'TITLE Track01' or "PERFORMER 'Artist Name'"
+		"""
 		parts = line.split(None, 1)
 		if len(parts) < 2:
 			return ""
@@ -51774,11 +51769,11 @@ def worker1():
 					#logging.info("DONE LOADING")
 					break
 
-def visit_radio_site(station: RadioStation):
+def visit_radio_site(station: RadioStation) -> None:
 	if station.website_url:
 		webbrowser.open(station.website_url, new=2, autoraise=True)
 
-def visit_radio_station(item: tuple[int, RadioStation]):
+def visit_radio_station(item: tuple[int, RadioStation]) -> None:
 	visit_radio_site(item[1])
 
 def window_is_focused(t_window: sdl3.LP_SDL_Window) -> bool:
@@ -51926,7 +51921,7 @@ logging.info(f"Window size: {window_size}")
 
 should_save_state = True
 
-tls_context = setup_tls()
+tls_context = setup_tls(holder)
 
 try:
 	# Pylast needs to be imported AFTER setup_tls() else pyinstaller breaks
@@ -52444,10 +52439,10 @@ format_colours = {  # These are the colours used for the label icon in UI 'track
 
 Archive_Formats = {"zip"}
 
-if whicher("unrar"):
+if whicher("unrar", flatpak_mode):
 	Archive_Formats.add("rar")
 
-if whicher("7z"):
+if whicher("7z", flatpak_mode):
 	Archive_Formats.add("7z")
 
 MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "far", "wow", "dmf", "med", "mt2", "ult"}
@@ -52662,7 +52657,7 @@ prefs = Prefs(
 	window_opacity=window_opacity,
 	ui_scale=scale,
 )
-prefs.theme = get_theme_number(prefs.theme_name)
+prefs.theme = get_theme_number(dirs, prefs.theme_name)
 
 bag = Bag(
 	cf=Config(),
@@ -52795,9 +52790,7 @@ primary_stations.append(RadioStation(
 for station in primary_stations:
 	radio_playlists[0].stations.append(station)
 
-pump = True
-
-shoot_pump = threading.Thread(target=pumper)
+shoot_pump = threading.Thread(target=pumper, args=(bag,))
 shoot_pump.daemon = True
 shoot_pump.start()
 
@@ -53228,7 +53221,7 @@ if len(keys) > 5000:
 	gui.suggest_clean_db = True
 # logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
-pump = False
+bag.pump = False
 shoot_pump.join()
 
 # temporary
@@ -53259,7 +53252,7 @@ save_prefs(bag)
 
 # Temporary
 if 0 < db_version <= 34:
-	prefs.theme_name = get_theme_name(theme)
+	prefs.theme_name = get_theme_name(dirs, theme)
 if 0 < db_version <= 66:
 	prefs.device_buffer = 80
 if 0 < db_version <= 53:
@@ -53323,9 +53316,9 @@ if msys and win_ver >= 10:
 	else:
 		logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
 
-auto_scale()
+auto_scale(bag)
 
-scale_assets(scale_want=prefs.scale_want)
+scale_assets(bag, gui, prefs.scale_want)
 
 try:
 	#star_lines        = view_prefs['star-lines']
@@ -54886,11 +54879,11 @@ try:
 except Exception:
 	logging.exception("Failed to cast")
 
-tauon.thread_manager.d["worker"] = [worker1, (), None]
-tauon.thread_manager.d["search"] = [worker2, (), None]
-tauon.thread_manager.d["gallery"] = [worker3, (), None]
-tauon.thread_manager.d["style"] = [worker4, (), None]
-tauon.thread_manager.d["radio-thumb"] = [radio_thumb_gen.loader, (), None]
+tauon.thread_manager.d["worker"]  = [worker1, [tauon], None]
+tauon.thread_manager.d["search"]  = [worker2, [tauon], None]
+tauon.thread_manager.d["gallery"] = [worker3, [tauon], None]
+tauon.thread_manager.d["style"]   = [worker4, [tauon], None]
+tauon.thread_manager.d["radio-thumb"] = [radio_thumb_gen.loader, [], None]
 
 tauon.thread_manager.ready("search")
 tauon.thread_manager.ready("gallery")
@@ -54998,7 +54991,7 @@ pctl.notify_update()
 
 key_focused = 0
 
-theme = get_theme_number(prefs.theme_name)
+theme = get_theme_number(dirs, prefs.theme_name)
 
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
 	gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
@@ -55074,7 +55067,7 @@ if msys:
 
 # Generate theme buttons
 pref_box.themes.append((ColoursClass(), "Mindaro", 0))
-theme_files = get_themes()
+theme_files = get_themes(dirs)
 for i, theme in enumerate(theme_files):
 	c = ColoursClass()
 	load_theme(c, Path(theme[0]))
@@ -55539,7 +55532,7 @@ while pctl.running:
 				sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 				window_size[0] = i_x.contents.value
 				window_size[1] = i_y.contents.value
-				auto_scale()
+				auto_scale(bag)
 				update_layout = True
 				gui.update = 2
 
@@ -55561,7 +55554,7 @@ while pctl.running:
 				gui.update = 2
 				logical_size[0] = event.window.data1
 				logical_size[1] = event.window.data2
-				#auto_scale()
+				#auto_scale(bag)
 				#update_layout = True
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_MOUSE_ENTER:
@@ -56472,7 +56465,7 @@ while pctl.running:
 	if gui.reload_theme is True:
 
 		gui.pl_update = 1
-		theme_files = get_themes()
+		theme_files = get_themes(dirs)
 
 		if theme > len(theme_files):  # sic
 			theme = 0
