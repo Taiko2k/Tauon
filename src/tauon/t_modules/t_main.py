@@ -1541,6 +1541,7 @@ class PlayerCtl:
 	# C-PC
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon                     = tauon
+		self.inp                       = self.tauon.inp
 		self.gui                       = self.tauon.gui
 		self.bag                       = self.tauon.bag
 		self.colours                   = self.tauon.colours
@@ -2484,7 +2485,7 @@ class PlayerCtl:
 		self.set_volume()
 
 	def set_volume(self, notify: bool = True) -> None:
-		if (self.tauon.spot_ctl.coasting or self.tauon.spot_ctl.playing) and not self.tauon.spot_ctl.local and self.gui.inp.mouse_down:
+		if (self.tauon.spot_ctl.coasting or self.tauon.spot_ctl.playing) and not self.tauon.spot_ctl.local and self.inp.mouse_down:
 			# Rate limit network volume change
 			t = self.volume_update_timer.get()
 			if t < 0.3:
