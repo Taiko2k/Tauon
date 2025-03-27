@@ -1445,7 +1445,9 @@ class PlayerCtl:
 		self.b_time: float = 0
 		# self.playlist_backup = []
 		self.active_replaygain = 0
-		self.auto_stop = False
+		self.stop_mode = 0
+		self.stop_ref = None
+
 
 		self.record_stream = False
 		self.record_title = ""
@@ -2100,7 +2102,16 @@ class PlayerCtl:
 
 	def jump(self, index: int, pl_position: int = None, jump: bool = True) -> None:
 		lfm_scrobbler.start_queue()
-		self.auto_stop = False
+		if self.stop_mode == 1:  # Disable auto stop track
+			self.stop_mode = 0
+		if self.stop_mode == 2 and not pctl.playing_state == 0:  # Disable auto stop album if album different
+			tr = pctl.get_track(index)
+			if (tr.parent_folder_path, tr.album) != self.stop_ref:
+				self.stop_mode = 0
+				self.stop_ref = None
+		if self.stop_mode == 4:  # Assign new current album for stopping
+			tr = pctl.get_track(index)
+			self.stop_ref = (tr.parent_folder_path, tr.album)
 
 		if self.force_queue and not self.pause_queue:
 			if self.force_queue[0].uuid_int == 1: # TODO(Martin): How can the UUID be 1 when we're doing a random on 1-1m except for massive chance? Is that the point?
@@ -2371,6 +2382,9 @@ class PlayerCtl:
 
 			# If the queue is not empty, play?
 			elif len(self.track_queue) > 0:
+				if self.stop_mode == 4:  # Assign new current album for stopping
+					tr = pctl.playing_object()
+					self.stop_ref = (tr.parent_folder_path, tr.album)
 				self.play_target()
 
 		self.render_playlist()
@@ -2479,14 +2493,36 @@ class PlayerCtl:
 
 			pp = self.playing_playlist()
 
-			if self.auto_stop:  # and not self.force_queue and not (self.force_queue and self.pause_queue):
-				self.stop(run=True)
-				if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
-					self.advance(play=False)
-				gui.update += 2
-				self.auto_stop = False
+			stopped = False
+			if self.stop_mode > 0:  # and not self.force_queue and not (self.force_queue and self.pause_queue):
+				if self.stop_mode == 1:
+					self.stop(run=True)
+					self.stop_mode = 0
+					stopped = True
+				if self.stop_mode == 2:
+					tr = self.playing_object()
+					i = self.advance(dry=True)
+					tr2 = self.get_track(i)
+					if (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
+						self.stop(run=True)
+						self.stop_mode = 0
+						stopped = True
+				if self.stop_mode == 3:
+					self.stop(run=True)
+					stopped = True
+				if self.stop_mode == 4:
+					i = self.advance(dry=True)
+					tr2 = self.get_track(i)
+					if self.stop_ref != (tr2.parent_folder_path, tr2.album):
+						self.stop(run=True)
+						stopped = True
+				if stopped is True:
+					if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
+						self.advance(play=False)
+					gui.update += 2
+					return
 
-			elif self.force_queue and not self.pause_queue:
+			if self.force_queue and not self.pause_queue:
 				id = self.advance(end=True, quiet=True, dry=True)
 				if id is not None:
 					self.start_commit(id)
@@ -2786,9 +2822,9 @@ class PlayerCtl:
 					del self.force_queue[0]
 
 					if q.auto_stop:
-						self.auto_stop = True
+						self.stop_mode = 1
 					if prefs.stop_end_queue and not self.force_queue:
-						self.auto_stop = True
+						self.stop_mode = 1
 
 					if queue_box.scroll_position > 0:
 						queue_box.scroll_position -= 1
@@ -2820,9 +2856,9 @@ class PlayerCtl:
 					self.play_target(jump=not end)
 				del self.force_queue[0]
 				if q.auto_stop:
-					self.auto_stop = True
+					self.stop_mode = 1
 				if prefs.stop_end_queue and not self.force_queue:
-					self.auto_stop = True
+					self.stop_mode = 1
 				if queue_box.scroll_position > 0:
 					queue_box.scroll_position -= 1
 
@@ -14816,7 +14852,7 @@ class BottomBarType1:
 			if pctl.playing_state == 1:
 				play_colour = colours.media_buttons_active
 
-			if pctl.auto_stop:
+			if pctl.stop_mode > 0:
 				stop_colour = colours.media_buttons_active
 
 			if pctl.playing_state == 2 or (tauon.spot_ctl.coasting and tauon.spot_ctl.paused):
@@ -14882,8 +14918,9 @@ class BottomBarType1:
 				if inp.mouse_click:
 					pctl.stop()
 				if right_click:
-					pctl.auto_stop ^= True
-				tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
+					#pctl.auto_stop ^= True
+					stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
+				#tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
 			# ddt.rect_r(rect,[255,0,0,255], True)
@@ -15401,7 +15438,7 @@ class BottomBarType_ao1:
 			if pctl.playing_state == 1:
 				play_colour = colours.media_buttons_active
 
-			if pctl.auto_stop:
+			if pctl.stop_mode > 0:
 				stop_colour = colours.media_buttons_active
 
 			if pctl.playing_state == 2:
@@ -16372,7 +16409,7 @@ class StandardPlaylist:
 									i += 1
 								queue_timer_set(plural=True)
 								if prefs.stop_end_queue:
-									pctl.auto_stop = False
+									pctl.stop_mode = 0
 
 							else:  # Add as grouped album
 								add_album_to_queue(track_id, track_position)
@@ -16516,7 +16553,7 @@ class StandardPlaylist:
 				gui.pl_update += 1
 				queue_timer_set()
 				if prefs.stop_end_queue:
-					pctl.auto_stop = False
+					pctl.stop_mode = 0
 
 			# Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
 			if len(shift_selection) > 1 and mouse_up and line_over and not key_shift_down and not key_ctrl_down and point_proximity_test(
@@ -27019,7 +27056,7 @@ def add_album_to_queue(ref, position=None, playlist_id=None):
 	pctl.force_queue.append(queue_object)
 	queue_timer_set(queue_object=queue_object)
 	if prefs.stop_end_queue:
-		pctl.auto_stop = False
+		pctl.stop_mode = 0
 
 def add_album_to_queue_fc(ref):
 	playing_object = pctl.playing_object()
@@ -27064,7 +27101,7 @@ def add_album_to_queue_fc(ref):
 	if queue_item:
 		queue_timer_set(queue_object=queue_item)
 	if prefs.stop_end_queue:
-		pctl.auto_stop = False
+		pctl.stop_mode = 0
 
 def cancel_import():
 	if transcode_list:
@@ -31331,12 +31368,12 @@ def add_to_queue(ref):
 	pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 	queue_timer_set()
 	if prefs.stop_end_queue:
-		pctl.auto_stop = False
+		pctl.stop_mode = 0
 
 def add_selected_to_queue():
 	gui.pl_update += 1
 	if prefs.stop_end_queue:
-		pctl.auto_stop = False
+		pctl.stop_mode = 0
 	if gui.album_tab_mode:
 		add_album_to_queue(default_playlist[get_album_info(pctl.selected_in_playlist)[1][0]], pctl.selected_in_playlist)
 		queue_timer_set()
@@ -31349,7 +31386,7 @@ def add_selected_to_queue():
 
 def add_selected_to_queue_multi():
 	if prefs.stop_end_queue:
-		pctl.auto_stop = False
+		pctl.stop_mode = 0
 	for index in shift_selection:
 		pctl.force_queue.append(
 			queue_item_gen(default_playlist[index],
@@ -33468,6 +33505,28 @@ def copy_bb_metadata() -> str | None:
 
 def stop() -> None:
 	pctl.stop()
+
+def stop_mode_off() -> None:
+	pctl.stop_mode = 0
+	pctl.stop_ref = None
+
+def stop_mode_track() -> None:
+	pctl.stop_mode = 1
+	pctl.stop_ref = None
+
+def stop_mode_album() -> None:
+	pctl.stop_mode = 2
+
+def stop_mode_track_persist() -> None:
+	pctl.stop_mode = 3
+	pctl.stop_ref = None
+
+def stop_mode_album_persist() -> None:
+	tr = pctl.playing_object()
+	if tr:
+		pctl.stop_mode = 4
+		pctl.stop_ref = (tr.parent_folder_path, tr.album)
+
 
 def random_track() -> None:
 	playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
@@ -41390,6 +41449,14 @@ mode_menu.add(MenuItem(_("Copy Title to Clipboard"), copy_bb_metadata))
 
 extra_menu = Menu(175, show_icons=True)
 
+stop_menu = Menu(175, show_icons=False)
+stop_menu.add(MenuItem(_("Always stop after album"), stop_mode_album_persist))
+stop_menu.add(MenuItem(_("Always stop after track"), stop_mode_track_persist))
+stop_menu.add(MenuItem(_("Stop after album"), stop_mode_album))
+stop_menu.add(MenuItem(_("Stop after track"), stop_mode_track))
+stop_menu.add(MenuItem(_("Continue Play"), stop_mode_off))
+
+
 extra_menu.add(MenuItem(_("Random Track"), random_track, hint=";"))
 
 radiorandom_icon = MenuIcon(asset_loader(scaled_asset_directory, loaded_asset_dc, "radiorandom.png", True))
@@ -43827,7 +43894,7 @@ while pctl.running:
 															pctl.active_playlist_viewing)))
 												queue_timer_set(plural=True)
 												if prefs.stop_end_queue:
-													pctl.auto_stop = False
+													pctl.stop_mode = 0
 											else:
 												# Add to queue grouped
 												add_album_to_queue(default_playlist[album_dex[album_on]])
