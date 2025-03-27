@@ -26173,46 +26173,61 @@ class Fields:
 
 class TopPanel:
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon           = tauon
+		self.ddt             = tauon.ddt
+		self.gui             = tauon.gui
+		self.inp             = tauon.inp
+		self.coll            = tauon.coll
+		self.pctl            = tauon.pctl
+		self.prefs           = tauon.prefs
+		self.fonts           = tauon.fonts
+		self.fields          = tauon.fields
+		self.colours         = tauon.colours
+		self.renderer        = tauon.renderer
+		self.window_size     = tauon.window_size
+		self.overflow_menu   = tauon.overflow_menu
+		self.draw_min_button = tauon.draw_min_button
+		self.draw_max_button = tauon.draw_max_button
+		self.height          = self.gui.panelY
+		self.ty              = 0
 
-		self.height = gui.panelY
-		self.ty = 0
+		self.start_space_left = round(46 * self.gui.scale)
+		self.start_space_compact_left = 46 * self.gui.scale
 
-		self.start_space_left = round(46 * gui.scale)
-		self.start_space_compact_left = 46 * gui.scale
-
-		self.tab_text_font = fonts.tabs
-		self.tab_extra_width = round(17 * gui.scale)
-		self.tab_text_start_space = 8 * gui.scale
-		self.tab_text_y_offset = 7 * gui.scale
+		self.tab_text_font = self.fonts.tabs
+		self.tab_extra_width = round(17 * self.gui.scale)
+		self.tab_text_start_space = 8 * self.gui.scale
+		self.tab_text_y_offset = 7 * self.gui.scale
 		self.tab_spacing = 0
 
-		self.ini_menu_space = 17 * gui.scale  # 17
-		self.menu_space = 17 * gui.scale
-		self.click_buffer = 4 * gui.scale
+		self.ini_menu_space = 17 * self.gui.scale  # 17
+		self.menu_space = 17 * self.gui.scale
+		self.click_buffer = 4 * self.gui.scale
 
 		self.tabs_right_x = 0  # computed for drag and drop code elsewhere (hacky)
 		self.tabs_left_x = 1
 
-		self.prime_tab = gui.saved_prime_tab
-		self.prime_side = gui.saved_prime_direction  # 0=left, 1=right
+		self.prime_tab = self.gui.saved_prime_tab
+		self.prime_side = self.gui.saved_prime_direction  # 0=left, 1=right
 		self.shown_tabs = []
 
 		# ---
 		self.space_left = 0
 		self.tab_text_spaces = []
 		self.index_playing = -1
-		self.drag_zone_start_x = 300 * gui.scale
+		self.drag_zone_start_x = 300 * self.gui.scale
 
-		self.exit_button = asset_loader(bag, bag.loaded_asset_dc, "ex.png", True)
-		self.maximize_button = asset_loader(bag, bag.loaded_asset_dc, "max.png", True)
-		self.restore_button = asset_loader(bag, bag.loaded_asset_dc, "restore.png", True)
-		self.restore_button = asset_loader(bag, bag.loaded_asset_dc, "restore.png", True)
-		self.playlist_icon = asset_loader(bag, bag.loaded_asset_dc, "playlist.png", True)
-		self.return_icon = asset_loader(bag, bag.loaded_asset_dc, "return.png", True)
+		bag                   = tauon.bag
+		self.exit_button      = asset_loader(bag, bag.loaded_asset_dc, "ex.png", True)
+		self.maximize_button  = asset_loader(bag, bag.loaded_asset_dc, "max.png", True)
+		self.restore_button   = asset_loader(bag, bag.loaded_asset_dc, "restore.png", True)
+		self.restore_button   = asset_loader(bag, bag.loaded_asset_dc, "restore.png", True)
+		self.playlist_icon    = asset_loader(bag, bag.loaded_asset_dc, "playlist.png", True)
+		self.return_icon      = asset_loader(bag, bag.loaded_asset_dc, "return.png", True)
 		self.artist_list_icon = asset_loader(bag, bag.loaded_asset_dc, "artist-list.png", True)
 		self.folder_list_icon = asset_loader(bag, bag.loaded_asset_dc, "folder-list.png", True)
-		self.dl_button = asset_loader(bag, bag.loaded_asset_dc, "dl.png", True)
-		self.overflow_icon = asset_loader(bag, bag.loaded_asset_dc, "overflow.png", True)
+		self.dl_button        = asset_loader(bag, bag.loaded_asset_dc, "dl.png", True)
+		self.overflow_icon    = asset_loader(bag, bag.loaded_asset_dc, "overflow.png", True)
 
 		self.drag_slide_timer = Timer(100)
 		self.tab_d_click_timer = Timer(10)
@@ -26220,17 +26235,25 @@ class TopPanel:
 
 		self.adds = []
 
-	def left_overflow_switch_playlist(self, pl):
+	def left_overflow_switch_playlist(self, pl) -> None:
 		self.prime_side = 0
 		self.prime_tab = pl
-		switch_playlist(pl)
+		self.pctl.switch_playlist(pl)
 
-	def right_overflow_switch_playlist(self, pl):
+	def right_overflow_switch_playlist(self, pl) -> None:
 		self.prime_side = 1
 		self.prime_tab = pl
-		switch_playlist(pl)
+		self.pctl.switch_playlist(pl)
 
-	def render(self):
+	def render(self) -> None:
+		tauon       = self.tauon
+		pctl        = self.pctl
+		gui         = self.gui
+		ddt         = self.ddt
+		inp         = self.inp
+		colours     = self.colours
+		prefs       = self.prefs
+		window_size = self.window_size
 
 		# C-TD
 		global quick_drag
@@ -26247,7 +26270,6 @@ class TopPanel:
 		# Draw the background
 		ddt.clear_rect((0, 0, window_size[0], gui.panelY))
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
-
 
 		if prefs.shuffle_lock and not gui.compact_bar:
 			colour = [250, 250, 250, 255]
@@ -26283,9 +26305,9 @@ class TopPanel:
 					title = tr.filename
 				artist = tr.artist
 
-				if pctl.playing_state == 3 and not radiobox.dummy_track.title:
+				if pctl.playing_state == 3 and not tauon.radiobox.dummy_track.title:
 					title = pctl.tag_meta
-					artist = radiobox.loaded_url  # pctl.url
+					artist = tauon.radiobox.loaded_url  # pctl.url
 
 				ddt.text_background_colour = colours.top_panel_background
 
@@ -26297,24 +26319,24 @@ class TopPanel:
 			if gui.macstyle:
 				wwx = 24
 				# wwx = round(64 * gui.scale)
-				if draw_min_button:
+				if self.draw_min_button:
 					wwx += 20
-				if draw_max_button:
+				if self.draw_max_button:
 					wwx += 20
 				wwx = round(wwx * gui.scale)
 			else:
 				wwx = 26
 				# wwx = round(90 * gui.scale)
-				if draw_min_button:
+				if self.draw_min_button:
 					wwx += 35
-				if draw_max_button:
+				if self.draw_max_button:
 					wwx += 33
 				wwx = round(wwx * gui.scale)
 
 		rect = (wwx + 9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
-		fields.add(rect)
+		self.fields.add(rect)
 
-		if coll(rect) and not prefs.shuffle_lock:
+		if self.coll(rect) and not prefs.shuffle_lock:
 			if inp.mouse_click:
 
 				if gui.combo_mode:
@@ -26322,7 +26344,7 @@ class TopPanel:
 				else:
 					gui.lsp ^= True
 
-				update_layout = True
+				gui.update_layout = True
 				gui.update += 1
 			if mouse_down and quick_drag:
 				gui.lsp = True
@@ -26345,7 +26367,7 @@ class TopPanel:
 			colour = colours.corner_button_active
 		if gui.combo_mode:
 			colour = colours.corner_button
-			if coll(rect):
+			if self.coll(rect):
 				colour = colours.corner_button_active
 
 		if not prefs.shuffle_lock:
@@ -26385,7 +26407,7 @@ class TopPanel:
 		offset = 15 * gui.scale
 		if draw_border and not prefs.left_window_control:
 			offset += 61 * gui.scale
-			if draw_max_button:
+			if self.draw_max_button:
 				offset += 61 * gui.scale
 		if gui.turbo:
 			offset += 90 * gui.scale
@@ -27153,8 +27175,19 @@ class TopPanel:
 
 class BottomBarType1:
 	def __init__(self, tauon: Tauon) -> None:
-
-		self.mode = 0
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.inp         = tauon.inp
+		self.ddt         = tauon.ddt
+		self.coll        = tauon.coll
+		self.pctl        = tauon.pctl
+		self.prefs       = tauon.prefs
+		self.system      = tauon.system
+		self.fields      = tauon.fields
+		self.colours     = tauon.colours
+		self.renderer    = tauon.renderer
+		self.window_size = tauon.window_size
+		self.mode        = 0
 
 		self.seek_time = 0
 
@@ -27162,41 +27195,40 @@ class BottomBarType1:
 		self.seek_hit = False
 		self.volume_hit = False
 		self.volume_bar_being_dragged = False
-		self.control_line_bottom = 35 * gui.scale
+		self.control_line_bottom = 35 * self.gui.scale
 		self.repeat_click_off = False
 		self.random_click_off = False
 
-		self.seek_bar_position = [300 * gui.scale, window_size[1] - gui.panelBY]
-		self.seek_bar_size = [window_size[0] - (300 * gui.scale), 15 * gui.scale]
-		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
-		self.volume_bar_position = [0, 45 * gui.scale]
+		self.seek_bar_position = [300 * self.gui.scale, self.window_size[1] - self.gui.panelBY]
+		self.seek_bar_size = [self.window_size[0] - (300 * self.gui.scale), 15 * self.gui.scale]
+		self.volume_bar_size = [135 * self.gui.scale, 14 * self.gui.scale]
+		self.volume_bar_position = [0, 45 * self.gui.scale]
 
-		self.play_button = asset_loader(bag, bag.loaded_asset_dc, "play.png", True)
-		self.forward_button = asset_loader(bag, bag.loaded_asset_dc, "ff.png", True)
-		self.back_button = asset_loader(bag, bag.loaded_asset_dc, "bb.png", True)
-		self.repeat_button = asset_loader(bag, bag.loaded_asset_dc, "tauon_repeat.png", True)
-		self.repeat_button_off = asset_loader(bag, bag.loaded_asset_dc, "tauon_repeat_off.png", True)
-		self.shuffle_button_off = asset_loader(bag, bag.loaded_asset_dc, "tauon_shuffle_off.png", True)
-		self.shuffle_button = asset_loader(bag, bag.loaded_asset_dc, "tauon_shuffle.png", True)
-		self.repeat_button_a = asset_loader(bag, bag.loaded_asset_dc, "tauon_repeat_a.png", True)
-		self.shuffle_button_a = asset_loader(bag, bag.loaded_asset_dc, "tauon_shuffle_a.png", True)
+		self.play_button        = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "play.png", True)
+		self.forward_button     = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "ff.png", True)
+		self.back_button        = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "bb.png", True)
+		self.repeat_button      = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tauon_repeat.png", True)
+		self.repeat_button_off  = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tauon_repeat_off.png", True)
+		self.shuffle_button_off = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tauon_shuffle_off.png", True)
+		self.shuffle_button     = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tauon_shuffle.png", True)
+		self.repeat_button_a    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tauon_repeat_a.png", True)
+		self.shuffle_button_a   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tauon_shuffle_a.png", True)
 
-		self.buffer_shard = asset_loader(bag, bag.loaded_asset_dc, "shard.png", True)
+		self.buffer_shard       = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "shard.png", True)
 
 		self.scrob_stick = 0
 
-	def update(self):
-
+	def update(self) -> None:
 		if self.mode == 0:
-			self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
-			self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
-			self.seek_bar_position[1] = window_size[1] - gui.panelBY
+			self.volume_bar_position[0] = self.window_size[0] - (210 * self.gui.scale)
+			self.volume_bar_position[1] = self.window_size[1] - (27 * self.gui.scale)
+			self.seek_bar_position[1]   = self.window_size[1] - self.gui.panelBY
 
-			seek_bar_x = 300 * gui.scale
-			if window_size[0] < 600 * gui.scale:
-				seek_bar_x = 250 * gui.scale
+			seek_bar_x = 300 * self.gui.scale
+			if self.window_size[0] < 600 * self.gui.scale:
+				seek_bar_x = 250 * self.gui.scale
 
-			self.seek_bar_size[0] = window_size[0] - seek_bar_x
+			self.seek_bar_size[0] = self.window_size[0] - seek_bar_x
 			self.seek_bar_position[0] = seek_bar_x
 
 			# if gui.bb_show_art:
@@ -27206,28 +27238,33 @@ class BottomBarType1:
 			# self.seek_bar_position[0] = 0
 			# self.seek_bar_size[0] = window_size[0]
 
-	def render(self):
+	def render(self) -> None:
+		window_size = self.window_size
+		tauon       = self.tauon
+		ddt         = self.ddt
+		gui         = self.gui
+		prefs       = self.prefs
+		pctl        = self.pctl
+		inp         = self.inp
+		colours     = self.colours
+		fonts       = self.tauon.fonts
 
-		global volume_store
-		global clicked
-		global right_click
-
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background)
 
 		right_offset = 0
 		if gui.display_time_mode >= 2:
-			right_offset = 22 * gui.scale
+			right_offset = 22 * self.gui.scale
 
-		if window_size[0] < 670 * gui.scale:
-			right_offset -= 90 * gui.scale
+		if self.window_size[0] < 670 * self.gui.scale:
+			right_offset -= 90 * self.gui.scale
 		# Scrobble marker
 
 		if prefs.scrobble_mark and (
-				prefs.auto_lfm or lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
+				prefs.auto_lfm or self.tauon.lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
 			if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
 				l_target = 240
 			else:
@@ -27243,14 +27280,14 @@ class BottomBarType1:
 					l_x = self.scrob_stick
 				else:
 					self.scrob_stick = l_x
-				ddt.rect((self.scrob_stick, self.seek_bar_position[1], 2 * gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80])
+				ddt.rect((self.scrob_stick, self.seek_bar_position[1], 2 * self.gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80])
 
 		# # MINI ALBUM ART
 		# if gui.bb_show_art:
 		#     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
 		#     ddt.rect_r(rect, [255, 255, 255, 8], True)
 		#     if 3 > pctl.playing_state > 0:
-		#         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+		#         tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, [255, 255, 255, 20])
 
@@ -27270,8 +27307,8 @@ class BottomBarType1:
 			if pctl.playing_state == 0:
 				pctl.play()
 
-		fields.add(self.seek_bar_position + self.seek_bar_size)
-		if coll(self.seek_bar_position + self.seek_bar_size):
+		self.fields.add(self.seek_bar_position + self.seek_bar_size)
+		if self.coll(self.seek_bar_position + self.seek_bar_size):
 
 			if middle_click and pctl.playing_state > 0:
 				gui.seek_cur_show = True
@@ -27293,10 +27330,9 @@ class BottomBarType1:
 			seek = bargetX / self.seek_bar_size[0]
 			gui.cur_time = get_display_time(pctl.playing_object().length * seek)
 
-		if self.seek_down is True:
-			if mouse_position[0] == 0:
-				self.seek_down = False
-				self.seek_hit = True
+		if self.seek_down is True and mouse_position[0] == 0:
+			self.seek_down = False
+			self.seek_hit = True
 
 		if (mouse_up and coll(self.seek_bar_position + self.seek_bar_size) and coll_point(
 			last_click_location, self.seek_bar_position + self.seek_bar_size)
@@ -27340,9 +27376,7 @@ class BottomBarType1:
 				colours.bottom_panel_colour)
 
 		if pctl.playing_length > 0:
-
 			if pctl.download_time != 0:
-
 				if pctl.download_time == -1:
 					pctl.download_time = pctl.playing_length
 
@@ -27363,8 +27397,7 @@ class BottomBarType1:
 			ddt.rect(gui.seek_bar_rect, colours.seek_bar_fill)
 
 		if gui.seek_cur_show:
-
-			if coll(
+			if self.coll(
 				[self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
 				if mouse_position[0] > self.seek_bar_position[0] - 1:
 					cur = [mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
@@ -27592,7 +27625,7 @@ class BottomBarType1:
 			r_start -= 20 * gui.scale
 		rect = (r_start, y - 3 * gui.scale, 80 * gui.scale, 27 * gui.scale)
 		# ddt.rect_r(rect, [255, 0, 0, 40], True)
-		if inp.mouse_click and coll(rect):
+		if inp.mouse_click and self.coll(rect):
 			gui.display_time_mode += 1
 			if gui.display_time_mode > 3:
 				gui.display_time_mode = 0
@@ -27625,7 +27658,7 @@ class BottomBarType1:
 
 			offset1 = 10 * gui.scale
 
-			if system == "Windows":
+			if self.system == "Windows":
 				offset1 += 2 * gui.scale
 
 			offset2 = offset1 + 7 * gui.scale
@@ -27641,11 +27674,8 @@ class BottomBarType1:
 			ddt.text(
 				(x + offset2, y), text_time, colours.time_sub,
 				fonts.bottom_panel_time)
-
 		elif gui.display_time_mode == 3:
-
 			# colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
-
 			track = pctl.playing_object()
 			if track and track.index != gui.dtm3_index:
 
@@ -27672,7 +27702,7 @@ class BottomBarType1:
 				fonts.bottom_panel_time)
 
 			offset1 = 10 * gui.scale
-			if system == "Windows":
+			if self.system == "Windows":
 				offset1 += 2 * gui.scale
 			offset2 = offset1 + 7 * gui.scale
 
@@ -27692,7 +27722,6 @@ class BottomBarType1:
 		# bottom buttons
 
 		if gui.mode == 1:
-
 			# PLAY---
 			buttons_x_offset = 0
 			compact = False
@@ -27723,8 +27752,8 @@ class BottomBarType1:
 				rect = (
 				buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale),
 				50 * gui.scale, 40 * gui.scale)
-				fields.add(rect)
-				if coll(rect):
+				self.fields.add(rect)
+				if self.coll(rect):
 					play_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						if compact and pctl.playing_state == 1:
@@ -27734,7 +27763,7 @@ class BottomBarType1:
 						else:
 							pctl.play()
 						inp.mouse_click = False
-					tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
+					tauon.tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
 
 					if right_click:
 						pctl.show_current(highlight=True)
@@ -27752,14 +27781,14 @@ class BottomBarType1:
 			if not compact or (compact and pctl.playing_state == 1):
 
 				rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
-				fields.add(rect)
-				if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
+				self.fields.add(rect)
+				if self.coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 					pause_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						pctl.pause()
 					if right_click:
 						pctl.show_current(highlight=True)
-					tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
 				# ddt.rect_r(rect,[255,0,0,255], True)
 				ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
@@ -27768,15 +27797,15 @@ class BottomBarType1:
 			# STOP---
 			x = 125 * gui.scale + buttons_x_offset
 			rect = (x - 14 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
-			fields.add(rect)
-			if coll(rect):
+			self.fields.add(rect)
+			if self.coll(rect):
 				stop_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.stop()
 				if right_click:
 					#pctl.auto_stop ^= True
 					stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
-				#tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
+				#tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
 			# ddt.rect_r(rect,[255,0,0,255], True)
@@ -27787,15 +27816,15 @@ class BottomBarType1:
 			# FORWARD---
 			rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
-			fields.add(rect)
-			if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
+			self.fields.add(rect)
+			if self.coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 				forward_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.advance()
 					gui.tool_tip_lock_off_f = True
 				if right_click:
 					# pctl.random_mode ^= True
-					toggle_random()
+					tauon.toggle_random()
 					gui.tool_tip_lock_off_f = True
 					# if window_size[0] < 600 * gui.scale:
 					# . Shuffle set to on
@@ -27810,7 +27839,7 @@ class BottomBarType1:
 					gui.tool_tip_lock_off_f = True
 				# tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
 				# if not gui.tool_tip_lock_off_f:
-				#     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+				# 	tauon.tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
 			else:
 				gui.tool_tip_lock_off_f = False
 
@@ -27822,8 +27851,8 @@ class BottomBarType1:
 			# BACK---
 			rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
-			fields.add(rect)
-			if coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
+			self.fields.add(rect)
+			if self.coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
 				back_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.back()
@@ -27843,7 +27872,7 @@ class BottomBarType1:
 					pctl.revert()
 					gui.tool_tip_lock_off_b = True
 				if not gui.tool_tip_lock_off_b:
-					tool_tip2.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
+					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
 			else:
 				gui.tool_tip_lock_off_b = False
 
@@ -27857,16 +27886,16 @@ class BottomBarType1:
 			y = window_size[1] - round(26 * gui.scale)
 			rpbc = colours.mode_button_off
 			rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
-			fields.add(rect)
-			if coll(rect):
-				if not extra_menu.active:
-					tool_tip.test(x, y - 28 * gui.scale, _("Playback menu"))
+			self.fields.add(rect)
+			if self.coll(rect):
+				if not tauon.extra_menu.active:
+					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Playback menu"))
 				rpbc = colours.mode_button_over
 				if inp.mouse_click:
-					extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
+					tauon.extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
 				elif right_click:
-					mode_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
-			if extra_menu.active:
+					tauon.mode_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
+			if tauon.extra_menu.active:
 				rpbc = colours.mode_button_active
 
 			spacing = round(5 * gui.scale)
@@ -27883,27 +27912,26 @@ class BottomBarType1:
 				y = window_size[1] - 27 * gui.scale
 
 				rect = (x - 5 * gui.scale, y - 5 * gui.scale, 60 * gui.scale, 25 * gui.scale)
-				fields.add(rect)
+				self.fields.add(rect)
 
 				rpbc = colours.mode_button_off
 				off = True
-				if (inp.mouse_click or right_click) and coll(rect):
-
+				if (inp.mouse_click or right_click) and self.coll(rect):
 					if inp.mouse_click:
 						# pctl.random_mode ^= True
-						toggle_random()
+						tauon.toggle_random()
 						if pctl.random_mode is False:
 							self.random_click_off = True
 					else:
-						shuffle_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
+						tauon.shuffle_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
 
 				if pctl.random_mode:
 					rpbc = colours.mode_button_active
 					off = False
-					if coll(rect):
-						tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
-				elif coll(rect):
-					tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
+					if self.coll(rect):
+						tauon.tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
+				elif self.coll(rect):
+					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
 					if self.random_click_off is True:
 						rpbc = colours.mode_button_off
 					elif pctl.random_mode is True:
@@ -27914,7 +27942,7 @@ class BottomBarType1:
 					self.random_click_off = False
 
 				# Keep hover highlight on if menu is open
-				if shuffle_menu.active and not pctl.random_mode:
+				if tauon.shuffle_menu.active and not pctl.random_mode:
 					rpbc = colours.mode_button_over
 
 				#self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
@@ -27942,15 +27970,14 @@ class BottomBarType1:
 				off = True
 
 				rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
-				fields.add(rect)
-				if (inp.mouse_click or right_click) and coll(rect):
-
+				self.fields.add(rect)
+				if (inp.mouse_click or right_click) and self.coll(rect):
 					if inp.mouse_click:
-						toggle_repeat()
+						tauon.toggle_repeat()
 						if pctl.repeat_mode is False:
 							self.repeat_click_off = True
 					else:  # right click
-						repeat_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
+						tauon.repeat_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
 						# pctl.album_repeat_mode ^= True
 						# if not pctl.repeat_mode:
 						#     self.repeat_click_off = True
@@ -27958,19 +27985,19 @@ class BottomBarType1:
 				if pctl.repeat_mode:
 					rpbc = colours.mode_button_active
 					off = False
-					if coll(rect):
+					if self.coll(rect):
 						if pctl.album_repeat_mode:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
 						else:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
-				elif coll(rect):
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
+				elif self.coll(rect):
 
 					# Tooltips. But don't show tooltips if menus open
-					if not repeat_menu.active and not shuffle_menu.active:
+					if not tauon.repeat_menu.active and not tauon.shuffle_menu.active:
 						if pctl.album_repeat_mode:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat album"))
 						else:
-							tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
+							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
 
 					if self.repeat_click_off is True:
 						rpbc = colours.mode_button_off
@@ -27982,7 +28009,7 @@ class BottomBarType1:
 					self.repeat_click_off = False
 
 				# Keep hover highlight on if menu is open
-				if repeat_menu.active and not pctl.repeat_mode:
+				if tauon.repeat_menu.active and not pctl.repeat_mode:
 					rpbc = colours.mode_button_over
 
 				rpbc = alpha_blend(rpbc, colours.bottom_panel_colour)  # bake in alpha in case of overlap
@@ -28027,40 +28054,37 @@ class BottomBarType_ao1:
 		self.window_size = tauon.window_size
 
 		self.mode = 0
-
 		self.seek_time = 0
-
 		self.seek_down = False
 		self.seek_hit = False
 		self.volume_hit = False
 		self.volume_bar_being_dragged = False
-		self.control_line_bottom = 35 * gui.scale
+		self.control_line_bottom = 35 * self.gui.scale
 		self.repeat_click_off = False
 		self.random_click_off = False
 
-		self.seek_bar_position = [300 * gui.scale, window_size[1] - gui.panelBY]
-		self.seek_bar_size = [window_size[0] - (300 * gui.scale), 15 * gui.scale]
-		self.volume_bar_size = [135 * gui.scale, 14 * gui.scale]
-		self.volume_bar_position = [0, 45 * gui.scale]
+		self.seek_bar_position = [300 * self.gui.scale, self.window_size[1] - self.gui.panelBY]
+		self.seek_bar_size = [self.window_size[0] - (300 * self.gui.scale), 15 * self.gui.scale]
+		self.volume_bar_size = [135 * self.gui.scale, 14 * self.gui.scale]
+		self.volume_bar_position = [0, 45 * self.gui.scale]
 
-		self.play_button = asset_loader(bag, bag.loaded_asset_dc, "play.png", True)
-		self.forward_button = asset_loader(bag, bag.loaded_asset_dc, "ff.png", True)
-		self.back_button = asset_loader(bag, bag.loaded_asset_dc, "bb.png", True)
+		self.play_button    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "play.png", True)
+		self.forward_button = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "ff.png", True)
+		self.back_button    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "bb.png", True)
 
 		self.scrob_stick = 0
 
-	def update(self):
-
+	def update(self) -> None:
 		if self.mode == 0:
-			self.volume_bar_position[0] = window_size[0] - (210 * gui.scale)
-			self.volume_bar_position[1] = window_size[1] - (27 * gui.scale)
-			self.seek_bar_position[1] = window_size[1] - gui.panelBY
+			self.volume_bar_position[0] = self.window_size[0] - (210 * self.gui.scale)
+			self.volume_bar_position[1] = self.window_size[1] - (27 * self.gui.scale)
+			self.seek_bar_position[1]   = self.window_size[1] - self.gui.panelBY
 
-			seek_bar_x = 300 * gui.scale
-			if window_size[0] < 600 * gui.scale:
-				seek_bar_x = 250 * gui.scale
+			seek_bar_x = 300 * self.gui.scale
+			if self.window_size[0] < 600 * self.gui.scale:
+				seek_bar_x = 250 * self.gui.scale
 
-			self.seek_bar_size[0] = window_size[0] - seek_bar_x
+			self.seek_bar_size[0] = self.window_size[0] - seek_bar_x
 			self.seek_bar_position[0] = seek_bar_x
 
 			# if gui.bb_show_art:
@@ -28070,29 +28094,28 @@ class BottomBarType_ao1:
 			# self.seek_bar_position[0] = 0
 			# self.seek_bar_size[0] = window_size[0]
 
-	def render(self):
-
+	def render(self) -> None:
 		global volume_store
 		global clicked
 		global right_click
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		ddt.rect_a((0, window_size[1] - gui.panelBY), (window_size[0], gui.panelBY), colours.bottom_panel_colour)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		right_offset = 0
-		if gui.display_time_mode >= 2:
-			right_offset = 22 * gui.scale
+		if self.gui.display_time_mode >= 2:
+			right_offset = 22 * self.gui.scale
 
-		if window_size[0] < 670 * gui.scale:
-			right_offset -= 90 * gui.scale
+		if self.window_size[0] < 670 * self.gui.scale:
+			right_offset -= 90 * self.gui.scale
 
 		# # MINI ALBUM ART
 		# if gui.bb_show_art:
 		#     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
 		#     ddt.rect_r(rect, [255, 255, 255, 8], True)
 		#     if 3 > pctl.playing_state > 0:
-		#         album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+		#         tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, [255, 255, 255, 20])
 
@@ -28100,14 +28123,14 @@ class BottomBarType_ao1:
 		if mouse_wheel != 0 and mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(
 			mouse_position, self.seek_bar_position + self.seek_bar_size):
 
-			pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment
-			if pctl.player_volume < 1:
-				pctl.player_volume = 0
-			elif pctl.player_volume > 100:
-				pctl.player_volume = 100
+			self.pctl.player_volume += mouse_wheel * self.prefs.volume_wheel_increment
+			if self.pctl.player_volume < 1:
+				self.pctl.player_volume = 0
+			elif self.pctl.player_volume > 100:
+				self.pctl.player_volume = 100
 
-			pctl.player_volume = int(pctl.player_volume)
-			pctl.set_volume()
+			self.pctl.player_volume = int(self.pctl.player_volume)
+			self.pctl.set_volume()
 
 		# mode menu
 		if right_click:
@@ -28124,18 +28147,18 @@ class BottomBarType_ao1:
 			if gui.compact_bar:
 				x -= 90 * gui.scale
 
-			rect = (x - 8 * gui.scale, y - 17 * gui.scale, 55 * gui.scale, 23 * gui.scale)
+			rect = (x - 8 * self.gui.scale, y - 17 * self.gui.scale, 55 * self.gui.scale, 23 * self.gui.scale)
 			# ddt.rect(rect, [255,255,255,25])
-			if coll(rect) and mouse_down:
-				gui.update_on_drag = True
+			if self.coll(rect) and mouse_down:
+				self.gui.update_on_drag = True
 
-			h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
-			if coll(h_rect) and mouse_down:
-				pctl.player_volume = 0
+			h_rect = (x - 6 * self.gui.scale, y - 17 * self.gui.scale, 4 * self.gui.scale, 23 * self.gui.scale)
+			if self.coll(h_rect) and mouse_down:
+				self.pctl.player_volume = 0
 
-			step = round(1 * gui.scale)
-			min_h = round(4 * gui.scale)
-			spacing = round(5 * gui.scale)
+			step = round(1 * self.gui.scale)
+			min_h = round(4 * self.gui.scale)
+			spacing = round(5 * self.gui.scale)
 
 			if right_click and coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
 				if right_click:
@@ -28145,241 +28168,237 @@ class BottomBarType_ao1:
 					else:
 						pctl.player_volume = volume_store
 
-					pctl.set_volume()
+					self.pctl.set_volume()
 
 			for bar in range(8):
-
 				h = min_h + bar * step
-				rect = (x, y - h, 3 * gui.scale, h)
-				h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
+				rect = (x, y - h, 3 * self.gui.scale, h)
+				h_rect = (x - 1 * self.gui.scale, y - 17 * self.gui.scale, 4 * self.gui.scale, 23 * self.gui.scale)
 
-				if coll(h_rect):
-					if mouse_down:
-						gui.update_on_drag = True
+				if self.coll(h_rect) and mouse_down:
+					self.gui.update_on_drag = True
 
-						if bar == 0:
-							pctl.player_volume = 5
-						if bar == 1:
-							pctl.player_volume = 10
-						if bar == 2:
-							pctl.player_volume = 20
-						if bar == 3:
-							pctl.player_volume = 30
-						if bar == 4:
-							pctl.player_volume = 45
-						if bar == 5:
-							pctl.player_volume = 55
-						if bar == 6:
-							pctl.player_volume = 70
-						if bar == 7:
-							pctl.player_volume = 100
+					if bar == 0:
+						self.pctl.player_volume = 5
+					if bar == 1:
+						self.pctl.player_volume = 10
+					if bar == 2:
+						self.pctl.player_volume = 20
+					if bar == 3:
+						self.pctl.player_volume = 30
+					if bar == 4:
+						self.pctl.player_volume = 45
+					if bar == 5:
+						self.pctl.player_volume = 55
+					if bar == 6:
+						self.pctl.player_volume = 70
+					if bar == 7:
+						self.pctl.player_volume = 100
 
-						pctl.set_volume()
+					self.pctl.set_volume()
 
-				colour = colours.mode_button_off
+				colour = self.colours.mode_button_off
 
-				if bar == 0 and pctl.player_volume > 0:
-					colour = colours.mode_button_active
-				elif bar == 1 and pctl.player_volume >= 10:
-					colour = colours.mode_button_active
-				elif bar == 2 and pctl.player_volume >= 20:
-					colour = colours.mode_button_active
-				elif bar == 3 and pctl.player_volume >= 30:
-					colour = colours.mode_button_active
-				elif bar == 4 and pctl.player_volume >= 45:
-					colour = colours.mode_button_active
-				elif bar == 5 and pctl.player_volume >= 55:
-					colour = colours.mode_button_active
-				elif bar == 6 and pctl.player_volume >= 70:
-					colour = colours.mode_button_active
-				elif bar == 7 and pctl.player_volume >= 95:
-					colour = colours.mode_button_active
+				if bar == 0 and self.pctl.player_volume > 0:
+					colour = self.colours.mode_button_active
+				elif bar == 1 and self.pctl.player_volume >= 10:
+					colour = self.colours.mode_button_active
+				elif bar == 2 and self.pctl.player_volume >= 20:
+					colour = self.colours.mode_button_active
+				elif bar == 3 and self.pctl.player_volume >= 30:
+					colour = self.colours.mode_button_active
+				elif bar == 4 and self.pctl.player_volume >= 45:
+					colour = self.colours.mode_button_active
+				elif bar == 5 and self.pctl.player_volume >= 55:
+					colour = self.colours.mode_button_active
+				elif bar == 6 and self.pctl.player_volume >= 70:
+					colour = self.colours.mode_button_active
+				elif bar == 7 and self.pctl.player_volume >= 95:
+					colour = self.colours.mode_button_active
 
-				ddt.rect(rect, colour)
+				self.ddt.rect(rect, colour)
 				x += spacing
 
 		# TIME----------------------
 
-		x = window_size[0] - 57 * gui.scale
-		y = window_size[1] - 35 * gui.scale
+		x = self.window_size[0] - 57 * self.gui.scale
+		y = self.window_size[1] - 35 * self.gui.scale
 
-		r_start = x - 10 * gui.scale
-		if gui.display_time_mode in (2, 3):
-			r_start -= 20 * gui.scale
-		rect = (r_start, y - 3 * gui.scale, 80 * gui.scale, 27 * gui.scale)
+		r_start = x - 10 * self.gui.scale
+		if self.gui.display_time_mode in (2, 3):
+			r_start -= 20 * self.gui.scale
+		rect = (r_start, y - 3 * self.gui.scale, 80 * self.gui.scale, 27 * self.gui.scale)
 		# ddt.rect_r(rect, [255, 0, 0, 40], True)
-		if inp.mouse_click and coll(rect):
-			gui.display_time_mode += 1
-			if gui.display_time_mode > 3:
-				gui.display_time_mode = 0
+		if self.inp.mouse_click and self.coll(rect):
+			self.gui.display_time_mode += 1
+			if self.gui.display_time_mode > 3:
+				self.gui.display_time_mode = 0
 
-		if gui.display_time_mode == 0:
-			text_time = get_display_time(pctl.playing_time)
-			ddt.text((x + 1 * gui.scale, y), text_time, colours.time_playing, fonts.bottom_panel_time)
-		elif gui.display_time_mode == 1:
-			if pctl.playing_state == 0:
+		if self.gui.display_time_mode == 0:
+			text_time = get_display_time(self.pctl.playing_time)
+			self.ddt.text((x + 1 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
+		elif self.gui.display_time_mode == 1:
+			if self.pctl.playing_state == 0:
 				text_time = get_display_time(0)
 			else:
-				text_time = get_display_time(pctl.playing_length - pctl.playing_time)
-			ddt.text((x + 1 * gui.scale, y), text_time, colours.time_playing, fonts.bottom_panel_time)
-			ddt.text((x - 5 * gui.scale, y), "-", colours.time_playing, fonts.bottom_panel_time)
-		elif gui.display_time_mode == 2:
-
-			colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+				text_time = get_display_time(self.pctl.playing_length - self.pctl.playing_time)
+			self.ddt.text((x + 1 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
+			self.ddt.text((x - 5 * self.gui.scale, y), "-", self.colours.time_playing, self.fonts.bottom_panel_time)
+		elif self.gui.display_time_mode == 2:
+			self.colours.time_sub = alpha_blend([255, 255, 255, 80], self.colours.bottom_panel_colour)
 
 			x -= 4
-			text_time = get_display_time(pctl.playing_time)
-			ddt.text((x - 25 * gui.scale, y), text_time, colours.time_playing, fonts.bottom_panel_time)
+			text_time = get_display_time(self.pctl.playing_time)
+			self.ddt.text((x - 25 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
 
-			offset1 = 10 * gui.scale
+			offset1 = 10 * self.gui.scale
 
-			if system == "Windows":
-				offset1 += 2 * gui.scale
+			if self.system == "Windows":
+				offset1 += 2 * self.gui.scale
 
-			offset2 = offset1 + 7 * gui.scale
+			offset2 = offset1 + 7 * self.gui.scale
 
-			ddt.text((x + offset1, y), "/", colours.time_sub, fonts.bottom_panel_time)
-			text_time = get_display_time(pctl.playing_length)
-			if pctl.playing_state == 0:
+			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
+			text_time = get_display_time(self.pctl.playing_length)
+			if self.pctl.playing_state == 0:
 				text_time = get_display_time(0)
-			elif pctl.playing_state == 3:
+			elif self.pctl.playing_state == 3:
 				text_time = "-- : --"
-			ddt.text((x + offset2, y), text_time, colours.time_sub, fonts.bottom_panel_time)
+			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
 
-		elif gui.display_time_mode == 3:
+		elif self.gui.display_time_mode == 3:
+			self.colours.time_sub = alpha_blend([255, 255, 255, 80], self.colours.bottom_panel_colour)
 
-			colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+			track = self.pctl.playing_object()
+			if track and track.index != self.gui.dtm3_index:
 
-			track = pctl.playing_object()
-			if track and track.index != gui.dtm3_index:
-
-				gui.dtm3_cum = 0
-				gui.dtm3_total = 0
+				self.gui.dtm3_cum = 0
+				self.gui.dtm3_total = 0
 				run = True
 				collected = []
 				for item in default_playlist:
 					if pctl.master_library[item].parent_folder_path == track.parent_folder_path:
 						if item not in collected:
 							collected.append(item)
-							gui.dtm3_total += pctl.master_library[item].length
+							self.gui.dtm3_total += self.pctl.master_library[item].length
 							if item == track.index:
 								run = False
 							if run:
-								gui.dtm3_cum += pctl.master_library[item].length
-				gui.dtm3_index = track.index
+								self.gui.dtm3_cum += self.pctl.master_library[item].length
+				self.gui.dtm3_index = track.index
 
 			x -= 4
-			text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
+			text_time = get_display_time(self.gui.dtm3_cum + self.pctl.playing_time)
 
-			ddt.text((x - 25 * gui.scale, y), text_time, colours.time_playing, fonts.bottom_panel_time)
+			self.ddt.text((x - 25 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
 
-			offset1 = 10 * gui.scale
-			if system == "Windows":
-				offset1 += 2 * gui.scale
-			offset2 = offset1 + 7 * gui.scale
+			offset1 = 10 * self.gui.scale
+			if self.system == "Windows":
+				offset1 += 2 * self.gui.scale
+			offset2 = offset1 + 7 * self.gui.scale
 
-			ddt.text((x + offset1, y), "/", colours.time_sub, fonts.bottom_panel_time)
-			text_time = get_display_time(gui.dtm3_total)
-			if pctl.playing_state == 0:
+			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
+			text_time = get_display_time(self.gui.dtm3_total)
+			if self.pctl.playing_state == 0:
 				text_time = get_display_time(0)
-			elif pctl.playing_state == 3:
+			elif self.pctl.playing_state == 3:
 				text_time = "-- : --"
-			ddt.text((x + offset2, y), text_time, colours.time_sub, fonts.bottom_panel_time)
+			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
 
 		# BUTTONS
 		# bottom buttons
 
-		if gui.mode == 1:
-
+		if self.gui.mode == 1:
 			# PLAY---
 			buttons_x_offset = 0
 			compact = False
-			if window_size[0] < 650 * gui.scale:
+			if self.window_size[0] < 650 * self.gui.scale:
 				compact = True
 
-			play_colour = colours.media_buttons_off
-			pause_colour = colours.media_buttons_off
-			stop_colour = colours.media_buttons_off
-			forward_colour = colours.media_buttons_off
-			back_colour = colours.media_buttons_off
+			play_colour = self.colours.media_buttons_off
+			pause_colour = self.colours.media_buttons_off
+			stop_colour = self.colours.media_buttons_off
+			forward_colour = self.colours.media_buttons_off
+			back_colour = self.colours.media_buttons_off
 
-			if pctl.playing_state == 1:
-				play_colour = colours.media_buttons_active
+			if self.pctl.playing_state == 1:
+				play_colour = self.colours.media_buttons_active
 
-			if pctl.stop_mode > 0:
-				stop_colour = colours.media_buttons_active
+			if self.pctl.stop_mode > 0:
+				stop_colour = self.colours.media_buttons_active
 
-			if pctl.playing_state == 2:
-				pause_colour = colours.media_buttons_active
-				play_colour = colours.media_buttons_active
-			elif pctl.playing_state == 3:
-				play_colour = colours.media_buttons_active
-				if pctl.record_stream:
+			if self.pctl.playing_state == 2:
+				pause_colour = self.colours.media_buttons_active
+				play_colour = self.colours.media_buttons_active
+			elif self.pctl.playing_state == 3:
+				play_colour = self.colours.media_buttons_active
+				if self.pctl.record_stream:
 					play_colour = [220, 50, 50, 255]
 
-			if not compact or (compact and pctl.playing_state != 2):
+			if not compact or (compact and self.pctl.playing_state != 2):
 				rect = (
-				buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale),
-				50 * gui.scale, 40 * gui.scale)
-				fields.add(rect)
-				if coll(rect):
-					play_colour = colours.media_buttons_over
-					if inp.mouse_click:
-						if compact and pctl.playing_state == 1:
-							pctl.pause()
-						elif pctl.playing_state == 1:
-							pctl.show_current(highlight=True)
+				buttons_x_offset + (10 * self.gui.scale), self.window_size[1] - self.control_line_bottom - (13 * self.gui.scale),
+				50 * self.gui.scale, 40 * self.gui.scale)
+				self.fields.add(rect)
+				if self.coll(rect):
+					play_colour = self.colours.media_buttons_over
+					if self.inp.mouse_click:
+						if compact and self.pctl.playing_state == 1:
+							self.pctl.pause()
+						elif self.pctl.playing_state == 1:
+							self.pctl.show_current(highlight=True)
 						else:
-							pctl.play()
-						inp.mouse_click = False
-					tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
+							self.pctl.play()
+						self.inp.mouse_click = False
+					self.tauon.tool_tip2.test(33 * self.gui.scale, y - 35 * self.gui.scale, _("Play, RC: Go to playing"))
 
 					if right_click:
-						pctl.show_current(highlight=True)
+						self.pctl.show_current(highlight=True)
 
-				self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
-				# ddt.rect_r(rect,[255,0,0,255], True)
+				self.play_button.render(29 * self.gui.scale, self.window_size[1] - self.control_line_bottom, play_colour)
+				# self.ddt.rect_r(rect,[255,0,0,255], True)
 
 			# PAUSE---
 			if compact:
-				buttons_x_offset = -46 * gui.scale
+				buttons_x_offset = -46 * self.gui.scale
 
-			x = (75 * gui.scale) + buttons_x_offset
-			y = window_size[1] - self.control_line_bottom
+			x = (75 * self.gui.scale) + buttons_x_offset
+			y = self.window_size[1] - self.control_line_bottom
 
-			if not compact or (compact and pctl.playing_state == 2):
+			if not compact or (compact and self.pctl.playing_state == 2):
 
-				rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
-				fields.add(rect)
-				if coll(rect) and pctl.playing_state != 3:
-					pause_colour = colours.media_buttons_over
-					if inp.mouse_click:
-						pctl.pause()
+				rect = (x - 15 * self.gui.scale, y - 13 * self.gui.scale, 50 * self.gui.scale, 40 * self.gui.scale)
+				self.fields.add(rect)
+				if self.coll(rect) and self.pctl.playing_state != 3:
+					pause_colour = self.colours.media_buttons_over
+					if self.inp.mouse_click:
+						self.pctl.pause()
 					if right_click:
-						pctl.show_current(highlight=True)
-					tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
+						self.pctl.show_current(highlight=True)
+					self.tauon.tool_tip2.test(x, y - 35 * self.gui.scale, _("Pause"))
 
-				# ddt.rect_r(rect,[255,0,0,255], True)
-				ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
-				ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
+				# self.ddt.rect_r(rect,[255,0,0,255], True)
+				self.ddt.rect_a((x, y + 0), (4 * self.gui.scale, 13 * self.gui.scale), pause_colour)
+				self.ddt.rect_a((x + 10 * self.gui.scale, y + 0), (4 * self.gui.scale, 13 * self.gui.scale), pause_colour)
 
 			# FORWARD---
-			rect = (buttons_x_offset + 125 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
-					50 * gui.scale, 35 * gui.scale)
-			fields.add(rect)
-			if coll(rect) and pctl.playing_state != 3:
-				forward_colour = colours.media_buttons_over
-				if inp.mouse_click:
-					pctl.advance()
-					gui.tool_tip_lock_off_f = True
+			rect = (
+				buttons_x_offset + 125 * self.gui.scale,
+				self.window_size[1] - self.control_line_bottom - 10 * self.gui.scale, 50 * self.gui.scale, 35 * self.gui.scale)
+			self.fields.add(rect)
+			if self.coll(rect) and self.pctl.playing_state != 3:
+				forward_colour = self.colours.media_buttons_over
+				if self.inp.mouse_click:
+					self.pctl.advance()
+					self.gui.tool_tip_lock_off_f = True
 				if right_click:
-					# pctl.random_mode ^= True
-					toggle_random()
-					gui.tool_tip_lock_off_f = True
-					# if window_size[0] < 600 * gui.scale:
+					# self.pctl.random_mode ^= True
+					self.tauon.toggle_random()
+					self.gui.tool_tip_lock_off_f = True
+					# if self.window_size[0] < 600 * self.gui.scale:
 					# . Shuffle set to on
-					gui.mode_toast_text = _("Shuffle On")
-					if not pctl.random_mode:
+					self.gui.mode_toast_text = _("Shuffle On")
+					if not self.pctl.random_mode:
 						# . Shuffle set to off
 						gui.mode_toast_text = _("Shuffle Off")
 					toast_mode_timer.set()
@@ -28391,11 +28410,11 @@ class BottomBarType_ao1:
 				# if not gui.tool_tip_lock_off_f:
 				#     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
 			else:
-				gui.tool_tip_lock_off_f = False
+				self.gui.tool_tip_lock_off_f = False
 
 			self.forward_button.render(
-				buttons_x_offset + 125 * gui.scale,
-				1 + window_size[1] - self.control_line_bottom, forward_colour)
+				buttons_x_offset + 125 * self.gui.scale,
+				1 + self.window_size[1] - self.control_line_bottom, forward_colour)
 
 class MiniMode:
 	def __init__(self, tauon: Tauon) -> None:
@@ -28423,72 +28442,71 @@ class MiniMode:
 		self.shuffle_fade_timer = Timer(100)
 		self.repeat_fade_timer = Timer(100)
 
-	def render(self):
+	def render(self) -> None:
 		# We only set seek_r and seek_w if track is currently on, but use it anyway later, so make sure it exists
-		if 'seek_r' not in locals():
+		if "seek_r" not in locals():
 			seek_r = [0, 0, 0, 0]
 			seek_w = 0
 
-		w = window_size[0]
-		h = window_size[1]
+		w = self.window_size[0]
+		h = self.window_size[1]
 
 		y1 = w
 		if w == h:
-			y1 -= 79 * gui.scale
+			y1 -= 79 * self.gui.scale
 
 		h1 = h - y1
 
 		# Draw background
-		bg = colours.mini_mode_background
+		bg = self.colours.mini_mode_background
 		# bg = [250, 250, 250, 255]
 
-		ddt.rect((0, 0, w, h), bg)
-		ddt.text_background_colour = bg
+		self.ddt.rect((0, 0, w, h), bg)
+		self.ddt.text_background_colour = bg
 
 		detect_mouse_rect = (3, 3, w - 6, h - 6)
-		fields.add(detect_mouse_rect)
-		mouse_in = coll(detect_mouse_rect)
+		self.fields.add(detect_mouse_rect)
+		mouse_in = self.coll(detect_mouse_rect)
 
 		# Play / Pause when right clicking below art
-		if right_click:  # and mouse_position[1] > y1:
-			pctl.play_pause()
+		if self.inp.right_click:  # and self.inp.mouse_position[1] > y1:
+			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if mouse_wheel != 0:
+		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
 
-			pctl.player_volume += mouse_wheel * prefs.volume_wheel_increment * 3
-			if pctl.player_volume < 1:
-				pctl.player_volume = 0
-			elif pctl.player_volume > 100:
-				pctl.player_volume = 100
+			self.pctl.player_volume += mouse_wheel * self.prefs.volume_wheel_increment * 3
+			if self.pctl.player_volume < 1:
+				self.pctl.player_volume = 0
+			elif self.pctl.player_volume > 100:
+				self.pctl.player_volume = 100
 
-			pctl.player_volume = int(pctl.player_volume)
-			pctl.set_volume()
+			self.pctl.player_volume = int(self.pctl.player_volume)
+			self.pctl.set_volume()
 
-		track = pctl.playing_object()
+		track = self.pctl.playing_object()
 
-		control_hit_area = (3, y1 - 15 * gui.scale, w - 6, h1 - 3 + 15 * gui.scale)
-		mouse_in_area = coll(control_hit_area)
-		fields.add(control_hit_area)
+		control_hit_area = (3, y1 - 15 * self.gui.scale, w - 6, h1 - 3 + 15 * self.gui.scale)
+		mouse_in_area = self.coll(control_hit_area)
+		self.fields.add(control_hit_area)
 
-		ddt.rect((0, 0, w, w), (0, 0, 0, 45))
+		self.ddt.rect((0, 0, w, w), (0, 0, 0, 45))
 		if track is not None:
-
 			# Render album art
-			album_art_gen.display(track, (0, 0), (w, w))
+			self.album_art_gen.display(track, (0, 0), (w, w))
 
-			line1c = colours.mini_mode_text_1
-			line2c = colours.mini_mode_text_2
+			line1c = self.colours.mini_mode_text_1
+			line2c = self.colours.mini_mode_text_2
 
 			if h == w and mouse_in_area:
-				# ddt.pretty_rect = (0, 260 * gui.scale, w, 100 * gui.scale)
-				ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
+				# self.ddt.pretty_rect = (0, 260 * self.gui.scale, w, 100 * self.gui.scale)
+				self.ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
 				line1c = [255, 255, 255, 240]
 				line2c = [255, 255, 255, 77]
 
 			# Double click bottom text to return to full window
-			text_hit_area = (60 * gui.scale, y1 + 4, 230 * gui.scale, 50 * gui.scale)
+			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if coll(text_hit_area):
 				if inp.mouse_click:
@@ -28505,82 +28523,80 @@ class MiniMode:
 			# Calculate seek bar position
 			seek_w = int(w * 0.70)
 
-			seek_r = [(w - seek_w) // 2, y1 + 58 * gui.scale, seek_w, 6 * gui.scale]
-			seek_r_hit = [seek_r[0], seek_r[1] - 4 * gui.scale, seek_r[2], seek_r[3] + 8 * gui.scale]
+			seek_r = [(w - seek_w) // 2, y1 + 58 * self.gui.scale, seek_w, 6 * self.gui.scale]
+			seek_r_hit = [seek_r[0], seek_r[1] - 4 * self.gui.scale, seek_r[2], seek_r[3] + 8 * self.gui.scale]
 
 			if w != h or mouse_in_area:
 
 				if not line1 and not line2:
-					ddt.text((w // 2, y1 + 18 * gui.scale, 2), track.filename, line1c, 214, window_size[0] - 30 * gui.scale)
+					self.ddt.text((w // 2, y1 + 18 * self.gui.scale, 2), track.filename, line1c, 214, self.window_size[0] - 30 * self.gui.scale)
 				else:
-
-					ddt.text((w // 2, y1 + 10 * gui.scale, 2), line1, line2c, 514, window_size[0] - 30 * gui.scale)
-
-					ddt.text((w // 2, y1 + 31 * gui.scale, 2), line2, line1c, 414, window_size[0] - 30 * gui.scale)
+					self.ddt.text((w // 2, y1 + 10 * self.gui.scale, 2), line1, line2c, 514, self.window_size[0] - 30 * self.gui.scale)
+					self.ddt.text((w // 2, y1 + 31 * self.gui.scale, 2), line2, line1c, 414, self.window_size[0] - 30 * self.gui.scale)
 
 				# Test click to seek
-				if mouse_up and coll(seek_r_hit):
-
+				if mouse_up and self.coll(seek_r_hit):
 					click_x = mouse_position[0]
 					click_x = min(click_x, seek_r[0] + seek_r[2])
 					click_x = max(click_x, seek_r[0])
 					click_x -= seek_r[0]
 
-					if click_x < 6 * gui.scale:
+					if click_x < 6 * self.gui.scale:
 						click_x = 0
 					seek = click_x / seek_r[2]
 
-					pctl.seek_decimal(seek)
+					self.pctl.seek_decimal(seek)
 
 				# Draw progress bar background
-				ddt.rect(seek_r, [255, 255, 255, 32])
+				self.ddt.rect(seek_r, [255, 255, 255, 32])
 
 				# Calculate and draw bar foreground
 				progress_w = 0
-				if pctl.playing_length > 1:
-					progress_w = pctl.playing_time * seek_w / pctl.playing_length
+				if self.pctl.playing_length > 1:
+					progress_w = self.pctl.playing_time * seek_w / self.pctl.playing_length
 				seek_colour = [210, 210, 210, 255]
-				if gui.theme_name == "Carbon":
-					seek_colour = colours.bottom_panel_colour
+				if self.gui.theme_name == "Carbon":
+					seek_colour = self.colours.bottom_panel_colour
 
-				if pctl.playing_state != 1:
+				if self.pctl.playing_state != 1:
 					seek_colour = [210, 40, 100, 255]
 
 				seek_r[2] = progress_w
 
 				if self.volume_timer.get() < 0.9:
-					progress_w = pctl.player_volume * (seek_w - (4 * gui.scale)) / 100
-					gui.update += 1
+					progress_w = self.pctl.player_volume * (seek_w - (4 * self.gui.scale)) / 100
+					self.gui.update += 1
 					seek_colour = [210, 210, 210, 255]
 					seek_r[2] = progress_w
-					seek_r[0] += 2 * gui.scale
-					seek_r[1] += 2 * gui.scale
-					seek_r[3] -= 4 * gui.scale
+					seek_r[0] += 2 * self.gui.scale
+					seek_r[1] += 2 * self.gui.scale
+					seek_r[3] -= 4 * self.gui.scale
 
-				ddt.rect(seek_r, seek_colour)
+				self.ddt.rect(seek_r, seek_colour)
 
-		left_area = (1, y1, seek_r[0] - 1, 45 * gui.scale)
-		right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * gui.scale)
+		left_area = (1, y1, seek_r[0] - 1, 45 * self.gui.scale)
+		right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * self.gui.scale)
 
-		fields.add(left_area)
-		fields.add(right_area)
+		self.fields.add(left_area)
+		self.fields.add(right_area)
 
 		hint = 0
-		if coll(control_hit_area):
+		if self.coll(control_hit_area):
 			hint = 30
-		if coll(left_area):
+		if self.coll(left_area):
 			hint = 240
-		if hint and not prefs.shuffle_lock:
-			self.left_slide.render(16 * gui.scale, y1 + 17 * gui.scale, [255, 255, 255, hint])
+		if hint and not self.prefs.shuffle_lock:
+			self.left_slide.render(16 * self.gui.scale, y1 + 17 * self.gui.scale, [255, 255, 255, hint])
 
 		hint = 0
-		if coll(control_hit_area):
+		if self.coll(control_hit_area):
 			hint = 30
-		if coll(right_area):
+		if self.coll(right_area):
 			hint = 240
 		if hint:
-			self.right_slide.render(window_size[0] - self.right_slide.w - 16 * gui.scale, y1 + 17 * gui.scale,
-									[255, 255, 255, hint])
+			self.right_slide.render(
+				self.window_size[0] - self.right_slide.w - 16 * self.gui.scale, y1 + 17 * self.gui.scale,
+				[255, 255, 255, hint])
 
 		# Shuffle
 
