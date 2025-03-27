@@ -24640,7 +24640,7 @@ class Over:
 		#         if not prefs.discogs_pat:
 		#             self.show_message(_("There wasn't any token saved.")
 		#         prefs.discogs_pat = ""
-		#         save_prefs()
+		#         save_prefs(bag)
 		#
 		#     y += 30 * gui.scale
 		#     if prefs.discogs_pat:
