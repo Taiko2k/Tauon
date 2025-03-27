@@ -52389,20 +52389,6 @@ selected_in_playlist = -1
 shift_selection = []
 
 gen_codes: dict[int, str] = {}
-# Control Variables--------------------------------------------------------------------------
-
-mouse_down = False
-right_down = False
-click_location = [200, 200]
-last_click_location = [0, 0]
-mouse_position = [0, 0]
-mouse_up_position = [0, 0]
-
-k_input = True
-key_shift_down = False
-drag_mode = False
-side_drag = False
-clicked = False
 
 # Player Variables----------------------------------------------------------------------------
 
@@ -52741,6 +52727,20 @@ gui = GuiVar(
 
 inp = gui.inp
 keymaps = gui.keymaps
+# Control Variables--------------------------------------------------------------------------
+
+mouse_down          = inp.mouse_down
+right_down          = inp.right_down
+click_location      = inp.click_location
+last_click_location = inp.last_click_location
+mouse_position      = inp.mouse_position
+mouse_up_position   = inp.mouse_up_position
+
+k_input        = inp.k_input
+key_shift_down = inp.key_shift_down
+drag_mode      = inp.drag_mode
+side_drag      = gui.side_drag # TODO(Martin): Move this to Input
+clicked        = inp.global_clicked
 
 # -----------------------------------------------------
 # STATE LOADING
