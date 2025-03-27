@@ -23179,7 +23179,7 @@ class Over:
 		border = round(4 * gui.scale)
 		outer_border = round(2 * gui.scale)
 
-		# theme_files = get_themes()
+		# theme_files = get_themes(dirs)
 		xx = x
 		yy = y
 		hover_name = None
