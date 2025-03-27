@@ -57,7 +57,7 @@ class LibreSpot:
 		self.prefs           = tauon.prefs
 		self.spot_ctl        = tauon.spot_ctl
 		self.librespot_p     = tauon.librespot_p
-		self.show_message    = tauon.gui.show_message
+		self.show_message    = tauon.show_message
 		self.cache_directory = tauon.cache_directory
 		self.running    = False
 		self.flush      = False
@@ -206,7 +206,7 @@ class Cachement:
 		self.gui          = tauon.gui
 		self.pctl         = tauon.pctl
 		self.prefs        = tauon.prefs
-		self.show_message = tauon.gui.show_message
+		self.show_message = tauon.show_message
 		self.audio_cache  = tauon.cache_directory / "network-audio1"
 		self.audio_cache2 = tauon.cache_directory / "audio-cache"
 		self.direc = str(self.audio_cache2)
@@ -716,8 +716,7 @@ def player4(tauon: Tauon) -> None:
 	loaded_track = None
 	fade_time = 400
 
-	aud = ctypes.cdll.LoadLibrary(str(get_phazor_path(pctl)))
-	logging.debug("Loaded Phazor path at: " + str(get_phazor_path(pctl)))
+	aud = tauon.aud
 
 	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
@@ -727,7 +726,6 @@ def player4(tauon: Tauon) -> None:
 
 	aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
 	aud.feed_raw.restype = None
-	tauon.aud = aud
 	aud.set_volume(int(pctl.player_volume))
 
 	bins1 = (ctypes.c_float * 24)()
@@ -1103,7 +1101,7 @@ def player4(tauon: Tauon) -> None:
 					r_timer = Timer()
 					r_timer.set()
 
-					if loaded_track and loaded_track.file_ext.lower() in tauon.gme_formats:
+					if loaded_track and loaded_track.file_ext.lower() in tauon.formats.GME:
 						# GME formats dont have a physical end so we don't do gapless
 						while r_timer.get() <= remain - prefs.device_buffer / 1000:
 							if pctl.commit:
@@ -1196,7 +1194,7 @@ def player4(tauon: Tauon) -> None:
 								break
 							aud.stop()
 							if not gui.message_box:
-								gui.show_message(_("Error loading track"), mode="warning")
+								tauon.show_message(_("Error loading track"), mode="warning")
 							error = True
 							break
 						time.sleep(0.016)
@@ -1208,7 +1206,7 @@ def player4(tauon: Tauon) -> None:
 
 				player_timer.set()
 				pctl.jump_time = 0
-				if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.mod_formats:
+				if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.formats.MOD:
 					i = 0
 					t = 0
 					while t == 0:
