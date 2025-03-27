@@ -5010,12 +5010,6 @@ class Menu:
 				else:
 					self.items[to_call].func()
 
-				if not self.is_item_disabled(self.items[to_call]):
-					if self.items[to_call].pass_ref:
-						self.items[to_call].func(self.reference)
-					else:
-						self.items[to_call].func()
-
 			if self.clicked or inp.key_esc_press or self.close_next_frame:
 				self.close_next_frame = False
 				self.active = False
