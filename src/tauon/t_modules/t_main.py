@@ -43018,8 +43018,7 @@ def main(holder: Holder) -> None:
 				elif ggc == 1:
 					ggc = 0
 					gbc.enable()
-
-				#logging.info("Enabling garbage collecting")
+					#logging.info("Enabling garbage collecting")
 
 			if gui.mode == 4:
 				launch.render()
