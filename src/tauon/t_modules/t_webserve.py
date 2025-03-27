@@ -443,7 +443,10 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 			elif path == "/api1/repeat":
 				self.run_command(tauon.toggle_repeat)
 			elif path == "/api1/auto-stop":
-				tauon.pctl.auto_stop ^= True
+				if tauon.pctl.stop_mode == 0:
+					tauon.pctl.stop_mode = 1
+				else:
+					tauon.pctl.stop_mode = 0
 				tauon.gui.update += 1
 			elif path == "/api1/version":
 				data = {"version": 1}
@@ -633,7 +636,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 					"shuffle": pctl.random_mode is True,
 					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
-					"auto_stop": tauon.pctl.auto_stop is True,
+					"auto_stop": tauon.pctl.stop_mode > 0,
 					"volume": pctl.player_volume,
 					"playlist": str(tauon.get_playing_playlist_id()),
 					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
