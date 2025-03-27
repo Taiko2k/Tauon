@@ -12229,13 +12229,13 @@ class Tauon:
 
 			self.bottom_bar1.update()
 
-			# if system != 'windows':
-			#     if draw_border:
-			#         gui.panelY = 30 * gui.scale + 3 * gui.scale
-			#         self.top_panel.ty = 3 * gui.scale
-			#     else:
-			#         gui.panelY = 30 * gui.scale
-			#         self.top_panel.ty = 0
+			# if system != "Windows":
+			# 	if draw_border:
+			# 		gui.panelY = 30 * gui.scale + 3 * gui.scale
+			# 		self.top_panel.ty = 3 * gui.scale
+			# 	else:
+			# 		gui.panelY = 30 * gui.scale
+			# 		self.top_panel.ty = 0
 
 			if gui.set_bar and gui.set_mode:
 				gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
@@ -24990,8 +24990,8 @@ class Over:
 			self.toggle_square(x, y, self.tauon.toggle_titlebar_line, _("Show playing in titlebar"))
 
 		#y += 25 * gui.scale
-		# if system != 'windows' and (self.flatpak_mode or snap_mode):
-		#     self.toggle_square(x, y, self.tauon.toggle_force_subpixel, _("Enable RGB text antialiasing"))
+		# if system != "Windows" and (self.flatpak_mode or snap_mode):
+		# 	self.toggle_square(x, y, self.tauon.toggle_force_subpixel, _("Enable RGB text antialiasing"))
 
 		y += 25 * gui.scale
 		old = prefs.mini_mode_on_top
@@ -36646,7 +36646,7 @@ def load_prefs(bag: Bag) -> None:
 	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
 	# show-current-on-transition", prefs.show_current_on_transition)
-	if bag.system != "windows":
+	if bag.system != "Windows":
 		cf.br()
 		cf.add_text("[fonts]")
 		cf.add_comment("Changes will require app restart.")
@@ -41689,7 +41689,7 @@ def main(holder: Holder) -> None:
 				#logging.info(link)
 
 				if pctl.playing_ready() and link.startswith("http"):
-					if system != "windows" and sdl3.SDL_version >= 204:
+					if system != "Windows" and sdl3.SDL_version >= 204:
 						gmp = get_global_mouse()
 						gwp = get_window_position(t_window)
 						i_x = gmp[0] - gwp[0]
