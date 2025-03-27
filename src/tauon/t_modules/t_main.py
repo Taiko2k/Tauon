@@ -21097,6 +21097,12 @@ class AlbumArt:
 		self.colours.last_album = ""
 
 class StyleOverlay:
+	"""
+	Stage:
+		0 - blank
+		1 - preparing first
+		2 - render first
+	"""
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon          = tauon
@@ -40471,11 +40477,6 @@ def main(holder: Holder) -> None:
 		tauon.rename_folder.text = rename_folder_previous
 
 	album_art_gen = tauon.album_art_gen
-
-	# 0 - blank
-	# 1 - preparing first
-	# 2 - render first
-	# 3 - preparing 2nd
 
 	scroll_hold = False
 	scroll_point = 0
