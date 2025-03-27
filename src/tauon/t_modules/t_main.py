@@ -36447,60 +36447,11 @@ class Formats:
 	DA:      set[str]
 	Archive: set[str]
 
-def get_cert_path() -> str:
-	if pyinstaller_mode:
-		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
-	# Running as script
-	return certifi.where()
-
-def setup_tls() -> ssl.SSLContext:
-	"""TLS setup (needed for frozen installs)
-
-	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast)
-	"""
-	# Set the TLS certificate path environment variable
-	cert_path = get_cert_path()
-	logging.debug(f"Found TLS cert file at: {cert_path}")
-	os.environ["SSL_CERT_FILE"] = cert_path
-	os.environ["REQUESTS_CA_BUNDLE"] = cert_path
-
-	# Create default TLS context
-	return ssl.create_default_context(cafile=get_cert_path())
-
-def whicher(target: str) -> bool | str | None:
-	"""Detect and launch programs outside of flatpak sandbox"""
-	try:
-		if flatpak_mode:
-			complete = subprocess.run(
-				shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
-					stderr=subprocess.PIPE, check=True)
-			r = complete.stdout.decode()
-			return "bin/" + target in r
-		return shutil.which(target)
-	except Exception:
-		logging.exception("Failed to run flatpak-spawn")
-		return False
-
-def asset_loader(
-	bag: Bag, loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset], name: str, mod: bool = False,
-) -> WhiteModImageAsset | LoadImageAsset:
-	if name in loaded_asset_dc:
-		return loaded_asset_dc[name]
-
-	target = str(bag.dirs.scaled_asset_directory / name)
-	if mod:
-		item = WhiteModImageAsset(bag=bag, path=target, scale_name=name)
-	else:
-		item = LoadImageAsset(bag=bag, path=target, scale_name=name)
-	loaded_asset_dc[name] = item
-	return item
-
-def no_padding() -> int:
-	"""This will remove all padding"""
-	return 0
-
-def uid_gen() -> int:
-	return random.randrange(1, 100000000)
+###################
+###################
+################### START OBSOLETED FUNCTIONS
+###################
+###################
 
 def pl_gen(
 	title:        str = "Default",
@@ -36523,13 +36474,6 @@ def pl_gen(
 
 	#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
 	return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False)
-
-def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, album_stage: int = 0) -> TauonQueueItem:
-	# type; 0 is track, 1 is album
-	auto_stop = False
-
-	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
-	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
 
 def open_uri(uri:str) -> None:
 	logging.info("OPEN URI")
@@ -36676,49 +36620,6 @@ def auto_size_columns():
 def set_colour(colour):
 	sdl3.SDL_SetRenderDrawColor(renderer, colour[0], colour[1], colour[2], colour[3])
 
-def get_themes(deco: bool = False):
-	themes = []  # full, name
-	decos = {}
-	direcs = [str(install_directory / "theme")]
-	if user_directory != install_directory:
-		direcs.append(str(user_directory / "theme"))
-
-	def scan_folders(folders: list[str]) -> None:
-		for folder in folders:
-			if not os.path.isdir(folder):
-				continue
-			paths = [os.path.join(folder, f) for f in os.listdir(folder)]
-			for path in paths:
-				if os.path.islink(path):
-					path = os.readlink(path)
-				if os.path.isfile(path):
-					if path[-7:] == ".ttheme":
-						themes.append((path, os.path.basename(path).split(".")[0]))
-					elif path[-6:] == ".tdeco":
-						decos[os.path.basename(path).split(".")[0]] = path
-				elif os.path.isdir(path):
-					scan_folders([path])
-
-	scan_folders(direcs)
-	themes.sort()
-	if deco:
-		return decos
-	return themes
-
-def get_end_folder(direc):
-	for w in range(len(direc)):
-		if direc[-w - 1] == "\\" or direc[-w - 1] == "/":
-			direc = direc[-w:]
-			return direc
-	return None
-
-def set_path(nt: TrackClass, path: str) -> None:
-	nt.fullpath = path.replace("\\", "/")
-	nt.filename = os.path.basename(path)
-	nt.parent_folder_path = os.path.dirname(path.replace("\\", "/"))
-	nt.parent_folder_name = get_end_folder(os.path.dirname(path))
-	nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
-
 def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None: # TODO(Martin): To be removed, now within Tauon
 	gui.message_box = True
 	gui.message_text = line1
@@ -36739,13 +36640,6 @@ def show_message(line1: str, line2: str ="", line3: str = "", mode: str = "info"
 			logging.error(f"Unknown mode '{mode}' for message: " + line1 + line2 + line3)
 	gui.update = 1
 
-def pumper():
-	if macos:
-		return
-	while pump:
-		time.sleep(0.005)
-		sdl3.SDL_PumpEvents()
-
 def track_number_process(line: str) -> str:
 	line = str(line).split("/", 1)[0].lstrip("0")
 	if prefs.dd_index and len(line) == 1:
@@ -36757,850 +36651,6 @@ def advance_theme() -> None:
 
 	theme += 1
 	gui.reload_theme = True
-
-def get_theme_number(name: str) -> int:
-	if name == "Mindaro":
-		return 0
-	themes = get_themes()
-	for i, theme in enumerate(themes):
-		if theme[1] == name:
-			return i + 1
-	return 0
-
-def get_theme_name(number: int) -> str:
-	if number == 0:
-		return "Mindaro"
-	number -= 1
-	themes = get_themes()
-	logging.info((number, themes))
-	if len(themes) > number:
-		return themes[number][1]
-	return ""
-
-def save_prefs(bag: Bag) -> None:
-	cf    = bag.cf
-	prefs = bag.prefs
-	cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
-	cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
-	cf.update_value("radio-record-codec", prefs.radio_record_codec)
-
-	cf.update_value("plex-username", prefs.plex_username)
-	cf.update_value("plex-password", prefs.plex_password)
-	cf.update_value("plex-servername", prefs.plex_servername)
-
-	cf.update_value("subsonic-username", prefs.subsonic_user)
-	cf.update_value("subsonic-password", prefs.subsonic_password)
-	cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
-	cf.update_value("subsonic-server-url", prefs.subsonic_server)
-
-	cf.update_value("jelly-username", prefs.jelly_username)
-	cf.update_value("jelly-password", prefs.jelly_password)
-	cf.update_value("jelly-server-url", prefs.jelly_server_url)
-
-	cf.update_value("koel-username", prefs.koel_username)
-	cf.update_value("koel-password", prefs.koel_password)
-	cf.update_value("koel-server-url", prefs.koel_server_url)
-	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
-
-	cf.update_value("display-language", prefs.ui_lang)
-	# cf.update_value("decode-search", prefs.diacritic_search)
-
-	# cf.update_value("use-log-volume-scale", prefs.log_vol)
-	# cf.update_value("audio-backend", prefs.backend)
-	cf.update_value("use-pipewire", prefs.pipewire)
-	cf.update_value("seek-interval", prefs.seek_interval)
-	cf.update_value("pause-fade-time", prefs.pause_fade_time)
-	cf.update_value("cross-fade-time", prefs.cross_fade_time)
-	cf.update_value("device-buffer-ms", prefs.device_buffer)
-	cf.update_value("output-samplerate", prefs.samplerate)
-	cf.update_value("resample-quality", prefs.resample)
-	cf.update_value("avoid_resampling", prefs.avoid_resampling)
-	# cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
-	cf.update_value("precache-local-files", prefs.precache)
-	cf.update_value("cache-use-tmp", prefs.tmp_cache)
-	cf.update_value("cache-limit", prefs.cache_limit)
-	cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
-	cf.update_value("volume-curve", prefs.volume_power)
-	cf.update_value("jump-start-dl", prefs.jump_start)
-	# cf.update_value("force-mono", prefs.mono)
-	# cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
-	# cf.update_value("use-short-buffering", prefs.short_buffer)
-
-	# cf.update_value("gst-output", prefs.gst_output)
-	# cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
-
-	cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
-
-	cf.update_value("tag-editor-name", prefs.tag_editor_name)
-	cf.update_value("tag-editor-target", prefs.tag_editor_target)
-
-	cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
-	cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
-	cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
-	cf.update_value("back-restarts", prefs.back_restarts)
-	cf.update_value("end-queue-stop", prefs.stop_end_queue)
-	cf.update_value("block-suspend", prefs.block_suspend)
-	cf.update_value("allow-video-formats", prefs.allow_video_formats)
-
-	cf.update_value("ui-scale", prefs.scale_want)
-	cf.update_value("auto-scale", prefs.x_scale)
-	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
-	cf.update_value("theme-name", prefs.theme_name)
-	cf.update_value("transparent-style", prefs.transparent_mode)
-	cf.update_value("mac-style", prefs.macstyle)
-	cf.update_value("allow-art-zoom", prefs.zoom_art)
-
-	cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
-	cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
-	cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
-	cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
-	cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
-
-	cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
-	cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
-	cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
-	cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
-	cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
-	cf.update_value("hide-queue-when-empty", prefs.hide_queue)
-	# cf.update_value("show-playlist-list", prefs.show_playlist_list)
-	cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
-	cf.update_value("always-art-header-bar", prefs.always_art_header)
-	# cf.update_value("prefer-center-bg", prefs.center_bg)
-	cf.update_value("showcase-texture-background", prefs.showcase_overlay_texture)
-	cf.update_value("side-panel-style", prefs.side_panel_layout)
-	cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
-	cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
-	cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
-	cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
-	cf.update_value("auto-show-playing", prefs.auto_goto_playing)
-	cf.update_value("notify-include-album", prefs.notify_include_album)
-	cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
-	cf.update_value("drag-tab-to-unpin", prefs.drag_to_unpin)
-
-	cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
-	cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
-	cf.update_value("gallery-center-text", prefs.center_gallery_text)
-
-	cf.update_value("use-custom-fonts", prefs.use_custom_fonts)
-	cf.update_value("font-main-standard", prefs.linux_font)
-	cf.update_value("font-main-medium", prefs.linux_font_semibold)
-	cf.update_value("font-main-bold", prefs.linux_font_bold)
-	cf.update_value("font-main-condensed", prefs.linux_font_condensed)
-	cf.update_value("font-main-condensed-bold", prefs.linux_font_condensed_bold)
-
-	cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
-
-	cf.update_value("double-digit-indices", prefs.dd_index)
-	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
-	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
-	cf.update_value("import-auto-sort", prefs.auto_sort)
-
-	cf.update_value("encode-output-dir", prefs.custom_encoder_output)
-	cf.update_value("sync-device-music-dir", prefs.sync_target)
-	cf.update_value("add_download_directory", prefs.download_dir1)
-
-	cf.update_value("use-system-tray", prefs.use_tray)
-	cf.update_value("use-gamepad", prefs.use_gamepad)
-	cf.update_value("enable-remote-interface", prefs.enable_remote)
-
-	cf.update_value("enable-mpris", prefs.enable_mpris)
-	cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
-	cf.update_value("restore-window-position", prefs.save_window_position)
-	cf.update_value("mini-mode-always-on-top", prefs.mini_mode_on_top)
-	cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
-	cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
-	cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
-
-	cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
-	cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
-	cf.update_value("fanart.tv-background", prefs.enable_fanart_bg)
-	cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
-	cf.update_value("write-ratings-to-tag", prefs.write_ratings)
-	cf.update_value("enable-spotify", prefs.spot_mode)
-	cf.update_value("enable-discord-rpc", prefs.discord_enable)
-	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
-	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
-	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
-
-	cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
-	cf.update_value("listenbrainz-token", prefs.lb_token)
-	cf.update_value("custom-listenbrainz-url", prefs.listenbrainz_url)
-
-	cf.update_value("maloja-key", prefs.maloja_key)
-	cf.update_value("maloja-url", prefs.maloja_url)
-	cf.update_value("maloja-enable", prefs.maloja_enable)
-
-	cf.update_value("tau-url", prefs.sat_url)
-
-	cf.update_value("lastfm-pull-love", prefs.lastfm_pull_love)
-
-	cf.update_value("broadcast-page-port", prefs.metadata_page_port)
-	cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
-
-	cf.update_value("chart-columns", prefs.chart_columns)
-	cf.update_value("chart-rows", prefs.chart_rows)
-	cf.update_value("chart-uses-text", prefs.chart_text)
-	cf.update_value("chart-font", prefs.chart_font)
-	cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
-
-	if bag.dirs.config_directory.is_dir():
-		cf.dump(str(bag.dirs.config_directory / "tauon.conf"))
-	else:
-		logging.error("Missing config directory")
-
-def load_prefs(bag: Bag) -> None:
-	cf    = bag.cf
-	prefs = bag.prefs
-	cf.reset()
-	cf.load(str(bag.dirs.config_directory / "tauon.conf"))
-
-	cf.add_comment("Tauon Music Box configuration file")
-	cf.br()
-	cf.add_comment(
-		"This file will be regenerated while app is running. Formatting and additional comments will be lost.")
-	cf.add_comment("Tip: Use TOML syntax highlighting")
-
-	cf.br()
-	cf.add_text("[audio]")
-
-	# prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
-	prefs.pipewire = cf.sync_add(
-		"bool", "use-pipewire", prefs.pipewire,
-		"Experimental setting to use Pipewire native only.")
-
-	prefs.seek_interval = cf.sync_add(
-		"int", "seek-interval", prefs.seek_interval,
-		"In s. Interval to seek when using keyboard shortcut. Default is 15.")
-	# prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
-
-	prefs.pause_fade_time = max(prefs.pause_fade_time, 100)
-	prefs.pause_fade_time = min(prefs.pause_fade_time, 5000)
-
-	prefs.cross_fade_time = cf.sync_add(
-		"int", "cross-fade-time", prefs.cross_fade_time,
-		"In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
-
-	prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
-	#prefs.samplerate = cf.sync_add(
-	#	"int", "output-samplerate", prefs.samplerate,
-	#	"In hz. Default: 48000, alt: 44100. (restart app to apply change)")
-	prefs.avoid_resampling = cf.sync_add(
-		"bool", "avoid_resampling", prefs.avoid_resampling,
-		"Only implemented for FLAC, MP3, OGG, OPUS")
-	prefs.resample = cf.sync_add(
-		"int", "resample-quality", prefs.resample,
-		"0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
-	if prefs.resample < 0 or prefs.resample > 4:
-		prefs.resample = 1
-	# prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
-	prefs.cache_limit = cf.sync_add(
-		"int", "cache-limit", prefs.cache_limit,
-		"Limit size of network audio file cache. In MB.")
-	prefs.tmp_cache = cf.sync_add(
-		"bool", "cache-use-tmp", prefs.tmp_cache,
-		"Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
-	prefs.precache = cf.sync_add(
-		"bool", "precache-local-files", prefs.precache,
-		"Cache files from local sources too. (Useful for mounted network drives)")
-	prefs.always_ffmpeg = cf.sync_add(
-		"bool", "always-ffmpeg", prefs.always_ffmpeg,
-		"Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
-	prefs.volume_power = cf.sync_add(
-		"int", "volume-curve", prefs.volume_power,
-		"1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
-
-	prefs.jump_start = cf.sync_add(
-		"bool", "jump-start-dl", prefs.jump_start,
-		"Start playing a network track before it has finished downloading")
-
-	# prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
-	# prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
-	# prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
-
-	# cf.br()
-	# cf.add_text("[audio (gstreamer only)]")
-	#
-	# prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
-	# prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
-
-	if prefs.dc_device_setting == "on":
-		prefs.dc_device = True
-	elif prefs.dc_device_setting == "off":
-		prefs.dc_device = False
-
-	cf.br()
-	cf.add_text("[locale]")
-	prefs.ui_lang = cf.sync_add(
-		"string", "display-language", prefs.ui_lang, "Override display language to use if "
-		"available. E.g. \"en\", \"ja\", \"zh_CH\". "
-		"Default: \"auto\"")
-	# prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
-	cf.br()
-	cf.add_text("[search]")
-	prefs.sep_genre_multi = cf.sync_add(
-		"bool", "separate-multi-genre", prefs.sep_genre_multi,
-		"If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
-
-	cf.br()
-	cf.add_text("[tag-editor]")
-	if bag.system == "Windows" or bag.msys:
-		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
-		prefs.tag_editor_target = cf.sync_add(
-			"string", "tag-editor-target",
-			"C:\\Program Files (x86)\\MusicBrainz Picard\\picard.exe",
-			"The path of the exe to run.")
-	else:
-		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
-		prefs.tag_editor_target = cf.sync_add(
-			"string", "tag-editor-target", "picard",
-			"The name of the binary to call.")
-
-	cf.br()
-	cf.add_text("[playback]")
-	prefs.playback_follow_cursor = cf.sync_add(
-		"bool", "playback-follow-cursor", prefs.playback_follow_cursor,
-		"When advancing, always play the track that is selected.")
-	prefs.launch_spotify_web = cf.sync_add(
-		"bool", "spotify-prefer-web", prefs.launch_spotify_web,
-		"Launch the web client rather than attempting to launch the desktop client.")
-	prefs.launch_spotify_local = cf.sync_add(
-		"bool", "spotify-allow-local", prefs.launch_spotify_local,
-		"Play Spotify audio through Tauon.")
-	prefs.back_restarts = cf.sync_add(
-		"bool", "back-restarts", prefs.back_restarts,
-		"Pressing the back button restarts playing track on first press.")
-	prefs.stop_end_queue = cf.sync_add(
-		"bool", "end-queue-stop", prefs.stop_end_queue,
-		"Queue will always enable auto-stop on last track")
-	prefs.block_suspend = cf.sync_add(
-		"bool", "block-suspend", prefs.block_suspend,
-		"Prevent system suspend during playback")
-	prefs.allow_video_formats = cf.sync_add(
-		"bool", "allow-video-formats", prefs.allow_video_formats,
-		"Allow the import of MP4 and WEBM formats")
-	if prefs.allow_video_formats:
-		for item in bag.formats.VID:
-			if item not in bag.formats.DA:
-				bag.formats.DA.add(item)
-
-	cf.br()
-	cf.add_text("[HiDPI]")
-	prefs.scale_want = cf.sync_add(
-		"float", "ui-scale", prefs.scale_want,
-		"UI scale factor. Default is 1.0, try increase if using a HiDPI display.")
-	prefs.x_scale = cf.sync_add("bool", "auto-scale", prefs.x_scale, "Automatically choose above setting")
-	prefs.tracklist_y_text_offset = cf.sync_add(
-		"int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset,
-		"If you're using a UI scale, you may need to tweak this.")
-
-	cf.br()
-	cf.add_text("[ui]")
-
-	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
-	macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
-	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
-	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
-	prefs.gallery_scroll_wheel_px = cf.sync_add(
-		"int", "scroll-gallery-distance", 90,
-		"Only has effect if scroll-gallery-by-row is false.")
-	prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
-	prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
-	if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
-		prefs.custom_bg_opacity = 40
-		logging.warning("Invalid value for mascot-opacity")
-
-	prefs.sync_lyrics_time_offset = cf.sync_add(
-		"int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset,
-		"In milliseconds. May be negative.")
-	prefs.artist_list_prefer_album_artist = cf.sync_add(
-		"bool", "artist-list-prefers-album-artist",
-		prefs.artist_list_prefer_album_artist,
-		"May require restart for change to take effect.")
-	prefs.meta_persists_stop = cf.sync_add(
-		"bool", "side-panel-info-persists", prefs.meta_persists_stop,
-		"Show album art and metadata of last played track when stopped.")
-	prefs.meta_shows_selected = cf.sync_add(
-		"bool", "side-panel-info-selected", prefs.meta_shows_selected,
-		"Show album art and metadata of selected track when stopped. (overides above setting)")
-	prefs.meta_shows_selected_always = cf.sync_add(
-		"bool", "side-panel-info-selected-always",
-		prefs.meta_shows_selected_always,
-		"Show album art and metadata of selected track at all times. (overides the above 2 settings)")
-	prefs.stop_notifications_mini_mode = cf.sync_add(
-		"bool", "mini-mode-avoid-notifications",
-		prefs.stop_notifications_mini_mode,
-		"Avoid sending track change notifications when in Mini Mode")
-	prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
-	# prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
-
-	prefs.show_current_on_transition = cf.sync_add(
-		"bool", "show-current-on-transition",
-		prefs.show_current_on_transition,
-		"Always jump to new playing track even with natural transition (broken setting, is always enabled")
-	prefs.art_in_top_panel = cf.sync_add(
-		"bool", "enable-art-header-bar", prefs.art_in_top_panel,
-		"Show art in top panel when window is narrow")
-	prefs.always_art_header = cf.sync_add(
-		"bool", "always-art-header-bar", prefs.always_art_header,
-		"Show art in top panel at any size. (Requires enable-art-header-bar)")
-
-	# prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
-	prefs.showcase_overlay_texture = cf.sync_add(
-		"bool", "showcase-texture-background", prefs.showcase_overlay_texture,
-		"Draw pattern over background art")
-	prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
-	prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
-	prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
-	prefs.use_absolute_track_index = cf.sync_add(
-		"bool", "absolute-track-indices", prefs.use_absolute_track_index,
-		"For playlists with titles disabled only")
-	prefs.hide_bottom_title = cf.sync_add(
-		"bool", "auto-hide-bottom-title", prefs.hide_bottom_title,
-		"Hide title in bottom panel when already shown in side panel")
-	prefs.auto_goto_playing = cf.sync_add(
-		"bool", "auto-show-playing", prefs.auto_goto_playing,
-		"Show playing track in current playlist on track and playlist change even if not the playing playlist")
-
-	prefs.notify_include_album = cf.sync_add(
-		"bool", "notify-include-album", prefs.notify_include_album,
-		"Include album name in track change notifications")
-	prefs.rating_playtime_stars = cf.sync_add(
-		"bool", "show-rating-hint", prefs.rating_playtime_stars,
-		"Indicate playtime in rating stars")
-
-	prefs.drag_to_unpin = cf.sync_add(
-		"bool", "drag-tab-to-unpin", prefs.drag_to_unpin,
-		"Dragging a tab off the top-panel un-pins it")
-
-	cf.br()
-	cf.add_text("[gallery]")
-	prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
-	prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
-	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
-
-	# show-current-on-transition", prefs.show_current_on_transition)
-	if bag.system != "Windows":
-		cf.br()
-		cf.add_text("[fonts]")
-		cf.add_comment("Changes will require app restart.")
-		prefs.use_custom_fonts = cf.sync_add(
-			"bool", "use-custom-fonts", prefs.use_custom_fonts,
-			"Setting to false will reset below settings to default on restart")
-		if prefs.use_custom_fonts:
-			prefs.linux_font = cf.sync_add(
-				"string", "font-main-standard", prefs.linux_font,
-				"Suggested alternate: Liberation Sans")
-			prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
-			prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
-			prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
-			prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
-
-		else:
-			cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
-			cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
-			cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
-			cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
-			cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
-
-		# prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
-
-	cf.br()
-	cf.add_text("[tracklist]")
-	prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
-	prefs.column_aa_fallback_artist = cf.sync_add(
-		"bool", "column-album-artist-fallsback",
-		prefs.column_aa_fallback_artist,
-		"'Album artist' column shows 'artist' if otherwise blank.")
-	prefs.left_align_album_artist_title = cf.sync_add(
-		"bool", "left-aligned-album-artist-title",
-		prefs.left_align_album_artist_title,
-		"Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
-	prefs.auto_sort = cf.sync_add(
-		"bool", "import-auto-sort", prefs.auto_sort,
-		"This setting is deprecated and will be removed in a future version")
-
-	cf.br()
-	cf.add_text("[transcode]")
-	prefs.bypass_transcode = cf.sync_add(
-		"bool", "sync-bypass-transcode", prefs.bypass_transcode,
-		"Don't transcode files with sync function")
-	prefs.smart_bypass = cf.sync_add("bool", "sync-bypass-low-bitrate", prefs.smart_bypass,
-		"Skip transcode of <=128kbs folders")
-	prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec,
-		"Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
-
-	cf.br()
-	cf.add_text("[directories]")
-	cf.add_comment("Use full paths")
-	prefs.sync_target = cf.sync_add("string", "sync-device-music-dir", prefs.sync_target)
-	prefs.custom_encoder_output = cf.sync_add(
-		"string", "encode-output-dir", prefs.custom_encoder_output,
-		"E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
-	if prefs.custom_encoder_output:
-		prefs.encoder_output = Path(prefs.custom_encoder_output)
-	prefs.download_dir1 = cf.sync_add(
-		"string", "add_download_directory", prefs.download_dir1,
-		"Add another folder to monitor in addition to home downloads and music.")
-	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
-		if os.path.isdir(prefs.download_dir1):
-			bag.download_directories.append(prefs.download_dir1)
-		else:
-			logging.warning("Invalid download directory in config")
-
-	cf.br()
-	cf.add_text("[app]")
-	prefs.enable_remote = cf.sync_add(
-		"bool", "enable-remote-interface", prefs.enable_remote,
-		"For use with Tauon Music Remote for Android")
-	prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control, restart on change.")
-	prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
-	prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
-	prefs.save_window_position = cf.sync_add(
-		"bool", "restore-window-position", prefs.save_window_position,
-		"Save and restore the last window position on desktop on open")
-	prefs.mini_mode_on_top  = cf.sync_add("bool", "mini-mode-always-on-top", prefs.mini_mode_on_top)
-	prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
-	prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
-	prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
-	prefs.auto_dl_artist_data = cf.sync_add(
-		"bool", "auto-dl-artist-data", prefs.auto_dl_artist_data,
-		"Enable automatic downloading of thumbnails in artist list")
-	prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
-	prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
-	prefs.enable_fanart_bg = cf.sync_add("bool", "fanart.tv-background", prefs.enable_fanart_bg)
-	prefs.always_auto_update_playlists = cf.sync_add(
-		"bool", "auto-update-playlists",
-		prefs.always_auto_update_playlists,
-		"Automatically update generator playlists")
-	prefs.write_ratings = cf.sync_add(
-		"bool", "write-ratings-to-tag", prefs.write_ratings,
-		"This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
-	prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
-	prefs.discord_enable = cf.sync_add(
-		"bool", "enable-discord-rpc", prefs.discord_enable,
-		"Show track info in running Discord application")
-	prefs.auto_lyrics = cf.sync_add(
-		"bool", "auto-search-lyrics", prefs.auto_lyrics,
-		"Automatically search internet for lyrics when display is wanted")
-
-	prefs.use_scancodes = cf.sync_add(
-		"bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
-		"When enabled, shortcuts will map to the physical keyboard layout")
-	prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
-		"When enabled, pressing single letter keyboard key will activate the global search")
-
-	cf.br()
-	cf.add_text("[tokens]")
-	temp = cf.sync_add(
-		"string", "discogs-personal-access-token", prefs.discogs_pat,
-		"Used for sourcing of artist thumbnails.")
-	if not temp:
-		prefs.discogs_pat = ""
-	elif len(temp) != 40:
-		logging.warning("Invalid discogs token in config")
-	else:
-		prefs.discogs_pat = temp
-
-	prefs.listenbrainz_url = cf.sync_add(
-		"string", "custom-listenbrainz-url", prefs.listenbrainz_url,
-		"Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
-	prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
-
-	cf.br()
-	cf.add_text("[tauon_satellite]")
-	prefs.sat_url = cf.sync_add("string", "tau-url", prefs.sat_url, "Exclude the port")
-
-	cf.br()
-	cf.add_text("[lastfm]")
-	prefs.lastfm_pull_love = cf.sync_add(
-		"bool", "lastfm-pull-love", prefs.lastfm_pull_love,
-		"Overwrite local love status on scrobble")
-
-
-	cf.br()
-	cf.add_text("[maloja_account]")
-	prefs.maloja_url = cf.sync_add(
-		"string", "maloja-url", prefs.maloja_url,
-		"A Maloja server URL, e.g. http://localhost:32400")
-	prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key, "One of your Maloja API keys")
-	prefs.maloja_enable = cf.sync_add("bool", "maloja-enable", prefs.maloja_enable)
-
-	cf.br()
-	cf.add_text("[plex_account]")
-	prefs.plex_username = cf.sync_add(
-		"string", "plex-username", prefs.plex_username,
-		"Probably the email address you used to make your PLEX account.")
-	prefs.plex_password = cf.sync_add(
-		"string", "plex-password", prefs.plex_password,
-		"The password associated with your PLEX account.")
-	prefs.plex_servername = cf.sync_add(
-		"string", "plex-servername", prefs.plex_servername,
-		"Probably your servers hostname.")
-
-	cf.br()
-	cf.add_text("[subsonic_account]")
-	prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
-	prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
-	prefs.subsonic_password_plain = cf.sync_add("bool", "subsonic-password-plain", prefs.subsonic_password_plain)
-	prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
-
-	cf.br()
-	cf.add_text("[koel_account]")
-	prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
-	prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
-	prefs.koel_server_url = cf.sync_add(
-		"string", "koel-server-url", prefs.koel_server_url,
-		"The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
-	prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
-
-	cf.br()
-	cf.add_text("[jellyfin_account]")
-	prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
-	prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
-	prefs.jelly_server_url = cf.sync_add(
-		"string", "jelly-server-url", prefs.jelly_server_url,
-		"The IP:Port where the jellyfin server is hosted.")
-	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
-
-	cf.br()
-	cf.add_text("[network]")
-	prefs.network_stream_bitrate = cf.sync_add(
-		"int", "stream-bitrate", prefs.network_stream_bitrate,
-		"Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
-
-	cf.br()
-	cf.add_text("[listenalong]")
-	prefs.metadata_page_port = cf.sync_add(
-		"int", "broadcast-page-port", prefs.metadata_page_port,
-		"Change applies on app restart or setting re-enable")
-
-	cf.br()
-	cf.add_text("[chart]")
-	prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
-	prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
-	prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
-	prefs.topchart_sorts_played = cf.sync_add("bool", "chart-sorts-top-played", prefs.topchart_sorts_played)
-	prefs.chart_font = cf.sync_add(
-		"string", "chart-font", prefs.chart_font,
-		"Format is fontname + size. Default is Monospace 10")
-
-def auto_scale() -> None:
-
-	old = prefs.scale_want
-	if prefs.x_scale:
-		prefs.scale_want = window_size[0] / logical_size[0]
-
-	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
-	if prefs.x_scale and old != prefs.scale_want:
-		logging.info("Applying scale based on buffer size")
-
-	if prefs.scale_want == 0.95:
-		prefs.scale_want = 1.0
-	if prefs.scale_want == 1.05:
-		prefs.scale_want = 1.0
-	if prefs.scale_want == 1.95:
-		prefs.scale_want = 2.0
-	if prefs.scale_want == 2.05:
-		prefs.scale_want = 2.0
-
-	if old != prefs.scale_want:
-		logging.info(f"Using UI scale: {prefs.scale_want}")
-
-	if prefs.scale_want < 0.5:
-		prefs.scale_want = 0.5
-
-	# if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
-	# 	logging.info("Window overscale!")
-	# 	show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
-	# 	prefs.scale_want = 1.0
-
-def scale_assets(scale_want: int, force: bool = False) -> None:
-	global scaled_asset_directory
-	if scale_want != 1:
-		bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
-		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
-				os.listdir(str(scaled_asset_directory))):
-			logging.info("Force rerender icons")
-			force = True
-	else:
-		bag.dirs.scaled_asset_directory = asset_directory
-
-	if scale_want != prefs.ui_scale or force:
-		if scale_want != 1:
-			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
-				shutil.rmtree(str(scaled_asset_directory))
-			from tauon.t_modules.t_svgout import render_icons
-
-			if scaled_asset_directory != asset_directory:
-				logging.info("Rendering icons...")
-				render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
-
-		logging.info("Done rendering icons")
-
-		diff_ratio = scale_want / prefs.ui_scale
-		prefs.ui_scale = scale_want
-		prefs.playlist_row_height = round(22 * prefs.ui_scale)
-
-		# Save user values
-		column_backup = gui.pl_st
-		rspw = gui.pref_rspw
-		grspw = gui.pref_gallery_w
-
-		gui.destroy_textures()
-		gui.rescale()
-
-		# Scale saved values
-		gui.pl_st = column_backup
-		for item in gui.pl_st:
-			item[1] *= diff_ratio
-		gui.pref_rspw = rspw * diff_ratio
-		gui.pref_gallery_w = grspw * diff_ratio
-		global album_mode_art_size
-		album_mode_art_size = int(album_mode_art_size * diff_ratio)
-
-def get_global_mouse() -> tuple[float, float]:
-	i_y = pointer(c_float(0))
-	i_x = pointer(c_float(0))
-	sdl3.SDL_GetGlobalMouseState(i_x, i_y)
-	return i_x.contents.value, i_y.contents.value
-
-def get_window_position(t_window: sdl3.LP_SDL_Window) -> tuple[int, int]:
-	i_y = pointer(c_int(0))
-	i_x = pointer(c_int(0))
-	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
-	return i_x.contents.value, i_y.contents.value
-
-def use_id3(tags: ID3, nt: TrackClass) -> None:
-	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
-		frames = tag.getall(frame)
-		if frames and frames[0].text:
-			if track is None:
-				return str(frames[0].text[0])
-			setattr(track, attr, str(frames[0].text[0]))
-		elif track is None:
-			return ""
-		else:
-			setattr(track, attr, "")
-
-	tag = tags
-
-	natural_get(tags, nt, "TIT2", "title")
-	natural_get(tags, nt, "TPE1", "artist")
-	natural_get(tags, nt, "TPE2", "album_artist")
-	natural_get(tags, nt, "TCON", "genre")  # content type
-	natural_get(tags, nt, "TALB", "album")
-	natural_get(tags, nt, "TDRC", "date")
-	natural_get(tags, nt, "TCOM", "composer")
-	natural_get(tags, nt, "COMM", "comment")
-
-	process_odat(nt, natural_get(tags, None, "TDOR", None))
-
-	frames = tag.getall("POPM")
-	rating = 0
-	if frames:
-		for frame in frames:
-			if frame.rating:
-				rating = frame.rating
-				nt.misc["POPM"] = frame.rating
-
-	if len(nt.comment) > 4 and nt.comment[2] == "+":
-		nt.comment = ""
-	if nt.comment[0:3] == "000":
-		nt.comment = ""
-
-	frames = tag.getall("USLT")
-	if frames:
-		nt.lyrics = frames[0].text
-		if 0 < len(nt.lyrics) < 150:
-			if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
-				nt.lyrics = ""
-
-	frames = tag.getall("TPE1")
-	if frames:
-		d = []
-		for frame in frames:
-			for t in frame.text:
-				d.append(t)
-		if len(d) > 1:
-			nt.misc["artists"] = d
-			nt.artist = "; ".join(d)
-
-	frames = tag.getall("TCON")
-	if frames:
-		d = []
-		for frame in frames:
-			for t in frame.text:
-				d.append(t)
-		if len(d) > 1:
-			nt.misc["genres"] = d
-		nt.genre = " / ".join(d)
-
-	track_no = natural_get(tags, None, "TRCK", None)
-	nt.track_total = ""
-	nt.track_number = ""
-	if track_no and track_no != "null":
-		if "/" in track_no:
-			a, b = track_no.split("/")
-			nt.track_number = a
-			nt.track_total = b
-		else:
-			nt.track_number = track_no
-
-	disc = natural_get(tags, None, "TPOS", None)  # set ? or ?/?
-	nt.disc_total = ""
-	nt.disc_number = ""
-	if disc:
-		if "/" in disc:
-			a, b = disc.split("/")
-			nt.disc_number = a
-			nt.disc_total = b
-		else:
-			nt.disc_number = disc
-
-	tx = tags.getall("UFID")
-	if tx:
-		for item in tx:
-			if item.owner == "http://musicbrainz.org":
-				nt.misc["musicbrainz_recordingid"] = item.data.decode()
-
-	tx = tags.getall("TSOP")
-	if tx:
-		nt.misc["artist_sort"] = tx[0].text[0]
-
-	tx = tags.getall("TXXX")
-	if tx:
-		for item in tx:
-			if item.desc == "MusicBrainz Release Track Id":
-				nt.misc["musicbrainz_trackid"] = item.text[0]
-			if item.desc == "MusicBrainz Album Id":
-				nt.misc["musicbrainz_albumid"] = item.text[0]
-			if item.desc == "MusicBrainz Release Group Id":
-				nt.misc["musicbrainz_releasegroupid"] = item.text[0]
-			if item.desc == "MusicBrainz Artist Id":
-				artist_id_list: list[str] = []
-				for uuid in item.text:
-					split_uuids = uuid.split("/") # UUIDs can be split by a special character
-					for split_uuid in split_uuids:
-						artist_id_list.append(split_uuid)
-				nt.misc["musicbrainz_artistids"] = artist_id_list
-
-			try:
-				desc = item.desc.lower()
-				if desc == "replaygain_track_gain":
-					nt.misc["replaygain_track_gain"] = float(item.text[0].strip(" dB"))
-				if desc == "replaygain_track_peak":
-					nt.misc["replaygain_track_peak"] = float(item.text[0])
-				if desc == "replaygain_album_gain":
-					nt.misc["replaygain_album_gain"] = float(item.text[0].strip(" dB"))
-				if desc == "replaygain_album_peak":
-					nt.misc["replaygain_album_peak"] = float(item.text[0])
-			except Exception:
-				logging.exception("Tag Scan: Read Replay Gain MP3 error")
-				logging.debug(nt.fullpath)
-
-			if item.desc == "FMPS_RATING":
-				nt.misc["FMPS_Rating"] = float(item.text[0])
 
 def scan_ffprobe(nt: TrackClass):
 	startupinfo = None
@@ -38367,30 +37417,6 @@ def id_to_pl(id: int): # TODO(Martin): Now in PlayerCtl
 def pl_to_id(pl: int) -> int: # TODO(Martin): Now in PlayerCtl
 	return pctl.multi_playlist[pl].uuid_int
 
-def encode_track_name(track_object: TrackClass) -> str:
-	if track_object.is_cue or not track_object.filename:
-		out_line = str(track_object.track_number) + ". "
-		out_line += track_object.artist + " - " + track_object.title
-		return filename_safe(out_line)
-	return os.path.splitext(track_object.filename)[0]
-
-def encode_folder_name(track_object: TrackClass) -> str:
-	folder_name = track_object.artist + " - " + track_object.album
-
-	if folder_name == " - ":
-		folder_name = track_object.parent_folder_name
-
-	folder_name = filename_safe(folder_name).strip()
-
-	if not folder_name:
-		folder_name = str(track_object.index)
-
-	if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
-		if track_object.disc_total not in ("", "0", 0, "1", 1) or (
-				str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
-			folder_name += " CD" + str(track_object.disc_number)
-
-	return folder_name
 
 def signal_handler(signum, frame):
 	signal.signal(signum, signal.SIG_IGN) # ignore additional signals
@@ -38775,13 +37801,6 @@ def bass_player_thread(player):
 		show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
 		raise
 
-# ---------------------------------------------------------------------------------------------
-# ABSTRACT SDL DRAWING FUNCTIONS -----------------------------------------------------
-
-def coll_point(l, r):
-	# rect point collision detection
-	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
-
 def coll(r):
 	return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
 
@@ -38860,29 +37879,6 @@ def prime_fonts():
 	ddt.prime_font(standard_font, 12, 515)
 	ddt.prime_font(standard_font, 13, 516)
 
-def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
-	if track.synced:
-		return track.synced.splitlines()
-	if track.is_network:
-		return None
-
-	direc = track.parent_folder_path
-	name = os.path.splitext(track.filename)[0] + ".lrc"
-
-	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
-		return track.lyrics.splitlines()
-
-	try:
-		if os.path.isfile(os.path.join(direc, name)):
-			with open(os.path.join(direc, name), encoding="utf-8") as f:
-				data = f.readlines()
-		else:
-			return None
-	except Exception:
-		logging.exception("Read lyrics file error")
-		return None
-
-	return data
 
 def get_real_time():
 	offset = pctl.decode_time - (prefs.sync_lyrics_time_offset / 1000)
@@ -39577,11 +38573,6 @@ def ex_tool_tip(x, y, text1_width, text, font):
 	ddt.rect((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
 	ddt.rect((x, y, w, h), colours.menu_background)
 	p = ddt.text((x + int(w / 2), y + 3 * gui.scale, 2), text, colours.menu_text, 312, bg=colours.menu_background)
-
-def close_all_menus():
-	for menu in Menu.instances:
-		menu.active = False
-	Menu.active = False
 
 def menu_standard_or_grey(bool: bool):
 	if bool:
@@ -40342,14 +39333,6 @@ def paste_lyrics_deco():
 
 	return [line_colour, colours.menu_background, None]
 
-def paste_lyrics(track_object: TrackClass):
-	if sdl3.SDL_HasClipboardText():
-		clip = sdl3.SDL_GetClipboardText()
-		#logging.info(clip)
-		track_object.lyrics = clip.decode("utf-8")
-	else:
-		logging.warning("NO TEXT TO PASTE")
-
 def chord_lyrics_paste_show_test(_) -> bool:
 	return gui.combo_mode and prefs.guitar_chords
 
@@ -40361,12 +39344,6 @@ def copy_lyrics_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, None]
 
-def copy_lyrics(track_object: TrackClass):
-	copy_to_clipboard(track_object.lyrics)
-
-def clear_lyrics(track_object: TrackClass):
-	track_object.lyrics = ""
-
 def clear_lyrics_deco(track_object: TrackClass):
 	if track_object.lyrics:
 		line_colour = colours.menu_text
@@ -40374,12 +39351,6 @@ def clear_lyrics_deco(track_object: TrackClass):
 		line_colour = colours.menu_text_disabled
 
 	return [line_colour, colours.menu_background, None]
-
-def split_lyrics(track_object: TrackClass):
-	if track_object.lyrics != "":
-		track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
-	else:
-		pass
 
 def show_sub_search(track_object: TrackClass):
 	sub_lyrics_box.activate(track_object)
@@ -40808,12 +39779,6 @@ def search_image_deco(track_object: TrackClass):
 
 	return [line_colour, colours.menu_background, None]
 
-def ser_gimage(track_object: TrackClass):
-	if track_object.artist and track_object.album:
-		line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(
-			track_object.artist + " " + track_object.album)
-		webbrowser.open(line, new=2, autoraise=True)
-
 def append_here():
 	global cargo
 	global default_playlist
@@ -40849,155 +39814,6 @@ def lightning_move_test(discard):
 #	 else:
 #		 line = "Copy"
 #	 return [colours.menu_text, colours.menu_background, line]
-
-def unique_template(string):
-	return "<t>" in string or \
-		"<title>" in string or \
-		"<n>" in string or \
-		"<number>" in string or \
-		"<tracknumber>" in string or \
-		"<tn>" in string or \
-		"<sn>" in string or \
-		"<singlenumber>" in string or \
-		"<s>" in string or "%t" in string or "%tn" in string
-
-def re_template_word(word, tr):
-	if word == "aa" or word == "albumartist":
-
-		if tr.album_artist:
-			return tr.album_artist
-		return tr.artist
-
-	if word == "a" or word == "artist":
-		return tr.artist
-
-	if word == "t" or word == "title":
-		return tr.title
-
-	if word == "n" or word == "number" or word == "tracknumber" or word == "tn":
-		if len(str(tr.track_number)) < 2:
-			return "0" + str(tr.track_number)
-		return str(tr.track_number)
-
-	if word == "sn" or word == "singlenumber" or word == "singletracknumber" or word == "s":
-		return str(tr.track_number)
-
-	if word == "d" or word == "date" or word == "year":
-		return str(tr.date)
-
-	if word == "b" or "album" in word:
-		return str(tr.album)
-
-	if word == "g" or word == "genre":
-		return tr.genre
-
-	if word == "x" or "ext" in word or "file" in word:
-		return tr.file_ext.lower()
-
-	if word == "ux" or "upper" in word:
-		return tr.file_ext.upper()
-
-	if word == "c" or "composer" in word:
-		return tr.composer
-
-	if "comment" in word:
-		return tr.comment.replace("\n", "").replace("\r", "")
-
-	return ""
-
-def parse_template2(string: str, track_object: TrackClass, strict: bool = False):
-	temp = ""
-	out = ""
-
-	mode = 0
-
-	for c in string:
-
-		if mode == 0:
-
-			if c == "<":
-				mode = 1
-			else:
-				out += c
-
-		else:
-
-			if c == ">":
-
-				test = re_template_word(temp, track_object)
-				if strict:
-					assert test
-				out += test
-
-				mode = 0
-				temp = ""
-
-			else:
-
-				temp += c
-
-	if "<und" in string:
-		out = out.replace(" ", "_")
-
-	return parse_template(out, track_object, strict=strict)
-
-def parse_template(string, track_object: TrackClass, up_ext: bool = False, strict: bool = False):
-	set = 0
-	underscore = False
-	output = ""
-
-	while set < len(string):
-		if string[set] == "%" and set < len(string) - 1:
-			set += 1
-			if string[set] == "n":
-				if len(str(track_object.track_number)) < 2:
-					output += "0"
-				if strict:
-					assert str(track_object.track_number)
-				output += str(track_object.track_number)
-			elif string[set] == "a":
-				if up_ext and track_object.album_artist != "":  # Context of renaming a folder
-					output += track_object.album_artist
-				else:
-					if strict:
-						assert track_object.artist
-					output += track_object.artist
-			elif string[set] == "t":
-				if strict:
-					assert track_object.title
-				output += track_object.title
-			elif string[set] == "c":
-				if strict:
-					assert track_object.composer
-				output += track_object.composer
-			elif string[set] == "d":
-				if strict:
-					assert track_object.date
-				output += track_object.date
-			elif string[set] == "b":
-				if strict:
-					assert track_object.album
-				output += track_object.album
-			elif string[set] == "x":
-				if up_ext:
-					output += track_object.file_ext.upper()
-				else:
-					output += "." + track_object.file_ext.lower()
-			elif string[set] == "u":
-				underscore = True
-		else:
-			output += string[set]
-		set += 1
-
-	output = output.rstrip(" -").lstrip(" -")
-
-	if underscore:
-		output = output.replace(" ", "_")
-
-	# Attempt to ensure the output text is filename safe
-	output = filename_safe(output)
-
-	return output
 
 def rename_playlist(index, generator: bool = False) -> None:
 	gui.rename_playlist_box = True
@@ -41791,14 +40607,6 @@ def standard_sort(pl: int) -> None:
 	reload_albums()
 	tree_view_box.clear_target_pl(pl)
 
-def year_s(plt):
-	sorted_temp = sorted(plt, key=lambda x: x[1])
-	temp = []
-
-	for album in sorted_temp:
-		temp += album[0]
-	return temp
-
 def year_sort(pl: int, custom_list=None):
 	if custom_list:
 		playlist = custom_list
@@ -41937,34 +40745,6 @@ def regenerate_deco(pl: int):
 		line_colour = colours.menu_text_disabled
 
 	return [line_colour, colours.menu_background, None]
-
-def parse_generator(string: str):
-	cmds = []
-	quotes = []
-	current = ""
-	q_string = ""
-	inquote = False
-	for cha in string:
-		if not inquote and cha == " ":
-			if current:
-				cmds.append(current)
-				quotes.append(q_string)
-			q_string = ""
-			current = ""
-			continue
-		if cha == "\"":
-			inquote ^= True
-
-		current += cha
-
-		if inquote and cha != "\"":
-			q_string += cha
-
-	if current:
-		cmds.append(current)
-		quotes.append(q_string)
-
-	return cmds, quotes, inquote
 
 def upload_spotify_playlist(pl: int):
 	p_id = pl_to_id(pl)
@@ -42727,15 +41507,6 @@ def start_quick_add(pl: int) -> None:
 		_("You can now add/remove albums to this playlist by right clicking in gallery of any playlist"),
 		_("To exit this mode, click \"Disengage\" from main MENU"))
 
-def auto_get_sync_targets():
-	search_paths = [
-		"/run/user/*/gvfs/*/*/[Mm]usic",
-		"/run/media/*/*/[Mm]usic"]
-	result_paths = []
-	for item in search_paths:
-		result_paths.extend(glob.glob(item))
-	return result_paths
-
 def auto_sync_thread(pl: int) -> None:
 	if prefs.transcode_inplace:
 		show_message(_("Cannot sync when in transcode inplace mode"))
@@ -42949,11 +41720,6 @@ def set_podcast_deco(pl: int):
 		text = _("Un-set Use Persistent Time")
 	return [colours.menu_text, colours.menu_background, text]
 
-def csv_string(item):
-	item = str(item)
-	item.replace("\"", "\"\"")
-	return f"\"{item}\""
-
 def export_playlist_albums(pl: int) -> None:
 	p = pctl.multi_playlist[pl]
 	name = p.title
@@ -43023,9 +41789,6 @@ def key_playcount(index: int):
 	#	 return pctl.star_library[key] / pctl.master_library[index].length
 	# else:
 	#	 return 0
-
-def add_pl_tag(text):
-	return f" <{text}>"
 
 def gen_top_rating(index, custom_list=None):
 	source = custom_list
@@ -43923,14 +42686,6 @@ def s_copy():
 
 	if len(cargo) == 1:
 		tauon.copied_track = cargo[0]
-
-def directory_size(path: str) -> int:
-	total = 0
-	for dirpath, dirname, filenames in os.walk(path):
-		for file in filenames:
-			path = os.path.join(dirpath, file)
-			total += os.path.getsize(path)
-	return total
 
 def lightning_paste():
 	move = True
@@ -45041,9 +43796,6 @@ def show_lyrics_menu(index: int):
 	enter_showcase_view(track_id=r_menu_index)
 	inp.mouse_click = False
 
-def recode(text, enc):
-	return text.encode("Latin-1", "ignore").decode(enc, "ignore")
-
 def intel_moji(index: int):
 	gui.pl_update += 1
 	gui.update += 1
@@ -45319,16 +44071,6 @@ def ser_rym(index: int) -> None:
 		pctl.master_library[index].artist)
 	webbrowser.open(line, new=2, autoraise=True)
 
-def copy_to_clipboard(text: str) -> None:
-	sdl3.SDL_SetClipboardText(text.encode(errors="surrogateescape"))
-
-def copy_from_clipboard():
-	try:
-		return sdl3.SDL_GetClipboardText().decode()
-	except UnicodeDecodeError as e:
-		logging.warning("Clipboard text decode error")
-		return ""
-
 def clip_aar_al(index: int):
 	if pctl.master_library[index].album_artist == "":
 		line = pctl.master_library[index].artist + " - " + pctl.master_library[index].album
@@ -45495,15 +44237,6 @@ def bass_test(_) -> bool:
 def gstreamer_test(_) -> bool:
 	# return True
 	return prefs.backend == 2
-
-def field_copy(text_field) -> None:
-	text_field.copy()
-
-def field_paste(text_field) -> None:
-	text_field.paste()
-
-def field_clear(text_field) -> None:
-	text_field.clear()
 
 def vis_off() -> None:
 	gui.vis_want = 0
@@ -47750,6 +46483,3915 @@ def get_album_from_first_track(track_position, track_id=None, pl_number=None, pl
 
 	return tracks
 
+def get_album_info(position, pl: int | None = None):
+
+	playlist = default_playlist
+	if pl is not None:
+		playlist = pctl.multi_playlist[pl].playlist_ids
+
+	global album_info_cache_key
+
+	if album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
+		album_info_cache.clear()
+		album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
+
+	if position in album_info_cache:
+		return album_info_cache[position]
+
+	if album_dex and album_mode and (pl is None or pl == pctl.active_playlist_viewing):
+		dex = album_dex
+	else:
+		dex = reload_albums(custom_list=playlist)
+
+	end = len(playlist)
+	start = 0
+
+	for i, p in enumerate(reversed(dex)):
+		if p <= position:
+			start = p
+			break
+		end = p
+
+	album = list(range(start, end))
+
+	playing = 0
+	select = False
+
+	if pctl.selected_in_playlist in album:
+		select = True
+
+	if len(pctl.track_queue) > 0 and p < len(playlist):
+		if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
+			playing = 1
+
+	album_info_cache[position] = playing, album, select
+	return playing, album, select
+
+def get_folder_list(index: int):
+	playlist = []
+
+	for item in default_playlist:
+		if pctl.master_library[item].parent_folder_name == pctl.master_library[index].parent_folder_name and \
+				pctl.master_library[item].album == pctl.master_library[index].album:
+			playlist.append(item)
+	return list(set(playlist))
+
+def gal_jump_select(up=False, num=1):
+
+	old_selected = pctl.selected_in_playlist
+	old_num = num
+
+	if not default_playlist:
+		return
+
+	on = pctl.selected_in_playlist
+	if on > len(default_playlist) - 1:
+		on = 0
+		pctl.selected_in_playlist = 0
+
+	if up is False:
+
+		while num > 0:
+			while pctl.master_library[
+				default_playlist[on]].parent_folder_name == pctl.master_library[
+				default_playlist[pctl.selected_in_playlist]].parent_folder_name:
+				on += 1
+
+				if on > len(default_playlist) - 1:
+					pctl.selected_in_playlist = old_selected
+					return
+
+			pctl.selected_in_playlist = on
+			num -= 1
+	else:
+
+		if num > 1:
+			if pctl.selected_in_playlist > len(default_playlist) - 1:
+				pctl.selected_in_playlist = old_selected
+				return
+
+			alb = get_album_info(pctl.selected_in_playlist)
+			if alb[1][0] in album_dex[:num]:
+				pctl.selected_in_playlist = old_selected
+				return
+
+		while num > 0:
+			alb = get_album_info(pctl.selected_in_playlist)
+
+			if alb[1][0] > -1:
+				on = alb[1][0] - 1
+
+			pctl.selected_in_playlist = max(get_album_info(on)[1][0], 0)
+			num -= 1
+
+def gen_power2():
+	tags = {}  # [tag name]: (first position, number of times we saw it)
+	tag_list = []
+
+	last = "a"
+	noise = 0
+
+	def key(tag):
+		return tags[tag][1]
+
+	for position in album_dex:
+
+		index = default_playlist[position]
+		track = pctl.get_track(index)
+
+		crumbs = track.parent_folder_path.split("/")
+
+		for i, b in enumerate(crumbs):
+
+			if i > 0 and (track.artist in b and track.artist):
+				tag = crumbs[i - 1]
+
+				if tag != last:
+					noise += 1
+				last = tag
+
+				if tag in tags:
+					tags[tag][1] += 1
+				else:
+					tags[tag] = [position, 1, "/".join(crumbs[:i])]
+					tag_list.append(tag)
+				break
+
+	if noise > len(album_dex) / 2:
+		#logging.info("Playlist is too noisy for power bar.")
+		return []
+
+	tag_list_sort = sorted(tag_list, key=key, reverse=True)
+
+	max_tags = round((window_size[1] - gui.panelY - gui.panelBY - 10) // 30 * gui.scale)
+
+	tag_list_sort = tag_list_sort[:max_tags]
+
+	for i in reversed(range(len(tag_list))):
+		if tag_list[i] not in tag_list_sort:
+			del tag_list[i]
+
+	h = []
+
+	for tag in tag_list:
+
+		if tags[tag][1] > 2:
+			t = PowerTag()
+			t.path = tags[tag][2]
+			t.name = tag.upper()
+			t.position = tags[tag][0]
+			h.append(t)
+
+	cc = random.random()
+	cj = 0.03
+	if len(h) < 5:
+		cj = 0.11
+
+	cj = 0.5 / max(len(h), 2)
+
+	for item in h:
+		item.colour = hsl_to_rgb(cc, 0.8, 0.7)
+		cc += cj
+
+	return h
+
+def reload_albums(quiet: bool = False, return_playlist: int = -1, custom_list=None) -> list[int] | None:
+	global album_dex
+	global update_layout
+	global old_album_pos
+
+	if cm_clean_db:
+		# Doing reload while things are being removed may cause crash
+		return None
+
+	dex = []
+	current_folder = ""
+	current_album = ""
+	current_artist = ""
+	current_date = ""
+	current_title = ""
+
+	if custom_list is not None:
+		playlist = custom_list
+	else:
+		target_pl_no = pctl.active_playlist_viewing
+		if return_playlist > -1:
+			target_pl_no = return_playlist
+
+		playlist = pctl.multi_playlist[target_pl_no].playlist_ids
+
+	for i in range(len(playlist)):
+		tr = pctl.master_library[playlist[i]]
+
+		split = False
+		if i == 0:
+			split = True
+		elif tr.parent_folder_path != current_folder and tr.date and tr.date != current_date:
+			split = True
+		elif prefs.gallery_combine_disc and "Disc" in tr.album and "Disc" in current_album and tr.album.split("Disc")[0].rstrip(" ") == current_album.split("Disc")[0].rstrip(" "):
+			split = False
+		elif prefs.gallery_combine_disc and "CD" in tr.album and "CD" in current_album and tr.album.split("CD")[0].rstrip() == current_album.split("CD")[0].rstrip():
+			split = False
+		elif prefs.gallery_combine_disc and "cd" in tr.album and "cd" in current_album and tr.album.split("cd")[0].rstrip() == current_album.split("cd")[0].rstrip():
+			split = False
+		elif tr.album and tr.album == current_album and prefs.gallery_combine_disc:
+			split = False
+		elif tr.parent_folder_path != current_folder or current_title != tr.parent_folder_name:
+			split = True
+
+		if split:
+			dex.append(i)
+			current_folder = tr.parent_folder_path
+			current_title = tr.parent_folder_name
+			current_album = tr.album
+			current_date = tr.date
+			current_artist = tr.artist
+
+	if return_playlist > -1 or custom_list:
+		return dex
+
+	album_dex = dex
+	album_info_cache.clear()
+	gui.update += 2
+	gui.pl_update = 1
+	update_layout = True
+
+	if not quiet:
+		goto_album(pctl.playlist_playing_position)
+
+	# Generate POWER BAR
+	gui.power_bar = gen_power2()
+	gui.pt = 0
+
+def star_line_toggle(mode: int= 0) -> bool | None:
+	if mode == 1:
+		return gui.star_mode == "line"
+
+	if gui.star_mode == "line":
+		gui.star_mode = "none"
+	else:
+		gui.star_mode = "line"
+
+	gui.show_ratings = False
+
+	gui.update += 1
+	gui.pl_update = 1
+	return None
+
+def star_toggle(mode: int = 0) -> bool | None:
+	if gui.show_ratings:
+		if mode == 1:
+			return prefs.rating_playtime_stars
+		prefs.rating_playtime_stars ^= True
+
+	else:
+		if mode == 1:
+			return gui.star_mode == "star"
+
+		if gui.star_mode == "star":
+			gui.star_mode = "none"
+		else:
+			gui.star_mode = "star"
+
+	# gui.show_ratings = False
+	gui.update += 1
+	gui.pl_update = 1
+	return None
+
+def heart_toggle(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return gui.show_hearts
+
+	gui.show_hearts ^= True
+	# gui.show_ratings = False
+
+	gui.update += 1
+	gui.pl_update = 1
+	return None
+
+def album_rating_toggle(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return gui.show_album_ratings
+
+	gui.show_album_ratings ^= True
+
+	gui.update += 1
+	gui.pl_update = 1
+	return None
+
+def rating_toggle(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return gui.show_ratings
+
+	gui.show_ratings ^= True
+
+	if gui.show_ratings:
+		# gui.show_hearts = False
+		gui.star_mode = "none"
+		prefs.rating_playtime_stars = True
+		if not prefs.write_ratings:
+			show_message(_("Note that ratings are stored in the local database and not written to tags."))
+
+	gui.update += 1
+	gui.pl_update = 1
+	return None
+
+def toggle_titlebar_line(mode: int = 0) -> bool | None:
+	global update_title
+	if mode == 1:
+		return update_title
+
+	line = window_title
+	sdl3.SDL_SetWindowTitle(t_window, line)
+	update_title ^= True
+	if update_title:
+		update_title_do()
+	return None
+
+def toggle_meta_persists_stop(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.meta_persists_stop
+	prefs.meta_persists_stop ^= True
+	return None
+
+def toggle_side_panel_layout(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.side_panel_layout == 1
+
+	if prefs.side_panel_layout == 1:
+		prefs.side_panel_layout = 0
+	else:
+		prefs.side_panel_layout = 1
+	return None
+
+def toggle_meta_shows_selected(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.meta_shows_selected_always
+	prefs.meta_shows_selected_always ^= True
+	return None
+
+def scale1(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.ui_scale == 1:
+			return True
+		return False
+
+	prefs.ui_scale = 1
+	pref_box.large_preset()
+
+	if prefs.ui_scale != gui.scale:
+		show_message(_("Change will be applied on restart."))
+	return None
+
+def scale125(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.ui_scale == 1.25:
+			return True
+		return False
+	return None
+
+	prefs.ui_scale = 1.25
+	pref_box.large_preset()
+
+	if prefs.ui_scale != gui.scale:
+		show_message(_("Change will be applied on restart."))
+	return None
+
+def toggle_use_tray(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.use_tray
+	prefs.use_tray ^= True
+	if not prefs.use_tray:
+		prefs.min_to_tray = False
+		gnome.hide_indicator()
+	else:
+		gnome.show_indicator()
+	return None
+
+def toggle_text_tray(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.tray_show_title
+	prefs.tray_show_title ^= True
+	pctl.notify_update()
+	return None
+
+def toggle_min_tray(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.min_to_tray
+	prefs.min_to_tray ^= True
+	return None
+
+def scale2(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.ui_scale == 2:
+			return True
+		return False
+
+	prefs.ui_scale = 2
+	pref_box.large_preset()
+
+	if prefs.ui_scale != gui.scale:
+		show_message(_("Change will be applied on restart."))
+	return None
+
+def toggle_borderless(mode: int = 0) -> bool | None:
+	global draw_border
+	global update_layout
+
+	if mode == 1:
+		return draw_border
+
+	update_layout = True
+	draw_border ^= True
+
+	if draw_border:
+		sdl3.SDL_SetWindowBordered(t_window, False)
+	else:
+		sdl3.SDL_SetWindowBordered(t_window, True)
+	return None
+
+def toggle_break(mode: int = 0) -> bool | None:
+	global break_enable
+	if mode == 1:
+		return break_enable ^ True
+	break_enable ^= True
+	gui.pl_update = 1
+	return None
+
+def toggle_scroll(mode: int = 0) -> bool | None:
+	global scroll_enable
+	global update_layout
+
+	if mode == 1:
+		if scroll_enable:
+			return False
+		return True
+
+	scroll_enable ^= True
+	gui.pl_update = 1
+	update_layout = True
+	return None
+
+def toggle_hide_bar(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return gui.set_bar ^ True
+	gui.update_layout()
+	gui.set_bar ^= True
+	show_message(_("Tip: You can also toggle this from a right-click context menu"))
+	return None
+
+def toggle_append_total_time(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.append_total_time
+	prefs.append_total_time ^= True
+	gui.pl_update = 1
+	gui.update += 1
+	return None
+
+def toggle_append_date(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.append_date
+	prefs.append_date ^= True
+	gui.pl_update = 1
+	gui.update += 1
+	return None
+
+def toggle_true_shuffle(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.true_shuffle
+	prefs.true_shuffle ^= True
+	return None
+
+def toggle_auto_artist_dl(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.auto_dl_artist_data
+	prefs.auto_dl_artist_data ^= True
+	for artist, value in list(artist_list_box.thumb_cache.items()):
+		if value is None:
+			del artist_list_box.thumb_cache[artist]
+	return None
+
+def toggle_enable_web(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.enable_web
+
+	prefs.enable_web ^= True
+
+	if prefs.enable_web and not gui.web_running:
+		webThread = threading.Thread(
+			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
+		webThread.daemon = True
+		webThread.start()
+		show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
+
+	elif prefs.enable_web is False:
+		if tauon.radio_server is not None:
+			tauon.radio_server.shutdown()
+			gui.web_running = False
+
+		time.sleep(0.25)
+	return None
+
+def toggle_scrobble_mark(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.scrobble_mark
+	prefs.scrobble_mark ^= True
+	return None
+
+def toggle_lfm_auto(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.auto_lfm
+	prefs.auto_lfm ^= True
+	if prefs.auto_lfm and not last_fm_enable:
+		show_message(_("Optional module python-pylast not installed"), mode="warning")
+		prefs.auto_lfm = False
+	# if prefs.auto_lfm:
+	#     lastfm.hold = False
+	# else:
+	#     lastfm.hold = True
+	return None
+
+def toggle_lb(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return lb.enable
+	if not lb.enable and not prefs.lb_token:
+		show_message(_("Can't enable this if there's no token."), mode="warning")
+		return None
+	lb.enable ^= True
+	return None
+
+def toggle_maloja(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.maloja_enable
+	if not prefs.maloja_url or not prefs.maloja_key:
+		show_message(_("One or more fields is missing."), mode="warning")
+		return None
+	prefs.maloja_enable ^= True
+	return None
+
+def toggle_ex_del(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.auto_del_zip
+	prefs.auto_del_zip ^= True
+	# if prefs.auto_del_zip is True:
+	#     show_message("Caution! This function deletes things!", mode='info', "This could result in data loss if the process were to malfunction.")
+	return None
+
+def toggle_dl_mon(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.monitor_downloads
+	prefs.monitor_downloads ^= True
+	return None
+
+def toggle_music_ex(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.extract_to_music
+	prefs.extract_to_music ^= True
+	return None
+
+def toggle_extract(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.auto_extract
+	prefs.auto_extract ^= True
+	if prefs.auto_extract is False:
+		prefs.auto_del_zip = False
+	return None
+
+def toggle_top_tabs(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.tabs_on_top
+	prefs.tabs_on_top ^= True
+	return None
+
+def toggle_guitar_chords(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.guitar_chords
+	prefs.guitar_chords ^= True
+	return None
+
+# def toggle_auto_lyrics(mode: int = 0) -> bool | None:
+# 	if mode == 1:
+# 		return prefs.auto_lyrics
+# 	prefs.auto_lyrics ^= True
+
+def switch_single(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_mode == "single":
+			return True
+		return False
+	prefs.transcode_mode = "single"
+	return None
+
+def switch_mp3(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_codec == "mp3":
+			return True
+		return False
+	prefs.transcode_codec = "mp3"
+	return None
+
+def switch_ogg(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_codec == "ogg":
+			return True
+		return False
+	prefs.transcode_codec = "ogg"
+	return None
+
+def switch_opus(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_codec == "opus":
+			return True
+		return False
+	prefs.transcode_codec = "opus"
+	return None
+
+def switch_opus_ogg(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_opus_as:
+			return True
+		return False
+	prefs.transcode_opus_as ^= True
+	return None
+
+def toggle_transcode_output(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_inplace:
+			return False
+		return True
+	prefs.transcode_inplace ^= True
+	if prefs.transcode_inplace:
+		transcode_icon.colour = [250, 20, 20, 255]
+		show_message(
+			_("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
+			_("For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."),
+			mode="warning")
+	else:
+		transcode_icon.colour = [239, 74, 157, 255]
+	return None
+
+def toggle_transcode_inplace(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_inplace:
+			return True
+		return False
+
+	if gui.sync_progress:
+		prefs.transcode_inplace = False
+		return None
+
+	prefs.transcode_inplace ^= True
+	if prefs.transcode_inplace:
+		transcode_icon.colour = [250, 20, 20, 255]
+		show_message(
+			_("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
+			_("For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."),
+			mode="warning")
+	else:
+		transcode_icon.colour = [239, 74, 157, 255]
+	return None
+
+def switch_flac(mode: int = 0) -> bool | None:
+	if mode == 1:
+		if prefs.transcode_codec == "flac":
+			return True
+		return False
+	prefs.transcode_codec = "flac"
+	return None
+
+def toggle_sbt(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.prefer_bottom_title
+	prefs.prefer_bottom_title ^= True
+	return None
+
+def toggle_bba(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return gui.bb_show_art
+	gui.bb_show_art ^= True
+	gui.update_layout()
+	return None
+
+def toggle_use_title(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.use_title
+	prefs.use_title ^= True
+	return None
+
+def switch_rg_off(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.replay_gain == 0 else False
+	prefs.replay_gain = 0
+	return None
+
+def switch_rg_track(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.replay_gain == 1 else False
+	prefs.replay_gain = 0 if prefs.replay_gain == 1 else 1
+	# prefs.replay_gain = 1
+	return None
+
+def switch_rg_album(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.replay_gain == 2 else False
+	prefs.replay_gain = 0 if prefs.replay_gain == 2 else 2
+	return None
+
+def switch_rg_auto(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.replay_gain == 3 else False
+	prefs.replay_gain = 0 if prefs.replay_gain == 3 else 3
+	return None
+
+def toggle_jump_crossfade(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.use_jump_crossfade else False
+	prefs.use_jump_crossfade ^= True
+	return None
+
+def toggle_pause_fade(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.use_pause_fade else False
+	prefs.use_pause_fade ^= True
+	return None
+
+def toggle_transition_crossfade(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return True if prefs.use_transition_crossfade else False
+	prefs.use_transition_crossfade ^= True
+	return None
+
+def toggle_transition_gapless(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return False if prefs.use_transition_crossfade else True
+	prefs.use_transition_crossfade ^= True
+	return None
+
+def toggle_eq(mode: int = 0) -> bool | None:
+	if mode == 1:
+		return prefs.use_eq
+	prefs.use_eq ^= True
+	pctl.playerCommand = "seteq"
+	pctl.playerCommandReady = True
+	return None
+
+def reload_backend() -> None:
+	gui.backend_reloading = True
+	logging.info("Reload backend...")
+	wait = 0
+	pre_state = pctl.stop(True)
+
+	while pctl.playerCommandReady:
+		time.sleep(0.01)
+		wait += 1
+		if wait > 20:
+			break
+	if tauon.thread_manager.player_lock.locked():
+		try:
+			tauon.thread_manager.player_lock.release()
+		except RuntimeError as e:
+			if str(e) == "release unlocked lock":
+				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+			else:
+				logging.exception("Unknown RuntimeError trying to release player_lock")
+		except Exception:
+			logging.exception("Unknown error trying to release player_lock")
+
+	pctl.playerCommand = "unload"
+	pctl.playerCommandReady = True
+
+	wait = 0
+	while pctl.playerCommand != "done":
+		time.sleep(0.01)
+		wait += 1
+		if wait > 200:
+			break
+
+	tauon.thread_manager.ready_playback()
+
+	if pre_state == 1:
+		pctl.revert()
+	gui.backend_reloading = False
+
+def gen_chart() -> None:
+	try:
+
+		topchart = t_topchart.TopChart(tauon)
+
+		tracks = []
+
+		source_tracks = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
+
+		if prefs.topchart_sorts_played:
+			source_tracks = gen_folder_top(0, custom_list=source_tracks)
+			dex = reload_albums(quiet=True, custom_list=source_tracks)
+		else:
+			dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
+
+		for item in dex:
+			tracks.append(pctl.get_track(source_tracks[item]))
+
+		cascade = False
+		if prefs.chart_cascade:
+			cascade = (
+				(prefs.chart_c1, prefs.chart_c2, prefs.chart_c3),
+				(prefs.chart_d1, prefs.chart_d2, prefs.chart_d3))
+
+		path = topchart.generate(
+			tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text,
+			prefs.chart_font, prefs.chart_tile, cascade)
+
+	except Exception:
+		logging.exception("There was an error generating the chart")
+		gui.generating_chart = False
+		show_message(_("There was an error generating the chart"), _("Sorry!"), mode="error")
+		return
+
+	gui.generating_chart = False
+
+	if path:
+		open_file(path)
+	else:
+		show_message(_("There was an error generating the chart"), _("Sorry!"), mode="error")
+		return
+
+	show_message(_("Chart generated"), mode="done")
+
+def update_playlist_call():
+	gui.update + 2
+	gui.pl_update = 2
+
+def pl_is_mut(pl: int) -> bool:
+	id = pl_to_id(pl)
+	if id is None:
+		return False
+	return not (pctl.gen_codes.get(id) and "self" not in pctl.gen_codes[id])
+
+def clear_gen(id: int) -> None:
+	del pctl.gen_codes[id]
+	show_message(_("Okay, it's a normal playlist now."), mode="done")
+
+def clear_gen_ask(id: int) -> None:
+	if "jelly\"" in pctl.gen_codes.get(id, ""):
+		return
+	if "spl\"" in pctl.gen_codes.get(id, ""):
+		return
+	if "tpl\"" in pctl.gen_codes.get(id, ""):
+		return
+	if "tar\"" in pctl.gen_codes.get(id, ""):
+		return
+	if "tmix\"" in pctl.gen_codes.get(id, ""):
+		return
+	gui.message_box_confirm_callback = clear_gen
+	gui.message_box_confirm_reference = (id,)
+	show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
+
+def set_mini_mode():
+	if gui.fullscreen:
+		return
+
+	global mouse_down
+	global mouse_up
+	global old_window_position
+	mouse_down = False
+	mouse_up = False
+	inp.mouse_click = False
+
+	if gui.maximized:
+		sdl3.SDL_RestoreWindow(t_window)
+		update_layout_do()
+
+	if gui.mode < 3:
+		old_window_position = get_window_position(t_window)
+
+	if prefs.mini_mode_on_top:
+		sdl3.SDL_SetWindowAlwaysOnTop(t_window, True)
+
+	gui.mode = 3
+	gui.vis = 0
+	gui.turbo = False
+	gui.draw_vis4_top = False
+	gui.level_update = False
+
+	i_y = pointer(c_int(0))
+	i_x = pointer(c_int(0))
+	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
+	gui.save_position = (i_x.contents.value, i_y.contents.value)
+
+	mini_mode.was_borderless = draw_border
+	sdl3.SDL_SetWindowBordered(t_window, False)
+
+	size = (350, 429)
+	if prefs.mini_mode_mode == 1:
+		size = (330, 330)
+	if prefs.mini_mode_mode == 2:
+		size = (420, 499)
+	if prefs.mini_mode_mode == 3:
+		size = (430, 430)
+	if prefs.mini_mode_mode == 4:
+		size = (330, 80)
+	if prefs.mini_mode_mode == 5:
+		size = (350, 545)
+		style_overlay.flush()
+		tauon.thread_manager.ready("style")
+
+	if logical_size == window_size:
+		size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
+
+	logical_size[0] = size[0]
+	logical_size[1] = size[1]
+
+	sdl3.SDL_SetWindowMinimumSize(t_window, 100, 80)
+
+	sdl3.SDL_SetWindowResizable(t_window, False)
+	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+
+	if mini_mode.save_position:
+		sdl3.SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
+
+	gui.update += 3
+
+def restore_full_mode():
+	logging.info("RESTORE FULL")
+	i_y = pointer(c_int(0))
+	i_x = pointer(c_int(0))
+	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
+	mini_mode.save_position = [i_x.contents.value, i_y.contents.value]
+
+	if not mini_mode.was_borderless:
+		sdl3.SDL_SetWindowBordered(t_window, True)
+
+	logical_size[0] = gui.save_size[0]
+	logical_size[1] = gui.save_size[1]
+
+	sdl3.SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
+
+
+	sdl3.SDL_SetWindowResizable(t_window, True)
+	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+	sdl3.SDL_SetWindowAlwaysOnTop(t_window, False)
+
+	# if macos:
+	#     sdl3.SDLSetWindowMinimumSize(t_window, 560, 330)
+	# else:
+	sdl3.SDL_SetWindowMinimumSize(t_window, 560, 330)
+
+	restore_ignore_timer.set()  # Hacky
+
+	gui.mode = 1
+
+	sdl3.SDL_SyncWindow(t_window)
+	sdl3.SDL_PumpEvents()
+
+	global mouse_down
+	global mouse_up
+	mouse_down = False
+	mouse_up = False
+	inp.mouse_click = False
+
+	if gui.maximized:
+		sdl3.SDL_MaximizeWindow(t_window)
+		time.sleep(0.05)
+		sdl3.SDL_PumpEvents()
+		sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
+		logical_size[0] = i_x.contents.value
+		logical_size[1] = i_y.contents.value
+
+		#logging.info(window_size)
+
+	gui.update_layout()
+	if prefs.art_bg:
+		tauon.thread_manager.ready("style")
+
+def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, album_fade, start_x, width, style=1, ry=None):
+	timec = colours.bar_time
+	titlec = colours.title_text
+	indexc = colours.index_text
+	artistc = colours.artist_text
+	albumc = colours.album_text
+
+	if this_line_playing is True:
+		timec = colours.time_text
+		titlec = colours.title_playing
+		indexc = colours.index_playing
+		artistc = colours.artist_playing
+		albumc = colours.album_playing
+
+	if n_track.found is False:
+		timec = colours.playlist_text_missing
+		titlec = colours.playlist_text_missing
+		indexc = colours.playlist_text_missing
+		artistc = colours.playlist_text_missing
+		albumc = colours.playlist_text_missing
+
+	artistoffset = 0
+	indexLine = ""
+
+	offset_font_extra = 0
+	if gui.row_font_size > 14:
+		offset_font_extra = 8
+
+	# In windows (arial?) draws numbers too high (hack fix)
+	num_y_offset = 0
+	# if system == 'Windows':
+	#    num_y_offset = 1
+
+	if True or style == 1:
+
+		# if not gui.rsp and not gui.combo_mode:
+		#     width -= 10 * gui.scale
+
+		dash = False
+		if n_track.artist and colours.artist_text == colours.title_text:
+			dash = True
+
+		if n_track.title:
+
+			line = track_number_process(n_track.track_number)
+
+			indexLine = line
+
+			if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
+				indexLine = str(p_track)
+				if len(indexLine) > 3:
+					indexLine += "  "
+
+			line = ""
+
+			if n_track.artist != "" and not dash:
+				line0 = n_track.artist
+
+				artistoffset = ddt.text(
+					(start_x + 27 * gui.scale, y),
+					line0,
+					alpha_mod(artistc, album_fade),
+					gui.row_font_size,
+					int(width / 2))
+
+				line = n_track.title
+			else:
+				line += n_track.title
+		else:
+			line = \
+				os.path.splitext(n_track.filename)[
+					0]
+
+		if p_track >= len(default_playlist):
+			gui.pl_update += 1
+			return
+
+		index = default_playlist[p_track]
+		star_x = 0
+		total = star_store.get(index)
+
+		if gui.star_mode == "line" and total > 0 and pctl.master_library[index].length > 0:
+
+			ratio = total / pctl.master_library[index].length
+			if ratio > 0.55:
+				star_x = int(ratio * 4 * gui.scale)
+				star_x = min(star_x, 60 * gui.scale)
+				sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
+				if gui.playlist_row_height > 17 * gui.scale:
+					sp -= 1
+
+				lh = 1
+				if gui.scale != 1:
+					lh = 2
+
+				colour = colours.star_line
+				if this_line_playing and colours.star_line_playing is not None:
+					colour = colours.star_line_playing
+
+				ddt.rect(
+					[
+						width + start_x - star_x - 45 * gui.scale - offset_font_extra,
+						sp,
+						star_x + 3 * gui.scale,
+						lh],
+					alpha_mod(colour, album_fade))
+
+				star_x += 6 * gui.scale
+
+		if gui.show_ratings:
+			sx = round(width + start_x - round(40 * gui.scale) - offset_font_extra)
+			sy = round(ry + (gui.playlist_row_height // 2) - round(7 * gui.scale))
+			sx -= round(68 * gui.scale)
+
+			draw_rating_widget(sx, sy, n_track)
+
+			star_x += round(70 * gui.scale)
+
+		if gui.star_mode == "star" and total > 0 and pctl.master_library[index].length != 0:
+			sx = width + start_x - 40 * gui.scale - offset_font_extra
+			sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
+			# if gui.scale == 1.25:
+			#     sy += 1
+			playtime_stars = star_count(total, pctl.master_library[index].length) - 1
+
+			sx2 = sx
+			selected_star = -2
+			rated_star = -1
+
+			# if key_ctrl_down:
+
+			c = 60
+			d = 6
+
+			colour = [70, 70, 70, 255]
+			if colours.lm:
+				colour = [90, 90, 90, 255]
+			# colour = alpha_mod(indexc, album_fade)
+
+			for count in range(8):
+
+				if selected_star < count and playtime_stars < count and rated_star < count:
+					break
+
+				if count == 0:
+					sx -= round(13 * gui.scale)
+					star_x += round(13 * gui.scale)
+				elif playtime_stars > 3:
+					dd = round((13 - (playtime_stars - 3)) * gui.scale)
+					sx -= dd
+					star_x += dd
+				else:
+					sx -= round(13 * gui.scale)
+					star_x += round(13 * gui.scale)
+
+				# if playtime_stars > 4:
+				#     colour = [c + d * count, c + d * count, c + d * count, 255]
+				# if playtime_stars > 6: # and count < 1:
+				#     colour = [230, 220, 60, 255]
+				if gui.tracklist_bg_is_light:
+					colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
+				else:
+					colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
+
+				# if selected_star > -2:
+				#     if selected_star >= count:
+				#         colour = (220, 200, 60, 255)
+				# else:
+				#     if rated_star >= count:
+				#         colour = (220, 200, 60, 255)
+
+				star_pc_icon.render(sx, sy, colour)
+
+		if gui.show_hearts:
+
+			xxx = star_x
+
+			count = 0
+			spacing = 6 * gui.scale
+
+			yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
+			if gui.scale == 1.25:
+				yy += 1
+			if xxx > 0:
+				xxx += 3 * gui.scale
+
+			if love(False, index):
+				count = 1
+
+				x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
+
+				f_store.store(display_you_heart, (x, yy))
+
+				star_x += 18 * gui.scale
+
+			if "spotify-liked" in pctl.master_library[index].misc:
+
+				x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
+
+				f_store.store(display_spot_heart, (x, yy))
+
+				star_x += heart_row_icon.w + spacing + 2
+
+			for name in pctl.master_library[index].lfm_friend_likes:
+
+				# Limit to number of hears to display
+				if gui.star_mode == "none":
+					if count > 6:
+						break
+				elif count > 4:
+					break
+
+				x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
+
+				f_store.store(display_friend_heart, (x, yy, name))
+
+				count += 1
+
+				star_x += heart_row_icon.w + spacing + 2
+
+		# Draw track number/index
+		display_queue = False
+
+		if pctl.force_queue:
+
+			marks = []
+			album_type = False
+			for i, item in enumerate(pctl.force_queue):
+				if item.track_id == n_track.index and item.position == p_track and item.playlist_id == pl_to_id(
+						pctl.active_playlist_viewing):
+					if item.type == 0:  # Only show mark if track type
+						marks.append(i)
+					# else:
+					#     album_type = True
+					#     marks.append(i)
+
+			if marks:
+				display_queue = True
+
+		if display_queue:
+
+			li = str(marks[0] + 1)
+			if li == "1":
+				li = "N"
+				# if item.track_id == n_track.index and item.position == p_track and item.playlist_id == pctl.active_playlist_viewing
+				if pctl.playing_ready() and n_track.index == pctl.track_queue[
+					pctl.queue_step] and p_track == pctl.playlist_playing_position:
+					li = "R"
+				# if album_type:
+				#     li = "A"
+
+			# rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
+			# ddt.rect_r(rect, [100, 200, 100, 255], True)
+			if len(marks) > 1:
+				li += " " + ("." * (len(marks) - 1))
+				li = li[:5]
+
+			# if album_type:
+			#     li += "🠗"
+
+			colour = [244, 200, 66, 255]
+			if colours.lm:
+				colour = [220, 40, 40, 255]
+
+			ddt.text(
+				(start_x + 5 * gui.scale, y, 2),
+				li, colour, gui.row_font_size + 200 - 1)
+
+		elif len(indexLine) > 2:
+
+			ddt.text(
+				(start_x + 5 * gui.scale, y, 2), indexLine,
+				alpha_mod(indexc, album_fade), gui.row_font_size)
+		else:
+
+			ddt.text(
+				(start_x, y), indexLine,
+				alpha_mod(indexc, album_fade), gui.row_font_size)
+
+		if dash and n_track.artist and n_track.title:
+			line = n_track.artist + " - " + n_track.title
+
+		ddt.text(
+			(start_x + 33 * gui.scale + artistoffset, y),
+			line,
+			alpha_mod(titlec, album_fade),
+			gui.row_font_size,
+			width - 71 * gui.scale - artistoffset - star_x - 20 * gui.scale)
+
+		line = get_display_time(n_track.length)
+
+		ddt.text(
+			(width + start_x - (round(36 * gui.scale) + offset_font_extra),
+			y + num_y_offset, 0), line,
+			alpha_mod(timec, album_fade), gui.row_font_size)
+
+		f_store.recall_all()
+
+# def visit_radio_site_show_test(p):
+# 	return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p].["website_url"]
+
+def visit_radio_site_deco(station: RadioStation):
+	if station.website_url:
+		return [colours.menu_text, colours.menu_background, None]
+	return [colours.menu_text_disabled, colours.menu_background, None]
+
+def visit_radio_station_site_deco(item: tuple[int, RadioStation]):
+	return visit_radio_site_deco(item[1])
+
+def radio_saved_panel_test(_):
+	return radiobox.tab == 0
+
+def save_to_radios(station: RadioStation):
+	pctl.radio_playlists[pctl.radio_playlist_viewing].stations.append(station)
+	toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing].name)
+
+def create_artist_pl(artist: str, replace: bool = False):
+	source_pl = pctl.active_playlist_viewing
+	this_pl = pctl.active_playlist_viewing
+
+	if pctl.multi_playlist[source_pl].parent_playlist_id:
+		if pctl.multi_playlist[source_pl].title.startswith("Artist:"):
+			new = id_to_pl(pctl.multi_playlist[source_pl].parent_playlist_id)
+			if new is None:
+				# The original playlist is now gone
+				pctl.multi_playlist[source_pl].parent_playlist_id = ""
+			else:
+				source_pl = new
+				# replace = True
+
+	playlist = []
+
+	for item in pctl.multi_playlist[source_pl].playlist_ids:
+		track = pctl.get_track(item)
+		if track.artist == artist or track.album_artist == artist:
+			playlist.append(item)
+
+	if replace:
+		pctl.multi_playlist[this_pl].playlist_ids[:] = playlist[:]
+		pctl.multi_playlist[this_pl].title = _("Artist: ") + artist
+		if album_mode:
+			reload_albums()
+
+		# Transfer playing track back to original playlist
+		if pctl.multi_playlist[this_pl].parent_playlist_id:
+			new = id_to_pl(pctl.multi_playlist[this_pl].parent_playlist_id)
+			tr = pctl.playing_object()
+			if new is not None and tr and pctl.active_playlist_playing == this_pl:
+				if tr.index not in pctl.multi_playlist[this_pl].playlist_ids and tr.index in pctl.multi_playlist[source_pl].playlist_ids:
+					logging.info("Transfer back playing")
+					pctl.active_playlist_playing = source_pl
+					pctl.playlist_playing_position = pctl.multi_playlist[source_pl].playlist_ids.index(tr.index)
+
+		pctl.gen_codes[pl_to_id(this_pl)] = "s\"" + pctl.multi_playlist[source_pl].title + "\" a\"" + artist + "\""
+
+	else:
+
+		pctl.multi_playlist.append(
+			pl_gen(
+				title=_("Artist: ") + artist,
+				playlist_ids=playlist,
+				hide_title=False,
+				parent=pl_to_id(source_pl)))
+
+		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[source_pl].title + "\" a\"" + artist + "\""
+
+		switch_playlist(len(pctl.multi_playlist) - 1)
+
+def aa_sort_alpha():
+	prefs.artist_list_sort_mode = "alpha"
+	artist_list_box.saves.clear()
+
+def aa_sort_popular():
+	prefs.artist_list_sort_mode = "popular"
+	artist_list_box.saves.clear()
+
+def aa_sort_play():
+	prefs.artist_list_sort_mode = "play"
+	artist_list_box.saves.clear()
+
+def toggle_artist_list_style():
+	if prefs.artist_list_style == 1:
+		prefs.artist_list_style = 2
+	else:
+		prefs.artist_list_style = 1
+
+def toggle_artist_list_threshold():
+	if prefs.artist_list_threshold > 0:
+		prefs.artist_list_threshold = 0
+	else:
+		prefs.artist_list_threshold = 4
+	artist_list_box.saves.clear()
+
+def toggle_artist_list_threshold_deco():
+	if prefs.artist_list_threshold == 0:
+		return [colours.menu_text, colours.menu_background, _("Filter Small Artists")]
+	# save = artist_list_box.saves.get(pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int)
+	# if save and save[5] == 0:
+	# 	return [colours.menu_text_disabled, colours.menu_background, _("Include All Artists")]
+	return [colours.menu_text, colours.menu_background, _("Include All Artists")]
+
+def verify_discogs():
+	return len(prefs.discogs_pat) == 40
+
+def save_discogs_artist_thumb(artist, filepath):
+	logging.info("Searching discogs for artist image...")
+
+	# Make artist name url safe
+	artist = artist.replace("/", "").replace("\\", "").replace(":", "")
+
+	# Search for Discogs artist id
+	url = "https://api.discogs.com/database/search"
+	r = requests.get(url, params={"query": artist, "type": "artist", "token": prefs.discogs_pat}, headers={"User-Agent": t_agent}, timeout=10)
+	id = r.json()["results"][0]["id"]
+
+	# Search artist info, get images
+	url = "https://api.discogs.com/artists/" + str(id)
+	r = requests.get(url, headers={"User-Agent": t_agent}, params={"token": prefs.discogs_pat}, timeout=10)
+	images = r.json()["images"]
+
+	# Respect rate limit
+	rate_remaining = r.headers["X-Discogs-Ratelimit-Remaining"]
+	if int(rate_remaining) < 30:
+		time.sleep(5)
+
+	# Find a square image in list of images
+	for image in images:
+		if image["height"] == image["width"]:
+			logging.info("Found square")
+			url = image["uri"]
+			break
+	else:
+		url = images[0]["uri"]
+
+	response = urllib.request.urlopen(url, context=tls_context)
+	im = Image.open(response)
+
+	width, height = im.size
+	if width > height:
+		delta = width - height
+		left = int(delta / 2)
+		upper = 0
+		right = height + left
+		lower = height
+	else:
+		delta = height - width
+		left = 0
+		upper = int(delta / 2)
+		right = width
+		lower = width + upper
+
+	im = im.crop((left, upper, right, lower))
+	im.save(filepath, "JPEG", quality=90)
+	im.close()
+	logging.info("Found artist image from Discogs")
+
+def save_fanart_artist_thumb(mbid, filepath, preview=False):
+	logging.info("Searching fanart.tv for image...")
+	#logging.info("mbid is " + mbid)
+	r = requests.get("https://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + prefs.fatvap, timeout=5)
+	#logging.info(r.json())
+	thumblink = r.json()["artistthumb"][0]["url"]
+	if preview:
+		thumblink = thumblink.replace("/fanart/music", "/preview/music")
+
+	response = urllib.request.urlopen(thumblink, timeout=10, context=tls_context)
+	info = response.info()
+
+	t = io.BytesIO()
+	t.seek(0)
+	t.write(response.read())
+	l = 0
+	t.seek(0, 2)
+	l = t.tell()
+	t.seek(0)
+
+	if info.get_content_maintype() == "image" and l > 1000:
+		f = open(filepath, "wb")
+		f.write(t.read())
+		f.close()
+
+		if prefs.fanart_notify:
+			prefs.fanart_notify = False
+			show_message(
+				_("Notice: Artist image sourced from fanart.tv"),
+				_("They encourage you to contribute at {link}").format(link="https://fanart.tv"), mode="link")
+		logging.info("Found artist thumbnail from fanart.tv")
+
+def queue_pause_deco():
+	if pctl.pause_queue:
+		return [colours.menu_text, colours.menu_background, _("Resume Queue")]
+	return [colours.menu_text, colours.menu_background, _("Pause Queue")]
+
+# def finish_current_deco():
+# 	colour = colours.menu_text
+# 	line = "Finish Playing Album"
+#
+# 	if pctl.playing_object() is None:
+# 		colour = colours.menu_text_disabled
+# 	if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
+# 		colour = colours.menu_text_disabled
+#
+# 	return [colour, colours.menu_background, line]
+
+def art_metadata_overlay(right, bottom, showc):
+	if not showc:
+		return
+
+	padding = 6 * gui.scale
+
+	if not key_shift_down:
+
+		line = ""
+		if showc[0] == 1:
+			line += "E "
+		elif showc[0] == 2:
+			line += "N "
+		else:
+			line += "F "
+
+		line += str(showc[2] + 1) + "/" + str(showc[1])
+
+		y = bottom - 40 * gui.scale
+
+		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
+		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+	else:  # Extended metadata
+
+		line = ""
+		if showc[0] == 1:
+			line += "Embedded"
+		elif showc[0] == 2:
+			line += "Network"
+		else:
+			line += "File"
+
+		y = bottom - 76 * gui.scale
+
+		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
+		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+		y += 18 * gui.scale
+
+		line = ""
+		line += showc[4]
+		line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
+
+		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
+		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+		y += 18 * gui.scale
+
+		line = ""
+		line += str(showc[2] + 1) + "/" + str(showc[1])
+
+		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
+		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
+		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+
+def artist_dl_deco():
+	if artist_info_box.status == "Ready":
+		return [colours.menu_text_disabled, colours.menu_background, None]
+	return [colours.menu_text, colours.menu_background, None]
+
+def station_browse():
+	radiobox.active = True
+	radiobox.edit_mode = False
+	radiobox.add_mode = False
+	radiobox.center = True
+	radiobox.tab = 1
+
+def add_station():
+	radiobox.active = True
+	radiobox.edit_mode = True
+	radiobox.add_mode = True
+	radiobox.radio_field.text = ""
+	radiobox.radio_field_title.text = ""
+	radiobox.station_editing = None
+	radiobox.center = True
+
+def rename_station(item: tuple[int, RadioStation]):
+	station = item[1]
+	radiobox.active = True
+	radiobox.center = False
+	radiobox.edit_mode = True
+	radiobox.add_mode = False
+	radiobox.radio_field.text = station.stream_url
+	radiobox.radio_field_title.text = station.title if station.title is not None else ""
+	radiobox.station_editing = station
+
+def remove_station(item: tuple[int, RadioStation]):
+	index = item[0]
+	del pctl.radio_playlists[pctl.radio_playlist_viewing].stations[index]
+
+def dismiss_dl():
+	dl_mon.ready.clear()
+	dl_mon.done.update(dl_mon.watching)
+	dl_mon.watching.clear()
+
+def download_img(link: str, target_dir: str, track: TrackClass) -> None:
+	try:
+		response = urllib.request.urlopen(link, context=tls_context)
+		info = response.info()
+		if info.get_content_maintype() == "image":
+			if info.get_content_subtype() == "jpeg":
+				save_target = os.path.join(target_dir, "image.jpg")
+				with open(save_target, "wb") as f:
+					f.write(response.read())
+				# clear_img_cache()
+				clear_track_image_cache(track)
+
+			elif info.get_content_subtype() == "png":
+				save_target = os.path.join(target_dir, "image.png")
+				with open(save_target, "wb") as f:
+					f.write(response.read())
+				# clear_img_cache()
+				clear_track_image_cache(track)
+			else:
+				show_message(_("Image types other than PNG or JPEG are currently not supported"), mode="warning")
+		else:
+			show_message(_("The link does not appear to refer to an image file."), mode="warning")
+		gui.image_downloading = False
+
+	except Exception as e:
+		logging.exception("Image download failed")
+		show_message(_("Image download failed."), str(e), mode="warning")
+		gui.image_downloading = False
+
+def display_you_heart(x: int, yy: int, just: int = 0) -> None:
+	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
+	gui.heart_fields.append(rect)
+	fields.add(rect, update_playlist_call)
+	if coll(rect) and not track_box:
+		gui.pl_update += 1
+		w = ddt.get_text_w(_("You"), 13)
+		xx = (x - w) - 5 * gui.scale
+
+		if just == 1:
+			xx += w + 15 * gui.scale
+
+		ty = yy - 28 * gui.scale
+		tx = xx
+		if ty < gui.panelY + 5 * gui.scale:
+			ty = gui.panelY + 5 * gui.scale
+			tx -= 20 * gui.scale
+
+		# ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
+		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), _("You"), [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+
+	heart_row_icon.render(x, yy, [244, 100, 100, 255])
+
+def display_spot_heart(x: int, yy: int, just: int = 0) -> None:
+	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
+	gui.heart_fields.append(rect)
+	fields.add(rect, update_playlist_call)
+	if coll(rect) and not track_box:
+		gui.pl_update += 1
+		w = ddt.get_text_w(_("Liked on Spotify"), 13)
+		xx = (x - w) - 5 * gui.scale
+
+		if just == 1:
+			xx += w + 15 * gui.scale
+
+		ty = yy - 28 * gui.scale
+		tx = xx
+		if ty < gui.panelY + 5 * gui.scale:
+			ty = gui.panelY + 5 * gui.scale
+			tx -= 20 * gui.scale
+
+		# ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
+		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
+		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), _("Liked on Spotify"), [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+
+	heart_row_icon.render(x, yy, [100, 244, 100, 255])
+
+def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
+	heart_row_icon.render(x, yy, heart_colours.get(name))
+
+	rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
+	gui.heart_fields.append(rect)
+	fields.add(rect, update_playlist_call)
+	if coll(rect) and not track_box:
+		gui.pl_update += 1
+		w = ddt.get_text_w(name, 13)
+		xx = (x - w) - 5 * gui.scale
+
+		if just == 1:
+			xx += w + 15 * gui.scale
+
+		ty = yy - 28 * gui.scale
+		tx = xx
+		if ty < gui.panelY + 5 * gui.scale:
+			ty = gui.panelY + 5 * gui.scale
+			tx -= 20 * gui.scale
+
+		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
+		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
+		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+
+def hit_callback(win, point, data):
+	x = point.contents.x / logical_size[0] * window_size[0]
+	y = point.contents.y / logical_size[0] * window_size[0]
+
+	# Special layout modes
+	if gui.mode == 3:
+
+		if key_shift_down or key_shiftr_down:
+			return sdl3.SDL_HITTEST_NORMAL
+
+		# if prefs.mini_mode_mode == 5:
+		#     return sdl3.SDL_HITTEST_NORMAL
+
+		if prefs.mini_mode_mode in (4, 5) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
+			return sdl3.SDL_HITTEST_NORMAL
+
+		if y < gui.window_control_hit_area_h and x > window_size[
+			0] - gui.window_control_hit_area_w:
+			return sdl3.SDL_HITTEST_NORMAL
+
+		# Square modes
+		y1 = window_size[0]
+		# if prefs.mini_mode_mode == 5:
+		#     y1 = window_size[1]
+		y0 = 0
+		if macos:
+			y0 = round(35 * gui.scale)
+		if window_size[0] == window_size[1]:
+			y1 = window_size[1] - 79 * gui.scale
+		if y0 < y < y1 and not search_over.active:
+			return sdl3.SDL_HITTEST_DRAGGABLE
+
+		return sdl3.SDL_HITTEST_NORMAL
+
+	# Standard player mode
+	if not gui.maximized:
+		if y < 0 and x > window_size[0]:
+			return sdl3.SDL_HITTEST_RESIZE_TOPRIGHT
+
+		if y < 0 and x < 1:
+			return sdl3.SDL_HITTEST_RESIZE_TOPLEFT
+
+		# if draw_border and y < 3 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
+		#     return sdl3.SDL_HITTEST_RESIZE_TOP
+
+	if y < gui.panelY:
+
+		if gui.top_bar_mode2:
+
+			if y < gui.panelY - gui.panelY2:
+				if prefs.left_window_control and x < 100 * gui.scale:
+					return sdl3.SDL_HITTEST_NORMAL
+
+				if x > window_size[0] - 100 * gui.scale and y < 30 * gui.scale:
+					return sdl3.SDL_HITTEST_NORMAL
+				return sdl3.SDL_HITTEST_DRAGGABLE
+			if top_panel.drag_zone_start_x > x or tab_menu.active:
+				return sdl3.SDL_HITTEST_NORMAL
+			return sdl3.SDL_HITTEST_DRAGGABLE
+
+		if top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
+
+			if tab_menu.active or mouse_up or mouse_down:  # mouse up/down is workaround for Wayland
+				return sdl3.SDL_HITTEST_NORMAL
+
+			if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (
+					macos or system == "Windows" or msys)) or (not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (
+					macos or system == "Windows" or msys)):
+				return sdl3.SDL_HITTEST_NORMAL
+
+			return sdl3.SDL_HITTEST_DRAGGABLE
+
+	if not gui.maximized:
+		if x > window_size[0] - 20 * gui.scale and y > window_size[1] - 20 * gui.scale:
+			return sdl3.SDL_HITTEST_RESIZE_BOTTOMRIGHT
+		if x < 5 and y > window_size[1] - 5:
+			return sdl3.SDL_HITTEST_RESIZE_BOTTOMLEFT
+		if y > window_size[1] - 5 * gui.scale:
+			return sdl3.SDL_HITTEST_RESIZE_BOTTOM
+
+		if x > window_size[0] - 3 * gui.scale and y > 20 * gui.scale:
+			return sdl3.SDL_HITTEST_RESIZE_RIGHT
+		if x < 5 * gui.scale and y > 10 * gui.scale:
+			return sdl3.SDL_HITTEST_RESIZE_LEFT
+		return sdl3.SDL_HITTEST_NORMAL
+	return sdl3.SDL_HITTEST_NORMAL
+
+def reload_scale():
+	auto_scale()
+
+	scale = prefs.scale_want
+
+	gui.scale = scale
+	ddt.scale = gui.scale
+	prime_fonts()
+	ddt.clear_text_cache()
+	scale_assets(scale_want=scale, force=True)
+	img_slide_update_gall(album_mode_art_size)
+
+	for item in WhiteModImageAsset.assets:
+		item.reload()
+	for item in LoadImageAsset.assets:
+		item.reload()
+	for menu in Menu.instances:
+		menu.rescale()
+	bottom_bar1.__init__(tauon)
+	bottom_bar_ao1.__init__(tauon)
+	top_panel.__init__(tauon)
+	view_box.__init__(tauon, reload=True)
+	queue_box.recalc()
+	playlist_box.recalc()
+
+def update_layout_do():
+	if prefs.scale_want != gui.scale:
+		reload_scale()
+
+	w = window_size[0]
+	h = window_size[1]
+
+	if gui.switch_showcase_off:
+		ddt.force_gray = False
+		gui.switch_showcase_off = False
+		exit_combo(restore=True)
+
+	global draw_max_button
+	if draw_max_button and prefs.force_hide_max_button:
+		draw_max_button = False
+
+	if gui.theme_name != prefs.theme_name:
+		gui.reload_theme = True
+		global theme
+		theme = get_theme_number(prefs.theme_name)
+		#logging.info("Config reload theme...")
+
+	# Restore in case of error
+	if gui.rspw < 30 * gui.scale:
+
+		gui.rspw = 100 * gui.scale
+
+	# Lock right side panel to full size if fully extended -----
+	if prefs.side_panel_layout == 0 and not album_mode:
+		max_w = round(
+			((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
+		# 17 here is the art box inset value
+
+		if not album_mode and gui.rspw > max_w - 12 * gui.scale and side_drag:
+			gui.rsp_full_lock = True
+	# ----------------------------------------------------------
+
+	# Auto shrink left side panel --------------
+	pl_width = window_size[0]
+	pl_width_a = pl_width
+	if gui.rsp:
+		pl_width_a = pl_width - gui.rspw
+		pl_width -= gui.rspw - 300 * gui.scale  # More sensitivity for compact with rsp for better visual balancing
+
+	if pl_width < 900 * gui.scale and not gui.hide_tracklist_in_gallery:
+		gui.lspw = 180 * gui.scale
+
+		if pl_width < 700 * gui.scale:
+			gui.lspw = 150 * gui.scale
+
+		if prefs.left_panel_mode == "artist list" and prefs.artist_list_style == 1:
+			gui.compact_artist_list = True
+			gui.lspw = 75 * gui.scale
+			if gui.force_side_on_drag:
+				gui.lspw = 180 * gui.scale
+	else:
+		gui.lspw = 220 * gui.scale
+		gui.compact_artist_list = False
+		if prefs.left_panel_mode == "artist list":
+			gui.lspw = 230 * gui.scale
+
+	if gui.lsp and prefs.left_panel_mode == "folder view":
+		gui.lspw = 260 * gui.scale
+		max_insets = 0
+		for item in tree_view_box.rows:
+			max_insets = max(item[2], max_insets)
+
+		p = (pl_width_a * 0.15) - round(200 * gui.scale)
+		if gui.hide_tracklist_in_gallery:
+			p = ((window_size[0] - gui.lspw) * 0.15) - round(170 * gui.scale)
+
+		p = min(round(200 * gui.scale), p)
+		if p > 0:
+			gui.lspw += p
+		if max_insets > 1:
+			gui.lspw = max(gui.lspw, 260 * gui.scale + round(15 * gui.scale) * max_insets)
+
+	# -----
+
+	# Set bg art strength according to setting ----
+	if prefs.art_bg_stronger == 3:
+		prefs.art_bg_opacity = 29
+	elif prefs.art_bg_stronger == 2:
+		prefs.art_bg_opacity = 19
+	else:
+		prefs.art_bg_opacity = 10
+
+	if prefs.bg_showcase_only:
+		prefs.art_bg_opacity += 21
+
+	# -----
+
+	# Adjust for for compact window sizes ----
+	if (prefs.always_art_header or (w < 600 * gui.scale and not gui.rsp and prefs.art_in_top_panel)) and not album_mode:
+		gui.top_bar_mode2 = True
+		gui.panelY = round(100 * gui.scale)
+		gui.playlist_top = gui.panelY + (8 * gui.scale)
+		gui.playlist_top_bk = gui.playlist_top
+
+	else:
+		gui.top_bar_mode2 = False
+		gui.panelY = round(30 * gui.scale)
+		gui.playlist_top = gui.panelY + (8 * gui.scale)
+		gui.playlist_top_bk = gui.playlist_top
+
+	gui.show_playlist = True
+	if w < 750 * gui.scale and album_mode:
+		gui.show_playlist = False
+
+	# Set bio panel size according to setting
+	if prefs.bio_large:
+		gui.artist_panel_height = 320 * gui.scale
+		if window_size[0] < 600 * gui.scale:
+			gui.artist_panel_height = 200 * gui.scale
+
+	else:
+		gui.artist_panel_height = 200 * gui.scale
+		if window_size[0] < 600 * gui.scale:
+			gui.artist_panel_height = 150 * gui.scale
+
+	# Trigger artist bio reload if panel size has changed
+	if gui.artist_info_panel:
+		if gui.last_artist_panel_height != gui.artist_panel_height:
+			artist_info_box.get_data(artist_info_box.artist_on)
+		gui.last_artist_panel_height = gui.artist_panel_height
+
+	# prefs.art_bg_blur = 9
+	# if prefs.bg_showcase_only:
+	#     prefs.art_bg_blur = 15
+	#
+	# if w / h == 16 / 9:
+	#     logging.info("YEP")
+	# elif w / h < 16 / 9:
+	#     logging.info("too low")
+	# else:
+	#     logging.info("too high")
+	#logging.info((w, h))
+
+	# input.mouse_click = False
+
+	global renderer
+
+	if prefs.spec2_colour_mode == 0:
+		prefs.spec2_base = [10, 10, 100]
+		prefs.spec2_multiply = [0.5, 1, 1]
+	elif prefs.spec2_colour_mode == 1:
+		prefs.spec2_base = [10, 10, 10]
+		prefs.spec2_multiply = [2, 1.2, 5]
+	# elif prefs.spec2_colour_mode == 2:
+	#     prefs.spec2_base = [10, 100, 10]
+	#     prefs.spec2_multiply = [1, -1, 0.4]
+
+	gui.draw_vis4_top = False
+
+	if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != 3 and prefs.backend == 4:
+		gui.vis = 4
+		gui.turbo = True
+	elif gui.vis_want == 0:
+		gui.turbo = False
+		gui.vis = 0
+	else:
+		gui.vis = gui.vis_want
+		if gui.vis > 0:
+			gui.turbo = True
+
+	# Disable vis when in compact view
+	if gui.mode == 3 or gui.top_bar_mode2:  # or prefs.backend == 2:
+		if not gui.combo_mode:
+			gui.vis = 0
+			gui.turbo = False
+
+	if gui.mode == 1:
+		if not gui.maximized and not gui.lowered and gui.mode != 3:
+			gui.save_size[0] = logical_size[0]
+			gui.save_size[1] = logical_size[1]
+
+		bottom_bar1.update()
+
+		# if system != "Windows":
+		# 	if draw_border:
+		# 		gui.panelY = 30 * gui.scale + 3 * gui.scale
+		# 		top_panel.ty = 3 * gui.scale
+		# 	else:
+		# 		gui.panelY = 30 * gui.scale
+		# 		top_panel.ty = 0
+
+		if gui.set_bar and gui.set_mode:
+			gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
+		else:
+			gui.playlist_top = gui.playlist_top_bk
+
+		if gui.artist_info_panel:
+			gui.playlist_top += gui.artist_panel_height
+
+		gui.offset_extra = 0
+		if draw_border and not prefs.left_window_control:
+
+			offset = 61 * gui.scale
+			if not draw_min_button:
+				offset -= 35 * gui.scale
+			if draw_max_button:
+				offset += 33 * gui.scale
+			if gui.macstyle:
+				offset = 24
+				if draw_min_button:
+					offset += 20
+				if draw_max_button:
+					offset += 20
+				offset = round(offset * gui.scale)
+			gui.offset_extra = offset
+
+		global album_v_gap
+		global album_h_gap
+		global album_v_slide_value
+
+		album_v_slide_value = round(50 * gui.scale)
+		if gui.gallery_show_text:
+			album_h_gap = 30 * gui.scale
+			album_v_gap = 66 * gui.scale
+		else:
+			album_h_gap = 30 * gui.scale
+			album_v_gap = 25 * gui.scale
+
+		if prefs.thin_gallery_borders:
+
+			if gui.gallery_show_text:
+				album_h_gap = 20 * gui.scale
+				album_v_gap = 55 * gui.scale
+			else:
+				album_h_gap = 17 * gui.scale
+				album_v_gap = 15 * gui.scale
+
+			album_v_slide_value = round(45 * gui.scale)
+
+		if prefs.increase_gallery_row_spacing:
+			album_v_gap = round(album_v_gap * 1.3)
+
+		gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
+
+		# gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
+		gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
+
+		# gui.spec_x = window_size[0] - gui.offset_extra - 90
+
+		gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
+
+		gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
+
+		# Tracklist row size and text positioning ---------------------------------
+		gui.playlist_row_height = prefs.playlist_row_height
+		gui.row_font_size = prefs.playlist_font_size  # 13
+
+		gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
+
+		if gui.scale != 1:
+			real_font_px = ddt.f_dict[gui.row_font_size][2]
+			# gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("AbcD", gui.row_font_size, 100) + round(1.3 * gui.scale)
+
+			if gui.scale < 1.3:
+				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.9 * gui.scale)
+			elif gui.scale < 1.5:
+				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.3 * gui.scale)
+			elif gui.scale < 1.75:
+				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.1 * gui.scale)
+			elif gui.scale < 2.3:
+				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.5 * gui.scale)
+			else:
+				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.8 * gui.scale)
+
+		gui.playlist_text_offset += prefs.tracklist_y_text_offset
+
+		gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
+
+		# -------------------------------------------------------------------------
+		gui.playlist_view_length = int(
+			(window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
+
+		box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
+
+		if gui.art_aspect_ratio > 1.01:
+			gui.art_unlock_ratio = True
+			gui.art_max_ratio_lock = max(gui.art_aspect_ratio, gui.art_max_ratio_lock)
+
+
+		#logging.info("Avaliabe: " + str(box_r))
+		elif box_r <= 1:
+			gui.art_unlock_ratio = False
+			gui.art_max_ratio_lock = 1
+
+		if side_drag and key_shift_down:
+			gui.art_unlock_ratio = True
+			gui.art_max_ratio_lock = 5
+
+		gui.rspw = gui.pref_rspw
+		if album_mode:
+			gui.rspw = gui.pref_gallery_w
+
+		# Limit the right side panel width to height of area
+		if gui.rsp and prefs.side_panel_layout == 0:
+			if album_mode:
+				pass
+			else:
+
+				if not gui.art_unlock_ratio:
+
+					if gui.rsp_full_lock and not side_drag:
+						gui.rspw = window_size[0]
+
+					gui.rspw = min(gui.rspw, window_size[1] - gui.panelY - gui.panelBY)
+
+		# Determine how wide the playlist need to be
+		gui.plw = window_size[0]
+		gui.playlist_left = 0
+		if gui.lsp:
+			# if gui.plw > gui.lspw:
+			gui.plw -= gui.lspw
+			gui.playlist_left = gui.lspw
+		if gui.rsp:
+			gui.plw -= gui.rspw
+
+		# Shrink side panel if playlist gets too small
+		if window_size[0] > 100 and not gui.hide_tracklist_in_gallery:
+
+			if gui.plw < 300:
+				if gui.rsp:
+
+					l = 0
+					if gui.lsp:
+						l = gui.lspw
+
+					gui.rspw = max(window_size[0] - l - 300, 110)
+					# if album_mode and window_size[0] > 750 * gui.scale:
+					#     gui.pref_gallery_w = gui.rspw
+
+		# Determine how wide the playlist need to be (again)
+		gui.plw = window_size[0]
+		gui.playlist_left = 0
+		if gui.lsp:
+			# if gui.plw > gui.lspw:
+			gui.plw -= gui.lspw
+			gui.playlist_left = gui.lspw
+		if gui.rsp:
+			gui.plw -= gui.rspw
+
+		if window_size[0] < 630 * gui.scale:
+			gui.compact_bar = True
+		else:
+			gui.compact_bar = False
+
+		gui.pl_update = 1
+
+		# Tracklist sizing ----------------------------------------------------
+		left = gui.playlist_left
+		width = gui.plw
+
+		center_mode = True
+		if gui.lsp or gui.rsp or gui.set_mode:
+			center_mode = False
+
+		if gui.set_mode and window_size[0] < 600:
+			center_mode = False
+
+		highlight_left = 0
+		highlight_width = width
+
+		inset_left = highlight_left + 23 * gui.scale
+		inset_width = highlight_width - 32 * gui.scale
+
+		if gui.lsp and not gui.rsp:
+			inset_width -= 10 * gui.scale
+
+		if gui.lsp:
+			inset_left -= 10 * gui.scale
+			inset_width += 10 * gui.scale
+
+		if center_mode:
+			if gui.set_mode:
+				highlight_left = int(pow((window_size[0] / gui.scale * 0.005), 2) * gui.scale)
+			else:
+				highlight_left = int(pow((window_size[0] / gui.scale * 0.01), 2) * gui.scale)
+
+			if window_size[0] < 600 * gui.scale:
+				highlight_left = 3 * gui.scale
+
+			highlight_width -= highlight_left * 2
+			inset_left = highlight_left + 18 * gui.scale
+			inset_width = highlight_width - 25 * gui.scale
+
+		if window_size[0] < 600 and gui.lsp:
+			inset_width = highlight_width - 18 * gui.scale
+
+		gui.tracklist_center_mode = center_mode
+		gui.tracklist_inset_left = inset_left
+		gui.tracklist_inset_width = inset_width
+		gui.tracklist_highlight_left = highlight_left
+		gui.tracklist_highlight_width = highlight_width
+
+		if album_mode and gui.hide_tracklist_in_gallery:
+			gui.show_playlist = False
+			gui.rspw = window_size[0] - 20 * gui.scale
+			if gui.lsp:
+				gui.rspw -= gui.lspw
+
+		# --------------------------------------------------------------------
+
+		if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
+
+			while window_size[0] > gui.max_window_tex:
+				gui.max_window_tex += 1000
+			while window_size[1] > gui.max_window_tex:
+				gui.max_window_tex += 1000
+
+			gui.tracklist_texture_rect = sdl3.SDL_FRect(0, 0, gui.max_window_tex, gui.max_window_tex)
+
+			sdl3.SDL_DestroyTexture(gui.tracklist_texture)
+			sdl3.SDL_RenderClear(renderer)
+			gui.tracklist_texture = sdl3.SDL_CreateTexture(
+				renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
+				gui.max_window_tex,
+				gui.max_window_tex)
+
+			sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
+			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+			sdl3.SDL_RenderClear(renderer)
+			sdl3.SDL_SetTextureBlendMode(gui.tracklist_texture, sdl3.SDL_BLENDMODE_BLEND)
+
+			# sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+			# sdl3.SDL_RenderClear(renderer)
+
+			sdl3.SDL_DestroyTexture(gui.main_texture)
+			gui.main_texture = sdl3.SDL_CreateTexture(
+				renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
+				gui.max_window_tex,
+				gui.max_window_tex)
+			sdl3.SDL_SetTextureBlendMode(gui.main_texture, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+			sdl3.SDL_RenderClear(renderer)
+
+			sdl3.SDL_DestroyTexture(gui.main_texture_overlay_temp)
+			gui.main_texture_overlay_temp = sdl3.SDL_CreateTexture(
+				renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
+				sdl3.SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
+				gui.max_window_tex)
+			sdl3.SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+			sdl3.SDL_RenderClear(renderer)
+
+		update_set()
+
+	if prefs.art_bg:
+		tauon.thread_manager.ready("style")
+
+def save_state() -> None:
+	if should_save_state:
+		logging.info("Writing database to disk... ")
+	else:
+		logging.warning("Dev mode, not saving state... ")
+		return
+
+	# view_prefs['star-lines'] = star_lines
+	view_prefs["update-title"] = update_title
+	view_prefs["side-panel"] = prefs.prefer_side
+	view_prefs["dim-art"] = prefs.dim_art
+	#view_prefs['level-meter'] = gui.turbo
+	# view_prefs['pl-follow'] = pl_follow
+	view_prefs["scroll-enable"] = scroll_enable
+	view_prefs["break-enable"] = break_enable
+	# view_prefs['dd-index'] = dd_index
+	view_prefs["append-date"] = prefs.append_date
+
+	tauonplaylist_jar = []
+	radioplaylist_jar = []
+	tauonqueueitem_jar = []
+	trackclass_jar = []
+	for v in pctl.multi_playlist:
+		tauonplaylist_jar.append(v.__dict__)
+	for v in pctl.radio_playlists:
+		radioplaylist_jar.append(v.__dict__)
+	for v in pctl.force_queue:
+		tauonqueueitem_jar.append(v.__dict__)
+	for v in pctl.master_library.values():
+		trackclass_jar.append(v.__dict__)
+
+	save = [
+		None,
+		pctl.master_count,
+		pctl.playlist_playing_position,
+		pctl.active_playlist_viewing,
+		pctl.playlist_view_position,
+		tauonplaylist_jar, # pctl.multi_playlist, # list[TauonPlaylist]
+		pctl.player_volume,
+		pctl.track_queue,
+		pctl.queue_step,
+		default_playlist,
+		None,  # pctl.playlist_playing_position,
+		None,  # Was cue list
+		"",  # radio_field.text,
+		theme,
+		folder_image_offsets,
+		None,  # lfm_username,
+		None,  # lfm_hash,
+		latest_db_version,  # Used for upgrading
+		view_prefs,
+		gui.save_size,
+		None,  # old side panel size
+		0,  # save time (unused)
+		gui.vis_want,  # gui.vis
+		pctl.selected_in_playlist,
+		album_mode_art_size,
+		draw_border,
+		prefs.enable_web,
+		prefs.allow_remote,
+		prefs.expose_web,
+		prefs.enable_transcode,
+		prefs.show_rym,
+		None,  # was combo mode art size
+		gui.maximized,
+		prefs.prefer_bottom_title,
+		gui.display_time_mode,
+		prefs.transcode_mode,
+		prefs.transcode_codec,
+		prefs.transcode_bitrate,
+		1,  # prefs.line_style,
+		prefs.cache_gallery,
+		prefs.playlist_font_size,
+		prefs.use_title,
+		gui.pl_st,
+		None,  # gui.set_mode,
+		None,
+		prefs.playlist_row_height,
+		prefs.show_wiki,
+		prefs.auto_extract,
+		prefs.colour_from_image,
+		gui.set_bar,
+		gui.gallery_show_text,
+		gui.bb_show_art,
+		False,  # Was show stars
+		prefs.auto_lfm,
+		prefs.scrobble_mark,
+		prefs.replay_gain,
+		True,  # Was radio lyrics
+		prefs.show_gimage,
+		prefs.end_setting,
+		prefs.show_gen,
+		[],  # was old radio urls
+		prefs.auto_del_zip,
+		gui.level_meter_colour_mode,
+		prefs.ui_scale,
+		prefs.show_lyrics_side,
+		None, #prefs.last_device,
+		album_mode,
+		None,  # album_playlist_width
+		prefs.transcode_opus_as,
+		gui.star_mode,
+		prefs.prefer_side,  # gui.rsp,
+		gui.lsp,
+		gui.rspw,
+		gui.pref_gallery_w,
+		gui.pref_rspw,
+		gui.show_hearts,
+		prefs.monitor_downloads,  # 76
+		gui.artist_info_panel,  # 77
+		prefs.extract_to_music,  # 78
+		lb.enable,
+		None,  # lb.key,
+		rename_files.text,
+		rename_folder.text,
+		prefs.use_jump_crossfade,
+		prefs.use_transition_crossfade,
+		prefs.show_notifications,
+		prefs.true_shuffle,
+		gui.set_mode,
+		None,  # prefs.show_queue, # 88
+		None,  # prefs.show_transfer,
+		tauonqueueitem_jar, # pctl.force_queue, # 90
+		prefs.use_pause_fade,  # 91
+		prefs.append_total_time,  # 92
+		None,  # prefs.backend,
+		pctl.album_shuffle_mode,
+		pctl.album_repeat_mode,  # 95
+		prefs.finish_current,  # Not used
+		prefs.reload_state,  # 97
+		None,  # prefs.reload_play_state,
+		prefs.last_fm_token,
+		prefs.last_fm_username,
+		prefs.use_card_style,
+		prefs.auto_lyrics,
+		prefs.auto_lyrics_checked,
+		prefs.show_side_art,
+		prefs.window_opacity,
+		prefs.gallery_single_click,
+		prefs.tabs_on_top,
+		prefs.showcase_vis,
+		prefs.spec2_colour_mode,
+		prefs.device_buffer,  # moved to config file
+		prefs.use_eq,
+		prefs.eq,
+		prefs.bio_large,
+		prefs.discord_show,
+		prefs.min_to_tray,
+		prefs.guitar_chords,
+		None,  # prefs.playback_follow_cursor,
+		prefs.art_bg,
+		pctl.random_mode,
+		pctl.repeat_mode,
+		prefs.art_bg_stronger,
+		prefs.art_bg_always_blur,
+		prefs.failed_artists,
+		prefs.artist_list,
+		None,  # prefs.auto_sort,
+		prefs.lyrics_enables,
+		prefs.fanart_notify,
+		prefs.bg_showcase_only,
+		None,  # prefs.discogs_pat,
+		prefs.mini_mode_mode,
+		after_scan,
+		gui.gallery_positions,
+		prefs.chart_bg,
+		prefs.left_panel_mode,
+		gui.last_left_panel_mode,
+		None, #prefs.gst_device,
+		search_string_cache,
+		search_dia_string_cache,
+		pctl.gen_codes,
+		gui.show_ratings,
+		gui.show_album_ratings,
+		prefs.radio_urls,
+		gui.showcase_mode,  # gui.combo_mode,
+		top_panel.prime_tab,
+		top_panel.prime_side,
+		prefs.sync_playlist,
+		prefs.spot_client,
+		prefs.spot_secret,
+		prefs.show_band,
+		prefs.download_playlist,
+		tauon.spot_ctl.cache_saved_albums,
+		prefs.auto_rec,
+		prefs.spotify_token,
+		prefs.use_libre_fm,
+		playlist_box.scroll_on,
+		prefs.artist_list_sort_mode,
+		prefs.phazor_device_selected,
+		prefs.failed_background_artists,
+		prefs.bg_flips,
+		prefs.tray_show_title,
+		prefs.artist_list_style,
+		trackclass_jar,
+		prefs.premium,
+		gui.radio_view,
+		radioplaylist_jar, # pctl.radio_playlists,
+		pctl.radio_playlist_viewing,
+		prefs.radio_thumb_bans,
+		prefs.playlist_exports,
+		prefs.show_chromecast,
+		prefs.cache_list,
+		prefs.shuffle_lock,
+		prefs.album_shuffle_lock_mode,
+		gui.was_radio,
+		prefs.spot_username,
+		"", #prefs.spot_password,  # No longer used
+		prefs.artist_list_threshold,
+		prefs.tray_theme,
+		prefs.row_title_format,
+		prefs.row_title_genre,
+		prefs.row_title_separator_type,
+		prefs.replay_preamp,  # 181
+		prefs.gallery_combine_disc,
+	]
+
+	try:
+		with (user_directory / "state.p.backup").open("wb") as file:
+			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
+		# if not pctl.running:
+		with (user_directory / "state.p").open("wb") as file:
+			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+		old_position = old_window_position
+		if not prefs.save_window_position:
+			old_position = None
+
+		save = [
+			draw_border,
+			gui.save_size,
+			prefs.window_opacity,
+			gui.scale,
+			gui.maximized,
+			old_position,
+		]
+
+		if not fs_mode:
+			with (user_directory / "window.p").open("wb") as file:
+				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+		tauon.spot_ctl.save_token()
+
+		with (user_directory / "lyrics_substitutions.json").open("w") as file:
+			json.dump(prefs.lyrics_subs, file)
+
+		save_prefs(bag)
+
+		for key, item in prefs.playlist_exports.items():
+			pl = id_to_pl(key)
+			if pl is None:
+				continue
+			if item["auto"] is False:
+				continue
+			export_playlist_box.run_export(item, key, warnings=False)
+
+		logging.info("Done writing database")
+
+	except PermissionError:
+		logging.exception("Permission error encountered while writing database")
+		show_message(_("Permission error encountered while writing database"), "error")
+	except Exception:
+		logging.exception("Unknown error encountered while writing database")
+
+def test_show_add_home_music() -> None:
+	gui.add_music_folder_ready = True
+
+	if music_directory is None:
+		gui.add_music_folder_ready = False
+		return
+
+	for item in pctl.multi_playlist:
+		if item.last_folder == str(music_directory):
+			gui.add_music_folder_ready = False
+			break
+
+def is_level_zero(include_menus: bool = True) -> bool:
+	if include_menus:
+		for menu in Menu.instances:
+			if menu.active:
+				return False
+
+	return not gui.rename_folder_box \
+		and not track_box \
+		and not rename_track_box.active \
+		and not radiobox.active \
+		and not pref_box.enabled \
+		and not quick_search_mode \
+		and not gui.rename_playlist_box \
+		and not search_over.active \
+		and not gui.box_over \
+		and not trans_edit_box.active
+
+def drop_file(target: str):
+	# Deprecated, move to individual UI components
+	global new_playlist_cooldown
+	global mouse_down
+	global drag_mode
+
+	i_x = mouse_position[0]
+	i_y = mouse_position[1]
+	gui.drop_playlist_target = 0
+	#logging.info(event.drop)
+
+	if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
+		x = top_panel.tabs_left_x
+		for tab in top_panel.shown_tabs:
+			wid = top_panel.tab_text_spaces[tab] + top_panel.tab_extra_width
+
+			if x < i_x < x + wid:
+				gui.drop_playlist_target = tab
+				tab_pulse.pulse()
+				gui.update += 1
+				gui.pl_pulse = True
+				logging.info("Direct drop")
+				break
+
+			x += wid
+		else:
+			logging.info("MISS")
+			if new_playlist_cooldown:
+				gui.drop_playlist_target = pctl.active_playlist_viewing
+			else:
+				if not target.lower().endswith(".xspf"):
+					gui.drop_playlist_target = new_playlist()
+				new_playlist_cooldown = True
+
+	elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
+
+		y = gui.panelY
+		y += 5 * gui.scale
+		y += playlist_box.tab_h + playlist_box.gap
+
+		for i, pl in enumerate(pctl.multi_playlist):
+			if i_y < y:
+				gui.drop_playlist_target = i
+				tab_pulse.pulse()
+				gui.update += 1
+				gui.pl_pulse = True
+				logging.info("Direct drop")
+				break
+			y += playlist_box.tab_h + playlist_box.gap
+		else:
+			if new_playlist_cooldown:
+				gui.drop_playlist_target = pctl.active_playlist_viewing
+			else:
+				if not target.lower().endswith(".xspf"):
+					gui.drop_playlist_target = new_playlist()
+				new_playlist_cooldown = True
+
+
+	else:
+		gui.drop_playlist_target = pctl.active_playlist_viewing
+
+	if not os.path.exists(target) and flatpak_mode:
+		show_message(
+			_("Could not access! Possible insufficient Flatpak permissions."),
+			_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
+			mode="bubble")
+
+	load_order = LoadClass()
+	load_order.target = target.replace("\\", "/")
+
+	if os.path.isdir(load_order.target):
+		quick_import_done.append(load_order.target)
+
+		# if not pctl.multi_playlist[gui.drop_playlist_target].last_folder:
+		pctl.multi_playlist[gui.drop_playlist_target].last_folder.append(load_order.target)
+		reduce_paths(pctl.multi_playlist[gui.drop_playlist_target].last_folder)
+
+	load_order.playlist = pctl.multi_playlist[gui.drop_playlist_target].uuid_int
+	load_orders.append(copy.deepcopy(load_order))
+
+	#logging.info('dropped: ' + str(dropped_file))
+	gui.update += 1
+	mouse_down = False
+	drag_mode = False
+
+###################
+###################
+################### END OBSOLETED FUNCTIONS
+###################
+###################
+
+def is_module_loaded(module_name: str) -> bool:
+	return module_name in sys.modules
+
+def get_cert_path() -> str:
+	if pyinstaller_mode:
+		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
+	# Running as script
+	return certifi.where()
+
+def setup_tls() -> ssl.SSLContext:
+	"""TLS setup (needed for frozen installs)
+
+	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast)
+	"""
+	# Set the TLS certificate path environment variable
+	cert_path = get_cert_path()
+	logging.debug(f"Found TLS cert file at: {cert_path}")
+	os.environ["SSL_CERT_FILE"] = cert_path
+	os.environ["REQUESTS_CA_BUNDLE"] = cert_path
+
+	# Create default TLS context
+	return ssl.create_default_context(cafile=get_cert_path())
+
+def whicher(target: str) -> bool | str | None:
+	"""Detect and launch programs outside of flatpak sandbox"""
+	try:
+		if flatpak_mode:
+			complete = subprocess.run(
+				shlex.split("flatpak-spawn --host which " + target), stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE, check=True)
+			r = complete.stdout.decode()
+			return "bin/" + target in r
+		return shutil.which(target)
+	except Exception:
+		logging.exception("Failed to run flatpak-spawn")
+		return False
+
+def asset_loader(
+	bag: Bag, loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset], name: str, mod: bool = False,
+) -> WhiteModImageAsset | LoadImageAsset:
+	if name in loaded_asset_dc:
+		return loaded_asset_dc[name]
+
+	target = str(bag.dirs.scaled_asset_directory / name)
+	if mod:
+		item = WhiteModImageAsset(bag=bag, path=target, scale_name=name)
+	else:
+		item = LoadImageAsset(bag=bag, path=target, scale_name=name)
+	loaded_asset_dc[name] = item
+	return item
+
+def no_padding() -> int:
+	"""This will remove all padding"""
+	return 0
+
+def uid_gen() -> int:
+	return random.randrange(1, 100000000)
+
+def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, album_stage: int = 0) -> TauonQueueItem:
+	# type; 0 is track, 1 is album
+	auto_stop = False
+
+	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
+	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
+
+def get_themes(deco: bool = False):
+	themes = []  # full, name
+	decos = {}
+	direcs = [str(install_directory / "theme")]
+	if user_directory != install_directory:
+		direcs.append(str(user_directory / "theme"))
+
+	def scan_folders(folders: list[str]) -> None:
+		for folder in folders:
+			if not os.path.isdir(folder):
+				continue
+			paths = [os.path.join(folder, f) for f in os.listdir(folder)]
+			for path in paths:
+				if os.path.islink(path):
+					path = os.readlink(path)
+				if os.path.isfile(path):
+					if path[-7:] == ".ttheme":
+						themes.append((path, os.path.basename(path).split(".")[0]))
+					elif path[-6:] == ".tdeco":
+						decos[os.path.basename(path).split(".")[0]] = path
+				elif os.path.isdir(path):
+					scan_folders([path])
+
+	scan_folders(direcs)
+	themes.sort()
+	if deco:
+		return decos
+	return themes
+
+def get_theme_number(name: str) -> int:
+	if name == "Mindaro":
+		return 0
+	themes = get_themes()
+	for i, theme in enumerate(themes):
+		if theme[1] == name:
+			return i + 1
+	return 0
+
+def get_theme_name(number: int) -> str:
+	if number == 0:
+		return "Mindaro"
+	number -= 1
+	themes = get_themes()
+	logging.info((number, themes))
+	if len(themes) > number:
+		return themes[number][1]
+	return ""
+
+def get_end_folder(direc: str) -> str | None:
+	for w in range(len(direc)):
+		if direc[-w - 1] == "\\" or direc[-w - 1] == "/":
+			return direc[-w:]
+	return None
+
+def set_path(nt: TrackClass, path: str) -> None:
+	nt.fullpath = path.replace("\\", "/")
+	nt.filename = os.path.basename(path)
+	nt.parent_folder_path = os.path.dirname(path.replace("\\", "/"))
+	nt.parent_folder_name = get_end_folder(os.path.dirname(path))
+	nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
+
+def pumper():
+	if macos:
+		return
+	while pump:
+		time.sleep(0.005)
+		sdl3.SDL_PumpEvents()
+
+def save_prefs(bag: Bag) -> None:
+	cf    = bag.cf
+	prefs = bag.prefs
+	cf.update_value("sync-bypass-transcode", prefs.bypass_transcode)
+	cf.update_value("sync-bypass-low-bitrate", prefs.smart_bypass)
+	cf.update_value("radio-record-codec", prefs.radio_record_codec)
+
+	cf.update_value("plex-username", prefs.plex_username)
+	cf.update_value("plex-password", prefs.plex_password)
+	cf.update_value("plex-servername", prefs.plex_servername)
+
+	cf.update_value("subsonic-username", prefs.subsonic_user)
+	cf.update_value("subsonic-password", prefs.subsonic_password)
+	cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
+	cf.update_value("subsonic-server-url", prefs.subsonic_server)
+
+	cf.update_value("jelly-username", prefs.jelly_username)
+	cf.update_value("jelly-password", prefs.jelly_password)
+	cf.update_value("jelly-server-url", prefs.jelly_server_url)
+
+	cf.update_value("koel-username", prefs.koel_username)
+	cf.update_value("koel-password", prefs.koel_password)
+	cf.update_value("koel-server-url", prefs.koel_server_url)
+	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
+
+	cf.update_value("display-language", prefs.ui_lang)
+	# cf.update_value("decode-search", prefs.diacritic_search)
+
+	# cf.update_value("use-log-volume-scale", prefs.log_vol)
+	# cf.update_value("audio-backend", prefs.backend)
+	cf.update_value("use-pipewire", prefs.pipewire)
+	cf.update_value("seek-interval", prefs.seek_interval)
+	cf.update_value("pause-fade-time", prefs.pause_fade_time)
+	cf.update_value("cross-fade-time", prefs.cross_fade_time)
+	cf.update_value("device-buffer-ms", prefs.device_buffer)
+	cf.update_value("output-samplerate", prefs.samplerate)
+	cf.update_value("resample-quality", prefs.resample)
+	cf.update_value("avoid_resampling", prefs.avoid_resampling)
+	# cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
+	cf.update_value("precache-local-files", prefs.precache)
+	cf.update_value("cache-use-tmp", prefs.tmp_cache)
+	cf.update_value("cache-limit", prefs.cache_limit)
+	cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
+	cf.update_value("volume-curve", prefs.volume_power)
+	cf.update_value("jump-start-dl", prefs.jump_start)
+	# cf.update_value("force-mono", prefs.mono)
+	# cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
+	# cf.update_value("use-short-buffering", prefs.short_buffer)
+
+	# cf.update_value("gst-output", prefs.gst_output)
+	# cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
+
+	cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
+
+	cf.update_value("tag-editor-name", prefs.tag_editor_name)
+	cf.update_value("tag-editor-target", prefs.tag_editor_target)
+
+	cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
+	cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
+	cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
+	cf.update_value("back-restarts", prefs.back_restarts)
+	cf.update_value("end-queue-stop", prefs.stop_end_queue)
+	cf.update_value("block-suspend", prefs.block_suspend)
+	cf.update_value("allow-video-formats", prefs.allow_video_formats)
+
+	cf.update_value("ui-scale", prefs.scale_want)
+	cf.update_value("auto-scale", prefs.x_scale)
+	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
+	cf.update_value("theme-name", prefs.theme_name)
+	cf.update_value("transparent-style", prefs.transparent_mode)
+	cf.update_value("mac-style", prefs.macstyle)
+	cf.update_value("allow-art-zoom", prefs.zoom_art)
+
+	cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
+	cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
+	cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
+	cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
+	cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
+
+	cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
+	cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
+	cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
+	cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
+	cf.update_value("mini-mode-avoid-notifications", prefs.stop_notifications_mini_mode)
+	cf.update_value("hide-queue-when-empty", prefs.hide_queue)
+	# cf.update_value("show-playlist-list", prefs.show_playlist_list)
+	cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
+	cf.update_value("always-art-header-bar", prefs.always_art_header)
+	# cf.update_value("prefer-center-bg", prefs.center_bg)
+	cf.update_value("showcase-texture-background", prefs.showcase_overlay_texture)
+	cf.update_value("side-panel-style", prefs.side_panel_layout)
+	cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
+	cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
+	cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
+	cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
+	cf.update_value("auto-show-playing", prefs.auto_goto_playing)
+	cf.update_value("notify-include-album", prefs.notify_include_album)
+	cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
+	cf.update_value("drag-tab-to-unpin", prefs.drag_to_unpin)
+
+	cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
+	cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
+	cf.update_value("gallery-center-text", prefs.center_gallery_text)
+
+	cf.update_value("use-custom-fonts", prefs.use_custom_fonts)
+	cf.update_value("font-main-standard", prefs.linux_font)
+	cf.update_value("font-main-medium", prefs.linux_font_semibold)
+	cf.update_value("font-main-bold", prefs.linux_font_bold)
+	cf.update_value("font-main-condensed", prefs.linux_font_condensed)
+	cf.update_value("font-main-condensed-bold", prefs.linux_font_condensed_bold)
+
+	cf.update_value("force-subpixel-text", prefs.force_subpixel_text)
+
+	cf.update_value("double-digit-indices", prefs.dd_index)
+	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
+	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
+	cf.update_value("import-auto-sort", prefs.auto_sort)
+
+	cf.update_value("encode-output-dir", prefs.custom_encoder_output)
+	cf.update_value("sync-device-music-dir", prefs.sync_target)
+	cf.update_value("add_download_directory", prefs.download_dir1)
+
+	cf.update_value("use-system-tray", prefs.use_tray)
+	cf.update_value("use-gamepad", prefs.use_gamepad)
+	cf.update_value("enable-remote-interface", prefs.enable_remote)
+
+	cf.update_value("enable-mpris", prefs.enable_mpris)
+	cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
+	cf.update_value("restore-window-position", prefs.save_window_position)
+	cf.update_value("mini-mode-always-on-top", prefs.mini_mode_on_top)
+	cf.update_value("resume-playback-on-restart", prefs.reload_play_state)
+	cf.update_value("resume-playback-on-wake", prefs.resume_play_wake)
+	cf.update_value("auto-dl-artist-data", prefs.auto_dl_artist_data)
+
+	cf.update_value("fanart.tv-cover", prefs.enable_fanart_cover)
+	cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
+	cf.update_value("fanart.tv-background", prefs.enable_fanart_bg)
+	cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
+	cf.update_value("write-ratings-to-tag", prefs.write_ratings)
+	cf.update_value("enable-spotify", prefs.spot_mode)
+	cf.update_value("enable-discord-rpc", prefs.discord_enable)
+	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
+	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
+	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
+
+	cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
+	cf.update_value("listenbrainz-token", prefs.lb_token)
+	cf.update_value("custom-listenbrainz-url", prefs.listenbrainz_url)
+
+	cf.update_value("maloja-key", prefs.maloja_key)
+	cf.update_value("maloja-url", prefs.maloja_url)
+	cf.update_value("maloja-enable", prefs.maloja_enable)
+
+	cf.update_value("tau-url", prefs.sat_url)
+
+	cf.update_value("lastfm-pull-love", prefs.lastfm_pull_love)
+
+	cf.update_value("broadcast-page-port", prefs.metadata_page_port)
+	cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
+
+	cf.update_value("chart-columns", prefs.chart_columns)
+	cf.update_value("chart-rows", prefs.chart_rows)
+	cf.update_value("chart-uses-text", prefs.chart_text)
+	cf.update_value("chart-font", prefs.chart_font)
+	cf.update_value("chart-sorts-top-played", prefs.topchart_sorts_played)
+
+	if bag.dirs.config_directory.is_dir():
+		cf.dump(str(bag.dirs.config_directory / "tauon.conf"))
+	else:
+		logging.error("Missing config directory")
+
+def load_prefs(bag: Bag) -> None:
+	cf    = bag.cf
+	prefs = bag.prefs
+	cf.reset()
+	cf.load(str(bag.dirs.config_directory / "tauon.conf"))
+
+	cf.add_comment("Tauon Music Box configuration file")
+	cf.br()
+	cf.add_comment(
+		"This file will be regenerated while app is running. Formatting and additional comments will be lost.")
+	cf.add_comment("Tip: Use TOML syntax highlighting")
+
+	cf.br()
+	cf.add_text("[audio]")
+
+	# prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
+	prefs.pipewire = cf.sync_add(
+		"bool", "use-pipewire", prefs.pipewire,
+		"Experimental setting to use Pipewire native only.")
+
+	prefs.seek_interval = cf.sync_add(
+		"int", "seek-interval", prefs.seek_interval,
+		"In s. Interval to seek when using keyboard shortcut. Default is 15.")
+	# prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
+
+	prefs.pause_fade_time = max(prefs.pause_fade_time, 100)
+	prefs.pause_fade_time = min(prefs.pause_fade_time, 5000)
+
+	prefs.cross_fade_time = cf.sync_add(
+		"int", "cross-fade-time", prefs.cross_fade_time,
+		"In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
+
+	prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
+	#prefs.samplerate = cf.sync_add(
+	#	"int", "output-samplerate", prefs.samplerate,
+	#	"In hz. Default: 48000, alt: 44100. (restart app to apply change)")
+	prefs.avoid_resampling = cf.sync_add(
+		"bool", "avoid_resampling", prefs.avoid_resampling,
+		"Only implemented for FLAC, MP3, OGG, OPUS")
+	prefs.resample = cf.sync_add(
+		"int", "resample-quality", prefs.resample,
+		"0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
+	if prefs.resample < 0 or prefs.resample > 4:
+		prefs.resample = 1
+	# prefs.pa_fast_seek = cf.sync_add("bool", "fast-scrubbing", prefs.pa_fast_seek, "Seek without a delay but may cause audible popping")
+	prefs.cache_limit = cf.sync_add(
+		"int", "cache-limit", prefs.cache_limit,
+		"Limit size of network audio file cache. In MB.")
+	prefs.tmp_cache = cf.sync_add(
+		"bool", "cache-use-tmp", prefs.tmp_cache,
+		"Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
+	prefs.precache = cf.sync_add(
+		"bool", "precache-local-files", prefs.precache,
+		"Cache files from local sources too. (Useful for mounted network drives)")
+	prefs.always_ffmpeg = cf.sync_add(
+		"bool", "always-ffmpeg", prefs.always_ffmpeg,
+		"Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
+	prefs.volume_power = cf.sync_add(
+		"int", "volume-curve", prefs.volume_power,
+		"1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
+
+	prefs.jump_start = cf.sync_add(
+		"bool", "jump-start-dl", prefs.jump_start,
+		"Start playing a network track before it has finished downloading")
+
+	# prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
+	# prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
+	# prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
+
+	# cf.br()
+	# cf.add_text("[audio (gstreamer only)]")
+	#
+	# prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
+	# prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
+
+	if prefs.dc_device_setting == "on":
+		prefs.dc_device = True
+	elif prefs.dc_device_setting == "off":
+		prefs.dc_device = False
+
+	cf.br()
+	cf.add_text("[locale]")
+	prefs.ui_lang = cf.sync_add(
+		"string", "display-language", prefs.ui_lang, "Override display language to use if "
+		"available. E.g. \"en\", \"ja\", \"zh_CH\". "
+		"Default: \"auto\"")
+	# prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
+	cf.br()
+	cf.add_text("[search]")
+	prefs.sep_genre_multi = cf.sync_add(
+		"bool", "separate-multi-genre", prefs.sep_genre_multi,
+		"If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
+
+	cf.br()
+	cf.add_text("[tag-editor]")
+	if bag.system == "Windows" or bag.msys:
+		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+		prefs.tag_editor_target = cf.sync_add(
+			"string", "tag-editor-target",
+			"C:\\Program Files (x86)\\MusicBrainz Picard\\picard.exe",
+			"The path of the exe to run.")
+	else:
+		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
+		prefs.tag_editor_target = cf.sync_add(
+			"string", "tag-editor-target", "picard",
+			"The name of the binary to call.")
+
+	cf.br()
+	cf.add_text("[playback]")
+	prefs.playback_follow_cursor = cf.sync_add(
+		"bool", "playback-follow-cursor", prefs.playback_follow_cursor,
+		"When advancing, always play the track that is selected.")
+	prefs.launch_spotify_web = cf.sync_add(
+		"bool", "spotify-prefer-web", prefs.launch_spotify_web,
+		"Launch the web client rather than attempting to launch the desktop client.")
+	prefs.launch_spotify_local = cf.sync_add(
+		"bool", "spotify-allow-local", prefs.launch_spotify_local,
+		"Play Spotify audio through Tauon.")
+	prefs.back_restarts = cf.sync_add(
+		"bool", "back-restarts", prefs.back_restarts,
+		"Pressing the back button restarts playing track on first press.")
+	prefs.stop_end_queue = cf.sync_add(
+		"bool", "end-queue-stop", prefs.stop_end_queue,
+		"Queue will always enable auto-stop on last track")
+	prefs.block_suspend = cf.sync_add(
+		"bool", "block-suspend", prefs.block_suspend,
+		"Prevent system suspend during playback")
+	prefs.allow_video_formats = cf.sync_add(
+		"bool", "allow-video-formats", prefs.allow_video_formats,
+		"Allow the import of MP4 and WEBM formats")
+	if prefs.allow_video_formats:
+		for item in bag.formats.VID:
+			if item not in bag.formats.DA:
+				bag.formats.DA.add(item)
+
+	cf.br()
+	cf.add_text("[HiDPI]")
+	prefs.scale_want = cf.sync_add(
+		"float", "ui-scale", prefs.scale_want,
+		"UI scale factor. Default is 1.0, try increase if using a HiDPI display.")
+	prefs.x_scale = cf.sync_add("bool", "auto-scale", prefs.x_scale, "Automatically choose above setting")
+	prefs.tracklist_y_text_offset = cf.sync_add(
+		"int", "tracklist-y-text-offset", prefs.tracklist_y_text_offset,
+		"If you're using a UI scale, you may need to tweak this.")
+
+	cf.br()
+	cf.add_text("[ui]")
+
+	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
+	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
+	macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
+	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
+	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
+	prefs.gallery_scroll_wheel_px = cf.sync_add(
+		"int", "scroll-gallery-distance", 90,
+		"Only has effect if scroll-gallery-by-row is false.")
+	prefs.spec2_scroll = cf.sync_add("bool", "scroll-spectrogram", prefs.spec2_scroll)
+	prefs.custom_bg_opacity = cf.sync_add("int", "mascot-opacity", prefs.custom_bg_opacity)
+	if prefs.custom_bg_opacity < 0 or prefs.custom_bg_opacity > 100:
+		prefs.custom_bg_opacity = 40
+		logging.warning("Invalid value for mascot-opacity")
+
+	prefs.sync_lyrics_time_offset = cf.sync_add(
+		"int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset,
+		"In milliseconds. May be negative.")
+	prefs.artist_list_prefer_album_artist = cf.sync_add(
+		"bool", "artist-list-prefers-album-artist",
+		prefs.artist_list_prefer_album_artist,
+		"May require restart for change to take effect.")
+	prefs.meta_persists_stop = cf.sync_add(
+		"bool", "side-panel-info-persists", prefs.meta_persists_stop,
+		"Show album art and metadata of last played track when stopped.")
+	prefs.meta_shows_selected = cf.sync_add(
+		"bool", "side-panel-info-selected", prefs.meta_shows_selected,
+		"Show album art and metadata of selected track when stopped. (overides above setting)")
+	prefs.meta_shows_selected_always = cf.sync_add(
+		"bool", "side-panel-info-selected-always",
+		prefs.meta_shows_selected_always,
+		"Show album art and metadata of selected track at all times. (overides the above 2 settings)")
+	prefs.stop_notifications_mini_mode = cf.sync_add(
+		"bool", "mini-mode-avoid-notifications",
+		prefs.stop_notifications_mini_mode,
+		"Avoid sending track change notifications when in Mini Mode")
+	prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
+	# prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
+
+	prefs.show_current_on_transition = cf.sync_add(
+		"bool", "show-current-on-transition",
+		prefs.show_current_on_transition,
+		"Always jump to new playing track even with natural transition (broken setting, is always enabled")
+	prefs.art_in_top_panel = cf.sync_add(
+		"bool", "enable-art-header-bar", prefs.art_in_top_panel,
+		"Show art in top panel when window is narrow")
+	prefs.always_art_header = cf.sync_add(
+		"bool", "always-art-header-bar", prefs.always_art_header,
+		"Show art in top panel at any size. (Requires enable-art-header-bar)")
+
+	# prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
+	prefs.showcase_overlay_texture = cf.sync_add(
+		"bool", "showcase-texture-background", prefs.showcase_overlay_texture,
+		"Draw pattern over background art")
+	prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
+	prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
+	prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
+	prefs.use_absolute_track_index = cf.sync_add(
+		"bool", "absolute-track-indices", prefs.use_absolute_track_index,
+		"For playlists with titles disabled only")
+	prefs.hide_bottom_title = cf.sync_add(
+		"bool", "auto-hide-bottom-title", prefs.hide_bottom_title,
+		"Hide title in bottom panel when already shown in side panel")
+	prefs.auto_goto_playing = cf.sync_add(
+		"bool", "auto-show-playing", prefs.auto_goto_playing,
+		"Show playing track in current playlist on track and playlist change even if not the playing playlist")
+
+	prefs.notify_include_album = cf.sync_add(
+		"bool", "notify-include-album", prefs.notify_include_album,
+		"Include album name in track change notifications")
+	prefs.rating_playtime_stars = cf.sync_add(
+		"bool", "show-rating-hint", prefs.rating_playtime_stars,
+		"Indicate playtime in rating stars")
+
+	prefs.drag_to_unpin = cf.sync_add(
+		"bool", "drag-tab-to-unpin", prefs.drag_to_unpin,
+		"Dragging a tab off the top-panel un-pins it")
+
+	cf.br()
+	cf.add_text("[gallery]")
+	prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
+	prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
+	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
+
+	# show-current-on-transition", prefs.show_current_on_transition)
+	if bag.system != "Windows":
+		cf.br()
+		cf.add_text("[fonts]")
+		cf.add_comment("Changes will require app restart.")
+		prefs.use_custom_fonts = cf.sync_add(
+			"bool", "use-custom-fonts", prefs.use_custom_fonts,
+			"Setting to false will reset below settings to default on restart")
+		if prefs.use_custom_fonts:
+			prefs.linux_font = cf.sync_add(
+				"string", "font-main-standard", prefs.linux_font,
+				"Suggested alternate: Liberation Sans")
+			prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+			prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+			prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+			prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+
+		else:
+			cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
+			cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+			cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+			cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+			cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+
+		# prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
+
+	cf.br()
+	cf.add_text("[tracklist]")
+	prefs.dd_index = cf.sync_add("bool", "double-digit-indices", prefs.dd_index)
+	prefs.column_aa_fallback_artist = cf.sync_add(
+		"bool", "column-album-artist-fallsback",
+		prefs.column_aa_fallback_artist,
+		"'Album artist' column shows 'artist' if otherwise blank.")
+	prefs.left_align_album_artist_title = cf.sync_add(
+		"bool", "left-aligned-album-artist-title",
+		prefs.left_align_album_artist_title,
+		"Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
+	prefs.auto_sort = cf.sync_add(
+		"bool", "import-auto-sort", prefs.auto_sort,
+		"This setting is deprecated and will be removed in a future version")
+
+	cf.br()
+	cf.add_text("[transcode]")
+	prefs.bypass_transcode = cf.sync_add(
+		"bool", "sync-bypass-transcode", prefs.bypass_transcode,
+		"Don't transcode files with sync function")
+	prefs.smart_bypass = cf.sync_add("bool", "sync-bypass-low-bitrate", prefs.smart_bypass,
+		"Skip transcode of <=128kbs folders")
+	prefs.radio_record_codec = cf.sync_add("string", "radio-record-codec", prefs.radio_record_codec,
+		"Can be OPUS, OGG, FLAC, or MP3. Default: OPUS")
+
+	cf.br()
+	cf.add_text("[directories]")
+	cf.add_comment("Use full paths")
+	prefs.sync_target = cf.sync_add("string", "sync-device-music-dir", prefs.sync_target)
+	prefs.custom_encoder_output = cf.sync_add(
+		"string", "encode-output-dir", prefs.custom_encoder_output,
+		"E.g. \"/home/example/music/output\". If left blank, encode-output in home music dir will be used.")
+	if prefs.custom_encoder_output:
+		prefs.encoder_output = Path(prefs.custom_encoder_output)
+	prefs.download_dir1 = cf.sync_add(
+		"string", "add_download_directory", prefs.download_dir1,
+		"Add another folder to monitor in addition to home downloads and music.")
+	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
+		if os.path.isdir(prefs.download_dir1):
+			bag.download_directories.append(prefs.download_dir1)
+		else:
+			logging.warning("Invalid download directory in config")
+
+	cf.br()
+	cf.add_text("[app]")
+	prefs.enable_remote = cf.sync_add(
+		"bool", "enable-remote-interface", prefs.enable_remote,
+		"For use with Tauon Music Remote for Android")
+	prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control, restart on change.")
+	prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
+	prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
+	prefs.save_window_position = cf.sync_add(
+		"bool", "restore-window-position", prefs.save_window_position,
+		"Save and restore the last window position on desktop on open")
+	prefs.mini_mode_on_top  = cf.sync_add("bool", "mini-mode-always-on-top", prefs.mini_mode_on_top)
+	prefs.enable_mpris = cf.sync_add("bool", "enable-mpris", prefs.enable_mpris)
+	prefs.reload_play_state = cf.sync_add("bool", "resume-playback-on-restart", prefs.reload_play_state)
+	prefs.resume_play_wake = cf.sync_add("bool", "resume-playback-on-wake", prefs.resume_play_wake)
+	prefs.auto_dl_artist_data = cf.sync_add(
+		"bool", "auto-dl-artist-data", prefs.auto_dl_artist_data,
+		"Enable automatic downloading of thumbnails in artist list")
+	prefs.enable_fanart_cover = cf.sync_add("bool", "fanart.tv-cover", prefs.enable_fanart_cover)
+	prefs.enable_fanart_artist = cf.sync_add("bool", "fanart.tv-artist", prefs.enable_fanart_artist)
+	prefs.enable_fanart_bg = cf.sync_add("bool", "fanart.tv-background", prefs.enable_fanart_bg)
+	prefs.always_auto_update_playlists = cf.sync_add(
+		"bool", "auto-update-playlists",
+		prefs.always_auto_update_playlists,
+		"Automatically update generator playlists")
+	prefs.write_ratings = cf.sync_add(
+		"bool", "write-ratings-to-tag", prefs.write_ratings,
+		"This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
+	prefs.spot_mode = cf.sync_add("bool", "enable-spotify", prefs.spot_mode, "Enable Spotify specific features")
+	prefs.discord_enable = cf.sync_add(
+		"bool", "enable-discord-rpc", prefs.discord_enable,
+		"Show track info in running Discord application")
+	prefs.auto_lyrics = cf.sync_add(
+		"bool", "auto-search-lyrics", prefs.auto_lyrics,
+		"Automatically search internet for lyrics when display is wanted")
+
+	prefs.use_scancodes = cf.sync_add(
+		"bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
+		"When enabled, shortcuts will map to the physical keyboard layout")
+	prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
+		"When enabled, pressing single letter keyboard key will activate the global search")
+
+	cf.br()
+	cf.add_text("[tokens]")
+	temp = cf.sync_add(
+		"string", "discogs-personal-access-token", prefs.discogs_pat,
+		"Used for sourcing of artist thumbnails.")
+	if not temp:
+		prefs.discogs_pat = ""
+	elif len(temp) != 40:
+		logging.warning("Invalid discogs token in config")
+	else:
+		prefs.discogs_pat = temp
+
+	prefs.listenbrainz_url = cf.sync_add(
+		"string", "custom-listenbrainz-url", prefs.listenbrainz_url,
+		"Specify a custom Listenbrainz compatible api url. E.g. \"https://example.tld/apis/listenbrainz/\" Default: Blank")
+	prefs.lb_token = cf.sync_add("string", "listenbrainz-token", prefs.lb_token)
+
+	cf.br()
+	cf.add_text("[tauon_satellite]")
+	prefs.sat_url = cf.sync_add("string", "tau-url", prefs.sat_url, "Exclude the port")
+
+	cf.br()
+	cf.add_text("[lastfm]")
+	prefs.lastfm_pull_love = cf.sync_add(
+		"bool", "lastfm-pull-love", prefs.lastfm_pull_love,
+		"Overwrite local love status on scrobble")
+
+
+	cf.br()
+	cf.add_text("[maloja_account]")
+	prefs.maloja_url = cf.sync_add(
+		"string", "maloja-url", prefs.maloja_url,
+		"A Maloja server URL, e.g. http://localhost:32400")
+	prefs.maloja_key = cf.sync_add("string", "maloja-key", prefs.maloja_key, "One of your Maloja API keys")
+	prefs.maloja_enable = cf.sync_add("bool", "maloja-enable", prefs.maloja_enable)
+
+	cf.br()
+	cf.add_text("[plex_account]")
+	prefs.plex_username = cf.sync_add(
+		"string", "plex-username", prefs.plex_username,
+		"Probably the email address you used to make your PLEX account.")
+	prefs.plex_password = cf.sync_add(
+		"string", "plex-password", prefs.plex_password,
+		"The password associated with your PLEX account.")
+	prefs.plex_servername = cf.sync_add(
+		"string", "plex-servername", prefs.plex_servername,
+		"Probably your servers hostname.")
+
+	cf.br()
+	cf.add_text("[subsonic_account]")
+	prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
+	prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
+	prefs.subsonic_password_plain = cf.sync_add("bool", "subsonic-password-plain", prefs.subsonic_password_plain)
+	prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
+
+	cf.br()
+	cf.add_text("[koel_account]")
+	prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
+	prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
+	prefs.koel_server_url = cf.sync_add(
+		"string", "koel-server-url", prefs.koel_server_url,
+		"The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
+	prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
+
+	cf.br()
+	cf.add_text("[jellyfin_account]")
+	prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
+	prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
+	prefs.jelly_server_url = cf.sync_add(
+		"string", "jelly-server-url", prefs.jelly_server_url,
+		"The IP:Port where the jellyfin server is hosted.")
+	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
+
+	cf.br()
+	cf.add_text("[network]")
+	prefs.network_stream_bitrate = cf.sync_add(
+		"int", "stream-bitrate", prefs.network_stream_bitrate,
+		"Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
+
+	cf.br()
+	cf.add_text("[listenalong]")
+	prefs.metadata_page_port = cf.sync_add(
+		"int", "broadcast-page-port", prefs.metadata_page_port,
+		"Change applies on app restart or setting re-enable")
+
+	cf.br()
+	cf.add_text("[chart]")
+	prefs.chart_columns = cf.sync_add("int", "chart-columns", prefs.chart_columns)
+	prefs.chart_rows = cf.sync_add("int", "chart-rows", prefs.chart_rows)
+	prefs.chart_text = cf.sync_add("bool", "chart-uses-text", prefs.chart_text)
+	prefs.topchart_sorts_played = cf.sync_add("bool", "chart-sorts-top-played", prefs.topchart_sorts_played)
+	prefs.chart_font = cf.sync_add(
+		"string", "chart-font", prefs.chart_font,
+		"Format is fontname + size. Default is Monospace 10")
+
+def auto_scale() -> None:
+	old = prefs.scale_want
+	if prefs.x_scale:
+		prefs.scale_want = window_size[0] / logical_size[0]
+
+	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
+	if prefs.x_scale and old != prefs.scale_want:
+		logging.info("Applying scale based on buffer size")
+
+	if prefs.scale_want == 0.95:
+		prefs.scale_want = 1.0
+	if prefs.scale_want == 1.05:
+		prefs.scale_want = 1.0
+	if prefs.scale_want == 1.95:
+		prefs.scale_want = 2.0
+	if prefs.scale_want == 2.05:
+		prefs.scale_want = 2.0
+
+	if old != prefs.scale_want:
+		logging.info(f"Using UI scale: {prefs.scale_want}")
+
+	if prefs.scale_want < 0.5:
+		prefs.scale_want = 0.5
+
+	# if window_size[0] < (560 * prefs.scale_want) * 0.9 or window_size[1] < (330 * prefs.scale_want) * 0.9:
+	# 	logging.info("Window overscale!")
+	# 	show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
+	# 	prefs.scale_want = 1.0
+
+def scale_assets(scale_want: int, force: bool = False) -> None:
+	global scaled_asset_directory
+	if scale_want != 1:
+		bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
+		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
+				os.listdir(str(scaled_asset_directory))):
+			logging.info("Force rerender icons")
+			force = True
+	else:
+		bag.dirs.scaled_asset_directory = asset_directory
+
+	if scale_want != prefs.ui_scale or force:
+		if scale_want != 1:
+			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
+				shutil.rmtree(str(scaled_asset_directory))
+			from tauon.t_modules.t_svgout import render_icons
+
+			if scaled_asset_directory != asset_directory:
+				logging.info("Rendering icons...")
+				render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
+
+		logging.info("Done rendering icons")
+
+		diff_ratio = scale_want / prefs.ui_scale
+		prefs.ui_scale = scale_want
+		prefs.playlist_row_height = round(22 * prefs.ui_scale)
+
+		# Save user values
+		column_backup = gui.pl_st
+		rspw = gui.pref_rspw
+		grspw = gui.pref_gallery_w
+
+		gui.destroy_textures()
+		gui.rescale()
+
+		# Scale saved values
+		gui.pl_st = column_backup
+		for item in gui.pl_st:
+			item[1] *= diff_ratio
+		gui.pref_rspw = rspw * diff_ratio
+		gui.pref_gallery_w = grspw * diff_ratio
+		global album_mode_art_size
+		album_mode_art_size = int(album_mode_art_size * diff_ratio)
+
+def get_global_mouse() -> tuple[float, float]:
+	i_y = pointer(c_float(0))
+	i_x = pointer(c_float(0))
+	sdl3.SDL_GetGlobalMouseState(i_x, i_y)
+	return i_x.contents.value, i_y.contents.value
+
+def get_window_position(t_window: sdl3.LP_SDL_Window) -> tuple[int, int]:
+	i_y = pointer(c_int(0))
+	i_x = pointer(c_int(0))
+	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
+	return i_x.contents.value, i_y.contents.value
+
+def use_id3(tags: ID3, nt: TrackClass) -> None:
+	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
+		frames = tag.getall(frame)
+		if frames and frames[0].text:
+			if track is None:
+				return str(frames[0].text[0])
+			setattr(track, attr, str(frames[0].text[0]))
+		elif track is None:
+			return ""
+		else:
+			setattr(track, attr, "")
+
+	tag = tags
+
+	natural_get(tags, nt, "TIT2", "title")
+	natural_get(tags, nt, "TPE1", "artist")
+	natural_get(tags, nt, "TPE2", "album_artist")
+	natural_get(tags, nt, "TCON", "genre")  # content type
+	natural_get(tags, nt, "TALB", "album")
+	natural_get(tags, nt, "TDRC", "date")
+	natural_get(tags, nt, "TCOM", "composer")
+	natural_get(tags, nt, "COMM", "comment")
+
+	process_odat(nt, natural_get(tags, None, "TDOR", None))
+
+	frames = tag.getall("POPM")
+	rating = 0
+	if frames:
+		for frame in frames:
+			if frame.rating:
+				rating = frame.rating
+				nt.misc["POPM"] = frame.rating
+
+	if len(nt.comment) > 4 and nt.comment[2] == "+":
+		nt.comment = ""
+	if nt.comment[0:3] == "000":
+		nt.comment = ""
+
+	frames = tag.getall("USLT")
+	if frames:
+		nt.lyrics = frames[0].text
+		if 0 < len(nt.lyrics) < 150:
+			if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
+				nt.lyrics = ""
+
+	frames = tag.getall("TPE1")
+	if frames:
+		d = []
+		for frame in frames:
+			for t in frame.text:
+				d.append(t)
+		if len(d) > 1:
+			nt.misc["artists"] = d
+			nt.artist = "; ".join(d)
+
+	frames = tag.getall("TCON")
+	if frames:
+		d = []
+		for frame in frames:
+			for t in frame.text:
+				d.append(t)
+		if len(d) > 1:
+			nt.misc["genres"] = d
+		nt.genre = " / ".join(d)
+
+	track_no = natural_get(tags, None, "TRCK", None)
+	nt.track_total = ""
+	nt.track_number = ""
+	if track_no and track_no != "null":
+		if "/" in track_no:
+			a, b = track_no.split("/")
+			nt.track_number = a
+			nt.track_total = b
+		else:
+			nt.track_number = track_no
+
+	disc = natural_get(tags, None, "TPOS", None)  # set ? or ?/?
+	nt.disc_total = ""
+	nt.disc_number = ""
+	if disc:
+		if "/" in disc:
+			a, b = disc.split("/")
+			nt.disc_number = a
+			nt.disc_total = b
+		else:
+			nt.disc_number = disc
+
+	tx = tags.getall("UFID")
+	if tx:
+		for item in tx:
+			if item.owner == "http://musicbrainz.org":
+				nt.misc["musicbrainz_recordingid"] = item.data.decode()
+
+	tx = tags.getall("TSOP")
+	if tx:
+		nt.misc["artist_sort"] = tx[0].text[0]
+
+	tx = tags.getall("TXXX")
+	if tx:
+		for item in tx:
+			if item.desc == "MusicBrainz Release Track Id":
+				nt.misc["musicbrainz_trackid"] = item.text[0]
+			if item.desc == "MusicBrainz Album Id":
+				nt.misc["musicbrainz_albumid"] = item.text[0]
+			if item.desc == "MusicBrainz Release Group Id":
+				nt.misc["musicbrainz_releasegroupid"] = item.text[0]
+			if item.desc == "MusicBrainz Artist Id":
+				artist_id_list: list[str] = []
+				for uuid in item.text:
+					split_uuids = uuid.split("/") # UUIDs can be split by a special character
+					for split_uuid in split_uuids:
+						artist_id_list.append(split_uuid)
+				nt.misc["musicbrainz_artistids"] = artist_id_list
+
+			try:
+				desc = item.desc.lower()
+				if desc == "replaygain_track_gain":
+					nt.misc["replaygain_track_gain"] = float(item.text[0].strip(" dB"))
+				if desc == "replaygain_track_peak":
+					nt.misc["replaygain_track_peak"] = float(item.text[0])
+				if desc == "replaygain_album_gain":
+					nt.misc["replaygain_album_gain"] = float(item.text[0].strip(" dB"))
+				if desc == "replaygain_album_peak":
+					nt.misc["replaygain_album_peak"] = float(item.text[0])
+			except Exception:
+				logging.exception("Tag Scan: Read Replay Gain MP3 error")
+				logging.debug(nt.fullpath)
+
+			if item.desc == "FMPS_RATING":
+				nt.misc["FMPS_Rating"] = float(item.text[0])
+
+def encode_track_name(track_object: TrackClass) -> str:
+	if track_object.is_cue or not track_object.filename:
+		out_line = str(track_object.track_number) + ". "
+		out_line += track_object.artist + " - " + track_object.title
+		return filename_safe(out_line)
+	return os.path.splitext(track_object.filename)[0]
+
+def encode_folder_name(track_object: TrackClass) -> str:
+	folder_name = track_object.artist + " - " + track_object.album
+
+	if folder_name == " - ":
+		folder_name = track_object.parent_folder_name
+
+	folder_name = filename_safe(folder_name).strip()
+
+	if not folder_name:
+		folder_name = str(track_object.index)
+
+	if "cd" not in folder_name.lower() or "disc" not in folder_name.lower():
+		if track_object.disc_total not in ("", "0", 0, "1", 1) or (
+				str(track_object.disc_number).isdigit() and int(track_object.disc_number) > 1):
+			folder_name += " CD" + str(track_object.disc_number)
+
+	return folder_name
+
+def coll_point(l, r):
+	# rect point collision detection
+	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
+
+def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
+	if track.synced:
+		return track.synced.splitlines()
+	if track.is_network:
+		return None
+
+	direc = track.parent_folder_path
+	name = os.path.splitext(track.filename)[0] + ".lrc"
+
+	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
+		return track.lyrics.splitlines()
+
+	try:
+		if os.path.isfile(os.path.join(direc, name)):
+			with open(os.path.join(direc, name), encoding="utf-8") as f:
+				data = f.readlines()
+		else:
+			return None
+	except Exception:
+		logging.exception("Read lyrics file error")
+		return None
+
+	return data
+
+def close_all_menus():
+	for menu in Menu.instances:
+		menu.active = False
+	Menu.active = False
+
+def paste_lyrics(track_object: TrackClass):
+	if sdl3.SDL_HasClipboardText():
+		clip = sdl3.SDL_GetClipboardText()
+		#logging.info(clip)
+		track_object.lyrics = clip.decode("utf-8")
+	else:
+		logging.warning("NO TEXT TO PASTE")
+
+def copy_lyrics(track_object: TrackClass):
+	copy_to_clipboard(track_object.lyrics)
+
+def clear_lyrics(track_object: TrackClass):
+	track_object.lyrics = ""
+
+def split_lyrics(track_object: TrackClass):
+	if track_object.lyrics != "":
+		track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
+	else:
+		pass
+
+def ser_gimage(track_object: TrackClass):
+	if track_object.artist and track_object.album:
+		line = "https://www.google.com/search?tbm=isch&q=" + urllib.parse.quote(
+			track_object.artist + " " + track_object.album)
+		webbrowser.open(line, new=2, autoraise=True)
+
+def unique_template(string):
+	return "<t>" in string or \
+		"<title>" in string or \
+		"<n>" in string or \
+		"<number>" in string or \
+		"<tracknumber>" in string or \
+		"<tn>" in string or \
+		"<sn>" in string or \
+		"<singlenumber>" in string or \
+		"<s>" in string or "%t" in string or "%tn" in string
+
+def re_template_word(word, tr):
+	if word == "aa" or word == "albumartist":
+
+		if tr.album_artist:
+			return tr.album_artist
+		return tr.artist
+
+	if word == "a" or word == "artist":
+		return tr.artist
+
+	if word == "t" or word == "title":
+		return tr.title
+
+	if word == "n" or word == "number" or word == "tracknumber" or word == "tn":
+		if len(str(tr.track_number)) < 2:
+			return "0" + str(tr.track_number)
+		return str(tr.track_number)
+
+	if word == "sn" or word == "singlenumber" or word == "singletracknumber" or word == "s":
+		return str(tr.track_number)
+
+	if word == "d" or word == "date" or word == "year":
+		return str(tr.date)
+
+	if word == "b" or "album" in word:
+		return str(tr.album)
+
+	if word == "g" or word == "genre":
+		return tr.genre
+
+	if word == "x" or "ext" in word or "file" in word:
+		return tr.file_ext.lower()
+
+	if word == "ux" or "upper" in word:
+		return tr.file_ext.upper()
+
+	if word == "c" or "composer" in word:
+		return tr.composer
+
+	if "comment" in word:
+		return tr.comment.replace("\n", "").replace("\r", "")
+
+	return ""
+
+def parse_template2(string: str, track_object: TrackClass, strict: bool = False):
+	temp = ""
+	out = ""
+
+	mode = 0
+
+	for c in string:
+
+		if mode == 0:
+
+			if c == "<":
+				mode = 1
+			else:
+				out += c
+
+		else:
+
+			if c == ">":
+
+				test = re_template_word(temp, track_object)
+				if strict:
+					assert test
+				out += test
+
+				mode = 0
+				temp = ""
+
+			else:
+
+				temp += c
+
+	if "<und" in string:
+		out = out.replace(" ", "_")
+
+	return parse_template(out, track_object, strict=strict)
+
+def parse_template(string, track_object: TrackClass, up_ext: bool = False, strict: bool = False):
+	set = 0
+	underscore = False
+	output = ""
+
+	while set < len(string):
+		if string[set] == "%" and set < len(string) - 1:
+			set += 1
+			if string[set] == "n":
+				if len(str(track_object.track_number)) < 2:
+					output += "0"
+				if strict:
+					assert str(track_object.track_number)
+				output += str(track_object.track_number)
+			elif string[set] == "a":
+				if up_ext and track_object.album_artist != "":  # Context of renaming a folder
+					output += track_object.album_artist
+				else:
+					if strict:
+						assert track_object.artist
+					output += track_object.artist
+			elif string[set] == "t":
+				if strict:
+					assert track_object.title
+				output += track_object.title
+			elif string[set] == "c":
+				if strict:
+					assert track_object.composer
+				output += track_object.composer
+			elif string[set] == "d":
+				if strict:
+					assert track_object.date
+				output += track_object.date
+			elif string[set] == "b":
+				if strict:
+					assert track_object.album
+				output += track_object.album
+			elif string[set] == "x":
+				if up_ext:
+					output += track_object.file_ext.upper()
+				else:
+					output += "." + track_object.file_ext.lower()
+			elif string[set] == "u":
+				underscore = True
+		else:
+			output += string[set]
+		set += 1
+
+	output = output.rstrip(" -").lstrip(" -")
+
+	if underscore:
+		output = output.replace(" ", "_")
+
+	# Attempt to ensure the output text is filename safe
+	return filename_safe(output)
+
+def year_s(plt):
+	sorted_temp = sorted(plt, key=lambda x: x[1])
+	temp = []
+
+	for album in sorted_temp:
+		temp += album[0]
+	return temp
+
+def parse_generator(string: str):
+	cmds = []
+	quotes = []
+	current = ""
+	q_string = ""
+	inquote = False
+	for cha in string:
+		if not inquote and cha == " ":
+			if current:
+				cmds.append(current)
+				quotes.append(q_string)
+			q_string = ""
+			current = ""
+			continue
+		if cha == "\"":
+			inquote ^= True
+
+		current += cha
+
+		if inquote and cha != "\"":
+			q_string += cha
+
+	if current:
+		cmds.append(current)
+		quotes.append(q_string)
+
+	return cmds, quotes, inquote
+
+def auto_get_sync_targets():
+	search_paths = [
+		"/run/user/*/gvfs/*/*/[Mm]usic",
+		"/run/media/*/*/[Mm]usic"]
+	result_paths = []
+	for item in search_paths:
+		result_paths.extend(glob.glob(item))
+	return result_paths
+
+def csv_string(item):
+	item = str(item)
+	item.replace("\"", "\"\"")
+	return f"\"{item}\""
+
+def add_pl_tag(text):
+	return f" <{text}>"
+
+def directory_size(path: str) -> int:
+	total = 0
+	for dirpath, dirname, filenames in os.walk(path):
+		for file in filenames:
+			path = os.path.join(dirpath, file)
+			total += os.path.getsize(path)
+	return total
+
+def recode(text, enc):
+	return text.encode("Latin-1", "ignore").decode(enc, "ignore")
+
+def copy_to_clipboard(text: str) -> None:
+	sdl3.SDL_SetClipboardText(text.encode(errors="surrogateescape"))
+
+def copy_from_clipboard():
+	try:
+		return sdl3.SDL_GetClipboardText().decode()
+	except UnicodeDecodeError as e:
+		logging.warning("Clipboard text decode error")
+		return ""
+
+def field_copy(text_field) -> None:
+	text_field.copy()
+
+def field_paste(text_field) -> None:
+	text_field.paste()
+
+def field_clear(text_field) -> None:
+	text_field.clear()
+
 def worker3():
 	while True:
 		# time.sleep(0.04)
@@ -49132,1295 +51774,6 @@ def worker1():
 					#logging.info("DONE LOADING")
 					break
 
-def get_album_info(position, pl: int | None = None):
-
-	playlist = default_playlist
-	if pl is not None:
-		playlist = pctl.multi_playlist[pl].playlist_ids
-
-	global album_info_cache_key
-
-	if album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
-		album_info_cache.clear()
-		album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
-
-	if position in album_info_cache:
-		return album_info_cache[position]
-
-	if album_dex and album_mode and (pl is None or pl == pctl.active_playlist_viewing):
-		dex = album_dex
-	else:
-		dex = reload_albums(custom_list=playlist)
-
-	end = len(playlist)
-	start = 0
-
-	for i, p in enumerate(reversed(dex)):
-		if p <= position:
-			start = p
-			break
-		end = p
-
-	album = list(range(start, end))
-
-	playing = 0
-	select = False
-
-	if pctl.selected_in_playlist in album:
-		select = True
-
-	if len(pctl.track_queue) > 0 and p < len(playlist):
-		if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
-			playing = 1
-
-	album_info_cache[position] = playing, album, select
-	return playing, album, select
-
-def get_folder_list(index: int):
-	playlist = []
-
-	for item in default_playlist:
-		if pctl.master_library[item].parent_folder_name == pctl.master_library[index].parent_folder_name and \
-				pctl.master_library[item].album == pctl.master_library[index].album:
-			playlist.append(item)
-	return list(set(playlist))
-
-def gal_jump_select(up=False, num=1):
-
-	old_selected = pctl.selected_in_playlist
-	old_num = num
-
-	if not default_playlist:
-		return
-
-	on = pctl.selected_in_playlist
-	if on > len(default_playlist) - 1:
-		on = 0
-		pctl.selected_in_playlist = 0
-
-	if up is False:
-
-		while num > 0:
-			while pctl.master_library[
-				default_playlist[on]].parent_folder_name == pctl.master_library[
-				default_playlist[pctl.selected_in_playlist]].parent_folder_name:
-				on += 1
-
-				if on > len(default_playlist) - 1:
-					pctl.selected_in_playlist = old_selected
-					return
-
-			pctl.selected_in_playlist = on
-			num -= 1
-	else:
-
-		if num > 1:
-			if pctl.selected_in_playlist > len(default_playlist) - 1:
-				pctl.selected_in_playlist = old_selected
-				return
-
-			alb = get_album_info(pctl.selected_in_playlist)
-			if alb[1][0] in album_dex[:num]:
-				pctl.selected_in_playlist = old_selected
-				return
-
-		while num > 0:
-			alb = get_album_info(pctl.selected_in_playlist)
-
-			if alb[1][0] > -1:
-				on = alb[1][0] - 1
-
-			pctl.selected_in_playlist = max(get_album_info(on)[1][0], 0)
-			num -= 1
-
-def gen_power2():
-	tags = {}  # [tag name]: (first position, number of times we saw it)
-	tag_list = []
-
-	last = "a"
-	noise = 0
-
-	def key(tag):
-		return tags[tag][1]
-
-	for position in album_dex:
-
-		index = default_playlist[position]
-		track = pctl.get_track(index)
-
-		crumbs = track.parent_folder_path.split("/")
-
-		for i, b in enumerate(crumbs):
-
-			if i > 0 and (track.artist in b and track.artist):
-				tag = crumbs[i - 1]
-
-				if tag != last:
-					noise += 1
-				last = tag
-
-				if tag in tags:
-					tags[tag][1] += 1
-				else:
-					tags[tag] = [position, 1, "/".join(crumbs[:i])]
-					tag_list.append(tag)
-				break
-
-	if noise > len(album_dex) / 2:
-		#logging.info("Playlist is too noisy for power bar.")
-		return []
-
-	tag_list_sort = sorted(tag_list, key=key, reverse=True)
-
-	max_tags = round((window_size[1] - gui.panelY - gui.panelBY - 10) // 30 * gui.scale)
-
-	tag_list_sort = tag_list_sort[:max_tags]
-
-	for i in reversed(range(len(tag_list))):
-		if tag_list[i] not in tag_list_sort:
-			del tag_list[i]
-
-	h = []
-
-	for tag in tag_list:
-
-		if tags[tag][1] > 2:
-			t = PowerTag()
-			t.path = tags[tag][2]
-			t.name = tag.upper()
-			t.position = tags[tag][0]
-			h.append(t)
-
-	cc = random.random()
-	cj = 0.03
-	if len(h) < 5:
-		cj = 0.11
-
-	cj = 0.5 / max(len(h), 2)
-
-	for item in h:
-		item.colour = hsl_to_rgb(cc, 0.8, 0.7)
-		cc += cj
-
-	return h
-
-def reload_albums(quiet: bool = False, return_playlist: int = -1, custom_list=None) -> list[int] | None:
-	global album_dex
-	global update_layout
-	global old_album_pos
-
-	if cm_clean_db:
-		# Doing reload while things are being removed may cause crash
-		return None
-
-	dex = []
-	current_folder = ""
-	current_album = ""
-	current_artist = ""
-	current_date = ""
-	current_title = ""
-
-	if custom_list is not None:
-		playlist = custom_list
-	else:
-		target_pl_no = pctl.active_playlist_viewing
-		if return_playlist > -1:
-			target_pl_no = return_playlist
-
-		playlist = pctl.multi_playlist[target_pl_no].playlist_ids
-
-	for i in range(len(playlist)):
-		tr = pctl.master_library[playlist[i]]
-
-		split = False
-		if i == 0:
-			split = True
-		elif tr.parent_folder_path != current_folder and tr.date and tr.date != current_date:
-			split = True
-		elif prefs.gallery_combine_disc and "Disc" in tr.album and "Disc" in current_album and tr.album.split("Disc")[0].rstrip(" ") == current_album.split("Disc")[0].rstrip(" "):
-			split = False
-		elif prefs.gallery_combine_disc and "CD" in tr.album and "CD" in current_album and tr.album.split("CD")[0].rstrip() == current_album.split("CD")[0].rstrip():
-			split = False
-		elif prefs.gallery_combine_disc and "cd" in tr.album and "cd" in current_album and tr.album.split("cd")[0].rstrip() == current_album.split("cd")[0].rstrip():
-			split = False
-		elif tr.album and tr.album == current_album and prefs.gallery_combine_disc:
-			split = False
-		elif tr.parent_folder_path != current_folder or current_title != tr.parent_folder_name:
-			split = True
-
-		if split:
-			dex.append(i)
-			current_folder = tr.parent_folder_path
-			current_title = tr.parent_folder_name
-			current_album = tr.album
-			current_date = tr.date
-			current_artist = tr.artist
-
-	if return_playlist > -1 or custom_list:
-		return dex
-
-	album_dex = dex
-	album_info_cache.clear()
-	gui.update += 2
-	gui.pl_update = 1
-	update_layout = True
-
-	if not quiet:
-		goto_album(pctl.playlist_playing_position)
-
-	# Generate POWER BAR
-	gui.power_bar = gen_power2()
-	gui.pt = 0
-
-def star_line_toggle(mode: int= 0) -> bool | None:
-	if mode == 1:
-		return gui.star_mode == "line"
-
-	if gui.star_mode == "line":
-		gui.star_mode = "none"
-	else:
-		gui.star_mode = "line"
-
-	gui.show_ratings = False
-
-	gui.update += 1
-	gui.pl_update = 1
-	return None
-
-def star_toggle(mode: int = 0) -> bool | None:
-	if gui.show_ratings:
-		if mode == 1:
-			return prefs.rating_playtime_stars
-		prefs.rating_playtime_stars ^= True
-
-	else:
-		if mode == 1:
-			return gui.star_mode == "star"
-
-		if gui.star_mode == "star":
-			gui.star_mode = "none"
-		else:
-			gui.star_mode = "star"
-
-	# gui.show_ratings = False
-	gui.update += 1
-	gui.pl_update = 1
-	return None
-
-def heart_toggle(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return gui.show_hearts
-
-	gui.show_hearts ^= True
-	# gui.show_ratings = False
-
-	gui.update += 1
-	gui.pl_update = 1
-	return None
-
-def album_rating_toggle(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return gui.show_album_ratings
-
-	gui.show_album_ratings ^= True
-
-	gui.update += 1
-	gui.pl_update = 1
-	return None
-
-def rating_toggle(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return gui.show_ratings
-
-	gui.show_ratings ^= True
-
-	if gui.show_ratings:
-		# gui.show_hearts = False
-		gui.star_mode = "none"
-		prefs.rating_playtime_stars = True
-		if not prefs.write_ratings:
-			show_message(_("Note that ratings are stored in the local database and not written to tags."))
-
-	gui.update += 1
-	gui.pl_update = 1
-	return None
-
-def toggle_titlebar_line(mode: int = 0) -> bool | None:
-	global update_title
-	if mode == 1:
-		return update_title
-
-	line = window_title
-	sdl3.SDL_SetWindowTitle(t_window, line)
-	update_title ^= True
-	if update_title:
-		update_title_do()
-	return None
-
-def toggle_meta_persists_stop(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.meta_persists_stop
-	prefs.meta_persists_stop ^= True
-	return None
-
-def toggle_side_panel_layout(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.side_panel_layout == 1
-
-	if prefs.side_panel_layout == 1:
-		prefs.side_panel_layout = 0
-	else:
-		prefs.side_panel_layout = 1
-	return None
-
-def toggle_meta_shows_selected(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.meta_shows_selected_always
-	prefs.meta_shows_selected_always ^= True
-	return None
-
-def scale1(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.ui_scale == 1:
-			return True
-		return False
-
-	prefs.ui_scale = 1
-	pref_box.large_preset()
-
-	if prefs.ui_scale != gui.scale:
-		show_message(_("Change will be applied on restart."))
-	return None
-
-def scale125(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.ui_scale == 1.25:
-			return True
-		return False
-	return None
-
-	prefs.ui_scale = 1.25
-	pref_box.large_preset()
-
-	if prefs.ui_scale != gui.scale:
-		show_message(_("Change will be applied on restart."))
-	return None
-
-def toggle_use_tray(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.use_tray
-	prefs.use_tray ^= True
-	if not prefs.use_tray:
-		prefs.min_to_tray = False
-		gnome.hide_indicator()
-	else:
-		gnome.show_indicator()
-	return None
-
-def toggle_text_tray(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.tray_show_title
-	prefs.tray_show_title ^= True
-	pctl.notify_update()
-	return None
-
-def toggle_min_tray(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.min_to_tray
-	prefs.min_to_tray ^= True
-	return None
-
-def scale2(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.ui_scale == 2:
-			return True
-		return False
-
-	prefs.ui_scale = 2
-	pref_box.large_preset()
-
-	if prefs.ui_scale != gui.scale:
-		show_message(_("Change will be applied on restart."))
-	return None
-
-def toggle_borderless(mode: int = 0) -> bool | None:
-	global draw_border
-	global update_layout
-
-	if mode == 1:
-		return draw_border
-
-	update_layout = True
-	draw_border ^= True
-
-	if draw_border:
-		sdl3.SDL_SetWindowBordered(t_window, False)
-	else:
-		sdl3.SDL_SetWindowBordered(t_window, True)
-	return None
-
-def toggle_break(mode: int = 0) -> bool | None:
-	global break_enable
-	if mode == 1:
-		return break_enable ^ True
-	break_enable ^= True
-	gui.pl_update = 1
-	return None
-
-def toggle_scroll(mode: int = 0) -> bool | None:
-	global scroll_enable
-	global update_layout
-
-	if mode == 1:
-		if scroll_enable:
-			return False
-		return True
-
-	scroll_enable ^= True
-	gui.pl_update = 1
-	update_layout = True
-	return None
-
-def toggle_hide_bar(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return gui.set_bar ^ True
-	gui.update_layout()
-	gui.set_bar ^= True
-	show_message(_("Tip: You can also toggle this from a right-click context menu"))
-	return None
-
-def toggle_append_total_time(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.append_total_time
-	prefs.append_total_time ^= True
-	gui.pl_update = 1
-	gui.update += 1
-	return None
-
-def toggle_append_date(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.append_date
-	prefs.append_date ^= True
-	gui.pl_update = 1
-	gui.update += 1
-	return None
-
-def toggle_true_shuffle(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.true_shuffle
-	prefs.true_shuffle ^= True
-	return None
-
-def toggle_auto_artist_dl(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.auto_dl_artist_data
-	prefs.auto_dl_artist_data ^= True
-	for artist, value in list(artist_list_box.thumb_cache.items()):
-		if value is None:
-			del artist_list_box.thumb_cache[artist]
-	return None
-
-def toggle_enable_web(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.enable_web
-
-	prefs.enable_web ^= True
-
-	if prefs.enable_web and not gui.web_running:
-		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
-		webThread.daemon = True
-		webThread.start()
-		show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
-
-	elif prefs.enable_web is False:
-		if tauon.radio_server is not None:
-			tauon.radio_server.shutdown()
-			gui.web_running = False
-
-		time.sleep(0.25)
-	return None
-
-def toggle_scrobble_mark(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.scrobble_mark
-	prefs.scrobble_mark ^= True
-	return None
-
-def toggle_lfm_auto(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.auto_lfm
-	prefs.auto_lfm ^= True
-	if prefs.auto_lfm and not last_fm_enable:
-		show_message(_("Optional module python-pylast not installed"), mode="warning")
-		prefs.auto_lfm = False
-	# if prefs.auto_lfm:
-	#     lastfm.hold = False
-	# else:
-	#     lastfm.hold = True
-	return None
-
-def toggle_lb(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return lb.enable
-	if not lb.enable and not prefs.lb_token:
-		show_message(_("Can't enable this if there's no token."), mode="warning")
-		return None
-	lb.enable ^= True
-	return None
-
-def toggle_maloja(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.maloja_enable
-	if not prefs.maloja_url or not prefs.maloja_key:
-		show_message(_("One or more fields is missing."), mode="warning")
-		return None
-	prefs.maloja_enable ^= True
-	return None
-
-def toggle_ex_del(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.auto_del_zip
-	prefs.auto_del_zip ^= True
-	# if prefs.auto_del_zip is True:
-	#     show_message("Caution! This function deletes things!", mode='info', "This could result in data loss if the process were to malfunction.")
-	return None
-
-def toggle_dl_mon(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.monitor_downloads
-	prefs.monitor_downloads ^= True
-	return None
-
-def toggle_music_ex(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.extract_to_music
-	prefs.extract_to_music ^= True
-	return None
-
-def toggle_extract(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.auto_extract
-	prefs.auto_extract ^= True
-	if prefs.auto_extract is False:
-		prefs.auto_del_zip = False
-	return None
-
-def toggle_top_tabs(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.tabs_on_top
-	prefs.tabs_on_top ^= True
-	return None
-
-def toggle_guitar_chords(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.guitar_chords
-	prefs.guitar_chords ^= True
-	return None
-
-# def toggle_auto_lyrics(mode: int = 0) -> bool | None:
-# 	if mode == 1:
-# 		return prefs.auto_lyrics
-# 	prefs.auto_lyrics ^= True
-
-def switch_single(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_mode == "single":
-			return True
-		return False
-	prefs.transcode_mode = "single"
-	return None
-
-def switch_mp3(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_codec == "mp3":
-			return True
-		return False
-	prefs.transcode_codec = "mp3"
-	return None
-
-def switch_ogg(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_codec == "ogg":
-			return True
-		return False
-	prefs.transcode_codec = "ogg"
-	return None
-
-def switch_opus(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_codec == "opus":
-			return True
-		return False
-	prefs.transcode_codec = "opus"
-	return None
-
-def switch_opus_ogg(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_opus_as:
-			return True
-		return False
-	prefs.transcode_opus_as ^= True
-	return None
-
-def toggle_transcode_output(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_inplace:
-			return False
-		return True
-	prefs.transcode_inplace ^= True
-	if prefs.transcode_inplace:
-		transcode_icon.colour = [250, 20, 20, 255]
-		show_message(
-			_("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
-			_("For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."),
-			mode="warning")
-	else:
-		transcode_icon.colour = [239, 74, 157, 255]
-	return None
-
-def toggle_transcode_inplace(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_inplace:
-			return True
-		return False
-
-	if gui.sync_progress:
-		prefs.transcode_inplace = False
-		return None
-
-	prefs.transcode_inplace ^= True
-	if prefs.transcode_inplace:
-		transcode_icon.colour = [250, 20, 20, 255]
-		show_message(
-			_("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
-			_("For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."),
-			mode="warning")
-	else:
-		transcode_icon.colour = [239, 74, 157, 255]
-	return None
-
-def switch_flac(mode: int = 0) -> bool | None:
-	if mode == 1:
-		if prefs.transcode_codec == "flac":
-			return True
-		return False
-	prefs.transcode_codec = "flac"
-	return None
-
-def toggle_sbt(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.prefer_bottom_title
-	prefs.prefer_bottom_title ^= True
-	return None
-
-def toggle_bba(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return gui.bb_show_art
-	gui.bb_show_art ^= True
-	gui.update_layout()
-	return None
-
-def toggle_use_title(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.use_title
-	prefs.use_title ^= True
-	return None
-
-def switch_rg_off(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.replay_gain == 0 else False
-	prefs.replay_gain = 0
-	return None
-
-def switch_rg_track(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.replay_gain == 1 else False
-	prefs.replay_gain = 0 if prefs.replay_gain == 1 else 1
-	# prefs.replay_gain = 1
-	return None
-
-def switch_rg_album(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.replay_gain == 2 else False
-	prefs.replay_gain = 0 if prefs.replay_gain == 2 else 2
-	return None
-
-def switch_rg_auto(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.replay_gain == 3 else False
-	prefs.replay_gain = 0 if prefs.replay_gain == 3 else 3
-	return None
-
-def toggle_jump_crossfade(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.use_jump_crossfade else False
-	prefs.use_jump_crossfade ^= True
-	return None
-
-def toggle_pause_fade(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.use_pause_fade else False
-	prefs.use_pause_fade ^= True
-	return None
-
-def toggle_transition_crossfade(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return True if prefs.use_transition_crossfade else False
-	prefs.use_transition_crossfade ^= True
-	return None
-
-def toggle_transition_gapless(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return False if prefs.use_transition_crossfade else True
-	prefs.use_transition_crossfade ^= True
-	return None
-
-def toggle_eq(mode: int = 0) -> bool | None:
-	if mode == 1:
-		return prefs.use_eq
-	prefs.use_eq ^= True
-	pctl.playerCommand = "seteq"
-	pctl.playerCommandReady = True
-	return None
-
-def reload_backend() -> None:
-	gui.backend_reloading = True
-	logging.info("Reload backend...")
-	wait = 0
-	pre_state = pctl.stop(True)
-
-	while pctl.playerCommandReady:
-		time.sleep(0.01)
-		wait += 1
-		if wait > 20:
-			break
-	if tauon.thread_manager.player_lock.locked():
-		try:
-			tauon.thread_manager.player_lock.release()
-		except RuntimeError as e:
-			if str(e) == "release unlocked lock":
-				logging.error("RuntimeError: Attempted to release already unlocked player_lock")
-			else:
-				logging.exception("Unknown RuntimeError trying to release player_lock")
-		except Exception:
-			logging.exception("Unknown error trying to release player_lock")
-
-	pctl.playerCommand = "unload"
-	pctl.playerCommandReady = True
-
-	wait = 0
-	while pctl.playerCommand != "done":
-		time.sleep(0.01)
-		wait += 1
-		if wait > 200:
-			break
-
-	tauon.thread_manager.ready_playback()
-
-	if pre_state == 1:
-		pctl.revert()
-	gui.backend_reloading = False
-
-def gen_chart() -> None:
-	try:
-
-		topchart = t_topchart.TopChart(tauon)
-
-		tracks = []
-
-		source_tracks = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
-
-		if prefs.topchart_sorts_played:
-			source_tracks = gen_folder_top(0, custom_list=source_tracks)
-			dex = reload_albums(quiet=True, custom_list=source_tracks)
-		else:
-			dex = reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing)
-
-		for item in dex:
-			tracks.append(pctl.get_track(source_tracks[item]))
-
-		cascade = False
-		if prefs.chart_cascade:
-			cascade = (
-				(prefs.chart_c1, prefs.chart_c2, prefs.chart_c3),
-				(prefs.chart_d1, prefs.chart_d2, prefs.chart_d3))
-
-		path = topchart.generate(
-			tracks, prefs.chart_bg, prefs.chart_rows, prefs.chart_columns, prefs.chart_text,
-			prefs.chart_font, prefs.chart_tile, cascade)
-
-	except Exception:
-		logging.exception("There was an error generating the chart")
-		gui.generating_chart = False
-		show_message(_("There was an error generating the chart"), _("Sorry!"), mode="error")
-		return
-
-	gui.generating_chart = False
-
-	if path:
-		open_file(path)
-	else:
-		show_message(_("There was an error generating the chart"), _("Sorry!"), mode="error")
-		return
-
-	show_message(_("Chart generated"), mode="done")
-
-def update_playlist_call():
-	gui.update + 2
-	gui.pl_update = 2
-
-def pl_is_mut(pl: int) -> bool:
-	id = pl_to_id(pl)
-	if id is None:
-		return False
-	return not (pctl.gen_codes.get(id) and "self" not in pctl.gen_codes[id])
-
-def clear_gen(id: int) -> None:
-	del pctl.gen_codes[id]
-	show_message(_("Okay, it's a normal playlist now."), mode="done")
-
-def clear_gen_ask(id: int) -> None:
-	if "jelly\"" in pctl.gen_codes.get(id, ""):
-		return
-	if "spl\"" in pctl.gen_codes.get(id, ""):
-		return
-	if "tpl\"" in pctl.gen_codes.get(id, ""):
-		return
-	if "tar\"" in pctl.gen_codes.get(id, ""):
-		return
-	if "tmix\"" in pctl.gen_codes.get(id, ""):
-		return
-	gui.message_box_confirm_callback = clear_gen
-	gui.message_box_confirm_reference = (id,)
-	show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
-
-def set_mini_mode():
-	if gui.fullscreen:
-		return
-
-	global mouse_down
-	global mouse_up
-	global old_window_position
-	mouse_down = False
-	mouse_up = False
-	inp.mouse_click = False
-
-	if gui.maximized:
-		sdl3.SDL_RestoreWindow(t_window)
-		update_layout_do()
-
-	if gui.mode < 3:
-		old_window_position = get_window_position(t_window)
-
-	if prefs.mini_mode_on_top:
-		sdl3.SDL_SetWindowAlwaysOnTop(t_window, True)
-
-	gui.mode = 3
-	gui.vis = 0
-	gui.turbo = False
-	gui.draw_vis4_top = False
-	gui.level_update = False
-
-	i_y = pointer(c_int(0))
-	i_x = pointer(c_int(0))
-	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
-	gui.save_position = (i_x.contents.value, i_y.contents.value)
-
-	mini_mode.was_borderless = draw_border
-	sdl3.SDL_SetWindowBordered(t_window, False)
-
-	size = (350, 429)
-	if prefs.mini_mode_mode == 1:
-		size = (330, 330)
-	if prefs.mini_mode_mode == 2:
-		size = (420, 499)
-	if prefs.mini_mode_mode == 3:
-		size = (430, 430)
-	if prefs.mini_mode_mode == 4:
-		size = (330, 80)
-	if prefs.mini_mode_mode == 5:
-		size = (350, 545)
-		style_overlay.flush()
-		tauon.thread_manager.ready("style")
-
-	if logical_size == window_size:
-		size = (int(size[0] * gui.scale), int(size[1] * gui.scale))
-
-	logical_size[0] = size[0]
-	logical_size[1] = size[1]
-
-	sdl3.SDL_SetWindowMinimumSize(t_window, 100, 80)
-
-	sdl3.SDL_SetWindowResizable(t_window, False)
-	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-
-	if mini_mode.save_position:
-		sdl3.SDL_SetWindowPosition(t_window, mini_mode.save_position[0], mini_mode.save_position[1])
-
-	gui.update += 3
-
-def restore_full_mode():
-	logging.info("RESTORE FULL")
-	i_y = pointer(c_int(0))
-	i_x = pointer(c_int(0))
-	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
-	mini_mode.save_position = [i_x.contents.value, i_y.contents.value]
-
-	if not mini_mode.was_borderless:
-		sdl3.SDL_SetWindowBordered(t_window, True)
-
-	logical_size[0] = gui.save_size[0]
-	logical_size[1] = gui.save_size[1]
-
-	sdl3.SDL_SetWindowPosition(t_window, gui.save_position[0], gui.save_position[1])
-
-
-	sdl3.SDL_SetWindowResizable(t_window, True)
-	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-	sdl3.SDL_SetWindowAlwaysOnTop(t_window, False)
-
-	# if macos:
-	#     sdl3.SDLSetWindowMinimumSize(t_window, 560, 330)
-	# else:
-	sdl3.SDL_SetWindowMinimumSize(t_window, 560, 330)
-
-	restore_ignore_timer.set()  # Hacky
-
-	gui.mode = 1
-
-	sdl3.SDL_SyncWindow(t_window)
-	sdl3.SDL_PumpEvents()
-
-	global mouse_down
-	global mouse_up
-	mouse_down = False
-	mouse_up = False
-	inp.mouse_click = False
-
-	if gui.maximized:
-		sdl3.SDL_MaximizeWindow(t_window)
-		time.sleep(0.05)
-		sdl3.SDL_PumpEvents()
-		sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
-		logical_size[0] = i_x.contents.value
-		logical_size[1] = i_y.contents.value
-
-		#logging.info(window_size)
-
-	gui.update_layout()
-	if prefs.art_bg:
-		tauon.thread_manager.ready("style")
-
-def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, album_fade, start_x, width, style=1, ry=None):
-	timec = colours.bar_time
-	titlec = colours.title_text
-	indexc = colours.index_text
-	artistc = colours.artist_text
-	albumc = colours.album_text
-
-	if this_line_playing is True:
-		timec = colours.time_text
-		titlec = colours.title_playing
-		indexc = colours.index_playing
-		artistc = colours.artist_playing
-		albumc = colours.album_playing
-
-	if n_track.found is False:
-		timec = colours.playlist_text_missing
-		titlec = colours.playlist_text_missing
-		indexc = colours.playlist_text_missing
-		artistc = colours.playlist_text_missing
-		albumc = colours.playlist_text_missing
-
-	artistoffset = 0
-	indexLine = ""
-
-	offset_font_extra = 0
-	if gui.row_font_size > 14:
-		offset_font_extra = 8
-
-	# In windows (arial?) draws numbers too high (hack fix)
-	num_y_offset = 0
-	# if system == 'Windows':
-	#    num_y_offset = 1
-
-	if True or style == 1:
-
-		# if not gui.rsp and not gui.combo_mode:
-		#     width -= 10 * gui.scale
-
-		dash = False
-		if n_track.artist and colours.artist_text == colours.title_text:
-			dash = True
-
-		if n_track.title:
-
-			line = track_number_process(n_track.track_number)
-
-			indexLine = line
-
-			if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
-				indexLine = str(p_track)
-				if len(indexLine) > 3:
-					indexLine += "  "
-
-			line = ""
-
-			if n_track.artist != "" and not dash:
-				line0 = n_track.artist
-
-				artistoffset = ddt.text(
-					(start_x + 27 * gui.scale, y),
-					line0,
-					alpha_mod(artistc, album_fade),
-					gui.row_font_size,
-					int(width / 2))
-
-				line = n_track.title
-			else:
-				line += n_track.title
-		else:
-			line = \
-				os.path.splitext(n_track.filename)[
-					0]
-
-		if p_track >= len(default_playlist):
-			gui.pl_update += 1
-			return
-
-		index = default_playlist[p_track]
-		star_x = 0
-		total = star_store.get(index)
-
-		if gui.star_mode == "line" and total > 0 and pctl.master_library[index].length > 0:
-
-			ratio = total / pctl.master_library[index].length
-			if ratio > 0.55:
-				star_x = int(ratio * 4 * gui.scale)
-				star_x = min(star_x, 60 * gui.scale)
-				sp = y - 0 - gui.playlist_text_offset + int(gui.playlist_row_height / 2)
-				if gui.playlist_row_height > 17 * gui.scale:
-					sp -= 1
-
-				lh = 1
-				if gui.scale != 1:
-					lh = 2
-
-				colour = colours.star_line
-				if this_line_playing and colours.star_line_playing is not None:
-					colour = colours.star_line_playing
-
-				ddt.rect(
-					[
-						width + start_x - star_x - 45 * gui.scale - offset_font_extra,
-						sp,
-						star_x + 3 * gui.scale,
-						lh],
-					alpha_mod(colour, album_fade))
-
-				star_x += 6 * gui.scale
-
-		if gui.show_ratings:
-			sx = round(width + start_x - round(40 * gui.scale) - offset_font_extra)
-			sy = round(ry + (gui.playlist_row_height // 2) - round(7 * gui.scale))
-			sx -= round(68 * gui.scale)
-
-			draw_rating_widget(sx, sy, n_track)
-
-			star_x += round(70 * gui.scale)
-
-		if gui.star_mode == "star" and total > 0 and pctl.master_library[index].length != 0:
-			sx = width + start_x - 40 * gui.scale - offset_font_extra
-			sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
-			# if gui.scale == 1.25:
-			#     sy += 1
-			playtime_stars = star_count(total, pctl.master_library[index].length) - 1
-
-			sx2 = sx
-			selected_star = -2
-			rated_star = -1
-
-			# if key_ctrl_down:
-
-			c = 60
-			d = 6
-
-			colour = [70, 70, 70, 255]
-			if colours.lm:
-				colour = [90, 90, 90, 255]
-			# colour = alpha_mod(indexc, album_fade)
-
-			for count in range(8):
-
-				if selected_star < count and playtime_stars < count and rated_star < count:
-					break
-
-				if count == 0:
-					sx -= round(13 * gui.scale)
-					star_x += round(13 * gui.scale)
-				elif playtime_stars > 3:
-					dd = round((13 - (playtime_stars - 3)) * gui.scale)
-					sx -= dd
-					star_x += dd
-				else:
-					sx -= round(13 * gui.scale)
-					star_x += round(13 * gui.scale)
-
-				# if playtime_stars > 4:
-				#     colour = [c + d * count, c + d * count, c + d * count, 255]
-				# if playtime_stars > 6: # and count < 1:
-				#     colour = [230, 220, 60, 255]
-				if gui.tracklist_bg_is_light:
-					colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
-				else:
-					colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
-
-				# if selected_star > -2:
-				#     if selected_star >= count:
-				#         colour = (220, 200, 60, 255)
-				# else:
-				#     if rated_star >= count:
-				#         colour = (220, 200, 60, 255)
-
-				star_pc_icon.render(sx, sy, colour)
-
-		if gui.show_hearts:
-
-			xxx = star_x
-
-			count = 0
-			spacing = 6 * gui.scale
-
-			yy = ry + (gui.playlist_row_height // 2) - (5 * gui.scale)
-			if gui.scale == 1.25:
-				yy += 1
-			if xxx > 0:
-				xxx += 3 * gui.scale
-
-			if love(False, index):
-				count = 1
-
-				x = width + start_x - 52 * gui.scale - offset_font_extra - xxx
-
-				f_store.store(display_you_heart, (x, yy))
-
-				star_x += 18 * gui.scale
-
-			if "spotify-liked" in pctl.master_library[index].misc:
-
-				x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
-
-				f_store.store(display_spot_heart, (x, yy))
-
-				star_x += heart_row_icon.w + spacing + 2
-
-			for name in pctl.master_library[index].lfm_friend_likes:
-
-				# Limit to number of hears to display
-				if gui.star_mode == "none":
-					if count > 6:
-						break
-				elif count > 4:
-					break
-
-				x = width + start_x - 52 * gui.scale - offset_font_extra - (heart_row_icon.w + spacing) * count - xxx
-
-				f_store.store(display_friend_heart, (x, yy, name))
-
-				count += 1
-
-				star_x += heart_row_icon.w + spacing + 2
-
-		# Draw track number/index
-		display_queue = False
-
-		if pctl.force_queue:
-
-			marks = []
-			album_type = False
-			for i, item in enumerate(pctl.force_queue):
-				if item.track_id == n_track.index and item.position == p_track and item.playlist_id == pl_to_id(
-						pctl.active_playlist_viewing):
-					if item.type == 0:  # Only show mark if track type
-						marks.append(i)
-					# else:
-					#     album_type = True
-					#     marks.append(i)
-
-			if marks:
-				display_queue = True
-
-		if display_queue:
-
-			li = str(marks[0] + 1)
-			if li == "1":
-				li = "N"
-				# if item.track_id == n_track.index and item.position == p_track and item.playlist_id == pctl.active_playlist_viewing
-				if pctl.playing_ready() and n_track.index == pctl.track_queue[
-					pctl.queue_step] and p_track == pctl.playlist_playing_position:
-					li = "R"
-				# if album_type:
-				#     li = "A"
-
-			# rect = (start_x + 3 * gui.scale, y - 1 * gui.scale, 5 * gui.scale, 5 * gui.scale)
-			# ddt.rect_r(rect, [100, 200, 100, 255], True)
-			if len(marks) > 1:
-				li += " " + ("." * (len(marks) - 1))
-				li = li[:5]
-
-			# if album_type:
-			#     li += "🠗"
-
-			colour = [244, 200, 66, 255]
-			if colours.lm:
-				colour = [220, 40, 40, 255]
-
-			ddt.text(
-				(start_x + 5 * gui.scale, y, 2),
-				li, colour, gui.row_font_size + 200 - 1)
-
-		elif len(indexLine) > 2:
-
-			ddt.text(
-				(start_x + 5 * gui.scale, y, 2), indexLine,
-				alpha_mod(indexc, album_fade), gui.row_font_size)
-		else:
-
-			ddt.text(
-				(start_x, y), indexLine,
-				alpha_mod(indexc, album_fade), gui.row_font_size)
-
-		if dash and n_track.artist and n_track.title:
-			line = n_track.artist + " - " + n_track.title
-
-		ddt.text(
-			(start_x + 33 * gui.scale + artistoffset, y),
-			line,
-			alpha_mod(titlec, album_fade),
-			gui.row_font_size,
-			width - 71 * gui.scale - artistoffset - star_x - 20 * gui.scale)
-
-		line = get_display_time(n_track.length)
-
-		ddt.text(
-			(width + start_x - (round(36 * gui.scale) + offset_font_extra),
-			y + num_y_offset, 0), line,
-			alpha_mod(timec, album_fade), gui.row_font_size)
-
-		f_store.recall_all()
-
-# def visit_radio_site_show_test(p):
-# 	return "website_url" in prefs.radio_urls[p] and prefs.radio_urls[p].["website_url"]
-
-def visit_radio_site_deco(station: RadioStation):
-	if station.website_url:
-		return [colours.menu_text, colours.menu_background, None]
-	return [colours.menu_text_disabled, colours.menu_background, None]
-
-def visit_radio_station_site_deco(item: tuple[int, RadioStation]):
-	return visit_radio_site_deco(item[1])
-
 def visit_radio_site(station: RadioStation):
 	if station.website_url:
 		webbrowser.open(station.website_url, new=2, autoraise=True)
@@ -50428,1359 +51781,15 @@ def visit_radio_site(station: RadioStation):
 def visit_radio_station(item: tuple[int, RadioStation]):
 	visit_radio_site(item[1])
 
-def radio_saved_panel_test(_):
-	return radiobox.tab == 0
-
-def save_to_radios(station: RadioStation):
-	pctl.radio_playlists[pctl.radio_playlist_viewing].stations.append(station)
-	toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing].name)
-
-def create_artist_pl(artist: str, replace: bool = False):
-	source_pl = pctl.active_playlist_viewing
-	this_pl = pctl.active_playlist_viewing
-
-	if pctl.multi_playlist[source_pl].parent_playlist_id:
-		if pctl.multi_playlist[source_pl].title.startswith("Artist:"):
-			new = id_to_pl(pctl.multi_playlist[source_pl].parent_playlist_id)
-			if new is None:
-				# The original playlist is now gone
-				pctl.multi_playlist[source_pl].parent_playlist_id = ""
-			else:
-				source_pl = new
-				# replace = True
-
-	playlist = []
-
-	for item in pctl.multi_playlist[source_pl].playlist_ids:
-		track = pctl.get_track(item)
-		if track.artist == artist or track.album_artist == artist:
-			playlist.append(item)
-
-	if replace:
-		pctl.multi_playlist[this_pl].playlist_ids[:] = playlist[:]
-		pctl.multi_playlist[this_pl].title = _("Artist: ") + artist
-		if album_mode:
-			reload_albums()
-
-		# Transfer playing track back to original playlist
-		if pctl.multi_playlist[this_pl].parent_playlist_id:
-			new = id_to_pl(pctl.multi_playlist[this_pl].parent_playlist_id)
-			tr = pctl.playing_object()
-			if new is not None and tr and pctl.active_playlist_playing == this_pl:
-				if tr.index not in pctl.multi_playlist[this_pl].playlist_ids and tr.index in pctl.multi_playlist[source_pl].playlist_ids:
-					logging.info("Transfer back playing")
-					pctl.active_playlist_playing = source_pl
-					pctl.playlist_playing_position = pctl.multi_playlist[source_pl].playlist_ids.index(tr.index)
-
-		pctl.gen_codes[pl_to_id(this_pl)] = "s\"" + pctl.multi_playlist[source_pl].title + "\" a\"" + artist + "\""
-
-	else:
-
-		pctl.multi_playlist.append(
-			pl_gen(
-				title=_("Artist: ") + artist,
-				playlist_ids=playlist,
-				hide_title=False,
-				parent=pl_to_id(source_pl)))
-
-		pctl.gen_codes[pl_to_id(len(pctl.multi_playlist) - 1)] = "s\"" + pctl.multi_playlist[source_pl].title + "\" a\"" + artist + "\""
-
-		switch_playlist(len(pctl.multi_playlist) - 1)
-
-def aa_sort_alpha():
-	prefs.artist_list_sort_mode = "alpha"
-	artist_list_box.saves.clear()
-
-def aa_sort_popular():
-	prefs.artist_list_sort_mode = "popular"
-	artist_list_box.saves.clear()
-
-def aa_sort_play():
-	prefs.artist_list_sort_mode = "play"
-	artist_list_box.saves.clear()
-
-def toggle_artist_list_style():
-	if prefs.artist_list_style == 1:
-		prefs.artist_list_style = 2
-	else:
-		prefs.artist_list_style = 1
-
-def toggle_artist_list_threshold():
-	if prefs.artist_list_threshold > 0:
-		prefs.artist_list_threshold = 0
-	else:
-		prefs.artist_list_threshold = 4
-	artist_list_box.saves.clear()
-
-def toggle_artist_list_threshold_deco():
-	if prefs.artist_list_threshold == 0:
-		return [colours.menu_text, colours.menu_background, _("Filter Small Artists")]
-	# save = artist_list_box.saves.get(pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int)
-	# if save and save[5] == 0:
-	# 	return [colours.menu_text_disabled, colours.menu_background, _("Include All Artists")]
-	return [colours.menu_text, colours.menu_background, _("Include All Artists")]
-
-def verify_discogs():
-	return len(prefs.discogs_pat) == 40
-
-def save_discogs_artist_thumb(artist, filepath):
-	logging.info("Searching discogs for artist image...")
-
-	# Make artist name url safe
-	artist = artist.replace("/", "").replace("\\", "").replace(":", "")
-
-	# Search for Discogs artist id
-	url = "https://api.discogs.com/database/search"
-	r = requests.get(url, params={"query": artist, "type": "artist", "token": prefs.discogs_pat}, headers={"User-Agent": t_agent}, timeout=10)
-	id = r.json()["results"][0]["id"]
-
-	# Search artist info, get images
-	url = "https://api.discogs.com/artists/" + str(id)
-	r = requests.get(url, headers={"User-Agent": t_agent}, params={"token": prefs.discogs_pat}, timeout=10)
-	images = r.json()["images"]
-
-	# Respect rate limit
-	rate_remaining = r.headers["X-Discogs-Ratelimit-Remaining"]
-	if int(rate_remaining) < 30:
-		time.sleep(5)
-
-	# Find a square image in list of images
-	for image in images:
-		if image["height"] == image["width"]:
-			logging.info("Found square")
-			url = image["uri"]
-			break
-	else:
-		url = images[0]["uri"]
-
-	response = urllib.request.urlopen(url, context=tls_context)
-	im = Image.open(response)
-
-	width, height = im.size
-	if width > height:
-		delta = width - height
-		left = int(delta / 2)
-		upper = 0
-		right = height + left
-		lower = height
-	else:
-		delta = height - width
-		left = 0
-		upper = int(delta / 2)
-		right = width
-		lower = width + upper
-
-	im = im.crop((left, upper, right, lower))
-	im.save(filepath, "JPEG", quality=90)
-	im.close()
-	logging.info("Found artist image from Discogs")
-
-def save_fanart_artist_thumb(mbid, filepath, preview=False):
-	logging.info("Searching fanart.tv for image...")
-	#logging.info("mbid is " + mbid)
-	r = requests.get("https://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + prefs.fatvap, timeout=5)
-	#logging.info(r.json())
-	thumblink = r.json()["artistthumb"][0]["url"]
-	if preview:
-		thumblink = thumblink.replace("/fanart/music", "/preview/music")
-
-	response = urllib.request.urlopen(thumblink, timeout=10, context=tls_context)
-	info = response.info()
-
-	t = io.BytesIO()
-	t.seek(0)
-	t.write(response.read())
-	l = 0
-	t.seek(0, 2)
-	l = t.tell()
-	t.seek(0)
-
-	if info.get_content_maintype() == "image" and l > 1000:
-		f = open(filepath, "wb")
-		f.write(t.read())
-		f.close()
-
-		if prefs.fanart_notify:
-			prefs.fanart_notify = False
-			show_message(
-				_("Notice: Artist image sourced from fanart.tv"),
-				_("They encourage you to contribute at {link}").format(link="https://fanart.tv"), mode="link")
-		logging.info("Found artist thumbnail from fanart.tv")
-
-def queue_pause_deco():
-	if pctl.pause_queue:
-		return [colours.menu_text, colours.menu_background, _("Resume Queue")]
-	return [colours.menu_text, colours.menu_background, _("Pause Queue")]
-
-# def finish_current_deco():
-# 	colour = colours.menu_text
-# 	line = "Finish Playing Album"
-#
-# 	if pctl.playing_object() is None:
-# 		colour = colours.menu_text_disabled
-# 	if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
-# 		colour = colours.menu_text_disabled
-#
-# 	return [colour, colours.menu_background, line]
-
-def art_metadata_overlay(right, bottom, showc):
-	if not showc:
-		return
-
-	padding = 6 * gui.scale
-
-	if not key_shift_down:
-
-		line = ""
-		if showc[0] == 1:
-			line += "E "
-		elif showc[0] == 2:
-			line += "N "
-		else:
-			line += "F "
-
-		line += str(showc[2] + 1) + "/" + str(showc[1])
-
-		y = bottom - 40 * gui.scale
-
-		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
-		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-	else:  # Extended metadata
-
-		line = ""
-		if showc[0] == 1:
-			line += "Embedded"
-		elif showc[0] == 2:
-			line += "Network"
-		else:
-			line += "File"
-
-		y = bottom - 76 * gui.scale
-
-		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
-		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-		y += 18 * gui.scale
-
-		line = ""
-		line += showc[4]
-		line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
-
-		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
-		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-		y += 18 * gui.scale
-
-		line = ""
-		line += str(showc[2] + 1) + "/" + str(showc[1])
-
-		tag_width = ddt.get_text_w(line, 12) + 12 * gui.scale
-		ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * gui.scale), [8, 8, 8, 255])
-		ddt.text(((right) - (6 * gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
-
-def artist_dl_deco():
-	if artist_info_box.status == "Ready":
-		return [colours.menu_text_disabled, colours.menu_background, None]
-	return [colours.menu_text, colours.menu_background, None]
-
-def station_browse():
-	radiobox.active = True
-	radiobox.edit_mode = False
-	radiobox.add_mode = False
-	radiobox.center = True
-	radiobox.tab = 1
-
-def add_station():
-	radiobox.active = True
-	radiobox.edit_mode = True
-	radiobox.add_mode = True
-	radiobox.radio_field.text = ""
-	radiobox.radio_field_title.text = ""
-	radiobox.station_editing = None
-	radiobox.center = True
-
-def rename_station(item: tuple[int, RadioStation]):
-	station = item[1]
-	radiobox.active = True
-	radiobox.center = False
-	radiobox.edit_mode = True
-	radiobox.add_mode = False
-	radiobox.radio_field.text = station.stream_url
-	radiobox.radio_field_title.text = station.title if station.title is not None else ""
-	radiobox.station_editing = station
-
-def remove_station(item: tuple[int, RadioStation]):
-	index = item[0]
-	del pctl.radio_playlists[pctl.radio_playlist_viewing].stations[index]
-
-def dismiss_dl():
-	dl_mon.ready.clear()
-	dl_mon.done.update(dl_mon.watching)
-	dl_mon.watching.clear()
-
-def download_img(link: str, target_dir: str, track: TrackClass) -> None:
-	try:
-		response = urllib.request.urlopen(link, context=tls_context)
-		info = response.info()
-		if info.get_content_maintype() == "image":
-			if info.get_content_subtype() == "jpeg":
-				save_target = os.path.join(target_dir, "image.jpg")
-				with open(save_target, "wb") as f:
-					f.write(response.read())
-				# clear_img_cache()
-				clear_track_image_cache(track)
-
-			elif info.get_content_subtype() == "png":
-				save_target = os.path.join(target_dir, "image.png")
-				with open(save_target, "wb") as f:
-					f.write(response.read())
-				# clear_img_cache()
-				clear_track_image_cache(track)
-			else:
-				show_message(_("Image types other than PNG or JPEG are currently not supported"), mode="warning")
-		else:
-			show_message(_("The link does not appear to refer to an image file."), mode="warning")
-		gui.image_downloading = False
-
-	except Exception as e:
-		logging.exception("Image download failed")
-		show_message(_("Image download failed."), str(e), mode="warning")
-		gui.image_downloading = False
-
-def display_you_heart(x: int, yy: int, just: int = 0) -> None:
-	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
-	gui.heart_fields.append(rect)
-	fields.add(rect, update_playlist_call)
-	if coll(rect) and not track_box:
-		gui.pl_update += 1
-		w = ddt.get_text_w(_("You"), 13)
-		xx = (x - w) - 5 * gui.scale
-
-		if just == 1:
-			xx += w + 15 * gui.scale
-
-		ty = yy - 28 * gui.scale
-		tx = xx
-		if ty < gui.panelY + 5 * gui.scale:
-			ty = gui.panelY + 5 * gui.scale
-			tx -= 20 * gui.scale
-
-		# ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
-		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), _("You"), [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
-
-	heart_row_icon.render(x, yy, [244, 100, 100, 255])
-
-def display_spot_heart(x: int, yy: int, just: int = 0) -> None:
-	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
-	gui.heart_fields.append(rect)
-	fields.add(rect, update_playlist_call)
-	if coll(rect) and not track_box:
-		gui.pl_update += 1
-		w = ddt.get_text_w(_("Liked on Spotify"), 13)
-		xx = (x - w) - 5 * gui.scale
-
-		if just == 1:
-			xx += w + 15 * gui.scale
-
-		ty = yy - 28 * gui.scale
-		tx = xx
-		if ty < gui.panelY + 5 * gui.scale:
-			ty = gui.panelY + 5 * gui.scale
-			tx -= 20 * gui.scale
-
-		# ddt.rect_r((xx - 1 * gui.scale, yy - 26 * gui.scale - 1 * gui.scale, w + 10 * gui.scale + 2 * gui.scale, 19 * gui.scale + 2 * gui.scale), [50, 50, 50, 255], True)
-		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
-		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), _("Liked on Spotify"), [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
-
-	heart_row_icon.render(x, yy, [100, 244, 100, 255])
-
-def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
-	heart_row_icon.render(x, yy, heart_colours.get(name))
-
-	rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
-	gui.heart_fields.append(rect)
-	fields.add(rect, update_playlist_call)
-	if coll(rect) and not track_box:
-		gui.pl_update += 1
-		w = ddt.get_text_w(name, 13)
-		xx = (x - w) - 5 * gui.scale
-
-		if just == 1:
-			xx += w + 15 * gui.scale
-
-		ty = yy - 28 * gui.scale
-		tx = xx
-		if ty < gui.panelY + 5 * gui.scale:
-			ty = gui.panelY + 5 * gui.scale
-			tx -= 20 * gui.scale
-
-		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [15, 15, 15, 255])
-		ddt.rect((tx - 5 * gui.scale, ty, w + 20 * gui.scale, 24 * gui.scale), [35, 35, 35, 255])
-		ddt.text((tx + 5 * gui.scale, ty + 4 * gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
-
-def hit_callback(win, point, data):
-	x = point.contents.x / logical_size[0] * window_size[0]
-	y = point.contents.y / logical_size[0] * window_size[0]
-
-	# Special layout modes
-	if gui.mode == 3:
-
-		if key_shift_down or key_shiftr_down:
-			return sdl3.SDL_HITTEST_NORMAL
-
-		# if prefs.mini_mode_mode == 5:
-		#     return sdl3.SDL_HITTEST_NORMAL
-
-		if prefs.mini_mode_mode in (4, 5) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
-			return sdl3.SDL_HITTEST_NORMAL
-
-		if y < gui.window_control_hit_area_h and x > window_size[
-			0] - gui.window_control_hit_area_w:
-			return sdl3.SDL_HITTEST_NORMAL
-
-		# Square modes
-		y1 = window_size[0]
-		# if prefs.mini_mode_mode == 5:
-		#     y1 = window_size[1]
-		y0 = 0
-		if macos:
-			y0 = round(35 * gui.scale)
-		if window_size[0] == window_size[1]:
-			y1 = window_size[1] - 79 * gui.scale
-		if y0 < y < y1 and not search_over.active:
-			return sdl3.SDL_HITTEST_DRAGGABLE
-
-		return sdl3.SDL_HITTEST_NORMAL
-
-	# Standard player mode
-	if not gui.maximized:
-		if y < 0 and x > window_size[0]:
-			return sdl3.SDL_HITTEST_RESIZE_TOPRIGHT
-
-		if y < 0 and x < 1:
-			return sdl3.SDL_HITTEST_RESIZE_TOPLEFT
-
-		# if draw_border and y < 3 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
-		#     return sdl3.SDL_HITTEST_RESIZE_TOP
-
-	if y < gui.panelY:
-
-		if gui.top_bar_mode2:
-
-			if y < gui.panelY - gui.panelY2:
-				if prefs.left_window_control and x < 100 * gui.scale:
-					return sdl3.SDL_HITTEST_NORMAL
-
-				if x > window_size[0] - 100 * gui.scale and y < 30 * gui.scale:
-					return sdl3.SDL_HITTEST_NORMAL
-				return sdl3.SDL_HITTEST_DRAGGABLE
-			if top_panel.drag_zone_start_x > x or tab_menu.active:
-				return sdl3.SDL_HITTEST_NORMAL
-			return sdl3.SDL_HITTEST_DRAGGABLE
-
-		if top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
-
-			if tab_menu.active or mouse_up or mouse_down:  # mouse up/down is workaround for Wayland
-				return sdl3.SDL_HITTEST_NORMAL
-
-			if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (
-					macos or system == "Windows" or msys)) or (not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (
-					macos or system == "Windows" or msys)):
-				return sdl3.SDL_HITTEST_NORMAL
-
-			return sdl3.SDL_HITTEST_DRAGGABLE
-
-	if not gui.maximized:
-		if x > window_size[0] - 20 * gui.scale and y > window_size[1] - 20 * gui.scale:
-			return sdl3.SDL_HITTEST_RESIZE_BOTTOMRIGHT
-		if x < 5 and y > window_size[1] - 5:
-			return sdl3.SDL_HITTEST_RESIZE_BOTTOMLEFT
-		if y > window_size[1] - 5 * gui.scale:
-			return sdl3.SDL_HITTEST_RESIZE_BOTTOM
-
-		if x > window_size[0] - 3 * gui.scale and y > 20 * gui.scale:
-			return sdl3.SDL_HITTEST_RESIZE_RIGHT
-		if x < 5 * gui.scale and y > 10 * gui.scale:
-			return sdl3.SDL_HITTEST_RESIZE_LEFT
-		return sdl3.SDL_HITTEST_NORMAL
-	return sdl3.SDL_HITTEST_NORMAL
-
-def reload_scale():
-	auto_scale()
-
-	scale = prefs.scale_want
-
-	gui.scale = scale
-	ddt.scale = gui.scale
-	prime_fonts()
-	ddt.clear_text_cache()
-	scale_assets(scale_want=scale, force=True)
-	img_slide_update_gall(album_mode_art_size)
-
-	for item in WhiteModImageAsset.assets:
-		item.reload()
-	for item in LoadImageAsset.assets:
-		item.reload()
-	for menu in Menu.instances:
-		menu.rescale()
-	bottom_bar1.__init__(tauon)
-	bottom_bar_ao1.__init__(tauon)
-	top_panel.__init__(tauon)
-	view_box.__init__(tauon, reload=True)
-	queue_box.recalc()
-	playlist_box.recalc()
-
-def update_layout_do():
-	if prefs.scale_want != gui.scale:
-		reload_scale()
-
-	w = window_size[0]
-	h = window_size[1]
-
-	if gui.switch_showcase_off:
-		ddt.force_gray = False
-		gui.switch_showcase_off = False
-		exit_combo(restore=True)
-
-	global draw_max_button
-	if draw_max_button and prefs.force_hide_max_button:
-		draw_max_button = False
-
-	if gui.theme_name != prefs.theme_name:
-		gui.reload_theme = True
-		global theme
-		theme = get_theme_number(prefs.theme_name)
-		#logging.info("Config reload theme...")
-
-	# Restore in case of error
-	if gui.rspw < 30 * gui.scale:
-
-		gui.rspw = 100 * gui.scale
-
-	# Lock right side panel to full size if fully extended -----
-	if prefs.side_panel_layout == 0 and not album_mode:
-		max_w = round(
-			((window_size[1] - gui.panelY - gui.panelBY - 17 * gui.scale) * gui.art_max_ratio_lock) + 17 * gui.scale)
-		# 17 here is the art box inset value
-
-		if not album_mode and gui.rspw > max_w - 12 * gui.scale and side_drag:
-			gui.rsp_full_lock = True
-	# ----------------------------------------------------------
-
-	# Auto shrink left side panel --------------
-	pl_width = window_size[0]
-	pl_width_a = pl_width
-	if gui.rsp:
-		pl_width_a = pl_width - gui.rspw
-		pl_width -= gui.rspw - 300 * gui.scale  # More sensitivity for compact with rsp for better visual balancing
-
-	if pl_width < 900 * gui.scale and not gui.hide_tracklist_in_gallery:
-		gui.lspw = 180 * gui.scale
-
-		if pl_width < 700 * gui.scale:
-			gui.lspw = 150 * gui.scale
-
-		if prefs.left_panel_mode == "artist list" and prefs.artist_list_style == 1:
-			gui.compact_artist_list = True
-			gui.lspw = 75 * gui.scale
-			if gui.force_side_on_drag:
-				gui.lspw = 180 * gui.scale
-	else:
-		gui.lspw = 220 * gui.scale
-		gui.compact_artist_list = False
-		if prefs.left_panel_mode == "artist list":
-			gui.lspw = 230 * gui.scale
-
-	if gui.lsp and prefs.left_panel_mode == "folder view":
-		gui.lspw = 260 * gui.scale
-		max_insets = 0
-		for item in tree_view_box.rows:
-			max_insets = max(item[2], max_insets)
-
-		p = (pl_width_a * 0.15) - round(200 * gui.scale)
-		if gui.hide_tracklist_in_gallery:
-			p = ((window_size[0] - gui.lspw) * 0.15) - round(170 * gui.scale)
-
-		p = min(round(200 * gui.scale), p)
-		if p > 0:
-			gui.lspw += p
-		if max_insets > 1:
-			gui.lspw = max(gui.lspw, 260 * gui.scale + round(15 * gui.scale) * max_insets)
-
-	# -----
-
-	# Set bg art strength according to setting ----
-	if prefs.art_bg_stronger == 3:
-		prefs.art_bg_opacity = 29
-	elif prefs.art_bg_stronger == 2:
-		prefs.art_bg_opacity = 19
-	else:
-		prefs.art_bg_opacity = 10
-
-	if prefs.bg_showcase_only:
-		prefs.art_bg_opacity += 21
-
-	# -----
-
-	# Adjust for for compact window sizes ----
-	if (prefs.always_art_header or (w < 600 * gui.scale and not gui.rsp and prefs.art_in_top_panel)) and not album_mode:
-		gui.top_bar_mode2 = True
-		gui.panelY = round(100 * gui.scale)
-		gui.playlist_top = gui.panelY + (8 * gui.scale)
-		gui.playlist_top_bk = gui.playlist_top
-
-	else:
-		gui.top_bar_mode2 = False
-		gui.panelY = round(30 * gui.scale)
-		gui.playlist_top = gui.panelY + (8 * gui.scale)
-		gui.playlist_top_bk = gui.playlist_top
-
-	gui.show_playlist = True
-	if w < 750 * gui.scale and album_mode:
-		gui.show_playlist = False
-
-	# Set bio panel size according to setting
-	if prefs.bio_large:
-		gui.artist_panel_height = 320 * gui.scale
-		if window_size[0] < 600 * gui.scale:
-			gui.artist_panel_height = 200 * gui.scale
-
-	else:
-		gui.artist_panel_height = 200 * gui.scale
-		if window_size[0] < 600 * gui.scale:
-			gui.artist_panel_height = 150 * gui.scale
-
-	# Trigger artist bio reload if panel size has changed
-	if gui.artist_info_panel:
-		if gui.last_artist_panel_height != gui.artist_panel_height:
-			artist_info_box.get_data(artist_info_box.artist_on)
-		gui.last_artist_panel_height = gui.artist_panel_height
-
-	# prefs.art_bg_blur = 9
-	# if prefs.bg_showcase_only:
-	#     prefs.art_bg_blur = 15
-	#
-	# if w / h == 16 / 9:
-	#     logging.info("YEP")
-	# elif w / h < 16 / 9:
-	#     logging.info("too low")
-	# else:
-	#     logging.info("too high")
-	#logging.info((w, h))
-
-	# input.mouse_click = False
-
-	global renderer
-
-	if prefs.spec2_colour_mode == 0:
-		prefs.spec2_base = [10, 10, 100]
-		prefs.spec2_multiply = [0.5, 1, 1]
-	elif prefs.spec2_colour_mode == 1:
-		prefs.spec2_base = [10, 10, 10]
-		prefs.spec2_multiply = [2, 1.2, 5]
-	# elif prefs.spec2_colour_mode == 2:
-	#     prefs.spec2_base = [10, 100, 10]
-	#     prefs.spec2_multiply = [1, -1, 0.4]
-
-	gui.draw_vis4_top = False
-
-	if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != 3 and prefs.backend == 4:
-		gui.vis = 4
-		gui.turbo = True
-	elif gui.vis_want == 0:
-		gui.turbo = False
-		gui.vis = 0
-	else:
-		gui.vis = gui.vis_want
-		if gui.vis > 0:
-			gui.turbo = True
-
-	# Disable vis when in compact view
-	if gui.mode == 3 or gui.top_bar_mode2:  # or prefs.backend == 2:
-		if not gui.combo_mode:
-			gui.vis = 0
-			gui.turbo = False
-
-	if gui.mode == 1:
-		if not gui.maximized and not gui.lowered and gui.mode != 3:
-			gui.save_size[0] = logical_size[0]
-			gui.save_size[1] = logical_size[1]
-
-		bottom_bar1.update()
-
-		# if system != "Windows":
-		# 	if draw_border:
-		# 		gui.panelY = 30 * gui.scale + 3 * gui.scale
-		# 		top_panel.ty = 3 * gui.scale
-		# 	else:
-		# 		gui.panelY = 30 * gui.scale
-		# 		top_panel.ty = 0
-
-		if gui.set_bar and gui.set_mode:
-			gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
-		else:
-			gui.playlist_top = gui.playlist_top_bk
-
-		if gui.artist_info_panel:
-			gui.playlist_top += gui.artist_panel_height
-
-		gui.offset_extra = 0
-		if draw_border and not prefs.left_window_control:
-
-			offset = 61 * gui.scale
-			if not draw_min_button:
-				offset -= 35 * gui.scale
-			if draw_max_button:
-				offset += 33 * gui.scale
-			if gui.macstyle:
-				offset = 24
-				if draw_min_button:
-					offset += 20
-				if draw_max_button:
-					offset += 20
-				offset = round(offset * gui.scale)
-			gui.offset_extra = offset
-
-		global album_v_gap
-		global album_h_gap
-		global album_v_slide_value
-
-		album_v_slide_value = round(50 * gui.scale)
-		if gui.gallery_show_text:
-			album_h_gap = 30 * gui.scale
-			album_v_gap = 66 * gui.scale
-		else:
-			album_h_gap = 30 * gui.scale
-			album_v_gap = 25 * gui.scale
-
-		if prefs.thin_gallery_borders:
-
-			if gui.gallery_show_text:
-				album_h_gap = 20 * gui.scale
-				album_v_gap = 55 * gui.scale
-			else:
-				album_h_gap = 17 * gui.scale
-				album_v_gap = 15 * gui.scale
-
-			album_v_slide_value = round(45 * gui.scale)
-
-		if prefs.increase_gallery_row_spacing:
-			album_v_gap = round(album_v_gap * 1.3)
-
-		gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
-
-		# gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
-		gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
-
-		# gui.spec_x = window_size[0] - gui.offset_extra - 90
-
-		gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
-
-		gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
-
-		# Tracklist row size and text positioning ---------------------------------
-		gui.playlist_row_height = prefs.playlist_row_height
-		gui.row_font_size = prefs.playlist_font_size  # 13
-
-		gui.playlist_text_offset = round(gui.playlist_row_height * 0.55) + 4 - 13 * gui.scale
-
-		if gui.scale != 1:
-			real_font_px = ddt.f_dict[gui.row_font_size][2]
-			# gui.playlist_text_offset = (round(gui.playlist_row_height - real_font_px) / 2) - ddt.get_y_offset("AbcD", gui.row_font_size, 100) + round(1.3 * gui.scale)
-
-			if gui.scale < 1.3:
-				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.9 * gui.scale)
-			elif gui.scale < 1.5:
-				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.3 * gui.scale)
-			elif gui.scale < 1.75:
-				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.1 * gui.scale)
-			elif gui.scale < 2.3:
-				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.5 * gui.scale)
-			else:
-				gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.8 * gui.scale)
-
-		gui.playlist_text_offset += prefs.tracklist_y_text_offset
-
-		gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
-
-		# -------------------------------------------------------------------------
-		gui.playlist_view_length = int(
-			(window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
-
-		box_r = gui.rspw / (window_size[1] - gui.panelBY - gui.panelY)
-
-		if gui.art_aspect_ratio > 1.01:
-			gui.art_unlock_ratio = True
-			gui.art_max_ratio_lock = max(gui.art_aspect_ratio, gui.art_max_ratio_lock)
-
-
-		#logging.info("Avaliabe: " + str(box_r))
-		elif box_r <= 1:
-			gui.art_unlock_ratio = False
-			gui.art_max_ratio_lock = 1
-
-		if side_drag and key_shift_down:
-			gui.art_unlock_ratio = True
-			gui.art_max_ratio_lock = 5
-
-		gui.rspw = gui.pref_rspw
-		if album_mode:
-			gui.rspw = gui.pref_gallery_w
-
-		# Limit the right side panel width to height of area
-		if gui.rsp and prefs.side_panel_layout == 0:
-			if album_mode:
-				pass
-			else:
-
-				if not gui.art_unlock_ratio:
-
-					if gui.rsp_full_lock and not side_drag:
-						gui.rspw = window_size[0]
-
-					gui.rspw = min(gui.rspw, window_size[1] - gui.panelY - gui.panelBY)
-
-		# Determine how wide the playlist need to be
-		gui.plw = window_size[0]
-		gui.playlist_left = 0
-		if gui.lsp:
-			# if gui.plw > gui.lspw:
-			gui.plw -= gui.lspw
-			gui.playlist_left = gui.lspw
-		if gui.rsp:
-			gui.plw -= gui.rspw
-
-		# Shrink side panel if playlist gets too small
-		if window_size[0] > 100 and not gui.hide_tracklist_in_gallery:
-
-			if gui.plw < 300:
-				if gui.rsp:
-
-					l = 0
-					if gui.lsp:
-						l = gui.lspw
-
-					gui.rspw = max(window_size[0] - l - 300, 110)
-					# if album_mode and window_size[0] > 750 * gui.scale:
-					#     gui.pref_gallery_w = gui.rspw
-
-		# Determine how wide the playlist need to be (again)
-		gui.plw = window_size[0]
-		gui.playlist_left = 0
-		if gui.lsp:
-			# if gui.plw > gui.lspw:
-			gui.plw -= gui.lspw
-			gui.playlist_left = gui.lspw
-		if gui.rsp:
-			gui.plw -= gui.rspw
-
-		if window_size[0] < 630 * gui.scale:
-			gui.compact_bar = True
-		else:
-			gui.compact_bar = False
-
-		gui.pl_update = 1
-
-		# Tracklist sizing ----------------------------------------------------
-		left = gui.playlist_left
-		width = gui.plw
-
-		center_mode = True
-		if gui.lsp or gui.rsp or gui.set_mode:
-			center_mode = False
-
-		if gui.set_mode and window_size[0] < 600:
-			center_mode = False
-
-		highlight_left = 0
-		highlight_width = width
-
-		inset_left = highlight_left + 23 * gui.scale
-		inset_width = highlight_width - 32 * gui.scale
-
-		if gui.lsp and not gui.rsp:
-			inset_width -= 10 * gui.scale
-
-		if gui.lsp:
-			inset_left -= 10 * gui.scale
-			inset_width += 10 * gui.scale
-
-		if center_mode:
-			if gui.set_mode:
-				highlight_left = int(pow((window_size[0] / gui.scale * 0.005), 2) * gui.scale)
-			else:
-				highlight_left = int(pow((window_size[0] / gui.scale * 0.01), 2) * gui.scale)
-
-			if window_size[0] < 600 * gui.scale:
-				highlight_left = 3 * gui.scale
-
-			highlight_width -= highlight_left * 2
-			inset_left = highlight_left + 18 * gui.scale
-			inset_width = highlight_width - 25 * gui.scale
-
-		if window_size[0] < 600 and gui.lsp:
-			inset_width = highlight_width - 18 * gui.scale
-
-		gui.tracklist_center_mode = center_mode
-		gui.tracklist_inset_left = inset_left
-		gui.tracklist_inset_width = inset_width
-		gui.tracklist_highlight_left = highlight_left
-		gui.tracklist_highlight_width = highlight_width
-
-		if album_mode and gui.hide_tracklist_in_gallery:
-			gui.show_playlist = False
-			gui.rspw = window_size[0] - 20 * gui.scale
-			if gui.lsp:
-				gui.rspw -= gui.lspw
-
-		# --------------------------------------------------------------------
-
-		if window_size[0] > gui.max_window_tex or window_size[1] > gui.max_window_tex:
-
-			while window_size[0] > gui.max_window_tex:
-				gui.max_window_tex += 1000
-			while window_size[1] > gui.max_window_tex:
-				gui.max_window_tex += 1000
-
-			gui.tracklist_texture_rect = sdl3.SDL_FRect(0, 0, gui.max_window_tex, gui.max_window_tex)
-
-			sdl3.SDL_DestroyTexture(gui.tracklist_texture)
-			sdl3.SDL_RenderClear(renderer)
-			gui.tracklist_texture = sdl3.SDL_CreateTexture(
-				renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
-				gui.max_window_tex,
-				gui.max_window_tex)
-
-			sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
-			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-			sdl3.SDL_RenderClear(renderer)
-			sdl3.SDL_SetTextureBlendMode(gui.tracklist_texture, sdl3.SDL_BLENDMODE_BLEND)
-
-			# sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-			# sdl3.SDL_RenderClear(renderer)
-
-			sdl3.SDL_DestroyTexture(gui.main_texture)
-			gui.main_texture = sdl3.SDL_CreateTexture(
-				renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
-				gui.max_window_tex,
-				gui.max_window_tex)
-			sdl3.SDL_SetTextureBlendMode(gui.main_texture, sdl3.SDL_BLENDMODE_BLEND)
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-			sdl3.SDL_RenderClear(renderer)
-
-			sdl3.SDL_DestroyTexture(gui.main_texture_overlay_temp)
-			gui.main_texture_overlay_temp = sdl3.SDL_CreateTexture(
-				renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
-				sdl3.SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
-				gui.max_window_tex)
-			sdl3.SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-			sdl3.SDL_RenderClear(renderer)
-
-		update_set()
-
-	if prefs.art_bg:
-		tauon.thread_manager.ready("style")
-
 def window_is_focused(t_window: sdl3.LP_SDL_Window) -> bool:
 	"""Thread safe?"""
 	return bool(sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
-
-def save_state() -> None:
-	if should_save_state:
-		logging.info("Writing database to disk... ")
-	else:
-		logging.warning("Dev mode, not saving state... ")
-		return
-
-	# view_prefs['star-lines'] = star_lines
-	view_prefs["update-title"] = update_title
-	view_prefs["side-panel"] = prefs.prefer_side
-	view_prefs["dim-art"] = prefs.dim_art
-	#view_prefs['level-meter'] = gui.turbo
-	# view_prefs['pl-follow'] = pl_follow
-	view_prefs["scroll-enable"] = scroll_enable
-	view_prefs["break-enable"] = break_enable
-	# view_prefs['dd-index'] = dd_index
-	view_prefs["append-date"] = prefs.append_date
-
-	tauonplaylist_jar = []
-	radioplaylist_jar = []
-	tauonqueueitem_jar = []
-	trackclass_jar = []
-	for v in pctl.multi_playlist:
-		tauonplaylist_jar.append(v.__dict__)
-	for v in pctl.radio_playlists:
-		radioplaylist_jar.append(v.__dict__)
-	for v in pctl.force_queue:
-		tauonqueueitem_jar.append(v.__dict__)
-	for v in pctl.master_library.values():
-		trackclass_jar.append(v.__dict__)
-
-	save = [
-		None,
-		pctl.master_count,
-		pctl.playlist_playing_position,
-		pctl.active_playlist_viewing,
-		pctl.playlist_view_position,
-		tauonplaylist_jar, # pctl.multi_playlist, # list[TauonPlaylist]
-		pctl.player_volume,
-		pctl.track_queue,
-		pctl.queue_step,
-		default_playlist,
-		None,  # pctl.playlist_playing_position,
-		None,  # Was cue list
-		"",  # radio_field.text,
-		theme,
-		folder_image_offsets,
-		None,  # lfm_username,
-		None,  # lfm_hash,
-		latest_db_version,  # Used for upgrading
-		view_prefs,
-		gui.save_size,
-		None,  # old side panel size
-		0,  # save time (unused)
-		gui.vis_want,  # gui.vis
-		pctl.selected_in_playlist,
-		album_mode_art_size,
-		draw_border,
-		prefs.enable_web,
-		prefs.allow_remote,
-		prefs.expose_web,
-		prefs.enable_transcode,
-		prefs.show_rym,
-		None,  # was combo mode art size
-		gui.maximized,
-		prefs.prefer_bottom_title,
-		gui.display_time_mode,
-		prefs.transcode_mode,
-		prefs.transcode_codec,
-		prefs.transcode_bitrate,
-		1,  # prefs.line_style,
-		prefs.cache_gallery,
-		prefs.playlist_font_size,
-		prefs.use_title,
-		gui.pl_st,
-		None,  # gui.set_mode,
-		None,
-		prefs.playlist_row_height,
-		prefs.show_wiki,
-		prefs.auto_extract,
-		prefs.colour_from_image,
-		gui.set_bar,
-		gui.gallery_show_text,
-		gui.bb_show_art,
-		False,  # Was show stars
-		prefs.auto_lfm,
-		prefs.scrobble_mark,
-		prefs.replay_gain,
-		True,  # Was radio lyrics
-		prefs.show_gimage,
-		prefs.end_setting,
-		prefs.show_gen,
-		[],  # was old radio urls
-		prefs.auto_del_zip,
-		gui.level_meter_colour_mode,
-		prefs.ui_scale,
-		prefs.show_lyrics_side,
-		None, #prefs.last_device,
-		album_mode,
-		None,  # album_playlist_width
-		prefs.transcode_opus_as,
-		gui.star_mode,
-		prefs.prefer_side,  # gui.rsp,
-		gui.lsp,
-		gui.rspw,
-		gui.pref_gallery_w,
-		gui.pref_rspw,
-		gui.show_hearts,
-		prefs.monitor_downloads,  # 76
-		gui.artist_info_panel,  # 77
-		prefs.extract_to_music,  # 78
-		lb.enable,
-		None,  # lb.key,
-		rename_files.text,
-		rename_folder.text,
-		prefs.use_jump_crossfade,
-		prefs.use_transition_crossfade,
-		prefs.show_notifications,
-		prefs.true_shuffle,
-		gui.set_mode,
-		None,  # prefs.show_queue, # 88
-		None,  # prefs.show_transfer,
-		tauonqueueitem_jar, # pctl.force_queue, # 90
-		prefs.use_pause_fade,  # 91
-		prefs.append_total_time,  # 92
-		None,  # prefs.backend,
-		pctl.album_shuffle_mode,
-		pctl.album_repeat_mode,  # 95
-		prefs.finish_current,  # Not used
-		prefs.reload_state,  # 97
-		None,  # prefs.reload_play_state,
-		prefs.last_fm_token,
-		prefs.last_fm_username,
-		prefs.use_card_style,
-		prefs.auto_lyrics,
-		prefs.auto_lyrics_checked,
-		prefs.show_side_art,
-		prefs.window_opacity,
-		prefs.gallery_single_click,
-		prefs.tabs_on_top,
-		prefs.showcase_vis,
-		prefs.spec2_colour_mode,
-		prefs.device_buffer,  # moved to config file
-		prefs.use_eq,
-		prefs.eq,
-		prefs.bio_large,
-		prefs.discord_show,
-		prefs.min_to_tray,
-		prefs.guitar_chords,
-		None,  # prefs.playback_follow_cursor,
-		prefs.art_bg,
-		pctl.random_mode,
-		pctl.repeat_mode,
-		prefs.art_bg_stronger,
-		prefs.art_bg_always_blur,
-		prefs.failed_artists,
-		prefs.artist_list,
-		None,  # prefs.auto_sort,
-		prefs.lyrics_enables,
-		prefs.fanart_notify,
-		prefs.bg_showcase_only,
-		None,  # prefs.discogs_pat,
-		prefs.mini_mode_mode,
-		after_scan,
-		gui.gallery_positions,
-		prefs.chart_bg,
-		prefs.left_panel_mode,
-		gui.last_left_panel_mode,
-		None, #prefs.gst_device,
-		search_string_cache,
-		search_dia_string_cache,
-		pctl.gen_codes,
-		gui.show_ratings,
-		gui.show_album_ratings,
-		prefs.radio_urls,
-		gui.showcase_mode,  # gui.combo_mode,
-		top_panel.prime_tab,
-		top_panel.prime_side,
-		prefs.sync_playlist,
-		prefs.spot_client,
-		prefs.spot_secret,
-		prefs.show_band,
-		prefs.download_playlist,
-		tauon.spot_ctl.cache_saved_albums,
-		prefs.auto_rec,
-		prefs.spotify_token,
-		prefs.use_libre_fm,
-		playlist_box.scroll_on,
-		prefs.artist_list_sort_mode,
-		prefs.phazor_device_selected,
-		prefs.failed_background_artists,
-		prefs.bg_flips,
-		prefs.tray_show_title,
-		prefs.artist_list_style,
-		trackclass_jar,
-		prefs.premium,
-		gui.radio_view,
-		radioplaylist_jar, # pctl.radio_playlists,
-		pctl.radio_playlist_viewing,
-		prefs.radio_thumb_bans,
-		prefs.playlist_exports,
-		prefs.show_chromecast,
-		prefs.cache_list,
-		prefs.shuffle_lock,
-		prefs.album_shuffle_lock_mode,
-		gui.was_radio,
-		prefs.spot_username,
-		"", #prefs.spot_password,  # No longer used
-		prefs.artist_list_threshold,
-		prefs.tray_theme,
-		prefs.row_title_format,
-		prefs.row_title_genre,
-		prefs.row_title_separator_type,
-		prefs.replay_preamp,  # 181
-		prefs.gallery_combine_disc,
-	]
-
-	try:
-		with (user_directory / "state.p.backup").open("wb") as file:
-			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
-		# if not pctl.running:
-		with (user_directory / "state.p").open("wb") as file:
-			pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-		old_position = old_window_position
-		if not prefs.save_window_position:
-			old_position = None
-
-		save = [
-			draw_border,
-			gui.save_size,
-			prefs.window_opacity,
-			gui.scale,
-			gui.maximized,
-			old_position,
-		]
-
-		if not fs_mode:
-			with (user_directory / "window.p").open("wb") as file:
-				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-		tauon.spot_ctl.save_token()
-
-		with (user_directory / "lyrics_substitutions.json").open("w") as file:
-			json.dump(prefs.lyrics_subs, file)
-
-		save_prefs(bag)
-
-		for key, item in prefs.playlist_exports.items():
-			pl = id_to_pl(key)
-			if pl is None:
-				continue
-			if item["auto"] is False:
-				continue
-			export_playlist_box.run_export(item, key, warnings=False)
-
-		logging.info("Done writing database")
-
-	except PermissionError:
-		logging.exception("Permission error encountered while writing database")
-		show_message(_("Permission error encountered while writing database"), "error")
-	except Exception:
-		logging.exception("Unknown error encountered while writing database")
-
-def test_show_add_home_music() -> None:
-	gui.add_music_folder_ready = True
-
-	if music_directory is None:
-		gui.add_music_folder_ready = False
-		return
-
-	for item in pctl.multi_playlist:
-		if item.last_folder == str(music_directory):
-			gui.add_music_folder_ready = False
-			break
 
 def menu_is_open() -> bool:
 	for menu in Menu.instances:
 		if menu.active:
 			return True
 	return False
-
-def is_level_zero(include_menus: bool = True) -> bool:
-	if include_menus:
-		for menu in Menu.instances:
-			if menu.active:
-				return False
-
-	return not gui.rename_folder_box \
-		and not track_box \
-		and not rename_track_box.active \
-		and not radiobox.active \
-		and not pref_box.enabled \
-		and not quick_search_mode \
-		and not gui.rename_playlist_box \
-		and not search_over.active \
-		and not gui.box_over \
-		and not trans_edit_box.active
-
-def drop_file(target: str):
-	# Deprecated, move to individual UI components
-	global new_playlist_cooldown
-	global mouse_down
-	global drag_mode
-
-	i_x = mouse_position[0]
-	i_y = mouse_position[1]
-	gui.drop_playlist_target = 0
-	#logging.info(event.drop)
-
-	if i_y < gui.panelY and not new_playlist_cooldown and gui.mode == 1:
-		x = top_panel.tabs_left_x
-		for tab in top_panel.shown_tabs:
-			wid = top_panel.tab_text_spaces[tab] + top_panel.tab_extra_width
-
-			if x < i_x < x + wid:
-				gui.drop_playlist_target = tab
-				tab_pulse.pulse()
-				gui.update += 1
-				gui.pl_pulse = True
-				logging.info("Direct drop")
-				break
-
-			x += wid
-		else:
-			logging.info("MISS")
-			if new_playlist_cooldown:
-				gui.drop_playlist_target = pctl.active_playlist_viewing
-			else:
-				if not target.lower().endswith(".xspf"):
-					gui.drop_playlist_target = new_playlist()
-				new_playlist_cooldown = True
-
-	elif gui.lsp and gui.panelY < i_y < window_size[1] - gui.panelBY and i_x < gui.lspw and gui.mode == 1:
-
-		y = gui.panelY
-		y += 5 * gui.scale
-		y += playlist_box.tab_h + playlist_box.gap
-
-		for i, pl in enumerate(pctl.multi_playlist):
-			if i_y < y:
-				gui.drop_playlist_target = i
-				tab_pulse.pulse()
-				gui.update += 1
-				gui.pl_pulse = True
-				logging.info("Direct drop")
-				break
-			y += playlist_box.tab_h + playlist_box.gap
-		else:
-			if new_playlist_cooldown:
-				gui.drop_playlist_target = pctl.active_playlist_viewing
-			else:
-				if not target.lower().endswith(".xspf"):
-					gui.drop_playlist_target = new_playlist()
-				new_playlist_cooldown = True
-
-
-	else:
-		gui.drop_playlist_target = pctl.active_playlist_viewing
-
-	if not os.path.exists(target) and flatpak_mode:
-		show_message(
-			_("Could not access! Possible insufficient Flatpak permissions."),
-			_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
-			mode="bubble")
-
-	load_order = LoadClass()
-	load_order.target = target.replace("\\", "/")
-
-	if os.path.isdir(load_order.target):
-		quick_import_done.append(load_order.target)
-
-		# if not pctl.multi_playlist[gui.drop_playlist_target].last_folder:
-		pctl.multi_playlist[gui.drop_playlist_target].last_folder.append(load_order.target)
-		reduce_paths(pctl.multi_playlist[gui.drop_playlist_target].last_folder)
-
-	load_order.playlist = pctl.multi_playlist[gui.drop_playlist_target].uuid_int
-	load_orders.append(copy.deepcopy(load_order))
-
-	#logging.info('dropped: ' + str(dropped_file))
-	gui.update += 1
-	mouse_down = False
-	drag_mode = False
-
 
 # BEGIN CODE
 
