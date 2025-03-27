@@ -36207,17 +36207,17 @@ def get_themes(dirs: Directories, deco: bool = False) -> list[str] | dict[str, s
 def get_theme_number(dirs: Directories, name: str) -> int:
 	if name == "Mindaro":
 		return 0
-	themes = get_themes(dirs=dirs)
+	themes = get_themes(dirs)
 	for i, theme in enumerate(themes):
 		if theme[1] == name:
 			return i + 1
 	return 0
 
-def get_theme_name(number: int) -> str:
+def get_theme_name(dirs: Directories, number: int) -> str:
 	if number == 0:
 		return "Mindaro"
 	number -= 1
-	themes = get_themes()
+	themes = get_themes(dirs)
 	logging.info((number, themes))
 	if len(themes) > number:
 		return themes[number][1]
@@ -39978,7 +39978,7 @@ def main(holder: Holder) -> None:
 
 	# Temporary
 	if 0 < db_version <= 34:
-		prefs.theme_name = get_theme_name(prefs.theme)
+		prefs.theme_name = get_theme_name(dirs, prefs.theme)
 	if 0 < db_version <= 66:
 		prefs.device_buffer = 80
 	if 0 < db_version <= 53:
