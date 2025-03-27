@@ -43174,7 +43174,7 @@ def main(holder: Holder) -> None:
 						rect = [x, gui.panelY, w, h]
 						ddt.rect(rect, colours.gallery_background)
 
-					# ddt.rect_r(rect, [255, 0, 0, 200], True)
+						# ddt.rect_r(rect, [255, 0, 0, 200], True)
 
 						area_x = w + 38 * gui.scale
 						# area_x = w - 40 * gui.scale
