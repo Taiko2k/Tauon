@@ -728,7 +728,7 @@ class GuiVar:
 
 		self.showed_title = False
 
-		self.to_get = 0
+		self.to_get = 0 # Used to store temporary import count display
 		self.to_got: int | str = 0
 		self.switch_showcase_off = False
 
@@ -52321,77 +52321,6 @@ search_dia_string_cache = {}
 vis_update = False
 
 
-# GUI Variables -------------------------------------------------------------------------------------------
-
-# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
-
-console = DConsole()
-
-spot_cache_saved_albums = []
-
-resize_mode = False
-
-side_panel_text_align = 0
-
-album_mode = False
-spec_smoothing = True
-
-# gui.offset_extra = 0
-
-old_album_pos = -55
-
-album_dex = []
-album_artist_dict = {}
-row_len = 5
-last_row = 0
-album_v_gap = 66
-album_h_gap = 30
-album_v_slide_value = 50
-
-album_mode_art_size = int(200 * scale)
-
-time_last_save = 0
-
-b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
-
-volume_store = 50  # Used to save the previous volume when muted
-
-# row_alt = False
-
-to_get = 0  # Used to store temporary import count display
-to_got = 0
-
-editline = ""
-# gui.rsp = True
-quick_drag = False
-
-# Playlist Panel
-pl_view_offset = 0
-pl_rect = (2, 12, 10, 10)
-
-theme = 7
-scroll_enable = True
-scroll_timer = Timer()
-scroll_timer.set()
-scroll_opacity = 0
-break_enable = True
-
-source = None
-
-album_playlist_width = 430
-
-update_title = False
-
-playlist_hold_position = 0
-playlist_hold = False
-selection_stage = 0
-
-selected_in_playlist = -1
-
-shift_selection = []
-
-gen_codes: dict[int, str] = {}
-
 # Player Variables----------------------------------------------------------------------------
 
 format_colours = {  # These are the colours used for the label icon in UI 'track info box'
@@ -52530,9 +52459,6 @@ multi_playlist: list[TauonPlaylist] = [pl_gen()]
 default_playlist: list[int] = multi_playlist[0].playlist_ids
 playlist_active: int = 0
 
-quick_search_mode = False
-search_index = 0
-
 # ----------------------------------------
 # Playlist right click menu
 
@@ -52659,7 +52585,7 @@ bag = Bag(
 	gme=gme,
 	mpt=mpt,
 	colours=colours,
-	console=console,
+	console=DConsole(),
 	dirs=dirs,
 	prefs=prefs,
 	fonts=fonts,
@@ -52699,7 +52625,7 @@ bag = Bag(
 	playing_in_queue=playing_in_queue,
 	playlist_playing=playlist_playing,
 	playlist_view_position=playlist_view_position,
-	selected_in_playlist=selected_in_playlist,
+	selected_in_playlist=-1,
 	album_mode_art_size=int(200 * scale),
 	primary_stations=[],
 	tls_context=tls_context,
@@ -52710,7 +52636,7 @@ bag = Bag(
 	p_force_queue=p_force_queue,
 	logical_size=logical_size,
 	window_size=window_size,
-	gen_codes=gen_codes,
+	gen_codes={},
 	master_library=master_library,
 	loaded_asset_dc=loaded_asset_dc,
 	radio_playlist_viewing=radio_playlist_viewing,
@@ -52735,6 +52661,14 @@ inp = gui.inp
 keymaps = gui.keymaps
 # Control Variables--------------------------------------------------------------------------
 
+key_shift_down  = inp.key_shift_down
+key_shiftr_down = inp.key_shiftr_down
+key_ctrl_down   = inp.key_ctrl_down
+key_rctrl_down  = inp.key_rctrl_down
+key_meta        = inp.key_meta
+key_ralt        = inp.key_ralt
+key_lalt        = inp.key_lalt
+
 mouse_down          = inp.mouse_down
 right_down          = inp.right_down
 click_location      = inp.click_location
@@ -52743,10 +52677,51 @@ mouse_position      = inp.mouse_position
 mouse_up_position   = inp.mouse_up_position
 
 k_input        = inp.k_input
-key_shift_down = inp.key_shift_down
 drag_mode      = inp.drag_mode
 side_drag      = gui.side_drag # TODO(Martin): Move this to Input
 clicked        = inp.global_clicked
+
+# GUI Variables -------------------------------------------------------------------------------------------
+# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
+console = bag.console
+spot_cache_saved_albums = [] # TODO(Martin): This isn't really used? It's just fed to spot_ctl as [] or saved, but we never save it
+resize_mode = False # TODO(Martin): Move
+album_mode = prefs.album_mode
+spec_smoothing = True # TODO(Martin): Move
+old_album_pos = gui.old_album_pos
+album_artist_dict = gui.album_artist_dict
+row_len = 5 # TODO(Martin): Move
+last_row = gui.last_row
+album_v_gap = gui.album_v_gap
+album_h_gap = gui.album_h_gap
+album_v_slide_value = gui.album_v_slide_value
+album_mode_art_size = bag.album_mode_art_size
+time_last_save = 0 # TODO(Martin): Move
+b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
+to_get = gui.to_get
+to_got = gui.to_got
+editline = gui.editline
+quick_drag = inp.quick_drag
+quick_search_mode = gui.quick_search_mode
+search_index = gui.search_index
+
+# Playlist Panel
+scroll_timer = Timer() # TODO(Martin): Move
+scroll_timer.set() # TODO(Martin): Move
+scroll_opacity = 0 # TODO(Martin): Move
+source = None # TODO(Martin): Useless to define here?
+scroll_enable = prefs.scroll_enable
+pl_rect = gui.pl_rect
+theme = prefs.theme
+break_enable = prefs.break_enable
+album_playlist_width = gui.album_playlist_width
+update_title = prefs.update_title
+playlist_hold_position = gui.playlist_hold_position
+playlist_hold = gui.playlist_hold
+selection_stage = gui.selection_stage
+selected_in_playlist = bag.selected_in_playlist
+shift_selection = gui.shift_selection
+gen_codes = bag.gen_codes
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -53425,9 +53400,9 @@ tauon = Tauon(
 )
 pctl = tauon.pctl
 pctl.default_playlist = default_playlist
-
+album_dex = tauon.album_dex # TODO(Martin): Remove after refactor
+volume_store = pctl.volume_store # TODO(Martin): Remove after refactor
 notify_change = pctl.notify_change
-
 star_store = tauon.star_store
 
 lastfm = tauon.lastfm
@@ -54758,13 +54733,6 @@ if prefs.enable_remote:
 	tauon.remote_limited = False
 
 # --------------------------------------------------------------
-
-key_shiftr_down = False
-key_ctrl_down = False
-key_rctrl_down = False
-key_meta = False
-key_ralt = False
-key_lalt = False
 
 fields = tauon.fields
 
