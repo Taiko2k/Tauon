@@ -57,7 +57,7 @@ class LibreSpot:
 		self.prefs           = tauon.prefs
 		self.spot_ctl        = tauon.spot_ctl
 		self.librespot_p     = tauon.librespot_p
-		self.show_message    = tauon.gui.show_message
+		self.show_message    = tauon.show_message
 		self.cache_directory = tauon.cache_directory
 		self.running    = False
 		self.flush      = False
@@ -206,7 +206,7 @@ class Cachement:
 		self.gui          = tauon.gui
 		self.pctl         = tauon.pctl
 		self.prefs        = tauon.prefs
-		self.show_message = tauon.gui.show_message
+		self.show_message = tauon.show_message
 		self.audio_cache  = tauon.cache_directory / "network-audio1"
 		self.audio_cache2 = tauon.cache_directory / "audio-cache"
 		self.direc = str(self.audio_cache2)
@@ -1194,7 +1194,7 @@ def player4(tauon: Tauon) -> None:
 								break
 							aud.stop()
 							if not gui.message_box:
-								gui.show_message(_("Error loading track"), mode="warning")
+								tauon.show_message(_("Error loading track"), mode="warning")
 							error = True
 							break
 						time.sleep(0.016)

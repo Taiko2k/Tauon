@@ -69,7 +69,7 @@ class Gnome:
 				self.start_indicator()
 			except Exception:
 				logging.exception("Failed to start indicator")
-				self.tauon.gui.show_message(_("Failed to start indicator"), mode="error")
+				self.tauon.show_message(_("Failed to start indicator"), mode="error")
 		else:
 			self.indicator.set_status(1)
 
