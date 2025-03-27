@@ -274,6 +274,7 @@ class Prefs:
 	center_gallery_text = False
 
 	tracklist_y_text_offset = 0
+	theme: int = 7
 	theme_name = "Turbo"
 	transparent_mode: int = 0
 	left_panel_mode = "playlist"
