@@ -238,7 +238,7 @@ class Tidal:
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Albums", playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tfa"
-		self.tauon.gui.show_message("Playlist load complete", mode="done")
+		self.tauon.show_message("Playlist load complete", mode="done")
 
 	def fav_tracks(self, return_list: bool = False) -> list[TrackClass] | None:
 
@@ -263,7 +263,7 @@ class Tidal:
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Tracks", playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tft"
-		self.tauon.gui.show_message("Playlist load complete", mode="done")
+		self.tauon.show_message("Playlist load complete", mode="done")
 
 	def playlist(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
 

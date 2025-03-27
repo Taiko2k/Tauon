@@ -286,9 +286,6 @@ class DConsole:
 class GuiVar:
 	"""Use to hold any variables for use in relation to UI"""
 
-	def show_message(self, line1: str, line2: str = "", line3: str = "", mode: str = "info") -> None:
-		show_message(line1, line2, line3, mode=mode)
-
 	def set_drag_source(self) -> None:
 		self.drag_source_position = tuple(self.inp.click_location)
 		self.drag_source_position_persist = tuple(self.inp.click_location)
@@ -24480,7 +24477,7 @@ class Over:
 						found = True
 						break
 				if not found:
-					gui.show_message(_("Run music import first"))
+					self.show_message(_("Run music import first"))
 				else:
 					jellyfin_get_playlists_thread()
 
@@ -44908,7 +44905,7 @@ def clean_db_fast():
 		keys -= set(pl.playlist_ids)
 	for item in keys:
 		pctl.purge_track(item, fast=True)
-	gui.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
+	tauon.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
 	gui.suggest_clean_db = False
 
 def clean_db_deco():
@@ -50331,7 +50328,7 @@ def worker2(tauon: Tauon) -> None:
 					search_over.results = results
 				else:
 					search_over.active = False
-					gui.show_message(_(
+					tauon.show_message(_(
 						"Global search + Tab triggers Spotify search but Spotify is not enabled in settings!"),
 						mode="warning")
 				search_over.searched_text = search_over.search_text.text
@@ -53873,7 +53870,7 @@ showcase_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics
 showcase_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 
-guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl, colours=colours, mouse_wheel=mouse_wheel, mouse_position=mouse_position, window_size=window_size)
+guitar_chords = GuitarChords(tauon=tauon, mouse_wheel=mouse_wheel, mouse_position=mouse_position, window_size=window_size)
 showcase_menu.add(MenuItem(_("Search GuitarParty"), guitar_chords.search_guitarparty, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
 showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=chord_lyrics_paste_show_test))
