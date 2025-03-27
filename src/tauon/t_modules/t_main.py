@@ -41961,7 +41961,7 @@ def main(holder: Holder) -> None:
 					window_size[0] = i_x.contents.value
 					window_size[1] = i_y.contents.value
 					auto_scale(bag)
-					update_layout = True
+					gui.update_layout = True
 					gui.update = 2
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
 					# sdl3.SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
