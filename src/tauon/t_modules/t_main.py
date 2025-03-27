@@ -26145,9 +26145,8 @@ class TopPanel:
 			gui.update_on_drag = True
 
 		# Draw the background
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		ddt.clear_rect((0, 0, window_size[0], gui.panelY))
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		if prefs.shuffle_lock and not gui.compact_bar:
 			colour = [250, 250, 250, 255]
