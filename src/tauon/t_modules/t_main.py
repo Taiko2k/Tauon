@@ -27902,6 +27902,7 @@ class BottomBarType_ao1:
 		self.system      = tauon.system
 		self.fields      = tauon.fields
 		self.colours     = tauon.colours
+		self.renderer    = tauon.renderer
 		self.window_size = tauon.window_size
 
 		self.mode = 0
@@ -27946,8 +27947,9 @@ class BottomBarType_ao1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self) -> None:
-		self.ddt.clear_rect((0, 0, self.window_size[0], self.gui.panelY))
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		right_offset = 0
 		if self.gui.display_time_mode >= 2:
