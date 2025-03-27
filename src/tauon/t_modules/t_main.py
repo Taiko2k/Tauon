@@ -1100,10 +1100,9 @@ class KeyMap:
 
 		for code, mod in self.maps[function]:
 			if code in self.hits:
-
-				ctrl = (key_ctrl_down or key_rctrl_down) * 1
-				shift = (key_shift_down or key_shiftr_down) * 10
-				alt = (key_lalt or key_ralt) * 100
+				ctrl = (inp.key_ctrl_down or inp.key_rctrl_down) * 1
+				shift = (inp.key_shift_down or inp.key_shiftr_down) * 10
+				alt = (inp.key_lalt or inp.key_ralt) * 100
 
 				if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
 					return True
@@ -1494,6 +1493,7 @@ class PlayerCtl:
 	# C-PC
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon                     = tauon
+		self.inp                       = self.tauon.inp
 		self.gui                       = self.tauon.gui
 		self.bag                       = self.tauon.bag
 		self.colours                   = self.tauon.colours
@@ -2308,8 +2308,8 @@ class PlayerCtl:
 
 		global shift_selection
 
-		if tauon.spot_ctl.coasting:
-			sptr = tauon.dummy_track.misc.get("spotify-track-url")
+		if self.tauon.spot_ctl.coasting:
+			sptr = self.tauon.dummy_track.misc.get("spotify-track-url")
 			if sptr:
 				for p in self.default_playlist:
 					tr = self.get_track(p)
@@ -2371,7 +2371,7 @@ class PlayerCtl:
 						quiet and self.playing_object().length < 15):  # or (abs(self.playlist_view_position - i) < vl - 1)):
 
 					# Align to album if in view range (and folder titles are active)
-					ap = get_album_info(i)[1][0]
+					ap = self.tauon.get_album_info(i)[1][0]
 
 					if not (quiet and self.playlist_view_position <= i <= self.playlist_view_position + vl) and (
 					not abs(i - ap) > vl - 2) and not self.multi_playlist[self.active_playlist_viewing].hide_title:
@@ -2416,16 +2416,16 @@ class PlayerCtl:
 		#	 logging.info("Run Over")
 
 		if select:
-			shift_selection = []
+			self.gui.shift_selection = []
 
 		self.render_playlist()
 
-		if album_mode and not quiet:
+		if self.prefs.album_mode and not quiet:
 			if highlight:
-				gui.gallery_animate_highlight_on = goto_album(self.selected_in_playlist)
-				gallery_select_animate_timer.set()
+				self.gui.gallery_animate_highlight_on = self.tauon.goto_album(self.selected_in_playlist)
+				self.tauon.gallery_select_animate_timer.set()
 			else:
-				goto_album(self.selected_in_playlist)
+				self.tauon.goto_album(self.selected_in_playlist)
 
 		if self.prefs.left_panel_mode == "artist list" and self.gui.lsp and not quiet:
 			self.artist_list_box.locate_artist(self.playing_object())
@@ -2446,8 +2446,7 @@ class PlayerCtl:
 		self.set_volume()
 
 	def set_volume(self, notify: bool = True) -> None:
-
-		if (tauon.spot_ctl.coasting or tauon.spot_ctl.playing) and not tauon.spot_ctl.local and mouse_down:
+		if (self.tauon.spot_ctl.coasting or self.tauon.spot_ctl.playing) and not self.tauon.spot_ctl.local and self.inp.mouse_down:
 			# Rate limit network volume change
 			t = self.volume_update_timer.get()
 			if t < 0.3:
@@ -2540,8 +2539,8 @@ class PlayerCtl:
 		if self.tauon.stream_proxy.download_running:
 			self.tauon.stream_proxy.stop()
 
-		if update_title:
-			update_title_do()
+		if self.prefs.update_title:
+			self.tauon.update_title_do()
 
 		self.deduct_shuffle(self.target_object.index)
 
@@ -2582,10 +2581,10 @@ class PlayerCtl:
 		self.deduct_shuffle(target.index)
 
 	def update_change(self) -> None:
-		if update_title:
-			update_title_do()
+		if self.prefs.update_title:
+			self.tauon.update_title_do()
 		self.notify_update()
-		hit_discord()
+		self.tauon.hit_discord()
 		self.render_playlist()
 
 		if self.lfm_scrobbler.a_sc:
@@ -2594,12 +2593,12 @@ class PlayerCtl:
 
 		self.lfm_scrobbler.start_queue()
 
-		if (album_mode or not gui.rsp) and (gui.theme_name == "Carbon" or prefs.colour_from_image):
+		if (self.prefs.album_mode or not self.gui.rsp) and (self.gui.theme_name == "Carbon" or self.prefs.colour_from_image):
 			target = self.playing_object()
-			if target and prefs.colour_from_image and target.parent_folder_path == colours.last_album:
+			if target and self.prefs.colour_from_image and target.parent_folder_path == self.colours.last_album:
 				return
 
-			album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
+			self.tauon.album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
 
 	def jump(self, index: int, pl_position: int | None = None, jump: bool = True) -> None:
 		self.lfm_scrobbler.start_queue()
@@ -2626,12 +2625,11 @@ class PlayerCtl:
 			if self.playing_state == 1 and self.left_time > 5 and self.playing_length - self.left_time > 15:
 				self.master_library[self.left_index].skips += 1
 
-		global playlist_hold
-		gui.update_spec = 0
+		self.gui.update_spec = 0
 		self.active_playlist_playing = self.active_playlist_viewing
 		self.track_queue.append(index)
 		self.queue_step = len(self.track_queue) - 1
-		playlist_hold = False
+		self.gui.playlist_hold = False
 		self.play_target(jump=jump)
 
 		if pl_position is not None:
@@ -2687,16 +2685,16 @@ class PlayerCtl:
 		if self.active_playlist_viewing == self.active_playlist_playing:
 			self.show_current(False, True)
 
-		if album_mode:
-			goto_album(self.playlist_playing_position)
-		if gui.combo_mode and self.active_playlist_viewing == self.active_playlist_playing:
+		if self.prefs.album_mode:
+			self.tauon.goto_album(self.playlist_playing_position)
+		if self.gui.combo_mode and self.active_playlist_viewing == self.active_playlist_playing:
 			self.show_current()
 
 		self.render_playlist()
 		self.notify_update()
-		notify_song()
-		lfm_scrobbler.start_queue()
-		gui.pl_update += 1
+		self.tauon.notify_song()
+		self.lfm_scrobbler.start_queue()
+		self.gui.pl_update += 1
 
 	def stop(self, block: bool = False, run : bool = False) -> int:
 		self.playerCommand = "stop"
@@ -2730,9 +2728,9 @@ class PlayerCtl:
 
 		self.gui.update_spec = 0
 		# gui.update_level = True  # Allows visualiser to enter decay sequence
-		gui.update = True
-		if update_title:
-			update_title_do()  # Update title bar text
+		self.gui.update = True
+		if self.prefs.update_title:
+			self.tauon.update_title_do()  # Update title bar text
 
 		if self.tauon.stream_proxy and self.tauon.stream_proxy.download_running:
 			self.tauon.stream_proxy.stop()
@@ -2784,7 +2782,7 @@ class PlayerCtl:
 		elif self.playing_state == 2:
 			self.playerCommand = "pauseoff"
 			self.playing_state = 1
-			notify_song()
+			self.tauon.notify_song()
 
 		self.playerCommandReady = True
 
@@ -3056,7 +3054,7 @@ class PlayerCtl:
 					i = max(i, 0)
 
 					self.selected_in_playlist = i
-					shift_selection = [i]
+					self.gui.shift_selection = [i]
 
 					self.jump(pp[i], i, jump=False)
 
@@ -3126,8 +3124,8 @@ class PlayerCtl:
 				self.gui.update += 1
 				self.gui.pl_update = 1
 
-				if update_title:
-					update_title_do()
+				if self.prefs.update_title:
+					self.tauon.update_title_do()
 				self.notify_update()
 			else:
 				# self.advance(quiet=True, end=True)
@@ -3664,7 +3662,7 @@ class PlayerCtl:
 		self.notify_update()
 		self.lfm_scrobbler.start_queue()
 		if play:
-			notify_song(end_of_playlist, delay=1.3)
+			self.tauon.notify_song(end_of_playlist, delay=1.3)
 		return None
 
 	def reset_missing_flags(self) -> None:
@@ -3741,8 +3739,8 @@ class LastFMapi:
 				logging.exception("Unknown error")
 				self.show_message(_("Error"), _("Unknown error."), mode="error")
 
-		if not toggle_lfm_auto(mode=1):
-			toggle_lfm_auto()
+		if not self.tauon.toggle_lfm_auto(mode=1):
+			self.tauon.toggle_lfm_auto()
 
 	def auth3(self) -> None:
 		"""This is used for 'logout'"""
@@ -3871,14 +3869,14 @@ class LastFMapi:
 			logging.exception("Scanning failed. Try again?")
 			self.gui.pl_update += 1
 			self.scanning_scrobbles = False
-			show_message(_("Scanning failed. Try again?"), mode="error")
+			self.show_message(_("Scanning failed. Try again?"), mode="error")
 			return
 
-		logging.info(perf_timer.get())
-		gui.pl_update += 1
+		logging.info(self.tauon.perf_timer.get())
+		self.gui.pl_update += 1
 		self.scanning_scrobbles = False
-		tauon.bg_save()
-		show_message(_("Scanning scrobbles complete"), mode="done")
+		self.tauon.bg_save()
+		self.show_message(_("Scanning scrobbles complete"), mode="done")
 
 	def artist_info(self, artist: str):
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
@@ -3943,10 +3941,10 @@ class LastFMapi:
 				logging.error("Error getting loved status")
 				return
 
-			local_loved = love(set=False, track_id=track_object.index, notify=False, sync=False)
+			local_loved = self.tauon.love(set=False, track_id=track_object.index, notify=False, sync=False)
 
 			if remote_loved != local_loved:
-				love(set=True, track_id=track_object.index, notify=False, sync=False)
+				self.tauon.love(set=True, track_id=track_object.index, notify=False, sync=False)
 		except Exception:
 			logging.exception("Failed to pull love")
 
@@ -4004,9 +4002,9 @@ class LastFMapi:
 
 			# self.show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
 			logging.error("Error connecting to last.fm")
-			scrobble_warning_timer.set()
-			gui.update += 1
-			gui.delay_frame(5)
+			self.tauon.scrobble_warning_timer.set()
+			self.gui.update += 1
+			self.gui.delay_frame(5)
 
 			return False
 		return True
@@ -4460,9 +4458,9 @@ class LastScrob:
 		if track_object.is_network and track_object.file_ext == "SUB":
 			self.tauon.subsonic.listen(track_object, submit=False)
 
-		if not prefs.scrobble_hold:
-			if prefs.auto_lfm and (lastfm.connected or lastfm.details_ready()):
-				mini_t = threading.Thread(target=lastfm.update, args=([track_object]))
+		if not self.prefs.scrobble_hold:
+			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
+				mini_t = threading.Thread(target=self.tauon.lastfm.update, args=([track_object]))
 				mini_t.daemon = True
 				mini_t.start()
 
@@ -4677,8 +4675,7 @@ class Menu:
 	def click(self) -> None:
 		self.clicked = True
 		# cheap hack to prevent scroll bar from being activated when closing menu
-		global click_location
-		click_location = [0, 0]
+		self.inp.click_location = [0, 0]
 
 	def add(self, menu_item: MenuItem) -> None:
 		if menu_item.render_func is None:
@@ -4845,7 +4842,7 @@ class Menu:
 				rect = (x_run, y_run, self.w, self.h - 1)
 				self.fields.add(rect)
 
-				if coll_point(mouse_position, (x_run, y_run, self.w, self.h - 1)):
+				if coll_point(inp.mouse_position, (x_run, y_run, self.w, self.h - 1)):
 					ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
 					selected = True
 					bg = alpha_blend(colours.menu_highlight_background, bg)
@@ -4856,8 +4853,7 @@ class Menu:
 							to_call = i
 							if self.items[i].set_ref is not None:
 								self.reference = self.items[i].set_ref
-							global mouse_down
-							mouse_down = False
+							self.inp.mouse_down = False
 
 						else:
 							self.clicked = False
@@ -4929,8 +4925,8 @@ class Menu:
 
 					if sub_pos[0] + sub_w > self.window_size[0]:
 						sub_pos[0] = x_run - sub_w
-						if view_box.active:
-							sub_pos[0] -= view_box.w
+						if tauon.view_box.active:
+							sub_pos[0] -= tauon.view_box.w
 
 					fx = self.deco()
 
@@ -4964,7 +4960,7 @@ class Menu:
 						self.fields.add(rect)
 						this_select = False
 						bg = colours.menu_background
-						if coll_point(mouse_position, (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
+						if coll_point(inp.mouse_position, (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
 							ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), colours.menu_highlight_background)
 							bg = alpha_blend(colours.menu_highlight_background, bg)
 							this_select = True
@@ -5010,13 +5006,13 @@ class Menu:
 				else:
 					self.items[to_call].func()
 
-			if self.clicked or key_esc_press or self.close_next_frame:
+			if self.clicked or inp.key_esc_press or self.close_next_frame:
 				self.close_next_frame = False
 				self.active = False
 				self.clicked = False
 
-				last_click_location[0] = 0
-				last_click_location[1] = 0
+				inp.last_click_location[0] = 0
+				inp.last_click_location[1] = 0
 
 				for menu in Menu.instances:
 					if menu.active:
@@ -5028,13 +5024,12 @@ class Menu:
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
 	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
-
 		Menu.active = True
 
 		if position is not None:
 			self.pos = [position[0], position[1]]
 		else:
-			self.pos = [copy.deepcopy(mouse_position[0]), copy.deepcopy(mouse_position[1])]
+			self.pos = [copy.deepcopy(self.inp.mouse_position[0]), copy.deepcopy(self.inp.mouse_position[1])]
 
 		self.reference = in_reference
 		Menu.switch = self.id
@@ -5090,15 +5085,12 @@ class GallClass:
 		self.limit                = 60
 
 	def get_file_source(self, track_object: TrackClass):
-
-		global album_art_gen
-
-		sources = album_art_gen.get_sources(track_object)
+		sources = self.album_art_gen.get_sources(track_object)
 
 		if len(sources) == 0:
 			return False, 0
 
-		offset = album_art_gen.get_offset(track_object.fullpath, sources)
+		offset = self.album_art_gen.get_offset(track_object.fullpath, sources)
 		return sources[offset], offset
 
 	def worker_render(self) -> bool:
@@ -5187,7 +5179,7 @@ class GallClass:
 					#		 logging.exception("IMAGE NETWORK LOAD ERROR")
 					# else:
 					#	 source_image = open(source[1], 'rb')
-					source_image = album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
+					source_image = self.album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
 
 				g = io.BytesIO()
 				g.seek(0)
@@ -5205,7 +5197,7 @@ class GallClass:
 						im.thumbnail((size, size), Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to work with thumbnail")
-						im = album_art_gen.get_error_img(size)
+						im = self.album_art_gen.get_error_img(size)
 						error = True
 
 					im.save(g, "BMP")
@@ -5752,8 +5744,7 @@ class Tauon:
 		self.love = love
 
 	def coll(self, r: list[int]) -> bool:
-		return r[0] < mouse_position[0] <= r[0] + r[2] and r[1] <= mouse_position[1] <= r[1] + r[3]
-		#return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
+		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
 
 	def scan_ffprobe(self, nt: TrackClass) -> None:
 		startupinfo = None
@@ -52669,6 +52660,28 @@ key_meta        = inp.key_meta
 key_ralt        = inp.key_ralt
 key_lalt        = inp.key_lalt
 
+d_mouse_click       = inp.d_mouse_click
+right_click         = inp.right_click
+level_2_right_click = inp.level_2_right_click
+middle_click        = inp.middle_click
+mouse_up            = inp.mouse_up
+mouse_wheel         = inp.mouse_wheel
+key_down_press      = inp.key_down_press
+key_up_press        = inp.key_up_press
+key_right_press     = inp.key_right_press
+key_left_press      = inp.key_left_press
+key_esc_press       = inp.key_esc_press
+key_del             = inp.key_del
+key_backspace_press = inp.key_backspace_press
+key_c_press         = inp.key_c_press
+key_v_press         = inp.key_v_press
+key_a_press         = inp.key_a_press
+key_z_press         = inp.key_z_press
+key_x_press         = inp.key_x_press
+key_home_press      = inp.key_home_press
+key_end_press       = inp.key_end_press
+input_text          = inp.input_text
+
 mouse_down          = inp.mouse_down
 right_down          = inp.right_down
 click_location      = inp.click_location
@@ -52704,6 +52717,7 @@ editline = gui.editline
 quick_drag = inp.quick_drag
 quick_search_mode = gui.quick_search_mode
 search_index = gui.search_index
+new_playlist_cooldown = gui.new_playlist_cooldown
 
 # Playlist Panel
 scroll_timer = Timer() # TODO(Martin): Move
@@ -53654,8 +53668,6 @@ if system == "Windows" or msys:
 	#gui.window_id = sss.info.win.window
 
 
-mouse_up = False
-mouse_wheel = 0
 reset_render = False
 c_yax = 0
 c_yax_timer = Timer()
@@ -59268,22 +59280,20 @@ while pctl.running:
 
 				if inp.key_return_press is True and search_index > -1:
 					gui.pl_update = 1
-					pctl.jump(default_playlist[search_index], search_index)
-					if album_mode:
-						goto_album(pctl.playlist_playing_position)
-					quick_search_mode = False
+					pctl.jump(pctl.default_playlist[gui.search_index], gui.search_index)
+					if prefs.album_mode:
+						tauon.goto_album(pctl.playlist_playing_position)
+					gui.quick_search_mode = False
 					search_clear_timer.set()
-
-			elif not search_over.active:
-
-				if key_up_press and ((
-					not key_shiftr_down \
-					and not key_shift_down \
-					and not key_ctrl_down \
-					and not key_rctrl_down \
-					and not key_meta \
-					and not key_lalt \
-					and not key_ralt) or (keymaps.test("shift-up"))):
+			elif not tauon.search_over.active:
+				if inp.key_up_press and ((
+					not inp.key_shiftr_down \
+					and not inp.key_shift_down \
+					and not inp.key_ctrl_down \
+					and not inp.key_rctrl_down \
+					and not inp.key_meta \
+					and not inp.key_lalt \
+					and not inp.key_ralt) or (keymaps.test("shift-up"))):
 
 					pctl.show_selected()
 					gui.pl_update = 1
@@ -59291,8 +59301,8 @@ while pctl.running:
 					if not keymaps.test("shift-up"):
 						if pctl.selected_in_playlist > 0:
 							pctl.selected_in_playlist -= 1
-							r_menu_index = default_playlist[pctl.selected_in_playlist]
-						shift_selection = []
+							pctl.r_menu_index = pctl.default_playlist[pctl.selected_in_playlist]
+						gui.shift_selection = []
 
 					if pctl.playlist_view_position > 0 and pctl.selected_in_playlist < pctl.playlist_view_position + 2:
 						pctl.playlist_view_position -= 1
@@ -59301,29 +59311,29 @@ while pctl.running:
 						scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
 
-					pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(default_playlist))
+					pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist))
 
-				if pctl.selected_in_playlist < len(default_playlist) and (
-					(key_down_press and \
-					not key_shiftr_down \
-					and not key_shift_down \
-					and not key_ctrl_down \
-					and not key_rctrl_down \
-					and not key_meta \
-					and not key_lalt \
-					and not key_ralt) or keymaps.test("shift-down")):
+				if pctl.selected_in_playlist < len(pctl.default_playlist) and (
+					(inp.key_down_press and \
+					not inp.key_shiftr_down \
+					and not inp.key_shift_down \
+					and not inp.key_ctrl_down \
+					and not inp.key_rctrl_down \
+					and not inp.key_meta \
+					and not inp.key_lalt \
+					and not inp.key_ralt) or keymaps.test("shift-down")):
 
 					pctl.show_selected()
 					gui.pl_update = 1
 
 					if not keymaps.test("shift-down"):
-						if pctl.selected_in_playlist < len(default_playlist) - 1:
+						if pctl.selected_in_playlist < len(pctl.default_playlist) - 1:
 							pctl.selected_in_playlist += 1
-							r_menu_index = default_playlist[pctl.selected_in_playlist]
-						shift_selection = []
+							pctl.r_menu_index = pctl.default_playlist[pctl.selected_in_playlist]
+						gui.shift_selection = []
 
 					if pctl.playlist_view_position < len(
-							default_playlist) and pctl.selected_in_playlist > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
+							pctl.default_playlist) and pctl.selected_in_playlist > pctl.playlist_view_position + gui.playlist_view_length - 3 - gui.row_extra:
 						pctl.playlist_view_position += 1
 						logging.debug("Position changed by key down")
 
@@ -59332,20 +59342,17 @@ while pctl.running:
 
 					pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
 
-				if inp.key_return_press and not pref_box.enabled and not radiobox.active and not trans_edit_box.active:
+				if inp.key_return_press and not pref_box.enabled and not radiobox.active and not tauon.trans_edit_box.active:
 					gui.pl_update = 1
-					if pctl.selected_in_playlist > len(default_playlist) - 1:
+					if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 						pctl.selected_in_playlist = 0
-						shift_selection = []
-					if default_playlist:
-						pctl.jump(default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
-						if album_mode:
-							goto_album(pctl.playlist_playing_position)
-
-
+						gui.shift_selection = []
+					if pctl.default_playlist:
+						pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
+						if prefs.album_mode:
+							tauon.goto_album(pctl.playlist_playing_position)
 		elif gui.mode == 3:
-
-			if (key_shift_down and inp.mouse_click) or middle_click:
+			if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 				if prefs.mini_mode_mode == 4:
 					prefs.mini_mode_mode = 1
 					window_size[0] = int(330 * gui.scale)
@@ -59375,9 +59382,9 @@ while pctl.running:
 				ww = gui.lspw
 
 			rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
-			fields.add(rect)
+			tauon.fields.add(rect)
 
-			if coll(rect):
+			if tauon.coll(rect):
 				toast_love_timer.force_set(10)
 			else:
 				ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
@@ -59389,10 +59396,10 @@ while pctl.running:
 
 				if gui.toast_love_added:
 					text = _("Loved track")
-					heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, [250, 100, 100, 255])
+					gui.heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, [250, 100, 100, 255])
 				else:
 					text = _("Un-Loved track")
-					heart_notify_break_icon.render(
+					gui.heart_notify_break_icon.render(
 						rect[0] + 9 * gui.scale, rect[1] + 7 * gui.scale,
 						[150, 150, 150, 255])
 
@@ -59410,13 +59417,13 @@ while pctl.running:
 			ww = 0
 			if gui.lsp:
 				ww = gui.lspw
-			if search_over.active:
+			if tauon.search_over.active:
 				ww = window_size[0] // 2 - (215 * gui.scale // 2)
 
 			rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 215 * gui.scale, 39 * gui.scale)
-			fields.add(rect)
+			tauon.fields.add(rect)
 
-			if coll(rect):
+			if tauon.coll(rect):
 				queue_add_timer.force_set(10)
 			elif len(pctl.force_queue) > 0:
 
@@ -59433,7 +59440,7 @@ while pctl.running:
 				if pctl.force_queue[-1].type == 1:
 					top_text = "Album"
 
-				queue_box.draw_card(
+				tauon.queue_box.draw_card(
 					rect[0] - 8 * gui.scale, 0, 160 * gui.scale, 210 * gui.scale,
 					rect[1] + 1 * gui.scale, track, fqo, True, False)
 
@@ -59456,9 +59463,9 @@ while pctl.running:
 				ww += gui.lspw
 
 			rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
-			fields.add(rect)
+			tauon.fields.add(rect)
 
-			if coll(rect):
+			if tauon.coll(rect):
 				toast_mode_timer.force_set(10)
 			else:
 				ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60))
@@ -59471,11 +59478,11 @@ while pctl.running:
 		for instance in Menu.instances:
 			instance.render()
 
-		if view_box.active:
-			view_box.render()
+		if tauon.view_box.active:
+			tauon.view_box.render()
 
-		tool_tip.render()
-		tool_tip2.render()
+		tauon.tool_tip.render()
+		tauon.tool_tip2.render()
 
 		if console.show:
 			rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
@@ -59520,18 +59527,16 @@ while pctl.running:
 			if u:
 				gui.delay_frame(5)
 
-			if draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
-
+			if pctl.draw.button("Copy", rect[0] + rect[2] - 55 * gui.scale, rect[1] + rect[3] - 30 * gui.scale):
 				text = ""
 				for record in log.log_history[-50:]:
 					t = record.created
 					dt = time.localtime(t)
 					text += time.strftime("%H:%M:%S", dt) + " " + log.format(record) + "\n"
 				copy_to_clipboard(text)
-				show_message(_("Lines copied to clipboard"), mode="done")
+				tauon.show_message(_("Lines copied to clipboard"), mode="done")
 
 		if gui.cursor_is != gui.cursor_want:
-
 			gui.cursor_is = gui.cursor_want
 
 			if gui.cursor_is == 0:
@@ -59560,8 +59565,8 @@ while pctl.running:
 		# quick_view_box.render()
 
 		# Drag icon next to cursor
-		if quick_drag and mouse_down and not point_proximity_test(
-			gui.drag_source_position, mouse_position, 15 * gui.scale):
+		if inp.quick_drag and inp.mouse_down and not point_proximity_test(
+			gui.drag_source_position, inp.mouse_position, 15 * gui.scale):
 			i_x, i_y = input_sdl.mouse()
 			gui.drag_source_position = (0, 0)
 
@@ -59569,9 +59574,9 @@ while pctl.running:
 			x_offset = round(20 * gui.scale)
 			y_offset = round(1 * gui.scale)
 
-			if len(shift_selection) == 1:  # Single track
+			if len(gui.shift_selection) == 1:  # Single track
 				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, block_size), [160, 140, 235, 240])
-			elif key_ctrl_down:  # Add to queue undrouped
+			elif inp.key_ctrl_down:  # Add to queue undrouped
 				small_block = round(6 * gui.scale)
 				spacing = round(2 * gui.scale)
 				ddt.rect((i_x + x_offset, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
@@ -59598,23 +59603,23 @@ while pctl.running:
 			gui.update_on_drag = True
 
 		# Drag pl tab next to cursor
-		if (playlist_box.drag) and mouse_down and not point_proximity_test(
-			gui.drag_source_position, mouse_position, 10 * gui.scale):
+		if (tauon.playlist_box.drag) and inp.mouse_down and not point_proximity_test(
+			gui.drag_source_position, inp.mouse_position, 10 * gui.scale):
 			i_x, i_y = input_sdl.mouse()
 			gui.drag_source_position = (0, 0)
 			ddt.rect(
 				(i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225])
 			# ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
-			# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[playlist_box.drag_on].title, [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
-		if radio_view.drag and not point_proximity_test(radio_view.click_point, mouse_position, round(4 * gui.scale)):
+			# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[tauon.playlist_box.drag_on].title, [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+		if tauon.radio_view.drag and not point_proximity_test(tauon.radio_view.click_point, inp.mouse_position, round(4 * gui.scale)):
 			ddt.rect((
-				mouse_position[0] + round(8 * gui.scale), mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
+				inp.mouse_position[0] + round(8 * gui.scale), inp.mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
 				14 * gui.scale), colours.grey(70))
-		if (gui.set_label_hold != -1) and mouse_down:
+		if (gui.set_label_hold != -1) and inp.mouse_down:
 
 			gui.update_on_drag = True
 
-			if not point_proximity_test(gui.set_label_point, mouse_position, 3):
+			if not point_proximity_test(gui.set_label_point, inp.mouse_position, 3):
 				i_x, i_y = input_sdl.mouse()
 				gui.set_label_point = (0, 0)
 
@@ -59630,7 +59635,7 @@ while pctl.running:
 		input_text = ""
 		gui.update -= 1
 
-		# logging.info("FRAME " + str(core_timer.get()))
+		# logging.info("FRAME " + str(tauon.core_timer.get()))
 		gui.update = min(gui.update, 1)
 		gui.present = True
 
@@ -59722,9 +59727,7 @@ while pctl.running:
 				gui.spec2_dest.x = gui.spec2_rec.x
 				gui.spec2_dest.w = gui.spec2_rec.w - gui.spec2_position
 				sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
-
 			else:
-
 				sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
 			if pref_box.enabled:
@@ -59735,9 +59738,7 @@ while pctl.running:
 			# gui.level_update = False
 
 		if gui.vis == 2 and gui.spec is not None:
-
 			# Standard spectrum visualiser
-
 			if gui.update_spec == 0 and pctl.playing_state != 2:
 				if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
 					vis_decay_timer.set()
@@ -59753,7 +59754,6 @@ while pctl.running:
 				vis_rate_timer.set()
 
 				if spec_smoothing and pctl.playing_state > 0:
-
 					for i in range(len(gui.spec)):
 						if gui.spec[i] > gui.s_spec[i]:
 							gui.s_spec[i] += 1
@@ -59763,7 +59763,6 @@ while pctl.running:
 								gui.s_spec[i] += 1
 							if abs(gui.spec[i] - gui.s_spec[i]) > 8:
 								gui.s_spec[i] += 1
-
 						elif gui.spec[i] == gui.s_spec[i]:
 							pass
 						elif gui.spec[i] < gui.s_spec[i] > 0:
@@ -59784,7 +59783,6 @@ while pctl.running:
 				pass
 
 			if not gui.test:
-
 				sdl3.SDL_SetRenderTarget(renderer, gui.spec1_tex)
 
 				# ddt.rect_r(gui.spec_rect, colours.top_panel_background, True)
@@ -59800,7 +59798,6 @@ while pctl.running:
 					colours.vis_colour[3])
 
 				for item in gui.s_spec:
-
 					if on > 19:
 						break
 					on += 1
@@ -59823,14 +59820,13 @@ while pctl.running:
 
 					gui.bar.x += round(4 * gui.scale)
 
-				if pref_box.enabled:
+				if tauon.pref_box.enabled:
 					ddt.rect((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90])
 
 				sdl3.SDL_SetRenderTarget(renderer, None)
 				sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
 		if gui.vis == 1:
-
 			if prefs.backend == 2 or True:
 				if pctl.playing_state in (1, 3):
 					# gui.level_update = True
@@ -59882,67 +59878,54 @@ while pctl.running:
 						gui.level_peak[0] -= decay
 
 			for t in range(12):
-
 				if gui.level_peak[0] < t:
 					met = False
 				else:
 					met = True
 				if gui.level_peak[0] < 0.2:
 					met = False
-
 				if gui.level_meter_colour_mode == 1:
-
 					if not met:
 						cc = [15, 10, 20, 255]
 					else:
 						cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
 				elif gui.level_meter_colour_mode == 2:
-
 					if not met:
 						cc = [11, 11, 13, 255]
 					else:
 						cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
 				elif gui.level_meter_colour_mode == 3:
-
 					if not met:
 						cc = [12, 6, 0, 255]
 					else:
 						cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
 				elif gui.level_meter_colour_mode == 4:
-
 					if not met:
 						cc = [10, 10, 10, 255]
 					else:
 						cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
-
+				elif t < 7:
+					cc = colours.level_green
+					if met is False:
+						cc = colours.level_1_bg
+				elif t < 10:
+					cc = colours.level_yellow
+					if met is False:
+						cc = colours.level_2_bg
 				else:
-
-					if t < 7:
-						cc = colours.level_green
-						if met is False:
-							cc = colours.level_1_bg
-					elif t < 10:
-						cc = colours.level_yellow
-						if met is False:
-							cc = colours.level_2_bg
-					else:
-						cc = colours.level_red
-						if met is False:
-							cc = colours.level_3_bg
+					cc = colours.level_red
+					if met is False:
+						cc = colours.level_3_bg
 				if gui.level > 0 and pctl.playing_state > 0:
 					pass
 				ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
 
 			y -= 7 * gui.scale
 			for t in range(12):
-
 				if gui.level_peak[1] < t:
 					met = False
 				else:
@@ -59951,7 +59934,6 @@ while pctl.running:
 					met = False
 
 				if gui.level_meter_colour_mode == 1:
-
 					if not met:
 						cc = [15, 10, 20, 255]
 					else:
@@ -59959,7 +59941,6 @@ while pctl.running:
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif gui.level_meter_colour_mode == 2:
-
 					if not met:
 						cc = [11, 11, 13, 255]
 					else:
@@ -59967,7 +59948,6 @@ while pctl.running:
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif gui.level_meter_colour_mode == 3:
-
 					if not met:
 						cc = [12, 6, 0, 255]
 					else:
@@ -59975,27 +59955,24 @@ while pctl.running:
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif gui.level_meter_colour_mode == 4:
-
 					if not met:
 						cc = [10, 10, 10, 255]
 					else:
 						cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
 						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
+				elif t < 7:
+					cc = colours.level_green
+					if met is False:
+						cc = colours.level_1_bg
+				elif t < 10:
+					cc = colours.level_yellow
+					if met is False:
+						cc = colours.level_2_bg
 				else:
-
-					if t < 7:
-						cc = colours.level_green
-						if met is False:
-							cc = colours.level_1_bg
-					elif t < 10:
-						cc = colours.level_yellow
-						if met is False:
-							cc = colours.level_2_bg
-					else:
-						cc = colours.level_red
-						if met is False:
-							cc = colours.level_3_bg
+					cc = colours.level_red
+					if met is False:
+						cc = colours.level_3_bg
 
 				if gui.level > 0 and pctl.playing_state > 0:
 					pass
