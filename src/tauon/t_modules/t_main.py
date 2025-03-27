@@ -26061,6 +26061,7 @@ class TopPanel:
 		self.renderer        = tauon.renderer
 		self.window_size     = tauon.window_size
 		self.overflow_menu   = tauon.overflow_menu
+		self.draw_min_button = tauon.draw_min_button
 		self.draw_max_button = tauon.draw_max_button
 		self.height          = self.gui.panelY
 		self.ty              = 0
