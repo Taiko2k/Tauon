@@ -2194,8 +2194,6 @@ class PlayerCtl:
 		if self.gui.playlist_view_length < 1:
 			return 0
 
-		global shift_selection
-
 		for i in range(len(self.multi_playlist[self.active_playlist_viewing].playlist_ids)):
 			if i == self.selected_in_playlist:
 				if i < self.playlist_view_position:
@@ -2286,8 +2284,6 @@ class PlayerCtl:
 		return line
 
 	def show(self) -> int | None:
-		global shift_selection
-
 		if not self.track_queue:
 			return 0
 		return None
@@ -2305,8 +2301,6 @@ class PlayerCtl:
 		# logging.info(highlight)
 		# logging.info("--------")
 		logging.debug("Position set by show playing")
-
-		global shift_selection
 
 		if self.tauon.spot_ctl.coasting:
 			sptr = self.tauon.dummy_track.misc.get("spotify-track-url")
@@ -2436,7 +2430,6 @@ class PlayerCtl:
 		return 0
 
 	def toggle_mute(self) -> None:
-		global volume_store
 		if self.player_volume > 0:
 			self.volume_store = self.player_volume
 			self.player_volume = 0
@@ -11296,19 +11289,21 @@ class Tauon:
 
 				title = _("Unknown Track")
 				tr = self.pctl.playing_object()
-				if tr.artist != "" and tr.title != "":
+				if tr.artist != "" and tr.title != "" and self.pctl.playing_state == 3:
 					title = tr.title + " | " + tr.artist
-					if len(title) > 150:
-						title = _("Unknown Track")
-
-				if tr.album:
-					album = tr.album
 				else:
-					album = _("Unknown Album")
-					if self.pctl.playing_state == 3:
-						album = self.radiobox.loaded_station["title"]
+					title = tr.title
+				if len(title) > 150:
+					title = _("Unknown Track")
 
-				if len(album) == 1:
+				artist = tr.artist if tr.artist != "" else _("Unknown Artist")
+
+				if self.pctl.playing_state == 3 and tr.album:
+					album = self.radiobox.loaded_station["title"]
+				else:
+					album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
+
+				if album and len(album) == 1:
 					album += " "
 
 				if state == 1:
@@ -11322,16 +11317,20 @@ class Tauon:
 						large_image = url
 						small_image = "tauon-standard"
 					RPC.update(
+						activity_type = ActivityType.LISTENING,
 						pid=pid,
-						state=album,
+						**({"state": artist} if not self.pctl.playing_state == 3 else {"state": album}),
 						details=title,
 						start=int(start_time),
+						**({"end": int(start_time + tr.length)} if not self.pctl.playing_state == 3 else {}),
+						**({"large_text": album} if album and not self.pctl.playing_state == 3 else {}),
 						large_image=large_image,
 						small_image=small_image)
 
 				else:
 					#logging.info("Discord RPC - Stop")
 					RPC.update(
+						activity_type = ActivityType.LISTENING,
 						pid=pid,
 						state="Idle",
 						large_image="tauon-standard")
@@ -11703,9 +11702,9 @@ class Tauon:
 	def toggle_artist_list_threshold_deco(self):
 		if self.prefs.artist_list_threshold == 0:
 			return [self.colours.menu_text, self.colours.menu_background, _("Filter Small Artists")]
-		save = self.artist_list_box.saves.get(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int)
-		if save and save[5] == 0:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, _("Include All Artists")]
+		# save = self.artist_list_box.saves.get(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int)
+		# if save and save[5] == 0:
+		# 	return [self.colours.menu_text_disabled, self.colours.menu_background, _("Include All Artists")]
 		return [self.colours.menu_text, self.colours.menu_background, _("Include All Artists")]
 
 	def verify_discogs(self) -> bool:
@@ -12209,13 +12208,13 @@ class Tauon:
 
 			self.bottom_bar1.update()
 
-			# if system != 'windows':
-			#     if draw_border:
-			#         gui.panelY = 30 * gui.scale + 3 * gui.scale
-			#         self.top_panel.ty = 3 * gui.scale
-			#     else:
-			#         gui.panelY = 30 * gui.scale
-			#         self.top_panel.ty = 0
+			# if system != "Windows":
+			# 	if draw_border:
+			# 		gui.panelY = 30 * gui.scale + 3 * gui.scale
+			# 		self.top_panel.ty = 3 * gui.scale
+			# 	else:
+			# 		gui.panelY = 30 * gui.scale
+			# 		self.top_panel.ty = 0
 
 			if gui.set_bar and gui.set_mode:
 				gui.playlist_top = gui.playlist_top_bk + gui.set_height - 6 * gui.scale
@@ -17436,24 +17435,8 @@ class Tauon:
 
 	def drop_file(self, target: str) -> None:
 		"""Deprecated, move to individual UI components"""
-		if self.system != "windows":
-			gmp = get_global_mouse()
-			gwp = get_window_position(self.t_window)
-			i_x = gmp[0] - gwp[0]
-			i_x = max(i_x, 0)
-			i_x = min(i_x, self.window_size[0])
-			i_y = gmp[1] - gwp[1]
-			i_y = max(i_y, 0)
-			i_y = min(i_y, self.window_size[1])
-		else:
-			i_y = pointer(c_int(0))
-			i_x = pointer(c_int(0))
-
-			sdl3.SDL_GetMouseState(i_x, i_y)
-			i_y = i_y.contents.value / self.logical_size[0] * self.window_size[0]
-			i_x = i_x.contents.value / self.logical_size[0] * self.window_size[0]
-
-		#logging.info((i_x, i_y))
+		i_x = self.inp.mouse_position[0]
+		i_y = self.inp.mouse_position[1]
 		self.gui.drop_playlist_target = 0
 		#logging.info(event.drop)
 
@@ -19207,18 +19190,18 @@ class TimedLyricsRen:
 			self.ready = False
 			self.generate(self.pctl.master_library[index])
 
-		if right_click and x and y and coll((x, y, w, h)):
-			showcase_menu.activate(pctl.master_library[index])
+		if self.inp.right_click and x and y and self.coll((x, y, w, h)):
+			self.showcase_menu.activate(self.pctl.master_library[index])
 
 		if not self.ready:
 			return False
 
-		if mouse_wheel and (pctl.playing_state != 1 or pctl.track_queue[pctl.queue_step] != index):
+		if self.inp.mouse_wheel and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
 			if side_panel:
-				if coll((x, y, w, h)):
-					self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+				if self.coll((x, y, w, h)):
+					self.scroll_position += int(self.inp.mouse_wheel * 30 * self.gui.scale)
 			else:
-				self.scroll_position += int(mouse_wheel * 30 * gui.scale)
+				self.scroll_position += int(self.inp.mouse_wheel * 30 * self.gui.scale)
 
 		line_active = -1
 		last = -1
@@ -19229,15 +19212,15 @@ class TimedLyricsRen:
 			bg = self.colours.side_panel_background
 			bg = (bg[0],bg[1], bg[2], 255)
 			font_size = 15
-			spacing = round(17 * gui.scale)
-			ddt.rect((window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h), bg)
+			spacing = round(17 * self.gui.scale)
+			self.ddt.rect((self.window_size[0] - self.gui.rspw, self.gui.panelY, self.gui.rspw, self.window_size[1] - self.gui.panelY - self.gui.panelBY - self.gui.l_panel_h), bg)
 		else:
 			bg = self.colours.playlist_panel_background
 			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
 		bg = (bg[0], bg[1], bg[2], 255)
-		test_time = get_real_time()
+		test_time = self.tauon.get_real_time()
 
 		if self.pctl.track_queue[self.pctl.queue_step] == index:
 			for i, line in enumerate(self.data):
@@ -19364,17 +19347,17 @@ class TextBox2:
 		selection_height *= self.gui.scale
 
 		if click is False:
-			click = inp.mouse_click
-		if mouse_down:
-			gui.update = 2  # TODO: more elegant fix
+			click = self.inp.mouse_click
+		if self.inp.mouse_down:
+			self.gui.update = 2  # TODO(Taiko): more elegant fix
 
-		rect = (x - 3, y - 2, width - 3, 21 * gui.scale)
-		select_rect = (x - 20 * gui.scale, y - 2, width + 20 * gui.scale, 21 * gui.scale)
+		rect = (x - 3, y - 2, width - 3, 21 * self.gui.scale)
+		select_rect = (x - 20 * self.gui.scale, y - 2, width + 20 * self.gui.scale, 21 * self.gui.scale)
 
 		self.fields.add(rect)
 
 		# Activate Menu
-		if self.coll(rect) and (right_click or level_2_right_click):
+		if self.coll(rect) and (self.inp.right_click or self.inp.level_2_right_click):
 			self.tauon.field_menu.activate(self)
 
 		if width > 0 and active:
@@ -19383,9 +19366,9 @@ class TextBox2:
 				click = False
 
 			# Add text from input
-			if input_text != "":
+			if self.inp.input_text != "":
 				self.eliminate_selection()
-				self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[len(
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
 					self.text) - self.cursor_position:]
 
 			def g():
@@ -19404,69 +19387,69 @@ class TextBox2:
 				self.selection = self.cursor_position
 
 			# Ctrl + Backspace to delete word
-			if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
+			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
 					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
 				self.text):
 				while g() == " ":
 					d()
-				while g() != " " and g() != None:
+				while g() != " " and g() is not None:
 					d()
 
 			# Ctrl + left to move cursor back a word
-			elif (key_ctrl_down or key_rctrl_down) and key_left_press:
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_left_press:
 				while g() == " ":
 					self.cursor_position += 1
-					if not key_shift_down:
+					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
-				while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
 					self.cursor_position += 1
-					if not key_shift_down:
+					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
 					if g() == " ":
 						self.cursor_position -= 1
-						if not key_shift_down:
+						if not self.inp.key_shift_down:
 							self.selection = self.cursor_position
 						break
 
 			# Ctrl + right to move cursor forward a word
-			elif (key_ctrl_down or key_rctrl_down) and key_right_press:
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_up_press:
 				while g2() == " ":
 					self.cursor_position -= 1
-					if not key_shift_down:
+					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
-				while g2() != None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
 					self.cursor_position -= 1
-					if not key_shift_down:
+					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
 					if g2() == " ":
 						self.cursor_position += 1
-						if not key_shift_down:
+						if not self.inp.key_shift_down:
 							self.selection = self.cursor_position
 						break
 
 			# Handle normal backspace
-			elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
-				while inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+			elif self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+				while self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
 					if self.selection != self.cursor_position:
 						self.eliminate_selection()
 					else:
 						self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
 							self.text) - self.cursor_position:]
-					inp.backspace_press -= 1
-			elif inp.backspace_press and len(self.get_selection()) > 0:
+					self.inp.backspace_press -= 1
+			elif self.inp.backspace_press and len(self.get_selection()) > 0:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if key_right_press:
+			if self.inp.key_up_press:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
-				if not key_shift_down and not key_shiftr_down:
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if key_left_press:
+			if self.inp.key_left_press:
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
-				if not key_shift_down and not key_shiftr_down:
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
 			if self.paste_text:
@@ -19482,32 +19465,31 @@ class TextBox2:
 				self.paste_text = ""
 
 			# Paste via ctrl-v
-			if key_ctrl_down and key_v_press:
+			if self.inp.key_ctrl_down and self.inp.key_v_press:
 				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
 
-			if key_ctrl_down and key_c_press:
+			if self.inp.key_ctrl_down and self.inp.key_c_press:
 				self.copy()
 
-			if key_ctrl_down and key_x_press:
-				if len(self.get_selection()) > 0:
-					text = self.get_selection()
-					if text != "":
-						sdl3.SDL_SetClipboardText(text.encode("utf-8"))
-					self.eliminate_selection()
+			if self.inp.key_ctrl_down and self.inp.key_x_press and len(self.get_selection()) > 0:
+				text = self.get_selection()
+				if text != "":
+					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+				self.eliminate_selection()
 
-			if key_ctrl_down and key_a_press:
+			if self.inp.key_ctrl_down and self.inp.key_a_press:
 				self.cursor_position = 0
 				self.selection = len(self.text)
 
-			# ddt.rect(rect, [255, 50, 50, 80], True)
-			if coll(rect) and not field_menu.active:
-				gui.cursor_want = 2
+			# self.ddt.rect(rect, [255, 50, 50, 80], True)
+			if self.coll(rect) and not self.tauon.field_menu.active:
+				self.gui.cursor_want = 2
 
 			# Delete key to remove text in front of cursor
-			if key_del:
+			if self.inp.key_del:
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
 				else:
@@ -19517,19 +19499,19 @@ class TextBox2:
 						self.cursor_position -= 1
 					self.selection = self.cursor_position
 
-			if key_home_press:
+			if self.inp.key_home_press:
 				self.cursor_position = len(self.text)
-				if not key_shift_down and not key_shiftr_down:
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
-			if key_end_press:
+			if self.inp.key_end_press:
 				self.cursor_position = 0
-				if not key_shift_down and not key_shiftr_down:
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			width -= round(15 * gui.scale)
-			t_len = ddt.get_text_w(self.text, font)
-			if active and editline and editline != input_text:
-				t_len += ddt.get_text_w(editline, font)
+			width -= round(15 * self.gui.scale)
+			t_len = self.ddt.get_text_w(self.text, font)
+			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
+				t_len += self.ddt.get_text_w(self.gui.editline, font)
 			if not click and not self.down_lock:
 				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
 				if self.cursor_position == 0 or cursor_x < self.offset + round(
@@ -19551,16 +19533,16 @@ class TextBox2:
 				if click:
 					pre = 0
 					post = 0
-					if mouse_position[0] < x + 1:
+					if self.inp.mouse_position[0] < x + 1:
 						self.cursor_position = len(self.text)
 					else:
 						for i in range(len(self.text)):
 							post = self.ddt.get_text_w(self.text[0:i + 1], font)
 							# pre_half = int((post - pre) / 2)
 
-							if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+							if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
 								diff = post - pre
-								if mouse_position[0] >= x + pre + int(diff / 2):
+								if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
 									self.cursor_position = len(self.text) - i - 1
 								else:
 									self.cursor_position = len(self.text) - i
@@ -19571,7 +19553,7 @@ class TextBox2:
 					self.selection = 0
 					self.down_lock = True
 
-			if mouse_up:
+			if self.inp.mouse_up:
 				self.down_lock = False
 			if self.down_lock:
 				pre = 0
@@ -19579,7 +19561,7 @@ class TextBox2:
 				text = self.text
 				if secret:
 					text = "●" * len(self.text)
-				if mouse_position[0] < x + 1:
+				if self.inp.mouse_position[0] < x + 1:
 					self.selection = len(text)
 				else:
 
@@ -19587,10 +19569,10 @@ class TextBox2:
 						post = self.ddt.get_text_w(text[0:i + 1], font)
 						# pre_half = int((post - pre) / 2)
 
-						if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+						if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
 							diff = post - pre
 
-							if mouse_position[0] >= x + pre + int(diff / 2):
+							if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
 								self.selection = len(text) - i - 1
 
 							else:
@@ -19661,37 +19643,38 @@ class TextBox2:
 				self.gui.cursor_want = 2
 
 		if active:
-			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
-			if editline != "" and editline != input_text:
-				ex = ddt.text((space + round(4 * gui.scale), 0), editline, [240, 230, 230, 255], font)
-				ddt.rect((space + round(4 * gui.scale), th + round(2 * gui.scale), ex, round(1 * gui.scale)), [245, 245, 245, 255])
+			tw, th = self.ddt.get_text_wh(self.gui.editline, font, max_x=2000)
+			if self.gui.editline not in ("", self.inp.input_text):
+				ex = self.ddt.text((space + round(4 * self.gui.scale), 0), self.gui.editline, [240, 230, 230, 255], font)
+				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), [245, 245, 245, 255])
 
+			pixel_to_logical = self.tauon.pixel_to_logical
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.SDL_SetTextInputArea(t_window, rect, pixel_to_logical(space))
+			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
 		animate_monitor_timer.set()
 
-		text_box_canvas_hide_rect.x = 0
-		text_box_canvas_hide_rect.y = 0
+		self.tauon.text_box_canvas_hide_rect.x = 0
+		self.tauon.text_box_canvas_hide_rect.y = 0
 
 		# if self.offset:
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 
-		text_box_canvas_hide_rect.w = round(self.offset)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
+		self.tauon.text_box_canvas_hide_rect.w = round(self.offset)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_hide_rect)
 
-		text_box_canvas_hide_rect.w = round(t_len)
-		text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * gui.scale))
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(renderer, text_box_canvas_hide_rect)
+		self.tauon.text_box_canvas_hide_rect.w = round(t_len)
+		self.tauon.text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * self.gui.scale))
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_hide_rect)
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
-		text_box_canvas_rect.x = round(x)
-		text_box_canvas_rect.y = round(y)
-		sdl3.SDL_RenderTexture(renderer, text_box_canvas, None, text_box_canvas_rect)
+		self.tauon.text_box_canvas_rect.x = round(x)
+		self.tauon.text_box_canvas_rect.y = round(y)
+		sdl3.SDL_RenderTexture(self.renderer, self.tauon.text_box_canvas, None, self.tauon.text_box_canvas_rect)
 
 class TextBox:
 	# TODO(Martin): Global class var!
@@ -19799,7 +19782,7 @@ class TextBox:
 				select_rect = (x - 50 * gui.scale, y - 15 * gui.scale, width + 50 * gui.scale, 35 * gui.scale)
 
 			# Activate Menu
-			if self.coll(rect) and (right_click or level_2_right_click):
+			if self.coll(rect) and (inp.right_click or inp.level_2_right_click):
 				self.tauon.field_menu.activate(self)
 
 			if click and self.tauon.field_menu.active:
@@ -19807,9 +19790,9 @@ class TextBox:
 				click = False
 
 			# Add text from input
-			if input_text != "":
+			if self.inp.input_text != "":
 				self.eliminate_selection()
-				self.text = self.text[0: len(self.text) - self.cursor_position] + input_text + self.text[
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[
 					len(self.text) - self.cursor_position:]
 
 			def g():
@@ -19828,7 +19811,7 @@ class TextBox:
 				self.selection = self.cursor_position
 
 			# Ctrl + Backspace to delete word
-			if inp.backspace_press and (key_ctrl_down or key_rctrl_down) and \
+			if inp.backspace_press and (inp.key_ctrl_down or inp.key_rctrl_down) and \
 					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
 				self.text):
 				while g() == " ":
@@ -19837,34 +19820,34 @@ class TextBox:
 					d()
 
 			# Ctrl + left to move cursor back a word
-			elif (key_ctrl_down or key_rctrl_down) and key_left_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_left_press:
 				while g() == " ":
 					self.cursor_position += 1
-					if not key_shift_down:
+					if not inp.key_shift_down:
 						self.selection = self.cursor_position
-				while g() != None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
 					self.cursor_position += 1
-					if not key_shift_down:
+					if not inp.key_shift_down:
 						self.selection = self.cursor_position
 					if g() == " ":
 						self.cursor_position -= 1
-						if not key_shift_down:
+						if not inp.key_shift_down:
 							self.selection = self.cursor_position
 						break
 
 			# Ctrl + right to move cursor forward a word
-			elif (key_ctrl_down or key_rctrl_down) and key_right_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_up_press:
 				while g2() == " ":
 					self.cursor_position -= 1
-					if not key_shift_down:
+					if not inp.key_shift_down:
 						self.selection = self.cursor_position
 				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
 					self.cursor_position -= 1
-					if not key_shift_down:
+					if not inp.key_shift_down:
 						self.selection = self.cursor_position
 					if g2() == " ":
 						self.cursor_position += 1
-						if not key_shift_down:
+						if not inp.key_shift_down:
 							self.selection = self.cursor_position
 						break
 
@@ -19881,36 +19864,35 @@ class TextBox:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if key_right_press:
+			if inp.key_up_press:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
-				if not key_shift_down and not key_shiftr_down:
+				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if key_left_press:
+			if inp.key_left_press:
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
-				if not key_shift_down and not key_shiftr_down:
+				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
 			# Paste via ctrl-v
-			if key_ctrl_down and key_v_press:
+			if inp.key_ctrl_down and inp.key_v_press:
 				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
 
-			if key_ctrl_down and key_c_press:
+			if inp.key_ctrl_down and inp.key_c_press:
 				self.copy()
 
-			if key_ctrl_down and key_x_press:
-				if len(self.get_selection()) > 0:
-					text = self.get_selection()
-					if text != "":
-						sdl3.SDL_SetClipboardText(text.encode("utf-8"))
-					self.eliminate_selection()
+			if inp.key_ctrl_down and inp.key_x_press and len(self.get_selection()) > 0:
+				text = self.get_selection()
+				if text != "":
+					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+				self.eliminate_selection()
 
-			if key_ctrl_down and key_a_press:
+			if inp.key_ctrl_down and inp.key_a_press:
 				self.cursor_position = 0
 				self.selection = len(self.text)
 
@@ -19921,7 +19903,7 @@ class TextBox:
 			self.fields.add(rect)
 
 			# Delete key to remove text in front of cursor
-			if key_del:
+			if inp.key_del:
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
 				else:
@@ -19931,13 +19913,13 @@ class TextBox:
 						self.cursor_position -= 1
 					self.selection = self.cursor_position
 
-			if key_home_press:
+			if inp.key_home_press:
 				self.cursor_position = len(self.text)
-				if not key_shift_down and not key_shiftr_down:
+				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
-			if key_end_press:
+			if inp.key_end_press:
 				self.cursor_position = 0
-				if not key_shift_down and not key_shiftr_down:
+				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
 			if self.coll(select_rect):
@@ -19945,16 +19927,16 @@ class TextBox:
 				if click:
 					pre = 0
 					post = 0
-					if mouse_position[0] < x + 1:
+					if inp.mouse_position[0] < x + 1:
 						self.cursor_position = len(self.text)
 					else:
 						for i in range(len(self.text)):
 							post = ddt.get_text_w(self.text[0:i + 1], font)
 							# pre_half = int((post - pre) / 2)
 
-							if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+							if x + pre - 0 <= inp.mouse_position[0] <= x + post + 0:
 								diff = post - pre
-								if mouse_position[0] >= x + pre + int(diff / 2):
+								if inp.mouse_position[0] >= x + pre + int(diff / 2):
 									self.cursor_position = len(self.text) - i - 1
 								else:
 									self.cursor_position = len(self.text) - i
@@ -19965,12 +19947,12 @@ class TextBox:
 					self.selection = 0
 					self.down_lock = True
 
-			if mouse_up:
+			if inp.mouse_up:
 				self.down_lock = False
 			if self.down_lock:
 				pre = 0
 				post = 0
-				if mouse_position[0] < x + 1:
+				if inp.mouse_position[0] < x + 1:
 
 					self.selection = len(self.text)
 				else:
@@ -19979,10 +19961,10 @@ class TextBox:
 						post = ddt.get_text_w(self.text[0:i + 1], font)
 						# pre_half = int((post - pre) / 2)
 
-						if x + pre - 0 <= mouse_position[0] <= x + post + 0:
+						if x + pre - 0 <= inp.mouse_position[0] <= x + post + 0:
 							diff = post - pre
 
-							if mouse_position[0] >= x + pre + int(diff / 2):
+							if inp.mouse_position[0] >= x + pre + int(diff / 2):
 								self.selection = len(self.text) - i - 1
 							else:
 								self.selection = len(self.text) - i
@@ -20035,15 +20017,15 @@ class TextBox:
 
 		else:
 			if active:
-				self.text += input_text
-				if input_text != "":
+				self.text += self.inp.input_text
+				if self.inp.input_text != "":
 					self.cursor = True
 
 				while inp.backspace_press and len(self.text) > 0:
 					self.text = self.text[:-1]
 					inp.backspace_press -= 1
 
-				if key_ctrl_down and key_v_press:
+				if inp.key_ctrl_down and inp.key_v_press:
 					self.paste()
 
 			if secret:
@@ -20060,10 +20042,10 @@ class TextBox:
 					ddt.rect((xx, yy, 1 * gui.scale, 14 * gui.scale), colour)
 
 		if active:
-			tw, th = ddt.get_text_wh(editline, font, max_x=2000)
-			if editline != "" and editline != input_text:
+			tw, th = ddt.get_text_wh(self.gui.editline, font, max_x=2000)
+			if self.gui.editline not in ("", self.inp.input_text):
 				print("OK")
-				ex = ddt.text((x + space + round(4 * gui.scale), y), editline, [240, 230, 230, 255], font)
+				ex = ddt.text((x + space + round(4 * gui.scale), y), self.gui.editline, [240, 230, 230, 255], font)
 
 				ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
 					[245, 245, 245, 255])
@@ -20234,63 +20216,60 @@ class AlbumArt:
 		return source_list
 
 	def get_error_img(self, size: float) -> ImageFile:
-		im = Image.open(str(install_directory / "assets" / "load-error.png"))
+		im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
 	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset) -> int:
 		"""Renders cached image only by given size for faster performance"""
-
 		found_unit = None
 		max_h = 0
 
 		for unit in self.image_cache:
-			if unit.source == source[offset][1]:
-				if unit.actual_size[1] > max_h:
-					max_h = unit.actual_size[1]
-					found_unit = unit
+			if unit.source == source[offset][1] and unit.actual_size[1] > max_h:
+				max_h = unit.actual_size[1]
+				found_unit = unit
 
-		if found_unit == None:
+		if found_unit is None:
 			return 1
 
 		unit = found_unit
 
-		temp_dest.x = round(location[0])
-		temp_dest.y = round(location[1])
+		self.temp_dest.x = round(location[0])
+		self.temp_dest.y = round(location[1])
 
-		temp_dest.w = unit.original_size[0]  # round(box[0])
-		temp_dest.h = unit.original_size[1]  # round(box[1])
+		self.temp_dest.w = unit.original_size[0]  # round(box[0])
+		self.temp_dest.h = unit.original_size[1]  # round(box[1])
 
 		bh = round(box[1])
 		bw = round(box[0])
 
-		if prefs.zoom_art:
-			temp_dest.w, temp_dest.h = fit_box((unit.original_size[0], unit.original_size[1]), box)
+		if self.prefs.zoom_art:
+			self.temp_dest.w, self.temp_dest.h = fit_box((unit.original_size[0], unit.original_size[1]), box)
 		else:
-
 			# Constrain image to given box
-			if temp_dest.w > bw:
-				temp_dest.w = bw
-				temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
+			if self.temp_dest.w > bw:
+				self.temp_dest.w = bw
+				self.temp_dest.h = int(bw * (unit.original_size[1] / unit.original_size[0]))
 
-			if temp_dest.h > bh:
-				temp_dest.h = bh
-				temp_dest.w = int(temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
+			if self.temp_dest.h > bh:
+				self.temp_dest.h = bh
+				self.temp_dest.w = int(self.temp_dest.h * (unit.original_size[0] / unit.original_size[1]))
 
 			# prevent scaling larger than original image size
-			if temp_dest.w > unit.original_size[0] or temp_dest.h > unit.original_size[1]:
-				temp_dest.w = unit.original_size[0]
-				temp_dest.h = unit.original_size[1]
+			if self.temp_dest.w > unit.original_size[0] or self.temp_dest.h > unit.original_size[1]:
+				self.temp_dest.w = unit.original_size[0]
+				self.temp_dest.h = unit.original_size[1]
 
 		# center the image
-		temp_dest.x = int((box[0] - temp_dest.w) / 2) + temp_dest.x
-		temp_dest.y = int((box[1] - temp_dest.h) / 2) + temp_dest.y
+		self.temp_dest.x = int((box[0] - self.temp_dest.w) / 2) + self.temp_dest.x
+		self.temp_dest.y = int((box[1] - self.temp_dest.h) / 2) + self.temp_dest.y
 
 		# render the image
-		sdl3.SDL_RenderTexture(renderer, unit.texture, None, temp_dest)
-		style_overlay.hole_punches.append(temp_dest)
+		sdl3.SDL_RenderTexture(self.renderer, unit.texture, None, self.temp_dest)
+		self.style_overlay.hole_punches.append(self.temp_dest)
 
-		gui.art_drawn_rect = (temp_dest.x, temp_dest.y, temp_dest.w, temp_dest.h)
+		self.gui.art_drawn_rect = (self.temp_dest.x, self.temp_dest.y, self.temp_dest.w, self.temp_dest.h)
 
 		return 0
 
@@ -20519,19 +20498,19 @@ class AlbumArt:
 			return None
 
 		# Check cache for existing image
-		path = os.path.join(b_cache_dir, artist)
+		path = os.path.join(self.b_cache_directory, artist)
 		if os.path.isfile(path):
 			logging.info("Load cached background")
 			return open(path, "rb")
 
 		# Try last.fm background
-		path = artist_info_box.get_data(artist, get_img_path=True)
+		path = self.tauon.artist_info_box.get_data(artist, get_img_path=True)
 		if os.path.isfile(path):
 			logging.info("Load cached background lfm")
 			return open(path, "rb")
 
 		# Check we've not already attempted a search for this artist
-		if artist in prefs.failed_background_artists:
+		if artist in self.prefs.failed_background_artists:
 			return None
 
 		# Get artist MBID
@@ -20540,19 +20519,18 @@ class AlbumArt:
 			artist_id = s["artist-list"][0]["id"]
 		except Exception:
 			logging.exception(f"Failed to find artist MBID for: {artist}")
-			prefs.failed_background_artists.append(artist)
+			self.prefs.failed_background_artists.append(artist)
 			return None
 
 		# Search fanart.tv for background
 		try:
-
 			r = requests.get(
 				"https://webservice.fanart.tv/v3/music/" \
-				+ artist_id + "?api_key=" + prefs.fatvap, timeout=(4, 10))
+				+ artist_id + "?api_key=" + self.prefs.fatvap, timeout=(4, 10))
 
 			artlink = r.json()["artistbackground"][0]["url"]
 
-			response = urllib.request.urlopen(artlink, context=tls_context)
+			response = urllib.request.urlopen(artlink, context=self.tls_context)
 			info = response.info()
 
 			assert info.get_content_maintype() == "image"
@@ -20567,7 +20545,7 @@ class AlbumArt:
 			assert l > 1000
 
 			# Cache image for future use
-			path = os.path.join(a_cache_dir, artist + "-ftv-full.jpg")
+			path = os.path.join(self.a_cache_directory, artist + "-ftv-full.jpg")
 			with open(path, "wb") as f:
 				f.write(t.read())
 			t.seek(0)
@@ -20575,22 +20553,21 @@ class AlbumArt:
 
 		except Exception:
 			logging.exception(f"Failed to find fanart background for: {artist}")
-			if not gui.artist_info_panel:
-				artist_info_box.get_data(artist)
-				path = artist_info_box.get_data(artist, get_img_path=True)
+			if not self.gui.artist_info_panel:
+				self.tauon.artist_info_box.get_data(artist)
+				path = self.tauon.artist_info_box.get_data(artist, get_img_path=True)
 				if os.path.isfile(path):
 					logging.debug("Downloaded background lfm")
 					return open(path, "rb")
 
 
-			prefs.failed_background_artists.append(artist)
+			self.prefs.failed_background_artists.append(artist)
 			return None
 
 	def get_blur_im(self, track: TrackClass) -> BytesIO | bool | None:
-
 		source_image = None
 		self.loaded_bg_type = 0
-		if prefs.enable_fanart_bg:
+		if self.prefs.enable_fanart_bg:
 			source_image = self.get_background(track)
 			if source_image:
 				self.loaded_bg_type = 1
@@ -20622,12 +20599,12 @@ class AlbumArt:
 		if im.mode != "RGB":
 			im = im.convert("RGB")
 
-		ratio = window_size[0] / ox_size
+		ratio = self.window_size[0] / ox_size
 		ratio += 0.2
 
-		if (oy_size * ratio) - ((oy_size * ratio) // 4) < window_size[1]:
+		if (oy_size * ratio) - ((oy_size * ratio) // 4) < self.window_size[1]:
 			logging.info("Adjust bg vertical")
-			ratio = window_size[1] / (oy_size - (oy_size // 4))
+			ratio = self.window_size[1] / (oy_size - (oy_size // 4))
 			ratio += 0.2
 
 		new_x = round(ox_size * ratio)
@@ -20637,12 +20614,12 @@ class AlbumArt:
 
 		if self.loaded_bg_type == 1:
 			artist = get_artist_safe(track)
-			if artist and artist in prefs.bg_flips:
+			if artist and artist in self.prefs.bg_flips:
 				im = im.transpose(Image.FLIP_LEFT_RIGHT)
 
-		if (ox_size < 500 or prefs.art_bg_always_blur) or gui.mode == 3:
-			blur = prefs.art_bg_blur
-			if prefs.mini_mode_mode == 5 and gui.mode == 3:
+		if (ox_size < 500 or self.prefs.art_bg_always_blur) or self.gui.mode == 3:
+			blur = self.prefs.art_bg_blur
+			if self.prefs.mini_mode_mode == 5 and self.gui.mode == 3:
 				blur = 160
 				pix = im.getpixel((new_x // 2, new_y // 4 * 3))
 				pixel_sum = sum(pix) / (255 * 3)
@@ -20652,12 +20629,12 @@ class AlbumArt:
 					im = enhancer.enhance(deduct)
 					logging.info(deduct)
 
-				gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
+				self.gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
 
 			im = im.filter(ImageFilter.GaussianBlur(blur))
 
 
-		gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 2))
+		self.gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 2))
 
 		g = io.BytesIO()
 		g.seek(0)
@@ -20673,7 +20650,6 @@ class AlbumArt:
 		return g
 
 	def save_thumb(self, track_object: TrackClass, size: tuple[int, int], save_path: str, png=False, zoom=False):
-
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
 
@@ -20717,16 +20693,16 @@ class AlbumArt:
 			im.save(save_path + ".png", "PNG")
 		else:
 			im.save(save_path + ".jpg", "JPEG")
+		return None
 
 	def display(self, track: TrackClass, location, box, fast: bool = False, theme_only: bool = False) -> int | None:
 		index = track.index
 		filepath = track.fullpath
 
-		if prefs.colour_from_image and track.album != gui.theme_temp_current and box[0] != 115:
-			if track.album in gui.temp_themes:
-				global colours
-				colours = gui.temp_themes[track.album]
-				gui.theme_temp_current = track.album
+		if self.prefs.colour_from_image and track.album != self.gui.theme_temp_current and box[0] != 115:
+			if track.album in self.gui.temp_themes:
+				self.colours = self.gui.temp_themes[track.album]
+				self.gui.theme_temp_current = track.album
 
 		source = self.get_sources(track)
 
@@ -20761,7 +20737,7 @@ class AlbumArt:
 				source_image = self.get_source_raw(0, 0, track, source[offset])
 
 			elif source[offset][0] == 2:
-				idea = prefs.encoder_output / encode_folder_name(track) / "cover.jpg"
+				idea = self.prefs.encoder_output / encode_folder_name(track) / "cover.jpg"
 				if idea.is_file():
 					source_image = idea.open("rb")
 				else:
@@ -20796,11 +20772,9 @@ class AlbumArt:
 							assert self.downloaded_image
 							source_image = self.downloaded_image
 
-
 					except Exception:
 						logging.exception("IMAGE NETWORK LOAD ERROR")
 						raise
-
 			else:
 				# source_image = open(source[offset][1], 'rb')
 				source_image = self.get_source_raw(0, 0, track, source[offset])
@@ -20826,19 +20800,17 @@ class AlbumArt:
 						source_image.close()
 					g.close()
 					return None
-				im = Image.open(str(install_directory / "assets" / "load-error.png"))
+				im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
-
 			if not theme_only:
-
-				if prefs.zoom_art:
+				if self.prefs.zoom_art:
 					new_size = fit_box(o_size, box)
 					try:
 						im = im.resize(new_size, Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to resize image")
-						im = Image.open(str(install_directory / "assets" / "load-error.png"))
+						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 						o_size = im.size
 						new_size = fit_box(o_size, box)
 						im = im.resize(new_size, Image.Resampling.LANCZOS)
@@ -20847,15 +20819,14 @@ class AlbumArt:
 						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
 					except Exception:
 						logging.exception("Failed to convert image to thumbnail")
-						im = Image.open(str(install_directory / "assets" / "load-error.png"))
+						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 						o_size = im.size
 						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
 				im.save(g, "BMP")
 				g.seek(0)
 
 			# Processing for "Carbon" theme
-			if track == pctl.playing_object() and gui.theme_name == "Carbon" and track.parent_folder_path != colours.last_album:
-
+			if track == self.pctl.playing_object() and self.gui.theme_name == "Carbon" and track.parent_folder_path != self.colours.last_album:
 				# Find main image colours
 				try:
 					im.thumbnail((50, 50), Image.Resampling.LANCZOS)
@@ -20888,15 +20859,15 @@ class AlbumArt:
 				if check_equal(colour):  # Default to theme purple if source colour was grayscale
 					hh = 0.72
 
-				colours.bottom_panel_colour = hls_to_rgb(hh, l, s)
-				colours.last_album = track.parent_folder_path
+				self.colours.bottom_panel_colour = hls_to_rgb(hh, l, s)
+				self.colours.last_album = track.parent_folder_path
 
 			# Processing for "Auto-theme" setting
-			if prefs.colour_from_image and box[0] != 115 and track.album != gui.theme_temp_current \
-					and track.album not in gui.temp_themes:  # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
-				colours.last_album = track.parent_folder_path
+			if self.prefs.colour_from_image and box[0] != 115 and track.album != self.gui.theme_temp_current \
+					and track.album not in self.gui.temp_themes:  # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
+				self.colours.last_album = track.parent_folder_path
 
-				colours = copy.deepcopy(colours)
+				colours = copy.deepcopy(self.colours)
 
 				im.thumbnail((50, 50), Image.Resampling.LANCZOS)
 				pixels = im.getcolors(maxcolors=2500)
@@ -20940,7 +20911,6 @@ class AlbumArt:
 				colours.queue_background = colours.side_panel_background
 				# Check artist text colour
 				if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
-
 					black = [25, 25, 25, 255]
 					white = [220, 220, 220, 255]
 
@@ -20956,7 +20926,6 @@ class AlbumArt:
 
 				# Check title text colour
 				if contrast_ratio(colours.title_text, colours.playlist_panel_background) < 1.9:
-
 					black = [60, 60, 60, 255]
 					white = [180, 180, 180, 255]
 
@@ -20970,7 +20939,7 @@ class AlbumArt:
 					colours.title_text = choice
 					colours.title_playing = choice
 
-				if test_lumi(colours.side_panel_background) < 0.50 and not prefs.transparent_mode:
+				if test_lumi(colours.side_panel_background) < 0.50 and not self.prefs.transparent_mode:
 					colours.side_bar_line1 = [25, 25, 25, 255]
 					colours.side_bar_line2 = [35, 35, 35, 255]
 				else:
@@ -20980,7 +20949,7 @@ class AlbumArt:
 				colours.album_text = colours.title_text
 				colours.album_playing = colours.title_playing
 
-				gui.pl_update = 1
+				self.gui.pl_update = 1
 
 				prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
 
@@ -21007,11 +20976,11 @@ class AlbumArt:
 					colours.row_playing_highlight = [255, 255, 255, 8]
 					colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, 0.03)
 
-				gui.temp_themes[track.album] = copy.deepcopy(colours)
-				colours = gui.temp_themes[track.album]
-				gui.theme_temp_current = track.album
+				self.gui.temp_themes[track.album] = copy.deepcopy(colours)
+				colours = self.gui.temp_themes[track.album]
+				self.gui.theme_temp_current = track.album
 
-				if prefs.transparent_mode:
+				if self.prefs.transparent_mode:
 					colours.apply_transparency()
 
 			if theme_only:
@@ -21020,10 +20989,10 @@ class AlbumArt:
 				g.close()
 				return None
 
-			s_image = ddt.load_image(g)
+			s_image = self.ddt.load_image(g)
 			#logging.error(IMG_GetError())
 
-			c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
+			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 
 			tex_w = pointer(c_float(0))
 			tex_h = pointer(c_float(0))
@@ -21057,49 +21026,42 @@ class AlbumArt:
 
 			self.render(unit, location)
 
-			if len(self.image_cache) > 5 or (prefs.colour_from_image and len(self.image_cache) > 1):
+			if len(self.image_cache) > 5 or (self.prefs.colour_from_image and len(self.image_cache) > 1):
 				sdl3.SDL_DestroyTexture(self.image_cache[0].texture)
 				del self.image_cache[0]
 
 			# temp fix
-			global move_on_title
-			global playlist_hold
-			global quick_drag
-			quick_drag = False
-			move_on_title = False
-			playlist_hold = False
+			self.inp.quick_drag = False
+			self.gui.move_on_title = False
+			self.gui.playlist_hold = False
 
 		except Exception:
 			logging.exception("Image load error")
-			logging.error("-- Associated track: " + track.fullpath)
+			logging.error(f"-- Associated track: {track.fullpath}")
 
 			self.current_wu = None
 			try:
 				del self.source_cache[index][offset]
 			except Exception:
 				logging.exception(" -- Error, no source cache?")
-
 			return 1
-
 		return 0
 
 	def render(self, unit, location) -> None:
-
 		rect = unit.rect
 
-		gui.art_aspect_ratio = unit.actual_size[0] / unit.actual_size[1]
+		self.gui.art_aspect_ratio = unit.actual_size[0] / unit.actual_size[1]
 
 		rect.x = round(int((unit.request_size[0] - unit.actual_size[0]) / 2) + location[0])
 		rect.y = round(int((unit.request_size[1] - unit.actual_size[1]) / 2) + location[1])
 
-		style_overlay.hole_punches.append(rect)
+		self.tauon.style_overlay.hole_punches.append(rect)
 
-		sdl3.SDL_RenderTexture(renderer, unit.texture, None, rect)
+		sdl3.SDL_RenderTexture(self.renderer, unit.texture, None, rect)
 
-		gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
+		self.gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
 	def clear_cache(self) -> None:
-
 		for unit in self.image_cache:
 			sdl3.SDL_DestroyTexture(unit.texture)
 
@@ -21114,9 +21076,9 @@ class AlbumArt:
 		self.loading_bin = (None, None)
 		self.embed_cached = (None, None)
 
-		gui.temp_themes.clear()
-		gui.theme_temp_current = -1
-		colours.last_album = ""
+		self.gui.temp_themes.clear()
+		self.gui.theme_temp_current = -1
+		self.colours.last_album = ""
 
 class StyleOverlay:
 	"""
@@ -21153,7 +21115,7 @@ class StyleOverlay:
 		self.a_type = 0
 		self.b_type = 0
 
-		self.window_size = None
+		self.window_size_int = None
 		self.parent_path = None
 
 		self.hole_punches = []
@@ -21165,25 +21127,23 @@ class StyleOverlay:
 		self.current_track_id = -1
 
 	def worker(self) -> None:
-
 		if self.stage == 0:
-
-			if (gui.mode == 3 and prefs.mini_mode_mode == 5):
+			if (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
 				pass
-			elif prefs.bg_showcase_only and not gui.combo_mode:
+			elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
 				return
 
-			if pctl.playing_ready() and self.min_on_timer.get() > 0:
+			if self.pctl.playing_ready() and self.min_on_timer.get() > 0:
 
-				track = pctl.playing_object()
+				track = self.pctl.playing_object()
 
-				self.window_size = copy.copy(window_size)
+				self.window_size_int = copy.copy(self.window_size)
 				self.parent_path = track.parent_folder_path
 				self.current_track_id = track.index
 				self.current_track_album = track.album
 
 				try:
-					self.im = album_art_gen.get_blur_im(track)
+					self.im = self.album_art_gen.get_blur_im(track)
 				except Exception:
 					logging.exception("Blur blackground error")
 					raise
@@ -21200,11 +21160,10 @@ class StyleOverlay:
 					return
 
 				self.stage = 1
-				gui.update += 1
+				self.gui.update += 1
 				return
 
-	def flush(self):
-
+	def flush(self) -> None:
 		if self.a_texture is not None:
 			sdl3.SDL_DestroyTexture(self.a_texture)
 			self.a_texture = None
@@ -21214,21 +21173,20 @@ class StyleOverlay:
 		self.min_on_timer.force_set(-0.2)
 		self.parent_path = "None"
 		self.stage = 0
-		tauon.thread_manager.ready("worker")
-		gui.style_worker_timer.set()
-		gui.delay_frame(0.25)
-		gui.update += 1
+		self.thread_manager.ready("worker")
+		self.gui.style_worker_timer.set()
+		self.gui.delay_frame(0.25)
+		self.gui.update += 1
 
 	def display(self) -> None:
-
 		if self.min_on_timer.get() < 0:
 			return
 
 		if self.stage == 1:
 
-			s_image = ddt.load_image(self.im)
+			s_image = self.ddt.load_image(self.im)
 
-			c = sdl3.SDL_CreateTextureFromSurface(renderer, s_image)
+			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 
 			tex_w = pointer(c_float(0))
 			tex_h = pointer(c_float(0))
@@ -21252,19 +21210,19 @@ class StyleOverlay:
 
 			self.a_texture = c
 			self.a_rect = dst
-			self.a_type = album_art_gen.loaded_bg_type
+			self.a_type = self.album_art_gen.loaded_bg_type
 
 			self.stage = 2
 			self.radio_meta = None
 
-			gui.update += 1
+			self.gui.update += 1
 
 		if self.stage == 2:
-			track = pctl.playing_object()
+			track = self.pctl.playing_object()
 
-			if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
-				if self.radio_meta != pctl.tag_meta:
-					self.radio_meta = pctl.tag_meta
+			if self.pctl.playing_state == 3 and not self.tauon.spot_ctl.coasting:
+				if self.radio_meta != self.pctl.tag_meta:
+					self.radio_meta = self.pctl.tag_meta
 					self.current_track_id = -1
 					self.stage = 0
 
@@ -21275,23 +21233,21 @@ class StyleOverlay:
 				else:
 					self.current_track_id = track.index
 					if (
-							self.parent_path != pctl.playing_object().parent_folder_path or self.current_track_album != pctl.playing_object().album):
+							self.parent_path != self.pctl.playing_object().parent_folder_path or self.current_track_album != self.pctl.playing_object().album):
 						self.stage = 0
 
-		if gui.mode == 3 and prefs.mini_mode_mode == 5:
+		if self.gui.mode == 3 and self.prefs.mini_mode_mode == 5:
 			pass
-		elif prefs.bg_showcase_only:
-			if not gui.combo_mode:
-				return
+		elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
+			return
 
 		t = self.fade_on_timer.get()
-		sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-		sdl3.SDL_RenderClear(renderer)
+		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
+		sdl3.SDL_RenderClear(self.renderer)
 
-		if self.a_texture is not None:
-			if self.window_size != window_size:
-				self.flush()
+		if self.a_texture is not None and self.window_size_int != self.window_size:
+			self.flush()
 
 		if self.b_texture is not None:
 
@@ -21301,7 +21257,7 @@ class StyleOverlay:
 
 			if t < 0.4:
 
-				sdl3.SDL_RenderTexture(renderer, self.b_texture, None, self.b_rect)
+				sdl3.SDL_RenderTexture(self.renderer, self.b_texture, None, self.b_rect)
 
 			else:
 				sdl3.SDL_DestroyTexture(self.b_texture)
@@ -21316,14 +21272,14 @@ class StyleOverlay:
 
 			if t < 0.4:
 				fade = round(t / 0.4 * 255)
-				gui.update += 1
+				self.gui.update += 1
 
 			else:
 				fade = 255
 
 			if self.go_to_sleep:
 				t = self.fade_off_timer.get()
-				gui.update += 1
+				self.gui.update += 1
 
 				if t < 1:
 					fade = 255
@@ -21334,43 +21290,43 @@ class StyleOverlay:
 					self.flush()
 					return
 
-			if prefs.bg_showcase_only and not (prefs.mini_mode_mode == 5 and gui.mode == 3):
-				tb = sdl3.SDL_FRect(0, 0, window_size[0], gui.panelY)
-				bb = sdl3.SDL_FRect(0, window_size[1] - gui.panelBY, window_size[0], gui.panelBY)
+			if self.prefs.bg_showcase_only and not (self.prefs.mini_mode_mode == 5 and self.gui.mode == 3):
+				tb = sdl3.SDL_FRect(0, 0, self.window_size[0], self.gui.panelY)
+				bb = sdl3.SDL_FRect(0, self.window_size[1] - self.gui.panelBY, self.window_size[0], self.gui.panelBY)
 				self.hole_punches.append(tb)
 				self.hole_punches.append(bb)
 
 			# Center image
-			if window_size[0] < 900 * gui.scale:
-				self.a_rect.x = (window_size[0] // 2) - self.a_rect.w // 2
+			if self.window_size[0] < 900 * self.gui.scale:
+				self.a_rect.x = (self.window_size[0] // 2) - self.a_rect.w // 2
 			else:
 				self.a_rect.x = -40
 
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
+			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
 
 			sdl3.SDL_SetTextureAlphaMod(self.a_texture, fade)
-			sdl3.SDL_RenderTexture(renderer, self.a_texture, None, self.a_rect)
+			sdl3.SDL_RenderTexture(self.renderer, self.a_texture, None, self.a_rect)
 
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 
-			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+			sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
 			for rect in self.hole_punches:
-				sdl3.SDL_RenderFillRect(renderer, rect)
+				sdl3.SDL_RenderFillRect(self.renderer, rect)
 
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-			opacity = prefs.art_bg_opacity
-			if prefs.mini_mode_mode == 5 and gui.mode == 3:
+			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+			opacity = self.prefs.art_bg_opacity
+			if self.prefs.mini_mode_mode == 5 and self.gui.mode == 3:
 				opacity = 255
 
-			sdl3.SDL_SetTextureAlphaMod(gui.main_texture_overlay_temp, opacity)
-			sdl3.SDL_RenderTexture(renderer, gui.main_texture_overlay_temp, None, None)
+			sdl3.SDL_SetTextureAlphaMod(self.gui.main_texture_overlay_temp, opacity)
+			sdl3.SDL_RenderTexture(self.renderer, self.gui.main_texture_overlay_temp, None, None)
 
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
 		else:
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
 class ToolTip:
 
@@ -21389,8 +21345,7 @@ class ToolTip:
 		self.called = False
 		self.a = False
 
-	def test(self, x, y, text):
-
+	def test(self, x, y, text) -> None:
 		if self.text != text or x != self.x or y != self.y:
 			self.text = text
 			# self.timer.set()
@@ -21398,33 +21353,29 @@ class ToolTip:
 
 			self.x = x
 			self.y = y
-			self.w = ddt.get_text_w(text, self.font) + 20 * gui.scale
+			self.w = self.ddt.get_text_w(text, self.font) + 20 * self.gui.scale
 
 		self.called = True
 
 		if self.a is False:
 			self.timer.set()
-			gui.frame_callback_list.append(TestTimer(self.trigger))
+			self.gui.frame_callback_list.append(TestTimer(self.trigger))
 		self.a = True
 
 	def render(self) -> None:
-
 		if self.called is True:
-
 			if self.timer.get() > self.trigger:
-
-				ddt.rect((self.x, self.y, self.w, self.h), colours.box_button_background)
-				# ddt.rect((self.x, self.y, self.w, self.h), colours.grey(45))
-				ddt.text(
-					(self.x + int(self.w / 2), self.y + 4 * gui.scale, 2), self.text,
-					colours.menu_text, self.font, bg=colours.box_button_background)
+				self.ddt.rect((self.x, self.y, self.w, self.h), self.colours.box_button_background)
+				# ddt.rect((self.x, self.y, self.w, self.h), self.colours.grey(45))
+				self.ddt.text(
+					(self.x + int(self.w / 2), self.y + 4 * self.gui.scale, 2), self.text,
+					self.colours.menu_text, self.font, bg=self.colours.box_button_background)
 			else:
-				# gui.update += 1
+				# self.gui.update += 1
 				pass
 		else:
 			self.timer.set()
 			self.a = False
-
 		self.called = False
 
 class ToolTip3:
@@ -21442,23 +21393,23 @@ class ToolTip3:
 		self.font = None
 		self.show = False
 		self.width = 0
-		self.height = 24 * gui.scale
+		self.height = 24 * self.gui.scale
 		self.timer = Timer()
 		self.pl_position = 0
 		self.click_exclude_point = (0, 0)
 
-	def set(self, x, y, text, font, rect):
+	def set(self, x, y, text, font, rect) -> None:
 
-		y -= round(11 * gui.scale)
-		if self.show == False or self.y != y or x != self.x or self.pl_position != pctl.playlist_view_position:
+		y -= round(11 * self.gui.scale)
+		if self.show is False or self.y != y or x != self.x or self.pl_position != self.pctl.playlist_view_position:
 			self.timer.set()
 
-		if point_proximity_test(self.click_exclude_point, mouse_position, 20 * gui.scale):
+		if point_proximity_test(self.click_exclude_point, self.inp.mouse_position, 20 * self.gui.scale):
 			self.timer.set()
 			return
 
-		if inp.mouse_click:
-			self.click_exclude_point = copy.copy(mouse_position)
+		if self.inp.mouse_click:
+			self.click_exclude_point = copy.copy(self.inp.mouse_position)
 			self.timer.set()
 			return
 
@@ -21468,38 +21419,37 @@ class ToolTip3:
 		self.font = font
 		self.show = True
 		self.rect = rect
-		self.pl_position = pctl.playlist_view_position
+		self.pl_position = self.pctl.playlist_view_position
 
-	def render(self):
-
+	def render(self) -> None:
 		if not self.show:
 			return
 
-		if not point_proximity_test(self.click_exclude_point, mouse_position, 20 * gui.scale):
+		if not point_proximity_test(self.click_exclude_point, self.inp.mouse_position, 20 * self.gui.scale):
 			self.click_exclude_point = (0, 0)
 
-		if not coll(
-				self.rect) or inp.mouse_click or gui.level_2_click or self.pl_position != pctl.playlist_view_position:
+		if not self.coll(
+				self.rect) or self.inp.mouse_click or self.gui.level_2_click or self.pl_position != self.pctl.playlist_view_position:
 			self.show = False
 
-		gui.frame_callback_list.append(TestTimer(0.02))
+		self.gui.frame_callback_list.append(TestTimer(0.02))
 
 		if self.timer.get() < 0.6:
 			return
 
-		w = ddt.get_text_w(self.text, 312) + self.height
+		w = self.ddt.get_text_w(self.text, 312) + self.height
 		x = self.x  # - int(self.width / 2)
 		y = self.y
 		h = self.height
 
-		border = 1 * gui.scale
+		border = 1 * self.gui.scale
 
-		ddt.rect((x - border, y - border, w + border * 2, h + border * 2), colours.grey(60))
-		ddt.rect((x, y, w, h), colours.menu_background)
-		p = ddt.text(
-			(x + int(w / 2), y + 3 * gui.scale, 2), self.text, colours.menu_text, 312, bg=colours.menu_background)
+		self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
+		self.ddt.rect((x, y, w, h), self.colours.menu_background)
+		p = self.ddt.text(
+			(x + int(w / 2), y + 3 * self.gui.scale, 2), self.text, self.colours.menu_text, 312, bg=self.colours.menu_background)
 
-		if not coll(self.rect):
+		if not self.coll(self.rect):
 			self.show = False
 
 class RenameTrackBox:
@@ -21520,153 +21470,144 @@ class RenameTrackBox:
 		self.target_track_id = None
 		self.single_only = False
 
-	def activate(self, track_id):
-
+	def activate(self, track_id: int) -> None:
 		self.active = True
 		self.target_track_id = track_id
-		if key_shift_down or key_shiftr_down:
+		if self.inp.key_shift_down or self.inp.key_shiftr_down:
 			self.single_only = True
 		else:
 			self.single_only = False
 
-	def disable_test(self, track_id):
-		if key_shift_down or key_shiftr_down:
-			single_only = True
-		else:
-			single_only = False
+	def disable_test(self, track_id: int) -> bool:
+		single_only = bool(self.inp.key_shift_down or self.inp.key_shiftr_down)
 
 		if not single_only:
-			for item in default_playlist:
-				if pctl.master_library[item].parent_folder_path == pctl.master_library[track_id].parent_folder_path:
-
-					if pctl.master_library[item].is_network is True:
+			for item in self.pctl.default_playlist:
+				if self.pctl.master_library[item].parent_folder_path == self.pctl.master_library[track_id].parent_folder_path:
+					if self.pctl.master_library[item].is_network is True:
 						return True
 		return False
 
-	def render(self):
-
+	def render(self) -> None:
 		if not self.active:
 			return
 
-		if gui.level_2_click:
-			inp.mouse_click = True
-		gui.level_2_click = False
+		if self.gui.level_2_click:
+			self.inp.mouse_click = True
+		self.gui.level_2_click = False
 
-		w = 420 * gui.scale
-		h = 155 * gui.scale
-		x = int(window_size[0] / 2) - int(w / 2)
-		y = int(window_size[1] / 2) - int(h / 2)
+		w = 420 * self.gui.scale
+		h = 155 * self.gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
 
-		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
-		ddt.rect_a((x, y), (w, h), colours.box_background)
-		ddt.text_background_colour = colours.box_background
+		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
+		self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
+		self.ddt.text_background_colour = self.colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
-			rename_track_box.active = False
+		if self.inp.key_esc_press or ((self.inp.mouse_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll((x, y, w, h))):
+			self.tauon.rename_track_box.active = False
 
 		r_todo = []
 
 		# Find matching folder tracks in playlist
 		if not self.single_only:
-			for item in default_playlist:
-				if pctl.master_library[item].parent_folder_path == pctl.master_library[
+			for item in self.pctl.default_playlist:
+				if self.pctl.master_library[item].parent_folder_path == self.pctl.master_library[
 					self.target_track_id].parent_folder_path:
 
 					# Close and display error if any tracks are not single local files
-					if pctl.master_library[item].is_network is True:
-						rename_track_box.active = False
-						show_message(_("Cannot rename"), _("One or more tracks is from a network location!"), mode="info")
-					if pctl.master_library[item].is_cue is True:
-						rename_track_box.active = False
-						show_message(_("This function does not support renaming CUE Sheet tracks."))
+					if self.pctl.master_library[item].is_network is True:
+						self.tauon.rename_track_box.active = False
+						self.show_message(_("Cannot rename"), _("One or more tracks is from a network location!"), mode="info")
+					if self.pctl.master_library[item].is_cue is True:
+						self.tauon.rename_track_box.active = False
+						self.show_message(_("This function does not support renaming CUE Sheet tracks."))
 					else:
 						r_todo.append(item)
 		else:
 			r_todo = [self.target_track_id]
 
-		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Track Renaming"), colours.grey(230), 213)
+		self.ddt.text((x + 10 * self.gui.scale, y + 8 * self.gui.scale), _("Track Renaming"), self.colours.grey(230), 213)
 
 		# if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
-		if rename_files.text != prefs.rename_tracks_template and draw.button(
-			_("Default"), x + w - 85 * gui.scale, y + h - 35 * gui.scale, 70 * gui.scale):
-			rename_files.text = prefs.rename_tracks_template
+		if self.rename_files.text != self.prefs.rename_tracks_template and self.draw.button(
+			_("Default"), x + w - 85 * self.gui.scale, y + h - 35 * self.gui.scale, 70 * self.gui.scale):
+			self.rename_files.text = self.prefs.rename_tracks_template
 
-		# ddt.draw_text((x + 14, y + 40,), NRN + cursor, colours.grey(150), 12)
-		rename_files.draw(x + 14 * gui.scale, y + 39 * gui.scale, colours.box_input_text, width=300)
-		NRN = rename_files.text
+		# ddt.draw_text((x + 14, y + 40,), NRN + cursor, self.colours.grey(150), 12)
+		self.rename_files.draw(x + 14 * self.gui.scale, y + 39 * self.gui.scale, self.colours.box_input_text, width=300)
+		NRN = self.rename_files.text
 
-		ddt.rect_s(
-			(x + 8 * gui.scale, y + 36 * gui.scale, 300 * gui.scale, 22 * gui.scale), colours.box_text_border, 1 * gui.scale)
+		self.ddt.rect_s(
+			(x + 8 * self.gui.scale, y + 36 * self.gui.scale, 300 * self.gui.scale, 22 * self.gui.scale), self.colours.box_text_border, 1 * self.gui.scale)
 
 		afterline = ""
 		warn = False
 		underscore = False
 
 		for item in r_todo:
-
-			if pctl.master_library[item].track_number == "" or pctl.master_library[item].artist == "" or \
-					pctl.master_library[item].title == "" or pctl.master_library[item].album == "":
+			if self.pctl.master_library[item].track_number == "" or self.pctl.master_library[item].artist == "" or \
+					self.pctl.master_library[item].title == "" or self.pctl.master_library[item].album == "":
 				warn = True
 
 			if item == self.target_track_id:
-				afterline = parse_template2(NRN, pctl.master_library[item])
+				afterline = parse_template2(NRN, self.pctl.master_library[item])
 
-		ddt.text((x + 10 * gui.scale, y + 68 * gui.scale), _("BEFORE"), colours.box_text_label, 212)
-		line = trunc_line(pctl.master_library[self.target_track_id].filename, 12, 335)
-		ddt.text((x + 70 * gui.scale, y + 68 * gui.scale), line, colours.grey(210), 211, max_w=340)
+		self.ddt.text((x + 10 * self.gui.scale, y + 68 * self.gui.scale), _("BEFORE"), self.colours.box_text_label, 212)
+		line = self.tauon.trunc_line(self.pctl.master_library[self.target_track_id].filename, 12, 335)
+		self.ddt.text((x + 70 * self.gui.scale, y + 68 * self.gui.scale), line, self.colours.grey(210), 211, max_w=340)
 
-		ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("AFTER"), colours.box_text_label, 212)
-		ddt.text((x + 70 * gui.scale, y + 83 * gui.scale), afterline, colours.grey(210), 211, max_w=340)
+		self.ddt.text((x + 10 * self.gui.scale, y + 83 * self.gui.scale), _("AFTER"), self.colours.box_text_label, 212)
+		self.ddt.text((x + 70 * self.gui.scale, y + 83 * self.gui.scale), afterline, self.colours.grey(210), 211, max_w=340)
 
-		if (len(NRN) > 3 and len(pctl.master_library[self.target_track_id].filename) > 3 and afterline[-3:].lower() !=
-			pctl.master_library[self.target_track_id].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
-			ddt.text(
-				(x + 10 * gui.scale, y + 108 * gui.scale), _("Warning: This may change the file extension"),
+		if (len(NRN) > 3 and len(self.pctl.master_library[self.target_track_id].filename) > 3 and afterline[-3:].lower() !=
+			self.pctl.master_library[self.target_track_id].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
+			self.ddt.text(
+				(x + 10 * self.gui.scale, y + 108 * self.gui.scale), _("Warning: This may change the file extension"),
 				[245, 90, 90, 255],
 				13)
 
 		colour_warn = [143, 186, 65, 255]
 		if not unique_template(NRN):
-			ddt.text(
-				(x + 10 * gui.scale, y + 123 * gui.scale), _("Warning: The filename might not be unique"),
+			self.ddt.text(
+				(x + 10 * self.gui.scale, y + 123 * self.gui.scale), _("Warning: The filename might not be unique"),
 				[245, 90, 90, 255],
 				13)
 		if warn:
-			ddt.text(
-				(x + 10 * gui.scale, y + 135 * gui.scale), _("Warning: A track has incomplete metadata"),
+			self.ddt.text(
+				(x + 10 * self.gui.scale, y + 135 * self.gui.scale), _("Warning: A track has incomplete metadata"),
 				[245, 90, 90, 255],
 				13)
 			colour_warn = [180, 60, 60, 255]
 
 		label = _("Write") + " (" + str(len(r_todo)) + ")"
 
-		if draw.button(
-			label, x + (8 + 300 + 10) * gui.scale, y + 36 * gui.scale, 80 * gui.scale,
-			text_highlight_colour=colours.grey(255), background_highlight_colour=colour_warn,
-			tooltip=_("Physically renames all the tracks in the folder")) or inp.level_2_enter:
+		if self.draw.button(
+			label, x + (8 + 300 + 10) * self.gui.scale, y + 36 * self.gui.scale, 80 * self.gui.scale,
+			text_highlight_colour=self.colours.grey(255), background_highlight_colour=colour_warn,
+			tooltip=_("Physically renames all the tracks in the folder")) or self.inp.level_2_enter:
 
-			inp.mouse_click = False
+			self.inp.mouse_click = False
 			total_todo = len(r_todo)
 			pre_state = 0
 
 			for item in r_todo:
-
-				if pctl.playing_state > 0 and item == pctl.track_queue[pctl.queue_step]:
-					pre_state = pctl.stop(True)
+				if self.pctl.playing_state > 0 and item == self.pctl.track_queue[self.pctl.queue_step]:
+					pre_state = self.pctl.stop(True)
 
 				try:
+					afterline = parse_template2(NRN, self.pctl.master_library[item], strict=True)
 
-					afterline = parse_template2(NRN, pctl.master_library[item], strict=True)
-
-					oldname = pctl.master_library[item].filename
-					oldpath = pctl.master_library[item].fullpath
+					oldname = self.pctl.master_library[item].filename
+					oldpath = self.pctl.master_library[item].fullpath
 
 					logging.info("Renaming...")
 
-					star = star_store.full_get(item)
-					star_store.remove(item)
+					star = self.star_store.full_get(item)
+					self.star_store.remove(item)
 
-					oldpath = pctl.master_library[item].fullpath
+					oldpath = self.pctl.master_library[item].fullpath
 
 					oldsplit = os.path.split(oldpath)
 
@@ -21685,37 +21626,37 @@ class RenameTrackBox:
 						total_todo -= 1
 						continue
 
-					os.rename(pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
+					os.rename(self.pctl.master_library[item].fullpath, os.path.join(oldsplit[0], afterline))
 
-					pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
-					pctl.master_library[item].filename = afterline
+					self.pctl.master_library[item].fullpath = os.path.join(oldsplit[0], afterline)
+					self.pctl.master_library[item].filename = afterline
 
-					search_string_cache.pop(item, None)
-					search_dia_string_cache.pop(item, None)
+					self.tauon.search_string_cache.pop(item, None)
+					self.tauon.search_dia_string_cache.pop(item, None)
 
 					if star is not None:
-						star_store.insert(item, star)
+						self.star_store.insert(item, star)
 
 				except Exception:
 					logging.exception("Rendering error")
 					total_todo -= 1
 
-			rename_track_box.active = False
+			self.tauon.rename_track_box.active = False
 			logging.info("Done")
 			if pre_state == 1:
-				pctl.revert()
+				self.pctl.revert()
 
 			if total_todo != len(r_todo):
-				show_message(
+				self.show_message(
 					_("Rename complete."),
 					_("{N} / {T} filenames were written.")
 					.format(N=str(total_todo), T=str(len(r_todo))), mode="warning")
 			else:
-				show_message(
+				self.show_message(
 					_("Rename complete."),
 					_("{N} / {T} filenames were written.")
 					.format(N=str(total_todo), T=str(len(r_todo))), mode="done")
-			pctl.notify_change()
+			self.pctl.notify_change()
 
 class TransEditBox:
 
@@ -21739,79 +21680,78 @@ class TransEditBox:
 		self.selected = []
 		self.playlist = -1
 
-	def render(self):
-
+	def render(self) -> None:
 		if not self.active:
 			return
 
-		if gui.level_2_click:
-			inp.mouse_click = True
-		gui.level_2_click = False
+		if self.gui.level_2_click:
+			self.inp.mouse_click = True
+		self.gui.level_2_click = False
 
-		w = 500 * gui.scale
-		h = 255 * gui.scale
-		x = int(window_size[0] / 2) - int(w / 2)
-		y = int(window_size[1] / 2) - int(h / 2)
+		w = 500 * self.gui.scale
+		h = 255 * self.gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
 
-		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
-		ddt.rect_a((x, y), (w, h), colours.box_background)
-		ddt.text_background_colour = colours.box_background
+		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
+		self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
+		self.ddt.text_background_colour = self.colours.box_background
 
-		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
+		if self.inp.key_esc_press or ((self.inp.mouse_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll((x, y, w, h))):
 			self.active = False
 
-		select = list(set(shift_selection))
-		if not select and pctl.selected_ready():
-			select = [pctl.selected_in_playlist]
+		select = list(set(self.gui.shift_selection))
+		if not select and self.pctl.selected_ready():
+			select = [self.pctl.selected_in_playlist]
 
-		titles = [pctl.get_track(default_playlist[s]).title for s in select]
-		artists = [pctl.get_track(default_playlist[s]).artist for s in select]
-		albums = [pctl.get_track(default_playlist[s]).album for s in select]
-		album_artists = [pctl.get_track(default_playlist[s]).album_artist for s in select]
+		titles        = [self.pctl.get_track(self.pctl.default_playlist[s]).title for s in select]
+		artists       = [self.pctl.get_track(self.pctl.default_playlist[s]).artist for s in select]
+		albums        = [self.pctl.get_track(self.pctl.default_playlist[s]).album for s in select]
+		album_artists = [self.pctl.get_track(self.pctl.default_playlist[s]).album_artist for s in select]
 
 		#logging.info(select)
-		if select != self.selected or pctl.active_playlist_viewing != self.playlist:
+		if select != self.selected or self.pctl.active_playlist_viewing != self.playlist:
 			#logging.info("reset")
 			self.selected = select
-			self.playlist = pctl.active_playlist_viewing
-			edit_album.clear()
-			edit_artist.clear()
-			edit_title.clear()
-			edit_album_artist.clear()
+			self.playlist = self.pctl.active_playlist_viewing
+			self.edit_album.clear()
+			self.edit_artist.clear()
+			self.edit_title.clear()
+			self.edit_album_artist.clear()
 
 			if len(select) == 0:
 				return
 
-			tr = pctl.get_track(default_playlist[select[0]])
-			edit_title.set_text(tr.title)
+			tr = self.pctl.get_track(self.pctl.default_playlist[select[0]])
+			self.edit_title.set_text(tr.title)
 
 			if check_equal(artists):
-				edit_artist.set_text(artists[0])
+				self.edit_artist.set_text(artists[0])
 
 			if check_equal(albums):
-				edit_album.set_text(albums[0])
+				self.edit_album.set_text(albums[0])
 
 			if check_equal(album_artists):
-				edit_album_artist.set_text(album_artists[0])
+				self.edit_album_artist.set_text(album_artists[0])
 
-		x += round(20 * gui.scale)
-		y += round(18 * gui.scale)
+		x += round(20 * self.gui.scale)
+		y += round(18 * self.gui.scale)
 
-		ddt.text((x, y), _("Simple tag editor"), colours.box_title_text, 215)
+		self.ddt.text((x, y), _("Simple tag editor"), self.colours.box_title_text, 215)
 
-		if draw.button(_("?"), x + 440 * gui.scale, y):
-			show_message(
+		if self.draw.button(_("?"), x + 440 * self.gui.scale, y):
+			self.show_message(
 				_("Press Enter in each field to apply its changes to local database."),
 				_("When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"),
 				mode="info")
 
-		y += round(24 * gui.scale)
-		ddt.text((x, y), _("Number of tracks selected: {N}").format(N=len(select)), colours.box_title_text, 313)
+		y += round(24 * self.gui.scale)
+		self.ddt.text((x, y), _("Number of tracks selected: {N}").format(N=len(select)), self.colours.box_title_text, 313)
 
-		y += round(24 * gui.scale)
+		y += round(24 * self.gui.scale)
 
-		if inp.key_tab_press:
-			if key_shift_down or key_shiftr_down:
+		if self.inp.key_tab_press:
+			if self.inp.key_shift_down or self.inp.key_shiftr_down:
 				self.active_field -= 1
 			else:
 				self.active_field += 1
@@ -21825,14 +21765,14 @@ class TransEditBox:
 
 		def field_edit(x, y, label, field_number, names, text_box):
 			changed = 0
-			ddt.text((x, y), label, colours.box_text_label, 11)
-			y += round(16 * gui.scale)
-			rect1 = (x, y, round(370 * gui.scale), round(17 * gui.scale))
-			fields.add(rect1)
-			if (coll(rect1) and inp.mouse_click) or (inp.key_tab_press and self.active_field == field_number):
+			self.ddt.text((x, y), label, self.colours.box_text_label, 11)
+			y += round(16 * self.gui.scale)
+			rect1 = (x, y, round(370 * self.gui.scale), round(17 * self.gui.scale))
+			self.fields.add(rect1)
+			if (self.coll(rect1) and self.inp.mouse_click) or (self.inp.key_tab_press and self.active_field == field_number):
 				self.active_field = field_number
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			tc = colours.box_input_text
+			self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
+			tc = self.colours.box_input_text
 			if names and check_equal(names) and text_box.text == names[0]:
 				h, l, s = rgb_to_hls(tc[0], tc[1], tc[2])
 				l *= 0.7
@@ -21841,90 +21781,86 @@ class TransEditBox:
 				changed = 1
 			if not (names and check_equal(names)) and not text_box.text:
 				changed = 0
-				ddt.text((x + round(2 * gui.scale), y), _("<Multiple selected>"), colours.box_text_label, 12)
-			text_box.draw(x + round(3 * gui.scale), y, tc, self.active_field == field_number, width=370 * gui.scale)
+				self.ddt.text((x + round(2 * self.gui.scale), y), _("<Multiple selected>"), self.colours.box_text_label, 12)
+			text_box.draw(x + round(3 * self.gui.scale), y, tc, self.active_field == field_number, width=370 * self.gui.scale)
 			if changed:
-				ddt.text((x + 377 * gui.scale, y - 1 * gui.scale), "⮨", colours.box_title_text, 214)
+				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "⮨", self.colours.box_title_text, 214)
 			return changed
 
 		changed = 0
 		if len(select) == 1:
-			changed = field_edit(x, y, _("Track title"), 0, titles, edit_title)
-		y += round(40 * gui.scale)
-		changed += field_edit(x, y, _("Album name"), 1, albums, edit_album)
-		y += round(40 * gui.scale)
-		changed += field_edit(x, y, _("Artist name"), 2, artists, edit_artist)
-		y += round(40 * gui.scale)
-		changed += field_edit(x, y, _("Album-artist name"), 3, album_artists, edit_album_artist)
+			changed = field_edit(x, y, _("Track title"), 0, titles, self.edit_title)
+		y += round(40 * self.gui.scale)
+		changed += field_edit(x, y, _("Album name"), 1, albums, self.edit_album)
+		y += round(40 * self.gui.scale)
+		changed += field_edit(x, y, _("Artist name"), 2, artists, self.edit_artist)
+		y += round(40 * self.gui.scale)
+		changed += field_edit(x, y, _("Album-artist name"), 3, album_artists, self.edit_album_artist)
 
-		y += round(40 * gui.scale)
+		y += round(40 * self.gui.scale)
 		for s in select:
-			tr = pctl.get_track(default_playlist[s])
+			tr = self.pctl.get_track(self.pctl.default_playlist[s])
 			if tr.is_network:
-				ddt.text((x, y), _("Editing network tracks is not recommended!"), [245, 90, 90, 255], 312)
+				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), [245, 90, 90, 255], 312)
 
-		if inp.key_return_press:
-
-			gui.pl_update += 1
+		if self.inp.key_return_press:
+			self.gui.pl_update += 1
 			if self.active_field == 0 and len(select) == 1:
 				for s in select:
-					tr = pctl.get_track(default_playlist[s])
-					star = star_store.full_get(tr.index)
-					star_store.remove(tr.index)
-					tr.title = edit_title.text
-					star_store.merge(tr.index, star)
+					tr = self.pctl.get_track(self.pctl.default_playlist[s])
+					star = self.star_store.full_get(tr.index)
+					self.star_store.remove(tr.index)
+					tr.title = self.edit_title.text
+					self.star_store.merge(tr.index, star)
 
 			if self.active_field == 1:
 				for s in select:
-					tr = pctl.get_track(default_playlist[s])
-					tr.album = edit_album.text
+					tr = self.pctl.get_track(self.pctl.default_playlist[s])
+					tr.album = self.edit_album.text
 			if self.active_field == 2:
 				for s in select:
-					tr = pctl.get_track(default_playlist[s])
-					star = star_store.full_get(tr.index)
-					star_store.remove(tr.index)
-					tr.artist = edit_artist.text
-					star_store.merge(tr.index, star)
+					tr = self.pctl.get_track(self.pctl.default_playlist[s])
+					star = self.star_store.full_get(tr.index)
+					self.star_store.remove(tr.index)
+					tr.artist = self.edit_artist.text
+					self.star_store.merge(tr.index, star)
 			if self.active_field == 3:
 				for s in select:
-					tr = pctl.get_track(default_playlist[s])
-					tr.album_artist = edit_album_artist.text
-			tauon.bg_save()
+					tr = self.pctl.get_track(self.pctl.default_playlist[s])
+					tr.album_artist = self.edit_album_artist.text
+			self.tauon.bg_save()
 
-
-		ww = ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * gui.scale)
-		if gui.write_tag_in_progress:
-			text = f"{gui.tag_write_count}/{len(select)}"
+		ww = self.ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * self.gui.scale)
+		if self.gui.write_tag_in_progress:
+			text = f"{self.gui.tag_write_count}/{len(select)}"
 		text = _("WRITE TAGS")
-		if draw.button(text, (x + w) - ww, y - round(0) * gui.scale):
+		if self.draw.button(text, (x + w) - ww, y - round(0) * self.gui.scale):
 			if changed:
-				show_message(_("Press enter on fields to apply your changes first!"))
+				self.show_message(_("Press enter on fields to apply your changes first!"))
 				return
 
-			if gui.write_tag_in_progress:
+			if self.gui.write_tag_in_progress:
 				return
 
-			def write_tag_go():
-
-
+			def write_tag_go() -> None:
 				for s in select:
-					tr = pctl.get_track(default_playlist[s])
+					tr = self.pctl.get_track(self.pctl.default_playlist[s])
 
 					if tr.is_network:
-						show_message(_("Writing to a network track is not applicable!"), mode="error")
-						gui.write_tag_in_progress = True
+						self.show_message(_("Writing to a network track is not applicable!"), mode="error")
+						self.gui.write_tag_in_progress = True
 						return
 					if tr.is_cue:
-						show_message(_("Cannot write CUE sheet types!"), mode="error")
-						gui.write_tag_in_progress = True
+						self.show_message(_("Cannot write CUE sheet types!"), mode="error")
+						self.gui.write_tag_in_progress = True
 						return
 
 					muta = mutagen.File(tr.fullpath, easy=True)
 
-					def write_tag(track: TrackClass, muta, field_name_tauon, field_name_muta):
+					def write_tag(track: TrackClass, muta, field_name_tauon, field_name_muta) -> int:
 						item = muta.get(field_name_muta)
 						if item and len(item) > 1:
-							show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
+							self.show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
 							return 0
 						if not getattr(tr, field_name_tauon):  # Want delete tag field
 							if item:
@@ -21939,15 +21875,15 @@ class TransEditBox:
 					write_tag(tr, muta, "album_artist", "albumartist")
 
 					muta.save()
-					gui.tag_write_count += 1
-					gui.update += 1
-				tauon.bg_save()
-				if not gui.message_box:
-					show_message(_("{N} files rewritten").format(N=gui.tag_write_count), mode="done")
-				gui.write_tag_in_progress = False
-			if not gui.write_tag_in_progress:
-				gui.tag_write_count = 0
-				gui.write_tag_in_progress = True
+					self.gui.tag_write_count += 1
+					self.gui.update += 1
+				self.tauon.bg_save()
+				if not self.gui.message_box:
+					self.show_message(_("{N} files rewritten").format(N=self.gui.tag_write_count), mode="done")
+				self.gui.write_tag_in_progress = False
+			if not self.gui.write_tag_in_progress:
+				self.gui.tag_write_count = 0
+				self.gui.write_tag_in_progress = True
 				shooter(write_tag_go)
 
 class SubLyricsBox:
@@ -21967,37 +21903,35 @@ class SubLyricsBox:
 		self.target_track = None
 		self.active_field = 1
 
-	def activate(self, track: TrackClass):
-
+	def activate(self, track: TrackClass) -> None:
 		self.active = True
-		gui.box_over = True
+		self.gui.box_over = True
 		self.target_track = track
 
-		sub_lyrics_a.text = prefs.lyrics_subs.get(self.target_track.artist, "")
-		sub_lyrics_b.text = prefs.lyrics_subs.get(self.target_track.title, "")
+		self.sub_lyrics_a.text = self.prefs.lyrics_subs.get(self.target_track.artist, "")
+		self.sub_lyrics_b.text = self.prefs.lyrics_subs.get(self.target_track.title, "")
 
-		if not sub_lyrics_a.text:
-			sub_lyrics_a.text = self.target_track.artist
-		if not sub_lyrics_b.text:
-			sub_lyrics_b.text = self.target_track.title
+		if not self.sub_lyrics_a.text:
+			self.sub_lyrics_a.text = self.target_track.artist
+		if not self.sub_lyrics_b.text:
+			self.sub_lyrics_b.text = self.target_track.title
 
-	def render(self):
-
+	def render(self) -> None:
 		if not self.active:
 			return
 
-		if gui.level_2_click:
-			inp.mouse_click = True
-		gui.level_2_click = False
+		if self.gui.level_2_click:
+			self.inp.mouse_click = True
+		self.gui.level_2_click = False
 
-		w = 400 * gui.scale
-		h = 155 * gui.scale
-		x = int(window_size[0] / 2) - int(w / 2)
-		y = int(window_size[1] / 2) - int(h / 2)
+		w = 400 * self.gui.scale
+		h = 155 * self.gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
 
-		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
-		ddt.rect_a((x, y), (w, h), colours.box_background)
-		ddt.text_background_colour = colours.box_background
+		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
+		self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
+		self.ddt.text_background_colour = self.colours.box_background
 
 		if key_esc_press or ((inp.mouse_click or right_click or level_2_right_click) and not coll((x, y, w, h))):
 			self.active = False
