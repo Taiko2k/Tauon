@@ -21347,8 +21347,8 @@ class StyleOverlay:
 class ToolTip:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.gui = tauon.gui
-		self.ddt = tauon.ddt
+		self.gui     = tauon.gui
+		self.ddt     = tauon.ddt
 		self.colours = tauon.colours
 		self.text = ""
 		self.h = 24 * self.gui.scale
