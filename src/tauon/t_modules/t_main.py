@@ -11310,22 +11310,22 @@ class Tauon:
 
 				title = _("Unknown Track")
 				tr = self.pctl.playing_object()
-				if tr.artist != "" and tr.title != "":
+				if tr.artist != "" and tr.title != "" and self.pctl.playing_state == 3:
 					title = tr.title + " | " + tr.artist
-					if len(title) > 150:
-						title = _("Unknown Track")
-
-				if tr.album:
-					album = tr.album
 				else:
-					album = _("Unknown Album")
-					if self.pctl.playing_state == 3:
-						album = self.radiobox.loaded_station["title"]
+					title = tr.title
+				if len(title) > 150:
+					title = _("Unknown Track")
 
-				if len(album) == 1:
+				artist = tr.artist if tr.artist != "" else _("Unknown Artist")
+
+				if self.pctl.playing_state == 3 and tr.album:
+					album = self.radiobox.loaded_station["title"]
+				else:
+					album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
+
+				if album and len(album) == 1:
 					album += " "
-
-				end_time = start_time + tr.length
 
 				if state == 1:
 					#logging.info("PLAYING: " + title)
@@ -11340,10 +11340,11 @@ class Tauon:
 					RPC.update(
 						activity_type = ActivityType.LISTENING,
 						pid=pid,
-						state=album,
+						**({"state": artist} if not self.pctl.playing_state == 3 else {"state": album}),
 						details=title,
 						start=int(start_time),
-						end=int(end_time),
+						**({"end": int(start_time + tr.length)} if not self.pctl.playing_state == 3 else {}),
+						**({"large_text": album} if album and not self.pctl.playing_state == 3 else {}),
 						large_image=large_image,
 						small_image=small_image)
 
