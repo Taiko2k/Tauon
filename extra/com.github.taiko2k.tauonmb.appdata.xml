@@ -61,11 +61,10 @@
   <releases>
 
 
-    <release version="7.9.0" date="2025-01-16">
+    <release version="8.0.0" date="2025-04-01">
       <description>
         <ul>
-          <li>Added Tidal support</li>
-          <li>Many bug fixes</li>
+          <li>New features and bug fixes</li>
         </ul>
       </description>
     </release>
