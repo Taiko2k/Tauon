@@ -20735,6 +20735,7 @@ class QueueBox:
 
 		sep_colour = alpha_blend([255, 255, 255, 11], colours.queue_background)
 
+
 		if y > gui.panelY + 10 * gui.scale:  # Draw fancy light mode border
 			gui.queue_frame_draw = y
 		# else:
@@ -20750,6 +20751,11 @@ class QueueBox:
 		if coll(box_rect) and quick_drag and not pctl.force_queue:
 			ddt.rect(box_rect, [255, 255, 255, 2])
 			ddt.text_background_colour = alpha_blend([255, 255, 255, 2], ddt.text_background_colour)
+
+		if prefs.show_playlist_list:  # draw top separator line
+			rect = (0, gui.panelY + pl_box_h, gui.lspw, round(gui.scale * 2))
+			ddt.rect(rect, [0, 0, 0, 255])
+			ddt.rect(rect, sep_colour)
 
 		# if y < gui.panelY * 2:
 		#     ddt.rect((x, y - 3 * gui.scale, w, 30 * gui.scale), colours.queue_background, True)
