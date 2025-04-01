@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v8.0.1
+
+ - **Fixed** crash on queue scroll
+
+
 ### v8.0.0
 
  - **Added** Transparent accent theme mode
