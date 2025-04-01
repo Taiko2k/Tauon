@@ -24017,7 +24017,7 @@ class Over:
 
 		y += 15 * gui.scale
 
-		if key_shift_down and self.button2(x + round(95 * gui.scale), y, "koel", width=84 * gui.scale):
+		if inp.key_shift_down and self.button2(x + round(95 * gui.scale), y, "koel", width=84 * gui.scale):
 			self.account_view = 6
 
 		if self.button2(x, y, "Jellyfin", width=84 * gui.scale):
@@ -24563,7 +24563,7 @@ class Over:
 			y += 25 * gui.scale
 			x += 23 * gui.scale
 			if self.button(x, y, _("Flip current")):
-				if key_shift_down:
+				if self.inp.key_shift_down:
 					prefs.bg_flips.clear()
 					self.show_message(_("Reset flips"), mode="done")
 				else:
@@ -24744,7 +24744,7 @@ class Over:
 					webbrowser.open(link_pa2[2], new=2, autoraise=True)
 
 	def clear_local_loves(self) -> None:
-		if not key_shift_down:
+		if not self.inp.key_shift_down:
 			self.show_message(
 				_("This will mark all tracks in local database as unloved!"),
 				_("Press button again while holding shift key if you're sure you want to do that."),
@@ -24759,7 +24759,7 @@ class Over:
 		self.show_message(_("Cleared all loves"), mode="done")
 
 	def get_scrobble_counts(self) -> None:
-		if not key_shift_down:
+		if not self.inp.key_shift_down:
 			t = self.lastfm.get_all_scrobbles_estimate_time()
 			if not t:
 				self.show_message(_("Error, not  connected to last.fm"))
@@ -24783,7 +24783,7 @@ class Over:
 		self.show_message(_("Cleared all scrobble counts"), mode="done")
 
 	def get_friend_love(self) -> None:
-		if not key_shift_down:
+		if not self.inp.key_shift_down:
 			self.show_message(
 				_("Warning: This process can take a long time to complete! (up to an hour or more)"),
 				_("This feature is not recommended for accounts that have many friends."),
@@ -26529,7 +26529,7 @@ class TopPanel:
 							# # Reveal the tab in case it has been hidden
 							# pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
 
-							if key_shift_down:
+							if self.inp.key_shift_down:
 								pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[tauon.playlist_box.drag_on].playlist_ids
 								pctl.delete_playlist(tauon.playlist_box.drag_on, check_lock=True, force=True)
 							else:
@@ -26593,7 +26593,7 @@ class TopPanel:
 		if self.inp.mouse_up and playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < self.height:
 			if gui.radio_view:
 				pass
-			elif key_ctrl_down:
+			elif self.inp.key_ctrl_down:
 				tauon.gen_dupe(tauon.playlist_box.drag_on)
 
 			else:
@@ -26692,7 +26692,7 @@ class TopPanel:
 			# Drag to move playlist
 			if tab_hit:
 				if self.inp.mouse_down and i != playlist_box.drag_on and playlist_box.drag is True:
-					if key_shift_down:
+					if self.inp.key_shift_down:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 160, 200, 255])
 					elif tauon.playlist_box.drag_on < i:
 						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
@@ -26738,7 +26738,7 @@ class TopPanel:
 
 			# Draw end drag tab indicator
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY:
-				if key_ctrl_down:
+				if self.inp.key_ctrl_down:
 					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [255, 190, 0, 255])
 				else:
 					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255])
@@ -29177,7 +29177,7 @@ class StandardPlaylist:
 						gui.pl_update += 1
 						# Add folder to queue if middle click
 						if self.inp.middle_click and is_level_zero():
-							if key_ctrl_down:  # Add as ungrouped tracks
+							if self.inp.key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
 								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
 								while i < len(pctl.default_playlist) and parent == pctl.get_track(
@@ -29230,14 +29230,14 @@ class StandardPlaylist:
 							self.inp.quick_drag = True
 							set_drag_source()
 
-							if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+							if not pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
 								self.gui.playlist_hold = True
 
 							selection_stage = 1
 							temp = get_folder_tracks_local(track_position)
 							pctl.selected_in_playlist = track_position
 
-							if len(shift_selection) > 0 and key_shift_down:
+							if len(shift_selection) > 0 and self.inp.key_shift_down:
 								if track_position < shift_selection[0]:
 									for item in reversed(temp):
 										if item not in shift_selection:
@@ -29253,7 +29253,7 @@ class StandardPlaylist:
 					# Should draw drag highlight?
 
 					if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
-						if len(shift_selection) < 2 and not key_shift_down:
+						if len(shift_selection) < 2 and not self.inp.key_shift_down:
 							pass
 						else:
 							drag_highlight = True
@@ -29301,7 +29301,7 @@ class StandardPlaylist:
 				line_hit = False
 
 			# Double click to play
-			if key_shift_down is False and inp.d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
+			if self.inp.key_shift_down is False and inp.d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
 					last_click_location, input_box):
 
 				pctl.jump(track_id, track_position)
@@ -29332,7 +29332,7 @@ class StandardPlaylist:
 					pctl.stop_mode = 0
 
 			# Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
-			if len(shift_selection) > 1 and self.inp.mouse_up and line_over and not key_shift_down and not key_ctrl_down and point_proximity_test(
+			if len(shift_selection) > 1 and self.inp.mouse_up and line_over and not self.inp.key_shift_down and not self.inp.key_ctrl_down and point_proximity_test(
 					gui.drag_source_position, self.inp.mouse_position, 15):  # and not self.gui.playlist_hold:
 				shift_selection = [track_position]
 				pctl.selected_in_playlist = track_position
@@ -29343,7 +29343,7 @@ class StandardPlaylist:
 			# if self.inp.mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
 			#     if not pl_is_locked(pctl.active_playlist_viewing):
 			#         self.gui.playlist_hold = True
-			#     elif key_shift_down:
+			#     elif self.inp.key_shift_down:
 			#         self.gui.playlist_hold = True
 
 			# Begin drag single track
@@ -29355,7 +29355,7 @@ class StandardPlaylist:
 			if move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and coll((
 					left + highlight_left, line_y, highlight_width, gui.playlist_row_height))):
 
-				if len(shift_selection) > 1 or key_shift_down:
+				if len(shift_selection) > 1 or self.inp.key_shift_down:
 					if track_position not in shift_selection:  # p_track != self.gui.playlist_hold_position and
 
 						if len(shift_selection) == 0:
@@ -29405,7 +29405,7 @@ class StandardPlaylist:
 
 			# Test show drag indicator
 			if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
-				if len(shift_selection) > 1 or key_shift_down:
+				if len(shift_selection) > 1 or self.inp.key_shift_down:
 					drag_highlight = True
 
 			# Right click menu activation
@@ -29430,7 +29430,7 @@ class StandardPlaylist:
 					pass
 				else:
 					selection_stage = 2
-					if key_shift_down:
+					if self.inp.key_shift_down:
 						start_s = track_position
 						end_s = pctl.selected_in_playlist
 						if end_s < start_s:
@@ -29440,19 +29440,19 @@ class StandardPlaylist:
 								shift_selection.append(y)
 						shift_selection.sort()
 						pctl.selected_in_playlist = track_position
-					elif key_ctrl_down:
+					elif self.inp.key_ctrl_down:
 						shift_selection.append(track_position)
 					else:
 						pctl.selected_in_playlist = track_position
 						shift_selection = [pctl.selected_in_playlist]
 
-				if not pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+				if not pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
 					self.gui.playlist_hold = True
 					self.gui.playlist_hold_position = track_position
 
 			# Activate drag if shift key down
 			if self.inp.quick_drag and pl_is_locked(pctl.active_playlist_viewing) and self.inp.mouse_down:
-				if key_shift_down:
+				if self.inp.key_shift_down:
 					self.gui.playlist_hold = True
 				else:
 					self.gui.playlist_hold = False
@@ -31649,7 +31649,7 @@ class PlaylistBox:
 
 					# Move playlist tab
 					if i != self.drag_on and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 10 * gui.scale):
-						if key_shift_down:
+						if self.inp.key_shift_down:
 							pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[self.drag_on].playlist_ids
 							delete_playlist(self.drag_on, force=True)
 						else:
@@ -31806,7 +31806,7 @@ class PlaylistBox:
 				# Draw indicators for moving tab
 				if self.drag and i != self.drag_on and not point_proximity_test(
 					gui.drag_source_position, self.inp.mouse_position, 10 * gui.scale):
-					if key_shift_down:
+					if self.inp.key_shift_down:
 						ddt.rect(
 							(tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h),
 							[80, 160, 200, 255])
@@ -31867,7 +31867,7 @@ class PlaylistBox:
 			# Move tab to end playlist if dragged past end
 			if self.drag:
 				if self.inp.mouse_up:
-					if key_ctrl_down:
+					if self.inp.key_ctrl_down:
 						# Duplicate playlist on ctrl
 						gen_dupe(playlist_box.drag_on)
 						gui.update += 2
@@ -31880,7 +31880,7 @@ class PlaylistBox:
 						move_playlist(self.drag_on, i)
 						gui.update += 2
 						self.drag = False
-				elif key_ctrl_down:
+				elif self.inp.key_ctrl_down:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), [255, 190, 0, 255])
 				else:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
@@ -33401,7 +33401,7 @@ class QueueBox:
 			# if shift selection contains only same folder
 			for position in shift_selection:
 				if pctl.get_track(self.pctl.default_playlist[position]).parent_folder_path != pctl.get_track(
-						main_track_id).parent_folder_path or key_ctrl_down:
+						main_track_id).parent_folder_path or self.inp.key_ctrl_down:
 					break
 			else:
 				# Add as album type
@@ -35290,9 +35290,9 @@ class Showcase:
 				x -= 100 * gui.scale
 				w = window_size[0] - x - 30 * gui.scale
 
-				if key_up_press and not (key_ctrl_down or key_shift_down or key_shiftr_down):
+				if key_up_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
 					lyrics_ren.lyrics_position += 35 * gui.scale
-				if key_down_press and not (key_ctrl_down or key_shift_down or key_shiftr_down):
+				if key_down_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
 					lyrics_ren.lyrics_position -= 35 * gui.scale
 
 				lyrics_ren.test_update(track)
@@ -37373,7 +37373,7 @@ def koel_get_album_thread() -> None:
 def do_exit_button() -> None:
 	if inp.mouse_up or ab_click:
 		if gui.tray_active and prefs.min_to_tray:
-			if key_shift_down:
+			if inp.key_shift_down:
 				tauon.exit("User clicked X button with shift key")
 				return
 			tauon.min_to_tray()
@@ -37414,7 +37414,7 @@ def draw_window_tools():
 
 	# rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
 	# fields.add(rect)
-	# prefs.left_window_control = not key_shift_down
+	# prefs.left_window_control = not inp.key_shift_down
 	macstyle = gui.macstyle
 
 	bg_off = colours.window_buttons_bg
@@ -38616,7 +38616,7 @@ def flush_artist_bio(artist):
 	artist_info_box.artist_on = None
 
 def test_shift(_): # TODO(Martin): DELETE, now under Input
-	return key_shift_down or key_shiftr_down
+	return inp.key_shift_down or inp.key_shiftr_down
 
 def test_artist_dl(_):
 	return not prefs.auto_dl_artist_data
@@ -39468,7 +39468,7 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 	"""Return amount of removed objects or None"""
 	index = track_object.index
 
-	if key_shift_down or key_shiftr_down:
+	if inp.key_shift_down or inp.key_shiftr_down:
 		tracks = [index]
 		if track_object.is_cue or track_object.is_network:
 			show_message(_("Error - No handling for this kind of track"), mode="warning")
@@ -39589,7 +39589,7 @@ def delete_track_image_deco(track_object: TrackClass):
 			line_colour = colours.menu_text_disabled
 
 		text = _("Delete Embedded | Folder")
-		if key_shift_down or key_shiftr_down:
+		if inp.key_shift_down or inp.key_shiftr_down:
 			text = _("Delete Embedded | Track")
 
 	return [line_colour, colours.menu_background, text]
@@ -39651,7 +39651,7 @@ def lightning_move_test(discard):
 
 # def copy_deco():
 #	 line = "Copy"
-#	 if key_shift_down:
+#	 if inp.key_shift_down:
 #		 line = "Copy" #Folder From Library"
 #	 else:
 #		 line = "Copy"
@@ -42376,7 +42376,7 @@ def convert_folder(index: int):
 		return
 
 	folder = []
-	if key_shift_down or key_shiftr_down:
+	if inp.key_shift_down or inp.key_shiftr_down:
 		track_object = pctl.get_track(index)
 		if track_object.is_network:
 			show_message(_("Transcoding tracks from network locations is not supported"))
@@ -42496,7 +42496,7 @@ def menu_paste(position):
 def s_copy():
 	# Copy tracks to internal clipboard
 	# gui.lightning_copy = False
-	# if key_shift_down:
+	# if inp.key_shift_down:
 	gui.lightning_copy = True
 
 	clip = copy_from_clipboard()
@@ -42519,7 +42519,7 @@ def s_copy():
 
 def lightning_paste():
 	move = True
-	# if not key_shift_down:
+	# if not inp.key_shift_down:
 	#	 move = False
 
 	move_track = pctl.get_track(cargo[0])
@@ -43049,7 +43049,7 @@ def delete_track(track_ref):
 	pctl.notify_change()
 
 def rename_tracks_deco(track_id: int):
-	if key_shift_down or key_shiftr_down:
+	if inp.key_shift_down or inp.key_shiftr_down:
 		return [colours.menu_text, colours.menu_background, _("Rename (Single track)")]
 	return [colours.menu_text, colours.menu_background, _("Rename Tracks…")]
 
@@ -43448,7 +43448,7 @@ def editor(index: int | None) -> None:
 	todo = []
 	obs = []
 
-	if key_shift_down and index is not None:
+	if inp.key_shift_down and index is not None:
 		todo = [index]
 		obs = [pctl.master_library[index]]
 	elif index is None:
@@ -43611,7 +43611,7 @@ def launch_editor_selection(index: int):
 	mini_t.start()
 
 def edit_deco(index: int):
-	if key_shift_down or key_shiftr_down:
+	if inp.key_shift_down or inp.key_shiftr_down:
 		return [colours.menu_text, colours.menu_background, prefs.tag_editor_name + " (Single track)"]
 	return [colours.menu_text, colours.menu_background, _("Edit with ") + prefs.tag_editor_name]
 
@@ -43778,7 +43778,7 @@ def toggle_transfer(mode: int = 0) -> bool:
 	return None
 
 def transcode_deco():
-	if key_shift_down or key_shiftr_down:
+	if inp.key_shift_down or inp.key_shiftr_down:
 		return [colours.menu_text, colours.menu_background, _("Transcode Single")]
 	return [colours.menu_text, colours.menu_background, _("Transcode Folder")]
 
@@ -44962,7 +44962,7 @@ def import_popm():
 	gui.pl_update += 1
 
 def clear_ratings() -> None:
-	if not key_shift_down:
+	if not inp.key_shift_down:
 		show_message(
 			_("This will delete all track and album ratings from the local database!"),
 			_("Press button again while holding shift key if you're sure you want to do that."),
@@ -45413,7 +45413,7 @@ def toggle_auto_theme(mode: int = 0) -> None:
 
 	gui.reload_theme = True
 
-	# if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
+	# if prefs.colour_from_image and prefs.art_bg and not inp.key_shift_down:
 	#     toggle_auto_bg()
 
 def toggle_transparent_accent(mode: int= 0) -> bool | None:
@@ -45441,7 +45441,7 @@ def toggle_auto_bg(mode: int= 0) -> bool | None:
 
 	style_overlay.flush()
 	tauon.thread_manager.ready("style")
-	# if prefs.colour_from_image and prefs.art_bg and not key_shift_down:
+	# if prefs.colour_from_image and prefs.art_bg and not inp.key_shift_down:
 	#     toggle_auto_theme()
 	return None
 
@@ -47407,7 +47407,7 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 			selected_star = -2
 			rated_star = -1
 
-			# if key_ctrl_down:
+			# if self.inp.key_ctrl_down:
 
 			c = 60
 			d = 6
@@ -47788,7 +47788,7 @@ def art_metadata_overlay(right, bottom, showc):
 
 	padding = 6 * gui.scale
 
-	if not key_shift_down:
+	if not inp.key_shift_down:
 
 		line = ""
 		if showc[0] == 1:
@@ -47991,7 +47991,7 @@ def hit_callback(win, point, data):
 	# Special layout modes
 	if gui.mode == 3:
 
-		if key_shift_down or key_shiftr_down:
+		if inp.key_shift_down or inp.key_shiftr_down:
 			return sdl3.SDL_HITTEST_NORMAL
 
 		# if prefs.mini_mode_mode == 5:
@@ -48385,7 +48385,7 @@ def update_layout_do():
 			gui.art_unlock_ratio = False
 			gui.art_max_ratio_lock = 1
 
-		if side_drag and key_shift_down:
+		if side_drag and inp.key_shift_down:
 			gui.art_unlock_ratio = True
 			gui.art_max_ratio_lock = 5
 
@@ -52448,14 +52448,6 @@ inp = gui.inp
 keymaps = gui.keymaps
 # Control Variables--------------------------------------------------------------------------
 
-key_shift_down  = inp.key_shift_down
-key_shiftr_down = inp.key_shiftr_down
-key_ctrl_down   = inp.key_ctrl_down
-key_rctrl_down  = inp.key_rctrl_down
-key_meta        = inp.key_meta
-key_ralt        = inp.key_ralt
-key_lalt        = inp.key_lalt
-
 mouse_wheel         = inp.mouse_wheel
 key_down_press      = inp.key_down_press
 key_up_press        = inp.key_up_press
@@ -55083,7 +55075,7 @@ while pctl.running:
 		elif event.type == sdl3.SDL_EVENT_QUIT:
 			power += 5
 
-			if gui.tray_active and prefs.min_to_tray and not key_shift_down:
+			if gui.tray_active and prefs.min_to_tray and not inp.key_shift_down:
 				tauon.min_to_tray()
 			else:
 				tauon.exit("Window received exit signal")
@@ -55193,9 +55185,9 @@ while pctl.running:
 			elif event.key.key == sdl3.SDLK_DELETE:
 				key_del = True
 			elif event.key.key == sdl3.SDLK_RALT:
-				key_ralt = True
+				inp.key_ralt = True
 			elif event.key.key == sdl3.SDLK_LALT:
-				key_lalt = True
+				inp.key_lalt = True
 			elif event.key.key == sdl3.SDLK_DOWN:
 				key_down_press = True
 			elif event.key.key == sdl3.SDLK_UP:
@@ -55205,22 +55197,22 @@ while pctl.running:
 			elif event.key.key == sdl3.SDLK_RIGHT:
 				key_right_press = True
 			elif event.key.key == sdl3.SDLK_LSHIFT:
-				key_shift_down = True
+				inp.key_shift_down = True
 			elif event.key.key == sdl3.SDLK_RSHIFT:
-				key_shiftr_down = True
+				inp.key_shiftr_down = True
 			elif event.key.key == sdl3.SDLK_LCTRL:
-				key_ctrl_down = True
+				inp.key_ctrl_down = True
 			elif event.key.key == sdl3.SDLK_RCTRL:
-				key_rctrl_down = True
+				inp.key_rctrl_down = True
 			elif event.key.key == sdl3.SDLK_HOME:
 				key_home_press = True
 			elif event.key.key == sdl3.SDLK_END:
 				key_end_press = True
 			elif event.key.key == sdl3.SDLK_LGUI:
 				if macos:
-					key_ctrl_down = True
+					inp.key_ctrl_down = True
 				else:
-					key_meta = True
+					inp.key_meta = True
 					key_focused = 1
 
 		elif event.type == sdl3.SDL_EVENT_KEY_UP:
@@ -55229,24 +55221,24 @@ while pctl.running:
 			power += 5
 			gui.update += 2
 			if event.key.key == sdl3.SDLK_LSHIFT:
-				key_shift_down = False
+				inp.key_shift_down = False
 			elif event.key.key == sdl3.SDLK_LCTRL:
-				key_ctrl_down = False
+				inp.key_ctrl_down = False
 			elif event.key.key == sdl3.SDLK_RCTRL:
-				key_rctrl_down = False
+				inp.key_rctrl_down = False
 			elif event.key.key == sdl3.SDLK_RSHIFT:
-				key_shiftr_down = False
+				inp.key_shiftr_down = False
 			elif event.key.key == sdl3.SDLK_RALT:
 				gui.album_tab_mode = False
-				key_ralt = False
+				inp.key_ralt = False
 			elif event.key.key == sdl3.SDLK_LALT:
 				gui.album_tab_mode = False
-				key_lalt = False
+				inp.key_lalt = False
 			elif event.key.key == sdl3.SDLK_LGUI:
 				if macos:
-					key_ctrl_down = False
+					inp.key_ctrl_down = False
 				else:
-					key_meta = False
+					inp.key_meta = False
 					key_focused = 1
 
 		elif event.type == sdl3.SDL_EVENT_TEXT_INPUT:
@@ -55504,7 +55496,7 @@ while pctl.running:
 	# if window_size[0] / window_size[1] > 16 / 9:
 	#     logging.info("A")
 
-	if key_meta:
+	if inp.key_meta:
 		input_text = ""
 		k_input = False
 		inp.key_return_press = False
@@ -55641,7 +55633,7 @@ while pctl.running:
 			if keymaps.test("escape"):
 				key_esc_press = True
 
-		if key_ctrl_down:
+		if inp.key_ctrl_down:
 			gui.pl_update += 1
 
 		if mouse_enter_window:
@@ -55656,9 +55648,9 @@ while pctl.running:
 
 			if not quick_search_mode and not search_over.active:
 				if prefs.album_mode and gui.album_tab_mode \
-						and not key_ctrl_down \
-						and not key_meta \
-						and not key_lalt:
+						and not inp.key_ctrl_down \
+						and not inp.key_meta \
+						and not inp.key_lalt:
 					if key_left_press:
 						gal_left = True
 						key_left_press = False
@@ -55717,15 +55709,15 @@ while pctl.running:
 
 			else:
 
-				if key_c_press and key_ctrl_down:
+				if key_c_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					s_copy()
 
-				if key_x_press and key_ctrl_down:
+				if key_x_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					s_cut()
 
-				if key_v_press and key_ctrl_down:
+				if key_v_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					paste()
 
@@ -55737,7 +55729,7 @@ while pctl.running:
 			inp.key_return_press = False
 			inp.level_2_enter = True
 
-		if key_ctrl_down and key_z_press:
+		if inp.key_ctrl_down and key_z_press:
 			undo.undo()
 
 		if keymaps.test("quit"):
@@ -55978,7 +55970,7 @@ while pctl.running:
 					key_left_press = False
 					pctl.back()
 
-				if key_a_press and key_ctrl_down:
+				if key_a_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					shift_selection = range(len(pctl.default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
 
@@ -56728,7 +56720,7 @@ while pctl.running:
 											elif inp.mouse_down and not m_in:
 												info = tauon.get_album_info(tauon.album_dex[album_on])
 												inp.quick_drag = True
-												if not tauon.pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
+												if not tauon.pl_is_locked(pctl.active_playlist_viewing) or inp.key_shift_down:
 													gui.playlist_hold = True
 												shift_selection = info[1]
 												gui.pl_update += 1
@@ -56760,7 +56752,7 @@ while pctl.running:
 												gui.pl_update += 1
 										elif inp.middle_click and tauon.is_level_zero():
 											# Middle click to add album to queue
-											if key_ctrl_down:
+											if inp.key_ctrl_down:
 												# Add to queue ungrouped
 												album = tauon.get_album_info(tauon.album_dex[album_on])[1]
 												for item in album:
@@ -58172,7 +58164,7 @@ while pctl.running:
 
 			if prefs.art_bg and not prefs.bg_showcase_only:
 				style_overlay.display()
-				# if key_shift_down:
+				# if inp.key_shift_down:
 				#     ddt.rect_r(gui.seek_bar_rect,
 				#                alpha_mod([150, 150, 150 ,255], 20), True)
 				#     ddt.rect_r(gui.volume_bar_rect,
@@ -58249,7 +58241,7 @@ while pctl.running:
 				value_font_a = 312
 				value_font = 12
 
-				# if key_shift_down:
+				# if inp.key_shift_down:
 				#     value_font = 12
 				key_colour_off = colours.box_text_label  # colours.grey_blend_bg(90)
 				key_colour_on = colours.box_title_text
@@ -58596,7 +58588,7 @@ while pctl.running:
 
 					rect = [x1, y1, 150, 14]
 
-					if coll(rect) and key_shift_down and mouse_wheel != 0:
+					if coll(rect) and inp.key_shift_down and mouse_wheel != 0:
 						star_store.add(r_menu_index, 60 * mouse_wheel)
 
 					line = time.strftime("%H:%M:%S", time.gmtime(total))
@@ -58715,14 +58707,14 @@ while pctl.running:
 
 				text = _("Trash")
 				tt = _("Moves folder to system trash")
-				if key_shift_down:
+				if inp.key_shift_down:
 					text = _("Delete")
 					tt = _("Physically deletes folder from disk")
 				if draw.button(
 					text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale,
 					text_highlight_colour=colours.grey(255), background_highlight_colour=[180, 60, 60, 255],
 					press=inp.mouse_up, tooltip=tt):
-					if key_shift_down:
+					if inp.key_shift_down:
 						delete_folder(rename_index, True)
 					else:
 						delete_folder(rename_index)
@@ -58782,7 +58774,7 @@ while pctl.running:
 				nagbox.draw()
 
 			# SEARCH
-			# if key_ctrl_down and key_v_press:
+			# if inp.key_ctrl_down and key_v_press:
 
 			#     search_over.active = True
 
@@ -58799,13 +58791,13 @@ while pctl.running:
 				quick_search_mode = False
 				search_text.text = ""
 
-			# if (key_backslash_press or (key_ctrl_down and key_f_press)) and quick_search_mode is False:
+			# if (key_backslash_press or (inp.key_ctrl_down and key_f_press)) and quick_search_mode is False:
 			#     if not search_over.active:
 			#         quick_search_mode = True
 			#     if search_clear_timer.get() > 3:
 			#         search_text.text = ""
 			#     input_text = ""
-			# elif ((key_backslash_press or (key_ctrl_down and key_f_press)) or (
+			# elif ((key_backslash_press or (inp.key_ctrl_down and key_f_press)) or (
 			#             key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
 			#     quick_search_mode = False
 			#     search_text.text = ""
@@ -58863,7 +58855,7 @@ while pctl.running:
 
 				search_text.draw(rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213)
 
-				if (key_shift_down or (
+				if (inp.key_shift_down or (
 						len(search_text.text) > 0 and search_text.text[0] == "/")) and inp.key_return_press:
 					inp.key_return_press = False
 					playlist = []
@@ -58969,13 +58961,13 @@ while pctl.running:
 						gui.force_search = False
 
 				if key_up_press is True \
-						and not key_shiftr_down \
-						and not key_shift_down \
-						and not key_ctrl_down \
-						and not key_rctrl_down \
-						and not key_meta \
-						and not key_lalt \
-						and not key_ralt:
+						and not inp.key_shiftr_down \
+						and not inp.key_shift_down \
+						and not inp.key_ctrl_down \
+						and not inp.key_rctrl_down \
+						and not inp.key_meta \
+						and not inp.key_lalt \
+						and not inp.key_ralt:
 
 					gui.pl_update = 1
 					oi = gui.search_index
