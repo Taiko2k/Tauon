@@ -26126,8 +26126,6 @@ class TopPanel:
 		window_size = self.window_size
 
 		# C-TD
-		global update_layout
-
 		hh = gui.panelY2
 		yy = gui.panelY - hh
 		self.height = hh
@@ -26590,7 +26588,7 @@ class TopPanel:
 			rect = (0, x, self.height, window_size[0])
 			self.fields.add(rect)
 
-		if self.inp.mouse_up and playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < self.height:
+		if self.inp.mouse_up and tauon.playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < self.height:
 			if gui.radio_view:
 				pass
 			elif self.inp.key_ctrl_down:
@@ -26691,20 +26689,19 @@ class TopPanel:
 
 			# Drag to move playlist
 			if tab_hit:
-				if self.inp.mouse_down and i != playlist_box.drag_on and playlist_box.drag is True:
+				if self.inp.mouse_down and i != tauon.playlist_box.drag_on and tauon.playlist_box.drag is True:
 					if self.inp.key_shift_down:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 160, 200, 255])
 					elif tauon.playlist_box.drag_on < i:
 						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
 					else:
 						ddt.rect((x, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
-
-				elif (self.inp.quick_drag or gui.ext_drop_mode) is True and pl_is_mut(i):
+				elif (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 200, 180, 255])
 			# Drag yellow line highlight if single track already in playlist
 			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
-					if item < len(default_playlist) and default_playlist[item] in tab.playlist_ids:
+					if item < len(pctl.default_playlist) and pctl.default_playlist[item] in tab.playlist_ids:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [190, 160, 20, 255])
 						break
 			# Drag red line highlight if playlist is generator playlist
@@ -26734,7 +26731,7 @@ class TopPanel:
 				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 200, 180, 255])
 
 				if self.inp.mouse_up:
-					tauon.drop_tracks_to_new_playlist(shift_selection)
+					tauon.drop_tracks_to_new_playlist(gui.shift_selection)
 
 			# Draw end drag tab indicator
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY:
@@ -28990,8 +28987,6 @@ class StandardPlaylist:
 		global highlight_left
 		global highlight_right
 
-		global shift_selection
-
 		global click_time
 		global selection_stage
 
@@ -29157,7 +29152,7 @@ class StandardPlaylist:
 					drag_highlight = False
 
 					# Shift selection highlight
-					if (track_position in shift_selection and len(shift_selection) > 1):
+					if (track_position in self.gui.shift_selection and len(self.gui.shift_selection) > 1):
 						highlight = True
 
 					# Tracks have been dropped?
@@ -29192,11 +29187,11 @@ class StandardPlaylist:
 							else:  # Add as grouped album
 								add_album_to_queue(track_id, track_position)
 							pctl.selected_in_playlist = track_position
-							shift_selection = [pctl.selected_in_playlist]
+							self.gui.shift_selection = [pctl.selected_in_playlist]
 							gui.pl_update += 1
 
 						# Play if double click:
-						if inp.d_mouse_click and track_position in shift_selection and coll_point(
+						if inp.d_mouse_click and track_position in self.gui.shift_selection and coll_point(
 							self.inp.last_click_location, (input_box)):
 							click_time -= 1.5
 							pctl.jump(track_id, track_position)
@@ -29213,14 +29208,14 @@ class StandardPlaylist:
 							selection_stage = 2
 							gui.pl_update = 1
 
-							if track_position not in shift_selection:
-								shift_selection = []
+							if track_position not in self.gui.shift_selection:
+								self.gui.shift_selection = []
 								pctl.selected_in_playlist = track_position
 								u = track_position
 								while u < len(pctl.default_playlist) and track_object.parent_folder_path == \
 										pctl.master_library[
 											pctl.default_playlist[u]].parent_folder_path:
-									shift_selection.append(u)
+									self.gui.shift_selection.append(u)
 									u += 1
 
 						# Add folder to selection if clicked
@@ -29237,23 +29232,23 @@ class StandardPlaylist:
 							temp = get_folder_tracks_local(track_position)
 							pctl.selected_in_playlist = track_position
 
-							if len(shift_selection) > 0 and self.inp.key_shift_down:
-								if track_position < shift_selection[0]:
+							if len(self.gui.shift_selection) > 0 and self.inp.key_shift_down:
+								if track_position < self.gui.shift_selection[0]:
 									for item in reversed(temp):
-										if item not in shift_selection:
-											shift_selection.insert(0, item)
+										if item not in self.gui.shift_selection:
+											self.gui.shift_selection.insert(0, item)
 								else:
 									for item in temp:
-										if item not in shift_selection:
-											shift_selection.append(item)
+										if item not in self.gui.shift_selection:
+											self.gui.shift_selection.append(item)
 
 							else:
-								shift_selection = copy.copy(temp)
+								self.gui.shift_selection = copy.copy(temp)
 
 					# Should draw drag highlight?
 
-					if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
-						if len(shift_selection) < 2 and not self.inp.key_shift_down:
+					if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in self.gui.shift_selection:
+						if len(self.gui.shift_selection) < 2 and not self.inp.key_shift_down:
 							pass
 						else:
 							drag_highlight = True
@@ -29325,22 +29320,22 @@ class StandardPlaylist:
 					queue_item_gen(track_id,
 					track_position, pl_to_id(pctl.active_playlist_viewing)))
 				pctl.selected_in_playlist = track_position
-				shift_selection = [pctl.selected_in_playlist]
+				self.gui.shift_selection = [pctl.selected_in_playlist]
 				gui.pl_update += 1
 				queue_timer_set()
 				if prefs.stop_end_queue:
 					pctl.stop_mode = 0
 
 			# Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
-			if len(shift_selection) > 1 and self.inp.mouse_up and line_over and not self.inp.key_shift_down and not self.inp.key_ctrl_down and point_proximity_test(
+			if len(self.gui.shift_selection) > 1 and self.inp.mouse_up and line_over and not self.inp.key_shift_down and not self.inp.key_ctrl_down and point_proximity_test(
 					gui.drag_source_position, self.inp.mouse_position, 15):  # and not self.gui.playlist_hold:
-				shift_selection = [track_position]
+				self.gui.shift_selection = [track_position]
 				pctl.selected_in_playlist = track_position
 				gui.pl_update = 1
 				gui.update = 2
 
 			# # Begin drag block selection
-			# if self.inp.mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
+			# if self.inp.mouse_down and line_over and track_position in self.gui.shift_selection and len(self.gui.shift_selection) > 1:
 			#     if not pl_is_locked(pctl.active_playlist_viewing):
 			#         self.gui.playlist_hold = True
 			#     elif self.inp.key_shift_down:
@@ -29355,10 +29350,10 @@ class StandardPlaylist:
 			if move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and coll((
 					left + highlight_left, line_y, highlight_width, gui.playlist_row_height))):
 
-				if len(shift_selection) > 1 or self.inp.key_shift_down:
-					if track_position not in shift_selection:  # p_track != self.gui.playlist_hold_position and
+				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
+					if track_position not in self.gui.shift_selection:  # p_track != self.gui.playlist_hold_position and
 
-						if len(shift_selection) == 0:
+						if len(self.gui.shift_selection) == 0:
 
 							ref = pctl.default_playlist[self.gui.playlist_hold_position]
 							pctl.default_playlist[self.gui.playlist_hold_position] = "old"
@@ -29376,13 +29371,13 @@ class StandardPlaylist:
 						else:
 							ref = []
 							selection_stage = 2
-							for item in shift_selection:
+							for item in self.gui.shift_selection:
 								ref.append(pctl.default_playlist[item])
 
-							for item in shift_selection:
+							for item in self.gui.shift_selection:
 								pctl.default_playlist[item] = "old"
 
-							for item in shift_selection:
+							for item in self.gui.shift_selection:
 								if move_on_title:
 									pctl.default_playlist.insert(track_position, "new")
 								else:
@@ -29391,26 +29386,26 @@ class StandardPlaylist:
 							for b in reversed(range(len(pctl.default_playlist))):
 								if pctl.default_playlist[b] == "old":
 									del pctl.default_playlist[b]
-							shift_selection = []
+							self.gui.shift_selection = []
 							for b in range(len(pctl.default_playlist)):
 								if pctl.default_playlist[b] == "new":
-									shift_selection.append(b)
+									self.gui.shift_selection.append(b)
 									pctl.default_playlist[b] = ref.pop(0)
 
-							pctl.selected_in_playlist = shift_selection[0]
+							pctl.selected_in_playlist = self.gui.shift_selection[0]
 							gui.pl_update += 1
 
 						reload_albums(True)
 						pctl.notify_change()
 
 			# Test show drag indicator
-			if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
-				if len(shift_selection) > 1 or self.inp.key_shift_down:
+			if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in self.gui.shift_selection:
+				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
 					drag_highlight = True
 
 			# Right click menu activation
 			if self.inp.right_click and line_hit and self.inp.mouse_position[0] > gui.playlist_left + 10:
-				if len(shift_selection) > 1 and track_position in shift_selection:
+				if len(self.gui.shift_selection) > 1 and track_position in self.gui.shift_selection:
 					selection_menu.activate(pctl.default_playlist[track_position])
 					selection_stage = 2
 				else:
@@ -29420,13 +29415,13 @@ class StandardPlaylist:
 					gui.pl_update += 1
 					gui.update += 1
 
-					if track_position not in shift_selection:
+					if track_position not in self.gui.shift_selection:
 						pctl.selected_in_playlist = track_position
-						shift_selection = [pctl.selected_in_playlist]
+						self.gui.shift_selection = [pctl.selected_in_playlist]
 
 			if line_over and inp.mouse_click:
 
-				if track_position in shift_selection:
+				if track_position in self.gui.shift_selection:
 					pass
 				else:
 					selection_stage = 2
@@ -29436,15 +29431,15 @@ class StandardPlaylist:
 						if end_s < start_s:
 							end_s, start_s = start_s, end_s
 						for y in range(start_s, end_s + 1):
-							if y not in shift_selection:
-								shift_selection.append(y)
-						shift_selection.sort()
+							if y not in self.gui.shift_selection:
+								self.gui.shift_selection.append(y)
+						self.gui.shift_selection.sort()
 						pctl.selected_in_playlist = track_position
 					elif self.inp.key_ctrl_down:
-						shift_selection.append(track_position)
+						self.gui.shift_selection.append(track_position)
 					else:
 						pctl.selected_in_playlist = track_position
-						shift_selection = [pctl.selected_in_playlist]
+						self.gui.shift_selection = [pctl.selected_in_playlist]
 
 				if not pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
 					self.gui.playlist_hold = True
@@ -29458,7 +29453,7 @@ class StandardPlaylist:
 					self.gui.playlist_hold = False
 
 			# Multi Select Highlight
-			if track_position in shift_selection or track_position == pctl.selected_in_playlist:
+			if track_position in self.gui.shift_selection or track_position == pctl.selected_in_playlist:
 				highlight = True
 
 			if pctl.playing_state != 3 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
@@ -31688,12 +31683,12 @@ class PlaylistBox:
 					modified = False
 					gui.pl_update += 1
 
-					for item in shift_selection:
+					for item in self.gui.shift_selection:
 						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
 						modified = True
-					if len(shift_selection) > 0:
+					if len(self.gui.shift_selection) > 0:
 						self.adds.append(
-							[pctl.multi_playlist[i].uuid_int, len(shift_selection), Timer()])  # ID, num, timer
+							[pctl.multi_playlist[i].uuid_int, len(self.gui.shift_selection), Timer()])  # ID, num, timer
 						modified = True
 					if modified:
 						pctl.after_import_flag = True
@@ -31816,7 +31811,7 @@ class PlaylistBox:
 						ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), [80, 160, 200, 255])
 
 			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
-				for item in shift_selection:
+				for item in self.gui.shift_selection:
 					if len(pctl.default_playlist) > item and pctl.default_playlist[item] in pl.playlist_ids:
 						ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [190, 170, 20, 255])
 						break
@@ -31859,7 +31854,7 @@ class PlaylistBox:
 			if self.inp.quick_drag or gui.ext_drop_mode:
 				ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
 				if self.inp.mouse_up:
-					drop_tracks_to_new_playlist(shift_selection)
+					drop_tracks_to_new_playlist(self.gui.shift_selection)
 
 			if self.inp.right_click:
 				self.tauon.extra_tab_menu.activate(pctl.active_playlist_viewing)
@@ -32518,7 +32513,7 @@ class ArtistList:
 					self.pctl.jump(self.pctl.default_playlist[select], pl_position=select)
 					self.pctl.playlist_view_position = select
 					self.pctl.selected_in_playlist = select
-					shift_selection.clear()
+					self.gui.shift_selection.clear()
 					self.d_click_timer.force_set(10)
 				else:
 					# Goto next artist section in playlist
@@ -33005,8 +33000,8 @@ class TreeView:
 
 			# Hold highlight while dragging folder
 			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15):
-				if shift_selection:
-					if pctl.get_track(pctl.multi_playlist[id_to_pl(pl_id)].playlist_ids[shift_selection[0]]).fullpath.startswith(
+				if self.gui.shift_selection:
+					if pctl.get_track(pctl.multi_playlist[id_to_pl(pl_id)].playlist_ids[self.gui.shift_selection[0]]).fullpath.startswith(
 							full_folder_path + "/") and self.dragging_name and item[0].endswith(self.dragging_name):
 						text_colour = (255, 255, 255, 230)
 						if semilight_mode:
@@ -33192,15 +33187,15 @@ class TreeView:
 			if "/" in self.dragging_name:
 				self.dragging_name = os.path.basename(self.dragging_name)
 
-			shift_selection.clear()
+			self.gui.shift_selection.clear()
 			set_drag_source()
 			for p, id in enumerate(pctl.multi_playlist[id_to_pl(pl_id)].playlist_ids):
 				if msys:
 					if pctl.get_track(id).fullpath.startswith(
 							self.click_drag_source[1].lstrip("/") + "/" + self.click_drag_source[0] + "/"):
-						shift_selection.append(p)
+						self.gui.shift_selection.append(p)
 				elif pctl.get_track(id).fullpath.startswith(f"{self.click_drag_source[1]}/{self.click_drag_source[0]}/"):
-					shift_selection.append(p)
+					self.gui.shift_selection.append(p)
 			self.click_drag_source = None
 
 		if self.dragging_name and not self.inp.quick_drag:
@@ -33382,7 +33377,7 @@ class QueueBox:
 					hide_title=False))
 
 	def drop_tracks_insert(self, insert_position):
-		if not shift_selection:
+		if not self.gui.shift_selection:
 			return
 
 		# remove incomplete album from queue
@@ -33392,14 +33387,14 @@ class QueueBox:
 		playlist_index = pctl.active_playlist_viewing
 		playlist_id = pl_to_id(pctl.active_playlist_viewing)
 
-		main_track_position = shift_selection[0]
+		main_track_position = self.gui.shift_selection[0]
 		main_track_id = self.pctl.default_playlist[main_track_position]
 		self.inp.quick_drag = False
 
-		if len(shift_selection) > 1:
+		if len(self.gui.shift_selection) > 1:
 
 			# if shift selection contains only same folder
-			for position in shift_selection:
+			for position in self.gui.shift_selection:
 				if pctl.get_track(self.pctl.default_playlist[position]).parent_folder_path != pctl.get_track(
 						main_track_id).parent_folder_path or self.inp.key_ctrl_down:
 					break
@@ -33409,11 +33404,11 @@ class QueueBox:
 					insert_position, queue_item_gen(main_track_id, main_track_position, playlist_id, 1))
 				return
 
-		if len(shift_selection) == 1:
+		if len(self.gui.shift_selection) == 1:
 			pctl.force_queue.insert(insert_position, queue_item_gen(main_track_id, main_track_position, playlist_id))
 		else:
 			# Add each track
-			for position in reversed(shift_selection):
+			for position in reversed(self.gui.shift_selection):
 				pctl.force_queue.insert(
 					insert_position, queue_item_gen(self.pctl.default_playlist[position], position, playlist_id))
 
@@ -33905,7 +33900,7 @@ class QueueBox:
 				self.draw_card(x, y, w, h, yyy, track, fqo, draw_back=True)
 
 		# Drag and drop tracks from main playlist into queue
-		if self.inp.quick_drag and self.inp.mouse_up and coll(box_rect) and shift_selection:
+		if self.inp.quick_drag and self.inp.mouse_up and coll(box_rect) and self.gui.shift_selection:
 			self.drop_tracks_insert(len(fq))
 
 		# Right click context menu in blank space
@@ -38627,8 +38622,8 @@ def show_in_playlist():
 
 	pctl.playlist_view_position = pctl.selected_in_playlist
 	logging.debug("Position changed by show in playlist")
-	shift_selection.clear()
-	shift_selection.append(pctl.selected_in_playlist)
+	gui.shift_selection.clear()
+	gui.shift_selection.append(pctl.selected_in_playlist)
 	pctl.render_playlist()
 
 def open_folder_stem(path):
@@ -39993,7 +39988,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 		pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing].position
 		logging.debug("Position reset by playlist delete")
 		pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].selected
-		shift_selection = [pctl.selected_in_playlist]
+		gui.shift_selection = [pctl.selected_in_playlist]
 
 		if prefs.album_mode:
 			reload_albums(True)
@@ -42506,7 +42501,7 @@ def s_copy():
 	global cargo
 	cargo = []
 	if pctl.default_playlist:
-		for item in shift_selection:
+		for item in gui.shift_selection:
 			cargo.append(pctl.default_playlist[item])
 
 	if not cargo and -1 < pctl.selected_in_playlist < len(pctl.default_playlist):
@@ -42532,7 +42527,7 @@ def lightning_paste():
 				_("This function can only move one folder at a time."), mode="info")
 			return
 
-	match_track = pctl.get_track(pctl.default_playlist[shift_selection[0]])
+	match_track = pctl.get_track(pctl.default_playlist[gui.shift_selection[0]])
 	match_path = match_track.parent_folder_path
 
 	if pctl.playing_state > 0 and move:
@@ -42622,7 +42617,7 @@ def lightning_paste():
 			load_order.target = os.path.join(artist_folder, move_track.parent_folder_name)
 			load_order.playlist = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
-			insert = shift_selection[0]
+			insert = gui.shift_selection[0]
 			old_insert = insert
 			while insert < len(pctl.default_playlist) and pctl.master_library[
 				pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids[insert]].parent_folder_name == \
@@ -42791,20 +42786,18 @@ def refind_playing():
 				break
 
 def del_selected(force_delete=False):
-	global shift_selection
-
 	gui.update += 1
 	gui.pl_update = 1
 
-	if not shift_selection:
-		shift_selection = [pctl.selected_in_playlist]
+	if not gui.shift_selection:
+		gui.shift_selection = [pctl.selected_in_playlist]
 
 	if not pctl.default_playlist:
 		return
 
 	li = []
 
-	for item in reversed(shift_selection):
+	for item in reversed(gui.shift_selection):
 		if item > len(pctl.default_playlist) - 1:
 			return
 
@@ -42845,7 +42838,7 @@ def del_selected(force_delete=False):
 
 	pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist) - 1)
 
-	shift_selection = [pctl.selected_in_playlist]
+	gui.shift_selection = [pctl.selected_in_playlist]
 	gui.pl_update += 1
 	refind_playing()
 	pctl.notify_change()
@@ -42956,7 +42949,7 @@ def add_selected_to_queue():
 def add_selected_to_queue_multi():
 	if prefs.stop_end_queue:
 		pctl.stop_mode = 0
-	for index in shift_selection:
+	for index in gui.shift_selection:
 		pctl.force_queue.append(
 			queue_item_gen(pctl.default_playlist[index],
 			index,
@@ -43238,7 +43231,7 @@ def rename_folders(index: int):
 
 	gui.rename_folder_box = True
 	input_text = ""
-	shift_selection.clear()
+	gui.shift_selection.clear()
 
 	inp.quick_drag = False
 	gui.playlist_hold = False
@@ -43436,7 +43429,7 @@ def reload_metadata(input, keep_star: bool = True) -> None:
 
 def reload_metadata_selection() -> None:
 	cargo = []
-	for item in shift_selection:
+	for item in gui.shift_selection:
 		cargo.append(pctl.default_playlist[item])
 
 	for k in cargo:
@@ -43452,7 +43445,7 @@ def editor(index: int | None) -> None:
 		todo = [index]
 		obs = [pctl.master_library[index]]
 	elif index is None:
-		for item in shift_selection:
+		for item in gui.shift_selection:
 			todo.append(pctl.default_playlist[item])
 			obs.append(pctl.master_library[pctl.default_playlist[item]])
 		if len(todo) > 0:
@@ -43596,7 +43589,7 @@ def launch_editor(index: int):
 	mini_t.start()
 
 def launch_editor_selection_disable_test(index: int):
-	for position in shift_selection:
+	for position in gui.shift_selection:
 		if pctl.get_track(pctl.default_playlist[position]).is_network:
 			return True
 	return False
@@ -43721,7 +43714,7 @@ def intel_moji(index: int):
 def sel_to_car():
 	cargo = []
 
-	for item in shift_selection:
+	for item in gui.shift_selection:
 		cargo.append(pctl.default_playlist[item])
 
 def cut_selection():
@@ -43835,12 +43828,12 @@ def add_to_spotify_library(track_id: int) -> None:
 
 def selection_queue_deco():
 	total = 0
-	for item in shift_selection:
+	for item in gui.shift_selection:
 		total += pctl.get_track(pctl.default_playlist[item]).length
 
 	total = get_hms_time(total)
 
-	text = (_("Queue {N}").format(N=len(shift_selection))) + f" [{total}]"
+	text = (_("Queue {N}").format(N=len(gui.shift_selection))) + f" [{total}]"
 
 	return [colours.menu_text, colours.menu_background, text]
 
@@ -44406,13 +44399,11 @@ def toggle_card_style(mode: int = 0) -> bool:
 	gui.update += 1
 
 def toggle_side_panel(mode: int = 0) -> bool:
-	global update_layout
-
 	if mode == 1:
 		return prefs.prefer_side
 
 	prefs.prefer_side ^= True
-	update_layout = True
+	gui.update_layout = True
 
 	if prefs.album_mode or prefs.prefer_side is True:
 		gui.rsp = True
@@ -44472,8 +44463,6 @@ def enter_radio_view():
 
 def standard_size():
 	global window_size
-	global update_layout
-
 	global album_mode_art_size
 
 	prefs.album_mode = False
@@ -44482,7 +44471,7 @@ def standard_size():
 	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
 	gui.rspw = 80 + int(window_size[0] * 0.18)
-	update_layout = True
+	gui.update_layout = True
 	album_mode_art_size = 130
 	# clear_img_cache()
 
@@ -44572,7 +44561,6 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 
 def toggle_album_mode(force_on=False):
 	global window_size
-	global update_layout
 	global album_playlist_width
 	global old_album_pos
 
@@ -44657,7 +44645,6 @@ def check_auto_update_okay(code, pl=None):
 		"r"      not in cmds)
 
 def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in PlayerCtl
-	global shift_selection
 
 	# Close any active menus
 	# for instance in Menu.instances:
@@ -44711,7 +44698,7 @@ def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in Pl
 	pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing].position
 	pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].selected
 	logging.debug("Position changed by playlist change")
-	shift_selection = [pctl.selected_in_playlist]
+	gui.shift_selection = [pctl.selected_in_playlist]
 
 	id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
@@ -45252,7 +45239,7 @@ def locate_artist() -> None:
 			if next:
 				pctl.selected_in_playlist = start
 				pctl.playlist_view_position = start
-				shift_selection.clear()
+				gui.shift_selection.clear()
 				break
 
 			if pctl.selected_in_playlist == start:
@@ -45262,7 +45249,7 @@ def locate_artist() -> None:
 		else:
 			pctl.selected_in_playlist = block_starts[0]
 			pctl.playlist_view_position = block_starts[0]
-			shift_selection.clear()
+			gui.shift_selection.clear()
 
 		tree_view_box.show_track(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]))
 	else:
@@ -45879,8 +45866,7 @@ def view_tracks() -> None:
 # 		toggle_combo_view(off=True)
 # 	if not gui.rsp:
 # 		toggle_side_panel()
-# 	global update_layout
-# 	update_layout = True
+# 	gui.update_layout = True
 # 	gui.rspw = window_size[0]
 
 def view_standard_meta() -> None:
@@ -45895,8 +45881,7 @@ def view_standard_meta() -> None:
 	if not gui.rsp:
 		toggle_side_panel()
 
-	global update_layout
-	update_layout = True
+	gui.update_layout = True
 	# gui.rspw = 80 + int(window_size[0] * 0.18)
 
 def view_standard() -> None:
@@ -45923,8 +45908,7 @@ def standard_view_deco():
 # 		toggle_album_mode()
 # 	gui.show_playlist = False
 # 	global album_playlist_width
-# 	global update_layout
-# 	update_layout = True
+# 	gui.update_layout = True
 # 	gui.rspw = window_size[0]
 # 	album_playlist_width = gui.playlist_width
 # 	#gui.playlist_width = -19
@@ -46476,7 +46460,6 @@ def gen_power2():
 
 def reload_albums(quiet: bool = False, return_playlist: int = -1, custom_list=None) -> list[int] | None:
 	global album_dex
-	global update_layout
 	global old_album_pos
 
 	if cm_clean_db:
@@ -46533,7 +46516,7 @@ def reload_albums(quiet: bool = False, return_playlist: int = -1, custom_list=No
 	album_info_cache.clear()
 	gui.update += 2
 	gui.pl_update = 1
-	update_layout = True
+	gui.update_layout = True
 
 	if not quiet:
 		goto_album(pctl.playlist_playing_position)
@@ -46715,12 +46698,11 @@ def scale2(mode: int = 0) -> bool | None:
 
 def toggle_borderless(mode: int = 0) -> bool | None:
 	global draw_border
-	global update_layout
 
 	if mode == 1:
 		return draw_border
 
-	update_layout = True
+	gui.update_layout = True
 	draw_border ^= True
 
 	if draw_border:
@@ -46739,7 +46721,6 @@ def toggle_break(mode: int = 0) -> bool | None:
 
 def toggle_scroll(mode: int = 0) -> bool | None:
 	global scroll_enable
-	global update_layout
 
 	if mode == 1:
 		if scroll_enable:
@@ -46748,7 +46729,7 @@ def toggle_scroll(mode: int = 0) -> bool | None:
 
 	scroll_enable ^= True
 	gui.pl_update = 1
-	update_layout = True
+	gui.update_layout = True
 	return None
 
 def toggle_hide_bar(mode: int = 0) -> bool | None:
@@ -52497,7 +52478,6 @@ album_playlist_width = gui.album_playlist_width
 update_title = prefs.update_title
 selection_stage = gui.selection_stage
 selected_in_playlist = bag.selected_in_playlist
-shift_selection = gui.shift_selection
 gen_codes = bag.gen_codes
 
 # -----------------------------------------------------
@@ -54664,8 +54644,6 @@ gui.playlist_view_length = int(((window_size[1] - gui.playlist_top) / 16) - 1)
 ab_click = False
 d_border = 1
 
-update_layout = True
-
 mouse_moved = False
 
 power = 0
@@ -55932,7 +55910,7 @@ while pctl.running:
 				gui.pl_update = 1
 				pctl.selected_in_playlist = pctl.playlist_view_position
 				logging.debug("Position changed by page key")
-				shift_selection.clear()
+				gui.shift_selection.clear()
 		if keymaps.test("pageup"):
 			if len(pctl.default_playlist) > 0:
 				pctl.playlist_view_position -= gui.playlist_view_length - 4
@@ -55940,7 +55918,7 @@ while pctl.running:
 				gui.pl_update = 1
 				pctl.selected_in_playlist = pctl.playlist_view_position
 				logging.debug("Position changed by page key")
-				shift_selection.clear()
+				gui.shift_selection.clear()
 
 		if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
 
@@ -55966,7 +55944,7 @@ while pctl.running:
 
 				if key_a_press and inp.key_ctrl_down:
 					gui.pl_update = 1
-					shift_selection = range(len(pctl.default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
+					gui.shift_selection = range(len(pctl.default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
 
 				if keymaps.test("revert"):
 					pctl.revert()
@@ -55994,30 +55972,30 @@ while pctl.running:
 					if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 						pctl.selected_in_playlist = 0
 
-					if not shift_selection:
-						shift_selection.append(pctl.selected_in_playlist)
+					if not gui.shift_selection:
+						gui.shift_selection.append(pctl.selected_in_playlist)
 					if pctl.selected_in_playlist < len(pctl.default_playlist) - 1:
 						r = pctl.selected_in_playlist
 						pctl.selected_in_playlist += 1
-						if pctl.selected_in_playlist not in shift_selection:
-							shift_selection.append(pctl.selected_in_playlist)
+						if pctl.selected_in_playlist not in gui.shift_selection:
+							gui.shift_selection.append(pctl.selected_in_playlist)
 						else:
-							shift_selection.remove(r)
+							gui.shift_selection.remove(r)
 
 				if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
 					gui.pl_update += 1
 					if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 						pctl.selected_in_playlist = len(pctl.default_playlist) - 1
 
-					if not shift_selection:
-						shift_selection.append(pctl.selected_in_playlist)
+					if not gui.shift_selection:
+						gui.shift_selection.append(pctl.selected_in_playlist)
 					if pctl.selected_in_playlist > 0:
 						r = pctl.selected_in_playlist
 						pctl.selected_in_playlist -= 1
-						if pctl.selected_in_playlist not in shift_selection:
-							shift_selection.insert(0, pctl.selected_in_playlist)
+						if pctl.selected_in_playlist not in gui.shift_selection:
+							gui.shift_selection.insert(0, pctl.selected_in_playlist)
 						else:
-							shift_selection.remove(r)
+							gui.shift_selection.remove(r)
 
 				if keymaps.test("toggle-shuffle"):
 					# pctl.random_mode ^= True
@@ -56661,7 +56639,7 @@ while pctl.running:
 									#     ddt.rect_r((x - 7, y - 7, tauon.album_mode_art_size + 14, tauon.album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
 
 									# Quick drag and drop
-									if inp.mouse_up and (gui.playlist_hold and m_in) and not gui.side_drag and shift_selection:
+									if inp.mouse_up and (gui.playlist_hold and m_in) and not gui.side_drag and gui.shift_selection:
 										info = tauon.get_album_info(tauon.album_dex[album_on])
 										if info[1]:
 											track_position = info[1][0]
@@ -56716,7 +56694,7 @@ while pctl.running:
 												inp.quick_drag = True
 												if not tauon.pl_is_locked(pctl.active_playlist_viewing) or inp.key_shift_down:
 													gui.playlist_hold = True
-												shift_selection = info[1]
+												gui.shift_selection = info[1]
 												gui.pl_update += 1
 												inp.click_location = [0, 0]
 
