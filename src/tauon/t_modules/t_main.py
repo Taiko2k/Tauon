@@ -22021,7 +22021,7 @@ class ExportPlaylistBox:
 		self.window_size = tauon.window_size
 		self.active = False
 		self.id = None
-		self.directory_text_box = TextBox2(tauon=tauon)
+		self.directory_text_box = TextBox2(tauon)
 		self.default = {
 			"path": str(tauon.dirs.music_directory) if tauon.dirs.music_directory else str(tauon.dirs.user_directory / "playlists"),
 			"type": "xspf",
@@ -22135,7 +22135,7 @@ class SearchOverlay:
 		self.window_size = tauon.window_size
 
 		self.active = False
-		self.search_text = TextBox(tauon=tauon)
+		self.search_text = TextBox(tauon)
 
 		self.worker2_lock = tauon.worker2_lock
 		self.results = []
@@ -23122,7 +23122,7 @@ class Over:
 
 		self.themes = []
 		self.view_supporters = False
-		self.key_box = TextBox2(tauon=tauon)
+		self.key_box = TextBox2(tauon)
 		self.key_box_focused = False
 
 	def theme(self, x0: int, y0: int, w0: int, h0: int) -> None:
