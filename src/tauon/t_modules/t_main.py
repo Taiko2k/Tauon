@@ -20825,7 +20825,7 @@ class QueueBox:
 
 		list_top = yy
 
-		i = self.scroll_position
+		i: int = round(self.scroll_position)
 
 		# Limit scroll distance
 		if i > len(fq):
