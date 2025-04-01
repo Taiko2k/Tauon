@@ -34127,6 +34127,7 @@ class ArtistInfoBox:
 		self.inp                   = tauon.inp
 		self.coll                  = tauon.coll
 		self.prefs                 = tauon.prefs
+		self.fields                = tauon.fields
 		self.user_directory        = tauon.user_directory
 		self.a_cache_directory     = tauon.a_cache_directory
 		self.artist_info_menu      = tauon.artist_info_menu
