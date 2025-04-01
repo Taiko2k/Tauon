@@ -23952,15 +23952,15 @@ class Over:
 			alpha_blend([255, 255, 255, 14], colours.box_background))
 
 		# Check if box clicked
-		clicked = False
-		if (self.click or click) and coll(hit_rect):
-			clicked = True
+		self.inp.global_clicked = False
+		if (self.click or click) and self.coll(hit_rect):
+			self.inp.global_clicked = True
 
 		# There are two mode, function type, and passthrough bool type
 		active = False
 		active = function if type(function) is bool else function(1)
 
-		if clicked:
+		if self.inp.global_clicked:
 			if type(function) is bool:
 				active ^= True
 			else:
@@ -27172,9 +27172,9 @@ class BottomBarType1:
 			if middle_click and pctl.playing_state > 0:
 				gui.seek_cur_show = True
 
-			clicked = True
+			inp.global_clicked = True
 			if mouse_wheel != 0:
-				pctl.seek_time(pctl.playing_time + (mouse_wheel * 3))
+				pctl.seek_time(pctl.playing_time + (inp.mouse_wheel * 3))
 
 		if gui.seek_cur_show:
 			gui.update += 1
@@ -27364,7 +27364,7 @@ class BottomBarType1:
 					self.volume_bar_position[0] - right_offset, self.volume_bar_position[1], self.volume_bar_size[0],
 					self.volume_bar_size[1] + 4))) or \
 					self.volume_bar_being_dragged is True:
-				clicked = True
+				inp.global_clicked = True
 
 				if inp.mouse_click is True or self.volume_bar_being_dragged is True:
 					gui.update = 2
@@ -27949,7 +27949,6 @@ class BottomBarType_ao1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self) -> None:
-		global clicked
 		global right_click
 
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
@@ -30718,7 +30717,6 @@ class RadioBox:
 		self.radio_field.text = station.stream_url
 
 	def browser_get_hosts(self):
-
 		import socket
 		"""
 		Get all base urls of all currently available radiobrowser servers
@@ -35670,6 +35668,7 @@ class ViewBox:
 
 		gui.artist_info_panel ^= True
 		self.gui.update_layout = True
+		return None
 
 	def render(self) -> None:
 		gui     = self.gui
@@ -52513,7 +52512,6 @@ mouse_up_position   = inp.mouse_up_position
 k_input        = inp.k_input
 drag_mode      = inp.drag_mode
 side_drag      = gui.side_drag # TODO(Martin): Move this to Input
-clicked        = inp.global_clicked
 
 # GUI Variables -------------------------------------------------------------------------------------------
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
@@ -54926,7 +54924,7 @@ while pctl.running:
 
 	# f not inp.mouse_down:
 	k_input = False
-	clicked = False
+	inp.global_clicked = False
 	focused = False
 	mouse_moved = False
 	gui.level_2_click = False
@@ -54934,7 +54932,6 @@ while pctl.running:
 	# gui.update = 2
 
 	while sdl3.SDL_PollEvent(ctypes.byref(event)) != 0:
-
 		# if event.type == sdl3.SDL_SYSWMEVENT:
 		#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
 
