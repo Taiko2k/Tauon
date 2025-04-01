@@ -25020,7 +25020,7 @@ class Over:
 		m2 = (x + ((2.0 - 0.5) / 3 * sw), y, sh, sh * 2)
 		m3 = (x + ((3.0 - 0.5) / 3 * sw), y, sh, sh * 2)
 
-		if self.coll(grow_rect(slider, round(16 * gui.scale))) and mouse_down:
+		if self.coll(grow_rect(slider, round(16 * gui.scale))) and self.inp.mouse_down:
 			prefs.scale_want = ((self.inp.mouse_position[0] - x) / sw * 3) + 0.5
 			prefs.x_scale = False
 			gui.update_on_drag = True
@@ -25060,7 +25060,7 @@ class Over:
 
 		if prefs.scale_want != gui.scale:
 			gui.update += 1
-			if not mouse_down:
+			if not self.inp.mouse_down:
 				gui.update_layout = True
 
 		y += round(25 * gui.scale)
@@ -25811,7 +25811,7 @@ class Over:
 				if callback is not None:
 					callback(value)
 
-			abg = [230, 120, 20, 255] if mouse_down else [220, 150, 20, 255]
+			abg = [230, 120, 20, 255] if self.inp.mouse_down else [220, 150, 20, 255]
 
 		if colour_value(self.colours.box_background) > 300:
 			abg = self.colours.box_sub_text
@@ -26216,7 +26216,7 @@ class TopPanel:
 
 				gui.update_layout = True
 				gui.update += 1
-			if mouse_down and quick_drag:
+			if self.inp.mouse_down and quick_drag:
 				gui.lsp = True
 				gui.update_layout = True
 				gui.update += 1
@@ -26430,14 +26430,14 @@ class TopPanel:
 					self.overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
 
 			if gui.radio_view:
-				if not mouse_down and pctl.radio_playlist_viewing not in show_tabs and pctl.radio_playlist_viewing in ready_tabs:
+				if not self.inp.mouse_down and pctl.radio_playlist_viewing not in show_tabs and pctl.radio_playlist_viewing in ready_tabs:
 					if pctl.radio_playlist_viewing < self.prime_tab:
 						self.prime_side = 0
 					elif pctl.radio_playlist_viewing > self.prime_tab:
 						self.prime_side = 1
 					self.prime_tab = pctl.radio_playlist_viewing
 					gui.update += 1
-			elif not mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
+			elif not self.inp.mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
 				if pctl.active_playlist_viewing < self.prime_tab:
 					self.prime_side = 0
 				elif pctl.active_playlist_viewing > self.prime_tab:
@@ -26692,8 +26692,7 @@ class TopPanel:
 
 			# Drag to move playlist
 			if tab_hit:
-				if mouse_down and i != playlist_box.drag_on and playlist_box.drag is True:
-
+				if self.inp.mouse_down and i != playlist_box.drag_on and playlist_box.drag is True:
 					if key_shift_down:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 160, 200, 255])
 					elif tauon.playlist_box.drag_on < i:
@@ -27294,11 +27293,11 @@ class BottomBarType1:
 
 			rect = (x - 8 * gui.scale, y - 17 * gui.scale, 55 * gui.scale, 23 * gui.scale)
 			# ddt.rect(rect, [255,255,255,25])
-			if self.coll(rect) and mouse_down:
+			if self.coll(rect) and self.inp.mouse_down:
 				gui.update_on_drag = True
 
 			h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
-			if self.coll(h_rect) and mouse_down:
+			if self.coll(h_rect) and self.inp.mouse_down:
 				pctl.player_volume = 0
 
 			step = round(1 * gui.scale)
@@ -27315,7 +27314,7 @@ class BottomBarType1:
 				h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
 				if self.coll(h_rect):
-					if mouse_down or mouse_up:
+					if self.inp.mouse_down or mouse_up:
 						gui.update_on_drag = True
 
 						if bar == 0:
@@ -27379,12 +27378,12 @@ class BottomBarType1:
 
 					time.sleep(0.02)
 
-					if mouse_down is False:
+					if self.inp.mouse_down is False:
 						self.volume_bar_being_dragged = False
 						pctl.player_volume = int(pctl.player_volume)
 						pctl.set_volume(True)
 
-				if mouse_down:
+				if self.inp.mouse_down:
 					pctl.player_volume = int(pctl.player_volume)
 					pctl.set_volume(False)
 
@@ -28003,11 +28002,11 @@ class BottomBarType_ao1:
 
 			rect = (x - 8 * self.gui.scale, y - 17 * self.gui.scale, 55 * self.gui.scale, 23 * self.gui.scale)
 			# ddt.rect(rect, [255,255,255,25])
-			if self.coll(rect) and mouse_down:
+			if self.coll(rect) and self.inp.mouse_down:
 				self.gui.update_on_drag = True
 
 			h_rect = (x - 6 * self.gui.scale, y - 17 * self.gui.scale, 4 * self.gui.scale, 23 * self.gui.scale)
-			if self.coll(h_rect) and mouse_down:
+			if self.coll(h_rect) and self.inp.mouse_down:
 				self.pctl.player_volume = 0
 
 			step = round(1 * self.gui.scale)
@@ -28029,7 +28028,7 @@ class BottomBarType_ao1:
 				rect = (x, y - h, 3 * self.gui.scale, h)
 				h_rect = (x - 1 * self.gui.scale, y - 17 * self.gui.scale, 4 * self.gui.scale, 23 * self.gui.scale)
 
-				if self.coll(h_rect) and mouse_down:
+				if self.coll(h_rect) and self.inp.mouse_down:
 					self.gui.update_on_drag = True
 
 					if bar == 0:
@@ -28843,7 +28842,7 @@ class MiniMode3:
 			volume_r_hit = [volume_r[0], volume_r[1] - 5 * gui.scale, volume_r[2], volume_r[3] + 10 * gui.scale]
 
 			# Test click to volume
-			if (mouse_up or mouse_down) and coll(volume_r_hit):
+			if (mouse_up or self.inp.mouse_down) and coll(volume_r_hit):
 				gui.update_on_drag = True
 				click_x = self.inp.mouse_position[0]
 				click_x = min(click_x, volume_r[0] + volume_r[2])
@@ -28999,7 +28998,6 @@ class StandardPlaylist:
 
 		global click_time
 		global quick_drag
-		global mouse_down
 		global mouse_up
 		global selection_stage
 
@@ -29260,8 +29258,7 @@ class StandardPlaylist:
 
 					# Should draw drag highlight?
 
-					if mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
-
+					if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
 						if len(shift_selection) < 2 and not key_shift_down:
 							pass
 						else:
@@ -29318,7 +29315,7 @@ class StandardPlaylist:
 
 				click_time -= 1.5
 				quick_drag = False
-				mouse_down = False
+				self.inp.mouse_down = False
 				mouse_up = False
 				line_hit = False
 
@@ -29350,7 +29347,7 @@ class StandardPlaylist:
 				gui.update = 2
 
 			# # Begin drag block selection
-			# if mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
+			# if self.inp.mouse_down and line_over and track_position in shift_selection and len(shift_selection) > 1:
 			#     if not pl_is_locked(pctl.active_playlist_viewing):
 			#         self.gui.playlist_hold = True
 			#     elif key_shift_down:
@@ -29414,7 +29411,7 @@ class StandardPlaylist:
 						pctl.notify_change()
 
 			# Test show drag indicator
-			if mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
+			if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in shift_selection:
 				if len(shift_selection) > 1 or key_shift_down:
 					drag_highlight = True
 
@@ -29461,7 +29458,7 @@ class StandardPlaylist:
 					self.gui.playlist_hold_position = track_position
 
 			# Activate drag if shift key down
-			if quick_drag and pl_is_locked(pctl.active_playlist_viewing) and mouse_down:
+			if quick_drag and pl_is_locked(pctl.active_playlist_viewing) and self.inp.mouse_down:
 				if key_shift_down:
 					self.gui.playlist_hold = True
 				else:
@@ -30106,7 +30103,7 @@ class StandardPlaylist:
 		sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 		sdl3.SDL_RenderTexture(renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
 
-		if mouse_down is False:
+		if self.inp.mouse_down is False:
 			self.gui.playlist_hold = False
 
 		ddt.pretty_rect = None
@@ -30281,7 +30278,7 @@ class ScrollBox:
 
 		if coll((fx, y, fw, h)):
 
-			if mouse_down:
+			if self.inp.mouse_down:
 				gui.update += 1
 
 			if r_click:
@@ -30318,7 +30315,7 @@ class ScrollBox:
 				pctl.playlist_view_position = 0
 
 
-			elif mouse_down and not self.held:
+			elif self.inp.mouse_down and not self.held:
 
 				if click and not in_bar:
 					self.slide_hold = True
@@ -30347,7 +30344,7 @@ class ScrollBox:
 			else:
 				self.slide_hold = False
 
-		if (self.held and mouse_up) or not mouse_down:
+		if (self.held and mouse_up) or not self.inp.mouse_down:
 			self.held = False
 
 		if self.held and not window_is_focused(self.t_window):
@@ -31194,7 +31191,7 @@ class RadioBox:
 		#     self.drag = None
 		#     gui.update += 1
 
-		# if not mouse_down:
+		# if not self.inp.mouse_down:
 		#     self.drag = None
 
 	def footer(self):
@@ -33123,7 +33120,7 @@ class TreeView:
 					self.gen_rows(tree, opens)
 
 			# Highlight folder text on mouse over
-			if (mouse_in and not mouse_down) or item == self.click_drag_source:
+			if (mouse_in and not self.inp.mouse_down) or item == self.click_drag_source:
 				text_colour = (255, 255, 255, 235)
 				if semilight_mode:
 					text_colour = (255, 255, 255, 255)
@@ -33223,7 +33220,7 @@ class TreeView:
 
 		if self.dragging_name and not quick_drag:
 			self.dragging_name = ""
-		if not mouse_down:
+		if not self.inp.mouse_down:
 			self.click_drag_source = None
 
 	def gen_row(self, tree_point, path, opens):
@@ -33686,7 +33683,7 @@ class QueueBox:
 			gui.update_on_drag = True
 
 		# End drag if mouse not in correct state for it
-		if not mouse_down and not mouse_up:
+		if not self.inp.mouse_down and not mouse_up:
 			self.dragging = None
 
 		if not queue_menu.active:
@@ -37406,7 +37403,6 @@ def do_exit_button() -> None:
 			tauon.exit("User clicked X button")
 
 def do_maximize_button() -> None:
-	global mouse_down
 	global drag_mode
 	if gui.fullscreen:
 		gui.fullscreen = False
@@ -37418,13 +37414,11 @@ def do_maximize_button() -> None:
 		gui.maximized = True
 		sdl3.SDL_MaximizeWindow(t_window)
 
-	mouse_down = False
+	inp.mouse_down = False
 	inp.mouse_click = False
 	drag_mode = False
 
 def do_minimize_button():
-
-	global mouse_down
 	global drag_mode
 	if macos:
 		# hack
@@ -37434,12 +37428,11 @@ def do_minimize_button():
 	else:
 		sdl3.SDL_MinimizeWindow(t_window)
 
-	mouse_down = False
+	inp.mouse_down = False
 	inp.mouse_click = False
 	drag_mode = False
 
 def draw_window_tools():
-	global mouse_down
 	global drag_mode
 
 	# rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
@@ -47200,10 +47193,9 @@ def set_mini_mode():
 	if gui.fullscreen:
 		return
 
-	global mouse_down
 	global mouse_up
 	global old_window_position
-	mouse_down = False
+	inp.mouse_down = False
 	mouse_up = False
 	inp.mouse_click = False
 
@@ -47293,9 +47285,8 @@ def restore_full_mode():
 	sdl3.SDL_SyncWindow(t_window)
 	sdl3.SDL_PumpEvents()
 
-	global mouse_down
 	global mouse_up
-	mouse_down = False
+	inp.mouse_down = False
 	mouse_up = False
 	inp.mouse_click = False
 
@@ -48081,7 +48072,7 @@ def hit_callback(win, point, data):
 
 		if top_panel.drag_zone_start_x < x < window_size[0] - (gui.offset_extra + 5):
 
-			if tab_menu.active or mouse_up or mouse_down:  # mouse up/down is workaround for Wayland
+			if tab_menu.active or mouse_up or inp.mouse_down:  # mouse up/down is workaround for Wayland
 				return sdl3.SDL_HITTEST_NORMAL
 
 			if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (
@@ -48883,7 +48874,6 @@ def is_level_zero(include_menus: bool = True) -> bool:
 def drop_file(target: str):
 	# Deprecated, move to individual UI components
 	global new_playlist_cooldown
-	global mouse_down
 	global drag_mode
 
 	i_x = inp.mouse_position[0]
@@ -52515,7 +52505,6 @@ key_home_press      = inp.key_home_press
 key_end_press       = inp.key_end_press
 input_text          = inp.input_text
 
-mouse_down          = inp.mouse_down
 right_down          = inp.right_down
 click_location      = inp.click_location
 last_click_location = inp.last_click_location
@@ -54935,7 +54924,7 @@ while pctl.running:
 		if key_focused:
 			key_focused -= 1
 
-	# f not mouse_down:
+	# f not inp.mouse_down:
 	k_input = False
 	clicked = False
 	focused = False
@@ -55170,11 +55159,11 @@ while pctl.running:
 				#logging.info("LEFT DOWN")
 
 				# if inp.mouse_position[1] > 1 and inp.mouse_position[0] > 1:
-				#     mouse_down = True
+				#     inp.mouse_down = True
 
 				inp.mouse_click = True
 
-				mouse_down = True
+				inp.mouse_down = True
 			elif event.button.button == sdl3.SDL_BUTTON_MIDDLE:
 				if not search_over.active:
 					middle_click = True
@@ -55190,12 +55179,12 @@ while pctl.running:
 			if event.button.button == sdl3.SDL_BUTTON_RIGHT:
 				right_down = False
 			elif event.button.button == sdl3.SDL_BUTTON_LEFT:
-				if mouse_down:
+				if inp.mouse_down:
 					mouse_up = True
 					mouse_up_position[0] = event.motion.x / logical_size[0] * window_size[0]
 					mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
 
-				mouse_down = False
+				inp.mouse_down = False
 				gui.update += 1
 		elif event.type == sdl3.SDL_EVENT_KEY_DOWN and key_focused == 0:
 
@@ -55327,7 +55316,7 @@ while pctl.running:
 				focused = True
 				gui.lowered = False
 				key_focused = 1
-				mouse_down = False
+				inp.mouse_down = False
 				gui.album_tab_mode = False
 				gui.pl_update = 1
 				gui.update += 1
@@ -55487,7 +55476,7 @@ while pctl.running:
 	if prefs.art_bg and core_timer.get() < 3:
 		power = 1000
 
-	if mouse_down and mouse_moved:
+	if inp.mouse_down and mouse_moved:
 		power = 1000
 		if gui.update_on_drag:
 			gui.update += 1
@@ -55539,10 +55528,10 @@ while pctl.running:
 	if prefs.auto_extract and prefs.monitor_downloads:
 		dl_mon.scan()
 
-	if mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
+	if inp.mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
 		#logging.info(sdl3.SDL_GetMouseState(None, None))
 		if sdl3.SDL_GetGlobalMouseState(None, None) == 0:
-			mouse_down = False
+			inp.mouse_down = False
 			mouse_up = True
 			quick_drag = False
 
@@ -55983,7 +55972,7 @@ while pctl.running:
 
 		if mouse_wheel != 0:
 			gui.update += 1
-		if mouse_down is True:
+		if inp.mouse_down is True:
 			gui.update += 1
 
 		if keymaps.test("pagedown"):  # key_PGD:
@@ -56172,7 +56161,7 @@ while pctl.running:
 	# if inp.mouse_position[1] < 1:
 	#     inp.mouse_down = False
 
-	if mouse_down is False:
+	if inp.mouse_down is False:
 		scroll_hold = False
 
 	# if focused is True:
@@ -56424,7 +56413,7 @@ while pctl.running:
 
 			# Side Bar Draging----------
 
-			if not mouse_down:
+			if not inp.mouse_down:
 				gui.side_drag = False
 
 			rect = (window_size[0] - gui.rspw - 5 * gui.scale, gui.panelY, 12 * gui.scale,
@@ -56565,7 +56554,7 @@ while pctl.running:
 								inp.mouse_position[1] > gui.panelY:
 							tauon.toggle_album_mode()
 							inp.mouse_click = False
-							mouse_down = False
+							inp.mouse_down = False
 
 					rect = [x, gui.panelY, w, h]
 					ddt.rect(rect, colours.gallery_background)
@@ -56692,7 +56681,7 @@ while pctl.running:
 						extend = 40 * gui.scale
 
 					# Process inputs first
-					if (inp.mouse_click or right_click or middle_click or mouse_down or mouse_up) and pctl.default_playlist:
+					if (inp.mouse_click or right_click or middle_click or inp.mouse_down or mouse_up) and pctl.default_playlist:
 						while render_pos < gui.album_scroll_px + window_size[1]:
 							if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
 								break
@@ -56773,7 +56762,7 @@ while pctl.running:
 														logging.debug("Position changed by gallery click")
 														pctl.jump(pctl.default_playlist[tauon.album_dex[album_on]], tauon.album_dex[album_on])
 													pctl.show_current()
-											elif mouse_down and not m_in:
+											elif inp.mouse_down and not m_in:
 												info = tauon.get_album_info(tauon.album_dex[album_on])
 												quick_drag = True
 												if not tauon.pl_is_locked(pctl.active_playlist_viewing) or key_shift_down:
@@ -57426,7 +57415,7 @@ while pctl.running:
 				if tauon.coll((
 						gui.playlist_left, gui.playlist_top, gui.plw,
 						window_size[1] - gui.panelY - gui.panelBY)) and not drag_mode and (
-						inp.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or mouse_down):
+						inp.mouse_click or mouse_wheel != 0 or right_click or middle_click or mouse_up or inp.mouse_down):
 					gui.pl_update = 1
 
 				if gui.combo_mode and mouse_wheel != 0:
@@ -57463,7 +57452,7 @@ while pctl.running:
 					run = 0
 					in_grip = False
 
-					if not mouse_down and gui.set_hold != -1:
+					if not inp.mouse_down and gui.set_hold != -1:
 						gui.set_hold = -1
 
 					for h, item in enumerate(gui.pl_st):
@@ -57535,7 +57524,7 @@ while pctl.running:
 									gui.set_point = inp.mouse_position[0]
 									gui.set_old = gui.pl_st[h - 1][1]
 
-							if mouse_down and gui.set_hold == h:
+							if inp.mouse_down and gui.set_hold == h:
 								gui.pl_st[h - 1][1] = gui.set_old + (inp.mouse_position[0] - gui.set_point)
 								gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
 
@@ -57553,7 +57542,7 @@ while pctl.running:
 
 						run += item[1]
 
-					if not mouse_down:
+					if not inp.mouse_down:
 						gui.set_label_hold = -1
 					#logging.info(in_grip)
 					if gui.set_label_hold == -1:
@@ -58086,7 +58075,7 @@ while pctl.running:
 
 					tauon.fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
 					if coll((x, top, 28 * gui.scale, ey - top)) and (
-							mouse_down or right_click) \
+							inp.mouse_down or right_click) \
 							and coll_point(click_location, (x, top, 28 * gui.scale, ey - top)):
 
 						gui.pl_update = 1
@@ -58139,7 +58128,7 @@ while pctl.running:
 							elif sbp < top:
 								sbp = top
 
-					if not mouse_down:
+					if not inp.mouse_down:
 						scroll_hold = False
 
 					if scroll_hold and not inp.mouse_click:
