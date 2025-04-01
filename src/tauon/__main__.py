@@ -65,7 +65,7 @@ if not sys.warnoptions:
 if sys.platform != "win32":
 	import fcntl
 
-n_version = "8.0.0"
+n_version = "8.0.1"
 t_version = "v" + n_version
 t_title = "Tauon"
 t_id = "tauonmb"
