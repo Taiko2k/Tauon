@@ -20735,7 +20735,6 @@ class QueueBox:
 
 		sep_colour = alpha_blend([255, 255, 255, 11], colours.queue_background)
 
-
 		if y > gui.panelY + 10 * gui.scale:  # Draw fancy light mode border
 			gui.queue_frame_draw = y
 		# else:
