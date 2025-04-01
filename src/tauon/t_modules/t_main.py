@@ -5686,7 +5686,6 @@ class Tauon:
 		self.switch_playlist                      = None
 		self.album_info_cache                     = {}
 		self.album_info_cache_key                 = (-1, -1)
-		self.album_mode:                     bool = False
 		self.console                              = bag.console
 		self.TrackClass                           = TrackClass
 		self.quickthumbnail                       = QuickThumbnail(tauon=self)
@@ -16346,7 +16345,7 @@ class Tauon:
 			prefs.ui_scale,
 			prefs.show_lyrics_side,
 			None, #prefs.last_device,
-			self.album_mode,
+			self.prefs.album_mode,
 			None,  # gui.album_playlist_width
 			prefs.transcode_opus_as,
 			gui.star_mode,
