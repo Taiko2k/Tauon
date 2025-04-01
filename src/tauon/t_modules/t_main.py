@@ -776,7 +776,7 @@ class GuiVar:
 
 		self.showed_title = False
 
-		self.to_get = 0
+		self.to_get = 0 # Used to store temporary import count display
 		self.to_got: int | str = 0
 		self.switch_showcase_off = False
 
@@ -4346,7 +4346,7 @@ class ListenBrainz:
 
 	def clear_key(self) -> None:
 		self.prefs.lb_token = ""
-		save_prefs(bag=self.bag)
+		save_prefs(self.bag)
 		self.enable = False
 
 class LastScrob:
@@ -23552,7 +23552,6 @@ class Over:
 				self.prefs.auto_lyrics_checked.clear()
 			y += 30 * self.gui.scale
 
-
 		self.toggle_square(x, y, self.tauon.toggle_guitar_chords, _("Enable chord lyrics"))
 
 		y += 40 * self.gui.scale
@@ -25846,7 +25845,6 @@ class Over:
 				if callback is not None:
 					callback(value)
 			abg = [230, 120, 20, 255] if self.inp.mouse_down else [220, 150, 20, 255]
-
 		if colour_value(self.colours.box_background) > 300:
 			abg = self.colours.box_sub_text
 
@@ -26224,12 +26222,12 @@ class TopPanel:
 
 				gui.update_layout = True
 				gui.update += 1
-			if inp.mouse_down and inp.quick_drag:
+			if self.inp.mouse_down and self.inp.quick_drag:
 				gui.lsp = True
 				gui.update_layout = True
 				gui.update += 1
 
-			if inp.middle_click:
+			if self.inp.middle_click:
 				self.tauon.toggle_left_last()
 				gui.update_layout = True
 				gui.update += 1
@@ -26264,7 +26262,7 @@ class TopPanel:
 		#     self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
 
 		if tauon.playlist_box.drag:
-			inp.drag_mode = False
+			self.inp.drag_mode = False
 
 		# Need to test length
 		self.tab_text_spaces = []
@@ -26300,8 +26298,8 @@ class TopPanel:
 		x_start = x
 
 		if tauon.playlist_box.drag and not gui.radio_view:
-			if inp.mouse_up:
-				if inp.mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and inp.mouse_up_position[1] > gui.panelY:
+			if self.inp.mouse_up:
+				if self.inp.mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and self.inp.mouse_up_position[1] > gui.panelY:
 					tauon.playlist_box.drag = False
 					if prefs.drag_to_unpin:
 						if tauon.playlist_box.drag_source == 0:
@@ -26438,14 +26436,14 @@ class TopPanel:
 					self.overflow_menu.activate(0, (rect[0], rect[1] + rect[3]))
 
 			if gui.radio_view:
-				if not inp.mouse_down and pctl.radio_playlist_viewing not in show_tabs and pctl.radio_playlist_viewing in ready_tabs:
+				if not self.inp.mouse_down and pctl.radio_playlist_viewing not in show_tabs and pctl.radio_playlist_viewing in ready_tabs:
 					if pctl.radio_playlist_viewing < self.prime_tab:
 						self.prime_side = 0
 					elif pctl.radio_playlist_viewing > self.prime_tab:
 						self.prime_side = 1
 					self.prime_tab = pctl.radio_playlist_viewing
 					gui.update += 1
-			elif not inp.mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
+			elif not self.inp.mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
 				if pctl.active_playlist_viewing < self.prime_tab:
 					self.prime_side = 0
 				elif pctl.active_playlist_viewing > self.prime_tab:
@@ -26453,7 +26451,7 @@ class TopPanel:
 				self.prime_tab = pctl.active_playlist_viewing
 				gui.update += 1
 
-			if tauon.playlist_box.drag and inp.mouse_position[0] > xx and inp.mouse_position[1] < gui.panelY:
+			if tauon.playlist_box.drag and self.inp.mouse_position[0] > xx and inp.mouse_position[1] < gui.panelY:
 				gui.update += 1
 				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and right_overflow:
 					self.drag_slide_timer.set()
@@ -26461,7 +26459,7 @@ class TopPanel:
 					self.prime_tab = right_overflow[0]
 				if self.drag_slide_timer.get() > 1:
 					self.drag_slide_timer.set()
-			if tauon.playlist_box.drag and inp.mouse_position[0] < x and inp.mouse_position[1] < gui.panelY:
+			if tauon.playlist_box.drag and self.inp.mouse_position[0] < x and inp.mouse_position[1] < gui.panelY:
 				gui.update += 1
 				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and left_overflow:
 					self.drag_slide_timer.set()
@@ -26500,7 +26498,7 @@ class TopPanel:
 			if tab_hit:
 				if not gui.radio_view:
 					# Double click to play
-					if inp.mouse_up and pctl.pl_to_id(i) == self.tab_d_click_ref == pctl.pl_to_id(pctl.active_playlist_viewing) and \
+					if self.inp.mouse_up and pctl.pl_to_id(i) == self.tab_d_click_ref == pctl.pl_to_id(pctl.active_playlist_viewing) and \
 							self.tab_d_click_timer.get() < 0.25 and point_distance(
 								inp.last_click_location, inp.mouse_up_position) < 5 * gui.scale:
 
@@ -26525,7 +26523,7 @@ class TopPanel:
 					gui.set_drag_source()
 
 				# Drag to move playlist
-				if inp.mouse_up and tauon.playlist_box.drag and coll_point(inp.mouse_up_position, f_rect):
+				if self.inp.mouse_up and tauon.playlist_box.drag and coll_point(self.inp.mouse_up_position, f_rect):
 
 					if gui.radio_view:
 						pctl.move_radio_playlist(tauon.playlist_box.drag_on, i)
@@ -26538,7 +26536,7 @@ class TopPanel:
 							# # Reveal the tab in case it has been hidden
 							# pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
 
-							if inp.key_shift_down:
+							if self.inp.key_shift_down:
 								pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[tauon.playlist_box.drag_on].playlist_ids
 								pctl.delete_playlist(tauon.playlist_box.drag_on, check_lock=True, force=True)
 							else:
@@ -26548,7 +26546,7 @@ class TopPanel:
 					gui.update += 1
 
 				# Delete playlist on wheel click
-				elif tauon.tab_menu.active is False and inp.middle_click:
+				elif tauon.tab_menu.active is False and self.inp.middle_click:
 					# delete_playlist(i)
 					self.pctl.delete_playlist_ask(i)
 					break
@@ -26562,12 +26560,12 @@ class TopPanel:
 					gui.tab_menu_pl = i
 
 				# Quick drop tracks
-				elif inp.quick_drag is True and inp.mouse_up:
+				elif self.inp.quick_drag is True and self.inp.mouse_up:
 					self.tab_d_click_ref = -1
 					self.tab_d_click_timer.force_set(100)
 					if (pctl.gen_codes.get(pctl.pl_to_id(i)) and "self" not in pctl.gen_codes[pctl.pl_to_id(i)]):
 						tauon.clear_gen_ask(pctl.pl_to_id(i))
-					inp.quick_drag = False
+					self.inp.quick_drag = False
 					modified = False
 					gui.pl_update += 1
 
@@ -26586,7 +26584,7 @@ class TopPanel:
 						tauon.tree_view_box.clear_target_pl(i)
 						tauon.thread_manager.ready("worker")
 
-				if inp.mouse_up and tauon.radio_view.drag:
+				if self.inp.mouse_up and tauon.radio_view.drag:
 					pctl.radio_playlists[i].stations.append(tauon.radio_view.drag)
 					self.tauon.toast(_("Added station to: ") + pctl.radio_playlists[i].name)
 
@@ -26599,10 +26597,10 @@ class TopPanel:
 			rect = (0, x, self.height, window_size[0])
 			self.fields.add(rect)
 
-		if inp.mouse_up and tauon.playlist_box.drag and inp.mouse_position[0] > x and inp.mouse_position[1] < self.height:
+		if self.inp.mouse_up and tauon.playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < self.height:
 			if gui.radio_view:
 				pass
-			elif inp.key_ctrl_down:
+			elif self.inp.key_ctrl_down:
 				tauon.gen_dupe(tauon.playlist_box.drag_on)
 
 			else:
@@ -26700,23 +26698,23 @@ class TopPanel:
 
 			# Drag to move playlist
 			if tab_hit:
-				if inp.mouse_down and i != tauon.playlist_box.drag_on and tauon.playlist_box.drag is True:
-					if inp.key_shift_down:
+				if self.inp.mouse_down and i != tauon.playlist_box.drag_on and tauon.playlist_box.drag is True:
+					if self.inp.key_shift_down:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 160, 200, 255])
 					elif tauon.playlist_box.drag_on < i:
 						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
 					else:
 						ddt.rect((x, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
-				elif (inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
+				elif (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 200, 180, 255])
 			# Drag yellow line highlight if single track already in playlist
-			elif inp.quick_drag and not point_proximity_test(gui.drag_source_position, inp.mouse_position, 15 * gui.scale):
+			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
 					if item < len(pctl.default_playlist) and pctl.default_playlist[item] in tab.playlist_ids:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [190, 160, 20, 255])
 						break
 			# Drag red line highlight if playlist is generator playlist
-			if inp.quick_drag and not point_proximity_test(gui.drag_source_position, inp.mouse_position, 15 * gui.scale):
+			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				if not self.tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [200, 70, 50, 255])
 
@@ -26738,10 +26736,10 @@ class TopPanel:
 
 		# Quick drag single track onto bar to create new playlist function and indicator
 		if prefs.tabs_on_top:
-			if (inp.quick_drag or gui.ext_drop_mode) and inp.mouse_position[0] > x and inp.mouse_position[1] < gui.panelY and tauon.quick_d_timer.get() > 1:
+			if (self.inp.quick_drag or gui.ext_drop_mode) and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY and tauon.quick_d_timer.get() > 1:
 				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 200, 180, 255])
 
-				if inp.mouse_up:
+				if self.inp.mouse_up:
 					tauon.drop_tracks_to_new_playlist(gui.shift_selection)
 
 			# Draw end drag tab indicator
@@ -27176,12 +27174,12 @@ class BottomBarType1:
 		self.fields.add(self.seek_bar_position + self.seek_bar_size)
 		if self.coll(self.seek_bar_position + self.seek_bar_size):
 
-			if inp.middle_click and pctl.playing_state > 0:
+			if self.inp.middle_click and pctl.playing_state > 0:
 				gui.seek_cur_show = True
 
 			inp.global_clicked = True
-			if inp.mouse_wheel != 0:
-				pctl.seek_time(pctl.playing_time + (inp.mouse_wheel * 3))
+			if self.inp.mouse_wheel != 0:
+				pctl.seek_time(pctl.playing_time + (self.inp.mouse_wheel * 3))
 
 		if gui.seek_cur_show:
 			gui.update += 1
@@ -27189,26 +27187,26 @@ class BottomBarType1:
 			# self.fields.add([inp.mouse_position[0] - 1, inp.mouse_position[1] - 1, 1, 1])
 			# ddt.rect_r([inp.mouse_position[0] - 1, inp.mouse_position[1] - 1, 1, 1], [255,0,0,180], True)
 
-			bargetX = inp.mouse_position[0]
+			bargetX = self.inp.mouse_position[0]
 			bargetX = min(bargetX, self.seek_bar_position[0] + self.seek_bar_size[0])
 			bargetX = max(bargetX, self.seek_bar_position[0])
 			bargetX -= self.seek_bar_position[0]
 			seek = bargetX / self.seek_bar_size[0]
 			gui.cur_time = get_display_time(pctl.playing_object().length * seek)
 
-		if self.seek_down is True and inp.mouse_position[0] == 0:
+		if self.seek_down is True and self.inp.mouse_position[0] == 0:
 			self.seek_down = False
 			self.seek_hit = True
 
-		if (inp.mouse_up and self.coll(self.seek_bar_position + self.seek_bar_size) \
-		and coll_point(inp.last_click_location, self.seek_bar_position + self.seek_bar_size) \
-		and coll_point(				inp.click_location, self.seek_bar_position + self.seek_bar_size)) \
-		or (inp.mouse_up and self.volume_hit) or self.seek_hit:
+		if (self.inp.mouse_up and self.coll(self.seek_bar_position + self.seek_bar_size) \
+		and coll_point(self.inp.last_click_location, self.seek_bar_position + self.seek_bar_size) \
+		and coll_point(self.inp.click_location, self.seek_bar_position + self.seek_bar_size)) \
+		or (self.inp.mouse_up and self.volume_hit) or self.seek_hit:
 			self.volume_hit = False
 			self.seek_down = False
 			self.seek_hit = False
 
-			bargetX = inp.mouse_position[0]
+			bargetX = self.inp.mouse_position[0]
 			bargetX = min(bargetX, self.seek_bar_position[0] + self.seek_bar_size[0])
 			bargetX = max(bargetX, self.seek_bar_position[0])
 			bargetX -= self.seek_bar_position[0]
@@ -27264,17 +27262,17 @@ class BottomBarType1:
 		if gui.seek_cur_show:
 			if self.coll(
 				[self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
-				if inp.mouse_position[0] > self.seek_bar_position[0] - 1:
-					cur = [inp.mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
+				if self.inp.mouse_position[0] > self.seek_bar_position[0] - 1:
+					cur = [self.inp.mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
 					ddt.rect(cur, colours.grey(15))
 					# ddt.rect_r(cur, colours.grey(80))
 					ddt.text(
-						(inp.mouse_position[0] - 40 + 3, self.seek_bar_position[1] - 24), gui.cur_time,
+						(self.inp.mouse_position[0] - 40 + 3, self.seek_bar_position[1] - 24), gui.cur_time,
 						colours.grey(180), 213,
 						bg=colours.grey(15))
 
 					ddt.rect(
-						[inp.mouse_position[0], self.seek_bar_position[1], 2, self.seek_bar_size[1]],
+						[self.inp.mouse_position[0], self.seek_bar_position[1], 2, self.seek_bar_size[1]],
 						[100, 100, 20, 255])
 			else:
 				gui.seek_cur_show = False
@@ -27282,9 +27280,9 @@ class BottomBarType1:
 		if gui.buffering and pctl.buffering_percent:
 			ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1] + self.seek_bar_size[1] - round(3 * gui.scale)), (self.seek_bar_size[0] * pctl.buffering_percent / 100, round(3 * gui.scale)), [255, 255, 255, 50])
 		# Volume mouse wheel control -----------------------------------------
-		if inp.mouse_wheel != 0 and inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
-		and not coll_point(inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
-			pctl.player_volume += inp.mouse_wheel * prefs.volume_wheel_increment
+		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
+		and not coll_point(self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
+			pctl.player_volume += self.inp.mouse_wheel * prefs.volume_wheel_increment
 			if pctl.player_volume < 1:
 				pctl.player_volume = 0
 			elif pctl.player_volume > 100:
@@ -27300,11 +27298,11 @@ class BottomBarType1:
 
 			rect = (x - 8 * gui.scale, y - 17 * gui.scale, 55 * gui.scale, 23 * gui.scale)
 			# ddt.rect(rect, [255,255,255,25])
-			if self.coll(rect) and inp.mouse_down:
+			if self.coll(rect) and self.inp.mouse_down:
 				gui.update_on_drag = True
 
 			h_rect = (x - 6 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
-			if self.coll(h_rect) and inp.mouse_down:
+			if self.coll(h_rect) and self.inp.mouse_down:
 				pctl.player_volume = 0
 
 			step = round(1 * gui.scale)
@@ -27321,7 +27319,7 @@ class BottomBarType1:
 				h_rect = (x - 1 * gui.scale, y - 17 * gui.scale, 4 * gui.scale, 23 * gui.scale)
 
 				if self.coll(h_rect):
-					if inp.mouse_down or inp.mouse_up:
+					if self.inp.mouse_down or self.inp.mouse_up:
 						gui.update_on_drag = True
 
 						if bar == 0:
@@ -27377,7 +27375,7 @@ class BottomBarType1:
 					gui.update = 2
 
 					self.volume_bar_being_dragged = True
-					volgetX = inp.mouse_position[0]
+					volgetX = self.inp.mouse_position[0]
 					volgetX = min(volgetX, self.volume_bar_position[0] + self.volume_bar_size[0] - right_offset)
 					volgetX = max(volgetX, self.volume_bar_position[0] - right_offset)
 					volgetX -= self.volume_bar_position[0] - right_offset
@@ -27385,12 +27383,12 @@ class BottomBarType1:
 
 					time.sleep(0.02)
 
-					if inp.mouse_down is False:
+					if self.inp.mouse_down is False:
 						self.volume_bar_being_dragged = False
 						pctl.player_volume = int(pctl.player_volume)
 						pctl.set_volume(True)
 
-				if inp.mouse_down:
+				if self.inp.mouse_down:
 					pctl.player_volume = int(pctl.player_volume)
 					pctl.set_volume(False)
 
@@ -27694,7 +27692,7 @@ class BottomBarType1:
 						gui.mode_toast_text = _("Shuffle Off")
 					tauon.toast_mode_timer.set()
 					gui.delay_frame(1)
-				if inp.middle_click:
+				if self.inp.middle_click:
 					pctl.advance(rr=True)
 					gui.tool_tip_lock_off_f = True
 				# tauon.tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
@@ -27728,7 +27726,7 @@ class BottomBarType1:
 						gui.mode_toast_text = _("Repeat Off")
 					tauon.toast_mode_timer.set()
 					gui.delay_frame(1)
-				if inp.middle_click:
+				if self.inp.middle_click:
 					pctl.revert()
 					gui.tool_tip_lock_off_b = True
 				if not gui.tool_tip_lock_off_b:
