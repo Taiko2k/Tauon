@@ -14642,7 +14642,7 @@ class Tauon:
 				self.pctl.master_library[self.pctl.master_count] = nt
 
 				cued.append(self.pctl.master_count)
-				# loaded_pathes_cache[filepath.replace('\\', '/')] = self.pctl.master_count
+				# loaded_paths_cache[filepath.replace('\\', '/')] = self.pctl.master_count
 				# self.added.append(self.pctl.master_count)
 
 				self.pctl.master_count += 1
@@ -37790,7 +37790,7 @@ def worker1(tauon: Tauon) -> None:
 	gui   = tauon.gui
 	pctl  = tauon.pctl
 	prefs = tauon.prefs
-	loaded_pathes_cache = {}
+	loaded_paths_cache = {}
 	loaded_cue_cache = {}
 	tauon.added = []
 
@@ -38076,7 +38076,7 @@ def worker1(tauon: Tauon) -> None:
 					pctl.master_library[track.index] = track
 					if track.fullpath not in bag.cue_list:
 						bag.cue_list.append(track.fullpath)
-					loaded_pathes_cache[track.fullpath] = track.index
+					loaded_paths_cache[track.fullpath] = track.index
 					tauon.added.append(track.index)
 
 		except Exception:
@@ -38226,8 +38226,8 @@ def worker1(tauon: Tauon) -> None:
 
 		path = path.replace("\\", "/")
 
-		if path in loaded_pathes_cache:
-			de = loaded_pathes_cache[path]
+		if path in loaded_paths_cache:
+			de = loaded_paths_cache[path]
 
 			if pctl.master_library[de].fullpath in bag.cue_list:
 				logging.info("File has an associated .cue file... Skipping")
@@ -38679,14 +38679,14 @@ def worker1(tauon: Tauon) -> None:
 					if tauon.loaderCommand == tauon.LC_Folder:
 						gui.to_get = 0
 						gui.to_got = 0
-						loaded_pathes_cache, loaded_cue_cache = cache_paths()
+						loaded_paths_cache, loaded_cue_cache = cache_paths()
 						# pre_get(order.target)
 						if order.force_scan:
 							gets(order.target, force_scan=True)
 						else:
 							gets(order.target)
 					elif tauon.loaderCommand == tauon.LC_File:
-						loaded_pathes_cache, loaded_cue_cache = cache_paths()
+						loaded_paths_cache, loaded_cue_cache = cache_paths()
 						add_file(order.target)
 
 					if gui.im_cancel:
