@@ -42321,9 +42321,9 @@ def main(holder: Holder) -> None:
 						if inp.key_left_press:
 							gal_left = True
 							inp.key_left_press = False
-						if inp.key_up_press:
+						if inp.key_right_press:
 							gal_right = True
-							inp.key_up_press = False
+							inp.key_right_press = False
 						if inp.key_up_press:
 							gal_up = True
 							inp.key_up_press = False
