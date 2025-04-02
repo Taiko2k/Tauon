@@ -390,7 +390,7 @@ class GuiVar:
 		self.album_v_gap:       float = 66
 		self.album_h_gap:       float = 30
 		self.album_v_slide_value: int = 50
-		self.album_scroll_px = self.album_v_slide_value # TODO(Martin): This looks weird, do we really need both? They should always have the same value no?
+		self.album_scroll_px = self.album_v_slide_value
 		# Playlist Panel
 		self.pl_rect = (2, 12, 10, 10)
 
@@ -1606,7 +1606,6 @@ class PlayerCtl:
 		self.active_replaygain = 0
 		self.stop_mode = 0
 		self.stop_ref = None
-
 
 		self.record_stream = False
 		self.record_title = ""
@@ -2873,7 +2872,7 @@ class PlayerCtl:
 			# If the queue is not empty, play?
 			elif len(self.track_queue) > 0:
 				if self.stop_mode == 4:  # Assign new current album for stopping
-					tr = pctl.playing_object()
+					tr = self.pctl.playing_object()
 					self.stop_ref = (tr.parent_folder_path, tr.album)
 				self.play_target()
 
@@ -5529,6 +5528,7 @@ class Tauon:
 
 		self.cancel_menu           = Menu(self, 100)
 		self.extra_menu            = Menu(self, 175, show_icons=True)
+		self.stop_menu             = Menu(self, 175, show_icons=False)
 		self.shuffle_menu          = Menu(self, 120)
 		self.repeat_menu           = Menu(self, 120)
 		self.tab_menu              = Menu(self, 160, show_icons=True)
@@ -5730,11 +5730,6 @@ class Tauon:
 		self.tau               = TauService(self)
 		self.album_star_store  = AlbumStarStore(self)
 		self.subsonic          = self.album_star_store.subsonic
-
-
-		# Workarounds for now
-		self.standard_sort = standard_sort
-		self.love = love
 
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
@@ -10900,6 +10895,27 @@ class Tauon:
 
 	def stop(self) -> None:
 		self.pctl.stop()
+
+	def stop_mode_off(self) -> None:
+		self.pctl.stop_mode = 0
+		self.pctl.stop_ref = None
+
+	def stop_mode_track(self) -> None:
+		self.pctl.stop_mode = 1
+		self.pctl.stop_ref = None
+
+	def stop_mode_album(self) -> None:
+		self.pctl.stop_mode = 2
+
+	def stop_mode_track_persist(self) -> None:
+		self.pctl.stop_mode = 3
+		self.pctl.stop_ref = None
+
+	def stop_mode_album_persist(self) -> None:
+		tr = self.pctl.playing_object()
+		if tr:
+			self.pctl.stop_mode = 4
+			self.pctl.stop_ref = (tr.parent_folder_path, tr.album)
 
 	def random_track(self) -> None:
 		playlist = self.pctl.multi_playlist[self.pctl.active_playlist_playing].playlist_ids
@@ -27010,7 +27026,7 @@ class TopPanel:
 				ddt.rect(box, c1)
 
 				done = round(gui.transcoding_bach_done / gui.transcoding_batch_total * 100)
-				doing = round(core_use / gui.transcoding_batch_total * 100)
+				doing = round(self.tauon.core_use / gui.transcoding_batch_total * 100)
 
 				ddt.rect([x, yy, done, h], c3)
 				ddt.rect([x + done, yy, doing, h], c2)
@@ -28976,8 +28992,6 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
-		global click_time
-
 		highlight_width    = gui.tracklist_highlight_width
 		gui.highlight_left = gui.tracklist_highlight_left
 		inset_width        = gui.tracklist_inset_width
@@ -29176,7 +29190,7 @@ class StandardPlaylist:
 						# Play if double click:
 						if inp.d_mouse_click and track_position in self.gui.shift_selection and coll_point(
 							self.inp.last_click_location, (input_box)):
-							click_time -= 1.5
+							gui.click_time -= 1.5
 							pctl.jump(track_id, track_position)
 							line_hit = False
 							inp.mouse_click = False
@@ -29283,7 +29297,7 @@ class StandardPlaylist:
 
 				pctl.jump(track_id, track_position)
 
-				click_time -= 1.5
+				gui.click_time -= 1.5
 				self.inp.quick_drag = False
 				self.inp.mouse_down = False
 				self.inp.mouse_up = False
@@ -29726,7 +29740,6 @@ class StandardPlaylist:
 				# gui.tracklist_inset_width = inset_width + round(20 * gui.scale)
 
 				for h, item in enumerate(gui.pl_st):
-
 					wid = item[1] - 20 * gui.scale
 					y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number
 					ry = gui.playlist_top + gui.playlist_row_height * number
@@ -29740,15 +29753,13 @@ class StandardPlaylist:
 					if item[0] == "Rating":
 						if wid > 50 * gui.scale:
 							yy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
-							draw_rating_widget(run + 4 * gui.scale, yy, n_track)
+							self.tauon.draw_rating_widget(run + 4 * gui.scale, yy, n_track)
 
 					if item[0] == "Starline":
-
-						total = star_store.get_by_object(n_track)
+						total = self.star_store.get_by_object(n_track)
 
 						if total > 0 and n_track.length != 0 and wid > 0:
 							if gui.star_mode == "star":
-
 								star = star_count(total, n_track.length) - 1
 								rr = 0
 								if star > -1:
@@ -29762,7 +29773,7 @@ class StandardPlaylist:
 									for count in range(8):
 										if star < count or rr > wid + round(6 * gui.scale):
 											break
-										star_pc_icon.render(sx, sy, colour)
+										gui.star_pc_icon.render(sx, sy, colour)
 										sx += round(13) * gui.scale
 										rr += round(13) * gui.scale
 
@@ -29780,7 +29791,6 @@ class StandardPlaylist:
 									sy = (gui.playlist_top + gui.playlist_row_height * number) + int(
 										gui.playlist_row_height / 2)
 									ddt.rect((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colour)
-
 					else:
 						text = ""
 						font = gui.row_font_size
@@ -29842,7 +29852,7 @@ class StandardPlaylist:
 							if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
 								text = str(p_track)
 							else:
-								text = track_number_process(n_track.track_number)
+								text = tauon.track_number_process(n_track.track_number)
 
 							colour = colours.index_text
 							norm_colour = colour
@@ -29906,7 +29916,7 @@ class StandardPlaylist:
 							ex = n_track.file_ext
 							if n_track.misc.get("container") is not None:
 								ex = n_track.misc.get("container")
-							if ex == "FLAC" or ex == "WAV" or ex == "APE":
+							if ex in ("FLAC", "WAV", "APE"):
 								text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(
 									n_track.bit_depth)
 							colour = colours.index_text
@@ -30771,7 +30781,7 @@ class RadioBox:
 					stream_url="http://shirayuki.org:9200/",
 					website_url="https://yggdrasilradio.net/"))
 
-			for station in primary_stations:
+			for station in self.tauon.primary_stations:
 				self.temp_list.append(station)
 
 	def search_radio_browser(self, param) -> None:
@@ -43658,7 +43668,7 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 		if gui.lsp:
 			w -= gui.lspw
 	area_x = w + 38 * gui.scale
-	row_len = int((area_x - album_h_gap) / (album_mode_art_size + album_h_gap))
+	row_len = int((area_x - gui.album_h_gap) / (album_mode_art_size + gui.album_h_gap))
 	global last_row
 	last_row = row_len
 	# ----
@@ -43677,25 +43687,25 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 		row += 1
 		if row > row_len - 1:
 			row = 0
-			px += album_mode_art_size + album_v_gap
+			px += album_mode_art_size + gui.album_v_gap
 
 	# If the album is within the view port already, dont jump to it
 	# (unless we really want to with force)
-	if not force and gui.album_scroll_px + album_v_slide_value < px < gui.album_scroll_px + window_size[1]:
+	if not force and gui.album_scroll_px + gui.album_v_slide_value < px < gui.album_scroll_px + window_size[1]:
 
 		# Dont chance the view since its alread in the view port
 		# But if the album is just out of view on the bottom, bring it into view on to bottom row
-		if window_size[1] > (album_mode_art_size + album_v_gap) * 2:
-			while not gui.album_scroll_px - 20 < px + (album_mode_art_size + album_v_gap + 3) < gui.album_scroll_px + \
+		if window_size[1] > (album_mode_art_size + gui.album_v_gap) * 2:
+			while not gui.album_scroll_px - 20 < px + (album_mode_art_size + gui.album_v_gap + 3) < gui.album_scroll_px + \
 				window_size[1] - 40:
 				gui.album_scroll_px += 1
 
 	else:
 		# Set the view to the calculated position
 		gui.album_scroll_px = px
-		gui.album_scroll_px -= album_v_slide_value
+		gui.album_scroll_px -= gui.album_v_slide_value
 
-		gui.album_scroll_px = max(gui.album_scroll_px, 0 - album_v_slide_value)
+		gui.album_scroll_px = max(gui.album_scroll_px, 0 - gui.album_v_slide_value)
 
 	if len(tauon.album_dex) > 0:
 		return tauon.album_dex[re]
@@ -45087,14 +45097,11 @@ def toggle_playlist_break() -> None:
 	gui.pl_update = 1
 
 def transcode_single(item: list[tuple[int, str]], manual_directory: Path | None = None, manual_name: str | None = None):
-	global core_use
-	global dl_use
-
 	if manual_directory != None:
 		codec = "opus"
 		output = manual_directory
 		track = item
-		core_use += 1
+		tauon.core_use += 1
 		bitrate = 48
 	else:
 		track = item[0]
@@ -45108,9 +45115,9 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: Path | None 
 	cleanup = False
 
 	if t.is_network:
-		while dl_use > 1:
+		while tauon.dl_use > 1:
 			time.sleep(0.2)
-		dl_use += 1
+		tauon.dl_use += 1
 		try:
 			url, params = pctl.get_url(t)
 			assert url
@@ -45124,11 +45131,11 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: Path | None 
 			cleanup = True
 		except Exception:
 			logging.exception("Error downloading file")
-		dl_use -= 1
+		tauon.dl_use -= 1
 
 	if not os.path.isfile(path):
 		show_message(_("Encoding warning: Missing one or more files"))
-		core_use -= 1
+		tauon.core_use -= 1
 		return
 
 	out_line = encode_track_name(t)
@@ -45245,7 +45252,7 @@ def transcode_single(item: list[tuple[int, str]], manual_directory: Path | None 
 	gui.transcoding_bach_done += 1
 	if cleanup:
 		os.remove(path)
-	core_use -= 1
+	tauon.core_use -= 1
 	gui.update += 1
 
 def cue_scan(content: str, tn: TrackClass) -> int | None:
@@ -47420,31 +47427,27 @@ def update_layout_do():
 				offset = round(offset * gui.scale)
 			gui.offset_extra = offset
 
-		global album_v_gap
-		global album_h_gap
-		global album_v_slide_value
-
-		album_v_slide_value = round(50 * gui.scale)
+		gui.album_v_slide_value = round(50 * gui.scale)
 		if gui.gallery_show_text:
-			album_h_gap = 30 * gui.scale
-			album_v_gap = 66 * gui.scale
+			gui.album_h_gap = 30 * gui.scale
+			gui.album_v_gap = 66 * gui.scale
 		else:
-			album_h_gap = 30 * gui.scale
-			album_v_gap = 25 * gui.scale
+			gui.album_h_gap = 30 * gui.scale
+			gui.album_v_gap = 25 * gui.scale
 
 		if prefs.thin_gallery_borders:
 
 			if gui.gallery_show_text:
-				album_h_gap = 20 * gui.scale
-				album_v_gap = 55 * gui.scale
+				gui.album_h_gap = 20 * gui.scale
+				gui.album_v_gap = 55 * gui.scale
 			else:
-				album_h_gap = 17 * gui.scale
-				album_v_gap = 15 * gui.scale
+				gui.album_h_gap = 17 * gui.scale
+				gui.album_v_gap = 15 * gui.scale
 
-			album_v_slide_value = round(45 * gui.scale)
+			gui.album_v_slide_value = round(45 * gui.scale)
 
 		if prefs.increase_gallery_row_spacing:
-			album_v_gap = round(album_v_gap * 1.3)
+			gui.album_v_gap = round(gui.album_v_gap * 1.3)
 
 		gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
@@ -47711,7 +47714,7 @@ def save_state() -> None:
 		None,  # Was cue list
 		"",  # radio_field.text,
 		prefs.theme,
-		folder_image_offsets,
+		tauon.folder_image_offsets,
 		None,  # lfm_username,
 		None,  # lfm_hash,
 		latest_db_version,  # Used for upgrading
@@ -50519,7 +50522,6 @@ def worker1(tauon: Tauon) -> None:
 					os.makedirs(cache_dir)
 
 				if prefs.transcode_codec in ("opus", "ogg", "flac", "mp3"):
-					global core_use
 					cores = os.cpu_count()
 
 					total = len(folder_items)
@@ -50529,12 +50531,12 @@ def worker1(tauon: Tauon) -> None:
 
 					q = 0
 					while True:
-						if core_use < cores and q < len(folder_items):
+						if tauon.core_use < cores and q < len(folder_items):
 							agg = [[folder_items[q], Path(folder_name)]]
 							if agg not in dones:
-								core_use += 1
+								tauon.core_use += 1
 								dones.append(agg)
-								loaderThread = threading.Thread(target=transcode_single, args=agg)
+								loaderThread = threading.Thread(target=tauon.transcode_single, args=agg)
 								loaderThread.daemon = True
 								loaderThread.start()
 
@@ -50542,10 +50544,10 @@ def worker1(tauon: Tauon) -> None:
 							gui.update += 1
 						time.sleep(0.05)
 						if gui.tc_cancel:
-							while core_use > 0:
+							while tauon.core_use > 0:
 								time.sleep(1)
 							break
-						if q == len(folder_items) and core_use == 0:
+						if q == len(folder_items) and tauon.core_use == 0:
 							gui.update += 1
 							break
 				else:
@@ -51304,9 +51306,6 @@ draw_sep_hl = False
 playlist_view_position = 0
 playlist_playing = -1
 
-core_use = 0
-dl_use = 0
-
 random_mode = False
 repeat_mode = False
 
@@ -51325,7 +51324,6 @@ master_count = 0
 
 volume = 75
 
-folder_image_offsets: dict[str, int] = {}
 db_version: float = 0.0
 latest_db_version: float = 70
 
@@ -51482,7 +51480,7 @@ bag = Bag(
 	loaded_asset_dc=loaded_asset_dc,
 	radio_playlist_viewing=radio_playlist_viewing,
 	radio_playlists=radio_playlists,
-	folder_image_offsets=folder_image_offsets,
+	folder_image_offsets={},
 )
 
 # If scaled-icons directory exists, use it even for initial loading
@@ -51513,9 +51511,6 @@ spec_smoothing = True # TODO(Martin): Move
 old_album_pos = gui.old_album_pos
 row_len = 5 # TODO(Martin): Move
 last_row = gui.last_row
-album_v_gap = gui.album_v_gap
-album_h_gap = gui.album_h_gap
-album_v_slide_value = gui.album_v_slide_value
 time_last_save = 0 # TODO(Martin): Move
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
 new_playlist_cooldown = gui.new_playlist_cooldown
@@ -51544,43 +51539,44 @@ if (user_directory / "lyrics_substitutions.json").is_file():
 perf_timer = Timer()
 perf_timer.set()
 
-primary_stations: list[RadioStation] = []
-
-primary_stations.append(RadioStation(
+bag.primary_stations.append(RadioStation(
 	title="SomaFM Groove Salad",
 	stream_url="https://ice3.somafm.com/groovesalad-128-mp3",
 	country="USA",
 	website_url="https://somafm.com/groovesalad",
 	icon="https://somafm.com/logos/120/groovesalad120.png"))
 
-primary_stations.append(RadioStation(
+bag.primary_stations.append(RadioStation(
 	title="SomaFM PopTron",
 	stream_url="https://ice3.somafm.com/poptron-128-mp3",
 	country="USA",
 	website_url="https://somafm.com/poptron/",
 	icon="https://somafm.com/logos/120/poptron120.jpg"))
 
-primary_stations.append(RadioStation(
+bag.primary_stations.append(RadioStation(
 	title="SomaFM Vaporwaves",
 	stream_url="https://ice4.somafm.com/vaporwaves-128-mp3",
 	country="USA",
 	website_url="https://somafm.com/vaporwaves",
 	icon="https://somafm.com/img3/vaporwaves400.png"))
 
-primary_stations.append(RadioStation(
+bag.primary_stations.append(RadioStation(
 	title="DKFM Shoegaze Radio",
 	stream_url="https://kathy.torontocast.com:2005/stream",
 	country="Canada",
 	website_url="https://decayfm.com",
 	icon="https://cdn-profiles.tunein.com/s193842/images/logod.png"))
 
-for station in primary_stations:
+for station in bag.primary_stations:
 	radio_playlists[0].stations.append(station)
 
 shoot_pump = threading.Thread(target=pumper, args=(bag,))
 shoot_pump.daemon = True
 shoot_pump.start()
 
+after_scan: list[TrackClass] = []
+search_string_cache          = {}
+search_dia_string_cache      = {}
 state_path1 = user_directory / "state.p"
 state_path2 = user_directory / "state.p.backup"
 for t in range(2):
@@ -51624,13 +51620,13 @@ for t in range(2):
 		playlist_view_position = save[4]
 		if save[5] is not None:
 			if db_version > 68:
-				multi_playlist = []
+				bag.multi_playlist = []
 				tauonplaylist_jar = save[5]
 				for d in tauonplaylist_jar:
 					nt = TauonPlaylist(**d)
-					multi_playlist.append(nt)
+					bag.multi_playlist.append(nt)
 			else:
-				multi_playlist = save[5]
+				bag.multi_playlist = save[5]
 		volume = save[6]
 		track_queue = save[7]
 		playing_in_queue = save[8]
@@ -51639,10 +51635,10 @@ for t in range(2):
 		# cue_list = save[11]
 		# radio_field_text = save[12]
 		prefs.theme = save[13]
-		folder_image_offsets = save[14]
+		bag.folder_image_offsets = save[14]
 		# lfm_username = save[15]
 		# lfm_hash = save[16]
-		view_prefs = save[18]
+		prefs.view_prefs = save[18]
 		# window_size = save[19]
 		gui.save_size = copy.copy(save[19])
 		gui.rspw = save[20]
@@ -51650,7 +51646,7 @@ for t in range(2):
 		gui.vis_want = save[22]
 		bag.selected_in_playlist = save[23]
 		if save[24] is not None:
-			album_mode_art_size = save[24]
+			bag.album_mode_art_size = save[24]
 		if save[25] is not None:
 			draw_border = save[25]
 		if save[26] is not None:
@@ -52024,13 +52020,12 @@ shoot.start()
 
 # Loading Config -----------------
 
-download_directories: list[str] = []
 
 if download_directory.is_dir():
-	download_directories.append(str(download_directory))
+	bag.download_directories.append(str(download_directory))
 
 if music_directory is not None and music_directory.is_dir():
-	download_directories.append(str(music_directory))
+	bag.download_directories.append(str(music_directory))
 
 cf = Config()
 
@@ -52039,7 +52034,7 @@ save_prefs(bag)
 
 # Temporary
 if 0 < db_version <= 34:
-	prefs.theme_name = get_theme_name(dirs, theme)
+	prefs.theme_name = get_theme_name(dirs, prefs.theme)
 if 0 < db_version <= 66:
 	prefs.device_buffer = 80
 if 0 < db_version <= 53:
@@ -52074,12 +52069,11 @@ if prefs.use_gamepad:
 	sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
 if msys and win_ver >= 10:
-
 	#logging.info(sss.info.win.window)
 	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 	if SMTC_path.exists():
 		try:
-			sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
+			bag.sm = ctypes.cdll.LoadLibrary(str(SMTC_path))
 
 			def SMTC_button_callback(button: int) -> None:
 				logging.debug(f"SMTC sent key ID: {button}")
@@ -52097,32 +52091,28 @@ if msys and win_ver >= 10:
 				tauon.wake()
 
 			close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
-			smtc = sm.init(close_callback) == 0
+			smtc = bag.sm.init(close_callback) == 0
 		except Exception:
 			logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
 	else:
 		logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
-
 auto_scale(bag)
-
 scale_assets(bag, gui, prefs.scale_want)
 
 try:
-	#star_lines        = view_prefs['star-lines']
-	prefs.update_title      = view_prefs["update-title"]
-	prefs.prefer_side = view_prefs["side-panel"]
-	prefs.dim_art     = False  # view_prefs['dim-art']
-	#gui.turbo         = view_prefs['level-meter']
-	#pl_follow         = view_prefs['pl-follow']
-	prefs.scroll_enable     = view_prefs["scroll-enable"]
-	if "break-enable" in view_prefs:
-		prefs.break_enable    = view_prefs["break-enable"]
+	prefs.update_title  = prefs.view_prefs["update-title"]
+	prefs.prefer_side   = prefs.view_prefs["side-panel"]
+	prefs.dim_art       = False  # view_prefs['dim-art']
+	#pl_follow          = view_prefs['pl-follow']
+	prefs.scroll_enable = prefs.view_prefs["scroll-enable"]
+	if "break-enable" in prefs.view_prefs:
+		prefs.break_enable = prefs.view_prefs["break-enable"]
 	else:
 		logging.warning("break-enable not found in view_prefs[] when trying to load settings! First run?")
 	#custom_line_mode  = view_prefs['custom-line']
 	#thick_lines       = view_prefs['thick-lines']
-	if "append-date" in view_prefs:
-		prefs.append_date = view_prefs["append-date"]
+	if "append-date" in prefs.view_prefs:
+		prefs.append_date = prefs.view_prefs["append-date"]
 	else:
 		logging.warning("append-date not found in view_prefs[] when trying to load settings! First run?")
 except KeyError:
@@ -52300,12 +52290,11 @@ else:
 	except Exception:
 		logging.exception("Unknown error loading star.p file")
 
-album_star_store = tauon.album_star_store
 album_star_path = user_directory / "album-star.p"
 if album_star_path.is_file():
 	try:
 		with album_star_path.open("rb") as file:
-			album_star_store.db = pickle.load(file)
+			tauon.album_star_store.db = pickle.load(file)
 	except Exception:
 		logging.exception("Unknown error loading album-star.p file")
 else:
@@ -52484,8 +52473,7 @@ launch = Launch(tauon, pctl, gui, ddt)
 draw = pctl.draw
 
 if system == "Linux":
-	prime_fonts()
-
+	tauon.prime_fonts()
 else:
 	# standard_font = "Meiryo"
 	standard_font = "Arial"
@@ -52615,7 +52603,6 @@ temp_dest = sdl3.SDL_FRect(0, 0)
 
 style_overlay = tauon.style_overlay
 
-click_time = time.time()
 scroll_hold = False
 scroll_point = 0
 scroll_bpoint = 0
@@ -55329,9 +55316,9 @@ while pctl.running:
 
 		if inp.mouse_click:
 			n_click_time = time.time()
-			if n_click_time - click_time < 0.42:
+			if n_click_time - gui.click_time < 0.42:
 				inp.d_mouse_click = True
-			click_time = n_click_time
+			gui.click_time = n_click_time
 
 			# Don't register bottom level click when closing message box
 			if gui.message_box and pref_box.enabled and not inp.key_focused and not tauon.coll(tauon.message_box.get_rect()):
@@ -55552,7 +55539,7 @@ while pctl.running:
 							gui.frame_callback_list.append(TestTimer(0.9))
 
 						if prefs.gallery_row_scroll:
-							gui.album_scroll_px -= inp.mouse_wheel * (tauon.album_mode_art_size + album_v_gap)  # 90
+							gui.album_scroll_px -= inp.mouse_wheel * (tauon.album_mode_art_size + gui.album_v_gap)  # 90
 						else:
 							gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
 
@@ -55648,7 +55635,7 @@ while pctl.running:
 
 									rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
 									# tauon.fields.add(rect)
-									m_in = coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+									m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 
 									# if m_in:
 									#     ddt.rect_r((x - 7, y - 7, tauon.album_mode_art_size + 14, tauon.album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
