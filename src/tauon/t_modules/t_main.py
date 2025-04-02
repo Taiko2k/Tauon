@@ -21668,12 +21668,14 @@ class TransEditBox:
 		self.coll              = tauon.coll
 		self.draw              = tauon.draw
 		self.pctl              = tauon.pctl
+		self.fields            = tauon.fields
 		self.colours           = tauon.colours
-		self.window_size       = tauon.window_size
 		self.star_store        = tauon.star_store
+		self.window_size       = tauon.window_size
+		self.show_message      = tauon.show_message
+		self.edit_title        = tauon.edit_title
 		self.edit_album        = tauon.edit_album
 		self.edit_artist       = tauon.edit_artist
-		self.edit_title        = tauon.edit_title
 		self.edit_album_artist = tauon.edit_album_artist
 		self.active = False
 		self.active_field = 1
@@ -31916,7 +31918,7 @@ class ArtistList:
 
 	def worker(self) -> None:
 		if self.load:
-			if after_scan:
+			if self.tauon.after_scan:
 				return
 
 			self.prep()
@@ -35028,12 +35030,12 @@ class Showcase:
 				style_overlay.hole_punches.append(rect)
 
 				# Draw album art in box
-				album_art_gen.display(track, (x, y), (box, box))
+				tauon.album_art_gen.display(track, (x, y), (box, box))
 
 				# Click art to cycle
 				if coll((x, y, box, box)):
 					if inp.mouse_click is True:
-						album_art_gen.cycle_offset(track)
+						tauon.album_art_gen.cycle_offset(track)
 					if inp.right_click:
 						picture_menu.activate(in_reference=track)
 						inp.right_click = False
@@ -36390,362 +36392,6 @@ def scan_ffprobe(nt: TrackClass):
 	except Exception:
 		logging.exception("FFPROBE couldn't supply a track")
 
-def tag_scan(nt: TrackClass) -> TrackClass | None:
-	"""This function takes a track object and scans metadata for it. (Filepath needs to be set)"""
-	if nt.is_embed_cue:
-		return nt
-	if nt.is_network or not nt.fullpath:
-		return None
-	try:
-		try:
-			nt.modified_time = os.path.getmtime(nt.fullpath)
-			nt.found = True
-		except FileNotFoundError:
-			logging.error("File not found when executing getmtime!")
-			nt.found = False
-			return nt
-		except Exception:
-			logging.exception("Unknown error executing getmtime!")
-			nt.found = False
-			return nt
-
-		nt.misc.clear()
-
-		nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
-
-		if nt.file_ext.lower() in formats.GME and gme:
-			emu = ctypes.c_void_p()
-			track_info = ctypes.POINTER(GMETrackInfo)()
-			err = gme.gme_open_file(nt.fullpath.encode("utf-8"), ctypes.byref(emu), -1)
-			#logging.error(err)
-			if not err:
-				n = nt.subtrack
-				err = gme.gme_track_info(emu, byref(track_info), n)
-				#logging.error(err)
-				if not err:
-					nt.length = track_info.contents.play_length / 1000
-					nt.title = track_info.contents.song.decode("utf-8")
-					nt.artist = track_info.contents.author.decode("utf-8")
-					nt.album = track_info.contents.game.decode("utf-8")
-					nt.comment = track_info.contents.comment.decode("utf-8")
-					gme.gme_free_info(track_info)
-				gme.gme_delete(emu)
-
-				filepath = nt.fullpath  # this is the full file path
-				filename = nt.filename  # this is the name of the file
-
-				# Get the directory of the file
-				dir_path = os.path.dirname(filepath)
-
-				# Loop through all files in the directory to find any matching M3U
-				for file in os.listdir(dir_path):
-					if file.endswith(".m3u"):
-						with open(os.path.join(dir_path, file), encoding="utf-8", errors="replace") as f:
-							content = f.read()
-							if "�" in content:  # Check for replacement marker
-								with open(os.path.join(dir_path, file), encoding="windows-1252") as b:
-									content = b.read()
-							if "::" in content:
-								a, b = content.split("::")
-								if a == filename:
-									s = re.split(r"(?<!\\),", b)
-									try:
-										st = int(s[1])
-									except Exception:
-										logging.exception("Failed to assign st to int")
-										continue
-									if st == n:
-										nt.title = s[2].split(" - ")[0].replace("\\", "")
-										nt.artist = s[2].split(" - ")[1].replace("\\", "")
-										nt.album = s[2].split(" - ")[2].replace("\\", "")
-										nt.length = hms_to_seconds(s[3])
-										break
-			if not nt.title:
-				nt.title = "Track " + str(nt.subtrack + 1)
-		elif nt.file_ext in ("MOD", "IT", "XM", "S3M", "MPTM") and mpt:
-			with Path(nt.fullpath).open("rb") as file:
-				data = file.read()
-			MOD1 = MOD.from_address(
-				mpt.openmpt_module_create_from_memory(
-					ctypes.c_char_p(data), ctypes.c_size_t(len(data)), None, None, None))
-			# The function may return infinity if the pattern data is too complex to evaluate
-			nt.length = mpt.openmpt_module_get_duration_seconds(byref(MOD1))
-			nt.title = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"title")).decode()
-			nt.artist = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"artist")).decode()
-			nt.comment = mpt.openmpt_module_get_metadata(byref(MOD1), ctypes.c_char_p(b"message_raw")).decode()
-			mpt.openmpt_module_destroy(byref(MOD1))
-			del MOD1
-		elif nt.file_ext == "FLAC":
-			with Flac(nt.fullpath) as audio:
-				audio.read()
-
-				nt.length = audio.length
-				nt.title = audio.title
-				nt.artist = audio.artist
-				nt.album = audio.album
-				nt.composer = audio.composer
-				nt.date = audio.date
-				nt.samplerate = audio.sample_rate
-				nt.bit_depth = audio.bit_depth
-				nt.size = os.path.getsize(nt.fullpath)
-				nt.track_number = audio.track_number
-				nt.genre = audio.genre
-				nt.album_artist = audio.album_artist
-				nt.disc_number = audio.disc_number
-				nt.lyrics = audio.lyrics
-				if nt.length:
-					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-				nt.track_total = audio.track_total
-				nt.disc_total = audio.disc_total
-				nt.comment = audio.comment
-				nt.cue_sheet = audio.cue_sheet
-				nt.misc = audio.misc
-
-		elif nt.file_ext == "WAV":
-			with Wav(nt.fullpath) as audio:
-				try:
-					audio.read()
-
-					nt.samplerate = audio.sample_rate
-					nt.length = audio.length
-					nt.title = audio.title
-					nt.artist = audio.artist
-					nt.album = audio.album
-					nt.track_number = audio.track_number
-
-				except Exception:
-					logging.exception("Failed saving WAV file as a Track, will try again differently")
-					audio = mutagen.File(nt.fullpath)
-					nt.samplerate = audio.info.sample_rate
-					nt.bitrate = audio.info.bitrate // 1000
-					nt.length = audio.info.length
-					nt.size = os.path.getsize(nt.fullpath)
-				audio = mutagen.File(nt.fullpath)
-				if audio.tags and type(audio.tags) is mutagen.wave._WaveID3:
-					use_id3(audio.tags, nt)
-
-		elif nt.file_ext in ("OPUS", "OGG", "OGA"):
-
-			#logging.info("get opus")
-			with Opus(nt.fullpath) as audio:
-				audio.read()
-
-				#logging.info(audio.title)
-
-				nt.length = audio.length
-				nt.title = audio.title
-				nt.artist = audio.artist
-				nt.album = audio.album
-				nt.composer = audio.composer
-				nt.date = audio.date
-				nt.samplerate = audio.sample_rate
-				nt.size = os.path.getsize(nt.fullpath)
-				nt.track_number = audio.track_number
-				nt.genre = audio.genre
-				nt.album_artist = audio.album_artist
-				nt.bitrate = audio.bit_rate
-				nt.lyrics = audio.lyrics
-				nt.disc_number = audio.disc_number
-				nt.track_total = audio.track_total
-				nt.disc_total = audio.disc_total
-				nt.comment = audio.comment
-				nt.misc = audio.misc
-				if nt.bitrate == 0 and nt.length > 0:
-					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-
-		elif nt.file_ext == "APE":
-			with mutagen.File(nt.fullpath) as audio:
-				nt.length = audio.info.length
-				nt.bit_depth = audio.info.bits_per_sample
-				nt.samplerate = audio.info.sample_rate
-				nt.size = os.path.getsize(nt.fullpath)
-				if nt.length > 0:
-					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-
-				# # def getter(audio, key, type):
-				# #	 if
-				# t = audio.tags
-				# logging.info(t.keys())
-				# nt.size = os.path.getsize(nt.fullpath)
-				# nt.title = str(t.get("title", ""))
-				# nt.album = str(t.get("album", ""))
-				# nt.date = str(t.get("year", ""))
-				# nt.disc_number = str(t.get("discnumber", ""))
-				# nt.comment = str(t.get("comment", ""))
-				# nt.artist = str(t.get("artist", ""))
-				# nt.composer = str(t.get("composer", ""))
-				# nt.composer = str(t.get("composer", ""))
-
-			with Ape(nt.fullpath) as audio:
-				audio.read()
-
-				# logging.info(audio.title)
-
-				# nt.length = audio.length
-				nt.title = audio.title
-				nt.artist = audio.artist
-				nt.album = audio.album
-				nt.date = audio.date
-				nt.composer = audio.composer
-				# nt.bit_depth = audio.bit_depth
-				nt.track_number = audio.track_number
-				nt.genre = audio.genre
-				nt.album_artist = audio.album_artist
-				nt.disc_number = audio.disc_number
-				nt.lyrics = audio.lyrics
-				nt.track_total = audio.track_total
-				nt.disc_total = audio.disc_total
-				nt.comment = audio.comment
-				nt.misc = audio.misc
-
-		elif nt.file_ext in ("WV", "TTA"):
-
-			with Ape(nt.fullpath) as audio:
-				audio.read()
-
-				# logging.info(audio.title)
-
-				nt.length = audio.length
-				nt.title = audio.title
-				nt.artist = audio.artist
-				nt.album = audio.album
-				nt.date = audio.date
-				nt.composer = audio.composer
-				nt.samplerate = audio.sample_rate
-				nt.bit_depth = audio.bit_depth
-				nt.size = os.path.getsize(nt.fullpath)
-				nt.track_number = audio.track_number
-				nt.genre = audio.genre
-				nt.album_artist = audio.album_artist
-				nt.disc_number = audio.disc_number
-				nt.lyrics = audio.lyrics
-				if nt.length > 0:
-					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
-				nt.track_total = audio.track_total
-				nt.disc_total = audio.disc_total
-				nt.comment = audio.comment
-				nt.misc = audio.misc
-
-		else:
-			# Use MUTAGEN
-			try:
-				if nt.file_ext.lower() in formats.VID:
-					scan_ffprobe(nt)
-					return nt
-
-				try:
-					audio = mutagen.File(nt.fullpath)
-				except Exception:
-					logging.exception("Mutagen scan failed, falling back to FFPROBE")
-					scan_ffprobe(nt)
-					return nt
-
-				nt.samplerate = audio.info.sample_rate
-				nt.bitrate = audio.info.bitrate // 1000
-				nt.length = audio.info.length
-				nt.size = os.path.getsize(nt.fullpath)
-
-				if not nt.length:
-					try:
-						startupinfo = None
-						if system == "Windows" or msys:
-							startupinfo = subprocess.STARTUPINFO()
-							startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-						result = subprocess.run([tauon.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-						nt.length = float(result.stdout.decode())
-					except Exception:
-						logging.exception("FFPROBE couldn't supply a duration")
-
-				if type(audio.tags) == mutagen.mp4.MP4Tags:
-					tags = audio.tags
-
-					def in_get(key, tags):
-						if key in tags:
-							return tags[key][0]
-						return ""
-
-					nt.title = in_get("\xa9nam", tags)
-					nt.album = in_get("\xa9alb", tags)
-					nt.artist = in_get("\xa9ART", tags)
-					nt.album_artist = in_get("aART", tags)
-					nt.composer = in_get("\xa9wrt", tags)
-					nt.date = in_get("\xa9day", tags)
-					nt.comment = in_get("\xa9cmt", tags)
-					nt.genre = in_get("\xa9gen", tags)
-					if "\xa9lyr" in tags:
-						nt.lyrics = in_get("\xa9lyr", tags)
-					nt.track_total = ""
-					nt.track_number = ""
-					t = in_get("trkn", tags)
-					if t:
-						nt.track_number = str(t[0])
-						if t[1]:
-							nt.track_total = str(t[1])
-
-					nt.disc_total = ""
-					nt.disc_number = ""
-					t = in_get("disk", tags)
-					if t:
-						nt.disc_number = str(t[0])
-						if t[1]:
-							nt.disc_total = str(t[1])
-
-					if "----:com.apple.iTunes:MusicBrainz Track Id" in tags:
-						nt.misc["musicbrainz_recordingid"] = in_get(
-							"----:com.apple.iTunes:MusicBrainz Track Id",
-							tags).decode()
-					if "----:com.apple.iTunes:MusicBrainz Release Track Id" in tags:
-						nt.misc["musicbrainz_trackid"] = in_get(
-							"----:com.apple.iTunes:MusicBrainz Release Track Id",
-							tags).decode()
-					if "----:com.apple.iTunes:MusicBrainz Album Id" in tags:
-						nt.misc["musicbrainz_albumid"] = in_get(
-							"----:com.apple.iTunes:MusicBrainz Album Id",
-							tags).decode()
-					if "----:com.apple.iTunes:MusicBrainz Release Group Id" in tags:
-						nt.misc["musicbrainz_releasegroupid"] = in_get(
-							"----:com.apple.iTunes:MusicBrainz Release Group Id",
-							tags).decode()
-					if "----:com.apple.iTunes:MusicBrainz Artist Id" in tags:
-						nt.misc["musicbrainz_artistids"] = [x.decode() for x in
-							tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
-
-
-				elif type(audio.tags) == mutagen.id3.ID3:
-					use_id3(audio.tags, nt)
-
-
-			except Exception:
-				logging.exception("Failed loading file through Mutagen")
-				raise
-
-
-		# Parse any multiple artists into list
-		artists = nt.artist.split(";")
-		if len(artists) > 1:
-			for a in artists:
-				a = a.strip()
-				if a:
-					if "artists" not in nt.misc:
-						nt.misc["artists"] = []
-					if a not in nt.misc["artists"]:
-						nt.misc["artists"].append(a)
-	except Exception:
-		try:
-			if Exception is UnicodeDecodeError:
-				logging.exception(f"Unicode decode error on file: {nt.fullpath}")
-			else:
-				logging.exception(f"Error: Tag read failed on file: {nt.fullpath}")
-		except Exception:
-			logging.exception(f"Error printing error. Non utf8 not allowed: {nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')}")
-		return nt
-	# This check won't guarantee that all codepaths above are checked as some return early, but it's better than nothing
-	# And importantly it does catch openmpt which can actually return such
-	if math.isinf(nt.length) or math.isnan(nt.length):
-		logging.error(f"Infinite/NaN found(autocorrected to 0) when scanning tags in file: {vars(nt)}!")
-		nt.length = 0
-	return nt
-
 def auto_name_pl(target_pl: int) -> None:
 	if not pctl.multi_playlist[target_pl].playlist_ids:
 		return
@@ -37700,8 +37346,7 @@ def img_slide_update_gall(value, pause: bool = True) -> None:
 		prefs.thin_gallery_borders = False
 
 def clear_img_cache(delete_disk: bool = True) -> None:
-	global album_art_gen
-	album_art_gen.clear_cache()
+	tauon.album_art_gen.clear_cache()
 	prefs.failed_artists.clear()
 	prefs.failed_background_artists.clear()
 	tauon.gall_ren.key_list = []
@@ -37761,7 +37406,7 @@ def clear_track_image_cache(track: TrackClass):
 			tauon.gall_ren.key_list.remove(key)
 
 	gui.halt_image_rendering = False
-	album_art_gen.clear_cache()
+	tauon.album_art_gen.clear_cache()
 
 def trunc_line(line: str, font: str, px: int, dots: bool = True) -> str:
 	"""This old function is slow and should be avoided"""
@@ -37912,84 +37557,6 @@ def add_stations(stations: list[RadioStation], name: str) -> None:
 	if not gui.radio_view:
 		enter_radio_view()
 
-def load_m3u(path: str) -> None:
-	name = os.path.basename(path)[:-4]
-	playlist = []
-	stations = []
-
-	location_dict = {}
-	titles = {}
-
-	if not os.path.isfile(path):
-		return
-
-	with Path(path).open(encoding="utf-8") as file:
-		lines = file.readlines()
-
-	for i, line in enumerate(lines):
-		line = line.strip("\r\n").strip()
-		if not line.startswith("#"):  # line.startswith("http"):
-
-			# Get title if present
-			line_title = ""
-			if i > 0:
-				bline = lines[i - 1]
-				if "," in bline and bline.startswith("#EXTINF:"):
-					line_title = bline.split(",", 1)[1].strip("\r\n").strip()
-
-			if line.startswith("http"):
-				radio: RadioStation = RadioStation(
-					stream_url=line,
-					title=line_title if line_title else os.path.splitext(os.path.basename(path))[0].strip())
-				stations.append(radio)
-
-				if gui.auto_play_import:
-					gui.auto_play_import = False
-					radiobox.start(radio)
-			else:
-				line = uri_parse(line)
-				# Join file path if possibly relative
-				if not line.startswith("/"):
-					line = os.path.join(os.path.dirname(path), line)
-
-				# Cache datbase file paths for quick lookup
-				if not location_dict:
-					for key, value in pctl.master_library.items():
-						if value.fullpath:
-							location_dict[value.fullpath] = value
-						if value.title:
-							titles[value.artist + " - " + value.title] = value
-
-				# Is file path already imported?
-				logging.info(line)
-				if line in location_dict:
-					playlist.append(location_dict[line].index)
-					logging.info("found imported")
-				# Or... does the file exist? Then import it
-				elif os.path.isfile(line):
-					nt = TrackClass()
-					nt.index = pctl.master_count
-					set_path(nt, line)
-					nt = tag_scan(nt)
-					pctl.master_library[pctl.master_count] = nt
-					playlist.append(pctl.master_count)
-					pctl.master_count += 1
-					logging.info("found file")
-				# Last resort, guess based on title
-				elif line_title in titles:
-					playlist.append(titles[line_title].index)
-					logging.info("found title")
-				else:
-					logging.info("not found")
-
-	if playlist:
-		pctl.multi_playlist.append(
-			pl_gen(title=name, playlist_ids=playlist))
-	if stations:
-		add_stations(stations, name)
-
-	gui.update = 1
-
 def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 	ids = []
 	urls = {}
@@ -38037,205 +37604,6 @@ def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 					radiobox.start(radio)
 	if stations:
 		add_stations(stations, os.path.basename(path))
-
-def load_pls(path: str) -> None:
-	if os.path.isfile(path):
-		f = open(path)
-		lines = f.readlines()
-		read_pls(lines, path)
-		f.close()
-
-def load_xspf(path: str) -> None:
-	name = os.path.basename(path)[:-5]
-	# tauon.log("Importing XSPF playlist: " + path, title=True)
-	logging.info("Importing XSPF playlist: " + path)
-
-	try:
-		parser = ET.XMLParser(encoding="utf-8")
-		e = ET.parse(path, parser).getroot()
-
-		a = []
-		b = {}
-		info = ""
-
-		for top in e:
-
-			if top.tag.endswith("info"):
-				info = top.text
-			if top.tag.endswith("title"):
-				name = top.text
-			if top.tag.endswith("trackList"):
-				for track in top:
-					if track.tag.endswith("track"):
-						for field in track:
-							logging.info(field.tag)
-							logging.info(field.text)
-							if "title" in field.tag and field.text:
-								b["title"] = field.text
-							if "location" in field.tag and field.text:
-								l = field.text
-								l = str(urllib.parse.unquote(l))
-								if l[:5] == "file:":
-									l = l.replace("file:", "")
-									l = l.lstrip("/")
-									l = "/" + l
-
-								b["location"] = l
-							if "creator" in field.tag and field.text:
-								b["artist"] = field.text
-							if "album" in field.tag and field.text:
-								b["album"] = field.text
-							if "duration" in field.tag and field.text:
-								b["duration"] = field.text
-
-						b["info"] = info
-						b["name"] = name
-						a.append(copy.deepcopy(b))
-						b = {}
-
-	except Exception:
-		logging.exception("Error importing/parsing XSPF playlist")
-		show_message(_("Error importing XSPF playlist."), _("Sorry about that."), mode="warning")
-		return
-
-	# Extract internet streams first
-	stations: list[RadioStation] = []
-	for i in reversed(range(len(a))):
-		item = a[i]
-		if item["location"].startswith("http"):
-			radio = RadioStation(
-				stream_url=item["location"],
-				title=item["name"])
-#			radio.scroll = 0 # TODO(Martin): This was here wrong as scrolling is meant to be for RadioPlaylist?
-			if item["info"].startswith("http"):
-				radio.website_url = item["info"]
-
-			stations.append(radio)
-
-			if gui.auto_play_import:
-				gui.auto_play_import = False
-				radiobox.start(radio)
-
-			del a[i]
-	if stations:
-		add_stations(stations, os.path.basename(path))
-	playlist = []
-	missing = 0
-
-	if len(a) > 5000:
-		gui.to_got = "xspfl"
-
-	# Generate location dict
-	location_dict = {}
-	base_names = {}
-	r_base_names = {}
-	titles = {}
-	for key, value in pctl.master_library.items():
-		if value.fullpath != "":
-			location_dict[value.fullpath] = key
-		if value.filename != "":
-			base_names[value.filename] = 0
-			r_base_names[key] = value.filename
-		if value.title != "":
-			titles[value.title] = 0
-
-	for track in a:
-		found = False
-
-		# Check if we already have a track with full file path in database
-		if not found and "location" in track:
-
-			location = track["location"]
-			if location in location_dict:
-				playlist.append(location_dict[location])
-				if not os.path.isfile(location):
-					missing += 1
-				found = True
-
-			if found is True:
-				continue
-
-		# Then check for title, artist and filename match
-		if not found and "location" in track and "duration" in track and "title" in track and "artist" in track:
-			base = os.path.basename(track["location"])
-			if base in base_names:
-				for index, bn in r_base_names.items():
-					va = pctl.master_library[index]
-					if va.artist == track["artist"] and va.title == track["title"] and \
-							os.path.isfile(va.fullpath) and \
-							va.filename == base:
-						playlist.append(index)
-						if not os.path.isfile(va.fullpath):
-							missing += 1
-						found = True
-						break
-				if found is True:
-					continue
-
-		# Then check for just title and artist match
-		if not found and "title" in track and "artist" in track and track["title"] in titles:
-			for key, value in pctl.master_library.items():
-				if value.artist == track["artist"] and value.title == track["title"] and os.path.isfile(value.fullpath):
-					playlist.append(key)
-					if not os.path.isfile(value.fullpath):
-						missing += 1
-					found = True
-					break
-			if found is True:
-				continue
-
-		if (not found and "location" in track) or "title" in track:
-			nt = TrackClass()
-			nt.index = pctl.master_count
-			nt.found = False
-
-			if "location" in track:
-				location = track["location"]
-				set_path(nt, location)
-				if os.path.isfile(location):
-					nt.found = True
-			elif "album" in track:
-				nt.parent_folder_name = track["album"]
-			if "artist" in track:
-				nt.artist = track["artist"]
-			if "title" in track:
-				nt.title = track["title"]
-			if "duration" in track:
-				nt.length = int(float(track["duration"]) / 1000)
-			if "album" in track:
-				nt.album = track["album"]
-			nt.is_cue = False
-			if nt.found:
-				nt = tag_scan(nt)
-
-			pctl.master_library[pctl.master_count] = nt
-			playlist.append(pctl.master_count)
-			pctl.master_count += 1
-			if nt.found:
-				continue
-
-		missing += 1
-		logging.error("-- Failed to locate track")
-		if "location" in track:
-			logging.error("-- -- Expected path: " + track["location"])
-		if "title" in track:
-			logging.error("-- -- Title: " + track["title"])
-		if "artist" in track:
-			logging.error("-- -- Artist: " + track["artist"])
-		if "album" in track:
-			logging.error("-- -- Album: " + track["album"])
-
-	if missing > 0:
-		show_message(
-			_("Failed to locate {N} out of {T} tracks.")
-			.format(N=str(missing), T=str(len(a))))
-	#logging.info(playlist)
-	if playlist:
-		pctl.multi_playlist.append(
-			pl_gen(title=name, playlist_ids=playlist))
-	gui.update = 1
-
-	# tauon.log("Finished importing XSPF")
 
 def ex_tool_tip(x, y, text1_width, text, font):
 	text2_width = ddt.get_text_w(text, font)
@@ -38617,7 +37985,7 @@ def move_playing_folder_to_stem(path: str, pl_id: int | None = None) -> None:
 
 	logging.info(artist_folder)
 	logging.info(os.path.join(artist_folder, track.parent_folder_name))
-	move_jobs.append(
+	tauon.move_jobs.append(
 		(move_folder, os.path.join(artist_folder, track.parent_folder_name), True,
 		track.parent_folder_name, load_order))
 	tauon.thread_manager.ready("worker")
@@ -39052,7 +38420,7 @@ def save_embed_img(track_object: TrackClass):
 		return
 
 	try:
-		pic = album_art_gen.get_embed(track_object)
+		pic = tauon.album_art_gen.get_embed(track_object)
 
 		if not pic:
 			show_message(_("Image save error."), _("No embedded album art found file."), mode="warning")
@@ -39082,7 +38450,7 @@ def save_embed_img(track_object: TrackClass):
 def open_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if info is None:
 		return [colours.menu_text_disabled, colours.menu_background, None]
@@ -39099,12 +38467,12 @@ def open_image_disable_test(track_object: TrackClass):
 def open_image(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	album_art_gen.open_external(track_object)
+	tauon.album_art_gen.open_external(track_object)
 
 def extract_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if info is None:
 		return [colours.menu_text_disabled, colours.menu_background, None]
@@ -39117,7 +38485,7 @@ def extract_image_deco(track_object: TrackClass):
 	return [line_colour, colours.menu_background, None]
 
 def cycle_image_deco(track_object: TrackClass):
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if pctl.playing_state != 0 and (info is not None and info[1] > 1):
 		line_colour = colours.menu_text
@@ -39129,7 +38497,7 @@ def cycle_image_deco(track_object: TrackClass):
 def cycle_image_gal_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	if info is not None and info[1] > 1:
 		line_colour = colours.menu_text
@@ -39141,12 +38509,12 @@ def cycle_image_gal_deco(track_object: TrackClass):
 def cycle_offset(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	album_art_gen.cycle_offset(track_object)
+	tauon.album_art_gen.cycle_offset(track_object)
 
 def cycle_offset_back(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	album_art_gen.cycle_offset_reverse(track_object)
+	tauon.album_art_gen.cycle_offset_reverse(track_object)
 
 def dl_art_deco(track_object: TrackClass):
 	if type(track_object) is int:
@@ -39394,9 +38762,9 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 
 def delete_file_image(track_object: TrackClass):
 	try:
-		showc = album_art_gen.get_info(track_object)
+		showc = tauon.album_art_gen.get_info(track_object)
 		if showc is not None and showc[0] == 0:
-			source = album_art_gen.get_sources(track_object)[showc[2]][1]
+			source = tauon.album_art_gen.get_sources(track_object)[showc[2]][1]
 			os.remove(source)
 			# clear_img_cache()
 			clear_track_image_cache(track_object)
@@ -39408,7 +38776,7 @@ def delete_file_image(track_object: TrackClass):
 def delete_track_image_deco(track_object: TrackClass):
 	if type(track_object) is int:
 		track_object = pctl.master_library[track_object]
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 
 	text = _("Delete Image File")
 	line_colour = colours.menu_text
@@ -39436,7 +38804,7 @@ def delete_track_image(track_object: TrackClass):
 		track_object = pctl.master_library[track_object]
 	if track_object.is_network:
 		return
-	info = album_art_gen.get_info(track_object)
+	info = tauon.album_art_gen.get_info(track_object)
 	if info and info[0] == 0:
 		delete_file_image(track_object)
 	elif info and info[0] == 1:
@@ -42467,7 +41835,7 @@ def lightning_paste():
 
 			load_order.playlist_position = insert
 
-			move_jobs.append(
+			tauon.move_jobs.append(
 				(move_path, os.path.join(artist_folder, move_track.parent_folder_name), move,
 				move_track.parent_folder_name, load_order))
 			tauon.thread_manager.ready("worker")
@@ -43019,8 +42387,8 @@ def rename_parent(index: int, template: str) -> None:
 			object.parent_folder_path = new_parent_path
 			object.fullpath = new_fullpath
 
-			search_string_cache.pop(object.index, None)
-			search_dia_string_cache.pop(object.index, None)
+			tauon.search_string_cache.pop(object.index, None)
+			tauon.search_dia_string_cache.pop(object.index, None)
 
 		# Fix any other tracks paths that contain the old path
 		if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
@@ -43028,8 +42396,8 @@ def rename_parent(index: int, template: str) -> None:
 			object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip("\\/"))
 			object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip("\\/"))
 
-			search_string_cache.pop(object.index, None)
-			search_dia_string_cache.pop(object.index, None)
+			tauon.search_string_cache.pop(object.index, None)
+			tauon.search_dia_string_cache.pop(object.index, None)
 
 	if new_parent_path is not None:
 		try:
@@ -43124,8 +42492,8 @@ def move_folder_up(index: int, do: bool = False) -> bool | None:
 			object.parent_folder_path = os.path.join(
 				new_parent_path, object.parent_folder_path[len(old):].lstrip("\\/"))
 
-			search_string_cache.pop(object.index, None)
-			search_dia_string_cache.pop(object.index, None)
+			tauon.search_string_cache.pop(object.index, None)
+			tauon.search_dia_string_cache.pop(object.index, None)
 
 			logging.info(object.fullpath)
 			logging.info(object.parent_folder_path)
@@ -43215,59 +42583,6 @@ def vacuum_playtimes(index: int):
 			star_store.db[key] = value
 		else:
 			logging.error("ERROR KEY ALREADY HERE?")
-
-def reload_metadata(input, keep_star: bool = True) -> None:
-	global todo
-
-	# vacuum_playtimes(index)
-	# return
-	todo = []
-
-	if isinstance(input, list):
-		todo = input
-
-	else:
-		for k in pctl.default_playlist:
-			if pctl.master_library[input].parent_folder_path == pctl.master_library[k].parent_folder_path:
-				todo.append(pctl.master_library[k])
-
-	for i in reversed(range(len(todo))):
-		if todo[i].is_cue:
-			del todo[i]
-
-	for track in todo:
-
-		search_string_cache.pop(track.index, None)
-		search_dia_string_cache.pop(track.index, None)
-
-		#logging.info('Reloading Metadata for ' + track.filename)
-		if keep_star:
-			tauon.to_scan.append(track.index)
-		else:
-			# if keep_star:
-			#     star = star_store.full_get(track.index)
-			#     star_store.remove(track.index)
-
-			pctl.master_library[track.index] = tag_scan(track)
-
-			# if keep_star:
-			#     if star is not None and (star[0] > 0 or star[1] or star[2] > 0):
-			#         star_store.merge(track.index, star)
-
-			pctl.notify_change()
-
-	gui.pl_update += 1
-	tauon.thread_manager.ready("worker")
-
-def reload_metadata_selection() -> None:
-	cargo = []
-	for item in gui.shift_selection:
-		cargo.append(pctl.default_playlist[item])
-
-	for k in cargo:
-		if pctl.master_library[k].is_cue == False:
-			tauon.to_scan.append(k)
-	tauon.thread_manager.ready("worker")
 
 def editor(index: int | None) -> None:
 	todo = []
@@ -43375,7 +42690,7 @@ def editor(index: int | None) -> None:
 					logging.warning("External Edit: A file rename was detected but track was not found.")
 
 	gui.message_box = False
-	reload_metadata(obs, keep_star=False)
+	tauon.reload_metadata(obs, keep_star=False)
 
 	# Re apply playtime data in case file names change
 	for item in old_stars:
@@ -43536,8 +42851,8 @@ def intel_moji(index: int):
 			if key != None:
 				star_store.insert(item, key)
 
-			search_string_cache.pop(track.index, None)
-			search_dia_string_cache.pop(track.index, None)
+			tauon.search_string_cache.pop(track.index, None)
+			tauon.search_dia_string_cache.pop(track.index, None)
 
 	else:
 		show_message(_("Autodetect failed"))
@@ -44336,8 +43651,6 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 	if core_timer.get() < 0.5:
 		return None
 
-	global album_dex
-
 	# ----
 	w = gui.rspw
 	if window_size[0] < 750 * gui.scale:
@@ -44354,11 +43667,11 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 	row = 0
 	re = 0
 
-	for i in range(len(album_dex)):
-		if i == len(album_dex) - 1:
+	for i in range(len(tauon.album_dex)):
+		if i == len(tauon.album_dex) - 1:
 			re = i
 			break
-		if album_dex[i + 1] - 1 > playlist_no - 1:
+		if tauon.album_dex[i + 1] - 1 > playlist_no - 1:
 			re = i
 			break
 		row += 1
@@ -44384,8 +43697,8 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 
 		gui.album_scroll_px = max(gui.album_scroll_px, 0 - album_v_slide_value)
 
-	if len(album_dex) > 0:
-		return album_dex[re]
+	if len(tauon.album_dex) > 0:
+		return tauon.album_dex[re]
 	return 0
 
 	gui.update += 1
@@ -44719,15 +44032,13 @@ def q_to_playlist():
 		selected=0))
 
 def clean_db() -> None:
-	global cm_clean_db
 	prefs.remove_network_tracks = False
-	cm_clean_db = True
+	tauon.cm_clean_db = True
 	tauon.thread_manager.ready("worker")
 
 def clean_db2() -> None:
-	global cm_clean_db
 	prefs.remove_network_tracks = True
-	cm_clean_db = True
+	tauon.cm_clean_db = True
 	tauon.thread_manager.ready("worker")
 
 def import_fmps() -> None:
@@ -45090,7 +44401,7 @@ def locate_artist() -> None:
 	gui.pl_update += 1
 
 def activate_search_overlay() -> None:
-	if cm_clean_db:
+	if tauon.cm_clean_db:
 		show_message(_("Please wait for cleaning process to finish"))
 		return
 	search_over.active = True
@@ -45947,8 +45258,6 @@ def cue_scan(content: str, tn: TrackClass) -> int | None:
 
 	#logging.info(content)
 
-	global added
-
 	cued = []
 
 	LENGTH = 0
@@ -46072,7 +45381,7 @@ def cue_scan(content: str, tn: TrackClass) -> int | None:
 
 			cued.append(pctl.master_count)
 			# loaded_paths_cache[filepath.replace('\\', '/')] = pctl.master_count
-			# added.append(pctl.master_count)
+			# tauon.added.append(pctl.master_count)
 
 			pctl.master_count += 1
 			LENGTH = 0
@@ -46081,7 +45390,7 @@ def cue_scan(content: str, tn: TrackClass) -> int | None:
 			START = 0
 			TN = 0
 
-	added += reversed(cued)
+	tauon.added += reversed(cued)
 
 	# cue_list.append(filepath)
 
@@ -46130,8 +45439,8 @@ def get_album_info(position, pl: int | None = None):
 	if position in album_info_cache:
 		return album_info_cache[position]
 
-	if album_dex and prefs.album_mode and (pl is None or pl == pctl.active_playlist_viewing):
-		dex = album_dex
+	if tauon.album_dex and prefs.album_mode and (pl is None or pl == pctl.active_playlist_viewing):
+		dex = tauon.album_dex
 	else:
 		dex = reload_albums(custom_list=playlist)
 
@@ -46203,7 +45512,7 @@ def gal_jump_select(up=False, num=1):
 				return
 
 			alb = get_album_info(pctl.selected_in_playlist)
-			if alb[1][0] in album_dex[:num]:
+			if alb[1][0] in tauon.album_dex[:num]:
 				pctl.selected_in_playlist = old_selected
 				return
 
@@ -46226,7 +45535,7 @@ def gen_power2():
 	def key(tag):
 		return tags[tag][1]
 
-	for position in album_dex:
+	for position in tauon.album_dex:
 
 		index = pctl.default_playlist[position]
 		track = pctl.get_track(index)
@@ -46249,7 +45558,7 @@ def gen_power2():
 					tag_list.append(tag)
 				break
 
-	if noise > len(album_dex) / 2:
+	if noise > len(tauon.album_dex) / 2:
 		#logging.info("Playlist is too noisy for power bar.")
 		return []
 
@@ -46288,10 +45597,9 @@ def gen_power2():
 	return h
 
 def reload_albums(quiet: bool = False, return_playlist: int = -1, custom_list=None) -> list[int] | None:
-	global album_dex
 	global old_album_pos
 
-	if cm_clean_db:
+	if tauon.cm_clean_db:
 		# Doing reload while things are being removed may cause crash
 		return None
 
@@ -46341,7 +45649,7 @@ def reload_albums(quiet: bool = False, return_playlist: int = -1, custom_list=No
 	if return_playlist > -1 or custom_list:
 		return dex
 
-	album_dex = dex
+	tauon.album_dex = dex
 	album_info_cache.clear()
 	gui.update += 2
 	gui.pl_update = 1
@@ -46604,7 +45912,7 @@ def toggle_enable_web(mode: int = 0) -> bool | None:
 
 	if prefs.enable_web and not gui.web_running:
 		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
+			target=webserve, args=[pctl, prefs, gui, tauon.album_art_gen, str(install_directory), strings, tauon])
 		webThread.daemon = True
 		webThread.start()
 		show_message(_("Web server starting"), _("External connections will be accepted."), mode="done")
@@ -48520,14 +47828,14 @@ def save_state() -> None:
 		prefs.bg_showcase_only,
 		None,  # prefs.discogs_pat,
 		prefs.mini_mode_mode,
-		after_scan,
+		tauon.after_scan,
 		gui.gallery_positions,
 		prefs.chart_bg,
 		prefs.left_panel_mode,
 		gui.last_left_panel_mode,
 		None, #prefs.gst_device,
-		search_string_cache,
-		search_dia_string_cache,
+		tauon.search_string_cache,
+		tauon.search_dia_string_cache,
 		pctl.gen_codes,
 		gui.show_ratings,
 		gui.show_album_ratings,
@@ -50127,7 +49435,7 @@ def worker2(tauon: Tauon) -> None:
 
 						if cn_mode:
 							s_text = o_text
-							cache_string = search_string_cache.get(track)
+							cache_string = tauon.search_string_cache.get(track)
 							if cache_string:
 								if search_magic_any(s_text, cache_string):
 									pass
@@ -50137,14 +49445,14 @@ def worker2(tauon: Tauon) -> None:
 									s_text = s_cn
 
 						if dia_mode:
-							cache_string = search_dia_string_cache.get(track)
+							cache_string = tauon.search_dia_string_cache.get(track)
 							if cache_string is not None:
 								if not search_magic_any(s_text, cache_string):
 									continue
 								# if s_text not in cache_string:
 								#     continue
 						else:
-							cache_string = search_string_cache.get(track)
+							cache_string = tauon.search_string_cache.get(track)
 							if cache_string is not None:
 								if not search_magic_any(s_text, cache_string):
 									continue
@@ -50164,11 +49472,11 @@ def worker2(tauon: Tauon) -> None:
 
 						if cache_string is None:
 							if not dia_mode:
-								search_string_cache[
+								tauon.search_string_cache[
 									track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
 							if cn_mode:
-								cache_string = search_string_cache.get(track)
+								cache_string = tauon.search_string_cache.get(track)
 								if cache_string:
 									if search_magic_any(s_text, cache_string):
 										pass
@@ -50188,7 +49496,7 @@ def worker2(tauon: Tauon) -> None:
 							sartist = unidecode(sartist)
 
 							if cache_string is None:
-								search_dia_string_cache[
+								tauon.search_dia_string_cache[
 									track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
 						stem = os.path.dirname(t.parent_folder_path)
@@ -50415,14 +49723,9 @@ def worker1(tauon: Tauon) -> None:
 	gui   = tauon.gui
 	pctl  = tauon.pctl
 	prefs = tauon.prefs
-	global cue_list
-	global formats
-	global home
-	global added
-
 	loaded_paths_cache = {}
 	loaded_cue_cache = {}
-	added = []
+	tauon.added = []
 
 	def get_quoted_from_line(line: str) -> str:
 		"""Extract quoted or unquoted string from a line
@@ -50444,11 +49747,8 @@ def worker1(tauon: Tauon) -> None:
 		# If not quoted, return the first word
 		return content.split()[0]
 
-	def add_from_cue(path):
-
-		global added
-
-		if not msys:  # Windows terminal doesn't like unicode
+	def add_from_cue(path: str) -> int | None:
+		if not tauon.msys:  # Windows terminal doesn't like unicode
 			logging.info("Reading CUE file: " + path)
 
 		try:
@@ -50656,9 +49956,9 @@ def worker1(tauon: Tauon) -> None:
 				tag_scan(end_track)
 
 				# Remove target track if already imported
-				for i in reversed(range(len(added))):
-					if pctl.get_track(added[i]).fullpath == end_track.fullpath:
-						del added[i]
+				for i in reversed(range(len(tauon.added))):
+					if pctl.get_track(tauon.added[i]).fullpath == end_track.fullpath:
+						del tauon.added[i]
 
 				# Update with proper length
 				for track in reversed(cd):
@@ -50710,7 +50010,7 @@ def worker1(tauon: Tauon) -> None:
 					if track.fullpath not in bag.cue_list:
 						bag.cue_list.append(track.fullpath)
 					loaded_paths_cache[track.fullpath] = track.index
-					added.append(track.index)
+					tauon.added.append(track.index)
 
 		except Exception:
 			logging.exception("Internal error processing CUE file")
@@ -50728,15 +50028,15 @@ def worker1(tauon: Tauon) -> None:
 
 		if path.lower().endswith(".xspf"):
 			logging.info("Found XSPF file at: " + path)
-			load_xspf(path)
+			tauon.load_xspf(path)
 			return 0
 
 		if path.lower().endswith(".m3u") or path.lower().endswith(".m3u8"):
-			load_m3u(path)
+			tauon.load_m3u(path)
 			return 0
 
 		if path.endswith(".pls"):
-			load_pls(path)
+			tauon.load_pls(path)
 			return 0
 
 		if os.path.splitext(path)[1][1:].lower() not in bag.formats.DA:
@@ -50870,7 +50170,7 @@ def worker1(tauon: Tauon) -> None:
 				# Skip cache for subtrack formats
 				pass
 			else:
-				added.append(de)
+				tauon.added.append(de)
 				return None
 
 		time.sleep(0.002)
@@ -50884,12 +50184,12 @@ def worker1(tauon: Tauon) -> None:
 
 		def commit_track(nt: TrackClass) -> None:
 			pctl.master_library[pctl.master_count] = nt
-			added.append(pctl.master_count)
+			tauon.added.append(pctl.master_count)
 
 			if prefs.auto_sort or force_scan:
 				tag_scan(nt)
 			else:
-				after_scan.append(nt)
+				tauon.after_scan.append(nt)
 				tauon.thread_manager.ready("worker")
 
 			pctl.master_count += 1
@@ -50929,10 +50229,7 @@ def worker1(tauon: Tauon) -> None:
 				return
 			gui.update = 3
 
-	def gets(direc, force_scan=False):
-
-		global formats
-
+	def gets(direc: str, force_scan: bool = False) -> None:
 		if os.path.basename(direc) == "__MACOSX":
 			return
 
@@ -50995,82 +50292,77 @@ def worker1(tauon: Tauon) -> None:
 
 	#logging.info(pctl.master_library)
 
-	global transcode_state
-	global album_art_gen
-	global cm_clean_db
-	global move_in_progress
-
 	active_timer = Timer()
 	while True:
-
-		if not after_scan:
+		if not tauon.after_scan:
 			time.sleep(0.1)
 
-		if after_scan or tauon.load_orders or \
-				artist_list_box.load or \
-				artist_list_box.to_fetch or \
-				gui.regen_single_id or \
-				gui.regen_single > -1 or \
-				pctl.after_import_flag or \
-				tauon.worker_save_state or \
-				move_jobs or \
-				cm_clean_db or \
-				tauon.transcode_list or \
-				tauon.to_scan or \
-				tauon.loaderCommandReady:
+		if tauon.after_scan \
+		or tauon.load_orders \
+		or tauon.artist_list_box.load \
+		or tauon.artist_list_box.to_fetch \
+		or tauon.gui.regen_single_id \
+		or tauon.gui.regen_single > -1 \
+		or tauon.pctl.after_import_flag \
+		or tauon.worker_save_state \
+		or tauon.move_jobs \
+		or tauon.cm_clean_db \
+		or tauon.transcode_list \
+		or tauon.to_scan \
+		or tauon.loaderCommandReady:
 			active_timer.set()
 		elif active_timer.get() > 5:
 			return
 
-		if after_scan:
+		if tauon.after_scan:
 			i = 0
-			while after_scan:
+			while tauon.after_scan:
 				i += 1
 
 				if i > 123:
 					break
 
-				tag_scan(after_scan[0])
+				tauon.tag_scan(tauon.after_scan[0])
 
 				gui.update = 2
 				gui.pl_update = 1
 				# time.sleep(0.001)
 				if pctl.running:
-					del after_scan[0]
+					del tauon.after_scan[0]
 				else:
 					break
 
 			gui.album_artist_dict.clear()
 
-		artist_list_box.worker()
+		tauon.artist_list_box.worker()
 
 		# Update smart playlists
 		if gui.regen_single_id is not None:
-			regenerate_playlist(pl=-1, silent=True, id=gui.regen_single_id)
+			tauon.regenerate_playlist(pl=-1, silent=True, id=gui.regen_single_id)
 			gui.regen_single_id = None
 
 		# Update smart playlists
 		if gui.regen_single > -1:
 			target = gui.regen_single
 			gui.regen_single = -1
-			regenerate_playlist(target, silent=True)
+			tauon.regenerate_playlist(target, silent=True)
 
-		if pctl.after_import_flag and not after_scan and not search_over.active and not pctl.loading_in_progress:
+		if pctl.after_import_flag and not tauon.after_scan and not tauon.search_over.active and not pctl.loading_in_progress:
 			pctl.after_import_flag = False
 
 			for i, plist in enumerate(pctl.multi_playlist):
-				if pl_to_id(i) in pctl.gen_codes:
-					code = pctl.gen_codes[pl_to_id(i)]
+				if pctl.pl_to_id(i) in pctl.gen_codes:
+					code = pctl.gen_codes[pctl.pl_to_id(i)]
 					try:
-						if check_auto_update_okay(code, pl=i):
-							if not pl_is_locked(i):
+						if tauon.check_auto_update_okay(code, pl=i):
+							if not tauon.pl_is_locked(i):
 								logging.info("Reloading smart playlist: " + plist.title)
-								regenerate_playlist(i, silent=True)
+								tauon.regenerate_playlist(i, silent=True)
 								time.sleep(0.02)
 					except Exception:
 						logging.exception("Failed to handle playlist")
 
-			tree_view_box.clear_all()
+			tauon.tree_view_box.clear_all()
 
 		if tauon.worker_save_state and \
 				not gui.pl_pulse and \
@@ -51082,59 +50374,59 @@ def worker1(tauon: Tauon) -> None:
 				not tauon.lastfm.scanning_friends and \
 				not tauon.move_in_progress and \
 				(gui.lowered or not window_is_focused(tauon.t_window) or not gui.mouse_in_window):
-			save_state()
+			tauon.save_state()
 			bag.cue_list.clear()
 			tauon.worker_save_state = False
 
 		# Folder moving
-		if len(move_jobs) > 0:
+		if len(tauon.move_jobs) > 0:
 			gui.update += 1
-			move_in_progress = True
-			job = move_jobs[0]
-			del move_jobs[0]
+			tauon.move_in_progress = True
+			job = tauon.move_jobs[0]
+			del tauon.move_jobs[0]
 
 			if job[0].strip("\\/") == job[1].strip("\\/"):
-				show_message(_("Folder copy error."), _("The target and source are the same."), mode="info")
+				tauon.show_message(_("Folder copy error."), _("The target and source are the same."), mode="info")
 				gui.update += 1
-				move_in_progress = False
+				tauon.move_in_progress = False
 				continue
 
 			try:
 				shutil.copytree(job[0], job[1])
 			except Exception:
 				logging.exception("Failed to copy directory")
-				move_in_progress = False
+				tauon.move_in_progress = False
 				gui.update += 1
-				show_message(_("The folder copy has failed!"), _("Some files may have been written."), mode="warning")
+				tauon.show_message(_("The folder copy has failed!"), _("Some files may have been written."), mode="warning")
 				continue
 
-			if job[2] == True:
+			if job[2] is True:
 				try:
 					shutil.rmtree(job[0])
 
 				except Exception:
 					logging.exception("Failed to delete directory")
-					show_message(_("Something has gone horribly wrong!"), _("Could not delete {name}").format(name=job[0]), mode="error")
+					tauon.show_message(_("Something has gone horribly wrong!"), _("Could not delete {name}").format(name=job[0]), mode="error")
 					gui.update += 1
-					move_in_progress = False
+					tauon.move_in_progress = False
 					return
 
-				show_message(_("Folder move complete."), _("Folder name: {name}").format(name=job[3]), mode="done")
+				tauon.show_message(_("Folder move complete."), _("Folder name: {name}").format(name=job[3]), mode="done")
 			else:
-				show_message(_("Folder copy complete."), _("Folder name: {name}").format(name=job[3]), mode="done")
+				tauon.show_message(_("Folder copy complete."), _("Folder name: {name}").format(name=job[3]), mode="done")
 
-			move_in_progress = False
+			tauon.move_in_progress = False
 			tauon.load_orders.append(job[4])
 			gui.update += 1
 
 		# Clean database
-		if cm_clean_db is True:
+		if tauon.cm_clean_db is True:
 			items_removed = 0
 
 			# old_db = copy.deepcopy(pctl.master_library)
 			gui.to_got = 0
 			gui.to_get = len(pctl.master_library)
-			search_over.results.clear()
+			tauon.search_over.results.clear()
 
 			keys = set(pctl.master_library.keys())
 			for index in keys:
@@ -51166,30 +50458,29 @@ def worker1(tauon: Tauon) -> None:
 					pctl.purge_track(index)
 					items_removed += 1
 
-			cm_clean_db = False
-			show_message(
+			tauon.cm_clean_db = False
+			tauon.show_message(
 				_("Cleaning complete."),
 				_("{N} items were removed from the database.").format(N=str(items_removed)), mode="done")
 			if prefs.album_mode:
-				reload_albums(True)
+				tauon.reload_albums(True)
 			if gui.combo_mode:
-				reload_albums()
+				tauon.reload_albums()
 
 			gui.update = 1
 			gui.pl_update = 1
 			pctl.notify_change()
 
-			search_dia_string_cache.clear()
-			search_string_cache.clear()
-			search_over.results.clear()
+			tauon.search_dia_string_cache.clear()
+			tauon.search_string_cache.clear()
+			tauon.search_over.results.clear()
 
 			pctl.notify_change()
 
 		# FOLDER ENC
 		if tauon.transcode_list:
-
 			try:
-				transcode_state = ""
+				tauon.transcode_state = ""
 				gui.update += 1
 
 				folder_items = tauon.transcode_list[0]
@@ -51266,20 +50557,20 @@ def worker1(tauon: Tauon) -> None:
 						output_dir.unlink()
 					except Exception:
 						logging.exception("Encode folder not removed")
-					reload_metadata(folder_items[0])
+					tauon.reload_metadata(folder_items[0])
 				else:
-					album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
+					tauon.album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
 
 				#logging.info(tauon.transcode_list[0])
 
 				del tauon.transcode_list[0]
-				transcode_state = ""
+				tauon.transcode_state = ""
 				gui.update += 1
 			except Exception:
 				logging.exception("Transcode failed")
-				transcode_state = "Transcode Error"
+				tauon.transcode_state = "Transcode Error"
 				time.sleep(0.2)
-				show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
+				tauon.show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
 				gui.update += 1
 				time.sleep(0.1)
 				del tauon.transcode_list[0]
@@ -51287,7 +50578,7 @@ def worker1(tauon: Tauon) -> None:
 			if len(tauon.transcode_list) == 0:
 				if gui.tc_cancel:
 					gui.tc_cancel = False
-					show_message(
+					tauon.show_message(
 						_("The transcode was canceled before completion."),
 						_("Incomplete files will remain."),
 						mode="warning")
@@ -51297,18 +50588,18 @@ def worker1(tauon: Tauon) -> None:
 						line = _("Note that any associated output picture is a thumbnail and not an exact copy.")
 					if not gui.sync_progress:
 						if not gui.message_box:
-							show_message(_("Encoding complete."), line, mode="done")
-						if system == "Linux" and de_notify_support:
-							g_tc_notify.show()
+							tauon.show_message(_("Encoding complete."), line, mode="done")
+						if tauon.system == "Linux" and tauon.de_notify_support:
+							tauon.g_tc_notify.show()
 
 		if tauon.to_scan:
 			while tauon.to_scan:
 				track = tauon.to_scan[0]
-				star = star_store.full_get(track)
-				star_store.remove(track)
-				pctl.master_library[track] = tag_scan(pctl.master_library[track])
-				star_store.merge(track, star)
-				lastfm.sync_pull_love(pctl.master_library[track])
+				star = tauon.star_store.full_get(track)
+				tauon.star_store.remove(track)
+				pctl.master_library[track] = tauon.tag_scan(pctl.master_library[track])
+				tauon.star_store.merge(track, star)
+				tauon.lastfm.sync_pull_love(pctl.master_library[track])
 				del tauon.to_scan[0]
 				gui.update += 1
 			gui.album_artist_dict.clear()
@@ -51318,7 +50609,7 @@ def worker1(tauon: Tauon) -> None:
 		if tauon.loaderCommandReady is True:
 			for order in tauon.load_orders:
 				if order.stage == 1:
-					if tauon.loaderCommand == LC_Folder:
+					if tauon.loaderCommand == tauon.LC_Folder:
 						gui.to_get = 0
 						gui.to_got = 0
 						loaded_paths_cache, loaded_cue_cache = cache_paths()
@@ -51327,7 +50618,7 @@ def worker1(tauon: Tauon) -> None:
 							gets(order.target, force_scan=True)
 						else:
 							gets(order.target)
-					elif tauon.loaderCommand == LC_File:
+					elif tauon.loaderCommand == tauon.LC_File:
 						loaded_paths_cache, loaded_cue_cache = cache_paths()
 						add_file(order.target)
 
@@ -51336,22 +50627,22 @@ def worker1(tauon: Tauon) -> None:
 						gui.to_get = 0
 						gui.to_got = 0
 						tauon.load_orders.clear()
-						added = []
-						tauon.loaderCommand = LC_Done
+						tauon.added = []
+						tauon.loaderCommand = tauon.LC_Done
 						tauon.loaderCommandReady = False
 						break
 
-					tauon.loaderCommand = LC_Done
+					tauon.loaderCommand = tauon.LC_Done
 					#logging.info("LOAD ORDER")
-					order.tracks = added
+					order.tracks = tauon.added
 
 					# Double check for cue dupes
 					for i in reversed(range(len(order.tracks))):
-						if pctl.master_library[order.tracks[i]].fullpath in cue_list:
+						if pctl.master_library[order.tracks[i]].fullpath in bag.cue_list:
 							if pctl.master_library[order.tracks[i]].is_cue is False:
 								del order.tracks[i]
 
-					added = []
+					tauon.added = []
 					order.stage = 2
 					tauon.loaderCommandReady = False
 					#logging.info("DONE LOADING")
@@ -51891,11 +51182,6 @@ if os.environ.get("SDL_VIDEODRIVER") != "wayland":
 
 f_store = FunctionStore()
 
-after_scan = []
-
-search_string_cache = {}
-search_dia_string_cache = {}
-
 vis_update = False
 
 
@@ -52007,8 +51293,6 @@ cargo = []
 # List of encodings to check for with the fix mojibake function
 encodings = ["cp932", "utf-8", "big5hkscs", "gbk"]  # These seem to be the most common for Japanese
 
-transcode_state = ""
-
 taskbar_progress = True
 track_queue: list[int] = []
 
@@ -52031,8 +51315,6 @@ playlist_active: int = 0
 
 # Library and loader Variables--------------------------------------------------------
 master_library: dict[int, TrackClass] = {}
-
-cue_list: list[str] = []
 
 LC_None = 0
 LC_Done = 1
@@ -52191,7 +51473,7 @@ bag = Bag(
 	track_queue=track_queue,
 	volume=volume,
 	multi_playlist=[],
-	cue_list=cue_list,
+	cue_list=[],
 	p_force_queue=p_force_queue,
 	logical_size=logical_size,
 	window_size=window_size,
@@ -52919,7 +52201,6 @@ tauon = Tauon(
 	gui=gui,
 )
 pctl = tauon.pctl
-album_dex = tauon.album_dex # TODO(Martin): Remove after refactor
 if bag.multi_playlist:
 	pctl.multi_playlist = bag.multi_playlist
 	pctl.default_playlist = default_playlist
@@ -53332,7 +52613,6 @@ if rename_folder_previous:
 
 temp_dest = sdl3.SDL_FRect(0, 0)
 
-album_art_gen = tauon.album_art_gen
 style_overlay = tauon.style_overlay
 
 click_time = time.time()
@@ -53443,9 +52723,6 @@ folder_icon.colour = [244, 220, 66, 255]
 info_icon.colour = [61, 247, 163, 255]
 
 power_bar_icon = asset_loader(bag, bag.loaded_asset_dc, "power.png", True)
-
-move_jobs = []
-move_in_progress = False
 
 folder_tree_stem_menu.add(MenuItem(_("Open Folder"), open_folder_stem, pass_ref=True, icon=folder_icon))
 folder_tree_menu.add(MenuItem(_("Open Folder"), open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=open_folder_disable_test))
@@ -53802,8 +53079,8 @@ mod_folder_icon.colour = [229, 98, 98, 255]
 track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), rename_folders, pass_ref=True, pass_ref_deco=True, icon=mod_folder_icon, disable_test=rename_folders_disable_test))
 # track_menu.add_to_sub("Reset Track Play Count", 0, reset_play_count, pass_ref=True)
 
-# track_menu.add('Reload Metadata', reload_metadata, pass_ref=True)
-track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), reload_metadata, pass_ref=True))
+# track_menu.add('Reload Metadata', tauon.reload_metadata, pass_ref=True)
+track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
 
 mbp_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "mbp-g.png"))
 mbp_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "mbp-gs.png")
@@ -53856,7 +53133,7 @@ folder_tree_menu.add(MenuItem("lock", lock_folder_tree, lock_folder_tree_deco))
 transcode_icon.colour = [239, 74, 157, 255]
 
 
-folder_menu.add(MenuItem(_("Rescan Tags"), reload_metadata, pass_ref=True))
+folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
 folder_menu.add(MenuItem(_("Edit fields…"), activate_trans_editor))
 folder_menu.add(MenuItem(_("Vacuum Playtimes"), vacuum_playtimes, pass_ref=True, show_test=test_shift))
 folder_menu.add(MenuItem(_("Transcode Folder"), convert_folder, transcode_deco, pass_ref=True, icon=transcode_icon,
@@ -53886,7 +53163,7 @@ selection_menu.add(MenuItem(_("Add to queue"), add_selected_to_queue_multi, sele
 
 selection_menu.br()
 
-selection_menu.add(MenuItem(_("Rescan Tags"), reload_metadata_selection))
+selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
 
 selection_menu.add(MenuItem(_("Edit fields…"), activate_trans_editor))
 
@@ -54057,8 +53334,6 @@ x_menu.add_to_sub(0, MenuItem(_("Rescan All Folders"), rescan_all_folders))
 x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), q_to_playlist))
 x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), clear_img_cache))
 
-cm_clean_db = False
-
 x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), clean_db2))
 x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), clean_db))
 x_menu.add_to_sub(0, MenuItem(_("Import FMPS Ratings"), import_fmps))
@@ -54211,8 +53486,6 @@ x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked 
 
 x_menu.add(MenuItem(_("Disengage Quick Add"), stop_quick_add, show_test=show_stop_quick_add))
 
-added = []
-
 search_over = tauon.search_over
 message_box = tauon.message_box
 nagbox = NagBox(tauon)
@@ -54238,7 +53511,7 @@ tauon.reload_albums = reload_albums
 # WEBSERVER
 if prefs.enable_web is True:
 	webThread = threading.Thread(
-		target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), strings, tauon])
+		target=webserve, args=[pctl, prefs, gui, tauon.album_art_gen, str(install_directory), strings, tauon])
 	webThread.daemon = True
 	webThread.start()
 
@@ -56041,7 +55314,7 @@ while pctl.running:
 
 		if gui.clear_image_cache_next:
 			gui.clear_image_cache_next -= 1
-			album_art_gen.clear_cache()
+			tauon.album_art_gen.clear_cache()
 			tauon.style_overlay.radio_meta = None
 			if prefs.art_bg:
 				tauon.thread_manager.ready("style")
@@ -57973,11 +57246,11 @@ while pctl.running:
 
 					# if not tc.is_network: # Don't draw album art if from network location for better performance
 					if comment_mode == 1:
-						album_art_gen.display(
+						tauon.album_art_gen.display(
 							tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)),
 							(art_size, art_size))  # Mirror this size in auto theme #mark2233
 					else:
-						album_art_gen.display(
+						tauon.album_art_gen.display(
 							tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)),
 							(art_size, art_size))
 
