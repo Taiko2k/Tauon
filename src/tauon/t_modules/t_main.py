@@ -7115,7 +7115,7 @@ class Tauon:
 		self.pctl.force_queue.append(queue_object)
 		self.queue_timer_set(queue_object=queue_object)
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 
 	def add_album_to_queue_fc(self, ref: int) -> None:
 		playing_object = self.pctl.playing_object()
@@ -7156,7 +7156,7 @@ class Tauon:
 		if queue_item:
 			self.queue_timer_set(queue_object=queue_item)
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 
 	def cancel_import(self) -> None:
 		if self.transcode_list:
@@ -9790,12 +9790,12 @@ class Tauon:
 		self.pctl.force_queue.append(queue_item_gen(ref, self.pctl.r_menu_position, self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
 		self.queue_timer_set()
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 
 	def add_selected_to_queue(self) -> None:
 		self.gui.pl_update += 1
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 		if self.gui.album_tab_mode:
 			self.add_album_to_queue(self.pctl.default_playlist[self.get_album_info(self.pctl.selected_in_playlist)[1][0]], self.pctl.selected_in_playlist)
 			self.queue_timer_set()
@@ -9808,7 +9808,7 @@ class Tauon:
 
 	def add_selected_to_queue_multi(self) -> None:
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 		for index in self.gui.shift_selection:
 			self.pctl.force_queue.append(
 				queue_item_gen(self.pctl.default_playlist[index],
@@ -27654,7 +27654,7 @@ class BottomBarType1:
 					pctl.stop()
 				if inp.right_click:
 					#pctl.auto_stop ^= True
-					stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
+					tauon.stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
 				#tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
@@ -28247,15 +28247,15 @@ class BottomBarType_ao1:
 					self.gui.mode_toast_text = _("Shuffle On")
 					if not self.pctl.random_mode:
 						# . Shuffle set to off
-						gui.mode_toast_text = _("Shuffle Off")
+						self.gui.mode_toast_text = _("Shuffle Off")
 					toast_mode_timer.set()
-					gui.delay_frame(1)
+					self.gui.delay_frame(1)
 				if self.inp.middle_click:
-					pctl.advance(rr=True)
-					gui.tool_tip_lock_off_f = True
-				# tool_tip.test(buttons_x_offset + 230 * gui.scale + 50 * gui.scale, window_size[1] - self.control_line_bottom - 20 * gui.scale, "Advance")
-				# if not gui.tool_tip_lock_off_f:
-				#     tool_tip2.test(x + 45 * gui.scale, y - 35 * gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
+					self.pctl.advance(rr=True)
+					self.gui.tool_tip_lock_off_f = True
+				# tool_tip.test(buttons_x_offset + 230 * self.gui.scale + 50 * self.gui.scale, self.window_size[1] - self.control_line_bottom - 20 * self.gui.scale, "Advance")
+				# if not self.gui.tool_tip_lock_off_f:
+				# 	tauon.tool_tip2.test(x + 45 * self.gui.scale, y - 35 * self.gui.scale, _("Forward, RC: Toggle shuffle, MC: Radio random"))
 			else:
 				self.gui.tool_tip_lock_off_f = False
 
@@ -28355,13 +28355,12 @@ class MiniMode:
 			# Double click bottom text to return to full window
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
-			if coll(text_hit_area):
-				if inp.mouse_click:
-					if d_click_timer.get() < 0.3:
-						restore_full_mode()
-						gui.update += 1
-						return
-					d_click_timer.set()
+			if self.coll(text_hit_area) and self.inp.mouse_click:
+				if d_click_timer.get() < 0.3:
+					self.tauon.restore_full_mode()
+					self.gui.update += 1
+					return
+				d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28473,9 +28472,9 @@ class MiniMode:
 		shuffle_area = (seek_r[0] - 41 * self.gui.scale, seek_r[1] - 10 * self.gui.scale, 40 * self.gui.scale, 30 * self.gui.scale)
 		if self.coll(control_hit_area) and not self.prefs.shuffle_lock:
 			colour = [255, 255, 255, 20]
-			if inp.mouse_click and coll(shuffle_area):
-				toggle_repeat()
-			if pctl.repeat_mode:
+			if self.inp.mouse_click and self.coll(shuffle_area):
+				self.tauon.toggle_repeat()
+			if self.pctl.repeat_mode:
 				colour = [255, 255, 255, 190]
 
 
@@ -28505,8 +28504,8 @@ class MiniMode:
 		if self.prefs.left_window_control:
 			tool_rect[0] = 0
 		self.fields.add(tool_rect)
-		if coll(tool_rect):
-			draw_window_tools()
+		if self.coll(tool_rect):
+			self.tauon.draw_window_tools()
 
 		if w != h:
 			self.ddt.rect_s((1, 1, w - 2, h - 2), self.colours.mini_mode_border, 1 * self.gui.scale)
@@ -28573,13 +28572,12 @@ class MiniMode2:
 
 			text_hit_area = (x1, 0, w, h)
 
-			if coll(text_hit_area):
-				if inp.mouse_click:
-					if d_click_timer.get() < 0.3:
-						restore_full_mode()
-						gui.update += 1
-						return
-					d_click_timer.set()
+			if self.coll(text_hit_area) and self.inp.mouse_click:
+				if d_click_timer.get() < 0.3:
+					self.tauon.restore_full_mode()
+					self.gui.update += 1
+					return
+				d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28587,63 +28585,61 @@ class MiniMode2:
 
 			if not line1 and not line2:
 
-				ddt.text(
-					(x1 + 15 * gui.scale, 44 * gui.scale), track.filename, colours.grey(150), 315,
-					window_size[0] - x1 - 30 * gui.scale)
+				self.ddt.text(
+					(x1 + 15 * self.gui.scale, 44 * self.gui.scale), track.filename, self.colours.grey(150), 315,
+					self.window_size[0] - x1 - 30 * self.gui.scale)
 			else:
-
-				# if ddt.get_text_w(line2, 215) > window_size[0] - x1 - 30 * gui.scale:
-				#     ddt.text((x1 + 15 * gui.scale, 19 * gui.scale), line2, colours.grey(249), 413,
-				#              window_size[0] - x1 - 35 * gui.scale)
+				# if self.ddt.get_text_w(line2, 215) > window_size[0] - x1 - 30 * self.gui.scale:
+				#     self.ddt.text((x1 + 15 * self.gui.scale, 19 * self.gui.scale), line2, self.colours.grey(249), 413,
+				#              window_size[0] - x1 - 35 * self.gui.scale)
 				#
-				#     ddt.text((x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 513,
-				#              window_size[0] - x1 - 35 * gui.scale)
+				#     self.ddt.text((x1 + 15 * self.gui.scale, 43 * self.gui.scale), line1, self.colours.grey(110), 513,
+				#              window_size[0] - x1 - 35 * self.gui.scale)
 				# else:
 
-				ddt.text(
-					(x1 + 15 * gui.scale, 18 * gui.scale), line2, colours.grey(249), 514,
-					window_size[0] - x1 - 30 * gui.scale)
+				self.ddt.text(
+					(x1 + 15 * self.gui.scale, 18 * self.gui.scale), line2, self.colours.grey(249), 514,
+					self.window_size[0] - x1 - 30 * self.gui.scale)
 
-				ddt.text(
-					(x1 + 15 * gui.scale, 43 * gui.scale), line1, colours.grey(110), 514,
-					window_size[0] - x1 - 30 * gui.scale)
+				self.ddt.text(
+					(x1 + 15 * self.gui.scale, 43 * self.gui.scale), line1, self.colours.grey(110), 514,
+					self.window_size[0] - x1 - 30 * self.gui.scale)
 
 		# Show exit/min buttons when mosue over
-		tool_rect = [window_size[0] - 110 * gui.scale, 2, 108 * gui.scale, 45 * gui.scale]
-		if prefs.left_window_control:
+		tool_rect = [self.window_size[0] - 110 * self.gui.scale, 2, 108 * self.gui.scale, 45 * self.gui.scale]
+		if self.prefs.left_window_control:
 			tool_rect[0] = 0
 		self.fields.add(tool_rect)
-		if coll(tool_rect):
-			draw_window_tools()
+		if self.coll(tool_rect):
+			self.tauon.draw_window_tools()
 
 		# Seek bar
-		bg_rect = (h, h - round(5 * gui.scale), w - h, round(5 * gui.scale))
-		ddt.rect(bg_rect, [255, 255, 255, 18])
+		bg_rect = (h, h - round(5 * self.gui.scale), w - h, round(5 * self.gui.scale))
+		self.ddt.rect(bg_rect, [255, 255, 255, 18])
 
-		if pctl.playing_state > 0:
+		if self.pctl.playing_state > 0:
+			hit_rect = h - 5 * self.gui.scale, h - 12 * self.gui.scale, w - h + 5 * self.gui.scale, 13 * self.gui.scale
 
-			hit_rect = h - 5 * gui.scale, h - 12 * gui.scale, w - h + 5 * gui.scale, 13 * gui.scale
-
-			if coll(hit_rect) and self.inp.mouse_up:
+			if self.coll(hit_rect) and self.inp.mouse_up:
 				p = (self.inp.mouse_position[0] - h) / (w - h)
 
-				if p < 0 or self.inp.mouse_position[0] - h < 6 * gui.scale:
-					pctl.seek_time(0)
+				if p < 0 or self.inp.mouse_position[0] - h < 6 * self.gui.scale:
+					self.pctl.seek_time(0)
 				elif p > .96:
-					pctl.advance()
+					self.pctl.advance()
 				else:
-					pctl.seek_decimal(p)
+					self.pctl.seek_decimal(p)
 
-			if pctl.playing_length:
+			if self.pctl.playing_length:
 				seek_rect = (
-					h, h - round(5 * gui.scale), round((w - h) * (pctl.playing_time / pctl.playing_length)),
-					round(5 * gui.scale))
-				colour = colours.artist_text
-				if gui.theme_name == "Carbon":
-					colour = colours.bottom_panel_colour
-				if pctl.playing_state != 1:
+					h, h - round(5 * self.gui.scale), round((w - h) * (self.pctl.playing_time / self.pctl.playing_length)),
+					round(5 * self.gui.scale))
+				colour = self.colours.artist_text
+				if self.gui.theme_name == "Carbon":
+					colour = self.colours.bottom_panel_colour
+				if self.pctl.playing_state != 1:
 					colour = [210, 40, 100, 255]
-				ddt.rect(seek_rect, colour)
+				self.ddt.rect(seek_rect, colour)
 
 class MiniMode3:
 	def __init__(self, tauon: Tauon) -> None:
@@ -28753,13 +28749,12 @@ class MiniMode3:
 			# Double click bottom text to return to full window
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
-			if coll(text_hit_area):
-				if inp.mouse_click:
-					if d_click_timer.get() < 0.3:
-						restore_full_mode()
-						gui.update += 1
-						return
-					d_click_timer.set()
+			if self.coll(text_hit_area) and self.inp.mouse_click:
+				if d_click_timer.get() < 0.3:
+					self.tauon.restore_full_mode()
+					self.gui.update += 1
+					return
+				d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28939,9 +28934,8 @@ class MiniMode3:
 		if self.prefs.left_window_control:
 			tool_rect[0] = 0
 		self.fields.add(tool_rect)
-		if coll(tool_rect):
-			draw_window_tools()
-
+		if self.coll(tool_rect):
+			self.tauon.draw_window_tools()
 
 		# if w != h:
 		#     self.ddt.rect_s((1, 1, w - 2, h - 2), self.colours.mini_mode_border, 1 * self.gui.scale)
@@ -28983,25 +28977,24 @@ class StandardPlaylist:
 		global highlight_right
 
 		global click_time
-		global selection_stage
 
 		global r_menu_index
 		global r_menu_position
 
-		highlight_width = gui.tracklist_highlight_width
-		highlight_left = gui.tracklist_highlight_left
-		inset_width = gui.tracklist_inset_width
-		inset_left = gui.tracklist_inset_left
-		center_mode = gui.tracklist_center_mode
+		highlight_width    = gui.tracklist_highlight_width
+		highlight_left  = gui.tracklist_highlight_left
+		inset_width        = gui.tracklist_inset_width
+		inset_left         = gui.tracklist_inset_left
+		center_mode        = gui.tracklist_center_mode
 
 		w = 0
 		gui.row_extra = 0
 		cv = 0  # update gui.playlist_current_visible_tracks
 
 		# Draw the background
-		sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(renderer)
+		sdl3.SDL_SetRenderTarget(self.renderer, gui.tracklist_texture)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderClear(self.renderer)
 
 		rect = (left, gui.panelY, width, window_size[1] - (gui.panelBY + gui.panelY))
 		ddt.rect(rect, colours.playlist_panel_background)
@@ -29019,9 +29012,9 @@ class StandardPlaylist:
 			deco.draw(ddt, xx, window_size[1] - gui.panelBY, pretty_text=True)
 
 		# Mouse wheel scrolling
-		if self.inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > self.inp.mouse_position[
-			1] > gui.panelY - 2 and gui.playlist_left < self.inp.mouse_position[0] < gui.playlist_left + gui.plw \
-				and not (coll(pl_rect)) and not search_over.active and not radiobox.active:
+		if inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
+			1] > gui.panelY - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
+				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active:
 
 			# Set scroll speed
 			mx = 4
@@ -29030,10 +29023,10 @@ class StandardPlaylist:
 				mx = 3
 			if gui.playlist_view_length < 10:
 				mx = 2
-			pctl.playlist_view_position -= int(self.inp.mouse_wheel) * mx
+			pctl.playlist_view_position -= int(inp.mouse_wheel) * mx
 
 			if gui.playlist_view_length > 40:
-				pctl.playlist_view_position -= int(self.inp.mouse_wheel)
+				pctl.playlist_view_position -= int(inp.mouse_wheel)
 
 			#if inp.mouse_wheel:
 				#logging.debug("Position changed by mouse wheel scroll: " + str(inp.mouse_wheel))
@@ -29044,7 +29037,7 @@ class StandardPlaylist:
 				pctl.playlist_view_position = 0
 				if pctl.default_playlist:
 					# edge_playlist.pulse()
-					edge_playlist2.pulse()
+					tauon.edge_playlist2.pulse()
 
 			scroll_hide_timer.set()
 			gui.frame_callback_list.append(TestTimer(0.9))
@@ -29061,8 +29054,8 @@ class StandardPlaylist:
 			half = int(top_a + (b * 0.60))
 
 			if pl_bg:
-				rect = (left + int(width / 2) - 80 * gui.scale, half - 10 * gui.scale,
-						190 * gui.scale, 60 * gui.scale)
+				rect = (
+					left + int(width / 2) - 80 * gui.scale, half - 10 * gui.scale, 190 * gui.scale, 60 * gui.scale)
 				ddt.pretty_rect = rect
 				ddt.alpha_bg = True
 
@@ -29088,8 +29081,8 @@ class StandardPlaylist:
 			half = int(top_a + (b * 0.17))
 
 			if pl_bg:
-				rect = (left + int(width / 2) - 60 * gui.scale, half - 5 * gui.scale,
-						140 * gui.scale, 30 * gui.scale)
+				rect = (
+					left + int(width / 2) - 60 * gui.scale, half - 5 * gui.scale, 140 * gui.scale, 30 * gui.scale)
 				ddt.pretty_rect = rect
 				ddt.alpha_bg = True
 
@@ -29114,7 +29107,6 @@ class StandardPlaylist:
 		number = 0
 
 		for i in range(gui.playlist_view_length + 1):
-
 			track_position = i + pctl.playlist_view_position
 
 			# Make sure the view position is valid
@@ -29126,7 +29118,7 @@ class StandardPlaylist:
 
 			track_object = pctl.get_track(pctl.default_playlist[track_position])
 			track_id = track_object.index
-			move_on_title = False
+			self.gui.move_on_title = False
 
 			line_y = gui.playlist_top + gui.playlist_row_height * number
 
@@ -29151,9 +29143,8 @@ class StandardPlaylist:
 						highlight = True
 
 					# Tracks have been dropped?
-					if self.gui.playlist_hold is True and coll(input_box):
-						if self.inp.mouse_up:
-							move_on_title = True
+					if gui.playlist_hold is True and self.coll(input_box) and inp.mouse_up:
+						gui.move_on_title = True
 
 					# Ignore click in ratings box
 					click_title = (inp.mouse_click or inp.right_click or self.inp.middle_click) and coll(input_box)
@@ -29194,13 +29185,13 @@ class StandardPlaylist:
 							inp.mouse_click = False
 
 							if prefs.album_mode:
-								goto_album(pctl.playlist_playing_position)
+								tauon.goto_album(pctl.playlist_playing_position)
 
 						# Show selection menu if right clicked after select
 						if inp.right_click:
-							folder_menu.activate(track_id)
-							r_menu_position = track_position
-							selection_stage = 2
+							self.tauon.folder_menu.activate(track_id)
+							pctl.r_menu_position = track_position
+							gui.selection_stage = 2
 							gui.pl_update = 1
 
 							if track_position not in self.gui.shift_selection:
@@ -29223,7 +29214,7 @@ class StandardPlaylist:
 							if not pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
 								self.gui.playlist_hold = True
 
-							selection_stage = 1
+							gui.selection_stage = 1
 							temp = get_folder_tracks_local(track_position)
 							pctl.selected_in_playlist = track_position
 
@@ -29342,17 +29333,16 @@ class StandardPlaylist:
 				set_drag_source()
 
 			# Shift Move Selection
-			if move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and coll((
+			if gui.move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and coll((
 					left + highlight_left, line_y, highlight_width, gui.playlist_row_height))):
 
 				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
 					if track_position not in self.gui.shift_selection:  # p_track != self.gui.playlist_hold_position and
 
 						if len(self.gui.shift_selection) == 0:
-
 							ref = pctl.default_playlist[self.gui.playlist_hold_position]
 							pctl.default_playlist[self.gui.playlist_hold_position] = "old"
-							if move_on_title:
+							if gui.move_on_title:
 								pctl.default_playlist.insert(track_position, "new")
 							else:
 								pctl.default_playlist.insert(track_position + 1, "new")
@@ -29365,7 +29355,7 @@ class StandardPlaylist:
 
 						else:
 							ref = []
-							selection_stage = 2
+							gui.selection_stage = 2
 							for item in self.gui.shift_selection:
 								ref.append(pctl.default_playlist[item])
 
@@ -29373,7 +29363,7 @@ class StandardPlaylist:
 								pctl.default_playlist[item] = "old"
 
 							for item in self.gui.shift_selection:
-								if move_on_title:
+								if gui.move_on_title:
 									pctl.default_playlist.insert(track_position, "new")
 								else:
 									pctl.default_playlist.insert(track_position + 1, "new")
@@ -29390,23 +29380,23 @@ class StandardPlaylist:
 							pctl.selected_in_playlist = self.gui.shift_selection[0]
 							gui.pl_update += 1
 
-						reload_albums(True)
+						tauon.reload_albums(True)
 						pctl.notify_change()
 
 			# Test show drag indicator
-			if self.inp.mouse_down and self.gui.playlist_hold and coll(input_box) and track_position not in self.gui.shift_selection:
+			if self.inp.mouse_down and self.gui.playlist_hold and self.coll(input_box) and track_position not in self.gui.shift_selection:
 				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
 					drag_highlight = True
 
 			# Right click menu activation
 			if self.inp.right_click and line_hit and self.inp.mouse_position[0] > gui.playlist_left + 10:
 				if len(self.gui.shift_selection) > 1 and track_position in self.gui.shift_selection:
-					selection_menu.activate(pctl.default_playlist[track_position])
-					selection_stage = 2
+					self.tauon.selection_menu.activate(pctl.default_playlist[track_position])
+					gui.selection_stage = 2
 				else:
-					r_menu_index = pctl.default_playlist[track_position]
-					r_menu_position = track_position
-					track_menu.activate(pctl.default_playlist[track_position])
+					self.pctl.r_menu_index = pctl.default_playlist[track_position]
+					self.pctl.r_menu_position = track_position
+					self.tauon.track_menu.activate(pctl.default_playlist[track_position])
 					gui.pl_update += 1
 					gui.update += 1
 
@@ -29419,7 +29409,7 @@ class StandardPlaylist:
 				if track_position in self.gui.shift_selection:
 					pass
 				else:
-					selection_stage = 2
+					gui.selection_stage = 2
 					if self.inp.key_shift_down:
 						start_s = track_position
 						end_s = pctl.selected_in_playlist
@@ -29436,12 +29426,12 @@ class StandardPlaylist:
 						pctl.selected_in_playlist = track_position
 						self.gui.shift_selection = [pctl.selected_in_playlist]
 
-				if not pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
+				if not tauon.pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
 					self.gui.playlist_hold = True
 					self.gui.playlist_hold_position = track_position
 
 			# Activate drag if shift key down
-			if self.inp.quick_drag and pl_is_locked(pctl.active_playlist_viewing) and self.inp.mouse_down:
+			if self.inp.quick_drag and tauon.pl_is_locked(pctl.active_playlist_viewing) and self.inp.mouse_down:
 				if self.inp.key_shift_down:
 					self.gui.playlist_hold = True
 				else:
@@ -29469,13 +29459,10 @@ class StandardPlaylist:
 		gui.tracklist_bg_is_light = test_lumi(colours.playlist_panel_background) < 0.55
 
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
-
 			line_y = gui.playlist_top + gui.playlist_row_height * number
-
 			ddt.text_background_colour = colours.playlist_panel_background
 
 			if type == 1:
-
 				# Is type ALBUM TITLE
 				separator = " - "
 				if prefs.row_title_separator_type == 1:
@@ -29494,7 +29481,6 @@ class StandardPlaylist:
 						pctl.get_track(pctl.default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
 					line = tr.parent_folder_name
 				else:
-
 					if tr.album_artist != "" and tr.album != "":
 						line = tr.album_artist + separator + tr.album
 
@@ -29520,9 +29506,7 @@ class StandardPlaylist:
 							if match:
 								line = b[0]
 								date = "(" + b[1]
-
 					elif line.startswith("("):
-
 						b = line.split(")")
 						if len(b) > 1 and len(b[0]) <= 11:
 
@@ -29547,7 +29531,6 @@ class StandardPlaylist:
 
 				total_time = 0
 				while q < len(pctl.default_playlist):
-
 					if pctl.get_track(pctl.default_playlist[q]).parent_folder_path != tr.parent_folder_path:
 						break
 
@@ -29570,7 +29553,7 @@ class StandardPlaylist:
 				if gui.show_album_ratings:
 					star_offset = round(72 * gui.scale)
 					ex -= star_offset
-					draw_rating_widget(ex + 6 * gui.scale, height, tr, album=True)
+					self.tauon.draw_rating_widget(ex + 6 * gui.scale, height, tr, album=True)
 
 				light_offset = 0
 				if colours.lm:
@@ -29593,7 +29576,6 @@ class StandardPlaylist:
 						(left + highlight_left, gui.playlist_top + gui.playlist_row_height * number),
 						(highlight_width, gui.playlist_row_height), colours.row_select_highlight)
 
-
 				#logging.info(d_date) # date of album release / release year
 				#logging.info(tr.parent_folder_name) # folder name
 				#logging.info(tr.album)
@@ -29601,10 +29583,7 @@ class StandardPlaylist:
 				#logging.info(tr.album_artist)
 				#logging.info(tr.genre)
 
-
-
 				if prefs.row_title_format == 2:
-
 					separator = " | "
 
 					start_offset = round(15 * gui.scale)
@@ -29641,12 +29620,7 @@ class StandardPlaylist:
 							(ex - run, height, 1), tr.genre, colour,
 							gui.row_font_size + gui.pl_title_font_offset)
 
-
 					w2 = ddt.text((xx, height), title_line, colours.folder_title, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale)))
-
-
-
-
 				else:
 					date_w = 0
 					if date:
@@ -29660,13 +29634,9 @@ class StandardPlaylist:
 					aa = 0
 
 					ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
-
 					left_align = highlight_width - date_w - 13 * gui.scale - light_offset
-
 					left_align -= star_offset
-
 					extra = aa
-
 					left_align -= extra
 
 					if ft_width > left_align:
@@ -29676,7 +29646,6 @@ class StandardPlaylist:
 							colours.folder_title,
 							gui.row_font_size + gui.pl_title_font_offset,
 							highlight_width - date_w - extra - star_offset)
-
 					else:
 						ddt.text(
 							(ex - date_w, height, 1), line,
@@ -29733,11 +29702,9 @@ class StandardPlaylist:
 					1 * gui.scale), colours.folder_line)
 
 			if not gui.set_mode:
-
-				line_render(
+				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
 					playing, 255, left + inset_left, inset_width, 1, line_y)
-
 			else:
 				# NEE ---------------------------------------------------------
 				n_track = tr
@@ -38781,7 +38748,7 @@ def finish_current():
 
 def add_album_to_queue(ref, position=None, playlist_id=None):
 	if position is None:
-		position = r_menu_position
+		position = pctl.r_menu_position
 	if playlist_id is None:
 		playlist_id = pl_to_id(pctl.active_playlist_viewing)
 
@@ -42406,8 +42373,7 @@ def temp_copy_folder(ref):
 
 def activate_track_box(index: int):
 	global track_box
-	global r_menu_index
-	r_menu_index = index
+	pctl.r_menu_index = index
 	track_box = True
 	track_box_path_tool_timer.set()
 
@@ -42644,7 +42610,7 @@ def paste(playlist_no=None, track_id=None):
 				if playlist_no is not None:
 					load_order.playlist = pl_to_id(playlist_no)
 				if track_id is not None:
-					load_order.playlist_position = r_menu_position
+					load_order.playlist_position = pctl.r_menu_position
 
 				tauon.load_orders.append(copy.deepcopy(load_order))
 				found = True
@@ -42787,8 +42753,7 @@ def last_fm_test(ignore):
 	return False
 
 def heart_xmenu_colour():
-	global r_menu_index
-	if love(False, r_menu_index):
+	if love(False, pctl.r_menu_index):
 		return [245, 60, 60, 255]
 	if colours.lm:
 		return [255, 150, 180, 255]
@@ -42803,36 +42768,32 @@ def spot_heart_xmenu_colour():
 	return None
 
 def love_decox():
-	global r_menu_index
-
-	if love(False, r_menu_index):
+	if love(False, pctl.r_menu_index):
 		return [colours.menu_text, colours.menu_background, _("Un-Love Track")]
 	return [colours.menu_text, colours.menu_background, _("Love Track")]
 
 def love_index():
-	global r_menu_index
-
 	notify = False
 	if not gui.show_hearts:
 		notify = True
 
-	# love(True, r_menu_index)
-	shoot_love = threading.Thread(target=love, args=[True, r_menu_index, False, notify])
+	# love(True, pctl.r_menu_index)
+	shoot_love = threading.Thread(target=love, args=[True, pctl.r_menu_index, False, notify])
 	shoot_love.daemon = True
 	shoot_love.start()
 
 def toggle_spotify_like_ref():
-	tr = pctl.get_track(r_menu_index)
+	tr = pctl.get_track(pctl.r_menu_index)
 	if tr:
 		shoot_dl = threading.Thread(target=toggle_spotify_like_active2, args=([tr]))
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
 def toggle_spotify_like3():
-	toggle_spotify_like_active2(pctl.get_track(r_menu_index))
+	toggle_spotify_like_active2(pctl.get_track(pctl.r_menu_index))
 
 def toggle_spotify_like_row_deco():
-	tr = pctl.get_track(r_menu_index)
+	tr = pctl.get_track(pctl.r_menu_index)
 	text = _("Spotify Like Track")
 
 	# if pctl.playing_state == 0 or not tr or not "spotify-track-url" in tr.misc:
@@ -42843,17 +42804,16 @@ def toggle_spotify_like_row_deco():
 	return [colours.menu_text, colours.menu_background, text]
 
 def spot_like_show_test(x):
-
-	return spotify_show_test and pctl.get_track(r_menu_index).file_ext == "SPTY"
+	return spotify_show_test and pctl.get_track(pctl.r_menu_index).file_ext == "SPTY"
 
 def spot_heart_menu_colour():
-	tr = pctl.get_track(r_menu_index)
+	tr = pctl.get_track(pctl.r_menu_index)
 	if tr and "spotify-liked" in tr.misc:
 		return [30, 215, 96, 255]
 	return None
 
 def add_to_queue(ref):
-	pctl.force_queue.append(queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
+	pctl.force_queue.append(queue_item_gen(ref, pctl.r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 	queue_timer_set()
 	if prefs.stop_end_queue:
 		pctl.stop_mode = 0
@@ -42920,7 +42880,7 @@ def add_to_queue_next(ref: int) -> None:
 	if pctl.force_queue and pctl.force_queue[0].album_stage == 1:
 		split_queue_album(None)
 
-	pctl.force_queue.insert(0, queue_item_gen(ref, r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
+	pctl.force_queue.insert(0, queue_item_gen(ref, pctl.r_menu_position, pl_to_id(pctl.active_playlist_viewing)))
 
 # def toggle_queue(mode: int = 0) -> bool:
 # 	 if mode == 1:
@@ -43539,7 +43499,7 @@ def launch_editor_disable_test(index: int):
 def show_lyrics_menu(index: int):
 	global track_box
 	track_box = False
-	enter_showcase_view(track_id=r_menu_index)
+	enter_showcase_view(track_id=pctl.r_menu_index)
 	inp.mouse_click = False
 
 def intel_moji(index: int):
@@ -43875,10 +43835,10 @@ def tidal_copy_album(index: int) -> None:
 			copy_to_clipboard(url)
 
 def is_tidal_track(_) -> bool:
-	return pctl.master_library[r_menu_index].file_ext == "TIDAL"
+	return pctl.master_library[pctl.r_menu_index].file_ext == "TIDAL"
 
 # def get_track_spot_url_show_test(_):
-# 	if pctl.get_track(r_menu_index).misc.get("spotify-track-url"):
+# 	if pctl.get_track(pctl.r_menu_index).misc.get("spotify-track-url"):
 # 		return True
 # 	return False
 
@@ -43892,7 +43852,7 @@ def get_track_spot_url(track_id: int) -> None:
 		show_message(_("No results found"))
 
 def get_track_spot_url_deco():
-	if pctl.get_track(r_menu_index).misc.get("spotify-track-url"):
+	if pctl.get_track(pctl.r_menu_index).misc.get("spotify-track-url"):
 		line_colour = colours.menu_text
 	else:
 		line_colour = colours.menu_text_disabled
@@ -52132,12 +52092,6 @@ repeat_mode = False
 default_playlist: list[int] = []
 playlist_active: int = 0
 
-# ----------------------------------------
-# Playlist right click menu
-
-r_menu_index = 0
-r_menu_position = 0
-
 # Library and loader Variables--------------------------------------------------------
 master_library: dict[int, TrackClass] = {}
 
@@ -52355,12 +52309,10 @@ scroll_timer.set() # TODO(Martin): Move
 scroll_opacity = 0 # TODO(Martin): Move
 source = None # TODO(Martin): Useless to define here?
 scroll_enable = prefs.scroll_enable
-pl_rect = gui.pl_rect
 theme = prefs.theme
 break_enable = prefs.break_enable
 album_playlist_width = gui.album_playlist_width
 update_title = prefs.update_title
-selection_stage = gui.selection_stage
 selected_in_playlist = bag.selected_in_playlist
 gen_codes = bag.gen_codes
 
@@ -55800,16 +55752,16 @@ while pctl.running:
 
 			if keymaps.test("info-playing"):
 				if pctl.selected_in_playlist < len(pctl.default_playlist):
-					r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
+					pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
 					track_box = True
 
 			if keymaps.test("info-show"):
 				if pctl.selected_in_playlist < len(pctl.default_playlist):
-					r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
+					pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
 					track_box = True
 
 			# These need to be disabled when text fields are active
-			if not search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
+			if not tauon.search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not tauon.trans_edit_box.active:
 				if keymaps.test("advance"):
 					inp.key_right_press = False
 					pctl.advance()
@@ -58064,7 +58016,7 @@ while pctl.running:
 					inp.mouse_click = True
 				gui.level_2_click = False
 
-				tc = pctl.master_library[r_menu_index]
+				tc = pctl.master_library[pctl.r_menu_index]
 
 				w = round(540 * gui.scale)
 				h = round(240 * gui.scale)
@@ -58421,12 +58373,12 @@ while pctl.running:
 
 					y1 += int(23 * gui.scale)
 
-					total = star_store.get(r_menu_index)
+					total = tauon.star_store.get(pctl.r_menu_index)
 
 					ratio = 0
 
 					if total > 0 and pctl.master_library[
-						r_menu_index].length > 1:
+						pctl.r_menu_index].length > 1:
 						ratio = total / (tc.length - 1)
 
 					ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70 * gui.scale)
@@ -58436,8 +58388,8 @@ while pctl.running:
 
 					rect = [x1, y1, 150, 14]
 
-					if coll(rect) and inp.key_shift_down and inp.mouse_wheel != 0:
-						star_store.add(r_menu_index, 60 * inp.mouse_wheel)
+					if tauon.coll(rect) and inp.key_shift_down and inp.mouse_wheel != 0:
+						tauon.star_store.add(pctl.r_menu_index, 60 * inp.mouse_wheel)
 
 					line = time.strftime("%H:%M:%S", time.gmtime(total))
 
@@ -58446,11 +58398,10 @@ while pctl.running:
 
 					# -------
 					if tc.lyrics != "":
-
-						if draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
+						if pctl.draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
 							prefs.show_lyrics_showcase = True
 							track_box = False
-							enter_showcase_view(track_id=r_menu_index)
+							tauon.enter_showcase_view(track_id=pctl.r_menu_index)
 							inp.mouse_click = False
 
 					if len(tc.comment) > 0:
@@ -58458,10 +58409,10 @@ while pctl.running:
 						rect = [x1, y1 + (2 * gui.scale), 60 * gui.scale, 14 * gui.scale]
 						# ddt.rect_r((x2, y1, 335, 10), [255, 20, 20, 255])
 						tauon.fields.add(rect)
-						if coll(rect):
+						if tauon.coll(rect):
 							ddt.text((x1, y1), _("Comment"), key_colour_on, 212)
 							if inp.mouse_click:
-								show_message(_("Copied text to clipboard"))
+								tauon.show_message(_("Copied text to clipboard"))
 								copy_to_clipboard(tc.comment)
 								inp.mouse_click = False
 						else:
@@ -58472,11 +58423,11 @@ while pctl.running:
 								"http://" in tc.comment or "www." in tc.comment or "https://" in tc.comment) and ddt.get_text_w(
 								tc.comment, 12) < 335 * gui.scale:
 
-							link_pa = draw_linked_text((x2, y1), tc.comment, value_colour, 12)
+							link_pa = tauon.draw_linked_text((x2, y1), tc.comment, value_colour, 12)
 							link_rect = [x + 98 * gui.scale + link_pa[0], y1 - 2 * gui.scale, link_pa[1], 20 * gui.scale]
 
 							tauon.fields.add(link_rect)
-							if coll(link_rect):
+							if tauon.coll(link_rect):
 								if not inp.mouse_click:
 									gui.cursor_want = 3
 								if inp.mouse_click:
@@ -58490,17 +58441,16 @@ while pctl.running:
 						else:
 							ddt.text((x2, y1), tc.comment, value_colour, 12)
 
-			if draw_border and gui.mode != 3:
-
+			if tauon.draw_border and gui.mode != 3:
 				tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
 				if prefs.left_window_control:
 					tool_rect[0] = 0
 				tauon.fields.add(tool_rect)
-				if not gui.top_bar_mode2 or coll(tool_rect):
-					draw_window_tools()
+				if not gui.top_bar_mode2 or tauon.coll(tool_rect):
+					tauon.draw_window_tools()
 
 				if not gui.fullscreen and not gui.maximized:
-					draw_window_border()
+					tauon.draw_window_border()
 
 			fader.render()
 			if pref_box.enabled:
@@ -58509,7 +58459,6 @@ while pctl.running:
 				pref_box.render()
 
 			if gui.rename_folder_box:
-
 				if gui.level_2_click:
 					inp.mouse_click = True
 
@@ -58844,8 +58793,7 @@ while pctl.running:
 							break
 					else:
 						gui.search_index = oi
-
-						edge_playlist2.pulse()
+						tauon.edge_playlist2.pulse()
 
 				if inp.key_return_press is True and gui.search_index > -1:
 					gui.pl_update = 1
