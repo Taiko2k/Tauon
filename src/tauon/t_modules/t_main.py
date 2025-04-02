@@ -42691,7 +42691,7 @@ def main(holder: Holder) -> None:
 				# These need to be disabled when text fields are active
 				if not tauon.search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not tauon.trans_edit_box.active:
 					if keymaps.test("advance"):
-						inp.key_up_press = False
+						inp.key_right_press = False
 						pctl.advance()
 
 					if keymaps.test("previous"):
