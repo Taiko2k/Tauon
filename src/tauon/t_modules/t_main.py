@@ -33524,6 +33524,11 @@ class QueueBox:
 			self.ddt.rect(box_rect, [255, 255, 255, 2])
 			self.ddt.text_background_colour = alpha_blend([255, 255, 255, 2], self.ddt.text_background_colour)
 
+		if self.prefs.show_playlist_list:  # draw top separator line
+			rect = (0, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
+			self.ddt.rect(rect, [0, 0, 0, 255])
+			self.ddt.rect(rect, sep_colour)
+
 		# if y < self.gui.panelY * 2:
 		#     self.ddt.rect((x, y - 3 * self.gui.scale, w, 30 * self.gui.scale), self.colours.queue_background, True)
 
