@@ -22187,18 +22187,20 @@ class ExportPlaylistBox:
 class SearchOverlay:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon       = tauon
-		self.ddt         = tauon.ddt
-		self.pctl        = tauon.pctl
-		self.prefs       = tauon.prefs
-		self.gui         = tauon.gui
-		self.inp         = tauon.inp
-		self.window_size = tauon.window_size
+		self.tauon        = tauon
+		self.ddt          = tauon.ddt
+		self.gui          = tauon.gui
+		self.inp          = tauon.inp
+		self.coll         = tauon.coll
+		self.pctl         = tauon.pctl
+		self.prefs        = tauon.prefs
+		self.fields       = tauon.fields
+		self.window_size  = tauon.window_size
+		self.worker2_lock = tauon.worker2_lock
 
 		self.active = False
 		self.search_text = TextBox(tauon)
 
-		self.worker2_lock = tauon.worker2_lock
 		self.results = []
 		self.searched_text = ""
 		self.on = 0
