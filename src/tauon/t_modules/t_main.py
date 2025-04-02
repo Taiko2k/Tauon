@@ -29202,18 +29202,18 @@ class StandardPlaylist:
 						gui.move_on_title = True
 
 					# Ignore click in ratings box
-					click_title = (inp.mouse_click or inp.right_click or inp.middle_click) and self.coll(input_box)
+					click_title = (inp.mouse_click or inp.right_click or self.inp.middle_click) and self.coll(input_box)
 					if click_title and gui.show_album_ratings:
-						if inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
+						if self.inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
 							click_title = False
 
 					# Detect folder title click
-					if click_title and inp.mouse_position[1] < window_size[1] - gui.panelBY:
+					if click_title and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
 
 						gui.pl_update += 1
 						# Add folder to queue if middle click
-						if inp.middle_click and self.tauon.is_level_zero():
-							if inp.key_ctrl_down:  # Add as ungrouped tracks
+						if self.inp.middle_click and self.tauon.is_level_zero():
+							if self.inp.key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
 								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
 								while i < len(pctl.default_playlist) and parent == pctl.get_track(
@@ -29232,8 +29232,8 @@ class StandardPlaylist:
 							gui.pl_update += 1
 
 						# Play if double click:
-						if inp.d_mouse_click and track_position in gui.shift_selection and coll_point(
-							inp.last_click_location, (input_box)):
+						if inp.d_mouse_click and track_position in self.gui.shift_selection and coll_point(
+							self.inp.last_click_location, (input_box)):
 							gui.click_time -= 1.5
 							pctl.jump(track_id, track_position)
 							line_hit = False
@@ -29249,14 +29249,14 @@ class StandardPlaylist:
 							gui.selection_stage = 2
 							gui.pl_update = 1
 
-							if track_position not in gui.shift_selection:
-								gui.shift_selection = []
+							if track_position not in self.gui.shift_selection:
+								self.gui.shift_selection = []
 								pctl.selected_in_playlist = track_position
 								u = track_position
 								while u < len(pctl.default_playlist) and track_object.parent_folder_path == \
 										pctl.master_library[
 											pctl.default_playlist[u]].parent_folder_path:
-									gui.shift_selection.append(u)
+									self.gui.shift_selection.append(u)
 									u += 1
 
 						# Add folder to selection if clicked
@@ -29320,9 +29320,9 @@ class StandardPlaylist:
 			# Test if line has mouse over or been clicked
 			line_over = False
 			line_hit = False
-			if self.coll(input_box) and inp.mouse_position[1] < window_size[1] - gui.panelBY:
+			if self.coll(input_box) and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
 				line_over = True
-				if (inp.mouse_click or inp.right_click or (inp.middle_click and self.tauon.is_level_zero())):
+				if (inp.mouse_click or inp.right_click or (self.inp.middle_click and self.tauon.is_level_zero())):
 					line_hit = True
 					gui.pl_update += 1
 				else:
@@ -29332,19 +29332,19 @@ class StandardPlaylist:
 				line_over = False
 
 			# Prevent click if near scroll bar
-			if prefs.scroll_enable and inp.mouse_position[0] < 30:
+			if prefs.scroll_enable and self.inp.mouse_position[0] < 30:
 				line_hit = False
 
 			# Double click to play
-			if inp.key_shift_down is False and inp.d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
-					inp.last_click_location, input_box):
+			if self.inp.key_shift_down is False and inp.d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
+					self.inp.last_click_location, input_box):
 
 				pctl.jump(track_id, track_position)
 
 				gui.click_time -= 1.5
-				inp.quick_drag = False
-				inp.mouse_down = False
-				inp.mouse_up = False
+				self.inp.quick_drag = False
+				self.inp.mouse_down = False
+				self.inp.mouse_up = False
 				line_hit = False
 
 				if prefs.album_mode:
@@ -29355,31 +29355,31 @@ class StandardPlaylist:
 					this_line_playing = True
 
 			# Add to queue on middle click
-			if inp.middle_click and line_hit:
+			if self.inp.middle_click and line_hit:
 				pctl.force_queue.append(
 					queue_item_gen(track_id,
 					track_position, pctl.pl_to_id(pctl.active_playlist_viewing)))
 				pctl.selected_in_playlist = track_position
-				gui.shift_selection = [pctl.selected_in_playlist]
+				self.gui.shift_selection = [pctl.selected_in_playlist]
 				gui.pl_update += 1
 				tauon.queue_timer_set()
 				if prefs.stop_end_queue:
 					pctl.stop_mode = 0
 
 			# Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
-			if len(gui.shift_selection) > 1 and inp.mouse_up and line_over and not inp.key_shift_down and not inp.key_ctrl_down and point_proximity_test(
-					gui.drag_source_position, inp.mouse_position, 15):  # and not gui.playlist_hold:
-				gui.shift_selection = [track_position]
+			if len(self.gui.shift_selection) > 1 and self.inp.mouse_up and line_over and not self.inp.key_shift_down and not self.inp.key_ctrl_down and point_proximity_test(
+					gui.drag_source_position, self.inp.mouse_position, 15):  # and not self.gui.playlist_hold:
+				self.gui.shift_selection = [track_position]
 				pctl.selected_in_playlist = track_position
 				gui.pl_update = 1
 				gui.update = 2
 
 			# # Begin drag block selection
-			# if inp.mouse_down and line_over and track_position in gui.shift_selection and len(gui.shift_selection) > 1:
+			# if self.inp.mouse_down and line_over and track_position in self.gui.shift_selection and len(self.gui.shift_selection) > 1:
 			#     if not tauon.pl_is_locked(pctl.active_playlist_viewing):
-			#         gui.playlist_hold = True
-			#     elif inp.key_shift_down:
-			#         gui.playlist_hold = True
+			#         self.gui.playlist_hold = True
+			#     elif self.inp.key_shift_down:
+			#         self.gui.playlist_hold = True
 
 			# Begin drag single track
 			if inp.mouse_click and line_hit and not gui.side_drag:
@@ -29387,11 +29387,11 @@ class StandardPlaylist:
 				gui.set_drag_source()
 
 			# Shift Move Selection
-			if gui.move_on_title or (inp.mouse_up and gui.playlist_hold is True and self.coll((
+			if gui.move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and self.coll((
 					left + gui.highlight_left, line_y, highlight_width, gui.playlist_row_height))):
 
-				if len(gui.shift_selection) > 1 or inp.key_shift_down:
-					if track_position not in gui.shift_selection:  # p_track != gui.playlist_hold_position and
+				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
+					if track_position not in self.gui.shift_selection:  # p_track != self.gui.playlist_hold_position and
 
 						if len(self.gui.shift_selection) == 0:
 							ref = pctl.default_playlist[self.gui.playlist_hold_position]
@@ -29734,7 +29734,8 @@ class StandardPlaylist:
 
 
 			# Blue drop line
-			if drag_highlight:  # gui.playlist_hold_position != p_track:
+			if drag_highlight:  # self.gui.playlist_hold_position != p_track:
+
 				ddt.rect(
 					[left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
 					3 * gui.scale], [125, 105, 215, 255])
@@ -39270,7 +39271,6 @@ def main(holder: Holder) -> None:
 
 	scroll_opacity = 0
 	source = None
-	selected_in_playlist = -1
 	gen_codes: dict[int, str] = {}
 
 	# Player Variables----------------------------------------------------------------------------
@@ -39443,21 +39443,17 @@ def main(holder: Holder) -> None:
 		"pl-follow": False,
 		"scroll-enable": True,
 	}
+
 	prefs = Prefs(
 		view_prefs=view_prefs,
 		power_save=power_save,
 		encoder_output=encoder_output,
-	#	user_directory=user_directory,
-	#	music_directory=music_directory,
-	#	cache_directory=cache_directory,
 		force_subpixel_text=force_subpixel_text,
 		dc_device=dc_device,
 		macos=macos,
-	#	detect_macstyle=detect_macstyle,
 		macstyle=macos or detect_macstyle,
 		left_window_control=macos or left_window_control,
 		phone=phone,
-	#	gtk_settings=gtk_settings,
 		discord_allow=discord_allow,
 		desktop=desktop,
 		window_opacity=window_opacity,
@@ -39470,7 +39466,7 @@ def main(holder: Holder) -> None:
 		gme=gme,
 		mpt=mpt,
 		colours=colours,
-		console=console,
+		console=DConsole(),
 		dirs=dirs,
 		prefs=prefs,
 		fonts=fonts,
@@ -39502,7 +39498,7 @@ def main(holder: Holder) -> None:
 		last_fm_enable=last_fm_enable,
 		launch_prefix=launch_prefix,
 		latest_db_version=latest_db_version,
-		load_orders=[],
+		load_orders=[], # TODO(Martin): We don't need to Bag this, it inits empty
 		flatpak_mode=flatpak_mode,
 		snap_mode=snap_mode,
 		master_count=master_count,
@@ -39510,7 +39506,7 @@ def main(holder: Holder) -> None:
 		playing_in_queue=playing_in_queue,
 		playlist_playing=playlist_playing,
 		playlist_view_position=playlist_view_position,
-		selected_in_playlist=selected_in_playlist,
+		selected_in_playlist=-1,
 		album_mode_art_size=int(200 * scale),
 		primary_stations=[],
 		tls_context=tls_context,
@@ -39653,7 +39649,7 @@ def main(holder: Holder) -> None:
 			gui.rspw = save[20]
 			# savetime = save[21]
 			gui.vis_want = save[22]
-			selected_in_playlist = save[23]
+			bag.selected_in_playlist = save[23]
 			if save[24] is not None:
 				bag.album_mode_art_size = save[24]
 			if save[25] is not None:
@@ -41603,7 +41599,7 @@ def main(holder: Holder) -> None:
 			inp.key_return_press = False
 			inp.key_down_press = False
 			inp.key_up_press = False
-			inp.key_up_press = False
+			inp.key_right_press = False
 			inp.key_left_press = False
 			inp.key_esc_press = False
 			inp.key_del = False
@@ -41620,7 +41616,7 @@ def main(holder: Holder) -> None:
 			inp.mouse_wheel = 0
 			pref_box.scroll = 0
 			gui.new_playlist_cooldown = False
-			input_text = ""
+			inp.input_text = ""
 			inp.level_2_enter = False
 
 			mouse_enter_window = False
@@ -41741,7 +41737,7 @@ def main(holder: Holder) -> None:
 						pctl.cycle_playlist_pinned(1)
 				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 					if gui.album_tab_mode:
-						inp.key_up_press = True
+						inp.key_right_press = True
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(-1)
 
@@ -41937,7 +41933,7 @@ def main(holder: Holder) -> None:
 				elif event.key.key == sdl3.SDLK_LEFT:
 					inp.key_left_press = True
 				elif event.key.key == sdl3.SDLK_RIGHT:
-					inp.key_up_press = True
+					inp.key_right_press = True
 				elif event.key.key == sdl3.SDLK_LSHIFT:
 					inp.key_shift_down = True
 				elif event.key.key == sdl3.SDLK_RSHIFT:
@@ -41985,10 +41981,10 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_TEXT_INPUT:
 				inp.k_input = True
 				power += 5
-				input_text += event.text.text.decode("utf-8")
+				inp.input_text += event.text.text.decode("utf-8")
 
 				gui.update += 1
-				#logging.info(input_text)
+				#logging.info(inp.input_text)
 
 			elif event.type == sdl3.SDL_EVENT_MOUSE_WHEEL:
 				inp.k_input = True
@@ -42233,16 +42229,15 @@ def main(holder: Holder) -> None:
 		#     logging.info("A")
 
 		if inp.key_meta:
-			input_text = ""
+			inp.input_text = ""
 			inp.k_input = False
 			inp.key_return_press = False
 			inp.key_tab_press = False
 
 		if inp.k_input:
-			# TODO(Martin): Check if commenting this out is the correct thing to do
-			#if inp.mouse_click or inp.right_click or inp.mouse_up:
-			#	last_click_location = copy.deepcopy(inp.click_location)
-			#	click_location = copy.deepcopy(inp.mouse_position)
+			if inp.mouse_click or inp.right_click or inp.mouse_up:
+				inp.last_click_location = copy.deepcopy(inp.click_location)
+				inp.click_location = copy.deepcopy(inp.mouse_position)
 
 			if inp.key_focused != 0:
 				keymaps.hits.clear()
@@ -42265,9 +42260,9 @@ def main(holder: Holder) -> None:
 				inp.key_tab_press = False
 				inp.key_c_press = False
 				inp.key_v_press = False
-				# key_f_press = False
+				# inp.key_f_press = False
 				inp.key_a_press = False
-				# key_t_press = False
+				# inp.key_t_press = False
 				inp.key_z_press = False
 				inp.key_x_press = False
 				inp.key_home_press = False
@@ -42326,7 +42321,7 @@ def main(holder: Holder) -> None:
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(1)
 				if keymaps.test("cycle-playlist-right"):
-					if gui.album_tab_mode and inp.key_up_press:
+					if gui.album_tab_mode and inp.key_right_press:
 						pass
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(-1)
@@ -42352,7 +42347,7 @@ def main(holder: Holder) -> None:
 					if len(pctl.track_queue) > 0:
 						gui.quick_search_mode = True
 						tauon.search_over.search_text.text = ""
-						input_text = pctl.playing_object().artist
+						inp.input_text = pctl.playing_object().artist
 
 				if keymaps.test("show-encode-folder"):
 					tauon.open_encode_out()
@@ -42404,7 +42399,7 @@ def main(holder: Holder) -> None:
 						tauon.del_selected()
 
 					# Arrow keys to change playlist
-					if (inp.key_left_press or inp.key_up_press) and len(pctl.multi_playlist) > 1:
+					if (inp.key_left_press or inp.key_right_press) and len(pctl.multi_playlist) > 1:
 						gui.pl_update = 1
 						gui.update += 1
 
@@ -42439,7 +42434,7 @@ def main(holder: Holder) -> None:
 				if gui.quick_search_mode:
 					if keymaps.test("add-to-queue") and pctl.selected_ready():
 						tauon.add_selected_to_queue()
-						input_text = ""
+						inp.input_text = ""
 				else:
 					if inp.key_c_press and inp.key_ctrl_down:
 						gui.pl_update = 1
@@ -42948,7 +42943,7 @@ def main(holder: Holder) -> None:
 
 		if gui.reload_theme is True:
 			gui.pl_update = 1
-			theme_files = get_themes(dirs=dirs)
+			theme_files = get_themes(dirs)
 
 			if prefs.theme > len(theme_files):  # sic
 				prefs.theme = 0
@@ -45520,7 +45515,7 @@ def main(holder: Holder) -> None:
 					# ddt.text_background_colour = [220,100,5,255]
 					ddt.rect(rect, colours.box_background)
 
-					if len(input_text) > 0:
+					if len(inp.input_text) > 0:
 						gui.search_index = -1
 
 					if inp.backspace_press and search_over.search_text.text == "":
@@ -45611,7 +45606,7 @@ def main(holder: Holder) -> None:
 							search_over.search_text.text = ""
 							gui.quick_search_mode = False
 
-					if (len(input_text) > 0 and not gui.search_error) or inp.key_down_press is True or inp.backspace_press \
+					if (len(inp.input_text) > 0 and not gui.search_error) or inp.key_down_press is True or inp.backspace_press \
 							or gui.force_search:
 
 						gui.pl_update = 1
@@ -45656,7 +45651,7 @@ def main(holder: Holder) -> None:
 
 							else:
 								gui.search_index = oi
-								if len(input_text) > 0 or gui.force_search:
+								if len(inp.input_text) > 0 or gui.force_search:
 									gui.search_error = True
 								if inp.key_down_press:
 									bottom_playlist2.pulse()
