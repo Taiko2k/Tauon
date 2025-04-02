@@ -30883,7 +30883,7 @@ class RadioBox:
 			self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
 			self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
 			self.ddt.text_background_colour = self.colours.box_background
-			if key_esc_press or (self.gui.level_2_click and not self.coll((x, y, w, h))):
+			if self.inp.key_esc_press or (self.gui.level_2_click and not self.coll((x, y, w, h))):
 				self.active = False
 
 			if self.add_mode:
@@ -30911,7 +30911,7 @@ class RadioBox:
 
 		self.ddt.text_background_colour = self.colours.box_background
 
-		if self.key_esc_press or (self.gui.level_2_click and not self.coll((x, y, w, h))):
+		if self.inp.key_esc_press or (self.gui.level_2_click and not self.coll((x, y, w, h))):
 			self.active = False
 
 		self.ddt.text((x + 10 * self.gui.scale, yy + 8 * self.gui.scale), _("Station Browser"), self.colours.box_title_text, 213)
@@ -31205,6 +31205,7 @@ class RenamePlaylistBox:
 		self.tauon            = tauon
 		self.ddt              = tauon.ddt
 		self.gui              = tauon.gui
+		self.inp              = tauon.inp
 		self.pctl             = tauon.pctl
 		self.colours          = tauon.colours
 		self.thread_manager   = tauon.thread_manager
@@ -31273,7 +31274,7 @@ class RenamePlaylistBox:
 			id = self.pctl.pl_to_id(pl)
 			self.pctl.gen_codes[id] = self.rename_text_area.text
 
-			if input_text or key_backspace_press:
+			if inp.input_text or inp.key_backspace_press:
 				self.gui.regen_single = self.tauon.rename_playlist_box.playlist_index
 				self.thread_manager.ready("worker")
 
@@ -31457,7 +31458,7 @@ class RenamePlaylistBox:
 		# self.ddt.pretty_rect = None
 
 		# If enter or click outside of box: save and close
-		if self.inp.key_return_press or (key_esc_press and len(editline) == 0) \
+		if self.inp.key_return_press or (self.inp.key_esc_press and len(editline) == 0) \
 				or ((self.inp.mouse_click or self.inp.level_2_right_click) and not self.coll(rect)):
 			self.gui.rename_playlist_box = False
 
@@ -35208,9 +35209,9 @@ class Showcase:
 				x -= 100 * gui.scale
 				w = window_size[0] - x - 30 * gui.scale
 
-				if key_up_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
+				if self.inp.key_up_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
 					lyrics_ren.lyrics_position += 35 * gui.scale
-				if key_down_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
+				if self.inp.key_down_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
 					lyrics_ren.lyrics_position -= 35 * gui.scale
 
 				lyrics_ren.test_update(track)
@@ -35801,7 +35802,7 @@ class DLMon:
 								pass
 								#logging.info("Target folder for archive already exists")
 
-							elif archive_file_scan(path, formats.DA, launch_prefix) >= 0.4:
+							elif archive_file_scan(path, self.formats.DA, self.tauon.launch_prefix) >= 0.4:
 								self.ready.add(path)
 								self.gui.update += 1
 								#logging.info("Archive detected as music")
@@ -35817,7 +35818,7 @@ class DLMon:
 						#logging.info("add.")
 				elif min_age < 60 \
 				and os.path.isdir(path) \
-				and path not in quick_import_done \
+				and path not in self.tauon.quick_import_done \
 				and "encode-output" not in path:
 					try:
 						size = get_folder_size(path)
@@ -35857,10 +35858,10 @@ class DLMon:
 
 		if len(self.ready) > 0:
 			temp = set()
-			#logging.info(quick_import_done)
+			#logging.info(self.tauon.quick_import_done)
 			#logging.info(self.ready)
 			for item in self.ready:
-				if item not in quick_import_done:
+				if item not in self.tauon.quick_import_done:
 					if os.path.exists(path):
 						temp.add(item)
 				# else:
@@ -35949,7 +35950,6 @@ class EdgePulse2:
 	def render(self, x: int, y: int, w: int, h: int, bottom: bool = False) -> bool | None:
 		time = self.timer.get()
 		if time < self.ani_duration:
-
 			if bottom:
 				if self.inp.mouse_wheel > 0:
 					self.timer.force_set(10)
@@ -43146,7 +43146,6 @@ def rename_folders_disable_test(index: int) -> bool:
 def rename_folders(index: int):
 	global track_box
 	global rename_index
-	global input_text
 
 	track_box = False
 	rename_index = index
@@ -43156,7 +43155,7 @@ def rename_folders(index: int):
 		return
 
 	gui.rename_folder_box = True
-	input_text = ""
+	inp.input_text = ""
 	gui.shift_selection.clear()
 
 	inp.quick_drag = False
@@ -48821,7 +48820,7 @@ def drop_file(target: str):
 	load_order.target = target.replace("\\", "/")
 
 	if os.path.isdir(load_order.target):
-		quick_import_done.append(load_order.target)
+		tauon.quick_import_done.append(load_order.target)
 
 		# if not pctl.multi_playlist[gui.drop_playlist_target].last_folder:
 		pctl.multi_playlist[gui.drop_playlist_target].last_folder.append(load_order.target)
@@ -50951,7 +50950,7 @@ def worker1(tauon: Tauon) -> None:
 
 						gui.to_got = b
 						gets(target_dir)
-						quick_import_done.append(target_dir)
+						tauon.quick_import_done.append(target_dir)
 					# gets(target_dir)
 
 			return 1
@@ -52329,22 +52328,6 @@ gui = GuiVar(
 inp = gui.inp
 keymaps = gui.keymaps
 # Control Variables--------------------------------------------------------------------------
-
-key_down_press      = inp.key_down_press
-key_up_press        = inp.key_up_press
-key_right_press     = inp.key_right_press
-key_left_press      = inp.key_left_press
-key_esc_press       = inp.key_esc_press
-key_del             = inp.key_del
-key_backspace_press = inp.key_backspace_press
-key_c_press         = inp.key_c_press
-key_v_press         = inp.key_v_press
-key_a_press         = inp.key_a_press
-key_z_press         = inp.key_z_press
-key_x_press         = inp.key_x_press
-key_home_press      = inp.key_home_press
-key_end_press       = inp.key_end_press
-input_text          = inp.input_text
 
 #side_drag      = gui.side_drag # TODO(Martin): Move this to Input
 
@@ -54610,8 +54593,6 @@ if gui.restart_album_mode:
 if gui.remember_library_mode:
 	toggle_library_mode()
 
-quick_import_done = []
-
 if reload_state:
 	if reload_state[0] == 1:
 		pctl.jump_time = reload_state[1]
@@ -54724,26 +54705,26 @@ while pctl.running:
 		inp.middle_click = False
 		inp.mouse_up = False
 		inp.key_return_press = False
-		key_down_press = False
-		key_up_press = False
-		key_right_press = False
-		key_left_press = False
-		key_esc_press = False
-		key_del = False
+		inp.key_down_press = False
+		inp.key_up_press = False
+		inp.key_right_press = False
+		inp.key_left_press = False
+		inp.key_esc_press = False
+		inp.key_del = False
 		inp.backspace_press = 0
-		key_backspace_press = False
+		inp.key_backspace_press = False
 		inp.key_tab_press = False
-		key_c_press = False
-		key_v_press = False
-		key_a_press = False
-		key_z_press = False
-		key_x_press = False
-		key_home_press = False
-		key_end_press = False
+		inp.key_c_press = False
+		inp.key_v_press = False
+		inp.key_a_press = False
+		inp.key_z_press = False
+		inp.key_x_press = False
+		inp.key_home_press = False
+		inp.key_end_press = False
 		inp.mouse_wheel = 0
 		pref_box.scroll = 0
 		new_playlist_cooldown = False
-		input_text = ""
+		inp.input_text = ""
 		inp.level_2_enter = False
 
 		mouse_enter_window = False
@@ -54852,19 +54833,19 @@ while pctl.running:
 				elif is_level_zero():
 					pctl.stop()
 				else:
-					key_esc_press = True
+					inp.key_esc_press = True
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
-				key_up_press = True
+				inp.key_up_press = True
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-				key_down_press = True
+				inp.key_down_press = True
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 				if gui.album_tab_mode:
-					key_left_press = True
+					inp.key_left_press = True
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(1)
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 				if gui.album_tab_mode:
-					key_right_press = True
+					inp.key_right_press = True
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(-1)
 
@@ -55024,25 +55005,25 @@ while pctl.running:
 
 			if prefs.use_scancodes:
 				if event.key.scancode == sdl3.SDL_SCANCODE_V:
-					key_v_press = True
+					inp.key_v_press = True
 				elif event.key.scancode == sdl3.SDL_SCANCODE_A:
-					key_a_press = True
+					inp.key_a_press = True
 				elif event.key.scancode == sdl3.SDL_SCANCODE_C:
-					key_c_press = True
+					inp.key_c_press = True
 				elif event.key.scancode == sdl3.SDL_SCANCODE_Z:
-					key_z_press = True
+					inp.key_z_press = True
 				elif event.key.scancode == sdl3.SDL_SCANCODE_X:
-					key_x_press = True
+					inp.key_x_press = True
 			elif event.key.key == sdl3.SDLK_V:
-				key_v_press = True
+				inp.key_v_press = True
 			elif event.key.key == sdl3.SDLK_A:
-				key_a_press = True
+				inp.key_a_press = True
 			elif event.key.key == sdl3.SDLK_C:
-				key_c_press = True
+				inp.key_c_press = True
 			elif event.key.key == sdl3.SDLK_Z:
-				key_z_press = True
+				inp.key_z_press = True
 			elif event.key.key == sdl3.SDLK_X:
-				key_x_press = True
+				inp.key_x_press = True
 
 			if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(editline) == 0:
 				inp.key_return_press = True
@@ -55052,21 +55033,21 @@ while pctl.running:
 				inp.key_tab_press = True
 			elif event.key.key == sdl3.SDLK_BACKSPACE:
 				inp.backspace_press += 1
-				key_backspace_press = True
+				inp.key_backspace_press = True
 			elif event.key.key == sdl3.SDLK_DELETE:
-				key_del = True
+				inp.key_del = True
 			elif event.key.key == sdl3.SDLK_RALT:
 				inp.key_ralt = True
 			elif event.key.key == sdl3.SDLK_LALT:
 				inp.key_lalt = True
 			elif event.key.key == sdl3.SDLK_DOWN:
-				key_down_press = True
+				inp.key_down_press = True
 			elif event.key.key == sdl3.SDLK_UP:
-				key_up_press = True
+				inp.key_up_press = True
 			elif event.key.key == sdl3.SDLK_LEFT:
-				key_left_press = True
+				inp.key_left_press = True
 			elif event.key.key == sdl3.SDLK_RIGHT:
-				key_right_press = True
+				inp.key_right_press = True
 			elif event.key.key == sdl3.SDLK_LSHIFT:
 				inp.key_shift_down = True
 			elif event.key.key == sdl3.SDLK_RSHIFT:
@@ -55076,9 +55057,9 @@ while pctl.running:
 			elif event.key.key == sdl3.SDLK_RCTRL:
 				inp.key_rctrl_down = True
 			elif event.key.key == sdl3.SDLK_HOME:
-				key_home_press = True
+				inp.key_home_press = True
 			elif event.key.key == sdl3.SDLK_END:
-				key_end_press = True
+				inp.key_end_press = True
 			elif event.key.key == sdl3.SDLK_LGUI:
 				if macos:
 					inp.key_ctrl_down = True
@@ -55115,10 +55096,10 @@ while pctl.running:
 		elif event.type == sdl3.SDL_EVENT_TEXT_INPUT:
 			inp.k_input = True
 			power += 5
-			input_text += event.text.text.decode("utf-8")
+			inp.input_text += event.text.text.decode("utf-8")
 
 			gui.update += 1
-			#logging.info(input_text)
+			#logging.info(inp.input_text)
 
 		elif event.type == sdl3.SDL_EVENT_MOUSE_WHEEL:
 			inp.k_input = True
@@ -55367,7 +55348,7 @@ while pctl.running:
 	#     logging.info("A")
 
 	if inp.key_meta:
-		input_text = ""
+		inp.input_text = ""
 		inp.k_input = False
 		inp.key_return_press = False
 		inp.key_tab_press = False
@@ -55387,35 +55368,35 @@ while pctl.running:
 			# inp.middle_click = False
 			inp.mouse_up = False
 			inp.key_return_press = False
-			key_down_press = False
-			key_up_press = False
-			key_right_press = False
-			key_left_press = False
-			key_esc_press = False
-			key_del = False
+			inp.key_down_press = False
+			inp.key_up_press = False
+			inp.key_right_press = False
+			inp.key_left_press = False
+			inp.key_esc_press = False
+			inp.key_del = False
 			inp.backspace_press = 0
-			key_backspace_press = False
+			inp.key_backspace_press = False
 			inp.key_tab_press = False
-			key_c_press = False
-			key_v_press = False
-			# key_f_press = False
-			key_a_press = False
-			# key_t_press = False
-			key_z_press = False
-			key_x_press = False
-			key_home_press = False
-			key_end_press = False
+			inp.key_c_press = False
+			inp.key_v_press = False
+			# inp.key_f_press = False
+			inp.key_a_press = False
+			# inp.key_t_press = False
+			inp.key_z_press = False
+			inp.key_x_press = False
+			inp.key_home_press = False
+			inp.key_end_press = False
 			inp.mouse_wheel = 0
 			pref_box.scroll = 0
-			input_text = ""
+			inp.input_text = ""
 			inp.level_2_enter = False
 
 	if c_yax != 0:
 		if c_yax_timer.get() >= 0:
 			if c_yax == -1:
-				key_up_press = True
+				inp.key_up_press = True
 			if c_yax == 1:
-				key_down_press = True
+				inp.key_down_press = True
 			c_yax_timer.force_set(-0.01)
 			gui.delay_frame(0.02)
 			inp.k_input = True
@@ -55455,12 +55436,12 @@ while pctl.running:
 				n += 1
 
 			if keymaps.test("cycle-playlist-left"):
-				if gui.album_tab_mode and key_left_press:
+				if gui.album_tab_mode and inp.key_left_press:
 					pass
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(1)
 			if keymaps.test("cycle-playlist-right"):
-				if gui.album_tab_mode and key_right_press:
+				if gui.album_tab_mode and inp.key_right_press:
 					pass
 				elif is_level_zero() or quick_search_mode:
 					cycle_playlist_pinned(-1)
@@ -55487,7 +55468,7 @@ while pctl.running:
 				if len(pctl.track_queue) > 0:
 					quick_search_mode = True
 					search_text.text = ""
-					input_text = pctl.playing_object().artist
+					inp.input_text = pctl.playing_object().artist
 
 			if keymaps.test("show-encode-folder"):
 				open_encode_out()
@@ -55501,7 +55482,7 @@ while pctl.running:
 				update_layout_do()
 
 			if keymaps.test("escape"):
-				key_esc_press = True
+				inp.key_esc_press = True
 
 		if inp.key_ctrl_down:
 			gui.pl_update += 1
@@ -55509,38 +55490,37 @@ while pctl.running:
 		if mouse_enter_window:
 			inp.key_return_press = False
 
-		if gui.fullscreen and key_esc_press:
+		if gui.fullscreen and inp.key_esc_press:
 			gui.fullscreen = False
 			sdl3.SDL_SetWindowFullscreen(t_window, 0)
 
 		# Disable keys for text cursor control
 		if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not trans_edit_box.active:
-
 			if not quick_search_mode and not search_over.active:
 				if prefs.album_mode and gui.album_tab_mode \
 						and not inp.key_ctrl_down \
 						and not inp.key_meta \
 						and not inp.key_lalt:
-					if key_left_press:
+					if inp.key_left_press:
 						gal_left = True
-						key_left_press = False
-					if key_right_press:
+						inp.key_left_press = False
+					if inp.key_right_press:
 						gal_right = True
-						key_right_press = False
-					if key_up_press:
+						inp.key_right_press = False
+					if inp.key_up_press:
 						gal_up = True
-						key_up_press = False
-					if key_down_press:
+						inp.key_up_press = False
+					if inp.key_down_press:
 						gal_down = True
-						key_down_press = False
+						inp.key_down_press = False
 
 			if not search_over.active:
-				if key_del:
+				if inp.key_del:
 					close_all_menus()
 					del_selected()
 
 				# Arrow keys to change playlist
-				if (key_left_press or key_right_press) and len(pctl.multi_playlist) > 1:
+				if (inp.key_left_press or inp.key_right_press) and len(pctl.multi_playlist) > 1:
 					gui.pl_update = 1
 					gui.update += 1
 
@@ -55575,19 +55555,17 @@ while pctl.running:
 			if quick_search_mode:
 				if keymaps.test("add-to-queue") and pctl.selected_ready():
 					add_selected_to_queue()
-					input_text = ""
-
+					inp.input_text = ""
 			else:
-
-				if key_c_press and inp.key_ctrl_down:
+				if inp.key_c_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					s_copy()
 
-				if key_x_press and inp.key_ctrl_down:
+				if inp.key_x_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					s_cut()
 
-				if key_v_press and inp.key_ctrl_down:
+				if inp.key_v_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					paste()
 
@@ -55599,7 +55577,7 @@ while pctl.running:
 			inp.key_return_press = False
 			inp.level_2_enter = True
 
-		if inp.key_ctrl_down and key_z_press:
+		if inp.key_ctrl_down and inp.key_z_press:
 			undo.undo()
 
 		if keymaps.test("quit"):
@@ -55833,14 +55811,14 @@ while pctl.running:
 			# These need to be disabled when text fields are active
 			if not search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not trans_edit_box.active:
 				if keymaps.test("advance"):
-					key_right_press = False
+					inp.key_right_press = False
 					pctl.advance()
 
 				if keymaps.test("previous"):
-					key_left_press = False
+					inp.key_left_press = False
 					pctl.back()
 
-				if key_a_press and inp.key_ctrl_down:
+				if inp.key_a_press and inp.key_ctrl_down:
 					gui.pl_update = 1
 					gui.shift_selection = range(len(pctl.default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
 
@@ -58076,7 +58054,7 @@ while pctl.running:
 					gui.preview_artist = ""
 
 			if track_box:
-				if inp.key_return_press or inp.right_click or key_esc_press or inp.backspace_press or keymaps.test(
+				if inp.key_return_press or inp.right_click or inp.key_esc_press or inp.backspace_press or keymaps.test(
 						"quick-find"):
 					track_box = False
 
@@ -58548,7 +58526,7 @@ while pctl.running:
 
 				ddt.text_background_colour = colours.box_background
 
-				if key_esc_press or (
+				if inp.key_esc_press or (
 						(inp.mouse_click or inp.right_click or inp.level_2_right_click) and not coll((x, y, w, h))):
 					gui.rename_folder_box = False
 
@@ -58644,8 +58622,7 @@ while pctl.running:
 				nagbox.draw()
 
 			# SEARCH
-			# if inp.key_ctrl_down and key_v_press:
-
+			# if inp.key_ctrl_down and inp.key_v_press:
 			#     search_over.active = True
 
 			search_over.render()
@@ -58655,9 +58632,9 @@ while pctl.running:
 					quick_search_mode = True
 				if search_clear_timer.get() > 3:
 					search_text.text = ""
-				input_text = ""
+				inp.input_text = ""
 			elif (keymaps.test("quick-find") or (
-					key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
+					inp.key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
 				quick_search_mode = False
 				search_text.text = ""
 
@@ -58666,9 +58643,9 @@ while pctl.running:
 			#         quick_search_mode = True
 			#     if search_clear_timer.get() > 3:
 			#         search_text.text = ""
-			#     input_text = ""
+			#     inp.input_text = ""
 			# elif ((key_backslash_press or (inp.key_ctrl_down and key_f_press)) or (
-			#             key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
+			#             inp.key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
 			#     quick_search_mode = False
 			#     search_text.text = ""
 
@@ -58687,7 +58664,7 @@ while pctl.running:
 				# ddt.text_background_colour = [220,100,5,255]
 				ddt.rect(rect, colours.box_background)
 
-				if len(input_text) > 0:
+				if len(inp.input_text) > 0:
 					gui.search_index = -1
 
 				if inp.backspace_press and search_text.text == "":
@@ -58713,9 +58690,9 @@ while pctl.running:
 
 				# if len(pctl.track_queue) > 0:
 
-				# if input_text == 'A':
+				# if inp.input_text == 'A':
 				#     search_text.text = pctl.playing_object().artist
-				#     input_text = ""
+				#     inp.input_text = ""
 
 				if gui.search_error:
 					ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255])
@@ -58778,7 +58755,7 @@ while pctl.running:
 						search_text.text = ""
 						quick_search_mode = False
 
-				if (len(input_text) > 0 and not gui.search_error) or key_down_press is True or inp.backspace_press \
+				if (len(inp.input_text) > 0 and not gui.search_error) or inp.key_down_press is True or inp.backspace_press \
 						or gui.force_search:
 
 					gui.pl_update = 1
@@ -58823,14 +58800,14 @@ while pctl.running:
 
 						else:
 							gui.search_index = oi
-							if len(input_text) > 0 or gui.force_search:
+							if len(inp.input_text) > 0 or gui.force_search:
 								gui.search_error = True
-							if key_down_press:
+							if inp.key_down_press:
 								bottom_playlist2.pulse()
 
 						gui.force_search = False
 
-				if key_up_press is True \
+				if inp.key_up_press is True \
 						and not inp.key_shiftr_down \
 						and not inp.key_shift_down \
 						and not inp.key_ctrl_down \
@@ -59224,7 +59201,7 @@ while pctl.running:
 					(i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1),
 					gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
-		input_text = ""
+		inp.input_text = ""
 		gui.update -= 1
 
 		# logging.info("FRAME " + str(tauon.core_timer.get()))
