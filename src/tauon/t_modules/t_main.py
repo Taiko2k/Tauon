@@ -31158,7 +31158,9 @@ class RadioBox:
 class RenamePlaylistBox:
 
 	def __init__(self, tauon: Tauon) -> None:
+		self.ddt              = tauon.ddt
 		self.gui              = tauon.gui
+		self.inp              = tauon.inp
 		self.pctl             = tauon.pctl
 		self.thread_manager   = tauon.thread_manager
 		self.rename_text_area = tauon.rename_text_area
