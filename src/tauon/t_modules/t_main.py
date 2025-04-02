@@ -40775,7 +40775,7 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), console.toggle))
+	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
 
 	# tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
@@ -42306,7 +42306,7 @@ def main(holder: Holder) -> None:
 						pctl.cycle_playlist_pinned(-1)
 
 				if keymaps.test("toggle-console"):
-					console.toggle()
+					tauon.console.toggle()
 
 				if keymaps.test("toggle-fullscreen"):
 					if not gui.fullscreen and gui.mode != 3:
@@ -45882,7 +45882,7 @@ def main(holder: Holder) -> None:
 			tauon.tool_tip.render()
 			tauon.tool_tip2.render()
 
-			if console.show:
+			if tauon.console.show:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 				ddt.rect(rect, [0, 0, 0, 245])
 
