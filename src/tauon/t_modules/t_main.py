@@ -31888,21 +31888,20 @@ class ArtistList:
 				g = io.BytesIO()
 				g.seek(0)
 
-				im = Image.open(filepath)
+				with Image.open(filepath) as im:
+					w, h = im.size
+					if w != h:
+						m = min(w, h)
+						im = im.crop((
+							round((w - m) / 2),
+							round((h - m) / 2),
+							round((w + m) / 2),
+							round((h + m) / 2),
+						))
 
-				w, h = im.size
-				if w != h:
-					m = min(w, h)
-					im = im.crop((
-						round((w - m) / 2),
-						round((h - m) / 2),
-						round((w + m) / 2),
-						round((h + m) / 2),
-					))
+					im.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
 
-				im.thumbnail((self.thumb_size, self.thumb_size), Image.Resampling.LANCZOS)
-
-				im.save(g, "PNG")
+					im.save(g, "PNG")
 				g.seek(0)
 
 				s_image = self.ddt.load_image(g)
