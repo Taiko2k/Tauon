@@ -21739,6 +21739,7 @@ class TransEditBox:
 		self.coll              = tauon.coll
 		self.draw              = tauon.draw
 		self.pctl              = tauon.pctl
+		self.fields            = tauon.fields
 		self.colours           = tauon.colours
 		self.window_size       = tauon.window_size
 		self.star_store        = tauon.star_store
