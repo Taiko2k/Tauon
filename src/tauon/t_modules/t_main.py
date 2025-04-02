@@ -39300,8 +39300,6 @@ def main(holder: Holder) -> None:
 
 	master_count = 0
 
-	load_orders: list[LoadClass] = []
-
 	volume = 75
 
 	folder_image_offsets: dict[str, int] = {}
@@ -39442,7 +39440,7 @@ def main(holder: Holder) -> None:
 		last_fm_enable=last_fm_enable,
 		launch_prefix=launch_prefix,
 		latest_db_version=latest_db_version,
-		load_orders=load_orders,
+		load_orders=[],
 		flatpak_mode=flatpak_mode,
 		snap_mode=snap_mode,
 		master_count=master_count,
