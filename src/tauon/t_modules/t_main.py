@@ -28973,16 +28973,10 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
-		global highlight_left
-		global highlight_right
-
 		global click_time
 
-		global r_menu_index
-		global r_menu_position
-
 		highlight_width    = gui.tracklist_highlight_width
-		highlight_left  = gui.tracklist_highlight_left
+		gui.highlight_left = gui.tracklist_highlight_left
 		inset_width        = gui.tracklist_inset_width
 		inset_left         = gui.tracklist_inset_left
 		center_mode        = gui.tracklist_center_mode
@@ -29123,7 +29117,7 @@ class StandardPlaylist:
 			line_y = gui.playlist_top + gui.playlist_row_height * number
 
 			track_box = (
-				left + highlight_left, line_y, highlight_width,
+				left + gui.highlight_left, line_y, highlight_width,
 				gui.playlist_row_height - 1)
 
 			input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
@@ -29258,7 +29252,7 @@ class StandardPlaylist:
 			line_y = gui.playlist_top + gui.playlist_row_height * number
 
 			track_box = (
-				left + highlight_left, line_y, highlight_width,
+				left + gui.highlight_left, line_y, highlight_width,
 				gui.playlist_row_height - 1)
 
 			input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
@@ -29266,9 +29260,9 @@ class StandardPlaylist:
 			# Test if line has mouse over or been clicked
 			line_over = False
 			line_hit = False
-			if coll(input_box) and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
+			if self.coll(input_box) and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
 				line_over = True
-				if (inp.mouse_click or inp.right_click or (self.inp.middle_click and is_level_zero())):
+				if (inp.mouse_click or inp.right_click or (self.inp.middle_click and self.tauon.is_level_zero())):
 					line_hit = True
 					gui.pl_update += 1
 				else:
@@ -29334,7 +29328,7 @@ class StandardPlaylist:
 
 			# Shift Move Selection
 			if gui.move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and coll((
-					left + highlight_left, line_y, highlight_width, gui.playlist_row_height))):
+					left + gui.highlight_left, line_y, highlight_width, gui.playlist_row_height))):
 
 				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
 					if track_position not in self.gui.shift_selection:  # p_track != self.gui.playlist_hold_position and
@@ -29545,7 +29539,7 @@ class StandardPlaylist:
 				if prefs.append_total_time:
 					date += duration
 
-				ex = left + highlight_left + highlight_width - 7 * gui.scale
+				ex = left + gui.highlight_left + highlight_width - 7 * gui.scale
 
 				height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
 
@@ -29573,7 +29567,7 @@ class StandardPlaylist:
 						colours.row_select_highlight,
 						colours.playlist_panel_background)
 					ddt.rect_a(
-						(left + highlight_left, gui.playlist_top + gui.playlist_row_height * number),
+						(left + gui.highlight_left, gui.playlist_top + gui.playlist_row_height * number),
 						(highlight_width, gui.playlist_row_height), colours.row_select_highlight)
 
 				#logging.info(d_date) # date of album release / release year
@@ -29587,7 +29581,7 @@ class StandardPlaylist:
 					separator = " | "
 
 					start_offset = round(15 * gui.scale)
-					xx = left + highlight_left + start_offset
+					xx = left + gui.highlight_left + start_offset
 					ww = highlight_width
 
 					was = False
@@ -29642,7 +29636,7 @@ class StandardPlaylist:
 					if ft_width > left_align:
 						date_w += 19 * gui.scale
 						ddt.text(
-							(left + highlight_left + 8 * gui.scale + extra, height), line,
+							(left + gui.highlight_left + 8 * gui.scale + extra, height), line,
 							colours.folder_title,
 							gui.row_font_size + gui.pl_title_font_offset,
 							highlight_width - date_w - extra - star_offset)
@@ -29656,13 +29650,13 @@ class StandardPlaylist:
 
 				# Draw separation line below title
 				ddt.rect(
-					(left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
+					(left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
 					1 * gui.scale), colours.folder_line)
 
 				# Draw blue highlight insert line
 				if drag_highlight:
 					ddt.rect(
-						[left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale,
+						[left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale,
 						highlight_width, 3 * gui.scale], [135, 145, 190, 255])
 
 				continue
@@ -29683,13 +29677,13 @@ class StandardPlaylist:
 			if drag_highlight:  # self.gui.playlist_hold_position != p_track:
 
 				ddt.rect(
-					[left + highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
+					[left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
 					3 * gui.scale], [125, 105, 215, 255])
 
 			# Highlight
 			if highlight:
 				ddt.rect_a(
-					(left + highlight_left, line_y), (highlight_width, gui.playlist_row_height),
+					(left + gui.highlight_left, line_y), (highlight_width, gui.playlist_row_height),
 					colours.row_select_highlight)
 
 				ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
@@ -29698,7 +29692,7 @@ class StandardPlaylist:
 					and tr.album == pctl.get_track(pctl.default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.get_track(pctl.default_playlist[track_position - 1]).parent_folder_path:
 				# Draw disc change line
 				ddt.rect(
-					(left + highlight_left, line_y + 0 * gui.scale, highlight_width,
+					(left + gui.highlight_left, line_y + 0 * gui.scale, highlight_width,
 					1 * gui.scale), colours.folder_line)
 
 			if not gui.set_mode:
@@ -30132,31 +30126,28 @@ class ArtBox:
 
 		# Input for album art
 		if target_track:
-
 			# Cycle images on click
+			if self.coll(gui.main_art_box) and inp.mouse_click is True and inp.key_focused == 0:
+				tauon.album_art_gen.cycle_offset(target_track)
 
-			if coll(gui.main_art_box) and inp.mouse_click is True and key_focused == 0:
-
-				album_art_gen.cycle_offset(target_track)
-
-				if pctl.mpris:
-					pctl.mpris.update(force=True)
+				if self.pctl.mpris:
+					self.pctl.mpris.update(force=True)
 
 		# Activate picture context menu on right click
 		if tight_border and gui.art_drawn_rect:
-			if inp.right_click and coll(gui.art_drawn_rect) and target_track:
-				picture_menu.activate(in_reference=target_track)
-		elif inp.right_click and coll(rect) and target_track:
-			picture_menu.activate(in_reference=target_track)
+			if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
+				self.tauon.picture_menu.activate(in_reference=target_track)
+		elif inp.right_click and self.coll(rect) and target_track:
+			self.tauon.picture_menu.activate(in_reference=target_track)
 
 		# Draw picture metadata
-		if showc is not None and coll(border) \
-			and rename_track_box.active is False \
-			and radiobox.active is False \
-			and pref_box.enabled is False \
+		if showc is not None and self.coll(border) \
+			and tauon.rename_track_box.active is False \
+			and tauon.radiobox.active is False \
+			and tauon.pref_box.enabled is False \
 			and gui.rename_playlist_box is False \
 			and gui.message_box is False \
-			and track_box is False \
+			and gui.track_box is False \
 			and gui.layer_focus == 0:
 
 			padding = 6 * gui.scale
@@ -30167,7 +30158,7 @@ class ArtBox:
 				xw = gui.art_drawn_rect[0] + gui.art_drawn_rect[2]
 				yh = gui.art_drawn_rect[1] + gui.art_drawn_rect[3]
 
-			art_metadata_overlay(xw, yh, showc)
+			self.tauon.art_metadata_overlay(xw, yh, showc)
 
 class ScrollBox:
 
@@ -30930,7 +30921,7 @@ class RadioBox:
 		if (self.coll(rect) and self.gui.level_2_click) or (self.inp.key_tab_press and self.radio_field_active == 2):
 			self.radio_field_active = 1
 			self.inp.key_tab_press = False
-		if not self.radio_field_title.text and not (self.radio_field_active == 1 and editline):
+		if not self.radio_field_title.text and not (self.radio_field_active == 1 and self.gui.editline):
 			self.ddt.text((x + 14 * self.gui.scale, yy), _("Name / Title"), self.colours.box_text_label, 312)
 		self.radio_field_title.draw(
 			x + 14 * self.gui.scale, yy, self.colours.box_input_text,
@@ -30948,7 +30939,7 @@ class RadioBox:
 			self.radio_field_active = 2
 			self.inp.key_tab_press = False
 
-		if not self.radio_field.text and not (self.radio_field_active == 2 and editline):
+		if not self.radio_field.text and not (self.radio_field_active == 2 and self.gui.editline):
 			self.ddt.text((x + 14 * self.gui.scale, yy), _("Raw Stream URL http://example.stream:1234"), self.colours.box_text_label, 312)
 		self.radio_field.draw(
 			x + 14 * self.gui.scale, yy, self.colours.box_input_text, active=self.radio_field_active == 2,
@@ -31425,7 +31416,7 @@ class RenamePlaylistBox:
 		# self.ddt.pretty_rect = None
 
 		# If enter or click outside of box: save and close
-		if self.inp.key_return_press or (self.inp.key_esc_press and len(editline) == 0) \
+		if self.inp.key_return_press or (self.inp.key_esc_press and len(self.gui.editline) == 0) \
 				or ((self.inp.mouse_click or self.inp.level_2_right_click) and not self.coll(rect)):
 			self.gui.rename_playlist_box = False
 
@@ -37727,7 +37718,7 @@ def link_activate(x, y, link_pa, click=None):
 			gui.cursor_want = 3
 		if click:
 			webbrowser.open(link_pa[2], new=2, autoraise=True)
-			track_box = True
+			gui.track_box = True
 
 def pixel_to_logical(x):
 	return round((x / window_size[0]) * logical_size[0])
@@ -42372,9 +42363,8 @@ def temp_copy_folder(ref):
 	transfer(ref, args=[1, 2])
 
 def activate_track_box(index: int):
-	global track_box
 	pctl.r_menu_index = index
-	track_box = True
+	gui.track_box = True
 	track_box_path_tool_timer.set()
 
 def menu_paste(position):
@@ -43104,10 +43094,9 @@ def rename_folders_disable_test(index: int) -> bool:
 	return pctl.get_track(index).is_network
 
 def rename_folders(index: int):
-	global track_box
 	global rename_index
 
-	track_box = False
+	gui.track_box = False
 	rename_index = index
 
 	if rename_folders_disable_test(index):
@@ -43497,8 +43486,7 @@ def launch_editor_disable_test(index: int):
 	return pctl.get_track(index).is_network
 
 def show_lyrics_menu(index: int):
-	global track_box
-	track_box = False
+	gui.track_box = False
 	enter_showcase_view(track_id=pctl.r_menu_index)
 	inp.mouse_click = False
 
@@ -44550,7 +44538,7 @@ def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in Pl
 	gui.search_index = 0
 	gui.column_d_click_on = -1
 	gui.search_error = False
-	if quick_search_mode:
+	if gui.quick_search_mode:
 		gui.force_search = True
 
 	# if pl_follow:
@@ -47780,7 +47768,7 @@ def display_you_heart(x: int, yy: int, just: int = 0) -> None:
 	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
 	gui.heart_fields.append(rect)
 	tauon.fields.add(rect, update_playlist_call)
-	if coll(rect) and not track_box:
+	if coll(rect) and not gui.track_box:
 		gui.pl_update += 1
 		w = ddt.get_text_w(_("You"), 13)
 		xx = (x - w) - 5 * gui.scale
@@ -47805,7 +47793,7 @@ def display_spot_heart(x: int, yy: int, just: int = 0) -> None:
 	rect = [x - 1 * gui.scale, yy - 4 * gui.scale, 15 * gui.scale, 17 * gui.scale]
 	gui.heart_fields.append(rect)
 	tauon.fields.add(rect, update_playlist_call)
-	if coll(rect) and not track_box:
+	if coll(rect) and not gui.track_box:
 		gui.pl_update += 1
 		w = ddt.get_text_w(_("Liked on Spotify"), 13)
 		xx = (x - w) - 5 * gui.scale
@@ -47832,7 +47820,7 @@ def display_friend_heart(x: int, yy: int, name: str, just: int = 0) -> None:
 	rect = [x - 1, yy - 4, 15 * gui.scale, 17 * gui.scale]
 	gui.heart_fields.append(rect)
 	tauon.fields.add(rect, update_playlist_call)
-	if coll(rect) and not track_box:
+	if coll(rect) and not gui.track_box:
 		gui.pl_update += 1
 		w = ddt.get_text_w(name, 13)
 		xx = (x - w) - 5 * gui.scale
@@ -48324,10 +48312,10 @@ def update_layout_do():
 		if gui.set_mode and window_size[0] < 600:
 			center_mode = False
 
-		highlight_left = 0
+		gui.highlight_left = 0
 		highlight_width = width
 
-		inset_left = highlight_left + 23 * gui.scale
+		inset_left = gui.highlight_left + 23 * gui.scale
 		inset_width = highlight_width - 32 * gui.scale
 
 		if gui.lsp and not gui.rsp:
@@ -48339,15 +48327,15 @@ def update_layout_do():
 
 		if center_mode:
 			if gui.set_mode:
-				highlight_left = int(pow((window_size[0] / gui.scale * 0.005), 2) * gui.scale)
+				gui.highlight_left = int(pow((window_size[0] / gui.scale * 0.005), 2) * gui.scale)
 			else:
-				highlight_left = int(pow((window_size[0] / gui.scale * 0.01), 2) * gui.scale)
+				gui.highlight_left = int(pow((window_size[0] / gui.scale * 0.01), 2) * gui.scale)
 
 			if window_size[0] < 600 * gui.scale:
-				highlight_left = 3 * gui.scale
+				gui.highlight_left = 3 * gui.scale
 
-			highlight_width -= highlight_left * 2
-			inset_left = highlight_left + 18 * gui.scale
+			highlight_width -= gui.highlight_left * 2
+			inset_left = gui.highlight_left + 18 * gui.scale
 			inset_width = highlight_width - 25 * gui.scale
 
 		if window_size[0] < 600 and gui.lsp:
@@ -48356,7 +48344,7 @@ def update_layout_do():
 		gui.tracklist_center_mode = center_mode
 		gui.tracklist_inset_left = inset_left
 		gui.tracklist_inset_width = inset_width
-		gui.tracklist_highlight_left = highlight_left
+		gui.tracklist_highlight_left = gui.highlight_left
 		gui.tracklist_highlight_width = highlight_width
 
 		if prefs.album_mode and gui.hide_tracklist_in_gallery:
@@ -48701,11 +48689,11 @@ def is_level_zero(include_menus: bool = True) -> bool:
 				return False
 
 	return not gui.rename_folder_box \
-		and not track_box \
+		and not gui.track_box \
 		and not rename_track_box.active \
 		and not radiobox.active \
 		and not pref_box.enabled \
-		and not quick_search_mode \
+		and not gui.quick_search_mode \
 		and not gui.rename_playlist_box \
 		and not search_over.active \
 		and not gui.box_over \
@@ -52068,8 +52056,6 @@ cargo = []
 # List of encodings to check for with the fix mojibake function
 encodings = ["cp932", "utf-8", "big5hkscs", "gbk"]  # These seem to be the most common for Japanese
 
-track_box = False
-
 transcode_state = ""
 
 taskbar_progress = True
@@ -52299,8 +52285,6 @@ album_h_gap = gui.album_h_gap
 album_v_slide_value = gui.album_v_slide_value
 time_last_save = 0 # TODO(Martin): Move
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
-editline = gui.editline
-quick_search_mode = gui.quick_search_mode
 new_playlist_cooldown = gui.new_playlist_cooldown
 
 # Playlist Panel
@@ -54552,8 +54536,6 @@ if reload_state:
 
 pctl.notify_update()
 
-key_focused = 0
-
 theme = get_theme_number(dirs, prefs.theme_name)
 
 if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
@@ -54599,11 +54581,11 @@ for menu in Menu.instances:
 	menu.w = max(w, menu.w)
 
 if gui.restore_showcase_view:
-	enter_showcase_view()
+	tauon.enter_showcase_view()
 if gui.restore_radio_view:
-	enter_radio_view()
+	tauon.enter_radio_view()
 
-# switch_playlist(len(pctl.multi_playlist) - 1)
+# pctl.switch_playlist(len(pctl.multi_playlist) - 1)
 
 sdl3.SDL_SetRenderTarget(renderer, overlay_texture_texture)
 
@@ -54622,7 +54604,7 @@ while y < 300:
 		x += block_size
 	y += block_size
 
-sync_target.text = prefs.sync_target
+tauon.sync_target.text = prefs.sync_target
 sdl3.SDL_SetRenderTarget(renderer, None)
 
 if msys:
@@ -54636,10 +54618,9 @@ for i, theme in enumerate(theme_files):
 	load_theme(c, Path(theme[0]))
 	pref_box.themes.append((c, theme[1], i + 1))
 
-pctl.total_playtime = star_store.get_total()
+pctl.total_playtime = tauon.star_store.get_total()
 
 # MAIN LOOP
-
 event = sdl3.SDL_Event()
 
 while pctl.running:
@@ -54647,7 +54628,6 @@ while pctl.running:
 	# time.sleep(100)
 
 	if inp.k_input:
-
 		keymaps.hits.clear()
 
 		inp.d_mouse_click = False
@@ -54675,14 +54655,14 @@ while pctl.running:
 		inp.key_end_press = False
 		inp.mouse_wheel = 0
 		pref_box.scroll = 0
-		new_playlist_cooldown = False
+		gui.new_playlist_cooldown = False
 		inp.input_text = ""
 		inp.level_2_enter = False
 
 		mouse_enter_window = False
 		gui.mouse_in_window = True
-		if key_focused:
-			key_focused -= 1
+		if inp.key_focused:
+			inp.key_focused -= 1
 
 	# f not inp.mouse_down:
 	inp.k_input = False
@@ -54771,9 +54751,9 @@ while pctl.running:
 					inp.key_return_press = True
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
 				if rt:
-					random_track()
+					tauon.random_track()
 				else:
-					toggle_gallery_keycontrol(always_exit=True)
+					tauon.toggle_gallery_keycontrol(always_exit=True)
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_NORTH:
 				if rt:
 					pctl.advance(rr=True)
@@ -54782,7 +54762,7 @@ while pctl.running:
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_EAST:
 				if rt:
 					pctl.revert()
-				elif is_level_zero():
+				elif tauon.is_level_zero():
 					pctl.stop()
 				else:
 					inp.key_esc_press = True
@@ -54793,13 +54773,13 @@ while pctl.running:
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 				if gui.album_tab_mode:
 					inp.key_left_press = True
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(1)
+				elif tauon.is_level_zero() or gui.quick_search_mode:
+					pctl.cycle_playlist_pinned(1)
 			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 				if gui.album_tab_mode:
 					inp.key_right_press = True
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(-1)
+				elif tauon.is_level_zero() or gui.quick_search_mode:
+					pctl.cycle_playlist_pinned(-1)
 
 		if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not msys:
 			reset_render = True
@@ -54871,7 +54851,6 @@ while pctl.running:
 			#logging.info(target)
 			drop_file(target)
 
-
 		elif event.type == 8192:
 			gui.pl_update = 1
 			gui.update += 2
@@ -54887,20 +54866,18 @@ while pctl.running:
 		elif event.type == sdl3.SDL_EVENT_TEXT_EDITING:
 			power += 5
 			#logging.info("edit text")
-			editline = event.edit.text
-			#logging.info(editline)
-			editline = editline.decode("utf-8", "ignore")
+			gui.editline = event.edit.text
+			#logging.info(gui.editline)
+			gui.editline = gui.editline.decode("utf-8", "ignore")
 			inp.k_input = True
 			gui.update += 1
 
 		elif event.type == sdl3.SDL_EVENT_MOUSE_MOTION:
-
 			inp.mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
 			inp.mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
 			mouse_moved = True
 			gui.mouse_unknown = False
 		elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_DOWN:
-
 			inp.k_input = True
 			focused = True
 			power += 5
@@ -54924,7 +54901,7 @@ while pctl.running:
 
 				inp.mouse_down = True
 			elif event.button.button == sdl3.SDL_BUTTON_MIDDLE:
-				if not search_over.active:
+				if not tauon.search_over.active:
 					inp.middle_click = True
 				gui.update += 1
 			elif event.button.button == sdl3.SDL_BUTTON_X1:
@@ -54945,8 +54922,7 @@ while pctl.running:
 
 				inp.mouse_down = False
 				gui.update += 1
-		elif event.type == sdl3.SDL_EVENT_KEY_DOWN and key_focused == 0:
-
+		elif event.type == sdl3.SDL_EVENT_KEY_DOWN and inp.key_focused == 0:
 			inp.k_input = True
 			power += 5
 			gui.update += 2
@@ -54977,9 +54953,9 @@ while pctl.running:
 			elif event.key.key == sdl3.SDLK_X:
 				inp.key_x_press = True
 
-			if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(editline) == 0:
+			if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0:
 				inp.key_return_press = True
-			elif event.key.key == sdl3.SDLK_KP_ENTER and len(editline) == 0:
+			elif event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0:
 				inp.key_return_press = True
 			elif event.key.key == sdl3.SDLK_TAB:
 				inp.key_tab_press = True
@@ -55017,10 +54993,9 @@ while pctl.running:
 					inp.key_ctrl_down = True
 				else:
 					inp.key_meta = True
-					key_focused = 1
+					inp.key_focused = 1
 
 		elif event.type == sdl3.SDL_EVENT_KEY_UP:
-
 			inp.k_input = True
 			power += 5
 			gui.update += 2
@@ -55043,7 +55018,7 @@ while pctl.running:
 					inp.key_ctrl_down = False
 				else:
 					inp.key_meta = False
-					key_focused = 1
+					inp.key_focused = 1
 
 		elif event.type == sdl3.SDL_EVENT_TEXT_INPUT:
 			inp.k_input = True
@@ -55073,7 +55048,7 @@ while pctl.running:
 				mouse_enter_window = True
 				focused = True
 				gui.lowered = False
-				key_focused = 1
+				inp.key_focused = 1
 				inp.mouse_down = False
 				gui.album_tab_mode = False
 				gui.pl_update = 1
@@ -55081,7 +55056,7 @@ while pctl.running:
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_LOST:
 				close_all_menus()
-				key_focused = 1
+				inp.key_focused = 1
 				gui.update += 1
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
@@ -55137,7 +55112,6 @@ while pctl.running:
 				# tauon.thread_manager.sleep()
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_RESTORED:
-
 				gui.lowered = False
 				gui.maximized = False
 				gui.pl_update = 1
@@ -55281,12 +55255,12 @@ while pctl.running:
 
 	gui.pl_update = min(gui.pl_update, 2)
 
-	new_playlist_cooldown = False
+	gui.new_playlist_cooldown = False
 
 	if prefs.auto_extract and prefs.monitor_downloads:
-		dl_mon.scan()
+		tauon.dl_mon.scan()
 
-	if inp.mouse_down and not coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
+	if inp.mouse_down and not tauon.coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
 		#logging.info(sdl3.SDL_GetMouseState(None, None))
 		if sdl3.SDL_GetGlobalMouseState(None, None) == 0:
 			inp.mouse_down = False
@@ -55310,7 +55284,7 @@ while pctl.running:
 			inp.last_click_location = copy.deepcopy(inp.click_location)
 			inp.click_location = copy.deepcopy(inp.mouse_position)
 
-		if key_focused != 0:
+		if inp.key_focused != 0:
 			keymaps.hits.clear()
 
 			# inp.d_mouse_click = False
@@ -55377,26 +55351,25 @@ while pctl.running:
 			gui.delay_frame(0.02)
 			inp.k_input = True
 
-	if inp.k_input and key_focused == 0:
-
+	if inp.k_input and inp.key_focused == 0:
 		if keymaps.hits:
 			n = 1
 			while n < 10:
 				if keymaps.test(f"jump-playlist-{n}"):
 					if len(pctl.multi_playlist) > n - 1:
-						switch_playlist(n - 1)
+						pctl.switch_playlist(n - 1)
 				n += 1
 
 			if keymaps.test("cycle-playlist-left"):
 				if gui.album_tab_mode and inp.key_left_press:
 					pass
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(1)
+				elif tauon.is_level_zero() or gui.quick_search_mode:
+					pctl.cycle_playlist_pinned(1)
 			if keymaps.test("cycle-playlist-right"):
 				if gui.album_tab_mode and inp.key_right_press:
 					pass
-				elif is_level_zero() or quick_search_mode:
-					cycle_playlist_pinned(-1)
+				elif tauon.is_level_zero() or gui.quick_search_mode:
+					pctl.cycle_playlist_pinned(-1)
 
 			if keymaps.test("toggle-console"):
 				console.toggle()
@@ -55418,8 +55391,8 @@ while pctl.running:
 			if keymaps.test("find-playing-artist"):
 				# standard_size()
 				if len(pctl.track_queue) > 0:
-					quick_search_mode = True
-					search_text.text = ""
+					gui.quick_search_mode = True
+					tauon.search_over.search_text.text = ""
 					inp.input_text = pctl.playing_object().artist
 
 			if keymaps.test("show-encode-folder"):
@@ -55448,7 +55421,7 @@ while pctl.running:
 
 		# Disable keys for text cursor control
 		if not gui.rename_folder_box and not rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not trans_edit_box.active:
-			if not quick_search_mode and not search_over.active:
+			if not gui.quick_search_mode and not search_over.active:
 				if prefs.album_mode and gui.album_tab_mode \
 						and not inp.key_ctrl_down \
 						and not inp.key_meta \
@@ -55504,7 +55477,7 @@ while pctl.running:
 				and not gui.rename_folder_box \
 				and not gui.rename_playlist_box and not search_over.active and not gui.box_over and not trans_edit_box.active:
 
-			if quick_search_mode:
+			if gui.quick_search_mode:
 				if keymaps.test("add-to-queue") and pctl.selected_ready():
 					add_selected_to_queue()
 					inp.input_text = ""
@@ -55689,12 +55662,12 @@ while pctl.running:
 		else:
 			gui.level_2_click = False
 
-		if track_box and inp.mouse_click:
+		if gui.track_box and inp.mouse_click:
 			w = 540
 			h = 240
 			x = int(window_size[0] / 2) - int(w / 2)
 			y = int(window_size[1] / 2) - int(h / 2)
-			if coll([x, y, w, h]):
+			if tauon.coll([x, y, w, h]):
 				inp.mouse_click = False
 				gui.level_2_click = True
 
@@ -55702,7 +55675,6 @@ while pctl.running:
 			inp.level_2_right_click = True
 
 		if pref_box.enabled:
-
 			if pref_box.inside():
 				if inp.mouse_click:  # and not gui.message_box:
 					pref_box.click = True
@@ -55748,17 +55720,16 @@ while pctl.running:
 				logging.debug("Position changed by page key")
 				gui.shift_selection.clear()
 
-		if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
-
+		if gui.quick_search_mode is False and tauon.rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
 			if keymaps.test("info-playing"):
 				if pctl.selected_in_playlist < len(pctl.default_playlist):
 					pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
-					track_box = True
+					gui.track_box = True
 
 			if keymaps.test("info-show"):
 				if pctl.selected_in_playlist < len(pctl.default_playlist):
 					pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
-					track_box = True
+					gui.track_box = True
 
 			# These need to be disabled when text fields are active
 			if not tauon.search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not tauon.trans_edit_box.active:
@@ -55827,7 +55798,7 @@ while pctl.running:
 
 				if keymaps.test("toggle-shuffle"):
 					# pctl.random_mode ^= True
-					toggle_random()
+					tauon.toggle_random()
 
 				if keymaps.test("goto-playing"):
 					pctl.show_current()
@@ -55836,13 +55807,13 @@ while pctl.running:
 						pctl.show_current(index=pctl.track_queue[pctl.queue_step - 1])
 
 				if keymaps.test("toggle-repeat"):
-					toggle_repeat()
+					tauon.toggle_repeat()
 
 				if keymaps.test("random-track"):
-					random_track()
+					tauon.random_track()
 
 				if keymaps.test("random-album"):
-					random_album()
+					tauon.random_album()
 
 				if keymaps.test("opacity-up"):
 					prefs.window_opacity += .05
@@ -56147,7 +56118,7 @@ while pctl.running:
 			click_time = n_click_time
 
 			# Don't register bottom level click when closing message box
-			if gui.message_box and pref_box.enabled and not key_focused and not tauon.coll(tauon.message_box.get_rect()):
+			if gui.message_box and pref_box.enabled and not inp.key_focused and not tauon.coll(tauon.message_box.get_rect()):
 				inp.mouse_click = False
 				gui.message_box = False
 
@@ -57809,7 +57780,7 @@ while pctl.running:
 
 			tauon.fields.add(gui.scroll_hide_box)
 			if scroll_hide_timer.get() < 0.9 or ((coll(
-					gui.scroll_hide_box) or scroll_hold or quick_search_mode) and \
+					gui.scroll_hide_box) or scroll_hold or gui.quick_search_mode) and \
 					not menu_is_open() and \
 					not pref_box.enabled and \
 					not gui.rename_playlist_box \
@@ -57829,13 +57800,12 @@ while pctl.running:
 						sbl = 105 * gui.scale
 
 					tauon.fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
-					if coll((x, top, 28 * gui.scale, ey - top)) and (
+					if tauon.coll((x, top, 28 * gui.scale, ey - top)) and (
 							inp.mouse_down or inp.right_click) \
 							and coll_point(inp.click_location, (x, top, 28 * gui.scale, ey - top)):
 
 						gui.pl_update = 1
 						if inp.right_click:
-
 							sbp = inp.mouse_position[1] - int(sbl / 2)
 							if sbp + sbl > ey:
 								sbp = ey - sbl
@@ -57978,7 +57948,7 @@ while pctl.running:
 						and gui.rename_playlist_box is False \
 						and gui.message_box is False \
 						and pref_box.enabled is False \
-						and track_box is False \
+						and gui.track_box is False \
 						and not gui.rename_folder_box \
 						and not Menu.active \
 						and not artist_info_scroll.held:
@@ -58005,10 +57975,10 @@ while pctl.running:
 				if inp.mouse_click or inp.right_click or inp.mouse_wheel:
 					gui.preview_artist = ""
 
-			if track_box:
+			if gui.track_box:
 				if inp.key_return_press or inp.right_click or inp.key_esc_press or inp.backspace_press or keymaps.test(
 						"quick-find"):
-					track_box = False
+					gui.track_box = False
 
 					inp.key_return_press = False
 
@@ -58060,9 +58030,8 @@ while pctl.running:
 				ddt.rect_a((x, y), (w, h), colours.box_background)
 				ddt.text_background_colour = colours.box_background
 
-				if inp.mouse_click and not coll([x, y, w, h]):
-					track_box = False
-
+				if inp.mouse_click and not tauon.coll([x, y, w, h]):
+					gui.track_box = False
 				else:
 					art_size = int(115 * gui.scale)
 
@@ -58400,7 +58369,7 @@ while pctl.running:
 					if tc.lyrics != "":
 						if pctl.draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
 							prefs.show_lyrics_showcase = True
-							track_box = False
+							gui.track_box = False
 							tauon.enter_showcase_view(track_id=pctl.r_menu_index)
 							inp.mouse_click = False
 
@@ -58432,7 +58401,7 @@ while pctl.running:
 									gui.cursor_want = 3
 								if inp.mouse_click:
 									webbrowser.open(link_pa[2], new=2, autoraise=True)
-									track_box = True
+									gui.track_box = True
 
 						elif comment_mode == 1:
 							ddt.text(
@@ -58576,30 +58545,29 @@ while pctl.running:
 
 			search_over.render()
 
-			if keymaps.test("quick-find") and quick_search_mode is False:
+			if keymaps.test("quick-find") and gui.quick_search_mode is False:
 				if not search_over.active and not gui.box_over:
-					quick_search_mode = True
+					gui.quick_search_mode = True
 				if search_clear_timer.get() > 3:
 					search_text.text = ""
 				inp.input_text = ""
 			elif (keymaps.test("quick-find") or (
-					inp.key_esc_press and len(editline) == 0)) or (inp.mouse_click and quick_search_mode is True):
-				quick_search_mode = False
+					inp.key_esc_press and len(gui.editline) == 0)) or (inp.mouse_click and gui.quick_search_mode is True):
+				gui.quick_search_mode = False
 				search_text.text = ""
 
-			# if (key_backslash_press or (inp.key_ctrl_down and key_f_press)) and quick_search_mode is False:
-			#     if not search_over.active:
-			#         quick_search_mode = True
-			#     if search_clear_timer.get() > 3:
-			#         search_text.text = ""
-			#     inp.input_text = ""
+			# if (key_backslash_press or (inp.key_ctrl_down and key_f_press)) and gui.quick_search_mode is False:
+			# 	if not tauon.search_over.active:
+			# 		gui.quick_search_mode = True
+			# 	if tauon.search_clear_timer.get() > 3:
+			# 		search_over.search_text.text = ""
+			# 	input_text = ""
 			# elif ((key_backslash_press or (inp.key_ctrl_down and key_f_press)) or (
-			#             inp.key_esc_press and len(editline) == 0)) or input.mouse_click and quick_search_mode is True:
-			#     quick_search_mode = False
-			#     search_text.text = ""
+			# 		inp.key_esc_press and len(gui.editline) == 0)) or input.mouse_click and gui.quick_search_mode is True:
+			# 	gui.quick_search_mode = False
+			# 	search_over.search_text.text = ""
 
-			if quick_search_mode is True:
-
+			if gui.quick_search_mode is True:
 				rect2 = [0, window_size[1] - 85 * gui.scale, 420 * gui.scale, 25 * gui.scale]
 				rect = [0, window_size[1] - 125 * gui.scale, 420 * gui.scale, 65 * gui.scale]
 				rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
@@ -58617,7 +58585,7 @@ while pctl.running:
 					gui.search_index = -1
 
 				if inp.backspace_press and search_text.text == "":
-					quick_search_mode = False
+					gui.quick_search_mode = False
 
 				if len(search_text.text) == 0:
 					gui.search_error = False
@@ -58702,7 +58670,7 @@ while pctl.running:
 									pctl.active_playlist_viewing].title + "\" f\"" + search_text.text + "\""
 								switch_playlist(len(pctl.multi_playlist) - 1)
 						search_text.text = ""
-						quick_search_mode = False
+						gui.quick_search_mode = False
 
 				if (len(inp.input_text) > 0 and not gui.search_error) or inp.key_down_press is True or inp.backspace_press \
 						or gui.force_search:
