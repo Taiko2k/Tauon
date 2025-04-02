@@ -517,6 +517,7 @@ class GuiVar:
 			["Artist", 156, False], ["Title", 188, False], ["T", 40, True], ["Album", 153, False],
 			["P", 28, True], ["Starline", 86, True], ["Date", 48, True], ["Codec", 55, True],
 			["Time", 53, True]]
+		self.pl_box_h: int = 0
 
 		for item in self.pl_st:
 			item[1] = item[1] * self.scale
@@ -33523,6 +33524,11 @@ class QueueBox:
 			self.ddt.rect(box_rect, [255, 255, 255, 2])
 			self.ddt.text_background_colour = alpha_blend([255, 255, 255, 2], self.ddt.text_background_colour)
 
+		if self.prefs.show_playlist_list:  # draw top separator line
+			rect = (0, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
+			self.ddt.rect(rect, [0, 0, 0, 255])
+			self.ddt.rect(rect, sep_colour)
+
 		# if y < self.gui.panelY * 2:
 		#     self.ddt.rect((x, y - 3 * self.gui.scale, w, 30 * self.gui.scale), self.colours.queue_background, True)
 
@@ -44627,9 +44633,9 @@ def main(holder: Holder) -> None:
 					full = (window_size[1] - (gui.panelY + gui.panelBY))
 					half = int(round(full / 2))
 
-					pl_box_h = full
+					gui.pl_box_h = full
 
-					panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
+					panel_rect = (0, gui.panelY, gui.lspw, gui.pl_box_h)
 					tauon.fields.add(panel_rect)
 
 					if gui.force_side_on_drag and not inp.quick_drag and not tauon.coll(panel_rect):
@@ -44646,7 +44652,7 @@ def main(holder: Holder) -> None:
 							tauon.update_layout_do()
 
 					if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
-						tauon.tree_view_box.render(0, gui.panelY, gui.lspw, pl_box_h)
+						tauon.tree_view_box.render(0, gui.panelY, gui.lspw, gui.pl_box_h)
 					elif prefs.left_panel_mode == "artist list" and not gui.force_side_on_drag:
 						tauon.artist_list_box.render(*panel_rect)
 					else:
@@ -44657,27 +44663,27 @@ def main(holder: Holder) -> None:
 
 						if pctl.force_queue or preview_queue or not prefs.hide_queue:
 							if h_estimate < half:
-								pl_box_h = h_estimate
+								gui.pl_box_h = h_estimate
 							else:
-								pl_box_h = half
+								gui.pl_box_h = half
 
 							if preview_queue:
-								pl_box_h = int(round(full * 5 / 6))
+								gui.pl_box_h = int(round(full * 5 / 6))
 
 						if prefs.left_panel_mode != "queue":
-							tauon.playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+							tauon.playlist_box.draw(0, gui.panelY, gui.lspw, gui.pl_box_h)
 						else:
-							pl_box_h = 0
+							gui.pl_box_h = 0
 
 						if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
-							tauon.queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+							tauon.queue_box.draw(0, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 						elif prefs.left_panel_mode == "queue":
 							text = _("Queue is Empty")
-							rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+							rect = (0, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 							ddt.rect(rect, colours.queue_background)
 							ddt.text_background_colour = colours.queue_background
 							ddt.text(
-								(0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2),
+								(0 + (gui.lspw // 2), gui.panelY + gui.pl_box_h + 15 * gui.scale, 2),
 								text, alpha_mod(colours.index_text, 200), 212)
 
 				# ------------------------------------------------
