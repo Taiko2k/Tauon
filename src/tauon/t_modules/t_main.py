@@ -40859,6 +40859,8 @@ showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 
 center_info_menu.add(MenuItem(_("Search for Lyrics"), get_lyric_wiki, search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 center_info_menu.add(MenuItem(_("Toggle Lyrics"), toggle_lyrics, toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+center_info_menu.add(MenuItem("Toggle synced", toggle_synced_lyrics, toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
 center_info_menu.add_sub(_("Misc…"), 150)
 center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), show_sub_search, pass_ref=True))
 center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, paste_lyrics_deco, pass_ref=True))
