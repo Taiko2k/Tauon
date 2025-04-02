@@ -1651,7 +1651,8 @@ class PlayerCtl:
 		self.b_time: float = 0
 		# self.playlist_backup = []
 		self.active_replaygain = 0
-		self.auto_stop = False
+		self.stop_mode = 0
+		self.stop_ref = None
 
 		self.record_stream = False
 		self.record_title = ""
@@ -2641,7 +2642,16 @@ class PlayerCtl:
 
 	def jump(self, index: int, pl_position: int | None = None, jump: bool = True) -> None:
 		self.lfm_scrobbler.start_queue()
-		self.auto_stop = False
+		if self.stop_mode == 1:  # Disable auto stop track
+			self.stop_mode = 0
+		if self.stop_mode == 2 and self.pctl.playing_state != 0:  # Disable auto stop album if album different
+			tr = self.pctl.get_track(index)
+			if (tr.parent_folder_path, tr.album) != self.stop_ref:
+				self.stop_mode = 0
+				self.stop_ref = None
+		if self.stop_mode == 4:  # Assign new current album for stopping
+			tr = self.pctl.get_track(index)
+			self.stop_ref = (tr.parent_folder_path, tr.album)
 
 		if self.force_queue and not self.pause_queue:
 			if self.force_queue[0].uuid_int == 1: # TODO(Martin): How can the UUID be 1 when we're doing a random on 1-1m except for massive chance? Is that the point?
@@ -2908,6 +2918,9 @@ class PlayerCtl:
 
 			# If the queue is not empty, play?
 			elif len(self.track_queue) > 0:
+				if self.stop_mode == 4:  # Assign new current album for stopping
+					tr = self.pctl.playing_object()
+					self.stop_ref = (tr.parent_folder_path, tr.album)
 				self.play_target()
 
 		self.render_playlist()
@@ -3016,14 +3029,36 @@ class PlayerCtl:
 
 			pp = self.playing_playlist()
 
-			if self.auto_stop:  # and not self.force_queue and not (self.force_queue and self.pause_queue):
-				self.stop(run=True)
-				if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
-					self.advance(play=False)
-				self.gui.update += 2
-				self.auto_stop = False
+			stopped = False
+			if self.stop_mode > 0:  # and not self.force_queue and not (self.force_queue and self.pause_queue):
+				if self.stop_mode == 1:
+					self.stop(run=True)
+					self.stop_mode = 0
+					stopped = True
+				if self.stop_mode == 2:
+					tr = self.playing_object()
+					i = self.advance(dry=True)
+					tr2 = self.get_track(i)
+					if (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
+						self.stop(run=True)
+						self.stop_mode = 0
+						stopped = True
+				if self.stop_mode == 3:
+					self.stop(run=True)
+					stopped = True
+				if self.stop_mode == 4:
+					i = self.advance(dry=True)
+					tr2 = self.get_track(i)
+					if self.stop_ref != (tr2.parent_folder_path, tr2.album):
+						self.stop(run=True)
+						stopped = True
+				if stopped is True:
+					if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
+						self.advance(play=False)
+					self.gui.update += 2
+					return
 
-			elif self.force_queue and not self.pause_queue:
+			if self.force_queue and not self.pause_queue:
 				id = self.advance(end=True, quiet=True, dry=True)
 				if id is not None:
 					self.start_commit(id)
@@ -3316,9 +3351,9 @@ class PlayerCtl:
 					del self.force_queue[0]
 
 					if q.auto_stop:
-						self.auto_stop = True
+						self.stop_mode = 1
 					if self.prefs.stop_end_queue and not self.force_queue:
-						self.auto_stop = True
+						self.stop_mode = 1
 
 					if self.queue_box.scroll_position > 0:
 						self.queue_box.scroll_position -= 1
@@ -3350,9 +3385,9 @@ class PlayerCtl:
 					self.play_target(jump=not end)
 				del self.force_queue[0]
 				if q.auto_stop:
-					self.auto_stop = True
+					self.stop_mode = 1
 				if self.prefs.stop_end_queue and not self.force_queue:
-					self.auto_stop = True
+					self.stop_mode = 1
 				if self.queue_box.scroll_position > 0:
 					self.queue_box.scroll_position -= 1
 
@@ -5540,6 +5575,7 @@ class Tauon:
 
 		self.cancel_menu           = Menu(self, 100)
 		self.extra_menu            = Menu(self, 175, show_icons=True)
+		self.stop_menu             = Menu(self, 175, show_icons=False)
 		self.shuffle_menu          = Menu(self, 120)
 		self.repeat_menu           = Menu(self, 120)
 		self.tab_menu              = Menu(self, 160, show_icons=True)
@@ -7131,7 +7167,7 @@ class Tauon:
 		self.pctl.force_queue.append(queue_object)
 		self.queue_timer_set(queue_object=queue_object)
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 
 	def add_album_to_queue_fc(self, ref: int) -> None:
 		playing_object = self.pctl.playing_object()
@@ -7172,7 +7208,7 @@ class Tauon:
 		if queue_item:
 			self.queue_timer_set(queue_object=queue_item)
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 
 	def cancel_import(self) -> None:
 		if self.transcode_list:
@@ -9806,12 +9842,12 @@ class Tauon:
 		self.pctl.force_queue.append(queue_item_gen(ref, self.pctl.r_menu_position, self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
 		self.queue_timer_set()
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 
 	def add_selected_to_queue(self) -> None:
 		self.gui.pl_update += 1
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 		if self.gui.album_tab_mode:
 			self.add_album_to_queue(self.pctl.default_playlist[self.get_album_info(self.pctl.selected_in_playlist)[1][0]], self.pctl.selected_in_playlist)
 			self.queue_timer_set()
@@ -9824,7 +9860,7 @@ class Tauon:
 
 	def add_selected_to_queue_multi(self) -> None:
 		if self.prefs.stop_end_queue:
-			self.pctl.auto_stop = False
+			self.pctl.stop_mode = 0
 		for index in self.gui.shift_selection:
 			self.pctl.force_queue.append(
 				queue_item_gen(self.pctl.default_playlist[index],
@@ -10915,6 +10951,27 @@ class Tauon:
 
 	def stop(self) -> None:
 		self.pctl.stop()
+
+	def stop_mode_off(self) -> None:
+		self.pctl.stop_mode = 0
+		self.pctl.stop_ref = None
+
+	def stop_mode_track(self) -> None:
+		self.pctl.stop_mode = 1
+		self.pctl.stop_ref = None
+
+	def stop_mode_album(self) -> None:
+		self.pctl.stop_mode = 2
+
+	def stop_mode_track_persist(self) -> None:
+		self.pctl.stop_mode = 3
+		self.pctl.stop_ref = None
+
+	def stop_mode_album_persist(self) -> None:
+		tr = self.pctl.playing_object()
+		if tr:
+			self.pctl.stop_mode = 4
+			self.pctl.stop_ref = (tr.parent_folder_path, tr.album)
 
 	def random_track(self) -> None:
 		playlist = self.pctl.multi_playlist[self.pctl.active_playlist_playing].playlist_ids
@@ -27596,7 +27653,7 @@ class BottomBarType1:
 			if pctl.playing_state == 1:
 				play_colour = colours.media_buttons_active
 
-			if pctl.auto_stop:
+			if pctl.stop_mode > 0:
 				stop_colour = colours.media_buttons_active
 
 			if pctl.playing_state == 2 or (tauon.spot_ctl.coasting and tauon.spot_ctl.paused):
@@ -27662,7 +27719,9 @@ class BottomBarType1:
 				if inp.mouse_click:
 					pctl.stop()
 				if inp.right_click:
-					pctl.auto_stop ^= True
+					#pctl.auto_stop ^= True
+					tauon.stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
+				#tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 				tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
@@ -28178,7 +28237,7 @@ class BottomBarType_ao1:
 			if self.pctl.playing_state == 1:
 				play_colour = self.colours.media_buttons_active
 
-			if self.pctl.auto_stop:
+			if self.pctl.stop_mode > 0:
 				stop_colour = self.colours.media_buttons_active
 
 			if self.pctl.playing_state == 2:
@@ -29164,7 +29223,7 @@ class StandardPlaylist:
 									i += 1
 								tauon.queue_timer_set(plural=True)
 								if prefs.stop_end_queue:
-									pctl.auto_stop = False
+									pctl.stop_mode = 0
 
 							else:  # Add as grouped album
 								self.tauon.add_album_to_queue(track_id, track_position)
@@ -29305,7 +29364,7 @@ class StandardPlaylist:
 				gui.pl_update += 1
 				tauon.queue_timer_set()
 				if prefs.stop_end_queue:
-					pctl.auto_stop = False
+					pctl.stop_mode = 0
 
 			# Deselect multiple if one clicked on and not dragged (mouse up is probably a bit of a hacky way of doing it)
 			if len(gui.shift_selection) > 1 and inp.mouse_up and line_over and not inp.key_shift_down and not inp.key_ctrl_down and point_proximity_test(
@@ -41026,6 +41085,12 @@ def main(holder: Holder) -> None:
 
 	extra_menu      = tauon.extra_menu
 
+	tauon.stop_menu.add(MenuItem(_("Always stop after album"), tauon.stop_mode_album_persist))
+	tauon.stop_menu.add(MenuItem(_("Always stop after track"), tauon.stop_mode_track_persist))
+	tauon.stop_menu.add(MenuItem(_("Stop after album"), tauon.stop_mode_album))
+	tauon.stop_menu.add(MenuItem(_("Stop after track"), tauon.stop_mode_track))
+	tauon.stop_menu.add(MenuItem(_("Continue Play"), tauon.stop_mode_off))
+
 	window_menu.add(MenuItem(_("Minimize"), tauon.do_minimize_button))
 	window_menu.add(MenuItem(_("Maximize"), tauon.do_maximize_button))
 	window_menu.add(MenuItem(_("Exit"),     tauon.do_exit_button))
@@ -43421,7 +43486,7 @@ def main(holder: Holder) -> None:
 																pctl.active_playlist_viewing)))
 													tauon.queue_timer_set(plural=True)
 													if prefs.stop_end_queue:
-														pctl.auto_stop = False
+														pctl.stop_mode = 0
 												else:
 													# Add to queue grouped
 													tauon.add_album_to_queue(pctl.default_playlist[tauon.album_dex[album_on]])
