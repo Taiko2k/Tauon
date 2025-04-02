@@ -6469,7 +6469,7 @@ class TimedLyricsRen:
 			bg = (bg[0],bg[1], bg[2], 255)
 			font_size = 15
 			spacing = round(17 * gui.scale)
-			ddt.rect((window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - gui.panelY - gui.panelBY - l_panel_h), bg)
+			ddt.rect((window_size[0] - gui.rspw, gui.panelY, gui.rspw, h), bg)
 		else:
 			bg = colours.playlist_panel_background
 			font_size = 17
