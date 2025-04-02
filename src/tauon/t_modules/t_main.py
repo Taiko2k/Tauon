@@ -438,7 +438,7 @@ class GuiVar:
 		self.album_v_gap:       float = 66
 		self.album_h_gap:       float = 30
 		self.album_v_slide_value: int = 50
-		self.album_scroll_px = self.album_v_slide_value # TODO(Martin): This looks weird, do we really need both? They should always have the same value no?
+		self.album_scroll_px = self.album_v_slide_value
 		# Playlist Panel
 		self.pl_rect = (2, 12, 10, 10)
 
@@ -1019,7 +1019,7 @@ class Input:
 	def __init__(self, gui: GuiVar) -> None:
 		self.gui = gui
 		self.ab_click:            bool = False
-		self.d_mouse_click:       bool = False
+		self.d_mouse_click:       bool = False # Double click
 		self.mouse_click:         bool = False
 		self.middle_click:        bool = False
 		self.right_click:         bool = False
@@ -29264,33 +29264,33 @@ class StandardPlaylist:
 						# Add folder to selection if clicked
 						if inp.mouse_click \
 						and not (prefs.scroll_enable and inp.mouse_position[0] < 30 * gui.scale) and not gui.side_drag:
-							inp.quick_drag = True
+							self.inp.quick_drag = True
 							gui.set_drag_source()
 
-							if not tauon.pl_is_locked(pctl.active_playlist_viewing) or inp.key_shift_down:
-								gui.playlist_hold = True
+							if not tauon.pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
+								self.gui.playlist_hold = True
 
 							gui.selection_stage = 1
 							temp = tauon.get_folder_tracks_local(track_position)
 							pctl.selected_in_playlist = track_position
 
-							if len(gui.shift_selection) > 0 and inp.key_shift_down:
-								if track_position < gui.shift_selection[0]:
+							if len(self.gui.shift_selection) > 0 and self.inp.key_shift_down:
+								if track_position < self.gui.shift_selection[0]:
 									for item in reversed(temp):
-										if item not in gui.shift_selection:
-											gui.shift_selection.insert(0, item)
+										if item not in self.gui.shift_selection:
+											self.gui.shift_selection.insert(0, item)
 								else:
 									for item in temp:
-										if item not in gui.shift_selection:
-											gui.shift_selection.append(item)
+										if item not in self.gui.shift_selection:
+											self.gui.shift_selection.append(item)
 
 							else:
-								gui.shift_selection = copy.copy(temp)
+								self.gui.shift_selection = copy.copy(temp)
 
 					# Should draw drag highlight?
 
-					if inp.mouse_down and gui.playlist_hold and self.coll(input_box) and track_position not in gui.shift_selection:
-						if len(gui.shift_selection) < 2 and not inp.key_shift_down:
+					if self.inp.mouse_down and self.gui.playlist_hold and self.coll(input_box) and track_position not in self.gui.shift_selection:
+						if len(self.gui.shift_selection) < 2 and not self.inp.key_shift_down:
 							pass
 						else:
 							drag_highlight = True
@@ -29385,7 +29385,7 @@ class StandardPlaylist:
 
 			# Begin drag single track
 			if inp.mouse_click and line_hit and not gui.side_drag:
-				inp.quick_drag = True
+				self.inp.quick_drag = True
 				gui.set_drag_source()
 
 			# Shift Move Selection
@@ -30025,7 +30025,7 @@ class StandardPlaylist:
 									total += 2
 								ratio = total / (n_track.length - 1)
 
-							text = str(str(int(ratio)))
+							text = str(int(ratio))
 							if text == "0":
 								text = ""
 							colour = colours.index_text
@@ -30097,14 +30097,14 @@ class StandardPlaylist:
 		gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
 		if (inp.right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * len(list_items) <
-				inp.mouse_position[1] < window_size[1] - 55 and width + left > inp.mouse_position[0] > gui.playlist_left + 15):
+				self.inp.mouse_position[1] < window_size[1] - 55 and width + left > self.inp.mouse_position[0] > gui.playlist_left + 15):
 			tauon.playlist_menu.activate()
 
 		sdl3.SDL_SetRenderTarget(self.renderer, gui.main_texture)
 		sdl3.SDL_RenderTexture(self.renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
 
-		if inp.mouse_down is False:
-			gui.playlist_hold = False
+		if self.inp.mouse_down is False:
+			self.gui.playlist_hold = False
 
 		ddt.pretty_rect = None
 		ddt.alpha_bg = False
@@ -33255,6 +33255,7 @@ class QueueBox:
 		self.gui         = tauon.gui
 		self.inp         = tauon.inp
 		self.coll        = tauon.coll
+		self.prefs       = tauon.prefs
 		self.colours     = tauon.colours
 		self.window_size = tauon.window_size
 		self.queue_menu  = tauon.queue_menu
@@ -35116,15 +35117,14 @@ class Showcase:
 
 				timed_ready = self.prefs.prefer_synced_lyrics
 
-			#if self.prefs.guitar_chords and track.title and self.prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
-			#	if not guitar_chords.auto_scroll:
-			#		if draw.button(
-			#			_("Auto-Scroll"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
-			#			text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-			#			background_highlight_colour=bfg):
-			#			guitar_chords.auto_scroll = True
-
-			if True and self.prefs.show_lyrics_showcase and timed_ready:
+			if self.prefs.guitar_chords and track.title and self.prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
+				if not guitar_chords.auto_scroll:
+					if draw.button(
+						_("Auto-Scroll"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
+						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+						background_highlight_colour=bfg):
+						guitar_chords.auto_scroll = True
+			elif True and self.prefs.show_lyrics_showcase and timed_ready:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
 			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
@@ -35416,8 +35416,8 @@ class ViewBox:
 				fun = test
 			if colour_get is None:
 				colour = self.over_colour
-			else:
-				colour = colour_get.get(col, on, not on and not animate, low, high)
+
+		colour = colour_get.get(col, on, not on and not animate, low, high)
 
 		# if "+" in name:
 		#
@@ -38826,8 +38826,6 @@ def main(holder: Holder) -> None:
 	log                    = holder.log
 	logging.info(f"Window size: {window_size}")
 
-	should_save_state = True
-
 	# Detect platform
 	macos = False
 	msys = False
@@ -38919,13 +38917,6 @@ def main(holder: Holder) -> None:
 
 	download_directory = Path("~").expanduser() / "Downloads"
 
-	n_cache_dir = cache_directory / "network"
-	e_cache_dir = cache_directory / "export"
-	g_cache_dir = cache_directory / "gallery"
-	a_cache_dir = cache_directory / "artist"
-	r_cache_dir = cache_directory / "radio-thumbs"
-	b_cache_dir = user_directory  / "artist-backgrounds"
-
 	# Detect if we are installed or running portable
 	install_mode = False
 	flatpak_mode = False
@@ -39005,6 +38996,13 @@ def main(holder: Holder) -> None:
 		logging.info("Clearing old cache directory")
 		logging.info(cache_directory)
 		shutil.rmtree(str(cache_directory))
+
+	n_cache_dir = cache_directory / "network"
+	e_cache_dir = cache_directory / "export"
+	g_cache_dir = cache_directory / "gallery"
+	a_cache_dir = cache_directory / "artist"
+	r_cache_dir = cache_directory / "radio-thumbs"
+	b_cache_dir = user_directory  / "artist-backgrounds"
 
 	if not os.path.isdir(n_cache_dir):
 		os.makedirs(n_cache_dir)
@@ -39197,16 +39195,16 @@ def main(holder: Holder) -> None:
 	sdl3.SDL_RenderClear(renderer)
 
 
-	#
+
 	# sdl3.SDL_SetRenderTarget(renderer, None)
 	# sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 	# sdl3.SDL_RenderClear(renderer)
 	# #sdl3.SDL_RenderPresent(renderer)
-	#
+
 	# sdl3.SDL_SetWindowOpacity(t_window, window_opacity)
 
 	loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset] = {}
-	# loading_image = asset_loader(bag, loaded_asset_dc, "loading.png")
+	# loading_image = asset_loader(bag, bag.loaded_asset_dc, "loading.png")
 
 	if maximized:
 		i_x = pointer(c_int(0))
@@ -39217,7 +39215,7 @@ def main(holder: Holder) -> None:
 		sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
 		logical_size[0] = i_x.contents.value
 		logical_size[1] = i_y.contents.value
-		sdl3.SDL_GL_GetDrawableSize(t_window, i_x, i_y)
+		sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
 		window_size[0] = i_x.contents.value
 		window_size[1] = i_y.contents.value
 
@@ -39256,7 +39254,6 @@ def main(holder: Holder) -> None:
 
 	# Variables now go in the GuiVar, PlayerCtl, Input, Prefs and Bag class instances.
 	# The following just haven't been moved yet:
-	console = DConsole()
 	spot_cache_saved_albums = []
 	resize_mode = False
 	side_panel_text_align = 0
@@ -39273,7 +39270,6 @@ def main(holder: Holder) -> None:
 
 	scroll_opacity = 0
 	source = None
-	gen_codes: dict[int, str] = {}
 
 	# Player Variables----------------------------------------------------------------------------
 	Archive_Formats = {"zip"}
@@ -39360,13 +39356,10 @@ def main(holder: Holder) -> None:
 	# Library and loader Variables--------------------------------------------------------
 	master_library: dict[int, TrackClass] = {}
 
-	cue_list: list[str] = []
-
 	master_count = 0
 
 	volume = 75
 
-	folder_image_offsets: dict[str, int] = {}
 	db_version: float = 0.0
 	latest_db_version: float = 70
 
@@ -39387,7 +39380,6 @@ def main(holder: Holder) -> None:
 	fonts = Fonts()
 	colours = ColoursClass()
 	colours.post_config()
-
 
 	mpt: CDLL | None = None
 	try:
@@ -39492,7 +39484,7 @@ def main(holder: Holder) -> None:
 		msys=msys,
 		phone=phone,
 		use_natsort=use_natsort,
-		should_save_state=should_save_state,
+		should_save_state=True,
 		old_window_position=old_window_position,
 		xdpi=xdpi,
 		desktop=desktop,
@@ -39515,16 +39507,16 @@ def main(holder: Holder) -> None:
 		track_queue=track_queue,
 		volume=volume,
 		multi_playlist=multi_playlist,
-		cue_list=cue_list,
+		cue_list=[],
 		p_force_queue=p_force_queue,
 		logical_size=logical_size,
 		window_size=window_size,
-		gen_codes=gen_codes,
+		gen_codes={},
 		master_library=master_library,
 		loaded_asset_dc=loaded_asset_dc,
 		radio_playlist_viewing=radio_playlist_viewing,
 		radio_playlists=radio_playlists,
-		folder_image_offsets=folder_image_offsets,
+		folder_image_offsets={},
 	)
 
 	gui = GuiVar(
@@ -39888,7 +39880,7 @@ def main(holder: Holder) -> None:
 			if save[138] is not None:
 				search_dia_string_cache = save[138]
 			if save[139] is not None:
-				gen_codes = save[139]
+				bag.gen_codes = save[139]
 			if save[140] is not None:
 				gui.show_ratings = save[140]
 			if save[141] is not None:
@@ -40030,8 +40022,8 @@ def main(holder: Holder) -> None:
 
 	# Loading Config -----------------
 
-	load_prefs(bag=bag)
-	save_prefs(bag=bag)
+	load_prefs(bag)
+	save_prefs(bag)
 
 	if download_directory.is_dir():
 		bag.download_directories.append(str(download_directory))
@@ -40103,8 +40095,8 @@ def main(holder: Holder) -> None:
 				logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
 		else:
 			logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
-	auto_scale(bag=bag)
-	scale_assets(bag=bag, gui=gui, scale_want=prefs.scale_want)
+	auto_scale(bag)
+	scale_assets(bag, gui, prefs.scale_want)
 
 	try:
 		prefs.update_title  = prefs.view_prefs["update-title"]
@@ -40161,7 +40153,7 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			master_library, multi_playlist, star_store, p_force_queue, prefs.theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
+			master_library, multi_playlist, star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
 				master_library=master_library,
@@ -40174,7 +40166,7 @@ def main(holder: Holder) -> None:
 				config_directory=config_directory,
 				user_directory=user_directory,
 				gui=gui,
-				gen_codes=gen_codes,
+				gen_codes=pctl.gen_codes,
 				prefs=prefs,
 				radio_playlists=radio_playlists,
 				theme=prefs.theme,
@@ -40231,7 +40223,6 @@ def main(holder: Holder) -> None:
 				star_store.db = pickle.load(file)
 		except Exception:
 			logging.exception("Unknown error loading star.p file")
-
 
 	album_star_path = user_directory / "album-star.p"
 	if album_star_path.is_file():
@@ -40306,7 +40297,7 @@ def main(holder: Holder) -> None:
 
 
 	# -------------------------------------------------------------------------------------------
-	# initiate SDL2 --------------------------------------------------------------------C-IS-----
+	# initiate SDL3 --------------------------------------------------------------------C-IS-----
 
 	cursor_hand = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_POINTER)
 	cursor_standard = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_DEFAULT)
@@ -40536,7 +40527,6 @@ def main(holder: Holder) -> None:
 	if rename_folder_previous:
 		tauon.rename_folder.text = rename_folder_previous
 
-	album_art_gen = tauon.album_art_gen
 
 	scroll_hold = False
 	scroll_point = 0
@@ -40578,30 +40568,9 @@ def main(holder: Holder) -> None:
 	# . Menu entry: A side panel view layout. Alternative name: Folder Tree
 	lsp_menu.add(MenuItem(_("Folder Navigator"), tauon.enable_folder_list, disable_test=tauon.lsp_menu_test_tree))
 
-	radio_entry_menu.add(MenuItem(_("Visit Website"), visit_radio_site, tauon.visit_radio_site_deco, pass_ref=True, pass_ref_deco=True))
-	radio_entry_menu.add(MenuItem(_("Save"), tauon.save_to_radios, pass_ref=True))
-
-	tauon.toggle_repeat = tauon.toggle_repeat
-	tauon.menu_album_repeat = tauon.menu_album_repeat
-	tauon.menu_repeat_off = tauon.menu_repeat_off
-	tauon.menu_set_repeat = tauon.menu_set_repeat
-	tauon.toggle_random = tauon.toggle_random
-
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
 	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
-
-	filter_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "filter.png", True))
-	filter_icon.colour = [43, 213, 255, 255]
-	filter_icon.xoff = 1
-
-	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), tauon.create_artist_pl, pass_ref=True, icon=filter_icon))
-	artist_list_menu.add_sub(_("View..."), 140)
-	artist_list_menu.add_to_sub(0, MenuItem(_("Sort Alphabetically"), tauon.aa_sort_alpha))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Popularity"), tauon.aa_sort_popular))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Playtime"), tauon.aa_sort_play))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Thumbnails"), tauon.toggle_artist_list_style))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Filter"), tauon.toggle_artist_list_threshold, tauon.toggle_artist_list_threshold_deco))
 
 	shuffle_menu.add(MenuItem(_("Shuffle Lockdown"), tauon.toggle_shuffle_layout))
 	shuffle_menu.add(MenuItem(_("Shuffle Lockdown Albums"), tauon.toggle_shuffle_layout_albums))
@@ -40613,8 +40582,12 @@ def main(holder: Holder) -> None:
 	artist_info_menu.add(MenuItem(_("Close Panel"), tauon.artist_info_panel_close))
 	artist_info_menu.add(MenuItem(_("Make Large"), tauon.toggle_bio_size, tauon.toggle_bio_size_deco))
 
-	folder_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "folder.png", True))
-	info_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "info.png", True))
+	filter_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "filter.png", True))
+	filter_icon.colour = [43, 213, 255, 255]
+	filter_icon.xoff = 1
+
+	folder_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "folder.png", True))
+	info_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "info.png", True))
 
 	folder_icon.colour = [244, 220, 66, 255]
 	info_icon.colour = [61, 247, 163, 255]
@@ -40649,7 +40622,7 @@ def main(holder: Holder) -> None:
 	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
-	guitar_chords = GuitarChords(user_directory=user_directory, ddt=ddt, inp=inp, gui=gui, pctl=pctl, colours=colours, mouse_wheel=inp.mouse_wheel, mouse_position=inp.mouse_position, window_size=window_size)
+	guitar_chords = GuitarChords(tauon=tauon, mouse_wheel=inp.mouse_wheel, mouse_position=inp.mouse_position, window_size=window_size)
 	showcase_menu.add(MenuItem(_("Search GuitarParty"), guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
@@ -40684,7 +40657,7 @@ def main(holder: Holder) -> None:
 	# Extract embedded artwork from file
 	picture_menu.add(MenuItem(_("Extract Image"), tauon.save_embed_img, tauon.extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.save_embed_img_disable_test))
 
-	del_icon = asset_loader(bag, loaded_asset_dc, "del.png", True)
+	del_icon = asset_loader(bag, bag.loaded_asset_dc, "del.png", True)
 	delete_icon = MenuIcon(del_icon)
 
 	picture_menu.add(
@@ -40710,14 +40683,14 @@ def main(holder: Holder) -> None:
 	# Create playlist tab menu
 	tab_menu = tauon.tab_menu
 	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
+	tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
 	radio_tab_menu = tauon.radio_tab_menu
 	radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
-	tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
-	lock_asset = asset_loader(bag, loaded_asset_dc, "lock.png", True)
+	lock_asset = asset_loader(bag, bag.loaded_asset_dc, "lock.png", True)
 	lock_icon = MenuIcon(lock_asset)
-	lock_icon.base_asset_mod = asset_loader(bag, loaded_asset_dc, "unlock.png", True)
+	lock_icon.base_asset_mod = asset_loader(bag, bag.loaded_asset_dc, "unlock.png", True)
 	lock_icon.colour = [240, 190, 10, 255]
 	lock_icon.colour_callback = tauon.lock_colour_callback
 	lock_icon.xoff = 4
@@ -40737,7 +40710,7 @@ def main(holder: Holder) -> None:
 	radio_tab_menu.add(MenuItem(_("Delete"),
 		pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
 
-	spot_asset         = asset_loader(bag, loaded_asset_dc, "spot.png", True)
+	spot_asset         = asset_loader(bag, bag.loaded_asset_dc, "spot.png", True)
 	spot_icon          = MenuIcon(spot_asset)
 	spot_icon.colour = [30, 215, 96, 255]
 	spot_icon.xoff = 5
@@ -40805,6 +40778,7 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), console.toggle))
 
 	# tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
+
 	tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), tauon.gen_top_100, pass_ref=True))
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), tauon.gen_top_100, pass_ref=True))
 
@@ -40844,7 +40818,6 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), tauon.gen_folder_shuffle, pass_ref=True))
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), tauon.gen_folder_shuffle, pass_ref=True))
 
-
 	tab_menu.add_to_sub(0, MenuItem(_("Lucky Random"), tauon.gen_best_random, pass_ref=True))
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Lucky Random"), tauon.gen_best_random, pass_ref=True))
 
@@ -40858,9 +40831,7 @@ def main(holder: Holder) -> None:
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Duplicate"), tauon.gen_dupe, pass_ref=True))
 
 	# tab_menu.add_to_sub("Filepath", 1, tauon.gen_sort_path, pass_ref=True)
-
 	# tab_menu.add_to_sub("Artist → gui.abc", 0, tauon.gen_sort_artist, pass_ref=True)
-
 	# tab_menu.add_to_sub("Album → gui.abc", 0, tauon.gen_sort_album, pass_ref=True)
 	tab_menu.add_to_sub(0, MenuItem(_("Loved"), tauon.gen_love, pass_ref=True))
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Loved"), tauon.gen_love, pass_ref=True))
@@ -40895,7 +40866,7 @@ def main(holder: Holder) -> None:
 	# Mark track as 'liked'
 	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, icon=gui.heartx_icon))
 
-	heart_spot_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "heart-menu.png", True))
+	heart_spot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "heart-menu.png", True))
 	heart_spot_icon.colour = [30, 215, 96, 255]
 	heart_spot_icon.xoff = 1
 	heart_spot_icon.yoff = 0
@@ -40942,8 +40913,8 @@ def main(holder: Holder) -> None:
 	# track_menu.add('Reload Metadata', tauon.reload_metadata, pass_ref=True)
 	track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
 
-	mbp_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "mbp-g.png"))
-	mbp_icon.base_asset = asset_loader(bag, loaded_asset_dc, "mbp-gs.png")
+	mbp_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "mbp-g.png"))
+	mbp_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "mbp-gs.png")
 
 	mbp_icon.xoff = 2
 	mbp_icon.yoff = -1
@@ -40988,8 +40959,8 @@ def main(holder: Holder) -> None:
 	folder_tree_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
 	folder_tree_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
 
-
 	# selection_menu.br()
+
 	gui.transcode_icon.colour = [239, 74, 157, 255]
 	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
 	folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
@@ -41040,17 +41011,16 @@ def main(holder: Holder) -> None:
 	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 
-
 	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.toggle_wiki))
 	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.toggle_gen))
 
-	son_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "sonemic-g.png"))
-	son_icon.base_asset = asset_loader(bag, loaded_asset_dc, "sonemic-gs.png")
+	son_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sonemic-g.png"))
+	son_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "sonemic-gs.png")
 
 	son_icon.xoff = 1
 	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.toggle_rym))
 
-	band_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "band.png", True))
+	band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
 	band_icon.xoff = 0
 	band_icon.yoff = 1
 	band_icon.colour = [96, 147, 158, 255]
@@ -41059,9 +41029,9 @@ def main(holder: Holder) -> None:
 
 	# Copy metadata to clipboard
 	# track_menu.add(_('Copy "Artist - Album"'), tauon.clip_aar_al, pass_ref=True)
-	# Copy metadata to clipboard
 	track_menu.add(MenuItem(_('Copy "Artist - Track"'), tauon.clip_ar_tr, pass_ref=True))
 	track_menu.add(MenuItem(_("Copy TIDAL Album URL"), tauon.tidal_copy_album, show_test=tauon.is_tidal_track, pass_ref=True))
+
 	track_menu.add_sub(_("Spotify…"), 190, show_test=tauon.spotify_show_test)
 	track_menu.add_to_sub(1, MenuItem(_("Show Full Artist"), tauon.get_spot_artist_track, pass_ref=True, icon=spot_icon))
 	track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), tauon.get_spot_album_track, pass_ref=True, icon=spot_icon))
@@ -41076,15 +41046,13 @@ def main(holder: Holder) -> None:
 
 	# Create top menu
 	x_menu          = tauon.x_menu
-	set_menu        = tauon.set_menu
-	field_menu      = tauon.field_menu
-	dl_menu         = tauon.dl_menu
 	view_menu       = Menu(tauon, 170)
+	set_menu        = tauon.set_menu
 	set_menu_hidden = Menu(tauon, 100)
 	vis_menu        = Menu(tauon, 140)
 	window_menu     = Menu(tauon, 140)
-
-	extra_menu      = tauon.extra_menu
+	field_menu      = tauon.field_menu
+	dl_menu         = tauon.dl_menu
 
 	tauon.stop_menu.add(MenuItem(_("Always stop after album"), tauon.stop_mode_album_persist))
 	tauon.stop_menu.add(MenuItem(_("Always stop after track"), tauon.stop_mode_track_persist))
@@ -41188,16 +41156,15 @@ def main(holder: Holder) -> None:
 		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
 	x_menu.br()
 
+	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
+
 	x_menu.add_to_sub(0, MenuItem(_("Export as CSV"), tauon.export_database))
 	x_menu.add_to_sub(0, MenuItem(_("Rescan All Folders"), pctl.rescan_all_folders))
 	x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), tauon.q_to_playlist))
 	x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), tauon.clear_img_cache))
 
-	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
-
 	x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), tauon.clean_db2))
 	x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), tauon.clean_db))
-
 	x_menu.add_to_sub(0, MenuItem(_("Import FMPS Ratings"), tauon.import_fmps))
 	x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), tauon.import_popm))
 	x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), tauon.clear_ratings))
@@ -41223,10 +41190,12 @@ def main(holder: Holder) -> None:
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
 
+	extra_menu = tauon.extra_menu
+
 	extra_menu.add(MenuItem(_("Random Track"), tauon.random_track, hint=";"))
 
-	radiorandom_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "radiorandom.png", True))
-	revert_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "revert.png", True))
+	radiorandom_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "radiorandom.png", True))
+	revert_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "revert.png", True))
 
 	radiorandom_icon.xoff = 1
 	radiorandom_icon.yoff = 0
@@ -41258,16 +41227,19 @@ def main(holder: Holder) -> None:
 	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
 	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
 	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
+
 	extra_menu.br()
 	extra_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_active, tauon.toggle_spotify_like_active_deco,
 		show_test=tauon.spotify_show_test, icon=gui.spot_heartx_icon))
 
 	extra_menu.add_sub(_("Import Spotify…"), 140, show_test=tauon.spotify_show_test)
+
 	extra_menu.add_to_sub(0, MenuItem(_("Liked Albums"), tauon.spot_import_albums, show_test=tauon.spotify_show_test, icon=spot_icon))
 	extra_menu.add_to_sub(0, MenuItem(_("Liked Tracks"), tauon.spot_import_tracks, show_test=tauon.spotify_show_test, icon=spot_icon))
 	#extra_menu.add_to_sub(_("Import All Playlists"), 0, tauon.spot_import_playlists, show_test=tauon.spotify_show_test, icon=spot_icon)
 	extra_menu.add_to_sub(0, MenuItem(_("Playlist…"), tauon.spot_import_playlist_menu, show_test=tauon.spotify_show_test, icon=spot_icon))
 	extra_menu.add_to_sub(0, MenuItem(_("Current Context"), tauon.spot_import_context, tauon.show_spot_coasting_deco, show_test=tauon.spotify_show_test, icon=spot_icon))
+
 	extra_menu.add(MenuItem("Show Full Album", tauon.get_album_spot_active, tauon.get_album_spot_deco,
 		show_test=tauon.spotify_show_test, icon=spot_icon))
 
@@ -41283,7 +41255,6 @@ def main(holder: Holder) -> None:
 	theme_files = os.listdir(str(install_directory / "theme"))
 	theme_files.sort()
 
-
 	lastfm_icon = MenuIcon(gui.last_fm_icon)
 
 	if gui.scale in (2, 1.25):
@@ -41296,10 +41267,8 @@ def main(holder: Holder) -> None:
 	lastfm_icon.colour = [249, 70, 70, 255]
 	lastfm_icon.colour_callback = tauon.lastfm_colour
 
-
-	lb_icon = MenuIcon(asset_loader(bag, loaded_asset_dc, "lb-g.png"))
-	lb_icon.base_asset = asset_loader(bag, loaded_asset_dc, "lb-gs.png")
-
+	lb_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "lb-g.png"))
+	lb_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "lb-gs.png")
 
 	lb_icon.mode_callback = tauon.lb_mode
 
@@ -41322,7 +41291,7 @@ def main(holder: Holder) -> None:
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
 
-	nagbox = NagBox(tauon=tauon)
+	nagbox = NagBox(tauon)
 
 	power_tag_colours = ColourGenCache(0.5, 0.8)
 
@@ -41334,7 +41303,7 @@ def main(holder: Holder) -> None:
 	# WEBSERVER
 	if prefs.enable_web is True:
 		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, album_art_gen, str(install_directory), tauon.strings, tauon])
+			target=webserve, args=[pctl, prefs, gui, tauon.album_art_gen, str(install_directory), tauon.strings, tauon])
 		webThread.daemon = True
 		webThread.start()
 
@@ -41361,27 +41330,35 @@ def main(holder: Holder) -> None:
 		pl_bg = LoadImageAsset(
 			scaled_asset_directory=scaled_asset_directory, path=str(user_directory / "bg.png"), is_full_path=True)
 
-	playlist_render = StandardPlaylist(tauon=tauon, pl_bg=pl_bg)
-	art_box = ArtBox(tauon=tauon)
-	artist_info_scroll    = tauon.artist_info_scroll
+	playlist_render = StandardPlaylist(tauon, pl_bg)
+	art_box = ArtBox(tauon)
 
-	meta_box = MetaBox(tauon=tauon)
+	radio_entry_menu.add(MenuItem(_("Visit Website"), visit_radio_site, tauon.visit_radio_site_deco, pass_ref=True, pass_ref_deco=True))
+	radio_entry_menu.add(MenuItem(_("Save"), tauon.save_to_radios, pass_ref=True))
+
+	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), tauon.create_artist_pl, pass_ref=True, icon=filter_icon))
+	artist_list_menu.add_sub(_("View..."), 140)
+	artist_list_menu.add_to_sub(0, MenuItem(_("Sort Alphabetically"), tauon.aa_sort_alpha))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Popularity"), tauon.aa_sort_popular))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Playtime"), tauon.aa_sort_play))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Thumbnails"), tauon.toggle_artist_list_style))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Filter"), tauon.toggle_artist_list_threshold, tauon.toggle_artist_list_threshold_deco))
 
 	artist_info_menu.add(MenuItem(_("Download Artist Data"), tauon.artist_info_box.manual_dl, tauon.artist_dl_deco, show_test=tauon.test_artist_dl))
 	artist_info_menu.add(MenuItem(_("Clear Bio"), tauon.flush_artist_bio, pass_ref=True, show_test=inp.test_shift))
-
 	radio_context_menu.add(MenuItem(_("Edit..."), tauon.rename_station, pass_ref=True))
 	radio_context_menu.add(
 		MenuItem(_("Visit Website"), visit_radio_station, tauon.visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
 	radio_context_menu.add(MenuItem(_("Remove"), tauon.remove_station, pass_ref=True))
 
-	showcase = Showcase(tauon=tauon)
-	cctest = ColourPulse2(tauon=tauon)
+	meta_box = MetaBox(tauon)
+	showcase = Showcase(tauon)
+	cctest = ColourPulse2(tauon)
 	dl_menu.add(MenuItem("Dismiss", tauon.dismiss_dl))
 
 	fader = tauon.fader
-	bottom_playlist2 = EdgePulse2(tauon=tauon)
-	gallery_pulse_top = EdgePulse2(tauon=tauon)
+	bottom_playlist2 = EdgePulse2(tauon)
+	gallery_pulse_top = EdgePulse2(tauon)
 
 	c_hit_callback = sdl3.SDL_HitTest(tauon.hit_callback)
 	sdl3.SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
@@ -41448,7 +41425,6 @@ def main(holder: Holder) -> None:
 	#     logging.warning("Using GStreamer as fallback. Some functions disabled")
 	if prefs.backend == 0:
 		tauon.show_message(_("ERROR: No backend found"), mode="error")
-
 
 	# SDL_RenderClear(renderer)
 	# SDL_RenderPresent(renderer)
@@ -41692,25 +41668,25 @@ def main(holder: Holder) -> None:
 				power += 5
 				gui.update += 2
 				#print(event.gbutton.button)
-			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-				if rt:
-					tauon.toggle_random()
-				else:
-					pctl.advance()
-			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-				if rt:
-					tauon.toggle_repeat()
-				else:
-					pctl.back()
-			if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
-				if rt:
-					pctl.show_current(highlight=True)
-				elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
-						pctl.selected_ready() and pctl.default_playlist[
-					pctl.selected_in_playlist] == pctl.playing_object().index:
-					pctl.play_pause()
-				else:
-					inp.key_return_press = True
+				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
+					if rt:
+						tauon.toggle_random()
+					else:
+						pctl.advance()
+				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+					if rt:
+						tauon.toggle_repeat()
+					else:
+						pctl.back()
+				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
+					if rt:
+						pctl.show_current(highlight=True)
+					elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
+							pctl.selected_ready() and pctl.default_playlist[
+						pctl.selected_in_playlist] == pctl.playing_object().index:
+						pctl.play_pause()
+					else:
+						inp.key_return_press = True
 				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
 					if rt:
 						tauon.random_track()
@@ -42208,7 +42184,8 @@ def main(holder: Holder) -> None:
 			if tauon.sleep_timer.get() > 2:
 				sdl3.SDL_WaitEventTimeout(None, 1000)
 			continue
-		power = 0
+		else:
+			power = 0
 
 		gui.pl_update = min(gui.pl_update, 2)
 
@@ -42738,7 +42715,7 @@ def main(holder: Holder) -> None:
 					if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
 						gui.pl_update += 1
 						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
-							pctl.selected_in_playlist = len(default_playlist) - 1
+							pctl.selected_in_playlist = len(pctl.default_playlist) - 1
 
 						if not gui.shift_selection:
 							gui.shift_selection.append(pctl.selected_in_playlist)
@@ -43052,7 +43029,7 @@ def main(holder: Holder) -> None:
 
 			if gui.clear_image_cache_next:
 				gui.clear_image_cache_next -= 1
-				album_art_gen.clear_cache()
+				tauon.album_art_gen.clear_cache()
 				tauon.style_overlay.radio_meta = None
 				if prefs.art_bg:
 					tauon.thread_manager.ready("style")
@@ -43110,7 +43087,7 @@ def main(holder: Holder) -> None:
 					and not gui.rename_folder_box \
 					and not Menu.active \
 					and (gui.rsp or prefs.album_mode) \
-					and not artist_info_scroll.held \
+					and not tauon.artist_info_scroll.held \
 					and gui.layer_focus == 0 and gui.show_playlist:
 
 					if gui.side_drag is True:
@@ -44886,7 +44863,7 @@ def main(holder: Holder) -> None:
 							and gui.track_box is False \
 							and not gui.rename_folder_box \
 							and not Menu.active \
-							and not artist_info_scroll.held:
+							and not tauon.artist_info_scroll.held:
 
 						columns_tool_tip.render()
 					else:
@@ -44972,11 +44949,11 @@ def main(holder: Holder) -> None:
 
 						# if not tc.is_network: # Don't draw album art if from network location for better performance
 						if comment_mode == 1:
-							album_art_gen.display(
+							tauon.album_art_gen.display(
 								tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)),
 								(art_size, art_size))  # Mirror this size in auto theme #mark2233
 						else:
-							album_art_gen.display(
+							tauon.album_art_gen.display(
 								tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)),
 								(art_size, art_size))
 
@@ -45543,9 +45520,9 @@ def main(holder: Holder) -> None:
 
 					# if len(pctl.track_queue) > 0:
 
-					# if input_text == 'A':
-					#     search_over.search_text.text = pctl.playing_object().artist
-					#     input_text = ""
+					# if inp.input_text == 'A':
+					#     search_text.text = pctl.playing_object().artist
+					#     inp.input_text = ""
 
 					if gui.search_error:
 						ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255])
@@ -46053,7 +46030,7 @@ def main(holder: Holder) -> None:
 						(i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1),
 						gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
 
-			input_text = ""
+			inp.input_text = ""
 			gui.update -= 1
 
 			# logging.info("FRAME " + str(tauon.core_timer.get()))
