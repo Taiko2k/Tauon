@@ -469,6 +469,7 @@ class GuiVar:
 			["Artist", 156, False], ["Title", 188, False], ["T", 40, True], ["Album", 153, False],
 			["P", 28, True], ["Starline", 86, True], ["Date", 48, True], ["Codec", 55, True],
 			["Time", 53, True]]
+		self.pl_box_h: int = 0
 
 		for item in self.pl_st:
 			item[1] = item[1] * self.scale
@@ -2597,13 +2598,13 @@ class PlayerCtl:
 		self.lfm_scrobbler.start_queue()
 		if self.stop_mode == 1:  # Disable auto stop track
 			self.stop_mode = 0
-		if self.stop_mode == 2 and not pctl.playing_state == 0:  # Disable auto stop album if album different
-			tr = pctl.get_track(index)
+		if self.stop_mode == 2 and self.pctl.playing_state != 0:  # Disable auto stop album if album different
+			tr = self.pctl.get_track(index)
 			if (tr.parent_folder_path, tr.album) != self.stop_ref:
 				self.stop_mode = 0
 				self.stop_ref = None
 		if self.stop_mode == 4:  # Assign new current album for stopping
-			tr = pctl.get_track(index)
+			tr = self.pctl.get_track(index)
 			self.stop_ref = (tr.parent_folder_path, tr.album)
 
 		if self.force_queue and not self.pause_queue:
@@ -29123,7 +29124,7 @@ class StandardPlaylist:
 			input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
 
 			# Are folder titles enabled?
-			if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title and break_enable:
+			if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title and self.prefs.break_enable:
 				# Is this track from a different folder than the last?
 				if track_position == 0 or track_object.parent_folder_path != pctl.get_track(
 						pctl.default_playlist[track_position - 1]).parent_folder_path:
@@ -29141,7 +29142,7 @@ class StandardPlaylist:
 						gui.move_on_title = True
 
 					# Ignore click in ratings box
-					click_title = (inp.mouse_click or inp.right_click or self.inp.middle_click) and coll(input_box)
+					click_title = (inp.mouse_click or inp.right_click or self.inp.middle_click) and self.coll(input_box)
 					if click_title and gui.show_album_ratings:
 						if self.inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
 							click_title = False
@@ -29151,13 +29152,13 @@ class StandardPlaylist:
 
 						gui.pl_update += 1
 						# Add folder to queue if middle click
-						if self.inp.middle_click and is_level_zero():
+						if self.inp.middle_click and self.tauon.is_level_zero():
 							if self.inp.key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
 								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
 								while i < len(pctl.default_playlist) and parent == pctl.get_track(
 										pctl.default_playlist[i]).parent_folder_path:
-									pctl.force_queue.append(queue_item_gen(pctl.default_playlist[i], i, pl_to_id(
+									pctl.force_queue.append(queue_item_gen(pctl.default_playlist[i], i, pctl.pl_to_id(
 										pctl.active_playlist_viewing)))
 									i += 1
 								queue_timer_set(plural=True)
@@ -29165,9 +29166,9 @@ class StandardPlaylist:
 									pctl.stop_mode = 0
 
 							else:  # Add as grouped album
-								add_album_to_queue(track_id, track_position)
+								self.tauon.add_album_to_queue(track_id, track_position)
 							pctl.selected_in_playlist = track_position
-							self.gui.shift_selection = [pctl.selected_in_playlist]
+							gui.shift_selection = [pctl.selected_in_playlist]
 							gui.pl_update += 1
 
 						# Play if double click:
@@ -29200,7 +29201,7 @@ class StandardPlaylist:
 
 						# Add folder to selection if clicked
 						if inp.mouse_click and not (
-								scroll_enable and self.inp.mouse_position[0] < 30 * gui.scale) and not gui.side_drag:
+								prefs.scroll_enable and self.inp.mouse_position[0] < 30 * gui.scale) and not gui.side_drag:
 
 							self.inp.quick_drag = True
 							set_drag_source()
@@ -29272,7 +29273,7 @@ class StandardPlaylist:
 				line_over = False
 
 			# Prevent click if near scroll bar
-			if scroll_enable and self.inp.mouse_position[0] < 30:
+			if prefs.scroll_enable and self.inp.mouse_position[0] < 30:
 				line_hit = False
 
 			# Double click to play
@@ -29288,7 +29289,7 @@ class StandardPlaylist:
 				line_hit = False
 
 				if prefs.album_mode:
-					goto_album(pctl.playlist_playing_position)
+					tauon.goto_album(pctl.playlist_playing_position)
 
 			if len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == track_id:
 				if track_position == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
@@ -29298,7 +29299,7 @@ class StandardPlaylist:
 			if self.inp.middle_click and line_hit:
 				pctl.force_queue.append(
 					queue_item_gen(track_id,
-					track_position, pl_to_id(pctl.active_playlist_viewing)))
+					track_position, pctl.pl_to_id(pctl.active_playlist_viewing)))
 				pctl.selected_in_playlist = track_position
 				self.gui.shift_selection = [pctl.selected_in_playlist]
 				gui.pl_update += 1
@@ -29316,7 +29317,7 @@ class StandardPlaylist:
 
 			# # Begin drag block selection
 			# if self.inp.mouse_down and line_over and track_position in self.gui.shift_selection and len(self.gui.shift_selection) > 1:
-			#     if not pl_is_locked(pctl.active_playlist_viewing):
+			#     if not tauon.pl_is_locked(pctl.active_playlist_viewing):
 			#         self.gui.playlist_hold = True
 			#     elif self.inp.key_shift_down:
 			#         self.gui.playlist_hold = True
@@ -29327,7 +29328,7 @@ class StandardPlaylist:
 				set_drag_source()
 
 			# Shift Move Selection
-			if gui.move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and coll((
+			if gui.move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and self.coll((
 					left + gui.highlight_left, line_y, highlight_width, gui.playlist_row_height))):
 
 				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
@@ -32346,11 +32347,11 @@ class ArtistList:
 		else:
 			self.draw_card_text_only(artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg)
 
-		if coll(area) and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
-			if inp.mouse_click:
+		if self.coll(area) and self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
+			if self.inp.mouse_click:
 				if self.click_ref != artist:
-					pctl.playlist_view_position = 0
-					pctl.selected_in_playlist = 0
+					self.pctl.playlist_view_position = 0
+					self.pctl.selected_in_playlist = 0
 				self.click_ref = artist
 
 				double_click = False
@@ -32373,7 +32374,7 @@ class ArtistList:
 				on = 0
 
 				for i in range(len(self.pctl.default_playlist)):
-					track = pctl.get_track(self.pctl.default_playlist[i])
+					track = self.pctl.get_track(self.pctl.default_playlist[i])
 					if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
 							"artists" in track.misc and artist in track.misc["artists"]):
 						# Matchin artist
@@ -32401,7 +32402,7 @@ class ArtistList:
 				# block_starts = []
 				# current = False
 				# for i in range(len(self.pctl.default_playlist)):
-				#     track = pctl.get_track(self.pctl.default_playlist[i])
+				#     track = self.pctl.get_track(self.pctl.default_playlist[i])
 				#     if current is False:
 				#         if track.artist == artist or track.album_artist == artist or (
 				#                 'artists' in track.misc and artist in track.misc['artists']):
@@ -32422,16 +32423,16 @@ class ArtistList:
 				#select = block_starts[0]
 
 				# if len(block_starts) > 1:
-				#     if -1 < pctl.selected_in_playlist < len(self.pctl.default_playlist):
-				#         if pctl.selected_in_playlist in block_starts:
-				#             scroll_hide_timer.set()
-				#             gui.frame_callback_list.append(TestTimer(0.9))
-				#             if block_starts[-1] == pctl.selected_in_playlist:
+				#     if -1 < self.pctl.selected_in_playlist < len(self.pctl.default_playlist):
+				#         if self.pctl.selected_in_playlist in block_starts:
+				#             tauon.scroll_hide_timer.set()
+				#             self.gui.frame_callback_list.append(TestTimer(0.9))
+				#             if block_starts[-1] == self.pctl.selected_in_playlist:
 				#                 pass
 				#             else:
-				#                 select = block_starts[block_starts.index(pctl.selected_in_playlist) + 1]
+				#                 select = block_starts[block_starts.index(self.pctl.selected_in_playlist) + 1]
 
-				gui.pl_update += 1
+				self.gui.pl_update += 1
 
 				self.click_highlight_timer.set()
 
@@ -32447,26 +32448,26 @@ class ArtistList:
 					self.d_click_timer.force_set(10)
 				else:
 					# Goto next artist section in playlist
-					c = pctl.selected_in_playlist
+					c = self.pctl.selected_in_playlist
 					next = False
-					track = pctl.get_track_in_playlist(c, -1)
+					track = self.pctl.get_track_in_playlist(c, -1)
 					if track is None:
 						logging.error("Index out of range!")
-						pctl.selected_in_playlist = 0
+						self.pctl.selected_in_playlist = 0
 						return
 					if track.artist.casefold != artist.casefold:
-						pctl.selected_in_playlist = 0
-						pctl.playlist_view_position = 0
+						self.pctl.selected_in_playlist = 0
+						self.pctl.playlist_view_position = 0
 					if len(blocks) == 1:
 						block = blocks[0]
 						if len(block) > 1:
 							if c < block[0] or c >= block[-1]:
 								select = block[0]
-								toast(_("First of artist's albums ({N} albums)")
+								self.tauon.toast(_("First of artist's albums ({N} albums)")
 									.format(N=len(block)))
 							else:
 								select = block[-1]
-								toast(_("Last of artist's albums ({N} albums)")
+								self.tauon.toast(_("Last of artist's albums ({N} albums)")
 									.format(N=len(block)))
 					else:
 						select = None
@@ -32478,20 +32479,20 @@ class ArtistList:
 								if i == 0:
 									select = al
 									if len(block) > 1:
-										toast(_("Start of location {N} of {T} ({Nb} albums)")
+										self.tauon.toast(_("Start of location {N} of {T} ({Nb} albums)")
 											.format(N=bb + 1, T=len(blocks), Nb=len(block)))
 									else:
-										toast(_("Location {N} of {T}")
+										self.tauon.toast(_("Location {N} of {T}")
 											.format(N=bb + 1, T=len(blocks)))
 									break
 
 							if next and not select:
 								select = block[-1]
 								if len(block) > 1:
-									toast(_("End of location {N} of {T} ({Nb} albums)")
+									self.tauon.toast(_("End of location {N} of {T} ({Nb} albums)")
 										.format(N=bb + 1, T=len(blocks), Nb=len(block)))
 								else:
-									toast(_("Location {N} of {T}")
+									self.tauon.toast(_("Location {N} of {T}")
 										.format(N=bb, T=len(blocks)))
 								break
 							if select:
@@ -32500,26 +32501,26 @@ class ArtistList:
 						select = blocks[0][0]
 						if len(blocks[0]) > 1:
 							if len(blocks) > 1:
-								toast(_("Start of location 1 of {N} ({Nb} albums)")
+								self.tauon.toast(_("Start of location 1 of {N} ({Nb} albums)")
 									.format(N=len(blocks), Nb=len(blocks[0])))
 							else:
-								toast(_("Location 1 of {N} ({Nb} albums)")
+								self.tauon.toast(_("Location 1 of {N} ({Nb} albums)")
 									.format(N=len(blocks), Nb=len(blocks[0])))
 						else:
-							toast(_("Location 1 of {N}")
+							self.tauon.toast(_("Location 1 of {N}")
 								.format(N=len(blocks)))
 
-					pctl.playlist_view_position = select
-					pctl.selected_in_playlist = select
+					self.pctl.playlist_view_position = select
+					self.pctl.selected_in_playlist = select
 					self.d_click_ref = artist
 					self.d_click_timer.set()
-					if prefs.album_mode:
-						goto_album(select)
+					if self.prefs.album_mode:
+						self.tauon.goto_album(select)
 
 			if self.inp.middle_click:
 				self.click_ref = artist
 				self.click_highlight_timer.set()
-				create_artist_pl(artist)
+				self.tauon.create_artist_pl(artist)
 
 			if self.inp.right_click:
 				self.click_ref = artist
@@ -32867,7 +32868,7 @@ class TreeView:
 			scroll_position = max(scroll_position, 0)
 			scroll_position = min(scroll_position, max_scroll)
 
-		focused = is_level_zero()
+		focused = self.tauon.is_level_zero()
 
 		# Draw scroll bar
 		if mouse_in or self.tree_view_scroll.held:
@@ -32949,8 +32950,7 @@ class TreeView:
 
 			if mouse_in and not self.tree_view_scroll.held:
 				if self.inp.middle_click:
-					stem_to_new_playlist(full_folder_path)
-
+					self.tauon.stem_to_new_playlist(full_folder_path)
 				elif self.inp.right_click:
 					if item[3]:
 						for p, id in enumerate(self.pctl.multi_playlist[self.pctl.id_to_pl(pl_id)].playlist_ids):
@@ -33496,7 +33496,7 @@ class QueueBox:
 			self.ddt.text_background_colour = alpha_blend([255, 255, 255, 2], self.ddt.text_background_colour)
 
 		if self.prefs.show_playlist_list:  # draw top separator line
-			rect = (0, self.gui.panelY + pl_box_h, self.gui.lspw, round(gui.scale * 2))
+			rect = (0, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
 			self.ddt.rect(rect, [0, 0, 0, 255])
 			self.ddt.rect(rect, sep_colour)
 
@@ -36379,9 +36379,7 @@ def track_number_process(line: str) -> str:
 	return line
 
 def advance_theme() -> None:
-	global theme
-
-	theme += 1
+	prefs.theme += 1
 	gui.reload_theme = True
 
 def scan_ffprobe(nt: TrackClass):
@@ -44434,7 +44432,6 @@ def goto_album(playlist_no: int, down: bool = False, force: bool = False) -> lis
 
 def toggle_album_mode(force_on=False):
 	global window_size
-	global album_playlist_width
 	global old_album_pos
 
 	gui.gall_tab_enter = False
@@ -44442,7 +44439,7 @@ def toggle_album_mode(force_on=False):
 	if prefs.album_mode is True:
 
 		prefs.album_mode = False
-		# album_playlist_width = gui.playlist_width
+		# gui.album_playlist_width = gui.playlist_width
 		# old_album_pos = gui.album_scroll_px
 		gui.rspw = gui.pref_rspw
 		gui.rsp = prefs.prefer_side
@@ -45780,10 +45777,9 @@ def standard_view_deco():
 # 	if not prefs.album_mode:
 # 		toggle_album_mode()
 # 	gui.show_playlist = False
-# 	global album_playlist_width
 # 	gui.update_layout = True
 # 	gui.rspw = window_size[0]
-# 	album_playlist_width = gui.playlist_width
+# 	gui.album_playlist_width = gui.playlist_width
 # 	#gui.playlist_width = -19
 
 def toggle_library_mode() -> None:
@@ -45808,7 +45804,7 @@ def break_deco():
 	tex = colours.menu_text
 	if gui.combo_mode or (gui.show_playlist is False and prefs.album_mode):
 		tex = colours.menu_text_disabled
-	if not break_enable:
+	if not prefs.break_enable:
 		tex = colours.menu_text_disabled
 
 	if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
@@ -46472,14 +46468,13 @@ def rating_toggle(mode: int = 0) -> bool | None:
 	return None
 
 def toggle_titlebar_line(mode: int = 0) -> bool | None:
-	global update_title
 	if mode == 1:
-		return update_title
+		return prefs.update_title
 
 	line = window_title
 	sdl3.SDL_SetWindowTitle(t_window, line)
-	update_title ^= True
-	if update_title:
+	prefs.update_title ^= True
+	if prefs.update_title:
 		update_title_do()
 	return None
 
@@ -46585,22 +46580,19 @@ def toggle_borderless(mode: int = 0) -> bool | None:
 	return None
 
 def toggle_break(mode: int = 0) -> bool | None:
-	global break_enable
 	if mode == 1:
-		return break_enable ^ True
-	break_enable ^= True
+		return prefs.break_enable ^ True
+	prefs.break_enable ^= True
 	gui.pl_update = 1
 	return None
 
 def toggle_scroll(mode: int = 0) -> bool | None:
-	global scroll_enable
-
 	if mode == 1:
-		if scroll_enable:
+		if prefs.scroll_enable:
 			return False
 		return True
 
-	scroll_enable ^= True
+	prefs.scroll_enable ^= True
 	gui.pl_update = 1
 	gui.update_layout = True
 	return None
@@ -47968,8 +47960,7 @@ def update_layout_do():
 
 	if gui.theme_name != prefs.theme_name:
 		gui.reload_theme = True
-		global theme
-		theme = get_theme_number(dirs, prefs.theme_name)
+		prefs.theme = get_theme_number(dirs, prefs.theme_name)
 		#logging.info("Config reload theme...")
 
 	# Restore in case of error
@@ -48414,13 +48405,13 @@ def save_state() -> None:
 		return
 
 	# view_prefs['star-lines'] = star_lines
-	view_prefs["update-title"] = update_title
+	view_prefs["update-title"] = prefs.update_title
 	view_prefs["side-panel"] = prefs.prefer_side
 	view_prefs["dim-art"] = prefs.dim_art
 	#view_prefs['level-meter'] = gui.turbo
 	# view_prefs['pl-follow'] = pl_follow
-	view_prefs["scroll-enable"] = scroll_enable
-	view_prefs["break-enable"] = break_enable
+	view_prefs["scroll-enable"] = prefs.scroll_enable
+	view_prefs["break-enable"] = prefs.break_enable
 	# view_prefs['dd-index'] = dd_index
 	view_prefs["append-date"] = prefs.append_date
 
@@ -48451,7 +48442,7 @@ def save_state() -> None:
 		None,  # pctl.playlist_playing_position,
 		None,  # Was cue list
 		"",  # radio_field.text,
-		theme,
+		prefs.theme,
 		folder_image_offsets,
 		None,  # lfm_username,
 		None,  # lfm_hash,
@@ -48505,7 +48496,7 @@ def save_state() -> None:
 		prefs.show_lyrics_side,
 		None, #prefs.last_device,
 		prefs.album_mode,
-		None,  # album_playlist_width
+		None,  # gui.album_playlist_width
 		prefs.transcode_opus_as,
 		gui.star_mode,
 		prefs.prefer_side,  # gui.rsp,
@@ -52292,13 +52283,6 @@ scroll_timer = Timer() # TODO(Martin): Move
 scroll_timer.set() # TODO(Martin): Move
 scroll_opacity = 0 # TODO(Martin): Move
 source = None # TODO(Martin): Useless to define here?
-scroll_enable = prefs.scroll_enable
-theme = prefs.theme
-break_enable = prefs.break_enable
-album_playlist_width = gui.album_playlist_width
-update_title = prefs.update_title
-selected_in_playlist = bag.selected_in_playlist
-gen_codes = bag.gen_codes
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -52412,7 +52396,7 @@ for t in range(2):
 		# playlist_playing = save[10]
 		# cue_list = save[11]
 		# radio_field_text = save[12]
-		theme = save[13]
+		prefs.theme = save[13]
 		folder_image_offsets = save[14]
 		# lfm_username = save[15]
 		# lfm_hash = save[16]
@@ -52422,7 +52406,7 @@ for t in range(2):
 		gui.rspw = save[20]
 		# savetime = save[21]
 		gui.vis_want = save[22]
-		selected_in_playlist = save[23]
+		bag.selected_in_playlist = save[23]
 		if save[24] is not None:
 			album_mode_art_size = save[24]
 		if save[25] is not None:
@@ -52507,7 +52491,7 @@ for t in range(2):
 		if save[66] is not None:
 			gui.restart_album_mode = save[66]
 		if save[67] is not None:
-			album_playlist_width = save[67]
+			gui.album_playlist_width = save[67]
 		if save[68] is not None:
 			prefs.transcode_opus_as = save[68]
 		if save[69] is not None:
@@ -52659,7 +52643,7 @@ for t in range(2):
 		if save[138] is not None:
 			search_dia_string_cache = save[138]
 		if save[139] is not None:
-			gen_codes = save[139]
+			bag.gen_codes = save[139]
 		if save[140] is not None:
 			gui.show_ratings = save[140]
 		if save[141] is not None:
@@ -52883,17 +52867,16 @@ scale_assets(bag, gui, prefs.scale_want)
 
 try:
 	#star_lines        = view_prefs['star-lines']
-	update_title      = view_prefs["update-title"]
+	prefs.update_title      = view_prefs["update-title"]
 	prefs.prefer_side = view_prefs["side-panel"]
 	prefs.dim_art     = False  # view_prefs['dim-art']
 	#gui.turbo         = view_prefs['level-meter']
 	#pl_follow         = view_prefs['pl-follow']
-	scroll_enable     = view_prefs["scroll-enable"]
+	prefs.scroll_enable     = view_prefs["scroll-enable"]
 	if "break-enable" in view_prefs:
-		break_enable    = view_prefs["break-enable"]
+		prefs.break_enable    = view_prefs["break-enable"]
 	else:
 		logging.warning("break-enable not found in view_prefs[] when trying to load settings! First run?")
-	#dd_index          = view_prefs['dd-index']
 	#custom_line_mode  = view_prefs['custom-line']
 	#thick_lines       = view_prefs['thick-lines']
 	if "append-date" in view_prefs:
@@ -53029,7 +53012,7 @@ sync_get_device_click_timer = Timer(100)
 if db_version > 0 and db_version < latest_db_version:
 	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 	try:
-		master_library, pctl.multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
+		master_library, pctl.multi_playlist, star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, radio_playlists = database_migrate(
 			tauon=tauon,
 			db_version=db_version,
 			master_library=master_library,
@@ -53042,10 +53025,10 @@ if db_version > 0 and db_version < latest_db_version:
 			config_directory=config_directory,
 			user_directory=user_directory,
 			gui=gui,
-			gen_codes=gen_codes,
+			gen_codes=pctl.gen_codes,
 			prefs=prefs,
 			radio_playlists=radio_playlists,
-			theme=theme,
+			theme=prefs.theme,
 			p_force_queue=p_force_queue,
 		)
 	except ValueError:
@@ -54536,10 +54519,11 @@ if reload_state:
 
 pctl.notify_update()
 
-theme = get_theme_number(dirs, prefs.theme_name)
+prefs.theme = get_theme_number(dirs, prefs.theme_name)
 
-if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
-	gui.album_scroll_px = gui.gallery_positions[pl_to_id(pctl.active_playlist_viewing)]
+if pctl.pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
+	gui.album_scroll_px = gui.gallery_positions[pctl.pl_to_id(pctl.active_playlist_viewing)]
+
 
 # Hold the splash/loading screen for a minimum duration
 # while core_timer.get() < 0.5:
@@ -54547,7 +54531,6 @@ if pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
 
 # Resize menu widths to text length (length can vary due to translations)
 for menu in Menu.instances:
-
 	w = 0
 	icon_space = 0
 
@@ -55117,8 +55100,8 @@ while pctl.running:
 				gui.pl_update = 1
 				gui.update += 2
 
-				if update_title:
-					update_title_do()
+				if prefs.update_title:
+					tauon.update_title_do()
 					#logging.info("restore")
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_SHOWN:
@@ -57666,7 +57649,6 @@ while pctl.running:
 
 				# Seperation Line Drawing
 				if gui.rsp:
-
 					# Draw Highlight when mouse over
 					if draw_sep_hl:
 						ddt.line(
@@ -57676,26 +57658,24 @@ while pctl.running:
 						draw_sep_hl = False
 
 			if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and prefs.album_mode):
-				artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
+				tauon.artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
 
 			if gui.lsp and not gui.combo_mode:
-
 				# left side panel
-
-				h_estimate = ((playlist_box.tab_h + playlist_box.gap) * gui.scale * len(
+				h_estimate = ((tauon.playlist_box.tab_h + tauon.playlist_box.gap) * gui.scale * len(
 					pctl.multi_playlist)) + 13 * gui.scale
 
 				full = (window_size[1] - (gui.panelY + gui.panelBY))
 				half = int(round(full / 2))
 
-				pl_box_h = full
+				gui.pl_box_h = full
 
-				panel_rect = (0, gui.panelY, gui.lspw, pl_box_h)
+				panel_rect = (0, gui.panelY, gui.lspw, gui.pl_box_h)
 				tauon.fields.add(panel_rect)
 
-				if gui.force_side_on_drag and not inp.quick_drag and not coll(panel_rect):
+				if gui.force_side_on_drag and not inp.quick_drag and not tauon.coll(panel_rect):
 					gui.force_side_on_drag = False
-					update_layout_do()
+					tauon.update_layout_do()
 
 				if inp.quick_drag and not coll_point(gui.drag_source_position_persist, panel_rect) and \
 					not point_proximity_test(
@@ -57704,51 +57684,47 @@ while pctl.running:
 						10 * gui.scale):
 					gui.force_side_on_drag = True
 					if inp.mouse_up:
-						update_layout_do()
+						tauon.update_layout_do()
 
 				if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
-					tree_view_box.render(0, gui.panelY, gui.lspw, pl_box_h)
+					tauon.tree_view_box.render(0, gui.panelY, gui.lspw, gui.pl_box_h)
 				elif prefs.left_panel_mode == "artist list" and not gui.force_side_on_drag:
-					artist_list_box.render(*panel_rect)
+					tauon.artist_list_box.render(*panel_rect)
 				else:
-
 					preview_queue = False
-					if inp.quick_drag and coll(
+					if inp.quick_drag and tauon.coll(
 							panel_rect) and not pctl.force_queue and prefs.show_playlist_list and prefs.hide_queue:
 						preview_queue = True
 
 					if pctl.force_queue or preview_queue or not prefs.hide_queue:
-
 						if h_estimate < half:
-							pl_box_h = h_estimate
+							gui.pl_box_h = h_estimate
 						else:
-							pl_box_h = half
+							gui.pl_box_h = half
 
 						if preview_queue:
-							pl_box_h = int(round(full * 5 / 6))
+							gui.pl_box_h = int(round(full * 5 / 6))
 
 					if prefs.left_panel_mode != "queue":
-
-						playlist_box.draw(0, gui.panelY, gui.lspw, pl_box_h)
+						tauon.playlist_box.draw(0, gui.panelY, gui.lspw, gui.pl_box_h)
 					else:
-						pl_box_h = 0
+						gui.pl_box_h = 0
 
 					if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
-
-						queue_box.draw(0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+						tauon.queue_box.draw(0, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 					elif prefs.left_panel_mode == "queue":
 						text = _("Queue is Empty")
-						rect = (0, gui.panelY + pl_box_h, gui.lspw, full - pl_box_h)
+						rect = (0, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 						ddt.rect(rect, colours.queue_background)
 						ddt.text_background_colour = colours.queue_background
 						ddt.text(
-							(0 + (gui.lspw // 2), gui.panelY + pl_box_h + 15 * gui.scale, 2),
+							(0 + (gui.lspw // 2), gui.panelY + gui.pl_box_h + 15 * gui.scale, 2),
 							text, alpha_mod(colours.index_text, 200), 212)
 
 			# ------------------------------------------------
 			# Scroll Bar
 
-			# if not scroll_enable:
+			# if not prefs.scroll_enable:
 			top = gui.panelY
 			if gui.artist_info_panel:
 				top += gui.artist_panel_height
@@ -57756,7 +57732,7 @@ while pctl.running:
 			edge_top = top
 			if gui.set_bar and gui.set_mode:
 				edge_top += gui.set_height
-			edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
+			tauon.edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
 
 			width = 15 * gui.scale
 
