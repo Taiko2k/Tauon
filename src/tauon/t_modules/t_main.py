@@ -21744,9 +21744,9 @@ class TransEditBox:
 		self.star_store        = tauon.star_store
 		self.window_size       = tauon.window_size
 		self.show_message      = tauon.show_message
+		self.edit_title        = tauon.edit_title
 		self.edit_album        = tauon.edit_album
 		self.edit_artist       = tauon.edit_artist
-		self.edit_title        = tauon.edit_title
 		self.edit_album_artist = tauon.edit_album_artist
 		self.active = False
 		self.active_field = 1
