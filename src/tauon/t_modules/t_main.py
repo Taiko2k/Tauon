@@ -22564,10 +22564,10 @@ class SearchOverlay:
 
 				self.old_mouse = copy.deepcopy(inp.mouse_position)
 
-			if inp.mouse_wheel == -1:
+			if self.inp.mouse_wheel == -1:
 				self.on += 1
 				self.force_select += 1
-			if inp.mouse_wheel == 1 and self.on > -1:
+			if self.inp.mouse_wheel == 1 and self.on > -1:
 				self.on -= 1
 				self.force_select -= 1
 
@@ -24630,7 +24630,7 @@ class Over:
 			y += 25 * gui.scale
 			x += 23 * gui.scale
 			if self.button(x, y, _("Flip current")):
-				if inp.key_shift_down:
+				if self.inp.key_shift_down:
 					prefs.bg_flips.clear()
 					self.show_message(_("Reset flips"), mode="done")
 				else:
@@ -26558,13 +26558,13 @@ class TopPanel:
 					# Double click to play
 					if self.inp.mouse_up and pctl.pl_to_id(i) == self.tab_d_click_ref == pctl.pl_to_id(pctl.active_playlist_viewing) and \
 							self.tab_d_click_timer.get() < 0.25 and point_distance(
-								inp.last_click_location, inp.mouse_up_position) < 5 * gui.scale:
+								self.inp.last_click_location, self.inp.mouse_up_position) < 5 * gui.scale:
 
 						if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
 							pctl.play()
 						elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
 							pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
-					if inp.mouse_up:
+					if self.inp.mouse_up:
 						self.tab_d_click_timer.set()
 						self.tab_d_click_ref = pctl.pl_to_id(i)
 
@@ -26801,8 +26801,8 @@ class TopPanel:
 					tauon.drop_tracks_to_new_playlist(gui.shift_selection)
 
 			# Draw end drag tab indicator
-			if tauon.playlist_box.drag and inp.mouse_position[0] > x and inp.mouse_position[1] < gui.panelY:
-				if inp.key_ctrl_down:
+			if tauon.playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY:
+				if self.inp.key_ctrl_down:
 					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [255, 190, 0, 255])
 				else:
 					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255])
@@ -26813,16 +26813,16 @@ class TopPanel:
 
 		# -------------
 		# Other input
-		if inp.mouse_up:
-			inp.quick_drag = False
+		if self.inp.mouse_up:
+			self.inp.quick_drag = False
 			tauon.playlist_box.drag = False
 			tauon.radio_view.drag = None
 
 		# Scroll anywhere on panel to cycle playlist
 		# (This is a bit complicated because we need to skip over hidden playlists)
-		if inp.mouse_wheel != 0 and 1 < inp.mouse_position[1] < gui.panelY + 1 and len(pctl.multi_playlist) > 1 and inp.mouse_position[0] > 5:
+		if self.inp.mouse_wheel != 0 and 1 < self.inp.mouse_position[1] < gui.panelY + 1 and len(pctl.multi_playlist) > 1 and self.inp.mouse_position[0] > 5:
 
-			pctl.cycle_playlist_pinned(inp.mouse_wheel)
+			pctl.cycle_playlist_pinned(self.inp.mouse_wheel)
 
 			gui.pl_update = 1
 			if not prefs.tabs_on_top:
@@ -27218,7 +27218,7 @@ class BottomBarType1:
 			self.seek_time = 0
 
 		if inp.mouse_click and coll_point(
-			inp.mouse_position,
+			self.inp.mouse_position,
 			self.seek_bar_position + [self.seek_bar_size[0]] + [
 			self.seek_bar_size[1] + 2]):
 			self.seek_down = True
@@ -31670,12 +31670,12 @@ class PlaylistBox:
 					modified = False
 					gui.pl_update += 1
 
-					for item in gui.shift_selection:
+					for item in self.gui.shift_selection:
 						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
 						modified = True
-					if len(gui.shift_selection) > 0:
+					if len(self.gui.shift_selection) > 0:
 						self.adds.append(
-							[pctl.multi_playlist[i].uuid_int, len(gui.shift_selection), Timer()])  # ID, num, timer
+							[pctl.multi_playlist[i].uuid_int, len(self.gui.shift_selection), Timer()])  # ID, num, timer
 						modified = True
 					if modified:
 						pctl.after_import_flag = True
@@ -33523,11 +33523,6 @@ class QueueBox:
 		if self.coll(box_rect) and self.inp.quick_drag and not self.pctl.force_queue:
 			self.ddt.rect(box_rect, [255, 255, 255, 2])
 			self.ddt.text_background_colour = alpha_blend([255, 255, 255, 2], self.ddt.text_background_colour)
-
-		if self.prefs.show_playlist_list:  # draw top separator line
-			rect = (0, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
-			self.ddt.rect(rect, [0, 0, 0, 255])
-			self.ddt.rect(rect, sep_colour)
 
 		# if y < self.gui.panelY * 2:
 		#     self.ddt.rect((x, y - 3 * self.gui.scale, w, 30 * self.gui.scale), self.colours.queue_background, True)
@@ -35816,14 +35811,14 @@ class DLMon:
 
 		if len(self.ready) > 0:
 			temp = set()
-			#logging.info(tauon.quick_import_done)
+			#logging.info(self.tauon.quick_import_done)
 			#logging.info(self.ready)
 			for item in self.ready:
 				if item not in self.tauon.quick_import_done:
 					if os.path.exists(path):
 						temp.add(item)
 				# else:
-				#     logging.info("FILE IMPORTED")
+				# 	logging.info("FILE IMPORTED")
 			self.ready = temp
 
 		if len(self.watching) > 0:
@@ -36114,7 +36109,6 @@ class Bag:
 	overlay_texture_texture: sdl3.LP_SDL_Texture
 	fonts:                   Fonts
 	tls_context:             ssl.SSLContext
-	#sdl_syswminfo:           SDL_SysWMinfo
 	macos:                   bool
 	msys:                    bool
 	phone:                   bool
@@ -40054,7 +40048,7 @@ def main(holder: Holder) -> None:
 		prefs.linux_font = "Noto Sans"
 		prefs.linux_font_semibold = "Noto Sans Medium"
 		prefs.linux_font_bold = "Noto Sans Bold"
-		save_prefs(bag=bag)
+		save_prefs(bag)
 
 	# Auto detect lang
 	lang: list[str] | None = None
@@ -40452,7 +40446,7 @@ def main(holder: Holder) -> None:
 	if sys.platform == "win32" and pctl.taskbar_progress:
 		if (install_directory / "TaskbarLib.tlb").is_file():
 			logging.info("Taskbar progress enabled")
-			pctl.windows_progress = WinTask(tauon=tauon)
+			pctl.windows_progress = WinTask(tauon)
 		else:
 			pctl.taskbar_progress = False
 			logging.warning("Could not find TaskbarLib.tlb")
