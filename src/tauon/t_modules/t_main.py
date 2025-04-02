@@ -27722,8 +27722,7 @@ class BottomBarType1:
 				if inp.right_click:
 					#pctl.auto_stop ^= True
 					tauon.stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
-				#tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
-				tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
+				#tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
 			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
 			# ddt.rect_r(rect,[255,0,0,255], True)
@@ -29037,11 +29036,11 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
-		highlight_width = gui.tracklist_highlight_width
-		gui.highlight_left  = gui.tracklist_highlight_left
-		inset_width     = gui.tracklist_inset_width
-		inset_left      = gui.tracklist_inset_left
-		center_mode     = gui.tracklist_center_mode
+		highlight_width    = gui.tracklist_highlight_width
+		gui.highlight_left = gui.tracklist_highlight_left
+		inset_width        = gui.tracklist_inset_width
+		inset_left         = gui.tracklist_inset_left
+		center_mode        = gui.tracklist_center_mode
 
 		w = 0
 		gui.row_extra = 0
@@ -29195,7 +29194,7 @@ class StandardPlaylist:
 					drag_highlight = False
 
 					# Shift selection highlight
-					if (track_position in gui.shift_selection and len(gui.shift_selection) > 1):
+					if (track_position in self.gui.shift_selection and len(self.gui.shift_selection) > 1):
 						highlight = True
 
 					# Tracks have been dropped?
@@ -29394,10 +29393,9 @@ class StandardPlaylist:
 				if len(gui.shift_selection) > 1 or inp.key_shift_down:
 					if track_position not in gui.shift_selection:  # p_track != gui.playlist_hold_position and
 
-						if len(gui.shift_selection) == 0:
-
-							ref = pctl.default_playlist[gui.playlist_hold_position]
-							pctl.default_playlist[gui.playlist_hold_position] = "old"
+						if len(self.gui.shift_selection) == 0:
+							ref = pctl.default_playlist[self.gui.playlist_hold_position]
+							pctl.default_playlist[self.gui.playlist_hold_position] = "old"
 							if gui.move_on_title:
 								pctl.default_playlist.insert(track_position, "new")
 							else:
@@ -29412,13 +29410,13 @@ class StandardPlaylist:
 						else:
 							ref = []
 							gui.selection_stage = 2
-							for item in gui.shift_selection:
+							for item in self.gui.shift_selection:
 								ref.append(pctl.default_playlist[item])
 
-							for item in gui.shift_selection:
+							for item in self.gui.shift_selection:
 								pctl.default_playlist[item] = "old"
 
-							for item in gui.shift_selection:
+							for item in self.gui.shift_selection:
 								if gui.move_on_title:
 									pctl.default_playlist.insert(track_position, "new")
 								else:
@@ -29427,26 +29425,26 @@ class StandardPlaylist:
 							for b in reversed(range(len(pctl.default_playlist))):
 								if pctl.default_playlist[b] == "old":
 									del pctl.default_playlist[b]
-							gui.shift_selection = []
+							self.gui.shift_selection = []
 							for b in range(len(pctl.default_playlist)):
 								if pctl.default_playlist[b] == "new":
-									gui.shift_selection.append(b)
+									self.gui.shift_selection.append(b)
 									pctl.default_playlist[b] = ref.pop(0)
 
-							pctl.selected_in_playlist = gui.shift_selection[0]
+							pctl.selected_in_playlist = self.gui.shift_selection[0]
 							gui.pl_update += 1
 
 						tauon.reload_albums(True)
 						pctl.notify_change()
 
 			# Test show drag indicator
-			if inp.mouse_down and gui.playlist_hold and self.coll(input_box) and track_position not in gui.shift_selection:
-				if len(gui.shift_selection) > 1 or inp.key_shift_down:
+			if self.inp.mouse_down and self.gui.playlist_hold and self.coll(input_box) and track_position not in self.gui.shift_selection:
+				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
 					drag_highlight = True
 
 			# Right click menu activation
-			if inp.right_click and line_hit and inp.mouse_position[0] > gui.playlist_left + 10:
-				if len(gui.shift_selection) > 1 and track_position in gui.shift_selection:
+			if self.inp.right_click and line_hit and self.inp.mouse_position[0] > gui.playlist_left + 10:
+				if len(self.gui.shift_selection) > 1 and track_position in self.gui.shift_selection:
 					self.tauon.selection_menu.activate(pctl.default_playlist[track_position])
 					gui.selection_stage = 2
 				else:
@@ -29456,45 +29454,45 @@ class StandardPlaylist:
 					gui.pl_update += 1
 					gui.update += 1
 
-					if track_position not in gui.shift_selection:
+					if track_position not in self.gui.shift_selection:
 						pctl.selected_in_playlist = track_position
-						gui.shift_selection = [pctl.selected_in_playlist]
+						self.gui.shift_selection = [pctl.selected_in_playlist]
 
 			if line_over and inp.mouse_click:
 
-				if track_position in gui.shift_selection:
+				if track_position in self.gui.shift_selection:
 					pass
 				else:
 					gui.selection_stage = 2
-					if inp.key_shift_down:
+					if self.inp.key_shift_down:
 						start_s = track_position
 						end_s = pctl.selected_in_playlist
 						if end_s < start_s:
 							end_s, start_s = start_s, end_s
 						for y in range(start_s, end_s + 1):
-							if y not in gui.shift_selection:
-								gui.shift_selection.append(y)
-						gui.shift_selection.sort()
+							if y not in self.gui.shift_selection:
+								self.gui.shift_selection.append(y)
+						self.gui.shift_selection.sort()
 						pctl.selected_in_playlist = track_position
-					elif inp.key_ctrl_down:
-						gui.shift_selection.append(track_position)
+					elif self.inp.key_ctrl_down:
+						self.gui.shift_selection.append(track_position)
 					else:
 						pctl.selected_in_playlist = track_position
-						gui.shift_selection = [pctl.selected_in_playlist]
+						self.gui.shift_selection = [pctl.selected_in_playlist]
 
-				if not tauon.pl_is_locked(pctl.active_playlist_viewing) or inp.key_shift_down:
-					gui.playlist_hold = True
-					gui.playlist_hold_position = track_position
+				if not tauon.pl_is_locked(pctl.active_playlist_viewing) or self.inp.key_shift_down:
+					self.gui.playlist_hold = True
+					self.gui.playlist_hold_position = track_position
 
 			# Activate drag if shift key down
-			if inp.quick_drag and tauon.pl_is_locked(pctl.active_playlist_viewing) and inp.mouse_down:
-				if inp.key_shift_down:
-					gui.playlist_hold = True
+			if self.inp.quick_drag and tauon.pl_is_locked(pctl.active_playlist_viewing) and self.inp.mouse_down:
+				if self.inp.key_shift_down:
+					self.gui.playlist_hold = True
 				else:
-					gui.playlist_hold = False
+					self.gui.playlist_hold = False
 
 			# Multi Select Highlight
-			if track_position in gui.shift_selection or track_position == pctl.selected_in_playlist:
+			if track_position in self.gui.shift_selection or track_position == pctl.selected_in_playlist:
 				highlight = True
 
 			if pctl.playing_state != 3 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
@@ -45351,7 +45349,6 @@ def main(holder: Holder) -> None:
 								ddt.text((x2, y1), tc.comment, value_colour, 12)
 
 				if tauon.draw_border and gui.mode != 3:
-
 					tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
 					if prefs.left_window_control:
 						tool_rect[0] = 0
