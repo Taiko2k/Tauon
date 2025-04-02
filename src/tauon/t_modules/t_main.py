@@ -5643,6 +5643,7 @@ class Tauon:
 		self.album_art_gen                        = self.style_overlay.album_art_gen
 		self.tool_tip                             = ToolTip(tauon=self)
 		self.tool_tip2                            = ToolTip(tauon=self)
+		self.columns_tool_tip                     = ToolTip3(tauon=self)
 		self.f_store                              = FunctionStore()
 		self.tool_tip2.trigger                    = 1.8
 		self.undo                                 = Undo(tauon=self)
@@ -40537,9 +40538,6 @@ def main(holder: Holder) -> None:
 	asbp = 50
 	album_scroll_hold = False
 
-	columns_tool_tip = ToolTip3(tauon)
-	tool_tip_instant = ToolTip3(tauon)
-
 	# Create empty area menu
 	playlist_menu         = tauon.playlist_menu
 	radio_entry_menu      = tauon.radio_entry_menu
@@ -44865,9 +44863,9 @@ def main(holder: Holder) -> None:
 							and not Menu.active \
 							and not tauon.artist_info_scroll.held:
 
-						columns_tool_tip.render()
+						tauon.columns_tool_tip.render()
 					else:
-						columns_tool_tip.show = False
+						tauon.columns_tool_tip.show = False
 
 				# Overlay GUI ----------------------
 
