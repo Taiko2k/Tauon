@@ -21741,8 +21741,9 @@ class TransEditBox:
 		self.pctl              = tauon.pctl
 		self.fields            = tauon.fields
 		self.colours           = tauon.colours
-		self.window_size       = tauon.window_size
 		self.star_store        = tauon.star_store
+		self.window_size       = tauon.window_size
+		self.show_message      = tauon.show_message
 		self.edit_album        = tauon.edit_album
 		self.edit_artist       = tauon.edit_artist
 		self.edit_title        = tauon.edit_title
