@@ -27990,7 +27990,6 @@ class BottomBarType_ao1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self) -> None:
-		global volume_store
 		global clicked
 		global right_click
 
@@ -28057,11 +28056,11 @@ class BottomBarType_ao1:
 
 			if right_click and coll((h_rect[0], h_rect[1], h_rect[2] + 50 * gui.scale, h_rect[3])):
 				if right_click:
-					if pctl.player_volume > 0:
-						volume_store = pctl.player_volume
-						pctl.player_volume = 0
+					if self.pctl.player_volume > 0:
+						self.pctl.volume_store = self.pctl.player_volume
+						self.pctl.player_volume = 0
 					else:
-						pctl.player_volume = volume_store
+						self.pctl.player_volume = self.pctl.volume_store
 
 					self.pctl.set_volume()
 
@@ -28171,8 +28170,8 @@ class BottomBarType_ao1:
 				self.gui.dtm3_total = 0
 				run = True
 				collected = []
-				for item in default_playlist:
-					if pctl.master_library[item].parent_folder_path == track.parent_folder_path:
+				for item in self.pctl.default_playlist:
+					if self.pctl.master_library[item].parent_folder_path == track.parent_folder_path:
 						if item not in collected:
 							collected.append(item)
 							self.gui.dtm3_total += self.pctl.master_library[item].length
@@ -29019,7 +29018,19 @@ class StandardPlaylist:
 		self.star_store  = tauon.star_store
 		self.window_size = tauon.window_size
 
-	def full_render(self):
+	def full_render(self) -> None:
+		tauon       = self.tauon
+		prefs       = self.prefs
+		pctl        = self.pctl
+		gui         = self.gui
+		inp         = self.inp
+		window_size = self.window_size
+		ddt         = self.ddt
+		colours     = self.colours
+		pl_bg       = self.pl_bg
+		deco        = self.deco
+		left        = gui.playlist_left
+		width       = gui.plw
 
 		global highlight_left
 		global highlight_right
@@ -29036,9 +29047,6 @@ class StandardPlaylist:
 
 		global r_menu_index
 		global r_menu_position
-
-		left = gui.playlist_left
-		width = gui.plw
 
 		highlight_width = gui.tracklist_highlight_width
 		highlight_left = gui.tracklist_highlight_left
@@ -29090,11 +29098,11 @@ class StandardPlaylist:
 			#if mouse_wheel:
 				#logging.debug("Position changed by mouse wheel scroll: " + str(mouse_wheel))
 
-			pctl.playlist_view_position = min(pctl.playlist_view_position, len(default_playlist))
+			pctl.playlist_view_position = min(pctl.playlist_view_position, len(pctl.default_playlist))
 				#logging.debug("Position changed by range bound")
 			if pctl.playlist_view_position < 1:
 				pctl.playlist_view_position = 0
-				if default_playlist:
+				if pctl.default_playlist:
 					# edge_playlist.pulse()
 					edge_playlist2.pulse()
 
@@ -29102,7 +29110,7 @@ class StandardPlaylist:
 			gui.frame_callback_list.append(TestTimer(0.9))
 
 		# Show notice if playlist empty
-		if len(default_playlist) == 0:
+		if len(pctl.default_playlist) == 0:
 			colour = alpha_mod(colours.index_text, 200)  # colours.playlist_text_missing
 
 			top_a = gui.panelY
@@ -29129,7 +29137,7 @@ class StandardPlaylist:
 			ddt.alpha_bg = False
 
 		# Show notice if at end of playlist
-		elif pctl.playlist_view_position > len(default_playlist) - 1:
+		elif pctl.playlist_view_position > len(pctl.default_playlist) - 1:
 			colour = alpha_mod(colours.index_text, 200)
 
 			top_a = gui.panelY
@@ -29152,8 +29160,8 @@ class StandardPlaylist:
 			ddt.pretty_rect = None
 			ddt.alpha_bg = False
 
-			# line = "Contains " + str(len(default_playlist)) + ' track'
-			# if len(default_playlist) > 1:
+			# line = "Contains " + str(len(pctl.default_playlist)) + ' track'
+			# if len(pctl.default_playlist) > 1:
 			#     line += "s"
 			#
 			# ddt.draw_text((left + int(width / 2) + 10 * gui.scale, half + 24 * gui.scale, 2), line,
@@ -29173,10 +29181,10 @@ class StandardPlaylist:
 			pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 
 			# Break if we are at end of playlist
-			if len(default_playlist) <= track_position or number > gui.playlist_view_length:
+			if len(pctl.default_playlist) <= track_position or number > gui.playlist_view_length:
 				break
 
-			track_object = pctl.get_track(default_playlist[track_position])
+			track_object = pctl.get_track(pctl.default_playlist[track_position])
 			track_id = track_object.index
 			move_on_title = False
 
@@ -29192,7 +29200,7 @@ class StandardPlaylist:
 			if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title and break_enable:
 				# Is this track from a different folder than the last?
 				if track_position == 0 or track_object.parent_folder_path != pctl.get_track(
-						default_playlist[track_position - 1]).parent_folder_path:
+						pctl.default_playlist[track_position - 1]).parent_folder_path:
 					# Make folder title
 
 					highlight = False
@@ -29221,10 +29229,10 @@ class StandardPlaylist:
 						if middle_click and is_level_zero():
 							if key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
-								parent = pctl.get_track(default_playlist[i]).parent_folder_path
-								while i < len(default_playlist) and parent == pctl.get_track(
-										default_playlist[i]).parent_folder_path:
-									pctl.force_queue.append(queue_item_gen(default_playlist[i], i, pl_to_id(
+								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
+								while i < len(pctl.default_playlist) and parent == pctl.get_track(
+										pctl.default_playlist[i]).parent_folder_path:
+									pctl.force_queue.append(queue_item_gen(pctl.default_playlist[i], i, pl_to_id(
 										pctl.active_playlist_viewing)))
 									i += 1
 								queue_timer_set(plural=True)
@@ -29259,9 +29267,9 @@ class StandardPlaylist:
 								shift_selection = []
 								pctl.selected_in_playlist = track_position
 								u = track_position
-								while u < len(default_playlist) and track_object.parent_folder_path == \
+								while u < len(pctl.default_playlist) and track_object.parent_folder_path == \
 										pctl.master_library[
-											default_playlist[u]].parent_folder_path:
+											pctl.default_playlist[u]].parent_folder_path:
 									shift_selection.append(u)
 									u += 1
 
@@ -29404,15 +29412,15 @@ class StandardPlaylist:
 
 						if len(shift_selection) == 0:
 
-							ref = default_playlist[playlist_hold_position]
-							default_playlist[playlist_hold_position] = "old"
+							ref = pctl.default_playlist[playlist_hold_position]
+							pctl.default_playlist[playlist_hold_position] = "old"
 							if move_on_title:
-								default_playlist.insert(track_position, "new")
+								pctl.default_playlist.insert(track_position, "new")
 							else:
-								default_playlist.insert(track_position + 1, "new")
-							default_playlist.remove("old")
-							pctl.selected_in_playlist = default_playlist.index("new")
-							default_playlist[default_playlist.index("new")] = ref
+								pctl.default_playlist.insert(track_position + 1, "new")
+							pctl.default_playlist.remove("old")
+							pctl.selected_in_playlist = pctl.default_playlist.index("new")
+							pctl.default_playlist[pctl.default_playlist.index("new")] = ref
 
 							gui.pl_update = 1
 
@@ -29421,25 +29429,25 @@ class StandardPlaylist:
 							ref = []
 							selection_stage = 2
 							for item in shift_selection:
-								ref.append(default_playlist[item])
+								ref.append(pctl.default_playlist[item])
 
 							for item in shift_selection:
-								default_playlist[item] = "old"
+								pctl.default_playlist[item] = "old"
 
 							for item in shift_selection:
 								if move_on_title:
-									default_playlist.insert(track_position, "new")
+									pctl.default_playlist.insert(track_position, "new")
 								else:
-									default_playlist.insert(track_position + 1, "new")
+									pctl.default_playlist.insert(track_position + 1, "new")
 
-							for b in reversed(range(len(default_playlist))):
-								if default_playlist[b] == "old":
-									del default_playlist[b]
+							for b in reversed(range(len(pctl.default_playlist))):
+								if pctl.default_playlist[b] == "old":
+									del pctl.default_playlist[b]
 							shift_selection = []
-							for b in range(len(default_playlist)):
-								if default_playlist[b] == "new":
+							for b in range(len(pctl.default_playlist)):
+								if pctl.default_playlist[b] == "new":
 									shift_selection.append(b)
-									default_playlist[b] = ref.pop(0)
+									pctl.default_playlist[b] = ref.pop(0)
 
 							pctl.selected_in_playlist = shift_selection[0]
 							gui.pl_update += 1
@@ -29456,12 +29464,12 @@ class StandardPlaylist:
 			if right_click and line_hit and mouse_position[0] > gui.playlist_left + 10:
 
 				if len(shift_selection) > 1 and track_position in shift_selection:
-					selection_menu.activate(default_playlist[track_position])
+					selection_menu.activate(pctl.default_playlist[track_position])
 					selection_stage = 2
 				else:
-					r_menu_index = default_playlist[track_position]
+					r_menu_index = pctl.default_playlist[track_position]
 					r_menu_position = track_position
-					track_menu.activate(default_playlist[track_position])
+					track_menu.activate(pctl.default_playlist[track_position])
 					gui.pl_update += 1
 					gui.update += 1
 
@@ -29507,7 +29515,7 @@ class StandardPlaylist:
 				highlight = True
 
 			if pctl.playing_state != 3 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
-					default_playlist[track_position]:
+					pctl.default_playlist[track_position]:
 				if track_position == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
 					playing = True
 
@@ -29544,9 +29552,9 @@ class StandardPlaylist:
 				line = tr.parent_folder_name
 
 				# Use folder name if mixed/singles?
-				if len(default_playlist) > track_position + 1 and pctl.get_track(
-						default_playlist[track_position + 1]).album != tr.album and \
-						pctl.get_track(default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
+				if len(pctl.default_playlist) > track_position + 1 and pctl.get_track(
+						pctl.default_playlist[track_position + 1]).album != tr.album and \
+						pctl.get_track(pctl.default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
 					line = tr.parent_folder_name
 				else:
 
@@ -29601,12 +29609,12 @@ class StandardPlaylist:
 				q = track_position
 
 				total_time = 0
-				while q < len(default_playlist):
+				while q < len(pctl.default_playlist):
 
-					if pctl.get_track(default_playlist[q]).parent_folder_path != tr.parent_folder_path:
+					if pctl.get_track(pctl.default_playlist[q]).parent_folder_path != tr.parent_folder_path:
 						break
 
-					total_time += pctl.get_track(default_playlist[q]).length
+					total_time += pctl.get_track(pctl.default_playlist[q]).length
 
 					q += 1
 					qq += 1
@@ -29780,8 +29788,8 @@ class StandardPlaylist:
 
 				ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
 
-			if track_position > 0 and track_position < len(default_playlist) and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.get_track(default_playlist[track_position - 1]).disc_number \
-					and tr.album == pctl.get_track(default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.get_track(default_playlist[track_position - 1]).parent_folder_path:
+			if track_position > 0 and track_position < len(pctl.default_playlist) and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.get_track(pctl.default_playlist[track_position - 1]).disc_number \
+					and tr.album == pctl.get_track(pctl.default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.get_track(pctl.default_playlist[track_position - 1]).parent_folder_path:
 				# Draw disc change line
 				ddt.rect(
 					(left + highlight_left, line_y + 0 * gui.scale, highlight_width,
@@ -31714,7 +31722,7 @@ class PlaylistBox:
 					if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
 						pctl.play()
 					elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
-						pctl.jump(default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
+						pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
 				if mouse_up:
 					top_panel.tab_d_click_timer.set()
 					top_panel.tab_d_click_ref = pl_to_id(i)
@@ -31738,7 +31746,7 @@ class PlaylistBox:
 					gui.pl_update += 1
 
 					for item in shift_selection:
-						pctl.multi_playlist[i].playlist_ids.append(default_playlist[item])
+						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
 						modified = True
 					if len(shift_selection) > 0:
 						self.adds.append(
@@ -31866,7 +31874,7 @@ class PlaylistBox:
 
 			elif quick_drag and not point_proximity_test(gui.drag_source_position, mouse_position, 15 * gui.scale):
 				for item in shift_selection:
-					if len(default_playlist) > item and default_playlist[item] in pl.playlist_ids:
+					if len(pctl.default_playlist) > item and pctl.default_playlist[item] in pl.playlist_ids:
 						ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [190, 170, 20, 255])
 						break
 			# Drag red line highlight if playlist is generator playlist
@@ -32440,7 +32448,7 @@ class ArtistList:
 		if not thin_mode:
 
 			if coll(area) and is_level_zero(
-					True):  # or pctl.get_track(default_playlist[pctl.playlist_view_position]).artist == artist:
+					True):  # or pctl.get_track(pctl.default_playlist[pctl.playlist_view_position]).artist == artist:
 				ddt.rect(area, [50, 50, 50, 50])
 				bg = alpha_blend([50, 50, 50, 50], colours.side_panel_background)
 				if prefs.transparent_mode:
@@ -32496,8 +32504,8 @@ class ArtistList:
 				last_ref = None
 				on = 0
 
-				for i in range(len(default_playlist)):
-					track = pctl.get_track(default_playlist[i])
+				for i in range(len(self.pctl.default_playlist)):
+					track = pctl.get_track(self.pctl.default_playlist[i])
 					if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
 							"artists" in track.misc and artist in track.misc["artists"]):
 						# Matchin artist
@@ -32524,8 +32532,8 @@ class ArtistList:
 
 				# block_starts = []
 				# current = False
-				# for i in range(len(default_playlist)):
-				#     track = pctl.get_track(default_playlist[i])
+				# for i in range(len(self.pctl.default_playlist)):
+				#     track = pctl.get_track(self.pctl.default_playlist[i])
 				#     if current is False:
 				#         if track.artist == artist or track.album_artist == artist or (
 				#                 'artists' in track.misc and artist in track.misc['artists']):
@@ -32546,7 +32554,7 @@ class ArtistList:
 				#select = block_starts[0]
 
 				# if len(block_starts) > 1:
-				#     if -1 < pctl.selected_in_playlist < len(default_playlist):
+				#     if -1 < pctl.selected_in_playlist < len(self.pctl.default_playlist):
 				#         if pctl.selected_in_playlist in block_starts:
 				#             scroll_hide_timer.set()
 				#             gui.frame_callback_list.append(TestTimer(0.9))
@@ -32564,9 +32572,9 @@ class ArtistList:
 				if double_click:
 					# Stat first artist track in playlist
 
-					pctl.jump(default_playlist[select], pl_position=select)
-					pctl.playlist_view_position = select
-					pctl.selected_in_playlist = select
+					self.pctl.jump(self.pctl.default_playlist[select], pl_position=select)
+					self.pctl.playlist_view_position = select
+					self.pctl.selected_in_playlist = select
 					shift_selection.clear()
 					self.d_click_timer.force_set(10)
 				else:
@@ -33450,14 +33458,14 @@ class QueueBox:
 		playlist_id = pl_to_id(pctl.active_playlist_viewing)
 
 		main_track_position = shift_selection[0]
-		main_track_id = default_playlist[main_track_position]
+		main_track_id = self.pctl.default_playlist[main_track_position]
 		quick_drag = False
 
 		if len(shift_selection) > 1:
 
 			# if shift selection contains only same folder
 			for position in shift_selection:
-				if pctl.get_track(default_playlist[position]).parent_folder_path != pctl.get_track(
+				if pctl.get_track(self.pctl.default_playlist[position]).parent_folder_path != pctl.get_track(
 						main_track_id).parent_folder_path or key_ctrl_down:
 					break
 			else:
@@ -33472,7 +33480,7 @@ class QueueBox:
 			# Add each track
 			for position in reversed(shift_selection):
 				pctl.force_queue.insert(
-					insert_position, queue_item_gen(default_playlist[position], position, playlist_id))
+					insert_position, queue_item_gen(self.pctl.default_playlist[position], position, playlist_id))
 
 	def clear_queue_crop(self):
 
@@ -38037,7 +38045,6 @@ def right_trunc(line: str, font: str, px: int, dots: bool = True) -> str:
 # 	 return line.rstrip(" ") + gui.trunk_end
 
 def fix_encoding(index, mode, enc):
-	global default_playlist
 	global enc_field
 
 	todo = []
@@ -38045,10 +38052,10 @@ def fix_encoding(index, mode, enc):
 	if mode == 1:
 		todo = [index]
 	elif mode == 0:
-		for b in range(len(default_playlist)):
-			if pctl.master_library[default_playlist[b]].parent_folder_name == pctl.master_library[
+		for b in range(len(pctl.default_playlist)):
+			if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == pctl.master_library[
 				index].parent_folder_name:
-				todo.append(default_playlist[b])
+				todo.append(pctl.default_playlist[b])
 
 	for q in range(len(todo)):
 
@@ -38090,12 +38097,12 @@ def transfer_tracks(index, mode, to):
 	if mode == 0:
 		todo = [index]
 	elif mode == 1:
-		for b in range(len(default_playlist)):
-			if pctl.master_library[default_playlist[b]].parent_folder_name == pctl.master_library[
+		for b in range(len(pctl.default_playlist)):
+			if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == pctl.master_library[
 				index].parent_folder_name:
-				todo.append(default_playlist[b])
+				todo.append(pctl.default_playlist[b])
 	elif mode == 2:
-		todo = default_playlist
+		todo = pctl.default_playlist
 
 	pctl.multi_playlist[to].playlist_ids += todo
 
@@ -38105,7 +38112,7 @@ def prep_gal():
 
 	folder = ""
 
-	for index in default_playlist:
+	for index in pctl.default_playlist:
 
 		if folder != pctl.master_library[index].parent_folder_name:
 			albums.append([index, 0])
@@ -38845,7 +38852,7 @@ def move_playing_folder_to_tag(tag_item):
 
 def re_import4(id):
 	p = None
-	for i, idd in enumerate(default_playlist):
+	for i, idd in enumerate(pctl.default_playlist):
 		if idd == id:
 			p = i
 			break
@@ -38864,7 +38871,7 @@ def re_import4(id):
 
 def re_import3(stem):
 	p = None
-	for i, id in enumerate(default_playlist):
+	for i, id in enumerate(pctl.default_playlist):
 		if pctl.get_track(id).fullpath.startswith(stem + "/"):
 			p = i
 			break
@@ -39474,7 +39481,7 @@ def download_art1(tr):
 
 					show_message(_("Cover art downloaded from fanart.tv"), mode="done")
 					# clear_img_cache()
-					for track_id in default_playlist:
+					for track_id in pctl.default_playlist:
 						if tr.parent_folder_path == pctl.get_track(track_id).parent_folder_path:
 							clear_track_image_cache(pctl.get_track(track_id))
 					return
@@ -39497,7 +39504,7 @@ def download_art1(tr):
 			# clear_img_cache()
 			clear_track_image_cache(tr)
 
-			for track_id in default_playlist:
+			for track_id in pctl.default_playlist:
 				if tr.parent_folder_path == pctl.get_track(track_id).parent_folder_path:
 					clear_track_image_cache(pctl.get_track(track_id))
 
@@ -39531,7 +39538,7 @@ def remove_embed_picture(track_object: TrackClass, dry: bool = True) -> int | No
 	else:
 		tracks = []
 		original_parent_folder = track_object.parent_folder_name
-		for k in default_playlist:
+		for k in pctl.default_playlist:
 			tr = pctl.get_track(k)
 			if original_parent_folder == tr.parent_folder_name:
 				tracks.append(k)
@@ -39679,8 +39686,7 @@ def search_image_deco(track_object: TrackClass):
 
 def append_here():
 	global cargo
-	global default_playlist
-	default_playlist += cargo
+	pctl.default_playlist += cargo
 
 def paste_deco():
 	active = False
@@ -39878,8 +39884,6 @@ def reload():
 	#	 combo_pl_render.prep()
 
 def clear_playlist(index: int):
-	global default_playlist
-
 	if pl_is_locked(index):
 		show_message(_("Playlist is locked to prevent accidental erasure"))
 		return
@@ -39898,7 +39902,7 @@ def clear_playlist(index: int):
 
 	del pctl.multi_playlist[index].playlist_ids[:]
 	if pctl.active_playlist_viewing == index:
-		default_playlist = pctl.multi_playlist[index].playlist_ids
+		pctl.default_playlist = pctl.multi_playlist[index].playlist_ids
 		reload()
 
 	# pctl.playlist_playing = 0
@@ -39941,9 +39945,9 @@ def convert_playlist(pl: int, get_list: bool = False) -> list[list[int]]| None:
 
 def get_folder_tracks_local(pl_in: int) -> list[int]:
 	selection = []
-	parent = os.path.normpath(pctl.master_library[default_playlist[pl_in]].parent_folder_path)
-	while pl_in < len(default_playlist) and parent == os.path.normpath(
-			pctl.master_library[default_playlist[pl_in]].parent_folder_path):
+	parent = os.path.normpath(pctl.master_library[pctl.default_playlist[pl_in]].parent_folder_path)
+	while pl_in < len(pctl.default_playlist) and parent == os.path.normpath(
+			pctl.master_library[pctl.default_playlist[pl_in]].parent_folder_path):
 		selection.append(pl_in)
 		pl_in += 1
 	return selection
@@ -39966,7 +39970,6 @@ def move_radio_playlist(source, dest): # TODO(Martin): Now in PlayerCtl
 		logging.exception("Playlist move error")
 
 def move_playlist(source, dest): # TODO(Martin): Now in PlayerCtl
-	global default_playlist
 	if dest > source:
 		dest += 1
 	try:
@@ -39980,7 +39983,7 @@ def move_playlist(source, dest): # TODO(Martin): Now in PlayerCtl
 
 		pctl.active_playlist_playing = pctl.multi_playlist.index(active)
 		pctl.active_playlist_viewing = pctl.multi_playlist.index(view)
-		default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
+		pctl.default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 	except Exception:
 		logging.exception("Playlist move error")
 
@@ -39990,8 +39993,6 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 		if not pctl.radio_playlists:
 			pctl.radio_playlists = [RadioPlaylist(uid=uid_gen(),name="Default", stations=[])]
 		return
-
-	global default_playlist
 
 	if check_lock and pl_is_locked(index):
 		show_message(_("Playlist is locked to prevent accidental deletion"))
@@ -40019,7 +40020,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 		logging.warning("Deleting final playlist and creating a new Default one")
 		pctl.multi_playlist.clear()
 		pctl.multi_playlist.append(pl_gen())
-		default_playlist = pctl.multi_playlist[0].playlist_ids
+		pctl.default_playlist = pctl.multi_playlist[0].playlist_ids
 		pctl.active_playlist_playing = 0
 		return
 
@@ -40052,7 +40053,7 @@ def delete_playlist(index: int, force: bool = False, check_lock: bool = False) -
 
 	# Re-initiate the now viewed playlist
 	if old_view_id != pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int:
-		default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
+		pctl.default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 		pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing].position
 		logging.debug("Position reset by playlist delete")
 		pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].selected
@@ -40570,7 +40571,7 @@ def year_sort(pl: int, custom_list=None):
 	if custom_list is not None:
 		return pl2
 
-	# We can't just assign the playlist because it may disconnect the 'pointer' default_playlist
+	# We can't just assign the playlist because it may disconnect the 'pointer' pctl.default_playlist
 	pctl.multi_playlist[pl].playlist_ids[:] = pl2[:]
 	reload_albums()
 	tree_view_box.clear_target_pl(pl)
@@ -42426,17 +42427,14 @@ def open_data_directory():
 		subprocess.call(["xdg-open", target])
 
 def remove_folder(index: int):
-	global default_playlist
-
-	for b in range(len(default_playlist) - 1, -1, -1):
+	for b in range(len(pctl.default_playlist) - 1, -1, -1):
 		r_folder = pctl.master_library[index].parent_folder_name
-		if pctl.master_library[default_playlist[b]].parent_folder_name == r_folder:
-			del default_playlist[b]
+		if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == r_folder:
+			del pctl.default_playlist[b]
 
 	reload()
 
 def convert_folder(index: int):
-	global default_playlist
 	global transcode_list
 
 	if not tauon.test_ffmpeg():
@@ -42462,7 +42460,7 @@ def convert_folder(index: int):
 
 	else:
 		r_folder = pctl.master_library[index].parent_folder_path
-		for item in default_playlist:
+		for item in pctl.default_playlist:
 			if r_folder == pctl.master_library[item].parent_folder_path:
 
 				track_object = pctl.get_track(item)
@@ -42489,36 +42487,35 @@ def convert_folder(index: int):
 
 def transfer(index: int, args) -> None:
 	global cargo
-	global default_playlist
 	old_cargo = copy.deepcopy(cargo)
 
 	if args[0] == 1 or args[0] == 0:  # copy
 		if args[1] == 1:  # single track
 			cargo.append(index)
 			if args[0] == 0:  # cut
-				del default_playlist[pctl.selected_in_playlist]
+				del pctl.default_playlist[pctl.selected_in_playlist]
 
 		elif args[1] == 2:  # folder
-			for b in range(len(default_playlist)):
-				if pctl.master_library[default_playlist[b]].parent_folder_name == pctl.master_library[
+			for b in range(len(pctl.default_playlist)):
+				if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == pctl.master_library[
 					index].parent_folder_name:
-					cargo.append(default_playlist[b])
+					cargo.append(pctl.default_playlist[b])
 			if args[0] == 0:  # cut
-				for b in reversed(range(len(default_playlist))):
-					if pctl.master_library[default_playlist[b]].parent_folder_name == pctl.master_library[
+				for b in reversed(range(len(pctl.default_playlist))):
+					if pctl.master_library[pctl.default_playlist[b]].parent_folder_name == pctl.master_library[
 						index].parent_folder_name:
-						del default_playlist[b]
+						del pctl.default_playlist[b]
 
 		elif args[1] == 3:  # playlist
-			cargo += default_playlist
+			cargo += pctl.default_playlist
 			if args[0] == 0:  # cut
-				default_playlist = []
+				pctl.default_playlist = []
 
 	elif args[0] == 2:  # Drop
 		if args[1] == 1:  # Before
 
 			insert = pctl.selected_in_playlist
-			while insert > 0 and pctl.master_library[default_playlist[insert]].parent_folder_name == \
+			while insert > 0 and pctl.master_library[pctl.default_playlist[insert]].parent_folder_name == \
 					pctl.master_library[index].parent_folder_name:
 				insert -= 1
 				if insert == 0:
@@ -42527,19 +42524,19 @@ def transfer(index: int, args) -> None:
 				insert += 1
 
 			while len(cargo) > 0:
-				default_playlist.insert(insert, cargo.pop())
+				pctl.default_playlist.insert(insert, cargo.pop())
 
 		elif args[1] == 2:  # After
 			insert = pctl.selected_in_playlist
 
-			while insert < len(default_playlist) and pctl.master_library[default_playlist[insert]].parent_folder_name == \
+			while insert < len(pctl.default_playlist) and pctl.master_library[pctl.default_playlist[insert]].parent_folder_name == \
 					pctl.master_library[index].parent_folder_name:
 				insert += 1
 
 			while len(cargo) > 0:
-				default_playlist.insert(insert, cargo.pop())
+				pctl.default_playlist.insert(insert, cargo.pop())
 		elif args[1] == 3:  # End
-			default_playlist += cargo
+			pctl.default_playlist += cargo
 			# cargo = []
 
 		cargo = old_cargo
@@ -42573,12 +42570,12 @@ def s_copy():
 
 	global cargo
 	cargo = []
-	if default_playlist:
+	if pctl.default_playlist:
 		for item in shift_selection:
-			cargo.append(default_playlist[item])
+			cargo.append(pctl.default_playlist[item])
 
-	if not cargo and -1 < pctl.selected_in_playlist < len(default_playlist):
-		cargo.append(default_playlist[pctl.selected_in_playlist])
+	if not cargo and -1 < pctl.selected_in_playlist < len(pctl.default_playlist):
+		cargo.append(pctl.default_playlist[pctl.selected_in_playlist])
 
 	tauon.copied_track = None
 
@@ -42600,7 +42597,7 @@ def lightning_paste():
 				_("This function can only move one folder at a time."), mode="info")
 			return
 
-	match_track = pctl.get_track(default_playlist[shift_selection[0]])
+	match_track = pctl.get_track(pctl.default_playlist[shift_selection[0]])
 	match_path = match_track.parent_folder_path
 
 	if pctl.playing_state > 0 and move:
@@ -42692,7 +42689,7 @@ def lightning_paste():
 
 			insert = shift_selection[0]
 			old_insert = insert
-			while insert < len(default_playlist) and pctl.master_library[
+			while insert < len(pctl.default_playlist) and pctl.master_library[
 				pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids[insert]].parent_folder_name == \
 					pctl.master_library[
 						pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids[old_insert]].parent_folder_name:
@@ -42819,7 +42816,7 @@ def paste_playlist_coast_fire():
 	elif pctl.playing_ready() and "spotify-album-url" in pctl.playing_object().misc:
 		url = pctl.playing_object().misc["spotify-album-url"]
 	if url:
-		default_playlist.extend(tauon.spot_ctl.append_album(url, return_list=True))
+		pctl.default_playlist.extend(tauon.spot_ctl.append_album(url, return_list=True))
 	gui.pl_update += 1
 
 def paste_playlist_track_coast_fire():
@@ -42853,7 +42850,7 @@ def paste_playlist_coast_album_deco():
 def refind_playing():
 	# Refind playing index
 	if pctl.playing_ready():
-		for i, n in enumerate(default_playlist):
+		for i, n in enumerate(pctl.default_playlist):
 			if pctl.track_queue[pctl.queue_step] == n:
 				pctl.playlist_playing_position = i
 				break
@@ -42867,23 +42864,23 @@ def del_selected(force_delete=False):
 	if not shift_selection:
 		shift_selection = [pctl.selected_in_playlist]
 
-	if not default_playlist:
+	if not pctl.default_playlist:
 		return
 
 	li = []
 
 	for item in reversed(shift_selection):
-		if item > len(default_playlist) - 1:
+		if item > len(pctl.default_playlist) - 1:
 			return
 
-		li.append((item, default_playlist[item]))  # take note for force delete
+		li.append((item, pctl.default_playlist[item]))  # take note for force delete
 
 		# Correct track playing position
 		if pctl.active_playlist_playing == pctl.active_playlist_viewing:
 			if 0 < pctl.playlist_playing_position + 1 > item:
 				pctl.playlist_playing_position -= 1
 
-		del default_playlist[item]
+		del pctl.default_playlist[item]
 
 	if force_delete:
 		for item in li:
@@ -42911,7 +42908,7 @@ def del_selected(force_delete=False):
 	reload()
 	tree_view_box.clear_target_pl(pctl.active_playlist_viewing)
 
-	pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(default_playlist) - 1)
+	pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist) - 1)
 
 	shift_selection = [pctl.selected_in_playlist]
 	gui.pl_update += 1
@@ -43012,11 +43009,11 @@ def add_selected_to_queue():
 	if prefs.stop_end_queue:
 		pctl.stop_mode = 0
 	if gui.album_tab_mode:
-		add_album_to_queue(default_playlist[get_album_info(pctl.selected_in_playlist)[1][0]], pctl.selected_in_playlist)
+		add_album_to_queue(pctl.default_playlist[get_album_info(pctl.selected_in_playlist)[1][0]], pctl.selected_in_playlist)
 		queue_timer_set()
 	else:
 		pctl.force_queue.append(
-			queue_item_gen(default_playlist[pctl.selected_in_playlist],
+			queue_item_gen(pctl.default_playlist[pctl.selected_in_playlist],
 			pctl.selected_in_playlist,
 			pl_to_id(pctl.active_playlist_viewing)))
 		queue_timer_set()
@@ -43026,7 +43023,7 @@ def add_selected_to_queue_multi():
 		pctl.stop_mode = 0
 	for index in shift_selection:
 		pctl.force_queue.append(
-			queue_item_gen(default_playlist[index],
+			queue_item_gen(pctl.default_playlist[index],
 			index,
 			pl_to_id(pctl.active_playlist_viewing)))
 
@@ -43088,8 +43085,8 @@ def delete_track(track_ref):
 		show_message(_("Cannot delete a network track"))
 		return
 
-	while track_ref in default_playlist:
-		default_playlist.remove(track_ref)
+	while track_ref in pctl.default_playlist:
+		pctl.default_playlist.remove(track_ref)
 
 	try:
 		send2trash(fullpath)
@@ -43165,10 +43162,10 @@ def delete_folder(index, force=False):
 		else:
 			send2trash(old)
 
-		for i in reversed(range(len(default_playlist))):
+		for i in reversed(range(len(pctl.default_playlist))):
 
-			if old == pctl.master_library[default_playlist[i]].parent_folder_path:
-				del default_playlist[i]
+			if old == pctl.master_library[pctl.default_playlist[i]].parent_folder_path:
+				del pctl.default_playlist[i]
 
 		if not os.path.exists(old):
 			if force:
@@ -43413,7 +43410,7 @@ def clean_folder(index: int, do: bool = False) -> int | None:
 					os.remove(os.path.join(folder, item))
 			# clear_img_cache()
 
-			for track_id in default_playlist:
+			for track_id in pctl.default_playlist:
 				if pctl.get_track(track_id).parent_folder_path == folder:
 					clear_track_image_cache(pctl.get_track(track_id))
 
@@ -43429,7 +43426,7 @@ def reset_play_count(index: int):
 
 def vacuum_playtimes(index: int):
 	todo = []
-	for k in default_playlist:
+	for k in pctl.default_playlist:
 		if pctl.master_library[index].parent_folder_name == pctl.master_library[k].parent_folder_name:
 			todo.append(k)
 
@@ -43472,7 +43469,7 @@ def reload_metadata(input, keep_star: bool = True) -> None:
 		todo = input
 
 	else:
-		for k in default_playlist:
+		for k in pctl.default_playlist:
 			if pctl.master_library[input].parent_folder_path == pctl.master_library[k].parent_folder_path:
 				todo.append(pctl.master_library[k])
 
@@ -43507,7 +43504,7 @@ def reload_metadata(input, keep_star: bool = True) -> None:
 def reload_metadata_selection() -> None:
 	cargo = []
 	for item in shift_selection:
-		cargo.append(default_playlist[item])
+		cargo.append(pctl.default_playlist[item])
 
 	for k in cargo:
 		if pctl.master_library[k].is_cue == False:
@@ -43523,12 +43520,12 @@ def editor(index: int | None) -> None:
 		obs = [pctl.master_library[index]]
 	elif index is None:
 		for item in shift_selection:
-			todo.append(default_playlist[item])
-			obs.append(pctl.master_library[default_playlist[item]])
+			todo.append(pctl.default_playlist[item])
+			obs.append(pctl.master_library[pctl.default_playlist[item]])
 		if len(todo) > 0:
 			index = todo[0]
 	else:
-		for k in default_playlist:
+		for k in pctl.default_playlist:
 			if pctl.master_library[index].parent_folder_path == pctl.master_library[k].parent_folder_path:
 				if pctl.master_library[k].is_cue == False:
 					todo.append(k)
@@ -43667,7 +43664,7 @@ def launch_editor(index: int):
 
 def launch_editor_selection_disable_test(index: int):
 	for position in shift_selection:
-		if pctl.get_track(default_playlist[position]).is_network:
+		if pctl.get_track(pctl.default_playlist[position]).is_network:
 			return True
 	return False
 
@@ -43702,7 +43699,7 @@ def intel_moji(index: int):
 
 	lot = []
 
-	for item in default_playlist:
+	for item in pctl.default_playlist:
 
 		if track.album == pctl.master_library[item].album and \
 				track.parent_folder_name == pctl.master_library[item].parent_folder_name:
@@ -43789,11 +43786,10 @@ def intel_moji(index: int):
 		show_message(_("Autodetect failed"))
 
 def sel_to_car():
-	global default_playlist
 	cargo = []
 
 	for item in shift_selection:
-		cargo.append(default_playlist[item])
+		cargo.append(pctl.default_playlist[item])
 
 def cut_selection():
 	sel_to_car()
@@ -43907,7 +43903,7 @@ def add_to_spotify_library(track_id: int) -> None:
 def selection_queue_deco():
 	total = 0
 	for item in shift_selection:
-		total += pctl.get_track(default_playlist[item]).length
+		total += pctl.get_track(pctl.default_playlist[item]).length
 
 	total = get_hms_time(total)
 
@@ -44100,13 +44096,13 @@ def drop_tracks_to_new_playlist(track_list: list[int], hidden: bool = False) -> 
 	albums = []
 	artists = []
 	for item in track_list:
-		albums.append(pctl.get_track(default_playlist[item]).album)
-		artists.append(pctl.get_track(default_playlist[item]).artist)
-		pctl.multi_playlist[pl].playlist_ids.append(default_playlist[item])
+		albums.append(pctl.get_track(pctl.default_playlist[item]).album)
+		artists.append(pctl.get_track(pctl.default_playlist[item]).artist)
+		pctl.multi_playlist[pl].playlist_ids.append(pctl.default_playlist[item])
 
 	if len(track_list) > 1:
 		if len(albums) > 0 and albums.count(albums[0]) == len(albums):
-			track = pctl.get_track(default_playlist[track_list[0]])
+			track = pctl.get_track(pctl.default_playlist[track_list[0]])
 			artist = track.artist
 			if track.album_artist != "":
 				artist = track.album_artist
@@ -44314,8 +44310,6 @@ def key_hl(index: int) -> int:
 	return 1
 
 def sort_ass(h, invert=False, custom_list=None, custom_name=""):
-	global default_playlist
-
 	if custom_list is None:
 		if pl_is_locked(pctl.active_playlist_viewing):
 			show_message(_("Playlist is locked"))
@@ -44390,7 +44384,7 @@ def sort_ass(h, invert=False, custom_list=None, custom_name=""):
 			playlist.sort(key=key, reverse=invert)
 
 			pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids = playlist
-			default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
+			pctl.default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 
 			pctl.playlist_view_position = 0
 			logging.debug("Position changed by sort")
@@ -44468,7 +44462,7 @@ def toggle_galler_text(mode: int = 0) -> bool:
 	# Jump to playing album
 	if album_mode and gui.first_in_grid is not None:
 
-		if gui.first_in_grid < len(default_playlist):
+		if gui.first_in_grid < len(pctl.default_playlist):
 			goto_album(gui.first_in_grid, force=True)
 
 def toggle_card_style(mode: int = 0) -> bool:
@@ -44733,9 +44727,6 @@ def check_auto_update_okay(code, pl=None):
 		"r"      not in cmds)
 
 def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in PlayerCtl
-	global default_playlist
-
-	global search_index
 	global shift_selection
 
 	# Close any active menus
@@ -44754,7 +44745,7 @@ def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in Pl
 	gui.previous_playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
 	gui.pl_update = 1
-	search_index = 0
+	gui.search_index = 0
 	gui.column_d_click_on = -1
 	gui.search_error = False
 	if quick_search_mode:
@@ -44766,7 +44757,7 @@ def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in Pl
 	if gui.showcase_mode and gui.combo_mode and not quiet:
 		view_standard()
 
-	pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids = default_playlist
+	pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids = pctl.default_playlist
 	pctl.multi_playlist[pctl.active_playlist_viewing].position = pctl.playlist_view_position
 	pctl.multi_playlist[pctl.active_playlist_viewing].selected = pctl.selected_in_playlist
 
@@ -44786,7 +44777,7 @@ def switch_playlist(number, cycle=False, quiet=False): # TODO(Martin): Now in Pl
 	while pctl.active_playlist_viewing < 0:
 		pctl.active_playlist_viewing += len(pctl.multi_playlist)
 
-	default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
+	pctl.default_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].playlist_ids
 	pctl.playlist_view_position = pctl.multi_playlist[pctl.active_playlist_viewing].position
 	pctl.selected_in_playlist = pctl.multi_playlist[pctl.active_playlist_viewing].selected
 	logging.debug("Position changed by playlist change")
@@ -45312,8 +45303,8 @@ def locate_artist() -> None:
 
 	block_starts = []
 	current = False
-	for i in range(len(default_playlist)):
-		track = pctl.get_track(default_playlist[i])
+	for i in range(len(pctl.default_playlist)):
+		track = pctl.get_track(pctl.default_playlist[i])
 		if current is False:
 			if track.artist == artist or track.album_artist == artist or (
 					"artists" in track.misc and artist in track.misc["artists"]):
@@ -45343,7 +45334,7 @@ def locate_artist() -> None:
 			pctl.playlist_view_position = block_starts[0]
 			shift_selection.clear()
 
-		tree_view_box.show_track(pctl.get_track(default_playlist[pctl.selected_in_playlist]))
+		tree_view_box.show_track(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]))
 	else:
 		show_message(_("No exact matching artist could be found in this playlist"))
 
@@ -46383,7 +46374,7 @@ def get_album_from_first_track(track_position, track_id=None, pl_number=None, pl
 
 def get_album_info(position, pl: int | None = None):
 
-	playlist = default_playlist
+	playlist = pctl.default_playlist
 	if pl is not None:
 		playlist = pctl.multi_playlist[pl].playlist_ids
 
@@ -46428,7 +46419,7 @@ def get_album_info(position, pl: int | None = None):
 def get_folder_list(index: int):
 	playlist = []
 
-	for item in default_playlist:
+	for item in pctl.default_playlist:
 		if pctl.master_library[item].parent_folder_name == pctl.master_library[index].parent_folder_name and \
 				pctl.master_library[item].album == pctl.master_library[index].album:
 			playlist.append(item)
@@ -46439,11 +46430,11 @@ def gal_jump_select(up=False, num=1):
 	old_selected = pctl.selected_in_playlist
 	old_num = num
 
-	if not default_playlist:
+	if not pctl.default_playlist:
 		return
 
 	on = pctl.selected_in_playlist
-	if on > len(default_playlist) - 1:
+	if on > len(pctl.default_playlist) - 1:
 		on = 0
 		pctl.selected_in_playlist = 0
 
@@ -46451,11 +46442,11 @@ def gal_jump_select(up=False, num=1):
 
 		while num > 0:
 			while pctl.master_library[
-				default_playlist[on]].parent_folder_name == pctl.master_library[
-				default_playlist[pctl.selected_in_playlist]].parent_folder_name:
+				pctl.default_playlist[on]].parent_folder_name == pctl.master_library[
+				pctl.default_playlist[pctl.selected_in_playlist]].parent_folder_name:
 				on += 1
 
-				if on > len(default_playlist) - 1:
+				if on > len(pctl.default_playlist) - 1:
 					pctl.selected_in_playlist = old_selected
 					return
 
@@ -46464,7 +46455,7 @@ def gal_jump_select(up=False, num=1):
 	else:
 
 		if num > 1:
-			if pctl.selected_in_playlist > len(default_playlist) - 1:
+			if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 				pctl.selected_in_playlist = old_selected
 				return
 
@@ -46494,7 +46485,7 @@ def gen_power2():
 
 	for position in album_dex:
 
-		index = default_playlist[position]
+		index = pctl.default_playlist[position]
 		track = pctl.get_track(index)
 
 		crumbs = track.parent_folder_path.split("/")
@@ -47434,11 +47425,11 @@ def line_render(n_track: TrackClass, p_track: TrackClass, y, this_line_playing, 
 				os.path.splitext(n_track.filename)[
 					0]
 
-		if p_track >= len(default_playlist):
+		if p_track >= len(pctl.default_playlist):
 			gui.pl_update += 1
 			return
 
-		index = default_playlist[p_track]
+		index = pctl.default_playlist[p_track]
 		star_x = 0
 		total = star_store.get(index)
 
@@ -48676,7 +48667,7 @@ def save_state() -> None:
 		pctl.player_volume,
 		pctl.track_queue,
 		pctl.queue_step,
-		default_playlist,
+		pctl.default_playlist,
 		None,  # pctl.playlist_playing_position,
 		None,  # Was cue list
 		"",  # radio_field.text,
@@ -52613,7 +52604,6 @@ to_got = gui.to_got
 editline = gui.editline
 quick_drag = inp.quick_drag
 quick_search_mode = gui.quick_search_mode
-search_index = gui.search_index
 new_playlist_cooldown = gui.new_playlist_cooldown
 
 # Playlist Panel
@@ -53311,7 +53301,6 @@ tauon = Tauon(
 )
 pctl = tauon.pctl
 album_dex = tauon.album_dex # TODO(Martin): Remove after refactor
-volume_store = pctl.volume_store # TODO(Martin): Remove after refactor
 if bag.multi_playlist:
 	pctl.multi_playlist = bag.multi_playlist
 	pctl.default_playlist = default_playlist
@@ -55094,7 +55083,7 @@ while pctl.running:
 				if rt:
 					pctl.show_current(highlight=True)
 				elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
-						pctl.selected_ready() and default_playlist[
+						pctl.selected_ready() and pctl.default_playlist[
 					pctl.selected_in_playlist] == pctl.playing_object().index:
 					pctl.play_pause()
 				else:
@@ -55825,11 +55814,11 @@ while pctl.running:
 				gui.pl_update = 1
 
 			if keymaps.test("goto-bottom"):
-				n = len(default_playlist) - gui.playlist_view_length + 1
+				n = len(pctl.default_playlist) - gui.playlist_view_length + 1
 				n = max(n, 0)
 				pctl.playlist_view_position = n
 				logging.debug("Position changed by key")
-				pctl.selected_in_playlist = len(default_playlist) - 1
+				pctl.selected_in_playlist = len(pctl.default_playlist) - 1
 				gui.pl_update = 1
 
 		if not pref_box.enabled and not radiobox.active and not rename_track_box.active \
@@ -55884,9 +55873,9 @@ while pctl.running:
 
 			if keymaps.test("transfer-playtime-to"):
 				if len(cargo) == 1 and tauon.copied_track is not None and -1 < pctl.selected_in_playlist < len(
-						default_playlist):
+						pctl.default_playlist):
 					fr = pctl.get_track(tauon.copied_track)
-					to = pctl.get_track(default_playlist[pctl.selected_in_playlist])
+					to = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist])
 
 					fr_s = star_store.full_get(fr.index)
 					to_s = star_store.full_get(to.index)
@@ -56065,16 +56054,16 @@ while pctl.running:
 			gui.update += 1
 
 		if keymaps.test("pagedown"):  # key_PGD:
-			if len(default_playlist) > 10:
+			if len(pctl.default_playlist) > 10:
 				pctl.playlist_view_position += gui.playlist_view_length - 4
-				if pctl.playlist_view_position > len(default_playlist):
-					pctl.playlist_view_position = len(default_playlist) - 2
+				if pctl.playlist_view_position > len(pctl.default_playlist):
+					pctl.playlist_view_position = len(pctl.default_playlist) - 2
 				gui.pl_update = 1
 				pctl.selected_in_playlist = pctl.playlist_view_position
 				logging.debug("Position changed by page key")
 				shift_selection.clear()
 		if keymaps.test("pageup"):
-			if len(default_playlist) > 0:
+			if len(pctl.default_playlist) > 0:
 				pctl.playlist_view_position -= gui.playlist_view_length - 4
 				pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 				gui.pl_update = 1
@@ -56085,13 +56074,13 @@ while pctl.running:
 		if quick_search_mode is False and rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
 
 			if keymaps.test("info-playing"):
-				if pctl.selected_in_playlist < len(default_playlist):
-					r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
+				if pctl.selected_in_playlist < len(pctl.default_playlist):
+					r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
 					track_box = True
 
 			if keymaps.test("info-show"):
-				if pctl.selected_in_playlist < len(default_playlist):
-					r_menu_index = pctl.get_track(default_playlist[pctl.selected_in_playlist]).index
+				if pctl.selected_in_playlist < len(pctl.default_playlist):
+					r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
 					track_box = True
 
 			# These need to be disabled when text fields are active
@@ -56106,7 +56095,7 @@ while pctl.running:
 
 				if key_a_press and key_ctrl_down:
 					gui.pl_update = 1
-					shift_selection = range(len(default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
+					shift_selection = range(len(pctl.default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
 
 				if keymaps.test("revert"):
 					pctl.revert()
@@ -56129,14 +56118,14 @@ while pctl.running:
 					pctl.player_volume = min(pctl.player_volume, 100)
 					pctl.set_volume()
 
-				if keymaps.test("shift-down") and len(default_playlist) > 0:
+				if keymaps.test("shift-down") and len(pctl.default_playlist) > 0:
 					gui.pl_update += 1
-					if pctl.selected_in_playlist > len(default_playlist) - 1:
+					if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 						pctl.selected_in_playlist = 0
 
 					if not shift_selection:
 						shift_selection.append(pctl.selected_in_playlist)
-					if pctl.selected_in_playlist < len(default_playlist) - 1:
+					if pctl.selected_in_playlist < len(pctl.default_playlist) - 1:
 						r = pctl.selected_in_playlist
 						pctl.selected_in_playlist += 1
 						if pctl.selected_in_playlist not in shift_selection:
@@ -56146,8 +56135,8 @@ while pctl.running:
 
 				if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
 					gui.pl_update += 1
-					if pctl.selected_in_playlist > len(default_playlist) - 1:
-						pctl.selected_in_playlist = len(default_playlist) - 1
+					if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
+						pctl.selected_in_playlist = len(pctl.default_playlist) - 1
 
 					if not shift_selection:
 						shift_selection.append(pctl.selected_in_playlist)
@@ -56211,7 +56200,7 @@ while pctl.running:
 
 				if keymaps.test("search-lyrics-selected"):
 					if pctl.selected_ready():
-						track = pctl.get_track(default_playlist[pctl.selected_in_playlist])
+						track = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist])
 						if track.lyrics:
 							show_message(_("Track already has lyrics"))
 						else:
@@ -56219,7 +56208,7 @@ while pctl.running:
 
 				if keymaps.test("substitute-search-selected"):
 					if pctl.selected_ready():
-						show_sub_search(pctl.get_track(default_playlist[pctl.selected_in_playlist]))
+						show_sub_search(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]))
 
 				if keymaps.test("global-search"):
 					activate_search_overlay()
@@ -56774,7 +56763,7 @@ while pctl.running:
 						extend = 40 * gui.scale
 
 					# Process inputs first
-					if (inp.mouse_click or right_click or middle_click or mouse_down or mouse_up) and default_playlist:
+					if (inp.mouse_click or right_click or middle_click or mouse_down or mouse_up) and pctl.default_playlist:
 						while render_pos < gui.album_scroll_px + window_size[1]:
 
 							if b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
@@ -58201,9 +58190,9 @@ while pctl.running:
 					sy = 31 * gui.scale
 					ey = window_size[1] - (30 + 22) * gui.scale
 
-					if len(default_playlist) < 50:
+					if len(pctl.default_playlist) < 50:
 						sbl = 85 * gui.scale
-						if len(default_playlist) == 0:
+						if len(pctl.default_playlist) == 0:
 							sbp = top
 					else:
 						sbl = 105 * gui.scale
@@ -58222,11 +58211,11 @@ while pctl.running:
 							elif sbp < top:
 								sbp = top
 							per = (sbp - top) / (ey - top - sbl)
-							pctl.playlist_view_position = int(len(default_playlist) * per)
+							pctl.playlist_view_position = int(len(pctl.default_playlist) * per)
 							logging.debug("Position set by scroll bar (right click)")
 							pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 
-							# if playlist_position == len(default_playlist):
+							# if playlist_position == len(pctl.default_playlist):
 							#     logging.info("END")
 
 						# elif mouse_position[1] < sbp:
@@ -58256,7 +58245,7 @@ while pctl.running:
 							pctl.playlist_view_position += gui.scroll_direction * 2
 							logging.debug("Position set by scroll bar (slide)")
 							pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
-							pctl.playlist_view_position = min(pctl.playlist_view_position, len(default_playlist))
+							pctl.playlist_view_position = min(pctl.playlist_view_position, len(pctl.default_playlist))
 
 							if sbp + sbl > ey:
 								sbp = ey - sbl
@@ -58279,12 +58268,12 @@ while pctl.running:
 						elif sbp < top:
 							sbp = top
 						per = (sbp - top) / (ey - top - sbl)
-						pctl.playlist_view_position = int(len(default_playlist) * per)
+						pctl.playlist_view_position = int(len(pctl.default_playlist) * per)
 						logging.debug("Position set by scroll bar (drag)")
 
 
-					elif len(default_playlist) > 0:
-						per = pctl.playlist_view_position / len(default_playlist)
+					elif len(pctl.default_playlist) > 0:
+						per = pctl.playlist_view_position / len(pctl.default_playlist)
 						sbp = int((ey - top - sbl) * per) + top + 1
 
 					bg = [255, 255, 255, 6]
@@ -58998,7 +58987,7 @@ while pctl.running:
 				ddt.rect(rect, colours.box_background)
 
 				if len(input_text) > 0:
-					search_index = -1
+					gui.search_index = -1
 
 				if inp.backspace_press and search_text.text == "":
 					quick_search_mode = False
@@ -59057,7 +59046,7 @@ while pctl.running:
 									search_text.text = search_text.text.replace("/", "")
 									tt_title = search_text.text
 								search_text.text = search_text.text.lower()
-								for item in default_playlist:
+								for item in pctl.default_playlist:
 									if search_text.text in pctl.master_library[item].parent_folder_path.lower():
 										playlist.append(item)
 								if len(playlist) > 0:
@@ -59066,7 +59055,7 @@ while pctl.running:
 
 						else:
 							search_terms = search_text.text.lower().split()
-							for item in default_playlist:
+							for item in pctl.default_playlist:
 								tr = pctl.get_track(item)
 								line = " ".join(
 									[
@@ -59094,21 +59083,21 @@ while pctl.running:
 					gui.pl_update = 1
 
 					if gui.force_search:
-						search_index = 0
+						gui.search_index = 0
 
 					if inp.backspace_press:
-						search_index = 0
+						gui.search_index = 0
 
 					if len(search_text.text) > 0 and search_text.text[0] != "/":
-						oi = search_index
+						oi = gui.search_index
 
-						while search_index < len(default_playlist) - 1:
-							search_index += 1
-							if search_index > len(default_playlist) - 1:
-								search_index = 0
+						while gui.search_index < len(pctl.default_playlist) - 1:
+							gui.search_index += 1
+							if gui.search_index > len(pctl.default_playlist) - 1:
+								gui.search_index = 0
 
 							search_terms = search_text.text.lower().split()
-							tr = pctl.get_track(default_playlist[search_index])
+							tr = pctl.get_track(pctl.default_playlist[gui.search_index])
 							line = " ".join(
 								[tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment,
 								tr.album_artist, tr.misc.get("artist_sort", "")]).lower()
@@ -59118,9 +59107,9 @@ while pctl.running:
 
 							if all(word in line for word in search_terms):
 
-								pctl.selected_in_playlist = search_index
-								if len(default_playlist) > 10 and search_index > 10:
-									pctl.playlist_view_position = search_index - 7
+								pctl.selected_in_playlist = gui.search_index
+								if len(pctl.default_playlist) > 10 and gui.search_index > 10:
+									pctl.playlist_view_position = gui.search_index - 7
 									logging.debug("Position changed by search")
 								else:
 									pctl.playlist_view_position = 0
@@ -59132,7 +59121,7 @@ while pctl.running:
 								break
 
 						else:
-							search_index = oi
+							gui.search_index = oi
 							if len(input_text) > 0 or gui.force_search:
 								gui.search_error = True
 							if key_down_press:
@@ -59150,25 +59139,25 @@ while pctl.running:
 						and not key_ralt:
 
 					gui.pl_update = 1
-					oi = search_index
+					oi = gui.search_index
 
-					while search_index > 1:
-						search_index -= 1
-						search_index = min(search_index, len(default_playlist) - 1)
+					while gui.search_index > 1:
+						gui.search_index -= 1
+						gui.search_index = min(gui.search_index, len(pctl.default_playlist) - 1)
 						search_terms = search_text.text.lower().split()
-						line = pctl.master_library[default_playlist[search_index]].title.lower() + \
-							pctl.master_library[default_playlist[search_index]].artist.lower() \
-							+ pctl.master_library[default_playlist[search_index]].album.lower() + \
-							pctl.master_library[default_playlist[search_index]].filename.lower()
+						line = pctl.master_library[pctl.default_playlist[gui.search_index]].title.lower() + \
+							pctl.master_library[pctl.default_playlist[gui.search_index]].artist.lower() \
+							+ pctl.master_library[pctl.default_playlist[gui.search_index]].album.lower() + \
+							pctl.master_library[pctl.default_playlist[gui.search_index]].filename.lower()
 
 						if prefs.diacritic_search and all([ord(c) < 128 for c in search_text.text]):
 							line = str(unidecode(line))
 
 						if all(word in line for word in search_terms):
 
-							pctl.selected_in_playlist = search_index
-							if len(default_playlist) > 10 and search_index > 10:
-								pctl.playlist_view_position = search_index - 7
+							pctl.selected_in_playlist = gui.search_index
+							if len(pctl.default_playlist) > 10 and gui.search_index > 10:
+								pctl.playlist_view_position = gui.search_index - 7
 								logging.debug("Position changed by search")
 							else:
 								pctl.playlist_view_position = 0
@@ -59176,11 +59165,11 @@ while pctl.running:
 								pctl.show_selected()
 							break
 					else:
-						search_index = oi
+						gui.search_index = oi
 
 						edge_playlist2.pulse()
 
-				if inp.key_return_press is True and search_index > -1:
+				if inp.key_return_press is True and gui.search_index > -1:
 					gui.pl_update = 1
 					pctl.jump(pctl.default_playlist[gui.search_index], gui.search_index)
 					if prefs.album_mode:
