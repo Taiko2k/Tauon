@@ -5566,6 +5566,8 @@ class Tauon:
 		self.scrobble_warning_timer       = Timer(1000)
 		self.sync_file_timer              = Timer(1000)
 		self.sync_file_update_timer       = Timer(1000)
+		self.restore_ignore_timer         = Timer()
+		self.restore_ignore_timer.force_set(100)
 
 		self.fields = Fields(self)
 		# Create top menu
@@ -41326,9 +41328,6 @@ def main(holder: Holder) -> None:
 	mini_mode2 = tauon.mini_mode2
 	mini_mode3 = tauon.mini_mode3
 
-	restore_ignore_timer = Timer()
-	restore_ignore_timer.force_set(100)
-
 	pl_bg = None
 	if (user_directory / "bg.png").exists():
 		pl_bg = LoadImageAsset(
@@ -42016,7 +42015,7 @@ def main(holder: Holder) -> None:
 					#if event.window.data1 < 500:
 					#	logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
 					#	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
-					#elif restore_ignore_timer.get() > 1:  # Hacky
+					#elif tauon.restore_ignore_timer.get() > 1:  # Hacky
 					#	gui.update = 2
 
 					#	logical_size[0] = event.window.data1
