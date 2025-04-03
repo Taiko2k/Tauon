@@ -646,6 +646,8 @@ def player4(tauon: Tauon) -> None:
 				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
 					gui.update_spec = 1
 
+	p_sync_timer = Timer()
+
 	def track(end: bool = True) -> None:
 		run_vis()
 
@@ -663,7 +665,23 @@ def player4(tauon: Tauon) -> None:
 
 		pctl.total_playtime += add_time
 
-		##t = aud.get_position_ms() / 1000
+		# Wait / speed up, if we are out of sync
+		if p_sync_timer.get() > 1:
+			real_position = aud.get_position_ms() / 1000
+			if real_position and pctl.playing_time and real_position != pctl.last_real_position:
+				diff = abs(real_position - pctl.playing_time)
+				if 5 > diff > 0.11:  # in a CUE file real will be different that playing time
+					# This assumes the first track in a CUE is > 5s
+					if real_position < pctl.playing_time:
+						add_time -= 5
+						if add_time < 0:
+							add_time = 0
+						p_sync_timer.force_set(2)  # wait for real to catch up again next clock
+					else:
+						add_time += 0.1
+				pctl.last_real_position = real_position  # we still want to move on if playback stalled
+			p_sync_timer.set()
+
 		pctl.playing_time += add_time
 		pctl.decode_time = pctl.playing_time
 
@@ -671,6 +689,7 @@ def player4(tauon: Tauon) -> None:
 			pctl.a_time = pctl.playing_time
 		else:
 			pctl.a_time += add_time
+
 
 		tauon.lfm_scrobbler.update(add_time)
 
@@ -1087,14 +1106,14 @@ def player4(tauon: Tauon) -> None:
 				fade = 0
 				error = False
 				if state == 1 \
-				and length \
-				and position \
-				and not pctl.start_time_target \
-				and not pctl.jump_time \
-				and loaded_track \
-				and 0 < remain < 5.5 \
-				and not loaded_track.is_cue \
-				and subcommand != "now":
+						and length \
+						and position \
+						and not pctl.start_time_target \
+						and not pctl.jump_time \
+						and loaded_track \
+						and 0 < remain < 5.5 \
+						and not loaded_track.is_cue \
+						and subcommand != "now":
 
 					logging.info("Transition gapless")
 
