@@ -52444,10 +52444,7 @@ dl_use = 0
 random_mode = False
 repeat_mode = False
 
-notify_change = lambda: None
-
-multi_playlist: list[TauonPlaylist] = [pl_gen()]
-default_playlist: list[int] = multi_playlist[0].playlist_ids
+default_playlist: list[int] = []
 playlist_active: int = 0
 
 # ----------------------------------------
@@ -52622,7 +52619,7 @@ bag = Bag(
 	tls_context=tls_context,
 	track_queue=track_queue,
 	volume=volume,
-	multi_playlist=multi_playlist,
+	multi_playlist=[],
 	cue_list=cue_list,
 	p_force_queue=p_force_queue,
 	logical_size=logical_size,
@@ -53210,7 +53207,7 @@ logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
 perf_timer.set()
 keys = set(master_library.keys())
-for pl in multi_playlist:
+for pl in bag.multi_playlist:
 	if db_version > 68 or db_version == 0:
 		keys -= set(pl.playlist_ids)
 	else:
@@ -53413,9 +53410,14 @@ tauon = Tauon(
 	gui=gui,
 )
 pctl = tauon.pctl
-pctl.default_playlist = default_playlist
 album_dex = tauon.album_dex # TODO(Martin): Remove after refactor
 volume_store = pctl.volume_store # TODO(Martin): Remove after refactor
+if bag.multi_playlist:
+	pctl.multi_playlist = bag.multi_playlist
+	pctl.default_playlist = default_playlist
+else:
+	pctl.multi_playlist = [tauon.pl_gen(notify=False)]
+	pctl.default_playlist = pctl.multi_playlist[0].playlist_ids
 notify_change = pctl.notify_change
 star_store = tauon.star_store
 
@@ -53462,12 +53464,12 @@ sync_get_device_click_timer = Timer(100)
 if db_version > 0 and db_version < latest_db_version:
 	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 	try:
-		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
+		master_library, pctl.multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists = database_migrate(
 			tauon=tauon,
 			db_version=db_version,
 			master_library=master_library,
 			install_mode=install_mode,
-			multi_playlist=multi_playlist,
+			multi_playlist=pctl.multi_playlist,
 			star_store=star_store,
 			install_directory=install_directory,
 			a_cache_dir=a_cache_dir,
