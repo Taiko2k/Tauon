@@ -1567,6 +1567,7 @@ class PlayerCtl:
 		self.default_playlist: list[int] = []
 		self.queue_step = self.bag.playing_in_queue
 		self.playing_time = 0
+		self.last_real_position = 0
 		self.playlist_playing_position = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
