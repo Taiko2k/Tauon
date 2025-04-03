@@ -26803,8 +26803,8 @@ class TopPanel:
 		#     rect = (5 * gui.scale, gui.panelY, round(90 * gui.scale), round(25 * gui.scale))
 		#
 
-		dl = len(dl_mon.ready)
-		watching = len(dl_mon.watching)
+		dl = len(tauon.dl_mon.ready)
+		watching = len(tauon.dl_mon.watching)
 
 		if (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
 			x += 52 * gui.scale
@@ -27460,7 +27460,7 @@ class BottomBarType1:
 					tauon.mode_menu.activate()
 
 				if d_click_timer.get() < 0.3 and inp.mouse_click:
-					set_mini_mode()
+					self.tauon.set_mini_mode()
 					gui.update += 1
 					return
 				d_click_timer.set()
@@ -27708,7 +27708,7 @@ class BottomBarType1:
 					pctl.back()
 					gui.tool_tip_lock_off_b = True
 				if inp.right_click:
-					toggle_repeat()
+					tauon.toggle_repeat()
 					gui.tool_tip_lock_off_b = True
 					# if window_size[0] < 600 * gui.scale:
 					# . Repeat set to on
