@@ -32708,6 +32708,7 @@ class TreeView:
 		self.msys                  = tauon.msys
 		self.prefs                 = tauon.prefs
 		self.fields                = tauon.fields
+		self.colours               = tauon.colours
 		self.formats               = tauon.formats
 		self.window_size           = tauon.window_size
 		self.tree_view_scroll      = pctl.tree_view_scroll
