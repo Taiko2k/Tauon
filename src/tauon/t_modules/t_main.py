@@ -28342,6 +28342,7 @@ class MiniMode:
 		self.gui           = tauon.gui
 		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
 		self.window_size   = tauon.window_size
@@ -28590,6 +28591,7 @@ class MiniMode2:
 		self.gui           = tauon.gui
 		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
 		self.window_size   = tauon.window_size
@@ -28718,6 +28720,7 @@ class MiniMode3:
 		self.gui           = tauon.gui
 		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
 		self.window_size   = tauon.window_size
@@ -43141,8 +43144,8 @@ def main(holder: Holder) -> None:
 						pass
 						# gui.rspw = target
 
-					if prefs.album_mode and gui.rspw < bag.album_mode_art_size + 50 * gui.scale:
-						target = bag.album_mode_art_size + 50 * gui.scale
+					if prefs.album_mode and gui.rspw < tauon.album_mode_art_size + 50 * gui.scale:
+						target = tauon.album_mode_art_size + 50 * gui.scale
 
 					# Prevent side bar getting too small
 					target = max(target, 120 * gui.scale)
@@ -43222,7 +43225,7 @@ def main(holder: Holder) -> None:
 						area_x = w + 38 * gui.scale
 						# area_x = w - 40 * gui.scale
 
-						row_len = int((area_x - gui.album_h_gap) / (bag.album_mode_art_size + gui.album_h_gap))
+						row_len = int((area_x - gui.album_h_gap) / (tauon.album_mode_art_size + gui.album_h_gap))
 
 						#logging.info(row_len)
 
@@ -43255,7 +43258,7 @@ def main(holder: Holder) -> None:
 						album_on = 0
 
 						max_scroll = round(
-							(math.ceil((len(tauon.album_dex)) / row_len) - 1) * (bag.album_mode_art_size + gui.album_v_gap)) - round(
+							(math.ceil((len(tauon.album_dex)) / row_len) - 1) * (tauon.album_mode_art_size + gui.album_v_gap)) - round(
 							50 * gui.scale)
 
 						# Mouse wheel scrolling
@@ -43268,7 +43271,7 @@ def main(holder: Holder) -> None:
 								gui.frame_callback_list.append(TestTimer(0.9))
 
 							if prefs.gallery_row_scroll:
-								gui.album_scroll_px -= inp.mouse_wheel * (bag.album_mode_art_size + gui.album_v_gap)  # 90
+								gui.album_scroll_px -= inp.mouse_wheel * (tauon.album_mode_art_size + gui.album_v_gap)  # 90
 							else:
 								gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
 
@@ -43344,9 +43347,9 @@ def main(holder: Holder) -> None:
 								if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
 									break
 
-								if render_pos < gui.album_scroll_px - bag.album_mode_art_size - gui.album_v_gap:
+								if render_pos < gui.album_scroll_px - tauon.album_mode_art_size - gui.album_v_gap:
 									# Skip row
-									render_pos += bag.album_mode_art_size + gui.album_v_gap
+									render_pos += tauon.album_mode_art_size + gui.album_v_gap
 									album_on += row_len
 								else:
 									# render row
@@ -43356,18 +43359,18 @@ def main(holder: Holder) -> None:
 										if album_on > len(tauon.album_dex) - 1:
 											break
 
-										x = (l_area + dev * a) - int(bag.album_mode_art_size / 2) + int(dev / 2) + int(
+										x = (l_area + dev * a) - int(tauon.album_mode_art_size / 2) + int(dev / 2) + int(
 											compact / 2) - a_offset
 
 										if tauon.album_dex[album_on] > len(pctl.default_playlist):
 											break
 
-										rect = (x, y, bag.album_mode_art_size, bag.album_mode_art_size + extend * gui.scale)
+										rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
 										# tauon.fields.add(rect)
 										m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 
 										# if m_in:
-										#     ddt.rect_r((x - 7, y - 7, bag.album_mode_art_size + 14, bag.album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
+										#     ddt.rect_r((x - 7, y - 7, tauon.album_mode_art_size + 14, tauon.album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
 
 										# Quick drag and drop
 										if inp.mouse_up and (gui.playlist_hold and m_in) and not gui.side_drag and gui.shift_selection:
@@ -43506,7 +43509,7 @@ def main(holder: Holder) -> None:
 
 									if album_on > len(tauon.album_dex):
 										break
-									render_pos += bag.album_mode_art_size + gui.album_v_gap
+									render_pos += tauon.album_mode_art_size + gui.album_v_gap
 
 						render_pos = 0
 						album_on = 0
@@ -43520,9 +43523,9 @@ def main(holder: Holder) -> None:
 							if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
 								break
 
-							if render_pos < gui.album_scroll_px - bag.album_mode_art_size - gui.album_v_gap:
+							if render_pos < gui.album_scroll_px - tauon.album_mode_art_size - gui.album_v_gap:
 								# Skip row
-								render_pos += bag.album_mode_art_size + gui.album_v_gap
+								render_pos += tauon.album_mode_art_size + gui.album_v_gap
 								album_on += row_len
 							else:
 								# render row
@@ -43538,7 +43541,7 @@ def main(holder: Holder) -> None:
 									if album_on > len(tauon.album_dex) - 1:
 										break
 
-									x = (l_area + dev * a) - int(bag.album_mode_art_size / 2) + int(dev / 2) + int(
+									x = (l_area + dev * a) - int(tauon.album_mode_art_size / 2) + int(dev / 2) + int(
 										compact / 2) - a_offset
 
 									if tauon.album_dex[album_on] > len(pctl.default_playlist):
@@ -43550,7 +43553,7 @@ def main(holder: Holder) -> None:
 									album = info[1]
 									# info = (0, 0, 0)
 
-									# rect = (x, y, bag.album_mode_art_size, bag.album_mode_art_size + extend * gui.scale)
+									# rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
 									# tauon.fields.add(rect)
 									# m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 
@@ -43564,25 +43567,25 @@ def main(holder: Holder) -> None:
 										ddt.text_background_colour = colours.grey(250)
 										tauon.drop_shadow.render(
 											x + 3 * gui.scale, y + 3 * gui.scale,
-											bag.album_mode_art_size + 11 * gui.scale,
-											bag.album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
+											tauon.album_mode_art_size + 11 * gui.scale,
+											tauon.album_mode_art_size + 45 * gui.scale + 13 * gui.scale)
 										ddt.rect(
-											(x, y, bag.album_mode_art_size, bag.album_mode_art_size + 45 * gui.scale), colours.grey(250))
+											(x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + 45 * gui.scale), colours.grey(250))
 
 									# White background needs extra border
 									if colours.lm and not card_mode:
-										ddt.rect_a((x - 2, y - 2), (bag.album_mode_art_size + 4, bag.album_mode_art_size + 4), colours.grey(200))
+										ddt.rect_a((x - 2, y - 2), (tauon.album_mode_art_size + 4, tauon.album_mode_art_size + 4), colours.grey(200))
 
 									if a == row_len - 1:
 										gui.gallery_scroll_field_left = max(
-											x + bag.album_mode_art_size,
+											x + tauon.album_mode_art_size,
 											window_size[0] - round(50 * gui.scale))
 
 									if info[0] == 1 and 0 < pctl.playing_state < 3:
 										ddt.rect_a(
-											(x - 4, y - 4), (bag.album_mode_art_size + 8, bag.album_mode_art_size + 8),
+											(x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
 											colours.gallery_highlight)
-										# ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size),
+										# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
 										#            colours.gallery_background, True)
 
 									# Draw quick add highlight
@@ -43593,7 +43596,7 @@ def main(holder: Holder) -> None:
 											c = [110, 233, 90, 255]
 											if colours.lm:
 												c = [66, 244, 66, 255]
-											ddt.rect_a((x - 4, y - 4), (bag.album_mode_art_size + 8, bag.album_mode_art_size + 8), c)
+											ddt.rect_a((x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8), c)
 
 									# Draw transcode highlight
 									if tauon.transcode_list and os.path.isdir(prefs.encoder_output):
@@ -43610,8 +43613,8 @@ def main(holder: Holder) -> None:
 											c = [244, 212, 66, 255]
 											if colours.lm:
 												c = [244, 64, 244, 255]
-											ddt.rect_a((x - 4, y - 4), (bag.album_mode_art_size + 8, bag.album_mode_art_size + 8), c)
-											# ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size),
+											ddt.rect_a((x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8), c)
+											# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
 											#            colours.gallery_background, True)
 
 									# Draw selection
@@ -43619,8 +43622,8 @@ def main(holder: Holder) -> None:
 									if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
 										c = colours.gallery_highlight
 										c = [c[1], c[2], c[0], c[3]]
-										ddt.rect_a((x - 4, y - 4), (bag.album_mode_art_size + 8, bag.album_mode_art_size + 8), c)  # [150, 80, 222, 255]
-										# ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size),
+										ddt.rect_a((x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8), c)  # [150, 80, 222, 255]
+										# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
 										#            colours.gallery_background, True)
 
 									# Draw selection animation
@@ -43637,22 +43640,22 @@ def main(holder: Holder) -> None:
 											a = int(255 - 255 * (t - 0.5))
 
 										c = [c[1], c[2], c[0], a]
-										ddt.rect_a((x - 5, y - 5), (bag.album_mode_art_size + 10, bag.album_mode_art_size + 10), c)  # [150, 80, 222, 255]
+										ddt.rect_a((x - 5, y - 5), (tauon.album_mode_art_size + 10, tauon.album_mode_art_size + 10), c)  # [150, 80, 222, 255]
 
 										gui.update += 1
 
 									# Draw faint outline
 									ddt.rect(
-										(x - 1, y - 1, bag.album_mode_art_size + 2, bag.album_mode_art_size + 2),
+										(x - 1, y - 1, tauon.album_mode_art_size + 2, tauon.album_mode_art_size + 2),
 										[255, 255, 255, 11])
 
 									if gui.album_tab_mode or gallery_menu.active:
 										if info[2] is False and info[0] != 1 and not colours.lm:
-											ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size), [0, 0, 0, 110])
+											ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [0, 0, 0, 110])
 											albumtitle = colours.grey(160)
 
 									elif info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-										ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size), [0, 0, 0, 110])
+										ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [0, 0, 0, 110])
 										albumtitle = colours.grey(160)
 
 									# Determine meta info
@@ -43682,16 +43685,16 @@ def main(holder: Holder) -> None:
 
 									back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
 
-									ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size), back_colour)
+									ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), back_colour)
 
 									# Draw album art
 									if singles:
-										dia = math.sqrt(bag.album_mode_art_size * bag.album_mode_art_size * 2)
+										dia = math.sqrt(tauon.album_mode_art_size * tauon.album_mode_art_size * 2)
 										ran = dia * 0.25
 										off = (dia - ran) / 2
 										albs = min(len(album), 5)
 										spacing = ran / (albs - 1)
-										size = round(bag.album_mode_art_size * 0.5)
+										size = round(tauon.album_mode_art_size * 0.5)
 
 										i = 0
 										for p in album[:albs]:
@@ -43716,7 +43719,7 @@ def main(holder: Holder) -> None:
 										drawn_art = tauon.gall_ren.render(track, (x, y))
 
 									# Determine mouse collision
-									rect = (x, y, bag.album_mode_art_size, bag.album_mode_art_size + extend * gui.scale)
+									rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
 									m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 									tauon.fields.add(rect)
 
@@ -43727,15 +43730,15 @@ def main(holder: Holder) -> None:
 
 									if drawn_art is False and gui.gallery_show_text is False:
 										ddt.text(
-											(x + int(bag.album_mode_art_size / 2), y + bag.album_mode_art_size - 22 * gui.scale, 2),
+											(x + int(tauon.album_mode_art_size / 2), y + tauon.album_mode_art_size - 22 * gui.scale, 2),
 											pctl.master_library[pctl.default_playlist[tauon.album_dex[album_on]]].parent_folder_name,
 											colours.gallery_artist_line,
 											13,
-											bag.album_mode_art_size - 15 * gui.scale,
+											tauon.album_mode_art_size - 15 * gui.scale,
 											bg=alpha_blend(back_colour, colours.gallery_background))
 
 									if prefs.art_bg and drawn_art:
-										rect = sdl3.SDL_FRect(round(x), round(y), bag.album_mode_art_size, bag.album_mode_art_size)
+										rect = sdl3.SDL_FRect(round(x), round(y), tauon.album_mode_art_size, tauon.album_mode_art_size)
 										if rect.y < gui.panelY:
 											diff = round(gui.panelY - rect.y)
 											rect.y += diff
@@ -43749,10 +43752,10 @@ def main(holder: Holder) -> None:
 
 									# # Drag over highlight
 									# if inp.quick_drag and gui.playlist_hold and inp.mouse_down:
-									# 	rect = (x, y, bag.album_mode_art_size, bag.album_mode_art_size + extend * gui.scale)
+									# 	rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
 									# 	m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 									# 	if m_in:
-									# 		ddt.rect_a((x, y), (bag.album_mode_art_size, bag.album_mode_art_size), [120, 10, 255, 100], True)
+									# 		ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [120, 10, 255, 100], True)
 
 									if gui.gallery_show_text:
 										c_index = pctl.default_playlist[tauon.album_dex[album_on]]
@@ -43791,7 +43794,7 @@ def main(holder: Holder) -> None:
 
 										text_align = 0
 										if prefs.center_gallery_text:
-											x += bag.album_mode_art_size // 2
+											x += tauon.album_mode_art_size // 2
 											text_align = 2
 										elif card_mode:
 											x += round(6 * gui.scale)
@@ -43799,52 +43802,52 @@ def main(holder: Holder) -> None:
 										if card_mode:
 											if line2 == "":
 												ddt.text(
-													(x, y + bag.album_mode_art_size + 8 * gui.scale, text_align),
+													(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
 													line,
 													line1_colour,
 													310,
-													bag.album_mode_art_size - 18 * gui.scale)
+													tauon.album_mode_art_size - 18 * gui.scale)
 											else:
 												ddt.text(
-													(x, y + bag.album_mode_art_size + 7 * gui.scale, text_align),
+													(x, y + tauon.album_mode_art_size + 7 * gui.scale, text_align),
 													line2,
 													line2_colour,
 													311,
-													bag.album_mode_art_size - 18 * gui.scale)
+													tauon.album_mode_art_size - 18 * gui.scale)
 
 												ddt.text(
-													(x, y + bag.album_mode_art_size + (10 + 14) * gui.scale, text_align),
+													(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale, text_align),
 													line,
 													line1_colour,
 													10,
-													bag.album_mode_art_size - 18 * gui.scale)
+													tauon.album_mode_art_size - 18 * gui.scale)
 										elif line2 == "":
 											ddt.text(
-												(x, y + bag.album_mode_art_size + 9 * gui.scale, text_align),
+												(x, y + tauon.album_mode_art_size + 9 * gui.scale, text_align),
 												line,
 												line1_colour,
 												311,
-												bag.album_mode_art_size - 5 * gui.scale)
+												tauon.album_mode_art_size - 5 * gui.scale)
 										else:
 											ddt.text(
-												(x, y + bag.album_mode_art_size + 8 * gui.scale, text_align),
+												(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
 												line2,
 												line2_colour,
 												212,
-												bag.album_mode_art_size)
+												tauon.album_mode_art_size)
 
 											ddt.text(
-												(x, y + bag.album_mode_art_size + (10 + 14) * gui.scale, text_align),
+												(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale, text_align),
 												line,
 												line1_colour,
 												311,
-												bag.album_mode_art_size - 5 * gui.scale)
+												tauon.album_mode_art_size - 5 * gui.scale)
 
 									album_on += 1
 
 								if album_on > len(tauon.album_dex):
 									break
-								render_pos += bag.album_mode_art_size + gui.album_v_gap
+								render_pos += tauon.album_mode_art_size + gui.album_v_gap
 
 
 						# POWER TAG BAR --------------
