@@ -23456,7 +23456,7 @@ class Over:
 			old = self.prefs.tmp_cache
 			self.prefs.tmp_cache = self.toggle_square(x, y, self.prefs.tmp_cache ^ True, _("Use persistent network cache")) ^ True
 			if old != self.prefs.tmp_cache and self.tauon.cachement:
-				self.tauon.cachement.__init__()
+				self.tauon.cachement.__init__(self.tauon)
 
 			y += round(22 * self.gui.scale)
 			self.ddt.text((x + round(22 * self.gui.scale), y), _("Cache size"), self.colours.box_text, 312)
