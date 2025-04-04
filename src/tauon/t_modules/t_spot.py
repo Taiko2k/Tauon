@@ -55,6 +55,7 @@ class SpotCtl:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon                   = tauon
 		self.strings                 = tauon.strings
+		self.show_message            = tauon.show_message
 		self.start_timer             = Timer()
 		self.status:             int = 0
 		self.spotify: Spotify | None = None
@@ -85,7 +86,7 @@ class SpotCtl:
 
 	def prep_cred(self) -> RefreshingCredentials:
 		if not tekore_imported:
-			self.tauon.gui.show_message(_("Dependency Tekore not found"), mode="warning")
+			self.show_message(_("Dependency Tekore not found"), mode="warning")
 		rc = tk.RefreshingCredentials
 		secret = self.tauon.prefs.spot_secret
 		if not secret or len(self.tauon.prefs.spot_secret) != 32:
@@ -120,7 +121,7 @@ class SpotCtl:
 
 		if self.token:
 			self.save_token()
-			self.tauon.gui.show_message(self.strings.spotify_account_connected, mode="done")
+			self.show_message(self.strings.spotify_account_connected, mode="done")
 		self.tauon.prefs.spot_mode = True
 
 	def save_token(self) -> None:
@@ -151,10 +152,10 @@ class SpotCtl:
 			except Exception:
 				logging.exception("FAILED TO LOAD TOKEN")
 				raise
-				self.tauon.gui.show_message(_("Please re-authenticate Spotify in settings"))
+				self.show_message(_("Please re-authenticate Spotify in settings"))
 				self.tauon.prefs.spotify_token = ""
 		else:
-			self.tauon.gui.show_message(_("Please authenticate Spotify in settings"))
+			self.show_message(_("Please authenticate Spotify in settings"))
 
 	def delete_token(self) -> None:
 		self.tauon.prefs.spotify_token = ""
@@ -164,12 +165,12 @@ class SpotCtl:
 
 	def auth(self) -> None:
 		if not tekore_imported:
-			self.tauon.gui.show_message(
+			self.show_message(
 				_("python-tekore not installed"),
 				_("If you installed via AUR, you'll need to install this optional dependency, then restart Tauon."), mode="error")
 			return
 		if len(self.tauon.prefs.spot_client) != 32:
-			self.tauon.gui.show_message(_("Invalid client ID. See Spotify tab in settings."), mode="error")
+			self.show_message(_("Invalid client ID. See Spotify tab in settings."), mode="error")
 			return
 		if self.cred is None:
 			self.cred = self.prep_cred()
@@ -232,7 +233,7 @@ class SpotCtl:
 				try:
 					tr = self.tauon.pctl.playing_object()
 					if command == "resume" and tr and tr.file_ext == "SPTY" and tr.url_key:
-						self.tauon.gui.show_message("Resuming Spotify playback")
+						self.show_message("Resuming Spotify playback")
 						p = self.tauon.pctl.playing_time
 						self.play_target(tr.url_key, p)
 						self.tauon.gui.message_box = False
@@ -240,7 +241,7 @@ class SpotCtl:
 						return
 				except Exception:
 					logging.exception("Control failure handling failure")
-				self.tauon.gui.show_message(_("It looks like there are no more active Spotify devices"))
+				self.show_message(_("It looks like there are no more active Spotify devices"))
 
 	def get_username(self) -> str | None:
 		self.connect()
@@ -326,14 +327,14 @@ class SpotCtl:
 
 		self.spotify_com = False
 		if not playlists:
-			self.tauon.gui.show_message(self.strings.spotify_need_enable)
+			self.show_message(self.strings.spotify_need_enable)
 			return
-		self.tauon.gui.show_message(self.strings.spotify_import_complete, mode="done")
+		self.show_message(self.strings.spotify_import_complete, mode="done")
 
 	def get_playlist_list(self) -> list[tuple[str, str]] | None:
 		self.connect()
 		if not self.spotify:
-			self.tauon.gui.show_message(self.strings.spotify_need_enable)
+			self.show_message(self.strings.spotify_need_enable)
 			return None
 
 		playlists: list[tuple[str, str]] = []
@@ -446,7 +447,7 @@ class SpotCtl:
 		time.sleep(wait)
 		p = self.spotify.playback()
 		if not p or not p.is_playing:
-			self.tauon.gui.show_message(_("Nothing playing"))
+			self.show_message(_("Nothing playing"))
 			self.preparing_spotify = False
 			return
 
@@ -457,7 +458,7 @@ class SpotCtl:
 				logging.info("Found Tauon Spotify player")
 				break
 		else:
-			self.tauon.gui.show_message(_("Error - Tauon device not found"))
+			self.show_message(_("Error - Tauon device not found"))
 
 		self.preparing_spotify = False
 
@@ -469,7 +470,7 @@ class SpotCtl:
 		self.connect()
 		if not self.spotify:
 			self.preparing_spotify = False
-			self.tauon.gui.show_message(
+			self.show_message(
 				_("Error. You may need to click Authorise in Settings > Accounts > Spotify."), mode="warning")
 			return
 
@@ -553,7 +554,7 @@ class SpotCtl:
 					tries += 1
 					if tries > 13:
 						self.tauon.pctl.stop()
-						self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
+						self.show_message(self.strings.spotify_error_starting, mode="error")
 						self.launching_spotify = False
 						self.preparing_spotify = False
 						self.tauon.gui.update += 1
@@ -631,7 +632,7 @@ class SpotCtl:
 					if tries > 13:
 						logging.info("Too many retries, aborting.")
 						self.tauon.pctl.stop()
-						self.tauon.gui.show_message(self.strings.spotify_error_starting, mode="error")
+						self.show_message(self.strings.spotify_error_starting, mode="error")
 						self.launching_spotify = False
 						self.preparing_spotify = False
 						self.tauon.gui.update += 1
@@ -674,18 +675,18 @@ class SpotCtl:
 					self.spotify.playback_start_tracks([id], device_id=d_id, position_ms=start_time)
 
 			# except tk.client.decor.error.InternalServerError:
-			#	 self.tauon.gui.show_message("Spotify server error. Maybe try again later.")
+			#	 self.show_message("Spotify server error. Maybe try again later.")
 			#	 return
 			except Exception as e:
 				logging.exception("Start track on device failed, aborting")
 				self.launching_spotify = False
 				self.preparing_spotify = False
-				self.tauon.gui.show_message("Spotify error, try again?", str(e), mode="warning")
+				self.show_message("Spotify error, try again?", str(e), mode="warning")
 				return
 
 		# except Exception as e:
 		#	 logging.exception("Failure. Do you have playback started somewhere?")
-		#	 self.tauon.gui.show_message("Error. Do you have playback started somewhere?", mode="error")
+		#	 self.show_message("Error. Do you have playback started somewhere?", mode="error")
 		logging.info("Done")
 		self.playing = True
 		self.started_once = True
@@ -702,7 +703,7 @@ class SpotCtl:
 		self.connect()
 		if not self.spotify:
 			self.spotify_com = False
-			self.tauon.gui.show_message(self.strings.spotify_need_enable)
+			self.show_message(self.strings.spotify_need_enable)
 			return []
 
 		albums = self.spotify.saved_albums()
@@ -918,7 +919,7 @@ class SpotCtl:
 				self.spotify.playlist_add(playlist_id, uris)
 		except Exception:
 			logging.exception("Spotify upload error!")
-			self.tauon.gui.show_message(_("Spotify upload error!"), mode="error")
+			self.show_message(_("Spotify upload error!"), mode="error")
 
 	def load_album(self, album: FullAlbum, playlist: list[int] | None):
 		#a = item
@@ -1036,9 +1037,9 @@ class SpotCtl:
 			if not results or results[0] is False:
 				self.spotify.saved_tracks_add([id])
 				tract_object.misc["spotify-liked"] = True
-				self.tauon.gui.show_message(self.strings.spotify_like_added, mode="done")
+				self.show_message(self.strings.spotify_like_added, mode="done")
 				return
-			self.tauon.gui.show_message(self.strings.spotify_already_liked)
+			self.show_message(self.strings.spotify_already_liked)
 			return
 
 	def unlike_track(self, tract_object: TrackClass) -> None:
@@ -1052,16 +1053,16 @@ class SpotCtl:
 			if not results or results[0] is True:
 				self.spotify.saved_tracks_delete([id])
 				tract_object.misc.pop("spotify-liked", None)
-				self.tauon.gui.show_message(self.strings.spotify_un_liked, mode="done")
+				self.show_message(self.strings.spotify_un_liked, mode="done")
 				return
-			self.tauon.gui.show_message(self.strings.spotify_already_un_liked)
+			self.show_message(self.strings.spotify_already_un_liked)
 			return
 
 	def get_library_likes(self, return_list: bool = False) -> list | None:
 		self.connect()
 		if not self.spotify:
 			self.spotify_com = False
-			self.tauon.gui.show_message(self.strings.spotify_need_enable)
+			self.show_message(self.strings.spotify_need_enable)
 			return []
 
 		self.update_existing_import_list()
@@ -1182,7 +1183,7 @@ class SpotCtl:
 					self.paused = True
 
 			else:
-				self.tauon.gui.show_message(self.strings.spotify_not_playing)
+				self.show_message(self.strings.spotify_not_playing)
 			return
 
 		self.coasting = True
@@ -1253,7 +1254,7 @@ class SpotCtl:
 			return
 		result = self.spotify.playback_currently_playing()
 		if not result or not result.context:
-			self.tauon.gui.show_message(_("No Spotify context found"))
+			self.show_message(_("No Spotify context found"))
 			return
 
 		if result.context.type == "playlist":
