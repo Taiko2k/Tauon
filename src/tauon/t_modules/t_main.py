@@ -32351,11 +32351,11 @@ class ArtistList:
 					double_click = True
 
 				self.click_highlight_timer.set()
-
+				replace = False
 				if self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id and \
 						self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title.startswith("Artist:"):
 					self.tauon.create_artist_pl(artist, replace=True)
-
+					replace = True
 
 				blocks = []
 				current_block = []
@@ -32438,7 +32438,7 @@ class ArtistList:
 					self.pctl.selected_in_playlist = select
 					self.gui.shift_selection.clear()
 					self.d_click_timer.force_set(10)
-				else:
+				elif not replace:
 					# Goto next artist section in playlist
 					c = self.pctl.selected_in_playlist
 					next = False
@@ -32508,6 +32508,9 @@ class ArtistList:
 					self.d_click_timer.set()
 					if self.prefs.album_mode:
 						self.tauon.goto_album(select)
+				else:
+					self.d_click_ref = artist
+					self.d_click_timer.set()
 
 			if self.inp.middle_click:
 				self.click_ref = artist
