@@ -19604,11 +19604,11 @@ class ArtistList:
 					double_click = True
 
 				self.click_highlight_timer.set()
-
+				replace = False
 				if pctl.multi_playlist[pctl.active_playlist_viewing].parent_playlist_id and \
 						pctl.multi_playlist[pctl.active_playlist_viewing].title.startswith("Artist:"):
 					create_artist_pl(artist, replace=True)
-
+					replace = True
 
 				blocks = []
 				current_block = []
@@ -19691,7 +19691,7 @@ class ArtistList:
 					pctl.selected_in_playlist = select
 					shift_selection.clear()
 					self.d_click_timer.force_set(10)
-				else:
+				elif not replace:
 					# Goto next artist section in playlist
 					c = pctl.selected_in_playlist
 					next = False
@@ -19761,6 +19761,9 @@ class ArtistList:
 					self.d_click_timer.set()
 					if album_mode:
 						goto_album(select)
+				else:
+					self.d_click_ref = artist
+					self.d_click_timer.set()
 
 			if middle_click:
 				self.click_ref = artist
