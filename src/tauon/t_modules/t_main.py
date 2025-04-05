@@ -183,6 +183,10 @@ if sys.platform == "linux":
 	from gi.repository import GLib
 	from tauon.t_modules import t_topchart
 
+if sys.platform == "darwin":
+	import gi
+	from gi.repository import GLib
+
 if TYPE_CHECKING:
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
