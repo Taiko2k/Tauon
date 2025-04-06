@@ -38899,7 +38899,7 @@ t_agent                = holder.t_agent
 dev_mode               = holder.dev_mode
 instance_lock          = holder.instance_lock
 log                    = holder.log
-logging.info(f"Window size: {window_size}")
+logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
 
 tls_context = setup_tls(holder)
 
