@@ -202,11 +202,11 @@ class LoadImageAsset:
 	def __init__(self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
 		if not reload:
 			self.assets.append(self)
-		self.bag = bag
+		self.bag  = bag
+		self.dirs = bag.dirs
 		self.renderer = bag.renderer
 		self.path = path
 		self.scale_name = scale_name
-		self.scaled_asset_directory: Path = bag.dirs.scaled_asset_directory
 
 		raw_image = sdl3.IMG_Load(c_char_p(self.path.encode()))
 		self.texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, raw_image)
@@ -226,7 +226,7 @@ class LoadImageAsset:
 	def reload(self) -> None:
 		sdl3.SDL_DestroyTexture(self.texture)
 		if self.scale_name:
-			self.path = str(self.scaled_asset_directory / self.scale_name)
+			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour: list[int] | None = None) -> None:
@@ -239,12 +239,12 @@ class WhiteModImageAsset:
 	assets: list[WhiteModImageAsset] = []
 
 	def __init__(self, *, bag: Bag, path: str, reload: bool = False, scale_name: str = "") -> None:
-		self.bag = bag
+		self.bag  = bag
+		self.dirs = bag.dirs
 		if not reload:
 			self.assets.append(self)
 		self.path = path
 		self.scale_name = scale_name
-		self.scaled_asset_directory: Path = self.bag.dirs.scaled_asset_directory
 
 		raw_image = sdl3.IMG_Load(path.encode())
 		self.texture = sdl3.SDL_CreateTextureFromSurface(self.bag.renderer, raw_image)
@@ -260,7 +260,7 @@ class WhiteModImageAsset:
 	def reload(self) -> None:
 		sdl3.SDL_DestroyTexture(self.texture)
 		if self.scale_name:
-			self.path = str(self.scaled_asset_directory / self.scale_name)
+			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
 	def render(self, x: int, y: int, colour: list[int]) -> None:
@@ -40885,6 +40885,10 @@ bag = Bag(
 	folder_image_offsets=folder_image_offsets,
 )
 
+# If scaled-icons directory exists, use it even for initial loading
+if (user_directory / "scaled-icons").exists():
+	bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
+
 gui = GuiVar(
 	bag=bag,
 	tracklist_texture_rect=tracklist_texture_rect,
@@ -42941,7 +42945,7 @@ restore_ignore_timer.force_set(100)
 pl_bg = None
 if (user_directory / "bg.png").exists():
 	pl_bg = LoadImageAsset(
-		scaled_asset_directory=scaled_asset_directory, path=str(user_directory / "bg.png"), is_full_path=True)
+		scaled_asset_directory=dirs.scaled_asset_directory, path=str(user_directory / "bg.png"), is_full_path=True)
 
 playlist_render = StandardPlaylist(tauon, pl_bg)
 art_box = ArtBox(tauon)
