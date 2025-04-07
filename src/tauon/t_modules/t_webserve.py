@@ -461,9 +461,9 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				l = []
 				for item in pctl.multi_playlist:
 					p = {}
-					p["name"] = item[0]
-					p["id"] = str(item[6])
-					p["count"] = len(item[2])
+					p["name"] = item.title
+					p["id"] = str(item.uuid_int)
+					p["count"] = len(item.playlist_ids)
 					l.append(p)
 				data = {"playlists": l}
 				self.send_response(200)
