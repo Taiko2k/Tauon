@@ -333,7 +333,7 @@ class Jellyfin:
 		for p in self.playlists:
 			found = False
 			for pp in self.pctl.multi_playlist:
-				if f"jelly\"{p['Id']}\"" in self.pctl.gen_codes.get(pp[6], ""):
+				if f"jelly\"{p['Id']}\"" in self.pctl.gen_codes.get(pp.uuid_int, ""):
 					found = True
 					break
 			if found:
