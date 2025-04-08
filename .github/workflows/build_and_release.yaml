@@ -380,23 +380,23 @@ jobs:
 
       - name: Replace Tauon version in .ISS
         run: |
-          sed -i 's|{{ tauon_version }}|8.0.0|g' extra/setup.iss
+          sed -i 's|{{ tauon_version }}|8.1.0|g' extra/setup.iss
 
-      #- name: Compile .ISS to .EXE Installer
-      #  uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
-      #  with:
-      #    path: extra/setup.iss
-      #    options: /O+
+      - name: Compile .ISS to .EXE Installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
+        with:
+          path: extra/setup.iss
+          options: /O+
 
       #- name: "[DEBUG] List all files after Inno"
       #  shell: msys2 {0}
       #  run: find .
 
-      #- name: Upload EXE installer
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: TauonMusicBox-windows-installer
-      #    path: extra/Output/tauonsetup-8.0.0.exe
+      - name: Upload EXE installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauonMusicBox-windows-installer
+          path: extra/Output/tauonsetup-8.1.0.exe
 
   get-info:
     runs-on: ubuntu-24.04
