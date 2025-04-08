@@ -1700,11 +1700,7 @@ class PlayerCtl:
 
 		# Add the disc number for sorting by CD, make it '1' if theres isnt one
 		if s or d:
-			if not d:
-				s = "1" + "d" + s
-			else:
-				s = d + "d" + s
-
+			s = f"1d{s}" if not d else f"{d}d{s}"
 		# Use the filename if we dont have any metadata to sort by,
 		# since it could likely have the track number in it
 		else:
