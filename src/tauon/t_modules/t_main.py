@@ -1693,8 +1693,11 @@ class PlayerCtl:
 				if dd < 2:
 					dd = 1
 				d = str(dd)
+			except ValueError:
+				logging.debug(f"Failed to parse disc_number '{tr.disc_number}' as int, using an empty string instead")
+				d = ""
 			except Exception:
-				logging.exception("Failed to parse as index as int")
+				logging.exception(f"Unknown excpetion parsing disc_number '{tr.disc_number}' as int")
 				d = ""
 
 
