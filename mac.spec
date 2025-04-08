@@ -2,6 +2,7 @@ import os
 import subprocess
 import certifi
 import sys
+from pathlib import Path
 
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 python_ver_dotless = f"{sys.version_info.major}{sys.version_info.minor}"
@@ -22,7 +23,9 @@ libs = [
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
-phazor_path = f"build/lib.macosx-14.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+x64_path   = f"build/lib.macosx-13.0-x86_64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+arm64_path = f"build/lib.macosx-14.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+phazor_path = x64_path if Path(x64_path).exists() else arm64_path
 
 a = Analysis(
 	["src/tauon/__main__.py"],
