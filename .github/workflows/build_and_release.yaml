@@ -271,6 +271,105 @@ jobs:
       #    hdiutil attach dist/dmg/TauonMusicBox.dmg
       #    /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
 
+  build-macos-x64:
+    name: "macOS_x64"
+    runs-on: macos-13
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      #- name: Set up Python
+      #  uses: actions/setup-python@v5
+      #  with:
+      #    python-version: '3.13'
+
+      - name: brew update and upgrade
+        run: brew update && brew upgrade
+
+      - name: Install brew dependencies
+        run: |
+          brew install \
+            gobject-introspection \
+            gtk+3 \
+            pango \
+            pillow \
+            sdl3 \
+            sdl3_image \
+            jpeg-xl \
+            ffmpeg \
+            librsvg \
+            opusfile \
+            libopenmpt \
+            wavpack \
+            game-music-emu
+
+      - name: Hack opusfile - https://github.com/xiph/opusfile/pull/47
+        run: |
+          sed 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /usr/local/include/opus/opusfile.h > /tmp/opusfile.h
+          sudo mv /tmp/opusfile.h /usr/local/include/opus/opusfile.h
+
+      # This generates 30MB of logs, enable it only when actively debugging something
+      #- name: "[DEBUG] List all Cellar files"
+      #  run: find /opt/homebrew/Cellar
+
+      - name: Install Python dependencies and setup venv
+        run: |
+          export CXXFLAGS="-I/opt/homebrew/include"
+          export LDFLAGS="-L/opt/homebrew/lib"
+          $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
+
+          $(brew --prefix python)/libexec/bin/pip install --user --break-system-packages \
+            -r requirements.txt \
+            build
+          $(brew --prefix python)/libexec/bin/pip install --break-system-packages https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #  $(brew --prefix python)/libexec/bin/python -m pip show -f pyinstaller
+        #   pyinstaller
+        #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
+        #  source .venv/bin/activate
+        #  CFLAGS: "-I/opt/homebrew/include"
+
+      - name: Build the project using python-build
+        run: |
+          $(brew --prefix python)/libexec/bin/python -m compile_translations
+          $(brew --prefix python)/libexec/bin/python -m build --wheel
+        #  source .venv/bin/activate
+
+      - name: Install the project into a venv
+        run: |
+          $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
+        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
+        #  source .venv/bin/activate
+
+      - name: "[DEBUG] List all files"
+        run: find .
+
+      - name: Build macOS app with PyInstaller
+        run: |
+          pyinstaller --log-level=DEBUG mac.spec
+        #  source .venv/bin/activate
+        env:
+          DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
+
+      - name: "[DEBUG] List all files in .app"
+        run: find "dist/TauonMusicBox.app"
+
+      - name: Create DMG
+        run: |
+          mkdir -p dist/dmg
+          APP_NAME="TauonMusicBox"
+          APP_PATH="dist/${APP_NAME}.app"
+          DMG_PATH="dist/dmg/${APP_NAME}-x64.dmg"
+
+          # Create a .dmg package
+          hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauonMusicBox-x64-dmg
+          path: dist/dmg/TauonMusicBox-x64.dmg
 
   build-windows:
     name: "Windows"
@@ -297,11 +396,10 @@ jobs:
           update: true
           install: ${{ env.packages }}
 
-      - name: Update CA trust and hack opusfile
+      - name: Update CA trust and hack opusfile - https://github.com/xiph/opusfile/pull/47
         shell: msys2 {0}
         run: |
           update-ca-trust
-          # https://github.com/xiph/opusfile/pull/47
           sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /mingw64/include/opus/opusfile.h
 
       - name: Install Python dependencies and setup venv
@@ -405,155 +503,155 @@ jobs:
       shorthash: ${{ steps.vars.outputs.shorthash }}
       fullhash: ${{ steps.vars.outputs.fullhash }}
     steps:
-    - uses: actions/checkout@v4
-    - name: Get date and git hash
-      id: vars
-      run: |
-        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-        echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-        echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_ENV
-        echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-        echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-        echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+      - name: Get date and git hash
+        id: vars
+        run: |
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos]
+    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos, build-macos-x64]
     runs-on: ubuntu-24.04
     steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ~/artifacts
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ~/artifacts
 
-    - name: Compress individual directories (without parent directory)
-      run: |
-        cd ~/artifacts
-        for dir in */; do
-          if [ -d "$dir" ]; then
-            dir_name=${dir%/}
-            echo "Creating zip for $dir_name"
-            (cd "$dir_name" && zip -r "../${dir_name}.zip" .)
-          fi
-        done
+      - name: Compress individual directories (without parent directory)
+        run: |
+          cd ~/artifacts
+          for dir in */; do
+            if [ -d "$dir" ]; then
+              dir_name=${dir%/}
+              echo "Creating zip for $dir_name"
+              (cd "$dir_name" && zip -r "../${dir_name}.zip" .)
+            fi
+          done
 
-    - name: Get latest release information
-      id: get_latest_release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        api_url="https://api.github.com/repos/${{ github.repository }}"
-        latest_release_info=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url/releases/latest")
-        echo "last_release_tag=$(echo "$latest_release_info" | jq -r '.tag_name')" >> $GITHUB_ENV
+      - name: Get latest release information
+        id: get_latest_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          api_url="https://api.github.com/repos/${{ github.repository }}"
+          latest_release_info=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url/releases/latest")
+          echo "last_release_tag=$(echo "$latest_release_info" | jq -r '.tag_name')" >> $GITHUB_ENV
 
-    - name: Checkout the repository
-      uses: actions/checkout@v4
+      - name: Checkout the repository
+        uses: actions/checkout@v4
 
-    - name: Process template release_body.md
-      run: |
-        sed -i 's|RELEASE_TAG|Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}|g' ${{ github.workspace }}/.github/release_body.md
+      - name: Process template release_body.md
+        run: |
+          sed -i 's|RELEASE_TAG|Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}|g' ${{ github.workspace }}/.github/release_body.md
 
 
-    - name: Create Pre-Release on GitHub
-      id: create_release
-      uses: ncipollo/release-action@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        name: "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
-        tag: "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
-        draft: false
-        prerelease: true
-        #body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/Taiko2k/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
-        bodyFile: ${{ github.workspace }}/.github/release_body.md
-        artifacts: ~/artifacts/*.zip
+      - name: Create Pre-Release on GitHub
+        id: create_release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
+          tag: "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}"
+          draft: false
+          prerelease: true
+          #body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/Taiko2k/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
+          bodyFile: ${{ github.workspace }}/.github/release_body.md
+          artifacts: ~/artifacts/*.zip
 
-    - name: Publish to Release Repository
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        ARTIFACTS_DIR=~/artifacts
-        REPO="Taiko2k/Tauon"
+      - name: Publish to Release Repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARTIFACTS_DIR=~/artifacts
+          REPO="Taiko2k/Tauon"
 
-        for file in "$ARTIFACTS_DIR"/*.zip; do
-          filename=$(basename "$file")
-          # Check if release already exists and get ID
-          release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/releases/tags/Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}" | jq -r '.id')
+          for file in "$ARTIFACTS_DIR"/*.zip; do
+            filename=$(basename "$file")
+            # Check if release already exists and get ID
+            release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/$REPO/releases/tags/Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}" | jq -r '.id')
 
-          if [[ "$release_id" == "null" ]]; then
-            echo "Creating release in $REPO for $filename"
-            release_id=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github.v3+json" \
-              -d '{
-                "tag_name": "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
-                "name": "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
-                "draft": false,
-                "prerelease": true,
-                "body": "Commit: [${{ needs.get-info.outputs.fullhash }}](https://github.com/Taiko2k/Tauon/commit/${{ needs.get-info.outputs.fullhash }})"
-              }' "https://api.github.com/repos/$REPO/releases" | jq -r '.id')
-          else
-            echo "Release already exists in $REPO with ID $release_id"
-          fi
+            if [[ "$release_id" == "null" ]]; then
+              echo "Creating release in $REPO for $filename"
+              release_id=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Accept: application/vnd.github.v3+json" \
+                -d '{
+                  "tag_name": "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
+                  "name": "Pre-release-Tauon-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}",
+                  "draft": false,
+                  "prerelease": true,
+                  "body": "Commit: [${{ needs.get-info.outputs.fullhash }}](https://github.com/Taiko2k/Tauon/commit/${{ needs.get-info.outputs.fullhash }})"
+                }' "https://api.github.com/repos/$REPO/releases" | jq -r '.id')
+            else
+              echo "Release already exists in $REPO with ID $release_id"
+            fi
 
-          # Artifact upload
-          echo "Uploading $filename to release $release_id in $REPO"
-          upload_url="https://uploads.github.com/repos/$REPO/releases/$release_id/assets?name=$filename"
-          curl -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" --data-binary @"$file" "$upload_url"
-        done
+            # Artifact upload
+            echo "Uploading $filename to release $release_id in $REPO"
+            upload_url="https://uploads.github.com/repos/$REPO/releases/$release_id/assets?name=$filename"
+            curl -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" --data-binary @"$file" "$upload_url"
+          done
 
-    - name: Get current pre-release information
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        api_url="https://api.github.com/repos/${{ github.repository }}/releases"
+      - name: Get current pre-release information
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          api_url="https://api.github.com/repos/${{ github.repository }}/releases"
 
-        # Get all releases (sorted by date)
-        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
+          # Get all releases (sorted by date)
+          releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
 
-        # Capture the most recent pre-release (assuming the first one is the latest)
-        current_release=$(echo "$releases" | jq -c '.[] | select(.prerelease == true) | .published_at' | sort -r | head -n 1)
-
-        # Remove extra quotes from captured date
-        current_release=$(echo $current_release | tr -d '"')
-
-        # Export the current published_at to be available for the next step
-        echo "CURRENT_PUBLISHED_AT=$current_release" >> $GITHUB_ENV
-
-    - name: Delete old pre-releases and tags
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        api_url="https://api.github.com/repos/${{ github.repository }}/releases"
-
-        # Get current pre-releases
-        releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
-
-        # Remove extra quotes from captured date
-        CURRENT_PUBLISHED_AT=$(echo $CURRENT_PUBLISHED_AT | tr -d '"')
-
-        # Convert CURRENT_PUBLISHED_AT para timestamp Unix
-        current_published_ts=$(date -d "$CURRENT_PUBLISHED_AT" +%s)
-
-        # Identify pre-releases
-        echo "$releases" | jq -c '.[] | select(.prerelease == true)' | while read -r release; do
-          release_date=$(echo "$release" | jq -r '.published_at')
-          release_id=$(echo "$release" | jq -r '.id')
-          release_tag=$(echo "$release" | jq -r '.tag_name')
+          # Capture the most recent pre-release (assuming the first one is the latest)
+          current_release=$(echo "$releases" | jq -c '.[] | select(.prerelease == true) | .published_at' | sort -r | head -n 1)
 
           # Remove extra quotes from captured date
-          release_date=$(echo $release_date | tr -d '"')
+          current_release=$(echo $current_release | tr -d '"')
 
-          # Convert release_date para timestamp Unix
-          release_date_ts=$(date -d "$release_date" +%s)
+          # Export the current published_at to be available for the next step
+          echo "CURRENT_PUBLISHED_AT=$current_release" >> $GITHUB_ENV
 
-          # Compare timestamps and delete old pre-releases
-          if [[ "$release_date_ts" -lt "$current_published_ts" ]]; then
-            echo "Deleting old pre-release: $release_id from $release_date with tag: $release_tag"
-            # Delete the pre-release
-            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api_url/$release_id"
-            # Delete the tag
-            curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$release_tag"
-          else
-            echo "Skipping pre-release: $release_id (newer or same date)"
-          fi
-        done
+      - name: Delete old pre-releases and tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          api_url="https://api.github.com/repos/${{ github.repository }}/releases"
+
+          # Get current pre-releases
+          releases=$(curl -H "Authorization: token $GITHUB_TOKEN" "$api_url")
+
+          # Remove extra quotes from captured date
+          CURRENT_PUBLISHED_AT=$(echo $CURRENT_PUBLISHED_AT | tr -d '"')
+
+          # Convert CURRENT_PUBLISHED_AT para timestamp Unix
+          current_published_ts=$(date -d "$CURRENT_PUBLISHED_AT" +%s)
+
+          # Identify pre-releases
+          echo "$releases" | jq -c '.[] | select(.prerelease == true)' | while read -r release; do
+            release_date=$(echo "$release" | jq -r '.published_at')
+            release_id=$(echo "$release" | jq -r '.id')
+            release_tag=$(echo "$release" | jq -r '.tag_name')
+
+            # Remove extra quotes from captured date
+            release_date=$(echo $release_date | tr -d '"')
+
+            # Convert release_date para timestamp Unix
+            release_date_ts=$(date -d "$release_date" +%s)
+
+            # Compare timestamps and delete old pre-releases
+            if [[ "$release_date_ts" -lt "$current_published_ts" ]]; then
+              echo "Deleting old pre-release: $release_id from $release_date with tag: $release_tag"
+              # Delete the pre-release
+              curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "$api_url/$release_id"
+              # Delete the tag
+              curl -X DELETE -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/${{ github.repository }}/git/refs/tags/$release_tag"
+            else
+              echo "Skipping pre-release: $release_id (newer or same date)"
+            fi
+          done
