@@ -651,7 +651,7 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 					data["title"] = track.title
 					data["artist"] = track.artist
 					data["album"] = track.album
-					data["progress"] = int(round(pctl.playing_time * 1000))
+					data["progress"] = round(pctl.playing_time * 1000)
 					data["track"] = self.get_track(0, 0, track)
 
 				p = pctl.playlist_playing_position
