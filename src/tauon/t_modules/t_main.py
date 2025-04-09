@@ -312,14 +312,14 @@ class GuiVar:
 	#	 self.text_input_request = False
 
 	def rescale(self) -> None:
-		self.spec_y = int(round(5 * self.scale))
-		self.spec_w = int(round(80 * self.scale))
-		self.spec_h = int(round(20 * self.scale))
+		self.spec_y = round(5 * self.scale)
+		self.spec_w = round(80 * self.scale)
+		self.spec_h = round(20 * self.scale)
 		self.spec1_rec = sdl3.SDL_FRect(0, self.spec_y, self.spec_w, self.spec_h)
 
-		self.spec4_y = int(round(200 * self.scale))
-		self.spec4_w = int(round(322 * self.scale))
-		self.spec4_h = int(round(100 * self.scale))
+		self.spec4_y = round(200 * self.scale)
+		self.spec4_w = round(322 * self.scale)
+		self.spec4_h = round(100 * self.scale)
 		self.spec4_rec = sdl3.SDL_FRect(0, self.spec4_y, self.spec4_w, self.spec4_h)
 
 		self.bar = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
@@ -332,8 +332,8 @@ class GuiVar:
 		self.playlist_top_bk = self.playlist_top
 		self.scroll_hide_box = (0, self.panelY, 28, self.bag.window_size[1] - self.panelBY - self.panelY)
 
-		self.spec2_y = int(round(22 * self.scale))
-		self.spec2_w = int(round(140 * self.scale))
+		self.spec2_y = round(22 * self.scale)
+		self.spec2_w = round(140 * self.scale)
 		self.spec2 = [0] * self.spec2_y
 		self.spec2_phase = 0
 		self.spec2_buffers = []
@@ -12287,11 +12287,11 @@ class Tauon:
 			gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
 			# gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
-			gui.spec1_rec.x = int(round(window_size[0] - gui.offset_extra - 90 * gui.scale))
+			gui.spec1_rec.x = round(window_size[0] - gui.offset_extra - 90 * gui.scale)
 
 			# gui.spec_x = window_size[0] - gui.offset_extra - 90
 
-			gui.spec2_rec.x = int(round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra))
+			gui.spec2_rec.x = round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra)
 
 			gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
 
@@ -13851,7 +13851,7 @@ class Tauon:
 
 		for i in range(len(self.gui.pl_st)):
 			if self.gui.pl_st[i][2] is False and total:
-				self.gui.pl_st[i][1] = int(round((self.gui.pl_st[i][1] / total) * wid))  # + 1
+				self.gui.pl_st[i][1] = round((self.gui.pl_st[i][1] / total) * wid)  # + 1
 
 	def auto_size_columns(self) -> None:
 		fixed_n = 0
@@ -25668,7 +25668,7 @@ class Over:
 					colour = colorsys.hls_to_rgb(1 - colour[0], colour[1] * 0.8, colour[2] * 0.8)
 					colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
 
-					h = int(round(value / len(pctl.master_library) * full_rect[2]))
+					h = round(value / len(pctl.master_library) * full_rect[2])
 					block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
 
 					ddt.rect(block_rect, colour)
@@ -26746,7 +26746,7 @@ class TopPanel:
 								ay -= 6 * self.adds[k][2].get() / 0.3
 
 								ddt.text(
-									(x + tab_width - 3, int(round(ay)), 1), "+" + str(self.adds[k][1]), colours.pluse_colour, 212, bg=bg)
+									(x + tab_width - 3, round(ay), 1), "+" + str(self.adds[k][1]), colours.pluse_colour, 212, bg=bg)
 								gui.update += 1
 
 			x += tab_width + self.tab_spacing
@@ -27153,9 +27153,9 @@ class BottomBarType1:
 			l_lead = l_target - pctl.a_time
 
 			if l_lead > 0 and pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 30:
-				l_x = self.seek_bar_position[0] + int(math.ceil(
-					pctl.playing_time * self.seek_bar_size[0] / int(pctl.playing_length)))
-				l_x += int(math.ceil(self.seek_bar_size[0] / int(pctl.playing_length) * l_lead))
+				l_x = self.seek_bar_position[0] + math.ceil(
+					pctl.playing_time * self.seek_bar_size[0] / int(pctl.playing_length))
+				l_x += math.ceil(self.seek_bar_size[0] / int(pctl.playing_length) * l_lead)
 
 				if abs(self.scrob_stick - l_x) < 2:
 					l_x = self.scrob_stick
@@ -30233,7 +30233,7 @@ class ScrollBox:
 		mi = y + half
 		mo = y + h - half
 		distance = mo - mi
-		position = int(round(distance * ratio))
+		position = round(distance * ratio)
 
 		fw = w + extend_field
 		fx = x - extend_field
@@ -30251,14 +30251,14 @@ class ScrollBox:
 
 				per = p / range
 
-				value = int(round(max_value * per))
+				value = round(max_value * per)
 
 				ratio = value / max_value
 
 				mi = y + half
 				mo = y + h - half
 				distance = mo - mi
-				position = int(round(distance * ratio))
+				position = round(distance * ratio)
 
 			in_bar = False
 			if self.coll((x, mi + position - half, w, bar_height)):
@@ -30320,7 +30320,7 @@ class ScrollBox:
 			position = min(position, distance)
 
 			ratio = position / distance
-			value = int(round(max_value * ratio))
+			value = round(max_value * ratio)
 
 		colour = fg_off
 		rect = (x, mi + position - half, w, bar_height)
@@ -31781,7 +31781,7 @@ class PlaylistBox:
 							ay -= 6 * gui.scale * self.adds[k][2].get() / 0.3
 
 							ddt.text(
-								(tab_start + tab_width - 10 * gui.scale, int(round(ay)), 1),
+								(tab_start + tab_width - 10 * gui.scale, round(ay), 1),
 								"+" + str(self.adds[k][1]), self.colours.pluse_colour, 212, bg=real_bg)
 							gui.update += 1
 
@@ -44692,7 +44692,7 @@ while pctl.running:
 					pctl.multi_playlist)) + 13 * gui.scale
 
 				full = (window_size[1] - (gui.panelY + gui.panelBY))
-				half = int(round(full / 2))
+				half = round(full / 2)
 
 				gui.pl_box_h = full
 
@@ -44729,7 +44729,7 @@ while pctl.running:
 							gui.pl_box_h = half
 
 						if preview_queue:
-							gui.pl_box_h = int(round(full * 5 / 6))
+							gui.pl_box_h = round(full * 5 / 6)
 
 					if prefs.left_panel_mode != "queue":
 						tauon.playlist_box.draw(0, gui.panelY, gui.lspw, gui.pl_box_h)
@@ -44904,18 +44904,18 @@ while pctl.running:
 				if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
 					ddt.rect(
 						(0 + gui.lspw - 6 * gui.scale, gui.panelY, 6 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
+						round(window_size[1] - gui.panelY - gui.panelBY)), colours.grey(200))
 					ddt.rect(
 						(0 + gui.lspw - 5 * gui.scale, gui.panelY - 1, 4 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
+						round(window_size[1] - gui.panelY - gui.panelBY) + 1), colours.grey(245))
 				if gui.rsp and gui.show_playlist:
 					w = window_size[0] - gui.rspw
 					ddt.rect(
 						(w - round(3 * gui.scale), gui.panelY, 6 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY))), colours.grey(200))
+						round(window_size[1] - gui.panelY - gui.panelBY)), colours.grey(200))
 					ddt.rect(
 						(w - round(2 * gui.scale), gui.panelY - 1, 4 * gui.scale,
-						int(round(window_size[1] - gui.panelY - gui.panelBY)) + 1), colours.grey(245))
+						round(window_size[1] - gui.panelY - gui.panelBY) + 1), colours.grey(245))
 				if gui.queue_frame_draw is not None:
 					if gui.lsp:
 						ddt.rect((0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200))
