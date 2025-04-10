@@ -22,6 +22,7 @@ Terminal=false
 Type=Application
 Categories=AudioVideo;Player;Audio;
 Actions=PlayPause;Previous;Next;Stop
+X-GNOME-UsesNotifications=true
 
 [Desktop Action PlayPause]
 Exec=com.github.taiko2k.tauonmb.sh --no-start --play-pause
