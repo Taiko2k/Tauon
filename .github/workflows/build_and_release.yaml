@@ -285,8 +285,14 @@ jobs:
       #  with:
       #    python-version: '3.13'
 
-      - name: brew update and upgrade
-        run: brew update && brew upgrade
+      - name: brew update and upgrade with a workaround for https://github.com/actions/runner-images/issues/9966
+        run: |
+          brew update
+          brew unlink python@3.12
+          brew unlink python@3.13
+          brew link --overwrite python@3.12
+          brew link --overwrite python@3.13
+          brew upgrade
 
       - name: Install brew dependencies
         run: |
