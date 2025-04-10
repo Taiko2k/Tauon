@@ -5,6 +5,7 @@ Changelog
 ### v8.0.1
 
  - **Fixed** crash on queue scroll
+ - **Fixed** synced lyrics rendering issue
 
 
 ### v8.0.0

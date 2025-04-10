@@ -42,10 +42,11 @@ if TYPE_CHECKING:
 class Jellyfin:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
-		self.pctl = tauon.pctl
-		self.prefs = tauon.prefs
-		self.gui = tauon.gui
+		self.tauon        = tauon
+		self.gui          = tauon.gui
+		self.pctl         = tauon.pctl
+		self.prefs        = tauon.prefs
+		self.show_message = tauon.show_message
 
 		self.scanning = False
 		self.connected = False
@@ -85,7 +86,7 @@ class Jellyfin:
 			)
 		except Exception:
 			logging.exception(f"{_('Could not establish connection to server.')} {_('Check server is running and URL is correct.')}")
-			self.gui.show_message(_("Could not establish connection to server."), _("Check server is running and URL is correct."), mode="error")
+			self.show_message(_("Could not establish connection to server."), _("Check server is running and URL is correct."), mode="error")
 			return
 
 		if response.status_code == HTTPStatus.OK:
@@ -94,11 +95,11 @@ class Jellyfin:
 			self.userId = info["User"]["Id"]
 			self.connected = True
 			if debug:
-				self.gui.show_message(_("Connection and authorisation successful"), mode="done")
+				self.show_message(_("Connection and authorisation successful"), mode="done")
 		elif response.status_code == HTTPStatus.UNAUTHORIZED:
-			self.gui.show_message(_("401 Authentication failed"), _("Check username and password."), mode="warning")
+			self.show_message(_("401 Authentication failed"), _("Check username and password."), mode="warning")
 		else:
-			self.gui.show_message(_("Jellyfin auth error"), f"{response.status_code} {response.text}", mode="warning")
+			self.show_message(_("Jellyfin auth error"), f"{response.status_code} {response.text}", mode="warning")
 
 	def test(self) -> None:
 		self._authenticate(debug=True)
@@ -332,7 +333,7 @@ class Jellyfin:
 		for p in self.playlists:
 			found = False
 			for pp in self.pctl.multi_playlist:
-				if f"jelly\"{p['Id']}\"" in self.pctl.gen_codes.get(pp[6], ""):
+				if f"jelly\"{p['Id']}\"" in self.pctl.gen_codes.get(pp.uuid_int, ""):
 					found = True
 					break
 			if found:
@@ -380,7 +381,7 @@ class Jellyfin:
 		if not self.connected:
 			self.scanning = False
 			if not return_list:
-				self.tauon.gui.show_message(_("Error connecting to Jellyfin"))
+				self.show_message(_("Error connecting to Jellyfin"))
 			return []
 
 		playlist: list[int] = []
@@ -416,7 +417,7 @@ class Jellyfin:
 
 		except Exception:
 			logging.exception("Error connecting to Jellyfin for Import")
-			self.gui.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
+			self.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
 			self.scanning = False
 			return None
 
@@ -434,7 +435,7 @@ class Jellyfin:
 		else:
 			logging.error("Error accessing Jellyfin")
 			self.scanning = False
-			self.tauon.gui.show_message(_("Error accessing Jellyfin"), mode="warning")
+			self.show_message(_("Error accessing Jellyfin"), mode="warning")
 			return None
 
 		fav_status = {}
