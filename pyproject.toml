@@ -1,6 +1,6 @@
 [project]
 	name = "tauon-music-box"
-	version = "7.9.0"
+	version = "8.0.1"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
