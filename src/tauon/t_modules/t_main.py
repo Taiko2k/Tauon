@@ -31191,8 +31191,10 @@ class RenamePlaylistBox:
 		self.ddt              = tauon.ddt
 		self.gui              = tauon.gui
 		self.inp              = tauon.inp
+		self.coll             = tauon.coll
 		self.pctl             = tauon.pctl
 		self.colours          = tauon.colours
+		self.window_size      = tauon.window_size
 		self.thread_manager   = tauon.thread_manager
 		self.rename_text_area = tauon.rename_text_area
 		self.x = 300
