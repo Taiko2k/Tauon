@@ -20243,7 +20243,7 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset) -> int:
+	def fast_display(self, index: int, location: list[int], box, source: list[tuple[int, str]], offset: int) -> int:
 		"""Renders cached image only by given size for faster performance"""
 		found_unit = None
 		max_h = 0
@@ -20718,7 +20718,7 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location, box, fast: bool = False, theme_only: bool = False) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box, fast: bool = False, theme_only: bool = False) -> int | None:
 		index = track.index
 		filepath = track.fullpath
 
@@ -20742,7 +20742,7 @@ class AlbumArt:
 				return 0
 
 			if fast:
-				return self.fast_display(track, location, box, source, offset)
+				return self.fast_display(track.index, location, box, source, offset)
 
 			# Check if cached
 			for unit in self.image_cache:
@@ -31875,7 +31875,7 @@ class ArtistList:
 		self.current_album_counts: dict[str, list[str]] = {}
 		self.current_artist_track_counts: dict[str, int] = {}
 
-		self.thumb_cache = {}
+		self.thumb_cache: dict[str, list[sdl3.LP_SDL_Texture | sdl3.SDL_FRect] | None] = {}
 
 		self.to_fetch = ""
 		self.to_fetch_mbid_a = ""
