@@ -18257,7 +18257,7 @@ class RadioBox:
 
 		rect = (x, y, w, h)
 		if coll(rect):
-			self.scroll_position += mouse_wheel * -1
+			self.scroll_position += int(mouse_wheel) * -1
 		self.scroll_position = max(self.scroll_position, 0)
 		self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
@@ -20113,7 +20113,7 @@ class TreeView:
 
 		# Mouse wheel scrolling
 		if mouse_in and mouse_wheel:
-			scroll_position += mouse_wheel * -2
+			scroll_position += int(mouse_wheel) * -2
 			scroll_position = max(scroll_position, 0)
 			scroll_position = min(scroll_position, max_scroll)
 
@@ -20779,7 +20779,7 @@ class QueueBox:
 
 		if coll(box_rect):
 			# Update scroll position
-			self.scroll_position += mouse_wheel * -1
+			self.scroll_position += int(mouse_wheel) * -1
 			self.scroll_position = max(self.scroll_position, 0)
 
 			if right_click:
@@ -34267,7 +34267,7 @@ def discord_loop() -> None:
 				album = radiobox.loaded_station["title"]
 			else:
 				album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
-					
+
 
 			if album and len(album) == 1:
 				album += " "
