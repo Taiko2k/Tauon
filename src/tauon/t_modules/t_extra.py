@@ -130,7 +130,7 @@ def tmp_cache_dir() -> str:
 class Timer:
 	"""A seconds based timer"""
 
-	def __init__(self, force: bool | None = None) -> None:
+	def __init__(self, force: float | None = None) -> None:
 		self.start = 0
 		self.end = 0
 		self.set()
