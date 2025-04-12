@@ -982,7 +982,7 @@ class Input:
 		self.level_2_right_click: bool = False
 		self.level_2_enter:       bool = False
 		self.backspace_press:      int = 0
-		self.mouse_wheel:          int = 0
+		self.mouse_wheel:        float = 0
 		self.mouse_down:          bool = False
 		self.mouse_up:            bool = False
 		self.right_down:          bool = False
@@ -19154,7 +19154,7 @@ class TimedLyricsRen:
 		self.ready = False
 		self.data = []
 
-		self.scroll_position = 0
+		self.scroll_position: int = 0
 
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index:
@@ -27299,7 +27299,7 @@ class BottomBarType1:
 		# Volume mouse wheel control -----------------------------------------
 		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
 		and not coll_point(self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
-			pctl.player_volume += self.inp.mouse_wheel * prefs.volume_wheel_increment
+			pctl.player_volume += int(self.inp.mouse_wheel) * prefs.volume_wheel_increment
 			if pctl.player_volume < 1:
 				pctl.player_volume = 0
 			elif pctl.player_volume > 100:
@@ -27996,7 +27996,7 @@ class BottomBarType_ao1:
 		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(
 			self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
 
-			self.pctl.player_volume += self.inp.mouse_wheel * self.prefs.volume_wheel_increment
+			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -28349,7 +28349,7 @@ class MiniMode:
 		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
 
-			self.pctl.player_volume += self.inp.mouse_wheel * self.prefs.volume_wheel_increment * 3
+			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment * 3
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -28581,7 +28581,7 @@ class MiniMode2:
 		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
 
-			self.pctl.player_volume += self.inp.mouse_wheel * self.prefs.volume_wheel_increment * 3
+			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment * 3
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -28735,7 +28735,7 @@ class MiniMode3:
 		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
 
-			self.pctl.player_volume += self.inp.mouse_wheel * self.prefs.volume_wheel_increment * 3
+			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment * 3
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -30201,7 +30201,7 @@ class ScrollBox:
 		self.d_position = 0
 
 	def draw(
-		self, x, y, w, h, value, max_value, force_dark_theme=False, click=None, r_click=False, jump_distance=4, extend_field=0):
+		self, x: int, y: int, w: int, h: int, value: int, max_value: int, force_dark_theme: bool = False, click=None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> int:
 		if max_value < 2:
 			return 0
 
@@ -30368,7 +30368,7 @@ class RadioBox:
 		self.h = 1
 		self.center = False
 
-		self.scroll_position = 0
+		self.scroll_position: int = 0
 		self.scroll = ScrollBox(tauon=tauon, pctl=pctl)
 
 		self.dummy_track = TrackClass()
@@ -30669,8 +30669,7 @@ class RadioBox:
 		self.radio_field_title.text = station.title
 		self.radio_field.text = station.stream_url
 
-	def browser_get_hosts(self):
-		import socket
+	def browser_get_hosts(self) -> list[str]:
 		"""
 		Get all base urls of all currently available radiobrowser servers
 
@@ -30691,12 +30690,14 @@ class RadioBox:
 				# add the name to a list if not already in there
 				if host_addr[0] not in hosts:
 					hosts.append(host_addr[0])
+			except socket.herror:
+				logging.exception(f"IP PTR lookup fail for {ip}")
 			except Exception:
-				logging.exception("IPv4 lookup fail")
+				logging.exception(f"Unknown exception - IP PTR lookup fail for {ip}")
 
 		# sort list of names
 		hosts.sort()
-		# add "https://" in front to make it an url
+		# add "https://" in front to make it a url
 		return list(map(lambda x: "https://" + x, hosts))
 
 	def search_page(self) -> None:
@@ -30802,6 +30803,11 @@ class RadioBox:
 	def search_radio_browser2(self, param) -> None:
 		if not self.hosts:
 			self.hosts = self.browser_get_hosts()
+			# In case we get an empty list for some reason
+			if not self.hosts:
+				logging.warning("Got an empty radio list back, returning early!")
+				self.searching = False
+				return
 		if not self.host:
 			self.host = random.choice(self.hosts)
 
@@ -31004,7 +31010,7 @@ class RadioBox:
 
 		rect = (x, y, w, h)
 		if self.coll(rect):
-			self.scroll_position += self.inp.mouse_wheel * -1
+			self.scroll_position += int(self.inp.mouse_wheel) * -1
 		self.scroll_position = max(self.scroll_position, 0)
 		self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
@@ -31863,7 +31869,7 @@ class ArtistList:
 		self.to_fetch = ""
 		self.to_fetch_mbid_a = ""
 
-		self.scroll_position = 0
+		self.scroll_position: int = 0
 
 		self.id_to_load = ""
 
@@ -32862,7 +32868,7 @@ class TreeView:
 
 		# Mouse wheel scrolling
 		if mouse_in and self.inp.mouse_wheel:
-			scroll_position += self.inp.mouse_wheel * -2
+			scroll_position += int(self.inp.mouse_wheel) * -2
 			scroll_position = max(scroll_position, 0)
 			scroll_position = min(scroll_position, max_scroll)
 
@@ -33231,7 +33237,7 @@ class QueueBox:
 		self.drag_start_y = 0
 		self.drag_start_top = 0
 		self.tab_h = 0
-		self.scroll_position = 0
+		self.scroll_position: int = 0
 		self.right_click_id = None
 		self.d_click_ref = None
 		self.recalc()
@@ -33510,7 +33516,7 @@ class QueueBox:
 
 		if self.coll(box_rect):
 			# Update scroll position
-			self.scroll_position += self.inp.mouse_wheel * -1
+			self.scroll_position += int(self.inp.mouse_wheel) * -1
 			self.scroll_position = max(self.scroll_position, 0)
 
 			if self.inp.right_click:
@@ -34314,7 +34320,7 @@ class ArtistInfoBox:
 			scroll_max = self.th - (h - 26)
 
 			if self.coll((x, y, w, h)):
-				self.scroll_y += self.inp.mouse_wheel * -20
+				self.scroll_y += int(self.inp.mouse_wheel) * -20
 			self.scroll_y = max(self.scroll_y, 0)
 			self.scroll_y = min(self.scroll_y, scroll_max)
 
@@ -34764,7 +34770,7 @@ class RadioView:
 		if not radiobox.active or (radiobox.active and not self.coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
 			if gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
 			and self.inp.mouse_position[0] < w + round(70 * gui.scale):
-				scroll += self.inp.mouse_wheel * -1
+				scroll += int(self.inp.mouse_wheel) * -1
 		scroll = min(scroll, len(radios) - mm + 1)
 		scroll = max(scroll, 0)
 		if len(radios) > mm:
@@ -35060,7 +35066,7 @@ class Showcase:
 
 			if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
 				if self.inp.mouse_wheel != 0:
-					self.lyrics_ren.lyrics_position += self.inp.mouse_wheel * 35 * self.gui.scale
+					self.lyrics_ren.lyrics_position += int(self.inp.mouse_wheel) * 35 * self.gui.scale
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
