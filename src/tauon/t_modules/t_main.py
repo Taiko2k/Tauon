@@ -2876,7 +2876,7 @@ class PlayerCtl:
 			# If the queue is not empty, play?
 			elif len(self.track_queue) > 0:
 				if self.stop_mode == 4:  # Assign new current album for stopping
-					tr = self.pctl.playing_object()
+					tr = self.playing_object()
 					self.stop_ref = (tr.parent_folder_path, tr.album)
 				self.play_target()
 
