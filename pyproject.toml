@@ -1,6 +1,7 @@
 [project]
 	name = "tauon-music-box"
-	version = "7.9.0"
+	# Should also be bumped in __main__.py and in two places in .github/workflows/build_and_release.yaml in the Windows section
+	version = "8.1.0"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
@@ -194,12 +195,17 @@
 			'D102',    # public-method                             - ^
 			'D103',    # undocumented-public-function              - ^
 			'D104',    # undocumented-public-package               - ^
-#			'D105',    # undocumented-magic-method                 - ^ < This one is a bit more severe though
+			#'D105',    # undocumented-magic-method                 - ^ < This one is a bit more severe though
 			'D106',    # undocumented-public-nested-class          - ^
 			'D107',    # undocumented-public-init                  - ^
 			'D400',    # ends-in-period                            - We do not care if docstrings end with a period
 			'D415',    # ends-in-punctuation                       - ^
+			'D203',   # incorrect-blank-line-before-class          - Clashes with D211
+			#'D211',   # no-blank-line-before-class                 - Clashes with D203
+			#'D212',   # multi-line-summary-first-line              - Clashes with D213
+			'D213',   # multi-line-summary-second-line             - Clashes with D212
 			'D401',    # non-imperative-mood                       - Wants docstrings in imperative language but it's really not foolproof, disable
+			'E501',    # line-too-long                             - TODO(Martin) - We want this enabled, but only after the rest of issues is gone
 			'EM101',   # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
 			'EM102',   # f-string-in-exception                     - ^
 			'EM103',   # dot-format-in-exception                   - ^
@@ -207,6 +213,8 @@
 			'FBT001',  # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
 			'FBT002',  # boolean-default-value-positional-argument - ^
 			'FBT003',  # boolean-positional-value-in-call          - ^
+			'G004',    # logging-f-string                          - Ignore this, we lose some efficiency but I suppose nobody wants to do a total overhaul of the logging system for next to no gains
+			'LOG015',  # root-logger-call                          - We are not a library and have customized the logger
 			'TD003',   # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
 			'C901',    # complex-structure                         - We'll ignore functions being too complex for now
 			'PLR0911', # too-many-return-statements                - We'll ignore functions having too many return statements

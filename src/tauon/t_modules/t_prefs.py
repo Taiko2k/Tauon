@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 	from pathlib import Path
+	from tauon.t_modules.t_extra import RadioStation
 
 @dataclass
 class Prefs:
@@ -274,6 +275,7 @@ class Prefs:
 	center_gallery_text = False
 
 	tracklist_y_text_offset = 0
+	theme: int = 7
 	theme_name = "Turbo"
 	transparent_mode: int = 0
 	left_panel_mode = "playlist"
@@ -308,7 +310,7 @@ class Prefs:
 
 	lyrics_subs = {}
 
-	radio_urls: list = field(default_factory=list)
+	radio_urls: list[RadioStation] = field(default_factory=list)
 
 	lyric_metadata_panel_top = False
 	showcase_overlay_texture = False

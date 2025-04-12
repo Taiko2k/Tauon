@@ -109,7 +109,7 @@ class TauonPlaylist:
 
 	title: str
 	playing: int
-	playlist_ids: list[int] | None
+	playlist_ids: list[int]
 	position: int                  # View Position
 	hide_title: bool               # hide playlist folder titles (bool)
 	selected: int

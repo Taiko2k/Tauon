@@ -18,8 +18,7 @@ import requests
 from tauon.t_modules.t_extra import TestTimer, filename_safe
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_draw import TDraw
-	from tauon.t_modules.t_main import ColoursClass, GuiVar, Input, PlayerCtl, TrackClass
+	from tauon.t_modules.t_main import TrackClass, Tauon
 
 # TODO(Martin): Dupe code here to make things work in a dirty fashion until t_main gets a bigger rework
 #from tauon.t_modules.t_main import copy_from_clipboard
@@ -30,16 +29,16 @@ def copy_from_clipboard():
 
 class GuitarChords:
 	def __init__(
-		self, user_directory: Path, inp: Input, ddt: TDraw, gui: GuiVar, pctl: PlayerCtl, colours: ColoursClass,
-		mouse_wheel: float, mouse_position: list[int], window_size: list[int],
+		self, tauon: Tauon, mouse_wheel: float, mouse_position: list[int], window_size: list[int],
 	) -> None:
-		self.store_a:         Path = user_directory / "guitar-chords-a"  # inline format
-		self.store_b:         Path = user_directory / "guitar-chords-b"  # 2 lines format
-		self.colours: ColoursClass = colours
-		self.inp:            Input = inp
-		self.ddt:            TDraw = ddt
-		self.gui:           GuiVar = gui
-		self.pctl:       PlayerCtl = pctl
+		self.inp                   = tauon.inp
+		self.ddt                   = tauon.ddt
+		self.gui                   = tauon.gui
+		self.pctl                  = tauon.pctl
+		self.colours               = tauon.colours
+		self.store_a               = tauon.user_directory / "guitar-chords-a"  # inline format
+		self.store_b               = tauon.user_directory / "guitar-chords-b"  # 2 lines format
+		self.show_message          = tauon.show_message
 		self.mouse_wheel           = mouse_wheel
 		self.mouse_position        = mouse_position
 		self.window_size           = window_size
@@ -79,7 +78,7 @@ class GuitarChords:
 			If you find a match in the search API, then you can fetch the song detail using the id, we have chords in all of our songs.
 		"""
 		if not track_object.title:
-			self.gui.show_message(_("Insufficient metadata to search"))
+			self.show_message(_("Insufficient metadata to search"))
 		self.fetch(track_object)
 
 	def paste_chord_lyrics(self, track_object: TrackClass) -> None:
@@ -93,7 +92,7 @@ class GuitarChords:
 	def save_format_b(self, track: TrackClass) -> None:
 		t = copy_from_clipboard()
 		if not t:
-			self.gui.show_message(_("Clipboard has no text"))
+			self.show_message(_("Clipboard has no text"))
 			self.inp.mouse_click = False
 			return
 
@@ -187,7 +186,7 @@ class GuitarChords:
 				timeout=15)
 		except Exception:
 			logging.exception("Error finding matching track on GuitarParty")
-			self.gui.show_message(_("Error finding matching track on GuitarParty"))
+			self.show_message(_("Error finding matching track on GuitarParty"))
 			self.inp.mouse_click = False
 			self.ready[cache_title] = 2
 			return
@@ -203,7 +202,7 @@ class GuitarChords:
 
 		if len(parsed_response) == 0:
 			logging.info("Track not found on GuitarParty")
-			self.gui.show_message(_("Track not found on GuitarParty"))
+			self.show_message(_("Track not found on GuitarParty"))
 			self.inp.mouse_click = False
 			self.ready[cache_title] = 2
 			return
@@ -218,7 +217,7 @@ class GuitarChords:
 				timeout=15)
 		except Exception:
 			logging.exception("Error getting song from GuitarParty")
-			self.gui.show_message(_("Error getting song from GuitarParty"))
+			self.show_message(_("Error getting song from GuitarParty"))
 			self.inp.mouse_click = False
 			self.ready[cache_title] = 2
 			return

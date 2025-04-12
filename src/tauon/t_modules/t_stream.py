@@ -137,7 +137,7 @@ class StreamEnc:
 					logging.debug("RETRYING...")
 					continue
 				logging.error("Connection failed")
-				self.tauon.gui.show_message(_("Failed to establish a connection"), str(e), mode="error")
+				self.tauon.show_message(_("Failed to establish a connection"), str(e), mode="error")
 				return False
 			break
 
@@ -513,7 +513,7 @@ class StreamEnc:
 							r.close()
 							self.download_running = False
 							self.abort = True
-							self.tauon.gui.show_message(_("Data malformation detected. Stream aborted."), mode="error")
+							self.tauon.show_message(_("Data malformation detected. Stream aborted."), mode="error")
 							raise
 		except Exception:
 			logging.exception("Stream download thread crashed!")
