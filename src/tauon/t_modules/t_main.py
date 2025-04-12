@@ -46596,7 +46596,7 @@ if tauon.radio_server is not None:
 if sys.platform == "win32":
 	tray.stop()
 	if smtc:
-		tauon.sm.unload()
+		pctl.sm.unload()
 elif tauon.de_notify_support:
 	try:
 		tauon.song_notification.close()
