@@ -34401,11 +34401,11 @@ class ArtistInfoBox:
 			str(self.user_directory / "artist-pictures" / (f_artist + ".png")),
 			str(self.user_directory / "artist-pictures" / (f_artist + ".jpg")),
 			str(self.user_directory / "artist-pictures" / (f_artist + ".webp")),
-			os.path.join(self.a_cache_directory, f_artist + "-ftv-full.jpg"),
-			os.path.join(self.a_cache_directory, f_artist + "-lfm.png"),
-			os.path.join(self.a_cache_directory, f_artist + "-lfm.jpg"),
-			os.path.join(self.a_cache_directory, f_artist + "-lfm.webp"),
-			os.path.join(self.a_cache_directory, f_artist + "-dcg.jpg"),
+			str(self.a_cache_directory / (f_artist + "-ftv-full.jpg")),
+			str(self.a_cache_directory / (f_artist + "-lfm.png")),
+			str(self.a_cache_directory / (f_artist + "-lfm.jpg")),
+			str(self.a_cache_directory / (f_artist + "-lfm.webp")),
+			str(self.a_cache_directory / (f_artist + "-dcg.jpg")),
 		]
 
 		if get_img_path:
