@@ -214,12 +214,12 @@ jobs:
         run: |
           export CXXFLAGS="-I/opt/homebrew/include"
           export LDFLAGS="-L/opt/homebrew/lib"
-          $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
 
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
             -r requirements.txt \
             build \
             https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
         #   pyinstaller
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
         #  source .venv/bin/activate
@@ -324,12 +324,12 @@ jobs:
         run: |
           export CXXFLAGS="-I/opt/homebrew/include"
           export LDFLAGS="-L/opt/homebrew/lib"
-          $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
 
           $(brew --prefix python)/libexec/bin/pip install --user --break-system-packages \
             -r requirements.txt \
             build
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
         #  $(brew --prefix python)/libexec/bin/python -m pip show -f pyinstaller
         #   pyinstaller
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
