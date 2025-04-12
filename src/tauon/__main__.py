@@ -33,12 +33,9 @@ from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
 
 from tauon.t_modules import t_bootstrap
 
-debug = False
-if (install_directory / "debug").is_file():
-	debug = True
 
 log = LogHistoryHandler()
-formatter = logging.Formatter('[%(levelname)s] %(message)s')
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
 log.setFormatter(formatter)
 
 # DEBUG+ to file and std_err
@@ -50,9 +47,6 @@ logging.basicConfig(
 #		logging.FileHandler('/tmp/tauon.log'),
 	],
 )
-# INFO+ to std_err
-# TODO(Martin): This hereabout section is wonk, setting INFO on streamhandler removes formatting for DEBUG
-logging.getLogger().handlers[0].setLevel(logging.DEBUG if debug else logging.INFO)
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 # https://docs.python.org/3/library/warnings.html
@@ -65,7 +59,7 @@ if not sys.warnoptions:
 if sys.platform != "win32":
 	import fcntl
 
-n_version = "8.0.1"
+n_version = "8.1.0" # Should also be bumped in pyproject.toml
 t_version = "v" + n_version
 t_title = "Tauon"
 t_id = "tauonmb"
@@ -146,6 +140,12 @@ else:
 #	logging.info("Running in portable mode")
 	user_directory = install_directory / "user-data"
 
+debug = bool((user_directory / "debug").is_file())
+
+# INFO+ to std_err
+# TODO(Martin): This hereabout section is wonk, setting INFO on streamhandler removes formatting for DEBUG
+logging.getLogger().handlers[0].setLevel(logging.DEBUG if debug else logging.INFO)
+
 asset_directory = install_directory / "assets"
 
 if not user_directory.is_dir():
@@ -156,7 +156,7 @@ if debug:
 	file_handler.setLevel(logging.DEBUG)
 	file_handler.setFormatter(formatter)
 	logging.getLogger().addHandler(file_handler)
-	logging.info("Debug mode enabled!")
+	logging.info(f"Debug mode enabled - saving log to {user_directory / 'tauon.log'}")
 
 fp = None
 dev_mode = (install_directory / ".dev").is_file()
@@ -322,7 +322,7 @@ if "--tray" in sys.argv:
 	flags |= sdl3.SDL_WINDOW_HIDDEN
 
 
-t_window = sdl3.SDL_CreateWindow(  # todo use SDL_CreateWindowAndRenderer()
+t_window = sdl3.SDL_CreateWindow(  # TODO(Taiko): use SDL_CreateWindowAndRenderer()
 	window_title,
 	# o_x, o_y,
 	logical_size[0], logical_size[1],
