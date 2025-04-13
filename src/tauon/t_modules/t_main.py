@@ -20243,7 +20243,7 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index, location, box, source: list[tuple[int, str]], offset) -> int:
+	def fast_display(self, index: int, location: list[int], box, source: list[tuple[int, str]], offset: int) -> int:
 		"""Renders cached image only by given size for faster performance"""
 		found_unit = None
 		max_h = 0
@@ -20718,7 +20718,7 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location, box, fast: bool = False, theme_only: bool = False) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box, fast: bool = False, theme_only: bool = False) -> int | None:
 		index = track.index
 		filepath = track.fullpath
 
@@ -20742,7 +20742,7 @@ class AlbumArt:
 				return 0
 
 			if fast:
-				return self.fast_display(track, location, box, source, offset)
+				return self.fast_display(track.index, location, box, source, offset)
 
 			# Check if cached
 			for unit in self.image_cache:
@@ -31838,7 +31838,18 @@ class PlaylistBox:
 				else:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
 
+@dataclass
+class ArtistListSaveState:
+
+	all_artists: list[str]
+	album_counts: dict[str, list[str]]
+	scroll_position: int
+	playlist_length: int
+	artist_track_counts: dict[str, int]
+	filtered_artists: int
+
 class ArtistList:
+
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
 		self.tauon                 = tauon
 		self.pctl                  = pctl
@@ -31862,11 +31873,11 @@ class ArtistList:
 		self.tab_h = round(60 * self.gui.scale)
 		self.thumb_size = round(55 * self.gui.scale)
 
-		self.current_artists = []
-		self.current_album_counts = {}
-		self.current_artist_track_counts = {}
+		self.current_artists: list[str] = []
+		self.current_album_counts: dict[str, list[str]] = {}
+		self.current_artist_track_counts: dict[str, int] = {}
 
-		self.thumb_cache = {}
+		self.thumb_cache: dict[str, list[sdl3.LP_SDL_Texture | sdl3.SDL_FRect] | None] = {}
 
 		self.to_fetch = ""
 		self.to_fetch_mbid_a = ""
@@ -31881,7 +31892,7 @@ class ArtistList:
 		self.click_ref = -1
 		self.click_highlight_timer = Timer()
 
-		self.saves = {}
+		self.saves: dict[int, ArtistListSaveState] = {}
 
 		self.load = False
 
@@ -32007,9 +32018,9 @@ class ArtistList:
 			return
 		current_pl = self.pctl.multi_playlist[curren_pl_no]
 
-		all = []
+		all: list[str] = []
 		artist_parents = {}
-		counts = {}
+		counts: dict[str, int] = {}
 		play_time = {}
 		filtered = 0
 		b = 0
@@ -32077,21 +32088,21 @@ class ArtistList:
 			return
 
 		# Artist-list, album-counts, scroll-position, playlist-length, number ignored
-		save = [all, current_album_counts, 0, len(current_pl.playlist_ids), counts, filtered]
+		save = ArtistListSaveState(all, current_album_counts, 0, len(current_pl.playlist_ids), counts, filtered)
 
 		# Scroll to playing artist
 		scroll = 0
 		if self.pctl.playing_ready():
 			track = self.pctl.playing_object()
-			for i, item in enumerate(save[0]):
+			for i, item in enumerate(save.all_artists):
 				if item in (track.artist, track.album_artist):
 					scroll = i
 					break
-		save[2] = scroll
+		save.scroll_position = scroll
 
 		viewing_pl_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int
 		if viewing_pl_id in self.saves:
-			self.saves[viewing_pl_id][2] = self.scroll_position # TODO(Martin): Is saves a list[TauonPlaylist] here? If so, [2] should be .playlist_ids
+			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
 		self.saves[current_pl.uuid_int] = save
 		self.gui.update += 1
@@ -32115,7 +32126,7 @@ class ArtistList:
 		if self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id:
 			viewing_pl_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id
 		if viewing_pl_id in self.saves:
-			self.saves[viewing_pl_id][2] = self.scroll_position
+			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
 	def locate_artist(self, track: TrackClass) -> None:
 		for i, item in enumerate(self.current_artists):
@@ -32125,7 +32136,7 @@ class ArtistList:
 
 		viewing_pl_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int
 		if viewing_pl_id in self.saves:
-			self.saves[viewing_pl_id][2] = self.scroll_position
+			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
 	def draw_card_text_only(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
 		album_mode = False
@@ -32553,12 +32564,12 @@ class ArtistList:
 				viewing_pl_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id
 
 		if viewing_pl_id in self.saves:
-			self.current_artists = self.saves[viewing_pl_id][0]
-			self.current_album_counts = self.saves[viewing_pl_id][1]
-			self.current_artist_track_counts = self.saves[viewing_pl_id][4]
-			self.scroll_position = self.saves[viewing_pl_id][2]
+			self.current_artists = self.saves[viewing_pl_id].all_artists
+			self.current_album_counts = self.saves[viewing_pl_id].album_counts
+			self.current_artist_track_counts = self.saves[viewing_pl_id].artist_track_counts
+			self.scroll_position = self.saves[viewing_pl_id].scroll_position
 
-			if self.saves[viewing_pl_id][3] != len(self.pctl.multi_playlist[self.pctl.id_to_pl(viewing_pl_id)].playlist_ids):
+			if self.saves[viewing_pl_id].playlist_length != len(self.pctl.multi_playlist[self.pctl.id_to_pl(viewing_pl_id)].playlist_ids):
 				del self.saves[viewing_pl_id]
 				return
 		else:
@@ -32587,12 +32598,12 @@ class ArtistList:
 
 		range = (h // self.tab_h) - 1
 
-		whole_rage = math.floor(h // self.tab_h)
+		whole_range = math.floor(h // self.tab_h)
 
 		if range > 4 and self.scroll_position > len(self.current_artists) - range:
 			self.scroll_position = len(self.current_artists) - range
 
-		if len(self.current_artists) <= whole_rage:
+		if len(self.current_artists) <= whole_range:
 			self.scroll_position = 0
 
 		self.fields.add(area2)
@@ -32631,7 +32642,7 @@ class ArtistList:
 		i = int(self.scroll_position)
 
 		if viewing_pl_id in self.saves:
-			self.saves[viewing_pl_id][2] = self.scroll_position
+			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
 		prefetch_mode = False
 		prefetch_distance = 22
@@ -32641,7 +32652,6 @@ class ArtistList:
 		self.hover_any = False
 
 		for i, artist in enumerate(self.current_artists[i:], start=i):
-
 			if not prefetch_mode:
 				self.draw_card(artist, x, round(yy), w)
 
@@ -34393,11 +34403,11 @@ class ArtistInfoBox:
 			str(self.user_directory / "artist-pictures" / (f_artist + ".png")),
 			str(self.user_directory / "artist-pictures" / (f_artist + ".jpg")),
 			str(self.user_directory / "artist-pictures" / (f_artist + ".webp")),
-			os.path.join(self.a_cache_directory, f_artist + "-ftv-full.jpg"),
-			os.path.join(self.a_cache_directory, f_artist + "-lfm.png"),
-			os.path.join(self.a_cache_directory, f_artist + "-lfm.jpg"),
-			os.path.join(self.a_cache_directory, f_artist + "-lfm.webp"),
-			os.path.join(self.a_cache_directory, f_artist + "-dcg.jpg"),
+			str(self.a_cache_directory / (f_artist + "-ftv-full.jpg")),
+			str(self.a_cache_directory / (f_artist + "-lfm.png")),
+			str(self.a_cache_directory / (f_artist + "-lfm.jpg")),
+			str(self.a_cache_directory / (f_artist + "-lfm.webp")),
+			str(self.a_cache_directory / (f_artist + "-dcg.jpg")),
 		]
 
 		if get_img_path:
