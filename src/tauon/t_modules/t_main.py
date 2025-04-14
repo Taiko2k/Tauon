@@ -94,7 +94,6 @@ from tauon.t_modules import t_bootstrap
 from tauon.t_modules.guitar_chords import GuitarChords
 from tauon.t_modules.t_config import Config
 from tauon.t_modules.t_db_migrate import database_migrate
-from tauon.t_modules.t_dbus import Gnome
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw
 from tauon.t_modules.t_extra import (
 	ColourGenCache,
@@ -171,17 +170,67 @@ from tauon.t_modules.t_themeload import Deco, load_theme
 from tauon.t_modules.t_tidal import Tidal
 from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
 
+# Log to debug as we don't care at all when user does not have this
+try:
+	import colored_traceback.always
+	logging.debug("Found colored_traceback for colored crash tracebacks")
+except ModuleNotFoundError:
+	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
+except Exception:
+	logging.warning("Error trying to import colored_traceback, tracebacks will be dull.")
+
+# try:
+#	 import rpc
+#	 discord_allow = True
+# except Exception:
+#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+
+try:
+	import natsort
+except ModuleNotFoundError:
+	logging.warning("Unable to import natsort, playlists may not sort as intended!")
+except Exception:
+	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
+
+try:
+	import opencc
+except ModuleNotFoundError:
+	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+except Exception:
+	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+
+try:
+	import setproctitle
+except ModuleNotFoundError:
+	logging.warning("Unable to import setproctitle, won't be setting process title.")
+except Exception:
+	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
+
+try:
+	from jxlpy import JXLImagePlugin
+	# We've already logged this once to INFO from t_draw, so just log to DEBUG
+	logging.debug("Found jxlpy for JPEG XL support")
+except ModuleNotFoundError:
+	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
+
 if sys.platform == "linux":
+	from tauon.t_modules import t_topchart
+	from tauon.t_modules.t_dbus import Gnome
 	import gi
 	try:
 		gi.require_version("Notify", "0.7")
 	except Exception:
 		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
 		gi.require_version("Notify", "0.8")
-	from gi.repository import Notify
-	from gi.repository import GdkPixbuf
-	from gi.repository import GLib
-	from tauon.t_modules import t_topchart
+	from gi.repository import GdkPixbuf, GLib, Notify
+	try:
+		# Pylast needs to be imported AFTER setup_tls() else pyinstaller breaks
+		# TODO(Martin): It's currently not!
+		import pylast
+	except Exception:
+		logging.exception("PyLast module not found, last fm will be disabled.")
 
 if sys.platform == "darwin":
 	import gi
@@ -1697,7 +1746,7 @@ class PlayerCtl:
 				logging.debug(f"Failed to parse disc_number '{tr.disc_number}' as int, using an empty string instead")
 				d = ""
 			except Exception:
-				logging.exception(f"Unknown excpetion parsing disc_number '{tr.disc_number}' as int")
+				logging.exception(f"Unknown exception parsing disc_number '{tr.disc_number}' as int")
 				d = ""
 
 
@@ -3163,7 +3212,7 @@ class PlayerCtl:
 
 		# Temporary Workaround for UI block causing unwanted dragging
 		if not dry:
-			quick_d_timer.set()
+			self.tauon.quick_d_timer.set()
 
 		if self.prefs.show_current_on_transition:
 			quiet = False
@@ -3832,7 +3881,7 @@ class LastFMapi:
 			self.network.enable_rate_limit()
 			user = pylast.User(self.prefs.last_fm_username, self.network)
 			# username = user.get_name()
-			perf_timer.set()
+			self.tauon.perf_timer.set()
 			tracks = user.get_recent_tracks(None)
 
 			counts = {}
@@ -4395,7 +4444,7 @@ class LastScrob:
 				logging.exception("SCROBBLE QUEUE ERROR")
 
 		if not self.queue:
-			scrobble_warning_timer.force_set(1000)
+			self.tauon.scrobble_warning_timer.force_set(1000)
 
 		self.running = False
 
@@ -5234,7 +5283,7 @@ class GallClass:
 		return False
 
 	def render(self, track: TrackClass, location, size: int | None = None, force_offset=None) -> bool | None:
-		if gallery_load_delay.get() < 0.5:
+		if self.tauon.gallery_load_delay.get() < 0.5:
 			return None
 
 		x = round(location[0])
@@ -5727,8 +5776,17 @@ class Tauon:
 		self.MenuItem = MenuItem
 
 		self.chrome: Chrome | None = None
-		self.chrome_menu: Menu | None = None
-
+		self.chrome_menu = self.x_menu
+		try:
+			from tauon.t_modules.t_chrome import Chrome
+			self.chrome = Chrome(self)
+		except ModuleNotFoundError as e:
+			logging.debug(f"pychromecast import error: {e}")
+			logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
+		except Exception:
+			logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+		finally:
+			logging.debug("Found Chrome(pychromecast) for chromecast support")
 
 		self.tidal             = Tidal(self)
 		self.plex              = PlexService(self)
@@ -17844,7 +17902,7 @@ class Tauon:
 
 	def get_ffmpeg(self) -> str | None:
 		path = self.user_directory / "ffmpeg.exe"
-		if msys and path.is_file():
+		if self.msys and path.is_file():
 			return str(path)
 
 		# macOS
@@ -17860,7 +17918,7 @@ class Tauon:
 
 	def get_ffprobe(self) -> str | None:
 		path = self.user_directory / "ffprobe.exe"
-		if msys and path.is_file():
+		if self.msys and path.is_file():
 			return str(path)
 
 		# macOS
@@ -19675,7 +19733,7 @@ class TextBox2:
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
 			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
-		animate_monitor_timer.set()
+		self.tauon.animate_monitor_timer.set()
 
 		self.tauon.text_box_canvas_hide_rect.x = 0
 		self.tauon.text_box_canvas_hide_rect.y = 0
@@ -20077,7 +20135,7 @@ class TextBox:
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
 			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
-		animate_monitor_timer.set()
+		self.tauon.animate_monitor_timer.set()
 
 class ImageObject:
 	def __init__(self) -> None:
@@ -26753,7 +26811,7 @@ class TopPanel:
 
 		# Quick drag single track onto bar to create new playlist function and indicator
 		if prefs.tabs_on_top:
-			if (self.inp.quick_drag or gui.ext_drop_mode) and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
+			if (self.inp.quick_drag or gui.ext_drop_mode) and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY and tauon.quick_d_timer.get() > 1:
 				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 200, 180, 255])
 
 				if self.inp.mouse_up:
@@ -26787,10 +26845,10 @@ class TopPanel:
 			if not prefs.tabs_on_top:
 				if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
 					gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing].title)
-					toast_mode_timer.set()
+					tauon.toast_mode_timer.set()
 					gui.frame_callback_list.append(TestTimer(1))
 				else:
-					toast_mode_timer.force_set(10)
+					tauon.toast_mode_timer.force_set(10)
 					gui.mode_toast_text = ""
 		# ---------
 		# Menu Bar
@@ -26832,7 +26890,7 @@ class TopPanel:
 		dl = len(tauon.dl_mon.ready)
 		watching = len(tauon.dl_mon.watching)
 
-		if (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
+		if (dl > 0 or watching > 0) and tauon.core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
 			x += 52 * gui.scale
 			rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
 			self.fields.add(rect)
@@ -26974,7 +27032,7 @@ class TopPanel:
 			text = _("Buffering... ")
 			text += gui.buffering_text
 			bg = [18, 180, 180, 255]
-		elif tauon.lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
+		elif tauon.lfm_scrobbler.queue and tauon.scrobble_warning_timer.get() < 260:
 			text = _("Network error. Will try again later.")
 			bg = [250, 250, 250, 255]
 			gui.last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, [250, 40, 40, 255])
@@ -27238,7 +27296,7 @@ class BottomBarType1:
 			x = self.seek_bar_position[0] - round(26 - gui.scale)
 			y = self.seek_bar_position[1]
 			while x < self.seek_bar_position[0] + self.seek_bar_size[0]:
-				offset = (math.floor(((core_timer.get() * 1) % 1) * 13) / 13) * self.buffer_shard.w
+				offset = (math.floor(((tauon.core_timer.get() * 1) % 1) * 13) / 13) * self.buffer_shard.w
 				gui.delay_frame(0.01)
 
 				# colour = colours.seek_bar_fill
@@ -27485,11 +27543,11 @@ class BottomBarType1:
 				if inp.right_click:
 					tauon.mode_menu.activate()
 
-				if d_click_timer.get() < 0.3 and inp.mouse_click:
+				if tauon.d_click_timer.get() < 0.3 and inp.mouse_click:
 					self.tauon.set_mini_mode()
 					gui.update += 1
 					return
-				d_click_timer.set()
+				tauon.d_click_timer.set()
 
 		# TIME----------------------
 
@@ -27708,7 +27766,7 @@ class BottomBarType1:
 					if not pctl.random_mode:
 						# . Shuffle set to off
 						gui.mode_toast_text = _("Shuffle Off")
-					toast_mode_timer.set()
+					tauon.toast_mode_timer.set()
 					gui.delay_frame(1)
 				if self.inp.middle_click:
 					pctl.advance(rr=True)
@@ -27742,7 +27800,7 @@ class BottomBarType1:
 					if not pctl.repeat_mode:
 						# . Repeat set to off
 						gui.mode_toast_text = _("Repeat Off")
-					toast_mode_timer.set()
+					tauon.toast_mode_timer.set()
 					gui.delay_frame(1)
 				if self.inp.middle_click:
 					pctl.revert()
@@ -27971,7 +28029,6 @@ class BottomBarType_ao1:
 			# self.seek_bar_size[0] = window_size[0]
 
 	def render(self) -> None:
-
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
@@ -28274,7 +28331,7 @@ class BottomBarType_ao1:
 					if not self.pctl.random_mode:
 						# . Shuffle set to off
 						self.gui.mode_toast_text = _("Shuffle Off")
-					toast_mode_timer.set()
+					self.tauon.toast_mode_timer.set()
 					self.gui.delay_frame(1)
 				if self.inp.middle_click:
 					self.pctl.advance(rr=True)
@@ -28382,11 +28439,11 @@ class MiniMode:
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
-				if d_click_timer.get() < 0.3:
+				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
 					self.gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28599,11 +28656,11 @@ class MiniMode2:
 			text_hit_area = (x1, 0, w, h)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
-				if d_click_timer.get() < 0.3:
+				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
 					self.gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28776,11 +28833,11 @@ class MiniMode3:
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
-				if d_click_timer.get() < 0.3:
+				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
 					self.gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -29057,7 +29114,7 @@ class StandardPlaylist:
 					# edge_playlist.pulse()
 					tauon.edge_playlist2.pulse()
 
-			scroll_hide_timer.set()
+			tauon.scroll_hide_timer.set()
 			gui.frame_callback_list.append(TestTimer(0.9))
 
 		# Show notice if playlist empty
@@ -29184,7 +29241,7 @@ class StandardPlaylist:
 									pctl.force_queue.append(queue_item_gen(pctl.default_playlist[i], i, pctl.pl_to_id(
 										pctl.active_playlist_viewing)))
 									i += 1
-								self.tauon.queue_timer_set(plural=True)
+								tauon.queue_timer_set(plural=True)
 								if prefs.stop_end_queue:
 									pctl.stop_mode = 0
 
@@ -29325,7 +29382,7 @@ class StandardPlaylist:
 				pctl.selected_in_playlist = track_position
 				self.gui.shift_selection = [pctl.selected_in_playlist]
 				gui.pl_update += 1
-				self.tauon.queue_timer_set()
+				tauon.queue_timer_set()
 				if prefs.stop_end_queue:
 					pctl.stop_mode = 0
 
@@ -30289,7 +30346,7 @@ class ScrollBox:
 						pass
 					else:
 
-						tt = scroll_timer.hit()
+						tt = self.tauon.scroll_timer.hit()
 						if tt > 0.1:
 							tt = 0
 
@@ -31948,7 +32005,7 @@ class ArtistList:
 			return
 
 		if self.to_fetch:
-			if get_lfm_wait_timer.get() < 2:
+			if self.tauon.get_lfm_wait_timer.get() < 2:
 				return
 
 			artist = self.to_fetch
@@ -33642,7 +33699,7 @@ class QueueBox:
 				self.drag_start_y = self.inp.mouse_position[1]
 				self.drag_start_top = yy
 
-				if d_click_timer.get() < 1:
+				if self.tauon.d_click_timer.get() < 1:
 					if self.d_click_ref == fq[i].uuid_int:
 						pl = self.pctl.id_to_pl(fq[i].uuid_int)
 						if pl is not None:
@@ -33653,7 +33710,7 @@ class QueueBox:
 				# else:
 				self.d_click_ref = fq[i].uuid_int
 
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			if self.dragging and self.coll(h_rect):
 				yy += self.tab_h
@@ -36155,7 +36212,6 @@ class Formats:
 	DA:      set[str]
 	Archive: set[str]
 
-
 def is_module_loaded(module_name: str) -> bool:
 	return module_name in sys.modules
 
@@ -37456,10 +37512,10 @@ def worker2(tauon: Tauon) -> None:
 		tauon.worker2_lock.acquire()
 		if search_over.search_text.text and not (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text[0]) < 128):
 			if search_over.spotify_mode:
-				t = spot_search_rate_timer.get()
+				t = tauon.spot_search_rate_timer.get()
 				if t < 1:
 					time.sleep(1 - t)
-					spot_search_rate_timer.set()
+					tauon.spot_search_rate_timer.set()
 				logging.info("Spotify search")
 				search_over.results.clear()
 				results = tauon.spot_ctl.search(search_over.search_text.text)
@@ -37824,7 +37880,7 @@ def worker2(tauon: Tauon) -> None:
 
 				search_over.on = 0
 				search_over.force_select = 0
-				#logging.info(perf_timer.get())
+				#logging.info(tauon.perf_timer.get())
 
 def worker1(tauon: Tauon) -> None:
 	bag   = tauon.bag
@@ -38344,7 +38400,8 @@ def worker1(tauon: Tauon) -> None:
 
 		try:
 			items_in_dir = os.listdir(direc)
-			if use_natsort:
+			if tauon.bag.use_natsort:
+				natsort = sys.modules.get("natsort")  # Fetch from loaded modules
 				items_in_dir = natsort.os_sorted(items_in_dir)
 			else:
 				items_in_dir.sort()
@@ -38773,111 +38830,7 @@ def menu_is_open() -> bool:
 			return True
 	return False
 
-# BEGIN CODE
-
-# Log to debug as we don't care at all when user does not have this
-try:
-	import colored_traceback.always
-	logging.debug("Found colored_traceback for colored crash tracebacks")
-except ModuleNotFoundError:
-	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:
-	logging.warning("Error trying to import colored_traceback, tracebacks will be dull.")
-
-try:
-	from jxlpy import JXLImagePlugin
-	# We've already logged this once to INFO from t_draw, so just log to DEBUG
-	logging.debug("Found jxlpy for JPEG XL support")
-except ModuleNotFoundError:
-	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
-
-try:
-	import setproctitle
-except ModuleNotFoundError:
-	logging.warning("Unable to import setproctitle, won't be setting process title.")
-except Exception:
-	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
-else:
-	setproctitle.setproctitle("tauonmb")
-
-# try:
-#	 import rpc
-#	 discord_allow = True
-# except Exception:
-#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
-discord_allow = False
-try:
-	from lynxpresence import Presence, ActivityType
-except ModuleNotFoundError:
-	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
-else:
-	import asyncio
-	discord_allow = True
-
-use_cc = False
-try:
-	import opencc
-except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-except Exception:
-	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-else:
-	s2t = opencc.OpenCC("s2t")
-	t2s = opencc.OpenCC("t2s")
-	use_cc = True
-
-use_natsort = False
-try:
-	import natsort
-except ModuleNotFoundError:
-	logging.warning("Unable to import natsort, playlists may not sort as intended!")
-except Exception:
-	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
-else:
-	use_natsort = True
-
-# Detect platform
-macos = False
-msys = False
-system = "Linux"
-arch = platform.machine()
-platform_release = platform.release()
-platform_system = platform.system()
-win_ver = 0
-if platform_system == "Windows":
-	try:
-		win_ver = int(platform_release)
-	except Exception:
-		logging.exception("Failed getting Windows version from platform.release()")
-
-if sys.platform == "win32":
-	# system = 'Windows'
-	system = "Linux"
-	msys = True
-	if msys:
-		import gi
-		from gi.repository import GLib
-	else:
-		import win32con
-		import win32api
-		import win32gui
-		import win32ui
-		import comtypes
-		import atexit
-else:
-	system = "Linux"
-	import fcntl
-
-if sys.platform == "darwin":
-	macos = True
-
-if system == "Linux" and not macos and not msys:
-	from tauon.t_modules.t_dbus import Gnome
-
+#def main(holder: Holder) -> None:
 holder                 = t_bootstrap.holder
 t_window               = holder.t_window
 renderer               = holder.renderer
@@ -38904,24 +38857,23 @@ t_agent                = holder.t_agent
 dev_mode               = holder.dev_mode
 instance_lock          = holder.instance_lock
 log                    = holder.log
-logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
+logging.info(f"Window size: {window_size}")
 
-tls_context = setup_tls(holder)
+# Detect platform
+macos = False
+msys = False
+system = "Linux"
+arch = platform.machine()
+platform_release = platform.release()
+platform_system = platform.system()
+win_ver = 0
 
-try:
-	# Pylast needs to be imported AFTER setup_tls() else pyinstaller breaks
-	import pylast
-	last_fm_enable = True
-except Exception:
-	logging.exception("PyLast module not found, last fm will be disabled.")
-	last_fm_enable = False
+last_fm_enable = is_module_loaded("pylast")
 
 if sys.platform == "win32" and msys:
 	font_folder = str(install_directory / "fonts")
 	if os.path.isdir(font_folder):
 		logging.info(f"Fonts directory:           {font_folder}")
-		import ctypes
-
 		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
 		fc.FcConfigReference.restype = ctypes.c_void_p
 		fc.FcConfigReference.argtypes = (ctypes.c_void_p,)
@@ -38930,45 +38882,58 @@ if sys.platform == "win32" and msys:
 		config.contents = fc.FcConfigGetCurrent()
 		fc.FcConfigAppFontAddDir(config.value, font_folder.encode())
 
-# Detect what desktop environment we are in to enable specific features
-desktop = os.environ.get("XDG_CURRENT_DESKTOP")
-# de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
-de_notify_support = False
-draw_min_button = True
-draw_max_button = True
-left_window_control = False
-xdpi = 0
+if is_module_loaded("setproctitle"):
+	setproctitle.setproctitle("tauonmb")
 
-detect_macstyle = False
-gtk_settings: Gtk.Settings | None = None
-mac_close = (253, 70, 70, 255)
-mac_maximize = (254, 176, 36, 255)
-mac_minimize = (42, 189, 49, 255)
+discord_allow = False
 try:
-	# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
-	gi.require_version("Gtk", "3.0")
-	from gi.repository import Gtk
-
-	gtk_settings = Gtk.Settings().get_default()
-	xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
-	if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-		draw_min_button = False
-	if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-		draw_max_button = False
-	if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
-		left_window_control = True
-	gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-	#logging.info(f"GTK theme is: {gtk_theme}")
-	for k, v in mac_styles.items():
-		if k in gtk_theme:
-			detect_macstyle = True
-			if v is not None:
-				mac_close = v[0]
-				mac_maximize = v[1]
-				mac_minimize = v[2]
-
+	from lynxpresence import Presence, ActivityType
+except ModuleNotFoundError:
+	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
 except Exception:
-	logging.exception("Error accessing GTK settings")
+	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
+else:
+	import asyncio
+	discord_allow = True
+
+use_cc = is_module_loaded("opencc")
+if use_cc:
+	s2t = opencc.OpenCC("s2t")
+	t2s = opencc.OpenCC("t2s")
+
+use_natsort = is_module_loaded("natsort")
+
+if platform_system == "Windows":
+	try:
+		win_ver = int(platform_release)
+	except Exception:
+		logging.exception("Failed getting Windows version from platform.release()")
+
+if sys.platform == "win32":
+	# system = 'Windows'
+	system = "Linux"
+	msys = True
+	if msys:
+		import gi
+		from gi.repository import GLib
+	else:
+		import win32con
+		import win32api
+		import win32gui
+		import win32ui
+		import comtypes
+		import atexit
+else:
+	system = "Linux"
+	import fcntl
+	# TODO(Martin): why can't the import be called on top
+	import gi
+	from gi.repository import GLib
+
+if sys.platform == "darwin":
+	macos = True
+
+tls_context = setup_tls(holder)
 
 # Set data folders (portable mode)
 config_directory = user_directory
@@ -39165,6 +39130,45 @@ logging.info(f"Home directory:            {home_directory}")
 logging.info(f"Music directory:           {music_directory}")
 logging.info(f"Downloads directory:       {download_directory}")
 
+# Detect what desktop environment we are in to enable specific features
+desktop = os.environ.get("XDG_CURRENT_DESKTOP")
+draw_min_button = True
+draw_max_button = True
+left_window_control = False
+xdpi = 0
+
+detect_macstyle = False
+gtk_settings: Settings | None = None
+mac_close = (253, 70, 70, 255)
+mac_maximize = (254, 176, 36, 255)
+mac_minimize = (42, 189, 49, 255)
+try:
+	# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
+	gi.require_version("Gtk", "3.0")
+	from gi.repository import Gtk
+
+	gtk_settings = Gtk.Settings().get_default()
+	xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
+	if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+		draw_min_button = False
+	if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
+		draw_max_button = False
+	if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
+		left_window_control = True
+	gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
+	#logging.info(f"GTK theme is: {gtk_theme}")
+	for k, v in mac_styles.items():
+		if k in gtk_theme:
+			detect_macstyle = True
+			if v is not None:
+				mac_close = v[0]
+				mac_maximize = v[1]
+				mac_minimize = v[2]
+except Exception:
+	logging.exception("Error accessing GTK settings")
+
+# TODO(Martin): Move this one to a separate dir func?
+
 launch_prefix = ""
 if flatpak_mode:
 	launch_prefix = "flatpak-spawn --host "
@@ -39278,6 +39282,27 @@ if os.environ.get("SDL_VIDEODRIVER") != "wayland":
 
 vis_update = False
 
+
+# GUI Variables -------------------------------------------------------------------------------------------
+
+# Variables now go in the GuiVar, PlayerCtl, Input, Prefs and Bag class instances.
+# The following just haven't been moved yet:
+spot_cache_saved_albums = []
+resize_mode = False
+side_panel_text_align = 0
+spec_smoothing = True
+
+# gui.offset_extra = 0
+row_len = 5
+time_last_save = 0
+b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
+
+
+# row_alt = False
+# gui.rsp = True
+
+scroll_opacity = 0
+source = None
 
 # Player Variables----------------------------------------------------------------------------
 Archive_Formats = {"zip"}
@@ -39541,43 +39566,14 @@ gui = GuiVar(
 
 inp = gui.inp
 keymaps = gui.keymaps
-# Control Variables--------------------------------------------------------------------------
 
-#side_drag      = gui.side_drag # TODO(Martin): Move this to Input
 
-# GUI Variables -------------------------------------------------------------------------------------------
-# Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
-console = bag.console
-spot_cache_saved_albums = [] # TODO(Martin): This isn't really used? It's just fed to spot_ctl as [] or saved, but we never save it
-resize_mode = False # TODO(Martin): Move
-spec_smoothing = True # TODO(Martin): Move
-old_album_pos = gui.old_album_pos
-row_len = 5 # TODO(Martin): Move
-last_row = gui.last_row
-time_last_save = 0 # TODO(Martin): Move
-b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
-new_playlist_cooldown = gui.new_playlist_cooldown
-
-# Playlist Panel
-scroll_timer = Timer() # TODO(Martin): Move
-scroll_timer.set() # TODO(Martin): Move
-scroll_opacity = 0 # TODO(Martin): Move
-source = None # TODO(Martin): Useless to define here?
-
-# -----------------------------------------------------
 # STATE LOADING
 # Loading of program data from previous run
 gbc.disable()
 ggc = 2
 
-if (user_directory / "lyrics_substitutions.json").is_file():
-	try:
-		with (user_directory / "lyrics_substitutions.json").open() as f:
-			prefs.lyrics_subs = json.load(f)
-	except FileNotFoundError:
-		logging.error("No existing lyrics_substitutions.json file")
-	except Exception:
-		logging.exception("Unknown error loading lyrics_substitutions.json")
+
 
 perf_timer = Timer()
 perf_timer.set()
@@ -39612,10 +39608,6 @@ bag.primary_stations.append(RadioStation(
 
 for station in bag.primary_stations:
 	radio_playlists[0].stations.append(station)
-
-shoot_pump = threading.Thread(target=pumper, args=(bag,))
-shoot_pump.daemon = True
-shoot_pump.start()
 
 after_scan: list[TrackClass] = []
 search_string_cache          = {}
@@ -40031,10 +40023,18 @@ for t in range(2):
 		break
 	except Exception:
 		logging.exception("Failed to load save file")
+logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
+
+shoot_pump = threading.Thread(target=pumper, args=(bag,))
+shoot_pump.daemon = True
+shoot_pump.start()
+
+if window_size is None:
+	window_size = window_default_size
+	gui.rspw = 200
 
 core_timer = Timer()
 core_timer.set()
-logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
 perf_timer.set()
 keys = set(master_library.keys())
@@ -40045,15 +40045,10 @@ for pl in bag.multi_playlist:
 		keys -= set(pl[2])
 if len(keys) > 5000:
 	gui.suggest_clean_db = True
-# logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
+# logging.info(f"Database scanned in {round(tauon.perf_timer.get(), 3)} seconds.")
 
 bag.pump = False
 shoot_pump.join()
-
-# temporary
-if window_size is None:
-	window_size = window_default_size
-	gui.rspw = 200
 
 playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
 
@@ -40063,15 +40058,14 @@ shoot.start()
 
 # Loading Config -----------------
 
+load_prefs(bag)
+save_prefs(bag)
 
 if download_directory.is_dir():
 	bag.download_directories.append(str(download_directory))
 
 if music_directory is not None and music_directory.is_dir():
 	bag.download_directories.append(str(music_directory))
-
-load_prefs(bag)
-save_prefs(bag)
 
 # Temporary
 if 0 < db_version <= 34:
@@ -40164,51 +40158,20 @@ except Exception:
 if prefs.prefer_side is False:
 	gui.rsp = False
 
-mpt = None
-try:
-	p = ctypes.util.find_library("libopenmpt")
-	if p:
-		mpt = ctypes.cdll.LoadLibrary(p)
-	elif msys:
-		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-	else:
-		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
-
-	mpt.openmpt_module_create_from_memory.restype = c_void_p
-	mpt.openmpt_module_get_metadata.restype = c_char_p
-	mpt.openmpt_module_get_duration_seconds.restype = c_double
-except Exception:
-	logging.exception("Failed to load libopenmpt!")
-
-gme = None
-p = None
-try:
-	p = ctypes.util.find_library("libgme")
-	if p:
-		gme = ctypes.cdll.LoadLibrary(p)
-	elif msys:
-		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
-	else:
-		gme = ctypes.cdll.LoadLibrary("libgme.so")
-
-	gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
-	gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
-	gme.gme_track_info.restype = ctypes.c_char_p
-	gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
-	gme.gme_open_file.restype = ctypes.c_char_p
-
-except Exception:
-	logging.exception("Cannot find libgme")
+if sys.platform == "win32":
+	from lynxtray import SysTrayIcon
 
 tauon = Tauon(
 	holder=holder,
 	bag=bag,
-	gui=gui,
-)
+	gui=gui)
 tauon.after_scan              = after_scan
 tauon.search_string_cache     = search_string_cache
 tauon.search_dia_string_cache = search_dia_string_cache
 signal.signal(signal.SIGINT, tauon.signal_handler)
+tray = STray(tauon=tauon)
+tauon.perf_timer = perf_timer
+tauon.core_timer = core_timer
 radiobox = tauon.radiobox
 star_store = tauon.star_store
 pctl = tauon.pctl
@@ -40218,46 +40181,9 @@ if bag.multi_playlist:
 else:
 	pctl.multi_playlist = [tauon.pl_gen(notify=False)]
 	pctl.default_playlist = pctl.multi_playlist[0].playlist_ids
-notify_change = pctl.notify_change
-
-lastfm = tauon.lastfm
-lb = tauon.lb
-lfm_scrobbler = tauon.lfm_scrobbler
-strings = tauon.strings
-
-# Setting various timers
-message_box_min_timer = tauon.message_box_min_timer
-cursor_blink_timer = Timer()
-animate_monitor_timer = Timer()
-min_render_timer = Timer()
-check_file_timer = Timer()
-vis_rate_timer = Timer()
-vis_decay_timer = Timer()
-scroll_timer = Timer()
-perf_timer = Timer()
-quick_d_timer = Timer()
-core_timer = Timer()
-sleep_timer = Timer()
-gallery_select_animate_timer = Timer()
-gallery_select_animate_timer.force_set(10)
-search_clear_timer = Timer()
-gall_pl_switch_timer = Timer()
-gall_pl_switch_timer.force_set(999)
-d_click_timer = Timer()
-d_click_timer.force_set(10)
-lyrics_check_timer = Timer()
-scroll_hide_timer = Timer(100)
-scroll_gallery_hide_timer = Timer(100)
-get_lfm_wait_timer = Timer(10)
-lyrics_fetch_timer = Timer(10)
-gallery_load_delay = Timer(10)
-queue_add_timer = Timer(100)
-toast_love_timer = Timer(100)
-toast_mode_timer = Timer(100)
-scrobble_warning_timer = Timer(1000)
-sync_file_timer = Timer(1000)
-sync_file_update_timer = Timer(1000)
-sync_get_device_click_timer = Timer(100)
+deco = tauon.deco
+deco.get_themes = get_themes
+deco.renderer = renderer
 
 # Run upgrades if we're behind the current DB standard
 if db_version > 0 and db_version < latest_db_version:
@@ -40344,45 +40270,21 @@ if album_star_path.is_file():
 else:
 	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
-deco = Deco(tauon)
-deco.get_themes = get_themes
-deco.renderer = renderer
+if (user_directory / "lyrics_substitutions.json").is_file():
+	try:
+		with (user_directory / "lyrics_substitutions.json").open() as f:
+			prefs.lyrics_subs = json.load(f)
+	except FileNotFoundError:
+		logging.error("No existing lyrics_substitutions.json file")
+	except Exception:
+		logging.exception("Unknown error loading lyrics_substitutions.json")
 
 if prefs.backend != 4:
 	prefs.backend = 4
 
-chrome = None
-
-try:
-	from tauon.t_modules.t_chrome import Chrome
-	chrome = Chrome(tauon)
-except ModuleNotFoundError as e:
-	logging.debug(f"pychromecast import error: {e}")
-	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
-finally:
-	logging.debug("Found Chrome(pychromecast) for chromecast support")
-
-tauon.chrome = chrome
-
-plex     = tauon.plex
-jellyfin = tauon.jellyfin
-subsonic = tauon.subsonic
-koel     = tauon.koel
-tau      = tauon.tau
-
-if system == "Windows" or msys:
-	from lynxtray import SysTrayIcon
-
-tray = STray(tauon)
-
 if system == "Linux" and not macos and not msys:
-
-	gnome = Gnome(tauon)
-
 	try:
-		gnomeThread = threading.Thread(target=gnome.main)
+		gnomeThread = threading.Thread(target=tauon.gnome.main)
 		gnomeThread.daemon = True
 		gnomeThread.start()
 	except Exception:
@@ -40476,15 +40378,6 @@ elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURS
 if not maximized and gui.maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-# logging.error(SDL_GetError())
-
-props = sdl3.SDL_GetWindowProperties(t_window)
-
-if system == "Windows" or msys:
-	gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
-	#gui.window_id = sss.info.win.window
-
-
 reset_render = False
 c_yax = 0
 c_yax_timer = Timer()
@@ -40573,17 +40466,10 @@ else:
 	ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
 	ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
 	ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
+sdl3.SDL_SetTextureBlendMode(tauon.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 
-drop_shadow = tauon.drop_shadow
-lyrics_ren_mini = tauon.lyrics_ren_mini
-lyrics_ren = tauon.lyrics_ren
-timed_lyrics_ren = tauon.timed_lyrics_ren
-
-text_box_canvas_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-text_box_canvas = sdl3.SDL_CreateTexture(
-	renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(text_box_canvas_rect.w), round(text_box_canvas_rect.h))
-sdl3.SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+#gst_output_field = TextBox2(tauon=tauon)
+#gst_output_field.text = prefs.gst_output
 
 tauon.rename_files.text = prefs.rename_tracks_template
 if rename_files_previous:
@@ -40593,7 +40479,6 @@ tauon.rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
 	tauon.rename_folder.text = rename_folder_previous
 
-temp_dest = sdl3.SDL_FRect(0, 0)
 
 scroll_hold = False
 scroll_point = 0
@@ -40603,24 +40488,6 @@ sbp = 100
 
 asbp = 50
 album_scroll_hold = False
-
-bb_type = 0
-
-# gui.scroll_hide_box = (0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
-
-encoding_menu = False
-enc_index = 0
-enc_setting = 0
-enc_field = "All"
-
-gen_menu = False
-
-transfer_setting = 0
-
-b_panel_size = 300
-b_info_bar = False
-
-track_box_path_tool_timer = Timer()
 
 # Create empty area menu
 playlist_menu         = tauon.playlist_menu
@@ -40721,8 +40588,6 @@ showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 
 center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-center_info_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
 center_info_menu.add_sub(_("Misc…"), 150)
 center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
 center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
@@ -40859,7 +40724,7 @@ tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), tauon.set_sync_playli
 tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
-tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), console.toggle))
+tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
 
 # tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
@@ -41259,7 +41124,6 @@ if tauon.chrome:
 	x_menu.add_sub(_("Chromecast…"), 220)
 	shooter(tauon.cast_search2)
 
-tauon.chrome_menu = x_menu
 
 #x_menu.add(_("Cast…"), cast_search, cast_deco)
 
@@ -41378,13 +41242,6 @@ x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=ta
 
 nagbox = NagBox(tauon)
 
-worker2_lock = threading.Lock()
-spot_search_rate_timer = Timer()
-
-album_info_cache = {}
-perfs = []
-album_info_cache_key = (-1, -1)
-
 power_tag_colours = ColourGenCache(0.5, 0.8)
 
 gui.pt_on = Timer()
@@ -41448,9 +41305,6 @@ dl_menu.add(MenuItem("Dismiss", tauon.dismiss_dl))
 fader = tauon.fader
 bottom_playlist2 = EdgePulse2(tauon)
 gallery_pulse_top = EdgePulse2(tauon)
-
-# Set SDL window drag areas
-# if system != "Windows":
 
 c_hit_callback = sdl3.SDL_HitTest(tauon.hit_callback)
 sdl3.SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
@@ -41575,8 +41429,8 @@ if pctl.pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
 
 
 # Hold the splash/loading screen for a minimum duration
-# while core_timer.get() < 0.5:
-#     time.sleep(0.01)
+# while tauon.core_timer.get() < 0.5:
+# 	time.sleep(0.01)
 
 # Resize menu widths to text length (length can vary due to translations)
 for menu in Menu.instances:
@@ -41985,9 +41839,7 @@ while pctl.running:
 			elif event.key.key == sdl3.SDLK_X:
 				inp.key_x_press = True
 
-			if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0:
-				inp.key_return_press = True
-			elif event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0:
+			if (event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0) or (event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0):
 				inp.key_return_press = True
 			elif event.key.key == sdl3.SDLK_TAB:
 				inp.key_tab_press = True
@@ -42074,7 +41926,7 @@ while pctl.running:
 				#logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
 				if system == "Linux" and not macos and not msys:
-					gnome.focus()
+					tauon.gnome.focus()
 				inp.k_input = True
 
 				mouse_enter_window = True
@@ -42220,14 +42072,14 @@ while pctl.running:
 				del gui.frame_callback_list[i]
 			i -= 1
 
-	if animate_monitor_timer.get() < 1 or tauon.load_orders:
-		if cursor_blink_timer.get() > 0.65:
-			cursor_blink_timer.set()
+	if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
+		if tauon.cursor_blink_timer.get() > 0.65:
+			tauon.cursor_blink_timer.set()
 			TextBox.cursor ^= True
 			gui.update = 1
 
 		if inp.k_input:
-			cursor_blink_timer.set()
+			tauon.cursor_blink_timer.set()
 			TextBox.cursor = True
 
 		sdl3.SDL_Delay(3)
@@ -42236,7 +42088,7 @@ while pctl.running:
 	if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
 		power = 1000
 
-	if prefs.art_bg and core_timer.get() < 3:
+	if prefs.art_bg and tauon.core_timer.get() < 3:
 		power = 1000
 
 	if inp.mouse_down and mouse_moved:
@@ -42271,12 +42123,13 @@ while pctl.running:
 
 	if power < 500:
 		time.sleep(0.03)
-		if (pctl.playing_state in (0, 2)) and not tauon.load_orders and gui.update == 0 \
-		and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
+
+		if (pctl.playing_state in (0, 2)) and not tauon.load_orders \
+		and gui.update == 0 and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
 			pass
 		else:
-			sleep_timer.set()
-		if sleep_timer.get() > 2:
+			tauon.sleep_timer.set()
+		if tauon.sleep_timer.get() > 2:
 			sdl3.SDL_WaitEventTimeout(None, 1000)
 		continue
 	else:
@@ -42401,7 +42254,7 @@ while pctl.running:
 					pctl.cycle_playlist_pinned(-1)
 
 			if keymaps.test("toggle-console"):
-				console.toggle()
+				tauon.console.toggle()
 
 			if keymaps.test("toggle-fullscreen"):
 				if not gui.fullscreen and gui.mode != 3:
@@ -43530,7 +43383,7 @@ while pctl.running:
 											if prefs.gallery_single_click:
 												gui.d_click_ref = tauon.album_dex[album_on]
 											else:
-												if d_click_timer.get() < 0.5 and gui.d_click_ref == tauon.album_dex[album_on]:
+												if tauon.d_click_timer.get() < 0.5 and gui.d_click_ref == tauon.album_dex[album_on]:
 													if info[0] == 1 and pctl.playing_state == 2:
 														pctl.play()
 													elif info[0] == 1 and pctl.playing_state > 0:
@@ -43542,7 +43395,7 @@ while pctl.running:
 														pctl.jump(pctl.default_playlist[tauon.album_dex[album_on]], tauon.album_dex[album_on])
 												else:
 													gui.d_click_ref = tauon.album_dex[album_on]
-													d_click_timer.set()
+													tauon.d_click_timer.set()
 
 												pctl.playlist_view_position = tauon.album_dex[album_on]
 												logging.debug("Position changed by gallery click")
@@ -45778,7 +45631,7 @@ while pctl.running:
 					if prefs.album_mode:
 						tauon.goto_album(pctl.playlist_playing_position)
 					gui.quick_search_mode = False
-					search_clear_timer.set()
+					tauon.search_clear_timer.set()
 			elif not tauon.search_over.active:
 				if inp.key_up_press and ((
 					not inp.key_shiftr_down \
@@ -45802,7 +45655,7 @@ while pctl.running:
 						pctl.playlist_view_position -= 1
 						logging.debug("Position changed by key up")
 
-						scroll_hide_timer.set()
+						tauon.scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
 
 					pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist))
@@ -45831,7 +45684,7 @@ while pctl.running:
 						pctl.playlist_view_position += 1
 						logging.debug("Position changed by key down")
 
-						scroll_hide_timer.set()
+						tauon.scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
 
 					pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
@@ -45867,7 +45720,7 @@ while pctl.running:
 			else:
 				mini_mode.render()
 
-		t = toast_love_timer.get()
+		t = tauon.toast_love_timer.get()
 		if t < 1.8 and gui.toast_love_object is not None:
 			track = gui.toast_love_object
 
@@ -45879,7 +45732,7 @@ while pctl.running:
 			tauon.fields.add(rect)
 
 			if tauon.coll(rect):
-				toast_love_timer.force_set(10)
+				tauon.toast_love_timer.force_set(10)
 			else:
 				ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
 				ddt.rect(rect, colours.queue_card_background)
@@ -45904,7 +45757,7 @@ while pctl.running:
 					f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label,
 					13, max_w=rect[2] - 50 * gui.scale)
 
-		t = queue_add_timer.get()
+		t = tauon.queue_add_timer.get()
 		if t < 2.5 and gui.toast_queue_object:
 			track = pctl.get_track(gui.toast_queue_object.track_id)
 
@@ -45918,7 +45771,7 @@ while pctl.running:
 			tauon.fields.add(rect)
 
 			if tauon.coll(rect):
-				queue_add_timer.force_set(10)
+				tauon.queue_add_timer.force_set(10)
 			elif len(pctl.force_queue) > 0:
 
 				fqo = copy.copy(pctl.force_queue[-1])
@@ -45946,7 +45799,7 @@ while pctl.running:
 					(rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue",
 					colours.box_text_label, 11)
 
-		t = toast_mode_timer.get()
+		t = tauon.toast_mode_timer.get()
 		if t < 0.98:
 
 			wid = ddt.get_text_w(gui.mode_toast_text, 313)
@@ -45960,7 +45813,7 @@ while pctl.running:
 			tauon.fields.add(rect)
 
 			if tauon.coll(rect):
-				toast_mode_timer.force_set(10)
+				tauon.toast_mode_timer.force_set(10)
 			else:
 				ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60))
 				ddt.rect(rect, colours.queue_card_background)
@@ -45978,7 +45831,7 @@ while pctl.running:
 		tauon.tool_tip.render()
 		tauon.tool_tip2.render()
 
-		if console.show:
+		if tauon.console.show:
 			rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 			ddt.rect(rect, [0, 0, 0, 245])
 
@@ -46234,8 +46087,8 @@ while pctl.running:
 		if gui.vis == 2 and gui.spec is not None:
 			# Standard spectrum visualiser
 			if gui.update_spec == 0 and pctl.playing_state != 2:
-				if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
-					vis_decay_timer.set()
+				if tauon.vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
+					tauon.vis_decay_timer.set()
 					for i in range(len(gui.spec)):
 						if gui.s_spec[i] > 0:
 							if gui.spec[i] > 0:
@@ -46244,8 +46097,8 @@ while pctl.running:
 				else:
 					gui.level_update = True
 
-			if vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
-				vis_rate_timer.set()
+			if tauon.vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
+				tauon.vis_rate_timer.set()
 
 				if spec_smoothing and pctl.playing_state > 0:
 					for i in range(len(gui.spec)):
@@ -46610,6 +46463,17 @@ try:
 except Exception:
 	logging.exception("No lock object to close")
 
+
+bb_type = 0
+
+# gui.scroll_hide_box = (0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
+
+
+gen_menu = False
+
+transfer_setting = 0
+
+b_panel_size = 300
 
 #sdl3.IMG_Quit()
 #sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)

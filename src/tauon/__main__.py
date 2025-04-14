@@ -292,7 +292,7 @@ if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG
 		logging.exception("Failed to set cursor")
 sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
 
-err = sdl3.SDL_GetError()
+err = bytes(sdl3.SDL_GetError())
 if err and "GLX" in err.decode():
 	logging.error(f"SDL init error: {err.decode()}")
 	sdl3.SDL_ShowSimpleMessageBox(
