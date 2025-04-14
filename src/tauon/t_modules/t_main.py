@@ -6433,10 +6433,11 @@ class Tauon:
 		stations: list[RadioStation] = []
 		for id in ids:
 			if id in urls:
-				radio = RadioPlaylist(
+				radio = RadioStation(
 					stream_url=titles[id] if id in titles else urls[id],
 					title=os.path.splitext(os.path.basename(path))[0],
-					scroll=0)
+					#scroll=0, # TODO(Martin): This was here wrong as scrolling is meant to be for RadioPlaylist?
+					)
 
 				if ".pls" in radio.stream_url:
 					if not followed:
