@@ -26367,10 +26367,9 @@ def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 	stations: list[RadioStation] = []
 	for id in ids:
 		if id in urls:
-			radio = RadioPlaylist(
-				stream_url=titles[id] if id in titles else urls[id],
-				title=os.path.splitext(os.path.basename(path))[0],
-				scroll=0)
+				radio = RadioStation(
+					stream_url=titles[id] if id in titles else urls[id],
+					title=os.path.splitext(os.path.basename(path))[0])
 
 			if ".pls" in radio.stream_url:
 				if not followed:
