@@ -23,8 +23,9 @@ import sys
 from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
-install_directory: Path = Path(__file__).resolve().parent
-sys.path.append(str(install_directory.parent))
+install_directory = Path(__file__).resolve().parent
+# Make sure we'll load from the parent directory first
+sys.path.insert(0, str(install_directory.parent))
 pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
 
 from gi.repository import GLib
