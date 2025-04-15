@@ -1595,8 +1595,8 @@ class PlayerCtl:
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
 		self.multi_playlist = self.bag.multi_playlist
-		self.active_playlist_viewing = self.bag.playlist_active  # the playlist index that is being viewed # TODO(Martin): Rename playlist_active and active_playlist?
-		self.active_playlist_playing = self.bag.playlist_active  # the playlist index that is playing from
+		self.active_playlist_viewing = self.bag.active_playlist_viewing  # the playlist index that is being viewed
+		self.active_playlist_playing = self.bag.active_playlist_playing  # the playlist index that is playing from
 		self.force_queue = self.bag.p_force_queue
 		self.pause_queue: bool = False
 		self.left_time = 0
@@ -16471,6 +16471,7 @@ class Tauon:
 			prefs.row_title_separator_type,
 			prefs.replay_preamp,  # 181
 			prefs.gallery_combine_disc,
+			pctl.active_playlist_viewing,  # 183
 		]
 
 		try:
@@ -36125,7 +36126,6 @@ class Bag:
 	xdpi:                    int
 	master_count:            int
 	playing_in_queue:        int
-	playlist_active:         int
 	playlist_playing:        int
 	playlist_view_position:  int
 	radio_playlist_viewing:  int
@@ -36152,6 +36152,8 @@ class Bag:
 	loaded_asset_dc:         dict[str, WhiteModImageAsset | LoadImageAsset]
 	sm:                      CDLL | None = None
 	song_notification:       None = None
+	active_playlist_viewing: int = 0
+	active_playlist_playing: int = 0
 
 @dataclass
 class Formats:
@@ -39371,7 +39373,6 @@ random_mode = False
 repeat_mode = False
 
 default_playlist: list[int] = []
-playlist_active: int = 0
 
 # Library and loader Variables--------------------------------------------------------
 master_library: dict[int, TrackClass] = {}
@@ -39516,7 +39517,6 @@ bag = Bag(
 	flatpak_mode=flatpak_mode,
 	snap_mode=snap_mode,
 	master_count=master_count,
-	playlist_active=playlist_active,
 	playing_in_queue=playing_in_queue,
 	playlist_playing=playlist_playing,
 	playlist_view_position=playlist_view_position,
@@ -39672,7 +39672,7 @@ for t in range(2):
 			master_library = save[0]
 		master_count = save[1]
 		playlist_playing = save[2]
-		playlist_active = save[3]
+		bag.active_playlist_viewing = save[3]
 		playlist_view_position = save[4]
 		if save[5] is not None:
 			if db_version > 68:
@@ -39681,7 +39681,7 @@ for t in range(2):
 				for i, d in enumerate(tauonplaylist_jar):
 					p = TauonPlaylist(**d)
 					bag.multi_playlist.append(p)
-					if i == playlist_active:
+					if i == bag.active_playlist_viewing:
 						default_playlist = p.playlist_ids
 			else:
 				bag.multi_playlist = save[5]
@@ -40037,6 +40037,8 @@ for t in range(2):
 			prefs.replay_preamp = save[181]
 		if save[182] is not None:
 			prefs.gallery_combine_disc = save[182]
+		if save[183] is not None:
+			bag.active_playlist_viewing = save[183]
 
 		del save
 		break
