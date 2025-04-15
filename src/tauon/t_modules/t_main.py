@@ -25093,8 +25093,7 @@ def open_encode_out() -> None:
 	if not prefs.encoder_output.exists():
 		prefs.encoder_output.mkdir()
 	if system == "Windows" or msys:
-		line = r"explorer " + prefs.encoder_output.replace("/", "\\")
-		subprocess.Popen(line)
+			subprocess.Popen(["explorer", self.prefs.encoder_output])
 	else:
 		if macos:
 			subprocess.Popen(["open", prefs.encoder_output])
