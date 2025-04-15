@@ -5402,6 +5402,7 @@ class Tauon:
 		self.download_directories         = bag.download_directories
 		self.launch_prefix                = bag.launch_prefix
 		self.overlay_texture_texture      = bag.overlay_texture_texture
+		self.use_natsort                  = bag.use_natsort
 		self.de_notify_support            = bag.de_notify_support
 		self.old_window_position          = bag.old_window_position
 		self.cache_directory              = bag.dirs.cache_directory
@@ -41181,8 +41182,8 @@ vis_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on))
 _("Time")
 _("Filepath")
 
-# set_menu.add(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True)
-# set_menu.add(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True)
+# set_menu.add(MenuItem(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
+# set_menu.add(MenuItem(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
 # set_menu.br()
 set_menu.add(MenuItem(_("Auto Resize"), tauon.auto_size_columns))
 set_menu.add(MenuItem(_("Hide bar"), tauon.hide_set_bar))
