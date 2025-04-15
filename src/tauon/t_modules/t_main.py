@@ -7321,6 +7321,7 @@ class Tauon:
 				self.prefs.show_lyrics_side = True
 			self.gui.update += 1
 			self.lyrics_ren.lyrics_position = 0
+			self.timed_lyrics_ren.index = -1
 			self.pctl.notify_change()
 		return None
 
