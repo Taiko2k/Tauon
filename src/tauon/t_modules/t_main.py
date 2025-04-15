@@ -16471,7 +16471,7 @@ class Tauon:
 			prefs.row_title_separator_type,
 			prefs.replay_preamp,  # 181
 			prefs.gallery_combine_disc,
-			pctl.active_playlist_viewing,  # 183
+			pctl.active_playlist_playing,  # 183
 		]
 
 		try:
@@ -40038,7 +40038,7 @@ for t in range(2):
 		if save[182] is not None:
 			prefs.gallery_combine_disc = save[182]
 		if save[183] is not None:
-			bag.active_playlist_viewing = save[183]
+			bag.active_playlist_playing = save[183]
 
 		del save
 		break
