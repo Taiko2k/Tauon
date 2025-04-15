@@ -16297,7 +16297,7 @@ class Tauon:
 			pctl.player_volume,
 			pctl.track_queue,
 			pctl.queue_step,
-			pctl.default_playlist,
+			pctl.default_playlist,  # not read from here (keep to avoid db version bump)
 			None,  # pctl.playlist_playing_position,
 			None,  # Was cue list
 			"",  # radio_field.text,
@@ -39678,15 +39678,17 @@ for t in range(2):
 			if db_version > 68:
 				bag.multi_playlist = []
 				tauonplaylist_jar = save[5]
-				for d in tauonplaylist_jar:
-					nt = TauonPlaylist(**d)
-					bag.multi_playlist.append(nt)
+				for i, d in enumerate(tauonplaylist_jar):
+					p = TauonPlaylist(**d)
+					bag.multi_playlist.append(p)
+					if i == playlist_active:
+						default_playlist = p.playlist_ids
 			else:
 				bag.multi_playlist = save[5]
 		volume = save[6]
 		track_queue = save[7]
 		playing_in_queue = save[8]
-		default_playlist = save[9]
+		# default_playlist = save[9]  # value is now set above
 		# playlist_playing = save[10]
 		# cue_list = save[11]
 		# radio_field_text = save[12]
@@ -42551,6 +42553,7 @@ while pctl.running:
 			tauon.exit("Quit keyboard shortcut pressed")
 
 		if keymaps.test("testkey"):  # F7: test
+			#print(pctl.multi_playlist)
 			pass
 
 		if gui.mode < 3:
