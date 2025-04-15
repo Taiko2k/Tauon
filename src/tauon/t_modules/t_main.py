@@ -4939,6 +4939,7 @@ class ThumbTracks:
 
 class Tauon:
 	"""Root class for everything Tauon"""
+
 	def __init__(self, renderer: sdl3.SDL_Renderer, e_cache_directory: Path) -> None:
 		self.renderer = renderer
 		self.t_title = t_title
@@ -26366,9 +26367,9 @@ def read_pls(lines: list[str], path: str, followed: bool = False) -> None:
 	stations: list[RadioStation] = []
 	for id in ids:
 		if id in urls:
-				radio = RadioStation(
-					stream_url=titles[id] if id in titles else urls[id],
-					title=os.path.splitext(os.path.basename(path))[0])
+			radio = RadioStation(
+				stream_url=titles[id] if id in titles else urls[id],
+				title=os.path.splitext(os.path.basename(path))[0])
 
 			if ".pls" in radio.stream_url:
 				if not followed:
@@ -41347,8 +41348,8 @@ vis_menu.add(MenuItem(_("Spectrum Visualizer"), spec_on))
 _("Time")
 _("Filepath")
 
-# set_menu.add(_("Sort Ascending"), sort_ass, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
-# set_menu.add(_("Sort Decending"), sort_dec, pass_ref=True, disable_test=view_pl_is_locked, pass_ref_deco=True)
+# set_menu.add(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True)
+# set_menu.add(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True)
 # set_menu.br()
 set_menu.add(MenuItem(_("Auto Resize"), auto_size_columns))
 set_menu.add(MenuItem(_("Hide bar"), hide_set_bar))
