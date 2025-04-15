@@ -12666,8 +12666,7 @@ class Tauon:
 		if not self.prefs.encoder_output.exists():
 			self.prefs.encoder_output.mkdir()
 		if self.system == "Windows" or self.msys:
-			line = r"explorer " + self.prefs.encoder_output.replace("/", "\\")
-			subprocess.Popen(line)
+			subprocess.Popen(["explorer", self.prefs.encoder_output])
 		elif self.macos:
 			subprocess.Popen(["open", self.prefs.encoder_output])
 		else:
