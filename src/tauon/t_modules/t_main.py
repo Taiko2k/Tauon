@@ -6804,7 +6804,7 @@ class Tauon:
 			self.pctl.repeat_mode = False
 			if albums:
 				self.prefs.album_shuffle_lock_mode = True
-			if self.pctl.playing_state == 0:
+			if self.pctl.playing_state == 0 and self.pctl.track_queue:
 				self.pctl.advance()
 		else:
 			self.pctl.random_mode = self.gui.shuffle_was_random
