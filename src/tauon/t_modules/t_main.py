@@ -367,7 +367,7 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture, main_texture_overlay_temp, main_texture, max_window_tex) -> None:
+	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture: sdl3.LP_SDL_Texture, main_texture_overlay_temp: sdl3.LP_SDL_Texture, main_texture: sdl3.LP_SDL_Texture, max_window_tex: int) -> None:
 		self.bag     = bag
 		self.console = bag.console
 		self.inp     = Input(gui=self)
@@ -653,7 +653,7 @@ class GuiVar:
 		self.downloading_bass = False
 		self.d_click_ref = -1
 
-		self.max_window_tex = max_window_tex
+		self.max_window_tex = max_window_tex # Both X and Y of maximal Tauon window texture size
 		self.main_texture = main_texture
 		self.main_texture_overlay_temp = main_texture_overlay_temp
 
@@ -39202,7 +39202,6 @@ if not phone:
 
 max_window_tex = 1000
 if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
-
 	while window_size[0] > max_window_tex:
 		max_window_tex += 1000
 	while window_size[1] > max_window_tex:
@@ -39549,6 +39548,7 @@ gui = GuiVar(
 	main_texture=main_texture,
 	max_window_tex=max_window_tex,
 )
+del max_window_tex
 
 inp = gui.inp
 keymaps = gui.keymaps
@@ -42180,7 +42180,7 @@ while pctl.running:
 			#     # inp.k_input = True
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_MAXIMIZED:
-				if gui.mode != 3:  # workaround. sdl bug? gives event on window size set
+				if gui.mode != 3:  # TODO(Taiko): workaround. sdl bug? gives event on window size set
 					gui.maximized = True
 				gui.update_layout = True
 				gui.pl_update = 1
