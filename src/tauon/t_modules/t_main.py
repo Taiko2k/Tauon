@@ -504,7 +504,7 @@ class GuiVar:
 		self.present = False
 		self.drag_source_position = (0, 0)
 		self.drag_source_position_persist = (0, 0)
-		self.old_album_pos: int = -55
+		#self.old_album_pos: int = -55
 		self.album_playlist_width: int = 430
 
 		self.album_tab_mode = False
@@ -39381,7 +39381,6 @@ db_version: float = 0.0
 latest_db_version: float = 70
 
 albums = []
-album_position = 0
 
 # url_saves = []
 rename_files_previous = ""
@@ -39560,7 +39559,6 @@ console = bag.console
 spot_cache_saved_albums = [] # TODO(Martin): This isn't really used? It's just fed to spot_ctl as [] or saved, but we never save it
 resize_mode = False # TODO(Martin): Move
 spec_smoothing = True # TODO(Martin): Move
-old_album_pos = gui.old_album_pos
 row_len = 5 # TODO(Martin): Move
 last_row = gui.last_row
 time_last_save = 0 # TODO(Martin): Move
@@ -46386,10 +46384,7 @@ while pctl.running:
 						gui.level_peak[0] -= decay
 
 			for t in range(12):
-				if gui.level_peak[0] < t:
-					met = False
-				else:
-					met = True
+				met = False if gui.level_peak[0] < t else True
 				if gui.level_peak[0] < 0.2:
 					met = False
 				if gui.level_meter_colour_mode == 1:
@@ -46434,10 +46429,7 @@ while pctl.running:
 
 			y -= 7 * gui.scale
 			for t in range(12):
-				if gui.level_peak[1] < t:
-					met = False
-				else:
-					met = True
+				met = False if gui.level_peak[1] < t else True
 				if gui.level_peak[1] < 0.2:
 					met = False
 
