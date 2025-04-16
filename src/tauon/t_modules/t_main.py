@@ -5679,7 +5679,7 @@ class Tauon:
 		self.cm_clean_db:                    bool = False
 		self.worker_save_state:              bool = False
 		self.whicher                              = whicher
-		self.load_orders                          = bag.load_orders
+		self.load_orders: list[LoadClass]         = []
 		self.switch_playlist                      = None
 		self.album_info_cache                     = {}
 		self.album_info_cache_key                 = (-1, -1)
@@ -36142,7 +36142,6 @@ class Bag:
 	old_window_position:     tuple[int, int] # X Y res
 	cue_list:                list[str]
 	download_directories:    list[str]
-	load_orders:             list[LoadClass]
 	multi_playlist:          list[TauonPlaylist]
 	radio_playlists:         list[RadioPlaylist]
 	primary_stations:        list[RadioStation]
@@ -39510,7 +39509,6 @@ bag = Bag(
 	last_fm_enable=last_fm_enable,
 	launch_prefix=launch_prefix,
 	latest_db_version=latest_db_version,
-	load_orders=[], # TODO(Martin): We don't need to Bag this, it inits empty
 	flatpak_mode=flatpak_mode,
 	snap_mode=snap_mode,
 	master_count=master_count,
