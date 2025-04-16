@@ -1654,8 +1654,8 @@ class PlayerCtl:
 		self.regen_in_progress = False
 		self.notify_in_progress = False
 
-		self.radio_playlists: list[RadioPlaylist] = self.bag.radio_playlists
-		self.radio_playlist_viewing: int = self.bag.radio_playlist_viewing
+		self.radio_playlists = self.bag.radio_playlists
+		self.radio_playlist_viewing = self.bag.radio_playlist_viewing
 		self.tag_history = {}
 
 		self.commit: int | None = None
@@ -39355,27 +39355,15 @@ formats = Formats(
 
 # ---------------------------------------------------------------------
 # Player variables
-
 # pl_follow = False
-
 draw_sep_hl = False
 
 # -------------------------------------------------------------------------------
 # Playlist Variables
-playlist_view_position = 0
-playlist_playing = -1
-
-random_mode = False
-repeat_mode = False
-
 default_playlist: list[int] = []
 
 # Library and loader Variables--------------------------------------------------------
 master_library: dict[int, TrackClass] = {}
-
-master_count = 0
-
-volume = 75
 
 db_version: float = 0.0
 latest_db_version: float = 70
@@ -39390,7 +39378,6 @@ p_force_queue: list[TauonQueueItem] = []
 reload_state = None
 smtc = False
 
-radio_playlist_viewing = 0
 radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
 
 fonts = Fonts()
@@ -39510,16 +39497,16 @@ bag = Bag(
 	latest_db_version=latest_db_version,
 	flatpak_mode=flatpak_mode,
 	snap_mode=snap_mode,
-	master_count=master_count,
+	master_count=0,
 	playing_in_queue=0,
-	playlist_playing=playlist_playing,
-	playlist_view_position=playlist_view_position,
+	playlist_playing=-1,
+	playlist_view_position=0,
 	selected_in_playlist=-1,
 	album_mode_art_size=int(200 * scale),
 	primary_stations=[],
 	tls_context=tls_context,
 	track_queue=[],
-	volume=volume,
+	volume=275,
 	multi_playlist=[],
 	cue_list=[],
 	p_force_queue=p_force_queue,
@@ -39528,7 +39515,7 @@ bag = Bag(
 	gen_codes={},
 	master_library=master_library,
 	loaded_asset_dc=loaded_asset_dc,
-	radio_playlist_viewing=radio_playlist_viewing,
+	radio_playlist_viewing=0,
 	radio_playlists=radio_playlists,
 	folder_image_offsets={},
 )
@@ -39664,10 +39651,10 @@ for t in range(2):
 
 		if save[0] is not None:
 			master_library = save[0]
-		master_count = save[1]
-		playlist_playing = save[2]
+		bag.master_count = save[1]
+		bag.playlist_playing = save[2]
 		bag.active_playlist_viewing = save[3]
-		playlist_view_position = save[4]
+		bag.playlist_view_position = save[4]
 		if save[5] is not None:
 			if db_version > 68:
 				bag.multi_playlist = []
@@ -39683,7 +39670,7 @@ for t in range(2):
 		bag.track_queue = save[7]
 		bag.playing_in_queue = save[8]
 		# default_playlist = save[9]  # value is now set above
-		# playlist_playing = save[10]
+		# bag.playlist_playing = save[10]
 		# cue_list = save[11]
 		# radio_field_text = save[12]
 		prefs.theme = save[13]
@@ -39998,7 +39985,7 @@ for t in range(2):
 			else:
 				radio_playlists = save[165]
 		if save[166] is not None:
-			radio_playlist_viewing = save[166]
+			bag.radio_playlist_viewing = save[166]
 		if save[167] is not None:
 			prefs.radio_thumb_bans = save[167]
 		if save[168] is not None:
@@ -42206,7 +42193,7 @@ while pctl.running:
 	# ----------------
 	# This section of code controls the internal processing speed or 'frame-rate'
 	# It's pretty messy
-	# if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
+	# if not gui.pl_update and gui.rendered_playlist_position != pctl.playlist_view_position:
 	#     logging.warning("The playlist failed to render at the latest position!!!!")
 
 	power += 1
@@ -44321,7 +44308,7 @@ while pctl.running:
 						tauon.fields.add(field, tauon.update_playlist_call)
 
 				if gui.pl_update > 0:
-					gui.rendered_playlist_position = playlist_view_position
+					gui.rendered_playlist_position = pctl.playlist_view_position
 
 					gui.pl_update -= 1
 					if gui.combo_mode:
