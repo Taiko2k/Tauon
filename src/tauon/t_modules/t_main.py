@@ -39360,9 +39360,6 @@ formats = Formats(
 
 # pl_follow = False
 
-track_queue: list[int] = []
-
-playing_in_queue: int = 0
 draw_sep_hl = False
 
 # -------------------------------------------------------------------------------
@@ -39518,14 +39515,14 @@ bag = Bag(
 	flatpak_mode=flatpak_mode,
 	snap_mode=snap_mode,
 	master_count=master_count,
-	playing_in_queue=playing_in_queue,
+	playing_in_queue=0,
 	playlist_playing=playlist_playing,
 	playlist_view_position=playlist_view_position,
 	selected_in_playlist=-1,
 	album_mode_art_size=int(200 * scale),
 	primary_stations=[],
 	tls_context=tls_context,
-	track_queue=track_queue,
+	track_queue=[],
 	volume=volume,
 	multi_playlist=[],
 	cue_list=[],
@@ -39687,8 +39684,8 @@ for t in range(2):
 			else:
 				bag.multi_playlist = save[5]
 		volume = save[6]
-		track_queue = save[7]
-		playing_in_queue = save[8]
+		bag.track_queue = save[7]
+		bag.playing_in_queue = save[8]
 		# default_playlist = save[9]  # value is now set above
 		# playlist_playing = save[10]
 		# cue_list = save[11]
@@ -40073,7 +40070,7 @@ if window_size is None:
 	window_size = window_default_size
 	gui.rspw = 200
 
-playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
+bag.playing_in_queue = min(bag.playing_in_queue, len(bag.track_queue) - 1)
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
