@@ -69,6 +69,7 @@ jobs:
             -r requirements.txt \
             build \
             https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+          python -c "import sdl3"
         #    pyinstaller
 
       - name: Build the project using python-build
