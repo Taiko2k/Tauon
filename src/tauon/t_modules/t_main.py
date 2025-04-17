@@ -39666,7 +39666,7 @@ for t in range(2):
 						default_playlist = p.playlist_ids
 			else:
 				bag.multi_playlist = save[5]
-		volume = save[6]
+		bag.volume = save[6]
 		bag.track_queue = save[7]
 		bag.playing_in_queue = save[8]
 		# default_playlist = save[9]  # value is now set above
