@@ -367,7 +367,7 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture, main_texture_overlay_temp, main_texture, max_window_tex) -> None:
+	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture: sdl3.LP_SDL_Texture, main_texture_overlay_temp: sdl3.LP_SDL_Texture, main_texture: sdl3.LP_SDL_Texture, max_window_tex: int) -> None:
 		self.bag     = bag
 		self.console = bag.console
 		self.inp     = Input(gui=self)
@@ -504,7 +504,7 @@ class GuiVar:
 		self.present = False
 		self.drag_source_position = (0, 0)
 		self.drag_source_position_persist = (0, 0)
-		self.old_album_pos: int = -55
+		#self.old_album_pos: int = -55
 		self.album_playlist_width: int = 430
 
 		self.album_tab_mode = False
@@ -653,7 +653,7 @@ class GuiVar:
 		self.downloading_bass = False
 		self.d_click_ref = -1
 
-		self.max_window_tex = max_window_tex
+		self.max_window_tex = max_window_tex # Both X and Y of maximal Tauon window texture size
 		self.main_texture = main_texture
 		self.main_texture_overlay_temp = main_texture_overlay_temp
 
@@ -1654,8 +1654,8 @@ class PlayerCtl:
 		self.regen_in_progress = False
 		self.notify_in_progress = False
 
-		self.radio_playlists: list[RadioPlaylist] = self.bag.radio_playlists
-		self.radio_playlist_viewing: int = self.bag.radio_playlist_viewing
+		self.radio_playlists = self.bag.radio_playlists
+		self.radio_playlist_viewing = self.bag.radio_playlist_viewing
 		self.tag_history = {}
 
 		self.commit: int | None = None
@@ -5679,7 +5679,7 @@ class Tauon:
 		self.cm_clean_db:                    bool = False
 		self.worker_save_state:              bool = False
 		self.whicher                              = whicher
-		self.load_orders                          = bag.load_orders
+		self.load_orders: list[LoadClass]         = []
 		self.switch_playlist                      = None
 		self.album_info_cache                     = {}
 		self.album_info_cache_key                 = (-1, -1)
@@ -36142,7 +36142,6 @@ class Bag:
 	old_window_position:     tuple[int, int] # X Y res
 	cue_list:                list[str]
 	download_directories:    list[str]
-	load_orders:             list[LoadClass]
 	multi_playlist:          list[TauonPlaylist]
 	radio_playlists:         list[RadioPlaylist]
 	primary_stations:        list[RadioStation]
@@ -39202,7 +39201,6 @@ if not phone:
 
 max_window_tex = 1000
 if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
-
 	while window_size[0] > max_window_tex:
 		max_window_tex += 1000
 	while window_size[1] > max_window_tex:
@@ -39357,36 +39355,20 @@ formats = Formats(
 
 # ---------------------------------------------------------------------
 # Player variables
-
 # pl_follow = False
-
-track_queue: list[int] = []
-
-playing_in_queue: int = 0
 draw_sep_hl = False
 
 # -------------------------------------------------------------------------------
 # Playlist Variables
-playlist_view_position = 0
-playlist_playing = -1
-
-random_mode = False
-repeat_mode = False
-
 default_playlist: list[int] = []
 
 # Library and loader Variables--------------------------------------------------------
 master_library: dict[int, TrackClass] = {}
 
-master_count = 0
-
-volume = 75
-
 db_version: float = 0.0
 latest_db_version: float = 70
 
 albums = []
-album_position = 0
 
 # url_saves = []
 rename_files_previous = ""
@@ -39396,7 +39378,6 @@ p_force_queue: list[TauonQueueItem] = []
 reload_state = None
 smtc = False
 
-radio_playlist_viewing = 0
 radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
 
 fonts = Fonts()
@@ -39514,19 +39495,18 @@ bag = Bag(
 	last_fm_enable=last_fm_enable,
 	launch_prefix=launch_prefix,
 	latest_db_version=latest_db_version,
-	load_orders=[], # TODO(Martin): We don't need to Bag this, it inits empty
 	flatpak_mode=flatpak_mode,
 	snap_mode=snap_mode,
-	master_count=master_count,
-	playing_in_queue=playing_in_queue,
-	playlist_playing=playlist_playing,
-	playlist_view_position=playlist_view_position,
+	master_count=0,
+	playing_in_queue=0,
+	playlist_playing=-1,
+	playlist_view_position=0,
 	selected_in_playlist=-1,
 	album_mode_art_size=int(200 * scale),
 	primary_stations=[],
 	tls_context=tls_context,
-	track_queue=track_queue,
-	volume=volume,
+	track_queue=[],
+	volume=275,
 	multi_playlist=[],
 	cue_list=[],
 	p_force_queue=p_force_queue,
@@ -39535,7 +39515,7 @@ bag = Bag(
 	gen_codes={},
 	master_library=master_library,
 	loaded_asset_dc=loaded_asset_dc,
-	radio_playlist_viewing=radio_playlist_viewing,
+	radio_playlist_viewing=0,
 	radio_playlists=radio_playlists,
 	folder_image_offsets={},
 )
@@ -39552,6 +39532,7 @@ gui = GuiVar(
 	main_texture=main_texture,
 	max_window_tex=max_window_tex,
 )
+del max_window_tex
 
 inp = gui.inp
 keymaps = gui.keymaps
@@ -39565,7 +39546,6 @@ console = bag.console
 spot_cache_saved_albums = [] # TODO(Martin): This isn't really used? It's just fed to spot_ctl as [] or saved, but we never save it
 resize_mode = False # TODO(Martin): Move
 spec_smoothing = True # TODO(Martin): Move
-old_album_pos = gui.old_album_pos
 row_len = 5 # TODO(Martin): Move
 last_row = gui.last_row
 time_last_save = 0 # TODO(Martin): Move
@@ -39671,10 +39651,10 @@ for t in range(2):
 
 		if save[0] is not None:
 			master_library = save[0]
-		master_count = save[1]
-		playlist_playing = save[2]
+		bag.master_count = save[1]
+		bag.playlist_playing = save[2]
 		bag.active_playlist_viewing = save[3]
-		playlist_view_position = save[4]
+		bag.playlist_view_position = save[4]
 		if save[5] is not None:
 			if db_version > 68:
 				bag.multi_playlist = []
@@ -39687,10 +39667,10 @@ for t in range(2):
 			else:
 				bag.multi_playlist = save[5]
 		volume = save[6]
-		track_queue = save[7]
-		playing_in_queue = save[8]
+		bag.track_queue = save[7]
+		bag.playing_in_queue = save[8]
 		# default_playlist = save[9]  # value is now set above
-		# playlist_playing = save[10]
+		# bag.playlist_playing = save[10]
 		# cue_list = save[11]
 		# radio_field_text = save[12]
 		prefs.theme = save[13]
@@ -40005,7 +39985,7 @@ for t in range(2):
 			else:
 				radio_playlists = save[165]
 		if save[166] is not None:
-			radio_playlist_viewing = save[166]
+			bag.radio_playlist_viewing = save[166]
 		if save[167] is not None:
 			prefs.radio_thumb_bans = save[167]
 		if save[168] is not None:
@@ -40073,7 +40053,7 @@ if window_size is None:
 	window_size = window_default_size
 	gui.rspw = 200
 
-playing_in_queue = min(playing_in_queue, len(track_queue) - 1)
+bag.playing_in_queue = min(bag.playing_in_queue, len(bag.track_queue) - 1)
 
 shoot = threading.Thread(target=keymaps.load)
 shoot.daemon = True
@@ -42183,7 +42163,7 @@ while pctl.running:
 			#     # inp.k_input = True
 
 			elif event.type == sdl3.SDL_EVENT_WINDOW_MAXIMIZED:
-				if gui.mode != 3:  # workaround. sdl bug? gives event on window size set
+				if gui.mode != 3:  # TODO(Taiko): workaround. sdl bug? gives event on window size set
 					gui.maximized = True
 				gui.update_layout = True
 				gui.pl_update = 1
@@ -42213,7 +42193,7 @@ while pctl.running:
 	# ----------------
 	# This section of code controls the internal processing speed or 'frame-rate'
 	# It's pretty messy
-	# if not gui.pl_update and gui.rendered_playlist_position != playlist_view_position:
+	# if not gui.pl_update and gui.rendered_playlist_position != pctl.playlist_view_position:
 	#     logging.warning("The playlist failed to render at the latest position!!!!")
 
 	power += 1
@@ -44328,7 +44308,7 @@ while pctl.running:
 						tauon.fields.add(field, tauon.update_playlist_call)
 
 				if gui.pl_update > 0:
-					gui.rendered_playlist_position = playlist_view_position
+					gui.rendered_playlist_position = pctl.playlist_view_position
 
 					gui.pl_update -= 1
 					if gui.combo_mode:
@@ -46391,10 +46371,7 @@ while pctl.running:
 						gui.level_peak[0] -= decay
 
 			for t in range(12):
-				if gui.level_peak[0] < t:
-					met = False
-				else:
-					met = True
+				met = False if gui.level_peak[0] < t else True
 				if gui.level_peak[0] < 0.2:
 					met = False
 				if gui.level_meter_colour_mode == 1:
@@ -46439,10 +46416,7 @@ while pctl.running:
 
 			y -= 7 * gui.scale
 			for t in range(12):
-				if gui.level_peak[1] < t:
-					met = False
-				else:
-					met = True
+				met = False if gui.level_peak[1] < t else True
 				if gui.level_peak[1] < 0.2:
 					met = False
 
