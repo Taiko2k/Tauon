@@ -33,7 +33,7 @@ def bandcamp_search(artist: str, callback: Callable[[str | None], None] | None =
 		html = BeautifulSoup(page.text, "html.parser")
 		results = html.find_all("div", {"class": "result-info"})
 		for result in results:
-			children = result.findChildren("div")
+			children = result.find_all("div")
 			okay = False
 			for child in children:
 				if child.string and "ARTIST" in child.string:
