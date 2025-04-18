@@ -166,8 +166,8 @@ class Flac:
 		block_position += 4
 		fields = int.from_bytes(buffer, byteorder="little")
 		# logging.info(fields)
-		artists = []
-		genres = []
+		artists: list[str] = []
+		genres: list[str] = []
 		odat = ""
 
 		for i in range(fields):
@@ -229,7 +229,7 @@ class Flac:
 						self.disc_number = b.decode("utf-8")
 					elif a == "metadata_block_picture":
 						logging.info("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
-						logging.info("      In file: " + self.filepath)
+						logging.info(f"      In file: {self.filepath}")
 					elif a in ("lyrics", "unsyncedlyrics"):
 						self.lyrics = b.decode("utf-8")
 					elif a == "replaygain_track_gain":
@@ -383,7 +383,7 @@ class Opus:
 		self.composer = ""
 		self.track_gain = None
 		self.album_gain = None
-		self.misc = {}
+		self.misc: dict[str, str | float | list[str]] = {}
 
 		self.sample_rate = 48000  # OPUS files are always 48000
 		self.bit_rate = 0
@@ -475,8 +475,8 @@ class Opus:
 
 		number = int.from_bytes(s, byteorder="little")  # Number of comments
 
-		artists = []
-		genres = []
+		artists: list[str] = []
+		genres: list[str] = []
 		odat = ""
 
 		for i in range(number):
@@ -631,7 +631,7 @@ class Ape:
 		self.label = ""
 		self.track_gain = None
 		self.album_gain = None
-		self.misc = {}
+		self.misc: dict[str, str | float | list[str]] = {}
 		self.composer = ""
 
 		self.sample_rate = 48000
@@ -1116,7 +1116,7 @@ class M4a:
 		self.lyrics = ""
 		self.track_gain = None
 		self.album_gain = None
-		self.misc = {}
+		self.misc: dict[str, str | float | list[str]] = {}
 		self.composer = ""
 
 		self.sample_rate = 0
