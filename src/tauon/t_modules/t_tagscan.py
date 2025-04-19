@@ -106,38 +106,38 @@ def parse_picture_block(f: BufferedReader) -> bytes:
 
 	return f.read(a)
 
-class Flac:
-	def __init__(self, file: str) -> None:
-		self.file = None
-		self.filepath = file
-		self.has_picture = False
-		self.picture = ""
+class TrackFile:
+	"""Base class for codec classes"""
 
+	def __init__(self) -> None:
+		self.file: BufferedReader | None = None
+		self.has_picture = False # Wav does not need this
+
+		self.picture      = "" # Wav does not need this
+		self.filepath     = ""
 		self.album_artist = ""
-		self.artist = ""
-		self.genre = ""
-		self.date = ""
-		self.comment = ""
-		self.album = ""
+		self.artist       = ""
+		self.genre        = ""
+		self.date         = "" # Wav does not need this
+		self.comment      = "" # Wav does not need this
+		self.album        = ""
 		self.track_number = ""
-		self.track_total = ""
-		self.title = ""
-		self.encoder = ""
-		self.disc_number = ""
-		self.picture = ""
-		self.disc_total = ""
-		self.lyrics = ""
-		self.cue_sheet = ""
-		self.composer = ""
-		self.misc = {}
+		self.track_total  = "" # Wav does not need this
+		self.title        = ""
+		self.encoder      = "" # Wav does not need this
+		self.disc_number  = "" # Wav does not need this
+		self.disc_total   = "" # Wav does not need this
+		self.lyrics       = "" # Wav does not need this
+		self.composer     = "" # Wav does not need this
+		self.misc: dict[str, str | float | list[str]] = {} # Wav does not need this
 
-		self.sample_rate = 48000
-		self.bit_rate = 0
+		self.sample_rate = 48000 # OPUS files are always 48000
 		self.length = 0
-		self.bit_depth = 0
+		self.bit_rate = 0  # Wav does not need this
+		self.bit_depth = 0 # Opus, M4a and Wav does not need this
 
-		self.track_gain = None
-		self.album_gain = None
+		self.track_gain: float | None = None # Wav does not need this
+		self.album_gain: float | None = None # Wav does not need this
 
 	def __enter__(self) -> Self:
 		"""Open the file when entering the context"""
@@ -151,6 +151,13 @@ class Flac:
 		if self.file:
 			self.file.close()
 		self.file = None
+
+class Flac(TrackFile):
+
+	def __init__(self, file: str) -> None:
+		super().__init__()
+		self.filepath = file
+		self.cue_sheet = ""
 
 	def read_vorbis(self, f: BufferedReader) -> None:
 		block_position = 0
@@ -187,9 +194,7 @@ class Flac:
 				# logging.info(sss[position:position+1])
 				position += 1
 
-
 				if buffer[position:position + 1] == b"=":
-
 					a = buffer[0:position].decode("utf-8").lower()
 					b = buffer[position + 1:]
 
@@ -312,16 +317,13 @@ class Flac:
 		i = 0
 		while i < 20:
 			i += 1
-
 			z = self.read_block(f)
 
 			if z[1] == 0:
 				self.read_seek_table(f)
 			if z[1] == 4:
 				self.read_vorbis(f)
-
 			if z[1] == 5:
-
 				logging.info("Tag Scan: Flac file has native embedded CUE. Not supported")
 				logging.info("      In file: " + self.filepath)
 				# mark = f.tell()
@@ -339,7 +341,6 @@ class Flac:
 			if z[1] == 6 and get_picture:
 				self.picture = parse_picture_block(f)
 				self.has_picture = True
-
 			else:
 				f.read(z[2])
 
@@ -361,53 +362,17 @@ class Flac:
 	def get(self) -> None:
 		pass
 
-
 # file = 'b.flac'
 #
 # item = Flac(file)
 # item.read()
 
-class Opus:
+class Opus(TrackFile):
+
 	def __init__(self, file: str) -> None:
-		self.file = None
+		super().__init__()
 		self.filepath = file
-		self.has_picture = False
-
-		self.album_artist = ""
-		self.artist = ""
-		self.genre = ""
-		self.date = ""
-		self.comment = ""
-		self.album = ""
-		self.track_number = ""
-		self.track_total = ""
-		self.title = ""
-		self.encoder = ""
-		self.disc_number = ""
-		self.disc_total = ""
-		self.picture = ""
-		self.lyrics = ""
-		self.composer = ""
-		self.track_gain = None
-		self.album_gain = None
-		self.misc: dict[str, str | float | list[str]] = {}
-
-		self.sample_rate = 48000  # OPUS files are always 48000
-		self.bit_rate = 0
 		self.length = 0
-
-	def __enter__(self) -> Self:
-		"""Open the file when entering the context"""
-		self.file = Path(self.filepath).open("rb")
-		return self
-
-	def __exit__(
-		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
-	) -> None:
-		"""Close the file when exiting the context"""
-		if self.file:
-			self.file.close()
-		self.file = None
 
 	def get_more(self, f: BufferedReader, v: BytesIO) -> int:
 		header = struct.unpack("<4sBBqIIiB", f.read(27))
@@ -442,13 +407,11 @@ class Opus:
 		if s == b"OpusHea":
 			f.seek(-7, 1)
 		elif s == b"\x01vorbis":
-
 			s = f.read(4)
 			a = struct.unpack("<B4i", f.read(17)) # 44100
 			self.sample_rate = a[1]
 			self.bit_rate = int(a[3] / 1000)
 			f.seek(-28, 1)
-
 		else:
 			return
 
@@ -501,11 +464,9 @@ class Opus:
 
 			position = 0
 			while position < 40:
-
 				position += 1
 
 				if s[position:position+1] == b"=":
-
 					a = s[0:position].decode("utf-8").lower()
 					b = s[position + 1:]
 
@@ -571,7 +532,6 @@ class Opus:
 						self.misc["FMPS_Rating"] = float(b.decode("utf-8"))
 					elif a == "artistsort":
 						self.misc["artist_sort"] = b.decode("utf-8")
-
 					# else:
 					#	 logging.info("Tag Scanner: Found unhandled Vorbis comment field: " + a)
 					#	 logging.info(b.decode("utf-8"))
@@ -619,52 +579,14 @@ class Opus:
 # item = Opus(file)
 # item.read()
 
+class Ape(TrackFile):
+	"""Helpful: http://wiki.hydrogenaud.io/index.php?title=APEv2_specification"""
 
-class Ape:
 	def __init__(self, file: str) -> None:
-		self.file = None
+		super().__init__()
 		self.filepath = file
-		self.has_picture = False
-		self.picture = ""
-
 		self.found_tag = False
-		self.album_artist = ""
-		self.artist = ""
-		self.genre = ""
-		self.date = ""
-		self.comment = ""
-		self.album = ""
-		self.track_number = ""
-		self.track_total = ""
-		self.title = ""
-		self.encoder = ""
-		self.disc_number = ""
-		self.disc_total = ""
-		self.picture = ""
-		self.lyrics = ""
 		self.label = ""
-		self.track_gain = None
-		self.album_gain = None
-		self.misc: dict[str, str | float | list[str]] = {}
-		self.composer = ""
-
-		self.sample_rate = 48000
-		self.bit_rate = 0
-		self.bit_depth = 0
-		self.length = 0
-
-	def __enter__(self) -> Self:
-		"""Open the file when entering the context"""
-		self.file = Path(self.filepath).open("rb")
-		return self
-
-	def __exit__(
-		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
-	) -> None:
-		"""Close the file when exiting the context"""
-		if self.file:
-			self.file.close()
-		self.file = None
 
 	def read(self) -> None:
 		if not self.file:
@@ -674,8 +596,6 @@ class Ape:
 		# Check size of file
 		a.seek(0, 2)
 		file_size = a.tell()
-
-		# Helpful: http://wiki.hydrogenaud.io/index.php?title=APEv2_specification
 
 		# Get last 32 bytes where ape tag footer might be
 		a.seek(-32, 1)
@@ -722,7 +642,6 @@ class Ape:
 
 			# For every field in tag
 			for q in range(num_items):
-
 				# (field value length, 0=text 2=binary)
 				ta = struct.unpack("<ii", a.read(8))
 
@@ -798,9 +717,7 @@ class Ape:
 					self.misc["replaygain_album_peak"] = float(value)
 				elif parse_mbids_from_vorbis(self, key, value):
 					pass
-
 				elif key == "cover art (front)":
-
 					# Data appears to have a filename at the start of it, we need to remove to recover a valid picture
 					# Im not sure what the actual specification is here
 
@@ -824,11 +741,9 @@ class Ape:
 
 		start = a.read(128)
 		if start[0:3] == b"MAC":  # Ape files start with MAC
-
 			version = struct.unpack("<h", start[4:6])[0]
 
 			if version >= 3980:
-
 				audio_info = struct.unpack("<IIIHHI", start[56:76])
 
 				self.bit_depth = audio_info[3]
@@ -846,7 +761,6 @@ class Ape:
 			header = struct.unpack("<4c3H3L", a.read(22))
 
 			if b"".join(header[0:3]) != b"TTA1":
-
 				self.sample_rate = header[7]
 				bps = header[6]
 				self.bit_depth = bps
@@ -857,7 +771,6 @@ class Ape:
 				# To do
 			else:
 				logging.info("WARNING: Does not appear to be a valid TTA file")
-
 		elif ".wv" in self.filepath:
 			#  We can handle WavPack files here too
 			#  This code likely wont cover all cases as is, I only tested it on a few files
@@ -881,34 +794,14 @@ class Ape:
 					break
 			else:
 				logging.info("Tag Scanner: Cannot verify WavPack file")
-
 		else:
 			logging.info("Tag Scanner: Does not appear to be an APE file")
-class Wav:
+
+class Wav(TrackFile):
+
 	def __init__(self, file: str) -> None:
-		self.file = None
+		super().__init__()
 		self.filepath = file
-		self.sample_rate = 48000
-		self.length = 0
-
-		self.title = ""
-		self.artist = ""
-		self.album = ""
-		self.genre = ""
-		self.track_number = ""
-
-	def __enter__(self) -> Self:
-		"""Open the file when entering the context"""
-		self.file = Path(self.filepath).open("rb")
-		return self
-
-	def __exit__(
-		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
-	) -> None:
-		"""Close the file when exiting the context"""
-		if self.file:
-			self.file.close()
-		self.file = None
 
 	def read(self) -> None:
 		if not self.file:
@@ -926,7 +819,6 @@ class Wav:
 			if type != b"LIST":
 				f.seek(remain, io.SEEK_CUR)
 			else:
-
 				INFO = f.read(4)
 				if INFO == b"INFO":
 					remain -= 4
@@ -1108,47 +1000,12 @@ genre_dict = {
 	148 : "Unknown",
 }
 
-class M4a:
+class M4a(TrackFile):
+
 	def __init__(self, file: str) -> None:
-		self.file = None
+		super().__init__()
 		self.filepath = file
-		self.has_picture = False
-
-		self.album_artist = ""
-		self.artist = ""
-		self.genre = ""
-		self.date = ""
-		self.comment = ""
-		self.album = ""
-		self.track_number = ""
-		self.track_total = ""
-		self.title = ""
-		self.encoder = ""
-		self.disc_number = ""
-		self.disc_total = ""
-		self.picture = ""
-		self.lyrics = ""
-		self.track_gain = None
-		self.album_gain = None
-		self.misc: dict[str, str | float | list[str]] = {}
-		self.composer = ""
-
-		self.sample_rate = 0
-		self.bit_rate = 0
-		self.length = 0
-
-	def __enter__(self) -> Self:
-		"""Open the file when entering the context"""
-		self.file = Path(self.filepath).open("rb")
-		return self
-
-	def __exit__(
-		self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None,
-	) -> None:
-		"""Close the file when exiting the context"""
-		if self.file:
-			self.file.close()
-		self.file = None
+		self.sample_rate = 0 # TODO(Martin): Do we need to set this to zero, isn't default 48k fine?
 
 	def read(self, get_picture: bool = False) -> None:
 		if not self.file:
@@ -1180,7 +1037,6 @@ class M4a:
 			return data
 
 		def atom(f: BufferedReader, tail: bytes = b"", name: str | bytes = "") -> bool:
-
 #			global s_name
 
 			start = f.tell()
@@ -1260,7 +1116,6 @@ class M4a:
 			#		 logging.info(data)
 
 			if name in k:
-
 				if name == b"----":
 					f.seek(30, 1)
 
@@ -1283,9 +1138,7 @@ class M4a:
 					bitrate = int.from_bytes(f.read(4), "big")
 					f.seek(-30, 1)
 					self.bit_rate = bitrate // 1000
-
 				else:
-
 					while f.tell() < start + size:
 						if not atom(f, tail + b"." + name, name):
 							break
