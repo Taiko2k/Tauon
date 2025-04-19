@@ -39375,9 +39375,6 @@ rename_files_previous = ""
 rename_folder_previous = ""
 p_force_queue: list[TauonQueueItem] = []
 
-reload_state = None
-smtc = False
-
 radio_playlists: list[RadioPlaylist] = [RadioPlaylist(uid=uid_gen(), name="Default", stations=[])]
 
 fonts = Fonts()
@@ -39479,7 +39476,7 @@ bag = Bag(
 	draw_max_button=draw_max_button,
 	download_directories=[],
 	overlay_texture_texture=overlay_texture_texture,
-	smtc=smtc,
+	smtc=False,
 	macos=macos,
 	mac_close=mac_close,
 	mac_maximize=mac_maximize,
@@ -39542,15 +39539,12 @@ keymaps = gui.keymaps
 
 # GUI Variables -------------------------------------------------------------------------------------------
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
-console = bag.console
 spot_cache_saved_albums = [] # TODO(Martin): This isn't really used? It's just fed to spot_ctl as [] or saved, but we never save it
 resize_mode = False # TODO(Martin): Move
 spec_smoothing = True # TODO(Martin): Move
 row_len = 5 # TODO(Martin): Move
-last_row = gui.last_row
 time_last_save = 0 # TODO(Martin): Move
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
-new_playlist_cooldown = gui.new_playlist_cooldown
 
 # Playlist Panel
 scroll_timer = Timer() # TODO(Martin): Move
@@ -39836,7 +39830,7 @@ for t in range(2):
 		# if save[96] is not None:
 		#	 prefs.finish_current = save[96]
 		if save[97] is not None:
-			reload_state = save[97]
+			prefs.reload_state = save[97]
 		# if save[98] is not None:
 		#	 prefs.reload_play_state = save[98]
 		if save[99] is not None:
@@ -40130,7 +40124,7 @@ if msys and win_ver >= 10:
 				tauon.wake()
 
 			close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
-			smtc = bag.sm.init(close_callback) == 0
+			bag.smtc = bag.sm.init(close_callback) == 0
 		except Exception:
 			logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
 	else:
@@ -40857,7 +40851,7 @@ tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), tauon.set_sync_playli
 tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
 tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
-tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), console.toggle))
+tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
 
 # tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
@@ -41560,8 +41554,8 @@ if gui.restart_album_mode:
 if gui.remember_library_mode:
 	tauon.toggle_library_mode()
 
-if reload_state and reload_state[0] == 1:
-	pctl.jump_time = reload_state[1]
+if prefs.reload_state and prefs.reload_state[0] == 1:
+	pctl.jump_time = prefs.reload_state[1]
 	pctl.play()
 
 pctl.notify_update()
@@ -42399,7 +42393,7 @@ while pctl.running:
 					pctl.cycle_playlist_pinned(-1)
 
 			if keymaps.test("toggle-console"):
-				console.toggle()
+				tauon.console.toggle()
 
 			if keymaps.test("toggle-fullscreen"):
 				if not gui.fullscreen and gui.mode != 3:
@@ -45977,7 +45971,7 @@ while pctl.running:
 		tauon.tool_tip.render()
 		tauon.tool_tip2.render()
 
-		if console.show:
+		if tauon.console.show:
 			rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 			ddt.rect(rect, [0, 0, 0, 245])
 
@@ -46588,7 +46582,7 @@ if tauon.radio_server is not None:
 
 if sys.platform == "win32":
 	tray.stop()
-	if smtc:
+	if pctl.smtc:
 		pctl.sm.unload()
 elif tauon.de_notify_support:
 	try:
