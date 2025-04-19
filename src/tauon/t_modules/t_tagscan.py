@@ -166,6 +166,7 @@ class Flac:
 		block_position += 4
 		fields = int.from_bytes(buffer, byteorder="little")
 		# logging.info(fields)
+		album_artists: list[str] = []
 		artists: list[str] = []
 		genres: list[str] = []
 		odat = ""
@@ -219,7 +220,8 @@ class Flac:
 					elif a == "encoder":
 						self.encoder = b.decode("utf-8")
 					elif a in ("albumartist", "album artist"):
-						self.album_artist = b.decode("utf-8")
+						#self.album_artist = b.decode("utf-8")
+						album_artists.append(b.decode("utf-8"))
 					elif a == "artist":
 						#self.artist = b.decode("utf-8")
 						artists.append(b.decode())
@@ -254,6 +256,11 @@ class Flac:
 
 		f.seek(block_position * -1, 1)
 
+		if album_artists:
+			#self.album_artist = "; ".join(album_artists)
+			self.album_artist = album_artists[0]
+			if len(album_artists) > 1:
+				self.misc["album_artists"] = album_artists
 		if artists:
 			self.artist = "; ".join(artists)
 			if len(artists) > 1:
@@ -475,6 +482,7 @@ class Opus:
 
 		number = int.from_bytes(s, byteorder="little")  # Number of comments
 
+		album_artists: list[str] = []
 		artists: list[str] = []
 		genres: list[str] = []
 		odat = ""
@@ -530,14 +538,15 @@ class Opus:
 					elif a == "encoder":
 						self.encoder = b.decode("utf-8")
 					elif a in ("albumartist", "album artist"):
-						self.album_artist = b.decode("utf-8")
+						#self.album_artist = b.decode("utf-8")
+						album_artists.append(b.decode("utf-8"))
 					elif a == "artist":
 						#self.artist = b.decode("utf-8")
 						artists.append(b.decode())
 					elif a == "metadata_block_picture":
 
 						logging.info("Tag Scanner: Found picture in OGG/OPUS file.")
-						logging.info("      In file: " + self.filepath)
+						logging.info(f"      In file: {self.filepath}")
 						self.has_picture = True
 						self.picture = b
 						# logging.info(b)
@@ -572,6 +581,11 @@ class Opus:
 
 		v.close()
 
+		if album_artists:
+			#self.album_artist = "; ".join(album_artists)
+			self.album_artist = album_artists[0]
+			if len(album_artists) > 1:
+				self.misc["album_artists"] = album_artists
 		if artists:
 			self.artist = "; ".join(artists)
 			if len(artists) > 1:
