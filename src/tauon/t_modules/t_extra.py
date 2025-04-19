@@ -44,6 +44,7 @@ if TYPE_CHECKING:
 	from collections.abc import Callable
 
 	from tauon.t_modules.t_main import TrackClass
+	from tauon.t_modules.t_tagscan import TrackFile
 
 @dataclass
 class RadioStation:
@@ -1042,7 +1043,7 @@ def d_date_display2(track: TrackClass) -> str:
 		return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.misc["rdat"])
 	return str(get_year_from_string(track.date))
 
-def process_odat(nt: TrackClass, odat: str) -> None:
+def process_odat(nt: TrackFile, odat: str) -> None:
 	if odat and odat != nt.date and odat != nt.date[:4] and odat != nt.date[-4:] \
 			and nt.date != odat[:4] and nt.date != odat[-4:]:
 		if not nt.date:
