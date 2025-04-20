@@ -66,7 +66,8 @@ class SpotCtl:
 		self.token = None
 		self.cred: RefreshingCredentials | None = None
 		self.started_once:                 bool = False
-		self.redirect_uri:                  str = "http://localhost:7811/spotredir"
+		# https://developer.spotify.com/documentation/web-api/concepts/redirect_uri
+		self.redirect_uri:                  str = "http://127.0.0.1:7811/spotredir"
 		self.current_imports:              dict = {}
 		self.spotify_com:                  bool = False
 		self.sender = None
