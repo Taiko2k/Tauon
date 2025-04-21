@@ -33,7 +33,7 @@ from tauon.t_modules.t_extra import rgb_add_hls, test_lumi
 if TYPE_CHECKING:
 	from pathlib import Path
 	from tauon.t_modules.t_draw import TDraw
-	from tauon.t_modules.t_main import GuiVar, Tauon
+	from tauon.t_modules.t_main import ColoursClass, Tauon
 
 def get_colour_from_line(cline: str) -> list[int]:
 	colour     = [-1, -1, -1, -1]
@@ -80,7 +80,7 @@ def get_colour_from_line(cline: str) -> list[int]:
 	return colour
 
 
-def load_theme(colours: GuiVar, path: Path) -> None:
+def load_theme(colours: ColoursClass, path: Path) -> None:
 
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
