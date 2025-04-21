@@ -1129,10 +1129,9 @@ class ColoursClass:
 		return alpha_blend((255, 255, 255, value), self.box_background)
 
 	def __init__(self) -> None:
-
-		self.deco = None
-		self.column_colours = {}
-		self.column_colours_playing = {}
+		self.deco: str | None = None
+		self.column_colours: dict[str, list[int]] = {}
+		self.column_colours_playing: dict[str, list[int]] = {}
 
 		self.last_album = ""
 		self.link_text = [100, 200, 252, 255]
@@ -34565,7 +34564,7 @@ class RadioThumbGen:
 		self.r_cache_directory = tauon.r_cache_directory
 		self.thread_manager    = tauon.thread_manager
 		self.cache = {}
-		self.requests = []
+		self.requests: list[tuple[RadioStation, int]] = []
 		self.size = 100
 
 	def loader(self) -> None:
@@ -34648,7 +34647,7 @@ class RadioThumbGen:
 			if src is not None:
 				src.close()
 
-	def draw(self, station: RadioStation, x, y, w) -> int:
+	def draw(self, station: RadioStation, x: int, y: int, w: int) -> int:
 		if not station.title:
 			return 0
 		key = (station.title, w)

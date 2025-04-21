@@ -3,9 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_extra import RadioStation
+
 if TYPE_CHECKING:
 	from pathlib import Path
-	from tauon.t_modules.t_extra import RadioStation
 
 @dataclass
 class Prefs:
@@ -310,7 +311,7 @@ class Prefs:
 
 	lyrics_subs = {}
 
-	radio_urls: list[RadioStation] = field(default_factory=list)
+	radio_urls: list[RadioStation] = field(default_factory=list[RadioStation])
 
 	lyric_metadata_panel_top = False
 	showcase_overlay_texture = False
@@ -339,7 +340,7 @@ class Prefs:
 	pa_fast_seek = False
 	precache = False
 	# TODO(Martin): cache_list isn't really used anywhere and will always be empty?
-	cache_list: list[str] = field(default_factory=list)
+	cache_list: list[str] = field(default_factory=list[str])
 	cache_limit = 2000  # in mb
 	save_window_position = True
 	spotify_token = ""
@@ -376,7 +377,7 @@ class Prefs:
 	shuffle_lock = False
 	album_shuffle_lock_mode = False
 	premium = False
-	radio_thumb_bans: list = field(default_factory=list)
+	radio_thumb_bans: list[str] = field(default_factory=list[str])
 	show_nag = False
 
 	playlist_exports = {}

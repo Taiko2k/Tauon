@@ -60,7 +60,7 @@ class RadioPlaylist:
 	name:   str
 	uid:    int
 	scroll: int = 0
-	stations: list[RadioStation] = field(default_factory=list)
+	stations: list[RadioStation] = field(default_factory=list[RadioStation])
 
 @dataclass
 class TauonQueueItem:
@@ -88,7 +88,6 @@ class TauonQueueItem:
 	uuid_int: int
 	auto_stop: bool
 
-# Functions to generate empty playlist
 @dataclass
 class TauonPlaylist:
 	"""Playlist is [Name, playing, playlist_ids, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
@@ -115,7 +114,7 @@ class TauonPlaylist:
 	hide_title: bool               # hide playlist folder titles (bool)
 	selected: int
 	uuid_int: int
-	last_folder: list[str]               # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
+	last_folder: list[str]         # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
 	hidden: bool
 	locked: bool
 	parent_playlist_id: str        # Filter parent playlist id (string)
@@ -158,7 +157,6 @@ class Timer:
 		self.start = time.monotonic()
 		self.start -= sec
 
-
 class TestTimer:
 	"""Simple bool timer object"""
 
@@ -170,7 +168,6 @@ class TestTimer:
 		return self.timer.get() > self.time
 
 j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
-
 
 def point_proximity_test(a: dict, b: dict, p: dict) -> bool:
 	"""Test given proximity between two 2d points to given square"""
@@ -191,7 +188,6 @@ def rm_16(line: str) -> str:
 		line = line[::2]
 	return line
 
-
 def get_display_time(seconds: float) -> str:
 	"""Returns a string from seconds to a compact time format, e.g 2h:23"""
 	if math.isinf(seconds) or math.isnan(seconds):
@@ -202,7 +198,6 @@ def get_display_time(seconds: float) -> str:
 		result = divmod(result[0], 60)
 		return str(result[0]) + "h " + str(result[1]).zfill(2)
 	return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
-
 
 def get_hms_time(seconds: float) -> str:
 	m, s = divmod(round(seconds), 60)
@@ -278,9 +273,7 @@ def rel_luminance(colour: tuple[int, int, int, int]) -> float:
 
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-
 def contrast_ratio(c1: tuple[int, int, int, int], c2: tuple[int, int, int, int]) -> float:
-
 	l1 = rel_luminance(c1)
 	l2 = rel_luminance(c2)
 
@@ -302,11 +295,9 @@ def alpha_blend(colour: tuple[int, int, int, int], base: tuple[int, int, int, in
 		int(alpha * colour[2] + (1 - alpha) * base[2]),
 		255]
 
-
 def alpha_mod(colour: list[int], alpha: int) -> list[int]:
 	"""Change the alpha component of an RGBA list"""
 	return [colour[0], colour[1], colour[2], alpha]
-
 
 def colour_slide(a: list[int], b: list[int], x: int, x_limit: int) -> tuple[int, int, int, int]:
 	"""Shift between two colours based on x where x is between 0 and limit"""
@@ -316,21 +307,17 @@ def colour_slide(a: list[int], b: list[int], x: int, x_limit: int) -> tuple[int,
 		min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255),
 		255)
 
-
 def hex_to_rgb(colour: str) -> list[int]:
 	colour = colour.strip("#")
 	return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
 
-
-def check_equal(lst: list) -> bool:
+def check_equal(lst: list[int]) -> bool:
 	"""Check if all the numbers in a list are the same"""
 	return not lst or lst.count(lst[0]) == len(lst)
 
-
-def is_grey(lst: list) -> bool:
+def is_grey(lst: list[int]) -> bool:
 	"""Check if the first 3 elements of a list are the same"""
 	return lst[0] == lst[1] == lst[2]
-
 
 def star_count(sec: float, dur: float) -> int:
 	"""Give a score from 0-7 based on number of seconds"""
@@ -352,7 +339,6 @@ def star_count(sec: float, dur: float) -> int:
 	if sec > 60 * 60 * 16:
 		stars += 1
 	return stars
-
 
 def star_count3(sec: float, dur: float) -> int:
 	stars = 0
@@ -380,7 +366,6 @@ def star_count3(sec: float, dur: float) -> int:
 	#	 stars += 1
 	return stars
 
-
 def star_count2(sec: float) -> float:
 	"""Give a score from 0.0 - 1.0 based on number of seconds"""
 	star = 0
@@ -389,21 +374,16 @@ def star_count2(sec: float) -> float:
 	star += sec / (60 * 60 * 10)
 	return float(round(min(star, 1), 1))
 
-
 def search_magic(terms: str, evaluate: str) -> bool:
 	return all(word in evaluate for word in terms.split())
-
 
 def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
 
-
 def random_colour(saturation: float, luminance: float) -> list[int]:
-
 	h = round(random.random(), 2)
 	colour = colorsys.hls_to_rgb(h, luminance, saturation)
 	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
-
 
 def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
 	colour = colorsys.hls_to_rgb(h, l, s)
@@ -425,7 +405,6 @@ def rgb_add_hls(source: list[int], h: float = 0, l: float = 0, s: float = 0) -> 
 
 def is_light(colour: list[int]) -> bool:
 	return test_lumi(colour) < 0.2
-
 class ColourGenCache:
 
 	def __init__(self, saturation: float, luminance: float) -> None:
@@ -444,15 +423,10 @@ class ColourGenCache:
 		self.store[key] = colour
 		return colour
 
-
-
-
 def folder_file_scan(path: str, extensions: str) -> float:
-
 	match = 0
 	count = sum([len(files) for r, d, files in os.walk(path)])
 	for ext in extensions:
-
 		match += len(glob.glob(path + "/**/*." + ext.lower(), recursive=True))
 
 	if count == 0:
@@ -463,10 +437,8 @@ def folder_file_scan(path: str, extensions: str) -> float:
 
 	return match / count
 
-
 def is_ignorable_file(string: str) -> bool:
 	return any(s in string for s in ["Thumbs.db", ".log", "desktop.ini", "DS_Store", ".nfo", "yric"])
-
 
 # Pre-compile the regular expression pattern for dates starting with the year
 date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
@@ -926,7 +898,7 @@ class FunctionStore:
 	"""Stores functions and arguments for calling later"""
 
 	def __init__(self) -> None:
-		self.items = []
+		self.items: list[tuple[Callable[..., None], tuple]] = []
 
 	def store(self, function: Callable[..., None], args: tuple = ()) -> None:
 		self.items.append((function, args))
