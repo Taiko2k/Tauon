@@ -259,7 +259,17 @@ jobs:
           DMG_PATH="dist/dmg/${APP_NAME}.dmg"
 
           # Create a .dmg package
-          hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
+          # FIXME: Undo this overengineered crap once the following issue gets figured out:
+          #        https://github.com/actions/runner-images/issues/7522
+          max_tries=10
+          i=0
+          until hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"; do
+            if [ $i -eq $max_tries ]; then
+              echo 'Error: hdiutil did not succeed even after 10 tries.'
+              exit 1
+            fi
+            ((i++))
+          done
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
@@ -370,7 +380,17 @@ jobs:
           DMG_PATH="dist/dmg/${APP_NAME}-x64.dmg"
 
           # Create a .dmg package
-          hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"
+          # FIXME: Undo this overengineered crap once the following issue gets figured out:
+          #        https://github.com/actions/runner-images/issues/7522
+          max_tries=10
+          i=0
+          until hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"; do
+            if [ $i -eq $max_tries ]; then
+              echo 'Error: hdiutil did not succeed even after 10 tries.'
+              exit 1
+            fi
+            ((i++))
+          done
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
