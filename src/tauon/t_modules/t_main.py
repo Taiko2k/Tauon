@@ -98,6 +98,7 @@ from tauon.t_modules.t_dbus import Gnome
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw
 from tauon.t_modules.t_extra import (
 	ColourGenCache,
+	ColourRGBA,
 	FunctionStore,
 	RadioPlaylist,
 	RadioStation,
@@ -234,7 +235,7 @@ class LoadImageAsset:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: int, y: int, colour: list[int] | None = None) -> None:
+	def render(self, x: int, y: int, colour: ColourRGBA | None = None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
 		sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.rect)
@@ -253,7 +254,7 @@ class WhiteModImageAsset:
 
 		raw_image = sdl3.IMG_Load(path.encode())
 		self.texture = sdl3.SDL_CreateTextureFromSurface(self.bag.renderer, raw_image)
-		self.colour = [255, 255, 255, 255]
+		self.colour = ColourRGBA(255, 255, 255, 255)
 		p_w = pointer(c_float(0.0))
 		p_h = pointer(c_float(0.0))
 		sdl3.SDL_GetTextureSize(self.texture, p_w, p_h)
@@ -268,10 +269,10 @@ class WhiteModImageAsset:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: int, y: int, colour: list[int]) -> None:
+	def render(self, x: int, y: int, colour: ColourRGBA) -> None:
 		if colour != self.colour:
-			sdl3.SDL_SetTextureColorMod(self.texture, colour[0], colour[1], colour[2])
-			sdl3.SDL_SetTextureAlphaMod(self.texture, colour[3])
+			sdl3.SDL_SetTextureColorMod(self.texture, colour.r, colour.g, colour.b)
+			sdl3.SDL_SetTextureAlphaMod(self.texture, colour.a)
 			self.colour = colour
 		self.rect.x = round(x)
 		self.rect.y = round(y)
@@ -601,8 +602,8 @@ class GuiVar:
 		self.save_position = [0, 0]
 
 		self.draw_vis4_top = False
-		# self.vis_4_colour = [0,0,0,255]
-		self.vis_4_colour = None
+		# self.vis_4_colour = ColourRGBA(0,0,0,255)
+		self.vis_4_colour: ColourRGBA | None = None
 
 		self.layer_focus = 0
 		self.tab_menu_pl = 0
@@ -1119,22 +1120,22 @@ class ColoursClass:
 	These are changed for themes
 	"""
 
-	def grey(self, value: int) -> list[int]:
-		return [value, value, value, 255]
+	def grey(self, value: int) -> ColourRGBA:
+		return ColourRGBA(value, value, value, 255)
 
-	def alpha_grey(self, value: int) -> list[int]:
-		return [255, 255, 255, value]
+	def alpha_grey(self, value: int) -> ColourRGBA:
+		return ColourRGBA(255, 255, 255, value)
 
-	def grey_blend_bg(self, value: int) -> list[int]:
-		return alpha_blend((255, 255, 255, value), self.box_background)
+	def grey_blend_bg(self, value: int) -> ColourRGBA:
+		return alpha_blend(ColourRGBA(255, 255, 255, value), self.box_background)
 
 	def __init__(self) -> None:
 		self.deco: str | None = None
-		self.column_colours: dict[str, list[int]] = {}
-		self.column_colours_playing: dict[str, list[int]] = {}
+		self.column_colours: dict[str, ColourRGBA] = {}
+		self.column_colours_playing: dict[str, ColourRGBA] = {}
 
 		self.last_album = ""
-		self.link_text = [100, 200, 252, 255]
+		self.link_text = ColourRGBA(100, 200, 252, 255)
 
 		self.tb_line = self.grey(21)  # not currently used
 		self.art_box = self.grey(24)
@@ -1150,18 +1151,18 @@ class ColoursClass:
 		self.tab_highlight = self.grey(40)
 		self.tab_background_active = self.grey(45)
 
-		self.title_text = [190, 190, 190, 255]
+		self.title_text = ColourRGBA(190, 190, 190, 255)
 		self.index_text = self.grey(70)
 		self.time_text = self.grey(180)
-		self.artist_text = [195, 255, 104, 255]
-		self.album_text = [245, 240, 90, 255]
+		self.artist_text = ColourRGBA(195, 255, 104, 255)
+		self.album_text = ColourRGBA(245, 240, 90, 255)
 
 		self.index_playing = self.grey(190)
-		self.artist_playing = [195, 255, 104, 255]
-		self.album_playing = [245, 240, 90, 255]
+		self.artist_playing = ColourRGBA(195, 255, 104, 255)
+		self.album_playing = ColourRGBA(245, 240, 90, 255)
 		self.title_playing = self.grey(230)
 
-		self.time_playing = [180, 194, 107, 255]
+		self.time_playing = ColourRGBA(180, 194, 107, 255)
 
 		self.playlist_text_missing = self.grey(85)
 		self.bar_time = self.grey(70)
@@ -1175,8 +1176,8 @@ class ColoursClass:
 		self.playlist_panel_background = self.grey(21)
 		self.bottom_panel_colour = self.grey(15)
 
-		self.row_playing_highlight = [255, 255, 255, 4]
-		self.row_select_highlight = [255, 255, 255, 5]
+		self.row_playing_highlight = ColourRGBA(255, 255, 255, 4)
+		self.row_select_highlight = ColourRGBA(255, 255, 255, 5)
 
 		self.side_bar_line1 = self.grey(230)
 		self.side_bar_line2 = self.grey(210)
@@ -1189,44 +1190,44 @@ class ColoursClass:
 		self.media_buttons_active = self.grey(220)
 		self.media_buttons_off = self.grey(55)
 
-		self.star_line = [100, 100, 100, 255]
-		self.star_line_playing = None
-		self.folder_title = [130, 130, 130, 255]
-		self.folder_line = [40, 40, 40, 255]
+		self.star_line = ColourRGBA(100, 100, 100, 255)
+		self.star_line_playing: ColourRGBA | None = None
+		self.folder_title = ColourRGBA(130, 130, 130, 255)
+		self.folder_line  = ColourRGBA(40, 40, 40, 255)
 
-		self.scroll_colour = [45, 45, 45, 255]
+		self.scroll_colour = ColourRGBA(45, 45, 45, 255)
 
-		self.level_1_bg = [0, 30, 0, 255]
-		self.level_2_bg = [30, 30, 0, 255]
-		self.level_3_bg = [30, 0, 0, 255]
-		self.level_green = [20, 120, 20, 255]
-		self.level_red = [190, 30, 30, 255]
-		self.level_yellow = [135, 135, 30, 255]
+		self.level_1_bg   = ColourRGBA(0, 30, 0, 255)
+		self.level_2_bg   = ColourRGBA(30, 30, 0, 255)
+		self.level_3_bg   = ColourRGBA(30, 0, 0, 255)
+		self.level_green  = ColourRGBA(20, 120, 20, 255)
+		self.level_red    = ColourRGBA(190, 30, 30, 255)
+		self.level_yellow = ColourRGBA(135, 135, 30, 255)
 
 		self.vis_colour = self.grey(200)
-		self.vis_bg = [0, 0, 0, 255]
+		self.vis_bg = ColourRGBA(0, 0, 0, 255)
 
-		self.menu_background = None  # self.grey(12)
-		self.menu_highlight_background = None
-		self.menu_text = [230, 230, 230, 255]
+		self.menu_background: ColourRGBA | None = None  # self.grey(12)
+		self.menu_highlight_background: ColourRGBA | None = None
+		self.menu_text = ColourRGBA(230, 230, 230, 255)
 		self.menu_text_disabled = self.grey(50)
-		self.menu_icons = [255, 255, 255, 25]
+		self.menu_icons = ColourRGBA(255, 255, 255, 25)
 		self.menu_tab = self.grey(30)
 
 		self.gallery_highlight = self.artist_playing
 
-		self.status_info_text = [245, 205, 0, 255]
-		self.streaming_text = [220, 75, 60, 255]
+		self.status_info_text = ColourRGBA(245, 205, 0, 255)
+		self.streaming_text = ColourRGBA(220, 75, 60, 255)
 		self.lyrics = self.grey(245)
 
-		self.corner_button = [255, 255, 255, 50]  # [60, 60, 60, 255]
-		self.corner_button_active = [255, 255, 255, 230]  # [230, 230, 230, 255]
+		self.corner_button        = ColourRGBA(255, 255, 255, 50)  # [60, 60, 60, 255]
+		self.corner_button_active = ColourRGBA(255, 255, 255, 230)  # [230, 230, 230, 255]
 
-		self.window_buttons_bg = [0, 0, 0, 50]
-		self.window_buttons_bg_over = [255, 255, 255, 10]  # [80, 80, 80, 120]
-		self.window_buttons_icon_over = (255, 255, 255, 60)
-		self.window_button_icon_off = (255, 255, 255, 40)
-		self.window_button_x_on = None
+		self.window_buttons_bg        = ColourRGBA(0, 0, 0, 50)
+		self.window_buttons_bg_over   = ColourRGBA(255, 255, 255, 10)  # [80, 80, 80, 120]
+		self.window_buttons_icon_over = ColourRGBA(255, 255, 255, 60)
+		self.window_button_icon_off   = ColourRGBA(255, 255, 255, 40)
+		self.window_button_x_on: ColourRGBA | None = None
 		self.window_button_x_off = self.window_button_icon_off
 
 		self.message_box_bg = self.grey(0)
@@ -1236,35 +1237,35 @@ class ColoursClass:
 		self.sys_title_strong = self.grey(230)
 		self.lm = False
 
-		self.pluse_colour = [244, 212, 66, 255]
+		self.pluse_colour = ColourRGBA(244, 212, 66, 255)
 
-		self.mini_mode_background = [19, 19, 19, 255]
-		self.mini_mode_border = [45, 45, 45, 255]
-		self.mini_mode_text_1 = [255, 255, 255, 240]
-		self.mini_mode_text_2 = [255, 255, 255, 77]
+		self.mini_mode_background = ColourRGBA(19, 19, 19, 255)
+		self.mini_mode_border     = ColourRGBA(45, 45, 45, 255)
+		self.mini_mode_text_1     = ColourRGBA(255, 255, 255, 240)
+		self.mini_mode_text_2     = ColourRGBA(255, 255, 255, 77)
 
-		self.queue_drag_indicator_colour = [200, 50, 240, 255]
+		self.queue_drag_indicator_colour = ColourRGBA(200, 50, 240, 255)
 
-		self.playlist_box_background: list[int] = self.side_panel_background
+		self.playlist_box_background = self.side_panel_background
 
 		self.bar_title_text = None
 
-		self.corner_icon = [40, 40, 40, 255]
-		self.queue_background = None  # self.side_panel_background #self.grey(18) # 18
+		self.corner_icon = ColourRGBA(40, 40, 40, 255)
+		self.queue_background: ColourRGBA | None = None  # self.side_panel_background #self.grey(18) # 18
 		self.queue_card_background = self.grey(23)
 
-		self.column_bar_background = [30, 30, 30, 255]
-		self.column_grip = [255, 255, 255, 14]
-		self.column_bar_text = [240, 240, 240, 255]
+		self.column_bar_background = ColourRGBA(30, 30, 30, 255)
+		self.column_grip           = ColourRGBA(255, 255, 255, 14)
+		self.column_bar_text       = ColourRGBA(240, 240, 240, 255)
 
-		self.window_frame = [30, 30, 30, 255]
+		self.window_frame = ColourRGBA(30, 30, 30, 255)
 
-		self.box_background: list[int] = [16, 16, 16, 255]
+		self.box_background = ColourRGBA(16, 16, 16, 255)
 		self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
 		self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
 		self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
 		self.box_sub_highlight = rgb_add_hls(self.box_background, 0, 0.07, -0.05)  # 58, 47, 85
-		self.box_check_border = [255, 255, 255, 18]
+		self.box_check_border = ColourRGBA(255, 255, 255, 18)
 
 		self.box_title_text = self.grey(245)
 		self.box_text = self.grey(240)
@@ -1272,21 +1273,21 @@ class ColoursClass:
 		self.box_input_text = self.grey(225)
 		self.box_button_text_highlight = self.grey(250)
 		self.box_button_text = self.grey(225)
-		self.box_button_background = alpha_blend([255, 255, 255, 11], self.box_background)
-		self.box_thumb_background = None
-		self.box_button_background_highlight = alpha_blend([255, 255, 255, 20], self.box_background)
+		self.box_button_background = alpha_blend(ColourRGBA(255, 255, 255, 11), self.box_background)
+		self.box_thumb_background: ColourRGBA | None = None
+		self.box_button_background_highlight = alpha_blend(ColourRGBA(255, 255, 255, 20), self.box_background)
 
-		self.artist_bio_background = [27, 27, 27, 255]
-		self.artist_bio_text = [230, 230, 230, 255]
+		self.artist_bio_background = ColourRGBA(27, 27, 27, 255)
+		self.artist_bio_text       = ColourRGBA(230, 230, 230, 255)
 
 	def apply_transparency(self) -> None:
-		self.top_panel_background[3] = 140
-		self.side_panel_background[3] = 140
-		self.art_box[3] = 100
-		self.window_frame[3] = 100
-		self.bottom_panel_colour[3] = 200
+		self.top_panel_background.a = 140
+		self.side_panel_background.a = 140
+		self.art_box.a = 100
+		self.window_frame.a = 100
+		self.bottom_panel_colour.a = 200
 
-		# colours.playlist_panel_background[3] = 220
+		# colours.playlist_panel_background.a = 220
 		# colours.playlist_box_background  = [0, 0, 0, 100]
 
 	def post_config(self) -> None:
@@ -1294,19 +1295,19 @@ class ColoursClass:
 			self.box_thumb_background = alpha_mod(self.box_button_background, 175)
 
 		# Pre calculate alpha blend for spec background
-		self.vis_bg[0] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[0])
-		self.vis_bg[1] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[1])
-		self.vis_bg[2] = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background[2])
+		self.vis_bg.r = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.r)
+		self.vis_bg.g = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.g)
+		self.vis_bg.b = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.b)
 
 		self.message_box_bg = self.box_background
 		self.sys_tab_bg = self.tab_background
 		self.sys_tab_hl = self.tab_background_active
 		self.toggle_box_on = self.folder_title
-		self.toggle_box_on = [255, 150, 100, 255]
+		self.toggle_box_on = ColourRGBA(255, 150, 100, 255)
 		self.toggle_box_on = self.artist_playing
 		if colour_value(self.toggle_box_on) < 150:
-			self.toggle_box_on = [160, 160, 160, 255]
-		# self.time_sub = [255, 255, 255, 80]#alpha_blend([255, 255, 255, 80], self.bottom_panel_colour)
+			self.toggle_box_on = ColourRGBA(160, 160, 160, 255)
+		# self.time_sub = [255, 255, 255, 80]#alpha_blend(ColourRGBA(255, 255, 255, 80), self.bottom_panel_colour)
 
 		self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, 0.29, 0)
 
@@ -1314,7 +1315,7 @@ class ColoursClass:
 			# self.time_sub = [0, 0, 0, 80]
 			self.time_sub = rgb_add_hls(self.bottom_panel_colour, 0, -0.15, -0.3)
 		elif test_lumi(self.bottom_panel_colour) < 0.8:
-			self.time_sub = [255, 255, 255, 135]
+			self.time_sub = ColourRGBA(255, 255, 255, 135)
 		# self.time_sub = self.mode_button_off
 
 		if self.bar_title_text is None:
@@ -1323,13 +1324,13 @@ class ColoursClass:
 		self.gallery_artist_line = alpha_mod(self.side_bar_line2, 120)
 
 		if self.menu_highlight_background is None:
-			self.menu_highlight_background = [40, 40, 40, 255]
+			self.menu_highlight_background = ColourRGBA(40, 40, 40, 255)
 
 		if not self.queue_background:
 			self.queue_background = self.side_panel_background
 
 		if test_lumi(self.queue_background) > 0.8:
-			self.queue_card_background = alpha_blend([255, 255, 255, 10], self.queue_background)
+			self.queue_card_background = alpha_blend(ColourRGBA(255, 255, 255, 10), self.queue_background)
 
 		if self.menu_background is None and not self.lm:
 			self.menu_background = self.bottom_panel_colour
@@ -1341,12 +1342,12 @@ class ColoursClass:
 			self.window_button_x_on = self.artist_playing
 
 		if test_lumi(self.column_bar_background) < 0.4:
-			self.column_bar_text = [40, 40, 40, 200]
-			self.column_grip = [255, 255, 255, 20]
+			self.column_bar_text = ColourRGBA(40, 40, 40, 200)
+			self.column_grip     = ColourRGBA(255, 255, 255, 20)
 
 	def light_mode(self) -> None:
 		self.lm = True
-		self.star_line_playing = [255, 255, 255, 255]
+		self.star_line_playing = ColourRGBA(255, 255, 255, 255)
 		self.sys_tab_bg = self.grey(25)
 		self.sys_tab_hl = self.grey(45)
 		# self.box_background = self.grey(30)
@@ -1359,18 +1360,18 @@ class ColoursClass:
 		# self.bar_title_text = self.grey(30)
 		self.status_text_normal = self.grey(70)
 		self.status_text_over = self.grey(40)
-		self.status_info_text = [40, 40, 40, 255]
+		self.status_info_text = ColourRGBA(40, 40, 40, 255)
 
 		# self.bar_title_text = self.grey(255)
-		self.vis_bg = [235, 235, 235, 255]
+		self.vis_bg = ColourRGBA(235, 235, 235, 255)
 		# self.menu_background = [240, 240, 240, 250]
 		# self.menu_text = self.grey(40)
 		# self.menu_text_disabled = self.grey(180)
 		# self.menu_highlight_background = [200, 200, 200, 250]
 		if self.menu_background is None:
-			self.menu_background = [15, 15, 15, 250]
+			self.menu_background = ColourRGBA(15, 15, 15, 250)
 		if not self.menu_icons:
-			self.menu_icons = [0, 0, 0, 40]
+			self.menu_icons = ColourRGBA(0, 0, 0, 40)
 
 		# self.menu_background = [40, 40, 40, 250]
 		# self.menu_text = self.grey(220)
@@ -1379,13 +1380,13 @@ class ColoursClass:
 
 		self.corner_button = self.grey(160)
 		self.corner_button_active = self.grey(35)
-		# self.window_buttons_bg = [0, 0, 0, 5]
-		self.message_box_bg = [245, 245, 245, 255]
+		# self.window_buttons_bg = ColourRGBA(0, 0, 0, 5]
+		self.message_box_bg = ColourRGBA(245, 245, 245, 255)
 		self.message_box_text = self.grey(20)
 		self.message_box_border = self.grey(40)
 		self.gallery_background = self.grey(230)
 		self.gallery_artist_line = self.grey(40)
-		self.pluse_colour = [212, 66, 244, 255]
+		self.pluse_colour = ColourRGBA(212, 66, 244, 255)
 
 		# tauon.view_box.off_colour = self.grey(200)
 
@@ -4531,7 +4532,7 @@ class MenuIcon:
 
 	def __init__(self, asset) -> None:
 		self.asset = asset
-		self.colour = [170, 170, 170, 255]
+		self.colour = ColourRGBA(170, 170, 170, 255)
 		self.base_asset = None
 		self.base_asset_mod = None
 		self.colour_callback = None
@@ -4665,7 +4666,7 @@ class Menu:
 		self.sub_y_postion = 0
 		Menu.instances.append(self)
 
-	def deco(self, _=_) -> list[list[int] | None]:
+	def deco(self, _=_) -> list[ColourRGBA | None]:
 		return [self.colours.menu_text, self.colours.menu_background, None]
 
 	def click(self) -> None:
@@ -4711,7 +4712,7 @@ class Menu:
 			x += icon.xoff * gui.scale
 			y += icon.yoff * gui.scale
 
-			colour = None
+			colour: ColourRGBA | None = None
 
 			if icon.base_asset is None:
 				# Colourise mode
@@ -4723,14 +4724,14 @@ class Menu:
 				if colour is None and icon.base_asset_mod:
 					colour = colours.menu_icons
 					# if colours.lm:
-					#	 colour = [160, 160, 160, 255]
+					#	 colour = ColourRGBA(160, 160, 160, 255)
 					icon.base_asset_mod.render(x, y, colour)
 					return
 
 				if colour is None:
-					# colour = [145, 145, 145, 70]
-					colour = colours.menu_icons  # [255, 255, 255, 35]
-					# colour = [50, 50, 50, 255]
+					# colour = ColourRGBA(145, 145, 145, 70)
+					colour = colours.menu_icons  # ColourRGBA(255, 255, 255, 35)
+					# colour = ColourRGBA(50, 50, 50, 255)
 
 				icon.asset.render(x, y, colour)
 			else:
@@ -4870,7 +4871,6 @@ class Menu:
 
 				# Draw arrow icon for sub menu
 				if self.items[i].is_sub_menu is True:
-
 					if is_light(bg) or colours.lm:
 						colour = rgb_add_hls(bg, 0, -0.6, -0.1)
 					else:
@@ -4882,11 +4882,11 @@ class Menu:
 						else:
 							colour = rgb_add_hls(bg, 0, 0.40, 0)
 
-					# colour = [50, 50, 50, 255]
+					# colour = ColourRGBA(50, 50, 50, 255)
 					# if selected:
-					#	 colour = [150, 150, 150, 255]
+					#	 colour = ColourRGBA(150, 150, 150, 255)
 					# if self.sub_active == self.items[i][2]:
-					#	 colour = [150, 150, 150, 255]
+					#	 colour = ColourRGBA(150, 150, 150, 255)
 					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
 				# Render the items label
@@ -4900,7 +4900,7 @@ class Menu:
 					else:
 						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
 
-					# colo = alpha_blend([255, 255, 255, 50], bg)
+					# colo = alpha_blend(ColourRGBA(255, 255, 255, 50), bg)
 					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), self.items[i].hint, hint_colour, self.font, bg=bg)
 
 				y_run += self.h
@@ -5928,7 +5928,7 @@ class Tauon:
 			self.fields.add(rect)
 			colour = self.mac_close
 			if not focused:
-				colour = (86, 85, 86, 255)
+				colour = ColourRGBA(86, 85, 86, 255)
 			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 			if self.coll(rect) and not gui.mouse_unknown and coll_point(inp.last_click_location, rect):
 				self.do_exit_button()
@@ -5954,9 +5954,9 @@ class Tauon:
 			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
 			self.fields.add(rect)
-			colour = (160, 55, 225, 255)
+			colour = ColourRGBA(160, 55, 225, 255)
 			if not focused:
-				colour = (86, 85, 86, 255)
+				colour = ColourRGBA(86, 85, 86, 255)
 			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 			if self.coll(rect) and not gui.mouse_unknown:
 				if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
@@ -5976,7 +5976,7 @@ class Tauon:
 				self.fields.add(rect)
 				colour = self.mac_maximize
 				if not focused:
-					colour = (86, 85, 86, 255)
+					colour = ColourRGBA(86, 85, 86, 255)
 				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 				if self.coll(rect) and not gui.mouse_unknown:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
@@ -6015,7 +6015,7 @@ class Tauon:
 				self.fields.add(rect)
 				colour = self.mac_minimize
 				if not focused:
-					colour = (86, 85, 86, 255)
+					colour = ColourRGBA(86, 85, 86, 255)
 				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 				if self.coll(rect) and not gui.mouse_unknown:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
@@ -6206,7 +6206,7 @@ class Tauon:
 			offset += 0.1
 		return max(0, offset)
 
-	def draw_internel_link(self, x: int, y: int, text: str, colour: list[int], font: int) -> bool:
+	def draw_internal_link(self, x: int, y: int, text: str, colour: ColourRGBA, font: int) -> bool:
 		tweak = font
 		while tweak > 100:
 			tweak -= 100
@@ -6815,7 +6815,7 @@ class Tauon:
 	def toggle_shuffle_layout_albums(self) -> None:
 		self.toggle_shuffle_layout(albums=True)
 
-	def toggle_shuffle_layout_deco(self) -> list[list[int] | str | None]:
+	def toggle_shuffle_layout_deco(self) -> list[ColourRGBA | str | None]:
 		if not self.prefs.shuffle_lock:
 			return [self.colours.menu_text, self.colours.menu_background, _("Shuffle Lockdown")]
 		return [self.colours.menu_text, self.colours.menu_background, _("Exit Shuffle Lockdown")]
@@ -6858,7 +6858,7 @@ class Tauon:
 			# bio_set_large()
 		# self.gui.update_layout = True
 
-	def flush_artist_bio(self, artist) -> None:
+	def flush_artist_bio(self, artist: str) -> None:
 		if os.path.isfile(os.path.join(self.a_cache_directory, artist + "-lfm.txt")):
 			os.remove(os.path.join(self.a_cache_directory, artist + "-lfm.txt"))
 		self.artist_info_box.text = ""
@@ -7175,7 +7175,7 @@ class Tauon:
 	def toggle_lyrics_show(self, _) -> bool:
 		return not self.gui.combo_mode
 
-	def toggle_side_art_deco(self) -> list[list[int] | str | None]:
+	def toggle_side_art_deco(self) -> list[ColourRGBA | str | None]:
 		colour = self.colours.menu_text
 		line = _("Hide Metadata Panel") if self.prefs.show_side_lyrics_art_panel else _("Show Metadata Panel")
 
@@ -7184,7 +7184,7 @@ class Tauon:
 
 		return [colour, self.colours.menu_background, line]
 
-	def toggle_lyrics_panel_position_deco(self) -> list[list[int] | str | None]:
+	def toggle_lyrics_panel_position_deco(self) -> list[ColourRGBA | str | None]:
 		colour = self.colours.menu_text
 		line = _("Panel Below Lyrics") if self.prefs.lyric_metadata_panel_top else _("Panel Above Lyrics")
 
@@ -7202,7 +7202,7 @@ class Tauon:
 	def toggle_side_art(self) -> None:
 		self.prefs.show_side_lyrics_art_panel ^= True
 
-	def toggle_lyrics_deco(self, track_object: TrackClass) -> list[list[int] | str | None]:
+	def toggle_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
 		colour = self.colours.menu_text
 
 		if self.gui.combo_mode:
@@ -7352,7 +7352,7 @@ class Tauon:
 		if track_object.artist != "":
 			self.lastfm.get_bio(track_object.artist)
 
-	def search_lyrics_deco(self, track_object: TrackClass) -> list[list[int] | None]:
+	def search_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text if not track_object.lyrics else self.colours.menu_text_disabled
 
 		return [line_colour, self.colours.menu_background, None]
@@ -7360,7 +7360,7 @@ class Tauon:
 	def toggle_synced_lyrics(self, tr: TrackClass) -> None:
 		self.prefs.prefer_synced_lyrics ^= True
 
-	def toggle_synced_lyrics_deco(self, track: TrackClass) -> list[list[int] | str | None]:
+	def toggle_synced_lyrics_deco(self, track: TrackClass) -> list[ColourRGBA | str | None]:
 		text = _("Show static lyrics") if self.prefs.prefer_synced_lyrics else _("Show synced lyrics")
 		if self.timed_lyrics_ren.generate(track) and track.lyrics:
 			line_colour = self.colours.menu_text
@@ -7373,7 +7373,7 @@ class Tauon:
 
 		return [line_colour, self.colours.menu_background, text]
 
-	def paste_lyrics_deco(self) -> list[list[int] | None]:
+	def paste_lyrics_deco(self) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text if sdl3.SDL_HasClipboardText() else self.colours.menu_text_disabled
 
 		return [line_colour, self.colours.menu_background, None]
@@ -7381,12 +7381,12 @@ class Tauon:
 	def chord_lyrics_paste_show_test(self, _) -> bool:
 		return self.gui.combo_mode and self.prefs.guitar_chords
 
-	def copy_lyrics_deco(self, track_object: TrackClass) -> list[list[int] | None]:
+	def copy_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text if track_object.lyrics else self.colours.menu_text_disabled
 
 		return [line_colour, self.colours.menu_background, None]
 
-	def clear_lyrics_deco(self, track_object: TrackClass) -> list[list[int] | None]:
+	def clear_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text if track_object.lyrics else self.colours.menu_text_disabled
 
 		return [line_colour, self.colours.menu_background, None]
@@ -7459,7 +7459,7 @@ class Tauon:
 			track_object = self.pctl.master_library[track_object]
 		self.album_art_gen.open_external(track_object)
 
-	def extract_image_deco(self, track_object: TrackClass | int) -> list[list[int] | None]:
+	def extract_image_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
@@ -7471,7 +7471,7 @@ class Tauon:
 
 		return [line_colour, self.colours.menu_background, None]
 
-	def cycle_image_deco(self, track_object: TrackClass) -> list[list[int] | None]:
+	def cycle_image_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
 		info = self.album_art_gen.get_info(track_object)
 
 		if self.pctl.playing_state != 0 and (info is not None and info[1] > 1):
@@ -7481,7 +7481,7 @@ class Tauon:
 
 		return [line_colour, self.colours.menu_background, None]
 
-	def cycle_image_gal_deco(self, track_object: TrackClass | int) -> list[list[int] | None]:
+	def cycle_image_gal_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
@@ -7500,7 +7500,7 @@ class Tauon:
 			track_object = self.pctl.master_library[track_object]
 		self.album_art_gen.cycle_offset_reverse(track_object)
 
-	def dl_art_deco(self, track_object: TrackClass | int) -> list[list[int] | None]:
+	def dl_art_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		if not track_object.album or not track_object.artist:
@@ -8343,7 +8343,7 @@ class Tauon:
 				break
 		return title
 
-	def append_deco(self) -> list[list[int] | str | None]:
+	def append_deco(self) -> list[ColourRGBA | str | None]:
 		line_colour = self.colours.menu_text if self.pctl.playing_state > 0 else self.colours.menu_text_disabled
 
 		text = None
@@ -8352,7 +8352,7 @@ class Tauon:
 
 		return [line_colour, self.colours.menu_background, text]
 
-	def rescan_deco(self, pl: int) -> list[list[int] | None]:
+	def rescan_deco(self, pl: int) -> list[ColourRGBA | None]:
 		if self.pctl.multi_playlist[pl].last_folder:
 			line_colour = self.colours.menu_text
 		else:
@@ -8361,7 +8361,7 @@ class Tauon:
 		# base = os.path.basename(self.pctl.multi_playlist[pl].last_folder)
 		return [line_colour, self.colours.menu_background, None]
 
-	def regenerate_deco(self, pl: int) -> list[list[int] | None]:
+	def regenerate_deco(self, pl: int) -> list[ColourRGBA | None]:
 		id = self.pctl.pl_to_id(pl)
 		value = self.pctl.gen_codes.get(id)
 
@@ -9731,19 +9731,19 @@ class Tauon:
 	def last_fm_test(self, ignore) -> bool:
 		return self.lastfm.connected
 
-	def heart_xmenu_colour(self) -> list[int] | None:
+	def heart_xmenu_colour(self) -> ColourRGBA | None:
 		if self.love(False, self.pctl.r_menu_index):
-			return [245, 60, 60, 255]
+			return ColourRGBA(245, 60, 60, 255)
 		if self.colours.lm:
-			return [255, 150, 180, 255]
+			return ColourRGBA(255, 150, 180, 255)
 		return None
 
-	def spot_heart_xmenu_colour(self) -> list[int] | None:
+	def spot_heart_xmenu_colour(self) -> ColourRGBA | None:
 		if self.pctl.playing_state not in (1, 2):
 			return None
 		tr = self.pctl.playing_object()
 		if tr and "spotify-liked" in tr.misc:
-			return [30, 215, 96, 255]
+			return ColourRGBA(30, 215, 96, 255)
 		return None
 
 	def love_decox(self):
@@ -9785,10 +9785,10 @@ class Tauon:
 	def spot_like_show_test(self, _) -> bool:
 		return self.spotify_show_test and self.pctl.get_track(self.pctl.r_menu_index).file_ext == "SPTY"
 
-	def spot_heart_menu_colour(self) -> list[int] | None:
+	def spot_heart_menu_colour(self) -> ColourRGBA | None:
 		tr = self.pctl.get_track(self.pctl.r_menu_index)
 		if tr and "spotify-liked" in tr.misc:
-			return [30, 215, 96, 255]
+			return ColourRGBA(30, 215, 96, 255)
 		return None
 
 	def add_to_queue(self, ref: int) -> None:
@@ -10951,15 +10951,15 @@ class Tauon:
 	def radio_random(self) -> None:
 		self.pctl.advance(rr=True)
 
-	def heart_menu_colour(self) -> list[int] | None:
+	def heart_menu_colour(self) -> ColourRGBA | None:
 		if self.pctl.playing_state not in (1, 2):
 			if self.colours.lm:
-				return [255, 150, 180, 255]
+				return ColourRGBA(255, 150, 180, 255)
 			return None
 		if self.love(False):
-			return [245, 60, 60, 255]
+			return ColourRGBA(245, 60, 60, 255)
 		if self.colours.lm:
-			return [255, 150, 180, 255]
+			return ColourRGBA(255, 150, 180, 255)
 		return None
 
 	def activate_search_overlay(self) -> None:
@@ -11114,9 +11114,9 @@ class Tauon:
 
 		return [self.colours.menu_text, bg, line]
 
-	def lastfm_colour(self) -> list[int] | None:
+	def lastfm_colour(self) -> ColourRGBA | None:
 		if not self.prefs.scrobble_hold:
-			return [250, 50, 50, 255]
+			return ColourRGBA(250, 50, 50, 255)
 		return None
 
 	def lastfm_menu_test(self, _: int) -> bool:
@@ -11853,8 +11853,8 @@ class Tauon:
 			y = bottom - 40 * self.gui.scale
 
 			tag_width = self.ddt.get_text_w(line, 12) + 12 * self.gui.scale
-			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), [8, 8, 8, 255])
-			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), ColourRGBA(8, 8, 8, 255))
+			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, ColourRGBA(200, 200, 200, 255), 12, bg=ColourRGBA(30, 30, 30, 255))
 		else:  # Extended metadata
 			line = ""
 			if showc[0] == 1:
@@ -11867,8 +11867,8 @@ class Tauon:
 			y = bottom - 76 * self.gui.scale
 
 			tag_width = self.ddt.get_text_w(line, 12) + 12 * self.gui.scale
-			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), [8, 8, 8, 255])
-			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), ColourRGBA(8, 8, 8, 255))
+			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, ColourRGBA(200, 200, 200, 255), 12, bg=ColourRGBA(30, 30, 30, 255))
 
 			y += 18 * self.gui.scale
 
@@ -11877,8 +11877,8 @@ class Tauon:
 			line += " " + str(showc[3][0]) + "×" + str(showc[3][1])
 
 			tag_width = self.ddt.get_text_w(line, 12) + 12 * self.gui.scale
-			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), [8, 8, 8, 255])
-			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), ColourRGBA(8, 8, 8, 255))
+			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, ColourRGBA(200, 200, 200, 255), 12, bg=ColourRGBA(30, 30, 30, 255))
 
 			y += 18 * self.gui.scale
 
@@ -11886,8 +11886,8 @@ class Tauon:
 			line += str(showc[2] + 1) + "/" + str(showc[1])
 
 			tag_width = self.ddt.get_text_w(line, 12) + 12 * self.gui.scale
-			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), [8, 8, 8, 255])
-			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, [200, 200, 200, 255], 12, bg=[30, 30, 30, 255])
+			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), ColourRGBA(8, 8, 8, 255))
+			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, ColourRGBA(200, 200, 200, 255), 12, bg=ColourRGBA(30, 30, 30, 255))
 
 	def artist_dl_deco(self):
 		if self.artist_info_box.status == "Ready":
@@ -11977,11 +11977,11 @@ class Tauon:
 				tx -= 20 * self.gui.scale
 
 		#	self.ddt.rect_r((xx - 1 * self.gui.scale, yy - 26 * self.gui.scale - 1 * self.gui.scale, w + 10 * self.gui.scale + 2 * self.gui.scale, 19 * self.gui.scale + 2 * self.gui.scale), [50, 50, 50, 255], True)
-			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), [15, 15, 15, 255])
-			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), [35, 35, 35, 255])
-			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), _("You"), [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(15, 15, 15, 255))
+			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(35, 35, 35, 255))
+			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), _("You"), ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
-		self.gui.heart_row_icon.render(x, yy, [244, 100, 100, 255])
+		self.gui.heart_row_icon.render(x, yy, ColourRGBA(244, 100, 100, 255))
 
 	def display_spot_heart(self, x: int, yy: int, just: int = 0) -> None:
 		rect = [x - 1 * self.gui.scale, yy - 4 * self.gui.scale, 15 * self.gui.scale, 17 * self.gui.scale]
@@ -12002,11 +12002,11 @@ class Tauon:
 				tx -= 20 * self.gui.scale
 
 			# self.ddt.rect_r((xx - 1 * self.gui.scale, yy - 26 * self.gui.scale - 1 * self.gui.scale, w + 10 * self.gui.scale + 2 * self.gui.scale, 19 * self.gui.scale + 2 * self.gui.scale), [50, 50, 50, 255], True)
-			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), [15, 15, 15, 255])
-			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), [35, 35, 35, 255])
-			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), _("Liked on Spotify"), [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(15, 15, 15, 255))
+			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(35, 35, 35, 255))
+			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), _("Liked on Spotify"), ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
-		self.gui.heart_row_icon.render(x, yy, [100, 244, 100, 255])
+		self.gui.heart_row_icon.render(x, yy, ColourRGBA(100, 244, 100, 255))
 
 	def display_friend_heart(self, x: int, yy: int, name: str, just: int = 0) -> None:
 		self.gui.heart_row_icon.render(x, yy, self.heart_colours.get(name))
@@ -12028,9 +12028,9 @@ class Tauon:
 				ty = self.gui.panelY + 5 * self.gui.scale
 				tx -= 20 * self.gui.scale
 
-			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), [15, 15, 15, 255])
-			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), [35, 35, 35, 255])
-			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), name, [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
+			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(15, 15, 15, 255))
+			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(35, 35, 35, 255))
+			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), name, ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
 	def reload_scale(self) -> None:
 		auto_scale(self.bag)
@@ -12685,7 +12685,7 @@ class Tauon:
 		self.gui.update_layout = True
 		self.gui.pl_update = 1
 
-	def bass_features_deco(self) -> list[list[int] | None]:
+	def bass_features_deco(self) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text
 		if self.prefs.backend != 1:
 			line_colour = self.colours.menu_text_disabled
@@ -12782,12 +12782,12 @@ class Tauon:
 		self.radiobox.radio_field.clear()
 		self.radiobox.radio_field_title.clear()
 
-	def new_playlist_colour_callback(self) -> list[int]:
+	def new_playlist_colour_callback(self) -> ColourRGBA:
 		if self.gui.radio_view:
-			return [120, 90, 245, 255]
-		return [237, 80, 221, 255]
+			return ColourRGBA(120, 90, 245, 255)
+		return ColourRGBA(237, 80, 221, 255)
 
-	def new_playlist_deco(self) -> list[list[int] | str | None]:
+	def new_playlist_deco(self) -> list[ColourRGBA | str | None]:
 		colours = self.colours
 		text = _("New Radio List") if self.gui.radio_view else _("New Playlist")
 		return [self.colours.menu_text, self.colours.menu_background, text]
@@ -12804,8 +12804,8 @@ class Tauon:
 		self.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
 		self.gui.suggest_clean_db = False
 
-	def clean_db_deco(self) -> list[list[int] | str]:
-		return [self.colours.menu_text, [30, 150, 120, 255], _("Clean Database!")]
+	def clean_db_deco(self) -> list[ColourRGBA | str]:
+		return [self.colours.menu_text, ColourRGBA(30, 150, 120, 255), _("Clean Database!")]
 
 	def import_spotify_playlist(self) -> None:
 		clip = copy_from_clipboard()
@@ -12987,7 +12987,7 @@ class Tauon:
 
 		self.pctl.notify_change()
 
-	def queue_deco(self) -> list[list[int] | None]:
+	def queue_deco(self) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text if len(self.pctl.force_queue) > 0 else self.colours.menu_text_disabled
 		return [line_colour, self.colours.menu_background, None]
 
@@ -13915,8 +13915,8 @@ class Tauon:
 		self.gui.pl_update += 1
 		self.update_set()
 
-	def set_colour(self, colour: list[int]) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+	def set_colour(self, colour: ColourRGBA) -> None:
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 
 	# 2025-02-02 - commented out as it was not used
 	#def advance_theme() -> None:
@@ -13990,11 +13990,11 @@ class Tauon:
 	def lock_playlist_toggle(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].locked ^= True
 
-	def lock_colour_callback(self) -> list[int] | None:
+	def lock_colour_callback(self) -> ColourRGBA | None:
 		if self.pctl.multi_playlist[self.gui.tab_menu_pl].locked:
 			if self.colours.lm:
-				return [230, 180, 60, 255]
-			return [240, 190, 10, 255]
+				return ColourRGBA(230, 180, 60, 255)
+			return ColourRGBA(240, 190, 10, 255)
 		return None
 
 	def reload_metadata_selection(self) -> None:
@@ -14280,20 +14280,20 @@ class Tauon:
 					self.star_store.set_rating(n_track.index, rat, write=True)
 
 		# bg = self.colours.grey(40)
-		bg = [255, 255, 255, 17]
+		bg = ColourRGBA(255, 255, 255, 17)
 		fg = self.colours.grey(210)
 
 		if self.gui.tracklist_bg_is_light:
-			bg = [0, 0, 0, 25]
+			bg = ColourRGBA(0, 0, 0, 25)
 			fg = self.colours.grey(70)
 
 		playtime_stars = 0
 		if self.prefs.rating_playtime_stars and rat == 0 and not album:
 			playtime_stars = star_count3(self.star_store.get(n_track.index), n_track.length)
 			if self.gui.tracklist_bg_is_light:
-				fg2 = alpha_blend([0, 0, 0, 70], self.ddt.text_background_colour)
+				fg2 = alpha_blend(ColourRGBA(0, 0, 0, 70), self.ddt.text_background_colour)
 			else:
-				fg2 = alpha_blend([255, 255, 255, 50], self.ddt.text_background_colour)
+				fg2 = alpha_blend(ColourRGBA(255, 255, 255, 50), self.ddt.text_background_colour)
 
 		for ss in range(5):
 			xx = x + ss * self.gui.star_row_icon.w
@@ -16040,9 +16040,9 @@ class Tauon:
 				c = 60
 				d = 6
 
-				colour = [70, 70, 70, 255]
+				colour = ColourRGBA(70, 70, 70, 255)
 				if self.colours.lm:
-					colour = [90, 90, 90, 255]
+					colour = ColourRGBA(90, 90, 90, 255)
 				# colour = alpha_mod(indexc, album_fade)
 
 				for count in range(8):
@@ -16061,20 +16061,20 @@ class Tauon:
 						star_x += round(13 * self.gui.scale)
 
 					# if playtime_stars > 4:
-					# 	colour = [c + d * count, c + d * count, c + d * count, 255]
+					# 	colour = ColourRGBA(c + d * count, c + d * count, c + d * count, 255)
 					# if playtime_stars > 6: # and count < 1:
-					# 	colour = [230, 220, 60, 255]
+					# 	colour = ColourRGBA(230, 220, 60, 255)
 					if self.gui.tracklist_bg_is_light:
-						colour = alpha_blend([0, 0, 0, 200], self.ddt.text_background_colour)
+						colour = alpha_blend(ColourRGBA(0, 0, 0, 200), self.ddt.text_background_colour)
 					else:
-						colour = alpha_blend([255, 255, 255, 50], self.ddt.text_background_colour)
+						colour = alpha_blend(ColourRGBA(255, 255, 255, 50), self.ddt.text_background_colour)
 
 					# if selected_star > -2:
 					# 	if selected_star >= count:
-					# 		colour = (220, 200, 60, 255)
+					# 		colour = ColourRGBA(220, 200, 60, 255)
 					# else:
 					# 	if rated_star >= count:
-					# 		colour = (220, 200, 60, 255)
+					# 		colour = ColourRGBA(220, 200, 60, 255)
 
 					self.gui.star_pc_icon.render(sx, sy, colour)
 
@@ -16152,9 +16152,9 @@ class Tauon:
 				# if album_type:
 				# 	li += "🠗"
 
-				colour = [244, 200, 66, 255]
+				colour = ColourRGBA(244, 200, 66, 255)
 				if self.colours.lm:
-					colour = [220, 40, 40, 255]
+					colour = ColourRGBA(220, 40, 40, 255)
 
 				self.ddt.text(
 					(start_x + 5 * self.gui.scale, y, 2),
@@ -17347,13 +17347,13 @@ class Tauon:
 			return not self.prefs.transcode_inplace
 		self.prefs.transcode_inplace ^= True
 		if self.prefs.transcode_inplace:
-			self.gui.transcode_icon.colour = [250, 20, 20, 255]
+			self.gui.transcode_icon.colour = ColourRGBA(250, 20, 20, 255)
 			self.show_message(
 				_("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
 				_("For safety, this setting will default to off. Embedded thumbnails are not kept so you may want to extract them first."),
 				mode="warning")
 		else:
-			self.gui.transcode_icon.colour = [239, 74, 157, 255]
+			self.gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
 		return None
 
 	def toggle_transcode_inplace(self, mode: int = 0) -> bool | None:
@@ -17366,13 +17366,13 @@ class Tauon:
 
 		self.prefs.transcode_inplace ^= True
 		if self.prefs.transcode_inplace:
-			self.gui.transcode_icon.colour = [250, 20, 20, 255]
+			self.gui.transcode_icon.colour = ColourRGBA(250, 20, 20, 255)
 			self.show_message(
 				_("DANGER! This will delete the original files. Keeping a backup is recommended in case of malfunction."),
 				_("For safety, this setting will reset on restart. Embedded thumbnails are not kept so you may want to extract them first."),
 				mode="warning")
 		else:
-			self.gui.transcode_icon.colour = [239, 74, 157, 255]
+			self.gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
 		return None
 
 	def switch_flac(self, mode: int = 0) -> bool | None:
@@ -18947,8 +18947,8 @@ class Drawing:
 		self.star_store = pctl.star_store
 
 	def button(
-		self, text, x, y, w=None, h=None, font=212, text_highlight_colour=None, text_colour=None,
-		background_colour=None, background_highlight_colour=None, press=None, tooltip=""):
+		self, text: str, x: int, y: int, w: int | None = None, h: int | None = None, font: int = 212, text_highlight_colour: ColourRGBA | None = None, text_colour: ColourRGBA | None = None,
+		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None =None, press: bool | None = None, tooltip: str="") -> bool:
 
 		if w is None:
 			w = self.ddt.get_text_w(text, font) + 18 * self.gui.scale
@@ -18986,7 +18986,7 @@ class Drawing:
 				click = True
 		else:
 			self.ddt.rect(rect, background_colour)
-			if background_highlight_colour[3] != 255:
+			if background_highlight_colour.a != 255:
 				background_colour = None
 			self.ddt.text(
 				(rect[0] + int(rect[2] / 2), rect[1] + 2 * self.gui.scale, 2), text, text_colour, font, bg=background_colour)
@@ -19235,7 +19235,7 @@ class TimedLyricsRen:
 
 		if side_panel:
 			bg = self.colours.side_panel_background
-			bg = (bg[0],bg[1], bg[2], 255)
+			bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 			font_size = 15
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, self.gui.panelY, self.gui.rspw, h), bg)
@@ -19244,7 +19244,7 @@ class TimedLyricsRen:
 			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
-		bg = (bg[0], bg[1], bg[2], 255)
+		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		test_time = self.tauon.get_real_time()
 
 		if self.pctl.track_queue[self.pctl.queue_step] == index:
@@ -19271,9 +19271,9 @@ class TimedLyricsRen:
 					colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
-					colour = [255, 210, 50, 255]
+					colour = ColourRGBA(255, 210, 50, 255)
 					if self.colours.lm:
-						colour = [180, 130, 210, 255]
+						colour = ColourRGBA(180, 130, 210, 255)
 
 				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
@@ -19623,7 +19623,7 @@ class TextBox2:
 			if big:
 				top -= 12 * self.gui.scale
 
-			self.ddt.rect([a, 0, b - a, selection_height], [40, 120, 180, 255])
+			self.ddt.rect([a, 0, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
 			if self.selection != self.cursor_position:
 				inf_comp = 0
@@ -19634,7 +19634,7 @@ class TextBox2:
 				text = self.get_selection(1)
 				if secret:
 					text = "●" * len(text)
-				space += self.ddt.text((0 + space - inf_comp, 0), text, [240, 240, 240, 255], font, bg=[40, 120, 180, 255])
+				space += self.ddt.text((0 + space - inf_comp, 0), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255))
 				text = self.get_selection(2)
 				if secret:
 					text = "●" * len(text)
@@ -19670,8 +19670,8 @@ class TextBox2:
 		if active:
 			tw, th = self.ddt.get_text_wh(self.gui.editline, font, max_x=2000)
 			if self.gui.editline not in ("", self.inp.input_text):
-				ex = self.ddt.text((space + round(4 * self.gui.scale), 0), self.gui.editline, [240, 230, 230, 255], font)
-				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), [245, 245, 245, 255])
+				ex = self.ddt.text((space + round(4 * self.gui.scale), 0), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
+				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
 
 			pixel_to_logical = self.tauon.pixel_to_logical
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
@@ -20014,14 +20014,14 @@ class TextBox:
 			if big:
 				top -= 12 * gui.scale
 
-			ddt.rect([x + a, top, b - a, selection_height], [40, 120, 180, 255])
+			ddt.rect([x + a, top, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
 			if self.selection != self.cursor_position:
 				inf_comp = 0
 				space = ddt.text((x, y), self.get_selection(0), colour, font)
 				space += ddt.text(
-					(x + space - inf_comp, y), self.get_selection(1), [240, 240, 240, 255], font,
-					bg=[40, 120, 180, 255])
+					(x + space - inf_comp, y), self.get_selection(1), ColourRGBA(240, 240, 240, 255), font,
+					bg=ColourRGBA(40, 120, 180, 255))
 				ddt.text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
 			else:
 				ddt.text((x, y), self.text, colour, font)
@@ -20070,10 +20070,10 @@ class TextBox:
 			tw, th = ddt.get_text_wh(self.gui.editline, font, max_x=2000)
 			if self.gui.editline not in ("", self.inp.input_text):
 				print("OK")
-				ex = ddt.text((x + space + round(4 * gui.scale), y), self.gui.editline, [240, 230, 230, 255], font)
+				ex = ddt.text((x + space + round(4 * gui.scale), y), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
 
 				ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
-					[245, 245, 245, 255])
+					ColourRGBA(245, 245, 245, 255))
 
 			pixel_to_logical = self.tauon.pixel_to_logical
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
@@ -20936,8 +20936,8 @@ class AlbumArt:
 				colours.queue_background = colours.side_panel_background
 				# Check artist text colour
 				if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
-					black = [25, 25, 25, 255]
-					white = [220, 220, 220, 255]
+					black = ColourRGBA(25, 25, 25, 255)
+					white = ColourRGBA(220, 220, 220, 255)
 
 					con_b = contrast_ratio(black, colours.playlist_panel_background)
 					con_w = contrast_ratio(white, colours.playlist_panel_background)
@@ -20951,8 +20951,8 @@ class AlbumArt:
 
 				# Check title text colour
 				if contrast_ratio(colours.title_text, colours.playlist_panel_background) < 1.9:
-					black = [60, 60, 60, 255]
-					white = [180, 180, 180, 255]
+					black = ColourRGBA(60, 60, 60, 255)
+					white = ColourRGBA(180, 180, 180, 255)
 
 					con_b = contrast_ratio(black, colours.playlist_panel_background)
 					con_w = contrast_ratio(white, colours.playlist_panel_background)
@@ -20965,11 +20965,11 @@ class AlbumArt:
 					colours.title_playing = choice
 
 				if test_lumi(colours.side_panel_background) < 0.50 and not self.prefs.transparent_mode:
-					colours.side_bar_line1 = [25, 25, 25, 255]
-					colours.side_bar_line2 = [35, 35, 35, 255]
+					colours.side_bar_line1 = ColourRGBA(25, 25, 25, 255)
+					colours.side_bar_line2 = ColourRGBA(35, 35, 35, 255)
 				else:
-					colours.side_bar_line1 = [250, 250, 250, 255]
-					colours.side_bar_line2 = [235, 235, 235, 255]
+					colours.side_bar_line1 = ColourRGBA(250, 250, 250, 255)
+					colours.side_bar_line2 = ColourRGBA(235, 235, 235, 255)
 
 				colours.album_text = colours.title_text
 				colours.album_playing = colours.title_playing
@@ -20979,26 +20979,26 @@ class AlbumArt:
 				prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
 
 				if prcl > 45:
-					ce = alpha_blend([0, 0, 0, 180], colours.playlist_panel_background)  # [40, 40, 40, 255]
+					ce = alpha_blend(ColourRGBA(0, 0, 0, 180), colours.playlist_panel_background)  # [40, 40, 40, 255]
 					colours.index_text = ce
 					colours.index_playing = ce
 					colours.time_text = ce
 					colours.bar_time = ce
 					colours.folder_title = ce
-					colours.star_line = [60, 60, 60, 255]
-					colours.row_select_highlight = [0, 0, 0, 30]
-					colours.row_playing_highlight = [0, 0, 0, 20]
+					colours.star_line = ColourRGBA(60, 60, 60, 255)
+					colours.row_select_highlight = ColourRGBA(0, 0, 0, 30)
+					colours.row_playing_highlight = ColourRGBA(0, 0, 0, 20)
 					colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, -0.03, -0.03)
 				else:
-					ce = alpha_blend([255, 255, 255, 160], colours.playlist_panel_background)  # [165, 165, 165, 255]
+					ce = alpha_blend(ColourRGBA(255, 255, 255, 160), colours.playlist_panel_background)  # [165, 165, 165, 255]
 					colours.index_text = ce
 					colours.index_playing = ce
 					colours.time_text = ce
 					colours.bar_time = ce
 					colours.folder_title = ce
-					colours.star_line = ce  # [150, 150, 150, 255]
-					colours.row_select_highlight = [255, 255, 255, 12]
-					colours.row_playing_highlight = [255, 255, 255, 8]
+					colours.star_line = ce  # ColourRGBA(150, 150, 150, 255)
+					colours.row_select_highlight = ColourRGBA(255, 255, 255, 12)
+					colours.row_playing_highlight = ColourRGBA(255, 255, 255, 8)
 					colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, 0.03)
 
 				self.gui.temp_themes[track.album] = copy.deepcopy(colours)
@@ -21590,21 +21590,21 @@ class RenameTrackBox:
 			self.pctl.master_library[self.target_track_id].filename[-3:].lower()) or len(NRN) < 4 or "." not in afterline[-5:]:
 			self.ddt.text(
 				(x + 10 * self.gui.scale, y + 108 * self.gui.scale), _("Warning: This may change the file extension"),
-				[245, 90, 90, 255],
+				ColourRGBA(245, 90, 90, 255),
 				13)
 
-		colour_warn = [143, 186, 65, 255]
+		colour_warn = ColourRGBA(143, 186, 65, 255)
 		if not unique_template(NRN):
 			self.ddt.text(
 				(x + 10 * self.gui.scale, y + 123 * self.gui.scale), _("Warning: The filename might not be unique"),
-				[245, 90, 90, 255],
+				ColourRGBA(245, 90, 90, 255),
 				13)
 		if warn:
 			self.ddt.text(
 				(x + 10 * self.gui.scale, y + 135 * self.gui.scale), _("Warning: A track has incomplete metadata"),
-				[245, 90, 90, 255],
+				ColourRGBA(245, 90, 90, 255),
 				13)
-			colour_warn = [180, 60, 60, 255]
+			colour_warn = ColourRGBA(180, 60, 60, 255)
 
 		label = _("Write") + " (" + str(len(r_todo)) + ")"
 
@@ -21828,7 +21828,7 @@ class TransEditBox:
 		for s in select:
 			tr = self.pctl.get_track(self.pctl.default_playlist[s])
 			if tr.is_network:
-				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), [245, 90, 90, 255], 312)
+				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), ColourRGBA(245, 90, 90, 255), 312)
 
 		if self.inp.key_return_press:
 			self.gui.pl_update += 1
@@ -22404,8 +22404,8 @@ class SearchOverlay:
 				mouse_change = True
 			# mouse_change = True
 
-			self.ddt.rect((x, y, w, h), [3, 3, 3, 235])
-			self.ddt.text_background_colour = [12, 12, 12, 255]
+			self.ddt.rect((x, y, w, h), ColourRGBA(3, 3, 3, 235))
+			self.ddt.text_background_colour = ColourRGBA(12, 12, 12, 255)
 
 
 			input_text_x = 80 * gui.scale
@@ -22446,7 +22446,7 @@ class SearchOverlay:
 					a = 100
 					if round(t * 14) % 4 == item:
 						a = 255
-					colour = (145, 245, 78, a) if self.spotify_mode else (140, 100, 255, a)
+					colour = ColourRGBA(145, 245, 78, a) if self.spotify_mode else ColourRGBA(140, 100, 255, a)
 
 					self.ddt.rect((x, y, s, s), colour)
 					x += g + s
@@ -22456,16 +22456,16 @@ class SearchOverlay:
 			# No results found message
 			elif not self.results and len(self.search_text.text) > 1:
 				if self.input_timer.get() > 0.5 and not self.sip:
-					self.ddt.text((self.window_size[0] // 2, 200 * gui.scale, 2), _("No results found"), [250, 250, 250, 255], 216,
-						bg=[12, 12, 12, 255])
+					self.ddt.text((self.window_size[0] // 2, 200 * gui.scale, 2), _("No results found"), ColourRGBA(250, 250, 250, 255), 216,
+						bg=ColourRGBA(12, 12, 12, 255))
 
 			# Spotify search text
 			if prefs.spot_mode and not self.spotify_mode:
 				text = _("Press Tab key to switch to Spotify search")
-				self.ddt.text((self.window_size[0] // 2, self.window_size[1] - 30 * gui.scale, 2), text, [250, 250, 250, 255], 212,
-					bg=[12, 12, 12, 255])
+				self.ddt.text((self.window_size[0] // 2, self.window_size[1] - 30 * gui.scale, 2), text, ColourRGBA(250, 250, 250, 255), 212,
+					bg=ColourRGBA(12, 12, 12, 255))
 
-			self.search_text.draw(input_text_x, 60 * gui.scale, [230, 230, 230, 255], True, False, 30,
+			self.search_text.draw(input_text_x, 60 * gui.scale, ColourRGBA(230, 230, 230, 255), True, False, 30,
 				self.window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
 			if inp.key_tab_press:
@@ -22549,8 +22549,8 @@ class SearchOverlay:
 
 			inp.key_return_press = False
 
-			bar_colour = [140, 80, 240, 255]
-			track_in_bar_colour = [244, 209, 66, 255]
+			bar_colour = ColourRGBA(140, 80, 240, 255)
+			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
 
 			self.on = max(self.on, 0)
 			self.on = min(len(self.results) - 1, self.on)
@@ -22602,25 +22602,25 @@ class SearchOverlay:
 					12: "Track",
 				}
 				type_colours = {
-					0: [250, 140, 190, 255],  # Artist
-					1: [250, 140, 190, 255],  # Album
-					2: [250, 220, 190, 255],  # Track
-					3: [240, 240, 160, 255],  # Genre
-					5: [250, 100, 50, 255],   # Folder
-					6: [180, 250, 190, 255],  # Composer
-					7: [250, 50, 140, 255],   # Year
-					8: [100, 210, 250, 255],  # Playlist
-					10: [145, 245, 78, 255],  # Spotify Artist
-					11: [130, 237, 69, 255],  # Spotify Album
-					12: [200, 255, 150, 255], # Spotify Track
+					0:  ColourRGBA(250, 140, 190, 255),  # Artist
+					1:  ColourRGBA(250, 140, 190, 255),  # Album
+					2:  ColourRGBA(250, 220, 190, 255),  # Track
+					3:  ColourRGBA(240, 240, 160, 255),  # Genre
+					5:  ColourRGBA(250, 100,  50, 255),   # Folder
+					6:  ColourRGBA(180, 250, 190, 255),  # Composer
+					7:  ColourRGBA(250, 50,  140, 255),   # Year
+					8:  ColourRGBA(100, 210, 250, 255),  # Playlist
+					10: ColourRGBA(145, 245,  78, 255),  # Spotify Artist
+					11: ColourRGBA(130, 237,  69, 255),  # Spotify Album
+					12: ColourRGBA(200, 255, 150, 255), # Spotify Track
 				}
 				if n not in names:
 					name = "NYI"
-					colour = [255, 255, 255, 255]
+					colour = ColourRGBA(255, 255, 255, 255)
 				else:
 					name = names[n]
 					colour = type_colours[n]
-					colour[3] = int(colour[3] * fade)
+					colour.a = int(colour.a * fade)
 
 				pad = round(4 * gui.scale)
 				height = round(25 * gui.scale)
@@ -22645,13 +22645,13 @@ class SearchOverlay:
 				# Thumbnail
 				if n in (1, 2):
 					thl = thumbnail_rx - album_art_size
-					self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
+					self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(50, 50, 50, 150))
 					self.tauon.gall_ren.render(self.pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
 					if fade != 1:
-						self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), [0, 0, 0, 70])
+						self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(0, 0, 0, 70))
 				if n in (11,):
 					thl = thumbnail_rx - album_art_size
-					self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), [50, 50, 50, 150])
+					self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(50, 50, 50, 150))
 					# tauon.gall_ren.render(pctl.get_track(item[2]), (50 * gui.scale, yy + 5), 50 * gui.scale)
 					if not item[5].draw(thumbnail_rx - album_art_size, yy + pad):
 						if self.tauon.gall_ren.lock.locked():
@@ -22667,46 +22667,46 @@ class SearchOverlay:
 
 				# Result text
 				if n in (0, 5, 6, 7, 8, 10):  # Bold
-					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], b_font)
+					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
 				if n in (3,):  # Genre
-					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), [255, 255, 255, int(255 * fade)], b_font)
+					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
 					if item[1].endswith("+"):
 						self.ddt.text(
 							(xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
-							[255, 255, 255, int(255 * fade) // 2], 313)
+							ColourRGBA(255, 255, 255, int(255 * fade) // 2), 313)
 				if n == 11:  # Spotify Album
-					xx = self.ddt.text((text_lx, yy + round(5 * gui.scale)), item[1][0], [255, 255, 255, int(255 * fade)], s_b_font)
+					xx = self.ddt.text((text_lx, yy + round(5 * gui.scale)), item[1][0], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 					artist = item[1][1]
-					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), _("BY"), [250, 240, 110, int(255 * fade)], 212)
+					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), _("BY"), ColourRGBA(250, 240, 110, int(255 * fade)), 212)
 					xx += 8 * gui.scale
-					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], s_font)
+					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
 				if n in (12,):  # Spotify Track
 					yyy = yy
 					yyy += round(6 * gui.scale)
-					xx = self.ddt.text((text_lx, yyy), item[1][0], [255, 255, 255, int(255 * fade)], s_font)
+					xx = self.ddt.text((text_lx, yyy), item[1][0], ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
 					xx += 9 * gui.scale
-					self.ddt.text((xx + text_lx, yyy), _("BY"), [250, 160, 110, int(255 * fade)], 212)
+					self.ddt.text((xx + text_lx, yyy), _("BY"), ColourRGBA(250, 160, 110, int(255 * fade)), 212)
 					xx += 25 * gui.scale
-					xx += self.ddt.text((xx + text_lx, yyy), item[1][1], [255, 255, 255, int(255 * fade)], s_b_font)
+					xx += self.ddt.text((xx + text_lx, yyy), item[1][1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 				if n in (2, ):  # Track
 					yyy = yy
 					yyy += round(6 * gui.scale)
 					track = self.pctl.master_library[item[2]]
 					if track.artist == track.title == "":
 						text = os.path.splitext(track.filename)[0]
-						xx = self.ddt.text((text_lx, yyy + pad), text, [255, 255, 255, int(255 * fade)], s_font)
+						xx = self.ddt.text((text_lx, yyy + pad), text, ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
 					else:
-						xx = self.ddt.text((text_lx, yyy), item[1], [255, 255, 255, int(255 * fade)], s_font)
+						xx = self.ddt.text((text_lx, yyy), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
 						xx += 9 * gui.scale
-						self.ddt.text((xx + text_lx, yyy), _("BY"), [250, 160, 110, int(255 * fade)], 212)
+						self.ddt.text((xx + text_lx, yyy), _("BY"), ColourRGBA(250, 160, 110, int(255 * fade)), 212)
 						xx += 25 * gui.scale
 						artist = track.artist
-						xx += self.ddt.text((xx + text_lx, yyy), artist, [255, 255, 255, int(255 * fade)], s_b_font)
+						xx += self.ddt.text((xx + text_lx, yyy), artist, ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 						if track.album:
 							xx += 9 * gui.scale
-							xx += self.ddt.text((xx + text_lx, yyy), _("FROM"), [120, 120, 120, int(255 * fade)], 212)
+							xx += self.ddt.text((xx + text_lx, yyy), _("FROM"), ColourRGBA(120, 120, 120, int(255 * fade)), 212)
 							xx += 8 * gui.scale
-							xx += self.ddt.text((xx + text_lx, yyy), track.album, [80, 80, 80, int(255 * fade)], 212)
+							xx += self.ddt.text((xx + text_lx, yyy), track.album, ColourRGBA(80, 80, 80, int(255 * fade)), 212)
 
 				if n in (1,):  # Two line album
 					track = self.pctl.master_library[item[2]]
@@ -22714,11 +22714,11 @@ class SearchOverlay:
 					if not artist:
 						artist = track.artist
 
-					xx = self.ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], [255, 255, 255, int(255 * fade)], s_b_font)
+					xx = self.ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 
-					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), _("BY"), [250, 240, 110, int(255 * fade)], 212)
+					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), _("BY"), ColourRGBA(250, 240, 110, int(255 * fade)), 212)
 					xx += 8 * gui.scale
-					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, [250, 250, 250, int(255 * fade)], s_font)
+					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
 
 				yy += height + pad + pad
 
@@ -22995,7 +22995,7 @@ class NagBox:
 			self.colours.message_box_text, 12, replace=_("Github release page."))
 		self.tauon.link_activate(x, y, link_pa, click=self.gui.level_2_click)
 
-		self.gui.heart_notify_icon.render(x + round(425 * self.gui.scale), y + round(80 * self.gui.scale), [255, 90, 90, 255])
+		self.gui.heart_notify_icon.render(x + round(425 * self.gui.scale), y + round(80 * self.gui.scale), ColourRGBA(255, 90, 90, 255))
 
 		y += round(30 * self.gui.scale)
 		self.ddt.text((x, y), _("New supporter bonuses!"), self.colours.message_box_text, 212)
@@ -23027,7 +23027,7 @@ class PowerTag:
 		self.name = "BLANK"
 		self.path = ""
 		self.position = 0
-		self.colour = None
+		self.colour: ColourRGBA | None = None
 
 		self.peak_x = 0
 		self.ani_timer = Timer()
@@ -23209,7 +23209,7 @@ class Over:
 				self.ddt.rect(rect, self.colours.box_text_label)
 
 			rect = [xx, yy, border * 2 + square * 2, border * 2 + square * 2]
-			self.ddt.rect(rect, [5, 5, 5, 255])
+			self.ddt.rect(rect, ColourRGBA(5, 5, 5, 255))
 
 			rect = grow_rect(rect, 3)
 			self.fields.add(rect)
@@ -23234,7 +23234,7 @@ class Over:
 
 			if theme_name == "Neon Love":
 				c2 = c.artist_text
-				c4 = [118, 85, 194, 255]
+				c4 = ColourRGBA(118, 85, 194, 255)
 				c1 = c4
 
 			if theme_name == "Sky":
@@ -23243,7 +23243,7 @@ class Over:
 			if theme_name == "Sunken":
 				c2 = c.title_text
 				c3 = c.artist_text
-				c4 = [59, 115, 109, 255]
+				c4 = ColourRGBA(59, 115, 109, 255)
 				c1 = c4
 
 			if c2 == c3 and colour_value(c1) < 200:
@@ -23385,7 +23385,7 @@ class Over:
 		for i, q in enumerate(self.prefs.eq):
 			bar = [x, y, width, base_dis]
 
-			self.ddt.rect(bar, [255, 255, 255, 20])
+			self.ddt.rect(bar, ColourRGBA(255, 255, 255, 20))
 
 			bar[0] -= 2 * self.gui.scale
 			bar[1] -= 10 * self.gui.scale
@@ -23415,7 +23415,7 @@ class Over:
 
 			bar = [x, y + center, width, start]
 
-			self.ddt.rect(bar, [100, 200, 100, 255])
+			self.ddt.rect(bar, ColourRGBA(100, 200, 100, 255))
 
 			x += round(29 * self.gui.scale)
 
@@ -23717,7 +23717,7 @@ class Over:
 			self.button(x, y, _("Open config file"), tauon.open_config_file, width=ww)
 			bg = None
 			if gui.opened_config_file:
-				bg = [90, 50, 130, 255]
+				bg = ColourRGBA(90, 50, 130, 255)
 				self.button(x + ww + wc + 25 * gui.scale, y, _("Reload"), tauon.reload_config_file, bg=bg)
 
 			self.button(x + wa + round(20 * gui.scale), y, _("Open data folder"), tauon.open_data_directory, ww)
@@ -23911,8 +23911,8 @@ class Over:
 
 		self.fields.add(rect)
 		if self.coll(rect):
-			self.ddt.rect(rect, [255, 255, 255, 15])
-			real_bg = alpha_blend([255, 255, 255, 15], bg)
+			self.ddt.rect(rect, ColourRGBA(255, 255, 255, 15))
+			real_bg = alpha_blend(ColourRGBA(255, 255, 255, 15), bg)
 			self.ddt.text((x + int(w / 2), rect[1] + 1 * self.gui.scale, 2), text, self.colours.box_title_text, 211, bg=real_bg)
 			if self.click:
 				hit = True
@@ -23977,7 +23977,7 @@ class Over:
 		# Inner background
 		self.ddt.rect_a(
 			(x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square),
-			alpha_blend([255, 255, 255, 14], colours.box_background))
+			alpha_blend(ColourRGBA(255, 255, 255, 14), colours.box_background))
 
 		# Check if box clicked
 		self.inp.global_clicked = False
@@ -24878,7 +24878,7 @@ class Over:
 			self.fields.add(rect)
 			colour = colours.box_text_label
 			if self.coll(rect):
-				colour = [225, 160, 0, 255]
+				colour = ColourRGBA(225, 160, 0, 255)
 				if self.click:
 					paths = auto_get_sync_targets()
 					if paths:
@@ -25482,12 +25482,12 @@ class Over:
 		x += 100 * self.gui.scale
 		y -= 20 * self.gui.scale
 
-		display_colour = (self.prefs.chart_bg[0], self.prefs.chart_bg[1], self.prefs.chart_bg[2], 255)
+		display_colour = ColourRGBA(self.prefs.chart_bg[0], self.prefs.chart_bg[1], self.prefs.chart_bg[2], 255)
 
 		rect = (x, y, 70 * self.gui.scale, 70 * self.gui.scale)
 		self.ddt.rect(rect, display_colour)
 
-		self.ddt.rect_s(rect, (50, 50, 50, 255), round(1 * self.gui.scale))
+		self.ddt.rect_s(rect, ColourRGBA(50, 50, 50, 255), round(1 * self.gui.scale))
 
 		# x = self.box_x + self.item_x_offset + 200 * self.gui.scale
 		# y = self.box_y + 180 * self.gui.scale
@@ -25527,7 +25527,7 @@ class Over:
 			if len(dex) < count:
 				self.ddt.text(
 					(x + ww + round(10 * self.gui.scale), y + 1 * self.gui.scale), _("Not enough albums in the playlist!"),
-					[255, 120, 125, 255], 12)
+					ColourRGBA(255, 120, 125, 255), 12)
 
 		x = x0 + round(20 * self.gui.scale)
 		y = y0 + 240 * self.gui.scale
@@ -25662,13 +25662,13 @@ class Over:
 							self.ext_ratio[value.file_ext] = 1
 
 				for key, value in self.ext_ratio.items():
-					colour = [200, 200, 200, 255]
+					colour = ColourRGBA(200, 200, 200, 255)
 					if key in self.formats.colours:
 						colour = self.formats.colours[key]
 
-					colour = colorsys.rgb_to_hls(colour[0] / 255, colour[1] / 255, colour[2] / 255)
+					colour = colorsys.rgb_to_hls(colour.r / 255, colour.g / 255, colour.b / 255)
 					colour = colorsys.hls_to_rgb(1 - colour[0], colour[1] * 0.8, colour[2] * 0.8)
-					colour = [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+					colour = ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
 					h = round(value / len(pctl.master_library) * full_rect[2])
 					block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
@@ -25831,7 +25831,7 @@ class Over:
 		rect = (x, y, 33 * self.gui.scale, 15 * self.gui.scale)
 		self.fields.add(rect)
 		self.ddt.rect(rect, self.colours.box_button_background)
-		abg = [255, 255, 255, 40]
+		abg = ColourRGBA(255, 255, 255, 40)
 		if self.coll(rect):
 			if self.click and value > lower_limit:
 				value -= step
@@ -25839,7 +25839,7 @@ class Over:
 				if callback is not None:
 					callback(value)
 
-			abg = [230, 120, 20, 255] if self.inp.mouse_down else [220, 150, 20, 255]
+			abg = ColourRGBA(230, 120, 20, 255) if self.inp.mouse_down else ColourRGBA(220, 150, 20, 255)
 
 		if colour_value(self.colours.box_background) > 300:
 			abg = self.colours.box_sub_text
@@ -25856,14 +25856,14 @@ class Over:
 		rect = (x, y, 33 * self.gui.scale, 15 * self.gui.scale)
 		self.fields.add(rect)
 		self.ddt.rect(rect, self.colours.box_button_background)
-		abg = [255, 255, 255, 40]
+		abg = ColourRGBA(255, 255, 255, 40)
 		if self.coll(rect):
 			if self.click and value < upper_limit:
 				value += step
 				self.gui.update_layout = True
 				if callback is not None:
 					callback(value)
-			abg = [230, 120, 20, 255] if self.inp.mouse_down else [220, 150, 20, 255]
+			abg = ColourRGBA(230, 120, 20, 255) if self.inp.mouse_down else ColourRGBA(220, 150, 20, 255)
 		if colour_value(self.colours.box_background) > 300:
 			abg = self.colours.box_sub_text
 
@@ -25940,7 +25940,7 @@ class Over:
 		tab_hl = colours.sys_tab_hl
 		tab_text = rgb_add_hls(tab_bg, 0, 0.3, -0.15)
 		if is_light(tab_bg):
-			h, l, s = rgb_to_hls(tab_bg[0], tab_bg[1], tab_bg[2])
+			h, l, s = rgb_to_hls(tab_bg.r, tab_bg.g, tab_bg.b)
 			l = 0.1
 			tab_text = hls_to_rgb(h, l, s)
 		tab_over = alpha_mod(rgb_add_hls(tab_bg, 0, 0.5, 0), 13)
@@ -26167,9 +26167,9 @@ class TopPanel:
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
 
 		if prefs.shuffle_lock and not gui.compact_bar:
-			colour = [250, 250, 250, 255]
+			colour = ColourRGBA(250, 250, 250, 255)
 			if colours.lm:
-				colour = [10, 10, 10, 255]
+				colour = ColourRGBA(10, 10, 10, 255)
 			text = _("Tauon SHUFFLE!")
 			if prefs.album_shuffle_lock_mode:
 				text = _("ALBUM SHUFFLE")
@@ -26700,7 +26700,7 @@ class TopPanel:
 			# Draw tab background
 			ddt.rect(rect, bg)
 			if playing_hint:
-				ddt.rect(rect, [255, 255, 255, 7])
+				ddt.rect(rect, ColourRGBA(255, 255, 255, 7))
 
 			# Determine text colour
 			fg = colours.tab_text_active if active else colours.tab_text
@@ -26719,23 +26719,23 @@ class TopPanel:
 			if tab_hit:
 				if self.inp.mouse_down and i != tauon.playlist_box.drag_on and tauon.playlist_box.drag is True:
 					if self.inp.key_shift_down:
-						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 160, 200, 255])
+						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(80, 160, 200, 255))
 					elif tauon.playlist_box.drag_on < i:
-						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
+						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), ColourRGBA(80, 160, 200, 255))
 					else:
-						ddt.rect((x, y, bar_highlight_size, gui.panelY2), [80, 160, 200, 255])
+						ddt.rect((x, y, bar_highlight_size, gui.panelY2), ColourRGBA(80, 160, 200, 255))
 				elif (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
-					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [80, 200, 180, 255])
+					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(80, 200, 180, 255))
 			# Drag yellow line highlight if single track already in playlist
 			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
 					if item < len(pctl.default_playlist) and pctl.default_playlist[item] in tab.playlist_ids:
-						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [190, 160, 20, 255])
+						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(190, 160, 20, 255))
 						break
 			# Drag red line highlight if playlist is generator playlist
 			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				if not self.tauon.pl_is_mut(i):
-					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), [200, 70, 50, 255])
+					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(200, 70, 50, 255))
 
 			if not gui.radio_view:
 				if len(self.adds) > 0:
@@ -26756,7 +26756,7 @@ class TopPanel:
 		# Quick drag single track onto bar to create new playlist function and indicator
 		if prefs.tabs_on_top:
 			if (self.inp.quick_drag or gui.ext_drop_mode) and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
-				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 200, 180, 255])
+				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), ColourRGBA(80, 200, 180, 255))
 
 				if self.inp.mouse_up:
 					tauon.drop_tracks_to_new_playlist(gui.shift_selection)
@@ -26764,9 +26764,9 @@ class TopPanel:
 			# Draw end drag tab indicator
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY:
 				if self.inp.key_ctrl_down:
-					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [255, 190, 0, 255])
+					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), ColourRGBA(255, 190, 0, 255))
 				else:
-					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), [80, 160, 200, 255])
+					ddt.rect((x, y, 2 * gui.scale, gui.panelY2), ColourRGBA(80, 160, 200, 255))
 
 		if prefs.tabs_on_top and right_overflow:
 			x += 24 * gui.scale
@@ -26842,7 +26842,7 @@ class TopPanel:
 			if self.coll(rect):
 				colour = colours.corner_button_active
 				# if colours.lm:
-				#     colour = [40, 40, 40, 255]
+				# colour = ColourRGBA(40, 40, 40, 255)
 				if (dl > 0 or watching > 0) and inp.right_click:
 					tauon.dl_menu.activate(position=(inp.mouse_position[0], gui.panelY))
 				if dl > 0:
@@ -26877,9 +26877,9 @@ class TopPanel:
 							logging.debug("Position changed by track import")
 							gui.update += 1
 				else:
-					colour = colours.corner_button  # [60, 60, 60, 255]
+					colour = colours.corner_button  # ColourRGBA(60, 60, 60, 255)
 					# if colours.lm:
-					#     colour = [180, 180, 180, 255]
+					# 	colour = ColourRGBA(180, 180, 180, 255)
 					if inp.mouse_click:
 						inp.mouse_click = False
 						self.show_message(
@@ -26887,16 +26887,16 @@ class TopPanel:
 
 
 			else:
-				colour = colours.corner_button  # [60, 60, 60, 255]
+				colour = colours.corner_button  # ColourRGBA(60, 60, 60, 255)
 				if colours.lm:
-					# colour = [180, 180, 180, 255]
+					# colour = ColourRGBA(180, 180, 180, 255)
 					if tauon.dl_mon.ready:
-						colour = colours.corner_button_active  # [60, 60, 60, 255]
+						colour = colours.corner_button_active  # ColourRGBA(60, 60, 60, 255)
 
 			self.dl_button.render(x, y + 1 * gui.scale, colour)
 			if dl > 0:
-				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pluse_colour, 209)  # [244, 223, 66, 255]
-				# [166, 244, 179, 255]
+				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pluse_colour, 209)  # ColourRGBA(244, 223, 66, 255)
+				# ColourRGBA(166, 244, 179, 255)
 
 		# LAYOUT --------------------------------
 		x += self.menu_space + word_length
@@ -26918,7 +26918,7 @@ class TopPanel:
 					tauon.cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 		elif tauon.after_scan:
 			# bg = colours.status_info_text
-			bg = [100, 200, 100, 255]
+			bg = ColourRGBA(100, 200, 100, 255)
 			text = _("Scanning Tags...  {N} remaining").format(N=str(len(tauon.after_scan)))
 		elif tauon.move_in_progress:
 			text = _("File copy in progress...")
@@ -26926,60 +26926,60 @@ class TopPanel:
 		elif tauon.cm_clean_db and gui.to_get > 0:
 			per = str(int(gui.to_got / gui.to_get * 100))
 			text = _("Cleaning db...  ") + per + "%"
-			bg = [100, 200, 100, 255]
+			bg = ColourRGBA(100, 200, 100, 255)
 		elif tauon.to_scan:
 			text = _("Rescanning Tags...  {N} remaining").format(N=str(len(tauon.to_scan)))
-			bg = [100, 200, 100, 255]
+			bg = ColourRGBA(100, 200, 100, 255)
 		elif tauon.plex.scanning:
 			text = _("Accessing PLEX library...")
 			if gui.to_got:
 				text += f" {gui.to_got}"
-			bg = [229, 160, 13, 255]
+			bg = ColourRGBA(229, 160, 13, 255)
 		elif tauon.spot_ctl.launching_spotify:
 			text = _("Launching Spotify...")
-			bg = [30, 215, 96, 255]
+			bg = ColourRGBA(30, 215, 96, 255)
 		elif tauon.spot_ctl.preparing_spotify:
 			text = _("Preparing Spotify Playback...")
-			bg = [30, 215, 96, 255]
+			bg = ColourRGBA(30, 215, 96, 255)
 		elif tauon.spot_ctl.spotify_com:
 			text = _("Accessing Spotify library...")
-			bg = [30, 215, 96, 255]
+			bg = ColourRGBA(30, 215, 96, 255)
 		elif tauon.subsonic.scanning:
 			text = _("Accessing AIRSONIC library...")
 			if gui.to_got:
 				text += f" {gui.to_got}"
-			bg = [58, 194, 224, 255]
+			bg = ColourRGBA(58, 194, 224, 255)
 		elif tauon.koel.scanning:
 			text = _("Accessing KOEL library...")
-			bg = [111, 98, 190, 255]
+			bg = ColourRGBA(111, 98, 190, 255)
 		elif tauon.jellyfin.scanning:
 			text = _("Accessing JELLYFIN library...")
-			bg = [90, 170, 240, 255]
+			bg = ColourRGBA(90, 170, 240, 255)
 		elif tauon.chrome_mode:
 			text = _("Chromecast Mode")
-			bg = [207, 94, 219, 255]
+			bg = ColourRGBA(207, 94, 219, 255)
 		elif gui.sync_progress and not tauon.transcode_list:
 			text = gui.sync_progress
-			bg = [100, 200, 100, 255]
+			bg = ColourRGBA(100, 200, 100, 255)
 			if inp.right_click and self.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
 				tauon.cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
 		elif tauon.transcode_list and gui.tc_cancel:
-			bg = [150, 150, 150, 255]
+			bg = ColourRGBA(150, 150, 150, 255)
 			text = _("Stopping transcode...")
 		elif tauon.lastfm.scanning_friends or tauon.lastfm.scanning_loves:
 			text = _("Scanning: ") + tauon.lastfm.scanning_username
-			bg = [200, 150, 240, 255]
+			bg = ColourRGBA(200, 150, 240, 255)
 		elif tauon.lastfm.scanning_scrobbles:
 			text = _("Scanning Scrobbles...")
-			bg = [219, 88, 18, 255]
+			bg = ColourRGBA(219, 88, 18, 255)
 		elif gui.buffering:
 			text = _("Buffering... ")
 			text += gui.buffering_text
-			bg = [18, 180, 180, 255]
+			bg = ColourRGBA(18, 180, 180, 255)
 		elif tauon.lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
 			text = _("Network error. Will try again later.")
-			bg = [250, 250, 250, 255]
-			gui.last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, [250, 40, 40, 255])
+			bg = ColourRGBA(250, 250, 250, 255)
+			gui.last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, ColourRGBA(250, 40, 40, 255))
 			x += 21 * gui.scale
 		elif tauon.listen_alongers:
 			new = {}
@@ -26989,7 +26989,7 @@ class TopPanel:
 			tauon.listen_alongers = new
 
 			text = _("{N} listening along").format(N=len(tauon.listen_alongers))
-			bg = [40, 190, 235, 255]
+			bg = ColourRGBA(40, 190, 235, 255)
 		else:
 			status = False
 
@@ -27010,28 +27010,28 @@ class TopPanel:
 
 			if gui.transcoding_batch_total:
 
-				# c1 = [40, 40, 40, 255]
-				# c2 = [60, 60, 60, 255]
-				# c3 = [130, 130, 130, 255]
+				# c1 = ColourRGBA(40, 40, 40, 255)
+				# c2 = ColourRGBA(60, 60, 60, 255)
+				# c3 = ColourRGBA(130, 130, 130, 255)
 				#
 				# if colours.lm:
-				# 	c1 = [100, 100, 100, 255]
-				# 	c2 = [130, 130, 130, 255]
-				# 	c3 = [180, 180, 180, 255]
+				# 	c1 = ColourRGBA(100, 100, 100, 255)
+				# 	c2 = ColourRGBA(130, 130, 130, 255)
+				# 	c3 = ColourRGBA(180, 180, 180, 255)
 
-				c1 = [40, 40, 40, 255]
-				c2 = [100, 59, 200, 200]
-				c3 = [150, 70, 200, 255]
+				c1 = ColourRGBA(40, 40, 40, 255)
+				c2 = ColourRGBA(100, 59, 200, 200)
+				c3 = ColourRGBA(150, 70, 200, 255)
 
 				if colours.lm:
-					c1 = [100, 100, 100, 255]
-					c2 = [170, 140, 255, 255]
-					c3 = [230, 170, 255, 255]
+					c1 = ColourRGBA(100, 100, 100, 255)
+					c2 = ColourRGBA(170, 140, 255, 255)
+					c3 = ColourRGBA(230, 170, 255, 255)
 
 				yy = y + 4 * gui.scale
 				h = 9 * gui.scale
 				box = [x, yy, w, h]
-				# ddt.rect_r(box, [100, 100, 100, 255])
+				# ddt.rect_r(box, ColourRGBA(100, 100, 100, 255))
 				ddt.rect(box, c1)
 
 				done = round(gui.transcoding_bach_done / gui.transcoding_batch_total * 100)
@@ -27163,16 +27163,16 @@ class BottomBarType1:
 					l_x = self.scrob_stick
 				else:
 					self.scrob_stick = l_x
-				ddt.rect((self.scrob_stick, self.seek_bar_position[1], 2 * self.gui.scale, self.seek_bar_size[1]), [240, 10, 10, 80])
+				ddt.rect((self.scrob_stick, self.seek_bar_position[1], 2 * self.gui.scale, self.seek_bar_size[1]), ColourRGBA(240, 10, 10, 80))
 
 		# # MINI ALBUM ART
 		# if gui.bb_show_art:
-		#     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
-		#     ddt.rect_r(rect, [255, 255, 255, 8], True)
-		#     if 3 > pctl.playing_state > 0:
-		#         tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+		# 	rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
+		# 	ddt.rect_r(rect, [255, 255, 255, 8], True)
+		# 	if 3 > pctl.playing_state > 0:
+		# 		tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
-		# ddt.rect_r(rect, [255, 255, 255, 20])
+		# ddt.rect_r(rect, ColourRGBA(255, 255, 255, 20))
 
 		# SEEK BAR------------------
 		if pctl.playing_time < 1:
@@ -27245,10 +27245,10 @@ class BottomBarType1:
 
 				# colour = colours.seek_bar_fill
 				h, l, s = rgb_to_hls(
-					colours.seek_bar_background[0], colours.seek_bar_background[1], colours.seek_bar_background[2])
+					colours.seek_bar_background.r, colours.seek_bar_background.g, colours.seek_bar_background.b)
 				l = min(1, l + 0.05)
 				colour = hls_to_rgb(h, l, s)
-				colour[3] = colours.seek_bar_background[3]
+				colour.a = colours.seek_bar_background.a
 
 				self.buffer_shard.render(x + offset, y, colour)
 				x += self.buffer_shard.w
@@ -27262,9 +27262,9 @@ class BottomBarType1:
 				if pctl.download_time == -1:
 					pctl.download_time = pctl.playing_length
 
-				colour = (255, 255, 255, 10)
+				colour = ColourRGBA(255, 255, 255, 10)
 				if gui.theme_name == "Lavender Light" or gui.theme_name == "Carbon":
-					colour = (255, 255, 255, 40)
+					colour = ColourRGBA(255, 255, 255, 40)
 
 				gui.seek_bar_rect = (
 					self.seek_bar_position[0], self.seek_bar_position[1],
@@ -27292,12 +27292,12 @@ class BottomBarType1:
 
 					ddt.rect(
 						[self.inp.mouse_position[0], self.seek_bar_position[1], 2, self.seek_bar_size[1]],
-						[100, 100, 20, 255])
+						ColourRGBA(100, 100, 20, 255))
 			else:
 				gui.seek_cur_show = False
 
 		if gui.buffering and pctl.buffering_percent:
-			ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1] + self.seek_bar_size[1] - round(3 * gui.scale)), (self.seek_bar_size[0] * pctl.buffering_percent / 100, round(3 * gui.scale)), [255, 255, 255, 50])
+			ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1] + self.seek_bar_size[1] - round(3 * gui.scale)), (self.seek_bar_size[0] * pctl.buffering_percent / 100, round(3 * gui.scale)), ColourRGBA(255, 255, 255, 50))
 		# Volume mouse wheel control -----------------------------------------
 		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
 		and not coll_point(self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
@@ -27526,7 +27526,7 @@ class BottomBarType1:
 				fonts.bottom_panel_time)
 		elif gui.display_time_mode == 2:
 
-			# colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+			# colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), colours.bottom_panel_colour)
 
 			x -= 4
 			text_time = get_display_time(pctl.playing_time)
@@ -27553,7 +27553,7 @@ class BottomBarType1:
 				(x + offset2, y), text_time, colours.time_sub,
 				fonts.bottom_panel_time)
 		elif gui.display_time_mode == 3:
-			# colours.time_sub = alpha_blend([255, 255, 255, 80], colours.bottom_panel_colour)
+			# colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), colours.bottom_panel_colour)
 			track = pctl.playing_object()
 			if track and track.index != gui.dtm3_index:
 
@@ -27624,7 +27624,7 @@ class BottomBarType1:
 			elif pctl.playing_state == 3:
 				play_colour = colours.media_buttons_active
 				if tauon.stream_proxy.encode_running:
-					play_colour = [220, 50, 50, 255]
+					play_colour = ColourRGBA(220, 50, 50, 255)
 
 			if not compact or (compact and pctl.playing_state != 1):
 				rect = (
@@ -27987,10 +27987,10 @@ class BottomBarType_ao1:
 
 		# # MINI ALBUM ART
 		# if gui.bb_show_art:
-		#     rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
-		#     ddt.rect_r(rect, [255, 255, 255, 8], True)
-		#     if 3 > pctl.playing_state > 0:
-		#         tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
+		# 	rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
+		# 	ddt.rect_r(rect, [255, 255, 255, 8], True)
+		# 	if 3 > pctl.playing_state > 0:
+		# 		tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, [255, 255, 255, 20])
 
@@ -28120,7 +28120,7 @@ class BottomBarType_ao1:
 			self.ddt.text((x + 1 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
 			self.ddt.text((x - 5 * self.gui.scale, y), "-", self.colours.time_playing, self.fonts.bottom_panel_time)
 		elif self.gui.display_time_mode == 2:
-			self.colours.time_sub = alpha_blend([255, 255, 255, 80], self.colours.bottom_panel_colour)
+			self.colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.bottom_panel_colour)
 
 			x -= 4
 			text_time = get_display_time(self.pctl.playing_time)
@@ -28142,7 +28142,7 @@ class BottomBarType_ao1:
 			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
 
 		elif self.gui.display_time_mode == 3:
-			self.colours.time_sub = alpha_blend([255, 255, 255, 80], self.colours.bottom_panel_colour)
+			self.colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.bottom_panel_colour)
 
 			track = self.pctl.playing_object()
 			if track and track.index != self.gui.dtm3_index:
@@ -28208,7 +28208,7 @@ class BottomBarType_ao1:
 			elif self.pctl.playing_state == 3:
 				play_colour = self.colours.media_buttons_active
 				if self.pctl.record_stream:
-					play_colour = [220, 50, 50, 255]
+					play_colour = ColourRGBA(220, 50, 50, 255)
 
 			if not compact or (compact and self.pctl.playing_state != 2):
 				rect = (
@@ -28334,7 +28334,7 @@ class MiniMode:
 
 		# Draw background
 		bg = self.colours.mini_mode_background
-		# bg = [250, 250, 250, 255]
+		# bg = ColourRGBA(250, 250, 250, 255)
 
 		self.ddt.rect((0, 0, w, h), bg)
 		self.ddt.text_background_colour = bg
@@ -28366,7 +28366,7 @@ class MiniMode:
 		mouse_in_area = self.coll(control_hit_area)
 		self.fields.add(control_hit_area)
 
-		self.ddt.rect((0, 0, w, w), (0, 0, 0, 45))
+		self.ddt.rect((0, 0, w, w), ColourRGBA(0, 0, 0, 45))
 		if track is not None:
 			# Render album art
 			self.album_art_gen.display(track, (0, 0), (w, w))
@@ -28376,9 +28376,9 @@ class MiniMode:
 
 			if h == w and mouse_in_area:
 				# self.ddt.pretty_rect = (0, 260 * self.gui.scale, w, 100 * self.gui.scale)
-				self.ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
-				line1c = [255, 255, 255, 240]
-				line2c = [255, 255, 255, 77]
+				self.ddt.rect((0, y1, w, h1), ColourRGBA(0, 0, 0, 220))
+				line1c = ColourRGBA(255, 255, 255, 240)
+				line2c = ColourRGBA(255, 255, 255, 77)
 
 			# Double click bottom text to return to full window
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
@@ -28422,25 +28422,25 @@ class MiniMode:
 					self.pctl.seek_decimal(seek)
 
 				# Draw progress bar background
-				self.ddt.rect(seek_r, [255, 255, 255, 32])
+				self.ddt.rect(seek_r, ColourRGBA(255, 255, 255, 32))
 
 				# Calculate and draw bar foreground
 				progress_w = 0
 				if self.pctl.playing_length > 1:
 					progress_w = self.pctl.playing_time * seek_w / self.pctl.playing_length
-				seek_colour = [210, 210, 210, 255]
+				seek_colour = ColourRGBA(210, 210, 210, 255)
 				if self.gui.theme_name == "Carbon":
 					seek_colour = self.colours.bottom_panel_colour
 
 				if self.pctl.playing_state != 1:
-					seek_colour = [210, 40, 100, 255]
+					seek_colour = ColourRGBA(210, 40, 100, 255)
 
 				seek_r[2] = progress_w
 
 				if self.volume_timer.get() < 0.9:
 					progress_w = self.pctl.player_volume * (seek_w - (4 * self.gui.scale)) / 100
 					self.gui.update += 1
-					seek_colour = [210, 210, 210, 255]
+					seek_colour = ColourRGBA(210, 210, 210, 255)
 					seek_r[2] = progress_w
 					seek_r[0] += 2 * self.gui.scale
 					seek_r[1] += 2 * self.gui.scale
@@ -28460,7 +28460,7 @@ class MiniMode:
 		if self.coll(left_area):
 			hint = 240
 		if hint and not self.prefs.shuffle_lock:
-			self.left_slide.render(16 * self.gui.scale, y1 + 17 * self.gui.scale, [255, 255, 255, hint])
+			self.left_slide.render(16 * self.gui.scale, y1 + 17 * self.gui.scale, ColourRGBA(255, 255, 255, hint))
 
 		hint = 0
 		if self.coll(control_hit_area):
@@ -28470,7 +28470,7 @@ class MiniMode:
 		if hint:
 			self.right_slide.render(
 				self.window_size[0] - self.right_slide.w - 16 * self.gui.scale, y1 + 17 * self.gui.scale,
-				[255, 255, 255, hint])
+				ColourRGBA(255, 255, 255, hint))
 
 		# Shuffle
 
@@ -28479,12 +28479,12 @@ class MiniMode:
 		# self.ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
 
 		if self.coll(control_hit_area) and not self.prefs.shuffle_lock:
-			colour = [255, 255, 255, 20]
+			colour = ColourRGBA(255, 255, 255, 20)
 			if self.inp.mouse_click and self.coll(shuffle_area):
 				# self.pctl.random_mode ^= True
 				self.tauon.toggle_random()
 			if self.pctl.random_mode:
-				colour = [255, 255, 255, 190]
+				colour = ColourRGBA(255, 255, 255, 190)
 
 			sx = seek_r[0] + seek_w + 12 * self.gui.scale
 			sy = seek_r[1] - 2 * self.gui.scale
@@ -28499,11 +28499,11 @@ class MiniMode:
 
 		shuffle_area = (seek_r[0] - 41 * self.gui.scale, seek_r[1] - 10 * self.gui.scale, 40 * self.gui.scale, 30 * self.gui.scale)
 		if self.coll(control_hit_area) and not self.prefs.shuffle_lock:
-			colour = [255, 255, 255, 20]
+			colour = ColourRGBA(255, 255, 255, 20)
 			if self.inp.mouse_click and self.coll(shuffle_area):
 				self.tauon.toggle_repeat()
 			if self.pctl.repeat_mode:
-				colour = [255, 255, 255, 190]
+				colour = ColourRGBA(255, 255, 255, 190)
 
 
 			sx = seek_r[0] - 36 * self.gui.scale
@@ -28643,7 +28643,7 @@ class MiniMode2:
 
 		# Seek bar
 		bg_rect = (h, h - round(5 * self.gui.scale), w - h, round(5 * self.gui.scale))
-		self.ddt.rect(bg_rect, [255, 255, 255, 18])
+		self.ddt.rect(bg_rect, ColourRGBA(255, 255, 255, 18))
 
 		if self.pctl.playing_state > 0:
 			hit_rect = h - 5 * self.gui.scale, h - 12 * self.gui.scale, w - h + 5 * self.gui.scale, 13 * self.gui.scale
@@ -28666,7 +28666,7 @@ class MiniMode2:
 				if self.gui.theme_name == "Carbon":
 					colour = self.colours.bottom_panel_colour
 				if self.pctl.playing_state != 1:
-					colour = [210, 40, 100, 255]
+					colour = ColourRGBA(210, 40, 100, 255)
 				self.ddt.rect(seek_rect, colour)
 
 class MiniMode3:
@@ -28712,7 +28712,7 @@ class MiniMode3:
 
 		# Draw background
 		bg = self.colours.mini_mode_background
-		bg = [0, 0, 0, 0]
+		bg = ColourRGBA(0, 0, 0, 0)
 		# bg = [250, 250, 250, 255]
 
 		self.ddt.rect((0, 0, w, h), bg)
@@ -28762,17 +28762,17 @@ class MiniMode3:
 			off = round(4 * self.gui.scale)
 
 			self.tauon.drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
-			self.ddt.rect((ins + 1, ins + 1, wid - 1, wid - 1), [20, 20, 20, 255])
+			self.ddt.rect((ins + 1, ins + 1, wid - 1, wid - 1), ColourRGBA(20, 20, 20, 255))
 			self.album_art_gen.display(track, (ins, ins), (wid, wid))
 
-			line1c = [255, 255, 255, 255] #self.colours.mini_mode_text_1
-			line2c = [255, 255, 255, 255] #self.colours.mini_mode_text_2
+			line1c = ColourRGBA(255, 255, 255, 255) #self.colours.mini_mode_text_1
+			line2c = ColourRGBA(255, 255, 255, 255) #self.colours.mini_mode_text_2
 
 			# if h == w and mouse_in_area:
-			#     # self.ddt.pretty_rect = (0, 260 * self.gui.scale, w, 100 * self.gui.scale)
-			#     self.ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
-			#     line1c = [255, 255, 255, 240]
-			#     line2c = [255, 255, 255, 77]
+			# 	# self.ddt.pretty_rect = (0, 260 * self.gui.scale, w, 100 * self.gui.scale)
+			# 	self.ddt.rect((0, y1, w, h1), [0, 0, 0, 220])
+			# 	line1c = [255, 255, 255, 240]
+			# 	line2c = [255, 255, 255, 77]
 
 			# Double click bottom text to return to full window
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
@@ -28829,18 +28829,18 @@ class MiniMode3:
 					self.pctl.seek_decimal(seek)
 
 				# Draw progress bar background
-				self.ddt.rect(seek_r, [255, 255, 255, 32])
+				self.ddt.rect(seek_r, ColourRGBA(255, 255, 255, 32))
 
 				# Calculate and draw bar foreground
 				progress_w = 0
 				if self.pctl.playing_length > 1:
 					progress_w = self.pctl.playing_time * seek_w / self.pctl.playing_length
-				seek_colour = [210, 210, 210, 255]
+				seek_colour = ColourRGBA(210, 210, 210, 255)
 				if self.gui.theme_name == "Carbon":
 					seek_colour = self.colours.bottom_panel_colour
 
 				if self.pctl.playing_state != 1:
-					seek_colour = [210, 40, 100, 255]
+					seek_colour = ColourRGBA(210, 40, 100, 255)
 
 				seek_r[2] = progress_w
 
@@ -28867,11 +28867,11 @@ class MiniMode3:
 				self.pctl.player_volume = int(volume * 100)
 				self.pctl.set_volume()
 
-			self.ddt.rect(volume_r, [255, 255, 255, 32])
+			self.ddt.rect(volume_r, ColourRGBA(255, 255, 255, 32))
 
 			#if self.volume_timer.get() < 0.9:
 			progress_w = self.pctl.player_volume * (volume_w - (4 * self.gui.scale)) / 100
-			volume_colour = [210, 210, 210, 255]
+			volume_colour = ColourRGBA(210, 210, 210, 255)
 			volume_r[2] = progress_w
 			volume_r[0] += 2 * self.gui.scale
 			volume_r[1] += 2 * self.gui.scale
@@ -28892,7 +28892,7 @@ class MiniMode3:
 		if self.coll(left_area):
 			hint = 240
 		if hint and not self.prefs.shuffle_lock:
-			self.left_slide.render(16 * self.gui.scale, y1 + 10 * self.gui.scale, [255, 255, 255, hint])
+			self.left_slide.render(16 * self.gui.scale, y1 + 10 * self.gui.scale, ColourRGBA(255, 255, 255, hint))
 
 		hint = 0
 		if True: #self.coll(control_hit_area):
@@ -28901,7 +28901,7 @@ class MiniMode3:
 			hint = 240
 		if hint:
 			self.right_slide.render(
-				self.window_size[0] - self.right_slide.w - 16 * self.gui.scale, y1 + 10 * self.gui.scale, [255, 255, 255, hint])
+				self.window_size[0] - self.right_slide.w - 16 * self.gui.scale, y1 + 10 * self.gui.scale, ColourRGBA(255, 255, 255, hint))
 
 		# Shuffle
 		shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * self.gui.scale, 50 * self.gui.scale, 30 * self.gui.scale)
@@ -28909,12 +28909,12 @@ class MiniMode3:
 		# self.ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
 
 		if True: #self.coll(control_hit_area) and not self.prefs.shuffle_lock:
-			colour = [255, 255, 255, 20]
+			colour = ColourRGBA(255, 255, 255, 20)
 			if self.inp.mouse_click and self.coll(shuffle_area):
 				# self.pctl.random_mode ^= True
 				self.tauon.toggle_random()
 			if self.pctl.random_mode:
-				colour = [255, 255, 255, 190]
+				colour = ColourRGBA(255, 255, 255, 190)
 
 			sx = volume_r[0] + volume_w + 12 * self.gui.scale
 			sy = volume_r[1] - 3 * self.gui.scale
@@ -28929,11 +28929,11 @@ class MiniMode3:
 
 		shuffle_area = (volume_r[0] - 41 * self.gui.scale, volume_r[1] - 10 * self.gui.scale, 40 * self.gui.scale, 30 * self.gui.scale)
 		if True: #self.coll(control_hit_area) and not self.prefs.shuffle_lock:
-			colour = [255, 255, 255, 20]
+			colour = ColourRGBA(255, 255, 255, 20)
 			if self.inp.mouse_click and self.coll(shuffle_area):
 				self.tauon.toggle_repeat()
 			if self.pctl.repeat_mode:
-				colour = [255, 255, 255, 190]
+				colour = ColourRGBA(255, 255, 255, 190)
 
 			sx = volume_r[0] - 39 * self.gui.scale
 			sy = volume_r[1] - 1 * self.gui.scale
@@ -28966,9 +28966,9 @@ class MiniMode3:
 			self.tauon.draw_window_tools()
 
 		# if w != h:
-		#     self.ddt.rect_s((1, 1, w - 2, h - 2), self.colours.mini_mode_border, 1 * self.gui.scale)
-		#     if self.gui.scale == 2:
-		#         self.ddt.rect_s((2, 2, w - 4, h - 4), self.colours.mini_mode_border, 1 * self.gui.scale)
+		# 	self.ddt.rect_s((1, 1, w - 2, h - 2), self.colours.mini_mode_border, 1 * self.gui.scale)
+		# 	if self.gui.scale == 2:
+		# 		self.ddt.rect_s((2, 2, w - 4, h - 4), self.colours.mini_mode_border, 1 * self.gui.scale)
 		self.ddt.alpha_bg = False
 
 class StandardPlaylist:
@@ -29613,7 +29613,7 @@ class StandardPlaylist:
 					run = 0
 					duration = get_display_time(total_time)
 					colour = colours.folder_title
-					colour = [colour[0], colour[1], colour[2], max(colour[3] - 50, 0)]
+					colour.a = max(colour.a - 50, 0)
 
 					if prefs.append_total_time and duration:
 						was = True
@@ -29682,7 +29682,7 @@ class StandardPlaylist:
 				if drag_highlight:
 					ddt.rect(
 						[left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale,
-						highlight_width, 3 * gui.scale], [135, 145, 190, 255])
+						highlight_width, 3 * gui.scale], ColourRGBA(135, 145, 190, 255))
 
 				continue
 
@@ -29694,8 +29694,8 @@ class StandardPlaylist:
 			if tr.file_ext == "SPTY":
 				# if not tauon.spot_ctl.started_once:
 				#     ddt.rect((track_box[0], track_box[1], track_box[2], track_box[3] + 1), [40, 190, 40, 20])
-				#     ddt.text_background_colour = alpha_blend([40, 190, 40, 20], ddt.text_background_colour)
-				ddt.rect((track_box[0] + track_box[2] - round(2 * gui.scale), track_box[1] + round(2 * gui.scale), round(2 * gui.scale), track_box[3] - round(3 * gui.scale)), [40, 190, 40, 230])
+				#     ddt.text_background_colour = alpha_blend(ColourRGBA(40, 190, 40, 20), ddt.text_background_colour)
+				ddt.rect((track_box[0] + track_box[2] - round(2 * gui.scale), track_box[1] + round(2 * gui.scale), round(2 * gui.scale), track_box[3] - round(3 * gui.scale)), ColourRGBA(40, 190, 40, 230))
 
 
 			# Blue drop line
@@ -29703,7 +29703,7 @@ class StandardPlaylist:
 
 				ddt.rect(
 					[left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale, highlight_width,
-					3 * gui.scale], [125, 105, 215, 255])
+					3 * gui.scale], ColourRGBA(125, 105, 215, 255))
 
 			# Highlight
 			if highlight:
@@ -29773,9 +29773,9 @@ class StandardPlaylist:
 								rr = 0
 								if star > -1:
 									if gui.tracklist_bg_is_light:
-										colour = alpha_blend([0, 0, 0, 200], ddt.text_background_colour)
+										colour = alpha_blend(ColourRGBA(0, 0, 0, 200), ddt.text_background_colour)
 									else:
-										colour = alpha_blend([255, 255, 255, 50], ddt.text_background_colour)
+										colour = alpha_blend(ColourRGBA(255, 255, 255, 50), ddt.text_background_colour)
 
 									sx = run + 6 * gui.scale
 									sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
@@ -29803,7 +29803,7 @@ class StandardPlaylist:
 					else:
 						text = ""
 						font = gui.row_font_size
-						colour = [200, 200, 200, 255]
+						colour = ColourRGBA(200, 200, 200, 255)
 						norm_colour = colour
 						y_off = 0
 						if item[0] == "Title":
@@ -30019,12 +30019,12 @@ class StandardPlaylist:
 
 							# # Hacky. Places a dark background behind light text for readability over mascot
 							# if pl_bg and gui.set_mode and colour_value(norm_colour) < 400 and not colours.lm:
-							#     w, h = ddt.get_text_wh(text, font, wid)
-							#     quick_box = [run + round(5 * gui.scale), y + y_off, w + round(2 * gui.scale), h]
-							#     if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
-							#         quick_box = (run, ry, item[1], gui.playlist_row_height)
-							#         ddt.rect(quick_box, [0, 0, 0, 40], True)
-							#         ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
+							# 	w, h = ddt.get_text_wh(text, font, wid)
+							# 	quick_box = [run + round(5 * gui.scale), y + y_off, w + round(2 * gui.scale), h]
+							# 	if coll_rect((left + width - pl_bg.w - 60 * gui.scale, window_size[1] - gui.panelBY - pl_bg.h, pl_bg.w, pl_bg.h), quick_box):
+							# 		quick_box = (run, ry, item[1], gui.playlist_row_height)
+							# 		ddt.rect(quick_box, [0, 0, 0, 40], True)
+							# 		ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
 
 							ddt.text(
 								(run + 6 * gui.scale, y + y_off),
@@ -30215,16 +30215,16 @@ class ScrollBox:
 		if h > 400 * self.gui.scale and max_value < 20:
 			bar_height = round(180 * self.gui.scale)
 
-		bg = [255, 255, 255, 7]
-		fg = [255, 255, 255, 30]
-		fg_h = [255, 255, 255, 40]
-		fg_off = [255, 255, 255, 15]
+		bg     = ColourRGBA(255, 255, 255, 7)
+		fg     = ColourRGBA(255, 255, 255, 30)
+		fg_h   = ColourRGBA(255, 255, 255, 40)
+		fg_off = ColourRGBA(255, 255, 255, 15)
 
 		if self.colours.lm and not force_dark_theme:
-			bg = [0, 0, 0, 15]
-			fg_off = [0, 0, 0, 30]
-			fg = [0, 0, 0, 60]
-			fg_h = [0, 0, 0, 70]
+			bg     = ColourRGBA(0, 0, 0, 15)
+			fg_off = ColourRGBA(0, 0, 0, 30)
+			fg     = ColourRGBA(0, 0, 0, 60)
+			fg_h   = ColourRGBA(0, 0, 0, 70)
 
 		self.ddt.rect((x, y, w, h), bg)
 
@@ -31055,12 +31055,12 @@ class RadioBox:
 			if self.tauon.radio_view.drag:
 				if station == self.tauon.radio_view.drag:
 					text_colour = self.colours.box_sub_text
-					bg = [255, 255, 255, 10]
+					bg = ColourRGBA(255, 255, 255, 10)
 					self.ddt.rect(rect, bg)
 			elif (self.tauon.radio_entry_menu.active and self.tauon.radio_entry_menu.reference == p) or \
 					((not self.tauon.radio_entry_menu.active and self.coll(rect)) and not playing):
 				text_colour = self.colours.box_sub_text
-				bg = [255, 255, 255, 10]
+				bg = ColourRGBA(255, 255, 255, 10)
 				self.ddt.rect(rect, bg)
 
 			if self.coll(rect):
@@ -31241,9 +31241,9 @@ class RenamePlaylistBox:
 		min_w = max(250 * self.gui.scale, text_w + 50 * self.gui.scale)
 
 		rect = [self.x, self.y, min_w, 37 * self.gui.scale]
-		bg = [40, 40, 40, 255]
+		bg = ColourRGBA(40, 40, 40, 255)
 		if self.edit_generator:
-			bg = [70, 50, 100, 255]
+			bg = ColourRGBA(70, 50, 100, 255)
 		self.ddt.text_background_colour = bg
 
 		# Draw background
@@ -31256,7 +31256,7 @@ class RenamePlaylistBox:
 
 		# Draw accent
 		rect2 = [self.x, self.y + rect[3] - 4 * self.gui.scale, min_w, 4 * self.gui.scale]
-		self.ddt.rect(rect2, [255, 255, 255, 60])
+		self.ddt.rect(rect2, ColourRGBA(255, 255, 255, 60))
 
 		if self.edit_generator:
 			pl = self.playlist_index
@@ -31269,23 +31269,23 @@ class RenamePlaylistBox:
 
 				# self.regenerate_playlist(self.tauon.rename_playlist_box.playlist_index)
 			# if self.gui.gen_code_errors:
-			#     del_icon.render(rect[0] + rect[2] - 21 * self.gui.scale, rect[1] + 10 * self.gui.scale, (255, 70, 70, 255))
-			self.ddt.text_background_colour = [4, 4, 4, 255]
+			#     del_icon.render(rect[0] + rect[2] - 21 * self.gui.scale, rect[1] + 10 * self.gui.scale, ColourRGBA(255, 70, 70, 255))
+			self.ddt.text_background_colour = ColourRGBA(4, 4, 4, 255)
 			hint_rect = [rect[0], rect[1] + round(50 * self.gui.scale), round(560 * self.gui.scale), round(300 * self.gui.scale)]
 
 			if hint_rect[0] + hint_rect[2] > self.window_size[0]:
 				hint_rect[0] = self.window_size[0] - hint_rect[2]
 
-			self.ddt.rect(hint_rect, [0, 0, 0, 245])
+			self.ddt.rect(hint_rect, ColourRGBA(0, 0, 0, 245))
 			xx0 = hint_rect[0] + round(15 * self.gui.scale)
 			xx = hint_rect[0] + round(25 * self.gui.scale)
 			xx2 = hint_rect[0] + round(85 * self.gui.scale)
 			yy = hint_rect[1] + round(10 * self.gui.scale)
 
-			text_colour = [150, 150, 150, 255]
+			text_colour = ColourRGBA(150, 150, 150, 255)
 			title_colour = text_colour
-			code_colour = [250, 250, 250, 255]
-			hint_colour = [110, 110, 110, 255]
+			code_colour = ColourRGBA(250, 250, 250, 255)
+			hint_colour = ColourRGBA(110, 110, 110, 255)
 
 			title_font = 311
 			code_font = 311
@@ -31428,21 +31428,21 @@ class RenamePlaylistBox:
 			yy += round(24 * self.gui.scale)
 			# xx += round(80 * self.gui.scale)
 			xx2 = xx
-			xx2 += self.ddt.text((xx2, yy), _("Status:"), [90, 90, 90, 255], 212) + round(6 * self.gui.scale)
+			xx2 += self.ddt.text((xx2, yy), _("Status:"), ColourRGBA(90, 90, 90, 255), 212) + round(6 * self.gui.scale)
 			if self.rename_text_area.text:
 				if self.gui.gen_code_errors:
 					if self.gui.gen_code_errors == "playlist":
-						self.ddt.text((xx2, yy), _("Playlist not found"), [255, 100, 100, 255], 212)
+						self.ddt.text((xx2, yy), _("Playlist not found"), ColourRGBA(255, 100, 100, 255), 212)
 					elif self.gui.gen_code_errors == "empty":
-						self.ddt.text((xx2, yy), _("Result is empty"), [250, 190, 100, 255], 212)
+						self.ddt.text((xx2, yy), _("Result is empty"), ColourRGBA(250, 190, 100, 255), 212)
 					elif self.gui.gen_code_errors == "close":
-						self.ddt.text((xx2, yy), _("Close quotation..."), [110, 110, 110, 255], 212)
+						self.ddt.text((xx2, yy), _("Close quotation..."), ColourRGBA(110, 110, 110, 255), 212)
 					else:
-						self.ddt.text((xx2, yy), "...", [255, 100, 100, 255], 212)
+						self.ddt.text((xx2, yy), "...", ColourRGBA(255, 100, 100, 255), 212)
 				else:
-					self.ddt.text((xx2, yy), _("OK"), [100, 255, 100, 255], 212)
+					self.ddt.text((xx2, yy), _("OK"), ColourRGBA(100, 255, 100, 255), 212)
 			else:
-				self.ddt.text((xx2, yy), _("Disabled"), [110, 110, 110, 255], 212)
+				self.ddt.text((xx2, yy), _("Disabled"), ColourRGBA(110, 110, 110, 255), 212)
 
 		# self.ddt.pretty_rect = None
 
@@ -31516,14 +31516,14 @@ class PlaylistBox:
 
 		max_tabs = (h - 10 * self.gui.scale) // (self.gap + self.tab_h)
 
-		tab_title_colour = [230, 230, 230, 255]
+		tab_title_colour = ColourRGBA(230, 230, 230, 255)
 
 		bg_lumi = test_lumi(self.colours.playlist_box_background)
 		light_mode = False
 
 		if bg_lumi < 0.55:
 			light_mode = True
-			tab_title_colour = [20, 20, 20, 255]
+			tab_title_colour = ColourRGBA(20, 20, 20, 255)
 
 		dark_mode = False
 		if bg_lumi > 0.8:
@@ -31683,11 +31683,11 @@ class PlaylistBox:
 			name = pl.title
 			hidden = pl.hidden
 
-			# Background is insivible by default (for hightlighting if selected)
-			bg = [0, 0, 0, 0]
+			# Background is invisible by default (for hightlighting if selected)
+			bg = ColourRGBA(0, 0, 0, 0)
 			if self.prefs.transparent_mode:
 				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.09, 0)
-				bg = (bg[0], bg[1], bg[2], 255)
+				bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 
 			# Highlight if playlist selected (viewing)
 			if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
@@ -31696,10 +31696,10 @@ class PlaylistBox:
 				# Adjust highlight for different background brightnesses
 				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.06, 0)
 				if light_mode:
-					bg = [0, 0, 0, 25]
+					bg = ColourRGBA(0, 0, 0, 25)
 				if self.prefs.transparent_mode:
 					bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.03, 0)
-					bg = (bg[0], bg[1], bg[2], 255)
+					bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 
 			# Highlight target playlist when tragging tracks over
 			if self.coll(
@@ -31708,7 +31708,7 @@ class PlaylistBox:
 				# bg = [255, 255, 255, 15]
 				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.04, 0)
 				if light_mode:
-					bg = [0, 0, 0, 16]
+					bg = ColourRGBA(0, 0, 0, 16)
 
 			# Get actual bg from blend for text bg
 			real_bg = alpha_blend(bg, self.colours.playlist_box_background)
@@ -31727,10 +31727,10 @@ class PlaylistBox:
 				self.spot_icon.render(tab_start + round(7 * gui.scale), yy + round(3 * gui.scale), alpha_mod(tab_title_colour, 170))
 
 			if not pl.hidden and self.prefs.tabs_on_top:
-				cl = [255, 255, 255, 25]
+				cl = ColourRGBA(255, 255, 255, 25)
 
 				if light_mode:
-					cl = [0, 0, 0, 40]
+					cl = ColourRGBA(0, 0, 0, 40)
 
 				xx = tab_start + tab_width - self.lock_icon.w
 				self.lock_icon.render(xx, yy, cl)
@@ -31756,7 +31756,7 @@ class PlaylistBox:
 			if hit:
 				# Draw indicator for dragging tracks
 				if (self.inp.quick_drag or gui.ext_drop_mode) and self.tauon.pl_is_mut(i):
-					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [80, 200, 180, 255])
+					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), ColourRGBA(80, 200, 180, 255))
 
 				# Draw indicators for moving tab
 				if self.drag and i != self.drag_on and not point_proximity_test(
@@ -31764,21 +31764,21 @@ class PlaylistBox:
 					if self.inp.key_shift_down:
 						ddt.rect(
 							(tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h),
-							[80, 160, 200, 255])
+							ColourRGBA(80, 160, 200, 255))
 					elif i < self.drag_on:
-						ddt.rect((tab_start, yy - self.indicate_w, tab_width, self.indicate_w), [80, 160, 200, 255])
+						ddt.rect((tab_start, yy - self.indicate_w, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
 					else:
-						ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), [80, 160, 200, 255])
+						ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
 
 			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
 					if len(pctl.default_playlist) > item and pctl.default_playlist[item] in pl.playlist_ids:
-						ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [190, 170, 20, 255])
+						ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), ColourRGBA(190, 170, 20, 255))
 						break
 			# Drag red line highlight if playlist is generator playlist
 			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				if not self.tauon.pl_is_mut(i):
-					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), [200, 70, 50, 255])
+					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), ColourRGBA(200, 70, 50, 255))
 
 			# Draw effect of adding tracks to playlist
 			if len(self.adds) > 0:
@@ -31797,7 +31797,7 @@ class PlaylistBox:
 
 							ddt.rect(
 								(tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w),
-								[244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1])
+								ColourRGBA(244, 212, 66, int(255 * self.adds[k][2].get() / 0.3) * -1))
 
 			yy += self.tab_h + self.gap
 
@@ -31812,7 +31812,7 @@ class PlaylistBox:
 
 		if self.coll(rect):
 			if self.inp.quick_drag or gui.ext_drop_mode:
-				ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
+				ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
 				if self.inp.mouse_up:
 					self.tauon.drop_tracks_to_new_playlist(gui.shift_selection)
 
@@ -31836,9 +31836,9 @@ class PlaylistBox:
 						gui.update += 2
 						self.drag = False
 				elif self.inp.key_ctrl_down:
-					ddt.rect((tab_start, yy, tab_width, self.indicate_w), [255, 190, 0, 255])
+					ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(255, 190, 0, 255))
 				else:
-					ddt.rect((tab_start, yy, tab_width, self.indicate_w), [80, 160, 200, 255])
+					ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
 
 @dataclass
 class ArtistListSaveState:
@@ -32193,13 +32193,13 @@ class ArtistList:
 			area = (4 * self.gui.scale, y, w - 7 * self.gui.scale, self.tab_h - 2)
 			self.fields.add(area)
 
-		back_colour = [30, 30, 30, 255]
-		back_colour_2 = [27, 27, 27, 255]
-		border_colour = [60, 60, 60, 255]
+		back_colour = ColourRGBA(30, 30, 30, 255)
+		back_colour_2 = ColourRGBA(27, 27, 27, 255)
+		border_colour = ColourRGBA(60, 60, 60, 255)
 		# if self.colours.lm:
-		#     back_colour = [200, 200, 200, 255]
-		#     back_colour_2 = [240, 240, 240, 255]
-		#     border_colour = [160, 160, 160, 255]
+		# 	back_colour = ColourRGBA(200, 200, 200, 255)
+		# 	back_colour_2 = ColourRGBA(240, 240, 240, 255)
+		# 	border_colour = ColourRGBA(160, 160, 160, 255)
 		rect = (thumb_x, round(y), self.thumb_size, self.thumb_size)
 
 		if thin_mode and self.coll(area) and self.tauon.is_level_zero() and y + self.tab_h < self.window_size[1] - self.gui.panelBY:
@@ -32272,10 +32272,10 @@ class ArtistList:
 				ww = self.ddt.get_text_w(text, 211)
 				self.ddt.rect(
 					(thumb_x + round(1 * self.gui.scale), y + self.tab_h - 20 * self.gui.scale, ww + 5 * self.gui.scale, 13 * self.gui.scale),
-					[20, 20, 20, 255])
+					ColourRGBA(20, 20, 20, 255))
 				self.ddt.text(
-					(thumb_x + 3 * self.gui.scale, y + self.tab_h - 23 * self.gui.scale), text, [240, 240, 240, 255], 210,
-					bg=[20, 20, 20, 255])
+					(thumb_x + 3 * self.gui.scale, y + self.tab_h - 23 * self.gui.scale), text, ColourRGBA(240, 240, 240, 255), 210,
+					bg=ColourRGBA(20, 20, 20, 255))
 				self.shown_letters.append(text)
 
 		# Draw labels
@@ -32318,27 +32318,27 @@ class ArtistList:
 		self.fields.add(area)
 
 		light_mode = False
-		line1_colour = [235, 235, 235, 255]
-		line2_colour = [255, 255, 255, 120]
+		line1_colour = ColourRGBA(235, 235, 235, 255)
+		line2_colour = ColourRGBA(255, 255, 255, 120)
 		fade_max = 50
 
 		thin_mode = False
 		if self.gui.compact_artist_list:
 			thin_mode = True
-			line2_colour = [115, 115, 115, 255]
+			line2_colour = ColourRGBA(115, 115, 115, 255)
 		elif test_lumi(self.colours.side_panel_background) < 0.55 and not thin_mode:
 			light_mode = True
 			fade_max = 20
-			line1_colour = [35, 35, 35, 255]
-			line2_colour = [100, 100, 100, 255]
+			line1_colour = ColourRGBA(35, 35, 35, 255)
+			line2_colour = ColourRGBA(100, 100, 100, 255)
 
 		# Fade on click
 		bg = self.colours.side_panel_background
 		if not thin_mode:
 			if self.coll(area) and self.tauon.is_level_zero(True):
 			# or pctl.get_track(pctl.default_playlist[pctl.playlist_view_position]).artist == artist:
-				self.ddt.rect(area, [50, 50, 50, 50])
-				bg = alpha_blend([50, 50, 50, 50], self.colours.side_panel_background)
+				self.ddt.rect(area, ColourRGBA(50, 50, 50, 50))
+				bg = alpha_blend(ColourRGBA(50, 50, 50, 50), self.colours.side_panel_background)
 				if self.prefs.transparent_mode:
 					bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.2, 0)
 					self.ddt.rect(area, bg)
@@ -32352,9 +32352,9 @@ class ArtistList:
 						fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
 
 					self.gui.update += 1
-					self.ddt.rect(area, [50, 50, 50, fade])
+					self.ddt.rect(area, ColourRGBA(50, 50, 50, fade))
 
-				bg = alpha_blend([50, 50, 50, fade], self.colours.side_panel_background)
+				bg = alpha_blend(ColourRGBA(50, 50, 50, fade), self.colours.side_panel_background)
 				if self.prefs.transparent_mode:
 					bg = self.colours.side_panel_background
 
@@ -32918,47 +32918,47 @@ class TreeView:
 			rect = (xx + inset - round(15 * self.gui.scale), yy, max_w - inset + round(15 * self.gui.scale), spacing - 1)
 			self.fields.add(rect)
 
-			# text_colour = [255, 255, 255, 100]
+			# text_colour = ColourRGBA(255, 255, 255, 100)
 			text_colour = rgb_add_hls(self.colours.side_panel_background, 0, 0.35, -0.15)
 
-			box_colour = [200, 100, 50, 255]
+			box_colour = ColourRGBA(200, 100, 50, 255)
 
 			if semilight_mode:
-				text_colour = [255, 255, 255, 180]
+				text_colour = ColourRGBA(255, 255, 255, 180)
 
 			if light_mode:
-				text_colour = [0, 0, 0, 200]
+				text_colour = ColourRGBA(0, 0, 0, 200)
 
 			full_folder_path = item[1] + "/" + item[0]
 
 			# Hold highlight while menu open
 			if (self.folder_tree_menu.active or self.folder_tree_stem_menu.active) and full_folder_path == self.menu_selected:
-				text_colour = [255, 255, 255, 170]
+				text_colour = ColourRGBA(255, 255, 255, 170)
 				if semilight_mode:
-					text_colour = (255, 255, 255, 255)
+					text_colour = ColourRGBA(255, 255, 255, 255)
 				if light_mode:
-					text_colour = [0, 0, 0, 255]
+					text_colour = ColourRGBA(0, 0, 0, 255)
 
 			# Hold highlight while dragging folder
 			if self.inp.quick_drag and not point_proximity_test(self.gui.drag_source_position, self.inp.mouse_position, 15):
 				if self.gui.shift_selection:
 					if self.pctl.get_track(self.pctl.multi_playlist[self.pctl.id_to_pl(pl_id)].playlist_ids[self.gui.shift_selection[0]]).fullpath.startswith(
 							full_folder_path + "/") and self.dragging_name and item[0].endswith(self.dragging_name):
-						text_colour = (255, 255, 255, 230)
+						text_colour = ColourRGBA(255, 255, 255, 230)
 						if semilight_mode:
-							text_colour = (255, 255, 255, 255)
+							text_colour = ColourRGBA(255, 255, 255, 255)
 						if light_mode:
-							text_colour = [0, 0, 0, 255]
+							text_colour = ColourRGBA(0, 0, 0, 255)
 
 			# Set highlight colours if folder is playing
 			if 0 < self.pctl.playing_state < 3 and playing_track:
 				if playing_track.parent_folder_path == full_folder_path or full_folder_path + "/" in playing_track.fullpath:
-					text_colour = [255, 255, 255, 225]
-					box_colour = [140, 220, 20, 255]
+					text_colour = ColourRGBA(255, 255, 255, 225)
+					box_colour  = ColourRGBA(140, 220, 20, 255)
 					if semilight_mode:
-						text_colour = (255, 255, 255, 255)
+						text_colour = ColourRGBA(255, 255, 255, 255)
 					if light_mode:
-						text_colour = [0, 0, 0, 255]
+						text_colour = ColourRGBA(0, 0, 0, 255)
 
 			if self.inp.right_click:
 				mouse_in = self.coll(rect) and self.tauon.is_level_zero(False)
@@ -33037,11 +33037,11 @@ class TreeView:
 
 			# Highlight folder text on mouse over
 			if (mouse_in and not self.inp.mouse_down) or item == self.click_drag_source:
-				text_colour = (255, 255, 255, 235)
+				text_colour = ColourRGBA(255, 255, 255, 235)
 				if semilight_mode:
-					text_colour = (255, 255, 255, 255)
+					text_colour = ColourRGBA(255, 255, 255, 255)
 				if light_mode:
-					text_colour = [0, 0, 0, 255]
+					text_colour = ColourRGBA(0, 0, 0, 255)
 
 			# Render folder name text
 			if item[4] > 50:
@@ -33072,11 +33072,11 @@ class TreeView:
 			# for m in range(item[2] + 1):
 			#     if m == 0:
 			#         continue
-			#     colour = (255, 255, 255, 20)
+			#     colour = ColourRGBA(255, 255, 255, 20)
 			#     if semilight_mode:
-			#         colour = (255, 255, 255, 30)
+			#         colour = ColourRGBA(255, 255, 255, 30)
 			#     if light_mode:
-			#         colour = (0, 0, 0, 60)
+			#         colour = ColourRGBA(0, 0, 0, 60)
 			#
 			#     if i > 0 and self.rows[i - 1][2] == m - 1:  # the top one needs to be slightly lower lower
 			#         self.ddt.rect((x + (12 * m) + 2, yy - round(1 * self.gui.scale), round(1 * self.gui.scale), round(17 * self.gui.scale)), colour, True)
@@ -33086,7 +33086,7 @@ class TreeView:
 			if self.prefs.folder_tree_codec_colours:
 				box_colour = self.folder_colour_cache.get(full_folder_path)
 				if box_colour is None:
-					box_colour = (150, 150, 150, 255)
+					box_colour = ColourRGBA(150, 150, 150, 255)
 
 			# Draw indicator box and +/- icons next to folder name
 			if item[3]:
@@ -33094,17 +33094,17 @@ class TreeView:
 						round(4 * self.gui.scale))
 				if light_mode or semilight_mode:
 					border = round(1 * self.gui.scale)
-					self.ddt.rect((rect[0] - border, rect[1] - border, rect[2] + border * 2, rect[3] + border * 2), [0, 0, 0, 150])
+					self.ddt.rect((rect[0] - border, rect[1] - border, rect[2] + border * 2, rect[3] + border * 2), ColourRGBA(0, 0, 0, 150))
 				self.ddt.rect(rect, box_colour)
 
 			elif True:
 				if not mouse_in or self.tree_view_scroll.held:
-					# text_colour = [255, 255, 255, 50]
+					# text_colour = ColourRGBA(255, 255, 255, 50)
 					text_colour = rgb_add_hls(self.colours.side_panel_background, 0, 0.2, -0.10)
 					if semilight_mode:
-						text_colour = [255, 255, 255, 70]
+						text_colour = ColourRGBA(255, 255, 255, 70)
 					if light_mode:
-						text_colour = [0, 0, 0, 70]
+						text_colour = ColourRGBA(0, 0, 0, 70)
 				if target in opens:
 					self.ddt.text((xx + inset - round(7 * self.gui.scale), yy + round(1 * self.gui.scale), 2), "-", text_colour, 19)
 				else:
@@ -33433,7 +33433,7 @@ class QueueBox:
 		draw_back: bool = False, draw_album_indicator: bool = True,
 	) -> None:
 
-		# text_colour = [230, 230, 230, 255]
+		# text_colour = ColourRGBA(230, 230, 230, 255)
 		bg = self.colours.queue_background
 
 		# if fq[i].type == 0:
@@ -33445,14 +33445,14 @@ class QueueBox:
 			bg = self.colours.queue_card_background
 
 		text_colour1 = rgb_add_hls(bg, 0, 0.28, -0.15)  # [255, 255, 255, 70]
-		text_colour2 = [255, 255, 255, 230]
+		text_colour2 = ColourRGBA(255, 255, 255, 230)
 		if test_lumi(bg) < 0.2:
-			text_colour1 = [0, 0, 0, 130]
-			text_colour2 = [0, 0, 0, 230]
+			text_colour1 = ColourRGBA(0, 0, 0, 130)
+			text_colour2 = ColourRGBA(0, 0, 0, 230)
 
 		self.tauon.gall_ren.render(track, (rect[0] + 4 * self.gui.scale, rect[1] + 4 * self.gui.scale), round(28 * self.gui.scale))
 
-		self.ddt.rect((rect[0] + 4 * self.gui.scale, rect[1] + 4 * self.gui.scale, 26, 26), [0, 0, 0, 6])
+		self.ddt.rect((rect[0] + 4 * self.gui.scale, rect[1] + 4 * self.gui.scale, 26, 26), ColourRGBA(0, 0, 0, 6))
 
 		line = track.album
 		if fqo.type == 0:
@@ -33481,27 +33481,27 @@ class QueueBox:
 		if draw_album_indicator:
 			if fqo.type == 1:
 				if fqo.album_stage == 0:
-					self.ddt.rect((rect[0] + rect[2] - 5 * self.gui.scale, rect[1], 5 * self.gui.scale, rect[3]), [220, 130, 20, 255])
+					self.ddt.rect((rect[0] + rect[2] - 5 * self.gui.scale, rect[1], 5 * self.gui.scale, rect[3]), ColourRGBA(220, 130, 20, 255))
 				else:
-					self.ddt.rect((rect[0] + rect[2] - 5 * self.gui.scale, rect[1], 5 * self.gui.scale, rect[3]), [140, 220, 20, 255])
+					self.ddt.rect((rect[0] + rect[2] - 5 * self.gui.scale, rect[1], 5 * self.gui.scale, rect[3]), ColourRGBA(140, 220, 20, 255))
 
 			if fqo.auto_stop:
 				xx = rect[0] + rect[2] - 9 * self.gui.scale
 				if fqo.type == 1:
 					xx -= 11 * self.gui.scale
-				self.ddt.rect((xx, rect[1] + 5 * self.gui.scale, 7 * self.gui.scale, 7 * self.gui.scale), [230, 190, 0, 255])
+				self.ddt.rect((xx, rect[1] + 5 * self.gui.scale, 7 * self.gui.scale, 7 * self.gui.scale), ColourRGBA(230, 190, 0, 255))
 
 	def draw(self, x: int, y: int, w: int, h: int) -> None:
 		yy = y
 		yy += round(4 * self.gui.scale)
 
-		sep_colour = alpha_blend([255, 255, 255, 11], self.colours.queue_background)
+		sep_colour = alpha_blend(ColourRGBA(255, 255, 255, 11), self.colours.queue_background)
 
 		if y > self.gui.panelY + 10 * self.gui.scale:  # Draw fancy light mode border
 			self.gui.queue_frame_draw = y
 		# else:
-		#     if not self.colours.lm:
-		#         self.ddt.rect((x, y, w, 3 * self.gui.scale),  self.colours.queue_background, True)
+		# 	if not self.colours.lm:
+		# 		self.ddt.rect((x, y, w, 3 * self.gui.scale),  self.colours.queue_background, True)
 
 		yy += round(3 * self.gui.scale)
 
@@ -33510,12 +33510,12 @@ class QueueBox:
 		self.ddt.text_background_colour = self.colours.queue_background
 
 		if self.coll(box_rect) and self.inp.quick_drag and not self.pctl.force_queue:
-			self.ddt.rect(box_rect, [255, 255, 255, 2])
-			self.ddt.text_background_colour = alpha_blend([255, 255, 255, 2], self.ddt.text_background_colour)
+			self.ddt.rect(box_rect, ColourRGBA(255, 255, 255, 2))
+			self.ddt.text_background_colour = alpha_blend(ColourRGBA(255, 255, 255, 2), self.ddt.text_background_colour)
 
 		if self.prefs.show_playlist_list:  # draw top separator line
 			rect = (0, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
-			self.ddt.rect(rect, [0, 0, 0, 255])
+			self.ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
 			self.ddt.rect(rect, sep_colour)
 
 		# if y < self.gui.panelY * 2:
@@ -33536,10 +33536,10 @@ class QueueBox:
 			if self.inp.right_click:
 				qb_right_click = 1
 
-		# text_colour = [255, 255, 255, 91]
+		# text_colour = ColourRGBA(255, 255, 255, 91)
 		text_colour = rgb_add_hls(self.colours.queue_background, 0, 0.3, -0.15)
 		if test_lumi(self.colours.queue_background) < 0.2:
-			text_colour = [0, 0, 0, 200]
+			text_colour = ColourRGBA(0, 0, 0, 200)
 
 		line = _("Up Next:")
 		if self.pctl.force_queue:
@@ -33556,14 +33556,14 @@ class QueueBox:
 			ds = 3 * self.gui.scale
 			gp = 4 * self.gui.scale
 
-			self.ddt.rect((x + int(w / 2), yy, ds, ds), [230, 190, 0, 255])
-			self.ddt.rect((x + int(w / 2), yy + gp, ds, ds), [230, 190, 0, 255])
-			self.ddt.rect((x + int(w / 2), yy + gp + gp, ds, ds), [230, 190, 0, 255])
+			self.ddt.rect((x + int(w / 2), yy, ds, ds), ColourRGBA(230, 190, 0, 255))
+			self.ddt.rect((x + int(w / 2), yy + gp, ds, ds), ColourRGBA(230, 190, 0, 255))
+			self.ddt.rect((x + int(w / 2), yy + gp + gp, ds, ds), ColourRGBA(230, 190, 0, 255))
 
 		# Draw pause icon
 		if self.pctl.pause_queue:
-			self.ddt.rect((x + w - 24 * self.gui.scale, yy + 2 * self.gui.scale, 3 * self.gui.scale, 9 * self.gui.scale), [230, 190, 0, 255])
-			self.ddt.rect((x + w - 19 * self.gui.scale, yy + 2 * self.gui.scale, 3 * self.gui.scale, 9 * self.gui.scale), [230, 190, 0, 255])
+			self.ddt.rect((x + w - 24 * self.gui.scale, yy + 2 * self.gui.scale, 3 * self.gui.scale, 9 * self.gui.scale), ColourRGBA(230, 190, 0, 255))
+			self.ddt.rect((x + w - 19 * self.gui.scale, yy + 2 * self.gui.scale, 3 * self.gui.scale, 9 * self.gui.scale), ColourRGBA(230, 190, 0, 255))
 
 		yy += 6 * self.gui.scale
 
@@ -33838,13 +33838,13 @@ class MetaBox:
 		if not track:
 			return
 
-		border_colour = [255, 255, 255, 30]
-		line1_colour = [255, 255, 255, 235]
-		line2_colour = [255, 255, 255, 200]
+		border_colour = ColourRGBA(255, 255, 255, 30)
+		line1_colour = ColourRGBA(255, 255, 255, 235)
+		line2_colour = ColourRGBA(255, 255, 255, 200)
 		if test_lumi(colours.gallery_background) < 0.55:
-			border_colour = [0, 0, 0, 30]
-			line1_colour = [0, 0, 0, 200]
-			line2_colour = [0, 0, 0, 230]
+			border_colour = ColourRGBA(0, 0, 0, 30)
+			line1_colour = ColourRGBA(0, 0, 0, 200)
+			line2_colour = ColourRGBA(0, 0, 0, 230)
 
 		rect = (x, y, w, h)
 
@@ -33911,7 +33911,7 @@ class MetaBox:
 
 	def lyrics(self, x: int, y: int, w: int, h: int, track: TrackClass) -> None:
 		bg = self.colours.side_panel_background
-		bg = (bg[0], bg[1], bg[2], 255)
+		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.rect((x, y, w, h), bg)
 		self.ddt.text_background_colour = bg
 
@@ -33972,7 +33972,7 @@ class MetaBox:
 	def draw(self, x: int, y: int, w: int, h: int, track=None) -> None:
 
 		bg = self.colours.side_panel_background
-		bg = (bg[0], bg[1], bg[2], 255)
+		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.text_background_colour = bg
 		self.ddt.clear_rect((x, y, w, h))
 		self.ddt.rect((x, y, w, h), bg)
@@ -34108,7 +34108,7 @@ class MetaBox:
 							self.fonts.side_panel_line2, max_w=text_width)
 
 						if tr and tr.lyrics:
-							if self.tauon.draw_internel_link(
+							if self.tauon.draw_internal_link(
 								margin + sp + 6 * self.gui.scale, block_y + 40 * self.gui.scale, "Lyrics", self.colours.side_bar_line2, self.fonts.side_panel_line2):
 								self.prefs.show_lyrics_showcase = True
 								self.tauon.enter_showcase_view(track_id=tr.index)
@@ -34293,24 +34293,24 @@ class ArtistInfoBox:
 
 			text += "\n"
 
-			self.urls = [(link, [200, 60, 60, 255], "L")]
+			self.urls = [(link, ColourRGBA(200, 60, 60, 255), "L")]
 			for word in text.replace("\n", " ").split(" "):
 				if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
 					word = word.rstrip(".")
 					if word.strip()[:4] == "www.":
 						word = "http://" + word
 					if "bandcamp" in word:
-						self.urls.append((word.strip(), [200, 150, 70, 255], "B"))
+						self.urls.append((word.strip(), ColourRGBA(200, 150, 70, 255), "B"))
 					elif "soundcloud" in word:
-						self.urls.append((word.strip(), [220, 220, 70, 255], "S"))
+						self.urls.append((word.strip(), ColourRGBA(220, 220, 70, 255), "S"))
 					elif "twitter" in word:
-						self.urls.append((word.strip(), [80, 110, 230, 255], "T"))
+						self.urls.append((word.strip(), ColourRGBA(80, 110, 230, 255), "T"))
 					elif "facebook" in word:
-						self.urls.append((word.strip(), [60, 60, 230, 255], "F"))
+						self.urls.append((word.strip(), ColourRGBA(60, 60, 230, 255), "F"))
 					elif "youtube" in word:
-						self.urls.append((word.strip(), [210, 50, 50, 255], "Y"))
+						self.urls.append((word.strip(), ColourRGBA(210, 50, 50, 255), "Y"))
 					else:
-						self.urls.append((word.strip(), [120, 200, 60, 255], "W"))
+						self.urls.append((word.strip(), ColourRGBA(120, 200, 60, 255), "W"))
 
 			self.processed_text = text
 			self.w = -1  # trigger text recalc
@@ -34370,18 +34370,18 @@ class ArtistInfoBox:
 					xx = (right - w) - 17 * self.gui.scale
 					self.ddt.rect(
 						(xx - 10 * self.gui.scale, yy - 4 * self.gui.scale, w + 20 * self.gui.scale, 24 * self.gui.scale),
-						[15, 15, 15, 255])
+						ColourRGBA(15, 15, 15, 255))
 					self.ddt.rect(
 						(xx - 10 * self.gui.scale, yy - 4 * self.gui.scale, w + 20 * self.gui.scale, 24 * self.gui.scale),
-						[50, 50, 50, 255])
+						ColourRGBA(50, 50, 50, 255))
 
-					self.ddt.text((xx, yy), item[0], [250, 250, 250, 255], 13, bg=[15, 15, 15, 255])
-					self.mini_box.render(right, yy, (item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
+					self.ddt.text((xx, yy), item[0], ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
+					self.mini_box.render(right, yy, ColourRGBA(item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
 				# self.ddt.rect_r(rect, [210, 80, 80, 255], True)
 
 				yy += 19 * self.gui.scale
 		else:
-			self.ddt.text((x + w // 2, y + h // 2 - 7 * self.gui.scale, 2), self.status, [255, 255, 255, 60], 313, bg=background)
+			self.ddt.text((x + w // 2, y + h // 2 - 7 * self.gui.scale, 2), self.status, ColourRGBA(255, 255, 255, 60), 313, bg=background)
 
 	def get_data(self, artist: str, get_img_path: bool = False, force_dl: bool = False) -> str | None:
 		if not get_img_path:
@@ -34718,8 +34718,8 @@ class RadioView:
 		a_colour = rgb_add_hls(bg, l=0.2, s=-0.3) #colours.box_button_text_highlight
 		b_colour = rgb_add_hls(bg, l=0.4, s=-0.3) #colours.box_button_text_highlight
 		if test_lumi(bg) < 0.38:
-			a_colour = [20, 20, 20, 200]
-			b_colour = [60, 60, 60, 200]
+			a_colour = ColourRGBA(20, 20, 20, 200)
+			b_colour = ColourRGBA(60, 60, 60, 200)
 
 		if self.coll(rect):
 			colour = b_colour
@@ -34770,8 +34770,8 @@ class RadioView:
 		rbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.03, -0.03)
 		tbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.07, -0.05)
 		if contrast_ratio(bg, rbg) < 1.05:
-			rbg = [30, 30, 30, 255]
-			tbg = [60, 60, 60, 255]
+			rbg = ColourRGBA(30, 30, 30, 255)
+			tbg = ColourRGBA(60, 60, 60, 255)
 
 		w = round(400 * gui.scale)
 		h = round(55 * gui.scale)
@@ -34810,12 +34810,12 @@ class RadioView:
 			self.ddt.rect(pic_rect, tbg)
 			self.tauon.radio_thumb_gen.draw(radio, pic_rect[0], pic_rect[1], pic_rect[2])
 
-			l1_colour = [10, 10, 10, 210]
+			l1_colour = ColourRGBA(10, 10, 10, 210)
 			if test_lumi(rbg) > 0.45:
-				l1_colour = [255, 255, 255, 220]
-			l2_colour = [30, 30, 30, 200]
+				l1_colour = ColourRGBA(255, 255, 255, 220)
+			l2_colour = ColourRGBA(30, 30, 30, 200)
 			if test_lumi(rbg) > 0.45:
-				l2_colour = [245, 245, 245, 200]
+				l2_colour = ColourRGBA(245, 245, 245, 200)
 
 			toff = h + round(2 * gui.scale)
 			yyy += round(9 * gui.scale)
@@ -34897,12 +34897,12 @@ class RadioView:
 			if radiobox.loaded_station and pctl.playing_state == 3:
 				space = window_size[0] - round(500 * gui.scale)
 				self.ddt.text(
-					(count, yy, 2), radiobox.loaded_station.title, [230, 230, 230, 255], 213, max_w=space)
+					(count, yy, 2), radiobox.loaded_station.title, ColourRGBA(230, 230, 230, 255), 213, max_w=space)
 				yy += round(25 * gui.scale)
-				self.ddt.text((count, yy, 2), radiobox.song_key, [230, 230, 230, 255], 313, max_w=space)
+				self.ddt.text((count, yy, 2), radiobox.song_key, ColourRGBA(230, 230, 230, 255), 313, max_w=space)
 				if radiobox.dummy_track.album:
 					yy += round(21 * gui.scale)
-					self.ddt.text((count, yy, 2), radiobox.dummy_track.album, [230, 230, 230, 255], 313, max_w=space)
+					self.ddt.text((count, yy, 2), radiobox.dummy_track.album, ColourRGBA(230, 230, 230, 255), 313, max_w=space)
 
 		if self.drag:
 			gui.update_on_drag = True
@@ -34962,19 +34962,19 @@ class Showcase:
 		light_mode = False
 		if self.colours.lm:
 			bbg = self.colours.vis_colour
-			bfg = alpha_blend([255, 255, 255, 60], self.colours.vis_colour)
+			bfg = alpha_blend(ColourRGBA(255, 255, 255, 60), self.colours.vis_colour)
 			bft = self.colours.grey(250)
 			bbt = self.colours.grey(245)
 		elif self.prefs.art_bg and self.prefs.bg_showcase_only:
-			bbg = [255, 255, 255, 18]
-			bfg = [255, 255, 255, 30]
-			bft = [255, 255, 255, 250]
-			bbt = [255, 255, 255, 200]
+			bbg = ColourRGBA(255, 255, 255, 18)
+			bfg = ColourRGBA(255, 255, 255, 30)
+			bft = ColourRGBA(255, 255, 255, 250)
+			bbt = ColourRGBA(255, 255, 255, 200)
 
 		if test_lumi(self.colours.playlist_panel_background) < 0.7:
 			light_mode = True
 			t1 = self.colours.grey(30)
-			self.gui.vis_4_colour = [40, 40, 40, 255]
+			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
 
 		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.playlist_panel_background)
 
@@ -35194,7 +35194,7 @@ class Showcase:
 
 		if self.gui.vis_4_colour is not None:
 			sdl3.SDL_SetRenderDrawColor(
-				self.renderer, self.gui.vis_4_colour[0], self.gui.vis_4_colour[1], self.gui.vis_4_colour[2], self.gui.vis_4_colour[3])
+				self.renderer, self.gui.vis_4_colour.r, self.gui.vis_4_colour.g, self.gui.vis_4_colour.b, self.gui.vis_4_colour.a)
 
 		if (self.pctl.playing_time < 0.5 and (self.pctl.playing_state in (1, 3))) or (
 				self.pctl.playing_state == 0 and self.gui.spec4_array.count(0) != len(self.gui.spec4_array)):
@@ -35256,7 +35256,7 @@ class ColourPulse2:
 		self.out_timer.start = 0
 		self.active = False
 
-	def get(self, hit: bool, on: bool, off: bool, low_hls: list[int], high_hls: list[int]) -> list[int] | tuple[int, int, int, int]:
+	def get(self, hit: bool, on: bool, off: bool, low_hls: ColourRGBA, high_hls: ColourRGBA) -> ColourRGBA:
 		if on:
 			return high_hls
 			# rgb = colorsys.hls_to_rgb(high_hls[0], high_hls[1], high_hls[2])
@@ -35347,8 +35347,8 @@ class ViewBox:
 		self.col_colour        = ColourPulse2(tauon=tauon)  # (0.14)
 		self.artist_colour     = ColourPulse2(tauon=tauon)  # (0.2)
 
-		self.on_colour = [255, 190, 50, 255]
-		self.over_colour = [255, 190, 50, 255]
+		self.on_colour = ColourRGBA(255, 190, 50, 255)
+		self.over_colour = ColourRGBA(255, 190, 50, 255)
 		self.off_colour = self.colours.grey(40)
 
 		if not reload:
@@ -35384,7 +35384,8 @@ class ViewBox:
 		# self.gui.level_2_click = False
 		self.gui.update = 2
 
-	def button(self, x: float, y: float, asset: WhiteModImageAsset | LoadImageAsset, test, colour_get: ColourPulse2 | None = None, name: str = "Unknown", animate: bool = True, low: list[int] = 0, high: list[int] = 0):
+	def button(
+		self, x: float, y: float, asset: WhiteModImageAsset | LoadImageAsset, test, colour_get: ColourPulse2 | None = None, name: str = "Unknown", animate: bool = True, low: ColourRGBA = 0, high: ColourRGBA = 0):
 		on = test()
 		rect = [
 			x - 8 * self.gui.scale,
@@ -35409,11 +35410,10 @@ class ViewBox:
 		colour = colour_get.get(col, on, not on and not animate, low, high)
 
 		# if "+" in name:
-		#
-		#     colour = cctest.get(col, on, [0, 0.2, 0.0], [0, 0.8, 0.8])
+		# 	colour = cctest.get(col, on, [0, 0.2, 0.0], [0, 0.8, 0.8])
 
 		# if not on and not animate:
-		#     colour = self.off_colour
+		# 	colour = self.off_colour
 
 		asset.render(x, y, colour)
 
@@ -35565,10 +35565,10 @@ class ViewBox:
 
 		# ----
 		#logging.info(hls_to_rgb(.55, .6, .75))
-		high = [76, 183, 229, 255]  # (.55, .6, .75)
+		high = ColourRGBA(76, 183, 229, 255)  # (.55, .6, .75)
 		if colours.lm:
 			# high = (.55, .75, .75)
-			high = [63, 63, 63, 255]
+			high = ColourRGBA(63, 63, 63, 255)
 
 		test = self.button(x, y, self.side_img, self.side, self.side_colour, _("Tracks + Art"), low=low, high=high)
 		if test is not None:
@@ -35578,10 +35578,10 @@ class ViewBox:
 
 		y += 40 * gui.scale
 
-		high = [76, 137, 229, 255]  # (.6, .6, .75)
+		high = ColourRGBA(76, 137, 229, 255)  # (.6, .6, .75)
 		if colours.lm:
 			# high = (.6, .80, .85)
-			high = [63, 63, 63, 255]
+			high = ColourRGBA(63, 63, 63, 255)
 
 		if gui.hide_tracklist_in_gallery:
 			test = self.button(
@@ -35597,10 +35597,10 @@ class ViewBox:
 
 		y += 40 * gui.scale
 
-		high = [76, 229, 229, 255]
+		high = ColourRGBA(76, 229, 229, 255)
 		if colours.lm:
 			# high = (.5, .7, .65)
-			high = [63, 63, 63, 255]
+			high = ColourRGBA(63, 63, 63, 255)
 
 		test = self.button(
 			x + 3 * gui.scale, y, self.tracks_img, self.tracks, self.tracks_colour, _("Tracks only"),
@@ -35612,10 +35612,10 @@ class ViewBox:
 
 		y += 45 * gui.scale
 
-		high = [107, 76, 229, 255]
+		high = ColourRGBA(107, 76, 229, 255)
 		if colours.lm:
 			# high = (.7, .75, .75)
-			high = [63, 63, 63, 255]
+			high = ColourRGBA(63, 63, 63, 255)
 
 		test = self.button(
 			x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour,
@@ -35627,10 +35627,10 @@ class ViewBox:
 
 		y += 40 * gui.scale
 
-		high = [92, 86, 255, 255]
+		high = ColourRGBA(92, 86, 255, 255)
 		if colours.lm:
 			# high = (.7, .75, .75)
-			high = [63, 63, 63, 255]
+			high = ColourRGBA(63, 63, 63, 255)
 
 		test = self.button(
 			x + 3 * gui.scale, y, self.radio_img, self.radio, self.radio_colour, _("Radio"), low=low, high=high)
@@ -35641,10 +35641,10 @@ class ViewBox:
 
 		y += 45 * gui.scale
 
-		high = [229, 205, 76, 255]
+		high = ColourRGBA(229, 205, 76, 255)
 		if colours.lm:
 			# high = (.9, .75, .65)
-			high = [63, 63, 63, 255]
+			high = ColourRGBA(63, 63, 63, 255)
 
 		test = self.button(
 			x + 5 * gui.scale, y, self.col_img, self.col, self.col_colour, _("Toggle columns"), False, low=low, high=high)
@@ -35844,7 +35844,7 @@ class Fader:
 			self.a = min(1, self.a)
 
 		rect = [0, 0, self.window_size[0], self.window_size[1]]
-		self.tauon.ddt.rect(rect, [0, 0, 0, int(110 * self.a)])
+		self.tauon.ddt.rect(rect, ColourRGBA(0, 0, 0, int(110 * self.a)))
 
 		if self.a not in (0, 1):
 			self.tauon.gui.update += 1
@@ -35870,13 +35870,13 @@ class EdgePulse:
 		self.ani_duration = 0.5
 
 	def render(self, x: int, y: int, w: int, h: int, r: int = 200, g: int = 120, b: int = 0) -> bool:
-		r = self.colours.pluse_colour[0]
-		g = self.colours.pluse_colour[1]
-		b = self.colours.pluse_colour[2]
+		r = self.colours.pluse_colour.r
+		g = self.colours.pluse_colour.g
+		b = self.colours.pluse_colour.b
 		time = self.timer.get()
 		if time < self.ani_duration:
 			alpha = 255 - int(255 * (time / self.ani_duration))
-			self.ddt.rect((x, y, w, h), [r, g, b, alpha])
+			self.ddt.rect((x, y, w, h), ColourRGBA(r, g, b, alpha))
 			self.gui.update = 2
 			return True
 		return False
@@ -35910,9 +35910,9 @@ class EdgePulse2:
 			h_off = (h // 5) * (time / self.ani_duration) * 4
 
 			if self.colours.lm:
-				colour = (0, 0, 0, alpha)
+				colour = ColourRGBA(0, 0, 0, alpha)
 			else:
-				colour = (255, 255, 255, alpha)
+				colour = ColourRGBA(255, 255, 255, alpha)
 
 			if not bottom:
 				self.ddt.rect((x, y, w, h - h_off), colour)
@@ -36132,9 +36132,9 @@ class Bag:
 	selected_in_playlist:    int
 	latest_db_version:       int
 	volume:                  float
-	mac_close:               tuple[int, int, int, int]
-	mac_maximize:            tuple[int, int, int, int]
-	mac_minimize:            tuple[int, int, int, int]
+	mac_close:               ColourRGBA
+	mac_maximize:            ColourRGBA
+	mac_minimize:            ColourRGBA
 	track_queue:             list[int]
 	logical_size:            list[int] # X Y
 	window_size:             list[int] # X Y
@@ -36162,7 +36162,7 @@ class Formats:
 	* Extensions of files to be added when importing
 	"""
 
-	colours: dict[str, tuple[int, int, int, int]]
+	colours: dict[str, ColourRGBA]
 	VID:     set[str]
 	MOD:     set[str]
 	GME:     set[str]
@@ -38955,9 +38955,9 @@ xdpi = 0
 
 detect_macstyle = False
 gtk_settings: Gtk.Settings | None = None
-mac_close = (253, 70, 70, 255)
-mac_maximize = (254, 176, 36, 255)
-mac_minimize = (42, 189, 49, 255)
+mac_close = ColourRGBA(253, 70, 70, 255)
+mac_maximize = ColourRGBA(254, 176, 36, 255)
+mac_minimize = ColourRGBA(42, 189, 49, 255)
 try:
 	# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
 	gi.require_version("Gtk", "3.0")
@@ -39305,41 +39305,41 @@ MOD_Formats = {"xm", "mod", "s3m", "it", "mptm", "umx", "okt", "mtm", "669", "fa
 GME_Formats = {"ay", "gbs", "gym", "hes", "kss", "nsf", "nsfe", "sap", "spc", "vgm", "vgz"}
 formats = Formats(
 	colours = {
-		"MP3":   [255, 130, 80,  255],  # Burnt orange
-		"FLAC":  [156, 249, 79,  255],  # Bright lime green
-		"M4A":   [81,  220, 225, 255],  # Soft cyan
-		"AIFF":  [81,  220, 225, 255],  # Soft cyan
-		"OGG":   [244, 244, 78,  255],  # Light yellow
-		"OGA":   [244, 244, 78,  255],  # Light yellow
-		"WMA":   [213, 79,  247, 255],  # Magenta
-		"APE":   [247, 79,  79,  255],  # Deep pink
-		"TTA":   [94,  78,  244, 255],  # Purple
-		"OPUS":  [247, 79,  146, 255],  # Pink
-		"AAC":   [79,  247, 168, 255],  # Teal
-		"WV":    [229, 23,  18,  255],  # Deep red
-		"PLEX":  [229, 160, 13,  255],  # Orange-brown
-		"KOEL":  [111, 98,  190, 255],  # Lavender
-		"TAU":   [111, 98,  190, 255],  # Lavender
-		"SUB":   [235, 140, 20,  255],  # Golden yellow
-		"SPTY":  [30,  215, 96,  255],  # Bright green
-		"TIDAL": [0,   0,   0,   255],  # Black
-		"JELY":  [190, 100, 210, 255],  # Fuchsia
-		"XM":    [50,  50,  50,  255],  # Grey
-		"MOD":   [50,  50,  50,  255],  # Grey
-		"S3M":   [50,  50,  50,  255],  # Grey
-		"IT":    [50,  50,  50,  255],  # Grey
-		"MPTM":  [50,  50,  50,  255],  # Grey
-		"AY":    [237, 212, 255, 255],  # Pastel purple
-		"GBS":   [255, 165, 0,   255],  # Vibrant orange
-		"GYM":   [0,   191, 255, 255],  # Bright blue
-		"HES":   [176, 224, 230, 255],  # Light blue-green
-		"KSS":   [255, 255, 153, 255],  # Bright yellow
-		"NSF":   [255, 140, 0,   255],  # Deep orange
-		"NSFE":  [255, 140, 0,   255],  # Deep orange
-		"SAP":   [152, 255, 152, 255],  # Light green
-		"SPC":   [255, 128, 0,   255],  # Bright orange
-		"VGM":   [0,   128, 255, 255],  # Deep blue
-		"VGZ":   [0,   128, 255, 255],  # Deep blue
+		"MP3":   ColourRGBA(255, 130, 80,  255),  # Burnt orange
+		"FLAC":  ColourRGBA(156, 249, 79,  255),  # Bright lime green
+		"M4A":   ColourRGBA(81,  220, 225, 255),  # Soft cyan
+		"AIFF":  ColourRGBA(81,  220, 225, 255),  # Soft cyan
+		"OGG":   ColourRGBA(244, 244, 78,  255),  # Light yellow
+		"OGA":   ColourRGBA(244, 244, 78,  255),  # Light yellow
+		"WMA":   ColourRGBA(213, 79,  247, 255),  # Magenta
+		"APE":   ColourRGBA(247, 79,  79,  255),  # Deep pink
+		"TTA":   ColourRGBA(94,  78,  244, 255),  # Purple
+		"OPUS":  ColourRGBA(247, 79,  146, 255),  # Pink
+		"AAC":   ColourRGBA(79,  247, 168, 255),  # Teal
+		"WV":    ColourRGBA(229, 23,  18,  255),  # Deep red
+		"PLEX":  ColourRGBA(229, 160, 13,  255),  # Orange-brown
+		"KOEL":  ColourRGBA(111, 98,  190, 255),  # Lavender
+		"TAU":   ColourRGBA(111, 98,  190, 255),  # Lavender
+		"SUB":   ColourRGBA(235, 140, 20,  255),  # Golden yellow
+		"SPTY":  ColourRGBA(30,  215, 96,  255),  # Bright green
+		"TIDAL": ColourRGBA(0,   0,   0,   255),  # Black
+		"JELY":  ColourRGBA(190, 100, 210, 255),  # Fuchsia
+		"XM":    ColourRGBA(50,  50,  50,  255),  # Grey
+		"MOD":   ColourRGBA(50,  50,  50,  255),  # Grey
+		"S3M":   ColourRGBA(50,  50,  50,  255),  # Grey
+		"IT":    ColourRGBA(50,  50,  50,  255),  # Grey
+		"MPTM":  ColourRGBA(50,  50,  50,  255),  # Grey
+		"AY":    ColourRGBA(237, 212, 255, 255),  # Pastel purple
+		"GBS":   ColourRGBA(255, 165, 0,   255),  # Vibrant orange
+		"GYM":   ColourRGBA(0,   191, 255, 255),  # Bright blue
+		"HES":   ColourRGBA(176, 224, 230, 255),  # Light blue-green
+		"KSS":   ColourRGBA(255, 255, 153, 255),  # Bright yellow
+		"NSF":   ColourRGBA(255, 140, 0,   255),  # Deep orange
+		"NSFE":  ColourRGBA(255, 140, 0,   255),  # Deep orange
+		"SAP":   ColourRGBA(152, 255, 152, 255),  # Light green
+		"SPC":   ColourRGBA(255, 128, 0,   255),  # Bright orange
+		"VGM":   ColourRGBA(0,   128, 255, 255),  # Deep blue
+		"VGZ":   ColourRGBA(0,   128, 255, 255),  # Deep blue
 	},
 	VID = {"mp4", "webm"},
 	MOD = MOD_Formats,
@@ -40656,14 +40656,14 @@ artist_info_menu.add(MenuItem(_("Close Panel"), tauon.artist_info_panel_close))
 artist_info_menu.add(MenuItem(_("Make Large"), tauon.toggle_bio_size, tauon.toggle_bio_size_deco))
 
 filter_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "filter.png", True))
-filter_icon.colour = [43, 213, 255, 255]
+filter_icon.colour = ColourRGBA(43, 213, 255, 255)
 filter_icon.xoff = 1
 
 folder_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "folder.png", True))
 info_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "info.png", True))
 
-folder_icon.colour = [244, 220, 66, 255]
-info_icon.colour = [61, 247, 163, 255]
+folder_icon.colour = ColourRGBA(244, 220, 66, 255)
+info_icon.colour = ColourRGBA(61, 247, 163, 255)
 
 folder_tree_stem_menu.add(MenuItem(_("Open Folder"), tauon.open_folder_stem, pass_ref=True, icon=folder_icon))
 folder_tree_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
@@ -40766,7 +40766,7 @@ radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, h
 lock_asset = asset_loader(bag, bag.loaded_asset_dc, "lock.png", True)
 lock_icon = MenuIcon(lock_asset)
 lock_icon.base_asset_mod = asset_loader(bag, bag.loaded_asset_dc, "unlock.png", True)
-lock_icon.colour = [240, 190, 10, 255]
+lock_icon.colour = ColourRGBA(240, 190, 10, 255)
 lock_icon.colour_callback = tauon.lock_colour_callback
 lock_icon.xoff = 4
 lock_icon.yoff = -1
@@ -40778,7 +40778,7 @@ tab_menu.add(MenuItem(_("Lock"), tauon.lock_playlist_toggle, tauon.pl_lock_deco,
 tab_menu.add(MenuItem(_("Clear"), tauon.clear_playlist, pass_ref=True, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
 
 delete_icon.xoff = 3
-delete_icon.colour = [249, 70, 70, 255]
+delete_icon.colour = ColourRGBA(249, 70, 70, 255)
 
 tab_menu.add(MenuItem(_("Delete"),
 	pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
@@ -40787,12 +40787,12 @@ radio_tab_menu.add(MenuItem(_("Delete"),
 
 spot_asset         = asset_loader(bag, bag.loaded_asset_dc, "spot.png", True)
 spot_icon          = MenuIcon(spot_asset)
-spot_icon.colour = [30, 215, 96, 255]
+spot_icon.colour = ColourRGBA(30, 215, 96, 255)
 spot_icon.xoff = 5
 spot_icon.yoff = 2
 
 jell_icon = MenuIcon(spot_asset)
-jell_icon.colour = [190, 100, 210, 255]
+jell_icon.colour = ColourRGBA(190, 100, 210, 255)
 jell_icon.xoff = 5
 jell_icon.yoff = 2
 
@@ -40928,12 +40928,12 @@ track_menu = tauon.track_menu
 track_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
 track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=info_icon))
 
-gui.heartx_icon.colour = [55, 55, 55, 255]
+gui.heartx_icon.colour = ColourRGBA(55, 55, 55, 255)
 gui.heartx_icon.xoff = 1
 gui.heartx_icon.yoff = 0
 gui.heartx_icon.colour_callback = tauon.heart_xmenu_colour
 
-gui.spot_heartx_icon.colour = [30, 215, 96, 255]
+gui.spot_heartx_icon.colour = ColourRGBA(30, 215, 96, 255)
 gui.spot_heartx_icon.xoff = 3
 gui.spot_heartx_icon.yoff = 0
 gui.spot_heartx_icon.colour_callback = tauon.spot_heart_xmenu_colour
@@ -40942,7 +40942,7 @@ gui.spot_heartx_icon.colour_callback = tauon.spot_heart_xmenu_colour
 track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, icon=gui.heartx_icon))
 
 heart_spot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "heart-menu.png", True))
-heart_spot_icon.colour = [30, 215, 96, 255]
+heart_spot_icon.colour = ColourRGBA(30, 215, 96, 255)
 heart_spot_icon.xoff = 1
 heart_spot_icon.yoff = 0
 heart_spot_icon.colour_callback = tauon.spot_heart_menu_colour
@@ -40970,16 +40970,16 @@ track_menu.add(MenuItem(_("Delete Track File"), tauon.delete_track, pass_ref=Tru
 
 track_menu.br()
 
-# gui.rename_tracks_icon.colour = [244, 241, 66, 255]
-# gui.rename_tracks_icon.colour = [204, 255, 66, 255]
-gui.rename_tracks_icon.colour = [204, 100, 205, 255]
+# gui.rename_tracks_icon.colour = ColourRGBA(244, 241, 66, 255)
+# gui.rename_tracks_icon.colour = ColourRGBA(204, 255, 66, 255)
+gui.rename_tracks_icon.colour = ColourRGBA(204, 100, 205, 255)
 gui.rename_tracks_icon.xoff = 1
 track_menu.add_to_sub(0, MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, tauon.rename_tracks_deco, pass_ref=True,
 	pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
 
 track_menu.add_to_sub(0, MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
 
-gui.mod_folder_icon.colour = [229, 98, 98, 255]
+gui.mod_folder_icon.colour = ColourRGBA(229, 98, 98, 255)
 track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
 
 
@@ -41036,7 +41036,7 @@ folder_tree_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_
 
 # selection_menu.br()
 
-gui.transcode_icon.colour = [239, 74, 157, 255]
+gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
 folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
 folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
 folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
@@ -41098,7 +41098,7 @@ track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=T
 band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
 band_icon.xoff = 0
 band_icon.yoff = 1
-band_icon.colour = [96, 147, 158, 255]
+band_icon.colour = ColourRGBA(96, 147, 158, 255)
 
 track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.toggle_band))
 
@@ -41192,7 +41192,7 @@ set_menu.add_to_sub(0, MenuItem("+ " + _("Is CUE Sheet"), tauon.sa_cue))
 
 gui.add_icon.xoff = 3
 gui.add_icon.yoff = 0
-gui.add_icon.colour = [237, 80, 221, 255]
+gui.add_icon.colour = ColourRGBA(237, 80, 221, 255)
 gui.add_icon.colour_callback = tauon.new_playlist_colour_callback
 
 x_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, tauon.new_playlist_deco, icon=gui.add_icon))
@@ -41212,8 +41212,8 @@ x_menu.br()
 
 gui.settings_icon.xoff = 0
 gui.settings_icon.yoff = 2
-gui.settings_icon.colour = [232, 200, 96, 255]  # [230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
-# gui.settings_icon.colour = [180, 140, 255, 255]
+gui.settings_icon.colour = ColourRGBA(232, 200, 96, 255)  # [230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
+# gui.settings_icon.colour = ColourRGBA(180, 140, 255, 255)
 x_menu.add(MenuItem(_("Settings"), tauon.activate_info_box, icon=gui.settings_icon))
 x_menu.add_sub(_("Database…"), 190)
 
@@ -41275,12 +41275,12 @@ revert_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "revert.png", True
 
 radiorandom_icon.xoff = 1
 radiorandom_icon.yoff = 0
-radiorandom_icon.colour = [153, 229, 133, 255]
+radiorandom_icon.colour = ColourRGBA(153, 229, 133, 255)
 extra_menu.add(MenuItem(_("Radio Random"), tauon.radio_random, hint="/", icon=radiorandom_icon))
 
 revert_icon.xoff = 1
 revert_icon.yoff = 0
-revert_icon.colour = [229, 102, 59, 255]
+revert_icon.colour = ColourRGBA(229, 102, 59, 255)
 extra_menu.add(MenuItem(_("Revert"), pctl.revert, hint="Shift+/", icon=revert_icon))
 
 # extra_menu.add('Toggle Repeat', tauon.toggle_repeat, hint='COMMA')
@@ -41291,7 +41291,7 @@ extra_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, h
 
 heart_colours = ColourGenCache(0.7, 0.7)
 
-gui.heart_icon.colour = [245, 60, 60, 255]
+gui.heart_icon.colour = ColourRGBA(245, 60, 60, 255)
 gui.heart_icon.xoff = 3
 gui.heart_icon.yoff = 0
 
@@ -41340,7 +41340,7 @@ else:
 
 lastfm_icon.yoff = 1
 
-lastfm_icon.colour = [249, 70, 70, 255]
+lastfm_icon.colour = ColourRGBA(249, 70, 70, 255)
 lastfm_icon.colour_callback = tauon.lastfm_colour
 
 lb_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "lb-g.png"))
@@ -41517,15 +41517,15 @@ if prefs.backend == 0:
 # Clear spectogram texture
 sdl3.SDL_SetRenderTarget(renderer, gui.spec2_tex)
 sdl3.SDL_RenderClear(renderer)
-ddt.rect((0, 0, 1000, 1000), [7, 7, 7, 255])
+ddt.rect((0, 0, 1000, 1000), ColourRGBA(7, 7, 7, 255))
 
 sdl3.SDL_SetRenderTarget(renderer, gui.spec1_tex)
 sdl3.SDL_RenderClear(renderer)
-ddt.rect((0, 0, 1000, 1000), [7, 7, 7, 255])
+ddt.rect((0, 0, 1000, 1000), ColourRGBA(7, 7, 7, 255))
 
 sdl3.SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 sdl3.SDL_RenderClear(renderer)
-ddt.rect((0, 0, 1000, 1000), [7, 7, 7, 255])
+ddt.rect((0, 0, 1000, 1000), ColourRGBA(7, 7, 7, 255))
 
 sdl3.SDL_SetRenderTarget(renderer, None)
 
@@ -41619,10 +41619,10 @@ y = 0
 while y < 300:
 	x = 0
 	while x < 300:
-		ddt.rect((x, y, 1, 1), [0, 0, 0, 70])
-		ddt.rect((x + 2, y + 0, 1, 1), [0, 0, 0, 70])
-		ddt.rect((x + 2, y + 2, 1, 1), [0, 0, 0, 70])
-		ddt.rect((x + 0, y + 2, 1, 1), [0, 0, 0, 70])
+		ddt.rect((x, y, 1, 1),         ColourRGBA(0, 0, 0, 70))
+		ddt.rect((x + 2, y + 0, 1, 1), ColourRGBA(0, 0, 0, 70))
+		ddt.rect((x + 2, y + 2, 1, 1), ColourRGBA(0, 0, 0, 70))
+		ddt.rect((x + 0, y + 2, 1, 1), ColourRGBA(0, 0, 0, 70))
 
 		x += block_size
 	y += block_size
@@ -43032,24 +43032,24 @@ while pctl.running:
 				logging.info("Applying theme: " + gui.theme_name)
 
 				if colours.lm:
-					info_icon.colour = [60, 60, 60, 255]
+					info_icon.colour = ColourRGBA(60, 60, 60, 255)
 				else:
-					info_icon.colour = [61, 247, 163, 255]
+					info_icon.colour = ColourRGBA(61, 247, 163, 255)
 
 				if colours.lm:
-					folder_icon.colour = [255, 190, 80, 255]
+					folder_icon.colour = ColourRGBA(255, 190, 80, 255)
 				else:
-					folder_icon.colour = [244, 220, 66, 255]
+					folder_icon.colour = ColourRGBA(244, 220, 66, 255)
 
 				if colours.lm:
-					gui.settings_icon.colour = [85, 187, 250, 255]
+					gui.settings_icon.colour = ColourRGBA(85, 187, 250, 255)
 				else:
-					gui.settings_icon.colour = [232, 200, 96, 255]
+					gui.settings_icon.colour = ColourRGBA(232, 200, 96, 255)
 
 				if colours.lm:
-					radiorandom_icon.colour = [120, 200, 120, 255]
+					radiorandom_icon.colour = ColourRGBA(120, 200, 120, 255)
 				else:
-					radiorandom_icon.colour = [153, 229, 133, 255]
+					radiorandom_icon.colour = ColourRGBA(153, 229, 133, 255)
 
 			except Exception:
 				logging.exception("Error loading theme file")
@@ -43326,8 +43326,8 @@ while pctl.running:
 					line2_colour = colours.grey(240)  # colours.side_bar_line1
 
 					if colours.side_panel_background != colours.gallery_background:
-						line2_colour = [240, 240, 240, 255]
-						line1_colour = alpha_mod([220, 220, 220, 255], 120)
+						line2_colour = ColourRGBA(240, 240, 240, 255)
+						line1_colour = alpha_mod(ColourRGBA(20, 220, 220, 255), 120)
 
 					if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
 						line1_colour = colours.grey(80)
@@ -43389,13 +43389,13 @@ while pctl.running:
 							rect = (window_size[0] - (15 + 20) * gui.scale, gui.panelY + 3 * gui.scale, 18 * gui.scale,
 									24 * gui.scale)
 							tauon.fields.add(rect)
-							colour = [255, 255, 255, 35]
+							colour = ColourRGBA(255, 255, 255, 35)
 							if colours.lm:
-								colour = [0, 0, 0, 30]
+								colour = ColourRGBA(0, 0, 0, 30)
 							if tauon.coll(rect) and not tauon.gallery_scroll.held:
-								colour = [255, 220, 100, 245]
+								colour = ColourRGBA(255, 220, 100, 245)
 								if colours.lm:
-									colour = [250, 100, 0, 255]
+									colour = ColourRGBA(250, 100, 0, 255)
 								if inp.mouse_click:
 									gui.pt = 1
 
@@ -43677,9 +43677,9 @@ while pctl.running:
 									pl = pctl.id_to_pl(pctl.quick_add_target)
 									if pl is not None and pctl.default_playlist[tauon.album_dex[album_on]] in \
 											pctl.multi_playlist[pl].playlist_ids:
-										c = [110, 233, 90, 255]
+										c = ColourRGBA(110, 233, 90, 255)
 										if colours.lm:
-											c = [66, 244, 66, 255]
+											c = ColourRGBA(66, 244, 66, 255)
 										ddt.rect_a((x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8), c)
 
 								# Draw transcode highlight
@@ -43694,9 +43694,9 @@ while pctl.running:
 												tr = True
 												break
 									if tr:
-										c = [244, 212, 66, 255]
+										c = ColourRGBA(244, 212, 66, 255)
 										if colours.lm:
-											c = [244, 64, 244, 255]
+											c = ColourRGBA(244, 64, 244, 255)
 										ddt.rect_a((x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8), c)
 										# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
 										#            colours.gallery_background, True)
@@ -43705,7 +43705,7 @@ while pctl.running:
 
 								if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
 									c = colours.gallery_highlight
-									c = [c[1], c[2], c[0], c[3]]
+									c = ColourRGBA(c.g, c.b, c.r, c.a)
 									ddt.rect_a((x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8), c)  # [150, 80, 222, 255]
 									# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
 									#            colours.gallery_background, True)
@@ -43731,15 +43731,15 @@ while pctl.running:
 								# Draw faint outline
 								ddt.rect(
 									(x - 1, y - 1, tauon.album_mode_art_size + 2, tauon.album_mode_art_size + 2),
-									[255, 255, 255, 11])
+									ColourRGBA(255, 255, 255, 11))
 
 								if gui.album_tab_mode or gallery_menu.active:
 									if info[2] is False and info[0] != 1 and not colours.lm:
-										ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [0, 0, 0, 110])
+										ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), ColourRGBA(0, 0, 0, 110))
 										albumtitle = colours.grey(160)
 
 								elif info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
-									ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [0, 0, 0, 110])
+									ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), ColourRGBA(0, 0, 0, 110))
 									albumtitle = colours.grey(160)
 
 								# Determine meta info
@@ -43763,11 +43763,11 @@ while pctl.running:
 									singles = True
 
 								# Draw blank back colour
-								back_colour = [40, 40, 40, 50]
+								back_colour = ColourRGBA(40, 40, 40, 50)
 								if colours.lm:
-									back_colour = [10, 10, 10, 15]
+									back_colour = ColourRGBA(10, 10, 10, 15)
 
-								back_colour = alpha_blend([10, 10, 10, 15], colours.gallery_background)
+								back_colour = alpha_blend(ColourRGBA(10, 10, 10, 15), colours.gallery_background)
 
 								ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), back_colour)
 
@@ -43793,7 +43793,7 @@ while pctl.running:
 											size=size, force_offset=0)
 										if not drawn_art:
 											g = 50 + round(100 / albs) * i
-											ddt.rect((x + xx, y + xx, size, size), [g, g, g, 100])
+											ddt.rect((x + xx, y + xx, size, size), ColourRGBA(g, g, g, 100))
 										drawn_art = True
 										i += 1
 								else:
@@ -43810,7 +43810,7 @@ while pctl.running:
 								# Draw mouse-over highlight
 								if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
 									if tauon.is_level_zero():
-										ddt.rect(rect, [255, 255, 255, 10])
+										ddt.rect(rect, ColourRGBA(255, 255, 255, 10))
 
 								if drawn_art is False and gui.gallery_show_text is False:
 									ddt.text(
@@ -44032,10 +44032,10 @@ while pctl.running:
 
 										ddt.rect(
 											(rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h),
-											[230, 230, 230, 255])
+											ColourRGBA(230, 230, 230, 255))
 										ddt.text(
 											(rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1), item.name,
-											[5, 5, 5, 255], 213, w, bg=[230, 230, 230, 255])
+											ColourRGBA(5, 5, 5, 255), 213, w, bg=ColourRGBA(230, 230, 230, 255))
 
 										if inp.mouse_click:
 											tauon.goto_album(item.position)
@@ -44328,7 +44328,7 @@ while pctl.running:
 				rect = (gui.playlist_left, gui.panelY, gui.plw, window_size[1] - (gui.panelBY + gui.panelY))
 
 				if gui.ext_drop_mode and tauon.coll(rect):
-					ddt.rect_si(rect, [80, 200, 180, 255], round(3 * gui.scale))
+					ddt.rect_si(rect, ColourRGBA(80, 200, 180, 255), round(3 * gui.scale))
 				tauon.fields.add(rect)
 
 				if gui.combo_mode and inp.key_esc_press and tauon.is_level_zero():
@@ -44384,7 +44384,6 @@ while pctl.running:
 					run = 0
 
 					for i, item in enumerate(gui.pl_st):
-
 						# if run > rect[2] - 55 * gui.scale:
 						#     break
 
@@ -44409,10 +44408,10 @@ while pctl.running:
 						bg = c_bar_background
 
 						if tauon.coll(box) and gui.set_label_hold != -1:
-							bg = [39, 39, 39, 255]
+							bg = ColourRGBA(39, 39, 39, 255)
 
 						if i == gui.set_label_hold:
-							bg = [22, 22, 22, 255]
+							bg = ColourRGBA(22, 22, 22, 255)
 
 						ddt.rect(box, bg)
 						ddt.rect(grip, colours.column_grip)
@@ -44449,11 +44448,11 @@ while pctl.running:
 
 						if gui.column_sort_ani_direction == 1:
 							y = top + 8 * p + 3 * gui.scale
-							gui.column_sort_down_icon.render(x, round(y), [255, 255, 255, 90])
+							gui.column_sort_down_icon.render(x, round(y), ColourRGBA(255, 255, 255, 90))
 						else:
 							p = 1 - p
 							y = top + 8 * p + 2 * gui.scale
-							gui.column_sort_up_icon.render(x, round(y), [255, 255, 255, 90])
+							gui.column_sort_up_icon.render(x, round(y), ColourRGBA(255, 255, 255, 90))
 
 				# Switch Vis:
 				if inp.right_click and tauon.coll(
@@ -44877,19 +44876,19 @@ while pctl.running:
 						per = pctl.playlist_view_position / len(pctl.default_playlist)
 						sbp = int((ey - top - sbl) * per) + top + 1
 
-					bg = [255, 255, 255, 6]
+					bg = ColourRGBA(255, 255, 255, 6)
 					fg = colours.scroll_colour
 
 					if colours.lm:
-						bg = [200, 200, 200, 100]
-						fg = [100, 100, 100, 200]
+						bg = ColourRGBA(200, 200, 200, 100)
+						fg = ColourRGBA(100, 100, 100, 200)
 
 					ddt.rect_a((x, top), (width + 1 * gui.scale, window_size[1] - top - gui.panelBY), bg)
 					ddt.rect_a((x + 1, sbp), (width, sbl), alpha_mod(fg, scroll_opacity))
 
 					if (tauon.coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and inp.mouse_position[
 						0] != 0) or scroll_hold:
-						ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), [255, 255, 255, 19])
+						ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), ColourRGBA(255, 255, 255, 19))
 
 			# NEW TOP BAR
 			# C-TBR
@@ -44969,7 +44968,7 @@ while pctl.running:
 					(gui.preview_artist_location[0] - border,
 					gui.preview_artist_location[1] - border,
 					tauon.artist_preview_render.size[0] + border * 2,
-					tauon.artist_preview_render.size[0] + border * 2), (20, 20, 20, 255))
+					tauon.artist_preview_render.size[0] + border * 2), ColourRGBA(20, 20, 20, 255))
 
 				tauon.artist_preview_render.draw(gui.preview_artist_location[0], gui.preview_artist_location[1])
 				if inp.mouse_click or inp.right_click or inp.mouse_wheel:
@@ -45052,14 +45051,14 @@ while pctl.running:
 								round(12 * gui.scale)]
 
 					line = tc.file_ext
-					ex_colour = [130, 130, 130, 255]
+					ex_colour = ColourRGBA(130, 130, 130, 255)
 					if line in tauon.formats.colours:
 						ex_colour = tauon.formats.colours[line]
 
 					# Spotify icon rendering
 					if line == "SPTY":
-						colour = [30, 215, 96, 255]
-						h, l, s = rgb_to_hls(colour[0], colour[1], colour[2])
+						colour = ColourRGBA(30, 215, 96, 255)
+						h, l, s = rgb_to_hls(colour.r, colour.g, colour.b)
 
 						rect = (x + w - round(35 * gui.scale), y + round(30 * gui.scale), round(30 * gui.scale),
 								round(30 * gui.scale))
@@ -45082,37 +45081,37 @@ while pctl.running:
 					# Codec tag rendering
 					else:
 						if tc.file_ext in ("JELY", "TIDAL"):
-							e_colour = [130, 130, 130, 255]
+							e_colour = ColourRGBA(130, 130, 130, 255)
 							if "container" in tc.misc:
 								line = tc.misc["container"].upper()
 								if line in tauon.formats.colours:
 									e_colour = tauon.formats.colours[line]
 
 							ddt.rect(ext_rect, e_colour)
-							colour = alpha_blend([10, 10, 10, 235], e_colour)
+							colour = alpha_blend(ColourRGBA(10, 10, 10, 235), e_colour)
 							if colour_value(e_colour) < 180:
-								colour = alpha_blend([200, 200, 200, 235], e_colour)
+								colour = alpha_blend(ColourRGBA(200, 200, 200, 235), e_colour)
 							ddt.text(
 								(int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)), line, colour, 211, bg=e_colour)
 							ext_rect[1] += 16 * gui.scale
 							y += 16 * gui.scale
 
 						ddt.rect(ext_rect, ex_colour)
-						colour = alpha_blend([10, 10, 10, 235], ex_colour)
+						colour = alpha_blend(ColourRGBA(10, 10, 10, 235), ex_colour)
 						if colour_value(ex_colour) < 180:
-							colour = alpha_blend([200, 200, 200, 235], ex_colour)
+							colour = alpha_blend(ColourRGBA(200, 200, 200, 235), ex_colour)
 						ddt.text(
 							(int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)), tc.file_ext, colour, 211, bg=ex_colour)
 
 						if tc.is_cue:
 							ext_rect[1] += 16 * gui.scale
-							colour = [218, 222, 73, 255]
+							colour = ColourRGBA(218, 222, 73, 255)
 							if tc.is_embed_cue:
-								colour = [252, 199, 55, 255]
+								colour = ColourRGBA(252, 199, 55, 255)
 							ddt.rect(ext_rect, colour)
 							ddt.text(
 								(int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)), "CUE",
-								alpha_blend([10, 10, 10, 235], colour), 211, bg=colour)
+								alpha_blend(ColourRGBA(10, 10, 10, 235), colour), 211, bg=colour)
 
 
 					rect = [x1, y1 + int(2 * gui.scale), 450 * gui.scale, 14 * gui.scale]
@@ -45478,7 +45477,7 @@ while pctl.running:
 					tt = _("Physically deletes folder from disk")
 				if pctl.draw.button(
 					text, x + (8 + 300 + 10) * gui.scale, y + 11 * gui.scale, 80 * gui.scale,
-					text_highlight_colour=colours.grey(255), background_highlight_colour=[180, 60, 60, 255],
+					text_highlight_colour=colours.grey(255), background_highlight_colour=ColourRGBA(180, 60, 60, 255),
 					press=inp.mouse_up, tooltip=tt):
 					if inp.key_shift_down:
 						tauon.delete_folder(gui.rename_index, True)
@@ -45578,8 +45577,8 @@ while pctl.running:
 				# ddt.rect_r((rect[0], rect[1], rect[2], rect[3]), [255,120,5,255], True)
 
 				ddt.text_background_colour = colours.box_background
-				# ddt.text_background_colour = [255,120,5,255]
-				# ddt.text_background_colour = [220,100,5,255]
+				# ddt.text_background_colour = ColourRGBA(255,120,5,255)
+				# ddt.text_background_colour = ColourRGBA(220,100,5,255)
 				ddt.rect(rect, colours.box_background)
 
 				if len(inp.input_text) > 0:
@@ -45613,8 +45612,8 @@ while pctl.running:
 				#     inp.input_text = ""
 
 				if gui.search_error:
-					ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], [180, 40, 40, 255])
-					ddt.text_background_colour = [180, 40, 40, 255]  # alpha_blend([255,0,0,25], ddt.text_background_colour)
+					ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], ColourRGBA(180, 40, 40, 255))
+					ddt.text_background_colour = ColourRGBA(180, 40, 40, 255)  # alpha_blend(ColourRGBA(255,0,0,25), ddt.text_background_colour)
 				# if input.backspace_press:
 				#     gui.search_error = False
 
@@ -45882,12 +45881,12 @@ while pctl.running:
 
 				if gui.toast_love_added:
 					text = _("Loved track")
-					gui.heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, [250, 100, 100, 255])
+					gui.heart_notify_icon.render(rect[0] + 9 * gui.scale, rect[1] + 8 * gui.scale, ColourRGBA(250, 100, 100, 255))
 				else:
 					text = _("Un-Loved track")
 					gui.heart_notify_break_icon.render(
 						rect[0] + 9 * gui.scale, rect[1] + 7 * gui.scale,
-						[150, 150, 150, 255])
+						ColourRGBA(150, 150, 150, 255))
 
 				ddt.text_background_colour = colours.queue_card_background
 				ddt.text((rect[0] + 42 * gui.scale, rect[1] + 3 * gui.scale), text, colours.box_text, 313)
@@ -45972,7 +45971,7 @@ while pctl.running:
 
 		if tauon.console.show:
 			rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
-			ddt.rect(rect, [0, 0, 0, 245])
+			ddt.rect(rect, ColourRGBA(0, 0, 0, 245))
 
 			yy = rect[3] + 15 * gui.scale
 			u = False
@@ -45981,7 +45980,7 @@ while pctl.running:
 				if yy < rect[1] + 5 * gui.scale:
 					break
 
-				text_colour = [60, 255, 60, 255]
+				text_colour = ColourRGBA(60, 255, 60, 255)
 				message = log.format(record)
 
 				t = record.created
@@ -45992,23 +45991,23 @@ while pctl.running:
 				if d > 2:
 					fade = 200
 
-				text_colour = [120, 120, 120, fade]
+				text_colour = ColourRGBA(120, 120, 120, fade)
 				if record.levelno == 10:
-					text_colour = [80, 80, 80, fade]
+					text_colour = ColourRGBA(80, 80, 80, fade)
 				if record.levelno == 30:
-					text_colour = [230, 190, 90, fade]
+					text_colour = ColourRGBA(230, 190, 90, fade)
 				if record.levelno == 40:
-					text_colour = [255, 120, 90, fade]
+					text_colour = ColourRGBA(255, 120, 90, fade)
 				if record.levelno == 50:
-					text_colour = [255, 90, 90, fade]
+					text_colour = ColourRGBA(255, 90, 90, fade)
 
-				time_colour = [255, 80, 160, fade]
+				time_colour = ColourRGBA(255, 80, 160, fade)
 
 				w = ddt.text(
 					(rect[0] + 10 * gui.scale, yy), time.strftime("%H:%M:%S", dt), time_colour, 311,
-					rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+					rect[2] - 60 * gui.scale, bg=ColourRGBA(5,5,5,255))
 
-				ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=[5,5,5,255])
+				ddt.text((w + rect[0] + 17 * gui.scale, yy), message, text_colour, 311, rect[2] - 60 * gui.scale, bg=ColourRGBA(5,5,5,255))
 				yy -= 14 * gui.scale
 			if u:
 				gui.delay_frame(5)
@@ -46061,29 +46060,29 @@ while pctl.running:
 			y_offset = round(1 * gui.scale)
 
 			if len(gui.shift_selection) == 1:  # Single track
-				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, block_size), [160, 140, 235, 240])
+				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, block_size), ColourRGBA(160, 140, 235, 240))
 			elif inp.key_ctrl_down:  # Add to queue undrouped
 				small_block = round(6 * gui.scale)
 				spacing = round(2 * gui.scale)
-				ddt.rect((i_x + x_offset, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
+				ddt.rect((i_x + x_offset, i_y + y_offset, small_block, small_block), ColourRGBA(160, 140, 235, 240))
 				ddt.rect(
-					(i_x + x_offset + spacing + small_block, i_y + y_offset, small_block, small_block), [160, 140, 235, 240])
+					(i_x + x_offset + spacing + small_block, i_y + y_offset, small_block, small_block), ColourRGBA(160, 140, 235, 240))
 				ddt.rect(
-					(i_x + x_offset, i_y + y_offset + spacing + small_block, small_block, small_block), [160, 140, 235, 240])
+					(i_x + x_offset, i_y + y_offset + spacing + small_block, small_block, small_block), ColourRGBA(160, 140, 235, 240))
 				ddt.rect(
 					(i_x + x_offset + spacing + small_block, i_y + y_offset + spacing + small_block, small_block, small_block),
-					[160, 140, 235, 240])
+					ColourRGBA(160, 140, 235, 240))
 				ddt.rect(
 					(i_x + x_offset, i_y + y_offset + spacing + small_block + spacing + small_block, small_block, small_block),
-					[160, 140, 235, 240])
+					ColourRGBA(160, 140, 235, 240))
 				ddt.rect(
 					(i_x + x_offset + spacing + small_block,
 					i_y + y_offset + spacing + small_block + spacing + small_block,
-					small_block, small_block), [160, 140, 235, 240])
+					small_block, small_block), ColourRGBA(160, 140, 235, 240))
 
 			else:  # Multiple tracks
 				long_block = round(25 * gui.scale)
-				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), [160, 140, 235, 240])
+				ddt.rect((i_x + x_offset, i_y + y_offset, block_size, long_block), ColourRGBA(160, 140, 235, 240))
 
 			# gui.update += 1
 			gui.update_on_drag = True
@@ -46094,9 +46093,9 @@ while pctl.running:
 			i_x, i_y = input_sdl.mouse()
 			gui.drag_source_position = (0, 0)
 			ddt.rect(
-				(i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), [50, 50, 50, 225])
+				(i_x + 20 * gui.scale, i_y + 3 * gui.scale, int(50 * gui.scale), int(15 * gui.scale)), ColourRGBA(50, 50, 50, 225))
 			# ddt.rect_r((i_x + 20 * gui.scale, i_y + 1 * gui.scale, int(60 * gui.scale), int(15 * gui.scale)), [240, 240, 240, 255], True)
-			# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[tauon.playlist_box.drag_on].title, [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+			# ddt.draw_text((i_x + 75 * gui.scale, i_y - 0 * gui.scale, 1), pctl.multi_playlist[tauon.playlist_box.drag_on].title, ColourRGBA(30, 30, 30, 255), 212, bg=[240, 240, 240, 255])
 		if tauon.radio_view.drag and not point_proximity_test(tauon.radio_view.click_point, inp.mouse_position, round(4 * gui.scale)):
 			ddt.rect((
 				inp.mouse_position[0] + round(8 * gui.scale), inp.mouse_position[1] - round(8 * gui.scale), 48 * gui.scale,
@@ -46113,10 +46112,10 @@ while pctl.running:
 				w = max(w, 45 * gui.scale)
 				ddt.rect(
 					(i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)),
-					[240, 240, 240, 255])
+					ColourRGBA(240, 240, 240, 255))
 				ddt.text(
 					(i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1),
-					gui.pl_st[gui.set_label_hold][0], [30, 30, 30, 255], 212, bg=[240, 240, 240, 255])
+					gui.pl_st[gui.set_label_hold][0], ColourRGBA(30, 30, 30, 255), 212, bg=ColourRGBA(240, 240, 240, 255))
 
 		inp.input_text = ""
 		gui.update -= 1
@@ -46179,11 +46178,11 @@ while pctl.running:
 				for i, value in enumerate(gui.spec2_buffers[0]):
 					ddt.rect(
 						[gui.spec2_position, i, 1, 1],
-						[
+						ColourRGBA(
 							min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
 							min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
 							min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
-							255])
+							255))
 
 				del gui.spec2_buffers[0]
 
@@ -46217,7 +46216,7 @@ while pctl.running:
 				sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
 			if pref_box.enabled:
-				ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), [0, 0, 0, 90])
+				ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), ColourRGBA(0, 0, 0, 90))
 
 		if gui.vis == 4 and gui.draw_vis4_top:
 			showcase.render_vis(True)
@@ -46279,9 +46278,9 @@ while pctl.running:
 				on = 0
 
 				sdl3.SDL_SetRenderDrawColor(
-					renderer, colours.vis_colour[0],
-					colours.vis_colour[1], colours.vis_colour[2],
-					colours.vis_colour[3])
+					renderer, colours.vis_colour.r,
+					colours.vis_colour.g, colours.vis_colour.b,
+					colours.vis_colour.a)
 
 				for item in gui.s_spec:
 					if on > 19:
@@ -46307,7 +46306,7 @@ while pctl.running:
 					gui.bar.x += round(4 * gui.scale)
 
 				if tauon.pref_box.enabled:
-					ddt.rect((0, 0, gui.spec_w, gui.spec_h), [0, 0, 0, 90])
+					ddt.rect((0, 0, gui.spec_w, gui.spec_h), ColourRGBA(0, 0, 0, 90))
 
 				sdl3.SDL_SetRenderTarget(renderer, None)
 				sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
@@ -46369,28 +46368,28 @@ while pctl.running:
 					met = False
 				if gui.level_meter_colour_mode == 1:
 					if not met:
-						cc = [15, 10, 20, 255]
+						cc = ColourRGBA(15, 10, 20, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 				elif gui.level_meter_colour_mode == 2:
 					if not met:
-						cc = [11, 11, 13, 255]
+						cc = ColourRGBA(11, 11, 13, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 				elif gui.level_meter_colour_mode == 3:
 					if not met:
-						cc = [12, 6, 0, 255]
+						cc = ColourRGBA(12, 6, 0, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 				elif gui.level_meter_colour_mode == 4:
 					if not met:
-						cc = [10, 10, 10, 255]
+						cc = ColourRGBA(10, 10, 10, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 				elif t < 7:
 					cc = colours.level_green
 					if met is False:
@@ -46415,31 +46414,31 @@ while pctl.running:
 
 				if gui.level_meter_colour_mode == 1:
 					if not met:
-						cc = [15, 10, 20, 255]
+						cc = ColourRGBA(15, 10, 20, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.68 + (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif gui.level_meter_colour_mode == 2:
 					if not met:
-						cc = [11, 11, 13, 255]
+						cc = ColourRGBA(11, 11, 13, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.63 - (t * 0.015), 0.4, 0.7)
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif gui.level_meter_colour_mode == 3:
 					if not met:
-						cc = [12, 6, 0, 255]
+						cc = ColourRGBA(12, 6, 0, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.11 - (t * 0.010), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif gui.level_meter_colour_mode == 4:
 					if not met:
-						cc = [10, 10, 10, 255]
+						cc = ColourRGBA(10, 10, 10, 255)
 					else:
 						cc = colorsys.hls_to_rgb(0.3 - (t * 0.03), 0.4, 0.7 + (t * 0.02))
-						cc = (int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
+						cc = ColourRGBA(int(cc[0] * 255), int(cc[1] * 255), int(cc[2] * 255), 255)
 
 				elif t < 7:
 					cc = colours.level_green
