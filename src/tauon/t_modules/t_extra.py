@@ -47,6 +47,18 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_tagscan import TrackFile
 
 @dataclass
+class ColourRGBA:
+	"""Red, Green, Blue and Alpha
+
+	SDR, ranging from 0 to 255
+	"""
+
+	r: int
+	g: int
+	b: int
+	a: int
+
+@dataclass
 class RadioStation:
 	title:               str
 	stream_url:          str
@@ -247,14 +259,14 @@ def get_filesize_string_rounded(file_bytes: int) -> str:
 		line = str(file_mb) + _(" MB")
 	return line
 
-def test_lumi(c1: list[int]) -> float:
+def test_lumi(c1: ColourRGBA) -> float:
 	"""Estimates the perceived luminance of a colour"""
-	return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
+	return 1 - (0.299 * c1.r + 0.587 * c1.g + 0.114 * c1.b) / 255
 
-def rel_luminance(colour: tuple[int, int, int, int]) -> float:
-	r = colour[0] / 255
-	g = colour[1] / 255
-	b = colour[2] / 255
+def rel_luminance(colour: ColourRGBA) -> float:
+	r = colour.r / 255
+	g = colour.g / 255
+	b = colour.b / 255
 
 	if r < 0.03928:
 		r /= 12.90
@@ -273,7 +285,7 @@ def rel_luminance(colour: tuple[int, int, int, int]) -> float:
 
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-def contrast_ratio(c1: tuple[int, int, int, int], c2: tuple[int, int, int, int]) -> float:
+def contrast_ratio(c1: ColourRGBA, c2: ColourRGBA) -> float:
 	l1 = rel_luminance(c1)
 	l2 = rel_luminance(c2)
 
@@ -282,29 +294,29 @@ def contrast_ratio(c1: tuple[int, int, int, int], c2: tuple[int, int, int, int])
 
 	return (l1 + 0.05) / (l2 + 0.05)
 
-def colour_value(c1: list[int]) -> int:
+def colour_value(c1: ColourRGBA) -> int:
 	"""Give the sum of first 3 elements in a list"""
-	return c1[0] + c1[1] + c1[2]
+	return c1.r + c1.g + c1.b
 
-def alpha_blend(colour: tuple[int, int, int, int], base: tuple[int, int, int, int]) -> list[int]:
+def alpha_blend(colour: ColourRGBA, base: ColourRGBA) -> ColourRGBA:
 	"""Performs alpha blending of one colour (RGB-A) onto another (RGB)"""
-	alpha = colour[3] / 255
-	return [
-		int(alpha * colour[0] + (1 - alpha) * base[0]),
-		int(alpha * colour[1] + (1 - alpha) * base[1]),
-		int(alpha * colour[2] + (1 - alpha) * base[2]),
-		255]
+	alpha = colour.a / 255
+	return ColourRGBA(
+		int(alpha * colour.r + (1 - alpha) * base.r),
+		int(alpha * colour.g + (1 - alpha) * base.g),
+		int(alpha * colour.b + (1 - alpha) * base.b),
+		255)
 
-def alpha_mod(colour: list[int], alpha: int) -> list[int]:
+def alpha_mod(colour: ColourRGBA, alpha: int) -> ColourRGBA:
 	"""Change the alpha component of an RGBA list"""
-	return [colour[0], colour[1], colour[2], alpha]
+	return ColourRGBA(colour.r, colour.g, colour.b, alpha)
 
-def colour_slide(a: list[int], b: list[int], x: int, x_limit: int) -> tuple[int, int, int, int]:
+def colour_slide(a: ColourRGBA, b: ColourRGBA, x: int, x_limit: int) -> ColourRGBA:
 	"""Shift between two colours based on x where x is between 0 and limit"""
-	return (
-		min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
-		min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
-		min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255),
+	return ColourRGBA(
+		min(int(a.r + ((b.r - a.r) * (x / x_limit))), 255),
+		min(int(a.g + ((b.g - a.g) * (x / x_limit))), 255),
+		min(int(a.b + ((b.b - a.b) * (x / x_limit))), 255),
 		255)
 
 def hex_to_rgb(colour: str) -> list[int]:
@@ -315,9 +327,9 @@ def check_equal(lst: list[int]) -> bool:
 	"""Check if all the numbers in a list are the same"""
 	return not lst or lst.count(lst[0]) == len(lst)
 
-def is_grey(lst: list[int]) -> bool:
-	"""Check if the first 3 elements of a list are the same"""
-	return lst[0] == lst[1] == lst[2]
+def is_grey(lst: ColourRGBA) -> bool:
+	"""Check if R, G, and B have the same values"""
+	return lst.r == lst.g == lst.b
 
 def star_count(sec: float, dur: float) -> int:
 	"""Give a score from 0-7 based on number of seconds"""
@@ -380,31 +392,31 @@ def search_magic(terms: str, evaluate: str) -> bool:
 def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
 
-def random_colour(saturation: float, luminance: float) -> list[int]:
+def random_colour(saturation: float, luminance: float) -> ColourRGBA:
 	h = round(random.random(), 2)
 	colour = colorsys.hls_to_rgb(h, luminance, saturation)
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
-def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
+def hsl_to_rgb(h: float, s: float, l: float) -> ColourRGBA:
 	colour = colorsys.hls_to_rgb(h, l, s)
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
-def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
+def hls_to_rgb(h: float, l: float, s: float) -> ColourRGBA:
 	"""Duplicate HSL function so it works for the less common alt name too"""
 	colour = colorsys.hls_to_rgb(h, l, s)
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
 def rgb_to_hls(r: float, g: float, b: float) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def rgb_add_hls(source: list[int], h: float = 0, l: float = 0, s: float = 0) -> list[int]:
-	c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
+def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) -> ColourRGBA:
+	c = colorsys.rgb_to_hls(source.r / 255, source.g / 255, source.b / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source.a)
 
-
-def is_light(colour: list[int]) -> bool:
+def is_light(colour: ColourRGBA) -> bool:
 	return test_lumi(colour) < 0.2
+
 class ColourGenCache:
 
 	def __init__(self, saturation: float, luminance: float) -> None:
@@ -413,8 +425,7 @@ class ColourGenCache:
 		self.luminance = luminance
 		self.store = {}
 
-	def get(self, key: str) -> list[int]:
-
+	def get(self, key: str) -> ColourRGBA:
 		if key in self.store:
 			return self.store[key]
 
@@ -1037,7 +1048,7 @@ mac_styles = {
 	"whitesur": None,
 	"vimix": None,
 	"sweet": None,
-	"dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
+	"dracula": [ColourRGBA(248, 58, 67, 255), ColourRGBA(239, 251, 122, 255), ColourRGBA(74, 254, 104, 255)],
 	"nordic": None,
 	"juno": None,
 }
