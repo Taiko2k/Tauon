@@ -36574,7 +36574,7 @@ def load_prefs(bag: Bag) -> None:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target",
-			"C:\\Program Files (x86)\\MusicBrainz Picard\\picard.exe",
+			"C:\\Program Files\\MusicBrainz Picard\\picard.exe",
 			"The path of the exe to run.")
 	else:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
