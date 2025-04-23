@@ -261,14 +261,13 @@ jobs:
           # Create a .dmg package
           # FIXME: Undo this overengineered crap once the following issue gets figured out:
           #        https://github.com/actions/runner-images/issues/7522
-          max_tries=10
           i=0
-          until hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"; do
-            if [ $i -eq $max_tries ]; then
-              echo 'Error: hdiutil did not succeed even after 10 tries.'
+          until hdiutil create -volname "${APP_NAME}" -srcfolder "${APP_PATH}" -ov -format UDZO "${DMG_PATH}"; do
+            if [[ ${i} -eq 10 ]]; then
+              echo "Error: hdiutil did not succeed even after 10 tries."
               exit 1
             fi
-            ((i++))
+            i=$((i+1))
           done
 
       - name: Upload DMG artifact
@@ -382,14 +381,13 @@ jobs:
           # Create a .dmg package
           # FIXME: Undo this overengineered crap once the following issue gets figured out:
           #        https://github.com/actions/runner-images/issues/7522
-          max_tries=10
           i=0
-          until hdiutil create -volname "$APP_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "$DMG_PATH"; do
-            if [ $i -eq $max_tries ]; then
-              echo 'Error: hdiutil did not succeed even after 10 tries.'
+          until hdiutil create -volname "${APP_NAME}" -srcfolder "${APP_PATH}" -ov -format UDZO "${DMG_PATH}"; do
+            if [[ ${i} -eq 10 ]]; then
+              echo "Error: hdiutil did not succeed even after 10 tries."
               exit 1
             fi
-            ((i++))
+            i=$((i+1))
           done
 
       - name: Upload DMG artifact
