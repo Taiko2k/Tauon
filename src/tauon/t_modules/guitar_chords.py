@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_extra import TestTimer, filename_safe
+from tauon.t_modules.t_extra import ColourRGBA, TestTimer, filename_safe
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import TrackClass, Tauon
@@ -248,7 +248,7 @@ class GuitarChords:
 		if "title" in parsed_response:
 			logging.debug(f"Wrote chords for found song title: {parsed_response['title']}")
 		else:
-			logging.error(f"Song had no title?!")
+			logging.error("Song had no title?!")
 			logging.debug(parsed_response)
 
 	def test_ready_status(self, track: TrackClass) -> int:
@@ -386,15 +386,15 @@ class GuitarChords:
 						xx = max(x + ch[1], min_space)
 
 						if len(ch[0]) == 2 and ch[0][1].lower() == "x":
-							min_space = 1 + xx + self.ddt.text((xx, y), ch[0], [220, 120, 240, 255], 214)
+							min_space = 1 + xx + self.ddt.text((xx, y), ch[0], ColourRGBA(220, 120, 240, 255), 214)
 						else:
-							min_space = 1 + xx + self.ddt.text((xx, y), ch[0], [140, 120, 240, 255], 213)
+							min_space = 1 + xx + self.ddt.text((xx, y), ch[0], ColourRGBA(140, 120, 240, 255), 213)
 				y += 15 * self.gui.scale
 
 				if self.window_size[0] > y > 0:
 					colour = self.colours.lyrics
 					if self.colours.lm:
-						colour = [30, 30, 30, 255]
+						colour = ColourRGBA(30, 30, 30, 255)
 					self.ddt.text((x, y), line[0], colour, 16)
 
 				y += 18 * self.gui.scale

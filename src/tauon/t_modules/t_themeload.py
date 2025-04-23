@@ -28,14 +28,14 @@ from typing import TYPE_CHECKING
 
 from PIL import Image
 
-from tauon.t_modules.t_extra import rgb_add_hls, test_lumi
+from tauon.t_modules.t_extra import ColourRGBA, rgb_add_hls, test_lumi
 
 if TYPE_CHECKING:
 	from pathlib import Path
 	from tauon.t_modules.t_draw import TDraw
-	from tauon.t_modules.t_main import GuiVar, Tauon
+	from tauon.t_modules.t_main import ColoursClass, Tauon
 
-def get_colour_from_line(cline: str) -> list[int]:
+def get_colour_from_line(cline: str) -> ColourRGBA:
 	colour     = [-1, -1, -1, -1]
 	colour_str = ["", "", "", ""]
 	mode = 0
@@ -62,7 +62,7 @@ def get_colour_from_line(cline: str) -> list[int]:
 		b = int(ll[4] + ll[5], 16)
 		if ll[6].isalnum() and ll[7].isalnum():
 			a = int(ll[6] + ll[7], 16)
-		return [r, g, b, a]
+		return ColourRGBA(r, g, b, a)
 	# rgb mode
 	for i in cline:
 		if i.isdigit():
@@ -77,10 +77,10 @@ def get_colour_from_line(cline: str) -> list[int]:
 		else:
 			colour[b] = int(colour_str[b])
 
-	return colour
+	return ColourRGBA(colour[0], colour[1], colour[2], colour[3])
 
 
-def load_theme(colours: GuiVar, path: Path) -> None:
+def load_theme(colours: ColoursClass, path: Path) -> None:
 
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
@@ -121,14 +121,14 @@ def load_theme(colours: GuiVar, path: Path) -> None:
 				colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
 
 				if test_lumi(colours.bottom_panel_colour) < 0.2:
-					colours.corner_icon = [0, 0, 0, 60]
+					colours.corner_icon = ColourRGBA(0, 0, 0, 60)
 				elif test_lumi(colours.bottom_panel_colour) < 0.8:
-					colours.corner_icon = [40, 40, 40, 255]
+					colours.corner_icon = ColourRGBA(40, 40, 40, 255)
 				else:
-					colours.corner_icon = [255, 255, 255, 30]
+					colours.corner_icon = ColourRGBA(255, 255, 255, 30)
 
 				if test_lumi(colours.bottom_panel_colour) < 0.2:
-					colours.corner_icon = [0, 0, 0, 60]
+					colours.corner_icon = ColourRGBA(0, 0, 0, 60)
 
 				if not colours.lm:
 					colours.corner_button = rgb_add_hls(colours.top_panel_background, 0, 0.18, 0)

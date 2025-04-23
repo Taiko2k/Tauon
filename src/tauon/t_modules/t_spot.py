@@ -78,7 +78,7 @@ class SpotCtl:
 		self.progress_timer:   Timer = Timer()
 		self.update_timer:     Timer = Timer()
 
-		self.token_path: str = os.path.join(self.tauon.user_directory, "spot-token-pkce")
+		self.token_path = self.tauon.user_directory / "spot-token-pkce"
 		self.pkce_code = None
 		self.local: bool = True
 		self.country = None
@@ -128,14 +128,14 @@ class SpotCtl:
 	def save_token(self) -> None:
 
 		if self.token:
-			f = open(self.token_path, "w")
+			f = self.token_path.open("w")
 			f.write(str(self.token.refresh_token))
 			f.close()
 			self.tauon.prefs.spotify_token = str(self.token.refresh_token)
 
 	def load_token(self) -> None:
-		if os.path.isfile(self.token_path):
-			f = open(self.token_path)
+		if self.token_path.is_file():
+			f = self.token_path.open()
 			self.tauon.prefs.spotify_token = f.read().replace("\n", "").strip()
 			f.close()
 
@@ -161,8 +161,8 @@ class SpotCtl:
 	def delete_token(self) -> None:
 		self.tauon.prefs.spotify_token = ""
 		self.token = None
-		if os.path.exists(self.token_path):
-			os.remove(self.token_path)
+		if self.token_path.exists():
+			self.token_path.unlink()
 
 	def auth(self) -> None:
 		if not tekore_imported:
