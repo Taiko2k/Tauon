@@ -47,6 +47,18 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_tagscan import TrackFile
 
 @dataclass
+class ColourRGBA:
+	"""Red, Green, Blue and Alpha
+
+	SDR, ranging from 0 to 255
+	"""
+
+	r: int
+	g: int
+	b: int
+	a: int
+
+@dataclass
 class RadioStation:
 	title:               str
 	stream_url:          str
@@ -60,7 +72,7 @@ class RadioPlaylist:
 	name:   str
 	uid:    int
 	scroll: int = 0
-	stations: list[RadioStation] = field(default_factory=list)
+	stations: list[RadioStation] = field(default_factory=list[RadioStation])
 
 @dataclass
 class TauonQueueItem:
@@ -88,7 +100,6 @@ class TauonQueueItem:
 	uuid_int: int
 	auto_stop: bool
 
-# Functions to generate empty playlist
 @dataclass
 class TauonPlaylist:
 	"""Playlist is [Name, playing, playlist_ids, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
@@ -115,7 +126,7 @@ class TauonPlaylist:
 	hide_title: bool               # hide playlist folder titles (bool)
 	selected: int
 	uuid_int: int
-	last_folder: list[str]               # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
+	last_folder: list[str]         # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
 	hidden: bool
 	locked: bool
 	parent_playlist_id: str        # Filter parent playlist id (string)
@@ -158,7 +169,6 @@ class Timer:
 		self.start = time.monotonic()
 		self.start -= sec
 
-
 class TestTimer:
 	"""Simple bool timer object"""
 
@@ -170,7 +180,6 @@ class TestTimer:
 		return self.timer.get() > self.time
 
 j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
-
 
 def point_proximity_test(a: dict, b: dict, p: dict) -> bool:
 	"""Test given proximity between two 2d points to given square"""
@@ -191,7 +200,6 @@ def rm_16(line: str) -> str:
 		line = line[::2]
 	return line
 
-
 def get_display_time(seconds: float) -> str:
 	"""Returns a string from seconds to a compact time format, e.g 2h:23"""
 	if math.isinf(seconds) or math.isnan(seconds):
@@ -202,7 +210,6 @@ def get_display_time(seconds: float) -> str:
 		result = divmod(result[0], 60)
 		return str(result[0]) + "h " + str(result[1]).zfill(2)
 	return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
-
 
 def get_hms_time(seconds: float) -> str:
 	m, s = divmod(round(seconds), 60)
@@ -252,14 +259,14 @@ def get_filesize_string_rounded(file_bytes: int) -> str:
 		line = str(file_mb) + _(" MB")
 	return line
 
-def test_lumi(c1: list[int]) -> float:
+def test_lumi(c1: ColourRGBA) -> float:
 	"""Estimates the perceived luminance of a colour"""
-	return 1 - (0.299 * c1[0] + 0.587 * c1[1] + 0.114 * c1[2]) / 255
+	return 1 - (0.299 * c1.r + 0.587 * c1.g + 0.114 * c1.b) / 255
 
-def rel_luminance(colour: tuple[int, int, int, int]) -> float:
-	r = colour[0] / 255
-	g = colour[1] / 255
-	b = colour[2] / 255
+def rel_luminance(colour: ColourRGBA) -> float:
+	r = colour.r / 255
+	g = colour.g / 255
+	b = colour.b / 255
 
 	if r < 0.03928:
 		r /= 12.90
@@ -278,9 +285,7 @@ def rel_luminance(colour: tuple[int, int, int, int]) -> float:
 
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-
-def contrast_ratio(c1: tuple[int, int, int, int], c2: tuple[int, int, int, int]) -> float:
-
+def contrast_ratio(c1: ColourRGBA, c2: ColourRGBA) -> float:
 	l1 = rel_luminance(c1)
 	l2 = rel_luminance(c2)
 
@@ -289,48 +294,42 @@ def contrast_ratio(c1: tuple[int, int, int, int], c2: tuple[int, int, int, int])
 
 	return (l1 + 0.05) / (l2 + 0.05)
 
-def colour_value(c1: list[int]) -> int:
+def colour_value(c1: ColourRGBA) -> int:
 	"""Give the sum of first 3 elements in a list"""
-	return c1[0] + c1[1] + c1[2]
+	return c1.r + c1.g + c1.b
 
-def alpha_blend(colour: tuple[int, int, int, int], base: tuple[int, int, int, int]) -> list[int]:
+def alpha_blend(colour: ColourRGBA, base: ColourRGBA) -> ColourRGBA:
 	"""Performs alpha blending of one colour (RGB-A) onto another (RGB)"""
-	alpha = colour[3] / 255
-	return [
-		int(alpha * colour[0] + (1 - alpha) * base[0]),
-		int(alpha * colour[1] + (1 - alpha) * base[1]),
-		int(alpha * colour[2] + (1 - alpha) * base[2]),
-		255]
-
-
-def alpha_mod(colour: list[int], alpha: int) -> list[int]:
-	"""Change the alpha component of an RGBA list"""
-	return [colour[0], colour[1], colour[2], alpha]
-
-
-def colour_slide(a: list[int], b: list[int], x: int, x_limit: int) -> tuple[int, int, int, int]:
-	"""Shift between two colours based on x where x is between 0 and limit"""
-	return (
-		min(int(a[0] + ((b[0] - a[0]) * (x / x_limit))), 255),
-		min(int(a[1] + ((b[1] - a[1]) * (x / x_limit))), 255),
-		min(int(a[2] + ((b[2] - a[2]) * (x / x_limit))), 255),
+	alpha = colour.a / 255
+	return ColourRGBA(
+		int(alpha * colour.r + (1 - alpha) * base.r),
+		int(alpha * colour.g + (1 - alpha) * base.g),
+		int(alpha * colour.b + (1 - alpha) * base.b),
 		255)
 
+def alpha_mod(colour: ColourRGBA, alpha: int) -> ColourRGBA:
+	"""Change the alpha component of an RGBA list"""
+	return ColourRGBA(colour.r, colour.g, colour.b, alpha)
+
+def colour_slide(a: ColourRGBA, b: ColourRGBA, x: int, x_limit: int) -> ColourRGBA:
+	"""Shift between two colours based on x where x is between 0 and limit"""
+	return ColourRGBA(
+		min(int(a.r + ((b.r - a.r) * (x / x_limit))), 255),
+		min(int(a.g + ((b.g - a.g) * (x / x_limit))), 255),
+		min(int(a.b + ((b.b - a.b) * (x / x_limit))), 255),
+		255)
 
 def hex_to_rgb(colour: str) -> list[int]:
 	colour = colour.strip("#")
 	return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
 
-
-def check_equal(lst: list) -> bool:
+def check_equal(lst: list[int]) -> bool:
 	"""Check if all the numbers in a list are the same"""
 	return not lst or lst.count(lst[0]) == len(lst)
 
-
-def is_grey(lst: list) -> bool:
-	"""Check if the first 3 elements of a list are the same"""
-	return lst[0] == lst[1] == lst[2]
-
+def is_grey(lst: ColourRGBA) -> bool:
+	"""Check if R, G, and B have the same values"""
+	return lst.r == lst.g == lst.b
 
 def star_count(sec: float, dur: float) -> int:
 	"""Give a score from 0-7 based on number of seconds"""
@@ -352,7 +351,6 @@ def star_count(sec: float, dur: float) -> int:
 	if sec > 60 * 60 * 16:
 		stars += 1
 	return stars
-
 
 def star_count3(sec: float, dur: float) -> int:
 	stars = 0
@@ -380,7 +378,6 @@ def star_count3(sec: float, dur: float) -> int:
 	#	 stars += 1
 	return stars
 
-
 def star_count2(sec: float) -> float:
 	"""Give a score from 0.0 - 1.0 based on number of seconds"""
 	star = 0
@@ -389,41 +386,35 @@ def star_count2(sec: float) -> float:
 	star += sec / (60 * 60 * 10)
 	return float(round(min(star, 1), 1))
 
-
 def search_magic(terms: str, evaluate: str) -> bool:
 	return all(word in evaluate for word in terms.split())
-
 
 def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
 
-
-def random_colour(saturation: float, luminance: float) -> list[int]:
-
+def random_colour(saturation: float, luminance: float) -> ColourRGBA:
 	h = round(random.random(), 2)
 	colour = colorsys.hls_to_rgb(h, luminance, saturation)
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
-
-def hsl_to_rgb(h: float, s: float, l: float) -> list[int]:
+def hsl_to_rgb(h: float, s: float, l: float) -> ColourRGBA:
 	colour = colorsys.hls_to_rgb(h, l, s)
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
-def hls_to_rgb(h: float, l: float, s: float) -> list[int]:
+def hls_to_rgb(h: float, l: float, s: float) -> ColourRGBA:
 	"""Duplicate HSL function so it works for the less common alt name too"""
 	colour = colorsys.hls_to_rgb(h, l, s)
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
 def rgb_to_hls(r: float, g: float, b: float) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
-def rgb_add_hls(source: list[int], h: float = 0, l: float = 0, s: float = 0) -> list[int]:
-	c = colorsys.rgb_to_hls(source[0] / 255, source[1] / 255, source[2] / 255)
+def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) -> ColourRGBA:
+	c = colorsys.rgb_to_hls(source.r / 255, source.g / 255, source.b / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
-	return [int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source[3]]
+	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source.a)
 
-
-def is_light(colour: list[int]) -> bool:
+def is_light(colour: ColourRGBA) -> bool:
 	return test_lumi(colour) < 0.2
 
 class ColourGenCache:
@@ -434,8 +425,7 @@ class ColourGenCache:
 		self.luminance = luminance
 		self.store = {}
 
-	def get(self, key: str) -> list[int]:
-
+	def get(self, key: str) -> ColourRGBA:
 		if key in self.store:
 			return self.store[key]
 
@@ -444,15 +434,10 @@ class ColourGenCache:
 		self.store[key] = colour
 		return colour
 
-
-
-
 def folder_file_scan(path: str, extensions: str) -> float:
-
 	match = 0
 	count = sum([len(files) for r, d, files in os.walk(path)])
 	for ext in extensions:
-
 		match += len(glob.glob(path + "/**/*." + ext.lower(), recursive=True))
 
 	if count == 0:
@@ -463,10 +448,8 @@ def folder_file_scan(path: str, extensions: str) -> float:
 
 	return match / count
 
-
 def is_ignorable_file(string: str) -> bool:
 	return any(s in string for s in ["Thumbs.db", ".log", "desktop.ini", "DS_Store", ".nfo", "yric"])
-
 
 # Pre-compile the regular expression pattern for dates starting with the year
 date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
@@ -926,7 +909,7 @@ class FunctionStore:
 	"""Stores functions and arguments for calling later"""
 
 	def __init__(self) -> None:
-		self.items = []
+		self.items: list[tuple[Callable[..., None], tuple]] = []
 
 	def store(self, function: Callable[..., None], args: tuple = ()) -> None:
 		self.items.append((function, args))
@@ -1065,7 +1048,7 @@ mac_styles = {
 	"whitesur": None,
 	"vimix": None,
 	"sweet": None,
-	"dracula": [[248, 58, 67, 255], [239, 251, 122, 255], [74, 254, 104, 255]],
+	"dracula": [ColourRGBA(248, 58, 67, 255), ColourRGBA(239, 251, 122, 255), ColourRGBA(74, 254, 104, 255)],
 	"nordic": None,
 	"juno": None,
 }

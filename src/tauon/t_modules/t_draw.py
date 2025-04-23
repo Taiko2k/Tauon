@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING
 import sdl3
 from PIL import Image
 
-from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
+from tauon.t_modules.t_extra import ColourRGBA, Timer, alpha_blend, coll_rect
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -148,8 +148,8 @@ if system == "Windows":
 	def RGB(r: int, g: int, b: int) -> int:
 		return r | (g << 8) | (b << 16)
 
-	def Wcolour(colour: list[int]) -> int:
-		return colour[0] | (colour[1] << 8) | (colour[2] << 16)
+	def Wcolour(colour: ColourRGBA) -> int:
+		return colour.r | (colour.g << 8) | (colour.b << 16)
 
 	def native_bmp_to_sdl(hdc, bitmap_handle, width: int, height: int): # -> tuple[Unknown, Array[c_char]]
 		bmpheader = struct.pack(
@@ -218,7 +218,7 @@ if system == "Windows":
 			return rect.right, rect.bottom
 
 
-		def renderText(self, text: str, bg: list[int], fg: list[int], wrap: bool = False, max_x: int = 100, max_y: int | None = None):
+		def renderText(self, text: str, bg: ColourRGBA, fg: ColourRGBA, wrap: bool = False, max_x: int = 100, max_y: int | None = None):
 
 			self.drawDC.SetTextColor(Wcolour(fg))
 
@@ -330,7 +330,7 @@ class TDraw:
 			self.ca_li = []
 			self.y_offset_dict = {}
 
-		self.text_background_colour = [0, 0, 0, 255]
+		self.text_background_colour = ColourRGBA(0, 0, 0, 255)
 		self.pretty_rect: tuple[int, int, int, int] | None = None
 		self.real_bg:     bool = False
 		self.alpha_bg:    bool = False
@@ -348,8 +348,8 @@ class TDraw:
 		stream = sdl3.SDL_IOFromMem(pointer, c_size_t(size))
 		return sdl3.IMG_Load_IO(stream, c_bool(True))
 
-	def rect_s(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+	def rect_s(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA, thickness: int) -> None:
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 		x, y, w, h = (round(x) for x in rectangle)
 		th = math.floor(thickness)
 		self.sdlrect.x = x - th
@@ -373,8 +373,8 @@ class TDraw:
 		self.sdlrect.h = h + th
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # right
 
-	def rect_si(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int], thickness: int) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+	def rect_si(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA, thickness: int) -> None:
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 		x, y, w, h = (round(x) for x in rectangle)
 		th = math.floor(thickness)
 		self.sdlrect.x = x
@@ -398,7 +398,7 @@ class TDraw:
 		self.sdlrect.h = h
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect) # right
 
-	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: tuple[int, int, int, int]) -> None:
+	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: ColourRGBA) -> None:
 		self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
 	def clear_rect(self, rectangle: tuple[int, int, int, int]) -> None:
@@ -413,8 +413,8 @@ class TDraw:
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-	def rect(self, rectangle: tuple[int, int, int, int], colour: tuple[int, int, int, int]) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+	def rect(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 
 		self.sdlrect.x = float(rectangle[0])
 		self.sdlrect.y = float(rectangle[1])
@@ -427,24 +427,24 @@ class TDraw:
 		# else:
 		#	 sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
-	def bordered_rect(self, rectangle: tuple[int, int, int, int], fill_colour: list[int], outer_colour: list[int], border_size: int) -> None:
+	def bordered_rect(self, rectangle: tuple[int, int, int, int], fill_colour: ColourRGBA, outer_colour: ColourRGBA, border_size: int) -> None:
 
 		self.sdlrect.x = round(rectangle[0]) - border_size
 		self.sdlrect.y = round(rectangle[1]) - border_size
 		self.sdlrect.w = round(rectangle[2]) + border_size + border_size
 		self.sdlrect.h = round(rectangle[3]) + border_size + border_size
-		sdl3.SDL_SetRenderDrawColor(self.renderer, outer_colour[0], outer_colour[1], outer_colour[2], outer_colour[3])
+		sdl3.SDL_SetRenderDrawColor(self.renderer, outer_colour.r, outer_colour.g, outer_colour.b, outer_colour.a)
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 		self.sdlrect.x = round(rectangle[0])
 		self.sdlrect.y = round(rectangle[1])
 		self.sdlrect.w = round(rectangle[2])
 		self.sdlrect.h = round(rectangle[3])
-		sdl3.SDL_SetRenderDrawColor(self.renderer, fill_colour[0], fill_colour[1], fill_colour[2], fill_colour[3])
+		sdl3.SDL_SetRenderDrawColor(self.renderer, fill_colour.r, fill_colour.g, fill_colour.b, fill_colour.a)
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 
-	def line(self, x1: int, y1: int, x2: int, y2: int, colour: list[int]) -> None:
+	def line(self, x1: int, y1: int, x2: int, y2: int, colour: ColourRGBA) -> None:
 
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour[0], colour[1], colour[2], colour[3])
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 		sdl3.SDL_RenderLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
 	def get_text_w(self, text: str, font: int, height: bool = False) -> int:
@@ -553,7 +553,7 @@ class TDraw:
 
 	def __draw_text_cairo(
 		self,
-		location: list[int], text: str, colour: list[int], font: int, max_x: int, bg: tuple[int, int, int, int],
+		location: list[int], text: str, colour: ColourRGBA, font: int, max_x: int, bg: ColourRGBA,
 		align: int = 0, max_y: int | None = None, wrap: bool = False, range_top: int = 0,
 		range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None,
 		) -> int:
@@ -572,7 +572,7 @@ class TDraw:
 		force_gray = self.force_gray
 		#real_bg = True
 
-		if bg[3] < 200:
+		if bg.a < 200:
 			alpha_bg = True
 			force_gray = True
 
@@ -600,7 +600,7 @@ class TDraw:
 
 
 		if alpha_bg:
-			bg = (0, 0, 0, 0)
+			bg = ColourRGBA(0, 0, 0, 0)
 
 		if max_y is not None:
 			max_y = round(max_y)
@@ -609,7 +609,7 @@ class TDraw:
 			return 0
 
 		if key is None:
-			key = (max_x, text, font, colour[0], colour[1], colour[2], colour[3], bg[0], bg[1], bg[2])
+			key = (max_x, text, font, colour.r, colour.g, colour.b, colour.a, bg.r, bg.g, bg.b)
 
 		if not real_bg or force_cache:
 			sd = self.ttc.get(key)
@@ -628,7 +628,6 @@ class TDraw:
 				return sd[0].w
 
 		if not self.pretty_rect:  # Would have already done this if True
-
 			w, h = self.get_text_wh(text, font, max_x, wrap)
 
 		if w < 1:
@@ -704,11 +703,11 @@ class TDraw:
 		context.rectangle(0, 0, w, h)
 
 		if not real_bg and not alpha_bg:
-			context.set_source_rgb(bg[0] / 255, bg[1] / 255, bg[2] / 255)
+			context.set_source_rgb(bg.r / 255, bg.g / 255, bg.b / 255)
 			# context.set_source_rgba(0, 0, 0, 0)
 			context.fill()
 
-		context.set_source_rgb(colour[0] / 255, colour[1] / 255, colour[2] / 255)
+		context.set_source_rgb(colour.r / 255, colour.g / 255, colour.b / 255)
 
 		if font not in self.f_dict:
 			logging.info("Font not loaded: " + str(font))
@@ -745,7 +744,7 @@ class TDraw:
 		# Here the background colour is keyed out allowing lines to overlap slightly
 		if not real_bg and not alpha_bg:
 			format_details = sdl3.SDL_GetPixelFormatDetails(format)
-			ke = sdl3.SDL_MapRGB(format_details, None, bg[0], bg[1], bg[2])
+			ke = sdl3.SDL_MapRGB(format_details, None, bg.r, bg.g, bg.b)
 			sdl3.SDL_SetSurfaceColorKey(surface, True, ke)
 
 		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
@@ -825,14 +824,14 @@ class TDraw:
 		sdl3.SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, sdl3.SDL_FLIP_VERTICAL)
 
 	def __draw_text_windows(
-		self, x: int, y: int, text: str, bg: list[int], fg: list[int], font: Win32Font | None = None,
+		self, x: int, y: int, text: str, bg: ColourRGBA, fg: ColourRGBA, font: Win32Font | None = None,
 		align: int = 0, wrap: bool = False, max_x: int = 100, max_y: int | None = None,
 		range_top: int = 0, range_height: int | None = None,
 	) -> int:
 
 		y += self.y_offset_dict[font]
 
-		key = (text, font, fg[0], fg[1], fg[2], fg[3], bg[0], bg[1], bg[2], max_x)
+		key = (text, font, fg.r, fg.g, fg.b, fg.a, bg.r, bg.g, bg.b, max_x)
 
 		if key in self.cache:
 			sd = self.cache[key]
@@ -859,7 +858,7 @@ class TDraw:
 		im, c_bits = f.renderText(text, bg, fg, wrap, max_x, max_y)
 
 		s_image = im
-		ke = sdl3.SDL_MapRGB(s_image.contents.format, bg[0], bg[1], bg[2])
+		ke = sdl3.SDL_MapRGB(s_image.contents.format, bg.r, bg.g, bg.b)
 		sdl3.SDL_SetColorKey(s_image, True, ke)
 		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 		tex_w = pointer(c_int(0))
@@ -895,7 +894,7 @@ class TDraw:
 		return dst.w
 
 	def text(
-		self, location: list[int], text: str, colour: list[int], font: int | Win32Font, max_w: int = 4000, bg: list[int] | None = None,
+		self, location: list[int], text: str, colour: ColourRGBA, font: int | Win32Font, max_w: int = 4000, bg: ColourRGBA | None = None,
 		range_top: int = 0, range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None) -> int | None:
 
 		#logging.info((text, font))
@@ -908,7 +907,7 @@ class TDraw:
 		if bg is None:
 			bg = self.text_background_colour
 
-		if colour[3] != 255:
+		if colour.a != 255:
 			colour = alpha_blend(colour, bg)
 		align = 0
 		if len(location) > 2:

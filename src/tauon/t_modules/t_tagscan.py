@@ -1005,7 +1005,7 @@ class M4a(TrackFile):
 	def __init__(self, file: str) -> None:
 		super().__init__()
 		self.filepath = file
-		self.sample_rate = 0 # TODO(Martin): Do we need to set this to zero, isn't default 48k fine?
+		self.sample_rate = 0 # Unknown sample rate
 
 	def read(self, get_picture: bool = False) -> None:
 		if not self.file:
