@@ -5695,6 +5695,8 @@ class Tauon:
 		self.encode_folder_name                   = encode_folder_name
 		self.encode_track_name                    = encode_track_name
 		self.todo:                           list = []
+		self.heart_colours                        = ColourGenCache(0.7, 0.7)
+		#self.power_tag_colours                    = ColourGenCache(0.5, 0.8)
 
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
@@ -7804,7 +7806,7 @@ class Tauon:
 	def append_here(self) -> None:
 		self.pctl.default_playlist += self.pctl.cargo
 
-	def paste_deco(self) -> list[list[int] | str | None]:
+	def paste_deco(self) -> list[ColourRGBA | str | None]:
 		active = False
 		line = None
 		if len(self.pctl.cargo) > 0:
@@ -12818,7 +12820,7 @@ class Tauon:
 			self.reload_albums()
 		self.gui.pl_update += 1
 
-	def import_spotify_playlist_deco(self) -> list[list[int] | None]:
+	def import_spotify_playlist_deco(self) -> list[ColourRGBA | None]:
 		clip = copy_from_clipboard()
 		if clip.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
 			return [self.colours.menu_text, self.colours.menu_background, None]
@@ -20902,34 +20904,34 @@ class AlbumArt:
 
 				min_colour_varience = 75
 
-				x_colours = []
+				x_colours: list[ColourRGBA] = []
 				for item in pixels:
 					colour = item[1]
 					for cc in x_colours:
 						if abs(
-							colour[0] - cc[0]) < min_colour_varience and abs(
-							colour[1] - cc[1]) < min_colour_varience and abs(
-							colour[2] - cc[2]) < min_colour_varience:
+							colour[0] - cc.r) < min_colour_varience and abs(
+							colour[1] - cc.g) < min_colour_varience and abs(
+							colour[2] - cc.b) < min_colour_varience:
 							break
 					else:
-						x_colours.append(colour)
+						x_colours.append(ColourRGBA(colour[0], colour[1], colour[2], 255))
 
 				#logging.info(x_colours)
 				colours.playlist_panel_bg = colours.side_panel_background
 				colours.playlist_box_background = colours.side_panel_background
 
-				colours.playlist_panel_background = x_colours[0] + (255,)
+				colours.playlist_panel_background = x_colours[0]
 				if len(x_colours) > 1:
-					colours.side_panel_background = x_colours[1] + (255,)
+					colours.side_panel_background = x_colours[1]
 					colours.playlist_box_background = colours.side_panel_background
 					if len(x_colours) > 2:
-						colours.title_text = x_colours[2] + (255,)
-						colours.title_playing = x_colours[2] + (255,)
+						colours.title_text = x_colours[2]
+						colours.title_playing = x_colours[2]
 						if len(x_colours) > 3:
-							colours.artist_text = x_colours[3] + (255,)
-							colours.artist_playing = x_colours[3] + (255,)
+							colours.artist_text = x_colours[3]
+							colours.artist_playing = x_colours[3]
 							if len(x_colours) > 4:
-								colours.playlist_box_background = x_colours[4] + (255,)
+								colours.playlist_box_background = x_colours[4]
 
 				colours.playlist_panel_background = list(colours.playlist_panel_background)
 				colours.side_panel_background = list(colours.side_panel_background)
@@ -21801,7 +21803,7 @@ class TransEditBox:
 			self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
 			tc = self.colours.box_input_text
 			if names and check_equal(names) and text_box.text == names[0]:
-				h, l, s = rgb_to_hls(tc[0], tc[1], tc[2])
+				h, l, s = rgb_to_hls(tc.r, tc.g, tc.b)
 				l *= 0.7
 				tc = hls_to_rgb(h, l, s)
 			else:
@@ -35385,7 +35387,7 @@ class ViewBox:
 		self.gui.update = 2
 
 	def button(
-		self, x: float, y: float, asset: WhiteModImageAsset | LoadImageAsset, test, colour_get: ColourPulse2 | None = None, name: str = "Unknown", animate: bool = True, low: ColourRGBA = 0, high: ColourRGBA = 0):
+		self, x: float, y: float, asset: WhiteModImageAsset | LoadImageAsset, test, colour_get: ColourPulse2 | None = None, name: str = "Unknown", animate: bool = True, low: ColourRGBA = ColourRGBA(0,0,0,255), high: ColourRGBA = ColourRGBA(0,0,0,255)):
 		on = test()
 		rect = [
 			x - 8 * self.gui.scale,
@@ -41289,8 +41291,6 @@ extra_menu.add(MenuItem(_("Revert"), pctl.revert, hint="Shift+/", icon=revert_ic
 # extra_menu.add('Toggle Random', tauon.toggle_random, hint='PERIOD')
 extra_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, hint="Alt+Shift+Q"))
 
-heart_colours = ColourGenCache(0.7, 0.7)
-
 gui.heart_icon.colour = ColourRGBA(245, 60, 60, 255)
 gui.heart_icon.xoff = 3
 gui.heart_icon.yoff = 0
@@ -41375,8 +41375,6 @@ spot_search_rate_timer = Timer()
 album_info_cache = {}
 perfs = []
 album_info_cache_key = (-1, -1)
-
-power_tag_colours = ColourGenCache(0.5, 0.8)
 
 gui.pt_on = Timer()
 gui.pt_off = Timer()
