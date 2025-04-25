@@ -3164,7 +3164,7 @@ class PlayerCtl:
 
 		# Temporary Workaround for UI block causing unwanted dragging
 		if not dry:
-			quick_d_timer.set()
+			self.tauon.quick_d_timer.set()
 
 		if self.prefs.show_current_on_transition:
 			quiet = False
@@ -4396,7 +4396,7 @@ class LastScrob:
 				logging.exception("SCROBBLE QUEUE ERROR")
 
 		if not self.queue:
-			scrobble_warning_timer.force_set(1000)
+			self.tauon.scrobble_warning_timer.force_set(1000)
 
 		self.running = False
 
@@ -5233,7 +5233,7 @@ class GallClass:
 		return False
 
 	def render(self, track: TrackClass, location, size: int | None = None, force_offset: int | None = None) -> bool | None:
-		if gallery_load_delay.get() < 0.5:
+		if self.tauon.gallery_load_delay.get() < 0.5:
 			return None
 
 		x = round(location[0])
@@ -19646,7 +19646,7 @@ class TextBox2:
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
 			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
-		animate_monitor_timer.set()
+		self.tauon.animate_monitor_timer.set()
 
 		self.tauon.text_box_canvas_hide_rect.x = 0
 		self.tauon.text_box_canvas_hide_rect.y = 0
@@ -20048,7 +20048,7 @@ class TextBox:
 			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
 			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
-		animate_monitor_timer.set()
+		self.tauon.animate_monitor_timer.set()
 
 class ImageObject:
 	def __init__(self) -> None:
@@ -26724,7 +26724,7 @@ class TopPanel:
 
 		# Quick drag single track onto bar to create new playlist function and indicator
 		if prefs.tabs_on_top:
-			if (self.inp.quick_drag or gui.ext_drop_mode) and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY and quick_d_timer.get() > 1:
+			if (self.inp.quick_drag or gui.ext_drop_mode) and self.inp.mouse_position[0] > x and self.inp.mouse_position[1] < gui.panelY and tauon.quick_d_timer.get() > 1:
 				ddt.rect((x, y, 2 * gui.scale, gui.panelY2), ColourRGBA(80, 200, 180, 255))
 
 				if self.inp.mouse_up:
@@ -26758,10 +26758,10 @@ class TopPanel:
 			if not prefs.tabs_on_top:
 				if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
 					gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing].title)
-					toast_mode_timer.set()
+					tauon.toast_mode_timer.set()
 					gui.frame_callback_list.append(TestTimer(1))
 				else:
-					toast_mode_timer.force_set(10)
+					tauon.toast_mode_timer.force_set(10)
 					gui.mode_toast_text = ""
 		# ---------
 		# Menu Bar
@@ -26803,7 +26803,7 @@ class TopPanel:
 		dl = len(tauon.dl_mon.ready)
 		watching = len(tauon.dl_mon.watching)
 
-		if (dl > 0 or watching > 0) and core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
+		if (dl > 0 or watching > 0) and tauon.core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
 			x += 52 * gui.scale
 			rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
 			self.fields.add(rect)
@@ -26945,7 +26945,7 @@ class TopPanel:
 			text = _("Buffering... ")
 			text += gui.buffering_text
 			bg = ColourRGBA(18, 180, 180, 255)
-		elif tauon.lfm_scrobbler.queue and scrobble_warning_timer.get() < 260:
+		elif tauon.lfm_scrobbler.queue and tauon.scrobble_warning_timer.get() < 260:
 			text = _("Network error. Will try again later.")
 			bg = ColourRGBA(250, 250, 250, 255)
 			gui.last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, ColourRGBA(250, 40, 40, 255))
@@ -27209,7 +27209,7 @@ class BottomBarType1:
 			x = self.seek_bar_position[0] - round(26 - gui.scale)
 			y = self.seek_bar_position[1]
 			while x < self.seek_bar_position[0] + self.seek_bar_size[0]:
-				offset = (math.floor(((core_timer.get() * 1) % 1) * 13) / 13) * self.buffer_shard.w
+				offset = (math.floor(((tauon.core_timer.get() * 1) % 1) * 13) / 13) * self.buffer_shard.w
 				gui.delay_frame(0.01)
 
 				# colour = colours.seek_bar_fill
@@ -27456,11 +27456,11 @@ class BottomBarType1:
 				if inp.right_click:
 					tauon.mode_menu.activate()
 
-				if d_click_timer.get() < 0.3 and inp.mouse_click:
+				if self.tauon.d_click_timer.get() < 0.3 and inp.mouse_click:
 					self.tauon.set_mini_mode()
 					gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 		# TIME----------------------
 
@@ -27679,7 +27679,7 @@ class BottomBarType1:
 					if not pctl.random_mode:
 						# . Shuffle set to off
 						gui.mode_toast_text = _("Shuffle Off")
-					toast_mode_timer.set()
+					tauon.toast_mode_timer.set()
 					gui.delay_frame(1)
 				if self.inp.middle_click:
 					pctl.advance(rr=True)
@@ -27713,7 +27713,7 @@ class BottomBarType1:
 					if not pctl.repeat_mode:
 						# . Repeat set to off
 						gui.mode_toast_text = _("Repeat Off")
-					toast_mode_timer.set()
+					tauon.toast_mode_timer.set()
 					gui.delay_frame(1)
 				if self.inp.middle_click:
 					pctl.revert()
@@ -28245,7 +28245,7 @@ class BottomBarType_ao1:
 					if not self.pctl.random_mode:
 						# . Shuffle set to off
 						self.gui.mode_toast_text = _("Shuffle Off")
-					toast_mode_timer.set()
+					self.tauon.toast_mode_timer.set()
 					self.gui.delay_frame(1)
 				if self.inp.middle_click:
 					self.pctl.advance(rr=True)
@@ -28353,11 +28353,11 @@ class MiniMode:
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
-				if d_click_timer.get() < 0.3:
+				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
 					self.gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28570,11 +28570,11 @@ class MiniMode2:
 			text_hit_area = (x1, 0, w, h)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
-				if d_click_timer.get() < 0.3:
+				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
 					self.gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -28747,11 +28747,11 @@ class MiniMode3:
 			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
-				if d_click_timer.get() < 0.3:
+				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
 					self.gui.update += 1
 					return
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			# Draw title texts
 			line1 = track.artist
@@ -29028,7 +29028,7 @@ class StandardPlaylist:
 					# edge_playlist.pulse()
 					tauon.edge_playlist2.pulse()
 
-			scroll_hide_timer.set()
+			tauon.scroll_hide_timer.set()
 			gui.frame_callback_list.append(TestTimer(0.9))
 
 		# Show notice if playlist empty
@@ -30155,6 +30155,7 @@ class ArtBox:
 class ScrollBox:
 
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.tauon     = tauon
 		self.pctl      = pctl
 		self.gui       = tauon.gui
 		self.inp       = tauon.inp
@@ -30260,7 +30261,7 @@ class ScrollBox:
 						pass
 					else:
 
-						tt = scroll_timer.hit()
+						tt = self.tauon.scroll_timer.hit()
 						if tt > 0.1:
 							tt = 0
 
@@ -31932,7 +31933,7 @@ class ArtistList:
 			return
 
 		if self.to_fetch:
-			if get_lfm_wait_timer.get() < 2:
+			if self.tauon.get_lfm_wait_timer.get() < 2:
 				return
 
 			artist = self.to_fetch
@@ -32387,20 +32388,20 @@ class ArtistList:
 				# block_starts = []
 				# current = False
 				# for i in range(len(self.pctl.default_playlist)):
-				#     track = self.pctl.get_track(self.pctl.default_playlist[i])
-				#     if current is False:
-				#         if track.artist == artist or track.album_artist == artist or (
-				#                 'artists' in track.misc and artist in track.misc['artists']):
-				#             block_starts.append(i)
-				#             current = True
-				#     else:
-				#         if track.artist != artist and track.album_artist != artist or (
-				#                 'artists' in track.misc and artist in track.misc['artists']):
-				#             current = False
+				# 	track = self.pctl.get_track(self.pctl.default_playlist[i])
+				# 	if current is False:
+				# 		if track.artist == artist or track.album_artist == artist or (
+				# 				'artists' in track.misc and artist in track.misc['artists']):
+				# 			block_starts.append(i)
+				# 			current = True
+				# 	else:
+				# 		if track.artist != artist and track.album_artist != artist or (
+				# 				'artists' in track.misc and artist in track.misc['artists']):
+				# 			current = False
 				#
 				# if not block_starts:
-				#     logging.info("No matching artists found in playlist")
-				#     return
+				# 	logging.info("No matching artists found in playlist")
+				# 	return
 
 				if not blocks:
 					return
@@ -32408,14 +32409,14 @@ class ArtistList:
 				#select = block_starts[0]
 
 				# if len(block_starts) > 1:
-				#     if -1 < self.pctl.selected_in_playlist < len(self.pctl.default_playlist):
-				#         if self.pctl.selected_in_playlist in block_starts:
-				#             tauon.scroll_hide_timer.set()
-				#             self.gui.frame_callback_list.append(TestTimer(0.9))
-				#             if block_starts[-1] == self.pctl.selected_in_playlist:
-				#                 pass
-				#             else:
-				#                 select = block_starts[block_starts.index(self.pctl.selected_in_playlist) + 1]
+				# 	if -1 < self.pctl.selected_in_playlist < len(self.pctl.default_playlist):
+				# 		if self.pctl.selected_in_playlist in block_starts:
+				# 			tauon.scroll_hide_timer.set()
+				# 			self.gui.frame_callback_list.append(TestTimer(0.9))
+				# 			if block_starts[-1] == self.pctl.selected_in_playlist:
+				# 				pass
+				# 			else:
+				# 				select = block_starts[block_starts.index(self.pctl.selected_in_playlist) + 1]
 
 				self.gui.pl_update += 1
 
@@ -33625,7 +33626,7 @@ class QueueBox:
 				self.drag_start_y = self.inp.mouse_position[1]
 				self.drag_start_top = yy
 
-				if d_click_timer.get() < 1:
+				if self.tauon.d_click_timer.get() < 1:
 					if self.d_click_ref == fq[i].uuid_int:
 						pl = self.pctl.id_to_pl(fq[i].uuid_int)
 						if pl is not None:
@@ -33636,7 +33637,7 @@ class QueueBox:
 				# else:
 				self.d_click_ref = fq[i].uuid_int
 
-				d_click_timer.set()
+				self.tauon.d_click_timer.set()
 
 			if self.dragging and self.coll(h_rect):
 				yy += self.tab_h
@@ -37439,10 +37440,10 @@ def worker2(tauon: Tauon) -> None:
 		tauon.worker2_lock.acquire()
 		if search_over.search_text.text and not (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text[0]) < 128):
 			if search_over.spotify_mode:
-				t = spot_search_rate_timer.get()
+				t = tauon.spot_search_rate_timer.get()
 				if t < 1:
 					time.sleep(1 - t)
-					spot_search_rate_timer.set()
+					tauon.spot_search_rate_timer.set()
 				logging.info("Spotify search")
 				search_over.results.clear()
 				results = tauon.spot_ctl.search(search_over.search_text.text)
@@ -39515,8 +39516,6 @@ time_last_save = 0 # TODO(Martin): Move
 b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
 
 # Playlist Panel
-scroll_timer = Timer() # TODO(Martin): Move
-scroll_timer.set() # TODO(Martin): Move
 scroll_opacity = 0 # TODO(Martin): Move
 source = None # TODO(Martin): Useless to define here?
 
@@ -40182,41 +40181,6 @@ notify_change = pctl.notify_change
 
 lastfm = tauon.lastfm
 lb = tauon.lb
-lfm_scrobbler = tauon.lfm_scrobbler
-strings = tauon.strings
-
-# Setting various timers
-cursor_blink_timer = Timer()
-animate_monitor_timer = Timer()
-min_render_timer = Timer()
-check_file_timer = Timer()
-vis_rate_timer = Timer()
-vis_decay_timer = Timer()
-scroll_timer = Timer()
-perf_timer = Timer()
-quick_d_timer = Timer()
-core_timer = Timer()
-sleep_timer = Timer()
-gallery_select_animate_timer = Timer()
-gallery_select_animate_timer.force_set(10)
-search_clear_timer = Timer()
-gall_pl_switch_timer = Timer()
-gall_pl_switch_timer.force_set(999)
-d_click_timer = Timer()
-d_click_timer.force_set(10)
-lyrics_check_timer = Timer()
-scroll_hide_timer = Timer(100)
-scroll_gallery_hide_timer = Timer(100)
-get_lfm_wait_timer = Timer(10)
-lyrics_fetch_timer = Timer(10)
-gallery_load_delay = Timer(10)
-queue_add_timer = Timer(100)
-toast_love_timer = Timer(100)
-toast_mode_timer = Timer(100)
-scrobble_warning_timer = Timer(1000)
-sync_file_timer = Timer(1000)
-sync_file_update_timer = Timer(1000)
-sync_get_device_click_timer = Timer(100)
 
 # Run upgrades if we're behind the current DB standard
 if db_version > 0 and db_version < latest_db_version:
@@ -41324,7 +41288,6 @@ x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked 
 x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
 
 nagbox = NagBox(tauon)
-spot_search_rate_timer = Timer()
 
 gui.pt_on = Timer()
 gui.pt_off = Timer()
@@ -41514,7 +41477,7 @@ if pctl.pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
 
 
 # Hold the splash/loading screen for a minimum duration
-# while core_timer.get() < 0.5:
+# while tauon.core_timer.get() < 0.5:
 #     time.sleep(0.01)
 
 # Resize menu widths to text length (length can vary due to translations)
@@ -42159,14 +42122,14 @@ while pctl.running:
 				del gui.frame_callback_list[i]
 			i -= 1
 
-	if animate_monitor_timer.get() < 1 or tauon.load_orders:
-		if cursor_blink_timer.get() > 0.65:
-			cursor_blink_timer.set()
+	if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
+		if tauon.cursor_blink_timer.get() > 0.65:
+			tauon.cursor_blink_timer.set()
 			TextBox.cursor ^= True
 			gui.update = 1
 
 		if inp.k_input:
-			cursor_blink_timer.set()
+			tauon.cursor_blink_timer.set()
 			TextBox.cursor = True
 
 		sdl3.SDL_Delay(3)
@@ -42175,7 +42138,7 @@ while pctl.running:
 	if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
 		power = 1000
 
-	if prefs.art_bg and core_timer.get() < 3:
+	if prefs.art_bg and tauon.core_timer.get() < 3:
 		power = 1000
 
 	if inp.mouse_down and mouse_moved:
@@ -42214,8 +42177,8 @@ while pctl.running:
 		and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
 			pass
 		else:
-			sleep_timer.set()
-		if sleep_timer.get() > 2:
+			tauon.sleep_timer.set()
+		if tauon.sleep_timer.get() > 2:
 			sdl3.SDL_WaitEventTimeout(None, 1000)
 		continue
 	else:
@@ -43470,7 +43433,7 @@ while pctl.running:
 											if prefs.gallery_single_click:
 												gui.d_click_ref = tauon.album_dex[album_on]
 											else:
-												if d_click_timer.get() < 0.5 and gui.d_click_ref == tauon.album_dex[album_on]:
+												if tauon.d_click_timer.get() < 0.5 and gui.d_click_ref == tauon.album_dex[album_on]:
 													if info[0] == 1 and pctl.playing_state == 2:
 														pctl.play()
 													elif info[0] == 1 and pctl.playing_state > 0:
@@ -43482,7 +43445,7 @@ while pctl.running:
 														pctl.jump(pctl.default_playlist[tauon.album_dex[album_on]], tauon.album_dex[album_on])
 												else:
 													gui.d_click_ref = tauon.album_dex[album_on]
-													d_click_timer.set()
+													tauon.d_click_timer.set()
 
 												pctl.playlist_view_position = tauon.album_dex[album_on]
 												logging.debug("Position changed by gallery click")
@@ -45717,7 +45680,7 @@ while pctl.running:
 					if prefs.album_mode:
 						tauon.goto_album(pctl.playlist_playing_position)
 					gui.quick_search_mode = False
-					search_clear_timer.set()
+					tauon.search_clear_timer.set()
 			elif not tauon.search_over.active:
 				if inp.key_up_press and ((
 					not inp.key_shiftr_down \
@@ -45741,7 +45704,7 @@ while pctl.running:
 						pctl.playlist_view_position -= 1
 						logging.debug("Position changed by key up")
 
-						scroll_hide_timer.set()
+						tauon.scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
 
 					pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist))
@@ -45770,7 +45733,7 @@ while pctl.running:
 						pctl.playlist_view_position += 1
 						logging.debug("Position changed by key down")
 
-						scroll_hide_timer.set()
+						tauon.scroll_hide_timer.set()
 						gui.frame_callback_list.append(TestTimer(0.9))
 
 					pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
@@ -45806,7 +45769,7 @@ while pctl.running:
 			else:
 				mini_mode.render()
 
-		t = toast_love_timer.get()
+		t = tauon.toast_love_timer.get()
 		if t < 1.8 and gui.toast_love_object is not None:
 			track = gui.toast_love_object
 
@@ -45818,7 +45781,7 @@ while pctl.running:
 			tauon.fields.add(rect)
 
 			if tauon.coll(rect):
-				toast_love_timer.force_set(10)
+				tauon.toast_love_timer.force_set(10)
 			else:
 				ddt.rect(grow_rect(rect, 2 * gui.scale), colours.box_border)
 				ddt.rect(rect, colours.queue_card_background)
@@ -45843,7 +45806,7 @@ while pctl.running:
 					f"{track.track_number}. {track.artist} - {track.title}".strip(".- "), colours.box_text_label,
 					13, max_w=rect[2] - 50 * gui.scale)
 
-		t = queue_add_timer.get()
+		t = tauon.queue_add_timer.get()
 		if t < 2.5 and gui.toast_queue_object:
 			track = pctl.get_track(gui.toast_queue_object.track_id)
 
@@ -45857,7 +45820,7 @@ while pctl.running:
 			tauon.fields.add(rect)
 
 			if tauon.coll(rect):
-				queue_add_timer.force_set(10)
+				tauon.queue_add_timer.force_set(10)
 			elif len(pctl.force_queue) > 0:
 
 				fqo = copy.copy(pctl.force_queue[-1])
@@ -45885,7 +45848,7 @@ while pctl.running:
 					(rect[0] + rect[2] - 50 * gui.scale, rect[1] + 15 * gui.scale, 2), "to queue",
 					colours.box_text_label, 11)
 
-		t = toast_mode_timer.get()
+		t = tauon.toast_mode_timer.get()
 		if t < 0.98:
 
 			wid = ddt.get_text_w(gui.mode_toast_text, 313)
@@ -45899,7 +45862,7 @@ while pctl.running:
 			tauon.fields.add(rect)
 
 			if tauon.coll(rect):
-				toast_mode_timer.force_set(10)
+				tauon.toast_mode_timer.force_set(10)
 			else:
 				ddt.rect(grow_rect(rect, round(2 * gui.scale)), colours.grey(60))
 				ddt.rect(rect, colours.queue_card_background)
@@ -46173,8 +46136,8 @@ while pctl.running:
 		if gui.vis == 2 and gui.spec is not None:
 			# Standard spectrum visualiser
 			if gui.update_spec == 0 and pctl.playing_state != 2:
-				if vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
-					vis_decay_timer.set()
+				if tauon.vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
+					tauon.vis_decay_timer.set()
 					for i in range(len(gui.spec)):
 						if gui.s_spec[i] > 0:
 							if gui.spec[i] > 0:
@@ -46183,8 +46146,8 @@ while pctl.running:
 				else:
 					gui.level_update = True
 
-			if vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
-				vis_rate_timer.set()
+			if tauon.vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
+				tauon.vis_rate_timer.set()
 
 				if spec_smoothing and pctl.playing_state > 0:
 					for i in range(len(gui.spec)):
