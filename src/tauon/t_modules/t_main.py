@@ -20901,8 +20901,6 @@ class AlbumArt:
 							if len(x_colours) > 4:
 								colours.playlist_box_background = x_colours[4]
 
-				colours.playlist_panel_background = list(colours.playlist_panel_background)
-				colours.side_panel_background = list(colours.side_panel_background)
 				colours.queue_background = colours.side_panel_background
 				# Check artist text colour
 				if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
