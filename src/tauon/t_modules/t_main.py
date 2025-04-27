@@ -44589,7 +44589,7 @@ while pctl.running:
 						ddt.line(
 							window_size[0] - gui.rspw + 1 * gui.scale, gui.panelY + 1 * gui.scale,
 							window_size[0] - gui.rspw + 1 * gui.scale,
-							window_size[1] - 50 * gui.scale, [100, 100, 100, 70])
+							window_size[1] - 50 * gui.scale, ColourRGBA(100, 100, 100, 70))
 						draw_sep_hl = False
 
 			if (gui.artist_info_panel and not gui.combo_mode) and not (window_size[0] < 750 * gui.scale and prefs.album_mode):
