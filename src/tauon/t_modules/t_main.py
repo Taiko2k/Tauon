@@ -5347,6 +5347,7 @@ class ThumbTracks:
 				im.thumbnail((512, 512), Image.Resampling.LANCZOS)
 				width, height = im.size
 				data = im.tobytes()
+			source_image.close()
 			return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 3)
 		except Exception:
 			logging.exception("Error create pixbuf of album art")
@@ -5367,13 +5368,12 @@ class ThumbTracks:
 			return t_path
 
 		source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
-
 		with Image.open(source_image) as im:
 			if im.mode != "RGB":
 				im = im.convert("RGB")
 			im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-
 			im.save(t_path, "JPEG")
+		source_image.close()
 
 		return t_path
 
@@ -20401,6 +20401,7 @@ class AlbumArt:
 		return pic
 
 	def get_source_raw(self, offset: int, sources: list[tuple[int, str]] | int, track: TrackClass, subsource: list[tuple[int, str]] | None = None):
+		"""Caller has to call .close() on the returned object afterwards"""
 		source_image = None
 
 		if subsource is None:
