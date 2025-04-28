@@ -3776,7 +3776,11 @@ class ListenBrainz:
 			return True
 
 		data = {"listen_type": "single", "payload": []}
-		metadata = {"track_name": title, "release_name": album, "artist_name": artist}
+		metadata = {
+			"track_name": title,
+			**({"release_name": album} if album else {}),
+			"artist_name": artist,
+			}
 
 		additional = {}
 
@@ -3824,7 +3828,11 @@ class ListenBrainz:
 			return
 
 		data = {"listen_type": "playing_now", "payload": []}
-		metadata = {"track_name": title, "release_name": album, "artist_name": artist}
+		metadata = {
+			"track_name": title,
+			**({"release_name": album} if album else {}),
+			"artist_name": artist,
+			}
 
 		additional = {}
 
