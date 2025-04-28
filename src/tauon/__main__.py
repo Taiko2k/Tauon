@@ -456,7 +456,18 @@ def main() -> None:
 	from tauon.t_modules import t_main
 
 if __name__ == "__main__":
-	main()
+	try:
+		main()
+	except Exception:
+		crash_logger = logging.getLogger("crash_logger")
+		crash_logger.setLevel(logging.DEBUG)
+		crash_log_path = user_directory / "tauon-crash.log"
+		file_handler = logging.FileHandler(crash_log_path)
+		crash_logger.addHandler(file_handler)
+
+		crash_logger.exception(f"Something went seriously wrong and it looks like we're crashing! Report a bug with the log from {crash_log_path} please!")
+
+
 
 # if pyinstaller_mode or sys.platform == "darwin" or install_mode:
 # 	from tauon.t_modules import t_main
