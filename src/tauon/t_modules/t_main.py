@@ -17823,7 +17823,6 @@ class Tauon:
 		if path.is_file():
 			return str(path)
 
-		logging.debug(f"Looking for ffmpeg in PATH: {os.environ.get('PATH')}")
 		path = shutil.which("ffmpeg")
 		if path:
 			return path
@@ -17839,7 +17838,6 @@ class Tauon:
 		if path.is_file():
 			return str(path)
 
-		logging.debug(f"Looking for ffprobe in PATH: {os.environ.get('PATH')}")
 		path = shutil.which("ffprobe")
 		if path:
 			return path
