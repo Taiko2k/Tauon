@@ -1698,7 +1698,7 @@ class PlayerCtl:
 				logging.debug(f"Failed to parse disc_number '{tr.disc_number}' as int, using an empty string instead")
 				d = ""
 			except Exception:
-				logging.exception(f"Unknown excpetion parsing disc_number '{tr.disc_number}' as int")
+				logging.exception(f"Unknown exception parsing disc_number '{tr.disc_number}' as int")
 				d = ""
 
 
