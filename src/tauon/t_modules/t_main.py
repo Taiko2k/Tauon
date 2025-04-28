@@ -12979,7 +12979,7 @@ class Tauon:
 					id = quotes[i]
 					break
 
-		urls = []
+		urls: list[str] = []
 		playlist = self.pctl.multi_playlist[pl].playlist_ids
 
 		warn = False
@@ -13037,7 +13037,7 @@ class Tauon:
 			return
 
 		playlist = []
-		selections = []
+		selections: list[list[int]] = []
 		errors = False
 		selections_searched = 0
 
@@ -34161,6 +34161,7 @@ class ArtistInfoBox:
 		self.min_rq_timer = Timer()
 		self.min_rq_timer.force_set(10)
 
+		self.urls: list[tuple[str, ColourRGBA, str]] = []
 		self.text = ""
 		self.status = ""
 		self.scroll_y = 0
@@ -34261,7 +34262,6 @@ class ArtistInfoBox:
 				lic = ex.split("</a>. ", 1)[1]
 
 			text += "\n"
-
 			self.urls = [(link, ColourRGBA(200, 60, 60, 255), "L")]
 			for word in text.replace("\n", " ").split(" "):
 				if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
@@ -34345,7 +34345,7 @@ class ArtistInfoBox:
 						ColourRGBA(50, 50, 50, 255))
 
 					self.ddt.text((xx, yy), item[0], ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
-					self.mini_box.render(right, yy, ColourRGBA(item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
+					self.mini_box.render(right, yy, ColourRGBA(item[1].r + 20, item[1].g + 20, item[1].b + 20, 255))
 				# self.ddt.rect_r(rect, [210, 80, 80, 255], True)
 
 				yy += 19 * self.gui.scale
