@@ -40302,13 +40302,10 @@ if system == "Windows" or tauon.msys:
 tray = STray(tauon)
 
 if system == "Linux" and not macos and not tauon.msys:
-
-	gnome = Gnome(tauon)
-
 	try:
-		gnomeThread = threading.Thread(target=gnome.main)
-		gnomeThread.daemon = True
-		gnomeThread.start()
+		gnome_thread = threading.Thread(target=tauon.gnome.main)
+		gnome_thread.daemon = True
+		gnome_thread.start()
 	except Exception:
 		logging.exception("Could not start Dbus thread")
 
@@ -41977,7 +41974,7 @@ while pctl.running:
 				#logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
 				if system == "Linux" and not macos and not tauon.msys:
-					gnome.focus()
+					tauon.gnome.focus()
 				inp.k_input = True
 
 				mouse_enter_window = True
