@@ -3876,7 +3876,7 @@ class LastFMapi:
 		self.tauon.bg_save()
 		self.show_message(_("Scanning scrobbles complete"), mode="done")
 
-	def artist_info(self, artist: str):
+	def artist_info(self, artist: str) -> tuple[bool, str | None, str, str | None, str | None] | tuple[bool, str, str]:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return False, "", ""
 
@@ -3892,7 +3892,7 @@ class LastFMapi:
 
 				return True, bio, "", mbid, url
 		except Exception:
-			logging.exception("last.fm get artist info failed")
+			logging.exception(f"last.fm get artist info failed for '{artist}'")
 
 		return False, "", "", "", ""
 
