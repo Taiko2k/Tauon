@@ -17815,7 +17815,7 @@ class Tauon:
 
 	def get_ffmpeg(self) -> str | None:
 		path = self.user_directory / "ffmpeg.exe"
-		if msys and path.is_file():
+		if self.msys and path.is_file():
 			return str(path)
 
 		# macOS
@@ -17831,7 +17831,7 @@ class Tauon:
 
 	def get_ffprobe(self) -> str | None:
 		path = self.user_directory / "ffprobe.exe"
-		if msys and path.is_file():
+		if self.msys and path.is_file():
 			return str(path)
 
 		# macOS
@@ -40069,7 +40069,7 @@ elif lang:
 if prefs.use_gamepad:
 	sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
-if msys and win_ver >= 10:
+if bag.msys and win_ver >= 10:
 	#logging.info(sss.info.win.window)
 	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 	if SMTC_path.exists():
@@ -40129,7 +40129,7 @@ try:
 	p = ctypes.util.find_library("libopenmpt")
 	if p:
 		mpt = ctypes.cdll.LoadLibrary(p)
-	elif msys:
+	elif bag.msys:
 		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 	else:
 		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
@@ -40146,7 +40146,7 @@ try:
 	p = ctypes.util.find_library("libgme")
 	if p:
 		gme = ctypes.cdll.LoadLibrary(p)
-	elif msys:
+	elif bag.msys:
 		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
 	else:
 		gme = ctypes.cdll.LoadLibrary("libgme.so")
@@ -40213,7 +40213,7 @@ if db_version > 0 and db_version < latest_db_version:
 		logging.exception("Unknown error running database migration!")
 		sys.exit(42)
 
-if system == "Linux" and not macos and not msys:
+if system == "Linux" and not macos and not tauon.msys:
 	try:
 		Notify.init("Tauon Music Box")
 		g_tc_notify = Notify.Notification.new(
@@ -40296,12 +40296,12 @@ subsonic = tauon.subsonic
 koel     = tauon.koel
 tau      = tauon.tau
 
-if system == "Windows" or msys:
+if system == "Windows" or tauon.msys:
 	from lynxtray import SysTrayIcon
 
 tray = STray(tauon)
 
-if system == "Linux" and not macos and not msys:
+if system == "Linux" and not macos and not tauon.msys:
 
 	gnome = Gnome(tauon)
 
@@ -40351,13 +40351,13 @@ cursor_top_side = cursor_standard
 cursor_left_side = cursor_standard
 cursor_bottom_side = cursor_standard
 
-if msys:
+if tauon.msys:
 	cursor_br_corner = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
 	cursor_right_side = cursor_shift
 	cursor_left_side = cursor_shift
 	cursor_top_side = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 	cursor_bottom_side = cursor_top_side
-elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
+elif not tauon.msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 	try:
 		try:
 			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
@@ -40404,7 +40404,7 @@ if not maximized and gui.maximized:
 
 props = sdl3.SDL_GetWindowProperties(t_window)
 
-if system == "Windows" or msys:
+if system == "Windows" or tauon.msys:
 	gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
 	#gui.window_id = sss.info.win.window
 
@@ -41542,7 +41542,7 @@ while y < 300:
 tauon.sync_target.text = prefs.sync_target
 sdl3.SDL_SetRenderTarget(renderer, None)
 
-if msys:
+if tauon.msys:
 	sdl3.SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
 
 # Generate theme buttons
@@ -41716,7 +41716,7 @@ while pctl.running:
 				elif tauon.is_level_zero() or gui.quick_search_mode:
 					pctl.cycle_playlist_pinned(-1)
 
-		if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not msys:
+		if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not tauon.msys:
 			reset_render = True
 
 		if event.type == sdl3.SDL_EVENT_DROP_TEXT:
@@ -41976,7 +41976,7 @@ while pctl.running:
 			if event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_GAINED:
 				#logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
-				if system == "Linux" and not macos and not msys:
+				if system == "Linux" and not macos and not tauon.msys:
 					gnome.focus()
 				inp.k_input = True
 
@@ -45089,7 +45089,7 @@ while pctl.running:
 					rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
 					tauon.fields.add(rect)
 					path = tc.fullpath
-					if msys:
+					if tauon.msys:
 						path = path.replace("/", "\\")
 					if tauon.coll(rect):
 						ddt.text((x1, y1), _("Path"), key_colour_on, 212)
