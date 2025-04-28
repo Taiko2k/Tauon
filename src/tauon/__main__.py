@@ -353,6 +353,7 @@ while True:
 	drivers.append(x)
 
 logging.debug(f"SDL availiable drivers: {drivers}")
+logging.debug(f"PATH that will be used for ffmpeg/ffprobe and similar: {os.environ.get('PATH')}")
 
 driver = None
 if "opengl" in drivers:
