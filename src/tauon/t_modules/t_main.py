@@ -14553,12 +14553,12 @@ class Tauon:
 
 	def download_ffmpeg(self, x) -> None:
 		def go() -> None:
-			url = "https://github.com/GyanD/codexffmpeg/releases/download/5.0.1/ffmpeg-5.0.1-essentials_build.zip"
-			sha = "9e00da9100ae1bba22b1385705837392e8abcdfd2efc5768d447890d101451b5"
+			url = "https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-essentials_build.zip"
+			sha = "04861d3339c5ebe38b56c19a15cf2c0cc97f5de4fa8910e4d47e5e6404e4a2d4"
 			self.show_message(_("Starting download..."))
 			try:
 				f = io.BytesIO()
-				r = requests.get(url, stream=True, timeout=1800) # ffmpeg is 77MB, give it half an hour in case someone is willing to suffer it on a slow connection
+				r = requests.get(url, stream=True, timeout=1800) # ffmpeg is 88MB, give it half an hour in case someone is willing to suffer it on a slow connection
 
 				dl = 0
 				for data in r.iter_content(chunk_size=4096):
@@ -14568,7 +14568,7 @@ class Tauon:
 					if mb > 90:
 						break
 					if mb % 5 == 0:
-						self.show_message(_("Downloading... {N}/80MB").format(N=mb))
+						self.show_message(_("Downloading... {N}/88MB").format(N=mb))
 
 			except Exception as e:
 				logging.exception("Download failed")
@@ -14581,11 +14581,11 @@ class Tauon:
 			self.show_message(_("Download completed.. extracting"))
 			f.seek(0)
 			z = zipfile.ZipFile(f, mode="r")
-			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffmpeg.exe")
+			exe = z.open("ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe")
 			with (self.user_directory / "ffmpeg.exe").open("wb") as file:
 				file.write(exe.read())
 
-			exe = z.open("ffmpeg-5.0.1-essentials_build/bin/ffprobe.exe")
+			exe = z.open("ffmpeg-7.1.1-essentials_build/bin/ffprobe.exe")
 			with (self.user_directory / "ffprobe.exe").open("wb") as file:
 				file.write(exe.read())
 
@@ -18206,7 +18206,7 @@ class Tauon:
 		if self.get_ffmpeg():
 			return True
 		if self.msys:
-			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (80MB)"), mode="confirm")
+			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (88MB)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
 			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (None,)
