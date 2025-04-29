@@ -1698,7 +1698,7 @@ class PlayerCtl:
 				logging.debug(f"Failed to parse disc_number '{tr.disc_number}' as int, using an empty string instead")
 				d = ""
 			except Exception:
-				logging.exception(f"Unknown excpetion parsing disc_number '{tr.disc_number}' as int")
+				logging.exception(f"Unknown exception parsing disc_number '{tr.disc_number}' as int")
 				d = ""
 
 
@@ -3876,7 +3876,7 @@ class LastFMapi:
 		self.tauon.bg_save()
 		self.show_message(_("Scanning scrobbles complete"), mode="done")
 
-	def artist_info(self, artist: str):
+	def artist_info(self, artist: str) -> tuple[bool, str | None, str, str | None, str | None] | tuple[bool, str, str]:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return False, "", ""
 
@@ -3892,7 +3892,7 @@ class LastFMapi:
 
 				return True, bio, "", mbid, url
 		except Exception:
-			logging.exception("last.fm get artist info failed")
+			logging.exception(f"last.fm get artist info failed for '{artist}'")
 
 		return False, "", "", "", ""
 
@@ -4230,7 +4230,11 @@ class ListenBrainz:
 			return True
 
 		data = {"listen_type": "single", "payload": []}
-		metadata = {"track_name": title, "release_name": album, "artist_name": artist}
+		metadata = {
+			"track_name": title,
+			**({"release_name": album} if album else {}),
+			"artist_name": artist,
+			}
 
 		additional: dict[str, str] = {}
 
@@ -4278,7 +4282,11 @@ class ListenBrainz:
 			return
 
 		data = {"listen_type": "playing_now", "payload": []}
-		metadata = {"track_name": title, "release_name": album, "artist_name": artist}
+		metadata = {
+			"track_name": title,
+			**({"release_name": album} if album else {}),
+			"artist_name": artist,
+			}
 
 		additional: dict[str, str] = {}
 
@@ -12979,7 +12987,7 @@ class Tauon:
 					id = quotes[i]
 					break
 
-		urls = []
+		urls: list[str] = []
 		playlist = self.pctl.multi_playlist[pl].playlist_ids
 
 		warn = False
@@ -13037,7 +13045,7 @@ class Tauon:
 			return
 
 		playlist = []
-		selections = []
+		selections: list[list[int]] = []
 		errors = False
 		selections_searched = 0
 
@@ -17815,7 +17823,7 @@ class Tauon:
 
 	def get_ffmpeg(self) -> str | None:
 		path = self.user_directory / "ffmpeg.exe"
-		if msys and path.is_file():
+		if self.msys and path.is_file():
 			return str(path)
 
 		# macOS
@@ -17823,7 +17831,6 @@ class Tauon:
 		if path.is_file():
 			return str(path)
 
-		logging.debug(f"Looking for ffmpeg in PATH: {os.environ.get('PATH')}")
 		path = shutil.which("ffmpeg")
 		if path:
 			return path
@@ -17831,7 +17838,7 @@ class Tauon:
 
 	def get_ffprobe(self) -> str | None:
 		path = self.user_directory / "ffprobe.exe"
-		if msys and path.is_file():
+		if self.msys and path.is_file():
 			return str(path)
 
 		# macOS
@@ -17839,7 +17846,6 @@ class Tauon:
 		if path.is_file():
 			return str(path)
 
-		logging.debug(f"Looking for ffprobe in PATH: {os.environ.get('PATH')}")
 		path = shutil.which("ffprobe")
 		if path:
 			return path
@@ -34161,6 +34167,7 @@ class ArtistInfoBox:
 		self.min_rq_timer = Timer()
 		self.min_rq_timer.force_set(10)
 
+		self.urls: list[tuple[str, ColourRGBA, str]] = []
 		self.text = ""
 		self.status = ""
 		self.scroll_y = 0
@@ -34261,7 +34268,6 @@ class ArtistInfoBox:
 				lic = ex.split("</a>. ", 1)[1]
 
 			text += "\n"
-
 			self.urls = [(link, ColourRGBA(200, 60, 60, 255), "L")]
 			for word in text.replace("\n", " ").split(" "):
 				if word.strip()[:4] == "http" or word.strip()[:4] == "www.":
@@ -34345,7 +34351,7 @@ class ArtistInfoBox:
 						ColourRGBA(50, 50, 50, 255))
 
 					self.ddt.text((xx, yy), item[0], ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
-					self.mini_box.render(right, yy, ColourRGBA(item[1][0] + 20, item[1][1] + 20, item[1][2] + 20, 255))
+					self.mini_box.render(right, yy, ColourRGBA(item[1].r + 20, item[1].g + 20, item[1].b + 20, 255))
 				# self.ddt.rect_r(rect, [210, 80, 80, 255], True)
 
 				yy += 19 * self.gui.scale
@@ -39501,22 +39507,17 @@ del max_window_tex
 
 inp = gui.inp
 keymaps = gui.keymaps
-# Control Variables--------------------------------------------------------------------------
-
-#side_drag      = gui.side_drag # TODO(Martin): Move this to Input
-
 # GUI Variables -------------------------------------------------------------------------------------------
 # Variables now go in the gui, pctl, input and prefs class instances. The following just haven't been moved yet
 spot_cache_saved_albums = [] # TODO(Martin): This isn't really used? It's just fed to spot_ctl as [] or saved, but we never save it
-resize_mode = False # TODO(Martin): Move
-spec_smoothing = True # TODO(Martin): Move
-row_len = 5 # TODO(Martin): Move
-time_last_save = 0 # TODO(Martin): Move
-b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist ; TODO(Martin): Move
-
+# TODO(Martin): Move these 6 vars
+resize_mode = False
+spec_smoothing = True
+row_len = 5
+time_last_save = 0
+b_info_y = int(window_size[1] * 0.7)  # For future possible panel below playlist
 # Playlist Panel
-scroll_opacity = 0 # TODO(Martin): Move
-source = None # TODO(Martin): Useless to define here?
+scroll_opacity = 0
 
 # -----------------------------------------------------
 # STATE LOADING
@@ -40067,7 +40068,7 @@ elif lang:
 if prefs.use_gamepad:
 	sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
-if msys and win_ver >= 10:
+if bag.msys and win_ver >= 10:
 	#logging.info(sss.info.win.window)
 	SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 	if SMTC_path.exists():
@@ -40127,7 +40128,7 @@ try:
 	p = ctypes.util.find_library("libopenmpt")
 	if p:
 		mpt = ctypes.cdll.LoadLibrary(p)
-	elif msys:
+	elif bag.msys:
 		mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 	else:
 		mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
@@ -40144,7 +40145,7 @@ try:
 	p = ctypes.util.find_library("libgme")
 	if p:
 		gme = ctypes.cdll.LoadLibrary(p)
-	elif msys:
+	elif bag.msys:
 		gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
 	else:
 		gme = ctypes.cdll.LoadLibrary("libgme.so")
@@ -40211,7 +40212,7 @@ if db_version > 0 and db_version < latest_db_version:
 		logging.exception("Unknown error running database migration!")
 		sys.exit(42)
 
-if system == "Linux" and not macos and not msys:
+if system == "Linux" and not macos and not tauon.msys:
 	try:
 		Notify.init("Tauon Music Box")
 		g_tc_notify = Notify.Notification.new(
@@ -40294,19 +40295,16 @@ subsonic = tauon.subsonic
 koel     = tauon.koel
 tau      = tauon.tau
 
-if system == "Windows" or msys:
+if system == "Windows" or tauon.msys:
 	from lynxtray import SysTrayIcon
 
 tray = STray(tauon)
 
-if system == "Linux" and not macos and not msys:
-
-	gnome = Gnome(tauon)
-
+if system == "Linux" and not macos and not tauon.msys:
 	try:
-		gnomeThread = threading.Thread(target=gnome.main)
-		gnomeThread.daemon = True
-		gnomeThread.start()
+		gnome_thread = threading.Thread(target=tauon.gnome.main)
+		gnome_thread.daemon = True
+		gnome_thread.start()
 	except Exception:
 		logging.exception("Could not start Dbus thread")
 
@@ -40349,13 +40347,13 @@ cursor_top_side = cursor_standard
 cursor_left_side = cursor_standard
 cursor_bottom_side = cursor_standard
 
-if msys:
+if tauon.msys:
 	cursor_br_corner = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
 	cursor_right_side = cursor_shift
 	cursor_left_side = cursor_shift
 	cursor_top_side = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 	cursor_bottom_side = cursor_top_side
-elif not msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
+elif not tauon.msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 	try:
 		try:
 			xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
@@ -40402,7 +40400,7 @@ if not maximized and gui.maximized:
 
 props = sdl3.SDL_GetWindowProperties(t_window)
 
-if system == "Windows" or msys:
+if system == "Windows" or tauon.msys:
 	gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
 	#gui.window_id = sss.info.win.window
 
@@ -40496,11 +40494,6 @@ else:
 	ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
 	ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
 
-drop_shadow = tauon.drop_shadow
-lyrics_ren_mini = tauon.lyrics_ren_mini
-lyrics_ren = tauon.lyrics_ren
-timed_lyrics_ren = tauon.timed_lyrics_ren
-
 text_box_canvas_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 text_box_canvas = sdl3.SDL_CreateTexture(
@@ -40515,8 +40508,6 @@ tauon.rename_folder.text = prefs.rename_folder_template
 if rename_folder_previous:
 	tauon.rename_folder.text = rename_folder_previous
 
-temp_dest = sdl3.SDL_FRect(0, 0)
-
 scroll_hold = False
 scroll_point = 0
 scroll_bpoint = 0
@@ -40527,22 +40518,12 @@ album_scroll_hold = False
 
 # gui.scroll_hide_box = (0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
 
-gen_menu = False
-
-transfer_setting = 0
-
-b_panel_size = 300
-b_info_bar = False
-
-# Create empty area menu
 playlist_menu         = tauon.playlist_menu
 radio_entry_menu      = tauon.radio_entry_menu
 showcase_menu         = tauon.showcase_menu
 center_info_menu      = tauon.center_info_menu
-cancel_menu           = tauon.cancel_menu
 gallery_menu          = tauon.gallery_menu
 artist_info_menu      = tauon.artist_info_menu
-queue_menu            = tauon.queue_menu
 repeat_menu           = tauon.repeat_menu
 shuffle_menu          = tauon.shuffle_menu
 artist_list_menu      = tauon.artist_list_menu
@@ -40550,9 +40531,15 @@ lightning_menu        = tauon.lightning_menu
 lsp_menu              = tauon.lsp_menu
 folder_tree_menu      = tauon.folder_tree_menu
 folder_tree_stem_menu = tauon.folder_tree_stem_menu
-overflow_menu         = tauon.overflow_menu
-spotify_playlist_menu = tauon.spotify_playlist_menu
 radio_context_menu    = tauon.radio_context_menu
+tab_menu              = tauon.tab_menu
+extra_tab_menu        = tauon.extra_tab_menu
+track_menu            = tauon.track_menu
+selection_menu        = tauon.selection_menu
+folder_menu           = tauon.folder_menu
+picture_menu          = tauon.picture_menu
+mode_menu             = tauon.mode_menu
+extra_menu            = tauon.extra_menu
 
 # . Menu entry: A side panel view layout
 lsp_menu.add(MenuItem(_("Playlists + Queue"), tauon.enable_playlist_list, disable_test=tauon.lsp_menu_test_playlist))
@@ -40611,7 +40598,7 @@ gallery_menu.add_sub(_("Image…"), 160)
 gallery_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
 gallery_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 
-cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
+tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
 showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
@@ -40644,7 +40631,6 @@ center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side
 center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 	tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
 
-picture_menu = tauon.picture_menu
 picture_menu.add(MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
 # Next and previous pictures
 picture_menu.add(MenuItem(_("Next Image"), tauon.cycle_offset, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True))
@@ -40676,13 +40662,10 @@ gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), tauon.delete_t
 gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), tauon.download_art1_fire, tauon.dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.download_art1_fire_disable_test))
 # playlist_menu.add('Paste', append_here, paste_deco)
 
-# Create playlist tab menu
-tab_menu = tauon.tab_menu
 tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
 tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
-radio_tab_menu = tauon.radio_tab_menu
-radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
+tauon.radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
 lock_asset = asset_loader(bag, bag.loaded_asset_dc, "lock.png", True)
 lock_icon = MenuIcon(lock_asset)
@@ -40703,7 +40686,7 @@ delete_icon.colour = ColourRGBA(249, 70, 70, 255)
 
 tab_menu.add(MenuItem(_("Delete"),
 	pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
-radio_tab_menu.add(MenuItem(_("Delete"),
+tauon.radio_tab_menu.add(MenuItem(_("Delete"),
 	pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
 
 spot_asset         = asset_loader(bag, bag.loaded_asset_dc, "spot.png", True)
@@ -40718,8 +40701,6 @@ jell_icon.xoff = 5
 jell_icon.yoff = 2
 
 tab_menu.br()
-
-extra_tab_menu = tauon.extra_tab_menu
 
 extra_tab_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, icon=gui.add_icon))
 
@@ -40843,9 +40824,6 @@ playlist_menu.add(MenuItem(_("Add Playing Spotify Album"), tauon.paste_playlist_
 playlist_menu.add(MenuItem(_("Add Playing Spotify Track"), tauon.paste_playlist_coast_track, tauon.paste_playlist_coast_album_deco,
 	show_test=tauon.spotify_show_test))
 
-# Create track context menu
-track_menu = tauon.track_menu
-
 track_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
 track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=info_icon))
 
@@ -40926,9 +40904,6 @@ track_menu.add_to_sub(0, MenuItem(_("Edit with"), tauon.launch_editor, pass_ref=
 track_menu.add_to_sub(0, MenuItem(_("Lyrics..."), tauon.show_lyrics_menu, pass_ref=True))
 track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
 # track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
-
-selection_menu = tauon.selection_menu
-folder_menu    = tauon.folder_menu
 
 folder_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
 
@@ -41175,7 +41150,6 @@ tauon.chrome_menu = x_menu
 
 #x_menu.add(_("Cast…"), cast_search, cast_deco)
 
-mode_menu = tauon.mode_menu
 
 mode_menu.add(MenuItem(_("Tab"), tauon.set_mini_mode_D))
 mode_menu.add(MenuItem(_("Mini"), tauon.set_mini_mode_A1))
@@ -41186,8 +41160,6 @@ mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
 
 mode_menu.br()
 mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
-
-extra_menu = tauon.extra_menu
 
 extra_menu.add(MenuItem(_("Random Track"), tauon.random_track, hint=";"))
 
@@ -41540,7 +41512,7 @@ while y < 300:
 tauon.sync_target.text = prefs.sync_target
 sdl3.SDL_SetRenderTarget(renderer, None)
 
-if msys:
+if tauon.msys:
 	sdl3.SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
 
 # Generate theme buttons
@@ -41714,7 +41686,7 @@ while pctl.running:
 				elif tauon.is_level_zero() or gui.quick_search_mode:
 					pctl.cycle_playlist_pinned(-1)
 
-		if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not msys:
+		if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not tauon.msys:
 			reset_render = True
 
 		if event.type == sdl3.SDL_EVENT_DROP_TEXT:
@@ -41974,8 +41946,8 @@ while pctl.running:
 			if event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_GAINED:
 				#logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
-				if system == "Linux" and not macos and not msys:
-					gnome.focus()
+				if system == "Linux" and not macos and not tauon.msys:
+					tauon.gnome.focus()
 				inp.k_input = True
 
 				mouse_enter_window = True
@@ -45087,7 +45059,7 @@ while pctl.running:
 					rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
 					tauon.fields.add(rect)
 					path = tc.fullpath
-					if msys:
+					if tauon.msys:
 						path = path.replace("/", "\\")
 					if tauon.coll(rect):
 						ddt.text((x1, y1), _("Path"), key_colour_on, 212)
