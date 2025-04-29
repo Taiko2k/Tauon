@@ -2161,7 +2161,7 @@ class PlayerCtl:
 		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
 			self.tauon.thread_manager.ready("style")
 
-	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
+	def get_url(self, track_object: TrackClass) -> tuple[list[str], str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
 			return self.tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
@@ -5404,6 +5404,7 @@ class Tauon:
 		self.platform_system              = bag.platform_system
 		self.primary_stations             = bag.primary_stations
 		self.wayland                      = bag.wayland
+		self.msys                         = bag.msys
 		self.dirs                         = bag.dirs
 		self.colours                      = bag.colours
 		self.download_directories         = bag.download_directories
@@ -5478,7 +5479,6 @@ class Tauon:
 		self.quick_import_done: list[str] = []
 		self.move_jobs: list[tuple[str, str, bool, str, LoadClass]] = []
 		self.move_in_progress:       bool = False
-		self.msys                         = bag.msys
 		self.worker2_lock                 = threading.Lock()
 		self.dummy_event:          sdl3.SDL_Event = sdl3.SDL_Event()
 		self.temp_dest                            = sdl3.SDL_FRect(0, 0)
@@ -5739,7 +5739,6 @@ class Tauon:
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
-
 		self.tidal             = Tidal(self)
 		self.plex              = PlexService(self)
 		self.jellyfin          = Jellyfin(self)
@@ -5747,6 +5746,9 @@ class Tauon:
 		self.tau               = TauService(self)
 		self.album_star_store  = AlbumStarStore(self)
 		self.subsonic          = self.album_star_store.subsonic
+
+		self.ffmpeg_path:     Path | None = self.get_ffmpeg()
+		self.ffprobe_path:    Path | None = self.get_ffprobe()
 
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
@@ -5758,42 +5760,42 @@ class Tauon:
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format=duration", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.length = float(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a duration")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=title", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.title = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a title")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=artist", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.artist = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a artist")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=album", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.album = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a album")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=date", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.date = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a date")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=track", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.track_number = str(result.stdout.decode())
 		except Exception:
@@ -14228,6 +14230,8 @@ class Tauon:
 				file.write(exe.read())
 
 			exe.close()
+			self.ffmpeg_path = self.get_ffmpeg()
+			self.ffprobe_path = self.get_ffprobe()
 			self.show_message(_("FFMPEG fetch complete"), mode="done")
 
 		shooter(go)
@@ -14392,7 +14396,7 @@ class Tauon:
 
 		target_out = str(output / f"output{track}.{codec})")
 
-		command = self.get_ffmpeg() + " "
+		command = f"{self.ffmpeg_path} "
 
 		if not t.is_cue:
 			command += '-i "'
@@ -15635,7 +15639,7 @@ class Tauon:
 							if self.system == "Windows" or self.msys:
 								startupinfo = subprocess.STARTUPINFO()
 								startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-							result = subprocess.run([self.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
+							result = subprocess.run([str(self.ffprobe_path), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 							nt.length = float(result.stdout.decode())
 						except Exception:
 							logging.exception("FFPROBE couldn't supply a duration")
@@ -17811,7 +17815,9 @@ class Tauon:
 		return str(self.cache_directory / "icon-export" / f"{name}.svg")
 
 	def test_ffmpeg(self) -> bool:
-		if self.get_ffmpeg():
+		test_result = self.get_ffmpeg()
+		self.ffmpeg_path = test_result
+		if test_result:
 			return True
 		if self.msys:
 			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (80MB)"), mode="confirm")
@@ -17821,34 +17827,34 @@ class Tauon:
 			self.show_message(_("FFMPEG could not be found"))
 		return False
 
-	def get_ffmpeg(self) -> str | None:
+	def get_ffmpeg(self) -> Path | None:
 		path = self.user_directory / "ffmpeg.exe"
 		if self.msys and path.is_file():
-			return str(path)
+			return path
 
 		# macOS
 		path = self.install_directory / "ffmpeg"
 		if path.is_file():
-			return str(path)
+			return path
 
 		path = shutil.which("ffmpeg")
 		if path:
-			return path
+			return Path(path)
 		return None
 
-	def get_ffprobe(self) -> str | None:
+	def get_ffprobe(self) -> Path | None:
 		path = self.user_directory / "ffprobe.exe"
 		if self.msys and path.is_file():
-			return str(path)
+			return path
 
 		# macOS
 		path = self.install_directory / "ffprobe"
 		if path.is_file():
-			return str(path)
+			return path
 
 		path = shutil.which("ffprobe")
 		if path:
-			return path
+			return Path(path)
 		return None
 
 	def bg_save(self) -> None:
