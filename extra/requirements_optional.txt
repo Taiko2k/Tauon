@@ -4,7 +4,7 @@ jxlpy
 natsort
 opencc;                      sys_platform != 'win32'
 opencc-python-reimplemented; sys_platform == 'win32'
-#picard - picard 2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
+#picard
 plexapi
 PyChromecast
 #python-magic # WIP

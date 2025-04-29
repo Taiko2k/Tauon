@@ -20,12 +20,12 @@ opencc-python-reimplemented; sys_platform == 'win32' # optional
 lynxpresence>=4.4.1 # optional
 tekore # optional
 natsort # optional
+#picard # optional
 PyChromecast # optional
 setproctitle # optional
 tidalapi # optional
 colored_traceback;           sys_platform != 'win32' # optional - Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 #pyinstaller
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
-#picard - Waiting for release newer than 2.12.3 which has a fix for this: picard
 #  2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
 #  https://github.com/metabrainz/picard/releases
