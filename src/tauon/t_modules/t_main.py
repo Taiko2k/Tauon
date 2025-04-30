@@ -2276,10 +2276,10 @@ class PlayerCtl:
 			if not title:
 				line = clean_string(track.filename)
 			else:
-				if artist != "":
+				if artist:
 					line += artist
-				if title != "":
-					if line != "":
+				if title:
+					if line:
 						line += "  -  "
 					line += title
 
@@ -3881,7 +3881,7 @@ class LastFMapi:
 			return False, "", ""
 
 		try:
-			if artist != "":
+			if artist:
 				l_artist = pylast.Artist(
 					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
 					self.lastfm_network)
@@ -3896,17 +3896,16 @@ class LastFMapi:
 
 		return False, "", "", "", ""
 
-	def artist_mbid(self, artist: str):
+	def artist_mbid(self, artist: str) -> str | None:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
 		try:
-			if artist != "":
+			if artist:
 				l_artist = pylast.Artist(
 					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
 					self.lastfm_network)
-				mbid = l_artist.get_mbid()
-				return mbid
+				return l_artist.get_mbid()
 		except Exception:
 			logging.exception("last.fm get artist mbid info failed")
 
@@ -3968,8 +3967,8 @@ class LastFMapi:
 
 		# Act
 		try:
-			if title != "" and artist != "":
-				if album != "":
+			if title and artist:
+				if album:
 					if album_artist and album_artist != artist:
 						self.network.scrobble(
 							artist=artist, title=title, album=album, album_artist=album_artist, timestamp=timestamp)
@@ -4026,7 +4025,7 @@ class LastFMapi:
 		if not self.connected and self.prefs.auto_lfm:
 			self.connect(False)
 			self.prefs.scrobble_hold = True
-		if self.connected and artist != "" and title != "":
+		if self.connected and artist and title:
 			track = self.network.get_track(artist, title)
 			track.love()
 
@@ -4036,7 +4035,7 @@ class LastFMapi:
 		if not self.connected and self.prefs.auto_lfm:
 			self.connect(False)
 			self.prefs.scrobble_hold = True
-		if self.connected and artist != "" and title != "":
+		if self.connected and artist and title:
 			track = self.network.get_track(artist, title)
 			track.love()
 			track.unlove()
@@ -4181,7 +4180,7 @@ class LastFMapi:
 		artist = get_artist_strip_feat(track_object)
 
 		try:
-			if title != "" and artist != "":
+			if title and artist:
 				self.network.update_now_playing(
 					artist=artist, title=title, album=album)
 				return 0
@@ -6559,12 +6558,12 @@ class Tauon:
 		r_base_names:  dict[int, str] = {}
 		titles:        dict[str, int] = {}
 		for key, value in self.pctl.master_library.items():
-			if value.fullpath != "":
+			if value.fullpath:
 				location_dict[value.fullpath] = key
-			if value.filename != "":
+			if value.filename:
 				base_names[value.filename] = 0
 				r_base_names[key] = value.filename
-			if value.title != "":
+			if value.title:
 				titles[value.title] = 0
 
 		for track in a:
@@ -7359,7 +7358,7 @@ class Tauon:
 		logging.info("..Done")
 
 	def get_bio(self, track_object: TrackClass) -> None:
-		if track_object.artist != "":
+		if track_object.artist:
 			self.lastfm.get_bio(track_object.artist)
 
 	def search_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
@@ -7908,15 +7907,15 @@ class Tauon:
 				path = os.path.relpath(path, start=direc)
 
 			xspf_track_tag = ET.SubElement(xspf_tracklist_tag, "track")
-			if track.title != "":
+			if track.title:
 				ET.SubElement(xspf_track_tag, "title").text = track.title
-			if track.is_cue is False and track.fullpath != "":
+			if track.is_cue is False and track.fullpath:
 				ET.SubElement(xspf_track_tag, "location").text = urllib.parse.quote(path)
-			if track.artist != "":
+			if track.artist:
 				ET.SubElement(xspf_track_tag, "creator").text = track.artist
-			if track.album != "":
+			if track.album:
 				ET.SubElement(xspf_track_tag, "album").text = track.album
-			if track.track_number != "":
+			if track.track_number:
 				ET.SubElement(xspf_track_tag, "trackNum").text = str(track.track_number)
 
 			ET.SubElement(xspf_track_tag, "duration").text = str(int(track.length * 1000))
@@ -8800,7 +8799,7 @@ class Tauon:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		for item in source:
-			if self.pctl.master_library[item].lyrics != "":
+			if self.pctl.master_library[item].lyrics:
 				playlist.append(item)
 
 		if custom_list is not None:
@@ -9084,7 +9083,7 @@ class Tauon:
 
 	def gen_sort_date(self, index: int, rev: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
 		def g_date(index: int) -> str:
-			if self.pctl.master_library[index].date != "":
+			if self.pctl.master_library[index].date:
 				return str(self.pctl.master_library[index].date)
 			return "z"
 
@@ -9097,7 +9096,7 @@ class Tauon:
 
 		for item in source:
 			date = self.pctl.master_library[item].date
-			if date != "":
+			if date:
 				playlist.append(item)
 				if len(date) > 4 and date[:4].isdigit():
 					date = date[:4]
@@ -9571,7 +9570,7 @@ class Tauon:
 					return
 
 				artist = move_track.artist
-				if move_track.album_artist != "":
+				if move_track.album_artist:
 					artist = move_track.album_artist
 
 				artist = filename_safe(artist)
@@ -10315,7 +10314,7 @@ class Tauon:
 		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
 
 	def clip_ar(self, index: int) -> None:
-		if self.pctl.master_library[index].album_artist != "":
+		if self.pctl.master_library[index].album_artist:
 			line = self.pctl.master_library[index].album_artist
 		else:
 			line = self.pctl.master_library[index].artist
@@ -10324,7 +10323,7 @@ class Tauon:
 	def clip_title(self, index: int) -> None:
 		n_track = self.pctl.master_library[index]
 
-		if not self.prefs.use_title and n_track.album_artist != "" and n_track.album != "":
+		if not self.prefs.use_title and n_track.album_artist and n_track.album:
 			line = n_track.album_artist + " - " + n_track.album
 		else:
 			line = n_track.parent_folder_name
@@ -11291,14 +11290,14 @@ class Tauon:
 
 				title = _("Unknown Track")
 				tr = self.pctl.playing_object()
-				if tr.artist != "" and tr.title != "" and self.pctl.playing_state == 3:
+				if tr.artist and tr.title and self.pctl.playing_state == 3:
 					title = tr.title + " | " + tr.artist
 				else:
 					title = tr.title
 				if len(title) > 150:
 					title = _("Unknown Track")
 
-				artist = tr.artist if tr.artist != "" else _("Unknown Artist")
+				artist = tr.artist if tr.artist else _("Unknown Artist")
 
 				if self.pctl.playing_state == 3 and tr.album:
 					album = self.radiobox.loaded_station["title"]
@@ -12952,7 +12951,7 @@ class Tauon:
 			if len(albums) > 0 and albums.count(albums[0]) == len(albums):
 				track = self.pctl.get_track(self.pctl.default_playlist[track_list[0]])
 				artist = track.artist
-				if track.album_artist != "":
+				if track.album_artist:
 					artist = track.album_artist
 				self.pctl.multi_playlist[pl].title = artist + " - " + albums[0][:50]
 
@@ -14406,15 +14405,15 @@ class Tauon:
 
 		command += '" '
 		if self.pctl.master_library[track].is_cue:
-			if t.title != "":
+			if t.title:
 				command += '-metadata title="' + t.title.replace('"', "").replace("'", "") + '" '
-			if t.artist != "":
+			if t.artist:
 				command += '-metadata artist="' + t.artist.replace('"', "").replace("'", "") + '" '
-			if t.album != "":
+			if t.album:
 				command += '-metadata album="' + t.album.replace('"', "").replace("'", "") + '" '
-			if t.track_number != "":
+			if t.track_number:
 				command += '-metadata track="' + str(t.track_number).replace('"', "").replace("'", "") + '" '
-			if t.date != "":
+			if t.date:
 				command += '-metadata year="' + str(t.date).replace('"', "").replace("'", "") + '" '
 
 		if codec != "flac":
@@ -15294,7 +15293,7 @@ class Tauon:
 		#if track_object.file_ext == "JELY":
 		#	url = jellyfin.resolve_thumbnail(track_object.art_url_key)
 		#	assert url is not None
-		#	assert url != ""
+		#	assert url
 		#	return url
 		if track_object.file_ext == "KOEL":
 			url = track_object.art_url_key
@@ -15939,7 +15938,7 @@ class Tauon:
 
 				line = ""
 
-				if n_track.artist != "" and not dash:
+				if n_track.artist and not dash:
 					line0 = n_track.artist
 
 					artistoffset = self.ddt.text(
@@ -19285,7 +19284,7 @@ class TextBox2:
 		text = self.get_selection()
 		if not text:
 			text = self.text
-		if text != "":
+		if text:
 			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 
 	def set_text(self, text: str) -> None:
@@ -19366,7 +19365,7 @@ class TextBox2:
 				click = False
 
 			# Add text from input
-			if self.inp.input_text != "":
+			if self.inp.input_text:
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
 					self.text) - self.cursor_position:]
@@ -19476,7 +19475,7 @@ class TextBox2:
 
 			if self.inp.key_ctrl_down and self.inp.key_x_press and len(self.get_selection()) > 0:
 				text = self.get_selection()
-				if text != "":
+				if text:
 					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 				self.eliminate_selection()
 
@@ -19712,7 +19711,7 @@ class TextBox:
 		text = self.get_selection()
 		if not text:
 			text = self.text
-		if text != "":
+		if text:
 			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 
 	def set_text(self, text) -> None:
@@ -19790,7 +19789,7 @@ class TextBox:
 				click = False
 
 			# Add text from input
-			if self.inp.input_text != "":
+			if self.inp.input_text:
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[
 					len(self.text) - self.cursor_position:]
@@ -19888,7 +19887,7 @@ class TextBox:
 
 			if inp.key_ctrl_down and inp.key_x_press and len(self.get_selection()) > 0:
 				text = self.get_selection()
-				if text != "":
+				if text:
 					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 				self.eliminate_selection()
 
@@ -20018,7 +20017,7 @@ class TextBox:
 		else:
 			if active:
 				self.text += self.inp.input_text
-				if self.inp.input_text != "":
+				if self.inp.input_text:
 					self.cursor = True
 
 				while inp.backspace_press and len(self.text) > 0:
@@ -22323,7 +22322,7 @@ class SearchOverlay:
 
 		if self.active is False:
 			# Activate search overlay on key presses
-			if prefs.search_on_letter and inp.input_text != "" and gui.layer_focus == 0 and \
+			if prefs.search_on_letter and inp.input_text and gui.layer_focus == 0 and \
 					not inp.key_lalt and not inp.key_ralt and \
 					not inp.key_ctrl_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
@@ -29474,7 +29473,7 @@ class StandardPlaylist:
 						pctl.get_track(pctl.default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
 					line = tr.parent_folder_name
 				else:
-					if tr.album_artist != "" and tr.album != "":
+					if tr.album_artist and tr.album:
 						line = tr.album_artist + separator + tr.album
 
 						if prefs.left_align_album_artist_title and not True:
@@ -29687,7 +29686,7 @@ class StandardPlaylist:
 
 				ddt.text_background_colour = alpha_blend(colours.row_select_highlight, ddt.text_background_colour)
 
-			if track_position > 0 and track_position < len(pctl.default_playlist) and tr.disc_number != "" and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.get_track(pctl.default_playlist[track_position - 1]).disc_number \
+			if track_position > 0 and track_position < len(pctl.default_playlist) and tr.disc_number and tr.disc_number != "0" and tr.album and tr.disc_number != pctl.get_track(pctl.default_playlist[track_position - 1]).disc_number \
 					and tr.album == pctl.get_track(pctl.default_playlist[track_position - 1]).album and tr.parent_folder_path == pctl.get_track(pctl.default_playlist[track_position - 1]).parent_folder_path:
 				# Draw disc change line
 				ddt.rect(
@@ -29782,7 +29781,7 @@ class StandardPlaylist:
 						y_off = 0
 						if item[0] == "Title":
 							colour = colours.title_text
-							if n_track.title != "":
+							if n_track.title:
 								text = n_track.title
 							else:
 								text = n_track.filename
@@ -29871,7 +29870,7 @@ class StandardPlaylist:
 								colour = colours.index_playing
 						elif item[0] == "Lyrics":
 							text = ""
-							if n_track.lyrics != "":
+							if n_track.lyrics:
 								text = "Y"
 							colour = colours.index_text
 							norm_colour = colour
@@ -33973,7 +33972,7 @@ class MetaBox:
 
 		# # Draw lyrics if avaliable
 		# if prefs.show_lyrics_side and pctl.track_queue \
-		# and track.lyrics != "" and h > 45 * gui.scale and w > 200 * gui.scale:
+		# and track.lyrics and h > 45 * gui.scale and w > 200 * gui.scale:
 		#
 		# 	self.lyrics(x, y, w, h, track)
 
@@ -34044,11 +34043,11 @@ class MetaBox:
 				if not self.prefs.show_side_art:
 					block_y += 3 * self.gui.scale
 
-				if title != "":
+				if title:
 					self.ddt.text(
 						(margin, block_y + 2 * self.gui.scale), title, self.colours.side_bar_line1, self.fonts.side_panel_line1,
 						max_w=text_width)
-				if artist != "":
+				if artist:
 					self.ddt.text(
 						(margin, block_y + 23 * self.gui.scale), artist, self.colours.side_bar_line2, self.fonts.side_panel_line2,
 						max_w=text_width)
@@ -34057,15 +34056,15 @@ class MetaBox:
 
 				if h > 140 * self.gui.scale:
 					block_y = y + 80 * self.gui.scale
-					if artist != "":
+					if artist:
 						self.ddt.text(
 							(margin, block_y), album, self.colours.side_bar_line2,
 							self.fonts.side_panel_line2, max_w=text_width)
 
 					if not genre == date == "":
 						line = date
-						if genre != "":
-							if line != "":
+						if genre:
+							if line:
 								line += " | "
 							line += genre
 
@@ -34073,7 +34072,7 @@ class MetaBox:
 							(margin, block_y + 20 * self.gui.scale), line, self.colours.side_bar_line2,
 							self.fonts.side_panel_line2, max_w=text_width)
 
-					if ext != "":
+					if ext:
 						if ext == "SPTY":
 							ext = "Spotify"
 						if ext == "RADIO":
@@ -37179,7 +37178,7 @@ def clear_lyrics(track_object: TrackClass) -> None:
 	track_object.lyrics = ""
 
 def split_lyrics(track_object: TrackClass) -> None:
-	if track_object.lyrics != "":
+	if track_object.lyrics:
 		track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
 
 def ser_gimage(track_object: TrackClass) -> None:
@@ -37286,7 +37285,7 @@ def parse_template(string: str, track_object: TrackClass, up_ext: bool = False, 
 					assert str(track_object.track_number)
 				output += str(track_object.track_number)
 			elif string[set] == "a":
-				if up_ext and track_object.album_artist != "":  # Context of renaming a folder
+				if up_ext and track_object.album_artist:  # Context of renaming a folder
 					output += track_object.album_artist
 				else:
 					if strict:
@@ -38293,7 +38292,7 @@ def worker1(tauon: Tauon) -> None:
 			pctl.master_count += 1
 
 		# nt = tauon.tag_scan(nt)
-		if nt.cue_sheet != "":
+		if nt.cue_sheet:
 			tauon.tag_scan(nt)
 			tauon.cue_scan(nt.cue_sheet, nt)
 			del nt
@@ -44418,7 +44417,7 @@ while pctl.running:
 							if inp.right_click and tauon.coll(
 								(window_size[0] - gui.rspw, gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
 								center_info_menu.activate(target_track)
-					elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics != "" and gui.rspw > 192 * gui.scale:
+					elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics and gui.rspw > 192 * gui.scale:
 						if prefs.show_side_lyrics_art_panel:
 							gui.l_panel_h = round(200 * gui.scale)
 							gui.l_panel_y = window_size[1] - (gui.panelBY + gui.l_panel_h)
@@ -44470,7 +44469,7 @@ while pctl.running:
 						ddt.rect((x, y, w, h), colours.side_panel_background)
 						tauon.test_auto_lyrics(target_track)
 						# Draw lyrics if avaliable
-						if prefs.show_lyrics_side and target_track and target_track.lyrics != "":  # and not prefs.show_side_art:
+						if prefs.show_lyrics_side and target_track and target_track.lyrics:  # and not prefs.show_side_art:
 							# meta_box.lyrics(x, y, w, h, target_track)
 							if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
 								center_info_menu.activate(target_track)
@@ -45105,7 +45104,7 @@ while pctl.running:
 						ddt.text((x2, y1), line, value_colour, 312)
 
 					# -----------
-					if tc.artist != tc.album_artist != "":
+					if tc.artist != tc.album_artist:
 						x += int(170 * gui.scale)
 						rect = [x + 7 * gui.scale, y1 + (2 * gui.scale), 220 * gui.scale, 14 * gui.scale]
 						tauon.fields.add(rect)
@@ -45247,7 +45246,7 @@ while pctl.running:
 					ddt.text((x2, y1), str(line), value_colour, value_font)
 
 					# -------
-					if tc.lyrics != "":
+					if tc.lyrics:
 						if pctl.draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
 							prefs.show_lyrics_showcase = True
 							gui.track_box = False
