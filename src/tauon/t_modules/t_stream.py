@@ -403,8 +403,7 @@ class StreamEnc:
 			self.encode_running = False
 			return
 
-	def run_download(self, r: _UrlopenRet):
-
+	def run_download(self, r: _UrlopenRet) -> None:
 		h = r.info()
 
 		self.s_name = h.get("icy-name")
@@ -443,7 +442,6 @@ class StreamEnc:
 
 		try:
 			while True:
-
 				chunk = r.read(256)
 
 				if self.abort:
