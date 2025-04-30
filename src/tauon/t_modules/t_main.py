@@ -42533,10 +42533,10 @@ while pctl.running:
 			tauon.edit_generator_box(pctl.active_playlist_viewing)
 
 		if keymaps.test("delete-playlist"):
-			tauon.delete_playlist(pctl.active_playlist_viewing)
+			pctl.delete_playlist(pctl.active_playlist_viewing)
 
 		if keymaps.test("delete-playlist-force"):
-			tauon.delete_playlist(pctl.active_playlist_viewing, force=True)
+			pctl.delete_playlist(pctl.active_playlist_viewing, force=True)
 
 		if keymaps.test("rename-playlist"):
 			if gui.radio_view:
