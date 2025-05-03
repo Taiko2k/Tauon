@@ -932,7 +932,7 @@ class StarStore:
 class AlbumStarStore:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.db = {}
+		self.db: dict[str, int] = {}
 		self.subsonic = SubsonicService(tauon=tauon, album_star_store=self)
 
 	def get_key(self, track_object: TrackClass) -> str:
@@ -941,19 +941,19 @@ class AlbumStarStore:
 			artist = track_object.artist
 		return artist + ":" + track_object.album
 
-	def get_rating(self, track_object: TrackClass):
+	def get_rating(self, track_object: TrackClass) -> int:
 		return self.db.get(self.get_key(track_object), 0)
 
-	def set_rating(self, track_object: TrackClass, rating) -> None:
+	def set_rating(self, track_object: TrackClass, rating: int) -> None:
 		self.db[self.get_key(track_object)] = rating
 		if track_object.file_ext == "SUB":
 			self.db[self.get_key(track_object)] = math.ceil(rating / 2) * 2
 			self.subsonic.set_album_rating(track_object, rating)
 
-	def set_rating_artist_title(self, artist: str, album: str, rating) -> None:
+	def set_rating_artist_title(self, artist: str, album: str, rating: int) -> None:
 		self.db[artist + ":" + album] = rating
 
-	def get_rating_artist_title(self, artist: str, album: str):
+	def get_rating_artist_title(self, artist: str, album: str) -> int:
 		return self.db.get(artist + ":" + album, 0)
 
 class Fonts:
@@ -18125,7 +18125,7 @@ class SubsonicService:
 		self.scanning = True
 		self.gui.to_got = 0
 
-		existing = {}
+		existing: dict[str, int] = {}
 
 		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "SUB":
@@ -18139,9 +18139,12 @@ class SubsonicService:
 			self.scanning = False
 			return []
 
+		if "indexes" not in a["subsonic-response"]:
+			logging.critical("Failed to find expected key 'indexes', report a bug with the log below!")
+			logging.critical(a["subsonic-response"])
 		b = a["subsonic-response"]["indexes"]["index"]
 
-		folders = []
+		folders: list[tuple[str, str]] = []
 
 		for letter in b:
 			artists = letter["artist"]
@@ -18151,14 +18154,14 @@ class SubsonicService:
 					artist["name"],
 				))
 
-		playlist = []
-		songsets = []
+		playlist: list[int] = []
+		songsets: list[tuple[TrackClass, str, str, int]] = []
 		for i in range(len(folders)):
 			songsets.append([])
 		statuses = [0] * len(folders)
-		dupes = []
+		#dupes = []
 
-		def getsongs(index, folder_id, name: str, inner: bool = False, parent=None) -> None:
+		def getsongs(index: int, folder_id: str, name: str, inner: bool = False, parent: dict[str, str | int] | None = None) -> None:
 			try:
 				d = self.r("getMusicDirectory", p={"id": folder_id})
 				if "child" not in d["subsonic-response"]["directory"]:
@@ -18180,7 +18183,7 @@ class SubsonicService:
 			self.gui.update = 2
 
 			for item in items:
-				if item["isDir"]:
+				if "isDir" in item and item["isDir"]:
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
 						if self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
