@@ -18139,9 +18139,18 @@ class SubsonicService:
 			self.scanning = False
 			return []
 
+		# {'openSubsonic': True, 'serverVersion': '8', 'status': 'failed', 'type': 'lms', 'version': '1.16.0', 'error': {'code': 41, 'message': 'Token authentication not supported for LDAP users.'}}
 		if "indexes" not in a["subsonic-response"]:
+			self.scanning = False
+			if "error" in a["subsonic-response"]:
+				logging.debug(a["subsonic-response"])
+				self.show_message(_("Error connecting to Airsonic server"), f'{a["subsonic-response"]["error"]["code"]}: {a["subsonic-response"]["error"]["message"]}', mode="error")
+				return None
 			logging.critical("Failed to find expected key 'indexes', report a bug with the log below!")
 			logging.critical(a["subsonic-response"])
+			self.show_message(_("Error connecting to Airsonic server"), "See console log for more details", mode="error")
+			return None
+
 		b = a["subsonic-response"]["indexes"]["index"]
 
 		folders: list[tuple[str, str]] = []
