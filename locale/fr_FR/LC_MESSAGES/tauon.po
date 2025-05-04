@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2024-11-23 13:08+1300\n"
-"PO-Revision-Date: 2025-01-09 13:00+0000\n"
-"Last-Translator: Martin <spleefer90@gmail.com>\n"
+"PO-Revision-Date: 2025-05-04 09:06+0000\n"
+"Last-Translator: Patricio Carrau <duckycb@proton.me>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:122
@@ -4341,8 +4341,7 @@ msgstr "Veuillez arrêter la lecture avant de changer cette préférence"
 
 #: src/tauon/t_modules/t_main.py:36532
 msgid "Please stop playback first to end current recording"
-msgstr ""
-"Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
+msgstr "Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
 
 #: src/tauon/t_modules/t_main.py:36539
 msgid "Tracks will now be recorded."
