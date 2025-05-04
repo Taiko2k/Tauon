@@ -202,6 +202,8 @@ if TYPE_CHECKING:
 	from pylast import LastFMNetwork
 	from collections.abc import Callable
 
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
 	assets: list[LoadImageAsset] = []
@@ -18076,7 +18078,23 @@ class SubsonicService:
 		if binary:
 			return response.content
 
-		d = json.loads(response.text)
+		# Some broken servers can send invalid JSON with control chars - remove them, see https://github.com/Taiko2k/Tauon/issues/1112
+		control_chars = CONTROL_CHAR_RE.findall(response.text)
+		if control_chars:
+			clean_response = CONTROL_CHAR_RE.sub('', response.text)
+			details = [f"U+{ord(c):04X}" for c in control_chars]
+			logging.warning(f"Invalid control characters found in JSON response: {', '.join(details)}")
+		else:
+			clean_response = response.text
+
+		try:
+			d = json.loads(clean_response)
+		except json.decoder.JSONDecodeError:
+			logging.exception(f"Failed to decode subsonic response as json: {clean_response}")
+			return None
+		except Exception:
+			logging.exception(f"Unknown error loading subsonic response: {clean_response}")
+			return None
 		# logging.info(d)
 
 		if d["subsonic-response"]["status"] != "ok":
@@ -18186,6 +18204,7 @@ class SubsonicService:
 				return
 			except Exception:
 				logging.exception("Unknown Error reading Airsonic directory")
+				return
 
 			items = d["subsonic-response"]["directory"]["child"]
 
