@@ -18217,6 +18217,7 @@ class SubsonicService:
 			self.gui.update = 2
 
 			for item in items:
+				#logging.debug(f"song: {item}")
 				if "isDir" in item and item["isDir"]:
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
@@ -18254,7 +18255,7 @@ class SubsonicService:
 					nt.fullpath = song["path"]
 					nt.parent_folder_path = os.path.dirname(song["path"])
 				if "coverArt" in song:
-					nt.art_url_key = song["id"]
+					nt.art_url_key = song["coverArt"]
 				nt.url_key = song["id"]
 				nt.misc["subsonic-folder-id"] = folder_id
 				nt.is_network = True
