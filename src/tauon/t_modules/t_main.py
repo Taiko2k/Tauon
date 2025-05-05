@@ -18103,8 +18103,14 @@ class SubsonicService:
 
 		return d
 
-	def get_cover(self, track_object: TrackClass):
+	def get_cover(self, track_object: TrackClass) -> BytesIO:
 		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
+		try:
+			response.decode('utf-8')
+			raise ValueError(f"Expected binary data with an image but got a valid string: {response}")
+		except UnicodeDecodeError:
+			pass
+
 		return io.BytesIO(response)
 
 	def resolve_stream(self, key):
