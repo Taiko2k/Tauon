@@ -24956,7 +24956,7 @@ class Over:
 		self.prefs.theme -= 1
 		self.gui.reload_theme = True
 		if self.prefs.theme < 0:
-			self.prefs.theme = len(get_themes())
+			self.prefs.theme = len(get_themes(self.dirs))
 
 	def config_b(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		gui     = self.gui
