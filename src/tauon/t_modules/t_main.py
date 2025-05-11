@@ -17797,6 +17797,10 @@ class Tauon:
 		def install_tray_icon(src: str, name: str) -> None:
 			alt = user_icon_dir / f"{name}.svg"
 			if not alt.is_file() or force:
+				if alt.exists():
+					# Remove file first to avoid PermissionError on distributions like NixOS that use 444 for permissions
+					# See https://github.com/Taiko2k/Tauon/issues/1615
+					alt.unlink()
 				shutil.copy(src, str(alt))
 
 		if not user_icon_dir.is_dir():
