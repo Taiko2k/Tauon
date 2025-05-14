@@ -45483,7 +45483,7 @@ while pctl.running:
 					#     line = "last.fm loved tracks from user. Format: /love <username>"
 					# else:
 					line = _("Folder filter mode. Enter path segment.")
-					ddt.text((rect[0] + 23 * gui.scale, window_size[1] - 87 * gui.scale), line, (220, 220, 220, 100), 312)
+					ddt.text((rect[0] + 23 * gui.scale, window_size[1] - 87 * gui.scale), line, ColourRGBA(220, 220, 220, 100), 312)
 				else:
 					line = _("UP / DOWN to navigate. SHIFT + RETURN for new playlist.")
 					if len(search_over.search_text.text) == 0:
