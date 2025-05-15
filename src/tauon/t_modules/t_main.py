@@ -202,6 +202,8 @@ if TYPE_CHECKING:
 	from pylast import LastFMNetwork
 	from collections.abc import Callable
 
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
 	assets: list[LoadImageAsset] = []
@@ -18080,7 +18082,23 @@ class SubsonicService:
 		if binary:
 			return response.content
 
-		d = json.loads(response.text)
+		# Some broken servers can send invalid JSON with control chars - remove them, see https://github.com/Taiko2k/Tauon/issues/1112
+		control_chars = CONTROL_CHAR_RE.findall(response.text)
+		if control_chars:
+			clean_response = CONTROL_CHAR_RE.sub('', response.text)
+			details = [f"U+{ord(c):04X}" for c in control_chars]
+			logging.warning(f"Invalid control characters found in JSON response: {', '.join(details)}")
+		else:
+			clean_response = response.text
+
+		try:
+			d = json.loads(clean_response)
+		except json.decoder.JSONDecodeError:
+			logging.exception(f"Failed to decode subsonic response as json: {clean_response}")
+			return None
+		except Exception:
+			logging.exception(f"Unknown error loading subsonic response: {clean_response}")
+			return None
 		# logging.info(d)
 
 		if d["subsonic-response"]["status"] != "ok":
@@ -18089,8 +18107,14 @@ class SubsonicService:
 
 		return d
 
-	def get_cover(self, track_object: TrackClass):
+	def get_cover(self, track_object: TrackClass) -> BytesIO:
 		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
+		try:
+			response.decode('utf-8')
+			raise ValueError(f"Expected binary data with an image but got a valid string: {response}")
+		except UnicodeDecodeError:
+			pass
+
 		return io.BytesIO(response)
 
 	def resolve_stream(self, key):
@@ -18143,9 +18167,18 @@ class SubsonicService:
 			self.scanning = False
 			return []
 
+		# {'openSubsonic': True, 'serverVersion': '8', 'status': 'failed', 'type': 'lms', 'version': '1.16.0', 'error': {'code': 41, 'message': 'Token authentication not supported for LDAP users.'}}
 		if "indexes" not in a["subsonic-response"]:
+			self.scanning = False
+			if "error" in a["subsonic-response"]:
+				logging.debug(a["subsonic-response"])
+				self.show_message(_("Error connecting to Airsonic server"), f'{a["subsonic-response"]["error"]["code"]}: {a["subsonic-response"]["error"]["message"]}', mode="error")
+				return None
 			logging.critical("Failed to find expected key 'indexes', report a bug with the log below!")
 			logging.critical(a["subsonic-response"])
+			self.show_message(_("Error connecting to Airsonic server"), "See console log for more details", mode="error")
+			return None
+
 		b = a["subsonic-response"]["indexes"]["index"]
 
 		folders: list[tuple[str, str]] = []
@@ -18181,12 +18214,14 @@ class SubsonicService:
 				return
 			except Exception:
 				logging.exception("Unknown Error reading Airsonic directory")
+				return
 
 			items = d["subsonic-response"]["directory"]["child"]
 
 			self.gui.update = 2
 
 			for item in items:
+				#logging.debug(f"song: {item}")
 				if "isDir" in item and item["isDir"]:
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
@@ -18224,7 +18259,7 @@ class SubsonicService:
 					nt.fullpath = song["path"]
 					nt.parent_folder_path = os.path.dirname(song["path"])
 				if "coverArt" in song:
-					nt.art_url_key = song["id"]
+					nt.art_url_key = song["coverArt"]
 				nt.url_key = song["id"]
 				nt.misc["subsonic-folder-id"] = folder_id
 				nt.is_network = True
