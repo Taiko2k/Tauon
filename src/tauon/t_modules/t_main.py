@@ -19481,7 +19481,7 @@ class TextBox2:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if self.inp.key_up_press:
+			if self.inp.key_right_press:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
@@ -19877,7 +19877,7 @@ class TextBox:
 						break
 
 			# Ctrl + right to move cursor forward a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_up_press:
+			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_right_press:
 				while g2() == " ":
 					self.cursor_position -= 1
 					if not inp.key_shift_down:
@@ -19905,7 +19905,7 @@ class TextBox:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if inp.key_up_press:
+			if inp.key_right_press:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
@@ -31580,11 +31580,11 @@ class PlaylistBox:
 		draw_pin_indicator = False  # self.prefs.tabs_on_top
 
 		# if not gui.album_tab_mode:
-		#     if self.inp.key_left_press or self.inp.key_up_press:
-		#         if pctl.active_playlist_viewing < self.scroll_on:
-		#             self.scroll_on = pctl.active_playlist_viewing
-		#         elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
-		#             self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
+		# 	if self.inp.key_left_press or self.inp.key_right_press:
+		# 		if pctl.active_playlist_viewing < self.scroll_on:
+		# 			self.scroll_on = pctl.active_playlist_viewing
+		# 		elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
+		# 			self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
 
 		# Process inputs
 		delete_pl = None
@@ -31598,7 +31598,7 @@ class PlaylistBox:
 				continue
 
 			# if not pl.hidden and i in tabs_on_top:
-			#     continue
+			# 	continue
 
 			tab_on += 1
 
