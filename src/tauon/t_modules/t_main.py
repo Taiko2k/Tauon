@@ -39019,7 +39019,7 @@ download_directory = Path("~").expanduser() / "Downloads"
 install_mode = False
 flatpak_mode = False
 snap_mode = False
-if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/")):
+if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")):
 	install_mode = True
 	if str(install_directory)[:6] == "/snap/":
 		snap_mode = True
