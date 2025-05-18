@@ -15002,10 +15002,10 @@ class Tauon:
 
 		return h
 
-	def reload_albums(self, quiet: bool = False, return_playlist: int = -1, custom_list: list[int] | None = None) -> list[int] | None:
+	def reload_albums(self, quiet: bool = False, return_playlist: int = -1, custom_list: list[int] | None = None) -> list[int]:
 		if self.cm_clean_db:
 			# Doing reload while things are being removed may cause crash
-			return None
+			return []
 
 		dex = []
 		current_folder = ""
@@ -15065,7 +15065,7 @@ class Tauon:
 		# Generate POWER BAR
 		self.gui.power_bar = self.gen_power2()
 		self.gui.pt = 0
-		return None
+		return []
 
 	def reload_backend(self) -> None:
 		self.gui.backend_reloading = True
