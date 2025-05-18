@@ -19453,7 +19453,7 @@ class TextBox2:
 						break
 
 			# Ctrl + right to move cursor forward a word
-			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_up_press:
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_right_press:
 				while g2() == " ":
 					self.cursor_position -= 1
 					if not self.inp.key_shift_down:
