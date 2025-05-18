@@ -12858,7 +12858,7 @@ class Tauon:
 	def ser_wiki(self, index: int) -> None:
 		if len(self.pctl.master_library[index].artist) < 2:
 			return
-		line = "https://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(self.pctl.master_library[index].artist)
+		line = "https://" + os.environ.get("LANGUAGE") + ".wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(self.pctl.master_library[index].artist)
 		webbrowser.open(line, new=2, autoraise=True)
 
 	def clip_ar_tr(self, index: int) -> None:
