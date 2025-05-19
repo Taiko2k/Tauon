@@ -102,6 +102,7 @@ from tauon.t_modules.t_extra import (
 	FunctionStore,
 	RadioPlaylist,
 	RadioStation,
+	StarRecord,
 	TauonPlaylist,
 	TauonQueueItem,
 	TestTimer,
@@ -782,7 +783,7 @@ class StarStore:
 		self.pctl       = pctl
 		self.prefs      = tauon.prefs
 		self.after_scan = tauon.after_scan
-		self.db = {}
+		self.db: dict[tuple[str, str, str], StarRecord] = {}
 
 	def key(self, track_id: int) -> tuple[str, str, str]:
 		track_object = self.pctl.master_library[track_id]
@@ -801,36 +802,36 @@ class StarStore:
 		key = track_object.artist, track_object.title, track_object.filename
 
 		if key in self.db:
-			self.db[key][0] += value
-			if value < 0 and self.db[key][0] < 0:
-				self.db[key][0] = 0
+			self.db[key].playtime += value
+			if value < 0 and self.db[key].playtime < 0:
+				self.db[key].playtime = 0
 		else:
-			self.db[key] = [value, "", 0, 0]  # Playtime in s, flags, rating, love timestamp
+			self.db[key] = StarRecord(playtime=value)
 
 	def get(self, index: int):
 		"""Returns the track play time"""
 		if index < 0:
 			return 0
-		return self.db.get(self.key(index), (0,))[0]
+		return self.db.get(self.key(index), StarRecord()).playtime
 
-	def get_rating(self, index: int):
+	def get_rating(self, index: int) -> int:
 		"""Returns the track user rating"""
 		key = self.key(index)
 		if key in self.db:
 			# self.db[key]
-			return self.db[key][2]
+			return self.db[key].rating
 		return 0
 
 	def set_rating(self, index: int, value: int, write: bool = False) -> None:
 		"""Sets the track user rating"""
 		key = self.key(index)
 		if key not in self.db:
-			self.db[key] = self.new_object()
-		self.db[key][2] = value
+			self.db[key] = StarRecord()
+		self.db[key].rating = value
 
 		tr = self.pctl.get_track(index)
 		if tr.file_ext == "SUB":
-			self.db[key][2] = math.ceil(value / 2) * 2
+			self.db[key].rating = math.ceil(value / 2) * 2
 			shooter(self.tauon.subsonic.set_rating, (tr, value))
 
 		if self.prefs.write_ratings and write:
@@ -897,16 +898,13 @@ class StarStore:
 			if value == 0:
 				del tr.misc["FMPS_Rating"]
 
-	def new_object(self):
-		return [0, "", 0, 0]
+	def get_by_object(self, track: TrackClass) -> int:
+		return self.db.get(self.object_key(track), StarRecord()).playtime
 
-	def get_by_object(self, track: TrackClass):
-		return self.db.get(self.object_key(track), (0,))[0]
+	def get_total(self) -> int:
+		return sum(item.playtime for item in self.db.values())
 
-	def get_total(self):
-		return sum(item[0] for item in self.db.values())
-
-	def full_get(self, index: int):
+	def full_get(self, index: int) -> StarRecord | None:
 		return self.db.get(self.key(index))
 
 	def remove(self, index: int) -> None:
@@ -914,22 +912,19 @@ class StarStore:
 		if key in self.db:
 			del self.db[key]
 
-	def insert(self, index: int, object) -> None:
+	def insert(self, index: int, record: StarRecord) -> None:
 		key = self.key(index)
-		self.db[key] = object
+		self.db[key] = record
 
-	def merge(self, index: int, object) -> None:
-		if object is None or object == self.new_object():
+	def merge(self, index: int, record: StarRecord | None) -> None:
+		if record is None or record == StarRecord():
 			return
 		key = self.key(index)
 		if key not in self.db:
-			self.db[key] = object
+			self.db[key] = record
 		else:
-			self.db[key][0] += object[0]
-			self.db[key][2] = object[2]
-			for cha in object[1]:
-				if cha not in self.db[key][1]:
-					self.db[key][1] += cha
+			self.db[key].playtime += record.playtime
+			self.db[key].rating = record.rating
 
 class AlbumStarStore:
 
@@ -4139,11 +4134,11 @@ class LastFMapi:
 						logging.info(f"     {artist} - {title}")
 						star = self.star_store.full_get(index)
 						if star is None:
-							star = self.star_store.new_object()
-						if "L" not in star[1]:
+							star = StarRecord()
+						if not star.loved:
 							updated += 1
 							logging.info("     NEW LOVE")
-							star[1] += "L"
+							star.loved = True
 
 						self.star_store.insert(index, star)
 
@@ -8628,25 +8623,25 @@ class Tauon:
 		xport.close()
 		self.show_message(_("Export complete."), _("Saved as: ") + filename, mode="done")
 
-	def best(self, index: int):
+	def best(self, index: int) -> float:
 		# key = self.pctl.master_library[index].title + pctl.master_library[index].filename
 		if self.pctl.master_library[index].length < 1:
 			return 0
 		return int(self.star_store.get(index))
 
-	def key_rating(self, index: int):
+	def key_rating(self, index: int) -> int:
 		return self.star_store.get_rating(index)
 
-	def key_scrobbles(self, index: int):
+	def key_scrobbles(self, index: int) -> int:
 		return self.pctl.get_track(index).lfm_scrobbles
 
-	def key_disc(self, index: int):
+	def key_disc(self, index: int) -> str:
 		return self.pctl.get_track(index).disc_number
 
-	def key_cue(self, index: int):
+	def key_cue(self, index: int) -> bool:
 		return self.pctl.get_track(index).is_cue
 
-	def key_playcount(self, index: int):
+	def key_playcount(self, index: int) -> float:
 		# key = self.pctl.master_library[index].title + self.pctl.master_library[index].filename
 		if self.pctl.master_library[index].length < 1:
 			return 0
@@ -10196,19 +10191,18 @@ class Tauon:
 					" ", "") == tr.title.lower().replace(
 					" ", "") and tr.title:
 					to_del.append(key)
-					total_playtime += value[0]
-					flags = "".join(set(flags + value[1]))
+					total_playtime += value.playtime
 
 			for key in to_del:
 				del self.star_store.db[key]
 
 			key = self.star_store.object_key(tr)
-			value = [total_playtime, flags, 0]
+			value = StarRecord(playtime=total_playtime)
 			if key not in self.star_store.db:
 				logging.info("Saving value")
 				self.star_store.db[key] = value
 			else:
-				logging.error("ERROR KEY ALREADY HERE?")
+				logging.error("KEY ALREADY HERE?")
 
 	def intel_moji(self, index: int) -> None:
 		self.gui.pl_update += 1
@@ -10811,7 +10805,7 @@ class Tauon:
 				mode="warning")
 			return
 		for key, star in self.star_store.db.items():
-			star[2] = 0
+			star.rating = 0
 		self.album_star_store.db.clear()
 		self.gui.pl_update += 1
 
@@ -13932,7 +13926,7 @@ class Tauon:
 				self.pctl.master_library[track.index] = self.tag_scan(track)
 
 				# if keep_star:
-				# 	if star is not None and (star[0] > 0 or star[1] or star[2] > 0):
+				# 	if star is not None and (star.playtime > 0 or star.flags or star.rating > 0):
 				# 		self.star_store.merge(track.index, star)
 
 				self.pctl.notify_change()
@@ -13986,8 +13980,8 @@ class Tauon:
 		self.thread_manager.ready("worker")
 
 	def editor(self, index: int | None) -> None:
-		todo = []
-		obs = []
+		todo: list[int] = []
+		obs: list[TrackClass] = []
 
 		if self.inp.key_shift_down and index is not None:
 			todo = [index]
@@ -14006,7 +14000,7 @@ class Tauon:
 						obs.append(self.pctl.master_library[k])
 
 		# Keep copy of play times
-		old_stars = []
+		old_stars: list[TrackClass | tuple[str, str, str] | StarRecord | None] = []
 		for track in todo:
 			item = []
 			item.append(self.pctl.get_track(track))
@@ -14094,8 +14088,8 @@ class Tauon:
 
 		# Re apply playtime data in case file names change
 		for item in old_stars:
-			old_key = item[1]
-			old_value = item[2]
+			old_key: tuple[str, str, str] = item[1]
+			old_value: StarRecord | None = item[2]
 
 			if not old_value:  # ignore if there was no old playcount metadata
 				continue
@@ -14107,10 +14101,9 @@ class Tauon:
 				continue
 
 			if new_value is None:
-				new_value = [0, "", 0]
+				new_value = StarRecord()
 
-			new_value[0] += old_value[0]
-			new_value[1] = "".join(set(new_value[1] + old_value[1]))
+			new_value.playtime += old_value.playtime
 
 			if old_key in self.star_store.db:
 				del self.star_store.db[old_key]
@@ -14479,12 +14472,11 @@ class Tauon:
 
 					new_star = self.star_store.full_get(track)
 					if new_star is None:
-						new_star = self.star_store.new_object()
+						new_star = StarRecord()
 
-					new_star[0] += old_star[0]
-					if old_star[2] > 0 and new_star[2] == 0:
-						new_star[2] = old_star[2]
-					new_star[1] = "".join(set(new_star[1] + old_star[1]))
+					new_star.playtime += old_star.playtime
+					if old_star.rating > 0 and new_star.rating == 0:
+						new_star.rating = old_star.rating
 
 					if old_key in self.star_store.db:
 						del self.star_store.db[old_key]
@@ -15174,20 +15166,20 @@ class Tauon:
 		if star is None:
 			return False
 
-		return "L" in star[1]
+		return star.loved
 
 	def get_love_index(self, index: int) -> bool:
 		star = self.star_store.full_get(index)
 		if star is None:
 			return False
 
-		return "L" in star[1]
+		return star.loved
 
 	def get_love_timestamp_index(self, index: int):
 		star = self.star_store.full_get(index)
 		if star is None:
 			return 0
-		return star[3]
+		return star.loved_timestamp
 
 	def maloja_get_scrobble_counts(self) -> None:
 		if self.lastfm.scanning_scrobbles is True or not self.prefs.maloja_url:
@@ -15814,7 +15806,7 @@ class Tauon:
 		loved = False
 		star = self.star_store.full_get(track_id)
 
-		if star is not None and "L" in star[1]:
+		if star is not None and star.loved:
 			loved = True
 
 		if set is False:
@@ -15827,7 +15819,7 @@ class Tauon:
 		#	 return
 
 		if star is None:
-			star = self.star_store.new_object()
+			star = StarRecord()
 
 		loved ^= True
 
@@ -15841,13 +15833,13 @@ class Tauon:
 		if no_delay or not sync or not self.lastfm.details_ready():
 			delay = 0
 
-		star[3] = time.time()
+		star.loved_timestamp = time.time()
 
 		if loved:
 			time.sleep(delay)
 			self.gui.update += 1
 			self.gui.pl_update += 1
-			star[1] = star[1] + "L" # = [star[0], star[1] + "L", star[2]]
+			star.loved = True
 			self.star_store.insert(track_id, star)
 			if sync:
 				if self.prefs.last_fm_token:
@@ -15856,7 +15848,7 @@ class Tauon:
 					except Exception:
 						logging.exception("Failed updating last.fm love status")
 						self.show_message(_("Failed updating last.fm love status"), mode="warning")
-						star[1] = star[1].replace("L", "") # = [star[0], star[1].strip("L"), star[2]]
+						star.loved = False
 						self.star_store.insert(track_id, star)
 						self.show_message(
 							_("Error updating love to last.fm!"),
@@ -15868,7 +15860,7 @@ class Tauon:
 			time.sleep(delay)
 			self.gui.update += 1
 			self.gui.pl_update += 1
-			star[1] = star[1].replace("L", "")
+			star.loved = False
 			self.star_store.insert(track_id, star)
 			if sync:
 				if self.prefs.last_fm_token:
@@ -15877,7 +15869,7 @@ class Tauon:
 					except Exception:
 						logging.exception("Failed updating last.fm love status")
 						self.show_message(_("Failed updating last.fm love status"), mode="warning")
-						star[1] = star[1] + "L"
+						star.loved = True
 						self.star_store.insert(track_id, star)
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id], un=True)
@@ -24795,7 +24787,7 @@ class Over:
 			return
 
 		for key, star in self.star_store.db.items():
-			star[1] = star[1].replace("L", "")
+			star.loved = False
 			self.star_store.db[key] = star
 
 		self.gui.pl_update += 1
@@ -39381,11 +39373,8 @@ default_playlist: list[int] = []
 master_library: dict[int, TrackClass] = {}
 
 db_version: float = 0.0
-latest_db_version: float = 70
+latest_db_version: float = 71
 
-albums = []
-
-# url_saves = []
 rename_files_previous = ""
 rename_folder_previous = ""
 p_force_queue: list[TauonQueueItem] = []
@@ -39442,7 +39431,7 @@ power_save = False
 if macos or phone:
 	power_save = True
 
-# This is legacy. New settings are added straight to the save list (need to overhaul)
+# TODO(Taiko): This is legacy. New settings are added straight to the save list (need to overhaul)
 view_prefs = {
 	"split-line": True,
 	"update-title": False,
@@ -40210,7 +40199,6 @@ tauon.search_string_cache     = search_string_cache
 tauon.search_dia_string_cache = search_dia_string_cache
 signal.signal(signal.SIGINT, tauon.signal_handler)
 radiobox = tauon.radiobox
-star_store = tauon.star_store
 pctl = tauon.pctl
 if bag.multi_playlist:
 	pctl.multi_playlist = bag.multi_playlist
@@ -40223,17 +40211,48 @@ notify_change = pctl.notify_change
 lastfm = tauon.lastfm
 lb = tauon.lb
 
+star_path1 = user_directory / "star.p"
+star_path2 = user_directory / "star.p.backup"
+star_size1 = 0
+star_size2 = 0
+to_load = star_path1
+if star_path1.is_file():
+	star_size1 = star_path1.stat().st_size
+if star_path2.is_file():
+	star_size2 = star_path2.stat().st_size
+if star_size2 > star_size1:
+	logging.warning("Loading backup star.p as it was bigger than regular file!")
+	to_load = star_path2
+if star_size1 == 0 and star_size2 == 0:
+	logging.warning("Star database file is missing, first run? Will create one anew!")
+else:
+	try:
+		with to_load.open("rb") as file:
+			tauon.star_store.db = pickle.load(file)
+	except Exception:
+		logging.exception("Unknown error loading star.p file")
+
+album_star_path = user_directory / "album-star.p"
+if album_star_path.is_file():
+	try:
+		with album_star_path.open("rb") as file:
+			tauon.album_star_store.db = pickle.load(file)
+	except Exception:
+		logging.exception("Unknown error loading album-star.p file")
+else:
+	logging.warning("Album star database file is missing, first run? Will create one anew!")
+
 # Run upgrades if we're behind the current DB standard
 if db_version > 0 and db_version < latest_db_version:
 	logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 	try:
-		master_library, pctl.multi_playlist, star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, radio_playlists = database_migrate(
+		master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, radio_playlists = database_migrate(
 			tauon=tauon,
 			db_version=db_version,
 			master_library=master_library,
 			install_mode=install_mode,
 			multi_playlist=pctl.multi_playlist,
-			star_store=star_store,
+			star_store=tauon.star_store,
 			install_directory=install_directory,
 			a_cache_dir=a_cache_dir,
 			cache_directory=cache_directory,
@@ -40276,37 +40295,6 @@ if system == "Linux" and not macos and not tauon.msys:
 		tauon.song_notification = Notify.Notification.new("Next track notification")
 		value = GLib.Variant("s", t_id)
 		tauon.song_notification.set_hint("desktop-entry", value)
-
-star_path1 = user_directory / "star.p"
-star_path2 = user_directory / "star.p.backup"
-star_size1 = 0
-star_size2 = 0
-to_load = star_path1
-if star_path1.is_file():
-	star_size1 = star_path1.stat().st_size
-if star_path2.is_file():
-	star_size2 = star_path2.stat().st_size
-if star_size2 > star_size1:
-	logging.warning("Loading backup star.p as it was bigger than regular file!")
-	to_load = star_path2
-if star_size1 == 0 and star_size2 == 0:
-	logging.warning("Star database file is missing, first run? Will create one anew!")
-else:
-	try:
-		with to_load.open("rb") as file:
-			star_store.db = pickle.load(file)
-	except Exception:
-		logging.exception("Unknown error loading star.p file")
-
-album_star_path = user_directory / "album-star.p"
-if album_star_path.is_file():
-	try:
-		with album_star_path.open("rb") as file:
-			tauon.album_star_store.db = pickle.load(file)
-	except Exception:
-		logging.exception("Unknown error loading album-star.p file")
-else:
-	logging.warning("Album star database file is missing, first run? Will create one anew!")
 
 deco = Deco(tauon)
 deco.get_themes = get_themes
@@ -42480,24 +42468,21 @@ while pctl.running:
 					tauon.undo.bk_playtime_transfer(fr, fr_s, fr_scr, to, to_s, to_scr)
 
 					if to_s is None:
-						to_s = tauon.star_store.new_object()
+						to_s = StarRecord()
 					if fr_s is None:
-						fr_s = tauon.star_store.new_object()
+						fr_s = StarRecord()
 
-					new = tauon.star_store.new_object()
+					new = StarRecord()
 
-					new[0] = fr_s[0] + to_s[0]  # playtime
-					new[1] = fr_s[1]  # flags
-					if to_s[1]:
-						new[1] = to_s[1]  # keep target flags
-					new[2] = fr_s[2]  # raiting
-					if to_s[2] > 0 and fr_s[2] == 0:
-						new[2] = to_s[2]  # keep target rating
+					new.playtime = fr_s.playtime + to_s.playtime
+					new.rating = fr_s.rating
+					if to_s.rating > 0 and fr_s.rating == 0:
+						new.rating = to_s.rating  # keep target rating
 					to.lfm_scrobbles = fr.lfm_scrobbles
 
 					tauon.star_store.remove(fr.index)
 					tauon.star_store.remove(to.index)
-					if new[0] or new[1] or new[2]:
+					if new.playtime or new.rating:
 						tauon.star_store.insert(to.index, new)
 
 					tauon.copied_track = None
