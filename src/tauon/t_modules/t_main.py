@@ -12859,7 +12859,7 @@ class Tauon:
 		if len(self.pctl.master_library[index].artist) < 2:
 			return
 
-		line = "https://" + lang_var + ".wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(self.pctl.master_library[index].artist)
+		line = f"https://{lang_var}.wikipedia.org/wiki/Special:Search?search={urllib.parse.quote(self.pctl.master_library[index].artist)}"
 		webbrowser.open(line, new=2, autoraise=True)
 
 	def clip_ar_tr(self, index: int) -> None:
