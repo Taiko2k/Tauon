@@ -2,6 +2,18 @@
 Changelog
 ---------
 
+### UPCOMING v8.1.0 (?)
+ - **Fixed** crash when scrolling radio stations
+ - **Fixed** crash when enabling monochrome tray icons on NixOS
+ - **Fixed** finding 64-bit Picard on Windows - 32-bit Picard is no longer supported
+ - **Fixed** loving a song not working under specific circumstances
+ - **Fixed** ListenBrainz integration not sending album name
+ - **Fixed** loading album art on some Subsonic implementations
+ - **Fixed** interacting with broken Subsonic implementations that send JSON with raw control characters
+ - **Fixed** crashing when attempting to use LMS (Subsonic)
+ - **Fixed** some other minor things and deprecations that didn't get a mention
+
+ 
 ### v8.0.1
 
  - **Fixed** crash on queue scroll
