@@ -3887,7 +3887,7 @@ class LastFMapi:
 				l_artist = pylast.Artist(
 					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
 					self.lastfm_network)
-				bio = l_artist.get_bio_content(language=var_lang)
+				bio = l_artist.get_bio_content(language=lang_var)
 				# cover_link = l_artist.get_cover_image()
 				mbid = l_artist.get_mbid()
 				url = l_artist.get_url()
@@ -12859,7 +12859,7 @@ class Tauon:
 		if len(self.pctl.master_library[index].artist) < 2:
 			return
 
-		line = "https://" + var_lang + ".wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(self.pctl.master_library[index].artist)
+		line = "https://" + lang_var + ".wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(self.pctl.master_library[index].artist)
 		webbrowser.open(line, new=2, autoraise=True)
 
 	def clip_ar_tr(self, index: int) -> None:
@@ -40091,9 +40091,9 @@ lang: list[str] | None = None
 if prefs.ui_lang != "auto" or prefs.ui_lang == "":
 	# Force set lang
 	lang = [prefs.ui_lang]
-	var_lang = prefs.ui_lang
+	lang_var = prefs.ui_lang
 else:
-	var_lang = os.environ.get("LANGUAGE")
+	lang_var = os.environ.get("LANGUAGE")
 
 f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
 if f:
