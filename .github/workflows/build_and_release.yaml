@@ -68,9 +68,9 @@ jobs:
           pip install \
             -r requirements.txt \
             build \
-            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+            pyinstaller
           python -c "import sdl3"
-        #    pyinstaller
+#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 
       - name: Build the project using python-build
         run: |
@@ -219,9 +219,9 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
             -r requirements.txt \
             build \
-            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+            pyinstaller
+#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
-        #   pyinstaller
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
         #  source .venv/bin/activate
         #  CFLAGS: "-I/opt/homebrew/include"
@@ -338,10 +338,12 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --user --break-system-packages \
             -r requirements.txt \
             build
-          $(brew --prefix python)/libexec/bin/pip install --break-system-packages https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+          $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
+            pyintaller
+        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
         #  $(brew --prefix python)/libexec/bin/python -m pip show -f pyinstaller
-        #   pyinstaller
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
         #  source .venv/bin/activate
         #  CFLAGS: "-I/opt/homebrew/include"
@@ -437,8 +439,8 @@ jobs:
           .venv/bin/python -m pip install \
             -r requirements.txt \
             build \
-            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-        #    pyinstaller
+            pyinstaller
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
       - name: Build the project using python-build
