@@ -39533,7 +39533,7 @@ bag = Bag(
 )
 
 # If scaled-icons directory exists, use it even for initial loading
-if (user_directory / "scaled-icons").exists():
+if (user_directory / "scaled-icons").exists() and bag.prefs.ui_scale != 1:
 	bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
 
 gui = GuiVar(
