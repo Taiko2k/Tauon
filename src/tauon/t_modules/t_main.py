@@ -35833,7 +35833,7 @@ class DLMon:
 			self.ready = temp
 
 		if len(self.watching) > 0:
-			self.gui.update += 1
+			self.tauon.gui.update += 1
 
 class Fader:
 
