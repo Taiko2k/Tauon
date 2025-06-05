@@ -30,7 +30,7 @@ pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False
 
 from gi.repository import GLib
 
-from tauon.t_modules.logging import CustomLoggingFormatter, LogHistoryHandler
+from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler
 
 from tauon.t_modules import t_bootstrap
 
