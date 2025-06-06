@@ -188,6 +188,61 @@ if sys.platform == "darwin":
 	import gi
 	from gi.repository import GLib
 
+# Log to debug as we don't care at all when user does not have this
+try:
+	import colored_traceback.always
+	logging.debug("Found colored_traceback for colored crash tracebacks")
+except ModuleNotFoundError:
+	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
+except Exception:
+	logging.warning("Error trying to import colored_traceback, tracebacks will be dull.")
+
+try:
+	from jxlpy import JXLImagePlugin
+	# We've already logged this once to INFO from t_draw, so just log to DEBUG
+	logging.debug("Found jxlpy for JPEG XL support")
+except ModuleNotFoundError:
+	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
+
+try:
+	import setproctitle
+except ModuleNotFoundError:
+	logging.warning("Unable to import setproctitle, won't be setting process title.")
+except Exception:
+	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
+else:
+	setproctitle.setproctitle("tauonmb")
+
+# try:
+#	 import rpc
+#	 discord_allow = True
+# except Exception:
+#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+try:
+	from lynxpresence import Presence, ActivityType
+except ModuleNotFoundError:
+	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
+else:
+	import asyncio
+
+try:
+	import opencc
+except ModuleNotFoundError:
+	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+except Exception:
+	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+
+try:
+	import natsort
+except ModuleNotFoundError:
+	logging.warning("Unable to import natsort, playlists may not sort as intended!")
+except Exception:
+	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
+
 if TYPE_CHECKING:
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
@@ -5390,6 +5445,9 @@ class Tauon:
 	"""Root class for everything Tauon"""
 
 	def __init__(self, holder: Holder, bag: Bag, gui: GuiVar) -> None:
+		self.use_cc                       = is_module_loaded("opencc")
+		self.use_natsort                  = is_module_loaded("natsort")
+
 		self.bag                          = bag
 		self.mpt                          = bag.mpt
 		self.gme                          = bag.gme
@@ -5410,7 +5468,6 @@ class Tauon:
 		self.download_directories         = bag.download_directories
 		self.launch_prefix                = bag.launch_prefix
 		self.overlay_texture_texture      = bag.overlay_texture_texture
-		self.use_natsort                  = bag.use_natsort
 		self.de_notify_support            = bag.de_notify_support
 		self.old_window_position          = bag.old_window_position
 		self.cache_directory              = bag.dirs.cache_directory
@@ -16684,7 +16741,7 @@ class Tauon:
 	def sort_path_pl(self, pl: int, custom_list: list[int] | None = None) -> None:
 		target = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
-		if self.bag.use_natsort and False:
+		if self.use_natsort and False:
 			target[:] = natsort.os_sorted(target, key=self.key_fullpath)
 		else:
 			target.sort(key=self.key_filepath)
@@ -36132,7 +36189,6 @@ class Bag:
 	last_fm_enable:          bool
 	de_notify_support:       bool
 	wayland:                 bool
-	use_natsort:             bool
 	should_save_state:       bool
 	desktop:                 str | None
 	system:                  str
@@ -37486,6 +37542,9 @@ def worker4(tauon: Tauon) -> None:
 			return
 
 def worker2(tauon: Tauon) -> None:
+	if tauon.use_cc:
+		s2t = opencc.OpenCC("s2t")
+		t2s = opencc.OpenCC("t2s")
 	search_over = tauon.search_over
 	while True:
 		tauon.worker2_lock.acquire()
@@ -37557,7 +37616,7 @@ def worker2(tauon: Tauon) -> None:
 					year_mode = True
 
 				cn_mode = False
-				if use_cc and re.search(r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]", o_text):
+				if tauon.use_cc and re.search(r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]", o_text):
 					t_cn = s2t.convert(o_text)
 					s_cn = t2s.convert(o_text)
 					cn_mode = True
@@ -38379,7 +38438,7 @@ def worker1(tauon: Tauon) -> None:
 
 		try:
 			items_in_dir = os.listdir(direc)
-			if use_natsort:
+			if tauon.use_natsort:
 				items_in_dir = natsort.os_sorted(items_in_dir)
 			else:
 				items_in_dir.sort()
@@ -38809,69 +38868,6 @@ def menu_is_open() -> bool:
 	return False
 
 # BEGIN CODE
-
-# Log to debug as we don't care at all when user does not have this
-try:
-	import colored_traceback.always
-	logging.debug("Found colored_traceback for colored crash tracebacks")
-except ModuleNotFoundError:
-	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:
-	logging.warning("Error trying to import colored_traceback, tracebacks will be dull.")
-
-try:
-	from jxlpy import JXLImagePlugin
-	# We've already logged this once to INFO from t_draw, so just log to DEBUG
-	logging.debug("Found jxlpy for JPEG XL support")
-except ModuleNotFoundError:
-	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
-
-try:
-	import setproctitle
-except ModuleNotFoundError:
-	logging.warning("Unable to import setproctitle, won't be setting process title.")
-except Exception:
-	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
-else:
-	setproctitle.setproctitle("tauonmb")
-
-# try:
-#	 import rpc
-#	 discord_allow = True
-# except Exception:
-#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
-try:
-	from lynxpresence import Presence, ActivityType
-except ModuleNotFoundError:
-	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
-else:
-	import asyncio
-
-use_cc = False
-try:
-	import opencc
-except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-except Exception:
-	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
-else:
-	s2t = opencc.OpenCC("s2t")
-	t2s = opencc.OpenCC("t2s")
-	use_cc = True
-
-use_natsort = False
-try:
-	import natsort
-except ModuleNotFoundError:
-	logging.warning("Unable to import natsort, playlists may not sort as intended!")
-except Exception:
-	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
-else:
-	use_natsort = True
 
 # Detect platform
 macos = False
@@ -39502,7 +39498,6 @@ bag = Bag(
 	mac_minimize=mac_minimize,
 	msys=msys,
 	phone=phone,
-	use_natsort=use_natsort,
 	should_save_state=True,
 	old_window_position=old_window_position,
 	xdpi=xdpi,
