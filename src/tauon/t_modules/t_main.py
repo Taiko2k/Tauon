@@ -258,6 +258,44 @@ if TYPE_CHECKING:
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
+# Detect platform
+macos = False
+msys = False
+system = "Linux"
+arch = platform.machine()
+platform_release = platform.release()
+platform_system = platform.system()
+win_ver = 0
+if platform_system == "Windows":
+	try:
+		win_ver = int(platform_release)
+	except Exception:
+		logging.exception("Failed getting Windows version from platform.release()")
+
+if sys.platform == "win32":
+	# system = 'Windows'
+	system = "Linux"
+	msys = True
+	if msys:
+		import gi
+		from gi.repository import GLib
+	else:
+		import win32con
+		import win32api
+		import win32gui
+		import win32ui
+		import comtypes
+		import atexit
+else:
+	system = "Linux"
+	import fcntl
+
+if sys.platform == "darwin":
+	macos = True
+
+if system == "Linux" and not macos and not msys:
+	from tauon.t_modules.t_dbus import Gnome
+
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
 	assets: list[LoadImageAsset] = []
@@ -38865,46 +38903,6 @@ def menu_is_open() -> bool:
 		if menu.active:
 			return True
 	return False
-
-# BEGIN CODE
-
-# Detect platform
-macos = False
-msys = False
-system = "Linux"
-arch = platform.machine()
-platform_release = platform.release()
-platform_system = platform.system()
-win_ver = 0
-if platform_system == "Windows":
-	try:
-		win_ver = int(platform_release)
-	except Exception:
-		logging.exception("Failed getting Windows version from platform.release()")
-
-if sys.platform == "win32":
-	# system = 'Windows'
-	system = "Linux"
-	msys = True
-	if msys:
-		import gi
-		from gi.repository import GLib
-	else:
-		import win32con
-		import win32api
-		import win32gui
-		import win32ui
-		import comtypes
-		import atexit
-else:
-	system = "Linux"
-	import fcntl
-
-if sys.platform == "darwin":
-	macos = True
-
-if system == "Linux" and not macos and not msys:
-	from tauon.t_modules.t_dbus import Gnome
 
 def main(holder: Holder) -> None:
 	t_window               = holder.t_window
