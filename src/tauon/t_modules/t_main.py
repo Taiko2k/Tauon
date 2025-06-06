@@ -36186,7 +36186,12 @@ class Formats:
 	Archive: set[str]
 
 
-def is_module_loaded(module_name: str) -> bool:
+def is_module_loaded(module_name: str, object_name: str = "") -> bool:
+	"""Check if a module is loaded, to determine which features we should enable
+
+	See https://stackoverflow.com/a/30483269/8962143 for more details"""
+	if object_name:
+		return module_name in sys.modules and object_name in sys.modules[module_name]
 	return module_name in sys.modules
 
 def get_cert_path(holder: Holder) -> str:
@@ -38837,7 +38842,6 @@ else:
 #	 discord_allow = True
 # except Exception:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
-discord_allow = False
 try:
 	from lynxpresence import Presence, ActivityType
 except ModuleNotFoundError:
@@ -38846,7 +38850,6 @@ except Exception:
 	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
 else:
 	import asyncio
-	discord_allow = True
 
 use_cc = False
 try:
@@ -38937,7 +38940,6 @@ log                    = holder.log
 logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
 
 tls_context = setup_tls(holder)
-
 try:
 	# Pylast needs to be imported AFTER setup_tls() else pyinstaller breaks
 	import pylast
@@ -38946,11 +38948,13 @@ except Exception:
 	logging.exception("PyLast module not found, last fm will be disabled.")
 	last_fm_enable = False
 
+discord_allow = is_module_loaded("lynxpresence", "ActivityType")
+ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
+
 if sys.platform == "win32" and msys:
 	font_folder = str(install_directory / "fonts")
 	if os.path.isdir(font_folder):
 		logging.info(f"Fonts directory:           {font_folder}")
-		import ctypes
 
 		fc = ctypes.cdll.LoadLibrary("libfontconfig-1.dll")
 		fc.FcConfigReference.restype = ctypes.c_void_p
