@@ -75,6 +75,20 @@ class RadioPlaylist:
 	stations: list[RadioStation] = field(default_factory=list[RadioStation])
 
 @dataclass
+class StarRecord:
+	"""Playtime in seconds, 0 to 10 rating, loved/hated status & timestamp
+
+	Hate status is currently not implemented. Integrations such as ListenBrainz use it.
+	"""
+
+	playtime:        float = 0
+	rating:            int = 0
+	loved:            bool = False
+	loved_timestamp: float = 0
+	hated:            bool = False
+	hated_timestamp: float = 0
+
+@dataclass
 class TauonQueueItem:
 	"""TauonQueueItem is [trackid, position, playlist_id, type, album_stage, uid_gen(), auto_stop]
 
