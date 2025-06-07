@@ -20,7 +20,7 @@ Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64os
 ArchitecturesAllowed=x64os
-SetupIconFile=D:\a\Tauon\Tauon\dist\TauonMusicBox\_internal\assets\icon.ico
+SetupIconFile=C:\a\Tauon\Tauon\dist\TauonMusicBox\_internal\assets\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -29,8 +29,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\a\Tauon\Tauon\dist\TauonMusicBox\Tauon Music Box.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\a\Tauon\Tauon\dist\TauonMusicBox\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\a\Tauon\Tauon\dist\TauonMusicBox\Tauon Music Box.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\a\Tauon\Tauon\dist\TauonMusicBox\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
