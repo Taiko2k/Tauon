@@ -19349,7 +19349,8 @@ class TimedLyricsRen:
 			bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 			font_size = 15
 			spacing = round(17 * self.gui.scale)
-			self.ddt.rect((self.window_size[0] - self.gui.rspw, self.gui.panelY, self.gui.rspw, h), bg)
+			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
+			y += 25 * gui.scale
 		else:
 			bg = self.colours.playlist_panel_background
 			font_size = 17
@@ -44437,13 +44438,13 @@ while pctl.running:
 							if not prefs.lyric_metadata_panel_top:
 								tauon.timed_lyrics_ren.render(
 									target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-									gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
+									gui.panelY, side_panel=True, w=gui.rspw,
 									h=window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h)
 								meta_box.l_panel(window_size[0] - gui.rspw, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track)
 							else:
 								tauon.timed_lyrics_ren.render(
 									target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-									gui.panelY + 25 * gui.scale + gui.l_panel_h, side_panel=True,
+									gui.panelY + gui.l_panel_h, side_panel=True,
 									w=gui.rspw,
 									h=window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h)
 								meta_box.l_panel(window_size[0] - gui.rspw, gui.panelY, gui.rspw, gui.l_panel_h, target_track)
