@@ -36285,8 +36285,8 @@ def is_module_loaded(module_name: str, object_name: str = "") -> bool:
 	"""Check if a module is loaded, to determine which features we should enable
 
 	See https://stackoverflow.com/a/30483269/8962143 for more details"""
-	# if object_name:
-	# 	return module_name in sys.modules and object_name in sys.modules[module_name]
+	if object_name:
+		return module_name in sys.modules and hasattr(sys.modules[module_name], object_name)
 	return module_name in sys.modules
 
 def get_cert_path(holder: Holder) -> str:
