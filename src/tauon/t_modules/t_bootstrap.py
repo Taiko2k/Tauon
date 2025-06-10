@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-#from dataclasses import dataclass
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
 	from io import TextIOWrapper
 	from pathlib import Path
+
 	from sdl3 import LP_SDL_Renderer, LP_SDL_Window
 
 	from tauon.__main__ import LogHistoryHandler
 
-#@dataclass
+@dataclass
 class Holder:
 	"""Class that holds variables for forwarding them from __main__.py to t_main.py"""
 
@@ -40,5 +41,3 @@ class Holder:
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
 	log:                    LogHistoryHandler
-
-holder = Holder()
