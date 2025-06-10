@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, TauonPlaylist, TauonQueueItem
+from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, Tauon, TrackClass
@@ -18,7 +18,7 @@ def database_migrate(
 	db_version: float,
 	master_library: dict[int, TrackClass],
 	install_mode: bool,
-	multi_playlist: list | list[TauonPlaylist],
+	multi_playlist: list[str | int | bool] | list[TauonPlaylist],
 	star_store: StarStore,
 	a_cache_dir: str,
 	cache_directory: Path,
@@ -29,7 +29,7 @@ def database_migrate(
 	gen_codes: dict[int, str],
 	prefs: Prefs,
 	radio_playlists: list[dict[str, int | str | list[dict[str, str]]]] | list[RadioPlaylist],
-	p_force_queue: list | list[TauonQueueItem],
+	p_force_queue: list[int | bool] | list[TauonQueueItem],
 	theme: int,
 ) -> tuple[
 	dict[int, TrackClass],
@@ -545,7 +545,7 @@ def database_migrate(
 		p_force_queue = new_queue
 
 	if db_version <= 69:
-		logging.info("Updating database to version 69")
+		logging.info("Updating database to version 70")
 		new_radio_playlists: list[RadioPlaylist] = []
 		for playlist in radio_playlists:
 			stations: list[RadioStation] = []
@@ -567,5 +567,25 @@ def database_migrate(
 					stations=stations))
 		radio_playlists = new_radio_playlists
 
+	if db_version <= 70:
+		logging.info("Updating database to version 71")
+		logging.info("Creating a backup Star database star.p.bak71")
+		import pickle
+		with (user_directory / "star.p.bak71").open("wb") as file:
+			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+		new_starstore_db: dict[tuple[str, str, str], StarRecord] = {}
+		old_record: list[int | str] = [] # Here just for typing
+		for key, old_record in star_store.db.items():
+			new_record = StarRecord()
+			new_record.playtime = old_record[0]
+			new_record.loved = "L" in old_record[1]
+			new_record.rating = old_record[2]
+			# There was a bug where the fourth element was not set
+			if len(old_record) == 4:
+				new_record.loved_timestamp = old_record[3]
+			new_starstore_db[key] = new_record
+
+		star_store.db = new_starstore_db
 
 	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
