@@ -37280,8 +37280,19 @@ def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 		return None
 
 	# Check if internal track lyrics are synced lyrics
-	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
-		return track.lyrics.splitlines()
+	if len(track.lyrics) > 20:
+		split_lines = track.lyrics.splitlines()
+		LRC_tags = "ti", "ar", "al", "au", "lr", "length", "by", "offset", "re", "tool", "ve"
+		# Check first line that's not empty or a commennt
+		for line in split_lines:
+			if line == "" or line[0] == "#":
+				continue
+
+			if line[0] == "[" and ":" in line[:10] \
+			and ("." in line[:10] or any(tag in line for tag in LRC_tags)) \
+			and "]" in line:
+				return split_lines
+			break
 
 
 	# Check if we have a .LRC file
