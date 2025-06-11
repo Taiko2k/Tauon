@@ -37271,28 +37271,44 @@ def coll_point(l: list[int], r: list[int]) -> bool:
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
+	"""Return list of strings if lyrics match LRC format, otherwise return None
+
+	See https://en.wikipedia.org/wiki/LRC_(file_format)"""
 	if track.synced:
 		return track.synced.splitlines()
 	if track.is_network:
 		return None
 
-	direc = track.parent_folder_path
-	name = os.path.splitext(track.filename)[0] + ".lrc"
-
+	# Check if internal track lyrics are synced lyrics
 	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
 		return track.lyrics.splitlines()
 
-	try:
-		if os.path.isfile(os.path.join(direc, name)):
-			with open(os.path.join(direc, name), encoding="utf-8") as f:
-				data = f.readlines()
-		else:
-			return None
-	except Exception:
-		logging.exception("Read lyrics file error")
-		return None
 
-	return data
+	# Check if we have a .LRC file
+	direc = Path(track.parent_folder_path)
+	name = os.path.splitext(track.filename)[0]
+
+	# Case-insensitive file check
+	matched_file = next(
+		(
+			f for f in direc.iterdir()
+			if f.is_file()
+			and f.stem == name
+			and f.suffix.lower() == ".lrc"
+		),
+		None,
+	)
+
+	if matched_file:
+		try:
+			with matched_file.open(encoding="utf-8") as f:
+				data = f.readlines()
+		except Exception:
+			logging.exception("Read lyrics file error")
+			return None
+		return data
+
+	return None
 
 def close_all_menus() -> None:
 	for menu in Menu.instances:
