@@ -295,6 +295,9 @@ if sys.platform == "darwin":
 if system == "Linux" and not macos and not msys:
 	from tauon.t_modules.t_dbus import Gnome
 
+if system == "Windows" or msys:
+	from lynxtray import SysTrayIcon
+
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
 class LoadImageAsset:
@@ -40320,9 +40323,6 @@ def main(holder: Holder) -> None:
 	subsonic = tauon.subsonic
 	koel     = tauon.koel
 	tau      = tauon.tau
-
-	if system == "Windows" or tauon.msys:
-		from lynxtray import SysTrayIcon
 
 	tray = STray(tauon)
 
