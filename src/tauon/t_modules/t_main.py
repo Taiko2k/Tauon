@@ -35163,7 +35163,7 @@ class Showcase:
 				# self.tauon.drop_shadow.render(x + 5 * self.gui.scale, y + 5 * self.gui.scale, box + 10 * self.gui.scale, box + 10 * self.gui.scale)
 				self.ddt.rect(
 					(x - round(2 * self.gui.scale), y - round(2 * self.gui.scale), box + round(4 * self.gui.scale),
-					box + round(4 * self.gui.scale)), [60, 60, 60, 135])
+					box + round(4 * self.gui.scale)), ColourRGBA(60, 60, 60, 135))
 				self.ddt.rect((x, y, box, box), self.colours.playlist_panel_background)
 				rect = sdl3.SDL_FRect(round(x), round(y), round(box), round(box))
 				self.tauon.style_overlay.hole_punches.append(rect)
