@@ -19344,7 +19344,7 @@ class TimedLyricsRen:
 			font_size = 15
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
-			y += 25 * gui.scale
+			y += 25 * self.gui.scale
 		else:
 			bg = self.colours.playlist_panel_background
 			font_size = 17
@@ -37271,28 +37271,55 @@ def coll_point(l: list[int], r: list[int]) -> bool:
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
+	"""Return list of strings if lyrics match LRC format, otherwise return None
+
+	See https://en.wikipedia.org/wiki/LRC_(file_format)"""
 	if track.synced:
 		return track.synced.splitlines()
 	if track.is_network:
 		return None
 
-	direc = track.parent_folder_path
-	name = os.path.splitext(track.filename)[0] + ".lrc"
+	# Check if internal track lyrics are synced lyrics
+	if len(track.lyrics) > 20:
+		split_lines = track.lyrics.splitlines()
+		LRC_tags = "ti", "ar", "al", "au", "lr", "length", "by", "offset", "re", "tool", "ve"
+		# Check first line that's not empty or a commennt
+		for line in split_lines:
+			if line == "" or line[0] == "#":
+				continue
 
-	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
-		return track.lyrics.splitlines()
+			if line[0] == "[" and ":" in line[:10] \
+			and ("." in line[:10] or any(tag in line for tag in LRC_tags)) \
+			and "]" in line:
+				return split_lines
+			break
 
-	try:
-		if os.path.isfile(os.path.join(direc, name)):
-			with open(os.path.join(direc, name), encoding="utf-8") as f:
+
+	# Check if we have a .LRC file
+	direc = Path(track.parent_folder_path)
+	name = os.path.splitext(track.filename)[0]
+
+	# Case-insensitive file check
+	matched_file = next(
+		(
+			f for f in direc.iterdir()
+			if f.is_file()
+			and f.stem == name
+			and f.suffix.lower() == ".lrc"
+		),
+		None,
+	)
+
+	if matched_file:
+		try:
+			with matched_file.open(encoding="utf-8") as f:
 				data = f.readlines()
-		else:
+		except Exception:
+			logging.exception("Read lyrics file error")
 			return None
-	except Exception:
-		logging.exception("Read lyrics file error")
-		return None
+		return data
 
-	return data
+	return None
 
 def close_all_menus() -> None:
 	for menu in Menu.instances:
