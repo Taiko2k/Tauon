@@ -40342,9 +40342,9 @@ def main(holder: Holder) -> None:
 			value = GLib.Variant("s", t_id)
 			tauon.song_notification.set_hint("desktop-entry", value)
 
-	deco = Deco(tauon)
-	deco.get_themes = get_themes
-	deco.renderer = renderer
+	# TODO(Martin): Get rid of this and define it properly
+	tauon.deco.get_themes = get_themes
+	tauon.deco.renderer = renderer
 
 	if prefs.backend != 4:
 		prefs.backend = 4
@@ -42979,7 +42979,7 @@ def main(holder: Holder) -> None:
 					colours.__init__()
 
 					load_theme(colours, Path(theme_item[0]))
-					deco.load(colours.deco)
+					tauon.deco.load(colours.deco)
 					logging.info("Applying theme: " + gui.theme_name)
 
 					if colours.lm:
@@ -43012,7 +43012,7 @@ def main(holder: Holder) -> None:
 				colours.lm = False
 				colours.__init__()
 				colours.post_config()
-				deco.unload()
+				tauon.deco.unload()
 
 			if prefs.transparent_mode:
 				colours.apply_transparency()
