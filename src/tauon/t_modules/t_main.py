@@ -19213,16 +19213,27 @@ class LyricsRen:
 		self.lyrics_position = 0
 
 	def test_update(self, track_object: TrackClass) -> None:
-		if track_object.index != self.index or self.text != track_object.lyrics:
+		if track_object.index != self.index: # or self.text != track_object.lyrics:
 			self.index = track_object.index
-			self.text = track_object.lyrics
+			# old line: self.text = track_object.lyrics
+			# get rid of LRC formatting if you can:
+			for line in track_object.lyrics:
+				if len(line) < 10:
+					self.text += line
+	
+				if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+					self.text += line
+				else:
+					self.text += line[10:]
+			# TODO (Flynn): fix the conditional for this section to run
+			
 			self.lyrics_position = 0
 
 	def render(self, x, y, w, h, p) -> None:
 		colour = self.colours.lyrics
 		if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 			colour = self.colours.grey(40)
-
+		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
 		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.lyrics_panel_background)
 
 class TimedLyricsToStatic:
