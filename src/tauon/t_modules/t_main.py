@@ -19223,7 +19223,7 @@ class LyricsRen:
 		if test_lumi(self.colours.gallery_background) < 0.5:
 			colour = self.colours.grey(40)
 
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.playlist_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.lyrics_panel_background)
 
 class TimedLyricsToStatic:
 
@@ -19233,12 +19233,13 @@ class TimedLyricsToStatic:
 
 	def get(self, track: TrackClass) -> str:
 		if track.lyrics:
-			return track.lyrics
-		if track.is_network:
+			data = track.lyrics
+		elif track.is_network:
 			return ""
-		if track == self.cache_key:
+		elif track == self.cache_key:
 			return self.cache_lyrics
-		data = find_synced_lyric_data(track)
+		else:
+			data = find_synced_lyric_data(track)
 
 		if data is None:
 			self.cache_lyrics = ""
