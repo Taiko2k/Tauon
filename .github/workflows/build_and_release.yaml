@@ -63,6 +63,7 @@ jobs:
       - name: Install Python dependencies and setup venv
         run: |
           python -m pip install --upgrade pip
+          rm -rf .venv
           python -m venv .venv
           source .venv/bin/activate
           pip install \
