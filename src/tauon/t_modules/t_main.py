@@ -19357,7 +19357,7 @@ class TimedLyricsRen:
 			bg = self.colours.side_panel_background
 			if not bg.a:
 				bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
-			font_size = prefs.lyrics_font_size
+			font_size = self.prefs.lyrics_font_size
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
