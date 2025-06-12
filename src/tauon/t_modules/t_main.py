@@ -19220,7 +19220,7 @@ class LyricsRen:
 
 	def render(self, x, y, w, h, p) -> None:
 		colour = self.colours.lyrics
-		if test_lumi(self.colours.gallery_background) < 0.5:
+		if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 			colour = self.colours.grey(40)
 
 		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.lyrics_panel_background)
