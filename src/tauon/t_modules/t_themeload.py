@@ -135,7 +135,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			if "status text" in p:
 				status_text_temp = get_colour_from_line(p)
 				
-				colours.status_text_over = rgb_add_hls(status_text_temp, 0, 0.83, 0)
+				colours.status_text_over = status_text_temp #rgb_add_hls(status_text_temp, 0, 0.83, 0)
 				colours.status_text_normal = rgb_add_hls(status_text_temp, 0, 0.30, -0.15)
 				status_text_color_defined = 1
 				
