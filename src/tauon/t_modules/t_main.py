@@ -19355,19 +19355,15 @@ class TimedLyricsRen:
 
 		if side_panel:
 			bg = self.colours.side_panel_background
-			if not bg.a:
-				bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
-			font_size = self.prefs.lyrics_font_size
+			font_size = 15
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 		else:
 			bg = self.colours.playlist_panel_background
-			font_size = self.prefs.playlist_font_size
+			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
-		if not bg.a:
-			bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		test_time = self.tauon.get_real_time()
 
 		if self.pctl.track_queue[self.pctl.queue_step] == index:
