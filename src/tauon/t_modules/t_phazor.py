@@ -1351,17 +1351,25 @@ def player4(tauon: Tauon) -> None:
 				state = 2
 
 			if command == "pauseoff":
-				if prefs.use_pause_fade:
-					if pctl.player_volume > 5:
-						speed = fade_time / (int(pctl.player_volume) / 100)
-					else:
-						speed = fade_time / (5 / 100)
 
-					aud.ramp_volume(int(pctl.player_volume), int(speed))
-				aud.resume()
-				player_timer.set()
-				stall_timer.set()
-				state = 1
+				if state == 0:
+					t = pctl.playing_time
+					pctl.play_target()
+					pctl.jump_time = t
+					pctl.playing_time = t
+					pctl.decode_time = t
+				else:
+					if prefs.use_pause_fade:
+						if pctl.player_volume > 5:
+							speed = fade_time / (int(pctl.player_volume) / 100)
+						else:
+							speed = fade_time / (5 / 100)
+
+						aud.ramp_volume(int(pctl.player_volume), int(speed))
+					aud.resume()
+					player_timer.set()
+					stall_timer.set()
+					state = 1
 
 			if command == "unload":
 				if prefs.use_pause_fade:
