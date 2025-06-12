@@ -19184,10 +19184,12 @@ class LyricsRenMini:
 		self.lyrics_position = 0
 
 	def generate(self, index, w) -> None:
+		logging.info("lyricsrenmini generate")
 		self.text = self.pctl.master_library[index].lyrics
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
+		logging.info("lyricsrenmini render")
 		if index != self.index or self.text != self.pctl.master_library[index].lyrics:
 			self.index = index
 			self.generate(index, w)
@@ -19213,10 +19215,12 @@ class LyricsRen:
 		self.lyrics_position = 0
 
 	def test_update(self, track_object: TrackClass) -> None:
+		logging.info(f"lyricsren test_update: track object index is {track_object.index} and self index is {self.index}")
 		if track_object.index != self.index: # or self.text != track_object.lyrics:
 			self.index = track_object.index
 			# old line: self.text = track_object.lyrics
 			# get rid of LRC formatting if you can:
+			logging.info(f"lyrics currently are: \n{track_object.lyrics}")
 			for line in track_object.lyrics:
 				if len(line) < 10:
 					self.text += line
@@ -19226,10 +19230,11 @@ class LyricsRen:
 				else:
 					self.text += line[10:]
 			# TODO (Flynn): fix the conditional for this section to run
-			
+			logging.info(f"self.text after running update is:\n{self.text}")
 			self.lyrics_position = 0
 
 	def render(self, x, y, w, h, p) -> None:
+		logging.info("lyricsren render")
 		colour = self.colours.lyrics
 		if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 			colour = self.colours.grey(40)
@@ -19243,6 +19248,7 @@ class TimedLyricsToStatic:
 		self.cache_lyrics = ""
 
 	def get(self, track: TrackClass) -> str:
+		logging.info("timedlyricstostatic get is running")
 		if track.lyrics:
 			data = track.lyrics
 		elif track.is_network:
@@ -19293,6 +19299,7 @@ class TimedLyricsRen:
 		self.scroll_position: int = 0
 
 	def generate(self, track: TrackClass) -> bool | None:
+		logging.info("timedlyricsren generate")
 		if self.index == track.index:
 			return self.ready
 
@@ -19345,6 +19352,7 @@ class TimedLyricsRen:
 		return True
 
 	def render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
+		logging.info("timedlyricsren render")
 		if index != self.index:
 			self.ready = False
 			self.generate(self.pctl.master_library[index])
@@ -46142,11 +46150,12 @@ def main(holder: Holder) -> None:
 					for i, value in enumerate(gui.spec2_buffers[0]):
 						ddt.rect(
 							[gui.spec2_position, i, 1, 1],
-							ColourRGBA(
+							'''ColourRGBA(
 								min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
 								min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
 								min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
-								255))
+								colours.top_panel_background.a))'''
+							colours.vis_bg )
 
 					del gui.spec2_buffers[0]
 
@@ -46302,7 +46311,7 @@ def main(holder: Holder) -> None:
 				y = 0
 
 				gui.spec_level_rec.x = round(x - 70 * gui.scale)
-				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10))
+				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.vis_bg ) #colours.grey(10))
 
 				x = round(gui.level_ww - 9 * gui.scale)
 				y = 10 * gui.scale
