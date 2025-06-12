@@ -1265,6 +1265,7 @@ class ColoursClass:
 		self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
 
 		self.side_panel_background = self.grey(18)
+		self.lyrics_panel_background = self.grey(18)
 		self.gallery_background = self.side_panel_background
 		self.playlist_panel_background = self.grey(21)
 		self.bottom_panel_colour = self.grey(15)
@@ -19199,7 +19200,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.side_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.lyrics_panel_background)
 
 class LyricsRen:
 
@@ -19355,7 +19356,7 @@ class TimedLyricsRen:
 		highlight = True
 
 		if side_panel:
-			bg = self.colours.side_panel_background
+			bg = self.colours.lyrics_panel_background
 			font_size = 15
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
@@ -21038,6 +21039,7 @@ class AlbumArt:
 				#logging.info(x_colours)
 				colours.playlist_panel_bg = colours.side_panel_background
 				colours.playlist_box_background = colours.side_panel_background
+				colours.lyrics_panel_background = colours.side_panel_background
 
 				colours.playlist_panel_background = x_colours[0]
 				if len(x_colours) > 1:
