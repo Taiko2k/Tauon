@@ -2,7 +2,8 @@
 Changelog
 ---------
 
-### UPCOMING v8.1.0 (?)
+### v8.1.0
+ - **Fixed** Synced lyrics rendering issue (again)
  - **Fixed** crash when scrolling radio stations
  - **Fixed** crash when enabling monochrome tray icons on NixOS
  - **Fixed** finding 64-bit Picard on Windows - 32-bit Picard is no longer supported

@@ -2603,7 +2603,7 @@ class PlayerCtl:
 			if track_id in pool:
 				pool.remove(track_id)
 
-	def play_target_rr(self) -> None:
+	def play_target_rr(self, play=True) -> None:
 		self.tauon.thread_manager.ready_playback()
 		self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
 
@@ -2619,11 +2619,12 @@ class PlayerCtl:
 		self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
 		self.start_time_target = self.start_time
 		self.jump_time = random_start
-		self.playerCommand = "open"
-		if not self.prefs.use_jump_crossfade:
-			self.playerSubCommand = "now"
-		self.playerCommandReady = True
-		self.playing_state = 1
+		if play:
+			self.playerCommand = "open"
+			if not self.prefs.use_jump_crossfade:
+				self.playerSubCommand = "now"
+			self.playerCommandReady = True
+			self.playing_state = 1
 		self.radiobox.loaded_station = None
 
 		if self.tauon.stream_proxy.download_running:
@@ -2634,7 +2635,7 @@ class PlayerCtl:
 
 		self.deduct_shuffle(self.target_object.index)
 
-	def play_target(self, gapless: bool = False, jump: bool = False) -> None:
+	def play_target(self, gapless: bool = False, jump: bool = False, play=True) -> None:
 		self.tauon.thread_manager.ready_playback()
 
 		#logging.info(self.track_queue)
@@ -2660,13 +2661,13 @@ class PlayerCtl:
 				self.decode_time = 0
 				self.jump_time = t
 
-		self.playerCommand = "open"
-		if jump:  # and not prefs.use_jump_crossfade:
-			self.playerSubCommand = "now"
+		if play:
+			self.playerCommand = "open"
+			if jump:  # and not prefs.use_jump_crossfade:
+				self.playerSubCommand = "now"
+			self.playerCommandReady = True
+			self.playing_state = 1
 
-		self.playerCommandReady = True
-
-		self.playing_state = 1
 		self.update_change()
 		self.deduct_shuffle(target.index)
 
@@ -2728,6 +2729,13 @@ class PlayerCtl:
 		self.gui.pl_update = 1
 
 	def back(self) -> None:
+
+		play = True
+		if self.playing_state == 2 and not self.prefs.resume_on_jump:
+			play = False
+			self.playerCommand = "stop"
+			self.playerCommandReady = True
+
 		if self.playing_state < 3 and self.prefs.back_restarts and self.playing_time > 6:
 			self.seek_time(0)
 			self.render_playlist()
@@ -2763,11 +2771,11 @@ class PlayerCtl:
 			self.playlist_playing_position -= 1
 			self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 			self.queue_step = len(self.track_queue) - 1
-			self.play_target(jump=True)
+			self.play_target(jump=True, play=play)
 
 		elif self.random_mode is True and self.queue_step > 0:
 			self.queue_step -= 1
-			self.play_target(jump=True)
+			self.play_target(jump=True, play=play)
 		else:
 			logging.info("BACK: NO CASE!")
 			self.show_current()
@@ -2810,6 +2818,7 @@ class PlayerCtl:
 		if len(self.track_queue) > 0:
 			self.left_time = self.playing_time
 			self.left_index = self.track_queue[self.queue_step]
+
 		previous_state = self.playing_state
 		self.playing_time = 0
 		self.decode_time = 0
@@ -3246,6 +3255,12 @@ class PlayerCtl:
 		self, rr: bool = False, quiet: bool = False, inplace: bool = False, end: bool = False,
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
+
+		if self.playing_state == 2 and not self.prefs.resume_on_jump:
+			play = False
+			self.playerCommand = "stop"
+			self.playerCommandReady = True
+
 		# Spotify remote control mode
 		if not dry and self.tauon.spot_ctl.coasting:
 			self.tauon.spot_ctl.control("next")
@@ -3315,8 +3330,8 @@ class PlayerCtl:
 					self.track_queue.append(target_index)
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
-					if play:
-						self.play_target(jump=not end)
+					#if play:
+					self.play_target(jump=not end, play=play)
 
 					#  Set the flag that we have entered the album
 					self.force_queue[0].album_stage = 1
@@ -3388,8 +3403,8 @@ class PlayerCtl:
 					self.track_queue.append(pl[self.playlist_playing_position])
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
-					if play:
-						self.play_target(jump=not end)
+					#if play:
+					self.play_target(jump=not end, play=play)
 
 				if not ok_continue:
 					# It seems this item has expired, remove it and call advance again
@@ -3431,8 +3446,8 @@ class PlayerCtl:
 				self.track_queue.append(target_index)
 				self.queue_step = len(self.track_queue) - 1
 				# self.queue_target = len(self.track_queue) - 1
-				if play:
-					self.play_target(jump=not end)
+				#if play:
+				self.play_target(jump=not end, play=play)
 				del self.force_queue[0]
 				if q.auto_stop:
 					self.stop_mode = 1
@@ -3462,8 +3477,8 @@ class PlayerCtl:
 
 			self.track_queue.append(self.default_playlist[self.selected_in_playlist])
 			self.queue_step = len(self.track_queue) - 1
-			if play:
-				self.play_target(jump=not end)
+			#if play:
+			self.play_target(jump=not end, play=play)
 
 		# If random, jump to random track
 		elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not (
@@ -3576,9 +3591,9 @@ class PlayerCtl:
 			if rr:
 				if dry:
 					return None
-				self.play_target_rr()
-			elif play:
-				self.play_target(jump=not end)
+				self.play_target_rr(play=play)
+			else:
+				self.play_target(jump=not end, play=play)
 
 
 		# If not random mode, Step down 1 on the playlist
@@ -3667,8 +3682,8 @@ class PlayerCtl:
 				#	 self.play_target_gapless(jump= not end)
 				# else:
 				self.queue_step = len(self.track_queue) - 1
-				if play:
-					self.play_target(jump=not end)
+				#if play:
+				self.play_target(jump=not end, play=play)
 
 		elif self.random_mode and (self.album_shuffle_mode or self.prefs.album_shuffle_lock_mode):
 			# Album shuffle mode
@@ -3696,8 +3711,8 @@ class PlayerCtl:
 					self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
-					if play:
-						self.play_target(jump=not end)
+					#if play:
+					self.play_target(jump=not end, play=play)
 				else:
 					if dry:
 						return None
@@ -3719,15 +3734,15 @@ class PlayerCtl:
 							self.track_queue.append(self.playing_playlist()[a])
 							self.queue_step = len(self.track_queue) - 1
 							# self.queue_target = len(self.track_queue) - 1
-							if play:
-								self.play_target(jump=not end)
+							#if play:
+							self.play_target(jump=not end, play=play)
 							break
 						a = 0
 						self.playlist_playing_position = a
 						self.track_queue.append(self.playing_playlist()[a])
 						self.queue_step = len(self.track_queue) - 1
-						if play:
-							self.play_target(jump=not end)
+						#if play:
+						self.play_target(jump=not end, play=play)
 						# logging.info("THERE IS ONLY ONE ALBUM IN THE PLAYLIST")
 						# self.stop()
 		else:
@@ -13446,7 +13461,7 @@ class Tauon:
 					for i in reversed(range(len(playlist))):
 						t_time = self.star_store.get(playlist[i])
 						tr = self.pctl.get_track(playlist[i])
-						if tr.length > 0 and not value < t_time / tr.length:
+						if tr.length < 1 or not value < t_time / tr.length:
 							del playlist[i]
 
 			elif cm[:3] == "pc<":
@@ -19345,7 +19360,7 @@ class TimedLyricsRen:
 			font_size = prefs.lyrics_font_size
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
-			y += 25 * gui.scale
+			y += 25 * self.gui.scale
 		else:
 			bg = self.colours.playlist_panel_background
 			font_size = self.prefs.playlist_font_size
@@ -36476,6 +36491,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
 	cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
 	cf.update_value("back-restarts", prefs.back_restarts)
+	cf.update_value("resume-on-advance", prefs.resume_on_jump)
 	cf.update_value("end-queue-stop", prefs.stop_end_queue)
 	cf.update_value("block-suspend", prefs.block_suspend)
 	cf.update_value("allow-video-formats", prefs.allow_video_formats)
@@ -36707,6 +36723,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.back_restarts = cf.sync_add(
 		"bool", "back-restarts", prefs.back_restarts,
 		"Pressing the back button restarts playing track on first press.")
+	prefs.resume_on_jump = cf.sync_add(
+		"bool", "resume-on-advance", prefs.resume_on_jump,
+		"When paused, pressing back or next button starts playback.")
 	prefs.stop_end_queue = cf.sync_add(
 		"bool", "end-queue-stop", prefs.stop_end_queue,
 		"Queue will always enable auto-stop on last track")
@@ -37273,28 +37292,55 @@ def coll_point(l: list[int], r: list[int]) -> bool:
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
 
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
+	"""Return list of strings if lyrics match LRC format, otherwise return None
+
+	See https://en.wikipedia.org/wiki/LRC_(file_format)"""
 	if track.synced:
 		return track.synced.splitlines()
 	if track.is_network:
 		return None
 
-	direc = track.parent_folder_path
-	name = os.path.splitext(track.filename)[0] + ".lrc"
+	# Check if internal track lyrics are synced lyrics
+	if len(track.lyrics) > 20:
+		split_lines = track.lyrics.splitlines()
+		LRC_tags = "ti", "ar", "al", "au", "lr", "length", "by", "offset", "re", "tool", "ve"
+		# Check first line that's not empty or a commennt
+		for line in split_lines:
+			if line == "" or line[0] == "#":
+				continue
 
-	if len(track.lyrics) > 20 and track.lyrics[0] == "[" and ":" in track.lyrics[:20] and "." in track.lyrics[:20]:
-		return track.lyrics.splitlines()
+			if line[0] == "[" and ":" in line[:10] \
+			and ("." in line[:10] or any(tag in line for tag in LRC_tags)) \
+			and "]" in line:
+				return split_lines
+			break
 
-	try:
-		if os.path.isfile(os.path.join(direc, name)):
-			with open(os.path.join(direc, name), encoding="utf-8") as f:
+
+	# Check if we have a .LRC file
+	direc = Path(track.parent_folder_path)
+	name = os.path.splitext(track.filename)[0]
+
+	# Case-insensitive file check
+	matched_file = next(
+		(
+			f for f in direc.iterdir()
+			if f.is_file()
+			and f.stem == name
+			and f.suffix.lower() == ".lrc"
+		),
+		None,
+	)
+
+	if matched_file:
+		try:
+			with matched_file.open(encoding="utf-8") as f:
 				data = f.readlines()
-		else:
+		except Exception:
+			logging.exception("Read lyrics file error")
 			return None
-	except Exception:
-		logging.exception("Read lyrics file error")
-		return None
+		return data
 
-	return data
+	return None
 
 def close_all_menus() -> None:
 	for menu in Menu.instances:
@@ -40298,9 +40344,9 @@ def main(holder: Holder) -> None:
 			value = GLib.Variant("s", t_id)
 			tauon.song_notification.set_hint("desktop-entry", value)
 
-	deco = Deco(tauon)
-	deco.get_themes = get_themes
-	deco.renderer = renderer
+	# TODO(Martin): Get rid of this and define it properly
+	tauon.deco.get_themes = get_themes
+	tauon.deco.renderer = renderer
 
 	if prefs.backend != 4:
 		prefs.backend = 4
@@ -40739,6 +40785,7 @@ def main(holder: Holder) -> None:
 
 	tab_menu.add(MenuItem(_("Regenerate"), tauon.regen_playlist_async, tauon.regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
 	tab_menu.add_sub(_("Generate…"), 150)
+	tab_menu.add(MenuItem(_("Edit Generator..."), tauon.edit_generator_box, pass_ref=True))
 	tab_menu.add_sub(_("Sort…"), 170)
 	extra_tab_menu.add_sub(_("From Current…"), 133)
 	# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
@@ -40774,7 +40821,6 @@ def main(holder: Holder) -> None:
 	# tab_menu.add_to_sub(_('Quick Export XSPF'), 2, tauon.export_xspf, pass_ref=True)
 	# tab_menu.add_to_sub(_('Quick Export M3U'), 2, tauon.export_m3u, pass_ref=True)
 	tab_menu.add_to_sub(2, MenuItem(_("Toggle Breaks"), tauon.pl_toggle_playlist_break, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Edit Generator..."), tauon.edit_generator_box, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Engage Gallery Quick Add"), tauon.start_quick_add, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), tauon.set_sync_playlist, tauon.sync_playlist_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
@@ -42935,7 +42981,7 @@ def main(holder: Holder) -> None:
 					colours.__init__()
 
 					load_theme(colours, Path(theme_item[0]))
-					deco.load(colours.deco)
+					tauon.deco.load(colours.deco)
 					logging.info("Applying theme: " + gui.theme_name)
 
 					if colours.lm:
@@ -42968,7 +43014,7 @@ def main(holder: Holder) -> None:
 				colours.lm = False
 				colours.__init__()
 				colours.post_config()
-				deco.unload()
+				tauon.deco.unload()
 
 			if prefs.transparent_mode:
 				colours.apply_transparency()
