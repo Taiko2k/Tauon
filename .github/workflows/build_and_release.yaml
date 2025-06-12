@@ -75,6 +75,9 @@ jobs:
 
       - name: Build the project using python-build
         run: |
+          rm -rf build/
+          rm -rf dist/
+          rm -rf *.egg-info *.dist-info
           source .venv/bin/activate
           python -m compile_translations
           python -m build --wheel
