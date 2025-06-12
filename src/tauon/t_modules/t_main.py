@@ -1391,6 +1391,7 @@ class ColoursClass:
 		self.vis_bg.r = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.r)
 		self.vis_bg.g = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.g)
 		self.vis_bg.b = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.b)
+		self.vis_bg.a = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.a)
 
 		self.message_box_bg = self.box_background
 		self.sys_tab_bg = self.tab_background
@@ -34030,7 +34031,7 @@ class MetaBox:
 
 	def lyrics(self, x: int, y: int, w: int, h: int, track: TrackClass) -> None:
 		bg = self.colours.side_panel_background
-		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.rect((x, y, w, h), bg)
 		self.ddt.text_background_colour = bg
 
@@ -34091,7 +34092,7 @@ class MetaBox:
 	def draw(self, x: int, y: int, w: int, h: int, track=None) -> None:
 
 		bg = self.colours.side_panel_background
-		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.text_background_colour = bg
 		self.ddt.clear_rect((x, y, w, h))
 		self.ddt.rect((x, y, w, h), bg)
