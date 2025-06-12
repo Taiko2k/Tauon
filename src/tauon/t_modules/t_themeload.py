@@ -132,7 +132,11 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 
 				if not colours.lm:
 					colours.corner_button = rgb_add_hls(colours.top_panel_background, 0, 0.18, 0)
-
+			if "status text" in p:
+				status_text_temp = get_colour_from_line(p)
+				
+				colours.status_text_over = rgb_add_hls(status_text_temp, 0, 0.83, 0)
+				colours.status_text_normal = rgb_add_hls(status_text_temp, 0, 0.30, -0.15)
 			if "corner button off" in p:
 				colours.corner_button = get_colour_from_line(p)
 			if "corner button on" in p:
@@ -146,6 +150,8 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			if "side panel" in p:
 				colours.side_panel_background = get_colour_from_line(p)
 				colours.playlist_box_background = colours.side_panel_background
+			if "lyrics panel" in p:
+				colours.lyrics_panel_background = get_colour_from_line(p)
 			if "gallery background" in p:
 				colours.gallery_background = get_colour_from_line(p)
 			if "playlist panel" in p:  # bad name
