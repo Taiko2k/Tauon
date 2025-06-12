@@ -352,7 +352,7 @@ class Deco:
 		if not name:
 			return
 
-		decos = self.get_themes(deco=True)
+		decos = self.get_themes(deco=True, dirs=self.tauon.dirs)
 
 		if name not in decos:
 			logging.error("Missing deco file")
