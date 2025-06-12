@@ -2603,7 +2603,7 @@ class PlayerCtl:
 			if track_id in pool:
 				pool.remove(track_id)
 
-	def play_target_rr(self) -> None:
+	def play_target_rr(self, play=True) -> None:
 		self.tauon.thread_manager.ready_playback()
 		self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
 
@@ -2619,11 +2619,12 @@ class PlayerCtl:
 		self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
 		self.start_time_target = self.start_time
 		self.jump_time = random_start
-		self.playerCommand = "open"
-		if not self.prefs.use_jump_crossfade:
-			self.playerSubCommand = "now"
-		self.playerCommandReady = True
-		self.playing_state = 1
+		if play:
+			self.playerCommand = "open"
+			if not self.prefs.use_jump_crossfade:
+				self.playerSubCommand = "now"
+			self.playerCommandReady = True
+			self.playing_state = 1
 		self.radiobox.loaded_station = None
 
 		if self.tauon.stream_proxy.download_running:
@@ -2634,7 +2635,7 @@ class PlayerCtl:
 
 		self.deduct_shuffle(self.target_object.index)
 
-	def play_target(self, gapless: bool = False, jump: bool = False) -> None:
+	def play_target(self, gapless: bool = False, jump: bool = False, play=True) -> None:
 		self.tauon.thread_manager.ready_playback()
 
 		#logging.info(self.track_queue)
@@ -2660,13 +2661,13 @@ class PlayerCtl:
 				self.decode_time = 0
 				self.jump_time = t
 
-		self.playerCommand = "open"
-		if jump:  # and not prefs.use_jump_crossfade:
-			self.playerSubCommand = "now"
+		if play:
+			self.playerCommand = "open"
+			if jump:  # and not prefs.use_jump_crossfade:
+				self.playerSubCommand = "now"
+			self.playerCommandReady = True
+			self.playing_state = 1
 
-		self.playerCommandReady = True
-
-		self.playing_state = 1
 		self.update_change()
 		self.deduct_shuffle(target.index)
 
@@ -2728,6 +2729,13 @@ class PlayerCtl:
 		self.gui.pl_update = 1
 
 	def back(self) -> None:
+
+		play = True
+		if self.playing_state == 2 and not self.prefs.resume_on_jump:
+			play = False
+			self.playerCommand = "stop"
+			self.playerCommandReady = True
+
 		if self.playing_state < 3 and self.prefs.back_restarts and self.playing_time > 6:
 			self.seek_time(0)
 			self.render_playlist()
@@ -2763,11 +2771,11 @@ class PlayerCtl:
 			self.playlist_playing_position -= 1
 			self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 			self.queue_step = len(self.track_queue) - 1
-			self.play_target(jump=True)
+			self.play_target(jump=True, play=play)
 
 		elif self.random_mode is True and self.queue_step > 0:
 			self.queue_step -= 1
-			self.play_target(jump=True)
+			self.play_target(jump=True, play=play)
 		else:
 			logging.info("BACK: NO CASE!")
 			self.show_current()
@@ -2810,6 +2818,7 @@ class PlayerCtl:
 		if len(self.track_queue) > 0:
 			self.left_time = self.playing_time
 			self.left_index = self.track_queue[self.queue_step]
+
 		previous_state = self.playing_state
 		self.playing_time = 0
 		self.decode_time = 0
@@ -3246,6 +3255,12 @@ class PlayerCtl:
 		self, rr: bool = False, quiet: bool = False, inplace: bool = False, end: bool = False,
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
+
+		if self.playing_state == 2 and not self.prefs.resume_on_jump:
+			play = False
+			self.playerCommand = "stop"
+			self.playerCommandReady = True
+
 		# Spotify remote control mode
 		if not dry and self.tauon.spot_ctl.coasting:
 			self.tauon.spot_ctl.control("next")
@@ -3315,8 +3330,8 @@ class PlayerCtl:
 					self.track_queue.append(target_index)
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
-					if play:
-						self.play_target(jump=not end)
+					#if play:
+					self.play_target(jump=not end, play=play)
 
 					#  Set the flag that we have entered the album
 					self.force_queue[0].album_stage = 1
@@ -3388,8 +3403,8 @@ class PlayerCtl:
 					self.track_queue.append(pl[self.playlist_playing_position])
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
-					if play:
-						self.play_target(jump=not end)
+					#if play:
+					self.play_target(jump=not end, play=play)
 
 				if not ok_continue:
 					# It seems this item has expired, remove it and call advance again
@@ -3431,8 +3446,8 @@ class PlayerCtl:
 				self.track_queue.append(target_index)
 				self.queue_step = len(self.track_queue) - 1
 				# self.queue_target = len(self.track_queue) - 1
-				if play:
-					self.play_target(jump=not end)
+				#if play:
+				self.play_target(jump=not end, play=play)
 				del self.force_queue[0]
 				if q.auto_stop:
 					self.stop_mode = 1
@@ -3462,8 +3477,8 @@ class PlayerCtl:
 
 			self.track_queue.append(self.default_playlist[self.selected_in_playlist])
 			self.queue_step = len(self.track_queue) - 1
-			if play:
-				self.play_target(jump=not end)
+			#if play:
+			self.play_target(jump=not end, play=play)
 
 		# If random, jump to random track
 		elif (self.random_mode or rr) and len(self.playing_playlist()) > 0 and not (
@@ -3576,9 +3591,9 @@ class PlayerCtl:
 			if rr:
 				if dry:
 					return None
-				self.play_target_rr()
-			elif play:
-				self.play_target(jump=not end)
+				self.play_target_rr(play=play)
+			else:
+				self.play_target(jump=not end, play=play)
 
 
 		# If not random mode, Step down 1 on the playlist
@@ -3667,8 +3682,8 @@ class PlayerCtl:
 				#	 self.play_target_gapless(jump= not end)
 				# else:
 				self.queue_step = len(self.track_queue) - 1
-				if play:
-					self.play_target(jump=not end)
+				#if play:
+				self.play_target(jump=not end, play=play)
 
 		elif self.random_mode and (self.album_shuffle_mode or self.prefs.album_shuffle_lock_mode):
 			# Album shuffle mode
@@ -3696,8 +3711,8 @@ class PlayerCtl:
 					self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
-					if play:
-						self.play_target(jump=not end)
+					#if play:
+					self.play_target(jump=not end, play=play)
 				else:
 					if dry:
 						return None
@@ -3719,15 +3734,15 @@ class PlayerCtl:
 							self.track_queue.append(self.playing_playlist()[a])
 							self.queue_step = len(self.track_queue) - 1
 							# self.queue_target = len(self.track_queue) - 1
-							if play:
-								self.play_target(jump=not end)
+							#if play:
+							self.play_target(jump=not end, play=play)
 							break
 						a = 0
 						self.playlist_playing_position = a
 						self.track_queue.append(self.playing_playlist()[a])
 						self.queue_step = len(self.track_queue) - 1
-						if play:
-							self.play_target(jump=not end)
+						#if play:
+						self.play_target(jump=not end, play=play)
 						# logging.info("THERE IS ONLY ONE ALBUM IN THE PLAYLIST")
 						# self.stop()
 		else:
@@ -36474,6 +36489,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("spotify-prefer-web", prefs.launch_spotify_web)
 	cf.update_value("spotify-allow-local", prefs.launch_spotify_local)
 	cf.update_value("back-restarts", prefs.back_restarts)
+	cf.update_value("resume-on-advance", prefs.resume_on_jump)
 	cf.update_value("end-queue-stop", prefs.stop_end_queue)
 	cf.update_value("block-suspend", prefs.block_suspend)
 	cf.update_value("allow-video-formats", prefs.allow_video_formats)
@@ -36705,6 +36721,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.back_restarts = cf.sync_add(
 		"bool", "back-restarts", prefs.back_restarts,
 		"Pressing the back button restarts playing track on first press.")
+	prefs.resume_on_jump = cf.sync_add(
+		"bool", "resume-on-advance", prefs.resume_on_jump,
+		"When paused, pressing back or next button starts playback.")
 	prefs.stop_end_queue = cf.sync_add(
 		"bool", "end-queue-stop", prefs.stop_end_queue,
 		"Queue will always enable auto-stop on last track")
