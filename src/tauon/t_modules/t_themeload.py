@@ -84,6 +84,9 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
+		status_text_color_defined = 0
+		lyrics_panel_color_defined = 0
+		# allows program to fallback on old colors if new options not provided
 		for p in content:
 			p = p.strip()
 			if p.startswith("#"):
@@ -117,9 +120,6 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			if "top panel" in p or "player background" in p:
 				colours.top_panel_background = get_colour_from_line(p)
 
-				colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
-				colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
-
 				if test_lumi(colours.bottom_panel_colour) < 0.2:
 					colours.corner_icon = ColourRGBA(0, 0, 0, 60)
 				elif test_lumi(colours.bottom_panel_colour) < 0.8:
@@ -137,6 +137,8 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				
 				colours.status_text_over = rgb_add_hls(status_text_temp, 0, 0.83, 0)
 				colours.status_text_normal = rgb_add_hls(status_text_temp, 0, 0.30, -0.15)
+				status_text_color_defined = 1
+				
 			if "corner button off" in p:
 				colours.corner_button = get_colour_from_line(p)
 			if "corner button on" in p:
@@ -152,6 +154,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.playlist_box_background = colours.side_panel_background
 			if "lyrics panel" in p:
 				colours.lyrics_panel_background = get_colour_from_line(p)
+				lyrics_panel_color_defined = 1
 			if "gallery background" in p:
 				colours.gallery_background = get_colour_from_line(p)
 			if "playlist panel" in p:  # bad name
@@ -324,7 +327,11 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			#	 colours.corner_button = get_colour_from_line(p)
 			# if "panel button on" in p:
 			#	 colours.corner_button_active = get_colour_from_line(p)
-
+		if status_text_color_defined == 0:
+				colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
+				colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
+		if lyrics_panel_color_defined == 0:
+			colours.lyrics_panel_background = colours.side_panel_background
 		colours.post_config()
 		if colours.lm:
 			colours.light_mode()
