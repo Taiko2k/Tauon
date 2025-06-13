@@ -19422,12 +19422,9 @@ class TimedLyricsRen:
 				#	colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
-					if self.colours.active_lyric:
-						colour = self.colours.active_lyric
-					else:
-						colour = ColourRGBA(255, 210, 50, 255)
-						if self.colours.lm:
-							colour = ColourRGBA(180, 130, 210, 255)
+					colour = ColourRGBA(255, 210, 50, 255)
+					if self.colours.lm:
+						colour = ColourRGBA(180, 130, 210, 255)
 
 				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
