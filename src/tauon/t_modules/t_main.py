@@ -5748,7 +5748,7 @@ class Tauon:
 		self.radio_thumb_gen                      = RadioThumbGen(tauon=self)
 		self.dl_mon                               = DLMon(tauon=self)
 		self.drop_shadow                          = DropShadow(tauon=self)
-		self.lyrics_ren_mini                      = (tauon=self)
+		self.lyrics_ren_mini                      = LyricsRenMini(tauon=self)
 		self.lyrics_ren                           = LyricsRen(tauon=self)
 		self.synced_to_static_lyrics              = TimedLyricsToStatic()
 		self.mini_mode                            = MiniMode(tauon=self)
@@ -19213,7 +19213,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.lyrics_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self._panel_background)
 
 class LyricsRen:
 
@@ -19245,8 +19245,8 @@ class LyricsRen:
 
 	def render(self, x, y, w, h, p) -> None:
 		logging.info("lyricsren render")
-		#colour = self.colours.lyrics
-		colour = self.colours.grey(40)
+		colour = self.colours.lyrics
+		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
@@ -19418,8 +19418,8 @@ class TimedLyricsRen:
 
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
-				#colour = self.colours.lyrics
-				colour = self.colours.grey(70)
+				colour = self.colours.lyrics
+				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
 				#	colour = self.colours.grey(40)
 
