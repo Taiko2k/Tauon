@@ -19187,19 +19187,19 @@ class LyricsRenMini:
 		logging.info("lyricsrenmini generate")
 		#self.text = self.pctl.master_library[index].lyrics
 		logging.info(f"lyrics currently are: \n{self.pctl.master_library[index].lyrics}")
-		# remove ugly LRC formatting
-		for line in self.pctl.master_library[index].lyrics:
-			if len(line) < 10 or line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+		# get rid of LRC formatting if you can
+		for line in self.pctl.master_library[index].lyrics.split("\n"):
+			# if the line is not LRC formatted:
+			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
 				self.text += line + "\n"
 			else:
 				self.text += line[10:] + "\n"
-		# TODO (Flynn): fix the conditional for this section to run
 		logging.info(f"self.text after running update is:\n{self.text}")
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
 		logging.info("lyricsrenmini render")
-		if index != self.index or self.text != self.pctl.master_library[index].lyrics:
+		if index != self.index: # or self.text != self.pctl.master_library[index].lyrics:
 			self.index = index
 			self.generate(index, w)
 
@@ -19230,11 +19230,11 @@ class LyricsRen:
 			# old line: self.text = track_object.lyrics
 			# get rid of LRC formatting if you can:
 			logging.info(f"lyrics currently are: \n{track_object.lyrics}")
-			for line in track_object.lyrics:
-				if len(line) < 10 or line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
-					self.text += line
+			for line in track_object.lyrics.split("\n"):
+				if len(line) < 10 or ( line[0] != "[" and line[9] != "]" or ":" not in line ) or "." not in line:
+					self.text += line + "\n"
 				else:
-					self.text += line[10:]
+					self.text += line[10:] + "\n"
 			# TODO (Flynn): fix the conditional for this section to run
 			logging.info(f"self.text after running update is:\n{self.text}")
 			self.lyrics_position = 0
@@ -35236,7 +35236,7 @@ class Showcase:
 
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 100 * self.gui.scale
-
+			# TODO (Flynn): work out the logic for full size static lyrics generating
 			timed_ready = False
 			if True and self.prefs.show_lyrics_showcase:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
