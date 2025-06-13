@@ -9,6 +9,7 @@ jobs:
     name: "Linux"
     runs-on: ubuntu-24.04
     steps:
+
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
@@ -19,6 +20,13 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Clean up stale build artifacts
+        run: |
+          find .
+          echo "deleting stuff now. let me know if it works"
+          rm -rf build/ dist/ *.egg-info *.dist-info
+          find .
+          
       - name: Install deps
         run: |
           sudo apt-get update
