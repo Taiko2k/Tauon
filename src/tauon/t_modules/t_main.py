@@ -12782,7 +12782,6 @@ class Tauon:
 		self.toggle_album_mode(force_on=True)
 
 	def enter_combo(self) -> None:
-		logging.info("entering combo mode now")
 		if not self.gui.combo_mode:
 			self.gui.combo_was_album = self.prefs.album_mode
 			self.gui.showcase_mode = False
@@ -12807,7 +12806,6 @@ class Tauon:
 			self.gui.was_radio = False
 
 	def enter_showcase_view(self, track_id: int | None = None) -> None:
-		logging.info("entering showcase view now")
 		if not self.gui.combo_mode:
 			self.enter_combo()
 			self.gui.was_radio = False
@@ -19204,7 +19202,6 @@ class LyricsRenMini:
 
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
-		#colour = self.colours.side_bar_line1
 
 		# if inp.key_ctrl_down:
 		#	 if inp.mouse_wheel < 0:
@@ -19225,9 +19222,6 @@ class LyricsRen:
 		self.lyrics_position = 0
 
 	def test_update(self, track_object: TrackClass) -> None:
-		#logging.info(f"lyricsren test_update: track object index is {track_object.index} and self index is {self.index}")
-
-		
 		if track_object.index != self.index: # or self.text != track_object.lyrics:
 			self.text = ""
 			self.index = track_object.index
@@ -19360,7 +19354,6 @@ class TimedLyricsRen:
 		return True
 
 	def render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
-		logging.info("timedlyricsren render")
 		if index != self.index:
 			self.ready = False
 			self.generate(self.pctl.master_library[index])
@@ -19422,11 +19415,10 @@ class TimedLyricsRen:
 				#	colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
-					#colour = ColourRGBA(255, 210, 50, 255)
 					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
-				
+
 				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
 			else:
@@ -34063,9 +34055,7 @@ class MetaBox:
 			self.gui.showed_title = True
 
 	def lyrics(self, x: int, y: int, w: int, h: int, track: TrackClass) -> None:
-		#bg = self.colours.side_panel_background
 		bg = self.colours.lyrics_panel_background
-		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.rect((x, y, w, h), bg)
 		self.ddt.text_background_colour = bg
 
@@ -34118,7 +34108,6 @@ class MetaBox:
 			w - 50 * self.gui.scale,
 			None, 0)
 
-		#self.ddt.rect((x, y + h - 1, w, 1), self.colours.side_panel_background)
 		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
@@ -34126,7 +34115,6 @@ class MetaBox:
 
 	def draw(self, x: int, y: int, w: int, h: int, track=None) -> None:
 		bg = self.colours.side_panel_background
-		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.text_background_colour = bg
 		self.ddt.clear_rect((x, y, w, h))
 		self.ddt.rect((x, y, w, h), bg)
@@ -35188,7 +35176,7 @@ class Showcase:
 
 			if self.prefs.bg_showcase_only and self.prefs.art_bg:
 				self.ddt.alpha_bg = True
-				#self.ddt.force_gray = True
+				self.ddt.force_gray = True
 
 			if self.gui.force_showcase_index >= 0:
 				if self.pctl.draw.button(
