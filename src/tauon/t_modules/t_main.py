@@ -19207,6 +19207,7 @@ class LyricsRenMini:
 
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
+		bg.a = 255
 
 		#colour = self.colours.side_bar_line1
 
@@ -19251,6 +19252,10 @@ class LyricsRen:
 		logging.info("lyricsren render")
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
+		bg.a = 255
+		# i think bg is the color the text is antialiased against
+		# and if opacity is less than 255 it freaks out. maybe.
+		
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
@@ -19424,6 +19429,10 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
+				bg.a = 255 #i think this means the color the text is
+				# antialiased against, where if it's transparent
+				# the ddt.text fails entirely????????????????
+				
 				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
 				#	colour = self.colours.grey(40)
