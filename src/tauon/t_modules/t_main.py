@@ -19205,6 +19205,9 @@ class LyricsRenMini:
 			self.index = index
 			self.generate(index, w)
 
+		colour = self.colours.lyrics
+		bg = self.colours.lyrics_panel_background
+
 		#colour = self.colours.side_bar_line1
 
 		# if inp.key_ctrl_down:
@@ -19213,7 +19216,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, self.colours.lyrics, self.prefs.lyrics_font_size, w - (w % 2), self.colours.lyrics_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg)
 
 class LyricsRen:
 
@@ -19246,12 +19249,13 @@ class LyricsRen:
 
 	def render(self, x, y, w, h, p) -> None:
 		logging.info("lyricsren render")
-		#colour = self.colours.lyrics
+		colour = self.colours.lyrics
+		bg = self.colours.lyrics_panel_background
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, self.colours.lyrics, 17, w, self.colours.lyrics_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
 
 class TimedLyricsToStatic:
 
@@ -19394,7 +19398,7 @@ class TimedLyricsRen:
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 		else:
-			bg = self.colours.playlist_panel_background
+			bg = self.colours.lyrics_panel_background
 			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
