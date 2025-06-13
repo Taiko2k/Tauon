@@ -19191,7 +19191,6 @@ class LyricsRenMini:
 		
 		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
-			# if the line is not LRC formatted:
 			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
 				self.text += line + "\n"
 			else:
@@ -19243,15 +19242,8 @@ class LyricsRen:
 			self.lyrics_position = 0
 
 	def render(self, x, y, w, h, p) -> None:
-		logging.info("lyricsren render")
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
-		temp_bg = ColourRGBA(0,255,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
-		# i think bg is the color the text is antialiased against
-		# and if opacity is less than 255 it freaks out. maybe.
-
-		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
-		logging.info(f"on antialias RGBA: {temp_bg.r},{temp_bg.g},{temp_bg.b},{temp_bg.a}")
 		
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
@@ -19266,7 +19258,6 @@ class TimedLyricsToStatic:
 		self.cache_lyrics = ""
 
 	def get(self, track: TrackClass) -> str:
-		logging.info("timedlyricstostatic get is running")
 		if track.lyrics:
 			data = track.lyrics
 		elif track.is_network:
@@ -19399,8 +19390,7 @@ class TimedLyricsRen:
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 		else:
-			#bg = self.colours.playlist_panel_background
-			bg = self.colours.grey(255)
+			bg = self.colours.playlist_panel_background
 			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
@@ -19426,9 +19416,6 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				temp_bg = ColourRGBA(bg.r, bg.g, bg.b, 255) #this means the color the text is
-				# antialiased against, where if it's transparent
-				# the ddt.text freak out i think?
 				
 				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
@@ -19439,8 +19426,6 @@ class TimedLyricsRen:
 					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
-					logging.info(f"rendering line at RGBA  {colour.r},{colour.g},{colour.b},{colour.a}")
-				logging.info(f"on opaque white AA background we hope")
 				
 				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
