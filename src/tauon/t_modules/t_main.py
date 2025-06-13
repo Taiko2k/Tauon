@@ -1265,7 +1265,7 @@ class ColoursClass:
 		self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
 
 		self.side_panel_background = self.grey(18)
-		self.lyrics_panel_background = self.grey(18)
+		self.lyrics_panel_background = self.grey(25)
 		self.gallery_background = self.side_panel_background
 		self.playlist_panel_background = self.grey(21)
 		self.bottom_panel_colour = self.grey(15)
@@ -1312,8 +1312,8 @@ class ColoursClass:
 
 		self.status_info_text = ColourRGBA(245, 205, 0, 255)
 		self.streaming_text = ColourRGBA(220, 75, 60, 255)
-		#self.lyrics = self.grey(245)
-		#self.active_lyric = ColourRGBA(255, 210, 50, 255)
+		self.lyrics = self.grey(245)
+		self.active_lyric = ColourRGBA(255, 210, 50, 255)
 
 		self.corner_button        = ColourRGBA(255, 255, 255, 50)  # [60, 60, 60, 255]
 		self.corner_button_active = ColourRGBA(255, 255, 255, 230)  # [230, 230, 230, 255]
@@ -19425,7 +19425,8 @@ class TimedLyricsRen:
 				#	colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
-					colour = ColourRGBA(255, 210, 50, 255)
+					#colour = ColourRGBA(255, 210, 50, 255)
+					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
@@ -46163,11 +46164,7 @@ def main(holder: Holder) -> None:
 					for i, value in enumerate(gui.spec2_buffers[0]):
 						ddt.rect(
 							[gui.spec2_position, i, 1, 1],
-							ColourRGBA(
-								min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
-								min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
-								min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
-								255))
+							colours.vis_bg)
 
 					del gui.spec2_buffers[0]
 
