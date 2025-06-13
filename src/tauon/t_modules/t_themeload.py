@@ -81,14 +81,14 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 
 
 def load_theme(colours: ColoursClass, path: Path) -> None:
-
+	status_text_color_defined = 0
+	lyrics_panel_color_defined = 0
+	lyrics_text_color_defined = 0
+	active_lyric_color_defined = 0
+	# allows program to fallback on old colors if new options not provided
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
-		status_text_color_defined = 0
-		lyrics_panel_color_defined = 0
-		lyrics_text_color_defined = 0
-		active_lyric_color_defined = 0
-		# allows program to fallback on old colors if new options not provided
+		
 		for p in content:
 			p = p.strip()
 			if p.startswith("#"):
@@ -140,6 +140,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.status_text_over = status_text_temp #rgb_add_hls(status_text_temp, 0, 0.83, 0)
 				colours.status_text_normal = rgb_add_hls(status_text_temp, 0, 0.30, -0.15)
 				status_text_color_defined = 1
+				logging.info("status text color loaded from theme")
 				
 			if "corner button off" in p:
 				colours.corner_button = get_colour_from_line(p)
@@ -156,6 +157,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.playlist_box_background = colours.side_panel_background
 			if "lyrics panel" in p:
 				colours.lyrics_panel_background = get_colour_from_line(p)
+				logging.info("lyrics panel color loaded from theme")
 				lyrics_panel_color_defined = 1
 			if "gallery background" in p:
 				colours.gallery_background = get_colour_from_line(p)
@@ -247,12 +249,16 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.menu_highlight_background = get_colour_from_line(p)
 			if "menu border" in p:
 				colours.menu_tab = get_colour_from_line(p)
+				
 			if "lyrics showcase" in p or "lyrics text" in p:
 				colours.lyrics = get_colour_from_line(p)
 				lyrics_text_color_defined = 1
+				logging.info("lyrics text color loaded from theme")
 			if "active lyric" in p:
 				colours.active_lyric = get_colour_from_line(p)
 				active_lyric_color_defined = 1
+				logging.info("active lyric color loaded from theme")
+				
 			if "bottom panel" in p:
 				colours.bottom_panel_colour = get_colour_from_line(p)
 				# colours.menu_background = colours.bottom_panel_colour
@@ -334,14 +340,18 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			# if "panel button on" in p:
 			#	 colours.corner_button_active = get_colour_from_line(p)
 	if status_text_color_defined == 0:
-			colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
-			colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
+		colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
+		colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
+		logging.info("falling back on default status color")
 	if lyrics_panel_color_defined == 0:
 		colours.lyrics_panel_background = colours.side_panel_background
+		logging.info("falling back on default lyrics panel color")
 	if lyrics_text_color_defined == 0:
 		colours.lyrics = colours.grey(245)
+		logging.info("falling back on default lyrics text color")
 	if active_lyric_color_defined == 0:
 		colours.active_lyric = ColourRGBA(255,210,50,255)
+		logging.info("falling back on default active lyric color")
 	colours.post_config()
 	if colours.lm:
 		colours.light_mode()
