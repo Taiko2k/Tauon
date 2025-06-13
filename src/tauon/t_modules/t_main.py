@@ -35189,7 +35189,7 @@ class Showcase:
 
 			if self.prefs.bg_showcase_only and self.prefs.art_bg:
 				self.ddt.alpha_bg = True
-				self.ddt.force_gray = True
+				#self.ddt.force_gray = True
 
 			if self.gui.force_showcase_index >= 0:
 				if self.pctl.draw.button(
