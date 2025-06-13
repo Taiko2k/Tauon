@@ -333,18 +333,18 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			#	 colours.corner_button = get_colour_from_line(p)
 			# if "panel button on" in p:
 			#	 colours.corner_button_active = get_colour_from_line(p)
-		if status_text_color_defined == 0:
-				colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
-				colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
-		if lyrics_panel_color_defined == 0:
-			colours.lyrics_panel_background = colours.side_panel_background
-		if lyrics_text_color_defined == 0:
-			colours.lyrics = colours.grey(245)
-		if active_lyric_color_defined == 0:
-			colours.active_lyric = ColourRGBA(255,210,50,255)
-		colours.post_config()
-		if colours.lm:
-			colours.light_mode()
+	if status_text_color_defined == 0:
+			colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
+			colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
+	if lyrics_panel_color_defined == 0:
+		colours.lyrics_panel_background = colours.side_panel_background
+	if lyrics_text_color_defined == 0:
+		colours.lyrics = colours.grey(245)
+	if active_lyric_color_defined == 0:
+		colours.active_lyric = ColourRGBA(255,210,50,255)
+	colours.post_config()
+	if colours.lm:
+		colours.light_mode()
 
 
 class Drawable:
