@@ -46150,12 +46150,11 @@ def main(holder: Holder) -> None:
 					for i, value in enumerate(gui.spec2_buffers[0]):
 						ddt.rect(
 							[gui.spec2_position, i, 1, 1],
-							'''ColourRGBA(
+							ColourRGBA(
 								min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
 								min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
 								min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
-								colours.top_panel_background.a))'''
-							colours.vis_bg )
+								255))
 
 					del gui.spec2_buffers[0]
 
@@ -46311,7 +46310,7 @@ def main(holder: Holder) -> None:
 				y = 0
 
 				gui.spec_level_rec.x = round(x - 70 * gui.scale)
-				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.vis_bg ) #colours.grey(10))
+				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10))
 
 				x = round(gui.level_ww - 9 * gui.scale)
 				y = 10 * gui.scale
