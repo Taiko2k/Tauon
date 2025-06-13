@@ -1313,6 +1313,7 @@ class ColoursClass:
 		self.status_info_text = ColourRGBA(245, 205, 0, 255)
 		self.streaming_text = ColourRGBA(220, 75, 60, 255)
 		self.lyrics = self.grey(245)
+		self.active_lyric = ColourRGBA(255, 210, 50, 255)
 
 		self.corner_button        = ColourRGBA(255, 255, 255, 50)  # [60, 60, 60, 255]
 		self.corner_button_active = ColourRGBA(255, 255, 255, 230)  # [230, 230, 230, 255]
@@ -5747,7 +5748,7 @@ class Tauon:
 		self.radio_thumb_gen                      = RadioThumbGen(tauon=self)
 		self.dl_mon                               = DLMon(tauon=self)
 		self.drop_shadow                          = DropShadow(tauon=self)
-		self.lyrics_ren_mini                      = LyricsRenMini(tauon=self)
+		self.lyrics_ren_mini                      = (tauon=self)
 		self.lyrics_ren                           = LyricsRen(tauon=self)
 		self.synced_to_static_lyrics              = TimedLyricsToStatic()
 		self.mini_mode                            = MiniMode(tauon=self)
@@ -19184,6 +19185,7 @@ class LyricsRenMini:
 		self.lyrics_position = 0
 
 	def generate(self, index, w) -> None:
+		self.text = ""
 		logging.info("lyricsrenmini generate")
 		#self.text = self.pctl.master_library[index].lyrics
 		logging.info(f"lyrics currently are: \n{self.pctl.master_library[index].lyrics}")
@@ -19225,6 +19227,8 @@ class LyricsRen:
 
 	def test_update(self, track_object: TrackClass) -> None:
 		logging.info(f"lyricsren test_update: track object index is {track_object.index} and self index is {self.index}")
+
+		self.text = ""
 		if track_object.index != self.index: # or self.text != track_object.lyrics:
 			self.index = track_object.index
 			# old line: self.text = track_object.lyrics
@@ -19242,8 +19246,8 @@ class LyricsRen:
 	def render(self, x, y, w, h, p) -> None:
 		logging.info("lyricsren render")
 		colour = self.colours.lyrics
-		if test_lumi(self.colours.lyrics_panel_background) < 0.5:
-			colour = self.colours.grey(40)
+		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
+		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
 		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.lyrics_panel_background)
 
@@ -19414,13 +19418,16 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				if test_lumi(self.colours.gallery_background) < 0.5:
-					colour = self.colours.grey(40)
+				#if test_lumi(self.colours.gallery_background) < 0.5:
+				#	colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
-					colour = ColourRGBA(255, 210, 50, 255)
-					if self.colours.lm:
-						colour = ColourRGBA(180, 130, 210, 255)
+					if self.colours.active_lyric:
+						colour = self.colours.active_lyric
+					else:
+						colour = ColourRGBA(255, 210, 50, 255)
+						if self.colours.lm:
+							colour = ColourRGBA(180, 130, 210, 255)
 
 				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
