@@ -19188,10 +19188,8 @@ class LyricsRenMini:
 
 	def generate(self, index, w) -> None:
 		self.text = ""
-		logging.info("lyricsrenmini generate")
-		#self.text = self.pctl.master_library[index].lyrics
 		
-		# get rid of LRC formatting if you can
+		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
 			# if the line is not LRC formatted:
 			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
@@ -19201,17 +19199,12 @@ class LyricsRenMini:
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
-		logging.info("lyricsrenmini render")
 		if index != self.index: # or self.text != self.pctl.master_library[index].lyrics:
 			self.index = index
 			self.generate(index, w)
 
 		colour = self.colours.lyrics
-		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
 		bg = self.colours.lyrics_panel_background
-		
-		#temp_bg = ColourRGBA(255,0,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
-		logging.info(f"antialias color will be RGBA: {bg.r},{bg.g},{bg.b},{bg.a}")
 		#colour = self.colours.side_bar_line1
 
 		# if inp.key_ctrl_down:
@@ -19258,13 +19251,13 @@ class LyricsRen:
 		# and if opacity is less than 255 it freaks out. maybe.
 
 		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
-		logging.info(f"on background RGBA: {bg.r},{bg.g},{bg.b},{bg.a}")
+		logging.info(f"on antialias RGBA: {temp_bg.r},{temp_bg.g},{temp_bg.b},{temp_bg.a}")
 		
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, temp_bg)
 
 class TimedLyricsToStatic:
 
@@ -19324,7 +19317,6 @@ class TimedLyricsRen:
 		self.scroll_position: int = 0
 
 	def generate(self, track: TrackClass) -> bool | None:
-		logging.info("timedlyricsren generate")
 		if self.index == track.index:
 			return self.ready
 
@@ -19407,7 +19399,8 @@ class TimedLyricsRen:
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 		else:
-			bg = self.colours.lyrics_panel_background
+			#bg = self.colours.playlist_panel_background
+			bg = self.colours.grey(255)
 			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
@@ -19446,9 +19439,10 @@ class TimedLyricsRen:
 					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
-				logging.info(f"rendering line at RGBA  {colour.r},{colour.g},{colour.b},{colour.a}")
-				logging.info(f"on opaque AA background {temp_bg.r},{temp_bg.g},{temp_bg.b},{temp_bg.a}\n")
-				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, temp_bg)
+					logging.info(f"rendering line at RGBA  {colour.r},{colour.g},{colour.b},{colour.a}")
+				logging.info(f"on opaque white AA background we hope")
+				
+				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
 			else:
 				yy += spacing
@@ -34085,7 +34079,6 @@ class MetaBox:
 
 	def lyrics(self, x: int, y: int, w: int, h: int, track: TrackClass) -> None:
 		#bg = self.colours.side_panel_background
-		logging.info("metabox lyrics")
 		bg = self.colours.lyrics_panel_background
 		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.rect((x, y, w, h), bg)
@@ -34147,7 +34140,6 @@ class MetaBox:
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
 	def draw(self, x: int, y: int, w: int, h: int, track=None) -> None:
-		logging.info("metabox draw with side panel bg")
 		bg = self.colours.side_panel_background
 		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.text_background_colour = bg
@@ -46219,7 +46211,9 @@ def main(holder: Holder) -> None:
 					sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
 				if pref_box.enabled:
-					ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), ColourRGBA(0, 0, 0, 90))
+					#ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), ColourRGBA(0, 0, 0, 90))
+					logging.info("spectrogram box")
+					ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), colours.vis_bg)
 
 			if gui.vis == 4 and gui.draw_vis4_top:
 				showcase.render_vis(True)
