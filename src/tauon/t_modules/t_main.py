@@ -19207,7 +19207,7 @@ class LyricsRenMini:
 
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
-		bg.a = 255
+		temp_bg = ColourRGBA(255,0,255,120) #ColourRGBA(bg.r, bg.g, bg.b, 255)
 
 		#colour = self.colours.side_bar_line1
 
@@ -19230,7 +19230,7 @@ class LyricsRen:
 		self.lyrics_position = 0
 
 	def test_update(self, track_object: TrackClass) -> None:
-		logging.info(f"lyricsren test_update: track object index is {track_object.index} and self index is {self.index}")
+		#logging.info(f"lyricsren test_update: track object index is {track_object.index} and self index is {self.index}")
 
 		
 		if track_object.index != self.index: # or self.text != track_object.lyrics:
@@ -19252,7 +19252,7 @@ class LyricsRen:
 		logging.info("lyricsren render")
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
-		bg.a = 255
+		temp_bg = ColourRGBA(0,255,255,120) #ColourRGBA(bg.r, bg.g, bg.b, 255)
 		# i think bg is the color the text is antialiased against
 		# and if opacity is less than 255 it freaks out. maybe.
 		
@@ -19260,7 +19260,7 @@ class LyricsRen:
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, temp_bg)
 
 class TimedLyricsToStatic:
 
@@ -19429,9 +19429,9 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				bg.a = 255 #i think this means the color the text is
+				temp_bg = ColourRGBA(bg.r, bg.g, bg.b, 255) #this means the color the text is
 				# antialiased against, where if it's transparent
-				# the ddt.text fails entirely????????????????
+				# the ddt.text freak out i think?
 				
 				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
@@ -19443,7 +19443,7 @@ class TimedLyricsRen:
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
-				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
+				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, temp_bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
 			else:
 				yy += spacing
@@ -34079,7 +34079,9 @@ class MetaBox:
 			self.gui.showed_title = True
 
 	def lyrics(self, x: int, y: int, w: int, h: int, track: TrackClass) -> None:
-		bg = self.colours.side_panel_background
+		#bg = self.colours.side_panel_background
+		logging.info("metabox lyrics")
+		bg = self.colours.lyrics_panel_background
 		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.rect((x, y, w, h), bg)
 		self.ddt.text_background_colour = bg
@@ -34133,13 +34135,14 @@ class MetaBox:
 			w - 50 * self.gui.scale,
 			None, 0)
 
-		self.ddt.rect((x, y + h - 1, w, 1), self.colours.side_panel_background)
+		#self.ddt.rect((x, y + h - 1, w, 1), self.colours.side_panel_background)
+		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
 	def draw(self, x: int, y: int, w: int, h: int, track=None) -> None:
-
+		logging.info("metabox draw with side panel bg")
 		bg = self.colours.side_panel_background
 		#bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.text_background_colour = bg
