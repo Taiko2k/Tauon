@@ -19190,7 +19190,7 @@ class LyricsRenMini:
 		self.text = ""
 		logging.info("lyricsrenmini generate")
 		#self.text = self.pctl.master_library[index].lyrics
-		logging.info(f"lyrics currently are: \n{self.pctl.master_library[index].lyrics}")
+		
 		# get rid of LRC formatting if you can
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
 			# if the line is not LRC formatted:
@@ -19198,7 +19198,6 @@ class LyricsRenMini:
 				self.text += line + "\n"
 			else:
 				self.text += line[10:] + "\n"
-		logging.info(f"self.text after running update is:\n{self.text}")
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
@@ -19207,12 +19206,12 @@ class LyricsRenMini:
 			self.index = index
 			self.generate(index, w)
 
-		colour = self.colours.status_text_over #self.colours.lyrics
+		colour = self.colours.lyrics
 		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
-		#bg = self.colours.lyrics_panel_background
+		bg = self.colours.lyrics_panel_background
 		
-		temp_bg = ColourRGBA(255,0,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
-		logging.info(f"antialias color will be RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
+		#temp_bg = ColourRGBA(255,0,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
+		logging.info(f"antialias color will be RGBA: {bg.r},{bg.g},{bg.b},{bg.a}")
 		#colour = self.colours.side_bar_line1
 
 		# if inp.key_ctrl_down:
@@ -19221,7 +19220,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), temp_bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg)
 
 class LyricsRen:
 
@@ -19242,14 +19241,12 @@ class LyricsRen:
 			self.index = track_object.index
 			# old line: self.text = track_object.lyrics
 			# get rid of LRC formatting if you can:
-			logging.info(f"lyrics currently are: \n{track_object.lyrics}")
 			for line in track_object.lyrics.split("\n"):
 				if len(line) < 10 or ( line[0] != "[" and line[9] != "]" or ":" not in line ) or "." not in line:
 					self.text += line + "\n"
 				else:
 					self.text += line[10:] + "\n"
-			# TODO (Flynn): fix the conditional for this section to run
-			logging.info(f"self.text after running update is:\n{self.text}")
+			# TODO (Flynn): fix the conditional for this section to run?
 			self.lyrics_position = 0
 
 	def render(self, x, y, w, h, p) -> None:
@@ -19449,7 +19446,8 @@ class TimedLyricsRen:
 					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
-
+				logging.info(f"rendering line at RGBA  {colour.r},{colour.g},{colour.b},{colour.a}")
+				logging.info(f"on opaque AA background {temp_bg.r},{temp_bg.g},{temp_bg.b},{temp_bg.a}\n")
 				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, temp_bg)
 				yy += max(h - round(6 * self.gui.scale), spacing)
 			else:
