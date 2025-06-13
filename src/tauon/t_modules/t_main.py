@@ -19243,7 +19243,7 @@ class LyricsRen:
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, temp_bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
 
 class TimedLyricsToStatic:
 
