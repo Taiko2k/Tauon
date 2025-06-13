@@ -19252,19 +19252,19 @@ class LyricsRen:
 	def render(self, x, y, w, h, p) -> None:
 		logging.info("lyricsren render")
 		colour = self.colours.lyrics
-		bg = self.colours.lyrics_panel_background
+		bg = self.colours.playlist_panel_background
 		temp_bg = ColourRGBA(0,255,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
 		# i think bg is the color the text is antialiased against
 		# and if opacity is less than 255 it freaks out. maybe.
 
 		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
-		logging.info(f"on background RGBA: {temp_bg.r},{temp_bg.g},{temp_bg.b},{temp_bg.a}")
+		logging.info(f"on background RGBA: {bg.r},{bg.g},{bg.b},{bg.a}")
 		
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, temp_bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
 
 class TimedLyricsToStatic:
 
