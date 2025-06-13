@@ -19213,7 +19213,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self._panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.lyrics_panel_background)
 
 class LyricsRen:
 
