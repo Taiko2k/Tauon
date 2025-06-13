@@ -245,8 +245,10 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.menu_highlight_background = get_colour_from_line(p)
 			if "menu border" in p:
 				colours.menu_tab = get_colour_from_line(p)
-			if "lyrics showcase" in p:
+			if "lyrics showcase" in p or "lyrics text" in p:
 				colours.lyrics = get_colour_from_line(p)
+			if "active lyric" in p:
+				colours.active_lyric = get_colour_from_line(p)
 			if "bottom panel" in p:
 				colours.bottom_panel_colour = get_colour_from_line(p)
 				# colours.menu_background = colours.bottom_panel_colour
