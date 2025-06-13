@@ -86,6 +86,8 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 		content = f.readlines()
 		status_text_color_defined = 0
 		lyrics_panel_color_defined = 0
+		lyrics_text_color_defined = 0
+		active_lyric_color_defined = 0
 		# allows program to fallback on old colors if new options not provided
 		for p in content:
 			p = p.strip()
@@ -247,8 +249,10 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.menu_tab = get_colour_from_line(p)
 			if "lyrics showcase" in p or "lyrics text" in p:
 				colours.lyrics = get_colour_from_line(p)
+				lyrics_text_color_defined = 1
 			if "active lyric" in p:
 				colours.active_lyric = get_colour_from_line(p)
+				active_lyric_color_defined = 1
 			if "bottom panel" in p:
 				colours.bottom_panel_colour = get_colour_from_line(p)
 				# colours.menu_background = colours.bottom_panel_colour
@@ -334,6 +338,10 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
 		if lyrics_panel_color_defined == 0:
 			colours.lyrics_panel_background = colours.side_panel_background
+		if lyrics_text_color_defined == 0:
+			colours.lyrics = colours.grey(245)
+		if active_lyric_color_defined == 0:
+			colours.active_lyric = ColourRGBA(255,210,50,255)
 		colours.post_config()
 		if colours.lm:
 			colours.light_mode()
