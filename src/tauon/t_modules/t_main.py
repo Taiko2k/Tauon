@@ -12782,6 +12782,7 @@ class Tauon:
 		self.toggle_album_mode(force_on=True)
 
 	def enter_combo(self) -> None:
+		logging.info("entering combo mode now")
 		if not self.gui.combo_mode:
 			self.gui.combo_was_album = self.prefs.album_mode
 			self.gui.showcase_mode = False
@@ -12806,6 +12807,7 @@ class Tauon:
 			self.gui.was_radio = False
 
 	def enter_showcase_view(self, track_id: int | None = None) -> None:
+		logging.info("entering showcase view now")
 		if not self.gui.combo_mode:
 			self.enter_combo()
 			self.gui.was_radio = False
@@ -19205,10 +19207,12 @@ class LyricsRenMini:
 			self.index = index
 			self.generate(index, w)
 
-		colour = self.colours.lyrics
-		bg = self.colours.lyrics_panel_background
-		temp_bg = ColourRGBA(255,0,255,120) #ColourRGBA(bg.r, bg.g, bg.b, 255)
-
+		colour = self.colours.status_text_over #self.colours.lyrics
+		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
+		#bg = self.colours.lyrics_panel_background
+		
+		temp_bg = ColourRGBA(255,0,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
+		logging.info(f"antialias color will be RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
 		#colour = self.colours.side_bar_line1
 
 		# if inp.key_ctrl_down:
@@ -19217,7 +19221,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), temp_bg)
 
 class LyricsRen:
 
@@ -19252,9 +19256,12 @@ class LyricsRen:
 		logging.info("lyricsren render")
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
-		temp_bg = ColourRGBA(0,255,255,120) #ColourRGBA(bg.r, bg.g, bg.b, 255)
+		temp_bg = ColourRGBA(0,255,255,255) #ColourRGBA(bg.r, bg.g, bg.b, 255)
 		# i think bg is the color the text is antialiased against
 		# and if opacity is less than 255 it freaks out. maybe.
+
+		logging.info(f"will attempt to render text at RGBA: {colour.r},{colour.g},{colour.b},{colour.a}")
+		logging.info(f"on background RGBA: {temp_bg.r},{temp_bg.g},{temp_bg.b},{temp_bg.a}")
 		
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
