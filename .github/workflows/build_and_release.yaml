@@ -144,7 +144,7 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos, build-macos-x64]
+    needs: [get-info, build-linux]
     runs-on: ubuntu-24.04
     steps:
       - name: Download all artifacts
