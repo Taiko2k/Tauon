@@ -117,6 +117,19 @@ jobs:
         with:
           name: TauonMusicBox-linux
           path: TauonMusicBox.7z
+          
+      - name: Upload build/
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: build/
+      
+      - name: Upload src/
+        uses: actions/upload-artifact@v4
+        with:
+          name: src
+          path: src/
+
 
       #- name: Run Tauon for testing
       #  run: |
