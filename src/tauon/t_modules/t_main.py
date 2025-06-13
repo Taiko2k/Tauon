@@ -19205,7 +19205,7 @@ class LyricsRenMini:
 			self.index = index
 			self.generate(index, w)
 
-		colour = self.colours.side_bar_line1
+		#colour = self.colours.side_bar_line1
 
 		# if inp.key_ctrl_down:
 		#	 if inp.mouse_wheel < 0:
@@ -19213,7 +19213,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.lyrics_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, self.colours.lyrics, self.prefs.lyrics_font_size, w - (w % 2), self.colours.lyrics_panel_background)
 
 class LyricsRen:
 
@@ -19228,8 +19228,9 @@ class LyricsRen:
 	def test_update(self, track_object: TrackClass) -> None:
 		logging.info(f"lyricsren test_update: track object index is {track_object.index} and self index is {self.index}")
 
-		self.text = ""
+		
 		if track_object.index != self.index: # or self.text != track_object.lyrics:
+			self.text = ""
 			self.index = track_object.index
 			# old line: self.text = track_object.lyrics
 			# get rid of LRC formatting if you can:
@@ -19245,12 +19246,12 @@ class LyricsRen:
 
 	def render(self, x, y, w, h, p) -> None:
 		logging.info("lyricsren render")
-		colour = self.colours.lyrics
+		#colour = self.colours.lyrics
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.lyrics_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, self.colours.lyrics, 17, w, self.colours.lyrics_panel_background)
 
 class TimedLyricsToStatic:
 
