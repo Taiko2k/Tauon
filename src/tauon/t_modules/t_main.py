@@ -19185,7 +19185,16 @@ class LyricsRenMini:
 
 	def generate(self, index, w) -> None:
 		logging.info("lyricsrenmini generate")
-		self.text = self.pctl.master_library[index].lyrics
+		#self.text = self.pctl.master_library[index].lyrics
+		logging.info(f"lyrics currently are: \n{self.pctl.master_library[index].lyrics}")
+		# remove ugly LRC formatting
+		for line in self.pctl.master_library[index].lyrics:
+			if len(line) < 10 or line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+				self.text += line + "\n"
+			else:
+				self.text += line[10:] + "\n"
+		# TODO (Flynn): fix the conditional for this section to run
+		logging.info(f"self.text after running update is:\n{self.text}")
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
@@ -19222,10 +19231,7 @@ class LyricsRen:
 			# get rid of LRC formatting if you can:
 			logging.info(f"lyrics currently are: \n{track_object.lyrics}")
 			for line in track_object.lyrics:
-				if len(line) < 10:
-					self.text += line
-	
-				if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+				if len(line) < 10 or line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
 					self.text += line
 				else:
 					self.text += line[10:]
