@@ -19245,7 +19245,8 @@ class LyricsRen:
 
 	def render(self, x, y, w, h, p) -> None:
 		logging.info("lyricsren render")
-		colour = self.colours.lyrics
+		#colour = self.colours.lyrics
+		colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
@@ -19417,7 +19418,8 @@ class TimedLyricsRen:
 
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
-				colour = self.colours.lyrics
+				#colour = self.colours.lyrics
+				colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
 				#	colour = self.colours.grey(40)
 
