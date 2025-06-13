@@ -1312,8 +1312,8 @@ class ColoursClass:
 
 		self.status_info_text = ColourRGBA(245, 205, 0, 255)
 		self.streaming_text = ColourRGBA(220, 75, 60, 255)
-		self.lyrics = self.grey(245)
-		self.active_lyric = ColourRGBA(255, 210, 50, 255)
+		#self.lyrics = self.grey(245)
+		#self.active_lyric = ColourRGBA(255, 210, 50, 255)
 
 		self.corner_button        = ColourRGBA(255, 255, 255, 50)  # [60, 60, 60, 255]
 		self.corner_button_active = ColourRGBA(255, 255, 255, 230)  # [230, 230, 230, 255]
