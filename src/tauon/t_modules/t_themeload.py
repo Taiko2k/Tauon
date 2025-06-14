@@ -81,9 +81,6 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 
 
 def load_theme(colours: ColoursClass, path: Path) -> None:
-	status_text_color_defined = 0
-	lyrics_panel_color_defined = 0
-	# allows program to fallback on old colors if new options not provided
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
 		
@@ -134,10 +131,8 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 					colours.corner_button = rgb_add_hls(colours.top_panel_background, 0, 0.18, 0)
 			if "status text" in p:
 				status_text_temp = get_colour_from_line(p)
-				
-				colours.status_text_over = status_text_temp #rgb_add_hls(status_text_temp, 0, 0.83, 0)
+				colours.status_text_over = status_text_temp
 				colours.status_text_normal = rgb_add_hls(status_text_temp, 0, 0.30, -0.15)
-				status_text_color_defined = 1
 				
 			if "corner button off" in p:
 				colours.corner_button = get_colour_from_line(p)
@@ -247,14 +242,10 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.menu_highlight_background = get_colour_from_line(p)
 			if "menu border" in p:
 				colours.menu_tab = get_colour_from_line(p)
-				
 			if "lyrics showcase" in p or "lyrics text" in p:
 				colours.lyrics = get_colour_from_line(p)
-				lyrics_text_color_defined = 1
 			if "active lyric" in p:
 				colours.active_lyric = get_colour_from_line(p)
-				active_lyric_color_defined = 1
-				
 			if "bottom panel" in p:
 				colours.bottom_panel_colour = get_colour_from_line(p)
 				# colours.menu_background = colours.bottom_panel_colour
@@ -335,11 +326,6 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			#	 colours.corner_button = get_colour_from_line(p)
 			# if "panel button on" in p:
 			#	 colours.corner_button_active = get_colour_from_line(p)
-	if status_text_color_defined == 0:
-		colours.status_text_over = rgb_add_hls(colours.top_panel_background, 0, 0.83, 0)
-		colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
-	if lyrics_panel_color_defined == 0:
-		colours.lyrics_panel_background = colours.side_panel_background
 	colours.post_config()
 	if colours.lm:
 		colours.light_mode()
