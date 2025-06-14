@@ -29732,7 +29732,7 @@ class StandardPlaylist:
 					was = False
 					run = 0
 					duration = get_display_time(total_time)
-					colour = colours.folder_title
+					colour = copy.deepcopy(colours.folder_title)
 					colour.a = max(colour.a - 50, 0)
 
 					if prefs.append_total_time and duration:
