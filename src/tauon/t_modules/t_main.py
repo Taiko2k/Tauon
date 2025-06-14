@@ -29732,7 +29732,10 @@ class StandardPlaylist:
 					was = False
 					run = 0
 					duration = get_display_time(total_time)
-					colour = colours.folder_title
+					colour = ColourRGBA(colours.folder_title.r,
+							    colours.folder_title.g,
+							    colours.folder_title.b,
+							    colours.folder_title.a)
 					colour.a = max(colour.a - 50, 0)
 
 					if prefs.append_total_time and duration:
