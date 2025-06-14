@@ -83,8 +83,6 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 def load_theme(colours: ColoursClass, path: Path) -> None:
 	status_text_color_defined = 0
 	lyrics_panel_color_defined = 0
-	lyrics_text_color_defined = 0
-	active_lyric_color_defined = 0
 	# allows program to fallback on old colors if new options not provided
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
@@ -147,8 +145,10 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.corner_button_active = get_colour_from_line(p)
 			if "menu button normal" in p:
 				colours.status_text_normal = get_colour_from_line(p)
+				status_text_color_defined = 1
 			if "menu button hover" in p:
 				colours.status_text_over = get_colour_from_line(p)
+				status_text_color_defined = 1
 			if "queue panel" in p:
 				colours.queue_background = get_colour_from_line(p)
 			if "side panel" in p:
@@ -340,10 +340,6 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 		colours.status_text_normal = rgb_add_hls(colours.top_panel_background, 0, 0.30, -0.15)
 	if lyrics_panel_color_defined == 0:
 		colours.lyrics_panel_background = colours.side_panel_background
-	if lyrics_text_color_defined == 0:
-		colours.lyrics = colours.grey(245)
-	if active_lyric_color_defined == 0:
-		colours.active_lyric = ColourRGBA(255,210,50,255)
 	colours.post_config()
 	if colours.lm:
 		colours.light_mode()
