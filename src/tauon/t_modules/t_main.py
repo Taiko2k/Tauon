@@ -19252,12 +19252,12 @@ class TimedLyricsToStatic:
 		self.cache_lyrics = ""
 
 	def get(self, track: TrackClass) -> str:
+		if track.is_network:
+			return ""
+		if track == self.cache_key:
+			return self.cache_lyrics
 		if track.lyrics:
 			data = track.lyrics
-		elif track.is_network:
-			return ""
-		elif track == self.cache_key:
-			return self.cache_lyrics
 		else:
 			data = find_synced_lyric_data(track)
 
