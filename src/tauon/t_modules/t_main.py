@@ -25899,8 +25899,10 @@ class Over:
 		y += round(25 * gui.scale)
 
 		if self.toggle_square(x, y, prefs.row_title_format == 2, _("Left align title style")):
+			logging.info("row title format 2")
 			prefs.row_title_format = 2
 		else:
+			logging.info("row title format 1")
 			prefs.row_title_format = 1
 
 		y += round(25 * gui.scale)
