@@ -1261,11 +1261,13 @@ class ColoursClass:
 		self.bar_time = self.grey(70)
 
 		self.top_panel_background = self.grey(15)
-		self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
-		self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
+		self.status_text_over: ColourRGBA | None = None
+		self.status_text_normal: ColourRGBA | None = None
+		
+
 
 		self.side_panel_background = self.grey(18)
-		self.lyrics_panel_background = self.grey(25)
+		self.lyrics_panel_background: ColourRGBA | None = None
 		self.gallery_background = self.side_panel_background
 		self.playlist_panel_background = self.grey(21)
 		self.bottom_panel_colour = self.grey(15)
@@ -1388,6 +1390,13 @@ class ColoursClass:
 	def post_config(self) -> None:
 		if self.box_thumb_background is None:
 			self.box_thumb_background = alpha_mod(self.box_button_background, 175)
+
+		if self.lyrics_panel_background is None:
+			self.lyrics_panel_background = self.side_panel_background
+		if self.status_text_over is None:
+			self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
+		if self.status_text_normal is None:
+			self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
 
 		# Pre calculate alpha blend for spec background
 		self.vis_bg.r = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.r)
