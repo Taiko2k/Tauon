@@ -1261,10 +1261,13 @@ class ColoursClass:
 		self.bar_time = self.grey(70)
 
 		self.top_panel_background = self.grey(15)
-		self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
-		self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
+		self.status_text_over: ColourRGBA | None = None
+		self.status_text_normal: ColourRGBA | None = None
+		
+
 
 		self.side_panel_background = self.grey(18)
+		self.lyrics_panel_background: ColourRGBA | None = None
 		self.gallery_background = self.side_panel_background
 		self.playlist_panel_background = self.grey(21)
 		self.bottom_panel_colour = self.grey(15)
@@ -1312,6 +1315,7 @@ class ColoursClass:
 		self.status_info_text = ColourRGBA(245, 205, 0, 255)
 		self.streaming_text = ColourRGBA(220, 75, 60, 255)
 		self.lyrics = self.grey(245)
+		self.active_lyric = ColourRGBA(255, 210, 50, 255)
 
 		self.corner_button        = ColourRGBA(255, 255, 255, 50)  # [60, 60, 60, 255]
 		self.corner_button_active = ColourRGBA(255, 255, 255, 230)  # [230, 230, 230, 255]
@@ -1387,10 +1391,18 @@ class ColoursClass:
 		if self.box_thumb_background is None:
 			self.box_thumb_background = alpha_mod(self.box_button_background, 175)
 
+		if self.lyrics_panel_background is None:
+			self.lyrics_panel_background = self.side_panel_background
+		if self.status_text_over is None:
+			self.status_text_over = rgb_add_hls(self.top_panel_background, 0, 0.83, 0)
+		if self.status_text_normal is None:
+			self.status_text_normal = rgb_add_hls(self.top_panel_background, 0, 0.30, -0.15)
+
 		# Pre calculate alpha blend for spec background
 		self.vis_bg.r = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.r)
 		self.vis_bg.g = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.g)
 		self.vis_bg.b = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.b)
+		self.vis_bg.a = int(0.05 * 255 + (1 - 0.05) * self.top_panel_background.a)
 
 		self.message_box_bg = self.box_background
 		self.sys_tab_bg = self.tab_background
@@ -19182,15 +19194,23 @@ class LyricsRenMini:
 		self.lyrics_position = 0
 
 	def generate(self, index, w) -> None:
-		self.text = self.pctl.master_library[index].lyrics
+		self.text = ""
+		
+		# LRC formatting search & destroy
+		for line in self.pctl.master_library[index].lyrics.split("\n"):
+			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
+				self.text += line + "\n"
+			else:
+				self.text += line[10:] + "\n"
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
-		if index != self.index or self.text != self.pctl.master_library[index].lyrics:
+		if index != self.index: # or self.text != self.pctl.master_library[index].lyrics:
 			self.index = index
 			self.generate(index, w)
 
-		colour = self.colours.side_bar_line1
+		colour = self.colours.lyrics
+		bg = self.colours.lyrics_panel_background
 
 		# if inp.key_ctrl_down:
 		#	 if inp.mouse_wheel < 0:
@@ -19198,7 +19218,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), self.colours.side_panel_background)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg)
 
 class LyricsRen:
 
@@ -19211,17 +19231,28 @@ class LyricsRen:
 		self.lyrics_position = 0
 
 	def test_update(self, track_object: TrackClass) -> None:
-		if track_object.index != self.index or self.text != track_object.lyrics:
+		if track_object.index != self.index: # or self.text != track_object.lyrics:
+			self.text = ""
 			self.index = track_object.index
-			self.text = track_object.lyrics
+			# old line: self.text = track_object.lyrics
+			# get rid of LRC formatting if you can:
+			for line in track_object.lyrics.split("\n"):
+				if len(line) < 10 or ( line[0] != "[" and line[9] != "]" or ":" not in line ) or "." not in line:
+					self.text += line + "\n"
+				else:
+					self.text += line[10:] + "\n"
+			# TODO (Flynn): fix the conditional for this section to run?
 			self.lyrics_position = 0
 
 	def render(self, x, y, w, h, p) -> None:
 		colour = self.colours.lyrics
-		if test_lumi(self.colours.gallery_background) < 0.5:
-			colour = self.colours.grey(40)
-
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, self.colours.playlist_panel_background)
+		bg = self.colours.playlist_panel_background
+		
+		#colour = self.colours.grey(40)
+		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
+		#	colour = self.colours.grey(40)
+		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
 
 class TimedLyricsToStatic:
 
@@ -19230,13 +19261,14 @@ class TimedLyricsToStatic:
 		self.cache_lyrics = ""
 
 	def get(self, track: TrackClass) -> str:
-		if track.lyrics:
-			return track.lyrics
 		if track.is_network:
 			return ""
 		if track == self.cache_key:
 			return self.cache_lyrics
-		data = find_synced_lyric_data(track)
+		if track.lyrics:
+			data = track.lyrics
+		else:
+			data = find_synced_lyric_data(track)
 
 		if data is None:
 			self.cache_lyrics = ""
@@ -19354,8 +19386,7 @@ class TimedLyricsRen:
 		highlight = True
 
 		if side_panel:
-			bg = self.colours.side_panel_background
-			bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+			bg = self.colours.lyrics_panel_background
 			font_size = 15
 			spacing = round(17 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
@@ -19365,7 +19396,6 @@ class TimedLyricsRen:
 			font_size = 17
 			spacing = round(23 * self.gui.scale)
 
-		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		test_time = self.tauon.get_real_time()
 
 		if self.pctl.track_queue[self.pctl.queue_step] == index:
@@ -19388,11 +19418,13 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				if test_lumi(self.colours.gallery_background) < 0.5:
-					colour = self.colours.grey(40)
+				
+				#colour = self.colours.grey(70)
+				#if test_lumi(self.colours.gallery_background) < 0.5:
+				#	colour = self.colours.grey(40)
 
 				if i == line_active and highlight:
-					colour = ColourRGBA(255, 210, 50, 255)
+					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
@@ -21039,6 +21071,7 @@ class AlbumArt:
 				#logging.info(x_colours)
 				colours.playlist_panel_bg = colours.side_panel_background
 				colours.playlist_box_background = colours.side_panel_background
+				colours.lyrics_panel_background = colours.side_panel_background
 
 				colours.playlist_panel_background = x_colours[0]
 				if len(x_colours) > 1:
@@ -34034,8 +34067,7 @@ class MetaBox:
 			self.gui.showed_title = True
 
 	def lyrics(self, x: int, y: int, w: int, h: int, track: TrackClass) -> None:
-		bg = self.colours.side_panel_background
-		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+		bg = self.colours.lyrics_panel_background
 		self.ddt.rect((x, y, w, h), bg)
 		self.ddt.text_background_colour = bg
 
@@ -34088,15 +34120,13 @@ class MetaBox:
 			w - 50 * self.gui.scale,
 			None, 0)
 
-		self.ddt.rect((x, y + h - 1, w, 1), self.colours.side_panel_background)
+		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
 	def draw(self, x: int, y: int, w: int, h: int, track=None) -> None:
-
 		bg = self.colours.side_panel_background
-		bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 		self.ddt.text_background_colour = bg
 		self.ddt.clear_rect((x, y, w, h))
 		self.ddt.rect((x, y, w, h), bg)
@@ -35212,7 +35242,7 @@ class Showcase:
 
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 100 * self.gui.scale
-
+			# TODO (Flynn): work out the logic for full size static lyrics generating
 			timed_ready = False
 			if True and self.prefs.show_lyrics_showcase:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
@@ -46132,11 +46162,7 @@ def main(holder: Holder) -> None:
 					for i, value in enumerate(gui.spec2_buffers[0]):
 						ddt.rect(
 							[gui.spec2_position, i, 1, 1],
-							ColourRGBA(
-								min(255, prefs.spec2_base[0] + int(value * prefs.spec2_multiply[0])),
-								min(255, prefs.spec2_base[1] + int(value * prefs.spec2_multiply[1])),
-								min(255, prefs.spec2_base[2] + int(value * prefs.spec2_multiply[2])),
-								255))
+							colours.vis_bg)
 
 					del gui.spec2_buffers[0]
 
@@ -46170,7 +46196,9 @@ def main(holder: Holder) -> None:
 					sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
 				if pref_box.enabled:
-					ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), ColourRGBA(0, 0, 0, 90))
+					#ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), ColourRGBA(0, 0, 0, 90))
+					logging.info("spectrogram box")
+					ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), colours.vis_bg)
 
 			if gui.vis == 4 and gui.draw_vis4_top:
 				showcase.render_vis(True)
