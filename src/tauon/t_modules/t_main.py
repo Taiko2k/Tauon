@@ -3940,7 +3940,7 @@ class LastFMapi:
 			self.network.enable_rate_limit()
 			user = pylast.User(self.prefs.last_fm_username, self.network)
 			# username = user.get_name()
-			perf_timer.set()
+			self.tauon.perf_timer.set()
 			tracks = user.get_recent_tracks(None)
 
 			counts: dict[tuple[str, str], int] = {}
@@ -5702,6 +5702,7 @@ class Tauon:
 		self.lastfm                               = self.pctl.lastfm
 		self.lfm_scrobbler                        = self.pctl.lfm_scrobbler
 		self.artist_list_box                      = self.pctl.artist_list_box
+		self.guitar_chords                        = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
 		self.search_over                          = SearchOverlay(tauon=self)
 		self.stats_gen                            = GStats(tauon=self)
 		self.deco                                 = Deco(tauon=self)
@@ -35052,6 +35053,7 @@ class Showcase:
 		self.renderer      = tauon.renderer
 		self.lyrics_ren    = tauon.lyrics_ren
 		self.window_size   = tauon.window_size
+		self.guitar_chords = tauon.guitar_chords
 		self.showcase_menu = tauon.showcase_menu
 		self.lastfm_artist = None
 		self.artist_mode = False
@@ -35126,12 +35128,12 @@ class Showcase:
 			self.ddt.force_gray = True
 
 		# if not self.prefs.shuffle_lock:
-		#     if draw.button(_("Return"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 40 * self.gui.scale,
-		#                    text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
-		#                    background_highlight_colour=bfg):
-		#         self.gui.switch_showcase_off = True
-		#         self.gui.update += 1
-		#         self.gui.update_layout = True
+		# 	if draw.button(_("Return"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 40 * self.gui.scale,
+		# 			text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+		# 			background_highlight_colour=bfg):
+		# 		self.gui.switch_showcase_off = True
+		# 		self.gui.update += 1
+		# 		self.gui.update_layout = True
 
 		# self.ddt.force_gray = True
 
@@ -35215,25 +35217,24 @@ class Showcase:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
 
 			if timed_ready and track.lyrics:
-				# if not self.prefs.guitar_chords or guitar_chords.test_ready_status(track) != 1:
-				#
-				#     line = _("Prefer synced")
-				#     if self.prefs.prefer_synced_lyrics:
-				#         line = _("Prefer static")
-				#     if self.pctl.draw.button(line, 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
-				#                    text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-				#                    background_highlight_colour=bfg):
-				#         self.prefs.prefer_synced_lyrics ^= True
+				# if not self.prefs.guitar_chords or self.guitar_chords.test_ready_status(track) != 1:
+				# 	line = _("Prefer synced")
+				# 	if self.prefs.prefer_synced_lyrics:
+				# 		line = _("Prefer static")
+				# 	if self.pctl.draw.button(line, 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
+				# 			text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+				# 			background_highlight_colour=bfg):
+				# 		self.prefs.prefer_synced_lyrics ^= True
 
 				timed_ready = self.prefs.prefer_synced_lyrics
 
-			if self.prefs.guitar_chords and track.title and self.prefs.show_lyrics_showcase and guitar_chords.render(track, gcx, y):
-				if not guitar_chords.auto_scroll:
+			if self.prefs.guitar_chords and track.title and self.prefs.show_lyrics_showcase and self.guitar_chords.render(track, gcx, y):
+				if not self.guitar_chords.auto_scroll:
 					if self.pctl.draw.button(
 						_("Auto-Scroll"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
 						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
 						background_highlight_colour=bfg):
-						guitar_chords.auto_scroll = True
+						self.guitar_chords.auto_scroll = True
 			elif True and self.prefs.show_lyrics_showcase and timed_ready:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
@@ -40675,10 +40676,9 @@ def main(holder: Holder) -> None:
 	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
-	guitar_chords = GuitarChords(tauon=tauon, mouse_wheel=inp.mouse_wheel, mouse_position=inp.mouse_position, window_size=window_size)
-	showcase_menu.add(MenuItem(_("Search GuitarParty"), guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 
 	showcase_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_sub(_("Misc…"), 150)
