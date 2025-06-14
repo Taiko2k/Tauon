@@ -1,3 +1,7 @@
+Please note that the Windows pre-release builds can be wrongly flagged by Defender at times, it is safe to whitelist them, see https://github.com/Taiko2k/Tauon/issues/1062 for more information.  
+
+It may not be possible to go to an older version after using a pre-release build due to migrations, backup your user data if this concerns you, to be able to go back.
+
 <div align=left>
 	<table>
 		<thead align=left>
