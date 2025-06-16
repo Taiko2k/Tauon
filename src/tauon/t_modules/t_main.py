@@ -4645,7 +4645,7 @@ class Chunker:
 
 class MenuIcon:
 
-	def __init__(self, asset) -> None:
+	def __init__(self, asset: WhiteModImageAsset | LoadImageAsset) -> None:
 		self.asset = asset
 		self.colour = ColourRGBA(170, 170, 170, 255)
 		self.base_asset = None
@@ -4674,8 +4674,8 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func=None, no_exit=False, pass_ref=False, hint=None, icon=None, show_test=None,
-		pass_ref_deco: bool = False, disable_test=None, set_ref=None, is_sub_menu: bool = False, args=None, sub_menu_number=None, sub_menu_width: int = 0,
+		self, title: str, func, render_func=None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number=None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
 		self.is_sub_menu = is_sub_menu
@@ -4761,7 +4761,7 @@ class Menu:
 		self.rescale()
 
 		self.reference: int = 0
-		self.items: list[MenuItem | None]= []
+		self.items: list[MenuItem | None] = []
 		self.subs: list[list[MenuItem]] = []
 		self.selected = -1
 		self.up = False
@@ -4806,10 +4806,10 @@ class Menu:
 			menu_item.render_func = self.deco
 		self.subs[sub_menu_index].append(menu_item)
 
-	def test_item_active(self, item) -> bool:
+	def test_item_active(self, item: MenuItem) -> bool:
 		return not (item.show_test is not None and item.show_test(1) is False)
 
-	def is_item_disabled(self, item):
+	def is_item_disabled(self, item: MenuItem) -> bool | None:
 		if item.disable_test is not None:
 			if item.pass_ref_deco:
 				return item.disable_test(self.reference)
@@ -26233,7 +26233,7 @@ class TopPanel:
 
 		# ---
 		self.space_left = 0
-		self.tab_text_spaces = []
+		self.tab_text_spaces: list[int] = []
 		self.index_playing = -1
 		self.drag_zone_start_x = 300 * self.gui.scale
 
@@ -26452,8 +26452,8 @@ class TopPanel:
 
 		# List all tabs eligible to be shown
 		#logging.info("-------------")
-		ready_tabs = []
-		show_tabs = []
+		ready_tabs: list[int] = []
+		show_tabs: list[int] = []
 
 		if prefs.tabs_on_top or gui.radio_view:
 			if gui.radio_view:
@@ -26469,8 +26469,8 @@ class TopPanel:
 				self.prime_tab = min(self.prime_tab, len(pctl.multi_playlist) - 1)
 			max_w = window_size[0] - (x + right_space_es + round(34 * gui.scale))
 
-			left_tabs = []
-			right_tabs = []
+			left_tabs: list[int] = []
+			right_tabs: list[int] = []
 			if prefs.shuffle_lock:
 				for p in ready_tabs:
 					left_tabs.append(p)
@@ -26614,7 +26614,6 @@ class TopPanel:
 		if gui.radio_view:
 			target = pctl.radio_playlists
 		for i, tab in enumerate(target):
-
 			if not gui.radio_view:
 				if not prefs.tabs_on_top or prefs.shuffle_lock:
 					break
@@ -26665,7 +26664,6 @@ class TopPanel:
 
 				# Drag to move playlist
 				if self.inp.mouse_up and tauon.playlist_box.drag and coll_point(self.inp.mouse_up_position, f_rect):
-
 					if gui.radio_view:
 						pctl.move_radio_playlist(tauon.playlist_box.drag_on, i)
 					else:
