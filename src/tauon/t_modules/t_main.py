@@ -38,10 +38,10 @@ import gettext
 import glob
 import hashlib
 import io
+import importlib
 import json
 import locale as py_locale
 import logging
-
 #import magic
 import math
 
@@ -242,6 +242,12 @@ except ModuleNotFoundError:
 	logging.warning("Unable to import natsort, playlists may not sort as intended!")
 except Exception:
 	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
+
+try:
+	# pyLast needs to be imported AFTER setup_tls() else pyinstaller breaks - we reimport it later
+	import pylast
+except Exception:
+	logging.exception("pyLast module not found, Last.fm support will be disabled.")
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -4038,7 +4044,7 @@ class LastFMapi:
 			remote_loved = track.get_userloved()
 
 			if track_object.title != track.get_correction() or track_object.artist != track.get_artist().get_correction():
-				logging.warning(f"Pylast/lastfm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
+				logging.warning(f"pyLast/Last.fm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
 				return
 
 			if remote_loved is None:
@@ -36307,7 +36313,7 @@ def get_cert_path(holder: Holder) -> str:
 def setup_tls(holder: Holder) -> ssl.SSLContext:
 	"""TLS setup (needed for frozen installs)
 
-	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast)
+	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast - see https://github.com/Taiko2k/Tauon/issues/1442)
 	"""
 	# Set the TLS certificate path environment variable
 	cert_path = get_cert_path(holder)
@@ -38975,13 +38981,10 @@ def main(holder: Holder) -> None:
 	logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
 
 	tls_context = setup_tls(holder)
-	try:
-		# Pylast needs to be imported AFTER setup_tls() else pyinstaller breaks
-		import pylast
-		last_fm_enable = True
-	except Exception:
-		logging.exception("PyLast module not found, last fm will be disabled.")
-		last_fm_enable = False
+	last_fm_enable = is_module_loaded("pylast")
+	if last_fm_enable:
+		# pyLast needs to be reimported AFTER setup_tls(), else pyinstaller breaks
+		importlib.reload(pylast)
 
 	discord_allow = is_module_loaded("lynxpresence", "ActivityType")
 	ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
