@@ -111,6 +111,7 @@ light-mode
 25,25,25		title info
 35,35,35		extra info
 0,0,0,0 		art border
+80,80,80    lyrics text
 
 #-Mini Mode---------
 
