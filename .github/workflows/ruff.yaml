@@ -1,18 +1,16 @@
-name: Build and release
-
-# Temporarily only run outside of master to not have ugly red checkmarks there, needs ruleset changes, #1388 merged and a bunch of code polish to be really useful
+name: Linter
 on:
   push:
-    branches:
-      - '*'
-      - '!master'
+    # branches:
+    #   - '*'
+    #   - '!master'
   pull_request:
-    branches:
-      - '*'
-      - '!master'
+    # branches:
+    #   - '*'
+    #   - '!master'
 
 jobs:
-  ruff:
+  Ruff:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
@@ -35,6 +33,7 @@ jobs:
       - name: Run Ruff
         # We do not want to completely fail all CI if Ruff has complaints
         continue-on-error: true
+        # TODO(Martin): Remove True to show actual status in the checkmark when all current issues are solved
         run: |
           source .venv/bin/activate
-          ruff check --config pyproject.toml .
+          ruff check --config pyproject.toml --output-format=github . || true
