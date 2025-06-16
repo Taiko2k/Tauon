@@ -22145,18 +22145,19 @@ class SubLyricsBox:
 class ExportPlaylistBox:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon       = tauon
-		self.ddt         = tauon.ddt
-		self.gui         = tauon.gui
-		self.inp         = tauon.inp
-		self.coll        = tauon.coll
-		self.draw        = tauon.draw
-		self.pctl        = tauon.pctl
-		self.prefs       = tauon.prefs
-		self.fields      = tauon.fields
-		self.colours     = tauon.colours
-		self.pref_box    = tauon.pref_box
-		self.window_size = tauon.window_size
+		self.tauon        = tauon
+		self.ddt          = tauon.ddt
+		self.gui          = tauon.gui
+		self.inp          = tauon.inp
+		self.coll         = tauon.coll
+		self.draw         = tauon.draw
+		self.pctl         = tauon.pctl
+		self.prefs        = tauon.prefs
+		self.fields       = tauon.fields
+		self.colours      = tauon.colours
+		self.pref_box     = tauon.pref_box
+		self.window_size  = tauon.window_size
+		self.show_message = tauon.show_message
 		self.active = False
 		self.id = None
 		self.directory_text_box = TextBox2(tauon)
