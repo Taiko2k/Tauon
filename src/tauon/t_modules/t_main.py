@@ -244,6 +244,16 @@ except Exception:
 	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
 
 try:
+	from tauon.t_modules.t_chrome import Chrome
+except ModuleNotFoundError as e:
+	logging.debug(f"pychromecast import error: {e}")
+	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
+except Exception:
+	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
+finally:
+	logging.debug("Found Chrome(pychromecast) for chromecast support")
+
+try:
 	# pyLast needs to be imported AFTER setup_tls() else pyinstaller breaks - we reimport it later
 	import pylast
 except Exception:
@@ -387,7 +397,7 @@ class DConsole:
 	"""GUI console with logs"""
 
 	def __init__(self) -> None:
-		self.show:     bool      = False
+		self.show: bool = False
 
 	def toggle(self) -> None:
 		"""Toggle the GUI console with logs on and off"""
@@ -2595,16 +2605,16 @@ class PlayerCtl:
 	def deduct_shuffle(self, track_id: int) -> None:
 		if self.multi_playlist and self.random_mode:
 			pl = self.multi_playlist[self.active_playlist_playing]
-			id = pl.uuid_int
+			pl_id = pl.uuid_int
 
-			if id not in self.shuffle_pools:
+			if pl_id not in self.shuffle_pools:
 				self.update_shuffle_pool(pl.uuid_int)
 
-			pool = self.shuffle_pools[id]
+			pool = self.shuffle_pools[pl_id]
 			if not pool:
-				del self.shuffle_pools[id]
+				del self.shuffle_pools[pl_id]
 				self.update_shuffle_pool(pl.uuid_int)
-			pool = self.shuffle_pools[id]
+			pool = self.shuffle_pools[pl_id]
 
 			if track_id in pool:
 				pool.remove(track_id)
@@ -8209,10 +8219,10 @@ class Tauon:
 			if track.file_ext == "M4A":
 				m4a_bitrates[track.bitrate] = m4a_bitrates.get(track.bitrate, 0) + 1
 
-			type = track.file_ext
-			if type == "OGA":
-				type = "OGG"
-			seen_types[type] = seen_types.get(type, 0) + 1
+			file_type = track.file_ext
+			if file_type == "OGA":
+				file_type = "OGG"
+			seen_types[file_type] = seen_types.get(file_type, 0) + 1
 
 			if track.fullpath and not track.is_network and track.fullpath not in seen_files:
 				size = track.size
@@ -8238,15 +8248,15 @@ class Tauon:
 		line += _("Track types:") + "\n"
 		if tracks_in_playlist:
 			types = sorted(seen_types, key=seen_types.get, reverse=True)
-			for type in types:
-				perc = round((seen_types.get(type) / tracks_in_playlist) * 100, 1)
+			for track_type in types:
+				perc = round((seen_types.get(track_type) / tracks_in_playlist) * 100, 1)
 				if perc < 0.1:
 					perc = "<0.1"
-				if type == "SPOT":
-					type = "SPOTIFY"
-				if type == "SUB":
-					type = "AIRSONIC"
-				line += f"{type} ({perc}%); "
+				if track_type == "SPOT":
+					track_type = "SPOTIFY"
+				if track_type == "SUB":
+					track_type = "AIRSONIC"
+				line += f"{track_type} ({perc}%); "
 		line = line.rstrip("; ")
 		line += "\n\n"
 
@@ -10826,20 +10836,18 @@ class Tauon:
 		xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
 
 		for index, track in self.pctl.master_library.items():
-
 			xport.write("\n")
-
 			xport.write(csv_string(track.artist) + ",")
 			xport.write(csv_string(track.title) + ",")
 			xport.write(csv_string(track.album) + ",")
 			xport.write(csv_string(track.album_artist) + ",")
 			xport.write(csv_string(track.track_number) + ",")
-			type = "File"
+			track_type = "File"
 			if track.is_network:
-				type = "Network"
+				track_type = "Network"
 			elif track.is_cue:
-				type = "CUE File"
-			xport.write(type + ",")
+				track_type = "CUE File"
+			xport.write(track_type + ",")
 			xport.write(str(track.length) + ",")
 			xport.write(csv_string(track.date) + ",")
 			xport.write(csv_string(track.genre) + ",")
@@ -40352,26 +40360,9 @@ def main(holder: Holder) -> None:
 	if prefs.backend != 4:
 		prefs.backend = 4
 
-	chrome = None
-
-	try:
-		from tauon.t_modules.t_chrome import Chrome
-		chrome = Chrome(tauon)
-	except ModuleNotFoundError as e:
-		logging.debug(f"pychromecast import error: {e}")
-		logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
-	except Exception:
-		logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
-	finally:
-		logging.debug("Found Chrome(pychromecast) for chromecast support")
-
-	tauon.chrome = chrome
-
-	plex     = tauon.plex
-	jellyfin = tauon.jellyfin
-	subsonic = tauon.subsonic
-	koel     = tauon.koel
-	tau      = tauon.tau
+	chrome_loaded = is_module_loaded("tauon.t_modules.t_chrome", "Chrome")
+	if chrome_loaded:
+		tauon.chrome = Chrome(tauon)
 
 	tray = STray(tauon)
 
@@ -42087,7 +42078,7 @@ def main(holder: Holder) -> None:
 				elif event.type == sdl3.SDL_EVENT_WINDOW_MINIMIZED:
 					gui.lowered = True
 					# if prefs.min_to_tray:
-					#     tray.down()
+					# 	tray.down()
 					# tauon.thread_manager.sleep()
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESTORED:
