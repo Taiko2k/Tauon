@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-05-18 15:11+0200\n"
-"PO-Revision-Date: 2025-05-04 09:07+0000\n"
-"Last-Translator: legion 1978 <legion1978@gmail.com>\n"
+"PO-Revision-Date: 2025-06-18 13:01+0000\n"
+"Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
 "Language: es\n"
@@ -15,31 +15,29 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.12.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/guitar_chords.py:81
 #, fuzzy
 msgid "Insufficient metadata to search"
-msgstr "Metadatos insuficientes para buscar"
+msgstr "Metadatos insuficientes para la búsqueda"
 
 #: src/tauon/t_modules/guitar_chords.py:95
 msgid "Clipboard has no text"
 msgstr "El portapapeles no contiene ningún texto"
 
 #: src/tauon/t_modules/guitar_chords.py:189
-#, fuzzy
 msgid "Error finding matching track on GuitarParty"
 msgstr "Ninguna pista coincide en GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:205
-#, fuzzy
 msgid "Track not found on GuitarParty"
-msgstr "Lista de reproducción no encontrada en el objetivo"
+msgstr "Pista no encontrada en GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:220
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Error obteniendo canción de GuitarParty"
 
 #: src/tauon/t_modules/t_db_migrate.py:134
 msgid ""
@@ -309,9 +307,8 @@ msgid "How did this even happen."
 msgstr "Cómo es esto posible."
 
 #: src/tauon/t_modules/t_main.py:4224 src/tauon/t_modules/t_main.py:4277
-#, fuzzy
 msgid "ListenBrainz is enabled but there is no token."
-msgstr "ListenBrains está habilitado pero no hay token."
+msgstr "ListenBrainz está habilitado pero no hay token."
 
 #: src/tauon/t_modules/t_main.py:4267 src/tauon/t_modules/t_main.py:4329
 msgid "There was an error submitting data to ListenBrainz"
@@ -445,7 +442,7 @@ msgstr "{N} de {T} pistas no se pudieron localizar."
 
 #: src/tauon/t_modules/t_main.py:6831 src/tauon/t_modules/t_main.py:40597
 msgid "Shuffle Lockdown"
-msgstr "Fijar Aleatorio"
+msgstr "Fijar Modo Aleatorio"
 
 #: src/tauon/t_modules/t_main.py:6832 src/tauon/t_modules/t_main.py:41297
 msgid "Exit Shuffle Lockdown"
@@ -1394,9 +1391,8 @@ msgid "Unknown Track"
 msgstr "Pista desconocida"
 
 #: src/tauon/t_modules/t_main.py:11302
-#, fuzzy
 msgid "Unknown Artist"
-msgstr "Álbum desconocido"
+msgstr "Artista desconocido"
 
 #: src/tauon/t_modules/t_main.py:11352
 msgid "Error - Discord not running?"
@@ -2152,7 +2148,7 @@ msgstr "Usar carátula del álbum como fondo"
 
 #: src/tauon/t_modules/t_main.py:23175
 msgid "Transparent accent"
-msgstr ""
+msgstr "Acento transparente"
 
 #: src/tauon/t_modules/t_main.py:23181
 msgid "Prefer artist backgrounds"
@@ -2565,9 +2561,8 @@ msgid "Sorry, this feature is unavailable with snap"
 msgstr "Lo siento, esta característica no está disponible con Snap"
 
 #: src/tauon/t_modules/t_main.py:23880
-#, fuzzy
 msgid "Missing dependency python-lynxpresence"
-msgstr "Falta la dependencia: python-pypresence"
+msgstr "Falta la dependencia: python-lynxpresence"
 
 #: src/tauon/t_modules/t_main.py:23889 src/tauon/t_modules/t_main.py:31461
 msgid "Disabled"
@@ -3069,7 +3064,7 @@ msgstr "Siguiente"
 
 #: src/tauon/t_modules/t_main.py:25430
 msgid "Chart Grid Generator"
-msgstr "Generador de las cuadrículas para los gráficos"
+msgstr "Generar gráfico de cuadrículas"
 
 #: src/tauon/t_modules/t_main.py:25433
 msgid "Target playlist:   "
@@ -3137,9 +3132,8 @@ msgid "Generating..."
 msgstr "Generando..."
 
 #: src/tauon/t_modules/t_main.py:25538
-#, fuzzy
 msgid "{N} Album chart"
-msgstr "Gráfico de Álbumes"
+msgstr "Lista de álbumes {N}"
 
 #: src/tauon/t_modules/t_main.py:25544
 msgid "Not enough albums in the playlist!"
@@ -3147,7 +3141,7 @@ msgstr "¡Álbumes insuficientes en la playlist!"
 
 #: src/tauon/t_modules/t_main.py:25568 src/tauon/t_modules/t_main.py:25569
 msgid "Chart generator..."
-msgstr "Generador de los gráficos…"
+msgstr "Generar gráfico…"
 
 #: src/tauon/t_modules/t_main.py:25576 src/tauon/t_modules/t_main.py:25616
 msgid "Tracks in playlist"
@@ -3235,9 +3229,8 @@ msgid "Tauon SHUFFLE!"
 msgstr "¡Tauon Music Box ALEATORIO!"
 
 #: src/tauon/t_modules/t_main.py:26190
-#, fuzzy
 msgid "ALBUM SHUFFLE"
-msgstr "¡Tauon Music Box ÁLBUM ALEATORIO!"
+msgstr "ÁLBUM ALEATORIO"
 
 #: src/tauon/t_modules/t_main.py:26821
 msgid "MENU"
@@ -3405,7 +3398,7 @@ msgstr "Arrastra archivos para importar"
 
 #: src/tauon/t_modules/t_main.py:29125
 msgid "End of Playlist"
-msgstr "Fin de la lista de reproducción"
+msgstr "Fin de la playlist"
 
 #: src/tauon/t_modules/t_main.py:30160
 msgid "Fetching image..."
@@ -3694,13 +3687,12 @@ msgid "Downloading data..."
 msgstr "Descargando datos..."
 
 #: src/tauon/t_modules/t_main.py:32314
-#, fuzzy
 msgid "{N} albums"
-msgstr "Álbumes Totales"
+msgstr "{N} Álbumes"
 
 #: src/tauon/t_modules/t_main.py:32316
 msgid "{N} album"
-msgstr ""
+msgstr "{N} álbum"
 
 #: src/tauon/t_modules/t_main.py:32498
 msgid "First of artist's albums ({N} albums)"
@@ -4294,7 +4286,7 @@ msgstr "Borrar Duplicados"
 #: src/tauon/t_modules/t_main.py:40796
 #, fuzzy
 msgid "Toggle Console"
-msgstr "Conmutar columnas"
+msgstr "Conmutar consola"
 
 #: src/tauon/t_modules/t_main.py:40818 src/tauon/t_modules/t_main.py:40819
 msgid "Longest Tracks"
@@ -4444,25 +4436,23 @@ msgstr "Copiar la dirección URL de la pista"
 
 #: src/tauon/t_modules/t_main.py:41069
 msgid "Always stop after album"
-msgstr ""
+msgstr "Para siempre después del álbum"
 
 #: src/tauon/t_modules/t_main.py:41070
 msgid "Always stop after track"
-msgstr ""
+msgstr "Para siempre después de la canción"
 
 #: src/tauon/t_modules/t_main.py:41071
-#, fuzzy
 msgid "Stop after album"
-msgstr "Álbumes Mejor Valorados"
+msgstr "Parar despúes del álbum"
 
 #: src/tauon/t_modules/t_main.py:41072
-#, fuzzy
 msgid "Stop after track"
-msgstr "Pistas Mejor Valoradas"
+msgstr "Parar despúes de la pista"
 
 #: src/tauon/t_modules/t_main.py:41073
 msgid "Continue Play"
-msgstr ""
+msgstr "Continuar reproducción"
 
 #: src/tauon/t_modules/t_main.py:41075
 msgid "Minimize"
@@ -4547,6 +4537,7 @@ msgid "Filename"
 msgstr "Nombre del Archivo"
 
 #: src/tauon/t_modules/t_main.py:41115
+#, fuzzy
 msgid "Starline"
 msgstr "Starline"
 
@@ -4627,7 +4618,7 @@ msgstr "Exportar como CSV"
 
 #: src/tauon/t_modules/t_main.py:41174
 msgid "Rescan All Folders"
-msgstr "Volver a escanear todas las carpetas"
+msgstr "Volver a escanear las carpetas"
 
 #: src/tauon/t_modules/t_main.py:41175
 msgid "Play History to Playlist"
