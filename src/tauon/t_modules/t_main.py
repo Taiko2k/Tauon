@@ -5557,6 +5557,7 @@ class Tauon:
 		self.window_size                  = bag.window_size
 		self.draw_border                  = holder.draw_border
 		self.desktop                      = bag.desktop
+		self.pid                          = os.getpid()
 		# List of encodings to check for with the fix mojibake function
 		self.encodings                    = ["cp932", "utf-8", "big5hkscs", "gbk"]  # These seem to be the most common for Japanese
 		self.column_names = (
@@ -11374,7 +11375,7 @@ class Tauon:
 					if current_state == 0 and idle_time.get() > 13:
 						logging.info("Pause discord RPC...")
 						self.gui.discord_status = "Idle"
-						RPC.clear(pid)
+						RPC.clear(self.pid)
 						# RPC.close()
 
 						while True:
@@ -11393,7 +11394,7 @@ class Tauon:
 					time.sleep(1)
 
 					if self.prefs.disconnect_discord:
-						RPC.clear(pid)
+						RPC.clear(self.pid)
 						RPC.close()
 						self.prefs.disconnect_discord = False
 						self.gui.discord_status = "Not connected"
@@ -11434,7 +11435,7 @@ class Tauon:
 						small_image = "tauon-standard"
 					RPC.update(
 						activity_type = ActivityType.LISTENING,
-						pid=pid,
+						pid=self.pid,
 						**({"state": artist} if not self.pctl.playing_state == 3 else {"state": album}),
 						details=title,
 						start=int(start_time),
@@ -11447,14 +11448,14 @@ class Tauon:
 					#logging.info("Discord RPC - Stop")
 					RPC.update(
 						activity_type = ActivityType.LISTENING,
-						pid=pid,
+						pid=self.pid,
 						state="Idle",
 						large_image="tauon-standard")
 
 				time.sleep(2)
 
 				if self.prefs.disconnect_discord:
-					RPC.clear(pid)
+					RPC.clear(self.pid)
 					RPC.close()
 					self.prefs.disconnect_discord = False
 					break
@@ -39239,8 +39240,6 @@ def main(holder: Holder) -> None:
 	launch_prefix = ""
 	if flatpak_mode:
 		launch_prefix = "flatpak-spawn --host "
-
-	pid = os.getpid()
 
 	if not macos:
 		icon = sdl3.IMG_Load(str(asset_directory / "icon-64.png").encode())
