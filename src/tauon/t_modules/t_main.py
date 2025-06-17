@@ -18918,21 +18918,21 @@ class GStats:
 	def __init__(self, tauon: Tauon) -> None:
 		self.pctl       = tauon.pctl
 		self.star_store = tauon.star_store
-		self.last_db = 0
-		self.last_pl = 0
-		self.artist_list = []
-		self.album_list = []
-		self.genre_list = []
-		self.genre_dict = {}
+		self.last_db: int = 0
+		self.last_pl: int = 0
+		self.artist_list: list[tuple[str, int]] = []
+		self.album_list:  list[tuple[str, int]] = []
+		self.genre_list:  list[tuple[str, int]] = []
+		self.genre_dict:   dict[str, list[int]] = {}
 
-	def update(self, playlist) -> None:
+	def update(self, playlist: int) -> None:
 		pt = 0
 
 		if self.pctl.master_count != self.last_db or self.last_pl != playlist:
 			self.last_db = self.pctl.master_count
 			self.last_pl = playlist
 
-			artists = {}
+			artists: dict[str, int] = {}
 
 			for index in self.pctl.multi_playlist[playlist].playlist_ids:
 				artist = self.pctl.master_library[index].artist
@@ -18955,8 +18955,8 @@ class GStats:
 
 			self.artist_list = copy.deepcopy(sorted_list)
 
-			genres = {}
-			genre_dict = {}
+			genres: dict[str, int] = {}
+			genre_dict: dict[str, list[int]] = {}
 
 			for index in self.pctl.multi_playlist[playlist].playlist_ids:
 				genre_r = self.pctl.master_library[index].genre
@@ -18990,7 +18990,6 @@ class GStats:
 				pt = int(pt / len(gn))
 
 				for genre in gn:
-
 					if genre.lower() in {"", "other", "unknown", "misc"}:
 						genre = "<Genre Unspecified>"
 					if genre.lower() in {"jpop", "japanese pop"}:
@@ -19038,7 +19037,7 @@ class GStats:
 
 			# logging.info('\n-----------------------\n')
 
-			g_albums = {}
+			g_albums: dict[str, int] = {}
 
 			for index in self.pctl.multi_playlist[playlist].playlist_ids:
 				album = self.pctl.master_library[index].album
