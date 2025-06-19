@@ -38,12 +38,13 @@ class CustomLoggingFormatter(logging.Formatter):
 		return formatter.format(record)
 
 class LogHistoryHandler(logging.Handler):
-	def __init__(self):
+
+	def __init__(self) -> None:
 		super().__init__()
-		self.log_history = []  # List to store log messages
+		self.log_history: list[LogRecord] = []
 
 	@override
-	def emit(self, record: LogRecord):
-		self.log_history.append(record)  # Append to the log history
+	def emit(self, record: LogRecord) -> None:
+		self.log_history.append(record)
 		if len(self.log_history) > 50:
 			del self.log_history[0]
