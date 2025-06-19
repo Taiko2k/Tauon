@@ -149,10 +149,6 @@ class TauonPlaylist:
 def _(m: str) -> str:
 	return m
 
-def tmp_cache_dir() -> str:
-	tmp_dir = GLib.get_tmp_dir()
-	return os.path.join(tmp_dir, "TauonMusicBox")
-
 class Timer:
 	"""A seconds based timer"""
 
@@ -193,13 +189,264 @@ class TestTimer:
 	def test(self) -> bool:
 		return self.timer.get() > self.time
 
-j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
+class ColourGenCache:
 
-def point_proximity_test(a: dict, b: dict, p: dict) -> bool:
+	def __init__(self, saturation: float, luminance: float) -> None:
+		self.saturation = saturation
+		self.luminance = luminance
+		self.store: dict [str, ColourRGBA] = {}
+
+	def get(self, key: str) -> ColourRGBA:
+		if key in self.store:
+			return self.store[key]
+
+		colour = random_colour(self.saturation, self.luminance)
+
+		self.store[key] = colour
+		return colour
+
+class FunctionStore:
+	"""Stores functions and arguments for calling later"""
+
+	def __init__(self) -> None:
+		self.items: list[tuple[Callable[..., None], tuple]] = []
+
+	def store(self, function: Callable[..., None], args: tuple = ()) -> None:
+		self.items.append((function, args))
+
+	def recall_all(self) -> None:
+		while self.items:
+			item = self.items.pop()
+			item[0](*item[1])
+
+j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
+year_search = re.compile(r"\d{4}")
+# Pre-compile the regular expression pattern for dates starting with the year
+date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
+
+genre_corrections = [
+	"J-Pop",
+	"J-Rock",
+	"K-Pop",
+	"Hip Hop",
+]
+genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
+
+mac_styles = {
+	"mac": None,
+	"whitesur": None,
+	"vimix": None,
+	"sweet": None,
+	"dracula": [ColourRGBA(248, 58, 67, 255), ColourRGBA(239, 251, 122, 255), ColourRGBA(74, 254, 104, 255)],
+	"nordic": None,
+	"juno": None,
+}
+
+id3_genre_dict = {
+	0: "Blues",
+	1: "Classic Rock",
+	2: "Country",
+	3: "Dance",
+	4: "Disco",
+	5: "Funk",
+	6: "Grunge",
+	7: "Hip-Hop",
+	8: "Jazz",
+	9: "Metal",
+	10: "New Age",
+	11: "Oldies",
+	12: "Other",
+	13: "Pop",
+	14: "R&B",
+	15: "Rap",
+	16: "Reggae",
+	17: "Rock",
+	18: "Techno",
+	19: "Industrial",
+	20: "Alternative",
+	21: "Ska",
+	22: "Death Metal",
+	23: "Pranks",
+	24: "Soundtrack",
+	25: "Euro-Techno",
+	26: "Ambient",
+	27: "Trip-Hop",
+	28: "Vocal",
+	29: "Jazz+Funk",
+	30: "Fusion",
+	31: "Trance",
+	32: "Classical",
+	33: "Instrumental",
+	34: "Acid",
+	35: "House",
+	36: "Game",
+	37: "Sound Clip",
+	38: "Gospel",
+	39: "Noise",
+	40: "Alternative Rock",
+	41: "Bass",
+	42: "Soul",
+	43: "Punk",
+	44: "Space",
+	45: "Meditative",
+	46: "Instrumental Pop",
+	47: "Instrumental Rock",
+	48: "Ethnic",
+	49: "Gothic",
+	50: "Darkwave",
+	51: "Techno-Industrial",
+	52: "Electronic",
+	53: "Pop-Folk",
+	54: "Eurodance",
+	55: "Dream",
+	56: "Southern Rock",
+	57: "Comedy",
+	58: "Cult",
+	59: "Gangsta Rap",
+	60: "Top 40",
+	61: "Christian Rap",
+	62: "Pop/Funk",
+	63: "Jungle",
+	64: "Native American",
+	65: "Cabaret",
+	66: "New Wave",
+	67: "Psychedelic",
+	68: "Rave",
+	69: "Showtunes",
+	70: "Trailer",
+	71: "Lo-Fi",
+	72: "Tribal",
+	73: "Acid Punk",
+	74: "Acid Jazz",
+	75: "Polka",
+	76: "Retro",
+	77: "Musical",
+	78: "Rock & Roll",
+	79: "Hard Rock",
+	80: "Folk",
+	81: "Folk-Rock",
+	82: "National Folk",
+	83: "Swing",
+	84: "Fast Fusion",
+	85: "Bebob",
+	86: "Latin",
+	87: "Revival",
+	88: "Celtic",
+	89: "Bluegrass",
+	90: "Avantgarde",
+	91: "Gothic Rock",
+	92: "Progressive Rock",
+	93: "Psychedelic Rock",
+	94: "Symphonic Rock",
+	95: "Slow Rock",
+	96: "Big Band",
+	97: "Chorus",
+	98: "Easy Listening",
+	99: "Acoustic",
+	100: "Humour",
+	101: "Speech",
+	102: "Chanson",
+	103: "Opera",
+	104: "Chamber Music",
+	105: "Sonata",
+	106: "Symphony",
+	107: "Booty Bass",
+	108: "Primus",
+	109: "Porn Groove",
+	110: "Satire",
+	111: "Slow Jam",
+	112: "Club",
+	113: "Tango",
+	114: "Samba",
+	115: "Folklore",
+	116: "Ballad",
+	117: "Power Ballad",
+	118: "Rhythmic Soul",
+	119: "Freestyle",
+	120: "Duet",
+	121: "Punk Rock",
+	122: "Drum Solo",
+	123: "A Cappella",
+	124: "Euro-House",
+	125: "Dance Hall",
+	126: "Goa",
+	127: "Drum & Bass",
+	128: "Club-House",
+	129: "Hardcore",
+	130: "Terror",
+	131: "Indie",
+	132: "BritPop",
+	133: "Negerpunk",
+	134: "Polsk Punk",
+	135: "Beat",
+	136: "Christian Gangsta Rap",
+	137: "Heavy Metal",
+	138: "Black Metal",
+	139: "Crossover",
+	140: "Contemporary Christian",
+	141: "Christian Rock",
+	142: "Merengue",
+	143: "Salsa",
+	144: "Thrash Metal",
+	145: "Anime",
+	146: "JPop",
+	147: "Synthpop",
+	148: "Abstract",
+	149: "Art Rock",
+	150: "Baroque",
+	151: "Bhangra",
+	152: "Big Beat",
+	153: "Breakbeat",
+	154: "Chillout",
+	155: "Downtempo",
+	156: "Dub",
+	157: "EBM",
+	158: "Eclectic",
+	159: "Electro",
+	160: "Electroclash",
+	161: "Emo",
+	162: "Experimental",
+	163: "Garage",
+	164: "Global",
+	165: "IDM",
+	166: "Illbient",
+	167: "Industro-Goth",
+	168: "Jam Band",
+	169: "Krautrock",
+	170: "Leftfield",
+	171: "Lounge",
+	172: "Math Rock",
+	173: "New Romantic",
+	174: "Nu-Breakz",
+	175: "Post-Punk",
+	176: "Post-Rock",
+	177: "Psytrance",
+	178: "Shoegaze",
+	179: "Space Rock",
+	180: "Trop Rock",
+	181: "World Music",
+	182: "Neoclassical",
+	183: "Audiobook",
+	184: "Audio Theatre",
+	185: "Neue Deutsche Welle",
+	186: "Podcast",
+	187: "Indie Rock",
+	188: "G-Funk",
+	189: "Dubstep",
+	190: "Garage Rock",
+	191: "Psybient",
+	192: "Unknown",
+}
+
+def tmp_cache_dir() -> str:
+	tmp_dir = GLib.get_tmp_dir()
+	return os.path.join(tmp_dir, "TauonMusicBox")
+
+def point_proximity_test(a: list[int], b: list[int], p: float) -> bool:
 	"""Test given proximity between two 2d points to given square"""
 	return abs(a[0] - b[0]) < p and abs(a[1] - b[1]) < p
 
-def point_distance(a: dict, b: dict) -> float:
+def point_distance(a: list[int], b: list[int]) -> float:
 	"""Get distance between two points"""
 	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
 
@@ -431,23 +678,6 @@ def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) ->
 def is_light(colour: ColourRGBA) -> bool:
 	return test_lumi(colour) < 0.2
 
-class ColourGenCache:
-
-	def __init__(self, saturation: float, luminance: float) -> None:
-
-		self.saturation = saturation
-		self.luminance = luminance
-		self.store = {}
-
-	def get(self, key: str) -> ColourRGBA:
-		if key in self.store:
-			return self.store[key]
-
-		colour = random_colour(self.saturation, self.luminance)
-
-		self.store[key] = colour
-		return colour
-
 def folder_file_scan(path: str, extensions: str) -> float:
 	match = 0
 	count = sum([len(files) for r, d, files in os.walk(path)])
@@ -464,9 +694,6 @@ def folder_file_scan(path: str, extensions: str) -> float:
 
 def is_ignorable_file(string: str) -> bool:
 	return any(s in string for s in ["Thumbs.db", ".log", "desktop.ini", "DS_Store", ".nfo", "yric"])
-
-# Pre-compile the regular expression pattern for dates starting with the year
-date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
 
 def get_year_from_string(s: str) -> str:
 	"""Gets year in form of YYYY from a string
@@ -500,7 +727,6 @@ def is_music_related(string: str) -> bool:
 		if s in string:
 			return True
 	return False
-
 
 def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> float:
 	"""Get ratio of given file extensions in archive"""
@@ -576,7 +802,6 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 				return 0
 
 		elif ext == "zip":
-
 			zip_ref = zipfile.ZipFile(path, "r")
 			matches = 0
 			count = 0
@@ -620,7 +845,6 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> floa
 		ratio = 100
 	return ratio
 
-
 def get_folder_size(path: str) -> int:
 	total_size = 0
 	for dirpath, dirnames, filenames in os.walk(path):
@@ -629,14 +853,12 @@ def get_folder_size(path: str) -> int:
 			total_size += os.path.getsize(fp)
 	return total_size
 
-
 def filename_safe(text: str, sub: str="") -> str:
 	for cha in '/\\<>:"|?*':
 		text = text.replace(cha, sub)
 	return text.rstrip(" .")
 
 def filename_to_metadata(filename: str) -> tuple[str, str]:
-
 	# Remove the file extension
 	name_without_extension = filename.rsplit(".", 1)[0]
 
@@ -653,9 +875,7 @@ def filename_to_metadata(filename: str) -> tuple[str, str]:
 
 	return artist, title
 
-
 def get_artist_strip_feat(track_object: TrackClass) -> str:
-
 	artist_name = track_object.artist #.lower()
 	if track_object.album_artist:
 		if "feat." in artist_name or "pres." in artist_name or ", " in artist_name or "; " in artist_name or not artist_name:
@@ -665,7 +885,6 @@ def get_artist_strip_feat(track_object: TrackClass) -> str:
 	return artist_name
 
 def get_artist_safe(track: TrackClass) -> str:
-
 	if track:
 		artist = track.album_artist
 		if not artist:
@@ -684,23 +903,18 @@ def get_split_artists(track: TrackClass) -> list[str]:
 	return re.split(r"; |, |& ", artist)
 
 def coll_rect(rect1: list[int], rect2: list[int]) -> bool:
+	return not (
+	rect1[0] + rect1[2] < rect2[0] \
+	or rect1[1] + rect1[3] < rect2[1] \
+	or rect1[0] > rect2[0] + rect2[2] \
+	or rect1[1] > rect2[1] + rect2[3])
 
-	if rect1[0] + rect1[2] < rect2[0] or \
-			rect1[1] + rect1[3] < rect2[1] or \
-			rect1[0] > rect2[0] + rect2[2] or \
-			rect1[1] > rect2[1] + rect2[3]:
-		return False
-	return True
-
-
-def commonprefix(l: str) -> str:
-
-	cp = []
-	ls = [p.split("/") for p in l]
+def commonprefix(parents: str) -> str:
+	cp: list[str] = []
+	ls = [p.split("/") for p in parents]
 	ml = min(len(p) for p in ls)
 
 	for i in range(ml):
-
 		s = set(p[i] for p in ls)
 		if len(s) != 1:
 			break
@@ -709,9 +923,7 @@ def commonprefix(l: str) -> str:
 
 	return "/".join(cp)
 
-
 def fader_timer(time_point: float, start: float, duration: float, off: bool = True, fade_range: int = 255) -> int:
-
 	if time_point < start:
 		fade = fade_range
 	elif time_point < start + duration:
@@ -721,217 +933,6 @@ def fader_timer(time_point: float, start: float, duration: float, off: bool = Tr
 		fade = 0
 
 	return fade
-
-
-id3_genre_dict = {
-	0: "Blues",
-	1: "Classic Rock",
-	2: "Country",
-	3: "Dance",
-	4: "Disco",
-	5: "Funk",
-	6: "Grunge",
-	7: "Hip-Hop",
-	8: "Jazz",
-	9: "Metal",
-	10: "New Age",
-	11: "Oldies",
-	12: "Other",
-	13: "Pop",
-	14: "R&B",
-	15: "Rap",
-	16: "Reggae",
-	17: "Rock",
-	18: "Techno",
-	19: "Industrial",
-	20: "Alternative",
-	21: "Ska",
-	22: "Death Metal",
-	23: "Pranks",
-	24: "Soundtrack",
-	25: "Euro-Techno",
-	26: "Ambient",
-	27: "Trip-Hop",
-	28: "Vocal",
-	29: "Jazz+Funk",
-	30: "Fusion",
-	31: "Trance",
-	32: "Classical",
-	33: "Instrumental",
-	34: "Acid",
-	35: "House",
-	36: "Game",
-	37: "Sound Clip",
-	38: "Gospel",
-	39: "Noise",
-	40: "Alternative Rock",
-	41: "Bass",
-	42: "Soul",
-	43: "Punk",
-	44: "Space",
-	45: "Meditative",
-	46: "Instrumental Pop",
-	47: "Instrumental Rock",
-	48: "Ethnic",
-	49: "Gothic",
-	50: "Darkwave",
-	51: "Techno-Industrial",
-	52: "Electronic",
-	53: "Pop-Folk",
-	54: "Eurodance",
-	55: "Dream",
-	56: "Southern Rock",
-	57: "Comedy",
-	58: "Cult",
-	59: "Gangsta Rap",
-	60: "Top 40",
-	61: "Christian Rap",
-	62: "Pop/Funk",
-	63: "Jungle",
-	64: "Native American",
-	65: "Cabaret",
-	66: "New Wave",
-	67: "Psychedelic",
-	68: "Rave",
-	69: "Showtunes",
-	70: "Trailer",
-	71: "Lo-Fi",
-	72: "Tribal",
-	73: "Acid Punk",
-	74: "Acid Jazz",
-	75: "Polka",
-	76: "Retro",
-	77: "Musical",
-	78: "Rock & Roll",
-	79: "Hard Rock",
-	80: "Folk",
-	81: "Folk-Rock",
-	82: "National Folk",
-	83: "Swing",
-	84: "Fast Fusion",
-	85: "Bebob",
-	86: "Latin",
-	87: "Revival",
-	88: "Celtic",
-	89: "Bluegrass",
-	90: "Avantgarde",
-	91: "Gothic Rock",
-	92: "Progressive Rock",
-	93: "Psychedelic Rock",
-	94: "Symphonic Rock",
-	95: "Slow Rock",
-	96: "Big Band",
-	97: "Chorus",
-	98: "Easy Listening",
-	99: "Acoustic",
-	100: "Humour",
-	101: "Speech",
-	102: "Chanson",
-	103: "Opera",
-	104: "Chamber Music",
-	105: "Sonata",
-	106: "Symphony",
-	107: "Booty Bass",
-	108: "Primus",
-	109: "Porn Groove",
-	110: "Satire",
-	111: "Slow Jam",
-	112: "Club",
-	113: "Tango",
-	114: "Samba",
-	115: "Folklore",
-	116: "Ballad",
-	117: "Power Ballad",
-	118: "Rhythmic Soul",
-	119: "Freestyle",
-	120: "Duet",
-	121: "Punk Rock",
-	122: "Drum Solo",
-	123: "A Cappella",
-	124: "Euro-House",
-	125: "Dance Hall",
-	126: "Goa",
-	127: "Drum & Bass",
-	128: "Club-House",
-	129: "Hardcore",
-	130: "Terror",
-	131: "Indie",
-	132: "BritPop",
-	133: "Negerpunk",
-	134: "Polsk Punk",
-	135: "Beat",
-	136: "Christian Gangsta Rap",
-	137: "Heavy Metal",
-	138: "Black Metal",
-	139: "Crossover",
-	140: "Contemporary Christian",
-	141: "Christian Rock",
-	142: "Merengue",
-	143: "Salsa",
-	144: "Thrash Metal",
-	145: "Anime",
-	146: "JPop",
-	147: "Synthpop",
-	148: "Abstract",
-	149: "Art Rock",
-	150: "Baroque",
-	151: "Bhangra",
-	152: "Big Beat",
-	153: "Breakbeat",
-	154: "Chillout",
-	155: "Downtempo",
-	156: "Dub",
-	157: "EBM",
-	158: "Eclectic",
-	159: "Electro",
-	160: "Electroclash",
-	161: "Emo",
-	162: "Experimental",
-	163: "Garage",
-	164: "Global",
-	165: "IDM",
-	166: "Illbient",
-	167: "Industro-Goth",
-	168: "Jam Band",
-	169: "Krautrock",
-	170: "Leftfield",
-	171: "Lounge",
-	172: "Math Rock",
-	173: "New Romantic",
-	174: "Nu-Breakz",
-	175: "Post-Punk",
-	176: "Post-Rock",
-	177: "Psytrance",
-	178: "Shoegaze",
-	179: "Space Rock",
-	180: "Trop Rock",
-	181: "World Music",
-	182: "Neoclassical",
-	183: "Audiobook",
-	184: "Audio Theatre",
-	185: "Neue Deutsche Welle",
-	186: "Podcast",
-	187: "Indie Rock",
-	188: "G-Funk",
-	189: "Dubstep",
-	190: "Garage Rock",
-	191: "Psybient",
-	192: "Unknown",
-}
-
-class FunctionStore:
-	"""Stores functions and arguments for calling later"""
-
-	def __init__(self) -> None:
-		self.items: list[tuple[Callable[..., None], tuple]] = []
-
-	def store(self, function: Callable[..., None], args: tuple = ()) -> None:
-		self.items.append((function, args))
-
-	def recall_all(self) -> None:
-		while self.items:
-			item = self.items.pop()
-			item[0](*item[1])
 
 def grow_rect(rect: tuple[int, int, int, int], px: int) -> tuple[int, int, int, int]:
 	return rect[0] - px, rect[1] - px, rect[2] + px * 2, rect[3] + px * 2
@@ -956,21 +957,12 @@ def subtract_rect(
 	]
 ):
 	"""Return 4 rects from 1 minus 1 inner (with overlaps)"""
-	west = base[0], base[1], hole[0], base[3]
+	west  = base[0], base[1], hole[0], base[3]
 	north = base[0], base[1], base[2], hole[1] - base[1]
-	east = base[0] + hole[0] + hole[2], base[1], base[2] - (hole[0] + hole[2]), base[3]
+	east  = base[0] + hole[0] + hole[2], base[1], base[2] - (hole[0] + hole[2]), base[3]
 	south = base[0], hole[1] + hole[3], base[2], base[3] - hole[3] - 2
 
 	return west, north, east, south
-
-genre_corrections = [
-	"J-Pop",
-	"J-Rock",
-	"K-Pop",
-	"Hip Hop",
-]
-
-genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
 
 def genre_correct(text: str) -> str:
 	parsed = text.lower().replace("-", "").replace(" ", "").strip()
@@ -979,7 +971,6 @@ def genre_correct(text: str) -> str:
 	if parsed in genre_corrections2:
 		return genre_corrections[genre_corrections2.index(parsed)]
 	return text.title().strip()
-
 
 def reduce_paths(paths: list[str]) -> None:
 	"""In-place remove of redundant sub-paths from list of folder paths"""
@@ -1010,9 +1001,7 @@ def fit_box(inner: dict, outer: dict) -> tuple[int, int]:
 	scale = min(outer[0]/inner[0], outer[1]/inner[1])
 	return round(inner[0] * scale), round(inner[1] * scale)
 
-
 def seconds_to_day_hms(seconds: float, s_day: float, s_days: float) -> str:
-
 	days, seconds = divmod(seconds, 86400)
 	hours, seconds = divmod(seconds, 3600)
 	minutes, seconds = divmod(seconds, 60)
@@ -1021,14 +1010,10 @@ def seconds_to_day_hms(seconds: float, s_day: float, s_days: float) -> str:
 		return f"{int(days)!s} {s_day}, {int(hours)!s}:{int(minutes)!s}:{int(seconds)!s}"
 	return f"{int(days)!s} {s_days}, {int(hours)!s}:{str(int(minutes)).zfill(2)}:{str(int(seconds)).zfill(2)}"
 
-
 def shooter(func: Callable[..., None], args: tuple = ()) -> None:
 	shoot = threading.Thread(target=func, args=args)
 	shoot.daemon = True
 	shoot.start()
-
-
-year_search = re.compile(r"\d{4}")
 
 def d_date_display(track: TrackClass) -> str:
 	if "rdat" in track.misc:
@@ -1056,16 +1041,6 @@ def uri_parse(s: str) -> str:
 	if s.startswith("file://"):
 		s = str(urllib.parse.unquote(s)).replace("file://", "").replace("\r", "")
 	return s
-
-mac_styles = {
-	"mac": None,
-	"whitesur": None,
-	"vimix": None,
-	"sweet": None,
-	"dracula": [ColourRGBA(248, 58, 67, 255), ColourRGBA(239, 251, 122, 255), ColourRGBA(74, 254, 104, 255)],
-	"nordic": None,
-	"juno": None,
-}
 
 def sleep_timeout(condition_function: Callable[[], bool], time_limit: int = 2) -> None:
 	if condition_function():
