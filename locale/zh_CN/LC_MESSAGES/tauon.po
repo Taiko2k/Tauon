@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2025-05-18 15:11+0200\n"
-"PO-Revision-Date: 2025-04-20 00:25+0800\n"
+"PO-Revision-Date: 2025-06-13 03:01+0000\n"
 "Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
 "projects/tauon-music-box/tauon-music-box/zh_Hans/>\n"
@@ -15,31 +15,28 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 1.8.8\n"
+"X-Generator: Weblate 5.12-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/guitar_chords.py:81
-#, fuzzy
 msgid "Insufficient metadata to search"
-msgstr "元数据不足以进行搜索"
+msgstr "元数据不足，无法搜索"
 
 #: src/tauon/t_modules/guitar_chords.py:95
 msgid "Clipboard has no text"
 msgstr "剪贴板没有文本"
 
 #: src/tauon/t_modules/guitar_chords.py:189
-#, fuzzy
 msgid "Error finding matching track on GuitarParty"
 msgstr "在 GuitarParty 上找不到匹配的曲目"
 
 #: src/tauon/t_modules/guitar_chords.py:205
-#, fuzzy
 msgid "Track not found on GuitarParty"
-msgstr "未在目标上找到播放列表"
+msgstr "在 GuitarParty 上找不到曲目"
 
 #: src/tauon/t_modules/guitar_chords.py:220
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "从 GuitarParty 获取歌曲时出错"
 
 #: src/tauon/t_modules/t_db_migrate.py:134
 msgid ""
@@ -292,9 +289,8 @@ msgid "How did this even happen."
 msgstr "这是怎么发生的？"
 
 #: src/tauon/t_modules/t_main.py:4224 src/tauon/t_modules/t_main.py:4277
-#, fuzzy
 msgid "ListenBrainz is enabled but there is no token."
-msgstr "ListenBrains 已启用，但没有令牌。"
+msgstr "ListenBrainz 已启用，但没有令牌。"
 
 #: src/tauon/t_modules/t_main.py:4267 src/tauon/t_modules/t_main.py:4329
 msgid "There was an error submitting data to ListenBrainz"
@@ -1364,9 +1360,8 @@ msgid "Unknown Track"
 msgstr "未知曲目"
 
 #: src/tauon/t_modules/t_main.py:11302
-#, fuzzy
 msgid "Unknown Artist"
-msgstr "未知专辑"
+msgstr "未知艺术家"
 
 #: src/tauon/t_modules/t_main.py:11352
 msgid "Error - Discord not running?"
@@ -2498,9 +2493,8 @@ msgid "Sorry, this feature is unavailable with snap"
 msgstr "抱歉，Snap 不支持此功能"
 
 #: src/tauon/t_modules/t_main.py:23880
-#, fuzzy
 msgid "Missing dependency python-lynxpresence"
-msgstr "缺少依赖项 python-pypresence"
+msgstr "缺少依赖项 python-lynxpresence"
 
 #: src/tauon/t_modules/t_main.py:23889 src/tauon/t_modules/t_main.py:31461
 msgid "Disabled"
@@ -2741,13 +2735,12 @@ msgid "Use LibreFM"
 msgstr "使用 LibreFM"
 
 #: src/tauon/t_modules/t_main.py:24711
-#, fuzzy
 msgid ""
 "Click login to open the last.fm web authorisation page (paste from clipboard "
 "if it didn't open) and follow prompt. Then return here and click \"Done\"."
-msgstr ""
-"点击登录，打开 last.fm 网页授权页面，按照提示进行操作。 然后返回此处并单击“完"
-"成”。"
+msgstr "点击“登录”打开 last.fm "
+"网页授权页面（如果未打开，请从剪贴板粘贴），并按照提示操作。然后返回此处并点"
+"击“完成”。"
 
 #: src/tauon/t_modules/t_main.py:24715
 msgid "Forget account"
@@ -3063,9 +3056,8 @@ msgid "Generating..."
 msgstr "生成中..."
 
 #: src/tauon/t_modules/t_main.py:25538
-#, fuzzy
 msgid "{N} Album chart"
-msgstr "专辑图表"
+msgstr "{N} 专辑排行榜"
 
 #: src/tauon/t_modules/t_main.py:25544
 msgid "Not enough albums in the playlist!"
@@ -3156,14 +3148,12 @@ msgid "Thick default"
 msgstr "宽默认"
 
 #: src/tauon/t_modules/t_main.py:26188
-#, fuzzy
 msgid "Tauon SHUFFLE!"
-msgstr "Tauon Music Box 随机播放！"
+msgstr "Tauon 随机播放!"
 
 #: src/tauon/t_modules/t_main.py:26190
-#, fuzzy
 msgid "ALBUM SHUFFLE"
-msgstr "Tauon Music Box 专辑随机播放！"
+msgstr "专辑随机播放"
 
 #: src/tauon/t_modules/t_main.py:26821
 msgid "MENU"
@@ -3516,7 +3506,7 @@ msgstr "搜索和排除"
 
 #: src/tauon/t_modules/t_main.py:31390
 msgid "Sorters"
-msgstr ""
+msgstr "分类"
 
 #: src/tauon/t_modules/t_main.py:31394
 msgid "Shuffle tracks"
@@ -3581,7 +3571,7 @@ msgstr "按列名排序：>, <"
 
 #: src/tauon/t_modules/t_main.py:31439
 msgid "Special"
-msgstr ""
+msgstr "特辑"
 
 #: src/tauon/t_modules/t_main.py:31442
 msgid "Automatically reload on imports"
@@ -3618,13 +3608,12 @@ msgid "Downloading data..."
 msgstr "正在下载数据..."
 
 #: src/tauon/t_modules/t_main.py:32314
-#, fuzzy
 msgid "{N} albums"
-msgstr "专辑总数"
+msgstr "{N} 专辑"
 
 #: src/tauon/t_modules/t_main.py:32316
 msgid "{N} album"
-msgstr ""
+msgstr "{N} 专辑"
 
 #: src/tauon/t_modules/t_main.py:32498
 msgid "First of artist's albums ({N} albums)"
@@ -4208,9 +4197,8 @@ msgid "Remove Duplicates"
 msgstr "删除重复项"
 
 #: src/tauon/t_modules/t_main.py:40796
-#, fuzzy
 msgid "Toggle Console"
-msgstr "切换列"
+msgstr "切换控制台"
 
 #: src/tauon/t_modules/t_main.py:40818 src/tauon/t_modules/t_main.py:40819
 msgid "Longest Tracks"
@@ -4360,25 +4348,23 @@ msgstr "复制曲目网址"
 
 #: src/tauon/t_modules/t_main.py:41069
 msgid "Always stop after album"
-msgstr ""
+msgstr "总是在专辑结束后停止"
 
 #: src/tauon/t_modules/t_main.py:41070
 msgid "Always stop after track"
-msgstr ""
+msgstr "总是在曲目后停止"
 
 #: src/tauon/t_modules/t_main.py:41071
-#, fuzzy
 msgid "Stop after album"
-msgstr "最高评分的专辑"
+msgstr "专辑结束后停止"
 
 #: src/tauon/t_modules/t_main.py:41072
-#, fuzzy
 msgid "Stop after track"
-msgstr "最高评分的曲目"
+msgstr "跟踪后停止"
 
 #: src/tauon/t_modules/t_main.py:41073
 msgid "Continue Play"
-msgstr ""
+msgstr "继续播放"
 
 #: src/tauon/t_modules/t_main.py:41075
 msgid "Minimize"
