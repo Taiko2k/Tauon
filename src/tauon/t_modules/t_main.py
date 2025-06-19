@@ -43674,7 +43674,7 @@ def main(holder: Holder) -> None:
 										else:
 											a = int(255 - 255 * (t - 0.5))
 
-										c = [c[1], c[2], c[0], a]
+										c = ColourRGBA(c.g, c.b, c.r, a)
 										ddt.rect_a((x - 5, y - 5), (tauon.album_mode_art_size + 10, tauon.album_mode_art_size + 10), c)  # [150, 80, 222, 255]
 
 										gui.update += 1
