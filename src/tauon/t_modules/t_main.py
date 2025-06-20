@@ -45522,7 +45522,7 @@ def main(holder: Holder) -> None:
 						gui.quick_search_mode = True
 					if tauon.search_clear_timer.get() > 3:
 						search_over.search_text.text = ""
-					input_text = ""
+					inp.input_text = ""
 				elif (keymaps.test("quick-find") or (
 						inp.key_esc_press and len(gui.editline) == 0)) or (inp.mouse_click and gui.quick_search_mode is True):
 					gui.quick_search_mode = False
