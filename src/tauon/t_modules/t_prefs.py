@@ -123,7 +123,7 @@ class Prefs:
 	use_jump_crossfade:       bool = True
 	use_transition_crossfade: bool = False
 	use_pause_fade:           bool = True
-	resume_on_jump:           bool = False
+	resume_on_jump:           bool = True
 
 	show_notifications: bool = True
 
