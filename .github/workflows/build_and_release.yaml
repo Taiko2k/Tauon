@@ -508,7 +508,7 @@ jobs:
           sed -i 's|{{ tauon_version }}|8.1.0|g' extra/setup.iss
 
       - name: Compile .ISS to .EXE Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.6
         with:
           path: extra/setup.iss
           options: /O+
