@@ -41624,6 +41624,11 @@ def main(holder: Holder) -> None:
 
 	pctl.total_playtime = tauon.star_store.get_total()
 
+	crash_log_path = user_directory / "tauon-crash.log"
+	if crash_log_path.is_file():
+		logging.warning(f"Crash log from previous run detected in {crash_log_path}, please report a bug at https://github.com/Taiko2k/Tauon/issues")
+		# TODO(Martin): Draw window here, prodding user to report a bug, give option to delete the log or skip?
+
 	# MAIN LOOP
 	event = sdl3.SDL_Event()
 
