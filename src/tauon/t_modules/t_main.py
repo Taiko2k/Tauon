@@ -16710,7 +16710,6 @@ class Tauon:
 				self.gui.cursor_want = 3
 			if click:
 				webbrowser.open(link_pa[2], new=2, autoraise=True)
-				self.gui.track_box = True
 
 	def trunc_line(self, line: str, font: str, px: int, dots: bool = True) -> str:
 		"""This old function is slow and should be avoided"""
@@ -24744,7 +24743,7 @@ class Over:
 				(x + 0 * gui.scale, y),
 				_("They encourage you to contribute at {link}").format(link="https://fanart.tv"),
 				colours.box_text_label, 11)
-			self.tauon.link_activate(x, y, link_pa2)
+			self.tauon.link_activate(x, y, link_pa2, click=self.click)
 
 			y += 35 * gui.scale
 			prefs.enable_fanart_cover = self.toggle_square(
