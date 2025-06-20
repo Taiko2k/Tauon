@@ -16578,7 +16578,7 @@ class Tauon:
 			prefs.tray_theme,
 			prefs.row_title_format,
 			prefs.row_title_genre,
-			prefs.row_title_separator_type,
+			prefs.row_title_separator_type,  # No longer used
 			prefs.replay_preamp,  # 181
 			prefs.gallery_combine_disc,
 			pctl.active_playlist_playing,  # 183
@@ -25868,19 +25868,24 @@ class Over:
 		x = x0 + self.item_x_offset
 		y = y0 + 17 * gui.scale
 
-		self.toggle_square(x, y, self.tauon.rating_toggle, _("Track ratings"))
-		y += round(25 * gui.scale)
-		self.toggle_square(x, y, self.tauon.album_rating_toggle, _("Album ratings"))
-		y += round(35 * gui.scale)
 
+
+
+		#y += round(35 * gui.scale)
 		self.toggle_square(x, y, self.tauon.heart_toggle, "     ")
 		gui.heart_row_icon.render(x + round(23 * gui.scale), y + round(2 * gui.scale), colours.box_text)
 		rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
 		self.fields.add(rect)
 		if self.coll(rect):
 			self.tauon.ex_tool_tip(x + round(45 * gui.scale), y - 20 * gui.scale, 0, _("Show track loves"), 12)
+		y += round(25 * gui.scale)
 
-		x += (55 * gui.scale)
+		self.toggle_square(x, y, self.tauon.rating_toggle, _("Track ratings"))
+		y += round(25 * gui.scale)
+		self.toggle_square(x, y, self.tauon.album_rating_toggle, _("Album ratings"))
+		y += round(35 * gui.scale)
+
+
 		self.toggle_square(x, y, self.tauon.star_toggle, "     ")
 		gui.star_row_icon.render(x + round(22 * gui.scale), y + round(0 * gui.scale), colours.box_text)
 		rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
@@ -25899,6 +25904,7 @@ class Over:
 			self.tauon.ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playcount as lines"), 12)
 
 		x = x0 + self.item_x_offset
+		#x += (55 * gui.scale)
 
 		# y += round(25 * gui.scale)
 
@@ -25930,12 +25936,12 @@ class Over:
 		self.toggle_square(x, y, self.tauon.toggle_append_total_time, _("Show album duration"))
 		y += round(35 * gui.scale)
 
-		if self.toggle_square(x, y, prefs.row_title_separator_type == 0, " - "):
-			prefs.row_title_separator_type = 0
-		if self.toggle_square(x + round(55 * gui.scale), y,  prefs.row_title_separator_type == 1, " ‒ "):
-			prefs.row_title_separator_type = 1
-		if self.toggle_square(x + round(110 * gui.scale), y,  prefs.row_title_separator_type == 2, " ⦁ "):
-			prefs.row_title_separator_type = 2
+		# if self.toggle_square(x, y, prefs.row_title_separator_type == 0, " - "):
+		# 	prefs.row_title_separator_type = 0
+		# if self.toggle_square(x + round(55 * gui.scale), y,  prefs.row_title_separator_type == 1, " ‒ "):
+		# 	prefs.row_title_separator_type = 1
+		# if self.toggle_square(x + round(110 * gui.scale), y,  prefs.row_title_separator_type == 2, " ⦁ "):
+		# 	prefs.row_title_separator_type = 2
 		x = x0 + 330 * gui.scale
 		y = y0 + 25 * gui.scale
 
@@ -29650,11 +29656,12 @@ class StandardPlaylist:
 
 			if type == 1:
 				# Is type ALBUM TITLE
-				separator = " - "
-				if prefs.row_title_separator_type == 1:
-					separator = " ‒ "
-				if prefs.row_title_separator_type == 2:
-					separator = " ⦁ "
+				# separator = " - "
+				# if prefs.row_title_separator_type == 1:
+				# 	separator = " ‒ "
+				# if prefs.row_title_separator_type == 2:
+				# 	separator = " ⦁ "
+				separator = " ‒ "
 
 				date = ""
 				duration = ""
