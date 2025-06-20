@@ -1279,7 +1279,7 @@ class ColoursClass:
 		self.top_panel_background = self.grey(15)
 		self.status_text_over: ColourRGBA | None = None
 		self.status_text_normal: ColourRGBA | None = None
-		
+
 
 
 		self.side_panel_background = self.grey(18)
@@ -19209,7 +19209,7 @@ class LyricsRenMini:
 
 	def generate(self, index, w) -> None:
 		self.text = ""
-		
+
 		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
 			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
@@ -19261,7 +19261,7 @@ class LyricsRen:
 	def render(self, x, y, w, h, p) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
-		
+
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
@@ -19432,7 +19432,7 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				
+
 				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
 				#	colour = self.colours.grey(40)
@@ -40462,7 +40462,7 @@ def main(holder: Holder) -> None:
 				xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
 			xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
-			def get_xcursor(name: str):
+			def get_xcursor(name: str) -> sdl3.LP_SDL_Cursor:
 				if "XCURSOR_THEME" not in os.environ:
 					raise ValueError("Missing XCURSOR_THEME in env")
 				if "XCURSOR_SIZE" not in os.environ:
