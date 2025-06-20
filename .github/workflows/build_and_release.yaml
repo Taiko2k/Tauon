@@ -507,6 +507,12 @@ jobs:
         run: |
           sed -i 's|{{ tauon_version }}|8.1.0|g' extra/setup.iss
 
+      - name: Get current drive letter nad replace what's in .ISS
+        shell: pwsh
+        run: |
+          $Drive = (Get-Item -Path "${{ github.workspace }}").PSDrive.Name + ":\"
+          (Get-Content extra/setup.iss) -replace "C:\\", $Drive | Set-Content extra/setup.iss
+
       - name: Compile .ISS to .EXE Installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.6
         with:
