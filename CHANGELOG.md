@@ -3,6 +3,7 @@ Changelog
 ---------
 
 ### v8.1.0
+ - **Fixed** Spotify redirect URI to address an upstream deprecation
  - **Fixed** Synced lyrics rendering issue (again)
  - **Fixed** crash when scrolling radio stations
  - **Fixed** crash when enabling monochrome tray icons on NixOS
