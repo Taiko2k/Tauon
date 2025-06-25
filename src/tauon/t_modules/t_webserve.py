@@ -36,6 +36,8 @@ from tauon.t_modules.t_extra import Timer
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+	pass
 
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False
@@ -83,7 +85,6 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 	gui.web_running = True
 
 	class Server(BaseHTTPRequestHandler):
-
 		def log_message(self, format, *args) -> None:
 			logging.info(format % args)
 
@@ -214,9 +215,6 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 				self.end_headers()
 				self.wfile.write(b"404 Not found")
 
-	class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-		pass
-
 	try:
 		httpd = ThreadedHTTPServer(("0.0.0.0", prefs.metadata_page_port), Server)
 		tauon.radio_server = httpd
@@ -231,8 +229,7 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 		logging.exception("Failed starting radio page server!")
 
 
-def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings: Strings, tauon: Tauon) -> None:
-
+def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 	play_timer = Timer()
 
 	class Server(BaseHTTPRequestHandler):
@@ -675,9 +672,6 @@ def webserve2(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumAr
 				self.end_headers()
 				self.wfile.write(b"404 Not found")
 			tauon.wake()
-
-	class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-		pass
 
 	try:
 		httpd = ThreadedHTTPServer(("0.0.0.0", 7814), Server)
