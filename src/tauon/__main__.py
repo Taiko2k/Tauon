@@ -224,8 +224,19 @@ os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checki
 os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
 
 import sdl3
+# Test the first SetHint to catch if we loaded SDL3 correctly
+sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+if sethint_result is None:
+	logging.error("Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround")
+	os.environ["SDL_BINARY_PATH"] = "/usr/lib"
+	import importlib
+	importlib.reload(sdl3)
 
-sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+	sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+	if sethint_result is None:
+		logging.critical("Could not call SetHint, crashing")
+		sys.exit(1)
+
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_ID, t_id.encode("utf-8"))
