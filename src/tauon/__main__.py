@@ -225,7 +225,6 @@ os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warn
 
 import sdl3
 
-
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
@@ -277,20 +276,23 @@ else:
 	logging.info("No window state file")
 
 
-if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
-	try:
-		import gi.repository
-		# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
-		gi.require_version("Gtk", "3.0")
-		from gi.repository import Gtk
+##  Maybe this is needed any more?
+# if d == "GNOME": #and os.environ.get("XDG_SESSION_TYPE") and os.environ.get("XDG_SESSION_TYPE") == "wayland":
+# 	try:
+# 		import gi.repository
+# 		# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
+# 		gi.require_version("Gtk", "3.0")
+# 		from gi.repository import Gtk
+#
+#
+# 		gtk_settings = Gtk.Settings().get_default()
+# 		xtheme = gtk_settings.get_property("gtk-cursor-theme-name")
+# 		xsize = gtk_settings.get_property("gtk-cursor-theme-size")
+# 		os.environ["XCURSOR_THEME"] = xtheme
+# 		os.environ["XCURSOR_SIZE"] = str(xsize)
+# 	except Exception:
+# 		logging.exception("Failed to set cursor")
 
-		gtk_settings = Gtk.Settings().get_default()
-		xtheme = gtk_settings.get_property("gtk-cursor-theme-name")
-		xsize = gtk_settings.get_property("gtk-cursor-theme-size")
-		os.environ["XCURSOR_THEME"] = xtheme
-		os.environ["XCURSOR_SIZE"] = str(xsize)
-	except Exception:
-		logging.exception("Failed to set cursor")
 sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
 
 err = sdl3.SDL_GetError()

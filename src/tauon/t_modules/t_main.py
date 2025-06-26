@@ -195,7 +195,7 @@ try:
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
 except Exception:
-	logging.warning("Error trying to import colored_traceback, tracebacks will be dull.")
+	logging.info("Error trying to import colored_traceback, tracebacks will be dull.")
 
 try:
 	from jxlpy import JXLImagePlugin
@@ -12162,6 +12162,7 @@ class Tauon:
 			item.reload()
 		for menu in Menu.instances:
 			menu.rescale()
+
 		self.bottom_bar1.__init__(self)
 		self.bottom_bar_ao1.__init__(self)
 		self.top_panel.__init__(self)
@@ -26496,7 +26497,9 @@ class TopPanel:
 					tauon.playlist_box.drag = False
 					if prefs.drag_to_unpin:
 						if tauon.playlist_box.drag_source == 0:
-							pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = True
+							pass
+							# Disabled drag to unpin feature
+							#pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = True
 						else:
 							pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
 					gui.update += 1
@@ -36293,7 +36296,6 @@ class Bag:
 	launch_prefix:           str
 	platform_system:         str
 	album_mode_art_size:     int
-	xdpi:                    int
 	master_count:            int
 	playing_in_queue:        int
 	playlist_playing:        int
@@ -39053,7 +39055,6 @@ def main(holder: Holder) -> None:
 	draw_min_button = True
 	draw_max_button = True
 	left_window_control = False
-	xdpi = 0
 
 	detect_macstyle = False
 	gtk_settings: Gtk.Settings | None = None
@@ -39066,7 +39067,6 @@ def main(holder: Holder) -> None:
 		from gi.repository import Gtk
 
 		gtk_settings = Gtk.Settings().get_default()
-		xdpi = gtk_settings.get_property("gtk-xft-dpi") / 1024
 		if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
 			draw_min_button = False
 		if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
@@ -39581,7 +39581,6 @@ def main(holder: Holder) -> None:
 		phone=phone,
 		should_save_state=True,
 		old_window_position=old_window_position,
-		xdpi=xdpi,
 		desktop=desktop,
 		platform_system=platform_system,
 		last_fm_enable=last_fm_enable,
@@ -42511,6 +42510,8 @@ def main(holder: Holder) -> None:
 
 			if keymaps.test("testkey"):  # F7: test
 				#print(pctl.multi_playlist)
+				from watchpoints import watch
+				watch(pctl.multi_playlist[0].hidden)
 				pass
 
 			if gui.mode < 3:
