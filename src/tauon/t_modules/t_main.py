@@ -1836,7 +1836,7 @@ class PlayerCtl:
 			logging.exception("Failed to parse as int, returning 'a'")
 			return "a"
 
-	def re_import2(self, pl: int) -> None:
+	def re_import2(self, pl: int) -> None: # note for flynn
 		paths = self.multi_playlist[pl].last_folder
 
 		reduce_paths(paths)
@@ -1856,8 +1856,79 @@ class PlayerCtl:
 	def rescan_all_folders(self) -> None:
 		for i, p in enumerate(self.multi_playlist):
 			self.re_import2(i)
+		self.tauon.playlist_autoscan = True
+		self.tauon.thread_manager.ready("worker")
 
-	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
+
+	def try_reload_playlist_from_file(self, pl_id: int, warnings: bool = False) -> None:
+		"""reload designated playlist from file if it meets the requirements. pl_id is uuid, not playlist index."""
+		code = self.gen_codes.get(pl_id)
+		new_playlist = self.multi_playlist[ self.id_to_pl(pl_id) ]
+		export_entry = self.prefs.playlist_exports.get(pl_id)
+		try:
+			export_entry["auto_imp"]
+		except:
+			pass
+		else:
+			if export_entry["auto_imp"]:
+				if code is not None:
+					if warnings:
+						self.tauon.show_message(
+							_("Cannot auto-import."),
+							_("This playlist was marked as both \"generator\" and \"auto-import\"."),
+							_("These are incompatible. Auto-import has been disabled."),
+							mode="warning")
+					else:
+						logging.info(f"Disabling auto-import on playlist {new_playlist.title} because it has a generator")
+					export_entry["auto_imp"] = False
+					self.prefs.playlist_exports[id] = export_entry
+					new_playlist.file_size = 0
+					new_playlist.playlist_file = ""
+
+				elif not os.path.exists(new_playlist.playlist_file):
+					if warnings:
+						self.tauon.show_message(
+							_("This playlist is linked to a file that no longer exists."),
+							_("The file will be unlinked."),
+							mode="warning")
+					else:
+						logging.info(f"Unlinking file from playlist {new_playlist.title} because it doesn't exist")
+					export_entry["auto_imp"] = False
+					self.prefs.playlist_exports[id] = export_entry
+					new_playlist.playlist_file = ""
+					new_playlist.file_size = 0
+				# tauon checks file size to determine if there have been any changes
+				elif os.path.getsize(new_playlist.playlist_file) != new_playlist.file_size:
+
+					if export_entry["type"] == "m3u":
+						playlist,stations = self.tauon.parse_m3u(new_playlist.playlist_file)
+						new_playlist.playlist_ids = playlist.copy()
+						new_playlist.file_size = os.path.getsize(new_playlist.playlist_file)
+						logging.info(f"Reloaded playlist \"{new_playlist.title}\" from changed file")
+					elif export_entry["type"] == "xspf":
+						playlist,stations,name = self.tauon.parse_xspf(new_playlist.playlist_file)
+						new_playlist.playlist_ids = playlist.copy()
+						new_playlist.file_size = os.path.getsize(new_playlist.playlist_file)
+						logging.info(f"Reloaded playlist \"{new_playlist.title}\" from changed file")
+
+					else: # if user closed the export dialog while the settings were unusable
+						# honestly this probably will never run.
+						if warnings:
+							self.tauon.show_message(
+								_("This playlist's import/export settings are broken."),
+								_("They will be reset. Please make sure next time."),
+								mode="warning")
+						else:
+							logging.info(f"import/export settings broken on playlist {new_playlist.title}; resetting")
+
+						export_entry["auto_imp"] = False
+						export_entry["type"] = "m3u"
+						self.prefs.playlist_exports[id] = export_entry
+						new_playlist.playlist_file = ""
+						new_playlist.file_size = 0
+
+
+	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None: # note for flynn
 		# Close any active menus
 		# for instance in Menu.instances:
 		# 	instance.active = False
@@ -1906,13 +1977,17 @@ class PlayerCtl:
 		while self.active_playlist_viewing < 0:
 			self.active_playlist_viewing += len(self.multi_playlist)
 
+		id = self.multi_playlist[self.active_playlist_viewing].uuid_int
+
+		if self.prefs.always_auto_update_playlists:
+			self.try_reload_playlist_from_file(id, True)
+		self.render_playlist()
+
 		self.default_playlist = self.multi_playlist[self.active_playlist_viewing].playlist_ids
 		self.playlist_view_position = self.multi_playlist[self.active_playlist_viewing].position
 		self.selected_in_playlist = self.multi_playlist[self.active_playlist_viewing].selected
 		logging.debug("Position changed by playlist change")
 		self.gui.shift_selection = [self.selected_in_playlist]
-
-		id = self.multi_playlist[self.active_playlist_viewing].uuid_int
 
 		code = self.gen_codes.get(id)
 		if code is not None and self.tauon.check_auto_update_okay(code, self.active_playlist_viewing):
@@ -1934,6 +2009,7 @@ class PlayerCtl:
 			if self.active_playlist_viewing:
 				self.active_playlist_playing = self.active_playlist_viewing
 				self.tauon.random_track()
+
 
 	def cycle_playlist_pinned(self, step: int) -> None:
 		if self.gui.radio_view:
@@ -5763,6 +5839,7 @@ class Tauon:
 		self.message_box                          = MessageBox(tauon=self)
 		self.search_text                          = self.search_over.search_text
 		self.sync_target                          = TextBox2(tauon=self)
+		self.playlist_folder_box                  = TextBox2(tauon=self)
 		self.edge_playlist2                       = EdgePulse2(tauon=self)
 		self.lyric_side_top_pulse                 = EdgePulse2(tauon=self)
 		self.lyric_side_bottom_pulse              = EdgePulse2(tauon=self)
@@ -5880,6 +5957,9 @@ class Tauon:
 		self.tau               = TauService(self)
 		self.album_star_store  = AlbumStarStore(self)
 		self.subsonic          = self.album_star_store.subsonic
+
+		self.playlist_autoscan = False
+		self.dropped_playlist = -1
 
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
@@ -6457,21 +6537,23 @@ class Tauon:
 		if not self.gui.radio_view:
 			self.enter_radio_view()
 
-	def load_m3u(self, path: str) -> None:
-		name = os.path.basename(path)[:-4]
+	def parse_m3u(self, path: str) -> tuple[ list[int], list[RadioStation] ]:
+		"""read specified .m3u[8] playlist file, return list of track IDs/stations"""
 		playlist: list[int] = []
 		stations: list[RadioStation] = []
 
-		location_dict: dict[str, TrackClass] = {}
 		titles:        dict[str, TrackClass] = {}
-
-		if not os.path.isfile(path):
-			return
+		location_dict: dict[str, TrackClass] = {}
 		pl_dir = Path(path).parent
 
 		with Path(path).open(encoding="utf-8") as file:
 			lines = file.readlines()
 
+		# parse data lines - either song files or radio links
+		found_imported = 0
+		found_file = 0
+		found_title = 0
+		not_found = 0
 		for i, line in enumerate(lines):
 			line = line.strip("\r\n").strip()
 			if not line.startswith("#"):  # line.startswith("http"):
@@ -6510,10 +6592,10 @@ class Tauon:
 								titles[value.artist + " - " + value.title] = value
 
 					# Is file path already imported?
-					logging.info(line)
+					# logging.info(line)
 					if line in location_dict:
 						playlist.append(location_dict[line].index)
-						logging.info("found imported")
+						found_imported += 1
 					# Or... does the file exist? Then import it
 					elif os.path.isfile(line):
 						nt = TrackClass()
@@ -6523,19 +6605,47 @@ class Tauon:
 						self.pctl.master_library[self.pctl.master_count] = nt
 						playlist.append(self.pctl.master_count)
 						self.pctl.master_count += 1
-						logging.info("found file")
+						found_file += 1
 					# Last resort, guess based on title
 					elif line_title in titles:
 						playlist.append(titles[line_title].index)
-						logging.info("found title")
+						found_title += 1
 					else:
-						logging.info("not found")
+						logging.info(f"track \"{line_title}\" not found")
+						not_found += 1
+		logging.info(f"playlist imported with {found_imported} tracks already in library, {found_file} found from filepath, {found_title} from title and {not_found} not found")
+		return playlist, stations
 
+	def load_m3u(self, path: str) -> None:
+		"""import an m3u file and create a new Tauon playlist for it"""
+		name = os.path.basename(path)[:-4].rstrip(".")
+		if not os.path.isfile(path):
+			return
+
+		playlist, stations = self.parse_m3u(path)
+
+		# & then add it to the list
 		if playlist:
+			filesize = os.path.getsize(path)
+			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=path, file_size=filesize)
+			logging.info(f"Imported m3u file as {final_playlist.title}")
 			self.pctl.multi_playlist.append(
-				self.pl_gen(title=name, playlist_ids=playlist))
+				final_playlist)
 		if stations:
 			self.add_stations(stations, name)
+		if not playlist and not stations:
+			return
+
+		# populate export fields
+		id = final_playlist.uuid_int
+		export_entry = self.prefs.playlist_exports.get(id)
+		if not export_entry:
+			export_entry = copy.copy(self.export_playlist_box.default)
+		export_entry["type"] = "m3u"
+		export_entry["auto"] = True
+		export_entry["auto_imp"] = True
+		export_entry["relative"] = True # note for flynn do logic here actually dont it's not worth it
+		self.prefs.playlist_exports[id] = export_entry
 
 		self.gui.update = 1
 
@@ -6595,11 +6705,8 @@ class Tauon:
 			self.read_pls(lines, path)
 			f.close()
 
-	def load_xspf(self, path: str) -> None:
-		name = os.path.basename(path)[:-5]
-		# self.log("Importing XSPF playlist: " + path, title=True)
-		logging.info(f"Importing XSPF playlist: {path}")
-
+	def parse_xspf(self, path:str) -> tuple[ list[int], list[RadioStation], str]:
+		"""read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
 		try:
 			parser = ET.XMLParser(encoding="utf-8")
 			e = ET.parse(path, parser).getroot()
@@ -6607,6 +6714,7 @@ class Tauon:
 			a: list[dict[str, str | None]] = []
 			b: dict[str, str | None] = {}
 			info = ""
+			name = ""
 			pl_dir = Path(path).parent
 
 			for top in e:
@@ -6619,8 +6727,8 @@ class Tauon:
 					for track in top:
 						if track.tag.endswith("track"):
 							for field in track:
-								logging.info(field.tag)
-								logging.info(field.text)
+								# logging.info(field.tag)
+								# logging.info(field.text)
 								if "title" in field.tag and field.text:
 									b["title"] = field.text
 								if "location" in field.tag and field.text:
@@ -6674,8 +6782,6 @@ class Tauon:
 					self.radiobox.start(radio)
 
 				del a[i]
-		if stations:
-			self.add_stations(stations, os.path.basename(path))
 		playlist: list[int] = []
 		missing = 0
 
@@ -6785,11 +6891,38 @@ class Tauon:
 			self.show_message(
 				_("Failed to locate {N} out of {T} tracks.")
 				.format(N=str(missing), T=str(len(a))))
+
+		return playlist, stations, name
+
+
+	def load_xspf(self, path: str) -> None:
+		# self.log("Importing XSPF playlist: " + path, title=True)
+		logging.info(f"Importing XSPF playlist: {path}")
+
+		playlist, stations, name = self.parse_xspf(path)
+		if not name:
+			name = os.path.basename(path)[:-5]
+		if stations:
+			self.add_stations(stations, os.path.basename(path))
 		#logging.info(playlist)
 		if playlist:
+			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=path)
 			self.pctl.multi_playlist.append(
-				self.pl_gen(title=name, playlist_ids=playlist))
+				final_playlist)
+		if not stations and not playlist:
+			return
 		self.gui.update = 1
+
+		# populate export fields
+		id = final_playlist.uuid_int
+		export_entry = self.prefs.playlist_exports.get(id)
+		if not export_entry:
+			export_entry = copy.copy(self.export_playlist_box.default)
+		export_entry["type"] = "xspf"
+		export_entry["auto"] = True
+		export_entry["auto_imp"] = True
+		export_entry["relative"] = True # note for flynn do logic here actually dont it's not worth it
+		self.prefs.playlist_exports[id] = export_entry
 
 		# logging.info("Finished importing XSPF")
 
@@ -6996,6 +7129,22 @@ class Tauon:
 			self.update_layout_do()
 			# bio_set_large()
 		# self.gui.update_layout = True
+
+	def remove_extension(self, path: str) -> str:
+		try: # TODO: move these somewhere better
+			period = path[::-1].index(".")
+		except:
+			period = 100
+		if period <= 4:
+			path = path[:-(period+1)]
+		return path
+
+	def get_containing_folder(self, path: str) -> str:
+		elements = path.split("/") # TODO: fix with windows
+		partial_path = ""
+		for i in range( len(elements)-1 ):
+			partial_path += "/" + elements[i]
+		return partial_path + "/"
 
 	def flush_artist_bio(self, artist: str) -> None:
 		if os.path.isfile(os.path.join(self.a_cache_directory, artist + "-lfm.txt")):
@@ -7974,15 +8123,23 @@ class Tauon:
 	#	 return [self.colours.menu_text, self.colours.menu_background, line]
 
 	def export_m3u(self, pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
+		"""Exports an m3u file from a Playlist dictionary in multi_playlist.
+		If the playlist contains a playlist_file field, it will export to that file;
+		otherwise it will export to the directory given as an argument."""
+
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
 
-		if not direc:
-			direc = str(self.user_directory / "playlists")
-			if not os.path.exists(direc):
-				os.makedirs(direc)
-		target = os.path.join(direc, self.pctl.multi_playlist[pl].title + ".m3u")
+		#if not direc or direc == "see playlist_file":
+		#	if prefs.playlist_folder_path:
+		#		direc = prefs.playlist_folder_path
+		#	else:
+		#		direc = str(self.user_directory / "playlists")
+		if not os.path.exists( self.get_containing_folder(direc) ):
+			os.makedirs( self.get_containing_folder(direc) )
+
+		target = direc
 
 		f = open(target, "w", encoding="utf-8")
 		f.write("#EXTM3U")
@@ -8000,7 +8157,7 @@ class Tauon:
 					f.write(f",{title}")
 				path = track.fullpath
 				if relative:
-					path = os.path.relpath(path, start=direc)
+					path = os.path.relpath(path, start=self.get_containing_folder(direc))
 				f.write(f"\n{path}")
 		f.close()
 
@@ -8020,12 +8177,29 @@ class Tauon:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
 
-		if not direc:
-			direc = str(self.user_directory / "playlists")
-			if not os.path.exists(direc):
-				os.makedirs(direc)
+		#if not direc:
+		#	direc = str(self.user_directory / "playlists")
+		#	if not os.path.exists(direc):
+		#		os.makedirs(direc)
 
-		target = os.path.join(direc, self.pctl.multi_playlist[pl].title + ".xspf")
+		# if direc != "see playlist_file":
+		#	target = os.path.join(direc, self.pctl.multi_playlist[pl].title + ".xspf")
+
+		if not os.path.exists( self.get_containing_folder(direc) ):
+			os.makedirs( self.get_containing_folder(direc) )
+
+		target = direc
+
+		if self.pctl.multi_playlist[pl].playlist_file and self.pctl.multi_playlist[pl].playlist_file != "":
+			# if the playlist has a file attribute:
+			target = self.pctl.multi_playlist[pl].playlist_file
+			logging.info(f"Playlist will export to filepath {target}")
+			# file attribute is removed if full path mode is disabled
+		try:
+			target
+		except:
+			logging.error("export_xspf: something's gone seriously wrong.")
+			return 1
 
 		xspf_root = ET.Element("playlist", version="1", xmlns="http://xspf.org/ns/0/")
 		xspf_tracklist_tag = ET.SubElement(xspf_root, "trackList")
@@ -8034,7 +8208,7 @@ class Tauon:
 			track = self.pctl.master_library[number]
 			path = track.fullpath
 			if relative:
-				path = os.path.relpath(path, start=direc)
+				path = os.path.relpath(path, start=self.get_containing_folder(direc))
 
 			xspf_track_tag = ET.SubElement(xspf_tracklist_tag, "track")
 			if track.title:
@@ -10817,7 +10991,8 @@ class Tauon:
 			playlist.sort(key=key, reverse=invert)
 		self.reload()
 
-	def stt2(self, sec: int) -> str:
+	def stt2(sec: int) -> str:
+		"""converts seconds into days hours minutes"""
 		days, rem = divmod(sec, 86400)
 		hours, rem = divmod(rem, 3600)
 		min, sec = divmod(rem, 60)
@@ -11598,6 +11773,7 @@ class Tauon:
 		self.gui.pl_update = 2
 
 	def pl_is_mut(self, pl: int) -> bool:
+		"""returns True if specified playlist number is modifiable/not associated with a generator i think"""
 		id = self.pctl.pl_to_id(pl)
 		if id is None:
 			return False
@@ -13082,7 +13258,7 @@ class Tauon:
 
 		if self.tree_view_box.dragging_name:
 			self.pctl.multi_playlist[pl].title = self.tree_view_box.dragging_name
-
+		self.dropped_playlist = pl
 		self.pctl.notify_change()
 
 	def queue_deco(self) -> list[ColourRGBA | None]:
@@ -13787,6 +13963,7 @@ class Tauon:
 		self.pctl.regen_in_progress = False
 		self.gui.pl_update = 1
 		self.reload()
+		self.dropped_playlist = pl
 		self.pctl.notify_change()
 
 		#logging.info(cmds)
@@ -13859,6 +14036,8 @@ class Tauon:
 		parent:       str = "",
 		hidden:       bool = False,
 		notify:       bool = True, # Allows us to generate initial playlist before worker thread is ready
+		playlist_file:str = "",
+		file_size:    int = 0,
 	) -> TauonPlaylist:
 		"""Generate a TauonPlaylist
 
@@ -13870,7 +14049,7 @@ class Tauon:
 			self.pctl.notify_change()
 
 		#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
-		return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False)
+		return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False, playlist_file=playlist_file, file_size=file_size)
 
 	def open_uri(self, uri: str) -> None:
 		logging.info("OPEN URI")
@@ -14994,7 +15173,7 @@ class Tauon:
 				if self.gui.album_tab_mode:
 					self.show_in_gal(self.pctl.selected_in_playlist, silent=True)
 
-	def check_auto_update_okay(self, code, pl=None):
+	def check_auto_update_okay(self, code, pl=None): # note for flynn - could be a good way to check
 		try:
 			cmds = shlex.split(code)
 		except Exception:
@@ -16603,7 +16782,27 @@ class Tauon:
 					continue
 				if item["auto"] is False:
 					continue
+
+				# if the playlist should auto import, but it hasn't since the file was last changed
+				try:
+					item["auto_imp"]
+				except:
+					pass
+				else:
+					if item["auto_imp"]:
+						original_playlist = pctl.multi_playlist[pl]
+						try:
+							filesize = os.path.getsize(original_playlist.playlist_file)
+						except Exception as e:
+							logging.error(e)
+						else:
+							if filesize != original_playlist.file_size and filesize != 0 and self.dropped_playlist != pl:
+								logging.info(f"playlist {original_playlist.title} has changed on disk - Tauon will not overwrite")
+								continue
+
 				self.export_playlist_box.run_export(item, key, warnings=False)
+			self.dropped_playlist = -1 # this value should always match the playlist whose editing caused save_state to run.
+			# this allows tauon to override the file safety when necessary.
 
 			logging.info("Done writing database")
 
@@ -22188,18 +22387,23 @@ class ExportPlaylistBox:
 		self.show_message = tauon.show_message
 		self.active = False
 		self.id = None
+		self.is_generator = False
 		self.directory_text_box = TextBox2(tauon)
 		self.default = {
-			"path": str(tauon.dirs.music_directory) if tauon.dirs.music_directory else str(tauon.dirs.user_directory / "playlists"),
-			"type": "xspf",
+			"path": self.prefs.playlist_folder_path if self.prefs.playlist_folder_path else ( str(tauon.dirs.music_directory) if tauon.dirs.music_directory else str(tauon.dirs.user_directory / "playlists") ),
+			"type": "m3u",
 			"relative": False,
 			"auto": False,
+			"auto_imp": False,
 		}
+		self.has_it_run_yet = False
 
 	def activate(self, playlist: int) -> None:
+		"""runs when the playlist export menu is opened"""
 		self.active = True
 		self.gui.box_over = True
 		self.id = self.pctl.pl_to_id(playlist)
+		self.has_it_run_yet = False
 
 		# Prune old enteries
 		ids = []
@@ -22210,14 +22414,19 @@ class ExportPlaylistBox:
 				del self.prefs.playlist_exports[key]
 
 	def render(self) -> None:
+		"""runs every frame that the playlist export menu is open.
+		also deals with the export entry logic."""
 		gui = self.gui
 		ddt = self.ddt
 		colours = self.colours
 		if not self.active:
 			return
+		for i, item in enumerate(self.pctl.multi_playlist):
+			if item.uuid_int == self.id:
+				original_playlist = item
 
 		w = 500 * gui.scale
-		h = 220 * gui.scale
+		h = 180 * gui.scale
 		x = int(self.window_size[0] / 2) - int(w / 2)
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
@@ -22230,40 +22439,134 @@ class ExportPlaylistBox:
 			self.active = False
 			gui.box_over = False
 
+		# if playlist_folder_path was set after __init__
+		if self.prefs.playlist_folder_path and self.prefs.playlist_folder_path != self.default["path"]:
+			self.default["path"] = self.prefs.playlist_folder_path
+
 		current = self.prefs.playlist_exports.get(self.id)
 		if not current:
 			current = copy.copy(self.default)
 
-		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Export Playlist"), colours.grey(230), 213)
+		if not self.has_it_run_yet:
+			self.is_generator = (self.pctl.gen_codes.get(self.id) and "self" not in self.pctl.gen_codes[self.id])
+			try:
+				current["auto_imp"]
+			except:
+				current["auto_imp"] = False
+			self.temp_auto_imp = current["auto_imp"]
+
+			if original_playlist.playlist_file:
+				self.file_or_folder = "file"
+				self.directory_text_box.text = original_playlist.playlist_file
+			else:
+				self.directory_text_box.text = current["path"] + "/" + original_playlist.title + "." + current["type"]
+				self.file_or_folder = "file"
+
+		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Import/Export Playlist"), colours.grey(230), 213)
 
 		x += round(15 * gui.scale)
 		y += round(25 * gui.scale)
 
-		ddt.text((x, y + 8 * gui.scale), _("Save directory"), colours.grey(230), 11)
+		if self.file_or_folder == "folder":
+			ddt.text((x, y + 8 * gui.scale), _("Save folder"), colours.grey(230), 11)
+		else:
+			ddt.text((x, y + 8 * gui.scale), _("Save file"), colours.grey(230), 11)
 		y += round(30 * gui.scale)
 
 		rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
 		self.fields.add(rect1)
 		# ddt.rect(rect1, [40, 40, 40, 255], True)
 		ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-		self.directory_text_box.text = current["path"]
+
+		# if full path mode is disabled or empty, display directory save path
+		# else display the full path
+		if self.has_it_run_yet:
+			if original_playlist.playlist_file:
+				self.directory_text_box.text = original_playlist.playlist_file
+			else:
+				self.directory_text_box.text = current["path"]
+		self.has_it_run_yet = True
+
 		self.directory_text_box.draw(
 			x + round(4 * gui.scale), y, colours.box_input_text, True,
 			width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
-		current["path"] = self.directory_text_box.text
 
+		old_type = current["type"]
 		y += round(30 * gui.scale)
 		if self.pref_box.toggle_square(x, y, current["type"] == "xspf", "XSPF", gui.level_2_click):
 			current["type"] = "xspf"
 		if self.pref_box.toggle_square(x + round(80 * gui.scale), y, current["type"] == "m3u", "M3U", gui.level_2_click):
 			current["type"] = "m3u"
+
+		if old_type != current["type"]: # if user switched types this frame
+			if self.file_or_folder == "file":
+				if current["type"] == "m3u":
+					if self.directory_text_box.text.endswith(".xspf"): # should be always but i don't wanna rebuild if i'm wrong
+						self.directory_text_box.text = self.directory_text_box.text[:-5] + ".m3u"
+				else:
+					if self.directory_text_box.text.endswith(".m3u8"):
+						self.directory_text_box.text = self.directory_text_box.text[:-5] + ".xspf"
+					if self.directory_text_box.text.endswith(".m3u"):
+						self.directory_text_box.text = self.directory_text_box.text[:-4] + ".xspf"
+
+		# parse box text and convert to options if possible
+		# remember this runs every single frame
+		if self.directory_text_box.text.endswith("/"):
+			self.file_or_folder = "folder"
+			current["auto_imp"] = False
+		elif self.directory_text_box.text.lower().endswith(".xspf"):
+			self.file_or_folder = "file"
+			current["type"] = "xspf"
+		elif self.directory_text_box.text.lower().endswith(".m3u") or self.directory_text_box.text.lower().endswith(".m3u8"):
+			self.file_or_folder = "file"
+			current["type"] = "m3u"
+		else: # if there's no trailing slash OR extension:
+			self.file_or_folder = "file"
+			current["auto_imp"] = False
+			# TODO: on linux you can make a folder called "folder.jpg" for example. same on other OS?
+
+		# save the path
+		if self.file_or_folder == "file":
+			original_playlist.playlist_file = self.directory_text_box.text
+			current["path"] = self.default["path"]
+		else:
+			original_playlist.playlist_file = ""
+			current["path"] = self.directory_text_box.text
+
+
 		# self.pref_box.toggle_square(x + round(160 * gui.scale), y, False, "PLS", gui.level_2_click)
-		y += round(35 * gui.scale)
+		y += round(30 * gui.scale)
 		current["relative"] = self.pref_box.toggle_square(
-			x, y, current["relative"], _("Use relative paths"),
+			x, y, current["relative"], _("Relative paths for tracks"),
 			gui.level_2_click)
-		y += round(60 * gui.scale)
+		ww = ddt.get_text_w(_("Relative paths for tracks"), 211)
+		if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
+			self.show_message(
+					_("Determines how tracks will be referenced in the exported file"),
+					_("Disabled: tracks will be located from root folder, e.g. \"/home/user/music_path/artist/album/track.mp3\"."),
+					_("Enabled: tracks will be located from where the playlist is saved, e.g. \"../artist/album/track.mp3\"."))
+			# TODO: make sense of these for windows and mac
+
+		if self.directory_text_box.text.lower().endswith(".m3u") or self.directory_text_box.text.lower().endswith(".m3u8") and current["type"] == "m3u":
+			is_valid_path = True
+		elif self.directory_text_box.text.lower().endswith(".xspf") and current["type"] == "xspf":
+			is_valid_path = True
+		elif self.directory_text_box.text.endswith("/") and self.file_or_folder == "folder":
+			is_valid_path = True
+		else:
+			is_valid_path = False
+		# determines whether we can use the path unaltered & whether we can show auto import box
+
+
+		y += round(30 * gui.scale)
 		current["auto"] = self.pref_box.toggle_square(x, y, current["auto"], _("Auto-export"), gui.level_2_click)
+		if self.is_generator:
+			current["auto_imp"] = False
+		elif self.file_or_folder == "folder" or not is_valid_path:
+			pass
+		else:
+			current["auto_imp"] = self.pref_box.toggle_square(x + round(130*gui.scale), y, current["auto_imp"], _("Auto-import"), gui.level_2_click)
+
 
 		y += round(0 * gui.scale)
 		ww = ddt.get_text_w(_("Export"), 211)
@@ -22271,26 +22574,57 @@ class ExportPlaylistBox:
 
 		self.prefs.playlist_exports[self.id] = current
 
-		if self.draw.button(_("Export"), x, y, press=gui.level_2_click):
+		if self.draw.button(_("Export"), x, y - (2*gui.scale), press=gui.level_2_click):
+			if not is_valid_path: # only occurs if file
+				try: # remove broken extension
+					reversed_path = self.directory_text_box.text[::-1]
+					period = reversed_path.index(".")
+					self.directory_text_box.text = self.directory_text_box.text[:-(period+1)]
+				except:
+					pass
+				self.directory_text_box.text += "." + current["type"]
+				original_playlist.playlist_file = self.directory_text_box.text
+				current["path"] = self.default["path"]
+				self.prefs.playlist_exports[self.id] = current
 			self.run_export(current, self.id, warnings=True)
+
+
 
 	def run_export(self, current, id, warnings: bool = True) -> None:
 		logging.info("Export playlist")
-		path = current["path"]
-		if not os.path.isdir(path):
-			if warnings:
-				self.show_message(_("Directory does not exist"), mode="warning")
-			return
+
+		# fetch corresponding TauonPlaylist object
+		for i, item in enumerate(self.pctl.multi_playlist):
+			if item.uuid_int == id:
+				original_playlist = item
+
+		if original_playlist.playlist_file:
+			path = original_playlist.playlist_file
+		else:
+			path = current["path"]
+			if not os.path.isdir(path):
+				if warnings:
+					self.show_message(_("Directory does not exist"), mode="warning")
+				return
+		if path.endswith(".m3u8"):
+			pass
+		elif path.endswith("/"):
+			path += original_playlist.title + "." + current["type"]
+		else:
+			path = self.tauon.remove_extension(path) + "." + current["type"]
+
 		target = ""
 		if current["type"] == "xspf":
 			target = self.tauon.export_xspf(self.pctl.id_to_pl(id), direc=path, relative=current["relative"], show=False)
 		if current["type"] == "m3u":
 			target = self.tauon.export_m3u(self.pctl.id_to_pl(id), direc=path, relative=current["relative"], show=False)
+		original_playlist.file_size = os.path.getsize(target)
 
 		if warnings and target != 1:
 			self.show_message(_("Playlist exported"), target, mode="done")
 
 class SearchOverlay:
+
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon        = tauon
@@ -23847,8 +24181,8 @@ class Over:
 			y += 38 * gui.scale
 			prefs.always_auto_update_playlists = self.toggle_square(
 				x, y, prefs.always_auto_update_playlists,
-				_("Auto regenerate playlists"),
-				subtitle=_("Generated playlists reload when re-entering"))
+				_("Auto reload playlists"),
+				subtitle=_("Playlists rescan/regenerate when re-entering"))
 
 			y += 38 * gui.scale
 			self.toggle_square(
@@ -23953,6 +24287,27 @@ class Over:
 				x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
 				subtitle=_("Change requires restart"))
 			y += 37 * gui.scale
+
+			ddt.text((x, y + 8 * gui.scale), _("Default playlist export folder"), colours.grey(230), 11)
+			y += round(30 * gui.scale)
+			rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
+			self.fields.add(rect1)
+			# ddt.rect(rect1, [40, 40, 40, 255], True)
+			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+
+			if self.prefs.playlist_folder_path == "":
+				tauon.playlist_folder_box.text = str(tauon.user_directory / "playlists")
+			else:
+				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
+			tauon.playlist_folder_box.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, True,
+				width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
+			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
+			y += round(30* gui.scale)
+			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
+			prefs.autoscan_playlist_folder = self.toggle_square(
+				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
+				subtitle=_("Only runs during database rescan"))
 
 		elif self.func_page == 3:
 			y += 23 * gui.scale
@@ -26754,6 +27109,7 @@ class TopPanel:
 
 					if modified:
 						pctl.after_import_flag = True
+						tauon.dropped_playlist = i
 						pctl.notify_change()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tauon.tree_view_box.clear_target_pl(i)
@@ -27076,6 +27432,10 @@ class TopPanel:
 			# bg = colours.status_info_text
 			bg = ColourRGBA(100, 200, 100, 255)
 			text = _("Scanning Tags...  {N} remaining").format(N=str(len(tauon.after_scan)))
+		elif tauon.playlist_autoscan:
+			# bg = colours.status_info_text
+			bg = ColourRGBA(100, 200, 100, 255)
+			text = _("Auto-importing playlists...")
 		elif tauon.move_in_progress:
 			text = _("File copy in progress...")
 			bg = colours.status_info_text
@@ -29556,6 +29916,7 @@ class StandardPlaylist:
 							gui.pl_update += 1
 
 						tauon.reload_albums(True)
+						# note for flynn?
 						pctl.notify_change()
 
 			# Test show drag indicator
@@ -31811,6 +32172,7 @@ class PlaylistBox:
 						modified = True
 					if modified:
 						pctl.after_import_flag = True
+						tauon.dropped_playlist = i
 						tauon.thread_manager.ready("worker")
 						pctl.notify_change()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
@@ -36561,6 +36923,9 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("sync-device-music-dir", prefs.sync_target)
 	cf.update_value("add_download_directory", prefs.download_dir1)
 
+	cf.update_value("autoscan_playlist_folder", prefs.autoscan_playlist_folder)
+	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
+
 	cf.update_value("use-system-tray", prefs.use_tray)
 	cf.update_value("use-gamepad", prefs.use_gamepad)
 	cf.update_value("enable-remote-interface", prefs.enable_remote)
@@ -36907,6 +37272,12 @@ def load_prefs(bag: Bag) -> None:
 	prefs.download_dir1 = cf.sync_add(
 		"string", "add_download_directory", prefs.download_dir1,
 		"Add another folder to monitor in addition to home downloads and music.")
+	prefs.playlist_folder_path = cf.sync_add(
+		"string", "playlist_folder_path", prefs.playlist_folder_path,
+		"Default storage folder for playlists")
+	prefs.autoscan_playlist_folder = cf.sync_add(
+		"bool", "autoscan_playlist_folder", prefs.autoscan_playlist_folder,
+		"Also auto-import new playlists from folder?")
 	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
 		if os.path.isdir(prefs.download_dir1):
 			bag.download_directories.append(prefs.download_dir1)
@@ -38307,12 +38678,47 @@ def worker1(tauon: Tauon) -> None:
 		except Exception:
 			logging.exception("Internal error processing CUE file")
 
-	def add_file(path, force_scan: bool = False) -> int | None:
+	def pl_folder_autoscan() -> None:
+		"""rescan designated playlist folder for new playlists and import them"""
+		if prefs.autoscan_playlist_folder:
+			new_playlists = []
+			for root, dirs, files in os.walk(prefs.playlist_folder_path):
+				for name in files:
+					if name.lower().endswith(".m3u8") or name.lower().endswith(".m3u") or name.lower().endswith(".xspf"):
+						structure = ( os.path.join(root, name), name )
+						new_playlists.append( structure )
+			for filepath in new_playlists:
+				can_import = True
+				for already_existing_playlist in pctl.multi_playlist:
+					if already_existing_playlist.playlist_file == filepath[0]:
+						can_import = False
+						logging.info(f"skipping {filepath[1]}: already loaded as {already_existing_playlist.title}")
+				if can_import:
+					add_file(filepath[0])
+					logging.info(f"will import {filepath[0]}")
+
+	def add_file(path, force_scan: bool = False, show_errors: bool = False) -> int | None:
+		"""import playlist from filepath""" # TODO (Flynn): add visible errors for bad playlist imports
 		# bm.get("add file start")
 
 		if not os.path.isfile(path):
 			logging.error("File to import missing")
+			if show_errors:
+				tauon.show_message(
+					_("File missing"),
+					_("Playlist file is missing and cannot be imported."),
+					mode="error")
 			return 0
+
+		for playlist in pctl.multi_playlist:
+			if path == playlist.playlist_file:
+				if show_errors:
+					tauon.show_message(
+						_("Playlist not imported"),
+						_(f"This file is already associated with playlist \"{playlist.title}\"."),
+						mode="error")
+				logging.error(f"File already associated with playlist \"{playlist.title}\"")
+				return 0
 
 		if os.path.splitext(path)[1][1:] in {"CUE", "cue"}:
 			add_from_cue(path)
@@ -38590,6 +38996,7 @@ def worker1(tauon: Tauon) -> None:
 			time.sleep(0.1)
 
 		if tauon.after_scan \
+		or tauon.playlist_autoscan \
 		or tauon.load_orders \
 		or tauon.artist_list_box.load \
 		or tauon.artist_list_box.to_fetch \
@@ -38625,6 +39032,10 @@ def worker1(tauon: Tauon) -> None:
 					break
 
 			gui.album_artist_dict.clear()
+
+		if tauon.playlist_autoscan:
+			pl_folder_autoscan()
+			tauon.playlist_autoscan = False
 
 		tauon.artist_list_box.worker()
 
@@ -38911,7 +39322,8 @@ def worker1(tauon: Tauon) -> None:
 							gets(order.target)
 					elif tauon.loaderCommand == tauon.LC_File:
 						loaded_paths_cache, loaded_cue_cache = cache_paths()
-						add_file(order.target)
+						add_file(order.target, show_errors=True)
+						# i think this meaans if it's manually dragged in
 
 					if gui.im_cancel:
 						gui.im_cancel = False
@@ -40791,7 +41203,7 @@ def main(holder: Holder) -> None:
 
 	# tab_menu.add("Sort By Filepath", tauon.sort_path_pl, pass_ref=True)
 
-	tab_menu.add(MenuItem(_("Export…"), tauon.export_playlist_box.activate, pass_ref=True))
+	tab_menu.add(MenuItem(_("Import/export…"), tauon.export_playlist_box.activate, pass_ref=True))
 
 	tab_menu.add_sub(_("Misc…"), 175)
 	tab_menu.add_to_sub(2, MenuItem(_("Export Playlist Stats"), tauon.export_stats, pass_ref=True))
@@ -41501,6 +41913,11 @@ def main(holder: Holder) -> None:
 
 	if pctl.pl_to_id(pctl.active_playlist_viewing) in gui.gallery_positions:
 		gui.album_scroll_px = gui.gallery_positions[pctl.pl_to_id(pctl.active_playlist_viewing)]
+
+	for playlist in pctl.multi_playlist:
+		pctl.try_reload_playlist_from_file(playlist.uuid_int, False)
+	tauon.playlist_autoscan = True
+	tauon.thread_manager.ready("worker")
 
 
 	# Hold the splash/loading screen for a minimum duration
