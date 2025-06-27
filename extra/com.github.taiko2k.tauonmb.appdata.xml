@@ -61,10 +61,10 @@
   <releases>
 
 
-    <release version="8.0.1" date="2025-04-02">
+    <release version="8.1.2" date="2025-07-03">
       <description>
         <ul>
-          <li>New features and bug fixes</li>
+          <li>Bug fixes</li>
         </ul>
       </description>
     </release>

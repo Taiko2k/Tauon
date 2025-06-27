@@ -306,7 +306,6 @@ perf = Timer()
 class TDraw:
 
 	def __init__(self, renderer: sdl3.LP_SDL_Renderer) -> None:
-
 		# All
 		self.renderer = renderer
 		self.scale = 1
@@ -326,18 +325,18 @@ class TDraw:
 			self.layout = PangoCairo.create_layout(self.context)
 
 		else:
-			self.cache = {}
-			self.ca_li = []
-			self.y_offset_dict = {}
+			self.cache: dict[tuple[str, Win32Font | None, int, int, int, int, int, int, int, int], list[sdl3.SDL_FRect | sdl3.LP_SDL_Texture]] = {}
+			self.ca_li: list[tuple[str, Win32Font | None, int, int, int, int, int, int, int, int]] = []
+			self.y_offset_dict: dict[float, int] = {}
 
 		self.text_background_colour = ColourRGBA(0, 0, 0, 255)
 		self.pretty_rect: tuple[int, int, int, int] | None = None
 		self.real_bg:     bool = False
 		self.alpha_bg:    bool = False
 		self.force_gray:  bool = False
-		self.f_dict: dict[str, Win32Font | tuple[str, int, int]] = {}
-		self.ttc = {}
-		self.ttl = []
+		self.f_dict: dict[float, Win32Font | tuple[str, int, float]] = {}
+		self.ttc: dict[tuple[int, str, int, int, int, int, int, int, int, int], list[sdl3.SDL_FRect | sdl3.LP_SDL_Texture | int | bool]] = {}
+		self.ttl: list[tuple[int, str, int, int, int, int, int, int, int, int]] = []
 
 		self.was_truncated = False
 
@@ -428,7 +427,6 @@ class TDraw:
 		#	 sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
 	def bordered_rect(self, rectangle: tuple[int, int, int, int], fill_colour: ColourRGBA, outer_colour: ColourRGBA, border_size: int) -> None:
-
 		self.sdlrect.x = round(rectangle[0]) - border_size
 		self.sdlrect.y = round(rectangle[1]) - border_size
 		self.sdlrect.w = round(rectangle[2]) + border_size + border_size
@@ -443,19 +441,16 @@ class TDraw:
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
 
 	def line(self, x1: int, y1: int, x2: int, y2: int, colour: ColourRGBA) -> None:
-
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 		sdl3.SDL_RenderLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
 	def get_text_w(self, text: str, font: int, height: bool = False) -> int:
-
 		x, y = self.get_text_wh(text, font, 3000)
 		if height:
 			return y
 		return x
 
 	def clear_text_cache(self) -> None:
-
 		for key in self.ttl:
 			so = self.ttc[key]
 			sdl3.SDL_DestroyTexture(so[1])
@@ -463,17 +458,14 @@ class TDraw:
 		self.ttc.clear()
 		self.ttl.clear()
 
-	def win_prime_font(self, name: str, size: int, user_handle: str, weight: int, y_offset: int = 0) -> None:
-
+	def win_prime_font(self, name: str, size: int, user_handle: float, weight: int, y_offset: int = 0) -> None:
 		self.f_dict[user_handle] = Win32Font(name, int(size * self.scale), weight)
 		self.y_offset_dict[user_handle] = y_offset
 
-	def prime_font(self, name: str, size: int, user_handle: str, offset: int = 0) -> None:
-
+	def prime_font(self, name: str, size: float, user_handle: float, offset: int = 0) -> None:
 		self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale)
 
 	def get_text_wh(self, text: str, font: int, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
-
 		if system == "Linux":
 			self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
 			self.layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -515,7 +507,6 @@ class TDraw:
 		return y_off
 
 	def __render_text(self, key: dict, x: int, y: int, range_top: int, range_height: int, align: int) -> None:
-
 		sd = key
 
 		if sd[3]:
@@ -555,7 +546,7 @@ class TDraw:
 		self,
 		location: list[int], text: str, colour: ColourRGBA, font: int, max_x: int, bg: ColourRGBA,
 		align: int = 0, max_y: int | None = None, wrap: bool = False, range_top: int = 0,
-		range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None,
+		range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, int, int, int, int, int, int, int, int] | None = None,
 		) -> int:
 
 		#perf.set()
@@ -580,7 +571,6 @@ class TDraw:
 		y = round(location[1])
 
 		if self.pretty_rect:
-
 			w, h = self.get_text_wh(text, font, max_x, wrap)
 			quick_box = [x, y, w, h]
 
@@ -614,7 +604,6 @@ class TDraw:
 		if not real_bg or force_cache:
 			sd = self.ttc.get(key)
 			if sd:
-
 				sd = self.ttc[key]
 				sd[0].x = round(x)
 				sd[0].y = round(y) - sd[2]
@@ -781,19 +770,13 @@ class TDraw:
 	# WINDOWS --------------------------------------------------------
 
 	def __win_text_xy(self, text: str, font: int | None, max_x: int, wrap: bool) -> tuple[int, int] | None:
-
 		if font is None or font not in self.f_dict:
-
 			logging.info("Missing Font")
 			logging.info(font)
-
 			return None
-
 		return self.f_dict[font].get_metrics(text, max_x, wrap)
 
-	def __win_render_text(self, key: dict, x: int, y: int, range_top: int, range_height: int, align: int) -> None:
-
-
+	def __win_render_text(self, key: list[sdl3.SDL_FRect | sdl3.LP_SDL_Texture], x: float, y: float, range_top: int, range_height: int, align: int) -> None:
 		sd = key
 
 		sd[0].x = round(x)
@@ -804,7 +787,6 @@ class TDraw:
 			sd[0].x -= int(sd[0].w / 2)
 
 		if range_height is not None and range_height < sd[0].h - 20:
-
 			if range_top + range_height > sd[0].h:
 				# range_top = 0
 				range_height = sd[0].h - range_top
@@ -824,7 +806,7 @@ class TDraw:
 		sdl3.SDL_RenderCopyEx(self.renderer, sd[1], None, sd[0], 0, None, sdl3.SDL_FLIP_VERTICAL)
 
 	def __draw_text_windows(
-		self, x: int, y: int, text: str, bg: ColourRGBA, fg: ColourRGBA, font: Win32Font | None = None,
+		self, x: float, y: float, text: str, bg: ColourRGBA, fg: ColourRGBA, font: Win32Font | None = None,
 		align: int = 0, wrap: bool = False, max_x: int = 100, max_y: int | None = None,
 		range_top: int = 0, range_height: int | None = None,
 	) -> int:
@@ -842,7 +824,6 @@ class TDraw:
 			return sd[0].w
 
 		if font is None or font not in self.f_dict:
-
 			logging.info("Missing Font")
 			logging.info(font)
 			return 0
@@ -895,7 +876,7 @@ class TDraw:
 
 	def text(
 		self, location: list[int], text: str, colour: ColourRGBA, font: int | Win32Font, max_w: int = 4000, bg: ColourRGBA | None = None,
-		range_top: int = 0, range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, str, int, int, int, int, int, int, int] | None = None) -> int | None:
+		range_top: int = 0, range_height: int | None = None, real_bg: bool = False, key: tuple[int, str, int, int, int, int, int, int, int, int] | None = None) -> int | None:
 
 		#logging.info((text, font))
 

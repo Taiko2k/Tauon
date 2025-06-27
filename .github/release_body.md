@@ -1,6 +1,21 @@
-Please note that the Windows pre-release builds can be wrongly flagged by Defender at times, it is safe to whitelist them, see https://github.com/Taiko2k/Tauon/issues/1062 for more information.  
+Here you can find builds for the very latest development version of Tauon.
 
-It may not be possible to go to an older version after using a pre-release build due to migrations, backup your user data if this concerns you, to be able to go back.
+You may want to use these releases if you want to:
+* Get a fix for a bug that hasn't made it to a stable release yet
+* Help catch bugs before they make it to a stable release
+* Experience new features and changes earlier
+
+Please report any issues either over at [Discord](https://discord.gg/v4EmhES) or the [GitHub bug tracker](https://github.com/Taiko2k/Tauon/issues).
+
+**[List of all changes](https://github.com/Taiko2k/Tauon/blob/master/CHANGELOG.md)**
+
+> [!NOTE]
+> Windows pre-release builds can be wrongly flagged by Defender, it is safe to whitelist them.
+> See https://github.com/Taiko2k/Tauon/issues/1062 for more information.
+
+> [!WARNING]
+> It may not be possible to go to an older version after using a pre-release build due to migrations, if this concerns you, backup your user data to be able to go back.
+
 
 <div align=left>
 	<table>
@@ -37,5 +52,3 @@ It may not be possible to go to an older version after using a pre-release build
 		</tbody>
 	</table>
 </div>
-
-**List of all changes:** [Changelog](https://github.com/Taiko2k/Tauon/blob/master/CHANGELOG.md)
