@@ -37879,7 +37879,7 @@ def worker2(tauon: Tauon) -> None:
 									temp_results.append([7, year, track, playlist.uuid_int, 0])
 									years[year] = 1000
 
-						if search_magic(s_text, title + artist + filename + album + sartist + album_artist):
+						if search_magic(s_text, title + " " + artist + " " + filename + " " + album + " " +  sartist + " " + album_artist):
 							if "artists" in t.misc and t.misc["artists"]:
 								for a in t.misc["artists"]:
 									if search_magic(s_text, a.lower()):
