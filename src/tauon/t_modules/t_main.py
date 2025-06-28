@@ -14533,7 +14533,7 @@ class Tauon:
 
 		out_line = encode_track_name(t)
 
-		target_out = str(output / f"output{track}.{codec})")
+		target_out = str(output / f"output{track}.{codec}")
 
 		command = self.get_ffmpeg() + " "
 
@@ -32148,52 +32148,17 @@ class ArtistList:
 			return
 
 		if self.to_fetch:
-			if self.tauon.get_lfm_wait_timer.get() < 2:
+			if self.tauon.get_lfm_wait_timer.get() < 6:
 				return
 
 			artist = self.to_fetch
 			f_artist = filename_safe(artist)
-			filename = f_artist + "-lfm.png"
-			filename2 = f_artist + "-lfm.txt"
-			filename3 = f_artist + "-ftv.jpg"
-			filename4 = f_artist + "-dcg.jpg"
-			filepath = os.path.join(self.a_cache_directory, filename)
-			filepath2 = os.path.join(self.a_cache_directory, filename2)
-			filepath3 = os.path.join(self.a_cache_directory, filename3)
-			filepath4 = os.path.join(self.a_cache_directory, filename4)
-			got_image = False
-			try:
-				# Lookup artist info on last.fm
-				logging.info("lastfm lookup artist: " + artist)
-				mbid = self.lastfm.artist_mbid(artist)
-				self.tauon.get_lfm_wait_timer.set()
-				# if data[0] is not False:
-				#     #cover_link = data[2]
-				#     text = data[1]
-				#
-				#     if not os.path.exists(filepath2):
-				#         f = open(filepath2, 'w', encoding='utf-8')
-				#         f.write(text)
-				#         f.close()
 
-				if mbid and self.prefs.enable_fanart_artist:
-					self.tauon.save_fanart_artist_thumb(mbid, filepath3, preview=True)
-					got_image = True
-
-			except Exception:
-				logging.exception("Failed to find image from fanart.tv")
-
-			if not got_image and self.tauon.verify_discogs():
-				try:
-					self.tauon.save_discogs_artist_thumb(artist, filepath4)
-				except Exception:
-					logging.exception("Failed to find image from discogs")
-
-			if os.path.exists(filepath3) or os.path.exists(filepath4):
-				self.gui.update += 1
-			elif artist not in self.prefs.failed_artists:
-				logging.error("Failed fetching: " + artist)
-				self.prefs.failed_artists.append(artist)
+			self.tauon.artist_info_box.get_data(artist, silent=True)
+			if not self.tauon.artist_info_box.get_data(artist, get_img_path=True):
+				if artist not in self.prefs.failed_artists:
+					logging.error("Failed fetching: " + artist)
+					self.prefs.failed_artists.append(artist)
 
 			self.to_fetch = ""
 
@@ -34565,11 +34530,11 @@ class ArtistInfoBox:
 		else:
 			self.ddt.text((x + w // 2, y + h // 2 - 7 * self.gui.scale, 2), self.status, ColourRGBA(255, 255, 255, 60), 313, bg=background)
 
-	def get_data(self, artist: str, get_img_path: bool = False, force_dl: bool = False) -> str | None:
+	def get_data(self, artist: str, get_img_path: bool = False, force_dl: bool = False, silent: bool = False) -> str | None:
 		if not get_img_path:
 			logging.info("Load Bio Data")
 
-		if artist is None and not get_img_path:
+		if not silent and artist is None and not get_img_path:
 			self.artist_on = artist
 			self.lock = False
 			return ""
@@ -34601,10 +34566,9 @@ class ArtistInfoBox:
 			return ""
 
 		# Check for cache
-		box_size = (
-		round(self.gui.artist_panel_height - 20 * self.gui.scale) * 2, round(self.gui.artist_panel_height - 20 * self.gui.scale))
+		box_size = (round(self.gui.artist_panel_height - 20 * self.gui.scale) * 2, round(self.gui.artist_panel_height - 20 * self.gui.scale))
 		try:
-			if os.path.isfile(text_filepath):
+			if not silent and os.path.isfile(text_filepath):
 				logging.info("Load cached bio and image")
 
 				self.artist_picture_render.show = False
@@ -34625,7 +34589,7 @@ class ArtistInfoBox:
 
 				return ""
 
-			if not force_dl and not self.prefs.auto_dl_artist_data:
+			if not silent and not force_dl and not self.prefs.auto_dl_artist_data:
 				# . Alt: No artist data has been downloaded (try imply this needs to be manually triggered)
 				self.status = _("No artist data downloaded")
 				self.artist_on = artist
@@ -34635,43 +34599,51 @@ class ArtistInfoBox:
 
 			# Get new from last.fm
 			# . Alt: Looking up artist data
-			self.status = _("Looking up...")
-			self.gui.update += 1
+			if not silent:
+				self.status = _("Looking up...")
+				self.gui.update += 1
+				self.text = ""
+
 			data = self.tauon.lastfm.artist_info(artist)
-			self.text = ""
+			text = ""
+
 			if data[0] is False:
-				self.artist_picture_render.show = False
-				self.status = _("No artist bio found")
-				self.artist_on = artist
-				self.lock = False
+				if not silent:
+					self.artist_picture_render.show = False
+					self.status = _("No artist bio found")
+					self.artist_on = artist
+					self.lock = False
 				return None
 			if data[1]:
-				self.text = data[1]
+				text = data[1]
+				if not silent:
+					self.text = text
 			# cover_link = data[2]
 			# Save text as file
 			f = open(text_filepath, "w", encoding="utf-8")
-			f.write(self.text)
+			f.write(text)
 			f.close()
 			logging.info("Save bio text")
 
-			self.artist_picture_render.show = False
+			if not silent:
+				self.artist_picture_render.show = False
+
+			got_image_path = ""
 			if data[3] and self.prefs.enable_fanart_artist:
 				try:
 					self.tauon.save_fanart_artist_thumb(data[3], img_filepath)
-					self.artist_picture_render.load(img_filepath, box_size)
-
-					self.artist_picture_render.show = True
+					got_image_path = img_filepath
 				except Exception:
 					logging.exception("Failed to find image from fanart.tv")
-			if not self.artist_picture_render.show and self.tauon.verify_discogs():
+
+			if not got_image_path and self.tauon.verify_discogs():
 				try:
 					self.tauon.save_discogs_artist_thumb(artist, img_filepath_dcg)
-					self.artist_picture_render.load(img_filepath_dcg, box_size)
-
-					self.artist_picture_render.show = True
+					got_image_path = img_filepath_dcg
 				except Exception:
 					logging.exception("Failed to find image from discogs")
-			if not self.artist_picture_render.show and data[4]:
+
+			if not got_image_path and data[4]:
 				try:
 					r = requests.get(data[4], timeout=10)
 					html = BeautifulSoup(r.text, "html.parser")
@@ -34682,11 +34654,16 @@ class ArtistInfoBox:
 						assert len(r.content) > 1000
 						with open(standard_path, "wb") as f:
 							f.write(r.content)
-						self.artist_picture_render.load(standard_path, box_size)
-						self.artist_picture_render.show = True
+						got_image_path = standard_path
+
 				except Exception:
 					logging.exception("Failed to scrape art")
 
+			if not silent and got_image_path:
+				self.artist_picture_render.load(got_image_path, box_size)
+				self.artist_picture_render.show = True
+			if silent:
+				return
 			# Trigger reload of thumbnail in artist list box
 			for key, value in list(self.tauon.artist_list_box.thumb_cache.items()):
 				if key is None and key == artist:
