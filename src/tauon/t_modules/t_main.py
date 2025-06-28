@@ -1876,6 +1876,8 @@ class PlayerCtl:
 				del temp_path[position]
 				del temp_path[position-1]
 			fullpath = "/".join(temp_path)
+			if fullpath != self.master_library[track].fullpath:
+				self.master_library[track].fullpath = fullpath
 			if fullpath in paths:
 				logging.info(f"bad path found: id    {track} is {self.master_library[track].fullpath}")
 				bad_id = paths.index(fullpath)
