@@ -1866,6 +1866,7 @@ class PlayerCtl:
 	def deep_remove_duplicates(self) -> None:
 		ids = []
 		paths = []
+		ids_to_delete = []
 		# index and fullpath
 		for track in self.master_library:
 			if not self.master_library[track].fullpath:
@@ -1881,11 +1882,13 @@ class PlayerCtl:
 				bad_id = paths.index(fullpath)
 				logging.info(f"old path could be id  {ids[bad_id]} at {self.master_library[ids[bad_id]].fullpath}")
 				logging.info(f"DELETING ID {track}!!!!!!!!!")
-				del self.master_library[track]
+				ids_to_delete.append(track)
 			elif fullpath != self.master_library[track].fullpath:
 				self.master_library[track].fullpath = fullpath
 			paths.append(fullpath)
 			ids.append(track)
+		for bad_track in ids_to_delete:
+			del self.master_library[bad_track]
 
 	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
 		# Close any active menus
