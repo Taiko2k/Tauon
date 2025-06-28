@@ -1279,7 +1279,7 @@ class ColoursClass:
 		self.top_panel_background = self.grey(15)
 		self.status_text_over: ColourRGBA | None = None
 		self.status_text_normal: ColourRGBA | None = None
-		
+
 
 
 		self.side_panel_background = self.grey(18)
@@ -5633,6 +5633,7 @@ class Tauon:
 		self.core_use: int                        = 0
 		self.dl_use: int                          = 0
 		self.latest_db_version                    = bag.latest_db_version
+		self.g_tc_notify                          = None
 		# Setting various timers
 		self.spot_search_rate_timer       = Timer()
 		self.track_box_path_tool_timer    = Timer()
@@ -5669,7 +5670,6 @@ class Tauon:
 		self.sync_file_update_timer       = Timer(1000)
 		self.restore_ignore_timer         = Timer()
 		self.restore_ignore_timer.force_set(100)
-
 		self.fields = Fields(self)
 		# Create top menu
 		self.x_menu                = Menu(self, 190, show_icons=True)
@@ -19210,7 +19210,7 @@ class LyricsRenMini:
 
 	def generate(self, index, w) -> None:
 		self.text = ""
-		
+
 		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
 			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
@@ -19262,7 +19262,7 @@ class LyricsRen:
 	def render(self, x, y, w, h, p) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
-		
+
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
@@ -19433,7 +19433,7 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				
+
 				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
 				#	colour = self.colours.grey(40)
@@ -40365,13 +40365,13 @@ def main(holder: Holder) -> None:
 	if system == "Linux" and not macos and not tauon.msys:
 		try:
 			Notify.init("Tauon Music Box")
-			g_tc_notify = Notify.Notification.new(
+			tauon.g_tc_notify = Notify.Notification.new(
 				"Tauon Music Box",
 				"Transcoding has finished.")
 			value = GLib.Variant("s", t_id)
-			g_tc_notify.set_hint("desktop-entry", value)
+			tauon.g_tc_notify.set_hint("desktop-entry", value)
 
-			g_tc_notify.add_action(
+			tauon.g_tc_notify.add_action(
 				"action_click",
 				"Open Output Folder",
 				tauon.g_open_encode_out,
@@ -46562,7 +46562,7 @@ def main(holder: Holder) -> None:
 	elif tauon.de_notify_support:
 		try:
 			tauon.song_notification.close()
-			g_tc_notify.close()
+			tauon.g_tc_notify.close()
 			Notify.uninit()
 		except Exception:
 			logging.exception("uninit notification error")
