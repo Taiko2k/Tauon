@@ -1882,7 +1882,7 @@ class PlayerCtl:
 				logging.info(f"old path could be id  {ids[bad_id]} at {self.master_library[ids[bad_id]].fullpath}")
 				logging.info(f"DELETING ID {track}!!!!!!!!!")
 				del self.master_library[track]
-			if fullpath != self.master_library[track].fullpath:
+			elif fullpath != self.master_library[track].fullpath:
 				self.master_library[track].fullpath = fullpath
 			paths.append(fullpath)
 			ids.append(track)
