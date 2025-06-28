@@ -1279,7 +1279,7 @@ class ColoursClass:
 		self.top_panel_background = self.grey(15)
 		self.status_text_over: ColourRGBA | None = None
 		self.status_text_normal: ColourRGBA | None = None
-		
+
 
 
 		self.side_panel_background = self.grey(18)
@@ -6516,6 +6516,14 @@ class Tauon:
 					# Join file path if possibly relative
 					if not line.startswith("/"):
 						line = os.path.join(os.path.dirname(path), line)
+
+					# Get rid of redundant relative paths
+					split = line.split("/")
+					while ".." in split:
+						location = split.index("..")
+						del split[location]
+						del split[location-1]
+					line = "/".join(split)
 
 					# Cache datbase file paths for quick lookup
 					if not location_dict:
@@ -19210,7 +19218,7 @@ class LyricsRenMini:
 
 	def generate(self, index, w) -> None:
 		self.text = ""
-		
+
 		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
 			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
@@ -19262,7 +19270,7 @@ class LyricsRen:
 	def render(self, x, y, w, h, p) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
-		
+
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
@@ -19433,7 +19441,7 @@ class TimedLyricsRen:
 		for i, line in enumerate(self.data):
 			if 0 < yy < self.window_size[1]:
 				colour = self.colours.lyrics
-				
+
 				#colour = self.colours.grey(70)
 				#if test_lumi(self.colours.gallery_background) < 0.5:
 				#	colour = self.colours.grey(40)
