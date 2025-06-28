@@ -1651,6 +1651,7 @@ class PlayerCtl:
 		self.loading_in_progress: bool = False
 		self.taskbar_progress:    bool = True
 		self.album_dex                 = self.tauon.album_dex
+		self.deep_duplicates           = False
 
 		self.cargo: list[int]          = []
 		# Database
@@ -1915,6 +1916,9 @@ class PlayerCtl:
 					if stations:
 						self.tauon.add_stations( stations, new_playlist.title )
 
+	def deep_remove_duplicates(self) -> None:
+		self.deep_duplicates = True
+		self.tauon.thread_manager.ready("worker")
 
 	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
 		# Close any active menus
@@ -14076,7 +14080,7 @@ class Tauon:
 	def forget_pl_import_folder(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].last_folder = []
 
-	def remove_duplicates(self, pl: int) -> None:
+	def remove_duplicates(self, pl: int, message: bool=True) -> None:
 		playlist = []
 
 		for item in self.pctl.multi_playlist[pl].playlist_ids:
@@ -14084,10 +14088,11 @@ class Tauon:
 				playlist.append(item)
 
 		removed = len(self.pctl.multi_playlist[pl].playlist_ids) - len(playlist)
-		if not removed:
-			self.show_message(_("No duplicates were found"))
-		else:
-			self.show_message(_("{N} duplicates removed").format(N=removed), mode="done")
+		if message:
+			if not removed:
+				self.show_message(_("No duplicates were found"))
+			else:
+				self.show_message(_("{N} duplicates removed").format(N=removed), mode="done")
 
 		self.pctl.multi_playlist[pl].playlist_ids[:] = playlist[:]
 
@@ -39155,6 +39160,48 @@ def worker1(tauon: Tauon) -> None:
 				dic2[(value.fullpath.replace("\\", "/"), value.track_number)] = value
 		return dic, dic2
 
+	def deep_remove_duplicates() -> int:
+		paths_ids: dict[str,int] = {}
+		dupes = []
+		for track in pctl.master_library:
+			if not pctl.master_library[track].fullpath:
+				continue
+			known_good = str( Path(pctl.master_library[track].fullpath).resolve() ).strip()
+
+			if known_good in paths_ids:
+				good_id = paths_ids[known_good]
+				dupes.append( deep_remove_duplicate(track, good_id) )
+				continue
+			if known_good != pctl.master_library[track].fullpath:
+				pctl.master_library[track].fullpath = known_good
+			paths_ids[known_good] = track
+		for bad_id in dupes:
+			logging.info(f"Deleting ID {bad_id}, duplicate of {pctl.master_library[bad_id].title}")
+			del pctl.master_library[bad_id]
+		return len( dupes )
+
+	def deep_remove_duplicate(bad_id: int, good_id: int) -> None:
+		"""replaces every instance of track bad_id with track good_id in every playlist
+		also tries to interpret whether the user is ok with duplicates"""
+		for num, pl in enumerate(pctl.multi_playlist):
+			# if the playlist already has duplicates then you don't need to remove them
+			if bad_id in pl.playlist_ids:
+				temp_pl = set()
+				allow_dupes = False
+
+				for id in pl.playlist_ids:
+					if id not in temp_pl:
+						temp_pl.add(id)
+					else:
+						allow_dupes = True
+						break
+				while bad_id in pl.playlist_ids:
+					loc = pl.playlist_ids.index(bad_id)
+					pl.playlist_ids[loc] = good_id
+				if not allow_dupes:
+					tauon.remove_duplicates(num, message=False)
+		return bad_id
+
 
 	#logging.info(pctl.master_library)
 
@@ -39176,7 +39223,8 @@ def worker1(tauon: Tauon) -> None:
 		or tauon.cm_clean_db \
 		or tauon.transcode_list \
 		or tauon.to_scan \
-		or tauon.loaderCommandReady:
+		or tauon.loaderCommandReady \
+		or pctl.deep_duplicates:
 			active_timer.set()
 		elif active_timer.get() > 5:
 			return
@@ -39204,6 +39252,16 @@ def worker1(tauon: Tauon) -> None:
 		if tauon.playlist_autoscan:
 			pl_folder_autoscan()
 			tauon.playlist_autoscan = False
+
+		# Remove identical files imported by different relative paths
+		if pctl.deep_duplicates:
+			dupes = deep_remove_duplicates()
+			tauon.show_message(
+				_("All filepaths resolved."),
+				_(f"Removed {dupes} tracks with duplicate paths."),
+				_("You should never have to run that again :)"),
+				mode = "done" )
+			pctl.deep_duplicates = False
 
 		tauon.artist_list_box.worker()
 
@@ -41752,6 +41810,7 @@ def main(holder: Holder) -> None:
 	x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), tauon.import_popm))
 	x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), tauon.clear_ratings))
 	x_menu.add_to_sub(0, MenuItem(_("Find Incomplete Albums"), tauon.find_incomplete))
+	x_menu.add_to_sub(0, MenuItem(_("Iron Out Duplicate Track Paths"), pctl.deep_remove_duplicates))
 	x_menu.add_to_sub(0, MenuItem(_("Mark Missing as Found"), pctl.reset_missing_flags, show_test=inp.test_shift))
 
 	if tauon.chrome:
