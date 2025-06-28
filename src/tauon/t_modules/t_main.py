@@ -14525,7 +14525,7 @@ class Tauon:
 
 		out_line = encode_track_name(t)
 
-		target_out = str(output / f"output{track}.{codec})")
+		target_out = str(output / f"output{track}.{codec}")
 
 		command = self.get_ffmpeg() + " "
 
