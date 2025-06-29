@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-05-18 15:11+0200\n"
-"PO-Revision-Date: 2025-05-04 09:07+0000\n"
-"Last-Translator: AHOHNMYC <lqwh2h2cwa@protonmail.com>\n"
+"PO-Revision-Date: 2025-06-30 08:01+0000\n"
+"Last-Translator: gfbdrgn <erfvvgtyhbnjhyuu@wireconnected.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -16,29 +16,28 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/guitar_chords.py:81
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "Недостаточно метаданных для поиска"
 
 #: src/tauon/t_modules/guitar_chords.py:95
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "В буфере обмена нет текста"
 
 #: src/tauon/t_modules/guitar_chords.py:189
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "Ошибка при поиске подходящего трека на GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:205
-#, fuzzy
 msgid "Track not found on GuitarParty"
-msgstr "Удалить все остальные каталоги в целевом каталоге"
+msgstr "Трек не найден на GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:220
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Ошибка при получении песни из GuitarParty"
 
 #: src/tauon/t_modules/t_db_migrate.py:134
 msgid ""
@@ -82,39 +81,45 @@ msgid ""
 "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > "
 "Accounts > Spotify"
 msgstr ""
+"Для этого нажмите «Забыть учетную запись», затем «Авторизовать» в «Настройки»"
+" > «Учетные записи» > «Spotify»"
 
 #: src/tauon/t_modules/t_db_migrate.py:380
 msgid "Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"
 msgstr ""
+"Добро пожаловать в версию 6.3.0. В связи с обновлением необходимо повторно "
+"авторизоваться в Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:381
 msgid ""
 "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"
 msgstr ""
+"Вы можете сделать это, нажав «Авторизовать» в «Настройки» > «Учетные записи» "
+"> «Spotify»"
 
 #: src/tauon/t_modules/t_db_migrate.py:436
 msgid "Upgrade to v6.5.1. It looks like you are using Spotify."
-msgstr ""
+msgstr "Обновите до версии 6.5.1. Похоже, вы используете Spotify."
 
 #: src/tauon/t_modules/t_db_migrate.py:437
-#, fuzzy
 msgid "Please click 'Authorise' again in the settings"
-msgstr "Пожалуйста, авторизуйте в Spotify в настройках!"
+msgstr "Пожалуйста, нажмите «Авторизовать» еще раз в настройках"
 
 #: src/tauon/t_modules/t_db_migrate.py:448
 msgid "Upgrade to v6.5.3 complete"
-msgstr ""
+msgstr "Обновление до версии 6.5.3 завершено"
 
 #: src/tauon/t_modules/t_db_migrate.py:449
 msgid ""
 "It looks like you are using Spotify. Please re-setup Spotify again in the "
 "settings"
 msgstr ""
+"Похоже, вы используете Spotify. Пожалуйста, переустановите Spotify в "
+"настройках"
 
 #: src/tauon/t_modules/t_dbus.py:72
-#, fuzzy
 msgid "Failed to start indicator"
-msgstr "Не удалось подключиться!"
+msgstr "Не удалось запустить индикатор"
 
 #: src/tauon/t_modules/t_extra.py:237 src/tauon/t_modules/t_extra.py:253
 msgid " B"
@@ -134,43 +139,39 @@ msgstr " ГБ"
 
 #: src/tauon/t_modules/t_jellyfin.py:88 src/tauon/t_modules/t_jellyfin.py:89
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "Убедитесь, что сервер работает и URL-адрес правильный."
 
 #: src/tauon/t_modules/t_jellyfin.py:88 src/tauon/t_modules/t_jellyfin.py:89
-#, fuzzy
 msgid "Could not establish connection to server."
-msgstr "Не удалось установить соединение"
+msgstr "Не удалось установить соединение с сервером."
 
 #: src/tauon/t_modules/t_jellyfin.py:98
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Подключение и авторизация успешно выполнены"
 
 #: src/tauon/t_modules/t_jellyfin.py:100
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Аутентификация не удалась"
 
 #: src/tauon/t_modules/t_jellyfin.py:100
 msgid "Check username and password."
-msgstr ""
+msgstr "Проверьте имя пользователя и пароль."
 
 #: src/tauon/t_modules/t_jellyfin.py:102
 msgid "Jellyfin auth error"
-msgstr ""
+msgstr "Ошибка аутентификации Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:384
-#, fuzzy
 msgid "Error connecting to Jellyfin"
-msgstr "Ошибка подключения к серверу PLEX"
+msgstr "Ошибка подключения к Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:420
-#, fuzzy
 msgid "Error connecting to Jellyfin for Import"
-msgstr "Ошибка подключения к серверу PLEX"
+msgstr "Ошибка подключения к Jellyfin для импорта"
 
 #: src/tauon/t_modules/t_jellyfin.py:438
-#, fuzzy
 msgid "Error accessing Jellyfin"
-msgstr "Ошибка удаления файла"
+msgstr "Ошибка доступа к Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:556
 msgid "Jellyfin Collection"
@@ -182,16 +183,15 @@ msgstr "Повторное сканирование каталогов..."
 
 #: src/tauon/t_modules/t_main.py:1904 src/tauon/t_modules/t_main.py:1908
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr ""
+msgstr "Плейлист заблокирован, чтобы предотвратить случайное удаление"
 
 #: src/tauon/t_modules/t_main.py:2014
-#, fuzzy
 msgid "Are you sure you want to delete playlist: {name}?"
-msgstr "Вы уверены, что хотите удалить плейлист: %s?"
+msgstr "Вы уверены, что хотите удалить плейлист: {name}?"
 
 #: src/tauon/t_modules/t_main.py:3704 src/tauon/t_modules/t_main.py:17222
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Дополнительный модуль python-pylast не установлен"
 
 #: src/tauon/t_modules/t_main.py:3715
 msgid "Once authorised click the 'done' button."
@@ -207,7 +207,7 @@ msgstr "Сначала вам нужно войти в систему"
 
 #: src/tauon/t_modules/t_main.py:3737
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Ошибка - Не авторизован"
 
 #: src/tauon/t_modules/t_main.py:3740
 msgid "Unknown error."
@@ -218,35 +218,32 @@ msgid "Error"
 msgstr "Ошибка"
 
 #: src/tauon/t_modules/t_main.py:3749
-#, fuzzy
 msgid "Logout will complete on app restart."
-msgstr "Изменение будет применено при перезапуске."
+msgstr "Выход из системы будет завершен при перезапуске приложения."
 
 #: src/tauon/t_modules/t_main.py:3757
 msgid "Already connected to Last.fm"
-msgstr ""
+msgstr "Уже подключено к Last.fm"
 
 #: src/tauon/t_modules/t_main.py:3761
-#, fuzzy
 msgid "Authorise an account in settings"
-msgstr "Пожалуйста, авторизуйте в Spotify в настройках!"
+msgstr "Авторизуйте учетную запись в настройках"
 
 #: src/tauon/t_modules/t_main.py:3761
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "Учетная запись Last.Fm не зарегистрирована"
 
 #: src/tauon/t_modules/t_main.py:3772
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Подключение к Last.fm прошло успешно."
 
 #: src/tauon/t_modules/t_main.py:3779
-#, fuzzy
 msgid "Error connecting to Last.fm network"
-msgstr "Ошибка подключения к серверу PLEX"
+msgstr "Ошибка подключения к сети Last.fm"
 
 #: src/tauon/t_modules/t_main.py:3798 src/tauon/t_modules/t_main.py:3811
 msgid "Error communicating with Last.fm network"
-msgstr ""
+msgstr "Ошибка при подключении к сети Last.fm"
 
 #: src/tauon/t_modules/t_main.py:3872
 msgid "Scanning failed. Try again?"
@@ -258,12 +255,11 @@ msgstr "Сканирование скробблов завершено"
 
 #: src/tauon/t_modules/t_main.py:4051
 msgid "Removed {N} loves."
-msgstr ""
+msgstr "Удалено {N} лайков."
 
 #: src/tauon/t_modules/t_main.py:4064
-#, fuzzy
 msgid "There was an error, try re-log in"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка, попробуйте войти заново"
 
 #: src/tauon/t_modules/t_main.py:4073
 msgid "Getting friend data..."
@@ -274,36 +270,34 @@ msgid "This may take a very long time."
 msgstr "Это может занять очень много времени."
 
 #: src/tauon/t_modules/t_main.py:4096
-#, fuzzy
 msgid "There was an error getting friends loves"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка при получении лайков друзей"
 
 #: src/tauon/t_modules/t_main.py:4104
 msgid "Scanning loved tracks for: {username}"
-msgstr ""
+msgstr "Сканирование любимых треков для: {имя пользователя}"
 
 #: src/tauon/t_modules/t_main.py:4108
-#, fuzzy
 msgid "No username found"
-msgstr "Ничего не найдено"
+msgstr "Имя пользователя не найдено"
 
 #: src/tauon/t_modules/t_main.py:4152
-#, fuzzy
 msgid "User has no loved tracks."
-msgstr "Не понравившаяся дорожка"
+msgstr "У пользователя нет любимых треков."
 
 #: src/tauon/t_modules/t_main.py:4155
 msgid "{N} matched tracks are up to date."
-msgstr ""
+msgstr "{N} совпадающих треков актуальны."
 
 #: src/tauon/t_modules/t_main.py:4158
-#, fuzzy
 msgid "{N} tracks matched. {T} were updated."
-msgstr "Дорожек с текстом песен не найдено."
+msgstr "{N} треков найдено. {T} обновлено."
 
 #: src/tauon/t_modules/t_main.py:4160
 msgid "Of {N} loved tracks, no matches were found in local db"
 msgstr ""
+"Из {N} любимых треков не было найдено ни одного совпадения в локальной базе "
+"данных."
 
 #: src/tauon/t_modules/t_main.py:4164
 msgid "This doesn't seem to be working :("
