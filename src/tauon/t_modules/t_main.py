@@ -13843,7 +13843,7 @@ class Tauon:
 	def forget_pl_import_folder(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].last_folder = []
 
-	def remove_duplicates(self, pl: int, message: bool=True) -> int:
+	def remove_duplicates(self, pl: int, message: bool=True) -> None:
 		playlist = []
 
 		for item in self.pctl.multi_playlist[pl].playlist_ids:
@@ -13858,7 +13858,6 @@ class Tauon:
 				self.show_message(_("{N} duplicates removed").format(N=removed), mode="done")
 
 		self.pctl.multi_playlist[pl].playlist_ids[:] = playlist[:]
-		return removed
 
 	def start_quick_add(self, pl: int) -> None:
 		self.pctl.quick_add_target = self.pctl.pl_to_id(pl)
@@ -38646,7 +38645,7 @@ def worker1(tauon: Tauon) -> None:
 					loc = pl.playlist_ids.index(bad_id)
 					pl.playlist_ids[loc] = good_id
 				if not allow_dupes:
-					dupes = tauon.remove_duplicates(num, message=False)
+					tauon.remove_duplicates(num, message=False)
 		return bad_id
 
 
