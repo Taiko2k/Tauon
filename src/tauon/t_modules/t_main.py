@@ -1736,11 +1736,6 @@ class PlayerCtl:
 		self.record_stream = False
 		self.record_title = ""
 
-		# Bass
-
-		#self.bass_devices = []
-		self.set_device = 0
-
 		#self.gst_devices = []  # Display names
 		#self.gst_outputs = {}  # Display name : (sink, device)
 		#TODO(Martin): Fix this by moving the class to root of the module
@@ -6254,20 +6249,6 @@ class Tauon:
 		ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
 		ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
 		ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
-
-	#def bass_player_thread(self, player) -> None:
-	#	# logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
-	#	#					 format='%(asctime)s %(levelname)s %(name)s %(message)s')
-	#	try:
-	#		player(self.pctl, self.gui, self.prefs, self.lfm_scrobbler, self.star_store, self)
-	#	except Exception:
-	#		logging.exception("Exception on player thread")
-	#		self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-	#		time.sleep(1)
-	#		self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-	#		time.sleep(1)
-	#		self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-	#		raise
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
@@ -12797,12 +12778,6 @@ class Tauon:
 		self.gui.update_layout = True
 		self.gui.pl_update = 1
 
-	def bass_features_deco(self) -> list[ColourRGBA | None]:
-		line_colour = self.colours.menu_text
-		if self.prefs.backend != 1:
-			line_colour = self.colours.menu_text_disabled
-		return [line_colour, self.colours.menu_background, None]
-
 	def force_album_view(self) -> None:
 		self.toggle_album_mode(force_on=True)
 
@@ -13102,10 +13077,6 @@ class Tauon:
 	def queue_deco(self) -> list[ColourRGBA | None]:
 		line_colour = self.colours.menu_text if len(self.pctl.force_queue) > 0 else self.colours.menu_text_disabled
 		return [line_colour, self.colours.menu_background, None]
-
-	def bass_test(self, _) -> bool:
-		# return True
-		return self.prefs.backend == 1
 
 	def gstreamer_test(self, _) -> bool:
 		# return True
