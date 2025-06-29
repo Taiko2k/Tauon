@@ -350,7 +350,7 @@ class LoadImageAsset:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: int, y: int, colour: ColourRGBA | None = None) -> None:
+	def render(self, x: float, y: float, colour: ColourRGBA | None = None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
 		sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.rect)
@@ -384,7 +384,7 @@ class WhiteModImageAsset:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: int, y: int, colour: ColourRGBA) -> None:
+	def render(self, x: float, y: float, colour: ColourRGBA) -> None:
 		if colour != self.colour:
 			sdl3.SDL_SetTextureColorMod(self.texture, colour.r, colour.g, colour.b)
 			sdl3.SDL_SetTextureAlphaMod(self.texture, colour.a)
@@ -662,10 +662,10 @@ class GuiVar:
 		self.rsp = True
 		if self.bag.phone:
 			self.rsp = False
-		self.rspw = round(300 * self.scale)
+		self.rspw: float = round(300 * self.scale)
 		self.lsp = False
-		self.lspw = round(220 * self.scale)
-		self.plw = None
+		self.lspw: float = round(220 * self.scale)
+		self.plw: float | None = None
 
 		self.pref_rspw = 300
 
@@ -1009,10 +1009,10 @@ class StarStore:
 			if value == 0:
 				del tr.misc["FMPS_Rating"]
 
-	def get_by_object(self, track: TrackClass) -> int:
+	def get_by_object(self, track: TrackClass) -> float:
 		return self.db.get(self.object_key(track), StarRecord()).playtime
 
-	def get_total(self) -> int:
+	def get_total(self) -> float:
 		return sum(item.playtime for item in self.db.values())
 
 	def full_get(self, index: int) -> StarRecord | None:
@@ -2631,7 +2631,7 @@ class PlayerCtl:
 			if track_id in pool:
 				pool.remove(track_id)
 
-	def play_target_rr(self, play=True) -> None:
+	def play_target_rr(self, play: bool = True) -> None:
 		self.tauon.thread_manager.ready_playback()
 		self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
 
@@ -2663,7 +2663,7 @@ class PlayerCtl:
 
 		self.deduct_shuffle(self.target_object.index)
 
-	def play_target(self, gapless: bool = False, jump: bool = False, play=True) -> None:
+	def play_target(self, gapless: bool = False, jump: bool = False, play: bool = True) -> None:
 		self.tauon.thread_manager.ready_playback()
 
 		#logging.info(self.track_queue)
@@ -4348,7 +4348,7 @@ class ListenBrainz:
 			url += "/"
 		return url + "1/submit-listens"
 
-	def listen_full(self, track_object: TrackClass, time) -> bool:
+	def listen_full(self, track_object: TrackClass, time: int) -> bool:
 		if self.enable is False:
 			return True
 		if self.prefs.scrobble_hold is True:
@@ -4785,7 +4785,7 @@ class Menu:
 		self.request_width: int = width
 		self.close_next_frame = False
 		self.clicked = False
-		self.pos = [0, 0]
+		self.pos: list[float] = [0, 0]
 		self.rescale()
 
 		self.reference: int = 0
@@ -4803,9 +4803,9 @@ class Menu:
 
 		Menu.count += 1
 
-		self.sub_number = 0
-		self.sub_active = -1
-		self.sub_y_postion = 0
+		self.sub_number:    int = 0
+		self.sub_active:    int = -1
+		self.sub_y_postion: int = 0
 		Menu.instances.append(self)
 
 	def deco(self, _=_) -> list[ColourRGBA | None]:
@@ -6255,20 +6255,19 @@ class Tauon:
 		ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
 		ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
 
-	def bass_player_thread(self, player) -> None:
-		# logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
-		#					 format='%(asctime)s %(levelname)s %(name)s %(message)s')
-
-		try:
-			player(self.pctl, self.gui, self.prefs, self.lfm_scrobbler, self.star_store, self)
-		except Exception:
-			logging.exception("Exception on player thread")
-			self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-			time.sleep(1)
-			self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-			time.sleep(1)
-			self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
-			raise
+	#def bass_player_thread(self, player) -> None:
+	#	# logging.basicConfig(filename=user_directory + '/crash.log', level=logging.ERROR,
+	#	#					 format='%(asctime)s %(levelname)s %(name)s %(message)s')
+	#	try:
+	#		player(self.pctl, self.gui, self.prefs, self.lfm_scrobbler, self.star_store, self)
+	#	except Exception:
+	#		logging.exception("Exception on player thread")
+	#		self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
+	#		time.sleep(1)
+	#		self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
+	#		time.sleep(1)
+	#		self.show_message(_("Playback thread has crashed. Sorry about that."), _("App will need to be restarted."), mode="error")
+	#		raise
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
@@ -11945,7 +11944,7 @@ class Tauon:
 	# 		colour = self.colours.menu_text_disabled
 	# 	return [self.colour, self.colours.menu_background, line]
 
-	def art_metadata_overlay(self, right, bottom, showc) -> None:
+	def art_metadata_overlay(self, right, bottom, showc: list[tuple[str, int, int, int, str]]) -> None:
 		if not showc:
 			return
 
@@ -12726,9 +12725,9 @@ class Tauon:
 		if not self.pctl.multi_playlist[target_pl].playlist_ids:
 			return
 
-		albums = []
-		artists = []
-		parents = []
+		albums:  list[str] = []
+		artists: list[str] = []
+		parents: list[str] = []
 
 		track = None
 
@@ -30263,7 +30262,7 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x, y, w, h, target_track=None, tight_border=False, default_border=None) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
@@ -34284,7 +34283,7 @@ class PictureRender:
 		logging.info("Save BMP to memory")
 		self.size = im.size[0], im.size[1]
 
-	def draw(self, x, y) -> None:
+	def draw(self, x: int, y: int) -> None:
 		if self.show is False:
 			return
 

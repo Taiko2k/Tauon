@@ -428,7 +428,6 @@ class TDraw:
 		#	 sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
 	def bordered_rect(self, rectangle: tuple[int, int, int, int], fill_colour: ColourRGBA, outer_colour: ColourRGBA, border_size: int) -> None:
-
 		self.sdlrect.x = round(rectangle[0]) - border_size
 		self.sdlrect.y = round(rectangle[1]) - border_size
 		self.sdlrect.w = round(rectangle[2]) + border_size + border_size
