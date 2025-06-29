@@ -6519,7 +6519,6 @@ class Tauon:
 						line = Path(pl_dir / Path(line) ).resolve()
 					else:
 						line = Path(line).resolve()
-					logging.info(f"final code says {line}")
 					line = str(line)
 
 					# Cache datbase file paths for quick lookup
