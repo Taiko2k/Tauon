@@ -3,8 +3,10 @@ Changelog
 ---------
 
 ### v8.1.0
+ - **Added** optional theme colours for "lyrics text", "active lyric" (in synced mode) and "lyrics panel"
  - **Fixed** Spotify redirect URI to address an upstream deprecation
- - **Fixed** Synced lyrics rendering issue (again)
+ - **Fixed** synced lyrics rendering issue (again)
+ - **Fixed** LRC-formatted lyrics displaying with timestamps when in static mode
  - **Fixed** crash when scrolling radio stations
  - **Fixed** crash when enabling monochrome tray icons on NixOS
  - **Fixed** finding 64-bit Picard on Windows - 32-bit Picard is no longer supported
