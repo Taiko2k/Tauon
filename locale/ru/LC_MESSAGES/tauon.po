@@ -297,33 +297,31 @@ msgstr "{N} треков найдено. {T} обновлено."
 msgid "Of {N} loved tracks, no matches were found in local db"
 msgstr ""
 "Из {N} любимых треков не было найдено ни одного совпадения в локальной базе "
-"данных."
+"данных"
 
 #: src/tauon/t_modules/t_main.py:4164
 msgid "This doesn't seem to be working :("
-msgstr ""
+msgstr "Похоже, это не работает :("
 
 #: src/tauon/t_modules/t_main.py:4224 src/tauon/t_modules/t_main.py:4277
 msgid "How did this even happen."
-msgstr ""
+msgstr "Как это вообще произошло."
 
 #: src/tauon/t_modules/t_main.py:4224 src/tauon/t_modules/t_main.py:4277
 msgid "ListenBrainz is enabled but there is no token."
-msgstr ""
+msgstr "ListenBrainz включен, но нет токена."
 
 #: src/tauon/t_modules/t_main.py:4267 src/tauon/t_modules/t_main.py:4329
-#, fuzzy
 msgid "There was an error submitting data to ListenBrainz"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка при отправке данных в ListenBrainz"
 
 #: src/tauon/t_modules/t_main.py:4337
-#, fuzzy
 msgid "There is no text in the clipboard"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "В буфере обмена нет текста"
 
 #: src/tauon/t_modules/t_main.py:4347
 msgid "That is not a valid token."
-msgstr ""
+msgstr "Это недействительный токен."
 
 #: src/tauon/t_modules/t_main.py:4501
 msgid "Spotify Likes"
@@ -423,27 +421,26 @@ msgstr "Выход"
 
 #: src/tauon/t_modules/t_main.py:6129 src/tauon/t_modules/t_main.py:6131
 #: src/tauon/t_modules/t_main.py:6133
-#, fuzzy
 msgid "App will need to be restarted."
-msgstr "Изменение будет применено при перезапуске."
+msgstr "Приложение необходимо перезапустить."
 
 #: src/tauon/t_modules/t_main.py:6129 src/tauon/t_modules/t_main.py:6131
 #: src/tauon/t_modules/t_main.py:6133
 msgid "Playback thread has crashed. Sorry about that."
 msgstr ""
+"Поток воспроизведения завершился с ошибкой. Приносим извинения за неудобства."
 
 #: src/tauon/t_modules/t_main.py:6527
-#, fuzzy
 msgid "Error importing XSPF playlist."
-msgstr "Ошибка при создании плейлиста Spotify"
+msgstr "Ошибка при импорте списка воспроизведения XSPF."
 
 #: src/tauon/t_modules/t_main.py:6527
 msgid "Sorry about that."
-msgstr ""
+msgstr "Извините за это."
 
 #: src/tauon/t_modules/t_main.py:6658
 msgid "Failed to locate {N} out of {T} tracks."
-msgstr ""
+msgstr "Не удалось найти {N} из {T} треков."
 
 #: src/tauon/t_modules/t_main.py:6831 src/tauon/t_modules/t_main.py:40597
 msgid "Shuffle Lockdown"
@@ -462,50 +459,44 @@ msgid "Make Compact Size"
 msgstr "Сделать компактным"
 
 #: src/tauon/t_modules/t_main.py:6911
-#, fuzzy
 msgid "Can't open folder of a network track."
-msgstr "Невозможно удалить сетевую дорожку"
+msgstr "Не удается открыть папку сетевого трека."
 
 #: src/tauon/t_modules/t_main.py:6947
 msgid "No item is currently playing"
-msgstr ""
+msgstr "В настоящее время не воспроизводится ни один элемент"
 
 #: src/tauon/t_modules/t_main.py:6970
-#, fuzzy
 msgid "This track is a networked track."
-msgstr "Дорожка добавлена в избранное"
+msgstr "Этот трек является сетевым треком."
 
 #: src/tauon/t_modules/t_main.py:6974
-#, fuzzy
 msgid "The source folder does not exist."
-msgstr "Каталога не существует"
+msgstr "Исходная папка не существует."
 
 #: src/tauon/t_modules/t_main.py:6978
-#, fuzzy
 msgid "The destination folder does not exist."
-msgstr "Каталога не существует"
+msgstr "Папка назначения не существует."
 
 #: src/tauon/t_modules/t_main.py:6982
 msgid "The destination and source folders are the same."
-msgstr ""
+msgstr "Папки назначения и источника одинаковы."
 
 #: src/tauon/t_modules/t_main.py:6986 src/tauon/t_modules/t_main.py:9548
 msgid "Safety interupt! The source path seems oddly short."
-msgstr ""
+msgstr "Прерывание безопасности! Путь источника кажется странно коротким."
 
 #: src/tauon/t_modules/t_main.py:6993 src/tauon/t_modules/t_main.py:9562
 msgid "Better not do anything to that folder!"
-msgstr ""
+msgstr "Лучше ничего не делайте с этой папкой!"
 
 #: src/tauon/t_modules/t_main.py:6998 src/tauon/t_modules/t_main.py:9567
-#, fuzzy
 msgid "Folder size safety limit reached! (3GB)"
-msgstr "Достигнут безопасный размер удаления!"
+msgstr "Достигнут предельный размер папки! (3 ГБ)"
 
 #: src/tauon/t_modules/t_main.py:7064 src/tauon/t_modules/t_main.py:7083
-#, fuzzy
 msgid "Rescanning folder..."
-msgstr "Повторное сканирование каталогов..."
+msgstr "Повторное сканирование папки..."
 
 #: src/tauon/t_modules/t_main.py:7103
 msgid "Unlock Panel"
@@ -552,7 +543,7 @@ msgstr "Источники текста песен не включены."
 
 #: src/tauon/t_modules/t_main.py:7266
 msgid "See 'lyrics settings' under 'functions' tab in settings."
-msgstr ""
+msgstr "См. «Настройки текстов песен» на вкладке «Функции» в настройках."
 
 #: src/tauon/t_modules/t_main.py:7274
 msgid "Let's be polite and try later."
@@ -560,7 +551,7 @@ msgstr "Давайте будем вежливы и попробуем позж�
 
 #: src/tauon/t_modules/t_main.py:7277
 msgid "Stop requesting lyrics AAAAAA."
-msgstr ""
+msgstr "Перестань просить тексты песен AAAAAA."
 
 #: src/tauon/t_modules/t_main.py:7291 src/tauon/t_modules/t_main.py:10418
 #: src/tauon/t_modules/t_main.py:12852 src/tauon/t_modules/t_main.py:30931
@@ -573,7 +564,7 @@ msgstr "Тексты песен для этой дорожки не найден
 
 #: src/tauon/t_modules/t_main.py:7341
 msgid "Insufficient metadata to get lyrics"
-msgstr ""
+msgstr "Недостаточно метаданных для получения текста песни"
 
 #: src/tauon/t_modules/t_main.py:7375 src/tauon/t_modules/t_main.py:7381
 msgid "Show static lyrics"
@@ -584,23 +575,21 @@ msgid "Show synced lyrics"
 msgstr "Показать синхронизированные тексты песен"
 
 #: src/tauon/t_modules/t_main.py:7421 src/tauon/t_modules/t_main.py:20327
-#, fuzzy
 msgid "Saving network images not implemented"
-msgstr "Правка интернет-дорожек не рекомендуется!"
+msgstr "Сохранение сетевых изображений не реализовано"
 
 #: src/tauon/t_modules/t_main.py:7428
-#, fuzzy
 msgid "No embedded album art found file."
-msgstr "Незавершённые альбомы не найдены."
+msgstr "Не найден файл встроенной обложки альбома."
 
 #: src/tauon/t_modules/t_main.py:7428 src/tauon/t_modules/t_main.py:7450
 #: src/tauon/t_modules/t_main.py:20332
 msgid "Image save error."
-msgstr ""
+msgstr "Ошибка сохранения изображения."
 
 #: src/tauon/t_modules/t_main.py:7450
 msgid "A mysterious error occurred"
-msgstr ""
+msgstr "Произошла загадочная ошибка"
 
 #: src/tauon/t_modules/t_main.py:7523
 msgid "Cannot download art for network tracks."
@@ -612,7 +601,7 @@ msgstr "Не похоже, что этот каталог принадлежит
 
 #: src/tauon/t_modules/t_main.py:7553
 msgid "Directory missing."
-msgstr ""
+msgstr "Справочник отсутствует."
 
 #: src/tauon/t_modules/t_main.py:7557
 msgid "Looking up MusicBrainz ID..."
@@ -620,12 +609,11 @@ msgstr "Поиск по MusicBrainz ID..."
 
 #: src/tauon/t_modules/t_main.py:7586
 msgid "Searching fanart.tv for cover art..."
-msgstr ""
+msgstr "Поиск обложек на fanart.tv..."
 
 #: src/tauon/t_modules/t_main.py:7610
-#, fuzzy
 msgid "Could not detect downloaded filetype."
-msgstr "Не удалось автоматически определить путь подключённого устройства."
+msgstr "Не удалось определить тип загруженного файла."
 
 #: src/tauon/t_modules/t_main.py:7617
 msgid "Cover art downloaded from fanart.tv"
@@ -633,7 +621,7 @@ msgstr "Обложка скачана с сайта fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:7626
 msgid "Searching MusicBrainz for cover art..."
-msgstr ""
+msgstr "Поиск обложки в MusicBrainz..."
 
 #: src/tauon/t_modules/t_main.py:7638
 msgid "Cover art downloaded from MusicBrainz"
@@ -645,16 +633,15 @@ msgstr "Не удалось найти подходящую обложку ил�
 
 #: src/tauon/t_modules/t_main.py:7671
 msgid "Error - No handling for this kind of track"
-msgstr ""
+msgstr "Ошибка - нет обработки для этого типа трека"
 
 #: src/tauon/t_modules/t_main.py:7717
 msgid "Removing vorbis image not implemented"
-msgstr ""
+msgstr "Удаление изображения vorbis не реализовано"
 
 #: src/tauon/t_modules/t_main.py:7738
-#, fuzzy
 msgid "Image remove error"
-msgstr "Не удалось удалить изображение."
+msgstr "Ошибка удаления изображения"
 
 #: src/tauon/t_modules/t_main.py:7745
 msgid "Image removal failed."
@@ -665,13 +652,12 @@ msgid "Deleted embedded picture from file"
 msgstr "Удаление встроенного в файл изображения"
 
 #: src/tauon/t_modules/t_main.py:7750
-#, fuzzy
 msgid "{N} files processed"
-msgstr "%d файлов обработано"
+msgstr "Обработано {N} файлов"
 
 #: src/tauon/t_modules/t_main.py:7766
 msgid "Something went wrong"
-msgstr ""
+msgstr "Что-то пошло не так"
 
 #: src/tauon/t_modules/t_main.py:7773 src/tauon/t_modules/t_main.py:7780
 #: src/tauon/t_modules/t_main.py:40687
@@ -688,24 +674,24 @@ msgstr "Удалить встроенный | Дорожку"
 
 #: src/tauon/t_modules/t_main.py:7805
 msgid "This will erase any embedded image in {N} files. Are you sure?"
-msgstr ""
+msgstr "Это удалит все встроенные изображения в {N} файлах. Вы уверены?"
 
 #: src/tauon/t_modules/t_main.py:7829
 msgid "Paste Spotify Album"
 msgstr "Вставьте альбом Spotify"
 
 #: src/tauon/t_modules/t_main.py:7850 src/tauon/t_modules/t_main.py:7892
-#, fuzzy
 msgid "There are no tracks in this playlist. Nothing to export"
-msgstr "В этом плейлисте нет дорожек для трансляции."
+msgstr "В этом плейлисте нет треков. Нечего экспортировать."
 
 #: src/tauon/t_modules/t_main.py:7952
 msgid "Playlist is locked to prevent accidental erasure"
-msgstr ""
+msgstr "Плейлист заблокирован, чтобы предотвратить случайное удаление"
 
 #: src/tauon/t_modules/t_main.py:7999
 msgid "This includes the conversion of a lossy codec to a lossless one!"
 msgstr ""
+"Это включает в себя преобразование кодека с потерями в кодеки без потерь!"
 
 #: src/tauon/t_modules/t_main.py:8112
 msgid "Playlist:"
@@ -716,42 +702,36 @@ msgid "Generated:"
 msgstr "Создано:"
 
 #: src/tauon/t_modules/t_main.py:8114
-#, fuzzy
 msgid "Tracks in playlist:"
-msgstr "Дорожки в плейлисте"
+msgstr "Треки в плейлисте:"
 
 #: src/tauon/t_modules/t_main.py:8116
-#, fuzzy
 msgid "Repeats in playlist:"
-msgstr "Повторить плейлист"
+msgstr "Повторы в плейлисте:"
 
 #: src/tauon/t_modules/t_main.py:8120
-#, fuzzy
 msgid "Total local size:"
-msgstr "Общее время воспроизведения"
+msgstr "Общий размер локальной памяти:"
 
 #: src/tauon/t_modules/t_main.py:8121
-#, fuzzy
 msgid "Playlist duration:"
-msgstr "Длительность плейлиста"
+msgstr "Продолжительность плейлиста:"
 
 #: src/tauon/t_modules/t_main.py:8122
-#, fuzzy
 msgid "Total playtime:"
-msgstr "Общее время воспроизведения"
+msgstr "Общее время воспроизведения:"
 
 #: src/tauon/t_modules/t_main.py:8124
-#, fuzzy
 msgid "Track types:"
-msgstr "Название трека"
+msgstr "Типы дорожек:"
 
 #: src/tauon/t_modules/t_main.py:8140
 msgid "Percent of tracks are CUE type:"
-msgstr ""
+msgstr "Процент треков типа CUE:"
 
 #: src/tauon/t_modules/t_main.py:8150
 msgid "MP3 bitrates (kbps):"
-msgstr ""
+msgstr "Битрейт MP3 (кбит/с):"
 
 #: src/tauon/t_modules/t_main.py:8164 src/tauon/t_modules/t_main.py:8183
 msgid "Others"
@@ -759,22 +739,19 @@ msgstr "Прочее"
 
 #: src/tauon/t_modules/t_main.py:8169
 msgid "OGG bitrates (kbps):"
-msgstr ""
+msgstr "Битрейт OGG (кбит/с):"
 
 #: src/tauon/t_modules/t_main.py:8207
-#, fuzzy
 msgid "Top Artists"
-msgstr "Исполнитель"
+msgstr "Лучшие артисты"
 
 #: src/tauon/t_modules/t_main.py:8213
-#, fuzzy
 msgid "Top Albums"
-msgstr "Альбомы с самым высоким рейтингом"
+msgstr "Лучшие альбомы"
 
 #: src/tauon/t_modules/t_main.py:8217
-#, fuzzy
 msgid "Top Genres"
-msgstr "Жанр"
+msgstr "Популярные жанры"
 
 #: src/tauon/t_modules/t_main.py:8236 src/tauon/t_modules/t_main.py:8247
 #: src/tauon/t_modules/t_main.py:8266 src/tauon/t_modules/t_main.py:10610
@@ -787,7 +764,7 @@ msgstr "Добавить альбом Spotify"
 
 #: src/tauon/t_modules/t_main.py:8381
 msgid "Cannot sync when in transcode inplace mode"
-msgstr ""
+msgstr "Невозможно выполнить синхронизацию в режиме транскодирования на месте"
 
 #: src/tauon/t_modules/t_main.py:8391
 msgid "No target folder selected"
@@ -819,19 +796,16 @@ msgid "Sync warning"
 msgstr "Предупреждение о синхронизации"
 
 #: src/tauon/t_modules/t_main.py:8479
-#, fuzzy
 msgid "One or more folders is missing"
-msgstr "Одно или несколько полей отсутствуют."
+msgstr "Отсутствует одна или несколько папок"
 
 #: src/tauon/t_modules/t_main.py:8488
-#, fuzzy
 msgid "{N} Folders Remaining"
-msgstr "Оставшиеся каталоги"
+msgstr "{N} Оставшиеся папки"
 
 #: src/tauon/t_modules/t_main.py:8490
-#, fuzzy
 msgid "{N} Folder Remaining"
-msgstr "Оставшийся каталог"
+msgstr "{N} Оставшиеся папки"
 
 #: src/tauon/t_modules/t_main.py:8546
 msgid "Sync completed"
@@ -862,14 +836,12 @@ msgid "Un-set Use Persistent Time"
 msgstr "Снять использование постоянного времени"
 
 #: src/tauon/t_modules/t_main.py:8629 src/tauon/t_modules/t_main.py:10737
-#, fuzzy
 msgid "Export complete."
-msgstr "Импорт из Spotify завершён"
+msgstr "Экспорт завершен."
 
 #: src/tauon/t_modules/t_main.py:8629 src/tauon/t_modules/t_main.py:10737
-#, fuzzy
 msgid "Saved as: "
-msgstr "Сохранено"
+msgstr "Сохранено как: "
 
 #: src/tauon/t_modules/t_main.py:8669 src/tauon/t_modules/t_main.py:40806
 #: src/tauon/t_modules/t_main.py:40807
@@ -929,28 +901,24 @@ msgid "Loved"
 msgstr "Понравившийся"
 
 #: src/tauon/t_modules/t_main.py:8968
-#, fuzzy
 msgid "No loved tracks were found."
-msgstr "Тексты песен для этой дорожки не найдены"
+msgstr "Не найдено любимых треков."
 
 #: src/tauon/t_modules/t_main.py:8996
 msgid "Interesting Comments"
 msgstr "Интересные комментарии"
 
 #: src/tauon/t_modules/t_main.py:9000
-#, fuzzy
 msgid "Nothing of interest was found."
-msgstr "Подходящего исполнителя не найдено"
+msgstr "Ничего интересного не было найдено."
 
 #: src/tauon/t_modules/t_main.py:9012
-#, fuzzy
 msgid "ReplayGain Tracks"
-msgstr "Выравнивание громкости (ReplayGain)"
+msgstr "Треки с функцией ReplayGain"
 
 #: src/tauon/t_modules/t_main.py:9016
-#, fuzzy
 msgid "No replay gain tags were found."
-msgstr "Дорожек с текстом песен не найдено."
+msgstr "Теги replay gain не найдены."
 
 #: src/tauon/t_modules/t_main.py:9037
 msgid "Duration Sorted"
@@ -1007,7 +975,7 @@ msgstr "Отсортированные по альбому"
 
 #: src/tauon/t_modules/t_main.py:9314
 msgid "Cannot reload while a transcode is in progress!"
-msgstr ""
+msgstr "Невозможно перезагрузить страницу во время транскодирования!"
 
 #: src/tauon/t_modules/t_main.py:9324
 msgid "Configuration reloaded"
@@ -1023,7 +991,7 @@ msgstr "Файл конфигурации открыт."
 
 #: src/tauon/t_modules/t_main.py:9345 src/tauon/t_modules/t_main.py:9357
 msgid "Input file missing"
-msgstr ""
+msgstr "Входной файл отсутствует"
 
 #: src/tauon/t_modules/t_main.py:9391
 msgid "Transcoding tracks from network locations is not supported"
@@ -1031,11 +999,11 @@ msgstr "Перекодирование дорожек из сети не под�
 
 #: src/tauon/t_modules/t_main.py:9399 src/tauon/t_modules/t_main.py:9423
 msgid "Im not going to let you transcode a lossy codec to a lossless one!"
-msgstr ""
+msgstr "Я не позволю вам перекодировать кодек с потерями в кодек без потерь!"
 
 #: src/tauon/t_modules/t_main.py:9399 src/tauon/t_modules/t_main.py:9423
 msgid "NO! Bad user!"
-msgstr ""
+msgstr "НЕТ! Плохой пользователь!"
 
 #: src/tauon/t_modules/t_main.py:9412
 msgid "Transcoding spotify tracks not possible"
@@ -1043,52 +1011,47 @@ msgstr "Конвертирование треков из Spotify невозмо�
 
 #: src/tauon/t_modules/t_main.py:9506
 msgid "More than one folder is in the clipboard"
-msgstr ""
+msgstr "В буфере обмена находится более одной папки"
 
 #: src/tauon/t_modules/t_main.py:9507
 msgid "This function can only move one folder at a time."
-msgstr ""
+msgstr "Эта функция может перемещать только одну папку за раз."
 
 #: src/tauon/t_modules/t_main.py:9552
 msgid "The target directory is missing!"
-msgstr ""
+msgstr "Целевой каталог отсутствует!"
 
 #: src/tauon/t_modules/t_main.py:9556
-#, fuzzy
 msgid "The source directory is missing!"
-msgstr "Одно или несколько полей отсутствуют."
+msgstr "Отсутствует исходный каталог!"
 
 #: src/tauon/t_modules/t_main.py:9571
 msgid "Safety interupt! The source folder seems to have many files."
-msgstr ""
+msgstr "Прерывание безопасности! В исходной папке, похоже, много файлов."
 
 #: src/tauon/t_modules/t_main.py:9581
 msgid "The track needs to have an artist name."
-msgstr ""
+msgstr "Трек должен иметь имя исполнителя."
 
 #: src/tauon/t_modules/t_main.py:9621
 msgid "Could not find a folder with the artist's name to match level at."
-msgstr ""
+msgstr "Не удалось найти папку с именем исполнителя, соответствующую уровню."
 
 #: src/tauon/t_modules/t_main.py:9672
-#, fuzzy
 msgid "Tracks sent to trash"
-msgstr "Дорожка добавлена в избранное"
+msgstr "Треки, отправленные в корзину"
 
 #: src/tauon/t_modules/t_main.py:9675
-#, fuzzy
 msgid "One or more tracks could not be sent to trash"
-msgstr "Одна или несколько дорожек взяты из сети!"
+msgstr "Один или несколько треков не удалось переместить в корзину"
 
 #: src/tauon/t_modules/t_main.py:9680
-#, fuzzy
 msgid "Files deleted"
-msgstr "Файл удалён"
+msgstr "Удаленные файлы"
 
 #: src/tauon/t_modules/t_main.py:9683
-#, fuzzy
 msgid "Error deleting one or more files"
-msgstr "Ошибка удаления файла"
+msgstr "Ошибка при удалении одного или нескольких файлов"
 
 #: src/tauon/t_modules/t_main.py:9729 src/tauon/t_modules/t_main.py:14675
 msgid "Un-Love Track"
@@ -1144,156 +1107,147 @@ msgstr "Одна или несколько дорожек взяты из сет
 
 #: src/tauon/t_modules/t_main.py:9899
 msgid "This folder path seems short, I don't wanna try delete that"
-msgstr ""
+msgstr "Этот путь к папке кажется коротким, я не хочу пробовать удалять его"
 
 #: src/tauon/t_modules/t_main.py:9903
 msgid "Error deleting folder. The folder seems to be missing."
-msgstr ""
+msgstr "Ошибка при удалении папки. Папка, похоже, отсутствует."
 
 #: src/tauon/t_modules/t_main.py:9903
 msgid "It's gone! Just gone!"
-msgstr ""
+msgstr "Оно исчезло! Просто исчезло!"
 
 #: src/tauon/t_modules/t_main.py:9910
 msgid "I don't think we should delete that folder."
-msgstr ""
+msgstr "Я не думаю, что нам следует удалять эту папку."
 
 #: src/tauon/t_modules/t_main.py:9910 src/tauon/t_modules/t_main.py:9989
 msgid "Woah, careful there!"
-msgstr ""
+msgstr "Осторожно!"
 
 #: src/tauon/t_modules/t_main.py:9914
-#, fuzzy
 msgid "Delete size safety limit reached! (1.5GB)"
-msgstr "Достигнут безопасный размер удаления!"
+msgstr "Достигнут предельный размер удаления! (1,5 ГБ)"
 
 #: src/tauon/t_modules/t_main.py:9936
-#, fuzzy
 msgid "Folder deleted."
-msgstr "Файл удалён"
+msgstr "Папка удалена."
 
 #: src/tauon/t_modules/t_main.py:9938
-#, fuzzy
 msgid "Folder sent to trash."
-msgstr "Файл перемещён в корзину"
+msgstr "Папка отправлена в корзину."
 
 #: src/tauon/t_modules/t_main.py:9940
 msgid "Hmm, its still there"
-msgstr ""
+msgstr "Хм, оно все еще там"
 
 #: src/tauon/t_modules/t_main.py:9949
 msgid "Could not delete folder. Try checking permissions."
-msgstr ""
+msgstr "Не удалось удалить папку. Попробуйте проверить права доступа."
 
 #: src/tauon/t_modules/t_main.py:9949
-#, fuzzy
 msgid "Unable to comply."
-msgstr "Переименование завершено."
+msgstr "Невозможно выполнить."
 
 #: src/tauon/t_modules/t_main.py:9952
 msgid "Folder could not be trashed."
 msgstr "Каталог нельзя поместить в корзину."
 
 #: src/tauon/t_modules/t_main.py:9952
-#, fuzzy
 msgid "Try again while holding shift to force delete."
-msgstr "Повторите попытку, удерживая Shift для подтверждения"
+msgstr ""
+"Попробуйте еще раз, удерживая клавишу Shift, чтобы принудительно удалить."
 
 #: src/tauon/t_modules/t_main.py:9965 src/tauon/t_modules/t_main.py:21562
 msgid "Cannot rename"
-msgstr ""
+msgstr "Невозможно переименовать"
 
 #: src/tauon/t_modules/t_main.py:9974
 msgid "The generated name is too short"
-msgstr ""
+msgstr "Сгенерированное имя слишком короткое"
 
 #: src/tauon/t_modules/t_main.py:9974 src/tauon/t_modules/t_main.py:9978
-#, fuzzy
 msgid "Rename error."
-msgstr "Переименовать"
+msgstr "Ошибка переименования."
 
 #: src/tauon/t_modules/t_main.py:9978
 msgid "This folder path seems short, I don't wanna try rename that"
 msgstr ""
+"Этот путь к папке кажется коротким, я не хочу пробовать переименовывать его"
 
 #: src/tauon/t_modules/t_main.py:9982
 msgid "Rename Failed. The original folder is missing."
-msgstr ""
+msgstr "Переименование не удалось. Исходная папка отсутствует."
 
 #: src/tauon/t_modules/t_main.py:9989
 msgid "I don't think we should rename that folder."
-msgstr ""
+msgstr "Я не думаю, что нам следует переименовывать эту папку."
 
 #: src/tauon/t_modules/t_main.py:10008
 msgid "The folder already has that name."
-msgstr ""
+msgstr "Папка уже имеет такое имя."
 
 #: src/tauon/t_modules/t_main.py:10012
 msgid "A folder with that name already exists"
-msgstr ""
+msgstr "Папка с таким именем уже существует"
 
 #: src/tauon/t_modules/t_main.py:10012
-#, fuzzy
 msgid "Rename Failed."
-msgstr "Переименование завершено."
+msgstr "Переименование не удалось."
 
 #: src/tauon/t_modules/t_main.py:10040
-#, fuzzy
 msgid "Rename Failed!"
-msgstr "Переименование завершено."
+msgstr "Переименование не удалось!"
 
 #: src/tauon/t_modules/t_main.py:10040
 msgid "Something went wrong, sorry."
-msgstr ""
+msgstr "Что-то пошло не так, извините."
 
 #: src/tauon/t_modules/t_main.py:10043
-#, fuzzy
 msgid "Folder renamed."
-msgstr "Дерево каталогов"
+msgstr "Папка переименована."
 
 #: src/tauon/t_modules/t_main.py:10043
 msgid "Renamed to: {name}"
-msgstr ""
+msgstr "Переименовано в: {имя}"
 
 #: src/tauon/t_modules/t_main.py:10059
-#, fuzzy
 msgid "Not applicable for a network track."
-msgstr "Невозможно удалить сетевую дорожку"
+msgstr "Не применимо к сетевому треку."
 
 #: src/tauon/t_modules/t_main.py:10073
 msgid "Cannot move"
-msgstr ""
+msgstr "Невозможно переместить"
 
 #: src/tauon/t_modules/t_main.py:10083
-#, fuzzy
 msgid "Error shifting directory"
-msgstr "Ошибка запуска Spotify"
+msgstr "Ошибка смены каталога"
 
 #: src/tauon/t_modules/t_main.py:10083
-#, fuzzy
 msgid "The directory does not appear to exist"
-msgstr "Каталога не существует"
+msgstr "Каталог, похоже, не существует"
 
 #: src/tauon/t_modules/t_main.py:10111
 msgid "System Error!"
-msgstr ""
+msgstr "Системная ошибка!"
 
 #: src/tauon/t_modules/t_main.py:10138
 msgid "Cannot clean"
-msgstr ""
+msgstr "Невозможно очистить"
 
 #: src/tauon/t_modules/t_main.py:10172
-#, fuzzy
 msgid "Error deleting files."
-msgstr "Ошибка удаления файла"
+msgstr "Ошибка при удалении файлов."
 
 #: src/tauon/t_modules/t_main.py:10172
 msgid "May not have permission or file may be set to read-only"
 msgstr ""
+"Возможно, нет разрешения или файл может быть установлен как доступный только "
+"для чтения"
 
 #: src/tauon/t_modules/t_main.py:10302
 msgid "Autodetect failed"
-msgstr ""
+msgstr "Автоматическое определение не удалось"
 
 #: src/tauon/t_modules/t_main.py:10340
 msgid "Transcode Single"
@@ -1331,9 +1285,8 @@ msgid "Un-save Spotify Album"
 msgstr "Отменить сохранение альбома Spotify"
 
 #: src/tauon/t_modules/t_main.py:10400
-#, fuzzy
 msgid "Queue {N}"
-msgstr "Очередь"
+msgstr "Очередь {N}"
 
 #: src/tauon/t_modules/t_main.py:10410
 msgid "No matching artist result found"
@@ -1341,21 +1294,19 @@ msgstr "Подходящего исполнителя не найдено"
 
 #: src/tauon/t_modules/t_main.py:10458
 msgid "Not implemented"
-msgstr ""
+msgstr "Не реализовано"
 
 #: src/tauon/t_modules/t_main.py:10468
 msgid "Cannot remove the only column."
-msgstr ""
+msgstr "Невозможно удалить единственную колонку."
 
 #: src/tauon/t_modules/t_main.py:10741
-#, fuzzy
 msgid "Play History"
-msgstr "Плейлист из истории прослушивания"
+msgstr "История игр"
 
 #: src/tauon/t_modules/t_main.py:10768
-#, fuzzy
 msgid "{N} ratings imported"
-msgstr "Отсортировано по продолжительности"
+msgstr "{N} рейтинги импортированы"
 
 #: src/tauon/t_modules/t_main.py:10809
 msgid "This will delete all track and album ratings from the local database!"
@@ -1374,23 +1325,20 @@ msgid "Stop Cast"
 msgstr "Остановить трансляцию"
 
 #: src/tauon/t_modules/t_main.py:10836
-#, fuzzy
 msgid "pychromecast not found"
-msgstr "Устройства Chromecast не найдены"
+msgstr "pychromecast не найден"
 
 #: src/tauon/t_modules/t_main.py:10838
-#, fuzzy
 msgid "Searching for Chomecasts..."
-msgstr "Сканирование трансляций Chromecast..."
+msgstr "Поиск Chomecasts..."
 
 #: src/tauon/t_modules/t_main.py:10880
 msgid "No metadata available to copy"
 msgstr "Нет доступных метаданных для копирования"
 
 #: src/tauon/t_modules/t_main.py:10945
-#, fuzzy
 msgid "Please wait for cleaning process to finish"
-msgstr "Пожалуйста, дождитесь завершения текущего задания"
+msgstr "Пожалуйста, дождитесь окончания процесса очистки"
 
 #: src/tauon/t_modules/t_main.py:10966
 msgid "Copy Album URL"
@@ -1438,18 +1386,16 @@ msgid "Scrobbling is Active"
 msgstr "Скробблинг активен"
 
 #: src/tauon/t_modules/t_main.py:11293 src/tauon/t_modules/t_main.py:11300
-#, fuzzy
 msgid "Unknown Track"
-msgstr "Убрать из любимых"
+msgstr "Неизвестный трек"
 
 #: src/tauon/t_modules/t_main.py:11302
-#, fuzzy
 msgid "Unknown Artist"
-msgstr "Случайные альбомы"
+msgstr "Неизвестный артист"
 
 #: src/tauon/t_modules/t_main.py:11352
 msgid "Error - Discord not running?"
-msgstr ""
+msgstr "Ошибка — Discord не запускается?"
 
 #: src/tauon/t_modules/t_main.py:11483
 msgid "Okay, it's a normal playlist now."
@@ -1483,9 +1429,8 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Примечание: изображение исполнителя взято с сайта fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:11797 src/tauon/t_modules/t_main.py:24591
-#, fuzzy
 msgid "They encourage you to contribute at {link}"
-msgstr "Они призывают вас внести свой вклад на https://fanart.tv"
+msgstr "Они призывают вас внести свой вклад на {ссылка}"
 
 #: src/tauon/t_modules/t_main.py:11802
 msgid "Resume Queue"
@@ -1498,16 +1443,16 @@ msgstr "Приостановить очередь"
 #: src/tauon/t_modules/t_main.py:11929
 msgid "Image types other than PNG or JPEG are currently not supported"
 msgstr ""
+"Типы изображений, отличные от PNG или JPEG, в настоящее время не "
+"поддерживаются"
 
 #: src/tauon/t_modules/t_main.py:11931
-#, fuzzy
 msgid "The link does not appear to refer to an image file."
-msgstr "Приложение редактора тегов не установлено."
+msgstr "Ссылка, похоже, не ведет на файл изображения."
 
 #: src/tauon/t_modules/t_main.py:11936
-#, fuzzy
 msgid "Image download failed."
-msgstr "Не удалось удалить изображение."
+msgstr "Загрузка изображения не удалась."
 
 #: src/tauon/t_modules/t_main.py:11945 src/tauon/t_modules/t_main.py:11960
 msgid "You"
@@ -1515,7 +1460,7 @@ msgstr "Вы"
 
 #: src/tauon/t_modules/t_main.py:11970 src/tauon/t_modules/t_main.py:11985
 msgid "Liked on Spotify"
-msgstr ""
+msgstr "Понравилось на Spotify"
 
 #: src/tauon/t_modules/t_main.py:12770 src/tauon/t_modules/t_main.py:17708
 msgid "New Radio List"
@@ -1529,7 +1474,7 @@ msgstr "Новый плейлист"
 
 #: src/tauon/t_modules/t_main.py:12782
 msgid "Done! {N} old items were removed."
-msgstr ""
+msgstr "Готово! {N} старых элементов было удалено."
 
 #: src/tauon/t_modules/t_main.py:12786 src/tauon/t_modules/t_main.py:41137
 msgid "Clean Database!"
@@ -1540,7 +1485,6 @@ msgid "Music"
 msgstr "Музыка"
 
 #: src/tauon/t_modules/t_main.py:12889
-#, fuzzy
 msgid "Url copied to clipboard"
 msgstr "URL скопирован в буфер обмена"
 
@@ -1566,7 +1510,7 @@ msgstr "Плейлист Spotify обновлён"
 
 #: src/tauon/t_modules/t_main.py:13039
 msgid "This playlist has no generator"
-msgstr ""
+msgstr "В этом плейлисте нет генератора"
 
 #: src/tauon/t_modules/t_main.py:13681
 msgid "OK. This playlist will automatically sort on import from now on"
@@ -1581,26 +1525,27 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:13697
 msgid "A regen is already in progress..."
-msgstr ""
+msgstr "Регенерация уже началась..."
 
 #: src/tauon/t_modules/t_main.py:13715
-#, fuzzy
 msgid "No duplicates were found"
-msgstr "Незавершённые альбомы не найдены."
+msgstr "Дубликаты не найдены"
 
 #: src/tauon/t_modules/t_main.py:13717
 msgid "{N} duplicates removed"
-msgstr ""
+msgstr "{N} удалены дубликаты"
 
 #: src/tauon/t_modules/t_main.py:13724
 msgid ""
 "You can now add/remove albums to this playlist by right clicking in gallery "
 "of any playlist"
 msgstr ""
+"Теперь вы можете добавлять/удалять альбомы из этого плейлиста, щелкнув "
+"правой кнопкой мыши в галерее любого плейлиста"
 
 #: src/tauon/t_modules/t_main.py:13725
 msgid "To exit this mode, click \"Disengage\" from main MENU"
-msgstr ""
+msgstr "Чтобы выйти из этого режима, нажмите «Отключить» в главном МЕНЮ"
 
 #: src/tauon/t_modules/t_main.py:13807 src/tauon/t_modules/t_main.py:13809
 msgid "No artist image found."
@@ -1628,7 +1573,7 @@ msgstr "Заблокировать"
 
 #: src/tauon/t_modules/t_main.py:14046
 msgid "Application not found"
-msgstr ""
+msgstr "Приложение не найдено"
 
 #: src/tauon/t_modules/t_main.py:14052
 msgid "Tag editor app does not appear to be installed."
@@ -1640,16 +1585,15 @@ msgstr "Приложение не найдено на хосте или не в�
 
 #: src/tauon/t_modules/t_main.py:14057 src/tauon/t_modules/t_main.py:17495
 msgid " For details, see {link}"
-msgstr ""
+msgstr " Подробности см. {ссылка}"
 
 #: src/tauon/t_modules/t_main.py:14126
 msgid "Sorry, this feature isn't (yet) available with Snap."
-msgstr ""
+msgstr "К сожалению, эта функция (пока) недоступна в Snap."
 
 #: src/tauon/t_modules/t_main.py:14130 src/tauon/t_modules/t_main.py:14145
-#, fuzzy
 msgid "Cannot edit tags of a network track."
-msgstr "Невозможно удалить сетевую дорожку"
+msgstr "Невозможно редактировать теги сетевого трека."
 
 #: src/tauon/t_modules/t_main.py:14155 src/tauon/t_modules/t_main.py:41005
 msgid "Edit with "
