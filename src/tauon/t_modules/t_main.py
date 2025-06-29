@@ -1864,31 +1864,23 @@ class PlayerCtl:
 			self.re_import2(i)
 
 	def deep_remove_duplicates(self) -> None:
-		ids = []
-		paths = []
-		ids_to_delete = []
-		# index and fullpath
-		for track in self.master_library:
-			if not self.master_library[track].fullpath:
-				continue
-			temp_path = self.master_library[track].fullpath.split("/")
-			while ".." in temp_path:
-				position = temp_path.index("..")
-				del temp_path[position]
-				del temp_path[position-1]
-			fullpath = "/".join(temp_path)
-			if fullpath in paths:
-				logging.info(f"bad path found: id    {track} is {self.master_library[track].fullpath}")
-				bad_id = paths.index(fullpath)
-				logging.info(f"old path could be id  {ids[bad_id]} at {self.master_library[ids[bad_id]].fullpath}")
-				logging.info(f"DELETING ID {track}!!!!!!!!!")
-				ids_to_delete.append(track)
-			elif fullpath != self.master_library[track].fullpath:
-				self.master_library[track].fullpath = fullpath
-			paths.append(fullpath)
-			ids.append(track)
-		for bad_track in ids_to_delete:
-			del self.master_library[bad_track]
+			ids = []
+			paths = []
+			# index and fullpath
+			for track in self.master_library:
+				if not self.master_library[track].fullpath:
+					continue
+
+				known_good = str( Path(self.master_library[track].fullpath).resolve() )
+
+				if known_good in paths:
+					good_id = paths.index(known_good)
+					self.deep_duplicates.append( (track, ids[good_id]) )
+				elif known_good != self.master_library[track].fullpath:
+					self.master_library[track].fullpath = known_good
+					paths.append(known_good)
+					ids.append(track)
+			self.tauon.thread_manager.ready("worker")
 
 	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
 		# Close any active menus
@@ -6544,14 +6536,6 @@ class Tauon:
 					# Join file path if possibly relative
 					if not line.startswith("/"):
 						line = os.path.join(os.path.dirname(path), line)
-
-					# Get rid of redundant relative paths
-					split = line.split("/")
-					while ".." in split:
-						location = split.index("..")
-						del split[location]
-						del split[location-1]
-					line = "/".join(split)
 
 					# Cache datbase file paths for quick lookup
 					if not location_dict:
@@ -13874,7 +13858,7 @@ class Tauon:
 	def forget_pl_import_folder(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].last_folder = []
 
-	def remove_duplicates(self, pl: int) -> None:
+	def remove_duplicates(self, pl: int, message: bool=True) -> None:
 		playlist = []
 
 		for item in self.pctl.multi_playlist[pl].playlist_ids:
@@ -13882,10 +13866,11 @@ class Tauon:
 				playlist.append(item)
 
 		removed = len(self.pctl.multi_playlist[pl].playlist_ids) - len(playlist)
-		if not removed:
-			self.show_message(_("No duplicates were found"))
-		else:
-			self.show_message(_("{N} duplicates removed").format(N=removed), mode="done")
+		if message:
+			if not removed:
+				self.show_message(_("No duplicates were found"))
+			else:
+				self.show_message(_("{N} duplicates removed").format(N=removed), mode="done")
 
 		self.pctl.multi_playlist[pl].playlist_ids[:] = playlist[:]
 
@@ -38638,7 +38623,25 @@ def worker1(tauon: Tauon) -> None:
 
 
 	def deep_remove_duplicate(bad_id: int, good_id: int) -> None:
-		pass
+		"""replaces every instance of track bad_id with track good_id in every playlist
+		also tries to interpret whether the user is ok with duplicates"""
+		for num, pl in enumerate(pctl.multi_playlist):
+			# if the playlist already has duplicates then you don't need to remove them
+			temp_pl = []
+			allow_dupes = False
+			for id in pl.playlist_ids:
+				if id not in temp_pl:
+					temp_pl.append(id)
+				else:
+					allow_dupes = True
+					break
+			while bad_id in pl.playlist_ids:
+				loc = pl.playlist_ids.index(bad_id)
+				pl.playlist_ids[loc] = good_id
+			if not allow_dupes:
+				tauon.remove_duplicates(num, message=False)
+		logging.info(f"Deleting track id {bad_id} with bad path {pctl.master_library[bad_id].fullpath}")
+		del pctl.master_library[bad_id]
 
 
 	#logging.info(pctl.master_library)
@@ -38688,9 +38691,14 @@ def worker1(tauon: Tauon) -> None:
 
 		# Remove identical files imported by different relative paths
 		if pctl.deep_duplicates:
+			deep_dupes = len(pctl.deep_duplicates)
 			while pctl.deep_duplicates:
-				deep_remove_duplicate( pctl.deep_duplicates[0] )
+				deep_remove_duplicate( pctl.deep_duplicates[0][0], pctl.deep_duplicates[0][1] )
 				del pctl.deep_duplicates[0]
+			tauon.show_message(
+				_("All filepaths resolved."),
+				_(f"Removed {deep_dupes} tracks with duplicate paths."),
+				mode = "done" )
 
 		tauon.artist_list_box.worker()
 
@@ -41262,8 +41270,8 @@ def main(holder: Holder) -> None:
 	x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), tauon.import_popm))
 	x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), tauon.clear_ratings))
 	x_menu.add_to_sub(0, MenuItem(_("Find Incomplete Albums"), tauon.find_incomplete))
+	x_menu.add_to_sub(0, MenuItem(_("Iron Out Duplicate Track Paths"), pctl.deep_remove_duplicates))
 	x_menu.add_to_sub(0, MenuItem(_("Mark Missing as Found"), pctl.reset_missing_flags, show_test=inp.test_shift))
-	x_menu.add_to_sub(0, MenuItem(_("Deep remove duplicates"), pctl.deep_remove_duplicates))
 
 	if tauon.chrome:
 		x_menu.add_sub(_("Chromecast…"), 220)
