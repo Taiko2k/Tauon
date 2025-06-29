@@ -1282,6 +1282,7 @@ class ColoursClass:
 
 
 
+
 		self.side_panel_background = self.grey(18)
 		self.lyrics_panel_background: ColourRGBA | None = None
 		self.gallery_background = self.side_panel_background
@@ -22586,7 +22587,14 @@ class ExportPlaylistBox:
 				original_playlist.playlist_file = self.directory_text_box.text
 				current["path"] = self.default["path"]
 				self.prefs.playlist_exports[self.id] = current
-			self.run_export(current, self.id, warnings=True)
+			try:
+				self.run_export(current, self.id, warnings=True)
+			except ValueError:
+				self.show_message(
+					_("Relative paths error"),
+					_("The playlist file and the audio files must be on the same drive."),
+					mode = "error"
+				)
 
 
 
