@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-05-18 15:11+0200\n"
-"PO-Revision-Date: 2025-06-30 08:01+0000\n"
+"PO-Revision-Date: 2025-07-01 14:49+0000\n"
 "Last-Translator: gfbdrgn <erfvvgtyhbnjhyuu@wireconnected.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -1613,45 +1613,39 @@ msgstr "Загрузка не удалась"
 
 #: src/tauon/t_modules/t_main.py:14218
 msgid "Download completed but checksum failed"
-msgstr ""
+msgstr "Загрузка завершена, но контрольная сумма не совпадает"
 
 #: src/tauon/t_modules/t_main.py:14220
 msgid "Download completed.. extracting"
-msgstr ""
+msgstr "Загрузка завершена... извлечение"
 
 #: src/tauon/t_modules/t_main.py:14232
 msgid "FFMPEG fetch complete"
-msgstr ""
+msgstr "Загрузка FFMPEG завершена"
 
 #: src/tauon/t_modules/t_main.py:14328
-#, fuzzy
 msgid "Disable Columns"
-msgstr "Столбцы"
+msgstr "Отключить столбцы"
 
 #: src/tauon/t_modules/t_main.py:14329
-#, fuzzy
 msgid "Enable Columns"
-msgstr "Столбцы"
+msgstr "Включить столбцы"
 
 #: src/tauon/t_modules/t_main.py:14339
-#, fuzzy
 msgid "Disable Title Breaks"
-msgstr "Переключить перерывы"
+msgstr "Отключить разрывы заголовков"
 
 #: src/tauon/t_modules/t_main.py:14340
-#, fuzzy
 msgid "Enable Title Breaks"
-msgstr "Переключить перерывы"
+msgstr "Включить разрывы заголовков"
 
 #: src/tauon/t_modules/t_main.py:14388
-#, fuzzy
 msgid "Encoding warning: Missing one or more files"
-msgstr "Ошибка доступа к одному или нескольким файлам"
+msgstr "Предупреждение о кодировке: отсутствует один или несколько файлов"
 
 #: src/tauon/t_modules/t_main.py:14772
-#, fuzzy
 msgid "No exact matching artist could be found in this playlist"
-msgstr "Подходящего исполнителя не найдено"
+msgstr "В этом плейлисте не найдены точно совпадающие исполнители"
 
 #: src/tauon/t_modules/t_main.py:15138 src/tauon/t_modules/t_main.py:15146
 msgid "Sorry!"
@@ -1666,33 +1660,29 @@ msgid "Chart generated"
 msgstr "Диаграмма создана"
 
 #: src/tauon/t_modules/t_main.py:15205
-#, fuzzy
 msgid "There was an error with the Maloja server"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка с сервером Maloja"
 
 #: src/tauon/t_modules/t_main.py:15210
-#, fuzzy
 msgid "There was an error reaching the Maloja server"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка при подключении к серверу Maloja"
 
 #: src/tauon/t_modules/t_main.py:15245
-#, fuzzy
 msgid "There was an error parsing the data"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка при анализе данных"
 
 #: src/tauon/t_modules/t_main.py:15278 src/tauon/t_modules/t_main.py:15282
-#, fuzzy
 msgid "There was an error submitting data to Maloja server"
-msgstr "Произошла ошибка при создании диаграммы"
+msgstr "Произошла ошибка при отправке данных на сервер Maloja"
 
 #: src/tauon/t_modules/t_main.py:15313 src/tauon/t_modules/t_main.py:15325
 msgid "Job already in progress!"
-msgstr ""
+msgstr "Работа уже выполняется!"
 
 #: src/tauon/t_modules/t_main.py:15338 src/tauon/t_modules/t_main.py:15355
 #: src/tauon/t_modules/t_main.py:15372
 msgid "Already scanning!"
-msgstr ""
+msgstr "Уже сканируется!"
 
 #: src/tauon/t_modules/t_main.py:15771
 msgid "End of playlist"
@@ -1711,23 +1701,25 @@ msgid "Maybe check your internet connection and try again?"
 msgstr "Может вы проверите ваше подключение к Интернету и попробуйте ещё раз?"
 
 #: src/tauon/t_modules/t_main.py:16498 src/tauon/t_modules/t_main.py:46422
-#, fuzzy
 msgid "Permission error encountered while writing database"
-msgstr "Ошибка доступа к одному или нескольким файлам"
+msgstr "Возникла ошибка разрешения при записи в базу данных"
 
 #: src/tauon/t_modules/t_main.py:16717
 msgid "Warning! Using this function moves physical folders."
 msgstr ""
+"Внимание! Использование этой функции приводит к перемещению физических папок."
 
 #: src/tauon/t_modules/t_main.py:16718
 msgid ""
 "This menu entry appears after selecting 'copy'. See manual (github wiki) for "
 "more info."
 msgstr ""
+"Этот пункт меню появляется после выбора «копировать». Дополнительную "
+"информацию см. в руководстве (github wiki)."
 
 #: src/tauon/t_modules/t_main.py:16931
 msgid "Notifications for this DE not supported"
-msgstr ""
+msgstr "Уведомления для этого DE не поддерживаются"
 
 #: src/tauon/t_modules/t_main.py:17046
 msgid ""
@@ -1749,7 +1741,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:17234
 msgid "Can't enable this if there's no token."
-msgstr ""
+msgstr "Невозможно включить эту функцию, если нет токена."
 
 #: src/tauon/t_modules/t_main.py:17243 src/tauon/t_modules/t_main.py:24225
 msgid "One or more fields is missing."
@@ -1798,12 +1790,11 @@ msgstr "Запуск веб-сервера"
 
 #: src/tauon/t_modules/t_main.py:17822
 msgid "This feature requires FFMPEG. Shall I can download that for you? (80MB)"
-msgstr ""
+msgstr "Для этой функции требуется FFMPEG. Могу я скачать его для вас? (80 МБ)"
 
 #: src/tauon/t_modules/t_main.py:17826
-#, fuzzy
 msgid "FFMPEG could not be found"
-msgstr "Не удалось найти каталог"
+msgstr "FFMPEG не найден"
 
 #: src/tauon/t_modules/t_main.py:17902
 msgid "Missing username, password and/or server name"
@@ -1811,16 +1802,15 @@ msgstr "Отсутствует имя пользователя, пароль и/
 
 #: src/tauon/t_modules/t_main.py:17912
 msgid "Error importing python-plexapi"
-msgstr ""
+msgstr "Ошибка при импорте python-plexapi"
 
 #: src/tauon/t_modules/t_main.py:17922
 msgid "Error connecting to PLEX server"
 msgstr "Ошибка подключения к серверу PLEX"
 
 #: src/tauon/t_modules/t_main.py:17923
-#, fuzzy
 msgid "Try checking login credentials and that the server is accessible."
-msgstr "Попробуйте проверить учётные данные для входа и доступность сервера."
+msgstr "Попробуйте проверить учетные данные для входа и доступность сервера."
 
 #: src/tauon/t_modules/t_main.py:18034
 msgid "PLEX Collection"
@@ -1832,13 +1822,12 @@ msgstr "Ошибка Subsonic: "
 
 #: src/tauon/t_modules/t_main.py:18166 src/tauon/t_modules/t_main.py:18175
 #: src/tauon/t_modules/t_main.py:18179
-#, fuzzy
 msgid "Error connecting to Airsonic server"
-msgstr "Ошибка подключения к серверу PLEX"
+msgstr "Ошибка подключения к серверу Airsonic"
 
 #: src/tauon/t_modules/t_main.py:18213
 msgid "Error reading Airsonic directory!"
-msgstr ""
+msgstr "Ошибка при чтении каталога Airsonic!"
 
 #: src/tauon/t_modules/t_main.py:18317
 msgid "Airsonic Collection"
@@ -1858,29 +1847,27 @@ msgstr "Не удалось установить соединение/автор
 
 #: src/tauon/t_modules/t_main.py:18637
 msgid "Koel Collection"
-msgstr ""
+msgstr "Коллекция Koel"
 
 #: src/tauon/t_modules/t_main.py:18666
 msgid "Network error"
-msgstr ""
+msgstr "Ошибка сети"
 
 #: src/tauon/t_modules/t_main.py:18679
-#, fuzzy
 msgid "No playlist name"
-msgstr "Имя плейлиста"
+msgstr "Нет названия плейлиста"
 
 #: src/tauon/t_modules/t_main.py:18690
-#, fuzzy
 msgid "Playlist not found on target"
-msgstr "Удалить все остальные каталоги в целевом каталоге"
+msgstr "Плейлист не найден на целевом устройстве"
 
 #: src/tauon/t_modules/t_main.py:20332
 msgid "No embedded album art."
-msgstr ""
+msgstr "Нет встроенной обложки альбома."
 
 #: src/tauon/t_modules/t_main.py:21565
 msgid "This function does not support renaming CUE Sheet tracks."
-msgstr ""
+msgstr "Эта функция не поддерживает переименование треков CUE Sheet."
 
 #: src/tauon/t_modules/t_main.py:21571
 msgid "Track Renaming"
@@ -1900,15 +1887,15 @@ msgstr "ПОСЛЕ"
 
 #: src/tauon/t_modules/t_main.py:21607
 msgid "Warning: This may change the file extension"
-msgstr ""
+msgstr "Предупреждение: это может изменить расширение файла"
 
 #: src/tauon/t_modules/t_main.py:21614
 msgid "Warning: The filename might not be unique"
-msgstr ""
+msgstr "Предупреждение: имя файла может быть не уникальным"
 
 #: src/tauon/t_modules/t_main.py:21619
 msgid "Warning: A track has incomplete metadata"
-msgstr ""
+msgstr "Предупреждение: трек имеет неполные метаданные"
 
 #: src/tauon/t_modules/t_main.py:21624
 msgid "Write"
@@ -1916,16 +1903,15 @@ msgstr "Записать"
 
 #: src/tauon/t_modules/t_main.py:21629
 msgid "Physically renames all the tracks in the folder"
-msgstr ""
+msgstr "Физически переименовывает все треки в папке"
 
 #: src/tauon/t_modules/t_main.py:21691 src/tauon/t_modules/t_main.py:21696
 msgid "Rename complete."
 msgstr "Переименование завершено."
 
 #: src/tauon/t_modules/t_main.py:21692 src/tauon/t_modules/t_main.py:21697
-#, fuzzy
 msgid "{N} / {T} filenames were written."
-msgstr " имён файлов записано."
+msgstr "Были записаны имена файлов {N} / {T}."
 
 #: src/tauon/t_modules/t_main.py:21782
 msgid "Simple tag editor"
@@ -1951,9 +1937,8 @@ msgstr ""
 "обязательно, но рекомендуется)"
 
 #: src/tauon/t_modules/t_main.py:21791
-#, fuzzy
 msgid "Number of tracks selected: {N}"
-msgstr "Число выбранных треков: %d"
+msgstr "Количество выбранных треков: {N}"
 
 #: src/tauon/t_modules/t_main.py:21826
 msgid "<Multiple selected>"
@@ -2002,9 +1987,8 @@ msgstr ""
 "редактор тегов"
 
 #: src/tauon/t_modules/t_main.py:21924
-#, fuzzy
 msgid "{N} files rewritten"
-msgstr "%d файлов перезаписано"
+msgstr "{N} файлов перезаписано"
 
 #: src/tauon/t_modules/t_main.py:21992
 msgid "Substitute Lyric Search"
@@ -2043,9 +2027,8 @@ msgid "Directory does not exist"
 msgstr "Каталога не существует"
 
 #: src/tauon/t_modules/t_main.py:22156
-#, fuzzy
 msgid "Playlist exported"
-msgstr "Плейлист пуст"
+msgstr "Плейлист экспортирован"
 
 #: src/tauon/t_modules/t_main.py:22240
 msgid "Year: "
@@ -2064,9 +2047,8 @@ msgid "Press Tab key to switch to Spotify search"
 msgstr "Нажмите клавишу Tab, чтобы переключиться на поиск Spotify"
 
 #: src/tauon/t_modules/t_main.py:22690
-#, fuzzy
 msgid "(Include multi-tag results)"
-msgstr "Включить всех исполнителей"
+msgstr "(Включить результаты с несколькими тегами)"
 
 #: src/tauon/t_modules/t_main.py:22695 src/tauon/t_modules/t_main.py:22703
 #: src/tauon/t_modules/t_main.py:22716 src/tauon/t_modules/t_main.py:22734
@@ -2087,28 +2069,30 @@ msgstr "Это может занять некоторое время"
 
 #: src/tauon/t_modules/t_main.py:23004
 msgid "Welcome to v7.2.0!"
-msgstr ""
+msgstr "Добро пожаловать в версию 7.2.0!"
 
 #: src/tauon/t_modules/t_main.py:23009
 msgid "You can check out the release notes on the https://"
-msgstr ""
+msgstr "Вы можете ознакомиться с примечаниями к выпуску на сайте https://"
 
 #: src/tauon/t_modules/t_main.py:23010
 msgid "Github release page."
-msgstr ""
+msgstr "Страница выпуска на Github."
 
 #: src/tauon/t_modules/t_main.py:23016
 msgid "New supporter bonuses!"
-msgstr ""
+msgstr "Новые бонусы для болельщиков!"
 
 #: src/tauon/t_modules/t_main.py:23020
 msgid ""
 "A new supporter bonus theme is now available! Check it out at the above link!"
 msgstr ""
+"Доступна новая тема бонусов для болельщиков! Ознакомьтесь с ней по ссылке "
+"выше!"
 
 #: src/tauon/t_modules/t_main.py:23025
 msgid "Your support means a lot! Love you!"
-msgstr ""
+msgstr "Ваша поддержка очень важна для нас! Люблю вас!"
 
 #: src/tauon/t_modules/t_main.py:23118
 msgid "Function"
@@ -2160,7 +2144,7 @@ msgstr "Использовать обложку альбома в качеств
 
 #: src/tauon/t_modules/t_main.py:23175
 msgid "Transparent accent"
-msgstr ""
+msgstr "Прозрачный акцент"
 
 #: src/tauon/t_modules/t_main.py:23181
 msgid "Prefer artist backgrounds"
@@ -2169,10 +2153,12 @@ msgstr "Предпочитать изображения артистов в ка
 #: src/tauon/t_modules/t_main.py:23185
 msgid "Also enabling 'auto-fech artist data' to scrape last.fm."
 msgstr ""
+"Также включение функции «автоматического извлечения данных об исполнителе» "
+"для сбора информации с last.fm."
 
 #: src/tauon/t_modules/t_main.py:23186
 msgid "You can toggle this back off under Settings > Function"
-msgstr ""
+msgstr "Вы можете отключить эту функцию в разделе «Настройки» > «Функции»"
 
 #: src/tauon/t_modules/t_main.py:23189
 msgid "Stronger"
