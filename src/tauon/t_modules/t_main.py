@@ -7135,22 +7135,6 @@ class Tauon:
 			# bio_set_large()
 		# self.gui.update_layout = True
 
-	def remove_extension(self, path: str) -> str:
-		try: # TODO: move these somewhere better
-			period = path[::-1].index(".")
-		except:
-			period = 100
-		if period <= 4:
-			path = path[:-(period+1)]
-		return path
-
-	def get_containing_folder(self, path: str) -> str:
-		elements = path.split("/") # TODO: fix with windows
-		partial_path = ""
-		for i in range( len(elements)-1 ):
-			partial_path += "/" + elements[i]
-		return partial_path + "/"
-
 	def flush_artist_bio(self, artist: str) -> None:
 		if os.path.isfile(os.path.join(self.a_cache_directory, artist + "-lfm.txt")):
 			os.remove(os.path.join(self.a_cache_directory, artist + "-lfm.txt"))
@@ -24266,7 +24250,7 @@ class Over:
 			y += 37 * gui.scale
 
 			if self.prefs.playlist_folder_path == "":
-				tauon.playlist_folder_box.text = str(tauon.user_directory / "playlists")
+				tauon.playlist_folder_box.text = str(tauon.dirs.music_directory) if tauon.dirs.music_directory else str(tauon.dirs.user_directory / "playlists")
 			else:
 				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
 
