@@ -1861,11 +1861,11 @@ class PlayerCtl:
 		self.tauon.thread_manager.ready("worker")
 
 
-	def try_reload_playlist_from_file(self, pl_id: int, warnings: bool = False) -> None:
-		"""reload designated playlist from file if it meets the requirements. pl_id is uuid, not playlist index."""
-		code = self.gen_codes.get(pl_id)
-		new_playlist = self.multi_playlist[ self.id_to_pl(pl_id) ]
-		export_entry = self.prefs.playlist_exports.get(pl_id)
+	def try_reload_playlist_from_file(self, id: int, warnings: bool = False) -> None:
+		"""reload designated playlist from file if it meets the requirements. id is playlist uuid, not index"""
+		code = self.gen_codes.get(id) and "self" not in self.gen_codes[id]
+		new_playlist = self.multi_playlist[ self.id_to_pl(id) ]
+		export_entry = self.prefs.playlist_exports.get(id)
 		try:
 			export_entry["auto_imp"]
 		except:
@@ -1886,7 +1886,7 @@ class PlayerCtl:
 					new_playlist.file_size = 0
 					new_playlist.playlist_file = ""
 
-				elif not os.path.exists(new_playlist.playlist_file):
+				elif not Path(new_playlist.playlist_file).is_file():
 					if warnings:
 						self.tauon.show_message(
 							_("This playlist is linked to a file that no longer exists."),
@@ -1899,17 +1899,17 @@ class PlayerCtl:
 					new_playlist.playlist_file = ""
 					new_playlist.file_size = 0
 				# tauon checks file size to determine if there have been any changes
-				elif os.path.getsize(new_playlist.playlist_file) != new_playlist.file_size:
+				elif Path(new_playlist.playlist_file).stat().st_size != new_playlist.file_size:
 
 					if export_entry["type"] == "m3u":
 						playlist,stations = self.tauon.parse_m3u(new_playlist.playlist_file)
 						new_playlist.playlist_ids = playlist.copy()
-						new_playlist.file_size = os.path.getsize(new_playlist.playlist_file)
+						new_playlist.file_size = Path(new_playlist.playlist_file).stat().st_size
 						logging.info(f"Reloaded playlist \"{new_playlist.title}\" from changed file")
 					elif export_entry["type"] == "xspf":
 						playlist,stations,name = self.tauon.parse_xspf(new_playlist.playlist_file)
 						new_playlist.playlist_ids = playlist.copy()
-						new_playlist.file_size = os.path.getsize(new_playlist.playlist_file)
+						new_playlist.file_size = Path(new_playlist.playlist_file).stat().st_size
 						logging.info(f"Reloaded playlist \"{new_playlist.title}\" from changed file")
 
 					else: # if user closed the export dialog while the settings were unusable
@@ -1927,6 +1927,8 @@ class PlayerCtl:
 						self.prefs.playlist_exports[id] = export_entry
 						new_playlist.playlist_file = ""
 						new_playlist.file_size = 0
+					if stations:
+						self.tauon.add_stations( stations, new_playlist.title )
 
 
 	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None: # note for flynn
@@ -6546,8 +6548,8 @@ class Tauon:
 		titles:        dict[str, TrackClass] = {}
 		location_dict: dict[str, TrackClass] = {}
 		pl_dir = Path(path).parent
-
-		with Path(path).open(encoding="utf-8") as file:
+		path = Path(path)
+		with path.open(encoding="utf-8") as file:
 			lines = file.readlines()
 
 		# parse data lines - either song files or radio links
@@ -6619,16 +6621,17 @@ class Tauon:
 
 	def load_m3u(self, path: str) -> None:
 		"""import an m3u file and create a new Tauon playlist for it"""
-		name = os.path.basename(path)[:-4].rstrip(".")
-		if not os.path.isfile(path):
+		path = Path(path)
+		name = path.stem
+		if not path.is_file:
 			return
 
 		playlist, stations = self.parse_m3u(path)
 
 		# & then add it to the list
 		if playlist:
-			filesize = os.path.getsize(path)
-			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=path, file_size=filesize)
+			filesize = path.stat().st_size
+			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path), file_size=filesize)
 			logging.info(f"Imported m3u file as {final_playlist.title}")
 			self.pctl.multi_playlist.append(
 				final_playlist)
@@ -6901,13 +6904,14 @@ class Tauon:
 		logging.info(f"Importing XSPF playlist: {path}")
 
 		playlist, stations, name = self.parse_xspf(path)
+		path = Path(path)
 		if not name:
-			name = os.path.basename(path)[:-5]
+			name = path.stem
 		if stations:
-			self.add_stations(stations, os.path.basename(path))
+			self.add_stations(stations, path.stem)
 		#logging.info(playlist)
 		if playlist:
-			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=path)
+			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path))
 			self.pctl.multi_playlist.append(
 				final_playlist)
 		if not stations and not playlist:
@@ -8123,7 +8127,7 @@ class Tauon:
 	#
 	#	 return [self.colours.menu_text, self.colours.menu_background, line]
 
-	def export_m3u(self, pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
+	def export_m3u(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
 		"""Exports an m3u file from a Playlist dictionary in multi_playlist.
 		If the playlist contains a playlist_file field, it will export to that file;
 		otherwise it will export to the directory given as an argument."""
@@ -8131,91 +8135,79 @@ class Tauon:
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
+		if relative:
+			for num in set( self.pctl.multi_playlist[pl].playlist_ids ):
+				track = self.pctl.master_library[num]
+				if not track.is_network:
+					try:
+						Path( track.fullpath ).relative_to( pl_file.parent, walk_up=True )
+					except:
+						self.show_message(
+							_("Cannot use relative paths"),
+							_("One or more tracks are stored on a separate drive from the playlist file."),
+							mode="error"
+						)
+						return 1
 
-		#if not direc or direc == "see playlist_file":
-		#	if prefs.playlist_folder_path:
-		#		direc = prefs.playlist_folder_path
-		#	else:
-		#		direc = str(self.user_directory / "playlists")
-		if not os.path.exists( self.get_containing_folder(direc) ):
-			os.makedirs( self.get_containing_folder(direc) )
-
-		target = direc
-
-		f = open(target, "w", encoding="utf-8")
-		f.write("#EXTM3U")
-		for number in self.pctl.multi_playlist[pl].playlist_ids:
-			track = self.pctl.master_library[number]
-			title = track.artist
-			if title:
-				title += " - "
-			title += track.title
-
-			if not track.is_network:
-				f.write("\n#EXTINF:")
-				f.write(str(round(track.length)))
+		with pl_file.open(mode = "w", encoding="utf-8") as f:
+			f.write("#EXTM3U")
+			for number in self.pctl.multi_playlist[pl].playlist_ids:
+				track = self.pctl.master_library[number]
+				title = track.artist
 				if title:
-					f.write(f",{title}")
-				path = track.fullpath
-				if relative:
-					path = os.path.relpath(path, start=self.get_containing_folder(direc))
-				f.write(f"\n{path}")
-		f.close()
+					title += " - "
+				title += track.title
 
-		if show:
-			line = direc
-			line += "/"
-			if self.system == "Windows" or self.msys:
-				os.startfile(line)
-			elif self.macos:
-				subprocess.Popen(["open", line])
-			else:
-				subprocess.Popen(["xdg-open", line])
-		return target
+				if not track.is_network:
+					f.write("\n#EXTINF:")
+					f.write(str(round(track.length)))
+					if title:
+						f.write(f",{title}")
+					path = Path( track.fullpath )
+					if relative:
+						path = path.relative_to( pl_file.parent, walk_up=True)
+					path = str( path )
+					f.write(f"\n{path}")
 
-	def export_xspf(self, pl: int, direc: str | None = None, relative: bool = False, show: bool = True) -> int | str:
+		return pl_file
+
+
+	def export_xspf(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
+
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
-
-		#if not direc:
-		#	direc = str(self.user_directory / "playlists")
-		#	if not os.path.exists(direc):
-		#		os.makedirs(direc)
-
-		# if direc != "see playlist_file":
-		#	target = os.path.join(direc, self.pctl.multi_playlist[pl].title + ".xspf")
-
-		if not os.path.exists( self.get_containing_folder(direc) ):
-			os.makedirs( self.get_containing_folder(direc) )
-
-		target = direc
-
-		if self.pctl.multi_playlist[pl].playlist_file and self.pctl.multi_playlist[pl].playlist_file != "":
-			# if the playlist has a file attribute:
-			target = self.pctl.multi_playlist[pl].playlist_file
-			logging.info(f"Playlist will export to filepath {target}")
-			# file attribute is removed if full path mode is disabled
-		try:
-			target
-		except:
-			logging.error("export_xspf: something's gone seriously wrong.")
-			return 1
+		if relative:
+			for num in set( self.pctl.multi_playlist[pl].playlist_ids ):
+				track = self.pctl.master_library[num]
+				if not track.is_network:
+					try:
+						Path( track.fullpath ).relative_to( pl_file.parent, walk_up=True )
+					except:
+						self.show_message(
+							_("Cannot use relative paths"),
+							_("One or more tracks are stored on a separate drive from the playlist file."),
+							mode="error"
+						)
+						return 1
 
 		xspf_root = ET.Element("playlist", version="1", xmlns="http://xspf.org/ns/0/")
 		xspf_tracklist_tag = ET.SubElement(xspf_root, "trackList")
 
 		for number in self.pctl.multi_playlist[pl].playlist_ids:
 			track = self.pctl.master_library[number]
-			path = track.fullpath
+			try:
+				path = track.fullpath
+			except:
+				continue
 			if relative:
-				path = os.path.relpath(path, start=self.get_containing_folder(direc))
+				path = Path( track.fullpath ).relative_to( pl_file.parent, walk_up=True )
 
 			xspf_track_tag = ET.SubElement(xspf_tracklist_tag, "track")
 			if track.title:
 				ET.SubElement(xspf_track_tag, "title").text = track.title
 			if track.is_cue is False and track.fullpath:
-				ET.SubElement(xspf_track_tag, "location").text = urllib.parse.quote(path)
+				ET.SubElement(xspf_track_tag, "location").text = urllib.parse.quote(str(path))
 			if track.artist:
 				ET.SubElement(xspf_track_tag, "creator").text = track.artist
 			if track.album:
@@ -8227,19 +8219,9 @@ class Tauon:
 
 		xspf_tree = ET.ElementTree(xspf_root)
 		ET.indent(xspf_tree, space="  ", level=0)
-		xspf_tree.write(target, encoding="UTF-8", xml_declaration=True)
+		xspf_tree.write( str(pl_file) , encoding="UTF-8", xml_declaration=True)
 
-		if show:
-			line = direc
-			line += "/"
-			if self.system == "Windows" or self.msys:
-				os.startfile(line)
-			elif self.macos:
-				subprocess.Popen(["open", line])
-			else:
-				subprocess.Popen(["xdg-open", line])
-
-		return target
+		return pl_file
 
 	def reload(self) -> None:
 		if self.prefs.album_mode:
@@ -22410,7 +22392,7 @@ class ExportPlaylistBox:
 		ids = []
 		for playlist in self.pctl.multi_playlist:
 			ids.append(playlist.uuid_int)
-		for key in list(self.prefs.playlist_exports.keys()):
+		for key in set(self.prefs.playlist_exports.keys()):
 			if key not in ids:
 				del self.prefs.playlist_exports[key]
 
@@ -22420,6 +22402,7 @@ class ExportPlaylistBox:
 		gui = self.gui
 		ddt = self.ddt
 		colours = self.colours
+		slash = "\\" if (self.tauon.system == "Windows" or self.tauon.msys) else "/"
 		if not self.active:
 			return
 		for i, item in enumerate(self.pctl.multi_playlist):
@@ -22444,10 +22427,12 @@ class ExportPlaylistBox:
 		if self.prefs.playlist_folder_path and self.prefs.playlist_folder_path != self.default["path"]:
 			self.default["path"] = self.prefs.playlist_folder_path
 
+		# load or generate export entry
 		current = self.prefs.playlist_exports.get(self.id)
 		if not current:
 			current = copy.copy(self.default)
 
+		# load transient fields for the first time
 		if not self.has_it_run_yet:
 			self.is_generator = (self.pctl.gen_codes.get(self.id) and "self" not in self.pctl.gen_codes[self.id])
 			try:
@@ -22455,39 +22440,28 @@ class ExportPlaylistBox:
 			except:
 				current["auto_imp"] = False
 			self.temp_auto_imp = current["auto_imp"]
-
 			if original_playlist.playlist_file:
 				self.file_or_folder = "file"
-				self.directory_text_box.text = original_playlist.playlist_file
+				self.directory_text_box.text = str( Path( original_playlist.playlist_file ).resolve() )
 			else:
-				self.directory_text_box.text = current["path"] + "/" + original_playlist.title + "." + current["type"]
+				p = Path( current["path"] )
+				p = (p / original_playlist.title).with_suffix("." + current["type"])
+				self.directory_text_box.text = str(p)
 				self.file_or_folder = "file"
+		self.has_it_run_yet = True
 
 		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Import/Export Playlist"), colours.grey(230), 213)
-
 		x += round(15 * gui.scale)
 		y += round(25 * gui.scale)
-
 		if self.file_or_folder == "folder":
 			ddt.text((x, y + 8 * gui.scale), _("Save folder"), colours.grey(230), 11)
 		else:
 			ddt.text((x, y + 8 * gui.scale), _("Save file"), colours.grey(230), 11)
 		y += round(30 * gui.scale)
-
 		rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
 		self.fields.add(rect1)
 		# ddt.rect(rect1, [40, 40, 40, 255], True)
 		ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-
-		# if full path mode is disabled or empty, display directory save path
-		# else display the full path
-		if self.has_it_run_yet:
-			if original_playlist.playlist_file:
-				self.directory_text_box.text = original_playlist.playlist_file
-			else:
-				self.directory_text_box.text = current["path"]
-		self.has_it_run_yet = True
-
 		self.directory_text_box.draw(
 			x + round(4 * gui.scale), y, colours.box_input_text, True,
 			width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
@@ -22502,29 +22476,26 @@ class ExportPlaylistBox:
 		if old_type != current["type"]: # if user switched types this frame
 			if self.file_or_folder == "file":
 				if current["type"] == "m3u":
-					if self.directory_text_box.text.endswith(".xspf"): # should be always but i don't wanna rebuild if i'm wrong
-						self.directory_text_box.text = self.directory_text_box.text[:-5] + ".m3u"
+					self.directory_text_box.text = str( Path(self.directory_text_box.text).with_suffix(".m3u") )
 				else:
-					if self.directory_text_box.text.endswith(".m3u8"):
-						self.directory_text_box.text = self.directory_text_box.text[:-5] + ".xspf"
-					if self.directory_text_box.text.endswith(".m3u"):
-						self.directory_text_box.text = self.directory_text_box.text[:-4] + ".xspf"
+					self.directory_text_box.text = str( Path(self.directory_text_box.text).with_suffix(".xspf") )
 
 		# parse box text and convert to options if possible
 		# remember this runs every single frame
-		if self.directory_text_box.text.endswith("/"):
+		# only part of this is possible with pathlib i think
+		extension = Path( self.directory_text_box.text.lower() ).suffix
+		if self.directory_text_box.text.endswith( slash ):
 			self.file_or_folder = "folder"
 			current["auto_imp"] = False
-		elif self.directory_text_box.text.lower().endswith(".xspf"):
+		elif extension == ".xspf":
 			self.file_or_folder = "file"
 			current["type"] = "xspf"
-		elif self.directory_text_box.text.lower().endswith(".m3u") or self.directory_text_box.text.lower().endswith(".m3u8"):
+		elif extension == ".m3u" or extension==".m3u8":
 			self.file_or_folder = "file"
 			current["type"] = "m3u"
 		else: # if there's no trailing slash OR extension:
 			self.file_or_folder = "file"
 			current["auto_imp"] = False
-			# TODO: on linux you can make a folder called "folder.jpg" for example. same on other OS?
 
 		# save the path
 		if self.file_or_folder == "file":
@@ -22542,17 +22513,28 @@ class ExportPlaylistBox:
 			gui.level_2_click)
 		ww = ddt.get_text_w(_("Relative paths for tracks"), 211)
 		if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
-			self.show_message(
-					_("Determines how tracks will be referenced in the exported file"),
-					_("Disabled: tracks will be located from root folder, e.g. \"/home/user/music_path/artist/album/track.mp3\"."),
-					_("Enabled: tracks will be located from where the playlist is saved, e.g. \"../artist/album/track.mp3\"."))
-			# TODO: make sense of these for windows and mac
 
-		if self.directory_text_box.text.lower().endswith(".m3u") or self.directory_text_box.text.lower().endswith(".m3u8") and current["type"] == "m3u":
+			try:
+				full_track = Path( self.pctl.master_library[0].fullpath ).resolve()
+				rel_track = full_track.relative_to(self.default["path"], walk_up=True )
+			except:
+				self.show_message(
+					_("You probably can't use this."),
+					_("You either have no tracks in your library, or they are stored"),
+					_("online or on a separate drive from the default playlist path.")
+				)
+			else:
+				self.show_message(
+						_("Determines how tracks will be referenced in the exported file"),
+						_(f"Disabled: tracks will be located from root folder, e.g. \"{full_track}\"."),
+						_(f"Enabled: tracks will be located from where the playlist is saved, e.g. \"{rel_track}\"."))
+
+		extension = Path( self.directory_text_box.text.lower() ).suffix
+		if extension == ".m3u" or extension==".m3u8" and current["type"] == "m3u":
 			is_valid_path = True
-		elif self.directory_text_box.text.lower().endswith(".xspf") and current["type"] == "xspf":
+		elif extension == ".xspf" and current["type"] == "xspf":
 			is_valid_path = True
-		elif self.directory_text_box.text.endswith("/") and self.file_or_folder == "folder":
+		elif self.directory_text_box.text.endswith( slash ) and self.file_or_folder == "folder":
 			is_valid_path = True
 		else:
 			is_valid_path = False
@@ -22567,36 +22549,20 @@ class ExportPlaylistBox:
 			pass
 		else:
 			current["auto_imp"] = self.pref_box.toggle_square(x + round(130*gui.scale), y, current["auto_imp"], _("Auto-import"), gui.level_2_click)
-
+		self.prefs.playlist_exports[self.id] = current
 
 		y += round(0 * gui.scale)
 		ww = ddt.get_text_w(_("Export"), 211)
 		x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
 
-		self.prefs.playlist_exports[self.id] = current
-
 		if self.draw.button(_("Export"), x, y - (2*gui.scale), press=gui.level_2_click):
 			if not is_valid_path: # only occurs if file
-				try: # remove broken extension
-					reversed_path = self.directory_text_box.text[::-1]
-					period = reversed_path.index(".")
-					self.directory_text_box.text = self.directory_text_box.text[:-(period+1)]
-				except:
-					pass
-				self.directory_text_box.text += "." + current["type"]
+				self.directory_text_box.text = str( Path( self.directory_text_box.text ).with_suffix( "." + current["type"] ) )
 				original_playlist.playlist_file = self.directory_text_box.text
 				current["path"] = self.default["path"]
 				self.prefs.playlist_exports[self.id] = current
-			try:
-				self.run_export(current, self.id, warnings=True)
-			except ValueError:
-				self.show_message(
-					_("Relative paths error"),
-					_("The playlist file and the audio files must be on the same drive."),
-					mode = "error"
-				)
 
-
+			self.run_export(current, self.id, warnings=True)
 
 	def run_export(self, current, id, warnings: bool = True) -> None:
 		logging.info("Export playlist")
@@ -22606,30 +22572,27 @@ class ExportPlaylistBox:
 			if item.uuid_int == id:
 				original_playlist = item
 
+		# if playlist saves to FILE, it will be stored in its playlist_file
+		# if it saves to FOLDER, it will be in the current["path"]
 		if original_playlist.playlist_file:
-			path = original_playlist.playlist_file
+			path = Path( original_playlist.playlist_file )
 		else:
-			path = current["path"]
-			if not os.path.isdir(path):
-				if warnings:
-					self.show_message(_("Directory does not exist"), mode="warning")
-				return
-		if path.endswith(".m3u8"):
-			pass
-		elif path.endswith("/"):
-			path += original_playlist.title + "." + current["type"]
-		else:
-			path = self.tauon.remove_extension(path) + "." + current["type"]
+			path = Path( current["path"] )
+		if not path.suffix or path.suffix.lower() not in [".m3u",".m3u8",".xspf"]: # suffix will always be correct at this point
+			path = ( path / original_playlist.title).with_suffix( "." + current["type"] )
+
+		if not path.parent.is_dir():
+			path.parent.mkdir(parents=True)
 
 		target = ""
 		if current["type"] == "xspf":
-			target = self.tauon.export_xspf(self.pctl.id_to_pl(id), direc=path, relative=current["relative"], show=False)
+			target = self.tauon.export_xspf(self.pctl.id_to_pl(id), pl_file=path, relative=current["relative"])
 		if current["type"] == "m3u":
-			target = self.tauon.export_m3u(self.pctl.id_to_pl(id), direc=path, relative=current["relative"], show=False)
-		original_playlist.file_size = os.path.getsize(target)
+			target = self.tauon.export_m3u(self.pctl.id_to_pl(id), pl_file=path, relative=current["relative"])
+		original_playlist.file_size = target.stat().st_size
 
 		if warnings and target != 1:
-			self.show_message(_("Playlist exported"), target, mode="done")
+			self.show_message(_("Playlist exported"), str(target), mode="done")
 
 class SearchOverlay:
 
@@ -24147,6 +24110,12 @@ class Over:
 
 		ddt.text_background_colour = colours.box_background
 
+		if self.func_page != 4 and not Path(prefs.playlist_folder_path).is_dir():
+			# reset options if user leaves a bad path in the box
+			prefs.playlist_folder_path = ""
+			prefs.autoscan_playlist_folder = False
+
+
 		if self.func_page == 0:
 
 			y += 23 * gui.scale
@@ -24296,6 +24265,11 @@ class Over:
 				subtitle=_("Change requires restart"))
 			y += 37 * gui.scale
 
+			if self.prefs.playlist_folder_path == "":
+				tauon.playlist_folder_box.text = str(tauon.user_directory / "playlists")
+			else:
+				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
+
 			ddt.text((x, y + 8 * gui.scale), _("Default playlist export folder"), colours.grey(230), 11)
 			y += round(30 * gui.scale)
 			rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
@@ -24303,13 +24277,14 @@ class Over:
 			# ddt.rect(rect1, [40, 40, 40, 255], True)
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 
-			if self.prefs.playlist_folder_path == "":
-				tauon.playlist_folder_box.text = str(tauon.user_directory / "playlists")
+			if Path(tauon.playlist_folder_box.text).is_dir():
+				tauon.playlist_folder_box.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, True,
+					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
 			else:
-				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
-			tauon.playlist_folder_box.draw(
-				x + round(4 * gui.scale), y, colours.box_input_text, True,
-				width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
+				tauon.playlist_folder_box.draw(
+					x + round(4 * gui.scale), y, colours.status_text_over, True,
+					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
 			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
 			y += round(30* gui.scale)
 			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
@@ -38690,9 +38665,9 @@ def worker1(tauon: Tauon) -> None:
 		"""rescan designated playlist folder for new playlists and import them"""
 		if prefs.autoscan_playlist_folder:
 			new_playlists = []
-			for root, dirs, files in os.walk(prefs.playlist_folder_path):
+			for root, dirs, files in os.walk( prefs.playlist_folder_path ):
 				for name in files:
-					if name.lower().endswith(".m3u8") or name.lower().endswith(".m3u") or name.lower().endswith(".xspf"):
+					if Path( name.lower() ).suffix in [".m3u",".m3u8",".xspf"]:
 						structure = ( os.path.join(root, name), name )
 						new_playlists.append( structure )
 			for filepath in new_playlists:
@@ -38718,14 +38693,16 @@ def worker1(tauon: Tauon) -> None:
 					mode="error")
 			return 0
 
-		for playlist in pctl.multi_playlist:
+		for pl, playlist in enumerate( pctl.multi_playlist ):
 			if path == playlist.playlist_file:
 				if show_errors:
 					tauon.show_message(
 						_("Playlist not imported"),
 						_(f"This file is already associated with playlist \"{playlist.title}\"."),
 						mode="error")
-				logging.error(f"File already associated with playlist \"{playlist.title}\"")
+					pctl.switch_playlist(pl)
+				else:
+					logging.error(f"File already associated with playlist \"{playlist.title}\"")
 				return 0
 
 		if os.path.splitext(path)[1][1:] in {"CUE", "cue"}:
@@ -45787,6 +45764,10 @@ def main(holder: Holder) -> None:
 					# rect = [0, 0, window_size[0], window_size[1]]
 					# ddt.rect_r(rect, [0, 0, 0, 90], True)
 					pref_box.render()
+				else:
+					if not Path(tauon.prefs.playlist_folder_path).is_dir():
+						tauon.prefs.playlist_folder_path = ""
+						prefs.autoscan_playlist_folder = False
 
 				if gui.rename_folder_box:
 					if gui.level_2_click:
