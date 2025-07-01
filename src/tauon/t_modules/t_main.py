@@ -38680,11 +38680,11 @@ def worker1(tauon: Tauon) -> None:
 		for pl, playlist in enumerate( pctl.multi_playlist ):
 			if path == playlist.playlist_file:
 				if show_errors:
-					tauon.show_message(
-						_("Playlist not imported"),
-						_(f"This file is already associated with playlist \"{playlist.title}\"."),
-						mode="error")
+					temp = prefs.always_auto_update_playlists
+					prefs.always_auto_update_playlists = True
 					pctl.switch_playlist(pl)
+					prefs.always_auto_update_playlists = temp
+					# make sure that the file gets reloaded regardless of settings
 				else:
 					logging.error(f"File already associated with playlist \"{playlist.title}\"")
 				return 0
