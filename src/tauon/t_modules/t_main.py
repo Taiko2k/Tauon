@@ -1837,7 +1837,7 @@ class PlayerCtl:
 			logging.exception("Failed to parse as int, returning 'a'")
 			return "a"
 
-	def re_import2(self, pl: int) -> None: # note for flynn
+	def re_import2(self, pl: int) -> None:
 		paths = self.multi_playlist[pl].last_folder
 
 		reduce_paths(paths)
@@ -1872,7 +1872,7 @@ class PlayerCtl:
 			pass
 		else:
 			if export_entry["auto_imp"]:
-				if code is not None:
+				if code:
 					if warnings:
 						self.tauon.show_message(
 							_("Cannot auto-import."),
@@ -1912,26 +1912,11 @@ class PlayerCtl:
 						new_playlist.file_size = Path(new_playlist.playlist_file).stat().st_size
 						logging.info(f"Reloaded playlist \"{new_playlist.title}\" from changed file")
 
-					else: # if user closed the export dialog while the settings were unusable
-						# honestly this probably will never run.
-						if warnings:
-							self.tauon.show_message(
-								_("This playlist's import/export settings are broken."),
-								_("They will be reset. Please make sure next time."),
-								mode="warning")
-						else:
-							logging.info(f"import/export settings broken on playlist {new_playlist.title}; resetting")
-
-						export_entry["auto_imp"] = False
-						export_entry["type"] = "m3u"
-						self.prefs.playlist_exports[id] = export_entry
-						new_playlist.playlist_file = ""
-						new_playlist.file_size = 0
 					if stations:
 						self.tauon.add_stations( stations, new_playlist.title )
 
 
-	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None: # note for flynn
+	def switch_playlist(self, number: int, cycle: bool = False, quiet: bool = False) -> None:
 		# Close any active menus
 		# for instance in Menu.instances:
 		# 	instance.active = False
@@ -6614,7 +6599,8 @@ class Tauon:
 						playlist.append(titles[line_title].index)
 						found_title += 1
 					else:
-						logging.info(f"track \"{line_title}\" not found")
+						log_line = line_title if line_title else line
+						logging.info(f"track \"{log_line}\" not found")
 						not_found += 1
 		logging.info(f"playlist imported with {found_imported} tracks already in library, {found_file} found from filepath, {found_title} from title and {not_found} not found")
 		return playlist, stations
@@ -6623,7 +6609,7 @@ class Tauon:
 		"""import an m3u file and create a new Tauon playlist for it"""
 		path = Path(path)
 		name = path.stem
-		if not path.is_file:
+		if not path.is_file():
 			return
 
 		playlist, stations = self.parse_m3u(path)
@@ -8112,9 +8098,8 @@ class Tauon:
 	#	 return [self.colours.menu_text, self.colours.menu_background, line]
 
 	def export_m3u(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
-		"""Exports an m3u file from a Playlist dictionary in multi_playlist.
-		If the playlist contains a playlist_file field, it will export to that file;
-		otherwise it will export to the directory given as an argument."""
+		"""Exports an m3u file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
+		pl_file is normalized by run_export; you should not call this function directly if you are uncertain."""
 
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
@@ -8157,6 +8142,8 @@ class Tauon:
 
 
 	def export_xspf(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
+		"""Exports an xspf file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
+		pl_file is normalized by run_export; you should not call this function directly if you are uncertain."""
 
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
@@ -15140,7 +15127,7 @@ class Tauon:
 				if self.gui.album_tab_mode:
 					self.show_in_gal(self.pctl.selected_in_playlist, silent=True)
 
-	def check_auto_update_okay(self, code, pl=None): # note for flynn - could be a good way to check
+	def check_auto_update_okay(self, code, pl=None):
 		try:
 			cmds = shlex.split(code)
 		except Exception:
@@ -16759,7 +16746,7 @@ class Tauon:
 					if item["auto_imp"]:
 						original_playlist = pctl.multi_playlist[pl]
 						try:
-							filesize = os.path.getsize(original_playlist.playlist_file)
+							filesize = Path(original_playlist.playlist_file).stat().st_size
 						except Exception as e:
 							logging.error(e)
 						else:
@@ -29883,7 +29870,6 @@ class StandardPlaylist:
 							gui.pl_update += 1
 
 						tauon.reload_albums(True)
-						# note for flynn?
 						pctl.notify_change()
 
 			# Test show drag indicator
