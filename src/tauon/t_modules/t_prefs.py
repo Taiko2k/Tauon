@@ -129,7 +129,7 @@ class Prefs:
 
 	true_shuffle:      bool = True
 	append_total_time: bool = False
-	backend:           int  = 4  # 2 gstreamer, 4 phazor
+	backend:           int  = 4  # 1 basslib(removed), 2 gstreamer, 4 phazor
 
 	album_repeat_mode:  bool = False  # passed to pctl
 	album_shuffle_mode: bool = False  # passed to pctl
