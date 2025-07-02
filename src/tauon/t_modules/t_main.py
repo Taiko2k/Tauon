@@ -19362,6 +19362,8 @@ class TimedLyricsRen:
 		if index != self.index:
 			self.ready = False
 			self.generate(self.pctl.master_library[index])
+		line_positions: list[ tuple[ list[int], list[float,str] ] ] = []
+		# saves collider positions alongside their respective lines
 
 		if self.inp.right_click and x and y and self.coll((x, y, w, h)):
 			self.showcase_menu.activate(self.pctl.master_library[index])
@@ -19373,6 +19375,7 @@ class TimedLyricsRen:
 			if side_panel:
 				if self.coll((x, y, w, h)):
 					self.scroll_position += int(self.inp.mouse_wheel * 30 * self.gui.scale)
+					self.scroll_position = min(self.scroll_position, 30)
 			else:
 				self.scroll_position += int(self.inp.mouse_wheel * 30 * self.gui.scale)
 
@@ -19384,13 +19387,13 @@ class TimedLyricsRen:
 		if side_panel:
 			bg = self.colours.lyrics_panel_background
 			font_size = 15
-			spacing = round(17 * self.gui.scale)
+			spacing = round(23 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 		else:
 			bg = self.colours.playlist_panel_background
 			font_size = 17
-			spacing = round(23 * self.gui.scale)
+			spacing = round(26 * self.gui.scale)
 
 		test_time = self.tauon.get_real_time()
 
@@ -19424,10 +19427,25 @@ class TimedLyricsRen:
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
-				h = self.ddt.text((x, yy, 4, w - 20 * self.gui.scale), line[1], colour, font_size, w - 20 * self.gui.scale, bg)
-				yy += max(h - round(6 * self.gui.scale), spacing)
+				location = [ round(x), round(yy), 4, round(w - 20 * self.gui.scale) ]
+				h = self.ddt.text(location, line[1], colour, font_size, w - 20 * self.gui.scale, bg)
+
+				collider = [ round(x), round(yy), round(w - 20 * self.gui.scale), h ]
+				association = collider, line
+				line_positions.append( association )
+
+				yy += max( h+round(self.gui.scale) , spacing)
 			else:
 				yy += spacing
+
+		# click a lyric to seek to it
+		if self.inp.mouse_click:
+			for rendered_line in line_positions:
+				if self.coll(rendered_line[0]):
+					# instantly seeek to the correct line
+					self.pctl.seek_time(rendered_line[1][0])
+					break
+
 		return None
 
 class TextBox2:
