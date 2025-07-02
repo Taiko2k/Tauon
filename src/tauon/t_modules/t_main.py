@@ -6467,6 +6467,7 @@ class Tauon:
 
 		if not os.path.isfile(path):
 			return
+		pl_dir = Path(path).parent
 
 		with Path(path).open(encoding="utf-8") as file:
 			lines = file.readlines()
@@ -6493,9 +6494,12 @@ class Tauon:
 						self.radiobox.start(radio)
 				else:
 					line = uri_parse(line)
-					# Join file path if possibly relative
-					if not line.startswith("/"):
-						line = os.path.join(os.path.dirname(path), line)
+					# Fix up relative filepaths
+					if not Path(line).is_absolute():
+						line = Path(pl_dir / Path(line) ).resolve()
+					else:
+						line = Path(line).resolve()
+					line = str(line)
 
 					# Cache datbase file paths for quick lookup
 					if not location_dict:
@@ -6603,6 +6607,7 @@ class Tauon:
 			a: list[dict[str, str | None]] = []
 			b: dict[str, str | None] = {}
 			info = ""
+			pl_dir = Path(path).parent
 
 			for top in e:
 
@@ -6621,10 +6626,16 @@ class Tauon:
 								if "location" in field.tag and field.text:
 									l = field.text
 									l = str(urllib.parse.unquote(l))
-									if l[:5] == "file:":
-										l = l.replace("file:", "")
-										l = l.lstrip("/")
-										l = "/" + l
+
+									try:
+										l = str( Path.from_uri(l) )
+									except:
+										pass
+
+									if not Path(l).is_absolute():
+										l = str(Path(pl_dir / Path(l)).resolve())
+									else:
+										l = str( Path(l).resolve() )
 
 									b["location"] = l
 								if "creator" in field.tag and field.text:
