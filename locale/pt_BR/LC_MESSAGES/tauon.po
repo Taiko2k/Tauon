@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2025-05-18 15:11+0200\n"
-"PO-Revision-Date: 2025-05-06 07:01+0000\n"
+"PO-Revision-Date: 2025-07-04 08:13+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,11 +16,11 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #: src/tauon/t_modules/guitar_chords.py:81
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "Metada insuficiente para pesquisar"
 
 #: src/tauon/t_modules/guitar_chords.py:95
 msgid "Clipboard has no text"
