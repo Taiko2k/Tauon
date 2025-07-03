@@ -1291,12 +1291,11 @@ msgstr "Não pode remover a coluna restante."
 
 #: src/tauon/t_modules/t_main.py:10741
 msgid "Play History"
-msgstr "Histórico"
+msgstr "Histórico de reprodução"
 
 #: src/tauon/t_modules/t_main.py:10768
-#, fuzzy
 msgid "{N} ratings imported"
-msgstr "Ordem por Duração"
+msgstr "Avaliações {N} importadas"
 
 #: src/tauon/t_modules/t_main.py:10809
 msgid "This will delete all track and album ratings from the local database!"
@@ -1316,23 +1315,20 @@ msgid "Stop Cast"
 msgstr "Parar Transmissão"
 
 #: src/tauon/t_modules/t_main.py:10836
-#, fuzzy
 msgid "pychromecast not found"
-msgstr "Não foram encontrados dispositivos Chromecast"
+msgstr "pychromecast não encontrado"
 
 #: src/tauon/t_modules/t_main.py:10838
-#, fuzzy
 msgid "Searching for Chomecasts..."
-msgstr "Reexaminando pastas..."
+msgstr "Procurando por Chomecasts..."
 
 #: src/tauon/t_modules/t_main.py:10880
 msgid "No metadata available to copy"
 msgstr "Não há metadados para copiar"
 
 #: src/tauon/t_modules/t_main.py:10945
-#, fuzzy
 msgid "Please wait for cleaning process to finish"
-msgstr "Por favor aguarde até que o trabalho finalize"
+msgstr "Aguarde o término do processo de limpeza"
 
 #: src/tauon/t_modules/t_main.py:10966
 msgid "Copy Album URL"
@@ -1380,14 +1376,12 @@ msgid "Scrobbling is Active"
 msgstr "Scrobbling está Ativo"
 
 #: src/tauon/t_modules/t_main.py:11293 src/tauon/t_modules/t_main.py:11300
-#, fuzzy
 msgid "Unknown Track"
-msgstr "Desgostar da Faixa"
+msgstr "Faixa desconhecida"
 
 #: src/tauon/t_modules/t_main.py:11302
-#, fuzzy
 msgid "Unknown Artist"
-msgstr "Álbuns Aleatórios"
+msgstr "Artista desconhecido"
 
 #: src/tauon/t_modules/t_main.py:11352
 msgid "Error - Discord not running?"
@@ -1410,9 +1404,8 @@ msgstr "Estação adicionada à: "
 
 #: src/tauon/t_modules/t_main.py:11653 src/tauon/t_modules/t_main.py:11671
 #: src/tauon/t_modules/t_main.py:22217
-#, fuzzy
 msgid "Artist: "
-msgstr "Artista"
+msgstr "Artista: "
 
 #: src/tauon/t_modules/t_main.py:11707
 msgid "Filter Small Artists"
@@ -1427,9 +1420,8 @@ msgid "Notice: Artist image sourced from fanart.tv"
 msgstr "Aviso: Imagem do artista de fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:11797 src/tauon/t_modules/t_main.py:24591
-#, fuzzy
 msgid "They encourage you to contribute at {link}"
-msgstr "Eles encorajam-no a contribuir em https://fanart.tv"
+msgstr "Eles incentivam você a contribuir em {link}"
 
 #: src/tauon/t_modules/t_main.py:11802
 msgid "Resume Queue"
@@ -1445,14 +1437,12 @@ msgstr ""
 "Os tipos de imagem que não sejam PNG ou JPEG atualmente não são suportados"
 
 #: src/tauon/t_modules/t_main.py:11931
-#, fuzzy
 msgid "The link does not appear to refer to an image file."
-msgstr "App de edição de etiquetas parece não estar instalada."
+msgstr "O link não parece se referir a um arquivo de imagem."
 
 #: src/tauon/t_modules/t_main.py:11936
-#, fuzzy
 msgid "Image download failed."
-msgstr "Remoção de imagem falhou."
+msgstr "O download da imagem falhou."
 
 #: src/tauon/t_modules/t_main.py:11945 src/tauon/t_modules/t_main.py:11960
 msgid "You"
@@ -1485,9 +1475,8 @@ msgid "Music"
 msgstr "Músic"
 
 #: src/tauon/t_modules/t_main.py:12889
-#, fuzzy
 msgid "Url copied to clipboard"
-msgstr "URL copiado para o clipboard"
+msgstr "URL copiado na área de transferência"
 
 #: src/tauon/t_modules/t_main.py:12914
 msgid "Looks like that's the only track in the album"
@@ -1527,9 +1516,8 @@ msgid "A regen is already in progress..."
 msgstr "Uma regeneração já está em andamento ..."
 
 #: src/tauon/t_modules/t_main.py:13715
-#, fuzzy
 msgid "No duplicates were found"
-msgstr "Álbuns incompletos não encontrados."
+msgstr "Não foram encontradas duplicatas"
 
 #: src/tauon/t_modules/t_main.py:13717
 msgid "{N} duplicates removed"
@@ -1592,9 +1580,8 @@ msgid "Sorry, this feature isn't (yet) available with Snap."
 msgstr "Desculpe, está funcionalidade ainda não está disponível com Snap."
 
 #: src/tauon/t_modules/t_main.py:14130 src/tauon/t_modules/t_main.py:14145
-#, fuzzy
 msgid "Cannot edit tags of a network track."
-msgstr "Não é possível excluir uma faixa de rede"
+msgstr "Não é possível editar tags de uma faixa de rede."
 
 #: src/tauon/t_modules/t_main.py:14155 src/tauon/t_modules/t_main.py:41005
 msgid "Edit with "
@@ -1605,32 +1592,28 @@ msgid "Starting download..."
 msgstr "Iniciando transferência..."
 
 #: src/tauon/t_modules/t_main.py:14210
-#, fuzzy
 msgid "Downloading... {N}/80MB"
-msgstr "Descarregando dados..."
+msgstr "Baixando... {N}/80MB"
 
 #: src/tauon/t_modules/t_main.py:14214
-#, fuzzy
 msgid "Download failed"
-msgstr "Baixar URL"
+msgstr "O download falhou"
 
 #: src/tauon/t_modules/t_main.py:14218
 msgid "Download completed but checksum failed"
 msgstr "Transferência completa mas a soma de verificação falhou"
 
 #: src/tauon/t_modules/t_main.py:14220
-#, fuzzy
 msgid "Download completed.. extracting"
-msgstr "BASS foi Baixado."
+msgstr "Download concluído... extraindo"
 
 #: src/tauon/t_modules/t_main.py:14232
 msgid "FFMPEG fetch complete"
 msgstr "FFMPEG Fetch completo"
 
 #: src/tauon/t_modules/t_main.py:14328
-#, fuzzy
 msgid "Disable Columns"
-msgstr "Colunas"
+msgstr "Disable Columns"
 
 #: src/tauon/t_modules/t_main.py:14329
 #, fuzzy
