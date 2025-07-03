@@ -4118,7 +4118,7 @@ msgstr "Não pude excluir {name}"
 
 #: src/tauon/t_modules/t_main.py:38548
 msgid "Something has gone horribly wrong!"
-msgstr "Something has gone horribly wrong!"
+msgstr "Algo deu terrivelmente errado!"
 
 #: src/tauon/t_modules/t_main.py:38553
 #, fuzzy
@@ -4142,11 +4142,11 @@ msgstr "Renomeação finalizada."
 
 #: src/tauon/t_modules/t_main.py:38603
 msgid "{N} items were removed from the database."
-msgstr ""
+msgstr "{N} itens foram removidos do banco de dados."
 
 #: src/tauon/t_modules/t_main.py:38711
 msgid "An error was encountered."
-msgstr ""
+msgstr "Um erro foi encontrado."
 
 #: src/tauon/t_modules/t_main.py:38711
 #, fuzzy
@@ -4155,20 +4155,22 @@ msgstr "Converter arquivos"
 
 #: src/tauon/t_modules/t_main.py:38720
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "A transcodificação foi cancelada antes da conclusão."
 
 #: src/tauon/t_modules/t_main.py:38721
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "Arquivos incompletos permanecerão."
 
 #: src/tauon/t_modules/t_main.py:38724
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "Pression F9 para mostar saída."
 
 #: src/tauon/t_modules/t_main.py:38726
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
 msgstr ""
+"Observe que qualquer imagem de saída associada é uma miniatura e não uma "
+"cópia exata."
 
 #: src/tauon/t_modules/t_main.py:38729
 #, fuzzy
@@ -4609,11 +4611,11 @@ msgstr "Copiar URL da Faixa"
 
 #: src/tauon/t_modules/t_main.py:41069
 msgid "Always stop after album"
-msgstr ""
+msgstr "Sempre pare depois do algum"
 
 #: src/tauon/t_modules/t_main.py:41070
 msgid "Always stop after track"
-msgstr ""
+msgstr "Sempre pare depois de faixa"
 
 #: src/tauon/t_modules/t_main.py:41071
 #, fuzzy
@@ -4627,7 +4629,7 @@ msgstr "Faixas Melhor Avaliadas"
 
 #: src/tauon/t_modules/t_main.py:41073
 msgid "Continue Play"
-msgstr ""
+msgstr "Continue Tocando"
 
 #: src/tauon/t_modules/t_main.py:41075
 msgid "Minimize"
@@ -4721,7 +4723,7 @@ msgstr "Avaliação"
 
 #: src/tauon/t_modules/t_main.py:41119
 msgid "More…"
-msgstr ""
+msgstr "Mais…"
 
 #: src/tauon/t_modules/t_main.py:41121 src/tauon/t_modules/t_main.py:45154
 #: src/tauon/t_modules/t_main.py:45160
@@ -4749,7 +4751,7 @@ msgstr "Número da Faixa"
 
 #: src/tauon/t_modules/t_main.py:41128
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "É folha CUE"
 
 #: src/tauon/t_modules/t_main.py:41143
 msgid "Paste Spotify Playlist"
@@ -4779,7 +4781,7 @@ msgstr "Autotema desativado"
 
 #: src/tauon/t_modules/t_main.py:41166
 msgid "Dev Mode"
-msgstr ""
+msgstr "Mode Dev"
 
 #: src/tauon/t_modules/t_main.py:41167
 #, fuzzy
@@ -4959,7 +4961,7 @@ msgstr "Editar..."
 
 #: src/tauon/t_modules/t_main.py:41433
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "ERRO: backend não encontrado"
 
 #: src/tauon/t_modules/t_main.py:42462
 msgid "Enabled auto theme"
@@ -4985,7 +4987,7 @@ msgstr "Erro ao excluir arquivo"
 
 #: src/tauon/t_modules/t_main.py:43787 src/tauon/t_modules/t_main.py:43800
 msgid "Various Artists"
-msgstr ""
+msgstr "Diversos Artistas"
 
 #: src/tauon/t_modules/t_main.py:44024
 msgid "Rescan folders complete."
@@ -4994,6 +4996,7 @@ msgstr "Reexame de Pastas Concluído."
 #: src/tauon/t_modules/t_main.py:44065
 msgid "Auto sort skipped because playlist is locked."
 msgstr ""
+"Classificação automática pulou porque a lista de reprodução está trancada."
 
 #: src/tauon/t_modules/t_main.py:44662
 msgid "Queue is Empty"
@@ -5017,7 +5020,7 @@ msgstr "Amostra"
 
 #: src/tauon/t_modules/t_main.py:45145
 msgid " kbps"
-msgstr ""
+msgstr " kbps"
 
 #: src/tauon/t_modules/t_main.py:45188 src/tauon/t_modules/t_main.py:45209
 msgid " of "
