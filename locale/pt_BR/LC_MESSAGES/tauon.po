@@ -3845,7 +3845,7 @@ msgstr "{N} album"
 
 #: src/tauon/t_modules/t_main.py:32498
 msgid "First of artist's albums ({N} albums)"
-msgstr "Primeiro dos álbuns de artistas ({N} álbuns)"
+msgstr "Primeiro dos álbuns de artista ({N} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32502
 msgid "Last of artist's albums ({N} albums)"
@@ -3853,27 +3853,27 @@ msgstr "Último dos álbuns de artista ({N} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32514
 msgid "Start of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Início da localização {N} de {T} ({Nb} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32517 src/tauon/t_modules/t_main.py:32527
 msgid "Location {N} of {T}"
-msgstr ""
+msgstr "Localização {N} de {T}"
 
 #: src/tauon/t_modules/t_main.py:32524
 msgid "End of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Fim da localização {N} de {T} ({Nb} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32536
 msgid "Start of location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Início da localização 1 de {N} ({Nb} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32539
 msgid "Location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Localização 1 de {N} ({Nb} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32542
 msgid "Location 1 of {N}"
-msgstr ""
+msgstr "Localização 1 de {N}"
 
 #: src/tauon/t_modules/t_main.py:32645
 msgid "No artists in playlist"
@@ -3934,11 +3934,11 @@ msgstr "Autoparada"
 
 #: src/tauon/t_modules/t_main.py:33430
 msgid "Eh?"
-msgstr ""
+msgstr "Eh?"
 
 #: src/tauon/t_modules/t_main.py:33438
 msgid "Looks like it's gone now anyway"
-msgstr ""
+msgstr "Parece que se foi agora de qualquer maneira"
 
 #: src/tauon/t_modules/t_main.py:33542 src/tauon/t_modules/t_main.py:40587
 msgid "Queue"
@@ -3990,7 +3990,7 @@ msgstr "Bio não encontrada"
 
 #: src/tauon/t_modules/t_main.py:34563
 msgid "Load Failed"
-msgstr ""
+msgstr "Falha de Carregamento"
 
 #: src/tauon/t_modules/t_main.py:35057
 msgid "Playing"
@@ -4030,18 +4030,20 @@ msgid ""
 "Global search + Tab triggers Spotify search but Spotify is not enabled in "
 "settings!"
 msgstr ""
+"Busca Global + Tab aciona a Pesquisa Spotify, mas o Spotify não está ativado "
+"nas configurações!"
 
 #: src/tauon/t_modules/t_main.py:38185
 msgid "You attempted to drop an archive."
-msgstr ""
+msgstr "Você tentou livrar-se de um arquivo."
 
 #: src/tauon/t_modules/t_main.py:38186
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "No entanto, a função \"Extrai Arquivo\" não está ativada."
 
 #: src/tauon/t_modules/t_main.py:38196
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Pular o arquivo zip de tamanho grande (> 4 GB)"
 
 #: src/tauon/t_modules/t_main.py:38213 src/tauon/t_modules/t_main.py:38218
 #: src/tauon/t_modules/t_main.py:38226
@@ -4054,12 +4056,15 @@ msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
 msgstr ""
+"O arquivo é criptografado. Você precisará extraí -lo manualmente com a senha."
 
 #: src/tauon/t_modules/t_main.py:38219 src/tauon/t_modules/t_main.py:38227
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
 msgstr ""
+"Talvez o arquivo esteja corrompido? O disco tem espaço suficiente e tem "
+"permissão de gravação?"
 
 #: src/tauon/t_modules/t_main.py:38243
 #, fuzzy
@@ -4091,7 +4096,7 @@ msgstr "Erro de permissão acessando um ou mais arquivos"
 
 #: src/tauon/t_modules/t_main.py:38528
 msgid "Folder copy error."
-msgstr ""
+msgstr "Erro de cópia de pasta."
 
 #: src/tauon/t_modules/t_main.py:38528
 #, fuzzy
@@ -4105,15 +4110,15 @@ msgstr " arquivos foram escritos."
 
 #: src/tauon/t_modules/t_main.py:38539
 msgid "The folder copy has failed!"
-msgstr ""
+msgstr "A cópia de pasta falhou!"
 
 #: src/tauon/t_modules/t_main.py:38548
 msgid "Could not delete {name}"
-msgstr ""
+msgstr "Não pude excluir {name}"
 
 #: src/tauon/t_modules/t_main.py:38548
 msgid "Something has gone horribly wrong!"
-msgstr ""
+msgstr "Something has gone horribly wrong!"
 
 #: src/tauon/t_modules/t_main.py:38553
 #, fuzzy
