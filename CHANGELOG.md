@@ -3,7 +3,9 @@ Changelog
 ---------
 
 ### v8.1.1
- - **Fixed** DLMon crash
+
+ - **Hotfix** Fixed possible crash on start
+ - **Added** Column toggle funtctionality to column menu.
 
 ### v8.1.0
  - **Added** optional theme colours for "lyrics text", "active lyric" (in synced mode) and "lyrics panel"
