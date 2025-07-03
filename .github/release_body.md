@@ -9,11 +9,11 @@ Please report any issues either over at [Discord](https://discord.gg/v4EmhES) or
 
 **[List of all changes](https://github.com/Taiko2k/Tauon/blob/master/CHANGELOG.md)**
 
-> [!NOTE]<br>
+> [!NOTE]
 > Windows pre-release builds can be wrongly flagged by Defender, it is safe to whitelist them.
 > See https://github.com/Taiko2k/Tauon/issues/1062 for more information.
 
-> [!WARNING]<br>
+> [!WARNING]
 > It may not be possible to go to an older version after using a pre-release build due to migrations, if this concerns you, backup your user data to be able to go back.
 
 

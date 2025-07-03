@@ -2,12 +2,17 @@
 Changelog
 ---------
 
+### v8.1.2
+
+ - **Hotfix** Fix 8.1.0 regression preventing loading saved radio stations
+
 ### v8.1.1
 
  - **Hotfix** Fixed possible crash on start
  - **Added** Column toggle funtctionality to column menu.
 
 ### v8.1.0
+
  - **Added** optional theme colours for "lyrics text", "active lyric" (in synced mode) and "lyrics panel"
  - **Fixed** Spotify redirect URI to address an upstream deprecation
  - **Fixed** synced lyrics rendering issue (again)
