@@ -38700,6 +38700,7 @@ def worker1(tauon: Tauon) -> None:
 			tauon.show_message(
 				_("All filepaths resolved."),
 				_(f"Removed {dupes} tracks with duplicate paths."),
+				_("You should never have to run that again :)"),
 				mode = "done" )
 			pctl.deep_duplicates = False
 
