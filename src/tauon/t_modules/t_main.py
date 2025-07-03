@@ -5598,6 +5598,7 @@ class Tauon:
 			"Filename",
 			"Disc",
 			"CUE",
+			"ID"
 		)
 		self.device                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
@@ -10587,101 +10588,218 @@ class Tauon:
 		self.prefs.spec2_colour_setting = "custom"
 		self.gui.update_layout = True
 
+	def sa_regen_menu(self) -> None:
+		"""Recreate the column select menu to correctly populate the checkbox state"""
+		set_menu = self.set_menu
+		set_menu.subs = []
+		set_menu.sub_number = 0
+		set_menu.items = []
+		checked = set()
+		fields = [
+			[_("Artist"),"Artist", self.sa_artist],
+			[_("Title"), "Title", self.sa_title],
+			[_("Album"), "Album", self.sa_album],
+			[_("Duration"), "Time", self.sa_time],
+			[_("Date"), "Date", self.sa_date],
+			[_("Genre"), "Genre", self.sa_genre],
+			[_("Track Number"), "#", self.sa_track],
+			[_("Play Count"), "P", self.sa_count],
+			[_("Codec"), "Codec", self.sa_codec],
+			[_("Bitrate"), "Bitrate", self.sa_bitrate],
+			[_("Filename"), "Filename", self.sa_filename],
+			[_("Starline"), "Starline", self.sa_star],
+			[_("Rating"), "Rating", self.sa_rating],
+			[_("Loved"), "❤", self.sa_love],
+			[_("Album Artist"), "Album Artist", self.sa_album_artist],
+			[_("Comment"), "Comment", self.sa_comment],
+			[_("Filepath"), "Filepath", self.sa_file],
+			[_("Scrobble Count"), "S", self.sa_scrobbles],
+			[_("Composer"), "Composer", self.sa_composer],
+			[_("Disc Number"), "Disc", self.sa_disc],
+			[_("Has Lyrics"), "Lyrics", self.sa_lyrics],
+			[_("Is CUE Sheet"), "CUE", self.sa_cue],
+			[_("Internal Track ID"), "ID", self.sa_track_id]
+		]
+		for checked_column in self.gui.pl_st:
+			checked.add( checked_column[0] )
+
+		set_menu.add(MenuItem(_("Auto Resize"), self.auto_size_columns))
+		set_menu.add(MenuItem(_("Hide bar"), self.hide_set_bar))
+		set_menu.br()
+		set_menu.add(MenuItem("- " + _("Remove This"), self.sa_remove, pass_ref=True))
+		set_menu.br()
+
+		for i, c in enumerate(fields):
+			if i<14:
+				if c[1] in checked:
+					set_menu.add( MenuItem("✓ " + c[0], c[2]) )
+				else:
+					set_menu.add( MenuItem("    " + c[0], c[2]) )
+			if i == 14:
+				set_menu.add_sub("+ " + _("More…"), 150)
+			if i >= 14:
+				if c[1] in checked:
+					set_menu.add_to_sub(0, MenuItem( "✓ " + c[0], c[2]))
+				else:
+					set_menu.add_to_sub(0, MenuItem( "    " + c[0], c[2]))
+
+
 	def sa_remove(self, h: int) -> None:
 		if len(self.gui.pl_st) > 1:
 			del self.gui.pl_st[h]
 			self.gui.update_layout = True
+			self.sa_regen_menu()
 		else:
 			self.show_message(_("Cannot remove the only column."))
 
+	def sa_try_uncheck(self, field: str) -> bool:
+		unchecks = [] # you could have multiple copies of the same column
+		for i, column in enumerate(self.gui.pl_st):
+			if column[0] == field:
+				unchecks.append(i)
+		unchecks.reverse()
+		for column in unchecks:
+			self.sa_remove(column)
+		return bool(unchecks)
+
 	def sa_artist(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Artist", 220, False])
+		if not self.sa_try_uncheck("Artist"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Artist", 220, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_album_artist(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album Artist", 220, False])
+		if not self.sa_try_uncheck("Album Artist"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album Artist", 220, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_composer(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Composer", 220, False])
+		if not self.sa_try_uncheck("Composer"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Composer", 220, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_title(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Title", 220, False])
+		if not self.sa_try_uncheck("Title"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Title", 220, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_album(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album", 220, False])
+		if not self.sa_try_uncheck("Album"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album", 220, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_comment(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Comment", 300, False])
+		if not self.sa_try_uncheck("Comment"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Comment", 300, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_track(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["#", 25, True])
+		if not self.sa_try_uncheck("#"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["#", 25, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_count(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["P", 25, True])
+		if not self.sa_try_uncheck("P"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["P", 25, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_scrobbles(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["S", 25, True])
+		if not self.sa_try_uncheck("S"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["S", 25, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_time(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Time", 55, True])
+		if not self.sa_try_uncheck("Time"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Time", 55, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_date(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Date", 55, True])
+		if not self.sa_try_uncheck("Date"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Date", 95, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_genre(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Genre", 150, False])
+		if not self.sa_try_uncheck("Genre"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Genre", 150, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_file(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Filepath", 350, False])
+		if not self.sa_try_uncheck("Filepath"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Filepath", 350, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_filename(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Filename", 300, False])
+		if not self.sa_try_uncheck("Filename"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Filename", 300, False])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_codec(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Codec", 65, True])
+		if not self.sa_try_uncheck("Codec"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Codec", 65, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_bitrate(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Bitrate", 65, True])
+		if not self.sa_try_uncheck("Bitrate"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Bitrate", 65, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_lyrics(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Lyrics", 50, True])
+		if not self.sa_try_uncheck("Lyrics"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Lyrics", 50, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_cue(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["CUE", 50, True])
+		if not self.sa_try_uncheck("CUE"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["CUE", 50, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_star(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Starline", 80, True])
+		if not self.sa_try_uncheck("Starline"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Starline", 80, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_disc(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Disc", 50, True])
+		if not self.sa_try_uncheck("Disc"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Disc", 50, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_rating(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["Rating", 80, True])
+		if not self.sa_try_uncheck("Rating"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Rating", 80, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_love(self) -> None:
-		self.gui.pl_st.insert(self.set_menu.reference + 1, ["❤", 25, True])
+		if not self.sa_try_uncheck("❤"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["❤", 25, True])
 		# self.gui.pl_st.append(["❤", 25, True])
 		self.gui.update_layout = True
+		self.sa_regen_menu()
+
+	def sa_track_id(self) -> None:
+		if not self.sa_try_uncheck("ID"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["ID", 55, True])
+		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def key_love(self, index: int) -> bool:
 		return self.get_love_index(index)
@@ -13973,7 +14091,7 @@ class Tauon:
 				item[1] = round(78 * self.gui.scale)
 				total  -= round(78 * self.gui.scale)
 
-			if item[0] == "Time":
+			if item[0] == "Time" or item[0] == "ID":
 				item[1] = round(58 * self.gui.scale)
 				total  -= round(58 * self.gui.scale)
 
@@ -15829,6 +15947,7 @@ class Tauon:
 							nt.misc["artists"] = []
 						if a not in nt.misc["artists"]:
 							nt.misc["artists"].append(a)
+			find_synced_lyric_data(nt) # populates track.synced if it succeeds
 		except Exception:
 			try:
 				if Exception is UnicodeDecodeError:
@@ -30055,7 +30174,9 @@ class StandardPlaylist:
 						elif item[0] == "Lyrics":
 							text = ""
 							if n_track.lyrics:
-								text = "Y"
+								text = "✓"
+							if n_track.synced:
+								text = "⧗"
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:
@@ -30063,13 +30184,19 @@ class StandardPlaylist:
 						elif item[0] == "CUE":
 							text = ""
 							if n_track.is_cue:
-								text = "Y"
+								text = "✓"
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:
 								colour = colours.index_playing
 						elif item[0] == "Genre":
 							text = n_track.genre
+							colour = colours.index_text
+							norm_colour = colour
+							if this_line_playing is True:
+								colour = colours.index_playing
+						elif item[0] == "ID":
+							text = str(n_track.index)
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:
@@ -37311,15 +37438,22 @@ def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 	# Check if internal track lyrics are synced lyrics
 	if len(track.lyrics) > 20:
 		split_lines = track.lyrics.splitlines()
-		LRC_tags = "ti", "ar", "al", "au", "lr", "length", "by", "offset", "re", "tool", "ve"
-		# Check first line that's not empty or a commennt
+		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:"
+		# Check first line that's not empty or a comment or an LRC tag
 		for line in split_lines:
 			if line == "" or line[0] == "#":
 				continue
 
+			if any(tag in line for tag in LRC_tags):
+				continue
+
 			if line[0] == "[" and ":" in line[:10] \
-			and ("." in line[:10] or any(tag in line for tag in LRC_tags)) \
-			and "]" in line:
+			and "." in line[:10] and "]" in line:
+				try:
+					int( line[1] )
+				except:
+					break
+				track.synced = track.lyrics
 				return split_lines
 			break
 
@@ -37346,8 +37480,10 @@ def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 		except Exception:
 			logging.exception("Read lyrics file error")
 			return None
+		track.synced = "\n".join(data)
 		return data
 
+	track.synced = ""
 	return None
 
 def close_all_menus() -> None:
@@ -41110,37 +41246,10 @@ def main(holder: Holder) -> None:
 	# set_menu.add(MenuItem(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
 	# set_menu.add(MenuItem(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
 	# set_menu.br()
-	set_menu.add(MenuItem(_("Auto Resize"), tauon.auto_size_columns))
-	set_menu.add(MenuItem(_("Hide bar"), tauon.hide_set_bar))
+
 	set_menu_hidden.add(MenuItem(_("Show bar"), tauon.show_set_bar))
-	set_menu.br()
-	set_menu.add(MenuItem("- " + _("Remove This"), tauon.sa_remove, pass_ref=True))
-	set_menu.br()
-	set_menu.add(MenuItem("+ " + _("Artist"), tauon.sa_artist))
-	set_menu.add(MenuItem("+ " + _("Title"), tauon.sa_title))
-	set_menu.add(MenuItem("+ " + _("Album"), tauon.sa_album))
-	set_menu.add(MenuItem("+ " + _("Duration"), tauon.sa_time))
-	set_menu.add(MenuItem("+ " + _("Date"), tauon.sa_date))
-	set_menu.add(MenuItem("+ " + _("Genre"), tauon.sa_genre))
-	set_menu.add(MenuItem("+ " + _("Track Number"), tauon.sa_track))
-	set_menu.add(MenuItem("+ " + _("Play Count"), tauon.sa_count))
-	set_menu.add(MenuItem("+ " + _("Codec"), tauon.sa_codec))
-	set_menu.add(MenuItem("+ " + _("Bitrate"), tauon.sa_bitrate))
-	set_menu.add(MenuItem("+ " + _("Filename"), tauon.sa_filename))
-	set_menu.add(MenuItem("+ " + _("Starline"), tauon.sa_star))
-	set_menu.add(MenuItem("+ " + _("Rating"), tauon.sa_rating))
-	set_menu.add(MenuItem("+ " + _("Loved"), tauon.sa_love))
 
-	set_menu.add_sub("+ " + _("More…"), 150)
-
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Album Artist"), tauon.sa_album_artist))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Comment"), tauon.sa_comment))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Filepath"), tauon.sa_file))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Scrobble Count"), tauon.sa_scrobbles))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Composer"), tauon.sa_composer))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Disc Number"), tauon.sa_disc))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Has Lyrics"), tauon.sa_lyrics))
-	set_menu.add_to_sub(0, MenuItem("+ " + _("Is CUE Sheet"), tauon.sa_cue))
+	tauon.sa_regen_menu()
 
 	gui.add_icon.xoff = 3
 	gui.add_icon.yoff = 0
