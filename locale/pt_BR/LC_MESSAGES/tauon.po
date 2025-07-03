@@ -3345,11 +3345,11 @@ msgstr "MEMU"
 
 #: src/tauon/t_modules/t_main.py:26901
 msgid "It looks like something is being downloaded..."
-msgstr "Parece que alguma coisa está sendo transferida ..."
+msgstr "Parece que alguma coisa está sendo baixada ..."
 
 #: src/tauon/t_modules/t_main.py:26901
 msgid "Let's check back later..."
-msgstr ""
+msgstr "Chequemos mais tarde ..."
 
 #: src/tauon/t_modules/t_main.py:26925
 #, fuzzy
@@ -3368,31 +3368,31 @@ msgstr "Extrair arquivos"
 
 #: src/tauon/t_modules/t_main.py:26931
 msgid "Importing...  "
-msgstr ""
+msgstr "Importando ...  "
 
 #: src/tauon/t_modules/t_main.py:26937
 msgid "Scanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Varrendo Tags...  {N} restantes"
 
 #: src/tauon/t_modules/t_main.py:26939
 msgid "File copy in progress..."
-msgstr ""
+msgstr "Cópia de arquivo em andamento ..."
 
 #: src/tauon/t_modules/t_main.py:26943
 msgid "Cleaning db...  "
-msgstr ""
+msgstr "Limpando bd ...  "
 
 #: src/tauon/t_modules/t_main.py:26946
 msgid "Rescanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Relendo Tags ...   {N} restantes"
 
 #: src/tauon/t_modules/t_main.py:26949
 msgid "Accessing PLEX library..."
-msgstr ""
+msgstr "Acessando biblioteca PLEX ..."
 
 #: src/tauon/t_modules/t_main.py:26954
 msgid "Launching Spotify..."
-msgstr ""
+msgstr "Abrindo Spotify ..."
 
 #: src/tauon/t_modules/t_main.py:26957
 #, fuzzy
@@ -3406,15 +3406,15 @@ msgstr "Importando playlist do Spotify..."
 
 #: src/tauon/t_modules/t_main.py:26963
 msgid "Accessing AIRSONIC library..."
-msgstr ""
+msgstr "Acessando biblioteca AIRSONIC ..."
 
 #: src/tauon/t_modules/t_main.py:26968
 msgid "Accessing KOEL library..."
-msgstr ""
+msgstr "Acessando biblioteca KOEL ..."
 
 #: src/tauon/t_modules/t_main.py:26971
 msgid "Accessing JELLYFIN library..."
-msgstr ""
+msgstr "Acessando biblioteca JELLYFIN ..."
 
 #: src/tauon/t_modules/t_main.py:26974
 #, fuzzy
@@ -3442,11 +3442,11 @@ msgstr "Carregando... "
 
 #: src/tauon/t_modules/t_main.py:26995
 msgid "Network error. Will try again later."
-msgstr ""
+msgstr "Erro de rede. Nova tentativa mais tarde."
 
 #: src/tauon/t_modules/t_main.py:27006
 msgid "{N} listening along"
-msgstr ""
+msgstr "{N} ouvindo junto"
 
 #: src/tauon/t_modules/t_main.py:27024
 #, fuzzy
@@ -3575,7 +3575,7 @@ msgstr "Falha ao conectar!"
 
 #: src/tauon/t_modules/t_main.py:30937
 msgid "kbps"
-msgstr ""
+msgstr "kbps"
 
 #: src/tauon/t_modules/t_main.py:30970
 msgid "Name / Title"
@@ -3629,6 +3629,8 @@ msgstr "Salvo"
 #: src/tauon/t_modules/t_main.py:31313
 msgid "Type codes separated by spaces. Codes will be executed left to right."
 msgstr ""
+"Digite códigos separados por espaços. Os códigos serão executados da "
+"esquerda para a direita."
 
 #: src/tauon/t_modules/t_main.py:31315
 #, fuzzy
@@ -3647,7 +3649,7 @@ msgstr "Playlist selecionada:"
 
 #: src/tauon/t_modules/t_main.py:31324
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr ""
+msgstr "Adicione faixas de fontes: (pelo menos 1 necessária)"
 
 #: src/tauon/t_modules/t_main.py:31328
 #, fuzzy
@@ -3661,23 +3663,23 @@ msgstr "Buscar etiqueta"
 
 #: src/tauon/t_modules/t_main.py:31338
 msgid "Find / Search / Path"
-msgstr ""
+msgstr "Encontrar / Buscar / Caminho"
 
 #: src/tauon/t_modules/t_main.py:31346
 msgid "Add all tracks"
-msgstr ""
+msgstr "Adicionar todas faixas"
 
 #: src/tauon/t_modules/t_main.py:31349
 msgid "Filters"
-msgstr ""
+msgstr "Filtros"
 
 #: src/tauon/t_modules/t_main.py:31352
 msgid "Limit to number of tracks"
-msgstr ""
+msgstr "Limitar a número de faixas"
 
 #: src/tauon/t_modules/t_main.py:31355
 msgid "Year: >, <, ="
-msgstr ""
+msgstr "Ano: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:31358
 #, fuzzy
@@ -3686,7 +3688,7 @@ msgstr "Reprises"
 
 #: src/tauon/t_modules/t_main.py:31361
 msgid "Duration (seconds): >, <"
-msgstr ""
+msgstr "Duração (segundos): >, <"
 
 #: src/tauon/t_modules/t_main.py:31364
 #, fuzzy
@@ -3715,7 +3717,7 @@ msgstr "Buscar Faixa no Genius"
 
 #: src/tauon/t_modules/t_main.py:31390
 msgid "Sorters"
-msgstr ""
+msgstr "Classificadores"
 
 #: src/tauon/t_modules/t_main.py:31394
 #, fuzzy
@@ -3729,7 +3731,7 @@ msgstr "Álbuns Embaralhados"
 
 #: src/tauon/t_modules/t_main.py:31400
 msgid "Year: >, <"
-msgstr ""
+msgstr "Ano: >, <"
 
 #: src/tauon/t_modules/t_main.py:31403
 #, fuzzy
@@ -3768,7 +3770,7 @@ msgstr "Avaliação de álbum"
 
 #: src/tauon/t_modules/t_main.py:31424
 msgid "Modification date: >, <"
-msgstr ""
+msgstr "Data de modificação: >, <"
 
 #: src/tauon/t_modules/t_main.py:31427 src/tauon/t_modules/t_main.py:41093
 #: src/tauon/t_modules/t_main.py:41123
@@ -3787,15 +3789,15 @@ msgstr "Ordenar Ano por Artista"
 
 #: src/tauon/t_modules/t_main.py:31436
 msgid "Sort by column name: >, <"
-msgstr ""
+msgstr "Classificar por nome de coluna: >, <"
 
 #: src/tauon/t_modules/t_main.py:31439
 msgid "Special"
-msgstr ""
+msgstr "Especial"
 
 #: src/tauon/t_modules/t_main.py:31442
 msgid "Automatically reload on imports"
-msgstr ""
+msgstr "Recarregar automaticamente ao importar"
 
 #: src/tauon/t_modules/t_main.py:31447
 #, fuzzy
@@ -3814,7 +3816,7 @@ msgstr "Fila está Vazia"
 
 #: src/tauon/t_modules/t_main.py:31455
 msgid "Close quotation..."
-msgstr ""
+msgstr "Fechar citação..."
 
 #: src/tauon/t_modules/t_main.py:32169 src/tauon/t_modules/t_main.py:32175
 #: src/tauon/t_modules/t_main.py:32308
@@ -3839,15 +3841,15 @@ msgstr "Total de álbuns"
 
 #: src/tauon/t_modules/t_main.py:32316
 msgid "{N} album"
-msgstr ""
+msgstr "{N} album"
 
 #: src/tauon/t_modules/t_main.py:32498
 msgid "First of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Primeiro dos álbuns de artistas ({N} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32502
 msgid "Last of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Último dos álbuns de artista ({N} álbuns)"
 
 #: src/tauon/t_modules/t_main.py:32514
 msgid "Start of location {N} of {T} ({Nb} albums)"
