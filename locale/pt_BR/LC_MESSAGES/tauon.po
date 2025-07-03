@@ -3955,7 +3955,7 @@ msgstr "Um erro foi encontrado."
 
 #: src/tauon/t_modules/t_main.py:38711
 msgid "Transcode failed."
-msgstr "Falha na transcrição."
+msgstr "Falha na transcodifição."
 
 #: src/tauon/t_modules/t_main.py:38720
 msgid "The transcode was canceled before completion."
@@ -3977,9 +3977,8 @@ msgstr ""
 "cópia exata."
 
 #: src/tauon/t_modules/t_main.py:38729
-#, fuzzy
 msgid "Encoding complete."
-msgstr "Sincr. finalizada"
+msgstr "Codificação concluída."
 
 #: src/tauon/t_modules/t_main.py:40586
 msgid "Playlists + Queue"
@@ -4119,14 +4118,12 @@ msgid "Clear Lyrics"
 msgstr "Limpar Letra"
 
 #: src/tauon/t_modules/t_main.py:40658 src/tauon/t_modules/t_main.py:40671
-#, fuzzy
 msgid "Toggle art panel"
-msgstr "Alternar info do artista"
+msgstr "Alternar painel de arte"
 
 #: src/tauon/t_modules/t_main.py:40659 src/tauon/t_modules/t_main.py:40672
-#, fuzzy
 msgid "Toggle art position"
-msgstr "Alternar info do artista"
+msgstr "Alternar a posição da arte"
 
 #: src/tauon/t_modules/t_main.py:40675 src/tauon/t_modules/t_main.py:40700
 msgid "Open Image"
@@ -4149,9 +4146,8 @@ msgid "Previous"
 msgstr "Anterior"
 
 #: src/tauon/t_modules/t_main.py:40702
-#, fuzzy
 msgid "Delete Image <combined>"
-msgstr "Apagar Arquivo de Imagem"
+msgstr "Excluir imagem <combined>"
 
 #: src/tauon/t_modules/t_main.py:40706 src/tauon/t_modules/t_main.py:40709
 #: src/tauon/t_modules/t_main.py:45390
@@ -4184,14 +4180,12 @@ msgid "From Current…"
 msgstr "Daqui gere…"
 
 #: src/tauon/t_modules/t_main.py:40761
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "Ordenar por importado"
+msgstr "Classificar por faixas importadas"
 
 #: src/tauon/t_modules/t_main.py:40762
-#, fuzzy
 msgid "Sort by Imported Folders"
-msgstr "Ordenar por importado"
+msgstr "Classificar por pastas importadas"
 
 #: src/tauon/t_modules/t_main.py:40763
 msgid "Sort by Filepath"
@@ -4252,18 +4246,16 @@ msgid "Engage Gallery Quick Add"
 msgstr "Ativar Inclusão Rápida da Galeria"
 
 #: src/tauon/t_modules/t_main.py:40794
-#, fuzzy
 msgid "Set podcast mode"
-msgstr "Parar Transmissão"
+msgstr "Definir o modo de podcast"
 
 #: src/tauon/t_modules/t_main.py:40795
 msgid "Remove Duplicates"
 msgstr "Remover Duplicados"
 
 #: src/tauon/t_modules/t_main.py:40796
-#, fuzzy
 msgid "Toggle Console"
-msgstr "Alternar colunas"
+msgstr "Alternar console"
 
 #: src/tauon/t_modules/t_main.py:40818 src/tauon/t_modules/t_main.py:40819
 msgid "Longest Tracks"
@@ -4339,9 +4331,8 @@ msgid "Modify Folder…"
 msgstr "Modificar Pasta…"
 
 #: src/tauon/t_modules/t_main.py:40944
-#, fuzzy
 msgid "Edit with"
-msgstr "Editar com "
+msgstr "Editar com"
 
 #: src/tauon/t_modules/t_main.py:40945
 msgid "Lyrics..."
@@ -4397,9 +4388,8 @@ msgid "Copy \"Artist - Track\""
 msgstr "Copiar \"Artista - Faixa\""
 
 #: src/tauon/t_modules/t_main.py:41045
-#, fuzzy
 msgid "Copy TIDAL Album URL"
-msgstr "Copiar URL do álbum"
+msgstr "Copiar o URL do álbum do TIDAL"
 
 #: src/tauon/t_modules/t_main.py:41047
 msgid "Spotify…"
@@ -4422,14 +4412,12 @@ msgid "Always stop after track"
 msgstr "Sempre pare depois de faixa"
 
 #: src/tauon/t_modules/t_main.py:41071
-#, fuzzy
 msgid "Stop after album"
-msgstr "Álbuns Melhor Avaliados"
+msgstr "Parar após o álbum"
 
 #: src/tauon/t_modules/t_main.py:41072
-#, fuzzy
 msgid "Stop after track"
-msgstr "Faixas Melhor Avaliadas"
+msgstr "Parar após a faixa"
 
 #: src/tauon/t_modules/t_main.py:41073
 msgid "Continue Play"
@@ -4549,9 +4537,8 @@ msgid "Composer"
 msgstr "Compositor"
 
 #: src/tauon/t_modules/t_main.py:41126
-#, fuzzy
 msgid "Disc Number"
-msgstr "Número da Faixa"
+msgstr "Número de Disco"
 
 #: src/tauon/t_modules/t_main.py:41128
 msgid "Is CUE Sheet"
@@ -4574,9 +4561,8 @@ msgid "Database…"
 msgstr "Base de dados…"
 
 #: src/tauon/t_modules/t_main.py:41160
-#, fuzzy
 msgid "Enabled saving state"
-msgstr "Ativar abas no painel do topo"
+msgstr "Parar após a trilha"
 
 #: src/tauon/t_modules/t_main.py:41164
 #, fuzzy
