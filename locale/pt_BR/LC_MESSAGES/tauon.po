@@ -82,7 +82,8 @@ msgstr ""
 
 #: src/tauon/t_modules/t_db_migrate.py:380
 msgid "Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"
-msgstr "Welccome to v6.3.0. Devido a um upgrade, por favor re-autorize Spotify"
+msgstr ""
+"Welccome to v6.3.0. Devido a uma atualização, por favor re-autorize Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:381
 msgid ""
@@ -110,6 +111,8 @@ msgid ""
 "It looks like you are using Spotify. Please re-setup Spotify again in the "
 "settings"
 msgstr ""
+"Parece que você está utilizando Spotify. Por favor reconfigure Spotify "
+"novamente nas configurações"
 
 #: src/tauon/t_modules/t_dbus.py:72
 #, fuzzy
@@ -118,23 +121,23 @@ msgstr "Falha ao conectar!"
 
 #: src/tauon/t_modules/t_extra.py:237 src/tauon/t_modules/t_extra.py:253
 msgid " B"
-msgstr ""
+msgstr " B"
 
 #: src/tauon/t_modules/t_extra.py:240 src/tauon/t_modules/t_extra.py:256
 msgid " KB"
-msgstr ""
+msgstr " KB"
 
 #: src/tauon/t_modules/t_extra.py:243 src/tauon/t_modules/t_extra.py:259
 msgid " MB"
-msgstr ""
+msgstr " MB"
 
 #: src/tauon/t_modules/t_extra.py:246 src/tauon/t_modules/t_main.py:23486
 msgid " GB"
-msgstr ""
+msgstr " GB"
 
 #: src/tauon/t_modules/t_jellyfin.py:88 src/tauon/t_modules/t_jellyfin.py:89
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "Verifique se o servidor está rodando e se o URL está correta."
 
 #: src/tauon/t_modules/t_jellyfin.py:88 src/tauon/t_modules/t_jellyfin.py:89
 #, fuzzy
@@ -143,19 +146,19 @@ msgstr "Não foi possível conectar"
 
 #: src/tauon/t_modules/t_jellyfin.py:98
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Conexão e autorização bem sucedidos"
 
 #: src/tauon/t_modules/t_jellyfin.py:100
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Autenticação falhou"
 
 #: src/tauon/t_modules/t_jellyfin.py:100
 msgid "Check username and password."
-msgstr ""
+msgstr "Verifique nome de usuário e senha."
 
 #: src/tauon/t_modules/t_jellyfin.py:102
 msgid "Jellyfin auth error"
-msgstr ""
+msgstr "Erro de autenticação em Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:384
 #, fuzzy
@@ -174,7 +177,7 @@ msgstr "Erro ao excluir arquivo"
 
 #: src/tauon/t_modules/t_jellyfin.py:556
 msgid "Jellyfin Collection"
-msgstr ""
+msgstr "Coleção Jellyfin"
 
 #: src/tauon/t_modules/t_main.py:1741
 msgid "Rescanning folders..."
@@ -182,7 +185,7 @@ msgstr "Reexaminando pastas..."
 
 #: src/tauon/t_modules/t_main.py:1904 src/tauon/t_modules/t_main.py:1908
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr ""
+msgstr "Playlist está trancada para prevenir exclusão acidental"
 
 #: src/tauon/t_modules/t_main.py:2014
 #, fuzzy
@@ -191,7 +194,7 @@ msgstr "Você tem certeza que quer apagar esta playlist: %s?"
 
 #: src/tauon/t_modules/t_main.py:3704 src/tauon/t_modules/t_main.py:17222
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Módulo opcional python-pylast não está instalado"
 
 #: src/tauon/t_modules/t_main.py:3715
 msgid "Once authorised click the 'done' button."
@@ -207,15 +210,15 @@ msgstr "Necessário entrar antes"
 
 #: src/tauon/t_modules/t_main.py:3737
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Erro - Não autorizado"
 
 #: src/tauon/t_modules/t_main.py:3740
 msgid "Unknown error."
-msgstr ""
+msgstr "Erro desconhecido."
 
 #: src/tauon/t_modules/t_main.py:3740 src/tauon/t_modules/t_phazor.py:431
 msgid "Error"
-msgstr ""
+msgstr "Erro"
 
 #: src/tauon/t_modules/t_main.py:3749
 #, fuzzy
@@ -224,7 +227,7 @@ msgstr "As alterações serão aplicadas ao reiniciar."
 
 #: src/tauon/t_modules/t_main.py:3757
 msgid "Already connected to Last.fm"
-msgstr ""
+msgstr "Já em conexão com Last.fm"
 
 #: src/tauon/t_modules/t_main.py:3761
 #, fuzzy
@@ -233,11 +236,11 @@ msgstr "Por favor autorize o Spotify em configurações!"
 
 #: src/tauon/t_modules/t_main.py:3761
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "Sem conta Last.Fm registrada"
 
 #: src/tauon/t_modules/t_main.py:3772
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Conexão a Last.Fm bem sucedida."
 
 #: src/tauon/t_modules/t_main.py:3779
 #, fuzzy
@@ -246,7 +249,7 @@ msgstr "Erro conectando ao servidor PLEX"
 
 #: src/tauon/t_modules/t_main.py:3798 src/tauon/t_modules/t_main.py:3811
 msgid "Error communicating with Last.fm network"
-msgstr ""
+msgstr "Erro comunicando com rede Last.fm"
 
 #: src/tauon/t_modules/t_main.py:3872
 msgid "Scanning failed. Try again?"
@@ -258,7 +261,7 @@ msgstr "Verificação de scrobbles pronta"
 
 #: src/tauon/t_modules/t_main.py:4051
 msgid "Removed {N} loves."
-msgstr ""
+msgstr "{N} loves removidos."
 
 #: src/tauon/t_modules/t_main.py:4064
 #, fuzzy
@@ -755,19 +758,19 @@ msgstr "Título da Faixa"
 
 #: src/tauon/t_modules/t_main.py:8140
 msgid "Percent of tracks are CUE type:"
-msgstr ""
+msgstr "Porcentagem de faixas que são tipo CUE:"
 
 #: src/tauon/t_modules/t_main.py:8150
 msgid "MP3 bitrates (kbps):"
-msgstr ""
+msgstr "Bitrates MP3 (kbps):"
 
 #: src/tauon/t_modules/t_main.py:8164 src/tauon/t_modules/t_main.py:8183
 msgid "Others"
-msgstr ""
+msgstr "Outros"
 
 #: src/tauon/t_modules/t_main.py:8169
 msgid "OGG bitrates (kbps):"
-msgstr ""
+msgstr "Bitrates OGG (kbps):"
 
 #: src/tauon/t_modules/t_main.py:8207
 #, fuzzy
@@ -795,7 +798,7 @@ msgstr "Adicionar álbum do Spotify"
 
 #: src/tauon/t_modules/t_main.py:8381
 msgid "Cannot sync when in transcode inplace mode"
-msgstr ""
+msgstr "Não é possível sincronizar quando no modo transcodificação no local"
 
 #: src/tauon/t_modules/t_main.py:8391
 msgid "No target folder selected"
@@ -862,11 +865,11 @@ msgstr "Desmarcar como Playlist Baixada"
 
 #: src/tauon/t_modules/t_main.py:8584
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Defina Use Tempo Persistente"
 
 #: src/tauon/t_modules/t_main.py:8586
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Desconfigurar Use Tempo Persistente"
 
 #: src/tauon/t_modules/t_main.py:8629 src/tauon/t_modules/t_main.py:10737
 #, fuzzy
