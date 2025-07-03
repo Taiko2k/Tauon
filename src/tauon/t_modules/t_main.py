@@ -31126,7 +31126,7 @@ class RadioBox:
 		self.parse_data(data)
 		self.searching = False
 
-	def parse_data(self, data: list[RadioStation]) -> None:
+	def parse_data(self, data: dict) -> None:
 		self.temp_list.clear()
 		for station in data:
 			#logging.info(station)
@@ -35189,7 +35189,7 @@ class RadioView:
 			if self.drag in radios:
 				radios.remove(self.drag)
 			else:
-				self.tauon.toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing]["name"])
+				self.tauon.toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing].name)
 
 			radios[radios.index("New")] = self.drag
 			self.drag = None
