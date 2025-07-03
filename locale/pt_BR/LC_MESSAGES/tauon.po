@@ -3646,22 +3646,20 @@ msgstr "Fechar citação..."
 #: src/tauon/t_modules/t_main.py:32169 src/tauon/t_modules/t_main.py:32175
 #: src/tauon/t_modules/t_main.py:32308
 msgid "{N} tracks"
-msgstr "{N} faixa"
+msgstr "{N} faixas"
 
 #: src/tauon/t_modules/t_main.py:32171 src/tauon/t_modules/t_main.py:32177
 #: src/tauon/t_modules/t_main.py:32310
-#, fuzzy
 msgid "{N} track"
-msgstr "Próxima Faixa"
+msgstr "{N} faixa"
 
 #: src/tauon/t_modules/t_main.py:32181 src/tauon/t_modules/t_main.py:32320
 msgid "Downloading data..."
 msgstr "Descarregando dados..."
 
 #: src/tauon/t_modules/t_main.py:32314
-#, fuzzy
 msgid "{N} albums"
-msgstr "Total de álbuns"
+msgstr "{N} álbuns"
 
 #: src/tauon/t_modules/t_main.py:32316
 msgid "{N} album"
@@ -3744,9 +3742,8 @@ msgid "Queue to New Playlist"
 msgstr "Enfileirar para Playlist"
 
 #: src/tauon/t_modules/t_main.py:33325
-#, fuzzy
 msgid "Queued Tracks"
-msgstr "Faixa Preferidas"
+msgstr "Faixas Enfileiradas"
 
 #: src/tauon/t_modules/t_main.py:33422
 msgid "Cancel Auto-Stop"
@@ -3773,7 +3770,6 @@ msgid "Add to Queue"
 msgstr "Adicionar à Fila"
 
 #: src/tauon/t_modules/t_main.py:33560
-#, fuzzy
 msgid "Up Next:"
 msgstr "Próximo(a)"
 
