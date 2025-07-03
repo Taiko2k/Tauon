@@ -2,6 +2,9 @@
 Changelog
 ---------
 
+### v8.1.1
+ - **Fixed** DLMon crash
+
 ### v8.1.0
  - **Added** optional theme colours for "lyrics text", "active lyric" (in synced mode) and "lyrics panel"
  - **Fixed** Spotify redirect URI to address an upstream deprecation
@@ -19,7 +22,7 @@ Changelog
  - **Tweaked** Behavior of artist list background download
  - **Removed** Album title separator setting
  - **Removed** Drag to unpin playlist tab feature
- 
+
 ### v8.0.1
 
  - **Fixed** crash on queue scroll
@@ -41,7 +44,7 @@ Changelog
  - **Tweaked** Theme Ash colours
  - **Tweaked** Developer radio pics to be non-hidden
  - **Restored** guitar chords, including support for new guitarchords.com API
- 
+
 
 ### v7.9.0
 
