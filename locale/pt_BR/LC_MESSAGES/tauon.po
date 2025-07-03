@@ -20,15 +20,15 @@ msgstr ""
 
 #: src/tauon/t_modules/guitar_chords.py:81
 msgid "Insufficient metadata to search"
-msgstr "Metada insuficiente para pesquisar"
+msgstr "Metadados insuficientes para pesquisar"
 
 #: src/tauon/t_modules/guitar_chords.py:95
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "Não há texto na Área de transferência"
 
 #: src/tauon/t_modules/guitar_chords.py:189
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "Erro em buscar faixa correspondente em GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:205
 #, fuzzy
@@ -37,7 +37,7 @@ msgstr "Apagar todas outras pastas no alvo"
 
 #: src/tauon/t_modules/guitar_chords.py:220
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Erro obtendo música de GuitarParty"
 
 #: src/tauon/t_modules/t_db_migrate.py:134
 msgid ""
@@ -82,16 +82,18 @@ msgstr ""
 
 #: src/tauon/t_modules/t_db_migrate.py:380
 msgid "Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"
-msgstr ""
+msgstr "Welccome to v6.3.0. Devido a um upgrade, por favor re-autorize Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:381
 msgid ""
 "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"
 msgstr ""
+"Você pode fazer isso clicando em 'Autorize' em Configurações -> Contas -> "
+"Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:436
 msgid "Upgrade to v6.5.1. It looks like you are using Spotify."
-msgstr ""
+msgstr "Faça atualização para v6.5.1. Parece que você está utilizando Spotify."
 
 #: src/tauon/t_modules/t_db_migrate.py:437
 #, fuzzy
