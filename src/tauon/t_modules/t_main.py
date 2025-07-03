@@ -272,6 +272,7 @@ if TYPE_CHECKING:
 	from subprocess import Popen
 	from pylast import LastFMNetwork
 	from collections.abc import Callable
+	from tauon.t_modules.t_webserve import ThreadedHTTPServer
 
 # Detect platform
 macos = False
@@ -5831,7 +5832,7 @@ class Tauon:
 		self.chunker                              = Chunker()
 		self.stream_proxy                         = StreamEnc(self)
 		self.level_train:       list[list[float]] = []
-		self.radio_server                         = None
+		self.radio_server: ThreadedHTTPServer | None = None
 		self.listen_alongers:    dict[str, Timer] = {}
 		self.encode_folder_name                   = encode_folder_name
 		self.encode_track_name                    = encode_track_name
@@ -5843,10 +5844,10 @@ class Tauon:
 		self.tray_releases = 0
 
 		self.play_lock = None
-		self.update_play_lock = None
+		self.update_play_lock: Callable[[], None] | None = None
 		self.sleep_lock = None
 		self.shutdown_lock = None
-		self.quick_close = False
+		self.quick_close: bool = False
 		self.pl_to_id = self.pctl.pl_to_id
 		self.id_to_pl = self.pctl.id_to_pl
 
@@ -5861,10 +5862,10 @@ class Tauon:
 
 		#self.recorded_songs = []
 
-		self.chrome_mode = False
-		self.web_running = False
+		self.chrome_mode: bool = False
+		self.web_running: bool = False
 		self.web_thread = None
-		self.remote_limited = True
+		self.remote_limited: bool = True
 		self.enable_librespot = shutil.which("librespot")
 
 		self.MenuItem = MenuItem
@@ -14300,7 +14301,7 @@ class Tauon:
 	def start_remote(self) -> None:
 		if not self.web_running:
 			self.web_thread = threading.Thread(
-				target=webserve2, args=[self.pctl, self.prefs, self.gui, self.album_art_gen, str(self.install_directory), self.strings, self])
+				target=webserve2, args=[self.pctl, self.album_art_gen, self])
 			self.web_thread.daemon = True
 			self.web_thread.start()
 			self.web_running = True
@@ -30694,8 +30695,8 @@ class RadioBox:
 	def start2(self, url: str) -> None:
 		if self.run_proxy and not self.tauon.stream_proxy.start_download(url):
 			self.load_failed_timer.set()
-			self.load_failed = True
-			self.load_connecting = False
+			self.load_failed: bool = True
+			self.load_connecting: bool = False
 			self.gui.update += 1
 			logging.error("Starting radio failed")
 			# self.show_message(_("Failed to establish a connection"), mode="error")
@@ -30703,9 +30704,9 @@ class RadioBox:
 
 		self.loaded_url = url
 		self.pctl.playing_state = 0
-		self.pctl.record_stream = False
+		self.pctl.record_stream: bool = False
 		self.pctl.playerCommand = "url"
-		self.pctl.playerCommandReady = True
+		self.pctl.playerCommandReady: bool = True
 		self.pctl.playing_state = 3
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
@@ -30717,8 +30718,8 @@ class RadioBox:
 			self.tauon.update_play_lock()
 
 		time.sleep(0.1)
-		self.load_connecting = False
-		self.load_failed = False
+		self.load_connecting: bool = False
+		self.load_failed: bool = False
 		self.gui.update += 1
 
 		wss = ""

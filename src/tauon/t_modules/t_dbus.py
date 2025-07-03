@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 class Gnome:
 
 	def __init__(self, tauon: Tauon) -> None:
-
 		self.bus_object = None
 		self.tauon = tauon
 		self.indicator_launched = False
@@ -50,11 +49,9 @@ class Gnome:
 		self.tray_text = ""
 		self.resume_playback = False
 
-
 		tauon.set_tray_icons()
 
 	def focus(self) -> None:
-
 		if self.bus_object is not None:
 			try:
 				# this is what gives us the multi media keys.
@@ -90,7 +87,6 @@ class Gnome:
 			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
 
 	def start_indicator(self) -> None:
-
 		pctl = self.tauon.pctl
 		tauon = self.tauon
 
@@ -234,7 +230,6 @@ class Gnome:
 		self.tauon.gui.update += 1
 
 	def main(self) -> None:
-
 		import dbus
 		import dbus.mainloop.glib
 		import dbus.service
@@ -248,7 +243,6 @@ class Gnome:
 			self.show_indicator()
 
 		def on_mediakey(comes_from: str, what: str) -> None:
-
 			if what == "Play":
 				self.tauon.inp.media_key = "Play"
 			elif what == "Pause":
@@ -301,7 +295,6 @@ class Gnome:
 			tauon.update_play_lock = update_play_lock
 
 			def PrepareForSleep(active: int) -> None:
-
 				if active == 1 and tauon.sleep_lock is not None:
 					logging.info("System is suspending!")
 					if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
