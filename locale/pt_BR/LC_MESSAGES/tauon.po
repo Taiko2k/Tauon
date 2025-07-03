@@ -1183,43 +1183,39 @@ msgstr "Uma pasta com esse nome já existe"
 
 #: src/tauon/t_modules/t_main.py:10012
 msgid "Rename Failed."
-msgstr "Renomeação Falhou!."
+msgstr "Falha ao renomear."
 
 #: src/tauon/t_modules/t_main.py:10040
 msgid "Rename Failed!"
-msgstr "Renomeação Falhou!"
+msgstr "Falha ao Renomear!"
 
 #: src/tauon/t_modules/t_main.py:10040
 msgid "Something went wrong, sorry."
 msgstr "Algo deu errado, desculpe."
 
 #: src/tauon/t_modules/t_main.py:10043
-#, fuzzy
 msgid "Folder renamed."
-msgstr "Árvore de Pastas"
+msgstr "Pasta renomeada."
 
 #: src/tauon/t_modules/t_main.py:10043
 msgid "Renamed to: {name}"
 msgstr "Renomeado para: {name}"
 
 #: src/tauon/t_modules/t_main.py:10059
-#, fuzzy
 msgid "Not applicable for a network track."
-msgstr "Não é possível excluir uma faixa de rede"
+msgstr "Não aplicável a uma faixa de rede."
 
 #: src/tauon/t_modules/t_main.py:10073
 msgid "Cannot move"
 msgstr "Não posso mover"
 
 #: src/tauon/t_modules/t_main.py:10083
-#, fuzzy
 msgid "Error shifting directory"
-msgstr "Erro ao iniciar o Spotify"
+msgstr "Erro ao mudar de diretório"
 
 #: src/tauon/t_modules/t_main.py:10083
-#, fuzzy
 msgid "The directory does not appear to exist"
-msgstr "Diretório não existe"
+msgstr "O diretório parece não existir"
 
 #: src/tauon/t_modules/t_main.py:10111
 msgid "System Error!"
@@ -1230,9 +1226,8 @@ msgid "Cannot clean"
 msgstr "Não posso limpar"
 
 #: src/tauon/t_modules/t_main.py:10172
-#, fuzzy
 msgid "Error deleting files."
-msgstr "Erro ao excluir arquivo"
+msgstr "Erro excluindo arquivos."
 
 #: src/tauon/t_modules/t_main.py:10172
 msgid "May not have permission or file may be set to read-only"
@@ -1279,9 +1274,8 @@ msgid "Un-save Spotify Album"
 msgstr "Descartar Álbum do Spotify"
 
 #: src/tauon/t_modules/t_main.py:10400
-#, fuzzy
 msgid "Queue {N}"
-msgstr "Fila"
+msgstr "Fila {N}"
 
 #: src/tauon/t_modules/t_main.py:10410
 msgid "No matching artist result found"
@@ -1296,9 +1290,8 @@ msgid "Cannot remove the only column."
 msgstr "Não pode remover a coluna restante."
 
 #: src/tauon/t_modules/t_main.py:10741
-#, fuzzy
 msgid "Play History"
-msgstr "Histórico de Reprodução para playlist"
+msgstr "Histórico"
 
 #: src/tauon/t_modules/t_main.py:10768
 #, fuzzy
