@@ -2811,13 +2811,15 @@ msgstr "Obter gostos de amigo"
 
 #: src/tauon/t_modules/t_main.py:24751
 msgid "Pull love on scrobble/rescan"
-msgstr "Puxe o amor no scrobble/rescan"
+msgstr "Puxe o love no scrobble/rescan"
 
 #: src/tauon/t_modules/t_main.py:24753
 msgid ""
 "Note that this will overwrite the local loved status if different to last.fm "
 "status"
 msgstr ""
+"Observe que isso substituirá o status favorito local se for diferente do "
+"status do last.fm"
 
 #: src/tauon/t_modules/t_main.py:24766 src/tauon/t_modules/t_main.py:24768
 msgid "Paste Token"
@@ -2848,7 +2850,7 @@ msgstr "Pressione de novo segurando Shift, se você entendeu"
 #: src/tauon/t_modules/t_main.py:24820 src/tauon/t_modules/t_main.py:24842
 #: src/tauon/t_modules/t_main.py:24850
 msgid "A process is already running. Wait for it to finish."
-msgstr ""
+msgstr "Um processo já está em execução. Aguarde sua conclusão."
 
 #: src/tauon/t_modules/t_main.py:24826
 msgid "Cleared all scrobble counts"
@@ -2929,7 +2931,7 @@ msgstr "Parar"
 
 #: src/tauon/t_modules/t_main.py:24948
 msgid "See here for detailed instructions"
-msgstr ""
+msgstr "Veja aqui instruções detalhadas"
 
 #: src/tauon/t_modules/t_main.py:24955
 msgid "Output codec setting:"
@@ -2978,11 +2980,12 @@ msgstr "Modo-mini sempre no topo"
 
 #: src/tauon/t_modules/t_main.py:25033
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr ""
+msgstr "Veja aqui instruções definidas"
 
 #: src/tauon/t_modules/t_main.py:25033
 msgid "You can enable the x11 setting below as a workaround"
 msgstr ""
+"Você pode habilitar a configuração x11 abaixo como uma solução alternativa"
 
 #: src/tauon/t_modules/t_main.py:25036
 msgid "Top-panel visualiser"
@@ -3002,36 +3005,36 @@ msgstr "Escala automática"
 
 #: src/tauon/t_modules/t_main.py:25114
 msgid "Prefer x11 when running in Wayland"
-msgstr ""
+msgstr "Prefira x11 ao executar em Wayland"
 
 #: src/tauon/t_modules/t_main.py:25220
 msgid "This program comes with absolutely no warranty."
-msgstr ""
+msgstr "Este programa não oferece nenhuma garantia."
 
 #: src/tauon/t_modules/t_main.py:25224
 msgid "See the {link} license for details."
-msgstr ""
+msgstr "Veja a licença {link} para mais detalhes."
 
 #: src/tauon/t_modules/t_main.py:25236
 msgid "Created by"
-msgstr ""
+msgstr "Criado por"
 
 #: src/tauon/t_modules/t_main.py:25242
 msgid "Contributors"
-msgstr ""
+msgstr "Contribuidores"
 
 #: src/tauon/t_modules/t_main.py:25253
 msgid "Open source software used"
-msgstr ""
+msgstr "Software de código aberto usado"
 
 #: src/tauon/t_modules/t_main.py:25290 src/tauon/t_modules/t_main.py:25330
 #: src/tauon/t_modules/t_main.py:25370
 msgid "Open source software used (cont'd)"
-msgstr ""
+msgstr "Software de código aberto usado (continuação)"
 
 #: src/tauon/t_modules/t_main.py:25295
 msgid "Public Domain"
-msgstr ""
+msgstr "Domínio público"
 
 #: src/tauon/t_modules/t_main.py:25414 src/tauon/t_modules/t_main.py:25417
 msgid "Credits"
@@ -3065,7 +3068,7 @@ msgstr "Nível 3"
 #: src/tauon/t_modules/t_main.py:25453 src/tauon/t_modules/t_main.py:25455
 #: src/tauon/t_modules/t_main.py:25457
 msgid "by"
-msgstr ""
+msgstr "por"
 
 #: src/tauon/t_modules/t_main.py:25460
 msgid "Rows"
@@ -3101,11 +3104,11 @@ msgstr "Gerar"
 
 #: src/tauon/t_modules/t_main.py:25521
 msgid "Be patient!"
-msgstr ""
+msgstr "Seja paciente!"
 
 #: src/tauon/t_modules/t_main.py:25523
 msgid "No font set in config"
-msgstr ""
+msgstr "Nenhuma fonte definida na configuração"
 
 #: src/tauon/t_modules/t_main.py:25532
 msgid "Generating..."
