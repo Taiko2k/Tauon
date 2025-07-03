@@ -35958,14 +35958,16 @@ class DLMon:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon           = tauon
+		self.gui             = tauon.gui
 		self.msys            = tauon.msys
+		self.pctl            = tauon.pctl
 		self.prefs           = tauon.prefs
 		self.formats         = tauon.formats
 		self.music_directory = tauon.music_directory
 		self.ticker = Timer()
 		self.ticker.force_set(8)
 
-		self.watching = {}
+		self.watching: dict[str, int] = {}
 		self.ready = set()
 		self.done = set()
 
