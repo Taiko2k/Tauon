@@ -30681,7 +30681,7 @@ class RadioBox:
 		self.drag = None
 
 		self.tab = 0
-		self.temp_list = []
+		self.temp_list: list[RadioStation] = []
 
 		self.hosts = None
 		self.host = None
@@ -31079,7 +31079,7 @@ class RadioBox:
 			for station in self.tauon.primary_stations:
 				self.temp_list.append(station)
 
-	def search_radio_browser(self, param) -> None:
+	def search_radio_browser(self, param: str) -> None:
 		if self.searching:
 			return
 		self.searching = True
@@ -31087,7 +31087,7 @@ class RadioBox:
 		shoot.daemon = True
 		shoot.start()
 
-	def search_radio_browser2(self, param) -> None:
+	def search_radio_browser2(self, param: str) -> None:
 		if not self.hosts:
 			self.hosts = self.browser_get_hosts()
 			# In case we get an empty list for some reason
@@ -39706,6 +39706,7 @@ def main(holder: Holder) -> None:
 		radio_playlists=radio_playlists,
 		folder_image_offsets={},
 	)
+	del radio_playlists
 
 	# If scaled-icons directory exists, use it even for initial loading
 	if (user_directory / "scaled-icons").exists() and bag.prefs.ui_scale != 1:
@@ -39782,7 +39783,7 @@ def main(holder: Holder) -> None:
 		icon="https://cdn-profiles.tunein.com/s193842/images/logod.png"))
 
 	for station in bag.primary_stations:
-		radio_playlists[0].stations.append(station)
+		bag.radio_playlists[0].stations.append(station)
 
 	shoot_pump = threading.Thread(target=pumper, args=(bag,))
 	shoot_pump.daemon = True
@@ -40154,13 +40155,13 @@ def main(holder: Holder) -> None:
 				gui.restore_radio_view = save[164]
 			if save[165] is not None:
 				if db_version > 69:
-					radio_playlists = []
+					bag.radio_playlists = []
 					radioplaylist_jar = save[165]
 					for d in radioplaylist_jar:
 						nt = RadioPlaylist(**d)
-						radio_playlists.append(nt)
+						bag.radio_playlists.append(nt)
 				else:
-					radio_playlists = save[165]
+					bag.radio_playlists = save[165]
 			if save[166] is not None:
 				bag.radio_playlist_viewing = save[166]
 			if save[167] is not None:
@@ -40432,7 +40433,7 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, radio_playlists = database_migrate(
+			master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, bag.radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
 				master_library=master_library,
@@ -40447,7 +40448,7 @@ def main(holder: Holder) -> None:
 				gui=gui,
 				gen_codes=pctl.gen_codes,
 				prefs=prefs,
-				radio_playlists=radio_playlists,
+				radio_playlists=bag.radio_playlists,
 				theme=prefs.theme,
 				p_force_queue=p_force_queue,
 			)
