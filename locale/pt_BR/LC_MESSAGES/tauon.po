@@ -4562,7 +4562,7 @@ msgstr "Base de dados…"
 
 #: src/tauon/t_modules/t_main.py:41160
 msgid "Enabled saving state"
-msgstr "Parar após a trilha"
+msgstr "Parar após a faixa"
 
 #: src/tauon/t_modules/t_main.py:41164
 #, fuzzy
