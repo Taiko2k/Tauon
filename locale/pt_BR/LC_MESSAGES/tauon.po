@@ -1889,7 +1889,7 @@ msgstr "Faltando nome de usuário, senha e/ou nome de servidor"
 
 #: src/tauon/t_modules/t_main.py:17912
 msgid "Error importing python-plexapi"
-msgstr "Erro à importação de python-plexapi"
+msgstr "Erro na importação de python-plexapi"
 
 #: src/tauon/t_modules/t_main.py:17922
 msgid "Error connecting to PLEX server"
@@ -1902,7 +1902,7 @@ msgstr "Tente verificar as credenciais e se o servidor está acessível."
 
 #: src/tauon/t_modules/t_main.py:18034
 msgid "PLEX Collection"
-msgstr ""
+msgstr "Coleção PLEX"
 
 #: src/tauon/t_modules/t_main.py:18105
 msgid "Subsonic Error: "
@@ -3294,7 +3294,7 @@ msgstr "Representar reprises como linhas"
 
 #: src/tauon/t_modules/t_main.py:25763
 msgid "Left align title style"
-msgstr ""
+msgstr "Estilo de alinhamento de texto a esquerda"
 
 #: src/tauon/t_modules/t_main.py:25770
 #, fuzzy
@@ -3341,11 +3341,11 @@ msgstr "Abrir Tauon Music Box"
 
 #: src/tauon/t_modules/t_main.py:26821
 msgid "MENU"
-msgstr ""
+msgstr "MEMU"
 
 #: src/tauon/t_modules/t_main.py:26901
 msgid "It looks like something is being downloaded..."
-msgstr ""
+msgstr "Parece que alguma coisa está sendo transferida ..."
 
 #: src/tauon/t_modules/t_main.py:26901
 msgid "Let's check back later..."
