@@ -3771,22 +3771,19 @@ msgstr "Adicionar à Fila"
 
 #: src/tauon/t_modules/t_main.py:33560
 msgid "Up Next:"
-msgstr "Próximo(a)"
+msgstr "Próximo(a):"
 
 #: src/tauon/t_modules/t_main.py:33803
-#, fuzzy
 msgid "{N} Track"
-msgstr "Próxima Faixa"
+msgstr "{N} Faixa"
 
 #: src/tauon/t_modules/t_main.py:33806
-#, fuzzy
 msgid "{N} Tracks"
-msgstr "Próxima Faixa"
+msgstr "{N} Faixas"
 
 #: src/tauon/t_modules/t_main.py:34227
-#, fuzzy
 msgid "No artist name found"
-msgstr "Imagem do artista não encontrada."
+msgstr "Nome de artista não encontrado"
 
 #: src/tauon/t_modules/t_main.py:34238 src/tauon/t_modules/t_main.py:34472
 msgid "Looking up..."
@@ -3841,9 +3838,8 @@ msgid "Toggle columns"
 msgstr "Alternar colunas"
 
 #: src/tauon/t_modules/t_main.py:35955
-#, fuzzy
 msgid "There are no more steps to undo."
-msgstr "Não existem provedores de Letra ativos."
+msgstr "Não existem mais passos para desfazer."
 
 #: src/tauon/t_modules/t_main.py:37500
 msgid ""
@@ -3867,9 +3863,8 @@ msgstr "Pular o arquivo zip de tamanho grande (> 4 GB)"
 
 #: src/tauon/t_modules/t_main.py:38213 src/tauon/t_modules/t_main.py:38218
 #: src/tauon/t_modules/t_main.py:38226
-#, fuzzy
 msgid "Failed to extract zip archive."
-msgstr "Extrair arquivos"
+msgstr "Falha ao extrair o arquivo zip."
 
 #: src/tauon/t_modules/t_main.py:38214
 msgid ""
@@ -3887,28 +3882,24 @@ msgstr ""
 "permissão de gravação?"
 
 #: src/tauon/t_modules/t_main.py:38243
-#, fuzzy
 msgid "Failed to extract rar archive."
-msgstr "Extrair arquivos"
+msgstr "Falha ao extrair arquivo rar."
 
 #: src/tauon/t_modules/t_main.py:38259
-#, fuzzy
 msgid "Failed to extract 7z archive."
-msgstr "Extrair arquivos"
+msgstr "Falha ao extrair o arquivo 7z."
 
 #: src/tauon/t_modules/t_main.py:38287
-#, fuzzy
 msgid "Could not move archive to trash"
-msgstr "Arquivo movido para lixeira"
+msgstr "Não foi possível mover o arquivo para a lixeira"
 
 #: src/tauon/t_modules/t_main.py:38385
 msgid "Permission error accessing one or more files."
 msgstr "Erro de permissão ao acessar um ou mais arquivos."
 
 #: src/tauon/t_modules/t_main.py:38386
-#, fuzzy
 msgid "If this location is on external media, see https://"
-msgstr "Se esta localização estiver em mídia externa, veja"
+msgstr "Se esse local estiver em uma mídia externa, consulte https://"
 
 #: src/tauon/t_modules/t_main.py:38389
 msgid "Permission error accessing one or more files"
@@ -3919,14 +3910,12 @@ msgid "Folder copy error."
 msgstr "Erro de cópia de pasta."
 
 #: src/tauon/t_modules/t_main.py:38528
-#, fuzzy
 msgid "The target and source are the same."
-msgstr "Não existem provedores de Letra ativos."
+msgstr "O destino e a origem são os mesmos."
 
 #: src/tauon/t_modules/t_main.py:38539
-#, fuzzy
 msgid "Some files may have been written."
-msgstr " arquivos foram escritos."
+msgstr "Alguns arquivos podem ter sido gravados."
 
 #: src/tauon/t_modules/t_main.py:38539
 msgid "The folder copy has failed!"
@@ -3941,24 +3930,20 @@ msgid "Something has gone horribly wrong!"
 msgstr "Algo deu terrivelmente errado!"
 
 #: src/tauon/t_modules/t_main.py:38553
-#, fuzzy
 msgid "Folder move complete."
-msgstr "Renomeação finalizada."
+msgstr "Transferência de pasta concluída."
 
 #: src/tauon/t_modules/t_main.py:38553 src/tauon/t_modules/t_main.py:38555
-#, fuzzy
 msgid "Folder name: {name}"
-msgstr "Árvore de Pastas"
+msgstr "Nome da pasta: {name}"
 
 #: src/tauon/t_modules/t_main.py:38555
-#, fuzzy
 msgid "Folder copy complete."
-msgstr "Reexame de Pastas Concluído."
+msgstr "Cópia da pasta finalizada."
 
 #: src/tauon/t_modules/t_main.py:38602
-#, fuzzy
 msgid "Cleaning complete."
-msgstr "Renomeação finalizada."
+msgstr "Limpeza concluída."
 
 #: src/tauon/t_modules/t_main.py:38603
 msgid "{N} items were removed from the database."
@@ -3969,9 +3954,8 @@ msgid "An error was encountered."
 msgstr "Um erro foi encontrado."
 
 #: src/tauon/t_modules/t_main.py:38711
-#, fuzzy
 msgid "Transcode failed."
-msgstr "Converter arquivos"
+msgstr "Falha na transcrição."
 
 #: src/tauon/t_modules/t_main.py:38720
 msgid "The transcode was canceled before completion."
