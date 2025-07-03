@@ -2642,11 +2642,11 @@ msgstr "A conexão com o servidor Maloja foi bem-sucedida."
 
 #: src/tauon/t_modules/t_main.py:24241
 msgid "The Maloja server returned an error"
-msgstr "A conexão com o servidor Maloja foi bem sucedida."
+msgstr "O servidor Maloja retornou um erro"
 
 #: src/tauon/t_modules/t_main.py:24244
 msgid "Could not communicate with the Maloja server"
-msgstr ""
+msgstr "Não foi possível comunicar com o servidor Maloja"
 
 #: src/tauon/t_modules/t_main.py:24248 src/tauon/t_modules/t_main.py:24250
 #: src/tauon/t_modules/t_main.py:24725 src/tauon/t_modules/t_main.py:24742
@@ -2691,7 +2691,7 @@ msgstr "Ativar reprodução de áudio local"
 
 #: src/tauon/t_modules/t_main.py:24328
 msgid "Librespot not installed?"
-msgstr ""
+msgstr "Librespot não instalado?"
 
 #: src/tauon/t_modules/t_main.py:24333
 msgid "Airsonic/Subsonic network streaming"
@@ -2734,7 +2734,7 @@ msgstr "Importar playlist"
 
 #: src/tauon/t_modules/t_main.py:24457
 msgid "Run music import first"
-msgstr ""
+msgstr "Execute a importação de música primeiro"
 
 #: src/tauon/t_modules/t_main.py:24466
 msgid "koel network streaming"
@@ -2766,11 +2766,11 @@ msgstr "Mudar atual"
 
 #: src/tauon/t_modules/t_main.py:24611
 msgid "Reset flips"
-msgstr ""
+msgstr "Reiniciar flips"
 
 #: src/tauon/t_modules/t_main.py:24621 src/tauon/t_modules/t_main.py:31459
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/tauon/t_modules/t_main.py:24690 src/tauon/t_modules/t_main.py:24691
 msgid "Username:"
@@ -2811,7 +2811,7 @@ msgstr "Obter gostos de amigo"
 
 #: src/tauon/t_modules/t_main.py:24751
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Puxe o amor no scrobble/rescan"
 
 #: src/tauon/t_modules/t_main.py:24753
 msgid ""
