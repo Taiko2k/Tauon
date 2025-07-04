@@ -8774,6 +8774,9 @@ class Tauon:
 	def key_cue(self, index: int) -> bool:
 		return self.pctl.get_track(index).is_cue
 
+	def key_track_id(self, index: int) -> int:
+		return index
+
 	def key_playcount(self, index: int) -> float:
 		# key = self.pctl.master_library[index].title + self.pctl.master_library[index].filename
 		if self.pctl.master_library[index].length < 1:
@@ -10799,6 +10802,8 @@ class Tauon:
 			key = self.key_disc
 		if name == "CUE":
 			key = self.key_cue
+		if name == "ID":
+			key = self.key_track_id
 
 		if custom_list is None:
 			if key is not None:
@@ -16788,7 +16793,7 @@ class Tauon:
 		return track.parent_folder_path.lower(), track.filename
 
 	def key_fullpath(self, index: int):
-		return self.pctl.master_library[index].fullpath
+		return self.pctl.master_library[index].fullpath.lower()
 
 	#def key_filename(index: int):
 	#	track = self.pctl.master_library[index]
