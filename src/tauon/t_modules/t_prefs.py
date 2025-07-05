@@ -322,6 +322,9 @@ class Prefs:
 	sync_playlist: int | None = None
 	download_playlist: int | None = None
 
+	autoscan_playlist_folder: bool = False
+	playlist_folder_path: str = ""
+
 	sep_genre_multi = False
 	topchart_sorts_played = True
 
