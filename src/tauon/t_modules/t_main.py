@@ -5702,6 +5702,8 @@ class Tauon:
 		self.folder_menu           = Menu(self, 193, show_icons=True)
 		self.extra_tab_menu        = Menu(self, 155, show_icons=True)
 
+
+		self.smooth_scroll                        = SmoothScroll(tauon=self)
 		self.lb                                   = ListenBrainz(tauon=self)
 		self.thread_manager                       = ThreadManager(tauon=self)
 		self.album_mode_art_size                  = bag.album_mode_art_size
@@ -5777,6 +5779,7 @@ class Tauon:
 		self.mini_mode                            = MiniMode(tauon=self)
 		self.mini_mode2                           = MiniMode2(tauon=self)
 		self.mini_mode3                           = MiniMode3(tauon=self)
+
 		if self.system == "Linux" and not self.macos and not self.msys:
 			self.gnome = Gnome(tauon=self)
 
@@ -19424,6 +19427,7 @@ class TimedLyricsRen:
 		self.data = []
 
 		self.scroll_position: int = 0
+		self.scroll        = tauon.smooth_scroll
 
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index:
@@ -19487,13 +19491,13 @@ class TimedLyricsRen:
 
 		if not self.ready:
 			return False
-
 		if self.inp.mouse_wheel and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
+			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
-					self.scroll_position += int(self.inp.mouse_wheel * 30 * self.gui.scale)
+					self.scroll_position += scroll_distance
 			else:
-				self.scroll_position += int(self.inp.mouse_wheel * 30 * self.gui.scale)
+				self.scroll_position += scroll_distance
 
 		line_active = -1
 		last = -1
@@ -22422,6 +22426,7 @@ class SearchOverlay:
 		self.fields       = tauon.fields
 		self.window_size  = tauon.window_size
 		self.worker2_lock = tauon.worker2_lock
+		self.scroll       = tauon.smooth_scroll
 
 		self.active = False
 		self.search_text = TextBox(tauon)
@@ -22794,12 +22799,9 @@ class SearchOverlay:
 
 				self.old_mouse = copy.deepcopy(inp.mouse_position)
 
-			if self.inp.mouse_wheel == -1:
-				self.on += 1
-				self.force_select += 1
-			if self.inp.mouse_wheel == 1 and self.on > -1:
-				self.on -= 1
-				self.force_select -= 1
+			scroll_distance = self.scroll.scroll("search overlay")
+			self.on = max( (self.on - scroll_distance), 0)
+			self.force_select = max( (self.force_select - scroll_distance), 0)
 
 			enter = False
 
@@ -27059,6 +27061,7 @@ class TopPanel:
 		if self.inp.mouse_wheel != 0 and 1 < self.inp.mouse_position[1] < gui.panelY + 1 and len(pctl.multi_playlist) > 1 and self.inp.mouse_position[0] > 5:
 
 			pctl.cycle_playlist_pinned(self.inp.mouse_wheel)
+			# TODO: does this one need a smooth scrolling update?
 
 			gui.pl_update = 1
 			if not prefs.tabs_on_top:
@@ -27345,6 +27348,7 @@ class BottomBarType1:
 		self.colours     = tauon.colours
 		self.renderer    = tauon.renderer
 		self.window_size = tauon.window_size
+		self.scroll      = tauon.smooth_scroll
 		self.mode        = 0
 
 		self.seek_time = 0
@@ -27576,7 +27580,8 @@ class BottomBarType1:
 		# Volume mouse wheel control -----------------------------------------
 		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
 		and not coll_point(self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
-			pctl.player_volume += int(self.inp.mouse_wheel) * prefs.volume_wheel_increment
+			scroll_distance = self.scroll.scroll("volume bar")
+			pctl.player_volume += scroll_distance * prefs.volume_wheel_increment
 			if pctl.player_volume < 1:
 				pctl.player_volume = 0
 			elif pctl.player_volume > 100:
@@ -28205,6 +28210,7 @@ class BottomBarType_ao1:
 		self.colours     = tauon.colours
 		self.renderer    = tauon.renderer
 		self.window_size = tauon.window_size
+		self.scroll      = tauon.smooth_scroll
 
 		self.mode = 0
 		self.seek_time = 0
@@ -28272,8 +28278,8 @@ class BottomBarType_ao1:
 		# Volume mouse wheel control -----------------------------------------
 		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(
 			self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
-
-			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment
+			scroll_distance = self.scroll.scroll("volume bar")
+			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -28579,6 +28585,7 @@ class MiniMode:
 		self.colours       = tauon.colours
 		self.window_size   = tauon.window_size
 		self.album_art_gen = tauon.album_art_gen
+		self.scroll        = tauon.smooth_scroll
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
@@ -28625,8 +28632,8 @@ class MiniMode:
 		# Volume change on scroll
 		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
-
-			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment * 3
+			scroll_distance = self.scroll.scroll("volume bar")
+			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -28828,6 +28835,7 @@ class MiniMode2:
 		self.colours       = tauon.colours
 		self.window_size   = tauon.window_size
 		self.album_art_gen = tauon.album_art_gen
+		self.scroll        = tauon.smooth_scroll
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
@@ -28857,8 +28865,8 @@ class MiniMode2:
 		# Volume change on scroll
 		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
-
-			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment * 3
+			scroll_distance = self.scroll.scroll("volume bar")
+			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -28957,6 +28965,7 @@ class MiniMode3:
 		self.colours       = tauon.colours
 		self.window_size   = tauon.window_size
 		self.album_art_gen = tauon.album_art_gen
+		self.scroll        = tauon.smooth_scroll
 		self.save_position = None
 		self.was_borderless = True
 		self.volume_timer = Timer()
@@ -29011,8 +29020,8 @@ class MiniMode3:
 		# Volume change on scroll
 		if self.inp.mouse_wheel != 0:
 			self.volume_timer.set()
-
-			self.pctl.player_volume += int(self.inp.mouse_wheel) * self.prefs.volume_wheel_increment * 3
+			scroll_distance = self.scroll.scroll("volume bar")
+			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
 			if self.pctl.player_volume < 1:
 				self.pctl.player_volume = 0
 			elif self.pctl.player_volume > 100:
@@ -29261,6 +29270,7 @@ class StandardPlaylist:
 		self.renderer    = tauon.renderer
 		self.star_store  = tauon.star_store
 		self.window_size = tauon.window_size
+		self.scroll      = tauon.smooth_scroll
 
 	def full_render(self) -> None:
 		tauon       = self.tauon
@@ -29311,17 +29321,19 @@ class StandardPlaylist:
 			1] > gui.panelY - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
 				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active:
 
-			# Set scroll speed
-			mx = 4
+			# set scroll speed
+			a = gui.playlist_view_length
+			match a:
+				case _ if a < 10:
+					mx = 2
+				case _ if a < 25:
+					mx = 3
+				case _ if a > 40:
+					mx = 5
+				case _:
+					mx = 4
 
-			if gui.playlist_view_length < 25:
-				mx = 3
-			if gui.playlist_view_length < 10:
-				mx = 2
-			pctl.playlist_view_position -= int(inp.mouse_wheel) * mx
-
-			if gui.playlist_view_length > 40:
-				pctl.playlist_view_position -= int(inp.mouse_wheel)
+			pctl.playlist_view_position -= self.scroll.scroll("playlist", mx)
 
 			#if inp.mouse_wheel:
 				#logging.debug("Position changed by mouse wheel scroll: " + str(inp.mouse_wheel))
@@ -30640,6 +30652,7 @@ class RadioBox:
 		self.window_size    = tauon.window_size
 		self.show_message   = tauon.show_message
 		self.thread_manager = tauon.thread_manager
+		self.scroll         = tauon.smooth_scroll
 		self.active = False
 		self.station_editing = None
 		self.edit_mode = True
@@ -31297,7 +31310,8 @@ class RadioBox:
 
 		rect = (x, y, w, h)
 		if self.coll(rect):
-			self.scroll_position += int(self.inp.mouse_wheel) * -1
+			scroll_distance = self.scroll.scroll("radio box")
+			self.scroll_position -= scroll_distance
 		self.scroll_position = max(self.scroll_position, 0)
 		self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
@@ -32157,6 +32171,7 @@ class ArtistList:
 		self.a_cache_directory     = tauon.a_cache_directory
 		self.artist_list_scroll    = pctl.artist_list_scroll
 		self.artist_preview_render = tauon.artist_preview_render
+		self.scroll                = tauon.smooth_scroll
 		self.tab_h = round(60 * self.gui.scale)
 		self.thumb_size = round(55 * self.gui.scale)
 
@@ -32845,7 +32860,9 @@ class ArtistList:
 			mx = 1
 			if self.prefs.artist_list_style == 2:
 				mx = 3
-			self.scroll_position -= self.inp.mouse_wheel * mx
+
+			self.scroll_position -= self.scroll.scroll("artist list", mx)
+
 		self.scroll_position = max(self.scroll_position, 0)
 
 		range = (h // self.tab_h) - 1
@@ -32947,6 +32964,7 @@ class TreeView:
 		self.tree_view_scroll      = pctl.tree_view_scroll
 		self.folder_tree_menu      = tauon.folder_tree_menu
 		self.folder_tree_stem_menu = tauon.folder_tree_stem_menu
+		self.scroll                = tauon.smooth_scroll
 		self.trees = {}  # Per playlist tree
 		self.rows = []  # For display (parsed from tree)
 		self.rows_id = ""
@@ -33132,7 +33150,7 @@ class TreeView:
 
 		# Mouse wheel scrolling
 		if mouse_in and self.inp.mouse_wheel:
-			scroll_position += int(self.inp.mouse_wheel) * -2
+			scroll_position -= self.scroll.scroll("tree view",2)
 			scroll_position = max(scroll_position, 0)
 			scroll_position = min(scroll_position, max_scroll)
 
@@ -33496,6 +33514,7 @@ class QueueBox:
 		self.colours     = tauon.colours
 		self.window_size = tauon.window_size
 		self.queue_menu  = tauon.queue_menu
+		self.scroll      = tauon.smooth_scroll
 		self.dragging = None
 		self.fq = []
 		self.drag_start_y = 0
@@ -33780,7 +33799,8 @@ class QueueBox:
 
 		if self.coll(box_rect):
 			# Update scroll position
-			self.scroll_position += int(self.inp.mouse_wheel) * -1
+			scroll_distance = self.scroll.scroll("queue")
+			self.scroll_position -= scroll_distance
 			self.scroll_position = max(self.scroll_position, 0)
 
 			if self.inp.right_click:
@@ -34435,6 +34455,7 @@ class ArtistInfoBox:
 		self.a_cache_directory     = tauon.a_cache_directory
 		self.artist_info_menu      = tauon.artist_info_menu
 		self.artist_picture_render = tauon.artist_picture_render
+		self.scroll                = tauon.smooth_scroll
 		self.artist_on = None
 		self.min_rq_timer = Timer()
 		self.min_rq_timer.force_set(10)
@@ -34581,7 +34602,8 @@ class ArtistInfoBox:
 			scroll_max = self.th - (h - 26)
 
 			if self.coll((x, y, w, h)):
-				self.scroll_y += int(self.inp.mouse_wheel) * -20
+				scroll_distance = self.scroll.scroll("artistinfo", 20)
+				self.scroll_y -= scroll_distance
 			self.scroll_y = max(self.scroll_y, 0)
 			self.scroll_y = min(self.scroll_y, scroll_max)
 
@@ -34948,6 +34970,7 @@ class RadioView:
 		self.colours     = tauon.colours
 		self.radiobox    = tauon.radiobox
 		self.window_size = tauon.window_size
+		self.scroll      = tauon.smooth_scroll
 		bag = tauon.bag
 		self.add_icon    = asset_loader(bag, bag.loaded_asset_dc, "add-station.png", True)
 		self.search_icon = asset_loader(bag, bag.loaded_asset_dc, "station-search.png", True)
@@ -35043,7 +35066,9 @@ class RadioView:
 		if not radiobox.active or (radiobox.active and not self.coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
 			if gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
 			and self.inp.mouse_position[0] < w + round(70 * gui.scale):
-				scroll += int(self.inp.mouse_wheel) * -1
+				scroll_distance = self.scroll.scroll("radios")
+				scroll -= scroll_distance
+
 		scroll = min(scroll, len(radios) - mm + 1)
 		scroll = max(scroll, 0)
 		if len(radios) > mm:
@@ -35192,6 +35217,7 @@ class Showcase:
 		self.window_size   = tauon.window_size
 		self.guitar_chords = tauon.guitar_chords
 		self.showcase_menu = tauon.showcase_menu
+		self.scroll        = tauon.smooth_scroll
 		self.lastfm_artist = None
 		self.artist_mode = False
 
@@ -35340,7 +35366,8 @@ class Showcase:
 
 			if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
 				if self.inp.mouse_wheel != 0:
-					self.lyrics_ren.lyrics_position += int(self.inp.mouse_wheel) * 35 * self.gui.scale
+					scroll_distance = self.scroll.scroll("showcase", 35*self.gui.scale)
+					self.lyrics_ren.lyrics_position += scroll_distance
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
@@ -36326,6 +36353,44 @@ class XcursorImage(ctypes.Structure):
 			("delay", c_uint32),
 			("pixels", c_void_p),
 		]
+
+
+class SmoothScroll:
+	def __init__(self, tauon: Tauon) -> None:
+		self.inp = tauon.inp
+		self.scroll_bins:    dict[str:list[float]] = {}
+		self.scroll_timeouts:      dict[str:Timer] = {}
+		self.timeout = 0.5
+
+	def scroll(self, source: str, coeff: float | int = 1) -> int:
+		"""Used for sections that require integer scroll values, e.g. pixels or lines.
+		Coeff should be the number that the scroll would be multiplied by if the scroll input was an integer;
+		Source keeps everything straight (the string's contents don't matter at all)."""
+
+		# if smooth scrolling isn't necessary
+		if self.inp.mouse_wheel % 1 == 0:
+			return int( self.inp.mouse_wheel * coeff )
+		else:
+			try:
+				self.scroll_bins[source]
+			except: # create for first time
+				self.scroll_bins[source] = []
+				self.scroll_timeouts[source] = Timer()
+
+			# tally up float inputs over time & only return when the final output can be integerized
+			if self.scroll_timeouts[source].get() > self.timeout:
+				self.scroll_bins[source] = []
+			self.scroll_bins[source].append( self.inp.mouse_wheel )
+
+			if sum( self.scroll_bins[source] ) * coeff > 1 or sum( self.scroll_bins[source] ) * coeff < -1:
+				scroll_distance = int( sum(self.scroll_bins[source]) * coeff )
+				self.scroll_bins[source] = [ sum(self.scroll_bins[source]) % (1/coeff) ] # save the remainder
+			else:
+				scroll_distance = 0
+			self.scroll_timeouts[source].set()
+
+			return scroll_distance
+
 
 @dataclass
 class Directories:
