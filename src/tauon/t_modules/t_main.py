@@ -19651,7 +19651,7 @@ class TimedLyricsRen:
 
 		if not self.ready:
 			return False
-		if self.inp.mouse_wheel:# and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
+		if self.inp.mouse_wheel and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
