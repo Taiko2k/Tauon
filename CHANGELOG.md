@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v8.1.3
+
+ - **Added** Playlist auto import feature (Thanks @rexendevar)
+ - **Fixed** Jittery scolling in some views (Thanks @rexendevar)
+
 ### v8.1.2
 
  - **Hotfix** Fix 8.1.0 regression preventing loading saved radio stations
@@ -9,7 +14,7 @@ Changelog
 ### v8.1.1
 
  - **Hotfix** Fixed possible crash on start
- - **Added** Column toggle funtctionality to column menu.
+ - **Added** Column toggle funtctionality to column menu. (Thanks @rexendevar)
 
 ### v8.1.0
 
