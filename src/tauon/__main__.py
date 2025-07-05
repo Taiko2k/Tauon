@@ -60,7 +60,7 @@ if not sys.warnoptions:
 if sys.platform != "win32":
 	import fcntl
 
-n_version = "8.1.2" # Should also be bumped in pyproject.toml
+n_version = "8.1.3" # Should also be bumped in pyproject.toml
 t_version = "v" + n_version
 t_title = "Tauon"
 t_id = "tauonmb"
