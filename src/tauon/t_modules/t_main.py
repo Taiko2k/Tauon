@@ -37873,6 +37873,11 @@ def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 
 	# Check if we have a .LRC file
 	direc = Path(track.parent_folder_path)
+	if not direc.is_dir():
+		logging.warning(f"Could not find directory: {track.parent_folder_path}")
+		track.synced = ""
+		return None
+
 	name = os.path.splitext(track.filename)[0]
 
 	# Case-insensitive file check
