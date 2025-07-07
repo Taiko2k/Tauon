@@ -567,8 +567,8 @@ def database_migrate(
 					stations=stations))
 		radio_playlists = new_radio_playlists
 
-	if db_version <= 70:
-		logging.info("Updating database to version 71")
+	if db_version <= 71: # This migration used both 71 and 72
+		logging.info("Updating database to version 72")
 		logging.info("Creating a backup Star database star.p.bak71")
 		import pickle
 		backup_star_db = (user_directory / "star.p.bak71")
@@ -592,5 +592,8 @@ def database_migrate(
 			new_starstore_db[key] = new_record
 		else:
 			star_store.db = new_starstore_db
+			logging.info("Saving newly migrated StarStore db…")
+			with (user_directory / "star.p").open("wb") as file:
+				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
