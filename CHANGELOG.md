@@ -6,6 +6,7 @@ Changelog
 
  - **Added** Playlist auto import feature (Thanks @rexendevar)
  - **Fixed** Jittery scolling in some views (Thanks @rexendevar)
+ - **Fixed** Version migrations not saving properly and causing crashes
 
 ### v8.1.2
 
