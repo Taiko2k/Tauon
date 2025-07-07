@@ -39998,7 +39998,7 @@ def main(holder: Holder) -> None:
 	master_library: dict[int, TrackClass] = {}
 
 	db_version: float = 0.0
-	latest_db_version: float = 71
+	latest_db_version: float = 72
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -40870,13 +40870,12 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, bag.radio_playlists = database_migrate(
+			master_library, pctl.multi_playlist, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, bag.radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
 				master_library=master_library,
 				install_mode=install_mode,
 				multi_playlist=pctl.multi_playlist,
-				star_store=tauon.star_store,
 				install_directory=install_directory,
 				a_cache_dir=a_cache_dir,
 				cache_directory=cache_directory,
@@ -40889,6 +40888,8 @@ def main(holder: Holder) -> None:
 				theme=prefs.theme,
 				p_force_queue=p_force_queue,
 			)
+			# Immediately write down migrations to prevent later crashes from throwing things out of alignment
+			tauon.save_state()
 		except ValueError:
 			logging.exception("That should not happen")
 			sys.exit(42)
