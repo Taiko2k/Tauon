@@ -19583,6 +19583,7 @@ class TimedLyricsRen:
 		self.scanned = {}
 		self.ready = False
 		self.data = []
+		self.line_heights: list[int] = []
 
 		self.scroll_position: int = 0
 		self.scroll        = tauon.smooth_scroll
@@ -19635,6 +19636,7 @@ class TimedLyricsRen:
 
 		self.data = sorted(self.data, key=lambda x: x[0])
 		# logging.info(self.data)
+		self.line_heights = []
 
 		self.ready = True
 		return True
@@ -19651,7 +19653,7 @@ class TimedLyricsRen:
 
 		if not self.ready:
 			return False
-		if self.inp.mouse_wheel and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
+		if self.inp.mouse_wheel:# and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
@@ -19694,14 +19696,16 @@ class TimedLyricsRen:
 			if self.pctl.playing_state == 1:
 				self.scroll_position = min( self.scroll_position,  h/2 )
 				self.scroll_position = max( self.scroll_position, -h/2 )
-		center = y_center + self.scroll_position
-
 
 		# record line heights so we can perfectly center the active lyric
 		if not self.line_heights:
 			for i, line in enumerate(self.data):
 				drop_w, line_h = self.ddt.get_text_wh(line[1], font_size, w - 20 * self.gui.scale, True)
 				self.line_heights.append( line_h + 5*self.gui.scale )
+
+		self.scroll_position = min( self.scroll_position,  sum( self.line_heights[:max(0,line_active)]) )
+		self.scroll_position = max( self.scroll_position, -sum( self.line_heights[max(0,line_active):]) )
+		center = y_center + self.scroll_position
 
 		for i, line in enumerate(self.data):
 			# determine y val
@@ -19734,6 +19738,7 @@ class TimedLyricsRen:
 				if self.coll(rendered_line[0]):
 					# instantly seeek to the correct line
 					self.pctl.seek_time(rendered_line[1][0])
+					self.scroll_position = -h/4
 					break
 
 		return None
