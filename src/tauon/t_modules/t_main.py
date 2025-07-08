@@ -19651,7 +19651,7 @@ class TimedLyricsRen:
 
 		if not self.ready:
 			return False
-		if self.inp.mouse_wheel and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
+		if self.inp.mouse_wheel:# and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
@@ -19689,13 +19689,27 @@ class TimedLyricsRen:
 			else:
 				line_active = len(self.data) - 1
 
-			if self.pctl.playing_state == 1:
-				self.scroll_position = (max(0, line_active)) * spacing * -1
+			y_center = y + (h/2) - (spacing)
 
-		yy = y + self.scroll_position
+			if self.pctl.playing_state == 1:
+				self.scroll_position = min( self.scroll_position,  h/2 )
+				self.scroll_position = max( self.scroll_position, -h/2 )
+		center = y_center + self.scroll_position
+
+
+		# record line heights so we can perfectly center the active lyric
+		if not self.line_heights:
+			for i, line in enumerate(self.data):
+				drop_w, line_h = self.ddt.get_text_wh(line[1], font_size, w - 20 * self.gui.scale, True)
+				self.line_heights.append( line_h + 5*self.gui.scale )
 
 		for i, line in enumerate(self.data):
-			if 0 < yy < self.window_size[1]:
+			# determine y val
+			possible_y = center - \
+				sum( self.line_heights[i: max(0,line_active) ] ) + \
+				sum( self.line_heights[ max(line_active,0) :i] )
+
+			if 0 < possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
@@ -19707,16 +19721,12 @@ class TimedLyricsRen:
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
-				location = [ round(x), round(yy), 4, round(w - 20 * self.gui.scale) ]
-				h = self.ddt.text(location, line[1], colour, font_size, w - 20 * self.gui.scale, bg)
+				location = [ round(x), round(possible_y), 4, round(w - 20 * self.gui.scale) ]
+				line_h = self.ddt.text(location, line[1], colour, font_size, w - 20 * self.gui.scale, bg)
 
-				collider = [ round(x), round(yy), round(w - 20 * self.gui.scale), h ]
+				collider = [ round(x), round(possible_y), round(w - 20 * self.gui.scale), line_h ]
 				association = collider, line
 				line_positions.append( association )
-
-				yy += max( h+round(self.gui.scale) , spacing)
-			else:
-				yy += spacing
 
 		# click a lyric to seek to it
 		if self.inp.mouse_click:
