@@ -19688,6 +19688,7 @@ class TimedLyricsRen:
 			spacing = round(26 * self.gui.scale)
 			y_center = self.window_size[1]/2
 
+		# reset scroll position after 5 seconds
 		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == 1:
 			self.scroll_position = scroll_to
 
