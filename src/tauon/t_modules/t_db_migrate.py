@@ -575,10 +575,6 @@ def database_migrate(
 		if not backup_star_db.exists():
 			with backup_star_db.open("wb") as file:
 				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-		backup_star_db = (user_directory / "star.p.bak71")
-		if not backup_star_db.exists():
-			with backup_star_db.open("wb") as file:
-				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		new_starstore_db: dict[tuple[str, str, str], StarRecord] = {}
 		old_record: list[int | str] = [] # Here just for typing
