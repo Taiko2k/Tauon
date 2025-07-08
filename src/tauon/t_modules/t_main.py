@@ -19588,6 +19588,10 @@ class TimedLyricsRen:
 		self.scroll_position: int = 0
 		self.scroll        = tauon.smooth_scroll
 
+		self.recenter_timeout = Timer()
+		self.temp_line: int = -1
+		self.temp_scale: float | None = None
+
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index:
 			return self.ready
@@ -19596,6 +19600,7 @@ class TimedLyricsRen:
 		self.index = track.index
 		self.scroll_position = 0
 		self.data.clear()
+		self.temp_scale = self.gui.scale
 
 		data = find_synced_lyric_data(track)
 		if data is None:
@@ -19635,8 +19640,9 @@ class TimedLyricsRen:
 				continue
 
 		self.data = sorted(self.data, key=lambda x: x[0])
-		# logging.info(self.data)
 		self.line_heights = []
+		self.recenter_timeout.set()
+		self.temp_line = -1
 
 		self.ready = True
 		return True
@@ -19653,13 +19659,14 @@ class TimedLyricsRen:
 
 		if not self.ready:
 			return False
-		if self.inp.mouse_wheel:# and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
+		if self.inp.mouse_wheel:
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
 					self.scroll_position += scroll_distance
 			else:
 				self.scroll_position += scroll_distance
+			self.recenter_timeout.set()
 
 		line_active = -1
 		last = -1
@@ -19667,18 +19674,26 @@ class TimedLyricsRen:
 		highlight = True
 
 		if side_panel:
+			scroll_to = -h/4
 			bg = self.colours.lyrics_panel_background
 			font_size = 15
 			spacing = round(23 * self.gui.scale)
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
+			y_center = y + (h/2) - (spacing)
 		else:
+			scroll_to = 0
 			bg = self.colours.playlist_panel_background
-			font_size = 17
+			font_size = 20
 			spacing = round(26 * self.gui.scale)
+			y_center = self.window_size[1]/2
+
+		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == 1:
+			self.scroll_position = scroll_to
 
 		test_time = self.tauon.get_real_time()
 
+		# determine active lyric
 		if self.pctl.track_queue[self.pctl.queue_step] == index:
 			for i, line in enumerate(self.data):
 				if line[0] < test_time:
@@ -19691,20 +19706,23 @@ class TimedLyricsRen:
 			else:
 				line_active = len(self.data) - 1
 
-			y_center = y + (h/2) - (spacing)
-
-			if self.pctl.playing_state == 1:
-				self.scroll_position = min( self.scroll_position,  h/2 )
-				self.scroll_position = max( self.scroll_position, -h/2 )
-
 		# record line heights so we can perfectly center the active lyric
-		if not self.line_heights:
+		if not self.line_heights or self.temp_scale != self.gui.scale:
+			self.scroll_position = scroll_to
 			for i, line in enumerate(self.data):
 				drop_w, line_h = self.ddt.get_text_wh(line[1], font_size, w - 20 * self.gui.scale, True)
-				self.line_heights.append( line_h + 5*self.gui.scale )
+				self.line_heights.append( line_h + spacing )
+			self.temp_scale = self.gui.scale
 
+		# scroll boundaries
 		self.scroll_position = min( self.scroll_position,  sum( self.line_heights[:max(0,line_active)]) )
 		self.scroll_position = max( self.scroll_position, -sum( self.line_heights[max(0,line_active):]) )
+
+		# don't autoscroll if the new active line is not visible
+		if ( self.scroll_position > h/2 or self.scroll_position < -h/2 ) and self.temp_line != line_active:
+			self.scroll_position -= ( self.temp_line - line_active ) * self.line_heights[line_active]
+			self.temp_line = line_active
+
 		center = y_center + self.scroll_position
 
 		for i, line in enumerate(self.data):
@@ -19736,9 +19754,8 @@ class TimedLyricsRen:
 		if self.inp.mouse_click:
 			for rendered_line in line_positions:
 				if self.coll(rendered_line[0]):
-					# instantly seeek to the correct line
 					self.pctl.seek_time(rendered_line[1][0])
-					self.scroll_position = -h/4
+					self.scroll_position = scroll_to
 					break
 
 		return None
