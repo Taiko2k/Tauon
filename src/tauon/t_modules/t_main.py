@@ -19587,14 +19587,11 @@ class TimedLyricsRen:
 
 		self.scroll_position: int = 0
 		self.scroll        = tauon.smooth_scroll
-<<<<<<< HEAD
-=======
 
 		self.recenter_timeout = Timer()
 		self.temp_line: int = -1
 		self.temp_scale: float | None = None
 		self.temp_w: int | None = None
->>>>>>> e055b924 (Improved synced lyrics display)
 
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index:
@@ -19663,21 +19660,15 @@ class TimedLyricsRen:
 
 		if not self.ready:
 			return False
-<<<<<<< HEAD
-		if self.inp.mouse_wheel and (self.pctl.playing_state != 1 or self.pctl.track_queue[self.pctl.queue_step] != index):
-=======
+
 		if self.inp.mouse_wheel:
->>>>>>> e055b924 (Improved synced lyrics display)
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
 					self.scroll_position += scroll_distance
 			else:
 				self.scroll_position += scroll_distance
-<<<<<<< HEAD
-=======
 			self.recenter_timeout.set()
->>>>>>> e055b924 (Improved synced lyrics display)
 
 		line_active = -1
 		last = -1
