@@ -19590,8 +19590,8 @@ class TimedLyricsRen:
 
 		self.recenter_timeout = Timer()
 		self.temp_line: int = -1
-		self.temp_scale: float | None = None
-		self.temp_w: int | None = None
+		self.temp_scale: float = self.gui.scale
+		self.temp_w: int = -1
 
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index:
