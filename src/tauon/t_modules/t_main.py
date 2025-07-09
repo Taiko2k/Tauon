@@ -19737,7 +19737,7 @@ class TimedLyricsRen:
 				sum( self.line_heights[i: max(0,line_active) ] ) + \
 				sum( self.line_heights[ max(line_active,0) :i] )
 
-			if 0 < possible_y < self.window_size[1]:
+			if 0 < possible_y - self.line_heights[i] and possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
