@@ -5,6 +5,8 @@ Changelog
 ### v8.1.3
 
  - **Added** Playlist auto import feature (Thanks @rexendevar)
+  - TODO: Write migrator for existing playlist imports
+  - TODO: Test to see if it works
  - **Fixed** Jittery scolling in some views (Thanks @rexendevar)
  - **Fixed** Version migrations not saving properly and causing crashes
 
