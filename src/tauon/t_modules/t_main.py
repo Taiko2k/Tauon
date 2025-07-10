@@ -22601,8 +22601,14 @@ class ExportPlaylistBox:
 		if not path.exists():
 			logging.warning("Path does not exist, attempting to create")
 
-		if not path.parent.is_dir():
-			path.parent.mkdir(parents=True)
+		try:
+			if not path.parent.is_dir():
+				path.parent.mkdir(parents=True)
+		except PermissionError as e:
+			logging.error("Export failed, cannot create dirs due to permissions")
+			return
+
+
 
 		target = ""
 		try:
