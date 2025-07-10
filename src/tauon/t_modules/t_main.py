@@ -1885,7 +1885,7 @@ class PlayerCtl:
 		if not playlist.auto_import:
 			return
 
-		code = (self.gen_codes.get(id))
+		code = self.gen_codes.get(id)
 		if code and not "self" in code:
 			logging.warning("Playlist to import has a generator!: " + playlist.title)
 			return
@@ -14097,7 +14097,7 @@ class Tauon:
 		notify:       bool = True, # Allows us to generate initial playlist before worker thread is ready
 		playlist_file:str = "",
 		file_size:    int = 0,
-	) -> playlist_id :
+	) -> TauonPlaylist :
 		"""Generate a TauonPlaylist
 
 		Creates a default playlist when called without parameters
