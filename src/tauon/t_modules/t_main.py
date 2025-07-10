@@ -14097,7 +14097,7 @@ class Tauon:
 		notify:       bool = True, # Allows us to generate initial playlist before worker thread is ready
 		playlist_file:str = "",
 		file_size:    int = 0,
-	) -> TauonPlaylist :
+	) -> TauonPlaylist:
 		"""Generate a TauonPlaylist
 
 		Creates a default playlist when called without parameters
