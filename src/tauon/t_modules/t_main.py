@@ -11539,7 +11539,6 @@ class Tauon:
 			url = f"{base_url}{release_id}"
 
 			try:
-				#logging.print("lookup image url from album id")
 				response = requests.get(url, timeout=10)
 				response.raise_for_status()
 				image_data = response.json()
@@ -20472,7 +20471,6 @@ class TextBox:
 		if active:
 			tw, th = ddt.get_text_wh(self.gui.editline, font, max_x=2000)
 			if self.gui.editline not in ("", self.inp.input_text):
-				print("OK")
 				ex = ddt.text((x + space + round(4 * gui.scale), y), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
 
 				ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
@@ -22592,7 +22590,6 @@ class ExportPlaylistBox:
 		# Fetch corresponding TauonPlaylist object
 		pl = None
 		pl = self.pctl.id_to_pl(id)
-		print(pl)
 		if pl is None:
 			return
 		playlist = self.pctl.multi_playlist[pl]
@@ -42953,8 +42950,8 @@ def main(holder: Holder) -> None:
 
 			if keymaps.test("testkey"):  # F7: test
 				#print(pctl.multi_playlist)
-				from watchpoints import watch
-				watch(pctl.multi_playlist[0].hidden)
+				# from watchpoints import watch
+				# watch(pctl.multi_playlist[0].hidden)
 				pass
 
 			if gui.mode < 3:
