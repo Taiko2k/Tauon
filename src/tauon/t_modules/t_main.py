@@ -22457,6 +22457,7 @@ class ExportPlaylistBox:
 
 		playlist = self.pctl.multi_playlist[playlist_index]
 		id = playlist.uuid_int
+		self.playlist_id = id
 
 		if not playlist.playlist_file:
 			playlist.playlist_file = self.suggest_default_playlist_target(playlist)
@@ -22491,19 +22492,15 @@ class ExportPlaylistBox:
 		ddt.rect_a((x, y), (w, h), colours.box_background)
 		ddt.text_background_colour = colours.box_background
 
-		if self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
+		playlist_id = self.playlist_id
+		pl = self.pctl.id_to_pl(playlist_id)
+
+		if not pl or self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
 				(x, y, w, h))):
 			self.active = False
 			gui.box_over = False
 
-		# Get current playlist
-		playlist = self.pctl.multi_playlist[self.pctl.active_playlist_viewing]
-		playlist_id = playlist.uuid_int
-
-		# If playlist is switched while box open, fill a default path
-		if not playlist.playlist_file and playlist_id != self.playlist_id:
-			playlist.playlist_file = self.suggest_default_playlist_target(playlist)
-		self.playlist_id = playlist_id
+		playlist = self.pctl.multi_playlist[pl]
 
 		# Title
 		ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Import/Export Playlist"), colours.grey(230), 213)
