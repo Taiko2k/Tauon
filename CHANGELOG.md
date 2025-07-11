@@ -9,6 +9,8 @@ Changelog
 
 ### v8.1.4
 
+ - **Added** New fully-featured lyrics editor, including LRC support (thanks @rexendevar)
+ - **Added** Option to automatically save changed lyrics back to the audio file
  - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Crash on radio playlist migration under some circumstances
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0

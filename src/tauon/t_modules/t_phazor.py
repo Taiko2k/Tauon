@@ -953,7 +953,7 @@ def player4(tauon: Tauon) -> None:
 				subtrack = target_object.subtrack
 				aud.set_subtrack(subtrack)
 
-				logging.info(f"Open - requested start was {int(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
+				logging.info(f"Open - requested start was {(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
 				try:
 					logging.info(f"Extension: {target_path.split('.')[-1]}")
 				except Exception:
@@ -968,7 +968,7 @@ def player4(tauon: Tauon) -> None:
 						tauon.level_train.clear()
 						if target_object.found is False:
 							pctl.playing_state = PlayingState.STOPPED
-							pctl.jump_time = 0
+							pctl.jump_time = 0.0
 							pctl.advance(inplace=True, play=True)
 							continue
 						if tauon.player4_state not in (PlayerState.STOPPED, PlayerState.SPOTIFY_MODE):
@@ -1021,7 +1021,7 @@ def player4(tauon: Tauon) -> None:
 							gui.buffering = True
 							gui.update += 1
 							tauon.wake()
-						if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0:
+						if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0.0:
 							break
 						time.sleep(0.05)
 						#logging.info(status)
@@ -1034,7 +1034,7 @@ def player4(tauon: Tauon) -> None:
 						logging.info("Could not locate resource")
 						target_object.found = False
 						pctl.playing_state = PlayingState.STOPPED
-						pctl.jump_time = 0
+						pctl.jump_time = 0.0
 						#pctl.advance(inplace=True, play=True)
 						continue
 					target_path = path
@@ -1062,7 +1062,7 @@ def player4(tauon: Tauon) -> None:
 					if status == 2:
 						target_object.found = False
 						pctl.playing_state = PlayingState.STOPPED
-						pctl.jump_time = 0
+						pctl.jump_time = 0.0
 						pctl.advance(inplace=True, play=True)
 						continue
 					target_path = path
@@ -1071,7 +1071,7 @@ def player4(tauon: Tauon) -> None:
 					target_object.found = False
 					if not target_object.is_network:
 						pctl.playing_state = PlayingState.STOPPED
-						pctl.jump_time = 0
+						pctl.jump_time = 0.0
 						pctl.advance(inplace=True, play=True)
 					continue
 				if not target_object.found:
@@ -1135,7 +1135,7 @@ def player4(tauon: Tauon) -> None:
 							time.sleep(0.016)
 						aud.stop()
 
-					aud.next(target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000, ctypes.c_float(calc_rg(target_object)))
+					aud.next(target_path.encode(), int( (pctl.start_time_target + pctl.jump_time) * 1000), ctypes.c_float(calc_rg(target_object)))
 
 					cont = False
 					while r_timer.get() <= remain - prefs.device_buffer / 1000:
@@ -1187,7 +1187,7 @@ def player4(tauon: Tauon) -> None:
 						fade = 1
 
 					logging.info("Transition jump")
-					aud.start(target_path.encode(errors="surrogateescape"), int(pctl.start_time_target + pctl.jump_time) * 1000, fade, ctypes.c_float(calc_rg(target_object)))
+					aud.start(target_path.encode(errors="surrogateescape"), int( (pctl.start_time_target + pctl.jump_time) * 1000), fade, ctypes.c_float(calc_rg(target_object)))
 					loaded_track = target_object
 					pctl.playing_time = pctl.jump_time
 					if pctl.jump_time:
@@ -1213,7 +1213,7 @@ def player4(tauon: Tauon) -> None:
 								#		 break
 								logging.info("Retry start file")
 								aud.start(
-									target_path.encode(), int(pctl.start_time_target + pctl.jump_time) * 1000,
+									target_path.encode(), int( (pctl.start_time_target + pctl.jump_time) * 1000),
 									fade, ctypes.c_float(calc_rg(target_object)))
 								gui.buffering = False
 								player_timer.set()
@@ -1231,7 +1231,7 @@ def player4(tauon: Tauon) -> None:
 						tauon.player4_state = PlayerState.STOPPED
 
 				player_timer.set()
-				pctl.jump_time = 0
+				pctl.jump_time = 0.0
 				if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.formats.MOD:
 					i = 0
 					t = 0
@@ -1292,7 +1292,7 @@ def player4(tauon: Tauon) -> None:
 						if status == 2:
 							loaded_track.found = False
 							pctl.playing_state = PlayingState.STOPPED
-							pctl.jump_time = 0
+							pctl.jump_time = 0.0
 							pctl.stop()
 							continue
 
