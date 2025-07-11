@@ -592,11 +592,16 @@ def player4(tauon: Tauon) -> None:
 					g = ag
 					if ap is not None:
 						p = ap
+				elif tg is not None and ag is None:
+					g = tg
+					if tp is not None:
+						p = tp
 
-		# logging.info("Replay gain")
-		# logging.info("GAIN: " + str(g))
-		# logging.info("PEAK: " + str(p))
-		# logging.info("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
+		logging.debug("Detected Replay gain")
+		logging.debug("GAIN: " + str(g))
+		logging.debug("PEAK: " + str(p))
+		logging.debug("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
+
 		if p == 0:
 			logging.warning("Detected replay gain peak of 0")
 			return 1
