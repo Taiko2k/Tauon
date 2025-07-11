@@ -19,6 +19,7 @@
   - Large album art and gallery browsing!
   - Download cover art function.
   - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
+  - Create, edit and upload lyrics for all of your music.
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
   - Built-in topchart generator.
   - **Extract archives** and import your music downloads in **one click**! :zap:

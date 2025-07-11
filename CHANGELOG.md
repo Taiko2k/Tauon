@@ -4,8 +4,11 @@ Changelog
 
 ### v8.2.0 (UNRELEASED)
 
+ - **Added** New fully-featured lyrics editor, including LRC support
+ - **Added** Option to upload lyrics to LRCLIB (inside the lyrics editor)
+ - **Added** All lyrics changes will now write back to their original files
+ - **Added** Spring-loaded clicking behavior to all context menus
  - **Fixed** Setting "Background artist info download" not being respected
- - **Added** Spring-loaded clicking behavior to most menus
 
 ### v8.1.4
 
