@@ -34,7 +34,7 @@ from bs4 import BeautifulSoup
 from unidecode import unidecode
 
 
-def ovh(artist: str, title: str) -> tuple[str, str]:
+def ovh(artist: str, title: str, user_agent: str="unused here but it needs to exist in every lyrics function") -> tuple[str, str]:
 	"""Get lyrics from lyrics.ovh API"""
 	q = urllib.parse.quote(f"{artist}/{title}")
 	point = f"https://api.lyrics.ovh/v1/{q}"
@@ -45,7 +45,7 @@ def ovh(artist: str, title: str) -> tuple[str, str]:
 	return "", ""
 
 
-def genius(artist: str, title: str, return_url: bool=False) -> tuple[str, str] | str:
+def genius(artist: str, title: str, return_url: bool=False, user_agent: str="unused here but it needs to exist in every lyrics function") -> tuple[str, str] | str:
 	"""Scrape lyrics from genius.com"""
 	artist = artist.split("feat.")[0]
 	title = title.split("(feat.")[0]
@@ -113,9 +113,9 @@ def genius(artist: str, title: str, return_url: bool=False) -> tuple[str, str] |
 	return lyrics, ""
 
 
-def lrclib(artist: str, title: str) -> tuple[str, str]:
+def lrclib(artist: str, title: str, user_agent: str = "TauonMusicBox/Devel") -> tuple[str, str]:
 	h = {
-		"User-Agent": "TauonMusicBox/1.0",
+		"User-Agent": user_agent,
 	}
 
 	p = {
@@ -129,6 +129,18 @@ def lrclib(artist: str, title: str) -> tuple[str, str]:
 		s = r.json().get("syncedLyrics")
 		if p or s:
 			return p, s
+	return "", ""
+
+def get_lrclib_challenge(user_agent: str = "TauonMusicBox/Devel") -> tuple[str, str]:
+	h = {
+		"User-Agent": user_agent,
+	}
+	r = requests.post("https://lrclib.net/api/request-challenge", headers=h, timeout=10)
+	if r.status_code == HTTPStatus.OK:
+		p = r.json().get("prefix")
+		t = r.json().get("target")
+		if p or t:
+			return p, t
 	return "", ""
 
 lyric_sources = {
