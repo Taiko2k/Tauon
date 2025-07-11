@@ -5,10 +5,12 @@ Changelog
 ### v8.1.3
 
  - **Added** Playlist auto import feature (Thanks @rexendevar)
+ - **Added** Click-to-seek + manual scrolling for synced lyrics (Thanks @rexendevar)
   - TODO: Write migrator for existing playlist imports
   - TODO: Test to see if it works
- - **Fixed** Jittery scolling in some views (Thanks @rexendevar)
+ - **Fixed** Jittery scrolling in some views (Thanks @rexendevar)
  - **Fixed** Version migrations not saving properly and causing crashes
+ - **Fixed** No more case sensitivity when sorting by filename/filepath
 
 ### v8.1.2
 
@@ -17,7 +19,8 @@ Changelog
 ### v8.1.1
 
  - **Hotfix** Fixed possible crash on start
- - **Added** Column toggle funtctionality to column menu. (Thanks @rexendevar)
+ - **Added** "Internal track ID" column option
+ - **Tweaked** Columns now toggle between on/off - can no longer have multiple copies of the same one (Thanks @rexendevar)
 
 ### v8.1.0
 
