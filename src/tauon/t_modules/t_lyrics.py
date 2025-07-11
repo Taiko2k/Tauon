@@ -131,6 +131,18 @@ def lrclib(artist: str, title: str) -> tuple[str, str]:
 			return p, s
 	return "", ""
 
+def get_lrclib_challenge() -> tuple[str]:
+	h = {
+		"User-Agent": "TauonMusicBox/DEVEL very early & idk what im doing",
+	}
+	r = requests.post("https://lrclib.net/api/request-challenge", headers=h, timeout=10)
+	if r.status_code == HTTPStatus.OK:
+		p = r.json().get("prefix")
+		t = r.json().get("target")
+		if p or t:
+			return p, t
+	return "", ""
+
 lyric_sources = {
 	"Genius": genius,
 	"lyrics.ovh": ovh,

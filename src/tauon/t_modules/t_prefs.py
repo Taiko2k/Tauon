@@ -71,6 +71,7 @@ class Prefs:
 	tag_editor_name:   str = ""
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""
+	use_lrc_instead: bool = True
 
 	use_title:    bool = False
 	auto_extract: bool = False
@@ -187,7 +188,7 @@ class Prefs:
 
 	guitar_chords = False
 	prefer_synced_lyrics = True
-	sync_lyrics_time_offset = 0
+	sync_lyrics_time_offset: int = -150 # in milliseconds
 
 	playback_follow_cursor = False
 	short_buffer = False
@@ -324,6 +325,8 @@ class Prefs:
 
 	autoscan_playlist_folder: bool = False
 	playlist_folder_path: str = ""
+
+	synced_lyrics_editor_track_end_mode: Literal["stop","autosave","full save"] = "stop"
 
 	sep_genre_multi = False
 	topchart_sorts_played = True
