@@ -1891,6 +1891,10 @@ class PlayerCtl:
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
+		print(path)
+		if not path.exists() or not path.is_file():
+			logging.error("Playlist file not found: " + str(path))
+			return
 		try:
 			current_size = path.stat().st_size
 		except FileNotFoundError as e:
@@ -1900,12 +1904,12 @@ class PlayerCtl:
 		if current_size != playlist.file_size:
 			logging.info(f"Reload playlist from changed file:"  + playlist.title)
 			if playlist.export_type == "m3u":
-				playlist, stations = self.tauon.parse_m3u(playlist.playlist_file)
-				playlist.playlist_ids[:] = playlist[:]
+				p, stations = self.tauon.parse_m3u(str(path))
+				playlist.playlist_ids[:] = p[:]
 
 			elif playlist.export_type == "xspf":
-				playlist, stations, name = self.tauon.parse_xspf(playlist.playlist_file)
-				playlist.playlist_ids[:] = playlist[:]
+				p, stations, name = self.tauon.parse_xspf(str(path))
+				playlist.playlist_ids[:] = p[:]
 
 			playlist.file_size = path.stat().st_size
 			if stations:
@@ -6743,7 +6747,7 @@ class Tauon:
 		except Exception:
 			logging.exception("Error importing/parsing XSPF playlist")
 			self.show_message(_("Error importing XSPF playlist."), _("Sorry about that."), mode="warning")
-			return
+			raise
 
 		# Extract internet streams first
 		stations: list[RadioStation] = []
@@ -22551,7 +22555,7 @@ class ExportPlaylistBox:
 		playlist_id = self.playlist_id
 		pl = self.pctl.id_to_pl(playlist_id)
 
-		if not pl or self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
+		if pl is None or self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
 				(x, y, w, h))):
 			self.active = False
 			gui.box_over = False
@@ -22583,10 +22587,10 @@ class ExportPlaylistBox:
 		yy = y + rect1[3] + round(3 * gui.scale)
 		if text.endswith("/") or text.endswith("\\"):
 			if Path(self.pctl.resolve_full_playlist_path(playlist)).exists():
-				ddt.text((xx, yy, 1), self.pctl.resolve_full_playlist_path(playlist, get_name=True) + " " + _("exists ✔"), ColourRGBA(80, 230, 80, 255), 10)
+				ddt.text((xx, yy, 1), _("Will overwrite existing file: ") + f" {self.pctl.resolve_full_playlist_path(playlist, get_name=True)}", ColourRGBA(80, 230, 80, 255), 10)
 				yy += round(13 * gui.scale)
 			else:
-				ddt.text((xx, yy, 1), _("Will save as:") + " " + self.pctl.resolve_full_playlist_path(playlist, get_name=True), colours.grey(190), 10)
+				ddt.text((xx, yy, 1), _("Will save with playlist name:") + f" {self.pctl.resolve_full_playlist_path(playlist, get_name=True)}", colours.grey(190), 10)
 				yy += round(13 * gui.scale)
 		elif not ext:
 			ddt.text((xx, yy, 1), _("No file extention?"), colours.grey(190), 10)
