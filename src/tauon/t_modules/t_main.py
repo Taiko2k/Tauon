@@ -1891,7 +1891,7 @@ class PlayerCtl:
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
-		print(path)
+		logging.info(f"Import playlist from file: {str(path)}")
 		if not path.exists() or not path.is_file():
 			logging.error("Playlist file not found: " + str(path))
 			return
