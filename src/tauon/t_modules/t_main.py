@@ -17858,23 +17858,33 @@ class Tauon:
 		else:
 			self.gui.drop_playlist_target = self.pctl.active_playlist_viewing
 
-		if not os.path.exists(target) and self.flatpak_mode:
-			self.show_message(
-				_("Could not access! Possible insufficient Flatpak permissions."),
-				_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
-				mode="bubble")
-
 		load_order = LoadClass()
 		load_order.target = target.replace("\\", "/")
-
-		if os.path.isdir(load_order.target):
-			self.quick_import_done.append(load_order.target)
-
-			# if not pctl.multi_playlist[self.gui.drop_playlist_target].last_folder:
-			self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder.append(load_order.target)
-			reduce_paths(self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder)
-
 		load_order.playlist = self.pctl.multi_playlist[self.gui.drop_playlist_target].uuid_int
+
+		if self.flatpak_mode:
+			if not os.path.exists(target):
+				self.show_message(
+					_("Could not access! Possible insufficient Flatpak permissions."),
+					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
+					mode="bubble")
+			elif target.startswith("/run/user/"):
+				self.gui.message_box_confirm_reference = copy.deepcopy(load_order)
+				self.gui.message_box_confirm_callback = lambda : self.load_orders.append(self.gui.message_box_confirm_reference)
+				self.show_message(_("Path is transient. You may want to grant permanent Flatpak permission."),
+									_("Continue with import?"), mode="confirm")
+				self.gui.update += 1
+				self.inp.mouse_down = False
+				self.inp.drag_mode = False
+
+
+        if os.path.isdir(load_order.target):
+        	self.quick_import_done.append(load_order.target)
+
+        	# if not pctl.multi_playlist[self.gui.drop_playlist_target].last_folder:
+        	self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder.append(load_order.target)
+        	reduce_paths(self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder)
+
 		self.load_orders.append(copy.deepcopy(load_order))
 
 		#logging.info('dropped: ' + str(dropped_file))
