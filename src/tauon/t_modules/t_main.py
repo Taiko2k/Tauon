@@ -17876,7 +17876,7 @@ class Tauon:
 				self.gui.update += 1
 				self.inp.mouse_down = False
 				self.inp.drag_mode = False
-
+				return
 
         if os.path.isdir(load_order.target):
         	self.quick_import_done.append(load_order.target)
