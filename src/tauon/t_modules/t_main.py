@@ -17877,12 +17877,12 @@ class Tauon:
 				self.inp.drag_mode = False
 				return
 
-        if os.path.isdir(load_order.target):
-        	self.quick_import_done.append(load_order.target)
+		if os.path.isdir(load_order.target):
+			self.quick_import_done.append(load_order.target)
 
-        	# if not pctl.multi_playlist[self.gui.drop_playlist_target].last_folder:
-        	self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder.append(load_order.target)
-        	reduce_paths(self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder)
+			# if not pctl.multi_playlist[self.gui.drop_playlist_target].last_folder:
+			self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder.append(load_order.target)
+			reduce_paths(self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder)
 
 		self.load_orders.append(copy.deepcopy(load_order))
 
