@@ -1664,7 +1664,7 @@ class PlayerCtl:
 		self.loading_in_progress: bool = False
 		self.taskbar_progress:    bool = True
 		self.album_dex                 = self.tauon.album_dex
-		self.deep_duplicates           = False
+		self.deep_duplicates:     bool = False
 
 		self.cargo: list[int]          = []
 		# Database
