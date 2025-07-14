@@ -7552,7 +7552,7 @@ class Tauon:
 						if lyrics:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
-							if self.prefs.save_changes_to_file:
+							if self.prefs.save_lyrics_to_file:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
@@ -7632,7 +7632,7 @@ class Tauon:
 			clip = sdl3.SDL_GetClipboardText()
 			#logging.info(clip)
 			track_object.lyrics = clip.decode("utf-8")
-			if self.prefs.save_changes_to_file:
+			if self.prefs.save_lyrics_to_file:
 				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload
 		else:
@@ -7643,14 +7643,14 @@ class Tauon:
 
 	def clear_lyrics(self, track_object: TrackClass) -> None:
 		track_object.lyrics = ""
-		if self.prefs.save_changes_to_file:
+		if self.prefs.save_lyrics_to_file:
 			self.write_lyrics(track_object)
 		self.lyrics_ren_mini.to_reload
 
 	def split_lyrics(self, track_object: TrackClass) -> None:
 		if track_object.lyrics:
 			track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
-			if self.prefs.save_changes_to_file:
+			if self.prefs.save_lyrics_to_file:
 				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload
 
@@ -7719,7 +7719,7 @@ class Tauon:
 			if not new_lyrics == track.lyrics:
 				track.lyrics = new_lyrics
 				self.lyrics_ren_mini.to_reload = True
-				if self.prefs.save_changes_to_file:
+				if self.prefs.save_lyrics_to_file:
 					self.write_lyrics(track)
 		self.gui.opened_lyric_file = False
 		target.unlink()
@@ -24498,9 +24498,8 @@ class Over:
 				subtitle=_("Only runs during database rescan"))
 
 			y += round(45* gui.scale)
-			prefs.save_changes_to_file = self.toggle_square(
-				x, y, prefs.save_changes_to_file, _("Save all metadata changes back to their original files"),
-				subtitle=_("(beta) Includes lyrics, etc"))
+			prefs.save_lyrics_to_file = self.toggle_square(
+				x, y, prefs.save_lyrics_to_file, _("Save all lyrics changes back to their original files"))
 
 		elif self.func_page == 3:
 			y += 23 * gui.scale
@@ -37213,7 +37212,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("autoscan_playlist_folder", prefs.autoscan_playlist_folder)
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
-	cf.update_value("save_changes_to_file", prefs.save_changes_to_file)
+	cf.update_value("save_lyrics_to_file", prefs.save_lyrics_to_file)
 
 	cf.update_value("use-system-tray", prefs.use_tray)
 	cf.update_value("use-gamepad", prefs.use_gamepad)
@@ -37370,8 +37369,8 @@ def load_prefs(bag: Bag) -> None:
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target", "picard",
 			"The name of the binary to call.")
-	prefs.save_changes_to_file = cf.sync_add(
-		"bool", "save_changes_to_file", prefs.save_changes_to_file,
+	prefs.save_lyrics_to_file = cf.sync_add(
+		"bool", "save_lyrics_to_file", prefs.save_lyrics_to_file,
 		"Save metadata changes made in Tauon back to their original files.")
 
 	cf.br()
