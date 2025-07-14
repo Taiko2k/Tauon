@@ -219,7 +219,8 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
             -r requirements.txt \
             build \
-            pyinstaller
+            pyinstaller \
+            pytest
 #            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
@@ -237,6 +238,10 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
         #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
         #  source .venv/bin/activate
+
+      - name: Run tests using pytest
+        run: |
+          PYTHONPATH=src pytest src/tauon/tests
 
       - name: "[DEBUG] List all files"
         run: find .
