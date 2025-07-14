@@ -39162,7 +39162,7 @@ def worker1(tauon: Tauon) -> None:
 
 	def deep_remove_duplicates() -> int:
 		paths_ids: dict[str,int] = {}
-		dupes = []
+		dupes: list[int] = []
 		for track in pctl.master_library:
 			if not pctl.master_library[track].fullpath:
 				continue
