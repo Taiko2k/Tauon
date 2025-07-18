@@ -39996,7 +39996,7 @@ def main(holder: Holder) -> None:
 	master_library: dict[int, TrackClass] = {}
 
 	db_version: float = 0.0
-	latest_db_version: float = 72
+	latest_db_version: float = 73
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
