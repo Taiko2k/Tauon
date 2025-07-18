@@ -6,8 +6,6 @@ Changelog
 
  - **Added** Playlist auto import feature (Thanks @rexendevar)
  - **Added** Click-to-seek + manual scrolling for synced lyrics (Thanks @rexendevar)
-  - TODO: Write migrator for existing playlist imports
-  - TODO: Test to see if it works
  - **Fixed** Jittery scrolling in some views (Thanks @rexendevar)
  - **Fixed** Version migrations not saving properly and causing crashes
  - **Fixed** No more case sensitivity when sorting by filename/filepath

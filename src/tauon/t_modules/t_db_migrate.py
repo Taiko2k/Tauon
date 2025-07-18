@@ -596,4 +596,35 @@ def database_migrate(
 			with (user_directory / "star.p").open("wb") as file:
 				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
+	if db_version <= 72:
+		# prefs.playlist_exports = save[168]
+		logging.info("Updating database to version 73")
+		for key, item in prefs.playlist_exports.items():
+
+			playlist = None
+			for p in multi_playlist:
+				if p.uuid_int == key:
+					playlist = p
+					break
+			else:
+				continue
+
+			if item.get("auto"):
+				playlist.auto_export = True
+
+			path = item.get("path")
+			if path:
+				if not path.endswith("/") and not path.endswith("\\"):
+					path = path + "/"
+				playlist.playlist_file = path
+
+			type = item.get("type")
+			if type:
+				playlist.export_type = type
+
+			relative = item.get("relative")
+			if relative:
+				playlist.relative_export = relative
+
+
 	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
