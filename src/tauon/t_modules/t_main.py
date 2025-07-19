@@ -527,6 +527,7 @@ class GuiVar:
 		self.message_box_confirm_reference = None
 		self.message_box_use_reference = True
 		self.message_box_confirm_callback = None
+		self.message_box_no_callback = None
 
 		self.save_size = [450, 310]
 		self.show_playlist = True
@@ -2186,6 +2187,7 @@ class PlayerCtl:
 			return
 
 		self.gui.message_box_confirm_callback = self.delete_playlist_by_id
+		self.gui.message_box_no_callback = None
 		self.gui.message_box_confirm_reference = (self.pl_to_id(index), True, True)
 		self.show_message(_("Are you sure you want to delete playlist: {name}?").format(name=self.multi_playlist[index].title), mode="confirm")
 
@@ -8039,6 +8041,7 @@ class Tauon:
 		elif info and info[0] == 1:
 			n = self.remove_embed_picture(track_object, dry=True)
 			self.gui.message_box_confirm_callback = self.remove_embed_picture
+			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (track_object, False)
 			self.show_message(_("This will erase any embedded image in {N} files. Are you sure?").format(N=n), mode="confirm")
 
@@ -11857,6 +11860,7 @@ class Tauon:
 		if "tmix\"" in self.pctl.gen_codes.get(id, ""):
 			return
 		self.gui.message_box_confirm_callback = self.clear_gen
+		self.gui.message_box_no_callback = None
 		self.gui.message_box_confirm_reference = (id,)
 		self.show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
 
@@ -17868,10 +17872,14 @@ class Tauon:
 					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
 					mode="bubble")
 			elif target.startswith("/run/user/"):
-				self.gui.message_box_confirm_reference = copy.deepcopy(load_order)
-				self.gui.message_box_confirm_callback = lambda : self.load_orders.append(self.gui.message_box_confirm_reference)
-				self.show_message(_("Path is transient. You may want to grant permanent Flatpak permission."),
-									_("Continue with import?"), mode="confirm")
+				self.gui.message_box_confirm_reference = (copy.deepcopy(load_order),)
+				self.gui.message_box_confirm_callback = lambda x: self.load_orders.append(x)
+				self.gui.message_box_no_callback = lambda x: self.show_message(
+					_("The target will may be lost on reboot without necessary Flatpak permissions."),
+					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
+					mode="bubble")
+				self.show_message(_("Path may be transient! Continue? Press \"No\" for more information."),
+								  mode="confirm")
 				self.gui.update += 1
 				self.inp.mouse_down = False
 				self.inp.drag_mode = False
@@ -18199,6 +18207,7 @@ class Tauon:
 		if self.msys:
 			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (80MB)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
+			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (None,)
 		else:
 			self.show_message(_("FFMPEG could not be found"))
@@ -23472,9 +23481,13 @@ class MessageBox:
 			self.message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(self.message_info_icon.h / 2) - 1)
 			ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
 			if self.draw.button("Yes", (w // 2 + x) - 70 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
-				gui.message_box_confirm_callback(*gui.message_box_confirm_reference)
+				gui.message_box = False
+				if gui.message_box_confirm_callback:
+					gui.message_box_confirm_callback(*gui.message_box_confirm_reference)
 			if self.draw.button("No", (w // 2 + x) + 25 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
 				gui.message_box = False
+				if gui.message_box_no_callback:
+					gui.message_box_no_callback(*gui.message_box_confirm_reference)
 			return
 
 		if gui.message_subtext:
