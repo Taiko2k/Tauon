@@ -38219,10 +38219,10 @@ def worker2(tauon: Tauon) -> None:
 					o_text = o_text[7:]
 					artist_mode = True
 
-				tauon.prefs.album_mode = False
+				album_mode = False
 				if o_text.startswith("album "):
 					o_text = o_text[6:]
-					tauon.prefs.album_mode = True
+					album_mode = True
 
 				composer_mode = False
 				if o_text.startswith("composer "):
@@ -38488,7 +38488,7 @@ def worker2(tauon: Tauon) -> None:
 						if temp_results[i][0] != 0:
 							del temp_results[i]
 
-				elif tauon.prefs.album_mode:
+				elif album_mode:
 					for i in reversed(range(len(temp_results))):
 						if temp_results[i][0] != 1:
 							del temp_results[i]
@@ -43021,9 +43021,6 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
-				#print(pctl.multi_playlist)
-				# from watchpoints import watch
-				# watch(pctl.multi_playlist[0].hidden)
 				pass
 
 			if gui.mode < 3:
