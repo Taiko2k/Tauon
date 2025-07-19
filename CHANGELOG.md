@@ -6,9 +6,11 @@ Changelog
 
  - **Added** Playlist auto import feature (Thanks @rexendevar)
  - **Added** Click-to-seek + manual scrolling for synced lyrics (Thanks @rexendevar)
+ - **Added** Warning for Flatpak transient file import
  - **Fixed** Jittery scrolling in some views (Thanks @rexendevar)
  - **Fixed** Version migrations not saving properly and causing crashes
  - **Fixed** No more case sensitivity when sorting by filename/filepath
+ - **Fixed** An issue with gallery switching when using search
 
 ### v8.1.2
 
