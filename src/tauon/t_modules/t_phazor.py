@@ -731,7 +731,6 @@ def player4(tauon: Tauon) -> None:
 	gui   = tauon.gui
 	pctl  = tauon.pctl
 	prefs = tauon.prefs
-	state = tauon.player4_state
 
 	logging.debug("Starting PHAzOR backend…")
 
@@ -791,9 +790,9 @@ def player4(tauon: Tauon) -> None:
 	while True:
 		#logging.error(aud.print_status())
 		time.sleep(0.016)
-		if state == 2:
+		if tauon.player4_state == 2:
 			time.sleep(0.05)
-		if state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
+		if tauon.player4_state != 0 or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
 			active_timer.set()
 		if active_timer.get() > 7:
 			aud.stop()
@@ -802,7 +801,7 @@ def player4(tauon: Tauon) -> None:
 			break
 
 		# Level meter
-		if (state in (1, 3)) and gui.vis == 1:
+		if (tauon.player4_state in (1, 3)) and gui.vis == 1:
 			amp = aud.get_level_peak_l()
 			l = amp * 12
 			amp = aud.get_level_peak_r()
@@ -821,14 +820,14 @@ def player4(tauon: Tauon) -> None:
 
 				if command == "endchrome":
 					chrome_mode = False
-					state = 0
+					tauon.player4_state = 0
 					pctl.playing_time = 0
 					pctl.decode_time = 0
 					pctl.stop()
 					continue
 				if command == "open":
 					target_object = pctl.target_object
-					if state == 1:
+					if tauon.player4_state == 1:
 						t, pid, s, d = tauon.chrome.update()
 						# logging.info((t, d))
 						# logging.info(d - t)
@@ -848,26 +847,26 @@ def player4(tauon: Tauon) -> None:
 					if pctl.commit:
 						pctl.advance(quiet=True, end=True)
 						pctl.commit = None
-					state = 1
+					tauon.player4_state = 1
 				if command == "pauseon":
 					tauon.chrome.pause()
-					state = 2
+					tauon.player4_state = 2
 				if command == "pauseoff":
 					tauon.chrome.play()
-					state = 1
+					tauon.player4_state = 1
 				if command == "volume":
 					tauon.chrome.volume(round(pctl.player_volume / 100, 3))
-					state = 1
+					tauon.player4_state = 1
 				if command == "seek":
 					tauon.chrome.seek(float(round(pctl.new_time + pctl.start_time_target, 2)))
 					chrome_cool_timer.set()
 					pctl.playing_time = pctl.new_time
 					pctl.decode_time = pctl.playing_time
 				if command == "stop":
-					state = 0
+					tauon.player4_state = 0
 					tauon.chrome.stop()
 
-			if state == 1:
+			if tauon.player4_state == 1:
 				if chrome_update > 0.8 and chrome_cool_timer.get() > 2.5:
 					t, pid, s, d = tauon.chrome.update()
 					pctl.playing_time = t - pctl.start_time_target
@@ -901,13 +900,13 @@ def player4(tauon: Tauon) -> None:
 				#aud.stop()
 				logging.info("SPP: Start librespot command received. Set Phazor input raw mode")
 				start_librespot()
-				state = 4
+				tauon.player4_state = 4
 				#time.sleep(20)
 				#tauon.spot_ctl.preparing_spotify = False
 
 			if command == "startchrome":
 				aud.stop()
-				if state == 1:
+				if tauon.player4_state == 1:
 					chrome_start(loaded_track.index, t=pctl.playing_time)
 				chrome_mode = True
 
@@ -921,7 +920,7 @@ def player4(tauon: Tauon) -> None:
 				w = 0
 				if not tauon.radiobox.run_proxy:
 					aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(calc_rg(None)))
-					state = 3
+					tauon.player4_state = 3
 					player_timer.hit()
 				else:
 					while len(tauon.stream_proxy.chunks) < 200:
@@ -936,11 +935,11 @@ def player4(tauon: Tauon) -> None:
 					else:
 						aud.config_set_feed_samplerate(prefs.samplerate)
 						aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
-						state = 3
+						tauon.player4_state = 3
 						player_timer.hit()
 
 			if command == "open":
-				if state == 2:
+				if tauon.player4_state == 2:
 					aud.set_volume(int(pctl.player_volume))
 
 
@@ -969,19 +968,19 @@ def player4(tauon: Tauon) -> None:
 							pctl.jump_time = 0
 							pctl.advance(inplace=True, play=True)
 							continue
-						if state > 0 and state != 4:
+						if tauon.player4_state > 0 and tauon.player4_state != 4:
 							aud.stop()
-						if state != 4:
-							state = 0
+						if tauon.player4_state != 4:
+							tauon.player4_state = 0
 
 						try:
 							f = False
-							if spotc.running and state != 4:
+							if spotc.running and tauon.player4_state != 4:
 								aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
-								state = 4
+								tauon.player4_state = 4
 							if prefs.launch_spotify_local and not spotc.running:
 								aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
-								state = 4
+								tauon.player4_state = 4
 								if not tauon.librespot_p:
 									tauon.spot_ctl.preparing_spotify = True
 									f = True
@@ -1090,7 +1089,7 @@ def player4(tauon: Tauon) -> None:
 						pctl.playing_length = target_object.length
 					del temp
 
-				if state == 1 and not pctl.start_time_target and not pctl.jump_time and loaded_track:
+				if tauon.player4_state == 1 and not pctl.start_time_target and not pctl.jump_time and loaded_track:
 					length = aud.get_length_ms() / 1000
 					position = aud.get_position_ms() / 1000
 					remain = length - position
@@ -1109,7 +1108,7 @@ def player4(tauon: Tauon) -> None:
 
 				fade = 0
 				error = False
-				if state == 1 \
+				if tauon.player4_state == 1 \
 						and length \
 						and position \
 						and not pctl.start_time_target \
@@ -1180,7 +1179,7 @@ def player4(tauon: Tauon) -> None:
 						pctl.commit = None
 						continue
 
-					if state == 1 and prefs.use_jump_crossfade:
+					if tauon.player4_state == 1 and prefs.use_jump_crossfade:
 						fade = 1
 
 					logging.info("Transition jump")
@@ -1223,9 +1222,9 @@ def player4(tauon: Tauon) -> None:
 						time.sleep(0.016)
 						run_vis()
 
-					state = 1
+					tauon.player4_state = 1
 					if error:
-						state = 0
+						tauon.player4_state = 0
 
 				player_timer.set()
 				pctl.jump_time = 0
@@ -1251,7 +1250,7 @@ def player4(tauon: Tauon) -> None:
 				if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
 					tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
 					pctl.playing_time = pctl.new_time
-				elif state > 0:
+				elif tauon.player4_state > 0:
 					if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
 						timer = Timer()
 						timer.set()
@@ -1322,7 +1321,7 @@ def player4(tauon: Tauon) -> None:
 				command = "stop"
 
 			if command == "stop":
-				if prefs.use_pause_fade and state != 3:
+				if prefs.use_pause_fade and tauon.player4_state != 3:
 					if pctl.player_volume > 5:
 						speed = fade_time / (int(pctl.player_volume) / 100)
 					else:
@@ -1331,7 +1330,7 @@ def player4(tauon: Tauon) -> None:
 					aud.ramp_volume(0, int(speed))
 					time.sleep((fade_time + 100) / 1000)
 
-				state = 0
+				tauon.player4_state = 0
 				pctl.playing_time = 0
 				aud.stop()
 				spotc.running = False
@@ -1352,11 +1351,11 @@ def player4(tauon: Tauon) -> None:
 					aud.ramp_volume(0, int(speed))
 					time.sleep((fade_time + 100) / 1000)
 				aud.pause()
-				state = 2
+				tauon.player4_state = 2
 
 			if command == "pauseoff":
 
-				if state == 0:
+				if tauon.player4_state == 0:
 					t = pctl.playing_time
 					pctl.play_target()
 					pctl.jump_time = t
@@ -1373,7 +1372,7 @@ def player4(tauon: Tauon) -> None:
 					aud.resume()
 					player_timer.set()
 					stall_timer.set()
-					state = 1
+					tauon.player4_state = 1
 
 			if command == "unload":
 				if prefs.use_pause_fade:
@@ -1398,10 +1397,10 @@ def player4(tauon: Tauon) -> None:
 		else:
 			pctl.spot_test_progress()
 
-			if state == 4:
+			if tauon.player4_state == 4:
 				run_vis()
 
-			if state == 3:
+			if tauon.player4_state == 3:
 				pctl.radio_progress()
 				run_vis()
 
@@ -1414,5 +1413,5 @@ def player4(tauon: Tauon) -> None:
 					gui.buffering = buffering
 					gui.update += 1
 
-			if state == 1:
+			if tauon.player4_state == 1:
 				track()
