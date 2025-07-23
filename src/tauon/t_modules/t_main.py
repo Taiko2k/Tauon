@@ -22548,7 +22548,7 @@ class ExportPlaylistBox:
 			return path
 		if self.tauon.dirs.music_directory:
 			return str(self.tauon.dirs.music_directory) + "/"
-		return str(tauon.dirs.user_directory / "playlists/")
+		return str(self.tauon.dirs.user_directory / "playlists/")
 
 	def render(self) -> None:
 		"""runs every frame that the playlist export menu is open.
