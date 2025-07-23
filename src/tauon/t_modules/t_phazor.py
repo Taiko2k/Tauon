@@ -59,8 +59,8 @@ class LibreSpot:
 		self.librespot_p     = tauon.librespot_p
 		self.show_message    = tauon.show_message
 		self.cache_directory = tauon.cache_directory
-		self.running    = False
-		self.flush      = False
+		self.running:   bool = False
+		self.flush:     bool = False
 
 	def go(self, force: bool = False) -> int:
 		self.aud.config_set_feed_samplerate(44100)
@@ -629,7 +629,7 @@ def player4(tauon: Tauon) -> None:
 	def run_vis() -> None:
 		if gui.turbo:  # and pctl.playing_time > 0.5:
 			if gui.vis == 2:
-				p_spec = []
+				p_spec: list[float] = []
 				aud.get_spectrum(24, bins1)
 				bias = 1
 				for b in list(bins1):
@@ -640,7 +640,7 @@ def player4(tauon: Tauon) -> None:
 				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
 					gui.update_spec = 1
 			elif gui.vis == 4:
-				p_spec = []
+				p_spec: list[float] = []
 				aud.get_spectrum(45, bins2)
 				bias = 1
 				for b in list(bins2):
@@ -679,8 +679,7 @@ def player4(tauon: Tauon) -> None:
 					# This assumes the first track in a CUE is > 5s
 					if real_position < pctl.playing_time:
 						add_time -= 5
-						if add_time < 0:
-							add_time = 0
+						add_time = max(add_time, 0)
 						p_sync_timer.force_set(2)  # wait for real to catch up again next clock
 					else:
 						add_time += 0.1
