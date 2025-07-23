@@ -138,14 +138,16 @@ class LibreSpot:
 			if self.flush:
 				self.flush = False
 				logging.info("SPP: Flushing some data...")
-				self.librespot_p.stdout.read(70000)  # rough
+				if self.librespot_p is not None:
+					self.librespot_p.stdout.read(70000)  # rough
 				logging.info("SPP: Done flush")
-			if self.aud.feed_ready(1000) == 1 and self.aud.get_buff_fill() < 2000:
+			if self.aud.feed_ready(1000) == 1 and self.aud.get_buff_fill() < 2000 and self.librespot_p is not None:
 				data = self.librespot_p.stdout.read(1000)
 				self.aud.feed_raw(len(data), data)
 
 			if self.tauon.player4_state == 0:
-				self.librespot_p.stdout.read(50)
+				if self.librespot_p is not None:
+					self.librespot_p.stdout.read(50)
 				time.sleep(0.0002)
 			else:
 				time.sleep(0.002)
