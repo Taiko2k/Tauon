@@ -544,7 +544,7 @@ class GuiVar:
 
 		self.vis = 0  # visualiser mode actual
 		self.vis_want = 2  # visualiser mode setting
-		self.spec = None
+		self.spec: list[float] | None = None
 		self.s_spec = [0] * 24
 		self.s4_spec = [0] * 45
 		self.update_spec = 0
@@ -558,7 +558,7 @@ class GuiVar:
 
 		# self.spec_rect = [0, 5, 80, 20]  # x = 72 + 24 - 6 - 10
 
-		self.spec4_array = []
+		self.spec4_array: list[float] = []
 
 		self.draw_spec4 = False
 
@@ -1730,7 +1730,7 @@ class PlayerCtl:
 		self.a_time: float = 0
 		self.b_time: float = 0
 		# self.playlist_backup = []
-		self.active_replaygain = 0
+		self.active_replaygain: int = 0
 		self.stop_mode = 0
 		self.stop_ref = None
 
@@ -5923,7 +5923,7 @@ class Tauon:
 		self.copied_track = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
-		self.player4_state:               int = 0
+		self.player4_state:               int = 0 # 0=stopped, 1=playing, 2=paused, 3=url stream, 4=spotify mode
 		self.librespot_p: Popen[bytes] | None = None
 		self.spot_ctl                         = SpotCtl(self)
 		self.cachement                        = Cachement(self)
@@ -17879,7 +17879,7 @@ class Tauon:
 					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
 					mode="bubble")
 				self.show_message(_("Path may be transient! Continue? Press \"No\" for more information."),
-								  mode="confirm")
+					mode="confirm")
 				self.gui.update += 1
 				self.inp.mouse_down = False
 				self.inp.drag_mode = False
@@ -22540,7 +22540,7 @@ class ExportPlaylistBox:
 		if not playlist.playlist_file:
 			playlist.playlist_file = self.suggest_default_playlist_target(playlist)
 
-	def suggest_default_playlist_target(self, playlst: TauonPlaylist):
+	def suggest_default_playlist_target(self, playlst: TauonPlaylist) -> str:
 		if self.prefs.playlist_folder_path:
 			path = str(self.prefs.playlist_folder_path)
 			if not path.endswith("/") and not path.endswith("\\"):
