@@ -2,6 +2,10 @@
 Changelog
 ---------
 
+### UPCOMING
+ - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
+ - **Fixed** crash when exporting playlist, regression introduced in 8.1.3
+
 ### v8.1.3
 
  - **Added** Playlist auto import feature (Thanks @rexendevar)
