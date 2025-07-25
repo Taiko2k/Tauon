@@ -19746,8 +19746,15 @@ class TimedLyricsRen:
 			self.temp_line = line_active
 
 		# scroll boundaries
-		self.scroll_position = min( self.scroll_position,  sum( self.line_heights[:max(0,line_active)]) )
-		self.scroll_position = max( self.scroll_position, -sum( self.line_heights[max(0,line_active):]) )
+		temp_scroll = self.scroll_position
+		if side_panel:
+			self.scroll_position  = min( self.scroll_position, sum( self.line_heights[:max(0,line_active)] ) - h/2 )
+			if temp_scroll == self.scroll_position:
+				self.scroll_position  = max( self.scroll_position, -sum( self.line_heights[max(0,line_active):] ) + h/2 - self.gui.panelBY )
+		else:
+			self.scroll_position  = min( self.scroll_position, sum( self.line_heights[:max(0,line_active)] ) - self.window_size[1]/2 )
+			if temp_scroll == self.scroll_position:
+				self.scroll_position  = max( self.scroll_position, -sum( self.line_heights[max(0,line_active):] ) + self.window_size[1]/2 - self.gui.panelBY)
 
 		center = y_center + self.scroll_position
 		# scroll position refers to y offset (in pixels) from the active lyric
