@@ -19754,7 +19754,7 @@ class TimedLyricsRen:
 		# click a lyric to seek to it
 		if self.inp.mouse_click \
 			and self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
-			and y < self.inp.mouse_position[1] < y+h:
+			and (not h or y < self.inp.mouse_position[1] < y+h):
 			for rendered_line in line_positions:
 				if self.coll(rendered_line[0]):
 					self.pctl.seek_time(rendered_line[1][0])
