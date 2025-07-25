@@ -34724,8 +34724,6 @@ class MetaBox:
 		self.ddt.rect((x, y, w, h), bg)
 
 
-		logging.info("panel running")
-
 		if not track:
 			return
 
@@ -34745,8 +34743,6 @@ class MetaBox:
 		# Check for lyrics if auto setting
 		self.tauon.test_auto_lyrics(track)
 
-
-		logging.info("panel still running")
 
 		# # Draw lyrics if avaliable
 		# if prefs.show_lyrics_side and pctl.track_queue \
