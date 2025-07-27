@@ -1900,8 +1900,8 @@ class PlayerCtl:
 			return
 
 		code = self.gen_codes.get(playlist.uuid_int)
-		if code and not "self" in code:
-			logging.warning("Playlist to import has a generator!: " + playlist.title)
+		if code and "self" not in code:
+			logging.warning(f"Playlist to import has a generator!: {playlist.title}")
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
