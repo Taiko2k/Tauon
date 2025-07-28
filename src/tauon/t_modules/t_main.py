@@ -36719,6 +36719,345 @@ class SmoothScroll:
 
 			return scroll_distance
 
+class TimedLyricsEdit:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.inp           = tauon.inp
+		self.gui           = tauon.gui
+		self.ddt           = tauon.ddt
+		self.coll          = tauon.coll
+		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
+		self.colours       = tauon.colours
+		self.renderer      = tauon.renderer
+		self.lyrics_ren    = tauon.lyrics_ren
+		self.window_size   = tauon.window_size
+		self.guitar_chords = tauon.guitar_chords
+		self.showcase_menu = tauon.showcase_menu
+		self.scroll        = tauon.smooth_scroll
+		self.lastfm_artist = None
+		self.artist_mode = False
+
+	def render(self) -> None:
+		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
+		box = min(self.window_size[0] // 2, box)
+
+		hide_art = False
+		if self.window_size[0] < 900 * self.gui.scale:
+			hide_art = True
+
+		x = int(self.window_size[0] * 0.15)
+		y = int((self.window_size[1] / 2) - (box / 2)) - 10 * self.gui.scale
+
+		if hide_art:
+			box = 45 * self.gui.scale
+		elif self.window_size[1] / self.window_size[0] > 0.7:
+			x = int(self.window_size[0] * 0.07)
+
+		bbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
+		bfg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
+		bft = self.colours.grey(235)
+		bbt = self.colours.grey(200)
+
+		t1 = self.colours.grey(250)
+
+		self.gui.vis_4_colour = None
+		light_mode = False
+		if self.colours.lm:
+			bbg = self.colours.vis_colour
+			bfg = alpha_blend(ColourRGBA(255, 255, 255, 60), self.colours.vis_colour)
+			bft = self.colours.grey(250)
+			bbt = self.colours.grey(245)
+		elif self.prefs.art_bg and self.prefs.bg_showcase_only:
+			bbg = ColourRGBA(255, 255, 255, 18)
+			bfg = ColourRGBA(255, 255, 255, 30)
+			bft = ColourRGBA(255, 255, 255, 250)
+			bbt = ColourRGBA(255, 255, 255, 200)
+
+		if test_lumi(self.colours.playlist_panel_background) < 0.7:
+			light_mode = True
+			t1 = self.colours.grey(30)
+			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
+
+		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.playlist_panel_background)
+
+		if self.prefs.bg_showcase_only and self.prefs.art_bg:
+			self.tauon.style_overlay.display()
+
+			# Draw textured background
+			if not light_mode and not self.colours.lm and self.prefs.showcase_overlay_texture:
+				rect = sdl3.SDL_FRect()
+				rect.x = 0
+				rect.y = 0
+				rect.w = 300
+				rect.h = 300
+
+				xx = 0
+				yy = 0
+				while yy < self.window_size[1]:
+					xx = 0
+					while xx < self.window_size[0]:
+						rect.x = xx
+						rect.y = yy
+						sdl3.SDL_RenderTexture(self.renderer, self.tauon.overlay_texture_texture, None, rect)
+						xx += 300
+					yy += 300
+
+		if self.prefs.bg_showcase_only and self.prefs.art_bg:
+			self.ddt.alpha_bg = True
+			self.ddt.force_gray = True
+
+		# if not self.prefs.shuffle_lock:
+		# 	if draw.button(_("Return"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 40 * self.gui.scale,
+		# 			text_highlight_colour=bft, text_colour=bbt, backgound_colour=bbg,
+		# 			background_highlight_colour=bfg):
+		# 		self.gui.switch_showcase_off = True
+		# 		self.gui.update += 1
+		# 		self.gui.update_layout = True
+
+		# self.ddt.force_gray = True
+
+		if self.pctl.playing_state == 3 and not self.tauon.radiobox.dummy_track.title:
+			if not self.pctl.tag_meta:
+				y = int(self.window_size[1] / 2) - 60 - self.gui.scale
+				self.ddt.text((self.window_size[0] // 2, y, 2), self.pctl.url, self.colours.side_bar_line2, 317)
+			else:
+				w = self.window_size[0] - (x + box) - 30 * self.gui.scale
+				x = int((self.window_size[0]) / 2)
+
+				y = int(self.window_size[1] / 2) - 60 - self.gui.scale
+				self.ddt.text((x, y, 2), self.pctl.tag_meta, self.colours.side_bar_line1, 216, w)
+		else:
+			if len(self.pctl.track_queue) < 1:
+				self.ddt.alpha_bg = False
+				return
+
+			# if self.pctl.draw.button("Return", 20, self.gui.panelY + 5, bg=colours.grey(30)):
+			# 	pass
+
+			if self.prefs.bg_showcase_only and self.prefs.art_bg:
+				self.ddt.alpha_bg = True
+				self.ddt.force_gray = True
+
+			if self.gui.force_showcase_index >= 0:
+				if self.pctl.draw.button(
+					_("Playing"), 25 * self.gui.scale, self.gui.panelY + 20 * self.gui.scale, text_highlight_colour=bft,
+					text_colour=bbt, background_colour=bbg, background_highlight_colour=bfg):
+					self.gui.force_showcase_index = -1
+					self.ddt.force_gray = False
+
+			if self.gui.force_showcase_index >= 0:
+				index = self.gui.force_showcase_index
+				track = self.pctl.master_library[index]
+			elif self.pctl.playing_state == 3:
+				track = self.tauon.radiobox.dummy_track
+			else:
+				index = self.pctl.track_queue[self.pctl.queue_step]
+				track = self.pctl.master_library[index]
+
+			if not hide_art:
+				# Draw frame around art box
+				# self.tauon.drop_shadow.render(x + 5 * self.gui.scale, y + 5 * self.gui.scale, box + 10 * self.gui.scale, box + 10 * self.gui.scale)
+				self.ddt.rect(
+					(x - round(2 * self.gui.scale), y - round(2 * self.gui.scale), box + round(4 * self.gui.scale),
+					box + round(4 * self.gui.scale)), ColourRGBA(60, 60, 60, 135))
+				self.ddt.rect((x, y, box, box), self.colours.playlist_panel_background)
+				rect = sdl3.SDL_FRect(round(x), round(y), round(box), round(box))
+				self.tauon.style_overlay.hole_punches.append(rect)
+
+				# Draw album art in box
+				self.tauon.album_art_gen.display(track, (x, y), (box, box))
+
+				# Click art to cycle
+				if self.coll((x, y, box, box)):
+					if self.inp.mouse_click is True:
+						self.tauon.album_art_gen.cycle_offset(track)
+					if self.inp.right_click:
+						self.tauon.picture_menu.activate(in_reference=track)
+						self.inp.right_click = False
+
+			# Check for lyrics if auto setting
+			self.tauon.test_auto_lyrics(track)
+
+			self.gui.draw_vis4_top = False
+
+			if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
+				if self.inp.mouse_wheel != 0:
+					scroll_distance = self.scroll.scroll("showcase", 35*self.gui.scale)
+					self.lyrics_ren.lyrics_position += scroll_distance
+				if self.inp.right_click:
+					# track = self.pctl.playing_object()
+					if track is not None:
+						self.showcase_menu.activate(track)
+
+			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
+			gcx -= 100 * self.gui.scale
+			# TODO (Flynn): work out the logic for full size static lyrics generating
+			timed_ready = False
+			if True and self.prefs.show_lyrics_showcase:
+				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
+
+			if timed_ready and track.lyrics:
+				# if not self.prefs.guitar_chords or self.guitar_chords.test_ready_status(track) != 1:
+				# 	line = _("Prefer synced")
+				# 	if self.prefs.prefer_synced_lyrics:
+				# 		line = _("Prefer static")
+				# 	if self.pctl.draw.button(line, 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
+				# 			text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+				# 			background_highlight_colour=bfg):
+				# 		self.prefs.prefer_synced_lyrics ^= True
+
+				timed_ready = self.prefs.prefer_synced_lyrics
+
+			if self.prefs.guitar_chords and track.title and self.prefs.show_lyrics_showcase and self.guitar_chords.render(track, gcx, y):
+				if not self.guitar_chords.auto_scroll:
+					if self.pctl.draw.button(
+						_("Auto-Scroll"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
+						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
+						background_highlight_colour=bfg):
+						self.guitar_chords.auto_scroll = True
+			elif True and self.prefs.show_lyrics_showcase and timed_ready:
+				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
+				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
+			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
+				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
+				x = int(x + box + (self.window_size[0] - x - box) / 2)
+
+				if hide_art:
+					x = self.window_size[0] // 2
+
+				# x = int((self.window_size[0]) / 2)
+				y = int(self.window_size[1] / 2) - round(60 * self.gui.scale)
+
+				if self.prefs.showcase_vis and self.prefs.backend == 1:
+					y -= round(30 * self.gui.scale)
+
+				if track.artist == "" and track.title == "":
+					self.ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w)
+				else:
+					self.ddt.text((x, y, 2), track.artist, t1, 20, w)
+					y += round(48 * self.gui.scale)
+
+					if self.window_size[0] < 700 * self.gui.scale:
+						if len(track.title) < 30:
+							self.ddt.text((x, y, 2), track.title, t1, 220, w)
+						elif len(track.title) < 40:
+							self.ddt.text((x, y, 2), track.title, t1, 217, w)
+						else:
+							self.ddt.text((x, y, 2), track.title, t1, 213, w)
+
+					elif len(track.title) < 35:
+						self.ddt.text((x, y, 2), track.title, t1, 220, w)
+					elif len(track.title) < 50:
+						self.ddt.text((x, y, 2), track.title, t1, 219, w)
+					else:
+						self.ddt.text((x, y, 2), track.title, t1, 216, w)
+
+				self.gui.spec4_rec.x = x - (self.gui.spec4_rec.w // 2)
+				self.gui.spec4_rec.y = y + round(50 * self.gui.scale)
+
+				if self.prefs.showcase_vis and self.window_size[1] > 369 and not self.tauon.search_over.active \
+				and not (self.tauon.spot_ctl.coasting or self.tauon.spot_ctl.playing):
+					if self.gui.message_box or not self.tauon.is_level_zero(include_menus=True):
+						self.render_vis()
+					else:
+						self.gui.draw_vis4_top = True
+				lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
+				if self.gui.opened_lyric_file and lyric_file.is_file():
+					if self.tauon.draw.button( _("Load lyrics"), x - 12 - 0.5*self.ddt.get_text_w(_("Load lyrics"), 211), y + 50*self.gui.scale, tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
+						self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
+			else:
+				x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
+				x -= 100 * self.gui.scale
+				w = self.window_size[0] - x - 30 * self.gui.scale
+
+				if self.inp.key_up_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
+					self.lyrics_ren.lyrics_position += 35 * self.gui.scale
+				if self.inp.key_down_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
+					self.lyrics_ren.lyrics_position -= 35 * self.gui.scale
+
+				self.lyrics_ren.test_update(track)
+				tw, th = self.ddt.get_text_wh(self.lyrics_ren.text + "\n", 17, w, True)
+
+				self.lyrics_ren.lyrics_position = max(self.lyrics_ren.lyrics_position, th * -1 + 100 * self.gui.scale)
+				self.lyrics_ren.lyrics_position = min(self.lyrics_ren.lyrics_position, 70 * self.gui.scale)
+
+				self.lyrics_ren.render(
+					x,
+					y + self.lyrics_ren.lyrics_position,
+					w,
+					int(self.window_size[1] - 100 * self.gui.scale),
+					0)
+
+				lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
+				if self.gui.opened_lyric_file and lyric_file.is_file():
+					if self.tauon.draw.button( _("Load lyrics"), x - 50*self.gui.scale - self.ddt.get_text_w(_("Load lyrics"), 211), int(self.window_size[1] - 100 * self.gui.scale), tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
+						self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
+
+		self.ddt.alpha_bg = False
+		self.ddt.force_gray = False
+
+	def render_vis(self, top: bool = False) -> None:
+		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.spec4_tex)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderClear(self.renderer)
+
+		bx = 0
+		by = 50 * self.gui.scale
+
+		if self.gui.vis_4_colour is not None:
+			sdl3.SDL_SetRenderDrawColor(
+				self.renderer, self.gui.vis_4_colour.r, self.gui.vis_4_colour.g, self.gui.vis_4_colour.b, self.gui.vis_4_colour.a)
+
+		if (self.pctl.playing_time < 0.5 and (self.pctl.playing_state in (1, 3))) or (
+				self.pctl.playing_state == 0 and self.gui.spec4_array.count(0) != len(self.gui.spec4_array)):
+			self.gui.update = 2
+			self.gui.level_update = True
+
+			for i in range(len(self.gui.spec4_array)):
+				self.gui.spec4_array[i] -= 0.1
+				self.gui.spec4_array[i] = max(self.gui.spec4_array[i], 0)
+
+		if not top and (self.pctl.playing_state in (1, 3)):
+			self.gui.update = 2
+
+		slide = 0.7
+		for i, bar in enumerate(self.gui.spec4_array):
+
+			# We wont draw higher bars that may not move
+			if i > 40:
+				break
+
+			# Scale input amplitude to pixel distance (Applying a slight exponentional)
+			dis = (2 + math.pow(bar / (2 + slide), 1.5))
+			slide -= 0.03  # Set a slight bias for higher bars
+
+			# Define colour for bar
+			if self.gui.vis_4_colour is None:
+				self.tauon.set_colour(
+					hsl_to_rgb(
+						0.7 + min(0.15, (bar / 150)) + self.pctl.total_playtime / 300, min(0.9, 0.7 + (dis / 300)),
+						min(0.9, 0.7 + (dis / 600))))
+
+			# Define bar size and draw
+			self.gui.bar4.x = int(bx)
+			self.gui.bar4.y = round(by - dis * self.gui.scale)
+			self.gui.bar4.w = round(2 * self.gui.scale)
+			self.gui.bar4.h = round(dis * 2 * self.gui.scale)
+
+			sdl3.SDL_RenderFillRect(self.renderer, self.gui.bar4)
+
+			# Set distance between bars
+			bx += 8 * self.gui.scale
+
+		if top:
+			sdl3.SDL_SetRenderTarget(self.renderer, None)
+		else:
+			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+
+		# sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_RenderTexture(self.renderer, self.gui.spec4_tex, None, self.gui.spec4_rec)
+
 
 @dataclass
 class Directories:
