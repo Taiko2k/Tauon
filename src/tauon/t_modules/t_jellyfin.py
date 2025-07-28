@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_extra import Timer
+from tauon.t_modules.t_extra import StarRecord, Timer
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -438,7 +438,7 @@ class Jellyfin:
 			self.show_message(_("Error accessing Jellyfin"), mode="warning")
 			return None
 
-		fav_status = {}
+		fav_status: dict[TrackClass, bool] = {}
 		for parent, items in grouped_items:
 			for track in items:
 				track_id = self.pctl.master_count  # id here is tauons track_id for the track
@@ -530,20 +530,20 @@ class Jellyfin:
 		self.gui.update += 1
 		self.tauon.wake()
 
-		def set_favs(d: dict) -> list | None:
+		def set_favs(d: dict[TrackClass, bool]) -> None:
 			for tr, v in d.items():
 				star = self.tauon.star_store.full_get(tr.index)
 
 				if v:
 					if star is None:
-						star = self.tauon.star_store.new_object()
-					if "L" not in star[1]:
-						star[1] += "L"
+						star = StarRecord()
+					if not star.loved:
+						star.loved = True
 					self.tauon.star_store.insert(tr.index, star)
 				elif star is None:
 					pass
 				else:
-					star = [star[0], star[1].replace("L", ""), star[2]]
+					star = StarRecord(star.playtime, star.rating)
 					self.tauon.star_store.insert(tr.index, star)
 
 		if return_list:
