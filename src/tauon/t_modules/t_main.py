@@ -37,11 +37,12 @@ import gc as gbc
 import gettext
 import glob
 import hashlib
-import io
 import importlib
+import io
 import json
 import locale as py_locale
 import logging
+
 #import magic
 import math
 
@@ -90,12 +91,12 @@ from unidecode import unidecode
 
 builtins._ = lambda x: x
 
-from tauon.t_modules.guitar_chords import GuitarChords
-from tauon.t_modules.t_config import Config
-from tauon.t_modules.t_db_migrate import database_migrate
-from tauon.t_modules.t_dbus import Gnome
-from tauon.t_modules.t_draw import QuickThumbnail, TDraw
-from tauon.t_modules.t_extra import (
+from tauon.t_modules.guitar_chords import GuitarChords  # noqa: E402
+from tauon.t_modules.t_config import Config  # noqa: E402
+from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
+from tauon.t_modules.t_dbus import Gnome  # noqa: E402
+from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
+from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
 	FunctionStore,
@@ -159,18 +160,18 @@ from tauon.t_modules.t_extra import (
 	uri_parse,
 	year_search,
 )
-from tauon.t_modules.t_jellyfin import Jellyfin
-from tauon.t_modules.t_launch import Launch
-from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping
-from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4
-from tauon.t_modules.t_prefs import Prefs
-from tauon.t_modules.t_search import bandcamp_search
-from tauon.t_modules.t_spot import SpotCtl
-from tauon.t_modules.t_stream import StreamEnc
-from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block
-from tauon.t_modules.t_themeload import Deco, load_theme
-from tauon.t_modules.t_tidal import Tidal
-from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2
+from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
+from tauon.t_modules.t_launch import Launch  # noqa: E402
+from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping  # noqa: E402
+from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
+from tauon.t_modules.t_prefs import Prefs  # noqa: E402
+from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
+from tauon.t_modules.t_spot import SpotCtl  # noqa: E402
+from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
+from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
+from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
+from tauon.t_modules.t_tidal import Tidal  # noqa: E402
+from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2  # noqa: E402
 
 if sys.platform == "linux":
 	import gi
@@ -639,11 +640,11 @@ class GuiVar:
 
 		self.frame_callback_list: list[TestTimer] = []
 
-		self.playlist_left = None
-		self.image_downloading = False
-		self.tc_cancel = False
-		self.im_cancel = False
-		self.force_search = False
+		self.playlist_left: float | None = None
+		self.image_downloading:     bool = False
+		self.tc_cancel:             bool = False
+		self.im_cancel:             bool = False
+		self.force_search:          bool = False
 
 		self.pl_pulse = False
 
@@ -653,7 +654,7 @@ class GuiVar:
 		self.dtm3_index = -1
 		self.dtm3_cum = 0
 		self.dtm3_total = 0
-		self.previous_playlist_id = ""
+		self.previous_playlist_id: int = 0
 
 		self.star_mode = "line"
 		self.heart_fields: list[list[float]] = [] # list of rectangles
@@ -1798,7 +1799,7 @@ class PlayerCtl:
 	def resolve_full_playlist_path(self, playlist: TauonPlaylist, get_name=False):
 
 		target = playlist.playlist_file
-		if target.endswith("/") or target.endswith("\\"):
+		if target.endswith(("/", "\\")):
 			name = filename_safe(playlist.title)
 			if not name:
 				name = str(playlist.uuid_int)
@@ -1886,23 +1887,23 @@ class PlayerCtl:
 			return
 
 		code = self.gen_codes.get(id)
-		if code and not "self" in code:
-			logging.warning("Playlist to import has a generator!: " + playlist.title)
+		if code and "self" not in code:
+			logging.warning(f"Playlist to import has a generator!: {playlist.title}")
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
-		logging.info(f"Import playlist from file: {str(path)}")
+		logging.info(f"Import playlist from file: {path}")
 		if not path.exists() or not path.is_file():
-			logging.error("Playlist file not found: " + str(path))
+			logging.error(f"Playlist file not found: {path}")
 			return
 		try:
 			current_size = path.stat().st_size
 		except FileNotFoundError as e:
-			logging.error("Playlist file not found: " + str(path))
+			logging.error(f"Playlist file not found: {path}")
 			return
 
 		if current_size != playlist.file_size:
-			logging.info(f"Reload playlist from changed file:"  + playlist.title)
+			logging.info(f"Reload playlist from changed file: {playlist.title}")
 			if playlist.export_type == "m3u":
 				p, stations = self.tauon.parse_m3u(str(path))
 				playlist.playlist_ids[:] = p[:]
@@ -3874,7 +3875,7 @@ class LastFMapi:
 		self.prefs          = self.tauon.prefs
 		self.sg             = None
 		self.url            = None
-		self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"
+		self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"  # noqa: S105
 		self.connected = False
 		self.API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
 		self.scanning_username = ""
@@ -5564,20 +5565,20 @@ class ThumbTracks:
 		image_name = track.album + track.parent_folder_path + str(offset)
 		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
 
-		t_path = os.path.join(self.tauon.e_cache_directory, image_name + ".jpg")
+		t_path = self.tauon.e_cache_directory / image_name + ".jpg"
 
-		if os.path.isfile(t_path):
-			return t_path
+		if t_path.is_file():
+			return str(t_path)
 
 		source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
 		with Image.open(source_image) as im:
 			if im.mode != "RGB":
 				im = im.convert("RGB")
 			im.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-			im.save(t_path, "JPEG")
+			im.save(str(t_path), "JPEG")
 		source_image.close()
 
-		return t_path
+		return str(t_path)
 
 class Tauon:
 	"""Root class for everything Tauon"""
@@ -6325,7 +6326,6 @@ class Tauon:
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
-		ddt = self.ddt
 		# if self.msys:
 		#	 standard_font = self.prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
 		self.ddt.prime_font(standard_font, 8, 9)
@@ -7130,8 +7130,7 @@ class Tauon:
 
 	def open_folder_stem(self, path: str) -> None:
 		if self.system == "Windows" or self.msys:
-			line = r'explorer /select,"%s"' % (
-				path.replace("/", "\\"))
+			line = r'explorer /select,"{}"'.format(path.replace("/", "\\"))
 			subprocess.Popen(line)
 		else:
 			line = path
@@ -7152,8 +7151,7 @@ class Tauon:
 			return
 
 		if self.system == "Windows" or self.msys:
-			line = r'explorer /select,"%s"' % (
-				track.fullpath.replace("/", "\\"))
+			line = r'explorer /select,"{}"'.format(track.fullpath.replace("/", "\\"))
 			subprocess.Popen(line)
 		else:
 			line = track.parent_folder_path
@@ -22673,7 +22671,7 @@ class ExportPlaylistBox:
 
 		# Resolve full path
 		path = Path(self.pctl.resolve_full_playlist_path(playlist))
-		logging.info("Export path: " + str(path))
+		logging.info(f"Export path: {path}")
 
 		if not path.exists():
 			logging.warning("Path does not exist, attempting to create")
@@ -26362,7 +26360,7 @@ class Over:
 
 		# if self.toggle_square(x, y, prefs.row_title_separator_type == 0, " - "):
 		# 	prefs.row_title_separator_type = 0
-		# if self.toggle_square(x + round(55 * gui.scale), y,  prefs.row_title_separator_type == 1, " ‒ "):
+		# if self.toggle_square(x + round(55 * gui.scale), y,  prefs.row_title_separator_type == 1, " ‒ "):  # noqa: RUF003 - The separator is correct here
 		# 	prefs.row_title_separator_type = 1
 		# if self.toggle_square(x + round(110 * gui.scale), y,  prefs.row_title_separator_type == 2, " ⦁ "):
 		# 	prefs.row_title_separator_type = 2
@@ -30099,9 +30097,9 @@ class StandardPlaylist:
 				# Is type ALBUM TITLE
 				# separator = " - "
 				# if prefs.row_title_separator_type == 1:
-				# 	separator = " ‒ "
+				# 	separator = " ‒ "  # noqa: RUF003 - The separator is correct here
 				# if prefs.row_title_separator_type == 2:
-				# 	separator = " ⦁ "
+				# 	separator = " ⦁ "  # noqa: RUF003 - The separator is correct here
 				separator = " ‒ "
 
 				date = ""
@@ -31195,8 +31193,9 @@ class RadioBox:
 			wss = "wss://listen.moe/gateway_v2"
 		if wss:
 			logging.info("Connecting to Listen.moe")
-			import websocket
 			import _thread as th
+
+			import websocket
 
 			def send_heartbeat(ws: WebSocketApp) -> None:
 				#logging.info(self.ws_interval)
@@ -35113,7 +35112,7 @@ class ArtistInfoBox:
 				self.artist_picture_render.load(got_image_path, box_size)
 				self.artist_picture_render.show = True
 			if silent:
-				return
+				return None
 			# Trigger reload of thumbnail in artist list box
 			for key, value in list(self.tauon.artist_list_box.thumb_cache.items()):
 				if key is None and key == artist:
@@ -36690,7 +36689,7 @@ class SmoothScroll:
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.timeout = 0.5
 
-	def scroll(self, source: str, coeff: float | int = 1) -> int:
+	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
 		Coeff should be the number that the scroll would be multiplied by if the scroll input was an integer;
 		Source keeps everything straight (the string's contents don't matter at all)."""
@@ -36698,26 +36697,25 @@ class SmoothScroll:
 		# if smooth scrolling isn't necessary
 		if self.inp.mouse_wheel % 1 == 0:
 			return int( self.inp.mouse_wheel * coeff )
+		try:
+			self.scroll_bins[source]
+		except: # create for first time
+			self.scroll_bins[source] = []
+			self.scroll_timeouts[source] = Timer()
+
+		# tally up float inputs over time & only return when the final output can be integerized
+		if self.scroll_timeouts[source].get() > self.timeout:
+			self.scroll_bins[source] = []
+		self.scroll_bins[source].append( self.inp.mouse_wheel )
+
+		if sum( self.scroll_bins[source] ) * coeff > 1 or sum( self.scroll_bins[source] ) * coeff < -1:
+			scroll_distance = int( sum(self.scroll_bins[source]) * coeff )
+			self.scroll_bins[source] = [ sum(self.scroll_bins[source]) % (1/coeff) ] # save the remainder
 		else:
-			try:
-				self.scroll_bins[source]
-			except: # create for first time
-				self.scroll_bins[source] = []
-				self.scroll_timeouts[source] = Timer()
+			scroll_distance = 0
+		self.scroll_timeouts[source].set()
 
-			# tally up float inputs over time & only return when the final output can be integerized
-			if self.scroll_timeouts[source].get() > self.timeout:
-				self.scroll_bins[source] = []
-			self.scroll_bins[source].append( self.inp.mouse_wheel )
-
-			if sum( self.scroll_bins[source] ) * coeff > 1 or sum( self.scroll_bins[source] ) * coeff < -1:
-				scroll_distance = int( sum(self.scroll_bins[source]) * coeff )
-				self.scroll_bins[source] = [ sum(self.scroll_bins[source]) % (1/coeff) ] # save the remainder
-			else:
-				scroll_distance = 0
-			self.scroll_timeouts[source].set()
-
-			return scroll_distance
+		return scroll_distance
 
 
 @dataclass
@@ -42777,8 +42775,7 @@ def main(holder: Holder) -> None:
 			if tauon.sleep_timer.get() > 2:
 				sdl3.SDL_WaitEventTimeout(None, 1000)
 			continue
-		else:
-			power = 0
+		power = 0
 
 		gui.pl_update = min(gui.pl_update, 2)
 
