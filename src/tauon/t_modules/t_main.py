@@ -19733,8 +19733,10 @@ class TimedLyricsRen:
 
 		self.recenter_timeout = Timer()
 		self.temp_line: int = -1
+		self.teleport_line: int | None = None
 		self.temp_scale: float = self.gui.scale
 		self.temp_w: int = -1
+		self.temp_side_panel: bool = False
 
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index and not self.lrm.to_reload:
