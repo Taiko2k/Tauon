@@ -36748,10 +36748,11 @@ class TimedLyricsEdit:
 		self.scroll        = tauon.smooth_scroll
 		self.lastfm_artist = None
 		self.artist_mode = False
+		self.recenter_timeout = Timer()
 
 		self.current_track: TrackClass | None = None
-		self.structure: dict[ int:list[str|None,float|None,str] ] = {}
-		# each line (stored by number) contains a timestamp as a string, that timestamp's actual time, and the line itself
+		self.structure: list[ tuple[ str, float, str] ] = []
+		# each line contains a timestamp as a string, that timestamp's actual time, and the line itself
 
 	def get_time_from_stamp(self, t: str) -> float:
 		a = t.lstrip("[")
@@ -36781,7 +36782,7 @@ class TimedLyricsEdit:
 
 	def structurize_current(self, track: TrackClass) -> None:
 		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:", "#:"
-		self.structure = {}
+		self.structure = []
 
 		if track.synced:
 			lyrics = find_synced_lyric_data(track)
@@ -36792,7 +36793,7 @@ class TimedLyricsEdit:
 
 		for i, line in enumerate(lyrics):
 			if any(tag in line for tag in LRC_tags):
-				self.structure[i] = [ "tag", -1.0, line ]
+				self.structure.append( ("tag", -1.0, line) )
 				continue
 
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -36805,17 +36806,132 @@ class TimedLyricsEdit:
 					stamp = line.split("]")[0].lstrip("[")
 					time = self.get_time_from_stamp( line )
 					line = line.split("]",1)[1]
-					self.structure[i] = [stamp,time,line]
+					self.structure.append( (stamp,time,line) )
 					continue
 
 			# if current line is NOT LRC-formatted
-			self.structure[i] = ["?", -1.0, line]
+			self.structure.append( ("?", -1.0, line) )
 
-		for i in range(len(self.structure)):
-			logging.info(self.structure[i])
-			logging.info(self.get_stamp_from_time(self.structure[i][1]))
+		for i in self.structure:
+			logging.info(i)
+			logging.info(self.get_stamp_from_time(i[1]))
 
 
+
+	def synced_render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
+		line_positions: list[ tuple[ list[int], list[float,str] ] ] = []
+		line_ys: list[ tuple[ tuple[int], list[ str|None, float|None, str ] ] ] = []
+		# saves collider positions alongside their respective lines
+
+		if self.inp.right_click and x and y and self.coll((x, y, w, h)):
+			self.menu.activate(self.pctl.master_library[index])
+
+		if self.inp.mouse_wheel:
+			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
+			if side_panel:
+				if self.coll((x, y, w, h)):
+					self.scroll_position += scroll_distance
+			else:
+				self.scroll_position += scroll_distance
+			self.recenter_timeout.set()
+
+		line_active = -1
+		last = -1
+
+		highlight = True
+
+		if side_panel:
+			scroll_to = -h/3
+			bg = self.colours.lyrics_panel_background
+			font_size = 15
+			spacing = round(6 * self.gui.scale)
+			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
+			y += 25 * self.gui.scale
+			y_center = y + (h/2) - (spacing)
+		else:
+			scroll_to = 0
+			bg = self.colours.playlist_panel_background
+			font_size = 20
+			spacing = round(10 * self.gui.scale)
+			y_center = self.window_size[1]/2
+
+		# reset scroll position after 5 seconds
+		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == 1:
+			self.scroll_position = scroll_to
+
+		test_time = self.tauon.get_real_time()
+
+		# determine active lyric
+		if self.pctl.track_queue[self.pctl.queue_step] == index:
+			for i, line in enumerate(self.structure):
+				if line[1] < 0:
+					continue
+
+				if line[1] < test_time:
+					last = i
+
+				if line[1] > test_time:
+					self.pctl.wake_past_time = line[1]
+					line_active = last
+					break
+			else:
+				line_active = len(self.structure) - 1
+
+		# record line heights so we can perfectly center the active lyric
+		if not self.line_heights or self.temp_scale != self.gui.scale or self.temp_w != w:
+			self.scroll_position = scroll_to
+			self.line_heights = []
+			drop_w, line_height = self.ddt.get_text_wh("?", font_size, 100, True) # get height of one line
+			self.temp_scale = self.gui.scale
+			self.temp_w = w
+
+		# don't autoscroll if the new active line is not visible
+		if ( self.scroll_position > h/2 or self.scroll_position < -h/2 ) and self.temp_line != line_active:
+			self.scroll_position -= ( self.temp_line - line_active ) * self.line_heights[line_active]
+			self.temp_line = line_active
+
+		# scroll boundaries
+		self.scroll_position = min( self.scroll_position,  sum( self.line_heights[:max(0,line_active)]) )
+		self.scroll_position = max( self.scroll_position, -sum( self.line_heights[max(0,line_active):]) )
+
+		center = y_center + self.scroll_position
+		# scroll position refers to y offset (in pixels) from the active lyric
+
+		for i, line in enumerate(self.data):
+			# determine y val
+			possible_y = center - line_height*(i-line_active)
+
+			if 0 < possible_y - line_height and possible_y < self.window_size[1]:
+				colour = self.colours.lyrics
+
+				#colour = self.colours.grey(70)
+				#if test_lumi(self.colours.gallery_background) < 0.5:
+				#	colour = self.colours.grey(40)
+
+				if i == line_active and highlight:
+					colour = self.colours.active_lyric
+					if self.colours.lm:
+						colour = ColourRGBA(180, 130, 210, 255)
+
+				location = [ round(x), round(possible_y), 4, round(w - 20 * self.gui.scale)-12 ]
+				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
+				line_h = self.ddt.text(location, line[1], colour, font_size, w - 20 * self.gui.scale, bg)
+
+				collider = [ round(x), round(possible_y), round(w - 20 * self.gui.scale), line_h ]
+				association = collider, line
+				line_positions.append( association )
+
+		# click a lyric to seek to it
+		if self.inp.mouse_click \
+			and self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
+			and (not h or y < self.inp.mouse_position[1] < y+h):
+			for rendered_line in line_positions:
+				if self.coll(rendered_line[0]):
+					self.pctl.seek_time(rendered_line[1][0])
+					self.scroll_position = scroll_to
+					break
+
+		return None
 
 	def render(self) -> None:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
@@ -36986,7 +37102,9 @@ class TimedLyricsEdit:
 
 			if True and self.prefs.show_lyrics_showcase and timed_ready:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
-				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
+				self.synced_render(track.index, gcx, y, w=w)
+
+
 			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				x = int(x + box + (self.window_size[0] - x - box) / 2)
