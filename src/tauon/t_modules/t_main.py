@@ -564,6 +564,7 @@ class GuiVar:
 
 		self.combo_mode = False
 		self.showcase_mode = False
+		self.timed_lyrics_edit_view: bool = False
 		self.display_time_mode = 0
 
 		self.pl_text_real_height = 12
@@ -5746,6 +5747,7 @@ class Tauon:
 		self.tab_menu              = Menu(self, 160, show_icons=True)
 		self.playlist_menu         = Menu(self, 130)
 		self.showcase_menu         = Menu(self, 135)
+		self.timed_lyrics_edit_menu= Menu(self, 135)
 		self.spotify_playlist_menu = Menu(self, 175)
 		self.queue_menu            = Menu(self, 150)
 		self.radio_entry_menu      = Menu(self, 125)
@@ -13058,10 +13060,11 @@ class Tauon:
 			self.gui.combo_mode = False
 			self.gui.was_radio = False
 
-	def enter_showcase_view(self, track_id: int | None = None) -> None:
+	def enter_showcase_view(self, track_id: int | None = None, timed_lyrics_edit: bool=False) -> None:
 		if not self.gui.combo_mode:
 			self.enter_combo()
 			self.gui.was_radio = False
+		self.gui.timed_lyrics_edit_view = timed_lyrics_edit
 		self.gui.showcase_mode = True
 		self.gui.radio_view = False
 		if track_id is None or self.pctl.playing_object() is None or self.pctl.playing_object().index == track_id:
@@ -13078,6 +13081,9 @@ class Tauon:
 		self.gui.radio_view = True
 		self.inp.mouse_click = False
 		self.gui.update_layout = True
+
+	def enter_timed_lyrics_edit(self, track: TrackClass) -> None:
+		self.enter_showcase_view(track.index, timed_lyrics_edit=True)
 
 	def standard_size(self) -> None:
 		self.prefs.album_mode = False
@@ -35546,10 +35552,14 @@ class Showcase:
 		self.guitar_chords = tauon.guitar_chords
 		self.showcase_menu = tauon.showcase_menu
 		self.scroll        = tauon.smooth_scroll
+		self.timed_lyrics_edit = TimedLyricsEdit(tauon=tauon)
 		self.lastfm_artist = None
 		self.artist_mode = False
 
 	def render(self) -> None:
+		if self.gui.timed_lyrics_edit_view:
+			self.timed_lyrics_edit.render()
+			return
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
 
@@ -36719,6 +36729,8 @@ class SmoothScroll:
 
 			return scroll_distance
 
+
+
 class TimedLyricsEdit:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
@@ -36732,11 +36744,78 @@ class TimedLyricsEdit:
 		self.renderer      = tauon.renderer
 		self.lyrics_ren    = tauon.lyrics_ren
 		self.window_size   = tauon.window_size
-		self.guitar_chords = tauon.guitar_chords
-		self.showcase_menu = tauon.showcase_menu
+		self.menu          = tauon.timed_lyrics_edit_menu
 		self.scroll        = tauon.smooth_scroll
 		self.lastfm_artist = None
 		self.artist_mode = False
+
+		self.current_track: TrackClass | None = None
+		self.structure: dict[ int:list[str|None,float|None,str] ] = {}
+		# each line (stored by number) contains a timestamp as a string, that timestamp's actual time, and the line itself
+
+	def get_time_from_stamp(self, t: str) -> float:
+		a = t.lstrip("[")
+		t = t.split("]")[1] + "]"
+
+		a = a.split("]")[0]
+		mm, b = a.split(":")
+		ss, ms = b.split(".")
+
+		s = int(mm) * 60 + int(ss)
+		if len(ms) == 2:
+			s += int(ms) / 100
+		elif len(ms) == 3:
+			s += int(ms) / 1000
+		return s
+
+
+	def get_stamp_from_time(self, t: float) -> str:
+		if t<0:
+			return "?"
+		ms = int( 1000 * t ) % 1000
+		t = t//1
+		ss = int(t%60)
+		mm = int(t//60)
+		return f"{format(mm,"02d")}:{format(ss,"02d")}.{format(ms,"03d")}"
+
+
+	def structurize_current(self, track: TrackClass) -> None:
+		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:", "#:"
+		self.structure = {}
+
+		if track.synced:
+			lyrics = find_synced_lyric_data(track)
+		elif track.lyrics:
+			lyrics = track.lyrics.split("\n")
+		else:
+			lyrics = ""
+
+		for i, line in enumerate(lyrics):
+			if any(tag in line for tag in LRC_tags):
+				self.structure[i] = [ "tag", -1.0, line ]
+				continue
+
+			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
+			and "." in line[:10] and "]" in line:
+				try:
+					int( line[1] )
+				except:
+					pass
+				else: # if current line is LRC-formatted
+					stamp = line.split("]")[0].lstrip("[")
+					time = self.get_time_from_stamp( line )
+					line = line.split("]",1)[1]
+					self.structure[i] = [stamp,time,line]
+					continue
+
+			# if current line is NOT LRC-formatted
+			self.structure[i] = ["?", -1.0, line]
+
+		for i in range(len(self.structure)):
+			logging.info(self.structure[i])
+			logging.info(self.get_stamp_from_time(self.structure[i][1]))
+
+
 
 	def render(self) -> None:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
@@ -36746,7 +36825,12 @@ class TimedLyricsEdit:
 		if self.window_size[0] < 900 * self.gui.scale:
 			hide_art = True
 
-		x = int(self.window_size[0] * 0.15)
+
+		index = self.pctl.track_queue[self.pctl.queue_step]
+		track = self.pctl.master_library[index]
+		self.structurize_current(track)
+
+		x = int(self.window_size[0] * 0.05)
 		y = int((self.window_size[1] / 2) - (box / 2)) - 10 * self.gui.scale
 
 		if hide_art:
@@ -36888,7 +36972,7 @@ class TimedLyricsEdit:
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
-						self.showcase_menu.activate(track)
+						self.menu.activate(track)
 
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 100 * self.gui.scale
@@ -36898,25 +36982,9 @@ class TimedLyricsEdit:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
 
 			if timed_ready and track.lyrics:
-				# if not self.prefs.guitar_chords or self.guitar_chords.test_ready_status(track) != 1:
-				# 	line = _("Prefer synced")
-				# 	if self.prefs.prefer_synced_lyrics:
-				# 		line = _("Prefer static")
-				# 	if self.pctl.draw.button(line, 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
-				# 			text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-				# 			background_highlight_colour=bfg):
-				# 		self.prefs.prefer_synced_lyrics ^= True
-
 				timed_ready = self.prefs.prefer_synced_lyrics
 
-			if self.prefs.guitar_chords and track.title and self.prefs.show_lyrics_showcase and self.guitar_chords.render(track, gcx, y):
-				if not self.guitar_chords.auto_scroll:
-					if self.pctl.draw.button(
-						_("Auto-Scroll"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 70 * self.gui.scale,
-						text_highlight_colour=bft, text_colour=bbt, background_colour=bbg,
-						background_highlight_colour=bfg):
-						self.guitar_chords.auto_scroll = True
-			elif True and self.prefs.show_lyrics_showcase and timed_ready:
+			if True and self.prefs.show_lyrics_showcase and timed_ready:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
 			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
@@ -41509,6 +41577,7 @@ def main(holder: Holder) -> None:
 	radio_entry_menu      = tauon.radio_entry_menu
 	showcase_menu         = tauon.showcase_menu
 	center_info_menu      = tauon.center_info_menu
+	timed_lyrics_edit_menu= tauon.timed_lyrics_edit_menu
 	gallery_menu          = tauon.gallery_menu
 	artist_info_menu      = tauon.artist_info_menu
 	repeat_menu           = tauon.repeat_menu
@@ -41600,6 +41669,7 @@ def main(holder: Holder) -> None:
 	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add_to_sub(0, MenuItem(_("Sync Lyrics Manually"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -41613,9 +41683,19 @@ def main(holder: Holder) -> None:
 	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Sync Lyrics Manually"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
+
+	timed_lyrics_edit_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	timed_lyrics_edit_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+	timed_lyrics_edit_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	timed_lyrics_edit_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	timed_lyrics_edit_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+
+	timed_lyrics_edit_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	picture_menu.add(MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
 	# Next and previous pictures
