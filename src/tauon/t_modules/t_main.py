@@ -171,7 +171,14 @@ from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
-from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2  # noqa: E402
+from tauon.t_modules.t_webserve import (  # noqa: E402
+	VorbisMonitor,
+	authserve,
+	controller,
+	stream_proxy,
+	webserve,
+	webserve2,
+)
 
 if sys.platform == "linux":
 	import gi
@@ -180,9 +187,8 @@ if sys.platform == "linux":
 	except Exception:
 		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
 		gi.require_version("Notify", "0.8")
-	from gi.repository import Notify
-	from gi.repository import GdkPixbuf
-	from gi.repository import GLib
+	from gi.repository import GdkPixbuf, GLib, Notify
+
 	from tauon.t_modules import t_topchart
 
 if sys.platform == "darwin":
@@ -195,7 +201,7 @@ try:
 	logging.debug("Found colored_traceback for colored crash tracebacks")
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:
+except Exception:  # noqa: BLE001
 	logging.info("Error trying to import colored_traceback, tracebacks will be dull.")
 
 try:
@@ -5846,6 +5852,7 @@ class Tauon:
 		self.mini_mode                            = MiniMode(tauon=self)
 		self.mini_mode2                           = MiniMode2(tauon=self)
 		self.mini_mode3                           = MiniMode3(tauon=self)
+		self.vb                                   = VorbisMonitor(tauon=self)
 
 		if self.system == "Linux" and not self.macos and not self.msys:
 			self.gnome = Gnome(tauon=self)

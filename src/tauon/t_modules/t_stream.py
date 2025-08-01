@@ -33,7 +33,6 @@ import urllib.request
 import mutagen
 
 from tauon.t_modules.t_extra import filename_safe
-from tauon.t_modules.t_webserve import vb
 
 if sys.platform != "win32":
 	import fcntl
@@ -169,8 +168,7 @@ class StreamEnc:
 
 		raw_audio = None
 		max_read = 10000
-		vb.reset()
-		vb.tauon = self.tauon
+		self.tauon.vb.reset()
 
 		def feed(decoder: Popen[bytes]) -> None:
 			position = 0
@@ -184,7 +182,7 @@ class StreamEnc:
 
 						chunk = self.chunks[position]
 						decoder.stdin.write(chunk)
-						vb.input(self.tauon.stream_proxy.chunks[position])
+						self.tauon.vb.input(self.tauon.stream_proxy.chunks[position])
 						position += 1
 					else:
 						time.sleep(0.01)
