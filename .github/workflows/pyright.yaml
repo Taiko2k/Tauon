@@ -10,13 +10,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Setup pyright action
+        uses: jakebailey/pyright-action@v2
         with:
-          node-version: '24'
+          working-directory: 'src/tauon'
 
-      - name: Install pyright
-        run: npm install -g pyright
-
-      - name: Run pyright on src/tauon
-        run: pyright src/tauon
+#      - name: Set up Node.js
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: '24'
+#
+#      - name: Install pyright
+#        run: npm install -g pyright
+#
+#      - name: Run pyright on src/tauon
+#        run: pyright src/tauon
