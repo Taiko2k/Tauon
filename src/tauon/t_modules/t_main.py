@@ -96,6 +96,7 @@ from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
 from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
+from tauon.t_modules.t_enums import LoaderCommand  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
@@ -5907,12 +5908,7 @@ class Tauon:
 		self.rename_folder     = TextBox2(tauon=self)
 		self.transcode_list:      list[list[int]] = []
 		self.transcode_state:                 str = ""
-		# TODO(Martin): Rework this LC_* stuff, maybe use a simple object instead?
-		self.LC_None                              = 0
-		self.LC_Done                              = 1
-		self.LC_Folder                            = 2
-		self.LC_File                              = 3
-		self.loaderCommand:                   int = self.LC_None
+		self.loaderCommand:                   int = LoaderCommand.NONE
 		self.loaderCommandReady:             bool = False
 		self.cm_clean_db:                    bool = False
 		self.worker_save_state:              bool = False
@@ -11710,11 +11706,11 @@ class Tauon:
 					RPC.update(
 						activity_type = ActivityType.LISTENING,
 						pid=self.pid,
-						**({"state": artist} if not self.pctl.playing_state == 3 else {"state": album}),
+						**({"state": artist} if self.pctl.playing_state != 3 else {"state": album}),
 						details=title,
 						start=int(start_time),
-						**({"end": int(start_time + tr.length)} if not self.pctl.playing_state == 3 else {}),
-						**({"large_text": album} if album and not self.pctl.playing_state == 3 else {}),
+						**({"end": int(start_time + tr.length)} if self.pctl.playing_state != 3 else {}),
+						**({"large_text": album} if album and self.pctl.playing_state != 3 else {}),
 						large_image=large_image,
 						small_image=small_image)
 
@@ -39536,7 +39532,7 @@ def worker1(tauon: Tauon) -> None:
 		if tauon.loaderCommandReady is True:
 			for order in tauon.load_orders:
 				if order.stage == 1:
-					if tauon.loaderCommand == tauon.LC_Folder:
+					if tauon.loaderCommand == LoaderCommand.FOLDER:
 						gui.to_get = 0
 						gui.to_got = 0
 						loaded_paths_cache, loaded_cue_cache = cache_paths()
@@ -39545,7 +39541,7 @@ def worker1(tauon: Tauon) -> None:
 							gets(order.target, force_scan=True)
 						else:
 							gets(order.target)
-					elif tauon.loaderCommand == tauon.LC_File:
+					elif tauon.loaderCommand == LoaderCommand.FILE:
 						loaded_paths_cache, loaded_cue_cache = cache_paths()
 						add_file(order.target, show_errors=True)
 						# i think this meaans if it's manually dragged in
@@ -39556,11 +39552,11 @@ def worker1(tauon: Tauon) -> None:
 						gui.to_got = 0
 						tauon.load_orders.clear()
 						tauon.added = []
-						tauon.loaderCommand = tauon.LC_Done
+						tauon.loaderCommand = LoaderCommand.DONE
 						tauon.loaderCommandReady = False
 						break
 
-					tauon.loaderCommand = tauon.LC_Done
+					tauon.loaderCommand = LoaderCommand.DONE
 					#logging.info("LOAD ORDER")
 					order.tracks = tauon.added
 
@@ -43495,7 +43491,7 @@ def main(holder: Holder) -> None:
 			pctl.loading_in_progress = True
 			pctl.after_import_flag = True
 			tauon.thread_manager.ready("worker")
-			if tauon.loaderCommand == tauon.LC_None:
+			if tauon.loaderCommand == LoaderCommand.NONE:
 
 				# Fliter out files matching CUE filenames
 				# This isnt the only mechanism that does this. This one helps in the situation
@@ -43519,9 +43515,9 @@ def main(holder: Holder) -> None:
 						order.traget = order.target.replace("\\", "/")
 						order.stage = 1
 						if os.path.isdir(order.traget):
-							tauon.loaderCommand = tauon.LC_Folder
+							tauon.loaderCommand = LoaderCommand.FOLDER
 						else:
-							tauon.loaderCommand = tauon.LC_File
+							tauon.loaderCommand = LoaderCommand.FILE
 							if order.traget.endswith(".xspf"):
 								gui.to_got = "xspf"
 								gui.to_get = 0
@@ -43536,8 +43532,8 @@ def main(holder: Holder) -> None:
 			pctl.loading_in_progress = False
 			pctl.notify_change()
 
-		if tauon.loaderCommand == tauon.LC_Done:
-			tauon.loaderCommand = tauon.LC_None
+		if tauon.loaderCommand == LoaderCommand.DONE:
+			tauon.loaderCommand = LoaderCommand.NONE
 			gui.update += 1
 			# gui.pl_update = 1
 			# pctl.loading_in_progress = False
