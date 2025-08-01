@@ -5565,7 +5565,7 @@ class ThumbTracks:
 		image_name = track.album + track.parent_folder_path + str(offset)
 		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
 
-		t_path = self.tauon.e_cache_directory / image_name + ".jpg"
+		t_path = self.tauon.e_cache_directory / f"{image_name}.jpg"
 
 		if t_path.is_file():
 			return str(t_path)
