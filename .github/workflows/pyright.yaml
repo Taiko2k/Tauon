@@ -1,0 +1,104 @@
+name: LSP Check
+
+on: [push, pull_request]
+
+jobs:
+  pyright:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gettext \
+            gobject-introspection \
+            gir1.2-rsvg-2.0 \
+            gir1.2-notify-0.7 \
+            gir1.2-girepository-3.0-dev \
+            kde-config-gtk-style \
+            libcanberra-gtk3-module \
+            libgirepository1.0-dev \
+            libgirepository-2.0-dev \
+            libglib2.0-dev \
+            python3-gi-cairo \
+            libayatana-appindicator3-dev \
+            libcairo2-dev \
+            libpipewire-0.3-dev \
+            libdbus-1-dev \
+            libjxl-dev \
+            libflac-dev \
+            libgme-dev \
+            libmpg123-dev \
+            libopenmpt-dev \
+            libopusfile-dev \
+            libsamplerate0-dev \
+            libvorbis-dev \
+            libwavpack-dev \
+            p7zip
+          # JPEG-XL hack since 24.04 is too old
+          sudo apt-get install -y \
+            libgif7 \
+            wget
+          wget http://mirrors.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
+          wget http://mirrors.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
+          wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
+          wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
+          wget http://mirrors.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
+          sudo dpkg -i *.deb
+        #    libsdl2-image-dev \
+
+      - name: Install Python dependencies and setup venv
+        run: |
+          python -m pip install --upgrade pip
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install \
+            -r requirements.txt \
+            build \
+            pyinstaller
+          python -c "import sdl3"
+#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+
+      - name: Build the project using python-build
+        run: |
+          source .venv/bin/activate
+          python -m compile_translations
+          python -m build --wheel
+
+      - name: Install the project into a venv
+        run: |
+          source .venv/bin/activate
+          pip install --prefix ".venv" dist/*.whl
+
+      - name: Let Pyright use our venv
+        run: echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
+      - name: Run pyright
+        continue-on-error: true
+        uses: jakebailey/pyright-action@v2
+        with:
+#          venv-path: .venv
+          working-directory: 'src/tauon'
+
+#      - name: Set up Node.js
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: '24'
+#
+#      - name: Install pyright
+#        run: npm install -g pyright
+#
+#      - name: Run pyright on src/tauon
+#        run: pyright src/tauon
