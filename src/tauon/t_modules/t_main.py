@@ -565,6 +565,7 @@ class GuiVar:
 		self.combo_mode = False
 		self.showcase_mode = False
 		self.timed_lyrics_edit_view: bool = False
+		self.timed_lyrics_editing_now: bool = False
 		self.display_time_mode = 0
 
 		self.pl_text_real_height = 12
@@ -22651,8 +22652,8 @@ class ExportPlaylistBox:
 		ww = ddt.get_text_w(_("Use relative paths"), 211)
 		if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
 			self.show_message(
-						_(f"Enable relative paths when keeping playlist files together with audio"),
-						_(f"Disable to move playlist files while keeping audio in one location"))
+						_("Enable relative paths when keeping playlist files together with audio"),
+						_("Disable to move playlist files while keeping audio in one location"))
 
 
 		y += round(30 * gui.scale)
@@ -22924,7 +22925,7 @@ class SearchOverlay:
 					not inp.key_ctrl_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
-					and not self.tauon.trans_edit_box.active:
+					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
 
 				# Divert to artist list if mouse over
 				if gui.lsp and prefs.left_panel_mode == "artist list" and 2 < inp.mouse_position[0] < gui.lspw \
@@ -35560,6 +35561,8 @@ class Showcase:
 		if self.gui.timed_lyrics_edit_view:
 			self.timed_lyrics_edit.render()
 			return
+		else:
+			self.gui.timed_lyrics_editing_now = False
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
 
@@ -42886,12 +42889,12 @@ def main(holder: Holder) -> None:
 				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 					if gui.album_tab_mode:
 						inp.key_left_press = True
-					elif tauon.is_level_zero() or gui.quick_search_mode:
+					elif ( tauon.is_level_zero() or gui.quick_search_mode ) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(1)
 				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 					if gui.album_tab_mode:
 						inp.key_right_press = True
-					elif tauon.is_level_zero() or gui.quick_search_mode:
+					elif ( tauon.is_level_zero() or gui.quick_search_mode ) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(-1)
 
 			if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not tauon.msys:
@@ -43471,12 +43474,12 @@ def main(holder: Holder) -> None:
 					n += 1
 
 				if keymaps.test("cycle-playlist-left"):
-					if gui.album_tab_mode and inp.key_left_press:
+					if ( gui.album_tab_mode and inp.key_left_press ) or gui.timed_lyrics_editing_now:
 						pass
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(1)
 				if keymaps.test("cycle-playlist-right"):
-					if gui.album_tab_mode and inp.key_right_press:
+					if ( gui.album_tab_mode and inp.key_right_press ) or gui.timed_lyrics_editing_now:
 						pass
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(-1)
@@ -43585,7 +43588,8 @@ def main(holder: Holder) -> None:
 
 			if not pref_box.enabled and not radiobox.active and not tauon.rename_track_box.active \
 					and not gui.rename_folder_box \
-					and not gui.rename_playlist_box and not tauon.search_over.active and not gui.box_over and not tauon.trans_edit_box.active:
+					and not gui.rename_playlist_box and not tauon.search_over.active \
+					and not gui.box_over and not tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
 
 				if gui.quick_search_mode:
 					if keymaps.test("add-to-queue") and pctl.selected_ready():
@@ -43837,7 +43841,7 @@ def main(holder: Holder) -> None:
 						gui.track_box = True
 
 				# These need to be disabled when text fields are active
-				if not tauon.search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not tauon.trans_edit_box.active:
+				if not tauon.search_over.active and not gui.box_over and not radiobox.active and not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
 					if keymaps.test("advance"):
 						inp.key_right_press = False
 						pctl.advance()
@@ -44259,6 +44263,7 @@ def main(holder: Holder) -> None:
 					and pref_box.enabled is False \
 					and gui.track_box is False \
 					and not gui.rename_folder_box \
+					and not gui.timed_lyrics_editing_now \
 					and not Menu.active \
 					and (gui.rsp or prefs.album_mode) \
 					and not tauon.artist_info_scroll.held \
@@ -46035,6 +46040,7 @@ def main(holder: Holder) -> None:
 							and pref_box.enabled is False \
 							and gui.track_box is False \
 							and not gui.rename_folder_box \
+							and not gui.timed_lyrics_editing_now \
 							and not Menu.active \
 							and not tauon.artist_info_scroll.held:
 
@@ -46917,7 +46923,7 @@ def main(holder: Holder) -> None:
 
 						pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
 
-					if inp.key_return_press and not pref_box.enabled and not radiobox.active and not tauon.trans_edit_box.active:
+					if inp.key_return_press and not pref_box.enabled and not radiobox.active and not tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
 						gui.pl_update = 1
 						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 							pctl.selected_in_playlist = 0
