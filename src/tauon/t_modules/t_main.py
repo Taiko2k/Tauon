@@ -228,7 +228,7 @@ else:
 # except Exception:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
-	from lynxpresence import Presence, ActivityType
+	from lynxpresence import ActivityType, Presence
 except ModuleNotFoundError:
 	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
 except Exception:
@@ -269,16 +269,20 @@ except Exception:
 if TYPE_CHECKING:
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
-	from pylast import Artist, LibreFMNetwork
+
 	from PIL.ImageFile import ImageFile
-	from tauon.t_modules.t_bootstrap import Holder
+	from pylast import Artist, LibreFMNetwork
 	from websocket import WebSocketApp
+
+	from tauon.t_modules.t_bootstrap import Holder
 	if sys.platform == "win32":
 		from lynxtray import SysTrayIcon
-	from mutagen.id3 import ID3
-	from subprocess import Popen
-	from pylast import LastFMNetwork
 	from collections.abc import Callable
+	from subprocess import Popen
+
+	from mutagen.id3 import ID3
+	from pylast import LastFMNetwork
+
 	from tauon.t_modules.t_webserve import ThreadedHTTPServer
 
 # Detect platform
@@ -303,12 +307,13 @@ if sys.platform == "win32":
 		import gi
 		from gi.repository import GLib
 	else:
-		import win32con
+		import atexit
+
+		import comtypes
 		import win32api
+		import win32con
 		import win32gui
 		import win32ui
-		import comtypes
-		import atexit
 else:
 	system = "Linux"
 	import fcntl
@@ -2439,9 +2444,9 @@ class PlayerCtl:
 		elif self.playing_state == 0 and self.prefs.meta_persists_stop:
 			target_track = self.master_library[self.track_queue[self.queue_step]]
 
-		if self.prefs.meta_shows_selected_always:
-			if -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
-				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
+		if self.prefs.meta_shows_selected_always \
+		and -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
+			target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
 		return target_track
 
