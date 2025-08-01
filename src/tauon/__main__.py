@@ -23,17 +23,15 @@ import sys
 from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
+from gi.repository import GLib
+
+from tauon.t_modules.t_bootstrap import Holder
+from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler
+
 install_directory = Path(__file__).resolve().parent
 # Make sure we'll load from the parent directory first
 sys.path.insert(0, str(install_directory.parent))
 pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
-
-from gi.repository import GLib
-
-from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler
-
-from tauon.t_modules.t_bootstrap import Holder
-
 
 log = LogHistoryHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
@@ -236,7 +234,8 @@ os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,    
 os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
 os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
 
-import sdl3
+import sdl3  # noqa: E402
+
 # Test the first SetHint to catch if we loaded SDL3 correctly
 sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 if sethint_result is None:
@@ -369,7 +368,7 @@ if not t_window:
 if maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-drivers = []
+drivers: list[str] = []
 i = 0
 while True:
 	x = sdl3.SDL_GetRenderDriver(i)

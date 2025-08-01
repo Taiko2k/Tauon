@@ -20,6 +20,7 @@ except Exception:
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
+
 class Tidal:
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -168,7 +169,6 @@ class Tidal:
 				self.import_cache[nt.url_key] = nt
 
 	def new_track(self, track: TrackClass) -> TrackClass:
-
 		new = False
 		nt = self.import_cache.get(track.id)
 
@@ -215,7 +215,6 @@ class Tidal:
 		self.tauon.gui.pl_update += 1
 
 	def fav_albums(self, return_list: bool = False) -> list[TrackClass] | None:
-
 		self.try_load()
 		if not self.session:
 			return []
@@ -239,9 +238,9 @@ class Tidal:
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Albums", playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tfa"
 		self.tauon.show_message("Playlist load complete", mode="done")
+		return None
 
 	def fav_tracks(self, return_list: bool = False) -> list[TrackClass] | None:
-
 		self.try_load()
 		if not self.session:
 			return []
@@ -264,9 +263,9 @@ class Tidal:
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title="TIDAL Tracks", playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "tft"
 		self.tauon.show_message("Playlist load complete", mode="done")
+		return None
 
 	def playlist(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
-
 		self.try_load()
 		if not self.session:
 			return []
@@ -288,9 +287,9 @@ class Tidal:
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.name, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tpl\"{id}\""
+		return None
 
 	def mix(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
-
 		self.try_load()
 		if not self.session:
 			return []
@@ -313,9 +312,9 @@ class Tidal:
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.title, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tmix\"{id}\""
+		return None
 
 	def artist(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
-
 		self.try_load()
 		if not self.session:
 			return []
@@ -339,6 +338,7 @@ class Tidal:
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=a.name, playlist_ids=playlist))
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tar\"{id}\""
+		return None
 
 	def append_album(self, id: int) -> None:
 		self.try_load()
