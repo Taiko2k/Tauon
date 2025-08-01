@@ -1,4 +1,5 @@
 """Update language files from ./locale"""
+import logging
 import os
 import subprocess
 import sys
@@ -7,44 +8,44 @@ from pathlib import Path
 
 def main() -> None:
 	if not Path("pygettext.py").is_file():
-		print("ERROR: Please add a copy of pygettext.py to this dir from the Python Tools dir")
+		logging.error("Please add a copy of pygettext.py to this dir from the Python Tools dir")
 		sys.exit()
 
-	locale_folder = "locale"
-	pot_path = Path(locale_folder) / "messages.pot"
+	locale_folder = Path("locale")
+	pot_path = locale_folder / "messages.pot"
 
-	print("Generate template")
+	logging.info("Generate template")
 
 	root_dir = "src"
 	# Collect all .py file paths
-	py_files = []
+	py_files: list[str] = []
 	for dirpath, _, filenames in os.walk(root_dir):
-		py_files.extend(os.path.join(dirpath, file) for file in filenames if file.endswith(".py"))
+		py_files.extend(str(Path(dirpath) / file) for file in filenames if file.endswith(".py"))
 	# Run pygettext.py with all .py files as arguments
 	if py_files:
-		subprocess.run(["python", "pygettext.py", *py_files], check=True)
+		subprocess.run(["/usr/bin/python", "pygettext.py", *py_files], check=True)  # noqa: S603
 
-	print("Copy template")
-	subprocess.run(["cp", "messages.pot", pot_path], check=True)
-	subprocess.run(["rm", "messages.pot"], check=True)
+	logging.info("Copy template")
+	subprocess.run(["/usr/bin/cp", "messages.pot", pot_path], check=True)  # noqa: S603
+	subprocess.run(["/usr/bin/rm", "messages.pot"], check=True)
 
-	languages = os.listdir(locale_folder)
+	languages = locale_folder.iterdir()
 
 	for lang_file in languages:
-		if lang_file == "messages.pot":
+		if lang_file.name == "messages.pot":
 			continue
 
-		po_path = Path(locale_folder) / lang_file / "LC_MESSAGES" / "tauon.po"
+		po_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.po"
 
 		if Path(po_path).exists():
-			subprocess.run(["msgmerge", "-U", po_path, pot_path], check=True)
+			subprocess.run(["/usr/bin/msgmerge", "-U", po_path, pot_path], check=True)  # noqa: S603
 
-			print(f"Updated: {lang_file}")
+			logging.info(f"Updated: {lang_file.name}")
 
 		else:
-			print(f"Missing po file: {po_path}")
+			logging.warning(f"Missing po file: {po_path}")
 
-	print("Done")
+	logging.info("Done")
 
 if __name__ == "__main__":
 	main()

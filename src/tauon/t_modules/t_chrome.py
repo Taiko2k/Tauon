@@ -10,7 +10,7 @@ from tauon.t_modules.t_extra import shooter
 
 if TYPE_CHECKING:
 	from pychromecast import Chromecast
-	from pychromecast.models import CastInfo
+	from pychromecast.discovery import CastBrowser
 
 	from tauon.t_modules.t_main import Tauon
 
@@ -20,22 +20,24 @@ def get_ip() -> str:
 	try:
 		# doesn't even have to be reachable
 		s.connect(("10.255.255.255", 1))
-		IPv4 = s.getsockname()[0]
+		ipv4 = s.getsockname()[0]
 	except Exception:
 		logging.exception("Failed to get socket name.")
-		IPv4 = "127.0.0.1"
+		ipv4 = "127.0.0.1"
 	finally:
 		s.close()
-	return IPv4
+	return ipv4
 
 
 class Chrome:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon:             Tauon = tauon
-		self.services: list[CastInfo] = []
+		self.services: list[list[str]] = []
 		self.active:             bool = False
 		self.cast:  Chromecast | None = None
 		self.save_vol:          float = 100
+		self.ip:                  str = ""
+		self.browser: CastBrowser
 
 	def rescan(self) -> None:
 		logging.info("Scanning for chromecasts...")
@@ -54,7 +56,9 @@ class Chrome:
 				#menu.items.clear()
 				for item in services:
 					self.services.append([str(item.uuid), str(item.friendly_name)])
-					menu.add_to_sub(1, MenuItem(self.tauon.strings.cast_to % str(item.friendly_name), self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)]))
+					menu.add_to_sub(1, MenuItem(
+						self.tauon.strings.cast_to % str(item.friendly_name),
+						self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)]))
 				menu.add_to_sub(1, MenuItem(self.tauon.strings.stop_cast, self.end, show_test=lambda x: self.active))
 			except Exception:
 				logging.exception("Failed to get chromecasts")
@@ -73,7 +77,10 @@ class Chrome:
 		self.cast = ccs[0]
 		self.cast.wait()
 		self.save_vol = self.tauon.pctl.player_volume
-		self.tauon.pctl.player_volume = min(self.cast.status.volume_level * 100, 100)
+		volume = self.cast.status.volume_level if self.cast.status else 0
+		if not self.cast.status:
+			logging.critical("self.cast.status was None, this should not happen!")
+		self.tauon.pctl.player_volume = min(volume * 100, 100)
 		self.ip = get_ip()
 
 		mc = self.cast.media_controller
