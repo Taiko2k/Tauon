@@ -81,11 +81,14 @@ jobs:
           source .venv/bin/activate
           pip install --prefix ".venv" dist/*.whl
 
+      - name: Let Pyright use our venv
+        run: echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
       - name: Run pyright
         continue-on-error: true
         uses: jakebailey/pyright-action@v2
         with:
-          venv-path: .venv
+#          venv-path: .venv
           working-directory: 'src/tauon'
 
 #      - name: Set up Node.js
