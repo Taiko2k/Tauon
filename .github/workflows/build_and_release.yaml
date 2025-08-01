@@ -183,10 +183,14 @@ jobs:
         with:
           submodules: true
 
-      #- name: Set up Python
-      #  uses: actions/setup-python@v5
-      #  with:
-      #    python-version: '3.13'
+      - name: Setup pip cache-key
+        uses: actions/cache@v4
+        if: startsWith(runner.os, 'macOS')
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: brew update and upgrade
         run: brew update && brew upgrade
@@ -296,10 +300,14 @@ jobs:
         with:
           submodules: true
 
-      #- name: Set up Python
-      #  uses: actions/setup-python@v5
-      #  with:
-      #    python-version: '3.13'
+      - name: Setup pip cache-key
+        uses: actions/cache@v4
+        if: startsWith(runner.os, 'macOS')
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: brew update and upgrade with a workaround for https://github.com/actions/runner-images/issues/9966
         run: |
@@ -412,6 +420,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+
+      - name: Setup pip cache-key
+        uses: actions/cache@v4
+        if: startsWith(runner.os, 'Windows')
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
       - name: Read Package List
