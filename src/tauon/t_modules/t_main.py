@@ -20724,7 +20724,7 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index: int, location: list[int], box, source: list[tuple[int, str]], offset: int) -> int:
+	def fast_display(self, index: int, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int) -> int:
 		"""Renders cached image only by given size for faster performance"""
 		found_unit = None
 		max_h = 0
@@ -21200,7 +21200,7 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location: list[int], box, fast: bool = False, theme_only: bool = False) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False) -> int | None:
 		index = track.index
 		filepath = track.fullpath
 
