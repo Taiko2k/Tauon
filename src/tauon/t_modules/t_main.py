@@ -5350,8 +5350,8 @@ class GallClass:
 					if parent_folder in self.folder_image_offsets:
 						offset = self.folder_image_offsets[parent_folder]
 					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
-					if self.prefs.cache_gallery and os.path.isfile(os.path.join(self.g_cache_directory, img_name + ".jpg")):
-						source_image = open(os.path.join(self.g_cache_directory, img_name + ".jpg"), "rb")
+					if self.prefs.cache_gallery and (self.g_cache_directory / f"{img_name}.jpg").is_file():
+						source_image = (self.g_cache_directory / f"{img_name}.jpg").open("rb")
 						# logging.info('load from cache')
 						cache_load = True
 					else:
@@ -5371,8 +5371,8 @@ class GallClass:
 
 					# gall_render_last_timer.set()
 
-					if self.prefs.cache_gallery and os.path.isfile(os.path.join(self.g_cache_directory, img_name + ".jpg")):
-						source_image = open(os.path.join(self.g_cache_directory, img_name + ".jpg"), "rb")
+					if self.prefs.cache_gallery and (self.g_cache_directory / f"{img_name}.jpg").is_file():
+						source_image = (self.g_cache_directory / f"{img_name}.jpg").open("rb")
 						logging.info("slow load image")
 						cache_load = True
 
@@ -5412,9 +5412,9 @@ class GallClass:
 
 					im.save(g, "BMP")
 
-					if not error and self.save_out and self.prefs.cache_gallery and not os.path.isfile(
-							os.path.join(self.g_cache_directory, img_name + ".jpg")):
-						im.save(os.path.join(self.g_cache_directory, img_name + ".jpg"), "JPEG", quality=95)
+					if not error and self.save_out and self.prefs.cache_gallery \
+					and not (self.g_cache_directory / f"{img_name}.jpg").is_file():
+						im.save(str(self.g_cache_directory / f"{img_name}.jpg"), "JPEG", quality=95)
 
 				g.seek(0)
 
