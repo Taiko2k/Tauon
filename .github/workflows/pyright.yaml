@@ -1,0 +1,22 @@
+name: LSP Check
+
+on: [push, pull_request]
+
+jobs:
+  pyright:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install pyright
+        run: npm install -g pyright
+
+      - name: Run pyright on src/tauon
+        run: pyright src/tauon
