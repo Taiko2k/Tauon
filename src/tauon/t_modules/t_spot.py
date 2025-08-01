@@ -30,8 +30,8 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_extra import Timer
 from tauon.t_modules.t_draw import QuickThumbnail
+from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
 	from tekore._auth.refreshing import RefreshingCredentials

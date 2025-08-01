@@ -171,7 +171,14 @@ from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
-from tauon.t_modules.t_webserve import authserve, controller, stream_proxy, webserve, webserve2  # noqa: E402
+from tauon.t_modules.t_webserve import (  # noqa: E402
+	VorbisMonitor,
+	authserve,
+	controller,
+	stream_proxy,
+	webserve,
+	webserve2,
+)
 
 if sys.platform == "linux":
 	import gi
@@ -180,9 +187,8 @@ if sys.platform == "linux":
 	except Exception:
 		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
 		gi.require_version("Notify", "0.8")
-	from gi.repository import Notify
-	from gi.repository import GdkPixbuf
-	from gi.repository import GLib
+	from gi.repository import GdkPixbuf, GLib, Notify
+
 	from tauon.t_modules import t_topchart
 
 if sys.platform == "darwin":
@@ -195,7 +201,7 @@ try:
 	logging.debug("Found colored_traceback for colored crash tracebacks")
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:
+except Exception:  # noqa: BLE001
 	logging.info("Error trying to import colored_traceback, tracebacks will be dull.")
 
 try:
@@ -222,7 +228,7 @@ else:
 # except Exception:
 #	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
-	from lynxpresence import Presence, ActivityType
+	from lynxpresence import ActivityType, Presence
 except ModuleNotFoundError:
 	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
 except Exception:
@@ -263,16 +269,20 @@ except Exception:
 if TYPE_CHECKING:
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
-	from pylast import Artist, LibreFMNetwork
+
 	from PIL.ImageFile import ImageFile
-	from tauon.t_modules.t_bootstrap import Holder
+	from pylast import Artist, LibreFMNetwork
 	from websocket import WebSocketApp
+
+	from tauon.t_modules.t_bootstrap import Holder
 	if sys.platform == "win32":
 		from lynxtray import SysTrayIcon
-	from mutagen.id3 import ID3
-	from subprocess import Popen
-	from pylast import LastFMNetwork
 	from collections.abc import Callable
+	from subprocess import Popen
+
+	from mutagen.id3 import ID3
+	from pylast import LastFMNetwork
+
 	from tauon.t_modules.t_webserve import ThreadedHTTPServer
 
 # Detect platform
@@ -297,12 +307,13 @@ if sys.platform == "win32":
 		import gi
 		from gi.repository import GLib
 	else:
-		import win32con
+		import atexit
+
+		import comtypes
 		import win32api
+		import win32con
 		import win32gui
 		import win32ui
-		import comtypes
-		import atexit
 else:
 	system = "Linux"
 	import fcntl
@@ -2433,9 +2444,9 @@ class PlayerCtl:
 		elif self.playing_state == 0 and self.prefs.meta_persists_stop:
 			target_track = self.master_library[self.track_queue[self.queue_step]]
 
-		if self.prefs.meta_shows_selected_always:
-			if -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
-				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
+		if self.prefs.meta_shows_selected_always \
+		and -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
+			target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
 		return target_track
 
@@ -5354,8 +5365,8 @@ class GallClass:
 					if parent_folder in self.folder_image_offsets:
 						offset = self.folder_image_offsets[parent_folder]
 					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(offset)
-					if self.prefs.cache_gallery and os.path.isfile(os.path.join(self.g_cache_directory, img_name + ".jpg")):
-						source_image = open(os.path.join(self.g_cache_directory, img_name + ".jpg"), "rb")
+					if self.prefs.cache_gallery and (self.g_cache_directory / f"{img_name}.jpg").is_file():
+						source_image = (self.g_cache_directory / f"{img_name}.jpg").open("rb")
 						# logging.info('load from cache')
 						cache_load = True
 					else:
@@ -5375,8 +5386,8 @@ class GallClass:
 
 					# gall_render_last_timer.set()
 
-					if self.prefs.cache_gallery and os.path.isfile(os.path.join(self.g_cache_directory, img_name + ".jpg")):
-						source_image = open(os.path.join(self.g_cache_directory, img_name + ".jpg"), "rb")
+					if self.prefs.cache_gallery and (self.g_cache_directory / f"{img_name}.jpg").is_file():
+						source_image = (self.g_cache_directory / f"{img_name}.jpg").open("rb")
 						logging.info("slow load image")
 						cache_load = True
 
@@ -5416,9 +5427,9 @@ class GallClass:
 
 					im.save(g, "BMP")
 
-					if not error and self.save_out and self.prefs.cache_gallery and not os.path.isfile(
-							os.path.join(self.g_cache_directory, img_name + ".jpg")):
-						im.save(os.path.join(self.g_cache_directory, img_name + ".jpg"), "JPEG", quality=95)
+					if not error and self.save_out and self.prefs.cache_gallery \
+					and not (self.g_cache_directory / f"{img_name}.jpg").is_file():
+						im.save(str(self.g_cache_directory / f"{img_name}.jpg"), "JPEG", quality=95)
 
 				g.seek(0)
 
@@ -5861,6 +5872,7 @@ class Tauon:
 		self.mini_mode                            = MiniMode(tauon=self)
 		self.mini_mode2                           = MiniMode2(tauon=self)
 		self.mini_mode3                           = MiniMode3(tauon=self)
+		self.vb                                   = VorbisMonitor(tauon=self)
 
 		if self.system == "Linux" and not self.macos and not self.msys:
 			self.gnome = Gnome(tauon=self)
@@ -20743,7 +20755,7 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index: int, location: list[int], box, source: list[tuple[int, str]], offset: int) -> int:
+	def fast_display(self, index: int, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int) -> int:
 		"""Renders cached image only by given size for faster performance"""
 		found_unit = None
 		max_h = 0
@@ -21219,7 +21231,7 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location: list[int], box, fast: bool = False, theme_only: bool = False) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False) -> int | None:
 		index = track.index
 		filepath = track.fullpath
 
@@ -31004,10 +31016,10 @@ class RadioBox:
 		self.show_message   = tauon.show_message
 		self.smooth_scroll  = tauon.smooth_scroll
 		self.thread_manager = tauon.thread_manager
-		self.active = False
+		self.active: bool = False
 		self.station_editing = None
-		self.edit_mode = True
-		self.add_mode = False
+		self.edit_mode: bool = True
+		self.add_mode: bool = False
 		self.radio_field_active = 1
 		self.radio_field        = TextBox2(tauon)
 		self.radio_field_title  = TextBox2(tauon)
@@ -31032,9 +31044,9 @@ class RadioBox:
 		self.proxy_started = False
 		self.loaded_url = None
 		self.loaded_station = None
-		self.load_connecting = False
-		self.load_failed = False
-		self.searching = False
+		self.load_connecting: bool = False
+		self.load_failed: bool = False
+		self.searching: bool = False
 		self.load_failed_timer = Timer()
 		self.right_clicked_station = None
 		self.right_clicked_station_p = None
@@ -31058,7 +31070,7 @@ class RadioBox:
 		self.websocket = None
 		self.ws_interval = 4.5
 		self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
-		self.run_proxy = True
+		self.run_proxy: bool = True
 
 	def parse_vorbis_okay(self):
 		return (
@@ -31069,18 +31081,18 @@ class RadioBox:
 	def search_country(self, text) -> None:
 		if len(text) == 2 and text.isalpha():
 			self.search_radio_browser(
-				"/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
+				f"/json/stations/search?countrycode={text}&order=votes&limit=250&reverse=true")
 		else:
 			self.search_radio_browser(
-				"/json/stations/search?country=" + text + "&order=votes&limit=250&reverse=true")
+				f"/json/stations/search?country={text}&order=votes&limit=250&reverse=true")
 
 	def search_tag(self, text) -> None:
 		text = text.lower()
-		self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+		self.search_radio_browser(f"/json/stations/search?order=votes&limit=250&reverse=true&tag={text}")
 
 	def search_title(self, text) -> None:
 		text = text.lower()
-		self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&name=" + text)
+		self.search_radio_browser(f"/json/stations/search?order=votes&limit=250&reverse=true&name={text}")
 
 	def is_m3u(self, url):
 		return url.lower().endswith(".m3u") or url.lower().endswith(".m3u8")
@@ -31185,18 +31197,17 @@ class RadioBox:
 	def start2(self, url: str) -> None:
 		if self.run_proxy and not self.tauon.stream_proxy.start_download(url):
 			self.load_failed_timer.set()
-			self.load_failed: bool = True
-			self.load_connecting: bool = False
+			self.load_failed = True
+			self.load_connecting = False
 			self.gui.update += 1
 			logging.error("Starting radio failed")
 			# self.show_message(_("Failed to establish a connection"), mode="error")
 			return
 
 		self.loaded_url = url
-		self.pctl.playing_state = 0
-		self.pctl.record_stream: bool = False
+		self.pctl.record_stream = False
 		self.pctl.playerCommand = "url"
-		self.pctl.playerCommandReady: bool = True
+		self.pctl.playerCommandReady = True
 		self.pctl.playing_state = 3
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
@@ -31208,8 +31219,8 @@ class RadioBox:
 			self.tauon.update_play_lock()
 
 		time.sleep(0.1)
-		self.load_connecting: bool = False
-		self.load_failed: bool = False
+		self.load_connecting = False
+		self.load_failed = False
 		self.gui.update += 1
 
 		wss = ""
