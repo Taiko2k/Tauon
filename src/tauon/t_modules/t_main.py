@@ -96,7 +96,7 @@ from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
 from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
-from tauon.t_modules.t_enums import LoaderCommand  # noqa: E402
+from tauon.t_modules.t_enums import LoaderCommand, PlayerState  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
@@ -5947,7 +5947,7 @@ class Tauon:
 		self.copied_track = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
-		self.player4_state:               int = 0 # 0=stopped, 1=playing, 2=paused, 3=url stream, 4=spotify mode
+		self.player4_state:               int = PlayerState.STOPPED
 		self.librespot_p: Popen[bytes] | None = None
 		self.spot_ctl                         = SpotCtl(self)
 		self.cachement                        = Cachement(self)
