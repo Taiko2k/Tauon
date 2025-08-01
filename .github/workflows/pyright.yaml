@@ -85,6 +85,7 @@ jobs:
         continue-on-error: true
         uses: jakebailey/pyright-action@v2
         with:
+          venv-path: .venv
           working-directory: 'src/tauon'
 
 #      - name: Set up Node.js
