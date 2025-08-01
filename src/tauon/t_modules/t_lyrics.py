@@ -71,7 +71,7 @@ def genius(artist: str, title: str, return_url: bool=False) -> tuple[str, str] |
 	result = html.find("div", class_="lyrics") #.get_text()
 	if result is not None:
 		lyrics = result.get_text()
-		lyrics2 = []
+		lyrics2: list[str] = []
 		for line in lyrics.splitlines():
 			if line.startswith("["):
 				pass
@@ -97,13 +97,12 @@ def genius(artist: str, title: str, return_url: bool=False) -> tuple[str, str] |
 	lyrics = new
 
 	lines = lyrics.splitlines()
-	new_lines = []
+	new_lines: list[str] = []
 	for line in lines:
 		if "[" in line:
 			line = line.split("[", 1)[0]
 			if line:
 				line += "\n"
-
 		new_lines.append(line.lstrip().rstrip(" ") + "\n")
 
 	lyrics = "".join(new_lines)
