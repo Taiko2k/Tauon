@@ -19,3 +19,10 @@ class PlayingState(IntEnum):
 	PLAYING      = 1
 	PAUSED       = 2
 	URL_STREAM   = 3
+
+class StopMode(IntEnum):
+	OFF = 0
+	TRACK = 1
+	ALBUM = 2
+	TRACK_PERSIST = 3
+	ALBUM_PERSIST = 4
