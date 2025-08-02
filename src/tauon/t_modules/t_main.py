@@ -30986,10 +30986,10 @@ class RadioBox:
 		self.show_message   = tauon.show_message
 		self.thread_manager = tauon.thread_manager
 		self.scroll         = tauon.smooth_scroll
-		self.active = False
+		self.active: bool = False
 		self.station_editing = None
-		self.edit_mode = True
-		self.add_mode = False
+		self.edit_mode: bool = True
+		self.add_mode: bool = False
 		self.radio_field_active = 1
 		self.radio_field        = TextBox2(tauon)
 		self.radio_field_title  = TextBox2(tauon)
@@ -31014,9 +31014,9 @@ class RadioBox:
 		self.proxy_started = False
 		self.loaded_url = None
 		self.loaded_station = None
-		self.load_connecting = False
-		self.load_failed = False
-		self.searching = False
+		self.load_connecting: bool = False
+		self.load_failed: bool = False
+		self.searching: bool = False
 		self.load_failed_timer = Timer()
 		self.right_clicked_station = None
 		self.right_clicked_station_p = None
@@ -31040,7 +31040,7 @@ class RadioBox:
 		self.websocket = None
 		self.ws_interval = 4.5
 		self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
-		self.run_proxy = True
+		self.run_proxy: bool = True
 
 	def parse_vorbis_okay(self):
 		return (
@@ -31051,18 +31051,18 @@ class RadioBox:
 	def search_country(self, text) -> None:
 		if len(text) == 2 and text.isalpha():
 			self.search_radio_browser(
-				"/json/stations/search?countrycode=" + text + "&order=votes&limit=250&reverse=true")
+				f"/json/stations/search?countrycode={text}&order=votes&limit=250&reverse=true")
 		else:
 			self.search_radio_browser(
-				"/json/stations/search?country=" + text + "&order=votes&limit=250&reverse=true")
+				f"/json/stations/search?country={text}&order=votes&limit=250&reverse=true")
 
 	def search_tag(self, text) -> None:
 		text = text.lower()
-		self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&tag=" + text)
+		self.search_radio_browser(f"/json/stations/search?order=votes&limit=250&reverse=true&tag={text}")
 
 	def search_title(self, text) -> None:
 		text = text.lower()
-		self.search_radio_browser("/json/stations/search?order=votes&limit=250&reverse=true&name=" + text)
+		self.search_radio_browser(f"/json/stations/search?order=votes&limit=250&reverse=true&name={text}")
 
 	def is_m3u(self, url):
 		return url.lower().endswith(".m3u") or url.lower().endswith(".m3u8")
@@ -31167,18 +31167,17 @@ class RadioBox:
 	def start2(self, url: str) -> None:
 		if self.run_proxy and not self.tauon.stream_proxy.start_download(url):
 			self.load_failed_timer.set()
-			self.load_failed: bool = True
-			self.load_connecting: bool = False
+			self.load_failed = True
+			self.load_connecting = False
 			self.gui.update += 1
 			logging.error("Starting radio failed")
 			# self.show_message(_("Failed to establish a connection"), mode="error")
 			return
 
 		self.loaded_url = url
-		self.pctl.playing_state = 0
-		self.pctl.record_stream: bool = False
+		self.pctl.record_stream = False
 		self.pctl.playerCommand = "url"
-		self.pctl.playerCommandReady: bool = True
+		self.pctl.playerCommandReady = True
 		self.pctl.playing_state = 3
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
@@ -31190,8 +31189,8 @@ class RadioBox:
 			self.tauon.update_play_lock()
 
 		time.sleep(0.1)
-		self.load_connecting: bool = False
-		self.load_failed: bool = False
+		self.load_connecting = False
+		self.load_failed = False
 		self.gui.update += 1
 
 		wss = ""
