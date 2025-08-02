@@ -31,7 +31,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
-from tauon.t_modules.t_enums import PlayingState
+from tauon.t_modules.t_enums import PlayingState, StopMode
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
@@ -549,10 +549,10 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			elif path == "/api1/repeat":
 				self.run_command(tauon.toggle_repeat)
 			elif path == "/api1/auto-stop":
-				if tauon.pctl.stop_mode == 0:
-					tauon.pctl.stop_mode = 1
+				if tauon.pctl.stop_mode == StopMode.OFF:
+					tauon.pctl.stop_mode = StopMode.TRACK
 				else:
-					tauon.pctl.stop_mode = 0
+					tauon.pctl.stop_mode = StopMode.OFF
 				tauon.gui.update += 1
 			elif path == "/api1/version":
 				data = {"version": 1}
@@ -742,7 +742,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					"shuffle": pctl.random_mode is True,
 					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
-					"auto_stop": tauon.pctl.stop_mode > 0,
+					"auto_stop": tauon.pctl.stop_mode != StopMode.OFF,
 					"volume": pctl.player_volume,
 					"playlist": str(tauon.get_playing_playlist_id()),
 					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
