@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING
 import requests
 from requests.models import PreparedRequest
 
-from tauon.t_modules.t_enums import PlayerState
+from tauon.t_modules.t_enums import PlayerState, PlayingState
 from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 
 if TYPE_CHECKING:
@@ -640,7 +640,7 @@ def player4(tauon: Tauon) -> None:
 					bias += 0.04
 				gui.spec = p_spec
 				gui.level_update = True
-				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
+				if pctl.playing_time > 0.5 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 					gui.update_spec = 1
 			elif gui.vis == 4:
 				p_spec: list[float] = []
@@ -651,7 +651,7 @@ def player4(tauon: Tauon) -> None:
 					bias += 0.01
 				gui.spec4_array = p_spec
 				gui.level_update = True
-				if pctl.playing_time > 0.5 and (pctl.playing_state in (1, 3)):
+				if pctl.playing_time > 0.5 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 					gui.update_spec = 1
 
 	p_sync_timer = Timer()
@@ -967,7 +967,7 @@ def player4(tauon: Tauon) -> None:
 					if target_object.file_ext == "SPTY":
 						tauon.level_train.clear()
 						if target_object.found is False:
-							pctl.playing_state = 0
+							pctl.playing_state = PlayingState.STOPPED
 							pctl.jump_time = 0
 							pctl.advance(inplace=True, play=True)
 							continue
@@ -1033,7 +1033,7 @@ def player4(tauon: Tauon) -> None:
 					if status == 2:
 						logging.info("Could not locate resource")
 						target_object.found = False
-						pctl.playing_state = 0
+						pctl.playing_state = PlayingState.STOPPED
 						pctl.jump_time = 0
 						#pctl.advance(inplace=True, play=True)
 						continue
@@ -1061,7 +1061,7 @@ def player4(tauon: Tauon) -> None:
 
 					if status == 2:
 						target_object.found = False
-						pctl.playing_state = 0
+						pctl.playing_state = PlayingState.STOPPED
 						pctl.jump_time = 0
 						pctl.advance(inplace=True, play=True)
 						continue
@@ -1070,7 +1070,7 @@ def player4(tauon: Tauon) -> None:
 				if not os.path.isfile(target_path):
 					target_object.found = False
 					if not target_object.is_network:
-						pctl.playing_state = 0
+						pctl.playing_state = PlayingState.STOPPED
 						pctl.jump_time = 0
 						pctl.advance(inplace=True, play=True)
 					continue
@@ -1291,7 +1291,7 @@ def player4(tauon: Tauon) -> None:
 
 						if status == 2:
 							loaded_track.found = False
-							pctl.playing_state = 0
+							pctl.playing_state = PlayingState.STOPPED
 							pctl.jump_time = 0
 							pctl.stop()
 							continue
