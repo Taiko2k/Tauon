@@ -96,7 +96,7 @@ from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
 from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
-from tauon.t_modules.t_enums import LoaderCommand, PlayerState  # noqa: E402
+from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
@@ -1719,7 +1719,7 @@ class PlayerCtl:
 		self.playerCommand = ""
 		self.playerSubCommand = ""
 		self.playerCommandReady = False
-		self.playing_state:    int = 0
+		self.playing_state: PlayingState = PlayingState.STOPPED
 		self.playing_length: float = 0
 		self.jump_time             = 0
 		self.random_mode           = self.prefs.random_mode
@@ -2324,9 +2324,9 @@ class PlayerCtl:
 			tr = self.playing_object()
 			if tr:
 				state = 0
-				if self.playing_state == 1:
+				if self.playing_state == PlayingState.PLAYING:
 					state = 1
-				if self.playing_state == 2:
+				if self.playing_state == PlayingState.PAUSED:
 					state = 2
 				image_path = ""
 				try:
@@ -2432,17 +2432,17 @@ class PlayerCtl:
 		"""The track to show in the metadata side panel"""
 		target_track = None
 
-		if self.playing_state == 3:
+		if self.playing_state == PlayingState.URL_STREAM:
 			return self.radiobox.dummy_track
 
-		if 3 > self.playing_state > 0:
+		if 3 > self.playing_state != PlayingState.STOPPED:
 			target_track = self.playing_object()
 
-		elif self.playing_state == 0 and self.prefs.meta_shows_selected:
+		elif self.playing_state == PlayingState.STOPPED and self.prefs.meta_shows_selected:
 			if -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
 				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
-		elif self.playing_state == 0 and self.prefs.meta_persists_stop:
+		elif self.playing_state == PlayingState.STOPPED and self.prefs.meta_persists_stop:
 			target_track = self.master_library[self.track_queue[self.queue_step]]
 
 		if self.prefs.meta_shows_selected_always \
@@ -2452,7 +2452,7 @@ class PlayerCtl:
 		return target_track
 
 	def playing_object(self) -> TrackClass | None:
-		if self.playing_state == 3:
+		if self.playing_state == PlayingState.URL_STREAM:
 			return self.radiobox.dummy_track
 
 		if len(self.track_queue) > 0:
@@ -2476,7 +2476,7 @@ class PlayerCtl:
 						line += "  -  "
 					line += title
 
-			if self.playing_state == 3 and not title and not artist:
+			if self.playing_state == PlayingState.URL_STREAM and not title and not artist:
 				return self.tag_meta
 
 		return line
@@ -2679,7 +2679,7 @@ class PlayerCtl:
 		self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
 		self.playerCommand = "open"
 		self.playerCommandReady = True
-		self.playing_state = 1
+		self.playing_state = PlayingState.PLAYING
 
 		if self.tauon.stream_proxy.download_running:
 			self.tauon.stream_proxy.stop()
@@ -2725,7 +2725,7 @@ class PlayerCtl:
 			if not self.prefs.use_jump_crossfade:
 				self.playerSubCommand = "now"
 			self.playerCommandReady = True
-			self.playing_state = 1
+			self.playing_state = PlayingState.PLAYING
 		self.radiobox.loaded_station = None
 
 		if self.tauon.stream_proxy.download_running:
@@ -2767,7 +2767,7 @@ class PlayerCtl:
 			if jump:  # and not prefs.use_jump_crossfade:
 				self.playerSubCommand = "now"
 			self.playerCommandReady = True
-			self.playing_state = 1
+			self.playing_state = PlayingState.PLAYING
 
 		self.update_change()
 		self.deduct_shuffle(target.index)
@@ -2796,7 +2796,7 @@ class PlayerCtl:
 		self.lfm_scrobbler.start_queue()
 		if self.stop_mode == 1:  # Disable auto stop track
 			self.stop_mode = 0
-		if self.stop_mode == 2 and self.playing_state != 0:  # Disable auto stop album if album different
+		if self.stop_mode == 2 and self.playing_state != PlayingState.STOPPED:  # Disable auto stop album if album different
 			tr = self.get_track(index)
 			if (tr.parent_folder_path, tr.album) != self.stop_ref:
 				self.stop_mode = 0
@@ -2814,7 +2814,7 @@ class PlayerCtl:
 			self.left_time = self.playing_time
 			self.left_index = self.track_queue[self.queue_step]
 
-			if self.playing_state == 1 and self.left_time > 5 and self.playing_length - self.left_time > 15:
+			if self.playing_state == PlayingState.PLAYING and self.left_time > 5 and self.playing_length - self.left_time > 15:
 				self.master_library[self.left_index].skips += 1
 
 		self.gui.update_spec = 0
@@ -2832,12 +2832,12 @@ class PlayerCtl:
 	def back(self) -> None:
 
 		play = True
-		if self.playing_state == 2 and not self.prefs.resume_on_jump:
+		if self.playing_state == PlayingState.PAUSED and not self.prefs.resume_on_jump:
 			play = False
 			self.playerCommand = "stop"
 			self.playerCommandReady = True
 
-		if self.playing_state < 3 and self.prefs.back_restarts and self.playing_time > 6:
+		if self.playing_state != PlayingState.URL_STREAM and self.prefs.back_restarts and self.playing_time > 6:
 			self.seek_time(0)
 			self.render_playlist()
 			return
@@ -2923,7 +2923,7 @@ class PlayerCtl:
 		previous_state = self.playing_state
 		self.playing_time = 0
 		self.decode_time = 0
-		self.playing_state = 0
+		self.playing_state = PlayingState.STOPPED
 		self.render_playlist()
 
 		self.gui.update_spec = 0
@@ -2951,14 +2951,14 @@ class PlayerCtl:
 
 	def pause(self) -> None:
 		if self.tauon.spotc and self.tauon.spotc.running and self.tauon.spot_ctl.playing:
-			if self.playing_state == 1:
+			if self.playing_state == PlayingState.PLAYING:
 				self.playerCommand = "pauseon"
 				self.playerCommandReady = True
-			elif self.playing_state == 2:
+			elif self.playing_state == PlayingState.PAUSED:
 				self.playerCommand = "pauseoff"
 				self.playerCommandReady = True
 
-		if self.playing_state == 3:
+		if self.playing_state == PlayingState.URL_STREAM:
 			if self.tauon.spot_ctl.coasting:
 				if self.tauon.spot_ctl.paused:
 					self.tauon.spot_ctl.control("resume")
@@ -2967,21 +2967,21 @@ class PlayerCtl:
 			return
 
 		if self.tauon.spot_ctl.playing:
-			if self.playing_state == 2:
+			if self.playing_state == PlayingState.PAUSED:
 				self.tauon.spot_ctl.control("resume")
-				self.playing_state = 1
-			elif self.playing_state == 1:
+				self.playing_state = PlayingState.PLAYING
+			elif self.playing_state == PlayingState.PLAYING:
 				self.tauon.spot_ctl.control("pause")
-				self.playing_state = 2
+				self.playing_state = PlayingState.PAUSED
 			self.render_playlist()
 			return
 
-		if self.playing_state == 1:
+		if self.playing_state == PlayingState.PLAYING:
 			self.playerCommand = "pauseon"
-			self.playing_state = 2
-		elif self.playing_state == 2:
+			self.playing_state = PlayingState.PAUSED
+		elif self.playing_state == PlayingState.PAUSED:
 			self.playerCommand = "pauseoff"
-			self.playing_state = 1
+			self.playing_state = PlayingState.PLAYING
 			self.tauon.notify_song()
 
 		self.playerCommandReady = True
@@ -2990,18 +2990,18 @@ class PlayerCtl:
 		self.notify_update()
 
 	def pause_only(self) -> None:
-		if self.playing_state == 1:
+		if self.playing_state == PlayingState.PLAYING:
 			self.playerCommand = "pauseon"
-			self.playing_state = 2
+			self.playing_state = PlayingState.PAUSED
 
 			self.playerCommandReady = True
 			self.render_playlist()
 			self.notify_update()
 
 	def play_pause(self) -> None:
-		if self.playing_state == 3:
+		if self.playing_state == PlayingState.URL_STREAM:
 			self.stop()
-		elif self.playing_state > 0:
+		elif self.playing_state != PlayingState.STOPPED:
 			self.pause()
 		else:
 			self.play()
@@ -3009,7 +3009,7 @@ class PlayerCtl:
 	def seek_decimal(self, decimal: int) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and self.tauon.spot_ctl.coasting):
+		if self.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED) or (self.playing_state == PlayingState.URL_STREAM and self.tauon.spot_ctl.coasting):
 			if decimal > 1:
 				decimal = 1
 			elif decimal < 0:
@@ -3029,7 +3029,7 @@ class PlayerCtl:
 	def seek_time(self, new: float) -> None:
 		# if self.commit:
 		#	 return
-		if self.playing_state in (1, 2) or (self.playing_state == 3 and self.tauon.spot_ctl.coasting):
+		if self.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED) or (self.playing_state == PlayingState.URL_STREAM and self.tauon.spot_ctl.coasting):
 
 			if new > self.playing_length - 0.5:
 				self.advance()
@@ -3049,19 +3049,19 @@ class PlayerCtl:
 
 	def play(self) -> None:
 		if self.tauon.spot_ctl.playing:
-			if self.playing_state == 2:
+			if self.playing_state == PlayingState.PAUSED:
 				self.play_pause()
 			return
 
 		# Unpause if paused
-		if self.playing_state == 2:
+		if self.playing_state == PlayingState.PAUSED:
 			self.playerCommand = "pauseoff"
 			self.playerCommandReady = True
-			self.playing_state = 1
+			self.playing_state = PlayingState.PLAYING
 			self.notify_update()
 
 		# If stopped
-		elif self.playing_state == 0:
+		elif self.playing_state == PlayingState.STOPPED:
 
 			if self.radiobox.loaded_station:
 				self.radiobox.start(self.radiobox.loaded_station)
@@ -3086,7 +3086,7 @@ class PlayerCtl:
 		self.render_playlist()
 
 	def spot_test_progress(self) -> None:
-		if self.playing_state in (1, 2) and self.tauon.spot_ctl.playing:
+		if self.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED) and self.tauon.spot_ctl.playing:
 			th = 5  # the rate to poll the spotify API
 			if self.playing_time > self.playing_length:
 				th = 1
@@ -3109,7 +3109,7 @@ class PlayerCtl:
 			else:
 				self.test_progress()
 
-		elif self.playing_state == 3 and self.tauon.spot_ctl.coasting:
+		elif self.playing_state == PlayingState.URL_STREAM and self.tauon.spot_ctl.coasting:
 			th = 7
 			if self.playing_time > self.playing_length or self.playing_time < 2.5:
 				th = 1
@@ -3132,7 +3132,8 @@ class PlayerCtl:
 					self.album_dex.clear()
 					playlist.playlist_ids.remove(track_id)
 		# Stop if track is playing track
-		if self.track_queue and self.track_queue[self.queue_step] == track_id and self.playing_state != 0:
+		if self.track_queue and self.track_queue[self.queue_step] == track_id \
+		and self.playing_state != PlayingState.STOPPED:
 			self.stop(block=True)
 		# Remove from playback history
 		while track_id in self.track_queue:
@@ -3168,12 +3169,12 @@ class PlayerCtl:
 		if self.commit is not None:
 			return
 
-		if self.playing_state == 1 and self.multi_playlist[self.active_playlist_playing].persist_time_positioning:
+		if self.playing_state == PlayingState.PLAYING and self.multi_playlist[self.active_playlist_playing].persist_time_positioning:
 			tr = self.playing_object()
 			if tr:
 				tr.misc["position"] = self.decode_time
 
-		if self.playing_state == 1 and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
+		if self.playing_state == PlayingState.PLAYING and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
 			# Allow some time for spotify playing time to update?
 			if self.tauon.spot_ctl.playing and self.tauon.spot_ctl.start_timer.get() < 3:
@@ -3313,7 +3314,7 @@ class PlayerCtl:
 				self.playlist_playing_position += 1
 				self.queue_step += 1
 				self.track_queue.append(pp[self.playlist_playing_position])
-				self.playing_state = 1
+				self.playing_state = PlayingState.PLAYING
 				self.playing_time = 0
 				self.decode_time = 0
 				self.playing_length = self.master_library[self.track_queue[self.queue_step]].length
@@ -3357,7 +3358,7 @@ class PlayerCtl:
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
 
-		if self.playing_state == 2 and not self.prefs.resume_on_jump:
+		if self.playing_state == PlayingState.PAUSED and not self.prefs.resume_on_jump:
 			play = False
 			self.playerCommand = "stop"
 			self.playerCommandReady = True
@@ -3388,7 +3389,7 @@ class PlayerCtl:
 			self.left_index = self.track_queue[self.queue_step]
 
 		# Test to register skip (not currently used for anything)
-		if not dry and self.playing_state == 1 and 1 < self.left_time < 45:
+		if not dry and self.playing_state == PlayingState.PLAYING and 1 < self.left_time < 45:
 			self.master_library[self.left_index].skips += 1
 			#logging.info('skip registered')
 
@@ -3704,7 +3705,7 @@ class PlayerCtl:
 				if dry:
 					return None
 				if self.prefs.end_setting == "stop":
-					self.playing_state = 0
+					self.playing_state = PlayingState.STOPPED
 					self.playerCommand = "runstop"
 					self.playerCommandReady = True
 					end_of_playlist = True
@@ -3713,7 +3714,7 @@ class PlayerCtl:
 					# If at end playlist and not cycle mode, stop playback
 					if self.active_playlist_playing == len(
 							self.multi_playlist) - 1 and self.prefs.end_setting != "cycle":
-						self.playing_state = 0
+						self.playing_state = PlayingState.STOPPED
 						self.playerCommand = "runstop"
 						self.playerCommandReady = True
 						end_of_playlist = True
@@ -5947,7 +5948,7 @@ class Tauon:
 		self.copied_track = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
-		self.player4_state:               int = PlayerState.STOPPED
+		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.librespot_p: Popen[bytes] | None = None
 		self.spot_ctl                         = SpotCtl(self)
 		self.cachement                        = Cachement(self)
@@ -7075,7 +7076,7 @@ class Tauon:
 			self.pctl.repeat_mode = False
 			if albums:
 				self.prefs.album_shuffle_lock_mode = True
-			if self.pctl.playing_state == 0 and self.pctl.track_queue:
+			if self.pctl.playing_state == PlayingState.STOPPED and self.pctl.track_queue:
 				self.pctl.advance()
 		else:
 			self.pctl.random_mode = self.gui.shuffle_was_random
@@ -7202,14 +7203,14 @@ class Tauon:
 
 		track = self.pctl.playing_object()
 
-		if not track or self.pctl.playing_state == 0:
+		if not track or self.pctl.playing_state == PlayingState.STOPPED:
 			self.show_message(_("No item is currently playing"))
 			return
 
 		move_folder = track.parent_folder_path
 
 		# Stop playing track if its in the current folder
-		if self.pctl.playing_state > 0 and move_folder in self.pctl.playing_object().parent_folder_path:
+		if self.pctl.playing_state != PlayingState.STOPPED and move_folder in self.pctl.playing_object().parent_folder_path:
 			self.pctl.stop(True)
 
 		target_base = path
@@ -7744,7 +7745,7 @@ class Tauon:
 	def cycle_image_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
 		info = self.album_art_gen.get_info(track_object)
 
-		if self.pctl.playing_state != 0 and (info is not None and info[1] > 1):
+		if self.pctl.playing_state != PlayingState.STOPPED and (info is not None and info[1] > 1):
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
@@ -8039,7 +8040,7 @@ class Tauon:
 			text = _("Delete Image File")
 
 		elif info and info[0] == 1:
-			if self.pctl.playing_state > 0 and track_object.file_ext in ("MP3", "FLAC", "M4A"):
+			if self.pctl.playing_state != PlayingState.STOPPED and track_object.file_ext in ("MP3", "FLAC", "M4A"):
 				line_colour = self.colours.menu_text
 			else:
 				line_colour = self.colours.menu_text_disabled
@@ -8325,7 +8326,7 @@ class Tauon:
 			self.gui.pl_update = 1
 			return
 
-		if self.pctl.playing_state > 0 and len(self.pctl.track_queue) > 0:
+		if self.pctl.playing_state != PlayingState.STOPPED and len(self.pctl.track_queue) > 0:
 			self.pctl.multi_playlist[index].playlist_ids.append(self.pctl.track_queue[self.pctl.queue_step])
 			self.gui.pl_update = 1
 
@@ -8616,7 +8617,7 @@ class Tauon:
 		return title
 
 	def append_deco(self) -> list[ColourRGBA | str | None]:
-		line_colour = self.colours.menu_text if self.pctl.playing_state > 0 else self.colours.menu_text_disabled
+		line_colour = self.colours.menu_text if self.pctl.playing_state != PlayingState.STOPPED else self.colours.menu_text_disabled
 
 		text = None
 		if self.spot_ctl.coasting:
@@ -9571,7 +9572,7 @@ class Tauon:
 				hide_title=False))
 
 	def get_playing_line(self) -> str:
-		if 3 > self.pctl.playing_state > 0:
+		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 			title = self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].title
 			artist = self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].artist
 			return artist + " - " + title
@@ -9778,7 +9779,7 @@ class Tauon:
 		match_track = self.pctl.get_track(self.pctl.default_playlist[self.gui.shift_selection[0]])
 		match_path = match_track.parent_folder_path
 
-		if self.pctl.playing_state > 0 and move and self.pctl.playing_object().parent_folder_path == move_path:
+		if self.pctl.playing_state != PlayingState.STOPPED and move and self.pctl.playing_object().parent_folder_path == move_path:
 			self.pctl.stop(True)
 
 		p = Path(match_path)
@@ -9985,7 +9986,7 @@ class Tauon:
 		return None
 
 	def spot_heart_xmenu_colour(self) -> ColourRGBA | None:
-		if self.pctl.playing_state not in (1, 2):
+		if self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.PAUSED):
 			return None
 		tr = self.pctl.playing_object()
 		if tr and "spotify-liked" in tr.misc:
@@ -10021,7 +10022,7 @@ class Tauon:
 		tr = self.pctl.get_track(self.pctl.r_menu_index)
 		text = _("Spotify Like Track")
 
-		# if self.pctl.playing_state == 0 or not tr or not "spotify-track-url" in tr.misc:
+		# if self.pctl.playing_state == PlayingState.STOPPED or not tr or not "spotify-track-url" in tr.misc:
 		#	 return [self.colours.menu_text_disabled, self.colours.menu_background, text]
 		if "spotify-liked" in tr.misc:
 			text = _("Un-like Spotify Track")
@@ -10183,7 +10184,7 @@ class Tauon:
 			return
 
 		try:
-			if self.pctl.playing_state > 0 and os.path.normpath(
+			if self.pctl.playing_state != PlayingState.STOPPED and os.path.normpath(
 					self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].parent_folder_path) == os.path.normpath(old):
 				self.pctl.stop(True)
 
@@ -10280,7 +10281,7 @@ class Tauon:
 					self.show_message(_("Rename Failed."), _("A folder with that name already exists"), mode="warning")
 					return
 
-				if key == self.pctl.track_queue[self.pctl.queue_step] and self.pctl.playing_state > 0:
+				if key == self.pctl.track_queue[self.pctl.queue_step] and self.pctl.playing_state != PlayingState.STOPPED:
 					pre_state = self.pctl.stop(True)
 
 				object.parent_folder_name = new
@@ -10358,7 +10359,7 @@ class Tauon:
 			return True
 
 		pre_state = 0
-		if self.pctl.playing_state > 0 and track.parent_folder_path in self.pctl.playing_object().parent_folder_path:
+		if self.pctl.playing_state != PlayingState.STOPPED and track.parent_folder_path in self.pctl.playing_object().parent_folder_path:
 			pre_state = self.pctl.stop(True)
 
 		try:
@@ -11256,7 +11257,7 @@ class Tauon:
 		tr = self.pctl.playing_object()
 		if tr is None:
 			return None
-		if not tr.title and not tr.artist and self.pctl.playing_state == 3:
+		if not tr.title and not tr.artist and self.pctl.playing_state == PlayingState.URL_STREAM:
 			return self.pctl.tag_meta
 		text = f"{tr.artist} - {tr.title}".strip(" -")
 		if text:
@@ -11315,7 +11316,7 @@ class Tauon:
 		self.pctl.advance(rr=True)
 
 	def heart_menu_colour(self) -> ColourRGBA | None:
-		if self.pctl.playing_state not in (1, 2):
+		if self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.PAUSED):
 			if self.colours.lm:
 				return ColourRGBA(255, 150, 180, 255)
 			return None
@@ -11370,7 +11371,8 @@ class Tauon:
 		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
 
 	def show_spot_playing(self) -> None:
-		if self.pctl.playing_state not in (0, 3) and not self.spot_ctl.coasting and not self.spot_ctl.playing:
+		if self.pctl.playing_state not in (PlayingState.STOPPED, PlayingState.URL_STREAM) \
+		and not self.spot_ctl.coasting and not self.spot_ctl.playing:
 			self.pctl.stop()
 		self.spot_ctl.update(start=True)
 
@@ -11380,7 +11382,7 @@ class Tauon:
 			self.spot_ctl.update(start=True)
 		self.pctl.playerCommand = "spotcon"
 		self.pctl.playerCommandReady = True
-		self.pctl.playing_state = 3
+		self.pctl.playing_state = PlayingState.URL_STREAM
 		shooter(self.spot_ctl.transfer_to_tauon)
 
 	def spot_import_albums(self) -> None:
@@ -11448,7 +11450,7 @@ class Tauon:
 		shooter(self.spot_ctl.artist_playlist, (url,))
 
 	# def spot_transfer_playback_here_deco(self):
-	# 	tr = self.pctl.playing_state == 3:
+	# 	tr = self.pctl.playing_state == PlayingState.URL_STREAM:
 	# 	text = _("Show Full Album")
 	# 	if not tr:
 	# 		return [self.colours.menu_text_disabled, self.colours.menu_background, text]
@@ -11623,12 +11625,12 @@ class Tauon:
 				while True:
 
 					current_index = self.pctl.playing_object().index
-					if self.pctl.playing_state == 3:
+					if self.pctl.playing_state == PlayingState.URL_STREAM:
 						current_index = self.radiobox.song_key
 
-					if current_state == 0 and self.pctl.playing_state in (1, 3):
+					if current_state == 0 and self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						current_state = 1
-					elif current_state == 1 and self.pctl.playing_state not in (1, 3):
+					elif current_state == 1 and self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						current_state = 0
 						idle_time.set()
 
@@ -11651,7 +11653,7 @@ class Tauon:
 						while True:
 							if self.prefs.disconnect_discord:
 								break
-							if self.pctl.playing_state == 1:
+							if self.pctl.playing_state == PlayingState.PLAYING:
 								logging.info("Reconnect discord...")
 								RPC.connect()
 								self.gui.discord_status = "Connected"
@@ -11676,7 +11678,7 @@ class Tauon:
 
 				title = _("Unknown Track")
 				tr = self.pctl.playing_object()
-				if tr.artist and tr.title and self.pctl.playing_state == 3:
+				if tr.artist and tr.title and self.pctl.playing_state == PlayingState.URL_STREAM:
 					title = tr.title + " | " + tr.artist
 				else:
 					title = tr.title
@@ -11685,7 +11687,7 @@ class Tauon:
 
 				artist = tr.artist if tr.artist else _("Unknown Artist")
 
-				if self.pctl.playing_state == 3 and tr.album:
+				if self.pctl.playing_state == PlayingState.URL_STREAM and tr.album:
 					album = self.radiobox.loaded_station["title"]
 				else:
 					album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
@@ -11706,11 +11708,11 @@ class Tauon:
 					RPC.update(
 						activity_type = ActivityType.LISTENING,
 						pid=self.pid,
-						**({"state": artist} if self.pctl.playing_state != 3 else {"state": album}),
+						**({"state": artist} if self.pctl.playing_state != PlayingState.URL_STREAM else {"state": album}),
 						details=title,
 						start=int(start_time),
-						**({"end": int(start_time + tr.length)} if self.pctl.playing_state != 3 else {}),
-						**({"large_text": album} if album and self.pctl.playing_state != 3 else {}),
+						**({"end": int(start_time + tr.length)} if self.pctl.playing_state != PlayingState.URL_STREAM else {}),
+						**({"large_text": album} if album and self.pctl.playing_state != PlayingState.URL_STREAM else {}),
 						large_image=large_image,
 						small_image=small_image)
 
@@ -13015,7 +13017,7 @@ class Tauon:
 		return self.pctl.master_library[index]
 
 	def update_title_do(self) -> None:
-		if self.pctl.playing_state > 0:
+		if self.pctl.playing_state != PlayingState.STOPPED:
 			if len(self.pctl.track_queue) > 0:
 				line = self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].artist + " - " + \
 					self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].title
@@ -15057,7 +15059,7 @@ class Tauon:
 	def love_deco(self) -> list[list[int] | str | None]:
 		if self.love(False):
 			return [self.colours.menu_text, self.colours.menu_background, _("Un-Love Track")]
-		if self.pctl.playing_state in (1, 2):
+		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 			return [self.colours.menu_text, self.colours.menu_background, _("Love Track")]
 		return [self.colours.menu_text_disabled, self.colours.menu_background, _("Love Track")]
 
@@ -15104,7 +15106,7 @@ class Tauon:
 		tr = self.pctl.playing_object()
 		text = _("Spotify Like Track")
 
-		if self.pctl.playing_state == 0 or not tr or "spotify-track-url" not in tr.misc:
+		if self.pctl.playing_state == PlayingState.STOPPED or not tr or "spotify-track-url" not in tr.misc:
 			return [self.colours.menu_text_disabled, self.colours.menu_background, text]
 		if "spotify-liked" in tr.misc:
 			text = _("Un-like Spotify Track")
@@ -18038,7 +18040,7 @@ class Tauon:
 
 	def paste_playlist_coast_fire(self) -> None:
 		url = None
-		if self.spot_ctl.coasting and self.pctl.playing_state == 3:
+		if self.spot_ctl.coasting and self.pctl.playing_state == PlayingState.URL_STREAM:
 			url = self.spot_ctl.get_album_url_from_local(self.pctl.playing_object())
 		elif self.pctl.playing_ready() and "spotify-album-url" in self.pctl.playing_object().misc:
 			url = self.pctl.playing_object().misc["spotify-album-url"]
@@ -18048,7 +18050,7 @@ class Tauon:
 
 	def paste_playlist_track_coast_fire(self) -> None:
 		url = None
-		# if self.spot_ctl.coasting and self.pctl.playing_state == 3:
+		# if self.spot_ctl.coasting and self.pctl.playing_state == PlayingState.URL_STREAM:
 		#	 url = self.spot_ctl.get_album_url_from_local(self.pctl.playing_object())
 		if self.pctl.playing_ready() and "spotify-track-url" in self.pctl.playing_object().misc:
 			url = self.pctl.playing_object().misc["spotify-track-url"]
@@ -19710,7 +19712,7 @@ class TimedLyricsRen:
 			y_center = self.window_size[1]/2
 
 		# reset scroll position after 5 seconds
-		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == 1:
+		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == PlayingState.PLAYING:
 			self.scroll_position = scroll_to
 
 		test_time = self.tauon.get_real_time()
@@ -21751,7 +21753,7 @@ class StyleOverlay:
 		if self.stage == 2:
 			track = self.pctl.playing_object()
 
-			if self.pctl.playing_state == 3 and not self.tauon.spot_ctl.coasting:
+			if self.pctl.playing_state == PlayingState.URL_STREAM and not self.tauon.spot_ctl.coasting:
 				if self.radio_meta != self.pctl.tag_meta:
 					self.radio_meta = self.pctl.tag_meta
 					self.current_track_id = -1
@@ -22124,7 +22126,7 @@ class RenameTrackBox:
 			pre_state = 0
 
 			for item in r_todo:
-				if self.pctl.playing_state > 0 and item == self.pctl.track_queue[self.pctl.queue_step]:
+				if self.pctl.playing_state != PlayingState.STOPPED and item == self.pctl.track_queue[self.pctl.queue_step]:
 					pre_state = self.pctl.stop(True)
 
 				try:
@@ -26831,7 +26833,7 @@ class TopPanel:
 					title = tr.filename
 				artist = tr.artist
 
-				if pctl.playing_state == 3 and not tauon.radiobox.dummy_track.title:
+				if pctl.playing_state == PlayingState.URL_STREAM and not tauon.radiobox.dummy_track.title:
 					title = pctl.tag_meta
 					artist = tauon.radiobox.loaded_url  # pctl.url
 
@@ -27153,9 +27155,9 @@ class TopPanel:
 							self.tab_d_click_timer.get() < 0.25 and point_distance(
 								self.inp.last_click_location, self.inp.mouse_up_position) < 5 * gui.scale:
 
-						if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
+						if pctl.playing_state == PlayingState.PAUSED and pctl.active_playlist_playing == i:
 							pctl.play()
-						elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
+						elif pctl.selected_ready() and (pctl.playing_state != PlayingState.PLAYING or pctl.active_playlist_playing != i):
 							pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
 					if self.inp.mouse_up:
 						self.tab_d_click_timer.set()
@@ -27784,8 +27786,9 @@ class BottomBarType1:
 			right_offset -= 90 * self.gui.scale
 		# Scrobble marker
 
-		if prefs.scrobble_mark and (
-				prefs.auto_lfm or self.tauon.lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold and pctl.playing_length > 0 and 3 > pctl.playing_state > 0:
+		if prefs.scrobble_mark \
+		and (prefs.auto_lfm or self.tauon.lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold \
+		and pctl.playing_length > 0 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 			if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
 				l_target = 240
 			else:
@@ -27807,7 +27810,7 @@ class BottomBarType1:
 		# if gui.bb_show_art:
 		# 	rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
 		# 	ddt.rect_r(rect, [255, 255, 255, 8], True)
-		# 	if 3 > pctl.playing_state > 0:
+		# 	if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED:
 		# 		tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, ColourRGBA(255, 255, 255, 20))
@@ -27825,13 +27828,13 @@ class BottomBarType1:
 		if inp.right_click and coll_point(
 			inp.mouse_position, self.seek_bar_position + [self.seek_bar_size[0]] + [self.seek_bar_size[1] + 2]):
 			pctl.pause()
-			if pctl.playing_state == 0:
+			if pctl.playing_state == PlayingState.STOPPED:
 				pctl.play()
 
 		self.fields.add(self.seek_bar_position + self.seek_bar_size)
 		if self.coll(self.seek_bar_position + self.seek_bar_size):
 
-			if self.inp.middle_click and pctl.playing_state > 0:
+			if self.inp.middle_click and pctl.playing_state != PlayingState.STOPPED:
 				gui.seek_cur_show = True
 
 			inp.global_clicked = True
@@ -28095,7 +28098,7 @@ class BottomBarType1:
 		if not prefs.hide_bottom_title:
 			gui.show_bottom_title = True
 
-		if gui.show_bottom_title and pctl.playing_state > 0 and window_size[0] > 820 * gui.scale:
+		if gui.show_bottom_title and pctl.playing_state != PlayingState.STOPPED and window_size[0] > 820 * gui.scale:
 			line = pctl.title_text()
 
 			x = self.seek_bar_position[0] + 1
@@ -28112,14 +28115,14 @@ class BottomBarType1:
 		if (inp.mouse_click or inp.right_click) and self.coll((
 				self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale,
 				window_size[0] - 710 * gui.scale, 30 * gui.scale)):
-			# if pctl.playing_state == 3:
-			#     copy_to_clipboard(pctl.tag_meta)
-			#     self.show_message("Copied text to clipboard")
-			#     if input.mouse_click or inp.right_click:
-			#         input.mouse_click = False
-			#         inp.right_click = False
+			# if pctl.playing_state == PlayingState.URL_STREAM:
+			# 	copy_to_clipboard(pctl.tag_meta)
+			# 	self.show_message("Copied text to clipboard")
+			# 	if input.mouse_click or inp.right_click:
+			# 		input.mouse_click = False
+			# 		inp.right_click = False
 			# else:
-			if inp.mouse_click and pctl.playing_state != 3:
+			if inp.mouse_click and pctl.playing_state != PlayingState.URL_STREAM:
 				pctl.show_current()
 
 			if pctl.playing_ready() and not gui.fullscreen:
@@ -28153,7 +28156,7 @@ class BottomBarType1:
 				(x + 1 * gui.scale, y), text_time, colours.time_playing,
 				fonts.bottom_panel_time)
 		elif gui.display_time_mode == 1:
-			if pctl.playing_state == 0:
+			if pctl.playing_state == PlayingState.STOPPED:
 				text_time = get_display_time(0)
 			else:
 				text_time = get_display_time(pctl.playing_length - pctl.playing_time)
@@ -28184,9 +28187,9 @@ class BottomBarType1:
 				(x + offset1, y), "/", colours.time_sub,
 				fonts.bottom_panel_time)
 			text_time = get_display_time(pctl.playing_length)
-			if pctl.playing_state == 0:
+			if pctl.playing_state == PlayingState.STOPPED:
 				text_time = get_display_time(0)
-			elif pctl.playing_state == 3:
+			elif pctl.playing_state == PlayingState.URL_STREAM:
 				text_time = "-- : --"
 			ddt.text(
 				(x + offset2, y), text_time, colours.time_sub,
@@ -28227,9 +28230,9 @@ class BottomBarType1:
 				(x + offset1, y), "/", colours.time_sub,
 				fonts.bottom_panel_time)
 			text_time = get_display_time(gui.dtm3_total)
-			if pctl.playing_state == 0:
+			if pctl.playing_state == PlayingState.STOPPED:
 				text_time = get_display_time(0)
-			elif pctl.playing_state == 3:
+			elif pctl.playing_state == PlayingState.URL_STREAM:
 				text_time = "-- : --"
 			ddt.text(
 				(x + offset2, y), text_time, colours.time_sub,
@@ -28251,21 +28254,21 @@ class BottomBarType1:
 			forward_colour = colours.media_buttons_off
 			back_colour = colours.media_buttons_off
 
-			if pctl.playing_state == 1:
+			if pctl.playing_state == PlayingState.PLAYING:
 				play_colour = colours.media_buttons_active
 
 			if pctl.stop_mode > 0:
 				stop_colour = colours.media_buttons_active
 
-			if pctl.playing_state == 2 or (tauon.spot_ctl.coasting and tauon.spot_ctl.paused):
+			if pctl.playing_state == PlayingState.PAUSED or (tauon.spot_ctl.coasting and tauon.spot_ctl.paused):
 				pause_colour = colours.media_buttons_active
 				play_colour = colours.media_buttons_active
-			elif pctl.playing_state == 3:
+			elif pctl.playing_state == PlayingState.URL_STREAM:
 				play_colour = colours.media_buttons_active
 				if tauon.stream_proxy.encode_running:
 					play_colour = ColourRGBA(220, 50, 50, 255)
 
-			if not compact or (compact and pctl.playing_state != 1):
+			if not compact or (compact and pctl.playing_state != PlayingState.PLAYING):
 				rect = (
 				buttons_x_offset + (10 * gui.scale), window_size[1] - self.control_line_bottom - (13 * gui.scale),
 				50 * gui.scale, 40 * gui.scale)
@@ -28273,9 +28276,9 @@ class BottomBarType1:
 				if self.coll(rect):
 					play_colour = colours.media_buttons_over
 					if inp.mouse_click:
-						if compact and pctl.playing_state == 1:
+						if compact and pctl.playing_state == PlayingState.PLAYING:
 							pctl.pause()
-						elif pctl.playing_state == 1 or tauon.spot_ctl.coasting:
+						elif pctl.playing_state == PlayingState.PLAYING or tauon.spot_ctl.coasting:
 							pctl.show_current(highlight=True)
 						else:
 							pctl.play()
@@ -28295,11 +28298,11 @@ class BottomBarType1:
 			x = (75 * gui.scale) + buttons_x_offset
 			y = window_size[1] - self.control_line_bottom
 
-			if not compact or (compact and pctl.playing_state == 1):
+			if not compact or (compact and pctl.playing_state == PlayingState.PLAYING):
 
 				rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
 				self.fields.add(rect)
-				if self.coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
+				if self.coll(rect) and not (pctl.playing_state == PlayingState.URL_STREAM and not tauon.spot_ctl.coasting):
 					pause_colour = colours.media_buttons_over
 					if inp.mouse_click:
 						pctl.pause()
@@ -28334,7 +28337,7 @@ class BottomBarType1:
 			rect = (buttons_x_offset + 230 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
 			self.fields.add(rect)
-			if self.coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
+			if self.coll(rect) and not (pctl.playing_state == PlayingState.URL_STREAM and not tauon.spot_ctl.coasting):
 				forward_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.advance()
@@ -28369,7 +28372,7 @@ class BottomBarType1:
 			rect = (buttons_x_offset + 170 * gui.scale, window_size[1] - self.control_line_bottom - 10 * gui.scale,
 					50 * gui.scale, 35 * gui.scale)
 			self.fields.add(rect)
-			if self.coll(rect) and not (pctl.playing_state == 3 and not tauon.spot_ctl.coasting):
+			if self.coll(rect) and not (pctl.playing_state == PlayingState.URL_STREAM and not tauon.spot_ctl.coasting):
 				back_colour = colours.media_buttons_over
 				if inp.mouse_click:
 					pctl.back()
@@ -28629,7 +28632,7 @@ class BottomBarType_ao1:
 		# if gui.bb_show_art:
 		# 	rect = [self.seek_bar_position[0] - gui.panelBY, self.seek_bar_position[1], gui.panelBY, gui.panelBY]
 		# 	ddt.rect_r(rect, [255, 255, 255, 8], True)
-		# 	if 3 > pctl.playing_state > 0:
+		# 	if (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 		# 		tauon.album_art_gen.display(pctl.track_queue[pctl.queue_step], (rect[0], rect[1]), (rect[2], rect[3]))
 
 		# ddt.rect_r(rect, [255, 255, 255, 20])
@@ -28753,7 +28756,7 @@ class BottomBarType_ao1:
 			text_time = get_display_time(self.pctl.playing_time)
 			self.ddt.text((x + 1 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
 		elif self.gui.display_time_mode == 1:
-			if self.pctl.playing_state == 0:
+			if self.pctl.playing_state == PlayingState.STOPPED:
 				text_time = get_display_time(0)
 			else:
 				text_time = get_display_time(self.pctl.playing_length - self.pctl.playing_time)
@@ -28775,13 +28778,13 @@ class BottomBarType_ao1:
 
 			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
 			text_time = get_display_time(self.pctl.playing_length)
-			if self.pctl.playing_state == 0:
+			if self.pctl.playing_state == PlayingState.STOPPED:
 				text_time = get_display_time(0)
-			elif self.pctl.playing_state == 3:
+			elif self.pctl.playing_state == PlayingState.URL_STREAM:
 				text_time = "-- : --"
 			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
 
-		elif self.gui.display_time_mode == 3:
+		elif self.gui.display_time_mode == PlayingState.URL_STREAM:
 			self.colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.bottom_panel_colour)
 
 			track = self.pctl.playing_object()
@@ -28814,9 +28817,9 @@ class BottomBarType_ao1:
 
 			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
 			text_time = get_display_time(self.gui.dtm3_total)
-			if self.pctl.playing_state == 0:
+			if self.pctl.playing_state == PlayingState.STOPPED:
 				text_time = get_display_time(0)
-			elif self.pctl.playing_state == 3:
+			elif self.pctl.playing_state == PlayingState.URL_STREAM:
 				text_time = "-- : --"
 			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
 
@@ -28836,21 +28839,21 @@ class BottomBarType_ao1:
 			forward_colour = self.colours.media_buttons_off
 			back_colour = self.colours.media_buttons_off
 
-			if self.pctl.playing_state == 1:
+			if self.pctl.playing_state == PlayingState.PLAYING:
 				play_colour = self.colours.media_buttons_active
 
 			if self.pctl.stop_mode > 0:
 				stop_colour = self.colours.media_buttons_active
 
-			if self.pctl.playing_state == 2:
+			if self.pctl.playing_state == PlayingState.PAUSED:
 				pause_colour = self.colours.media_buttons_active
 				play_colour = self.colours.media_buttons_active
-			elif self.pctl.playing_state == 3:
+			elif self.pctl.playing_state == PlayingState.URL_STREAM:
 				play_colour = self.colours.media_buttons_active
 				if self.pctl.record_stream:
 					play_colour = ColourRGBA(220, 50, 50, 255)
 
-			if not compact or (compact and self.pctl.playing_state != 2):
+			if not compact or (compact and self.pctl.playing_state != PlayingState.PAUSED):
 				rect = (
 				buttons_x_offset + (10 * self.gui.scale), self.window_size[1] - self.control_line_bottom - (13 * self.gui.scale),
 				50 * self.gui.scale, 40 * self.gui.scale)
@@ -28858,9 +28861,9 @@ class BottomBarType_ao1:
 				if self.coll(rect):
 					play_colour = self.colours.media_buttons_over
 					if self.inp.mouse_click:
-						if compact and self.pctl.playing_state == 1:
+						if compact and self.pctl.playing_state == PlayingState.PLAYING:
 							self.pctl.pause()
-						elif self.pctl.playing_state == 1:
+						elif self.pctl.playing_state == PlayingState.PLAYING:
 							self.pctl.show_current(highlight=True)
 						else:
 							self.pctl.play()
@@ -28880,11 +28883,11 @@ class BottomBarType_ao1:
 			x = (75 * self.gui.scale) + buttons_x_offset
 			y = self.window_size[1] - self.control_line_bottom
 
-			if not compact or (compact and self.pctl.playing_state == 2):
+			if not compact or (compact and self.pctl.playing_state == PlayingState.PAUSED):
 
 				rect = (x - 15 * self.gui.scale, y - 13 * self.gui.scale, 50 * self.gui.scale, 40 * self.gui.scale)
 				self.fields.add(rect)
-				if self.coll(rect) and self.pctl.playing_state != 3:
+				if self.coll(rect) and self.pctl.playing_state != PlayingState.URL_STREAM:
 					pause_colour = self.colours.media_buttons_over
 					if self.inp.mouse_click:
 						self.pctl.pause()
@@ -28901,7 +28904,7 @@ class BottomBarType_ao1:
 				buttons_x_offset + 125 * self.gui.scale,
 				self.window_size[1] - self.control_line_bottom - 10 * self.gui.scale, 50 * self.gui.scale, 35 * self.gui.scale)
 			self.fields.add(rect)
-			if self.coll(rect) and self.pctl.playing_state != 3:
+			if self.coll(rect) and self.pctl.playing_state != PlayingState.URL_STREAM:
 				forward_colour = self.colours.media_buttons_over
 				if self.inp.mouse_click:
 					self.pctl.advance()
@@ -29073,7 +29076,7 @@ class MiniMode:
 				if self.gui.theme_name == "Carbon":
 					seek_colour = self.colours.bottom_panel_colour
 
-				if self.pctl.playing_state != 1:
+				if self.pctl.playing_state != PlayingState.PLAYING:
 					seek_colour = ColourRGBA(210, 40, 100, 255)
 
 				seek_r[2] = progress_w
@@ -29287,7 +29290,7 @@ class MiniMode2:
 		bg_rect = (h, h - round(5 * self.gui.scale), w - h, round(5 * self.gui.scale))
 		self.ddt.rect(bg_rect, ColourRGBA(255, 255, 255, 18))
 
-		if self.pctl.playing_state > 0:
+		if self.pctl.playing_state != PlayingState.STOPPED:
 			hit_rect = h - 5 * self.gui.scale, h - 12 * self.gui.scale, w - h + 5 * self.gui.scale, 13 * self.gui.scale
 
 			if self.coll(hit_rect) and self.inp.mouse_up:
@@ -29307,7 +29310,7 @@ class MiniMode2:
 				colour = self.colours.artist_text
 				if self.gui.theme_name == "Carbon":
 					colour = self.colours.bottom_panel_colour
-				if self.pctl.playing_state != 1:
+				if self.pctl.playing_state != PlayingState.PLAYING:
 					colour = ColourRGBA(210, 40, 100, 255)
 				self.ddt.rect(seek_rect, colour)
 
@@ -29482,7 +29485,7 @@ class MiniMode3:
 				if self.gui.theme_name == "Carbon":
 					seek_colour = self.colours.bottom_panel_colour
 
-				if self.pctl.playing_state != 1:
+				if self.pctl.playing_state != PlayingState.PLAYING:
 					seek_colour = ColourRGBA(210, 40, 100, 255)
 
 				seek_r[2] = progress_w
@@ -30106,8 +30109,8 @@ class StandardPlaylist:
 			if track_position in self.gui.shift_selection or track_position == pctl.selected_in_playlist:
 				highlight = True
 
-			if pctl.playing_state != 3 and len(pctl.track_queue) > 0 and pctl.track_queue[pctl.queue_step] == \
-					pctl.default_playlist[track_position]:
+			if pctl.playing_state != PlayingState.URL_STREAM and len(pctl.track_queue) > 0 \
+			and pctl.track_queue[pctl.queue_step] == pctl.default_playlist[track_position]:
 				if track_position == pctl.playlist_playing_position and pctl.active_playlist_viewing == pctl.active_playlist_playing:
 					playing = True
 
@@ -31204,7 +31207,7 @@ class RadioBox:
 		self.pctl.record_stream = False
 		self.pctl.playerCommand = "url"
 		self.pctl.playerCommandReady = True
-		self.pctl.playing_state = 3
+		self.pctl.playing_state = PlayingState.URL_STREAM
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
 		self.pctl.playing_length = 0
@@ -31570,7 +31573,7 @@ class RadioBox:
 				self.load_failed = False
 		elif self.searching:
 			self.ddt.text((x + 495 * self.gui.scale, yy + 8 * self.gui.scale, 1), _("Searching..."), self.colours.box_title_text, 311)
-		elif self.pctl.playing_state == 3:
+		elif self.pctl.playing_state == PlayingState.URL_STREAM:
 			text = ""
 			if self.tauon.stream_proxy.s_format:
 				text = str(self.tauon.stream_proxy.s_format)
@@ -31700,7 +31703,7 @@ class RadioBox:
 			bg = self.colours.box_background
 			text_colour = self.colours.box_input_text
 
-			playing = self.pctl.playing_state == 3 and self.loaded_url == station.stream_url
+			playing = self.pctl.playing_state == PlayingState.URL_STREAM and self.loaded_url == station.stream_url
 
 			if playing:
 				# bg = self.colours.box_sub_highlight
@@ -31809,13 +31812,13 @@ class RadioBox:
 		h = self.h
 
 		yy = y + round(328 * self.gui.scale)
-		if self.pctl.playing_state == 3 and not self.prefs.auto_rec:
+		if self.pctl.playing_state == PlayingState.URL_STREAM and not self.prefs.auto_rec:
 			old = self.prefs.auto_rec
 			if not old and self.tauon.pref_box.toggle_square(
 				x, yy, self.prefs.auto_rec, _("Record and auto split songs"),
 				click=self.gui.level_2_click):
 				self.show_message(_("Please stop playback first before toggling this setting"))
-		elif self.pctl.playing_state == 3:
+		elif self.pctl.playing_state == PlayingState.URL_STREAM:
 			old = self.prefs.auto_rec
 			if old and not self.tauon.pref_box.toggle_square(
 				x, yy, self.prefs.auto_rec, _("Record and auto split songs"),
@@ -32277,9 +32280,9 @@ class PlaylistBox:
 					self.tauon.top_panel.tab_d_click_timer.get() < 0.25 and \
 					point_distance(self.inp.last_click_location, self.inp.mouse_up_position) < 5 * gui.scale:
 
-					if pctl.playing_state == 2 and pctl.active_playlist_playing == i:
+					if pctl.playing_state == PlayingState.PAUSED and pctl.active_playlist_playing == i:
 						pctl.play()
-					elif pctl.selected_ready() and (pctl.playing_state != 1 or pctl.active_playlist_playing != i):
+					elif pctl.selected_ready() and (pctl.playing_state != PlayingState.PLAYING or pctl.active_playlist_playing != i):
 						pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pl_position=pctl.selected_in_playlist)
 				if self.inp.mouse_up:
 					self.tauon.top_panel.tab_d_click_timer.set()
@@ -33579,7 +33582,7 @@ class TreeView:
 							text_colour = ColourRGBA(0, 0, 0, 255)
 
 			# Set highlight colours if folder is playing
-			if 0 < self.pctl.playing_state < 3 and playing_track:
+			if (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)) and playing_track:
 				if playing_track.parent_folder_path == full_folder_path or full_folder_path + "/" in playing_track.fullpath:
 					text_colour = ColourRGBA(255, 255, 255, 225)
 					box_colour  = ColourRGBA(140, 220, 20, 255)
@@ -34549,7 +34552,7 @@ class MetaBox:
 
 		# Test for show lyric menu on right ckick
 		if self.coll((x + 10, y, w - 10, h)):
-			if self.inp.right_click:  # and 3 > self.pctl.playing_state > 0:
+			if self.inp.right_click:  # and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 				self.gui.force_showcase_index = -1
 				self.showcase_menu.activate(track)
 
@@ -34609,11 +34612,11 @@ class MetaBox:
 
 		# Test for show lyric menu on right ckick
 		if self.coll((x + 10, y, w - 10, h)):
-			if self.inp.right_click:  # and 3 > self.pctl.playing_state > 0:
+			if self.inp.right_click:  # and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 				self.gui.force_showcase_index = -1
 				self.showcase_menu.activate(track)
 
-		if self.pctl.playing_state == 0:
+		if self.pctl.playing_state == PlayingState.STOPPED:
 			if not self.prefs.meta_persists_stop and not self.prefs.meta_shows_selected and not self.prefs.meta_shows_selected_always:
 				return
 
@@ -34631,7 +34634,7 @@ class MetaBox:
 
 		# Draw standard metadata
 		if len(self.pctl.track_queue) > 0:
-			if self.pctl.playing_state == 0:
+			if self.pctl.playing_state == PlayingState.STOPPED:
 				if not self.prefs.meta_persists_stop and not self.prefs.meta_shows_selected and not self.prefs.meta_shows_selected_always:
 					return
 
@@ -34657,15 +34660,15 @@ class MetaBox:
 			text_width = w - 25 * self.gui.scale
 			tr = None
 
-			# if pctl.playing_state < 3:
+			# if pctl.playing_state != PlayingState.URL_STREAM:
 
-			if self.pctl.playing_state == 0 and self.prefs.meta_persists_stop:
+			if self.pctl.playing_state == PlayingState.STOPPED and self.prefs.meta_persists_stop:
 				tr = self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]]
-			if self.pctl.playing_state == 0 and self.prefs.meta_shows_selected:
+			if self.pctl.playing_state == PlayingState.STOPPED and self.prefs.meta_shows_selected:
 				if -1 < self.pctl.selected_in_playlist < len(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].playlist_ids):
 					tr = self.pctl.get_track(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].playlist_ids[self.pctl.selected_in_playlist])
 
-			if self.prefs.meta_shows_selected_always and self.pctl.playing_state != 3:
+			if self.prefs.meta_shows_selected_always and self.pctl.playing_state != PlayingState.URL_STREAM:
 				if -1 < self.pctl.selected_in_playlist < len(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].playlist_ids):
 					tr = self.pctl.get_track(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].playlist_ids[self.pctl.selected_in_playlist])
 
@@ -35393,7 +35396,7 @@ class RadioView:
 		radios = pctl.radio_playlists[pctl.radio_playlist_viewing].stations
 
 		y += round(32 * gui.scale)
-		if pctl.playing_state == 3 and radiobox.loaded_station not in radios:
+		if pctl.playing_state == PlayingState.URL_STREAM and radiobox.loaded_station not in radios:
 			rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
 			self.fields.add(rect)
 
@@ -35528,7 +35531,7 @@ class RadioView:
 		art_rect = (count - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
 
 		if window_size[0] > round(700 * gui.scale):
-			if pctl.playing_state == 3 and radiobox.loaded_station:
+			if pctl.playing_state == PlayingState.URL_STREAM and radiobox.loaded_station:
 				r = self.tauon.album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
 				if r:
 					r = self.tauon.radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
@@ -35540,7 +35543,7 @@ class RadioView:
 			yy = window_size[1] / 3 - boxx / 2
 			yy += boxx + round(30 * gui.scale)
 
-			if radiobox.loaded_station and pctl.playing_state == 3:
+			if radiobox.loaded_station and pctl.playing_state == PlayingState.URL_STREAM:
 				space = window_size[0] - round(500 * gui.scale)
 				self.ddt.text(
 					(count, yy, 2), radiobox.loaded_station.title, ColourRGBA(230, 230, 230, 255), 213, max_w=space)
@@ -35662,7 +35665,7 @@ class Showcase:
 
 		# self.ddt.force_gray = True
 
-		if self.pctl.playing_state == 3 and not self.tauon.radiobox.dummy_track.title:
+		if self.pctl.playing_state == PlayingState.URL_STREAM and not self.tauon.radiobox.dummy_track.title:
 			if not self.pctl.tag_meta:
 				y = int(self.window_size[1] / 2) - 60 - self.gui.scale
 				self.ddt.text((self.window_size[0] // 2, y, 2), self.pctl.url, self.colours.side_bar_line2, 317)
@@ -35694,7 +35697,7 @@ class Showcase:
 			if self.gui.force_showcase_index >= 0:
 				index = self.gui.force_showcase_index
 				track = self.pctl.master_library[index]
-			elif self.pctl.playing_state == 3:
+			elif self.pctl.playing_state == PlayingState.URL_STREAM:
 				track = self.tauon.radiobox.dummy_track
 			else:
 				index = self.pctl.track_queue[self.pctl.queue_step]
@@ -35844,8 +35847,8 @@ class Showcase:
 			sdl3.SDL_SetRenderDrawColor(
 				self.renderer, self.gui.vis_4_colour.r, self.gui.vis_4_colour.g, self.gui.vis_4_colour.b, self.gui.vis_4_colour.a)
 
-		if (self.pctl.playing_time < 0.5 and (self.pctl.playing_state in (1, 3))) or (
-				self.pctl.playing_state == 0 and self.gui.spec4_array.count(0) != len(self.gui.spec4_array)):
+		if (self.pctl.playing_time < 0.5 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM))) or (
+				self.pctl.playing_state == PlayingState.STOPPED and self.gui.spec4_array.count(0) != len(self.gui.spec4_array)):
 			self.gui.update = 2
 			self.gui.level_update = True
 
@@ -35853,7 +35856,7 @@ class Showcase:
 				self.gui.spec4_array[i] -= 0.1
 				self.gui.spec4_array[i] = max(self.gui.spec4_array[i], 0)
 
-		if not top and (self.pctl.playing_state in (1, 3)):
+		if not top and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 			self.gui.update = 2
 
 		slide = 0.7
@@ -36691,10 +36694,10 @@ class WinTask:
 		if self.d_timer.get() > 2 or force:
 			self.d_timer.set()
 
-			if self.pctl.playing_state == 1 and self.updated_state != 1:
+			if self.pctl.playing_state == PlayingState.PLAYING and self.updated_state != 1:
 				self.taskbar.SetProgressState(self.window_id, 0x2)
 
-			if self.pctl.playing_state == 1:
+			if self.pctl.playing_state == PlayingState.PLAYING:
 				self.updated_state = 1
 				if self.pctl.playing_length > 2:
 					perc = int(self.pctl.playing_time * 100 / int(self.pctl.playing_length))
@@ -36707,11 +36710,11 @@ class WinTask:
 
 				self.taskbar.SetProgressValue(self.window_id, perc, 100)
 
-			elif self.pctl.playing_state == 2 and self.updated_state != 2:
+			elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
 				self.updated_state = 2
 				self.taskbar.SetProgressState(self.window_id, 0x8)
 
-			elif self.pctl.playing_state == 0 and self.updated_state != 0:
+			elif self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
 				self.updated_state = 0
 				self.taskbar.SetProgressState(self.window_id, 0x2)
 				self.taskbar.SetProgressValue(self.window_id, 0, 100)
@@ -38215,7 +38218,7 @@ def worker4(tauon: Tauon) -> None:
 			tauon.style_overlay.worker()
 
 		time.sleep(0.01)
-		if pctl.playing_state > 0 and pctl.playing_time < 5:
+		if pctl.playing_state != PlayingState.STOPPED and pctl.playing_time < 5:
 			gui.style_worker_timer.set()
 		if gui.style_worker_timer.get() > 5:
 			return
@@ -42799,24 +42802,24 @@ def main(holder: Holder) -> None:
 		if gui.level_update and not album_scroll_hold and not scroll_hold:
 			power = 500
 
-		# if gui.vis == 3 and (pctl.playing_state == 1 or pctl.playing_state == 3):
-		#     power = 500
-		#     if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
-		#         gui.spec2_timer.set()
-		#         gui.level_update = True
-		#         vis_update = True
-		#     else:
-		#         sdl3.SDL_Delay(5)
+		# if gui.vis == 3 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
+		# 	power = 500
+		# 	if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
+		# 		gui.spec2_timer.set()
+		# 		gui.level_update = True
+		# 		vis_update = True
+		# 	else:
+		# 		sdl3.SDL_Delay(5)
 
 		if not pctl.running:
 			break
 
-		if pctl.playing_state > 0:
+		if pctl.playing_state != PlayingState.STOPPED:
 			power += 400
 
 		if power < 500:
 			time.sleep(0.03)
-			if (pctl.playing_state in (0, 2)) and not tauon.load_orders and gui.update == 0 \
+			if (pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED)) and not tauon.load_orders and gui.update == 0 \
 			and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
 				pass
 			else:
@@ -43463,7 +43466,7 @@ def main(holder: Holder) -> None:
 
 		if inp.media_key:
 			if inp.media_key == "Play":
-				if pctl.playing_state == 0:
+				if pctl.playing_state == PlayingState.STOPPED:
 					pctl.play()
 				else:
 					pctl.pause()
@@ -44046,9 +44049,9 @@ def main(holder: Holder) -> None:
 
 												if m_in and inp.mouse_up and prefs.gallery_single_click:
 													if tauon.is_level_zero() and gui.d_click_ref == tauon.album_dex[album_on]:
-														if info[0] == 1 and pctl.playing_state == 2:
+														if info[0] == 1 and pctl.playing_state == PlayingState.PAUSED:
 															pctl.play()
-														elif info[0] == 1 and pctl.playing_state > 0:
+														elif info[0] == 1 and pctl.playing_state != PlayingState.STOPPED:
 															pctl.playlist_view_position = tauon.album_dex[album_on]
 															logging.debug("Position changed by gallery click")
 														else:
@@ -44072,9 +44075,9 @@ def main(holder: Holder) -> None:
 													gui.d_click_ref = tauon.album_dex[album_on]
 												else:
 													if tauon.d_click_timer.get() < 0.5 and gui.d_click_ref == tauon.album_dex[album_on]:
-														if info[0] == 1 and pctl.playing_state == 2:
+														if info[0] == 1 and pctl.playing_state == PlayingState.PAUSED:
 															pctl.play()
-														elif info[0] == 1 and pctl.playing_state > 0:
+														elif info[0] == 1 and pctl.playing_state != PlayingState.STOPPED:
 															pctl.playlist_view_position = tauon.album_dex[album_on]
 															logging.debug("Position changed by gallery click")
 														else:
@@ -44214,7 +44217,7 @@ def main(holder: Holder) -> None:
 											x + tauon.album_mode_art_size,
 											window_size[0] - round(50 * gui.scale))
 
-									if info[0] == 1 and 0 < pctl.playing_state < 3:
+									if info[0] == 1 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 										ddt.rect_a(
 											(x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
 											colours.gallery_highlight)
@@ -44287,7 +44290,7 @@ def main(holder: Holder) -> None:
 											ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), ColourRGBA(0, 0, 0, 110))
 											albumtitle = colours.grey(160)
 
-									elif info[0] != 1 and pctl.playing_state != 0 and prefs.dim_art:
+									elif info[0] != 1 and pctl.playing_state != PlayingState.STOPPED and prefs.dim_art:
 										ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), ColourRGBA(0, 0, 0, 110))
 										albumtitle = colours.grey(160)
 
@@ -45191,7 +45194,7 @@ def main(holder: Holder) -> None:
 								if target_track:
 									ddt.text_background_colour = colours.side_panel_background
 
-									if pctl.playing_state == 3 and not radiobox.dummy_track.title:
+									if pctl.playing_state == PlayingState.URL_STREAM and not radiobox.dummy_track.title:
 										title = pctl.tag_meta
 									else:
 										title = target_track.title
@@ -46683,22 +46686,20 @@ def main(holder: Holder) -> None:
 			if gui.turbo:
 				gui.level_update = True
 
-		# if gui.vis == 1 and pctl.playing_state != 1 and gui.level_peak != [0, 0] and gui.turbo:
-		#
-		#     # logging.info(gui.level_peak)
-		#     gui.time_passed = gui.level_time.hit()
-		#     if gui.time_passed > 1:
-		#         gui.time_passed = 0
-		#     while gui.time_passed > 0.01:
-		#         gui.level_peak[1] -= 0.5
-		#         if gui.level_peak[1] < 0:
-		#             gui.level_peak[1] = 0
-		#         gui.level_peak[0] -= 0.5
-		#         if gui.level_peak[0] < 0:
-		#             gui.level_peak[0] = 0
-		#         gui.time_passed -= 0.020
-		#
-		#     gui.level_update = True
+		# if gui.vis == 1 and pctl.playing_state != PlayingState.PLAYING and gui.level_peak != [0, 0] and gui.turbo:
+		# 	# logging.info(gui.level_peak)
+		# 	gui.time_passed = gui.level_time.hit()
+		# 	if gui.time_passed > 1:
+		# 		gui.time_passed = 0
+		# 	while gui.time_passed > 0.01:
+		# 		gui.level_peak[1] -= 0.5
+		# 		if gui.level_peak[1] < 0:
+		# 			gui.level_peak[1] = 0
+		# 		gui.level_peak[0] -= 0.5
+		# 		if gui.level_peak[0] < 0:
+		# 			gui.level_peak[0] = 0
+		# 		gui.time_passed -= 0.020
+		# 	gui.level_update = True
 
 		if gui.level_update is True and not resize_mode and gui.mode != 3:
 			gui.level_update = False
@@ -46775,7 +46776,7 @@ def main(holder: Holder) -> None:
 
 			if gui.vis == 2 and gui.spec is not None:
 				# Standard spectrum visualiser
-				if gui.update_spec == 0 and pctl.playing_state != 2:
+				if gui.update_spec == 0 and pctl.playing_state != PlayingState.PAUSED:
 					if tauon.vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
 						tauon.vis_decay_timer.set()
 						for i in range(len(gui.spec)):
@@ -46789,7 +46790,7 @@ def main(holder: Holder) -> None:
 				if tauon.vis_rate_timer.get() > 0.027:  # Limit the change rate #to 60 fps
 					tauon.vis_rate_timer.set()
 
-					if spec_smoothing and pctl.playing_state > 0:
+					if spec_smoothing and pctl.playing_state != PlayingState.STOPPED:
 						for i in range(len(gui.spec)):
 							if gui.spec[i] > gui.s_spec[i]:
 								gui.s_spec[i] += 1
@@ -46810,7 +46811,7 @@ def main(holder: Holder) -> None:
 								if abs(gui.spec[i] - gui.s_spec[i]) > 8:
 									gui.s_spec[i] -= 1
 
-						if pctl.playing_state == 0 and check_equal(gui.s_spec):
+						if pctl.playing_state == PlayingState.STOPPED and check_equal(gui.s_spec):
 							gui.level_update = True
 							time.sleep(0.008)
 					else:
@@ -46864,7 +46865,7 @@ def main(holder: Holder) -> None:
 
 			if gui.vis == 1:
 				if prefs.backend == 2 or True:
-					if pctl.playing_state in (1, 3):
+					if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						# gui.level_update = True
 						while tauon.level_train and tauon.level_train[0][0] < time.time():
 
@@ -46900,12 +46901,12 @@ def main(holder: Holder) -> None:
 						if pctl.playing_time < 1:
 							gui.delay_frame(0.032)
 
-						if pctl.playing_state in (1, 3):
+						if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 							t = gui.level_decay_timer.hit()
 							decay = 14 * t
 							gui.level_peak[1] -= decay
 							gui.level_peak[0] -= decay
-						elif pctl.playing_state in (0, 2):
+						elif pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED):
 							gui.level_update = True
 							time.sleep(0.016)
 							t = gui.level_decay_timer.hit()
@@ -46953,7 +46954,7 @@ def main(holder: Holder) -> None:
 						cc = colours.level_red
 						if met is False:
 							cc = colours.level_3_bg
-					if gui.level > 0 and pctl.playing_state > 0:
+					if gui.level > 0 and pctl.playing_state != PlayingState.STOPPED:
 						pass
 					ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
 
@@ -47004,7 +47005,7 @@ def main(holder: Holder) -> None:
 						if met is False:
 							cc = colours.level_3_bg
 
-					if gui.level > 0 and pctl.playing_state > 0:
+					if gui.level > 0 and pctl.playing_state != PlayingState.STOPPED:
 						pass
 					ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
 
@@ -47025,11 +47026,11 @@ def main(holder: Holder) -> None:
 		# Misc things to update every tick
 
 		# Update d-bus metadata on Linux
-		if (pctl.playing_state in (1, 3)) and pctl.mpris is not None:
+		if (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)) and pctl.mpris is not None:
 			pctl.mpris.update_progress()
 
 		# GUI time ticker update
-		if (pctl.playing_state in (1, 3)) and gui.lowered is False:
+		if (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)) and gui.lowered is False:
 			if int(pctl.playing_time) != int(pctl.last_playing_time):
 				pctl.last_playing_time = pctl.playing_time
 				tauon.bottom_bar1.seek_time = pctl.playing_time
@@ -47087,7 +47088,7 @@ def main(holder: Holder) -> None:
 	pctl.playerCommand = "unload"
 	pctl.playerCommandReady = True
 
-	if prefs.reload_play_state and pctl.playing_state in (1, 2):
+	if prefs.reload_play_state and pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 		logging.info("Saving play state...")
 		prefs.reload_state = (pctl.playing_state, pctl.playing_time)
 

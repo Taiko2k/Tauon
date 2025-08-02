@@ -31,11 +31,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-	from typing import Any
+from tauon.t_modules.t_enums import PlayingState
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
+	from typing import Any
+
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -746,9 +747,9 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					"playlist": str(tauon.get_playing_playlist_id()),
 					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
 				}
-				if pctl.playing_state == 1:
+				if pctl.playing_state == PlayingState.PLAYING:
 					data["status"] = "playing"
-				if pctl.playing_state == 2:
+				if pctl.playing_state == PlayingState.PAUSED:
 					data["status"] = "paused"
 				track = pctl.playing_object()
 				if track:
@@ -806,7 +807,7 @@ def controller(tauon: Tauon) -> None:
 			if path == "/raise/":
 				tauon.raise_window()
 			if path == "/playpause/":
-				if tauon.pctl.playing_state == 0:
+				if tauon.pctl.playing_state == PlayingState.STOPPED:
 					tauon.pctl.play()
 				else:
 					tauon.pctl.pause()
