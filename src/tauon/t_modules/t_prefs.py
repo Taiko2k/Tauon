@@ -71,6 +71,7 @@ class Prefs:
 	tag_editor_name:   str = ""
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""
+	save_lyrics_to_file: bool = False
 
 	use_title:    bool = False
 	auto_extract: bool = False
