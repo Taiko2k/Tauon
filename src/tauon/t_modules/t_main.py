@@ -5956,7 +5956,7 @@ class Tauon:
 		self.playlist_autoscan = False
 		self.dropped_playlist = -1
 
-		self.now_searching: int = 0
+		self.now_searching: Literal["off", "searching", "errored", "success"] = "off"
 
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
@@ -7508,7 +7508,7 @@ class Tauon:
 				self.show_message(
 					_("There are no lyric sources enabled."),
 					_("See 'lyrics settings' under 'functions' tab in settings."), mode="info")
-			self.now_searching = -1
+			self.now_searching = "errored"
 			return None
 
 		t = self.lyrics_fetch_timer.get()
@@ -7523,7 +7523,7 @@ class Tauon:
 
 			# If the user keeps pressing, lets mess with them haha
 			self.lyrics_fetch_timer.force_set(t - 5)
-			self.now_searching = -1
+			self.now_searching = "errored"
 			return "later"
 
 		if t > 0:
@@ -7569,7 +7569,7 @@ class Tauon:
 					logging.error(f"Could not find lyrics from source {name}")
 
 		if not found:
-			self.now_searching = -1
+			self.now_searching = "errored"
 			if not silent:
 				self.show_message(_("No lyrics for this track were found"))
 		else:
@@ -7580,7 +7580,7 @@ class Tauon:
 			self.lyrics_ren.lyrics_position = 0
 			self.timed_lyrics_ren.index = -1
 			self.pctl.notify_change()
-			self.now_searching = 2
+			self.now_searching = "success"
 		return None
 
 	def get_lyric_wiki(self, track_object: TrackClass) -> None:
@@ -7588,7 +7588,7 @@ class Tauon:
 			self.show_message(_("Insufficient metadata to get lyrics"), mode="warning")
 			return
 
-		self.now_searching = 1
+		self.now_searching = "searching"
 		shoot_dl = threading.Thread(target=self.get_lyric_fire, args=([track_object]))
 		shoot_dl.daemon = True
 		shoot_dl.start()
@@ -13066,7 +13066,7 @@ class Tauon:
 			self.gui.combo_mode = False
 			self.gui.was_radio = False
 
-	def enter_showcase_view(self, track_id: int | None = None, timed_lyrics_edit: bool=False) -> None:
+	def enter_showcase_view(self, track_id: int | None = None, timed_lyrics_edit: bool = False) -> None:
 		if not self.gui.combo_mode:
 			self.enter_combo()
 			self.gui.was_radio = False
@@ -36756,13 +36756,12 @@ class TimedLyricsEdit:
 		self.colours       = tauon.colours
 		self.renderer      = tauon.renderer
 		self.lyrics_ren    = tauon.lyrics_ren
+		self.overlay       = tauon.search_over
 		self.window_size   = tauon.window_size
 		self.scroll        = tauon.smooth_scroll
-		self.fields        = tauon.fields
 		self.lastfm_artist = None
 		self.artist_mode = False
 		self.recenter_timeout = Timer()
-		self.overlay       = tauon.search_over
 
 		self.struct_track: int = -1 #what track are we on
 		self.structure: list[ tuple[ str, float, str] ] = []
@@ -36773,8 +36772,8 @@ class TimedLyricsEdit:
 		self.temp_scale: float = self.gui.scale
 		self.temp_line: int = -1
 
-		self.dont_scroll: bool = False #cancels auto scroll correction when adding & removing lines
-		self.font = 20
+		self.allow_scroll: bool = True #cancels auto scroll correction when adding & removing lines
+		self.font: int = 20
 		self.line_height = self.ddt.get_text_w("?", self.font, True)
 		self.yy: int = 0 #line height plus spacing
 
@@ -36796,7 +36795,8 @@ class TimedLyricsEdit:
 
 
 
-	def button(self, text: str, x_pos: int, y_pos: int, font: int,
+	def button(
+			self, text: str, x_pos: int, y_pos: int, font: int,
 			bg: ColourRGBA | None = None, active_bg: ColourRGBA | None = None,
 			txt: ColourRGBA | None = None, active_txt: ColourRGBA | None = None,
 			tooltip: str = "", off: bool = False) -> bool | None:
@@ -36926,15 +36926,15 @@ class TimedLyricsEdit:
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[current_line+1][2] ) # else time the next line
 			self.structure[current_line+1] = full_line
 			self.scroll_position -= self.yy
-			self.dont_scroll = True
+			self.allow_scroll = False
 		self.gui.pl_update += 1
 
 
 
 	def save(self) -> None:
-		lyrics = ""
-		warning = [False, False]
-		timed = 0
+		lyrics: str = ""
+		warning: list[bool] = [False, False]
+		timed: int = 0
 		for line in self.structure:
 			if line[1] < 0:
 				lyrics += line[2]
@@ -37073,7 +37073,7 @@ class TimedLyricsEdit:
 			del self.structure[line_number]
 			self.inp.key_backspace_press = False
 			self.scroll_position += self.yy
-			self.dont_scroll = True
+			self.allow_scroll = False
 		x += round(30*self.gui.scale)
 		if self.button("+", x, y_pos, self.font, active_bg=self.colours.level_green, tooltip=_("Add line")) or self.inp.key_return_press:
 			if self.inp.key_shift_down or self.inp.key_shiftr_down: # hold shift to make a new line above
@@ -37082,7 +37082,7 @@ class TimedLyricsEdit:
 				self.structure.insert(line_number+1, (_("?????"),-1.0,""))
 				self.scroll_position -= self.yy
 			self.inp.key_return_press = False
-			self.dont_scroll = True
+			self.allow_scroll = False
 		if temp != self.structure[line_number]:
 			self.autosave_timer.set()
 			self.autosaved = False
@@ -37160,15 +37160,15 @@ class TimedLyricsEdit:
 		self.yy = self.line_height + spacing
 		# don't autoscroll if the new active line is not visible
 		if ( self.scroll_position > self.window_size[1]/2 or self.scroll_position < -self.window_size[1]/2 or self.editing_text ) \
-			and self.temp_line != line_active and not self.dont_scroll:
+		and self.temp_line != line_active and self.allow_scroll:
 			self.scroll_position += self.yy
 			self.temp_line = line_active
 
 		# scroll boundaries
-		if not self.dont_scroll:
+		if self.allow_scroll:
 			self.scroll_position = min( self.scroll_position,  line_active*(self.yy) )
 			self.scroll_position = max( self.scroll_position, -(len(self.structure)-line_active)*(self.yy) )
-		self.dont_scroll = False
+		self.allow_scroll = True
 
 		center = y_center + self.scroll_position
 		# scroll position refers to y offset (in pixels) from the active lyric
@@ -37280,23 +37280,23 @@ class TimedLyricsEdit:
 		btx_top += sw + self.yy
 
 		match self.tauon.now_searching:
-			case 0:
+			case "off":
 				pass
-			case 1:
+			case "searching":
 				self.ddt.text([btx_top,bty_top],_("Searching..."), self.colours.lyrics, self.font)
-			case -1:
+			case "errored":
 				if self.text_timer.get() > 10:
 					self.text_timer.set()
 					self.ddt.text([btx_top,bty_top],_("Errored"), self.colours.level_yellow, self.font)
 				elif self.text_timer.get() < 2: # display error text for 2 seconds
 					self.ddt.text([btx_top,bty_top],_("Errored"), self.colours.level_yellow, self.font)
 				else:
-					self.tauon.now_searching = 0
-			case 2:
+					self.tauon.now_searching = "off"
+			case "success":
 				index = self.pctl.track_queue[self.pctl.queue_step]
 				track = self.pctl.master_library[index]
 				self.structurize_current(track)
-				self.tauon.now_searching = 0
+				self.tauon.now_searching = "off"
 
 		if self.button("≪5", buttons_x, buttons_y, self.font):
 			self.pctl.seek_time( max( 0, self.tauon.get_real_time()-5 ) )
