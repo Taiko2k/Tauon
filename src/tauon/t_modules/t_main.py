@@ -36755,12 +36755,9 @@ class TimedLyricsEdit:
 		self.prefs         = tauon.prefs
 		self.colours       = tauon.colours
 		self.renderer      = tauon.renderer
-		self.lyrics_ren    = tauon.lyrics_ren
 		self.overlay       = tauon.search_over
 		self.window_size   = tauon.window_size
 		self.scroll        = tauon.smooth_scroll
-		self.lastfm_artist = None
-		self.artist_mode = False
 		self.recenter_timeout = Timer()
 
 		self.struct_track: int = -1 #what track are we on
@@ -36771,27 +36768,60 @@ class TimedLyricsEdit:
 		self.temp_w: int = 0
 		self.temp_scale: float = self.gui.scale
 		self.temp_line: int = -1
+		self.scroll_position: int = 0
 
 		self.allow_scroll: bool = True #cancels auto scroll correction when adding & removing lines
 		self.font: int = 20
-		self.line_height = self.ddt.get_text_w("?", self.font, True)
-		self.yy: int = 0 #line height plus spacing
+		self.line_height = round(self.ddt.get_text_w("?", self.font, True))
+		self.yy: int = self.line_height + round(10 * self.gui.scale) #line height plus spacing
 
-		self.editing_text: bool = False
-		self.timer = Timer() # debugging framerates
 		self.autosave_timer = Timer()
 		self.autosaved: bool = True
 		self.text_timer = Timer()
 		self.x_posns: list[int]=[] # to display buttons etc in the right places
-		self.right: bool = False # has the user right clicked a button this frame
-
-
-
+		self.line_active: int = 0
 
 		self.menu = Menu(tauon, 135)
-		self.menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		self.reload_menu()
+
+
+
+	def reload_menu(self):
+		self.menu.subs = []
+		self.menu.sub_number = 0
+		self.menu.items = []
+
+		self.menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, self.tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 		self.menu.add(MenuItem(_("Clear All Timestamps"), self.clear_all_timestamps, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Lyrics"), self.clear_lyrics, pass_ref=False))
+
+		self.menu.add_sub(_("When track ends..."), 165)
+		if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
+			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
+		else:
+			self.menu.add_to_sub(0, MenuItem( "    " + _("Stop immediately"), self.end_set_stop ))
+
+		if self.prefs.synced_lyrics_editor_track_end_mode == "autosave":
+			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Autosave and continue"), self.end_set_stop ))
+		else:
+			self.menu.add_to_sub(0, MenuItem( "    " + _("Autosave and continue"), self.end_set_stop ))
+
+		if self.prefs.synced_lyrics_editor_track_end_mode == "full save":
+			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_stop ))
+		else:
+			self.menu.add_to_sub(0, MenuItem( "    " + _("Fully save and continue"), self.end_set_stop ))
+
+	def end_set_stop(self):
+		self.prefs.synced_lyrics_editor_track_end_mode = "stop"
+		self.reload_menu()
+
+	def end_set_autosave(self):
+		self.prefs.synced_lyrics_editor_track_end_mode = "autosave"
+		self.reload_menu()
+
+	def end_set_full_save(self):
+		self.prefs.synced_lyrics_editor_track_end_mode = "full save"
+		self.reload_menu()
 
 
 
@@ -36853,7 +36883,6 @@ class TimedLyricsEdit:
 		return s
 
 
-
 	def get_stamp_from_time(self, t: float) -> str:
 		if t<0:
 			return _("?????")
@@ -36905,26 +36934,26 @@ class TimedLyricsEdit:
 
 
 
-	def previous(self, prev: float, line_active: int) -> int:
+	def previous(self, prev: float) -> int:
 		self.pctl.seek_time(prev)
-		if (len(self.structure)==line_active+1 or self.structure[line_active+1][1]<0):
-			stamp, time, line = self.structure[line_active]
+		if (len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0):
+			stamp, time, line = self.structure[self.line_active]
 			stamp = _("?????")
 			time = -1.0
 			full_line = ( stamp, time, line )
-			self.structure[line_active] = full_line
+			self.structure[self.line_active] = full_line
 		return 1
 
 
-
-	def time_next_line(self, current_line: int) -> None:
+	def time_next_line(self) -> None:
 		time = self.tauon.get_real_time()
-		if (self.structure[current_line][1] < 0 or self.structure[current_line][1] > time) and self.structure[current_line][0] != _("tag"): # if current line needs to be timed, time it
-			full_line = ( self.get_stamp_from_time(time), time, self.structure[current_line][2] )
-			self.structure[current_line] = full_line
+		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time) and self.structure[self.line_active][0] != _("tag"):
+			# if current line needs to be timed, time it
+			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
+			self.structure[self.line_active] = full_line
 		else:
-			full_line = ( self.get_stamp_from_time(time), time, self.structure[current_line+1][2] ) # else time the next line
-			self.structure[current_line+1] = full_line
+			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
+			self.structure[self.line_active+1] = full_line
 			self.scroll_position -= self.yy
 			self.allow_scroll = False
 		self.gui.pl_update += 1
@@ -36933,8 +36962,9 @@ class TimedLyricsEdit:
 
 	def save(self) -> None:
 		lyrics: str = ""
-		warning: list[bool] = [False, False]
+		warning: list[bool] = [False, False, False]
 		timed: int = 0
+		max_stamp: float = 0.0
 		for line in self.structure:
 			if line[1] < 0:
 				lyrics += line[2]
@@ -36943,27 +36973,38 @@ class TimedLyricsEdit:
 				else:
 					timed += 1
 			else:
+				if line[1] < max_stamp:
+					warning[2] = True
 				stamp = self.get_stamp_from_time( line[1] )
 				lyrics += "[" + stamp + "]" + line[2]
 				warning[1] = True
 				timed += 1
+				max_stamp = max(max_stamp, line[1])
 			lyrics += "\n"
 		lyrics = lyrics.strip()
-		if warning == [True, True] and not ( self.inp.key_shift_down or self.inp.key_shiftr_down ):
+		if warning[0] and warning[1] and not ( self.inp.key_shift_down or self.inp.key_shiftr_down ):
 			self.tauon.show_message(
 				_("Lyrics will misbehave if only some of them are timed."),
 				_("You can time all of them or none of them, either will work."),
 				_("Alternatively, click again while holding Shift to override."),
 				mode="warning"
 			)
+			self.autosave()
+		elif warning[2] and not ( self.inp.key_shift_down or self.inp.key_shiftr_down ):
+			self.tauon.show_message(
+				_("Lyrics will misbehave if their timestamps are out of order."),
+				_("Please make sure all timestamps are ordered correctly."),
+				_("Alternatively, click again while holding Shift to override."),
+				mode="warning"
+			)
+			self.autosave()
 		else:
 			track = self.pctl.master_library[self.struct_track]
 			track.lyrics = lyrics
 			if timed == len(self.structure):
 				track.synced = lyrics
 			if self.prefs.save_lyrics_to_file:
-				self.tauon.write_lyrics(track)
-
+					self.tauon.write_lyrics(track)
 
 
 	def autosave(self) -> None:
@@ -36979,7 +37020,6 @@ class TimedLyricsEdit:
 					stamp = "tag"
 				lyrics_file.write( f"{stamp},{str(time)},{line}\n")
 		self.autosaved = True
-
 
 
 	def autoload(self) -> None:
@@ -37006,23 +37046,38 @@ class TimedLyricsEdit:
 		self.autosave_timer.set()
 		self.autosaved = False
 
-
-
 	def clear_lyrics(self) -> None:
 		self.structure = [ (_("?????"), -1.0, "") ]
 
 
 
 	def accept_paste(self, current_line: int) -> None:
+		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:", "#:"
 		pasted_lines = self.line_edit_box.text.splitlines()
 		temp_line = self.structure[current_line]
+
 		out_line = ( temp_line[0], temp_line[1], pasted_lines[0] )
 		self.structure[current_line] = out_line
 		del pasted_lines[0]
 		pasted_lines.reverse()
-		for line in pasted_lines:
-			self.structure.insert(current_line+1, (_("?????"),-1.0,line))
+		for line in pasted_lines: # try to accept LRC-formatted paste text
+			if any(tag in line for tag in LRC_tags):
+					self.structure.append( (_("tag"), -1.0, line) )
+					continue
+
+			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
+			and "." in line[:10] and "]" in line:
+				try:
+					int( line[1] )
+				except:
+					self.structure.insert(current_line+1, (_("?????"),-1.0,line))
+				else: # if current line is LRC-formatted
+					stamp = line.split("]")[0].lstrip("[")
+					time = self.get_time_from_stamp( line )
+					line = line.split("]",1)[1]
+					self.structure.insert( current_line+1, (stamp,time,line) )
 			self.scroll_position -= self.yy
+
 
 
 
@@ -37052,7 +37107,7 @@ class TimedLyricsEdit:
 		self.line_edit_box.text = line
 
 		height = self.ddt.get_text_w("?", self.font, True)
-		x = round(self.x_posns[3]-self.x_posns[2]-60*self.gui.scale)
+		x = round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale
 
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, height)
 		self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale) )
@@ -37065,17 +37120,17 @@ class TimedLyricsEdit:
 		full_line = ( stamp, time, line )
 		self.structure[line_number] = full_line
 
-		if "\n" in self.line_edit_box.text:
-			self.accept_paste(line_number)
-
 		x += self.x_posns[2]-height/4 + round(12*self.gui.scale)
+		x = min( x, round( self.window_size[0]-self.yy - 12*self.gui.scale ) )
 		if self.button("x", x, y_pos, self.font, active_bg=self.colours.level_red, tooltip=_("Delete line")) or (self.inp.key_backspace_press and temp_text==""):
 			del self.structure[line_number]
 			self.inp.key_backspace_press = False
 			self.scroll_position += self.yy
 			self.allow_scroll = False
 		x += round(30*self.gui.scale)
-		if self.button("+", x, y_pos, self.font, active_bg=self.colours.level_green, tooltip=_("Add line")) or self.inp.key_return_press:
+		x = min( x, self.window_size[0]-self.line_height*0.9)
+
+		if self.button("+", x, y_pos, self.font, active_bg=self.colours.level_green, tooltip=_("Add line")):
 			if self.inp.key_shift_down or self.inp.key_shiftr_down: # hold shift to make a new line above
 				self.structure.insert(line_number, (_("?????"),-1.0,""))
 			else:
@@ -37083,56 +37138,71 @@ class TimedLyricsEdit:
 				self.scroll_position -= self.yy
 			self.inp.key_return_press = False
 			self.allow_scroll = False
-		if temp != self.structure[line_number]:
+
+		# add new lines
+		if "\n" in self.line_edit_box.text: # can only happen if user pastes multi line string
+			self.accept_paste(line_number)
+
+		if self.coll(rect): # advanced text editing
+			position = len( self.line_edit_box.text ) - self.line_edit_box.cursor_position
+			if self.inp.key_return_press:
+				if self.inp.key_shift_down or self.inp.key_shiftr_down:
+					self.structure.insert(line_number, (_("?????"),-1.0,""))
+				else:
+					line_one = self.line_edit_box.text[:position]
+					line_two = self.line_edit_box.text[position:]
+					self.structure[line_number] = (stamp, time, line_one)
+					self.structure.insert(line_number+1, (_("?????"),-1.0,line_two))
+					self.scroll_position -= self.yy
+			elif self.inp.key_backspace_press and position==0 and line_number >= 1:
+				p_stamp, p_time, p_line = self.structure[line_number-1]
+				self.structure[line_number-1] = (p_stamp, p_time, (p_line + self.line_edit_box.text))
+				del self.structure[line_number]
+				self.scroll_position += self.yy
+			elif self.inp.key_up_press and line_number > 0:
+				self.scroll_position += self.yy
+			elif self.inp.key_down_press and line_number+1 < len(self.structure):
+				self.scroll_position -= self.yy
+
+
+		if len(self.structure) == 0:
+			self.structure = [ (_("?????"),-1.0,"") ]
+
+		if line_number == len(self.structure) or temp != self.structure[line_number]:
 			self.autosave_timer.set()
 			self.autosaved = False
 
 
 
-	def synced_render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
-		timered = self.timer.get()
-		#logging.info(f"time between frames is {timered}")
+	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> bool | None:
 
-		line_ys: list[ tuple[ tuple[ int, int ], tuple[ str, float, str ] ] | None ] = []
+		line_ys: list[ tuple[ tuple[ int, int ], float ] | None ] = []
 		# saves collider positions alongside their respective lines
 
 		if self.inp.mouse_wheel:
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
-			if side_panel:
-				if self.coll((x, y, w, h)):
-					self.scroll_position += scroll_distance
-			else:
-				self.scroll_position += scroll_distance
+			self.scroll_position += scroll_distance
 			self.recenter_timeout.set()
 
-		line_active = -1
-		last = -1
+
 
 		highlight = True
 
-		if side_panel:
-			scroll_to = -h/3
-			bg = self.colours.lyrics_panel_background
-			font_size = 15
-			spacing = round(6 * self.gui.scale)
-			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
-			y += 25 * self.gui.scale
-			y_center = y + (h/2) - (spacing)
-		else:
-			scroll_to = 0
-			bg = self.colours.playlist_panel_background
-			font_size = self.font
-			spacing = round(10 * self.gui.scale)
-			y_center = self.window_size[1]/2
+		scroll_to = 0
+		bg = self.colours.playlist_panel_background
+		spacing = round(10 * self.gui.scale)
+		y_center = self.window_size[1]/2
 
 		# reset scroll position after 5 seconds
 		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == 1:
-			self.scroll_position = scroll_to
+			self.scroll_position = 0
 
 		test_time = self.tauon.get_real_time()
 
 		# determine active lyric
-		last=0
+		self.line_active = -1
+		last = 0
+		has_timed = 0
 		if self.pctl.track_queue[self.pctl.queue_step] == index:
 			for i, line in enumerate(self.structure):
 				if line[0] == _("tag"):
@@ -37140,207 +37210,223 @@ class TimedLyricsEdit:
 					continue
 
 				if 0 < line[1] < test_time:
+					has_timed = i
 					last = i
 
-				if line[1] >= test_time or line[1] < 0:
+				if line[1] >= test_time:
+
 					self.pctl.wake_past_time = line[1]
-					line_active = last
+					self.line_active = last
+					has_timed = i
 					break
 			else:
-				line_active = len(self.structure) - 1
+				self.line_active = has_timed
 
 		# record line heights so we can perfectly center the active lyric
 		if self.temp_scale != self.gui.scale or self.temp_w != w:
 			self.scroll_position = scroll_to
-			#drop_w, self.line_height = self.ddt.get_text_wh("?", font_size, 100, True) # get height of one line
 			self.temp_scale = self.gui.scale
 			self.temp_w = w
 			self.line_height = self.ddt.get_text_w("?", self.font, True)
 
-		self.yy = self.line_height + spacing
 		# don't autoscroll if the new active line is not visible
-		if ( self.scroll_position > self.window_size[1]/2 or self.scroll_position < -self.window_size[1]/2 or self.editing_text ) \
-		and self.temp_line != line_active and self.allow_scroll:
+		if ( self.scroll_position > self.window_size[1]/2 or self.scroll_position < -self.window_size[1]/2 ) \
+		and self.temp_line != self.line_active and self.allow_scroll:
 			self.scroll_position += self.yy
-			self.temp_line = line_active
+			self.temp_line = self.line_active
 
 		# scroll boundaries
 		if self.allow_scroll:
-			self.scroll_position = min( self.scroll_position,  line_active*(self.yy) )
-			self.scroll_position = max( self.scroll_position, -(len(self.structure)-line_active)*(self.yy) )
+			self.scroll_position = min( self.scroll_position,  self.line_active*(self.yy) )
+			self.scroll_position = max( self.scroll_position, -(len(self.structure)-self.line_active)*(self.yy) )
 		self.allow_scroll = True
 
 		center = y_center + self.scroll_position
 		# scroll position refers to y offset (in pixels) from the active lyric
 
-		timered = self.timer.get() - timered
-		#logging.info(f"time for first section is {timered}")
-
 
 
 		# RENDER LINES
 		prev = 0.0
-		w = round(self.x_posns[3]-self.x_posns[2]*0.9)
-		location = [ round(x), 0 ]
+		w = round( (self.x_posns[3]-self.x_posns[2]) * 0.9 )
+		location = [ self.x_posns[2], 0 ]
+		if hide_art:
+			maximum_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
+		else:
+			maximum_y = self.window_size[1]
 		for i, line in enumerate(self.structure):
 			# determine y val
-			possible_y = center + self.yy*(i-line_active)
+			possible_y = center + self.yy*(i-self.line_active)
 
-			if 0 < possible_y and possible_y < self.window_size[1]:
+			if 0 < possible_y and possible_y+self.line_height/2 < maximum_y:
 				colour = self.colours.lyrics
 
-				#colour = self.colours.grey(70)
-				#if test_lumi(self.colours.gallery_background) < 0.5:
-				#	colour = self.colours.grey(40)
-
-				if i < line_active:
+				if i < self.line_active:
 					prev = max( prev, line[1] )
 
-				if i == line_active and highlight and test_time >= line[1]:
+				if i == self.line_active and highlight and test_time >= line[1]:
 					colour = self.colours.active_lyric
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
 				location[1] = round(possible_y)
 				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
-				self.ddt.text(location, line[2], colour, font_size, w, bg) # line
-				location[0] -= 100*self.gui.scale
-				self.ddt.text(location, line[0], colour, font_size, 100 * self.gui.scale, bg) # timestamp
-				location[0] += 100*self.gui.scale
+				self.ddt.text(location, line[2], colour, self.font, w, bg) # line
+				location[0] = self.x_posns[1]
+				self.ddt.text(location, line[0], colour, self.font, 100 * self.gui.scale, bg) # timestamp
+				location[0] = self.x_posns[2]
 
 				collider = ( round(possible_y), round(possible_y + self.yy) )
-				association = collider, line
+				association = collider, line[1]
 				line_ys.append( association )
 			else:
 				line_ys.append( None )
 
-		timered = self.timer.get() - timered
-		#logging.info(f"time for render section is {timered}")
 
+		if not (self.gui.box_over or self.tauon.pref_box.enabled):
 
-
-		# CLICK LINE TO SEEK OR LET USER EDIT LINE
-		self.gui.timed_lyrics_editing_now = False
-		# click a lyric to seek to it
-		if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3]:
-			if self.pctl.playing_state == 1:
-				if self.inp.mouse_click \
-				and self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
-				and (not h or y < self.inp.mouse_position[1] < y+h):
+			# CLICK LINE TO SEEK OR LET USER EDIT LINE
+			self.gui.timed_lyrics_editing_now = False
+			# click a lyric to seek to it
+			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3]:
+				if self.pctl.playing_state == 1:
+					if self.inp.mouse_click \
+					and self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
+					and (not h or y < self.inp.mouse_position[1] < y+h):
+						for i, rendered_line in enumerate(line_ys):
+							if rendered_line is None:
+								continue
+							if rendered_line[0][0] < self.inp.mouse_position[1] < rendered_line[0][1]:
+								self.pctl.seek_time(rendered_line[1][1])
+								self.scroll_position = scroll_to
+								break
+				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
+					(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
+					(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
+					pass # if mouse is below or above relevant area, or first line is visible and mouse is above it, or last line is visible and mouse is below
+					# i'm only guessing this is more efficient than not doing it
+				else:
+					self.gui.timed_lyrics_editing_now = True
 					for i, rendered_line in enumerate(line_ys):
 						if rendered_line is None:
 							continue
-						if rendered_line[0][0] < self.inp.mouse_position[1] < rendered_line[0][1]:
-							self.pctl.seek_time(rendered_line[1][1])
-							self.scroll_position = scroll_to
-							break
-			elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
-				(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
-				(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
-				pass # if mouse is below or above relevant area, or first line is visible and mouse is above it, or last line is visible and mouse is below
-				# i'm only guessing this is more efficient than not doing it
+						if (rendered_line[0][0]-0.25*self.line_height) < self.inp.mouse_position[1] < (rendered_line[0][1]-0.25*self.line_height):
+							self.settings_for_one_line(i, rendered_line[0][0])
+
+
+
+			# BUTTONS IN THE CORNER
+			widths = [
+				self.ddt.get_text_w("≪5", self.font),
+				self.ddt.get_text_w(_("Previous"), self.font),
+				self.ddt.get_text_w(_("ADVANCE"), self.font),
+				self.ddt.get_text_w(_("SAVE"), self.font),
+				self.ddt.get_text_w(_("Load Autosave"), self.font),
+			]
+			if hide_art:
+				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
+				buttons_x = 10*self.gui.scale
+				x_gap = min( self.yy, (self.window_size[0]-sum(widths))/4 )
 			else:
-				self.gui.timed_lyrics_editing_now = True
-				for i, rendered_line in enumerate(line_ys):
-					if rendered_line is None:
-						continue
-					if (rendered_line[0][0]-0.25*self.line_height) < self.inp.mouse_position[1] < (rendered_line[0][1]-0.25*self.line_height):
-						self.settings_for_one_line(i, rendered_line[0][0])
-		timered = self.timer.get() - timered
-		#logging.info(f"time for interaction section is {timered}")
+				buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
+				buttons_x = 25*self.gui.scale
+				x_gap = self.yy
 
 
+			if self.button("≪5", buttons_x, buttons_y, self.font):
+				self.pctl.seek_time( max( 0, self.tauon.get_real_time()-5 ) )
+			buttons_x += widths[0] + x_gap
 
-		# BUTTONS IN THE CORNER
-		buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
-		buttons_x = 35*self.gui.scale
+			if self.button(_("Previous"), buttons_x, buttons_y, self.font,
+				off = ( not prev)):
+				self.previous(prev)
+			buttons_x += widths[1] + x_gap
 
-		gn = copy.deepcopy(self.colours.level_green)
-		gn.a = round(gn.a * 0.3)
-		btx_top = buttons_x
-		bty_top = buttons_y-self.yy-10*self.gui.scale
-		if self.button( _("SAVE"), btx_top, bty_top, self.font, gn, self.colours.level_green):
-			self.save()
-		sw = self.ddt.get_text_w(_("SAVE"), self.font)
-		btx_top += sw + self.yy
+			match self.button(_("ADVANCE"), buttons_x, buttons_y, self.font,
+				off=self.pctl.playing_state!=1 or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0) ):
+				case True:
+					self.time_next_line()
+				case False:
+					self.previous(prev)
+			buttons_x += widths[2] + x_gap
 
-		target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".csv")
-		match self.button( _("Load autosave"), btx_top, bty_top, \
-				self.font, off=not target.is_file()):
-			case True:
-				self.autoload()
-			case False:
-				if self.tauon.system == "Windows" or self.tauon.msys:
-					os.startfile(target)
-				elif self.tauon.macos:
-					subprocess.call(["open", "-t", target])
-				else:
-					subprocess.call(["xdg-open", target])
-		sw = self.ddt.get_text_w(_("Load autosave"), self.font)
-		btx_top += sw + self.yy
+			if not hide_art:
+				btx_top = 25*self.gui.scale
+				bty_top = buttons_y-self.yy-10*self.gui.scale
+			else:
+				btx_top = buttons_x
+				bty_top = buttons_y
 
-		match self.tauon.now_searching:
-			case "off":
-				pass
-			case "searching":
-				self.ddt.text([btx_top,bty_top],_("Searching..."), self.colours.lyrics, self.font)
-			case "errored":
-				if self.text_timer.get() > 10:
-					self.text_timer.set()
-					self.ddt.text([btx_top,bty_top],_("Errored"), self.colours.level_yellow, self.font)
-				elif self.text_timer.get() < 2: # display error text for 2 seconds
-					self.ddt.text([btx_top,bty_top],_("Errored"), self.colours.level_yellow, self.font)
-				else:
+			gn = copy.deepcopy(self.colours.level_green)
+			gn.a = round(gn.a * 0.3)
+			if self.button( _("SAVE"), btx_top, bty_top, self.font, gn, self.colours.level_green):
+				self.save()
+			btx_top += widths[3] + x_gap
+
+			target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".csv")
+			match self.button( _("Load autosave"), btx_top, bty_top, \
+					self.font, off=not target.is_file()):
+				case True:
+					self.autoload()
+				case False:
+					if self.tauon.system == "Windows" or self.tauon.msys:
+						os.startfile(target)
+					elif self.tauon.macos:
+						subprocess.call(["open", "-t", target])
+					else:
+						subprocess.call(["xdg-open", target])
+			btx_top += widths[4] + x_gap
+
+			if btx_top + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
+				btx_top = (25 - 15*hide_art) * self.gui.scale
+				bty_top -= self.yy+10*self.gui.scale
+			match self.tauon.now_searching:
+				case "off":
+					pass
+				case "searching":
+					self.ddt.text([btx_top,bty_top],_("Searching..."), self.colours.lyrics, self.font)
+				case "errored":
+					if self.text_timer.get() > 10:
+						self.text_timer.set()
+						self.ddt.text([btx_top,bty_top],_("Errored"), self.colours.level_yellow, self.font)
+					elif self.text_timer.get() < 2: # display error text for 2 seconds
+						self.ddt.text([btx_top,bty_top],_("Errored"), self.colours.level_yellow, self.font)
+					else:
+						self.tauon.now_searching = "off"
+				case "success":
+					index = self.pctl.track_queue[self.pctl.queue_step]
+					track = self.pctl.master_library[index]
+					self.structurize_current(track)
 					self.tauon.now_searching = "off"
-			case "success":
-				index = self.pctl.track_queue[self.pctl.queue_step]
-				track = self.pctl.master_library[index]
-				self.structurize_current(track)
-				self.tauon.now_searching = "off"
 
-		if self.button("≪5", buttons_x, buttons_y, self.font):
-			self.pctl.seek_time( max( 0, self.tauon.get_real_time()-5 ) )
-		ww = self.ddt.get_text_w("≪5", self.font)
 
-		buttons_x += ww + self.yy
-		if self.button(_("Previous"), buttons_x, buttons_y, self.font,
-			off = ( not prev)):
-			self.previous(prev, line_active)
-		ww = self.ddt.get_text_w(_("Previous"), self.font)
 
-		buttons_x += ww + self.yy
-		match self.button(_("Set time"), buttons_x, buttons_y, self.font,
-			off=self.pctl.playing_state!=1 or not (len(self.structure)>=line_active or self.structure[line_active][1]<0) ):
-			case True:
-				self.time_next_line(line_active)
-			case False:
-				self.previous(prev, line_active)
+			if self.coll((0,0,self.window_size[0],self.window_size[1])): # DIRTY - always refresh if cursor is on window
+				self.gui.pl_update += 1
+		# end of stuff blocked by boxes being open
 
 		if self.pctl.playing_length - test_time < 0.5 and self.pctl.playing_state == 1:
-			self.pctl.stop() # prevent track auto advance
-
-		timered = self.timer.get() - timered
-		#logging.info(f"time for button section is {timered}")
-		self.timer.set()
+			match self.prefs.synced_lyrics_editor_track_end_mode:
+				case "stop":
+					self.pctl.stop()
+				case "autosave":
+					self.autosave()
+				case "full save":
+					self.save()
 
 		if self.autosave_timer.get() > 5 and not self.autosaved:
 			self.autosave()
-
-		if self.coll((0,0,self.window_size[0],self.window_size[1])): # DIRTY - always refresh if cursor is on window
-			self.gui.pl_update += 1
 
 		return None
 
 
 
 	def render(self) -> None:
-		timered = self.timer.get()
-		#logging.info(f"time between main frames is {timered}")
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
 
 		hide_art = False
-		if self.window_size[0] < 900 * self.gui.scale:
+		if self.window_size[0] < 1200 * self.gui.scale:
 			hide_art = True
 
 
@@ -37469,44 +37555,25 @@ class TimedLyricsEdit:
 						self.tauon.picture_menu.activate(in_reference=track)
 						self.inp.right_click = False
 
-			# Check for lyrics if auto setting
-			self.tauon.test_auto_lyrics(track)
-
-			self.gui.draw_vis4_top = False
-
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 50 * self.gui.scale
 			w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 			if self.temp_scale != self.gui.scale or self.temp_w != w or not self.x_posns:
 				self.temp_scale = self.gui.scale
 				self.temp_w = w
+				self.line_height = round(self.ddt.get_text_w("?", self.font, True))
+				self.yy = self.line_height + round( 10*self.gui.scale )
 				self.x_posns = [ # determines button and text box placement
-					round(gcx - 130*self.gui.scale),
-					round(gcx - 100*self.gui.scale),
-					round(gcx),
-					round(self.window_size[0] - 120*self.gui.scale),
-					round(gcx - 145*self.gui.scale) ]
-				self.scroll_position = 0
+					round( max( gcx - 130*self.gui.scale, self.line_height/2 ) ),
+					round( max( gcx - 100*self.gui.scale, self.yy) ),
+					round( gcx ),
+					round( max(self.window_size[0] - 90*self.gui.scale, self.window_size[0]*0.98) ),
+					round( max( gcx - 145*self.gui.scale, 0 )) ]
+				self.x_posns[2] = max(self.x_posns[1] + 90*self.gui.scale, gcx)
 
-
-			# TODO (Flynn): work out the logic for full size static lyrics generating
-			timed_ready = False
-			if True and self.prefs.show_lyrics_showcase:
-				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
-
-			if timed_ready and track.lyrics:
-				timed_ready = self.prefs.prefer_synced_lyrics
-
-			timered = self.timer.get() - timered
-			#logging.info(f"time for main frame is {timered}")
-			if True:# and self.prefs.show_lyrics_showcase and timed_ready:
-				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
-				self.synced_render(track.index, gcx, y, w=w)
+			self.synced_render(track.index, gcx, y, hide_art, w)
 
 			if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
-				if self.inp.mouse_wheel != 0:
-					scroll_distance = self.scroll.scroll("showcase", 35*self.gui.scale)
-					self.lyrics_ren.lyrics_position += scroll_distance
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
@@ -37882,6 +37949,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("autoscan_playlist_folder", prefs.autoscan_playlist_folder)
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
+	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
+
 	cf.update_value("use-system-tray", prefs.use_tray)
 	cf.update_value("use-gamepad", prefs.use_gamepad)
 	cf.update_value("enable-remote-interface", prefs.enable_remote)
@@ -38234,6 +38303,10 @@ def load_prefs(bag: Bag) -> None:
 	prefs.autoscan_playlist_folder = cf.sync_add(
 		"bool", "autoscan_playlist_folder", prefs.autoscan_playlist_folder,
 		"Also auto-import new playlists from folder?")
+	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
+		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
+		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
+	)
 	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
 		if os.path.isdir(prefs.download_dir1):
 			bag.download_directories.append(prefs.download_dir1)
@@ -42052,12 +42125,12 @@ def main(holder: Holder) -> None:
 	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 
 	showcase_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_sub(_("Misc…"), 150)
 	showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Sync Lyrics Manually"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -42065,13 +42138,13 @@ def main(holder: Holder) -> None:
 	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	center_info_menu.add_sub(_("Misc…"), 150)
 	center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Sync Lyrics Manually"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -44008,8 +44081,10 @@ def main(holder: Holder) -> None:
 					inp.mouse_wheel = 0
 				else:
 					if inp.mouse_click:
+						inp.mouse_click = False
 						pref_box.close()
 					if inp.right_click:
+						inp.right_click = False
 						pref_box.close()
 					if pref_box.lock is False:
 						pass
