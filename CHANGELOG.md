@@ -4,7 +4,7 @@ Changelog
 
 ### v8.1.4
 
- - **Added** Menu option to manually edit track lyrics
+ - **Added** New fully-featured lyrics editor, including LRC support (thanks @rexendevar)
  - **Added** Option to automatically save changed lyrics back to the audio file
  - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Crash on radio playlist migration under some circumstances
