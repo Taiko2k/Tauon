@@ -36779,7 +36779,7 @@ class TimedLyricsEdit:
 		self.autosaved: bool = True
 		self.cursor: int | None = None
 		self.text_timer = Timer()
-		self.x_posns: list[int]=[] # to display buttons etc in the right places
+		self.x_posns: list[int] = [] # to display buttons etc in the right places
 		self.line_active: int = 0
 
 		self.menu = Menu(tauon, 135)
@@ -36804,14 +36804,14 @@ class TimedLyricsEdit:
 			self.menu.add_to_sub(0, MenuItem( "    " + _("Stop immediately"), self.end_set_stop ))
 
 		if self.prefs.synced_lyrics_editor_track_end_mode == "autosave":
-			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Autosave and continue"), self.end_set_stop ))
+			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Autosave and continue"), self.end_set_autosave ))
 		else:
-			self.menu.add_to_sub(0, MenuItem( "    " + _("Autosave and continue"), self.end_set_stop ))
+			self.menu.add_to_sub(0, MenuItem( "    " + _("Autosave and continue"), self.end_set_autosave ))
 
 		if self.prefs.synced_lyrics_editor_track_end_mode == "full save":
-			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_stop ))
+			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_full_save ))
 		else:
-			self.menu.add_to_sub(0, MenuItem( "    " + _("Fully save and continue"), self.end_set_stop ))
+			self.menu.add_to_sub(0, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
 
 		self.menu.add(MenuItem(_("Delete All Backups"), self.delete_autosaves, show_test=self.inp.test_shift, pass_ref=False))
 
@@ -36846,6 +36846,7 @@ class TimedLyricsEdit:
 			except:
 				logging.error( _("You put a folder in the autosaved-lyrics directory. Don't do that.") )
 			logging.info(f"Deleted {count} autosave files.")
+
 
 
 	def button(
@@ -36925,12 +36926,9 @@ class TimedLyricsEdit:
 		if track.synced:
 			lyrics = find_synced_lyric_data(track)
 		elif track.lyrics:
-			lyrics = track.lyrics.split("\n")
+			lyrics = track.lyrics.splitlines()
 		else:
-			self.structure = [
-				(_("?????"), -1.0, _("You can edit lyrics while paused. Hover over the text to begin.")),
-				(_("?????"), -1.0, _("Use the buttons in the lower left to time each line as it plays."))
-				]
+			self.structure = [(_("?????"), -1.0, "")]
 			self.scroll_position = 0
 			lyrics=""
 
@@ -36954,6 +36952,7 @@ class TimedLyricsEdit:
 
 			# if current line is NOT LRC-formatted
 			self.structure.append( (_("?????"), -1.0, line) )
+		self.autosaved = True
 
 
 
@@ -36990,7 +36989,7 @@ class TimedLyricsEdit:
 		max_stamp: float = 0.0
 		for line in self.structure:
 			if line[1] < 0:
-				lyrics += line[2]
+				lyrics += line[2].rstrip()
 				if line[0] != _("tag"):
 					warning[0] = True
 				else:
@@ -37127,8 +37126,8 @@ class TimedLyricsEdit:
 		else:
 			self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Timestamp unknown"))
 
-		temp_text = self.line_edit_box.text # so we don't delete lines a frame early
 		self.line_edit_box.text = line
+		temp_text = self.line_edit_box.text # so we don't delete lines a frame early
 		if self.cursor:
 			self.line_edit_box.cursor_position =  len(self.line_edit_box.text) - self.cursor
 			self.line_edit_box.selection = self.line_edit_box.cursor_position
@@ -37172,6 +37171,7 @@ class TimedLyricsEdit:
 
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, self.yy)
 		if self.coll(rect):
+			position = len( self.line_edit_box.text ) - self.line_edit_box.cursor_position
 			if self.inp.key_return_press:
 				if self.inp.key_shift_down or self.inp.key_shiftr_down:
 					self.structure.insert(line_number, (_("?????"),-1.0,""))
@@ -37183,7 +37183,7 @@ class TimedLyricsEdit:
 					self.scroll_position -= self.yy
 					self.cursor = position
 
-			elif self.inp.key_backspace_press and position==0 and line_number >= 1:
+			elif self.inp.key_backspace_press and position==0 and line_number >= 1 and temp_text == self.line_edit_box.text:
 				p_stamp, p_time, p_line = self.structure[line_number-1]
 				self.structure[line_number-1] = (p_stamp, p_time, (p_line + self.line_edit_box.text))
 				del self.structure[line_number]
@@ -37191,7 +37191,7 @@ class TimedLyricsEdit:
 				self.inp.key_backspace_press = False
 				self.cursor = position
 
-			elif self.inp.key_del and self.line_edit_box.cursor_position==0 and line_number+1<len(self.structure):
+			elif self.inp.key_del and self.line_edit_box.cursor_position==0 and line_number+1<len(self.structure) and temp_text == self.line_edit_box.text:
 				p_stamp, p_time, p_line = self.structure[line_number+1]
 				self.structure[line_number] = (stamp, time, (self.line_edit_box.text + p_line))
 				del self.structure[line_number+1]
@@ -37390,7 +37390,16 @@ class TimedLyricsEdit:
 				case True:
 					self.time_next_line()
 				case False:
-					self.previous( max(prev, test_time-5) )
+					if prev > test_time-5:
+						self.previous( prev )
+					else:
+						self.pctl.seek_time( test_time-5 )
+						if self.structure[self.line_active][1]>test_time-5 and (len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0):
+							stamp, time, line = self.structure[self.line_active]
+							stamp = _("?????")
+							time = -1.0
+							full_line = ( stamp, time, line )
+							self.structure[self.line_active] = full_line
 			buttons_x += widths[2] + x_gap
 
 			if not hide_art:
@@ -37442,20 +37451,17 @@ class TimedLyricsEdit:
 					self.structurize_current(track)
 					self.tauon.now_searching = "off"
 
-
-
 			if self.coll((0,0,self.window_size[0],self.window_size[1])): # DIRTY - always refresh if cursor is on window
 				self.gui.pl_update += 1
+
 		# end of stuff blocked by boxes being open
 
-		if self.pctl.playing_length - test_time < 0.5 and self.pctl.playing_state == 1:
-			match self.prefs.synced_lyrics_editor_track_end_mode:
-				case "stop":
-					self.pctl.stop()
-				case "autosave":
-					self.autosave()
-				case "full save":
-					self.save()
+		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" and self.pctl.playing_state == 1:
+			if not self.coll((0,0,self.window_size[0],self.window_size[1])) and self.pctl.playing_length - test_time < 5.5:
+				self.gui.pl_update += 1
+			if self.pctl.playing_length - test_time < 2.01:
+				self.pctl.stop()
+
 
 		if self.autosave_timer.get() > 5 and not self.autosaved:
 			self.autosave()
@@ -37476,6 +37482,12 @@ class TimedLyricsEdit:
 		index = self.pctl.track_queue[self.pctl.queue_step]
 		track = self.pctl.master_library[index]
 		if not self.structure or self.struct_track != index:
+			if self.struct_track != index and self.struct_track != -1:
+				match self.prefs.synced_lyrics_editor_track_end_mode:
+					case "autosave":
+						self.autosave()
+					case "full save":
+						self.save()
 			self.structurize_current(track)
 
 		x = int(self.window_size[0] * 0.05)
@@ -43861,7 +43873,7 @@ def main(holder: Holder) -> None:
 				sdl3.SDL_SetWindowFullscreen(t_window, 0)
 
 			# Disable keys for text cursor control
-			if not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not tauon.trans_edit_box.active:
+			if not gui.rename_folder_box and not tauon.rename_track_box.active and not gui.rename_playlist_box and not radiobox.active and not pref_box.enabled and not tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
 				if not gui.quick_search_mode and not tauon.search_over.active:
 					if prefs.album_mode and gui.album_tab_mode \
 							and not inp.key_ctrl_down \
