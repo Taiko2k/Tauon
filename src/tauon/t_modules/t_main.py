@@ -36777,6 +36777,7 @@ class TimedLyricsEdit:
 
 		self.autosave_timer = Timer()
 		self.autosaved: bool = True
+		self.cursor: int | None = None
 		self.text_timer = Timer()
 		self.x_posns: list[int]=[] # to display buttons etc in the right places
 		self.line_active: int = 0
@@ -36786,11 +36787,12 @@ class TimedLyricsEdit:
 
 
 
-	def reload_menu(self):
+	def reload_menu(self) -> None:
 		self.menu.subs = []
 		self.menu.sub_number = 0
 		self.menu.items = []
 
+		self.menu.add(MenuItem(_("Exit Lyrics Editor"), self.exit_lyrics_editor, pass_ref=False))
 		self.menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, self.tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 		self.menu.add(MenuItem(_("Clear All Timestamps"), self.clear_all_timestamps, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Lyrics"), self.clear_lyrics, pass_ref=False))
@@ -36811,18 +36813,39 @@ class TimedLyricsEdit:
 		else:
 			self.menu.add_to_sub(0, MenuItem( "    " + _("Fully save and continue"), self.end_set_stop ))
 
-	def end_set_stop(self):
+		self.menu.add(MenuItem(_("Delete All Backups"), self.delete_autosaves, show_test=self.inp.test_shift, pass_ref=False))
+
+	def end_set_stop(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "stop"
 		self.reload_menu()
 
-	def end_set_autosave(self):
+	def end_set_autosave(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "autosave"
 		self.reload_menu()
 
-	def end_set_full_save(self):
+	def end_set_full_save(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "full save"
 		self.reload_menu()
 
+	def exit_lyrics_editor(self) -> None:
+		self.autosave()
+		self.gui.timed_lyrics_edit_view = False
+
+	def delete_autosaves(self) -> None:
+		count = 0
+		target = self.tauon.config_directory / _("autosaved-lyrics")
+		if not target.is_dir():
+			return
+		else:
+			for child in target.iterdir():
+				if child.is_file():
+					count += 1
+					child.unlink()
+			try:
+				target.rmdir()
+			except:
+				logging.error( _("You put a folder in the autosaved-lyrics directory. Don't do that.") )
+			logging.info(f"Deleted {count} autosave files.")
 
 
 	def button(
@@ -37008,7 +37031,7 @@ class TimedLyricsEdit:
 
 
 	def autosave(self) -> None:
-		target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w") as lyrics_file:
@@ -37023,7 +37046,7 @@ class TimedLyricsEdit:
 
 
 	def autoload(self) -> None:
-		target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
 		with open(target, "r") as lyrics_file:
@@ -37104,14 +37127,18 @@ class TimedLyricsEdit:
 		else:
 			self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Timestamp unknown"))
 
+		temp_text = self.line_edit_box.text # so we don't delete lines a frame early
 		self.line_edit_box.text = line
+		if self.cursor:
+			self.line_edit_box.cursor_position =  len(self.line_edit_box.text) - self.cursor
+			self.line_edit_box.selection = self.line_edit_box.cursor_position
+			self.cursor = None
 
 		height = self.ddt.get_text_w("?", self.font, True)
 		x = round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale
 
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, height)
 		self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale) )
-		temp_text = self.line_edit_box.text # so we don't delete lines a frame early
 		self.line_edit_box.draw(
 			self.x_posns[2], y_pos, self.colours.box_input_text, True,
 			font = self.font, width = ( x ), big=True
@@ -37119,6 +37146,7 @@ class TimedLyricsEdit:
 		line = self.line_edit_box.text
 		full_line = ( stamp, time, line )
 		self.structure[line_number] = full_line
+		position = len( self.line_edit_box.text ) - self.line_edit_box.cursor_position
 
 		x += self.x_posns[2]-height/4 + round(12*self.gui.scale)
 		x = min( x, round( self.window_size[0]-self.yy - 12*self.gui.scale ) )
@@ -37136,15 +37164,14 @@ class TimedLyricsEdit:
 			else:
 				self.structure.insert(line_number+1, (_("?????"),-1.0,""))
 				self.scroll_position -= self.yy
-			self.inp.key_return_press = False
 			self.allow_scroll = False
 
-		# add new lines
+		# advanced text editing
 		if "\n" in self.line_edit_box.text: # can only happen if user pastes multi line string
 			self.accept_paste(line_number)
 
-		if self.coll(rect): # advanced text editing
-			position = len( self.line_edit_box.text ) - self.line_edit_box.cursor_position
+		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, self.yy)
+		if self.coll(rect):
 			if self.inp.key_return_press:
 				if self.inp.key_shift_down or self.inp.key_shiftr_down:
 					self.structure.insert(line_number, (_("?????"),-1.0,""))
@@ -37154,16 +37181,34 @@ class TimedLyricsEdit:
 					self.structure[line_number] = (stamp, time, line_one)
 					self.structure.insert(line_number+1, (_("?????"),-1.0,line_two))
 					self.scroll_position -= self.yy
+					self.cursor = position
+
 			elif self.inp.key_backspace_press and position==0 and line_number >= 1:
 				p_stamp, p_time, p_line = self.structure[line_number-1]
 				self.structure[line_number-1] = (p_stamp, p_time, (p_line + self.line_edit_box.text))
 				del self.structure[line_number]
 				self.scroll_position += self.yy
+				self.inp.key_backspace_press = False
+				self.cursor = position
+
+			elif self.inp.key_del and self.line_edit_box.cursor_position==0 and line_number+1<len(self.structure):
+				p_stamp, p_time, p_line = self.structure[line_number+1]
+				self.structure[line_number] = (stamp, time, (self.line_edit_box.text + p_line))
+				del self.structure[line_number+1]
+				self.line_edit_box.cursor_position += len(p_line)
+				self.line_edit_box.selection = self.line_edit_box.cursor_position
+				self.inp.key_del = False
+				self.cursor = position
+
 			elif self.inp.key_up_press and line_number > 0:
 				self.scroll_position += self.yy
+				self.cursor = position
 			elif self.inp.key_down_press and line_number+1 < len(self.structure):
 				self.scroll_position -= self.yy
+				self.cursor = position
 
+		if len(self.line_edit_box.text) == 0:
+			self.inp.key_backspace_press = False
 
 		if len(self.structure) == 0:
 			self.structure = [ (_("?????"),-1.0,"") ]
@@ -37183,8 +37228,6 @@ class TimedLyricsEdit:
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			self.scroll_position += scroll_distance
 			self.recenter_timeout.set()
-
-
 
 		highlight = True
 
@@ -37237,8 +37280,8 @@ class TimedLyricsEdit:
 
 		# scroll boundaries
 		if self.allow_scroll:
-			self.scroll_position = min( self.scroll_position,  self.line_active*(self.yy) )
-			self.scroll_position = max( self.scroll_position, -(len(self.structure)-self.line_active)*(self.yy) )
+			self.scroll_position = min( self.scroll_position,  self.line_active*(self.yy) + self.window_size[1]/2 -(self.yy + self.gui.panelBY) )
+			self.scroll_position = max( self.scroll_position, -(len(self.structure)-self.line_active)*(self.yy) - self.window_size[1]/2 +(self.yy + self.gui.panelY) )
 		self.allow_scroll = True
 
 		center = y_center + self.scroll_position
@@ -37297,7 +37340,7 @@ class TimedLyricsEdit:
 							if rendered_line is None:
 								continue
 							if rendered_line[0][0] < self.inp.mouse_position[1] < rendered_line[0][1]:
-								self.pctl.seek_time(rendered_line[1][1])
+								self.pctl.seek_time(rendered_line[1])
 								self.scroll_position = scroll_to
 								break
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
@@ -37321,7 +37364,7 @@ class TimedLyricsEdit:
 				self.ddt.get_text_w(_("Previous"), self.font),
 				self.ddt.get_text_w(_("ADVANCE"), self.font),
 				self.ddt.get_text_w(_("SAVE"), self.font),
-				self.ddt.get_text_w(_("Load Autosave"), self.font),
+				self.ddt.get_text_w(_("Load Backup"), self.font),
 			]
 			if hide_art:
 				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -37347,7 +37390,7 @@ class TimedLyricsEdit:
 				case True:
 					self.time_next_line()
 				case False:
-					self.previous(prev)
+					self.previous( max(prev, test_time-5) )
 			buttons_x += widths[2] + x_gap
 
 			if not hide_art:
@@ -37363,8 +37406,8 @@ class TimedLyricsEdit:
 				self.save()
 			btx_top += widths[3] + x_gap
 
-			target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".csv")
-			match self.button( _("Load autosave"), btx_top, bty_top, \
+			target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
+			match self.button( _("Load Backup"), btx_top, bty_top, \
 					self.font, off=not target.is_file()):
 				case True:
 					self.autoload()
