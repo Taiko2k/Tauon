@@ -3,6 +3,7 @@ Changelog
 ---------
 
 ### UPCOMING
+ - **Added** New fully-featured lyrics editor, including LRC support (thanks @rexendevar)
  - **Fixed** being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
  - **Fixed** Jellyfin import, regression introduced in 8.1.0
