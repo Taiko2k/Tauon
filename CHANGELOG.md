@@ -4,6 +4,7 @@ Changelog
 
 ### UPCOMING
  - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
+ - **Fixed** Crash on radio playlist migration under some circumstances
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
  - **Fixed** Jellyfin import, regression introduced in 8.1.0
  - **Fixed** Crash when exporting playlist, regression introduced in 8.1.3
