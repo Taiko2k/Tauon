@@ -69,7 +69,7 @@ jobs:
           pip install \
             -r requirements.txt \
             build \
-            pyinstaller
+            pyinstaller==6.14.2
           python -c "import sdl3"
 #            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 
@@ -224,7 +224,7 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
             -r requirements.txt \
             build \
-            pyinstaller \
+            pyinstaller==6.14.2 \
             pytest
 #            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
@@ -353,7 +353,7 @@ jobs:
             -r requirements.txt \
             build
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
-            pyinstaller
+            pyinstaller==6.14.2
         #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
         #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
@@ -462,7 +462,7 @@ jobs:
           .venv/bin/python -m pip install \
             -r requirements.txt \
             build \
-            pyinstaller
+            pyinstaller==6.14.2
         #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
