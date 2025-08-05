@@ -11054,7 +11054,7 @@ class Tauon:
 			playlist.sort(key=key, reverse=invert)
 		self.reload()
 
-	def stt2(sec: int) -> str:
+	def stt2(self, sec: int) -> str:
 		"""converts seconds into days hours minutes"""
 		days, rem = divmod(sec, 86400)
 		hours, rem = divmod(rem, 3600)
