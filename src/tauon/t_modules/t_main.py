@@ -1886,9 +1886,9 @@ class PlayerCtl:
 		if not playlist.auto_import:
 			return
 
-		code = self.gen_codes.get(id)
-		if code and "self" not in code:
-			logging.warning(f"Playlist to import has a generator!: {playlist.title}")
+		code = self.gen_codes.get(playlist.uuid_int)
+		if code and not "self" in code:
+			logging.warning("Playlist to import has a generator!: " + playlist.title)
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
@@ -6622,7 +6622,7 @@ class Tauon:
 		# & then add it to the list
 		if playlist:
 			filesize = path.stat().st_size
-			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path), file_size=filesize)
+			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path), file_size=filesize, export_type="m3u", auto_import=True)
 			logging.info(f"Imported m3u file as {final_playlist.title}")
 			self.pctl.multi_playlist.append(
 				final_playlist)
@@ -6630,9 +6630,6 @@ class Tauon:
 			self.add_stations(stations, name)
 		if not playlist and not stations:
 			return
-
-		# populate export fields
-		playlist.export_type = "xspf"
 
 		self.gui.update = 1
 
@@ -6884,25 +6881,27 @@ class Tauon:
 
 	def load_xspf(self, path: str) -> None:
 		# self.log("Importing XSPF playlist: " + path, title=True)
-		logging.info(f"Importing XSPF playlist: {path}")
+
+		if not Path(path).is_file():
+			return
 
 		playlist, stations, name = self.parse_xspf(path)
 		path = Path(path)
 		if not name:
 			name = path.stem
-		if stations:
-			self.add_stations(stations, path.stem)
+
 		#logging.info(playlist)
 		if playlist:
-			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path))
+			filesize = path.stat().st_size
+			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path), file_size=filesize, export_type="xspf", auto_import=True)
+			logging.info(f"Imported xspf file as {final_playlist.title}")
 			self.pctl.multi_playlist.append(
 				final_playlist)
+		if stations:
+			self.add_stations(stations, name)
 		if not stations and not playlist:
 			return
 		self.gui.update = 1
-
-		# populate export fields
-		playlist.export_type = "xspf"
 
 
 	def ex_tool_tip(self, x: int, y: float, text1_width: int, text: str, font: int) -> None:
@@ -14101,7 +14100,12 @@ class Tauon:
 		hidden:       bool = False,
 		notify:       bool = True, # Allows us to generate initial playlist before worker thread is ready
 		playlist_file:str = "",
+		auto_export:  bool = False,
+		auto_import:  bool = False,
+		relative_export: bool = False,
+		export_type:  str = "xspf",
 		file_size:    int = 0,
+
 	) -> TauonPlaylist:
 		"""Generate a TauonPlaylist
 
@@ -14113,7 +14117,7 @@ class Tauon:
 			self.pctl.notify_change()
 
 		#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
-		return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False, playlist_file=playlist_file, file_size=file_size)
+		return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False, playlist_file=playlist_file, file_size=file_size, auto_export=auto_export, auto_import=auto_import, export_type=export_type, relative_export=relative_export)
 
 	def open_uri(self, uri: str) -> None:
 		logging.info("OPEN URI")
@@ -22624,6 +22628,11 @@ class ExportPlaylistBox:
 			ddt.text((xx, yy, 1), _("Will create directory"), colours.grey(190), 10)
 
 		y += round(30 * gui.scale)
+		if playlist.playlist_file.lower().endswith(".xspf"):
+			playlist.export_type = "xspf"
+		if playlist.playlist_file.lower().endswith(".m3u") or playlist.playlist_file.lower().endswith(".m3u8"):
+			playlist.export_type = "m3u"
+
 		old = playlist.export_type
 		if self.pref_box.toggle_square(x, y, playlist.export_type == "xspf", "XSPF", gui.level_2_click):
 			playlist.export_type = "xspf"
@@ -24380,6 +24389,8 @@ class Over:
 			# ddt.rect(rect1, [40, 40, 40, 255], True)
 			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 
+			if self.prefs.playlist_folder_path:
+				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
 			if Path(tauon.playlist_folder_box.text).is_dir():
 				tauon.playlist_folder_box.draw(
 					x + round(4 * gui.scale), y, colours.box_input_text, True,
