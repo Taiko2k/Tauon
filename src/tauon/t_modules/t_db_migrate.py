@@ -54,28 +54,28 @@ def database_migrate(
 		raise ValueError
 
 	logging.warning(f"Running migrations as DB version was {db_version}!")
-	if db_version <= 0.8:
+	if db_version <= 0.8:  # noqa: PLR2004
 		logging.info("Updating database from version 0.8 to 0.9")
 		for key, value in master_library.items():
 			setattr(master_library[key], "skips", 0)
 
-	if db_version <= 0.9:
+	if db_version <= 0.9:  # noqa: PLR2004
 		logging.info("Updating database from version 0.9 to 1.1")
 		for key, value in master_library.items():
 			setattr(master_library[key], "comment", "")
 
-	if db_version <= 1.1:
+	if db_version <= 1.1:  # noqa: PLR2004
 		logging.info("Updating database from version 1.1 to 1.2")
 		for key, value in master_library.items():
 			setattr(master_library[key], "album_artist", "")
 
-	if db_version <= 1.2:
+	if db_version <= 1.2:  # noqa: PLR2004
 		logging.info("Updating database to version 1.3")
 		for key, value in master_library.items():
 			setattr(master_library[key], "disc_number", "")
 			setattr(master_library[key], "disc_total", "")
 
-	if db_version <= 1.3:
+	if db_version <= 1.3:  # noqa: PLR2004
 		logging.info("Updating database to version 1.4")
 		for key, value in master_library.items():
 			setattr(master_library[key], "lyrics", "")
@@ -83,25 +83,25 @@ def database_migrate(
 		show_message(
 			"Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
 
-	if db_version <= 1.4:
+	if db_version <= 1.4:  # noqa: PLR2004
 		logging.info("Updating database to version 1.5")
 		for playlist in multi_playlist:
 			playlist.append(uid_gen())
 
-	if db_version <= 1.5:
+	if db_version <= 1.5:  # noqa: PLR2004
 		logging.info("Updating database to version 1.6")
 		for i in range(len(multi_playlist)):
 			if len(multi_playlist[i]) == 7:
 				multi_playlist[i].append("")
 
-	if db_version <= 1.6:
+	if db_version <= 1.6:  # noqa: PLR2004
 		logging.info("Updating preferences to 1.7")
 		# gui.show_stars = False
 		if install_mode:
 			# shutil.copy(install_directory / "config.txt", user_directory)
 			logging.info("Rewrote user config file")
 
-	if db_version <= 1.7:
+	if db_version <= 1.7:  # noqa: PLR2004
 		logging.info("Updating database to version 1.8")
 		if install_mode:
 			logging.info(".... Overwriting user config file")
@@ -133,46 +133,46 @@ def database_migrate(
 			logging.exception("Error upgrading database")
 			show_message(_("Error loading old database, did the program not exit properly after updating? Oh well."))
 
-	if db_version <= 1.8:
+	if db_version <= 1.8:  # noqa: PLR2004
 		logging.info("Updating database to 1.9")
 		for key, value in master_library.items():
 			setattr(master_library[key], "track_gain", None)
 			setattr(master_library[key], "album_gain", None)
 		show_message(_("Upgrade complete. Run a tag rescan if you want enable ReplayGain"))
 
-	if db_version <= 1.9:
+	if db_version <= 1.9:  # noqa: PLR2004
 		logging.info("Updating database to version 2.0")
 		for key, value in master_library.items():
 			setattr(master_library[key], "modified_time", 0)
 		show_message(_("Upgrade complete. New sorting option may require tag rescan."))
 
-	if db_version <= 2.0:
+	if db_version <= 2.0:  # noqa: PLR2004
 		logging.info("Updating database to version 2.1")
 		for key, value in master_library.items():
 			setattr(master_library[key], "is_embed_cue", False)
 			setattr(master_library[key], "cue_sheet", "")
 		show_message(_("Updated to v2.6.3"))
 
-	if db_version <= 2.1:
+	if db_version <= 2.1:  # noqa: PLR2004
 		logging.info("Updating database to version 2.1")
 		for key, value in master_library.items():
 			setattr(master_library[key], "lfm_friend_likes", set())
 
-	if db_version <= 2.2:
+	if db_version <= 2.2:  # noqa: PLR2004
 		for i in range(len(multi_playlist)):
 			if len(multi_playlist[i]) < 9:
 				multi_playlist[i].append(True)
 
-	if db_version <= 2.3:
+	if db_version <= 2.3:  # noqa: PLR2004
 		logging.info("Updating database to version 2.4")
 		for key, value in master_library.items():
 			setattr(master_library[key], "bit_depth", 0)
 
-	if db_version <= 2.4:
+	if db_version <= 2.4:  # noqa: PLR2004
 		if theme > 0:
 			theme += 1
 
-	if db_version <= 2.5:
+	if db_version <= 2.5:  # noqa: PLR2004
 		logging.info("Updating database to version 2.6")
 		for key, value in master_library.items():
 			setattr(master_library[key], "is_network", False)
@@ -180,19 +180,19 @@ def database_migrate(
 		#	 if len(multi_playlist[i]) < 10:
 		#		 multi_playlist[i].append(False)
 
-	if db_version <= 26:
+	if db_version <= 26:  # noqa: PLR2004
 		logging.info("Updating database to version 27")
 		for i in range(len(multi_playlist)):
 			if len(multi_playlist[i]) == 9:
 				multi_playlist[i].append(False)
 
-	if db_version <= 27:
+	if db_version <= 27:  # noqa: PLR2004
 		logging.info("Updating database to version 28")
 		for i in range(len(multi_playlist)):
 			if len(multi_playlist[i]) <= 10:
 				multi_playlist[i].append("")
 
-	if db_version <= 29:
+	if db_version <= 29:  # noqa: PLR2004
 		logging.info("Updating database to version 30")
 		for key, value in master_library.items():
 			setattr(master_library[key], "composer", "")
@@ -205,7 +205,7 @@ def database_migrate(
 
 		show_message(_("Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."))
 
-	if db_version <= 30:
+	if db_version <= 30:  # noqa: PLR2004
 		for i, item in enumerate(p_force_queue):
 			try:
 				assert item[6]
@@ -213,42 +213,40 @@ def database_migrate(
 				logging.exception("Error asserting item[6]")
 				p_force_queue[i].append(False)
 
-	if db_version <= 31:
-
+	if db_version <= 31:  # noqa: PLR2004
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("love-selected\n")
 		gui.set_bar = True
 
-	if db_version <= 32:
-		if theme > 1:
-			theme += 1
+	if db_version <= 32 and theme > 1:  # noqa: PLR2004
+		theme += 1
 
-	if db_version <= 33:
+	if db_version <= 33:  # noqa: PLR2004
 		logging.info("Update to db 34")
 		for key, value in master_library.items():
 			if not hasattr(master_library[key], "misc"):
 				setattr(master_library[key], "misc", {})
 
-	if db_version <= 34:
+	if db_version <= 34:  # noqa: PLR2004
 		logging.info("Update to dv 35")
 		# Moved to after config load
 
-	if db_version <= 35:
+	if db_version <= 35:  # noqa: PLR2004
 		logging.info("Updating database to version 36")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("toggle-show-art H Ctrl\n")
 
-	if db_version <= 37:
+	if db_version <= 37:  # noqa: PLR2004
 		logging.info("Updating database to version 38")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with Path(config_directory / "input.txt").open("a") as f:
 				f.write("toggle-console `\n")
 
-	if db_version <= 38:
+	if db_version <= 38:  # noqa: PLR2004
 		logging.info("Updating database to version 39")
 
 		for key, value in star_store.db.items():
@@ -257,7 +255,7 @@ def database_migrate(
 				value.append(0)
 				star_store.db[key] = value
 
-	if db_version <= 39:
+	if db_version <= 39:  # noqa: PLR2004
 		logging.info("Updating database to version 40")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
@@ -274,7 +272,7 @@ def database_migrate(
 					f.write(line + "\n")
 				f.close()
 
-	if db_version <= 40:
+	if db_version <= 40:  # noqa: PLR2004
 		logging.info("Updating database to version 41")
 		old = copy.deepcopy(prefs.lyrics_enables)
 		prefs.lyrics_enables.clear()
@@ -285,7 +283,7 @@ def database_migrate(
 		if "genius" in old:
 			prefs.lyrics_enables.append("Genius")
 
-	if db_version <= 41:
+	if db_version <= 41:  # noqa: PLR2004
 		logging.info("Updating database to version 42")
 
 		for key, value in gen_codes.items():
@@ -323,10 +321,10 @@ def database_migrate(
 
 			f.close()
 
-	if db_version <= 42:
+	if db_version <= 42:  # noqa: PLR2004
 		logging.info("Updating database to version 43")
 
-	if db_version <= 43:
+	if db_version <= 43:  # noqa: PLR2004
 		logging.info("Updating database to version 44")
 		# Repair db
 		for key, value in star_store.db.items():
@@ -334,7 +332,7 @@ def database_migrate(
 				value.append(0)
 				star_store.db[key] = value
 
-	if db_version <= 44:
+	if db_version <= 44:  # noqa: PLR2004
 		logging.info("Updating database to version 45")
 		logging.info("Cleaning cache directory")
 		for item in cache_directory.iterdir():
@@ -346,26 +344,26 @@ def database_migrate(
 			if path.is_file():
 				path.unlink()
 
-	if db_version <= 45:
+	if db_version <= 45:  # noqa: PLR2004
 		logging.info("Updating database to version 46")
 		for p in multi_playlist:
 			if type(p[7]) != list:
 				p[7] = [p[7]]
 
-	if db_version <= 46:
+	if db_version <= 46:  # noqa: PLR2004
 		logging.info("Updating database to version 47")
 		for p in multi_playlist:
 			if type(p[7]) != list:
 				p[7] = [p[7]]
 
-	if db_version <= 47:
+	if db_version <= 47:  # noqa: PLR2004
 		logging.info("Updating database to version 48")
 		if (user_directory / "spot-r-token").is_file():
 			show_message(
 			_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
 			_("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"))
 
-	if db_version <= 48:
+	if db_version <= 48:  # noqa: PLR2004
 		logging.info("Fix bad upgrade, now 49")
 		for key, value in master_library.items():
 			if not hasattr(master_library[key], "url_key"):
@@ -373,7 +371,7 @@ def database_migrate(
 			if not hasattr(master_library[key], "art_url_key"):
 				setattr(master_library[key], "art_url_key", "")
 
-	if db_version <= 49:
+	if db_version <= 49:  # noqa: PLR2004
 		logging.info("Updating database to version 50")
 		if (user_directory / "spot-r-token").is_file():
 			show_message(
@@ -381,12 +379,12 @@ def database_migrate(
 				_("You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"))
 			(user_directory / "spot-r-token").unlink()
 
-	if db_version <= 54:
+	if db_version <= 54:  # noqa: PLR2004
 		logging.info("Updating database to version 55")
 		for key, value in master_library.items():
 			setattr(master_library[key], "lfm_scrobbles", 0)
 
-	if db_version <= 55:
+	if db_version <= 55:  # noqa: PLR2004
 		logging.info("Update to db 56")
 		for key, value in master_library.items():
 
@@ -405,13 +403,13 @@ def database_migrate(
 				f.write("toggle-right-panel MB5\n")
 				f.write("toggle-gallery MB4\n")
 
-	if db_version <= 56:
+	if db_version <= 56:  # noqa: PLR2004
 		logging.info("Update to db 57")
 		if "Apiseeds" in prefs.lyrics_enables:
 			prefs.lyrics_enables.remove("Apiseeds")
 			prefs.lyrics_enables.append("Happi")
 
-	if db_version <= 57:
+	if db_version <= 57:  # noqa: PLR2004
 		logging.info("Updating database to version 58")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
@@ -421,14 +419,14 @@ def database_migrate(
 				f.write("resize-window-16:9 F11 Alt\n")
 				f.write("delete-playlist-force W Shift Ctrl\n")
 
-	if db_version <= 58:
+	if db_version <= 58:  # noqa: PLR2004
 		logging.info("Updating database to version 59")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with (config_directory / "input.txt").open("a") as f:
 				f.write("\nrandom-album ; Alt\n")
 
-	if db_version <= 59:
+	if db_version <= 59:  # noqa: PLR2004
 		logging.info("Updating database to version 60")
 
 		if prefs.spotify_token:
@@ -437,7 +435,7 @@ def database_migrate(
 				_("Please click 'Authorise' again in the settings"))
 		prefs.spotify_token = ""
 
-	if db_version <= 60:
+	if db_version <= 60:  # noqa: PLR2004
 		logging.info("Updating database to version 61")
 
 		token_path = user_directory / "spot-token-pkce"
@@ -448,14 +446,14 @@ def database_migrate(
 				_("Upgrade to v6.5.3 complete"),
 				_("It looks like you are using Spotify. Please re-setup Spotify again in the settings"))
 
-	if db_version <= 61:
+	if db_version <= 61:  # noqa: PLR2004
 		logging.info("Updating database to version 62")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with (config_directory / "input.txt").open("a") as f:
 				f.write("\ntransfer-playtime-to P Ctrl Shift\n")
 
-	if db_version <= 62:
+	if db_version <= 62:  # noqa: PLR2004
 		logging.info("Updating database to version 63")
 		for item in gui.pl_st:
 			if item[0] == "T":
@@ -475,14 +473,14 @@ def database_migrate(
 				f.write("vol-up Up Ctrl\n")
 				f.write("vol-down Down Ctrl\n")
 
-	if db_version <= 63:
+	if db_version <= 63:  # noqa: PLR2004
 		logging.info("Updating database to version 64")
 		if prefs.radio_urls:
 			radio_playlists[0]["items"].extend(prefs.radio_urls)
 			prefs.radio_urls = []
 		# prefs.show_nag = True
 
-	if db_version <= 64:
+	if db_version <= 64:  # noqa: PLR2004
 		logging.info("Updating database to version 65")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
@@ -490,7 +488,7 @@ def database_migrate(
 				f.write("\nescape Escape\n")
 				f.write("toggle-mute M Ctrl\n")
 
-	if db_version <= 65:
+	if db_version <= 65:  # noqa: PLR2004
 		logging.info("Updating database to version 66")
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
@@ -499,20 +497,20 @@ def database_migrate(
 				f.write("cycle-theme ] Ctrl\n")
 				f.write("cycle-theme-reverse [ Ctrl\n")
 
-	if db_version <= 66:
+	if db_version <= 66:  # noqa: PLR2004
 		logging.info("Updating database to version 67")
 		for key, value in star_store.db.items():
 			if len(value) == 3:
 				value.append(0)
 				star_store.db[key] = value
 
-	if db_version <= 67:
+	if db_version <= 67:  # noqa: PLR2004
 		logging.info("Updating database to version 68")
 		for p in multi_playlist:
 			if len(p) == 11:
 				p.append(False)
 
-	if db_version <= 68:
+	if db_version <= 68:  # noqa: PLR2004
 		logging.info("Updating database to version 69")
 		new_multi_playlist: list[TauonPlaylist] = []
 		new_queue: list[TauonQueueItem] = []
@@ -544,7 +542,7 @@ def database_migrate(
 		multi_playlist = new_multi_playlist
 		p_force_queue = new_queue
 
-	if db_version <= 69:
+	if db_version <= 69:  # noqa: PLR2004
 		logging.info("Updating database to version 70")
 		new_radio_playlists: list[RadioPlaylist] = []
 		for playlist in radio_playlists:
@@ -567,10 +565,10 @@ def database_migrate(
 					stations=stations))
 		radio_playlists = new_radio_playlists
 
-	if db_version <= 71: # This migration used both 71 and 72
+	if db_version <= 71: # This migration used both 71 and 72  # noqa: PLR2004
 		logging.info("Updating database to version 72")
 		logging.info("Creating a backup Star database star.p.bak71")
-		import pickle
+		import pickle  # noqa: PLC0415
 		backup_star_db = (user_directory / "star.p.bak71")
 		if not backup_star_db.exists():
 			with backup_star_db.open("wb") as file:
@@ -596,7 +594,7 @@ def database_migrate(
 			with (user_directory / "star.p").open("wb") as file:
 				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-	if db_version <= 72:
+	if db_version <= 72:  # noqa: PLR2004
 		# prefs.playlist_exports = save[168]
 		logging.info("Updating database to version 73")
 		for key, item in prefs.playlist_exports.items():
