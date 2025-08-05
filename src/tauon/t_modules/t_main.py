@@ -40892,7 +40892,7 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, bag.radio_playlists = database_migrate(
+			master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
 				master_library=master_library,
@@ -40907,7 +40907,7 @@ def main(holder: Holder) -> None:
 				gui=gui,
 				gen_codes=pctl.gen_codes,
 				prefs=prefs,
-				radio_playlists=bag.radio_playlists,
+				radio_playlists=pctl.radio_playlists,
 				theme=prefs.theme,
 				p_force_queue=p_force_queue,
 			)
