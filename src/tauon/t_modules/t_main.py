@@ -7561,6 +7561,8 @@ class Tauon:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
 							# TODO (Flynn): SYLT
+							if self.prefs.save_lyrics_to_file:
+								self.write_lyrics(track_object, True)
 						found = True
 						break
 				except Exception:
@@ -7685,7 +7687,6 @@ class Tauon:
 		target = Path( self.config_directory / _("edited-lyrics") / str(track_object.index)).with_suffix(".txt")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
-			# TODO (Flynn): delete all lyric files on program close
 		with open(target, "w") as lyrics_file:
 			if track_object.lyrics:
 				# TODO (Flynn): make this interchangablaedbaledjbaejdblaejdblajebjd synced lyrics too lol
@@ -7704,37 +7705,52 @@ class Tauon:
 		self.show_message(_("Lyrics file opened."), _('Click "Reload" if you made any changes'), mode="arrow")
 
 
-	def write_lyrics(self, track: TrackClass) -> None:
-		if track.file_ext == "MP3":
-			audio = mutagen.id3.ID3(track.fullpath)
-			audio.add( mutagen.id3.USLT( text=track.lyrics ) )
-			audio.save()
-			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
-		elif track.file_ext == "FLAC":
-			audio = mutagen.flac.FLAC(track.fullpath)
-			audio["LYRICS"] = track.lyrics
-			audio.save()
-			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
-		elif track.file_ext in ("OPUS", "OGG"):
-			audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-			audio["LYRICS"] = track.lyrics
-			audio.save()
-			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
-		elif track.file_ext in ("APE","WV","TTA"):
-			audio = mutagen.apev2.APEv2(track.fullpath)
-			audio["Lyrics"] = track.lyrics
-			audio.save()
-			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
-		elif track.file_ext in ("MP4","M4A","M4B","M4P"):
-			audio = mutagen.mp4.MP4(track.fullpath)
-			audio['\xa9lyr'] = track.lyrics
-			audio.save()
-			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+	def write_lyrics(self, track: TrackClass, synced: bool = False) -> None:
+		if synced:
+			lyrics = track.synced
 		else:
-			logging.info(f"Could not save lyrics to file with extension {track.file_ext}")
-
-		if track.synced:
-			find_synced_lyric_data( track, reload=True )
+			lyrics = track.lyrics
+		if track.is_network:
+			logging.info(f"Cannot write lyrics to network track {track.artist} - {track.title}")
+		try:
+			if track.file_ext == "MP3":
+				audio = mutagen.id3.ID3(track.fullpath)
+				audio.add( mutagen.id3.USLT( text=track.lyrics ) )
+				audio.save()
+				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			elif track.file_ext == "FLAC":
+				audio = mutagen.flac.FLAC(track.fullpath)
+				audio["LYRICS"] = track.lyrics
+				audio.save()
+				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			elif track.file_ext in ("OPUS", "OGG"):
+				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
+				audio["LYRICS"] = track.lyrics
+				audio.save()
+				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			elif track.file_ext in ("APE","WV","TTA"):
+				audio = mutagen.apev2.APEv2(track.fullpath)
+				audio["Lyrics"] = track.lyrics
+				audio.save()
+				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			elif track.file_ext in ("MP4","M4A","M4B","M4P"):
+				audio = mutagen.mp4.MP4(track.fullpath)
+				audio['\xa9lyr'] = track.lyrics
+				audio.save()
+				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			else:
+				self.show_message(
+					_("Could not write lyrics to file"),
+					_("We don't know how to write lyrics to the filetype: ") + track.file_ext,
+					mode="error"
+				)
+		except:
+			self.show_message(
+				_("Could not write lyrics to file"),
+				_("File doesn't exist or is not accessible."),
+				mode="error"
+			)
+		self.lyrics_ren_mini.to_reload = True
 		# TODO: add more formats
 
 	def reload_lyric_file(self, index: int) -> None:
