@@ -7712,30 +7712,35 @@ class Tauon:
 			lyrics = track.lyrics
 		if track.is_network:
 			logging.info(f"Cannot write lyrics to network track {track.artist} - {track.title}")
+		if synced and self.prefs.use_lrc_instead:
+			with open( Path(track.fullpath).with_suffix(".lrc"), "w") as lrc:
+				lrc.write( lyrics )
+				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
+				return
 		try:
 			if track.file_ext == "MP3":
 				audio = mutagen.id3.ID3(track.fullpath)
-				audio.add( mutagen.id3.USLT( text=track.lyrics ) )
+				audio.add( mutagen.id3.USLT( text=lyrics ) )
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
-				audio["LYRICS"] = track.lyrics
+				audio["LYRICS"] = lyrics
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("OPUS", "OGG"):
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-				audio["LYRICS"] = track.lyrics
+				audio["LYRICS"] = lyrics
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("APE","WV","TTA"):
 				audio = mutagen.apev2.APEv2(track.fullpath)
-				audio["Lyrics"] = track.lyrics
+				audio["Lyrics"] = lyrics
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 				audio = mutagen.mp4.MP4(track.fullpath)
-				audio['\xa9lyr'] = track.lyrics
+				audio['\xa9lyr'] = lyrics
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			else:
@@ -24557,7 +24562,12 @@ class Over:
 
 			y += round(45* gui.scale)
 			prefs.save_lyrics_to_file = self.toggle_square(
-				x, y, prefs.save_lyrics_to_file, _("Save all lyrics changes back to their original files"))
+				x, y, prefs.save_lyrics_to_file, _("Save all lyrics changes back to files"))
+			y += round(25* gui.scale)
+			if prefs.save_lyrics_to_file:
+				prefs.use_lrc_instead = self.toggle_square(
+					x + 10*gui.scale, y, prefs.use_lrc_instead, _("Use separate .LRC file for synced lyrics"),
+					subtitle=_("instead of file metadata"))
 
 		elif self.func_page == 3:
 			y += 23 * gui.scale
@@ -37267,6 +37277,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
 	cf.update_value("save_lyrics_to_file", prefs.save_lyrics_to_file)
+	cf.update_value("use_lrc_instead", prefs.use_lrc_instead)
 
 	cf.update_value("use-system-tray", prefs.use_tray)
 	cf.update_value("use-gamepad", prefs.use_gamepad)
@@ -37426,6 +37437,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.save_lyrics_to_file = cf.sync_add(
 		"bool", "save_lyrics_to_file", prefs.save_lyrics_to_file,
 		"Save lyrics changes made in Tauon back to their original files.")
+	prefs.use_lrc_instead = cf.sync_add(
+		"bool", "use_lrc_instead", prefs.use_lrc_instead,
+		"Use separate .LRC files instead of file metadata for synced lyrics.")
 
 	cf.br()
 	cf.add_text("[playback]")
