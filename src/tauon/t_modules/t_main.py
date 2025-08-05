@@ -40281,18 +40281,18 @@ def main(holder: Holder) -> None:
 					logging.critical(f"Loaded DB version: '{db_version}' is newer than latest known DB version '{latest_db_version}', refusing to load!\nAre you running an out of date Tauon version using Configuration directory from a newer one?")
 					sys.exit(42)
 				logging.warning(f"Loaded older DB version: {db_version}")
-			if save[63] is not None:
+			if len(save) > 63 and save[63] is not None:
 				prefs.ui_scale = save[63]
 				# prefs.ui_scale = 1.3
 				# gui.__init__()
 
-			if save[0] is not None:
+			if len(save) > 0 and save[0] is not None:
 				master_library = save[0]
 			bag.master_count = save[1]
 			bag.playlist_playing = save[2]
 			bag.active_playlist_viewing = save[3]
 			bag.playlist_view_position = save[4]
-			if save[5] is not None:
+			if len(save) > 5 and save[5] is not None:
 				if db_version > 68:
 					bag.multi_playlist = []
 					tauonplaylist_jar = save[5]
@@ -40321,138 +40321,138 @@ def main(holder: Holder) -> None:
 			# savetime = save[21]
 			gui.vis_want = save[22]
 			bag.selected_in_playlist = save[23]
-			if save[24] is not None:
+			if len(save) > 24 and save[24] is not None:
 				bag.album_mode_art_size = save[24]
-			if save[25] is not None:
+			if len(save) > 25 and save[25] is not None:
 				draw_border = save[25]
-			if save[26] is not None:
+			if len(save) > 26 and save[26] is not None:
 				prefs.enable_web = save[26]
-			if save[27] is not None:
+			if len(save) > 27 and save[27] is not None:
 				prefs.allow_remote = save[27]
-			if save[28] is not None:
+			if len(save) > 28 and save[28] is not None:
 				prefs.expose_web = save[28]
-			if save[29] is not None:
+			if len(save) > 29 and save[29] is not None:
 				prefs.enable_transcode = save[29]
-			if save[30] is not None:
+			if len(save) > 30 and save[30] is not None:
 				prefs.show_rym = save[30]
-			# if save[31] is not None:
+			# if len(save) > 31 and save[31] is not None:
 			#	 combo_mode_art_size = save[31]
-			if save[32] is not None:
+			if len(save) > 32 and save[32] is not None:
 				gui.maximized = save[32]
-			if save[33] is not None:
+			if len(save) > 33 and save[33] is not None:
 				prefs.prefer_bottom_title = save[33]
-			if save[34] is not None:
+			if len(save) > 34 and save[34] is not None:
 				gui.display_time_mode = save[34]
-			# if save[35] is not None:
+			# if len(save) > 35 and save[35] is not None:
 			#	 prefs.transcode_mode = save[35]
-			if save[36] is not None:
+			if len(save) > 36 and save[36] is not None:
 				prefs.transcode_codec = save[36]
-			if save[37] is not None:
+			if len(save) > 37 and save[37] is not None:
 				prefs.transcode_bitrate = save[37]
-			# if save[38] is not None:
+			# if len(save) > 38 and save[38] is not None:
 			#	 prefs.line_style = save[38]
-			# if save[39] is not None:
+			# if len(save) > 39 and save[39] is not None:
 			#	 prefs.cache_gallery = save[39]
-			if save[40] is not None:
+			if len(save) > 40 and save[40] is not None:
 				prefs.playlist_font_size = save[40]
-			if save[41] is not None:
+			if len(save) > 41 and save[41] is not None:
 				prefs.use_title = save[41]
-			if save[42] is not None:
+			if len(save) > 42 and save[42] is not None:
 				gui.pl_st = save[42]
-			# if save[43] is not None:
+			# if len(save) > 43 and save[43] is not None:
 			#	 gui.set_mode = save[43]
 			#	 gui.set_bar = gui.set_mode
-			if save[45] is not None:
+			if len(save) > 45 and save[45] is not None:
 				prefs.playlist_row_height = save[45]
-			if save[46] is not None:
+			if len(save) > 46 and save[46] is not None:
 				prefs.show_wiki = save[46]
-			if save[47] is not None:
+			if len(save) > 47 and save[47] is not None:
 				prefs.auto_extract = save[47]
-			if save[48] is not None:
+			if len(save) > 48 and save[48] is not None:
 				prefs.colour_from_image = save[48]
-			if save[49] is not None:
+			if len(save) > 49 and save[49] is not None:
 				gui.set_bar = save[49]
-			if save[50] is not None:
+			if len(save) > 50 and save[50] is not None:
 				gui.gallery_show_text = save[50]
-			if save[51] is not None:
+			if len(save) > 51 and save[51] is not None:
 				gui.bb_show_art = save[51]
-			# if save[52] is not None:
+			# if len(save) > 52 and save[52] is not None:
 			#	 gui.show_stars = save[52]
-			if save[53] is not None:
+			if len(save) > 53 and save[53] is not None:
 				prefs.auto_lfm = save[53]
-			if save[54] is not None:
+			if len(save) > 54 and save[54] is not None:
 				prefs.scrobble_mark = save[54]
-			if save[55] is not None:
+			if len(save) > 55 and save[55] is not None:
 				prefs.replay_gain = save[55]
-			# if save[56] is not None:
+			# if len(save) > 56 and save[56] is not None:
 			#	 prefs.radio_page_lyrics = save[56]
-			if save[57] is not None:
+			if len(save) > 57 and save[57] is not None:
 				prefs.show_gimage = save[57]
-			if save[58] is not None:
+			if len(save) > 58 and save[58] is not None:
 				prefs.end_setting = save[58]
-			if save[59] is not None:
+			if len(save) > 59 and save[59] is not None:
 				prefs.show_gen = save[59]
-			# if save[60] is not None:
+			# if len(save) > 60 and save[60] is not None:
 			#	 url_saves = save[60]
-			if save[61] is not None:
+			if len(save) > 61 and save[61] is not None:
 				prefs.auto_del_zip = save[61]
-			if save[62] is not None:
+			if len(save) > 62 and save[62] is not None:
 				gui.level_meter_colour_mode = save[62]
-			if save[64] is not None:
+			if len(save) > 64 and save[64] is not None:
 				prefs.show_lyrics_side = save[64]
-			# if save[65] is not None:
+			# if len(save) > 65 and save[65] is not None:
 			#	 prefs.last_device = save[65]
-			if save[66] is not None:
+			if len(save) > 66 and save[66] is not None:
 				gui.restart_album_mode = save[66]
-			if save[67] is not None:
+			if len(save) > 67 and save[67] is not None:
 				gui.album_playlist_width = save[67]
-			if save[68] is not None:
+			if len(save) > 68 and save[68] is not None:
 				prefs.transcode_opus_as = save[68]
-			if save[69] is not None:
+			if len(save) > 69 and save[69] is not None:
 				gui.star_mode = save[69]
-			if save[70] is not None:
+			if len(save) > 70 and save[70] is not None:
 				gui.rsp = save[70]
-			if save[71] is not None:
+			if len(save) > 71 and save[71] is not None:
 				gui.lsp = save[71]
-			if save[72] is not None:
+			if len(save) > 72 and save[72] is not None:
 				gui.rspw = save[72]
-			if save[73] is not None:
+			if len(save) > 73 and save[73] is not None:
 				gui.pref_gallery_w = save[73]
-			if save[74] is not None:
+			if len(save) > 74 and save[74] is not None:
 				gui.pref_rspw = save[74]
-			if save[75] is not None:
+			if len(save) > 75 and save[75] is not None:
 				gui.show_hearts = save[75]
-			if save[76] is not None:
+			if len(save) > 76 and save[76] is not None:
 				prefs.monitor_downloads = save[76]
-			if save[77] is not None:
+			if len(save) > 77 and save[77] is not None:
 				gui.artist_info_panel = save[77]
-			if save[78] is not None:
+			if len(save) > 78 and save[78] is not None:
 				prefs.extract_to_music = save[78]
-			if save[79] is not None:
+			if len(save) > 79 and save[79] is not None:
 				prefs.enable_lb = save[79]
-			# if save[80] is not None:
+			# if len(save) > 80 and save[80] is not None:
 			#	 prefs.lb_token = save[80]
 			#	 if prefs.lb_token is None:
 			#		 prefs.lb_token = ""
-			if save[81] is not None:
+			if len(save) > 81 and save[81] is not None:
 				rename_files_previous = save[81]
-			if save[82] is not None:
+			if len(save) > 82 and save[82] is not None:
 				rename_folder_previous = save[82]
-			if save[83] is not None:
+			if len(save) > 83 and save[83] is not None:
 				prefs.use_jump_crossfade = save[83]
-			if save[84] is not None:
+			if len(save) > 84 and save[84] is not None:
 				prefs.use_transition_crossfade = save[84]
-			if save[85] is not None:
+			if len(save) > 85 and save[85] is not None:
 				prefs.show_notifications = save[85]
-			# if save[86] is not None:
+			# if len(save) > 86 and save[86] is not None:
 			#	 prefs.true_shuffle = save[86]
-			if save[87] is not None:
+			if len(save) > 87 and save[87] is not None:
 				gui.remember_library_mode = save[87]
-			# if save[88] is not None:
+			# if len(save) > 88 and save[88] is not None:
 			#	 prefs.show_queue = save[88]
-			# if save[89] is not None:
+			# if len(save) > 89 and save[89] is not None:
 			#	 prefs.show_transfer = save[89]
-			if save[90] is not None:
+			if len(save) > 90 and save[90] is not None:
 				if db_version > 68:
 					tauonqueueitem_jar = save[90]
 					for d in tauonqueueitem_jar:
@@ -40460,159 +40460,159 @@ def main(holder: Holder) -> None:
 						p_force_queue.append(nt)
 				else:
 					p_force_queue = save[90]
-			if save[91] is not None:
+			if len(save) > 91 and save[91] is not None:
 				prefs.use_pause_fade = save[91]
-			if save[92] is not None:
+			if len(save) > 92 and save[92] is not None:
 				prefs.append_total_time = save[92]
-			if save[93] is not None:
+			if len(save) > 93 and save[93] is not None:
 				prefs.backend = save[93]  # moved to config file
-			if save[94] is not None:
+			if len(save) > 94 and save[94] is not None:
 				prefs.album_shuffle_mode = save[94]
-			if save[95] is not None:
+			if len(save) > 95 and save[95] is not None:
 				prefs.album_repeat_mode = save[95]
-			# if save[96] is not None:
-			#	 prefs.finish_current = save[96]
-			if save[97] is not None:
+			# if len(save) > 96 and save[96] is not None:
+			#	prefs.finish_current = save[96]
+			if len(save) > 97 and save[97] is not None:
 				prefs.reload_state = save[97]
-			# if save[98] is not None:
-			#	 prefs.reload_play_state = save[98]
-			if save[99] is not None:
+			# if len(save) > 98 and save[98] is not None:
+			#	prefs.reload_play_state = save[98]
+			if len(save) > 99 and save[99] is not None:
 				prefs.last_fm_token = save[99]
-			if save[100] is not None:
+			if len(save) > 100 and save[100] is not None:
 				prefs.last_fm_username = save[100]
-			# if save[101] is not None:
-			#	 prefs.use_card_style = save[101]
-			# if save[102] is not None:
-			#	 prefs.auto_lyrics = save[102]
-			if save[103] is not None:
+			# if len(save) > 101 and save[101] is not None:
+			#	prefs.use_card_style = save[101]
+			# if len(save) > 102 and save[102] is not None:
+			#	prefs.auto_lyrics = save[102]
+			if len(save) > 103 and save[103] is not None:
 				prefs.auto_lyrics_checked = save[103]
-			if save[104] is not None:
+			if len(save) > 104 and save[104] is not None:
 				prefs.show_side_art = save[104]
-			if save[105] is not None:
+			if len(save) > 105 and save[105] is not None:
 				prefs.window_opacity = save[105]
-			if save[106] is not None:
+			if len(save) > 106 and save[106] is not None:
 				prefs.gallery_single_click = save[106]
-			if save[107] is not None:
+			if len(save) > 107 and save[107] is not None:
 				prefs.tabs_on_top = save[107]
-			if save[108] is not None:
+			if len(save) > 108 and save[108] is not None:
 				prefs.showcase_vis = save[108]
-			if save[109] is not None:
+			if len(save) > 109 and save[109] is not None:
 				prefs.spec2_colour_mode = save[109]
-			# if save[110] is not None:
-			#	 prefs.device_buffer = save[110]
-			if save[111] is not None:
+			# if len(save) > 110 and save[110] is not None:
+			#	prefs.device_buffer = save[110]
+			if len(save) > 111 and save[111] is not None:
 				prefs.use_eq = save[111]
-			if save[112] is not None:
+			if len(save) > 112 and save[112] is not None:
 				prefs.eq = save[112]
-			if save[113] is not None:
+			if len(save) > 113 and save[113] is not None:
 				prefs.bio_large = save[113]
-			if save[114] is not None:
+			if len(save) > 114 and save[114] is not None:
 				prefs.discord_show = save[114]
-			if save[115] is not None:
+			if len(save) > 115 and save[115] is not None:
 				prefs.min_to_tray = save[115]
-			if save[116] is not None:
+			if len(save) > 116 and save[116] is not None:
 				prefs.guitar_chords = save[116]
-			if save[117] is not None:
+			if len(save) > 117 and save[117] is not None:
 				prefs.playback_follow_cursor = save[117]
-			if save[118] is not None:
+			if len(save) > 118 and save[118] is not None:
 				prefs.art_bg = save[118]
-			if save[119] is not None:
+			if len(save) > 119 and save[119] is not None:
 				prefs.random_mode = save[119]
-			if save[120] is not None:
+			if len(save) > 120 and save[120] is not None:
 				prefs.repeat_mode = save[120]
-			if save[121] is not None:
+			if len(save) > 121 and save[121] is not None:
 				prefs.art_bg_stronger = save[121]
-			if save[122] is not None:
+			if len(save) > 122 and save[122] is not None:
 				prefs.art_bg_always_blur = save[122]
-			if save[123] is not None:
+			if len(save) > 123 and save[123] is not None:
 				prefs.failed_artists = save[123]
-			if save[124] is not None:
+			if len(save) > 124 and save[124] is not None:
 				prefs.artist_list = save[124]
-			if save[125] is not None:
+			if len(save) > 125 and save[125] is not None:
 				prefs.auto_sort = save[125]
-			if save[126] is not None:
+			if len(save) > 126 and save[126] is not None:
 				prefs.lyrics_enables = save[126]
-			if save[127] is not None:
+			if len(save) > 127 and save[127] is not None:
 				prefs.fanart_notify = save[127]
-			if save[128] is not None:
+			if len(save) > 128 and save[128] is not None:
 				prefs.bg_showcase_only = save[128]
-			if save[129] is not None:
+			if len(save) > 129 and save[129] is not None:
 				prefs.discogs_pat = save[129]
-			if save[130] is not None:
+			if len(save) > 130 and save[130] is not None:
 				prefs.mini_mode_mode = save[130]
-			if save[131] is not None:
+			if len(save) > 131 and save[131] is not None:
 				after_scan = save[131]
-			if save[132] is not None:
+			if len(save) > 132 and save[132] is not None:
 				gui.gallery_positions = save[132]
-			if save[133] is not None:
+			if len(save) > 133 and save[133] is not None:
 				prefs.chart_bg = save[133]
-			if save[134] is not None:
+			if len(save) > 134 and save[134] is not None:
 				prefs.left_panel_mode = save[134]
-			if save[135] is not None:
+			if len(save) > 135 and save[135] is not None:
 				gui.last_left_panel_mode = save[135]
-			# if save[136] is not None:
-			#	 prefs.gst_device = save[136]
-			if save[137] is not None:
+			# if len(save) > 136 and save[136] is not None:
+			#	prefs.gst_device = save[136]
+			if len(save) > 137 and save[137] is not None:
 				search_string_cache = save[137]
-			if save[138] is not None:
+			if len(save) > 138 and save[138] is not None:
 				search_dia_string_cache = save[138]
-			if save[139] is not None:
+			if len(save) > 139 and save[139] is not None:
 				bag.gen_codes = save[139]
-			if save[140] is not None:
+			if len(save) > 140 and save[140] is not None:
 				gui.show_ratings = save[140]
-			if save[141] is not None:
+			if len(save) > 141 and save[141] is not None:
 				gui.show_album_ratings = save[141]
-			if save[142] is not None:
+			if len(save) > 142 and save[142] is not None:
 				prefs.radio_urls = save[142]
-			if save[143] is not None:
+			if len(save) > 143 and save[143] is not None:
 				gui.restore_showcase_view = save[143]
-			if save[144] is not None:
+			if len(save) > 144 and save[144] is not None:
 				gui.saved_prime_tab = save[144]
-			if save[145] is not None:
+			if len(save) > 145 and save[145] is not None:
 				gui.saved_prime_direction = save[145]
-			if save[146] is not None:
+			if len(save) > 146 and save[146] is not None:
 				prefs.sync_playlist = save[146]
-			if save[147] is not None:
+			if len(save) > 147 and save[147] is not None:
 				prefs.spot_client = save[147]
-			if save[148] is not None:
+			if len(save) > 148 and save[148] is not None:
 				prefs.spot_secret = save[148]
-			if save[149] is not None:
+			if len(save) > 149 and save[149] is not None:
 				prefs.show_band = save[149]
-			if save[150] is not None:
+			if len(save) > 150 and save[150] is not None:
 				prefs.download_playlist = save[150]
-			if save[151] is not None:
+			if len(save) > 151 and save[151] is not None:
 				spot_cache_saved_albums = save[151]
-			if save[152] is not None:
+			if len(save) > 152 and save[152] is not None:
 				prefs.auto_rec = save[152]
-			if save[153] is not None:
+			if len(save) > 153 and save[153] is not None:
 				prefs.spotify_token = save[153]
-			if save[154] is not None:
+			if len(save) > 154 and save[154] is not None:
 				prefs.use_libre_fm = save[154]
-			if save[155] is not None:
+			if len(save) > 155 and save[155] is not None:
 				prefs.old_playlist_box_position = save[155]
-			if save[156] is not None:
+			if len(save) > 156 and save[156] is not None:
 				prefs.artist_list_sort_mode = save[156]
-			if save[157] is not None:
+			if len(save) > 157 and save[157] is not None:
 				prefs.phazor_device_selected = save[157]
-			if save[158] is not None:
+			if len(save) > 158 and save[158] is not None:
 				prefs.failed_background_artists = save[158]
-			if save[159] is not None:
+			if len(save) > 159 and save[159] is not None:
 				prefs.bg_flips = save[159]
-			if save[160] is not None:
+			if len(save) > 160 and save[160] is not None:
 				prefs.tray_show_title = save[160]
-			if save[161] is not None:
+			if len(save) > 161 and save[161] is not None:
 				prefs.artist_list_style = save[161]
-			if save[162] is not None:
+			if len(save) > 162 and save[162] is not None:
 				trackclass_jar = save[162]
 				for d in trackclass_jar:
 					nt = TrackClass()
 					nt.__dict__.update(d)
 					master_library[d["index"]] = nt
-			if save[163] is not None:
+			if len(save) > 163 and save[163] is not None:
 				prefs.premium = save[163]
-			if save[164] is not None:
+			if len(save) > 164 and save[164] is not None:
 				gui.restore_radio_view = save[164]
-			if save[165] is not None:
+			if len(save) > 165 and save[165] is not None:
 				if db_version > 69:
 					bag.radio_playlists = []
 					radioplaylist_jar = save[165]
@@ -40621,41 +40621,41 @@ def main(holder: Holder) -> None:
 						bag.radio_playlists.append(nt)
 				else:
 					bag.radio_playlists = save[165]
-			if save[166] is not None:
+			if len(save) > 166 and save[166] is not None:
 				bag.radio_playlist_viewing = save[166]
-			if save[167] is not None:
+			if len(save) > 167 and save[167] is not None:
 				prefs.radio_thumb_bans = save[167]
-			if save[168] is not None:
+			if len(save) > 168 and save[168] is not None:
 				prefs.playlist_exports = save[168]
-			if save[169] is not None:
+			if len(save) > 169 and save[169] is not None:
 				prefs.show_chromecast = save[169]
-			if save[170] is not None:
+			if len(save) > 170 and save[170] is not None:
 				prefs.cache_list = save[170]
-			if save[171] is not None:
+			if len(save) > 171 and save[171] is not None:
 				prefs.shuffle_lock = save[171]
-			if save[172] is not None:
+			if len(save) > 172 and save[172] is not None:
 				prefs.album_shuffle_lock_mode = save[172]
-			if save[173] is not None:
+			if len(save) > 173 and save[173] is not None:
 				gui.was_radio = save[173]
-			if save[174] is not None:
+			if len(save) > 174 and save[174] is not None:
 				prefs.spot_username = save[174]
-			# if save[175] is not None:
-			# 	prefs.spot_password = save[175]
-			if save[176] is not None:
+			# if len(save) > 175 and save[175] is not None:
+			#	prefs.spot_password = save[175]
+			if len(save) > 176 and save[176] is not None:
 				prefs.artist_list_threshold = save[176]
-			if save[177] is not None:
+			if len(save) > 177 and save[177] is not None:
 				prefs.tray_theme = save[177]
-			if save[178] is not None:
+			if len(save) > 178 and save[178] is not None:
 				prefs.row_title_format = save[178]
-			if save[179] is not None:
+			if len(save) > 179 and save[179] is not None:
 				prefs.row_title_genre = save[179]
-			if save[180] is not None:
+			if len(save) > 180 and save[180] is not None:
 				prefs.row_title_separator_type = save[180]
-			if save[181] is not None:
+			if len(save) > 181 and save[181] is not None:
 				prefs.replay_preamp = save[181]
-			if save[182] is not None:
+			if len(save) > 182 and save[182] is not None:
 				prefs.gallery_combine_disc = save[182]
-			if save[183] is not None:
+			if len(save) > 183 and save[183] is not None:
 				bag.active_playlist_playing = save[183]
 
 			del save
