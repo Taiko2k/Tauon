@@ -40034,13 +40034,13 @@ def main(holder: Holder) -> None:
 
 	mpt: CDLL | None = None
 	try:
-		p = ctypes.util.find_library("libopenmpt")
+		p = ctypes.util.find_library("openmpt")
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
 		elif msys:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 		else:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
 
 		mpt.openmpt_module_create_from_memory.restype = c_void_p
 		mpt.openmpt_module_get_metadata.restype = c_char_p
@@ -40051,13 +40051,13 @@ def main(holder: Holder) -> None:
 	gme: CDLL | None = None
 	p = None
 	try:
-		p = ctypes.util.find_library("libgme")
+		p = ctypes.util.find_library("gme")
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
 		elif msys:
 			gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
 		else:
-			gme = ctypes.cdll.LoadLibrary("libgme.so")
+			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
 
 		gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
 		gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
@@ -40801,13 +40801,13 @@ def main(holder: Holder) -> None:
 
 	mpt = None
 	try:
-		p = ctypes.util.find_library("libopenmpt")
+		p = ctypes.util.find_library("openmpt")
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
 		elif bag.msys:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 		else:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so")
+			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
 
 		mpt.openmpt_module_create_from_memory.restype = c_void_p
 		mpt.openmpt_module_get_metadata.restype = c_char_p
@@ -40818,13 +40818,13 @@ def main(holder: Holder) -> None:
 	gme = None
 	p = None
 	try:
-		p = ctypes.util.find_library("libgme")
+		p = ctypes.util.find_library("gme")
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
 		elif bag.msys:
 			gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
 		else:
-			gme = ctypes.cdll.LoadLibrary("libgme.so")
+			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
 
 		gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
 		gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
@@ -41013,10 +41013,10 @@ def main(holder: Holder) -> None:
 	elif not tauon.msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 		try:
 			try:
-				xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
-			except Exception:
-				logging.exception("Failed to load libXcursor.so, will try libXcursor.so.1")
 				xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
+			except Exception:
+				logging.exception("Failed to load libXcursor.so, will try libXcursor.so")
+				xcu = ctypes.cdll.LoadLibrary("libXcursor.so")
 			xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
 			def get_xcursor(name: str):
