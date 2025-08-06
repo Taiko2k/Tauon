@@ -41019,7 +41019,7 @@ def main(holder: Holder) -> None:
 				xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
 			xcu.XcursorLibraryLoadImage.restype = ctypes.POINTER(XcursorImage)
 
-			def get_xcursor(name: str):
+			def get_xcursor(name: str) -> sdl3.LP_SDL_Cursor:
 				if "XCURSOR_THEME" not in os.environ:
 					raise ValueError("Missing XCURSOR_THEME in env")
 				if "XCURSOR_SIZE" not in os.environ:
