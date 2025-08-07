@@ -109,26 +109,42 @@ class Gnome:
 
 		import gi
 
-		# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
-		gi.require_version("Gtk", "3.0")
-		from gi.repository import Gtk
-
 		try:
-			gi.require_version("AyatanaAppIndicator3", "0.1")
-			from gi.repository import AyatanaAppIndicator3 as AppIndicator3
+			gi.require_version("AyatanaAppIndicatorGlib", "2.0")
+			from gi.repository import AyatanaAppIndicatorGlib, Gio
+			self.loaded_indicator = "AyatanaAppIndicatorGlib"
 		except Exception:
-			logging.exception("Failed to load AyatanaAppIndicator3")
-			gi.require_version("AppIndicator3", "0.1")
-			from gi.repository import AppIndicator3
+			logging.exception("Failed to load AyatanaAppIndicatorGlib")
+			# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
+			gi.require_version("Gtk", "3.0")
+			from gi.repository import Gtk
+			try:
+				gi.require_version("AyatanaAppIndicator3", "0.1")
+				from gi.repository import AyatanaAppIndicator3 as AppIndicator3
+				self.loaded_indicator = "AyatanaAppIndicator3"
+			except Exception:
+				logging.exception("Failed to load AyatanaAppIndicator3")
+				gi.require_version("AppIndicator3", "0.1")
+				from gi.repository import AppIndicator3
+				self.loaded_indicator = "AppIndicator3"
 
-		self.indicator = AppIndicator3.Indicator.new(
-			"Tauon",
-			self.tauon.get_tray_icon("tray-indicator-default"),
-			AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
-		)
-		self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
+		if self.loaded_indicator == "AyatanaAppIndicatorGlib":
+			self.indicator = AyatanaAppIndicatorGlib.Indicator.new(
+				"Tauon",
+				self.tauon.get_tray_icon("tray-indicator-default"),
+				AyatanaAppIndicatorGlib.IndicatorCategory.APPLICATION_STATUS,
+			)
+			self.indicator.set_status(AyatanaAppIndicatorGlib.IndicatorStatus.ACTIVE)  # 1
+			self.menu = Gio.Menu.new()
+		else:
+			self.indicator = AppIndicator3.Indicator.new(
+				"Tauon",
+				self.tauon.get_tray_icon("tray-indicator-default"),
+				AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
+			)
+			self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
+			self.menu = Gtk.Menu()
 		self.indicator.set_title(tauon.t_title)
-		self.menu = Gtk.Menu()
 
 		def restore(_) -> None:
 			tauon.request_raise()
@@ -136,7 +152,10 @@ class Gnome:
 		def menu_quit(_) -> None:
 			logging.info("Exit via tray")
 			tauon.exit("Exit received from app indicator")
-			self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
+			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
+				self.indicator.set_status(AyatanaAppIndicatorGlib.IndicatorStatus.PASSIVE)  # 0
+			else:
+				self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
 
 		def play_pause(_) -> None:
 			pctl.play_pause()
@@ -192,12 +211,12 @@ class Gnome:
 		if self.loaded_indicator == "AyatanaAppIndicatorGlib":
 			pActions = Gio.SimpleActionGroup.new ()
 #			self.menu.append(tauon.strings.menu_open_tauon, restore)
-			pSimpleAction = Gio.SimpleAction.new ("showlabel", None)
+			pSimpleAction = Gio.SimpleAction.new("restore", None)
 			pActions.add_action (pSimpleAction)
 			pSimpleAction.connect ("activate", restore, 6)
-			pItem = Gio.MenuItem.new (tauon.strings.menu_open_tauon, "indicator.showlabel")
+			pItem = Gio.MenuItem.new(tauon.strings.menu_open_tauon, "indicator.restore")
 			self.menu.append_item (pItem)
-
+			# TODO(Martin): Add rest of actions
 			# TODO(Martin): Separator
 #			self.menu.append(tauon.strings.menu_play_pause, play_pause)
 #			self.menu.append(tauon.strings.menu_next, next)
