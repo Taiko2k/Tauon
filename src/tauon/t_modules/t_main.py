@@ -39588,7 +39588,7 @@ def main(holder: Holder) -> None:
 		importlib.reload(pylast)
 
 	discord_allow = is_module_loaded("lynxpresence", "ActivityType")
-	ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
+	#ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
 
 	if sys.platform == "win32" and msys:
 		font_folder = str(install_directory / "fonts")
