@@ -48,6 +48,8 @@ class Gnome:
 		self.update_tray_text = None
 		self.tray_text = ""
 		self.resume_playback = False
+		self.last_playing_time: float = 0.0
+		self.last_track_index: int = -1
 
 		tauon.set_tray_icons()
 
@@ -466,8 +468,6 @@ class Gnome:
 						dbus.service.Object.__init__(self, bus, object_path, bus_name=bus_name)
 
 						self.playing_index = -1
-						self.last_playing_time = 0.0
-						self.last_track_index = -1
 
 						self.root_properties = {
 							"CanQuit": True,
