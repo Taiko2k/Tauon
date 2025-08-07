@@ -34,6 +34,11 @@ from tauon.t_modules.t_enums import PlayingState  # noqa: E402
 from tauon.t_modules.t_extra import filename_to_metadata, star_count2  # noqa: E402
 
 if TYPE_CHECKING:
+	gi.require_version("AyatanaAppIndicatorGlib", "2.0")
+	from gi.repository import AyatanaAppIndicatorGlib
+	gi.require_version("AyatanaAppIndicator3", "0.1")
+	from gi.repository import AyatanaAppIndicator3
+	gi.require_version("AppIndicator3", "0.1")
 	from gi.repository import AppIndicator3
 
 	from tauon.t_modules.t_main import Tauon
@@ -48,6 +53,9 @@ class Gnome:
 		self.update_tray_text = None
 		self.tray_text = ""
 		self.resume_playback = False
+		self.indicator: AyatanaAppIndicatorGlib | AyatanaAppIndicator3 | AppIndicator3 = None
+		self.loaded_indicator: str = ""
+		self.menu: Gio.Menu | Gtk.Menu = None
 
 		tauon.set_tray_icons()
 
@@ -76,15 +84,24 @@ class Gnome:
 
 	def indicator_play(self) -> None:
 		if self.indicator_launched:
-			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
+			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
+				self.indicator.set_icon(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
+			else:
+				self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
 
 	def indicator_pause(self) -> None:
 		if self.indicator_launched:
-			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
+			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
+				self.indicator.set_icon(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
+			else:
+				self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
 
 	def indicator_stop(self) -> None:
 		if self.indicator_launched:
-			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
+			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
+				self.indicator.set_icon(self.tauon.get_tray_icon("tray-indicator-default"), "default")
+			else:
+				self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
 
 	def start_indicator(self) -> None:
 		pctl = self.tauon.pctl
@@ -172,40 +189,57 @@ class Gnome:
 						self.indicator.set_title(tauon.t_title)
 					self.tray_text = text
 
-		item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
-		item.connect("activate", restore)
-		item.show()
-		self.menu.append(item)
+		if self.loaded_indicator == "AyatanaAppIndicatorGlib":
+			pActions = Gio.SimpleActionGroup.new ()
+#			self.menu.append(tauon.strings.menu_open_tauon, restore)
+			pSimpleAction = Gio.SimpleAction.new ("showlabel", None)
+			pActions.add_action (pSimpleAction)
+			pSimpleAction.connect ("activate", restore, 6)
+			pItem = Gio.MenuItem.new (tauon.strings.menu_open_tauon, "indicator.showlabel")
+			self.menu.append_item (pItem)
 
-		item = Gtk.SeparatorMenuItem()
-		item.show()
-		self.menu.append(item)
+			# TODO(Martin): Separator
+#			self.menu.append(tauon.strings.menu_play_pause, play_pause)
+#			self.menu.append(tauon.strings.menu_next, next)
+#			self.menu.append(tauon.strings.menu_previous, back)
+			# TODO(Martin): Separator
+#			self.menu.append(tauon.strings.menu_quit, menu_quit)
+			self.indicator.set_actions(pActions)
+		else:
+			item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
+			item.connect("activate", restore)
+			item.show()
+			self.menu.append(item)
 
-		item = Gtk.MenuItem(label=tauon.strings.menu_play_pause)
-		item.connect("activate", play_pause)
-		item.show()
-		self.menu.append(item)
+			item = Gtk.SeparatorMenuItem()
+			item.show()
+			self.menu.append(item)
 
-		item = Gtk.MenuItem(label=tauon.strings.menu_next)
-		item.connect("activate", next)
-		item.show()
-		self.menu.append(item)
+			item = Gtk.MenuItem(label=tauon.strings.menu_play_pause)
+			item.connect("activate", play_pause)
+			item.show()
+			self.menu.append(item)
 
-		item = Gtk.MenuItem(label=tauon.strings.menu_previous)
-		item.connect("activate", back)
-		item.show()
-		self.menu.append(item)
+			item = Gtk.MenuItem(label=tauon.strings.menu_next)
+			item.connect("activate", next)
+			item.show()
+			self.menu.append(item)
 
-		item = Gtk.SeparatorMenuItem()
-		item.show()
-		self.menu.append(item)
+			item = Gtk.MenuItem(label=tauon.strings.menu_previous)
+			item.connect("activate", back)
+			item.show()
+			self.menu.append(item)
 
-		item = Gtk.MenuItem(label=tauon.strings.menu_quit)
-		item.connect("activate", menu_quit)
-		item.show()
-		self.menu.append(item)
+			item = Gtk.SeparatorMenuItem()
+			item.show()
+			self.menu.append(item)
 
-		self.menu.show()
+			item = Gtk.MenuItem(label=tauon.strings.menu_quit)
+			item.connect("activate", menu_quit)
+			item.show()
+			self.menu.append(item)
+
+			self.menu.show()
 
 		self.indicator.set_menu(self.menu)
 
@@ -220,7 +254,7 @@ class Gnome:
 		shoot.daemon = True
 		shoot.start()
 
-	def scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
+	def scroll(self, indicator: AyatanaAppIndicatorGlib.Indicator | AppIndicator3.Indicator, steps: int, direction: int) -> None:
 		if direction == Gdk.ScrollDirection.UP:
 			self.tauon.pctl.player_volume += 4
 			self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
@@ -619,7 +653,7 @@ class Gnome:
 						pctl.seek_time(pctl.playing_time + (offset / 1000000))
 
 					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def SetPosition(self, id: int, position: str) -> None:
+					def SetPosition(self, id: int, position: int) -> None:
 						pctl.seek_time(position / 1000000)
 
 						self.player_properties["Position"] = dbus.Int64(int(position))
