@@ -446,16 +446,17 @@ class Gnome:
 
 					def update_progress(self) -> None:
 						if (
-							pctl.repeat_mode 
-        					and not pctl.album_repeat_mode
-        					and pctl.playing_object() is not None
-        					and self.last_track_index == pctl.playing_object().index 
-        					and pctl.playing_time < self.last_playing_time
+							pctl.repeat_mode
+							and not pctl.album_repeat_mode
+							and pctl.playing_object() is not None
+							and self.last_track_index == pctl.playing_object().index
+							and pctl.playing_time < self.last_playing_time
 							):
-							self.seek_do(pctl.playing_time)							
+							self.seek_do(pctl.playing_time)
 
 						self.last_playing_time = pctl.playing_time
 						self.last_track_index = pctl.playing_object().index
+
 						self.player_properties["Position"] = dbus.Int64(int(pctl.playing_time * 1000000))
 
 					def update_shuffle(self) -> None:
