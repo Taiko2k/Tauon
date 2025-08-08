@@ -1714,7 +1714,7 @@ class PlayerCtl:
 		self.playerCommandReady = False
 		self.playing_state:    int = 0
 		self.playing_length: float = 0
-		self.jump_time             = 0
+		self.jump_time: float      = 0.0
 		self.random_mode           = self.prefs.random_mode
 		self.repeat_mode           = self.prefs.repeat_mode
 		self.album_repeat_mode     = self.prefs.album_repeat_mode
@@ -1897,7 +1897,6 @@ class PlayerCtl:
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
-		logging.info(f"Import playlist from file: {path}")
 		if not path.exists() or not path.is_file():
 			logging.error(f"Playlist file not found: {path}")
 			return
@@ -2657,7 +2656,7 @@ class PlayerCtl:
 			prev += 1
 		else:
 			self.queue_step -= 1
-			self.jump_time = 0
+			self.jump_time = 0.0
 			self.playing_time = 0
 			self.decode_time = 0
 
@@ -7557,13 +7556,13 @@ class Tauon:
 						if lyrics:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
-							if self.prefs.save_lyrics_to_file:
+							if if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
 							# TODO (Flynn): SYLT
-							if self.prefs.save_lyrics_to_file:
+							if if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
 								self.write_lyrics(track_object, True)
 						found = True
 						break
@@ -22880,6 +22879,7 @@ class ExportPlaylistBox:
 
 		if target and isinstance(target, Path):
 			playlist.file_size = target.stat().st_size
+			playlist.playlist_file = str( target )
 
 		if warnings and target != 1:
 			self.show_message(_("Playlist exported"), str(target), mode="done")
@@ -37118,7 +37118,7 @@ class TimedLyricsEdit:
 		t = t//1
 		ss = round(t%60)
 		mm = round(t//60)
-		
+
 		if display:
 			ms = format(ms,"02")
 			ms = str( ms ).translate(SUB)
@@ -37281,7 +37281,7 @@ class TimedLyricsEdit:
 	def clear_lyrics(self) -> None:
 		self.structure = [ ("??:??.﹖﹖", -1.0, "") ]
 
-	
+
 	def scroll_timestamp(self, current_line: int) -> None:
 		stamp, time, line = self.structure[current_line]
 		time += self.inp.mouse_wheel * 0.2
@@ -37569,7 +37569,7 @@ class TimedLyricsEdit:
 								elif self.inp.key_shift_down or self.inp.key_shiftr_down and self.inp.mouse_wheel:
 									self.scroll_timestamp(i)
 								break
-					
+
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
 					(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
 					(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
@@ -47509,7 +47509,8 @@ def main(holder: Holder) -> None:
 
 						pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
 
-					if inp.key_return_press and not pref_box.enabled and not radiobox.active and not tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
+					if inp.key_return_press and not pref_box.enabled and not radiobox.active and not tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now \
+						and not (gui.showcase_mode and gui.timed_lyrics_edit_view):
 						gui.pl_update = 1
 						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 							pctl.selected_in_playlist = 0
