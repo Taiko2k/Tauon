@@ -14558,25 +14558,26 @@ class Tauon:
 			self.show_message(_("Starting download..."))
 			try:
 				f = io.BytesIO()
-				r = requests.get(url, stream=True, timeout=1800) # ffmpeg is 88MB, give it half an hour in case someone is willing to suffer it on a slow connection
+				with requests.get(url, stream=True, timeout=1800) as r: # ffmpeg is 92MB, give it half an hour in case someone is willing to suffer it on a slow connection
+					dl = 0
+					total_bytes = int(r.headers.get("Content-Length", 0))
+					total_mb = round(total_bytes / 1000 / 1000) if total_bytes else 92
 
-				dl = 0
-				for data in r.iter_content(chunk_size=4096):
-					dl += len(data)
-					f.write(data)
-					mb = round(dl / 1000 / 1000)
-					if mb > 90:
-						break
-					if mb % 5 == 0:
-						self.show_message(_("Downloading... {N}/88MB").format(N=mb))
-
+					for data in r.iter_content(chunk_size=4096):
+						dl += len(data)
+						f.write(data)
+						mb = round(dl / 1000 / 1000)
+						if mb % 5 == 0:
+							self.show_message(_("Downloading... {MB}/{total_mb}").format(MB=mb, total_mb=total_mb))
 			except Exception as e:
 				logging.exception("Download failed")
 				self.show_message(_("Download failed"), str(e), mode="error")
 
 			f.seek(0)
-			if hashlib.sha256(f.read()).hexdigest() != sha:
+			checksum = hashlib.sha256(f.read()).hexdigest()
+			if checksum != sha:
 				self.show_message(_("Download completed but checksum failed"), mode="error")
+				logging.error(f"Checksum was {checksum} but expected {sha}")
 				return
 			self.show_message(_("Download completed.. extracting"))
 			f.seek(0)
@@ -18206,7 +18207,7 @@ class Tauon:
 		if self.get_ffmpeg():
 			return True
 		if self.msys:
-			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (88MB)"), mode="confirm")
+			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (92MB)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
 			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (None,)
