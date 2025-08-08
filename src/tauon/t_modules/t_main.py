@@ -5952,6 +5952,9 @@ class Tauon:
 		self.album_star_store  = AlbumStarStore(self)
 		self.subsonic          = self.album_star_store.subsonic
 
+		self.ffmpeg_path:     Path | None = self.get_ffmpeg()
+		self.ffprobe_path:    Path | None = self.get_ffprobe()
+
 		self.playlist_autoscan = False
 		self.dropped_playlist = -1
 
@@ -5965,42 +5968,42 @@ class Tauon:
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format=duration", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.length = float(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a duration")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=title", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.title = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a title")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=artist", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.artist = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a artist")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=album", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.album = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a album")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=date", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.date = str(result.stdout.decode())
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a date")
 		try:
 			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
+				[str(self.ffprobe_path), "-v", "error", "-show_entries", "format_tags=track", "-of",
 				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 			nt.track_number = str(result.stdout.decode())
 		except Exception:
@@ -14591,6 +14594,8 @@ class Tauon:
 				file.write(exe.read())
 
 			exe.close()
+			self.ffmpeg_path = self.get_ffmpeg()
+			self.ffprobe_path = self.get_ffprobe()
 			self.show_message(_("FFMPEG fetch complete"), mode="done")
 
 		shooter(go)
@@ -14755,7 +14760,7 @@ class Tauon:
 
 		target_out = str(output / f"output{track}.{codec}")
 
-		command = self.get_ffmpeg() + " "
+		command = f"{self.ffmpeg_path} "
 
 		if not t.is_cue:
 			command += '-i "'
@@ -15997,7 +16002,7 @@ class Tauon:
 							if self.system == "Windows" or self.msys:
 								startupinfo = subprocess.STARTUPINFO()
 								startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-							result = subprocess.run([self.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
+							result = subprocess.run([str(self.ffprobe_path), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
 							nt.length = float(result.stdout.decode())
 						except Exception:
 							logging.exception("FFPROBE couldn't supply a duration")
@@ -18204,7 +18209,9 @@ class Tauon:
 		return str(self.cache_directory / "icon-export" / f"{name}.svg")
 
 	def test_ffmpeg(self) -> bool:
-		if self.get_ffmpeg():
+		test_result = self.get_ffmpeg()
+		self.ffmpeg_path = test_result
+		if test_result:
 			return True
 		if self.msys:
 			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (80MB)"), mode="confirm")
