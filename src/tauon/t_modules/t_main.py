@@ -39588,7 +39588,7 @@ def main(holder: Holder) -> None:
 		importlib.reload(pylast)
 
 	discord_allow = is_module_loaded("lynxpresence", "ActivityType")
-	ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
+	#ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
 
 	if sys.platform == "win32" and msys:
 		font_folder = str(install_directory / "fonts")
@@ -40033,8 +40033,9 @@ def main(holder: Holder) -> None:
 	colours.post_config()
 
 	mpt: CDLL | None = None
+	p = ctypes.util.find_library("openmpt") # Linux
+	p = p if p else ctypes.util.find_library("libopenmpt-0") # Windows
 	try:
-		p = ctypes.util.find_library("openmpt")
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
 		elif msys:
@@ -40049,13 +40050,13 @@ def main(holder: Holder) -> None:
 		logging.exception("Failed to load libopenmpt!")
 
 	gme: CDLL | None = None
-	p = None
+	p = ctypes.util.find_library("gme") # Linux
+	p = p if p else ctypes.util.find_library("libgme") # Windows
 	try:
-		p = ctypes.util.find_library("gme")
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
 		elif msys:
-			gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
+			gme = ctypes.cdll.LoadLibrary("libgme.dll")
 		else:
 			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
 
@@ -40799,12 +40800,13 @@ def main(holder: Holder) -> None:
 	if prefs.prefer_side is False:
 		gui.rsp = False
 
-	mpt = None
+	mpt: CDLL | None = None
+	p = ctypes.util.find_library("openmpt") # Linux
+	p = p if p else ctypes.util.find_library("libopenmpt-0") # Windows
 	try:
-		p = ctypes.util.find_library("openmpt")
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
-		elif bag.msys:
+		elif msys:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 		else:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
@@ -40815,14 +40817,14 @@ def main(holder: Holder) -> None:
 	except Exception:
 		logging.exception("Failed to load libopenmpt!")
 
-	gme = None
-	p = None
+	gme: CDLL | None = None
+	p = ctypes.util.find_library("gme") # Linux
+	p = p if p else ctypes.util.find_library("libgme") # Windows
 	try:
-		p = ctypes.util.find_library("gme")
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
-		elif bag.msys:
-			gme = ctypes.cdll.LoadLibrary("libgme-0.dll")
+		elif msys:
+			gme = ctypes.cdll.LoadLibrary("libgme.dll")
 		else:
 			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
 
