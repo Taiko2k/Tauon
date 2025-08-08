@@ -781,13 +781,12 @@ def authserve(tauon: Tauon) -> None:
 class VorbisMonitor:
 
 	def __init__(self) -> None:
-
-		self.tauon = None
+		self.tauon: Tauon | None = None
 		self.reset()
-		self.enable = True
-		self.synced = False
+		self.enable: bool = True
+		self.synced: bool = False
 		self.buffer = io.BytesIO()
-		self.tries = 0
+		self.tries: int = 0
 
 	def reset(self, tries: int = 0) -> None:
 		self.enable = True
@@ -796,7 +795,6 @@ class VorbisMonitor:
 		self.tries = tries
 
 	def input(self, data: bytes) -> None:
-
 		if not self.enable:
 			return
 
