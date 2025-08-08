@@ -2342,7 +2342,7 @@ class PlayerCtl:
 		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
 			self.tauon.thread_manager.ready("style")
 
-	def get_url(self, track_object: TrackClass) -> tuple[str | None, dict | None] | None:
+	def get_url(self, track_object: TrackClass) -> tuple[list[str], str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
 			return self.tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
@@ -5602,6 +5602,7 @@ class Tauon:
 		self.platform_system              = bag.platform_system
 		self.primary_stations             = bag.primary_stations
 		self.wayland                      = bag.wayland
+		self.msys                         = bag.msys
 		self.dirs                         = bag.dirs
 		self.colours                      = bag.colours
 		self.download_directories         = bag.download_directories
@@ -5677,7 +5678,6 @@ class Tauon:
 		self.quick_import_done: list[str] = []
 		self.move_jobs: list[tuple[str, str, bool, str, LoadClass]] = []
 		self.move_in_progress:       bool = False
-		self.msys                         = bag.msys
 		self.worker2_lock                 = threading.Lock()
 		self.dummy_event:          sdl3.SDL_Event = sdl3.SDL_Event()
 		self.temp_dest                            = sdl3.SDL_FRect(0, 0)
@@ -5942,7 +5942,6 @@ class Tauon:
 
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
-
 
 		self.tidal             = Tidal(self)
 		self.plex              = PlexService(self)
@@ -18215,34 +18214,34 @@ class Tauon:
 			self.show_message(_("FFMPEG could not be found"))
 		return False
 
-	def get_ffmpeg(self) -> str | None:
+	def get_ffmpeg(self) -> Path | None:
 		path = self.user_directory / "ffmpeg.exe"
 		if self.msys and path.is_file():
-			return str(path)
+			return path
 
 		# macOS
 		path = self.install_directory / "ffmpeg"
 		if path.is_file():
-			return str(path)
+			return path
 
 		path = shutil.which("ffmpeg")
 		if path:
-			return path
+			return Path(path)
 		return None
 
-	def get_ffprobe(self) -> str | None:
+	def get_ffprobe(self) -> Path | None:
 		path = self.user_directory / "ffprobe.exe"
 		if self.msys and path.is_file():
-			return str(path)
+			return path
 
 		# macOS
 		path = self.install_directory / "ffprobe"
 		if path.is_file():
-			return str(path)
+			return path
 
 		path = shutil.which("ffprobe")
 		if path:
-			return path
+			return Path(path)
 		return None
 
 	def bg_save(self) -> None:
