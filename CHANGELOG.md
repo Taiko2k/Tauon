@@ -3,7 +3,7 @@ Changelog
 ---------
 
 ### UPCOMING
- - **Added** Menu option to manually edit track lyrics
+ - **Added** New fully-featured lyrics editor, including LRC support (thanks @rexendevar)
  - **Added** Option to automatically save changed lyrics back to the audio file
  - **Fixed** being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0

@@ -327,6 +327,8 @@ class Prefs:
 	autoscan_playlist_folder: bool = False
 	playlist_folder_path: str = ""
 
+	synced_lyrics_editor_track_end_mode: Literal["stop","autosave","full save"] = "stop"
+
 	sep_genre_multi = False
 	topchart_sorts_played = True
 
