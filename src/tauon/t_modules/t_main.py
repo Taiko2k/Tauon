@@ -19614,7 +19614,7 @@ class TimedLyricsRen:
 				text = line.split("]")[-1].rstrip("\n")
 				t = line
 
-				while t[0] == "[" and t[9] == "]" and ":" in t and "." in t:
+				while t[0] == "[" and (t[9] == "]" or t[10] == "]") and ":" in t and "." in t:
 					a = t.lstrip("[")
 					t = t.split("]")[1] + "]"
 
