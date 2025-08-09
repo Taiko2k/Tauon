@@ -189,7 +189,7 @@ class Prefs:
 
 	guitar_chords = False
 	prefer_synced_lyrics = True
-	sync_lyrics_time_offset = 0
+	sync_lyrics_time_offset = -500
 
 	playback_follow_cursor = False
 	short_buffer = False
