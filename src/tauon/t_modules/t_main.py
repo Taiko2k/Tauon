@@ -37145,6 +37145,8 @@ class TimedLyricsEdit:
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
 			self.structure[self.line_active] = full_line
 		else:
+			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
+				self.line_active += 1
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
 			self.structure[self.line_active+1] = full_line
 			self.scroll_position -= self.yy
