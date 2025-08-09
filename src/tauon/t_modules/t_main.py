@@ -37139,7 +37139,7 @@ class TimedLyricsEdit:
 
 
 	def time_next_line(self, current: bool = False) -> None:
-		time = self.tauon.get_real_time() + self.prefs.sync_lyrics_time_offset/1000
+		time = self.pctl.decode_time
 		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
