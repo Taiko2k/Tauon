@@ -19912,7 +19912,7 @@ class TimedLyricsRen:
 			and (not h or y < self.inp.mouse_position[1] < y+h):
 			for rendered_line in line_positions:
 				if self.coll(rendered_line[0]):
-					self.pctl.seek_time(rendered_line[1][0] + self.prefs.sync_lyrics_time_offset/1000)
+					self.pctl.seek_time(rendered_line[1][0])
 					self.scroll_position = scroll_to
 					self.teleport_line = rendered_line[2]
 					self.temp_line = rendered_line[2]
@@ -37177,7 +37177,7 @@ class TimedLyricsEdit:
 
 
 	def time_next_line(self, current: bool = False) -> None:
-		time = self.tauon.get_real_time()
+		time = self.tauon.get_real_time() + self.prefs.sync_lyrics_time_offset/1000
 		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
@@ -37309,7 +37309,7 @@ class TimedLyricsEdit:
 		if self.check_timer.get() > 0.5 and self.structure[line_number][1] > 0 and line_number == self.check_line and self.check == False:
 			self.recenter_timeout.set()
 			self.pctl.stop()
-			self.pctl.jump_time = self.structure[line_number][1] + self.prefs.sync_lyrics_time_offset/1000
+			self.pctl.jump_time = self.structure[line_number][1]
 			self.pctl.play()
 			self.check_timer.set()
 			self.check = True
@@ -37364,7 +37364,7 @@ class TimedLyricsEdit:
 			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
 			if time > 0 and button:
 				self.pctl.stop()
-				self.pctl.jump_time = time + self.prefs.sync_lyrics_time_offset/1000
+				self.pctl.jump_time = time
 				self.pctl.play()
 				self.scroll_position += (line_number-self.line_active)*self.yy
 				#self.pctl.seek_time(time)
@@ -37639,7 +37639,7 @@ class TimedLyricsEdit:
 								continue
 							if rendered_line[0][0] < self.inp.mouse_position[1] < rendered_line[0][1]:
 								if self.inp.mouse_click:
-									self.pctl.seek_time(rendered_line[1] + self.prefs.sync_lyrics_time_offset/1000 )
+									self.pctl.seek_time(rendered_line[1])
 									self.scroll_position = scroll_to
 								# elif self.inp.key_shift_down or self.inp.key_shiftr_down and self.inp.mouse_wheel:
 								# 	self.scroll_timestamp(i)
