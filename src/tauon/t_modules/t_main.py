@@ -7701,28 +7701,6 @@ class Tauon:
 		return [line_colour, self.colours.menu_background, None]
 
 
-	def edit_lyrics(self, track_object: TrackClass) -> None:
-		target = Path( self.config_directory / _("edited-lyrics") / str(track_object.index)).with_suffix(".txt")
-		if not target.parent.is_dir():
-			target.parent.mkdir()
-		with open(target, "w") as lyrics_file:
-			if track_object.lyrics:
-				# TODO (Flynn): make this interchangablaedbaledjbaejdblaejdblajebjd synced lyrics too lol
-				if find_synced_lyric_data(track_object, just_check=True):
-					lyrics_file.write( _("NOTE: You are editing synced lyrics. Please don't break the formatting, because we can't correct for that yet. Thanks") + '\n')
-				lyrics_file.write( track_object.lyrics )
-			else:
-				lyrics_file.write( _("Put the lyrics in this file."))
-		if self.system == "Windows" or self.msys:
-			os.startfile(target)
-		elif self.macos:
-			subprocess.call(["open", "-t", target])
-		else:
-			subprocess.call(["xdg-open", target])
-		self.gui.opened_lyric_file = True
-		self.show_message(_("Lyrics file opened."), _('Click "Reload" if you made any changes'), mode="arrow")
-
-
 	def write_lyrics(self, track: TrackClass, synced: bool = False) -> None:
 		if synced:
 			lyrics = track.synced
@@ -7775,21 +7753,6 @@ class Tauon:
 			)
 		self.lyrics_ren_mini.to_reload = True
 		# TODO: add more formats
-
-	def reload_lyric_file(self, index: int) -> None:
-		target = Path( self.config_directory / _("edited-lyrics") / str( index )).with_suffix(".txt")
-		with open(target, "r") as lyric_file:
-			new_lyrics = lyric_file.read().strip()
-		track = self.pctl.master_library[index]
-		if not new_lyrics == _("Put the lyrics in this file."):
-			new_lyrics = new_lyrics.lstrip( _("NOTE: You are editing synced lyrics. Please don't break the formatting, because we can't correct for that yet. Thanks") ).strip()
-			if not new_lyrics == track.lyrics:
-				track.lyrics = new_lyrics
-				self.lyrics_ren_mini.to_reload = True
-				if self.prefs.save_lyrics_to_file:
-					self.write_lyrics(track)
-		self.gui.opened_lyric_file = False
-		target.unlink()
 
 
 	def show_sub_search(self, track_object: TrackClass) -> None:
@@ -17005,16 +16968,6 @@ class Tauon:
 			with (self.user_directory / "lyrics_substitutions.json").open("w") as file:
 				json.dump(prefs.lyrics_subs, file)
 
-			edited_lyrics = self.config_directory / _("edited-lyrics")
-			if edited_lyrics.is_dir():
-				for child in edited_lyrics.iterdir():
-					if child.is_file():
-						child.unlink()
-				try:
-					edited_lyrics.rmdir()
-				except:
-					logging.error( _("You put a folder in the edited-lyrics directory. Don't do that.") )
-
 			save_prefs(bag=self.bag)
 
 			# Save playlists to export
@@ -19952,20 +19905,9 @@ class TimedLyricsRen:
 				association = collider, line, i
 				line_positions.append( association )
 
-		button_pressed = False
-		lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-		if self.gui.opened_lyric_file and lyric_file.is_file():
-			if side_panel:
-				if self.tauon.draw.button( _("Reload"), x + 20*self.gui.scale, y + h - 70*self.gui.scale, tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
-					self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
-					button_pressed = True
-			else:
-				if self.tauon.draw.button( _("Reload"), x - 50*self.gui.scale - self.ddt.get_text_w(_("Reload"), 211), int(self.window_size[1] - 100 * self.gui.scale), tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
-					self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
-					button_pressed = True
 
 		# click a lyric to seek to it
-		if self.inp.mouse_click and not button_pressed \
+		if self.inp.mouse_click \
 			and self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
 			and (not h or y < self.inp.mouse_position[1] < y+h):
 			for rendered_line in line_positions:
@@ -34796,11 +34738,6 @@ class MetaBox:
 
 		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
-		lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-		if self.gui.opened_lyric_file and lyric_file.is_file():
-			if self.tauon.draw.button( _("Reload"), x + 20*self.gui.scale, y + h - 40*self.gui.scale, tooltip=_("Make sure to save your changes."), background_colour = self.colours.status_text_over):
-				self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
-
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
@@ -36020,10 +35957,6 @@ class Showcase:
 						self.render_vis()
 					else:
 						self.gui.draw_vis4_top = True
-				lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-				if self.gui.opened_lyric_file and lyric_file.is_file():
-					if self.tauon.draw.button( _("Load lyrics"), x - 12 - 0.5*self.ddt.get_text_w(_("Load lyrics"), 211), y + 50*self.gui.scale, tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
-						self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
 			else:
 				x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 				x -= 100 * self.gui.scale
@@ -36046,11 +35979,6 @@ class Showcase:
 					w,
 					int(self.window_size[1] - 100 * self.gui.scale),
 					0)
-
-				lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-				if self.gui.opened_lyric_file and lyric_file.is_file():
-					if self.tauon.draw.button( _("Load lyrics"), x - 50*self.gui.scale - self.ddt.get_text_w(_("Load lyrics"), 211), int(self.window_size[1] - 100 * self.gui.scale), tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
-						self.tauon.reload_lyric_file(self.pctl.track_queue[self.pctl.queue_step])
 
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
@@ -42638,7 +42566,6 @@ def main(holder: Holder) -> None:
 	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Edit Lyrics"), tauon.edit_lyrics, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -42653,7 +42580,6 @@ def main(holder: Holder) -> None:
 	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Edit Lyrics"), tauon.edit_lyrics, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -46562,10 +46488,6 @@ def main(holder: Holder) -> None:
 										line = " | ".join(
 											filter(None, (target_track.album, target_track.date, target_track.genre)))
 										ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
-									lyric_file = Path( tauon.config_directory / _("edited-lyrics") / str( pctl.track_queue[pctl.queue_step] )).with_suffix(".txt")
-									if gui.opened_lyric_file and lyric_file.is_file():
-										if tauon.draw.button( _("Load lyrics"), x + 20*gui.scale, y + h - 40*gui.scale, tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
-											tauon.reload_lyric_file(pctl.track_queue[pctl.queue_step])
 
 					# Seperation Line Drawing
 					if gui.rsp:
