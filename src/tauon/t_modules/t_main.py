@@ -7703,7 +7703,10 @@ class Tauon:
 		try:
 			if track.file_ext == "MP3":
 				audio = mutagen.id3.ID3(track.fullpath)
-				audio.add( mutagen.id3.USLT( text=lyrics ) )
+				if audio.getall("USLT"):
+					audio.getall("USLT")[0].text = lyrics
+				else:
+					audio.add( mutagen.id3.USLT( text=lyrics ) )
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext == "FLAC":
