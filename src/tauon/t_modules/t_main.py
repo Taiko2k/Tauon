@@ -1129,6 +1129,7 @@ class Input:
 		self.key_v_press:         bool = False
 		#self.key_f_press:        bool = False
 		self.key_a_press:         bool = False
+		self.key_s_press:         bool = False
 		#self.key_t_press:        bool = False
 		self.key_z_press:         bool = False
 		self.key_x_press:         bool = False
@@ -7569,13 +7570,13 @@ class Tauon:
 						if lyrics:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
-							if if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
+							if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
 							# TODO (Flynn): SYLT
-							if if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
+							if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
 								self.write_lyrics(track_object, True)
 						found = True
 						break
@@ -38500,7 +38501,7 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.sync_lyrics_time_offset = cf.sync_add(
 		"int", "synced-lyrics-time-offset", prefs.sync_lyrics_time_offset,
-		"In milliseconds. May be negative.")
+		"In milliseconds. Negative values cause each line to display earlier and vice versa.")
 	prefs.artist_list_prefer_album_artist = cf.sync_add(
 		"bool", "artist-list-prefers-album-artist",
 		prefs.artist_list_prefer_album_artist,
@@ -43438,6 +43439,7 @@ def main(holder: Holder) -> None:
 			inp.key_c_press = False
 			inp.key_v_press = False
 			inp.key_a_press = False
+			inp.key_s_press = False
 			inp.key_z_press = False
 			inp.key_x_press = False
 			inp.key_home_press = False
@@ -43725,6 +43727,8 @@ def main(holder: Holder) -> None:
 						inp.key_v_press = True
 					elif event.key.scancode == sdl3.SDL_SCANCODE_A:
 						inp.key_a_press = True
+					elif event.key.scancode == sdl3.SDL_SCANCODE_S:
+						inp.key_s_press = True
 					elif event.key.scancode == sdl3.SDL_SCANCODE_C:
 						inp.key_c_press = True
 					elif event.key.scancode == sdl3.SDL_SCANCODE_Z:
@@ -43735,6 +43739,8 @@ def main(holder: Holder) -> None:
 					inp.key_v_press = True
 				elif event.key.key == sdl3.SDLK_A:
 					inp.key_a_press = True
+				elif event.key.key == sdl3.SDLK_S:
+					inp.key_s_press = True
 				elif event.key.key == sdl3.SDLK_C:
 					inp.key_c_press = True
 				elif event.key.key == sdl3.SDLK_Z:
@@ -44092,6 +44098,7 @@ def main(holder: Holder) -> None:
 				inp.key_v_press = False
 				# inp.key_f_press = False
 				inp.key_a_press = False
+				inp.key_s_press = False
 				# inp.key_t_press = False
 				inp.key_z_press = False
 				inp.key_x_press = False
