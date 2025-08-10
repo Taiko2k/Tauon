@@ -37194,8 +37194,8 @@ class TimedLyricsEdit:
 		else:
 			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
 				self.line_active += 1
-			if self.line_active == len(self.structure)-1:
-				self.structure.append( (self.get_stamp_from_time(time), time, "") )
+			if self.line_active == len(self.structure)-1 or (self.inp.key_rctrl_down or self.inp.key_ctrl_down):
+				self.structure.insert( self.line_active+1, (self.get_stamp_from_time(time), time, "") )
 			else:
 				full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
 				self.structure[self.line_active+1] = full_line
@@ -37694,7 +37694,7 @@ class TimedLyricsEdit:
 			widths = [
 				self.ddt.get_text_w("≪5", self.font),
 				self.ddt.get_text_w(_("Previous"), self.font),
-				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
+				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("ADD TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
 				self.ddt.get_text_w(_("SAVE"), self.font),
 				self.ddt.get_text_w(_("Discard"), self.font),
 			]
@@ -37720,6 +37720,8 @@ class TimedLyricsEdit:
 			# TIME or CURRENT: click button or go to previous
 			if self.inp.key_shift_down or self.inp.key_shiftr_down:
 				text = _("CURRENT")
+			elif self.inp.key_ctrl_down or self.inp.key_rctrl_down:
+				text = _("ADD TIME")
 			else:
 				text = _("TIME")
 			match self.button(text, buttons_x, buttons_y, self.font,
