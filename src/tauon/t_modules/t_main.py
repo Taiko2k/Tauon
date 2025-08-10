@@ -35737,6 +35737,7 @@ class Showcase:
 			return
 		else:
 			self.gui.timed_lyrics_editing_now = False
+			self.timed_lyrics_edit.continuous = False
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
 
@@ -36942,6 +36943,7 @@ class TimedLyricsEdit:
 
 		self.pausing: bool = False
 		self.cursor: int | None = None
+		self.continuous: bool = True
 
 		# scrolling
 		self.scroll_position: int = 0
@@ -36972,29 +36974,31 @@ class TimedLyricsEdit:
 		self.menu.items = []
 
 		self.menu.add(MenuItem(_("Exit Lyrics Editor"), self.exit_lyrics_editor, pass_ref=False))
-		self.menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, self.tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-		self.menu.add(MenuItem(_("Discard Changes"), self.structurize_current, pass_ref=True))
+		self.menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, pass_ref=True))
 		self.menu.add(MenuItem(_("Clear All Section Markers"), self.clear_section_markers, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Timestamps"), self.clear_all_timestamps, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Lyrics"), self.clear_lyrics, pass_ref=False))
 
+		self.menu.add_sub(_("Backups..."), 165)
+		self.menu.add_to_sub(0, MenuItem(_("Load Current Backup"), self.autoload, pass_ref=False))
+		self.menu.add_to_sub(0, MenuItem(_("Visit Current Backup"), self.visit_backup, pass_ref=False))
+		self.menu.add_to_sub(0, MenuItem(_("Delete All Backups"), self.delete_autosaves, pass_ref=False))
+
 		self.menu.add_sub(_("When track ends..."), 165)
 		if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
-			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
+			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
 		else:
-			self.menu.add_to_sub(0, MenuItem( "    " + _("Stop immediately"), self.end_set_stop ))
+			self.menu.add_to_sub(1, MenuItem( "    " + _("Stop immediately"), self.end_set_stop ))
 
 		if self.prefs.synced_lyrics_editor_track_end_mode == "autosave":
-			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Backup and continue"), self.end_set_autosave ))
+			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Backup and continue"), self.end_set_autosave ))
 		else:
-			self.menu.add_to_sub(0, MenuItem( "    " + _("Backup and continue"), self.end_set_autosave ))
+			self.menu.add_to_sub(1, MenuItem( "    " + _("Backup and continue"), self.end_set_autosave ))
 
 		if self.prefs.synced_lyrics_editor_track_end_mode == "full save":
-			self.menu.add_to_sub(0, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_full_save ))
+			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_full_save ))
 		else:
-			self.menu.add_to_sub(0, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
-
-		self.menu.add(MenuItem(_("Delete All Backups"), self.delete_autosaves, show_test=self.inp.test_shift, pass_ref=False))
+			self.menu.add_to_sub(1, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
 
 
 	def end_set_stop(self) -> None:
@@ -37176,6 +37180,8 @@ class TimedLyricsEdit:
 			time = -1.0
 			full_line = ( stamp, time, line )
 			self.structure[self.line_active] = full_line
+			if self.line_active == len(self.structure)-1 and line == "":
+				del self.structure[self.line_active]
 		return 1
 
 
@@ -37188,8 +37194,11 @@ class TimedLyricsEdit:
 		else:
 			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
 				self.line_active += 1
-			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
-			self.structure[self.line_active+1] = full_line
+			if self.line_active == len(self.structure)-1:
+				self.structure.append( (self.get_stamp_from_time(time), time, "") )
+			else:
+				full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
+				self.structure[self.line_active+1] = full_line
 			self.scroll_position -= self.yy
 			self.allow_scroll = False
 		self.gui.pl_update += 1
@@ -37279,6 +37288,21 @@ class TimedLyricsEdit:
 					stamp = _("tag")
 				time = float(time)
 				self.structure.append( (stamp,time,line) )
+
+	def visit_backup(self) -> None:
+		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
+		if not target.is_file():
+			self.tauon.show_message(
+				_("Backup file does not exist")
+			)
+			return
+		if self.tauon.system == "Windows" or self.tauon.msys:
+			os.startfile(target)
+		elif self.tauon.macos:
+			subprocess.call(["open", "-t", target])
+		else:
+			subprocess.call(["xdg-open", target])
+
 
 
 	def scroll_timestamp(self, current_line: int) -> None:
@@ -37670,9 +37694,9 @@ class TimedLyricsEdit:
 			widths = [
 				self.ddt.get_text_w("≪5", self.font),
 				self.ddt.get_text_w(_("Previous"), self.font),
-				max( self.ddt.get_text_w(_("ADVANCE"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
+				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
 				self.ddt.get_text_w(_("SAVE"), self.font),
-				self.ddt.get_text_w(_("Load Backup"), self.font),
+				self.ddt.get_text_w(_("Discard"), self.font),
 			]
 			if hide_art:
 				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -37693,11 +37717,11 @@ class TimedLyricsEdit:
 				self.previous(prev)
 			buttons_x += widths[1] + x_gap
 
-			# ADVANCE or CURRENT: click button or go to previous
+			# TIME or CURRENT: click button or go to previous
 			if self.inp.key_shift_down or self.inp.key_shiftr_down:
 				text = _("CURRENT")
 			else:
-				text = _("ADVANCE")
+				text = _("TIME")
 			match self.button(text, buttons_x, buttons_y, self.font,
 				off=self.pctl.playing_state!=1 or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0) ):
 				case True:
@@ -37735,18 +37759,22 @@ class TimedLyricsEdit:
 				self.save()
 			btx_top += widths[3] + x_gap
 
-			target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
-			match self.button( _("Load Backup"), btx_top, bty_top, \
-					self.font, off=not target.is_file()):
-				case True:
-					self.autoload()
-				case False:
-					if self.tauon.system == "Windows" or self.tauon.msys:
-						os.startfile(target)
-					elif self.tauon.macos:
-						subprocess.call(["open", "-t", target])
-					else:
-						subprocess.call(["xdg-open", target])
+			rd = copy.deepcopy(self.colours.level_red)
+			rd.a = round(rd.a * 0.3)
+			if self.button(_("Discard"), btx_top, bty_top, self.font, rd, self.colours.level_red):
+				self.structurize_current(self.pctl.master_library[self.struct_track])
+			# target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
+			# match self.button( _("Load Backup"), btx_top, bty_top, \
+			# 		self.font, off=not target.is_file()):
+			# 	case True:
+			# 		self.autoload()
+			# 	case False:
+			# 		if self.tauon.system == "Windows" or self.tauon.msys:
+			# 			os.startfile(target)
+			# 		elif self.tauon.macos:
+			# 			subprocess.call(["open", "-t", target])
+			# 		else:
+			# 			subprocess.call(["xdg-open", target])
 			btx_top += widths[4] + x_gap
 
 			if btx_top + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
@@ -37777,9 +37805,9 @@ class TimedLyricsEdit:
 		# end of stuff blocked by boxes being open
 
 		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" and self.pctl.playing_state == 1:
-			if not self.coll((0,0,self.window_size[0],self.window_size[1])) and self.pctl.playing_length - test_time < 5.5:
+			if not self.coll((0,0,self.window_size[0],self.window_size[1])) and self.pctl.playing_length - self.pctl.decode_time < 5.5:
 				self.gui.pl_update += 1
-			if self.pctl.playing_length - test_time < 2.01:
+			if self.pctl.playing_length - self.pctl.decode_time < 2.01:
 				self.pctl.stop()
 
 
@@ -37807,13 +37835,14 @@ class TimedLyricsEdit:
 		index = self.pctl.track_queue[self.pctl.queue_step]
 		track = self.pctl.master_library[index]
 		if not self.structure or self.struct_track != index:
-			if self.struct_track != index and self.struct_track != -1:
+			if self.struct_track != index and self.struct_track != -1 and self.continuous:
 				match self.prefs.synced_lyrics_editor_track_end_mode:
 					case "autosave":
 						self.autosave()
 					case "full save":
 						self.save()
 			self.structurize_current(track)
+			self.continuous = True
 
 		x = int(self.window_size[0] * 0.05)
 		y = int((self.window_size[1] / 2) - (box / 2)) - 10 * self.gui.scale
@@ -46124,6 +46153,9 @@ def main(holder: Holder) -> None:
 					if gui.heart_fields:
 						for field in gui.heart_fields:
 							tauon.fields.add(field, tauon.update_playlist_call)
+
+					if not gui.showcase_mode:
+						showcase.timed_lyrics_edit.continuous = False
 
 					if gui.pl_update > 0:
 						gui.rendered_playlist_position = pctl.playlist_view_position
