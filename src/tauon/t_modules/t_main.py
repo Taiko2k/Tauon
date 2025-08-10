@@ -37329,7 +37329,7 @@ class TimedLyricsEdit:
 		# TIMESTAMP - TELEPORT, DELETE AND SCROLL EDIT
 		if stamp != "??:??.??" and stamp != _("tag"):
 			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
-			if time > 0 and button:
+			if time >= 0 and button:
 				self.pctl.stop()
 				self.pctl.jump_time = time
 				self.pctl.play()
@@ -37515,7 +37515,7 @@ class TimedLyricsEdit:
 					last = i
 					continue
 
-				if 0 < line[1] < test_time:
+				if 0 <= line[1] < test_time:
 					has_timed = i
 					last = i
 
