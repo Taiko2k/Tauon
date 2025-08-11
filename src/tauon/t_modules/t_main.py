@@ -36906,6 +36906,7 @@ class TimedLyricsEdit:
 		self.pausing: bool = False
 		self.cursor: int | None = None
 		self.continuous: bool = True
+		self.big_paste: bool = False
 
 		# scrolling
 		self.scroll_position: int = 0
