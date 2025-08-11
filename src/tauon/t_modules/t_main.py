@@ -5084,6 +5084,7 @@ class Menu:
 								self.reference = self.items[i].set_ref
 							self.inp.mouse_down = False
 							self.close_next_frame = True
+							gui.update += 1
 						if springing:
 							self.sub_active = -1
 					else:
@@ -5209,6 +5210,7 @@ class Menu:
 								else:
 									self.subs[self.sub_active][w].func()
 								self.close_next_frame = True
+								gui.update += 1
 
 						label = fx[2] if fx[2] is not None else self.subs[self.sub_active][w].title
 
