@@ -37424,7 +37424,11 @@ class TimedLyricsEdit:
 		if self.button("x", x, y_pos, self.font, active_bg=self.colours.level_red, tooltip=_("Delete line")):# or (self.inp.key_backspace_press and temp_text==""):
 			del self.structure[line_number]
 			if line_number >= self.line_active:
-				self.scroll_position += self.yy
+				if (self.inp.key_shift_down or self.inp.key_shiftr_down):
+					self.scroll_position += self.yy
+			else:
+				if not (self.inp.key_shift_down or self.inp.key_shiftr_down):
+					self.scroll_position -= self.yy
 			self.allow_scroll = False
 		x += round(30*self.gui.scale)
 		x = min( x, self.window_size[0]-self.line_height*0.9)
