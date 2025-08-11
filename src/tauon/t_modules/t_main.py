@@ -36872,9 +36872,6 @@ class SmoothScroll:
 
 
 class TimedLyricsEdit:
-	# TODO: AFTER EDIT LYRICS IS MERGED, ADD CONDITIONAL TO
-	# self.write_lyrics in get_lyric_fire
-	# if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
@@ -36891,7 +36888,6 @@ class TimedLyricsEdit:
 		self.window_size   = tauon.window_size
 		self.scroll        = tauon.smooth_scroll
 
-
 		self.struct_track: int = -1 #what track are we on
 		self.structure: list[ tuple[ str, float, str] ] = []
 		# each line contains a timestamp as a string, that timestamp's actual time, and the line itself
@@ -36905,8 +36901,8 @@ class TimedLyricsEdit:
 
 		self.pausing: bool = False
 		self.cursor: int | None = None
-		self.continuous: bool = True
 		self.big_paste: bool = False
+		self.continuous: bool = True
 
 		# scrolling
 		self.scroll_position: int = 0
@@ -36928,8 +36924,6 @@ class TimedLyricsEdit:
 
 		self.menu = Menu(tauon, 135)
 		self.reload_menu()
-
-
 
 	def reload_menu(self) -> None:
 		self.menu.subs = []
@@ -36963,7 +36957,6 @@ class TimedLyricsEdit:
 		else:
 			self.menu.add_to_sub(1, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
 
-
 	def end_set_stop(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "stop"
 		self.reload_menu()
@@ -36985,17 +36978,15 @@ class TimedLyricsEdit:
 		target = self.tauon.config_directory / _("autosaved-lyrics")
 		if not target.is_dir():
 			return
-		else:
-			for child in target.iterdir():
-				if child.is_file():
-					count += 1
-					child.unlink()
-			try:
-				target.rmdir()
-			except:
-				logging.error( _("You put a folder in the autosaved-lyrics directory. Don't do that.") )
-			logging.info(f"Deleted {count} autosave files.")
-
+		for child in target.iterdir():
+			if child.is_file():
+				count += 1
+				child.unlink()
+		try:
+			target.rmdir()
+		except:
+			logging.error( _("You put a folder in the autosaved-lyrics directory. Don't do that.") )
+		logging.info(f"Deleted {count} autosave files.")
 
 	def clear_all_timestamps(self) -> None:
 		for i, line in enumerate(self.structure):
@@ -37017,8 +37008,6 @@ class TimedLyricsEdit:
 		deletes.reverse()
 		for i in deletes:
 			del self.structure[i]
-
-
 
 	def button(
 			self, text: str, x_pos: int, y_pos: int, font: int,
@@ -37054,21 +37043,18 @@ class TimedLyricsEdit:
 			if self.inp.mouse_click:
 				if return_rect:
 					return True, rect
-				else:
-					return True
+				return True
 			elif self.inp.right_click:
 				self.inp.right_click = False
 				if return_rect:
 					return False, rect
-				else:
-					return False
+				return False
 		else:
 			self.ddt.bordered_rect( rect, bg, self.colours.box_text_border, round(1*self.gui.scale))
 			self.ddt.text( t_rect, text, txt, font, bg=bg)
 		if return_rect:
 			return None, rect
-
-
+		return None
 
 	def get_time_from_stamp(self, t: str) -> float:
 		a = t.lstrip("[")
@@ -37085,7 +37071,6 @@ class TimedLyricsEdit:
 			s += int(ms) / 1000
 		return s
 
-
 	def get_stamp_from_time(self, t: float) -> str:
 		if t<0:
 			return "??:??.??"
@@ -37095,10 +37080,8 @@ class TimedLyricsEdit:
 		mm = round(t//60)
 		return f"{format(mm,"02d")}:{format(ss,"02d")}.{format(ms,"02d")}"
 
-
-
 	def structurize_current(self, track: TrackClass) -> None:
-		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:", "#:"
+		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
 		self.structure = []
 		self.struct_track = track.index
 
@@ -37133,8 +37116,6 @@ class TimedLyricsEdit:
 			self.structure.append( ("??:??.??", -1.0, line) )
 		self.autosaved = True
 
-
-
 	def previous(self, prev: float) -> int:
 		self.pctl.seek_time(prev)
 		if ((len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0)) and self.structure[self.line_active][1]>prev:
@@ -37146,7 +37127,6 @@ class TimedLyricsEdit:
 			if self.line_active == len(self.structure)-1 and line == "":
 				del self.structure[self.line_active]
 		return 1
-
 
 	def time_next_line(self, current: bool = False) -> None:
 		time = self.pctl.decode_time
@@ -37165,8 +37145,6 @@ class TimedLyricsEdit:
 			self.scroll_position -= self.yy
 			self.allow_scroll = False
 		self.gui.pl_update += 1
-
-
 
 	def save(self) -> None:
 		lyrics: str = ""
@@ -37221,7 +37199,6 @@ class TimedLyricsEdit:
 				mode="done"
 			)
 
-
 	def autosave(self) -> None:
 		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
@@ -37235,7 +37212,6 @@ class TimedLyricsEdit:
 					stamp = "tag"
 				lyrics_file.write( f"{stamp},{str(time)},{line}\n")
 		self.autosaved = True
-
 
 	def autoload(self) -> None:
 		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
@@ -37265,8 +37241,6 @@ class TimedLyricsEdit:
 			subprocess.call(["open", "-t", target])
 		else:
 			subprocess.call(["xdg-open", target])
-
-
 
 	def scroll_timestamp(self, current_line: int) -> None:
 		stamp, time, line = self.structure[current_line]
@@ -37306,13 +37280,10 @@ class TimedLyricsEdit:
 			self.check_timer.set()
 			self.check = True
 			return True
-		else:
-			return False
-
-
+		return False
 
 	def accept_paste(self, current_line: int) -> None:
-		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:", "#:"
+		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
 		pasted_lines = self.line_edit_box.text.splitlines()
 		temp_line = self.structure[current_line]
 		overwrite: bool = (self.inp.key_shift_down or self.inp.key_shiftr_down)
@@ -37354,9 +37325,6 @@ class TimedLyricsEdit:
 			self.scroll_position -= self.yy
 			if overwrite:
 				self.big_paste = True
-
-
-
 
 	def settings_for_one_line(self, line_number: int, y_pos: int) -> None:
 		# x_posns contains in order: position for delete timestamp button, position for stamp teleport, position for text box, position for end of line
@@ -37471,7 +37439,7 @@ class TimedLyricsEdit:
 				p_stamp, p_time, p_line = self.structure[line_number-1]
 				self.structure[line_number-1] = (p_stamp, p_time, (p_line + self.line_edit_box.text))
 				del self.structure[line_number]
-				if line_number >= self.line_active:
+				if line_number > self.line_active:
 					self.scroll_position += self.yy
 				#self.inp.key_backspace_press = False
 				self.line_edit_box.cursor_position = len(self.line_edit_box.text)
@@ -37516,10 +37484,7 @@ class TimedLyricsEdit:
 			self.autosave_timer.set()
 			self.autosaved = False
 
-
-
 	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> bool | None:
-
 		line_ys: list[ tuple[ tuple[ int, int ], float ] | None ] = []
 		# saves collider positions alongside their respective lines
 
@@ -37642,9 +37607,9 @@ class TimedLyricsEdit:
 				line_ys.append( None )
 
 
-		if not (self.gui.box_over or self.tauon.pref_box.enabled):
 
-			# CLICK LINE TO SEEK or LET USER EDIT LINE
+		# CLICK LINE TO SEEK or LET USER EDIT LINE
+		if not (self.gui.box_over or self.tauon.pref_box.enabled):
 			self.gui.timed_lyrics_editing_now = False
 			# click a lyric to seek to it
 			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3]:
@@ -37675,6 +37640,8 @@ class TimedLyricsEdit:
 							continue
 						if (rendered_line[0][0]-0.25*self.line_height) < self.inp.mouse_position[1] < (rendered_line[0][1]-0.25*self.line_height):
 							self.settings_for_one_line(i, rendered_line[0][0])
+			# elif self.pctl.playing_state != 1 and (self.inp.key_shift_down or self.inp.key_shiftr_down):
+			# 	self.scroll_timestamp(self.line_active)
 
 
 
@@ -37694,6 +37661,15 @@ class TimedLyricsEdit:
 				buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 				buttons_x = 25*self.gui.scale
 				x_gap = self.yy
+
+			if self.inp.key_del and self.pctl.playing_state == 1:
+				self.inp.key_del = False
+				if self.inp.key_shift_down or self.inp.key_shiftr_down:
+					del self.structure[self.line_active]
+				elif self.line_active+1 <= len(self.structure)-1:
+					del self.structure[self.line_active+1]
+				if not self.structure:
+					self.structure = [("??:??.??", -1.0, "")]
 
 
 			if self.button("≪5", buttons_x, buttons_y, self.font):
@@ -37717,17 +37693,7 @@ class TimedLyricsEdit:
 				case True:
 					self.time_next_line(self.inp.key_shift_down or self.inp.key_shiftr_down)
 				case False:
-					self.previous( max(prev, test_time-5, 0) )
-					# if prev > test_time-5:
-					# 	self.previous( prev )
-					# else:
-					# 	self.pctl.seek_time( test_time-5 )
-					# 	if self.structure[self.line_active][1]>test_time-5 and (len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0):
-					# 		stamp, time, line = self.structure[self.line_active]
-					# 		stamp = "??:??.??"
-					# 		time = -1.0
-					# 		full_line = ( stamp, time, line )
-					# 		self.structure[self.line_active] = full_line
+					self.previous( max(prev, self.pctl.decode_time-5, 0) )
 				case None:
 					if not (self.pctl.playing_state!=1 or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0)):
 						if self.inp.key_return_press:
@@ -37753,18 +37719,6 @@ class TimedLyricsEdit:
 			rd.a = round(rd.a * 0.3)
 			if self.button(_("Discard"), btx_top, bty_top, self.font, rd, self.colours.level_red):
 				self.structurize_current(self.pctl.master_library[self.struct_track])
-			# target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
-			# match self.button( _("Load Backup"), btx_top, bty_top, \
-			# 		self.font, off=not target.is_file()):
-			# 	case True:
-			# 		self.autoload()
-			# 	case False:
-			# 		if self.tauon.system == "Windows" or self.tauon.msys:
-			# 			os.startfile(target)
-			# 		elif self.tauon.macos:
-			# 			subprocess.call(["open", "-t", target])
-			# 		else:
-			# 			subprocess.call(["xdg-open", target])
 			btx_top += widths[4] + x_gap
 
 			if btx_top + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
@@ -37810,8 +37764,6 @@ class TimedLyricsEdit:
 			self.pausing = False
 
 		return None
-
-
 
 	def render(self) -> None:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
@@ -37980,7 +37932,6 @@ class TimedLyricsEdit:
 
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
-
 
 @dataclass
 class Directories:
