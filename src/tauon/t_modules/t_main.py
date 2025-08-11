@@ -45043,11 +45043,11 @@ def main(holder: Holder) -> None:
 							else:
 								tauon.timed_lyrics_ren.render(
 									target_track.index, (window_size[0] - gui.rspw) + 9 * gui.scale,
-									gui.panelY + 25 * gui.scale, side_panel=True, w=gui.rspw,
+									gui.panelY, side_panel=True, w=gui.rspw,
 									h=window_size[1] - gui.panelY - gui.panelBY)
 
 								if inp.right_click and tauon.coll(
-									(window_size[0] - gui.rspw, gui.panelY + 25 * gui.scale, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
+									(window_size[0] - gui.rspw, gui.panelY, gui.rspw, window_size[1] - (gui.panelBY + gui.panelY))):
 									center_info_menu.activate(target_track)
 						elif prefs.show_lyrics_side and target_track is not None and target_track.lyrics and gui.rspw > 192 * gui.scale:
 							if prefs.show_side_lyrics_art_panel:
