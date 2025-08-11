@@ -5000,6 +5000,8 @@ class Menu:
 
 				return
 
+
+
 			# ytoff = 3
 			y_run = round(self.pos[1])
 			to_call = None
@@ -5196,7 +5198,6 @@ class Menu:
 
 							# Call Callback
 							if ( self.clicked or ( springing and not self.inp.right_down ) ) and not self.is_item_disabled(self.subs[self.sub_active][w]):
-
 								# If callback needs args
 								if self.subs[self.sub_active][w].args is not None:
 									self.subs[self.sub_active][w].func(self.reference, self.subs[self.sub_active][w].args)
@@ -5207,7 +5208,6 @@ class Menu:
 
 								else:
 									self.subs[self.sub_active][w].func()
-
 								self.close_next_frame = True
 
 						label = fx[2] if fx[2] is not None else self.subs[self.sub_active][w].title
@@ -5251,10 +5251,9 @@ class Menu:
 				else:
 					Menu.active = False
 
-				self.can_be_spring_clicked = self.can_be_spring_clicked and self.inp.right_down
-
 				# Render the menu outline
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+			self.can_be_spring_clicked = self.can_be_spring_clicked and self.inp.right_down
 
 	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
 		Menu.active = True
@@ -5295,7 +5294,6 @@ class Menu:
 
 		self.spring_loading_timer.set()
 		self.can_be_spring_clicked = True
-
 		self.active = True
 
 class GallClass:
