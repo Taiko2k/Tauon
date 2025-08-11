@@ -37352,28 +37352,45 @@ class TimedLyricsEdit:
 		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:", "#:"
 		pasted_lines = self.line_edit_box.text.splitlines()
 		temp_line = self.structure[current_line]
+		overwrite: bool = (self.inp.key_shift_down or self.inp.key_shiftr_down)
 
-		out_line = ( temp_line[0], temp_line[1], pasted_lines[0] )
-		self.structure[current_line] = out_line
-		del pasted_lines[0]
-		pasted_lines.reverse()
-		for line in pasted_lines: # try to accept LRC-formatted paste text
+		def is_int(number: str) -> bool:
+			try:
+				int(number)
+				return True
+			except:
+				return False
+
+		if not overwrite:
+			out_line = ( temp_line[0], temp_line[1], pasted_lines[0] )
+			self.structure[current_line] = out_line
+			del pasted_lines[0]
+
+		for i, line in enumerate(pasted_lines): # try to accept LRC-formatted paste text
 			if any(tag in line for tag in LRC_tags):
 					self.structure.append( (_("tag"), -1.0, line) )
 					continue
 
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
-			and "." in line[:10] and "]" in line:
-				try:
-					int( line[1] )
-				except:
-					self.structure.insert(current_line+1, ("??:??.??",-1.0,line))
-				else: # if current line is LRC-formatted
-					stamp = line.split("]")[0].lstrip("[")
-					time = self.get_time_from_stamp( line )
-					line = line.split("]",1)[1]
-					self.structure.insert( current_line+1, (stamp,time,line) )
+				and "." in line[:10] and "]" in line and is_int(line[1]): # if line is LRC-formatted
+				stamp = line.split("]")[0].lstrip("[")
+				time = self.get_time_from_stamp( line )
+				line = line.split("]",1)[1]
+			else:
+				stamp = "??:??.??"
+				time = -1.0
+
+			if overwrite and current_line+i <= len(self.structure)-1:
+				if self.structure[current_line+i][1] != -1.0:
+					time = self.structure[current_line+i][1]
+					stamp = self.structure[current_line+i][0]
+				self.structure[current_line+i] = (stamp,time,line)
+			else:
+				self.structure.insert( current_line+1+i, (stamp,time,line) )
+
 			self.scroll_position -= self.yy
+			if overwrite:
+				self.big_paste = True
 
 
 
@@ -37413,6 +37430,10 @@ class TimedLyricsEdit:
 
 		self.line_edit_box.text = line
 		temp_text = self.line_edit_box.text # so we don't delete lines a frame early
+		if self.big_paste:
+			self.line_edit_box.text = self.line_edit_box.text[ : -self.line_edit_box.cursor_position ]
+			self.big_paste = False
+
 		if self.cursor is not None:
 			self.line_edit_box.cursor_position =  len(self.line_edit_box.text) - self.cursor
 			self.line_edit_box.cursor_position = max( self.line_edit_box.cursor_position, 0 )
