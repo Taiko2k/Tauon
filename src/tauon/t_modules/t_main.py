@@ -4891,6 +4891,9 @@ class Menu:
 		self.sub_y_postion: int = 0
 		Menu.instances.append(self)
 
+		self.spring_loading_timer: Timer = Timer()
+		self.can_be_spring_clicked: bool = False
+
 	def deco(self, _=_) -> list[ColourRGBA | None]:
 		return [self.colours.menu_text, self.colours.menu_background, None]
 
@@ -5010,6 +5013,8 @@ class Menu:
 
 			x_run = self.pos[0]
 
+			springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
+
 			for i in range(len(self.items)):
 				#logging.info(self.items[i])
 
@@ -5070,14 +5075,17 @@ class Menu:
 					bg = alpha_blend(colours.menu_highlight_background, bg)
 
 					# Call menu items callback if clicked
-					if self.clicked:
-						if self.items[i].is_sub_menu is False:
+					if self.items[i].is_sub_menu is False:
+						if self.clicked or (springing and not self.inp.right_down):
 							to_call = i
 							if self.items[i].set_ref is not None:
 								self.reference = self.items[i].set_ref
 							self.inp.mouse_down = False
-
-						else:
+							self.close_next_frame = True
+						if springing:
+							self.sub_active = -1
+					else:
+						if self.clicked or springing:
 							self.clicked = False
 							self.sub_active = self.items[i].sub_menu_number
 							self.sub_y_postion = y_run
@@ -5187,7 +5195,7 @@ class Menu:
 							this_select = True
 
 							# Call Callback
-							if self.clicked and not self.is_item_disabled(self.subs[self.sub_active][w]):
+							if ( self.clicked or ( springing and not self.inp.right_down ) ) and not self.is_item_disabled(self.subs[self.sub_active][w]):
 
 								# If callback needs args
 								if self.subs[self.sub_active][w].args is not None:
@@ -5199,6 +5207,8 @@ class Menu:
 
 								else:
 									self.subs[self.sub_active][w].func()
+
+								self.close_next_frame = True
 
 						label = fx[2] if fx[2] is not None else self.subs[self.sub_active][w].title
 
@@ -5241,6 +5251,8 @@ class Menu:
 				else:
 					Menu.active = False
 
+				self.can_be_spring_clicked = self.can_be_spring_clicked and self.inp.right_down
+
 				# Render the menu outline
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 
@@ -5280,6 +5292,9 @@ class Menu:
 			if self.pos[1] < self.gui.panelY:
 				self.pos[1] = self.gui.panelY
 				self.pos[0] += 5 * self.gui.scale
+
+		self.spring_loading_timer.set()
+		self.can_be_spring_clicked = True
 
 		self.active = True
 
