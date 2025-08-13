@@ -4,6 +4,7 @@ Changelog
 
 ### v8.1.4
 
+ - **Added** Spring-loaded clicking behavior to most menus
  - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Crash on radio playlist migration under some circumstances
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
