@@ -36967,6 +36967,12 @@ class TimedLyricsEdit:
 		else:
 			self.menu.add_to_sub(1, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
 
+		if self.prefs.use_lrc_instead:
+			lrc = "✓ "
+		else:
+			lrc = "x  "
+		self.menu.add(MenuItem( lrc + _("Save synced to .lrc"), self.toggle_lrc, pass_ref=False))
+
 	def end_set_stop(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "stop"
 		self.reload_menu()
@@ -36985,7 +36991,7 @@ class TimedLyricsEdit:
 
 	def delete_autosaves(self) -> None:
 		count = 0
-		target = self.tauon.config_directory / _("autosaved-lyrics")
+		target = self.tauon.config_directory / _("lyrics-editor")
 		if not target.is_dir():
 			return
 		for child in target.iterdir():
@@ -36995,7 +37001,7 @@ class TimedLyricsEdit:
 		try:
 			target.rmdir()
 		except:
-			logging.error( _("You put a folder in the autosaved-lyrics directory. Don't do that.") )
+			logging.error( _("You put a folder in the lyrics-editor directory. Don't do that.") )
 		logging.info(f"Deleted {count} autosave files.")
 
 	def clear_all_timestamps(self) -> None:
@@ -37019,6 +37025,17 @@ class TimedLyricsEdit:
 		for i in deletes:
 			del self.structure[i]
 
+	def toggle_lrc(self) -> None:
+		self.prefs.use_lrc_instead = not self.prefs.use_lrc_instead
+		if not self.prefs.use_lrc_instead:
+			self.tauon.show_message(
+				_("Be careful!"),
+				_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
+				_("Saving one type will now OVERWRITE the other in the files. (Tauon itself doesn't care.)"),
+				mode="warning"
+			)
+		self.reload_menu()
+
 	def button(
 			self, text: str, x_pos: int, y_pos: int, font: int,
 			bg: ColourRGBA | None = None, active_bg: ColourRGBA | None = None,
@@ -37039,7 +37056,6 @@ class TimedLyricsEdit:
 			bg.a = round(bg.a * 0.5)
 			txt = copy.deepcopy(txt)
 			txt.a = round(txt.a * 0.5)
-
 		inner_border = 7*self.gui.scale
 		width = self.ddt.get_text_w(text, font)
 		height = self.ddt.get_text_w("?", font, True) /2
@@ -37188,7 +37204,7 @@ class TimedLyricsEdit:
 			self.autosave()
 		elif warning[2] and not ( self.inp.key_lalt or self.inp.key_ralt ):
 			self.tauon.show_message(
-				_("Lyrics will misbehave if their timestamps are out of order."),
+				_("Lyrics might misbehave if their timestamps are out of order."),
 				_("Please make sure all timestamps are ordered correctly."),
 				_("Alternatively, save again while holding Alt to override."),
 				mode="warning"
@@ -37196,21 +37212,24 @@ class TimedLyricsEdit:
 			self.autosave()
 		else:
 			track = self.pctl.master_library[self.struct_track]
-			track.lyrics = lyrics
-			if timed == len(self.structure):
+			if timed > 0:
 				track.synced = lyrics
-			if self.prefs.save_lyrics_to_file:
-				if timed == len(self.structure):
-					self.tauon.write_lyrics(track, True)
-				else:
-					self.tauon.write_lyrics(track)
-			self.tauon.show_message(
-				_("Saved successfully"),
-				mode="done"
-			)
+				self.tauon.write_lyrics(track, True)
+				self.tauon.show_message(
+					_("Synced lyrics saved successfully"),
+					mode="done"
+				)
+			else:
+				track.lyrics = lyrics
+				self.tauon.write_lyrics(track)
+				self.tauon.show_message(
+					_("Unsynced lyrics saved successfully"),
+					mode="done"
+				)
+
 
 	def autosave(self) -> None:
-		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w") as lyrics_file:
@@ -37222,7 +37241,7 @@ class TimedLyricsEdit:
 		self.autosaved = True
 
 	def autoload(self) -> None:
-		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
 		with open(target, "r") as lyrics_file:
@@ -37234,13 +37253,26 @@ class TimedLyricsEdit:
 				time = float(time)
 				self.structure.append( (stamp,time,line) )
 
-	def visit_backup(self) -> None:
-		target = Path( self.tauon.config_directory / _("autosaved-lyrics") / str( self.struct_track )).with_suffix(".csv")
-		if not target.is_file():
+	def visit_backup(self, synced: bool = True) -> None:
+		if synced:
+			suffix = ".csv"
+		else:
+			suffix = ".txt"
+		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(suffix)
+		if not target.parent.is_dir() and not synced:
+			target.parent.mkdir()
+		elif not target.is_file():
 			self.tauon.show_message(
 				_("Backup file does not exist")
 			)
 			return
+		if not synced:
+			with open(target, "w") as lyrics_file:
+				if self.text:
+					lyrics_file.write( self.text )
+				else:
+					lyrics_file.write( _("Put the lyrics in this file."))
+
 		if self.tauon.system == "Windows" or self.tauon.msys:
 			os.startfile(target)
 		elif self.tauon.macos:
@@ -37644,7 +37676,7 @@ class TimedLyricsEdit:
 							if rendered_line is None:
 								continue
 							if rendered_line[0][0] < self.inp.mouse_position[1] < rendered_line[0][1]:
-								if self.inp.mouse_click:
+								if self.inp.mouse_click and rendered_line[1] != -1.0:
 									self.pctl.seek_time(rendered_line[1])
 									self.scroll_position = scroll_to
 								# elif self.inp.key_shift_down or self.inp.key_shiftr_down and self.inp.mouse_wheel:
@@ -37702,6 +37734,7 @@ class TimedLyricsEdit:
 				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("ADD TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
 				self.ddt.get_text_w(_("SAVE"), self.font),
 				self.ddt.get_text_w(_("Discard"), self.font),
+				self.ddt.get_text_w("   ", self.font)
 			]
 			if hide_art:
 				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -37721,6 +37754,12 @@ class TimedLyricsEdit:
 					del self.structure[self.line_active+1]
 				if not self.structure:
 					self.structure = [("??:??.??", -1.0, "")]
+
+			# SWITCH MODES
+			if self.button("   ", buttons_x, buttons_y, self.font):
+				self.view_is_synced = False
+			self.unsynced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
+			buttons_x += widths[5] + x_gap
 
 			# BACK 5 AND PREVIOUS
 			if self.button("≪5", buttons_x, buttons_y, self.font):
@@ -37825,7 +37864,7 @@ class TimedLyricsEdit:
 
 	def edit_static(self) -> None:
 		track_object = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / _("edited-lyrics") / str(self.struct_track)).with_suffix(".txt")
+		target = Path( self.tauon.config_directory / _("lyrics-editor") / str(self.struct_track)).with_suffix(".txt")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w") as lyrics_file:
@@ -37840,20 +37879,18 @@ class TimedLyricsEdit:
 		else:
 			subprocess.call(["xdg-open", target])
 		self.opened_lyric_file = True
-		self.tauon.show_message(_("Lyrics file opened."), _('Click "Reload" if you made any changes'), mode="arrow")
 
 
 	def reload_lyric_file(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".txt")
+		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".txt")
 		with open(target, "r") as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
 		if not new_lyrics == _("Put the lyrics in this file."):
 			if not new_lyrics == track.lyrics:
 				track.lyrics = new_lyrics
-				if self.prefs.save_lyrics_to_file:
-					self.tauon.write_lyrics(track)
+				self.tauon.write_lyrics(track)
 		self.opened_lyric_file = False
 		self.test_update()
 		target.unlink()
@@ -37905,12 +37942,13 @@ class TimedLyricsEdit:
 
 		self.lyrics_position = max(self.lyrics_position, th * -1 + 100 * self.gui.scale)
 		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
-
+		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
 
 
 		widths = [
+			self.ddt.get_text_w("   ", self.font),
 			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
-			self.ddt.get_text_w(_("Load Lyrics"), self.font)
+			self.ddt.get_text_w(_("Reload and Save"), self.font)
 		]
 		if hide_art:
 			buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -37922,28 +37960,30 @@ class TimedLyricsEdit:
 			x_gap = self.yy
 
 
-		lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
+		lyric_file = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
 		can_load = self.opened_lyric_file and lyric_file.is_file()
 
+		if self.button("   ", buttons_x, buttons_y, self.font):
+			self.view_is_synced = True
+		self.synced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
+		buttons_x += widths[0] + x_gap
 		#if self.tauon.view_box.button(buttons_x, buttons_y, self.synced_img, )
 		if self.button(_("Edit Lyrics"), buttons_x, buttons_y, self.font, tooltip=_("Opens an external editor.")):
 			self.edit_static()
-		buttons_x += widths[0] + x_gap
-		if self.button(_("Load Lyrics"), buttons_x, buttons_y, self.font, tooltip=_("Make sure to save your changes."), off=not can_load):
-		#if self.tauon.draw.button( _("Load lyrics"), x - 50*self.gui.scale - self.ddt.get_text_w(_("Load lyrics"), 211), int(self.window_size[1] - 100 * self.gui.scale), tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
-			self.reload_lyric_file()
-		self.synced_img.w = 15*self.gui.scale
-		self.synced_img.h = 15*self.gui.scale
+		buttons_x += widths[1] + x_gap
 
+		self.gui.pl_update += 1
 
-		self.synced_img.render(buttons_x, buttons_y, self.colours.box_button_text)
-
-
-		#colour = self.colours.grey(40)
-		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
-		#	colour = self.colours.grey(40)
-		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
-		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+		if can_load:
+			x, y = self.window_size[0]/2, self.window_size[1]/2
+			rect = ( x - 200*self.gui.scale, y - 100*self.gui.scale, 400*self.gui.scale, 200*self.gui.scale)
+			self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
+			txt = self.colours.box_button_text
+			x0 = x - 180*self.gui.scale
+			y0 = y - 80*self.gui.scale
+			self.ddt.text( [x0,y0], _("Edit the lyrics in your text editor, then save the file and click \"Reload.\""), txt, self.font)
+			if self.button(_("Reload and Save"), rect[0] + self.yy, y + 90*self.gui.scale - self.yy, self.font, tooltip=_("Make sure to save your changes.")):
+				self.reload_lyric_file()
 
 
 
