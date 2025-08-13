@@ -7735,7 +7735,8 @@ class Tauon:
 					_("We don't know how to write lyrics to the filetype: ") + track.file_ext,
 					mode="error"
 				)
-		except:
+		except Exception:
+			logging.exception(Exception)
 			self.show_message(
 				_("Could not write lyrics to file"),
 				_("File doesn't exist or is not accessible."),
