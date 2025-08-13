@@ -36903,7 +36903,6 @@ class TimedLyricsEdit:
 		self.cursor: int | None = None
 		self.big_paste: bool = False
 		self.continuous: bool = True
-		self.opened_lyric_file: bool = False
 
 		# scrolling
 		self.scroll_position: int = 0
@@ -36925,6 +36924,16 @@ class TimedLyricsEdit:
 
 		self.menu = Menu(tauon, 135)
 		self.reload_menu()
+
+		#unsynced view
+		self.opened_lyric_file: bool = False
+		self.view_is_synced: bool = True
+		self.lyrics_position: int = 0
+		self.text: str = ""
+		self.synced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "synced.png", True)
+		self.unsynced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "unsynced.png", True)
+
+
 
 	def reload_menu(self) -> None:
 		self.menu.subs = []
@@ -37009,44 +37018,6 @@ class TimedLyricsEdit:
 		deletes.reverse()
 		for i in deletes:
 			del self.structure[i]
-
-
-	def edit_static(self) -> None:
-		index = self.pctl.track_queue[self.pctl.queue_step]
-		track_object = self.pctl.master_library[index]
-		target = Path( self.config_directory / _("edited-lyrics") / str(self.struct_track)).with_suffix(".txt")
-		if not target.parent.is_dir():
-			target.parent.mkdir()
-		with open(target, "w") as lyrics_file:
-			if track_object.lyrics:
-				lyrics_file.write( track_object.lyrics )
-			else:
-				lyrics_file.write( _("Put the lyrics in this file."))
-		if self.system == "Windows" or self.msys:
-			os.startfile(target)
-		elif self.macos:
-			subprocess.call(["open", "-t", target])
-		else:
-			subprocess.call(["xdg-open", target])
-		self.opened_lyric_file = True
-		self.show_message(_("Lyrics file opened."), _('Click "Reload" if you made any changes'), mode="arrow")
-
-
-	def reload_lyric_file(self) -> None:
-		track = self.pctl.master_library[index]
-		target = Path( self.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".txt")
-		with open(target, "r") as lyric_file:
-			new_lyrics = lyric_file.read().strip()
-		track = self.pctl.master_library[index]
-		if not new_lyrics == _("Put the lyrics in this file."):
-			if not new_lyrics == track.lyrics:
-				track.lyrics = new_lyrics
-				self.lyrics_ren_mini.to_reload = True
-				if self.prefs.save_lyrics_to_file:
-					self.write_lyrics(track)
-		self.opened_lyric_file = False
-		target.unlink()
-
 
 	def button(
 			self, text: str, x_pos: int, y_pos: int, font: int,
@@ -37307,6 +37278,7 @@ class TimedLyricsEdit:
 			if current_line != len(self.structure)-1 and self.structure[current_line+1][1] != -1.0:
 				time = min( time, self.structure[current_line+1][1] )
 			time = max( time, 0 )
+			self.pctl.decode_time = time
 			stamp = self.get_stamp_from_time(time)
 			self.structure[current_line] = (stamp,time,line)
 			self.autosave_timer.set()
@@ -37850,6 +37822,132 @@ class TimedLyricsEdit:
 
 		return None
 
+
+	def edit_static(self) -> None:
+		track_object = self.pctl.master_library[self.struct_track]
+		target = Path( self.tauon.config_directory / _("edited-lyrics") / str(self.struct_track)).with_suffix(".txt")
+		if not target.parent.is_dir():
+			target.parent.mkdir()
+		with open(target, "w") as lyrics_file:
+			if self.text:
+				lyrics_file.write( self.text )
+			else:
+				lyrics_file.write( _("Put the lyrics in this file."))
+		if self.tauon.system == "Windows" or self.tauon.msys:
+			os.startfile(target)
+		elif self.tauon.macos:
+			subprocess.call(["open", "-t", target])
+		else:
+			subprocess.call(["xdg-open", target])
+		self.opened_lyric_file = True
+		self.tauon.show_message(_("Lyrics file opened."), _('Click "Reload" if you made any changes'), mode="arrow")
+
+
+	def reload_lyric_file(self) -> None:
+		track = self.pctl.master_library[self.struct_track]
+		target = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.struct_track )).with_suffix(".txt")
+		with open(target, "r") as lyric_file:
+			new_lyrics = lyric_file.read().strip()
+		track = self.pctl.master_library[self.struct_track]
+		if not new_lyrics == _("Put the lyrics in this file."):
+			if not new_lyrics == track.lyrics:
+				track.lyrics = new_lyrics
+				if self.prefs.save_lyrics_to_file:
+					self.tauon.write_lyrics(track)
+		self.opened_lyric_file = False
+		self.test_update()
+		target.unlink()
+
+
+	def test_update(self) -> None:
+		track_object = self.pctl.master_library[self.struct_track]
+		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
+		self.text = ""
+
+		def is_int(number: str) -> bool:
+			try:
+				int(number)
+				return True
+			except:
+				return False
+
+		for line in track_object.lyrics.split("\n"):
+			if any(tag in line for tag in LRC_tags):
+				continue
+			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
+			and "." in line[:10] and "]" in line and is_int(line[1]):
+				pos = line.index("]")+1
+				self.text += line[pos:] + "\n"
+			else:
+				self.text += line + "\n"
+
+			# TODO (Flynn): fix the conditional for this section to run?
+		self.lyrics_position = 0
+
+	def unsynced_render(self, x, y, box, hide_art) -> None:
+		colour = self.colours.lyrics
+		bg = self.colours.playlist_panel_background
+
+
+		x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
+		x -= 100 * self.gui.scale
+		w = self.window_size[0] - x - 30 * self.gui.scale
+		h = int(self.window_size[1] - 100 * self.gui.scale)
+
+		if self.inp.key_up_press:
+			self.lyrics_position += 35 * self.gui.scale
+		if self.inp.key_down_press:
+			self.lyrics_position -= 35 * self.gui.scale
+		if self.inp.mouse_wheel:
+			self.lyrics_position += self.scroll.scroll("timed lyrics", 30*self.gui.scale)
+
+		tw, th = self.ddt.get_text_wh(self.text + "\n", self.font, w, True)
+
+		self.lyrics_position = max(self.lyrics_position, th * -1 + 100 * self.gui.scale)
+		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
+
+
+
+		widths = [
+			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
+			self.ddt.get_text_w(_("Load Lyrics"), self.font)
+		]
+		if hide_art:
+			buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
+			buttons_x = 10*self.gui.scale
+			x_gap = 18*self.gui.scale #min( self.yy, (self.window_size[0]-sum(widths))/4 )
+		else:
+			buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
+			buttons_x = 25*self.gui.scale
+			x_gap = self.yy
+
+
+		lyric_file = Path( self.tauon.config_directory / _("edited-lyrics") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
+		can_load = self.opened_lyric_file and lyric_file.is_file()
+
+		#if self.tauon.view_box.button(buttons_x, buttons_y, self.synced_img, )
+		if self.button(_("Edit Lyrics"), buttons_x, buttons_y, self.font, tooltip=_("Opens an external editor.")):
+			self.edit_static()
+		buttons_x += widths[0] + x_gap
+		if self.button(_("Load Lyrics"), buttons_x, buttons_y, self.font, tooltip=_("Make sure to save your changes."), off=not can_load):
+		#if self.tauon.draw.button( _("Load lyrics"), x - 50*self.gui.scale - self.ddt.get_text_w(_("Load lyrics"), 211), int(self.window_size[1] - 100 * self.gui.scale), tooltip=_("Make sure to save your changes."), background_colour = ColourRGBA(90, 50, 130, 255)):
+			self.reload_lyric_file()
+		self.synced_img.w = 15*self.gui.scale
+		self.synced_img.h = 15*self.gui.scale
+
+
+		self.synced_img.render(buttons_x, buttons_y, self.colours.box_button_text)
+
+
+		#colour = self.colours.grey(40)
+		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
+		#	colour = self.colours.grey(40)
+		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
+		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+
+
+
+
 	def render(self) -> None:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
@@ -37869,7 +37967,10 @@ class TimedLyricsEdit:
 					case "full save":
 						self.save()
 			self.structurize_current(track)
+			self.test_update()
 			self.continuous = True
+
+		#self.view_is_synced = False
 
 		x = int(self.window_size[0] * 0.05)
 		y = int((self.window_size[1] / 2) - (box / 2)) - 10 * self.gui.scale
@@ -38007,7 +38108,10 @@ class TimedLyricsEdit:
 					round( max( gcx - 145*self.gui.scale, 0 )) ]
 				self.x_posns[2] = max(self.x_posns[1] + 90*self.gui.scale, gcx)
 
-			self.synced_render(track.index, gcx, y, hide_art, w)
+			if self.view_is_synced:
+				self.synced_render(track.index, gcx, y, hide_art, w)
+			else:
+				self.unsynced_render(x, y, box, hide_art)
 
 			if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
 				if self.inp.right_click:
@@ -38017,6 +38121,7 @@ class TimedLyricsEdit:
 
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
+
 
 @dataclass
 class Directories:
