@@ -19473,7 +19473,7 @@ class LyricsRenMini:
 			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
 				self.text += line + "\n"
 			else:
-				self.text += line[10:] + "\n"
+				self.text += line.split("]")[-1] + "\n"
 		self.lyrics_position = 0
 
 	def render(self, index, x, y, w, h, p) -> None:
@@ -19512,7 +19512,7 @@ class LyricsRen:
 				if len(line) < 10 or ( line[0] != "[" and line[9] != "]" or ":" not in line ) or "." not in line:
 					self.text += line + "\n"
 				else:
-					self.text += line[10:] + "\n"
+					self.text += line.split("]")[-1] + "\n"
 			# TODO (Flynn): fix the conditional for this section to run?
 			self.lyrics_position = 0
 
@@ -19614,7 +19614,7 @@ class TimedLyricsRen:
 				text = line.split("]")[-1].rstrip("\n")
 				t = line
 
-				while t[0] == "[" and t[9] == "]" and ":" in t and "." in t:
+				while t[0] == "[" and (t[9] == "]" or t[10] == "]") and ":" in t and "." in t:
 					a = t.lstrip("[")
 					t = t.split("]")[1] + "]"
 
