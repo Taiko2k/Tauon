@@ -569,6 +569,7 @@ class GuiVar:
 		self.showcase_mode = False
 		self.timed_lyrics_edit_view: bool = False
 		self.timed_lyrics_editing_now: bool = False
+		self.lyrics_editor_update_now: list[bool] = [False, False]
 		self.display_time_mode = 0
 
 		self.pl_text_real_height = 12
@@ -7557,13 +7558,15 @@ class Tauon:
 						if lyrics:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
-							if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
+							self.gui.lyrics_editor_update_now[0] = True
+							if not self.gui.timed_lyrics_edit_view:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
+							self.gui.lyrics_editor_update_now[1] = True
 							# TODO (Flynn): SYLT
-							if self.prefs.save_lyrics_to_file and not self.gui.timed_lyrics_edit_view:
+							if not self.gui.timed_lyrics_edit_view:
 								self.write_lyrics(track_object, True)
 						found = True
 						break
@@ -38117,6 +38120,12 @@ class TimedLyricsEdit:
 			self.test_update()
 			self.lyrics_position = 0
 			self.continuous = True
+
+		if self.gui.lyrics_editor_update_now[0]:
+			self.test_update()
+		if self.gui.lyrics_editor_update_now[1]:
+			self.structurize_current(track)
+		self.gui.lyrics_editor_update_now = [False, False]
 
 		#self.view_is_synced = False
 
