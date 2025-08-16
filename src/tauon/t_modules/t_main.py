@@ -7736,7 +7736,7 @@ class Tauon:
 					mode="error"
 				)
 		except Exception:
-			logging.exception(Exception)
+			logging.exception()
 			self.show_message(
 				_("Could not write lyrics to file"),
 				_("File doesn't exist or is not accessible."),
@@ -36933,6 +36933,11 @@ class TimedLyricsEdit:
 		self.text: str = ""
 		self.synced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "synced.png", True)
 		self.unsynced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "unsynced.png", True)
+		self.unsynced_menu = Menu(tauon, 135)
+
+		self.unsynced_menu.add(MenuItem(_("Exit Lyrics Editor"), self.exit_lyrics_editor, pass_ref=False))
+		self.unsynced_menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, pass_ref=True))
+		self.unsynced_menu.add(MenuItem(_("Copy From Synced"), self.copy_from_synced, pass_ref=False))
 
 
 
@@ -36943,6 +36948,7 @@ class TimedLyricsEdit:
 
 		self.menu.add(MenuItem(_("Exit Lyrics Editor"), self.exit_lyrics_editor, pass_ref=False))
 		self.menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, pass_ref=True))
+		self.menu.add(MenuItem(_("Copy From Unsynced"), self.copy_from_unsynced, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Section Markers"), self.clear_section_markers, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Timestamps"), self.clear_all_timestamps, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Lyrics"), self.clear_lyrics, pass_ref=False))
@@ -37026,6 +37032,10 @@ class TimedLyricsEdit:
 		for i in deletes:
 			del self.structure[i]
 
+	def copy_from_unsynced(self) -> None:
+		track = self.pctl.master_library[self.struct_track]
+		self.structurize_current(track, True)
+
 	def toggle_lrc(self) -> None:
 		self.prefs.use_lrc_instead = not self.prefs.use_lrc_instead
 		if not self.prefs.use_lrc_instead:
@@ -37036,6 +37046,14 @@ class TimedLyricsEdit:
 				mode="warning"
 			)
 		self.reload_menu()
+
+
+	def copy_from_synced(self) -> None:
+		self.text = ""
+		for line in self.structure:
+			self.text += line[2] + "\n"
+		self.text = self.text.strip()
+
 
 	def button(
 			self, text: str, x_pos: int, y_pos: int, font: int,
@@ -37107,12 +37125,14 @@ class TimedLyricsEdit:
 		mm = round(t//60)
 		return f"{format(mm,"02d")}:{format(ss,"02d")}.{format(ms,"02d")}"
 
-	def structurize_current(self, track: TrackClass) -> None:
+	def structurize_current(self, track: TrackClass, from_unsynced: bool = False) -> None:
 		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
 		self.structure = []
 		self.struct_track = track.index
 
-		if track.synced:
+		if from_unsynced:
+			lyrics = self.text
+		elif track.synced:
 			lyrics = find_synced_lyric_data(track)
 		elif track.lyrics:
 			lyrics = track.lyrics.splitlines()
@@ -37141,6 +37161,8 @@ class TimedLyricsEdit:
 
 			# if current line is NOT LRC-formatted
 			self.structure.append( ("??:??.??", -1.0, line) )
+		if self.structure == []:
+			self.structure = [ ("??:??.??", -1.0, "") ]
 		self.autosaved = True
 
 	def previous(self, prev: float) -> int:
@@ -37173,28 +37195,35 @@ class TimedLyricsEdit:
 			self.allow_scroll = False
 		self.gui.pl_update += 1
 
-	def save(self) -> None:
+	def save(self, synced: bool = True) -> None:
 		lyrics: str = ""
 		warning: list[bool] = [False, False, False]
 		timed: int = 0
 		max_stamp: float = 0.0
-		for line in self.structure:
-			if line[1] < 0:
-				lyrics += line[2].rstrip()
-				if line[0] != _("tag"):
-					warning[0] = True
+
+		track = self.pctl.master_library[self.struct_track]
+		over = self.will_overwrite_lyrics(track)
+
+		if synced:
+			for line in self.structure:
+				if line[1] < 0:
+					lyrics += line[2].rstrip()
+					if line[0] != _("tag"):
+						warning[0] = True
+					else:
+						timed += 1
 				else:
+					if line[1] < max_stamp:
+						warning[2] = True
+					stamp = self.get_stamp_from_time( line[1] )
+					lyrics += "[" + stamp + "]" + line[2]
+					warning[1] = True
 					timed += 1
-			else:
-				if line[1] < max_stamp:
-					warning[2] = True
-				stamp = self.get_stamp_from_time( line[1] )
-				lyrics += "[" + stamp + "]" + line[2]
-				warning[1] = True
-				timed += 1
-				max_stamp = max(max_stamp, line[1])
-			lyrics += "\n"
-		lyrics = lyrics.strip()
+					max_stamp = max(max_stamp, line[1])
+				lyrics += "\n"
+			lyrics = lyrics.strip()
+		else:
+			lyrics = self.text.strip()
 		if warning[0] and warning[1] and not ( self.inp.key_lalt or self.inp.key_ralt ):
 			self.tauon.show_message(
 				_("Lyrics will misbehave if only some of them are timed."),
@@ -37212,21 +37241,59 @@ class TimedLyricsEdit:
 			)
 			self.autosave()
 		else:
-			track = self.pctl.master_library[self.struct_track]
 			if timed > 0:
 				track.synced = lyrics
 				self.tauon.write_lyrics(track, True)
-				self.tauon.show_message(
-					_("Synced lyrics saved successfully"),
-					mode="done"
-				)
+				if over and not self.prefs.use_lrc_instead:
+					self.tauon.show_message(
+						_("Synced lyrics saved successfully"),
+						_("Destroyed previously existing lyrics in file"),
+						mode="done"
+					)
+				else:
+					self.tauon.show_message(
+						_("Synced lyrics saved successfully"),
+						mode="done"
+					)
 			else:
 				track.lyrics = lyrics
 				self.tauon.write_lyrics(track)
-				self.tauon.show_message(
-					_("Unsynced lyrics saved successfully"),
-					mode="done"
-				)
+				if over:
+					self.tauon.show_message(
+						_("Unsynced lyrics saved successfully"),
+						_("Destroyed previously existing lyrics in file"),
+						mode="done"
+					)
+				else:
+					self.tauon.show_message(
+						_("Unsynced lyrics saved successfully"),
+						mode="done"
+					)
+			self.test_update()
+
+	def will_overwrite_lyrics(self, track: TrackClass) -> bool:
+		file = Path(track.fullpath)
+		if track.file_ext == "MP3":
+			audio = mutagen.id3.ID3(track.fullpath)
+			if audio.getall("USLT"):
+				return True
+		elif track.file_ext == "FLAC":
+			audio = mutagen.flac.FLAC(track.fullpath)
+			if audio["LYRICS"]:
+				return True
+		elif track.file_ext in ("OPUS", "OGG"):
+			audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
+			if audio["LYRICS"]:
+				return True
+		elif track.file_ext in ("APE","WV","TTA"):
+			audio = mutagen.apev2.APEv2(track.fullpath)
+			if audio["Lyrics"]:
+				return True
+		elif track.file_ext in ("MP4","M4A","M4B","M4P"):
+			audio = mutagen.mp4.MP4(track.fullpath)
+			if audio['\xa9lyr']:
+				return True
+		return False
 
 
 	def autosave(self) -> None:
@@ -37281,7 +37348,7 @@ class TimedLyricsEdit:
 		else:
 			subprocess.call(["xdg-open", target])
 
-	def scroll_timestamp(self, current_line: int) -> None:
+	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool:
 		stamp, time, line = self.structure[current_line]
 		if self.inp.key_ctrl_down or self.inp.key_rctrl_down:
 			adjust = 0.01
@@ -37295,14 +37362,18 @@ class TimedLyricsEdit:
 
 		if self.inp.mouse_wheel:
 			time -= self.inp.mouse_wheel * adjust
-			self.check = False
-			self.check_line = current_line
-			self.check_timer.set()
+			if active:
+				self.check = False
+				self.check_line = current_line
+				self.check_timer.set()
 		elif self.inp.key_right_press or self.inp.key_left_press:
 			time += adjust * (self.inp.key_right_press - self.inp.key_left_press)
-			self.check = False
-			self.check_line = current_line
-			self.check_timer.set()
+			if active:
+				self.check = False
+				self.check_line = current_line
+				self.check_timer.set()
+		else:
+			return False
 
 		if old_time != time:
 			time = round(time, 2)
@@ -37311,11 +37382,13 @@ class TimedLyricsEdit:
 			if current_line != len(self.structure)-1 and self.structure[current_line+1][1] != -1.0:
 				time = min( time, self.structure[current_line+1][1] )
 			time = max( time, 0 )
-			self.pctl.decode_time = time
 			stamp = self.get_stamp_from_time(time)
 			self.structure[current_line] = (stamp,time,line)
 			self.autosave_timer.set()
 			self.autosaved = False
+			if active:
+				self.scroll_position += (current_line - self.line_active) * self.yy
+			return True
 
 	# for scrolling timestamps - will play one second of audio after 0.5 seconds of waiting
 	# to make sure the timestamp is correct
@@ -37335,7 +37408,7 @@ class TimedLyricsEdit:
 				self.pctl.playing_time = self.pctl.decode_time
 				self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
 				self.check = None
-			self.scroll_position += (line_number - self.line_active) * self.yy
+				self.scroll_position += (line_number - self.line_active) * self.yy
 			return True
 		return False
 
@@ -37430,6 +37503,7 @@ class TimedLyricsEdit:
 			temp = self.structure[line_number]
 			self.inp.key_left_press = False
 			self.inp.key_right_press = False
+			self.inp.mouse_wheel = 0
 
 		height = self.ddt.get_text_w("?", self.font, True)
 		x = round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale
@@ -37680,8 +37754,8 @@ class TimedLyricsEdit:
 								if self.inp.mouse_click and rendered_line[1] != -1.0:
 									self.pctl.seek_time(rendered_line[1])
 									self.scroll_position = scroll_to
-								# elif self.inp.key_shift_down or self.inp.key_shiftr_down and self.inp.mouse_wheel:
-								# 	self.scroll_timestamp(i)
+								elif self.inp.key_lalt or self.inp.key_ralt:
+									did_one_line = self.scroll_timestamp(i, False)
 								break
 
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
@@ -37762,15 +37836,35 @@ class TimedLyricsEdit:
 			self.unsynced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
 			buttons_x += widths[5] + x_gap
 
-			# BACK 5 AND PREVIOUS
-			if self.button("≪5", buttons_x, buttons_y, self.font):
-				self.previous( max(test_time-5, 0) )
-			buttons_x += widths[0] + x_gap
+			# SAVE AND DISCARD
+			gn = copy.deepcopy(self.colours.level_green)
+			gn.a = round(gn.a * 0.3)
+			if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green):
+				self.save()
+			buttons_x += widths[3] + x_gap
 
-			if self.button(_("Previous"), buttons_x, buttons_y, self.font,
+			rd = copy.deepcopy(self.colours.level_red)
+			rd.a = round(rd.a * 0.3)
+			if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red):
+				self.structurize_current(self.pctl.master_library[self.struct_track])
+			buttons_x += widths[4] + x_gap
+
+			if not hide_art:
+				btx_top = 25*self.gui.scale
+				bty_top = buttons_y-self.yy-10*self.gui.scale
+			else:
+				btx_top = buttons_x
+				bty_top = buttons_y
+
+			# BACK 5 AND PREVIOUS
+			if self.button("≪5", btx_top, bty_top, self.font):
+				self.previous( max(test_time-5, 0) )
+			btx_top += widths[0] + x_gap
+
+			if self.button(_("Previous"), btx_top, bty_top, self.font,
 				off = ( not prev)):
 				self.previous(prev)
-			buttons_x += widths[1] + x_gap
+			btx_top += widths[1] + x_gap
 
 			# TIME or CURRENT or ADD TIME: click button or go to previous
 			if self.inp.key_lalt or self.inp.key_ralt:
@@ -37781,11 +37875,11 @@ class TimedLyricsEdit:
 				text = _("TIME")
 			width = self.ddt.get_text_w(text, self.font)
 			if hide_art:
-				x_pos = buttons_x + (widths[2] - width)/2
+				x_pos = btx_top + (widths[2] - width)/2
 			else:
-				x_pos = buttons_x
+				x_pos = btx_top
 
-			match self.button(text, x_pos, buttons_y, self.font,
+			match self.button(text, x_pos, bty_top, self.font,
 				off=self.pctl.playing_state!=1 or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0) ):
 				case True:
 					self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
@@ -37797,26 +37891,11 @@ class TimedLyricsEdit:
 							self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
 						elif self.inp.key_backspace_press:
 							self.previous( max(test_time-5, 0, prev) )
-			buttons_x += widths[2] + x_gap
+			btx_top += widths[2] + x_gap
 
-			if not hide_art:
-				btx_top = 25*self.gui.scale
-				bty_top = buttons_y-self.yy-10*self.gui.scale
-			else:
-				btx_top = buttons_x
-				bty_top = buttons_y
 
-			gn = copy.deepcopy(self.colours.level_green)
-			gn.a = round(gn.a * 0.3)
-			if self.button( _("SAVE"), btx_top, bty_top, self.font, gn, self.colours.level_green):
-				self.save()
-			btx_top += widths[3] + x_gap
 
-			rd = copy.deepcopy(self.colours.level_red)
-			rd.a = round(rd.a * 0.3)
-			if self.button(_("Discard"), btx_top, bty_top, self.font, rd, self.colours.level_red):
-				self.structurize_current(self.pctl.master_library[self.struct_track])
-			btx_top += widths[4] + x_gap
+
 
 			if btx_top + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
 				btx_top = (25 - 15*hide_art) * self.gui.scale
@@ -37872,7 +37951,7 @@ class TimedLyricsEdit:
 			if self.text:
 				lyrics_file.write( self.text )
 			else:
-				lyrics_file.write( _("Put the lyrics in this file."))
+				lyrics_file.write( _("Put the lyrics in this file and save it."))
 		if self.tauon.system == "Windows" or self.tauon.msys:
 			os.startfile(target)
 		elif self.tauon.macos:
@@ -37888,12 +37967,13 @@ class TimedLyricsEdit:
 		with open(target, "r") as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
-		if not new_lyrics == _("Put the lyrics in this file."):
+		if not new_lyrics == _("Put the lyrics in this file and save it."):
 			if not new_lyrics == track.lyrics:
-				track.lyrics = new_lyrics
-				self.tauon.write_lyrics(track)
+				self.text = new_lyrics
+				# track.lyrics = new_lyrics
+				# self.tauon.write_lyrics(track)
 		self.opened_lyric_file = False
-		self.test_update()
+		#self.test_update()
 		target.unlink()
 
 
@@ -37919,8 +37999,6 @@ class TimedLyricsEdit:
 			else:
 				self.text += line + "\n"
 
-			# TODO (Flynn): fix the conditional for this section to run?
-		self.lyrics_position = 0
 
 	def unsynced_render(self, x, y, box, hide_art) -> None:
 		colour = self.colours.lyrics
@@ -37931,6 +38009,7 @@ class TimedLyricsEdit:
 		x -= 100 * self.gui.scale
 		w = self.window_size[0] - x - 30 * self.gui.scale
 		h = int(self.window_size[1] - 100 * self.gui.scale)
+		offset = 20*self.gui.scale
 
 		if self.inp.key_up_press:
 			self.lyrics_position += 35 * self.gui.scale
@@ -37949,7 +38028,10 @@ class TimedLyricsEdit:
 		widths = [
 			self.ddt.get_text_w("   ", self.font),
 			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
-			self.ddt.get_text_w(_("Reload and Save"), self.font)
+			self.ddt.get_text_w(_("Reload"), self.font),
+			self.ddt.get_text_w(_("Cancel"), self.font),
+			self.ddt.get_text_w(_("SAVE"), self.font),
+			self.ddt.get_text_w(_("Discard"), self.font)
 		]
 		if hide_art:
 			buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -37968,10 +38050,31 @@ class TimedLyricsEdit:
 			self.view_is_synced = True
 		self.synced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
 		buttons_x += widths[0] + x_gap
+
+		# SAVE AND DISCARD
+		gn = copy.deepcopy(self.colours.level_green)
+		gn.a = round(gn.a * 0.3)
+		if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green):
+			self.save(False)
+		buttons_x += widths[4] + x_gap
+
+		rd = copy.deepcopy(self.colours.level_red)
+		rd.a = round(rd.a * 0.3)
+		if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red):
+			self.structurize_current(self.pctl.master_library[self.struct_track])
+		buttons_x += widths[5] + x_gap
+
+		if not hide_art:
+			btx_top = 25*self.gui.scale
+			bty_top = buttons_y-self.yy-10*self.gui.scale
+		else:
+			btx_top = buttons_x
+			bty_top = buttons_y
+
 		#if self.tauon.view_box.button(buttons_x, buttons_y, self.synced_img, )
-		if self.button(_("Edit Lyrics"), buttons_x, buttons_y, self.font, tooltip=_("Opens an external editor.")):
+		if self.button(_("Edit Lyrics"), btx_top, bty_top, self.font, tooltip=_("Opens an external editor.")):
 			self.edit_static()
-		buttons_x += widths[1] + x_gap
+		btx_top += widths[1] + x_gap
 
 		self.gui.pl_update += 1
 
@@ -37982,9 +38085,12 @@ class TimedLyricsEdit:
 			txt = self.colours.box_button_text
 			x0 = x - 180*self.gui.scale
 			y0 = y - 80*self.gui.scale
-			self.ddt.text( [x0,y0], _("Edit the lyrics in your text editor, then save the file and click \"Reload.\""), txt, self.font)
-			if self.button(_("Reload and Save"), rect[0] + self.yy, y + 90*self.gui.scale - self.yy, self.font, tooltip=_("Make sure to save your changes.")):
+			self.ddt.text( [x0,y0,4,rect[2]-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Reload.\""), txt, self.font)
+
+			if self.button(_("Reload"), rect[0] + offset, y + 87*self.gui.scale - offset, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes.")):
 				self.reload_lyric_file()
+			if self.button(_("Cancel"), rect[0] + rect[2] - widths[3] - offset, y + 87*self.gui.scale - offset, self.font, rd, self.colours.level_red, tooltip=_("Delete the file.")):
+				lyric_file.unlink()
 
 
 
@@ -38009,6 +38115,7 @@ class TimedLyricsEdit:
 						self.save()
 			self.structurize_current(track)
 			self.test_update()
+			self.lyrics_position = 0
 			self.continuous = True
 
 		#self.view_is_synced = False
@@ -38158,7 +38265,10 @@ class TimedLyricsEdit:
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
-						self.menu.activate(track)
+						if self.view_is_synced:
+							self.menu.activate(track)
+						else:
+							self.unsynced_menu.activate(track)
 
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
