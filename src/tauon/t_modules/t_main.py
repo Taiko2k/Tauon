@@ -164,7 +164,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_launch import Launch  # noqa: E402
-from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping  # noqa: E402
+from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping, get_lrclib_challenge  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
@@ -36943,6 +36943,7 @@ class TimedLyricsEdit:
 		self.menu.add(MenuItem(_("Clear All Section Markers"), self.clear_section_markers, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Timestamps"), self.clear_all_timestamps, pass_ref=False))
 		self.menu.add(MenuItem(_("Clear All Lyrics"), self.clear_lyrics, pass_ref=False))
+		self.menu.add(MenuItem(_("Upload To LRCLIB"), self.upload_both_to_lrclib, pass_ref=False))
 
 		self.menu.add_sub(_("Backups..."), 165)
 		self.menu.add_to_sub(0, MenuItem(_("Load Current Backup"), self.autoload, pass_ref=False))
@@ -37044,6 +37045,32 @@ class TimedLyricsEdit:
 		for line in self.structure:
 			self.text += line[2] + "\n"
 		self.text = self.text.strip()
+
+	def upload_both_to_lrclib(self) -> None:
+		track = self.pctl.master_library[self.struct_track]
+		p, t = get_lrclib_challenge()
+		nonce = subprocess.run(
+			["rust_nonce_solver", p, t],
+			capture_output=True,
+			text=True,
+			check=True
+		)
+		publish_token = p + ":" + nonce.stdout.strip()
+		h = {
+			"User-Agent": "TauonMusicBox/DEVEL very early & idk what im doing",
+			"X-Publish-Token": publish_token
+		}
+
+		p = {
+			"trackName": track.title,
+			"artistName": track.artist,
+			"albumName": track.album,
+			"duration": track.length,
+			"plainLyrics": track.lyrics,
+			"syncedLyrics": track.synced
+		}
+		r = requests.post("https://lrclib.net/api/publish", headers=h, json=p, timeout=10)
+		logging.info(r.text)
 
 
 	def button(
