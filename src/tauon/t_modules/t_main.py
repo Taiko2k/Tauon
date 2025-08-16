@@ -7645,8 +7645,7 @@ class Tauon:
 			clip = sdl3.SDL_GetClipboardText()
 			#logging.info(clip)
 			track_object.lyrics = clip.decode("utf-8")
-			if self.prefs.save_lyrics_to_file:
-				self.write_lyrics(track_object)
+			self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 		else:
 			logging.warning("NO TEXT TO PASTE")
@@ -7656,15 +7655,13 @@ class Tauon:
 
 	def clear_lyrics(self, track_object: TrackClass) -> None:
 		track_object.lyrics = ""
-		if self.prefs.save_lyrics_to_file:
-			self.write_lyrics(track_object)
+		self.write_lyrics(track_object)
 		self.lyrics_ren_mini.to_reload = True
 
 	def split_lyrics(self, track_object: TrackClass) -> None:
 		if track_object.lyrics:
 			track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
-			if self.prefs.save_lyrics_to_file:
-				self.write_lyrics(track_object)
+			self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 
 	def paste_lyrics_deco(self) -> list[ColourRGBA | None]:
@@ -24531,15 +24528,6 @@ class Over:
 				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
 				subtitle=_("Only runs during database rescan"))
 
-			y += round(45* gui.scale)
-			prefs.save_lyrics_to_file = self.toggle_square(
-				x, y, prefs.save_lyrics_to_file, _("Save all lyrics changes back to files"))
-			y += round(25* gui.scale)
-			if prefs.save_lyrics_to_file:
-				prefs.use_lrc_instead = self.toggle_square(
-					x + 10*gui.scale, y, prefs.use_lrc_instead, _("Use separate .LRC file for synced lyrics"),
-					subtitle=_("instead of file metadata"))
-
 		elif self.func_page == 3:
 			y += 23 * gui.scale
 			old = prefs.enable_remote
@@ -38649,7 +38637,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("autoscan_playlist_folder", prefs.autoscan_playlist_folder)
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
-	cf.update_value("save_lyrics_to_file", prefs.save_lyrics_to_file)
 	cf.update_value("use_lrc_instead", prefs.use_lrc_instead)
 
 	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
@@ -38809,12 +38796,9 @@ def load_prefs(bag: Bag) -> None:
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target", "picard",
 			"The name of the binary to call.")
-	prefs.save_lyrics_to_file = cf.sync_add(
-		"bool", "save_lyrics_to_file", prefs.save_lyrics_to_file,
-		"Save lyrics changes made in Tauon back to their original files.")
 	prefs.use_lrc_instead = cf.sync_add(
 		"bool", "use_lrc_instead", prefs.use_lrc_instead,
-		"Use separate .LRC files instead of file metadata for synced lyrics.")
+		"Save separate .LRC files instead of file metadata for synced lyrics.")
 
 	cf.br()
 	cf.add_text("[playback]")
