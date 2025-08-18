@@ -71,7 +71,7 @@ jobs:
             build \
             pyinstaller
           python -c "import sdl3"
-#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 
       - name: Build the project using python-build
         run: |
@@ -141,7 +141,7 @@ jobs:
       - name: Clone Flatpak repo
         run: |
           git clone --recurse-submodules https://github.com/flathub/com.github.taiko2k.tauonmb.git tauon-flatpak
-#          cd tauon-flatpak; git checkout tekoreless
+        #  cd tauon-flatpak; git checkout tekoreless
 
       - name: "[DEBUG] List all files"
         run: find .
@@ -226,7 +226,7 @@ jobs:
             build \
             pyinstaller \
             pytest
-#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
         #  source .venv/bin/activate
@@ -483,9 +483,9 @@ jobs:
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
-          curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TaskbarLib.tlb
-          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TauonSMTC.dll
+          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
+          curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/TaskbarLib.tlb
+          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/TauonSMTC.dll
           mkdir fonts
           curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
           curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
