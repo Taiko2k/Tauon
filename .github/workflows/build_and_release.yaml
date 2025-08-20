@@ -420,6 +420,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Read version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          with open("pyproject.toml","rb") as f:
+            data = tomllib.load(f)
+          # falls back cleanly if you ever switch to dynamic versioning
+          version = data.get("project", {}).get("version")
+          if not version:
+            raise SystemExit("project.version not found in pyproject.toml")
+            with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"version={version}\n")
+          PY
 
       - name: Setup pip cache-key
         uses: actions/cache@v4
@@ -528,7 +543,7 @@ jobs:
 
       - name: Replace Tauon version in .ISS
         run: |
-          sed -i 's|{{ tauon_version }}|8.2.0|g' extra/setup.iss
+          sed -i "s|{{ tauon_version }}|${{ steps.version.outputs.version }}|g" extra/setup.iss
 
       - name: Get current drive letter nad replace what's in .ISS
         shell: pwsh
@@ -550,7 +565,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-windows-installer
-          path: extra/Output/tauonsetup-8.2.0.exe
+          path: extra/Output/tauonsetup-${{ steps.version.outputs.version }}.exe
 
   get-info:
     runs-on: ubuntu-24.04
