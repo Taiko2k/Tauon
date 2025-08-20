@@ -478,8 +478,9 @@ jobs:
           version = data.get("project", {}).get("version")
           if not version:
             raise SystemExit("project.version not found in pyproject.toml")
-            with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-              fh.write(f"version={version}\n")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+            fh.write(f"version={version}\n")
+          print(f"Detected version: {version}")
           PY
 
       - name: Build the project using python-build
