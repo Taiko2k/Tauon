@@ -1,7 +1,7 @@
 [project]
 	name = "tauon-music-box"
 	# Should also be bumped in __main__.py and in two places in .github/workflows/build_and_release.yaml in the Windows section
-	version = "8.1.4"
+	version = "8.2.0"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
