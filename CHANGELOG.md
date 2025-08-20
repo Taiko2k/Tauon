@@ -4,13 +4,13 @@ Changelog
 
 ### v8.2.0 (UNRELEASED)
 
+ - **Added** New fully-featured lyrics editor, including LRC support (thanks @rexendevar)
+ - **Added** All lyrics changes will now write back to their original files (thanks @rexendevar)
+ - **Added** Spring-loaded clicking behavior to all context menus (thanks @rexendevar)
  - **Fixed** Setting "Background artist info download" not being respected
- - **Added** Spring-loaded clicking behavior to most menus
 
 ### v8.1.4
 
- - **Added** New fully-featured lyrics editor, including LRC support (thanks @rexendevar)
- - **Added** Option to automatically save changed lyrics back to the audio file
  - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Crash on radio playlist migration under some circumstances
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
