@@ -19746,7 +19746,7 @@ class TimedLyricsRen:
 
 
 		if self.inp.mouse_wheel:
-			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
+			scroll_distance = self.smooth_scroll.scroll("timed lyrics", 30*self.gui.scale)
 			if side_panel:
 				if self.coll((x, y, w, h)):
 					self.scroll_position += scroll_distance
