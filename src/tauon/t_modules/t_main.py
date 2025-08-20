@@ -38154,17 +38154,29 @@ class TimedLyricsEdit:
 		btx_top += widths[1] + x_gap
 
 		if can_load and not self.box_open:
+			# measure box height
+			box_width = 400*self.gui.scale
+			drop_w, text_height = self.ddt.get_text_wh(
+					_("Edit the opened lyrics in your text editor, then save the file and click \"Reload.\""),
+					self.font,
+					box_width - 2*offset,
+					True
+				)
+			button_height = self.line_height/2 + 14*self.gui.scale
+			box_height = text_height + button_height + offset
 			x, y = self.window_size[0]/2, self.window_size[1]/2
-			rect = ( x - 200*self.gui.scale, y - 100*self.gui.scale, 400*self.gui.scale, 200*self.gui.scale)
+
+			rect = ( x - 0.5*box_width, y - 0.5*box_height, box_width, box_height)
 			self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
 			txt = self.colours.box_button_text
-			x0 = x - 180*self.gui.scale
-			y0 = y - 80*self.gui.scale
-			self.ddt.text( [x0,y0,4,rect[2]-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Reload.\""), txt, self.font)
+			x0 = rect[0] + offset
+			y0 = rect[1] + offset
+			self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Reload.\""), txt, self.font)
 
-			if self.button(_("Reload"), rect[0] + offset, y + 87*self.gui.scale - offset, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes.")):
+			y0 += text_height - 7*self.gui.scale
+			if self.button(_("Reload"), rect[0] + offset, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes.")):
 				self.reload_lyric_file()
-			if self.button(_("Cancel"), rect[0] + rect[2] - widths[3] - offset, y + 87*self.gui.scale - offset, self.font, rd, self.colours.level_red, tooltip=_("Delete the file.")):
+			if self.button(_("Cancel"), rect[0] + rect[2] - widths[3] - offset, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file.")):
 				lyric_file.unlink()
 
 
@@ -38342,27 +38354,45 @@ class TimedLyricsEdit:
 
 			if self.struct_track in self.potential_uploads:
 				if not self.box_open:
-					self.synced_upload = self.view_is_synced
-					self.static_upload = not self.view_is_synced
+					self.upload_synced = self.view_is_synced
+					self.upload_static = not self.view_is_synced
 				self.box_open = True
-				gn = copy.deepcopy(self.colours.level_yellow)
-				gn.a = round(gn.a * 0.3)
-				offset = 20*self.gui.scale
-				x, y = self.window_size[0]/2, self.window_size[1]/2
-				rect = ( x - 200*self.gui.scale, y - 100*self.gui.scale, 400*self.gui.scale, 200*self.gui.scale)
-				self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
-				txt = self.colours.box_button_text
+
 				upload = self.potential_uploads[self.struct_track]
 
-				x0 = x - 180*self.gui.scale
-				y0 = y - 80*self.gui.scale
-				y1 = y0 + self.ddt.text( [x0,y0,4,rect[2]-2*offset], _("Upload lyrics for {artist} - {title}?").format(artist=upload["artistName"], title=upload["trackName"]), txt, self.font)
+				# measure the box height
+				box_width = 400*self.gui.scale
+				offset = 20*self.gui.scale
+				drop_w, text_height = self.ddt.get_text_wh(
+						_("Upload lyrics for {artist} - {title}?").format(artist=upload["artistName"], title=upload["trackName"]),
+						self.font,
+						box_width - 2*offset,
+						True
+					)
+				button_height = self.line_height/2 + 14*self.gui.scale
+				checkbox_height = 40*self.gui.scale
+				box_height = text_height + button_height + checkbox_height + offset
+
+
+
+				gn = copy.deepcopy(self.colours.level_yellow)
+				gn.a = round(gn.a * 0.3)
+				x, y = self.window_size[0]/2, self.window_size[1]/2
+				rect = ( x - 0.5*box_width, y - 0.5*box_height, box_width, box_height)
+				self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
+				txt = self.colours.box_button_text
+
+				x0 = rect[0] + offset
+				y0 = rect[1] + offset
+				self.ddt.text( [x0,y0,4,box_width-2*offset], _("Upload lyrics for {artist} - {title}?").format(artist=upload["artistName"], title=upload["trackName"]), txt, self.font)
+				y0 += text_height
 
 				width = self.ddt.get_text_w(_("Synced"), 13)
 				cancel = self.ddt.get_text_w(_("Cancel"), self.font)
-				self.upload_synced = self.tauon.pref_box.toggle_square(rect[0]+offset, y1, self.upload_synced, _("Synced"), self.inp.mouse_click)
-				self.upload_static = self.tauon.pref_box.toggle_square(rect[0]+3*offset+width, y1, self.upload_static, _("Unsynced"), self.inp.mouse_click)
-				if self.button(_("Upload"), rect[0] + offset, y + 87*self.gui.scale - offset, self.font, gn, self.colours.level_yellow, off=not(self.upload_synced or self.upload_static)):
+				self.upload_synced = self.tauon.pref_box.toggle_square(rect[0]+offset, y0, self.upload_synced, _("Synced"), self.inp.mouse_click)
+				self.upload_static = self.tauon.pref_box.toggle_square(rect[0]+3*offset+width, y0, self.upload_static, _("Unsynced"), self.inp.mouse_click)
+				y0 += checkbox_height - 7*self.gui.scale
+				if self.button(_("Upload"), rect[0] + offset, y0, self.font, gn, self.colours.level_yellow, off=not(self.upload_synced or self.upload_static)):
 					if not self.upload_synced:
 						upload["syncedLyrics"] = ""
 					if not self.upload_static:
@@ -38370,8 +38400,10 @@ class TimedLyricsEdit:
 					self.tauon.lrclib_uploads.append(upload)
 					self.tauon.thread_manager.ready("worker")
 					del self.potential_uploads[self.struct_track]
-				if self.button(_("Cancel"), rect[0] + rect[2] - cancel - offset, y + 87*self.gui.scale - offset, self.font, tooltip=_("Delete the file.")):
+				if self.button(_("Cancel"), rect[0] + rect[2] - cancel - offset, y0, self.font, tooltip=_("Delete the file.")) \
+					or ( self.inp.mouse_click and not self.coll(rect) ):
 					del self.potential_uploads[self.struct_track]
+					self.queue_next_frame = True
 			else:
 				self.box_open = False
 
