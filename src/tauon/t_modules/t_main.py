@@ -4869,6 +4869,9 @@ class Menu:
 		self.sub_y_postion: int = 0
 		Menu.instances.append(self)
 
+		self.spring_loading_timer: Timer = Timer()
+		self.can_be_spring_clicked: bool = False
+
 	def deco(self, _=_) -> list[ColourRGBA | None]:
 		return [self.colours.menu_text, self.colours.menu_background, None]
 
@@ -4975,6 +4978,8 @@ class Menu:
 
 				return
 
+
+
 			# ytoff = 3
 			y_run = round(self.pos[1])
 			to_call = None
@@ -4987,6 +4992,8 @@ class Menu:
 			ytoff = round(self.h * 0.71 - 13 * gui.scale)
 
 			x_run = self.pos[0]
+
+			springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
 
 			for i in range(len(self.items)):
 				#logging.info(self.items[i])
@@ -5048,14 +5055,18 @@ class Menu:
 					bg = alpha_blend(colours.menu_highlight_background, bg)
 
 					# Call menu items callback if clicked
-					if self.clicked:
-						if self.items[i].is_sub_menu is False:
+					if self.items[i].is_sub_menu is False:
+						if self.clicked or (springing and not self.inp.right_down and not self.inp.mouse_down ):
 							to_call = i
 							if self.items[i].set_ref is not None:
 								self.reference = self.items[i].set_ref
 							self.inp.mouse_down = False
-
-						else:
+							self.close_next_frame = True
+							gui.update += 1
+						if springing:
+							self.sub_active = -1
+					else:
+						if self.clicked or springing:
 							self.clicked = False
 							self.sub_active = self.items[i].sub_menu_number
 							self.sub_y_postion = y_run
@@ -5165,8 +5176,7 @@ class Menu:
 							this_select = True
 
 							# Call Callback
-							if self.clicked and not self.is_item_disabled(self.subs[self.sub_active][w]):
-
+							if ( self.clicked or ( springing and not self.inp.right_down and not self.inp.mouse_down ) ) and not self.is_item_disabled(self.subs[self.sub_active][w]):
 								# If callback needs args
 								if self.subs[self.sub_active][w].args is not None:
 									self.subs[self.sub_active][w].func(self.reference, self.subs[self.sub_active][w].args)
@@ -5177,6 +5187,8 @@ class Menu:
 
 								else:
 									self.subs[self.sub_active][w].func()
+								self.close_next_frame = True
+								gui.update += 1
 
 						label = fx[2] if fx[2] is not None else self.subs[self.sub_active][w].title
 
@@ -5221,6 +5233,7 @@ class Menu:
 
 				# Render the menu outline
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
+			self.can_be_spring_clicked = self.can_be_spring_clicked and ( self.inp.right_down or self.inp.mouse_down )
 
 	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
 		Menu.active = True
@@ -5259,6 +5272,8 @@ class Menu:
 				self.pos[1] = self.gui.panelY
 				self.pos[0] += 5 * self.gui.scale
 
+		self.spring_loading_timer.set()
+		self.can_be_spring_clicked = True
 		self.active = True
 
 class GallClass:
@@ -35975,6 +35990,10 @@ class ViewBox:
 		self.over_colour = ColourRGBA(255, 190, 50, 255)
 		self.off_colour = self.colours.grey(40)
 
+		self.spring_loading_timer: Timer = Timer()
+		self.can_be_spring_clicked: bool = False
+		self.springing: bool             = False
+
 		if not reload:
 			tauon.gui.combo_was_album = False
 
@@ -36008,6 +36027,9 @@ class ViewBox:
 		# self.gui.level_2_click = False
 		self.gui.update = 2
 
+		self.spring_loading_timer.set()
+		self.can_be_spring_clicked = True
+
 	def button(
 		self, x: float, y: float, asset: WhiteModImageAsset | LoadImageAsset, test, colour_get: ColourPulse2 | None = None, name: str = "Unknown", animate: bool = True, low: ColourRGBA = ColourRGBA(0,0,0,255), high: ColourRGBA = ColourRGBA(0,0,0,255)):
 		on = test()
@@ -36026,8 +36048,9 @@ class ViewBox:
 			self.tauon.tool_tip.test(x + asset.w + 10 * self.gui.scale, y - 15 * self.gui.scale, name)
 
 			col = True
-			if self.gui.level_2_click:
+			if self.gui.level_2_click or (self.springing and not self.tauon.inp.mouse_down):
 				fun = test
+				self.x_menu.active = False
 			if colour_get is None:
 				colour = self.over_colour
 
@@ -36159,6 +36182,8 @@ class ViewBox:
 		if self.clicked:
 			gui.level_2_click = True
 		self.clicked = False
+
+		self.springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
 
 		x = self.x - 40 * gui.scale
 
@@ -36300,6 +36325,8 @@ class ViewBox:
 		gui.level_2_click = False
 		if not self.x_menu.active:
 			self.active = False
+
+		self.can_be_spring_clicked = self.can_be_spring_clicked and self.tauon.inp.mouse_down
 
 class DLMon:
 
