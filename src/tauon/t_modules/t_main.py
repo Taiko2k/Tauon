@@ -1808,7 +1808,7 @@ class PlayerCtl:
 	#	 load_order.playlist = pctl.multi_playlist[pl].uuid_int
 	#	 tauon.load_orders.append(copy.deepcopy(load_order))
 
-	def resolve_full_playlist_path(self, playlist: TauonPlaylist, get_name=False):
+	def resolve_full_playlist_path(self, playlist: TauonPlaylist, get_name: bool = False) -> str:
 
 		target = playlist.playlist_file
 		if target.endswith(("/", "\\")):
@@ -1899,8 +1899,8 @@ class PlayerCtl:
 			return
 
 		code = self.gen_codes.get(playlist.uuid_int)
-		if code and not "self" in code:
-			logging.warning("Playlist to import has a generator!: " + playlist.title)
+		if code and "self" not in code:
+			logging.warning(f"Playlist to import has a generator!: {playlist.title}")
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
@@ -1911,7 +1911,10 @@ class PlayerCtl:
 		try:
 			current_size = path.stat().st_size
 		except FileNotFoundError as e:
-			logging.error(f"Playlist file not found: {path}")
+			logging.error(f"Playlist file not found: {path}")  # noqa: TRY400
+			return
+		except Exception:
+			logging.exception("Unknown exception!")
 			return
 
 		if current_size != playlist.file_size:
@@ -6707,10 +6710,9 @@ class Tauon:
 
 	def load_pls(self, path: str) -> None:
 		if os.path.isfile(path):
-			f = open(path)
-			lines = f.readlines()
-			self.read_pls(lines, path)
-			f.close()
+			with open(path) as f:
+				lines = f.readlines()
+				self.read_pls(lines, path)
 
 	def parse_xspf(self, path:str) -> tuple[ list[int], list[RadioStation], str]:
 		"""read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
@@ -6944,8 +6946,8 @@ class Tauon:
 		self.ddt.rect((x, y, w, h), self.colours.menu_background)
 		p = self.ddt.text((x + int(w / 2), y + 3 * self.gui.scale, 2), text, self.colours.menu_text, 312, bg=self.colours.menu_background)
 
-	def menu_standard_or_grey(self, bool: bool):
-		line_colour = self.colours.menu_text if bool else self.colours.menu_text_disabled
+	def menu_standard_or_grey(self, enabled: bool) -> list[ColourRGBA | None]:
+		line_colour = self.colours.menu_text if enabled else self.colours.menu_text_disabled
 
 		return [line_colour, self.colours.menu_background, None]
 
@@ -7114,7 +7116,7 @@ class Tauon:
 		self.gui.artist_info_panel ^= True
 		self.gui.update_layout = True
 
-	def toggle_bio_size_deco(self):
+	def toggle_bio_size_deco(self) -> list[ColourRGBA | str | None]:
 		line = _("Make Large Size")
 		if self.prefs.bio_large:
 			line = _("Make Compact Size")
@@ -8979,7 +8981,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder: str):
+		def best(folder: str) -> int:
 			#logging.info(folder)
 			total_star = 0
 			for item in folder:
@@ -9017,7 +9019,7 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[pl].title + "\" a pa>"
 		return None
 
-	def gen_folder_top_rating(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None):
+	def gen_folder_top_rating(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		if len(source) < 3:
@@ -9037,7 +9039,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder):
+		def best(folder) -> int:
 			return self.album_star_store.get_rating(self.pctl.get_track(folder[0]))
 
 		if get_sets:
@@ -9065,8 +9067,8 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[pl].title + "\" a rata>"
 		return None
 
-	def gen_lyrics(self, pl: int, custom_list: list[int] | None = None):
-		playlist = []
+	def gen_lyrics(self, pl: int, custom_list: list[int] | None = None)-> list[int] | None:
+		playlist: list[int] = []
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		for item in source:
@@ -9162,7 +9164,7 @@ class Tauon:
 
 		a_cache: dict[tuple[str, str], int] = {}
 
-		def key_import(index: int):
+		def key_import(index: int) -> int:
 			track = self.pctl.master_library[index]
 			cached = a_cache.get((track.album, track.parent_folder_name))
 			if cached is not None:
@@ -15469,7 +15471,7 @@ class Tauon:
 				self.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -16886,7 +16888,7 @@ class Tauon:
 						filesize = path.stat().st_size
 						if filesize and filesize != playlist.file_size:
 							logging.warning("Playlist has changed on disk - Skipping overwrite")
-							logging.warning("-- " + str(path))
+							logging.warning(f"-- {path}")
 							continue
 
 				self.export_playlist_box.run_export(id, warnings=False)
@@ -25720,12 +25722,12 @@ class Over:
 
 		y += round(25 * gui.scale)
 		if not self.msys and not self.macos:
-			x11_path = str(self.user_directory / "x11")
-			x11 = os.path.exists(x11_path)
+			x11_path = self.user_directory / "x11"
+			x11 = x11_path.exists()
 			old = x11
 			x11 = self.toggle_square(x, y, x11, _("Prefer x11 when running in Wayland"))
 			if old is False and x11 is True:
-				with open(x11_path, "a"):
+				with x11_path.open("a"):
 					pass
 			elif old is True and x11 is False:
 				os.remove(x11_path)
@@ -32635,7 +32637,7 @@ class ArtistList:
 			self.tauon.artist_info_box.get_data(artist, silent=True)
 			if not self.tauon.artist_info_box.get_data(artist, get_img_path=True):
 				if artist not in self.prefs.failed_artists:
-					logging.error("Failed fetching: " + artist)
+					logging.error(f"Failed fetching: {artist}")
 					self.prefs.failed_artists.append(artist)
 
 			self.to_fetch = ""
@@ -32768,7 +32770,7 @@ class ArtistList:
 		if viewing_pl_id in self.saves:
 			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
-	def draw_card_text_only(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
+	def draw_card_text_only(self, artist, x: int, y: int, w: int, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
 		album_mode = False
 		for albums in self.current_album_counts.values():
 			if len(albums) > 1:
@@ -38634,7 +38636,7 @@ def worker1(tauon: Tauon) -> None:
 
 	def add_from_cue(path: str) -> int | None:
 		if not tauon.msys:  # Windows terminal doesn't like unicode
-			logging.info("Reading CUE file: " + path)
+			logging.info(f"Reading CUE file: {path}")
 
 		try:
 			try:
@@ -38766,7 +38768,7 @@ def worker1(tauon: Tauon) -> None:
 									if ".cue" not in item.lower() and item.split(".")[-1].lower() in bag.formats.DA:
 										file_name = item
 										file_path = os.path.join(os.path.dirname(path), file_name)
-										logging.info("-- Source found at: " + file_path)
+										logging.info(f"-- Source found at: {file_path}")
 										break
 							else:
 								logging.error("-- Abort: Source file not found")
@@ -38949,7 +38951,7 @@ def worker1(tauon: Tauon) -> None:
 			return 0
 
 		if path.lower().endswith(".xspf"):
-			logging.info("Found XSPF file at: " + path)
+			logging.info(f"Found XSPF file at: {path}")
 			tauon.load_xspf(path)
 			return 0
 
@@ -39062,7 +39064,7 @@ def worker1(tauon: Tauon) -> None:
 								logging.error("Extract error, expected directory not found")
 
 						if True and not error and prefs.auto_del_zip:
-							logging.info("Moving archive file to trash: " + path)
+							logging.info(f"Moving archive file to trash: {path}")
 							try:
 								send2trash(path)
 							except Exception:
@@ -39283,7 +39285,7 @@ def worker1(tauon: Tauon) -> None:
 					try:
 						if tauon.check_auto_update_okay(code, pl=i):
 							if not tauon.pl_is_locked(i):
-								logging.info("Reloading smart playlist: " + plist.title)
+								logging.info(f"Reloading smart playlist: {plist.title}")
 								tauon.regenerate_playlist(i, silent=True)
 								time.sleep(0.02)
 					except Exception:
@@ -39425,7 +39427,7 @@ def worker1(tauon: Tauon) -> None:
 						folder_name = ref_track_object.parent_folder_name
 						break
 
-				logging.info("Transcoding folder: " + folder_name)
+				logging.info(f"Transcoding folder: {folder_name}")
 
 				# Remove any existing matching folder
 				if (prefs.encoder_output / folder_name).is_dir():
@@ -42053,7 +42055,7 @@ def main(holder: Holder) -> None:
 			tauon.open_uri(item)
 
 	sdl_version = sdl3.SDL_GetVersion()
-	logging.info("Using SDL version: " + str(sdl_version))
+	logging.info(f"Using SDL version: {str(sdl_version)}")
 
 	# C-ML
 	# if prefs.backend == 2:
@@ -43581,7 +43583,7 @@ def main(holder: Holder) -> None:
 
 					load_theme(colours, Path(theme_item[0]))
 					tauon.deco.load(colours.deco)
-					logging.info("Applying theme: " + gui.theme_name)
+					logging.info(f"Applying theme: {gui.theme_name}")
 
 					if colours.lm:
 						info_icon.colour = ColourRGBA(60, 60, 60, 255)
@@ -46960,7 +46962,7 @@ def main(holder: Holder) -> None:
 
 				y -= 7 * gui.scale
 				for t in range(12):
-					met = False if gui.level_peak[1] < t else True
+					met = not gui.level_peak[1] < t
 					if gui.level_peak[1] < 0.2:
 						met = False
 
