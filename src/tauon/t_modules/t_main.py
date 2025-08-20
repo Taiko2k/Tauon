@@ -7711,18 +7711,18 @@ class Tauon:
 		return [line_colour, self.colours.menu_background, None]
 
 
-	def write_lyrics(self, track: TrackClass, synced: bool = False) -> None:
+	def write_lyrics(self, track: TrackClass, synced: bool = False, loud: bool = False) -> bool:
 		if synced:
 			lyrics = track.synced
 		else:
 			lyrics = track.lyrics
-		if track.is_network:
-			logging.info(f"Cannot write lyrics to network track {track.artist} - {track.title}")
+		if track.is_network or not track.fullpath:
+			logging.warning(f"Cannot write lyrics to network track {track.artist} - {track.title}")
 		if synced and self.prefs.use_lrc_instead:
 			with open( Path(track.fullpath).with_suffix(".lrc"), "w") as lrc:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
-				return
+				return True
 		try:
 			if track.file_ext == "MP3":
 				audio = mutagen.id3.ID3(track.fullpath)
@@ -7753,19 +7753,26 @@ class Tauon:
 				audio.save()
 				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			else:
-				self.show_message(
-					_("Could not write lyrics to file"),
-					_("We don't know how to write lyrics to the filetype: ") + track.file_ext,
-					mode="error"
-				)
+				if loud:
+					self.show_message(
+						_("Could not write lyrics to file"),
+						_("We don't know how to write lyrics to the filetype: ") + track.file_ext,
+						_("(We still saved to the internal database)"),
+						mode="error"
+					)
+				return False
 		except Exception:
 			logging.exception()
-			self.show_message(
-				_("Could not write lyrics to file"),
-				_("File doesn't exist or is not accessible."),
-				mode="error"
-			)
+			if loud:
+				self.show_message(
+					_("Could not write lyrics to file"),
+					_("File doesn't exist or is not accessible"),
+					_("(We still saved to the internal database)"),
+					mode="error"
+				)
+			return False
 		self.lyrics_ren_mini.to_reload = True
+		return True
 		# TODO: add more formats
 
 
@@ -37286,32 +37293,32 @@ class TimedLyricsEdit:
 		else:
 			if timed > 0:
 				track.synced = lyrics
-				self.tauon.write_lyrics(track, True)
-				if over and not self.prefs.use_lrc_instead:
-					self.tauon.show_message(
-						_("Synced lyrics saved successfully"),
-						_("Destroyed previously existing lyrics in file"),
-						mode="done"
-					)
-				else:
-					self.tauon.show_message(
-						_("Synced lyrics saved successfully"),
-						mode="done"
-					)
+				if self.tauon.write_lyrics(track, True, True):
+					if over and not self.prefs.use_lrc_instead:
+						self.tauon.show_message(
+							_("Synced lyrics saved successfully"),
+							_("Destroyed previously existing lyrics in file"),
+							mode="done"
+						)
+					else:
+						self.tauon.show_message(
+							_("Synced lyrics saved successfully"),
+							mode="done"
+						)
 			else:
 				track.lyrics = lyrics
-				self.tauon.write_lyrics(track)
-				if over:
-					self.tauon.show_message(
-						_("Unsynced lyrics saved successfully"),
-						_("Destroyed previously existing lyrics in file"),
-						mode="done"
-					)
-				else:
-					self.tauon.show_message(
-						_("Unsynced lyrics saved successfully"),
-						mode="done"
-					)
+				if self.tauon.write_lyrics(track, False, True):
+					if over:
+						self.tauon.show_message(
+							_("Unsynced lyrics saved successfully"),
+							_("Destroyed previously existing lyrics in file"),
+							mode="done"
+						)
+					else:
+						self.tauon.show_message(
+							_("Unsynced lyrics saved successfully"),
+							mode="done"
+						)
 			self.test_update()
 		self.queue_next_frame = True
 
