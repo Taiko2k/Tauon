@@ -36,6 +36,7 @@ import time
 import urllib.parse
 import zipfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from gi.repository import GLib
@@ -151,7 +152,7 @@ class TauonPlaylist:
 	relative_export: bool = False
 	export_type: str = "xspf"
 	file_size: int = 0             # if this is different from last time we'll rescan it
-		
+
 
 
 def _(m: str) -> str:
@@ -447,8 +448,7 @@ id3_genre_dict = {
 }
 
 def tmp_cache_dir() -> str:
-	tmp_dir = GLib.get_tmp_dir()
-	return os.path.join(tmp_dir, "TauonMusicBox")
+	return str(Path(GLib.get_tmp_dir()) / "TauonMusicBox")
 
 def point_proximity_test(a: list[int], b: list[int], p: float) -> bool:
 	"""Test given proximity between two 2d points to given square"""
@@ -590,7 +590,7 @@ def colour_slide(a: ColourRGBA, b: ColourRGBA, x: int, x_limit: int) -> ColourRG
 
 def hex_to_rgb(colour: str) -> list[int]:
 	colour = colour.strip("#")
-	return list(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + [255]
+	return [int(colour[i:i + 2], 16) for i in (0, 2, 4)] + [255]
 
 def check_equal(lst: list[int]) -> bool:
 	"""Check if all the numbers in a list are the same"""
@@ -736,7 +736,7 @@ def is_music_related(string: str) -> bool:
 			return True
 	return False
 
-def archive_file_scan(path: str, extensions: str, launch_prefix: str="") -> float:
+def archive_file_scan(path: str, extensions: str, launch_prefix: str = "") -> float:
 	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
 	#logging.info(path)
@@ -892,7 +892,7 @@ def get_artist_strip_feat(track_object: TrackClass) -> str:
 				artist_name = track_object.album_artist
 	return artist_name
 
-def get_artist_safe(track: TrackClass) -> str:
+def get_artist_safe(track: TrackClass | None) -> str:
 	if track:
 		artist = track.album_artist
 		if not artist:
@@ -900,8 +900,7 @@ def get_artist_safe(track: TrackClass) -> str:
 		artist = filename_safe(artist)
 		artist = artist.split("feat")[0]
 		artist = artist.split(", ")[0]
-		artist = artist.split("; ")[0]
-		return artist
+		return artist.split("; ")[0]
 	return ""
 
 def get_split_artists(track: TrackClass) -> list[str]:
@@ -1005,7 +1004,7 @@ def reduce_paths(paths: list[str]) -> None:
 		if not remove_path:
 			break
 
-def fit_box(inner: dict, outer: dict) -> tuple[int, int]:
+def fit_box(inner: tuple[int, int], outer: tuple[int, int]) -> tuple[int, int]:
 	scale = min(outer[0]/inner[0], outer[1]/inner[1])
 	return round(inner[0] * scale), round(inner[1] * scale)
 

@@ -30,7 +30,8 @@ import gi
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib
 
-from tauon.t_modules.t_extra import filename_to_metadata, star_count2
+from tauon.t_modules.t_enums import PlayingState  # noqa: E402
+from tauon.t_modules.t_extra import filename_to_metadata, star_count2  # noqa: E402
 
 if TYPE_CHECKING:
 	from gi.repository import AppIndicator3
@@ -137,11 +138,11 @@ class Gnome:
 					tauon.tray_lock.acquire()
 				tauon.tray_releases -= 1
 
-				if pctl.playing_state in (1, 3):
+				if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 					if self.indicator_mode != 1:
 						self.indicator_mode = 1
 						self.indicator_play()
-				elif pctl.playing_state == 2:
+				elif pctl.playing_state == PlayingState.PAUSED:
 					if self.indicator_mode != 2:
 						self.indicator_mode = 2
 						self.indicator_pause()
@@ -157,7 +158,7 @@ class Gnome:
 					elif tr and tr.filename:
 						text = tr.filename
 
-					if pctl.playing_state == 0:
+					if pctl.playing_state == PlayingState.STOPPED:
 						text = ""
 
 				if self.indicator_launched and text != self.tray_text:
@@ -283,9 +284,9 @@ class Gnome:
 
 			def update_play_lock() -> None:
 				if prefs.block_suspend:
-					if pctl.playing_state in (1, 3) and tauon.play_lock is None:
+					if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM) and tauon.play_lock is None:
 						tauon.play_lock = iface.Inhibit("idle", "Tauon Music Box", "Audio is playing", "block")
-					elif pctl.playing_state not in (1, 3) and tauon.play_lock is not None:
+					elif pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM) and tauon.play_lock is not None:
 						del tauon.play_lock
 						tauon.play_lock = None
 				elif tauon.play_lock is not None:
@@ -297,12 +298,12 @@ class Gnome:
 			def PrepareForSleep(active: int) -> None:
 				if active == 1 and tauon.sleep_lock is not None:
 					logging.info("System is suspending!")
-					if pctl.playing_state == 3 and not tauon.spot_ctl.coasting:
+					if pctl.playing_state == PlayingState.URL_STREAM and not tauon.spot_ctl.coasting:
 						pctl.stop(block=True)
 						if prefs.resume_play_wake:
-							pctl.playing_state = 3
+							pctl.playing_state = PlayingState.URL_STREAM
 							self.resume_playback = True
-					elif pctl.playing_state in (1, 3):
+					elif pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						tauon.pctl.pause()
 						if prefs.resume_play_wake:
 							self.resume_playback = True
@@ -313,8 +314,8 @@ class Gnome:
 					tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
 					if self.resume_playback:
 						self.resume_playback = False
-						if pctl.playing_state == 3:
-							pctl.playing_state = 0
+						if pctl.playing_state == PlayingState.URL_STREAM:
+							pctl.playing_state = PlayingState.STOPPED
 							time.sleep(4)
 							pctl.play()
 							logging.info("Resume Radio")
@@ -360,15 +361,15 @@ class Gnome:
 					def update(self, force: bool = False) -> None:
 						changed = {}
 
-						if pctl.playing_state in (1, 3):
+						if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 							if self.player_properties["PlaybackStatus"] != "Playing":
 								self.player_properties["PlaybackStatus"] = "Playing"
 								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
-						elif pctl.playing_state == 0:
+						elif pctl.playing_state == PlayingState.STOPPED:
 							if self.player_properties["PlaybackStatus"] != "Stopped":
 								self.player_properties["PlaybackStatus"] = "Stopped"
 								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
-						elif pctl.playing_state == 2:
+						elif pctl.playing_state == PlayingState.PAUSED:
 							if self.player_properties["PlaybackStatus"] != "Paused":
 								self.player_properties["PlaybackStatus"] = "Paused"
 								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
@@ -381,7 +382,7 @@ class Gnome:
 						if track is not None and (track.index != self.playing_index or force):
 							self.playing_index = track.index
 							id = f"/com/tauon/{track.index}/{abs(pctl.playlist_playing_position)}"
-							if pctl.playing_state == 3:
+							if pctl.playing_state == PlayingState.URL_STREAM:
 								id = "/com/tauon/radio"
 
 							d = {
@@ -424,12 +425,12 @@ class Gnome:
 							self.player_properties["Metadata"] = dbus.Dictionary(d, signature="sv")
 							changed["Metadata"] = self.player_properties["Metadata"]
 
-							if pctl.playing_state == 3 and self.player_properties["CanPause"] is True:
+							if pctl.playing_state == PlayingState.URL_STREAM and self.player_properties["CanPause"] is True:
 								self.player_properties["CanPause"] = False
 								self.player_properties["CanSeek"] = False
 								changed["CanPause"] = self.player_properties["CanPause"]
 								changed["CanSeek"] = self.player_properties["CanSeek"]
-							elif pctl.playing_state == 1 and self.player_properties["CanPause"] is False:
+							elif pctl.playing_state == PlayingState.PLAYING and self.player_properties["CanPause"] is False:
 								self.player_properties["CanPause"] = True
 								self.player_properties["CanSeek"] = True
 								changed["CanPause"] = self.player_properties["CanPause"]
@@ -598,7 +599,7 @@ class Gnome:
 					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
 					def PlayPause(self) -> None:
 						tauon.wake()
-						if pctl.playing_state == 3:
+						if pctl.playing_state == PlayingState.URL_STREAM:
 							pctl.stop()  # Stop if playing radio
 						else:
 							pctl.play_pause()

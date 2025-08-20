@@ -325,7 +325,7 @@ class Flac(TrackFile):
 				self.read_vorbis(f)
 			if z[1] == 5:
 				logging.info("Tag Scan: Flac file has native embedded CUE. Not supported")
-				logging.info("      In file: " + self.filepath)
+				logging.info(f"      In file: {self.filepath}")
 				# mark = f.tell()
 				#
 				# logging.info("Found flac cue")
@@ -811,30 +811,30 @@ class Wav(TrackFile):
 		f.read(12)
 
 		while True:
-			type = f.read(4)
-			if not type:
+			wav_type = f.read(4)
+			if not wav_type:
 				break
 			remain = int.from_bytes(f.read(4), "little")
 
-			if type != b"LIST":
+			if wav_type != b"LIST":
 				f.seek(remain, io.SEEK_CUR)
 			else:
-				INFO = f.read(4)
-				if INFO == b"INFO":
+				info = f.read(4)
+				if info == b"INFO":
 					remain -= 4
 					while remain > 0:
-						id = f.read(4).decode()
+						tag_id = f.read(4).decode()
 						size = int.from_bytes(f.read(4), "little")
 						value = f.read(size)[:-1].decode("unicode_escape")
-						if id == "ITRK":
+						if tag_id == "ITRK":
 							self.track_number = value
-						if id == "IGNR":
+						if tag_id == "IGNR":
 							self.genre = value
-						if id == "IART":
+						if tag_id == "IART":
 							self.artist = value
-						if id == "INAM":
+						if tag_id == "INAM":
 							self.title = value
-						if id == "IPRD":
+						if tag_id == "IPRD":
 							self.album = value
 
 						if size % 2 == 1:

@@ -83,7 +83,7 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 def load_theme(colours: ColoursClass, path: Path) -> None:
 	with path.open(encoding="utf-8") as f:
 		content = f.readlines()
-		
+
 		for p in content:
 			p = p.strip()
 			if p.startswith("#"):
@@ -133,7 +133,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				status_text_temp = get_colour_from_line(p)
 				colours.status_text_over = status_text_temp
 				colours.status_text_normal = rgb_add_hls(status_text_temp, 0, 0.30, -0.15)
-				
+
 			if "corner button off" in p:
 				colours.corner_button = get_colour_from_line(p)
 			if "corner button on" in p:

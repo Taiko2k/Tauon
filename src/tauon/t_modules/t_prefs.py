@@ -152,7 +152,7 @@ class Prefs:
 	plex_servername = ""
 
 	koel_username = "admin@example.com"
-	koel_password = "admin"
+	koel_password = "admin"  # noqa: S105
 	koel_server_url = "http://localhost:8050"
 
 	auto_lyrics = False  # Function has been disabled
