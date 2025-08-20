@@ -757,7 +757,6 @@ class GuiVar:
 		self.mini_mode_return_maximized = False
 
 		self.opened_config_file = False
-		self.opened_lyric_file = False
 
 		self.notify_main_id = None
 
@@ -24554,7 +24553,7 @@ class Over:
 			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
 			prefs.autoscan_playlist_folder = self.toggle_square(
 				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
-				subtitle=_("Only runs during database rescan"))
+				subtitle=_("Only runs during \"Rescan All Folders\""))
 
 		elif self.func_page == 3:
 			y += 23 * gui.scale
@@ -36931,67 +36930,69 @@ class TimedLyricsEdit:
 		self.window_size   = tauon.window_size
 		self.scroll        = tauon.smooth_scroll
 
-		self.struct_track: int = -1 #what track are we on
-		self.structure: list[ tuple[ str, float, str] ] = []
-		# each line contains a timestamp as a string, that timestamp's actual time, and the line itself
-		self.line_edit_box = TextBox2(tauon=tauon)
-		self.x_posns: list[int] = [] # to display buttons etc in the right places
-		self.line_active: int = 0
+		# main boys big kahunas
+		self.struct_track:                          int = -1 # what track are we on
+		self.structure: list[ tuple[ str, float, str] ] = [] # backbone of synced editing system
+												             # each line contains a timestamp as a string, that timestamp's actual time, and the line itself
+		self.line_edit_box                              = TextBox2(tauon=tauon) # there are no multi line text boxes so we have to reuse the same one for every single line
+		self.x_posns:                         list[int] = [] # to display text editing buttons in the right places
+		self.line_active:                           int = 0  # which lyric is currently playing
+		self.view_is_synced:                       bool = True # which view do we display
+		self.text:                                  str = "" # unsynced lyrics after lrc stuff is filtered out
 
-		self.temp_w: int = 0
-		self.temp_scale: float = self.gui.scale
-		self.temp_line: int = -1
+		# icons
+		self.synced_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "synced.png", True)
+		self.unsynced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "unsynced.png", True)
 
 		# these ones are only stored from one frame to the next
-		self.pausing: bool = False
-		self.cursor: int | None = None
-		self.big_paste: bool = False
-		self.continuous: bool = True
-		self.queue_next_frame: bool = False
+		self.pausing:          bool = False # prevents typing a space in text box when pausing
+		self.cursor:     int | None = None  # tracks text box cursor position across frames
+		self.big_paste:        bool = False # do special things the frame after receiving a multi-line paste
+		self.continuous:       bool = True  # track change behavior should only happen if the editor wasn't closed when the track changed
+		self.queue_next_frame: bool = False # update gui when things happen
+		self.temp_line:         int = -1    # special scroll thingy when the line advances while it's offscreen
+		self.temp_w:            int = 0     # these two are used to recalculate self.x_posns when the user...
+		self.temp_scale:      float = self.gui.scale # ...resizes or rescales the window
 
 		# scrolling
-		self.scroll_position: int = 0
-		self.allow_scroll: bool = True #cancels auto scroll correction when adding & removing lines
-		self.font: int = 20
-		self.line_height = round(self.ddt.get_text_w("?", self.font, True))
-		self.yy: int = self.line_height + round(10 * self.gui.scale) #line height plus spacing
+		self.scroll_position: int = 0 # measured in pixels - greater means scrolled further down - 0 means centered on active line
+		self.lyrics_position: int = 0 # same thing but for the static view
+		self.allow_scroll:   bool = True # cancels auto scroll correction when adding & removing lines. probably doesnt actually do anything
+		self.font:            int = 20
+		self.line_height:     int = round(self.ddt.get_text_w("?", self.font, True))
+		self.yy:              int = self.line_height + round(10 * self.gui.scale) #line height plus spacing
 
 		# timers
-		self.recenter_timeout = Timer()
-		self.autosave_timer = Timer()
-		self.autosaved: bool = True
-		self.text_timer = Timer()
+		self.recenter_timeout = Timer() # when playing, snap back to current line after 5 seconds no scrolling
+		self.autosave_timer   = Timer() # create autosave a couple seconds after most recent edit
+		self.autosaved:  bool = True    # then don't do it again until next edit
+		self.text_timer       = Timer() # should display lyrics search indicator
 
 		# nudge timestamp
-		self.check_timer = Timer()
-		self.check_line: int = -1
-		self.check: bool | None = None
+		self.check_timer        = Timer() # preview timing after half a second
+		self.check_line:    int = -1
+		self.check: bool | None = None    # True if previewing now, False if waiting to preview, None if disengaged
 
-		#lrclib upload
-		self.upload_synced: bool = True
-		self.upload_static: bool = False
+		# lrclib upload
+		self.upload_synced:               bool = True
+		self.upload_static:               bool = False
 		self.potential_uploads: dict[int:dict] = {}
-		self.box_open: bool = False
+		self.box_open:                    bool = False
 
-		self.menu = Menu(tauon, 135)
-		self.reload_menu()
-
-		#unsynced view
-		self.opened_lyric_file: bool = False
-		self.view_is_synced: bool = True
-		self.lyrics_position: int = 0
-		self.text: str = ""
-		self.synced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "synced.png", True)
-		self.unsynced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "unsynced.png", True)
+		# menus
+		self.menu          = Menu(tauon, 135)
 		self.unsynced_menu = Menu(tauon, 135)
-
+		self.reload_menu()
 		self.unsynced_menu.add(MenuItem(_("Exit Lyrics Editor"), self.exit_lyrics_editor, pass_ref=False))
 		self.unsynced_menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, pass_ref=True))
 		self.unsynced_menu.add(MenuItem(_("Copy From Synced"), self.copy_from_synced, pass_ref=False))
+		self.unsynced_menu.add(MenuItem(_("Upload To LRCLIB"), self.upload_both_to_lrclib, pass_ref=False))
 
 
+	# FUNCTIONS FROM THE RIGHT CLICK MENU
 
 	def reload_menu(self) -> None:
+		'''Recreates the context menu to properly display checkmarks'''
 		self.menu.subs = []
 		self.menu.sub_number = 0
 		self.menu.items = []
@@ -37087,18 +37088,6 @@ class TimedLyricsEdit:
 		track = self.pctl.master_library[self.struct_track]
 		self.structurize_current(track, True)
 
-	def toggle_lrc(self) -> None:
-		self.prefs.use_lrc_instead = not self.prefs.use_lrc_instead
-		if not self.prefs.use_lrc_instead:
-			self.tauon.show_message(
-				_("Be careful!"),
-				_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
-				_("Saving one type will now OVERWRITE the other in the files. (Tauon itself doesn't care.)"),
-				mode="warning"
-			)
-		self.reload_menu()
-
-
 	def copy_from_synced(self) -> None:
 		self.text = ""
 		for line in self.structure:
@@ -37117,14 +37106,28 @@ class TimedLyricsEdit:
 		}
 		self.potential_uploads[self.struct_track] = p
 
+	def toggle_lrc(self) -> None:
+		self.prefs.use_lrc_instead = not self.prefs.use_lrc_instead
+		if not self.prefs.use_lrc_instead:
+			self.tauon.show_message(
+				_("Be careful!"),
+				_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
+				_("Saving one type will now OVERWRITE the other in the files. (Tauon itself doesn't care.)"),
+				mode="warning"
+			)
+		self.reload_menu()
+
+
+
 
 	def button(
 			self, text: str, x_pos: int, y_pos: int, font: int,
 			bg: ColourRGBA | None = None, active_bg: ColourRGBA | None = None,
 			txt: ColourRGBA | None = None, active_txt: ColourRGBA | None = None,
 			tooltip: str = "", off: bool = False, return_rect: bool = False) -> bool | None:
-		'''PSA for anyone making a new button function: use fields.add(rect) to make the gui
-		refresh when you pan the mouse over it'''
+		'''button centered around text display. off will disable the button if the condition is true,
+		return_rect will return the rect as a second parameter. returns True for click, False for right click,
+		None for nothing'''
 
 		if bg is None:
 			bg = self.colours.box_button_background
@@ -37232,38 +37235,6 @@ class TimedLyricsEdit:
 		self.autosaved = True
 		self.queue_next_frame = True
 
-	def previous(self, prev: float) -> int:
-		self.pctl.seek_time(prev)
-		if ((len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0)) and self.structure[self.line_active][1]>prev \
-			and not (self.inp.key_lalt or self.inp.key_ralt):
-			stamp, time, line = self.structure[self.line_active]
-			stamp = "??:??.??"
-			time = -1.0
-			full_line = ( stamp, time, line )
-			self.structure[self.line_active] = full_line
-			if self.line_active == len(self.structure)-1 and line == "":
-				del self.structure[self.line_active]
-		return 1
-		self.queue_next_frame = True
-
-	def time_next_line(self, current: bool = False) -> None:
-		time = self.pctl.decode_time
-		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
-			# if current line needs to be timed, time it
-			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
-			self.structure[self.line_active] = full_line
-		else:
-			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
-				self.line_active += 1
-			if self.line_active == len(self.structure)-1 or (self.inp.key_rctrl_down or self.inp.key_ctrl_down):
-				self.structure.insert( self.line_active+1, (self.get_stamp_from_time(time), time, "") )
-			else:
-				full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
-				self.structure[self.line_active+1] = full_line
-			self.scroll_position -= self.yy
-			self.allow_scroll = False
-		self.queue_next_frame = True
-
 	def save(self, synced: bool = True) -> None:
 		lyrics: str = ""
 		warning: list[bool] = [False, False, False]
@@ -37365,7 +37336,6 @@ class TimedLyricsEdit:
 				return True
 		return False
 
-
 	def autosave(self) -> None:
 		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
@@ -37419,18 +37389,52 @@ class TimedLyricsEdit:
 		else:
 			subprocess.call(["xdg-open", target])
 
+
+
+	# SYNCED EDITING FUNCTIONS
+
+	def previous(self, prev: float) -> None:
+		self.pctl.seek_time(prev)
+		if ((len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0)) and self.structure[self.line_active][1]>prev \
+			and not (self.inp.key_lalt or self.inp.key_ralt):
+			stamp, time, line = self.structure[self.line_active]
+			stamp = "??:??.??"
+			time = -1.0
+			full_line = ( stamp, time, line )
+			self.structure[self.line_active] = full_line
+			if self.line_active == len(self.structure)-1 and line == "":
+				del self.structure[self.line_active]
+		self.queue_next_frame = True
+
+	def time_next_line(self, current: bool = False) -> None:
+		time = self.pctl.decode_time
+		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
+			# if current line needs to be timed, time it
+			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
+			self.structure[self.line_active] = full_line
+		else:
+			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
+				self.line_active += 1 # increment until we're not going to timestanmp a tag
+			if self.line_active == len(self.structure)-1 or (self.inp.key_rctrl_down or self.inp.key_ctrl_down):
+				self.structure.insert( self.line_active+1, (self.get_stamp_from_time(time), time, "") )
+			else:
+				full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
+				self.structure[self.line_active+1] = full_line
+			self.scroll_position -= self.yy
+			self.allow_scroll = False
+		self.queue_next_frame = True
+
 	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool:
 		stamp, time, line = self.structure[current_line]
+		if time == -1.0:
+			return
+
 		if self.inp.key_ctrl_down or self.inp.key_rctrl_down:
 			adjust = 0.01
 		else:
 			adjust = 0.1
 
-		if time == -1.0:
-			return
-
 		old_time = time
-
 		if self.inp.mouse_wheel:
 			time -= self.inp.mouse_wheel * adjust
 			if active:
@@ -37443,28 +37447,28 @@ class TimedLyricsEdit:
 				self.check = False
 				self.check_line = current_line
 				self.check_timer.set()
-		else:
+
+		if old_time == time:
 			return False
 
-		if old_time != time:
-			time = round(time, 2)
-			if current_line != 0 and self.structure[current_line - 1][1] != -1.0:
-				time = max( time, self.structure[current_line - 1][1] )
-			if current_line != len(self.structure)-1 and self.structure[current_line+1][1] != -1.0:
-				time = min( time, self.structure[current_line+1][1] )
-			time = max( time, 0 )
-			stamp = self.get_stamp_from_time(time)
-			self.structure[current_line] = (stamp,time,line)
-			self.autosave_timer.set()
-			self.autosaved = False
-			if active:
-				self.scroll_position += (current_line - self.line_active) * self.yy
-			return True
+		time = round(time, 2)
+		if current_line != 0 and self.structure[current_line - 1][1] != -1.0:
+			time = max( time, self.structure[current_line - 1][1] )
+		if current_line != len(self.structure)-1 and self.structure[current_line+1][1] != -1.0:
+			time = min( time, self.structure[current_line+1][1] )
+		time = max( time, 0 )
+		stamp = self.get_stamp_from_time(time)
+		self.structure[current_line] = (stamp,time,line)
+		self.autosave_timer.set()
+		self.autosaved = False
+		if active:
+			self.scroll_position += (current_line - self.line_active) * self.yy
 		self.queue_next_frame = True
+		return True
 
 	# for scrolling timestamps - will play one second of audio after 0.5 seconds of waiting
 	# to make sure the timestamp is correct
-	def check_if_time_is_good(self, line_number: int) -> bool:
+	def check_if_time_is_good(self, line_number: int) -> None:
 		if self.check == False and self.check_timer.get() > 0.5 and self.structure[line_number][1] >= 0 and line_number == self.check_line:
 			self.recenter_timeout.set()
 			if self.pctl.playing_state != PlayingState.PLAYING:
@@ -37482,8 +37486,6 @@ class TimedLyricsEdit:
 				self.check = None
 				self.scroll_position += (line_number - self.line_active) * self.yy
 			self.queue_next_frame = True
-			return True
-		return False
 
 	def accept_paste(self, current_line: int) -> None:
 		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
@@ -37530,6 +37532,7 @@ class TimedLyricsEdit:
 				self.big_paste = True
 
 	def settings_for_one_line(self, line_number: int, y_pos: int) -> None:
+		'''Deals with editing and manipulating synced lines while paused'''
 		# x_posns contains in order: position for delete timestamp button, position for stamp teleport, position for text box, position for end of line
 		if self.pausing:
 			return
@@ -37689,7 +37692,7 @@ class TimedLyricsEdit:
 			self.autosave_timer.set()
 			self.autosaved = False
 
-	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> bool | None:
+	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> None:
 		line_ys: list[ tuple[ tuple[ int, int ], float ] | None ] = []
 		# saves collider positions alongside their respective lines
 
@@ -38013,8 +38016,8 @@ class TimedLyricsEdit:
 		else:
 			self.pausing = False
 
-		return None
 
+	# UNSYNCED EDITING FUNCTIONS
 
 	def edit_static(self) -> None:
 		track_object = self.pctl.master_library[self.struct_track]
@@ -38032,7 +38035,6 @@ class TimedLyricsEdit:
 			subprocess.call(["open", "-t", target])
 		else:
 			subprocess.call(["xdg-open", target])
-		self.opened_lyric_file = True
 
 
 	def reload_lyric_file(self) -> None:
@@ -38046,7 +38048,6 @@ class TimedLyricsEdit:
 				self.text = new_lyrics
 				track.lyrics = new_lyrics
 				# self.tauon.write_lyrics(track)
-		self.opened_lyric_file = False
 		#self.test_update()
 		target.unlink()
 		self.queue_next_frame = True
@@ -38120,7 +38121,7 @@ class TimedLyricsEdit:
 			x_gap = self.yy
 
 		lyric_file = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-		can_load = self.opened_lyric_file and lyric_file.is_file()
+		can_load = lyric_file.is_file()
 
 		if self.button("   ", buttons_x, buttons_y, self.font):
 			self.view_is_synced = True
@@ -38155,8 +38156,6 @@ class TimedLyricsEdit:
 		if can_load and not self.box_open:
 			x, y = self.window_size[0]/2, self.window_size[1]/2
 			rect = ( x - 200*self.gui.scale, y - 100*self.gui.scale, 400*self.gui.scale, 200*self.gui.scale)
-			if self.coll(rect):
-				self.queue_next_frame = True
 			self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
 			txt = self.colours.box_button_text
 			x0 = x - 180*self.gui.scale
@@ -38342,13 +38341,15 @@ class TimedLyricsEdit:
 				self.unsynced_render(x, y, box, hide_art)
 
 			if self.struct_track in self.potential_uploads:
+				if not self.box_open:
+					self.synced_upload = self.view_is_synced
+					self.static_upload = not self.view_is_synced
 				self.box_open = True
 				gn = copy.deepcopy(self.colours.level_yellow)
 				gn.a = round(gn.a * 0.3)
 				offset = 20*self.gui.scale
 				x, y = self.window_size[0]/2, self.window_size[1]/2
 				rect = ( x - 200*self.gui.scale, y - 100*self.gui.scale, 400*self.gui.scale, 200*self.gui.scale)
-				self.queue_next_frame = self.queue_next_frame or self.coll(rect)
 				self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
 				txt = self.colours.box_button_text
 				upload = self.potential_uploads[self.struct_track]
