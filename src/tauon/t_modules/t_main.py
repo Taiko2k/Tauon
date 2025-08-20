@@ -19894,7 +19894,10 @@ class TimedLyricsRen:
 
 				location = [ round(x), round(possible_y), 4, round(w - 20 * self.gui.scale)-12 ]
 				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
-				line_h = self.ddt.text(location, line[1], colour, font_size, w - 20 * self.gui.scale, bg)
+				text = line[1]
+				if text.rstrip() == "":
+					text = "♪♪♪"
+				line_h = self.ddt.text(location, text, colour, font_size, w - 20 * self.gui.scale, bg)
 
 				collider = [ round(x), round(possible_y), round(w - 20 * self.gui.scale), line_h ]
 				association = collider, line
