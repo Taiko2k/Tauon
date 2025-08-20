@@ -420,21 +420,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Read version from pyproject.toml
-        id: version
-        shell: bash
-        run: |
-          python - <<'PY'
-          import os, tomllib
-          with open("pyproject.toml","rb") as f:
-            data = tomllib.load(f)
-          # falls back cleanly if you ever switch to dynamic versioning
-          version = data.get("project", {}).get("version")
-          if not version:
-            raise SystemExit("project.version not found in pyproject.toml")
-            with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-              fh.write(f"version={version}\n")
-          PY
 
       - name: Setup pip cache-key
         uses: actions/cache@v4
@@ -480,6 +465,22 @@ jobs:
             pyinstaller
         #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
+
+      - name: Read version from pyproject.toml
+        id: version
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          with open("pyproject.toml","rb") as f:
+            data = tomllib.load(f)
+          # falls back cleanly if you ever switch to dynamic versioning
+          version = data.get("project", {}).get("version")
+          if not version:
+            raise SystemExit("project.version not found in pyproject.toml")
+            with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"version={version}\n")
+          PY
 
       - name: Build the project using python-build
         shell: msys2 {0}
