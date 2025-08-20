@@ -66,7 +66,7 @@ class StreamEnc:
 
 		self.chunks = {}
 		self.c = 0
-		self.url = None
+		self.url = ""
 
 	def stop(self) -> None:
 		if self.tauon.radiobox.websocket:
@@ -234,7 +234,6 @@ class StreamEnc:
 		self.encode_running = True
 
 		try:
-
 			while self.c < 20:
 				if self.abort:
 					self.encode_running = False
@@ -254,9 +253,9 @@ class StreamEnc:
 				ext = ".flac"
 				rate = "44100"
 
-			target_file = str(self.tauon.cache_directory / "stream" / ext)
-			if os.path.isfile(target_file):
-				os.remove(target_file)
+			target_file = self.tauon.cache_directory / "stream" / ext
+			if target_file.is_file():
+				target_file.unlink()
 
 			cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
 
@@ -269,7 +268,7 @@ class StreamEnc:
 			old_tags = self.tauon.pctl.found_tags
 
 			##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-			cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", target_file]
+			cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", str(target_file)]
 			encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 			def save_track():
@@ -336,7 +335,6 @@ class StreamEnc:
 				self.tauon.gui.update += 1
 
 			while True:
-
 				if self.abort:
 					decoder.terminate()
 					encoder.terminate()
@@ -350,20 +348,20 @@ class StreamEnc:
 					except Exception:
 						logging.exception("Failed to kill encoder")
 
-					if os.path.exists(target_file):
-						if os.path.getsize(target_file) > 256000:
+					if target_file.exists():
+						if target_file.stat().st_size > 256000:
 							logging.info("Save file")
 							save_track()
 						else:
 							logging.info("Discard small file")
-							os.remove(target_file)
+							target_file.unlink()
 
 					self.encode_running = False
 					self.tauon.pctl.tag_history.clear()
 					return
 
 				if old_metadata != self.tauon.radiobox.song_key:
-					if (self.c < 400 and not old_metadata) or not os.path.exists(target_file) or os.path.getsize(target_file) < 100000:
+					if (self.c < 400 and not old_metadata) or not target_file.exists() or target_file.stat().st_size < 100000:
 						old_metadata = self.tauon.radiobox.song_key
 					else:
 						logging.info("Split and save file")
@@ -376,12 +374,12 @@ class StreamEnc:
 							encoder.kill()
 						except Exception:
 							logging.exception("Failed to kill encoder")
-						if os.path.exists(target_file):
-							if os.path.getsize(target_file) > 256000:
+						if target_file.exists():
+							if target_file.stat().st_size > 256000:
 								save_track()
 							else:
 								logging.info("Discard small file")
-								os.remove(target_file)
+								target_file.unlink()
 						encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 				raw_audio = decoder.stdout.read(1000000)
@@ -400,8 +398,7 @@ class StreamEnc:
 			self.encode_running = False
 			return
 
-	def run_download(self, r: _UrlopenRet):
-
+	def run_download(self, r: _UrlopenRet) -> None:
 		h = r.info()
 
 		self.s_name = h.get("icy-name")
@@ -440,7 +437,6 @@ class StreamEnc:
 
 		try:
 			while True:
-
 				chunk = r.read(256)
 
 				if self.abort:
