@@ -35072,6 +35072,8 @@ class ArtistInfoBox:
 				self.lock = False
 				return None
 
+			if silent and not force_dl and not self.prefs.auto_dl_artist_data:
+				return None
 			# Get new from last.fm
 			# . Alt: Looking up artist data
 			if not silent:

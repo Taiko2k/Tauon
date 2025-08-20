@@ -11,6 +11,7 @@ Changelog
  - **Fixed** Jellyfin import, regression introduced in 8.1.0
  - **Fixed** Crash when exporting playlist, regression introduced in 8.1.3
  - **Fixed** A couple of playlist-file bugs, including one that would import radio stations forever
+ - **Fixed** Setting "Background artist info download" not being respected 
  - **Tweaked** Defaults for imported playlists
 
 ### v8.1.3
