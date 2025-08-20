@@ -467,8 +467,8 @@ jobs:
         #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
       - name: Read version from pyproject.toml
+        shell: msys2 {0}
         id: version
-        shell: bash
         run: |
           python - <<'PY'
           import os, tomllib
