@@ -44217,7 +44217,7 @@ def main(holder: Holder) -> None:
 											x + tauon.album_mode_art_size,
 											window_size[0] - round(50 * gui.scale))
 
-									if info[0] == 1 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
+									if info[0] == 1 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 										ddt.rect_a(
 											(x - 4, y - 4), (tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
 											colours.gallery_highlight)
