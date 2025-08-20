@@ -31,13 +31,125 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_enums import PlayingState, StopMode
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
+	from typing import Any
+
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	pass
+
+class VorbisMonitor:
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.reset()
+		self.enable: bool = True
+		self.synced: bool = False
+		self.buffer = io.BytesIO()
+		self.tries: int = 0
+
+	def reset(self, tries: int = 0) -> None:
+		self.enable = True
+		self.synced = False
+		self.buffer = io.BytesIO()
+		self.tries = tries
+
+	def input(self, data: bytes) -> None:
+		if not self.enable:
+			return
+
+		b = self.buffer
+		b.seek(0, io.SEEK_END)
+		b.write(data)
+
+		# Check theres enough data to decode header
+		b.seek(0, io.SEEK_END)
+		l = b.tell()
+		if l < 128:
+			logging.info("Not enough data to parse vorbis")
+			return
+
+		# Get page length
+		b.seek(0, io.SEEK_SET)
+		ogg = b.read(4)
+
+		if ogg != b"OggS":
+			f = data.find(b"Oggs")
+			self.reset(self.tries)
+			if f > -1:
+				logging.info("Ogg stream synced")
+				data = data[f:]
+				b = self.buffer
+				b.write(data)
+			else:
+				self.tries += 1
+				if self.tries > 100:
+					logging.info("Giving up looking for OGG pages")
+					self.enable = False
+				return
+
+			# self.enable = False
+			# return
+
+		b.seek(0, io.SEEK_SET)
+		header = struct.unpack("<4sBBqIIiB", b.read(27))
+		segs = struct.unpack("B" * header[7], b.read(header[7]))
+
+		length = 0
+		for s in segs:
+			length += s
+
+		length += 27 + header[7]
+
+		if l > length:
+			h = b.read(7)
+			# logging.info(h)
+			if h in {b"\x03vorbis", b"OpusTag"}:
+				if h == b"OpusTag":
+					b.seek(1, io.SEEK_CUR)
+
+				vendor_length = int.from_bytes(b.read(4), byteorder="little")
+				vendor = int.from_bytes(b.read(vendor_length), byteorder="little")
+				comment_list_length = int.from_bytes(b.read(4), byteorder="little")
+
+				found_tags = {}
+				for i in range(comment_list_length):
+					comment_length = int.from_bytes(b.read(4), byteorder="little")
+					comment = b.read(comment_length)
+
+					key, value = comment.decode().split("=", 1)
+
+					if key == "title":
+						found_tags["title"] = value
+					if key == "artist":
+						found_tags["artist"] = value
+					if key == "year":
+						found_tags["year"] = value
+					if key == "album":
+						found_tags["album"] = value
+
+				line = ""
+				if "title" in found_tags:
+					line += found_tags["title"]
+					if "artist" in found_tags:
+						line = found_tags["artist"] + " - " + line
+
+				if self.tauon.radiobox.parse_vorbis_okay():
+					self.tauon.pctl.found_tags = found_tags
+					self.tauon.pctl.tag_meta = line
+
+				logging.info("Found vorbis comment")
+				logging.info(line)
+
+			# Consume page from buffer
+			b.seek(length, io.SEEK_SET)
+			new = io.BytesIO()
+			new.write(b.read())
+			self.buffer = new
 
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False
@@ -78,14 +190,13 @@ def send_file(path: str, mime: str, server) -> None:
 			server.wfile.write(data)
 
 def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings: Strings, tauon: Tauon) -> int | None:
-
 	if prefs.enable_web is False:
 		return 0
 
 	gui.web_running = True
 
 	class Server(BaseHTTPRequestHandler):
-		def log_message(self, format, *args) -> None:
+		def log_message(self, format: str, *args) -> None:
 			logging.info(format % args)
 
 		def send_file(self, path: str, mime: str) -> None:
@@ -147,7 +258,7 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 				mime = "audio/mpeg"
 				if track.file_ext == "FLAC":
 					mime = "audio/flac"
-				if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
+				if track.file_ext in {"OGG", "OPUS", "OGA"}:
 					mime = "audio/ogg"
 				if track.file_ext == "M4A":
 					mime = "audio/mp4"
@@ -222,19 +333,18 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 		httpd.server_close()
 	except OSError as e:
 		if str(e) == "[Errno 98] Address already in use":
-			logging.error("Not starting radio page server, is another Tauon instance already running?")
+			logging.error("Not starting radio page server, is another Tauon instance already running?")  # noqa: TRY400
 		else:
 			logging.exception("Unknown OSError starting radio page server!")
 	except Exception:
 		logging.exception("Failed starting radio page server!")
-
 
 def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 	play_timer = Timer()
 
 	class Server(BaseHTTPRequestHandler):
 
-		def log_message(self, format, *args) -> None:
+		def log_message(self, format: str, *args) -> None:
 			logging.info(format % args)
 
 		def run_command(self, callback) -> None:
@@ -244,9 +354,8 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			callback()
 			self.wfile.write(b"OK")
 
-		def parse_trail(self, text: str) -> tuple[list[str], dict]:
-
-			params = {}
+		def parse_trail(self, text: str) -> tuple[list[str], dict[str, str]]:
+			params: dict[str, str] = {}
 			both = text.split("?")
 			levels = both[0].split("/")
 			if len(both) > 1:
@@ -400,7 +509,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					mime = "audio/mpeg"
 					if track.file_ext == "FLAC":
 						mime = "audio/flac"
-					if track.file_ext == "OGG" or track.file_ext == "OPUS" or track.file_ext == "OGA":
+					if track.file_ext in {"OGG", "OPUS", "OGA"}:
 						mime = "audio/ogg"
 					if track.file_ext == "M4A":
 						mime = "audio/mp4"
@@ -440,10 +549,10 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			elif path == "/api1/repeat":
 				self.run_command(tauon.toggle_repeat)
 			elif path == "/api1/auto-stop":
-				if tauon.pctl.stop_mode == 0:
-					tauon.pctl.stop_mode = 1
+				if tauon.pctl.stop_mode == StopMode.OFF:
+					tauon.pctl.stop_mode = StopMode.TRACK
 				else:
-					tauon.pctl.stop_mode = 0
+					tauon.pctl.stop_mode = StopMode.OFF
 				tauon.gui.update += 1
 			elif path == "/api1/version":
 				data = {"version": 1}
@@ -633,14 +742,14 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					"shuffle": pctl.random_mode is True,
 					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
-					"auto_stop": tauon.pctl.stop_mode > 0,
+					"auto_stop": tauon.pctl.stop_mode != StopMode.OFF,
 					"volume": pctl.player_volume,
 					"playlist": str(tauon.get_playing_playlist_id()),
 					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
 				}
-				if pctl.playing_state == 1:
+				if pctl.playing_state == PlayingState.PLAYING:
 					data["status"] = "playing"
-				if pctl.playing_state == 2:
+				if pctl.playing_state == PlayingState.PAUSED:
 					data["status"] = "paused"
 				track = pctl.playing_object()
 				if track:
@@ -679,12 +788,11 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 		httpd.server_close()
 	except OSError as e:
 		if str(e) == "[Errno 98] Address already in use":
-			logging.error("Not starting web api server, is another Tauon instance already running?")
+			logging.error("Not starting web api server, is another Tauon instance already running?")  # noqa: TRY400
 		else:
 			logging.exception("Unknown OSError starting web api server!")
 	except Exception:
 		logging.exception("Failed starting web api server!")
-
 
 def controller(tauon: Tauon) -> None:
 	import base64
@@ -699,7 +807,7 @@ def controller(tauon: Tauon) -> None:
 			if path == "/raise/":
 				tauon.raise_window()
 			if path == "/playpause/":
-				if tauon.pctl.playing_state == 0:
+				if tauon.pctl.playing_state == PlayingState.STOPPED:
 					tauon.pctl.play()
 				else:
 					tauon.pctl.pause()
@@ -738,12 +846,11 @@ def controller(tauon: Tauon) -> None:
 	except Exception:
 		logging.exception("Failed starting controller server!")
 
-
 def authserve(tauon: Tauon) -> None:
 
 	class Server(BaseHTTPRequestHandler):
 
-		def log_message(self, format, *args) -> None:
+		def log_message(self, format: str, *args) -> None:
 			logging.info(format % args)
 
 		def do_GET(self) -> None:
@@ -778,132 +885,18 @@ def authserve(tauon: Tauon) -> None:
 	httpd.serve_forever()
 	httpd.server_close()
 
-class VorbisMonitor:
-
-	def __init__(self) -> None:
-		self.tauon: Tauon | None = None
-		self.reset()
-		self.enable: bool = True
-		self.synced: bool = False
-		self.buffer = io.BytesIO()
-		self.tries: int = 0
-
-	def reset(self, tries: int = 0) -> None:
-		self.enable = True
-		self.synced = False
-		self.buffer = io.BytesIO()
-		self.tries = tries
-
-	def input(self, data: bytes) -> None:
-		if not self.enable:
-			return
-
-		b = self.buffer
-		b.seek(0, io.SEEK_END)
-		b.write(data)
-
-		# Check theres enough data to decode header
-		b.seek(0, io.SEEK_END)
-		l = b.tell()
-		if l < 128:
-			logging.info("Not enough data to parse vorbis")
-			return
-
-		# Get page length
-		b.seek(0, io.SEEK_SET)
-		ogg = b.read(4)
-
-		if ogg != b"OggS":
-			f = data.find(b"Oggs")
-			self.reset(self.tries)
-			if f > -1:
-				logging.info("Ogg stream synced")
-				data = data[f:]
-				b = self.buffer
-				b.write(data)
-			else:
-				self.tries += 1
-				if self.tries > 100:
-					logging.info("Giving up looking for OGG pages")
-					self.enable = False
-				return
-
-			# self.enable = False
-			# return
-
-		b.seek(0, io.SEEK_SET)
-		header = struct.unpack("<4sBBqIIiB", b.read(27))
-		segs = struct.unpack("B" * header[7], b.read(header[7]))
-
-		length = 0
-		for s in segs:
-			length += s
-
-		length += 27 + header[7]
-
-		if l > length:
-			h = b.read(7)
-			# logging.info(h)
-			if h == b"\x03vorbis" or h == b"OpusTag":
-				if h == b"OpusTag":
-					b.seek(1, io.SEEK_CUR)
-
-				vendor_length = int.from_bytes(b.read(4), byteorder="little")
-				vendor = int.from_bytes(b.read(vendor_length), byteorder="little")
-				comment_list_length = int.from_bytes(b.read(4), byteorder="little")
-
-				found_tags = {}
-				for i in range(comment_list_length):
-					comment_length = int.from_bytes(b.read(4), byteorder="little")
-					comment = b.read(comment_length)
-
-					key, value = comment.decode().split("=", 1)
-
-					if key == "title":
-						found_tags["title"] = value
-					if key == "artist":
-						found_tags["artist"] = value
-					if key == "year":
-						found_tags["year"] = value
-					if key == "album":
-						found_tags["album"] = value
-
-				line = ""
-				if "title" in found_tags:
-					line += found_tags["title"]
-					if "artist" in found_tags:
-						line = found_tags["artist"] + " - " + line
-
-				if self.tauon.radiobox.parse_vorbis_okay():
-					self.tauon.pctl.found_tags = found_tags
-					self.tauon.pctl.tag_meta = line
-
-				logging.info("Found vorbis comment")
-				logging.info(line)
-
-			# Consume page from buffer
-			b.seek(length, io.SEEK_SET)
-			new = io.BytesIO()
-			new.write(b.read())
-			self.buffer = new
-
-vb = VorbisMonitor()
-
 def stream_proxy(tauon: Tauon) -> None:
-
 	class Server(BaseHTTPRequestHandler):
-		def log_message(self, format, *args) -> None:
+		def log_message(self, format: str, *args: Any) -> None:
 			logging.info(format % args)
 
 		def do_GET(self) -> None:
-
 			self.send_response(200)
 			self.send_header("Content-type", "audio/ogg")
 			self.end_headers()
 
 			position = 0
-			vb.reset()
-			vb.tauon = tauon
+			tauon.vb.reset()
 
 			while True:
 				if not tauon.stream_proxy.download_running:
@@ -917,7 +910,7 @@ def stream_proxy(tauon: Tauon) -> None:
 					self.wfile.write(tauon.stream_proxy.chunks[position])
 
 					if tauon.prefs.backend == 4:
-						vb.input(tauon.stream_proxy.chunks[position])
+						tauon.vb.input(tauon.stream_proxy.chunks[position])
 
 					position += 1
 
