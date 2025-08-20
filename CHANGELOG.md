@@ -2,16 +2,19 @@
 Changelog
 ---------
 
+### v8.2.0 (UNRELEASED)
+
+ - **Fixed** Setting "Background artist info download" not being respected
+ - **Added** Spring-loaded clicking behavior to most menus
+
 ### v8.1.4
 
- - **Added** Spring-loaded clicking behavior to most menus
  - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
  - **Fixed** Crash on radio playlist migration under some circumstances
  - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
  - **Fixed** Jellyfin import, regression introduced in 8.1.0
  - **Fixed** Crash when exporting playlist, regression introduced in 8.1.3
  - **Fixed** A couple of playlist-file bugs, including one that would import radio stations forever
- - **Fixed** Setting "Background artist info download" not being respected 
  - **Tweaked** Defaults for imported playlists
 
 ### v8.1.3
