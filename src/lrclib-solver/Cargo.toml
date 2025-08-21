@@ -1,0 +1,19 @@
+[package]
+name = "lrclib-solver"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+panic = "abort"
+
+[dependencies]
+sha2 = "0.10"
+ring = "0.17"
+data-encoding = "2.5"
+
+[[bin]]
+name = "lrclib-solver"
+path = "lrclib_solver.rs"

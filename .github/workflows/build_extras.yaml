@@ -59,6 +59,45 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  build-windows-lrclib_solver_exe:
+    name: "lrclib-solver.exe"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 MinGW-W64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            cmake
+            make
+            ninja
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-rust
+
+      - name: Build lrclib-solver.exe
+        shell: msys2 {0}
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-windows
+          path: src/lrclib-solver/target/release/lrclib-solver.exe
+          if-no-files-found: error
+          retention-days: 14
+
   build-windows-TaskbarLib_tlb:
     name: "TaskbarLib.tlb"
     runs-on: windows-latest
@@ -174,5 +213,80 @@ jobs:
         with:
           name: TauonSMTC-dll
           path: ${{ env.TAUON_SMTC_DLL }}
+          if-no-files-found: error
+          retention-days: 14
+
+  build-linux-lrclib_solver:
+    name: "Linux lrclib-solver"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy,rustfmt
+
+      - name: Build lrclib-solver
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-linux
+          path: src/lrclib-solver/target/release/lrclib-solver
+          if-no-files-found: error
+          retention-days: 14
+
+  build-macOS-lrclib_solver:
+    name: "macOS lrclib-solver"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy,rustfmt
+
+      - name: Build lrclib-solver
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-macos
+          path: src/lrclib-solver/target/release/lrclib-solver
+          if-no-files-found: error
+          retention-days: 14
+
+  build-macOS-lrclib_solver_x64:
+    name: "macOS lrclib-solver-x64"
+    runs-on: macos-13
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy,rustfmt
+
+      - name: Build lrclib-solver
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-macos-x64
+          path: src/lrclib-solver/target/release/lrclib-solver
           if-no-files-found: error
           retention-days: 14
