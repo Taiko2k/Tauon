@@ -133,7 +133,7 @@ def lrclib(artist: str, title: str) -> tuple[str, str]:
 
 def get_lrclib_challenge() -> tuple[str]:
 	h = {
-		"User-Agent": "TauonMusicBox/DEVEL very early & idk what im doing",
+		"User-Agent": "TauonMusicBox/Devel",
 	}
 	r = requests.post("https://lrclib.net/api/request-challenge", headers=h, timeout=10)
 	if r.status_code == HTTPStatus.OK:

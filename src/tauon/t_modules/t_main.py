@@ -40893,7 +40893,7 @@ def worker1(tauon: Tauon) -> None:
 		)
 		publish_token = p + ":" + nonce.stdout.strip()
 		h = {
-			"User-Agent": "TauonMusicBox/DEVEL",
+			"User-Agent": "TauonMusicBox/Devel",
 			"X-Publish-Token": publish_token
 		}
 		r = requests.post("https://lrclib.net/api/publish", headers=h, json=upload, timeout=10)
