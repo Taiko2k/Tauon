@@ -36123,7 +36123,7 @@ class ViewBox:
 		self.x = 0
 		self.y = tauon.gui.panelY
 		self.w = 52 * tauon.gui.scale
-		self.h = 260 * tauon.gui.scale  # 257
+		self.h = 303 * tauon.gui.scale  # 260
 		self.active = False
 
 		self.border = 3 * tauon.gui.scale
@@ -36134,6 +36134,7 @@ class ViewBox:
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
 		self.combo_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "combo.png", True)
 		self.lyrics_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics.png", True)
+		self.editor_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics-editor.png", True)
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
 		self.radio_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "radio.png", True)
 		self.col_img      = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "col.png", True)
@@ -36146,6 +36147,7 @@ class ViewBox:
 		self.radio_colour      = ColourPulse2(tauon=tauon)  # (0.6) # .6 .6 .75
 		# self.combo_colour    = ColourPulse(0.75)
 		self.lyrics_colour     = ColourPulse2(tauon=tauon)  # (0.7)
+		self.editor_colour     = ColourPulse2(tauon=tauon)  # (0.7)
 		# self.gallery2_colour = ColourPulse(0.65)
 		self.col_colour        = ColourPulse2(tauon=tauon)  # (0.14)
 		self.artist_colour     = ColourPulse2(tauon=tauon)  # (0.2)
@@ -36295,7 +36297,7 @@ class ViewBox:
 
 	def lyrics(self, hit: bool = False) -> bool | None:
 		if hit is False:
-			return self.gui.showcase_mode
+			return self.gui.showcase_mode and not self.gui.timed_lyrics_edit_view
 
 		if not self.gui.showcase_mode:
 			if self.gui.radio_view:
@@ -36304,6 +36306,27 @@ class ViewBox:
 
 		elif self.gui.was_radio:
 			self.tauon.enter_radio_view()
+		elif self.gui.timed_lyrics_edit_view:
+			self.gui.timed_lyrics_edit_view = False
+		else:
+			self.tauon.exit_combo(restore=True)
+		if self.x_menu.active:
+			self.x_menu.close_next_frame = True
+		return None
+
+	def editor(self, hit: bool = False) -> bool | None:
+		if hit is False:
+			return self.gui.showcase_mode and self.gui.timed_lyrics_edit_view
+
+		if not self.gui.showcase_mode:
+			if self.gui.radio_view:
+				self.gui.was_radio = True
+			self.tauon.enter_showcase_view(timed_lyrics_edit=True)
+
+		elif self.gui.was_radio:
+			self.tauon.enter_radio_view()
+		elif not self.gui.timed_lyrics_edit_view:
+			self.gui.timed_lyrics_edit_view = True
 		else:
 			self.tauon.exit_combo(restore=True)
 		if self.x_menu.active:
@@ -36435,6 +36458,21 @@ class ViewBox:
 		test = self.button(
 			x + 4 * gui.scale, y, self.lyrics_img, self.lyrics, self.lyrics_colour,
 			_("Showcase + Lyrics"), low=low, high=high)
+		if test is not None:
+			func = test
+
+		# --
+
+		y += 45 * gui.scale
+
+		high = ColourRGBA(81, 231, 0, 255)
+		if colours.lm:
+			# high = (.7, .75, .75)
+			high = ColourRGBA(63, 63, 63, 255)
+
+		test = self.button(
+			x + 4 * gui.scale, y, self.editor_img, self.editor, self.editor_colour,
+			_("Lyrics Editor"), low=low, high=high)
 		if test is not None:
 			func = test
 
@@ -37921,7 +37959,7 @@ class TimedLyricsEdit:
 				self.queue_next_frame = True
 
 			# SWITCH MODES
-			if self.button("   ", buttons_x, buttons_y, self.font):
+			if self.button("   ", buttons_x, buttons_y, self.font, tooltip="Go to Unsynced View"):
 				self.view_is_synced = False
 				self.queue_next_frame = True
 			self.unsynced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
@@ -38056,7 +38094,8 @@ class TimedLyricsEdit:
 		if not new_lyrics == _("Put the lyrics in this file and save it."):
 			if not new_lyrics == track.lyrics:
 				self.text = new_lyrics
-				track.lyrics = new_lyrics
+				if self.inp.key_lalt or self.inp.key_ralt:
+					track.lyrics = new_lyrics
 				# self.tauon.write_lyrics(track)
 		#self.test_update()
 		target.unlink()
@@ -38116,10 +38155,11 @@ class TimedLyricsEdit:
 		widths = [
 			self.ddt.get_text_w("   ", self.font),
 			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
-			self.ddt.get_text_w(_("Reload"), self.font),
+			self.ddt.get_text_w(_("Read Back"), self.font),
 			self.ddt.get_text_w(_("Cancel"), self.font),
 			self.ddt.get_text_w(_("SAVE"), self.font),
-			self.ddt.get_text_w(_("Discard"), self.font)
+			self.ddt.get_text_w(_("Discard"), self.font),
+			self.ddt.get_text_w(_("Reopen Editor"), self.font)
 		]
 		if hide_art:
 			buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -38133,7 +38173,7 @@ class TimedLyricsEdit:
 		lyric_file = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
 		can_load = lyric_file.is_file()
 
-		if self.button("   ", buttons_x, buttons_y, self.font):
+		if self.button("   ", buttons_x, buttons_y, self.font, tooltip="Go to Synced View"):
 			self.view_is_synced = True
 		self.synced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
 		buttons_x += widths[0] + x_gap
@@ -38167,12 +38207,16 @@ class TimedLyricsEdit:
 			# measure box height
 			box_width = 400*self.gui.scale
 			drop_w, text_height = self.ddt.get_text_wh(
-					_("Edit the opened lyrics in your text editor, then save the file and click \"Reload.\""),
+					_("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""),
 					self.font,
 					box_width - 2*offset,
 					True
 				)
-			button_height = self.line_height/2 + 14*self.gui.scale
+			too_wide = widths[2] + widths[3] + widths[6] + 3*offset > box_width
+			if too_wide:
+				button_height = self.line_height + 28*self.gui.scale + offset/2
+			else:
+				button_height = self.line_height/2 + 14*self.gui.scale
 			box_height = text_height + button_height + offset
 			x, y = self.window_size[0]/2, self.window_size[1]/2
 
@@ -38181,13 +38225,27 @@ class TimedLyricsEdit:
 			txt = self.colours.box_button_text
 			x0 = rect[0] + offset
 			y0 = rect[1] + offset
-			self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Reload.\""), txt, self.font)
+			self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""), txt, self.font)
 
 			y0 += text_height - 7*self.gui.scale
-			if self.button(_("Reload"), rect[0] + offset, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes.")):
+			x0 = rect[0] + offset
+			if self.button(_("Read Back"), x0, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes.")):
 				self.reload_lyric_file()
-			if self.button(_("Cancel"), rect[0] + rect[2] - widths[3] - offset, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file.")):
+			x0 += offset + widths[2]
+			if self.button(_("Cancel"), x0, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file.")):
 				lyric_file.unlink()
+			if too_wide:
+				x0 = rect[0] + offset/2
+				y0 += self.line_height/2 + 14*self.gui.scale + offset
+			else:
+				x0 += offset + widths[3]
+			if self.button(_("Reopen Editor"), x0, y0, self.font, tooltip=_("In case you closed it by accident.")):
+				if self.tauon.system == "Windows" or self.tauon.msys:
+					os.startfile(lyric_file)
+				elif self.tauon.macos:
+					subprocess.call(["open", "-t", lyric_file])
+				else:
+					subprocess.call(["xdg-open", lyric_file])
 
 
 
