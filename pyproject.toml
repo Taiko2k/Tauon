@@ -238,6 +238,8 @@
 			'PTH111',  # os-path-expanduser                         - TODO fix
 			'PTH112',  # os-path-isdir                              - TODO fix
 			'PTH113',  # os-path-isfile                             - TODO fix
+			'PTH114',  # os-path-islink                             - TODO fix
+			'PTH115',  # os-readlink                                - TODO fix
 			'PTH118',  # os-path-join                               - TODO fix
 			'PTH119',  # os-path-basename                           - TODO fix
 			'PTH120',  # os-path-dirname                            - TODO fix
