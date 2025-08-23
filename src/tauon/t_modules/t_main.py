@@ -9168,7 +9168,7 @@ class Tauon:
 			return playlist
 		return None
 
-	def gen_last_modified(self, index: int, custom_list: list[int] | None = None, reverse: bool = True):
+	def gen_last_modified(self, index: int, custom_list: list[int] | None = None, reverse: bool = True) -> list[int] | None:
 		source = self.pctl.multi_playlist[index].playlist_ids if custom_list is None else custom_list
 
 		a_cache: dict[tuple[str, str], float] = {}
@@ -34024,7 +34024,7 @@ class QueueBox:
 			return [self.colours.menu_text, self.colours.menu_background, _("Cancel Auto-Stop")]
 		return [self.colours.menu_text, self.colours.menu_background, _("Auto-Stop")]
 
-	def queue_remove_show(self, id: int) -> bool:
+	def queue_remove_show(self, _: int) -> bool:
 		return self.right_click_id is not None
 
 	def right_remove_item(self) -> None:
@@ -34743,7 +34743,7 @@ class PictureRender:
 		self.srect = None
 		self.size = (0, 0)
 
-	def load(self, path, box_size=None) -> None:
+	def load(self, path: str, box_size: tuple[int, int] | None = None) -> None:
 		if not os.path.isfile(path):
 			logging.warning("NO PICTURE FILE TO LOAD")
 			return
@@ -34901,13 +34901,13 @@ class ArtistInfoBox:
 			self.process_text_artist = self.artist_on
 
 			text = self.text
-			lic = ""
+			#lic = ""
 			link = ""
 
 			if "<a" in text:
 				text, ex = text.split('<a href="', 1)
 				link, ex = ex.split('">', 1)
-				lic = ex.split("</a>. ", 1)[1]
+				#lic = ex.split("</a>. ", 1)[1]
 
 			text += "\n"
 			self.urls = [(link, ColourRGBA(200, 60, 60, 255), "L")]
