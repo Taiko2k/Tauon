@@ -2197,7 +2197,7 @@ class PlayerCtl:
 		self.gui.message_box_confirm_reference = (self.pl_to_id(index), True, True)
 		self.show_message(_("Are you sure you want to delete playlist: {name}?").format(name=self.multi_playlist[index].title), mode="confirm")
 
-	def id_to_pl(self, id: int):
+	def id_to_pl(self, id: int) -> int | None:
 		for i, item in enumerate(self.multi_playlist):
 			if item.uuid_int == id:
 				return i
@@ -8829,13 +8829,13 @@ class Tauon:
 	def set_podcast_playlist(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].persist_time_positioning ^= True
 
-	def set_download_deco(self, pl: int):
+	def set_download_deco(self, pl: int) -> list[ColourRGBA | str | None]:
 		text = _("Set as Downloads Playlist")
 		if id == self.prefs.download_playlist:
 			text = _("Un-set as Downloads Playlist")
 		return [self.colours.menu_text, self.colours.menu_background, text]
 
-	def set_podcast_deco(self, pl: int):
+	def set_podcast_deco(self, pl: int) -> list[ColourRGBA | str | None]:
 		text = _("Set Use Persistent Time")
 		if self.pctl.multi_playlist[pl].persist_time_positioning:
 			text = _("Un-set Use Persistent Time")
@@ -11451,7 +11451,7 @@ class Tauon:
 	def level_meter_special_2(self) -> None:
 		self.gui.level_meter_colour_mode = 2
 
-	def last_fm_menu_deco(self):
+	def last_fm_menu_deco(self) -> list[ColourRGBA | str | None]:
 		if self.prefs.scrobble_hold:
 			if not self.prefs.auto_lfm and self.lb.enable:
 				line = _("ListenBrainz is Paused")
@@ -19530,7 +19530,7 @@ class LyricsRen:
 			# TODO (Flynn): fix the conditional for this section to run?
 			self.lyrics_position = 0
 
-	def render(self, x, y, w, h, p) -> None:
+	def render(self, x: int, y: int, w: int, h: int, p) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
 
@@ -32789,7 +32789,7 @@ class ArtistList:
 		# self.ddt.text((x_text, y + self.tab_h // 2 - 2 * self.gui.scale), text, line2_colour, count_font,
 		#          extra_text_space + w - x_text - 15 * self.gui.scale, bg=bg)
 
-	def draw_card_with_thumbnail(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
+	def draw_card_with_thumbnail(self, artist:str, x: int, y: int, w: int, area: list[int], thin_mode: bool, line1_colour: ColourRGBA, line2_colour: ColourRGBA, light_mode: bool, bg: ColourRGBA) -> None:
 		if artist not in self.thumb_cache:
 			self.load_img(artist)
 
