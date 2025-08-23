@@ -29118,7 +29118,7 @@ class MiniMode:
 				colour = ColourRGBA(255, 255, 255, 190)
 
 			sx = seek_r[0] + seek_w + 12 * self.gui.scale
-			# sy = seek_r[1] - 2 * self.gui.scale
+			sy = seek_r[1] - 2 * self.gui.scale
 			self.shuffle.render(sx, sy, colour)
 
 
@@ -35891,7 +35891,7 @@ class ColourPulse2:
 		self.in_timer = Timer()
 		self.out_timer = Timer()
 		self.out_timer.start = 0
-		self.active = False
+		self.active: bool = False
 
 	def get(self, hit: bool, on: bool, off: bool, low_hls: ColourRGBA, high_hls: ColourRGBA) -> ColourRGBA:
 		if on:
@@ -35954,11 +35954,11 @@ class ViewBox:
 		self.x_menu  = tauon.x_menu
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
-		self.x = 0
+		self.x: int = 0
 		self.y = tauon.gui.panelY
 		self.w = 52 * tauon.gui.scale
 		self.h = 260 * tauon.gui.scale  # 257
-		self.active = False
+		self.active: bool = False
 
 		self.border = 3 * tauon.gui.scale
 
@@ -35995,7 +35995,7 @@ class ViewBox:
 		if not reload:
 			tauon.gui.combo_was_album = False
 
-	def activate(self, x) -> None:
+	def activate(self, x: int) -> None:
 		self.x = x
 		self.active = True
 		self.clicked = False
