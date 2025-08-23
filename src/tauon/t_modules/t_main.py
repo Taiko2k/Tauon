@@ -39143,6 +39143,7 @@ def worker1(tauon: Tauon) -> None:
 		if gui.auto_play_import:
 			pctl.jump(pctl.master_count - 1)
 			gui.auto_play_import = False
+		return None
 
 	def pre_get(direc: str) -> None:
 		"""Count the approx number of files to be imported"""
