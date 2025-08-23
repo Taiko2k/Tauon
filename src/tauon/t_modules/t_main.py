@@ -71,7 +71,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -272,7 +272,7 @@ if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 
 	from PIL.ImageFile import ImageFile
-	from pylast import Artist, LibreFMNetwork
+	from pylast import LibreFMNetwork
 	from websocket import WebSocketApp
 
 	from tauon.t_modules.t_bootstrap import Holder
@@ -307,17 +307,8 @@ if sys.platform == "win32":
 	if msys:
 		import gi
 		from gi.repository import GLib
-	else:
-		import atexit
-
-		import comtypes
-		import win32api
-		import win32con
-		import win32gui
-		import win32ui
 else:
 	system = "Linux"
-	import fcntl
 
 if sys.platform == "darwin":
 	macos = True
@@ -1893,8 +1884,7 @@ class PlayerCtl:
 
 
 	def try_reload_playlist_from_file(self, playlist: TauonPlaylist, warnings: bool = False) -> None:
-		"""reload designated playlist from file if it meets the requirements"""
-
+		"""Reload designated playlist from file if it meets the requirements"""
 		if not playlist.auto_import:
 			return
 
@@ -1910,7 +1900,7 @@ class PlayerCtl:
 			return
 		try:
 			current_size = path.stat().st_size
-		except FileNotFoundError as e:
+		except FileNotFoundError:
 			logging.error(f"Playlist file not found: {path}")  # noqa: TRY400
 			return
 		except Exception:
@@ -2317,7 +2307,7 @@ class PlayerCtl:
 				self.tauon.tray_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release tray_lock")
 			except Exception:
@@ -2912,7 +2902,7 @@ class PlayerCtl:
 				self.tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -5081,11 +5071,10 @@ class Menu:
 							gui.update += 1
 						if springing:
 							self.sub_active = -1
-					else:
-						if self.clicked or springing:
-							self.clicked = False
-							self.sub_active = self.items[i].sub_menu_number
-							self.sub_y_postion = y_run
+					elif self.clicked or springing:
+						self.clicked = False
+						self.sub_active = self.items[i].sub_menu_number
+						self.sub_y_postion = y_run
 
 				# Draw tab
 				ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
@@ -5556,7 +5545,7 @@ class GallClass:
 					self.lock.release()
 				except RuntimeError as e:
 					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked lock")
+						logging.error("RuntimeError: Attempted to release already unlocked lock")  # noqa: TRY400
 					else:
 						logging.exception("Unknown RuntimeError trying to release lock")
 				except Exception:
@@ -5696,7 +5685,7 @@ class Tauon:
 			"Filename",
 			"Disc",
 			"CUE",
-			"ID"
+			"ID",
 		)
 		self.device                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
@@ -6557,7 +6546,7 @@ class Tauon:
 			self.enter_radio_view()
 
 	def parse_m3u(self, path: str) -> tuple[ list[int], list[RadioStation] ]:
-		"""read specified .m3u[8] playlist file, return list of track IDs/stations"""
+		"""Read specified .m3u[8] playlist file, return list of track IDs/stations"""
 		playlist: list[int] = []
 		stations: list[RadioStation] = []
 
@@ -6637,7 +6626,7 @@ class Tauon:
 		return playlist, stations
 
 	def load_m3u(self, path: str) -> None:
-		"""import an m3u file and create a new Tauon playlist for it"""
+		"""Import an m3u file and create a new Tauon playlist for it"""
 		path = Path(path)
 		name = path.stem
 		if not path.is_file():
@@ -6715,7 +6704,7 @@ class Tauon:
 				self.read_pls(lines, path)
 
 	def parse_xspf(self, path:str) -> tuple[ list[int], list[RadioStation], str]:
-		"""read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
+		"""Read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
 		try:
 			parser = ET.XMLParser(encoding="utf-8")
 			e = ET.parse(path, parser).getroot()
@@ -8110,8 +8099,8 @@ class Tauon:
 
 	def export_m3u(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
 		"""Exports an m3u file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
-		pl_file is normalized by run_export; you should not call this function directly if you are uncertain."""
-
+		pl_file is normalized by run_export; you should not call this function directly if you are uncertain.
+		"""
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
@@ -8125,7 +8114,7 @@ class Tauon:
 						self.show_message(
 							_("Cannot use relative paths"),
 							_("One or more tracks are stored on a separate drive from the playlist file."),
-							mode="error"
+							mode="error",
 						)
 						return 1
 
@@ -8154,8 +8143,8 @@ class Tauon:
 
 	def export_xspf(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
 		"""Exports an xspf file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
-		pl_file is normalized by run_export; you should not call this function directly if you are uncertain."""
-
+		pl_file is normalized by run_export; you should not call this function directly if you are uncertain.
+		"""
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
@@ -8169,7 +8158,7 @@ class Tauon:
 						self.show_message(
 							_("Cannot use relative paths"),
 							_("One or more tracks are stored on a separate drive from the playlist file."),
-							mode="error"
+							mode="error",
 						)
 						return 1
 
@@ -8551,9 +8540,7 @@ class Tauon:
 			track = self.get_object(playlist[p])
 
 			if track.artist != artist:
-				if album_artist and track.album_artist and album_artist == track.album_artist:
-					pass
-				elif len(artist) > 5 and artist.lower() in track.parent_folder_name.lower():
+				if (album_artist and track.album_artist and album_artist == track.album_artist) or (len(artist) > 5 and artist.lower() in track.parent_folder_name.lower()):
 					pass
 				else:
 					artist = track.artist
@@ -10760,7 +10747,7 @@ class Tauon:
 			[_("Disc Number"), "Disc", self.sa_disc],
 			[_("Has Lyrics"), "Lyrics", self.sa_lyrics],
 			[_("Is CUE Sheet"), "CUE", self.sa_cue],
-			[_("Internal Track ID"), "ID", self.sa_track_id]
+			[_("Internal Track ID"), "ID", self.sa_track_id],
 		]
 		for checked_column in self.gui.pl_st:
 			checked.add( checked_column[0] )
@@ -11080,7 +11067,7 @@ class Tauon:
 		self.reload()
 
 	def stt2(self, sec: int) -> str:
-		"""converts seconds into days hours minutes"""
+		"""Converts seconds into days hours minutes"""
 		days, rem = divmod(sec, 86400)
 		hours, rem = divmod(rem, 3600)
 		min, sec = divmod(rem, 60)
@@ -11861,7 +11848,7 @@ class Tauon:
 		self.gui.pl_update = 2
 
 	def pl_is_mut(self, pl: int) -> bool:
-		"""returns True if specified playlist number is modifiable/not associated with a generator i think"""
+		"""Returns True if specified playlist number is modifiable/not associated with a generator i think"""
 		id = self.pctl.pl_to_id(pl)
 		if id is None:
 			return False
@@ -13836,7 +13823,7 @@ class Tauon:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -13876,7 +13863,7 @@ class Tauon:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -13926,7 +13913,7 @@ class Tauon:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -15782,7 +15769,7 @@ class Tauon:
 				nt.modified_time = os.path.getmtime(nt.fullpath)
 				nt.found = True
 			except FileNotFoundError:
-				logging.error("File not found when executing getmtime!")
+				logging.error("File not found when executing getmtime!")  # noqa: TRY400
 				nt.found = False
 				return nt
 			except Exception:
@@ -18501,7 +18488,7 @@ class SubsonicService:
 		# Some broken servers can send invalid JSON with control chars - remove them, see https://github.com/Taiko2k/Tauon/issues/1112
 		control_chars = CONTROL_CHAR_RE.findall(response.text)
 		if control_chars:
-			clean_response = CONTROL_CHAR_RE.sub('', response.text)
+			clean_response = CONTROL_CHAR_RE.sub("", response.text)
 			details = [f"U+{ord(c):04X}" for c in control_chars]
 			logging.warning(f"Invalid control characters found in JSON response: {', '.join(details)}")
 		else:
@@ -18526,7 +18513,7 @@ class SubsonicService:
 	def get_cover(self, track_object: TrackClass) -> BytesIO:
 		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
 		try:
-			response.decode('utf-8')
+			response.decode("utf-8")
 			raise ValueError(f"Expected binary data with an image but got a valid string: {response}")
 		except UnicodeDecodeError:
 			pass
@@ -18638,7 +18625,7 @@ class SubsonicService:
 
 			for item in items:
 				#logging.debug(f"song: {item}")
-				if "isDir" in item and item["isDir"]:
+				if item.get("isDir"):
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
 						if self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
@@ -19497,7 +19484,7 @@ class LyricsRenMini:
 
 		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
-			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
+			if len(line) < 10 or ( line[0] != "[" or (line[9] != "]" and ":" not in line) ) or "." not in line:
 				self.text += line + "\n"
 			else:
 				self.text += line.split("]")[-1] + "\n"
@@ -19536,7 +19523,7 @@ class LyricsRen:
 			# old line: self.text = track_object.lyrics
 			# get rid of LRC formatting if you can:
 			for line in track_object.lyrics.split("\n"):
-				if len(line) < 10 or ( line[0] != "[" and line[9] != "]" or ":" not in line ) or "." not in line:
+				if len(line) < 10 or ( (line[0] != "[" and line[9] != "]") or ":" not in line ) or "." not in line:
 					self.text += line + "\n"
 				else:
 					self.text += line.split("]")[-1] + "\n"
@@ -19760,7 +19747,7 @@ class TimedLyricsRen:
 				sum( self.line_heights[i: max(0,line_active) ] ) + \
 				sum( self.line_heights[ max(line_active,0) :i] )
 
-			if 0 < possible_y - self.line_heights[i] and possible_y < self.window_size[1]:
+			if possible_y - self.line_heights[i] > 0 and possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
@@ -21572,7 +21559,7 @@ class AlbumArt:
 
 		except Exception:
 			logging.exception("Image load error")
-			logging.error(f"-- Associated track: {track.fullpath}")
+			logging.error(f"-- Associated track: {track.fullpath}")  # noqa: TRY400
 
 			self.current_wu = None
 			try:
@@ -21616,11 +21603,10 @@ class AlbumArt:
 		self.colours.last_album = ""
 
 class StyleOverlay:
-	"""
-	Stage:
-		0 - blank
-		1 - preparing first
-		2 - render first
+	"""Stage:
+	0 - blank
+	1 - preparing first
+	2 - render first
 	"""
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -21727,7 +21713,7 @@ class StyleOverlay:
 			tex_h = pointer(c_float(0))
 			sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
 
-			dst = sdl3.SDL_FRect(round(-40, 0))
+			dst = sdl3.SDL_FRect(-40)
 			dst.w = int(tex_w.contents.value)
 			dst.h = int(tex_h.contents.value)
 
@@ -22371,7 +22357,7 @@ class TransEditBox:
 		if self.gui.write_tag_in_progress:
 			text = f"{self.gui.tag_write_count}/{len(select)}"
 		text = _("WRITE TAGS")
-		if self.draw.button(text, (x + w) - ww, y - round(0) * self.gui.scale):
+		if self.draw.button(text, (x + w) - ww, y - (0) * self.gui.scale):
 			if changed:
 				self.show_message(_("Press enter on fields to apply your changes first!"))
 				return
@@ -22560,7 +22546,7 @@ class ExportPlaylistBox:
 		# }
 
 	def activate(self, playlist_index: int) -> None:
-		"""runs when the playlist export menu is opened"""
+		"""Runs when the playlist export menu is opened"""
 		self.active = True
 		self.gui.box_over = True
 
@@ -22582,9 +22568,9 @@ class ExportPlaylistBox:
 		return str(self.tauon.dirs.user_directory / "playlists/")
 
 	def render(self) -> None:
-		"""runs every frame that the playlist export menu is open.
-		also deals with the export entry logic."""
-
+		"""Runs every frame that the playlist export menu is open.
+		also deals with the export entry logic.
+		"""
 		if not self.active:
 			return
 
@@ -22679,8 +22665,8 @@ class ExportPlaylistBox:
 		ww = ddt.get_text_w(_("Use relative paths"), 211)
 		if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
 			self.show_message(
-						_(f"Enable relative paths when keeping playlist files together with audio"),
-						_(f"Disable to move playlist files while keeping audio in one location"))
+						_("Enable relative paths when keeping playlist files together with audio"),
+						_("Disable to move playlist files while keeping audio in one location"))
 
 
 		y += round(30 * gui.scale)
@@ -22715,8 +22701,8 @@ class ExportPlaylistBox:
 		try:
 			if not path.parent.is_dir():
 				path.parent.mkdir(parents=True)
-		except PermissionError as e:
-			logging.error("Export failed, cannot create dirs due to permissions")
+		except PermissionError:
+			logging.error("Export failed, cannot create dirs due to permissions")  # noqa: TRY400
 			return
 
 
@@ -22727,8 +22713,8 @@ class ExportPlaylistBox:
 				target = self.tauon.export_xspf(self.pctl.id_to_pl(id), pl_file=path, relative=playlist.relative_export)
 			if playlist.export_type == "m3u":
 				target = self.tauon.export_m3u(self.pctl.id_to_pl(id), pl_file=path, relative=playlist.relative_export)
-		except PermissionError as e:
-			logging.error("Export failed due to permissions")
+		except PermissionError:
+			logging.error("Export failed due to permissions")  # noqa: TRY400
 
 		if target and isinstance(target, Path):
 			playlist.file_size = target.stat().st_size
@@ -23075,7 +23061,7 @@ class SearchOverlay:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -23094,7 +23080,7 @@ class SearchOverlay:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -23254,7 +23240,7 @@ class SearchOverlay:
 								self.tauon.gall_ren.lock.release()
 							except RuntimeError as e:
 								if str(e) == "release unlocked lock":
-									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
+									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")  # noqa: TRY400
 								else:
 									logging.exception("Unknown RuntimeError trying to release gall_ren_lock")
 							except Exception:
@@ -31334,8 +31320,7 @@ class RadioBox:
 		self.radio_field.text = station.stream_url
 
 	def browser_get_hosts(self) -> list[str]:
-		"""
-		Get all base urls of all currently available radiobrowser servers
+		"""Get all base urls of all currently available radiobrowser servers
 
 		Returns:
 		list: a list of strings
@@ -36744,8 +36729,8 @@ class SmoothScroll:
 	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
 		Coeff should be the number that the scroll would be multiplied by if the scroll input was an integer;
-		Source keeps everything straight (the string's contents don't matter at all)."""
-
+		Source keeps everything straight (the string's contents don't matter at all).
+		"""
 		# if smooth scrolling isn't necessary
 		if self.inp.mouse_wheel % 1 == 0:
 			return int( self.inp.mouse_wheel * coeff )
@@ -36875,7 +36860,8 @@ class Formats:
 def is_module_loaded(module_name: str, object_name: str = "") -> bool:
 	"""Check if a module is loaded, to determine which features we should enable
 
-	See https://stackoverflow.com/a/30483269/8962143 for more details"""
+	See https://stackoverflow.com/a/30483269/8962143 for more details
+	"""
 	if object_name:
 		return module_name in sys.modules and hasattr(sys.modules[module_name], object_name)
 	return module_name in sys.modules
@@ -37883,7 +37869,8 @@ def coll_point(l: list[int], r: list[int]) -> bool:
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 	"""Return list of strings if lyrics match LRC format, otherwise return None
 
-	See https://en.wikipedia.org/wiki/LRC_(file_format)"""
+	See https://en.wikipedia.org/wiki/LRC_(file_format)
+	"""
 	if track.synced:
 		return track.synced.splitlines()
 	if track.is_network:
@@ -38433,7 +38420,7 @@ def worker2(tauon: Tauon) -> None:
 									years[year] = 1000
 
 						if search_magic(s_text, title + " " + artist + " " + filename + " " + album + " " +  sartist + " " + album_artist):
-							if "artists" in t.misc and t.misc["artists"]:
+							if t.misc.get("artists"):
 								for a in t.misc["artists"]:
 									if search_magic(s_text, a.lower()):
 
@@ -38693,9 +38680,7 @@ def worker1(tauon: Tauon) -> None:
 			if subtrack_count > 2:
 				files_with_subtracks += 1
 
-			if files == 1:
-				pass
-			elif files_with_subtracks > 1:
+			if files == 1 or files_with_subtracks > 1:
 				pass
 			else:
 				return 1
@@ -38727,8 +38712,7 @@ def worker1(tauon: Tauon) -> None:
 				line = content[i].strip()
 
 				if in_header:
-					if line.startswith("REM "):
-						line = line[4:]
+					line = line.removeprefix("REM ")
 
 					if line.startswith("TITLE "):
 						cue_album = get_quoted_from_line(line)
@@ -38779,8 +38763,7 @@ def worker1(tauon: Tauon) -> None:
 
 				if line.startswith("TRACK "):
 					line = line[6:]
-					if line.endswith("AUDIO"):
-						line = line[:-5]
+					line = line.removesuffix("AUDIO")
 
 					c = loaded_cue_cache.get((file_path.replace("\\", "/"), int(line.strip())))
 					if c is not None:
@@ -38903,7 +38886,7 @@ def worker1(tauon: Tauon) -> None:
 			logging.exception("Internal error processing CUE file")
 
 	def pl_folder_autoscan() -> None:
-		"""rescan designated playlist folder for new playlists and import them"""
+		"""Rescan designated playlist folder for new playlists and import them"""
 		if prefs.autoscan_playlist_folder:
 			new_playlists = []
 			for root, dirs, files in os.walk( prefs.playlist_folder_path ):
@@ -38922,7 +38905,7 @@ def worker1(tauon: Tauon) -> None:
 					logging.info(f"will import {filepath[0]}")
 
 	def add_file(path, force_scan: bool = False, show_errors: bool = False) -> int | None:
-		"""import playlist from filepath""" # TODO (Flynn): add visible errors for bad playlist imports
+		"""Import playlist from filepath""" # TODO (Flynn): add visible errors for bad playlist imports
 		# bm.get("add file start")
 
 		if not os.path.isfile(path):
@@ -40249,7 +40232,7 @@ def main(holder: Holder) -> None:
 			with (user_directory / "lyrics_substitutions.json").open() as f:
 				prefs.lyrics_subs = json.load(f)
 		except FileNotFoundError:
-			logging.error("No existing lyrics_substitutions.json file")
+			logging.error("No existing lyrics_substitutions.json file")  # noqa: TRY400
 		except Exception:
 			logging.exception("Unknown error loading lyrics_substitutions.json")
 
@@ -42056,7 +42039,7 @@ def main(holder: Holder) -> None:
 			tauon.open_uri(item)
 
 	sdl_version = sdl3.SDL_GetVersion()
-	logging.info(f"Using SDL version: {str(sdl_version)}")
+	logging.info(f"Using SDL version: {sdl_version!s}")
 
 	# C-ML
 	# if prefs.backend == 2:
@@ -42536,9 +42519,7 @@ def main(holder: Holder) -> None:
 				elif event.key.key == sdl3.SDLK_X:
 					inp.key_x_press = True
 
-				if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0:
-					inp.key_return_press = True
-				elif event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0:
+				if (event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0) or (event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0):
 					inp.key_return_press = True
 				elif event.key.key == sdl3.SDLK_TAB:
 					inp.key_tab_press = True
@@ -42756,7 +42737,7 @@ def main(holder: Holder) -> None:
 				tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -43357,8 +43338,7 @@ def main(holder: Holder) -> None:
 
 					if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
 						gui.pl_update += 1
-						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
-							pctl.selected_in_playlist = len(pctl.default_playlist) - 1
+						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist) - 1)
 
 						if not gui.shift_selection:
 							gui.shift_selection.append(pctl.selected_in_playlist)
@@ -45980,10 +45960,9 @@ def main(holder: Holder) -> None:
 					# rect = [0, 0, window_size[0], window_size[1]]
 					# ddt.rect_r(rect, [0, 0, 0, 90], True)
 					pref_box.render()
-				else:
-					if not Path(tauon.prefs.playlist_folder_path).is_dir():
-						tauon.prefs.playlist_folder_path = ""
-						prefs.autoscan_playlist_folder = False
+				elif not Path(tauon.prefs.playlist_folder_path).is_dir():
+					tauon.prefs.playlist_folder_path = ""
+					prefs.autoscan_playlist_folder = False
 
 				if gui.rename_folder_box:
 					if gui.level_2_click:
@@ -47121,7 +47100,7 @@ def main(holder: Holder) -> None:
 			tauon.thread_manager.player_lock.release()
 	except RuntimeError as e:
 		if str(e) == "release unlocked lock":
-			logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+			logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 		else:
 			logging.exception("Unknown RuntimeError trying to release player_lock")
 	except Exception:
