@@ -7554,7 +7554,7 @@ class Tauon:
 		found = False
 		for name in self.prefs.lyrics_enables:
 
-			if name in lyric_sources.keys():
+			if name in lyric_sources:
 				func = lyric_sources[name]
 
 				try:
@@ -24162,7 +24162,7 @@ class Over:
 		self.ddt.text((x, y), _("Sources:"), self.colours.box_text_label, 11)
 		y += 23 * self.gui.scale
 
-		for name in lyric_sources.keys():
+		for name in lyric_sources:
 			enabled = name in self.prefs.lyrics_enables
 			title = _(name)
 			if name in uses_scraping:
