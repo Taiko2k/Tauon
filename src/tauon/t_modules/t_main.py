@@ -8811,7 +8811,7 @@ class Tauon:
 		else:
 			self.prefs.sync_playlist = self.pctl.pl_to_id(pl)
 
-	def sync_playlist_deco(self, pl: int):
+	def sync_playlist_deco(self, pl: int) -> list[ColourRGBA | str | None]:
 		text = _("Set as Sync Playlist")
 		id = self.pctl.pl_to_id(pl)
 		if id == self.prefs.sync_playlist:
@@ -19162,7 +19162,7 @@ class STray:
 		self.systray: SysTrayIcon | None = None
 		self.active = False
 
-	def up(self, systray: SysTrayIcon) -> None:
+	def up(self, _: SysTrayIcon) -> None:
 		sdl3.SDL_ShowWindow(self.t_window)
 		sdl3.SDL_RaiseWindow(self.t_window)
 		sdl3.SDL_RestoreWindow(self.t_window)
@@ -19172,19 +19172,19 @@ class STray:
 		if self.active:
 			sdl3.SDL_HideWindow(self.t_window)
 
-	def advance(self, systray: SysTrayIcon) -> None:
+	def advance(self, _: SysTrayIcon) -> None:
 		self.pctl.advance()
 
-	def back(self, systray: SysTrayIcon) -> None:
+	def back(self, _: SysTrayIcon) -> None:
 		self.pctl.back()
 
-	def pause(self, systray: SysTrayIcon) -> None:
+	def pause(self, _: SysTrayIcon) -> None:
 		self.pctl.play_pause()
 
-	def track_stop(self, systray: SysTrayIcon) -> None:
+	def track_stop(self, _: SysTrayIcon) -> None:
 		self.pctl.stop()
 
-	def on_quit_callback(self, systray: SysTrayIcon) -> None:
+	def on_quit_callback(self, _: SysTrayIcon) -> None:
 		self.tauon.exit("Exit called from tray.")
 
 	def start(self) -> None:
@@ -37716,6 +37716,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 			return ""
 		else:
 			setattr(track, attr, "")
+		return None
 
 	tag = tags
 
