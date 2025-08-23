@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING
 
 allow_tidal = False
 try:
-	import tidalapi
-	from tidalapi import Quality, Session
+	from tidalapi.media import Quality, Track
+	from tidalapi.session import Session
+	from tidalapi.user import Favorites
 	allow_tidal = True
 except ModuleNotFoundError:
 	logging.warning("Unable to import tidalapi, Tidal support will be disabled.")
@@ -41,7 +42,7 @@ class Tidal:
 			self.tauon.show_message(_("Tidalapi package not loaded"))
 			return
 		logging.info("LOGIN 1")
-		session = tidalapi.Session()
+		session = Session()
 		#session.config.pkce_uri_redirect = f"http://localhost:7811/tidalredir"
 		login_url = session.pkce_login_url()
 		webbrowser.open(login_url, new=2, autoraise=True)
@@ -66,7 +67,7 @@ class Tidal:
 		if not self.session and os.path.isfile(self.save_path):
 			with open(self.save_path) as f:
 				session_data = json.load(f)
-			session = tidalapi.Session()
+			session = Session()
 
 			expiry_time = None
 			if session_data["expiry_time"]:
@@ -168,7 +169,7 @@ class Tidal:
 			if nt.url_key and nt.file_ext == "TIDAL":
 				self.import_cache[nt.url_key] = nt
 
-	def new_track(self, track: TrackClass) -> TrackClass:
+	def new_track(self, track: Track) -> TrackClass:
 		new = False
 		nt = self.import_cache.get(track.id)
 
@@ -203,7 +204,7 @@ class Tidal:
 
 		return nt
 
-	def track(self, id: int) -> None:
+	def track(self, id: int) -> list | None:
 		self.try_load()
 		if not self.session:
 			return []
@@ -212,7 +213,8 @@ class Tidal:
 		t = self.session.track(id)
 		nt = self.new_track(t)
 		self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing].playlist_ids.append(nt.index)
-		self.tauon.gui.pl_update += 1
+		self.tauon.gui.pl_update += 14
+		return None
 
 	def fav_albums(self, return_list: bool = False) -> list[TrackClass] | None:
 		self.try_load()
@@ -221,7 +223,7 @@ class Tidal:
 		self.build_cache()
 
 		try:
-			f = tidalapi.Favorites(self.session, self.session.user.id)
+			f = Favorites(self.session, self.session.user.id)
 		except Exception:
 			logging.exception("Error getting tidal user favorites")
 			return []
@@ -247,7 +249,7 @@ class Tidal:
 		self.build_cache()
 
 		try:
-			f = tidalapi.Favorites(self.session, self.session.user.id)
+			f = Favorites(self.session, self.session.user.id)
 		except Exception:
 			logging.exception("Error getting tidal user favorites")
 			return []
