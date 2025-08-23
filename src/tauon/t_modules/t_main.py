@@ -162,7 +162,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	year_search,
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
-from tauon.t_modules.t_launch import Launch  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
@@ -29119,7 +29118,7 @@ class MiniMode:
 				colour = ColourRGBA(255, 255, 255, 190)
 
 			sx = seek_r[0] + seek_w + 12 * self.gui.scale
-			sy = seek_r[1] - 2 * self.gui.scale
+			# sy = seek_r[1] - 2 * self.gui.scale
 			self.shuffle.render(sx, sy, colour)
 
 
@@ -41110,7 +41109,6 @@ def main(holder: Holder) -> None:
 	ddt.scale = gui.scale
 	ddt.force_subpixel_text = prefs.force_subpixel_text
 
-	launch = Launch(tauon, pctl, gui, ddt)
 	if system == "Linux":
 		tauon.prime_fonts()
 	else:
@@ -43685,9 +43683,7 @@ def main(holder: Holder) -> None:
 					gbc.enable()
 					#logging.info("Enabling garbage collecting")
 
-			if gui.mode == 4:
-				launch.render()
-			elif gui.mode in (1, 2):
+			if gui.mode in (1, 2):
 
 				ddt.text_background_colour = colours.playlist_panel_background
 
@@ -43821,8 +43817,8 @@ def main(holder: Holder) -> None:
 								w -= gui.lspw
 
 						x = window_size[0] - w
-						sx = x
-						sw = w
+						# sx = x
+						# sw = w
 						h = window_size[1] - gui.panelY - gui.panelBY
 
 						if not gui.show_playlist and inp.mouse_click:
@@ -43853,7 +43849,7 @@ def main(holder: Holder) -> None:
 
 						l_area = x
 						r_area = w
-						c_area = r_area // 2 + l_area
+						# c_area = r_area // 2 + l_area
 
 						ddt.text_background_colour = colours.gallery_background
 
