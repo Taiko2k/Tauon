@@ -35255,7 +35255,7 @@ class RadioThumbGen:
 					src.write(chunk)
 					length += len(chunk)
 					if length > 2000000:
-						scr = None
+						src = None
 				if src is None:
 					self.cache[key] = [0]
 					if station.icon and station.icon not in self.prefs.radio_thumb_bans:
