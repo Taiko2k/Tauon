@@ -31,8 +31,7 @@ import cairo
 from gi.repository import Pango, PangoCairo
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import AlbumArt, Tauon, TrackClass
-
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
 class TopChart:
 
