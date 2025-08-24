@@ -40497,9 +40497,9 @@ def main(holder: Holder) -> None:
 					tauonqueueitem_jar = save[90]
 					for d in tauonqueueitem_jar:
 						nt = TauonQueueItem(**d)
-						p_force_queue.append(nt)
+						bag.p_force_queue.append(nt)
 				else:
-					p_force_queue = save[90]
+					bag.p_force_queue = save[90]
 			if len(save) > 91 and save[91] is not None:
 				prefs.use_pause_fade = save[91]
 			if len(save) > 92 and save[92] is not None:
@@ -40933,7 +40933,7 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			master_library, pctl.multi_playlist, tauon.star_store, p_force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
+			master_library, pctl.multi_playlist, tauon.star_store, pctl.force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
 				master_library=master_library,
@@ -40950,7 +40950,7 @@ def main(holder: Holder) -> None:
 				prefs=prefs,
 				radio_playlists=pctl.radio_playlists,
 				theme=prefs.theme,
-				p_force_queue=p_force_queue,
+				p_force_queue=pctl.force_queue,
 			)
 			# Immediately write down migrations to prevent later crashes from throwing things out of alignment
 			tauon.save_state()
