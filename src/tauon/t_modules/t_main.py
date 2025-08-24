@@ -5618,6 +5618,7 @@ class Tauon:
 		self.bag                          = bag
 		self.mpt                          = bag.mpt
 		self.gme                          = bag.gme
+		self.dev_mode                     = bag.dev_mode
 		self.renderer                     = bag.renderer
 		self.ddt                          = TDraw(bag.renderer)
 		self.fonts                        = bag.fonts
@@ -5762,6 +5763,10 @@ class Tauon:
 		self.restore_ignore_timer.force_set(100)
 		self.fields = Fields(self)
 		# Create top menu
+		self.view_menu             = Menu(self, 170)
+		self.set_menu_hidden       = Menu(self, 100)
+		self.vis_menu              = Menu(self, 140)
+		self.window_menu           = Menu(self, 140)
 		self.x_menu                = Menu(self, 190, show_icons=True)
 		self.set_menu              = Menu(self, 150)
 		self.field_menu            = Menu(self, 140)
@@ -36806,6 +36811,7 @@ class Bag:
 	overlay_texture_texture: sdl3.LP_SDL_Texture
 	fonts:                   Fonts
 	tls_context:             ssl.SSLContext
+	dev_mode:                bool
 	macos:                   bool
 	msys:                    bool
 	phone:                   bool
@@ -40013,6 +40019,766 @@ def load_savefile(latest_db_version: float, user_directory: Path, bag: Bag, pref
 			logging.exception("Failed to load save file")
 	return bag, prefs, gui, after_scan, search_string_cache, search_dia_string_cache
 
+def setup_menus(tauon: Tauon) -> tuple[MenuIcon, MenuIcon, MenuIcon]:
+	bag   = tauon.bag
+	gui   = tauon.gui
+	inp   = tauon.inp
+	pctl  = tauon.pctl
+	prefs = tauon.prefs
+
+	playlist_menu         = tauon.playlist_menu
+	radio_entry_menu      = tauon.radio_entry_menu
+	showcase_menu         = tauon.showcase_menu
+	center_info_menu      = tauon.center_info_menu
+	gallery_menu          = tauon.gallery_menu
+	artist_info_menu      = tauon.artist_info_menu
+	repeat_menu           = tauon.repeat_menu
+	shuffle_menu          = tauon.shuffle_menu
+	artist_list_menu      = tauon.artist_list_menu
+	lightning_menu        = tauon.lightning_menu
+	lsp_menu              = tauon.lsp_menu
+	folder_tree_menu      = tauon.folder_tree_menu
+	folder_tree_stem_menu = tauon.folder_tree_stem_menu
+	radio_context_menu    = tauon.radio_context_menu
+	tab_menu              = tauon.tab_menu
+	extra_tab_menu        = tauon.extra_tab_menu
+	track_menu            = tauon.track_menu
+	selection_menu        = tauon.selection_menu
+	folder_menu           = tauon.folder_menu
+	picture_menu          = tauon.picture_menu
+	mode_menu             = tauon.mode_menu
+	extra_menu            = tauon.extra_menu
+
+	# . Menu entry: A side panel view layout
+	lsp_menu.add(MenuItem(_("Playlists + Queue"), tauon.enable_playlist_list, disable_test=tauon.lsp_menu_test_playlist))
+	lsp_menu.add(MenuItem(_("Queue"), tauon.enable_queue_panel, disable_test=tauon.lsp_menu_test_queue))
+	# . Menu entry: Side panel view layout showing a list of artists with thumbnails
+	lsp_menu.add(MenuItem(_("Artist List"), tauon.enable_artist_list, disable_test=tauon.lsp_menu_test_artist))
+	# . Menu entry: A side panel view layout. Alternative name: Folder Tree
+	lsp_menu.add(MenuItem(_("Folder Navigator"), tauon.enable_folder_list, disable_test=tauon.lsp_menu_test_tree))
+
+	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
+	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
+	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
+
+	shuffle_menu.add(MenuItem(_("Shuffle Lockdown"), tauon.toggle_shuffle_layout))
+	shuffle_menu.add(MenuItem(_("Shuffle Lockdown Albums"), tauon.toggle_shuffle_layout_albums))
+	shuffle_menu.br()
+	shuffle_menu.add(MenuItem(_("Shuffle OFF"), tauon.menu_shuffle_off))
+	shuffle_menu.add(MenuItem(_("Shuffle Tracks"), tauon.menu_set_random))
+	shuffle_menu.add(MenuItem(_("Random Albums"), tauon.menu_album_random))
+
+	artist_info_menu.add(MenuItem(_("Close Panel"), tauon.artist_info_panel_close))
+	artist_info_menu.add(MenuItem(_("Make Large"), tauon.toggle_bio_size, tauon.toggle_bio_size_deco))
+
+	filter_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "filter.png", True))
+	filter_icon.colour = ColourRGBA(43, 213, 255, 255)
+	filter_icon.xoff = 1
+
+	folder_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "folder.png", True))
+	info_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "info.png", True))
+
+	folder_icon.colour = ColourRGBA(244, 220, 66, 255)
+	info_icon.colour = ColourRGBA(61, 247, 163, 255)
+
+	folder_tree_stem_menu.add(MenuItem(_("Open Folder"), tauon.open_folder_stem, pass_ref=True, icon=folder_icon))
+	folder_tree_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
+
+	lightning_menu.add(MenuItem(_("Filter to New Playlist"), tauon.tag_to_new_playlist, pass_ref=True, icon=filter_icon))
+	folder_tree_menu.add(MenuItem(_("Filter to New Playlist"), tauon.folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon))
+	folder_tree_stem_menu.add(MenuItem(_("Filter to New Playlist"), tauon.stem_to_new_playlist, pass_ref=True, icon=filter_icon))
+	folder_tree_stem_menu.add(MenuItem(_("Rescan Folder"), tauon.re_import3, pass_ref=True))
+	folder_tree_menu.add(MenuItem(_("Rescan Folder"), tauon.re_import4, pass_ref=True))
+	lightning_menu.add(MenuItem(_("Move Playing Folder Here"), tauon.move_playing_folder_to_tag, pass_ref=True))
+
+	folder_tree_stem_menu.add(MenuItem(_("Move Playing Folder Here"), tauon.move_playing_folder_to_tree_stem, pass_ref=True))
+
+	folder_tree_stem_menu.br()
+
+	folder_tree_stem_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
+
+	folder_tree_stem_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
+	# folder_tree_menu.add("lock", lock_folder_tree, tauon.lock_folder_tree_deco)
+
+	gallery_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
+	gallery_menu.add(MenuItem(_("Show in Playlist"), tauon.show_in_playlist))
+	gallery_menu.add_sub(_("Image…"), 160)
+	gallery_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
+	gallery_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
+
+	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
+
+	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+
+	showcase_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add_sub(_("Misc…"), 150)
+	showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
+	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
+	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
+	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
+		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
+
+	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+	center_info_menu.add_sub(_("Misc…"), 150)
+	center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
+	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
+		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
+
+	picture_menu.add(MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
+	# Next and previous pictures
+	picture_menu.add(MenuItem(_("Next Image"), tauon.cycle_offset, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True))
+	#picture_menu.add(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True)
+
+	# Extract embedded artwork from file
+	picture_menu.add(MenuItem(_("Extract Image"), tauon.save_embed_img, tauon.extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.save_embed_img_disable_test))
+
+	del_icon = asset_loader(bag, bag.loaded_asset_dc, "del.png", True)
+	delete_icon = MenuIcon(del_icon)
+
+	picture_menu.add(
+		MenuItem(_("Delete Image File"), tauon.delete_track_image, tauon.delete_track_image_deco, pass_ref=True,
+		pass_ref_deco=True, icon=delete_icon))
+
+	picture_menu.add(MenuItem(_("Quick-Fetch Cover Art"), tauon.download_art1_fire, tauon.dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.download_art1_fire_disable_test))
+	# picture_menu.add(_('Search Google for Images'), tauon.ser_gimage, tauon.search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=tauon.toggle_gimage)
+
+	# picture_menu.add(_('Toggle art box'), tauon.toggle_side_art, tauon.toggle_side_art_deco)
+
+	picture_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
+	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
+	gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
+	gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), tauon.save_embed_img, tauon.extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.save_embed_img_disable_test))
+	gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), tauon.delete_track_image, tauon.delete_track_image_deco, pass_ref=True, pass_ref_deco=True)) #, icon=delete_icon)
+	gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), tauon.download_art1_fire, tauon.dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.download_art1_fire_disable_test))
+	# playlist_menu.add('Paste', append_here, paste_deco)
+
+	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
+	tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
+
+	tauon.radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
+
+	lock_asset = asset_loader(bag, bag.loaded_asset_dc, "lock.png", True)
+	lock_icon = MenuIcon(lock_asset)
+	lock_icon.base_asset_mod = asset_loader(bag, bag.loaded_asset_dc, "unlock.png", True)
+	lock_icon.colour = ColourRGBA(240, 190, 10, 255)
+	lock_icon.colour_callback = tauon.lock_colour_callback
+	lock_icon.xoff = 4
+	lock_icon.yoff = -1
+
+	tab_menu.add(MenuItem(_("Lock"), tauon.lock_playlist_toggle, tauon.pl_lock_deco,
+		pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=inp.test_shift))
+
+	# Clear playlist
+	tab_menu.add(MenuItem(_("Clear"), tauon.clear_playlist, pass_ref=True, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
+
+	delete_icon.xoff = 3
+	delete_icon.colour = ColourRGBA(249, 70, 70, 255)
+
+	tab_menu.add(MenuItem(_("Delete"),
+		pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
+	tauon.radio_tab_menu.add(MenuItem(_("Delete"),
+		pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
+
+	spot_asset         = asset_loader(bag, bag.loaded_asset_dc, "spot.png", True)
+	spot_icon          = MenuIcon(spot_asset)
+	spot_icon.colour = ColourRGBA(30, 215, 96, 255)
+	spot_icon.xoff = 5
+	spot_icon.yoff = 2
+
+	jell_icon = MenuIcon(spot_asset)
+	jell_icon.colour = ColourRGBA(190, 100, 210, 255)
+	jell_icon.xoff = 5
+	jell_icon.yoff = 2
+
+	tab_menu.br()
+
+	extra_tab_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, icon=gui.add_icon))
+
+	tab_menu.add(MenuItem(_("Upload"),
+		tauon.upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=tauon.spotify_show_test))
+	tab_menu.add(MenuItem(_("Upload"),
+		tauon.upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=tauon.jellyfin_show_test))
+
+	tab_menu.add(MenuItem(_("Regenerate"), tauon.regen_playlist_async, tauon.regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
+	tab_menu.add_sub(_("Generate…"), 150)
+	tab_menu.add(MenuItem(_("Edit Generator..."), tauon.edit_generator_box, pass_ref=True))
+	tab_menu.add_sub(_("Sort…"), 170)
+	extra_tab_menu.add_sub(_("From Current…"), 133)
+	# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
+	# tab_menu.add(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True)
+	# tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
+
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), tauon.imported_sort, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), tauon.imported_sort_folders, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), tauon.standard_sort, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), tauon.year_sort, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), tauon.make_auto_sorting, pass_ref=True))
+
+	tab_menu.br()
+
+	tab_menu.add(MenuItem(_("Rescan Folder"), pctl.re_import2, tauon.rescan_deco, pass_ref=True, pass_ref_deco=True))
+
+	tab_menu.add(MenuItem(_("Paste"), tauon.s_append, tauon.paste_deco, pass_ref=True))
+	tab_menu.add(MenuItem(_("Append Playing"), tauon.append_current_playing, tauon.append_deco, pass_ref=True))
+	tab_menu.br()
+
+	# tab_menu.add("Sort By Filepath", tauon.sort_path_pl, pass_ref=True)
+
+	tab_menu.add(MenuItem(_("Import/export…"), tauon.export_playlist_box.activate, pass_ref=True))
+
+	tab_menu.add_sub(_("Misc…"), 175)
+	tab_menu.add_to_sub(2, MenuItem(_("Export Playlist Stats"), tauon.export_stats, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Export Albums CSV"), tauon.export_playlist_albums, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Transcode All"), tauon.convert_playlist, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Rescan Tags"), tauon.rescan_tags, pass_ref=True))
+	# tab_menu.add_to_sub(_('Forget Import Folder'), 2, tauon.forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
+	# tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, tauon.re_import, pass_ref=True)
+	# tab_menu.add_to_sub(_('Quick Export XSPF'), 2, tauon.export_xspf, pass_ref=True)
+	# tab_menu.add_to_sub(_('Quick Export M3U'), 2, tauon.export_m3u, pass_ref=True)
+	tab_menu.add_to_sub(2, MenuItem(_("Toggle Breaks"), tauon.pl_toggle_playlist_break, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Engage Gallery Quick Add"), tauon.start_quick_add, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), tauon.set_sync_playlist, tauon.sync_playlist_deco, pass_ref_deco=True, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
+	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
+
+	# tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
+
+	tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), tauon.gen_top_100, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), tauon.gen_top_100, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Top Played Albums"), tauon.gen_folder_top, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Albums"), tauon.gen_folder_top, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), tauon.gen_top_rating, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), tauon.gen_top_rating, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), tauon.gen_folder_top_rating, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), tauon.gen_folder_top_rating, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("File Modified"),tauon. gen_last_modified, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("File Modified"), tauon.gen_last_modified, pass_ref=True))
+
+	# tab_menu.add_to_sub(_("File Path"), 0, stauon.tandard_sort, pass_ref=True)
+	# extra_tab_menu.add_to_sub(_("File Path"), 0, tauon.standard_sort, pass_ref=True)
+
+	tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), tauon.gen_sort_len, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), tauon.gen_sort_len, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), tauon.gen_folder_duration, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), tauon.gen_folder_duration, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Year by Oldest"), tauon.gen_sort_date, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Year by Oldest"), tauon.gen_sort_date, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Year by Latest"), tauon.gen_sort_date_new, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Year by Latest"), tauon.gen_sort_date_new, pass_ref=True))
+
+	# tab_menu.add_to_sub(_("Year by Artist"), 0, tauon.year_sort, pass_ref=True)
+	# extra_tab_menu.add_to_sub(_("Year by Artist"), 0, tauon.year_sort, pass_ref=True)
+
+	tab_menu.add_to_sub(0, MenuItem(_("Shuffled Tracks"), tauon.gen_500_random, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Shuffled Tracks"), tauon.gen_500_random, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), tauon.gen_folder_shuffle, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), tauon.gen_folder_shuffle, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Lucky Random"), tauon.gen_best_random, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Lucky Random"), tauon.gen_best_random, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Reverse Tracks"), tauon.gen_reverse, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Reverse Tracks"), tauon.gen_reverse, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Reverse Albums"), tauon.gen_folder_reverse, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Reverse Albums"), tauon.gen_folder_reverse, pass_ref=True))
+
+	tab_menu.add_to_sub(0, MenuItem(_("Duplicate"), tauon.gen_dupe, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Duplicate"), tauon.gen_dupe, pass_ref=True))
+
+	# tab_menu.add_to_sub("Filepath", 1, tauon.gen_sort_path, pass_ref=True)
+	# tab_menu.add_to_sub("Artist → gui.abc", 0, tauon.gen_sort_artist, pass_ref=True)
+	# tab_menu.add_to_sub("Album → gui.abc", 0, tauon.gen_sort_album, pass_ref=True)
+	tab_menu.add_to_sub(0, MenuItem(_("Loved"), tauon.gen_love, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Loved"), tauon.gen_love, pass_ref=True))
+	tab_menu.add_to_sub(0, MenuItem(_("Has Comment"), tauon.gen_comment, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Has Comment"), tauon.gen_comment, pass_ref=True))
+	tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
+	extra_tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
+
+	playlist_menu.add(MenuItem("Paste", tauon.paste, tauon.paste_deco))
+
+	playlist_menu.add(MenuItem(_("Add Playing Spotify Album"), tauon.paste_playlist_coast_album, tauon.paste_playlist_coast_album_deco,
+		show_test=tauon.spotify_show_test))
+	playlist_menu.add(MenuItem(_("Add Playing Spotify Track"), tauon.paste_playlist_coast_track, tauon.paste_playlist_coast_album_deco,
+		show_test=tauon.spotify_show_test))
+
+	track_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
+	track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=info_icon))
+
+	gui.heartx_icon.colour = ColourRGBA(55, 55, 55, 255)
+	gui.heartx_icon.xoff = 1
+	gui.heartx_icon.yoff = 0
+	gui.heartx_icon.colour_callback = tauon.heart_xmenu_colour
+
+	gui.spot_heartx_icon.colour = ColourRGBA(30, 215, 96, 255)
+	gui.spot_heartx_icon.xoff = 3
+	gui.spot_heartx_icon.yoff = 0
+	gui.spot_heartx_icon.colour_callback = tauon.spot_heart_xmenu_colour
+
+	# Mark track as 'liked'
+	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, icon=gui.heartx_icon))
+
+	heart_spot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "heart-menu.png", True))
+	heart_spot_icon.colour = ColourRGBA(30, 215, 96, 255)
+	heart_spot_icon.xoff = 1
+	heart_spot_icon.yoff = 0
+	heart_spot_icon.colour_callback = tauon.spot_heart_menu_colour
+
+	track_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_ref, tauon.toggle_spotify_like_row_deco, show_test=tauon.spot_like_show_test, icon=heart_spot_icon))
+
+	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
+
+	track_menu.add(MenuItem(_("↳ After Current Track"), tauon.add_to_queue_next, pass_ref=True, show_test=inp.test_shift))
+
+	track_menu.add(MenuItem(_("Show in Gallery"), tauon.show_in_gal, pass_ref=True, show_test=tauon.test_show))
+
+	track_menu.add_sub(_("Meta…"), 160)
+
+	track_menu.br()
+	# track_menu.add('Cut', s_cut, pass_ref=False)
+	# track_menu.add('Remove', del_selected)
+	track_menu.add(MenuItem(_("Copy"), tauon.s_copy, pass_ref=False))
+
+	# track_menu.add(_('Paste + Transfer Folder'), tauon.lightning_paste, pass_ref=False, show_test=tauon.lightning_move_test)
+
+	track_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
+
+	track_menu.add(MenuItem(_("Delete Track File"), tauon.delete_track, pass_ref=True, icon=delete_icon, show_test=inp.test_shift))
+
+	track_menu.br()
+
+	# gui.rename_tracks_icon.colour = ColourRGBA(244, 241, 66, 255)
+	# gui.rename_tracks_icon.colour = ColourRGBA(204, 255, 66, 255)
+	gui.rename_tracks_icon.colour = ColourRGBA(204, 100, 205, 255)
+	gui.rename_tracks_icon.xoff = 1
+	track_menu.add_to_sub(0, MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, tauon.rename_tracks_deco, pass_ref=True,
+		pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
+
+	track_menu.add_to_sub(0, MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
+
+	gui.mod_folder_icon.colour = ColourRGBA(229, 98, 98, 255)
+	track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
+
+
+	# track_menu.add_to_sub("Reset Track Play Count", 0, tauon.reset_play_count, pass_ref=True)
+
+	# track_menu.add('Reload Metadata', tauon.reload_metadata, pass_ref=True)
+	track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
+
+	mbp_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "mbp-g.png"))
+	mbp_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "mbp-gs.png")
+
+	mbp_icon.xoff = 2
+	mbp_icon.yoff = -1
+
+	if gui.scale == 1.25:
+		mbp_icon.yoff = 0
+
+	edit_icon = None
+	if prefs.tag_editor_name == "Picard":
+		edit_icon = mbp_icon
+
+	track_menu.add_to_sub(0, MenuItem(_("Edit with"), tauon.launch_editor, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_disable_test))
+	track_menu.add_to_sub(0, MenuItem(_("Lyrics..."), tauon.show_lyrics_menu, pass_ref=True))
+	track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
+	# track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
+
+	folder_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
+
+	folder_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
+	folder_tree_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
+	# folder_menu.add(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True)
+	folder_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
+	folder_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
+
+	gallery_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
+
+	folder_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, tauon.rename_tracks_deco,
+		pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
+	folder_tree_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
+
+	if not tauon.snap_mode:
+		folder_menu.add(MenuItem("Edit with", tauon.launch_editor_selection, pass_ref=True,
+			pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
+
+	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
+	folder_tree_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
+
+	folder_tree_menu.br()
+	folder_tree_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
+	folder_tree_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
+
+	# selection_menu.br()
+
+	gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
+	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
+	folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
+	folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
+	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
+		show_test=tauon.toggle_transcode))
+	gallery_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
+		show_test=tauon.toggle_transcode))
+	folder_menu.br()
+
+	# Copy album title text to clipboard
+	folder_menu.add(MenuItem(_('Copy "Artist - Album"'), tauon.clip_title, pass_ref=True))
+
+	folder_menu.add(MenuItem("Lookup Spotify Album URL", tauon.get_album_spot_url, tauon.get_album_spot_url_deco, pass_ref=True,
+		pass_ref_deco=True, show_test=tauon.spotify_show_test, icon=spot_icon))
+
+	folder_menu.add(MenuItem("Add to Spotify Library", tauon.add_to_spotify_library, tauon.add_to_spotify_library_deco, pass_ref=True,
+		pass_ref_deco=True, show_test=tauon.spotify_show_test, icon=spot_icon))
+
+
+	# Copy artist name text to clipboard
+	# folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
+
+	selection_menu.add(MenuItem(_("Add to queue"), tauon.add_selected_to_queue_multi, tauon.selection_queue_deco))
+	selection_menu.br()
+	selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
+	selection_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
+	selection_menu.add(MenuItem(_("Edit with "), tauon.launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
+
+	selection_menu.br()
+	folder_menu.br()
+
+	# It's complicated
+	# folder_menu.add(_('Copy Folder From Library'), lightning_copy)
+
+	selection_menu.add(MenuItem(_("Copy"), tauon.s_copy))
+	selection_menu.add(MenuItem(_("Cut"), tauon.s_cut))
+	selection_menu.add(MenuItem(_("Remove"), tauon.del_selected))
+	selection_menu.add(MenuItem(_("Delete Files"), tauon.force_del_selected, show_test=inp.test_shift, icon=delete_icon))
+
+	folder_menu.add(MenuItem(_("Copy"), tauon.s_copy))
+	gallery_menu.add(MenuItem(_("Copy"), tauon.s_copy))
+	# folder_menu.add(_('Cut'), s_cut)
+	# folder_menu.add(_('Paste + Transfer Folder'), tauon.lightning_paste, pass_ref=False, show_test=tauon.lightning_move_test)
+	# gallery_menu.add(_('Paste + Transfer Folder'), tauon.lightning_paste, pass_ref=False, show_test=tauon.lightning_move_test)
+	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
+	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
+
+	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.toggle_wiki))
+	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.toggle_gen))
+
+	son_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sonemic-g.png"))
+	son_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "sonemic-gs.png")
+
+	son_icon.xoff = 1
+	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.toggle_rym))
+
+	band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
+	band_icon.xoff = 0
+	band_icon.yoff = 1
+	band_icon.colour = ColourRGBA(96, 147, 158, 255)
+
+	track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.toggle_band))
+
+	# Copy metadata to clipboard
+	# track_menu.add(_('Copy "Artist - Album"'), tauon.clip_aar_al, pass_ref=True)
+	track_menu.add(MenuItem(_('Copy "Artist - Track"'), tauon.clip_ar_tr, pass_ref=True))
+	track_menu.add(MenuItem(_("Copy TIDAL Album URL"), tauon.tidal_copy_album, show_test=tauon.is_tidal_track, pass_ref=True))
+
+	track_menu.add_sub(_("Spotify…"), 190, show_test=tauon.spotify_show_test)
+	track_menu.add_to_sub(1, MenuItem(_("Show Full Artist"), tauon.get_spot_artist_track, pass_ref=True, icon=spot_icon))
+	track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), tauon.get_spot_album_track, pass_ref=True, icon=spot_icon))
+	track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), tauon.get_track_spot_url, tauon.get_track_spot_url_deco, pass_ref=True,
+		icon=spot_icon))
+	# track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), tauon.get_spot_recs_track, pass_ref=True, icon=spot_icon))
+
+	track_menu.br()
+	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
+		show_test=tauon.toggle_transcode))
+
+
+	# Create top menu
+	x_menu          = tauon.x_menu
+	view_menu       = tauon.view_menu
+	set_menu        = tauon.set_menu
+	set_menu_hidden = tauon.set_menu_hidden
+	vis_menu        = tauon.vis_menu
+	window_menu     = tauon.window_menu
+	field_menu      = tauon.field_menu
+
+	tauon.stop_menu.add(MenuItem(_("Always stop after album"), tauon.stop_mode_album_persist))
+	tauon.stop_menu.add(MenuItem(_("Always stop after track"), tauon.stop_mode_track_persist))
+	tauon.stop_menu.add(MenuItem(_("Stop after album"), tauon.stop_mode_album))
+	tauon.stop_menu.add(MenuItem(_("Stop after track"), tauon.stop_mode_track))
+	tauon.stop_menu.add(MenuItem(_("Continue Play"), tauon.stop_mode_off))
+
+	window_menu.add(MenuItem(_("Minimize"), tauon.do_minimize_button))
+	window_menu.add(MenuItem(_("Maximize"), tauon.do_maximize_button))
+	window_menu.add(MenuItem(_("Exit"),     tauon.do_exit_button))
+
+	# Copy text
+	field_menu.add(MenuItem(_("Copy"), field_copy, pass_ref=True))
+	# Paste text
+	field_menu.add(MenuItem(_("Paste"), field_paste, pass_ref=True))
+	# Clear text
+	field_menu.add(MenuItem(_("Clear"), field_clear, pass_ref=True))
+
+	vis_menu.add(MenuItem(_("Off"), tauon.vis_off))
+	vis_menu.add(MenuItem(_("Level Meter"), tauon.level_on))
+	vis_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on))
+	# vis_menu.add(_("Spectrogram"), spec2_def)
+
+	# Mark for translation
+	_("Time")
+	_("Filepath")
+
+	# set_menu.add(MenuItem(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
+	# set_menu.add(MenuItem(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
+	# set_menu.br()
+
+	set_menu_hidden.add(MenuItem(_("Show bar"), tauon.show_set_bar))
+
+	tauon.sa_regen_menu()
+
+	gui.add_icon.xoff = 3
+	gui.add_icon.yoff = 0
+	gui.add_icon.colour = ColourRGBA(237, 80, 221, 255)
+	gui.add_icon.colour_callback = tauon.new_playlist_colour_callback
+
+	x_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, tauon.new_playlist_deco, icon=gui.add_icon))
+
+	x_menu.add(MenuItem(_("Clean Database!"), tauon.clean_db_fast, tauon.clean_db_deco, show_test=tauon.clean_db_show_test))
+
+	# x_menu.add(_("Internet Radio…"), activate_radio_box)
+
+	tauon.switch_playlist = pctl.switch_playlist
+
+	x_menu.add(MenuItem(_("Paste Spotify Playlist"), tauon.import_spotify_playlist, tauon.import_spotify_playlist_deco, icon=spot_icon,
+		show_test=tauon.spotify_show_test))
+
+	x_menu.add(MenuItem(_("Import Music Folder"), tauon.import_music, show_test=tauon.show_import_music))
+
+	x_menu.br()
+
+	gui.settings_icon.xoff = 0
+	gui.settings_icon.yoff = 2
+	gui.settings_icon.colour = ColourRGBA(232, 200, 96, 255)  # [230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
+	# gui.settings_icon.colour = ColourRGBA(180, 140, 255, 255)
+	x_menu.add(MenuItem(_("Settings"), tauon.activate_info_box, icon=gui.settings_icon))
+	x_menu.add_sub(_("Database…"), 190)
+
+	if tauon.dev_mode:
+		def dev_mode_enable_save_state() -> None:
+			bag.should_save_state = True
+			tauon.show_message(_("Enabled saving state"))
+
+		def dev_mode_disable_save_state() -> None:
+			bag.should_save_state = False
+			tauon.show_message(_("Disabled saving state"))
+
+		x_menu.add_sub(_("Dev Mode"), 190)
+		x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), tauon.dev_mode_enable_save_state))
+		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
+	x_menu.br()
+
+	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
+
+	x_menu.add_to_sub(0, MenuItem(_("Export as CSV"), tauon.export_database))
+	x_menu.add_to_sub(0, MenuItem(_("Rescan All Folders"), pctl.rescan_all_folders))
+	x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), tauon.q_to_playlist))
+	x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), tauon.clear_img_cache))
+
+	x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), tauon.clean_db2))
+	x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), tauon.clean_db))
+	x_menu.add_to_sub(0, MenuItem(_("Import FMPS Ratings"), tauon.import_fmps))
+	x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), tauon.import_popm))
+	x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), tauon.clear_ratings))
+	x_menu.add_to_sub(0, MenuItem(_("Find Incomplete Albums"), tauon.find_incomplete))
+	x_menu.add_to_sub(0, MenuItem(_("Mark Missing as Found"), pctl.reset_missing_flags, show_test=inp.test_shift))
+
+	if tauon.chrome:
+		x_menu.add_sub(_("Chromecast…"), 220)
+		shooter(tauon.cast_search2)
+
+	tauon.chrome_menu = x_menu
+
+	#x_menu.add(_("Cast…"), cast_search, cast_deco)
+
+
+	mode_menu.add(MenuItem(_("Tab"), tauon.set_mini_mode_D))
+	mode_menu.add(MenuItem(_("Mini"), tauon.set_mini_mode_A1))
+	# mode_menu.add(_('Mini Mode Large'), tauon.set_mini_mode_A2)
+	mode_menu.add(MenuItem(_("Slate"), tauon.set_mini_mode_C1))
+	mode_menu.add(MenuItem(_("Square"), tauon.set_mini_mode_B1))
+	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
+
+	mode_menu.br()
+	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
+
+	extra_menu.add(MenuItem(_("Random Track"), tauon.random_track, hint=";"))
+
+	radiorandom_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "radiorandom.png", True))
+	revert_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "revert.png", True))
+
+	radiorandom_icon.xoff = 1
+	radiorandom_icon.yoff = 0
+	radiorandom_icon.colour = ColourRGBA(153, 229, 133, 255)
+	extra_menu.add(MenuItem(_("Radio Random"), tauon.radio_random, hint="/", icon=radiorandom_icon))
+
+	revert_icon.xoff = 1
+	revert_icon.yoff = 0
+	revert_icon.colour = ColourRGBA(229, 102, 59, 255)
+	extra_menu.add(MenuItem(_("Revert"), pctl.revert, hint="Shift+/", icon=revert_icon))
+
+	# extra_menu.add('Toggle Repeat', tauon.toggle_repeat, hint='COMMA')
+
+
+	# extra_menu.add('Toggle Random', tauon.toggle_random, hint='PERIOD')
+	extra_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, hint="Alt+Shift+Q"))
+
+	gui.heart_icon.colour = ColourRGBA(245, 60, 60, 255)
+	gui.heart_icon.xoff = 3
+	gui.heart_icon.yoff = 0
+
+	if gui.scale == 1.25:
+		gui.heart_icon.yoff = 1
+
+	gui.heart_icon.colour_callback = tauon.heart_menu_colour
+	extra_menu.add(MenuItem("Love", tauon.bar_love_notify, tauon.love_deco, icon=gui.heart_icon))
+	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
+	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
+	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
+
+	extra_menu.br()
+	extra_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_active, tauon.toggle_spotify_like_active_deco,
+		show_test=tauon.spotify_show_test, icon=gui.spot_heartx_icon))
+
+	extra_menu.add_sub(_("Import Spotify…"), 140, show_test=tauon.spotify_show_test)
+
+	extra_menu.add_to_sub(0, MenuItem(_("Liked Albums"), tauon.spot_import_albums, show_test=tauon.spotify_show_test, icon=spot_icon))
+	extra_menu.add_to_sub(0, MenuItem(_("Liked Tracks"), tauon.spot_import_tracks, show_test=tauon.spotify_show_test, icon=spot_icon))
+	#extra_menu.add_to_sub(_("Import All Playlists"), 0, tauon.spot_import_playlists, show_test=tauon.spotify_show_test, icon=spot_icon)
+	extra_menu.add_to_sub(0, MenuItem(_("Playlist…"), tauon.spot_import_playlist_menu, show_test=tauon.spotify_show_test, icon=spot_icon))
+	extra_menu.add_to_sub(0, MenuItem(_("Current Context"), tauon.spot_import_context, tauon.show_spot_coasting_deco, show_test=tauon.spotify_show_test, icon=spot_icon))
+
+	extra_menu.add(MenuItem("Show Full Album", tauon.get_album_spot_active, tauon.get_album_spot_deco,
+		show_test=tauon.spotify_show_test, icon=spot_icon))
+
+	extra_menu.add(MenuItem(_("Show Full Artist"), tauon.get_artist_spot,
+		show_test=tauon.spotify_show_test, icon=spot_icon))
+
+	extra_menu.add(MenuItem(_("Start Spotify Remote"), tauon.show_spot_playing, tauon.show_spot_playing_deco, show_test=tauon.spotify_show_test,
+		icon=spot_icon))
+
+	extra_menu.add(MenuItem("Transfer audio here", tauon.spot_transfer_playback_here, show_test=lambda x:tauon.spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (tauon.spot_ctl.coasting or tauon.spot_ctl.playing),
+		icon=spot_icon))
+
+	theme_files = os.listdir(str(tauon.install_directory / "theme"))
+	theme_files.sort()
+
+	lastfm_icon = MenuIcon(gui.last_fm_icon)
+
+	if gui.scale in (2, 1.25):
+		lastfm_icon.xoff = 0
+	else:
+		lastfm_icon.xoff = -1
+
+	lastfm_icon.yoff = 1
+
+	lastfm_icon.colour = ColourRGBA(249, 70, 70, 255)
+	lastfm_icon.colour_callback = tauon.lastfm_colour
+
+	lb_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "lb-g.png"))
+	lb_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "lb-gs.png")
+
+	lb_icon.mode_callback = tauon.lb_mode
+
+	lb_icon.xoff = 3
+	lb_icon.yoff = -1
+
+	if gui.scale == 1.25:
+		lb_icon.yoff = 0
+
+	if prefs.auto_lfm:
+		listen_icon = lastfm_icon
+	elif tauon.lb.enable:
+		listen_icon = lb_icon
+	else:
+		listen_icon = None
+
+	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
+	x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), tauon.toggle_shuffle_layout, tauon.toggle_shuffle_layout_deco)) #show_test=tauon.exit_shuffle_layout))
+	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
+	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
+	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
+
+	gui.pt_on = Timer()
+	gui.pt_off = Timer()
+	gui.pt = 0
+
+	# ------------------------------------------------------------------------------------
+	# WEBSERVER
+	if prefs.enable_web is True:
+		webThread = threading.Thread(
+			target=webserve, args=[pctl, prefs, gui, tauon.album_art_gen, str(tauon.install_directory), tauon.strings, tauon])
+		webThread.daemon = True
+		webThread.start()
+
+	ctlThread = threading.Thread(target=controller, args=[tauon])
+	ctlThread.daemon = True
+	ctlThread.start()
+
+	if prefs.enable_remote:
+		tauon.start_remote()
+		tauon.remote_limited = False
+	# --------------------------------------------------------------
+
+	pref_box = tauon.pref_box
+
+	radio_entry_menu.add(MenuItem(_("Visit Website"), visit_radio_site, tauon.visit_radio_site_deco, pass_ref=True, pass_ref_deco=True))
+	radio_entry_menu.add(MenuItem(_("Save"), tauon.save_to_radios, pass_ref=True))
+
+	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), tauon.create_artist_pl, pass_ref=True, icon=filter_icon))
+	artist_list_menu.add_sub(_("View..."), 140)
+	artist_list_menu.add_to_sub(0, MenuItem(_("Sort Alphabetically"), tauon.aa_sort_alpha))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Popularity"), tauon.aa_sort_popular))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Playtime"), tauon.aa_sort_play))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Thumbnails"), tauon.toggle_artist_list_style))
+	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Filter"), tauon.toggle_artist_list_threshold, tauon.toggle_artist_list_threshold_deco))
+
+	artist_info_menu.add(MenuItem(_("Download Artist Data"), tauon.artist_info_box.manual_dl, tauon.artist_dl_deco, show_test=tauon.test_artist_dl))
+	artist_info_menu.add(MenuItem(_("Clear Bio"), tauon.flush_artist_bio, pass_ref=True, show_test=inp.test_shift))
+	radio_context_menu.add(MenuItem(_("Edit..."), tauon.rename_station, pass_ref=True))
+	radio_context_menu.add(
+		MenuItem(_("Visit Website"), visit_radio_station, tauon.visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
+	radio_context_menu.add(MenuItem(_("Remove"), tauon.remove_station, pass_ref=True))
+
+	tauon.dl_menu.add(MenuItem("Dismiss", tauon.dismiss_dl))
+	return info_icon, folder_icon, radiorandom_icon
+
 def main(holder: Holder) -> None:
 	t_window               = holder.t_window
 	renderer               = holder.renderer
@@ -40568,6 +41334,7 @@ def main(holder: Holder) -> None:
 
 	bag = Bag(
 		cf=Config(),
+		dev_mode=dev_mode,
 		gme=gme,
 		mpt=mpt,
 		colours=colours,
@@ -41219,6 +41986,23 @@ def main(holder: Holder) -> None:
 
 	# gui.scroll_hide_box = (0, gui.panelY, 28, window_size[1] - gui.panelBY - gui.panelY)
 
+	pl_bg = None
+	if (tauon.user_directory / "bg.png").exists():
+		pl_bg = LoadImageAsset(
+			scaled_asset_directory=tauon.dirs.scaled_asset_directory, path=str(tauon.user_directory / "bg.png"), is_full_path=True)
+
+	playlist_render = StandardPlaylist(tauon, pl_bg)
+	meta_box = MetaBox(tauon)
+	showcase = Showcase(tauon)
+	cctest = ColourPulse2(tauon)
+
+	bottom_playlist2 = EdgePulse2(tauon)
+	gallery_pulse_top = EdgePulse2(tauon)
+	art_box = ArtBox(tauon)
+	nagbox = NagBox(tauon)
+
+	info_icon, folder_icon, radiorandom_icon = setup_menus(tauon)
+
 	playlist_menu         = tauon.playlist_menu
 	radio_entry_menu      = tauon.radio_entry_menu
 	showcase_menu         = tauon.showcase_menu
@@ -41242,758 +42026,9 @@ def main(holder: Holder) -> None:
 	mode_menu             = tauon.mode_menu
 	extra_menu            = tauon.extra_menu
 
-	# . Menu entry: A side panel view layout
-	lsp_menu.add(MenuItem(_("Playlists + Queue"), tauon.enable_playlist_list, disable_test=tauon.lsp_menu_test_playlist))
-	lsp_menu.add(MenuItem(_("Queue"), tauon.enable_queue_panel, disable_test=tauon.lsp_menu_test_queue))
-	# . Menu entry: Side panel view layout showing a list of artists with thumbnails
-	lsp_menu.add(MenuItem(_("Artist List"), tauon.enable_artist_list, disable_test=tauon.lsp_menu_test_artist))
-	# . Menu entry: A side panel view layout. Alternative name: Folder Tree
-	lsp_menu.add(MenuItem(_("Folder Navigator"), tauon.enable_folder_list, disable_test=tauon.lsp_menu_test_tree))
-
-	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
-	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
-	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
-
-	shuffle_menu.add(MenuItem(_("Shuffle Lockdown"), tauon.toggle_shuffle_layout))
-	shuffle_menu.add(MenuItem(_("Shuffle Lockdown Albums"), tauon.toggle_shuffle_layout_albums))
-	shuffle_menu.br()
-	shuffle_menu.add(MenuItem(_("Shuffle OFF"), tauon.menu_shuffle_off))
-	shuffle_menu.add(MenuItem(_("Shuffle Tracks"), tauon.menu_set_random))
-	shuffle_menu.add(MenuItem(_("Random Albums"), tauon.menu_album_random))
-
-	artist_info_menu.add(MenuItem(_("Close Panel"), tauon.artist_info_panel_close))
-	artist_info_menu.add(MenuItem(_("Make Large"), tauon.toggle_bio_size, tauon.toggle_bio_size_deco))
-
-	filter_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "filter.png", True))
-	filter_icon.colour = ColourRGBA(43, 213, 255, 255)
-	filter_icon.xoff = 1
-
-	folder_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "folder.png", True))
-	info_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "info.png", True))
-
-	folder_icon.colour = ColourRGBA(244, 220, 66, 255)
-	info_icon.colour = ColourRGBA(61, 247, 163, 255)
-
-	folder_tree_stem_menu.add(MenuItem(_("Open Folder"), tauon.open_folder_stem, pass_ref=True, icon=folder_icon))
-	folder_tree_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
-
-	lightning_menu.add(MenuItem(_("Filter to New Playlist"), tauon.tag_to_new_playlist, pass_ref=True, icon=filter_icon))
-	folder_tree_menu.add(MenuItem(_("Filter to New Playlist"), tauon.folder_to_new_playlist_by_track_id, pass_ref=True, icon=filter_icon))
-	folder_tree_stem_menu.add(MenuItem(_("Filter to New Playlist"), tauon.stem_to_new_playlist, pass_ref=True, icon=filter_icon))
-	folder_tree_stem_menu.add(MenuItem(_("Rescan Folder"), tauon.re_import3, pass_ref=True))
-	folder_tree_menu.add(MenuItem(_("Rescan Folder"), tauon.re_import4, pass_ref=True))
-	lightning_menu.add(MenuItem(_("Move Playing Folder Here"), tauon.move_playing_folder_to_tag, pass_ref=True))
-
-	folder_tree_stem_menu.add(MenuItem(_("Move Playing Folder Here"), tauon.move_playing_folder_to_tree_stem, pass_ref=True))
-
-	folder_tree_stem_menu.br()
-
-	folder_tree_stem_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
-
-	folder_tree_stem_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
-	# folder_tree_menu.add("lock", lock_folder_tree, tauon.lock_folder_tree_deco)
-
-	gallery_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
-	gallery_menu.add(MenuItem(_("Show in Playlist"), tauon.show_in_playlist))
-	gallery_menu.add_sub(_("Image…"), 160)
-	gallery_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
-	gallery_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
-
-	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
-
-	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
-	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-
-	showcase_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_sub(_("Misc…"), 150)
-	showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
-	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
-		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
-
-	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
-	center_info_menu.add_sub(_("Misc…"), 150)
-	center_info_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
-	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
-		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
-
-	picture_menu.add(MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
-	# Next and previous pictures
-	picture_menu.add(MenuItem(_("Next Image"), tauon.cycle_offset, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True))
-	#picture_menu.add(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True)
-
-	# Extract embedded artwork from file
-	picture_menu.add(MenuItem(_("Extract Image"), tauon.save_embed_img, tauon.extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.save_embed_img_disable_test))
-
-	del_icon = asset_loader(bag, bag.loaded_asset_dc, "del.png", True)
-	delete_icon = MenuIcon(del_icon)
-
-	picture_menu.add(
-		MenuItem(_("Delete Image File"), tauon.delete_track_image, tauon.delete_track_image_deco, pass_ref=True,
-		pass_ref_deco=True, icon=delete_icon))
-
-	picture_menu.add(MenuItem(_("Quick-Fetch Cover Art"), tauon.download_art1_fire, tauon.dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.download_art1_fire_disable_test))
-	# picture_menu.add(_('Search Google for Images'), tauon.ser_gimage, tauon.search_image_deco, pass_ref=True, pass_ref_deco=True, show_test=tauon.toggle_gimage)
-
-	# picture_menu.add(_('Toggle art box'), tauon.toggle_side_art, tauon.toggle_side_art_deco)
-
-	picture_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
-	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
-	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
-	gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
-	gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), tauon.save_embed_img, tauon.extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.save_embed_img_disable_test))
-	gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), tauon.delete_track_image, tauon.delete_track_image_deco, pass_ref=True, pass_ref_deco=True)) #, icon=delete_icon)
-	gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), tauon.download_art1_fire, tauon.dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.download_art1_fire_disable_test))
-	# playlist_menu.add('Paste', append_here, paste_deco)
-
-	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
-	tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
-
-	tauon.radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
-
-	lock_asset = asset_loader(bag, bag.loaded_asset_dc, "lock.png", True)
-	lock_icon = MenuIcon(lock_asset)
-	lock_icon.base_asset_mod = asset_loader(bag, bag.loaded_asset_dc, "unlock.png", True)
-	lock_icon.colour = ColourRGBA(240, 190, 10, 255)
-	lock_icon.colour_callback = tauon.lock_colour_callback
-	lock_icon.xoff = 4
-	lock_icon.yoff = -1
-
-	tab_menu.add(MenuItem(_("Lock"), tauon.lock_playlist_toggle, tauon.pl_lock_deco,
-		pass_ref=True, pass_ref_deco=True, icon=lock_icon, show_test=inp.test_shift))
-
-	# Clear playlist
-	tab_menu.add(MenuItem(_("Clear"), tauon.clear_playlist, pass_ref=True, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
-
-	delete_icon.xoff = 3
-	delete_icon.colour = ColourRGBA(249, 70, 70, 255)
-
-	tab_menu.add(MenuItem(_("Delete"),
-		pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
-	tauon.radio_tab_menu.add(MenuItem(_("Delete"),
-		pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
-
-	spot_asset         = asset_loader(bag, bag.loaded_asset_dc, "spot.png", True)
-	spot_icon          = MenuIcon(spot_asset)
-	spot_icon.colour = ColourRGBA(30, 215, 96, 255)
-	spot_icon.xoff = 5
-	spot_icon.yoff = 2
-
-	jell_icon = MenuIcon(spot_asset)
-	jell_icon.colour = ColourRGBA(190, 100, 210, 255)
-	jell_icon.xoff = 5
-	jell_icon.yoff = 2
-
-	tab_menu.br()
-
-	extra_tab_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, icon=gui.add_icon))
-
-	tab_menu.add(MenuItem(_("Upload"),
-		tauon.upload_spotify_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=tauon.spotify_show_test))
-	tab_menu.add(MenuItem(_("Upload"),
-		tauon.upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=spot_icon, show_test=tauon.jellyfin_show_test))
-
-	tab_menu.add(MenuItem(_("Regenerate"), tauon.regen_playlist_async, tauon.regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
-	tab_menu.add_sub(_("Generate…"), 150)
-	tab_menu.add(MenuItem(_("Edit Generator..."), tauon.edit_generator_box, pass_ref=True))
-	tab_menu.add_sub(_("Sort…"), 170)
-	extra_tab_menu.add_sub(_("From Current…"), 133)
-	# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
-	# tab_menu.add(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True)
-	# tab_menu.add(_("Sort Year per Artist"), year_sort, pass_ref=True)
-
-	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), tauon.imported_sort, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), tauon.imported_sort_folders, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), tauon.standard_sort, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), tauon.year_sort, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), tauon.make_auto_sorting, pass_ref=True))
-
-	tab_menu.br()
-
-	tab_menu.add(MenuItem(_("Rescan Folder"), pctl.re_import2, tauon.rescan_deco, pass_ref=True, pass_ref_deco=True))
-
-	tab_menu.add(MenuItem(_("Paste"), tauon.s_append, tauon.paste_deco, pass_ref=True))
-	tab_menu.add(MenuItem(_("Append Playing"), tauon.append_current_playing, tauon.append_deco, pass_ref=True))
-	tab_menu.br()
-
-	# tab_menu.add("Sort By Filepath", tauon.sort_path_pl, pass_ref=True)
-
-	tab_menu.add(MenuItem(_("Import/export…"), tauon.export_playlist_box.activate, pass_ref=True))
-
-	tab_menu.add_sub(_("Misc…"), 175)
-	tab_menu.add_to_sub(2, MenuItem(_("Export Playlist Stats"), tauon.export_stats, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Export Albums CSV"), tauon.export_playlist_albums, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Transcode All"), tauon.convert_playlist, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Rescan Tags"), tauon.rescan_tags, pass_ref=True))
-	# tab_menu.add_to_sub(_('Forget Import Folder'), 2, tauon.forget_pl_import_folder, rescan_deco, pass_ref=True, pass_ref_deco=True)
-	# tab_menu.add_to_sub(_('Re-Import Last Folder'), 1, tauon.re_import, pass_ref=True)
-	# tab_menu.add_to_sub(_('Quick Export XSPF'), 2, tauon.export_xspf, pass_ref=True)
-	# tab_menu.add_to_sub(_('Quick Export M3U'), 2, tauon.export_m3u, pass_ref=True)
-	tab_menu.add_to_sub(2, MenuItem(_("Toggle Breaks"), tauon.pl_toggle_playlist_break, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Engage Gallery Quick Add"), tauon.start_quick_add, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Set as Sync Playlist"), tauon.set_sync_playlist, tauon.sync_playlist_deco, pass_ref_deco=True, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
-
-	# tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
-
-	tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), tauon.gen_top_100, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Tracks"), tauon.gen_top_100, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Top Played Albums"), tauon.gen_folder_top, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Played Albums"), tauon.gen_folder_top, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), tauon.gen_top_rating, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Tracks"), tauon.gen_top_rating, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), tauon.gen_folder_top_rating, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Top Rated Albums"), tauon.gen_folder_top_rating, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("File Modified"),tauon. gen_last_modified, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("File Modified"), tauon.gen_last_modified, pass_ref=True))
-
-	# tab_menu.add_to_sub(_("File Path"), 0, stauon.tandard_sort, pass_ref=True)
-	# extra_tab_menu.add_to_sub(_("File Path"), 0, tauon.standard_sort, pass_ref=True)
-
-	tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), tauon.gen_sort_len, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Tracks"), tauon.gen_sort_len, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), tauon.gen_folder_duration, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Longest Albums"), tauon.gen_folder_duration, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Year by Oldest"), tauon.gen_sort_date, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Year by Oldest"), tauon.gen_sort_date, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Year by Latest"), tauon.gen_sort_date_new, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Year by Latest"), tauon.gen_sort_date_new, pass_ref=True))
-
-	# tab_menu.add_to_sub(_("Year by Artist"), 0, tauon.year_sort, pass_ref=True)
-	# extra_tab_menu.add_to_sub(_("Year by Artist"), 0, tauon.year_sort, pass_ref=True)
-
-	tab_menu.add_to_sub(0, MenuItem(_("Shuffled Tracks"), tauon.gen_500_random, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Shuffled Tracks"), tauon.gen_500_random, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), tauon.gen_folder_shuffle, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Shuffled Albums"), tauon.gen_folder_shuffle, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Lucky Random"), tauon.gen_best_random, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Lucky Random"), tauon.gen_best_random, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Reverse Tracks"), tauon.gen_reverse, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Reverse Tracks"), tauon.gen_reverse, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Reverse Albums"), tauon.gen_folder_reverse, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Reverse Albums"), tauon.gen_folder_reverse, pass_ref=True))
-
-	tab_menu.add_to_sub(0, MenuItem(_("Duplicate"), tauon.gen_dupe, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Duplicate"), tauon.gen_dupe, pass_ref=True))
-
-	# tab_menu.add_to_sub("Filepath", 1, tauon.gen_sort_path, pass_ref=True)
-	# tab_menu.add_to_sub("Artist → gui.abc", 0, tauon.gen_sort_artist, pass_ref=True)
-	# tab_menu.add_to_sub("Album → gui.abc", 0, tauon.gen_sort_album, pass_ref=True)
-	tab_menu.add_to_sub(0, MenuItem(_("Loved"), tauon.gen_love, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Loved"), tauon.gen_love, pass_ref=True))
-	tab_menu.add_to_sub(0, MenuItem(_("Has Comment"), tauon.gen_comment, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Has Comment"), tauon.gen_comment, pass_ref=True))
-	tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
-	extra_tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
-
-	playlist_menu.add(MenuItem("Paste", tauon.paste, tauon.paste_deco))
-
-	playlist_menu.add(MenuItem(_("Add Playing Spotify Album"), tauon.paste_playlist_coast_album, tauon.paste_playlist_coast_album_deco,
-		show_test=tauon.spotify_show_test))
-	playlist_menu.add(MenuItem(_("Add Playing Spotify Track"), tauon.paste_playlist_coast_track, tauon.paste_playlist_coast_album_deco,
-		show_test=tauon.spotify_show_test))
-
-	track_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
-	track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=info_icon))
-
-	gui.heartx_icon.colour = ColourRGBA(55, 55, 55, 255)
-	gui.heartx_icon.xoff = 1
-	gui.heartx_icon.yoff = 0
-	gui.heartx_icon.colour_callback = tauon.heart_xmenu_colour
-
-	gui.spot_heartx_icon.colour = ColourRGBA(30, 215, 96, 255)
-	gui.spot_heartx_icon.xoff = 3
-	gui.spot_heartx_icon.yoff = 0
-	gui.spot_heartx_icon.colour_callback = tauon.spot_heart_xmenu_colour
-
-	# Mark track as 'liked'
-	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, icon=gui.heartx_icon))
-
-	heart_spot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "heart-menu.png", True))
-	heart_spot_icon.colour = ColourRGBA(30, 215, 96, 255)
-	heart_spot_icon.xoff = 1
-	heart_spot_icon.yoff = 0
-	heart_spot_icon.colour_callback = tauon.spot_heart_menu_colour
-
-	track_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_ref, tauon.toggle_spotify_like_row_deco, show_test=tauon.spot_like_show_test, icon=heart_spot_icon))
-
-	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
-
-	track_menu.add(MenuItem(_("↳ After Current Track"), tauon.add_to_queue_next, pass_ref=True, show_test=inp.test_shift))
-
-	track_menu.add(MenuItem(_("Show in Gallery"), tauon.show_in_gal, pass_ref=True, show_test=tauon.test_show))
-
-	track_menu.add_sub(_("Meta…"), 160)
-
-	track_menu.br()
-	# track_menu.add('Cut', s_cut, pass_ref=False)
-	# track_menu.add('Remove', del_selected)
-	track_menu.add(MenuItem(_("Copy"), tauon.s_copy, pass_ref=False))
-
-	# track_menu.add(_('Paste + Transfer Folder'), tauon.lightning_paste, pass_ref=False, show_test=tauon.lightning_move_test)
-
-	track_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
-
-	track_menu.add(MenuItem(_("Delete Track File"), tauon.delete_track, pass_ref=True, icon=delete_icon, show_test=inp.test_shift))
-
-	track_menu.br()
-
-	# gui.rename_tracks_icon.colour = ColourRGBA(244, 241, 66, 255)
-	# gui.rename_tracks_icon.colour = ColourRGBA(204, 255, 66, 255)
-	gui.rename_tracks_icon.colour = ColourRGBA(204, 100, 205, 255)
-	gui.rename_tracks_icon.xoff = 1
-	track_menu.add_to_sub(0, MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, tauon.rename_tracks_deco, pass_ref=True,
-		pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
-
-	track_menu.add_to_sub(0, MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
-
-	gui.mod_folder_icon.colour = ColourRGBA(229, 98, 98, 255)
-	track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-
-
-	# track_menu.add_to_sub("Reset Track Play Count", 0, tauon.reset_play_count, pass_ref=True)
-
-	# track_menu.add('Reload Metadata', tauon.reload_metadata, pass_ref=True)
-	track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
-
-	mbp_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "mbp-g.png"))
-	mbp_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "mbp-gs.png")
-
-	mbp_icon.xoff = 2
-	mbp_icon.yoff = -1
-
-	if gui.scale == 1.25:
-		mbp_icon.yoff = 0
-
-	edit_icon = None
-	if prefs.tag_editor_name == "Picard":
-		edit_icon = mbp_icon
-
-	track_menu.add_to_sub(0, MenuItem(_("Edit with"), tauon.launch_editor, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_disable_test))
-	track_menu.add_to_sub(0, MenuItem(_("Lyrics..."), tauon.show_lyrics_menu, pass_ref=True))
-	track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
-	# track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
-
-	folder_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=folder_icon, disable_test=tauon.open_folder_disable_test))
-
-	folder_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-	folder_tree_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-	# folder_menu.add(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True)
-	folder_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
-	folder_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
-
-	gallery_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-
-	folder_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, tauon.rename_tracks_deco,
-		pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
-	folder_tree_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
-
-	if not snap_mode:
-		folder_menu.add(MenuItem("Edit with", tauon.launch_editor_selection, pass_ref=True,
-			pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
-
-	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
-	folder_tree_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
-
-	folder_tree_menu.br()
-	folder_tree_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
-	folder_tree_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
-
-	# selection_menu.br()
-
-	gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
-	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
-	folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
-	folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
-	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
-		show_test=tauon.toggle_transcode))
-	gallery_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
-		show_test=tauon.toggle_transcode))
-	folder_menu.br()
 
 	tauon.spot_ctl.cache_saved_albums = spot_cache_saved_albums
-
-	# Copy album title text to clipboard
-	folder_menu.add(MenuItem(_('Copy "Artist - Album"'), tauon.clip_title, pass_ref=True))
-
-	folder_menu.add(MenuItem("Lookup Spotify Album URL", tauon.get_album_spot_url, tauon.get_album_spot_url_deco, pass_ref=True,
-		pass_ref_deco=True, show_test=tauon.spotify_show_test, icon=spot_icon))
-
-	folder_menu.add(MenuItem("Add to Spotify Library", tauon.add_to_spotify_library, tauon.add_to_spotify_library_deco, pass_ref=True,
-		pass_ref_deco=True, show_test=tauon.spotify_show_test, icon=spot_icon))
-
-
-	# Copy artist name text to clipboard
-	# folder_menu.add(_('Copy "Artist"'), clip_ar, pass_ref=True)
-
-	selection_menu.add(MenuItem(_("Add to queue"), tauon.add_selected_to_queue_multi, tauon.selection_queue_deco))
-	selection_menu.br()
-	selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
-	selection_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
-	selection_menu.add(MenuItem(_("Edit with "), tauon.launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
-
-	selection_menu.br()
-	folder_menu.br()
-
-	# It's complicated
-	# folder_menu.add(_('Copy Folder From Library'), lightning_copy)
-
-	selection_menu.add(MenuItem(_("Copy"), tauon.s_copy))
-	selection_menu.add(MenuItem(_("Cut"), tauon.s_cut))
-	selection_menu.add(MenuItem(_("Remove"), tauon.del_selected))
-	selection_menu.add(MenuItem(_("Delete Files"), tauon.force_del_selected, show_test=inp.test_shift, icon=delete_icon))
-
-	folder_menu.add(MenuItem(_("Copy"), tauon.s_copy))
-	gallery_menu.add(MenuItem(_("Copy"), tauon.s_copy))
-	# folder_menu.add(_('Cut'), s_cut)
-	# folder_menu.add(_('Paste + Transfer Folder'), tauon.lightning_paste, pass_ref=False, show_test=tauon.lightning_move_test)
-	# gallery_menu.add(_('Paste + Transfer Folder'), tauon.lightning_paste, pass_ref=False, show_test=tauon.lightning_move_test)
-	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
-	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
-
-	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.toggle_wiki))
-	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.toggle_gen))
-
-	son_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sonemic-g.png"))
-	son_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "sonemic-gs.png")
-
-	son_icon.xoff = 1
-	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.toggle_rym))
-
-	band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
-	band_icon.xoff = 0
-	band_icon.yoff = 1
-	band_icon.colour = ColourRGBA(96, 147, 158, 255)
-
-	track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.toggle_band))
-
-	# Copy metadata to clipboard
-	# track_menu.add(_('Copy "Artist - Album"'), tauon.clip_aar_al, pass_ref=True)
-	track_menu.add(MenuItem(_('Copy "Artist - Track"'), tauon.clip_ar_tr, pass_ref=True))
-	track_menu.add(MenuItem(_("Copy TIDAL Album URL"), tauon.tidal_copy_album, show_test=tauon.is_tidal_track, pass_ref=True))
-
-	track_menu.add_sub(_("Spotify…"), 190, show_test=tauon.spotify_show_test)
-	track_menu.add_to_sub(1, MenuItem(_("Show Full Artist"), tauon.get_spot_artist_track, pass_ref=True, icon=spot_icon))
-	track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), tauon.get_spot_album_track, pass_ref=True, icon=spot_icon))
-	track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), tauon.get_track_spot_url, tauon.get_track_spot_url_deco, pass_ref=True,
-		icon=spot_icon))
-	# track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), tauon.get_spot_recs_track, pass_ref=True, icon=spot_icon))
-
-	track_menu.br()
-	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
-		show_test=tauon.toggle_transcode))
-
-
-	# Create top menu
-	x_menu          = tauon.x_menu
-	view_menu       = Menu(tauon, 170)
-	set_menu        = tauon.set_menu
-	set_menu_hidden = Menu(tauon, 100)
-	vis_menu        = Menu(tauon, 140)
-	window_menu     = Menu(tauon, 140)
-	field_menu      = tauon.field_menu
-	dl_menu         = tauon.dl_menu
-
-	tauon.stop_menu.add(MenuItem(_("Always stop after album"), tauon.stop_mode_album_persist))
-	tauon.stop_menu.add(MenuItem(_("Always stop after track"), tauon.stop_mode_track_persist))
-	tauon.stop_menu.add(MenuItem(_("Stop after album"), tauon.stop_mode_album))
-	tauon.stop_menu.add(MenuItem(_("Stop after track"), tauon.stop_mode_track))
-	tauon.stop_menu.add(MenuItem(_("Continue Play"), tauon.stop_mode_off))
-
-	window_menu.add(MenuItem(_("Minimize"), tauon.do_minimize_button))
-	window_menu.add(MenuItem(_("Maximize"), tauon.do_maximize_button))
-	window_menu.add(MenuItem(_("Exit"),     tauon.do_exit_button))
-
-	# Copy text
-	field_menu.add(MenuItem(_("Copy"), field_copy, pass_ref=True))
-	# Paste text
-	field_menu.add(MenuItem(_("Paste"), field_paste, pass_ref=True))
-	# Clear text
-	field_menu.add(MenuItem(_("Clear"), field_clear, pass_ref=True))
-
-	vis_menu.add(MenuItem(_("Off"), tauon.vis_off))
-	vis_menu.add(MenuItem(_("Level Meter"), tauon.level_on))
-	vis_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on))
-	# vis_menu.add(_("Spectrogram"), spec2_def)
-
-	# Mark for translation
-	_("Time")
-	_("Filepath")
-
-	# set_menu.add(MenuItem(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
-	# set_menu.add(MenuItem(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
-	# set_menu.br()
-
-	set_menu_hidden.add(MenuItem(_("Show bar"), tauon.show_set_bar))
-
-	tauon.sa_regen_menu()
-
-	gui.add_icon.xoff = 3
-	gui.add_icon.yoff = 0
-	gui.add_icon.colour = ColourRGBA(237, 80, 221, 255)
-	gui.add_icon.colour_callback = tauon.new_playlist_colour_callback
-
-	x_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, tauon.new_playlist_deco, icon=gui.add_icon))
-
-	x_menu.add(MenuItem(_("Clean Database!"), tauon.clean_db_fast, tauon.clean_db_deco, show_test=tauon.clean_db_show_test))
-
-	# x_menu.add(_("Internet Radio…"), activate_radio_box)
-
-	tauon.switch_playlist = pctl.switch_playlist
-
-	x_menu.add(MenuItem(_("Paste Spotify Playlist"), tauon.import_spotify_playlist, tauon.import_spotify_playlist_deco, icon=spot_icon,
-		show_test=tauon.spotify_show_test))
-
-	x_menu.add(MenuItem(_("Import Music Folder"), tauon.import_music, show_test=tauon.show_import_music))
-
-	x_menu.br()
-
-	gui.settings_icon.xoff = 0
-	gui.settings_icon.yoff = 2
-	gui.settings_icon.colour = ColourRGBA(232, 200, 96, 255)  # [230, 152, 118, 255]#[173, 255, 47, 255] #[198, 237, 56, 255]
-	# gui.settings_icon.colour = ColourRGBA(180, 140, 255, 255)
-	x_menu.add(MenuItem(_("Settings"), tauon.activate_info_box, icon=gui.settings_icon))
-	x_menu.add_sub(_("Database…"), 190)
-
-	if dev_mode:
-		def dev_mode_enable_save_state() -> None:
-			bag.should_save_state = True
-			tauon.show_message(_("Enabled saving state"))
-
-		def dev_mode_disable_save_state() -> None:
-			bag.should_save_state = False
-			tauon.show_message(_("Disabled saving state"))
-
-		x_menu.add_sub(_("Dev Mode"), 190)
-		x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), tauon.dev_mode_enable_save_state))
-		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
-	x_menu.br()
-
-	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
-
-	x_menu.add_to_sub(0, MenuItem(_("Export as CSV"), tauon.export_database))
-	x_menu.add_to_sub(0, MenuItem(_("Rescan All Folders"), pctl.rescan_all_folders))
-	x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), tauon.q_to_playlist))
-	x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), tauon.clear_img_cache))
-
-	x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), tauon.clean_db2))
-	x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), tauon.clean_db))
-	x_menu.add_to_sub(0, MenuItem(_("Import FMPS Ratings"), tauon.import_fmps))
-	x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), tauon.import_popm))
-	x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), tauon.clear_ratings))
-	x_menu.add_to_sub(0, MenuItem(_("Find Incomplete Albums"), tauon.find_incomplete))
-	x_menu.add_to_sub(0, MenuItem(_("Mark Missing as Found"), pctl.reset_missing_flags, show_test=inp.test_shift))
-
-	if tauon.chrome:
-		x_menu.add_sub(_("Chromecast…"), 220)
-		shooter(tauon.cast_search2)
-
-	tauon.chrome_menu = x_menu
-
-	#x_menu.add(_("Cast…"), cast_search, cast_deco)
-
-
-	mode_menu.add(MenuItem(_("Tab"), tauon.set_mini_mode_D))
-	mode_menu.add(MenuItem(_("Mini"), tauon.set_mini_mode_A1))
-	# mode_menu.add(_('Mini Mode Large'), tauon.set_mini_mode_A2)
-	mode_menu.add(MenuItem(_("Slate"), tauon.set_mini_mode_C1))
-	mode_menu.add(MenuItem(_("Square"), tauon.set_mini_mode_B1))
-	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
-
-	mode_menu.br()
-	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
-
-	extra_menu.add(MenuItem(_("Random Track"), tauon.random_track, hint=";"))
-
-	radiorandom_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "radiorandom.png", True))
-	revert_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "revert.png", True))
-
-	radiorandom_icon.xoff = 1
-	radiorandom_icon.yoff = 0
-	radiorandom_icon.colour = ColourRGBA(153, 229, 133, 255)
-	extra_menu.add(MenuItem(_("Radio Random"), tauon.radio_random, hint="/", icon=radiorandom_icon))
-
-	revert_icon.xoff = 1
-	revert_icon.yoff = 0
-	revert_icon.colour = ColourRGBA(229, 102, 59, 255)
-	extra_menu.add(MenuItem(_("Revert"), pctl.revert, hint="Shift+/", icon=revert_icon))
-
-	# extra_menu.add('Toggle Repeat', tauon.toggle_repeat, hint='COMMA')
-
-
-	# extra_menu.add('Toggle Random', tauon.toggle_random, hint='PERIOD')
-	extra_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, hint="Alt+Shift+Q"))
-
-	gui.heart_icon.colour = ColourRGBA(245, 60, 60, 255)
-	gui.heart_icon.xoff = 3
-	gui.heart_icon.yoff = 0
-
-	if gui.scale == 1.25:
-		gui.heart_icon.yoff = 1
-
-	gui.heart_icon.colour_callback = tauon.heart_menu_colour
-	extra_menu.add(MenuItem("Love", tauon.bar_love_notify, tauon.love_deco, icon=gui.heart_icon))
-	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
-	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
-	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
-
-	extra_menu.br()
-	extra_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_active, tauon.toggle_spotify_like_active_deco,
-		show_test=tauon.spotify_show_test, icon=gui.spot_heartx_icon))
-
-	extra_menu.add_sub(_("Import Spotify…"), 140, show_test=tauon.spotify_show_test)
-
-	extra_menu.add_to_sub(0, MenuItem(_("Liked Albums"), tauon.spot_import_albums, show_test=tauon.spotify_show_test, icon=spot_icon))
-	extra_menu.add_to_sub(0, MenuItem(_("Liked Tracks"), tauon.spot_import_tracks, show_test=tauon.spotify_show_test, icon=spot_icon))
-	#extra_menu.add_to_sub(_("Import All Playlists"), 0, tauon.spot_import_playlists, show_test=tauon.spotify_show_test, icon=spot_icon)
-	extra_menu.add_to_sub(0, MenuItem(_("Playlist…"), tauon.spot_import_playlist_menu, show_test=tauon.spotify_show_test, icon=spot_icon))
-	extra_menu.add_to_sub(0, MenuItem(_("Current Context"), tauon.spot_import_context, tauon.show_spot_coasting_deco, show_test=tauon.spotify_show_test, icon=spot_icon))
-
-	extra_menu.add(MenuItem("Show Full Album", tauon.get_album_spot_active, tauon.get_album_spot_deco,
-		show_test=tauon.spotify_show_test, icon=spot_icon))
-
-	extra_menu.add(MenuItem(_("Show Full Artist"), tauon.get_artist_spot,
-		show_test=tauon.spotify_show_test, icon=spot_icon))
-
-	extra_menu.add(MenuItem(_("Start Spotify Remote"), tauon.show_spot_playing, tauon.show_spot_playing_deco, show_test=tauon.spotify_show_test,
-		icon=spot_icon))
-
-	extra_menu.add(MenuItem("Transfer audio here", tauon.spot_transfer_playback_here, show_test=lambda x:tauon.spotify_show_test(0) and tauon.enable_librespot and prefs.launch_spotify_local and not pctl.spot_playing and (tauon.spot_ctl.coasting or tauon.spot_ctl.playing),
-		icon=spot_icon))
-
-	theme_files = os.listdir(str(install_directory / "theme"))
-	theme_files.sort()
-
-	lastfm_icon = MenuIcon(gui.last_fm_icon)
-
-	if gui.scale in (2, 1.25):
-		lastfm_icon.xoff = 0
-	else:
-		lastfm_icon.xoff = -1
-
-	lastfm_icon.yoff = 1
-
-	lastfm_icon.colour = ColourRGBA(249, 70, 70, 255)
-	lastfm_icon.colour_callback = tauon.lastfm_colour
-
-	lb_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "lb-g.png"))
-	lb_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "lb-gs.png")
-
-	lb_icon.mode_callback = tauon.lb_mode
-
-	lb_icon.xoff = 3
-	lb_icon.yoff = -1
-
-	if gui.scale == 1.25:
-		lb_icon.yoff = 0
-
-	if prefs.auto_lfm:
-		listen_icon = lastfm_icon
-	elif tauon.lb.enable:
-		listen_icon = lb_icon
-	else:
-		listen_icon = None
-
-	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
-	x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), tauon.toggle_shuffle_layout, tauon.toggle_shuffle_layout_deco)) #show_test=tauon.exit_shuffle_layout))
-	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
-	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
-	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
-
-	nagbox = NagBox(tauon)
-
-	gui.pt_on = Timer()
-	gui.pt_off = Timer()
-	gui.pt = 0
-
-	# ------------------------------------------------------------------------------------
-	# WEBSERVER
-	if prefs.enable_web is True:
-		webThread = threading.Thread(
-			target=webserve, args=[pctl, prefs, gui, tauon.album_art_gen, str(install_directory), tauon.strings, tauon])
-		webThread.daemon = True
-		webThread.start()
-
-	ctlThread = threading.Thread(target=controller, args=[tauon])
-	ctlThread.daemon = True
-	ctlThread.start()
-
-	if prefs.enable_remote:
-		tauon.start_remote()
-		tauon.remote_limited = False
-	# --------------------------------------------------------------
-
 	pref_box = tauon.pref_box
-
-	mini_mode  = tauon.mini_mode
-	mini_mode2 = tauon.mini_mode2
-	mini_mode3 = tauon.mini_mode3
-
-	pl_bg = None
-	if (user_directory / "bg.png").exists():
-		pl_bg = LoadImageAsset(
-			scaled_asset_directory=dirs.scaled_asset_directory, path=str(user_directory / "bg.png"), is_full_path=True)
-
-	playlist_render = StandardPlaylist(tauon, pl_bg)
-	art_box = ArtBox(tauon)
-
-	radio_entry_menu.add(MenuItem(_("Visit Website"), visit_radio_site, tauon.visit_radio_site_deco, pass_ref=True, pass_ref_deco=True))
-	radio_entry_menu.add(MenuItem(_("Save"), tauon.save_to_radios, pass_ref=True))
-
-	artist_list_menu.add(MenuItem(_("Filter to New Playlist"), tauon.create_artist_pl, pass_ref=True, icon=filter_icon))
-	artist_list_menu.add_sub(_("View..."), 140)
-	artist_list_menu.add_to_sub(0, MenuItem(_("Sort Alphabetically"), tauon.aa_sort_alpha))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Popularity"), tauon.aa_sort_popular))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Sort by Playtime"), tauon.aa_sort_play))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Thumbnails"), tauon.toggle_artist_list_style))
-	artist_list_menu.add_to_sub(0, MenuItem(_("Toggle Filter"), tauon.toggle_artist_list_threshold, tauon.toggle_artist_list_threshold_deco))
-
-	artist_info_menu.add(MenuItem(_("Download Artist Data"), tauon.artist_info_box.manual_dl, tauon.artist_dl_deco, show_test=tauon.test_artist_dl))
-	artist_info_menu.add(MenuItem(_("Clear Bio"), tauon.flush_artist_bio, pass_ref=True, show_test=inp.test_shift))
-	radio_context_menu.add(MenuItem(_("Edit..."), tauon.rename_station, pass_ref=True))
-	radio_context_menu.add(
-		MenuItem(_("Visit Website"), visit_radio_station, tauon.visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
-	radio_context_menu.add(MenuItem(_("Remove"), tauon.remove_station, pass_ref=True))
-
-	meta_box = MetaBox(tauon)
-	showcase = Showcase(tauon)
-	cctest = ColourPulse2(tauon)
-	dl_menu.add(MenuItem("Dismiss", tauon.dismiss_dl))
-
-	fader = tauon.fader
-	bottom_playlist2 = EdgePulse2(tauon)
-	gallery_pulse_top = EdgePulse2(tauon)
 
 	# Set SDL window drag areas
 	# if system != "Windows":
@@ -44732,7 +44767,7 @@ def main(holder: Holder) -> None:
 							left = gui.lspw
 						rect = [left, top, gui.plw, 12 * gui.scale]
 						if inp.right_click and tauon.coll(rect):
-							set_menu_hidden.activate()
+							tauon.set_menu_hidden.activate()
 							inp.right_click = False
 
 					width = gui.plw
@@ -44812,7 +44847,7 @@ def main(holder: Holder) -> None:
 									gui.set_label_hold = h
 									gui.set_label_point = copy.deepcopy(inp.mouse_position)
 								if inp.right_click:
-									set_menu.activate(h)
+									tauon.set_menu.activate(h)
 
 							if h != 0:
 								if tauon.coll(m_grip):
@@ -44844,7 +44879,7 @@ def main(holder: Holder) -> None:
 							gui.set_label_hold = -1
 						#logging.info(in_grip)
 						if gui.set_label_hold == -1:
-							if in_grip and not x_menu.active and not view_menu.active and not tab_menu.active and not set_menu.active:
+							if in_grip and not tauon.x_menu.active and not tauon.view_menu.active and not tab_menu.active and not tauon.set_menu.active:
 								gui.cursor_want = 1
 							if gui.set_hold != -1:
 								gui.cursor_want = 1
@@ -45013,13 +45048,13 @@ def main(holder: Holder) -> None:
 					if inp.right_click and tauon.coll(
 						(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale,
 						gui.panelY)) and not gui.top_bar_mode2:
-						vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
+						tauon.vis_menu.activate(None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale))
 					elif inp.right_click and tauon.top_panel.tabs_right_x < inp.mouse_position[0] and \
 							inp.mouse_position[1] < gui.panelY and \
 							inp.mouse_position[0] > tauon.top_panel.tabs_right_x and \
 							inp.mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra:
 
-						window_menu.activate(None, (inp.mouse_position[0], 30 * gui.scale))
+						tauon.window_menu.activate(None, (inp.mouse_position[0], 30 * gui.scale))
 
 					elif inp.middle_click and tauon.top_panel.tabs_right_x < inp.mouse_position[0] and \
 							inp.mouse_position[1] < gui.panelY and \
@@ -45030,8 +45065,8 @@ def main(holder: Holder) -> None:
 
 					# edge_playlist.render(gui.playlist_left, gui.panelY, gui.plw, 2 * gui.scale)
 
-					bottom_playlist2.render(gui.playlist_left, window_size[1] - gui.panelBY, gui.plw, 25 * gui.scale,
-											bottom=True)
+					bottom_playlist2.render(
+						gui.playlist_left, window_size[1] - gui.panelBY, gui.plw, 25 * gui.scale, bottom=True)
 					# --------------------------------------------
 					# ALBUM ART
 
@@ -45975,7 +46010,7 @@ def main(holder: Holder) -> None:
 					if not gui.fullscreen and not gui.maximized:
 						tauon.draw_window_border()
 
-				fader.render()
+				tauon.fader.render()
 				if pref_box.enabled:
 					# rect = [0, 0, window_size[0], window_size[1]]
 					# ddt.rect_r(rect, [0, 0, 0, 90], True)
@@ -46411,11 +46446,11 @@ def main(holder: Holder) -> None:
 						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
 				if prefs.mini_mode_mode == 5:
-					mini_mode3.render()
+					tauon.mini_mode3.render()
 				elif prefs.mini_mode_mode == 4:
-					mini_mode2.render()
+					tauon.mini_mode2.render()
 				else:
-					mini_mode.render()
+					tauon.mini_mode.render()
 
 			t = tauon.toast_love_timer.get()
 			if t < 1.8 and gui.toast_love_object is not None:
