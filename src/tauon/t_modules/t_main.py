@@ -71,7 +71,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -162,7 +162,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	year_search,
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
-from tauon.t_modules.t_launch import Launch  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
@@ -272,7 +271,7 @@ if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 
 	from PIL.ImageFile import ImageFile
-	from pylast import Artist, LibreFMNetwork
+	from pylast import LibreFMNetwork
 	from websocket import WebSocketApp
 
 	from tauon.t_modules.t_bootstrap import Holder
@@ -307,17 +306,8 @@ if sys.platform == "win32":
 	if msys:
 		import gi
 		from gi.repository import GLib
-	else:
-		import atexit
-
-		import comtypes
-		import win32api
-		import win32con
-		import win32gui
-		import win32ui
 else:
 	system = "Linux"
-	import fcntl
 
 if sys.platform == "darwin":
 	macos = True
@@ -1808,7 +1798,7 @@ class PlayerCtl:
 	#	 load_order.playlist = pctl.multi_playlist[pl].uuid_int
 	#	 tauon.load_orders.append(copy.deepcopy(load_order))
 
-	def resolve_full_playlist_path(self, playlist: TauonPlaylist, get_name=False):
+	def resolve_full_playlist_path(self, playlist: TauonPlaylist, get_name: bool = False) -> str:
 
 		target = playlist.playlist_file
 		if target.endswith(("/", "\\")):
@@ -1893,14 +1883,13 @@ class PlayerCtl:
 
 
 	def try_reload_playlist_from_file(self, playlist: TauonPlaylist, warnings: bool = False) -> None:
-		"""reload designated playlist from file if it meets the requirements"""
-
+		"""Reload designated playlist from file if it meets the requirements"""
 		if not playlist.auto_import:
 			return
 
 		code = self.gen_codes.get(playlist.uuid_int)
-		if code and not "self" in code:
-			logging.warning("Playlist to import has a generator!: " + playlist.title)
+		if code and "self" not in code:
+			logging.warning(f"Playlist to import has a generator!: {playlist.title}")
 			return
 
 		path = Path(self.resolve_full_playlist_path(playlist))
@@ -1910,8 +1899,11 @@ class PlayerCtl:
 			return
 		try:
 			current_size = path.stat().st_size
-		except FileNotFoundError as e:
-			logging.error(f"Playlist file not found: {path}")
+		except FileNotFoundError:
+			logging.error(f"Playlist file not found: {path}")  # noqa: TRY400
+			return
+		except Exception:
+			logging.exception("Unknown exception!")
 			return
 
 		if current_size != playlist.file_size:
@@ -2204,7 +2196,7 @@ class PlayerCtl:
 		self.gui.message_box_confirm_reference = (self.pl_to_id(index), True, True)
 		self.show_message(_("Are you sure you want to delete playlist: {name}?").format(name=self.multi_playlist[index].title), mode="confirm")
 
-	def id_to_pl(self, id: int):
+	def id_to_pl(self, id: int) -> int | None:
 		for i, item in enumerate(self.multi_playlist):
 			if item.uuid_int == id:
 				return i
@@ -2314,7 +2306,7 @@ class PlayerCtl:
 				self.tauon.tray_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release tray_lock")
 			except Exception:
@@ -2909,7 +2901,7 @@ class PlayerCtl:
 				self.tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -5078,11 +5070,10 @@ class Menu:
 							gui.update += 1
 						if springing:
 							self.sub_active = -1
-					else:
-						if self.clicked or springing:
-							self.clicked = False
-							self.sub_active = self.items[i].sub_menu_number
-							self.sub_y_postion = y_run
+					elif self.clicked or springing:
+						self.clicked = False
+						self.sub_active = self.items[i].sub_menu_number
+						self.sub_y_postion = y_run
 
 				# Draw tab
 				ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
@@ -5553,7 +5544,7 @@ class GallClass:
 					self.lock.release()
 				except RuntimeError as e:
 					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked lock")
+						logging.error("RuntimeError: Attempted to release already unlocked lock")  # noqa: TRY400
 					else:
 						logging.exception("Unknown RuntimeError trying to release lock")
 				except Exception:
@@ -5693,7 +5684,7 @@ class Tauon:
 			"Filename",
 			"Disc",
 			"CUE",
-			"ID"
+			"ID",
 		)
 		self.device                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
@@ -6554,7 +6545,7 @@ class Tauon:
 			self.enter_radio_view()
 
 	def parse_m3u(self, path: str) -> tuple[ list[int], list[RadioStation] ]:
-		"""read specified .m3u[8] playlist file, return list of track IDs/stations"""
+		"""Read specified .m3u[8] playlist file, return list of track IDs/stations"""
 		playlist: list[int] = []
 		stations: list[RadioStation] = []
 
@@ -6634,7 +6625,7 @@ class Tauon:
 		return playlist, stations
 
 	def load_m3u(self, path: str) -> None:
-		"""import an m3u file and create a new Tauon playlist for it"""
+		"""Import an m3u file and create a new Tauon playlist for it"""
 		path = Path(path)
 		name = path.stem
 		if not path.is_file():
@@ -6707,13 +6698,12 @@ class Tauon:
 
 	def load_pls(self, path: str) -> None:
 		if os.path.isfile(path):
-			f = open(path)
-			lines = f.readlines()
-			self.read_pls(lines, path)
-			f.close()
+			with open(path) as f:
+				lines = f.readlines()
+				self.read_pls(lines, path)
 
 	def parse_xspf(self, path:str) -> tuple[ list[int], list[RadioStation], str]:
-		"""read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
+		"""Read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
 		try:
 			parser = ET.XMLParser(encoding="utf-8")
 			e = ET.parse(path, parser).getroot()
@@ -6944,8 +6934,8 @@ class Tauon:
 		self.ddt.rect((x, y, w, h), self.colours.menu_background)
 		p = self.ddt.text((x + int(w / 2), y + 3 * self.gui.scale, 2), text, self.colours.menu_text, 312, bg=self.colours.menu_background)
 
-	def menu_standard_or_grey(self, bool: bool):
-		line_colour = self.colours.menu_text if bool else self.colours.menu_text_disabled
+	def menu_standard_or_grey(self, enabled: bool) -> list[ColourRGBA | None]:
+		line_colour = self.colours.menu_text if enabled else self.colours.menu_text_disabled
 
 		return [line_colour, self.colours.menu_background, None]
 
@@ -7114,7 +7104,7 @@ class Tauon:
 		self.gui.artist_info_panel ^= True
 		self.gui.update_layout = True
 
-	def toggle_bio_size_deco(self):
+	def toggle_bio_size_deco(self) -> list[ColourRGBA | str | None]:
 		line = _("Make Large Size")
 		if self.prefs.bio_large:
 			line = _("Make Compact Size")
@@ -7563,7 +7553,7 @@ class Tauon:
 		found = False
 		for name in self.prefs.lyrics_enables:
 
-			if name in lyric_sources.keys():
+			if name in lyric_sources:
 				func = lyric_sources[name]
 
 				try:
@@ -8108,8 +8098,8 @@ class Tauon:
 
 	def export_m3u(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
 		"""Exports an m3u file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
-		pl_file is normalized by run_export; you should not call this function directly if you are uncertain."""
-
+		pl_file is normalized by run_export; you should not call this function directly if you are uncertain.
+		"""
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
@@ -8123,7 +8113,7 @@ class Tauon:
 						self.show_message(
 							_("Cannot use relative paths"),
 							_("One or more tracks are stored on a separate drive from the playlist file."),
-							mode="error"
+							mode="error",
 						)
 						return 1
 
@@ -8152,8 +8142,8 @@ class Tauon:
 
 	def export_xspf(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
 		"""Exports an xspf file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
-		pl_file is normalized by run_export; you should not call this function directly if you are uncertain."""
-
+		pl_file is normalized by run_export; you should not call this function directly if you are uncertain.
+		"""
 		if len(self.pctl.multi_playlist[pl].playlist_ids) < 1:
 			self.show_message(_("There are no tracks in this playlist. Nothing to export"))
 			return 1
@@ -8167,7 +8157,7 @@ class Tauon:
 						self.show_message(
 							_("Cannot use relative paths"),
 							_("One or more tracks are stored on a separate drive from the playlist file."),
-							mode="error"
+							mode="error",
 						)
 						return 1
 
@@ -8549,9 +8539,7 @@ class Tauon:
 			track = self.get_object(playlist[p])
 
 			if track.artist != artist:
-				if album_artist and track.album_artist and album_artist == track.album_artist:
-					pass
-				elif len(artist) > 5 and artist.lower() in track.parent_folder_name.lower():
+				if (album_artist and track.album_artist and album_artist == track.album_artist) or (len(artist) > 5 and artist.lower() in track.parent_folder_name.lower()):
 					pass
 				else:
 					artist = track.artist
@@ -8823,7 +8811,7 @@ class Tauon:
 		else:
 			self.prefs.sync_playlist = self.pctl.pl_to_id(pl)
 
-	def sync_playlist_deco(self, pl: int):
+	def sync_playlist_deco(self, pl: int) -> list[ColourRGBA | str | None]:
 		text = _("Set as Sync Playlist")
 		id = self.pctl.pl_to_id(pl)
 		if id == self.prefs.sync_playlist:
@@ -8840,13 +8828,13 @@ class Tauon:
 	def set_podcast_playlist(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].persist_time_positioning ^= True
 
-	def set_download_deco(self, pl: int):
+	def set_download_deco(self, pl: int) -> list[ColourRGBA | str | None]:
 		text = _("Set as Downloads Playlist")
 		if id == self.prefs.download_playlist:
 			text = _("Un-set as Downloads Playlist")
 		return [self.colours.menu_text, self.colours.menu_background, text]
 
-	def set_podcast_deco(self, pl: int):
+	def set_podcast_deco(self, pl: int) -> list[ColourRGBA | str | None]:
 		text = _("Set Use Persistent Time")
 		if self.pctl.multi_playlist[pl].persist_time_positioning:
 			text = _("Un-set Use Persistent Time")
@@ -8979,7 +8967,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder: str):
+		def best(folder: str) -> int:
 			#logging.info(folder)
 			total_star = 0
 			for item in folder:
@@ -9017,7 +9005,7 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[pl].title + "\" a pa>"
 		return None
 
-	def gen_folder_top_rating(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None):
+	def gen_folder_top_rating(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		if len(source) < 3:
@@ -9037,7 +9025,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder):
+		def best(folder) -> int:
 			return self.album_star_store.get_rating(self.pctl.get_track(folder[0]))
 
 		if get_sets:
@@ -9065,8 +9053,8 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[pl].title + "\" a rata>"
 		return None
 
-	def gen_lyrics(self, pl: int, custom_list: list[int] | None = None):
-		playlist = []
+	def gen_lyrics(self, pl: int, custom_list: list[int] | None = None)-> list[int] | None:
+		playlist: list[int] = []
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		for item in source:
@@ -9162,7 +9150,7 @@ class Tauon:
 
 		a_cache: dict[tuple[str, str], int] = {}
 
-		def key_import(index: int):
+		def key_import(index: int) -> int:
 			track = self.pctl.master_library[index]
 			cached = a_cache.get((track.album, track.parent_folder_name))
 			if cached is not None:
@@ -9180,7 +9168,7 @@ class Tauon:
 			return playlist
 		return None
 
-	def gen_last_modified(self, index: int, custom_list: list[int] | None = None, reverse: bool = True):
+	def gen_last_modified(self, index: int, custom_list: list[int] | None = None, reverse: bool = True) -> list[int] | None:
 		source = self.pctl.multi_playlist[index].playlist_ids if custom_list is None else custom_list
 
 		a_cache: dict[tuple[str, str], float] = {}
@@ -10758,7 +10746,7 @@ class Tauon:
 			[_("Disc Number"), "Disc", self.sa_disc],
 			[_("Has Lyrics"), "Lyrics", self.sa_lyrics],
 			[_("Is CUE Sheet"), "CUE", self.sa_cue],
-			[_("Internal Track ID"), "ID", self.sa_track_id]
+			[_("Internal Track ID"), "ID", self.sa_track_id],
 		]
 		for checked_column in self.gui.pl_st:
 			checked.add( checked_column[0] )
@@ -11078,7 +11066,7 @@ class Tauon:
 		self.reload()
 
 	def stt2(self, sec: int) -> str:
-		"""converts seconds into days hours minutes"""
+		"""Converts seconds into days hours minutes"""
 		days, rem = divmod(sec, 86400)
 		hours, rem = divmod(rem, 3600)
 		min, sec = divmod(rem, 60)
@@ -11462,7 +11450,7 @@ class Tauon:
 	def level_meter_special_2(self) -> None:
 		self.gui.level_meter_colour_mode = 2
 
-	def last_fm_menu_deco(self):
+	def last_fm_menu_deco(self) -> list[ColourRGBA | str | None]:
 		if self.prefs.scrobble_hold:
 			if not self.prefs.auto_lfm and self.lb.enable:
 				line = _("ListenBrainz is Paused")
@@ -11859,7 +11847,7 @@ class Tauon:
 		self.gui.pl_update = 2
 
 	def pl_is_mut(self, pl: int) -> bool:
-		"""returns True if specified playlist number is modifiable/not associated with a generator i think"""
+		"""Returns True if specified playlist number is modifiable/not associated with a generator i think"""
 		id = self.pctl.pl_to_id(pl)
 		if id is None:
 			return False
@@ -13834,7 +13822,7 @@ class Tauon:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -13874,7 +13862,7 @@ class Tauon:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -13924,7 +13912,7 @@ class Tauon:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -15469,7 +15457,7 @@ class Tauon:
 				self.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -15780,7 +15768,7 @@ class Tauon:
 				nt.modified_time = os.path.getmtime(nt.fullpath)
 				nt.found = True
 			except FileNotFoundError:
-				logging.error("File not found when executing getmtime!")
+				logging.error("File not found when executing getmtime!")  # noqa: TRY400
 				nt.found = False
 				return nt
 			except Exception:
@@ -16886,7 +16874,7 @@ class Tauon:
 						filesize = path.stat().st_size
 						if filesize and filesize != playlist.file_size:
 							logging.warning("Playlist has changed on disk - Skipping overwrite")
-							logging.warning("-- " + str(path))
+							logging.warning(f"-- {path}")
 							continue
 
 				self.export_playlist_box.run_export(id, warnings=False)
@@ -18499,7 +18487,7 @@ class SubsonicService:
 		# Some broken servers can send invalid JSON with control chars - remove them, see https://github.com/Taiko2k/Tauon/issues/1112
 		control_chars = CONTROL_CHAR_RE.findall(response.text)
 		if control_chars:
-			clean_response = CONTROL_CHAR_RE.sub('', response.text)
+			clean_response = CONTROL_CHAR_RE.sub("", response.text)
 			details = [f"U+{ord(c):04X}" for c in control_chars]
 			logging.warning(f"Invalid control characters found in JSON response: {', '.join(details)}")
 		else:
@@ -18524,7 +18512,7 @@ class SubsonicService:
 	def get_cover(self, track_object: TrackClass) -> BytesIO:
 		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
 		try:
-			response.decode('utf-8')
+			response.decode("utf-8")
 			raise ValueError(f"Expected binary data with an image but got a valid string: {response}")
 		except UnicodeDecodeError:
 			pass
@@ -18636,7 +18624,7 @@ class SubsonicService:
 
 			for item in items:
 				#logging.debug(f"song: {item}")
-				if "isDir" in item and item["isDir"]:
+				if item.get("isDir"):
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
 						if self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
@@ -19174,7 +19162,7 @@ class STray:
 		self.systray: SysTrayIcon | None = None
 		self.active = False
 
-	def up(self, systray: SysTrayIcon) -> None:
+	def up(self, _: SysTrayIcon) -> None:
 		sdl3.SDL_ShowWindow(self.t_window)
 		sdl3.SDL_RaiseWindow(self.t_window)
 		sdl3.SDL_RestoreWindow(self.t_window)
@@ -19184,19 +19172,19 @@ class STray:
 		if self.active:
 			sdl3.SDL_HideWindow(self.t_window)
 
-	def advance(self, systray: SysTrayIcon) -> None:
+	def advance(self, _: SysTrayIcon) -> None:
 		self.pctl.advance()
 
-	def back(self, systray: SysTrayIcon) -> None:
+	def back(self, _: SysTrayIcon) -> None:
 		self.pctl.back()
 
-	def pause(self, systray: SysTrayIcon) -> None:
+	def pause(self, _: SysTrayIcon) -> None:
 		self.pctl.play_pause()
 
-	def track_stop(self, systray: SysTrayIcon) -> None:
+	def track_stop(self, _: SysTrayIcon) -> None:
 		self.pctl.stop()
 
-	def on_quit_callback(self, systray: SysTrayIcon) -> None:
+	def on_quit_callback(self, _: SysTrayIcon) -> None:
 		self.tauon.exit("Exit called from tray.")
 
 	def start(self) -> None:
@@ -19495,7 +19483,7 @@ class LyricsRenMini:
 
 		# LRC formatting search & destroy
 		for line in self.pctl.master_library[index].lyrics.split("\n"):
-			if len(line) < 10 or ( line[0] != "[" or line[9] != "]" and ":" not in line ) or "." not in line:
+			if len(line) < 10 or ( line[0] != "[" or (line[9] != "]" and ":" not in line) ) or "." not in line:
 				self.text += line + "\n"
 			else:
 				self.text += line.split("]")[-1] + "\n"
@@ -19534,14 +19522,14 @@ class LyricsRen:
 			# old line: self.text = track_object.lyrics
 			# get rid of LRC formatting if you can:
 			for line in track_object.lyrics.split("\n"):
-				if len(line) < 10 or ( line[0] != "[" and line[9] != "]" or ":" not in line ) or "." not in line:
+				if len(line) < 10 or ( (line[0] != "[" and line[9] != "]") or ":" not in line ) or "." not in line:
 					self.text += line + "\n"
 				else:
 					self.text += line.split("]")[-1] + "\n"
 			# TODO (Flynn): fix the conditional for this section to run?
 			self.lyrics_position = 0
 
-	def render(self, x, y, w, h, p) -> None:
+	def render(self, x: int, y: int, w: int, h: int, p) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
 
@@ -19758,7 +19746,7 @@ class TimedLyricsRen:
 				sum( self.line_heights[i: max(0,line_active) ] ) + \
 				sum( self.line_heights[ max(line_active,0) :i] )
 
-			if 0 < possible_y - self.line_heights[i] and possible_y < self.window_size[1]:
+			if possible_y - self.line_heights[i] > 0 and possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
@@ -21570,7 +21558,7 @@ class AlbumArt:
 
 		except Exception:
 			logging.exception("Image load error")
-			logging.error(f"-- Associated track: {track.fullpath}")
+			logging.error(f"-- Associated track: {track.fullpath}")  # noqa: TRY400
 
 			self.current_wu = None
 			try:
@@ -21614,11 +21602,10 @@ class AlbumArt:
 		self.colours.last_album = ""
 
 class StyleOverlay:
-	"""
-	Stage:
-		0 - blank
-		1 - preparing first
-		2 - render first
+	"""Stage:
+	0 - blank
+	1 - preparing first
+	2 - render first
 	"""
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -21725,7 +21712,7 @@ class StyleOverlay:
 			tex_h = pointer(c_float(0))
 			sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
 
-			dst = sdl3.SDL_FRect(round(-40, 0))
+			dst = sdl3.SDL_FRect(-40)
 			dst.w = int(tex_w.contents.value)
 			dst.h = int(tex_h.contents.value)
 
@@ -22369,7 +22356,7 @@ class TransEditBox:
 		if self.gui.write_tag_in_progress:
 			text = f"{self.gui.tag_write_count}/{len(select)}"
 		text = _("WRITE TAGS")
-		if self.draw.button(text, (x + w) - ww, y - round(0) * self.gui.scale):
+		if self.draw.button(text, (x + w) - ww, y - (0) * self.gui.scale):
 			if changed:
 				self.show_message(_("Press enter on fields to apply your changes first!"))
 				return
@@ -22558,7 +22545,7 @@ class ExportPlaylistBox:
 		# }
 
 	def activate(self, playlist_index: int) -> None:
-		"""runs when the playlist export menu is opened"""
+		"""Runs when the playlist export menu is opened"""
 		self.active = True
 		self.gui.box_over = True
 
@@ -22580,9 +22567,9 @@ class ExportPlaylistBox:
 		return str(self.tauon.dirs.user_directory / "playlists/")
 
 	def render(self) -> None:
-		"""runs every frame that the playlist export menu is open.
-		also deals with the export entry logic."""
-
+		"""Runs every frame that the playlist export menu is open.
+		also deals with the export entry logic.
+		"""
 		if not self.active:
 			return
 
@@ -22677,8 +22664,8 @@ class ExportPlaylistBox:
 		ww = ddt.get_text_w(_("Use relative paths"), 211)
 		if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
 			self.show_message(
-						_(f"Enable relative paths when keeping playlist files together with audio"),
-						_(f"Disable to move playlist files while keeping audio in one location"))
+						_("Enable relative paths when keeping playlist files together with audio"),
+						_("Disable to move playlist files while keeping audio in one location"))
 
 
 		y += round(30 * gui.scale)
@@ -22713,8 +22700,8 @@ class ExportPlaylistBox:
 		try:
 			if not path.parent.is_dir():
 				path.parent.mkdir(parents=True)
-		except PermissionError as e:
-			logging.error("Export failed, cannot create dirs due to permissions")
+		except PermissionError:
+			logging.error("Export failed, cannot create dirs due to permissions")  # noqa: TRY400
 			return
 
 
@@ -22725,8 +22712,8 @@ class ExportPlaylistBox:
 				target = self.tauon.export_xspf(self.pctl.id_to_pl(id), pl_file=path, relative=playlist.relative_export)
 			if playlist.export_type == "m3u":
 				target = self.tauon.export_m3u(self.pctl.id_to_pl(id), pl_file=path, relative=playlist.relative_export)
-		except PermissionError as e:
-			logging.error("Export failed due to permissions")
+		except PermissionError:
+			logging.error("Export failed due to permissions")  # noqa: TRY400
 
 		if target and isinstance(target, Path):
 			playlist.file_size = target.stat().st_size
@@ -23073,7 +23060,7 @@ class SearchOverlay:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -23092,7 +23079,7 @@ class SearchOverlay:
 						self.worker2_lock.release()
 					except RuntimeError as e:
 						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")
+							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
 						else:
 							logging.exception("Unknown RuntimeError trying to release worker2_lock")
 					except Exception:
@@ -23252,7 +23239,7 @@ class SearchOverlay:
 								self.tauon.gall_ren.lock.release()
 							except RuntimeError as e:
 								if str(e) == "release unlocked lock":
-									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")
+									logging.error("RuntimeError: Attempted to release already unlocked gall_ren_lock")  # noqa: TRY400
 								else:
 									logging.exception("Unknown RuntimeError trying to release gall_ren_lock")
 							except Exception:
@@ -24174,7 +24161,7 @@ class Over:
 		self.ddt.text((x, y), _("Sources:"), self.colours.box_text_label, 11)
 		y += 23 * self.gui.scale
 
-		for name in lyric_sources.keys():
+		for name in lyric_sources:
 			enabled = name in self.prefs.lyrics_enables
 			title = _(name)
 			if name in uses_scraping:
@@ -25720,12 +25707,12 @@ class Over:
 
 		y += round(25 * gui.scale)
 		if not self.msys and not self.macos:
-			x11_path = str(self.user_directory / "x11")
-			x11 = os.path.exists(x11_path)
+			x11_path = self.user_directory / "x11"
+			x11 = x11_path.exists()
 			old = x11
 			x11 = self.toggle_square(x, y, x11, _("Prefer x11 when running in Wayland"))
 			if old is False and x11 is True:
-				with open(x11_path, "a"):
+				with x11_path.open("a"):
 					pass
 			elif old is True and x11 is False:
 				os.remove(x11_path)
@@ -31332,8 +31319,7 @@ class RadioBox:
 		self.radio_field.text = station.stream_url
 
 	def browser_get_hosts(self) -> list[str]:
-		"""
-		Get all base urls of all currently available radiobrowser servers
+		"""Get all base urls of all currently available radiobrowser servers
 
 		Returns:
 		list: a list of strings
@@ -32635,7 +32621,7 @@ class ArtistList:
 			self.tauon.artist_info_box.get_data(artist, silent=True)
 			if not self.tauon.artist_info_box.get_data(artist, get_img_path=True):
 				if artist not in self.prefs.failed_artists:
-					logging.error("Failed fetching: " + artist)
+					logging.error(f"Failed fetching: {artist}")
 					self.prefs.failed_artists.append(artist)
 
 			self.to_fetch = ""
@@ -32768,7 +32754,7 @@ class ArtistList:
 		if viewing_pl_id in self.saves:
 			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
-	def draw_card_text_only(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
+	def draw_card_text_only(self, artist, x: int, y: int, w: int, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
 		album_mode = False
 		for albums in self.current_album_counts.values():
 			if len(albums) > 1:
@@ -32802,7 +32788,7 @@ class ArtistList:
 		# self.ddt.text((x_text, y + self.tab_h // 2 - 2 * self.gui.scale), text, line2_colour, count_font,
 		#          extra_text_space + w - x_text - 15 * self.gui.scale, bg=bg)
 
-	def draw_card_with_thumbnail(self, artist, x, y, w, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
+	def draw_card_with_thumbnail(self, artist:str, x: int, y: int, w: int, area: list[int], thin_mode: bool, line1_colour: ColourRGBA, line2_colour: ColourRGBA, light_mode: bool, bg: ColourRGBA) -> None:
 		if artist not in self.thumb_cache:
 			self.load_img(artist)
 
@@ -34038,7 +34024,7 @@ class QueueBox:
 			return [self.colours.menu_text, self.colours.menu_background, _("Cancel Auto-Stop")]
 		return [self.colours.menu_text, self.colours.menu_background, _("Auto-Stop")]
 
-	def queue_remove_show(self, id: int) -> bool:
+	def queue_remove_show(self, _: int) -> bool:
 		return self.right_click_id is not None
 
 	def right_remove_item(self) -> None:
@@ -34757,7 +34743,7 @@ class PictureRender:
 		self.srect = None
 		self.size = (0, 0)
 
-	def load(self, path, box_size=None) -> None:
+	def load(self, path: str, box_size: tuple[int, int] | None = None) -> None:
 		if not os.path.isfile(path):
 			logging.warning("NO PICTURE FILE TO LOAD")
 			return
@@ -34915,13 +34901,13 @@ class ArtistInfoBox:
 			self.process_text_artist = self.artist_on
 
 			text = self.text
-			lic = ""
+			#lic = ""
 			link = ""
 
 			if "<a" in text:
 				text, ex = text.split('<a href="', 1)
 				link, ex = ex.split('">', 1)
-				lic = ex.split("</a>. ", 1)[1]
+				#lic = ex.split("</a>. ", 1)[1]
 
 			text += "\n"
 			self.urls = [(link, ColourRGBA(200, 60, 60, 255), "L")]
@@ -35905,7 +35891,7 @@ class ColourPulse2:
 		self.in_timer = Timer()
 		self.out_timer = Timer()
 		self.out_timer.start = 0
-		self.active = False
+		self.active: bool = False
 
 	def get(self, hit: bool, on: bool, off: bool, low_hls: ColourRGBA, high_hls: ColourRGBA) -> ColourRGBA:
 		if on:
@@ -35968,11 +35954,11 @@ class ViewBox:
 		self.x_menu  = tauon.x_menu
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
-		self.x = 0
+		self.x: int = 0
 		self.y = tauon.gui.panelY
 		self.w = 52 * tauon.gui.scale
 		self.h = 260 * tauon.gui.scale  # 257
-		self.active = False
+		self.active: bool = False
 
 		self.border = 3 * tauon.gui.scale
 
@@ -36009,7 +35995,7 @@ class ViewBox:
 		if not reload:
 			tauon.gui.combo_was_album = False
 
-	def activate(self, x) -> None:
+	def activate(self, x: int) -> None:
 		self.x = x
 		self.active = True
 		self.clicked = False
@@ -36742,8 +36728,8 @@ class SmoothScroll:
 	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
 		Coeff should be the number that the scroll would be multiplied by if the scroll input was an integer;
-		Source keeps everything straight (the string's contents don't matter at all)."""
-
+		Source keeps everything straight (the string's contents don't matter at all).
+		"""
 		# if smooth scrolling isn't necessary
 		if self.inp.mouse_wheel % 1 == 0:
 			return int( self.inp.mouse_wheel * coeff )
@@ -36873,7 +36859,8 @@ class Formats:
 def is_module_loaded(module_name: str, object_name: str = "") -> bool:
 	"""Check if a module is loaded, to determine which features we should enable
 
-	See https://stackoverflow.com/a/30483269/8962143 for more details"""
+	See https://stackoverflow.com/a/30483269/8962143 for more details
+	"""
 	if object_name:
 		return module_name in sys.modules and hasattr(sys.modules[module_name], object_name)
 	return module_name in sys.modules
@@ -37729,6 +37716,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 			return ""
 		else:
 			setattr(track, attr, "")
+		return None
 
 	tag = tags
 
@@ -37881,7 +37869,8 @@ def coll_point(l: list[int], r: list[int]) -> bool:
 def find_synced_lyric_data(track: TrackClass) -> list[str] | None:
 	"""Return list of strings if lyrics match LRC format, otherwise return None
 
-	See https://en.wikipedia.org/wiki/LRC_(file_format)"""
+	See https://en.wikipedia.org/wiki/LRC_(file_format)
+	"""
 	if track.synced:
 		return track.synced.splitlines()
 	if track.is_network:
@@ -38431,7 +38420,7 @@ def worker2(tauon: Tauon) -> None:
 									years[year] = 1000
 
 						if search_magic(s_text, title + " " + artist + " " + filename + " " + album + " " +  sartist + " " + album_artist):
-							if "artists" in t.misc and t.misc["artists"]:
+							if t.misc.get("artists"):
 								for a in t.misc["artists"]:
 									if search_magic(s_text, a.lower()):
 
@@ -38634,7 +38623,7 @@ def worker1(tauon: Tauon) -> None:
 
 	def add_from_cue(path: str) -> int | None:
 		if not tauon.msys:  # Windows terminal doesn't like unicode
-			logging.info("Reading CUE file: " + path)
+			logging.info(f"Reading CUE file: {path}")
 
 		try:
 			try:
@@ -38691,9 +38680,7 @@ def worker1(tauon: Tauon) -> None:
 			if subtrack_count > 2:
 				files_with_subtracks += 1
 
-			if files == 1:
-				pass
-			elif files_with_subtracks > 1:
+			if files == 1 or files_with_subtracks > 1:
 				pass
 			else:
 				return 1
@@ -38725,8 +38712,7 @@ def worker1(tauon: Tauon) -> None:
 				line = content[i].strip()
 
 				if in_header:
-					if line.startswith("REM "):
-						line = line[4:]
+					line = line.removeprefix("REM ")
 
 					if line.startswith("TITLE "):
 						cue_album = get_quoted_from_line(line)
@@ -38766,7 +38752,7 @@ def worker1(tauon: Tauon) -> None:
 									if ".cue" not in item.lower() and item.split(".")[-1].lower() in bag.formats.DA:
 										file_name = item
 										file_path = os.path.join(os.path.dirname(path), file_name)
-										logging.info("-- Source found at: " + file_path)
+										logging.info(f"-- Source found at: {file_path}")
 										break
 							else:
 								logging.error("-- Abort: Source file not found")
@@ -38777,8 +38763,7 @@ def worker1(tauon: Tauon) -> None:
 
 				if line.startswith("TRACK "):
 					line = line[6:]
-					if line.endswith("AUDIO"):
-						line = line[:-5]
+					line = line.removesuffix("AUDIO")
 
 					c = loaded_cue_cache.get((file_path.replace("\\", "/"), int(line.strip())))
 					if c is not None:
@@ -38901,7 +38886,7 @@ def worker1(tauon: Tauon) -> None:
 			logging.exception("Internal error processing CUE file")
 
 	def pl_folder_autoscan() -> None:
-		"""rescan designated playlist folder for new playlists and import them"""
+		"""Rescan designated playlist folder for new playlists and import them"""
 		if prefs.autoscan_playlist_folder:
 			new_playlists = []
 			for root, dirs, files in os.walk( prefs.playlist_folder_path ):
@@ -38920,7 +38905,7 @@ def worker1(tauon: Tauon) -> None:
 					logging.info(f"will import {filepath[0]}")
 
 	def add_file(path, force_scan: bool = False, show_errors: bool = False) -> int | None:
-		"""import playlist from filepath""" # TODO (Flynn): add visible errors for bad playlist imports
+		"""Import playlist from filepath""" # TODO (Flynn): add visible errors for bad playlist imports
 		# bm.get("add file start")
 
 		if not os.path.isfile(path):
@@ -38949,7 +38934,7 @@ def worker1(tauon: Tauon) -> None:
 			return 0
 
 		if path.lower().endswith(".xspf"):
-			logging.info("Found XSPF file at: " + path)
+			logging.info(f"Found XSPF file at: {path}")
 			tauon.load_xspf(path)
 			return 0
 
@@ -39062,7 +39047,7 @@ def worker1(tauon: Tauon) -> None:
 								logging.error("Extract error, expected directory not found")
 
 						if True and not error and prefs.auto_del_zip:
-							logging.info("Moving archive file to trash: " + path)
+							logging.info(f"Moving archive file to trash: {path}")
 							try:
 								send2trash(path)
 							except Exception:
@@ -39141,6 +39126,7 @@ def worker1(tauon: Tauon) -> None:
 		if gui.auto_play_import:
 			pctl.jump(pctl.master_count - 1)
 			gui.auto_play_import = False
+		return None
 
 	def pre_get(direc: str) -> None:
 		"""Count the approx number of files to be imported"""
@@ -39283,7 +39269,7 @@ def worker1(tauon: Tauon) -> None:
 					try:
 						if tauon.check_auto_update_okay(code, pl=i):
 							if not tauon.pl_is_locked(i):
-								logging.info("Reloading smart playlist: " + plist.title)
+								logging.info(f"Reloading smart playlist: {plist.title}")
 								tauon.regenerate_playlist(i, silent=True)
 								time.sleep(0.02)
 					except Exception:
@@ -39425,7 +39411,7 @@ def worker1(tauon: Tauon) -> None:
 						folder_name = ref_track_object.parent_folder_name
 						break
 
-				logging.info("Transcoding folder: " + folder_name)
+				logging.info(f"Transcoding folder: {folder_name}")
 
 				# Remove any existing matching folder
 				if (prefs.encoder_output / folder_name).is_dir():
@@ -40246,7 +40232,7 @@ def main(holder: Holder) -> None:
 			with (user_directory / "lyrics_substitutions.json").open() as f:
 				prefs.lyrics_subs = json.load(f)
 		except FileNotFoundError:
-			logging.error("No existing lyrics_substitutions.json file")
+			logging.error("No existing lyrics_substitutions.json file")  # noqa: TRY400
 		except Exception:
 			logging.exception("Unknown error loading lyrics_substitutions.json")
 
@@ -41124,7 +41110,6 @@ def main(holder: Holder) -> None:
 	ddt.scale = gui.scale
 	ddt.force_subpixel_text = prefs.force_subpixel_text
 
-	launch = Launch(tauon, pctl, gui, ddt)
 	if system == "Linux":
 		tauon.prime_fonts()
 	else:
@@ -42053,7 +42038,7 @@ def main(holder: Holder) -> None:
 			tauon.open_uri(item)
 
 	sdl_version = sdl3.SDL_GetVersion()
-	logging.info("Using SDL version: " + str(sdl_version))
+	logging.info(f"Using SDL version: {sdl_version!s}")
 
 	# C-ML
 	# if prefs.backend == 2:
@@ -42533,9 +42518,7 @@ def main(holder: Holder) -> None:
 				elif event.key.key == sdl3.SDLK_X:
 					inp.key_x_press = True
 
-				if event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0:
-					inp.key_return_press = True
-				elif event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0:
+				if (event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0) or (event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0):
 					inp.key_return_press = True
 				elif event.key.key == sdl3.SDLK_TAB:
 					inp.key_tab_press = True
@@ -42753,7 +42736,7 @@ def main(holder: Holder) -> None:
 				tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -43354,8 +43337,7 @@ def main(holder: Holder) -> None:
 
 					if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
 						gui.pl_update += 1
-						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
-							pctl.selected_in_playlist = len(pctl.default_playlist) - 1
+						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist) - 1)
 
 						if not gui.shift_selection:
 							gui.shift_selection.append(pctl.selected_in_playlist)
@@ -43581,7 +43563,7 @@ def main(holder: Holder) -> None:
 
 					load_theme(colours, Path(theme_item[0]))
 					tauon.deco.load(colours.deco)
-					logging.info("Applying theme: " + gui.theme_name)
+					logging.info(f"Applying theme: {gui.theme_name}")
 
 					if colours.lm:
 						info_icon.colour = ColourRGBA(60, 60, 60, 255)
@@ -43702,9 +43684,7 @@ def main(holder: Holder) -> None:
 					gbc.enable()
 					#logging.info("Enabling garbage collecting")
 
-			if gui.mode == 4:
-				launch.render()
-			elif gui.mode in (1, 2):
+			if gui.mode in (1, 2):
 
 				ddt.text_background_colour = colours.playlist_panel_background
 
@@ -43838,8 +43818,8 @@ def main(holder: Holder) -> None:
 								w -= gui.lspw
 
 						x = window_size[0] - w
-						sx = x
-						sw = w
+						# sx = x
+						# sw = w
 						h = window_size[1] - gui.panelY - gui.panelBY
 
 						if not gui.show_playlist and inp.mouse_click:
@@ -43870,7 +43850,7 @@ def main(holder: Holder) -> None:
 
 						l_area = x
 						r_area = w
-						c_area = r_area // 2 + l_area
+						# c_area = r_area // 2 + l_area
 
 						ddt.text_background_colour = colours.gallery_background
 
@@ -45977,10 +45957,9 @@ def main(holder: Holder) -> None:
 					# rect = [0, 0, window_size[0], window_size[1]]
 					# ddt.rect_r(rect, [0, 0, 0, 90], True)
 					pref_box.render()
-				else:
-					if not Path(tauon.prefs.playlist_folder_path).is_dir():
-						tauon.prefs.playlist_folder_path = ""
-						prefs.autoscan_playlist_folder = False
+				elif not Path(tauon.prefs.playlist_folder_path).is_dir():
+					tauon.prefs.playlist_folder_path = ""
+					prefs.autoscan_playlist_folder = False
 
 				if gui.rename_folder_box:
 					if gui.level_2_click:
@@ -46960,7 +46939,7 @@ def main(holder: Holder) -> None:
 
 				y -= 7 * gui.scale
 				for t in range(12):
-					met = False if gui.level_peak[1] < t else True
+					met = not gui.level_peak[1] < t
 					if gui.level_peak[1] < 0.2:
 						met = False
 
@@ -47118,7 +47097,7 @@ def main(holder: Holder) -> None:
 			tauon.thread_manager.player_lock.release()
 	except RuntimeError as e:
 		if str(e) == "release unlocked lock":
-			logging.error("RuntimeError: Attempted to release already unlocked player_lock")
+			logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 		else:
 			logging.exception("Unknown RuntimeError trying to release player_lock")
 	except Exception:
