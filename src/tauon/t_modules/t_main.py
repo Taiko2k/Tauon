@@ -41919,8 +41919,6 @@ def main(holder: Holder) -> None:
 	default_playlist: list[int] = []
 
 	# Library and loader Variables--------------------------------------------------------
-	master_library: dict[int, TrackClass] = {}
-
 	db_version: float = 0.0
 	latest_db_version: float = 73
 
@@ -42062,7 +42060,7 @@ def main(holder: Holder) -> None:
 		logical_size=logical_size,
 		window_size=window_size,
 		gen_codes={},
-		master_library=master_library,
+		master_library={},
 		loaded_asset_dc=loaded_asset_dc,
 		radio_playlist_viewing=0,
 		radio_playlists=radio_playlists,
@@ -42190,7 +42188,7 @@ def main(holder: Holder) -> None:
 				# gui.__init__()
 
 			if len(save) > 0 and save[0] is not None:
-				master_library = save[0]
+				bag.master_library = save[0]
 			bag.master_count = save[1]
 			bag.playlist_playing = save[2]
 			bag.active_playlist_viewing = save[3]
@@ -42510,7 +42508,7 @@ def main(holder: Holder) -> None:
 				for d in trackclass_jar:
 					nt = TrackClass()
 					nt.__dict__.update(d)
-					master_library[d["index"]] = nt
+					bag.master_library[d["index"]] = nt
 			if len(save) > 163 and save[163] is not None:
 				prefs.premium = save[163]
 			if len(save) > 164 and save[164] is not None:
@@ -42575,7 +42573,7 @@ def main(holder: Holder) -> None:
 	logging.info(f"Database loaded in {round(perf_timer.get(), 3)} seconds.")
 
 	perf_timer.set()
-	keys = set(master_library.keys())
+	keys = set(bag.master_library.keys())
 	for pl in bag.multi_playlist:
 		if db_version > 68 or db_version == 0:
 			keys -= set(pl.playlist_ids)
@@ -42798,10 +42796,10 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			master_library, pctl.multi_playlist, tauon.star_store, pctl.force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
+			pctl.master_library, pctl.multi_playlist, tauon.star_store, pctl.force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
-				master_library=master_library,
+				master_library=pctl.master_library,
 				install_mode=install_mode,
 				multi_playlist=pctl.multi_playlist,
 				star_store=tauon.star_store,
