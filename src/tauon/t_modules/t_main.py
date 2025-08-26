@@ -921,6 +921,9 @@ class GuiVar:
 			self.cursor_top_side = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 			self.cursor_bottom_side = self.cursor_top_side
 
+		self.nine_enable: bool = False
+		self.nine_active: bool = False
+
 class StarStore:
 	"""Functions for reading and setting play counts"""
 
@@ -26943,6 +26946,8 @@ class TopPanel:
 		self.folder_list_icon = asset_loader(bag, bag.loaded_asset_dc, "folder-list.png", True)
 		self.dl_button        = asset_loader(bag, bag.loaded_asset_dc, "dl.png", True)
 		self.overflow_icon    = asset_loader(bag, bag.loaded_asset_dc, "overflow.png", True)
+		self.start_icon = asset_loader(bag, bag.loaded_asset_dc, "start.png", True)
+
 
 		self.drag_slide_timer = Timer(100)
 		self.tab_d_click_timer = Timer(10)
@@ -27048,7 +27053,9 @@ class TopPanel:
 		rect = (wwx + 9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
 		self.fields.add(rect)
 
-		if self.coll(rect) and not prefs.shuffle_lock:
+		if self.coll(rect) and gui.nine_enable:
+			pass   # nine click
+		elif self.coll(rect) and not prefs.shuffle_lock:
 			if inp.mouse_click:
 
 				if gui.combo_mode:
@@ -27082,7 +27089,12 @@ class TopPanel:
 			if self.coll(rect):
 				colour = colours.corner_button_active
 
-		if not prefs.shuffle_lock:
+		if gui.nine_enable:
+			colour = colours.corner_button
+			if self.coll(rect):
+				colour = colours.corner_button_active
+			self.start_icon.render(wwx + 13 * gui.scale, yy + 6 * gui.scale, colour)  # nine icon
+		elif not prefs.shuffle_lock:
 			if gui.combo_mode:
 				self.return_icon.render(wwx + 14 * gui.scale, yy + 8 * gui.scale, colour)
 			elif prefs.left_panel_mode == "artist list":
@@ -27622,27 +27634,29 @@ class TopPanel:
 
 		# MENU -----------------------------
 
-		word = _("MENU")
-		word_length = ddt.get_text_w(word, 212)
-		rect = [x - self.click_buffer, yy + self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
-		hit = self.coll(rect)
-		self.fields.add(rect)
+		word_length = 0
+		if not gui.nine_enable:
+			word = _("MENU")
+			word_length = ddt.get_text_w(word, 212)
+			rect = [x - self.click_buffer, yy + self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
+			hit = self.coll(rect)
+			self.fields.add(rect)
 
-		if (tauon.x_menu.active or hit) and not tauon.tab_menu.active:
-			bg = colours.status_text_over
-		else:
-			bg = colours.status_text_normal
-		ddt.text((x, y), word, bg, 212)
-
-		if hit and inp.mouse_click:
-			if tauon.x_menu.active:
-				tauon.x_menu.active = False
+			if (tauon.x_menu.active or hit) and not tauon.tab_menu.active:
+				bg = colours.status_text_over
 			else:
-				xx = x
-				if x > window_size[0] - (210 * gui.scale):
-					xx = window_size[0] - round(210 * gui.scale)
-				tauon.x_menu.activate(position=(xx + round(12 * gui.scale), gui.panelY))
-				tauon.view_box.activate(xx)
+				bg = colours.status_text_normal
+			ddt.text((x, y), word, bg, 212)
+
+			if hit and inp.mouse_click:
+				if tauon.x_menu.active:
+					tauon.x_menu.active = False
+				else:
+					xx = x
+					if x > window_size[0] - (210 * gui.scale):
+						xx = window_size[0] - round(210 * gui.scale)
+					tauon.x_menu.activate(position=(xx + round(12 * gui.scale), gui.panelY))
+					tauon.view_box.activate(xx)
 
 		# if True:
 		#     border = round(3 * gui.scale)
@@ -45005,6 +45019,7 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
+				gui.nine_enable ^= True
 				pass
 
 			if gui.mode < 3:
