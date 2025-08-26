@@ -91,6 +91,7 @@ from unidecode import unidecode
 
 builtins._ = lambda x: x
 
+from tauon.t_modules import t_topchart  # noqa: E402
 from tauon.t_modules.guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
@@ -189,8 +190,6 @@ if sys.platform == "linux":
 		logging.exception("Failed importing gi Notify 0.7, will try 0.8")
 		gi.require_version("Notify", "0.8")
 	from gi.repository import GdkPixbuf, GLib, Notify
-
-	from tauon.t_modules import t_topchart
 
 if sys.platform == "darwin":
 	import gi
