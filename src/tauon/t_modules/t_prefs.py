@@ -203,8 +203,8 @@ class Prefs:
 	random_mode = False
 	repeat_mode = False
 
-	failed_artists: list = field(default_factory=list)
-	failed_background_artists: list = field(default_factory=list)
+	failed_artists: list[str] = field(default_factory=list)
+	failed_background_artists: list[str] = field(default_factory=list)
 
 	artist_list = False
 	auto_sort = False
@@ -213,7 +213,7 @@ class Prefs:
 
 	bg_showcase_only = False
 
-	lyrics_enables: list = field(default_factory=list)
+	lyrics_enables: list[str] = field(default_factory=list)
 
 	fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 
