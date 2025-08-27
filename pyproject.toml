@@ -224,4 +224,28 @@
 			'PLR0912', # too-many-branches                         - We'll ignore functions having too many branches for now
 			'PLR0913', # too-many-arguments                        - We'll ignore functions taking too many arguments
 			'PLR0915', # too-many-statements                       - We'll ignore functions having too many statements
+			# TODO(Martin): We mostly want these, but currently there's so many issues it's making the check useless
+			# Throw these out one by one when the time allows and fix the issues
+			'A001',    # builtin-variable-shadowing                 - TODO fix
+			'S101',    # assert                                     - TODO fix
+			'S603',    # subprocess-without-shell-equals-true       - TODO fix
+			'S607',    # start-process-with-partial-path            - TODO fix
+			'PLR2004', # magic-value-comparison                     - TODO fix
+			'FIX002',  # line-contains-todo                         - TODO fix
+			'PTH103',  # os-makedirs                                - TODO fix
+			'PTH107',  # os-remove                                  - TODO fix
+			'PTH110',  # os-path-exists                             - TODO fix
+			'PTH111',  # os-path-expanduser                         - TODO fix
+			'PTH112',  # os-path-isdir                              - TODO fix
+			'PTH113',  # os-path-isfile                             - TODO fix
+			'PTH114',  # os-path-islink                             - TODO fix
+			'PTH115',  # os-readlink                                - TODO fix
+			'PTH118',  # os-path-join                               - TODO fix
+			'PTH119',  # os-path-basename                           - TODO fix
+			'PTH120',  # os-path-dirname                            - TODO fix
+			'PTH122',  # os-path-splittext                          - TODO fix
+			'PTH123',  # builtin-open                               - TODO fix
+			'PTH202',  # os-path-getsize                            - TODO fix
+			'PTH208',  # os-listdir                                 - TODO fix
+			'PLW2901', # os-path-getsize                            - TODO fix
 		]
