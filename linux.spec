@@ -30,6 +30,7 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
+		("lrclib-solver", "."),
 	],
 	hiddenimports=[
 		"pylast",
