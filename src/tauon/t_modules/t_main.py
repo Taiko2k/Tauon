@@ -91,6 +91,7 @@ from unidecode import unidecode
 
 builtins._ = lambda x: x
 
+from tauon.t_modules.t_svgout import render_icons
 from tauon.t_modules import t_topchart  # noqa: E402
 from tauon.t_modules.guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
@@ -12394,7 +12395,7 @@ class Tauon:
 		self.ddt.scale = self.gui.scale
 		self.prime_fonts()
 		self.ddt.clear_text_cache()
-		scale_assets(bag=self.bag, gui=self.gui, scale_want=scale, force=True)
+		scale_assets(tauon=self, bag=self.bag, gui=self.gui, scale_want=scale, force=True)
 		self.img_slide_update_gall(self.album_mode_art_size)
 
 		for item in WhiteModImageAsset.assets:
@@ -37668,52 +37669,58 @@ def auto_scale(bag: Bag) -> None:
 	#	self.show_message(_("Detected unsuitable UI scaling."), _("Scaling setting reset to 1x"))
 	#	prefs.scale_want = 1.0
 
-def scale_assets(bag: Bag, gui: GuiVar, scale_want: int, force: bool = False) -> None:
+def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bool = False) -> None:
 	asset_directory        = bag.dirs.asset_directory
 	scaled_asset_directory = bag.dirs.scaled_asset_directory
 	user_directory         = bag.dirs.user_directory
 	svg_directory          = bag.dirs.svg_directory
 	prefs = bag.prefs
-	if scale_want != 1:
-		bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
-		if not scaled_asset_directory.exists() or len(os.listdir(str(svg_directory))) != len(
-				os.listdir(str(scaled_asset_directory))):
-			logging.info("Force rerender icons")
-			force = True
-	else:
-		bag.dirs.scaled_asset_directory = asset_directory
 
-	if scale_want != prefs.ui_scale or force:
-		if scale_want != 1:
-			if scaled_asset_directory.is_dir() and scaled_asset_directory != asset_directory:
-				shutil.rmtree(str(scaled_asset_directory))
-			from tauon.t_modules.t_svgout import render_icons
+	key = f"{tauon.n_version},{scale_want}"
+	keyfile = scaled_asset_directory / "key"
+	render = True
 
-			if scaled_asset_directory != asset_directory:
-				logging.info("Rendering icons...")
-				render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
+	# Optimisation: don't rerender if we don't need to
+	if not force:
+		if scaled_asset_directory.exists() and keyfile.exists():
+			with open(keyfile, "r") as f:
+				c = f.read()
+				if c == key:
+					render = False
 
+	if render:
+		if scaled_asset_directory.exists():
+			shutil.rmtree(scaled_asset_directory)
+		os.mkdir(scaled_asset_directory)
+		logging.info("Rendering icons...")
+		render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
+		with open(keyfile, "w") as f:
+			f.write(key)
 		logging.info("Done rendering icons")
 
-		diff_ratio = scale_want / prefs.ui_scale
-		prefs.ui_scale = scale_want
-		prefs.playlist_row_height = round(22 * prefs.ui_scale)
 
-		# Save user values
-		column_backup = gui.pl_st
-		rspw = gui.pref_rspw
-		grspw = gui.pref_gallery_w
+	diff_ratio = scale_want / prefs.ui_scale
+	prefs.ui_scale = scale_want
 
-		gui.destroy_textures()
-		gui.rescale()
+	# Save user values
+	column_backup = gui.pl_st
+	rspw = gui.pref_rspw
+	grspw = gui.pref_gallery_w
+	row_h = prefs.playlist_row_height
 
-		# Scale saved values
-		gui.pl_st = column_backup
-		for item in gui.pl_st:
-			item[1] *= diff_ratio
-		gui.pref_rspw = rspw * diff_ratio
-		gui.pref_gallery_w = grspw * diff_ratio
-		bag.album_mode_art_size = int(bag.album_mode_art_size * diff_ratio)
+	gui.destroy_textures()
+	gui.rescale()
+
+	# Scale saved values
+	gui.pl_st = column_backup
+	for item in gui.pl_st:
+		item[1] *= diff_ratio
+	gui.pref_rspw = rspw * diff_ratio
+	gui.pref_gallery_w = grspw * diff_ratio
+	prefs.playlist_row_height = round(row_h * diff_ratio)
+	bag.album_mode_art_size = int(bag.album_mode_art_size * diff_ratio)
+
+
 
 def get_global_mouse() -> tuple[float, float]:
 	i_y = pointer(c_float(0))
@@ -39695,7 +39702,7 @@ def main(holder: Holder) -> None:
 
 	asset_directory = install_directory / "assets"
 	svg_directory = install_directory / "assets" / "svg"
-	scaled_asset_directory = asset_directory
+	scaled_asset_directory = user_directory / "scaled-icons"
 
 	music_directory = Path("~").expanduser() / "Music"
 	if not music_directory.is_dir():
@@ -40820,8 +40827,6 @@ def main(holder: Holder) -> None:
 				logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
 		else:
 			logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
-	auto_scale(bag)
-	scale_assets(bag, gui, prefs.scale_want)
 
 	try:
 		prefs.update_title  = prefs.view_prefs["update-title"]
@@ -40889,6 +40894,10 @@ def main(holder: Holder) -> None:
 		bag=bag,
 		gui=gui,
 	)
+
+	auto_scale(bag)
+	scale_assets(tauon, bag, gui, prefs.scale_want)
+
 	tauon.after_scan              = after_scan
 	tauon.search_string_cache     = search_string_cache
 	tauon.search_dia_string_cache = search_dia_string_cache
