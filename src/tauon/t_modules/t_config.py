@@ -61,7 +61,7 @@ class Config:
 	def load(self, path: str) -> None:
 
 		if os.path.isfile(path):
-			with open(path, encoding="utf_8") as f:
+			with open(path, encoding="utf-8") as f:
 				self.old = f.readlines()
 
 	def dump(self, path: str) -> None:
@@ -70,7 +70,7 @@ class Config:
 		#	 logging.error("Config file cannot be written")
 		#	 return
 
-		with open(path, "w", encoding="utf_8") as f:
+		with open(path, "w", encoding="utf-8") as f:
 
 			for item in self.live:
 

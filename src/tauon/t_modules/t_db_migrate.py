@@ -264,7 +264,7 @@ def database_migrate(
 			f.close()
 			lines = text.splitlines()
 			if "l ctrl" not in text.lower():
-				f = (config_directory / "input.txt").open("w")
+				f = (config_directory / "input.txt").open("w", encoding="utf-8")
 				for line in lines:
 					line = line.strip()
 					if line == "love-selected":
@@ -295,7 +295,7 @@ def database_migrate(
 			f.close()
 			lines = text.splitlines()
 
-			f = Path(config_directory / "input.txt").open("w")
+			f = Path(config_directory / "input.txt").open("w", encoding="utf-8")
 			for line in lines:
 				line = line.strip()
 				if "rename-playlist" in line:
@@ -462,7 +462,7 @@ def database_migrate(
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			with (config_directory / "input.txt").open("r") as f:
 				lines = f.readlines()
-			with (config_directory / "input.txt").open("w") as f:
+			with (config_directory / "input.txt").open("w", encoding="utf-8") as f:
 				for line in lines:
 					if line == "vol-up Up Shift\n" or line == "vol-down Down Shift\n":
 						continue

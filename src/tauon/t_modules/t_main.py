@@ -8971,30 +8971,28 @@ class Tauon:
 
 			playtimes[last_folder] = playtimes.get(last_folder, 0) + int(self.star_store.get(id))
 
-		filename = f"{self.user_directory}/{name}.csv"
-		xport = open(filename, "w")
+		filepath = self.user_directory / f"{name}.csv"
+		with open(filepath, "w", encoding="utf-8") as xport:
+			xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
 
-		xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
+			for id in albums:
+				track = self.pctl.get_track(id)
+				artist = track.album_artist
+				if not artist:
+					artist = track.artist
 
-		for id in albums:
-			track = self.pctl.get_track(id)
-			artist = track.album_artist
-			if not artist:
-				artist = track.artist
+				xport.write("\n")
+				xport.write(csv_string(track.album) + ",")
+				xport.write(csv_string(artist) + ",")
+				xport.write(csv_string(track.date) + ",")
+				xport.write(csv_string(track.genre) + ",")
+				xport.write(str(int(self.album_star_store.get_rating(track))))
+				xport.write(",")
+				xport.write(str(round(playtimes[track.parent_folder_path])))
+				xport.write(",")
+				xport.write(csv_string(track.parent_folder_path))
 
-			xport.write("\n")
-			xport.write(csv_string(track.album) + ",")
-			xport.write(csv_string(artist) + ",")
-			xport.write(csv_string(track.date) + ",")
-			xport.write(csv_string(track.genre) + ",")
-			xport.write(str(int(self.album_star_store.get_rating(track))))
-			xport.write(",")
-			xport.write(str(round(playtimes[track.parent_folder_path])))
-			xport.write(",")
-			xport.write(csv_string(track.parent_folder_path))
-
-		xport.close()
-		self.show_message(_("Export complete."), _("Saved as: ") + filename, mode="done")
+		self.show_message(_("Export complete."), _("Saved as: ") + filepath, mode="done")
 
 	def best(self, index: int) -> float:
 		# key = self.pctl.master_library[index].title + pctl.master_library[index].filename
@@ -11197,8 +11195,8 @@ class Tauon:
 		return s_day.rjust(3) + " " + s_hours.rjust(3) + " " + s_min.rjust(3)
 
 	def export_database(self) -> None:
-		path = str(self.user_directory / "DatabaseExport.csv")
-		xport = open(path, "w")
+		path = self.user_directory / "DatabaseExport.csv"
+		xport = path.open("w", encoding="utf-8")
 
 		xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
 
@@ -11222,7 +11220,7 @@ class Tauon:
 			xport.write(csv_string(track.fullpath))
 
 		xport.close()
-		self.show_message(_("Export complete."), _("Saved as: ") + path, mode="done")
+		self.show_message(_("Export complete."), _("Saved as: ") + str(path), mode="done")
 
 	def q_to_playlist(self) -> None:
 		self.pctl.multi_playlist.append(self.pl_gen(
@@ -16974,7 +16972,7 @@ class Tauon:
 
 			self.spot_ctl.save_token()
 
-			with (self.user_directory / "lyrics_substitutions.json").open("w") as file:
+			with (self.user_directory / "lyrics_substitutions.json").open("w", encoding="utf-8") as file:
 				json.dump(prefs.lyrics_subs, file)
 
 			save_prefs(bag=self.bag)
@@ -37429,7 +37427,7 @@ class TimedLyricsEdit:
 		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
-		with open(target, "r") as lyrics_file:
+		with target.open() as lyrics_file:
 			self.structure = []
 			for lyric in lyrics_file.readlines():
 				stamp, time, line = lyric.strip().split(",", 2)
@@ -38125,7 +38123,7 @@ class TimedLyricsEdit:
 	def reload_lyric_file(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
 		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".txt")
-		with open(target, "r") as lyric_file:
+		with open(target) as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
 		if not new_lyrics == _("Put the lyrics in this file and save it."):
@@ -39488,20 +39486,19 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	render = True
 
 	# Optimisation: don't rerender if we don't need to
-	if not force:
-		if scaled_asset_directory.exists() and keyfile.exists():
-			with open(keyfile, "r") as f:
-				c = f.read()
-				if c == key:
-					render = False
+	if not force and scaled_asset_directory.exists() and keyfile.exists():
+		with open(keyfile) as f:
+			c = f.read()
+			if c == key:
+				render = False
 
 	if render:
 		if scaled_asset_directory.exists():
 			shutil.rmtree(scaled_asset_directory)
-		os.mkdir(scaled_asset_directory)
+		scaled_asset_directory.mkdir()
 		logging.info("Rendering icons...")
 		render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
-		with open(keyfile, "w") as f:
+		with open(keyfile, "w", encoding="utf-8") as f:
 			f.write(key)
 		logging.info("Done rendering icons")
 
