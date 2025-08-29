@@ -166,7 +166,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	year_search,
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
-from tauon.t_modules.t_launch import Launch  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping, get_lrclib_challenge  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
