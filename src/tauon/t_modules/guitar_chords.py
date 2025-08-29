@@ -100,7 +100,7 @@ class GuitarChords:
 
 		t = t.replace("\r", "")
 
-		f = (self.store_b / cache_title).open("w")
+		f = (self.store_b / cache_title).open("w", encoding="utf-8")
 		f.write(t)
 		f.close()
 
@@ -241,7 +241,7 @@ class GuitarChords:
 		result = parsed_response["song"]
 
 		self.prep_folders()
-		with (self.store_a / cache_title).open("w") as file:
+		with (self.store_a / cache_title).open("w", encoding="utf-8") as file:
 			file.write(result)
 		self.ready[cache_title] = 1
 

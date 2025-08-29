@@ -128,7 +128,7 @@ class SpotCtl:
 	def save_token(self) -> None:
 
 		if self.token:
-			f = self.token_path.open("w")
+			f = self.token_path.open("w", encoding="utf-8")
 			f.write(str(self.token.refresh_token))
 			f.close()
 			self.tauon.prefs.spotify_token = str(self.token.refresh_token)
