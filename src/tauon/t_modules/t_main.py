@@ -37752,7 +37752,7 @@ class TimedLyricsEdit:
 				self.line_edit_box.selection = self.line_edit_box.cursor_position
 				self.inp.key_del = False
 				self.cursor = position
-				if line_number >= self.line_active:
+				if line_number < self.line_active:
 					self.scroll_position += self.yy
 
 			# ARROW KEYS
