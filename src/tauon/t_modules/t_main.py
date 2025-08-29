@@ -37420,7 +37420,7 @@ class TimedLyricsEdit:
 		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
-		with open(target, "w") as lyrics_file:
+		with open(target, "w", encoding="utf-8") as lyrics_file:
 			for line in self.structure:
 				stamp, time, line = line
 				if stamp == _("tag"):
@@ -37443,10 +37443,7 @@ class TimedLyricsEdit:
 		self.queue_next_frame = True
 
 	def visit_backup(self, synced: bool = True) -> None:
-		if synced:
-			suffix = ".csv"
-		else:
-			suffix = ".txt"
+		suffix = ".csv" if synced else ".txt"
 		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(suffix)
 		if not target.parent.is_dir() and not synced:
 			target.parent.mkdir()
@@ -37475,7 +37472,7 @@ class TimedLyricsEdit:
 
 	def previous(self, prev: float) -> None:
 		self.pctl.seek_time(prev)
-		if ((len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0)) and self.structure[self.line_active][1]>prev \
+		if (len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0) and self.structure[self.line_active][1]>prev \
 			and not (self.inp.key_lalt or self.inp.key_ralt):
 			stamp, time, line = self.structure[self.line_active]
 			stamp = "??:??.??"
@@ -37503,10 +37500,10 @@ class TimedLyricsEdit:
 			self.scroll_position -= self.yy
 		self.queue_next_frame = True
 
-	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool:
+	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool | None:
 		stamp, time, line = self.structure[current_line]
 		if time == -1.0:
-			return
+			return None
 
 		if self.inp.key_ctrl_down or self.inp.key_rctrl_down:
 			adjust = 0.01
