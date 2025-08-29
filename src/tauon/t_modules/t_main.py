@@ -22136,6 +22136,7 @@ class RenameTrackBox:
 		self.draw         = tauon.draw
 		self.pctl         = tauon.pctl
 		self.coll         = tauon.coll
+		self.prefs        = tauon.prefs
 		self.colours      = tauon.colours
 		self.star_store   = tauon.star_store
 		self.window_size  = tauon.window_size
