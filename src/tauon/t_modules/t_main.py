@@ -37948,6 +37948,7 @@ class TimedLyricsEdit:
 					pass
 				elif self.pctl.playing_state == PlayingState.PLAYING:
 					self.pctl.seek_time(self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1])
+					self.line_active -= self.inp.key_up_press - self.inp.key_down_press
 				elif self.pctl.playing_state != PlayingState.STOPPED:
 					self.pctl.decode_time = self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1]
 					self.pctl.new_time = self.pctl.decode_time
