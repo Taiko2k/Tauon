@@ -7705,14 +7705,11 @@ class Tauon:
 
 
 	def write_lyrics(self, track: TrackClass, synced: bool = False, loud: bool = False) -> bool:
-		if synced:
-			lyrics = track.synced
-		else:
-			lyrics = track.lyrics
+		lyrics = track.synced if synced else track.lyrics
 		if track.is_network or not track.fullpath:
 			logging.warning(f"Cannot write lyrics to network track {track.artist} - {track.title}")
 		if synced and self.prefs.use_lrc_instead:
-			with open( Path(track.fullpath).with_suffix(".lrc"), "w") as lrc:
+			with open( Path(track.fullpath).with_suffix(".lrc"), "w", encoding="utf-8") as lrc:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
 				return True
@@ -37453,7 +37450,7 @@ class TimedLyricsEdit:
 			)
 			return
 		if not synced:
-			with open(target, "w") as lyrics_file:
+			with open(target, "w", encoding="utf-8") as lyrics_file:
 				if self.text:
 					lyrics_file.write( self.text )
 				else:
@@ -38112,7 +38109,7 @@ class TimedLyricsEdit:
 		target = Path( self.tauon.config_directory / _("lyrics-editor") / str(self.struct_track)).with_suffix(".txt")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
-		with open(target, "w") as lyrics_file:
+		with open(target, "w", encoding="utf-8") as lyrics_file:
 			if self.text:
 				lyrics_file.write( self.text )
 			else:
