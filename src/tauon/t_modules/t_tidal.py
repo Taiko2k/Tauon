@@ -102,7 +102,7 @@ class Tidal:
 				"expiry_time": session.expiry_time.isoformat() if session.expiry_time else None,
 				"is_pkce": session.is_pkce,
 			}
-			with open(self.save_path, "w") as f:
+			with open(self.save_path, "w", encoding="utf-8") as f:
 				json.dump(session_data, f)
 
 	def resolve_stream(self, tr: TrackClass) -> list[str] | None:
@@ -405,9 +405,9 @@ class Tidal:
 	#			 # 2. Export as HLS m3u8 playlist
 	#			 hls = manifest.get_hls()
 	#			 logging.info(hls)
-	#			 # with open("{}_{}.mpd".format(album_id, track.id), "w") as my_file:
+	#			 # with open("{}_{}.mpd".format(album_id, track.id), "w", encoding="utf-8") as my_file:
 	#			 #	my_file.write(mpd)
-	#			 # with open("{}_{}.m3u8".format(album_id, track.id), "w") as my_file:
+	#			 # with open("{}_{}.m3u8".format(album_id, track.id), "w", encoding="utf-8") as my_file:
 	#			 #	my_file.write(hls)
 	#			 urls = manifest.get_urls()
 	#			 if urls:
