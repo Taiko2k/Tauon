@@ -44,7 +44,6 @@ def ovh(artist: str, title: str, user_agent: str="unused here but it needs to ex
 		return j["lyrics"], ""
 	return "", ""
 
-
 def genius(artist: str, title: str, return_url: bool=False, user_agent: str="unused here but it needs to exist in every lyrics function") -> tuple[str, str] | str:
 	"""Scrape lyrics from genius.com"""
 	artist = artist.split("feat.")[0]
@@ -68,7 +67,7 @@ def genius(artist: str, title: str, return_url: bool=False, user_agent: str="unu
 	page = requests.get(line, timeout=10)
 	html = BeautifulSoup(page.text, "html.parser")
 
-	result = html.find("div", class_="lyrics") #.get_text()
+	result = html.find("div", class_="lyrics")
 	if result is not None:
 		lyrics = result.get_text()
 		lyrics2: list[str] = []
@@ -82,9 +81,12 @@ def genius(artist: str, title: str, return_url: bool=False, user_agent: str="unu
 		lyrics = lyrics.strip("\n")
 		return lyrics, ""
 
-	# New layout type
 	results = html.findAll("div", {"class": lambda l: l and "Lyrics__Container" in l})
+	if not results:
+		return "", ""
+		
 	lyrics = "".join([r.get_text("\n") for r in results])
+	
 	level = 0
 	new = ""
 	for cha in lyrics:
@@ -98,19 +100,77 @@ def genius(artist: str, title: str, return_url: bool=False, user_agent: str="unu
 
 	lines = lyrics.splitlines()
 	new_lines: list[str] = []
+	skip_patterns = [
+		r'^\d+\s+Contributors?$',  # "3 Contributors"
+		r'^[^a-zA-Z]*Lyrics$',     # "[Song Name] Lyrics"
+		r'^\s*$',                   # Empty lines
+		r'^Embed$',                 # "Embed" button text
+		r'^\d+$',                   # Standalone numbers
+		r'^See .* Live$',           # "See Artist Live"
+		r'^Get tickets as low as',  # Ticket advertisements
+		r'^You might also like',    # Related content
+		r'^\w+ on Apple Music',     # Apple Music links
+	]
+	
 	for line in lines:
+		line = line.strip()
+		
+		if not line:
+			continue
+			
+		should_skip = False
+		for pattern in skip_patterns:
+			if re.match(pattern, line, re.IGNORECASE):
+				should_skip = True
+				break
+		
+		if should_skip:
+			continue
+			
 		if "[" in line:
-			line = line.split("[", 1)[0]
-			if line:
-				line += "\n"
-		new_lines.append(line.lstrip().rstrip(" ") + "\n")
+			line = line.split("[", 1)[0].strip()
+			if not line:
+				continue
+		
+		if (line.lower() in ['lyrics', 'embed', 'more on genius'] or
+			line.isdigit() or
+			len(line) < 2):
+			continue
+			
+		new_lines.append(line.rstrip() + "\n")
 
 	lyrics = "".join(new_lines)
 	lyrics = lyrics.replace("(\n", "(")
 	lyrics = lyrics.replace("\n)", ")")
 	lyrics = lyrics.lstrip("\n")
 	lyrics = lyrics.lstrip()
-	return lyrics, ""
+	
+	lyrics_lines = lyrics.split('\n')
+	
+	while lyrics_lines:
+		first_line = lyrics_lines[0].strip()
+		if (re.match(r'^\d+\s+Contributors?$', first_line, re.IGNORECASE) or
+			re.match(r'^.*Lyrics$', first_line, re.IGNORECASE) or
+			first_line.lower() in ['embed', 'lyrics'] or
+			len(first_line) < 3):
+			lyrics_lines.pop(0)
+		else:
+			break
+	
+	while lyrics_lines:
+		last_line = lyrics_lines[-1].strip()
+		if (last_line.lower() in ['embed', 'more on genius'] or
+			len(last_line) < 3):
+			lyrics_lines.pop()
+		else:
+			break
+	
+	final_lyrics = '\n'.join(lyrics_lines).strip()
+	
+	if len(final_lyrics) > 10:
+		return final_lyrics, ""
+	
+	return "", ""
 
 
 def lrclib(artist: str, title: str, user_agent: str = "TauonMusicBox/Devel") -> tuple[str, str]:
