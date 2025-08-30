@@ -166,6 +166,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	year_search,
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
+from tauon.t_modules.t_logging import LogHistoryHandler  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping, get_lrclib_challenge  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
@@ -830,6 +831,13 @@ class GuiVar:
 		self.rename_tracks_icon = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "pen.png", True))
 		self.add_icon           = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "new.png", True))
 
+		self.filter_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "filter.png", True))
+		self.folder_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "folder.png", True))
+		self.info_icon        = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "info.png", True))
+		self.delete_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "del.png", True))
+		self.revert_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "revert.png", True))
+		self.radiorandom_icon = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "radiorandom.png", True))
+
 		self.last_fm_icon       = asset_loader(self.bag, self.bag.loaded_asset_dc, "as.png", True)
 		self.power_bar_icon     = asset_loader(self.bag, self.bag.loaded_asset_dc, "power.png", True)
 		self.mac_circle         = asset_loader(self.bag, self.bag.loaded_asset_dc, "macstyle.png", True)
@@ -895,6 +903,23 @@ class GuiVar:
 		# self.text_input_request = False
 		# self.text_input_active = False
 		self.center_blur_pixel = (0, 0, 0)
+		self.cursor_hand = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_POINTER)
+		self.cursor_standard = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_DEFAULT)
+		self.cursor_shift = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_EW_RESIZE)
+		self.cursor_text = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_TEXT)
+
+		self.cursor_br_corner   = self.cursor_standard
+		self.cursor_right_side  = self.cursor_standard
+		self.cursor_top_side    = self.cursor_standard
+		self.cursor_left_side   = self.cursor_standard
+		self.cursor_bottom_side = self.cursor_standard
+
+		if bag.msys:
+			self.cursor_br_corner = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
+			self.cursor_right_side = self.cursor_shift
+			self.cursor_left_side = self.cursor_shift
+			self.cursor_top_side = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
+			self.cursor_bottom_side = self.cursor_top_side
 
 class StarStore:
 	"""Functions for reading and setting play counts"""
@@ -5615,8 +5640,10 @@ class Tauon:
 		self.use_natsort                  = is_module_loaded("natsort")
 
 		self.bag                          = bag
+		self.log                          = bag.log
 		self.mpt                          = bag.mpt
 		self.gme                          = bag.gme
+		self.dev_mode                     = bag.dev_mode
 		self.renderer                     = bag.renderer
 		self.ddt                          = TDraw(bag.renderer)
 		self.fonts                        = bag.fonts
@@ -5766,6 +5793,11 @@ class Tauon:
 		self.field_menu            = Menu(self, 140)
 		self.dl_menu               = Menu(self, 90)
 
+		self.view_menu             = Menu(self, 170)
+		self.set_menu_hidden       = Menu(self, 100)
+		self.vis_menu              = Menu(self, 140)
+		self.window_menu           = Menu(self, 140)
+
 		self.cancel_menu           = Menu(self, 100)
 		self.extra_menu            = Menu(self, 175, show_icons=True)
 		self.stop_menu             = Menu(self, 175, show_icons=False)
@@ -5874,6 +5906,10 @@ class Tauon:
 		self.mini_mode2                           = MiniMode2(tauon=self)
 		self.mini_mode3                           = MiniMode3(tauon=self)
 		self.vb                                   = VorbisMonitor(tauon=self)
+		self.bottom_playlist2                     = EdgePulse2(tauon=self)
+		self.gallery_pulse_top                    = EdgePulse2(tauon=self)
+		self.art_box                              = ArtBox(tauon=self)
+		self.nagbox                               = NagBox(tauon=self)
 
 		if self.system == "Linux" and not self.macos and not self.msys:
 			self.gnome = Gnome(tauon=self)
@@ -38611,6 +38647,7 @@ class Bag:
 	overlay_texture_texture: sdl3.LP_SDL_Texture
 	fonts:                   Fonts
 	tls_context:             ssl.SSLContext
+	dev_mode:                bool
 	macos:                   bool
 	msys:                    bool
 	phone:                   bool
@@ -38637,6 +38674,7 @@ class Bag:
 	selected_in_playlist:    int
 	latest_db_version:       int
 	volume:                  float
+	log:                     LogHistoryHandler
 	mac_close:               ColourRGBA
 	mac_maximize:            ColourRGBA
 	mac_minimize:            ColourRGBA
@@ -38654,6 +38692,7 @@ class Bag:
 	gen_codes:               dict[int, str]
 	master_library:          dict[int, TrackClass]
 	loaded_asset_dc:         dict[str, WhiteModImageAsset | LoadImageAsset]
+	default_playlist:        list[int] = field(default_factory=list[int])
 	sm:                      CDLL | None = None
 	song_notification:       None = None
 	active_playlist_viewing: int = 0
