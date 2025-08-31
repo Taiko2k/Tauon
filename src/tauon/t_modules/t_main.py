@@ -37252,7 +37252,7 @@ class TimedLyricsEdit:
 		t = t//1
 		ss = round(t%60)
 		mm = round(t//60)
-		return f"{format(mm,"02d")}:{format(ss,"02d")}.{format(ms,"02d")}"
+		return f"{format(mm,'02d')}:{format(ss,'02d')}.{format(ms,'02d')}"
 
 	def structurize_current(self, track: TrackClass, from_unsynced: bool = False) -> None:
 		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
