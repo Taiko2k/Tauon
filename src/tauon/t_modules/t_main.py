@@ -71,7 +71,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
 from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -165,7 +165,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	year_search,
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
-from tauon.t_modules.t_logging import LogHistoryHandler  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
@@ -278,6 +277,7 @@ if TYPE_CHECKING:
 	from websocket import WebSocketApp
 
 	from tauon.t_modules.t_bootstrap import Holder
+	from tauon.t_modules.t_logging import LogHistoryHandler  # noqa: E402
 	if sys.platform == "win32":
 		from lynxtray import SysTrayIcon
 	from collections.abc import Callable
@@ -4802,7 +4802,7 @@ class MenuItem:
 	]
 	def __init__(
 		self, title: str, func, render_func=None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
-		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number=None, sub_menu_width: int = 0,
+		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
 		self.is_sub_menu = is_sub_menu
