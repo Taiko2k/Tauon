@@ -922,7 +922,6 @@ class GuiVar:
 			self.cursor_bottom_side = self.cursor_top_side
 
 		self.nine_enable: bool = False
-		self.nine_active: bool = False
 
 class StarStore:
 	"""Functions for reading and setting play counts"""
@@ -5858,6 +5857,7 @@ class Tauon:
 		self.artist_list_box                      = self.pctl.artist_list_box
 		self.guitar_chords                        = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
 		self.search_over                          = SearchOverlay(tauon=self)
+		self.nav_over                             = NavOverlay(tauon=self)
 		self.stats_gen                            = GStats(tauon=self)
 		self.deco                                 = Deco(tauon=self)
 		self.bottom_bar1                          = BottomBarType1(tauon=self)
@@ -22917,6 +22917,41 @@ class ExportPlaylistBox:
 		if warnings and target != 1:
 			self.show_message(_("Playlist exported"), str(target), mode="done")
 
+class NavOverlay:
+
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.ddt           = tauon.ddt
+		self.gui           = tauon.gui
+		self.inp           = tauon.inp
+		self.coll          = tauon.coll
+		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
+		self.fields        = tauon.fields
+
+		self.active = False
+
+	def activate(self):
+		self.active = True
+		self.gui.update += 1
+
+	def render(self):
+		if not self.active:
+			return
+		ddt = self.ddt
+		gui = self.gui
+		x = 0
+		y = 0
+		w = self.gui.window_size[0]
+		h = self.gui.window_size[1]
+
+		self.ddt.rect((x, y, w, h), ColourRGBA(4, 4, 4, 245))
+		self.ddt.text_background_colour = ColourRGBA(11, 11, 11, 255)
+
+		if self.inp.key_esc_press:
+			self.active = False
+
 class SearchOverlay:
 
 
@@ -26946,7 +26981,7 @@ class TopPanel:
 		self.folder_list_icon = asset_loader(bag, bag.loaded_asset_dc, "folder-list.png", True)
 		self.dl_button        = asset_loader(bag, bag.loaded_asset_dc, "dl.png", True)
 		self.overflow_icon    = asset_loader(bag, bag.loaded_asset_dc, "overflow.png", True)
-		self.start_icon = asset_loader(bag, bag.loaded_asset_dc, "start.png", True)
+		self.start_icon       = asset_loader(bag, bag.loaded_asset_dc, "start.png", True)
 
 
 		self.drag_slide_timer = Timer(100)
@@ -27054,7 +27089,8 @@ class TopPanel:
 		self.fields.add(rect)
 
 		if self.coll(rect) and gui.nine_enable:
-			pass   # nine click
+			if inp.mouse_click:
+				tauon.nav_over.activate()   # nine click
 		elif self.coll(rect) and not prefs.shuffle_lock:
 			if inp.mouse_click:
 
@@ -48037,6 +48073,7 @@ def main(holder: Holder) -> None:
 				# 	tauon.search_over.active = True
 
 				tauon.search_over.render()
+				tauon.nav_over.render()
 				search_over = tauon.search_over
 
 				if keymaps.test("quick-find") and gui.quick_search_mode is False:
