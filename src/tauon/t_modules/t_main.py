@@ -9172,7 +9172,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder) -> int:
+		def best(folder: list[int]) -> int:
 			return self.album_star_store.get_rating(self.pctl.get_track(folder[0]))
 
 		if get_sets:
@@ -14310,7 +14310,7 @@ class Tauon:
 		self.toast_mode_timer.set()
 		self.gui.frame_callback_list.append(TestTimer(1.5))
 
-	def set_artist_preview(self, path, artist, x, y) -> None:
+	def set_artist_preview(self, path: str, artist: str, x: int, y: int) -> None:
 		m = min(round(500 * self.gui.scale), self.window_size[1] - (self.gui.panelY + self.gui.panelBY + 50 * self.gui.scale))
 		self.artist_preview_render.load(path, box_size=(m, m))
 		self.artist_preview_render.show = True
@@ -14323,7 +14323,7 @@ class Tauon:
 		self.gui.preview_artist = artist
 		self.gui.preview_artist_location = (x + 15 * self.gui.scale, ay)
 
-	def get_artist_preview(self, artist: str, x, y) -> None:
+	def get_artist_preview(self, artist: str, x: int, y: int) -> None:
 		# self.show_message(_("Loading artist image..."))
 
 		self.gui.preview_artist_loading = artist
@@ -19577,7 +19577,7 @@ class DropShadow:
 		self.grow = 2 * tauon.gui.scale
 		self.opacity = 90
 
-	def prepare(self, w, h) -> None:
+	def prepare(self, w: int, h: int) -> None:
 		fh = h + self.underscan
 		fw = w + self.underscan
 
@@ -19646,7 +19646,7 @@ class LyricsRenMini:
 				self.text += line.split("]")[-1] + "\n"
 		self.lyrics_position = 0
 
-	def render(self, index, x, y, w, h, p) -> None:
+	def render(self, index: int, x: float, y: float, w: float, h: None, p: int) -> None:
 		if index != self.index or self.to_reload: # or self.text != self.pctl.master_library[index].lyrics:
 			self.index = index
 			self.generate(index, w)
@@ -19689,7 +19689,7 @@ class LyricsRen:
 			self.lyrics_position = 0
 			self.lrm.to_reload = False
 
-	def render(self, x: int, y: int, w: int, h: int, p) -> None:
+	def render(self, x: int, y: int, w: int, h: int, p: int) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
 
@@ -20400,7 +20400,7 @@ class TextBox:
 		self.fields   = tauon.fields
 		self.t_window = tauon.t_window
 		self.renderer = tauon.renderer
-		self.text = ""
+		self.text: str = ""
 		self.cursor_position = 0
 		self.selection = 0
 		self.down_lock = False
@@ -20426,7 +20426,7 @@ class TextBox:
 		if text:
 			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
 
-	def set_text(self, text) -> None:
+	def set_text(self, text: str) -> None:
 		self.text = text
 		self.cursor_position = 0
 		self.selection = 0
@@ -21360,7 +21360,7 @@ class AlbumArt:
 
 		return g
 
-	def save_thumb(self, track_object: TrackClass, size: tuple[int, int], save_path: str, png=False, zoom=False):
+	def save_thumb(self, track_object: TrackClass, size: tuple[int, int], save_path: str, png: bool = False, zoom: bool = False) -> BytesIO | bool | None:
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
 
@@ -22054,7 +22054,7 @@ class ToolTip:
 		self.called = False
 		self.a = False
 
-	def test(self, x, y, text) -> None:
+	def test(self, x: float, y: float, text: string) -> None:
 		if self.text != text or x != self.x or y != self.y:
 			self.text = text
 			# self.timer.set()
@@ -23031,13 +23031,13 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
-	def click_meta(self, name: str, get_list: bool = False, search_lists=None):
+	def click_meta(self, name: str, get_list: bool = False, search_lists: list[list[int]] | None = None) -> list[int] | None:
 		if search_lists is None:
 			search_lists = []
 			for pl in self.pctl.multi_playlist:
 				search_lists.append(pl.playlist_ids)
 
-		playlist = []
+		playlist: list[int] = []
 		for pl in search_lists:
 			for item in pl:
 				if name in self.pctl.master_library[item].parent_folder_path and item not in playlist:
@@ -23061,8 +23061,8 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
-	def click_genre(self, name: str, get_list: bool = False, search_lists=None):
-		playlist = []
+	def click_genre(self, name: str, get_list: bool = False, search_lists: list[list[int]] | None = None) -> list[int] | None:
+		playlist: list[int] = []
 
 		if search_lists is None:
 			search_lists = []
@@ -38197,7 +38197,7 @@ class TimedLyricsEdit:
 				self.text += line + "\n"
 
 
-	def unsynced_render(self, x, y, box, hide_art) -> None:
+	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.playlist_panel_background
 
