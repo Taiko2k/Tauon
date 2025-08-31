@@ -78,22 +78,21 @@ from typing import TYPE_CHECKING, Literal
 import certifi
 import musicbrainzngs
 import mutagen
+import mutagen.apev2
 import mutagen.flac
 import mutagen.id3
-from mutagen.easyid3 import EasyID3
 import mutagen.mp4
-import mutagen.apev2
 import mutagen.oggvorbis
 import requests
 import sdl3
 from bs4 import BeautifulSoup
+from mutagen.easyid3 import EasyID3
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from send2trash import send2trash
 from unidecode import unidecode
 
 builtins._ = lambda x: x
 
-from tauon.t_modules.t_svgout import render_icons
 from tauon.t_modules import t_topchart  # noqa: E402
 from tauon.t_modules.guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
@@ -167,12 +166,13 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 )
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_logging import LogHistoryHandler  # noqa: E402
-from tauon.t_modules.t_lyrics import genius, lyric_sources, uses_scraping, get_lrclib_challenge  # noqa: E402
+from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_spot import SpotCtl  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
+from tauon.t_modules.t_svgout import render_icons  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
