@@ -39519,7 +39519,7 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	row_h = prefs.playlist_row_height
 
 	# gui.destroy_textures()
-	# gui.rescale()
+	gui.rescale()
 	gui.update_layout = True
 
 	# Scale saved values
