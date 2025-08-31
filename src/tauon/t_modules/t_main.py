@@ -12498,7 +12498,7 @@ class Tauon:
 			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(35, 35, 35, 255))
 			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), name, ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
-	def reload_scale(self) -> None:
+	def reload_scale(self, skip_render: bool = False) -> None:
 		auto_scale(self.bag)
 
 		scale = self.prefs.scale_want
@@ -12507,7 +12507,8 @@ class Tauon:
 		self.ddt.scale = self.gui.scale
 		self.prime_fonts()
 		self.ddt.clear_text_cache()
-		scale_assets(tauon=self, bag=self.bag, gui=self.gui, scale_want=scale, force=True)
+		if not skip_render:
+			scale_assets(tauon=self, bag=self.bag, gui=self.gui, scale_want=scale, force=True)
 		self.img_slide_update_gall(self.album_mode_art_size)
 
 		for item in WhiteModImageAsset.assets:
@@ -12531,6 +12532,7 @@ class Tauon:
 		ddt = self.ddt
 		gui = self.gui
 		if prefs.scale_want != gui.scale:
+			logging.info("Reload scale")
 			self.reload_scale()
 
 		w = window_size[0]
@@ -39503,10 +39505,12 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 		with open(keyfile, "w", encoding="utf-8") as f:
 			f.write(key)
 		logging.info("Done rendering icons")
+		tauon.reload_scale(skip_render=True)
 
 
 	diff_ratio = scale_want / prefs.ui_scale
 	prefs.ui_scale = scale_want
+	prefs.scale_want = scale_want
 
 	# Save user values
 	column_backup = gui.pl_st
@@ -39514,8 +39518,9 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	grspw = gui.pref_gallery_w
 	row_h = prefs.playlist_row_height
 
-	gui.destroy_textures()
-	gui.rescale()
+	# gui.destroy_textures()
+	# gui.rescale()
+	gui.update_layout = True
 
 	# Scale saved values
 	gui.pl_st = column_backup
