@@ -954,7 +954,7 @@ class StarStore:
 		else:
 			self.db[key] = StarRecord(playtime=value)
 
-	def get(self, index: int):
+	def get(self, index: int) -> float:
 		"""Returns the track play time"""
 		if index < 0:
 			return 0
@@ -7848,7 +7848,7 @@ class Tauon:
 			logging.exception("Unknown error trying to save an image")
 			self.show_message(_("Image save error."), _("A mysterious error occurred"), mode="error")
 
-	def open_image_deco(self, track_object: TrackClass | int):
+	def open_image_deco(self, track_object: TrackClass | int)-> list[ColourRGBA | None]:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
@@ -10101,7 +10101,7 @@ class Tauon:
 	def force_del_selected(self) -> None:
 		self.del_selected(force_delete=True)
 
-	def test_show(self, dummy) -> bool:
+	def test_show(self, _) -> bool:
 		return self.prefs.album_mode
 
 	def show_in_gal(self, track: TrackClass, silent: bool = False) -> None:
@@ -12334,7 +12334,7 @@ class Tauon:
 	# 		colour = self.colours.menu_text_disabled
 	# 	return [self.colour, self.colours.menu_background, line]
 
-	def art_metadata_overlay(self, right, bottom, showc: list[tuple[str, int, int, int, str]]) -> None:
+	def art_metadata_overlay(self, right: float, bottom: float, showc: list[tuple[str, int, int, int, str]]) -> None:
 		if not showc:
 			return
 
@@ -22475,8 +22475,8 @@ class TransEditBox:
 			if len(select) > 1:
 				self.active_field = 1
 
-		def field_edit(x, y, label, field_number, names, text_box):
-			changed = 0
+		def field_edit(x: int, y: int, label: string, field_number: int, names: list[str], text_box: TextBox2) -> bool:
+			changed = False
 			self.ddt.text((x, y), label, self.colours.box_text_label, 11)
 			y += round(16 * self.gui.scale)
 			rect1 = (x, y, round(370 * self.gui.scale), round(17 * self.gui.scale))
@@ -22490,24 +22490,24 @@ class TransEditBox:
 				l *= 0.7
 				tc = hls_to_rgb(h, l, s)
 			else:
-				changed = 1
+				changed = True
 			if not (names and check_equal(names)) and not text_box.text:
-				changed = 0
+				changed = False
 				self.ddt.text((x + round(2 * self.gui.scale), y), _("<Multiple selected>"), self.colours.box_text_label, 12)
 			text_box.draw(x + round(3 * self.gui.scale), y, tc, self.active_field == field_number, width=370 * self.gui.scale)
 			if changed:
 				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "⮨", self.colours.box_title_text, 214)
 			return changed
 
-		changed = 0
+		changed = False
 		if len(select) == 1:
-			changed = field_edit(x, y, _("Track title"), 0, titles, self.edit_title)
+			changed |= field_edit(x, y, _("Track title"), 0, titles, self.edit_title)
 		y += round(40 * self.gui.scale)
-		changed += field_edit(x, y, _("Album name"), 1, albums, self.edit_album)
+		changed |= field_edit(x, y, _("Album name"), 1, albums, self.edit_album)
 		y += round(40 * self.gui.scale)
-		changed += field_edit(x, y, _("Artist name"), 2, artists, self.edit_artist)
+		changed |= field_edit(x, y, _("Artist name"), 2, artists, self.edit_artist)
 		y += round(40 * self.gui.scale)
-		changed += field_edit(x, y, _("Album-artist name"), 3, album_artists, self.edit_album_artist)
+		changed |= field_edit(x, y, _("Album-artist name"), 3, album_artists, self.edit_album_artist)
 
 		y += round(40 * self.gui.scale)
 		for s in select:
