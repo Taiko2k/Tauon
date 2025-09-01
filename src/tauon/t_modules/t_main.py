@@ -19924,7 +19924,7 @@ class TimedLyricsRen:
 			and (not h or y-25*self.gui.scale < self.inp.mouse_position[1] < y+h-25*self.gui.scale):
 			for rendered_line in line_positions:
 				if self.coll(rendered_line[0]):
-					self.pctl.seek_time(rendered_line[1][0])
+					self.pctl.seek_time(rendered_line[1][0] + self.prefs.sync_lyrics_time_offset/1000)
 					self.scroll_position = scroll_to
 					self.teleport_line = rendered_line[2]
 					self.temp_line = rendered_line[2]
