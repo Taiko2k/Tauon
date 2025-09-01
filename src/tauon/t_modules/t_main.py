@@ -37959,11 +37959,13 @@ class TimedLyricsEdit:
 				elif self.pctl.playing_state == PlayingState.PLAYING:
 					self.pctl.seek_time(self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1] + self.prefs.sync_lyrics_time_offset/1000)
 					self.line_active -= self.inp.key_up_press - self.inp.key_down_press
+					self.alted = True
 				elif self.pctl.playing_state != PlayingState.STOPPED:
 					self.pctl.decode_time = self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1] + self.prefs.sync_lyrics_time_offset/1000
 					self.pctl.new_time = self.pctl.decode_time
 					self.pctl.playing_time = self.pctl.decode_time
 					self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
+					self.alted = True
 			elif self.alt_timer.get() < 0.3 and not self.alted and not (self.inp.key_lalt or self.inp.key_ralt) and self.structure[self.line_active][1] >= 0:
 				if self.pctl.playing_state == PlayingState.PLAYING:
 					self.pctl.seek_time(self.structure[self.line_active][1] + self.prefs.sync_lyrics_time_offset/1000)
