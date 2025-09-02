@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 def get_colour_from_line(cline: str) -> ColourRGBA:
-	colour     = [-1, -1, -1, -1]
+	colour = [-1, -1, -1, -1]
 	colour_str = ["", "", "", ""]
 	mode = 0
 
