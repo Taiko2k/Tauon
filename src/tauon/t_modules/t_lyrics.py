@@ -107,6 +107,7 @@ def genius(
 
 	lines = lyrics.splitlines()
 	new_lines: list[str] = []
+	# fmt:off
 	skip_patterns = [
 		r"^\d+\s+Contributors?$",   # "3 Contributors"
 		r"^[^a-zA-Z]*Lyrics$",      # "[Song Name] Lyrics"
@@ -118,6 +119,7 @@ def genius(
 		r"^You might also like",    # Related content
 		r"^\w+ on Apple Music",     # Apple Music links
 	]
+	# fmt:on
 
 	for line in lines:
 		line = line.strip()
