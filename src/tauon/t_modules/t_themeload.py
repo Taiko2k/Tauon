@@ -23,20 +23,22 @@ import io
 import json
 import logging
 import os
-import sdl3
 from typing import TYPE_CHECKING
 
+import sdl3
 from PIL import Image
 
 from tauon.t_modules.t_extra import ColourRGBA, rgb_add_hls, test_lumi
 
 if TYPE_CHECKING:
 	from pathlib import Path
+
 	from tauon.t_modules.t_draw import TDraw
 	from tauon.t_modules.t_main import ColoursClass, Tauon
 
+
 def get_colour_from_line(cline: str) -> ColourRGBA:
-	colour     = [-1, -1, -1, -1]
+	colour = [-1, -1, -1, -1]
 	colour_str = ["", "", "", ""]
 	mode = 0
 
@@ -51,10 +53,8 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 
 	if is_hex:
 		# hex mode
-		if cline.startswith("0x"):
-			cline = cline[2:]
-		if cline.startswith("#"):
-			cline = cline[1:]
+		cline = cline.removeprefix("0x")
+		cline = cline.removeprefix("#")
 		ll = cline
 		a = 255
 		r = int(ll[0] + ll[1], 16)
@@ -258,11 +258,11 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			if "mini text 2" in p:
 				colours.mini_mode_text_2 = get_colour_from_line(p)
 			if "column-" in p:
-				key = p[p.find("column-") + 7:].replace("-", " ").lower().title().rstrip()
+				key = p[p.find("column-") + 7 :].replace("-", " ").lower().title().rstrip()
 				value = get_colour_from_line(p)
 				colours.column_colours[key] = value
 			if "column+" in p:
-				key = p[p.find("column+") + 7:].replace("-", " ").lower().title().rstrip()
+				key = p[p.find("column+") + 7 :].replace("-", " ").lower().title().rstrip()
 				value = get_colour_from_line(p)
 				colours.column_colours_playing[key] = value
 			if "menu bg" in p:
@@ -323,9 +323,9 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 			if "artist bio text" in p:
 				colours.artist_bio_text = get_colour_from_line(p)
 			# if "panel button off" in p:
-			#	 colours.corner_button = get_colour_from_line(p)
+			# 	colours.corner_button = get_colour_from_line(p)
 			# if "panel button on" in p:
-			#	 colours.corner_button_active = get_colour_from_line(p)
+			# 	colours.corner_button_active = get_colour_from_line(p)
 	colours.post_config()
 	if colours.lm:
 		colours.light_mode()
@@ -340,6 +340,7 @@ class Drawable:
 		self.y = 100
 		self.rect = None
 		self.texture = None
+
 
 class Deco:
 	def __init__(self, tauon: Tauon) -> None:
