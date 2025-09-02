@@ -13029,6 +13029,7 @@ class Tauon:
 			and not self.gui.quick_search_mode \
 			and not self.gui.rename_playlist_box \
 			and not self.search_over.active \
+			and not self.nav_over.active \
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active
 
@@ -29918,7 +29919,7 @@ class StandardPlaylist:
 		# Mouse wheel scrolling
 		if inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
 			1] > gui.panelY - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
-				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active:
+				and not (self.coll(gui.pl_rect)) and not tauon.nav_over.active and not tauon.search_over.active and not tauon.radiobox.active:
 
 			# set scroll speed
 			a = gui.playlist_view_length
