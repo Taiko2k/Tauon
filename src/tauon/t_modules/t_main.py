@@ -921,7 +921,7 @@ class GuiVar:
 			self.cursor_top_side = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 			self.cursor_bottom_side = self.cursor_top_side
 
-		self.nine_enable: bool = False
+		self.nine_enable: bool = True
 
 class StarStore:
 	"""Functions for reading and setting play counts"""
@@ -22931,6 +22931,8 @@ class NavOverlay:
 		self.prefs         = tauon.prefs
 		self.fields        = tauon.fields
 
+		self.nav_lside = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "nav-lside.png", mod=True)
+
 		self.active = False
 
 	def activate(self):
@@ -22940,18 +22942,48 @@ class NavOverlay:
 	def render(self):
 		if not self.active:
 			return
+
 		ddt = self.ddt
 		gui = self.gui
+		tauon = self.tauon
+		coll = tauon.coll
+
 		x = 0
 		y = 0
 		w = self.gui.window_size[0]
 		h = self.gui.window_size[1]
 
+		click = gui.level_2_click
+		click_to_exit = click
+
 		self.ddt.rect((x, y, w, h), ColourRGBA(4, 4, 4, 245))
 		self.ddt.text_background_colour = ColourRGBA(11, 11, 11, 255)
 
-		if self.inp.key_esc_press:
+		y = round(50 * gui.scale)
+		x = round(50 * gui.scale)
+		cb = ColourRGBA(210, 210, 210, 255)
+		ch = ColourRGBA(255, 255, 255, 255)
+		grow = round(10 * gui.scale)
+
+		def get_rect(x, y, icon: WhiteModImageAsset):
+			rect = [y - grow, x - grow, icon.w + grow * 2, icon.h + grow * 2]
+			tauon.fields.add(rect)
+			return icon, rect
+
+		icon, rect = get_rect(x, y, self.nav_lside)
+		c = cb
+		if coll(rect):
+			c = ch
+			if click:
+				gui.lsp ^= True
+				gui.update_layout = True
+				gui.update += 1
+		icon.render(x, y, c)
+
+
+		if self.inp.key_esc_press or click_to_exit:
 			self.active = False
+
 
 class SearchOverlay:
 
@@ -39577,6 +39609,8 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	key = f"{tauon.n_version},{scale_want}"
 	keyfile = scaled_asset_directory / "key"
 	render = True
+	#if tauon.dev_mode:
+	force = True
 
 	# Optimisation: don't rerender if we don't need to
 	if not force and scaled_asset_directory.exists() and keyfile.exists():
@@ -45199,7 +45233,7 @@ def main(holder: Holder) -> None:
 					tauon.view_box.clicked = True
 
 			if inp.mouse_click and (
-					prefs.show_nag or gui.box_over or radiobox.active or tauon.search_over.active or gui.rename_folder_box or gui.rename_playlist_box or tauon.rename_track_box.active or tauon.view_box.active or tauon.trans_edit_box.active):  # and not gui.message_box:
+					tauon.nav_over.active or prefs.show_nag or gui.box_over or radiobox.active or tauon.search_over.active or gui.rename_folder_box or gui.rename_playlist_box or tauon.rename_track_box.active or tauon.view_box.active or tauon.trans_edit_box.active):  # and not gui.message_box:
 				inp.mouse_click = False
 				gui.level_2_click = True
 			else:
