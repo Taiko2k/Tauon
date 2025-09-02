@@ -8,10 +8,12 @@ from tauon.t_modules.t_extra import RadioStation
 if TYPE_CHECKING:
 	from pathlib import Path
 
+
 @dataclass
 class Prefs:
 	"""Used to hold any kind of settings"""
 
+	# fmt:off
 	view_prefs:              dict[str, bool]
 	encoder_output:          Path
 	window_opacity:          float
@@ -140,6 +142,7 @@ class Prefs:
 	reload_play_state: bool = False  # Resume playback on app restart
 	resume_play_wake:  bool = False  # Resume playback on wake
 	reload_state: tuple[int, float] | None = None
+	# fmt:on
 
 	mono: bool = False
 
@@ -188,7 +191,7 @@ class Prefs:
 
 	guitar_chords = False
 	prefer_synced_lyrics = True
-	sync_lyrics_time_offset: int = -150 # in milliseconds
+	sync_lyrics_time_offset: int = -150  # in milliseconds
 
 	playback_follow_cursor = False
 	short_buffer = False
@@ -326,7 +329,7 @@ class Prefs:
 	autoscan_playlist_folder: bool = False
 	playlist_folder_path: str = ""
 
-	synced_lyrics_editor_track_end_mode: Literal["stop","autosave","full save"] = "stop"
+	synced_lyrics_editor_track_end_mode: Literal["stop", "autosave", "full save"] = "stop"
 
 	sep_genre_multi = False
 	topchart_sorts_played = True

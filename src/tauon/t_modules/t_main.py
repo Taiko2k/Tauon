@@ -23,7 +23,6 @@ I would highly recommend not using this project as an example on how to code cle
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 from __future__ import annotations
 
 import base64
@@ -43,10 +42,10 @@ import json
 import locale as py_locale
 import logging
 
-#import magic
+# import magic
 import math
 
-#import mimetypes
+# import mimetypes
 import os
 import pickle
 import platform
@@ -63,7 +62,7 @@ import sys
 import threading
 import time
 
-#import type_enforced
+# import type_enforced
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -186,6 +185,7 @@ from tauon.t_modules.t_webserve import (  # noqa: E402
 
 if sys.platform == "linux":
 	import gi
+
 	try:
 		gi.require_version("Notify", "0.7")
 	except Exception:
@@ -200,6 +200,7 @@ if sys.platform == "darwin":
 # Log to debug as we don't care at all when user does not have this
 try:
 	import colored_traceback.always
+
 	logging.debug("Found colored_traceback for colored crash tracebacks")
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
@@ -208,6 +209,7 @@ except Exception:  # noqa: BLE001
 
 try:
 	from jxlpy import JXLImagePlugin
+
 	# We've already logged this once to INFO from t_draw, so just log to DEBUG
 	logging.debug("Found jxlpy for JPEG XL support")
 except ModuleNotFoundError:
@@ -225,10 +227,10 @@ else:
 	setproctitle.setproctitle("tauonmb")
 
 # try:
-#	 import rpc
-#	 discord_allow = True
+# 	import rpc
+# 	discord_allow = True
 # except Exception:
-#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+# 	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
 	from lynxpresence import ActivityType, Presence
 except ModuleNotFoundError:
@@ -241,9 +243,13 @@ else:
 try:
 	import opencc
 except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	logging.warning(
+		"Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably."
+	)
 except Exception:
-	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	logging.exception(
+		"Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably."
+	)
 
 try:
 	import natsort
@@ -323,14 +329,17 @@ if system == "Windows" or msys:
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
+
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
 	assets: list[LoadImageAsset] = []
 
-	def __init__(self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
+	def __init__(
+		self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = ""
+	) -> None:
 		if not reload:
 			self.assets.append(self)
-		self.bag  = bag
+		self.bag = bag
 		self.dirs = bag.dirs
 		self.renderer = bag.renderer
 		self.path = path

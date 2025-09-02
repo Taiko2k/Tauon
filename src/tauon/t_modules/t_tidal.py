@@ -1,4 +1,5 @@
 """Tauon Music Box - Tidal streaming module"""
+
 from __future__ import annotations
 
 import json
@@ -13,6 +14,7 @@ try:
 	from tidalapi.media import Quality, Track
 	from tidalapi.session import Session
 	from tidalapi.user import Favorites
+
 	allow_tidal = True
 except ModuleNotFoundError:
 	logging.warning("Unable to import tidalapi, Tidal support will be disabled.")
@@ -22,8 +24,8 @@ except Exception:
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
-class Tidal:
 
+class Tidal:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.session = None
@@ -43,7 +45,7 @@ class Tidal:
 			return
 		logging.info("LOGIN 1")
 		session = Session()
-		#session.config.pkce_uri_redirect = f"http://localhost:7811/tidalredir"
+		# session.config.pkce_uri_redirect = f"http://localhost:7811/tidalredir"
 		login_url = session.pkce_login_url()
 		webbrowser.open(login_url, new=2, autoraise=True)
 		self.session = session
@@ -139,7 +141,7 @@ class Tidal:
 			if result:
 				return result
 		except Exception:
-				logging.exception("Failed to resolve stream")
+			logging.exception("Failed to resolve stream")
 
 	def resolve_stream2(self, tr: TrackClass) -> list[str] | None:
 		track_id = tr.url_key
@@ -151,7 +153,9 @@ class Tidal:
 		manifest = stream.get_stream_manifest()
 		audio_resolution = stream.get_audio_resolution()
 
-		logging.info(f"track:{track.id}, (quality:{stream.audio_quality}, codec:{manifest.get_codecs()}, {audio_resolution[0]}bit/{audio_resolution[1]}Hz)")
+		logging.info(
+			f"track:{track.id}, (quality:{stream.audio_quality}, codec:{manifest.get_codecs()}, {audio_resolution[0]}bit/{audio_resolution[1]}Hz)"
+		)
 		tr.misc["container"] = manifest.get_codecs().upper()
 		tr.samplerate = str(audio_resolution[1])
 		tr.bit_depth = audio_resolution[0]
@@ -288,7 +292,7 @@ class Tidal:
 			return playlist
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.name, playlist_ids=playlist))
-		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tpl\"{id}\""
+		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'tpl"{id}"'
 		return None
 
 	def mix(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
@@ -313,7 +317,7 @@ class Tidal:
 			return playlist
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=p.title, playlist_ids=playlist))
-		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tmix\"{id}\""
+		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'tmix"{id}"'
 		return None
 
 	def artist(self, id: int, return_list: bool = False) -> list[TrackClass] | None:
@@ -339,7 +343,7 @@ class Tidal:
 			return playlist
 
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=a.name, playlist_ids=playlist))
-		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"tar\"{id}\""
+		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'tar"{id}"'
 		return None
 
 	def append_album(self, id: int) -> None:
@@ -360,77 +364,77 @@ class Tidal:
 			self.tauon.gui.pl_update += 1
 
 	# def test(self):
-	#	 logging.info("Test Tidal")
-	#	 self.try_load()
-	#	 if not self.session:
-	#		 logging.info("Tidal: not logged in")
-	#		 return
+	# 	 logging.info("Test Tidal")
+	# 	 self.try_load()
+	# 	 if not self.session:
+	# 		 logging.info("Tidal: not logged in")
+	# 		 return
 	#
-	#	 session = self.session
-	#	 # Override the required playback quality, if necessary
-	#	 # Note: Set the quality according to your subscription.
-	#	 # Low: Quality.low_96k          (m4a 96k)
-	#	 # Normal: Quality.low_320k      (m4a 320k)
-	#	 # HiFi: Quality.high_lossless   (FLAC)
-	#	 # HiFi+ Quality.hi_res          (FLAC MQA)
-	#	 # HiFi+ Quality.hi_res_lossless (FLAC HI_RES)
-	#	 session.audio_quality = Quality.high_lossless
-	#	 session.audio_quality = Quality.low_320k
-	#	 # album_id = "249593867"  # Alice In Chains / We Die Young (Max quality: HI_RES MHA1 SONY360)
-	#	 # album_id = "77640617"   # U2 / Achtung Baby              (Max quality: HI_RES MQA, 16bit/44100Hz)
-	#	 # album_id = "110827651"  # The Black Keys / Let's Rock    (Max quality: LOSSLESS FLAC, 24bit/48000Hz)
-	#	 album_id = "77646169"  # Beck / Sea Change               (Max quality: HI_RES_LOSSLESS FLAC, 24bit/192000Hz)
-	#	 album = session.album(album_id)
-	#	 res = album.get_audio_resolution()
-	#	 tracks = album.tracks()
-	#	 # list album tracks
-	#	 for track in tracks:
-	#		 logging.info("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
-	#		 stream = track.get_stream()
-	#		 logging.info("MimeType:{}".format(stream.manifest_mime_type))
+	# 	 session = self.session
+	# 	 # Override the required playback quality, if necessary
+	# 	 # Note: Set the quality according to your subscription.
+	# 	 # Low: Quality.low_96k          (m4a 96k)
+	# 	 # Normal: Quality.low_320k      (m4a 320k)
+	# 	 # HiFi: Quality.high_lossless   (FLAC)
+	# 	 # HiFi+ Quality.hi_res          (FLAC MQA)
+	# 	 # HiFi+ Quality.hi_res_lossless (FLAC HI_RES)
+	# 	 session.audio_quality = Quality.high_lossless
+	# 	 session.audio_quality = Quality.low_320k
+	# 	 # album_id = "249593867"  # Alice In Chains / We Die Young (Max quality: HI_RES MHA1 SONY360)
+	# 	 # album_id = "77640617"   # U2 / Achtung Baby              (Max quality: HI_RES MQA, 16bit/44100Hz)
+	# 	 # album_id = "110827651"  # The Black Keys / Let's Rock    (Max quality: LOSSLESS FLAC, 24bit/48000Hz)
+	# 	 album_id = "77646169"  # Beck / Sea Change               (Max quality: HI_RES_LOSSLESS FLAC, 24bit/192000Hz)
+	# 	 album = session.album(album_id)
+	# 	 res = album.get_audio_resolution()
+	# 	 tracks = album.tracks()
+	# 	 # list album tracks
+	# 	 for track in tracks:
+	# 		 logging.info("{}: '{}' by '{}'".format(track.id, track.name, track.artist.name))
+	# 		 stream = track.get_stream()
+	# 		 logging.info("MimeType:{}".format(stream.manifest_mime_type))
 	#
-	#		 manifest = stream.get_stream_manifest()
-	#		 audio_resolution = stream.get_audio_resolution()
+	# 		 manifest = stream.get_stream_manifest()
+	# 		 audio_resolution = stream.get_audio_resolution()
 	#
-	#		 logging.info("track:{}, (quality:{}, codec:{}, {}bit/{}Hz)".format(track.id,
-	#																	 stream.audio_quality,
-	#																	 manifest.get_codecs(),
-	#																	 audio_resolution[0],
-	#																	 audio_resolution[1]))
-	#		 if stream.is_MPD:
-	#			 logging.info("MPD!")
-	#			 # HI_RES_LOSSLESS quality supported when using MPEG-DASH stream (PKCE only!)
-	#			 # 1. Export as MPD manifest
-	#			 mpd = stream.get_manifest_data()
-	#			 # 2. Export as HLS m3u8 playlist
-	#			 hls = manifest.get_hls()
-	#			 logging.info(hls)
-	#			 # with open("{}_{}.mpd".format(album_id, track.id), "w", encoding="utf-8") as my_file:
-	#			 #	my_file.write(mpd)
-	#			 # with open("{}_{}.m3u8".format(album_id, track.id), "w", encoding="utf-8") as my_file:
-	#			 #	my_file.write(hls)
-	#			 urls = manifest.get_urls()
-	#			 if urls:
-	#				 f = io.BytesIO()
-	#				 i = 0
-	#				 for url in urls:
-	#					 i += 1
-	#					 logging.info(i, end=",")
-	#					 response = requests.get(url)
-	#					 if response.status_code == 200:
-	#						 f.write(response.content)
-	#					 else:
-	#						 logging.error(f"ERROR CODE: {response.status_code}")
-	#				 f.seek(0)
-	#				 with open("test", 'wb') as a:
-	#					 a.write(f.read())
-	#				 logging.info("done")
+	# 		 logging.info("track:{}, (quality:{}, codec:{}, {}bit/{}Hz)".format(track.id,
+	# 																	 stream.audio_quality,
+	# 																	 manifest.get_codecs(),
+	# 																	 audio_resolution[0],
+	# 																	 audio_resolution[1]))
+	# 		 if stream.is_MPD:
+	# 			 logging.info("MPD!")
+	# 			 # HI_RES_LOSSLESS quality supported when using MPEG-DASH stream (PKCE only!)
+	# 			 # 1. Export as MPD manifest
+	# 			 mpd = stream.get_manifest_data()
+	# 			 # 2. Export as HLS m3u8 playlist
+	# 			 hls = manifest.get_hls()
+	# 			 logging.info(hls)
+	# 			 # with open("{}_{}.mpd".format(album_id, track.id), "w", encoding="utf-8") as my_file:
+	# 			 #	my_file.write(mpd)
+	# 			 # with open("{}_{}.m3u8".format(album_id, track.id), "w", encoding="utf-8") as my_file:
+	# 			 #	my_file.write(hls)
+	# 			 urls = manifest.get_urls()
+	# 			 if urls:
+	# 				 f = io.BytesIO()
+	# 				 i = 0
+	# 				 for url in urls:
+	# 					 i += 1
+	# 					 logging.info(i, end=",")
+	# 					 response = requests.get(url)
+	# 					 if response.status_code == 200:
+	# 						 f.write(response.content)
+	# 					 else:
+	# 						 logging.error(f"ERROR CODE: {response.status_code}")
+	# 				 f.seek(0)
+	# 				 with open("test", 'wb') as a:
+	# 					 a.write(f.read())
+	# 				 logging.info("done")
 	#
-	#		 if stream.is_BTS:
-	#			 logging.info("BTS!")
-	#			 # Direct URL (m4a or flac) is available for Quality < HI_RES_LOSSLESS
-	#			 url = manifest.get_urls()
-	#			 logging.info(f"URL = {url}")
-	#		 for url in manifest.get_urls():
-	#			 logging.info(url)
-	#		 break
+	# 		 if stream.is_BTS:
+	# 			 logging.info("BTS!")
+	# 			 # Direct URL (m4a or flac) is available for Quality < HI_RES_LOSSLESS
+	# 			 url = manifest.get_urls()
+	# 			 logging.info(f"URL = {url}")
+	# 		 for url in manifest.get_urls():
+	# 			 logging.info(url)
+	# 		 break
