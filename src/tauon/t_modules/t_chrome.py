@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import Tauon
 
+
 def get_ip() -> str:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.settimeout(0)
@@ -31,20 +32,20 @@ def get_ip() -> str:
 
 class Chrome:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon:             Tauon = tauon
+		self.tauon: Tauon = tauon
 		self.services: list[list[str]] = []
-		self.active:             bool = False
-		self.cast:  Chromecast | None = None
-		self.save_vol:          float = 100
-		self.ip:                  str = ""
+		self.active: bool = False
+		self.cast: Chromecast | None = None
+		self.save_vol: float = 100
+		self.ip: str = ""
 		self.browser: CastBrowser
 
 	def rescan(self) -> None:
 		logging.info("Scanning for chromecasts...")
 
-		if True: #not self.services:
+		if True:  # not self.services:
 			try:
-				#self.tauon.show_message(self.tauon.strings.scan_chrome)
+				# self.tauon.show_message(self.tauon.strings.scan_chrome)
 				services, browser = pychromecast.discovery.discover_chromecasts()
 				browser.stop_discovery()
 				menu = self.tauon.chrome_menu
@@ -53,17 +54,22 @@ class Chrome:
 					return
 				MenuItem = self.tauon.MenuItem
 
-				#menu.items.clear()
+				# menu.items.clear()
 				for item in services:
 					self.services.append([str(item.uuid), str(item.friendly_name)])
-					menu.add_to_sub(1, MenuItem(
-						self.tauon.strings.cast_to % str(item.friendly_name),
-						self.three, pass_ref=True, args=[str(item.uuid), str(item.friendly_name)]))
+					menu.add_to_sub(
+						1,
+						MenuItem(
+							self.tauon.strings.cast_to % str(item.friendly_name),
+							self.three,
+							pass_ref=True,
+							args=[str(item.uuid), str(item.friendly_name)],
+						),
+					)
 				menu.add_to_sub(1, MenuItem(self.tauon.strings.stop_cast, self.end, show_test=lambda x: self.active))
 			except Exception:
 				logging.exception("Failed to get chromecasts")
 				raise
-
 
 	def three(self, _, item: tuple) -> None:
 		shooter(self.four, [item])
@@ -93,16 +99,17 @@ class Chrome:
 		self.tauon.pctl.playerCommandReady = True
 		self.tauon.thread_manager.ready_playback()
 
-
 	def update(self) -> tuple:
 		if self.cast is None:
 			logging.critical("self.cast was None, this should not happen!")
 			return ()
 		self.cast.media_controller.update_status()
-		return self.cast.media_controller.status.current_time, \
-			self.cast.media_controller.status.media_custom_data.get("id"), \
-			self.cast.media_controller.status.player_state, \
-			self.cast.media_controller.status.duration
+		return (
+			self.cast.media_controller.status.current_time,
+			self.cast.media_controller.status.media_custom_data.get("id"),
+			self.cast.media_controller.status.player_state,
+			self.cast.media_controller.status.duration,
+		)
 
 	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> None:
 		if self.cast is None:
@@ -136,7 +143,9 @@ class Chrome:
 			url = url.replace("localhost", self.ip)
 			url = url.replace("127.0.0.1", self.ip)
 
-		self.cast.media_controller.play_media(url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue)
+		self.cast.media_controller.play_media(
+			url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue
+		)
 
 	def stop(self) -> None:
 		if self.cast is None:

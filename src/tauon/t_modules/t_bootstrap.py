@@ -12,10 +12,12 @@ if TYPE_CHECKING:
 
 	from tauon.__main__ import LogHistoryHandler
 
+
 @dataclass
 class Holder:
 	"""Class that holds variables for forwarding them from __main__.py to t_main.py"""
 
+	# fmt:off
 	t_window:               LP_SDL_Window
 	renderer:               LP_SDL_Renderer
 	logical_size:           list[int] # X Y res
@@ -41,3 +43,4 @@ class Holder:
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
 	log:                    LogHistoryHandler
+	# fmt:on
