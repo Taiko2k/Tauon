@@ -189,6 +189,8 @@
 [tool.ruff.lint]
 	select = ['ALL']
 		ignore = [
+			'COM812',  # missing-trailing-comma                    - Using the formatter makes this rule redundant
+			'C901',    # complex-structure                         - We'll ignore functions being too complex for now - https://github.com/microsoft/pyright/issues/10839
 			'Q003',    # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
 			'W191',    # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
 			'D206',    # indent-with-spaces                        - ^
@@ -219,7 +221,6 @@
 			'G004',    # logging-f-string                          - Ignore this, we lose some efficiency but I suppose nobody wants to do a total overhaul of the logging system for next to no gains
 			'LOG015',  # root-logger-call                          - We are not a library and have customized the logger
 			'TD003',   # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
-			'C901',    # complex-structure                         - We'll ignore functions being too complex for now
 			'PLR0911', # too-many-return-statements                - We'll ignore functions having too many return statements
 			'PLR0912', # too-many-branches                         - We'll ignore functions having too many branches for now
 			'PLR0913', # too-many-arguments                        - We'll ignore functions taking too many arguments
