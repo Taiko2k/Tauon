@@ -28,8 +28,8 @@ from gi.repository import GLib
 install_directory = Path(__file__).resolve().parent
 sys.path.insert(0, str(install_directory.parent))
 
-from tauon.t_modules.t_bootstrap import Holder
-from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler
+from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
+from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler  # noqa: E402
 
 pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
 
