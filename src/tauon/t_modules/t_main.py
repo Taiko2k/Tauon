@@ -40802,6 +40802,14 @@ def worker1(tauon: Tauon) -> None:
 					mode="error"
 				)
 			return 0
+		except:
+			logging.error("Can't import for some reason")
+			if show_errors:
+				tauon.show_message(
+					_("Can't import that"),
+					_("We can't import the file {path} and we're not sure why.").format(path=path),
+					mode="error"
+				)
 
 		for pl, playlist in enumerate( pctl.multi_playlist ):
 			if path == playlist.playlist_file:
