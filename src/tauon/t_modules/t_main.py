@@ -40802,7 +40802,7 @@ def worker1(tauon: Tauon) -> None:
 					mode="error"
 				)
 			return 0
-		except:
+		except Exception:
 			logging.error("Can't import for some reason")
 			if show_errors:
 				tauon.show_message(
@@ -41127,7 +41127,7 @@ def worker1(tauon: Tauon) -> None:
 				mode="error"
 			)
 			return False
-		except:
+		except Exception:
 			tauon.lrclib_uploads = []
 			tauon.show_message(
 				_("Something went wrong"),
