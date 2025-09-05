@@ -40779,17 +40779,28 @@ def worker1(tauon: Tauon) -> None:
 					add_file(filepath[0])
 					logging.info(f"will import {filepath[0]}")
 
-	def add_file(path, force_scan: bool = False, show_errors: bool = False) -> int | None:
-		"""Import playlist from filepath""" # TODO (Flynn): add visible errors for bad playlist imports
-		# bm.get("add file start")
+	def add_file(path: str, force_scan: bool = False, show_errors: bool = False) -> int | None:
+		"""Import file from path - playlists, audio, zips etc"""
 
-		if not os.path.isfile(path):
+		try:
+			Path(path).stat().st_size
+		except FileNotFoundError:
 			logging.error("File to import missing")
 			if show_errors:
 				tauon.show_message(
-					_("File missing"),
-					_("Playlist file is missing and cannot be imported."),
-					mode="error")
+					_("Files missing or inaccessible"),
+					_("If you're using Flatpak, you should probably follow this:"),
+					"https://github.com/Taiko2k/Tauon/wiki/Flatpak-Extra-Steps#gui-way-using-flatseal",
+					mode="link")
+			return 0
+		except PermissionError:
+			logging.error("Bad permissions to import")
+			if show_errors:
+				tauon.show_message(
+					_("Bad permissions"),
+					_("We don't have permissions to access {file}").format(file=path),
+					mode="error"
+				)
 			return 0
 
 		for pl, playlist in enumerate( pctl.multi_playlist ):
@@ -41094,9 +41105,28 @@ def worker1(tauon: Tauon) -> None:
 			tauon.lrclib_uploads = [] # fatal error should cancel all further uploads
 			tauon.show_message(
 				_("Something went wrong"),
-				_("There's a component missing. Uploading will be unavailable."),
+				_("The following file is missing:"),
+				binary,
 				mode="error"
 			)
+			return False
+		except PermissionError:
+			tauon.lrclib_uploads = []
+			tauon.show_message(
+				_("Something went wrong"),
+				_("We don't have the proper permissions to run the file:"),
+				binary,
+				mode="error"
+			)
+			return False
+		except:
+			tauon.lrclib_uploads = []
+			tauon.show_message(
+				_("Something went wrong"),
+				_("We can't upload your lyrics, and we don't know why."),
+				mode="error"
+			)
+			logging.exception()
 			return False
 		logging.info("LRCLIB upload: step 2 (of 3) complete")
 		publish_token = p + ":" + nonce.stdout.strip()
