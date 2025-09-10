@@ -48,8 +48,10 @@ from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import PlayerCtl, Tauon, TrackClass
 
+
 class LibreSpot:
 	def __init__(self, tauon: Tauon) -> None:
+		# fmt:off
 		self.tauon           = tauon
 		self.aud             = tauon.aud
 		self.gui             = tauon.gui
@@ -62,6 +64,7 @@ class LibreSpot:
 		self.cache_directory = tauon.cache_directory
 		self.running:   bool = False
 		self.flush:     bool = False
+		# fmt:on
 
 	def go(self, force: bool = False) -> int:
 		self.aud.config_set_feed_samplerate(44100)
@@ -70,8 +73,8 @@ class LibreSpot:
 			self.show_message(_("SPP: Error, librespot not found"))
 			return 1
 		# if not prefs.spot_username or not prefs.spot_password:
-		#	 self.show_message("Please enter your spotify username and password in settings")
-		#	 return 1
+		# 	self.show_message("Please enter your spotify username and password in settings")
+		# 	return 1
 		if self.librespot_p:
 			if force:
 				logging.info("SPP: Force restart librespot")
@@ -95,9 +98,24 @@ class LibreSpot:
 
 			access_token = str(self.spot_ctl.spotify.token.access_token)
 
-			cmd = ["librespot", "-k", access_token, "--backend", "pipe", "-n", "Tauon", "--disable-audio-cache", "--device-type", "computer", "--volume-ctrl", "fixed", "--initial-volume", "100"]
+			cmd = [
+				"librespot",
+				"-k",
+				access_token,
+				"--backend",
+				"pipe",
+				"-n",
+				"Tauon",
+				"--disable-audio-cache",
+				"--device-type",
+				"computer",
+				"--volume-ctrl",
+				"fixed",
+				"--initial-volume",
+				"100",
+			]
 
-			#self.spot_ctl.preparing_spotify = True
+			# self.spot_ctl.preparing_spotify = True
 			self.gui.update += 1
 
 			startupinfo = None
@@ -109,7 +127,7 @@ class LibreSpot:
 				logging.info("SPP: Librespot now started")
 			except Exception:
 				logging.exception("SPP: Error starting librespot")
-				#tauon.spot_ctl.preparing_spotify = False
+				# tauon.spot_ctl.preparing_spotify = False
 				self.gui.update += 1
 				return 1
 		return 0
@@ -124,9 +142,10 @@ class LibreSpot:
 		if self.librespot_p:
 			if self.msys:
 				self.librespot_p.terminate()
-				#self.librespot_p.communicate()
+				# self.librespot_p.communicate()
 			else:
 				import signal
+
 				self.librespot_p.send_signal(signal.SIGINT)  # terminate() doesn't work
 
 	def worker(self) -> None:
@@ -152,6 +171,7 @@ class LibreSpot:
 				time.sleep(0.0002)
 			else:
 				time.sleep(0.002)
+
 
 class FFRun:
 	def __init__(self, tauon: Tauon) -> None:
@@ -203,8 +223,10 @@ class FFRun:
 			return len(data)
 		return 0
 
+
 class Cachement:
 	def __init__(self, tauon: Tauon) -> None:
+		# fmt:off
 		self.tauon        = tauon
 		self.gui          = tauon.gui
 		self.pctl         = tauon.pctl
@@ -212,6 +234,7 @@ class Cachement:
 		self.show_message = tauon.show_message
 		self.audio_cache  = tauon.cache_directory / "network-audio1"
 		self.audio_cache2 = tauon.cache_directory / "audio-cache"
+		# fmt:on
 		self.direc = str(self.audio_cache2)
 		if self.prefs.tmp_cache:
 			self.direc = os.path.join(tmp_cache_dir(), "audio-cache")
@@ -263,7 +286,12 @@ class Cachement:
 
 		# disable me for debugging
 		for codec in (".opus", ".ogg", ".flac", ".mp3"):
-			idea = os.path.join(self.prefs.encoder_output, self.tauon.encode_folder_name(track), self.tauon.encode_track_name(track)) + codec
+			idea = (
+				os.path.join(
+					self.prefs.encoder_output, self.tauon.encode_folder_name(track), self.tauon.encode_track_name(track)
+				)
+				+ codec
+			)
 			if os.path.isfile(idea):
 				logging.info("Found transcode")
 				return 0, idea
@@ -381,6 +409,7 @@ class Cachement:
 			elif type(network_url) in (list, tuple):
 				logging.info("Multi part DL")
 				logging.info(path)
+				# fmt:off
 				ffmpeg_command = [
 					self.tauon.get_ffmpeg(),
 					"-i", "-",      # Input from stdin (pipe the data)
@@ -388,6 +417,7 @@ class Cachement:
 					"-c:a", "copy", # Copy FLAC data without re-encoding
 					path,           # Output file for extracted FLAC
 				]
+				# fmt:on
 				p = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
 				i = 0
 				for url in network_url:
@@ -408,12 +438,12 @@ class Cachement:
 						logging.info("Aborted loading track!")
 						return None
 
-				#logging.info("done")
+				# logging.info("done")
 				p.stdin.close()
 				p.wait()
 
 				logging.info("Done loading track")
-				#self.ready = track
+				# self.ready = track
 				self.files.append(key)
 				self.list.append(key)
 				return None
@@ -442,7 +472,6 @@ class Cachement:
 			length = int(cl)
 			self.gui.buffering_text = "0%"
 
-
 		timer = Timer()
 		try:
 			with path.open("wb") as f:
@@ -452,23 +481,22 @@ class Cachement:
 						if a == 3000 and self.prefs.jump_start:  # kilobyes~
 							self.ready = track
 						if a % 32 == 0:
-							#time.sleep(0.03)
-							#logging.info(f"Downloading file @ {round(32 / timer.hit())} kbps")
+							# time.sleep(0.03)
+							# logging.info(f"Downloading file @ {round(32 / timer.hit())} kbps")
 							if length:
 								self.gui.update += 1
 								self.pctl.buffering_percent = round(a * 1000 / length * 100)
 								self.gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
-
 
 						if self.get_now is not None and self.get_now != track:
 							logging.warning("Aborted loading track!")
 							return None
 
 						# if self.cancel is True:
-						#	 self.part.close()
-						#	 self.status = "failed"
-						#	 logging.info("Abort download")
-						#	 return
+						# 	self.part.close()
+						# 	self.status = "failed"
+						# 	logging.info("Abort download")
+						# 	return
 
 						f.write(chunk)
 			logging.info("Done loading track")
@@ -479,6 +507,7 @@ class Cachement:
 			logging.exception("Download failed!")
 			return 1
 		return 0
+
 
 def find_library(libname: str) -> Path | None:
 	"""Search for 'libname.extension' in various formats.
@@ -493,10 +522,11 @@ def find_library(libname: str) -> Path | None:
 
 	# Used to be lib but Slackware uses that for 32-bit,
 	# all other distros seem to symlink lib64 to lib, so just use lib64
-	libdir="lib64"
+	libdir = "lib64"
 
 	# Try looking in site-packages of the current environment, pwd and ../pwd
 	for extension in so_extensions:
+		# fmt:off
 		search_paths += [
 			(Path(site_packages_path)                        / (libname + extension)).resolve(),
 			(Path(base_path)          / ".."                 / (libname + extension)).resolve(),
@@ -504,14 +534,16 @@ def find_library(libname: str) -> Path | None:
 			# Compat with old way to store .so files
 			(Path(base_path)          / ".." / ".." / libdir / (libname + ".so")).resolve(),
 		]
+		# fmt:on
 
 	for path in search_paths:
 		if path.exists():
 			logging.debug(f"Lib {libname} found in {path!s}")
 			return path
 
-	#raise OSError(f"Can't find library '{libname}'. Searched at:\n" + "\n".join(str(p) for p in search_paths))
+	# raise OSError(f"Can't find library '{libname}'. Searched at:\n" + "\n".join(str(p) for p in search_paths))
 	return None
+
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
 	"""Locate the PHaZOR library in the specified priority order.
@@ -543,9 +575,11 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 
 	raise Exception(f"Failed to load PHaZOR library ({lib_name})")
 
+
 def phazor_exists(pctl: PlayerCtl) -> bool:
 	"""Check for the existence of the PHaZOR library on the FS"""
 	return get_phazor_path(pctl).exists()
+
 
 def player4(tauon: Tauon) -> None:
 	def scan_device() -> None:
@@ -587,7 +621,9 @@ def player4(tauon: Tauon) -> None:
 						g = ag
 						if ap is not None:
 							p = ap
-				elif (prefs.replay_gain == 1 and tg is not None) or (prefs.replay_gain == 2 and ag is None and tg is not None):
+				elif (prefs.replay_gain == 1 and tg is not None) or (
+					prefs.replay_gain == 2 and ag is None and tg is not None
+				):
 					g = tg
 					if tp is not None:
 						p = tp
@@ -697,7 +733,6 @@ def player4(tauon: Tauon) -> None:
 		else:
 			pctl.a_time += add_time
 
-
 		tauon.lfm_scrobbler.update(add_time)
 
 		if len(pctl.track_queue) > 0 and 2 > add_time > 0:
@@ -708,8 +743,8 @@ def player4(tauon: Tauon) -> None:
 	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> None:
 		track = pctl.get_track(track_id)
 		# if track.is_cue:
-		#	 logging.error("CUE cast not supported")
-		#	 return
+		# 	logging.error("CUE cast not supported")
+		# 	return
 		if track.is_network:
 			if track.file_ext == "SPTY":
 				logging.error("Spotify cast not supported")
@@ -731,10 +766,11 @@ def player4(tauon: Tauon) -> None:
 		if not spotc.running:
 			shooter(spotc.worker)
 
+	# fmt:off
 	gui   = tauon.gui
 	pctl  = tauon.pctl
 	prefs = tauon.prefs
-
+	# fmt:on
 	logging.debug("Starting PHAzOR backend…")
 
 	player_timer = Timer()
@@ -749,7 +785,7 @@ def player4(tauon: Tauon) -> None:
 
 	aud.get_device.restype = ctypes.c_char_p
 
-	aud.feed_raw.argtypes = (ctypes.c_int,ctypes.c_char_p)
+	aud.feed_raw.argtypes = (ctypes.c_int, ctypes.c_char_p)
 	aud.feed_raw.restype = None
 	aud.set_volume(int(pctl.player_volume))
 
@@ -765,7 +801,6 @@ def player4(tauon: Tauon) -> None:
 	spotc = tauon.spotc
 	ff_run = FFRun(tauon)
 
-
 	if sys.platform == "win32":
 		FUNCTYPE = WINFUNCTYPE
 	else:
@@ -778,7 +813,7 @@ def player4(tauon: Tauon) -> None:
 
 	cachement = tauon.cachement
 
-	#aud.config_set_samplerate(prefs.samplerate)
+	# aud.config_set_samplerate(prefs.samplerate)
 	aud.config_set_resample_quality(prefs.resample)
 
 	set_config()
@@ -791,11 +826,16 @@ def player4(tauon: Tauon) -> None:
 	chrome_mode = False
 
 	while True:
-		#logging.error(aud.print_status())
+		# logging.error(aud.print_status())
 		time.sleep(0.016)
 		if tauon.player4_state == PlayerState.PAUSED:
 			time.sleep(0.05)
-		if tauon.player4_state != PlayerState.STOPPED or tauon.spot_ctl.playing or tauon.spot_ctl.coasting or tauon.chrome_mode:
+		if (
+			tauon.player4_state != PlayerState.STOPPED
+			or tauon.spot_ctl.playing
+			or tauon.spot_ctl.coasting
+			or tauon.chrome_mode
+		):
 			active_timer.set()
 		if active_timer.get() > 7:
 			aud.stop()
@@ -897,15 +937,15 @@ def player4(tauon: Tauon) -> None:
 			subcommand = pctl.playerSubCommand
 			pctl.playerSubCommand = ""
 			pctl.playerCommandReady = False
-			#logging.info(command)
+			# logging.info(command)
 
 			if command == "spotcon":
-				#aud.stop()
+				# aud.stop()
 				logging.info("SPP: Start librespot command received. Set Phazor input raw mode")
 				start_librespot()
 				tauon.player4_state = PlayerState.SPOTIFY_MODE
-				#time.sleep(20)
-				#tauon.spot_ctl.preparing_spotify = False
+				# time.sleep(20)
+				# tauon.spot_ctl.preparing_spotify = False
 
 			if command == "startchrome":
 				aud.stop()
@@ -945,7 +985,6 @@ def player4(tauon: Tauon) -> None:
 				if tauon.player4_state == PlayerState.PAUSED:
 					aud.set_volume(int(pctl.player_volume))
 
-
 				stall_timer.set()
 				pctl.download_time = 0
 				target_object = pctl.target_object
@@ -953,7 +992,9 @@ def player4(tauon: Tauon) -> None:
 				subtrack = target_object.subtrack
 				aud.set_subtrack(subtrack)
 
-				logging.info(f"Open - requested start was {(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})")
+				logging.info(
+					f"Open - requested start was {(pctl.start_time_target + pctl.jump_time)} ({pctl.start_time_target})"
+				)
 				try:
 					logging.info(f"Extension: {target_path.split('.')[-1]}")
 				except Exception:
@@ -963,7 +1004,6 @@ def player4(tauon: Tauon) -> None:
 					tauon.spot_ctl.control("stop")
 
 				if target_object.is_network:
-
 					if target_object.file_ext == "SPTY":
 						tauon.level_train.clear()
 						if target_object.found is False:
@@ -991,8 +1031,10 @@ def player4(tauon: Tauon) -> None:
 								if not spotc.running:
 									shooter(spotc.worker)
 
-							tauon.spot_ctl.play_target(target_object.url_key, force_new_device=f, start_callback=start_librespot)
-							#tauon.spot_ctl.preparing_spotify = False
+							tauon.spot_ctl.play_target(
+								target_object.url_key, force_new_device=f, start_callback=start_librespot
+							)
+							# tauon.spot_ctl.preparing_spotify = False
 							if pctl.playerCommand == "spotcon":  # such spaghetti code
 								state = 4
 								pctl.playerCommand = ""
@@ -1000,13 +1042,13 @@ def player4(tauon: Tauon) -> None:
 
 						except Exception:
 							logging.exception("Failed to start Spotify track")
-							#tauon.spot_ctl.preparing_spotify = False
+							# tauon.spot_ctl.preparing_spotify = False
 							pctl.playerCommand = "stop"
 							pctl.playerCommandReady = True
 						continue
 
 					spotc.running = False
-					#tauon.spot_ctl.preparing_spotify = False
+					# tauon.spot_ctl.preparing_spotify = False
 					pctl.spot_playing = False
 					timer = Timer()
 					timer.set()
@@ -1024,7 +1066,7 @@ def player4(tauon: Tauon) -> None:
 						if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0.0:
 							break
 						time.sleep(0.05)
-						#logging.info(status)
+						# logging.info(status)
 
 					gui.buffering = False
 					gui.update += 1
@@ -1035,7 +1077,7 @@ def player4(tauon: Tauon) -> None:
 						target_object.found = False
 						pctl.playing_state = PlayingState.STOPPED
 						pctl.jump_time = 0.0
-						#pctl.advance(inplace=True, play=True)
+						# pctl.advance(inplace=True, play=True)
 						continue
 					target_path = path
 
@@ -1092,14 +1134,18 @@ def player4(tauon: Tauon) -> None:
 						pctl.playing_length = target_object.length
 					del temp
 
-				if tauon.player4_state == PlayerState.PLAYING \
-				and not pctl.start_time_target and not pctl.jump_time and loaded_track:
+				if (
+					tauon.player4_state == PlayerState.PLAYING
+					and not pctl.start_time_target
+					and not pctl.jump_time
+					and loaded_track
+				):
 					length = aud.get_length_ms() / 1000
 					position = aud.get_position_ms() / 1000
 					remain = length - position
 
-					#TODO(Martin): The GUI logger does not support multiline
-					#logging.info(f"{loaded_track.title} -> {target_object.title}\nlength: {length!s}\nposition: {position!s}\nWe are {remain!s} from end")
+					# TODO(Martin): The GUI logger does not support multiline
+					# logging.info(f"{loaded_track.title} -> {target_object.title}\nlength: {length!s}\nposition: {position!s}\nWe are {remain!s} from end")
 					logging.info(loaded_track.title + " -> " + target_object.title)
 					logging.info(" --- length: " + str(length))
 					logging.info(" --- position: " + str(position))
@@ -1112,16 +1158,17 @@ def player4(tauon: Tauon) -> None:
 
 				fade = 0
 				error = False
-				if tauon.player4_state == PlayerState.PLAYING \
-				and length \
-				and position \
-				and not pctl.start_time_target \
-				and not pctl.jump_time \
-				and loaded_track \
-				and 0 < remain < 5.5 \
-				and not loaded_track.is_cue \
-				and subcommand != "now":
-
+				if (
+					tauon.player4_state == PlayerState.PLAYING
+					and length
+					and position
+					and not pctl.start_time_target
+					and not pctl.jump_time
+					and loaded_track
+					and 0 < remain < 5.5
+					and not loaded_track.is_cue
+					and subcommand != "now"
+				):
 					logging.info("Transition gapless")
 
 					r_timer = Timer()
@@ -1135,7 +1182,11 @@ def player4(tauon: Tauon) -> None:
 							time.sleep(0.016)
 						aud.stop()
 
-					aud.next(target_path.encode(), int( (pctl.start_time_target + pctl.jump_time) * 1000), ctypes.c_float(calc_rg(target_object)))
+					aud.next(
+						target_path.encode(),
+						int((pctl.start_time_target + pctl.jump_time) * 1000),
+						ctypes.c_float(calc_rg(target_object)),
+					)
 
 					cont = False
 					while r_timer.get() <= remain - prefs.device_buffer / 1000:
@@ -1187,7 +1238,12 @@ def player4(tauon: Tauon) -> None:
 						fade = 1
 
 					logging.info("Transition jump")
-					aud.start(target_path.encode(errors="surrogateescape"), int( (pctl.start_time_target + pctl.jump_time) * 1000), fade, ctypes.c_float(calc_rg(target_object)))
+					aud.start(
+						target_path.encode(errors="surrogateescape"),
+						int((pctl.start_time_target + pctl.jump_time) * 1000),
+						fade,
+						ctypes.c_float(calc_rg(target_object)),
+					)
 					loaded_track = target_object
 					pctl.playing_time = pctl.jump_time
 					if pctl.jump_time:
@@ -1208,13 +1264,16 @@ def player4(tauon: Tauon) -> None:
 								gui.buffering_text = ""
 
 								# while dm.request(loaded_track, whole=True) == "wait":
-								#	 time.sleep(0.05)
-								#	 if pctl.playerCommandReady:
-								#		 break
+								# 	time.sleep(0.05)
+								# 	if pctl.playerCommandReady:
+								# 		break
 								logging.info("Retry start file")
 								aud.start(
-									target_path.encode(), int( (pctl.start_time_target + pctl.jump_time) * 1000),
-									fade, ctypes.c_float(calc_rg(target_object)))
+									target_path.encode(),
+									int((pctl.start_time_target + pctl.jump_time) * 1000),
+									fade,
+									ctypes.c_float(calc_rg(target_object)),
+								)
 								gui.buffering = False
 								player_timer.set()
 								break
@@ -1297,7 +1356,12 @@ def player4(tauon: Tauon) -> None:
 							continue
 
 						# The vorbis decoder doesn't like appended files
-						aud.start(path.encode(), int(pctl.new_time + pctl.start_time_target) * 1000, 0, ctypes.c_float(calc_rg(loaded_track)))
+						aud.start(
+							path.encode(),
+							int(pctl.new_time + pctl.start_time_target) * 1000,
+							0,
+							ctypes.c_float(calc_rg(loaded_track)),
+						)
 						while aud.get_result() == 0:
 							time.sleep(0.01)
 					else:
@@ -1343,7 +1407,7 @@ def player4(tauon: Tauon) -> None:
 
 				if subcommand == "return":
 					pctl.playerSubCommand = "stopped"
-					#pctl.playerCommandReady = True
+					# pctl.playerCommandReady = True
 
 			if command == "pauseon":
 				if prefs.use_pause_fade:
@@ -1358,7 +1422,6 @@ def player4(tauon: Tauon) -> None:
 				tauon.player4_state = PlayerState.PAUSED
 
 			if command == "pauseoff":
-
 				if tauon.player4_state == PlayerState.STOPPED:
 					t = pctl.playing_time
 					pctl.play_target()
