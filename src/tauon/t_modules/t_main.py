@@ -22056,7 +22056,7 @@ class ToolTip:
 		self.called = False
 		self.a = False
 
-	def test(self, x: float, y: float, text: string) -> None:
+	def test(self, x: float, y: float, text: str) -> None:
 		if self.text != text or x != self.x or y != self.y:
 			self.text = text
 			# self.timer.set()
@@ -22477,7 +22477,7 @@ class TransEditBox:
 			if len(select) > 1:
 				self.active_field = 1
 
-		def field_edit(x: int, y: int, label: string, field_number: int, names: list[str], text_box: TextBox2) -> bool:
+		def field_edit(x: int, y: int, label: str, field_number: int, names: list[str], text_box: TextBox2) -> bool:
 			changed = False
 			self.ddt.text((x, y), label, self.colours.box_text_label, 11)
 			y += round(16 * self.gui.scale)
