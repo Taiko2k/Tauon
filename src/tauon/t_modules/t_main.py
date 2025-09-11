@@ -40803,7 +40803,7 @@ def worker1(tauon: Tauon) -> None:
 				)
 			return 0
 		except Exception:
-			logging.error("Can't import for some reason")
+			logging.exception()
 			if show_errors:
 				tauon.show_message(
 					_("Can't import that"),
