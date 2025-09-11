@@ -7759,6 +7759,10 @@ class Tauon:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
 				return True
+		# fully stop and resume track to prevent severe bug when simultaneously reading and modifying
+		stop = track.index == self.pctl.track_queue[self.pctl.queue_step]
+		resume = stop and self.pctl.playing_state == PlayingState.PLAYING
+		logging.info(stop)
 		try:
 			if track.file_ext == "MP3":
 				audio = mutagen.id3.ID3(track.fullpath)
@@ -7766,28 +7770,18 @@ class Tauon:
 					audio.getall("USLT")[0].text = lyrics
 				else:
 					audio.add( mutagen.id3.USLT( text=lyrics ) )
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
 				audio["LYRICS"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("OPUS", "OGG"):
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
 				audio["LYRICS"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("APE","WV","TTA"):
 				audio = mutagen.apev2.APEv2(track.fullpath)
 				audio["Lyrics"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 				audio = mutagen.mp4.MP4(track.fullpath)
 				audio['\xa9lyr'] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			else:
 				if loud:
 					self.show_message(
@@ -7797,6 +7791,15 @@ class Tauon:
 						mode="error"
 					)
 				return False
+
+			if stop:
+				self.pctl.jump_time = self.pctl.decode_time
+				self.pctl.stop()
+			audio.save()
+			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			if resume:
+				self.pctl.play()
+
 		except Exception:
 			logging.exception()
 			if loud:
