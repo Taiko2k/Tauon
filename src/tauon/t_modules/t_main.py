@@ -38028,6 +38028,7 @@ class TimedLyricsEdit:
 					del self.structure[self.line_active+1]
 				if not self.structure:
 					self.structure = [("??:??.??", -1.0, "")]
+					self.line_active = max(0, self.line_active)
 				self.queue_next_frame = True
 
 			# SWITCH MODES
