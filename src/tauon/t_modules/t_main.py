@@ -7794,7 +7794,7 @@ class Tauon:
 
 			if stop:
 				self.pctl.jump_time = self.pctl.decode_time
-				self.pctl.stop()
+				self.pctl.stop(block=True)
 			audio.save()
 			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			if resume:
