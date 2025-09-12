@@ -7748,6 +7748,9 @@ class Tauon:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
 				return True
+		# fully stop and resume track to prevent severe bug when simultaneously reading and modifying
+		stop = track.index == self.pctl.track_queue[self.pctl.queue_step]
+		resume = stop and self.pctl.playing_state == PlayingState.PLAYING
 		try:
 			if track.file_ext == "MP3":
 				audio = mutagen.id3.ID3(track.fullpath)
@@ -7755,28 +7758,18 @@ class Tauon:
 					audio.getall("USLT")[0].text = lyrics
 				else:
 					audio.add( mutagen.id3.USLT( text=lyrics ) )
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
 				audio["LYRICS"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("OPUS", "OGG"):
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
 				audio["LYRICS"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("APE","WV","TTA"):
 				audio = mutagen.apev2.APEv2(track.fullpath)
 				audio["Lyrics"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 				audio = mutagen.mp4.MP4(track.fullpath)
 				audio['\xa9lyr'] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			else:
 				if loud:
 					self.show_message(
@@ -7786,6 +7779,15 @@ class Tauon:
 						mode="error"
 					)
 				return False
+
+			if stop:
+				self.pctl.jump_time = self.pctl.decode_time
+				self.pctl.stop(block=True)
+			audio.save()
+			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			if resume:
+				self.pctl.play()
+
 		except Exception:
 			logging.exception()
 			if loud:
@@ -37047,6 +37049,8 @@ class TimedLyricsEdit:
 		self.temp_w:            int = 0     # these two are used to recalculate self.x_posns when the user...
 		self.temp_scale:      float = self.gui.scale # ...resizes or rescales the window
 		self.editing_line:      int = -1    # clear selection when line changes
+		self.track_time_left:   int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
+		self.repeat_mode:list[bool] = []    # save the global repeat mode yada yada track end behavior
 
 		# scrolling
 		self.scroll_position: int = 0 # measured in pixels - greater means scrolled further down - 0 means centered on active line
@@ -37107,6 +37111,11 @@ class TimedLyricsEdit:
 		self.menu.add_to_sub(0, MenuItem(_("Delete All Backups"), self.delete_autosaves, pass_ref=False))
 
 		self.menu.add_sub(_("When track ends..."), 165)
+		if self.prefs.synced_lyrics_editor_track_end_mode == "repeat":
+			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Repeat track"), self.end_set_repeat ))
+		else:
+			self.menu.add_to_sub(1, MenuItem( "    " + _("Repeat track"), self.end_set_repeat ))
+
 		if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
 			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
 		else:
@@ -37127,6 +37136,10 @@ class TimedLyricsEdit:
 		else:
 			lrc = "x  "
 		self.menu.add(MenuItem( lrc + _("Save synced to .lrc"), self.toggle_lrc, pass_ref=False))
+
+	def end_set_repeat(self) -> None:
+		self.prefs.synced_lyrics_editor_track_end_mode = "repeat"
+		self.reload_menu()
 
 	def end_set_stop(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "stop"
@@ -38123,11 +38136,16 @@ class TimedLyricsEdit:
 
 		# end of stuff blocked by boxes being open
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" and self.pctl.playing_state == PlayingState.PLAYING:
+		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" or self.prefs.synced_lyrics_editor_track_end_mode == "repeat" and self.pctl.playing_state == PlayingState.PLAYING:
 			if self.pctl.playing_length - self.pctl.decode_time < 5.5:
 				self.queue_next_frame = True
 			if self.pctl.playing_length - self.pctl.decode_time < 2.01:
-				self.pctl.stop()
+				if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
+					self.pctl.stop()
+				elif not self.repeat_mode: # repeat
+					self.repeat_mode = [ self.pctl.repeat_mode, self.pctl.album_repeat_mode ]
+					self.pctl.repeat_mode = True
+					self.pctl.album_repeat_mode = False
 
 
 		if self.autosave_timer.get() > 5 and not self.autosaved:
@@ -38352,7 +38370,7 @@ class TimedLyricsEdit:
 		index = self.pctl.track_queue[self.pctl.queue_step]
 		track = self.pctl.master_library[index]
 		if not self.structure or self.struct_track != index:
-			if self.struct_track != index and self.struct_track != -1 and self.continuous:
+			if self.struct_track != index and self.struct_track != -1 and self.continuous and 0 < self.track_time_left < 5.0:
 				match self.prefs.synced_lyrics_editor_track_end_mode:
 					case "autosave":
 						self.autosave()
@@ -38363,6 +38381,11 @@ class TimedLyricsEdit:
 			self.lyrics_position = 0
 			self.continuous = True
 			self.clicks = 0
+		if self.pctl.decode_time < 1.0 and len(self.repeat_mode) == 2:
+			self.pctl.repeat_mode, self.pctl.album_repeat_mode = self.repeat_mode
+			self.repeat_mode = []
+
+		self.track_time_left = self.pctl.playing_length - self.pctl.decode_time
 
 		if self.gui.lyrics_editor_update_now[0]:
 			self.test_update()
