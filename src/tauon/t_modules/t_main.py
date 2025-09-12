@@ -21414,7 +21414,7 @@ class AlbumArt:
 
 		if self.prefs.colour_from_image and track.album != self.gui.theme_temp_current and box[0] != 115:
 			if track.album in self.gui.temp_themes:
-				self.colours = self.gui.temp_themes[track.album]
+				self.tauon.colours.__dict__.update(self.gui.temp_themes[track.album].__dict__)
 				self.gui.theme_temp_current = track.album
 
 		source = self.get_sources(track)
@@ -21689,7 +21689,7 @@ class AlbumArt:
 					colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, 0.03)
 
 				self.gui.temp_themes[track.album] = copy.deepcopy(colours)
-				colours = self.gui.temp_themes[track.album]
+				self.tauon.colours.__dict__.update(self.gui.temp_themes[track.album].__dict__)
 				self.gui.theme_temp_current = track.album
 
 				if self.prefs.transparent_mode:
