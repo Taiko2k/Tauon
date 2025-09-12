@@ -11,6 +11,7 @@ Changelog
  - **Fixed** Setting "Background artist info download" not being respected
  - **Fixed** Chart generation on macOS and Windows (regression)
  - **Fixed** Loading queue on app restart (regression)
+ - **Fixed** Auto-theme from album art (regression)
 
 ### v8.1.4
 
