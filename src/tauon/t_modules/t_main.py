@@ -7621,14 +7621,14 @@ class Tauon:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
 							self.gui.lyrics_editor_update_now[0] = True
-							if not self.gui.timed_lyrics_edit_view:
+							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
 							self.gui.lyrics_editor_update_now[1] = True
 							# TODO (Flynn): SYLT
-							if not self.gui.timed_lyrics_edit_view:
+							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
 								self.write_lyrics(track_object, True)
 						found = True
 						break
@@ -7707,7 +7707,8 @@ class Tauon:
 			clip = sdl3.SDL_GetClipboardText()
 			#logging.info(clip)
 			track_object.lyrics = clip.decode("utf-8")
-			self.write_lyrics(track_object)
+			if self.prefs.save_lyrics_changes_to_files:
+				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 		else:
 			logging.warning("NO TEXT TO PASTE")
@@ -7717,13 +7718,15 @@ class Tauon:
 
 	def clear_lyrics(self, track_object: TrackClass) -> None:
 		track_object.lyrics = ""
-		self.write_lyrics(track_object)
+		if self.prefs.save_lyrics_changes_to_files:
+			self.write_lyrics(track_object)
 		self.lyrics_ren_mini.to_reload = True
 
 	def split_lyrics(self, track_object: TrackClass) -> None:
 		if track_object.lyrics:
 			track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
-			self.write_lyrics(track_object)
+			if self.prefs.save_lyrics_changes_to_files:
+				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 
 	def paste_lyrics_deco(self) -> list[ColourRGBA | None]:
@@ -24659,6 +24662,12 @@ class Over:
 				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
 				subtitle=_("Only runs during \"Rescan All Folders\""))
 
+			y += round(35 * gui.scale)
+			prefs.save_lyrics_changes_to_files = self.toggle_square(
+				x, y, prefs.save_lyrics_changes_to_files, _("Save \"simple\" lyrics changes back to their original files"),
+				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
+			)
+
 		elif self.func_page == 3:
 			y += 23 * gui.scale
 			old = prefs.enable_remote
@@ -39078,6 +39087,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("autoscan_playlist_folder", prefs.autoscan_playlist_folder)
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
+	cf.update_value("save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files)
 	cf.update_value("use_lrc_instead", prefs.use_lrc_instead)
 
 	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
@@ -39240,6 +39250,13 @@ def load_prefs(bag: Bag) -> None:
 	prefs.use_lrc_instead = cf.sync_add(
 		"bool", "use_lrc_instead", prefs.use_lrc_instead,
 		"Save separate .LRC files instead of file metadata for synced lyrics.")
+	prefs.save_lyrics_changes_to_files = cf.sync_add(
+		"bool", "save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files,
+		"Lyrics edited in the editor will always try to save back to their original files. Should we do the same thing when you clear/paste/search for lyrics?")
+	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
+		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
+		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
+	)
 
 	cf.br()
 	cf.add_text("[playback]")
@@ -39437,10 +39454,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.autoscan_playlist_folder = cf.sync_add(
 		"bool", "autoscan_playlist_folder", prefs.autoscan_playlist_folder,
 		"Also auto-import new playlists from folder?")
-	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
-		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
-		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
-	)
 	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
 		if os.path.isdir(prefs.download_dir1):
 			bag.download_directories.append(prefs.download_dir1)
