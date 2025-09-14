@@ -22,6 +22,7 @@ Changelog
  - **Fixed** Crash when exporting playlist, regression introduced in 8.1.3
  - **Fixed** A couple of playlist-file bugs, including one that would import radio stations forever
  - **Tweaked** Defaults for imported playlists
+ - **Removed** Prebuilt images for macOS x64 (Intel)
 
 ### v8.1.3
 

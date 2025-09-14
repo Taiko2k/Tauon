@@ -265,28 +265,3 @@ jobs:
           path: src/lrclib-solver/target/release/lrclib-solver
           if-no-files-found: error
           retention-days: 14
-
-  build-macOS-lrclib_solver_x64:
-    name: "macOS lrclib-solver-x64"
-    runs-on: macos-13
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          components: clippy,rustfmt
-
-      - name: Build lrclib-solver
-        run: |
-          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
-
-      - name: Upload lrclib-solver artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lrclib-solver-macos-x64
-          path: src/lrclib-solver/target/release/lrclib-solver
-          if-no-files-found: error
-          retention-days: 14
