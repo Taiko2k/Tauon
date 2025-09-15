@@ -38223,7 +38223,7 @@ class TimedLyricsEdit:
 		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" or self.prefs.synced_lyrics_editor_track_end_mode == "repeat" and self.pctl.playing_state == PlayingState.PLAYING:
 			if self.pctl.playing_length - self.pctl.decode_time < 5.5:
 				self.queue_next_frame = True
-			if self.pctl.playing_length - self.pctl.decode_time < 2.01:
+			if self.pctl.playing_length - self.pctl.decode_time < 2.1:
 				if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
 					self.pctl.stop()
 				elif not self.repeat_mode: # repeat
