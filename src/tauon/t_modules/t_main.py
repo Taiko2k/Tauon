@@ -19693,7 +19693,7 @@ class LyricsRen:
 
 	def render(self, x: int, y: int, w: int, h: int, p: int) -> None:
 		colour = self.colours.lyrics
-		bg = self.colours.playlist_panel_background
+		bg = self.colours.lyrics_panel_background
 
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
@@ -19852,7 +19852,7 @@ class TimedLyricsRen:
 			y_center = y + (h/2) - (spacing)
 		else:
 			scroll_to = 0
-			bg = self.colours.playlist_panel_background
+			bg = self.colours.lyrics_panel_background
 			font_size = 20
 			spacing = round(10 * self.gui.scale)
 			y_center = self.window_size[1]/2
@@ -21603,9 +21603,7 @@ class AlbumArt:
 						x_colours.append(ColourRGBA(colour[0], colour[1], colour[2], 255))
 
 				#logging.info(x_colours)
-				colours.playlist_panel_bg = colours.side_panel_background
 				colours.playlist_box_background = colours.side_panel_background
-				colours.lyrics_panel_background = colours.side_panel_background
 
 				colours.playlist_panel_background = x_colours[0]
 				if len(x_colours) > 1:
@@ -21621,6 +21619,7 @@ class AlbumArt:
 								colours.playlist_box_background = x_colours[4]
 
 				colours.queue_background = colours.side_panel_background
+				colours.lyrics_panel_background = colours.side_panel_background
 				# Check artist text colour
 				if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
 					black = ColourRGBA(25, 25, 25, 255)
@@ -21650,6 +21649,41 @@ class AlbumArt:
 
 					colours.title_text = choice
 					colours.title_playing = choice
+
+				# Check lyrics text colour
+				if contrast_ratio(colours.lyrics, colours.lyrics_panel_background) < 1.9:
+					black = ColourRGBA(60, 60, 60, 255)
+					white = ColourRGBA(180, 180, 180, 255)
+
+					con_b = contrast_ratio(black, colours.lyrics_panel_background)
+					con_w = contrast_ratio(white, colours.lyrics_panel_background)
+
+					choice = black
+					if con_w > con_b:
+						choice = white
+
+					colours.lyrics = choice
+
+				# try to pick high-contrast active lyric color
+				contrast = 0
+				for i in x_colours:
+					temp = contrast_ratio(i, colours.lyrics_panel_background)
+					if temp > contrast:
+						colours.active_lyric = i
+						contrast = temp
+				# if there isn't one, just do full black/white
+				if contrast_ratio(colours.active_lyric, colours.lyrics_panel_background) < 1.9 or contrast_ratio(colours.active_lyric, colours.lyrics) < 1.6:
+					black = ColourRGBA(0, 0, 0, 255)
+					white = ColourRGBA(255, 255, 255, 255)
+
+					con_b = contrast_ratio(black, colours.lyrics_panel_background)
+					con_w = contrast_ratio(white, colours.lyrics_panel_background)
+
+					choice = black
+					if con_w > con_b:
+						choice = white
+
+					colours.active_lyric = choice
 
 				if test_lumi(colours.side_panel_background) < 0.50 and not self.prefs.transparent_mode:
 					colours.side_bar_line1 = ColourRGBA(25, 25, 25, 255)
@@ -35798,8 +35832,8 @@ class Showcase:
 		elif self.window_size[1] / self.window_size[0] > 0.7:
 			x = int(self.window_size[0] * 0.07)
 
-		bbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
-		bfg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
+		bbg = rgb_add_hls(self.colours.lyrics_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
+		bfg = rgb_add_hls(self.colours.lyrics_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
 		bft = self.colours.grey(235)
 		bbt = self.colours.grey(200)
 
@@ -35818,12 +35852,12 @@ class Showcase:
 			bft = ColourRGBA(255, 255, 255, 250)
 			bbt = ColourRGBA(255, 255, 255, 200)
 
-		if test_lumi(self.colours.playlist_panel_background) < 0.7:
+		if test_lumi(self.colours.lyrics_panel_background) < 0.7:
 			light_mode = True
 			t1 = self.colours.grey(30)
 			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
 
-		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.playlist_panel_background)
+		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.lyrics_panel_background)
 
 		if self.prefs.bg_showcase_only and self.prefs.art_bg:
 			self.tauon.style_overlay.display()
@@ -37834,7 +37868,7 @@ class TimedLyricsEdit:
 		highlight = True
 
 		scroll_to = 0
-		bg = self.colours.playlist_panel_background
+		bg = self.colours.lyrics_panel_background
 		spacing = round(10 * self.gui.scale)
 		y_center = self.window_size[1]/2
 
@@ -38201,7 +38235,7 @@ class TimedLyricsEdit:
 
 	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool) -> None:
 		colour = self.colours.lyrics
-		bg = self.colours.playlist_panel_background
+		bg = self.colours.lyrics_panel_background
 
 
 		x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
@@ -38378,8 +38412,8 @@ class TimedLyricsEdit:
 		elif self.window_size[1] / self.window_size[0] > 0.7:
 			x = int(self.window_size[0] * 0.07)
 
-		bbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
-		bfg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
+		bbg = rgb_add_hls(self.colours.lyrics_panel_background, 0, 0.05, 0)  # [255, 255, 255, 18]
+		bfg = rgb_add_hls(self.colours.lyrics_panel_background, 0, 0.09, 0)  # [255, 255, 255, 30]
 		bft = self.colours.grey(235)
 		bbt = self.colours.grey(200)
 
@@ -38398,12 +38432,12 @@ class TimedLyricsEdit:
 			bft = ColourRGBA(255, 255, 255, 250)
 			bbt = ColourRGBA(255, 255, 255, 200)
 
-		if test_lumi(self.colours.playlist_panel_background) < 0.7:
+		if test_lumi(self.colours.lyrics_panel_background) < 0.7:
 			light_mode = True
 			t1 = self.colours.grey(30)
 			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
 
-		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.playlist_panel_background)
+		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.lyrics_panel_background)
 
 		if self.prefs.bg_showcase_only and self.prefs.art_bg:
 			self.tauon.style_overlay.display()
