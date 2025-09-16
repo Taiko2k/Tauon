@@ -19724,7 +19724,7 @@ class TimedLyricsToStatic:
 		text = ""
 
 		for line in data:
-			if line and (line[0] != "[" or ":" not in line or "." not in line):
+			if line and line[0] != "[" and ":" not in line:
 				text += line + "\n"
 				continue
 
