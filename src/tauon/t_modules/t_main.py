@@ -19713,7 +19713,7 @@ class TimedLyricsToStatic:
 		if track == self.cache_key:
 			return self.cache_lyrics
 		if track.lyrics:
-			data = track.lyrics
+			data = track.lyrics.splitlines()
 		else:
 			data = find_synced_lyric_data(track)
 
@@ -19724,10 +19724,11 @@ class TimedLyricsToStatic:
 		text = ""
 
 		for line in data:
-			if len(line) < 10:
+			if line and (line[0] != "[" or ":" not in line or "." not in line):
+				text += line + "\n"
 				continue
 
-			if line[0] != "[" or line[9] != "]" or ":" not in line or "." not in line:
+			if len(line) < 10:
 				continue
 
 			text += line.split("]")[-1].rstrip("\n") + "\n"
