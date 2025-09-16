@@ -36169,7 +36169,7 @@ class ViewBox:
 		self.x: int = 0
 		self.y = tauon.gui.panelY
 		self.w = 52 * tauon.gui.scale
-		self.h = 303 * tauon.gui.scale  # 260
+		self.h = 260 * tauon.gui.scale  # 260
 		self.active: bool = False
 
 		self.border = 3 * tauon.gui.scale
@@ -36180,7 +36180,7 @@ class ViewBox:
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
 		self.combo_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "combo.png", True)
 		self.lyrics_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics.png", True)
-		self.editor_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics-editor.png", True)
+		#self.editor_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics-editor.png", True)
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
 		self.radio_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "radio.png", True)
 		self.col_img      = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "col.png", True)
@@ -36360,6 +36360,9 @@ class ViewBox:
 			self.x_menu.close_next_frame = True
 		return None
 
+	def activate_synced_lyric_editor(self):
+		self.editor(hit = True)
+
 	def editor(self, hit: bool = False) -> bool | None:
 		if hit is False:
 			return self.gui.showcase_mode and self.gui.timed_lyrics_edit_view
@@ -36509,18 +36512,18 @@ class ViewBox:
 
 		# --
 
-		y += 45 * gui.scale
-
-		high = ColourRGBA(81, 231, 0, 255)
-		if colours.lm:
-			# high = (.7, .75, .75)
-			high = ColourRGBA(63, 63, 63, 255)
-
-		test = self.button(
-			x + 4 * gui.scale, y, self.editor_img, self.editor, self.editor_colour,
-			_("Lyrics Editor"), low=low, high=high)
-		if test is not None:
-			func = test
+		# y += 45 * gui.scale
+		#
+		# high = ColourRGBA(81, 231, 0, 255)
+		# if colours.lm:
+		# 	# high = (.7, .75, .75)
+		# 	high = ColourRGBA(63, 63, 63, 255)
+		#
+		# test = self.button(
+		# 	x + 4 * gui.scale, y, self.editor_img, self.editor, self.editor_colour,
+		# 	_("Lyrics Editor"), low=low, high=high)
+		# if test is not None:
+		# 	func = test
 
 		# --
 
@@ -43819,6 +43822,7 @@ def main(holder: Holder) -> None:
 		listen_icon = None
 
 	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
+	x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
 	x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), tauon.toggle_shuffle_layout, tauon.toggle_shuffle_layout_deco)) #show_test=tauon.exit_shuffle_layout))
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
