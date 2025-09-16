@@ -37433,19 +37433,19 @@ class TimedLyricsEdit:
 				return True
 		elif track.file_ext == "FLAC":
 			audio = mutagen.flac.FLAC(track.fullpath)
-			if audio["LYRICS"]:
+			if "LYRICS" in audio:
 				return True
 		elif track.file_ext in ("OPUS", "OGG"):
 			audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-			if audio["LYRICS"]:
+			if "LYRICS" in audio:
 				return True
 		elif track.file_ext in ("APE","WV","TTA"):
 			audio = mutagen.apev2.APEv2(track.fullpath)
-			if audio["Lyrics"]:
+			if "Lyrics" in audio:
 				return True
 		elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 			audio = mutagen.mp4.MP4(track.fullpath)
-			if audio['\xa9lyr']:
+			if '\xa9lyr' in audio:
 				return True
 		return False
 
