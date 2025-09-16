@@ -21672,18 +21672,13 @@ class AlbumArt:
 						colours.active_lyric = i
 						contrast = temp
 				# if there isn't one, just do full black/white
-				if contrast_ratio(colours.active_lyric, colours.lyrics_panel_background) < 1.9 or contrast_ratio(colours.active_lyric, colours.lyrics) < 1.6:
-					black = ColourRGBA(0, 0, 0, 255)
-					white = ColourRGBA(255, 255, 255, 255)
+				if contrast_ratio(colours.active_lyric, colours.lyrics_panel_background) < 2.9 or contrast_ratio(colours.active_lyric, colours.lyrics) < 1.9:
+					lpb = colours.lyrics_panel_background
+					lr  = colours.lyrics
+					tc = rgb_to_hls(lpb.r, lpb.g, lpb.b)
+					lc = rgb_to_hls(lr.r,  lr.g,  lr.b)
 
-					con_b = contrast_ratio(black, colours.lyrics_panel_background)
-					con_w = contrast_ratio(white, colours.lyrics_panel_background)
-
-					choice = black
-					if con_w > con_b:
-						choice = white
-
-					colours.active_lyric = choice
+					colours.active_lyric = hls_to_rgb( tc[0]+0.3, lc[1], max(tc[2]*1.5, 0.5) )
 
 				if test_lumi(colours.side_panel_background) < 0.50 and not self.prefs.transparent_mode:
 					colours.side_bar_line1 = ColourRGBA(25, 25, 25, 255)
