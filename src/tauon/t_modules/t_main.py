@@ -16253,7 +16253,7 @@ class Tauon:
 			except Exception:
 				logging.exception(f"Error printing error. Non utf8 not allowed: {nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')}")
 			return nt
-		if nt.index == self.pctl.track_queue[self.pctl.queue_step]:
+		if self.pctl.track_queue and nt.index == self.pctl.track_queue[self.pctl.queue_step]:
 			self.lyrics_ren_mini.to_reload = True
 		return nt
 
