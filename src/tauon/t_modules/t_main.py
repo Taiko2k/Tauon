@@ -42275,7 +42275,7 @@ def main(holder: Holder) -> None:
 					def logchange3(frame, elem, exec_info):
 						logging.warning(f"Master library was modified! @ {exec_info}")
 
-					watch(p.playlist_ids, callback=logchange3)
+					watch(bag.master_library, callback=logchange3)
 				except:
 					logging.warning("Module Watchpoints not found")
 			bag.master_count = save[1]
@@ -42284,7 +42284,7 @@ def main(holder: Holder) -> None:
 				def logchange2(frame, elem, exec_info):
 					logging.warning(f"Master count was modified! @ {exec_info}")
 
-				watch(p.playlist_ids, callback=logchange2)
+				watch(bag.master_count, callback=logchange2)
 			except:
 				logging.warning("Module Watchpoints not found")
 
