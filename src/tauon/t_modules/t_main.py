@@ -3784,9 +3784,9 @@ class PlayerCtl:
 						return None
 					self.playlist_playing_position = 0
 
-				elif not force and len(self.track_queue) > 0 and self.playing_playlist()[
+				elif not force and self.track_queue and self.playing_playlist()[
 					self.playlist_playing_position] != self.track_queue[
-					self.queue_step]:
+					self.queue_step] and self.track_queue[self.queue_step] in self.playing_playlist():
 					try:
 						if dry:
 							return None
