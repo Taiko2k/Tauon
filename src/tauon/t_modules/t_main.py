@@ -23080,13 +23080,13 @@ class SearchOverlay:
 		for pl in search_lists:
 			for item in pl:
 				track = self.pctl.master_library[item]
-				if track.genre.lower().replace("-", "") == name.lower().replace("-", ""):
+				if track.genre.lower().replace("-", "").replace(" ", "") == name.lower().replace("-", "").replace(" ", ""):
 					if item not in playlist:
 						playlist.append(item)
 				elif include_multi and ("/" in track.genre or "," in track.genre or ";" in track.genre):
 					for split in track.genre.replace(",", "/").replace(";", "/").split("/"):
 						split = split.strip()
-						if name.lower().replace("-", "") == split.lower().replace("-", ""):
+						if name.lower().replace("-", "").replace(" ", "") == split.lower().replace("-", "").replace(" ", ""):
 							if item not in playlist:
 								playlist.append(item)
 
@@ -40218,7 +40218,7 @@ def worker2(tauon: Tauon) -> None:
 						composer = t.composer.lower().replace("-", "")
 						date = t.date.lower().replace("-", "")
 						album = t.album.lower().replace("-", "")
-						genre = t.genre.lower().replace("-", "")
+						genre = t.genre.lower().replace("-", "").replace(" ", "")
 						filename = t.filename.lower().replace("-", "")
 						stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
 						sartist = t.misc.get("artist_sort", "").lower()
@@ -40262,10 +40262,10 @@ def worker2(tauon: Tauon) -> None:
 								temp_results.append([5, stem, track, playlist.uuid_int, 0])
 								metas[stem] = 2
 
-						if s_text in genre:
+						if s_text.replace(" ", "") in genre:
 							if "/" in genre or "," in genre or ";" in genre:
 								for split in genre.replace(";", "/").replace(",", "/").split("/"):
-									if s_text in split:
+									if s_text.replace(" ", "") in split:
 										split = genre_correct(split)
 										if tauon.prefs.sep_genre_multi:
 											split += "+"
