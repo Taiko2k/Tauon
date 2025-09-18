@@ -14027,7 +14027,7 @@ class Tauon:
 
 				if cm.startswith("g=\""):
 					for result in self.search_over.results:
-						if result[0] == 3 and result[1].lower().replace("-", "").replace(" ", "") == g_search:
+						if result[0] == 3 and result[1].lower().replace("-", "") == g_search:
 							found_name = result[1]
 							break
 				elif cm.startswith("g\"") or not self.prefs.sep_genre_multi:
@@ -42270,23 +42270,23 @@ def main(holder: Holder) -> None:
 
 			if len(save) > 0 and save[0] is not None:
 				bag.master_library = save[0]
-				try: # todo remove me before release!
-					from watchpoints import watch
-					def logchange3(frame, elem, exec_info):
-						logging.warning(f"Master library was modified! @ {exec_info}")
-
-					watch(bag.master_library, callback=logchange3)
-				except:
-					logging.warning("Module Watchpoints not found")
+				# try: # todo remove me before release!
+				# 	from watchpoints import watch
+				# 	def logchange3(frame, elem, exec_info):
+				# 		logging.warning(f"Master library was modified! @ {exec_info}")
+				#
+				# 	watch(bag.master_library, callback=logchange3)
+				# except:
+				# 	logging.warning("Module Watchpoints not found")
 			bag.master_count = save[1]
-			try: # todo remove me before release!
-				from watchpoints import watch
-				def logchange2(frame, elem, exec_info):
-					logging.warning(f"Master count was modified! @ {exec_info}")
-
-				watch(bag.master_count, callback=logchange2)
-			except:
-				logging.warning("Module Watchpoints not found")
+			# try: # todo remove me before release!
+			# 	from watchpoints import watch
+			# 	def logchange2(frame, elem, exec_info):
+			# 		logging.warning(f"Master count was modified! @ {exec_info}")
+			#
+			# 	watch(bag.master_count, callback=logchange2)
+			# except:
+			# 	logging.warning("Module Watchpoints not found")
 
 			bag.playlist_playing = save[2]
 			bag.active_playlist_viewing = save[3]
@@ -42299,13 +42299,13 @@ def main(holder: Holder) -> None:
 						p = TauonPlaylist(**d)
 						bag.multi_playlist.append(p)
 
-						try:  # todo remove me before release!
-							from watchpoints import watch
-							def logchange(frame, elem, exec_info):
-								logging.warning(f"A playlist was modified! @ {exec_info}")
-							watch(p.playlist_ids, callback=logchange)
-						except:
-							logging.warning("Module Watchpoints not found")
+						# try:  # todo remove me before release!
+						# 	from watchpoints import watch
+						# 	def logchange(frame, elem, exec_info):
+						# 		logging.warning(f"A playlist was modified! @ {exec_info}")
+						# 	watch(p.playlist_ids, callback=logchange)
+						# except:
+						# 	logging.warning("Module Watchpoints not found")
 
 						if i == bag.active_playlist_viewing:
 							bag.default_playlist = p.playlist_ids
