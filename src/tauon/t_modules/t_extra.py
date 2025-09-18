@@ -237,7 +237,7 @@ genre_corrections = [
 	"J-Pop",
 	"J-Rock",
 	"K-Pop",
-	"Hip Hop",
+	"Hip-Hop",
 ]
 genre_corrections2 = [x.lower().replace("-", "").replace(" ", "") for x in genre_corrections]
 
