@@ -40218,7 +40218,8 @@ def worker2(tauon: Tauon) -> None:
 						composer = t.composer.lower().replace("-", "")
 						date = t.date.lower().replace("-", "")
 						album = t.album.lower().replace("-", "")
-						genre = t.genre.lower().replace("-", "").replace(" ", "")
+						genre = t.genre.lower().replace("-", "")
+						genre_nospace = t.genre.lower().replace("-", "").replace(" ", "")
 						filename = t.filename.lower().replace("-", "")
 						stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
 						sartist = t.misc.get("artist_sort", "").lower()
@@ -40262,10 +40263,10 @@ def worker2(tauon: Tauon) -> None:
 								temp_results.append([5, stem, track, playlist.uuid_int, 0])
 								metas[stem] = 2
 
-						if s_text.replace(" ", "") in genre:
+						if s_text.replace(" ", "") in genre_nospace:
 							if "/" in genre or "," in genre or ";" in genre:
 								for split in genre.replace(";", "/").replace(",", "/").split("/"):
-									if s_text.replace(" ", "") in split:
+									if s_text.replace(" ", "") in split.replace(" ", ""):
 										split = genre_correct(split)
 										if tauon.prefs.sep_genre_multi:
 											split += "+"
@@ -40274,6 +40275,8 @@ def worker2(tauon: Tauon) -> None:
 										else:
 											temp_results.append([3, split, track, playlist.uuid_int, 0])
 											genres[split] = 1
+											if split.replace(" ", "") == genre_nospace:
+												genres[split] += 10000
 							else:
 								name = genre_correct(t.genre)
 								if name in genres:
@@ -40281,6 +40284,8 @@ def worker2(tauon: Tauon) -> None:
 								else:
 									temp_results.append([3, name, track, playlist.uuid_int, 0])
 									genres[name] = 1
+									if s_text.replace(" ", "") == genre_nospace:
+										genres[name] += 10000
 
 						if s_text in composer:
 							if t.composer in composers:
