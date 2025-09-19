@@ -53,10 +53,10 @@ jobs:
           sudo apt-get install -y \
             libgif7 \
             wget
-          wget http://mirrors.edge.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.7.0-10.2ubuntu6.1_amd64.deb
-          wget http://mirrors.edge.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl0.7_0.7.0-10.2ubuntu6.1_amd64.deb
-          wget http://mirrors.edge.kernel.org/ubuntu/pool/universe/h/highway/libhwy-dev_1.0.7-8.1build1_amd64.deb
-          wget http://mirrors.edge.kernel.org/ubuntu/pool/universe/h/highway/libhwy1t64_1.0.7-8.1build1_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
           wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
           curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/lrclib-solver-linux
           sudo dpkg -i *.deb
