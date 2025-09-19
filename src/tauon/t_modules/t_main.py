@@ -44976,6 +44976,8 @@ def main(holder: Holder) -> None:
 				inp.k_input = True
 
 		if inp.k_input and inp.key_focused == 0:
+			if gui.timed_lyrics_editing_now:
+				keymaps.hits.clear()
 			if keymaps.hits:
 				n = 1
 				while n < 10:
@@ -44985,12 +44987,12 @@ def main(holder: Holder) -> None:
 					n += 1
 
 				if keymaps.test("cycle-playlist-left"):
-					if ( gui.album_tab_mode and inp.key_left_press ) or gui.timed_lyrics_editing_now:
+					if ( gui.album_tab_mode and inp.key_left_press ):
 						pass
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(1)
 				if keymaps.test("cycle-playlist-right"):
-					if ( gui.album_tab_mode and inp.key_right_press ) or gui.timed_lyrics_editing_now:
+					if ( gui.album_tab_mode and inp.key_right_press ):
 						pass
 					elif tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(-1)
