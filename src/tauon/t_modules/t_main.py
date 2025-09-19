@@ -19746,6 +19746,7 @@ class TimedLyricsRen:
 		self.inp           = tauon.inp
 		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
 		self.colours       = tauon.colours
 		self.top_panel     = tauon.top_panel
 		self.window_size   = tauon.window_size
