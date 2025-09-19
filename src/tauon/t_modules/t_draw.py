@@ -23,7 +23,7 @@ import io
 import logging
 import math
 import sys
-from ctypes import c_bool, c_int, c_size_t, pointer
+from ctypes import c_bool, c_float, byref, c_size_t, pointer
 from typing import TYPE_CHECKING
 
 import sdl3
@@ -111,11 +111,11 @@ class QuickThumbnail:
 		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
 		sdl3.SDL_DestroySurface(self.surface)
 		self.surface = None
-		tex_w = pointer(c_int(0))
-		tex_h = pointer(c_int(0))
-		sdl3.SDL_QueryTexture(texture, None, None, tex_w, tex_h)
-		self.rect.w = int(tex_w.contents.value)
-		self.rect.h = int(tex_h.contents.value)
+		tex_w = c_float(0.0)
+		tex_h = c_float(0.0)
+		sdl3.SDL_GetTextureSize(texture, byref(tex_w), byref(tex_h))
+		self.rect.w = int(tex_w.value)
+		self.rect.h = int(tex_h.value)
 		self.texture = texture
 
 	def draw(self, x: int, y: int) -> bool | None:
@@ -131,7 +131,7 @@ class QuickThumbnail:
 			self.prime()
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderCopy(self.renderer, self.texture, None, self.rect)
+		sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.rect)
 
 		return True
 
@@ -842,12 +842,12 @@ class TDraw:
 		ke = sdl3.SDL_MapRGB(s_image.contents.format, bg.r, bg.g, bg.b)
 		sdl3.SDL_SetColorKey(s_image, True, ke)
 		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-		tex_w = pointer(c_int(0))
-		tex_h = pointer(c_int(0))
-		sdl3.SDL_QueryTexture(c, None, None, tex_w, tex_h)
+		tex_w = c_float(0.0)
+		tex_h = c_float(0.0)
+		sdl3.SDL_GetTextureSize(c, byref(tex_w), byref(tex_h))
 		dst = sdl3.SDL_FRect(round(x), round(y))
-		dst.w = int(tex_w.contents.value)
-		dst.h = int(tex_h.contents.value)
+		dst.w = int(tex_w.value)
+		dst.h = int(tex_h.value)
 
 		sdl3.SDL_DestroySurface(s_image)
 		#im.close()
