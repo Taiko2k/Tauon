@@ -23,7 +23,6 @@ I would highly recommend not using this project as an example on how to code cle
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 from __future__ import annotations
 
 import base64
@@ -43,10 +42,10 @@ import json
 import locale as py_locale
 import logging
 
-#import magic
+# import magic
 import math
 
-#import mimetypes
+# import mimetypes
 import os
 import pickle
 import platform
@@ -63,7 +62,7 @@ import sys
 import threading
 import time
 
-#import type_enforced
+# import type_enforced
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -94,7 +93,6 @@ from unidecode import unidecode
 builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
-from tauon.t_modules.guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
 from tauon.t_modules.t_dbus import Gnome  # noqa: E402
@@ -164,6 +162,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	uri_parse,
 	year_search,
 )
+from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
@@ -186,6 +185,7 @@ from tauon.t_modules.t_webserve import (  # noqa: E402
 
 if sys.platform == "linux":
 	import gi
+
 	try:
 		gi.require_version("Notify", "0.7")
 	except Exception:
@@ -200,6 +200,7 @@ if sys.platform == "darwin":
 # Log to debug as we don't care at all when user does not have this
 try:
 	import colored_traceback.always
+
 	logging.debug("Found colored_traceback for colored crash tracebacks")
 except ModuleNotFoundError:
 	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
@@ -208,6 +209,7 @@ except Exception:  # noqa: BLE001
 
 try:
 	from jxlpy import JXLImagePlugin
+
 	# We've already logged this once to INFO from t_draw, so just log to DEBUG
 	logging.debug("Found jxlpy for JPEG XL support")
 except ModuleNotFoundError:
@@ -225,10 +227,10 @@ else:
 	setproctitle.setproctitle("tauonmb")
 
 # try:
-#	 import rpc
-#	 discord_allow = True
+# 	import rpc
+# 	discord_allow = True
 # except Exception:
-#	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
+# 	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
 	from lynxpresence import ActivityType, Presence
 except ModuleNotFoundError:
@@ -241,9 +243,13 @@ else:
 try:
 	import opencc
 except ModuleNotFoundError:
-	logging.warning("Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	logging.warning(
+		"Unable to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably."
+	)
 except Exception:
-	logging.exception("Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably.")
+	logging.exception(
+		"Unknown error trying to import opencc, Traditional and Simplified Chinese searches will not be usable interchangeably."
+	)
 
 try:
 	import natsort
@@ -323,14 +329,17 @@ if system == "Windows" or msys:
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
+
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
 	assets: list[LoadImageAsset] = []
 
-	def __init__(self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = "") -> None:
+	def __init__(
+		self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = ""
+	) -> None:
 		if not reload:
 			self.assets.append(self)
-		self.bag  = bag
+		self.bag = bag
 		self.dirs = bag.dirs
 		self.renderer = bag.renderer
 		self.path = path
@@ -5335,7 +5344,7 @@ class GallClass:
 		self.lock                 = threading.Lock()
 		self.limit                = 60
 
-	def get_file_source(self, track_object: TrackClass):
+	def get_file_source(self, track_object: TrackClass) -> tuple[bool, int] | tuple[tuple[int, str], int]:
 		sources = self.album_art_gen.get_sources(track_object)
 
 		if len(sources) == 0:
@@ -7221,6 +7230,7 @@ class Tauon:
 				subprocess.Popen(["xdg-open", line])
 
 	def tag_to_new_playlist(self, tag_item) -> None:
+		logging.critical(type(tag_item))
 		self.path_stem_to_playlist(tag_item.path, tag_item.name)
 
 	def folder_to_new_playlist_by_track_id(self, track_id: int) -> None:
@@ -10104,13 +10114,13 @@ class Tauon:
 	def test_show(self, _) -> bool:
 		return self.prefs.album_mode
 
-	def show_in_gal(self, track: TrackClass, silent: bool = False) -> None:
+	def show_in_gal(self, _track: TrackClass, silent: bool = False) -> None:
 		# self.goto_album(self.pctl.playlist_selected)
 		self.gui.gallery_animate_highlight_on = self.goto_album(self.pctl.selected_in_playlist)
 		if not silent:
 			self.gallery_select_animate_timer.set()
 
-	def last_fm_test(self, ignore) -> bool:
+	def last_fm_test(self, _ignore) -> bool:
 		return self.lastfm.connected
 
 	def heart_xmenu_colour(self) -> ColourRGBA | None:
@@ -10738,7 +10748,7 @@ class Tauon:
 		self.s_copy()
 		self.gui.lightning_copy = True
 
-	def transcode_deco(self):
+	def transcode_deco(self) -> list[ColourRGBA | str | None]:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
 			return [self.colours.menu_text, self.colours.menu_background, _("Transcode Single")]
 		return [self.colours.menu_text, self.colours.menu_background, _("Transcode Folder")]
@@ -10752,7 +10762,7 @@ class Tauon:
 		else:
 			self.show_message(_("No results found"))
 
-	def get_album_spot_url_deco(self, track_id: int):
+	def get_album_spot_url_deco(self, track_id: int) -> list[ColourRGBA | str | None]:
 		track_object = self.pctl.get_track(track_id)
 		if "spotify-album-url" in track_object.misc:
 			text = _("Copy Spotify Album URL")
@@ -10760,7 +10770,7 @@ class Tauon:
 			text = _("Lookup Spotify Album URL")
 		return [self.colours.menu_text, self.colours.menu_background, text]
 
-	def add_to_spotify_library_deco(self, track_id: int):
+	def add_to_spotify_library_deco(self, track_id: int) -> tuple[ColourRGBA, ColourRGBA | None, str]:
 		track_object = self.pctl.get_track(track_id)
 		text = _("Save Album to Spotify")
 		if track_object.file_ext != "SPTY":
@@ -15407,7 +15417,7 @@ class Tauon:
 				if self.gui.album_tab_mode:
 					self.show_in_gal(self.pctl.selected_in_playlist, silent=True)
 
-	def check_auto_update_okay(self, code, pl=None):
+	def check_auto_update_okay(self, code: str, pl: int | None = None) -> bool:
 		try:
 			cmds = shlex.split(code)
 		except Exception:
@@ -20044,7 +20054,7 @@ class TextBox2:
 		return ""
 
 	def draw(
-			self, x, y, colour, active=True, secret=False, font=13, width=0, click=False, selection_height=18, big=False) -> None:
+			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False) -> None:
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
@@ -22132,6 +22142,7 @@ class ToolTip3:
 		self.x = 0
 		self.y = 0
 		self.text = ""
+		self.rect: list[int] = []
 		self.font = None
 		self.show = False
 		self.width = 0
@@ -22140,8 +22151,7 @@ class ToolTip3:
 		self.pl_position = 0
 		self.click_exclude_point = (0, 0)
 
-	def set(self, x, y, text, font, rect) -> None:
-
+	def set(self, x: int, y: int, text: str, font, rect: list[int]) -> None:
 		y -= round(11 * self.gui.scale)
 		if self.show is False or self.y != y or x != self.x or self.pl_position != self.pctl.playlist_view_position:
 			self.timer.set()
@@ -24727,7 +24737,7 @@ class Over:
 
 		# self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
 
-	def button(self, x, y, text, plug=None, width=0, bg=None):
+	def button(self, x: int, y: int, text: str, plug=None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
 		refresh when you pan the mouse over it"""
 		w = width
@@ -24763,7 +24773,7 @@ class Over:
 
 		return hit
 
-	def button2(self, x, y, text, width=0, center_text=False, force_on=False):
+	def button2(self, x: int, y: int, text: str, width: int = 0, center_text: bool = False, force_on: bool = False) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
 		refresh when you pan the mouse over it"""
 		w = width
@@ -24793,7 +24803,7 @@ class Over:
 			self.ddt.text(text_position, text, self.colours.box_button_text, 211, bg=real_bg)
 		return hit
 
-	def toggle_square(self, x, y, function, text: str , click: bool = False, subtitle: str = "") -> bool:
+	def toggle_square(self, x: int, y: int, function, text: str , click: bool = False, subtitle: str = "") -> bool:
 		gui     = self.gui
 		colours = self.colours
 		x = round(x)
@@ -26981,12 +26991,12 @@ class TopPanel:
 
 		self.adds = []
 
-	def left_overflow_switch_playlist(self, pl) -> None:
+	def left_overflow_switch_playlist(self, pl: int) -> None:
 		self.prime_side = 0
 		self.prime_tab = pl
 		self.pctl.switch_playlist(pl)
 
-	def right_overflow_switch_playlist(self, pl) -> None:
+	def right_overflow_switch_playlist(self, pl: int) -> None:
 		self.prime_side = 1
 		self.prime_tab = pl
 		self.pctl.switch_playlist(pl)
@@ -31080,7 +31090,7 @@ class ScrollBox:
 		self.d_position = 0
 
 	def draw(
-		self, x: int, y: int, w: int, h: int, value: int, max_value: int, force_dark_theme: bool = False, click=None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> int:
+		self, x: int, y: int, w: int, h: int, value: int, max_value: int, force_dark_theme: bool = False, click: bool | None = None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> int:
 		if max_value < 2:
 			return 0
 
@@ -31289,13 +31299,13 @@ class RadioBox:
 		self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
 		self.run_proxy: bool = True
 
-	def parse_vorbis_okay(self):
+	def parse_vorbis_okay(self) -> bool:
 		return (
 			self.loaded_url not in self.websocket_source_urls) and \
 			"radio.plaza.one" not in self.loaded_url and \
 			"gensokyoradio.net" not in self.loaded_url
 
-	def search_country(self, text) -> None:
+	def search_country(self, text: str) -> None:
 		if len(text) == 2 and text.isalpha():
 			self.search_radio_browser(
 				f"/json/stations/search?countrycode={text}&order=votes&limit=250&reverse=true")
@@ -32954,7 +32964,7 @@ class ArtistList:
 		self.saves[current_pl.uuid_int] = save
 		self.gui.update += 1
 
-	def locate_artist_letter(self, text) -> None:
+	def locate_artist_letter(self, text: str) -> None:
 		if not text or self.prefs.artist_list_sort_mode != "alpha":
 			return
 
@@ -32985,7 +32995,7 @@ class ArtistList:
 		if viewing_pl_id in self.saves:
 			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
-	def draw_card_text_only(self, artist, x: int, y: int, w: int, area, thin_mode, line1_colour, line2_colour, light_mode, bg) -> None:
+	def draw_card_text_only(self, artist: str, x: int, y: int, w: int, area: list[int], thin_mode: bool, line1_colour: ColourRGBA, line2_colour: ColourRGBA, light_mode: bool, bg: ColourRGBA) -> None:
 		album_mode = False
 		for albums in self.current_album_counts.values():
 			if len(albums) > 1:
@@ -33019,7 +33029,7 @@ class ArtistList:
 		# self.ddt.text((x_text, y + self.tab_h // 2 - 2 * self.gui.scale), text, line2_colour, count_font,
 		#          extra_text_space + w - x_text - 15 * self.gui.scale, bg=bg)
 
-	def draw_card_with_thumbnail(self, artist:str, x: int, y: int, w: int, area: list[int], thin_mode: bool, line1_colour: ColourRGBA, line2_colour: ColourRGBA, light_mode: bool, bg: ColourRGBA) -> None:
+	def draw_card_with_thumbnail(self, artist: str, x: int, y: int, w: int, area: list[int], thin_mode: bool, line1_colour: ColourRGBA, line2_colour: ColourRGBA, light_mode: bool, bg: ColourRGBA) -> None:
 		if artist not in self.thumb_cache:
 			self.load_img(artist)
 
@@ -40043,9 +40053,9 @@ def year_s(plt: list[tuple[list[int], str, str]]) -> list[int]:
 		temp += album[0]
 	return temp
 
-def parse_generator(string: str):
-	cmds = []
-	quotes = []
+def parse_generator(string: str) -> tuple[list[str], list[str], bool]:
+	cmds: list[str] = []
+	quotes: list[str] = []
 	current = ""
 	q_string = ""
 	inquote = False

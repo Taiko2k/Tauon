@@ -17,7 +17,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import logging
 import os
 
@@ -26,6 +25,7 @@ from gi import require_version
 
 require_version("Rsvg", "2.0")
 from gi.repository import Rsvg
+
 
 def render_icons(source_directory: str, output_directory: str, scale: int) -> None:
 	"""Render SVG files to PNG"""
