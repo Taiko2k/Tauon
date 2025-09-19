@@ -37563,7 +37563,6 @@ class TimedLyricsEdit:
 			else:
 				full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
 				self.structure[self.line_active+1] = full_line
-			self.scroll_position -= self.yy
 		self.queue_next_frame = True
 
 	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool | None:
