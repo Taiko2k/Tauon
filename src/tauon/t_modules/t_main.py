@@ -19837,7 +19837,6 @@ class TimedLyricsRen:
 		if not self.ready:
 			return False
 
-
 		line_active = -1
 		last = -1
 
@@ -19851,12 +19850,14 @@ class TimedLyricsRen:
 			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 			y_center = y + (h/2) - (spacing)
+			allowed_width = round(w - 20 * self.gui.scale)
 		else:
 			scroll_to = 0
 			bg = self.colours.lyrics_panel_background
 			font_size = 20
 			spacing = round(10 * self.gui.scale)
 			y_center = self.window_size[1]/2
+			allowed_width = round(w - 20 * self.gui.scale) - 108
 
 		# reset scroll position after 5 seconds
 		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == PlayingState.PLAYING:
@@ -19886,7 +19887,7 @@ class TimedLyricsRen:
 			self.scroll_position = scroll_to
 			self.line_heights = []
 			for i, line in enumerate(self.data):
-				drop_w, line_h = self.ddt.get_text_wh(line[1], font_size, w - 20 * self.gui.scale, True)
+				drop_w, line_h = self.ddt.get_text_wh(line[1], font_size, allowed_width, True)
 				self.line_heights.append( line_h + spacing )
 			self.temp_scale = self.gui.scale
 			self.temp_w = w
@@ -19932,7 +19933,7 @@ class TimedLyricsRen:
 				sum( self.line_heights[i: max(0,line_active) ] ) + \
 				sum( self.line_heights[ max(line_active,0) :i] )
 
-			if possible_y > 0 and possible_y < self.window_size[1]:
+			if 0 < possible_y and possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
@@ -19944,14 +19945,14 @@ class TimedLyricsRen:
 					if self.colours.lm:
 						colour = ColourRGBA(180, 130, 210, 255)
 
-				location = [ round(x), round(possible_y), 4, round(w - 20 * self.gui.scale)-12 ]
+				location = [ round(x), round(possible_y), 4, allowed_width - 12 ]
 				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
 				text = line[1]
 				if text.rstrip() == "":
 					text = "♪♪♪"
-				line_h = self.ddt.text(location, text, colour, font_size, w - 20 * self.gui.scale, bg)
+				line_h = self.ddt.text(location, text, colour, font_size, allowed_width, bg)
 
-				collider = [ round(x), round(possible_y - spacing/2), round(w - 20 * self.gui.scale), self.line_heights[i] ]
+				collider = [ round(x), round(possible_y - spacing/2), allowed_width, self.line_heights[i] ]
 				association = collider, line, i
 				line_positions.append( association )
 
