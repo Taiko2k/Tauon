@@ -19962,7 +19962,7 @@ class TimedLyricsRen:
 			and (not h or y-25*self.gui.scale < self.inp.mouse_position[1] < y+h-25*self.gui.scale):
 			for rendered_line in line_positions:
 				if self.coll(rendered_line[0]):
-					self.pctl.seek_time(rendered_line[1][0])
+					self.pctl.seek_time(rendered_line[1][0] + self.prefs.sync_lyrics_time_offset/1000)
 					self.scroll_position = scroll_to
 					self.teleport_line = rendered_line[2]
 					self.temp_line = rendered_line[2]
@@ -37096,9 +37096,11 @@ class TimedLyricsEdit:
 		self.text_timer       = Timer() # should display lyrics search indicator
 
 		# nudge timestamp
-		self.check_timer        = Timer() # preview timing after half a second
-		self.check_line:    int = -1
-		self.check: bool | None = None    # True if previewing now, False if waiting to preview, None if disengaged
+		self.check_timer          = Timer() # preview timing after half a second
+		self.check_line:      int = -1
+		self.check:   bool | None = None    # True if previewing now, False if waiting to preview, None if disengaged
+		self.alt_timer            = Timer()
+		self.alted:          bool = False
 
 		# lrclib upload
 		self.upload_synced:                                      bool = True
@@ -37420,6 +37422,8 @@ class TimedLyricsEdit:
 			)
 			self.autosave()
 		else:
+			if ( self.inp.key_lalt or self.inp.key_ralt ):
+				self.alted = True
 			if timed > 0:
 				if fetch_text:
 					return lyrics
@@ -37537,8 +37541,10 @@ class TimedLyricsEdit:
 	# SYNCED EDITING FUNCTIONS
 
 	def previous(self, prev: float) -> None:
-		self.pctl.seek_time(prev)
-		if (len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0) and self.structure[self.line_active][1]>prev \
+		self.pctl.seek_time(prev + self.prefs.sync_lyrics_time_offset/1000)
+		if (self.inp.key_lalt or self.inp.key_ralt):
+			self.alted = True
+		if ((len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0)) and self.structure[self.line_active][1]>prev \
 			and not (self.inp.key_lalt or self.inp.key_ralt):
 			stamp, time, line = self.structure[self.line_active]
 			stamp = "??:??.??"
@@ -37551,6 +37557,8 @@ class TimedLyricsEdit:
 
 	def time_next_line(self, current: bool = False) -> None:
 		time = self.pctl.decode_time
+		if current:
+			self.alted = True
 		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
@@ -37565,10 +37573,10 @@ class TimedLyricsEdit:
 				self.structure[self.line_active+1] = full_line
 		self.queue_next_frame = True
 
-	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool | None:
+	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool:
 		stamp, time, line = self.structure[current_line]
 		if time == -1.0:
-			return None
+			return False
 
 		if self.inp.key_ctrl_down or self.inp.key_rctrl_down:
 			adjust = 0.01
@@ -37594,6 +37602,7 @@ class TimedLyricsEdit:
 		if old_time == time:
 			return False
 
+		self.alted = True
 		time = round(time, 2)
 		if current_line != 0 and self.structure[current_line - 1][1] != -1.0:
 			time = max( time, self.structure[current_line - 1][1] )
@@ -37618,13 +37627,13 @@ class TimedLyricsEdit:
 			self.recenter_timeout.set()
 			if self.pctl.playing_state != PlayingState.PLAYING:
 				self.pctl.stop(update_gui=False)
-				self.pctl.jump_time = self.structure[line_number][1]
+				self.pctl.jump_time = self.structure[line_number][1] + self.prefs.sync_lyrics_time_offset/1000
 				self.pctl.play(update_gui=False)
 				self.line_active = line_number
 				self.check_timer.set()
 				self.check = True
 			else:
-				self.pctl.decode_time = self.structure[line_number][1]
+				self.pctl.decode_time = self.structure[line_number][1] + self.prefs.sync_lyrics_time_offset/1000
 				self.pctl.new_time = self.pctl.decode_time
 				self.pctl.playing_time = self.pctl.decode_time
 				self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
@@ -37692,7 +37701,7 @@ class TimedLyricsEdit:
 			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
 			if time >= 0 and button:
 				self.pctl.stop()
-				self.pctl.jump_time = time
+				self.pctl.jump_time = time + self.prefs.sync_lyrics_time_offset/1000
 				self.pctl.play()
 				self.scroll_position += (line_number-self.line_active)*self.yy
 
@@ -37980,10 +37989,8 @@ class TimedLyricsEdit:
 								continue
 							if rendered_line[0][0] < self.inp.mouse_position[1] < rendered_line[0][1]:
 								if self.inp.mouse_click and rendered_line[1] != -1.0:
-									self.pctl.seek_time(rendered_line[1])
+									self.pctl.seek_time(rendered_line[1] + self.prefs.sync_lyrics_time_offset/1000)
 									self.scroll_position = scroll_to
-								elif self.inp.key_lalt or self.inp.key_ralt:
-									did_one_line = self.scroll_timestamp(i, False)
 								break
 
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
@@ -38004,7 +38011,7 @@ class TimedLyricsEdit:
 							did_one_line = True
 
 			# KEYBOARD SHORTCUTS
-			if not did_one_line:#self.pctl.playing_state != PlayingState.PLAYING and
+			if not did_one_line: # self.pctl.playing_state != PlayingState.PLAYING and
 				if (self.inp.key_lalt or self.inp.key_ralt):
 					self.scroll_timestamp(self.line_active)
 
@@ -38016,13 +38023,30 @@ class TimedLyricsEdit:
 				elif self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1] < 0:
 					pass
 				elif self.pctl.playing_state == PlayingState.PLAYING:
-					self.pctl.seek_time(self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1])
+					self.pctl.seek_time(self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1] + self.prefs.sync_lyrics_time_offset/1000)
 					self.line_active -= self.inp.key_up_press - self.inp.key_down_press
+					self.alted = True
 				elif self.pctl.playing_state != PlayingState.STOPPED:
-					self.pctl.decode_time = self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1]
+					self.pctl.decode_time = self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1] + self.prefs.sync_lyrics_time_offset/1000
 					self.pctl.new_time = self.pctl.decode_time
 					self.pctl.playing_time = self.pctl.decode_time
 					self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
+					self.alted = True
+			elif self.alt_timer.get() < 0.3 and not self.alted and not (self.inp.key_lalt or self.inp.key_ralt) and self.structure[self.line_active][1] >= 0:
+				if self.pctl.playing_state == PlayingState.PLAYING:
+					self.pctl.seek_time(self.structure[self.line_active][1] + self.prefs.sync_lyrics_time_offset/1000)
+					self.line_active -= self.inp.key_up_press - self.inp.key_down_press
+				elif self.pctl.playing_state != PlayingState.STOPPED:
+					self.pctl.decode_time = self.structure[self.line_active][1] + self.prefs.sync_lyrics_time_offset/1000
+					self.pctl.new_time = self.pctl.decode_time
+					self.pctl.playing_time = self.pctl.decode_time
+					self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
+				self.alted = True
+			elif self.alt_timer.get() > 0.3:
+				self.alted = False
+
+			if (self.inp.key_lalt or self.inp.key_ralt):
+				self.alt_timer.set()
 
 			# ctrl s to save
 			if (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_s_press:
