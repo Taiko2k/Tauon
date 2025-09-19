@@ -5,7 +5,7 @@ pylast/
 PyLyrics/
 pypresence/
 cache/
-user-data/
+user-data*/
 .idea/
 sdl2/
 fonts/
@@ -32,3 +32,4 @@ src/tauon_music_box.egg-info
 kissfft.tar.gz
 miniaudio.tar.gz
 debug
+lrclib-solver
