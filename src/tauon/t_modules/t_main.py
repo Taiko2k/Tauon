@@ -6790,8 +6790,8 @@ class Tauon:
 
 									try:
 										l = str( Path.from_uri(l) )
-									except:
-										pass
+									except Exception:
+										logging.exception("Unknown error getting Path from URI")
 
 									if not Path(l).is_absolute():
 										l = str(Path(pl_dir / Path(l)).resolve())
@@ -8269,7 +8269,8 @@ class Tauon:
 				if not track.is_network:
 					try:
 						Path( track.fullpath ).relative_to( pl_file.parent, walk_up=True )
-					except:
+					except Exception:
+						logging.exception("Unknown exception, probably tried to use relative paths")
 						self.show_message(
 							_("Cannot use relative paths"),
 							_("One or more tracks are stored on a separate drive from the playlist file."),
@@ -8313,7 +8314,8 @@ class Tauon:
 				if not track.is_network:
 					try:
 						Path( track.fullpath ).relative_to( pl_file.parent, walk_up=True )
-					except:
+					except Exception:
+						logging.exception("Unknown exception, probably tried to use relative paths")
 						self.show_message(
 							_("Cannot use relative paths"),
 							_("One or more tracks are stored on a separate drive from the playlist file."),
@@ -8328,7 +8330,8 @@ class Tauon:
 			track = self.pctl.master_library[number]
 			try:
 				path = track.fullpath
-			except:
+			except Exception:
+				logging.exception("Unknown exception getting track fullpath")
 				continue
 			if relative:
 				path = Path( track.fullpath ).relative_to( pl_file.parent, walk_up=True )
@@ -42387,8 +42390,8 @@ def main(holder: Holder) -> None:
 				# 		logging.warning(f"Master library was modified! @ {exec_info}")
 				#
 				# 	watch(bag.master_library, callback=logchange3)
-				# except:
-				# 	logging.warning("Module Watchpoints not found")
+				# except Exception:
+				# 	logging.exception("Module Watchpoints not found")
 			bag.master_count = save[1]
 			# try: # todo remove me before release!
 			# 	from watchpoints import watch
@@ -42396,8 +42399,8 @@ def main(holder: Holder) -> None:
 			# 		logging.warning(f"Master count was modified! @ {exec_info}")
 			#
 			# 	watch(bag.master_count, callback=logchange2)
-			# except:
-			# 	logging.warning("Module Watchpoints not found")
+			# except Exception:
+			# 	logging.exception("Module Watchpoints not found")
 
 			bag.playlist_playing = save[2]
 			bag.active_playlist_viewing = save[3]
@@ -42415,8 +42418,8 @@ def main(holder: Holder) -> None:
 						# 	def logchange(frame, elem, exec_info):
 						# 		logging.warning(f"A playlist was modified! @ {exec_info}")
 						# 	watch(p.playlist_ids, callback=logchange)
-						# except:
-						# 	logging.warning("Module Watchpoints not found")
+						# except Exception:
+						# 	logging.exception("Module Watchpoints not found")
 
 						if i == bag.active_playlist_viewing:
 							bag.default_playlist = p.playlist_ids
