@@ -7,9 +7,9 @@ assignees: ''
 ---
 
 <!-- Please fill out as much as you can. Leave fields empty if not applicable. -->
-<!-- Text between "<!--" and "-->" will be deleted from your finalized post. -->
+<!-- Text between "<!––" and "––>" will be deleted from your finalized post. -->
 
-**Desktop (please complete the following information):**
+**Desktop<!--(please complete the following information)-->**
 - OS: <!-- e.g. Arch Linux/Windows/macOS -->
 - OS version: <!-- e.g. rolling/11/15.2 -->
 - Tauon Version: <!-- e.g. 7.9.0, see Menu->Settings->About -->
@@ -19,6 +19,7 @@ assignees: ''
 <!-- A clear and concise description of what the bug is. -->
 
 **To Reproduce**
+
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '....'
@@ -34,8 +35,9 @@ Steps to reproduce the behavior:
 **Tauon log**
 <details><summary>Logfiles</summary>
 
+<!--
 ```python
-<!-- Example Python stack trace
+ Example Python stack trace
 Traceback (most recent call last):
   File "/app/bin/tauon.py", line 359, in <module>
     exec(main)
@@ -45,4 +47,5 @@ Traceback (most recent call last):
     prefs.scale_want = window_size[0] / logical_size[0]
                        ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
 ZeroDivisionError: division by zero
+```
 -->
