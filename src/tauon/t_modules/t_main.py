@@ -277,6 +277,7 @@ except Exception:
 if TYPE_CHECKING:
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
+	from typing import Any, ClassVar
 
 	from PIL.ImageFile import ImageFile
 	from pylast import LibreFMNetwork
@@ -332,7 +333,7 @@ CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
-	assets: list[LoadImageAsset] = []
+	assets: ClassVar[list[LoadImageAsset]] = []
 
 	def __init__(
 		self, *, bag: Bag, path: str, is_full_path: bool = False, reload: bool = False, scale_name: str = ""
@@ -366,14 +367,14 @@ class LoadImageAsset:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: float, y: float, colour: ColourRGBA | None = None) -> None:
+	def render(self, x: float, y: float, _colour: ColourRGBA | None = None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
 		sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.rect)
 
 class WhiteModImageAsset:
 	# TODO(Martin): Global class var!
-	assets: list[WhiteModImageAsset] = []
+	assets: ClassVar[list[WhiteModImageAsset]] = []
 
 	def __init__(self, *, bag: Bag, path: str, reload: bool = False, scale_name: str = "") -> None:
 		self.bag  = bag
@@ -1922,7 +1923,7 @@ class PlayerCtl:
 		self.tauon.thread_manager.ready("worker")
 
 
-	def try_reload_playlist_from_file(self, playlist: TauonPlaylist, warnings: bool = False) -> None:
+	def try_reload_playlist_from_file(self, playlist: TauonPlaylist, _warnings: bool = False) -> None:
 		"""Reload designated playlist from file if it meets the requirements"""
 		if not playlist.auto_import:
 			return
@@ -1952,7 +1953,7 @@ class PlayerCtl:
 				playlist.playlist_ids[:] = p[:]
 
 			elif playlist.export_type == "xspf":
-				p, stations, name = self.tauon.parse_xspf(str(path))
+				p, stations, _name = self.tauon.parse_xspf(str(path))
 				playlist.playlist_ids[:] = p[:]
 
 			playlist.file_size = path.stat().st_size
@@ -2218,8 +2219,8 @@ class PlayerCtl:
 	def delete_playlist_force(self, index: int) -> None:
 		self.delete_playlist(index, force=True, check_lock=True)
 
-	def delete_playlist_by_id(self, id: int, force: bool = False, check_lock: bool = False) -> None:
-		self.delete_playlist(self.id_to_pl(id), force=force, check_lock=check_lock)
+	def delete_playlist_by_id(self, pl_id: int, force: bool = False, check_lock: bool = False) -> None:
+		self.delete_playlist(self.id_to_pl(pl_id), force=force, check_lock=check_lock)
 
 	def delete_playlist_ask(self, index: int) -> None:
 		if self.gui.radio_view:
@@ -2235,9 +2236,9 @@ class PlayerCtl:
 		self.gui.message_box_confirm_reference = (self.pl_to_id(index), True, True)
 		self.show_message(_("Are you sure you want to delete playlist: {name}?").format(name=self.multi_playlist[index].title), mode="confirm")
 
-	def id_to_pl(self, id: int) -> int | None:
+	def id_to_pl(self, pl_id: int) -> int | None:
 		for i, item in enumerate(self.multi_playlist):
-			if item.uuid_int == id:
+			if item.uuid_int == pl_id:
 				return i
 		return None
 
@@ -2767,7 +2768,7 @@ class PlayerCtl:
 
 		self.deduct_shuffle(self.target_object.index)
 
-	def play_target(self, gapless: bool = False, jump: bool = False, play: bool = True, update_gui: bool = True) -> None:
+	def play_target(self, _gapless: bool = False, jump: bool = False, play: bool = True, update_gui: bool = True) -> None:
 		self.tauon.thread_manager.ready_playback()
 
 		#logging.info(self.track_queue)
@@ -3941,10 +3942,10 @@ class LastFMapi:
 		return pylast.LastFMNetwork
 
 	def auth1(self) -> None:
+		r"""Step 1 where the user clicks \"Login\""""
 		if not self.last_fm_enable:
 			self.show_message(_("Optional module python-pylast not installed"), mode="warning")
 			return
-		# This is step one where the user clicks "login"
 
 		if self.network is None:
 			self.no_user_connect()
@@ -3957,7 +3958,7 @@ class LastFMapi:
 		webbrowser.open(self.url, new=2, autoraise=True)
 
 	def auth2(self) -> None:
-		"""This is step 2 where the user clicks \"Done\""""
+		r"""Step 2 where the user clicks \"Done\""""
 		if self.sg is None:
 			self.show_message(_("You need to log in first"))
 			return
@@ -3984,7 +3985,7 @@ class LastFMapi:
 			self.tauon.toggle_lfm_auto()
 
 	def auth3(self) -> None:
-		"""This is used for 'logout'"""
+		"""Used for 'logout'"""
 		self.prefs.last_fm_token = None
 		self.prefs.last_fm_username = ""
 		self.show_message(_("Logout will complete on app restart."))
@@ -4868,7 +4869,7 @@ class Menu:
 	# TODO(Martin): Global class vars!
 	switch = 0
 	count = switch + 1
-	instances: list[Menu] = []
+	instances: ClassVar[list[Menu]] = []
 	active = False
 
 	def rescale(self) -> None:
@@ -5624,7 +5625,7 @@ class ThumbTracks:
 			return None
 
 		image_name = track.album + track.parent_folder_path + str(offset)
-		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()
+		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()  # noqa: S324 - not a security hash
 
 		t_path = self.tauon.e_cache_directory / f"{image_name}.jpg"
 
@@ -18685,7 +18686,7 @@ class SubsonicService:
 
 		return io.BytesIO(response)
 
-	def resolve_stream(self, key):
+	def resolve_stream(self, key: str) -> (tuple[str, dict[str, str]] | bytes | Any | None):
 		p = {"id": key}
 		if self.prefs.network_stream_bitrate > 0:
 			p["maxBitRate"] = self.prefs.network_stream_bitrate
