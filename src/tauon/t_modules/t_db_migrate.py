@@ -1,4 +1,5 @@
 """Upgrade from older versions"""
+
 from __future__ import annotations
 
 import copy
@@ -40,13 +41,15 @@ def database_migrate(
 	Prefs,
 	GuiVar,
 	dict[int, str],
-	list[RadioPlaylist]]:
+	list[RadioPlaylist],
+]:
 	"""Migrate database to a newer version if we're behind
 
 	Returns all the objects that could've been possibly changed:
 		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
 	"""
 	from tauon.t_modules.t_main import uid_gen
+
 	show_message = tauon.show_message
 
 	if db_version <= 0:
@@ -81,7 +84,8 @@ def database_migrate(
 			setattr(master_library[key], "lyrics", "")
 			setattr(master_library[key], "track_total", "")
 		show_message(
-			"Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)")
+			"Upgrade complete. Note: New attributes such as disk number won't show for existing tracks (delete state.p to reset)"
+		)
 
 	if db_version <= 1.4:  # noqa: PLR2004
 		logging.info("Updating database to version 1.5")
@@ -126,7 +130,9 @@ def database_migrate(
 					star_store.db[n_key] = n_value
 
 			diff = old_total - star_store.get_total()
-			logging.info(f"New total: {int(diff)} Seconds could not be matched to tracks. Total playtime won't be affected")
+			logging.info(
+				f"New total: {int(diff)} Seconds could not be matched to tracks. Total playtime won't be affected"
+			)
 			star_store.db[("", "", "LOST")] = [diff, ""]
 			logging.info("Upgrade Complete")
 		except Exception:
@@ -177,8 +183,8 @@ def database_migrate(
 		for key, value in master_library.items():
 			setattr(master_library[key], "is_network", False)
 		# for i in range(len(multi_playlist)):
-		#	 if len(multi_playlist[i]) < 10:
-		#		 multi_playlist[i].append(False)
+		# 	if len(multi_playlist[i]) < 10:
+		# 		multi_playlist[i].append(False)
 
 	if db_version <= 26:  # noqa: PLR2004
 		logging.info("Updating database to version 27")
@@ -287,7 +293,7 @@ def database_migrate(
 		logging.info("Updating database to version 42")
 
 		for key, value in gen_codes.items():
-			gen_codes[key] = value.replace("f\"", "p\"")
+			gen_codes[key] = value.replace('f"', 'p"')
 
 		if install_directory != config_directory and (config_directory / "input.txt").is_file():
 			f = (config_directory / "input.txt").open("r")
@@ -299,7 +305,6 @@ def database_migrate(
 			for line in lines:
 				line = line.strip()
 				if "rename-playlist" in line:
-
 					f.write(line + "\n")
 
 					line = "new-playlist T Ctrl\n"
@@ -360,8 +365,9 @@ def database_migrate(
 		logging.info("Updating database to version 48")
 		if (user_directory / "spot-r-token").is_file():
 			show_message(
-			_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
-			_("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"))
+				_("Welcome to v6.1.0. Due to changes, please re-authorise Spotify"),
+				_("You can do this by clicking 'Forget Account', then 'Authroise' in Settings > Accounts > Spotify"),
+			)
 
 	if db_version <= 48:  # noqa: PLR2004
 		logging.info("Fix bad upgrade, now 49")
@@ -376,7 +382,8 @@ def database_migrate(
 		if (user_directory / "spot-r-token").is_file():
 			show_message(
 				_("Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"),
-				_("You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"))
+				_("You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"),
+			)
 			(user_directory / "spot-r-token").unlink()
 
 	if db_version <= 54:  # noqa: PLR2004
@@ -387,7 +394,6 @@ def database_migrate(
 	if db_version <= 55:  # noqa: PLR2004
 		logging.info("Update to db 56")
 		for key, value in master_library.items():
-
 			if hasattr(value, "track_gain"):
 				if value.track_gain != 0:
 					value.misc["replaygain_track_gain"] = value.track_gain
@@ -432,7 +438,8 @@ def database_migrate(
 		if prefs.spotify_token:
 			show_message(
 				_("Upgrade to v6.5.1. It looks like you are using Spotify."),
-				_("Please click 'Authorise' again in the settings"))
+				_("Please click 'Authorise' again in the settings"),
+			)
 		prefs.spotify_token = ""
 
 	if db_version <= 60:  # noqa: PLR2004
@@ -444,7 +451,8 @@ def database_migrate(
 			token_path.unlink()
 			show_message(
 				_("Upgrade to v6.5.3 complete"),
-				_("It looks like you are using Spotify. Please re-setup Spotify again in the settings"))
+				_("It looks like you are using Spotify. Please re-setup Spotify again in the settings"),
+			)
 
 	if db_version <= 61:  # noqa: PLR2004
 		logging.info("Updating database to version 62")
@@ -528,17 +536,21 @@ def database_migrate(
 					hidden=playlist[8],
 					locked=playlist[9],
 					parent_playlist_id=playlist[10],
-					persist_time_positioning=playlist[11]))
+					persist_time_positioning=playlist[11],
+				)
+			)
 		for queue in p_force_queue:
-				new_queue.append(
-					TauonQueueItem(
-						track_id=queue[0],
-						position=queue[1],
-						playlist_id=queue[2],
-						type=queue[3],
-						album_stage=queue[4],
-						uuid_int=queue[5],
-						auto_stop=queue[6]))
+			new_queue.append(
+				TauonQueueItem(
+					track_id=queue[0],
+					position=queue[1],
+					playlist_id=queue[2],
+					type=queue[3],
+					album_stage=queue[4],
+					uuid_int=queue[5],
+					auto_stop=queue[6],
+				)
+			)
 		multi_playlist = new_multi_playlist
 		p_force_queue = new_queue
 
@@ -556,29 +568,33 @@ def database_migrate(
 						country=station.get("country", ""),
 						website_url=station.get("website_url", ""),
 						icon=station.get("icon", ""),
-						stream_url_fallback=station.get("stream_url_unresolved", "")))
+						stream_url_fallback=station.get("stream_url_unresolved", ""),
+					)
+				)
 			new_radio_playlists.append(
 				RadioPlaylist(
-					uid=playlist["uid"],
-					name=playlist["name"],
-					scroll=playlist.get("scroll", 0),
-					stations=stations))
+					uid=playlist["uid"], name=playlist["name"], scroll=playlist.get("scroll", 0), stations=stations
+				)
+			)
 		radio_playlists = new_radio_playlists
 
-	if db_version <= 71: # This migration used both 71 and 72  # noqa: PLR2004
+	if db_version <= 71:  # This migration used both 71 and 72  # noqa: PLR2004
 		logging.info("Updating database to version 72")
 		logging.info("Creating a backup Star database star.p.bak71")
 		import pickle  # noqa: PLC0415
-		backup_star_db = (user_directory / "star.p.bak71")
+
+		backup_star_db = user_directory / "star.p.bak71"
 		if not backup_star_db.exists():
 			with backup_star_db.open("wb") as file:
 				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 		new_starstore_db: dict[tuple[str, str, str], StarRecord] = {}
-		old_record: list[int | str] = [] # Here just for typing
+		old_record: list[int | str] = []  # Here just for typing
 		for key, old_record in star_store.db.items():
 			if isinstance(old_record, StarRecord):
-				logging.warning("Record {old_record} was already a StarRecord, likely half-failed earlier migration, skipping this migration over…")
+				logging.warning(
+					"Record {old_record} was already a StarRecord, likely half-failed earlier migration, skipping this migration over…"
+				)
 				break
 			new_record = StarRecord()
 			new_record.playtime = old_record[0]
@@ -598,7 +614,6 @@ def database_migrate(
 		# prefs.playlist_exports = save[168]
 		logging.info("Updating database to version 73")
 		for key, item in prefs.playlist_exports.items():
-
 			playlist = None
 			for p in multi_playlist:
 				if p.uuid_int == key:
@@ -623,6 +638,5 @@ def database_migrate(
 			relative = item.get("relative")
 			if relative:
 				playlist.relative_export = relative
-
 
 	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

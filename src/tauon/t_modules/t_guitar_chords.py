@@ -4,33 +4,43 @@ At the moment unused, and not fully working due to broken vars which used to be 
 
 Used to work with api.guitarchord.com in the past.
 """
+
 from __future__ import annotations
 
 import logging
 import os
 import urllib.parse
-import sdl3
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
+import sdl3
 
 from tauon.t_modules.t_extra import ColourRGBA, TestTimer, filename_safe
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import TrackClass, Tauon
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
 # TODO(Martin): Dupe code here to make things work in a dirty fashion until t_main gets a bigger rework
-#from tauon.t_modules.t_main import copy_from_clipboard
+# from tauon.t_modules.t_main import copy_from_clipboard
+
 
 def copy_from_clipboard():
 	return sdl3.SDL_GetClipboardText().decode()
+
+
 # ENDTODO
+
 
 class GuitarChords:
 	def __init__(
-		self, tauon: Tauon, mouse_wheel: float, mouse_position: list[int], window_size: list[int],
+		self,
+		tauon: Tauon,
+		mouse_wheel: float,
+		mouse_position: list[int],
+		window_size: list[int],
 	) -> None:
+		# fmt:off
 		self.inp                   = tauon.inp
 		self.ddt                   = tauon.ddt
 		self.gui                   = tauon.gui
@@ -48,6 +58,7 @@ class GuitarChords:
 		self.scroll_position:  int = 0
 		self.ready: dict[str, int] = {}
 		self.widespace:        str = "　"
+		# fmt:on
 
 	def clear(self, track: TrackClass) -> None:
 		cache_title = self.get_cache_title(track)
@@ -115,16 +126,22 @@ class GuitarChords:
 			line = line.replace("\n", "")
 			line = line.replace("\r", "")
 
-			if not last and (len(line) < 6 or \
-				"    "   in line \
-				or "D "  in line \
-				or "Am " in line \
-				or "Fm"  in line \
-				or "Em " in line \
-				or "C "  in line \
-				or "G "  in line \
-				or "F "  in line \
-				or "Dm"  in line) and any(c.isalpha() for c in line):
+			if (
+				not last
+				and (
+					len(line) < 6
+					or "    " in line
+					or "D " in line
+					or "Am " in line
+					or "Fm" in line
+					or "Em " in line
+					or "C " in line
+					or "G " in line
+					or "F " in line
+					or "Dm" in line
+				)
+				and any(c.isalpha() for c in line)
+			):
 				last = line
 				continue
 
@@ -183,7 +200,8 @@ class GuitarChords:
 		try:
 			response = requests.get(
 				f"https://www.guitarparty.com/api/v3/core/search/?format=json&q={urllib.parse.quote(cache_title)}",
-				timeout=15)
+				timeout=15,
+			)
 		except Exception:
 			logging.exception("Error finding matching track on GuitarParty")
 			self.show_message(_("Error finding matching track on GuitarParty"))
@@ -214,7 +232,8 @@ class GuitarChords:
 		try:
 			response = requests.get(
 				f"https://www.guitarparty.com/api/v3/core/songs/{song['id']}/?format=json&q={urllib.parse.quote(cache_title)}",
-				timeout=15)
+				timeout=15,
+			)
 		except Exception:
 			logging.exception("Error getting song from GuitarParty")
 			self.show_message(_("Error getting song from GuitarParty"))
@@ -337,7 +356,6 @@ class GuitarChords:
 		return filename_safe(name, sub="_")
 
 	def render(self, track: TrackClass, x: int, y: int) -> bool:
-
 		cache_title = self.get_cache_title(track)
 
 		if self.current == cache_title:
@@ -370,7 +388,7 @@ class GuitarChords:
 			self.scroll_position = height * progress
 			# gui.update += 1
 			self.gui.frame_callback_list.append(TestTimer(0.3))
-				# time.sleep(0.032)
+			# time.sleep(0.032)
 
 		if self.mouse_wheel and self.gui.panelY < self.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
 			self.scroll_position += int(self.mouse_wheel * 30 * self.gui.scale * -1)

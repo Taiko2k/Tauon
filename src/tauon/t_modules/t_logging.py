@@ -6,6 +6,7 @@ from typing import override
 class CustomLoggingFormatter(logging.Formatter):
 	"""Nicely format logging.loglevel logs"""
 
+	# fmt:off
 	grey        = "\x1b[0;20m"
 	grey_bold   = "\x1b[0;1m"
 	yellow      = "\x1b[33;20m"
@@ -25,6 +26,7 @@ class CustomLoggingFormatter(logging.Formatter):
 		logging.ERROR:    red         + format_verbose + reset,
 		logging.CRITICAL: bold_red    + format_verbose + reset,
 	}
+	# fmt:on
 
 	@override
 	def format(self, record: LogRecord) -> str:
@@ -37,8 +39,8 @@ class CustomLoggingFormatter(logging.Formatter):
 		record.module = f"{record.module:^10}"
 		return formatter.format(record)
 
-class LogHistoryHandler(logging.Handler):
 
+class LogHistoryHandler(logging.Handler):
 	def __init__(self) -> None:
 		super().__init__()
 		self.log_history: list[LogRecord] = []

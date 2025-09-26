@@ -1,4 +1,3 @@
-
 """Tauon Music Box - Web interface module"""
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
@@ -39,11 +38,12 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
 
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	pass
 
-class VorbisMonitor:
 
+class VorbisMonitor:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.reset()
@@ -151,6 +151,7 @@ class VorbisMonitor:
 			new.write(b.read())
 			self.buffer = new
 
+
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False
 	start = 0
@@ -163,7 +164,6 @@ def send_file(path: str, mime: str, server) -> None:
 		start = int(start)
 
 	with open(path, "rb") as f:
-
 		f.seek(0, 2)
 		length = f.tell()
 		f.seek(start, 0)
@@ -189,7 +189,16 @@ def send_file(path: str, mime: str, server) -> None:
 				break
 			server.wfile.write(data)
 
-def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt, install_directory: str, strings: Strings, tauon: Tauon) -> int | None:
+
+def webserve(
+	pctl: PlayerCtl,
+	prefs: Prefs,
+	gui: GuiVar,
+	album_art_gen: AlbumArt,
+	install_directory: str,
+	strings: Strings,
+	tauon: Tauon,
+) -> int | None:
 	if prefs.enable_web is False:
 		return 0
 
@@ -211,7 +220,6 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 			return hashlib.md5((str(track.index) + track.title + track.artist).encode()).hexdigest()
 
 		def do_GET(self) -> None:
-
 			path = self.path
 
 			# logging.info(self.headers)
@@ -279,13 +287,14 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 				if track is None:
 					data = {"status": 0}
 				else:
-					data = {"status": pctl.playing_state,
-							"id": self.get_track_id(track),
-							"position": pctl.playing_time,
-							"duration": track.length,
-							"title": track.title,
-							"artist": track.artist,
-							}
+					data = {
+						"status": pctl.playing_state,
+						"id": self.get_track_id(track),
+						"position": pctl.playing_time,
+						"duration": track.length,
+						"title": track.title,
+						"artist": track.artist,
+					}
 				self.end_headers()
 				data = json.dumps(data).encode()
 				self.wfile.write(data)
@@ -339,17 +348,17 @@ def webserve(pctl: PlayerCtl, prefs: Prefs, gui: GuiVar, album_art_gen: AlbumArt
 	except Exception:
 		logging.exception("Failed starting radio page server!")
 
+
 def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 	play_timer = Timer()
 
 	class Server(BaseHTTPRequestHandler):
-
 		def log_message(self, format: str, *args) -> None:
 			logging.info(format % args)
 
 		def run_command(self, callback) -> None:
 			self.send_response(200)
-			#self.send_header("Content-type", "application/json")
+			# self.send_header("Content-type", "application/json")
 			self.end_headers()
 			callback()
 			self.wfile.write(b"OK")
@@ -366,7 +375,13 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			return levels, params
 
-		def get_track(self, track_position: int, playlist_index: int | None = None, track: TrackClass | None = None, album_id: int = -1) -> None:
+		def get_track(
+			self,
+			track_position: int,
+			playlist_index: int | None = None,
+			track: TrackClass | None = None,
+			album_id: int = -1,
+		) -> None:
 			if track is None:
 				if playlist_index is None:
 					playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
@@ -394,15 +409,16 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			return data
 
 		def do_GET(self) -> None:
-
 			path = self.path
-			#logging.info(self.headers)
+			# logging.info(self.headers)
 			if tauon.remote_limited and not tauon.chrome_mode:
 				self.send_response(404)
 				self.end_headers()
 				self.wfile.write(b"404 Not found")
 				return
-			if tauon.remote_limited and (not path.startswith("/api1/pic/medium/") and not path.startswith("/api1/file/")):
+			if tauon.remote_limited and (
+				not path.startswith("/api1/pic/medium/") and not path.startswith("/api1/file/")
+			):
 				self.send_response(404)
 				self.end_headers()
 				self.wfile.write(b"404 Not found")
@@ -468,24 +484,24 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					self.wfile.write(b"Invalid parameter")
 
 			# elif path.startswith("/api1/stream/"):
-			#	 param = path[13:]
+			# param = path[13:]
 			#
-			#	 if param.isdigit() and int(param) in pctl.master_library:
-			#		 track = pctl.master_library[int(param)]
-			#		 mime = "audio/mpeg"
-			#		 #mime = "audio/ogg"
-			#		 self.send_response(200)
-			#		 self.send_header("Content-type", mime)
-			#		 self.end_headers()
+			# if param.isdigit() and int(param) in pctl.master_library:
+			# 	track = pctl.master_library[int(param)]
+			# 	mime = "audio/mpeg"
+			# 	#mime = "audio/ogg"
+			# 	self.send_response(200)
+			# 	self.send_header("Content-type", mime)
+			# 	self.end_headers()
 			#
-			#		 cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libopus", "-f", "ogg", "-"]
-			#		 #cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libvorbis", "-f", "ogg", "-"]
-			#		 #cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libmp3lame", "-f", "mp3", "-"]
-			#		 encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			#		 while True:
-			#			 data = encoder.stdout.read(1024)
-			#			 if data:
-			#				 self.wfile.write(data)
+			# 	cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libopus", "-f", "ogg", "-"]
+			# 	#cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libvorbis", "-f", "ogg", "-"]
+			# 	#cmd = ["ffmpeg", "-i", track.fullpath, "-c:a", "libmp3lame", "-f", "mp3", "-"]
+			# 	encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			# 	while True:
+			# 		data = encoder.stdout.read(1024)
+			# 		if data:
+			# 			self.wfile.write(data)
 			elif path.startswith("/api1/playinghit/"):
 				param = path[17:]
 				if param.isdigit() and int(param) in pctl.master_library:
@@ -501,7 +517,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			elif path.startswith("/api1/file/"):
 				param = path[11:]
 
-				#logging.info(self.headers)
+				# logging.info(self.headers)
 				play_timer.hit()
 
 				if param.isdigit() and int(param) in pctl.master_library:
@@ -516,7 +532,6 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					send_file(track.fullpath, mime, self)
 
 			elif path.startswith("/api1/start/"):
-
 				levels, _ = self.parse_trail(path)
 				if len(levels) == 5:
 					playlist = levels[3]
@@ -563,7 +578,6 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				self.wfile.write(data)
 
 			elif path == "/api1/playlists":
-
 				l = []
 				for item in pctl.multi_playlist:
 					p = {}
@@ -603,7 +617,6 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
 					pl = tauon.id_to_pl(int(levels[3]))
 					if pl is not None:
-
 						data = self.get_track(int(levels[4]), pl)
 
 						playlist = pctl.multi_playlist[pl].playlist_ids
@@ -794,15 +807,15 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 	except Exception:
 		logging.exception("Failed starting web api server!")
 
+
 def controller(tauon: Tauon) -> None:
 	import base64
-	class Server(BaseHTTPRequestHandler):
 
+	class Server(BaseHTTPRequestHandler):
 		def log_message(self, format, *args) -> None:
 			logging.info(format % args)
 
 		def do_GET(self) -> None:
-
 			path = self.path
 			if path == "/raise/":
 				tauon.raise_window()
@@ -833,6 +846,7 @@ def controller(tauon: Tauon) -> None:
 			self.send_response(200)
 			self.end_headers()
 			tauon.wake()
+
 	logging.info("Start controller server")
 	try:
 		httpd = HTTPServer(("127.0.0.1", 7813), Server)
@@ -846,10 +860,9 @@ def controller(tauon: Tauon) -> None:
 	except Exception:
 		logging.exception("Failed starting controller server!")
 
+
 def authserve(tauon: Tauon) -> None:
-
 	class Server(BaseHTTPRequestHandler):
-
 		def log_message(self, format: str, *args) -> None:
 			logging.info(format % args)
 
@@ -857,12 +870,12 @@ def authserve(tauon: Tauon) -> None:
 			code = ""
 			path = self.path
 			# if path.startswith("/tidalredir"):
-			#	 self.send_response(200)
-			#	 self.send_header("Content-type", "text/plain")
-			#	 self.end_headers()
+			# 	self.send_response(200)
+			# 	self.send_header("Content-type", "text/plain")
+			# 	self.end_headers()
 			#
-			#	 tauon.tidal.login2(path)
-			#	 self.wfile.write(b"You can close this now and return to Tauon Music Box")
+			# 	tauon.tidal.login2(path)
+			# 	self.wfile.write(b"You can close this now and return to Tauon Music Box")
 
 			if path.startswith("/spotredir"):
 				self.send_response(200)
@@ -884,6 +897,7 @@ def authserve(tauon: Tauon) -> None:
 	httpd = HTTPServer(("127.0.0.1", 7811), Server)
 	httpd.serve_forever()
 	httpd.server_close()
+
 
 def stream_proxy(tauon: Tauon) -> None:
 	class Server(BaseHTTPRequestHandler):
