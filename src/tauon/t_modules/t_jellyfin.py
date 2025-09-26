@@ -491,6 +491,9 @@ class Jellyfin:
 				if len(artists) > 1:
 					nt.misc["artists"] = artists
 				nt.album_artist = track.get("AlbumArtist", "")
+				replay_gain = track.get("NormalizationGain", "")
+				if replay_gain:
+					nt.misc["replaygain_track_gain"] = float(replay_gain)
 				nt.title = track.get("Name", "")
 				nt.composer = "; ".join(d["Name"] for d in track.get("People", []) if d["Type"] == "Composer")
 				nt.length = track.get("RunTimeTicks", 0) / 10000000  # needs to be in seconds
