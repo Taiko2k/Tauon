@@ -44,8 +44,8 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import Tauon
 
-class StreamEnc:
 
+class StreamEnc:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.download_running = False
@@ -96,12 +96,13 @@ class StreamEnc:
 		self.download_process.start()
 		return True
 
-
 	def start_request(self) -> bool:
 		url = self.url
+
 		def NiceToICY(self) -> None:
 			class InterceptedHTTPResponse:
 				pass
+
 			if not url.endswith(".ts"):
 				line = self.fp.readline().replace(b"ICY 200 OK\r\n", b"HTTP/1.0 200 OK\r\n")
 			else:
@@ -119,7 +120,7 @@ class StreamEnc:
 		while True:
 			try:
 				r = urllib.request.Request(self.url)
-				#r.add_header('GET', '1')
+				# r.add_header('GET', '1')
 				if not self.url.endswith(".ts"):
 					r.add_header("Icy-MetaData", "1")
 				r.add_header("User-Agent", self.tauon.t_agent)
@@ -154,9 +155,18 @@ class StreamEnc:
 		self.pump_running = True
 
 		rate = str(self.tauon.prefs.samplerate)
+		# fmt:off
 		cmd = [
-			self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0",
-			"-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
+			self.tauon.get_ffmpeg(),
+			"-loglevel", "quiet",
+			"-i", "pipe:0",
+			"-acodec", "pcm_s16le",
+			"-f", "s16le",
+			"-ac", "2",
+			"-ar", rate,
+			"-",
+		]
+		# fmt:on
 
 		startupinfo = None
 		if self.tauon.msys:
@@ -216,7 +226,6 @@ class StreamEnc:
 
 			time.sleep(0.01)
 
-
 		decoder.terminate()
 		time.sleep(0.1)
 		try:
@@ -226,9 +235,7 @@ class StreamEnc:
 
 		self.pump_running = False
 
-
 	def encode(self) -> None:
-
 		self.encode_running = True
 
 		try:
@@ -255,7 +262,18 @@ class StreamEnc:
 			if target_file.is_file():
 				target_file.unlink()
 
-			cmd = [self.tauon.get_ffmpeg(), "-loglevel", "quiet", "-i", "pipe:0", "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", rate, "-"]
+			# fmt:off
+			cmd = [
+				self.tauon.get_ffmpeg(),
+				"-loglevel", "quiet",
+				"-i", "pipe:0",
+				"-acodec", "pcm_s16le",
+				"-f", "s16le",
+				"-ac", "2",
+				"-ar", rate,
+				"-",
+			]
+			# fmt:on
 
 			decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 			if sys.platform != "win32":
@@ -266,11 +284,21 @@ class StreamEnc:
 			old_tags = self.tauon.pctl.found_tags
 
 			##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
-			cmd = ["ffmpeg", "-loglevel", "quiet", "-f", "s16le", "-ar", rate, "-ac", "2", "-i", "pipe:0", str(target_file)]
+			# fmt:off
+			cmd = [
+				"ffmpeg",
+				"-loglevel", "quiet",
+				"-f", "s16le",
+				"-ar", rate,
+				"-ac", "2",
+				"-i", "pipe:0",
+				str(target_file),
+			]
+			# fmt:on
 			encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 			def save_track():
-				#self.tauon.recorded_songs.append(song)
+				# self.tauon.recorded_songs.append(song)
 
 				save_file = f"{datetime.datetime.now():%Y-%m-%d %H-%M-%S} - "
 				save_file += filename_safe(old_metadata)
@@ -287,34 +315,34 @@ class StreamEnc:
 				tags = self.tauon.pctl.tag_history.get(old_metadata, None)
 				if tags:
 					logging.info("Save metadata to file")
-					#logging.info(tags)
+					# logging.info(tags)
 					muta = mutagen.File(save_file, easy=True)
 					muta["artist"] = tags.get("artist", "")
 					muta["title"] = tags.get("title", "")
 					muta["album"] = tags.get("album", "")
 					# if tags["image"]:
-					#	 tags["image"].seek(0)
-					#	 im = Image.open(tags["image"])
-					#	 width, height = im.size
-					#	 tags["image"].seek(0)
+					# 	tags["image"].seek(0)
+					# 	im = Image.open(tags["image"])
+					# 	width, height = im.size
+					# 	tags["image"].seek(0)
 					#
-					#	 picture = Picture()
-					#	 tags["image"].seek(0)
-					#	 picture.data = tags["image"].read()
-					#	 picture.type = 3
-					#	 picture.desc = ""
-					#	 picture.mime = "image/jpeg"
-					#	 picture.width = width
-					#	 picture.height = height
+					# 	picture = Picture()
+					# 	tags["image"].seek(0)
+					# 	picture.data = tags["image"].read()
+					# 	picture.type = 3
+					# 	picture.desc = ""
+					# 	picture.mime = "image/jpeg"
+					# 	picture.width = width
+					# 	picture.height = height
 					#
-					#	 mode_to_bpp = {'1': 1, 'L': 8, 'P': 8, 'RGB': 24, 'RGBA': 32, 'CMYK': 32, 'YCbCr': 24, 'I': 32,
-					#					'F': 32}
-					#	 picture.depth = mode_to_bpp[im.mode]
+					# 	mode_to_bpp = {'1': 1, 'L': 8, 'P': 8, 'RGB': 24, 'RGBA': 32, 'CMYK': 32, 'YCbCr': 24, 'I': 32,
+					# 	'F': 32}
+					# 	picture.depth = mode_to_bpp[im.mode]
 					#
-					#	 picture_data = picture.write()
-					#	 encoded_data = base64.b64encode(picture_data)
-					#	 vcomment_value = encoded_data.decode("ascii")
-					#	 muta["metadata_block_picture"] = [vcomment_value]
+					# 	picture_data = picture.write()
+					# 	encoded_data = base64.b64encode(picture_data)
+					# 	vcomment_value = encoded_data.decode("ascii")
+					# 	muta["metadata_block_picture"] = [vcomment_value]
 
 					muta.save()
 
@@ -359,7 +387,11 @@ class StreamEnc:
 					return
 
 				if old_metadata != self.tauon.radiobox.song_key:
-					if (self.c < 400 and not old_metadata) or not target_file.exists() or target_file.stat().st_size < 100000:
+					if (
+						(self.c < 400 and not old_metadata)
+						or not target_file.exists()
+						or target_file.stat().st_size < 100000
+					):
 						old_metadata = self.tauon.radiobox.song_key
 					else:
 						logging.info("Split and save file")
@@ -475,8 +507,8 @@ class StreamEnc:
 							# Not enough data yet
 							continue
 
-						text = inter[1:follow + 1]
-						data2 = inter[follow + 1:]
+						text = inter[1 : follow + 1]
+						data2 = inter[follow + 1 :]
 
 						self.chunks[self.c] = data1 + data2
 						# Delete old data
@@ -499,7 +531,7 @@ class StreamEnc:
 								if "=" in tag:
 									a, b = tag.split("=", 1)
 									if a == "StreamTitle":
-										#logging.info("Set meta")
+										# logging.info("Set meta")
 										self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
 										break
 						except Exception:
