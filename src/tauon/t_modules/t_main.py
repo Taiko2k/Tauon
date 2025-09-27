@@ -69,7 +69,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
-from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer
+from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer, POINTER
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -35842,6 +35842,279 @@ class RadioView:
 			self.drag = None
 			gui.update += 1
 
+
+import OpenGL
+from OpenGL.GL import (
+	glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
+	glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+	glCheckFramebufferStatus, glDeleteFramebuffers, glDeleteTextures,
+	glViewport, glClear, glClearColor, glGetIntegerv,
+	GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER,
+	GL_TEXTURE_MAG_FILTER, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_S,
+	GL_TEXTURE_WRAP_T, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+	GL_FRAMEBUFFER_COMPLETE, GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
+	GL_TEXTURE_BINDING_2D, glFlush, glGetString, GL_VERSION, glFinish
+)
+
+
+class ProjectM:
+	def __init__(self):
+		self.lib = None
+		self.pm_instance = None
+
+	def load_library(self):
+		"""Load projectM library using ctypes"""
+		library_names = [
+			"libprojectM.so.4",  # Common on newer Linux
+			"libprojectM.so.3",
+			"libprojectM.so",  # Generic Linux
+			"libprojectM.4.dylib",  # macOS
+			"libprojectM.dylib",
+			"projectM.dll",  # Windows
+			"libprojectM.dll"
+		]
+
+		for lib_name in library_names:
+			try:
+				self.lib = ctypes.CDLL(lib_name)
+				print(f"Successfully loaded: {lib_name}")
+				return True
+			except OSError:
+				continue
+
+
+	def setup_function_signatures(self):
+		"""Define ctypes function signatures for basic projectM functions"""
+		if not self.lib:
+			return False
+
+		try:
+			# Define projectM settings structure
+			class ProjectMSettings(ctypes.Structure):
+				_fields_ = [
+					("mesh_size_x", c_int),
+					("mesh_size_y", c_int),
+					("fps", c_int),
+					("texture_size", c_int),
+					("window_width", c_int),
+					("window_height", c_int),
+					("preset_url", c_char_p),
+					("title_font_url", c_char_p),
+					("menu_font_url", c_char_p)
+				]
+
+			self.ProjectMSettings = ProjectMSettings
+
+			# projectm_create - Create projectM instance
+			self.lib.projectm_create.argtypes = None #[POINTER(ProjectMSettings)]
+			self.lib.projectm_create.restype = c_void_p
+
+			# # projectm_destroy - Destroy projectM instance
+			# self.lib.projectm_destroy.argtypes = [c_void_p]
+			# self.lib.projectm_destroy.restype = None
+			#
+			# # projectm_pcm_add_float - Add audio data
+			# self.lib.projectm_pcm_add_float.argtypes = [c_void_p, POINTER(c_float), c_uint, c_uint]
+			# self.lib.projectm_pcm_add_float.restype = None
+			#
+			# # projectm_opengl_render_frame - Render frame
+			# self.lib.projectm_opengl_render_frame.argtypes = [c_void_p]
+			# self.lib.projectm_opengl_render_frame.restype = None
+			#
+			# # projectm_get_preset_count - Get number of presets
+			# self.lib.projectm_get_preset_count.argtypes = [c_void_p]
+			# self.lib.projectm_get_preset_count.restype = c_uint
+			#
+			# # projectm_select_preset - Select preset by index
+			# self.lib.projectm_select_preset.argtypes = [c_void_p, c_uint, c_int]
+			# self.lib.projectm_select_preset.restype = None
+			#
+			# # projectm_select_next_preset - Next preset
+			# self.lib.projectm_select_next_preset.argtypes = [c_void_p, c_int]
+			# self.lib.projectm_select_next_preset.restype = None
+			#
+			# # projectm_select_previous_preset - Previous preset
+			# self.lib.projectm_select_previous_preset.argtypes = [c_void_p, c_int]
+			# self.lib.projectm_select_previous_preset.restype = None
+			#
+			# # projectm_load_preset_file - Load specific preset file
+			# self.lib.projectm_load_preset_file.argtypes = [c_void_p, c_char_p, c_int]
+			# self.lib.projectm_load_preset_file.restype = c_int
+
+			print("Function signatures set up successfully")
+			return True
+
+		except AttributeError as e:
+			print(f"Error setting up function signatures: {e}")
+			print("Some functions may not be available in your projectM version")
+			return False
+
+
+	def init(self, width=800, height=600, preset_path=None):
+		"""Initialize projectM with basic settings"""
+		if not self.lib:
+			return False
+
+		self.setup_function_signatures()
+
+		# Set default preset path if not provided
+		if preset_path is None:
+			possible_paths = [
+				"/usr/share/projectM/presets",
+				"/usr/share/projectm/presets",
+				"/usr/local/share/projectM/presets",
+				"/opt/projectM/share/projectM/presets",
+				"./presets"  # Local directory
+			]
+
+			preset_path = None
+			for path in possible_paths:
+				if os.path.exists(path):
+					preset_path = path
+					break
+
+			if not preset_path:
+				print("Warning: No preset directory found")
+				preset_path = "/usr/share/projectM/presets"  # Default fallback
+
+		# Create settings structure
+		settings = self.ProjectMSettings()
+		settings.mesh_size_x = 32
+		settings.mesh_size_y = 24
+		settings.fps = 60
+		settings.texture_size = 512
+		settings.window_width = width
+		settings.window_height = height
+		settings.preset_url = preset_path.encode('utf-8')
+		settings.title_font_url = None  # Optional
+		settings.menu_font_url = None  # Optional
+
+		# Create projectM instance
+		try:
+			self.pm_instance = self.lib.projectm_create(byref(settings))
+			if self.pm_instance:
+				print(f"ProjectM initialized successfully")
+				print(f"Preset path: {preset_path}")
+
+				# Get preset count
+				try:
+					count = self.lib.projectm_get_preset_count(self.pm_instance)
+					print(f"Found {count} presets")
+				except:
+					print("Could not get preset count")
+
+				return True
+			else:
+				print("Failed to create projectM instance")
+				return False
+
+		except Exception as e:
+			print(f"Error initializing projectM: {e}")
+			return False
+
+
+	def render_frame(self):
+		"""Render a projectM frame"""
+		if not self.pm_instance:
+			return False
+
+		try:
+			self.lib.projectm_opengl_render_frame(self.pm_instance)
+			return True
+		except Exception as e:
+			print(f"Error rendering frame: {e}")
+			return False
+
+
+projectm = ProjectM()
+
+class Milky:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.pctl          = tauon.pctl
+		self.gui           = tauon.gui
+		self.ddt           = tauon.ddt
+		self.coll          = tauon.coll
+		self.inp           = tauon.inp
+		self.renderer      = tauon.renderer
+		self.ready = False
+		self.render_texture = None
+		self.gl_texture_id = None
+		self.framebuffer = None
+
+	def render(self):
+		ddt = self.ddt
+		x = 300
+		y = 150
+		w = 200
+		h = 200
+		c = ColourRGBA(200, 0, 0, 255)
+		ddt.rect_si((x,y,w,h), c, 2)
+		srect = sdl3.SDL_FRect(x, y, w, h)
+
+		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
+
+		if not self.ready:
+
+			projectm.load_library()
+			projectm.init()
+
+			sdl3.SDL_ClearError()
+			sdl3.SDL_FlushRenderer(self.renderer)
+
+			context = sdl3.SDL_GL_GetCurrentContext()
+			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+
+			gl_texture_id = glGenTextures(1)
+			glBindTexture(GL_TEXTURE_2D, gl_texture_id)
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0,
+						 GL_RGBA, GL_UNSIGNED_BYTE, None)
+
+			# Step 3: Create framebuffer for rendering
+			self.framebuffer = glGenFramebuffers(1)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+								   GL_TEXTURE_2D, gl_texture_id, 0)
+
+			# Check framebuffer completeness
+			if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+				print("Framebuffer not complete!")
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glBindTexture(GL_TEXTURE_2D, 0)
+
+			props = sdl3.SDL_CreateProperties()
+			# Set properties to wrap the OpenGL texture
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, gl_texture_id)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, w)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, h)
+			#sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, sdl3.SDL_PIXELFORMAT_RGBA8888)
+			#sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+
+			# Create SDL texture from the OpenGL texture
+			self.render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
+
+			self.ready = True
+
+
+		sdl3.SDL_FlushRenderer(self.renderer)
+		glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+		glViewport(0, 0, w, h)
+		glClearColor(0.9, 0.3, 0, 1)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glBindFramebuffer(GL_FRAMEBUFFER, 0)
+		glFlush()
+		glFinish()
+
+		sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+
+
 class Showcase:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
@@ -44343,6 +44616,7 @@ def main(holder: Holder) -> None:
 	playlist_render = StandardPlaylist(tauon, pl_bg)
 	meta_box = MetaBox(tauon)
 	showcase = Showcase(tauon)
+	milky = Milky(tauon)
 
 	while pctl.running:
 		# bm.get('main')
@@ -48849,6 +49123,7 @@ def main(holder: Holder) -> None:
 		# 			gui.level_peak[0] = 0
 		# 		gui.time_passed -= 0.020
 		# 	gui.level_update = True
+		milky.render()
 
 		if gui.level_update is True and not resize_mode and gui.mode != 3:
 			gui.level_update = False
