@@ -35858,20 +35858,15 @@ from OpenGL.GL import (
 
 
 class ProjectM:
-	def __init__(self):
+	def __init__(self, tauon):
+		self.tauon = tauon
 		self.lib = None
 		self.pm_instance = None
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
 		library_names = [
-			"libprojectM.so.4",  # Common on newer Linux
-			"libprojectM.so.3",
-			"libprojectM.so",  # Generic Linux
-			"libprojectM.4.dylib",  # macOS
-			"libprojectM.dylib",
-			"projectM.dll",  # Windows
-			"libprojectM.dll"
+			self.tauon.pctl.install_directory / "libprojectM-4.so"
 		]
 
 		for lib_name in library_names:
@@ -35960,11 +35955,12 @@ class ProjectM:
 		# Set default preset path if not provided
 		if preset_path is None:
 			possible_paths = [
-				"/usr/share/projectM/presets",
-				"/usr/share/projectm/presets",
-				"/usr/local/share/projectM/presets",
-				"/opt/projectM/share/projectM/presets",
-				"./presets"  # Local directory
+				#"/usr/share/projectM/presets",
+				#"/usr/share/projectm/presets",
+				#"/usr/local/share/projectM/presets",
+				#"/opt/projectM/share/projectM/presets",
+				#"./presets",  # Local directory,
+				self.tauon.pctl.install_directory / "presets"
 			]
 
 			preset_path = None
@@ -35985,7 +35981,7 @@ class ProjectM:
 		settings.texture_size = 512
 		settings.window_width = width
 		settings.window_height = height
-		settings.preset_url = preset_path.encode('utf-8')
+		settings.preset_url = str(preset_path).encode('utf-8')
 		settings.title_font_url = None  # Optional
 		settings.menu_font_url = None  # Optional
 
@@ -36026,7 +36022,7 @@ class ProjectM:
 			return False
 
 
-projectm = ProjectM()
+
 
 class Milky:
 	def __init__(self, tauon: Tauon) -> None:
@@ -36042,6 +36038,8 @@ class Milky:
 		self.gl_texture_id = None
 		self.framebuffer = None
 
+		self.projectm = ProjectM(tauon)
+
 	def render(self):
 		ddt = self.ddt
 		x = 300
@@ -36056,8 +36054,8 @@ class Milky:
 
 		if not self.ready:
 
-			projectm.load_library()
-			projectm.init()
+			self.projectm.load_library()
+			self.projectm.init()
 
 			sdl3.SDL_ClearError()
 			sdl3.SDL_FlushRenderer(self.renderer)
