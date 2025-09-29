@@ -9,6 +9,7 @@ Changelog
  - **Added** All lyrics changes will now write back to their original files
  - **Added** Spring-loaded clicking behavior to all context menus
  - **Added** Track ReplayGain support for Jellyfin
+ - **Added** Configurable timeout for Jellyfin
  - **Fixed** Setting "Background artist info download" not being respected
  - **Fixed** Chart generation on macOS and Windows (regression)
  - **Fixed** Loading queue on app restart (regression)
