@@ -38948,6 +38948,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-username", prefs.jelly_username)
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
+	cf.update_value("jelly-timeout", prefs.jelly_timeout)
 
 	cf.update_value("koel-username", prefs.koel_username)
 	cf.update_value("koel-password", prefs.koel_password)
@@ -39538,6 +39539,9 @@ def load_prefs(bag: Bag) -> None:
 		"string", "jelly-server-url", prefs.jelly_server_url,
 		"The IP:Port where the jellyfin server is hosted.")
 	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
+	prefs.jelly_timeout = cf.sync_add(
+		"int", "jelly-timeout", prefs.jelly_timeout,
+		"Timeout for synchronizing library.")
 
 	cf.br()
 	cf.add_text("[network]")
