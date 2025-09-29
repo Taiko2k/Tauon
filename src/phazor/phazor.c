@@ -263,6 +263,10 @@ void buff_reset() {
 	watermark = high_mark;
 }
 
+#define VIS_SIDE_MAX 10000
+float vis_side_buffer[VIS_SIDE_MAX];
+float vis_side_fill = 0;
+
 double t_start, t_end;
 
 bool out_thread_running = false;
