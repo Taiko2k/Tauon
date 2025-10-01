@@ -414,7 +414,7 @@ class Jellyfin:
 				},
 				# Someone had a local setup with 36k songs where sync took 31s,
 				# so let's wait a nice while before timing out
-				timeout=120,
+				timeout=self.prefs.jelly_timeout,
 				# stream=True,
 			)
 
