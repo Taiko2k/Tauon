@@ -7621,14 +7621,14 @@ class Tauon:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
 							self.gui.lyrics_editor_update_now[0] = True
-							if not self.gui.timed_lyrics_edit_view:
+							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
 							self.gui.lyrics_editor_update_now[1] = True
 							# TODO (Flynn): SYLT
-							if not self.gui.timed_lyrics_edit_view:
+							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
 								self.write_lyrics(track_object, True)
 						found = True
 						break
@@ -7707,7 +7707,8 @@ class Tauon:
 			clip = sdl3.SDL_GetClipboardText()
 			#logging.info(clip)
 			track_object.lyrics = clip.decode("utf-8")
-			self.write_lyrics(track_object)
+			if self.prefs.save_lyrics_changes_to_files:
+				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 		else:
 			logging.warning("NO TEXT TO PASTE")
@@ -7717,13 +7718,15 @@ class Tauon:
 
 	def clear_lyrics(self, track_object: TrackClass) -> None:
 		track_object.lyrics = ""
-		self.write_lyrics(track_object)
+		if self.prefs.save_lyrics_changes_to_files:
+			self.write_lyrics(track_object)
 		self.lyrics_ren_mini.to_reload = True
 
 	def split_lyrics(self, track_object: TrackClass) -> None:
 		if track_object.lyrics:
 			track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
-			self.write_lyrics(track_object)
+			if self.prefs.save_lyrics_changes_to_files:
+				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 
 	def paste_lyrics_deco(self) -> list[ColourRGBA | None]:
@@ -7759,6 +7762,9 @@ class Tauon:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
 				return True
+		# fully stop and resume track to prevent severe bug when simultaneously reading and modifying
+		stop = track.index == self.pctl.track_queue[self.pctl.queue_step]
+		resume = stop and self.pctl.playing_state == PlayingState.PLAYING
 		try:
 			if track.file_ext == "MP3":
 				audio = mutagen.id3.ID3(track.fullpath)
@@ -7766,28 +7772,18 @@ class Tauon:
 					audio.getall("USLT")[0].text = lyrics
 				else:
 					audio.add( mutagen.id3.USLT( text=lyrics ) )
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
 				audio["LYRICS"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("OPUS", "OGG"):
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
 				audio["LYRICS"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("APE","WV","TTA"):
 				audio = mutagen.apev2.APEv2(track.fullpath)
 				audio["Lyrics"] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 				audio = mutagen.mp4.MP4(track.fullpath)
 				audio['\xa9lyr'] = lyrics
-				audio.save()
-				logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			else:
 				if loud:
 					self.show_message(
@@ -7797,6 +7793,15 @@ class Tauon:
 						mode="error"
 					)
 				return False
+
+			if stop:
+				self.pctl.jump_time = self.pctl.decode_time
+				self.pctl.stop(block=True)
+			audio.save()
+			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
+			if resume:
+				self.pctl.play()
+
 		except Exception:
 			logging.exception()
 			if loud:
@@ -24657,6 +24662,12 @@ class Over:
 				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
 				subtitle=_("Only runs during \"Rescan All Folders\""))
 
+			y += round(35 * gui.scale)
+			prefs.save_lyrics_changes_to_files = self.toggle_square(
+				x, y, prefs.save_lyrics_changes_to_files, _("Save \"simple\" lyrics changes back to their original files"),
+				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
+			)
+
 		elif self.func_page == 3:
 			y += 23 * gui.scale
 			old = prefs.enable_remote
@@ -37096,6 +37107,8 @@ class TimedLyricsEdit:
 		self.temp_w:            int = 0     # these two are used to recalculate self.x_posns when the user...
 		self.temp_scale:      float = self.gui.scale # ...resizes or rescales the window
 		self.editing_line:      int = -1    # clear selection when line changes
+		self.track_time_left:   int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
+		self.repeat_mode:list[bool] = []    # save the global repeat mode yada yada track end behavior
 
 		# scrolling
 		self.scroll_position: int = 0 # measured in pixels - greater means scrolled further down - 0 means centered on active line
@@ -37158,6 +37171,11 @@ class TimedLyricsEdit:
 		self.menu.add_to_sub(0, MenuItem(_("Delete All Backups"), self.delete_autosaves, pass_ref=False))
 
 		self.menu.add_sub(_("When track ends..."), 165)
+		if self.prefs.synced_lyrics_editor_track_end_mode == "repeat":
+			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Repeat track"), self.end_set_repeat ))
+		else:
+			self.menu.add_to_sub(1, MenuItem( "    " + _("Repeat track"), self.end_set_repeat ))
+
 		if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
 			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
 		else:
@@ -37178,6 +37196,10 @@ class TimedLyricsEdit:
 		else:
 			lrc = "x  "
 		self.menu.add(MenuItem( lrc + _("Save synced to .lrc"), self.toggle_lrc, pass_ref=False))
+
+	def end_set_repeat(self) -> None:
+		self.prefs.synced_lyrics_editor_track_end_mode = "repeat"
+		self.reload_menu()
 
 	def end_set_stop(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "stop"
@@ -38204,11 +38226,16 @@ class TimedLyricsEdit:
 
 		# end of stuff blocked by boxes being open
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" and self.pctl.playing_state == PlayingState.PLAYING:
+		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" or self.prefs.synced_lyrics_editor_track_end_mode == "repeat" and self.pctl.playing_state == PlayingState.PLAYING:
 			if self.pctl.playing_length - self.pctl.decode_time < 5.5:
 				self.queue_next_frame = True
-			if self.pctl.playing_length - self.pctl.decode_time < 2.01:
-				self.pctl.stop()
+			if self.pctl.playing_length - self.pctl.decode_time < 2.1:
+				if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
+					self.pctl.stop()
+				elif not self.repeat_mode: # repeat
+					self.repeat_mode = [ self.pctl.repeat_mode, self.pctl.album_repeat_mode ]
+					self.pctl.repeat_mode = True
+					self.pctl.album_repeat_mode = False
 
 
 		if self.autosave_timer.get() > 5 and not self.autosaved:
@@ -38433,7 +38460,7 @@ class TimedLyricsEdit:
 		index = self.pctl.track_queue[self.pctl.queue_step]
 		track = self.pctl.master_library[index]
 		if not self.structure or self.struct_track != index:
-			if self.struct_track != index and self.struct_track != -1 and self.continuous:
+			if self.struct_track != index and self.struct_track != -1 and self.continuous and 0 < self.track_time_left < 5.0:
 				match self.prefs.synced_lyrics_editor_track_end_mode:
 					case "autosave":
 						self.autosave()
@@ -38444,6 +38471,11 @@ class TimedLyricsEdit:
 			self.lyrics_position = 0
 			self.continuous = True
 			self.clicks = 0
+		if self.pctl.decode_time < 1.0 and len(self.repeat_mode) == 2:
+			self.pctl.repeat_mode, self.pctl.album_repeat_mode = self.repeat_mode
+			self.repeat_mode = []
+
+		self.track_time_left = self.pctl.playing_length - self.pctl.decode_time
 
 		if self.gui.lyrics_editor_update_now[0]:
 			self.test_update()
@@ -39062,6 +39094,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("autoscan_playlist_folder", prefs.autoscan_playlist_folder)
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
+	cf.update_value("save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files)
 	cf.update_value("use_lrc_instead", prefs.use_lrc_instead)
 
 	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
@@ -39224,6 +39257,13 @@ def load_prefs(bag: Bag) -> None:
 	prefs.use_lrc_instead = cf.sync_add(
 		"bool", "use_lrc_instead", prefs.use_lrc_instead,
 		"Save separate .LRC files instead of file metadata for synced lyrics.")
+	prefs.save_lyrics_changes_to_files = cf.sync_add(
+		"bool", "save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files,
+		"Lyrics edited in the editor will always try to save back to their original files. Should we do the same thing when you clear/paste/search for lyrics?")
+	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
+		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
+		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
+	)
 
 	cf.br()
 	cf.add_text("[playback]")
@@ -39421,10 +39461,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.autoscan_playlist_folder = cf.sync_add(
 		"bool", "autoscan_playlist_folder", prefs.autoscan_playlist_folder,
 		"Also auto-import new playlists from folder?")
-	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
-		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
-		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
-	)
 	if prefs.download_dir1 and prefs.download_dir1 not in bag.download_directories:
 		if os.path.isdir(prefs.download_dir1):
 			bag.download_directories.append(prefs.download_dir1)
