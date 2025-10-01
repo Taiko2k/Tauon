@@ -38007,6 +38007,12 @@ class TimedLyricsEdit:
 								if self.inp.mouse_click and rendered_line[1] != -1.0:
 									self.pctl.seek_time(rendered_line[1] + self.prefs.sync_lyrics_time_offset/1000)
 									self.scroll_position = scroll_to
+								elif self.inp.middle_click:
+									if rendered_line[1] != -1.0:
+										self.structure[i] = ( "??:??.??", -1.0, self.structure[i][2] )
+									else:
+										self.line_active = i
+										self.time_next_line(True)
 								break
 
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
