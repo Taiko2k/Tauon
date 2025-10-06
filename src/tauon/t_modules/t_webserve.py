@@ -817,26 +817,31 @@ def controller(tauon: Tauon) -> None:
 
 		def do_GET(self) -> None:
 			path = self.path
-			if path == "/raise/":
+			if not path.startswith("/open/"):
+				path = path.rstrip("/")
+
+			if path == "/raise":
 				tauon.raise_window()
-			if path == "/playpause/":
+			if path == "/reloadtheme":
+				tauon.gui.reload_theme = True
+			if path == "/playpause":
 				if tauon.pctl.playing_state == PlayingState.STOPPED:
 					tauon.pctl.play()
 				else:
 					tauon.pctl.pause()
-			if path == "/play/":
+			if path == "/play":
 				tauon.pctl.play()
-			if path == "/pause/":
+			if path == "/pause":
 				tauon.pctl.pause_only()
-			if path == "/stop/":
+			if path == "/stop":
 				tauon.pctl.stop()
-			if path == "/next/":
+			if path == "/next":
 				tauon.pctl.advance()
-			if path == "/previous/":
+			if path == "/previous":
 				tauon.pctl.back()
-			if path == "/shuffle/":
+			if path == "/shuffle":
 				tauon.toggle_random()
-			if path == "/repeat/":
+			if path == "/repeat":
 				tauon.toggle_repeat()
 			if path.startswith("/open/"):
 				rest = path[6:]
