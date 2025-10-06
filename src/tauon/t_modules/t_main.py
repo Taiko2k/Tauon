@@ -31051,10 +31051,28 @@ class ArtBox:
 		result = 1
 
 		if target_track:  # Only show if song playing or paused
+
+
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
 			showc = tauon.album_art_gen.get_info(target_track)
 
-		tauon.milky.render()
+			if self.pctl.playing_time < 1:
+				pass
+				# print( tauon.milky.render_texture)
+				# print(sdl3.SDL_SetRenderTarget(self.tauon.renderer, tauon.milky.render_texture))
+				# logging.error(sdl3.SDL_GetError())
+				#
+				# result = tauon.album_art_gen.display(target_track, (0, 0), (box_w, box_h), gui.side_drag)
+				# # sdl3.SDL_SetRenderDrawColor(self.tauon.renderer, 0, 0, 0, 0)
+				# # sdl3.SDL_RenderClear(self.tauon.renderer)
+				# sdl3.SDL_SetRenderTarget(self.tauon.renderer, self.gui.main_texture)
+				# self.tauon.milky.projectm.lib.projectm_set_window_size(self.tauon.milky.projectm.pm_instance, int(self.tauon.gui.main_art_box[2]),
+				# 							  int(self.tauon.gui.main_art_box[3] - 2))
+
+
+			else:
+				tauon.milky.render()
+
 		gui.delay_frame(0.016)
 
 		# Draw faint border on album art
@@ -36103,7 +36121,7 @@ class Milky:
 			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
 			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
 			#sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, sdl3.SDL_PIXELFORMAT_RGBA8888)
-			#sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
 
 			# Create SDL texture from the OpenGL texture
 			self.render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
