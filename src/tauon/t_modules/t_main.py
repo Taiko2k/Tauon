@@ -38007,6 +38007,12 @@ class TimedLyricsEdit:
 								if self.inp.mouse_click and rendered_line[1] != -1.0:
 									self.pctl.seek_time(rendered_line[1] + self.prefs.sync_lyrics_time_offset/1000)
 									self.scroll_position = scroll_to
+								elif self.inp.middle_click:
+									if rendered_line[1] != -1.0:
+										self.structure[i] = ( "??:??.??", -1.0, self.structure[i][2] )
+									else:
+										self.line_active = i
+										self.time_next_line(True)
 								break
 
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
@@ -38948,6 +38954,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-username", prefs.jelly_username)
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
+	cf.update_value("jelly-timeout", prefs.jelly_timeout)
 
 	cf.update_value("koel-username", prefs.koel_username)
 	cf.update_value("koel-password", prefs.koel_password)
@@ -39538,6 +39545,9 @@ def load_prefs(bag: Bag) -> None:
 		"string", "jelly-server-url", prefs.jelly_server_url,
 		"The IP:Port where the jellyfin server is hosted.")
 	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
+	prefs.jelly_timeout = cf.sync_add(
+		"int", "jelly-timeout", prefs.jelly_timeout,
+		"Timeout for synchronizing library.")
 
 	cf.br()
 	cf.add_text("[network]")
