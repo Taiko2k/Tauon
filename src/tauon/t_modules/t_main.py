@@ -35883,6 +35883,7 @@ class ProjectM:
 		self.tauon = tauon
 		self.lib = None
 		self.pm_instance = None
+		self.presets = []
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
@@ -35925,6 +35926,7 @@ class ProjectM:
 			# # projectm_opengl_render_frame_fbo - Render frame
 			self.lib.projectm_opengl_render_frame_fbo.argtypes = [c_void_p, c_uint32]
 			self.lib.projectm_opengl_render_frame_fbo.restype = None
+
 			# #
 			# projectm_set_window_size - Render frame
 			self.lib.projectm_set_window_size.argtypes = [c_void_p, c_uint, c_uint]
@@ -35966,36 +35968,24 @@ class ProjectM:
 
 		self.setup_function_signatures()
 
-		# Set default preset path if not provided
-		if preset_path is None:
-			possible_paths = [
-				#"/usr/share/projectM/presets",
-				#"/usr/share/projectm/presets",
-				#"/usr/local/share/projectM/presets",
-				#"/opt/projectM/share/projectM/presets",
-				#"./presets",  # Local directory,
-				self.tauon.pctl.install_directory / "presets"
-			]
-
-			preset_path = None
-			for path in possible_paths:
-				if os.path.exists(path):
-					preset_path = path
-					break
-
-			if not preset_path:
-				print("Warning: No preset directory found")
-				preset_path = "/usr/share/projectM/presets"  # Default fallback
-
 		# Create projectM instance
 		try:
 			print("init project m...")
 			self.pm_instance = self.lib.projectm_create()
-			print("done")
-			print(self.pm_instance)
 			if self.pm_instance:
 				print(f"ProjectM initialized successfully")
 				print(f"Preset path: {preset_path}")
+
+				aud = self.tauon.aud
+				if not aud:
+					logging.error("Phazor not init for vis")
+					return
+
+				aud.get_vis_side_buffer.argtypes = []
+				aud.get_vis_side_buffer.restype = ctypes.POINTER(c_float)
+
+				aud.get_vis_side_buffer_fill.argtypes = []
+				aud.get_vis_side_buffer_fill.restype = ctypes.c_int
 
 				# Get preset count
 				# try:
@@ -36003,6 +35993,26 @@ class ProjectM:
 				# 	print(f"Found {count} presets")
 				# except:
 				# 	print("Could not get preset count")
+				# Set default preset path if not provided
+
+				dirs = [
+					# "./presets",  # Local directory,
+					self.tauon.pctl.install_directory / "presets"
+					]
+
+				def scan_folder(dir):
+					for item in dir.iterdir():
+						if item.is_dir():
+							scan_folder(item)
+						else:
+							if item.suffix.lower() == ".milk":
+								logging.info(f"Found milkdrop {item.stem}")
+								self.presets.append(item)
+				for dir in dirs:
+					scan_folder(dir)
+
+				if self.presets:
+					self.lib.projectm_load_preset_file(self.pm_instance, str(random.choice(self.presets)).encode("utf-8"), 0)
 
 				return True
 			else:
@@ -36013,42 +36023,33 @@ class ProjectM:
 			print(f"Error initializing projectM: {e}")
 			return False
 
+	def random_preset(self):
+		choice = random.choice(self.presets)
+		logging.info(f"Loading preset: {choice.stem}")
+		self.lib.projectm_load_preset_file(self.pm_instance, str(choice).encode("utf-8"), 1)
 
 	def render_frame(self, framebuffer):
 		"""Render a projectM frame"""
 		if not self.pm_instance:
 			return False
 
-		duration = 0.001  # seconds
-		sample_rate = 48000  # Hz
-		frequency = 440.0  # Hz (A4 tone, you can change this)
-
-		# Generate sine wave samples
-		num_samples = int(sample_rate * duration)
-		samples = [math.sin(2 * math.pi * frequency * t / sample_rate) for t in range(num_samples)]
-
-		# Convert to ctypes float array
-		FloatArray = c_float * len(samples)
-		c_array = FloatArray(*samples)
-
-		# Get pointer to the array
-		c_pointer = ctypes.cast(c_array, POINTER(c_float))
-		#self.lib.projectm_pcm_add_float(self.pm_instance, c_pointer, len(samples), 2)
+		# feed audio
+		aud = self.tauon.aud
+		f = aud.get_vis_side_buffer_fill()
+		if f > 200:
+			buffer_p = aud.get_vis_side_buffer()
+			self.lib.projectm_pcm_add_float(self.pm_instance, buffer_p, f // 2, 2)
+			aud.reset_vis_side_buffer()
 
 		self.lib.projectm_set_window_size(self.pm_instance, int(self.tauon.gui.main_art_box[2]), int(self.tauon.gui.main_art_box[3]))
 		#self.tauon.gui.delay_frame(0.016)
 
 		try:
-			#print("render...")
 			self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
-			#self.lib.projectm_opengl_render_frame(self.pm_instance)
-			#print("done")
 			return True
 		except Exception as e:
 			print(f"Error rendering frame: {e}")
 			return False
-
-
 
 
 class Milky:
@@ -45538,6 +45539,7 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
+				tauon.milky.projectm.random_preset()
 				pass
 
 			if gui.mode < 3:
