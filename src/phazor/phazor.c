@@ -265,7 +265,7 @@ void buff_reset() {
 
 #define VIS_SIDE_MAX 10000
 float vis_side_buffer[VIS_SIDE_MAX];
-float vis_side_fill = 0;
+int vis_side_fill = 0;
 
 double t_start, t_end;
 
@@ -1219,6 +1219,13 @@ int get_audio(int max, float* buff) {
 				buff_cycle();
 
 				position_count++;
+
+				// vis stuff
+				if (vis_side_fill + 2 < VIS_SIDE_MAX){
+					vis_side_buffer[vis_side_fill] = l;
+					vis_side_buffer[vis_side_fill + 1] = r;
+					vis_side_fill += 2;
+				}
 
 				if (b >= max) break; // Buffer is now full
 			}
@@ -3013,6 +3020,18 @@ EXPORT void set_subtrack(int n) {
 EXPORT void print_status() {
 	printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
 }
+
+EXPORT float* get_vis_side_buffer(){
+	return vis_side_buffer;
+	}
+
+EXPORT int get_vis_side_buffer_fill(){
+	return vis_side_fill;
+	}
+
+EXPORT void reset_vis_side_buffer(){
+	vis_side_fill = 0;
+	}
 
 EXPORT int phazor_shutdown() {
 	while (command != NONE) {
