@@ -17,16 +17,31 @@ class CustomLoggingFormatter(logging.Formatter):
 	reset       = "\x1b[0m"
 	format_simple  = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s"
 	format_verbose = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s (%(filename)s:%(lineno)d)"
-
-	# TODO(Martin): Add some way in which devel mode uses everything verbose
-	FORMATS = {
-		logging.DEBUG:    grey_bold   + format_verbose + reset,
-		logging.INFO:     grey        + format_simple  + reset,
-		logging.WARNING:  purple      + format_verbose + reset,
-		logging.ERROR:    red         + format_verbose + reset,
-		logging.CRITICAL: bold_red    + format_verbose + reset,
-	}
 	# fmt:on
+
+	def __init__(self, color: bool = True):
+		super().__init__()
+		self.color = color
+
+		# TODO(Martin): Add a way in which devel mode uses everything verbose
+		# fmt:off
+		if color:
+			self.FORMATS = {
+				logging.DEBUG:    self.grey_bold   + self.format_verbose + self.reset,
+				logging.INFO:     self.grey        + self.format_simple  + self.reset,
+				logging.WARNING:  self.purple      + self.format_verbose + self.reset,
+				logging.ERROR:    self.red         + self.format_verbose + self.reset,
+				logging.CRITICAL: self.bold_red    + self.format_verbose + self.reset,
+			}
+		else:
+			self.FORMATS = {
+				logging.DEBUG:    self.format_verbose,
+				logging.INFO:     self.format_simple,
+				logging.WARNING:  self.format_verbose,
+				logging.ERROR:    self.format_verbose,
+				logging.CRITICAL: self.format_verbose,
+			}
+		# fmt:on
 
 	@override
 	def format(self, record: LogRecord) -> str:
