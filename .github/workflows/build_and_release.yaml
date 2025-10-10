@@ -211,7 +211,8 @@ jobs:
             opusfile \
             libopenmpt \
             wavpack \
-            game-music-emu
+            game-music-emu \
+            Python@3.14
 
       # This generates 30MB of logs, enable it only when actively debugging something
       #- name: "[DEBUG] List all Cellar files"
