@@ -31056,7 +31056,7 @@ class ArtBox:
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
 			showc = tauon.album_art_gen.get_info(target_track)
 
-			if self.pctl.playing_time < 1:
+			if self.pctl.playing_time < 1.2:
 				pass
 				# print( tauon.milky.render_texture)
 				# print(sdl3.SDL_SetRenderTarget(self.tauon.renderer, tauon.milky.render_texture))
