@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### v8.2.0 (UNRELEASED)
+### v8.2.0
 
  - **Added** New fully-featured lyrics editor, including LRC support
  - **Added** Option to upload lyrics to LRCLIB (inside the lyrics editor)
