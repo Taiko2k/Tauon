@@ -504,6 +504,7 @@ if __name__ == "__main__":
 		crash_log_path = user_directory / "tauon-crash.log"
 		file_handler = logging.FileHandler(crash_log_path)
 		crash_logger.addHandler(file_handler)
+		crash_logger.handlers[0].setFormatter(CustomLoggingFormatter(color=False))
 		error_message = f"Oops, looks like Tauon crashed.\n\nPlease report a bug over at GitHub or Discord.\n\nCrash log was saved to\n{crash_log_path}"
 		crash_logger.exception(error_message)
 		import ctypes
