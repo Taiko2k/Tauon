@@ -7556,6 +7556,25 @@ class Tauon:
 	def toggle_milky(self, track_object: TrackClass) -> None:
 		self.prefs.milk ^= True
 
+	def open_preset_folder(self, track_object: TrackClass) -> None:
+		target = self.user_directory / "presets"
+		if not target.exists():
+			target.mkdir()
+		self.open_file_browser_at(target)
+
+	def open_file_browser_at(self, path):
+		if self.system == "Windows" or self.msys:
+			line = r'explorer /select,"{}"'.format(str(path).replace("/", "\\"))
+			subprocess.Popen(line)
+		else:
+			line = str(path)
+			if self.macos:
+				subprocess.Popen(["open", "-R", line])
+			else:
+				line += "/"
+				subprocess.Popen(["xdg-open", line])
+
+
 	def toggle_lyrics(self, track_object: TrackClass) -> None:
 		if not track_object:
 			return
@@ -35981,6 +36000,8 @@ class ProjectM:
 
 		self.setup_function_signatures()
 
+		if not (self.tauon.user_directory / "presets").exists():
+			(self.tauon.user_directory / "presets").mkdir()
 		# Create projectM instance
 		try:
 			print("init project m...")
@@ -36000,21 +36021,7 @@ class ProjectM:
 				aud.get_vis_side_buffer_fill.argtypes = []
 				aud.get_vis_side_buffer_fill.restype = ctypes.c_int
 
-				dirs = [
-					# "./presets",  # Local directory,
-					self.tauon.pctl.install_directory / "presets"
-					]
-
-				def scan_folder(dir):
-					for item in dir.iterdir():
-						if item.is_dir():
-							scan_folder(item)
-						else:
-							if item.suffix.lower() == ".milk":
-								logging.info(f"Found milkdrop {item.stem}")
-								self.presets.append(item)
-				for dir in dirs:
-					scan_folder(dir)
+				self.rescan_presets()
 
 				self.random_preset()
 
@@ -36027,7 +36034,28 @@ class ProjectM:
 			print(f"Error initializing projectM: {e}")
 			return False
 
+	def rescan_presets(self):
+
+		dirs = [
+			self.tauon.pctl.install_directory / "presets",
+			self.tauon.user_directory / "presets"
+		]
+
+		def scan_folder(dir):
+			for item in dir.iterdir():
+				if item.is_dir():
+					scan_folder(item)
+				else:
+					if item.suffix.lower() == ".milk":
+						#logging.info(f"Found milkdrop {item.stem}")
+						self.presets.append(item)
+
+		self.presets.clear()
+		for dir in dirs:
+			scan_folder(dir)
+
 	def random_preset(self, fade=False):
+		#self.rescan_presets()
 		if not self.presets:
 			return
 		choice = random.choice(self.presets)
@@ -43812,6 +43840,7 @@ def main(holder: Holder) -> None:
 
 	picture_menu.br()
 	picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
 
 	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
 	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
