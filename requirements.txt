@@ -25,6 +25,7 @@ PyChromecast # optional
 setproctitle # optional
 tidalapi # optional
 colored_traceback;           sys_platform != 'win32' # optional - Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
+PyOpenGL
 #pyinstaller
 #librespot - https://github.com/kokarare1212/librespot-python/pull/286
 #  2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
