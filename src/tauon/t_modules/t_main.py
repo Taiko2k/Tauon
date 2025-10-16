@@ -36052,7 +36052,8 @@ class ProjectM:
 
 		self.presets.clear()
 		for dir in dirs:
-			scan_folder(dir)
+			if dir.is_dir():
+				scan_folder(dir)
 
 	def random_preset(self, fade=False):
 		#self.rescan_presets()
