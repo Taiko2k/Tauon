@@ -422,3 +422,5 @@ class Prefs:
 	tidal_quality = 1
 
 	jump_start = True
+
+	milk = False
