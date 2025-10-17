@@ -44113,9 +44113,9 @@ def main(holder: Holder) -> None:
 
 	mouse_moved = False
 
-	for item in sys.argv:
+	for item in sys.argv[1:]:
 		if (os.path.isdir(item) or os.path.isfile(item) or "file://" in item) \
-		and not item.endswith(".py") and not item.endswith("tauon.exe") and not item.endswith("tauonmb") \
+		and not item.endswith(".py") and not item.endswith(".exe") and not item.endswith("tauonmb") \
 		and not item.startswith("-"):
 			tauon.open_uri(item)
 
