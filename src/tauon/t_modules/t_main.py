@@ -31091,7 +31091,7 @@ class ArtBox:
 			showc = tauon.album_art_gen.get_info(target_track)
 
 			if tauon.prefs.milk:
-				if self.pctl.playing_time < 1.2:
+				if self.pctl.playing_time < 1.3:
 					pass
 				else:
 					tauon.milky.render()
@@ -36037,6 +36037,7 @@ class ProjectM:
 	def rescan_presets(self):
 
 		dirs = [
+			Path("/usr/share/projectM/presets"),
 			self.tauon.pctl.install_directory / "presets",
 			self.tauon.user_directory / "presets"
 		]
