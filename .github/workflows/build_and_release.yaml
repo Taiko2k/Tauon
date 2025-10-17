@@ -160,7 +160,7 @@ jobs:
 
           # Modify JSON file
           jq --arg repo "$REPO_URL" --arg commit "$COMMIT_SHA" '
-            (.modules[] | select(type == "object" and .name == "tauonmb-git").sources[] | select(.type == "git")) |= {type: "git", url: $repo, commit: $commit}
+            (.modules[] | select(type == "object" and .name == "tauonmb-git").sources[] | select(type == "object") | select(.type == "git")) |= {type: "git", url: $repo, commit: $commit}
           ' tauon-flatpak/com.github.taiko2k.tauonmb.json > updated.json
           mv updated.json tauon-flatpak/com.github.taiko2k.tauonmb.json
 
