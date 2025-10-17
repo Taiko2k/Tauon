@@ -67,6 +67,8 @@ t_agent = "TauonMusicBox/" + n_version
 logging.info(f"{t_title} {t_version}")
 logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
 
+logging.info(f"Started with arguments: {sys.argv}")
+
 def open_discord() -> None:
 	webbrowser.open("https://discord.gg/v4EmhES")
 
