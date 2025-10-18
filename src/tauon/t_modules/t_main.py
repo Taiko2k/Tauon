@@ -35920,6 +35920,7 @@ class ProjectM:
 		self.pm_instance = None
 		self.presets = []
 		self.loaded_preset = None
+		self.load_next = None
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
@@ -36078,6 +36079,10 @@ class ProjectM:
 		"""Render a projectM frame"""
 		if not self.pm_instance:
 			return False
+
+		if self.load_next:
+			self.load_preset(self.load_next)
+			self.load_next = None
 
 		# feed audio
 		aud = self.tauon.aud
@@ -41347,6 +41352,9 @@ def worker1(tauon: Tauon) -> None:
 			logging.info(f"Found XSPF file at: {path}")
 			tauon.load_xspf(path)
 			return 0
+
+		if path.lower().endswith(".milk"):
+			tauon.milky.projectm.load_next = Path(path)
 
 		if path.lower().endswith(".m3u") or path.lower().endswith(".m3u8"):
 			tauon.load_m3u(path)
