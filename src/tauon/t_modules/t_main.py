@@ -69,7 +69,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
-from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_ubyte, c_uint32, c_void_p, pointer
+from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_uint, c_ubyte, c_uint32, c_void_p, pointer, POINTER
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -923,6 +923,9 @@ class GuiVar:
 		self.cursor_top_side    = self.cursor_standard
 		self.cursor_left_side   = self.cursor_standard
 		self.cursor_bottom_side = self.cursor_standard
+
+		self.toast_length = 1
+
 
 		if bag.msys:
 			self.cursor_br_corner = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
@@ -7520,6 +7523,12 @@ class Tauon:
 	def toggle_side_art(self) -> None:
 		self.prefs.show_side_lyrics_art_panel ^= True
 
+	def toggle_milky_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
+		text = _("Enable Milkdrop Visualiser")
+		if self.prefs.milk:
+			text = _("Disable Milkdrop Visualiser")
+		return [self.colours.menu_text, self.colours.menu_background, text]
+
 	def toggle_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
 		colour = self.colours.menu_text
 
@@ -7539,6 +7548,28 @@ class Tauon:
 		if (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
 			colour = self.colours.menu_text_disabled
 		return [colour, self.colours.menu_background, line]
+
+	def toggle_milky(self, track_object: TrackClass) -> None:
+		self.prefs.milk ^= True
+
+	def open_preset_folder(self, track_object: TrackClass) -> None:
+		target = self.user_directory / "presets"
+		if not target.exists():
+			target.mkdir()
+		self.open_file_browser_at(target)
+
+	def open_file_browser_at(self, path):
+		if self.system == "Windows" or self.msys:
+			line = r'explorer /select,"{}"'.format(str(path).replace("/", "\\"))
+			subprocess.Popen(line)
+		else:
+			line = str(path)
+			if self.macos:
+				subprocess.Popen(["open", "-R", line])
+			else:
+				line += "/"
+				subprocess.Popen(["xdg-open", line])
+
 
 	def toggle_lyrics(self, track_object: TrackClass) -> None:
 		if not track_object:
@@ -14326,10 +14357,11 @@ class Tauon:
 		self.load_orders.append(copy.deepcopy(load_order))
 		self.gui.update += 1
 
-	def toast(self, text: str) -> None:
+	def toast(self, text: str, duration: float = 1) -> None:
 		self.gui.mode_toast_text = text
+		self.gui.toast_length = duration
 		self.toast_mode_timer.set()
-		self.gui.frame_callback_list.append(TestTimer(1.5))
+		self.gui.frame_callback_list.append(TestTimer(duration + 0.2))
 
 	def set_artist_preview(self, path: str, artist: str, x: int, y: int) -> None:
 		m = min(round(500 * self.gui.scale), self.window_size[1] - (self.gui.panelY + self.gui.panelBY + 50 * self.gui.scale))
@@ -17000,6 +17032,7 @@ class Tauon:
 			prefs.replay_preamp,  # 181
 			prefs.gallery_combine_disc,
 			pctl.active_playlist_playing,  # 183
+			prefs.milk,
 		]
 
 		try:
@@ -31020,10 +31053,21 @@ class ArtBox:
 		# Draw the album art. If side bar is being dragged set quick draw flag
 		showc = None
 		result = 1
+		show_vis = False
 
 		if target_track:  # Only show if song playing or paused
+
+
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
 			showc = tauon.album_art_gen.get_info(target_track)
+
+			if tauon.prefs.milk:
+				if self.pctl.playing_time < 1.3:
+					pass
+				else:
+					tauon.milky.render()
+					show_vis = True
+				gui.delay_frame(0.016)
 
 		# Draw faint border on album art
 		if tight_border:
@@ -31084,6 +31128,18 @@ class ArtBox:
 				yh = gui.art_drawn_rect[1] + gui.art_drawn_rect[3]
 
 			self.tauon.art_metadata_overlay(xw, yh, showc)
+
+			if show_vis:
+				line = tauon.milky.projectm.get_current_name()
+
+				padding = round(0 * gui.scale)
+				xx = x + round(12 * gui.scale)
+				yy = y + round(25 * gui.scale)
+				tag_width = self.ddt.get_text_w(line, 12) + 12 * self.gui.scale
+				self.ddt.rect_a((xx, yy), (tag_width, 18 * self.gui.scale),
+								ColourRGBA(8, 8, 8, 255))
+				self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(200, 200, 200, 255),
+							  12, bg=ColourRGBA(30, 30, 30, 255))
 
 class ScrollBox:
 
@@ -35812,6 +35868,316 @@ class RadioView:
 			radios[radios.index("New")] = self.drag
 			self.drag = None
 			gui.update += 1
+
+
+import OpenGL
+from OpenGL.GL import (
+	glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
+	glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+	glCheckFramebufferStatus, glDeleteFramebuffers, glDeleteTextures,
+	glViewport, glClear, glClearColor, glGetIntegerv,
+	GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER,
+	GL_TEXTURE_MAG_FILTER, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_S,
+	GL_TEXTURE_WRAP_T, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+	GL_FRAMEBUFFER_COMPLETE, GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
+	GL_TEXTURE_BINDING_2D, glFlush, glGetString, GL_VERSION, glFinish
+)
+from OpenGL.GL import glGetIntegerv, glBindFramebuffer, GL_FRAMEBUFFER_BINDING
+
+class ProjectM:
+	def __init__(self, tauon):
+		self.tauon = tauon
+		self.lib = None
+		self.pm_instance = None
+		self.presets = []
+		self.loaded_preset = None
+		self.load_next = None
+
+	def load_library(self):
+		"""Load projectM library using ctypes"""
+		lib_name = ctypes.util.find_library('projectM-4')
+		try:
+			self.lib = ctypes.CDLL(lib_name)
+			logging.info(f"Successfully loaded: {lib_name}")
+			return True
+		except OSError:
+			logging.warning("Could not find libprojectM-4")
+
+
+	def setup_function_signatures(self):
+		"""Define ctypes function signatures for basic projectM functions"""
+		if not self.lib:
+			return False
+
+		try:
+
+			# projectm_create - Create projectM instance
+			self.lib.projectm_create.argtypes = None #[POINTER(ProjectMSettings)]
+			self.lib.projectm_create.restype = c_void_p
+
+			# # projectm_destroy - Destroy projectM instance
+			# self.lib.projectm_destroy.argtypes = [c_void_p]
+			# self.lib.projectm_destroy.restype = None
+			#
+			# projectm_pcm_add_float - Add audio data
+			self.lib.projectm_pcm_add_float.argtypes = [c_void_p, POINTER(c_float), c_uint, c_uint]
+			self.lib.projectm_pcm_add_float.restype = None
+			#
+			# projectm_opengl_render_frame - Render frame
+			self.lib.projectm_opengl_render_frame.argtypes = [c_void_p]
+			self.lib.projectm_opengl_render_frame.restype = None
+			#
+			# # projectm_opengl_render_frame_fbo - Render frame
+			self.lib.projectm_opengl_render_frame_fbo.argtypes = [c_void_p, c_uint32]
+			self.lib.projectm_opengl_render_frame_fbo.restype = None
+
+			# #
+			# projectm_set_window_size - Render frame
+			self.lib.projectm_set_window_size.argtypes = [c_void_p, c_uint, c_uint]
+			self.lib.projectm_set_window_size.restype = None
+			#
+			# # projectm_get_preset_count - Get number of presets
+			# self.lib.projectm_get_preset_count.argtypes = [c_void_p]
+			# self.lib.projectm_get_preset_count.restype = c_uint
+			#
+			# # projectm_select_preset - Select preset by index
+			# self.lib.projectm_select_preset.argtypes = [c_void_p, c_uint, c_int]
+			# self.lib.projectm_select_preset.restype = None
+			#
+			# # projectm_select_next_preset - Next preset
+			# self.lib.projectm_select_next_preset.argtypes = [c_void_p, c_int]
+			# self.lib.projectm_select_next_preset.restype = None
+			#
+			# # projectm_select_previous_preset - Previous preset
+			# self.lib.projectm_select_previous_preset.argtypes = [c_void_p, c_int]
+			# self.lib.projectm_select_previous_preset.restype = None
+			#
+			# projectm_load_preset_file - Load specific preset file
+			self.lib.projectm_load_preset_file.argtypes = [c_void_p, c_char_p, c_int]
+			self.lib.projectm_load_preset_file.restype = c_int
+
+			print("Function signatures set up successfully")
+			return True
+
+		except AttributeError as e:
+			print(f"Error setting up function signatures: {e}")
+			print("Some functions may not be available in your projectM version")
+			return False
+
+
+	def init(self, width=800, height=600, preset_path=None):
+		"""Initialize projectM with basic settings"""
+		if not self.lib:
+			return False
+
+		self.setup_function_signatures()
+
+		if not (self.tauon.user_directory / "presets").exists():
+			(self.tauon.user_directory / "presets").mkdir()
+		# Create projectM instance
+		try:
+			print("init project m...")
+			self.pm_instance = self.lib.projectm_create()
+			if self.pm_instance:
+				print(f"ProjectM initialized successfully")
+				print(f"Preset path: {preset_path}")
+
+				aud = self.tauon.aud
+				if not aud:
+					logging.error("Phazor not init for vis")
+					return
+
+				aud.get_vis_side_buffer.argtypes = []
+				aud.get_vis_side_buffer.restype = ctypes.POINTER(c_float)
+
+				aud.get_vis_side_buffer_fill.argtypes = []
+				aud.get_vis_side_buffer_fill.restype = ctypes.c_int
+
+				self.rescan_presets()
+
+				self.random_preset()
+
+				return True
+			else:
+				print("Failed to create projectM instance")
+				return False
+
+		except Exception as e:
+			print(f"Error initializing projectM: {e}")
+			return False
+
+	def rescan_presets(self):
+
+		dirs = [
+			Path("/usr/share/projectM/presets"),
+			self.tauon.pctl.install_directory / "presets",
+			self.tauon.user_directory / "presets"
+		]
+
+		def scan_folder(dir):
+			for item in dir.iterdir():
+				if item.is_dir():
+					scan_folder(item)
+				else:
+					if item.suffix.lower() == ".milk":
+						#logging.info(f"Found milkdrop {item.stem}")
+						self.presets.append(item)
+
+		self.presets.clear()
+		for dir in dirs:
+			if dir.is_dir():
+				scan_folder(dir)
+
+	def random_preset(self, fade=False):
+		#self.rescan_presets()
+		if not self.presets:
+			return
+		choice = random.choice(self.presets)
+		self.load_preset(choice, fade)
+
+	def get_current_name(self):
+		if self.loaded_preset:
+			return self.loaded_preset.stem
+		return "Default"
+
+	def load_preset(self, preset, fade=False):
+		self.loaded_preset = preset
+		logging.info(f"Loading preset: {preset.stem}")
+		self.tauon.toast("Loaded preset: " + preset.stem, duration=3)
+		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
+
+	def render_frame(self, framebuffer):
+		"""Render a projectM frame"""
+		if not self.pm_instance:
+			return False
+
+		if self.load_next:
+			self.load_preset(self.load_next)
+			self.load_next = None
+
+		# feed audio
+		aud = self.tauon.aud
+		f = aud.get_vis_side_buffer_fill()
+		if f > 200:
+			buffer_p = aud.get_vis_side_buffer()
+			self.lib.projectm_pcm_add_float(self.pm_instance, buffer_p, f // 2, 2)
+			aud.reset_vis_side_buffer()
+
+		self.lib.projectm_set_window_size(self.pm_instance, int(self.tauon.gui.main_art_box[2]), int(self.tauon.gui.main_art_box[3]))
+		#self.tauon.gui.delay_frame(0.016)
+
+		try:
+			self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
+			return True
+		except Exception as e:
+			print(f"Error rendering frame: {e}")
+			return False
+
+
+class Milky:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.pctl          = tauon.pctl
+		self.gui           = tauon.gui
+		self.ddt           = tauon.ddt
+		self.coll          = tauon.coll
+		self.inp           = tauon.inp
+		self.renderer      = tauon.renderer
+		self.ready = False
+		self.render_texture = None
+		self.gl_texture_id = None
+		self.framebuffer = None
+		self.loaded_size = None
+
+		self.projectm = ProjectM(tauon)
+
+	def render(self):
+		ddt = self.ddt
+		x = self.tauon.gui.main_art_box[0]
+		y = self.tauon.gui.main_art_box[1]
+		w = self.tauon.gui.main_art_box[2]
+		h = self.tauon.gui.main_art_box[3]
+
+		# c = ColourRGBA(200, 0, 0, 255)
+		# ddt.rect_si((x,y,w,h), c, 2)
+		srect = sdl3.SDL_FRect(x, y, w, h)
+
+		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
+
+		if not self.ready:
+
+			self.projectm.load_library()
+			self.projectm.init()
+			self.ready = True
+
+
+		sdl3.SDL_FlushRenderer(self.renderer)
+		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
+
+		if (w, h) != self.loaded_size:
+
+			self.loaded_size = (w, h)
+			sdl3.SDL_ClearError()
+			context = sdl3.SDL_GL_GetCurrentContext()
+			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+
+			if self.render_texture:
+				sdl3.SDL_DestroyTexture(self.render_texture)
+				glDeleteTextures(1, [self.gl_texture_id])
+				glDeleteFramebuffers(1, [self.framebuffer])
+
+
+			gl_texture_id = glGenTextures(1)
+			glBindTexture(GL_TEXTURE_2D, gl_texture_id)
+			self.gl_texture_id = gl_texture_id
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0,
+						 GL_RGBA, GL_UNSIGNED_BYTE, None)
+
+			# Step 3: Create framebuffer for rendering
+			self.framebuffer = glGenFramebuffers(1)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+								   GL_TEXTURE_2D, gl_texture_id, 0)
+
+			# Check framebuffer completeness
+			if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+				print("Framebuffer not complete!")
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glBindTexture(GL_TEXTURE_2D, 0)
+
+			props = sdl3.SDL_CreateProperties()
+			# Set properties to wrap the OpenGL texture
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, gl_texture_id)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
+			#sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, sdl3.SDL_PIXELFORMAT_RGBA8888)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+
+			# Create SDL texture from the OpenGL texture
+			self.render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
+
+		sdl3.SDL_FlushRenderer(self.renderer)
+		#saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
+		glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+		# glViewport(0, 0, int(w), int(h))
+		# # glClearColor(0.9, 0.3, 0, 1)
+		# # glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		self.projectm.render_frame(self.framebuffer)
+
+		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
+		#glBindFramebuffer(GL_FRAMEBUFFER, 0)
+		glFlush()
+		glFinish()
+
+		sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+
 
 class Showcase:
 	def __init__(self, tauon: Tauon) -> None:
@@ -40958,6 +41324,9 @@ def worker1(tauon: Tauon) -> None:
 			tauon.load_xspf(path)
 			return 0
 
+		if path.lower().endswith(".milk"):
+			tauon.milky.projectm.load_next = Path(path)
+
 		if path.lower().endswith(".m3u") or path.lower().endswith(".m3u8"):
 			tauon.load_m3u(path)
 			return 0
@@ -42825,6 +43194,8 @@ def main(holder: Holder) -> None:
 				prefs.gallery_combine_disc = save[182]
 			if len(save) > 183 and save[183] is not None:
 				bag.active_playlist_playing = save[183]
+			if len(save) > 184 and save[184] is not None:
+				prefs.milk = save[184]
 
 			del save
 			break
@@ -43441,6 +43812,10 @@ def main(holder: Holder) -> None:
 
 	picture_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
+	picture_menu.br()
+	picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
 
 	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
 	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
@@ -44308,6 +44683,8 @@ def main(holder: Holder) -> None:
 	playlist_render = StandardPlaylist(tauon, pl_bg)
 	meta_box = MetaBox(tauon)
 	showcase = Showcase(tauon)
+	milky = Milky(tauon)
+	tauon.milky = milky
 
 	while pctl.running:
 		# bm.get('main')
@@ -45198,6 +45575,7 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
+				tauon.milky.projectm.random_preset()
 				pass
 
 			if gui.mode < 3:
@@ -48611,7 +48989,7 @@ def main(holder: Holder) -> None:
 						colours.box_text_label, 11)
 
 			t = tauon.toast_mode_timer.get()
-			if t < 0.98:
+			if t < gui.toast_length:
 
 				wid = ddt.get_text_w(gui.mode_toast_text, 313)
 				wid = max(round(68 * gui.scale), wid)
@@ -48818,6 +49196,10 @@ def main(holder: Holder) -> None:
 		# 		gui.time_passed -= 0.020
 		# 	gui.level_update = True
 
+		# gui.turbo = True
+		# gui.vis = 5
+		# gui.level_update = True
+
 		if gui.level_update is True and not resize_mode and gui.mode != 3:
 			gui.level_update = False
 
@@ -48831,6 +49213,10 @@ def main(holder: Holder) -> None:
 				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 				sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 				gui.present = True
+
+			if gui.vis == 5:
+				# milky
+				pass
 
 			if gui.vis == 3:
 				# Scrolling spectrogram
