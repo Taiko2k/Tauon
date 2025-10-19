@@ -35913,6 +35913,11 @@ class ProjectM:
 		self.loaded_preset = None
 		self.load_next = None
 		self.auto_frames = 0
+		self.dirs = [
+			Path("/usr/share/projectM/presets"),
+			self.tauon.pctl.install_directory / "presets",
+			self.tauon.user_directory / "presets"
+		]
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
@@ -35957,6 +35962,13 @@ class ProjectM:
 			self.lib.projectm_load_preset_file.argtypes = [c_void_p, c_char_p, c_int]
 			self.lib.projectm_load_preset_file.restype = c_int
 
+			self.lib.projectm_set_texture_search_paths.argtypes = [
+				c_void_p,  # instance
+				ctypes.POINTER(ctypes.c_char_p),  # texture_search_paths (array of strings)
+				ctypes.c_size_t  # count
+			]
+			self.lib.projectm_set_texture_search_paths.restype = None
+
 			print("Function signatures set up successfully")
 
 		except AttributeError as e:
@@ -35964,6 +35976,17 @@ class ProjectM:
 		except Exception as e:
 			logging.error(f"Error setting up function signatures: {e}")
 
+
+	def set_texture_paths(self):
+
+		path_bytes = []
+		for path in self.dirs:
+			if (path / "textures").is_dir():
+				path_bytes.append(str(path / "textures").encode('utf-8'))
+		if path_bytes:
+			path_array = (ctypes.c_char_p * len(path_bytes))(*path_bytes)
+			self.lib.projectm_set_texture_search_paths(self.pm_instance, path_array, len(path_bytes))
+			logging.info(f"Set projectm texture paths: {path_bytes}")
 
 	def init(self, width=800, height=600, preset_path=None):
 		"""Initialize projectM with basic settings"""
@@ -35994,6 +36017,7 @@ class ProjectM:
 				aud.get_vis_side_buffer_fill.restype = ctypes.c_int
 
 				self.rescan_presets()
+				self.set_texture_paths()
 
 				self.random_preset()
 
@@ -36008,12 +36032,6 @@ class ProjectM:
 
 	def rescan_presets(self):
 
-		dirs = [
-			Path("/usr/share/projectM/presets"),
-			self.tauon.pctl.install_directory / "presets",
-			self.tauon.user_directory / "presets"
-		]
-
 		def scan_folder(dir):
 			for item in dir.iterdir():
 				if item.is_dir():
@@ -36024,7 +36042,7 @@ class ProjectM:
 						self.presets.append(item)
 
 		self.presets.clear()
-		for dir in dirs:
+		for dir in self.dirs:
 			if dir.is_dir():
 				scan_folder(dir)
 
