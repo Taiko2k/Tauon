@@ -426,3 +426,4 @@ class Prefs:
 	jump_start = True
 
 	milk = False
+	auto_milk = True
