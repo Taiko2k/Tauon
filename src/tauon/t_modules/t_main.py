@@ -31086,17 +31086,18 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
-
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
 			showc = tauon.album_art_gen.get_info(target_track)
 
-			if tauon.prefs.milk:
+			# Milkdrop visualiser
+			if tauon.prefs.milk and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
 				if self.pctl.playing_time < 1.3:
 					pass
 				else:
 					tauon.milky.render()
 					show_vis = True
-				gui.delay_frame(0.016)
+				if self.tauon.pctl.playing_state != PlayingState.PAUSED:
+					gui.delay_frame(0.016)  # 60 fps
 
 		# Draw faint border on album art
 		if tight_border:
@@ -31126,10 +31127,15 @@ class ArtBox:
 		if target_track:
 			# Cycle images on click
 			if self.coll(gui.main_art_box) and inp.mouse_click is True and inp.key_focused == 0:
-				tauon.album_art_gen.cycle_offset(target_track)
 
-				if self.pctl.mpris:
-					self.pctl.mpris.update(force=True)
+				if show_vis:
+					tauon.milky.projectm.load_next = "random"
+					pass
+				else:
+					tauon.album_art_gen.cycle_offset(target_track)
+
+					if self.pctl.mpris:
+						self.pctl.mpris.update(force=True)
 
 		# Activate picture context menu on right click
 		if tight_border and gui.art_drawn_rect:
@@ -35928,70 +35934,49 @@ class ProjectM:
 		try:
 			self.lib = ctypes.CDLL(lib_name)
 			logging.info(f"Successfully loaded: {lib_name}")
-			return True
 		except OSError:
 			logging.warning("Could not find libprojectM-4")
-
 
 	def setup_function_signatures(self):
 		"""Define ctypes function signatures for basic projectM functions"""
 		if not self.lib:
-			return False
+			return
 
 		try:
-
 			# projectm_create - Create projectM instance
-			self.lib.projectm_create.argtypes = None #[POINTER(ProjectMSettings)]
+			self.lib.projectm_create.argtypes = None
 			self.lib.projectm_create.restype = c_void_p
 
 			# # projectm_destroy - Destroy projectM instance
-			# self.lib.projectm_destroy.argtypes = [c_void_p]
-			# self.lib.projectm_destroy.restype = None
-			#
+			self.lib.projectm_destroy.argtypes = [c_void_p]
+			self.lib.projectm_destroy.restype = None
+
 			# projectm_pcm_add_float - Add audio data
 			self.lib.projectm_pcm_add_float.argtypes = [c_void_p, POINTER(c_float), c_uint, c_uint]
 			self.lib.projectm_pcm_add_float.restype = None
-			#
+
 			# projectm_opengl_render_frame - Render frame
 			self.lib.projectm_opengl_render_frame.argtypes = [c_void_p]
 			self.lib.projectm_opengl_render_frame.restype = None
-			#
+
 			# # projectm_opengl_render_frame_fbo - Render frame
 			self.lib.projectm_opengl_render_frame_fbo.argtypes = [c_void_p, c_uint32]
 			self.lib.projectm_opengl_render_frame_fbo.restype = None
 
-			# #
 			# projectm_set_window_size - Render frame
 			self.lib.projectm_set_window_size.argtypes = [c_void_p, c_uint, c_uint]
 			self.lib.projectm_set_window_size.restype = None
-			#
-			# # projectm_get_preset_count - Get number of presets
-			# self.lib.projectm_get_preset_count.argtypes = [c_void_p]
-			# self.lib.projectm_get_preset_count.restype = c_uint
-			#
-			# # projectm_select_preset - Select preset by index
-			# self.lib.projectm_select_preset.argtypes = [c_void_p, c_uint, c_int]
-			# self.lib.projectm_select_preset.restype = None
-			#
-			# # projectm_select_next_preset - Next preset
-			# self.lib.projectm_select_next_preset.argtypes = [c_void_p, c_int]
-			# self.lib.projectm_select_next_preset.restype = None
-			#
-			# # projectm_select_previous_preset - Previous preset
-			# self.lib.projectm_select_previous_preset.argtypes = [c_void_p, c_int]
-			# self.lib.projectm_select_previous_preset.restype = None
-			#
+
 			# projectm_load_preset_file - Load specific preset file
 			self.lib.projectm_load_preset_file.argtypes = [c_void_p, c_char_p, c_int]
 			self.lib.projectm_load_preset_file.restype = c_int
 
 			print("Function signatures set up successfully")
-			return True
 
 		except AttributeError as e:
-			print(f"Error setting up function signatures: {e}")
-			print("Some functions may not be available in your projectM version")
-			return False
+			logging.error(f"Error setting up function signatures: {e}")
+		except Exception as e:
+			logging.error(f"Error setting up function signatures: {e}")
 
 
 	def init(self, width=800, height=600, preset_path=None):
@@ -36072,7 +36057,6 @@ class ProjectM:
 	def load_preset(self, preset, fade=False):
 		self.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
-		self.tauon.toast("Loaded preset: " + preset.stem, duration=3)
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
 
 	def render_frame(self, framebuffer):
@@ -36081,7 +36065,10 @@ class ProjectM:
 			return False
 
 		if self.load_next:
-			self.load_preset(self.load_next)
+			if self.load_next == "random":
+				self.random_preset()
+			else:
+				self.load_preset(self.load_next)
 			self.load_next = None
 
 		# feed audio
@@ -36095,12 +36082,11 @@ class ProjectM:
 		self.lib.projectm_set_window_size(self.pm_instance, int(self.tauon.gui.main_art_box[2]), int(self.tauon.gui.main_art_box[3]))
 		#self.tauon.gui.delay_frame(0.016)
 
-		try:
-			self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
-			return True
-		except Exception as e:
-			print(f"Error rendering frame: {e}")
-			return False
+		if self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+			try:
+				self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
+			except Exception as e:
+				logging.warning(f"Error rendering frame: {e}")
 
 
 class Milky:
