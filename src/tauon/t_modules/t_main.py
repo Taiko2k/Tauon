@@ -7533,6 +7533,12 @@ class Tauon:
 			text = _("Disable Milkdrop Visualiser")
 		return [self.colours.menu_text, self.colours.menu_background, text]
 
+	def toggle_milky_auto_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
+		text = _("Enable Auto Cycle")
+		if self.prefs.auto_milk:
+			text = _("Disable Auto Cycle")
+		return [self.colours.menu_text, self.colours.menu_background, text]
+
 	def toggle_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
 		colour = self.colours.menu_text
 
@@ -7555,6 +7561,10 @@ class Tauon:
 
 	def toggle_milky(self, track_object: TrackClass) -> None:
 		self.prefs.milk ^= True
+
+	def toggle_milky_auto(self, track_object: TrackClass) -> None:
+		self.milky.projectm.auto_frames = 0
+		self.prefs.auto_milk ^= True
 
 	def open_preset_folder(self, track_object: TrackClass) -> None:
 		target = self.user_directory / "presets"
@@ -17047,6 +17057,7 @@ class Tauon:
 			prefs.gallery_combine_disc,
 			pctl.active_playlist_playing,  # 183
 			prefs.milk,
+			prefs.auto_milk,
 		]
 
 		try:
@@ -31170,11 +31181,25 @@ class ArtBox:
 				padding = round(0 * gui.scale)
 				xx = x + round(12 * gui.scale)
 				yy = y + round(25 * gui.scale)
-				tag_width = self.ddt.get_text_w(line, 12) + 12 * self.gui.scale
+				mw = box_w - round(25 * gui.scale)
+				tag_width, tag_height = self.ddt.get_text_wh(line, 312, max_x = mw)
+				tag_width += round(17 * self.gui.scale)
+
 				self.ddt.rect_a((xx, yy), (tag_width, 18 * self.gui.scale),
 								ColourRGBA(8, 8, 8, 255))
-				self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(200, 200, 200, 255),
-							  12, bg=ColourRGBA(30, 30, 30, 255))
+				self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(220, 220, 220, 255),
+							  312, bg=ColourRGBA(30, 30, 30, 255), max_w = mw)
+
+				if self.tauon.prefs.auto_milk:
+					line = _("Auto Cycle")
+					yy += round(30 * gui.scale)
+					tag_width, tag_height = self.ddt.get_text_wh(line, 12, max_x = mw)
+					tag_width += round(14 * self.gui.scale)
+
+					self.ddt.rect_a((xx, yy), (tag_width, 18 * self.gui.scale),
+									ColourRGBA(8, 8, 8, 255))
+					self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(210, 210, 210, 255),
+								  12, bg=ColourRGBA(30, 30, 30, 255), max_w = mw)
 
 class ScrollBox:
 
@@ -35927,6 +35952,7 @@ class ProjectM:
 		self.presets = []
 		self.loaded_preset = None
 		self.load_next = None
+		self.auto_frames = 0
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
@@ -36058,6 +36084,7 @@ class ProjectM:
 		self.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
+		self.auto_frames = 0
 
 	def render_frame(self, framebuffer):
 		"""Render a projectM frame"""
@@ -36070,6 +36097,9 @@ class ProjectM:
 			else:
 				self.load_preset(self.load_next)
 			self.load_next = None
+
+		if self.auto_frames > 17 * 60:
+			self.random_preset(fade=True)
 
 		# feed audio
 		aud = self.tauon.aud
@@ -36087,7 +36117,7 @@ class ProjectM:
 				self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
 			except Exception as e:
 				logging.warning(f"Error rendering frame: {e}")
-
+			self.auto_frames += 1
 
 class Milky:
 	def __init__(self, tauon: Tauon) -> None:
@@ -43211,6 +43241,8 @@ def main(holder: Holder) -> None:
 				bag.active_playlist_playing = save[183]
 			if len(save) > 184 and save[184] is not None:
 				prefs.milk = save[184]
+			if len(save) > 185 and save[185] is not None:
+				prefs.auto_milk = save[185]
 
 			del save
 			break
@@ -43835,7 +43867,8 @@ def main(holder: Holder) -> None:
 	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	picture_menu.br()
-	picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
 	picture_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
 
 	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
