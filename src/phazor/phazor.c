@@ -1205,6 +1205,12 @@ int get_audio(int max, float* buff) {
 				if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
 				if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
 
+				// vis stuff
+				if (vis_side_fill + 2 < VIS_SIDE_MAX){
+					vis_side_buffer[vis_side_fill] = l;
+					vis_side_buffer[vis_side_fill + 1] = r;
+					vis_side_fill += 2;
+				}
 
 				// Apply final volume adjustment
 				float final_vol = pow((gate * volume_on), config_volume_power);
@@ -1219,13 +1225,6 @@ int get_audio(int max, float* buff) {
 				buff_cycle();
 
 				position_count++;
-
-				// vis stuff
-				if (vis_side_fill + 2 < VIS_SIDE_MAX){
-					vis_side_buffer[vis_side_fill] = l;
-					vis_side_buffer[vis_side_fill + 1] = r;
-					vis_side_fill += 2;
-				}
 
 				if (b >= max) break; // Buffer is now full
 			}

@@ -99,6 +99,7 @@ from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
+	FPSCounter,
 	ColourGenCache,
 	ColourRGBA,
 	FunctionStore,
@@ -31108,7 +31109,8 @@ class ArtBox:
 					tauon.milky.render()
 					show_vis = True
 				if self.tauon.pctl.playing_state != PlayingState.PAUSED:
-					gui.delay_frame(0.016)  # 60 fps
+					#gui.update += 1
+					gui.delay_frame(0.007)  # 60 fps
 
 		# Draw faint border on album art
 		if tight_border:
@@ -31200,6 +31202,18 @@ class ArtBox:
 									ColourRGBA(8, 8, 8, 255))
 					self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(210, 210, 210, 255),
 								  12, bg=ColourRGBA(30, 30, 30, 255), max_w = mw)
+
+				if not self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+					tauon.milky.fps.reset()
+				line = f"FPS: {round(tauon.milky.fps.get())}"
+				yy += round(30 * gui.scale)
+				tag_width, tag_height = self.ddt.get_text_wh(line, 12, max_x = mw)
+				tag_width += round(14 * self.gui.scale)
+
+				self.ddt.rect_a((xx, yy), (tag_width, 18 * self.gui.scale),
+								ColourRGBA(8, 8, 8, 255))
+				self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(210, 210, 210, 255),
+							  12, bg=ColourRGBA(30, 30, 30, 255), max_w = mw)
 
 class ScrollBox:
 
@@ -36116,7 +36130,7 @@ class ProjectM:
 				self.load_preset(self.load_next)
 			self.load_next = None
 
-		if self.auto_frames > 17 * 60:
+		if self.tauon.prefs.auto_milk and self.auto_frames > 22 * 60:
 			self.random_preset(fade=True)
 
 		# feed audio
@@ -36151,6 +36165,7 @@ class Milky:
 		self.gl_texture_id = None
 		self.framebuffer = None
 		self.loaded_size = None
+		self.fps = FPSCounter(window_size=10, min_update_interval=0.1, max_frame_time=0.5)
 
 		self.projectm = ProjectM(tauon)
 
@@ -36240,6 +36255,7 @@ class Milky:
 		glFinish()
 
 		sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+		self.fps.tick()
 
 
 class Showcase:
