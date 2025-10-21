@@ -36016,6 +36016,9 @@ class ProjectM:
 			self.lib.projectm_load_preset_file.argtypes = [c_void_p, c_char_p, c_int]
 			self.lib.projectm_load_preset_file.restype = c_int
 
+			self.lib.projectm_set_fps.argtypes = [c_void_p, ctypes.c_int32]
+			self.lib.projectm_set_fps.restype = None
+
 			self.lib.projectm_set_texture_search_paths.argtypes = [
 				c_void_p,  # instance
 				ctypes.POINTER(ctypes.c_char_p),  # texture_search_paths (array of strings)
@@ -36146,6 +36149,11 @@ class ProjectM:
 
 		if self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			try:
+				fps = int(self.tauon.milky.fps.get())
+				if not fps or fps < 1:
+					fps = 1
+
+				self.lib.projectm_set_fps(self.pm_instance, fps)
 				self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
 			except Exception as e:
 				logging.warning(f"Error rendering frame: {e}")
@@ -45389,7 +45397,7 @@ def main(holder: Holder) -> None:
 			power += 400
 
 		if power < 500:
-			time.sleep(0.03)
+
 			if (pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED)) and not tauon.load_orders and gui.update == 0 \
 			and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
 				pass
@@ -45660,7 +45668,7 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
-				tauon.milky.projectm.random_preset()
+				shutil.copy(tauon.milky.projectm.loaded_preset, tauon.user_directory / "presets")
 				pass
 
 			if gui.mode < 3:
