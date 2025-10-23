@@ -114,7 +114,7 @@ class Gnome:
 		self.menu = Gtk.Menu()
 
 		def restore(_) -> None:
-			tauon.raise_window()
+			tauon.request_raise()
 
 		def menu_quit(_) -> None:
 			logging.info("Exit via tray")
@@ -531,8 +531,7 @@ class Gnome:
 
 					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2")
 					def Raise(self) -> None:
-						gui.request_raise = True
-						tauon.wake()
+						tauon.request_raise()
 
 					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2")
 					def Quit(self) -> None:
