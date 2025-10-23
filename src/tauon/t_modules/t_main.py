@@ -45668,7 +45668,10 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
-				shutil.copy(tauon.milky.projectm.loaded_preset, tauon.user_directory / "presets")
+				try:
+					shutil.copy(tauon.milky.projectm.loaded_preset, tauon.user_directory / "presets")
+				except:
+					pass
 				pass
 
 			if gui.mode < 3:
