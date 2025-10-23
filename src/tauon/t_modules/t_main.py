@@ -162,6 +162,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	uri_parse,
 	year_search,
 )
+from tauon.t_modules.t_db_migrate import migrate_star_store_71  # noqa: E402
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
@@ -43050,6 +43051,13 @@ def main(holder: Holder) -> None:
 		try:
 			with to_load.open("rb") as file:
 				tauon.star_store.db = pickle.load(file)
+				# Test if we truly have StarRecord in the DB file
+				# If we have something else, it's likely an older DB format,
+				# in which case we try migrating it
+				for key, old_record in tauon.star_store.db.items():
+					if not isinstance(old_record, StarRecord):
+						migrate_star_store_71(tauon)
+
 		except Exception:
 			logging.exception("Unknown error loading star.p file")
 
@@ -43067,13 +43075,12 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		logging.warning(f"Current DB version {db_version} was lower than latest {latest_db_version}, running migrations!")
 		try:
-			pctl.master_library, pctl.multi_playlist, tauon.star_store, pctl.force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
+			pctl.master_library, pctl.multi_playlist, pctl.force_queue, prefs.theme, prefs, gui, pctl.gen_codes, pctl.radio_playlists = database_migrate(
 				tauon=tauon,
 				db_version=db_version,
 				master_library=pctl.master_library,
 				install_mode=install_mode,
 				multi_playlist=pctl.multi_playlist,
-				star_store=tauon.star_store,
 				install_directory=install_directory,
 				a_cache_dir=a_cache_dir,
 				cache_directory=cache_directory,
