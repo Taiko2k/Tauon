@@ -515,7 +515,6 @@ class GuiVar:
 		self.turbo_next = 0
 		self.pl_update  = 1
 		self.lowered           = False
-		self.request_raise     = False
 		self.maximized         = False
 		self.side_drag         = False
 		self.ext_drop_mode     = False
@@ -44842,13 +44841,6 @@ def main(holder: Holder) -> None:
 		if mouse_moved and tauon.fields.test():
 			gui.update += 1
 
-		if gui.request_raise:
-			gui.request_raise = False
-			logging.info("Raise")
-			sdl3.SDL_ShowWindow(t_window)
-			sdl3.SDL_RestoreWindow(t_window)
-			sdl3.SDL_RaiseWindow(t_window)
-			gui.lowered = False
 
 		# if tauon.thread_manager.sleeping:
 		#     if not gui.lowered:
