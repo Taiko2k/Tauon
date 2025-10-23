@@ -821,7 +821,7 @@ def controller(tauon: Tauon) -> None:
 				path = path.rstrip("/")
 
 			if path == "/raise":
-				tauon.raise_window()
+				tauon.request_raise()
 			if path == "/reloadtheme":
 				tauon.gui.reload_theme = True
 				tauon.gui.update += 1

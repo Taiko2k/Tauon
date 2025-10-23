@@ -6025,6 +6025,8 @@ class Tauon:
 
 		self.now_searching: Literal["off", "searching", "errored", "success"] = "off"
 
+		self.requested_raise = False
+
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
 
@@ -18445,6 +18447,10 @@ class Tauon:
 	def min_to_tray(self) -> None:
 		sdl3.SDL_HideWindow(self.t_window)
 		self.gui.mouse_unknown = True
+
+	def request_raise(self):
+		self.requested_raise = True
+		self.wake()
 
 	def raise_window(self) -> None:
 		sdl3.SDL_ShowWindow(self.t_window)
@@ -44922,6 +44928,10 @@ def main(holder: Holder) -> None:
 
 		if not pctl.running:
 			break
+
+		if tauon.requested_raise:
+			tauon.raise_window()
+			tauon.requested_raise = False
 
 		if pctl.playing_state != PlayingState.STOPPED:
 			power += 400
