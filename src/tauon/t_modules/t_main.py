@@ -7561,6 +7561,7 @@ class Tauon:
 
 	def toggle_milky_auto(self, track_object: TrackClass) -> None:
 		self.milky.projectm.auto_frames = 0
+		self.milky.projectm.timer.set()
 		self.prefs.auto_milk ^= True
 
 	def open_preset_folder(self, track_object: TrackClass) -> None:
@@ -35932,6 +35933,9 @@ class ProjectM:
 			self.tauon.pctl.install_directory / "presets",
 			self.tauon.user_directory / "presets"
 		]
+		self.timer = Timer()
+		self.frame_timer = Timer()
+		self.first_frame = True
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
@@ -35978,6 +35982,9 @@ class ProjectM:
 
 			self.lib.projectm_set_fps.argtypes = [c_void_p, ctypes.c_int32]
 			self.lib.projectm_set_fps.restype = None
+
+			self.lib.projectm_set_frame_time.argtypes = [c_void_p, ctypes.c_double]
+			self.lib.projectm_set_frame_time.restype = None
 
 			self.lib.projectm_set_texture_search_paths.argtypes = [
 				c_void_p,  # instance
@@ -36080,6 +36087,7 @@ class ProjectM:
 		logging.info(f"Loading preset: {preset.stem}")
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
 		self.auto_frames = 0
+		self.timer.set()
 
 	def render_frame(self, framebuffer):
 		"""Render a projectM frame"""
@@ -36093,8 +36101,19 @@ class ProjectM:
 				self.load_preset(self.load_next)
 			self.load_next = None
 
-		if self.tauon.prefs.auto_milk and self.auto_frames > 22 * 60:
-			self.random_preset(fade=True)
+		fps = int(self.tauon.milky.fps.get())
+		if fps and self.tauon.prefs.auto_milk and self.auto_frames > 30 * self.tauon.milky.fps.get():
+			if self.timer.get() > 30:
+				self.random_preset(fade=True)
+
+		# if self.first_frame:
+		# 	self.frame_timer.set()
+		# 	self.lib.projectm_set_frame_time(self.pm_instance, 0.0)
+		# 	self.first_frame = False
+		# else:
+		# 	t = self.frame_timer.get()
+		# 	t = t * 1
+		# 	self.lib.projectm_set_frame_time(self.pm_instance, t)
 
 		# feed audio
 		aud = self.tauon.aud
@@ -36109,7 +36128,7 @@ class ProjectM:
 
 		if self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			try:
-				fps = int(self.tauon.milky.fps.get())
+
 				if not fps or fps < 1:
 					fps = 1
 
@@ -36117,6 +36136,7 @@ class ProjectM:
 				self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
 			except Exception as e:
 				logging.warning(f"Error rendering frame: {e}")
+
 			self.auto_frames += 1
 
 class Milky:
