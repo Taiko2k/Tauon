@@ -195,7 +195,7 @@ class FFRun:
 
 	def start(self, uri: bytes, start_ms: int, samplerate: int) -> int:
 		self.close()
-		path = self.tauon.get_ffmpeg()
+		path = str(self.tauon.get_ffmpeg())
 		if not path:
 			self.tauon.test_ffmpeg()
 			return 1
@@ -411,7 +411,7 @@ class Cachement:
 				logging.info(path)
 				# fmt:off
 				ffmpeg_command = [
-					self.tauon.get_ffmpeg(),
+					str(self.tauon.get_ffmpeg()),
 					"-i", "-",      # Input from stdin (pipe the data)
 					"-f", "flac",   # Specify FLAC as the output format explicitly
 					"-c:a", "copy", # Copy FLAC data without re-encoding
