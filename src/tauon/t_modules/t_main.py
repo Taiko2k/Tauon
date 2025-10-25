@@ -14941,7 +14941,7 @@ class Tauon:
 
 		target_out = str(output / f"output{track}.{codec}")
 
-		command = self.get_ffmpeg() + " "
+		command = str(self.get_ffmpeg()) + " "
 
 		if not t.is_cue:
 			command += '-i "'
