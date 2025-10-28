@@ -17216,13 +17216,16 @@ class Tauon:
 				current_folder = tr.parent_folder_path
 				current_album = tr.album
 				current_date = track_date
+				current_artist = tr.album_artist
 			elif tr.parent_folder_path != current_folder:
 				if tr.album == current_album and tr.album and track_date == current_date and tr.disc_number \
+						and tr.album_artist == current_artist \
 						and os.path.dirname(tr.parent_folder_path) == os.path.dirname(current_folder):
 					continue
 				current_folder = tr.parent_folder_path
 				current_album = tr.album
-				current_date = tr.date
+				current_date = track_date
+				current_artist = tr.album_artist
 				albums.append(i)
 
 		i = 0
