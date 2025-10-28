@@ -40916,7 +40916,7 @@ def worker1(tauon: Tauon) -> None:
 		try:
 			Path(path).stat().st_size
 		except FileNotFoundError:
-			logging.error("File to import missing")
+			logging.error(f"File to import missing: {path}")
 			if show_errors:
 				tauon.show_message(
 					_("Files missing or inaccessible"),
@@ -40925,7 +40925,7 @@ def worker1(tauon: Tauon) -> None:
 					mode="link")
 			return 0
 		except PermissionError:
-			logging.error("Bad permissions to import")
+			logging.error(f"Bad permissions to import: {path}")
 			if show_errors:
 				tauon.show_message(
 					_("Bad permissions"),
@@ -40934,7 +40934,7 @@ def worker1(tauon: Tauon) -> None:
 				)
 			return 0
 		except Exception:
-			logging.exception()
+			logging.exception(f"Unknown error importing: {path}")
 			if show_errors:
 				tauon.show_message(
 					_("Can't import that"),
