@@ -157,7 +157,7 @@ class StreamEnc:
 		rate = str(self.tauon.prefs.samplerate)
 		# fmt:off
 		cmd = [
-			self.tauon.get_ffmpeg(),
+			str(self.tauon.get_ffmpeg()),
 			"-loglevel", "quiet",
 			"-i", "pipe:0",
 			"-acodec", "pcm_s16le",
@@ -264,7 +264,7 @@ class StreamEnc:
 
 			# fmt:off
 			cmd = [
-				self.tauon.get_ffmpeg(),
+				str(self.tauon.get_ffmpeg()),
 				"-loglevel", "quiet",
 				"-i", "pipe:0",
 				"-acodec", "pcm_s16le",
