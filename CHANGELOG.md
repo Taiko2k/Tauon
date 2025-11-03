@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v8.2.1
+
+ - **Fixed** Window not restoring from tray
+ - **Fixed** Possible random crash on Wayland
+
 ### v8.2.0
 
  - **Added** New fully-featured lyrics editor, including LRC support
