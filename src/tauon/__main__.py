@@ -203,6 +203,8 @@ if d in ["GNOME:Phosh"]:
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
 	phone = True
 
+os.environ["SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"] = "0"  # emergency crash workaround
+
 if pyinstaller_mode: # and sys.platform == 'darwin':
 	os.environ["SDL_BINARY_PATH"] = str(install_directory)
 
