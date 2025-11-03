@@ -34,6 +34,11 @@ Steps to reproduce the behavior:
 
 **Tauon log**
 <details><summary>Logfiles</summary>
+<!-- 
+ Misc -> Toggle Console, or press the ~ key on your keyboard to open the built-in console with the last 50 commands 
+ On Linux and macOS you can launch the application via a terminal for a full log.
+ If Tauon crashed, the recent logs are saved to tauon-crash.log in Tauon's User Data directory.
+-->
 
 <!--
 ```python
