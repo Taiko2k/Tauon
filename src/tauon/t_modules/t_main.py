@@ -38965,12 +38965,12 @@ def set_path(nt: TrackClass, path: str) -> None:
 	nt.parent_folder_name = get_end_folder(os.path.dirname(path))
 	nt.file_ext = os.path.splitext(os.path.basename(path))[1][1:].upper()
 
-def pumper(bag: Bag) -> None:
-	if bag.macos:
-		return
-	while bag.pump:
-		time.sleep(0.005)
-		sdl3.SDL_PumpEvents()
+# def pumper(bag: Bag) -> None:
+# 	if bag.macos:
+# 		return
+# 	while bag.pump:
+# 		time.sleep(0.005)
+# 		sdl3.SDL_PumpEvents()
 
 def save_prefs(bag: Bag) -> None:
 	cf    = bag.cf
@@ -42390,9 +42390,9 @@ def main(holder: Holder) -> None:
 	for station in bag.primary_stations:
 		bag.radio_playlists[0].stations.append(station)
 
-	shoot_pump = threading.Thread(target=pumper, args=(bag,))
-	shoot_pump.daemon = True
-	shoot_pump.start()
+	# shoot_pump = threading.Thread(target=pumper, args=(bag,))
+	# shoot_pump.daemon = True
+	# shoot_pump.start()
 
 	#after_scan, search_string_cache, search_dia_string_cache = load_savefile(latest_db_version, user_directory, bag, prefs, gui)
 	after_scan: list[TrackClass] = []
@@ -42855,8 +42855,8 @@ def main(holder: Holder) -> None:
 		gui.suggest_clean_db = True
 	# logging.info(f"Database scanned in {round(perf_timer.get(), 3)} seconds.")
 
-	bag.pump = False
-	shoot_pump.join()
+	# bag.pump = False
+	# shoot_pump.join()
 
 	# temporary
 	if window_size is None:
