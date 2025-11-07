@@ -2,6 +2,10 @@
 Changelog
 ---------
 
+### v8.2.2
+
+ - **Fixed** Black screen bug
+
 ### v8.2.1
 
  - **Fixed** Window not restoring from tray
