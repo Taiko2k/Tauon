@@ -49136,11 +49136,7 @@ def main(holder: Holder) -> None:
 				sdl3.SDL_RenderTexture(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
 
 		if gui.present:
-			# Possible bug older version of SDL (2.0.16) Wayland, setting render target to None causer last copy
-			# to fail when resizing? Not a big deal as it doesn't matter what the target is when presenting, just
-			# set to something else
-			# sdl3.SDL_SetRenderTarget(renderer, None)
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
+			sdl3.SDL_SetRenderTarget(renderer, None)
 			sdl3.SDL_RenderPresent(renderer)
 
 			gui.present = False
