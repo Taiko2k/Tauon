@@ -3,7 +3,7 @@
 	# Should also be bumped in:
 	# * __main__.py
 	# * extra/com.github.taiko2k.tauonmb.appdata.xml for Flatpak
-	version = "8.2.1"
+	version = "8.2.2"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
