@@ -1096,13 +1096,13 @@ def shooter(func: Callable[..., None], args: tuple = ()) -> None:
 
 
 def d_date_display(track: TrackClass) -> str:
-	if "rdat" in track.misc:
+	if "rdat" in track.misc and str(track.date) != track.misc["rdat"]:
 		return str(track.date) + " → " + track.misc["rdat"]
 	return str(track.date)
 
 
 def d_date_display2(track: TrackClass) -> str:
-	if "rdat" in track.misc:
+	if "rdat" in track.misc and str(get_year_from_string(track.date)) != get_year_from_string(track.misc["rdat"]):
 		return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.misc["rdat"])
 	return str(get_year_from_string(track.date))
 
