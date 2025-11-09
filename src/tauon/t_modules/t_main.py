@@ -134,6 +134,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	get_hms_time,
 	get_split_artists,
 	get_year_from_string,
+	get_modify_date_string,
 	grow_rect,
 	hls_to_rgb,
 	hms_to_seconds,
@@ -5729,6 +5730,7 @@ class Tauon:
 			"Disc",
 			"CUE",
 			"ID",
+			"=/=",
 		)
 		self.device                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
@@ -10914,6 +10916,7 @@ class Tauon:
 			[_("Has Lyrics"), "Lyrics", self.sa_lyrics],
 			[_("Is CUE Sheet"), "CUE", self.sa_cue],
 			[_("Internal Track ID"), "ID", self.sa_track_id],
+			[_("File Changed"), "=/=", self.sa_modify_date],
 		]
 		for checked_column in self.gui.pl_st:
 			checked.add( checked_column[0] )
@@ -11096,6 +11099,12 @@ class Tauon:
 		self.gui.update_layout = True
 		self.sa_regen_menu()
 
+	def sa_modify_date(self) -> None:
+		if not self.sa_try_uncheck("=/="):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["=/=", 65, True])
+		self.gui.update_layout = True
+		self.sa_regen_menu()
+
 	def key_love(self, index: int) -> bool:
 		return self.get_love_index(index)
 
@@ -11140,6 +11149,9 @@ class Tauon:
 		if len(self.pctl.master_library[index].lyrics) > 5:
 			return 0
 		return 1
+
+	def key_modify_date(self, index: int) -> float:
+		return self.pctl.master_library[index].modified_time
 
 	def sort_dec(self, h: int) -> None:
 		self.sort_ass(h, True)
@@ -14421,7 +14433,7 @@ class Tauon:
 				item[1] = round(55 * self.gui.scale)
 				total  -= round(55 * self.gui.scale)
 
-			if item[0] == "Bitrate":
+			if item[0] == "Bitrate" or item[0] == "=/=":
 				item[1] = round(67 * self.gui.scale)
 				total  -= round(67 * self.gui.scale)
 
@@ -30824,6 +30836,12 @@ class StandardPlaylist:
 								colour = colours.index_playing
 						elif item[0] == "ID":
 							text = str(n_track.index)
+							colour = colours.index_text
+							norm_colour = colour
+							if this_line_playing is True:
+								colour = colours.index_playing
+						elif item[0] == "=/=":
+							text = get_modify_date_string( n_track.modified_time )
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:
