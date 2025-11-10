@@ -1,0 +1,267 @@
+name: Build extras
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows-librespot_exe:
+    name: "librespot.exe"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 MinGW-W64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            cmake
+            make
+            ninja
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-rust
+
+      #- name: "[DEBUG] List all packages"
+      #  shell: msys2 {0}
+      #  run: pacman -Q
+
+      # C:\Users\runneradmin\.cargo\bin\librespot.exe
+      - name: Install librespot with cargo
+        shell: msys2 {0}
+        run: |
+          cargo install librespot
+
+      #- name: "[DEBUG] List all files"
+      #  shell: msys2 {0}
+      #  run: find .
+
+      #- name: Get current drive letter for cargo bin
+      #  shell: pwsh
+      #  run: |
+      #    $Drive = (Get-Item -Path "${{ github.workspace }}").PSDrive.Name + ":\"
+      #    $BinPath = Join-Path $Drive "Users\runneradmin\.cargo\bin\librespot.exe"
+      #    Write-Output "##vso[task.setvariable variable=LibrespotPath]$BinPath"
+
+      - name: Upload librespot.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: librespot-windows
+          path: C:\Users\runneradmin\.cargo\bin\librespot.exe # ${{ env.LibrespotPath }}
+          if-no-files-found: error
+          retention-days: 14
+
+  build-windows-lrclib_solver_exe:
+    name: "lrclib-solver.exe"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 MinGW-W64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            cmake
+            make
+            ninja
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-rust
+
+      - name: Build lrclib-solver.exe
+        shell: msys2 {0}
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-windows
+          path: src/lrclib-solver/target/release/lrclib-solver.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  build-windows-TaskbarLib_tlb:
+    name: "TaskbarLib.tlb"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Locate Windows SDK
+        shell: pwsh
+        run: |
+          $kitsRoot10 = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots' 'KitsRoot10').KitsRoot10
+          if (-not $kitsRoot10) { throw 'Windows SDK root not found.' }
+
+          $includeDir = Join-Path $kitsRoot10 'Include'
+          $pick = Get-ChildItem -Path $includeDir -Directory |
+            Where-Object {
+              (Test-Path (Join-Path $_.FullName 'um')) -and
+              (Test-Path (Join-Path $_.FullName 'shared'))
+            } |
+            Sort-Object Name -Descending |
+            Select-Object -First 1
+
+          if (-not $pick) { throw "No suitable SDK version found under $includeDir." }
+          $sdkVer = $pick.Name
+
+          $sdkBinX64 = Join-Path $kitsRoot10 "bin\$sdkVer\x64"
+          $incUm     = Join-Path $includeDir "$sdkVer\um"
+          $incShared = Join-Path $includeDir "$sdkVer\shared"
+
+          if (-not (Test-Path (Join-Path $sdkBinX64 'midl.exe'))) {
+            throw "midl.exe not found in $sdkBinX64"
+          }
+
+          "WIN_SDK_BIN_X64=$sdkBinX64"    | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "WIN_SDK_INC_UM=$incUm"         | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "WIN_SDK_INC_SHARED=$incShared" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Locate VS Dev Cmd (sets up cl.exe, INCLUDE/LIB)
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found at $vswhere" }
+          $vsRoot = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath
+          if (-not $vsRoot) { throw "Visual Studio with VC tools not found." }
+          $vsDevCmd = Join-Path $vsRoot "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $vsDevCmd)) { throw "VsDevCmd.bat not found at $vsDevCmd" }
+          "VSDEVCMD=$vsDevCmd" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Compile TaskbarLib.idl -> TaskbarLib.tlb (MIDL)
+        shell: cmd
+        run: |
+          call "%VSDEVCMD%" -arch=x64 -host_arch=x64
+          set "PATH=%PATH%;%WIN_SDK_BIN_X64%"
+          cd extra
+          midl.exe /I "%WIN_SDK_INC_UM%" /I "%WIN_SDK_INC_SHARED%" TaskbarLib.idl
+          if errorlevel 1 exit /b %errorlevel%
+
+      # Upload TaskbarLib.tlb as artifact
+      - name: Upload TaskbarLib.tlb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskbarLib-tlb
+          path: extra\TaskbarLib.tlb
+          if-no-files-found: error
+          retention-days: 14
+
+  build-windows-TauonSMTC_dll:
+    name: "TauonSMTC.dll"
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Locate MSBuild via vswhere and add to PATH
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe not found at $vswhere"
+          }
+          $msbuildPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+          if (-not $msbuildPath) {
+            throw "MSBuild.exe not found by vswhere."
+          }
+          Write-Host "MSBuild at: $msbuildPath"
+          # Persist the MSBuild directory to PATH for next steps
+          $msbuildDir = Split-Path $msbuildPath -Parent
+          "$msbuildDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Show MSBuild version
+        shell: cmd
+        run: msbuild -version
+
+      - name: Build TauonSMTC.sln (Release)
+        shell: cmd
+        run: |
+          msbuild src/smtc/TauonSMTC.sln /p:Configuration=Release /m
+
+      - name: Locate built TauonSMTC.dll
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem -Path "${{ github.workspace }}" -Filter "TauonSMTC.dll" -Recurse `
+                  | Where-Object { $_.FullName -match "\\Release\\" } `
+                  | Select-Object -First 1
+          if (-not $dll) { throw "TauonSMTC.dll not found under a Release directory." }
+          "TAUON_SMTC_DLL=$($dll.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Found: $($dll.FullName)"
+
+      - name: Upload TauonSMTC.dll artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TauonSMTC-dll
+          path: ${{ env.TAUON_SMTC_DLL }}
+          if-no-files-found: error
+          retention-days: 14
+
+  build-linux-lrclib_solver:
+    name: "Linux lrclib-solver"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy,rustfmt
+
+      - name: Build lrclib-solver
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-linux
+          path: src/lrclib-solver/target/release/lrclib-solver
+          if-no-files-found: error
+          retention-days: 14
+
+  build-macOS-lrclib_solver:
+    name: "macOS lrclib-solver"
+    runs-on: macos-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy,rustfmt
+
+      - name: Build lrclib-solver
+        run: |
+          cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
+
+      - name: Upload lrclib-solver artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrclib-solver-macos
+          path: src/lrclib-solver/target/release/lrclib-solver
+          if-no-files-found: error
+          retention-days: 14

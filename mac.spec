@@ -24,7 +24,7 @@ libs = [
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
 x64_path   = f"build/lib.macosx-13.0-x86_64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
-arm64_path = f"build/lib.macosx-14.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+arm64_path = f"build/lib.macosx-15.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
 phazor_path = x64_path if Path(x64_path).exists() else arm64_path
 
 a = Analysis(
@@ -40,6 +40,7 @@ a = Analysis(
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
+		("lrclib-solver", "."),
 	],
 	hiddenimports=[
 		"phazor",

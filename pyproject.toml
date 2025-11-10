@@ -1,7 +1,9 @@
 [project]
 	name = "tauon-music-box"
-	# Should also be bumped in __main__.py and in two places in .github/workflows/build_and_release.yaml in the Windows section
-	version = "8.1.2"
+	# Should also be bumped in:
+	# * __main__.py
+	# * extra/com.github.taiko2k.tauonmb.appdata.xml for Flatpak
+	version = "8.2.2"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = { text = "GPL-3.0-or-later" }
@@ -187,6 +189,8 @@
 [tool.ruff.lint]
 	select = ['ALL']
 		ignore = [
+			'COM812',  # missing-trailing-comma                    - Using the formatter makes this rule redundant
+			'C901',    # complex-structure                         - We'll ignore functions being too complex for now - https://github.com/microsoft/pyright/issues/10839
 			'Q003',    # avoidable-escaped-quote                   - It's not that important, we just use escapes, keeping the quotes consistent
 			'W191',    # tab-indentation                           - We use tabs for indents, disabling this PEP 8 recommendation
 			'D206',    # indent-with-spaces                        - ^
@@ -209,6 +213,7 @@
 			'EM101',   # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
 			'EM102',   # f-string-in-exception                     - ^
 			'EM103',   # dot-format-in-exception                   - ^
+			'S311',    # suspicious-non-cryptographic-random-usage - We aren't using random for anything important
 			'ERA001',  # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
 			'FBT001',  # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
 			'FBT002',  # boolean-default-value-positional-argument - ^
@@ -216,9 +221,32 @@
 			'G004',    # logging-f-string                          - Ignore this, we lose some efficiency but I suppose nobody wants to do a total overhaul of the logging system for next to no gains
 			'LOG015',  # root-logger-call                          - We are not a library and have customized the logger
 			'TD003',   # missing-todo-link                         - We're fine not linking existing issues in TODOs, it's fine to have them noted in code only
-			'C901',    # complex-structure                         - We'll ignore functions being too complex for now
 			'PLR0911', # too-many-return-statements                - We'll ignore functions having too many return statements
 			'PLR0912', # too-many-branches                         - We'll ignore functions having too many branches for now
 			'PLR0913', # too-many-arguments                        - We'll ignore functions taking too many arguments
 			'PLR0915', # too-many-statements                       - We'll ignore functions having too many statements
+			# TODO(Martin): We mostly want these, but currently there's so many issues it's making the check useless
+			# Throw these out one by one when the time allows and fix the issues
+			'A001',    # builtin-variable-shadowing                 - TODO fix
+			'S101',    # assert                                     - TODO fix
+			'S603',    # subprocess-without-shell-equals-true       - TODO fix
+			'S607',    # start-process-with-partial-path            - TODO fix
+			'PLR2004', # magic-value-comparison                     - TODO fix
+			'FIX002',  # line-contains-todo                         - TODO fix
+			'PTH103',  # os-makedirs                                - TODO fix
+			'PTH107',  # os-remove                                  - TODO fix
+			'PTH110',  # os-path-exists                             - TODO fix
+			'PTH111',  # os-path-expanduser                         - TODO fix
+			'PTH112',  # os-path-isdir                              - TODO fix
+			'PTH113',  # os-path-isfile                             - TODO fix
+			'PTH114',  # os-path-islink                             - TODO fix
+			'PTH115',  # os-readlink                                - TODO fix
+			'PTH118',  # os-path-join                               - TODO fix
+			'PTH119',  # os-path-basename                           - TODO fix
+			'PTH120',  # os-path-dirname                            - TODO fix
+			'PTH122',  # os-path-splittext                          - TODO fix
+			'PTH123',  # builtin-open                               - TODO fix
+			'PTH202',  # os-path-getsize                            - TODO fix
+			'PTH208',  # os-listdir                                 - TODO fix
+			'PLW2901', # os-path-getsize                            - TODO fix
 		]

@@ -29,9 +29,7 @@ from tauon.t_modules.t_extra import tryint
 
 
 class Config:
-
 	def __init__(self) -> None:
-
 		self.live = []
 		self.old = []
 
@@ -40,40 +38,32 @@ class Config:
 		self.old.clear()
 
 	def add_text(self, text: str) -> None:
-
 		self.live.append(["comment", text])
 
 	def add_comment(self, text: str) -> None:
-
 		self.live.append(["comment", "# " + text])
 
 	def br(self) -> None:
-
 		self.live.append(["comment", ""])
 
 	def update_value(self, key: str, value: bool | str | float) -> None:
-
 		for item in self.live:
 			if item[0] != "comment" and item[1] == key:
 				item[2] = value
 				break
 
 	def load(self, path: str) -> None:
-
 		if os.path.isfile(path):
-			with open(path, encoding="utf_8") as f:
+			with open(path, encoding="utf-8") as f:
 				self.old = f.readlines()
 
 	def dump(self, path: str) -> None:
-
 		# if os.path.exists(path) and not os.access("test.conf", os.W_OK):
-		#	 logging.error("Config file cannot be written")
-		#	 return
+		# 	logging.error("Config file cannot be written")
+		# 	return
 
-		with open(path, "w", encoding="utf_8") as f:
-
+		with open(path, "w", encoding="utf-8") as f:
 			for item in self.live:
-
 				if item[0] == "comment":
 					f.write(item[1])
 					f.write(os.linesep)
@@ -119,8 +109,9 @@ class Config:
 
 			f.write(os.linesep)
 
-	def sync_add(self, var_type: str, key: str, default_value: bool | str | float, comment: str="") -> bool | str | float:
-
+	def sync_add(
+		self, var_type: str, key: str, default_value: bool | str | float, comment: str = ""
+	) -> bool | str | float:
 		got_old = False
 		old_value = None
 
@@ -144,12 +135,11 @@ class Config:
 			return default_value
 
 		if var_type == "string":
-
 			if old_value is None:
 				self.live.append(["string", key, default_value, comment])
 				return default_value
 
-			#old_value = old_value.strip('"')
+			# old_value = old_value.strip('"')
 			if old_value and old_value[0] == old_value[-1] == '"':
 				old_value = old_value[1:-1]
 
@@ -161,10 +151,10 @@ class Config:
 			return old_value
 
 			# if got_old:
-			#	 old_value = old_value.strip('"')
-			#	 if old_value:
-			#		 self.live.append(["string", key, old_value, comment])
-			#		 return old_value
+			# old_value = old_value.strip('"')
+			# if old_value:
+			# 	self.live.append(["string", key, old_value, comment])
+			# 	return old_value
 			#
 			# self.live.append(["string", key, default_value, comment])
 			# return default_value

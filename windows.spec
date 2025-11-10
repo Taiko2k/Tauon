@@ -49,6 +49,7 @@ a = Analysis(
 		("src/tauon/templates", "templates"),
 		("fonts", "fonts"),
 		("librespot.exe", "."),
+		("lrclib-solver.exe", "."),
 		("TaskbarLib.tlb", "."),
 		("TauonSMTC.dll", "lib"),
 	],
