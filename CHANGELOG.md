@@ -2,6 +2,49 @@
 Changelog
 ---------
 
+### v8.2.2
+
+ - **Fixed** Black screen bug
+
+### v8.2.1
+
+ - **Fixed** Window not restoring from tray
+ - **Fixed** Possible random crash on Wayland
+
+### v8.2.0
+
+ - **Added** New fully-featured lyrics editor, including LRC support
+ - **Added** Option to upload lyrics to LRCLIB (inside the lyrics editor)
+ - **Added** All lyrics changes will now write back to their original files
+ - **Added** Spring-loaded clicking behavior to all context menus
+ - **Added** Track ReplayGain support for Jellyfin
+ - **Added** Configurable timeout for Jellyfin
+ - **Fixed** Setting "Background artist info download" not being respected
+ - **Fixed** Chart generation on macOS and Windows (regression)
+ - **Fixed** Loading queue on app restart (regression)
+ - **Fixed** Auto-theme from album art (regression)
+
+### v8.1.4
+
+ - **Fixed** Being able to click-to-seek synced lyrics even outside the lyrics window
+ - **Fixed** Crash on radio playlist migration under some circumstances
+ - **Fixed** Spotify playback via Librespot, regression introduced in 8.0.0
+ - **Fixed** Jellyfin import, regression introduced in 8.1.0
+ - **Fixed** Crash when exporting playlist, regression introduced in 8.1.3
+ - **Fixed** A couple of playlist-file bugs, including one that would import radio stations forever
+ - **Tweaked** Defaults for imported playlists
+ - **Removed** Prebuilt images for macOS x64 (Intel)
+
+### v8.1.3
+
+ - **Added** Playlist auto import feature (Thanks @rexendevar)
+ - **Added** Click-to-seek + manual scrolling for synced lyrics (Thanks @rexendevar)
+ - **Added** Warning for Flatpak transient file import
+ - **Fixed** Jittery scrolling in some views (Thanks @rexendevar)
+ - **Fixed** Version migrations not saving properly and causing crashes
+ - **Fixed** No more case sensitivity when sorting by filename/filepath
+ - **Fixed** An issue with gallery switching when using search
+
 ### v8.1.2
 
  - **Hotfix** Fix 8.1.0 regression preventing loading saved radio stations
@@ -9,7 +52,8 @@ Changelog
 ### v8.1.1
 
  - **Hotfix** Fixed possible crash on start
- - **Added** Column toggle funtctionality to column menu.
+ - **Added** "Internal track ID" column option
+ - **Tweaked** Columns now toggle between on/off - can no longer have multiple copies of the same one (Thanks @rexendevar)
 
 ### v8.1.0
 

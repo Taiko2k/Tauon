@@ -17,7 +17,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from __future__ import annotations
 
 import io
@@ -30,8 +29,8 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_extra import Timer
 from tauon.t_modules.t_draw import QuickThumbnail
+from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
 	from tekore._auth.refreshing import RefreshingCredentials
@@ -50,9 +49,10 @@ except Exception:
 else:
 	tekore_imported = True
 
-class SpotCtl:
 
+class SpotCtl:
 	def __init__(self, tauon: Tauon) -> None:
+		# fmt:off
 		self.tauon                   = tauon
 		self.strings                 = tauon.strings
 		self.show_message            = tauon.show_message
@@ -77,6 +77,7 @@ class SpotCtl:
 		self.preparing_spotify: bool = False
 		self.progress_timer:   Timer = Timer()
 		self.update_timer:     Timer = Timer()
+		# fmt:on
 
 		self.token_path = self.tauon.user_directory / "spot-token-pkce"
 		self.pkce_code = None
@@ -119,16 +120,14 @@ class SpotCtl:
 		else:
 			self.token = self.cred.request_user_token(code.strip().strip("\n"))
 
-
 		if self.token:
 			self.save_token()
 			self.show_message(self.strings.spotify_account_connected, mode="done")
 		self.tauon.prefs.spot_mode = True
 
 	def save_token(self) -> None:
-
 		if self.token:
-			f = self.token_path.open("w")
+			f = self.token_path.open("w", encoding="utf-8")
 			f.write(str(self.token.refresh_token))
 			f.close()
 			self.tauon.prefs.spotify_token = str(self.token.refresh_token)
@@ -140,14 +139,15 @@ class SpotCtl:
 			f.close()
 
 		if self.tauon.prefs.spotify_token:
-
 			secret = self.tauon.prefs.spot_secret
 			if not secret or len(self.tauon.prefs.spot_secret) != 32:
 				secret = None
 
 			try:
 				if secret:
-					self.token = tk.refresh_user_token(self.tauon.prefs.spot_client, secret, self.tauon.prefs.spotify_token)
+					self.token = tk.refresh_user_token(
+						self.tauon.prefs.spot_client, secret, self.tauon.prefs.spotify_token
+					)
 				else:
 					self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
 			except Exception:
@@ -168,7 +168,9 @@ class SpotCtl:
 		if not tekore_imported:
 			self.show_message(
 				_("python-tekore not installed"),
-				_("If you installed via AUR, you'll need to install this optional dependency, then restart Tauon."), mode="error")
+				_("If you installed via AUR, you'll need to install this optional dependency, then restart Tauon."),
+				mode="error",
+			)
 			return
 		if len(self.tauon.prefs.spot_client) != 32:
 			self.show_message(_("Invalid client ID. See Spotify tab in settings."), mode="error")
@@ -219,17 +221,17 @@ class SpotCtl:
 				self.start_timer.set()
 			elif command == "next" and type(param) is str:
 				self.spotify.playback_next(param)
-				#self.start_timer.set()
+				# self.start_timer.set()
 			elif command == "previous" and type(param) is str:
 				self.spotify.playback_previous(param)
-				#self.start_timer.set()
+				# self.start_timer.set()
 			else:
 				logging.error(f"Passed an invalid command {command}!")
 				return
 
 		except Exception as e:
 			logging.exception("Control failure")
-			#logging.info(repr(e))
+			# logging.info(repr(e))
 			if "No active device found" in repr(e):
 				try:
 					tr = self.tauon.pctl.playing_object()
@@ -268,7 +270,6 @@ class SpotCtl:
 			logging.exception("Error saving album")
 
 	def remove_album_from_library(self, url: str) -> None:
-
 		self.connect()
 		if not self.spotify:
 			return
@@ -282,7 +283,6 @@ class SpotCtl:
 			logging.exception("Error removing album")
 
 	def get_album_url_from_local(self, track_object: TrackClass) -> str | None:
-
 		if "spotify-album-url" in track_object.misc:
 			return track_object.misc["spotify-album-url"]
 
@@ -298,7 +298,6 @@ class SpotCtl:
 		return None
 
 	def get_artist_url_from_local(self, track_object: TrackClass) -> str | None:
-
 		if "spotify-artist-url" in track_object.misc:
 			return track_object.misc["spotify-artist-url"]
 
@@ -306,7 +305,7 @@ class SpotCtl:
 		if not self.spotify:
 			return None
 
-		results = self.spotify.search(track_object.artist, types=("artist",), limit=1) #+ " " + track_object.album
+		results = self.spotify.search(track_object.artist, types=("artist",), limit=1)  # + " " + track_object.album
 		for artist in results[0].items:
 			if "spotify" in artist.external_urls:
 				if artist.name.lower() not in track_object.artist.lower():
@@ -316,7 +315,6 @@ class SpotCtl:
 		return None
 
 	def import_all_playlists(self) -> None:
-
 		self.spotify_com = True
 
 		playlists = self.get_playlist_list()
@@ -344,9 +342,9 @@ class SpotCtl:
 		for page in pages:
 			items = page.items
 			for item in items:
-#				if item is None:
-#					logging.debug("Playlist item is None?")
-#					continue
+				# if item is None:
+				# 	logging.debug("Playlist item is None?")
+				# 	continue
 				name = item.name
 				url = item.external_urls["spotify"]
 				playlists.append((name, url))
@@ -370,6 +368,9 @@ class SpotCtl:
 
 		if results[0]:
 			for i, album in enumerate(results[0].items[1:]):
+				if hasattr(album, "album"):
+					album = album.album
+
 				img = QuickThumbnail(self.tauon)
 				img.url = album.images[-1].url
 				img.size = round(50 * self.tauon.gui.scale)
@@ -394,7 +395,6 @@ class SpotCtl:
 				finds.insert(8, (12, (track.name, track.artists[0].name), track.external_urls["spotify"], 0, 0, None))
 
 		return finds
-
 
 	def search_track(self, track: TrackClass | None) -> None:
 		"""Search track on Spotify - returning results is unimplemented"""
@@ -464,7 +464,6 @@ class SpotCtl:
 		self.preparing_spotify = False
 
 	def play_target(self, id: int, force_new_device: bool = False, start_time: int | None = 0, start_callback=None):
-
 		start_time = None if not start_time else int(start_time * 1000)
 
 		self.coasting = False
@@ -472,7 +471,8 @@ class SpotCtl:
 		if not self.spotify:
 			self.preparing_spotify = False
 			self.show_message(
-				_("Error. You may need to click Authorise in Settings > Accounts > Spotify."), mode="warning")
+				_("Error. You may need to click Authorise in Settings > Accounts > Spotify."), mode="warning"
+			)
 			return
 
 		logging.info("Want play spotify target " + str(id))
@@ -528,11 +528,10 @@ class SpotCtl:
 			logging.info("Internal logic error, aborting.")
 			return
 
-
-		#if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
-		#try:
+		# if self.tauon.pctl.playing_state == 1 and self.playing and self.tauon.pctl.playing_time
+		# try:
 		if start_new_device:
-			#if not force_new_device:
+			# if not force_new_device:
 			logging.info("Launch new device...")
 
 			self.tauon.gui.update += 1
@@ -561,7 +560,6 @@ class SpotCtl:
 						self.tauon.gui.update += 1
 						return
 			else:
-
 				if self.tauon.prefs.launch_spotify_local:
 					self.preparing_spotify = True
 					logging.info("Queue start librespot...")
@@ -572,7 +570,7 @@ class SpotCtl:
 						logging.info("Callback start librespot")
 						start_callback()
 
-					#self.tauon.pctl.playing_state = 3
+					# self.tauon.pctl.playing_state = 3
 				elif self.tauon.msys:
 					self.launching_spotify = True
 					p = os.getenv("APPDATA") + "\\Spotify\\Spotify.exe"
@@ -599,7 +597,9 @@ class SpotCtl:
 					if devices and tries < 13:
 						logging.info("Devices found:")
 						for device in devices:
-							logging.info(f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}")
+							logging.info(
+								f" -- Device name: {device.name}, type: {device.type}, is active: {device.is_active}"
+							)
 
 						if not self.tauon.prefs.launch_spotify_local:
 							self.tauon.focus_window()
@@ -645,7 +645,7 @@ class SpotCtl:
 			self.tauon.gui.update += 1
 
 		elif not done:
-			#logging.info(d_id)
+			# logging.info(d_id)
 			logging.info("A ready device is present...")
 			try:
 				self.progress_timer.set()
@@ -653,13 +653,13 @@ class SpotCtl:
 
 				# Check conditions for a proper transition
 				if self.playing:
-					#logging.info("already playing")
+					# logging.info("already playing")
 					result = self.spotify.playback_currently_playing()
 					if result and result.item and result.is_playing:
 						remain = result.item.duration_ms - result.progress_ms
 						if 1400 < remain < 3500:
 							logging.info("We are close to the end of the current track, queuing next.")
-							self.spotify.playback_queue_add("spotify:track:" + id,  device_id=d_id)
+							self.spotify.playback_queue_add("spotify:track:" + id, device_id=d_id)
 							okay = True
 							logging.info("Waiting for remainder of track...")
 							time.sleep(remain / 1000)
@@ -676,8 +676,8 @@ class SpotCtl:
 					self.spotify.playback_start_tracks([id], device_id=d_id, position_ms=start_time)
 
 			# except tk.client.decor.error.InternalServerError:
-			#	 self.show_message("Spotify server error. Maybe try again later.")
-			#	 return
+			# self.show_message("Spotify server error. Maybe try again later.")
+			# return
 			except Exception as e:
 				logging.exception("Start track on device failed, aborting")
 				self.launching_spotify = False
@@ -686,8 +686,8 @@ class SpotCtl:
 				return
 
 		# except Exception as e:
-		#	 logging.exception("Failure. Do you have playback started somewhere?")
-		#	 self.show_message("Error. Do you have playback started somewhere?", mode="error")
+		# logging.exception("Failure. Do you have playback started somewhere?")
+		# self.show_message("Error. Do you have playback started somewhere?", mode="error")
 		logging.info("Done")
 		self.playing = True
 		self.started_once = True
@@ -698,7 +698,6 @@ class SpotCtl:
 		self.tauon.pctl.decode_time = 0
 		self.tauon.gui.pl_update += 1
 		self.tauon.thread_manager.ready_playback()
-
 
 	def get_library_albums(self, return_list: bool = False) -> list | None:
 		self.connect()
@@ -725,12 +724,13 @@ class SpotCtl:
 		if return_list:
 			return playlist
 
-		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=self.strings.spotify_albums, playlist_ids=playlist))
+		self.tauon.pctl.multi_playlist.append(
+			self.tauon.pl_gen(title=self.strings.spotify_albums, playlist_ids=playlist)
+		)
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "sal"
 		self.spotify_com = False
 
 	def append_track(self, url: str, playlist_number: int | None = None) -> None:
-
 		self.connect()
 		if not self.spotify:
 			return
@@ -751,7 +751,6 @@ class SpotCtl:
 		self.tauon.gui.pl_update += 1
 
 	def append_album(self, url: str, playlist_number: int | None = None, return_list: bool = False) -> list | None:
-
 		self.connect()
 		if not self.spotify:
 			return []
@@ -778,7 +777,6 @@ class SpotCtl:
 		return None
 
 	def playlist(self, url: str, return_list: bool = False, silent: bool = False) -> list[int] | None:
-
 		self.connect()
 		if not self.spotify:
 			return []
@@ -814,11 +812,11 @@ class SpotCtl:
 
 		title = p.name + " by " + p.owner.display_name
 		if p.name in ("Discover Weekly", "Release Radar"):
-			#self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1].hide_title = True
+			# self.tauon.pctl.multi_playlist[len(self.tauon.pctl.multi_playlist) - 1].hide_title = True
 			title = p.name
 		self.tauon.pctl.multi_playlist.append(self.tauon.pl_gen(title=title, playlist_ids=playlist))
 
-		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f"spl\"{id}\""
+		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'spl"{id}"'
 		if not silent:
 			self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
@@ -880,7 +878,8 @@ class SpotCtl:
 			self.tauon.pl_gen(
 				title=f"{self.tauon.pctl.get_track(l[0]).artist} - {self.tauon.pctl.get_track(l[0]).album}",
 				playlist_ids=l,
-				hide_title=False),
+				hide_title=False,
+			),
 		)
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 
@@ -923,7 +922,7 @@ class SpotCtl:
 			self.show_message(_("Spotify upload error!"), mode="error")
 
 	def load_album(self, album: FullAlbum, playlist: list[int] | None):
-		#a = item
+		# a = item
 		album_url = album.external_urls["spotify"]
 		art_url = album.images[0].url
 		album_name = album.name
@@ -935,7 +934,6 @@ class SpotCtl:
 
 		# logging.info(a.release_date, a.name)
 		for track in album.tracks.items:
-
 			pr = None
 			if "spotify" in track.external_urls:
 				pr = self.current_imports.get(track.external_urls["spotify"])
@@ -960,7 +958,7 @@ class SpotCtl:
 			nt.date = date
 			nt.album = album_name
 			nt.disc_number = track.disc_number
-			#nt.disc_total =
+			# nt.disc_total =
 			nt.length = track.duration_ms / 1000
 			nt.title = track.name
 			nt.track_number = track.track_number
@@ -973,9 +971,9 @@ class SpotCtl:
 				self.tauon.pctl.master_library[nt.index] = nt
 			playlist.append(nt.index)
 
-
-
-	def load_track(self, track: TrackClass, update_master_count: bool = True, include_album_url: bool = False) -> TrackClass:
+	def load_track(
+		self, track: TrackClass, update_master_count: bool = True, include_album_url: bool = False
+	) -> TrackClass:
 		if "spotify" in track.external_urls:
 			pr = self.current_imports.get(track.external_urls["spotify"])
 
@@ -996,7 +994,7 @@ class SpotCtl:
 		nt.is_network = True
 		nt.file_ext = "SPTY"
 		nt.url_key = track.id
-		#if new:
+		# if new:
 		if "spotify" in track.artists[0].external_urls:
 			nt.misc["spotify-artist-url"] = track.artists[0].external_urls["spotify"]
 		if include_album_url and "spotify-album-url" not in nt.misc:
@@ -1092,7 +1090,8 @@ class SpotCtl:
 				return None
 
 		self.tauon.pctl.multi_playlist.append(
-			self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist_ids=playlist))
+			self.tauon.pl_gen(title=self.tauon.strings.spotify_likes, playlist_ids=playlist)
+		)
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = "slt"
 		self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
 		self.spotify_com = False
@@ -1113,7 +1112,6 @@ class SpotCtl:
 
 		# Detect is playback has been modified
 		elif self.playing and self.start_timer.get() > 4 and self.tauon.pctl.playing_time + 5 < tr.length:
-
 			if not result:
 				result = self.spotify.playback_currently_playing()
 
@@ -1139,16 +1137,15 @@ class SpotCtl:
 
 			p = result.progress_ms
 			if p is not None:
-				#if abs(self.tauon.pctl.playing_time - (p / 1000)) > 0.4:
-					# logging.info("DESYNC")
-					# logging.info(abs(self.tauon.pctl.playing_time - (p / 1000)))
+				# if abs(self.tauon.pctl.playing_time - (p / 1000)) > 0.4:
+				# 	logging.info("DESYNC")
+				# 	logging.info(abs(self.tauon.pctl.playing_time - (p / 1000)))
 				self.tauon.pctl.playing_time = p / 1000
 				self.tauon.pctl.decode_time = self.tauon.pctl.playing_time
 				# else:
-				#	 logging.info("SYNCED")
+				# logging.info("SYNCED")
 
 	def update(self, start: bool = False) -> None:
-
 		if self.playing:
 			self.coasting = False
 			return
@@ -1170,7 +1167,6 @@ class SpotCtl:
 
 		if result is None or result.is_playing is False:
 			if self.coasting:
-
 				if self.tauon.pctl.radio_image_bin:
 					self.loaded_art = ""
 					self.tauon.pctl.radio_image_bin.close()
@@ -1206,7 +1202,6 @@ class SpotCtl:
 			self.append_track(tr.misc["spotify-track-url"], playlist_number=playlist_number)
 
 	def coast_update(self, result: dict | None) -> None:
-
 		if result is None or result.item is None:
 			logging.info("Spotify returned unknown")
 			return
@@ -1259,12 +1254,12 @@ class SpotCtl:
 			return
 
 		if result.context.type == "playlist":
-				self.playlist(result.context.uri)
+			self.playlist(result.context.uri)
 
 		if result.context.type == "album":
-				self.album_playlist(result.context.uri)
+			self.album_playlist(result.context.uri)
 
 		if result.context.type == "artist":
-				self.artist_playlist(result.context.uri)
+			self.artist_playlist(result.context.uri)
 
 		self.tauon.gui.pl_update += 1

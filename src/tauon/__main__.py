@@ -23,17 +23,15 @@ import sys
 from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
-install_directory = Path(__file__).resolve().parent
-# Make sure we'll load from the parent directory first
-sys.path.insert(0, str(install_directory.parent))
-pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
-
 from gi.repository import GLib
 
-from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler
+install_directory = Path(__file__).resolve().parent
+sys.path.insert(0, str(install_directory.parent))
 
-from tauon.t_modules.t_bootstrap import Holder
+from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
+from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler  # noqa: E402
 
+pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
 
 log = LogHistoryHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
@@ -60,7 +58,7 @@ if not sys.warnoptions:
 if sys.platform != "win32":
 	import fcntl
 
-n_version = "8.1.2" # Should also be bumped in pyproject.toml
+n_version = "8.2.2" # Should also be bumped in pyproject.toml, extra/*.appdata.xml
 t_version = "v" + n_version
 t_title = "Tauon"
 t_id = "tauonmb"
@@ -69,8 +67,21 @@ t_agent = "TauonMusicBox/" + n_version
 logging.info(f"{t_title} {t_version}")
 logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
 
-# Early arg processing
+logging.info(f"Started with arguments: {sys.argv}")
+
+def open_discord() -> None:
+	webbrowser.open("https://discord.gg/v4EmhES")
+
+def open_github() -> None:
+	webbrowser.open("https://github.com/Taiko2k/Tauon/issues")
+
+def main() -> None:
+	"""Launch Tauon by means of importing t_main.py"""
+	from tauon.t_modules.t_main import main as t_main
+	t_main(holder)
+
 def transfer_args_and_exit() -> None:
+	"""Early arg processing"""
 	import urllib.request
 	base = "http://localhost:7813/"
 
@@ -170,6 +181,7 @@ elif sys.platform != "win32":
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
 	except OSError:
 		logging.exception("Another Tauon instance is already running")
+		# TODO(Martin): Silent crash
 		transfer_args_and_exit()
 else:
 	if sys.platform == "win32":
@@ -180,6 +192,7 @@ else:
 			fp = pid_file.open("w")
 		except OSError:
 			logging.exception("Another Tauon instance is already running")
+			# TODO(Martin): Silent crash
 			transfer_args_and_exit()
 	if pyinstaller_mode:
 		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts") #"C:\\msys64\\mingw64\\etc\\fonts"
@@ -189,6 +202,8 @@ d = os.environ.get("XDG_CURRENT_DESKTOP")
 if d in ["GNOME:Phosh"]:
 	os.environ["SDL_VIDEODRIVER"] = "wayland"
 	phone = True
+
+os.environ["SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"] = "0"  # emergency crash workaround
 
 if pyinstaller_mode: # and sys.platform == 'darwin':
 	os.environ["SDL_BINARY_PATH"] = str(install_directory)
@@ -223,9 +238,21 @@ os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,    
 os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
 os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
 
-import sdl3
+import sdl3  # noqa: E402
 
-sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+# Test the first SetHint to catch if we loaded SDL3 correctly
+sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+if sethint_result is None:
+	logging.error("Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround")
+	os.environ["SDL_BINARY_PATH"] = "/usr/lib"
+	import importlib
+	importlib.reload(sdl3)
+
+	sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
+	if sethint_result is None:
+		logging.critical("Could not call SetHint, crashing")
+		sys.exit(1)
+
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_ID, t_id.encode("utf-8"))
@@ -300,7 +327,7 @@ if err and "GLX" in err.decode():
 	logging.error(f"SDL init error: {err.decode()}")
 	sdl3.SDL_ShowSimpleMessageBox(
 		sdl3.SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
-		b"Error: " + err + b".\n If you're using Flatpak, try run `$ flatpak update`", None)
+		b"Error: " + err + b".\n If you're using Flatpak, try running `$ flatpak update`", None)
 	sys.exit(1)
 
 window_title = t_title
@@ -339,13 +366,32 @@ if not t_window:
 	logging.error(f"Size 0: {logical_size[0]}")
 	logging.error(f"Size 1: {logical_size[1]}")
 	logging.error(f"Flags: {flags}")
-	logging.error(f"SDL Error: {sdl3.SDL_GetError()}")
-	sys.exit(1)
+	sdl_err = sdl3.SDL_GetError()
+	logging.error(f"SDL Error: {sdl_err}")
+	if sdl_err and sdl_err.decode() == "x11 not available":
+		x11_path = user_directory / "x11"
+		if x11_path.exists():
+			logging.critical("Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034")
+			x11_path.unlink()
+			# TODO(Martin): This does not seem to work on SDL3, it attempts to relaunch under x11 again
+			#os.environ["SDL_VIDEODRIVER"] = "wayland"
+			#t_window = sdl3.SDL_CreateWindow(
+			#	window_title,
+			#	o_x, o_y,
+			#	logical_size[0], logical_size[1],
+			#	flags)
+			#if not t_window:
+			#	logging.error(f"Failed to create Wayland fallback window - SDL Error: {sdl3.SDL_GetError()}")
+			#	sys.exit(1)
+			sys.exit(1)
+		else:
+			logging.critical(f"Failed to find {x11_path} but got 'x11 not available' error, hm?")
+			sys.exit(1)
 
 if maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-drivers = []
+drivers: list[str] = []
 i = 0
 while True:
 	x = sdl3.SDL_GetRenderDriver(i)
@@ -453,41 +499,50 @@ del rect
 del flags
 del img_path
 
-
-def main() -> None:
-	"""Launch Tauon by means of importing t_main.py"""
-	from tauon.t_modules.t_main import main as t_main
-	t_main(holder)
-
 if __name__ == "__main__":
 	try:
 		main()
-	except Exception:
+	except Exception as e:
 		crash_logger = logging.getLogger("crash_logger")
 		crash_logger.setLevel(logging.DEBUG)
 		crash_log_path = user_directory / "tauon-crash.log"
 		file_handler = logging.FileHandler(crash_log_path)
 		crash_logger.addHandler(file_handler)
+		crash_logger.handlers[0].setFormatter(CustomLoggingFormatter(color=False))
+		error_message = f"Oops, looks like Tauon crashed.\n\nPlease report a bug over at GitHub or Discord.\n\nCrash log was saved to\n{crash_log_path}"
+		crash_logger.exception(error_message)
+		import ctypes
+		import webbrowser
 
-		crash_logger.exception(f"Something went seriously wrong and it looks like we're crashing! Report a bug with the log from {crash_log_path} please!")
+		BUTTON_ID_GITHUB = 1
+		BUTTON_ID_DISCORD = 2
+		BUTTON_ID_QUIT = 3
 
+		# Create buttons
+		button_array = (sdl3.SDL_MessageBoxButtonData * 3)(
+			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_GITHUB, b"GitHub"),
+			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_DISCORD, b"Discord"),
+			sdl3.SDL_MessageBoxButtonData(sdl3.SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, BUTTON_ID_QUIT, b"Quit"),
+		)
+		messageboxdata = sdl3.SDL_MessageBoxData(
+			flags=sdl3.SDL_MESSAGEBOX_ERROR,
+			window=None,
+			title=b"Tauon Music Box crashed :(",
+			message=str.encode(f"{error_message}\n\nShortlog:\n{e}"),
+			numbuttons=3,
+			buttons=button_array,
+			color_scheme=None,
+		)
+		buttonid = ctypes.c_int(-1)
 
+		# Show the message box
+		success = sdl3.SDL_ShowMessageBox(ctypes.byref(messageboxdata), ctypes.byref(buttonid))
 
-# if pyinstaller_mode or sys.platform == "darwin" or install_mode:
-# 	from tauon.t_modules import t_main
-# else:
-# 	# Using the above import method breaks previous pickles.
-# 	# Could be fixed, but yet to decide what best method is.
-# 	big_boy_path = install_directory / "t_modules/t_main.py"
-# 	f = big_boy_path.open("rb")
-# 	main_func = compile(f.read(), big_boy_path, "exec")
-# 	f.close()
-# 	del big_boy_path
-# 	del f
-#
-# #	main = main_func
-# #	exec(main)
-#
-# 	def main() -> None:
-# 		"""Execute the compiled code and return"""
-# 		exec(main_func, {})
+		if not success:
+			logging.error("SDL_ShowMessageBox failed:", sdl3.SDL_GetError().decode())
+		elif buttonid.value == BUTTON_ID_DISCORD:
+			open_discord()
+		elif buttonid.value == BUTTON_ID_GITHUB:
+			open_github()
+		elif buttonid.value == BUTTON_ID_QUIT:
+			pass

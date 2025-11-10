@@ -18,6 +18,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+          cache: 'pip'
 
       - name: Install deps
         run: |
@@ -52,11 +53,12 @@ jobs:
           sudo apt-get install -y \
             libgif7 \
             wget
-          wget http://mirrors.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
-          wget http://mirrors.kernel.org/ubuntu/pool/universe/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
-          wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
-          wget http://mirrors.kernel.org/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
-          wget http://mirrors.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
+          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
+          wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
+          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/lrclib-solver-linux
           sudo dpkg -i *.deb
         #    libsdl2-image-dev \
 
@@ -70,7 +72,7 @@ jobs:
             build \
             pyinstaller
           python -c "import sdl3"
-#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 
       - name: Build the project using python-build
         run: |
@@ -140,7 +142,7 @@ jobs:
       - name: Clone Flatpak repo
         run: |
           git clone --recurse-submodules https://github.com/flathub/com.github.taiko2k.tauonmb.git tauon-flatpak
-#          cd tauon-flatpak; git checkout tekoreless
+        #  cd tauon-flatpak; git checkout tekoreless
 
       - name: "[DEBUG] List all files"
         run: find .
@@ -158,7 +160,7 @@ jobs:
 
           # Modify JSON file
           jq --arg repo "$REPO_URL" --arg commit "$COMMIT_SHA" '
-            (.modules[] | select(type == "object" and .name == "tauonmb-git").sources[] | select(.type == "git")) |= {type: "git", url: $repo, commit: $commit}
+            (.modules[] | select(type == "object" and .name == "tauonmb-git").sources[] | select(type == "object") | select(.type == "git")) |= {type: "git", url: $repo, commit: $commit}
           ' tauon-flatpak/com.github.taiko2k.tauonmb.json > updated.json
           mv updated.json tauon-flatpak/com.github.taiko2k.tauonmb.json
 
@@ -175,17 +177,21 @@ jobs:
 
   build-macos:
     name: "macOS"
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
           submodules: true
 
-      #- name: Set up Python
-      #  uses: actions/setup-python@v5
-      #  with:
-      #    python-version: '3.13'
+      - name: Setup pip cache-key
+        uses: actions/cache@v4
+        if: startsWith(runner.os, 'macOS')
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: brew update and upgrade
         run: brew update && brew upgrade
@@ -205,11 +211,19 @@ jobs:
             opusfile \
             libopenmpt \
             wavpack \
-            game-music-emu
+            game-music-emu \
+            Python@3.14
+
+      - name: Remove aws-sam-cli as it makes pydantic core preinstalled in brew but we want to use pip's
+        run: brew uninstall aws-sam-cli pydantic-core
 
       # This generates 30MB of logs, enable it only when actively debugging something
       #- name: "[DEBUG] List all Cellar files"
       #  run: find /opt/homebrew/Cellar
+
+      - name: Download lirclib solver
+        run: |
+          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/lrclib-solver-macos
 
       - name: Install Python dependencies and setup venv
         run: |
@@ -219,8 +233,9 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
             -r requirements.txt \
             build \
-            pyinstaller
-#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+            pyinstaller \
+            pytest
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
         #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
         #  source .venv/bin/activate
@@ -237,6 +252,10 @@ jobs:
           $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
         #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
         #  source .venv/bin/activate
+
+      - name: Run tests using pytest
+        run: |
+          PYTHONPATH=src pytest src/tauon/tests
 
       - name: "[DEBUG] List all files"
         run: find .
@@ -281,123 +300,6 @@ jobs:
       #    hdiutil attach dist/dmg/TauonMusicBox.dmg
       #    /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
 
-  build-macos-x64:
-    name: "macOS_x64"
-    runs-on: macos-13
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      #- name: Set up Python
-      #  uses: actions/setup-python@v5
-      #  with:
-      #    python-version: '3.13'
-
-      - name: brew update and upgrade with a workaround for https://github.com/actions/runner-images/issues/9966
-        run: |
-          brew update
-          brew unlink python@3.12
-          brew unlink python@3.13
-          brew link --overwrite python@3.12
-          brew link --overwrite python@3.13
-          brew upgrade
-
-      - name: Install brew dependencies
-        run: |
-          brew install \
-            gobject-introspection \
-            gtk+3 \
-            pango \
-            pillow \
-            sdl3 \
-            sdl3_image \
-            jpeg-xl \
-            ffmpeg \
-            librsvg \
-            opusfile \
-            libopenmpt \
-            wavpack \
-            game-music-emu
-
-      - name: Hack opusfile - https://github.com/xiph/opusfile/pull/47
-        run: |
-          sed 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /usr/local/include/opus/opusfile.h > /tmp/opusfile.h
-          sudo mv /tmp/opusfile.h /usr/local/include/opus/opusfile.h
-
-      # This generates 30MB of logs, enable it only when actively debugging something
-      #- name: "[DEBUG] List all Cellar files"
-      #  run: find /opt/homebrew/Cellar
-
-      - name: Install Python dependencies and setup venv
-        run: |
-          export CXXFLAGS="-I/opt/homebrew/include"
-          export LDFLAGS="-L/opt/homebrew/lib"
-
-          $(brew --prefix python)/libexec/bin/pip install --user --break-system-packages \
-            -r requirements.txt \
-            build
-          $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
-            pyinstaller
-        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
-        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-        #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
-        #  $(brew --prefix python)/libexec/bin/python -m pip show -f pyinstaller
-        #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
-        #  source .venv/bin/activate
-        #  CFLAGS: "-I/opt/homebrew/include"
-
-      - name: Build the project using python-build
-        run: |
-          $(brew --prefix python)/libexec/bin/python -m compile_translations
-          $(brew --prefix python)/libexec/bin/python -m build --wheel
-        #  source .venv/bin/activate
-
-      - name: Install the project into a venv
-        run: |
-          $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
-        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
-        #  source .venv/bin/activate
-
-      - name: "[DEBUG] List all files"
-        run: find .
-
-      - name: Build macOS app with PyInstaller
-        run: |
-          pyinstaller --log-level=DEBUG mac.spec
-        #  source .venv/bin/activate
-        env:
-          DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
-
-      - name: "[DEBUG] List all files in .app"
-        run: find "dist/TauonMusicBox.app"
-
-      - name: Create DMG
-        run: |
-          mkdir -p dist/dmg
-          APP_NAME="TauonMusicBox"
-          APP_PATH="dist/${APP_NAME}.app"
-          DMG_PATH="dist/dmg/${APP_NAME}-x64.dmg"
-
-          # Create a .dmg package
-          # FIXME: Undo this overengineered crap once the following issue gets figured out:
-          #        https://github.com/actions/runner-images/issues/7522
-          i=0
-          until hdiutil create -volname "${APP_NAME}" -srcfolder "${APP_PATH}" -ov -format UDZO "${DMG_PATH}"; do
-            if [[ ${i} -eq 10 ]]; then
-              echo "Error: hdiutil did not succeed even after 10 tries."
-              exit 1
-            fi
-            i=$((i+1))
-          done
-
-      - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: TauonMusicBox-x64-dmg
-          path: dist/dmg/TauonMusicBox-x64.dmg
-
   build-windows:
     name: "Windows"
     runs-on: windows-latest
@@ -406,6 +308,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+
+      - name: Setup pip cache-key
+        uses: actions/cache@v4
+        if: startsWith(runner.os, 'Windows')
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
       - name: Read Package List
@@ -443,6 +354,23 @@ jobs:
         #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
         #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
 
+      - name: Read version from pyproject.toml
+        shell: msys2 {0}
+        id: version
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          with open("pyproject.toml","rb") as f:
+            data = tomllib.load(f)
+          # falls back cleanly if you ever switch to dynamic versioning
+          version = data.get("project", {}).get("version")
+          if not version:
+            raise SystemExit("project.version not found in pyproject.toml")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+            fh.write(f"version={version}\n")
+          print(f"Detected version: {version}")
+          PY
+
       - name: Build the project using python-build
         shell: msys2 {0}
         run: |
@@ -460,9 +388,10 @@ jobs:
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
-          curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TaskbarLib.tlb
-          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v7.8.3/TauonSMTC.dll
+          curl -L -o lrclib-solver.exe https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/lrclib-solver.exe
+          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
+          curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/TaskbarLib.tlb
+          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/TauonSMTC.dll
           mkdir fonts
           curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
           curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
@@ -505,7 +434,7 @@ jobs:
 
       - name: Replace Tauon version in .ISS
         run: |
-          sed -i 's|{{ tauon_version }}|8.1.2|g' extra/setup.iss
+          sed -i "s|{{ tauon_version }}|${{ steps.version.outputs.version }}|g" extra/setup.iss
 
       - name: Get current drive letter nad replace what's in .ISS
         shell: pwsh
@@ -514,7 +443,7 @@ jobs:
           (Get-Content extra/setup.iss) -replace "C:\\", $Drive | Set-Content extra/setup.iss
 
       - name: Compile .ISS to .EXE Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.6
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
         with:
           path: extra/setup.iss
           options: /O+
@@ -527,7 +456,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TauonMusicBox-windows-installer
-          path: extra/Output/tauonsetup-8.1.2.exe
+          path: extra/Output/tauonsetup-${{ steps.version.outputs.version }}.exe
 
   get-info:
     runs-on: ubuntu-24.04
@@ -549,7 +478,7 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos, build-macos-x64]
+    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos]
     runs-on: ubuntu-24.04
     steps:
       - name: Download all artifacts

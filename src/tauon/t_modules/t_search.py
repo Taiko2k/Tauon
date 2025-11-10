@@ -26,6 +26,7 @@ from bs4 import BeautifulSoup
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
+
 def bandcamp_search(artist: str, callback: Callable[[str | None], None] | None = None) -> str | None:
 	"""Search Bandcamp for the artist and return their URL"""
 	try:

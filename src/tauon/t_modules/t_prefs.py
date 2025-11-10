@@ -8,10 +8,12 @@ from tauon.t_modules.t_extra import RadioStation
 if TYPE_CHECKING:
 	from pathlib import Path
 
+
 @dataclass
 class Prefs:
 	"""Used to hold any kind of settings"""
 
+	# fmt:off
 	view_prefs:              dict[str, bool]
 	encoder_output:          Path
 	window_opacity:          float
@@ -71,6 +73,7 @@ class Prefs:
 	tag_editor_name:   str = ""
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""
+	use_lrc_instead: bool = True
 
 	use_title:    bool = False
 	auto_extract: bool = False
@@ -139,6 +142,7 @@ class Prefs:
 	reload_play_state: bool = False  # Resume playback on app restart
 	resume_play_wake:  bool = False  # Resume playback on wake
 	reload_state: tuple[int, float] | None = None
+	# fmt:on
 
 	mono: bool = False
 
@@ -152,13 +156,14 @@ class Prefs:
 	plex_servername = ""
 
 	koel_username = "admin@example.com"
-	koel_password = "admin"
+	koel_password = "admin"  # noqa: S105
 	koel_server_url = "http://localhost:8050"
 
-	auto_lyrics = False  # Function has been disabled
-	jelly_username = ""
-	jelly_password = ""
-	jelly_server_url = "http://localhost:8096"
+	auto_lyrics: bool = False  # Function has been disabled
+	jelly_username: str = ""
+	jelly_password: str = ""
+	jelly_server_url: str = "http://localhost:8096"
+	jelly_timeout: int = 300 # Make configurable in case user has a large/slow setup
 
 	auto_lyrics_checked: list = field(default_factory=list)
 
@@ -187,7 +192,7 @@ class Prefs:
 
 	guitar_chords = False
 	prefer_synced_lyrics = True
-	sync_lyrics_time_offset = 0
+	sync_lyrics_time_offset: int = -150  # in milliseconds
 
 	playback_follow_cursor = False
 	short_buffer = False
@@ -203,8 +208,8 @@ class Prefs:
 	random_mode = False
 	repeat_mode = False
 
-	failed_artists: list = field(default_factory=list)
-	failed_background_artists: list = field(default_factory=list)
+	failed_artists: list[str] = field(default_factory=list)
+	failed_background_artists: list[str] = field(default_factory=list)
 
 	artist_list = False
 	auto_sort = False
@@ -213,7 +218,7 @@ class Prefs:
 
 	bg_showcase_only = False
 
-	lyrics_enables: list = field(default_factory=list)
+	lyrics_enables: list[str] = field(default_factory=list)
 
 	fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 
@@ -321,6 +326,12 @@ class Prefs:
 	sync_deletes = False
 	sync_playlist: int | None = None
 	download_playlist: int | None = None
+
+	autoscan_playlist_folder: bool = False
+	playlist_folder_path: str = ""
+
+	synced_lyrics_editor_track_end_mode: Literal["stop","autosave","full save","repeat"] = "repeat"
+	save_lyrics_changes_to_files: bool = False
 
 	sep_genre_multi = False
 	topchart_sorts_played = True
