@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### Unreleased version
+
+ - **Fixed** Crashes when using the Russian localization
+
+
 ### v8.2.2
 
  - **Fixed** Black screen bug
