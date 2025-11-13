@@ -166,7 +166,6 @@
 	reportImportCycles                  = "warning"
 #	reportMissingSuperCall              = "warning" # Leave this one disabled by default, it's more useful for Python 2 compat
 	reportPropertyTypeMismatch          = "warning"
-	reportShadowedImports               = "warning"
 
 # https://docs.astral.sh/ruff/configuration/
 [tool.ruff]
