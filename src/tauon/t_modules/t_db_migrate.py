@@ -12,6 +12,37 @@ from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, Tau
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, Tauon, TrackClass
 
+def migrate_star_store_71(tauon: Tauon) -> None:
+	import pickle  # noqa: PLC0415
+
+	backup_star_db = tauon.user_directory / "star.p.bak71"
+	if not backup_star_db.exists():
+		logging.info("Creating a backup Star database star.p.bak71")
+		with backup_star_db.open("wb") as file:
+			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+	new_starstore_db: dict[tuple[str, str, str], StarRecord] = {}
+	old_record: list[int | str] = []  # Here just for typing
+	for key, old_record in tauon.star_store.db.items():
+		if isinstance(old_record, StarRecord):
+			logging.warning(
+				f"Record {old_record} was already a StarRecord, skipping this migration over…"
+			)
+			break
+		new_record = StarRecord()
+		new_record.playtime = old_record[0]
+		new_record.loved = "L" in old_record[1]
+		new_record.rating = old_record[2]
+		# There was a bug where the fourth element was not set
+		if len(old_record) == 4:
+			new_record.loved_timestamp = old_record[3]
+		new_starstore_db[key] = new_record
+	else:
+		tauon.star_store.db = new_starstore_db
+		logging.info("Saving newly migrated StarStore db…")
+		with (tauon.user_directory / "star.p").open("wb") as file:
+			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 def database_migrate(
 	*,
@@ -20,7 +51,6 @@ def database_migrate(
 	master_library: dict[int, TrackClass],
 	install_mode: bool,
 	multi_playlist: list[str | int | bool] | list[TauonPlaylist],
-	star_store: StarStore,
 	a_cache_dir: str,
 	cache_directory: Path,
 	config_directory: Path,
@@ -35,7 +65,6 @@ def database_migrate(
 ) -> tuple[
 	dict[int, TrackClass],
 	list[TauonPlaylist],
-	StarStore,
 	list[TauonQueueItem],
 	int,
 	Prefs,
@@ -46,7 +75,7 @@ def database_migrate(
 	"""Migrate database to a newer version if we're behind
 
 	Returns all the objects that could've been possibly changed:
-		master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
+		master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
 	"""
 	from tauon.t_modules.t_main import uid_gen
 
@@ -114,26 +143,26 @@ def database_migrate(
 		try:
 			logging.info(".... Updating playtime database")
 
-			old = star_store.db
+			old = tauon.star_store.db
 			# perf_timer.set()
 			old_total = sum(old.values())
 			# logging.info(perf_timer.get())
 			logging.info(f"Old total: {old_total}")
-			star_store.db = {}
+			tauon.star_store.db = {}
 
 			new = {}
 			for track in master_library.values():
 				key = track.title + track.filename
 				if key in old:
 					n_value = [old[key], ""]
-					n_key = star_store.object_key(track)
-					star_store.db[n_key] = n_value
+					n_key = tauon.star_store.object_key(track)
+					tauon.star_store.db[n_key] = n_value
 
-			diff = old_total - star_store.get_total()
+			diff = old_total - tauon.star_store.get_total()
 			logging.info(
 				f"New total: {int(diff)} Seconds could not be matched to tracks. Total playtime won't be affected"
 			)
-			star_store.db[("", "", "LOST")] = [diff, ""]
+			tauon.star_store.db[("", "", "LOST")] = [diff, ""]
 			logging.info("Upgrade Complete")
 		except Exception:
 			logging.exception("Error upgrading database")
@@ -255,11 +284,11 @@ def database_migrate(
 	if db_version <= 38:  # noqa: PLR2004
 		logging.info("Updating database to version 39")
 
-		for key, value in star_store.db.items():
+		for key, value in tauon.star_store.db.items():
 			logging.info(value)
 			if len(value) == 2:
 				value.append(0)
-				star_store.db[key] = value
+				tauon.star_store.db[key] = value
 
 	if db_version <= 39:  # noqa: PLR2004
 		logging.info("Updating database to version 40")
@@ -332,10 +361,10 @@ def database_migrate(
 	if db_version <= 43:  # noqa: PLR2004
 		logging.info("Updating database to version 44")
 		# Repair db
-		for key, value in star_store.db.items():
+		for key, value in tauon.star_store.db.items():
 			if len(value) == 2:
 				value.append(0)
-				star_store.db[key] = value
+				tauon.star_store.db[key] = value
 
 	if db_version <= 44:  # noqa: PLR2004
 		logging.info("Updating database to version 45")
@@ -507,10 +536,10 @@ def database_migrate(
 
 	if db_version <= 66:  # noqa: PLR2004
 		logging.info("Updating database to version 67")
-		for key, value in star_store.db.items():
+		for key, value in tauon.star_store.db.items():
 			if len(value) == 3:
 				value.append(0)
-				star_store.db[key] = value
+				tauon.star_store.db[key] = value
 
 	if db_version <= 67:  # noqa: PLR2004
 		logging.info("Updating database to version 68")
@@ -580,35 +609,7 @@ def database_migrate(
 
 	if db_version <= 71:  # This migration used both 71 and 72  # noqa: PLR2004
 		logging.info("Updating database to version 72")
-		logging.info("Creating a backup Star database star.p.bak71")
-		import pickle  # noqa: PLC0415
-
-		backup_star_db = user_directory / "star.p.bak71"
-		if not backup_star_db.exists():
-			with backup_star_db.open("wb") as file:
-				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-		new_starstore_db: dict[tuple[str, str, str], StarRecord] = {}
-		old_record: list[int | str] = []  # Here just for typing
-		for key, old_record in star_store.db.items():
-			if isinstance(old_record, StarRecord):
-				logging.warning(
-					"Record {old_record} was already a StarRecord, likely half-failed earlier migration, skipping this migration over…"
-				)
-				break
-			new_record = StarRecord()
-			new_record.playtime = old_record[0]
-			new_record.loved = "L" in old_record[1]
-			new_record.rating = old_record[2]
-			# There was a bug where the fourth element was not set
-			if len(old_record) == 4:
-				new_record.loved_timestamp = old_record[3]
-			new_starstore_db[key] = new_record
-		else:
-			star_store.db = new_starstore_db
-			logging.info("Saving newly migrated StarStore db…")
-			with (user_directory / "star.p").open("wb") as file:
-				pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
+		migrate_star_store_71(tauon)
 
 	if db_version <= 72:  # noqa: PLR2004
 		# prefs.playlist_exports = save[168]
@@ -639,4 +640,4 @@ def database_migrate(
 			if relative:
 				playlist.relative_export = relative
 
-	return master_library, multi_playlist, star_store, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
+	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
