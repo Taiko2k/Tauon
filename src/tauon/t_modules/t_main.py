@@ -42189,7 +42189,7 @@ def main(holder: Holder) -> None:
 		GME = GME_Formats,
 		DA = {
 			"mp3", "wav", "opus", "flac", "ape", "aiff",
-			"m4a", "ogg", "oga", "aac", "tta", "wv", "wma",
+			"m4a", "m4b", "ogg", "oga", "aac", "tta", "wv", "wma",
 		} | MOD_Formats | GME_Formats,
 		Archive = Archive_Formats,
 	)
