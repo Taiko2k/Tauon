@@ -5,6 +5,9 @@ Changelog
 ### Unreleased version
 
  - **Fixed** Crashes when using the Russian localization
+ - **Fixed** Another crash related to the bottom bar
+ - **Fixed** Playing M4B files
+ - **Fixed** Jellyfin playlist import from playlist files
 
 
 ### v8.2.2
