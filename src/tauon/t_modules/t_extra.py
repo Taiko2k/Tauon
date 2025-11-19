@@ -548,6 +548,40 @@ def get_filesize_string_rounded(file_bytes: int) -> str:
 		line = str(file_mb) + _(" MB")
 	return line
 
+def get_modify_date_string(modify_date: float) -> str:
+	ago = round(time.time() - modify_date)
+	if ago < 0:
+		ago_str = _("Not yet")
+	elif ago < 60: # < minute
+		ago_str = _("Now")
+	else:
+		ago = ago // 60
+		if ago < 60: # minutes
+			ago_str = str(ago) + _("min")
+		else:
+			ago = ago // 60
+			if ago < 24: # hours
+				ago_str = str(ago) + _("hr")
+			else:
+				ago = ago // 24
+				if ago < 7: # days
+					ago_str = str(ago) + _("dy")
+				elif ago < 31: # weeks
+					ago_str = str(ago//7) + _("wk")
+				elif ago < 90: # months. dont worry about it
+					ago_str = str(ago//30) + _("mnth")
+				else:
+					try:
+						modify_date = time.localtime(modify_date)
+					except:
+						ago_str = _("Unknown")
+					else:
+						if ago < 365:
+							ago_str = time.strftime( "%d %b", modify_date)
+						else:
+							ago_str = time.strftime( "%b '%y", modify_date)
+	return ago_str
+
 
 def test_lumi(c1: ColourRGBA) -> float:
 	"""Estimates the perceived luminance of a colour"""
@@ -1096,13 +1130,13 @@ def shooter(func: Callable[..., None], args: tuple = ()) -> None:
 
 
 def d_date_display(track: TrackClass) -> str:
-	if "rdat" in track.misc:
+	if "rdat" in track.misc and str(track.date) != track.misc["rdat"]:
 		return str(track.date) + " → " + track.misc["rdat"]
 	return str(track.date)
 
 
 def d_date_display2(track: TrackClass) -> str:
-	if "rdat" in track.misc:
+	if "rdat" in track.misc and str(get_year_from_string(track.date)) != get_year_from_string(track.misc["rdat"]):
 		return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.misc["rdat"])
 	return str(get_year_from_string(track.date))
 
