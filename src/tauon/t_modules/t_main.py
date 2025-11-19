@@ -28832,6 +28832,7 @@ class BottomBarType_ao1:
 		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
 		self.fonts         = tauon.fonts
+		self.prefs         = tauon.prefs
 		self.system        = tauon.system
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
