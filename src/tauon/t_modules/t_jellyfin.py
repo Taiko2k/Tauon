@@ -409,7 +409,7 @@ class Jellyfin:
 					"userId": self.userId,
 					"fields": ["Genres", "DateCreated", "MediaSources", "People"],
 					"enableImages": False,
-					"mediaTypes": ["Audio"],
+					"includeItemTypes": ["Audio", "Playlist"],
 					"recursive": True,
 				},
 				# Someone had a local setup with 36k songs where sync took 31s,
