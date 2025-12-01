@@ -43923,7 +43923,7 @@ def main(holder: Holder) -> None:
 	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
 
 	x_menu.add_to_sub(0, MenuItem(_("Export as CSV"), tauon.export_database))
-	x_menu.add_to_sub(0, MenuItem(_("Reload All Folders"), pctl.rescan_all_folders))
+	x_menu.add_to_sub(0, MenuItem(_("Rescan All Folders"), pctl.rescan_all_folders))
 	x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), tauon.q_to_playlist))
 	x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), tauon.clear_img_cache))
 
