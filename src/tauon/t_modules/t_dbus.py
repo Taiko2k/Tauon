@@ -107,6 +107,10 @@ class Gnome:
 		pctl = self.tauon.pctl
 		tauon = self.tauon
 
+		# Create SDL tray
+		tauon.requested_tray = True
+
+
 		import gi
 
 		try:
@@ -210,7 +214,7 @@ class Gnome:
 
 		if self.loaded_indicator == "AyatanaAppIndicatorGlib":
 			pActions = Gio.SimpleActionGroup.new ()
-#			self.menu.append(tauon.strings.menu_open_tauon, restore)
+			#self.menu.append(tauon.strings.menu_open_tauon, restore)
 			pSimpleAction = Gio.SimpleAction.new("restore", None)
 			pActions.add_action (pSimpleAction)
 			pSimpleAction.connect ("activate", restore, 6)
@@ -218,11 +222,11 @@ class Gnome:
 			self.menu.append_item (pItem)
 			# TODO(Martin): Add rest of actions
 			# TODO(Martin): Separator
-#			self.menu.append(tauon.strings.menu_play_pause, play_pause)
-#			self.menu.append(tauon.strings.menu_next, next)
-#			self.menu.append(tauon.strings.menu_previous, back)
+			#self.menu.append(tauon.strings.menu_play_pause, play_pause)
+			#self.menu.append(tauon.strings.menu_next, next)
+			#self.menu.append(tauon.strings.menu_previous, back)
 			# TODO(Martin): Separator
-#			self.menu.append(tauon.strings.menu_quit, menu_quit)
+			#self.menu.append(tauon.strings.menu_quit, menu_quit)
 			self.indicator.set_actions(pActions)
 		else:
 			item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
