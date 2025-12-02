@@ -554,7 +554,7 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	:return: Path to the library file
 	:raises Exception: If no library is found
 	"""
-	# This is where compile-phazor.sh scrips place the dll
+	# This is where compile-phazor.sh scripts place the dll
 	base_path = Path(pctl.install_directory).parent.parent / "build"
 
 	# Define the library name and extensions in priority order

@@ -46,7 +46,7 @@ class CustomLoggingFormatter(logging.Formatter):
 	@override
 	def format(self, record: LogRecord) -> str:
 		log_fmt = self.FORMATS.get(record.levelno)
-		# Remove the miliseconds(%f) from the default string
+		# Remove the milliseconds(%f) from the default string
 		date_fmt = "%Y-%m-%d %H:%M:%S"
 		formatter = logging.Formatter(log_fmt, date_fmt)
 		# Center align + min length things to prevent logs jumping around when switching between different values
