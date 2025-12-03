@@ -31104,8 +31104,13 @@ class ArtBox:
 
 			# Milkdrop visualiser
 			if tauon.prefs.milk and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
-				if self.pctl.playing_time < 1.3:
-					pass
+
+				if self.pctl.a_time < 1.3:
+					if 1 < self.pctl.a_time < 1.3:
+						# not sure why running this at 0 spases the window out
+						# hopefully this ghost wont come back to haunt us
+						tauon.milky.render(discard=True)
+						tauon.milky.burn(target_track)
 				else:
 					tauon.milky.render()
 					show_vis = True
@@ -36033,6 +36038,10 @@ class ProjectM:
 			]
 			self.lib.projectm_set_texture_search_paths.restype = None
 
+			self.lib.projectm_opengl_burn_texture.argtypes = [c_void_p, c_uint32, c_int, c_int, c_int, c_int]
+			self.lib.projectm_opengl_burn_texture.restype = None
+
+
 			print("Function signatures set up successfully")
 
 		except AttributeError as e:
@@ -36197,25 +36206,47 @@ class Milky:
 
 		self.projectm = ProjectM(tauon)
 
-	def render(self):
+	def burn(self, target_track):
+		if not self.ready:
+			return
+
+		w = int(self.tauon.gui.main_art_box[2])
+		h = int(self.tauon.gui.main_art_box[3])
+
+		sdl3.SDL_SetRenderTarget(self.renderer, self.render_texture)
+
+		self.tauon.album_art_gen.display(target_track, (0, 0), (w, h), fast=False)
+		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+
+		sdl3.SDL_FlushRenderer(self.renderer)
+		context = sdl3.SDL_GL_GetCurrentContext()
+		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
+
+		glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+		self.projectm.lib.projectm_opengl_burn_texture(self.projectm.pm_instance, self.gl_texture_id, 0, 0, w, h)
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0)
+		glBindTexture(GL_TEXTURE_2D, 0)
+		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
+		glFlush()
+		glFinish()
+
+	def render(self, discard=False):
 		ddt = self.ddt
 		x = self.tauon.gui.main_art_box[0]
 		y = self.tauon.gui.main_art_box[1]
 		w = self.tauon.gui.main_art_box[2]
 		h = self.tauon.gui.main_art_box[3]
 
-		# c = ColourRGBA(200, 0, 0, 255)
-		# ddt.rect_si((x,y,w,h), c, 2)
 		srect = sdl3.SDL_FRect(x, y, w, h)
 
 		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
 
 		if not self.ready:
-
 			self.projectm.load_library()
 			self.projectm.init()
 			self.ready = True
-
 
 		sdl3.SDL_FlushRenderer(self.renderer)
 		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
@@ -36231,7 +36262,6 @@ class Milky:
 				sdl3.SDL_DestroyTexture(self.render_texture)
 				glDeleteTextures(1, [self.gl_texture_id])
 				glDeleteFramebuffers(1, [self.framebuffer])
-
 
 			gl_texture_id = glGenTextures(1)
 			glBindTexture(GL_TEXTURE_2D, gl_texture_id)
@@ -36270,19 +36300,15 @@ class Milky:
 			self.render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
 
 		sdl3.SDL_FlushRenderer(self.renderer)
-		#saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
 		glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
-		# glViewport(0, 0, int(w), int(h))
-		# # glClearColor(0.9, 0.3, 0, 1)
-		# # glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
 		self.projectm.render_frame(self.framebuffer)
 
 		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
-		#glBindFramebuffer(GL_FRAMEBUFFER, 0)
 		glFlush()
 		glFinish()
-
-		sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+		if not discard:
+			sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
 		self.fps.tick()
 
 
