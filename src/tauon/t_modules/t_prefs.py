@@ -427,3 +427,4 @@ class Prefs:
 
 	milk = False
 	auto_milk = True
+	loaded_preset = None
