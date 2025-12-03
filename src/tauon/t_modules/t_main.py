@@ -5838,6 +5838,7 @@ class Tauon:
 		self.mode_menu             = Menu(self, 175)
 		self.track_menu            = Menu(self, 195, show_icons=True)
 		self.picture_menu          = Menu(self, 175)
+		self.milky_menu            = Menu(self, 175)
 		self.selection_menu        = Menu(self, 200, show_icons=False)
 		self.folder_menu           = Menu(self, 193, show_icons=True)
 		self.extra_tab_menu        = Menu(self, 155, show_icons=True)
@@ -17060,6 +17061,7 @@ class Tauon:
 			pctl.active_playlist_playing,  # 183
 			prefs.milk,
 			prefs.auto_milk,
+			prefs.loaded_preset,
 		]
 
 		try:
@@ -31157,11 +31159,14 @@ class ArtBox:
 						self.pctl.mpris.update(force=True)
 
 		# Activate picture context menu on right click
-		if tight_border and gui.art_drawn_rect:
-			if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
+		if inp.right_click and tauon.prefs.milk and self.coll(rect):
+			self.tauon.milky_menu.activate(in_reference=target_track)
+		else:
+			if tight_border and gui.art_drawn_rect:
+				if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
+					self.tauon.picture_menu.activate(in_reference=target_track)
+			elif inp.right_click and self.coll(rect) and target_track:
 				self.tauon.picture_menu.activate(in_reference=target_track)
-		elif inp.right_click and self.coll(rect) and target_track:
-			self.tauon.picture_menu.activate(in_reference=target_track)
 
 		# Draw picture metadata
 		if showc is not None and self.coll(border) \
@@ -36092,7 +36097,10 @@ class ProjectM:
 				self.rescan_presets()
 				self.set_texture_paths()
 
-				self.random_preset()
+				if self.tauon.prefs.loaded_preset:
+					self.load_preset(self.tauon.prefs.loaded_preset)
+				else:
+					self.random_preset()
 
 				return True
 			else:
@@ -36133,6 +36141,7 @@ class ProjectM:
 
 	def load_preset(self, preset, fade=False):
 		self.loaded_preset = preset
+		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
 		self.auto_frames = 0
@@ -43331,6 +43340,8 @@ def main(holder: Holder) -> None:
 				prefs.milk = save[184]
 			if len(save) > 185 and save[185] is not None:
 				prefs.auto_milk = save[185]
+			if len(save) > 186 and save[186] is not None:
+				prefs.loaded_preset = save[186]
 
 			del save
 			break
@@ -43844,6 +43855,7 @@ def main(holder: Holder) -> None:
 	selection_menu        = tauon.selection_menu
 	folder_menu           = tauon.folder_menu
 	picture_menu          = tauon.picture_menu
+	milky_menu            = tauon.milky_menu
 	mode_menu             = tauon.mode_menu
 	extra_menu            = tauon.extra_menu
 
@@ -43956,8 +43968,13 @@ def main(holder: Holder) -> None:
 
 	picture_menu.br()
 	picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	picture_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
-	picture_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
+	milky_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
+
+	milky_menu.br()
+	milky_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+
 
 	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
 	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
