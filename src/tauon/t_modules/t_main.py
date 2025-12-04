@@ -3923,7 +3923,7 @@ class LastFMapi:
 		self.pctl           = pctl
 		self.prefs          = self.tauon.prefs
 		self.sg             = None
-		self.url            = None
+		self.url: str | None = None
 		self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"  # noqa: S105
 		self.connected = False
 		self.API_KEY = "bfdaf6357f1dddd494e5bee1afe38254"
@@ -3952,7 +3952,16 @@ class LastFMapi:
 			self.no_user_connect()
 
 		self.sg = pylast.SessionKeyGenerator(self.network)
-		self.url = self.sg.get_web_auth_url()
+		try:
+			self.url = self.sg.get_web_auth_url()
+		except pylast.NetworkError:
+			logging.exception("Failed to get web auth URL from pylast due to a network error")
+			self.show_message("Failed to get web auth URL from pylast", "Network error")
+			return
+		except Exception:
+			logging.exception("Failed to get web auth URL from pylast due to an unknown issue")
+			self.show_message("Failed to get web auth URL from pylast", "Unknown error")
+			return
 		logging.info(str(self.url))
 		copy_to_clipboard(self.url)
 		self.show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
