@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2025-12-01 09:51+0100\n"
+"POT-Creation-Date: 2025-12-04 13:28+0100\n"
 "PO-Revision-Date: 2025-06-13 03:01+0000\n"
 "Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
@@ -488,7 +488,8 @@ msgid "The destination and source folders are the same."
 msgstr "目标文件夹和源文件夹相同。"
 
 #: src/tauon/t_modules/t_main.py:7297 src/tauon/t_modules/t_main.py:9975
-msgid "Safety interupt! The source path seems oddly short."
+#, fuzzy
+msgid "Safety interrupt! The source path seems oddly short."
 msgstr "安全中断！源路径似乎异常短。"
 
 #: src/tauon/t_modules/t_main.py:7304 src/tauon/t_modules/t_main.py:9989
@@ -1056,7 +1057,8 @@ msgid "The source directory is missing!"
 msgstr "缺少源目录！"
 
 #: src/tauon/t_modules/t_main.py:9998
-msgid "Safety interupt! The source folder seems to have many files."
+#, fuzzy
+msgid "Safety interrupt! The source folder seems to have many files."
 msgstr "安全中断！源文件夹似乎包含许多文件。"
 
 #: src/tauon/t_modules/t_main.py:10008
@@ -2159,11 +2161,11 @@ msgid "Will save with playlist name:"
 msgstr "没有播放列表名称"
 
 #: src/tauon/t_modules/t_main.py:22895
-msgid "No file extention?"
+msgid "No file extension?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
-msgid "Incorrect extention?"
+msgid "Incorrect extension?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22905
