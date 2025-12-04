@@ -773,6 +773,28 @@ void read_to_buffer_24in32_fs(int32_t src[], int n_samples) {
 	resample_to_buffer(f);
 }
 
+void read_to_buffer_32in32_fs(int32_t src[], int n_samples) {
+	// full samples version
+	int i = 0;
+	int f = 0;
+
+	// Convert int32 to float
+	while (f < n_samples) {
+		re_in[f * 2] = (src[i]) / 2147483648.0;
+		if (src_channels == 1) {
+			re_in[(f * 2) + 1] = re_in[f * 2];
+			i += 1;
+		} else {
+			re_in[(f * 2) + 1] = (src[i + 1]) / 2147483648.0;
+			i += 2;
+		}
+
+		f++;
+	}
+
+	resample_to_buffer(f);
+}
+
 void read_to_buffer_16in32_fs(int32_t src[], int n_samples) {
 	// full samples version
 	int i = 0;
@@ -2102,7 +2124,7 @@ int load_next() {
 				src_reset(src);
 			}
 			wp_bit = WavpackGetBitsPerSample(wpc);
-			if (! (wp_bit == 16 || wp_bit == 24)) {
+			if (! (wp_bit == 16 || wp_bit == 24 || wp_bit == 32)) {
 				printf("pa: wavpak bit depth not supported\n");
 				WavpackCloseFile(wpc);
 				return 1;
@@ -2358,6 +2380,8 @@ void pump_decode() {
 				read_to_buffer_16in32_fs(buffer, samples);
 			} else if (wp_bit == 24) {
 				read_to_buffer_24in32_fs(buffer, samples);
+			} else if (wp_bit == 32) {
+				read_to_buffer_32in32_fs(buffer, samples);
 			}
 			samples_decoded += samples;
 		}
