@@ -1,6 +1,6 @@
 # Contributing to Tauon Music Box
 
-Wanna contribute? Theres a few ways you can:
+Wanna contribute? There's a few ways you can:
 
 
 ## Questions
