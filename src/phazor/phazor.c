@@ -985,7 +985,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 				} else {
 					bfr[high] = (buffer[1][i]) / 32768.0;
 				}
-			} else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
+			} else printf("ph: CRITICAL ERROR - INVALID BIT DEPTH!\n");
 
 			fade_fx();
 
@@ -1017,7 +1017,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 				if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
 				else re_in[(i * 2) + 1] = (buffer[1][i]) / 32768.0;
 
-			} else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
+			} else printf("ph: CRITICAL ERROR - INVALID BIT DEPTH!\n");
 
 			temp_fill++;
 			i++;

@@ -1881,7 +1881,7 @@ class PlayerCtl:
 				d = ""
 
 
-		# Add the disc number for sorting by CD, make it '1' if theres isnt one
+		# Add the disc number for sorting by CD, make it '1' if there isn't one
 		if s or d:
 			s = f"1d{s}" if not d else f"{d}d{s}"
 		# Use the filename if we dont have any metadata to sort by,
@@ -1892,7 +1892,7 @@ class PlayerCtl:
 		if (not tr.disc_number or tr.disc_number == "0") and tr.is_cue:
 			s = tr.filename + "-" + s
 
-		# This splits the line by groups of numbers, causing the sorting algorithum to sort
+		# This splits the line by groups of numbers, causing the sorting algorithm to sort
 		# by those numbers. Should work for filenames, even with the disc number in the name
 		try:
 			return [tryint(c) for c in re.split("([0-9]+)", s)]
@@ -2612,7 +2612,7 @@ class PlayerCtl:
 							self.multi_playlist[self.active_playlist_viewing].playlist_ids) - 5:
 						self.playlist_view_position += 3
 
-					# We know its out of range if above view postion
+					# We know its out of range if above view position
 					elif i < self.playlist_view_position:
 						self.playlist_view_position = i - random.randint(2, int((
 							self.gui.playlist_view_length / 3) * 2) + int(self.gui.playlist_view_length / 6))
@@ -6650,7 +6650,7 @@ class Tauon:
 						line = Path(line).resolve()
 					line = str(line)
 
-					# Cache datbase file paths for quick lookup
+					# Cache database file paths for quick lookup
 					if not location_dict:
 						for key, value in self.pctl.master_library.items():
 							if value.fullpath:
@@ -7294,7 +7294,7 @@ class Tauon:
 			return
 
 		if len(target_base) < 4:
-			self.show_message(_("Safety interupt! The source path seems oddly short."), target_base, mode="error")
+			self.show_message(_("Safety interrupt! The source path seems oddly short."), target_base, mode="error")
 			return
 
 		protect = ("", "Documents", "Music", "Desktop", "Downloads")
@@ -9972,7 +9972,7 @@ class Tauon:
 				logging.info(f"Upper folder is: {upper}")
 
 				if len(move_path) < 4:
-					self.show_message(_("Safety interupt! The source path seems oddly short."), move_path, mode="error")
+					self.show_message(_("Safety interrupt! The source path seems oddly short."), move_path, mode="error")
 					return
 
 				if not os.path.isdir(upper):
@@ -9995,7 +9995,7 @@ class Tauon:
 					return
 
 				if len(next(os.walk(move_path))[2]) > max(20, len(to_move) * 2):
-					self.show_message(_("Safety interupt! The source folder seems to have many files."), move_path, mode="warning")
+					self.show_message(_("Safety interrupt! The source folder seems to have many files."), move_path, mode="warning")
 					return
 
 				artist = move_track.artist
@@ -15335,7 +15335,7 @@ class Tauon:
 		self.gui.pl_update += 1
 
 	def goto_album(self, playlist_no: int, down: bool = False, force: bool = False) -> list | int | None:
-		logging.debug("Postion set by album locate")
+		logging.debug("Position set by album locate")
 
 		if self.core_timer.get() < 0.5:
 			return None
@@ -15370,7 +15370,7 @@ class Tauon:
 		# If the album is within the view port already, dont jump to it
 		# (unless we really want to with force)
 		if not force and self.gui.album_scroll_px + self.gui.album_v_slide_value < px < self.gui.album_scroll_px + self.window_size[1]:
-			# Dont chance the view since its alread in the view port
+			# Dont chance the view since its already in the view port
 			# But if the album is just out of view on the bottom, bring it into view on to bottom row
 			if self.window_size[1] > (self.album_mode_art_size + self.gui.album_v_gap) * 2:
 				while not self.gui.album_scroll_px - 20 < px + (self.album_mode_art_size + self.gui.album_v_gap + 3) < self.gui.album_scroll_px + \
@@ -16304,7 +16304,7 @@ class Tauon:
 			track = self.pctl.playing_object()
 
 			if not track or not (track.title or track.artist or track.album or track.filename):
-				return  # only display if we have at least one piece of metadata avaliable
+				return  # only display if we have at least one piece of metadata available
 
 			#i_path = ""
 			#try:
@@ -16794,7 +16794,7 @@ class Tauon:
 
 	def signal_handler(self, signum, frame) -> None:
 		signal.signal(signum, signal.SIG_IGN) # ignore additional signals
-		self.exit(reason="SIGINT recieved")
+		self.exit(reason="SIGINT received")
 
 	def save_state(self) -> None:
 		gui   = self.gui
@@ -19739,7 +19739,7 @@ class LyricsRen:
 		#colour = self.colours.grey(40)
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
-		# TODO (Flynn): this used to check the gallery backrgound & i don't even know why it did that much
+		# TODO (Flynn): this used to check the gallery background & i don't even know why it did that much
 		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
 
 class TimedLyricsToStatic:
@@ -21096,7 +21096,7 @@ class AlbumArt:
 		self.cycle_offset(track_object, True)
 
 	def get_offset(self, filepath: str, source: list[tuple[int, str]]) -> int:
-		# Check if folder offset already exsts, if not, make it
+		# Check if folder offset already exists, if not, make it
 		parent_folder = os.path.dirname(filepath)
 
 		if parent_folder in self.folder_image_offsets:
@@ -21213,9 +21213,9 @@ class AlbumArt:
 				if t > 20:
 					break
 
-		cahced = self.base64cache
-		if track == cahced[0] and size == cahced[1]:
-			return cahced[2]
+		cached = self.base64cache
+		if track == cached[0] and size == cached[1]:
+			return cached[2]
 
 		self.processing64on = track
 
@@ -22892,14 +22892,14 @@ class ExportPlaylistBox:
 				ddt.text((xx, yy, 1), _("Will save with playlist name:") + f" {self.pctl.resolve_full_playlist_path(playlist, get_name=True)}", colours.grey(190), 10)
 				yy += round(13 * gui.scale)
 		elif not ext:
-			ddt.text((xx, yy, 1), _("No file extention?"), colours.grey(190), 10)
+			ddt.text((xx, yy, 1), _("No file extension?"), colours.grey(190), 10)
 			yy += round(13 * gui.scale)
 		elif ext:
 			if playlist.export_type == "xspf" and ext.lower() != ".xspf":
-				ddt.text((xx, yy, 1), _("Incorrect extention?"), colours.grey(190), 10)
+				ddt.text((xx, yy, 1), _("Incorrect extension?"), colours.grey(190), 10)
 				yy += round(13 * gui.scale)
 			if playlist.export_type == "m3u" and ext.lower() not in (".m3u", ".m3u8"):
-				ddt.text((xx, yy, 1), _("Incorrect extention?"), colours.grey(190), 10)
+				ddt.text((xx, yy, 1), _("Incorrect extension?"), colours.grey(190), 10)
 				yy += round(13 * gui.scale)
 		if not Path(self.pctl.resolve_full_playlist_path(playlist)).parent.is_dir():
 			ddt.text((xx, yy, 1), _("Will create directory"), colours.grey(190), 10)
@@ -29438,7 +29438,7 @@ class MiniMode:
 			if self.coll(right_area):
 				self.pctl.advance()
 
-		# Show exit/min buttons when mosue over
+		# Show exit/min buttons when mouse over
 		tool_rect = [self.window_size[0] - 110 * self.gui.scale, 2, 108 * self.gui.scale, 45 * self.gui.scale]
 		if self.prefs.left_window_control:
 			tool_rect[0] = 0
@@ -29545,7 +29545,7 @@ class MiniMode2:
 					(x1 + 15 * self.gui.scale, 43 * self.gui.scale), line1, self.colours.grey(110), 514,
 					self.window_size[0] - x1 - 30 * self.gui.scale)
 
-		# Show exit/min buttons when mosue over
+		# Show exit/min buttons when mouse over
 		tool_rect = [self.window_size[0] - 110 * self.gui.scale, 2, 108 * self.gui.scale, 45 * self.gui.scale]
 		if self.prefs.left_window_control:
 			tool_rect[0] = 0
@@ -29870,7 +29870,7 @@ class MiniMode3:
 		self.tauon.search_over.render()
 
 
-		# Show exit/min buttons when mosue over
+		# Show exit/min buttons when mouse over
 		tool_rect = [self.window_size[0] - 110 * self.gui.scale, 2, 108 * self.gui.scale, 45 * self.gui.scale]
 		if self.prefs.left_window_control:
 			tool_rect[0] = 0
@@ -30975,7 +30975,7 @@ class StandardPlaylist:
 					run += item[1]
 
 			# -----------------------------------------------------------------
-			# Count the number if visable tracks (used by Show Current function)
+			# Count the number if visible tracks (used by Show Current function)
 			if gui.playlist_top + gui.playlist_row_height * w > window_size[0] - gui.panelBY - gui.playlist_row_height:
 				pass
 			else:
@@ -31510,7 +31510,7 @@ class RadioBox:
 				#logging.info(self.ws_interval)
 				time.sleep(self.ws_interval)
 				ws.send("{\"op\":9}")
-				logging.info("Send heatbeat")
+				logging.info("Send heartbeat")
 
 			def on_message(ws: WebSocketApp, message: str) -> None:
 				logging.info(message)
@@ -32617,7 +32617,7 @@ class PlaylistBox:
 			name = pl.title
 			hidden = pl.hidden
 
-			# Background is invisible by default (for hightlighting if selected)
+			# Background is invisible by default (for highlighting if selected)
 			bg = ColourRGBA(0, 0, 0, 0)
 			if self.prefs.transparent_mode:
 				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.09, 0)
@@ -33293,7 +33293,7 @@ class ArtistList:
 					track = self.pctl.get_track(self.pctl.default_playlist[i])
 					if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
 							"artists" in track.misc and artist in track.misc["artists"]):
-						# Matchin artist
+						# Matching artist
 						if not in_artist:
 							in_artist = True
 							last_ref = track
@@ -34900,7 +34900,7 @@ class MetaBox:
 		self.tauon.test_auto_lyrics(track)
 
 
-		# # Draw lyrics if avaliable
+		# # Draw lyrics if available
 		# if prefs.show_lyrics_side and pctl.track_queue \
 		# and track.lyrics and h > 45 * gui.scale and w > 200 * gui.scale:
 		#
@@ -36145,7 +36145,7 @@ class Showcase:
 		slide = 0.7
 		for i, bar in enumerate(self.gui.spec4_array):
 
-			# We wont draw higher bars that may not move
+			# We won't draw higher bars that may not move
 			if i > 40:
 				break
 
@@ -37142,7 +37142,7 @@ class TimedLyricsEdit:
 		# scrolling
 		self.scroll_position: int = 0 # measured in pixels - greater means scrolled further down - 0 means centered on active line
 		self.lyrics_position: int = 0 # same thing but for the static view
-		self.allow_scroll:   bool = True # cancels auto scroll correction when adding & removing lines. probably doesnt actually do anything
+		self.allow_scroll:   bool = True # cancels auto scroll correction when adding & removing lines. probably doesn't actually do anything
 		self.font:            int = 20
 		self.line_height:     int = round(self.ddt.get_text_w("?", self.font, True))
 		self.yy:              int = self.line_height + round(10 * self.gui.scale) #line height plus spacing
@@ -39364,11 +39364,11 @@ def load_prefs(bag: Bag) -> None:
 		"Show album art and metadata of last played track when stopped.")
 	prefs.meta_shows_selected = cf.sync_add(
 		"bool", "side-panel-info-selected", prefs.meta_shows_selected,
-		"Show album art and metadata of selected track when stopped. (overides above setting)")
+		"Show album art and metadata of selected track when stopped. (overrides above setting)")
 	prefs.meta_shows_selected_always = cf.sync_add(
 		"bool", "side-panel-info-selected-always",
 		prefs.meta_shows_selected_always,
-		"Show album art and metadata of selected track at all times. (overides the above 2 settings)")
+		"Show album art and metadata of selected track at all times. (overrides the above 2 settings)")
 	prefs.stop_notifications_mini_mode = cf.sync_add(
 		"bool", "mini-mode-avoid-notifications",
 		prefs.stop_notifications_mini_mode,
@@ -39901,7 +39901,7 @@ def coll_point(l: list[int], r: list[int]) -> bool:
 def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: bool = False) -> list[str] | bool | None:
 	"""Return list of strings if lyrics match LRC format, otherwise return None.
 	just_check returns True if current track.lyrics fit LRC format.
-	reload will try to OVEWRITE track.synced with new data.
+	reload will try to OVERWRITE track.synced with new data.
 
 	See https://en.wikipedia.org/wiki/LRC_(file_format)
 	"""
@@ -40693,7 +40693,7 @@ def worker1(tauon: Tauon) -> None:
 			f.close()
 
 			# We want to detect if this is a cue sheet that points to either a single file with subtracks, or multiple
-			# files with mutiple subtracks, but not multiple files that are individual tracks
+			# files with multiple subtracks, but not multiple files that are individual tracks
 			# i.e, is there really any splitting going on
 
 			files = 0
@@ -43872,7 +43872,7 @@ def main(holder: Holder) -> None:
 	_("Filepath")
 
 	# set_menu.add(MenuItem(_("Sort Ascending"), tauon.sort_ass, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
-	# set_menu.add(MenuItem(_("Sort Decending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
+	# set_menu.add(MenuItem(_("Sort Descending"), tauon.sort_dec, pass_ref=True, disable_test=tauon.view_pl_is_locked, pass_ref_deco=True))
 	# set_menu.br()
 
 	set_menu_hidden.add(MenuItem(_("Show bar"), tauon.show_set_bar))
@@ -45642,8 +45642,8 @@ def main(holder: Holder) -> None:
 			tauon.thread_manager.ready("worker")
 			if tauon.loaderCommand == LoaderCommand.NONE:
 
-				# Fliter out files matching CUE filenames
-				# This isnt the only mechanism that does this. This one helps in the situation
+				# Filter out files matching CUE filenames
+				# This isn't the only mechanism that does this. This one helps in the situation
 				# where the user drags and drops multiple files at onec. CUEs in folders are handled elsewhere
 				if len(tauon.load_orders) > 1:
 					for order in tauon.load_orders:
@@ -45661,13 +45661,13 @@ def main(holder: Holder) -> None:
 				# Prepare loader thread with load order
 				for order in tauon.load_orders:
 					if order.stage == 0:
-						order.traget = order.target.replace("\\", "/")
+						order.target = order.target.replace("\\", "/")
 						order.stage = 1
-						if os.path.isdir(order.traget):
+						if os.path.isdir(order.target):
 							tauon.loaderCommand = LoaderCommand.FOLDER
 						else:
 							tauon.loaderCommand = LoaderCommand.FILE
-							if order.traget.endswith(".xspf"):
+							if order.target.endswith(".xspf"):
 								gui.to_got = "xspf"
 								gui.to_get = 0
 							else:
@@ -45839,7 +45839,7 @@ def main(holder: Holder) -> None:
 					inp.mouse_click = False
 					gui.message_box = False
 
-			# Enable the garbage collecter (since we disabled it during startup)
+			# Enable the garbage collector (since we disabled it during startup)
 			if ggc > 0:
 				if ggc == 2:
 					ggc = 1
@@ -46669,7 +46669,7 @@ def main(holder: Holder) -> None:
 										off -= 0.01
 
 							done = True
-							# Animate tages on
+							# Animate tags on
 							if gui.pt == 2:
 								for item in gui.power_bar:
 									t = item.ani_timer.get()
@@ -47287,7 +47287,7 @@ def main(holder: Holder) -> None:
 							ddt.clear_rect((x, y, w, h))
 							ddt.rect((x, y, w, h), colours.side_panel_background)
 							tauon.test_auto_lyrics(target_track)
-							# Draw lyrics if avaliable
+							# Draw lyrics if available
 							if prefs.show_lyrics_side and target_track and target_track.lyrics:  # and not prefs.show_side_art:
 								# meta_box.lyrics(x, y, w, h, target_track)
 								if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
@@ -47370,7 +47370,7 @@ def main(holder: Holder) -> None:
 											filter(None, (target_track.album, target_track.date, target_track.genre)))
 										ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
 
-					# Seperation Line Drawing
+					# Separation Line Drawing
 					if gui.rsp:
 						# Draw Highlight when mouse over
 						if draw_sep_hl:

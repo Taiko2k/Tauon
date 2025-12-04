@@ -638,7 +638,7 @@ class Ape(TrackFile):
 					footer = struct.unpack("<8c6i", b)
 
 		if found == 0:
-			logging.info("Tag Scanner: Cant find APE tag")
+			logging.info("Tag Scanner: Can't find APE tag")
 		else:
 			self.found_tag = True
 			tag_len = footer[9]  # The size of the tag data (excludes header)
@@ -783,7 +783,7 @@ class Ape(TrackFile):
 				logging.info("WARNING: Does not appear to be a valid TTA file")
 		elif ".wv" in self.filepath:
 			#  We can handle WavPack files here too
-			#  This code likely wont cover all cases as is, I only tested it on a few files
+			#  This code likely won't cover all cases as is, I only tested it on a few files
 
 			a.seek(0)
 
@@ -941,7 +941,7 @@ genre_dict = {
 	64: "Native US",
 	65: "Cabaret",
 	66: "New Wave",
-	67: "Psychadelic",
+	67: "Psychedelic",
 	68: "Rave",
 	69: "Showtunes",
 	70: "Trailer",
