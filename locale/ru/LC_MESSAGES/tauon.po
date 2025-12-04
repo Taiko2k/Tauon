@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-12-01 09:51+0100\n"
+"POT-Creation-Date: 2025-12-04 13:28+0100\n"
 "PO-Revision-Date: 2025-11-11 18:51+0000\n"
 "Last-Translator: Martin <spleefer90@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -507,7 +507,8 @@ msgid "The destination and source folders are the same."
 msgstr "Папки назначения и источника одинаковы."
 
 #: src/tauon/t_modules/t_main.py:7297 src/tauon/t_modules/t_main.py:9975
-msgid "Safety interupt! The source path seems oddly short."
+#, fuzzy
+msgid "Safety interrupt! The source path seems oddly short."
 msgstr "Прерывание безопасности! Путь источника кажется странно коротким."
 
 #: src/tauon/t_modules/t_main.py:7304 src/tauon/t_modules/t_main.py:9989
@@ -1079,7 +1080,8 @@ msgid "The source directory is missing!"
 msgstr "Отсутствует исходный каталог!"
 
 #: src/tauon/t_modules/t_main.py:9998
-msgid "Safety interupt! The source folder seems to have many files."
+#, fuzzy
+msgid "Safety interrupt! The source folder seems to have many files."
 msgstr "Прерывание безопасности! В исходной папке, похоже, много файлов."
 
 #: src/tauon/t_modules/t_main.py:10008
@@ -2210,11 +2212,11 @@ msgid "Will save with playlist name:"
 msgstr "Нет названия плейлиста"
 
 #: src/tauon/t_modules/t_main.py:22895
-msgid "No file extention?"
+msgid "No file extension?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
-msgid "Incorrect extention?"
+msgid "Incorrect extension?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22905
