@@ -1,13 +1,29 @@
+#!/usr/bin/env python
 """Update language files from ./locale"""
 import logging
 import os
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 
 
+def find_pygettext() -> Path | None:
+	"""Find pygettext.py, either in the standard stdlib dir or locally in the project"""
+	stdlib = sysconfig.get_path("stdlib")
+	path = Path(stdlib) / "Tools" / "i18n" / "pygettext.py"
+	if path.exists():
+		return path
+
+	path = Path.cwd() / "pygettext.py"
+	if path.exists():
+		return path
+
+	return None
+
 def main() -> None:
-	if not Path("pygettext.py").is_file():
+	pygettext_path = find_pygettext()
+	if not pygettext_path:
 		logging.error("Please add a copy of pygettext.py to this dir from the Python Tools dir")
 		sys.exit()
 
@@ -23,11 +39,11 @@ def main() -> None:
 		py_files.extend(str(Path(dirpath) / file) for file in filenames if file.endswith(".py"))
 	# Run pygettext.py with all .py files as arguments
 	if py_files:
-		subprocess.run(["/usr/bin/python", "pygettext.py", *py_files], check=True)  # noqa: S603
+		_ = subprocess.run(["/usr/bin/python", str(pygettext_path), *py_files], check=True)  # noqa: S603
 
 	logging.info("Copy template")
-	subprocess.run(["/usr/bin/cp", "messages.pot", pot_path], check=True)  # noqa: S603
-	subprocess.run(["/usr/bin/rm", "messages.pot"], check=True)
+	_ = subprocess.run(["/usr/bin/cp", "messages.pot", pot_path], check=True)  # noqa: S603
+	_ = subprocess.run(["/usr/bin/rm", "messages.pot"], check=True)
 
 	languages = locale_folder.iterdir()
 
@@ -38,7 +54,7 @@ def main() -> None:
 		po_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.po"
 
 		if Path(po_path).exists():
-			subprocess.run(["/usr/bin/msgmerge", "-U", po_path, pot_path], check=True)  # noqa: S603
+			_ = subprocess.run(["/usr/bin/msgmerge", "-U", po_path, pot_path], check=True)  # noqa: S603
 
 			logging.info(f"Updated: {lang_file.name}")
 

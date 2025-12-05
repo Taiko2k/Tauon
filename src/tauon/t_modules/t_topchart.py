@@ -193,7 +193,7 @@ class TopChart:
 			if two_col:
 				ww += col_w + 20
 
-		# Get lables
+		# Get labels
 		text = ""
 		b_text = ""
 		f = False

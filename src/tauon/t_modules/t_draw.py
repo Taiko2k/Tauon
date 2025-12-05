@@ -43,7 +43,7 @@ try:
 except ModuleNotFoundError:
 	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
 except Exception:
-	logging.exception("Unkown error trying to import jxlpy, JPEG XL support will be disabled.")
+	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
 
 
 system = "Linux"

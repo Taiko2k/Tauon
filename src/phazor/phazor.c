@@ -773,6 +773,61 @@ void read_to_buffer_24in32_fs(int32_t src[], int n_samples) {
 	resample_to_buffer(f);
 }
 
+void read_to_buffer_32in32_fs(int32_t src[], int n_samples) {
+	// full samples version
+	int i = 0;
+	int f = 0;
+
+	// Convert int32 to float
+	while (f < n_samples) {
+		re_in[f * 2] = (src[i]) / 2147483648.0;
+		if (src_channels == 1) {
+			re_in[(f * 2) + 1] = re_in[f * 2];
+			i += 1;
+		} else {
+			re_in[(f * 2) + 1] = (src[i + 1]) / 2147483648.0;
+			i += 2;
+		}
+
+		f++;
+	}
+
+	resample_to_buffer(f);
+}
+
+void read_to_buffer_float32_fs(int32_t src[], int n_samples) {
+	// full samples version for floating point WavPack
+	int i = 0;
+	int f = 0;
+
+	// Reinterpret int32 as float (WavPack stores float as int32)
+	union {
+		int32_t i;
+		float f;
+	} convert;
+
+	while (f < n_samples) {
+		convert.i = src[i];
+		re_in[f * 2] = convert.f;
+		if (re_in[f * 2] > 1) re_in[f * 2] = 1;
+		if (re_in[f * 2] < -1) re_in[f * 2] = -1;
+		if (src_channels == 1) {
+			re_in[(f * 2) + 1] = re_in[f * 2];
+			i += 1;
+		} else {
+			convert.i = src[i + 1];
+			re_in[(f * 2) + 1] = convert.f;
+			if (re_in[(f * 2) + 1] > 1) re_in[(f * 2) + 1] = 1;
+			if (re_in[(f * 2) + 1] < -1) re_in[(f * 2) + 1] = -1;
+			i += 2;
+		}
+
+		f++;
+	}
+
+	resample_to_buffer(f);
+}
+
 void read_to_buffer_16in32_fs(int32_t src[], int n_samples) {
 	// full samples version
 	int i = 0;
@@ -985,7 +1040,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 				} else {
 					bfr[high] = (buffer[1][i]) / 32768.0;
 				}
-			} else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
+			} else printf("ph: CRITICAL ERROR - INVALID BIT DEPTH!\n");
 
 			fade_fx();
 
@@ -1017,7 +1072,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 				if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
 				else re_in[(i * 2) + 1] = (buffer[1][i]) / 32768.0;
 
-			} else printf("ph: CRITIAL ERROR - INVALID BIT DEPTH!\n");
+			} else printf("ph: CRITICAL ERROR - INVALID BIT DEPTH!\n");
 
 			temp_fill++;
 			i++;
@@ -2102,16 +2157,20 @@ int load_next() {
 				src_reset(src);
 			}
 			wp_bit = WavpackGetBitsPerSample(wpc);
-			if (! (wp_bit == 16 || wp_bit == 24)) {
-				printf("pa: wavpak bit depth not supported\n");
-				WavpackCloseFile(wpc);
-				return 1;
-			}
 			wp_float = 0;
 			if (WavpackGetMode(wpc) & MODE_FLOAT) {
 				wp_float = 1;
-				printf("pa: wavpak float mode not implemented");
-				return 1;
+				if (wp_bit != 32) {
+					printf("pa: wavpak float mode only supported for 32-bit\n");
+					WavpackCloseFile(wpc);
+					return 1;
+				}
+			} else {
+				if (! (wp_bit == 16 || wp_bit == 24 || wp_bit == 32)) {
+					printf("pa: wavpak bit depth not supported\n");
+					WavpackCloseFile(wpc);
+					return 1;
+				}
 			}
 
 			current_length_count = WavpackGetNumSamples(wpc);
@@ -2354,10 +2413,14 @@ void pump_decode() {
 			int samples;
 			int32_t buffer[4 * 1024 * 2];
 			samples = WavpackUnpackSamples(wpc, buffer, 1024);
-			if (wp_bit == 16) {
+			if (wp_float) {
+				read_to_buffer_float32_fs(buffer, samples);
+			} else if (wp_bit == 16) {
 				read_to_buffer_16in32_fs(buffer, samples);
 			} else if (wp_bit == 24) {
 				read_to_buffer_24in32_fs(buffer, samples);
+			} else if (wp_bit == 32) {
+				read_to_buffer_32in32_fs(buffer, samples);
 			}
 			samples_decoded += samples;
 		}

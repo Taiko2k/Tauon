@@ -66,7 +66,7 @@ class VorbisMonitor:
 		b.seek(0, io.SEEK_END)
 		b.write(data)
 
-		# Check theres enough data to decode header
+		# Check there's enough data to decode header
 		b.seek(0, io.SEEK_END)
 		l = b.tell()
 		if l < 128:

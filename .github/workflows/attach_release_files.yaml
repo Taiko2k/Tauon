@@ -1,0 +1,40 @@
+name: attach-to-release
+on:
+  release:
+    types: [published]
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # upload to release
+      actions: read     # read artifacts via API
+    steps:
+      - name: DL repo for getting tags
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Get commit SHA for release tag
+        id: get_sha
+        run: |
+          # Fetch tags to ensure they're available
+          git fetch --tags
+
+          # Get commit hash for the tag that triggered this release
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          COMMIT_SHA=$(git rev-list -n 1 "$TAG_NAME")
+
+          echo "Commit SHA for $TAG_NAME is $COMMIT_SHA"
+          echo "sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+      - name: Download artifacts from CI run for this commit/tag
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          repo: ${{ github.repository }}
+          workflow: build_and_release.yaml
+          commit: ${{ steps.get_sha.outputs.sha }}
+          path: dist
+          if_no_artifact_found: fail
+      - name: Upload files to this release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**
