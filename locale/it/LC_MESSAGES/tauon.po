@@ -15,10 +15,30 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.15-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
-#: src/tauon/t_modules/t_db_migrate.py:169
+#: src/tauon/t_modules/guitar_chords.py:81
+msgid "Insufficient metadata to search"
+msgstr "Metadati insufficienti per la ricerca"
+
+#: src/tauon/t_modules/guitar_chords.py:95
+msgid "Clipboard has no text"
+msgstr "Nessun testo negli appunti"
+
+#: src/tauon/t_modules/guitar_chords.py:189
+msgid "Error finding matching track on GuitarParty"
+msgstr "Non posso trovare una traccia corrispondente su GuitarParty"
+
+#: src/tauon/t_modules/guitar_chords.py:205
+msgid "Track not found on GuitarParty"
+msgstr "Traccia non trovata su GuitarParty"
+
+#: src/tauon/t_modules/guitar_chords.py:220
+msgid "Error getting song from GuitarParty"
+msgstr "Errore nell'ottenere la traccia da GuitarParty"
+
+#: src/tauon/t_modules/t_db_migrate.py:134
 msgid ""
 "Error loading old database, did the program not exit properly after "
 "updating? Oh well."
@@ -341,8 +361,7 @@ msgstr "Sembra non funzionare :("
 msgid "How did this even happen."
 msgstr "Com'è potuto succedere."
 
-#: src/tauon/t_modules/t_main.py:4467 src/tauon/t_modules/t_main.py:4520
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:4224 src/tauon/t_modules/t_main.py:4277
 msgid "ListenBrainz is enabled but there is no token."
 msgstr "ListenBrainz è abilitato ma non c'è nessun token."
 
@@ -522,7 +541,7 @@ msgstr "Limite di sicurezza cartella raggiunto! (3GB)"
 
 #: src/tauon/t_modules/t_main.py:7375 src/tauon/t_modules/t_main.py:7394
 msgid "Rescanning folder..."
-msgstr "Ricontrollo cartelle..."
+msgstr "Ricontrollo cartella..."
 
 #: src/tauon/t_modules/t_main.py:7414
 msgid "Unlock Panel"
@@ -597,11 +616,11 @@ msgstr "Metadati insufficienti per trovare i testi"
 
 #: src/tauon/t_modules/t_main.py:7697 src/tauon/t_modules/t_main.py:7703
 msgid "Show static lyrics"
-msgstr "Mostra Testi statici"
+msgstr "Mostra testi statici"
 
 #: src/tauon/t_modules/t_main.py:7697 src/tauon/t_modules/t_main.py:7705
 msgid "Show synced lyrics"
-msgstr "Mostra Testi sincronizzati"
+msgstr "Mostra testi sincronizzati"
 
 #: src/tauon/t_modules/t_main.py:7794 src/tauon/t_modules/t_main.py:7813
 msgid "Could not write lyrics to file"
@@ -1568,10 +1587,9 @@ msgstr "L'invio è Attivo"
 msgid "Unknown Track"
 msgstr "Traccia sconosciuta"
 
-#: src/tauon/t_modules/t_main.py:11856
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:11302
 msgid "Unknown Artist"
-msgstr "Album sconosciuto"
+msgstr "Artista sconosciuto"
 
 #: src/tauon/t_modules/t_main.py:11906
 msgid "Error - Discord not running?"
@@ -2363,7 +2381,7 @@ msgstr "Usa copertina come sfondo"
 
 #: src/tauon/t_modules/t_main.py:24010
 msgid "Transparent accent"
-msgstr ""
+msgstr "Colore d'accento trasparente"
 
 #: src/tauon/t_modules/t_main.py:24016
 msgid "Prefer artist backgrounds"
@@ -2800,8 +2818,7 @@ msgstr "Per problemi su Stato Discord"
 msgid "Sorry, this feature is unavailable with snap"
 msgstr "Ci dispiace, questa funzione non è disponibile nello snap"
 
-#: src/tauon/t_modules/t_main.py:24751
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:23880
 msgid "Missing dependency python-lynxpresence"
 msgstr "Dipendenza mancante python-pypresence"
 
@@ -3043,14 +3060,14 @@ msgstr "Fatto"
 msgid "Use LibreFM"
 msgstr "Usa LibreFM"
 
-#: src/tauon/t_modules/t_main.py:25586
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:24711
 msgid ""
 "Click login to open the last.fm web authorisation page (paste from clipboard "
 "if it didn't open) and follow prompt. Then return here and click \"Done\"."
 msgstr ""
-"Clicca su accedi per aprire l'autorizzazione in rete di last.fm e segui le "
-"indicazioni. Poi torna qui e clicca su \"Fatto\"."
+"Clicca su accedi per aprire l'autorizzazione in rete di last.fm (incollala "
+"dagli appunti se non si è aperta) e segui le indicazioni. Poi torna qui e "
+"clicca su \"Fatto\"."
 
 #: src/tauon/t_modules/t_main.py:25590
 msgid "Forget account"
@@ -3367,10 +3384,9 @@ msgstr "Nessun font impostato nella configurazione"
 msgid "Generating..."
 msgstr "Sto generando..."
 
-#: src/tauon/t_modules/t_main.py:26413
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:25538
 msgid "{N} Album chart"
-msgstr "Classifica dischi"
+msgstr "{N} Classifica dischi"
 
 #: src/tauon/t_modules/t_main.py:26419
 msgid "Not enough albums in the playlist!"
@@ -3460,15 +3476,13 @@ msgstr "Riduci predefinito"
 msgid "Thick default"
 msgstr "Aumenta predefinito"
 
-#: src/tauon/t_modules/t_main.py:27069
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:26188
 msgid "Tauon SHUFFLE!"
-msgstr "Tauon Music Box MISCHIA!"
+msgstr "Tauon MISCHIA!"
 
-#: src/tauon/t_modules/t_main.py:27071
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:26190
 msgid "ALBUM SHUFFLE"
-msgstr "Tauon Music Box MISCHIA ALBUM!"
+msgstr "MISCHIA DISCO"
 
 #: src/tauon/t_modules/t_main.py:27704
 msgid "MENU"
@@ -3930,14 +3944,13 @@ msgstr "{N} traccia"
 msgid "Downloading data..."
 msgstr "Scaricando dati..."
 
-#: src/tauon/t_modules/t_main.py:33198
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:32314
 msgid "{N} albums"
-msgstr "Dischi totali"
+msgstr "{N} dischi"
 
 #: src/tauon/t_modules/t_main.py:33200
 msgid "{N} album"
-msgstr ""
+msgstr "{N} disco"
 
 #: src/tauon/t_modules/t_main.py:33382
 msgid "First of artist's albums ({N} albums)"
@@ -4685,7 +4698,7 @@ msgstr "Ripulisci Spartito Note"
 #: src/tauon/t_modules/t_main.py:43435 src/tauon/t_modules/t_main.py:43447
 #: src/tauon/t_modules/t_main.py:43478
 msgid "Toggle Lyrics"
-msgstr "Nascondi/mostra Testi"
+msgstr "Mostra / nascondi Testi"
 
 #: src/tauon/t_modules/t_main.py:43436 src/tauon/t_modules/t_main.py:43449
 #, fuzzy
@@ -4842,10 +4855,9 @@ msgstr "Imposta modalità podcast"
 msgid "Remove Duplicates"
 msgstr "Rimuovi Duplicati"
 
-#: src/tauon/t_modules/t_main.py:43578
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:40796
 msgid "Toggle Console"
-msgstr "Modifica colonne"
+msgstr "Mostra / nascondi Console"
 
 #: src/tauon/t_modules/t_main.py:43600 src/tauon/t_modules/t_main.py:43601
 msgid "Longest Tracks"
@@ -4871,7 +4883,12 @@ msgstr "Inverti dischi"
 msgid "Has Comment"
 msgstr "Ha Commenti"
 
-#: src/tauon/t_modules/t_main.py:43645
+#: src/tauon/t_modules/t_main.py:40858 src/tauon/t_modules/t_main.py:40859
+#: src/tauon/t_modules/t_main.py:41127
+msgid "Has Lyrics"
+msgstr "Ha il Testo"
+
+#: src/tauon/t_modules/t_main.py:40863
 msgid "Add Playing Spotify Album"
 msgstr "Aggiungi Album in Riproduzione da Spotify"
 
@@ -4921,7 +4938,7 @@ msgstr "Modifica con"
 
 #: src/tauon/t_modules/t_main.py:43727
 msgid "Lyrics..."
-msgstr "Testi..."
+msgstr "Testo..."
 
 #: src/tauon/t_modules/t_main.py:43728
 msgid "Fix Mojibake"
@@ -4990,25 +5007,23 @@ msgstr "Copia URL Traccia"
 
 #: src/tauon/t_modules/t_main.py:43848
 msgid "Always stop after album"
-msgstr ""
+msgstr "Ferma sempre dopo disco"
 
 #: src/tauon/t_modules/t_main.py:43849
 msgid "Always stop after track"
-msgstr ""
+msgstr "Ferma sempre dopo traccia"
 
-#: src/tauon/t_modules/t_main.py:43850
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:41071
 msgid "Stop after album"
-msgstr "Dischi Più Amati"
+msgstr "Ferma dopo disco"
 
-#: src/tauon/t_modules/t_main.py:43851
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:41072
 msgid "Stop after track"
-msgstr "Tracce Più Amate"
+msgstr "Ferma dopo traccia"
 
 #: src/tauon/t_modules/t_main.py:43852
 msgid "Continue Play"
-msgstr ""
+msgstr "Continua Riproduzione"
 
 #: src/tauon/t_modules/t_main.py:43854
 msgid "Minimize"
