@@ -809,12 +809,16 @@ void read_to_buffer_float32_fs(int32_t src[], int n_samples) {
 	while (f < n_samples) {
 		convert.i = src[i];
 		re_in[f * 2] = convert.f;
+		if (re_in[f * 2] > 1) re_in[f * 2] = 1;
+		if (re_in[f * 2] < -1) re_in[f * 2] = -1;
 		if (src_channels == 1) {
 			re_in[(f * 2) + 1] = re_in[f * 2];
 			i += 1;
 		} else {
 			convert.i = src[i + 1];
 			re_in[(f * 2) + 1] = convert.f;
+			if (re_in[(f * 2) + 1] > 1) re_in[(f * 2) + 1] = 1;
+			if (re_in[(f * 2) + 1] < -1) re_in[(f * 2) + 1] = -1;
 			i += 2;
 		}
 
