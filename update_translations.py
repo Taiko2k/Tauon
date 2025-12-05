@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Update language files from ./locale"""
 import logging
 import os
