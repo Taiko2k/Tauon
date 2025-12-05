@@ -801,14 +801,20 @@ void read_to_buffer_float32_fs(int32_t src[], int n_samples) {
 	int f = 0;
 
 	// Reinterpret int32 as float (WavPack stores float as int32)
-	float *float_src = (float *)src;
+	union {
+		int32_t i;
+		float f;
+	} convert;
+
 	while (f < n_samples) {
-		re_in[f * 2] = float_src[i];
+		convert.i = src[i];
+		re_in[f * 2] = convert.f;
 		if (src_channels == 1) {
 			re_in[(f * 2) + 1] = re_in[f * 2];
 			i += 1;
 		} else {
-			re_in[(f * 2) + 1] = float_src[i + 1];
+			convert.i = src[i + 1];
+			re_in[(f * 2) + 1] = convert.f;
 			i += 2;
 		}
 
