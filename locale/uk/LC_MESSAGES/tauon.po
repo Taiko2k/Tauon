@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-12-01 09:51+0100\n"
+"POT-Creation-Date: 2025-12-04 13:28+0100\n"
 "PO-Revision-Date: 2025-05-06 07:01+0000\n"
 "Last-Translator: Kosťantin Horovij <lg096066587039@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/tauon-music-"
@@ -511,8 +511,9 @@ msgid "The destination and source folders are the same."
 msgstr "Теки призначення та джерела не відрізняються."
 
 #: src/tauon/t_modules/t_main.py:7297 src/tauon/t_modules/t_main.py:9975
-msgid "Safety interupt! The source path seems oddly short."
-msgstr ""
+#, fuzzy
+msgid "Safety interrupt! The source path seems oddly short."
+msgstr "Безпечне переривання! Здається, у теці з вихідним кодом багато файлів."
 
 #: src/tauon/t_modules/t_main.py:7304 src/tauon/t_modules/t_main.py:9989
 msgid "Better not do anything to that folder!"
@@ -1081,7 +1082,8 @@ msgid "The source directory is missing!"
 msgstr "Відсутній вихідний каталог!"
 
 #: src/tauon/t_modules/t_main.py:9998
-msgid "Safety interupt! The source folder seems to have many files."
+#, fuzzy
+msgid "Safety interrupt! The source folder seems to have many files."
 msgstr "Безпечне переривання! Здається, у теці з вихідним кодом багато файлів."
 
 #: src/tauon/t_modules/t_main.py:10008
@@ -2211,11 +2213,11 @@ msgid "Will save with playlist name:"
 msgstr "Немає назви списку відтворення"
 
 #: src/tauon/t_modules/t_main.py:22895
-msgid "No file extention?"
+msgid "No file extension?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
-msgid "Incorrect extention?"
+msgid "Incorrect extension?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22905
