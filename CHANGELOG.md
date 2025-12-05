@@ -2,6 +2,14 @@
 Changelog
 ---------
 
+### Unreleased version
+
+ - **Fixed** Crashes when using the Russian localization
+ - **Fixed** Another crash related to the bottom bar
+ - **Fixed** Playing M4B files
+ - **Fixed** Jellyfin playlist import from playlist files
+
+
 ### v8.2.2
 
  - **Fixed** Black screen bug
@@ -638,7 +646,7 @@ Changelog
 
 - **Improved** File Modified sorter to better group albums
 - **Fixed** radio recording not working on Flatpak
-- **Fixed** an issue with artist list wont goto multi-artist
+- **Fixed** an issue with artist list won't goto multi-artist
 - **Fixed** window not restoring when relaunching while in tray
 
 ### v6.4.6
@@ -1385,7 +1393,7 @@ Changelog
 
 ### v4.5.1
 
-- **Added** "artist " search prefex to search overly to only search artists
+- **Added** "artist " search prefix to search overly to only search artists
 - **Added** config option "show-current-on-transition"
 - **Extended** mpris2 with LovePlaying and UnLovePlaying methods
 - **Fixed** random track shortcut behavior when random albums mode was set
@@ -1881,7 +1889,7 @@ Changelog
 - **Fixed** limit on number of friend hearts displayed
 - **Fixed** auto theme not persisting in gallery view
 - **Fixed** gallery jumping to wrong position on playlist switch if position was at top
-- **Fixed** a case where playlist would change vew position when deleting another playlist
+- **Fixed** a case where playlist would change view position when deleting another playlist
 - **Fixed** a possible issue where playback would stall at end of a long track
 - **Fixed** end lines possibly missing from lyrics views
 - **Fixed** side panel closing if application restarted while in lyrics view

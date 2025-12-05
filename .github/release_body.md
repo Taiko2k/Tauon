@@ -44,6 +44,7 @@ Please report any issues either over at [Discord](https://discord.gg/v4EmhES) or
 			<tr>
 				<td>macOS</td>
 				<td>
+					<sub><i>Sequoia or later</i></sub><br>
 					<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/TauonMusicBox-dmg.zip"><img src="https://img.shields.io/badge/DMG-arm64-ea005e.svg?logo=apple"></a><br>
 				<!--	<a href="https://github.com/Taiko2k/Tauon/releases/download/RELEASE_TAG/Tauon-MacOS-Installer.pkg"><img src="https://img.shields.io/badge/PKG-Universal-bc544b.svg?logo=apple" /></a></a> -->
 				</td>
