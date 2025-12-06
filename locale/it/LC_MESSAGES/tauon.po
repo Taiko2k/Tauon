@@ -19,22 +19,27 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/guitar_chords.py:81
+#: src/tauon/t_modules/t_guitar_chords.py:92
 msgid "Insufficient metadata to search"
 msgstr "Metadati insufficienti per la ricerca"
 
 #: src/tauon/t_modules/guitar_chords.py:95
+#: src/tauon/t_modules/t_guitar_chords.py:106
 msgid "Clipboard has no text"
 msgstr "Nessun testo negli appunti"
 
 #: src/tauon/t_modules/guitar_chords.py:189
+#: src/tauon/t_modules/t_guitar_chords.py:207
 msgid "Error finding matching track on GuitarParty"
 msgstr "Non posso trovare una traccia corrispondente su GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:205
+#: src/tauon/t_modules/t_guitar_chords.py:223
 msgid "Track not found on GuitarParty"
 msgstr "Traccia non trovata su GuitarParty"
 
 #: src/tauon/t_modules/guitar_chords.py:220
+#: src/tauon/t_modules/t_guitar_chords.py:239
 msgid "Error getting song from GuitarParty"
 msgstr "Errore nell'ottenere la traccia da GuitarParty"
 
@@ -168,29 +173,6 @@ msgstr ""
 #, fuzzy
 msgid "Unknown"
 msgstr "Traccia sconosciuta"
-
-#: src/tauon/t_modules/t_guitar_chords.py:92
-#, fuzzy
-msgid "Insufficient metadata to search"
-msgstr "Metadati insufficienti per la ricerca"
-
-#: src/tauon/t_modules/t_guitar_chords.py:106
-msgid "Clipboard has no text"
-msgstr "Nessun testo negli appunti"
-
-#: src/tauon/t_modules/t_guitar_chords.py:207
-#, fuzzy
-msgid "Error finding matching track on GuitarParty"
-msgstr "Non posso trovare una traccia corrispondente su GuitarParty"
-
-#: src/tauon/t_modules/t_guitar_chords.py:223
-#, fuzzy
-msgid "Track not found on GuitarParty"
-msgstr "Scaletta non trovata sulla destinazione"
-
-#: src/tauon/t_modules/t_guitar_chords.py:239
-msgid "Error getting song from GuitarParty"
-msgstr ""
 
 #: src/tauon/t_modules/t_jellyfin.py:88 src/tauon/t_modules/t_jellyfin.py:91
 msgid "Could not establish connection to server."
@@ -1457,8 +1439,9 @@ msgstr "Compositore"
 msgid "Disc Number"
 msgstr "Numero disco"
 
-#: src/tauon/t_modules/t_main.py:10917 src/tauon/t_modules/t_main.py:43640
-#: src/tauon/t_modules/t_main.py:43641
+#: src/tauon/t_modules/t_main.py:10917 src/tauon/t_modules/t_main.py:40858
+#: src/tauon/t_modules/t_main.py:40859 src/tauon/t_modules/t_main.py:41127
+#: src/tauon/t_modules/t_main.py:43640 src/tauon/t_modules/t_main.py:43641
 msgid "Has Lyrics"
 msgstr "Ha testi"
 
@@ -4882,11 +4865,6 @@ msgstr "Inverti dischi"
 #: src/tauon/t_modules/t_main.py:43638 src/tauon/t_modules/t_main.py:43639
 msgid "Has Comment"
 msgstr "Ha Commenti"
-
-#: src/tauon/t_modules/t_main.py:40858 src/tauon/t_modules/t_main.py:40859
-#: src/tauon/t_modules/t_main.py:41127
-msgid "Has Lyrics"
-msgstr "Ha il Testo"
 
 #: src/tauon/t_modules/t_main.py:40863
 msgid "Add Playing Spotify Album"
