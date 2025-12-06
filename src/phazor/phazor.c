@@ -263,6 +263,10 @@ void buff_reset() {
 	watermark = high_mark;
 }
 
+#define VIS_SIDE_MAX 10000
+float vis_side_buffer[VIS_SIDE_MAX];
+int vis_side_fill = 0;
+
 double t_start, t_end;
 
 bool out_thread_running = false;
@@ -1256,6 +1260,12 @@ int get_audio(int max, float* buff) {
 				if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
 				if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
 
+				// vis stuff
+				if (vis_side_fill + 2 < VIS_SIDE_MAX){
+					vis_side_buffer[vis_side_fill] = l;
+					vis_side_buffer[vis_side_fill + 1] = r;
+					vis_side_fill += 2;
+				}
 
 				// Apply final volume adjustment
 				float final_vol = pow((gate * volume_on), config_volume_power);
@@ -3072,6 +3082,18 @@ EXPORT void set_subtrack(int n) {
 EXPORT void print_status() {
 	printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
 }
+
+EXPORT float* get_vis_side_buffer(){
+	return vis_side_buffer;
+	}
+
+EXPORT int get_vis_side_buffer_fill(){
+	return vis_side_fill;
+	}
+
+EXPORT void reset_vis_side_buffer(){
+	vis_side_fill = 0;
+	}
 
 EXPORT int phazor_shutdown() {
 	while (command != NONE) {
