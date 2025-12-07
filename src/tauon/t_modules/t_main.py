@@ -7557,11 +7557,42 @@ class Tauon:
 			return [colour, self.colours.menu_background, line]
 
 		line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
-		if (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
+		if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
 			colour = self.colours.menu_text_disabled
 		return [colour, self.colours.menu_background, line]
 
 	def toggle_milky(self, track_object: TrackClass) -> None:
+		if not self.prefs.milk:
+			self.milky.projectm.rescan_presets()
+			if not self.milky.projectm.presets:
+				def dowload_presets():
+					self.show_message(_("Downloading..."))
+					def dl():
+						url = ""  # todo
+						assert url
+						target_directory = self.tauon.user_directory / "presets"
+						target_directory.mkdir(parents=True, exist_ok=True)
+
+						response = requests.get(url)
+						response.raise_for_status()  # fail if download failed
+
+						# Open ZIP from memory and extract
+						with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+							z.extractall(target_directory)
+
+						self.prefs.milk = True
+						self.show_message(_("Presets ready"), mode="done")
+
+					shooter(dl)
+				def skip_presets():
+					self.prefs.milk = True
+				self.gui.message_box_confirm_callback = dowload_presets
+				self.gui.message_box_no_callback = skip_presets
+				self.gui.message_box_confirm_reference = []
+				self.show_message(_("No presets loaded. Download preset pack? (~5MB)"),
+								  mode="confirm")
+				return
+
 		self.prefs.milk ^= True
 
 	def toggle_milky_auto(self, track_object: TrackClass) -> None:
@@ -35995,7 +36026,8 @@ class ProjectM:
 			logging.info(f"Successfully loaded: {lib_name}")
 		except OSError:
 			logging.warning("Could not find libprojectM-4")
-
+		except Exception:
+			logging.warning("Unkown error loading libprojectM-4")
 	def setup_function_signatures(self):
 		"""Define ctypes function signatures for basic projectM functions"""
 		if not self.lib:
