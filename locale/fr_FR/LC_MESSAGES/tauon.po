@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-12-06 13:21+0000\n"
+"PO-Revision-Date: 2025-12-07 15:00+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -731,7 +731,7 @@ msgstr "Impossible d'utiliser des chemins relatifs"
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
 msgstr ""
-"Une ou plusieurs piste sont stockées sur un disque séparé du fichier "
+"Une ou plusieurs pistes sont stockées sur un disque séparé du fichier "
 "playlist."
 
 #: src/tauon/t_modules/t_main.py:8380
@@ -3464,7 +3464,7 @@ msgstr "Décalage de base"
 
 #: src/tauon/t_modules/t_main.py:26678
 msgid "Thin default"
-msgstr "Fin par défaut"
+msgstr "Petit interligne"
 
 #: src/tauon/t_modules/t_main.py:26680
 msgid "Thick default"
@@ -4304,7 +4304,7 @@ msgstr "ACTUEL"
 #: src/tauon/t_modules/t_main.py:38135 src/tauon/t_modules/t_main.py:38205
 #: src/tauon/t_modules/t_main.py:38206
 msgid "ADD TIME"
-msgstr "+"
+msgstr "AJOUTER"
 
 #: src/tauon/t_modules/t_main.py:38135 src/tauon/t_modules/t_main.py:38208
 #: src/tauon/t_modules/t_main.py:38209
@@ -4362,7 +4362,7 @@ msgid ""
 "\"Read Back.\""
 msgstr ""
 "Apportez les modifications dans votre éditeur de texte, puis enregistrez et "
-"cliquez sur « Recharger ».\\t"
+"cliquez sur « Recharger »."
 
 #: src/tauon/t_modules/t_main.py:38459
 msgid "Make sure to save your changes."
