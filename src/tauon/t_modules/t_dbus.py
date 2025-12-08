@@ -34,8 +34,6 @@ from tauon.t_modules.t_enums import PlayingState  # noqa: E402
 from tauon.t_modules.t_extra import filename_to_metadata, star_count2  # noqa: E402
 
 if TYPE_CHECKING:
-	gi.require_version("AyatanaAppIndicatorGlib", "2.0")
-	from gi.repository import AyatanaAppIndicatorGlib
 	gi.require_version("AyatanaAppIndicator3", "0.1")
 	from gi.repository import AyatanaAppIndicator3
 	gi.require_version("AppIndicator3", "0.1")
@@ -53,7 +51,7 @@ class Gnome:
 		self.update_tray_text = None
 		self.tray_text = ""
 		self.resume_playback = False
-		self.indicator: AyatanaAppIndicatorGlib | AyatanaAppIndicator3 | AppIndicator3 = None
+		self.indicator: AyatanaAppIndicator3 | AppIndicator3 = None
 		self.loaded_indicator: str = ""
 		self.menu: Gio.Menu | Gtk.Menu = None
 
@@ -84,24 +82,15 @@ class Gnome:
 
 	def indicator_play(self) -> None:
 		if self.indicator_launched:
-			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
-				self.indicator.set_icon(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
-			else:
-				self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
+			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
 
 	def indicator_pause(self) -> None:
 		if self.indicator_launched:
-			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
-				self.indicator.set_icon(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
-			else:
-				self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
+			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
 
 	def indicator_stop(self) -> None:
 		if self.indicator_launched:
-			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
-				self.indicator.set_icon(self.tauon.get_tray_icon("tray-indicator-default"), "default")
-			else:
-				self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
+			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
 
 	def start_indicator(self) -> None:
 		pctl = self.tauon.pctl
@@ -113,41 +102,26 @@ class Gnome:
 
 		import gi
 
+		# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
+		gi.require_version("Gtk", "3.0")
+		from gi.repository import Gtk
 		try:
-			gi.require_version("AyatanaAppIndicatorGlib", "2.0")
-			from gi.repository import AyatanaAppIndicatorGlib, Gio
-			self.loaded_indicator = "AyatanaAppIndicatorGlib"
+			gi.require_version("AyatanaAppIndicator3", "0.1")
+			from gi.repository import AyatanaAppIndicator3 as AppIndicator3
+			self.loaded_indicator = "AyatanaAppIndicator3"
 		except Exception:
-			logging.exception("Failed to load AyatanaAppIndicatorGlib")
-			# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
-			gi.require_version("Gtk", "3.0")
-			from gi.repository import Gtk
-			try:
-				gi.require_version("AyatanaAppIndicator3", "0.1")
-				from gi.repository import AyatanaAppIndicator3 as AppIndicator3
-				self.loaded_indicator = "AyatanaAppIndicator3"
-			except Exception:
-				logging.exception("Failed to load AyatanaAppIndicator3")
-				gi.require_version("AppIndicator3", "0.1")
-				from gi.repository import AppIndicator3
-				self.loaded_indicator = "AppIndicator3"
+			logging.exception("Failed to load AyatanaAppIndicator3")
+			gi.require_version("AppIndicator3", "0.1")
+			from gi.repository import AppIndicator3
+			self.loaded_indicator = "AppIndicator3"
 
-		if self.loaded_indicator == "AyatanaAppIndicatorGlib":
-			self.indicator = AyatanaAppIndicatorGlib.Indicator.new(
-				"Tauon",
-				self.tauon.get_tray_icon("tray-indicator-default"),
-				AyatanaAppIndicatorGlib.IndicatorCategory.APPLICATION_STATUS,
-			)
-			self.indicator.set_status(AyatanaAppIndicatorGlib.IndicatorStatus.ACTIVE)  # 1
-			self.menu = Gio.Menu.new()
-		else:
-			self.indicator = AppIndicator3.Indicator.new(
-				"Tauon",
-				self.tauon.get_tray_icon("tray-indicator-default"),
-				AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
-			)
-			self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
-			self.menu = Gtk.Menu()
+		self.indicator = AppIndicator3.Indicator.new(
+			"Tauon",
+			self.tauon.get_tray_icon("tray-indicator-default"),
+			AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
+		)
+		self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
+		self.menu = Gtk.Menu()
 		self.indicator.set_title(tauon.t_title)
 
 		def restore(_) -> None:
@@ -156,10 +130,7 @@ class Gnome:
 		def menu_quit(_) -> None:
 			logging.info("Exit via tray")
 			tauon.exit("Exit received from app indicator")
-			if self.loaded_indicator == "AyatanaAppIndicatorGlib":
-				self.indicator.set_status(AyatanaAppIndicatorGlib.IndicatorStatus.PASSIVE)  # 0
-			else:
-				self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
+			self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
 
 		def play_pause(_) -> None:
 			pctl.play_pause()
@@ -212,57 +183,40 @@ class Gnome:
 						self.indicator.set_title(tauon.t_title)
 					self.tray_text = text
 
-		if self.loaded_indicator == "AyatanaAppIndicatorGlib":
-			pActions = Gio.SimpleActionGroup.new ()
-			#self.menu.append(tauon.strings.menu_open_tauon, restore)
-			pSimpleAction = Gio.SimpleAction.new("restore", None)
-			pActions.add_action (pSimpleAction)
-			pSimpleAction.connect ("activate", restore, 6)
-			pItem = Gio.MenuItem.new(tauon.strings.menu_open_tauon, "indicator.restore")
-			self.menu.append_item (pItem)
-			# TODO(Martin): Add rest of actions
-			# TODO(Martin): Separator
-			#self.menu.append(tauon.strings.menu_play_pause, play_pause)
-			#self.menu.append(tauon.strings.menu_next, next)
-			#self.menu.append(tauon.strings.menu_previous, back)
-			# TODO(Martin): Separator
-			#self.menu.append(tauon.strings.menu_quit, menu_quit)
-			self.indicator.set_actions(pActions)
-		else:
-			item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
-			item.connect("activate", restore)
-			item.show()
-			self.menu.append(item)
+		item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
+		item.connect("activate", restore)
+		item.show()
+		self.menu.append(item)
 
-			item = Gtk.SeparatorMenuItem()
-			item.show()
-			self.menu.append(item)
+		item = Gtk.SeparatorMenuItem()
+		item.show()
+		self.menu.append(item)
 
-			item = Gtk.MenuItem(label=tauon.strings.menu_play_pause)
-			item.connect("activate", play_pause)
-			item.show()
-			self.menu.append(item)
+		item = Gtk.MenuItem(label=tauon.strings.menu_play_pause)
+		item.connect("activate", play_pause)
+		item.show()
+		self.menu.append(item)
 
-			item = Gtk.MenuItem(label=tauon.strings.menu_next)
-			item.connect("activate", next)
-			item.show()
-			self.menu.append(item)
+		item = Gtk.MenuItem(label=tauon.strings.menu_next)
+		item.connect("activate", next)
+		item.show()
+		self.menu.append(item)
 
-			item = Gtk.MenuItem(label=tauon.strings.menu_previous)
-			item.connect("activate", back)
-			item.show()
-			self.menu.append(item)
+		item = Gtk.MenuItem(label=tauon.strings.menu_previous)
+		item.connect("activate", back)
+		item.show()
+		self.menu.append(item)
 
-			item = Gtk.SeparatorMenuItem()
-			item.show()
-			self.menu.append(item)
+		item = Gtk.SeparatorMenuItem()
+		item.show()
+		self.menu.append(item)
 
-			item = Gtk.MenuItem(label=tauon.strings.menu_quit)
-			item.connect("activate", menu_quit)
-			item.show()
-			self.menu.append(item)
+		item = Gtk.MenuItem(label=tauon.strings.menu_quit)
+		item.connect("activate", menu_quit)
+		item.show()
+		self.menu.append(item)
 
-			self.menu.show()
+		self.menu.show()
 
 		self.indicator.set_menu(self.menu)
 
@@ -277,7 +231,7 @@ class Gnome:
 		shoot.daemon = True
 		shoot.start()
 
-	def scroll(self, indicator: AyatanaAppIndicatorGlib.Indicator | AppIndicator3.Indicator, steps: int, direction: int) -> None:
+	def scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
 		if direction == Gdk.ScrollDirection.UP:
 			self.tauon.pctl.player_volume += 4
 			self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
