@@ -94,7 +94,10 @@ builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
-from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
+from tauon.t_modules.t_db_migrate import ( # noqa: E402
+	database_migrate,
+	migrate_star_store_71,
+)
 from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
@@ -132,9 +135,9 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	get_filesize_string_rounded,
 	get_folder_size,
 	get_hms_time,
+	get_modify_date_string,
 	get_split_artists,
 	get_year_from_string,
-	get_modify_date_string,
 	grow_rect,
 	hls_to_rgb,
 	hms_to_seconds,
@@ -163,7 +166,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	uri_parse,
 	year_search,
 )
-from tauon.t_modules.t_db_migrate import migrate_star_store_71  # noqa: E402
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
@@ -331,7 +333,6 @@ if system == "Windows" or msys:
 	from lynxtray import SysTrayIcon
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
-
 
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
@@ -6030,49 +6031,109 @@ class Tauon:
 		self.requested_raise = False
 		self.requested_tray  = False
 		self.sdl_tray        = None
+		self.sdl_tray_state: PlayingState = PlayingState.STOPPED
+		self.sdl_tray_launched: bool = False
+		self.sdl_tray_text: str = ""
 		self._tray_quit_cb = None
 		self._tray_open_cb = None
 		self._tray_playpause_cb = None
 		self._tray_next_cb = None
 		self._tray_prev_cb = None
 
-	def tray_quit_callback(self, userdata, entry):
+	def tray_quit_callback(self, userdata, entry) -> None:
 		"""Called when the 'Quit' tray entry is clicked."""
 		logging.info("Exit via tray")
 		self.exit("Exit received from app indicator")
 
-	def tray_open_callback(self, userdata, entry):
+	def tray_open_callback(self, userdata, entry) -> None:
 		"""Open Tauon main UI."""
 		# Adjust to whatever your real function is
 		self.request_raise()
 
 
-	def tray_playpause_callback(self, userdata, entry):
+	def tray_playpause_callback(self, userdata, entry) -> None:
 		"""Toggle play/pause."""
 		self.pctl.play_pause()
 
 
-	def tray_next_callback(self, userdata, entry):
+	def tray_next_callback(self, userdata, entry) -> None:
 		"""Next track."""
 		self.pctl.advance()
 
 
-	def tray_prev_callback(self, userdata, entry):
+	def tray_prev_callback(self, userdata, entry) -> None:
 		"""Previous track."""
 		self.pctl.back()
 
-	def load_sdl_icon(self, path: Path):
+	def load_sdl_icon(self, path: Path) -> sdl3.LP_SDL_Surface:
 		"""Load an image file into an SDL_Surface suitable for a tray icon."""
-		# Load image as a surface (requires SDL3_image installed)
 		surf = sdl3.IMG_Load(str(path).encode("utf-8"))
 		if not surf:
 			raise RuntimeError(f"IMG_Load failed: {sdl3.SDL_GetError().decode()}")
 		return surf
 
-	def init_sdl_tray(self):
+
+	def update_tray_icon(self, name: str) -> None:
+		"""Name like \"tray-indicator-stop\""""
+		surf = self.load_sdl_icon(Path(self.get_tray_icon(name)))
+		sdl3.SDL_SetTrayIcon(self.sdl_tray, surf)
+
+
+	def sdl_tray_set_label (self) -> None:
+		# TODO(Martin): Implement
+		pass
+
+
+	def sdl_tray_set_title (self) -> None:
+		# TODO(Martin): Implement
+		pass
+
+
+	def show_tray(self) -> None:
+		return
+		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+		if not self.sdl_tray_launched:
+			try:
+				self.init_sdl_tray()
+			except Exception:
+				logging.exception("Failed to start tray")
+				self.show_message(_("Failed to start tray"), mode="error")
+		else:
+			self.indicator.set_status(1)
+
+
+	def hide_tray(self) -> None:
+		return
+		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+		if self.sdl_tray_launched:
+			self.indicator.set_status(0)
+
+
+	def tray_icon_play(self) -> None:
+		if self.sdl_tray_launched:
+			self.update_tray_icon("tray-indicator-play")
+			# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+			#self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
+
+
+	def tray_icon_pause(self) -> None:
+		if self.sdl_tray_launched:
+			self.update_tray_icon("tray-indicator-pause")
+			# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+			#self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
+
+
+	def tray_icon_stop(self) -> None:
+		if self.sdl_tray_launched:
+			self.update_tray_icon("tray-indicator-default")
+			# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+			#self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
+
+
+	def init_sdl_tray(self) -> None:
 		icon_surface = self.load_sdl_icon(Path(self.get_tray_icon("tray-indicator-default")))
 		# Create tray (no icon, just tooltip)
-		self.sdl_tray = sdl3.SDL_CreateTray(icon_surface, b"My tray")
+		self.sdl_tray = sdl3.SDL_CreateTray(icon_surface, b"Tauon Music Box")
 		if not self.sdl_tray:
 			raise RuntimeError(f"SDL_CreateTray failed: {sdl3.SDL_GetError().decode()}")
 		# Create menu
@@ -6162,6 +6223,47 @@ class Tauon:
 		sdl3.SDL_SetTrayEntryCallback(quit_entry, self._tray_quit_cb, None)
 		sdl3.SDL_SetTrayEntryCallback(prev_entry, self._tray_prev_cb, None)
 
+		self.sdl_tray_launched = True
+
+	def update_sdl_tray(self) -> None:
+		#if self.tray_releases <= 0:
+		#	self.tray_lock.acquire()
+		#self.tray_releases -= 1
+
+		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+			if self.sdl_tray_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+				self.sdl_tray_state = self.pctl.playing_state
+				logging.critical("Playing state PLAY")
+				self.tray_icon_play()
+		elif self.pctl.playing_state == PlayingState.PAUSED:
+			if self.sdl_tray_state != PlayingState.PAUSED:
+				self.sdl_tray_state = PlayingState.PAUSED
+				logging.critical("Playing state PAUSE")
+				self.tray_icon_pause()
+		elif self.sdl_tray_state != PlayingState.STOPPED:
+			self.sdl_tray_state = PlayingState.STOPPED
+			logging.critical("Playing state STOPPED")
+			self.tray_icon_stop()
+
+		text = ""
+		if self.prefs.tray_show_title:
+			tr = self.pctl.playing_object()
+			if tr and tr.title and tr.artist:
+				text = tr.artist + " - " + tr.title
+			elif tr and tr.filename:
+				text = tr.filename
+
+			if self.pctl.playing_state == PlayingState.STOPPED:
+				text = ""
+
+		if self.sdl_tray_launched and text != self.sdl_tray_text:
+			if text:
+				self.sdl_tray_set_label(" " + text, text)
+				self.sdl_tray_set_title(text)
+			else:
+				self.sdl_tray_set_label("", "")
+				self.sdl_tray_set_title(self.t_title)
+			self.sdl_tray_text = text
 
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
@@ -44479,6 +44581,7 @@ def main(holder: Holder) -> None:
 	showcase = Showcase(tauon)
 
 	while pctl.running:
+		tauon.update_sdl_tray()
 		# bm.get('main')
 		# time.sleep(100)
 
