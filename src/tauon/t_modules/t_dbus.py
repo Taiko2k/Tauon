@@ -24,21 +24,12 @@ import time
 import urllib.parse
 from typing import TYPE_CHECKING
 
-import gi
-
-# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
-gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib
+from gi.repository import GLib
 
 from tauon.t_modules.t_enums import PlayingState  # noqa: E402
 from tauon.t_modules.t_extra import filename_to_metadata, star_count2  # noqa: E402
 
 if TYPE_CHECKING:
-	gi.require_version("AyatanaAppIndicator3", "0.1")
-	from gi.repository import AyatanaAppIndicator3
-	gi.require_version("AppIndicator3", "0.1")
-	from gi.repository import AppIndicator3
-
 	from tauon.t_modules.t_main import Tauon
 
 
@@ -46,16 +37,7 @@ class Gnome:
 	def __init__(self, tauon: Tauon) -> None:
 		self.bus_object = None
 		self.tauon = tauon
-		self.indicator_launched = False
-		self.indicator_mode = 0
-		self.update_tray_text = None
-		self.tray_text = ""
 		self.resume_playback = False
-		self.indicator: AyatanaAppIndicator3 | AppIndicator3 = None
-		self.loaded_indicator: str = ""
-		self.menu: Gio.Menu | Gtk.Menu = None
-
-		tauon.set_tray_icons()
 
 	def focus(self) -> None:
 		if self.bus_object is not None:
@@ -66,183 +48,6 @@ class Gnome:
 			except Exception:
 				logging.exception("Error connecting to org.gnome.SettingsDaemon.MediaKeys")
 
-	def show_indicator(self) -> None:
-		if not self.indicator_launched:
-			try:
-				self.start_indicator()
-			except Exception:
-				logging.exception("Failed to start indicator")
-				self.tauon.show_message(_("Failed to start indicator"), mode="error")
-		else:
-			self.indicator.set_status(1)
-
-	def hide_indicator(self) -> None:
-		if self.indicator_launched:
-			self.indicator.set_status(0)
-
-	def indicator_play(self) -> None:
-		if self.indicator_launched:
-			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
-
-	def indicator_pause(self) -> None:
-		if self.indicator_launched:
-			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
-
-	def indicator_stop(self) -> None:
-		if self.indicator_launched:
-			self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
-
-	def start_indicator(self) -> None:
-		pctl = self.tauon.pctl
-		tauon = self.tauon
-
-		# Create SDL tray
-		tauon.requested_tray = True
-
-
-		import gi
-
-		# TODO(Martin): Get rid of this - https://github.com/Taiko2k/Tauon/issues/1316
-		gi.require_version("Gtk", "3.0")
-		from gi.repository import Gtk
-		try:
-			gi.require_version("AyatanaAppIndicator3", "0.1")
-			from gi.repository import AyatanaAppIndicator3 as AppIndicator3
-			self.loaded_indicator = "AyatanaAppIndicator3"
-		except Exception:
-			logging.exception("Failed to load AyatanaAppIndicator3")
-			gi.require_version("AppIndicator3", "0.1")
-			from gi.repository import AppIndicator3
-			self.loaded_indicator = "AppIndicator3"
-
-		self.indicator = AppIndicator3.Indicator.new(
-			"Tauon",
-			self.tauon.get_tray_icon("tray-indicator-default"),
-			AppIndicator3.IndicatorCategory.APPLICATION_STATUS,
-		)
-		self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)  # 1
-		self.menu = Gtk.Menu()
-		self.indicator.set_title(tauon.t_title)
-
-		def restore(_) -> None:
-			tauon.request_raise()
-
-		def menu_quit(_) -> None:
-			logging.info("Exit via tray")
-			tauon.exit("Exit received from app indicator")
-			self.indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)  # 0
-
-		def play_pause(_) -> None:
-			pctl.play_pause()
-
-		def next(_) -> None:
-			pctl.advance()
-
-		def back(_) -> None:
-			pctl.back()
-
-		def update() -> None:
-			# This is done polling style in a single thread because calling
-			# from a different thread seems to cause text to sometimes stall
-
-			while True:
-				time.sleep(0.25)
-				if tauon.tray_releases <= 0:
-					tauon.tray_lock.acquire()
-				tauon.tray_releases -= 1
-
-				if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-					if self.indicator_mode != 1:
-						self.indicator_mode = 1
-						self.indicator_play()
-				elif pctl.playing_state == PlayingState.PAUSED:
-					if self.indicator_mode != 2:
-						self.indicator_mode = 2
-						self.indicator_pause()
-				elif self.indicator_mode != 0:
-					self.indicator_mode = 0
-					self.indicator_stop()
-
-				text = ""
-				if self.tauon.prefs.tray_show_title:
-					tr = pctl.playing_object()
-					if tr and tr.title and tr.artist:
-						text = tr.artist + " - " + tr.title
-					elif tr and tr.filename:
-						text = tr.filename
-
-					if pctl.playing_state == PlayingState.STOPPED:
-						text = ""
-
-				if self.indicator_launched and text != self.tray_text:
-					if text:
-						self.indicator.set_label(" " + text, text)
-						self.indicator.set_title(text)
-					else:
-						self.indicator.set_label("", "")
-						self.indicator.set_title(tauon.t_title)
-					self.tray_text = text
-
-		item = Gtk.MenuItem(label=tauon.strings.menu_open_tauon)
-		item.connect("activate", restore)
-		item.show()
-		self.menu.append(item)
-
-		item = Gtk.SeparatorMenuItem()
-		item.show()
-		self.menu.append(item)
-
-		item = Gtk.MenuItem(label=tauon.strings.menu_play_pause)
-		item.connect("activate", play_pause)
-		item.show()
-		self.menu.append(item)
-
-		item = Gtk.MenuItem(label=tauon.strings.menu_next)
-		item.connect("activate", next)
-		item.show()
-		self.menu.append(item)
-
-		item = Gtk.MenuItem(label=tauon.strings.menu_previous)
-		item.connect("activate", back)
-		item.show()
-		self.menu.append(item)
-
-		item = Gtk.SeparatorMenuItem()
-		item.show()
-		self.menu.append(item)
-
-		item = Gtk.MenuItem(label=tauon.strings.menu_quit)
-		item.connect("activate", menu_quit)
-		item.show()
-		self.menu.append(item)
-
-		self.menu.show()
-
-		self.indicator.set_menu(self.menu)
-
-		self.indicator.connect("scroll-event", self.scroll)
-
-		self.tauon.gui.tray_active = True
-		self.indicator_launched = True
-
-		import threading
-
-		shoot = threading.Thread(target=update)
-		shoot.daemon = True
-		shoot.start()
-
-	def scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
-		if direction == Gdk.ScrollDirection.UP:
-			self.tauon.pctl.player_volume += 4
-			self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
-			self.tauon.pctl.set_volume()
-		if direction == Gdk.ScrollDirection.DOWN:
-			if self.tauon.pctl.player_volume > 4:
-				self.tauon.pctl.player_volume -= 4
-			else:
-				self.tauon.pctl.player_volume = 0
-			self.tauon.pctl.set_volume()
-		self.tauon.gui.update += 1
 
 	def main(self) -> None:
 		import dbus
@@ -253,9 +58,6 @@ class Gnome:
 		gui = self.tauon.gui
 		pctl = self.tauon.pctl
 		tauon = self.tauon
-
-		if prefs.use_tray:
-			self.show_indicator()
 
 		def on_mediakey(comes_from: str, what: str) -> None:
 			if what == "Play":

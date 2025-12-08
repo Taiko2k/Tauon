@@ -6088,8 +6088,24 @@ class Tauon:
 		# TODO(Martin): Implement
 		pass
 
+	# TODO(Martin): Get this working with native SDL scroll implementation when available
+	#def sdl_tray_scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
+	#	if direction == Gdk.ScrollDirection.UP:
+	#		self.tauon.pctl.player_volume += 4
+	#		self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
+	#		self.tauon.pctl.set_volume()
+	#	if direction == Gdk.ScrollDirection.DOWN:
+	#		if self.tauon.pctl.player_volume > 4:
+	#			self.tauon.pctl.player_volume -= 4
+	#		else:
+	#			self.tauon.pctl.player_volume = 0
+	#		self.tauon.pctl.set_volume()
+	#	self.tauon.gui.update += 1
+
 
 	def show_tray(self) -> None:
+		self.requested_tray = True
+
 		return
 		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
 		if not self.sdl_tray_launched:
@@ -6233,16 +6249,13 @@ class Tauon:
 		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			if self.sdl_tray_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 				self.sdl_tray_state = self.pctl.playing_state
-				logging.critical("Playing state PLAY")
 				self.tray_icon_play()
 		elif self.pctl.playing_state == PlayingState.PAUSED:
 			if self.sdl_tray_state != PlayingState.PAUSED:
 				self.sdl_tray_state = PlayingState.PAUSED
-				logging.critical("Playing state PAUSE")
 				self.tray_icon_pause()
 		elif self.sdl_tray_state != PlayingState.STOPPED:
 			self.sdl_tray_state = PlayingState.STOPPED
-			logging.critical("Playing state STOPPED")
 			self.tray_icon_stop()
 
 		text = ""
@@ -17927,9 +17940,9 @@ class Tauon:
 		self.prefs.use_tray ^= True
 		if not self.prefs.use_tray:
 			self.prefs.min_to_tray = False
-			self.gnome.hide_indicator()
+			self.hide_tray()
 		else:
-			self.gnome.show_indicator()
+			self.show_tray()
 		return None
 
 	def toggle_text_tray(self, mode: int = 0) -> bool | None:
@@ -18615,7 +18628,6 @@ class Tauon:
 		return playing, album, select
 
 	def set_tray_icons(self, force: bool = False) -> None:
-
 		indicator_icon_play =    str(self.install_directory / "assets/svg/tray-indicator-play.svg")
 		indicator_icon_pause =   str(self.install_directory / "assets/svg/tray-indicator-pause.svg")
 		indicator_icon_default = str(self.install_directory / "assets/svg/tray-indicator-default.svg")
@@ -44579,6 +44591,10 @@ def main(holder: Holder) -> None:
 	playlist_render = StandardPlaylist(tauon, pl_bg)
 	meta_box = MetaBox(tauon)
 	showcase = Showcase(tauon)
+
+	tauon.set_tray_icons()
+	if prefs.use_tray:
+		tauon.show_tray()
 
 	while pctl.running:
 		tauon.update_sdl_tray()
