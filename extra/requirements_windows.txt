@@ -13,4 +13,3 @@ PySDL3
 requests
 Send2Trash
 unidecode
-PyOpenGL

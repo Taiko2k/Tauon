@@ -35986,19 +35986,24 @@ class RadioView:
 			gui.update += 1
 
 
-import OpenGL
-from OpenGL.GL import (
-	glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
-	glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
-	glCheckFramebufferStatus, glDeleteFramebuffers, glDeleteTextures,
-	glViewport, glClear, glClearColor, glGetIntegerv,
-	GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER,
-	GL_TEXTURE_MAG_FILTER, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_S,
-	GL_TEXTURE_WRAP_T, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-	GL_FRAMEBUFFER_COMPLETE, GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
-	GL_TEXTURE_BINDING_2D, glFlush, glGetString, GL_VERSION, glFinish
-)
-from OpenGL.GL import glGetIntegerv, glBindFramebuffer, GL_FRAMEBUFFER_BINDING
+milky_ready = True
+try:
+	import OpenGL
+	from OpenGL.GL import (
+		glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
+		glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+		glCheckFramebufferStatus, glDeleteFramebuffers, glDeleteTextures,
+		glViewport, glClear, glClearColor, glGetIntegerv,
+		GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER,
+		GL_TEXTURE_MAG_FILTER, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_S,
+		GL_TEXTURE_WRAP_T, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+		GL_FRAMEBUFFER_COMPLETE, GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
+		GL_TEXTURE_BINDING_2D, glFlush, glGetString, GL_VERSION, glFinish,
+		GL_FRAMEBUFFER_BINDING
+	)
+except:
+	log.info("PyOpenGL not found")
+	milky_ready = False
 
 class ProjectM:
 	def __init__(self, tauon):
@@ -36017,6 +36022,7 @@ class ProjectM:
 		self.timer = Timer()
 		self.frame_timer = Timer()
 		self.first_frame = True
+		self.lib_error = False
 
 	def load_library(self):
 		"""Load projectM library using ctypes"""
@@ -36026,8 +36032,11 @@ class ProjectM:
 			logging.info(f"Successfully loaded: {lib_name}")
 		except OSError:
 			logging.warning("Could not find libprojectM-4")
+			self.lib_error = True
 		except Exception:
 			logging.warning("Unkown error loading libprojectM-4")
+			self.lib_error = True
+
 	def setup_function_signatures(self):
 		"""Define ctypes function signatures for basic projectM functions"""
 		if not self.lib:
@@ -36274,6 +36283,9 @@ class Milky:
 		glFinish()
 
 	def render(self, discard=False):
+		if self.projectm.lib_error is True:
+			return
+
 		ddt = self.ddt
 		x = self.tauon.gui.main_art_box[0]
 		y = self.tauon.gui.main_art_box[1]
@@ -36288,6 +36300,8 @@ class Milky:
 			self.projectm.load_library()
 			self.projectm.init()
 			self.ready = True
+		if self.projectm.lib_error is True:
+			return
 
 		sdl3.SDL_FlushRenderer(self.renderer)
 		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
@@ -41499,7 +41513,8 @@ def worker1(tauon: Tauon) -> None:
 			return 0
 
 		if path.lower().endswith(".milk"):
-			tauon.milky.projectm.load_next = Path(path)
+			if milky_ready:
+				tauon.milky.projectm.load_next = Path(path)
 
 		if path.lower().endswith(".m3u") or path.lower().endswith(".m3u8"):
 			tauon.load_m3u(path)
@@ -43999,7 +44014,8 @@ def main(holder: Holder) -> None:
 	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	picture_menu.br()
-	picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	if milky_ready:
+		picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
