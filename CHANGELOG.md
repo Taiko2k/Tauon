@@ -5,9 +5,12 @@ Changelog
 ### Unreleased version
 
  - **Fixed** Crashes when using the Russian localization
+ - **Fixed** Crash when trying to login to last.fm with network not working
  - **Fixed** Another crash related to the bottom bar
  - **Fixed** Playing M4B files
  - **Fixed** Jellyfin playlist import from playlist files
+ - **Fixed** Stop media key on Windows not working
+ - **Added** Support for 32-bit WavPack files
 
 
 ### v8.2.2
