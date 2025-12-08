@@ -125,6 +125,7 @@ extern "C" {
             smtc->put_IsPauseEnabled(true);
             smtc->put_IsNextEnabled(true);
             smtc->put_IsPreviousEnabled(true);
+            smtc->put_IsStopEnabled(true);
             smtc->put_PlaybackStatus(MediaPlaybackStatus_Stopped);
             displayUpdater->put_Type(MediaPlaybackType_Music);
             displayUpdater->Update();
@@ -202,3 +203,4 @@ extern "C" {
         return;
     }
 }
+
