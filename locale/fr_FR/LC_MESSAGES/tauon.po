@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-12-07 15:00+0000\n"
+"PO-Revision-Date: 2025-12-09 20:00+0000\n"
 "Last-Translator: Lorsoen <fashim99@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
@@ -592,7 +592,7 @@ msgstr "Afficher les paroles statiques"
 
 #: src/tauon/t_modules/t_main.py:7697 src/tauon/t_modules/t_main.py:7705
 msgid "Show synced lyrics"
-msgstr "Afficher les paroles synchronisées"
+msgstr "Afficher les paroles dynamiques"
 
 #: src/tauon/t_modules/t_main.py:7794 src/tauon/t_modules/t_main.py:7813
 msgid "Could not write lyrics to file"
@@ -3245,7 +3245,7 @@ msgstr "Mode mini toujours au dessus"
 
 #: src/tauon/t_modules/t_main.py:25908
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr "Les fenêteres toujours au dessus ne sont pas encode dispo. sur Wayland"
+msgstr "Les fenêtres toujours au dessus ne sont pas encore dispo. sur Wayland"
 
 #: src/tauon/t_modules/t_main.py:25908
 msgid "You can enable the x11 setting below as a workaround"
@@ -4187,7 +4187,7 @@ msgstr "Sauvegarde complète avant reprise"
 
 #: src/tauon/t_modules/t_main.py:37227
 msgid "Save synced to .lrc"
-msgstr "Sauvegarder synchro. vers .lrc"
+msgstr "Enregistrer dynamique vers .lrc"
 
 #: src/tauon/t_modules/t_main.py:37251 src/tauon/t_modules/t_main.py:37557
 #: src/tauon/t_modules/t_main.py:37569 src/tauon/t_modules/t_main.py:37584
@@ -4323,7 +4323,7 @@ msgstr "Rétablir"
 
 #: src/tauon/t_modules/t_main.py:38229
 msgid "Errored"
-msgstr "Succès avec erreurs"
+msgstr "Erreur"
 
 #: src/tauon/t_modules/t_main.py:38242 src/tauon/t_modules/t_main.py:38244
 #: src/tauon/t_modules/t_main.py:38424 src/tauon/t_modules/t_main.py:38426
@@ -4366,7 +4366,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:38459
 msgid "Make sure to save your changes."
-msgstr "Pensez à sauvegardez vos changements."
+msgstr "Pensez à sauvegarder vos changements."
 
 #: src/tauon/t_modules/t_main.py:38462 src/tauon/t_modules/t_main.py:38732
 msgid "Delete the file."
@@ -4382,7 +4382,7 @@ msgstr "Téléverser des paroles pour {artist} - {title} ?"
 
 #: src/tauon/t_modules/t_main.py:38696 src/tauon/t_modules/t_main.py:38702
 msgid "Synced"
-msgstr "Synchronisé"
+msgstr "Dynamique"
 
 #: src/tauon/t_modules/t_main.py:38715
 msgid "Lyrics must be formatted correctly"
@@ -4398,7 +4398,7 @@ msgstr "Tauon ne peut pas téléverser des paroles corrompues vers LRCLIB."
 
 #: src/tauon/t_modules/t_main.py:38722
 msgid "Unsynced"
-msgstr "Désynchronisé"
+msgstr "Statique"
 
 #: src/tauon/t_modules/t_main.py:38724 src/tauon/t_modules/t_main.py:43530
 #: src/tauon/t_modules/t_main.py:43532
