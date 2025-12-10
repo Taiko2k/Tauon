@@ -4,6 +4,7 @@ Changelog
 
 ### Unreleased version
 
+ - **Fixed** Crash when rescanning network tracks
  - **Fixed** Crashes when using the Russian localization
  - **Fixed** Another crash related to the bottom bar
  - **Fixed** Playing M4B files

@@ -41627,11 +41627,18 @@ def worker1(tauon: Tauon) -> None:
 							tauon.g_tc_notify.show()
 
 		if tauon.to_scan:
+			network_warn: bool = False
 			while tauon.to_scan:
 				track = tauon.to_scan[0]
 				star = tauon.star_store.full_get(track)
 				tauon.star_store.remove(track)
-				pctl.master_library[track] = tauon.tag_scan(pctl.master_library[track])
+				rescanned_track = tauon.tag_scan(pctl.master_library[track])
+				if rescanned_track is None:
+					del tauon.to_scan[0]
+					gui.update += 1
+					network_warn = True
+					continue
+				pctl.master_library[track] = rescanned_track
 				tauon.star_store.merge(track, star)
 				tauon.lastfm.sync_pull_love(pctl.master_library[track])
 				del tauon.to_scan[0]
@@ -41639,6 +41646,8 @@ def worker1(tauon: Tauon) -> None:
 			gui.album_artist_dict.clear()
 			pctl.notify_change()
 			gui.pl_update += 1
+			if network_warn:
+				tauon.show_message(_("Some tracks could not be rescanned"), _("Rescanning network tracks is unsupported, please reimport your playlist instead."))
 
 		if tauon.loaderCommandReady is True:
 			for order in tauon.load_orders:
