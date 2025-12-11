@@ -11,6 +11,7 @@ Changelog
  - **Fixed** Jellyfin playlist import from playlist files
  - **Fixed** Stop media key on Windows not working
  - **Added** Support for 32-bit WavPack files
+ - **Tweaked** Switch back to pypresence
 
 
 ### v8.2.2
