@@ -4,6 +4,7 @@ Changelog
 
 ### Unreleased version
 
+ - **Fixed** Crash when rescanning network tracks
  - **Fixed** Crashes when using the Russian localization
  - **Fixed** Crash when trying to login to last.fm with network not working
  - **Fixed** Another crash related to the bottom bar
