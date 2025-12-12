@@ -234,11 +234,11 @@ else:
 # except Exception:
 # 	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
-	from lynxpresence import ActivityType, Presence
+	from pypresence import ActivityType, Presence
 except ModuleNotFoundError:
-	logging.warning("Unable to import lynxpresence, Discord Rich Presence will be disabled.")
+	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
 except Exception:
-	logging.exception("Unknown error trying to import lynxpresence, Discord Rich Presence will be disabled.")
+	logging.exception("Unknown error trying to import pypresence, Discord Rich Presence will be disabled.")
 else:
 	import asyncio
 
@@ -24757,7 +24757,7 @@ class Over:
 					self.show_message(_("Sorry, this feature is unavailable with snap"), mode="error")
 					prefs.discord_enable = False
 				elif not self.prefs.discord_allow:
-					self.show_message(_("Missing dependency python-lynxpresence"))
+					self.show_message(_("Missing dependency python-pypresence"))
 					prefs.discord_enable = False
 				else:
 					tauon.hit_discord()
@@ -26267,10 +26267,10 @@ class Over:
 				xxx, y, "https://github.com/avian2/unidecode", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
-			ddt.text((x, y), "lynxpresence", colours.box_sub_text, font)
+			ddt.text((x, y), "pypresence", colours.box_sub_text, font)
 			ddt.text((xx, y), "MIT", colours.box_text_label, font)
 			self.tauon.draw_linked_text2(
-				xxx, y, "https://github.com/C0rn3j/lynxpresence", colours.box_sub_text, font, click=self.click, replace="github")
+				xxx, y, "https://github.com/qwertyquerty/pypresence", colours.box_sub_text, font, click=self.click, replace="github")
 
 			y += spacing
 			ddt.text((x, y), "musicbrainzngs", colours.box_sub_text, font)
@@ -41785,7 +41785,7 @@ def main(holder: Holder) -> None:
 		# pyLast needs to be reimported AFTER setup_tls(), else pyinstaller breaks
 		importlib.reload(pylast)
 
-	discord_allow = is_module_loaded("lynxpresence", "ActivityType")
+	discord_allow = is_module_loaded("pypresence", "ActivityType")
 	#ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
 
 	if sys.platform == "win32" and msys:
