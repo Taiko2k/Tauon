@@ -6,7 +6,7 @@
 	version = "8.2.2"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
-	license = { text = "GPL-3.0-or-later" }
+	license = "GPL-3.0-or-later"
 	# Change the version for the tools below too when bumping up
 	requires-python = ">=3.10"
 	classifiers = [
@@ -66,7 +66,7 @@
 	homepage = "https://tauonmusicbox.rocks/"
 
 [build-system]
-	requires = ["setuptools>=75.3", "setuptools_scm"]
+	requires = ["setuptools>=75.3"]
 	build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
