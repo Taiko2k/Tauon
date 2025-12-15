@@ -7568,9 +7568,9 @@ class Tauon:
 				def dowload_presets():
 					self.show_message(_("Downloading..."))
 					def dl():
-						url = ""  # todo
+						url = "https://github.com/Taiko2k/Tauon/releases/download/v8.2.2/creamingsodav1.zip"
 						assert url
-						target_directory = self.tauon.user_directory / "presets"
+						target_directory = self.user_directory / "presets"
 						target_directory.mkdir(parents=True, exist_ok=True)
 
 						response = requests.get(url)
