@@ -36027,9 +36027,18 @@ class ProjectM:
 	def load_library(self):
 		"""Load projectM library using ctypes"""
 		lib_name = ctypes.util.find_library('projectM-4')
+		if not lib_name:
+			logging.warning("Could not find libprojectM-4")
+			self.tauon.show_message("Package ProjectM-4 not found", "Milkdrop feature will be unavailable", mode="error")
+			self.lib_error = True
+			return
 		try:
 			self.lib = ctypes.CDLL(lib_name)
-			logging.info(f"Successfully loaded: {lib_name}")
+			if self.lib:
+				logging.info(f"Successfully loaded: {lib_name}")
+			else:
+				logging.warning("Could not find libprojectM-4")
+				self.lib_error = True
 		except OSError:
 			logging.warning("Could not find libprojectM-4")
 			self.lib_error = True
@@ -36094,7 +36103,6 @@ class ProjectM:
 			logging.error(f"Error setting up function signatures: {e}")
 		except Exception as e:
 			logging.error(f"Error setting up function signatures: {e}")
-
 
 	def set_texture_paths(self):
 
@@ -36299,7 +36307,8 @@ class Milky:
 		if not self.ready:
 			self.projectm.load_library()
 			self.projectm.init()
-			self.ready = True
+			if self.projectm.lib:
+				self.ready = True
 		if self.projectm.lib_error is True:
 			return
 
