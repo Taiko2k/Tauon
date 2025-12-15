@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### Unreleased version
+### v8.2.3
 
  - **Fixed** Crash when rescanning network tracks
  - **Fixed** Crashes when using the Russian localization
