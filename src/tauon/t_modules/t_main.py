@@ -35989,6 +35989,8 @@ class RadioView:
 milky_ready = True
 try:
 	import OpenGL
+	# Disable error checking as SDL can generate errors we do not otherwise catch, crashing PyOpenGL
+	OpenGL.ERROR_CHECKING = False
 	from OpenGL.GL import (
 		glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
 		glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
