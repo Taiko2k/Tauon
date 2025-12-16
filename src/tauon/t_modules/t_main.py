@@ -36003,12 +36003,15 @@ try:
 		GL_TEXTURE_BINDING_2D, glFlush, glGetString, GL_VERSION, glFinish,
 		GL_FRAMEBUFFER_BINDING
 	)
-except:
-	log.info("PyOpenGL not found")
+except ModuleNotFoundError:
+	logging.warning("PyOpenGL not found, Milkdrop visualizer will be disabled")
+	milky_ready = False
+except Exception:
+	logging.exception("Unknown error importing PyOpenGL, Milkdrop visualizer will be disabled")
 	milky_ready = False
 
 class ProjectM:
-	def __init__(self, tauon):
+	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.lib = None
 		self.pm_instance = None
@@ -36026,9 +36029,9 @@ class ProjectM:
 		self.first_frame = True
 		self.lib_error = False
 
-	def load_library(self):
+	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
-		lib_name = ctypes.util.find_library('projectM-4')
+		lib_name = ctypes.util.find_library("projectM-4")
 		if not lib_name:
 			logging.warning("Could not find libprojectM-4")
 			self.tauon.show_message("Package ProjectM-4 not found", "Milkdrop feature will be unavailable", mode="error")
@@ -36045,10 +36048,10 @@ class ProjectM:
 			logging.warning("Could not find libprojectM-4")
 			self.lib_error = True
 		except Exception:
-			logging.warning("Unkown error loading libprojectM-4")
+			logging.exception("Unkown error loading libprojectM-4")
 			self.lib_error = True
 
-	def setup_function_signatures(self):
+	def setup_function_signatures(self) -> None:
 		"""Define ctypes function signatures for basic projectM functions"""
 		if not self.lib:
 			return
@@ -36099,25 +36102,25 @@ class ProjectM:
 			self.lib.projectm_opengl_burn_texture.restype = None
 
 
-			print("Function signatures set up successfully")
+			logging.debug("Function signatures set up successfully")
 
 		except AttributeError as e:
 			logging.error(f"Error setting up function signatures: {e}")
 		except Exception as e:
-			logging.error(f"Error setting up function signatures: {e}")
+			logging.exception(f"Error setting up function signatures: {e}")
 
 	def set_texture_paths(self):
 
 		path_bytes = []
 		for path in self.dirs:
 			if (path / "textures").is_dir():
-				path_bytes.append(str(path / "textures").encode('utf-8'))
+				path_bytes.append(str(path / "textures").encode("utf-8"))
 		if path_bytes:
 			path_array = (ctypes.c_char_p * len(path_bytes))(*path_bytes)
 			self.lib.projectm_set_texture_search_paths(self.pm_instance, path_array, len(path_bytes))
 			logging.info(f"Set projectm texture paths: {path_bytes}")
 
-	def init(self, width=800, height=600, preset_path=None):
+	def init(self, width: int = 800, height: int = 600, preset_path=None) -> bool:
 		"""Initialize projectM with basic settings"""
 		if not self.lib:
 			return False
@@ -36137,7 +36140,7 @@ class ProjectM:
 				aud = self.tauon.aud
 				if not aud:
 					logging.error("Phazor not init for vis")
-					return
+					return False
 
 				aud.get_vis_side_buffer.argtypes = []
 				aud.get_vis_side_buffer.restype = ctypes.POINTER(c_float)
@@ -36154,12 +36157,11 @@ class ProjectM:
 					self.random_preset()
 
 				return True
-			else:
-				print("Failed to create projectM instance")
-				return False
+			logging.error("Failed to create projectM instance")
+			return False
 
 		except Exception as e:
-			print(f"Error initializing projectM: {e}")
+			logging.exception(f"Error initializing projectM: {e}")
 			return False
 
 	def rescan_presets(self):
@@ -36198,7 +36200,7 @@ class ProjectM:
 		self.auto_frames = 0
 		self.timer.set()
 
-	def render_frame(self, framebuffer):
+	def render_frame(self, framebuffer) -> bool:
 		"""Render a projectM frame"""
 		if not self.pm_instance:
 			return False
@@ -36247,6 +36249,7 @@ class ProjectM:
 				logging.warning(f"Error rendering frame: {e}")
 
 			self.auto_frames += 1
+		return True
 
 class Milky:
 	def __init__(self, tauon: Tauon) -> None:
@@ -36338,14 +36341,14 @@ class Milky:
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0,
-						 GL_RGBA, GL_UNSIGNED_BYTE, None)
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
 
 			# Step 3: Create framebuffer for rendering
 			self.framebuffer = glGenFramebuffers(1)
 			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-								   GL_TEXTURE_2D, gl_texture_id, 0)
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl_texture_id, 0)
 
 			# Check framebuffer completeness
 			if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
@@ -43787,7 +43790,7 @@ def main(holder: Holder) -> None:
 	if not maximized and gui.maximized:
 		sdl3.SDL_MaximizeWindow(t_window)
 
-	# logging.error(SDL_GetError())
+	# logging.error(sdl3.SDL_GetError())
 
 	props = sdl3.SDL_GetWindowProperties(t_window)
 
