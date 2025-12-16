@@ -36010,6 +36010,9 @@ except Exception:
 	logging.exception("Unknown error importing PyOpenGL, Milkdrop visualizer will be disabled")
 	milky_ready = False
 
+if not ctypes.util.find_library("projectM-4"):
+	milky_ready = False
+
 class ProjectM:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
