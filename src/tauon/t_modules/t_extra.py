@@ -36,6 +36,7 @@ import time
 import urllib.parse
 import zipfile
 from dataclasses import dataclass, field
+from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -1186,3 +1187,75 @@ def tryint(string: str) -> int | str:
 	except Exception:
 		logging.exception("Unknown error trying to convert string to int!")
 		return string
+
+
+class FPSCounter:
+	"""
+	A robust FPS counter that handles pauses and provides smooth measurements.
+
+	Args:
+		window_size: Number of frames to average over (default: 60)
+		min_update_interval: Minimum time between updates in seconds (default: 0.1)
+		max_frame_time: Maximum expected frame time in seconds. If exceeded,
+						frame is considered anomalous (default: 1.0)
+	"""
+
+	def __init__(self, window_size=60, min_update_interval=0.1, max_frame_time=1.0):
+		self.window_size = window_size
+		self.min_update_interval = min_update_interval
+		self.max_frame_time = max_frame_time
+
+		self.frame_times = deque(maxlen=window_size)
+		self.last_tick_time = None
+		self.last_update_time = None
+		self.cached_fps = 0.0
+		self.frame_count = 0
+
+	def tick(self):
+		"""Call this once per frame to record the frame timing."""
+		current_time = time.perf_counter()
+
+		if self.last_tick_time is not None:
+			frame_time = current_time - self.last_tick_time
+
+			# Ignore anomalous frame times (e.g., after a pause)
+			if frame_time <= self.max_frame_time:
+				self.frame_times.append(frame_time)
+
+		self.last_tick_time = current_time
+		self.frame_count += 1
+
+	def get(self):
+		"""
+		Get the current FPS value.
+
+		Returns the cached value if called within min_update_interval,
+		otherwise recalculates based on recent frame times.
+
+		Returns:
+			float: Current FPS value, or 0.0 if insufficient data
+		"""
+		current_time = time.perf_counter()
+
+		# Return cached value if we updated recently
+		if (self.last_update_time is not None and
+				current_time - self.last_update_time < self.min_update_interval):
+			return self.cached_fps
+
+		# Calculate new FPS value
+		if len(self.frame_times) == 0:
+			self.cached_fps = 0.0
+		else:
+			avg_frame_time = sum(self.frame_times) / len(self.frame_times)
+			self.cached_fps = 1.0 / avg_frame_time if avg_frame_time > 0 else 0.0
+
+		self.last_update_time = current_time
+		return self.cached_fps
+
+	def reset(self):
+		"""Reset the FPS counter."""
+		self.frame_times.clear()
+		self.last_tick_time = None
+		self.last_update_time = None
+		self.cached_fps = 0.0
+		self.frame_count = 0

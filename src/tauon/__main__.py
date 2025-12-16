@@ -422,6 +422,8 @@ sdl3.SDL_RenderClear(renderer)
 
 logging.info(f"SDL window system: {sdl3.SDL_GetCurrentVideoDriver().decode()}")
 
+sdl3.SDL_SetRenderVSync(renderer, 1) # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
+
 i_x = pointer(c_int(0))
 i_y = pointer(c_int(0))
 sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
