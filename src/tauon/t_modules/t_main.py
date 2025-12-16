@@ -36101,13 +36101,14 @@ class ProjectM:
 			self.lib.projectm_opengl_burn_texture.argtypes = [c_void_p, c_uint32, c_int, c_int, c_int, c_int]
 			self.lib.projectm_opengl_burn_texture.restype = None
 
-
 			logging.debug("Function signatures set up successfully")
 
 		except AttributeError as e:
-			logging.error(f"Error setting up function signatures: {e}")
+			logging.warning(f"Error setting up function signatures: {e}")
+			raise
 		except Exception as e:
-			logging.exception(f"Error setting up function signatures: {e}")
+			logging.warning(f"Error setting up function signatures: {e}")
+			raise
 
 	def set_texture_paths(self):
 
@@ -36125,7 +36126,27 @@ class ProjectM:
 		if not self.lib:
 			return False
 
-		self.setup_function_signatures()
+		# Git version doesn't bump version :(
+		# major = c_int()
+		# minor = c_int()
+		# patch = c_int()
+		#
+		# self.lib.projectm_get_version_components(byref(major), byref(minor), byref(patch))
+		# print(major.value, minor.value, patch.value)
+		# if major.value == 4 and minor.value < 2:
+		# 	logging.warning(f"Detected libprojectm version {major.value}.{minor.value} but at least 4.2 is required")
+		# 	logging.warning("Milkdrop visualiser will be unavailable")
+		# 	self.lib_error = True
+		# 	self.lib = None
+		# 	return False
+
+		try:
+			self.setup_function_signatures()
+		except:
+			logging.warning("Failed to bind projectm functions, milkdrop visualiser will be unavailable")
+			self.lib_error = True
+			self.lib = None
+			return False
 
 		if not (self.tauon.user_directory / "presets").exists():
 			(self.tauon.user_directory / "presets").mkdir()
