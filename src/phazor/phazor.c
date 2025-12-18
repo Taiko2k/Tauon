@@ -799,6 +799,34 @@ void read_to_buffer_32in32_fs(int32_t src[], int n_samples) {
 	resample_to_buffer(f);
 }
 
+void read_to_buffer_float_stereo(float **pcm_channels, int n_samples) {
+	// For vorbis ov_read_float_stereo - planar stereo float to interleaved
+	int i = 0;
+	
+	// Convert planar stereo float to interleaved float in re_in buffer
+	while (i < n_samples) {
+		re_in[i * 2] = pcm_channels[0][i];
+		re_in[i * 2 + 1] = pcm_channels[1][i];
+		i++;
+	}
+	
+	// Process through resampling if needed, or directly to buffer
+	if (sample_rate_src != sample_rate_out) {
+		resample_to_buffer(n_samples);
+	} else {
+		// Direct to buffer without resampling
+		i = 0;
+		while (i < n_samples) {
+			bfl[high] = re_in[i * 2];
+			bfr[high] = re_in[i * 2 + 1];
+			fade_fx();
+			high++;
+			i++;
+		}
+		buff_cycle();
+	}
+}
+
 void read_to_buffer_float32_fs(int32_t src[], int n_samples) {
 	// full samples version for floating point WavPack
 	int i = 0;
@@ -2409,14 +2437,17 @@ void pump_decode() {
 
 	} else if (codec == VORBIS) {
 
-		unsigned int done;
-		int stream;
-		done = ov_read(&vf, parse_buffer, 2048 * 2, 0, 2, 1, &stream);
+		float **pcm_channels;
+		long samples_read;
+		samples_read = ov_read_float_stereo(&vf, &pcm_channels, 1024);
 
-		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_char16(parse_buffer, done);
-		pthread_mutex_unlock(&buffer_mutex);
-		if (done == 0) decoder_eos();
+		if (samples_read > 0) {
+			pthread_mutex_lock(&buffer_mutex);
+			read_to_buffer_float_stereo(pcm_channels, samples_read);
+			pthread_mutex_unlock(&buffer_mutex);
+		}
+		
+		if (samples_read == 0) decoder_eos();
 
 	} else if (codec == WAVPACK) {
 		if (wpc != NULL) {
