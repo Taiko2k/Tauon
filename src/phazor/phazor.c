@@ -484,7 +484,7 @@ vorbis_info vi;
 // Opus related ----------------------------------------
 
 OggOpusFile *opus_dec;
-int16_t opus_buffer[2048 * 2];
+float opus_buffer[2048 * 2];
 
 // MP3 related ------------------------------------------------
 
@@ -928,6 +928,41 @@ void read_to_buffer_s16int_resample(int16_t src[], int n_samples) {
 
 	resample_to_buffer(f);
 
+}
+
+void read_to_buffer_float_stereo_resample(float src[], int n_samples) {
+
+	int i = 0;
+	int f = 0;
+
+	// Convert float stereo samples to resampler buffer
+	while (i < n_samples) {
+		re_in[f * 2] = src[i * 2];
+		re_in[(f * 2) + 1] = src[i * 2 + 1];
+		f++;
+		i++;
+	}
+
+	resample_to_buffer(f);
+}
+
+void read_to_buffer_float_stereo(float src[], int n_samples) {
+
+	if (sample_rate_src != sample_rate_out) {
+		read_to_buffer_float_stereo_resample(src, n_samples);
+		return;
+	}
+
+	int i = 0;
+	while (i < n_samples) {
+		bfl[high] = src[i * 2];
+		bfr[high] = src[i * 2 + 1];
+		fade_fx();
+
+		i++;
+		high++;
+	}
+	buff_cycle();
 }
 
 void read_to_buffer_s16int(int16_t src[], int n_samples) {
@@ -2377,16 +2412,15 @@ void pump_decode() {
 
 	} else if (codec == OPUS) {
 		if (opus_dec != NULL) {
-			unsigned int done;
+			int done;
 
-			if (src_channels == 1) {
-				done = op_read(opus_dec, opus_buffer, 4096, NULL);
-			}
-			else done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
+			done = op_read_float_stereo(opus_dec, opus_buffer, 1024);
 
 			pthread_mutex_lock(&buffer_mutex);
-			read_to_buffer_s16int(opus_buffer, done);
-			samples_decoded += done;
+			if (done > 0) {
+				read_to_buffer_float_stereo(opus_buffer, done);
+				samples_decoded += done * 2;
+			}
 
 			pthread_mutex_unlock(&buffer_mutex);
 			if (done == 0) {
