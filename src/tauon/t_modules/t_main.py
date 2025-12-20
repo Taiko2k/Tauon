@@ -9134,7 +9134,7 @@ class Tauon:
 				xport.write(",")
 				xport.write(csv_string(track.parent_folder_path))
 
-		self.show_message(_("Export complete."), _("Saved as: ") + filepath, mode="done")
+		self.show_message(_("Export complete."), _("Saved as: ") + str(filepath), mode="done")
 
 	def best(self, index: int) -> float:
 		# key = self.pctl.master_library[index].title + pctl.master_library[index].filename
