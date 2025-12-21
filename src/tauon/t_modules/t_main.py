@@ -6627,8 +6627,17 @@ class Tauon:
 		location_dict: dict[str, TrackClass] = {}
 		pl_dir = Path(path).parent
 		path = Path(path)
-		with path.open(encoding="utf-8") as file:
-			lines = file.readlines()
+		try:
+			with path.open(encoding="utf-8") as file:
+				lines = file.readlines()
+		except UnicodeDecodeError as e:
+			self.show_message(_("Error importing M3U playlist"), _(f"Error trying to parse trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
+			logging.error(f"Error trying to parse trying to parse playlist as UTF-8: {e}")
+			return [], []
+		except Exception as e:
+			self.show_message(_("Exception importing M3U playlist"), _(f"Unknown exception trying to parse playlist") + f" {e}", mode="warning")
+			logging.exception("Unknown exception trying to parse playlist")
+			return [], []
 
 		# parse data lines - either song files or radio links
 		found_imported = 0
