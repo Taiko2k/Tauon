@@ -97,7 +97,14 @@ class VorbisMonitor:
 
 		b.seek(0, io.SEEK_SET)
 		header = struct.unpack("<4sBBqIIiB", b.read(27))
-		segs = struct.unpack("B" * header[7], b.read(header[7]))
+		segment_count = header[7]
+
+		# Ensure we can read the segment table
+		seg_bytes = b.read(segment_count)
+		if len(seg_bytes) < segment_count:
+			return  # wait for more data
+
+		segs = seg_bytes
 
 		length = 0
 		for s in segs:
