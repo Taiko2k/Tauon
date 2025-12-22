@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-05-04 09:07+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2025-12-23 09:00+0000\n"
+"Last-Translator: Lieba Natur Brilian <gingalibadeidara@gmail.com>\n"
 "Language-Team: Indonesian <https://hosted.weblate.org/projects/tauon-music-"
 "box/tauon-music-box/id/>\n"
 "Language: id\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.15.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
@@ -92,6 +92,8 @@ msgid ""
 "It looks like you are using Spotify. Please re-setup Spotify again in the "
 "settings"
 msgstr ""
+"Sepertinya anda menggunakan Spotify, silahkan konfigurasikan ulang Spotify "
+"di pengaturan"
 
 #: src/tauon/t_modules/t_dbus.py:69
 msgid "Failed to start indicator"
@@ -115,20 +117,19 @@ msgstr " GB"
 
 #: src/tauon/t_modules/t_extra.py:554
 msgid "Not yet"
-msgstr ""
+msgstr "Tidak ada"
 
 #: src/tauon/t_modules/t_extra.py:556
 msgid "Now"
-msgstr ""
+msgstr "Sekarang"
 
 #: src/tauon/t_modules/t_extra.py:560
-#, fuzzy
 msgid "min"
-msgstr "Pin"
+msgstr "min"
 
 #: src/tauon/t_modules/t_extra.py:564
 msgid "hr"
-msgstr ""
+msgstr "jam"
 
 #: src/tauon/t_modules/t_extra.py:568
 #, fuzzy
@@ -137,37 +138,35 @@ msgstr "hari"
 
 #: src/tauon/t_modules/t_extra.py:570
 msgid "wk"
-msgstr ""
+msgstr "minggu"
 
 #: src/tauon/t_modules/t_extra.py:572
 msgid "mnth"
-msgstr ""
+msgstr "bulan"
 
 #: src/tauon/t_modules/t_extra.py:577
-#, fuzzy
 msgid "Unknown"
-msgstr "Tidak suka Trek"
+msgstr "Tidak diketahui"
 
 #: src/tauon/t_modules/t_guitar_chords.py:92
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "Metadata tidak mencukupi untuk dicari"
 
 #: src/tauon/t_modules/t_guitar_chords.py:106
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "Papan klip tidak memiliki teks"
 
 #: src/tauon/t_modules/t_guitar_chords.py:207
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "Kesalahan saat mencocokkan trek yang dicari di GuitarParty"
 
 #: src/tauon/t_modules/t_guitar_chords.py:223
-#, fuzzy
 msgid "Track not found on GuitarParty"
-msgstr "Hapus semua folder lain yang di tuju"
+msgstr "Trek tidak ditemukan di GuitarParty"
 
 #: src/tauon/t_modules/t_guitar_chords.py:239
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Kesalahan mendapatkan lagu dari GuitarParty"
 
 #: src/tauon/t_modules/t_jellyfin.py:88 src/tauon/t_modules/t_jellyfin.py:91
 msgid "Could not establish connection to server."
@@ -215,12 +214,11 @@ msgstr "Memindai ulang folder..."
 
 #: src/tauon/t_modules/t_main.py:2127 src/tauon/t_modules/t_main.py:2131
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr ""
+msgstr "Daftar Putar dikunci untuk mencegah penghapusan yang tidak disengaja"
 
 #: src/tauon/t_modules/t_main.py:2238
-#, fuzzy
 msgid "Are you sure you want to delete playlist: {name}?"
-msgstr "Kamu yakin ingin menghapus daftar putar: %s?"
+msgstr "Anda yakin ingin menghapus daftar putar: {name}?"
 
 #: src/tauon/t_modules/t_main.py:3948 src/tauon/t_modules/t_main.py:17802
 msgid "Optional module python-pylast not installed"
@@ -308,26 +306,23 @@ msgstr "Terjadi kesalahan saat mendapatkan loves teman"
 
 #: src/tauon/t_modules/t_main.py:4347
 msgid "Scanning loved tracks for: {username}"
-msgstr ""
+msgstr "Memindai trek yang disukai untuk: {username}"
 
 #: src/tauon/t_modules/t_main.py:4351
-#, fuzzy
 msgid "No username found"
-msgstr "Tidak ada hasil yang ditemukan"
+msgstr "Nama pengguna tidak ditemukan"
 
 #: src/tauon/t_modules/t_main.py:4395
-#, fuzzy
 msgid "User has no loved tracks."
-msgstr "Lagu yang tidak disukai"
+msgstr "Pengguna tidak memiliki trek yang disukai."
 
 #: src/tauon/t_modules/t_main.py:4398
 msgid "{N} matched tracks are up to date."
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:4401
-#, fuzzy
 msgid "{N} tracks matched. {T} were updated."
-msgstr "Tidak ada lagu dengan lirik."
+msgstr "{N} trek cocok. {T} diperbarui."
 
 #: src/tauon/t_modules/t_main.py:4403
 msgid "Of {N} loved tracks, no matches were found in local db"
