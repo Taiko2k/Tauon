@@ -1577,7 +1577,7 @@ class ColoursClass:
 		# tauon.view_box.off_colour = self.grey(200)
 
 class TrackClass:
-	"""This is the fundamental object/data structure of a track"""
+	"""The fundamental object/data structure of a track"""
 
 	def __init__(self) -> None:
 		self.index:              int = 0
@@ -5366,7 +5366,7 @@ class GallClass:
 		self.search_over          = tauon.search_over
 		self.album_art_gen        = tauon.album_art_gen
 		self.size                 = size
-		self.gall: dict[tuple[TrackClass, int, int], list[int | None]] = {}
+		self.gall: dict[tuple[TrackClass, int, int], list[int | BytesIO | None]] = {}
 		self.queue:    list[tuple[TrackClass, int, int]] = []
 		self.key_list: list[tuple[TrackClass, int, int]] = []
 		self.save_out             = save_out
@@ -6633,15 +6633,15 @@ class Tauon:
 		if not self.gui.radio_view:
 			self.enter_radio_view()
 
-	def parse_m3u(self, path: str) -> tuple[ list[int], list[RadioStation] ]:
+	def parse_m3u(self, m3u_path: str) -> tuple[ list[int], list[RadioStation] ]:
 		"""Read specified .m3u[8] playlist file, return list of track IDs/stations"""
 		playlist: list[int] = []
 		stations: list[RadioStation] = []
 
 		titles:        dict[str, TrackClass] = {}
 		location_dict: dict[str, TrackClass] = {}
-		pl_dir = Path(path).parent
-		path = Path(path)
+		pl_dir = Path(m3u_path).parent
+		path = Path(m3u_path)
 		try:
 			with path.open(encoding="utf-8") as file:
 				lines = file.readlines()
@@ -6722,9 +6722,9 @@ class Tauon:
 		logging.info(f"playlist imported with {found_imported} tracks already in library, {found_file} found from filepath, {found_title} from title and {not_found} not found")
 		return playlist, stations
 
-	def load_m3u(self, path: str) -> None:
+	def load_m3u(self, m3u_path: str) -> None:
 		"""Import an m3u file and create a new Tauon playlist for it"""
-		path = Path(path)
+		path = Path(m3u_path)
 		name = path.stem
 		if not path.is_file():
 			return
@@ -15176,7 +15176,7 @@ class Tauon:
 
 		#logging.info(content)
 
-		cued = []
+		cued: list[int] = []
 
 		LENGTH = 0
 		PERFORMER = ""
@@ -19784,13 +19784,13 @@ class LyricsRenMini:
 		self.ddt   = tauon.ddt
 		self.colours = tauon.colours
 		self.prefs = tauon.prefs
-		self.index = -1
-		self.text  = ""
-		self.to_reload = False
+		self.index: int = -1
+		self.text: str  = ""
+		self.to_reload: bool = False
 
 		self.lyrics_position = 0
 
-	def generate(self, index, w) -> None:
+	def generate(self, index: int, w: float) -> None:
 		self.text = ""
 
 		# LRC formatting search & destroy
