@@ -2,8 +2,15 @@
 Changelog
 ---------
 
+### Upcoming
+ - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing (#1860)
+ - **Fixed** Crash when exporting albums as CSV
+ - **Fixed** Freeze when importing an invalid playlist
+ - **Fixed** Radio playback of some ogg streams (#1933)
+
 ### v8.2.3
 
+ - **Added** Support for 32-bit WavPack files
  - **Fixed** Crash when rescanning network tracks
  - **Fixed** Crashes when using the Russian localization
  - **Fixed** Crash when trying to login to last.fm with network not working
@@ -11,9 +18,7 @@ Changelog
  - **Fixed** Playing M4B files
  - **Fixed** Jellyfin playlist import from playlist files
  - **Fixed** Stop media key on Windows not working
- - **Added** Support for 32-bit WavPack files
  - **Tweaked** Switch back to pypresence
-
 
 ### v8.2.2
 
@@ -92,7 +97,6 @@ Changelog
  - **Fixed** crash on queue scroll
  - **Fixed** synced lyrics rendering issue
 
-
 ### v8.0.0
 
  - **Added** Transparent accent theme mode
@@ -108,7 +112,6 @@ Changelog
  - **Tweaked** Theme Ash colours
  - **Tweaked** Developer radio pics to be non-hidden
  - **Restored** guitar chords, including support for new guitarchords.com API
-
 
 ### v7.9.0
 
@@ -331,7 +334,6 @@ Changelog
 - **Enabled** ID3 scanning on WAVE files
 - **Marked** tray menu strings for translation
 
-
 ### v7.4.1
 
 - **Added** jellyfin playlist import and uploading
@@ -352,7 +354,6 @@ Changelog
 - **Fixed** folder rescan on Windows
 - **Fixed** garbled audio on RPi
 - **Fixed** missing duration on some files
-
 
 ### v7.3.2
 
@@ -434,7 +435,6 @@ Changelog
 - **Fixed** terminal spam on radio playback
 - **[Phazor] Fixed** radio stalling in some cases
 - **[Phazor] Fixed** some FLAC files not playing
-
 
 ### v7.1.1
 
@@ -1563,7 +1563,6 @@ Changelog
 - ***Disabled*** artist image downloading
 - ***Disabled*** artist info panel
 
-
 ### v4.2.1
 
 - **Added** loading of user artist thumbnails from "artist-pictures" folder
@@ -1572,7 +1571,6 @@ Changelog
 - **Fixed** album image cache resets clearing artist thumbnails
 - **Fixed** background skin not changing on singles
 - **Fixed** crash when using gallery and 1.25x scaling with background skin on
-
 
 ### v4.2.0
 
@@ -1982,7 +1980,6 @@ Changelog
 - **Fixed** possible crash when using fractional scaling and artist info panel
 - **[Flatpak] Added** workaround for possible issue causing crash on start
 
-
 ### v3.2.0
 
 - **Added** context menu to gallery album right click
@@ -2167,7 +2164,6 @@ Changelog
 - **[Linux only] Fixed** performance slowdown when truncating text
 - **Moved** documentation to Github wiki
 
-
 ### v2.8.0
 
 - **Added** new global search function
@@ -2185,7 +2181,6 @@ Changelog
 - **Fixed** fixed message box not clearing after continued keyboard input
 - [Linux] Filename changes are now tracked when editing tags with Picard
 - **Bound** F5 key to toggle lyrics view
-
 
 ### v2.7.0
 
@@ -2211,7 +2206,6 @@ Changelog
 - **Fixed** cursor flicker on column drag
 - **[Windows] Fixed** non ascii device names causing playback to fail
 
-
 ### v2.6.4
 
 - **Added** right click menu for canceling imports and transcodes
@@ -2228,7 +2222,6 @@ Changelog
 - **Fixed** track info box WAV tag having bad rendering
 - **Allowed** last.fm module to be optional
 - **[Linux] Fixed** dragging volume bar causing unstable rendering
-
 
 ### v2.6.3
 
@@ -2318,7 +2311,6 @@ Changelog
 - **[Linux] Improved** integration with budgie desktop
 - **[Linux] Improved** volume bar sliding performance under some configurations
 
-
 ### v2.5.1
 
 - **Moved** 'art + tracks' view scroll bar to right side of window
@@ -2329,7 +2321,6 @@ Changelog
 - **Fixed** crash when using 'go to playing' on first played track
 - **Tweaked** some fonts and colours
 - ***Removed*** reset window shortcut
-
 
 ### v2.5.0
 
@@ -2358,8 +2349,6 @@ Changelog
 - **Fixed** menu elements activating after click but before menu close
 - **Fixed** stream metadata parsing
 - **Fixed** newlines being allowed in text boxes
-
-
 
 ### v2.4.1
 
@@ -2438,7 +2427,6 @@ Changelog
 - ***Removed*** title in top panel setting
 - ***Removed*** 'Has Comment' filter option
 
-
 ### v2.3.1
 
 - **Added** delete folder function
@@ -2448,7 +2436,6 @@ Changelog
 - **Fixed** mouse button 4 gallery shortcut not working
 - **Fixed** visualiser not activating from menu when off
 - ***Removed*** toggle random and repeat entries from playback menu
-
 
 ### v2.3.0
 
@@ -2769,7 +2756,6 @@ Changelog
 - Various UI tweaks
 - Various other bug fixes
 
-
 ### v1.4.2
 
 - **Added** playlist sorting by year
@@ -2841,7 +2827,6 @@ Changelog
 - Cleaner starting when some program files missing
 - Galley view now jumps to album when selecting 'back'
 
-
 ### v1.2.0
 
 - **Improved** rendering performance
@@ -2902,7 +2887,6 @@ Changelog
 - **Added** Page Up / Page Down function
 - **Added** seek bar background and various line colours to themes
 - **Added** custom playlist line format option
-
 
 ### v1.0.1
 
