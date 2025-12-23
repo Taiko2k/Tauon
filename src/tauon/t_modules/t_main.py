@@ -41381,10 +41381,10 @@ def worker1(tauon: Tauon) -> None:
 										logging.info(f"-- Source found at: {file_path}")
 										break
 							else:
-								logging.error("-- Abort: Source file not found")
+								logging.error(f"-- Abort: Source file not found: {file_path}")
 								return 1
 						else:
-							logging.error("-- Abort: Source file not found")
+							logging.error(f"-- Abort: Source file not found: {file_path}")
 							return 1
 
 				if line.startswith("TRACK "):
