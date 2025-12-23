@@ -69,7 +69,20 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict
-from ctypes import Structure, byref, c_char_p, c_double, c_float, c_int, c_uint, c_ubyte, c_uint32, c_void_p, pointer, POINTER
+from ctypes import (
+	POINTER,
+	Structure,
+	byref,
+	c_char_p,
+	c_double,
+	c_float,
+	c_int,
+	c_ubyte,
+	c_uint,
+	c_uint32,
+	c_void_p,
+	pointer,
+)
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -94,14 +107,17 @@ builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
-from tauon.t_modules.t_db_migrate import database_migrate  # noqa: E402
+from tauon.t_modules.t_db_migrate import ( # noqa: E402
+	database_migrate,
+	migrate_star_store_71,
+)
 from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
-	FPSCounter,
 	ColourGenCache,
 	ColourRGBA,
+	FPSCounter,
 	FunctionStore,
 	RadioPlaylist,
 	RadioStation,
@@ -133,9 +149,9 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	get_filesize_string_rounded,
 	get_folder_size,
 	get_hms_time,
+	get_modify_date_string,
 	get_split_artists,
 	get_year_from_string,
-	get_modify_date_string,
 	grow_rect,
 	hls_to_rgb,
 	hms_to_seconds,
@@ -164,7 +180,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	uri_parse,
 	year_search,
 )
-from tauon.t_modules.t_db_migrate import migrate_star_store_71  # noqa: E402
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
