@@ -3,10 +3,12 @@ Changelog
 ---------
 
 ### Upcoming
- - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing (#1860)
+ - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
+ - **Fixed** Tidal integration on newer tidalapi versions
  - **Fixed** Crash when exporting albums as CSV
+ - **Fixed** Couple crashes under specific scenarios
  - **Fixed** Freeze when importing an invalid playlist
- - **Fixed** Radio playback of some ogg streams (#1933)
+ - **Fixed** Radio playback of some ogg streams
 
 ### v8.2.3
 
