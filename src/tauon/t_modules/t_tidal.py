@@ -159,10 +159,10 @@ class Tidal:
 		tr.misc["container"] = manifest.get_codecs().upper()
 		tr.samplerate = str(audio_resolution[1])
 		tr.bit_depth = audio_resolution[0]
-		if stream.is_MPD:
+		if stream.is_mpd:
 			logging.info("MPD!")
 			return manifest.get_urls()
-		if stream.is_BTS:
+		if stream.is_bts:
 			logging.info("BTS!")
 			return manifest.get_urls()
 
