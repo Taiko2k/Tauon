@@ -4355,7 +4355,6 @@ class LastFMapi:
 					title = track.track.title.casefold()
 					artist = track.track.artist.name.casefold()
 					for index, tr in self.pctl.master_library.items():
-
 						if tr.title.casefold() == title and tr.artist.casefold() == artist:
 							tr.lfm_friend_likes.add(friend.name)
 							logging.info("MATCH")
@@ -10652,7 +10651,6 @@ class Tauon:
 		old = track.parent_folder_path
 		new_parent_path = os.path.join(upper_folder, folder_name)
 		for key, object in self.pctl.master_library.items():
-
 			if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
 					and os.path.normpath(object.fullpath)[len(old)] in ("/", "\\"):
 				object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip("\\/"))
@@ -13607,7 +13605,7 @@ class Tauon:
 	# def get_spot_recs_track(self, index: int) -> None:
 	# 	self.get_spot_recs(self.pctl.get_track(index))
 
-	def drop_tracks_to_new_playlist(self, track_list: list[int], hidden: bool = False) -> None:
+	def drop_tracks_to_new_playlist(self, track_list: list[int], _hidden: bool = False) -> None:
 		pl = self.new_playlist(switch=False)
 		albums = []
 		artists = []
@@ -14270,11 +14268,11 @@ class Tauon:
 							tr = self.pctl.get_track(track_id)
 
 							if cm.startswith("fs\""):
-								line = "|".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+								line = f"{tr.title}|{tr.artist}|{tr.album}|{tr.fullpath}|{tr.composer}|{tr.comment}|{tr.album_artist}".lower()
 								if quote.lower() in line:
 									playlist.append(track_id)
 							else:
-								line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+								line = f"{tr.title} {tr.artist} {tr.album} {tr.fullpath} {tr.composer} {tr.comment} {tr.album_artist}".lower()
 
 								# if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
 								#	 line = str(unidecode(line))
@@ -24632,7 +24630,6 @@ class Over:
 
 
 		if self.func_page == 0:
-
 			y += 23 * gui.scale
 
 			self.toggle_square(
@@ -25606,8 +25603,7 @@ class Over:
 				x, y, prefs.enable_fanart_artist,
 				_("Artist images (Automatic)"))
 			#y += 25 * gui.scale
-			# prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg,
-			#                                             _("Artist backgrounds (Automatic)"))
+			# prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg, _("Artist backgrounds (Automatic)"))
 			y += 25 * gui.scale
 			x += 23 * gui.scale
 			if self.button(x, y, _("Flip current")):
