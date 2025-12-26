@@ -24905,7 +24905,7 @@ class Over:
 
 		# self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
 
-	def button(self, x: int, y: int, text: str, plug=None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
+	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
 		refresh when you pan the mouse over it"""
 		w = width
@@ -24971,7 +24971,7 @@ class Over:
 			self.ddt.text(text_position, text, self.colours.box_button_text, 211, bg=real_bg)
 		return hit
 
-	def toggle_square(self, x: int, y: int, function, text: str , click: bool = False, subtitle: str = "") -> bool:
+	def toggle_square(self, x: int, y: int, function: Callable[[int], bool | None] | bool, text: str , click: bool = False, subtitle: str = "") -> bool:
 		gui     = self.gui
 		colours = self.colours
 		x = round(x)
