@@ -24773,43 +24773,6 @@ class Over:
 			else:
 				self.toggle_square(x, y, tauon.toggle_min_tray, _("Close to tray"))
 
-		elif self.func_page == 4:
-			y += 23 * gui.scale
-			prefs.use_gamepad = self.toggle_square(
-				x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
-				subtitle=_("Change requires restart"))
-			y += 37 * gui.scale
-
-			ddt.text((x, y + 8 * gui.scale), _("Default playlist export folder"), colours.grey(230), 11)
-			y += round(30 * gui.scale)
-			rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
-			self.fields.add(rect1)
-			# ddt.rect(rect1, [40, 40, 40, 255], True)
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-
-			if self.prefs.playlist_folder_path:
-				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
-			if Path(tauon.playlist_folder_box.text).is_dir():
-				tauon.playlist_folder_box.draw(
-					x + round(4 * gui.scale), y, colours.box_input_text, True,
-					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
-			else:
-				tauon.playlist_folder_box.draw(
-					x + round(4 * gui.scale), y, colours.status_text_over, True,
-					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
-			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
-			y += round(30* gui.scale)
-			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
-			prefs.autoscan_playlist_folder = self.toggle_square(
-				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
-				subtitle=_("Only runs during \"Rescan All Folders\""))
-
-			y += round(35 * gui.scale)
-			prefs.save_lyrics_changes_to_files = self.toggle_square(
-				x, y, prefs.save_lyrics_changes_to_files, _("Save \"simple\" lyrics changes back to their original files"),
-				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
-			)
-
 		elif self.func_page == 3:
 			y += 23 * gui.scale
 			old = prefs.enable_remote
@@ -24881,6 +24844,43 @@ class Over:
 			if prefs.discord_enable:
 				text = gui.discord_status
 			ddt.text((x, y), _("Status: {state}").format(state=text), colours.box_text, 11)
+		elif self.func_page == 4:
+			y += 23 * gui.scale
+			prefs.use_gamepad = self.toggle_square(
+				x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
+				subtitle=_("Change requires restart"))
+			y += 37 * gui.scale
+
+			ddt.text((x, y + 8 * gui.scale), _("Default playlist export folder"), colours.grey(230), 11)
+			y += round(30 * gui.scale)
+			rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
+			self.fields.add(rect1)
+			# ddt.rect(rect1, [40, 40, 40, 255], True)
+			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+
+			if self.prefs.playlist_folder_path:
+				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
+			if Path(tauon.playlist_folder_box.text).is_dir():
+				tauon.playlist_folder_box.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, True,
+					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
+			else:
+				tauon.playlist_folder_box.draw(
+					x + round(4 * gui.scale), y, colours.status_text_over, True,
+					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
+			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
+			y += round(30* gui.scale)
+			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
+			prefs.autoscan_playlist_folder = self.toggle_square(
+				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
+				subtitle=_("Only runs during \"Rescan All Folders\""))
+
+			y += round(35 * gui.scale)
+			prefs.save_lyrics_changes_to_files = self.toggle_square(
+				x, y, prefs.save_lyrics_changes_to_files, _("Save \"simple\" lyrics changes back to their original files"),
+				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
+			)
+
 
 		# Switcher
 		pages = 5
