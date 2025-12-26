@@ -24881,6 +24881,16 @@ class Over:
 				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
 			)
 
+			y += round(35 * gui.scale)
+			debug_path = self.user_directory / "debug"
+			debug_state = debug_path.exists()
+			old = debug_state
+			debug_state = self.toggle_square(x, y, debug_state, _("Enable debug mode"))
+			if old is False and debug_state is True:
+				with debug_path.open("a"):
+					pass
+			elif old is True and debug_state is False:
+				os.remove(debug_path)
 
 		# Switcher
 		pages = 5
