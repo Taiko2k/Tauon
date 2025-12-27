@@ -7,7 +7,7 @@ from tauon.t_modules.t_extra import RadioStation
 
 if TYPE_CHECKING:
 	from pathlib import Path
-
+	from typing import Literal
 
 @dataclass
 class Prefs:
