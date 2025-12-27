@@ -244,7 +244,7 @@ class Prefs:
 
 	left_align_album_artist_title = False
 	stop_notifications_mini_mode = False
-	scale_want = 1
+	scale_want: float = 1
 	x_scale = True
 	hide_queue = True
 	show_playlist_list = True
