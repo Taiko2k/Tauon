@@ -9229,7 +9229,7 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[index].title + "\" a pt>"
 		return None
 
-	def gen_folder_top(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None):
+	def gen_folder_top(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		if len(source) < 3:
@@ -9251,7 +9251,7 @@ class Tauon:
 
 		def best(folder: str) -> int:
 			#logging.info(folder)
-			total_star = 0
+			total_star: int = 0
 			for item in folder:
 				# key = self.pctl.master_library[item].title + self.pctl.master_library[item].filename
 				# if key in self.pctl.star_library:
@@ -10187,7 +10187,7 @@ class Tauon:
 		if not self.pctl.default_playlist:
 			return
 
-		li = []
+		li: list[tuple[int, int]] = []
 
 		for item in reversed(self.gui.shift_selection):
 			if item > len(self.pctl.default_playlist) - 1:
@@ -11627,7 +11627,7 @@ class Tauon:
 			else:
 				self.show_message(_("No results found"))
 
-	def get_album_spot_url_actove_deco(self):
+	def get_album_spot_url_actove_deco(self) -> list[ColourRGBA | str | None]:
 		tr = self.pctl.playing_object()
 		text = _("Copy Album URL")
 		if not tr:
@@ -20133,20 +20133,20 @@ class TextBox2:
 	cursor = True
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon    = tauon
+		self.tauon:    Tauon = tauon
 		self.coll     = tauon.coll
-		self.ddt      = tauon.ddt
-		self.gui      = tauon.gui
-		self.inp      = tauon.inp
-		self.fields   = tauon.fields
+		self.ddt:      TDraw = tauon.ddt
+		self.gui:     GuiVar = tauon.gui
+		self.inp:      Input = tauon.inp
+		self.fields:  Fields = tauon.fields
 		self.t_window = tauon.t_window
 		self.renderer = tauon.renderer
 		self.text: str = ""
 		self.cursor_position = 0
 		self.selection = 0
 		self.offset = 0
-		self.down_lock = False
-		self.paste_text = ""
+		self.down_lock: bool = False
+		self.paste_text: str = ""
 
 	def paste(self) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -20553,18 +20553,18 @@ class TextBox:
 	cursor = True
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon    = tauon
-		self.ddt      = tauon.ddt
-		self.gui      = tauon.gui
-		self.inp      = tauon.inp
-		self.coll     = tauon.coll
-		self.fields   = tauon.fields
-		self.t_window = tauon.t_window
-		self.renderer = tauon.renderer
+		self.tauon:   Tauon = tauon
+		self.ddt:     TDraw = tauon.ddt
+		self.gui:    GuiVar = tauon.gui
+		self.inp:     Input = tauon.inp
+		self.coll           = tauon.coll
+		self.fields: Fields = tauon.fields
+		self.t_window       = tauon.t_window
+		self.renderer       = tauon.renderer
 		self.text: str = ""
 		self.cursor_position = 0
 		self.selection = 0
-		self.down_lock = False
+		self.down_lock: bool = False
 
 	def paste(self) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -24007,34 +24007,34 @@ class PowerTag:
 
 class Over:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon               = tauon
-		self.bag                 = tauon.bag
-		self.gui                 = tauon.gui
-		self.inp                 = tauon.inp
-		self.ddt                 = tauon.ddt
-		self.coll                = tauon.coll
-		self.pctl                = tauon.pctl
-		self.dirs                = tauon.dirs
-		self.prefs               = tauon.prefs
-		self.fields              = tauon.fields
-		self.lastfm              = tauon.lastfm
-		self.formats             = tauon.formats
-		self.colours             = tauon.colours
-		self.window_size         = tauon.window_size
-		self.show_message        = tauon.show_message
-		self.album_mode_art_size = tauon.album_mode_art_size
-		self.platform_system     = tauon.platform_system
-		self.user_directory      = tauon.user_directory
-		self.flatpak_mode        = tauon.flatpak_mode
-		self.star_store          = tauon.star_store
-		self.snap_mode           = tauon.snap_mode
-		self.t_version           = tauon.t_version
-		self.wayland             = tauon.wayland
-		self.system              = tauon.system
-		self.macos               = tauon.macos
-		self.msys                = tauon.msys
-		self.phazor_found        = phazor_exists(tauon.pctl)
-		self.init2done           = False
+		self.tauon:             Tauon = tauon
+		self.bag:                 Bag = tauon.bag
+		self.gui:              GuiVar = tauon.gui
+		self.inp:               Input = tauon.inp
+		self.ddt:               TDraw = tauon.ddt
+		self.coll                     = tauon.coll
+		self.pctl:          PlayerCtl = tauon.pctl
+		self.dirs:        Directories = tauon.dirs
+		self.prefs:             Prefs = tauon.prefs
+		self.fields:           Fields = tauon.fields
+		self.lastfm:        LastFMapi = tauon.lastfm
+		self.formats:         Formats = tauon.formats
+		self.colours:    ColoursClass = tauon.colours
+		self.window_size              = tauon.window_size
+		self.show_message             = tauon.show_message
+		self.album_mode_art_size: int = tauon.album_mode_art_size
+		self.platform_system:     str = tauon.platform_system
+		self.user_directory:     Path = tauon.user_directory
+		self.flatpak_mode:       bool = tauon.flatpak_mode
+		self.star_store:    StarStore = tauon.star_store
+		self.snap_mode:          bool = tauon.snap_mode
+		self.t_version:           str = tauon.t_version
+		self.wayland:            bool = tauon.wayland
+		self.system:              str = tauon.system
+		self.macos:              bool = tauon.macos
+		self.msys:               bool = tauon.msys
+		self.phazor_found:       bool = phazor_exists(tauon.pctl)
+		self.init2done:          bool = False
 
 		self.about_image  = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "v4-a.png")
 		self.about_image2 = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "v4-b.png")
@@ -24119,8 +24119,8 @@ class Over:
 	def theme(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		gui = self.gui
 		prefs = self.prefs
-		y = y0 + 13 * gui.scale
-		x = x0 + 25 * gui.scale
+		y: float = y0 + 13 * gui.scale
+		x: float = x0 + 25 * gui.scale
 
 		self.ddt.text_background_colour = self.colours.box_background
 		self.ddt.text((x, y), _("Theme"), self.colours.box_text_label, 12)
@@ -31551,7 +31551,7 @@ class RadioBox:
 		text = text.lower()
 		self.search_radio_browser(f"/json/stations/search?order=votes&limit=250&reverse=true&name={text}")
 
-	def is_m3u(self, url):
+	def is_m3u(self, url: str) -> bool:
 		return url.lower().endswith(".m3u") or url.lower().endswith(".m3u8")
 
 	def extract_stream_m3u(self, url, recursion_limit=5):
@@ -36057,22 +36057,22 @@ if not ctypes.util.find_library("projectM-4"):
 
 class ProjectM:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
+		self.tauon: Tauon = tauon
 		self.lib = None
 		self.pm_instance = None
-		self.presets = []
-		self.loaded_preset = None
+		self.presets: list[Path] = []
+		self.loaded_preset: Path | None = None
 		self.load_next = None
 		self.auto_frames = 0
-		self.dirs = [
+		self.dirs: list[Path] = [
 			Path("/usr/share/projectM/presets"),
 			self.tauon.pctl.install_directory / "presets",
 			self.tauon.user_directory / "presets"
 		]
-		self.timer = Timer()
-		self.frame_timer = Timer()
-		self.first_frame = True
-		self.lib_error = False
+		self.timer: Timer = Timer()
+		self.frame_timer: Timer = Timer()
+		self.first_frame: bool = True
+		self.lib_error: bool = False
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
@@ -36155,8 +36155,7 @@ class ProjectM:
 			logging.warning(f"Error setting up function signatures: {e}")
 			raise
 
-	def set_texture_paths(self):
-
+	def set_texture_paths(self) -> None:
 		path_bytes = []
 		for path in self.dirs:
 			if (path / "textures").is_dir():
@@ -36187,7 +36186,7 @@ class ProjectM:
 
 		try:
 			self.setup_function_signatures()
-		except:
+		except Exception:
 			logging.warning("Failed to bind projectm functions, milkdrop visualiser will be unavailable")
 			self.lib_error = True
 			self.lib = None
@@ -36197,11 +36196,11 @@ class ProjectM:
 			(self.tauon.user_directory / "presets").mkdir()
 		# Create projectM instance
 		try:
-			print("init project m...")
+			logging.info("init project m...")
 			self.pm_instance = self.lib.projectm_create()
 			if self.pm_instance:
-				print(f"ProjectM initialized successfully")
-				print(f"Preset path: {preset_path}")
+				logging.info(f"ProjectM initialized successfully")
+				logging.info(f"Preset path: {preset_path}")
 
 				aud = self.tauon.aud
 				if not aud:
@@ -36230,9 +36229,8 @@ class ProjectM:
 			logging.exception(f"Error initializing projectM: {e}")
 			return False
 
-	def rescan_presets(self):
-
-		def scan_folder(dir):
+	def rescan_presets(self) -> None:
+		def scan_folder(dir: Path) -> None:
 			for item in dir.iterdir():
 				if item.is_dir():
 					scan_folder(item)
@@ -36246,7 +36244,7 @@ class ProjectM:
 			if dir.is_dir():
 				scan_folder(dir)
 
-	def random_preset(self, fade=False):
+	def random_preset(self, fade: bool = False) -> None:
 		#self.rescan_presets()
 		if not self.presets:
 			return
@@ -36258,7 +36256,7 @@ class ProjectM:
 			return self.loaded_preset.stem
 		return "Default"
 
-	def load_preset(self, preset, fade=False):
+	def load_preset(self, preset: Path, fade: bool = False):
 		self.loaded_preset = preset
 		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
@@ -36305,7 +36303,6 @@ class ProjectM:
 
 		if self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			try:
-
 				if not fps or fps < 1:
 					fps = 1
 
@@ -36319,14 +36316,14 @@ class ProjectM:
 
 class Milky:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon         = tauon
-		self.pctl          = tauon.pctl
-		self.gui           = tauon.gui
-		self.ddt           = tauon.ddt
+		self.tauon:    Tauon = tauon
+		self.pctl: PlayerCtl = tauon.pctl
+		self.gui:     GuiVar = tauon.gui
+		self.ddt:      TDraw = tauon.ddt
 		self.coll          = tauon.coll
-		self.inp           = tauon.inp
+		self.inp:      Input = tauon.inp
 		self.renderer      = tauon.renderer
-		self.ready = False
+		self.ready: bool = False
 		self.render_texture = None
 		self.gl_texture_id = None
 		self.framebuffer = None
@@ -36335,7 +36332,7 @@ class Milky:
 
 		self.projectm = ProjectM(tauon)
 
-	def burn(self, target_track):
+	def burn(self, target_track: TrackClass) -> None:
 		if not self.ready:
 			return
 
@@ -36361,7 +36358,7 @@ class Milky:
 		glFlush()
 		glFinish()
 
-	def render(self, discard=False):
+	def render(self, discard: bool = False) -> None:
 		if self.projectm.lib_error is True:
 			return
 
@@ -36449,31 +36446,31 @@ class Milky:
 
 class Showcase:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon         = tauon
-		self.inp           = tauon.inp
-		self.gui           = tauon.gui
-		self.ddt           = tauon.ddt
-		self.coll          = tauon.coll
-		self.pctl          = tauon.pctl
-		self.prefs         = tauon.prefs
-		self.colours       = tauon.colours
-		self.renderer      = tauon.renderer
-		self.lyrics_ren    = tauon.lyrics_ren
-		self.window_size   = tauon.window_size
-		self.guitar_chords = tauon.guitar_chords
-		self.showcase_menu = tauon.showcase_menu
-		self.smooth_scroll = tauon.smooth_scroll
-		self.timed_lyrics_edit = TimedLyricsEdit(tauon=tauon)
-		self.lastfm_artist = None
-		self.artist_mode = False
+		self.tauon:                       Tauon = tauon
+		self.inp:                         Input = tauon.inp
+		self.gui:                        GuiVar = tauon.gui
+		self.ddt:                         TDraw = tauon.ddt
+		self.coll                               = tauon.coll
+		self.pctl:                    PlayerCtl = tauon.pctl
+		self.prefs:                       Prefs = tauon.prefs
+		self.colours:              ColoursClass = tauon.colours
+		self.renderer                           = tauon.renderer
+		self.lyrics_ren:              LyricsRen = tauon.lyrics_ren
+		self.window_size:             list[int] = tauon.window_size
+		self.guitar_chords:        GuitarChords = tauon.guitar_chords
+		self.showcase_menu:                Menu = tauon.showcase_menu
+		self.smooth_scroll:        SmoothScroll = tauon.smooth_scroll
+		self.timed_lyrics_edit: TimedLyricsEdit = TimedLyricsEdit(tauon=tauon)
+		#self.lastfm_artist = None
+		self.artist_mode: bool = False
 
 	def render(self) -> None:
 		if self.gui.timed_lyrics_edit_view:
 			self.timed_lyrics_edit.render()
 			return
-		else:
-			self.gui.timed_lyrics_editing_now = False
-			self.timed_lyrics_edit.continuous = False
+
+		self.gui.timed_lyrics_editing_now = False
+		self.timed_lyrics_edit.continuous = False
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
 
@@ -37050,7 +37047,7 @@ class ViewBox:
 			self.x_menu.close_next_frame = True
 		return None
 
-	def activate_synced_lyric_editor(self):
+	def activate_synced_lyric_editor(self) -> None:
 		self.editor(hit = True)
 
 	def editor(self, hit: bool = False) -> bool | None:
@@ -37524,11 +37521,15 @@ class EdgePulse2:
 class Undo:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.gui          = tauon.gui
-		self.pctl         = tauon.pctl
-		self.star_store   = tauon.star_store
+		self.gui: GuiVar = tauon.gui
+		self.pctl: PlayerCtl = tauon.pctl
+		self.star_store: StarStore = tauon.star_store
 		self.show_message = tauon.show_message
-		self.e = []
+		self.e: list[
+			tuple[str, TrackClass, StarRecord | None, int, TrackClass, StarRecord | None, int] |
+			tuple[str, list[int]] |
+			tuple[str, int, list[tuple[int, int]]]
+			] = []
 
 	def undo(self) -> None:
 		if not self.e:
@@ -37541,7 +37542,6 @@ class Undo:
 			self.pctl.multi_playlist.append(job[1])
 			self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		elif job[0] == "tracks":
-
 			uid = job[1]
 			li = job[2]
 
@@ -37575,11 +37575,11 @@ class Undo:
 	def bk_playlist(self, pl_index: int) -> None:
 		self.e.append(("playlist", self.pctl.multi_playlist[pl_index]))
 
-	def bk_tracks(self, pl_index: int, indis) -> None:
+	def bk_tracks(self, pl_index: int, indis: list[tuple[int, int]]) -> None:
 		uid = self.pctl.multi_playlist[pl_index].uuid_int
 		self.e.append(("tracks", uid, indis))
 
-	def bk_playtime_transfer(self, fr, fr_s, fr_scr, to, to_s, to_scr) -> None:
+	def bk_playtime_transfer(self, fr: TrackClass, fr_s: StarRecord | None, fr_scr: int, to: TrackClass, to_s: StarRecord | None, to_scr: int) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, to, to_s, to_scr))
 
 class GetSDLInput:
