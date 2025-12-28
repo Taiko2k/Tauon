@@ -302,7 +302,8 @@ if TYPE_CHECKING:
 	from websocket import WebSocketApp
 
 	from tauon.t_modules.t_bootstrap import Holder
-	from tauon.t_modules.t_logging import LogHistoryHandler  # noqa: E402
+	from tauon.t_modules.t_dbus import MPRIS
+	from tauon.t_modules.t_logging import LogHistoryHandler
 	if sys.platform == "win32":
 		from lynxtray import SysTrayIcon
 	from collections.abc import Callable
@@ -1805,8 +1806,7 @@ class PlayerCtl:
 
 		#self.gst_devices = []  # Display names
 		#self.gst_outputs = {}  # Display name : (sink, device)
-		#TODO(Martin): Fix this by moving the class to root of the module
-		self.mpris: Gnome.main.MPRIS | None = None
+		self.mpris: MPRIS | None = None
 		self.tray_update = None
 		self.eq = [0] * 2  # not used
 		self.enable_eq = True  # not used
