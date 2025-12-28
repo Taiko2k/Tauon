@@ -111,7 +111,6 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	database_migrate,
 	migrate_star_store_71,
 )
-from tauon.t_modules.t_dbus import Gnome  # noqa: E402
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
