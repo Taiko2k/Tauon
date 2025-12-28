@@ -314,13 +314,13 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_webserve import ThreadedHTTPServer
 
 # Detect platform
-macos = False
-msys = False
-system = "Linux"
-arch = platform.machine()
-platform_release = platform.release()
-platform_system = platform.system()
-win_ver = 0
+macos: bool = False
+msys: bool = False
+system: str = "Linux"
+arch: str = platform.machine()
+platform_release: str = platform.release()
+platform_system: str = platform.system()
+win_ver: int = 0
 if platform_system == "Windows":
 	try:
 		win_ver = int(platform_release)
@@ -625,7 +625,7 @@ class GuiVar:
 		self.set_label_point = (0, 0)
 		self.set_point = 0
 		self.set_old = 0
-		self.pl_st = [
+		self.pl_st: list[list[str | int | bool]] = [
 			["Artist", 156, False], ["Title", 188, False], ["T", 40, True], ["Album", 153, False],
 			["P", 28, True], ["Starline", 86, True], ["Date", 48, True], ["Codec", 55, True],
 			["Time", 53, True]]
@@ -957,10 +957,10 @@ class StarStore:
 	"""Functions for reading and setting play counts"""
 
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
-		self.tauon      = tauon
-		self.pctl       = pctl
-		self.prefs      = tauon.prefs
-		self.after_scan = tauon.after_scan
+		self.tauon: Tauon    = tauon
+		self.pctl: PlayerCtl = pctl
+		self.prefs: Prefs    = tauon.prefs
+		self.after_scan: list[TrackClass] = tauon.after_scan
 		self.db: dict[tuple[str, str, str], StarRecord] = {}
 
 	def key(self, track_id: int) -> tuple[str, str, str]:
@@ -1233,8 +1233,8 @@ class Input:
 class KeyMap:
 
 	def __init__(self, bag: Bag, inp: Input) -> None:
-		self.bag = bag
-		self.inp = inp
+		self.bag: Bag = bag
+		self.inp: Input = inp
 		self.hits: list[str | sdl3.SDL_Scancode] = []  # The keys hit this frame
 		self.maps: dict[str, tuple[str | sdl3.SDL_Scancode, list[str]]] = {}  # Loaded from input.txt
 
@@ -2427,7 +2427,7 @@ class PlayerCtl:
 
 		return None, None
 
-	def playing_playlist(self) -> list[int] | None:
+	def playing_playlist(self) -> list[int]:
 		return self.multi_playlist[self.active_playlist_playing].playlist_ids
 
 	def playing_ready(self) -> bool:
@@ -4841,7 +4841,7 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func=None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		self, title: str, func, render_func: Callable[[int], list[list[int | str | None]]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
@@ -5719,10 +5719,10 @@ class Tauon:
 		self.draw_max_button: bool              = bag.draw_max_button
 		self.draw_min_button: bool              = bag.draw_min_button
 		self.song_notification: None            = bag.song_notification
-		self.tls_context: SSLContext            = bag.tls_context
+		self.tls_context: ssl.SSLContext        = bag.tls_context
 		self.folder_image_offsets: dict[str, int] = bag.folder_image_offsets
 		self.inp: Input                          = gui.inp
-		self.instance_lock: TextIOWrapper[_WrappedBuffer] | None                 = holder.instance_lock
+		self.instance_lock: io.TextIOWrapper[io._WrappedBuffer] | None = holder.instance_lock
 		self.n_version: str                    = holder.n_version
 		self.t_window                     = holder.t_window
 		self.t_title: str                         = holder.t_title
