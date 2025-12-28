@@ -20,10 +20,14 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 import urllib.parse
 from typing import TYPE_CHECKING
 
+import dbus
+import dbus.mainloop.glib
+import dbus.service
 import gi
 
 # TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
@@ -36,7 +40,306 @@ from tauon.t_modules.t_extra import filename_to_metadata, star_count2  # noqa: E
 if TYPE_CHECKING:
 	from gi.repository import AppIndicator3
 
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon
+
+class MPRIS(dbus.service.Object):
+
+	def __init__(self, object_path: str, tauon: Tauon) -> None:
+		self.tauon:    Tauon = tauon
+		self.gui:     GuiVar = tauon.gui
+		self.pctl: PlayerCtl = tauon.pctl
+		bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+		self.bus_name = dbus.service.BusName("org.mpris.MediaPlayer2.tauon", bus)  # This object must be kept alive
+
+		# dbus.service.Object.__init__(self, bus_name, object_path)
+		dbus.service.Object.__init__(self, bus, object_path, bus_name=self.bus_name)
+
+		self.playing_index = -1
+		self.last_playing_time: float = 0.0
+		self.last_track_index: int = -1
+
+		self.root_properties = {
+			"CanQuit": True,
+			#'Fullscreen'
+			#'CanSetFullscreen'
+			"CanRaise": True,
+			"HasTrackList": False,
+			"Identity": tauon.t_title,
+			"DesktopEntry": tauon.t_id,
+			"SupportedUriSchemes": dbus.Array([dbus.String("file")]),
+			"SupportedMimeTypes": dbus.Array(
+				[
+					dbus.String("audio/mpeg"),
+					dbus.String("audio/flac"),
+					dbus.String("audio/ogg"),
+					dbus.String("audio/m4a"),
+				]
+			),
+		}
+
+		self.player_properties = {
+			"PlaybackStatus": "Stopped",
+			"LoopStatus": self.get_loop_status(),
+			"Rate": 1.0,
+			"Shuffle": self.pctl.random_mode,
+			"Volume": self.pctl.player_volume / 100,
+			"Position": dbus.Int64(0),
+			"MinimumRate": 1.0,
+			"MaximumRate": 1.0,
+			"CanGoNext": True,
+			"CanGoPrevious": True,
+			"CanPlay": True,
+			"CanPause": True,
+			"CanSeek": True,
+			"CanControl": True,
+			"Metadata": dbus.Dictionary({}, signature="sv"),
+		}
+
+	def update(self, force: bool = False) -> None:
+		changed = {}
+
+		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+			if self.player_properties["PlaybackStatus"] != "Playing":
+				self.player_properties["PlaybackStatus"] = "Playing"
+				changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
+		elif self.pctl.playing_state == PlayingState.STOPPED:
+			if self.player_properties["PlaybackStatus"] != "Stopped":
+				self.player_properties["PlaybackStatus"] = "Stopped"
+				changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
+		elif self.pctl.playing_state == PlayingState.PAUSED:
+			if self.player_properties["PlaybackStatus"] != "Paused":
+				self.player_properties["PlaybackStatus"] = "Paused"
+				changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
+
+		if self.pctl.player_volume / 100 != self.player_properties["Volume"]:
+			self.player_properties["Volume"] = self.pctl.player_volume / 100
+			changed["Volume"] = self.player_properties["Volume"]
+
+		track = self.pctl.playing_object()
+		if track is not None and (track.index != self.playing_index or force):
+			self.playing_index = track.index
+			id = f"/com/tauon/{track.index}/{abs(self.pctl.playlist_playing_position)}"
+			if self.pctl.playing_state == PlayingState.URL_STREAM:
+				id = "/com/tauon/radio"
+
+			d = {
+				"mpris:trackid": dbus.ObjectPath(id),
+				"mpris:length": dbus.Int64(int(self.pctl.playing_length * 1000000)),
+				"xesam:album": track.album,
+				"xesam:albumArtist": dbus.Array([track.album_artist]),
+				"xesam:artist": dbus.Array([track.artist]),
+				"xesam:title": track.title,
+				"xesam:asText": track.lyrics,
+				"xesam:autoRating": star_count2(self.tauon.star_store.get(track.index)),
+				"xesam:composer": dbus.Array([track.composer]),
+				"tauon:loved": self.tauon.love(False, track.index),
+				# added by msmafra
+				"xesam:comment": dbus.Array([track.comment]),
+				"xesam:genre": dbus.Array([track.genre]),
+			}
+			if not track.title:
+				a, t = filename_to_metadata(track.filename)
+				if not track.artist:
+					d["xesam:artist"] = dbus.Array([a])
+				d["xesam:title"] = t
+
+			try:
+				d["xesam:url"] = "file://" + urllib.parse.quote(track.fullpath)
+			except Exception:
+				logging.exception("Uri encode error")
+
+			try:
+				i_path = self.tauon.thumb_tracks.path(track)
+				if i_path is not None:
+					d["mpris:artUrl"] = "file://" + urllib.parse.quote(i_path)
+			except Exception:
+				logging.exception("Thumbnail error")
+				logging.debug(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
+
+			self.update_progress()
+
+			self.player_properties["Metadata"] = dbus.Dictionary(d, signature="sv")
+			changed["Metadata"] = self.player_properties["Metadata"]
+
+			if (
+				self.pctl.playing_state == PlayingState.URL_STREAM
+				and self.player_properties["CanPause"] is True
+			):
+				self.player_properties["CanPause"] = False
+				self.player_properties["CanSeek"] = False
+				changed["CanPause"] = self.player_properties["CanPause"]
+				changed["CanSeek"] = self.player_properties["CanSeek"]
+			elif (
+				self.pctl.playing_state == PlayingState.PLAYING
+				and self.player_properties["CanPause"] is False
+			):
+				self.player_properties["CanPause"] = True
+				self.player_properties["CanSeek"] = True
+				changed["CanPause"] = self.player_properties["CanPause"]
+				changed["CanSeek"] = self.player_properties["CanSeek"]
+
+		if len(changed) > 0:
+			try:
+				self.PropertiesChanged("org.mpris.MediaPlayer2.Player", changed, [])
+			except Exception:
+				logging.exception("Error updating MPRIS")
+				logging.debug(changed)
+				if track is not None:
+					logging.debug(track.fullpath)
+
+	def update_progress(self) -> None:
+		if (
+			self.pctl.repeat_mode
+			and not self.pctl.album_repeat_mode
+			and self.pctl.playing_object() is not None
+			and self.last_track_index == self.pctl.playing_object().index
+			and self.pctl.playing_time < self.last_playing_time
+		):
+			self.seek_do(self.pctl.playing_time)
+
+		self.last_playing_time = self.pctl.playing_time
+		self.last_track_index = self.pctl.playing_object().index
+
+		self.player_properties["Position"] = dbus.Int64(int(self.pctl.playing_time * 1000000))
+
+	def update_shuffle(self) -> None:
+		self.player_properties["Shuffle"] = self.pctl.random_mode
+		self.PropertiesChanged("org.mpris.MediaPlayer2.Player", {"Shuffle": self.pctl.random_mode}, [])
+
+	def update_loop(self) -> None:
+		self.player_properties["LoopStatus"] = self.get_loop_status()
+		self.PropertiesChanged(
+			"org.mpris.MediaPlayer2.Player", {"LoopStatus": self.get_loop_status()}, []
+		)
+
+	def get_loop_status(self) -> str:
+		if self.pctl.repeat_mode:
+			if self.pctl.album_repeat_mode:
+				return "Playlist"
+			return "Track"
+		return "None"
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2")
+	def Raise(self) -> None:
+		self.tauon.request_raise()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2")
+	def Quit(self) -> None:
+		self.tauon.wake()
+		self.tauon.exit("Exit request received from MPRIS2")
+
+	@dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
+	def Get(self, interface_name: str, property_name: str) -> dict | None:
+		if interface_name == "org.mpris.MediaPlayer2":
+			# return self.GetAll(interface_name)[property_name]
+			return self.root_properties[property_name]
+		if interface_name == "org.mpris.MediaPlayer2.Player":
+			return self.player_properties[property_name]
+		return None
+
+	@dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE, in_signature="s", out_signature="a{sv}")
+	def GetAll(self, interface_name: str) -> dict:
+		if interface_name == "org.mpris.MediaPlayer2":
+			return self.root_properties
+		if interface_name == "org.mpris.MediaPlayer2.Player":
+			return self.player_properties
+		return {}
+
+	@dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE, in_signature="ssv", out_signature="")
+	def Set(self, interface_name: str, property_name: str, value: str) -> None:
+		if interface_name == "org.mpris.MediaPlayer2.Player":
+			self.tauon.wake()
+			if property_name == "Volume":
+				self.pctl.player_volume = min(max(int(value * 100), 0), 100)
+				self.pctl.set_volume()
+				self.gui.update += 1
+			if property_name == "Shuffle":
+				self.pctl.random_mode = bool(value)
+				self.update_shuffle()
+				self.gui.update += 1
+			if property_name == "LoopStatus":
+				if value == "None":
+					self.tauon.menu_repeat_off()
+				elif value == "Track":
+					self.tauon.menu_set_repeat()
+				elif value == "Playlist":
+					self.tauon.menu_album_repeat()
+				self.gui.update += 1
+
+		if interface_name == "org.mpris.MediaPlayer2":
+			pass
+
+	@dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE, signature="sa{sv}as")
+	def PropertiesChanged(self, interface_name: str, change: dict, inval: list) -> None:
+		pass
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Next(self) -> None:
+		self.tauon.wake()
+		self.pctl.advance()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Previous(self) -> None:
+		self.tauon.wake()
+		self.pctl.back()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Pause(self) -> None:
+		self.pctl.pause_only()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def PlayPause(self) -> None:
+		self.tauon.wake()
+		if self.pctl.playing_state == PlayingState.URL_STREAM:
+			self.pctl.stop()  # Stop if playing radio
+		else:
+			self.pctl.play_pause()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Stop(self) -> None:
+		self.pctl.stop()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Play(self) -> None:
+		self.tauon.wake()
+		self.pctl.play()
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Seek(self, offset: int) -> None:
+		self.pctl.seek_time(self.pctl.playing_time + (offset / 1000000))
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def SetPosition(self, id: int, position: str) -> None:
+		self.pctl.seek_time(position / 1000000)
+
+		self.player_properties["Position"] = dbus.Int64(int(position))
+		self.Seeked(self.pctl.playing_time)
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def OpenUri(self, uri: str) -> None:
+		self.tauon.wake()
+		self.tauon.open_uri(uri)
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def LovePlaying(self) -> None:
+		if not self.tauon.love(set=False):
+			self.tauon.love(set=True, no_delay=True)
+			self.update(True)
+			self.gui.pl_update += 1
+
+	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def UnLovePlaying(self) -> None:
+		if self.tauon.love(set=False):
+			self.tauon.love(set=True, no_delay=True)
+			self.update(True)
+			self.gui.pl_update += 1
+
+	@dbus.service.signal(dbus_interface="org.mpris.MediaPlayer2.Player")
+	def Seeked(self, position: str) -> None:
+		pass
+
+	def seek_do(self, seconds: str) -> None:
+		self.Seeked(dbus.Int64(int(seconds * 1000000)))
 
 
 class Gnome:
@@ -214,8 +517,6 @@ class Gnome:
 		self.tauon.gui.tray_active = True
 		self.indicator_launched = True
 
-		import threading
-
 		shoot = threading.Thread(target=update)
 		shoot.daemon = True
 		shoot.start()
@@ -234,10 +535,6 @@ class Gnome:
 		self.tauon.gui.update += 1
 
 	def main(self) -> None:
-		import dbus
-		import dbus.mainloop.glib
-		import dbus.service
-
 		prefs = self.tauon.prefs
 		gui = self.tauon.gui
 		pctl = self.tauon.pctl
@@ -356,302 +653,7 @@ class Gnome:
 		# ----------
 		if prefs.enable_mpris:
 			try:
-				bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-				bus_name = dbus.service.BusName("org.mpris.MediaPlayer2.tauon", bus)  # This object must be kept alive
-
-				class MPRIS(dbus.service.Object):
-					def update(self, force: bool = False) -> None:
-						changed = {}
-
-						if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-							if self.player_properties["PlaybackStatus"] != "Playing":
-								self.player_properties["PlaybackStatus"] = "Playing"
-								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
-						elif pctl.playing_state == PlayingState.STOPPED:
-							if self.player_properties["PlaybackStatus"] != "Stopped":
-								self.player_properties["PlaybackStatus"] = "Stopped"
-								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
-						elif pctl.playing_state == PlayingState.PAUSED:
-							if self.player_properties["PlaybackStatus"] != "Paused":
-								self.player_properties["PlaybackStatus"] = "Paused"
-								changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
-
-						if pctl.player_volume / 100 != self.player_properties["Volume"]:
-							self.player_properties["Volume"] = pctl.player_volume / 100
-							changed["Volume"] = self.player_properties["Volume"]
-
-						track = pctl.playing_object()
-						if track is not None and (track.index != self.playing_index or force):
-							self.playing_index = track.index
-							id = f"/com/tauon/{track.index}/{abs(pctl.playlist_playing_position)}"
-							if pctl.playing_state == PlayingState.URL_STREAM:
-								id = "/com/tauon/radio"
-
-							d = {
-								"mpris:trackid": dbus.ObjectPath(id),
-								"mpris:length": dbus.Int64(int(pctl.playing_length * 1000000)),
-								"xesam:album": track.album,
-								"xesam:albumArtist": dbus.Array([track.album_artist]),
-								"xesam:artist": dbus.Array([track.artist]),
-								"xesam:title": track.title,
-								"xesam:asText": track.lyrics,
-								"xesam:autoRating": star_count2(tauon.star_store.get(track.index)),
-								"xesam:composer": dbus.Array([track.composer]),
-								"tauon:loved": tauon.love(False, track.index),
-								# added by msmafra
-								"xesam:comment": dbus.Array([track.comment]),
-								"xesam:genre": dbus.Array([track.genre]),
-							}
-							if not track.title:
-								a, t = filename_to_metadata(track.filename)
-								if not track.artist:
-									d["xesam:artist"] = dbus.Array([a])
-								d["xesam:title"] = t
-
-							try:
-								d["xesam:url"] = "file://" + urllib.parse.quote(track.fullpath)
-							except Exception:
-								logging.exception("Uri encode error")
-
-							try:
-								i_path = tauon.thumb_tracks.path(track)
-								if i_path is not None:
-									d["mpris:artUrl"] = "file://" + urllib.parse.quote(i_path)
-							except Exception:
-								logging.exception("Thumbnail error")
-								logging.debug(track.fullpath.encode("utf-8", "replace").decode("utf-8"))
-
-							self.update_progress()
-
-							self.player_properties["Metadata"] = dbus.Dictionary(d, signature="sv")
-							changed["Metadata"] = self.player_properties["Metadata"]
-
-							if (
-								pctl.playing_state == PlayingState.URL_STREAM
-								and self.player_properties["CanPause"] is True
-							):
-								self.player_properties["CanPause"] = False
-								self.player_properties["CanSeek"] = False
-								changed["CanPause"] = self.player_properties["CanPause"]
-								changed["CanSeek"] = self.player_properties["CanSeek"]
-							elif (
-								pctl.playing_state == PlayingState.PLAYING
-								and self.player_properties["CanPause"] is False
-							):
-								self.player_properties["CanPause"] = True
-								self.player_properties["CanSeek"] = True
-								changed["CanPause"] = self.player_properties["CanPause"]
-								changed["CanSeek"] = self.player_properties["CanSeek"]
-
-						if len(changed) > 0:
-							try:
-								self.PropertiesChanged("org.mpris.MediaPlayer2.Player", changed, [])
-							except Exception:
-								logging.exception("Error updating MPRIS")
-								logging.debug(changed)
-								if track is not None:
-									logging.debug(track.fullpath)
-
-					def update_progress(self) -> None:
-						if (
-							pctl.repeat_mode
-							and not pctl.album_repeat_mode
-							and pctl.playing_object() is not None
-							and self.last_track_index == pctl.playing_object().index
-							and pctl.playing_time < self.last_playing_time
-						):
-							self.seek_do(pctl.playing_time)
-
-						self.last_playing_time = pctl.playing_time
-						self.last_track_index = pctl.playing_object().index
-
-						self.player_properties["Position"] = dbus.Int64(int(pctl.playing_time * 1000000))
-
-					def update_shuffle(self) -> None:
-						self.player_properties["Shuffle"] = pctl.random_mode
-						self.PropertiesChanged("org.mpris.MediaPlayer2.Player", {"Shuffle": pctl.random_mode}, [])
-
-					def update_loop(self) -> None:
-						self.player_properties["LoopStatus"] = self.get_loop_status()
-						self.PropertiesChanged(
-							"org.mpris.MediaPlayer2.Player", {"LoopStatus": self.get_loop_status()}, []
-						)
-
-					def __init__(self, object_path: str) -> None:
-						# dbus.service.Object.__init__(self, bus_name, object_path)
-						dbus.service.Object.__init__(self, bus, object_path, bus_name=bus_name)
-
-						self.playing_index = -1
-						self.last_playing_time: float = 0.0
-						self.last_track_index: int = -1
-
-						self.root_properties = {
-							"CanQuit": True,
-							#'Fullscreen'
-							#'CanSetFullscreen'
-							"CanRaise": True,
-							"HasTrackList": False,
-							"Identity": tauon.t_title,
-							"DesktopEntry": tauon.t_id,
-							"SupportedUriSchemes": dbus.Array([dbus.String("file")]),
-							"SupportedMimeTypes": dbus.Array(
-								[
-									dbus.String("audio/mpeg"),
-									dbus.String("audio/flac"),
-									dbus.String("audio/ogg"),
-									dbus.String("audio/m4a"),
-								]
-							),
-						}
-
-						self.player_properties = {
-							"PlaybackStatus": "Stopped",
-							"LoopStatus": self.get_loop_status(),
-							"Rate": 1.0,
-							"Shuffle": pctl.random_mode,
-							"Volume": pctl.player_volume / 100,
-							"Position": dbus.Int64(0),
-							"MinimumRate": 1.0,
-							"MaximumRate": 1.0,
-							"CanGoNext": True,
-							"CanGoPrevious": True,
-							"CanPlay": True,
-							"CanPause": True,
-							"CanSeek": True,
-							"CanControl": True,
-							"Metadata": dbus.Dictionary({}, signature="sv"),
-						}
-
-					def get_loop_status(self) -> str:
-						if pctl.repeat_mode:
-							if pctl.album_repeat_mode:
-								return "Playlist"
-							return "Track"
-						return "None"
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2")
-					def Raise(self) -> None:
-						tauon.request_raise()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2")
-					def Quit(self) -> None:
-						tauon.wake()
-						tauon.exit("Exit request received from MPRIS2")
-
-					@dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE, in_signature="ss", out_signature="v")
-					def Get(self, interface_name: str, property_name: str) -> dict | None:
-						if interface_name == "org.mpris.MediaPlayer2":
-							# return self.GetAll(interface_name)[property_name]
-							return self.root_properties[property_name]
-						if interface_name == "org.mpris.MediaPlayer2.Player":
-							return self.player_properties[property_name]
-						return None
-
-					@dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE, in_signature="s", out_signature="a{sv}")
-					def GetAll(self, interface_name: str) -> dict:
-						if interface_name == "org.mpris.MediaPlayer2":
-							return self.root_properties
-						if interface_name == "org.mpris.MediaPlayer2.Player":
-							return self.player_properties
-						return {}
-
-					@dbus.service.method(dbus_interface=dbus.PROPERTIES_IFACE, in_signature="ssv", out_signature="")
-					def Set(self, interface_name: str, property_name: str, value: str) -> None:
-						if interface_name == "org.mpris.MediaPlayer2.Player":
-							tauon.wake()
-							if property_name == "Volume":
-								pctl.player_volume = min(max(int(value * 100), 0), 100)
-								pctl.set_volume()
-								gui.update += 1
-							if property_name == "Shuffle":
-								pctl.random_mode = bool(value)
-								self.update_shuffle()
-								gui.update += 1
-							if property_name == "LoopStatus":
-								if value == "None":
-									tauon.menu_repeat_off()
-								elif value == "Track":
-									tauon.menu_set_repeat()
-								elif value == "Playlist":
-									tauon.menu_album_repeat()
-								gui.update += 1
-
-						if interface_name == "org.mpris.MediaPlayer2":
-							pass
-
-					@dbus.service.signal(dbus_interface=dbus.PROPERTIES_IFACE, signature="sa{sv}as")
-					def PropertiesChanged(self, interface_name: str, change: dict, inval: list) -> None:
-						pass
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Next(self) -> None:
-						tauon.wake()
-						pctl.advance()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Previous(self) -> None:
-						tauon.wake()
-						pctl.back()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Pause(self) -> None:
-						pctl.pause_only()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def PlayPause(self) -> None:
-						tauon.wake()
-						if pctl.playing_state == PlayingState.URL_STREAM:
-							pctl.stop()  # Stop if playing radio
-						else:
-							pctl.play_pause()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Stop(self) -> None:
-						pctl.stop()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Play(self) -> None:
-						tauon.wake()
-						pctl.play()
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Seek(self, offset: int) -> None:
-						pctl.seek_time(pctl.playing_time + (offset / 1000000))
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def SetPosition(self, id: int, position: str) -> None:
-						pctl.seek_time(position / 1000000)
-
-						self.player_properties["Position"] = dbus.Int64(int(position))
-						self.Seeked(pctl.playing_time)
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def OpenUri(self, uri: str) -> None:
-						tauon.wake()
-						tauon.open_uri(uri)
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def LovePlaying(self) -> None:
-						if not tauon.love(set=False):
-							tauon.love(set=True, no_delay=True)
-							self.update(True)
-							gui.pl_update += 1
-
-					@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def UnLovePlaying(self) -> None:
-						if tauon.love(set=False):
-							tauon.love(set=True, no_delay=True)
-							self.update(True)
-							gui.pl_update += 1
-
-					@dbus.service.signal(dbus_interface="org.mpris.MediaPlayer2.Player")
-					def Seeked(self, position: str) -> None:
-						pass
-
-					def seek_do(self, seconds: str) -> None:
-						self.Seeked(dbus.Int64(int(seconds * 1000000)))
-
-				pctl.mpris = MPRIS("/org/mpris/MediaPlayer2")
+				pctl.mpris = MPRIS("/org/mpris/MediaPlayer2", tauon)
 
 			except Exception:
 				logging.exception("MPRIS2 CONNECT FAILED")
