@@ -4356,7 +4356,6 @@ class LastFMapi:
 					title = track.track.title.casefold()
 					artist = track.track.artist.name.casefold()
 					for index, tr in self.pctl.master_library.items():
-
 						if tr.title.casefold() == title and tr.artist.casefold() == artist:
 							tr.lfm_friend_likes.add(friend.name)
 							logging.info("MATCH")
@@ -10653,7 +10652,6 @@ class Tauon:
 		old = track.parent_folder_path
 		new_parent_path = os.path.join(upper_folder, folder_name)
 		for key, object in self.pctl.master_library.items():
-
 			if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
 					and os.path.normpath(object.fullpath)[len(old)] in ("/", "\\"):
 				object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip("\\/"))
@@ -13608,7 +13606,7 @@ class Tauon:
 	# def get_spot_recs_track(self, index: int) -> None:
 	# 	self.get_spot_recs(self.pctl.get_track(index))
 
-	def drop_tracks_to_new_playlist(self, track_list: list[int], hidden: bool = False) -> None:
+	def drop_tracks_to_new_playlist(self, track_list: list[int], _hidden: bool = False) -> None:
 		pl = self.new_playlist(switch=False)
 		albums = []
 		artists = []
@@ -14271,11 +14269,11 @@ class Tauon:
 							tr = self.pctl.get_track(track_id)
 
 							if cm.startswith("fs\""):
-								line = "|".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+								line = f"{tr.title}|{tr.artist}|{tr.album}|{tr.fullpath}|{tr.composer}|{tr.comment}|{tr.album_artist}".lower()
 								if quote.lower() in line:
 									playlist.append(track_id)
 							else:
-								line = " ".join([tr.title, tr.artist, tr.album, tr.fullpath, tr.composer, tr.comment, tr.album_artist]).lower()
+								line = f"{tr.title} {tr.artist} {tr.album} {tr.fullpath} {tr.composer} {tr.comment} {tr.album_artist}".lower()
 
 								# if prefs.diacritic_search and all([ord(c) < 128 for c in quote]):
 								#	 line = str(unidecode(line))
@@ -24634,7 +24632,6 @@ class Over:
 
 
 		if self.func_page == 0:
-
 			y += 23 * gui.scale
 
 			self.toggle_square(
@@ -24775,43 +24772,6 @@ class Over:
 			else:
 				self.toggle_square(x, y, tauon.toggle_min_tray, _("Close to tray"))
 
-		elif self.func_page == 4:
-			y += 23 * gui.scale
-			prefs.use_gamepad = self.toggle_square(
-				x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
-				subtitle=_("Change requires restart"))
-			y += 37 * gui.scale
-
-			ddt.text((x, y + 8 * gui.scale), _("Default playlist export folder"), colours.grey(230), 11)
-			y += round(30 * gui.scale)
-			rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
-			self.fields.add(rect1)
-			# ddt.rect(rect1, [40, 40, 40, 255], True)
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-
-			if self.prefs.playlist_folder_path:
-				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
-			if Path(tauon.playlist_folder_box.text).is_dir():
-				tauon.playlist_folder_box.draw(
-					x + round(4 * gui.scale), y, colours.box_input_text, True,
-					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
-			else:
-				tauon.playlist_folder_box.draw(
-					x + round(4 * gui.scale), y, colours.status_text_over, True,
-					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
-			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
-			y += round(30* gui.scale)
-			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
-			prefs.autoscan_playlist_folder = self.toggle_square(
-				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
-				subtitle=_("Only runs during \"Rescan All Folders\""))
-
-			y += round(35 * gui.scale)
-			prefs.save_lyrics_changes_to_files = self.toggle_square(
-				x, y, prefs.save_lyrics_changes_to_files, _("Save \"simple\" lyrics changes back to their original files"),
-				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
-			)
-
 		elif self.func_page == 3:
 			y += 23 * gui.scale
 			old = prefs.enable_remote
@@ -24883,6 +24843,53 @@ class Over:
 			if prefs.discord_enable:
 				text = gui.discord_status
 			ddt.text((x, y), _("Status: {state}").format(state=text), colours.box_text, 11)
+		elif self.func_page == 4:
+			y += 23 * gui.scale
+			prefs.use_gamepad = self.toggle_square(
+				x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
+				subtitle=_("Change requires restart"))
+			y += 37 * gui.scale
+
+			ddt.text((x, y + 8 * gui.scale), _("Default playlist export folder"), colours.grey(230), 11)
+			y += round(30 * gui.scale)
+			rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
+			self.fields.add(rect1)
+			# ddt.rect(rect1, [40, 40, 40, 255], True)
+			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+
+			if self.prefs.playlist_folder_path:
+				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
+			if Path(tauon.playlist_folder_box.text).is_dir():
+				tauon.playlist_folder_box.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, True,
+					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
+			else:
+				tauon.playlist_folder_box.draw(
+					x + round(4 * gui.scale), y, colours.status_text_over, True,
+					width=rect1[2] - 8 * gui.scale, click=gui.level_2_click)
+			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
+			y += round(30* gui.scale)
+			# ddt.text((x, y - 8 * gui.scale), _("Default storage folder for playlists."), colours.grey(230), 11)
+			prefs.autoscan_playlist_folder = self.toggle_square(
+				x, y, prefs.autoscan_playlist_folder, _("Also auto-import new playlists from here"),
+				subtitle=_("Only runs during \"Rescan All Folders\""))
+
+			y += round(35 * gui.scale)
+			prefs.save_lyrics_changes_to_files = self.toggle_square(
+				x, y, prefs.save_lyrics_changes_to_files, _("Save \"simple\" lyrics changes back to their original files"),
+				subtitle=_("Includes search, clear, paste, etc. Manual edits will always save this way.")
+			)
+
+			y += round(35 * gui.scale)
+			debug_path = self.user_directory / "debug"
+			debug_state = debug_path.exists()
+			old = debug_state
+			debug_state = self.toggle_square(x, y, debug_state, _("Enable debug mode"))
+			if old is False and debug_state is True:
+				with debug_path.open("a"):
+					pass
+			elif old is True and debug_state is False:
+				os.remove(debug_path)
 
 		# Switcher
 		pages = 5
@@ -24897,7 +24904,7 @@ class Over:
 
 		# self.button(x, y, _("Open keymap file"), open_keymap_file, width=wc)
 
-	def button(self, x: int, y: int, text: str, plug=None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
+	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
 		refresh when you pan the mouse over it"""
 		w = width
@@ -24963,7 +24970,7 @@ class Over:
 			self.ddt.text(text_position, text, self.colours.box_button_text, 211, bg=real_bg)
 		return hit
 
-	def toggle_square(self, x: int, y: int, function, text: str , click: bool = False, subtitle: str = "") -> bool:
+	def toggle_square(self, x: int, y: int, function: Callable[[int], bool | None] | bool, text: str , click: bool = False, subtitle: str = "") -> bool:
 		gui     = self.gui
 		colours = self.colours
 		x = round(x)
@@ -25598,8 +25605,7 @@ class Over:
 				x, y, prefs.enable_fanart_artist,
 				_("Artist images (Automatic)"))
 			#y += 25 * gui.scale
-			# prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg,
-			#                                             _("Artist backgrounds (Automatic)"))
+			# prefs.enable_fanart_bg = self.toggle_square(x, y, prefs.enable_fanart_bg, _("Artist backgrounds (Automatic)"))
 			y += 25 * gui.scale
 			x += 23 * gui.scale
 			if self.button(x, y, _("Flip current")):
