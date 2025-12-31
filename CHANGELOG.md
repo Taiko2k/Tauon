@@ -8,6 +8,7 @@ Changelog
  - **Fixed** Crash when exporting albums as CSV
  - **Fixed** Couple crashes under specific scenarios
  - **Fixed** Freeze when importing an invalid playlist
+ - **Fixed** Playback of 4-channel VORBIS being half the speed
  - **Fixed** Radio playback of some ogg streams
 
 ### v8.2.3
