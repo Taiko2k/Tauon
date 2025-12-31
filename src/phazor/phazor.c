@@ -2412,7 +2412,6 @@ void pump_decode() {
 
 
 	} else if (codec == VORBIS) {
-
 		unsigned int done;
 		int stream;
 		done = ov_read(&vf, parse_buffer, sizeof(parse_buffer), 0, 2, 1, &stream);
@@ -2423,6 +2422,7 @@ void pump_decode() {
 			int bytes_per_frame = src_channels * 2;
 			int frames = done / bytes_per_frame;
 
+			int16_t stereo_buf[frames * 2];
 			const unsigned char *p = (const unsigned char *)parse_buffer;
 
 			for (int f = 0; f < frames; f++) {
@@ -2449,15 +2449,13 @@ void pump_decode() {
 					}
 				}
 
-				bfl[high] = l;
-				bfr[high] = r;
-				fade_fx();
-				high++;
+				stereo_buf[f * 2 + 0] = (int16_t)(l * 32767.0f);
+				stereo_buf[f * 2 + 1] = (int16_t)(r * 32767.0f);
 
 				p += bytes_per_frame;
 			}
 
-			buff_cycle();
+			read_to_buffer_char16((char *)stereo_buf, frames * 4);
 			pthread_mutex_unlock(&buffer_mutex);
 		}
 		if (done == 0) decoder_eos();
