@@ -2433,20 +2433,30 @@ void pump_decode() {
 					l = r = s16_to_float(p);
 				}
 				else if (src_channels == 2) {
-					l = s16_to_float(p);
-					r = s16_to_float(p + 2);
+					l = s16_to_float(p + 0); // FL
+					r = s16_to_float(p + 2); // FR
+				}
+				else if (src_channels == 6) {
+					float fl = s16_to_float(p + 0);
+					float c  = s16_to_float(p + 2);
+					float fr = s16_to_float(p + 4);
+					float sl = s16_to_float(p + 6);
+					float sr = s16_to_float(p + 8);
+					// float lfe = s16_to_float(p + 10); // ignore or very low
+
+					l = fl + 0.707f * c + 0.707f * sl;
+					r = fr + 0.707f * c + 0.707f * sr;
 				}
 				else {
-					/* Downmix: sum pairs */
-					l = s16_to_float(p);       // ch0
-					r = s16_to_float(p + 2);   // ch1
-
-					if (src_channels >= 4) {
-						l += s16_to_float(p + 4);   // ch2
-						r += s16_to_float(p + 6);   // ch3
-						l *= 0.5f;
-						r *= 0.5f;
+					// Fallback: average pairs
+					for (int ch = 0; ch < src_channels; ch++) {
+						float v = s16_to_float(p + ch * 2);
+						if (ch & 1) r += v;
+						else        l += v;
 					}
+					float norm = 1.0f / (src_channels / 2.0f);
+					l *= norm;
+					r *= norm;
 				}
 
 				stereo_buf[f * 2 + 0] = (int16_t)(l * 32767.0f);
