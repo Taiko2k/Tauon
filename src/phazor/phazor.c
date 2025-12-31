@@ -854,6 +854,10 @@ void read_to_buffer_16in32_fs(int32_t src[], int n_samples) {
 	resample_to_buffer(f);
 }
 
+static inline float s16_to_float(const unsigned char *p) {
+	return ((int16_t)((p[1] << 8) | p[0])) / 32768.0f;
+}
+
 void read_to_buffer_char16_resample(char src[], int n_bytes) {
 
 	int i = 0;
@@ -2411,11 +2415,51 @@ void pump_decode() {
 
 		unsigned int done;
 		int stream;
-		done = ov_read(&vf, parse_buffer, 2048 * 2, 0, 2, 1, &stream);
+		done = ov_read(&vf, parse_buffer, sizeof(parse_buffer), 0, 2, 1, &stream);
 
-		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_char16(parse_buffer, done);
-		pthread_mutex_unlock(&buffer_mutex);
+		if (done > 0) {
+			pthread_mutex_lock(&buffer_mutex);
+
+			int bytes_per_frame = src_channels * 2;
+			int frames = done / bytes_per_frame;
+
+			const unsigned char *p = (const unsigned char *)parse_buffer;
+
+			for (int f = 0; f < frames; f++) {
+				float l = 0.0f;
+				float r = 0.0f;
+
+				if (src_channels == 1) {
+					l = r = s16_to_float(p);
+				}
+				else if (src_channels == 2) {
+					l = s16_to_float(p);
+					r = s16_to_float(p + 2);
+				}
+				else {
+					/* Downmix: sum pairs */
+					l = s16_to_float(p);       // ch0
+					r = s16_to_float(p + 2);   // ch1
+
+					if (src_channels >= 4) {
+						l += s16_to_float(p + 4);   // ch2
+						r += s16_to_float(p + 6);   // ch3
+						l *= 0.5f;
+						r *= 0.5f;
+					}
+				}
+
+				bfl[high] = l;
+				bfr[high] = r;
+				fade_fx();
+				high++;
+
+				p += bytes_per_frame;
+			}
+
+			buff_cycle();
+			pthread_mutex_unlock(&buffer_mutex);
+		}
 		if (done == 0) decoder_eos();
 
 	} else if (codec == WAVPACK) {
