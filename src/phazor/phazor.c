@@ -130,6 +130,9 @@ bool out_thread_running = false;
 bool called_to_stop_device = false;
 bool device_stopped = false;
 bool signaled_device_unavailable = false;
+bool pulse_connected = false;
+static volatile bool pw_need_restart = false;
+static volatile bool pw_running = false;
 
 float fadefl[BUFF_SIZE];
 float fadefr[BUFF_SIZE];
@@ -298,6 +301,8 @@ FILE *d_file;
 	struct pipe_devices_struct pipe_devices = {0};
 
 	static void registry_event_remove_global(void *data, uint32_t id) {
+		bool removed_active_sink = false;
+
 		pthread_mutex_lock(&pipe_devices_mutex);
 		for (size_t i = 0; i < pipe_devices.device_count; i++) {
 			if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
@@ -306,11 +311,22 @@ FILE *d_file;
 					pipe_devices.devices[j] = pipe_devices.devices[j + 1];
 				}
 				pipe_devices.device_count--;
-				printf("Removed device with ID: %u\n", id);
+				printf("Removed device with ID: %u (%s)\n", id, pipe_devices.devices[i].description);
+				removed_active_sink = true;
 				break;
 			}
 		}
 		pthread_mutex_unlock(&pipe_devices_mutex);
+
+		/* IMPORTANT: handle stream loss OUTSIDE the mutex */
+		if (removed_active_sink && global_stream) {
+			fprintf(stderr, "Active sink removed — disconnecting PipeWire stream\n");
+
+			pw_stream_disconnect(global_stream);
+
+			/* Mark output as dead so start_out() will reconnect */
+			pulse_connected = false;
+		}
 	}
 
 	static void registry_event_global(
@@ -375,9 +391,23 @@ FILE *d_file;
 		}
 	}
 
+	static void on_core_error(void *data, uint32_t id, int seq, int res, const char *message) {
+		fprintf(
+			stderr, "PipeWire core error: id=%u res=%d (%s) msg=%s\n",
+			id, res, spa_strerror(res), message ? message : "(null)");
+		// Mark disconnected so the app can attempt reconnect
+		pulse_connected = false;
+
+		if (res == -EPIPE || res == -ECONNRESET) {
+			pw_need_restart = true;
+			if (loop) pw_main_loop_quit(loop);
+		}
+	}
+
 	static const struct pw_core_events core_events = {
 		PW_VERSION_CORE_EVENTS,
 		.done = on_core_done,
+		.error = on_core_error,
 	};
 #endif
 
@@ -1110,8 +1140,6 @@ FLAC__StreamDecoderInitStatus status;
 
 // -----------------------------------------------------------------------------------
 
-bool pulse_connected = false;
-
 void stop_decoder() {
 
 	if (decoder_allocated == 0) return;
@@ -1326,14 +1354,29 @@ int get_audio(int max, float* buff) {
 
 	}
 
+	static void on_stream_state_changed(
+		void *data,
+		enum pw_stream_state old,
+		enum pw_stream_state state,
+		const char *error) {
+		if (
+			state == PW_STREAM_STATE_ERROR ||
+			state == PW_STREAM_STATE_UNCONNECTED) {
+			fprintf(stderr, "PipeWire stream lost (%s)\n", error ? error : "no error");
+			pulse_connected = false;
+		}
+	}
+
 	static const struct pw_stream_events stream_events = {
 		PW_VERSION_STREAM_EVENTS,
 		.process = on_process,
+		.state_changed = on_stream_state_changed,
 	};
 
 
 	void *pipewire_main_loop_thread(void *thread_id) {
 
+		pw_running = true;
 		printf("Begin Pipewire init...\n");
 		pw_init(NULL, NULL);
 
@@ -1427,6 +1470,7 @@ int get_audio(int max, float* buff) {
 		}
 		pw_deinit();
 		//printf("Exit pipewire main loop\n");
+		pw_running = false;
 		return thread_id;
 	}
 #endif
@@ -2618,6 +2662,31 @@ void *main_loop(void *thread_id) {
 			on_device_unavailable();
 			signaled_device_unavailable = true;
 		}
+		#ifdef PIPE
+			if (pw_need_restart) {
+				pw_need_restart = false;
+
+				// Wait for pw thread to actually stop
+				if (pw_running) {
+					// loop will quit soon because we called pw_main_loop_quit()
+					while (pw_running) usleep(10000);
+				}
+
+				// Join old thread (safe if it already exited)
+				pthread_join(pw_thread, NULL);
+
+				// Reset enumeration readiness
+				enum_done = 0;
+
+				// Start fresh thread
+				if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+					fprintf(stderr, "Failed to restart PipeWire thread\n");
+				} else {
+					// Wait for new core sync
+					while (enum_done != 1) usleep(10000);
+				}
+			}
+		#endif
 
 		if (command != NONE) {
 			if (command == EXIT) {
