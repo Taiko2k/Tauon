@@ -2704,8 +2704,8 @@ void *main_loop(void *thread_id) {
 						//stop_out();
 						command = NONE;
 					}
-
 					break;
+
 				case RESUME:
 					if (mode == PAUSED) {
 						start_out();
@@ -2713,6 +2713,7 @@ void *main_loop(void *thread_id) {
 					}
 					command = NONE;
 					break;
+
 				case STOP:
 					if (mode == STOPPED) {
 						command = NONE;
@@ -2723,6 +2724,7 @@ void *main_loop(void *thread_id) {
 						end();
 					}
 					break;
+
 				case START:
 					if (mode == PLAYING) {
 						mode = RAMP_DOWN;
@@ -2732,7 +2734,6 @@ void *main_loop(void *thread_id) {
 					} else break;
 
 				case LOAD:
-
 					// Prepare for a crossfade if enabled and suitable
 					using_fade = false;
 					if (config_fade_jump == 1 && mode == PLAYING) {
@@ -2807,6 +2808,12 @@ void *main_loop(void *thread_id) {
 
 
 		if (command == SEEK) {
+			#ifdef PIPE
+				if (!pulse_connected || !pw_running) {
+					// No callback means gate won't hit 0 unless we force progress.
+					gate = 0;
+				}
+			#endif
 			if (mode == PLAYING) {
 				mode = RAMP_DOWN;
 
