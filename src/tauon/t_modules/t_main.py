@@ -24461,7 +24461,7 @@ class Over:
 				old = self.prefs.pipewire
 				self.prefs.pipewire = self.toggle_square(
 					x + round(self.gui.scale * 110), self.box_y + self.h - 50 * self.gui.scale,
-					self.prefs.pipewire, _("PipeWire (unstable)"))
+					self.prefs.pipewire, _("PipeWire"))
 				self.prefs.pipewire = self.toggle_square(
 					x, self.box_y + self.h - 50 * self.gui.scale,
 					self.prefs.pipewire ^ True, _("PulseAudio")) ^ True
@@ -39806,7 +39806,7 @@ def load_prefs(bag: Bag) -> None:
 	# prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
 	prefs.pipewire = cf.sync_add(
 		"bool", "use-pipewire", prefs.pipewire,
-		"Experimental setting to use Pipewire native only.")
+		"Use Pipewire native only.")
 
 	prefs.seek_interval = cf.sync_add(
 		"int", "seek-interval", prefs.seek_interval,
