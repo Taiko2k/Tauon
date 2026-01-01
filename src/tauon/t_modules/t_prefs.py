@@ -420,7 +420,7 @@ class Prefs:
 	search_on_letter = True
 
 	gallery_combine_disc = False
-	pipewire = False
+	pipewire: bool = True
 	tidal_quality = 1
 
 	jump_start = True
