@@ -203,6 +203,8 @@ float peak_roll_l = 0.;
 float peak_r = 0.;
 float peak_roll_r = 0.;
 
+float gate = 1.0;  // Used for ramping
+
 int config_fast_seek = 0;
 int config_dev_buffer = 80;
 int config_fade_jump = 1;
@@ -1177,8 +1179,6 @@ void stop_decoder() {
 	decoder_allocated = 0;
 }
 
-float gate = 1.0;  // Used for ramping
-
 int get_audio(int max, float* buff) {
 		int b = 0;
 
@@ -1584,7 +1584,11 @@ int disconnect_pulse() {
 	static int pipe_connect(
 		struct spa_loop *loop, bool async, uint32_t seq, const void *_data, size_t size, void *user_data
 	) {
-
+		enum pw_stream_state st = pw_stream_get_state(global_stream, NULL);
+		if (st != PW_STREAM_STATE_UNCONNECTED) {
+			fprintf(stderr, "pipe_connect: stream not unconnected (state=%d)\n", st);
+			return -EBUSY;
+		}
 		struct spa_pod_builder b = { 0 };
 		uint8_t buffer[POD_BUFFER_SIZE];
 		const struct spa_pod *params[1];
