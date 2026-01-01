@@ -304,17 +304,27 @@ FILE *d_file;
 
 	static void registry_event_remove_global(void *data, uint32_t id) {
 		bool removed_active_sink = false;
+		uint32_t stream_node_id = PW_ID_ANY;
+
+		/* Determine the node ID currently used by the stream */
+		if (global_stream) {
+			stream_node_id = pw_stream_get_node_id(global_stream);
+		}
 
 		pthread_mutex_lock(&pipe_devices_mutex);
 		for (size_t i = 0; i < pipe_devices.device_count; i++) {
 			if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
+				/* Check if THIS is the active sink */
+				printf("Removed device with ID: %u (%s)\n", id, pipe_devices.devices[i].description);
+				if (id == stream_node_id) {
+					printf("Active sink removed!");
+					removed_active_sink = true;
+				}
 				// Shift remaining devices to fill the gap
 				for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
 					pipe_devices.devices[j] = pipe_devices.devices[j + 1];
 				}
 				pipe_devices.device_count--;
-				printf("Removed device with ID: %u (%s)\n", id, pipe_devices.devices[i].description);
-				removed_active_sink = true;
 				break;
 			}
 		}
@@ -2689,6 +2699,10 @@ void *main_loop(void *thread_id) {
 					// Wait for new core sync
 					while (enum_done != 1) usleep(10000);
 				}
+				if (mode == PLAYING || mode == RAMP_DOWN) {
+					fprintf(stderr, "Reconnecting output after PipeWire restart\n");
+					start_out();
+				}
 			}
 		#endif
 
@@ -2808,6 +2822,7 @@ void *main_loop(void *thread_id) {
 
 
 		if (command == SEEK) {
+			//printf("command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d\n", command, mode, gate, pulse_connected, pw_running);
 			#ifdef PIPE
 				if (!pulse_connected || !pw_running) {
 					// No callback means gate won't hit 0 unless we force progress.
@@ -2825,8 +2840,6 @@ void *main_loop(void *thread_id) {
 				position_count = current_sample_rate * (seek_request_ms / 1000.0);
 
 			} else if (mode == PAUSED) {
-
-
 				//if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
 				decode_seek(seek_request_ms, current_sample_rate);
 
@@ -2843,6 +2856,7 @@ void *main_loop(void *thread_id) {
 
 			} else if (mode != RAMP_DOWN) {
 				printf("pa: fixme - cannot seek at this time\n");
+				//printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
 				command = NONE;
 			}
 
@@ -3035,11 +3049,16 @@ EXPORT void wait_for_command() {
 }
 
 EXPORT int seek(int ms_absolute, int flag) {
-
 	while (command != NONE) {
 		usleep(1000);
 	}
 
+	// This is checked on the Python side, but race conditions can happen,
+	// so check again
+	//if (mode == ENDING || mode == STOPPED) {
+	//	printf("command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d\n", command, mode, gate, pulse_connected, pw_running);
+	//	return 1;
+	//}
 	config_fast_seek = flag;
 	seek_request_ms = ms_absolute;
 	command = SEEK;
