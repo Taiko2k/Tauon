@@ -4,6 +4,8 @@ Changelog
 
 ### Upcoming
  - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
+ - **Fixed** Phazor deadlocks when PipeWire server goes away
+ - **Fixed** Phazor not reconnecting to PipeWire and Tauon not resuming playback when PW goes away
  - **Fixed** Tidal integration on newer tidalapi versions
  - **Fixed** Crash when exporting albums as CSV
  - **Fixed** Couple crashes under specific scenarios
