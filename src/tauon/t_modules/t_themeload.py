@@ -332,12 +332,12 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 
 
 class Drawable:
-	def __int__(self) -> None:
+	def __init__(self) -> None:
 		self.location = 1
 		self.x = 0
 		self.y = 0
 		self.w = 100
-		self.y = 100
+		self.h = 100
 		self.rect = None
 		self.texture = None
 
