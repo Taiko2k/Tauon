@@ -854,6 +854,9 @@ def player4(tauon: Tauon) -> None:
 			gui.level_update = True
 
 		if chrome_mode:
+			if tauon.chrome is None:
+				logging.critical("This should not happen, tauon.chrome was None")
+				return
 			if pctl.playerCommandReady:
 				command = pctl.playerCommand
 				# logging.info(command)
