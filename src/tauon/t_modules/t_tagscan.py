@@ -1,6 +1,8 @@
 """Tauon Music Box - Tag Module
 
 The purpose of this module is to read metadata from FLAC, OGG, OPUS, APE and WV files
+
+There is additional parsing logic in in Tauon.tag_scan()
 """
 
 # Copyright © 2015-2019, Taiko2k captain(dot)gxj(at)gmail.com
@@ -1073,8 +1075,7 @@ class M4a(TrackFile):
 			if name == b"":
 				return False
 
-			# logging.info("NAME: ", end="")
-			# logging.info(tail + b"." + name)
+			#logging.info(f"NAME: {tail}{b'.'}{name}")
 
 			# Too lazy to parse each sub atom, lets just grab the data out the sub atom and
 			# hope the file is formatted normally
@@ -1128,13 +1129,11 @@ class M4a(TrackFile):
 				self.disc_number = int(meta_get(f, size)[3])
 
 			# if tail[-4:] == b"----":
-			#
-			#
-			# 	if name == b'name':
+			# 	s_name: bytes = b""
+			# 	if name == b"name":
 			# 		s_name = f.read(size - 8)
 			# 		f.seek((size - 8) * -1, 1)
-			#
-			# 	elif name == b'data' and s_name != b"":
+			# 	elif name == b"data" and s_name != b"":
 			# 		data = f.read(size - 8)
 			# 		f.seek((size - 8) * -1, 1)
 			# 		logging.info(s_name)
