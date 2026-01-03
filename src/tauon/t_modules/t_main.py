@@ -16346,6 +16346,23 @@ class Tauon:
 							if t[1]:
 								nt.disc_total = str(t[1])
 
+						if "----:com.apple.iTunes:replaygain_track_gain" in tags:
+							nt.misc["replaygain_track_gain"] = float(in_get(
+								"----:com.apple.iTunes:replaygain_track_gain",
+								tags).decode().lower().strip(" db"))
+						if "----:com.apple.iTunes:replaygain_track_peak" in tags:
+							nt.misc["replaygain_track_peak"] = float(in_get(
+								"----:com.apple.iTunes:replaygain_track_peak",
+								tags).decode())
+						if "----:com.apple.iTunes:replaygain_album_gain" in tags:
+							nt.misc["replaygain_album_gain"] = float(in_get(
+								"----:com.apple.iTunes:replaygain_album_gain",
+								tags).decode().lower().strip(" db"))
+						if "----:com.apple.iTunes:replaygain_album_peak" in tags:
+							nt.misc["replaygain_album_peak"] = float(in_get(
+								"----:com.apple.iTunes:replaygain_album_peak",
+								tags).decode())
+
 						if "----:com.apple.iTunes:MusicBrainz Track Id" in tags:
 							nt.misc["musicbrainz_recordingid"] = in_get(
 								"----:com.apple.iTunes:MusicBrainz Track Id",
