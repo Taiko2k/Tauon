@@ -3,6 +3,8 @@ Changelog
 ---------
 
 ### Upcoming
+
+ - **Added** Jellyfin import timeout to GUI settings
  - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
  - **Fixed** Tidal integration on newer tidalapi versions
  - **Fixed** Crash when exporting albums as CSV
