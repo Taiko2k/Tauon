@@ -120,149 +120,6 @@ PyMODINIT_FUNC PyInit_phazor(void) {
 #define BUFF_SIZE 240000  // Decoded data buffer size
 #define BUFF_SAFE 100000  // Ensure there is this much space free in the buffer
 
-#ifdef MINI
-	ma_context_config c_config;
-	ma_device_config config;
-	ma_device device;
-#endif
-
-
-#ifdef PIPE
-	pthread_t pw_thread;
-	pthread_mutex_t pipe_devices_mutex;
-	struct pw_main_loop *loop;
-	struct pw_context *context;
-	struct pw_core *core;
-	struct pw_registry *registry;
-	struct spa_hook registry_listener;
-	struct spa_hook core_listener;
-	struct pw_stream *global_stream;
-	int enum_done = 0;
-	int pipe_set_samplerate = 48000;
-	#define MAX_DEVICES 64
-	#define POD_BUFFER_SIZE 2048
-	struct device_info {
-		uint32_t id;
-		char name[256];
-		char description[256];
-	};
-	struct pipe_devices_struct {
-		struct device_info devices[MAX_DEVICES];
-		int device_count;
-	};
-
-	struct pipe_devices_struct pipe_devices = {0};
-
-	static void registry_event_remove_global(void *data, uint32_t id) {
-		pthread_mutex_lock(&pipe_devices_mutex);
-		for (size_t i = 0; i < pipe_devices.device_count; i++) {
-			if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
-				// Shift remaining devices to fill the gap
-				for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
-					pipe_devices.devices[j] = pipe_devices.devices[j + 1];
-				}
-				pipe_devices.device_count--;
-				printf("Removed device with ID: %u\n", id);
-				break;
-			}
-		}
-		pthread_mutex_unlock(&pipe_devices_mutex);
-	}
-
-	static void registry_event_global(
-		void *data, uint32_t id,
-		uint32_t permissions, const char *type, uint32_t version,
-		const struct spa_dict *props)
-	{
-
-		if (props == NULL || type == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
-			return;
-
-
-		//printf("object: id:%u type:%s/%d\n", id, type, version);
-		const char *media_class;
-
-		media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
-		if (media_class == NULL)
-			return;
-
-		if (spa_streq(media_class, "Audio/Sink")) {
-
-			pthread_mutex_lock(&pipe_devices_mutex);
-			if (pipe_devices.device_count >= MAX_DEVICES) {
-				printf("Error: Max devices\n");
-				pthread_mutex_unlock(&pipe_devices_mutex);
-				return;
-			}
-			const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
-			const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
-			if (!name || !description) {
-				printf("Error: Missing name or description for device\n");
-				pthread_mutex_unlock(&pipe_devices_mutex);
-				return;
-			}
-
-			// Check if already added
-			for (size_t i = 0; i < pipe_devices.device_count; i++) {
-				if (pipe_devices.devices[i].id == id) {
-					pthread_mutex_unlock(&pipe_devices_mutex);
-					return;
-					}
-				}
-			pipe_devices.devices[pipe_devices.device_count].id = id;
-			snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
-			snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
-			pipe_devices.device_count++;
-			printf("Found audio sink: %s (%s)\n", name, description);
-			pthread_mutex_unlock(&pipe_devices_mutex);
-
-		}
-	}
-
-	static const struct pw_registry_events registry_events = {
-		PW_VERSION_REGISTRY_EVENTS,
-		.global = registry_event_global,
-		.global_remove = registry_event_remove_global,
-	};
-
-	static void on_core_done(void *userdata, uint32_t id, int seq) {
-		if (id == PW_ID_CORE) {
-			enum_done = 1;
-		}
-	}
-
-	static const struct pw_core_events core_events = {
-		PW_VERSION_CORE_EVENTS,
-		.done = on_core_done,
-	};
-#endif
-
-float bfl[BUFF_SIZE];
-float bfr[BUFF_SIZE];
-int low = 0;
-int high = 0;
-int high_mark = BUFF_SIZE - BUFF_SAFE;
-int watermark = BUFF_SIZE - BUFF_SAFE;
-
-int get_buff_fill() {
-	if (low <= high) return high - low;
-	return (watermark - low) + high;
-}
-
-void buff_cycle() {
-	if (high > high_mark) {
-		watermark = high;
-		high = 0;
-	}
-	if (low >= watermark) low = 0;
-}
-
-void buff_reset() {
-	low = 0;
-	high = 0;
-	watermark = high_mark;
-}
-
 #define VIS_SIDE_MAX 10000
 float vis_side_buffer[VIS_SIDE_MAX];
 int vis_side_fill = 0;
@@ -273,6 +130,9 @@ bool out_thread_running = false;
 bool called_to_stop_device = false;
 bool device_stopped = false;
 bool signaled_device_unavailable = false;
+bool pulse_connected = false;
+static volatile bool pw_need_restart = false;
+static volatile bool pw_running = false;
 
 float fadefl[BUFF_SIZE];
 float fadefr[BUFF_SIZE];
@@ -343,6 +203,8 @@ float peak_roll_l = 0.;
 float peak_r = 0.;
 float peak_roll_r = 0.;
 
+float gate = 1.0;  // Used for ramping
+
 int config_fast_seek = 0;
 int config_dev_buffer = 80;
 int config_fade_jump = 1;
@@ -406,6 +268,187 @@ int buffering = 0;
 int flac_got_rate = 0;
 
 FILE *d_file;
+
+#ifdef MINI
+	ma_context_config c_config;
+	ma_device_config config;
+	ma_device device;
+#endif
+
+
+#ifdef PIPE
+	pthread_t pw_thread;
+	pthread_mutex_t pipe_devices_mutex;
+	struct pw_main_loop *loop;
+	struct pw_context *context;
+	struct pw_core *core;
+	struct pw_registry *registry;
+	struct spa_hook registry_listener;
+	struct spa_hook core_listener;
+	struct pw_stream *global_stream;
+	int enum_done = 0;
+	int pipe_set_samplerate = 48000;
+	#define MAX_DEVICES 64
+	#define POD_BUFFER_SIZE 2048
+	struct device_info {
+		uint32_t id;
+		char name[256];
+		char description[256];
+	};
+	struct pipe_devices_struct {
+		struct device_info devices[MAX_DEVICES];
+		int device_count;
+	};
+
+	struct pipe_devices_struct pipe_devices = {0};
+
+	static void registry_event_remove_global(void *data, uint32_t id) {
+		bool removed_active_sink = false;
+		uint32_t stream_node_id = PW_ID_ANY;
+
+		/* Determine the node ID currently used by the stream */
+		if (global_stream) {
+			stream_node_id = pw_stream_get_node_id(global_stream);
+		}
+
+		pthread_mutex_lock(&pipe_devices_mutex);
+		for (size_t i = 0; i < pipe_devices.device_count; i++) {
+			if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
+				/* Check if THIS is the active sink */
+				printf("Removed device with ID: %u (%s)\n", id, pipe_devices.devices[i].description);
+				if (id == stream_node_id) {
+					printf("Active sink removed!");
+					removed_active_sink = true;
+				}
+				// Shift remaining devices to fill the gap
+				for (size_t j = i; j < pipe_devices.device_count - 1; j++) {
+					pipe_devices.devices[j] = pipe_devices.devices[j + 1];
+				}
+				pipe_devices.device_count--;
+				break;
+			}
+		}
+		pthread_mutex_unlock(&pipe_devices_mutex);
+
+		/* IMPORTANT: handle stream loss OUTSIDE the mutex */
+		if (removed_active_sink && global_stream) {
+			fprintf(stderr, "Active sink removed — disconnecting PipeWire stream\n");
+
+			pw_stream_disconnect(global_stream);
+
+			/* Mark output as dead so start_out() will reconnect */
+			pulse_connected = false;
+		}
+	}
+
+	static void registry_event_global(
+		void *data, uint32_t id,
+		uint32_t permissions, const char *type, uint32_t version,
+		const struct spa_dict *props)
+	{
+
+		if (props == NULL || type == NULL || !spa_streq(type, PW_TYPE_INTERFACE_Node))
+			return;
+
+
+		//printf("object: id:%u type:%s/%d\n", id, type, version);
+		const char *media_class;
+
+		media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+		if (media_class == NULL)
+			return;
+
+		if (spa_streq(media_class, "Audio/Sink")) {
+
+			pthread_mutex_lock(&pipe_devices_mutex);
+			if (pipe_devices.device_count >= MAX_DEVICES) {
+				printf("Error: Max devices\n");
+				pthread_mutex_unlock(&pipe_devices_mutex);
+				return;
+			}
+			const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
+			const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
+			if (!name || !description) {
+				printf("Error: Missing name or description for device\n");
+				pthread_mutex_unlock(&pipe_devices_mutex);
+				return;
+			}
+
+			// Check if already added
+			for (size_t i = 0; i < pipe_devices.device_count; i++) {
+				if (pipe_devices.devices[i].id == id) {
+					pthread_mutex_unlock(&pipe_devices_mutex);
+					return;
+					}
+				}
+			pipe_devices.devices[pipe_devices.device_count].id = id;
+			snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
+			snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
+			pipe_devices.device_count++;
+			printf("Found audio sink: %s (%s)\n", name, description);
+			pthread_mutex_unlock(&pipe_devices_mutex);
+
+		}
+	}
+
+	static const struct pw_registry_events registry_events = {
+		PW_VERSION_REGISTRY_EVENTS,
+		.global = registry_event_global,
+		.global_remove = registry_event_remove_global,
+	};
+
+	static void on_core_done(void *userdata, uint32_t id, int seq) {
+		if (id == PW_ID_CORE) {
+			enum_done = 1;
+		}
+	}
+
+	static void on_core_error(void *data, uint32_t id, int seq, int res, const char *message) {
+		fprintf(
+			stderr, "PipeWire core error: id=%u res=%d (%s) msg=%s\n",
+			id, res, spa_strerror(res), message ? message : "(null)");
+		// Mark disconnected so the app can attempt reconnect
+		pulse_connected = false;
+
+		if (res == -EPIPE || res == -ECONNRESET) {
+			pw_need_restart = true;
+			if (loop) pw_main_loop_quit(loop);
+		}
+	}
+
+	static const struct pw_core_events core_events = {
+		PW_VERSION_CORE_EVENTS,
+		.done = on_core_done,
+		.error = on_core_error,
+	};
+#endif
+
+float bfl[BUFF_SIZE];
+float bfr[BUFF_SIZE];
+int low = 0;
+int high = 0;
+int high_mark = BUFF_SIZE - BUFF_SAFE;
+int watermark = BUFF_SIZE - BUFF_SAFE;
+
+int get_buff_fill() {
+	if (low <= high) return high - low;
+	return (watermark - low) + high;
+}
+
+void buff_cycle() {
+	if (high > high_mark) {
+		watermark = high;
+		high = 0;
+	}
+	if (low >= watermark) low = 0;
+}
+
+void buff_reset() {
+	low = 0;
+	high = 0;
+	watermark = high_mark;
+}
+
 
 // Misc ----------------------------------------------------------
 
@@ -1109,8 +1152,6 @@ FLAC__StreamDecoderInitStatus status;
 
 // -----------------------------------------------------------------------------------
 
-bool pulse_connected = false;
-
 void stop_decoder() {
 
 	if (decoder_allocated == 0) return;
@@ -1147,8 +1188,6 @@ void stop_decoder() {
 	//src_reset(src);
 	decoder_allocated = 0;
 }
-
-float gate = 1.0;  // Used for ramping
 
 int get_audio(int max, float* buff) {
 		int b = 0;
@@ -1325,14 +1364,29 @@ int get_audio(int max, float* buff) {
 
 	}
 
+	static void on_stream_state_changed(
+		void *data,
+		enum pw_stream_state old,
+		enum pw_stream_state state,
+		const char *error) {
+		if (
+			state == PW_STREAM_STATE_ERROR ||
+			state == PW_STREAM_STATE_UNCONNECTED) {
+			fprintf(stderr, "PipeWire stream lost (%s)\n", error ? error : "no error");
+			pulse_connected = false;
+		}
+	}
+
 	static const struct pw_stream_events stream_events = {
 		PW_VERSION_STREAM_EVENTS,
 		.process = on_process,
+		.state_changed = on_stream_state_changed,
 	};
 
 
 	void *pipewire_main_loop_thread(void *thread_id) {
 
+		pw_running = true;
 		printf("Begin Pipewire init...\n");
 		pw_init(NULL, NULL);
 
@@ -1426,6 +1480,7 @@ int get_audio(int max, float* buff) {
 		}
 		pw_deinit();
 		//printf("Exit pipewire main loop\n");
+		pw_running = false;
 		return thread_id;
 	}
 #endif
@@ -1539,7 +1594,11 @@ int disconnect_pulse() {
 	static int pipe_connect(
 		struct spa_loop *loop, bool async, uint32_t seq, const void *_data, size_t size, void *user_data
 	) {
-
+		enum pw_stream_state st = pw_stream_get_state(global_stream, NULL);
+		if (st != PW_STREAM_STATE_UNCONNECTED) {
+			fprintf(stderr, "pipe_connect: stream not unconnected (state=%d)\n", st);
+			return -EBUSY;
+		}
 		struct spa_pod_builder b = { 0 };
 		uint8_t buffer[POD_BUFFER_SIZE];
 		const struct spa_pod *params[1];
@@ -2617,6 +2676,35 @@ void *main_loop(void *thread_id) {
 			on_device_unavailable();
 			signaled_device_unavailable = true;
 		}
+		#ifdef PIPE
+			if (pw_need_restart) {
+				pw_need_restart = false;
+
+				// Wait for pw thread to actually stop
+				if (pw_running) {
+					// loop will quit soon because we called pw_main_loop_quit()
+					while (pw_running) usleep(10000);
+				}
+
+				// Join old thread (safe if it already exited)
+				pthread_join(pw_thread, NULL);
+
+				// Reset enumeration readiness
+				enum_done = 0;
+
+				// Start fresh thread
+				if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
+					fprintf(stderr, "Failed to restart PipeWire thread\n");
+				} else {
+					// Wait for new core sync
+					while (enum_done != 1) usleep(10000);
+				}
+				if (mode == PLAYING || mode == RAMP_DOWN) {
+					fprintf(stderr, "Reconnecting output after PipeWire restart\n");
+					start_out();
+				}
+			}
+		#endif
 
 		if (command != NONE) {
 			if (command == EXIT) {
@@ -2630,8 +2718,8 @@ void *main_loop(void *thread_id) {
 						//stop_out();
 						command = NONE;
 					}
-
 					break;
+
 				case RESUME:
 					if (mode == PAUSED) {
 						start_out();
@@ -2639,6 +2727,7 @@ void *main_loop(void *thread_id) {
 					}
 					command = NONE;
 					break;
+
 				case STOP:
 					if (mode == STOPPED) {
 						command = NONE;
@@ -2649,6 +2738,7 @@ void *main_loop(void *thread_id) {
 						end();
 					}
 					break;
+
 				case START:
 					if (mode == PLAYING) {
 						mode = RAMP_DOWN;
@@ -2658,7 +2748,6 @@ void *main_loop(void *thread_id) {
 					} else break;
 
 				case LOAD:
-
 					// Prepare for a crossfade if enabled and suitable
 					using_fade = false;
 					if (config_fade_jump == 1 && mode == PLAYING) {
@@ -2733,6 +2822,13 @@ void *main_loop(void *thread_id) {
 
 
 		if (command == SEEK) {
+			//printf("command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d\n", command, mode, gate, pulse_connected, pw_running);
+			#ifdef PIPE
+				if (!pulse_connected || !pw_running) {
+					// No callback means gate won't hit 0 unless we force progress.
+					gate = 0;
+				}
+			#endif
 			if (mode == PLAYING) {
 				mode = RAMP_DOWN;
 
@@ -2744,8 +2840,6 @@ void *main_loop(void *thread_id) {
 				position_count = current_sample_rate * (seek_request_ms / 1000.0);
 
 			} else if (mode == PAUSED) {
-
-
 				//if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
 				decode_seek(seek_request_ms, current_sample_rate);
 
@@ -2762,6 +2856,7 @@ void *main_loop(void *thread_id) {
 
 			} else if (mode != RAMP_DOWN) {
 				printf("pa: fixme - cannot seek at this time\n");
+				//printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
 				command = NONE;
 			}
 
@@ -2954,11 +3049,16 @@ EXPORT void wait_for_command() {
 }
 
 EXPORT int seek(int ms_absolute, int flag) {
-
 	while (command != NONE) {
 		usleep(1000);
 	}
 
+	// This is checked on the Python side, but race conditions can happen,
+	// so check again
+	//if (mode == ENDING || mode == STOPPED) {
+	//	printf("command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d\n", command, mode, gate, pulse_connected, pw_running);
+	//	return 1;
+	//}
 	config_fast_seek = flag;
 	seek_request_ms = ms_absolute;
 	command = SEEK;
