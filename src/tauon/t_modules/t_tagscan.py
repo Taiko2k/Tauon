@@ -385,7 +385,7 @@ class Flac(TrackFile):
 class Opus(TrackFile):
 	def __init__(self, file: str) -> None:
 		super().__init__()
-		self.filepath = file
+		self.filepath: str = file
 		self.length = 0
 
 	def get_more(self, f: BufferedReader, v: BytesIO) -> int:
