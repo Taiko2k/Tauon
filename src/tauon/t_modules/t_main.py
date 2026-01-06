@@ -5960,9 +5960,10 @@ class Tauon:
 		self.text_plex_pas     = TextBox2(tauon=self)
 		self.text_plex_ser     = TextBox2(tauon=self)
 
-		self.text_jelly_usr    = TextBox2(tauon=self)
-		self.text_jelly_pas    = TextBox2(tauon=self)
-		self.text_jelly_ser    = TextBox2(tauon=self)
+		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_pas:     TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_ser:     TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_timeout: TextBox2 = TextBox2(tauon=self)
 
 		self.text_koel_usr     = TextBox2(tauon=self)
 		self.text_koel_pas     = TextBox2(tauon=self)
@@ -24124,7 +24125,7 @@ class Over:
 		self.rg_view = False
 		self.sync_view = False
 
-		self.account_text_field = -1
+		self.account_text_field: int = -1
 
 		self.themes = []
 		self.view_supporters = False
@@ -24478,7 +24479,7 @@ class Over:
 				old = self.prefs.pipewire
 				self.prefs.pipewire = self.toggle_square(
 					x + round(self.gui.scale * 110), self.box_y + self.h - 50 * self.gui.scale,
-					self.prefs.pipewire, _("PipeWire (unstable)"))
+					self.prefs.pipewire, _("PipeWire"))
 				self.prefs.pipewire = self.toggle_square(
 					x, self.box_y + self.h - 50 * self.gui.scale,
 					self.prefs.pipewire ^ True, _("PulseAudio")) ^ True
@@ -25463,6 +25464,20 @@ class Over:
 				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.jelly_server_url = tauon.text_jelly_ser.text
 
+			y += round(23 * gui.scale)
+			ddt.text((x + 0 * gui.scale, y), _("Import timeout"), colours.box_text_label, 11)
+			y += round(19 * gui.scale)
+			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+			self.fields.add(rect1)
+			if self.coll(rect1) and (self.click or inp.level_2_right_click):
+				self.account_text_field = 3
+			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+			tauon.text_jelly_timeout.text = str(prefs.jelly_timeout)
+			tauon.text_jelly_timeout.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 3,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
+			prefs.jelly_timeout = int(tauon.text_jelly_timeout.text)
+
 			y += round(30 * gui.scale)
 
 			self.button(x, y, _("Import music to playlist"), tauon.jellyfin_get_library_thread)
@@ -25479,7 +25494,7 @@ class Over:
 				else:
 					tauon.jellyfin_get_playlists_thread()
 
-			y += round(35 * gui.scale)
+			x += round(140 * gui.scale)
 			if self.button(x, y, _("Test connectivity")):
 				self.tauon.jellyfin.test()
 
@@ -38331,7 +38346,7 @@ class TimedLyricsEdit:
 				self.pctl.decode_time = self.structure[line_number][1] + self.prefs.sync_lyrics_time_offset/1000
 				self.pctl.new_time = self.pctl.decode_time
 				self.pctl.playing_time = self.pctl.decode_time
-				self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
+				_ = self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
 				if not active:
 					self.check = None
 			#self.scroll_position += (line_number - self.line_active) * self.yy
@@ -38731,7 +38746,7 @@ class TimedLyricsEdit:
 					self.pctl.decode_time = self.structure[self.line_active - self.inp.key_up_press + self.inp.key_down_press][1] + self.prefs.sync_lyrics_time_offset/1000
 					self.pctl.new_time = self.pctl.decode_time
 					self.pctl.playing_time = self.pctl.decode_time
-					self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
+					_ = self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
 					self.alted = True
 			elif self.alt_timer.get() < 0.3 and not self.alted and not (self.inp.key_lalt or self.inp.key_ralt) and self.structure[self.line_active][1] >= 0:
 				if self.pctl.playing_state == PlayingState.PLAYING:
@@ -38741,7 +38756,7 @@ class TimedLyricsEdit:
 					self.pctl.decode_time = self.structure[self.line_active][1] + self.prefs.sync_lyrics_time_offset/1000
 					self.pctl.new_time = self.pctl.decode_time
 					self.pctl.playing_time = self.pctl.decode_time
-					self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
+					_ = self.tauon.aud.seek(int((self.pctl.decode_time) * 1000), self.prefs.pa_fast_seek)
 				self.alted = True
 			elif self.alt_timer.get() > 0.3:
 				self.alted = False
@@ -39823,7 +39838,7 @@ def load_prefs(bag: Bag) -> None:
 	# prefs.backend = cf.sync_add("int", "audio-backend", prefs.backend, "4: Built in backend (Phazor), 2: GStreamer")
 	prefs.pipewire = cf.sync_add(
 		"bool", "use-pipewire", prefs.pipewire,
-		"Experimental setting to use Pipewire native only.")
+		"Use Pipewire native only.")
 
 	prefs.seek_interval = cf.sync_add(
 		"int", "seek-interval", prefs.seek_interval,

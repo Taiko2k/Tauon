@@ -23,7 +23,7 @@ import io
 import json
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import sdl3
 from PIL import Image
@@ -34,8 +34,12 @@ if TYPE_CHECKING:
 	from pathlib import Path
 
 	from tauon.t_modules.t_draw import TDraw
-	from tauon.t_modules.t_main import ColoursClass, Tauon
+	from tauon.t_modules.t_main import ColoursClass, Directories, PlayerCtl, Tauon
+	from tauon.t_modules.t_prefs import Prefs
 
+
+class GetThemesFn(Protocol):
+	def __call__(self, *, dirs: Directories, deco: bool) -> list[str] | dict[str, str]: ...
 
 def get_colour_from_line(cline: str) -> ColourRGBA:
 	colour = [-1, -1, -1, -1]
@@ -332,23 +336,24 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 
 
 class Drawable:
-	def __int__(self) -> None:
+	def __init__(self) -> None:
 		self.location = 1
 		self.x = 0
 		self.y = 0
 		self.w = 100
-		self.y = 100
+		self.h = 100
 		self.rect = None
 		self.texture = None
 
 
 class Deco:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
+		self.tauon: Tauon = tauon
 		self.renderer = None
-		self.pctl = tauon.pctl
-		self.prefs = tauon.prefs
-		self.drawables = []
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs: Prefs = tauon.prefs
+		self.drawables: list[Drawable] = []
+		self.get_themes: GetThemesFn
 
 	def unload(self) -> None:
 		for item in self.drawables:
