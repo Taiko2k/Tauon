@@ -636,13 +636,13 @@ def player4(tauon: Tauon) -> None:
 					if tp is not None:
 						p = tp
 
-		logging.debug("Detected Replay gain")
+		logging.debug("Detected ReplayGain")
 		logging.debug("GAIN: " + str(g))
 		logging.debug("PEAK: " + str(p))
 		logging.debug("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
 
 		if p == 0:
-			logging.warning("Detected replay gain peak of 0")
+			logging.warning("Detected ReplayGain peak of 0")
 			return 1
 		pctl.active_replaygain = g
 		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
