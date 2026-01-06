@@ -6,12 +6,15 @@ Changelog
 
  - **Added** Jellyfin import timeout to GUI settings
  - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
+ - **Fixed** Phazor deadlocks when PipeWire server goes away
+ - **Fixed** Phazor not reconnecting to PipeWire and Tauon not resuming playback when PW goes away
  - **Fixed** Tidal integration on newer tidalapi versions
  - **Fixed** Crash when exporting albums as CSV
  - **Fixed** Couple crashes under specific scenarios
  - **Fixed** Freeze when importing an invalid playlist
  - **Fixed** Playback of 4-channel VORBIS being half the speed
  - **Fixed** Radio playback of some ogg streams
+ - **Tweaked** Default to the PipeWire backend on Linux
 
 ### v8.2.3
 
