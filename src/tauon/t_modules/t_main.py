@@ -5960,9 +5960,10 @@ class Tauon:
 		self.text_plex_pas     = TextBox2(tauon=self)
 		self.text_plex_ser     = TextBox2(tauon=self)
 
-		self.text_jelly_usr    = TextBox2(tauon=self)
-		self.text_jelly_pas    = TextBox2(tauon=self)
-		self.text_jelly_ser    = TextBox2(tauon=self)
+		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_pas:     TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_ser:     TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_timeout: TextBox2 = TextBox2(tauon=self)
 
 		self.text_koel_usr     = TextBox2(tauon=self)
 		self.text_koel_pas     = TextBox2(tauon=self)
@@ -24107,7 +24108,7 @@ class Over:
 		self.rg_view = False
 		self.sync_view = False
 
-		self.account_text_field = -1
+		self.account_text_field: int = -1
 
 		self.themes = []
 		self.view_supporters = False
@@ -25446,6 +25447,20 @@ class Over:
 				width=rect1[2] - 8 * gui.scale, click=self.click)
 			prefs.jelly_server_url = tauon.text_jelly_ser.text
 
+			y += round(23 * gui.scale)
+			ddt.text((x + 0 * gui.scale, y), _("Import timeout"), colours.box_text_label, 11)
+			y += round(19 * gui.scale)
+			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+			self.fields.add(rect1)
+			if self.coll(rect1) and (self.click or inp.level_2_right_click):
+				self.account_text_field = 3
+			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+			tauon.text_jelly_timeout.text = str(prefs.jelly_timeout)
+			tauon.text_jelly_timeout.draw(
+				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 3,
+				width=rect1[2] - 8 * gui.scale, click=self.click)
+			prefs.jelly_timeout = int(tauon.text_jelly_timeout.text)
+
 			y += round(30 * gui.scale)
 
 			self.button(x, y, _("Import music to playlist"), tauon.jellyfin_get_library_thread)
@@ -25462,7 +25477,7 @@ class Over:
 				else:
 					tauon.jellyfin_get_playlists_thread()
 
-			y += round(35 * gui.scale)
+			x += round(140 * gui.scale)
 			if self.button(x, y, _("Test connectivity")):
 				self.tauon.jellyfin.test()
 
