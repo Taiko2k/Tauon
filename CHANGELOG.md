@@ -6,6 +6,7 @@ Changelog
 
  - **Added** Jellyfin import timeout to GUI settings
  - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
+ - **Added** ReplayGain support for M4A
  - **Fixed** Phazor deadlocks when PipeWire server goes away
  - **Fixed** Phazor not reconnecting to PipeWire and Tauon not resuming playback when PW goes away
  - **Fixed** Tidal integration on newer tidalapi versions
@@ -180,7 +181,7 @@ Changelog
 - **Tweaked** MPRIS and notifications to fallback to filename if metadata missing
 - **Tweaked** folder title to only show year in date
 - **Fixed** a repeat of first part of track when in an album queue
-- **Fixed** replay gain preamp setting not persisting
+- **Fixed** ReplayGain preamp setting not persisting
 - ***Deprecated*** koel support
 
 ### v7.7.0
@@ -219,7 +220,7 @@ Changelog
 - **Tweaked** UI Spotify track indication
 - **Improved** Spotify playback reliability
 - **Improved** handling of unplayable Spotify tracks
-- **Fixed** replay gain transition volume
+- **Fixed** ReplayGain transition volume
 
 ### v7.6.4
 
@@ -468,7 +469,7 @@ Changelog
 - **Added** gen code 'ia' for albums imported
 - **Added** flag "--tray" to hide window on startup
 - **Fixed** some radio stations not working
-- **Fixed** replay gain not being read from MP3
+- **Fixed** ReplayGain not being read from MP3
 - **[Phazor] Fixed** some file types not playing with network
 - ***Removed*** lyric provider LyricWiki
 
@@ -553,7 +554,7 @@ Changelog
 - **Tweaked** defaults of some settings
 - **Fixed** a bug with text highlighting
 - **Fixed** an issue with CUE importing
-- **Fixed** replay-gain slider setting movement
+- **Fixed** ReplayGain slider setting movement
 - **Fixed** a possible issue with Airsonic import stalling
 - **Fixed** UI scaling of some border elements
 - **Workaround** for a rendering bug in SDL 2.0.16
@@ -1169,7 +1170,7 @@ Changelog
 
 - **Added** "Collapse All" function to folder tree
 - **Added** BASS library downloader function
-- **Added** device selection and replay gain to GStreamer backend
+- **Added** device selection and ReplayGain to GStreamer backend
 - **Tweaked** middle click right side panel to also cycle lyrics view
 - **Fixed** album grid drag and drop
 - **Fixed** compact view gallery exit field with panel open
@@ -1369,7 +1370,7 @@ Changelog
 - **Fixed** numpad return key not being registered
 - **Fixed** chart text grouping
 - **Fixed** a change that caused artist list names being lowercase and not registering on click
-- **Fixed** replay gain applying after song start
+- **Fixed** ReplayGain applying after song start
 
 ### v4.6.1
 
@@ -1803,7 +1804,7 @@ Changelog
 - **Restored** option to not delete archives on extraction
 - **Fixed** archive monitor activating when target folder already exists
 - **Fixed** 'open with picard' losing track of playtimes if filename was changed
-- **Fixed** replay gain indicator not offsetting position on full time indicator
+- **Fixed** ReplayGain indicator not offsetting position on full time indicator
 - **Fixed** time indicator possibly updating irregularly
 - **Fixed** "Fetching image" text rendering.
 - **Fixed** "Show Current" not jumping when track just out of view
@@ -2205,7 +2206,7 @@ Changelog
 - **Changed** transcode image thumbnail names to "cover.jpg" only (for improved compatibility)
 - ***Set*** new defaults: visualiser enabled, row size larger
 - **Improved** error feedback for changing output devices
-- **Fixed** replay-gain db indicator not being truncated
+- **Fixed** ReplayGain db indicator not being truncated
 - **Fixed** bug with side panel lyric setting
 - **Fixed** output sound device not being remembered on restart
 - **Fixed** gallery setting not being remembered on restart
@@ -2350,7 +2351,7 @@ Changelog
 - **Split** selection context menu into separate selection and folder menus
 - **Tweaked** various UI elements
 - **Tweaked** window draggable area during broadcast
-- **Fixed** replay gain not consistently applying
+- **Fixed** ReplayGain not consistently applying
 - **Fixed** playback stall if stop and play clicked in quick succession
 - **Fixed** crashes when using clean database function under certain circumstances
 - **Fixed** reload metadata failing when used for a selection
