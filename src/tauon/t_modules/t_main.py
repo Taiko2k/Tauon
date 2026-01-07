@@ -9249,7 +9249,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder: str) -> int:
+		def best(folder: list[int]) -> int:
 			#logging.info(folder)
 			total_star: int = 0
 			for item in folder:
@@ -9597,7 +9597,7 @@ class Tauon:
 			se.append(track)
 		sets.append(copy.deepcopy(se))
 
-		def best(folder) -> float:
+		def best(folder: list[int]) -> float:
 			total_duration = 0.
 			for item in folder:
 				total_duration += self.pctl.master_library[item].length
