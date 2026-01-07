@@ -35,8 +35,8 @@ import threading
 import time
 import urllib.parse
 import zipfile
-from dataclasses import dataclass, field
 from collections import deque
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -171,8 +171,8 @@ class Timer:
 	"""A seconds based timer"""
 
 	def __init__(self, force: float | None = None) -> None:
-		self.start = 0
-		self.end = 0
+		self.start: float = 0
+		self.end: float = 0
 		self.set()
 		if force:
 			self.force_set(force)

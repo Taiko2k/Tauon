@@ -21538,7 +21538,7 @@ class AlbumArt:
 
 		return g
 
-	def save_thumb(self, track_object: TrackClass, size: tuple[int, int], save_path: str, png: bool = False, zoom: bool = False) -> BytesIO | bool | None:
+	def save_thumb(self, track_object: TrackClass, size: tuple[int, int], save_path: str | None, png: bool = False, zoom: bool = False) -> BytesIO | bool | None:
 		filepath = track_object.fullpath
 		sources = self.get_sources(track_object)
 
