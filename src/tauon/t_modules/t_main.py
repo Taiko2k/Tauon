@@ -44938,7 +44938,8 @@ def main(holder: Holder) -> None:
 	block_size = 3
 
 	x = 0
-	y = 0
+	# TODO(Martin): Remove workaround when https://github.com/astral-sh/ty/issues/232 is fixed
+	y = cast(int, 0)
 	while y < 300:
 		x = 0
 		while x < 300:
