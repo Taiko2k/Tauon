@@ -388,7 +388,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			playlist_index: int | None = None,
 			track: TrackClass | None = None,
 			album_id: int = -1,
-		) -> None:
+		) -> dict[str, int | str | bool]:
 			if track is None:
 				if playlist_index is None:
 					playlist = pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids
@@ -397,7 +397,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				track_id = playlist[track_position]
 				track = pctl.get_track(track_id)
 
-			data = {}
+			data: dict[str, int | str | bool] = {}
 			data["title"] = track.title
 			data["artist"] = track.artist
 			data["album"] = track.album
