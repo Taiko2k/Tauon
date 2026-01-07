@@ -11420,11 +11420,15 @@ class Tauon:
 		self.thread_manager.ready("worker")
 
 	def import_fmps(self) -> None:
+		"""FMPS spec: https://gitorious.org/xdg-specs/xdg-specs/trees/master/specifications/FMPSpecs?p=xdg-specs:xdg-specs.git;a=blob;f=specifications/FMPSpecs/specification.txt;hb=HEAD#l235"""
 		unique = set()
 		for playlist in self.pctl.multi_playlist:
 			for id in playlist.playlist_ids:
 				tr = self.pctl.get_track(id)
 				if "FMPS_Rating" in tr.misc:
+					if tr.misc["FMPS_Rating"] > 1 or tr.misc["FMPS_Rating"] < 0:
+						logging.warning(f"Nonstandard FMPS_RATING in track, skipping {tr.fullpath}: {tr.misc['FMPS_Rating']}")
+						continue
 					rating = round(tr.misc["FMPS_Rating"] * 10)
 					self.star_store.set_rating(tr.index, rating)
 					unique.add(tr.index)
