@@ -85,7 +85,7 @@ from ctypes import (
 )
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import certifi
 import musicbrainzngs
