@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-06-13 03:01+0000\n"
-"Last-Translator: 無情天 <kofzhanganguo@126.com>\n"
+"PO-Revision-Date: 2026-01-09 14:01+0000\n"
+"Last-Translator: Sketch6580 <sketch6580@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
 "projects/tauon-music-box/tauon-music-box/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.15.1\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
@@ -50,7 +50,7 @@ msgid ""
 "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > "
 "Accounts > Spotify"
 msgstr ""
-"您可以通过在“设置”>“帐户”>“Spotify”中单击“忘记帐户”，然后单击“授权”来执行此操"
+"您可以通过点击“忘记账号”，然后在“设置”>“账号”>“Spotify”中点击“授权”来完成此操"
 "作"
 
 #: src/tauon/t_modules/t_db_migrate.py:413
@@ -60,7 +60,7 @@ msgstr "欢迎使用 v6.3.0。由于升级，请重新授权 Spotify"
 #: src/tauon/t_modules/t_db_migrate.py:414
 msgid ""
 "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"
-msgstr "您可以通过在“设置”>“帐户”>“Spotify”中单击“授权”来执行此操作"
+msgstr "您可以通过点击“设置”>“账号”>“Spotify”中的“授权”来完成此操作"
 
 #: src/tauon/t_modules/t_db_migrate.py:469
 msgid "Upgrade to v6.5.1. It looks like you are using Spotify."
@@ -131,9 +131,8 @@ msgid "mnth"
 msgstr ""
 
 #: src/tauon/t_modules/t_extra.py:577
-#, fuzzy
 msgid "Unknown"
-msgstr "未知曲目"
+msgstr "未知"
 
 #: src/tauon/t_modules/t_guitar_chords.py:92
 msgid "Insufficient metadata to search"
@@ -245,11 +244,11 @@ msgstr "已连接到 Last.fm"
 
 #: src/tauon/t_modules/t_main.py:4004
 msgid "Authorise an account in settings"
-msgstr "在设置中授权帐户"
+msgstr "在设置中授权账号"
 
 #: src/tauon/t_modules/t_main.py:4004
 msgid "No Last.Fm account registered"
-msgstr "未注册 Last.Fm 帐户"
+msgstr "未注册 Last.Fm 账号"
 
 #: src/tauon/t_modules/t_main.py:4015
 msgid "Connection to Last.fm was successful."
@@ -365,11 +364,11 @@ msgstr "曲目已添加到喜欢的曲目"
 
 #: src/tauon/t_modules/t_main.py:4750
 msgid "Spotify account connected"
-msgstr "已连接 Spotify 帐户"
+msgstr "Spotify 账号已连接"
 
 #: src/tauon/t_modules/t_main.py:4751
 msgid "This Spotify account isn't currently playing anything"
-msgstr "此 Spotify 帐户目前未播放任何内容"
+msgstr "此 Spotify 账号目前未播放任何内容"
 
 #: src/tauon/t_modules/t_main.py:4752
 msgid "Error starting Spotify"
@@ -596,7 +595,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:7814
 msgid "File doesn't exist or is not accessible"
-msgstr ""
+msgstr "文件不存在或无法访问"
 
 #: src/tauon/t_modules/t_main.py:7840 src/tauon/t_modules/t_main.py:21042
 msgid "Saving network images not implemented"
@@ -710,9 +709,8 @@ msgid "There are no tracks in this playlist. Nothing to export"
 msgstr "此播放列表中没有曲目。没有可导出的内容"
 
 #: src/tauon/t_modules/t_main.py:8284 src/tauon/t_modules/t_main.py:8329
-#, fuzzy
 msgid "Cannot use relative paths"
-msgstr "使用相对路径"
+msgstr "无法使用相对路径"
 
 #: src/tauon/t_modules/t_main.py:8285 src/tauon/t_modules/t_main.py:8330
 msgid ""
@@ -1125,7 +1123,7 @@ msgstr "重命名（单曲）"
 #: src/tauon/t_modules/t_main.py:10311 src/tauon/t_modules/t_main.py:43699
 #: src/tauon/t_modules/t_main.py:43741 src/tauon/t_modules/t_main.py:43743
 msgid "Rename Tracks…"
-msgstr "重命名曲目..."
+msgstr "重命名曲目…"
 
 #: src/tauon/t_modules/t_main.py:10320
 msgid "Cannot physically delete"
@@ -1426,9 +1424,8 @@ msgid "Internal Track ID"
 msgstr "反转曲目"
 
 #: src/tauon/t_modules/t_main.py:10920
-#, fuzzy
 msgid "File Changed"
-msgstr "文件名"
+msgstr "文件已更改"
 
 #: src/tauon/t_modules/t_main.py:10925
 msgid "Auto Resize"
@@ -1644,7 +1641,7 @@ msgstr "播放列表包含非 Spotify 曲目"
 
 #: src/tauon/t_modules/t_main.py:13563
 msgid "Created new Spotify playlist"
-msgstr "创建新的 Spotify 播放列表"
+msgstr "已创建新的 Spotify 播放列表"
 
 #: src/tauon/t_modules/t_main.py:13569
 msgid "Error creating Spotify playlist"
@@ -1652,7 +1649,7 @@ msgstr "创建 Spotify 播放列表时出错"
 
 #: src/tauon/t_modules/t_main.py:13572
 msgid "Updated Spotify playlist"
-msgstr "更新 Spotify 播放列表"
+msgstr "已更新 Spotify 播放列表"
 
 #: src/tauon/t_modules/t_main.py:13592
 msgid "This playlist has no generator"
@@ -1699,11 +1696,11 @@ msgstr "未设置供应商！"
 
 #: src/tauon/t_modules/t_main.py:14513
 msgid "Pin"
-msgstr "固定到顶部"
+msgstr "置顶"
 
 #: src/tauon/t_modules/t_main.py:14514
 msgid "Unpin"
-msgstr "从顶部移除"
+msgstr "取消置顶"
 
 #: src/tauon/t_modules/t_main.py:14518
 msgid "Unlock"
@@ -1747,9 +1744,8 @@ msgid "Starting download..."
 msgstr "开始下载..."
 
 #: src/tauon/t_modules/t_main.py:14770
-#, fuzzy
 msgid "Downloading... {MB}/{total_mb}"
-msgstr "正在下载...{N}/80MB"
+msgstr "正在下载… {MB}/{total_mb}"
 
 #: src/tauon/t_modules/t_main.py:14773
 msgid "Download failed"
@@ -1846,7 +1842,7 @@ msgstr "检查你的网络连接然后再试试？"
 
 #: src/tauon/t_modules/t_main.py:17075 src/tauon/t_modules/t_main.py:49196
 msgid "Permission error encountered while writing database"
-msgstr "写入数据库时​​遇到权限错误"
+msgstr "写入数据库时遇到权限错误"
 
 #: src/tauon/t_modules/t_main.py:17297
 msgid "Warning! Using this function moves physical folders."
@@ -2055,7 +2051,7 @@ msgstr "重命名完成。"
 
 #: src/tauon/t_modules/t_main.py:22437 src/tauon/t_modules/t_main.py:22442
 msgid "{N} / {T} filenames were written."
-msgstr " 文件名已写入。已写入{N} / {T} 个文件名。"
+msgstr "已写入 {N} / {T} 个文件名。"
 
 #: src/tauon/t_modules/t_main.py:22527
 msgid "Simple tag editor"
@@ -2142,14 +2138,12 @@ msgid "with"
 msgstr "和"
 
 #: src/tauon/t_modules/t_main.py:22865
-#, fuzzy
 msgid "Import/Export Playlist"
-msgstr "导出播放列表"
+msgstr "导入/导出播放列表"
 
 #: src/tauon/t_modules/t_main.py:22870
-#, fuzzy
 msgid "Target folder or file"
-msgstr "文件夹复制失败！"
+msgstr "目标文件夹或文件"
 
 #: src/tauon/t_modules/t_main.py:22889
 msgid "Will overwrite existing file: "
@@ -2162,11 +2156,11 @@ msgstr "没有播放列表名称"
 
 #: src/tauon/t_modules/t_main.py:22895
 msgid "No file extension?"
-msgstr ""
+msgstr "没有文件扩展名？"
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "扩展名不正确？"
 
 #: src/tauon/t_modules/t_main.py:22905
 #, fuzzy
@@ -2190,9 +2184,8 @@ msgid "Auto-export"
 msgstr "自动导出"
 
 #: src/tauon/t_modules/t_main.py:22938
-#, fuzzy
 msgid "Auto-import"
-msgstr "自动导出"
+msgstr "自动导入"
 
 #: src/tauon/t_modules/t_main.py:22942 src/tauon/t_modules/t_main.py:22945
 msgid "Export"
@@ -2286,7 +2279,7 @@ msgstr "窗口"
 
 #: src/tauon/t_modules/t_main.py:23958
 msgid "View"
-msgstr "视图 "
+msgstr "视图"
 
 #: src/tauon/t_modules/t_main.py:23959
 msgid "Transcode"
@@ -2298,7 +2291,7 @@ msgstr "歌词"
 
 #: src/tauon/t_modules/t_main.py:23961
 msgid "Accounts"
-msgstr "帐户"
+msgstr "账号"
 
 #: src/tauon/t_modules/t_main.py:23962
 msgid "Stats"
@@ -2535,9 +2528,8 @@ msgid "Downloads data in background when artist panel is open"
 msgstr "艺术家面板打开时在后台下载数据"
 
 #: src/tauon/t_modules/t_main.py:24556
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "自动重新生成播放列表"
+msgstr "自动重新加载播放列表"
 
 #: src/tauon/t_modules/t_main.py:24557
 #, fuzzy
@@ -2661,9 +2653,8 @@ msgid "Change requires restart"
 msgstr "更改需要重新启动"
 
 #: src/tauon/t_modules/t_main.py:24663
-#, fuzzy
 msgid "Default playlist export folder"
-msgstr "播放列表已导出"
+msgstr "默认播放列表导出文件夹"
 
 #: src/tauon/t_modules/t_main.py:24684
 msgid "Also auto-import new playlists from here"
@@ -2874,7 +2865,7 @@ msgstr "客户端机密"
 
 #: src/tauon/t_modules/t_main.py:25176
 msgid "Forget Account"
-msgstr "忘记帐户"
+msgstr "忘记账号"
 
 #: src/tauon/t_modules/t_main.py:25182
 msgid "Authorise"
@@ -2993,7 +2984,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:25590
 msgid "Forget account"
-msgstr "忘记帐号"
+msgstr "忘记账号"
 
 #: src/tauon/t_modules/t_main.py:25597 src/tauon/t_modules/t_main.py:25605
 msgid "Get user loves"
@@ -3058,7 +3049,7 @@ msgstr "警告：此过程可能需要很长时间才能完成！ （最多一�
 
 #: src/tauon/t_modules/t_main.py:25707
 msgid "This feature is not recommended for accounts that have many friends."
-msgstr "对于有很多好友的帐户，不建议使用此功能。"
+msgstr "对于有很多好友的账号，不建议使用此功能。"
 
 #: src/tauon/t_modules/t_main.py:25751
 msgid "Selected playlist:"
@@ -3425,16 +3416,15 @@ msgstr "正在提取档案..."
 
 #: src/tauon/t_modules/t_main.py:27814
 msgid "Importing...  "
-msgstr "导入..."
+msgstr "正在导入…  "
 
 #: src/tauon/t_modules/t_main.py:27820
 msgid "Scanning Tags...  {N} remaining"
 msgstr "正在扫描标签...剩余 {N} 个"
 
 #: src/tauon/t_modules/t_main.py:27824
-#, fuzzy
 msgid "Auto-importing playlists..."
-msgstr "正在导入 XSPF 播放列表..."
+msgstr "正在自动导入播放列表…"
 
 #: src/tauon/t_modules/t_main.py:27826
 msgid "File copy in progress..."
@@ -3442,7 +3432,7 @@ msgstr "正在复制文件..."
 
 #: src/tauon/t_modules/t_main.py:27830
 msgid "Cleaning db...  "
-msgstr "清理数据库..."
+msgstr "正在清理数据库…  "
 
 #: src/tauon/t_modules/t_main.py:27833
 msgid "Rescanning Tags...  {N} remaining"
@@ -3478,7 +3468,7 @@ msgstr "访问 JELLYFIN 库..."
 
 #: src/tauon/t_modules/t_main.py:27861
 msgid "Chromecast Mode"
-msgstr "Chromecas t模式"
+msgstr "Chromecast 模式"
 
 #: src/tauon/t_modules/t_main.py:27870
 msgid "Stopping transcode..."
@@ -3491,7 +3481,7 @@ msgstr "加载艺术家列表..."
 
 #: src/tauon/t_modules/t_main.py:27875
 msgid "Scanning: "
-msgstr "扫描："
+msgstr "正在扫描： "
 
 #: src/tauon/t_modules/t_main.py:27878
 msgid "Scanning Scrobbles..."
@@ -3499,7 +3489,7 @@ msgstr "正在扫描 Scrobbles..."
 
 #: src/tauon/t_modules/t_main.py:27881
 msgid "Buffering... "
-msgstr "缓冲... "
+msgstr "正在缓冲… "
 
 #: src/tauon/t_modules/t_main.py:27885
 msgid "Network error. Will try again later."
@@ -3983,7 +3973,7 @@ msgstr "未找到艺术家姓名"
 
 #: src/tauon/t_modules/t_main.py:35128 src/tauon/t_modules/t_main.py:35365
 msgid "Looking up..."
-msgstr "正在查找"
+msgstr "正在查找…"
 
 #: src/tauon/t_modules/t_main.py:35168
 msgid "Cooldown..."
@@ -4039,7 +4029,7 @@ msgstr "没有更多需要撤消的步骤。"
 
 #: src/tauon/t_modules/t_main.py:37175 src/tauon/t_modules/t_main.py:37189
 msgid "Exit Lyrics Editor"
-msgstr ""
+msgstr "退出歌词编辑器"
 
 #: src/tauon/t_modules/t_main.py:37176 src/tauon/t_modules/t_main.py:37190
 #: src/tauon/t_modules/t_main.py:43428 src/tauon/t_modules/t_main.py:43446
@@ -4074,21 +4064,19 @@ msgstr "清空歌词"
 
 #: src/tauon/t_modules/t_main.py:37197
 msgid "Backups..."
-msgstr ""
+msgstr "备份…"
 
 #: src/tauon/t_modules/t_main.py:37198
 msgid "Load Current Backup"
-msgstr ""
+msgstr "加载当前备份"
 
 #: src/tauon/t_modules/t_main.py:37199
-#, fuzzy
 msgid "Visit Current Backup"
-msgstr "↳ 在当前曲目之后"
+msgstr "访问当前备份"
 
 #: src/tauon/t_modules/t_main.py:37200
-#, fuzzy
 msgid "Delete All Backups"
-msgstr "删除文件"
+msgstr "删除所有备份"
 
 #: src/tauon/t_modules/t_main.py:37202
 msgid "When track ends..."
@@ -4096,11 +4084,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:37209 src/tauon/t_modules/t_main.py:37211
 msgid "Stop immediately"
-msgstr ""
+msgstr "立即停止"
 
 #: src/tauon/t_modules/t_main.py:37214 src/tauon/t_modules/t_main.py:37216
 msgid "Backup and continue"
-msgstr ""
+msgstr "备份并继续"
 
 #: src/tauon/t_modules/t_main.py:37219 src/tauon/t_modules/t_main.py:37221
 msgid "Fully save and continue"
@@ -4129,7 +4117,7 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:37733 src/tauon/t_modules/t_main.py:37767
 #: src/tauon/t_modules/t_main.py:37961
 msgid "tag"
-msgstr ""
+msgstr "标签"
 
 #: src/tauon/t_modules/t_main.py:37312
 msgid "Be careful!"
@@ -4181,9 +4169,8 @@ msgid "Unsynced lyrics saved successfully"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:37589
-#, fuzzy
 msgid "Backup file does not exist"
-msgstr "目录不存在"
+msgstr "备份文件不存在"
 
 #: src/tauon/t_modules/t_main.py:37597
 msgid "Put the lyrics in this file."
@@ -4235,33 +4222,29 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:38136 src/tauon/t_modules/t_main.py:38173
 #: src/tauon/t_modules/t_main.py:38371 src/tauon/t_modules/t_main.py:38395
 msgid "SAVE"
-msgstr ""
+msgstr "保存"
 
 #: src/tauon/t_modules/t_main.py:38137 src/tauon/t_modules/t_main.py:38179
 #: src/tauon/t_modules/t_main.py:38372 src/tauon/t_modules/t_main.py:38401
-#, fuzzy
 msgid "Discard"
-msgstr "碟片"
+msgstr "舍弃"
 
 #: src/tauon/t_modules/t_main.py:38229
-#, fuzzy
 msgid "Errored"
-msgstr "错误"
+msgstr "出错"
 
 #: src/tauon/t_modules/t_main.py:38242 src/tauon/t_modules/t_main.py:38244
 #: src/tauon/t_modules/t_main.py:38424 src/tauon/t_modules/t_main.py:38426
-#, fuzzy
 msgid "Failed"
-msgstr "加载失败"
+msgstr "失败"
 
 #: src/tauon/t_modules/t_main.py:38290 src/tauon/t_modules/t_main.py:38305
 msgid "Put the lyrics in this file and save it."
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:38368 src/tauon/t_modules/t_main.py:38412
-#, fuzzy
 msgid "Edit Lyrics"
-msgstr "隐藏歌词"
+msgstr "编辑歌词"
 
 #: src/tauon/t_modules/t_main.py:38369 src/tauon/t_modules/t_main.py:38459
 msgid "Read Back"
@@ -4275,11 +4258,11 @@ msgstr "取消"
 
 #: src/tauon/t_modules/t_main.py:38373 src/tauon/t_modules/t_main.py:38469
 msgid "Reopen Editor"
-msgstr ""
+msgstr "重新打开编辑器"
 
 #: src/tauon/t_modules/t_main.py:38412
 msgid "Opens an external editor."
-msgstr ""
+msgstr "打开外部编辑器。"
 
 #: src/tauon/t_modules/t_main.py:38437 src/tauon/t_modules/t_main.py:38455
 msgid ""
@@ -4292,9 +4275,8 @@ msgid "Make sure to save your changes."
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:38462 src/tauon/t_modules/t_main.py:38732
-#, fuzzy
 msgid "Delete the file."
-msgstr "删除图片文件"
+msgstr "删除文件。"
 
 #: src/tauon/t_modules/t_main.py:38469
 msgid "In case you closed it by accident."
@@ -4305,9 +4287,8 @@ msgid "Upload lyrics for {artist} - {title}?"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:38696 src/tauon/t_modules/t_main.py:38702
-#, fuzzy
 msgid "Synced"
-msgstr "同步..."
+msgstr "已同步"
 
 #: src/tauon/t_modules/t_main.py:38715
 msgid "Lyrics must be formatted correctly"
@@ -4323,7 +4304,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:38722
 msgid "Unsynced"
-msgstr ""
+msgstr "未同步"
 
 #: src/tauon/t_modules/t_main.py:38724 src/tauon/t_modules/t_main.py:43530
 #: src/tauon/t_modules/t_main.py:43532
@@ -4338,7 +4319,7 @@ msgstr "全局搜索 + Tab 触发 Spotify 搜索，但 Spotify 未在设置中�
 
 #: src/tauon/t_modules/t_main.py:40946
 msgid "Files missing or inaccessible"
-msgstr ""
+msgstr "文件缺失或无法访问"
 
 #: src/tauon/t_modules/t_main.py:40947
 msgid "If you're using Flatpak, you should probably follow this:"
@@ -4354,7 +4335,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:40964
 msgid "Can't import that"
-msgstr ""
+msgstr "无法导入"
 
 #: src/tauon/t_modules/t_main.py:40965
 msgid "We can't import the file {path} and we're not sure why."
@@ -4607,14 +4588,13 @@ msgid "Toggle Lyrics"
 msgstr "切换歌词"
 
 #: src/tauon/t_modules/t_main.py:43436 src/tauon/t_modules/t_main.py:43449
-#, fuzzy
 msgid "Lyrics Editor"
-msgstr "歌词"
+msgstr "歌词编辑器"
 
 #: src/tauon/t_modules/t_main.py:43437 src/tauon/t_modules/t_main.py:43451
 #: src/tauon/t_modules/t_main.py:43563
 msgid "Misc…"
-msgstr "其他..."
+msgstr "其他…"
 
 #: src/tauon/t_modules/t_main.py:43438 src/tauon/t_modules/t_main.py:43452
 msgid "Substitute Search..."
@@ -4672,11 +4652,11 @@ msgstr "删除"
 
 #: src/tauon/t_modules/t_main.py:43535
 msgid "Regenerate"
-msgstr "生成"
+msgstr "重新生成"
 
 #: src/tauon/t_modules/t_main.py:43536
 msgid "Generate…"
-msgstr "生成..."
+msgstr "生成…"
 
 #: src/tauon/t_modules/t_main.py:43537
 msgid "Edit Generator..."
@@ -4684,7 +4664,7 @@ msgstr "编辑生成器..."
 
 #: src/tauon/t_modules/t_main.py:43538
 msgid "Sort…"
-msgstr "排序..."
+msgstr "排序…"
 
 #: src/tauon/t_modules/t_main.py:43539
 msgid "From Current…"
@@ -4724,9 +4704,8 @@ msgid "Append Playing"
 msgstr "追加到当前播放之后"
 
 #: src/tauon/t_modules/t_main.py:43561
-#, fuzzy
 msgid "Import/export…"
-msgstr "导入 Spotify…"
+msgstr "导入/导出…"
 
 #: src/tauon/t_modules/t_main.py:43564
 msgid "Export Playlist Stats"
@@ -4968,7 +4947,7 @@ msgstr "设置"
 
 #: src/tauon/t_modules/t_main.py:43907
 msgid "Database…"
-msgstr "数据库..."
+msgstr "数据库…"
 
 #: src/tauon/t_modules/t_main.py:43912
 msgid "Enabled saving state"
@@ -4995,9 +4974,8 @@ msgid "Export as CSV"
 msgstr "导出为 CSV"
 
 #: src/tauon/t_modules/t_main.py:43926
-#, fuzzy
 msgid "Reload All Folders"
-msgstr "重新扫描所有文件夹"
+msgstr "重新加载所有文件夹"
 
 #: src/tauon/t_modules/t_main.py:43927
 msgid "Play History to Playlist"
@@ -5112,9 +5090,8 @@ msgid "Start Spotify Remote"
 msgstr "启动 Spotify 远程"
 
 #: src/tauon/t_modules/t_main.py:44046
-#, fuzzy
 msgid "Synced Lyrics Editor"
-msgstr "显示同步歌词"
+msgstr "已同步歌词编辑器"
 
 #: src/tauon/t_modules/t_main.py:44050
 msgid "Disengage Quick Add"
@@ -5365,7 +5342,7 @@ msgstr "错误 - 未找到 Tauon 设备"
 #: src/tauon/t_modules/t_spot.py:474
 msgid ""
 "Error. You may need to click Authorise in Settings > Accounts > Spotify."
-msgstr "错误。您可能需要在“设置”>“帐户”>“Spotify”中点击“授权”。"
+msgstr "错误。您可能需要在“设置”>“账号”>“Spotify”中点击“授权”。"
 
 #: src/tauon/t_modules/t_spot.py:922
 msgid "Spotify upload error!"
