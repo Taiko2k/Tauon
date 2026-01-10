@@ -45635,7 +45635,8 @@ def main(holder: Holder) -> None:
 			power += 400
 
 		if power < 500:
-
+			# TODO(Martin): Check if milkdrop is off, and if so do 0.03 instead - https://github.com/Taiko2k/Tauon/issues/1958
+			time.sleep(0.002)
 			if (pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED)) and not tauon.load_orders and gui.update == 0 \
 			and not tauon.gall_ren.queue and not tauon.transcode_list and not gui.frame_callback_list:
 				pass
