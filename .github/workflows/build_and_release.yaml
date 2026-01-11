@@ -443,10 +443,11 @@ jobs:
           (Get-Content extra/setup.iss) -replace "C:\\", $Drive | Set-Content extra/setup.iss
 
       - name: Compile .ISS to .EXE Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
+        uses: C0rn3j/Inno-Setup-Action@v1.2.8
         with:
           path: extra/setup.iss
           options: /O+
+          install_latest: true
 
       #- name: "[DEBUG] List all files after Inno"
       #  shell: msys2 {0}
