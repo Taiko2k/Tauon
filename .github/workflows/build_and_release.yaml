@@ -215,7 +215,7 @@ jobs:
             Python@3.14
 
       - name: Remove aws-sam-cli as it makes pydantic core preinstalled in brew but we want to use pip's
-        run: brew uninstall aws-sam-cli pydantic-core
+        run: brew uninstall aws-sam-cli pydantic
 
       # This generates 30MB of logs, enable it only when actively debugging something
       #- name: "[DEBUG] List all Cellar files"
