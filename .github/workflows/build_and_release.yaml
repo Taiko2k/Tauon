@@ -443,7 +443,7 @@ jobs:
           (Get-Content extra/setup.iss) -replace "C:\\", $Drive | Set-Content extra/setup.iss
 
       - name: Compile .ISS to .EXE Installer
-        uses: C0rn3j/Inno-Setup-Action@v1.2.13
+        uses: C0rn3j/Inno-Setup-Action@v1.2.14
         with:
           path: extra/setup.iss
           options: /O+
