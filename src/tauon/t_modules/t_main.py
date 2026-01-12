@@ -45075,15 +45075,18 @@ def main(holder: Holder) -> None:
 			# if event.type == sdl3.SDL_SYSWMEVENT:
 			#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
 
-			if event.type == sdl3.SDL_EVENT_GAMEPAD_ADDED and prefs.use_gamepad:
+			if event.type == sdl3.SDL_EVENT_GAMEPAD_ADDED:
+				if not prefs.use_gamepad:
+					continue
 				if sdl3.SDL_IsGamepad(event.gdevice.which):
 					sdl3.SDL_OpenGamepad(event.gdevice.which)
 					try:
 						logging.info(f"Found game controller: {sdl3.SDL_GetGamepadNameForID(event.gdevice.which).decode()}")
 					except Exception:
 						logging.exception("Error getting game controller")
-
-			if event.type == sdl3.SDL_EVENT_GAMEPAD_AXIS_MOTION and prefs.use_gamepad:
+			elif event.type == sdl3.SDL_EVENT_GAMEPAD_AXIS_MOTION:
+				if not prefs.use_gamepad:
+					continue
 				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
 					rt = event.gaxis.value > 5000
 				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
@@ -45122,8 +45125,9 @@ def main(holder: Holder) -> None:
 					c_xay = new
 					power += 5
 					gui.update += 1
-
-			if event.type == sdl3.SDL_EVENT_GAMEPAD_BUTTON_DOWN and prefs.use_gamepad:
+			elif event.type == sdl3.SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+				if not prefs.use_gamepad:
+					continue
 				inp.k_input = True
 				power += 5
 				gui.update += 2
@@ -45133,12 +45137,12 @@ def main(holder: Holder) -> None:
 						tauon.toggle_random()
 					else:
 						pctl.advance()
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
 					if rt:
 						tauon.toggle_repeat()
 					else:
 						pctl.back()
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_SOUTH:
 					if rt:
 						pctl.show_current(highlight=True)
 					elif pctl.playing_ready() and pctl.active_playlist_playing == pctl.active_playlist_viewing and \
@@ -45147,42 +45151,41 @@ def main(holder: Holder) -> None:
 						pctl.play_pause()
 					else:
 						inp.key_return_press = True
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_WEST:
 					if rt:
 						tauon.random_track()
 					else:
 						tauon.toggle_gallery_keycontrol(always_exit=True)
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_NORTH:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_NORTH:
 					if rt:
 						pctl.advance(rr=True)
 					else:
 						pctl.play_pause()
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_EAST:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_EAST:
 					if rt:
 						pctl.revert()
 					elif tauon.is_level_zero():
 						pctl.stop()
 					else:
 						inp.key_esc_press = True
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
 					inp.key_up_press = True
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 					inp.key_down_press = True
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 					if gui.album_tab_mode:
 						inp.key_left_press = True
 					elif ( tauon.is_level_zero() or gui.quick_search_mode ) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(1)
-				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 					if gui.album_tab_mode:
 						inp.key_right_press = True
 					elif ( tauon.is_level_zero() or gui.quick_search_mode ) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(-1)
-
-			if event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET and not tauon.msys:
-				reset_render = True
-
-			if event.type == sdl3.SDL_EVENT_DROP_TEXT:
+			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
+				if not tauon.msys:
+					reset_render = True
+			elif event.type == sdl3.SDL_EVENT_DROP_TEXT:
 				power += 5
 
 				link = event.drop.file.decode()
@@ -45224,8 +45227,7 @@ def main(holder: Holder) -> None:
 					for line in link.split("\n"):
 						target = str(urllib.parse.unquote(line)).replace("file:///", "/")
 						tauon.drop_file(target)
-
-			if event.type == sdl3.SDL_EVENT_DROP_BEGIN:
+			elif event.type == sdl3.SDL_EVENT_DROP_BEGIN:
 				gui.ext_drop_mode = True
 			elif event.type == sdl3.SDL_EVENT_DROP_POSITION:
 				inp.mouse_position[0] = int(event.drop.x / logical_size[0] * window_size[0])
@@ -45320,7 +45322,9 @@ def main(holder: Holder) -> None:
 
 					inp.mouse_down = False
 					gui.update += 1
-			elif event.type == sdl3.SDL_EVENT_KEY_DOWN and inp.key_focused == 0:
+			elif event.type == sdl3.SDL_EVENT_KEY_DOWN:
+				if inp.key_focused != 0:
+					continue
 				inp.k_input = True
 				power += 5
 				gui.update += 2
