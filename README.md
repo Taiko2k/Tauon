@@ -39,7 +39,7 @@ For Windows installer see the [releases](https://github.com/Taiko2k/TauonMusicBo
 
 ### Linux
 
-Installation is available as a Flatpak. You can also install from the [**AUR**](https://aur.archlinux.org/packages/tauon-music-box/) on **Arch Linux** based distros.
+Installation is available on [Arch Linux](https://archlinux.org/packages/extra/x86_64/tauon-music-box/) or as a Flatpak. You can also install portable binaires from the [releases](https://github.com/Taiko2k/Tauon/releases) page.
 
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
@@ -48,8 +48,8 @@ Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wik
 
 ___
 
-I highly recommend reading the Tauon [manual](https://tauonmusicbox.rocks#manual).
+I highly recommend reading the Tauon [manual](https://tauonmusicbox.rocks/manual/overview/).
 
 Feel free to submit any issues you encounter.
 
-[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) [![Discord](https://img.shields.io/discord/687418493209018622.svg?color=a483ef&style=for-the-badge)](https://discord.gg/v4EmhES)
+[![Maintenance](https://img.shields.io/maintenance/yes/2026.svg?color=a3e11f&style=for-the-badge)](https://github.com/Taiko2k/tauonmb/releases) [![GitHub release](https://img.shields.io/github/release/taiko2k/tauonmb.svg?style=for-the-badge&colorB=ff69b4)](https://github.com/Taiko2k/tauonmb/releases) [![Discord](https://img.shields.io/discord/687418493209018622.svg?color=a483ef&style=for-the-badge)](https://discord.gg/v4EmhES)
