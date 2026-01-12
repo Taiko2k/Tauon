@@ -88,7 +88,7 @@ def genius(
 		lyrics = lyrics.strip("\n")
 		return lyrics, ""
 
-	results = html.findAll("div", {"class": lambda l: l and "Lyrics__Container" in l})
+	results = html.find_all("div", {"class": lambda l: l and "Lyrics__Container" in l})
 	if not results:
 		return "", ""
 
