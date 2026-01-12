@@ -36,29 +36,30 @@ if TYPE_CHECKING:
 	from io import BytesIO
 
 	from tauon.t_modules.t_extra import TauonPlaylist
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_prefs import Prefs
 
 
 class Jellyfin:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
-		self.gui = tauon.gui
-		self.pctl = tauon.pctl
-		self.prefs = tauon.prefs
+		self.tauon: Tauon = tauon
+		self.gui: GuiVar = tauon.gui
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs: Prefs = tauon.prefs
 		self.show_message = tauon.show_message
 
-		self.scanning = False
+		self.scanning: bool = False
 		self.connected = False
 
 		self.accessToken = None
 		self.userId = None
 		self.currentId = None
 
-		self.session_thread_active = False
-		self.session_status = 0
-		self.session_item_id = None
-		self.session_update_timer = Timer()
-		self.session_last_item = None
+		self.session_thread_active: bool = False
+		self.session_status: int = 0
+		self.session_item_id: int | None = None
+		self.session_update_timer: Timer = Timer()
+		self.session_last_item: dict[str, list[str] | bool | int | str] | None = None
 		self.playlists = []
 
 	def _get_jellyfin_auth(self) -> str:
@@ -189,7 +190,7 @@ class Jellyfin:
 		except Exception:
 			logging.exception("Failed to submit favorite to Jellyfin server")
 
-	def upload_playlist(self, pl: TauonPlaylist) -> None:
+	def upload_playlist(self, pl: int) -> None:
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 		if not self.connected:
@@ -390,7 +391,7 @@ class Jellyfin:
 		playlist: list[int] = []
 
 		# This code is to identify if a track has already been imported
-		existing = {}
+		existing: dict[str, int] = {}
 		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "JELY":
 				existing[track.url_key] = track_id
