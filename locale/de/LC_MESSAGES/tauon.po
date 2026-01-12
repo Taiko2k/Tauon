@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-05-04 09:07+0000\n"
-"Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
+"PO-Revision-Date: 2026-01-13 14:55+0000\n"
+"Last-Translator: Micromot20 <micromot20@gmail.com>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
 "Language: de\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.15.2-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
@@ -23,42 +23,56 @@ msgid ""
 "Error loading old database, did the program not exit properly after "
 "updating? Oh well."
 msgstr ""
+"Fehler beim Laden der alten Datenbank. Vielleicht wurde das Programm nach "
+"dem updaten nicht richtig geschlossen."
 
 #: src/tauon/t_modules/t_db_migrate.py:176
 msgid "Upgrade complete. Run a tag rescan if you want enable ReplayGain"
-msgstr ""
+msgstr "Upgrade beendet. Führe einen Tag Rescan aus, um ReplayGain zu nutzen"
 
 #: src/tauon/t_modules/t_db_migrate.py:182
 msgid "Upgrade complete. New sorting option may require tag rescan."
 msgstr ""
+"Upgrade beendet. Um die neue Sortieroption zu nutzen, könnte ein Tag Rescan "
+"erforderlich sein."
 
 #: src/tauon/t_modules/t_db_migrate.py:189
 msgid "Updated to v2.6.3"
-msgstr ""
+msgstr "Auf v2.6.3 aktualisiert"
 
 #: src/tauon/t_modules/t_db_migrate.py:241
 msgid ""
 "Welcome to v4.4.0. Run a tag rescan if you want enable Composer metadata."
 msgstr ""
+"Wilkommen zu v4.4.0. Führe einen Tag Rescan durch, um Komponisten metadaten "
+"zu aktivieren."
 
 #: src/tauon/t_modules/t_db_migrate.py:397
 msgid "Welcome to v6.1.0. Due to changes, please re-authorise Spotify"
 msgstr ""
+"Wilkommen zu v6.1.0. Aufgrund von Änderungen muss Spotify erneut "
+"authorisiert werden."
 
 #: src/tauon/t_modules/t_db_migrate.py:398
 msgid ""
 "You can do this by clicking 'Forget Account', then 'Authroise' in Settings > "
 "Accounts > Spotify"
 msgstr ""
+"Dazu auf die Schaltfläche \"Account entfernen\" und dann \"Bestätigen\" "
+"klicken. Diese befindet sich in den Einstellungen > Accounts > Spotify"
 
 #: src/tauon/t_modules/t_db_migrate.py:413
 msgid "Welcome to v6.3.0. Due to an upgrade, please re-authorise Spotify"
 msgstr ""
+"Wilkommen zu v6.3.0. Aufgrund von Änderungen muss Spotify erneut "
+"authorisiert werden."
 
 #: src/tauon/t_modules/t_db_migrate.py:414
 msgid ""
 "You can do this by clicking 'Authroise' in Settings > Accounts > Spotify"
 msgstr ""
+"Dazu auf die Schaltfläche \"Authorisieren\" (Einstellungen > Konten > "
+"Spotify) klicken"
 
 #: src/tauon/t_modules/t_db_migrate.py:469
 msgid "Upgrade to v6.5.1. It looks like you are using Spotify."
