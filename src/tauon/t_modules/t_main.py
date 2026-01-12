@@ -14355,7 +14355,7 @@ class Tauon:
 	def jellyfin_show_test(self, _: int) -> bool:
 		return bool(self.prefs.jelly_password and self.prefs.jelly_username)
 
-	def upload_jellyfin_playlist(self, pl: TauonPlaylist) -> None:
+	def upload_jellyfin_playlist(self, pl: int) -> None:
 		if self.jellyfin.scanning:
 			return
 		shooter(self.jellyfin.upload_playlist, [pl])

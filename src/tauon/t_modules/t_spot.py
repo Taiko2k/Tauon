@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 	from tekore._client.full import Spotify
 	from tekore._model.album.full import FullAlbum
 
-	from tauon.t_modules.t_main import Strings, Tauon, TrackClass
+	from tauon.t_modules.t_main import Tauon, TrackClass
 
 tekore_imported = False
 try:
@@ -802,7 +802,7 @@ class SpotCtl:
 		pages = self.spotify.all_pages(p.tracks)
 		for page in pages:
 			for item in page.items:
-				if type(item.track) == tk.model.FullPlaylistTrack:
+				if type(item.track) is tk.model.FullPlaylistTrack:
 					nt = self.load_track(item.track, include_album_url=True)
 					self.tauon.pctl.master_library[nt.index] = nt
 					playlist.append(nt.index)
@@ -819,6 +819,7 @@ class SpotCtl:
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'spl"{id}"'
 		if not silent:
 			self.tauon.switch_playlist(len(self.tauon.pctl.multi_playlist) - 1)
+		return None
 
 	# def rec_playlist(self, artist_url: str, track_url: str) -> None:
 	#
@@ -972,11 +973,10 @@ class SpotCtl:
 			playlist.append(nt.index)
 
 	def load_track(
-		self, track: TrackClass, update_master_count: bool = True, include_album_url: bool = False
+		self, track: tk.model.FullPlaylistTrack, update_master_count: bool = True, include_album_url: bool = False
 	) -> TrackClass:
 		if "spotify" in track.external_urls:
 			pr = self.current_imports.get(track.external_urls["spotify"])
-
 		else:
 			pr = False
 

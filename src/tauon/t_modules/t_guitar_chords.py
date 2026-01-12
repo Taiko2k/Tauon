@@ -19,7 +19,8 @@ import sdl3
 from tauon.t_modules.t_extra import ColourRGBA, TestTimer, filename_safe
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_draw import TDraw
+	from tauon.t_modules.t_main import ColoursClass, GuiVar, Input, PlayerCtl, Tauon, TrackClass
 
 # TODO(Martin): Dupe code here to make things work in a dirty fashion until t_main gets a bigger rework
 # from tauon.t_modules.t_main import copy_from_clipboard
@@ -41,23 +42,23 @@ class GuitarChords:
 		window_size: list[int],
 	) -> None:
 		# fmt:off
-		self.inp                   = tauon.inp
-		self.ddt                   = tauon.ddt
-		self.gui                   = tauon.gui
-		self.pctl                  = tauon.pctl
-		self.colours               = tauon.colours
-		self.store_a               = tauon.user_directory / "guitar-chords-a"  # inline format
-		self.store_b               = tauon.user_directory / "guitar-chords-b"  # 2 lines format
+		self.inp:            Input = tauon.inp
+		self.ddt:            TDraw = tauon.ddt
+		self.gui:           GuiVar = tauon.gui
+		self.pctl:       PlayerCtl = tauon.pctl
+		self.colours: ColoursClass = tauon.colours
+		self.store_a:         Path = tauon.user_directory / "guitar-chords-a"  # inline format
+		self.store_b:         Path = tauon.user_directory / "guitar-chords-b"  # 2 lines format
 		self.show_message          = tauon.show_message
-		self.mouse_wheel           = mouse_wheel
-		self.mouse_position        = mouse_position
-		self.window_size           = window_size
-		self.data:            list = []
-		self.current:          str = ""
-		self.auto_scroll:     bool = True
-		self.scroll_position:  int = 0
-		self.ready: dict[str, int] = {}
-		self.widespace:        str = "　"
+		self.mouse_wheel:        float = mouse_wheel
+		self.mouse_position: list[int] = mouse_position
+		self.window_size:    list[int] = window_size
+		self.data:                list = []
+		self.current:              str = ""
+		self.auto_scroll:         bool = True
+		self.scroll_position:    float = 0
+		self.ready:     dict[str, int] = {}
+		self.widespace:            str = "　"
 		# fmt:on
 
 	def clear(self, track: TrackClass) -> None:
@@ -355,7 +356,7 @@ class GuitarChords:
 		name = track.artist + " " + track.title
 		return filename_safe(name, sub="_")
 
-	def render(self, track: TrackClass, x: int, y: int) -> bool:
+	def render(self, track: TrackClass, x: int, y: float) -> bool:
 		cache_title = self.get_cache_title(track)
 
 		if self.current == cache_title:
