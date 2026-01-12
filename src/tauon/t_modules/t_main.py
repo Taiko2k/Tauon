@@ -12307,7 +12307,7 @@ class Tauon:
 				new = self.pctl.id_to_pl(self.pctl.multi_playlist[source_pl].parent_playlist_id)
 				if new is None:
 					# The original playlist is now gone
-					self.pctl.multi_playlist[source_pl].parent_playlist_id = ""
+					self.pctl.multi_playlist[source_pl].parent_playlist_id = 0
 				else:
 					source_pl = new
 					# replace = True
@@ -14408,7 +14408,7 @@ class Tauon:
 		position:     int = 0,
 		hide_title:   bool = False,
 		selected:     int = 0,
-		parent:       str = "",
+		parent:       int = 0,
 		hidden:       bool = False,
 		notify:       bool = True, # Allows us to generate initial playlist before worker thread is ready
 		playlist_file:str = "",
@@ -33688,7 +33688,7 @@ class ArtistList:
 			# test if parent still exists
 			new = self.pctl.id_to_pl(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id)
 			if new is None or not self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title.startswith("Artist:"):
-				self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id = ""
+				self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id = 0
 			else:
 				viewing_pl_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id
 
