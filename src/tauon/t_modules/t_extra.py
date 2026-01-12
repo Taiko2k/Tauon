@@ -137,7 +137,7 @@ class TauonPlaylist:
 		7 last_folder import path (string)
 		8 hidden (bool)
 		9 locked (bool)
-		10 parent_playlist_id <- Filter (string)
+		10 parent_playlist_id <- Filter (int)
 		11 persist_time_positioning
 	"""
 
@@ -153,7 +153,7 @@ class TauonPlaylist:
 	]  # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
 	hidden: bool
 	locked: bool
-	parent_playlist_id: str  # Filter parent playlist id (string)
+	parent_playlist_id: int  # Filter parent playlist id
 	persist_time_positioning: bool  # Persist time positioning
 	playlist_file: str = ""  # Playlist may be automatically loaded to and from this filepath
 	auto_export: bool = False
