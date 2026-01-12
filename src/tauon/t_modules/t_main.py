@@ -39575,8 +39575,8 @@ def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, albu
 	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
 	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
 
-def get_themes(dirs: Directories, deco: bool = False) -> list[str] | dict[str, str]:
-	themes: list[str] = []  # full, name
+def get_themes(dirs: Directories, deco: bool = False) -> list[tuple[str, str]] | dict[str, str]:
+	themes: list[tuple[str, str]] = []  # full path, theme file name
 	decos: dict[str, str] = {}
 	direcs = [str(dirs.install_directory / "theme")]
 	if dirs.user_directory != dirs.install_directory:
