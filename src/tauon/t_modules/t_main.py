@@ -31627,6 +31627,8 @@ class RadioBox:
 	def start(self, station: RadioStation) -> None:
 		url = station.stream_url
 		logging.info("Start radio")
+		# Otherwise we'll be mute if we're starting from a paused state
+		self.pctl.set_volume()
 		logging.info(url)
 		if self.is_m3u(url):
 			url = self.extract_stream_m3u(url)
