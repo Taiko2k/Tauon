@@ -15,6 +15,7 @@ Changelog
  - **Fixed** Freeze when importing an invalid playlist
  - **Fixed** Playback of 4-channel VORBIS being half the speed
  - **Fixed** Radio playback of some ogg streams
+ - **Fixed** Radio volume being muted when starting a radio station from a paused state
  - **Tweaked** Default to the PipeWire backend on Linux
 
 ### v8.2.3
