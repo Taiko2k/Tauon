@@ -5959,6 +5959,7 @@ class Tauon:
 		self.text_plex_usr     = TextBox2(tauon=self)
 		self.text_plex_pas     = TextBox2(tauon=self)
 		self.text_plex_ser     = TextBox2(tauon=self)
+		self.text_plex_2fa     = TextBox2(tauon=self)
 
 		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
 		self.text_jelly_pas:     TextBox2 = TextBox2(tauon=self)
@@ -16005,13 +16006,36 @@ class Tauon:
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
+	def plex_cancel_two_factor(self) -> None:
+		self.plex.two_factor_required = False
+		self.text_plex_2fa.text = ""
+		self.plex.connected = False
+		self.plex.resource = None
+		self.plex.scanning = False
+		self.gui.update += 1
+
 	def plex_get_album_thread(self) -> None:
-		self.pref_box.close()
-		save_prefs(bag=self.bag)
 		if self.plex.scanning:
 			self.inp.mouse_click = False
 			self.show_message(_("Already scanning!"))
 			return
+
+		# If the user has 2FA enabled, Plex may require a verification code.
+		# In that case we keep the settings window open and prompt for the code.
+		if self.plex.two_factor_required:
+			code = self.text_plex_2fa.text.strip()
+			if not code:
+				self.show_message(_("Enter two-factor code"), mode="warning")
+				return
+			if not self.plex.connect(code=code):
+				return
+			self.text_plex_2fa.text = ""
+		else:
+			if not self.plex.connect():
+				return
+
+		self.pref_box.close()
+		save_prefs(bag=self.bag)
 		self.plex.scanning = True
 
 		shoot_dl = threading.Thread(target=self.plex.get_albums)
@@ -18630,41 +18654,53 @@ class PlexService:
 		self.connected = False
 		self.resource = None
 		self.scanning = False
+		self.two_factor_required = False
 
-	def connect(self) -> None:
+	def connect(self, code: str | None = None) -> bool:
 		if not self.prefs.plex_username or not self.prefs.plex_password or not self.prefs.plex_servername:
 			self.show_message(_("Missing username, password and/or server name"), mode="warning")
 			self.scanning = False
-			return
+			return False
 
 		try:
 			from plexapi.myplex import MyPlexAccount
+			from plexapi.exceptions import TwoFactorRequired
 		except ModuleNotFoundError:
 			logging.warning("Unable to import python-plexapi, plex support will be disabled.")
+			self.scanning = False
+			return False
 		except Exception:
 			logging.exception("Unknown error to import python-plexapi, plex support will be disabled.")
 			self.show_message(_("Error importing python-plexapi"), mode="error")
 			self.scanning = False
-			return
+			return False
 
 		try:
-			account = MyPlexAccount(self.prefs.plex_username, self.prefs.plex_password)
+			account = MyPlexAccount(self.prefs.plex_username, self.prefs.plex_password, code=code)
 			self.resource = account.resource(self.prefs.plex_servername).connect()  # returns a PlexServer instance
+			self.connected = True
+			self.two_factor_required = False
+			return True
+		except TwoFactorRequired:
+			logging.info("PLEX two-factor authentication required")
+			self.connected = False
+			self.resource = None
+			self.two_factor_required = True
+			self.show_message(
+				_("Two-factor authentication required"),
+				_("Enter the verification code and try again."),
+				mode="warning",
+			)
+			self.gui.update += 1
+			self.scanning = False
+			return False
 		except Exception:
 			logging.exception("Error connecting to PLEX server, check login credentials and server accessibility.")
 			self.show_message(
 				_("Error connecting to PLEX server"),
 				_("Try checking login credentials and that the server is accessible."), mode="error")
 			self.scanning = False
-			return
-
-		# from plexapi.server import PlexServer
-		# baseurl = 'http://localhost:32400'
-		# token = ''
-
-		# self.resource = PlexServer(baseurl, token)
-
-		self.connected = True
+			return False
 
 	def resolve_stream(self, location):
 		logging.info("Get plex stream")
@@ -25561,57 +25597,78 @@ class Over:
 		if self.account_view == 5:
 			ddt.text((x, y), _("PLEX network streaming"), colours.box_sub_text, 213)
 
+			max_field = 0 if tauon.plex.two_factor_required else 2
+			if self.account_text_field > max_field:
+				self.account_text_field = 0
 			if inp.key_tab_press:
 				self.account_text_field += 1
-				if self.account_text_field > 2:
+				if self.account_text_field > max_field:
 					self.account_text_field = 0
 
 			field_width = round(245 * gui.scale)
 
 			y += round(25 * gui.scale)
-			ddt.text((x + 0 * gui.scale, y), _("Username / Email"), colours.box_text_label, 11)
-			y += round(19 * gui.scale)
-			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-			self.fields.add(rect1)
-			if self.coll(rect1) and (self.click or inp.level_2_right_click):
-				self.account_text_field = 0
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			tauon.text_plex_usr.text = prefs.plex_username
-			tauon.text_plex_usr.draw(
-				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
-				width=rect1[2] - 8 * gui.scale, click=self.click)
-			prefs.plex_username = tauon.text_plex_usr.text
+			if tauon.plex.two_factor_required:
+				ddt.text((x + 0 * gui.scale, y), _("Two-factor code"), colours.box_text_label, 11)
+				y += round(19 * gui.scale)
+				rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+				self.fields.add(rect1)
+				if self.coll(rect1) and (self.click or inp.level_2_right_click):
+					self.account_text_field = 0
+				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+				tauon.text_plex_2fa.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+					width=rect1[2] - 8 * gui.scale, click=self.click)
+			else:
+				ddt.text((x + 0 * gui.scale, y), _("Username / Email"), colours.box_text_label, 11)
+				y += round(19 * gui.scale)
+				rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+				self.fields.add(rect1)
+				if self.coll(rect1) and (self.click or inp.level_2_right_click):
+					self.account_text_field = 0
+				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+				tauon.text_plex_usr.text = prefs.plex_username
+				tauon.text_plex_usr.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 0,
+					width=rect1[2] - 8 * gui.scale, click=self.click)
+				prefs.plex_username = tauon.text_plex_usr.text
 
-			y += round(23 * gui.scale)
-			ddt.text((x + 0 * gui.scale, y), _("Password"), colours.box_text_label, 11)
-			y += round(19 * gui.scale)
-			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-			self.fields.add(rect1)
-			if self.coll(rect1) and (self.click or inp.level_2_right_click):
-				self.account_text_field = 1
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			tauon.text_plex_pas.text = prefs.plex_password
-			tauon.text_plex_pas.draw(
-				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
-				width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
-			prefs.plex_password = tauon.text_plex_pas.text
+				y += round(23 * gui.scale)
+				ddt.text((x + 0 * gui.scale, y), _("Password"), colours.box_text_label, 11)
+				y += round(19 * gui.scale)
+				rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+				self.fields.add(rect1)
+				if self.coll(rect1) and (self.click or inp.level_2_right_click):
+					self.account_text_field = 1
+				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+				tauon.text_plex_pas.text = prefs.plex_password
+				tauon.text_plex_pas.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 1,
+					width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
+				prefs.plex_password = tauon.text_plex_pas.text
 
-			y += round(23 * gui.scale)
-			ddt.text((x + 0 * gui.scale, y), _("Server name"), colours.box_text_label, 11)
-			y += round(19 * gui.scale)
-			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-			self.fields.add(rect1)
-			if self.coll(rect1) and (self.click or inp.level_2_right_click):
-				self.account_text_field = 2
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			tauon.text_plex_ser.text = prefs.plex_servername
-			tauon.text_plex_ser.draw(
-				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
-				width=rect1[2] - 8 * gui.scale, click=self.click)
-			prefs.plex_servername = tauon.text_plex_ser.text
+			if not tauon.plex.two_factor_required:
+				y += round(23 * gui.scale)
+				ddt.text((x + 0 * gui.scale, y), _("Server name"), colours.box_text_label, 11)
+				y += round(19 * gui.scale)
+				rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+				self.fields.add(rect1)
+				if self.coll(rect1) and (self.click or inp.level_2_right_click):
+					self.account_text_field = 2
+				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+				tauon.text_plex_ser.text = prefs.plex_servername
+				tauon.text_plex_ser.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+					width=rect1[2] - 8 * gui.scale, click=self.click)
+				prefs.plex_servername = tauon.text_plex_ser.text
 
 			y += round(40 * gui.scale)
-			self.button(x, y, _("Import music to playlist"), tauon.plex_get_album_thread)
+			if tauon.plex.two_factor_required:
+				self.button(x, y, _("Continue"), tauon.plex_get_album_thread)
+				x2 = x + round(140 * gui.scale)
+				self.button(x2, y, _("Cancel"), tauon.plex_cancel_two_factor)
+			else:
+				self.button(x, y, _("Import music to playlist"), tauon.plex_get_album_thread)
 
 		if self.account_view == 4:
 
