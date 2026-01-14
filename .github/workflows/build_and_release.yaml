@@ -206,6 +206,7 @@ jobs:
             sdl3 \
             sdl3_image \
             jpeg-xl \
+            libsamplerate \
             ffmpeg \
             librsvg \
             opusfile \
