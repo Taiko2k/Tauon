@@ -1930,7 +1930,7 @@ int load_next() {
 	// Peak into file and try to detect signature
 
 	if ((fptr = uni_fopen(loaded_target_file)) == NULL) {
-		log_msg(LOG_ERROR, "pa: Error opening file: %s", strerror(errno));
+		log_msg(LOG_ERROR, "pa: Error opening file: '%s' (%s)", loaded_target_file, strerror(errno));
 		perror("Error");
 		return 1;
 	}
