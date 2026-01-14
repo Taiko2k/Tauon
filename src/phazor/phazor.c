@@ -2689,7 +2689,10 @@ void *main_loop(void *thread_id) {
 
 	mpg123_init();
 	mh = mpg123_new(NULL, &error);
-
+	if (!mh) {
+		log_msg(LOG_ERROR, "pa: mpg123_new failed: %d", error);
+		return thread_id;
+	}
 	mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_QUIET | MPG123_SKIP_ID3V2, 0);
 	mpg123_param(mh, MPG123_RESYNC_LIMIT, 10000, 0);
 
