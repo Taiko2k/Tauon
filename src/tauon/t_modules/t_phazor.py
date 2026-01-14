@@ -46,22 +46,27 @@ from tauon.t_modules.t_enums import PlayerState, PlayingState
 from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import PlayerCtl, Tauon, TrackClass
+	from ctypes import CDLL
+	from subprocess import Popen
+
+	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_prefs import Prefs
+	from tauon.t_modules.t_spot import SpotCtl
 
 
 class LibreSpot:
 	def __init__(self, tauon: Tauon) -> None:
 		# fmt:off
-		self.tauon           = tauon
-		self.aud             = tauon.aud
-		self.gui             = tauon.gui
-		self.msys            = tauon.msys
-		self.pctl            = tauon.pctl
-		self.prefs           = tauon.prefs
-		self.spot_ctl        = tauon.spot_ctl
-		self.librespot_p     = tauon.librespot_p
+		self.tauon:      Tauon = tauon
+		self.aud:         CDLL = tauon.aud
+		self.gui:       GuiVar = tauon.gui
+		self.msys:        bool = tauon.msys
+		self.pctl:   PlayerCtl = tauon.pctl
+		self.prefs:      Prefs = tauon.prefs
+		self.spot_ctl: SpotCtl = tauon.spot_ctl
+		self.librespot_p: Popen[bytes] | None = tauon.librespot_p
 		self.show_message    = tauon.show_message
-		self.cache_directory = tauon.cache_directory
+		self.cache_directory: Path = tauon.cache_directory
 		self.running:   bool = False
 		self.flush:     bool = False
 		# fmt:on
