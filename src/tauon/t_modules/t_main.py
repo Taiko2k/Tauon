@@ -16006,6 +16006,14 @@ class Tauon:
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
+	def plex_cancel_two_factor(self) -> None:
+		self.plex.two_factor_required = False
+		self.text_plex_2fa.text = ""
+		self.plex.connected = False
+		self.plex.resource = None
+		self.plex.scanning = False
+		self.gui.update += 1
+
 	def plex_get_album_thread(self) -> None:
 		if self.plex.scanning:
 			self.inp.mouse_click = False
@@ -25589,7 +25597,7 @@ class Over:
 		if self.account_view == 5:
 			ddt.text((x, y), _("PLEX network streaming"), colours.box_sub_text, 213)
 
-			max_field = 1 if tauon.plex.two_factor_required else 2
+			max_field = 0 if tauon.plex.two_factor_required else 2
 			if self.account_text_field > max_field:
 				self.account_text_field = 0
 			if inp.key_tab_press:
@@ -25639,23 +25647,26 @@ class Over:
 					width=rect1[2] - 8 * gui.scale, click=self.click, secret=True)
 				prefs.plex_password = tauon.text_plex_pas.text
 
-			y += round(23 * gui.scale)
-			ddt.text((x + 0 * gui.scale, y), _("Server name"), colours.box_text_label, 11)
-			y += round(19 * gui.scale)
-			rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
-			self.fields.add(rect1)
-			if self.coll(rect1) and (self.click or inp.level_2_right_click):
-				self.account_text_field = 1 if tauon.plex.two_factor_required else 2
-			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
-			tauon.text_plex_ser.text = prefs.plex_servername
-			tauon.text_plex_ser.draw(
-				x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == (1 if tauon.plex.two_factor_required else 2),
-				width=rect1[2] - 8 * gui.scale, click=self.click)
-			prefs.plex_servername = tauon.text_plex_ser.text
+			if not tauon.plex.two_factor_required:
+				y += round(23 * gui.scale)
+				ddt.text((x + 0 * gui.scale, y), _("Server name"), colours.box_text_label, 11)
+				y += round(19 * gui.scale)
+				rect1 = (x + 0 * gui.scale, y, field_width, round(17 * gui.scale))
+				self.fields.add(rect1)
+				if self.coll(rect1) and (self.click or inp.level_2_right_click):
+					self.account_text_field = 2
+				ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+				tauon.text_plex_ser.text = prefs.plex_servername
+				tauon.text_plex_ser.draw(
+					x + round(4 * gui.scale), y, colours.box_input_text, self.account_text_field == 2,
+					width=rect1[2] - 8 * gui.scale, click=self.click)
+				prefs.plex_servername = tauon.text_plex_ser.text
 
 			y += round(40 * gui.scale)
 			if tauon.plex.two_factor_required:
 				self.button(x, y, _("Continue"), tauon.plex_get_album_thread)
+				x2 = x + round(140 * gui.scale)
+				self.button(x2, y, _("Cancel"), tauon.plex_cancel_two_factor)
 			else:
 				self.button(x, y, _("Import music to playlist"), tauon.plex_get_album_thread)
 
