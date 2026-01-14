@@ -1039,7 +1039,7 @@ def player4(tauon: Tauon) -> None:
 							)
 							# tauon.spot_ctl.preparing_spotify = False
 							if pctl.playerCommand == "spotcon":  # such spaghetti code
-								state = 4
+								tauon.player4_state = PlayerState.SPOTIFY_MODE
 								pctl.playerCommand = ""
 								pctl.playerCommandReady = False
 
