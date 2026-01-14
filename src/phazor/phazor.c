@@ -2294,7 +2294,16 @@ int load_next() {
 			break;
 
 		case MPG:
-			mpg123_open(mh, loaded_target_file);
+			int ret = mpg123_open(mh, loaded_target_file);
+			if (ret != MPG123_OK) {
+				log_msg(
+					LOG_ERROR,
+					"pa: mpg123_open failed for '%s': %s",
+					loaded_target_file,
+					mpg123_strerror(mh)
+				);
+				return 1;
+			}
 			decoder_allocated = 1;
 
 			mpg123_getformat(mh, &rate, &channels, &encoding);
