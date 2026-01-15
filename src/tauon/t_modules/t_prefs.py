@@ -149,7 +149,7 @@ class Prefs:
 	last_fm_token = None
 	last_fm_username = ""
 
-	use_card_style = True
+	use_card_style: bool = True
 
 	plex_username = ""
 	plex_password = ""
@@ -167,98 +167,98 @@ class Prefs:
 
 	auto_lyrics_checked: list = field(default_factory=list)
 
-	show_side_art = True
-	always_pin_playlists = True
+	show_side_art: bool = True
+	always_pin_playlists: bool = True
 
-	gallery_single_click = True
+	gallery_single_click: bool = True
 	custom_bg_opacity = 40
 
-	tabs_on_top = True
+	tabs_on_top: bool = True
 
-	showcase_vis = True
-	show_lyrics_showcase = True
+	showcase_vis: bool = True
+	show_lyrics_showcase: bool = True
 
 	spec2_colour_mode = 0
 
 	device_buffer = 80
 
 	eq = [0.0] * 10
-	use_eq = False
+	use_eq: bool = False
 
-	bio_large = False
-	discord_show = False
+	bio_large: bool = False
+	discord_show: bool = False
 
-	min_to_tray = False
+	min_to_tray: bool = False
 
-	guitar_chords = False
-	prefer_synced_lyrics = True
+	guitar_chords: bool = False
+	prefer_synced_lyrics: bool = True
 	sync_lyrics_time_offset: int = -150  # in milliseconds
 
-	playback_follow_cursor = False
-	short_buffer = False
+	playback_follow_cursor: bool = False
+	short_buffer: bool = False
 
 	gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
-	art_bg = False
+	art_bg: bool = False
 	art_bg_stronger = 1
 	art_bg_opacity = 10
 	art_bg_blur = 9
-	art_bg_always_blur = False
+	art_bg_always_blur: bool = False
 
-	random_mode = False
-	repeat_mode = False
+	random_mode: bool = False
+	repeat_mode: bool = False
 
 	failed_artists: list[str] = field(default_factory=list)
 	failed_background_artists: list[str] = field(default_factory=list)
 
-	artist_list = False
-	auto_sort = False
+	artist_list: bool = False
+	auto_sort: bool = False
 
-	transcode_inplace = False
+	transcode_inplace: bool = False
 
-	bg_showcase_only = False
+	bg_showcase_only: bool = False
 
 	lyrics_enables: list[str] = field(default_factory=list)
 
 	fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 
-	fanart_notify = True
+	fanart_notify: bool = True
 	discogs_pat = ""
 
-	artist_list_prefer_album_artist = True
+	artist_list_prefer_album_artist: bool = True
 
 	mini_mode_mode = 0
 	dc_device_setting = "on"
 
 	download_dir1 = ""
-	dd_index = False
+	dd_index: bool = False
 
 	metadata_page_port = 7590
 
 	custom_encoder_output = ""
-	column_aa_fallback_artist = False
+	column_aa_fallback_artist: bool = False
 
-	meta_persists_stop = False
-	meta_shows_selected = False
-	meta_shows_selected_always = False
+	meta_persists_stop: bool = False
+	meta_shows_selected: bool = False
+	meta_shows_selected_always: bool = False
 
-	left_align_album_artist_title = False
-	stop_notifications_mini_mode = False
+	left_align_album_artist_title: bool = False
+	stop_notifications_mini_mode: bool = False
 	scale_want: float = 1
-	x_scale = True
-	hide_queue = True
-	show_playlist_list = True
-	thin_gallery_borders = False
-	show_current_on_transition = False
+	x_scale: bool = True
+	hide_queue: bool = True
+	show_playlist_list: bool = True
+	thin_gallery_borders: bool = False
+	show_current_on_transition: bool = False
 
 	chart_rows = 3
 	chart_columns = 3
 	chart_bg: list[int] = field(default_factory=lambda: [7, 7, 7])
-	chart_text = True
+	chart_text: bool = True
 	chart_font = "Monospace 10"
-	chart_tile = False
+	chart_tile: bool = False
 
-	chart_cascade = False
+	chart_cascade: bool = False
 	chart_c1 = 5
 	chart_c2 = 6
 	chart_c3 = 10
@@ -266,20 +266,20 @@ class Prefs:
 	chart_d2 = 2
 	chart_d3 = 2
 
-	art_in_top_panel = True
-	always_art_header = False
+	art_in_top_panel: bool = True
+	always_art_header: bool = False
 
 	# center_bg = True
 	ui_lang: str = "auto"
 	side_panel_layout = 0
-	use_absolute_track_index = False
+	use_absolute_track_index: bool = False
 
-	hide_bottom_title = True
-	auto_goto_playing = False
+	hide_bottom_title: bool = True
+	auto_goto_playing: bool = False
 
-	diacritic_search = True
-	increase_gallery_row_spacing = False
-	center_gallery_text = False
+	diacritic_search: bool = True
+	increase_gallery_row_spacing: bool = False
+	center_gallery_text: bool = False
 
 	tracklist_y_text_offset = 0
 	theme: int = 7
@@ -287,43 +287,43 @@ class Prefs:
 	transparent_mode: int = 0
 	left_panel_mode = "playlist"
 
-	folder_tree_codec_colours = False
+	folder_tree_codec_colours: bool = False
 
 	network_stream_bitrate = 0  # 0 is off
 
-	show_side_lyrics_art_panel = True
+	show_side_lyrics_art_panel: bool = True
 
-	gst_use_custom_output = False
+	gst_use_custom_output: bool = False
 
-	notify_include_album = True
+	notify_include_album: bool = True
 
-	auto_dl_artist_data = False
+	auto_dl_artist_data: bool = False
 
-	enable_fanart_artist = False
-	enable_fanart_bg = False
-	enable_fanart_cover = False
+	enable_fanart_artist: bool = False
+	enable_fanart_bg: bool = False
+	enable_fanart_cover: bool = False
 
-	always_auto_update_playlists = False
+	always_auto_update_playlists: bool = False
 
 	subsonic_server = "http://localhost:4040"
 	subsonic_user = ""
 	subsonic_password = ""
-	subsonic_password_plain = False
+	subsonic_password_plain: bool = False
 
 	subsonic_playlists = {}
 
-	write_ratings = False
-	rating_playtime_stars = False
+	write_ratings: bool = False
+	rating_playtime_stars: bool = False
 
 	lyrics_subs = {}
 
 	radio_urls: list[RadioStation] = field(default_factory=list[RadioStation])
 
-	lyric_metadata_panel_top = False
-	showcase_overlay_texture = False
+	lyric_metadata_panel_top: bool = False
+	showcase_overlay_texture: bool = False
 
 	sync_target = ""
-	sync_deletes = False
+	sync_deletes: bool = False
 	sync_playlist: int | None = None
 	download_playlist: int | None = None
 
@@ -333,98 +333,98 @@ class Prefs:
 	synced_lyrics_editor_track_end_mode: Literal["stop","autosave","full save","repeat"] = "repeat"
 	save_lyrics_changes_to_files: bool = False
 
-	sep_genre_multi = False
-	topchart_sorts_played = True
+	sep_genre_multi: bool = False
+	topchart_sorts_played: bool = True
 
 	spot_client = ""
 	spot_secret = ""
 	spot_username = ""
 	spot_password = ""
-	spot_mode = False
-	launch_spotify_web = False
-	launch_spotify_local = False
-	remove_network_tracks = False
-	bypass_transcode = False
-	force_hide_max_button = False
-	zoom_art = False
-	auto_rec = False
+	spot_mode: bool = False
+	launch_spotify_web: bool = False
+	launch_spotify_local: bool = False
+	remove_network_tracks: bool = False
+	bypass_transcode: bool = False
+	force_hide_max_button: bool = False
+	zoom_art: bool = False
+	auto_rec: bool = False
 	radio_record_codec = "OPUS"
-	pa_fast_seek = False
-	precache = False
+	pa_fast_seek: bool = False
+	precache: bool = False
 	# TODO(Martin): cache_list isn't really used anywhere and will always be empty?
 	cache_list: list[str] = field(default_factory=list[str])
 	cache_limit = 2000  # in mb
-	save_window_position = True
+	save_window_position: bool = True
 	spotify_token = ""
-	always_ffmpeg = False
+	always_ffmpeg: bool = False
 
-	use_libre_fm = False
-	back_restarts = False
+	use_libre_fm: bool = False
+	back_restarts: bool = False
 
 	old_playlist_box_position = 0
 	listenbrainz_url = ""
-	maloja_enable = False
+	maloja_enable: bool = False
 	maloja_url = ""
 	maloja_key = ""
 
-	scrobble_hold = False
+	scrobble_hold: bool = False
 
 	artist_list_sort_mode = "alpha"
 
 	phazor_device_selected = "Default"
 	phazor_devices = ["Default"]
 	bg_flips = set()
-	use_tray = False
-	tray_show_title = False
-	drag_to_unpin = True
-	enable_remote = False
+	use_tray: bool = False
+	tray_show_title: bool = False
+	drag_to_unpin: bool = True
+	enable_remote: bool = False
 
 	artist_list_style = 1
-	discord_enable = False
-	stop_end_queue = False
+	discord_enable: bool = False
+	stop_end_queue: bool = False
 
-	block_suspend = False
-	smart_bypass = True
+	block_suspend: bool = False
+	smart_bypass: bool = True
 	seek_interval = 15
-	shuffle_lock = False
-	album_shuffle_lock_mode = False
-	premium = False
+	shuffle_lock: bool = False
+	album_shuffle_lock_mode: bool = False
+	premium: bool = False
 	radio_thumb_bans: list[str] = field(default_factory=list[str])
-	show_nag = False
+	show_nag: bool = False
 
 	playlist_exports = {}
-	show_chromecast = False
+	show_chromecast: bool = False
 
 	samplerate = 48000
 	resample = 1
 	volume_power = 2
 
-	tmp_cache = True
+	tmp_cache: bool = True
 
 	sat_url = ""
 	lyrics_font_size = 15
 
-	use_gamepad = True
-	avoid_resampling = False
-	use_scancodes = False
+	use_gamepad: bool = True
+	avoid_resampling: bool = False
+	use_scancodes: bool = False
 
 	artist_list_threshold = 4
-	allow_video_formats = True
-	mini_mode_on_top = True
+	allow_video_formats: bool = True
+	mini_mode_on_top: bool = True
 	tray_theme = "pink"
 
-	lastfm_pull_love = False
+	lastfm_pull_love: bool = False
 	row_title_format = 1
-	row_title_genre = False
+	row_title_genre: bool = False
 	row_title_separator_type = 1
-	search_on_letter = True
+	search_on_letter: bool = True
 
-	gallery_combine_disc = False
+	gallery_combine_disc: bool = False
 	pipewire: bool = True
 	tidal_quality = 1
 
-	jump_start = True
+	jump_start: bool = True
 
-	milk = False
-	auto_milk = True
+	milk: bool = False
+	auto_milk: bool = True
 	loaded_preset = None
