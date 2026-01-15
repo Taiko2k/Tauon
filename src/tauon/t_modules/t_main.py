@@ -526,6 +526,8 @@ class GuiVar:
 
 		self.scale: float = self.bag.prefs.ui_scale
 
+		self.panelY: int = 0
+		self.panelY2: int = 0
 		self.panelBY: float = 0
 
 		self.window_id = 0
@@ -546,7 +548,7 @@ class GuiVar:
 		self.album_v_gap:       float = 66
 		self.album_h_gap:       float = 30
 		self.album_v_slide_value: int = 50
-		self.album_scroll_px = self.album_v_slide_value
+		self.album_scroll_px: int = self.album_v_slide_value
 		# Playlist Panel
 		self.pl_rect = (2, 12, 10, 10)
 
@@ -729,7 +731,7 @@ class GuiVar:
 		self.gallery_scroll_field_left = 1
 		self.combo_was_album: bool = False
 
-		self.gallery_positions: dict[str, int] = {}
+		self.gallery_positions: dict[int, int] = {}
 
 		self.remember_library_mode: bool = False
 
@@ -1207,7 +1209,8 @@ class Input:
 		self.input_text = ""
 		self.key_focused = 0
 
-	def test_shift(self, _) -> bool:
+	def test_shift(self, _: int) -> bool:
+		logging.critical(f"test shift {type(_)}")
 		return self.key_shift_down or self.key_shiftr_down
 
 	def m_key_play(self) -> None:
@@ -1774,11 +1777,11 @@ class PlayerCtl:
 		self.playerCommandReady = False
 		self.playing_state: PlayingState = PlayingState.STOPPED
 		self.playing_length: float = 0
-		self.jump_time: float      = 0.0
-		self.random_mode           = self.prefs.random_mode
-		self.repeat_mode           = self.prefs.repeat_mode
-		self.album_repeat_mode     = self.prefs.album_repeat_mode
-		self.album_shuffle_mode    = self.prefs.album_shuffle_mode
+		self.jump_time:      float = 0.0
+		self.random_mode:        bool = self.prefs.random_mode
+		self.repeat_mode:        bool = self.prefs.repeat_mode
+		self.album_repeat_mode:  bool = self.prefs.album_repeat_mode
+		self.album_shuffle_mode: bool = self.prefs.album_shuffle_mode
 		# self.album_shuffle_pool = []
 		# self.album_shuffle_id = ""
 		self.last_playing_time = 0
@@ -4840,7 +4843,7 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func: Callable[[int], list[list[int | str | None]]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		self, title: str, func, render_func: Callable[[int], list[list[ColourRGBA | str | None]]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
@@ -4909,20 +4912,20 @@ class Menu:
 			self.w += 15
 
 	def __init__(self, tauon: Tauon, width: int, show_icons: bool = False) -> None:
-		self.tauon       = tauon
-		self.gui         = tauon.gui
-		self.inp         = tauon.inp
-		self.ddt         = tauon.ddt
-		self.coll        = tauon.coll
-		self.fields      = tauon.fields
-		self.colours     = tauon.colours
-		self.window_size = tauon.window_size
+		self.tauon:           Tauon = tauon
+		self.gui:            GuiVar = tauon.gui
+		self.inp:             Input = tauon.inp
+		self.ddt:             TDraw = tauon.ddt
+		self.coll                   = tauon.coll
+		self.fields:         Fields = tauon.fields
+		self.colours:  ColoursClass = tauon.colours
+		self.window_size: list[int] = tauon.window_size
 
 		self.base_v_size = 22
-		self.active = False
+		self.active: bool = False
 		self.request_width: int = width
-		self.close_next_frame = False
-		self.clicked = False
+		self.close_next_frame: bool = False
+		self.clicked: bool = False
 		self.pos: list[float] = [0, 0]
 		self.rescale()
 
@@ -4930,8 +4933,8 @@ class Menu:
 		self.items: list[MenuItem | None] = []
 		self.subs: list[list[MenuItem]] = []
 		self.selected = -1
-		self.up = False
-		self.down = False
+		self.up: bool = False
+		self.down: bool = False
 		self.font = 412
 		self.show_icons: bool = show_icons
 		self.sub_arrow = MenuIcon(asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "sub.png", True))
@@ -7230,7 +7233,7 @@ class Tauon:
 		self.artist_info_box.text = ""
 		self.artist_info_box.artist_on = None
 
-	def test_artist_dl(self, _) -> bool:
+	def test_artist_dl(self, _: int) -> bool:
 		return not self.prefs.auto_dl_artist_data
 
 	def show_in_playlist(self) -> None:
@@ -7436,7 +7439,7 @@ class Tauon:
 		self.load_orders.append(copy.deepcopy(load_order))
 		self.show_message(_("Rescanning folder..."), stem, mode="info")
 
-	def collapse_tree_deco(self):
+	def collapse_tree_deco(self) -> list[ColourRGBA | None]:
 		pl_id = self.tree_view_box.get_pl_id()
 
 		if self.tree_view_box.opens.get(pl_id):
@@ -7561,19 +7564,19 @@ class Tauon:
 	def toggle_lyrics_panel_position(self) -> None:
 		self.prefs.lyric_metadata_panel_top ^= True
 
-	def lyrics_in_side_show(self, track_object: TrackClass) -> bool:
+	def lyrics_in_side_show(self, _track_object: TrackClass) -> bool:
 		return not (self.gui.combo_mode or not self.prefs.show_lyrics_side)
 
 	def toggle_side_art(self) -> None:
 		self.prefs.show_side_lyrics_art_panel ^= True
 
-	def toggle_milky_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
+	def toggle_milky_deco(self, _track_object: TrackClass) -> list[ColourRGBA | str | None]:
 		text = _("Enable Milkdrop Visualiser")
 		if self.prefs.milk:
 			text = _("Disable Milkdrop Visualiser")
 		return [self.colours.menu_text, self.colours.menu_background, text]
 
-	def toggle_milky_auto_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
+	def toggle_milky_auto_deco(self, _track_object: TrackClass) -> list[ColourRGBA | str | None]:
 		text = _("Enable Auto Cycle")
 		if self.prefs.auto_milk:
 			text = _("Disable Auto Cycle")
@@ -7605,7 +7608,7 @@ class Tauon:
 			if not self.milky.projectm.presets:
 				def dowload_presets():
 					self.show_message(_("Downloading..."))
-					def dl():
+					def dl() -> None:
 						url = "https://github.com/Taiko2k/Tauon/releases/download/v8.2.2/creamingsodav1.zip"
 						assert url
 						target_directory = self.user_directory / "presets"
@@ -7622,7 +7625,7 @@ class Tauon:
 						self.show_message(_("Presets ready"), mode="done")
 
 					shooter(dl)
-				def skip_presets():
+				def skip_presets() -> None:
 					self.prefs.milk = True
 				self.gui.message_box_confirm_callback = dowload_presets
 				self.gui.message_box_no_callback = skip_presets
@@ -7633,12 +7636,12 @@ class Tauon:
 
 		self.prefs.milk ^= True
 
-	def toggle_milky_auto(self, track_object: TrackClass) -> None:
+	def toggle_milky_auto(self, _track_object: TrackClass) -> None:
 		self.milky.projectm.auto_frames = 0
 		self.milky.projectm.timer.set()
 		self.prefs.auto_milk ^= True
 
-	def open_preset_folder(self, track_object: TrackClass) -> None:
+	def open_preset_folder(self, _track_object: TrackClass) -> None:
 		target = self.user_directory / "presets"
 		if not target.exists():
 			target.mkdir()
@@ -8065,8 +8068,8 @@ class Tauon:
 				if tr.parent_folder_path == parent:
 					siblings.append(tr)
 
-		album_tags: list[str] = []
-		date_tags:  list[str] = []
+		album_tags: list[str] | set[str] = []
+		date_tags:  list[str] | set[str] = []
 
 		for tr in siblings:
 			album_tags.append(tr.album)
@@ -8230,7 +8233,6 @@ class Tauon:
 						try:
 							tag = mutagen.id3.ID3(tr.fullpath)
 							tag.delall("APIC")
-							remove = True
 							tag.save(padding=no_padding)
 							removed += 1
 						except Exception:
@@ -8297,7 +8299,7 @@ class Tauon:
 			logging.exception("Failed to delete file")
 			self.show_message(_("Something went wrong"), mode="error")
 
-	def delete_track_image_deco(self, track_object: TrackClass | int):
+	def delete_track_image_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
@@ -8337,7 +8339,7 @@ class Tauon:
 			self.gui.message_box_confirm_reference = (track_object, False)
 			self.show_message(_("This will erase any embedded image in {N} files. Are you sure?").format(N=n), mode="confirm")
 
-	def search_image_deco(self, track_object: TrackClass):
+	def search_image_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
 		if track_object.artist and track_object.album:
 			line_colour = self.colours.menu_text
 		else:
@@ -10237,7 +10239,7 @@ class Tauon:
 	def force_del_selected(self) -> None:
 		self.del_selected(force_delete=True)
 
-	def test_show(self, _) -> bool:
+	def test_show(self, _: int) -> bool:
 		return self.prefs.album_mode
 
 	def show_in_gal(self, _track: TrackClass, silent: bool = False) -> None:
@@ -11644,12 +11646,12 @@ class Tauon:
 	def goto_playing_extra(self) -> None:
 		self.pctl.show_current(highlight=True)
 
-	def show_spot_playing_deco(self):
+	def show_spot_playing_deco(self) -> list[ColourRGBA | None]:
 		if not (self.spot_ctl.coasting or self.spot_ctl.playing):
 			return [self.colours.menu_text, self.colours.menu_background, None]
 		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
 
-	def show_spot_coasting_deco(self):
+	def show_spot_coasting_deco(self) -> list[ColourRGBA | None]:
 		if self.spot_ctl.coasting:
 			return [self.colours.menu_text, self.colours.menu_background, None]
 		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
@@ -11712,7 +11714,7 @@ class Tauon:
 	def spot_import_context(self) -> None:
 		shooter(self.spot_ctl.import_context)
 
-	def get_album_spot_deco(self):
+	def get_album_spot_deco(self) -> list[ColourRGBA | str | None]:
 		tr = self.pctl.playing_object()
 		text = _("Show Full Album")
 		if not tr:
@@ -27188,23 +27190,23 @@ class Fields:
 
 class TopPanel:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon           = tauon
-		self.ddt             = tauon.ddt
-		self.gui             = tauon.gui
-		self.inp             = tauon.inp
+		self.tauon:          Tauon = tauon
+		self.ddt:            TDraw = tauon.ddt
+		self.gui:           GuiVar = tauon.gui
+		self.inp:            Input = tauon.inp
 		self.coll            = tauon.coll
-		self.pctl            = tauon.pctl
-		self.prefs           = tauon.prefs
-		self.fonts           = tauon.fonts
-		self.fields          = tauon.fields
-		self.colours         = tauon.colours
+		self.pctl:       PlayerCtl = tauon.pctl
+		self.prefs:          Prefs = tauon.prefs
+		self.fonts:          Fonts = tauon.fonts
+		self.fields:        Fields = tauon.fields
+		self.colours: ColoursClass = tauon.colours
 		self.renderer        = tauon.renderer
-		self.window_size     = tauon.window_size
-		self.overflow_menu   = tauon.overflow_menu
-		self.draw_min_button = tauon.draw_min_button
-		self.draw_max_button = tauon.draw_max_button
-		self.height          = self.gui.panelY
-		self.ty              = 0
+		self.window_size: list[int] = tauon.window_size
+		self.overflow_menu:    Menu = tauon.overflow_menu
+		self.draw_min_button:  bool = tauon.draw_min_button
+		self.draw_max_button:  bool = tauon.draw_max_button
+		self.height:            int = self.gui.panelY
+		self.ty:                int = 0
 
 		self.start_space_left = round(46 * self.gui.scale)
 		self.start_space_compact_left = 46 * self.gui.scale
@@ -27248,7 +27250,7 @@ class TopPanel:
 		self.tab_d_click_timer = Timer(10)
 		self.tab_d_click_ref = None
 
-		self.adds = []
+		self.adds: list[list[int | Timer]] = []
 
 	def left_overflow_switch_playlist(self, pl: int) -> None:
 		self.prime_side = 0

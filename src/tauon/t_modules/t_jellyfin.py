@@ -291,7 +291,7 @@ class Jellyfin:
 			)
 		logging.info("DONE")
 
-	def get_playlist(self, playlist_id: int, name: str = "", return_list: bool = False) -> list | None:
+	def get_playlist(self, playlist_id: str, name: str = "", return_list: bool = False) -> list | None:
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 		if not self.connected:
