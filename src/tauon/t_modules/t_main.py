@@ -348,6 +348,12 @@ if system == "Windows" or msys:
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
+@dataclass
+class Decorator:
+	text_colour: ColourRGBA | None
+	bg_colour: ColourRGBA | None
+	text: str | None
+
 
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
@@ -4842,7 +4848,7 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func: Callable[[int], list[list[ColourRGBA | str | None]]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		self, title: str, func, render_func: Callable[[int], list[Decorator]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
@@ -4951,8 +4957,8 @@ class Menu:
 		self.spring_loading_timer: Timer = Timer()
 		self.can_be_spring_clicked: bool = False
 
-	def deco(self, _=_) -> list[ColourRGBA | None]:
-		return [self.colours.menu_text, self.colours.menu_background, None]
+	def deco(self, _=_) -> Decorator:
+		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
 	def click(self) -> None:
 		self.clicked = True
@@ -4987,7 +4993,7 @@ class Menu:
 			return item.disable_test()
 		return None
 
-	def render_icon(self, x: float, y: float, icon: MenuIcon | None, selected: bool, fx) -> None:
+	def render_icon(self, x: float, y: float, icon: MenuIcon | None, selected: bool, fx: Decorator) -> None:
 		colours = self.colours
 		gui     = self.gui
 		if colours.lm:
@@ -5003,7 +5009,7 @@ class Menu:
 				# Colourise mode
 				if icon.colour_callback is not None:  # and icon.colour_callback() is not None:
 					colour = icon.colour_callback()
-				elif selected and fx[0] != colours.menu_text_disabled:
+				elif selected and fx.text_colour != colours.menu_text_disabled:
 					colour = icon.colour
 
 				if colour is None and icon.base_asset_mod:
@@ -5023,7 +5029,7 @@ class Menu:
 				if not is_grey(colours.menu_background):
 					return  # Since these are currently pre-rendered greyscale, they are
 					# Incompatible with coloured backgrounds. Fix TODO
-				if selected and fx[0] == colours.menu_text_disabled:
+				if selected and fx.text_colour == colours.menu_text_disabled:
 					icon.base_asset.render(x, y)
 					return
 
@@ -5113,15 +5119,15 @@ class Menu:
 				else:
 					fx = self.deco()
 
-				label = fx[2] if fx[2] is not None else self.items[i].title
+				label = fx.text if fx.text is not None else self.items[i].title
 
 				# Show text as disabled if disable_test() passes
 				if self.is_item_disabled(self.items[i]):
-					fx[0] = colours.menu_text_disabled
+					fx.text_colour = colours.menu_text_disabled
 
 				# Draw item background, black by default
-				ddt.rect_a((x_run, y_run), (self.w, self.h), fx[1])
-				bg = fx[1]
+				ddt.rect_a((x_run, y_run), (self.w, self.h), fx.bg_colour)
+				bg = fx.bg_colour
 
 				# Detect if mouse is over this item
 				selected = False
@@ -5182,7 +5188,7 @@ class Menu:
 					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
 
 				# Render the items label
-				ddt.text((x_run + x, y_run + ytoff), label, fx[0], self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
+				ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
 
 				# Render the items hint
 				if self.items[i].hint is not None:
@@ -5241,7 +5247,7 @@ class Menu:
 								fx = self.subs[self.sub_active][w].render_func()
 
 						# Item background
-						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx[1])
+						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx.bg_colour)
 
 						# Detect if mouse is over this item
 						rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
@@ -5268,11 +5274,11 @@ class Menu:
 								self.close_next_frame = True
 								gui.update += 1
 
-						label = fx[2] if fx[2] is not None else self.subs[self.sub_active][w].title
+						label = fx.text if fx.text is not None else self.subs[self.sub_active][w].title
 
 						# Show text as disabled if disable_test() passes
 						if self.is_item_disabled(self.subs[self.sub_active][w]):
-							fx[0] = colours.menu_text_disabled
+							fx.text_colour = colours.menu_text_disabled
 
 						# Render sub items icon
 						icon = self.subs[self.sub_active][w].icon
@@ -5280,7 +5286,7 @@ class Menu:
 
 						# Render the items label
 						ddt.text(
-							(sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx[0], self.font, bg=bg)
+							(sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx.text_colour, self.font, bg=bg)
 
 						# Draw tab
 						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h), colours.menu_tab)
@@ -7039,10 +7045,9 @@ class Tauon:
 		self.ddt.rect((x, y, w, h), self.colours.menu_background)
 		p = self.ddt.text((x + int(w / 2), y + 3 * self.gui.scale, 2), text, self.colours.menu_text, 312, bg=self.colours.menu_background)
 
-	def menu_standard_or_grey(self, enabled: bool) -> list[ColourRGBA | None]:
+	def menu_standard_or_grey(self, enabled: bool) -> Decorator:
 		line_colour = self.colours.menu_text if enabled else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def enable_artist_list(self) -> None:
 		if self.prefs.left_panel_mode != "artist list":
@@ -7183,10 +7188,10 @@ class Tauon:
 	def toggle_shuffle_layout_albums(self) -> None:
 		self.toggle_shuffle_layout(albums=True)
 
-	def toggle_shuffle_layout_deco(self) -> list[ColourRGBA | str | None]:
+	def toggle_shuffle_layout_deco(self) -> Decorator:
 		if not self.prefs.shuffle_lock:
-			return [self.colours.menu_text, self.colours.menu_background, _("Shuffle Lockdown")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Exit Shuffle Lockdown")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Shuffle Lockdown"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Exit Shuffle Lockdown"))
 
 	def exit_shuffle_layout(self, _: int) -> bool:
 		return self.prefs.shuffle_lock
@@ -7209,11 +7214,11 @@ class Tauon:
 		self.gui.artist_info_panel ^= True
 		self.gui.update_layout = True
 
-	def toggle_bio_size_deco(self) -> list[ColourRGBA | str | None]:
+	def toggle_bio_size_deco(self) -> Decorator:
 		line = _("Make Large Size")
 		if self.prefs.bio_large:
 			line = _("Make Compact Size")
-		return [self.colours.menu_text, self.colours.menu_background, line]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, line)
 
 	def toggle_bio_size(self) -> None:
 		if self.prefs.bio_large:
@@ -7438,12 +7443,12 @@ class Tauon:
 		self.load_orders.append(copy.deepcopy(load_order))
 		self.show_message(_("Rescanning folder..."), stem, mode="info")
 
-	def collapse_tree_deco(self) -> list[ColourRGBA | None]:
+	def collapse_tree_deco(self) -> Decorator:
 		pl_id = self.tree_view_box.get_pl_id()
 
 		if self.tree_view_box.opens.get(pl_id):
-			return [self.colours.menu_text, self.colours.menu_background, None]
-		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
 	def collapse_tree(self) -> None:
 		self.tree_view_box.collapse_all()
@@ -7454,10 +7459,10 @@ class Tauon:
 		else:
 			self.tree_view_box.lock_pl = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int
 
-	def lock_folder_tree_deco(self):
+	def lock_folder_tree_deco(self) -> Decorator:
 		if self.tree_view_box.lock_pl:
-			return [self.colours.menu_text, self.colours.menu_background, _("Unlock Panel")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Lock Panel")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Unlock Panel"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Lock Panel"))
 
 	def finish_current(self) -> None:
 		playing_object = self.pctl.playing_object()
@@ -7542,23 +7547,21 @@ class Tauon:
 	def toggle_lyrics_show(self, _) -> bool:
 		return not self.gui.combo_mode
 
-	def toggle_side_art_deco(self) -> list[ColourRGBA | str | None]:
+	def toggle_side_art_deco(self) -> Decorator:
 		colour = self.colours.menu_text
 		line = _("Hide Metadata Panel") if self.prefs.show_side_lyrics_art_panel else _("Show Metadata Panel")
 
 		if self.gui.combo_mode:
 			colour = self.colours.menu_text_disabled
+		return Decorator(colour, self.colours.menu_background, line)
 
-		return [colour, self.colours.menu_background, line]
-
-	def toggle_lyrics_panel_position_deco(self) -> list[ColourRGBA | str | None]:
+	def toggle_lyrics_panel_position_deco(self) -> Decorator:
 		colour = self.colours.menu_text
 		line = _("Panel Below Lyrics") if self.prefs.lyric_metadata_panel_top else _("Panel Above Lyrics")
 
 		if self.gui.combo_mode or not self.prefs.show_side_lyrics_art_panel:
 			colour = self.colours.menu_text_disabled
-
-		return [colour, self.colours.menu_background, line]
+		return Decorator(colour, self.colours.menu_background, line)
 
 	def toggle_lyrics_panel_position(self) -> None:
 		self.prefs.lyric_metadata_panel_top ^= True
@@ -7569,43 +7572,43 @@ class Tauon:
 	def toggle_side_art(self) -> None:
 		self.prefs.show_side_lyrics_art_panel ^= True
 
-	def toggle_milky_deco(self, _track_object: TrackClass) -> list[ColourRGBA | str | None]:
+	def toggle_milky_deco(self, _track_object: TrackClass) -> Decorator:
 		text = _("Enable Milkdrop Visualiser")
 		if self.prefs.milk:
 			text = _("Disable Milkdrop Visualiser")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def toggle_milky_auto_deco(self, _track_object: TrackClass) -> list[ColourRGBA | str | None]:
+	def toggle_milky_auto_deco(self, _track_object: TrackClass) -> Decorator:
 		text = _("Enable Auto Cycle")
 		if self.prefs.auto_milk:
 			text = _("Disable Auto Cycle")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def toggle_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | str | None]:
+	def toggle_lyrics_deco(self, track_object: TrackClass) -> Decorator:
 		colour = self.colours.menu_text
 
 		if self.gui.combo_mode:
 			line = _("Hide Lyrics") if self.prefs.show_lyrics_showcase else _("Show Lyrics")
 			if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
 				colour = self.colours.menu_text_disabled
-			return [colour, self.colours.menu_background, line]
+			return Decorator(colour, self.colours.menu_background, line)
 
 		if self.prefs.side_panel_layout == 1:  # and self.prefs.show_side_art:
 			line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
 			if (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
 				colour = self.colours.menu_text_disabled
-			return [colour, self.colours.menu_background, line]
+			return Decorator(colour, self.colours.menu_background, line)
 
 		line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
 		if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
 			colour = self.colours.menu_text_disabled
-		return [colour, self.colours.menu_background, line]
+		return Decorator(colour, self.colours.menu_background, line)
 
-	def toggle_milky(self, track_object: TrackClass) -> None:
+	def toggle_milky(self, _track_object: TrackClass) -> None:
 		if not self.prefs.milk:
 			self.milky.projectm.rescan_presets()
 			if not self.milky.projectm.presets:
-				def dowload_presets():
+				def download_presets() -> None:
 					self.show_message(_("Downloading..."))
 					def dl() -> None:
 						url = "https://github.com/Taiko2k/Tauon/releases/download/v8.2.2/creamingsodav1.zip"
@@ -7626,7 +7629,7 @@ class Tauon:
 					shooter(dl)
 				def skip_presets() -> None:
 					self.prefs.milk = True
-				self.gui.message_box_confirm_callback = dowload_presets
+				self.gui.message_box_confirm_callback = download_presets
 				self.gui.message_box_no_callback = skip_presets
 				self.gui.message_box_confirm_reference = []
 				self.show_message(_("No presets loaded. Download preset pack? (~5MB)"),
@@ -7800,15 +7803,14 @@ class Tauon:
 		if track_object.artist:
 			self.lastfm.get_bio(track_object.artist)
 
-	def search_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
+	def search_lyrics_deco(self, track_object: TrackClass) -> Decorator:
 		line_colour = self.colours.menu_text if not track_object.lyrics else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def toggle_synced_lyrics(self, tr: TrackClass) -> None:
 		self.prefs.prefer_synced_lyrics ^= True
 
-	def toggle_synced_lyrics_deco(self, track: TrackClass) -> list[ColourRGBA | str | None]:
+	def toggle_synced_lyrics_deco(self, track: TrackClass) -> Decorator:
 		text = _("Show static lyrics") if self.prefs.prefer_synced_lyrics else _("Show synced lyrics")
 		if self.timed_lyrics_ren.generate(track) and track.lyrics:
 			line_colour = self.colours.menu_text
@@ -7818,8 +7820,7 @@ class Tauon:
 				text = _("Show static lyrics")
 			if not self.timed_lyrics_ren.generate(track):
 				text = _("Show synced lyrics")
-
-		return [line_colour, self.colours.menu_background, text]
+		return Decorator(line_colour, self.colours.menu_background, text)
 
 	def paste_lyrics(self, track_object: TrackClass) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -7848,28 +7849,24 @@ class Tauon:
 				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
 
-	def paste_lyrics_deco(self) -> list[ColourRGBA | None]:
+	def paste_lyrics_deco(self) -> Decorator:
 		line_colour = self.colours.menu_text if sdl3.SDL_HasClipboardText() else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def chord_lyrics_paste_show_test(self, _) -> bool:
 		return self.gui.combo_mode and self.prefs.guitar_chords
 
-	def copy_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
+	def copy_lyrics_deco(self, track_object: TrackClass) -> Decorator:
 		line_colour = self.colours.menu_text if track_object.lyrics else self.colours.menu_text_disabled
+		return Decorator(line_colour, self.colours.menu_background, None)
 
-		return [line_colour, self.colours.menu_background, None]
-
-	def clear_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
+	def clear_lyrics_deco(self, track_object: TrackClass) -> Decorator:
 		line_colour = self.colours.menu_text if track_object.lyrics else self.colours.menu_text_disabled
+		return Decorator(line_colour, self.colours.menu_background, None)
 
-		return [line_colour, self.colours.menu_background, None]
-
-	def edit_lyrics_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
+	def edit_lyrics_deco(self, _track_object: TrackClass) -> Decorator:
 		line_colour = self.colours.menu_text# if track_object.lyrics else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 
 	def write_lyrics(self, track: TrackClass, synced: bool = False, loud: bool = False) -> bool:
@@ -7983,16 +7980,16 @@ class Tauon:
 			logging.exception("Unknown error trying to save an image")
 			self.show_message(_("Image save error."), _("A mysterious error occurred"), mode="error")
 
-	def open_image_deco(self, track_object: TrackClass | int)-> list[ColourRGBA | None]:
+	def open_image_deco(self, track_object: TrackClass | int)-> Decorator:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
 
 		if info is None:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
 		line_colour = self.colours.menu_text
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def open_image_disable_test(self, track_object: TrackClass | int) -> bool:
 		if type(track_object) is int:
@@ -8004,19 +8001,18 @@ class Tauon:
 			track_object = self.pctl.master_library[track_object]
 		self.album_art_gen.open_external(track_object)
 
-	def extract_image_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
+	def extract_image_deco(self, track_object: TrackClass | int) -> Decorator:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
 
 		if info is None:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
 		line_colour = self.colours.menu_text if info[0] == 1 else self.colours.menu_text_disabled
+		return Decorator(line_colour, self.colours.menu_background, None)
 
-		return [line_colour, self.colours.menu_background, None]
-
-	def cycle_image_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
+	def cycle_image_deco(self, track_object: TrackClass) -> Decorator:
 		info = self.album_art_gen.get_info(track_object)
 
 		if self.pctl.playing_state != PlayingState.STOPPED and (info is not None and info[1] > 1):
@@ -8024,16 +8020,15 @@ class Tauon:
 		else:
 			line_colour = self.colours.menu_text_disabled
 
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
-	def cycle_image_gal_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
+	def cycle_image_gal_deco(self, track_object: TrackClass | int) -> Decorator:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
 
 		line_colour = self.colours.menu_text if info is not None and info[1] > 1 else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def cycle_offset(self, track_object: TrackClass | int) -> None:
 		if type(track_object) is int:
@@ -8045,12 +8040,12 @@ class Tauon:
 			track_object = self.pctl.master_library[track_object]
 		self.album_art_gen.cycle_offset_reverse(track_object)
 
-	def dl_art_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
+	def dl_art_deco(self, track_object: TrackClass | int) -> Decorator:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		if not track_object.album or not track_object.artist:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, None]
-		return [self.colours.menu_text, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
 	def download_art1(self, tr: TrackClass) -> None:
 		if tr.is_network:
@@ -8298,7 +8293,7 @@ class Tauon:
 			logging.exception("Failed to delete file")
 			self.show_message(_("Something went wrong"), mode="error")
 
-	def delete_track_image_deco(self, track_object: TrackClass | int) -> list[ColourRGBA | None]:
+	def delete_track_image_deco(self, track_object: TrackClass | int) -> Decorator:
 		if type(track_object) is int:
 			track_object = self.pctl.master_library[track_object]
 		info = self.album_art_gen.get_info(track_object)
@@ -8307,7 +8302,7 @@ class Tauon:
 		line_colour = self.colours.menu_text
 
 		if info is None or track_object.is_network:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
 		if info and info[0] == 0:
 			text = _("Delete Image File")
@@ -8321,7 +8316,7 @@ class Tauon:
 			text = _("Delete Embedded | Folder")
 			if self.inp.key_shift_down or self.inp.key_shiftr_down:
 				text = _("Delete Embedded | Track")
-		return [line_colour, self.colours.menu_background, text]
+		return Decorator(line_colour, self.colours.menu_background, text)
 
 	def delete_track_image(self, track_object: TrackClass | int) -> None:
 		if type(track_object) is int:
@@ -8338,18 +8333,17 @@ class Tauon:
 			self.gui.message_box_confirm_reference = (track_object, False)
 			self.show_message(_("This will erase any embedded image in {N} files. Are you sure?").format(N=n), mode="confirm")
 
-	def search_image_deco(self, track_object: TrackClass) -> list[ColourRGBA | None]:
+	def search_image_deco(self, track_object: TrackClass) -> Decorator:
 		if track_object.artist and track_object.album:
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def append_here(self) -> None:
 		self.pctl.default_playlist += self.pctl.cargo
 
-	def paste_deco(self) -> list[ColourRGBA | str | None]:
+	def paste_deco(self) -> Decorator:
 		active = False
 		line = None
 		if len(self.pctl.cargo) > 0:
@@ -8363,21 +8357,18 @@ class Tauon:
 				line = _("Paste Spotify Album")
 
 		line_colour = self.colours.menu_text if active else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, line]
+		return Decorator(line_colour, self.colours.menu_background, line)
 
 	def lightning_move_test(self, _: int) -> bool:
 		return self.gui.lightning_copy and self.prefs.show_transfer
 
-	# def copy_deco(self):
+	# def copy_deco(self) -> Decorator:
 	#	 line = "Copy"
 	#	 if self.inp.key_shift_down:
 	#		 line = "Copy" #Folder From Library"
 	#	 else:
 	#		 line = "Copy"
-	#
-	#
-	#	 return [self.colours.menu_text, self.colours.menu_background, line]
+	#	 return Decorator(self.colours.menu_text, self.colours.menu_background, line)
 
 	def export_m3u(self, pl: int, pl_file: Path | None = None, relative: bool = False) -> int | Path:
 		"""Exports an m3u file from a Playlist dictionary in multi_playlist to a playlist file denoted by pl_file.
@@ -8890,31 +8881,29 @@ class Tauon:
 				break
 		return title
 
-	def append_deco(self) -> list[ColourRGBA | str | None]:
+	def append_deco(self) -> Decorator:
 		line_colour = self.colours.menu_text if self.pctl.playing_state != PlayingState.STOPPED else self.colours.menu_text_disabled
 
 		text = None
 		if self.spot_ctl.coasting:
 			text = _("Add Spotify Album")
+		return Decorator(line_colour, self.colours.menu_background, text)
 
-		return [line_colour, self.colours.menu_background, text]
-
-	def rescan_deco(self, pl: int) -> list[ColourRGBA | None]:
+	def rescan_deco(self, pl: int) -> Decorator:
 		if self.pctl.multi_playlist[pl].last_folder:
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
 
 		# base = os.path.basename(self.pctl.multi_playlist[pl].last_folder)
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
-	def regenerate_deco(self, pl: int) -> list[ColourRGBA | None]:
+	def regenerate_deco(self, pl: int) -> Decorator:
 		id = self.pctl.pl_to_id(pl)
 		value = self.pctl.gen_codes.get(id)
 
 		line_colour = self.colours.menu_text if value else self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def auto_sync_thread(self, pl: int) -> None:
 		if self.prefs.transcode_inplace:
@@ -9097,12 +9086,12 @@ class Tauon:
 		else:
 			self.prefs.sync_playlist = self.pctl.pl_to_id(pl)
 
-	def sync_playlist_deco(self, pl: int) -> list[ColourRGBA | str | None]:
+	def sync_playlist_deco(self, pl: int) -> Decorator:
 		text = _("Set as Sync Playlist")
 		id = self.pctl.pl_to_id(pl)
 		if id == self.prefs.sync_playlist:
 			text = _("Un-set as Sync Playlist")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def set_download_playlist(self, pl: int) -> None:
 		id = self.pctl.pl_to_id(pl)
@@ -9114,17 +9103,17 @@ class Tauon:
 	def set_podcast_playlist(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].persist_time_positioning ^= True
 
-	def set_download_deco(self, pl: int) -> list[ColourRGBA | str | None]:
+	def set_download_deco(self, pl: int) -> Decorator:
 		text = _("Set as Downloads Playlist")
 		if id == self.prefs.download_playlist:
 			text = _("Un-set as Downloads Playlist")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def set_podcast_deco(self, pl: int) -> list[ColourRGBA | str | None]:
+	def set_podcast_deco(self, pl: int) -> Decorator:
 		text = _("Set Use Persistent Time")
 		if self.pctl.multi_playlist[pl].persist_time_positioning:
 			text = _("Un-set Use Persistent Time")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def export_playlist_albums(self, pl: int) -> None:
 		p = self.pctl.multi_playlist[pl]
@@ -10265,10 +10254,10 @@ class Tauon:
 			return ColourRGBA(30, 215, 96, 255)
 		return None
 
-	def love_decox(self):
+	def love_decox(self) -> Decorator:
 		if self.love(False, self.pctl.r_menu_index):
-			return [self.colours.menu_text, self.colours.menu_background, _("Un-Love Track")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Love Track")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Un-Love Track"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Love Track"))
 
 	def love_index(self) -> None:
 		notify = False
@@ -10290,16 +10279,15 @@ class Tauon:
 	def toggle_spotify_like3(self) -> None:
 		self.toggle_spotify_like_active2(self.pctl.get_track(self.pctl.r_menu_index))
 
-	def toggle_spotify_like_row_deco(self):
+	def toggle_spotify_like_row_deco(self) -> Decorator:
 		tr = self.pctl.get_track(self.pctl.r_menu_index)
 		text = _("Spotify Like Track")
 
 		# if self.pctl.playing_state == PlayingState.STOPPED or not tr or not "spotify-track-url" in tr.misc:
-		#	 return [self.colours.menu_text_disabled, self.colours.menu_background, text]
+		#	 return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
 		if "spotify-liked" in tr.misc:
 			text = _("Un-like Spotify Track")
-
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def spot_like_show_test(self, _) -> bool:
 		return self.spotify_show_test and self.pctl.get_track(self.pctl.r_menu_index).file_ext == "SPTY"
@@ -10419,10 +10407,10 @@ class Tauon:
 		self.refind_playing()
 		self.pctl.notify_change()
 
-	def rename_tracks_deco(self, track_id: int):
+	def rename_tracks_deco(self, _track_id: int) -> Decorator:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
-			return [self.colours.menu_text, self.colours.menu_background, _("Rename (Single track)")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Rename Tracks…")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Rename (Single track)"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Rename Tracks…"))
 
 	def activate_trans_editor(self) -> None:
 		self.trans_edit_box.active = True
@@ -10874,10 +10862,10 @@ class Tauon:
 		self.s_copy()
 		self.gui.lightning_copy = True
 
-	def transcode_deco(self) -> list[ColourRGBA | str | None]:
+	def transcode_deco(self) -> Decorator:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
-			return [self.colours.menu_text, self.colours.menu_background, _("Transcode Single")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Transcode Folder")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Transcode Single"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Transcode Folder"))
 
 	def get_album_spot_url(self, track_id: int) -> None:
 		track_object = self.pctl.get_track(track_id)
@@ -10888,24 +10876,24 @@ class Tauon:
 		else:
 			self.show_message(_("No results found"))
 
-	def get_album_spot_url_deco(self, track_id: int) -> list[ColourRGBA | str | None]:
+	def get_album_spot_url_deco(self, track_id: int) -> Decorator:
 		track_object = self.pctl.get_track(track_id)
 		if "spotify-album-url" in track_object.misc:
 			text = _("Copy Spotify Album URL")
 		else:
 			text = _("Lookup Spotify Album URL")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def add_to_spotify_library_deco(self, track_id: int) -> tuple[ColourRGBA, ColourRGBA | None, str]:
+	def add_to_spotify_library_deco(self, track_id: int) -> Decorator:
 		track_object = self.pctl.get_track(track_id)
 		text = _("Save Album to Spotify")
 		if track_object.file_ext != "SPTY":
-			return (self.colours.menu_text_disabled, self.colours.menu_background, text)
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
 
 		album_url = track_object.misc.get("spotify-album-url")
 		if album_url and album_url in self.spot_ctl.cache_saved_albums:
 			text = _("Un-save Spotify Album")
-		return (self.colours.menu_text, self.colours.menu_background, text)
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def add_to_spotify_library2(self, album_url: str) -> None:
 		if album_url in self.spot_ctl.cache_saved_albums:
@@ -10929,16 +10917,14 @@ class Tauon:
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
-	def selection_queue_deco(self):
+	def selection_queue_deco(self) -> Decorator:
 		total = 0
 		for item in self.gui.shift_selection:
 			total += self.pctl.get_track(self.pctl.default_playlist[item]).length
 
 		total = get_hms_time(total)
-
 		text = (_("Queue {N}").format(N=len(self.gui.shift_selection))) + f" [{total}]"
-
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def ser_band_done(self, result: str) -> None:
 		if result:
@@ -11489,11 +11475,11 @@ class Tauon:
 	def find_incomplete(self) -> None:
 		self.gen_incomplete(self.pctl.active_playlist_viewing)
 
-	def cast_deco(self) -> list:
+	def cast_deco(self) -> Decorator:
 		line_colour = self.colours.menu_text
 		if self.chrome_mode:
-			return [line_colour, self.colours.menu_background, _("Stop Cast")]  # [24, 25, 60, 255]
-		return [line_colour, self.colours.menu_background, None]
+			return Decorator(line_colour, self.colours.menu_background, _("Stop Cast"))  # [24, 25, 60, 255]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def cast_search2(self) -> None:
 		self.chrome.rescan()
@@ -11632,28 +11618,27 @@ class Tauon:
 			else:
 				self.show_message(_("No results found"))
 
-	def get_album_spot_url_actove_deco(self) -> list[ColourRGBA | str | None]:
+	def get_album_spot_url_actove_deco(self) -> Decorator:
 		tr = self.pctl.playing_object()
 		text = _("Copy Album URL")
 		if not tr:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, text]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
 		if "spotify-album-url" not in tr.misc:
 			text = _("Lookup Spotify Album")
-
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def goto_playing_extra(self) -> None:
 		self.pctl.show_current(highlight=True)
 
-	def show_spot_playing_deco(self) -> list[ColourRGBA | None]:
+	def show_spot_playing_deco(self) -> Decorator:
 		if not (self.spot_ctl.coasting or self.spot_ctl.playing):
-			return [self.colours.menu_text, self.colours.menu_background, None]
-		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
-	def show_spot_coasting_deco(self) -> list[ColourRGBA | None]:
+	def show_spot_coasting_deco(self) -> Decorator:
 		if self.spot_ctl.coasting:
-			return [self.colours.menu_text, self.colours.menu_background, None]
-		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
 	def show_spot_playing(self) -> None:
 		if self.pctl.playing_state not in (PlayingState.STOPPED, PlayingState.URL_STREAM) \
@@ -11713,14 +11698,14 @@ class Tauon:
 	def spot_import_context(self) -> None:
 		shooter(self.spot_ctl.import_context)
 
-	def get_album_spot_deco(self) -> list[ColourRGBA | str | None]:
+	def get_album_spot_deco(self) -> Decorator:
 		tr = self.pctl.playing_object()
 		text = _("Show Full Album")
 		if not tr:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, text]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
 		if "spotify-album-url" not in tr.misc:
 			text = _("Lookup Spotify Album")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def get_artist_spot(self, tr: TrackClass = None) -> None:
 		if not tr:
@@ -11734,20 +11719,20 @@ class Tauon:
 		self.show_message(_("Fetching..."))
 		shooter(self.spot_ctl.artist_playlist, (url,))
 
-	# def spot_transfer_playback_here_deco(self):
+	# def spot_transfer_playback_here_deco(self) -> Decorator:
 	# 	tr = self.pctl.playing_state == PlayingState.URL_STREAM:
 	# 	text = _("Show Full Album")
 	# 	if not tr:
-	# 		return [self.colours.menu_text_disabled, self.colours.menu_background, text]
+	# 		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
 	# 	if not "spotify-album-url" in tr.misc:
 	# 		text = _("Lookup Spotify Album")
 	#
-	# 	return [self.colours.menu_text, self.colours.menu_background, text]
+	# 	return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def level_meter_special_2(self) -> None:
 		self.gui.level_meter_colour_mode = 2
 
-	def last_fm_menu_deco(self) -> list[ColourRGBA | str | None]:
+	def last_fm_menu_deco(self) -> Decorator:
 		if self.prefs.scrobble_hold:
 			if not self.prefs.auto_lfm and self.lb.enable:
 				line = _("ListenBrainz is Paused")
@@ -11761,8 +11746,7 @@ class Tauon:
 				line = _("Scrobbling is Active")
 
 			bg = self.colours.menu_background
-
-		return [self.colours.menu_text, bg, line]
+		return Decorator(self.colours.menu_text, bg, line)
 
 	def lastfm_colour(self) -> ColourRGBA | None:
 		if not self.prefs.scrobble_hold:
@@ -12285,12 +12269,12 @@ class Tauon:
 	# def visit_radio_site_show_test(self, p):
 	# 	return "website_url" in self.prefs.radio_urls[p] and self.prefs.radio_urls[p].["website_url"]
 
-	def visit_radio_site_deco(self, station: RadioStation):
+	def visit_radio_site_deco(self, station: RadioStation) -> Decorator:
 		if station.website_url:
-			return [self.colours.menu_text, self.colours.menu_background, None]
-		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
-	def visit_radio_station_site_deco(self, item: tuple[int, RadioStation]):
+	def visit_radio_station_site_deco(self, item: tuple[int, RadioStation]) -> Decorator:
 		return self.visit_radio_site_deco(item[1])
 
 	def radio_saved_panel_test(self, _) -> bool:
@@ -12375,13 +12359,13 @@ class Tauon:
 			self.prefs.artist_list_threshold = 4
 		self.artist_list_box.saves.clear()
 
-	def toggle_artist_list_threshold_deco(self):
+	def toggle_artist_list_threshold_deco(self) -> Decorator:
 		if self.prefs.artist_list_threshold == 0:
-			return [self.colours.menu_text, self.colours.menu_background, _("Filter Small Artists")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Filter Small Artists"))
 		# save = self.artist_list_box.saves.get(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int)
 		# if save and save[5] == 0:
-		# 	return [self.colours.menu_text_disabled, self.colours.menu_background, _("Include All Artists")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Include All Artists")]
+		# 	return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, _("Include All Artists"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Include All Artists"))
 
 	def verify_discogs(self) -> bool:
 		return len(self.prefs.discogs_pat) == 40
@@ -12470,19 +12454,19 @@ class Tauon:
 					_("They encourage you to contribute at {link}").format(link="https://fanart.tv"), mode="link")
 			logging.info("Found artist thumbnail from fanart.tv")
 
-	def queue_pause_deco(self):
+	def queue_pause_deco(self) -> Decorator:
 		if self.pctl.pause_queue:
-			return [self.colours.menu_text, self.colours.menu_background, _("Resume Queue")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Pause Queue")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Resume Queue"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Pause Queue"))
 
-	# def finish_current_deco(self):
+	# def finish_current_deco(self) -> Decorator:
 	# 	colour = self.colours.menu_text
 	# 	line = "Finish Playing Album"
 	# 	if self.pctl.playing_object() is None:
 	# 		colour = self.colours.menu_text_disabled
 	# 	if self.pctl.force_queue and pctl.force_queue[0].album_stage == 1:
 	# 		colour = self.colours.menu_text_disabled
-	# 	return [self.colour, self.colours.menu_background, line]
+	# 	return Decorator(self.colour, self.colours.menu_background, line)
 
 	def art_metadata_overlay(self, right: float, bottom: float, showc: list[tuple[str, int, int, int, str]]) -> None:
 		if not showc:
@@ -12540,10 +12524,10 @@ class Tauon:
 			self.ddt.rect_a((right - (tag_width + padding), y), (tag_width, 18 * self.gui.scale), ColourRGBA(8, 8, 8, 255))
 			self.ddt.text(((right) - (6 * self.gui.scale + padding), y, 1), line, ColourRGBA(200, 200, 200, 255), 12, bg=ColourRGBA(30, 30, 30, 255))
 
-	def artist_dl_deco(self):
+	def artist_dl_deco(self) -> Decorator:
 		if self.artist_info_box.status == "Ready":
-			return [self.colours.menu_text_disabled, self.colours.menu_background, None]
-		return [self.colours.menu_text, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
 	def station_browse(self) -> None:
 		self.radiobox.active = True
@@ -13439,9 +13423,9 @@ class Tauon:
 			return ColourRGBA(120, 90, 245, 255)
 		return ColourRGBA(237, 80, 221, 255)
 
-	def new_playlist_deco(self) -> list[ColourRGBA | str | None]:
+	def new_playlist_deco(self) -> Decorator:
 		text = _("New Radio List") if self.gui.radio_view else _("New Playlist")
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def clean_db_show_test(self, _: int) -> bool:
 		return self.gui.suggest_clean_db
@@ -13455,8 +13439,8 @@ class Tauon:
 		self.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
 		self.gui.suggest_clean_db = False
 
-	def clean_db_deco(self) -> list[ColourRGBA | str]:
-		return [self.colours.menu_text, ColourRGBA(30, 150, 120, 255), _("Clean Database!")]
+	def clean_db_deco(self) -> Decorator:
+		return Decorator(self.colours.menu_text, ColourRGBA(30, 150, 120, 255), _("Clean Database!"))
 
 	def import_spotify_playlist(self) -> None:
 		clip = copy_from_clipboard()
@@ -13469,11 +13453,11 @@ class Tauon:
 			self.reload_albums()
 		self.gui.pl_update += 1
 
-	def import_spotify_playlist_deco(self) -> list[ColourRGBA | None]:
+	def import_spotify_playlist_deco(self) -> Decorator:
 		clip = copy_from_clipboard()
 		if clip.startswith(("https://open.spotify.com/playlist/", "spotify:playlist:")):
-			return [self.colours.menu_text, self.colours.menu_background, None]
-		return [self.colours.menu_text_disabled, self.colours.menu_background, None]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, None)
+		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 
 	def show_import_music(self, _: int) -> bool:
 		return self.gui.add_music_folder_ready
@@ -13563,12 +13547,12 @@ class Tauon:
 		else:
 			self.show_message(_("No results found"))
 
-	def get_track_spot_url_deco(self):
+	def get_track_spot_url_deco(self) -> Decorator:
 		if self.pctl.get_track(self.pctl.r_menu_index).misc.get("spotify-track-url"):
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def get_spot_artist_track(self, index: int) -> None:
 		self.get_artist_spot(self.pctl.get_track(index))
@@ -13638,9 +13622,9 @@ class Tauon:
 		self.dropped_playlist = pl
 		self.pctl.notify_change()
 
-	def queue_deco(self) -> list[ColourRGBA | None]:
+	def queue_deco(self) -> Decorator:
 		line_colour = self.colours.menu_text if len(self.pctl.force_queue) > 0 else self.colours.menu_text_disabled
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def gstreamer_test(self, _) -> bool:
 		# return True
@@ -14624,16 +14608,16 @@ class Tauon:
 	def pin_playlist_toggle(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].hidden ^= True
 
-	def pl_pin_deco(self, pl: int):
+	def pl_pin_deco(self, pl: int) -> Decorator:
 		# if pctl.multi_playlist[pl].hidden == True and self.tab_menu.pos[1] >
 		if self.pctl.multi_playlist[pl].hidden is True:
-			return [self.colours.menu_text, self.colours.menu_background, _("Pin")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Unpin")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Pin"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Unpin"))
 
-	def pl_lock_deco(self, pl: int):
+	def pl_lock_deco(self, pl: int) -> Decorator:
 		if self.pctl.multi_playlist[pl].locked is True:
-			return [self.colours.menu_text, self.colours.menu_background, _("Unlock")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Lock")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Unlock"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Lock"))
 
 	def view_pl_is_locked(self, _) -> bool:
 		return self.pctl.multi_playlist[self.pctl.active_playlist_viewing].locked
@@ -14826,15 +14810,15 @@ class Tauon:
 		mini_t.daemon = True
 		mini_t.start()
 
-	def edit_deco(self, index: int) -> list[list[int] | str | None]:
+	def edit_deco(self, _index: int) -> Decorator:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
-			return [self.colours.menu_text, self.colours.menu_background, self.prefs.tag_editor_name + " (Single track)"]
-		return [self.colours.menu_text, self.colours.menu_background, _("Edit with ") + self.prefs.tag_editor_name]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, self.prefs.tag_editor_name + " (Single track)")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Edit with ") + self.prefs.tag_editor_name)
 
 	def launch_editor_disable_test(self, index: int) -> bool:
 		return self.pctl.get_track(index).is_network
 
-	def show_lyrics_menu(self, index: int) -> None:
+	def show_lyrics_menu(self, _index: int) -> None:
 		self.gui.track_box = False
 		self.enter_showcase_view(track_id=self.pctl.r_menu_index)
 		self.inp.mouse_click = False
@@ -14970,12 +14954,12 @@ class Tauon:
 			else:
 				self.gui.star_row_icon.render(xx, y, fg)
 
-	def standard_view_deco(self):
+	def standard_view_deco(self) -> Decorator:
 		if self.prefs.album_mode or self.gui.combo_mode or not self.gui.rsp:
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	# def gallery_only_view(self) -> None:
 	# 	if self.gui.show_playlist is False:
@@ -14997,16 +14981,16 @@ class Tauon:
 			# self.gui.set_bar = True
 		self.gui.update_layout = True
 
-	def library_deco(self):
+	def library_deco(self) -> Decorator:
 		tc = self.colours.menu_text
 		if self.gui.combo_mode or (self.gui.show_playlist is False and self.prefs.album_mode):
 			tc = self.colours.menu_text_disabled
 
 		if self.gui.set_mode:
-			return [tc, self.colours.menu_background, _("Disable Columns")]
-		return [tc, self.colours.menu_background, _("Enable Columns")]
+			return Decorator(tc, self.colours.menu_background, _("Disable Columns"))
+		return Decorator(tc, self.colours.menu_background, _("Enable Columns"))
 
-	def break_deco(self):
+	def break_deco(self) -> Decorator:
 		tex = self.colours.menu_text
 		if self.gui.combo_mode or (self.gui.show_playlist is False and self.prefs.album_mode):
 			tex = self.colours.menu_text_disabled
@@ -15014,8 +14998,8 @@ class Tauon:
 			tex = self.colours.menu_text_disabled
 
 		if not self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title:
-			return [tex, self.colours.menu_background, _("Disable Title Breaks")]
-		return [tex, self.colours.menu_background, _("Enable Title Breaks")]
+			return Decorator(tex, self.colours.menu_background, _("Disable Title Breaks"))
+		return Decorator(tex, self.colours.menu_background, _("Enable Title Breaks"))
 
 	def toggle_playlist_break(self) -> None:
 		self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title ^= 1
@@ -15347,12 +15331,12 @@ class Tauon:
 
 		return tracks
 
-	def love_deco(self) -> list[list[int] | str | None]:
+	def love_deco(self) -> Decorator:
 		if self.love(False):
-			return [self.colours.menu_text, self.colours.menu_background, _("Un-Love Track")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Un-Love Track"))
 		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
-			return [self.colours.menu_text, self.colours.menu_background, _("Love Track")]
-		return [self.colours.menu_text_disabled, self.colours.menu_background, _("Love Track")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Love Track"))
+		return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, _("Love Track"))
 
 	def bar_love(self, notify: bool = False) -> None:
 		shoot_love = threading.Thread(target=self.love, args=[True, None, False, notify])
@@ -15393,16 +15377,16 @@ class Tauon:
 			shoot_dl.daemon = True
 			shoot_dl.start()
 
-	def toggle_spotify_like_active_deco(self):
+	def toggle_spotify_like_active_deco(self) -> Decorator:
 		tr = self.pctl.playing_object()
 		text = _("Spotify Like Track")
 
 		if self.pctl.playing_state == PlayingState.STOPPED or not tr or "spotify-track-url" not in tr.misc:
-			return [self.colours.menu_text_disabled, self.colours.menu_background, text]
+			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
 		if "spotify-liked" in tr.misc:
 			text = _("Un-like Spotify Track")
 
-		return [self.colours.menu_text, self.colours.menu_background, text]
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def locate_artist(self) -> None:
 		track = self.pctl.playing_object()
@@ -18409,13 +18393,12 @@ class Tauon:
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
-	def paste_playlist_coast_album_deco(self) -> list[list[int] | None]:
+	def paste_playlist_coast_album_deco(self) -> Decorator:
 		if self.spot_ctl.coasting or self.spot_ctl.playing:
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
-
-		return [line_colour, self.colours.menu_background, None]
+		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def do_exit_button(self) -> None:
 		if self.inp.mouse_up or self.inp.ab_click:
@@ -19734,7 +19717,7 @@ class Drawing:
 
 	def button(
 		self, text: str, x: int, y: int, w: int | None = None, h: int | None = None, font: int = 212, text_highlight_colour: ColourRGBA | None = None, text_colour: ColourRGBA | None = None,
-		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None =None, press: bool | None = None, tooltip: str="") -> bool:
+		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None, press: bool | None = None, tooltip: str = "") -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
 		refresh when you pan the mouse over it"""
 
@@ -34586,7 +34569,7 @@ class QueueBox:
 				item.auto_stop ^= True
 				break
 
-	def toggle_auto_stop_deco(self):
+	def toggle_auto_stop_deco(self) -> Decorator:
 		enabled = False
 		for item in self.pctl.force_queue:
 			if item.uuid_int == self.right_click_id and item.auto_stop:
@@ -34594,8 +34577,8 @@ class QueueBox:
 				break
 
 		if enabled:
-			return [self.colours.menu_text, self.colours.menu_background, _("Cancel Auto-Stop")]
-		return [self.colours.menu_text, self.colours.menu_background, _("Auto-Stop")]
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Cancel Auto-Stop"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Auto-Stop"))
 
 	def queue_remove_show(self, _: int) -> bool:
 		return self.right_click_id is not None
