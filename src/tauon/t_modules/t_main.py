@@ -1210,7 +1210,6 @@ class Input:
 		self.key_focused = 0
 
 	def test_shift(self, _: int) -> bool:
-		logging.critical(f"test shift {type(_)}")
 		return self.key_shift_down or self.key_shiftr_down
 
 	def m_key_play(self) -> None:
