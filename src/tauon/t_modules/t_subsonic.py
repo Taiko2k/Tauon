@@ -1,43 +1,58 @@
+"""Tauon Music Box - Subsonic/Airsonic Integration"""
+
+# Copyright © 2020, Taiko2k captain(dot)gxj(at)gmail.com
+
+#     This file is part of Tauon Music Box.
+#
+#     Tauon Music Box is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     Tauon Music Box is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU Lesser General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import os
+import hashlib
 import io
-import itertools
 import json
 import logging
+import math
+import os
+import re
+import secrets
 import threading
 import time
-import secrets
-import hashlib
-import re
-import math
-from http import HTTPStatus
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_extra import StarRecord, Timer
+from tauon.t_modules.t_extra import StarRecord
 
 if TYPE_CHECKING:
 	from io import BytesIO
 
-	from tauon.t_modules.t_extra import TauonPlaylist
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import AlbumStarStore, GuiVar, PlayerCtl, StarStore, Tauon, TrackClass
+	from tauon.t_modules.t_prefs import Prefs
 
 class SubsonicService:
 
 	def __init__(self, tauon: Tauon, album_star_store: AlbumStarStore) -> None:
-		self.tauon            = tauon
-		self.gui              = tauon.gui
-		self.pctl             = tauon.pctl
-		self.prefs            = tauon.prefs
-		self.t_title          = tauon.t_title
-		self.star_store       = tauon.star_store
-		self.album_star_store = album_star_store
+		self.tauon: Tauon = tauon
+		self.gui: GuiVar = tauon.gui
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs: Prefs = tauon.prefs
+		self.t_title: str = tauon.t_title
+		self.star_store: StarStore = tauon.star_store
+		self.album_star_store: AlbumStarStore = album_star_store
 		self.show_message     = tauon.show_message
 		self.playlists        = tauon.prefs.subsonic_playlists
-		self.scanning         = False
+		self.scanning: bool= False
 
 	def r(self, point: str, p: dict[str, str] | None = None, binary: bool = False, get_url: bool = False):
 		salt = secrets.token_hex(8)
@@ -139,7 +154,30 @@ class SubsonicService:
 				logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def get_music3(self, return_list: bool = False):
+	def star_track(self, track_object: TrackClass) -> bool:
+		try:
+			a = self.r("star", p={"id": track_object.url_key})
+		except Exception:
+			logging.exception('Error connect for star track on airsonic')
+		return True
+
+	def unstar_track(self, track_object: TrackClass) -> bool:
+		try:
+			a = self.r("unstar", p={"id": track_object.url_key})
+		except Exception:
+			logging.exception('Error connect for unstar track on airsonic')
+		return True
+
+	def star_album(self, track_object: TrackClass) -> bool:
+		id = track_object.misc.get("subsonic-folder-id")
+		if id is not None:
+			try:
+				a = self.r("star", p={"id": id})
+			except Exception:
+				logging.exception("Error connect for star Album on airsonic")
+		return True
+
+	def get_music3(self, return_list: bool = False) -> list[int] | None:
 		self.scanning = True
 		self.gui.to_got = 0
 
@@ -187,6 +225,7 @@ class SubsonicService:
 			songsets.append([])
 		statuses = [0] * len(folders)
 		#dupes = []
+		liked_track_ids: list[int] = []
 
 		def getsongs(index: int, folder_id: str, name: str, inner: bool = False, parent: dict[str, str | int] | None = None) -> None:
 			try:
@@ -278,6 +317,22 @@ class SubsonicService:
 		while statuses.count(2) != len(statuses):
 			time.sleep(0.1)
 
+		try:
+			a = self.r("getStarred2")
+		except Exception:
+			logging.exception("Error connecting to Airsonic server")
+			self.show_message(_("Error connecting to Airsonic server"), mode="error")
+			return []
+		b = a["subsonic-response"]["starred2"]
+
+		liked_tracks: list[str] = []
+
+		for id in b["song"]:
+			#print(id["id"])
+			liked_tracks.append((
+				id["id"]
+				))
+
 		for sset in songsets:
 			for nt, name, song_id, rating in sset:
 				id = self.pctl.master_count
@@ -293,12 +348,28 @@ class SubsonicService:
 				if not replace_existing:
 					self.pctl.master_count += 1
 
+				if nt.url_key in liked_tracks:
+					liked_track_ids.append(nt.index)
+
 				playlist.append(nt.index)
 
 				if self.star_store.get_rating(nt.index) == 0 and rating == 0:
 					pass
 				else:
 					self.star_store.set_rating(nt.index, rating * 2)
+
+		def set_favs(d:list[int]) -> None:
+			for track_id in d:
+				if track_id == 0:
+					continue
+
+				star = self.tauon.star_store.full_get(track_id)
+				if star is None:
+					star = StarRecord()
+				if not star.loved:
+					star.loved = True
+				self.tauon.star_store.insert(track_id, star)
+		set_favs(liked_track_ids)
 
 		self.scanning = False
 		if return_list:
@@ -308,119 +379,3 @@ class SubsonicService:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "air"
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		return None
-
-	# def get_music2(self, return_list=False):
-	#
-	#	 self.scanning = True
-	#	 gui.to_got = 0
-	#
-	#	 existing = {}
-	#
-	#	 for track_id, track in pctl.master_library.items():
-	#		 if track.is_network and track.file_ext == "SUB":
-	#			 existing[track.url_key] = track_id
-	#
-	#	 try:
-	#		 a = self.r("getIndexes")
-	#	 except Exception:
-	#		 self.show_message(_("Error connecting to Airsonic server"), mode="error")
-	#		 self.scanning = False
-	#		 return []
-	#
-	#	 b = a["subsonic-response"]["indexes"]["index"]
-	#
-	#	 folders = []
-	#
-	#	 for letter in b:
-	#		 artists = letter["artist"]
-	#		 for artist in artists:
-	#			 folders.append((
-	#				 artist["id"],
-	#				 artist["name"]
-	#			 ))
-	#
-	#	 playlist = []
-	#
-	#	 def get(folder_id, name):
-	#
-	#		 try:
-	#			 d = self.r("getMusicDirectory", p={"id": folder_id})
-	#			 if "child" not in d["subsonic-response"]["directory"]:
-	#				 return
-	#
-	#		 except json.decoder.JSONDecodeError:
-	#			 logging.error("Error reading Airsonic directory")
-	#			 self.show_message(_("Error reading Airsonic directory!)", mode="warning")
-	#			 return
-	#
-	#		 items = d["subsonic-response"]["directory"]["child"]
-	#
-	#		 gui.update = 1
-	#
-	#		 for item in items:
-	#
-	#			 gui.to_got += 1
-	#
-	#			 if item["isDir"]:
-	#				 get(item["id"], item["title"])
-	#				 continue
-	#
-	#			 song = item
-	#			 id = pctl.master_count
-	#
-	#			 replace_existing = False
-	#			 ex = existing.get(song["id"])
-	#			 if ex is not None:
-	#				 id = ex
-	#				 replace_existing = True
-	#
-	#			 nt = TrackClass()
-	#
-	#			 if "title" in song:
-	#				 nt.title = song["title"]
-	#			 if "artist" in song:
-	#				 nt.artist = song["artist"]
-	#			 if "album" in song:
-	#				 nt.album = song["album"]
-	#			 if "track" in song:
-	#				 nt.track_number = song["track"]
-	#			 if "year" in song:
-	#				 nt.date = str(song["year"])
-	#			 if "duration" in song:
-	#				 nt.length = song["duration"]
-	#
-	#			 # if "bitRate" in song:
-	#			 #	 nt.bitrate = song["bitRate"]
-	#
-	#			 nt.file_ext = "SUB"
-	#
-	#			 nt.index = id
-	#
-	#			 nt.parent_folder_name = name
-	#			 if "path" in song:
-	#				 nt.fullpath = song["path"]
-	#				 nt.parent_folder_path = os.path.dirname(song["path"])
-	#
-	#			 if "coverArt" in song:
-	#				 nt.art_url_key = song["id"]
-	#
-	#			 nt.url_key = song["id"]
-	#			 nt.is_network = True
-	#
-	#			 pctl.master_library[id] = nt
-	#
-	#			 if not replace_existing:
-	#				 pctl.master_count += 1
-	#
-	#			 playlist.append(nt.index)
-	#
-	#	 for id, name in folders:
-	#		 get(id, name)
-	#
-	#	 self.scanning = False
-	#	 if return_list:
-	#		 return playlist
-	#
-	#	 pctl.multi_playlist.append(self.tauon.pl_gen(title="Airsonic Collection", playlist_ids=playlist))
-	#	 pctl.gen_codes[pctl.pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
-	#	 pctl.switch_playlist(len(pctl.multi_playlist) - 1)
