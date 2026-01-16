@@ -34,7 +34,7 @@ from unidecode import unidecode
 
 
 def ovh(
-	artist: str, title: str, user_agent: str = "unused here but it needs to exist in every lyrics function"
+	artist: str, title: str, _user_agent: str = "unused here but it needs to exist in every lyrics function"
 ) -> tuple[str, str]:
 	"""Get lyrics from lyrics.ovh API"""
 	q = urllib.parse.quote(f"{artist}/{title}")
@@ -50,7 +50,7 @@ def genius(
 	artist: str,
 	title: str,
 	return_url: bool = False,
-	user_agent: str = "unused here but it needs to exist in every lyrics function",
+	_user_agent: str = "unused here but it needs to exist in every lyrics function",
 ) -> tuple[str, str] | str:
 	"""Scrape lyrics from genius.com"""
 	artist = artist.split("feat.")[0]

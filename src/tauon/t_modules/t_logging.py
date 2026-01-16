@@ -19,7 +19,7 @@ class CustomLoggingFormatter(logging.Formatter):
 	format_verbose = "%(asctime)s [%(levelname)s] [%(module)s] %(message)s (%(filename)s:%(lineno)d)"
 	# fmt:on
 
-	def __init__(self, color: bool = True):
+	def __init__(self, color: bool = True) -> None:
 		super().__init__()
 		self.color = color
 
