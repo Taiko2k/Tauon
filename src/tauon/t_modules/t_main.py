@@ -2699,8 +2699,22 @@ class PlayerCtl:
 				return
 
 		self.volume_update_timer.set()
-		self.playerCommand = "volume"
-		self.playerCommandReady = True
+
+		if self.playerCommandReady:
+			# send vol command later if command busy. Solution not great.
+			def govol():
+				time.sleep(1)
+				if not self.playerCommandReady:
+					self.playerCommand = "volume"
+					self.playerCommandReady = True
+				time.sleep(1)
+				if not self.playerCommandReady:
+					self.playerCommand = "volume"
+					self.playerCommandReady = True
+			shooter(govol)
+		else:
+			self.playerCommand = "volume"
+			self.playerCommandReady = True
 		if notify:
 			self.notify_update()
 
@@ -28530,7 +28544,7 @@ class BottomBarType1:
 					volgetX -= self.volume_bar_position[0] - right_offset
 					pctl.player_volume = volgetX / self.volume_bar_size[0] * 100
 
-					time.sleep(0.02)
+					time.sleep(0.005)
 
 					if self.inp.mouse_down is False:
 						self.volume_bar_being_dragged = False
@@ -45080,6 +45094,8 @@ def main(holder: Holder) -> None:
 	meta_box = MetaBox(tauon)
 	showcase = Showcase(tauon)
 
+	render_heartbeat_timer = Timer()
+
 	while pctl.running:
 		# bm.get('main')
 		# time.sleep(100)
@@ -45700,6 +45716,13 @@ def main(holder: Holder) -> None:
 
 		if pctl.playing_state != PlayingState.STOPPED:
 			power += 400
+
+		if prefs.milk and render_heartbeat_timer.get() > 5:
+			# workaround for invis window bug?
+			gui.pl_update = 1
+			gui.update = 1
+			power = 1000
+			render_heartbeat_timer.set()
 
 		if power < 500:
 			# Limit FPS to 500 when Milkdrop presets are enabled, otherwise to 33
