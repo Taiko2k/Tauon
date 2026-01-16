@@ -4,6 +4,7 @@ Changelog
 
 ### Upcoming
 
+ - **Added** Subsonic favorites integration
  - **Added** Jellyfin import timeout to GUI settings
  - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
  - **Added** ReplayGain support for M4A
