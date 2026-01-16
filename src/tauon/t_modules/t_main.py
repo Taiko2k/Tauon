@@ -5891,61 +5891,61 @@ class Tauon:
 		self.extra_tab_menu: Menu        = Menu(self, 155, show_icons=True)
 
 
-		self.smooth_scroll: SmoothScroll                        = SmoothScroll(tauon=self)
-		self.lb: ListenBrainz                                   = ListenBrainz(tauon=self)
-		self.thread_manager: ThreadManager                      = ThreadManager(tauon=self)
-		self.album_mode_art_size: int                  = bag.album_mode_art_size
-		self.artist_picture_render: PictureRender = PictureRender(tauon=self)
-		self.artist_preview_render: PictureRender = PictureRender(tauon=self)
-		self.input_sdl: GetSDLInput                          = GetSDLInput(tauon=self)
-		self.pctl: PlayerCtl                                 = PlayerCtl(tauon=self)
-		self.mini_lyrics_scroll: ScrollBox                   = self.pctl.mini_lyrics_scroll
-		self.playlist_panel_scroll: ScrollBox                = self.pctl.playlist_panel_scroll
-		self.artist_info_scroll: ScrollBox                   = self.pctl.artist_info_scroll
-		self.device_scroll: ScrollBox                        = self.pctl.device_scroll
-		self.artist_list_scroll: ScrollBox                   = self.pctl.artist_list_scroll
-		self.gallery_scroll: ScrollBox                       = self.pctl.gallery_scroll
-		self.tree_view_scroll: ScrollBox                     = self.pctl.tree_view_scroll
-		self.radio_view_scroll: ScrollBox                    = self.pctl.radio_view_scroll
-		self.artist_info_box: ArtistInfoBox                  = self.pctl.artist_info_box
-		self.draw: Drawing                                   = self.pctl.draw
-		self.radiobox: RadioBox                              = self.pctl.radiobox
-		self.dummy_track: TrackClass                         = self.radiobox.dummy_track
-		self.queue_box: QueueBox                             = self.pctl.queue_box
-		self.tree_view_box: TreeView                         = self.pctl.tree_view_box
-		self.star_store: StarStore                           = self.pctl.star_store
-		self.lastfm: LastFMapi                               = self.pctl.lastfm
-		self.lfm_scrobbler: LastScrob                        = self.pctl.lfm_scrobbler
-		self.artist_list_box: ArtistList                     = self.pctl.artist_list_box
-		self.guitar_chords: GuitarChords                     = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
-		self.search_over: SearchOverlay                      = SearchOverlay(tauon=self)
-		self.stats_gen: GStats                               = GStats(tauon=self)
-		self.deco: Deco                                      = Deco(tauon=self)
-		self.bottom_bar1: BottomBarType1                     = BottomBarType1(tauon=self)
-		self.bottom_bar_ao1: BottomBarType_ao1               = BottomBarType_ao1(tauon=self)
-		self.top_panel: TopPanel                             = TopPanel(tauon=self)
-		self.playlist_box: PlaylistBox                       = PlaylistBox(tauon=self)
-		self.radio_view: RadioView                           = RadioView(tauon=self)
-		self.view_box: ViewBox                               = ViewBox(tauon=self)
-		self.pref_box: Over                                  = Over(tauon=self)
-		self.fader: Fader                                    = Fader(tauon=self)
-		self.style_overlay: StyleOverlay                     = StyleOverlay(tauon=self)
-		self.album_art_gen: AlbumArt                        = self.style_overlay.album_art_gen
-		self.tool_tip:                            ToolTip = ToolTip(tauon=self)
-		self.tool_tip2:                           ToolTip = ToolTip(tauon=self)
-		self.columns_tool_tip:                    ToolTip3 = ToolTip3(tauon=self)
-		self.f_store:                             FunctionStore = FunctionStore()
-		self.tool_tip2.trigger                    = 1.8
-		self.undo:                                Undo = Undo(tauon=self)
-		self.rename_files:                        TextBox2 = TextBox2(tauon=self)
-		self.rename_track_box:                    RenameTrackBox = RenameTrackBox(tauon=self)
-		self.edit_artist:                         TextBox2 = TextBox2(tauon=self)
-		self.edit_album:                          TextBox2 = TextBox2(tauon=self)
-		self.edit_title:                          TextBox2 = TextBox2(tauon=self)
-		self.edit_album_artist:                   TextBox2 = TextBox2(tauon=self)
-		self.trans_edit_box:                      TransEditBox = TransEditBox(tauon=self)
-		self.sub_lyrics_a:                        TextBox2 = TextBox2(tauon=self)
-		self.sub_lyrics_b:                        TextBox2 = TextBox2(tauon=self)
+		self.smooth_scroll:                     SmoothScroll = SmoothScroll(tauon=self)
+		self.lb:                                ListenBrainz = ListenBrainz(tauon=self)
+		self.thread_manager:                   ThreadManager = ThreadManager(tauon=self)
+		self.album_mode_art_size:                        int = bag.album_mode_art_size
+		self.artist_picture_render:            PictureRender = PictureRender(tauon=self)
+		self.artist_preview_render:            PictureRender = PictureRender(tauon=self)
+		self.input_sdl:                          GetSDLInput = GetSDLInput(tauon=self)
+		self.pctl:                                 PlayerCtl = PlayerCtl(tauon=self)
+		self.mini_lyrics_scroll:                   ScrollBox = self.pctl.mini_lyrics_scroll
+		self.playlist_panel_scroll:                ScrollBox = self.pctl.playlist_panel_scroll
+		self.artist_info_scroll:                   ScrollBox = self.pctl.artist_info_scroll
+		self.device_scroll:                        ScrollBox = self.pctl.device_scroll
+		self.artist_list_scroll:                   ScrollBox = self.pctl.artist_list_scroll
+		self.gallery_scroll:                       ScrollBox = self.pctl.gallery_scroll
+		self.tree_view_scroll:                     ScrollBox = self.pctl.tree_view_scroll
+		self.radio_view_scroll:                    ScrollBox = self.pctl.radio_view_scroll
+		self.artist_info_box:                  ArtistInfoBox = self.pctl.artist_info_box
+		self.draw:                                   Drawing = self.pctl.draw
+		self.radiobox:                              RadioBox = self.pctl.radiobox
+		self.dummy_track:                         TrackClass = self.radiobox.dummy_track
+		self.queue_box:                             QueueBox = self.pctl.queue_box
+		self.tree_view_box:                         TreeView = self.pctl.tree_view_box
+		self.star_store:                           StarStore = self.pctl.star_store
+		self.lastfm:                               LastFMapi = self.pctl.lastfm
+		self.lfm_scrobbler:                        LastScrob = self.pctl.lfm_scrobbler
+		self.artist_list_box:                     ArtistList = self.pctl.artist_list_box
+		self.guitar_chords:                     GuitarChords = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
+		self.search_over:                      SearchOverlay = SearchOverlay(tauon=self)
+		self.stats_gen:                               GStats = GStats(tauon=self)
+		self.deco:                                      Deco = Deco(tauon=self)
+		self.bottom_bar1:                     BottomBarType1 = BottomBarType1(tauon=self)
+		self.bottom_bar_ao1:               BottomBarType_ao1 = BottomBarType_ao1(tauon=self)
+		self.top_panel:                             TopPanel = TopPanel(tauon=self)
+		self.playlist_box:                       PlaylistBox = PlaylistBox(tauon=self)
+		self.radio_view:                           RadioView = RadioView(tauon=self)
+		self.view_box:                               ViewBox = ViewBox(tauon=self)
+		self.pref_box:                                  Over = Over(tauon=self)
+		self.fader:                                    Fader = Fader(tauon=self)
+		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
+		self.album_art_gen:                         AlbumArt = self.style_overlay.album_art_gen
+		self.tool_tip:                               ToolTip = ToolTip(tauon=self)
+		self.tool_tip2:                              ToolTip = ToolTip(tauon=self)
+		self.columns_tool_tip:                      ToolTip3 = ToolTip3(tauon=self)
+		self.f_store:                          FunctionStore = FunctionStore()
+		self.tool_tip2.trigger:                        float = 1.8
+		self.undo:                                      Undo = Undo(tauon=self)
+		self.rename_files:                          TextBox2 = TextBox2(tauon=self)
+		self.rename_track_box:                RenameTrackBox = RenameTrackBox(tauon=self)
+		self.edit_artist:                           TextBox2 = TextBox2(tauon=self)
+		self.edit_album:                            TextBox2 = TextBox2(tauon=self)
+		self.edit_title:                            TextBox2 = TextBox2(tauon=self)
+		self.edit_album_artist:                     TextBox2 = TextBox2(tauon=self)
+		self.trans_edit_box:                    TransEditBox = TransEditBox(tauon=self)
+		self.sub_lyrics_a:                          TextBox2 = TextBox2(tauon=self)
+		self.sub_lyrics_b:                          TextBox2 = TextBox2(tauon=self)
 		self.sub_lyrics_box:                      SubLyricsBox = SubLyricsBox(tauon=self)
 		self.export_playlist_box:                 ExportPlaylistBox = ExportPlaylistBox(tauon=self)
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
@@ -6019,13 +6019,13 @@ class Tauon:
 		self.switch_playlist                      = None
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
 		self.album_info_cache_key                 = (-1, -1)
-		self.console                              = bag.console
+		self.console:                    DConsole = bag.console
 		self.TrackClass                           = TrackClass
-		self.quickthumbnail                       = QuickThumbnail(tauon=self)
-		self.gall_ren                             = GallClass(tauon=self, size=self.album_mode_art_size)
-		self.thumb_tracks                         = ThumbTracks(tauon=self)
-		self.chunker                              = Chunker()
-		self.stream_proxy                         = StreamEnc(self)
+		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
+		self.gall_ren:                  GallClass = GallClass(tauon=self, size=self.album_mode_art_size)
+		self.thumb_tracks:            ThumbTracks = ThumbTracks(tauon=self)
+		self.chunker:                     Chunker = Chunker()
+		self.stream_proxy:              StreamEnc = StreamEnc(self)
 		self.level_train:       list[list[float]] = []
 		self.radio_server: ThreadedHTTPServer | None = None
 		self.listen_alongers:    dict[str, Timer] = {}
@@ -6033,8 +6033,8 @@ class Tauon:
 		self.encode_track_name                    = encode_track_name
 		self.lrclib_uploads:           list[dict] = []
 		self.todo:               list[TrackClass] = []
-		self.heart_colours                        = ColourGenCache(0.7, 0.7)
-		#self.power_tag_colours                    = ColourGenCache(0.5, 0.8)
+		self.heart_colours:        ColourGenCache = ColourGenCache(0.7, 0.7)
+		#self.power_tag_colours:    ColourGenCache = ColourGenCache(0.5, 0.8)
 
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
@@ -6052,10 +6052,10 @@ class Tauon:
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.librespot_p: Popen[bytes] | None = None
-		self.spot_ctl                         = SpotCtl(self)
-		self.cachement                        = Cachement(self)
-		self.spotc                            = LibreSpot(self)
-		self.milky                            = Milky(self)
+		self.spot_ctl:                 SpotCtl = SpotCtl(self)
+		self.cachement:              Cachement = Cachement(self)
+		self.spotc:                  LibreSpot = LibreSpot(self)
+		self.milky:                      Milky = Milky(self)
 
 		#self.recorded_songs = []
 
