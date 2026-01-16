@@ -112,6 +112,48 @@ static struct PyModuleDef phazor_module = {
 	#define EXPORT
 #endif
 
+enum logtypes {LOG_INFO, LOG_WARNING, LOG_ERROR, LOG_CRITICAL, LOG_DEBUG};
+
+static void log_msg(int type, const char *fmt, ...) {
+	PyGILState_STATE gstate = PyGILState_Ensure();
+	static PyObject *logging = NULL;
+
+	// import logging module on demand
+	if (logging == NULL){
+		logging = PyImport_ImportModule("logging");
+		if (logging == NULL) {
+			PyErr_SetString(
+				PyExc_ImportError,
+				"Could not import module 'logging'"
+			);
+			PyGILState_Release(gstate);
+			return;
+		}
+	}
+	/* format message */
+	char buffer[1024];
+
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+	PyObject *py_msg = PyUnicode_FromString(buffer);
+
+	const char *method = NULL;
+	switch (type) {
+		case LOG_INFO:     method = "info";     break;
+		case LOG_WARNING:  method = "warning";  break;
+		case LOG_ERROR:    method = "error";    break;
+		case LOG_CRITICAL: method = "critical"; break;
+		case LOG_DEBUG:    method = "debug";    break;
+		default:           method = "info";     break;
+	}
+	PyObject_CallMethod(logging, method, "O", py_msg);
+
+	Py_DECREF(py_msg);
+	PyGILState_Release(gstate);
+}
+
 // Entry point for the module
 PyMODINIT_FUNC PyInit_phazor(void) {
 	return PyModule_Create(&phazor_module);
@@ -315,9 +357,9 @@ FILE *d_file;
 		for (size_t i = 0; i < pipe_devices.device_count; i++) {
 			if (pipe_devices.devices[i].id == id) { // Assuming each device has a unique ID
 				/* Check if THIS is the active sink */
-				printf("Removed device with ID: %u (%s)\n", id, pipe_devices.devices[i].description);
+				log_msg(LOG_INFO, "Removed device with ID: %u (%s)", id, pipe_devices.devices[i].description);
 				if (id == stream_node_id) {
-					printf("Active sink removed!");
+					log_msg(LOG_WARNING, "Active sink removed!");
 					removed_active_sink = true;
 				}
 				// Shift remaining devices to fill the gap
@@ -332,7 +374,7 @@ FILE *d_file;
 
 		/* IMPORTANT: handle stream loss OUTSIDE the mutex */
 		if (removed_active_sink && global_stream) {
-			fprintf(stderr, "Active sink removed — disconnecting PipeWire stream\n");
+			log_msg(LOG_ERROR, "Active sink removed — disconnecting PipeWire stream");
 
 			pw_stream_disconnect(global_stream);
 
@@ -351,7 +393,7 @@ FILE *d_file;
 			return;
 
 
-		//printf("object: id:%u type:%s/%d\n", id, type, version);
+		//log_msg(LOG_INFO, "object: id:%u type:%s/%d", id, type, version);
 		const char *media_class;
 
 		media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
@@ -362,14 +404,14 @@ FILE *d_file;
 
 			pthread_mutex_lock(&pipe_devices_mutex);
 			if (pipe_devices.device_count >= MAX_DEVICES) {
-				printf("Error: Max devices\n");
+				log_msg(LOG_ERROR, "Error: Max devices");
 				pthread_mutex_unlock(&pipe_devices_mutex);
 				return;
 			}
 			const char *name = spa_dict_lookup(props, PW_KEY_NODE_NAME);
 			const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
 			if (!name || !description) {
-				printf("Error: Missing name or description for device\n");
+				log_msg(LOG_ERROR, "Error: Missing name or description for device");
 				pthread_mutex_unlock(&pipe_devices_mutex);
 				return;
 			}
@@ -385,7 +427,7 @@ FILE *d_file;
 			snprintf(pipe_devices.devices[pipe_devices.device_count].name, sizeof(pipe_devices.devices[pipe_devices.device_count].name), "%s", name);
 			snprintf(pipe_devices.devices[pipe_devices.device_count].description, sizeof(pipe_devices.devices[pipe_devices.device_count].description), "%s", description);
 			pipe_devices.device_count++;
-			printf("Found audio sink: %s (%s)\n", name, description);
+			log_msg(LOG_INFO, "Found audio sink: %s (%s)", name, description);
 			pthread_mutex_unlock(&pipe_devices_mutex);
 
 		}
@@ -404,8 +446,8 @@ FILE *d_file;
 	}
 
 	static void on_core_error(void *data, uint32_t id, int seq, int res, const char *message) {
-		fprintf(
-			stderr, "PipeWire core error: id=%u res=%d (%s) msg=%s\n",
+		log_msg(LOG_ERROR,
+			"PipeWire core error: id=%u res=%d (%s) msg=%s",
 			id, res, spa_strerror(res), message ? message : "(null)");
 		// Mark disconnected so the app can attempt reconnect
 		pulse_connected = false;
@@ -559,12 +601,12 @@ void start_ffmpeg(char uri[], int start_ms) {
 	int status = 0;
 	if (ff_start != NULL) status = ff_start(uri, start_ms, sample_rate_out);
 	else {
-		printf("pa: FFMPEG callback is NULL\n");
+		log_msg(LOG_ERROR, "pa: FFMPEG callback is NULL");
 		return;
 	}
 
 	if (status != 0) {
-		printf("pa: Error starting FFMPEG\n");
+		log_msg(LOG_ERROR, "pa: Error starting FFMPEG");
 		return;
 	}
 
@@ -588,9 +630,9 @@ void resample_to_buffer(int in_frames) {
 	src_data.end_of_input = 0;
 
 	src_process(src, &src_data);
-	//printf("pa: SRC error code: %d\n", src_result);
-	//printf("pa: SRC output frames: %lu\n", src_data.output_frames_gen);
-	//printf("pa: SRC input frames used: %lu\n", src_data.input_frames_used);
+	//log_msg(LOG_ERROR, "pa: SRC error code: %d", src_result);
+	//log_msg(LOG_ERROR, "pa: SRC output frames: %lu", src_data.output_frames_gen);
+	//log_msg(LOG_ERROR, "pa: SRC input frames used: %lu", src_data.input_frames_used);
 	int out_frames = src_data.output_frames_gen;
 
 	int i = 0;
@@ -622,7 +664,7 @@ int16_t wave_16 = 0;
 int wave_open(char *filename) {
 	wave_file = fopen(filename, "rb");
 	if (wave_file == NULL) {
-		printf("pa: Error opening WAVE file: %s\n", strerror(errno));
+		log_msg(LOG_ERROR, "pa: Error opening WAVE file: %s", strerror(errno));
 		return 1;
 	}
 
@@ -631,16 +673,16 @@ int wave_open(char *filename) {
 
 	b[15] = '\0';
 	fread(b, 4, 1, wave_file);
-	//printf("pa: mark: %s\n", b)
+	//log_msg(LOG_INFO, "pa: mark: %s", b)
 
 	fread(&i, 4, 1, wave_file);
-	//printf("pa: size: %d\n", i);
+	//log_msg(LOG_INFO, "pa: size: %d", i);
 	wave_size = i - 44;
 
 	fread(b, 4, 1, wave_file);
-	//printf("pa: head: %s\n", b);
+	//log_msg(LOG_INFO, "pa: head: %s", b);
 	if (memcmp(b, "WAVE", 4) == 1) {
-		printf("pa: Invalid WAVE file\n");
+		log_msg(LOG_ERROR, "pa: Invalid WAVE file");
 		fclose(wave_file);
 		return 1;
 	}
@@ -671,43 +713,43 @@ int wave_open(char *filename) {
 
 
 	//fread(b, 4, 1, wave_file);
-	//printf("pa: fmt : %s\n", b);
+	//log_msg(LOG_INFO, "pa: fmt : %s", b);
 
 	//fread(&i, 4, 1, wave_file);
-	//printf("pa: abov: %d\n", i);
+	//log_msg(LOG_INFO, "pa: abov: %d", i);
 	//if (i != 16) {
-	//	printf("pa: Unsupported WAVE file\n");
+	//	log_msg(LOG_ERROR, "pa: Unsupported WAVE file");
 	//	return 1;
 	//}
 
 	fread(&i, 2, 1, wave_file);
-	//printf("pa: type: %d\n", i);
+	//log_msg(LOG_INFO, "pa: type: %d", i);
 	if (i != 1) {
-		printf("pa: Unsupported WAVE file\n");
+		log_msg(LOG_ERROR, "pa: Unsupported WAVE file");
 		fclose(wave_file);
 		return 1;
 	}
 
 	fread(&i, 2, 1, wave_file);
-	//printf("pa: chan: %d\n", i);
+	//log_msg(LOG_INFO, "pa: chan: %d\n", i);
 	if (i != 1 && i != 2) {
-		printf("pa: Unsupported WAVE channels\n");
+		log_msg(LOG_ERROR, "pa: Unsupported WAVE channels");
 		fclose(wave_file);
 		return 1;
 	}
 	wave_channels = i;
 
 	fread(&i, 4, 1, wave_file);
-	//printf("pa: smpl: %d\n", i);
+	//log_msg(LOG_INFO, "pa: smpl: %d", i);
 	wave_samplerate = i;
 	sample_rate_src = i;
 
 	fseek(wave_file, 6, SEEK_CUR);
 
 	fread(&i, 2, 1, wave_file);
-	//printf("pa: bitd: %d\n", i);
+	//log_msg(LOG_INFO, "pa: bitd: %d", i);
 	if (i != 16) {
-		printf("pa: Unsupported WAVE depth\n");
+		log_msg(LOG_ERROR, "pa: Unsupported WAVE depth");
 		fclose(wave_file);
 		return 1;
 	}
@@ -728,7 +770,7 @@ int wave_open(char *filename) {
 			return 1;
 		}
 		// Is audio data?
-		//printf("label %s\n", b);
+		//log_msg(LOG_INFO, "label %s", b);
 		if (memcmp(b, "data", 4) == 0) {
 			wave_start = ftell(wave_file);
 			wave_size = i;
@@ -759,7 +801,7 @@ int wave_decode(int read_frames) {
 		i++;
 		frames_read++;
 		if ((ftell(wave_file) - wave_start) > wave_size) {
-			printf("pa: End of WAVE file data\n");
+			log_msg(LOG_INFO, "pa: End of WAVE file data");
 			end = true;
 			break;
 		}
@@ -1016,10 +1058,10 @@ FLAC__StreamDecoderWriteStatus
 f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[],
 		void *client_data) {
 
-	//printf("Frame size is: %d\n", frame->header.blocksize);
-	//printf("Resolution is: %d\n", frame->header.bits_per_sample);
-	//printf("Samplerate is: %d\n", frame->header.sample_rate);
-	//printf("Channels is  : %d\n", frame->header.channels);
+	//log_msg(LOG_INFO, "Frame size is: %d", frame->header.blocksize);
+	//log_msg(LOG_INFO, "Resolution is: %d", frame->header.bits_per_sample);
+	//log_msg(LOG_INFO, "Samplerate is: %d", frame->header.sample_rate);
+	//log_msg(LOG_INFO, "Channels is  : %d", frame->header.channels);
 
 	pthread_mutex_lock(&buffer_mutex);
 
@@ -1060,7 +1102,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 	}
 
 	if (frame->header.blocksize > (BUFF_SIZE - get_buff_fill())) {
-		printf("pa: critical: BUFFER OVERFLOW!");
+		log_msg(LOG_CRITICAL, "pa: BUFFER OVERFLOW!");
 	}
 
 	int temp_fill = 0;
@@ -1091,7 +1133,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 				} else {
 					bfr[high] = (buffer[1][i]) / 32768.0;
 				}
-			} else printf("ph: CRITICAL ERROR - INVALID BIT DEPTH!\n");
+			} else log_msg(LOG_CRITICAL, "ph: INVALID BIT DEPTH!");
 
 			fade_fx();
 
@@ -1123,7 +1165,7 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 				if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
 				else re_in[(i * 2) + 1] = (buffer[1][i]) / 32768.0;
 
-			} else printf("ph: CRITICAL ERROR - INVALID BIT DEPTH!\n");
+			} else log_msg(LOG_CRITICAL, "ph: INVALID BIT DEPTH!");
 
 			temp_fill++;
 			i++;
@@ -1139,11 +1181,11 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 }
 
 void f_meta(const FLAC__StreamDecoder *decoder, const FLAC__StreamMetadata *metadata, void *client_data) {
-	printf("GOT META\n");
+	log_msg(LOG_INFO, "GOT META");
 }
 
 void f_err(const FLAC__StreamDecoder *decoder, FLAC__StreamDecoderErrorStatus status, void *client_data) {
-	printf("GOT FLAC ERR\n");
+	log_msg(LOG_ERROR, "GOT FLAC ERR");
 }
 
 
@@ -1196,20 +1238,20 @@ int get_audio(int max, float* buff) {
 
 		if (buffering == 1 && get_buff_fill() > config_min_buffer) {
 			buffering = 0;
-			printf("pa: Buffering -> Playing\n");
+			log_msg(LOG_INFO, "pa: Buffering -> Playing");
 		}
 
 		if (get_buff_fill() < 10 && loaded_target_file[0] == 'h') {
 
 			if (mode == PLAYING) {
-				if (buffering == 0) printf("pa: Buffering...\n");
+				if (buffering == 0) log_msg(LOG_INFO, "pa: Buffering...");
 				buffering = 1;
 			} else buffering = 0;
 		}
 
 
 //		if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
-//			//printf("pa: Buffer underrun\n");
+//			//log_msg(LOG_WARNING, "pa: Buffer underrun");
 //		}
 
 		// Put fade buffer back
@@ -1247,7 +1289,7 @@ int get_audio(int max, float* buff) {
 			peak_roll_l = 0;
 			peak_roll_r = 0;
 
-			//printf("pa: Buffer is at %d\n", buff_filled);
+			//log_msg(LOG_INFO, "pa: Buffer is at %d", buff_filled);
 
 			// Fill the out buffer...
 			while (get_buff_fill() > 0) {
@@ -1257,13 +1299,13 @@ int get_audio(int max, float* buff) {
 				if (mode == RAMP_DOWN && gate == 0) break;
 
 //				if (want_sample_rate > 0 && sample_change_byte == buff_base) {
-//					//printf("pa: Set new sample rate\n");
+//					//log_msg(LOG_INFO, "pa: Set new sample rate");
 //					connect_pulse();
 //					break;
 //				}
 
 				if (reset_set && reset_set_byte == low) {
-					//printf("pa: Reset position counter\n");
+					//log_msg(LOG_INFO, "pa: Reset position counter");
 					reset_set = false;
 					position_count = reset_set_value;
 				}
@@ -1372,7 +1414,7 @@ int get_audio(int max, float* buff) {
 		if (
 			state == PW_STREAM_STATE_ERROR ||
 			state == PW_STREAM_STATE_UNCONNECTED) {
-			fprintf(stderr, "PipeWire stream lost (%s)\n", error ? error : "no error");
+			log_msg(LOG_ERROR, "PipeWire stream lost (%s)", error ? error : "no error");
 			pulse_connected = false;
 		}
 	}
@@ -1387,12 +1429,12 @@ int get_audio(int max, float* buff) {
 	void *pipewire_main_loop_thread(void *thread_id) {
 
 		pw_running = true;
-		printf("Begin Pipewire init...\n");
+		log_msg(LOG_INFO, "Begin Pipewire init...");
 		pw_init(NULL, NULL);
 
 		loop = pw_main_loop_new(NULL /* properties */);
 		if (loop == NULL) {
-			fprintf(stderr, "Error: Failed to create main loop\n");
+			log_msg(LOG_ERROR, "Error: Failed to create main loop");
 			return thread_id;
 		}
 
@@ -1401,7 +1443,7 @@ int get_audio(int max, float* buff) {
 			NULL /* properties */,
 			0 /* user_data size */);
 		if (context == NULL) {
-			fprintf(stderr, "Error: Failed to create context\n");
+			log_msg(LOG_ERROR, "Error: Failed to create context");
 			return thread_id;
 		}
 
@@ -1410,14 +1452,14 @@ int get_audio(int max, float* buff) {
 			NULL /* properties */,
 			0 /* user_data size */);
 		if (core == NULL) {
-			fprintf(stderr, "Error: Failed to connect to PipeWire\n");
+			log_msg(LOG_ERROR, "Error: Failed to connect to PipeWire");
 			return thread_id;
 		}
 
 		registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
 						0 /* user_data size */);
 		if (registry == NULL) {
-			fprintf(stderr, "Error: Failed to get registry\n");
+			log_msg(LOG_ERROR, "Error: Failed to get registry");
 			return thread_id;
 		}
 
@@ -1426,13 +1468,13 @@ int get_audio(int max, float* buff) {
 		res = pw_registry_add_listener(registry, &registry_listener, &registry_events, NULL);
 
 		if (res < 0) {
-			fprintf(stderr, "Error: Failed to add registry listener: %s\n", spa_strerror(res));
+			log_msg(LOG_ERROR, "Error: Failed to add registry listener: %s", spa_strerror(res));
 			return thread_id;
 		}
 
 		res = pw_core_add_listener(core, &core_listener, &core_events, NULL);
 		if (res < 0) {
-			fprintf(stderr, "Error: Failed to add core listener: %s\n", spa_strerror(res));
+			log_msg(LOG_ERROR, "Error: Failed to add core listener: %s", spa_strerror(res));
 			return thread_id;
 		}
 		pw_core_sync(core, PW_ID_CORE, 0);
@@ -1450,14 +1492,14 @@ int get_audio(int max, float* buff) {
 			NULL
 		);
 		if (global_stream == NULL) {
-			fprintf(stderr, "Error: Failed to create stream\n");
+			log_msg(LOG_ERROR, "Error: Failed to create stream");
 			return thread_id;
 		}
-		//printf("Run pipewire main loop...\n");
+		//log_msg(LOG_INFO, "Run pipewire main loop...");
 		res = pw_main_loop_run(loop);
 
 		if (res < 0) {
-			fprintf(stderr, "Error: Main loop run failed: %s\n", spa_strerror(res));
+			log_msg(LOG_ERROR, "Error: Main loop run failed: %s", spa_strerror(res));
 			return thread_id;
 		}
 
@@ -1479,7 +1521,7 @@ int get_audio(int max, float* buff) {
 			pw_main_loop_destroy(loop);
 		}
 		pw_deinit();
-		//printf("Exit pipewire main loop\n");
+		//log_msg(LOG_INFO, "Exit pipewire main loop");
 		pw_running = false;
 		return thread_id;
 	}
@@ -1489,7 +1531,7 @@ int get_audio(int max, float* buff) {
 #ifdef MINI
 	void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
 		get_audio(frameCount * 2, pOutput);
-		//if (0 < b && b < frameCount) printf("ph: Buffer underrun\n");
+		//if (0 < b && b < frameCount) log_msg(LOG_INFO, "ph: Buffer underrun");
 	}
 
 	void notification_callback(const ma_device_notification* pNotification) {
@@ -1509,7 +1551,7 @@ int get_audio(int max, float* buff) {
 	int initiate_ma_context() {
 		if (context_allocated == 0) {
 			if (ma_context_init(NULL, 0, NULL, &context) != MA_SUCCESS) {
-				printf("Failed to initialize context.\n");
+				log_msg(LOG_ERROR, "Failed to initialize context.");
 				return -1;
 			}
 			context_allocated = 1;
@@ -1518,7 +1560,7 @@ int get_audio(int max, float* buff) {
 	}
 
 	void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
-		printf("Log [%u]: %s\n", level, pMessage);
+		log_msg(LOG_INFO, "Log [%u]: %s", level, pMessage);
 		// Additional logic for handling log messages can be added here
 	}
 #endif
@@ -1564,7 +1606,7 @@ void decode_seek(int abs_ms, int sample_rate) {
 #endif
 
 int disconnect_pulse() {
-	//printf("ph: Disconnect Device\n");
+	//log_msg(LOG_INFO, "ph: Disconnect Device");
 
 	if (pulse_connected) {
 		#ifdef MINI
@@ -1596,7 +1638,7 @@ int disconnect_pulse() {
 	) {
 		enum pw_stream_state st = pw_stream_get_state(global_stream, NULL);
 		if (st != PW_STREAM_STATE_UNCONNECTED) {
-			fprintf(stderr, "pipe_connect: stream not unconnected (state=%d)\n", st);
+			log_msg(LOG_ERROR, "pipe_connect: stream not unconnected (state=%d)", st);
 			return -EBUSY;
 		}
 		struct spa_pod_builder b = { 0 };
@@ -1615,7 +1657,7 @@ int disconnect_pulse() {
 			.channels = 2,
 			.rate = pipe_set_samplerate));
 		if (params[0] == NULL) {
-			fprintf(stderr, "Failed to build audio format parameters\n");
+			log_msg(LOG_ERROR, "Failed to build audio format parameters");
 			return -EINVAL;
 		}
 
@@ -1634,13 +1676,13 @@ int disconnect_pulse() {
 		// Get and copy stream properties
 		const struct pw_properties *props = pw_stream_get_properties(global_stream);
 		if (props == NULL) {
-			fprintf(stderr, "Failed to get stream properties\n");
+			log_msg(LOG_ERROR, "Failed to get stream properties");
 			return -EINVAL;
 		}
 
 		struct pw_properties *mutable_props = pw_properties_copy(props);
 		if (mutable_props == NULL) {
-			fprintf(stderr, "Failed to copy stream properties\n");
+			log_msg(LOG_ERROR, "Failed to copy stream properties");
 			return -ENOMEM;
 		}
 
@@ -1652,21 +1694,21 @@ int disconnect_pulse() {
 
 			if (device_name) {
 				pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, device_name);
-				printf("Selected device index: %zu (%s)\n", selected_index, device_name);
+				log_msg(LOG_INFO, "Selected device index: %zu (%s)", selected_index, device_name);
 			} else {
-				fprintf(stderr, "Selected device has no name\n");
+				log_msg(LOG_ERROR, "Selected device has no name");
 				pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
 			}
 		} else {
 			// Optionally, handle the case where no device is selected
 			pw_properties_set(mutable_props, PW_KEY_TARGET_OBJECT, "");
-			printf("Using default device.\n");
+			log_msg(LOG_INFO, "Using default device.");
 		}
 
 		// Update the stream properties
 		ret = pw_stream_update_properties(global_stream, &mutable_props->dict);
 		if (ret < 0) {
-			fprintf(stderr, "Failed to update stream properties: %d\n", ret);
+			log_msg(LOG_ERROR, "Failed to update stream properties: %d", ret);
 			pw_properties_free(mutable_props);
 			return ret;
 		}
@@ -1683,16 +1725,17 @@ int disconnect_pulse() {
 			PW_STREAM_FLAG_RT_PROCESS,
 			params, 1);
 		if (ret < 0) {
-			fprintf(stderr, "Failed to connect stream: %d\n", ret);
+			log_msg(LOG_ERROR, "Failed to connect stream: %d", ret);
 			return ret;
 		}
 
-		printf("Stream connected successfully.\n");
+		log_msg(LOG_INFO, "Stream connected successfully.");
 		return 0; // Success
 	}
 
-	static int pipe_update(struct spa_loop *loop, bool async, uint32_t seq,
-						 const void *_data, size_t size, void *user_data) {
+	static int pipe_update(
+		struct spa_loop *loop, bool async, uint32_t seq,
+		const void *_data, size_t size, void *user_data) {
 
 			pw_stream_disconnect(global_stream);
 			return pipe_connect(loop, async, seq, _data, size, user_data);
@@ -1702,22 +1745,22 @@ int disconnect_pulse() {
 void connect_pulse() {
 
 	if (pulse_connected) {
-		//printf("pa: Reconnect\n");
+		//log_msg(LOG_INFO, "pa: Reconnect");
 		disconnect_pulse();
 	}
-	printf("ph: Connect\n");
+	log_msg(LOG_INFO, "ph: Connect");
 
 	#ifdef MINI
 		if (getenv("MA_DEBUG")) {
 			ma_result result;
 			ma_log logger;
 
-			printf("Initialize logger.\n");
+			log_msg(LOG_INFO, "Initialize logger.");
 
 			// Initialize the logger
 			result = ma_log_init(NULL, &logger);
 			if (result != MA_SUCCESS) {
-				printf("Failed to initialize logger.\n");
+				log_msg(LOG_ERROR, "Failed to initialize logger.");
 				return;
 			}
 
@@ -1727,7 +1770,7 @@ void connect_pulse() {
 			// Register the log callback
 			result = ma_log_register_callback(&logger, logCallback);
 			if (result != MA_SUCCESS) {
-				printf("Failed to register log callback.\n");
+				log_msg(LOG_ERROR, "Failed to register log callback.");
 				ma_log_uninit(&logger);
 				return;
 			}
@@ -1742,14 +1785,14 @@ void connect_pulse() {
 			}
 		}
 
-		//printf("ph: Connect device\n");
+		//log_msg(LOG_INFO, "ph: Connect device\n");
 
 		c_config.pulse.pApplicationName = "Tauon Music Box";
 		if (initiate_ma_context() == -1) return;
 
 		result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
 		if (result != MA_SUCCESS) {
-			printf("Failed to retrieve device information.\n");
+			log_msg(LOG_ERROR, "Failed to retrieve device information.");
 			return;
 		}
 
@@ -1770,15 +1813,15 @@ void connect_pulse() {
 		ma_result result;
 		result = ma_device_init(&context, &config, &device);
 		if (result != MA_SUCCESS) {
-			printf("ph: Device init error\n");
+			log_msg(LOG_ERROR, "ph: Device init error");
 			const char* description = ma_result_description(result);
-			printf("Result Description: %s\n", description);
+			log_msg(LOG_ERROR, "Result Description: %s", description);
 			mode = STOPPED;
 			return;  // Failed to initialize the device.
 		}
 
 		//dev = config_output_sink;
-		printf("ph: Connected using samplerate %uhz\n", device.sampleRate);
+		log_msg(LOG_INFO, "ph: Connected using samplerate %uhz", device.sampleRate);
 
 		sample_rate_out = device.sampleRate;
 	#endif
@@ -1786,7 +1829,7 @@ void connect_pulse() {
 	#ifdef PIPE
 		int set_samplerate = 48000;
 		if (sample_rate_src > 0) pipe_set_samplerate = sample_rate_src;
-		printf("SET PIPE SAMPLERATE: %d\n", set_samplerate);
+		log_msg(LOG_INFO, "SET PIPE SAMPLERATE: %d", set_samplerate);
 		sample_rate_out = pipe_set_samplerate;
 
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_connect, SPA_ID_INVALID, NULL, 0, true, NULL);
@@ -1797,7 +1840,7 @@ void connect_pulse() {
 		current_sample_rate != sample_rate_out && position_count > 0 && get_buff_fill() > 0) {
 
 		src_reset(src);
-		printf("ph: The samplerate changed, rewinding\n");
+		log_msg(LOG_WARNING, "ph: The samplerate changed, rewinding");
 		if (!reset_set) {
 			decode_seek(position_count / sample_rate_src * 1000, sample_rate_src);
 		}
@@ -1887,7 +1930,7 @@ int load_next() {
 	// Peak into file and try to detect signature
 
 	if ((fptr = uni_fopen(loaded_target_file)) == NULL) {
-		printf("pa: Error opening file: %s\n", strerror(errno));
+		log_msg(LOG_ERROR, "pa: Error opening file: '%s' (%s)", loaded_target_file, strerror(errno));
 		perror("Error");
 		return 1;
 	}
@@ -1899,7 +1942,7 @@ int load_next() {
 
 	if (memcmp(peak, "fLaC", 4) == 0) {
 		codec = FLAC;
-		//printf("Detected flac\n");
+		//log_msg(LOG_INFO, "Detected flac");
 	} else if (memcmp(peak, "RIFF", 4) == 0) {
 		codec = FFMPEG; //WAVE;
 	} else if (memcmp(peak, "OggS", 4) == 0) {
@@ -1907,34 +1950,34 @@ int load_next() {
 		if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
 	} else if (memcmp(peak, "\xff\xfb", 2) == 0) {
 		codec = MPG;
-		//printf("Detected mp3\n");
+		//log_msg(LOG_INFO, "Detected mp3");
 	} else if (memcmp(peak, "\xff\xf3", 2) == 0) {
 		codec = MPG;
-		//printf("Detected mp3\n");
+		//log_msg(LOG_INFO, "Detected mp3");
 	} else if (memcmp(peak, "\xff\xf2", 2) == 0) {
 		codec = MPG;
-		//printf("Detected mp3\n");
+		//log_msg(LOG_INFO, "Detected mp3");
 	} else if (memcmp(peak, "\0\0\0\x20" "ftypM4A", 11) == 0) {
 		codec = FFMPEG;
-		//printf("Detected m4a\n");
+		//log_msg(LOG_INFO, "Detected m4a");
 	} else if (memcmp(peak, "\0\0\0\x18" "ftypdash", 12) == 0) {
 		codec = FFMPEG;
-		//printf("Detected m4a\n");
+		//log_msg(LOG_INFO, "Detected m4a");
 	} else if (memcmp(peak, "\0\0\0\x18" "ftypiso5", 12) == 0) {
 		codec = FFMPEG;
-		//printf("Detected m4a\n");
+		//log_msg(LOG_INFO, "Detected m4a");
 	} else if (memcmp(peak, "\x30\x26\xb2\x75\x8e\x66\xcf\x11", 8) == 0) {
 		codec = FFMPEG;
-		//printf("Detected wma\n");
+		//log_msg(LOG_INFO, "Detected wma");
 	} else if (memcmp(peak, "MAC\x20", 4) == 0) {
 		codec = FFMPEG;
-		//printf("Detected ape\n");
+		//log_msg(LOG_INFO, "Detected ape");
 	} else if (memcmp(peak, "TTA1", 4) == 0) {
 		codec = FFMPEG;
-		//printf("Detected tta\n");
+		//log_msg(LOG_INFO, "Detected tta");
 	} else if (memcmp(peak, "wvpk", 4) == 0) {
 		codec = WAVPACK;
-		printf("Detected wavpack\n");
+		log_msg(LOG_INFO, "Detected wavpack");
 
 	} else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
 		int id3_size = (peak[6] << 21) | (peak[7] << 14) | (peak[8] << 7) | peak[9];
@@ -1943,7 +1986,7 @@ int load_next() {
 		unsigned char flac_marker[4];
 		if (fread(flac_marker, 1, 4, fptr) == 4 && memcmp(flac_marker, "fLaC", 4) == 0) {
 			codec = FLAC;
-			printf("Detected FLAC with ID3 header\n");
+			log_msg(LOG_INFO, "Detected FLAC with ID3 header\n");
 		}
 	}
 	fclose(fptr);
@@ -2014,7 +2057,7 @@ int load_next() {
 
 	if (codec == UNKNOWN || config_always_ffmpeg == 1) {
 		codec = FFMPEG;
-		printf("pa: Decode using FFMPEG\n");
+		log_msg(LOG_INFO, "pa: Decode using FFMPEG\n");
 	}
 
 	// Start decoders
@@ -2056,7 +2099,7 @@ int load_next() {
 		fclose(mod_file);
 
 		if (mod == NULL) {
-			printf("pa: Error creating MPT modules\n");
+			log_msg(LOG_INFO, "pa: Error creating MPT modules");
 			return 1;
 		}
 		pthread_mutex_lock(&buffer_mutex);
@@ -2068,7 +2111,7 @@ int load_next() {
 		}
 
 		if (load_target_seek > 0) {
-			// printf("pa: Start at position %d\n", load_target_seek);
+			// log_msg(LOG_INFO, "pa: Start at position %d", load_target_seek);
 			openmpt_module_set_position_seconds(mod, load_target_seek / 1000.0);
 			reset_set_value = 48000 * (load_target_seek / 1000.0);
 			samples_decoded = reset_set_value * 2;
@@ -2115,9 +2158,9 @@ int load_next() {
 			decoder_allocated = 1;
 
 			if (e != 0) {
-				printf("pa: Error reading ogg file (expecting opus)\n");
-				printf("pa: %d\n", e);
-				printf("pa: %s\n", loaded_target_file);
+				log_msg(LOG_ERROR, "pa: Error reading ogg file (expecting opus)");
+				log_msg(LOG_ERROR, "pa: %d", e);
+				log_msg(LOG_ERROR, "pa: %s", loaded_target_file);
 			}
 
 			if (e == 0) {
@@ -2133,7 +2176,7 @@ int load_next() {
 				current_length_count = op_pcm_total(opus_dec, -1);
 
 				if (load_target_seek > 0) {
-					// printf("pa: Start at position %d\n", load_target_seek);
+					// log_msg(LOG_INFO, "pa: Start at position %d", load_target_seek);
 					op_pcm_seek(opus_dec, (int) 48000 * (load_target_seek / 1000.0));
 					reset_set_value = op_raw_tell(opus_dec);
 					samples_decoded = reset_set_value * 2;
@@ -2152,14 +2195,14 @@ int load_next() {
 		case VORBIS:
 			d_file = uni_fopen(loaded_target_file);
 			if (d_file == NULL) {
-				printf("pa: Error opening VORBIS file: %s\n", strerror(errno));
+				log_msg(LOG_ERROR, "pa: Error opening VORBIS file: %s", strerror(errno));
 				return 1;
 			}
 			//e = ov_fopen(loaded_target_file, &vf);
 			e = ov_open(d_file, &vf, NULL, 0);
 			decoder_allocated = 1;
 			if (e != 0) {
-				printf("pa: Error reading ogg file (expecting vorbis)\n");
+				log_msg(LOG_ERROR, "pa: Error reading ogg file (expecting vorbis)");
 				fclose(d_file);
 
 				return 1;
@@ -2168,7 +2211,7 @@ int load_next() {
 				vi = *ov_info(&vf, -1);
 
 				pthread_mutex_lock(&buffer_mutex);
-				//printf("pa: Vorbis samplerate is %lu\n", vi.rate);
+				//log_msg(LOG_INFO, "pa: Vorbis samplerate is %lu", vi.rate);
 
 				sample_rate_src = vi.rate;
 				src_channels = vi.channels;
@@ -2180,7 +2223,7 @@ int load_next() {
 				current_length_count = ov_pcm_total(&vf, -1);
 
 				if (load_target_seek > 0) {
-					//printf("pa: Start at position %d\n", load_target_seek);
+					//log_msg(LOG_INFO, "pa: Start at position %d", load_target_seek);
 					ov_pcm_seek(&vf, (ogg_int64_t) vi.rate * (load_target_seek / 1000.0));
 					reset_set_value = vi.rate * (load_target_seek / 1000.0); // op_pcm_tell(opus_dec); that segfaults?
 					//reset_set_value = 0;
@@ -2220,7 +2263,7 @@ int load_next() {
 		case WAVPACK:
 			wpc = WavpackOpenFileInput(loaded_target_file, NULL, OPEN_WVC | OPEN_2CH_MAX, 0);
 			if (wpc == NULL) {
-				printf("pa: Error loading wavpak file\n");
+				log_msg(LOG_ERROR, "pa: Error loading wavpak file");
 				WavpackCloseFile(wpc);
 				return 1;
 			}
@@ -2234,13 +2277,13 @@ int load_next() {
 			if (WavpackGetMode(wpc) & MODE_FLOAT) {
 				wp_float = 1;
 				if (wp_bit != 32) {
-					printf("pa: wavpak float mode only supported for 32-bit\n");
+					log_msg(LOG_ERROR, "pa: wavpak float mode only supported for 32-bit");
 					WavpackCloseFile(wpc);
 					return 1;
 				}
 			} else {
 				if (! (wp_bit == 16 || wp_bit == 24 || wp_bit == 32)) {
-					printf("pa: wavpak bit depth not supported\n");
+					log_msg(LOG_ERROR, "pa: wavpak bit depth not supported");
 					WavpackCloseFile(wpc);
 					return 1;
 				}
@@ -2251,12 +2294,21 @@ int load_next() {
 			break;
 
 		case MPG:
-			mpg123_open(mh, loaded_target_file);
+			int ret = mpg123_open(mh, loaded_target_file);
+			if (ret != MPG123_OK) {
+				log_msg(
+					LOG_ERROR,
+					"pa: mpg123_open failed for '%s': %s",
+					loaded_target_file,
+					mpg123_strerror(mh)
+				);
+				return 1;
+			}
 			decoder_allocated = 1;
 
 			mpg123_getformat(mh, &rate, &channels, &encoding);
 			mpg123_scan(mh);
-			//printf("pa: %lu. / %d. / %d\n", rate, channels, encoding);
+			//log_msg(LOG_INFO, "pa: %lu. / %d. / %d", rate, channels, encoding);
 
 			pthread_mutex_lock(&buffer_mutex);
 
@@ -2270,7 +2322,7 @@ int load_next() {
 			if (encoding == MPG123_ENC_SIGNED_16) {
 
 				if (load_target_seek > 0) {
-					//printf("pa: Start at position %d\n", load_target_seek);
+					//log_msg(LOG_INFO, "pa: Start at position %d", load_target_seek);
 					mpg123_seek(mh, (int) rate * (load_target_seek / 1000.0), SEEK_SET);
 					reset_set_value = mpg123_tell(mh);
 					reset_set = true;
@@ -2283,7 +2335,7 @@ int load_next() {
 			} else {
 				// Pretty much every MP3 ive tried is S16, so we might not have
 				// to worry about this.
-				printf("pa: ERROR, encoding format not supported!\n");
+				log_msg(LOG_ERROR, "pa: encoding format not supported!");
 				pthread_mutex_unlock(&buffer_mutex);
 				return 1;
 			}
@@ -2306,9 +2358,9 @@ void end() {
 
 void decoder_eos() {
 	// Call once current decode steam has run out
-	//printf("pa: End of stream\n");
+	//log_msg(LOG_INFO, "pa: End of stream");
 	if (next_ready == 1) {
-		//printf("pa: Read next gapless\n");
+		//log_msg(LOG_INFO, "pa: Read next gapless");
 		int result = load_next();
 		if (result == 1) {
 			result_status = FAILURE;
@@ -2359,7 +2411,7 @@ void pump_decode() {
 		if (get_buff_fill() > 0) {
 			return;
 		}
-		printf("ph: Pump wrong samplerate\n");
+		log_msg(LOG_ERROR, "ph: Pump wrong samplerate");
 
 		#ifdef MINI
 			stop_out();
@@ -2427,7 +2479,7 @@ void pump_decode() {
 			}
 
 			if (load_target_seek > 0 && flac_got_rate == 1) {
-				//printf("pa: Set start position %d\n", load_target_seek);
+				//log_msg(LOG_INFO, "pa: Set start position %d", load_target_seek);
 
 				FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate_src * (load_target_seek / 1000.0));
 				pthread_mutex_lock(&buffer_mutex);
@@ -2457,7 +2509,7 @@ void pump_decode() {
 				// Check if file was appended to...
 				stat(loaded_target_file, &st);
 				if (load_file_size != st.st_size) {
-					printf("pa: Ogg file size changed!\n");
+					log_msg(LOG_WARNING, "pa: Ogg file size changed!");
 					int e = 0;
 					op_free(opus_dec);
 					opus_dec = op_open_file(loaded_target_file, &e);
@@ -2563,13 +2615,13 @@ void pump_decode() {
 		int b = 0;
 		if (ff_read != NULL) b = ff_read(ffm_buffer, 2048);
 		else {
-			printf("pa: FFMPEG read callback is NULL\n");
+			log_msg(LOG_WARNING, "pa: FFMPEG read callback is NULL");
 			decoder_eos();
 			return;
 		}
 
 		if (b % 4 != 0) {
-			printf("pa: Uneven data\n");
+			log_msg(LOG_WARNING, "pa: Uneven data");
 			decoder_eos();
 			return;
 		}
@@ -2578,7 +2630,7 @@ void pump_decode() {
 		read_to_buffer_char16(ffm_buffer, b);
 		pthread_mutex_unlock(&buffer_mutex);
 		if (b == 0) {
-			printf("pa: FFMPEG has finished\n");
+			log_msg(LOG_INFO, "pa: FFMPEG has finished");
 			decoder_eos();
 		}
 	}
@@ -2598,18 +2650,18 @@ void *main_loop(void *thread_id) {
 
 	rbuf = (kiss_fft_scalar*)malloc(sizeof(kiss_fft_scalar) * 2048 );
 	if (rbuf == NULL) {
-		printf("pa: Error allocating memory for rbuf\n");
+		log_msg(LOG_ERROR, "pa: Error allocating memory for rbuf");
 		return thread_id;
 	}
 	cbuf = (kiss_fft_cpx*)malloc(sizeof(kiss_fft_cpx) * (2048/2+1) );
 	if (cbuf == NULL) {
-		printf("pa: Error allocating memory for cbuf\n");
+		log_msg(LOG_ERROR, "pa: Error allocating memory for cbuf");
 		free(rbuf);
 		return thread_id;
 	}
 	ffta = kiss_fftr_alloc(2048 ,0 ,0,0 );
 	if (ffta == NULL) {
-		printf("pa: Error allocating memory for ffta\n");
+		log_msg(LOG_ERROR, "pa: Error allocating memory for ffta");
 		free(rbuf);
 		free(cbuf);
 		return thread_id;
@@ -2624,20 +2676,23 @@ void *main_loop(void *thread_id) {
 
 	src = src_new(config_resample_quality, 2, &error);
 	if (src == NULL) {
-		printf("pa: Error creating SRC state\n");
+		log_msg(LOG_ERROR, "pa: Error creating SRC state");
 		free(rbuf);
 		free(cbuf);
 		kiss_fftr_free(ffta);
 		return thread_id;
 	}
-	// printf("pa: SRC error code %d", error);
+	// log_msg(LOG_ERROR, "pa: SRC error code %d", error);
 	error = 0;
 
 	// MP3 decoder --------------------------------------------------------------
 
 	mpg123_init();
 	mh = mpg123_new(NULL, &error);
-
+	if (!mh) {
+		log_msg(LOG_ERROR, "pa: mpg123_new failed: %d", error);
+		return thread_id;
+	}
 	mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_QUIET | MPG123_SKIP_ID3V2, 0);
 	mpg123_param(mh, MPG123_RESYNC_LIMIT, 10000, 0);
 
@@ -2649,17 +2704,17 @@ void *main_loop(void *thread_id) {
 
 	// PIPEWIRE -----------
 	#ifdef PIPE
-		printf("Start pipewire thread...\n");
+		log_msg(LOG_INFO, "Start pipewire thread...");
 		enum_done = 0;
 		if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
-				fprintf(stderr, "Failed to create Pipewire main loop thread\n");
+				log_msg(LOG_ERROR, "Failed to create Pipewire main loop thread");
 				return thread_id;
 		}
-		printf("Done Pipewire prep, wait for ready event...\n");
+		log_msg(LOG_INFO, "Done Pipewire prep, wait for ready event...");
 		while (enum_done != 1) {
 			usleep(10000);
 		}
-		printf("Pipewire load done.\n");
+		log_msg(LOG_INFO, "Pipewire load done.");
 	#endif
 	//int test1 = 0;
 	// Main loop ---------------------------------------------------------------
@@ -2667,12 +2722,12 @@ void *main_loop(void *thread_id) {
 
 //		test1++;
 //		if (test1 > 650) {
-//			printf("pa: Status: mode %d, command %d, buffer %d, gate %f\n", mode, command, get_buff_fill(), gate);
+//			log_msg(LOG_INFO, "pa: Status: mode %d, command %d, buffer %d, gate %f", mode, command, get_buff_fill(), gate);
 //			test1 = 0;
 //		}
 
 		if (device_stopped && !called_to_stop_device && !signaled_device_unavailable) {
-			printf("Device was unplugged or became unavailable.\n");
+			log_msg(LOG_WARNING, "Device was unplugged or became unavailable.");
 			on_device_unavailable();
 			signaled_device_unavailable = true;
 		}
@@ -2694,13 +2749,13 @@ void *main_loop(void *thread_id) {
 
 				// Start fresh thread
 				if (pthread_create(&pw_thread, NULL, pipewire_main_loop_thread, NULL) != 0) {
-					fprintf(stderr, "Failed to restart PipeWire thread\n");
+					log_msg(LOG_ERROR, "Failed to restart PipeWire thread");
 				} else {
 					// Wait for new core sync
 					while (enum_done != 1) usleep(10000);
 				}
 				if (mode == PLAYING || mode == RAMP_DOWN) {
-					fprintf(stderr, "Reconnecting output after PipeWire restart\n");
+					log_msg(LOG_ERROR, "Reconnecting output after PipeWire restart");
 					start_out();
 				}
 			}
@@ -2753,7 +2808,7 @@ void *main_loop(void *thread_id) {
 					if (config_fade_jump == 1 && mode == PLAYING) {
 						pthread_mutex_lock(&buffer_mutex);
 						if (fade_fill > 0) {
-							printf("pa: Fade already in progress\n");
+							log_msg(LOG_WARNING, "pa: Fade already in progress");
 						}
 						int l = current_sample_rate * (config_fade_duration / 1000.0);
 						int reserve = 0; //current_sample_rate / 10.0;
@@ -2793,7 +2848,7 @@ void *main_loop(void *thread_id) {
 
 					if (!using_fade) {
 						// Jump immediately
-						//printf("ph: Jump\n");
+						//log_msg(LOG_INFO, "ph: Jump");
 						position_count = 0;
 						buff_reset();
 						gate = 0;
@@ -2809,7 +2864,7 @@ void *main_loop(void *thread_id) {
 						start_out();
 						command = NONE;
 					} else {
-						printf("ph: Load file failed\n");
+						log_msg(LOG_ERROR, "ph: Load file failed");
 						result_status = FAILURE;
 						command = NONE;
 						mode = STOPPED;
@@ -2822,7 +2877,7 @@ void *main_loop(void *thread_id) {
 
 
 		if (command == SEEK) {
-			//printf("command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d\n", command, mode, gate, pulse_connected, pw_running);
+			//log_msg(LOG_INFO, "command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d", command, mode, gate, pulse_connected, pw_running);
 			#ifdef PIPE
 				if (!pulse_connected || !pw_running) {
 					// No callback means gate won't hit 0 unless we force progress.
@@ -2855,8 +2910,8 @@ void *main_loop(void *thread_id) {
 				pthread_mutex_unlock(&buffer_mutex);
 
 			} else if (mode != RAMP_DOWN) {
-				printf("pa: fixme - cannot seek at this time\n");
-				//printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
+				log_msg(LOG_CRITICAL, "pa: fixme - cannot seek at this time");
+				//log_msg(LOG_INFO, "command is %d, mode is %d, gate is %f", command, mode, gate);
 				command = NONE;
 			}
 
@@ -2878,19 +2933,19 @@ void *main_loop(void *thread_id) {
 		}
 
 		if (mode == ENDING && get_buff_fill() == 0) {
-			//printf("pa: Buffer ran out at end of track\n");
+			//log_msg(LOG_INFO, "pa: Buffer ran out at end of track");
 			end();
 		}
 		if (mode == ENDING && next_ready == 1) {
-			//printf("pa: Next registered while buffer was draining\n");
-			//printf("pa: -- remaining was %d\n", get_buff_fill());
+			//log_msg(LOG_INFO, "pa: Next registered while buffer was draining");
+			//log_msg(LOG_INFO, "pa: -- remaining was %d", get_buff_fill());
 			mode = PLAYING;
 		}
 
 		usleep(5000);
 	}
 
-	//printf("pa: Cleanup and exit\n");
+	//log_msg(LOG_INFO, "pa: Cleanup and exit");
 
 	pthread_mutex_lock(&buffer_mutex);
 
@@ -2923,7 +2978,7 @@ void *main_loop(void *thread_id) {
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_exit, SPA_ID_INVALID, NULL, 0, true, NULL);
 	#endif
 	command = NONE;
-	printf("Exit PHAzOR\n");
+	log_msg(LOG_INFO, "Exit PHAzOR");
 	return thread_id;
 }
 
@@ -2936,7 +2991,7 @@ EXPORT int scan_devices() {
 		if (initiate_ma_context() == -1) return -1;
 		result = ma_context_get_devices(&context, &pPlaybackDeviceInfos, &playbackDeviceCount, NULL, NULL);
 		if (result != MA_SUCCESS) {
-			printf("Failed to retrieve device information.\n");
+			log_msg(LOG_ERROR, "Failed to retrieve device information.");
 			return -2;
 		}
 		return playbackDeviceCount;
@@ -2951,12 +3006,12 @@ EXPORT int scan_devices() {
 }
 
 EXPORT int init() {
-	//printf("ph: PHAzOR starting up\n");
+	//log_msg(LOG_INFO, "ph: PHAzOR starting up");
 	if (main_running == 0) {
 		main_running = 1;
 		pthread_t main_thread_id;
 		pthread_create(&main_thread_id, NULL, main_loop, NULL);
-	} else printf("ph: Cannot init. Main loop already running!\n");
+	} else log_msg(LOG_ERROR, "ph: Cannot init. Main loop already running!");
 	return 0;
 }
 
@@ -3056,7 +3111,7 @@ EXPORT int seek(int ms_absolute, int flag) {
 	// This is checked on the Python side, but race conditions can happen,
 	// so check again
 	//if (mode == ENDING || mode == STOPPED) {
-	//	printf("command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d\n", command, mode, gate, pulse_connected, pw_running);
+	//	log_msg(LOG_INFO, "command is %d, mode is %d, gate is %f, pulse_connected is %d, pw_running is %d", command, mode, gate, pulse_connected, pw_running);
 	//	return 1;
 	//}
 	config_fast_seek = flag;
@@ -3232,7 +3287,7 @@ EXPORT void set_subtrack(int n) {
 }
 
 EXPORT void print_status() {
-	printf("command is %d, mode is %d, gate is %f\n", command, mode, gate);
+	log_msg(LOG_INFO, "command is %d, mode is %d, gate is %f", command, mode, gate);
 }
 
 EXPORT float* get_vis_side_buffer(){

@@ -1767,8 +1767,8 @@ class PlayerCtl:
 			self.playlist_playing_position = -1
 		self.playlist_view_position: int = self.bag.playlist_view_position
 		self.selected_in_playlist: int = self.bag.selected_in_playlist
-		self.target_open = ""
-		self.target_object = None
+		self.target_open: str = ""
+		self.target_object: TrackClass | None = None
 		self.start_time = 0
 		self.b_start_time = 0
 		self.playerCommand = ""
@@ -7643,8 +7643,9 @@ class Tauon:
 				self.gui.message_box_confirm_callback = dowload_presets
 				self.gui.message_box_no_callback = skip_presets
 				self.gui.message_box_confirm_reference = []
-				self.show_message(_("No presets loaded. Download preset pack? (~5MB)"),
-								  mode="confirm")
+				self.show_message(_(
+					"No presets loaded. Download preset pack? (~5MB)"),
+					mode="confirm")
 				return
 
 		self.prefs.milk ^= True

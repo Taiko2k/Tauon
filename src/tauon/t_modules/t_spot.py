@@ -463,7 +463,7 @@ class SpotCtl:
 
 		self.preparing_spotify = False
 
-	def play_target(self, id: int, force_new_device: bool = False, start_time: int | None = 0, start_callback=None):
+	def play_target(self, id: int | str, force_new_device: bool = False, start_time: int | None = 0, start_callback=None):
 		start_time = None if not start_time else int(start_time * 1000)
 
 		self.coasting = False
@@ -475,7 +475,7 @@ class SpotCtl:
 			)
 			return
 
-		logging.info("Want play spotify target " + str(id))
+		logging.info(f"Want play spotify target {id!s}")
 		# Sort devices
 		start_new_device = False
 		done = False
