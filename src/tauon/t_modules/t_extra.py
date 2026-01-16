@@ -574,7 +574,7 @@ def get_modify_date_string(modify_date: float) -> str:
 				else:
 					try:
 						modify_date = time.localtime(modify_date)
-					except:
+					except Exception:
 						ago_str = _("Unknown")
 					else:
 						if ago < 365:

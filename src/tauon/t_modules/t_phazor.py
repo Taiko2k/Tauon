@@ -996,6 +996,9 @@ def player4(tauon: Tauon) -> None:
 				stall_timer.set()
 				pctl.download_time = 0
 				target_object = pctl.target_object
+				if not target_object:
+					logging.exception("This shouldn't happen, target_object was None")
+					continue
 				target_path = target_object.fullpath
 				subtrack = target_object.subtrack
 				aud.set_subtrack(subtrack)
@@ -1154,9 +1157,9 @@ def player4(tauon: Tauon) -> None:
 
 					# TODO(Martin): The GUI logger does not support multiline
 					# logging.info(f"{loaded_track.title} -> {target_object.title}\nlength: {length!s}\nposition: {position!s}\nWe are {remain!s} from end")
-					logging.info(loaded_track.title + " -> " + target_object.title)
-					logging.info(" --- length: " + str(length))
-					logging.info(" --- position: " + str(position))
+					logging.info(f"{loaded_track.title} -> {target_object.title}")
+					logging.info(f" --- length: {length!s}")
+					logging.info(f" --- position: {position!s}")
 					logging.info(f" --- We are {remain!s} from end")
 
 					if loaded_track.is_network or length == 0:

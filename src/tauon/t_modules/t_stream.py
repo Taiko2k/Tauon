@@ -297,7 +297,7 @@ class StreamEnc:
 			# fmt:on
 			encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-			def save_track():
+			def save_track() -> None:
 				# self.tauon.recorded_songs.append(song)
 
 				save_file = f"{datetime.datetime.now():%Y-%m-%d %H-%M-%S} - "
