@@ -6016,7 +6016,7 @@ class Tauon:
 		self.worker_save_state:              bool = False
 		self.whicher                              = whicher
 		self.load_orders:         list[LoadClass] = []
-		self.switch_playlist                      = None
+		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
 		self.album_info_cache_key                 = (-1, -1)
 		self.console:                    DConsole = bag.console
@@ -44621,8 +44621,6 @@ def main(holder: Holder) -> None:
 	x_menu.add(MenuItem(_("Clean Database!"), tauon.clean_db_fast, tauon.clean_db_deco, show_test=tauon.clean_db_show_test))
 
 	# x_menu.add(_("Internet Radio…"), activate_radio_box)
-
-	tauon.switch_playlist = pctl.switch_playlist
 
 	x_menu.add(MenuItem(_("Paste Spotify Playlist"), tauon.import_spotify_playlist, tauon.import_spotify_playlist_deco, icon=spot_icon,
 		show_test=tauon.spotify_show_test))
