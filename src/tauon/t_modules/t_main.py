@@ -2708,7 +2708,7 @@ class PlayerCtl:
 
 		if self.playerCommandReady:
 			# send vol command later if command busy. Solution not great.
-			def govol():
+			def govol() -> None:
 				time.sleep(1)
 				if not self.playerCommandReady:
 					self.playerCommand = "volume"
@@ -7664,7 +7664,7 @@ class Tauon:
 			target.mkdir()
 		self.open_file_browser_at(target)
 
-	def open_file_browser_at(self, path):
+	def open_file_browser_at(self, path) -> None:
 		if self.system == "Windows" or self.msys:
 			line = r'explorer /select,"{}"'.format(str(path).replace("/", "\\"))
 			subprocess.Popen(line)
@@ -9364,7 +9364,7 @@ class Tauon:
 			self.show_message(_("No tracks with lyrics were found."))
 		return None
 
-	def gen_incomplete(self, pl: int, custom_list: list[int] | None = None):
+	def gen_incomplete(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
 		playlist: list[int] = []
 
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
@@ -9433,7 +9433,7 @@ class Tauon:
 					playlist_ids=copy.deepcopy(playlist),
 					hide_title=False))
 
-	def gen_last_imported_folders(self, index: int, custom_list: list[int] | None = None, reverse: bool = True):
+	def gen_last_imported_folders(self, index: int, custom_list: list[int] | None = None, reverse: bool = True) -> int | list[int] | None:
 		source = self.pctl.multi_playlist[index].playlist_ids if custom_list is None else custom_list
 
 		a_cache: dict[tuple[str, str], int] = {}
@@ -9461,7 +9461,7 @@ class Tauon:
 
 		a_cache: dict[tuple[str, str], float] = {}
 
-		def key_modified(index: int):
+		def key_modified(index: int) -> float:
 			track = self.pctl.master_library[index]
 			cached = a_cache.get((track.album, track.parent_folder_name))
 			if cached is not None:
@@ -11250,7 +11250,7 @@ class Tauon:
 	def key_genre(self, index: int) -> str:
 		return self.pctl.master_library[index].genre.lower()
 
-	def key_t(self, index: int):
+	def key_t(self, index: int) -> list[int | str] | Literal["a"]:
 		# return str(self.pctl.master_library[index].track_number)
 		return self.pctl.index_key(index)
 
@@ -11774,7 +11774,7 @@ class Tauon:
 	def lb_mode(self) -> bool:
 		return self.prefs.enable_lb
 
-	def get_album_art_url(self, tr: TrackClass):
+	def get_album_art_url(self, tr: TrackClass) -> str | None:
 		artist = tr.album_artist
 		if not tr.album:
 			return None
@@ -12084,8 +12084,8 @@ class Tauon:
 		if not self.gui.rsp:
 			self.toggle_side_panel()
 
-	def get_folder_list(self, index: int):
-		playlist = []
+	def get_folder_list(self, index: int) -> list[int]:
+		playlist: list[int] = []
 
 		for item in self.pctl.default_playlist:
 			if self.pctl.master_library[item].parent_folder_name == self.pctl.master_library[index].parent_folder_name and \
@@ -13891,13 +13891,13 @@ class Tauon:
 				playlist = self.gen_folder_top_rating(0, custom_list=playlist)
 
 			elif cm == "rat>":
-				def rat_key(track_id: int):
+				def rat_key(track_id: int) -> int:
 					return self.star_store.get_rating(track_id)
 
 				playlist = sorted(playlist, key=rat_key, reverse=True)
 
 			elif cm == "rat<":
-				def rat_key(track_id: int):
+				def rat_key(track_id: int) -> int:
 					return self.star_store.get_rating(track_id)
 
 				playlist = sorted(playlist, key=rat_key)
@@ -15859,7 +15859,7 @@ class Tauon:
 
 		return star.loved
 
-	def get_love_timestamp_index(self, index: int):
+	def get_love_timestamp_index(self, index: int) -> float:
 		star = self.star_store.full_get(index)
 		if star is None:
 			return 0
@@ -15959,7 +15959,7 @@ class Tauon:
 			return False
 		return True
 
-	def get_network_thumbnail_url(self, track_object: TrackClass):
+	def get_network_thumbnail_url(self, track_object: TrackClass) -> str | None:
 		if track_object.file_ext == "TIDAL":
 			return track_object.art_url_key
 		if track_object.file_ext == "SPTY":
@@ -17409,11 +17409,11 @@ class Tauon:
 
 		self.gui.pl_update += 1
 
-	def key_filepath(self, index: int):
+	def key_filepath(self, index: int) -> tuple[str, str]:
 		track = self.pctl.master_library[index]
 		return track.parent_folder_path.lower(), track.filename
 
-	def key_fullpath(self, index: int):
+	def key_fullpath(self, index: int) -> str:
 		return self.pctl.master_library[index].fullpath.lower()
 
 	#def key_filename(index: int):
@@ -18622,7 +18622,7 @@ class Tauon:
 		sdl3.SDL_HideWindow(self.t_window)
 		self.gui.mouse_unknown = True
 
-	def request_raise(self):
+	def request_raise(self) -> None:
 		self.requested_raise = True
 		self.wake()
 
@@ -18645,15 +18645,15 @@ class Tauon:
 class PlexService:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon        = tauon
-		self.gui          = tauon.gui
-		self.pctl         = tauon.pctl
-		self.prefs        = tauon.prefs
-		self.show_message = tauon.show_message
-		self.connected = False
-		self.resource = None
-		self.scanning = False
-		self.two_factor_required = False
+		self.tauon:    Tauon = tauon
+		self.gui:     GuiVar = tauon.gui
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs:    Prefs = tauon.prefs
+		self.show_message    = tauon.show_message
+		self.connected: bool = False
+		self.resource        = None
+		self.scanning:  bool = False
+		self.two_factor_required: bool = False
 
 	def connect(self, code: str | None = None) -> bool:
 		if not self.prefs.plex_username or not self.prefs.plex_password or not self.prefs.plex_servername:
@@ -18701,7 +18701,7 @@ class PlexService:
 			self.scanning = False
 			return False
 
-	def resolve_stream(self, location):
+	def resolve_stream(self, location: str):
 		logging.info("Get plex stream")
 		if not self.connected:
 			self.connect()
@@ -18709,8 +18709,7 @@ class PlexService:
 		# return self.resource.url(location, True)
 		return self.resource.library.fetchItem(location).getStreamURL()
 
-	def resolve_thumbnail(self, location):
-
+	def resolve_thumbnail(self, location: str):
 		if not self.connected:
 			self.connect()
 		if self.connected:
@@ -18918,7 +18917,7 @@ class SubsonicService:
 				logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def get_music3(self, return_list: bool = False):
+	def get_music3(self, return_list: bool = False) -> list[int] | None:
 		self.scanning = True
 		self.gui.to_got = 0
 
@@ -19411,12 +19410,12 @@ class KoelService:
 
 class TauService:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon             = tauon
-		self.pctl              = tauon.pctl
-		self.prefs             = tauon.prefs
-		self.show_message      = tauon.show_message
-		self.install_directory = tauon.install_directory
-		self.processing        = False
+		self.tauon:            Tauon = tauon
+		self.pctl:         PlayerCtl = tauon.pctl
+		self.prefs:            Prefs = tauon.prefs
+		self.show_message            = tauon.show_message
+		self.install_directory: Path = tauon.install_directory
+		self.processing: bool        = False
 
 	def resolve_stream(self, key: str) -> str:
 		return "http://" + self.prefs.sat_url + ":7814/api1/file/" + key
@@ -20298,12 +20297,12 @@ class TextBox2:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
 					self.text) - self.cursor_position:]
 
-			def g():
+			def g() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == len(self.text):
 					return None
 				return self.text[len(self.text) - self.cursor_position - 1]
 
-			def g2():
+			def g2() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == 0:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
@@ -20722,12 +20721,12 @@ class TextBox:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[
 					len(self.text) - self.cursor_position:]
 
-			def g():
+			def g() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == len(self.text):
 					return None
 				return self.text[len(self.text) - self.cursor_position - 1]
 
-			def g2():
+			def g2() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == 0:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
@@ -23164,18 +23163,18 @@ class SearchOverlay:
 
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon         = tauon
-		self.ddt           = tauon.ddt
-		self.gui           = tauon.gui
-		self.inp           = tauon.inp
-		self.coll          = tauon.coll
-		self.pctl          = tauon.pctl
-		self.prefs         = tauon.prefs
-		self.fields        = tauon.fields
-		self.window_size   = tauon.window_size
+		self.tauon:    Tauon = tauon
+		self.ddt:      TDraw = tauon.ddt
+		self.gui:     GuiVar = tauon.gui
+		self.inp:      Input = tauon.inp
+		self.coll            = tauon.coll
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs:    Prefs = tauon.prefs
+		self.fields:  Fields = tauon.fields
+		self.window_size: list[int] = tauon.window_size
 		self.worker2_lock  = tauon.worker2_lock
 		self.show_message  = tauon.show_message
-		self.smooth_scroll = tauon.smooth_scroll
+		self.smooth_scroll: SmoothScroll = tauon.smooth_scroll
 
 		self.active: bool = False
 		self.search_text: TextBox = TextBox(tauon)
@@ -23200,8 +23199,8 @@ class SearchOverlay:
 		self.on = 0
 		self.all_folders = False
 
-	def click_artist(self, name, get_list=False, search_lists=None):
-		playlist = []
+	def click_artist(self, name: str, get_list: bool = False, search_lists: list[list[int]] | None = None) -> list[int] | None:
+		playlist: list[int] = []
 
 		if search_lists is None:
 			search_lists = []
@@ -23234,8 +23233,8 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
-	def click_year(self, name, get_list: bool = False):
-		playlist = []
+	def click_year(self, name, get_list: bool = False) -> list[int] | None:
+		playlist: list [int] = []
 		for pl in self.pctl.multi_playlist:
 			for item in pl.playlist_ids:
 				if name in self.pctl.master_library[item].date and item not in playlist:
@@ -23256,8 +23255,8 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
-	def click_composer(self, name: str, get_list: bool = False):
-		playlist = []
+	def click_composer(self, name: str, get_list: bool = False) -> list[int] | None:
+		playlist: list[int] = []
 		for pl in self.pctl.multi_playlist:
 			for item in pl.playlist_ids:
 				if self.pctl.master_library[item].composer.lower() == name.lower():
@@ -31652,7 +31651,7 @@ class RadioBox:
 	def is_m3u(self, url: str) -> bool:
 		return url.lower().endswith(".m3u") or url.lower().endswith(".m3u8")
 
-	def extract_stream_m3u(self, url, recursion_limit=5):
+	def extract_stream_m3u(self, url: str, recursion_limit: int = 5) -> str | None:
 		if recursion_limit <= 0:
 			return None
 		logging.info("Fetching M3U...")
@@ -34460,7 +34459,7 @@ class QueueBox:
 	def recalc(self) -> None:
 		self.tab_h = 34 * self.gui.scale
 
-	def except_for_this_show_test(self, _):
+	def except_for_this_show_test(self, _) -> bool:
 		return self.queue_remove_show(_) and self.inp.test_shift(_)
 
 	def make_as_playlist(self) -> None:
@@ -36351,12 +36350,12 @@ class ProjectM:
 		choice = random.choice(self.presets)
 		self.load_preset(choice, fade)
 
-	def get_current_name(self):
+	def get_current_name(self) -> str:
 		if self.loaded_preset:
 			return self.loaded_preset.stem
 		return "Default"
 
-	def load_preset(self, preset: Path, fade: bool = False):
+	def load_preset(self, preset: Path, fade: bool = False) -> None:
 		self.loaded_preset = preset
 		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
