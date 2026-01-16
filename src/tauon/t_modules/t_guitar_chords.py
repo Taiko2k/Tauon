@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 # from tauon.t_modules.t_main import copy_from_clipboard
 
 
-def copy_from_clipboard():
+def copy_from_clipboard() -> str:
 	return sdl3.SDL_GetClipboardText().decode()
 
 
@@ -77,7 +77,7 @@ class GuitarChords:
 			if item == cache_title:
 				(self.store_b / cache_title).unlink()
 
-	def search_guitarparty(self, track_object: TrackClass):
+	def search_guitarparty(self, track_object: TrackClass) -> None:
 		"""Search guitarparty.com for the lyrics with guitar chords.
 
 		[2025-01-22] Note from site owners:
