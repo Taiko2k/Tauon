@@ -574,7 +574,7 @@ def get_modify_date_string(modify_date: float) -> str:
 				else:
 					try:
 						modify_date = time.localtime(modify_date)
-					except:
+					except Exception:
 						ago_str = _("Unknown")
 					else:
 						if ago < 365:
@@ -1190,28 +1190,28 @@ def tryint(string: str) -> int | str:
 
 
 class FPSCounter:
-	"""
-	A robust FPS counter that handles pauses and provides smooth measurements.
+	"""A robust FPS counter that handles pauses and provides smooth measurements.
 
 	Args:
 		window_size: Number of frames to average over (default: 60)
 		min_update_interval: Minimum time between updates in seconds (default: 0.1)
 		max_frame_time: Maximum expected frame time in seconds. If exceeded,
 						frame is considered anomalous (default: 1.0)
+
 	"""
 
-	def __init__(self, window_size=60, min_update_interval=0.1, max_frame_time=1.0):
+	def __init__(self, window_size: int = 60, min_update_interval: float = 0.1, max_frame_time: float = 1.0) -> None:
 		self.window_size = window_size
 		self.min_update_interval = min_update_interval
 		self.max_frame_time = max_frame_time
 
 		self.frame_times = deque(maxlen=window_size)
-		self.last_tick_time = None
-		self.last_update_time = None
-		self.cached_fps = 0.0
-		self.frame_count = 0
+		self.last_tick_time: float | None = None
+		self.last_update_time: float | None = None
+		self.cached_fps: float = 0.0
+		self.frame_count: int = 0
 
-	def tick(self):
+	def tick(self) -> None:
 		"""Call this once per frame to record the frame timing."""
 		current_time = time.perf_counter()
 
@@ -1225,15 +1225,15 @@ class FPSCounter:
 		self.last_tick_time = current_time
 		self.frame_count += 1
 
-	def get(self):
-		"""
-		Get the current FPS value.
+	def get(self) -> float:
+		"""Get the current FPS value.
 
 		Returns the cached value if called within min_update_interval,
 		otherwise recalculates based on recent frame times.
 
 		Returns:
 			float: Current FPS value, or 0.0 if insufficient data
+
 		"""
 		current_time = time.perf_counter()
 
@@ -1252,7 +1252,7 @@ class FPSCounter:
 		self.last_update_time = current_time
 		return self.cached_fps
 
-	def reset(self):
+	def reset(self) -> None:
 		"""Reset the FPS counter."""
 		self.frame_times.clear()
 		self.last_tick_time = None

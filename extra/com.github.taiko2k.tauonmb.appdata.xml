@@ -12,6 +12,7 @@
   <project_license>GPL-3.0+</project_license>
   <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/Tauon/issues</url>
+  <url type="vcs-browser">https://github.com/Taiko2k/Tauon</url>
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
   <icon type="remote" height="256" width="256">https://github.com/Taiko2k/Tauon/assets/17271572/c975e54a-5db1-4007-bab5-e6d14603822d</icon>
 

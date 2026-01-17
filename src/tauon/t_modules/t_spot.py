@@ -463,7 +463,7 @@ class SpotCtl:
 
 		self.preparing_spotify = False
 
-	def play_target(self, id: int | str, force_new_device: bool = False, start_time: int | None = 0, start_callback=None):
+	def play_target(self, id: int | str, force_new_device: bool = False, start_time: int | None = 0, start_callback=None) -> None:
 		start_time = None if not start_time else int(start_time * 1000)
 
 		self.coasting = False
@@ -922,7 +922,7 @@ class SpotCtl:
 			logging.exception("Spotify upload error!")
 			self.show_message(_("Spotify upload error!"), mode="error")
 
-	def load_album(self, album: FullAlbum, playlist: list[int] | None):
+	def load_album(self, album: FullAlbum, playlist: list[int] | None) -> None:
 		# a = item
 		album_url = album.external_urls["spotify"]
 		art_url = album.images[0].url
