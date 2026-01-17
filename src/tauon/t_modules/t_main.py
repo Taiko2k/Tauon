@@ -16042,10 +16042,6 @@ class Tauon:
 		shoot_dl.start()
 
 	def sub_get_album_thread(self) -> None:
-		# if prefs.backend != Backend.BASS:
-		#	 self.show_message("This feature is currently only available with the BASS backend")
-		#	 return
-
 		self.pref_box.close()
 		save_prefs(bag=self.bag)
 		if self.subsonic.scanning:
@@ -16059,10 +16055,6 @@ class Tauon:
 		shoot_dl.start()
 
 	def koel_get_album_thread(self) -> None:
-		# if prefs.backend != Backend.BASS:
-		#	 self.show_message("This feature is currently only available with the BASS backend")
-		#	 return
-
 		self.pref_box.close()
 		save_prefs(bag=self.bag)
 		if self.koel.scanning:
@@ -36364,9 +36356,6 @@ class Showcase:
 				# x = int((self.window_size[0]) / 2)
 				y = int(self.window_size[1] / 2) - round(60 * self.gui.scale)
 
-				if self.prefs.showcase_vis and self.prefs.backend == Backend.BASS:
-					y -= round(30 * self.gui.scale)
-
 				if track.artist == "" and track.title == "":
 					self.ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w)
 				else:
@@ -39351,8 +39340,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("volume-curve", prefs.volume_power)
 	cf.update_value("jump-start-dl", prefs.jump_start)
 	# cf.update_value("force-mono", prefs.mono)
-	# cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
-	# cf.update_value("use-short-buffering", prefs.short_buffer)
 
 	# cf.update_value("gst-output", prefs.gst_output)
 	# cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
@@ -39551,19 +39538,12 @@ def load_prefs(bag: Bag) -> None:
 		"Start playing a network track before it has finished downloading")
 
 	# prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
-	# prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
-	# prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
 	# cf.br()
 	# cf.add_text("[audio (gstreamer only)]")
 	#
 	# prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
 	# prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
-
-	if prefs.dc_device_setting == "on":
-		prefs.dc_device = True
-	elif prefs.dc_device_setting == "off":
-		prefs.dc_device = False
 
 	cf.br()
 	cf.add_text("[locale]")
@@ -42567,9 +42547,6 @@ def main(holder: Holder) -> None:
 	force_subpixel_text = False
 	if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
 		force_subpixel_text = True
-	dc_device = False  # (BASS) Disconnect device on pause
-	if desktop == "KDE":
-		dc_device = True
 	encoder_output = user_directory / "encoder" if music_directory is None else music_directory / "encode-output"
 	power_save = False
 	if macos or phone:
@@ -42591,7 +42568,6 @@ def main(holder: Holder) -> None:
 		power_save=power_save,
 		encoder_output=encoder_output,
 		force_subpixel_text=force_subpixel_text,
-		dc_device=dc_device,
 		macos=macos,
 		macstyle=macos or detect_macstyle,
 		left_window_control=macos or left_window_control,
