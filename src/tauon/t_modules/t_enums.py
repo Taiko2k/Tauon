@@ -33,6 +33,5 @@ class StopMode(IntEnum):
 
 class Backend(IntEnum):
 	NONE = 0
-	BASS = 1
 	GSTREAMER = 2
 	PHAZOR = 4
