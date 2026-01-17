@@ -187,6 +187,7 @@ from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_spot import SpotCtl  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
+from tauon.t_modules.t_subsonic import SubsonicService  #noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
@@ -2708,7 +2709,7 @@ class PlayerCtl:
 
 		if self.playerCommandReady:
 			# send vol command later if command busy. Solution not great.
-			def govol():
+			def govol() -> None:
 				time.sleep(1)
 				if not self.playerCommandReady:
 					self.playerCommand = "volume"
@@ -3013,7 +3014,6 @@ class PlayerCtl:
 			self.tauon.stream_proxy.stop()
 
 		if block:
-			loop = 0
 			sleep_timeout(lambda: self.playerSubCommand != "stopped", 2)
 			if self.tauon.stream_proxy.download_running:
 				sleep_timeout(lambda: self.tauon.stream_proxy.download_running, 2)
@@ -4241,7 +4241,7 @@ class LastFMapi:
 		except Exception:
 			logging.exception("Failed to pull love")
 
-	def scrobble(self, track_object: TrackClass, timestamp: float | None = None) -> bool:
+	def scrobble(self, track_object: TrackClass, timestamp: int | None = None) -> bool:
 		if not self.last_fm_enable:
 			return True
 		if self.prefs.scrobble_hold:
@@ -4862,7 +4862,7 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func: Callable[[int], list[Decorator]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		self, title: str, func, render_func: Callable[[int], Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
@@ -5891,61 +5891,61 @@ class Tauon:
 		self.extra_tab_menu: Menu        = Menu(self, 155, show_icons=True)
 
 
-		self.smooth_scroll: SmoothScroll                        = SmoothScroll(tauon=self)
-		self.lb: ListenBrainz                                   = ListenBrainz(tauon=self)
-		self.thread_manager: ThreadManager                      = ThreadManager(tauon=self)
-		self.album_mode_art_size: int                  = bag.album_mode_art_size
-		self.artist_picture_render: PictureRender = PictureRender(tauon=self)
-		self.artist_preview_render: PictureRender = PictureRender(tauon=self)
-		self.input_sdl: GetSDLInput                          = GetSDLInput(tauon=self)
-		self.pctl: PlayerCtl                                 = PlayerCtl(tauon=self)
-		self.mini_lyrics_scroll: ScrollBox                   = self.pctl.mini_lyrics_scroll
-		self.playlist_panel_scroll: ScrollBox                = self.pctl.playlist_panel_scroll
-		self.artist_info_scroll: ScrollBox                   = self.pctl.artist_info_scroll
-		self.device_scroll: ScrollBox                        = self.pctl.device_scroll
-		self.artist_list_scroll: ScrollBox                   = self.pctl.artist_list_scroll
-		self.gallery_scroll: ScrollBox                       = self.pctl.gallery_scroll
-		self.tree_view_scroll: ScrollBox                     = self.pctl.tree_view_scroll
-		self.radio_view_scroll: ScrollBox                    = self.pctl.radio_view_scroll
-		self.artist_info_box: ArtistInfoBox                  = self.pctl.artist_info_box
-		self.draw: Drawing                                   = self.pctl.draw
-		self.radiobox: RadioBox                              = self.pctl.radiobox
-		self.dummy_track: TrackClass                         = self.radiobox.dummy_track
-		self.queue_box: QueueBox                             = self.pctl.queue_box
-		self.tree_view_box: TreeView                         = self.pctl.tree_view_box
-		self.star_store: StarStore                           = self.pctl.star_store
-		self.lastfm: LastFMapi                               = self.pctl.lastfm
-		self.lfm_scrobbler: LastScrob                        = self.pctl.lfm_scrobbler
-		self.artist_list_box: ArtistList                     = self.pctl.artist_list_box
-		self.guitar_chords: GuitarChords                     = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
-		self.search_over: SearchOverlay                      = SearchOverlay(tauon=self)
-		self.stats_gen: GStats                               = GStats(tauon=self)
-		self.deco: Deco                                      = Deco(tauon=self)
-		self.bottom_bar1: BottomBarType1                     = BottomBarType1(tauon=self)
-		self.bottom_bar_ao1: BottomBarType_ao1               = BottomBarType_ao1(tauon=self)
-		self.top_panel: TopPanel                             = TopPanel(tauon=self)
-		self.playlist_box: PlaylistBox                       = PlaylistBox(tauon=self)
-		self.radio_view: RadioView                           = RadioView(tauon=self)
-		self.view_box: ViewBox                               = ViewBox(tauon=self)
-		self.pref_box: Over                                  = Over(tauon=self)
-		self.fader: Fader                                    = Fader(tauon=self)
-		self.style_overlay: StyleOverlay                     = StyleOverlay(tauon=self)
-		self.album_art_gen: AlbumArt                        = self.style_overlay.album_art_gen
-		self.tool_tip:                            ToolTip = ToolTip(tauon=self)
-		self.tool_tip2:                           ToolTip = ToolTip(tauon=self)
-		self.columns_tool_tip:                    ToolTip3 = ToolTip3(tauon=self)
-		self.f_store:                             FunctionStore = FunctionStore()
-		self.tool_tip2.trigger                    = 1.8
-		self.undo:                                Undo = Undo(tauon=self)
-		self.rename_files:                        TextBox2 = TextBox2(tauon=self)
-		self.rename_track_box:                    RenameTrackBox = RenameTrackBox(tauon=self)
-		self.edit_artist:                         TextBox2 = TextBox2(tauon=self)
-		self.edit_album:                          TextBox2 = TextBox2(tauon=self)
-		self.edit_title:                          TextBox2 = TextBox2(tauon=self)
-		self.edit_album_artist:                   TextBox2 = TextBox2(tauon=self)
-		self.trans_edit_box:                      TransEditBox = TransEditBox(tauon=self)
-		self.sub_lyrics_a:                        TextBox2 = TextBox2(tauon=self)
-		self.sub_lyrics_b:                        TextBox2 = TextBox2(tauon=self)
+		self.smooth_scroll:                     SmoothScroll = SmoothScroll(tauon=self)
+		self.lb:                                ListenBrainz = ListenBrainz(tauon=self)
+		self.thread_manager:                   ThreadManager = ThreadManager(tauon=self)
+		self.album_mode_art_size:                        int = bag.album_mode_art_size
+		self.artist_picture_render:            PictureRender = PictureRender(tauon=self)
+		self.artist_preview_render:            PictureRender = PictureRender(tauon=self)
+		self.input_sdl:                          GetSDLInput = GetSDLInput(tauon=self)
+		self.pctl:                                 PlayerCtl = PlayerCtl(tauon=self)
+		self.mini_lyrics_scroll:                   ScrollBox = self.pctl.mini_lyrics_scroll
+		self.playlist_panel_scroll:                ScrollBox = self.pctl.playlist_panel_scroll
+		self.artist_info_scroll:                   ScrollBox = self.pctl.artist_info_scroll
+		self.device_scroll:                        ScrollBox = self.pctl.device_scroll
+		self.artist_list_scroll:                   ScrollBox = self.pctl.artist_list_scroll
+		self.gallery_scroll:                       ScrollBox = self.pctl.gallery_scroll
+		self.tree_view_scroll:                     ScrollBox = self.pctl.tree_view_scroll
+		self.radio_view_scroll:                    ScrollBox = self.pctl.radio_view_scroll
+		self.artist_info_box:                  ArtistInfoBox = self.pctl.artist_info_box
+		self.draw:                                   Drawing = self.pctl.draw
+		self.radiobox:                              RadioBox = self.pctl.radiobox
+		self.dummy_track:                         TrackClass = self.radiobox.dummy_track
+		self.queue_box:                             QueueBox = self.pctl.queue_box
+		self.tree_view_box:                         TreeView = self.pctl.tree_view_box
+		self.star_store:                           StarStore = self.pctl.star_store
+		self.lastfm:                               LastFMapi = self.pctl.lastfm
+		self.lfm_scrobbler:                        LastScrob = self.pctl.lfm_scrobbler
+		self.artist_list_box:                     ArtistList = self.pctl.artist_list_box
+		self.guitar_chords:                     GuitarChords = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
+		self.search_over:                      SearchOverlay = SearchOverlay(tauon=self)
+		self.stats_gen:                               GStats = GStats(tauon=self)
+		self.deco:                                      Deco = Deco(tauon=self)
+		self.bottom_bar1:                     BottomBarType1 = BottomBarType1(tauon=self)
+		self.bottom_bar_ao1:               BottomBarType_ao1 = BottomBarType_ao1(tauon=self)
+		self.top_panel:                             TopPanel = TopPanel(tauon=self)
+		self.playlist_box:                       PlaylistBox = PlaylistBox(tauon=self)
+		self.radio_view:                           RadioView = RadioView(tauon=self)
+		self.view_box:                               ViewBox = ViewBox(tauon=self)
+		self.pref_box:                                  Over = Over(tauon=self)
+		self.fader:                                    Fader = Fader(tauon=self)
+		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
+		self.album_art_gen:                         AlbumArt = self.style_overlay.album_art_gen
+		self.tool_tip:                               ToolTip = ToolTip(tauon=self)
+		self.tool_tip2:                              ToolTip = ToolTip(tauon=self)
+		self.columns_tool_tip:                      ToolTip3 = ToolTip3(tauon=self)
+		self.f_store:                          FunctionStore = FunctionStore()
+		self.tool_tip2.trigger:                        float = 1.8
+		self.undo:                                      Undo = Undo(tauon=self)
+		self.rename_files:                          TextBox2 = TextBox2(tauon=self)
+		self.rename_track_box:                RenameTrackBox = RenameTrackBox(tauon=self)
+		self.edit_artist:                           TextBox2 = TextBox2(tauon=self)
+		self.edit_album:                            TextBox2 = TextBox2(tauon=self)
+		self.edit_title:                            TextBox2 = TextBox2(tauon=self)
+		self.edit_album_artist:                     TextBox2 = TextBox2(tauon=self)
+		self.trans_edit_box:                    TransEditBox = TransEditBox(tauon=self)
+		self.sub_lyrics_a:                          TextBox2 = TextBox2(tauon=self)
+		self.sub_lyrics_b:                          TextBox2 = TextBox2(tauon=self)
 		self.sub_lyrics_box:                      SubLyricsBox = SubLyricsBox(tauon=self)
 		self.export_playlist_box:                 ExportPlaylistBox = ExportPlaylistBox(tauon=self)
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
@@ -6016,16 +6016,16 @@ class Tauon:
 		self.worker_save_state:              bool = False
 		self.whicher                              = whicher
 		self.load_orders:         list[LoadClass] = []
-		self.switch_playlist                      = None
+		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
 		self.album_info_cache_key                 = (-1, -1)
-		self.console                              = bag.console
+		self.console:                    DConsole = bag.console
 		self.TrackClass                           = TrackClass
-		self.quickthumbnail                       = QuickThumbnail(tauon=self)
-		self.gall_ren                             = GallClass(tauon=self, size=self.album_mode_art_size)
-		self.thumb_tracks                         = ThumbTracks(tauon=self)
-		self.chunker                              = Chunker()
-		self.stream_proxy                         = StreamEnc(self)
+		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
+		self.gall_ren:                  GallClass = GallClass(tauon=self, size=self.album_mode_art_size)
+		self.thumb_tracks:            ThumbTracks = ThumbTracks(tauon=self)
+		self.chunker:                     Chunker = Chunker()
+		self.stream_proxy:              StreamEnc = StreamEnc(self)
 		self.level_train:       list[list[float]] = []
 		self.radio_server: ThreadedHTTPServer | None = None
 		self.listen_alongers:    dict[str, Timer] = {}
@@ -6033,8 +6033,8 @@ class Tauon:
 		self.encode_track_name                    = encode_track_name
 		self.lrclib_uploads:           list[dict] = []
 		self.todo:               list[TrackClass] = []
-		self.heart_colours                        = ColourGenCache(0.7, 0.7)
-		#self.power_tag_colours                    = ColourGenCache(0.5, 0.8)
+		self.heart_colours:        ColourGenCache = ColourGenCache(0.7, 0.7)
+		#self.power_tag_colours:    ColourGenCache = ColourGenCache(0.5, 0.8)
 
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
@@ -6052,10 +6052,10 @@ class Tauon:
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.librespot_p: Popen[bytes] | None = None
-		self.spot_ctl                         = SpotCtl(self)
-		self.cachement                        = Cachement(self)
-		self.spotc                            = LibreSpot(self)
-		self.milky                            = Milky(self)
+		self.spot_ctl:                 SpotCtl = SpotCtl(self)
+		self.cachement:              Cachement = Cachement(self)
+		self.spotc:                  LibreSpot = LibreSpot(self)
+		self.milky:                      Milky = Milky(self)
 
 		#self.recorded_songs = []
 
@@ -6226,7 +6226,6 @@ class Tauon:
 		return sdl3.SDL_HITTEST_NORMAL
 
 	def draw_window_tools(self) -> None:
-		bag         = self.bag
 		gui         = self.gui
 		inp         = self.inp
 		colours     = self.colours
@@ -7664,7 +7663,7 @@ class Tauon:
 			target.mkdir()
 		self.open_file_browser_at(target)
 
-	def open_file_browser_at(self, path):
+	def open_file_browser_at(self, path) -> None:
 		if self.system == "Windows" or self.msys:
 			line = r'explorer /select,"{}"'.format(str(path).replace("/", "\\"))
 			subprocess.Popen(line)
@@ -9364,7 +9363,7 @@ class Tauon:
 			self.show_message(_("No tracks with lyrics were found."))
 		return None
 
-	def gen_incomplete(self, pl: int, custom_list: list[int] | None = None):
+	def gen_incomplete(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
 		playlist: list[int] = []
 
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
@@ -9433,7 +9432,7 @@ class Tauon:
 					playlist_ids=copy.deepcopy(playlist),
 					hide_title=False))
 
-	def gen_last_imported_folders(self, index: int, custom_list: list[int] | None = None, reverse: bool = True):
+	def gen_last_imported_folders(self, index: int, custom_list: list[int] | None = None, reverse: bool = True) -> int | list[int] | None:
 		source = self.pctl.multi_playlist[index].playlist_ids if custom_list is None else custom_list
 
 		a_cache: dict[tuple[str, str], int] = {}
@@ -9461,7 +9460,7 @@ class Tauon:
 
 		a_cache: dict[tuple[str, str], float] = {}
 
-		def key_modified(index: int):
+		def key_modified(index: int) -> float:
 			track = self.pctl.master_library[index]
 			cached = a_cache.get((track.album, track.parent_folder_name))
 			if cached is not None:
@@ -11250,7 +11249,7 @@ class Tauon:
 	def key_genre(self, index: int) -> str:
 		return self.pctl.master_library[index].genre.lower()
 
-	def key_t(self, index: int):
+	def key_t(self, index: int) -> list[int | str] | Literal["a"]:
 		# return str(self.pctl.master_library[index].track_number)
 		return self.pctl.index_key(index)
 
@@ -11774,7 +11773,7 @@ class Tauon:
 	def lb_mode(self) -> bool:
 		return self.prefs.enable_lb
 
-	def get_album_art_url(self, tr: TrackClass):
+	def get_album_art_url(self, tr: TrackClass) -> str | None:
 		artist = tr.album_artist
 		if not tr.album:
 			return None
@@ -12084,8 +12083,8 @@ class Tauon:
 		if not self.gui.rsp:
 			self.toggle_side_panel()
 
-	def get_folder_list(self, index: int):
-		playlist = []
+	def get_folder_list(self, index: int) -> list[int]:
+		playlist: list[int] = []
 
 		for item in self.pctl.default_playlist:
 			if self.pctl.master_library[item].parent_folder_name == self.pctl.master_library[index].parent_folder_name and \
@@ -13891,13 +13890,13 @@ class Tauon:
 				playlist = self.gen_folder_top_rating(0, custom_list=playlist)
 
 			elif cm == "rat>":
-				def rat_key(track_id: int):
+				def rat_key(track_id: int) -> int:
 					return self.star_store.get_rating(track_id)
 
 				playlist = sorted(playlist, key=rat_key, reverse=True)
 
 			elif cm == "rat<":
-				def rat_key(track_id: int):
+				def rat_key(track_id: int) -> int:
 					return self.star_store.get_rating(track_id)
 
 				playlist = sorted(playlist, key=rat_key)
@@ -15859,7 +15858,7 @@ class Tauon:
 
 		return star.loved
 
-	def get_love_timestamp_index(self, index: int):
+	def get_love_timestamp_index(self, index: int) -> float:
 		star = self.star_store.full_get(index)
 		if star is None:
 			return 0
@@ -15959,7 +15958,7 @@ class Tauon:
 			return False
 		return True
 
-	def get_network_thumbnail_url(self, track_object: TrackClass):
+	def get_network_thumbnail_url(self, track_object: TrackClass) -> str | None:
 		if track_object.file_ext == "TIDAL":
 			return track_object.art_url_key
 		if track_object.file_ext == "SPTY":
@@ -16584,6 +16583,8 @@ class Tauon:
 
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id])
+				if self.pctl.master_library[track_id].file_ext == "SUB":
+					self.jellyfin.star_track(self.pctl.master_library[track_id])
 		else:
 			time.sleep(delay)
 			self.gui.update += 1
@@ -16601,6 +16602,8 @@ class Tauon:
 						self.star_store.insert(track_id, star)
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id], un=True)
+				if self.pctl.master_library[track_id].file_ext == "SUB":
+					self.jellyfin.unstar_track(self.pctl.master_library[track_id])
 
 		self.gui.pl_update = 2
 		self.gui.update += 1
@@ -17409,11 +17412,11 @@ class Tauon:
 
 		self.gui.pl_update += 1
 
-	def key_filepath(self, index: int):
+	def key_filepath(self, index: int) -> tuple[str, str]:
 		track = self.pctl.master_library[index]
 		return track.parent_folder_path.lower(), track.filename
 
-	def key_fullpath(self, index: int):
+	def key_fullpath(self, index: int) -> str:
 		return self.pctl.master_library[index].fullpath.lower()
 
 	#def key_filename(index: int):
@@ -18622,7 +18625,7 @@ class Tauon:
 		sdl3.SDL_HideWindow(self.t_window)
 		self.gui.mouse_unknown = True
 
-	def request_raise(self):
+	def request_raise(self) -> None:
 		self.requested_raise = True
 		self.wake()
 
@@ -18645,15 +18648,15 @@ class Tauon:
 class PlexService:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon        = tauon
-		self.gui          = tauon.gui
-		self.pctl         = tauon.pctl
-		self.prefs        = tauon.prefs
-		self.show_message = tauon.show_message
-		self.connected = False
-		self.resource = None
-		self.scanning = False
-		self.two_factor_required = False
+		self.tauon:    Tauon = tauon
+		self.gui:     GuiVar = tauon.gui
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs:    Prefs = tauon.prefs
+		self.show_message    = tauon.show_message
+		self.connected: bool = False
+		self.resource        = None
+		self.scanning:  bool = False
+		self.two_factor_required: bool = False
 
 	def connect(self, code: str | None = None) -> bool:
 		if not self.prefs.plex_username or not self.prefs.plex_password or not self.prefs.plex_servername:
@@ -18701,7 +18704,7 @@ class PlexService:
 			self.scanning = False
 			return False
 
-	def resolve_stream(self, location):
+	def resolve_stream(self, location: str):
 		logging.info("Get plex stream")
 		if not self.connected:
 			self.connect()
@@ -18709,8 +18712,7 @@ class PlexService:
 		# return self.resource.url(location, True)
 		return self.resource.library.fetchItem(location).getStreamURL()
 
-	def resolve_thumbnail(self, location):
-
+	def resolve_thumbnail(self, location: str):
 		if not self.connected:
 			self.connect()
 		if self.connected:
@@ -18804,405 +18806,6 @@ class PlexService:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "plex path"
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		return None
-
-class SubsonicService:
-
-	def __init__(self, tauon: Tauon, album_star_store: AlbumStarStore) -> None:
-		self.tauon            = tauon
-		self.gui              = tauon.gui
-		self.pctl             = tauon.pctl
-		self.prefs            = tauon.prefs
-		self.t_title          = tauon.t_title
-		self.star_store       = tauon.star_store
-		self.album_star_store = album_star_store
-		self.show_message     = tauon.show_message
-		self.playlists        = tauon.prefs.subsonic_playlists
-		self.scanning         = False
-
-	def r(self, point: str, p: dict[str, str] | None = None, binary: bool = False, get_url: bool = False):
-		salt = secrets.token_hex(8)
-		server = self.prefs.subsonic_server.rstrip("/") + "/"
-
-		params = {
-			"u": self.prefs.subsonic_user,
-			"v": "1.13.0",
-			"c": self.t_title,
-			"f": "json",
-		}
-
-		if self.prefs.subsonic_password_plain:
-			params["p"] = self.prefs.subsonic_password
-		else:
-			params["t"] = hashlib.md5((self.prefs.subsonic_password + salt).encode()).hexdigest()
-			params["s"] = salt
-
-		if p:
-			params.update(p)
-
-		point = "rest/" + point
-
-		url = server + point
-
-		if get_url:
-			return url, params
-
-		response = requests.get(url, params=params, timeout=10)
-
-		if binary:
-			return response.content
-
-		# Some broken servers can send invalid JSON with control chars - remove them, see https://github.com/Taiko2k/Tauon/issues/1112
-		control_chars = CONTROL_CHAR_RE.findall(response.text)
-		if control_chars:
-			clean_response = CONTROL_CHAR_RE.sub("", response.text)
-			details = [f"U+{ord(c):04X}" for c in control_chars]
-			logging.warning(f"Invalid control characters found in JSON response: {', '.join(details)}")
-		else:
-			clean_response = response.text
-
-		try:
-			d = json.loads(clean_response)
-		except json.decoder.JSONDecodeError:
-			logging.exception(f"Failed to decode subsonic response as json: {clean_response}")
-			return None
-		except Exception:
-			logging.exception(f"Unknown error loading subsonic response: {clean_response}")
-			return None
-		# logging.info(d)
-
-		if d["subsonic-response"]["status"] != "ok":
-			self.show_message(_("Subsonic Error: ") + response.text, mode="warning")
-			logging.error(f"Subsonic Error: {response.text}")
-
-		return d
-
-	def get_cover(self, track_object: TrackClass) -> BytesIO:
-		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
-		try:
-			response.decode("utf-8")
-			raise ValueError(f"Expected binary data with an image but got a valid string: {response}")
-		except UnicodeDecodeError:
-			pass
-
-		return io.BytesIO(response)
-
-	def resolve_stream(self, key: str) -> (tuple[str, dict[str, str]] | bytes | Any | None):
-		p = {"id": key}
-		if self.prefs.network_stream_bitrate > 0:
-			p["maxBitRate"] = self.prefs.network_stream_bitrate
-
-		return self.r("stream", p={"id": key}, get_url=True)
-		# logging.info(response.content)
-
-	def listen(self, track_object: TrackClass, submit: bool = False) -> bool:
-
-		try:
-			a = self.r("scrobble", p={"id": track_object.url_key, "submission": submit})
-		except Exception:
-			logging.exception("Error connecting for scrobble on airsonic")
-		return True
-
-	def set_rating(self, track_object: TrackClass, rating) -> bool:
-		try:
-			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
-		except Exception:
-			logging.exception("Error connect for set rating on airsonic")
-		return True
-
-	def set_album_rating(self, track_object: TrackClass, rating) -> bool:
-		id = track_object.misc.get("subsonic-folder-id")
-		if id is not None:
-			try:
-				a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
-			except Exception:
-				logging.exception("Error connect for set rating on airsonic")
-		return True
-
-	def get_music3(self, return_list: bool = False):
-		self.scanning = True
-		self.gui.to_got = 0
-
-		existing: dict[str, int] = {}
-
-		for track_id, track in self.pctl.master_library.items():
-			if track.is_network and track.file_ext == "SUB":
-				existing[track.url_key] = track_id
-
-		try:
-			a = self.r("getIndexes")
-		except Exception:
-			logging.exception("Error connecting to Airsonic server")
-			self.show_message(_("Error connecting to Airsonic server"), mode="error")
-			self.scanning = False
-			return []
-
-		# {'openSubsonic': True, 'serverVersion': '8', 'status': 'failed', 'type': 'lms', 'version': '1.16.0', 'error': {'code': 41, 'message': 'Token authentication not supported for LDAP users.'}}
-		if "indexes" not in a["subsonic-response"]:
-			self.scanning = False
-			if "error" in a["subsonic-response"]:
-				logging.debug(a["subsonic-response"])
-				self.show_message(_("Error connecting to Airsonic server"), f'{a["subsonic-response"]["error"]["code"]}: {a["subsonic-response"]["error"]["message"]}', mode="error")
-				return None
-			logging.critical("Failed to find expected key 'indexes', report a bug with the log below!")
-			logging.critical(a["subsonic-response"])
-			self.show_message(_("Error connecting to Airsonic server"), "See console log for more details", mode="error")
-			return None
-
-		b = a["subsonic-response"]["indexes"]["index"]
-
-		folders: list[tuple[str, str]] = []
-
-		for letter in b:
-			artists = letter["artist"]
-			for artist in artists:
-				folders.append((
-					artist["id"],
-					artist["name"],
-				))
-
-		playlist: list[int] = []
-		songsets: list[tuple[TrackClass, str, str, int]] = []
-		for i in range(len(folders)):
-			songsets.append([])
-		statuses = [0] * len(folders)
-		#dupes = []
-
-		def getsongs(index: int, folder_id: str, name: str, inner: bool = False, parent: dict[str, str | int] | None = None) -> None:
-			try:
-				d = self.r("getMusicDirectory", p={"id": folder_id})
-				if "child" not in d["subsonic-response"]["directory"]:
-					if not inner:
-						statuses[index] = 2
-					return
-
-			except json.decoder.JSONDecodeError:
-				logging.exception("Error reading Airsonic directory")
-				if not inner:
-					statuses[index] = 2
-				self.show_message(_("Error reading Airsonic directory!"), mode="warning")
-				return
-			except Exception:
-				logging.exception("Unknown Error reading Airsonic directory")
-				return
-
-			items = d["subsonic-response"]["directory"]["child"]
-
-			self.gui.update = 2
-
-			for item in items:
-				#logging.debug(f"song: {item}")
-				if item.get("isDir"):
-					if "userRating" in item and "artist" in item:
-						rating = item["userRating"]
-						if self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
-							pass
-						else:
-							self.album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
-
-					getsongs(index, item["id"], item["title"], inner=True, parent=item)
-					continue
-
-				self.gui.to_got += 1
-				song = item
-				nt = TrackClass()
-
-				if parent and "artist" in parent:
-					nt.album_artist = parent["artist"]
-
-				if "title" in song:
-					nt.title = song["title"]
-				if "artist" in song:
-					nt.artist = song["artist"]
-				if "album" in song:
-					nt.album = song["album"]
-				if "track" in song:
-					nt.track_number = song["track"]
-				if "year" in song:
-					nt.date = str(song["year"])
-				if "duration" in song:
-					nt.length = song["duration"]
-
-				nt.file_ext = "SUB"
-				nt.parent_folder_name = name
-				if "path" in song:
-					nt.fullpath = song["path"]
-					nt.parent_folder_path = os.path.dirname(song["path"])
-				if "coverArt" in song:
-					nt.art_url_key = song["coverArt"]
-				nt.url_key = song["id"]
-				nt.misc["subsonic-folder-id"] = folder_id
-				nt.is_network = True
-
-				rating = 0
-				if "userRating" in song:
-					rating = int(song["userRating"])
-
-				songsets[index].append((nt, name, song["id"], rating))
-
-			if inner:
-				return
-			statuses[index] = 2
-
-		i = -1
-		for id, name in folders:
-			i += 1
-			while statuses.count(1) > 3:
-				time.sleep(0.1)
-
-			statuses[i] = 1
-			t = threading.Thread(target=getsongs, args=([i, id, name]))
-			t.daemon = True
-			t.start()
-
-		while statuses.count(2) != len(statuses):
-			time.sleep(0.1)
-
-		for sset in songsets:
-			for nt, name, song_id, rating in sset:
-				id = self.pctl.master_count
-
-				replace_existing = False
-				ex = existing.get(song_id)
-				if ex is not None:
-					id = ex
-					replace_existing = True
-
-				nt.index = id
-				self.pctl.master_library[id] = nt
-				if not replace_existing:
-					self.pctl.master_count += 1
-
-				playlist.append(nt.index)
-
-				if self.star_store.get_rating(nt.index) == 0 and rating == 0:
-					pass
-				else:
-					self.star_store.set_rating(nt.index, rating * 2)
-
-		self.scanning = False
-		if return_list:
-			return playlist
-
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Airsonic Collection"), playlist_ids=playlist))
-		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "air"
-		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
-		return None
-
-	# def get_music2(self, return_list=False):
-	#
-	#	 self.scanning = True
-	#	 gui.to_got = 0
-	#
-	#	 existing = {}
-	#
-	#	 for track_id, track in pctl.master_library.items():
-	#		 if track.is_network and track.file_ext == "SUB":
-	#			 existing[track.url_key] = track_id
-	#
-	#	 try:
-	#		 a = self.r("getIndexes")
-	#	 except Exception:
-	#		 self.show_message(_("Error connecting to Airsonic server"), mode="error")
-	#		 self.scanning = False
-	#		 return []
-	#
-	#	 b = a["subsonic-response"]["indexes"]["index"]
-	#
-	#	 folders = []
-	#
-	#	 for letter in b:
-	#		 artists = letter["artist"]
-	#		 for artist in artists:
-	#			 folders.append((
-	#				 artist["id"],
-	#				 artist["name"]
-	#			 ))
-	#
-	#	 playlist = []
-	#
-	#	 def get(folder_id, name):
-	#
-	#		 try:
-	#			 d = self.r("getMusicDirectory", p={"id": folder_id})
-	#			 if "child" not in d["subsonic-response"]["directory"]:
-	#				 return
-	#
-	#		 except json.decoder.JSONDecodeError:
-	#			 logging.error("Error reading Airsonic directory")
-	#			 self.show_message(_("Error reading Airsonic directory!)", mode="warning")
-	#			 return
-	#
-	#		 items = d["subsonic-response"]["directory"]["child"]
-	#
-	#		 gui.update = 1
-	#
-	#		 for item in items:
-	#
-	#			 gui.to_got += 1
-	#
-	#			 if item["isDir"]:
-	#				 get(item["id"], item["title"])
-	#				 continue
-	#
-	#			 song = item
-	#			 id = pctl.master_count
-	#
-	#			 replace_existing = False
-	#			 ex = existing.get(song["id"])
-	#			 if ex is not None:
-	#				 id = ex
-	#				 replace_existing = True
-	#
-	#			 nt = TrackClass()
-	#
-	#			 if "title" in song:
-	#				 nt.title = song["title"]
-	#			 if "artist" in song:
-	#				 nt.artist = song["artist"]
-	#			 if "album" in song:
-	#				 nt.album = song["album"]
-	#			 if "track" in song:
-	#				 nt.track_number = song["track"]
-	#			 if "year" in song:
-	#				 nt.date = str(song["year"])
-	#			 if "duration" in song:
-	#				 nt.length = song["duration"]
-	#
-	#			 # if "bitRate" in song:
-	#			 #	 nt.bitrate = song["bitRate"]
-	#
-	#			 nt.file_ext = "SUB"
-	#
-	#			 nt.index = id
-	#
-	#			 nt.parent_folder_name = name
-	#			 if "path" in song:
-	#				 nt.fullpath = song["path"]
-	#				 nt.parent_folder_path = os.path.dirname(song["path"])
-	#
-	#			 if "coverArt" in song:
-	#				 nt.art_url_key = song["id"]
-	#
-	#			 nt.url_key = song["id"]
-	#			 nt.is_network = True
-	#
-	#			 pctl.master_library[id] = nt
-	#
-	#			 if not replace_existing:
-	#				 pctl.master_count += 1
-	#
-	#			 playlist.append(nt.index)
-	#
-	#	 for id, name in folders:
-	#		 get(id, name)
-	#
-	#	 self.scanning = False
-	#	 if return_list:
-	#		 return playlist
-	#
-	#	 pctl.multi_playlist.append(self.tauon.pl_gen(title="Airsonic Collection", playlist_ids=playlist))
-	#	 pctl.gen_codes[pctl.pl_to_id(len(pctl.multi_playlist) - 1)] = "air"
-	#	 pctl.switch_playlist(len(pctl.multi_playlist) - 1)
 
 class KoelService:
 
@@ -19411,12 +19014,12 @@ class KoelService:
 
 class TauService:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon             = tauon
-		self.pctl              = tauon.pctl
-		self.prefs             = tauon.prefs
-		self.show_message      = tauon.show_message
-		self.install_directory = tauon.install_directory
-		self.processing        = False
+		self.tauon:            Tauon = tauon
+		self.pctl:         PlayerCtl = tauon.pctl
+		self.prefs:            Prefs = tauon.prefs
+		self.show_message            = tauon.show_message
+		self.install_directory: Path = tauon.install_directory
+		self.processing: bool        = False
 
 	def resolve_stream(self, key: str) -> str:
 		return "http://" + self.prefs.sat_url + ":7814/api1/file/" + key
@@ -20145,7 +19748,7 @@ class TimedLyricsRen:
 				sum( self.line_heights[i: max(0,line_active) ] ) + \
 				sum( self.line_heights[ max(line_active,0) :i] )
 
-			if 0 < possible_y and possible_y < self.window_size[1]:
+			if possible_y > 0 and possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
@@ -20298,12 +19901,12 @@ class TextBox2:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
 					self.text) - self.cursor_position:]
 
-			def g():
+			def g() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == len(self.text):
 					return None
 				return self.text[len(self.text) - self.cursor_position - 1]
 
-			def g2():
+			def g2() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == 0:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
@@ -20722,12 +20325,12 @@ class TextBox:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[
 					len(self.text) - self.cursor_position:]
 
-			def g():
+			def g() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == len(self.text):
 					return None
 				return self.text[len(self.text) - self.cursor_position - 1]
 
-			def g2():
+			def g2() -> str | None:
 				if len(self.text) == 0 or self.cursor_position == 0:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
@@ -22849,19 +22452,19 @@ class TransEditBox:
 class SubLyricsBox:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.ddt          = tauon.ddt
-		self.gui          = tauon.gui
-		self.inp          = tauon.inp
-		self.coll         = tauon.coll
-		self.fields       = tauon.fields
-		self.prefs        = tauon.prefs
-		self.colours      = tauon.colours
-		self.window_size  = tauon.window_size
-		self.sub_lyrics_a = tauon.sub_lyrics_a
-		self.sub_lyrics_b = tauon.sub_lyrics_b
-		self.active = False
-		self.target_track = None
-		self.active_field = 1
+		self.ddt:             TDraw = tauon.ddt
+		self.gui:            GuiVar = tauon.gui
+		self.inp:             Input = tauon.inp
+		self.coll                   = tauon.coll
+		self.fields:         Fields = tauon.fields
+		self.prefs:           Prefs = tauon.prefs
+		self.colours:  ColoursClass = tauon.colours
+		self.window_size: list[int] = tauon.window_size
+		self.sub_lyrics_a: TextBox2 = tauon.sub_lyrics_a
+		self.sub_lyrics_b: TextBox2 = tauon.sub_lyrics_b
+		self.active:           bool = False
+		self.target_track: TrackClass | None = None
+		self.active_field:      int = 1
 
 	def activate(self, track: TrackClass) -> None:
 		self.active = True
@@ -23164,18 +22767,18 @@ class SearchOverlay:
 
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon         = tauon
-		self.ddt           = tauon.ddt
-		self.gui           = tauon.gui
-		self.inp           = tauon.inp
-		self.coll          = tauon.coll
-		self.pctl          = tauon.pctl
-		self.prefs         = tauon.prefs
-		self.fields        = tauon.fields
-		self.window_size   = tauon.window_size
+		self.tauon:    Tauon = tauon
+		self.ddt:      TDraw = tauon.ddt
+		self.gui:     GuiVar = tauon.gui
+		self.inp:      Input = tauon.inp
+		self.coll            = tauon.coll
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs:    Prefs = tauon.prefs
+		self.fields:  Fields = tauon.fields
+		self.window_size: list[int] = tauon.window_size
 		self.worker2_lock  = tauon.worker2_lock
 		self.show_message  = tauon.show_message
-		self.smooth_scroll = tauon.smooth_scroll
+		self.smooth_scroll: SmoothScroll = tauon.smooth_scroll
 
 		self.active: bool = False
 		self.search_text: TextBox = TextBox(tauon)
@@ -23200,8 +22803,8 @@ class SearchOverlay:
 		self.on = 0
 		self.all_folders = False
 
-	def click_artist(self, name, get_list=False, search_lists=None):
-		playlist = []
+	def click_artist(self, name: str, get_list: bool = False, search_lists: list[list[int]] | None = None) -> list[int] | None:
+		playlist: list[int] = []
 
 		if search_lists is None:
 			search_lists = []
@@ -23234,8 +22837,8 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
-	def click_year(self, name, get_list: bool = False):
-		playlist = []
+	def click_year(self, name, get_list: bool = False) -> list[int] | None:
+		playlist: list [int] = []
 		for pl in self.pctl.multi_playlist:
 			for item in pl.playlist_ids:
 				if name in self.pctl.master_library[item].date and item not in playlist:
@@ -23256,8 +22859,8 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
-	def click_composer(self, name: str, get_list: bool = False):
-		playlist = []
+	def click_composer(self, name: str, get_list: bool = False) -> list[int] | None:
+		playlist: list[int] = []
 		for pl in self.pctl.multi_playlist:
 			for item in pl.playlist_ids:
 				if self.pctl.master_library[item].composer.lower() == name.lower():
@@ -31652,7 +31255,7 @@ class RadioBox:
 	def is_m3u(self, url: str) -> bool:
 		return url.lower().endswith(".m3u") or url.lower().endswith(".m3u8")
 
-	def extract_stream_m3u(self, url, recursion_limit=5):
+	def extract_stream_m3u(self, url: str, recursion_limit: int = 5) -> str | None:
 		if recursion_limit <= 0:
 			return None
 		logging.info("Fetching M3U...")
@@ -34460,7 +34063,7 @@ class QueueBox:
 	def recalc(self) -> None:
 		self.tab_h = 34 * self.gui.scale
 
-	def except_for_this_show_test(self, _):
+	def except_for_this_show_test(self, _) -> bool:
 		return self.queue_remove_show(_) and self.inp.test_shift(_)
 
 	def make_as_playlist(self) -> None:
@@ -36351,12 +35954,12 @@ class ProjectM:
 		choice = random.choice(self.presets)
 		self.load_preset(choice, fade)
 
-	def get_current_name(self):
+	def get_current_name(self) -> str:
 		if self.loaded_preset:
 			return self.loaded_preset.stem
 		return "Default"
 
-	def load_preset(self, preset: Path, fade: bool = False):
+	def load_preset(self, preset: Path, fade: bool = False) -> None:
 		self.loaded_preset = preset
 		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
@@ -38717,7 +38320,7 @@ class TimedLyricsEdit:
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
 
-			if 0 < possible_y and possible_y+self.line_height/2 < maximum_y:
+			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y:
 				colour = self.colours.lyrics
 
 				if i < self.line_active:
@@ -44623,8 +44226,6 @@ def main(holder: Holder) -> None:
 
 	# x_menu.add(_("Internet Radio…"), activate_radio_box)
 
-	tauon.switch_playlist = pctl.switch_playlist
-
 	x_menu.add(MenuItem(_("Paste Spotify Playlist"), tauon.import_spotify_playlist, tauon.import_spotify_playlist_deco, icon=spot_icon,
 		show_test=tauon.spotify_show_test))
 
@@ -45314,7 +44915,7 @@ def main(holder: Holder) -> None:
 				#logging.info(target)
 				tauon.drop_file(target)
 
-			elif event.type == 8192:
+			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
 				gui.pl_update = 1
 				gui.update += 2
 
@@ -45422,7 +45023,7 @@ def main(holder: Holder) -> None:
 				elif event.key.key == sdl3.SDLK_X:
 					inp.key_x_press = True
 
-				if (event.key.key == (sdl3.SDLK_RETURN or sdl3.SDLK_RETURN2) and len(gui.editline) == 0) or (event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0):
+				if (event.key.key in (sdl3.SDLK_RETURN, sdl3.SDLK_RETURN2) and len(gui.editline) == 0) or (event.key.key == sdl3.SDLK_KP_ENTER and len(gui.editline) == 0):
 					inp.key_return_press = True
 				elif event.key.key == sdl3.SDLK_TAB:
 					inp.key_tab_press = True

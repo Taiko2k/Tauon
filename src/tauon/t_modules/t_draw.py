@@ -23,7 +23,7 @@ import io
 import logging
 import math
 import sys
-from ctypes import c_bool, c_float, byref, c_size_t, pointer
+from ctypes import byref, c_bool, c_float, c_size_t, pointer
 from typing import TYPE_CHECKING
 
 import sdl3
@@ -716,7 +716,7 @@ class TDraw:
 		context.set_source_rgb(colour.r / 255, colour.g / 255, colour.b / 255)
 
 		if font not in self.f_dict:
-			logging.info("Font not loaded: " + str(font))
+			logging.info(f"Font not loaded: {font!s}")
 			return 10
 
 		# desc = Pango.FontDescription(self.f_dict[font][0])
