@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_enums import MiniModeMode
 from tauon.t_modules.t_extra import RadioStation
 
 if TYPE_CHECKING:
@@ -225,7 +226,7 @@ class Prefs:
 
 	artist_list_prefer_album_artist: bool = True
 
-	mini_mode_mode = 0
+	mini_mode_mode = MiniModeMode.MINI
 
 	download_dir1 = ""
 	dd_index: bool = False
