@@ -491,6 +491,120 @@ void buff_reset() {
 	watermark = high_mark;
 }
 
+// Cross-compatibility -------------------------------------------
+
+#ifdef WIN64
+	static wchar_t *loaded_target_wpath = NULL;
+	#include <wchar.h>
+	static wchar_t *utf8_to_wide_path(const char *utf8) {
+		if (!utf8) return NULL;
+
+		// 1) UTF-8 -> wide
+		int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+		if (wlen <= 0) return NULL;
+
+		wchar_t *wtmp = (wchar_t*)malloc(sizeof(wchar_t) * (size_t)wlen);
+		if (!wtmp) return NULL;
+
+		if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wtmp, wlen)) {
+			free(wtmp);
+			return NULL;
+		}
+
+		// 2) Make absolute (required for \\?\)
+		DWORD abs_len = GetFullPathNameW(wtmp, 0, NULL, NULL);
+		if (abs_len == 0) {
+			free(wtmp);
+			return NULL;
+		}
+
+		wchar_t *abs_path = (wchar_t*)malloc(sizeof(wchar_t) * (size_t)abs_len);
+		if (!abs_path) {
+			free(wtmp);
+			return NULL;
+		}
+
+		DWORD abs_len2 = GetFullPathNameW(wtmp, abs_len, abs_path, NULL);
+		free(wtmp);
+		if (abs_len2 == 0 || abs_len2 >= abs_len) {
+			free(abs_path);
+			return NULL;
+		}
+
+		// Already prefixed?
+		if (wcsncmp(abs_path, L"\\\\?\\", 4) == 0) {
+			return abs_path;
+		}
+
+		// 3) Add long-path prefix only if needed
+		size_t abs_chars = wcslen(abs_path);
+		if (abs_chars < MAX_PATH) {
+			return abs_path;
+		}
+
+		// UNC path: \\server\share\...
+		if (wcsncmp(abs_path, L"\\\\", 2) == 0) {
+			// Build: \\?\UNC\ + (abs_path without leading \\)
+			const wchar_t *tail = abs_path + 2;
+			size_t tail_len = wcslen(tail);
+			wchar_t *out = (wchar_t*)malloc(sizeof(wchar_t) * (tail_len + 8 + 1)); // "\\?\UNC\" = 8 chars
+			if (!out) {
+				free(abs_path);
+				return NULL;
+			}
+			wcscpy(out, L"\\\\?\\UNC\\");
+			wcscat(out, tail);
+			free(abs_path);
+			return out;
+		}
+
+		// Drive path: C:\...
+		wchar_t *out = (wchar_t*)malloc(sizeof(wchar_t) * (abs_chars + 4 + 1));
+		if (!out) {
+			free(abs_path);
+			return NULL;
+		}
+		wcscpy(out, L"\\\\?\\");
+		wcscat(out, abs_path);
+		free(abs_path);
+		return out;
+	}
+#endif
+
+FILE *uni_fopen(char *ff) {
+	#ifdef WIN64
+		wchar_t *wpath = utf8_to_wide_path(ff);
+		if (!wpath) return NULL;
+
+		FILE *f = _wfopen(wpath, L"rb");
+		free(wpath);
+		return f;
+	#else
+		return fopen(ff, "rb");
+	#endif
+}
+
+#ifdef WIN64
+static int uni_stat(const char *path, struct stat *st) {
+	if (!loaded_target_wpath) return -1;
+
+	struct _stat64 wst;
+	int r = _wstat64(loaded_target_wpath, &wst);
+
+	if (r != 0) return r;
+
+	st->st_size  = (off_t)wst.st_size;
+	st->st_mtime = wst.st_mtime;
+	st->st_atime = wst.st_atime;
+	st->st_ctime = wst.st_ctime;
+	st->st_mode  = wst.st_mode;
+
+	return 0;
+}
+#else
+	#define uni_stat stat
+#endif
+
 
 // Misc ----------------------------------------------------------
 
@@ -662,7 +776,7 @@ int wave_error = 0;
 int16_t wave_16 = 0;
 
 int wave_open(char *filename) {
-	wave_file = fopen(filename, "rb");
+	wave_file = uni_fopen(filename);
 	if (wave_file == NULL) {
 		log_msg(LOG_ERROR, "pa: Error opening WAVE file: %s", strerror(errno));
 		return 1;
@@ -1854,20 +1968,12 @@ void connect_pulse() {
 
 }
 
-FILE *uni_fopen(char *ff) {
-	#ifdef WIN64
-		wchar_t w_path[MAX_PATH];
-		MultiByteToWideChar(CP_UTF8, 0, ff, -1, w_path, MAX_PATH);
-		FILE *file = _wfopen(w_path, L"rb");
-		return file;
-	#else
-		return fopen(ff, "rb");
-	#endif
-}
-
-
 int load_next() {
 	// Function to load a file / prepare decoder
+	#ifdef WIN64
+		free(loaded_target_wpath);
+		loaded_target_wpath = utf8_to_wide_path(loaded_target_file);
+	#endif
 
 	stop_decoder();
 
@@ -1912,7 +2018,6 @@ int load_next() {
 
 	// If target is url, use FFMPEG
 	if (loaded_target_file[0] == 'h') {
-
 		codec = FFMPEG;
 		start_ffmpeg(loaded_target_file, load_target_seek);
 		load_target_seek = 0;
@@ -1935,7 +2040,7 @@ int load_next() {
 		return 1;
 	}
 
-	stat(loaded_target_file, &st);
+	uni_stat(loaded_target_file, &st);
 	load_file_size = st.st_size;
 
 	fread(peak, sizeof(peak), 1, fptr);
@@ -2074,7 +2179,6 @@ int load_next() {
 	}
 
 	if (codec == GME) {
-
 		sample_rate_src = 48000;
 		gme_open_file(loaded_target_file, &emu, (long) sample_rate_src);
 		gme_start_track(emu, subtrack);
@@ -2089,7 +2193,6 @@ int load_next() {
 		decoder_allocated = 1;
 
 		return 0;
-
 	}
 
 	if (codec == MPT) {
@@ -2123,12 +2226,10 @@ int load_next() {
 		decoder_allocated = 1;
 
 		return 0;
-
 	}
 
 
 	switch (codec) {
-
 		// Unlock the output thread mutex cause loading could take a while?..
 		// and we dont wanna interrupt the output for too long.
 		//
@@ -2153,7 +2254,6 @@ int load_next() {
 			return 0;
 
 		case OPUS:
-
 			opus_dec = op_open_file(loaded_target_file, &e);
 			decoder_allocated = 1;
 
@@ -2507,7 +2607,7 @@ void pump_decode() {
 			if (done == 0) {
 
 				// Check if file was appended to...
-				stat(loaded_target_file, &st);
+				uni_stat(loaded_target_file, &st);
 				if (load_file_size != st.st_size) {
 					log_msg(LOG_WARNING, "pa: Ogg file size changed!");
 					int e = 0;
