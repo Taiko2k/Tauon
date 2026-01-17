@@ -29,3 +29,10 @@ class StopMode(IntEnum):
 	ALBUM = 2
 	TRACK_PERSIST = 3
 	ALBUM_PERSIST = 4
+
+
+class Backend(IntEnum):
+	NONE = 0
+	BASS = 1
+	GSTREAMER = 2
+	PHAZOR = 4

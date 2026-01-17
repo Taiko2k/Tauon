@@ -30,7 +30,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
-from tauon.t_modules.t_enums import PlayingState, StopMode
+from tauon.t_modules.t_enums import Backend, PlayingState, StopMode
 from tauon.t_modules.t_extra import Timer
 
 if TYPE_CHECKING:
@@ -936,7 +936,7 @@ def stream_proxy(tauon: Tauon) -> None:
 
 					self.wfile.write(tauon.stream_proxy.chunks[position])
 
-					if tauon.prefs.backend == 4:
+					if tauon.prefs.backend == Backend.PHAZOR:
 						tauon.vb.input(tauon.stream_proxy.chunks[position])
 
 					position += 1
