@@ -35,3 +35,12 @@ class Backend(IntEnum):
 	NONE = 0
 	GSTREAMER = 2
 	PHAZOR = 4
+
+
+class MiniModeMode(IntEnum):
+	MINI = 0
+	SQUARE = 1
+	LARGE = 2
+	SQUARE_LARGE = 3
+	TAB = 4
+	SLATE = 5
