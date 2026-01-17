@@ -8,7 +8,7 @@ No doubt I have written some things terribly wrong or inefficiently in places.
 I would highly recommend not using this project as an example on how to code cleanly or correctly.
 """
 
-# Copyright © 2015-2025, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2026, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25899,7 +25899,7 @@ class Over:
 		if self.cred_page == 0:
 			ddt.text((x, y - 6 * gui.scale), self.t_version, colours.box_text_label, 313)
 			y += 19 * gui.scale
-			ddt.text((x, y), "Copyright © 2015-2025 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
+			ddt.text((x, y), "Copyright © 2015-2026 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
 
 			y += 19 * gui.scale
 			link_pa = self.tauon.draw_linked_text(
