@@ -32,6 +32,7 @@ import urllib.request
 
 import mutagen
 
+from tauon.t_modules.t_enums import Backend
 from tauon.t_modules.t_extra import filename_safe
 
 if sys.platform != "win32":
@@ -149,7 +150,7 @@ class StreamEnc:
 
 	def pump(self) -> None:
 		aud = self.tauon.aud
-		if self.tauon.prefs.backend != 4 or not aud:
+		if self.tauon.prefs.backend != Backend.PHAZOR or not aud:
 			logging.error("Radio error: Phazor not loaded")
 			return
 		self.pump_running = True

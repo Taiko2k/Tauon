@@ -112,7 +112,7 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	migrate_star_store_71,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
-from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
+from tauon.t_modules.t_enums import Backend, LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
 from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
@@ -4901,9 +4901,9 @@ class ThreadManager:
 
 	def ready_playback(self) -> None:
 		if self.playback is None or not self.playback.is_alive():
-			if self.prefs.backend == 4:
+			if self.prefs.backend == Backend.PHAZOR:
 				self.playback = threading.Thread(target=player4, args=[self.tauon])
-			# elif self.prefs.backend == 2:
+			# elif self.prefs.backend == Backend.GSTREAMER:
 			# 	from tauon.t_modules.t_gstreamer import player3
 			# 	self.playback = threading.Thread(target=player3, args=[tauon])
 			self.playback.daemon = True
@@ -6530,9 +6530,9 @@ class Tauon:
 
 	def get_real_time(self) -> float:
 		offset = self.pctl.decode_time - (self.prefs.sync_lyrics_time_offset / 1000)
-		if self.prefs.backend == 4:
+		if self.prefs.backend == Backend.PHAZOR:
 			offset -= (self.prefs.device_buffer - 120) / 1000
-		elif self.prefs.backend == 2:
+		elif self.prefs.backend == Backend.GSTREAMER:
 			offset += 0.1
 		return max(0, offset)
 
@@ -10976,13 +10976,13 @@ class Tauon:
 
 		self.gui.vis_want = 1
 		self.gui.update_layout = True
-		# if self.prefs.backend == 2:
+		# if self.prefs.backend == Backend.GSTREAMER:
 		# 	self.show_message("Visualisers not implemented in GStreamer mode")
 		# self.gui.turbo = True
 
 	def spec_on(self) -> None:
 		self.gui.vis_want = 2
-		# if self.prefs.backend == 2:
+		# if self.prefs.backend == Backend.GSTREAMER:
 		# 	self.show_message("Not implemented")
 		self.gui.update_layout = True
 
@@ -10993,7 +10993,7 @@ class Tauon:
 				self.prefs.spec2_colour_mode = 0
 
 		self.gui.vis_want = 3
-		if self.prefs.backend == 2:
+		if self.prefs.backend == Backend.GSTREAMER:
 			self.show_message(_("Not implemented"))
 		# self.gui.turbo = True
 		self.prefs.spec2_colour_setting = "custom"
@@ -12861,7 +12861,7 @@ class Tauon:
 
 		gui.draw_vis4_top = False
 
-		if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != 3 and prefs.backend == 4:
+		if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != 3 and prefs.backend == Backend.PHAZOR:
 			gui.vis = 4
 			gui.turbo = True
 		elif gui.vis_want == 0:
@@ -12873,7 +12873,7 @@ class Tauon:
 				gui.turbo = True
 
 		# Disable vis when in compact view
-		if gui.mode == 3 or gui.top_bar_mode2:  # or prefs.backend == 2:
+		if gui.mode == 3 or gui.top_bar_mode2:  # or prefs.backend == Backend.GSTREAMER:
 			if not gui.combo_mode:
 				gui.vis = 0
 				gui.turbo = False
@@ -13642,7 +13642,7 @@ class Tauon:
 
 	def gstreamer_test(self, _) -> bool:
 		# return True
-		return self.prefs.backend == 2
+		return self.prefs.backend == Backend.GSTREAMER
 
 	def upload_spotify_playlist(self, pl: int) -> None:
 		p_id = self.pctl.pl_to_id(pl)
@@ -16042,7 +16042,7 @@ class Tauon:
 		shoot_dl.start()
 
 	def sub_get_album_thread(self) -> None:
-		# if prefs.backend != 1:
+		# if prefs.backend != Backend.BASS:
 		#	 self.show_message("This feature is currently only available with the BASS backend")
 		#	 return
 
@@ -16059,7 +16059,7 @@ class Tauon:
 		shoot_dl.start()
 
 	def koel_get_album_thread(self) -> None:
-		# if prefs.backend != 1:
+		# if prefs.backend != Backend.BASS:
 		#	 self.show_message("This feature is currently only available with the BASS backend")
 		#	 return
 
@@ -24068,7 +24068,7 @@ class Over:
 		if not self.phazor_found:
 			x += round(20 * self.gui.scale)
 			self.ddt.text((x, y - 25 * self.gui.scale), _("PHAzOR DLL not found!"), colour, 213)
-		elif self.prefs.backend == 4:
+		elif self.prefs.backend == Backend.PHAZOR:
 			y = y0 + round(20 * self.gui.scale)
 			x = x0 + 20 * self.gui.scale
 
@@ -25734,7 +25734,7 @@ class Over:
 		self.toggle_square(x, y, self.tauon.toggle_level_meter, _("Top-panel visualiser"))
 
 		y += 25 * gui.scale
-		if prefs.backend == 4:
+		if prefs.backend == Backend.PHAZOR:
 			self.toggle_square(x, y, self.tauon.toggle_showcase_vis, _("Showcase visualisation"))
 
 		y += round(30 * gui.scale)
@@ -31326,7 +31326,7 @@ class RadioBox:
 		if url.endswith(".ts"):
 			self.run_proxy = False
 
-		if self.run_proxy and not self.proxy_started and self.prefs.backend != 4:
+		if self.run_proxy and not self.proxy_started and self.prefs.backend != Backend.PHAZOR:
 			shoot = threading.Thread(target=stream_proxy, args=[self.tauon])
 			shoot.daemon = True
 			shoot.start()
@@ -36365,7 +36365,7 @@ class Showcase:
 				# x = int((self.window_size[0]) / 2)
 				y = int(self.window_size[1] / 2) - round(60 * self.gui.scale)
 
-				if self.prefs.showcase_vis and self.prefs.backend == 1:
+				if self.prefs.showcase_vis and self.prefs.backend == Backend.BASS:
 					y -= round(30 * self.gui.scale)
 
 				if track.artist == "" and track.title == "":
@@ -43480,8 +43480,8 @@ def main(holder: Holder) -> None:
 	tauon.deco.get_themes = get_themes
 	tauon.deco.renderer = renderer
 
-	if prefs.backend != 4:
-		prefs.backend = 4
+	if prefs.backend != Backend.PHAZOR:
+		prefs.backend = Backend.PHAZOR
 
 	chrome_loaded = is_module_loaded("tauon.t_modules.t_chrome", "Chrome")
 	if chrome_loaded:
@@ -44493,9 +44493,9 @@ def main(holder: Holder) -> None:
 	logging.info(f"Using SDL version: {sdl_version!s}")
 
 	# C-ML
-	# if prefs.backend == 2:
+	# if prefs.backend == Backend.GSTREAMER:
 	#     logging.warning("Using GStreamer as fallback. Some functions disabled")
-	if prefs.backend == 0:
+	if prefs.backend == Backend.NONE:
 		tauon.show_message(_("ERROR: No backend found"), mode="error")
 
 	# SDL_RenderClear(renderer)
@@ -49381,7 +49381,7 @@ def main(holder: Holder) -> None:
 					sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
 			if gui.vis == 1:
-				if prefs.backend == 2 or True:
+				if prefs.backend == Backend.GSTREAMER or True:
 					if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						# gui.level_update = True
 						while tauon.level_train and tauon.level_train[0][0] < time.time():
@@ -49412,7 +49412,7 @@ def main(holder: Holder) -> None:
 				x = round(gui.level_ww - 9 * gui.scale)
 				y = 10 * gui.scale
 
-				if prefs.backend == 2 or True:
+				if prefs.backend == Backend.GSTREAMER or True:
 					if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
 						# gui.level_update = True
 						if pctl.playing_time < 1:
