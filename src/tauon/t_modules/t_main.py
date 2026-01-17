@@ -44915,7 +44915,7 @@ def main(holder: Holder) -> None:
 				#logging.info(target)
 				tauon.drop_file(target)
 
-			elif event.type == 8192:
+			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
 				gui.pl_update = 1
 				gui.update += 2
 
