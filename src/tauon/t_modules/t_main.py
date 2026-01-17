@@ -112,7 +112,14 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	migrate_star_store_71,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
-from tauon.t_modules.t_enums import Backend, LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
+from tauon.t_modules.t_enums import (  # noqa: E402
+	Backend,
+	LoaderCommand,
+	MiniModeMode,
+	PlayerState,
+	PlayingState,
+	StopMode,
+)
 from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
@@ -2413,7 +2420,7 @@ class PlayerCtl:
 			shoot = threading.Thread(target=self.notify_update_fire)
 			shoot.daemon = True
 			shoot.start()
-		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
+		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
 			self.tauon.thread_manager.ready("style")
 
 	def get_url(self, track_object: TrackClass) -> tuple[list[str], str | None, dict | None] | None:
@@ -6154,10 +6161,10 @@ class Tauon:
 			if inp.key_shift_down or inp.key_shiftr_down:
 				return sdl3.SDL_HITTEST_NORMAL
 
-			# if prefs.mini_mode_mode == 5:
+			# if prefs.mini_mode_mode == MiniModeMode.SLATE:
 			#     return sdl3.SDL_HITTEST_NORMAL
 
-			if prefs.mini_mode_mode in (4, 5) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
+			if prefs.mini_mode_mode in (MiniModeMode.TAB, MiniModeMode.SLATE) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
 				return sdl3.SDL_HITTEST_NORMAL
 
 			if y < gui.window_control_hit_area_h and x > window_size[
@@ -6166,7 +6173,7 @@ class Tauon:
 
 			# Square modes
 			y1 = window_size[0]
-			# if prefs.mini_mode_mode == 5:
+			# if prefs.mini_mode_mode == MiniModeMode.SLATE:
 			#     y1 = window_size[1]
 			y0 = 0
 			if macos:
@@ -11515,27 +11522,27 @@ class Tauon:
 		self.pctl.pause_queue = False
 
 	def set_mini_mode_A1(self) -> None:
-		self.prefs.mini_mode_mode = 0
+		self.prefs.mini_mode_mode = MiniModeMode.MINI
 		self.set_mini_mode()
 
 	def set_mini_mode_B1(self) -> None:
-		self.prefs.mini_mode_mode = 1
+		self.prefs.mini_mode_mode = MiniModeMode.SQUARE
 		self.set_mini_mode()
 
 	def set_mini_mode_A2(self) -> None:
-		self.prefs.mini_mode_mode = 2
+		self.prefs.mini_mode_mode = MiniModeMode.LARGE
 		self.set_mini_mode()
 
 	def set_mini_mode_C1(self) -> None:
-		self.prefs.mini_mode_mode = 5
+		self.prefs.mini_mode_mode = MiniModeMode.SLATE
 		self.set_mini_mode()
 
 	def set_mini_mode_B2(self) -> None:
-		self.prefs.mini_mode_mode = 3
+		self.prefs.mini_mode_mode = MiniModeMode.SQUARE_LARGE
 		self.set_mini_mode()
 
 	def set_mini_mode_D(self) -> None:
-		self.prefs.mini_mode_mode = 4
+		self.prefs.mini_mode_mode = MiniModeMode.TAB
 		self.set_mini_mode()
 
 	def copy_bb_metadata(self) -> str | None:
@@ -12201,15 +12208,15 @@ class Tauon:
 		sdl3.SDL_SetWindowBordered(self.t_window, False)
 
 		size = (350, 429)
-		if self.prefs.mini_mode_mode == 1:
+		if self.prefs.mini_mode_mode == MiniModeMode.MINI:
 			size = (330, 330)
-		if self.prefs.mini_mode_mode == 2:
+		if self.prefs.mini_mode_mode == MiniModeMode.LARGE:
 			size = (420, 499)
-		if self.prefs.mini_mode_mode == 3:
+		if self.prefs.mini_mode_mode == MiniModeMode.SQUARE_LARGE:
 			size = (430, 430)
-		if self.prefs.mini_mode_mode == 4:
+		if self.prefs.mini_mode_mode == MiniModeMode.TAB:
 			size = (330, 80)
-		if self.prefs.mini_mode_mode == 5:
+		if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
 			size = (350, 545)
 			self.style_overlay.flush()
 			self.thread_manager.ready("style")
@@ -21142,7 +21149,7 @@ class AlbumArt:
 
 		if (ox_size < 500 or self.prefs.art_bg_always_blur) or self.gui.mode == 3:
 			blur = self.prefs.art_bg_blur
-			if self.prefs.mini_mode_mode == 5 and self.gui.mode == 3:
+			if self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == 3:
 				blur = 160
 				pix = im.getpixel((new_x // 2, new_y // 4 * 3))
 				pixel_sum = sum(pix) / (255 * 3)
@@ -21679,7 +21686,7 @@ class StyleOverlay:
 
 	def worker(self) -> None:
 		if self.stage == 0:
-			if (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
+			if (self.gui.mode == 3 and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
 				pass
 			elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
 				return
@@ -21787,7 +21794,7 @@ class StyleOverlay:
 							self.parent_path != self.pctl.playing_object().parent_folder_path or self.current_track_album != self.pctl.playing_object().album):
 						self.stage = 0
 
-		if self.gui.mode == 3 and self.prefs.mini_mode_mode == 5:
+		if self.gui.mode == 3 and self.prefs.mini_mode_mode == MiniModeMode.SLATE:
 			pass
 		elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
 			return
@@ -21841,7 +21848,7 @@ class StyleOverlay:
 					self.flush()
 					return
 
-			if self.prefs.bg_showcase_only and not (self.prefs.mini_mode_mode == 5 and self.gui.mode == 3):
+			if self.prefs.bg_showcase_only and not (self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == 3):
 				tb = sdl3.SDL_FRect(0, 0, self.window_size[0], self.gui.panelY)
 				bb = sdl3.SDL_FRect(0, self.window_size[1] - self.gui.panelBY, self.window_size[0], self.gui.panelBY)
 				self.hole_punches.append(tb)
@@ -21868,7 +21875,7 @@ class StyleOverlay:
 
 			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 			opacity = self.prefs.art_bg_opacity
-			if self.prefs.mini_mode_mode == 5 and self.gui.mode == 3:
+			if self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == 3:
 				opacity = 255
 
 			sdl3.SDL_SetTextureAlphaMod(self.gui.main_texture_overlay_temp, opacity)
@@ -40516,7 +40523,7 @@ def worker4(tauon: Tauon) -> None:
 	pctl = tauon.pctl
 	gui.style_worker_timer.set()
 	while True:
-		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
+		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == MiniModeMode.SLATE):
 			tauon.style_overlay.worker()
 
 		time.sleep(0.01)
@@ -48878,22 +48885,22 @@ def main(holder: Holder) -> None:
 								tauon.goto_album(pctl.playlist_playing_position)
 			elif gui.mode == 3:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
-					if prefs.mini_mode_mode == 4:
-						prefs.mini_mode_mode = 1
+					if prefs.mini_mode_mode == MiniModeMode.TAB:
+						prefs.mini_mode_mode = MiniModeMode.SQUARE
 						window_size[0] = int(330 * gui.scale)
 						window_size[1] = int(330 * gui.scale)
 						sdl3.SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
 						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 					else:
-						prefs.mini_mode_mode = 4
+						prefs.mini_mode_mode = MiniModeMode.TAB
 						window_size[0] = int(320 * gui.scale)
 						window_size[1] = int(90 * gui.scale)
 						sdl3.SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
 						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
-				if prefs.mini_mode_mode == 5:
+				if prefs.mini_mode_mode == MiniModeMode.SLATE:
 					tauon.mini_mode3.render()
-				elif prefs.mini_mode_mode == 4:
+				elif prefs.mini_mode_mode == MiniModeMode.TAB:
 					tauon.mini_mode2.render()
 				else:
 					tauon.mini_mode.render()
