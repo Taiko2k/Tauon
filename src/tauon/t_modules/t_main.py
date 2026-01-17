@@ -3014,7 +3014,6 @@ class PlayerCtl:
 			self.tauon.stream_proxy.stop()
 
 		if block:
-			loop = 0
 			sleep_timeout(lambda: self.playerSubCommand != "stopped", 2)
 			if self.tauon.stream_proxy.download_running:
 				sleep_timeout(lambda: self.tauon.stream_proxy.download_running, 2)
@@ -4242,7 +4241,7 @@ class LastFMapi:
 		except Exception:
 			logging.exception("Failed to pull love")
 
-	def scrobble(self, track_object: TrackClass, timestamp: float | None = None) -> bool:
+	def scrobble(self, track_object: TrackClass, timestamp: int | None = None) -> bool:
 		if not self.last_fm_enable:
 			return True
 		if self.prefs.scrobble_hold:
@@ -4863,7 +4862,7 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func: Callable[[int], list[Decorator]] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		self, title: str, func, render_func: Callable[[int], Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title = title
@@ -6227,7 +6226,6 @@ class Tauon:
 		return sdl3.SDL_HITTEST_NORMAL
 
 	def draw_window_tools(self) -> None:
-		bag         = self.bag
 		gui         = self.gui
 		inp         = self.inp
 		colours     = self.colours
@@ -19750,7 +19748,7 @@ class TimedLyricsRen:
 				sum( self.line_heights[i: max(0,line_active) ] ) + \
 				sum( self.line_heights[ max(line_active,0) :i] )
 
-			if 0 < possible_y and possible_y < self.window_size[1]:
+			if possible_y > 0 and possible_y < self.window_size[1]:
 				colour = self.colours.lyrics
 
 				#colour = self.colours.grey(70)
@@ -22454,19 +22452,19 @@ class TransEditBox:
 class SubLyricsBox:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.ddt          = tauon.ddt
-		self.gui          = tauon.gui
-		self.inp          = tauon.inp
-		self.coll         = tauon.coll
-		self.fields       = tauon.fields
-		self.prefs        = tauon.prefs
-		self.colours      = tauon.colours
-		self.window_size  = tauon.window_size
-		self.sub_lyrics_a = tauon.sub_lyrics_a
-		self.sub_lyrics_b = tauon.sub_lyrics_b
-		self.active = False
-		self.target_track = None
-		self.active_field = 1
+		self.ddt:             TDraw = tauon.ddt
+		self.gui:            GuiVar = tauon.gui
+		self.inp:             Input = tauon.inp
+		self.coll                   = tauon.coll
+		self.fields:         Fields = tauon.fields
+		self.prefs:           Prefs = tauon.prefs
+		self.colours:  ColoursClass = tauon.colours
+		self.window_size: list[int] = tauon.window_size
+		self.sub_lyrics_a: TextBox2 = tauon.sub_lyrics_a
+		self.sub_lyrics_b: TextBox2 = tauon.sub_lyrics_b
+		self.active:           bool = False
+		self.target_track: TrackClass | None = None
+		self.active_field:      int = 1
 
 	def activate(self, track: TrackClass) -> None:
 		self.active = True
@@ -38322,7 +38320,7 @@ class TimedLyricsEdit:
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
 
-			if 0 < possible_y and possible_y+self.line_height/2 < maximum_y:
+			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y:
 				colour = self.colours.lyrics
 
 				if i < self.line_active:

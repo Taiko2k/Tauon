@@ -338,19 +338,19 @@ class MPRIS(dbus.service.Object):
 	def Seeked(self, position: str) -> None:
 		pass
 
-	def seek_do(self, seconds: str) -> None:
+	def seek_do(self, seconds: str | float) -> None:
 		self.Seeked(dbus.Int64(int(seconds * 1000000)))
 
 
 class Gnome:
 	def __init__(self, tauon: Tauon) -> None:
 		self.bus_object = None
-		self.tauon = tauon
-		self.indicator_launched = False
+		self.tauon: Tauon = tauon
+		self.indicator_launched: bool = False
 		self.indicator_mode = 0
 		self.update_tray_text = None
-		self.tray_text = ""
-		self.resume_playback = False
+		self.tray_text: str = ""
+		self.resume_playback: bool = False
 
 		tauon.set_tray_icons()
 
