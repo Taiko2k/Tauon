@@ -187,7 +187,7 @@ from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_spot import SpotCtl  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
-from tauon.t_modules.t_subsonic import SubsonicServices  #noqa: E402
+from tauon.t_modules.t_subsonic import SubsonicService  #noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
