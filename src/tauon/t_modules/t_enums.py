@@ -44,3 +44,8 @@ class MiniModeMode(IntEnum):
 	SQUARE_LARGE = 3
 	TAB = 4
 	SLATE = 5
+
+
+class GuiMode(IntEnum):
+	MAIN = 1
+	MINI = 3
