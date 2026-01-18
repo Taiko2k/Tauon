@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-01-17 23:01+0000\n"
+"PO-Revision-Date: 2026-01-19 11:01+0000\n"
 "Last-Translator: RBuzz RBuzz <rbuzz@gmx.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.15.2\n"
+"X-Generator: Weblate 5.16-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
@@ -2091,72 +2091,76 @@ msgstr "?"
 #: src/tauon/t_modules/t_main.py:22531
 msgid "Press Enter in each field to apply its changes to local database."
 msgstr ""
+"Wciśnij enter w każdym polu aby zachować zmiany w lokalnej bazie danych."
 
 #: src/tauon/t_modules/t_main.py:22532
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
 msgstr ""
+"Kiedy gotowe, wciśnij WPISZ TAGI aby zachować tagi we właściwych plikach. "
+"(Niewymagane, rekomendowane)"
 
 #: src/tauon/t_modules/t_main.py:22536
 msgid "Number of tracks selected: {N}"
-msgstr ""
+msgstr "Ilość wybranych utworów: {N}"
 
 #: src/tauon/t_modules/t_main.py:22571
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Wybrano wiele>"
 
 #: src/tauon/t_modules/t_main.py:22579
 msgid "Track title"
-msgstr ""
+msgstr "Tytuł utworu"
 
 #: src/tauon/t_modules/t_main.py:22581
 msgid "Album name"
-msgstr ""
+msgstr "Nazwa albumu"
 
 #: src/tauon/t_modules/t_main.py:22583
 msgid "Artist name"
-msgstr ""
+msgstr "Nazwa artysty"
 
 #: src/tauon/t_modules/t_main.py:22585
 msgid "Album-artist name"
-msgstr ""
+msgstr "Nazwa artysty z albumu"
 
 #: src/tauon/t_modules/t_main.py:22591
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Edytowanie utworów sieciowych niezalecane!"
 
 #: src/tauon/t_modules/t_main.py:22620 src/tauon/t_modules/t_main.py:22623
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "WPISZ TAGI"
 
 #: src/tauon/t_modules/t_main.py:22626
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Wciśnij enter w polach by zastosować zmiany!"
 
 #: src/tauon/t_modules/t_main.py:22637
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Nie można zapisać zmian do utworu sieciowego!"
 
 #: src/tauon/t_modules/t_main.py:22641
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Nie można zapisać typu pliku CUE!"
 
 #: src/tauon/t_modules/t_main.py:22650
 msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr ""
+msgstr "Multipola nie obsługiwane. Skorzystać z zewnętrznego edytora tagów"
 
 #: src/tauon/t_modules/t_main.py:22669
 msgid "{N} files rewritten"
-msgstr ""
+msgstr "Przepisano {N} plików"
 
 #: src/tauon/t_modules/t_main.py:22737
+#, fuzzy
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Alternatywna wyszukiwarka tekstu"
 
 #: src/tauon/t_modules/t_main.py:22744 src/tauon/t_modules/t_main.py:22767
 msgid "Substitute"
-msgstr ""
+msgstr "Zamiennik"
 
 #: src/tauon/t_modules/t_main.py:22750 src/tauon/t_modules/t_main.py:22773
 msgid "with"
@@ -2164,53 +2168,51 @@ msgstr "z"
 
 #: src/tauon/t_modules/t_main.py:22865
 msgid "Import/Export Playlist"
-msgstr ""
+msgstr "Import/Eksport listy"
 
 #: src/tauon/t_modules/t_main.py:22870
 msgid "Target folder or file"
-msgstr ""
+msgstr "Docelowy folder lub plik"
 
 #: src/tauon/t_modules/t_main.py:22889
 msgid "Will overwrite existing file: "
-msgstr ""
+msgstr "Nadpisze istniejący plik: "
 
 #: src/tauon/t_modules/t_main.py:22892
-#, fuzzy
 msgid "Will save with playlist name:"
-msgstr "Koniec playlisty"
+msgstr "Zapisze z nazwą listy:"
 
 #: src/tauon/t_modules/t_main.py:22895
 msgid "No file extension?"
-msgstr ""
+msgstr "Brak rozszerzenia pliku?"
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "Nieprawidłowe rozszerzenie pliku?"
 
 #: src/tauon/t_modules/t_main.py:22905
 msgid "Will create directory"
-msgstr ""
+msgstr "Zostanie stworzony katalog"
 
 #: src/tauon/t_modules/t_main.py:22927 src/tauon/t_modules/t_main.py:22929
 msgid "Use relative paths"
-msgstr ""
+msgstr "Używają ścieżek względnych"
 
 #: src/tauon/t_modules/t_main.py:22932
 msgid "Enable relative paths when keeping playlist files together with audio"
-msgstr ""
+msgstr "Stosuj względne ścieżki jeśli trzymasz listy wraz z plikami audio"
 
 #: src/tauon/t_modules/t_main.py:22933
 msgid "Disable to move playlist files while keeping audio in one location"
-msgstr ""
+msgstr "Wyłącz aby przenosić listy bez przenoszenia plików audio"
 
 #: src/tauon/t_modules/t_main.py:22937
 msgid "Auto-export"
 msgstr "Automatyczny eksport"
 
 #: src/tauon/t_modules/t_main.py:22938
-#, fuzzy
 msgid "Auto-import"
-msgstr "Automatyczny eksport"
+msgstr "Automatyczny import"
 
 #: src/tauon/t_modules/t_main.py:22942 src/tauon/t_modules/t_main.py:22945
 msgid "Export"
@@ -2218,493 +2220,501 @@ msgstr "Eksport"
 
 #: src/tauon/t_modules/t_main.py:22988
 msgid "Playlist exported"
-msgstr ""
+msgstr "Lista wyeksportowana"
 
 #: src/tauon/t_modules/t_main.py:23074
 msgid "Year: "
-msgstr ""
+msgstr "Rok: "
 
 #: src/tauon/t_modules/t_main.py:23097
 msgid "Composer: "
-msgstr ""
+msgstr "Kompozytor: "
 
 #: src/tauon/t_modules/t_main.py:23169
 msgid "Genre: "
-msgstr ""
+msgstr "Gatunek: "
 
 #: src/tauon/t_modules/t_main.py:23313
 msgid "Press Tab key to switch to Spotify search"
-msgstr ""
+msgstr "Wciśnij Tab dla wyszukiwania Spotify"
 
 #: src/tauon/t_modules/t_main.py:23521
 msgid "(Include multi-tag results)"
-msgstr ""
+msgstr "(Uwzględnij wyniki multitag)"
 
 #: src/tauon/t_modules/t_main.py:23526 src/tauon/t_modules/t_main.py:23534
 #: src/tauon/t_modules/t_main.py:23547 src/tauon/t_modules/t_main.py:23565
 msgid "BY"
-msgstr ""
+msgstr "PRZEZ"
 
 #: src/tauon/t_modules/t_main.py:23553
 msgid "FROM"
-msgstr ""
+msgstr "OD"
 
 #: src/tauon/t_modules/t_main.py:23644
 msgid "Searching for albums by artist: "
-msgstr ""
+msgstr "Wyszukiwanie albumów artysty: "
 
 #: src/tauon/t_modules/t_main.py:23644
 msgid "This may take a moment"
-msgstr ""
+msgstr "To może chwilę potrwać"
 
 #: src/tauon/t_modules/t_main.py:23839
 msgid "Welcome to v7.2.0!"
-msgstr ""
+msgstr "Witamy w wersji 7.2.0!"
 
 #: src/tauon/t_modules/t_main.py:23844
 msgid "You can check out the release notes on the https://"
-msgstr ""
+msgstr "Możesz sprawdzić informacje o wydaniu pod https://"
 
 #: src/tauon/t_modules/t_main.py:23845
 msgid "Github release page."
-msgstr ""
+msgstr "Strona wydania Github."
 
 #: src/tauon/t_modules/t_main.py:23851
 msgid "New supporter bonuses!"
-msgstr ""
+msgstr "Nowe bonusy dla wspierających!"
 
 #: src/tauon/t_modules/t_main.py:23855
 msgid ""
 "A new supporter bonus theme is now available! Check it out at the above link!"
-msgstr ""
+msgstr "Nowa skórka dla wspierających dostępna! Sprawdź pod powyższym linkiem!"
 
 #: src/tauon/t_modules/t_main.py:23860
 msgid "Your support means a lot! Love you!"
-msgstr ""
+msgstr "Twoje wsparcie wiele dla nas znaczy! Kochamy Cię!"
 
 #: src/tauon/t_modules/t_main.py:23953
 msgid "Function"
-msgstr ""
+msgstr "Funkcja"
 
 #: src/tauon/t_modules/t_main.py:23954
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: src/tauon/t_modules/t_main.py:23955
 msgid "Tracklist"
-msgstr ""
+msgstr "Lista"
 
 #: src/tauon/t_modules/t_main.py:23956 src/tauon/t_modules/t_main.py:24004
 msgid "Theme"
-msgstr ""
+msgstr "Motyw"
 
 #: src/tauon/t_modules/t_main.py:23957
 msgid "Window"
-msgstr ""
+msgstr "Okno"
 
 #: src/tauon/t_modules/t_main.py:23958
 msgid "View"
-msgstr ""
+msgstr "Widok"
 
 #: src/tauon/t_modules/t_main.py:23959
 msgid "Transcode"
-msgstr ""
+msgstr "Transkodowanie"
 
 #: src/tauon/t_modules/t_main.py:23960 src/tauon/t_modules/t_main.py:48070
 msgid "Lyrics"
-msgstr ""
+msgstr "Tekst"
 
 #: src/tauon/t_modules/t_main.py:23961
 msgid "Accounts"
-msgstr ""
+msgstr "Konta"
 
 #: src/tauon/t_modules/t_main.py:23962
 msgid "Stats"
-msgstr ""
+msgstr "Statystyki"
 
 #: src/tauon/t_modules/t_main.py:23963
 msgid "About"
-msgstr ""
+msgstr "O programie"
 
 #: src/tauon/t_modules/t_main.py:24008
 msgid "Use album art as background"
-msgstr ""
+msgstr "Używaj grafiki albumu jako tła"
 
 #: src/tauon/t_modules/t_main.py:24010
 msgid "Transparent accent"
-msgstr ""
+msgstr "Przejrzysty akcent"
 
 #: src/tauon/t_modules/t_main.py:24016
 msgid "Prefer artist backgrounds"
-msgstr ""
+msgstr "Preferuj tła artystów"
 
 #: src/tauon/t_modules/t_main.py:24020
 msgid "Also enabling 'auto-fech artist data' to scrape last.fm."
-msgstr ""
+msgstr "Pozwala również na 'autopobieranie danych artystów\" z last.fm."
 
 #: src/tauon/t_modules/t_main.py:24021
 msgid "You can toggle this back off under Settings > Function"
-msgstr ""
+msgstr "Można to wyłączyć w Ustawienia > Funkcje"
 
 #: src/tauon/t_modules/t_main.py:24024
 msgid "Stronger"
-msgstr ""
+msgstr "Silniej"
 
 #: src/tauon/t_modules/t_main.py:24030
 msgid "Blur"
-msgstr ""
+msgstr "Rozmazanie"
 
 #: src/tauon/t_modules/t_main.py:24033
 msgid "Showcase only"
-msgstr ""
+msgstr "Tylko prezentacja"
 
 #: src/tauon/t_modules/t_main.py:24038
 msgid "Pattern style"
-msgstr ""
+msgstr "Styl wzoru"
 
 #: src/tauon/t_modules/t_main.py:24042
 msgid "Auto-theme from album art"
-msgstr ""
+msgstr "Automotyw z obrazu albumu"
 
 #: src/tauon/t_modules/t_main.py:24135
 msgid "Based on"
-msgstr ""
+msgstr "Bazuje na"
 
 #: src/tauon/t_modules/t_main.py:24142 src/tauon/t_modules/t_main.py:24221
 #: src/tauon/t_modules/t_main.py:25818 src/tauon/t_modules/t_main.py:26426
 msgid "Return"
-msgstr ""
+msgstr "Powrót"
 
 #: src/tauon/t_modules/t_main.py:24148 src/tauon/t_modules/t_main.py:24304
 msgid "ReplayGain"
-msgstr ""
+msgstr "ReplayGain"
 
 #: src/tauon/t_modules/t_main.py:24151 src/tauon/t_modules/t_main.py:43865
 msgid "Off"
-msgstr ""
+msgstr "Wyłącz"
 
 #: src/tauon/t_modules/t_main.py:24152
 msgid "Auto"
-msgstr ""
+msgstr "Auto"
 
 #: src/tauon/t_modules/t_main.py:24154
 msgid "Preserve album dynamics"
-msgstr ""
+msgstr "Zachowaj dynamikę albumu"
 
 #: src/tauon/t_modules/t_main.py:24156
 msgid "Tracks equal loudness"
-msgstr ""
+msgstr "Równa głośność utworów"
 
 #: src/tauon/t_modules/t_main.py:24159
 msgid "Will only have effect if ReplayGain metadata is present."
-msgstr ""
+msgstr "Zadziała tylko jeśli metadane ReplayGain dostępne."
 
 #: src/tauon/t_modules/t_main.py:24162
 msgid "Pre-amp"
-msgstr ""
+msgstr "Przedwzmacniacz"
 
 #: src/tauon/t_modules/t_main.py:24214
 msgid ""
 "Lower pre-amp values improve normalisation but will require a higher system "
 "volume."
 msgstr ""
+"Niższe ustawienia przedwzmacniacza poprawiają normalizację ale będą wymagać "
+"głośniejszego ustawienia dźwięku systemowego."
 
 #: src/tauon/t_modules/t_main.py:24230 src/tauon/t_modules/t_main.py:24911
 #: src/tauon/t_modules/t_main.py:24917 src/tauon/t_modules/t_main.py:24923
 #: src/tauon/t_modules/t_main.py:25132
 msgid "Enable"
-msgstr ""
+msgstr "Włącz"
 
 #: src/tauon/t_modules/t_main.py:24290
 msgid "PHAzOR DLL not found!"
-msgstr ""
+msgstr "Nie znaleziono PHAzOR DLL!"
 
 #: src/tauon/t_modules/t_main.py:24297
 msgid "Use fade on pause/stop"
-msgstr ""
+msgstr "Używaj stopniowego wyciszania przy pauzie/zatrzymaniu"
 
 #: src/tauon/t_modules/t_main.py:24299
 msgid "Use fade on track jump"
-msgstr ""
+msgstr "Używaj stopniowego wyciszania przy zmianie utworów"
 
 #: src/tauon/t_modules/t_main.py:24301
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Cofnij zawraca do początku"
 
 #: src/tauon/t_modules/t_main.py:24309
 msgid "Cache local files (for smb/nfs)"
-msgstr ""
+msgstr "Buforuj lokalne pliki (smb/nfs)"
 
 #: src/tauon/t_modules/t_main.py:24312
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Używaj stałego bufora sieciowego"
 
 #: src/tauon/t_modules/t_main.py:24317
 msgid "Cache size"
-msgstr ""
+msgstr "Rozmiar bufora"
 
 #: src/tauon/t_modules/t_main.py:24338
 msgid "Set audio output device"
-msgstr ""
+msgstr "Ustaw wyjście audio"
 
 #: src/tauon/t_modules/t_main.py:24344
 msgid "PipeWire (unstable)"
-msgstr ""
+msgstr "PipeWire (niestabilny)"
 
 #: src/tauon/t_modules/t_main.py:24347
 msgid "PulseAudio"
-msgstr ""
+msgstr "PulseAudio"
 
 #: src/tauon/t_modules/t_main.py:24349
 msgid "Please restart Tauon for this change to take effect"
-msgstr ""
+msgstr "Zrestartuj Tauon aby zastosować zmiany"
 
 #: src/tauon/t_modules/t_main.py:24352
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Unikaj resamplowania"
 
 #: src/tauon/t_modules/t_main.py:24358
 msgid "Tip: To get samplerate to DAC you may need to check some settings, see:"
 msgstr ""
+"Wskazówka: Aby pozyskać samplerate dla DAC trzeba sprawdzić ustawienia, "
+"patrz:"
 
 #: src/tauon/t_modules/t_main.py:24420
 msgid "Reset failed list"
-msgstr ""
+msgstr "Lista nieudanego resetu"
 
 #: src/tauon/t_modules/t_main.py:24424
 msgid "Enable chord lyrics"
-msgstr ""
+msgstr "Włącz teksty akordów"
 
 #: src/tauon/t_modules/t_main.py:24427
 msgid "Sources:"
-msgstr ""
+msgstr "Żródła:"
 
 #: src/tauon/t_modules/t_main.py:24444
 msgid "*Uses scraping. Enable at your own discretion."
-msgstr ""
+msgstr "*Uzywa scrapowania. Korzystasz na własne ryzyko."
 
 #: src/tauon/t_modules/t_main.py:24446
 msgid "Tip: The order enabled will be the order searched."
-msgstr ""
+msgstr "Wskazówka: Włączony porządek będzie porządkiem wyszukiwania."
 
 #: src/tauon/t_modules/t_main.py:24455
 msgid "Metadata side panel"
-msgstr ""
+msgstr "Boczny panel metadanych"
 
 #: src/tauon/t_modules/t_main.py:24458
 msgid "Use centered style"
-msgstr ""
+msgstr "Używaj wyśrodkowanego stylu"
 
 #: src/tauon/t_modules/t_main.py:24461
 msgid "Zoom album art to fit"
-msgstr ""
+msgstr "Powiększaj okładki albumów aby dopasować"
 
 #: src/tauon/t_modules/t_main.py:24466 src/tauon/t_modules/t_main.py:36561
 #: src/tauon/t_modules/t_main.py:36564
 msgid "Gallery"
-msgstr ""
+msgstr "Galeria"
 
 #: src/tauon/t_modules/t_main.py:24470
 msgid "Single click to play"
-msgstr ""
+msgstr "Pojedynczy klik dla odtwarzania"
 
 #: src/tauon/t_modules/t_main.py:24472
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Połącz multi dyski"
 
 #: src/tauon/t_modules/t_main.py:24474
 msgid "Show titles"
-msgstr ""
+msgstr "Pokaż tytuły"
 
 #: src/tauon/t_modules/t_main.py:24479
 msgid "Center alignment"
-msgstr ""
+msgstr "Wyśrodkowanie"
 
 #: src/tauon/t_modules/t_main.py:24486 src/tauon/t_modules/t_main.py:24495
 msgid "Thumbnail size"
-msgstr ""
+msgstr "Rozmiar miniatur"
 
 #: src/tauon/t_modules/t_main.py:24490
+#, fuzzy
 msgid "Prefer thinner padding"
-msgstr ""
+msgstr "Preferuj cieńsze podbicia"
 
 #: src/tauon/t_modules/t_main.py:24519
+#, fuzzy
 msgid "Enable Listen Along"
-msgstr ""
+msgstr "Włącz współsłuchanie"
 
 #: src/tauon/t_modules/t_main.py:24519
 msgid "Start server for remote web playback"
-msgstr ""
+msgstr "Uruchom serwer dla zdalnego odtwarzania w sieci"
 
 #: src/tauon/t_modules/t_main.py:24541
 msgid "Show artist info panel"
-msgstr ""
+msgstr "Pokaż panel info artysty"
 
 #: src/tauon/t_modules/t_main.py:24542
 msgid "You can also toggle this with ctrl+o"
-msgstr ""
+msgstr "Można to przełączyć także skrótem ctrl+o"
 
 #: src/tauon/t_modules/t_main.py:24550
 msgid "Auto fetch artist data"
-msgstr ""
+msgstr "Pobieraj dane artystów automatycznie"
 
 #: src/tauon/t_modules/t_main.py:24551
 msgid "Downloads data in background when artist panel is open"
-msgstr ""
+msgstr "Pobiera dane w tle gdy panel artysty jest otwarty"
 
 #: src/tauon/t_modules/t_main.py:24556
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Koniec playlisty"
+msgstr "Automatycznie przeładowywanie list"
 
 #: src/tauon/t_modules/t_main.py:24557
 msgid "Playlists rescan/regenerate when re-entering"
-msgstr ""
+msgstr "Ponowne wczytanie/regeneracja list podczas ponownego wprowadzania"
 
 #: src/tauon/t_modules/t_main.py:24561
 msgid "Tabs in top panel"
-msgstr ""
+msgstr "Zakładki górnego panelu"
 
 #: src/tauon/t_modules/t_main.py:24562
 msgid "Uncheck to disable the tab pin function"
-msgstr ""
+msgstr "Odznacz aby wyłączyć przypinanie zakładek"
 
 #: src/tauon/t_modules/t_main.py:24567 src/tauon/t_modules/t_main.py:24573
 msgid "Open config file"
-msgstr ""
+msgstr "Otwórz plik konfiguracji"
 
 #: src/tauon/t_modules/t_main.py:24569 src/tauon/t_modules/t_main.py:24579
 msgid "Open data folder"
-msgstr ""
+msgstr "Otwórz folder danych"
 
 #: src/tauon/t_modules/t_main.py:24577
 msgid "Reload"
-msgstr ""
+msgstr "Przeładuj"
 
 #: src/tauon/t_modules/t_main.py:24583
 msgid "Enable/Disable track context menu functions:"
-msgstr ""
+msgstr "Włącz/wyłącz kontekstowe menu utworów:"
 
 #: src/tauon/t_modules/t_main.py:24586
 msgid "Wikipedia artist search"
-msgstr ""
+msgstr "Wyszukiwanie artysty w Wikipedii"
 
 #: src/tauon/t_modules/t_main.py:24588
 msgid "Sonemic artist search"
-msgstr ""
+msgstr "Wyszukiwanie artysty Sonemic"
 
 #: src/tauon/t_modules/t_main.py:24590
 msgid "Bandcamp artist page search"
-msgstr ""
+msgstr "Strona wyszukiwania artysty Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:24594
 msgid "Genius track search"
-msgstr ""
+msgstr "Wyszukiwanie utworu Genius"
 
 #: src/tauon/t_modules/t_main.py:24596
 msgid "Transcode folder"
-msgstr ""
+msgstr "Folder transkodowania"
 
 #: src/tauon/t_modules/t_main.py:24602
+#, fuzzy
 msgid "End of playlist action"
-msgstr ""
+msgstr "Koniec akcji listy"
 
 #: src/tauon/t_modules/t_main.py:24605 src/tauon/t_modules/t_main.py:24609
 msgid "Stop playback"
-msgstr ""
+msgstr "Zatrzymaj odtwarzanie"
 
 #: src/tauon/t_modules/t_main.py:24606 src/tauon/t_modules/t_main.py:24611
 msgid "Repeat playlist"
-msgstr ""
+msgstr "Powtarzaj listę"
 
 #: src/tauon/t_modules/t_main.py:24615
 msgid "Play next playlist"
-msgstr ""
+msgstr "Odtwarzaj następną listę"
 
 #: src/tauon/t_modules/t_main.py:24617
 msgid "Cycle all playlists"
-msgstr ""
+msgstr "Wszystkie listy w pętli"
 
 #: src/tauon/t_modules/t_main.py:24624
 msgid "Extract archives"
-msgstr ""
+msgstr "Wypakuj archiwa"
 
 #: src/tauon/t_modules/t_main.py:24625
 msgid "Extracts zip archives on drag and drop"
-msgstr ""
+msgstr "Wypakuj archiwa zip po przeciągnięciu i upuszczeniu"
 
 #: src/tauon/t_modules/t_main.py:24628
 msgid "Enable download monitor"
-msgstr ""
+msgstr "Włącz monitor pobierania"
 
 #: src/tauon/t_modules/t_main.py:24629
 msgid "One click import new archives and folders from downloads folder"
-msgstr ""
+msgstr "Jedno kliknięcie importuje nowe archiwa i foldery z folderu pobrań"
 
 #: src/tauon/t_modules/t_main.py:24631
 msgid "Trash archive after extraction"
-msgstr ""
+msgstr "Skasuj po wypakowaniu"
 
 #: src/tauon/t_modules/t_main.py:24633
 msgid "Always extract to Music folder"
-msgstr ""
+msgstr "Zawsze wypakuj do folderu Muzyka"
 
 #: src/tauon/t_modules/t_main.py:24637
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Pokaż ikonę w zasobniku systemowym"
 
 #: src/tauon/t_modules/t_main.py:24640 src/tauon/t_modules/t_main.py:24654
 msgid "Close to tray"
-msgstr ""
+msgstr "Zamknij do zasobnika systemowego"
 
 #: src/tauon/t_modules/t_main.py:24643
 msgid "Show title text"
-msgstr ""
+msgstr "Pokaż tytuł"
 
 #: src/tauon/t_modules/t_main.py:24646
 msgid "Monochrome"
-msgstr ""
+msgstr "Monochromatyczne"
 
 #: src/tauon/t_modules/t_main.py:24652
 msgid "Restart Tauon for change to take effect"
-msgstr ""
+msgstr "Zrestartuj Tauon aby zastosować zmiany"
 
 #: src/tauon/t_modules/t_main.py:24659
 msgid "Enable use of gamepad as input"
-msgstr ""
+msgstr "Włącz użycie pada jako klawiatury"
 
 #: src/tauon/t_modules/t_main.py:24660 src/tauon/t_modules/t_main.py:24698
 msgid "Change requires restart"
-msgstr ""
+msgstr "Zmiana wymaga restartu"
 
 #: src/tauon/t_modules/t_main.py:24663
 msgid "Default playlist export folder"
-msgstr ""
+msgstr "Domyślny folder eksportu listy"
 
 #: src/tauon/t_modules/t_main.py:24684
 msgid "Also auto-import new playlists from here"
-msgstr ""
+msgstr "Automatycznie importuj listy również stąd"
 
 #: src/tauon/t_modules/t_main.py:24685
 msgid "Only runs during \"Rescan All Folders\""
-msgstr ""
+msgstr "Działa tylko podczas \"Wczytaj ponownie wszystkie foldery\""
 
 #: src/tauon/t_modules/t_main.py:24689
 msgid "Save \"simple\" lyrics changes back to their original files"
-msgstr ""
+msgstr "Zapisz proste zmiany tekstów w oryginalnych plikach"
 
 #: src/tauon/t_modules/t_main.py:24690
 msgid ""
 "Includes search, clear, paste, etc. Manual edits will always save this way."
 msgstr ""
+"Zawiera wyszukiwanie, czyszczenie, wklejanie itp. Ręczne zapisy zawsze "
+"zachowują się w ten sposób."
 
 #: src/tauon/t_modules/t_main.py:24697
 msgid "Enable remote control"
-msgstr ""
+msgstr "Włącz zdalne sterowanie"
 
 #: src/tauon/t_modules/t_main.py:24703
 msgid "Notice: This API is not security hardened."
-msgstr ""
+msgstr "Uwaga: To API nie jest zbyt bezpieczne."
 
 #: src/tauon/t_modules/t_main.py:24704
 msgid ""
@@ -4803,101 +4813,102 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:43651
 msgid "Track Info…"
-msgstr ""
+msgstr "Info utworu…"
 
 #: src/tauon/t_modules/t_main.py:43676
 msgid "↳ After Current Track"
-msgstr ""
+msgstr "↳ po obecnym utworze"
 
 #: src/tauon/t_modules/t_main.py:43678
 msgid "Show in Gallery"
-msgstr ""
+msgstr "Pokaż w Galerii"
 
 #: src/tauon/t_modules/t_main.py:43680
+#, fuzzy
 msgid "Meta…"
-msgstr ""
+msgstr "Metadane…"
 
 #: src/tauon/t_modules/t_main.py:43685 src/tauon/t_modules/t_main.py:43793
 #: src/tauon/t_modules/t_main.py:43798 src/tauon/t_modules/t_main.py:43799
 #: src/tauon/t_modules/t_main.py:43859
 msgid "Copy"
-msgstr ""
+msgstr "Kopiuj"
 
 #: src/tauon/t_modules/t_main.py:43691
 msgid "Delete Track File"
-msgstr ""
+msgstr "Usuń plik utworu"
 
 #: src/tauon/t_modules/t_main.py:43702 src/tauon/t_modules/t_main.py:43760
 #: src/tauon/t_modules/t_main.py:43784
 msgid "Edit fields…"
-msgstr ""
+msgstr "Edytuj pola…"
 
 #: src/tauon/t_modules/t_main.py:43705 src/tauon/t_modules/t_main.py:43733
 #: src/tauon/t_modules/t_main.py:43734 src/tauon/t_modules/t_main.py:43739
 msgid "Modify Folder…"
-msgstr ""
+msgstr "Zmień folder…"
 
 #: src/tauon/t_modules/t_main.py:43726
-#, fuzzy
 msgid "Edit with"
-msgstr "z"
+msgstr "Edytuj z"
 
 #: src/tauon/t_modules/t_main.py:43727
 msgid "Lyrics..."
-msgstr ""
+msgstr "Teksty..."
 
 #: src/tauon/t_modules/t_main.py:43728
 msgid "Fix Mojibake"
-msgstr ""
+msgstr "Napraw Mojibake"
 
 #: src/tauon/t_modules/t_main.py:43761
+#, fuzzy
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Odkurz czasy odtwarzania"
 
 #: src/tauon/t_modules/t_main.py:43769
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "Kopiuj \"Artysta - Album\""
 
 #: src/tauon/t_modules/t_main.py:43781
 msgid "Add to queue"
-msgstr ""
+msgstr "Dodaj do kolejki"
 
 #: src/tauon/t_modules/t_main.py:43794
 msgid "Cut"
-msgstr ""
+msgstr "Wytnij"
 
 #: src/tauon/t_modules/t_main.py:43795 src/tauon/t_modules/t_main.py:43803
 #: src/tauon/t_modules/t_main.py:43804 src/tauon/t_modules/t_main.py:44092
 msgid "Remove"
-msgstr ""
+msgstr "Usuń"
 
 #: src/tauon/t_modules/t_main.py:43796
 msgid "Delete Files"
-msgstr ""
+msgstr "Skasuj pliki"
 
 #: src/tauon/t_modules/t_main.py:43806
 msgid "Search Artist on Wikipedia"
-msgstr ""
+msgstr "Wyszukaj artystę na Wikipedii"
 
 #: src/tauon/t_modules/t_main.py:43807
 msgid "Search Track on Genius"
-msgstr ""
+msgstr "Wyszukaj utwór na Genius"
 
 #: src/tauon/t_modules/t_main.py:43813
 msgid "Search Artist on Sonemic"
-msgstr ""
+msgstr "Wyszukaj artystę na Sonemic"
 
 #: src/tauon/t_modules/t_main.py:43820
 msgid "Search Artist on Bandcamp"
-msgstr ""
+msgstr "Wyszukaj artystę na Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:43824
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "Kopiuj \"Artysta - Utwór\""
 
 #: src/tauon/t_modules/t_main.py:43825
 msgid "Copy TIDAL Album URL"
-msgstr ""
+msgstr "Kopiuj URL albumu z Tidal"
 
 #: src/tauon/t_modules/t_main.py:43827
 msgid "Spotify…"
@@ -4905,195 +4916,196 @@ msgstr "Spotify…"
 
 #: src/tauon/t_modules/t_main.py:43828 src/tauon/t_modules/t_main.py:44003
 msgid "Show Full Artist"
-msgstr ""
+msgstr "Pokaż artystę w całości"
 
 #: src/tauon/t_modules/t_main.py:43830
 msgid "Copy Track URL"
-msgstr ""
+msgstr "Skopiuj URL utworu"
 
 #: src/tauon/t_modules/t_main.py:43848
 msgid "Always stop after album"
-msgstr ""
+msgstr "Zawsze zatrzymuj na końcu albumu"
 
 #: src/tauon/t_modules/t_main.py:43849
 msgid "Always stop after track"
-msgstr ""
+msgstr "Zawsze zatrzymuj na końcu utworu"
 
 #: src/tauon/t_modules/t_main.py:43850
 msgid "Stop after album"
-msgstr ""
+msgstr "Zatrzymaj po albumie"
 
 #: src/tauon/t_modules/t_main.py:43851
 msgid "Stop after track"
-msgstr ""
+msgstr "Zatrzymaj po utworze"
 
 #: src/tauon/t_modules/t_main.py:43852
 msgid "Continue Play"
-msgstr ""
+msgstr "Kontynuuj odtwarzanie"
 
 #: src/tauon/t_modules/t_main.py:43854
 msgid "Minimize"
-msgstr ""
+msgstr "Zminimalizuj"
 
 #: src/tauon/t_modules/t_main.py:43855
 msgid "Maximize"
-msgstr ""
+msgstr "Zmaksymalizuj"
 
 #: src/tauon/t_modules/t_main.py:43856 src/tauon/t_modules/t_main.py:44049
 msgid "Exit"
-msgstr ""
+msgstr "Wyjdź"
 
 #: src/tauon/t_modules/t_main.py:43866
 msgid "Level Meter"
-msgstr ""
+msgstr "Miernik poziomu"
 
 #: src/tauon/t_modules/t_main.py:43867
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Wizualizator spektrum"
 
 #: src/tauon/t_modules/t_main.py:43871
 msgid "Time"
-msgstr ""
+msgstr "Czas"
 
 #: src/tauon/t_modules/t_main.py:43878
 msgid "Show bar"
-msgstr ""
+msgstr "Pokaż belkę"
 
 #: src/tauon/t_modules/t_main.py:43895
 msgid "Paste Spotify Playlist"
-msgstr ""
+msgstr "Wklej listę Spotify"
 
 #: src/tauon/t_modules/t_main.py:43898
 msgid "Import Music Folder"
-msgstr ""
+msgstr "Importuj folder z muzyką"
 
 #: src/tauon/t_modules/t_main.py:43906
 msgid "Settings"
-msgstr ""
+msgstr "Ustawienia"
 
 #: src/tauon/t_modules/t_main.py:43907
 msgid "Database…"
-msgstr ""
+msgstr "Baza danych…"
 
 #: src/tauon/t_modules/t_main.py:43912
 msgid "Enabled saving state"
-msgstr ""
+msgstr "Zapisywanie stanu włączone"
 
 #: src/tauon/t_modules/t_main.py:43916
 msgid "Disabled saving state"
-msgstr ""
+msgstr "Zapisywanie stanu wyłączone"
 
 #: src/tauon/t_modules/t_main.py:43918
 msgid "Dev Mode"
-msgstr ""
+msgstr "Tryb dewelopera"
 
 #: src/tauon/t_modules/t_main.py:43919
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Włącz zapisywanie stanu"
 
 #: src/tauon/t_modules/t_main.py:43920
 msgid "Disable Saving State"
-msgstr ""
+msgstr "Wyłącz zapisywanie stanu"
 
 #: src/tauon/t_modules/t_main.py:43925
 msgid "Export as CSV"
-msgstr ""
+msgstr "Eksportuj jako CSV"
 
 #: src/tauon/t_modules/t_main.py:43926
 msgid "Reload All Folders"
-msgstr ""
+msgstr "Przeładuj wszystkie foldery"
 
 #: src/tauon/t_modules/t_main.py:43927
 msgid "Play History to Playlist"
-msgstr ""
+msgstr "Historia odtwarzania do listy"
 
 #: src/tauon/t_modules/t_main.py:43928
 msgid "Reset Image Cache"
-msgstr ""
+msgstr "Resetuj bufor obrazów"
 
 #: src/tauon/t_modules/t_main.py:43930
 msgid "Remove Network Tracks"
-msgstr ""
+msgstr "Usuń utwory sieciowe"
 
 #: src/tauon/t_modules/t_main.py:43931
 msgid "Remove Missing Tracks"
-msgstr ""
+msgstr "Usuń brakujące utwory"
 
 #: src/tauon/t_modules/t_main.py:43932
 msgid "Import FMPS Ratings"
-msgstr ""
+msgstr "Importuj oceny FMPS"
 
 #: src/tauon/t_modules/t_main.py:43933
 msgid "Import POPM Ratings"
-msgstr ""
+msgstr "Importuje oceny POPM"
 
 #: src/tauon/t_modules/t_main.py:43934
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "Resetuj oceny użytkownika"
 
 #: src/tauon/t_modules/t_main.py:43935
 msgid "Find Incomplete Albums"
-msgstr ""
+msgstr "Znajdź niekompletne albumy"
 
 #: src/tauon/t_modules/t_main.py:43936
 msgid "Mark Missing as Found"
-msgstr ""
+msgstr "Odznacz brakujące jako znalezione"
 
 #: src/tauon/t_modules/t_main.py:43939
 msgid "Chromecast…"
-msgstr ""
+msgstr "Chromecast…"
 
 #: src/tauon/t_modules/t_main.py:43947
 msgid "Tab"
-msgstr ""
+msgstr "Tab"
 
 #: src/tauon/t_modules/t_main.py:43948
 msgid "Mini"
-msgstr ""
+msgstr "Mini"
 
 #: src/tauon/t_modules/t_main.py:43950
+#, fuzzy
 msgid "Slate"
-msgstr ""
+msgstr "Dachówka"
 
 #: src/tauon/t_modules/t_main.py:43951
 msgid "Square"
-msgstr ""
+msgstr "Kwadrat"
 
 #: src/tauon/t_modules/t_main.py:43952
 msgid "Square Large"
-msgstr ""
+msgstr "Duży kwadrat"
 
 #: src/tauon/t_modules/t_main.py:43955
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Kopiuje tytuł do schowka"
 
 #: src/tauon/t_modules/t_main.py:43957
 msgid "Random Track"
-msgstr ""
+msgstr "Losowy utwor"
 
 #: src/tauon/t_modules/t_main.py:43962
 msgid "Radio Random"
-msgstr ""
+msgstr "Losowe radio"
 
 #: src/tauon/t_modules/t_main.py:43967
 msgid "Revert"
-msgstr ""
+msgstr "Odwróć"
 
 #: src/tauon/t_modules/t_main.py:43984
 msgid "Global Search"
-msgstr ""
+msgstr "Wyszukiwanie globalne"
 
 #: src/tauon/t_modules/t_main.py:43985
 msgid "Locate Artist"
-msgstr ""
+msgstr "Zlokalizuj artystę"
 
 #: src/tauon/t_modules/t_main.py:43986
 msgid "Go To Playing"
-msgstr ""
+msgstr "Idź do odtwarzania"
 
 #: src/tauon/t_modules/t_main.py:43992
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Importuj Spotify…"
 
 #: src/tauon/t_modules/t_main.py:43994
 msgid "Liked Albums"
@@ -5101,19 +5113,19 @@ msgstr "Polubione Albumy"
 
 #: src/tauon/t_modules/t_main.py:43995
 msgid "Liked Tracks"
-msgstr ""
+msgstr "Polubione utwory"
 
 #: src/tauon/t_modules/t_main.py:43997
 msgid "Playlist…"
-msgstr ""
+msgstr "Listy…"
 
 #: src/tauon/t_modules/t_main.py:43998
 msgid "Current Context"
-msgstr ""
+msgstr "Aktualny kontekst"
 
 #: src/tauon/t_modules/t_main.py:44006
 msgid "Start Spotify Remote"
-msgstr ""
+msgstr "Uruchom Spotify Remote"
 
 #: src/tauon/t_modules/t_main.py:44046
 msgid "Synced Lyrics Editor"
