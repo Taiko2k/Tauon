@@ -8,7 +8,7 @@ No doubt I have written some things terribly wrong or inefficiently in places.
 I would highly recommend not using this project as an example on how to code cleanly or correctly.
 """
 
-# Copyright © 2015-2025, Taiko2k captain(dot)gxj(at)gmail.com
+# Copyright © 2015-2026, Taiko2k captain(dot)gxj(at)gmail.com
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -112,7 +112,15 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	migrate_star_store_71,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
-from tauon.t_modules.t_enums import LoaderCommand, PlayerState, PlayingState, StopMode  # noqa: E402
+from tauon.t_modules.t_enums import (  # noqa: E402
+	Backend,
+	GuiMode,
+	LoaderCommand,
+	MiniModeMode,
+	PlayerState,
+	PlayingState,
+	StopMode,
+)
 from tauon.t_modules.t_extra import (  # noqa: E402
 	ColourGenCache,
 	ColourRGBA,
@@ -761,7 +769,7 @@ class GuiVar:
 		self.rename_playlist_box: bool = False
 		self.queue_frame_draw = None  # Set when need draw frame later
 
-		self.mode = 1
+		self.mode = GuiMode.MAIN
 
 		self.save_position = [0, 0]
 
@@ -2413,7 +2421,7 @@ class PlayerCtl:
 			shoot = threading.Thread(target=self.notify_update_fire)
 			shoot.daemon = True
 			shoot.start()
-		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
+		if self.prefs.art_bg or (self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
 			self.tauon.thread_manager.ready("style")
 
 	def get_url(self, track_object: TrackClass) -> tuple[list[str], str | None, dict | None] | None:
@@ -4901,9 +4909,9 @@ class ThreadManager:
 
 	def ready_playback(self) -> None:
 		if self.playback is None or not self.playback.is_alive():
-			if self.prefs.backend == 4:
+			if self.prefs.backend == Backend.PHAZOR:
 				self.playback = threading.Thread(target=player4, args=[self.tauon])
-			# elif self.prefs.backend == 2:
+			# elif self.prefs.backend == Backend.GSTREAMER:
 			# 	from tauon.t_modules.t_gstreamer import player3
 			# 	self.playback = threading.Thread(target=player3, args=[tauon])
 			self.playback.daemon = True
@@ -6150,14 +6158,14 @@ class Tauon:
 		y = point.contents.y / logical_size[0] * window_size[0]
 
 		# Special layout modes
-		if gui.mode == 3:
+		if gui.mode == GuiMode.MINI:
 			if inp.key_shift_down or inp.key_shiftr_down:
 				return sdl3.SDL_HITTEST_NORMAL
 
-			# if prefs.mini_mode_mode == 5:
+			# if prefs.mini_mode_mode == MiniModeMode.SLATE:
 			#     return sdl3.SDL_HITTEST_NORMAL
 
-			if prefs.mini_mode_mode in (4, 5) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
+			if prefs.mini_mode_mode in (MiniModeMode.TAB, MiniModeMode.SLATE) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
 				return sdl3.SDL_HITTEST_NORMAL
 
 			if y < gui.window_control_hit_area_h and x > window_size[
@@ -6166,7 +6174,7 @@ class Tauon:
 
 			# Square modes
 			y1 = window_size[0]
-			# if prefs.mini_mode_mode == 5:
+			# if prefs.mini_mode_mode == MiniModeMode.SLATE:
 			#     y1 = window_size[1]
 			y0 = 0
 			if macos:
@@ -6292,7 +6300,7 @@ class Tauon:
 				self.top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
 
 		# Macstyle restore
-		if gui.mode == 3 and macstyle:
+		if gui.mode == GuiMode.MINI and macstyle:
 			if r:
 				xx -= round(20 * gui.scale)
 			if l:
@@ -6311,7 +6319,7 @@ class Tauon:
 
 		# maximize
 
-		if self.draw_max_button and gui.mode != 3:
+		if self.draw_max_button and gui.mode != GuiMode.MINI:
 			if macstyle:
 				if r:
 					xx -= round(20 * gui.scale)
@@ -6349,7 +6357,7 @@ class Tauon:
 
 		if self.draw_min_button:
 			# x = window_size[0] - round(65 * gui.scale)
-			# if draw_max_button and not gui.mode == 3:
+			# if draw_max_button and not gui.mode == GuiMode.MINI:
 			#	 x -= round(34 * gui.scale)
 			if macstyle:
 				if r:
@@ -6386,7 +6394,7 @@ class Tauon:
 						(rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_off)
 
 		# restore
-		if gui.mode == 3:
+		if gui.mode == GuiMode.MINI:
 			# bg_off = [0, 0, 0, 50]
 			# bg_on = [255, 255, 255, 10]
 			# fg_off =(255, 255, 255, 40)
@@ -6530,9 +6538,9 @@ class Tauon:
 
 	def get_real_time(self) -> float:
 		offset = self.pctl.decode_time - (self.prefs.sync_lyrics_time_offset / 1000)
-		if self.prefs.backend == 4:
+		if self.prefs.backend == Backend.PHAZOR:
 			offset -= (self.prefs.device_buffer - 120) / 1000
-		elif self.prefs.backend == 2:
+		elif self.prefs.backend == Backend.GSTREAMER:
 			offset += 0.1
 		return max(0, offset)
 
@@ -10976,13 +10984,13 @@ class Tauon:
 
 		self.gui.vis_want = 1
 		self.gui.update_layout = True
-		# if self.prefs.backend == 2:
+		# if self.prefs.backend == Backend.GSTREAMER:
 		# 	self.show_message("Visualisers not implemented in GStreamer mode")
 		# self.gui.turbo = True
 
 	def spec_on(self) -> None:
 		self.gui.vis_want = 2
-		# if self.prefs.backend == 2:
+		# if self.prefs.backend == Backend.GSTREAMER:
 		# 	self.show_message("Not implemented")
 		self.gui.update_layout = True
 
@@ -10993,7 +11001,7 @@ class Tauon:
 				self.prefs.spec2_colour_mode = 0
 
 		self.gui.vis_want = 3
-		if self.prefs.backend == 2:
+		if self.prefs.backend == Backend.GSTREAMER:
 			self.show_message(_("Not implemented"))
 		# self.gui.turbo = True
 		self.prefs.spec2_colour_setting = "custom"
@@ -11515,27 +11523,27 @@ class Tauon:
 		self.pctl.pause_queue = False
 
 	def set_mini_mode_A1(self) -> None:
-		self.prefs.mini_mode_mode = 0
+		self.prefs.mini_mode_mode = MiniModeMode.MINI
 		self.set_mini_mode()
 
 	def set_mini_mode_B1(self) -> None:
-		self.prefs.mini_mode_mode = 1
+		self.prefs.mini_mode_mode = MiniModeMode.SQUARE
 		self.set_mini_mode()
 
 	def set_mini_mode_A2(self) -> None:
-		self.prefs.mini_mode_mode = 2
+		self.prefs.mini_mode_mode = MiniModeMode.LARGE
 		self.set_mini_mode()
 
 	def set_mini_mode_C1(self) -> None:
-		self.prefs.mini_mode_mode = 5
+		self.prefs.mini_mode_mode = MiniModeMode.SLATE
 		self.set_mini_mode()
 
 	def set_mini_mode_B2(self) -> None:
-		self.prefs.mini_mode_mode = 3
+		self.prefs.mini_mode_mode = MiniModeMode.SQUARE_LARGE
 		self.set_mini_mode()
 
 	def set_mini_mode_D(self) -> None:
-		self.prefs.mini_mode_mode = 4
+		self.prefs.mini_mode_mode = MiniModeMode.TAB
 		self.set_mini_mode()
 
 	def copy_bb_metadata(self) -> str | None:
@@ -12180,13 +12188,13 @@ class Tauon:
 			sdl3.SDL_RestoreWindow(self.t_window)
 			self.update_layout_do()
 
-		if self.gui.mode < 3:
+		if self.gui.mode == GuiMode.MAIN:
 			self.old_window_position = get_window_position(self.t_window)
 
 		if self.prefs.mini_mode_on_top:
 			sdl3.SDL_SetWindowAlwaysOnTop(self.t_window, True)
 
-		self.gui.mode = 3
+		self.gui.mode = GuiMode.MINI
 		self.gui.vis = 0
 		self.gui.turbo = False
 		self.gui.draw_vis4_top = False
@@ -12201,15 +12209,15 @@ class Tauon:
 		sdl3.SDL_SetWindowBordered(self.t_window, False)
 
 		size = (350, 429)
-		if self.prefs.mini_mode_mode == 1:
+		if self.prefs.mini_mode_mode == MiniModeMode.MINI:
 			size = (330, 330)
-		if self.prefs.mini_mode_mode == 2:
+		if self.prefs.mini_mode_mode == MiniModeMode.LARGE:
 			size = (420, 499)
-		if self.prefs.mini_mode_mode == 3:
+		if self.prefs.mini_mode_mode == MiniModeMode.SQUARE_LARGE:
 			size = (430, 430)
-		if self.prefs.mini_mode_mode == 4:
+		if self.prefs.mini_mode_mode == MiniModeMode.TAB:
 			size = (330, 80)
-		if self.prefs.mini_mode_mode == 5:
+		if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
 			size = (350, 545)
 			self.style_overlay.flush()
 			self.thread_manager.ready("style")
@@ -12257,7 +12265,7 @@ class Tauon:
 
 		self.restore_ignore_timer.set()  # Hacky
 
-		self.gui.mode = 1
+		self.gui.mode = GuiMode.MAIN
 
 		sdl3.SDL_SyncWindow(self.t_window)
 		sdl3.SDL_PumpEvents()
@@ -12861,7 +12869,7 @@ class Tauon:
 
 		gui.draw_vis4_top = False
 
-		if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != 3 and prefs.backend == 4:
+		if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != GuiMode.MINI and prefs.backend == Backend.PHAZOR:
 			gui.vis = 4
 			gui.turbo = True
 		elif gui.vis_want == 0:
@@ -12873,13 +12881,13 @@ class Tauon:
 				gui.turbo = True
 
 		# Disable vis when in compact view
-		if gui.mode == 3 or gui.top_bar_mode2:  # or prefs.backend == 2:
+		if gui.mode == GuiMode.MINI or gui.top_bar_mode2:  # or prefs.backend == Backend.GSTREAMER:
 			if not gui.combo_mode:
 				gui.vis = 0
 				gui.turbo = False
 
-		if gui.mode == 1:
-			if not gui.maximized and not gui.lowered and gui.mode != 3:
+		if gui.mode == GuiMode.MAIN:
+			if not gui.maximized and not gui.lowered:
 				gui.save_size[0] = self.logical_size[0]
 				gui.save_size[1] = self.logical_size[1]
 
@@ -13642,7 +13650,7 @@ class Tauon:
 
 	def gstreamer_test(self, _) -> bool:
 		# return True
-		return self.prefs.backend == 2
+		return self.prefs.backend == Backend.GSTREAMER
 
 	def upload_spotify_playlist(self, pl: int) -> None:
 		p_id = self.pctl.pl_to_id(pl)
@@ -16042,10 +16050,6 @@ class Tauon:
 		shoot_dl.start()
 
 	def sub_get_album_thread(self) -> None:
-		# if prefs.backend != 1:
-		#	 self.show_message("This feature is currently only available with the BASS backend")
-		#	 return
-
 		self.pref_box.close()
 		save_prefs(bag=self.bag)
 		if self.subsonic.scanning:
@@ -16059,10 +16063,6 @@ class Tauon:
 		shoot_dl.start()
 
 	def koel_get_album_thread(self) -> None:
-		# if prefs.backend != 1:
-		#	 self.show_message("This feature is currently only available with the BASS backend")
-		#	 return
-
 		self.pref_box.close()
 		save_prefs(bag=self.bag)
 		if self.koel.scanning:
@@ -16453,7 +16453,7 @@ class Tauon:
 			return
 
 		if self.prefs.show_notifications and self.pctl.playing_object() is not None and not window_is_focused(self.t_window):
-			if self.prefs.stop_notifications_mini_mode and self.gui.mode == 3:
+			if self.prefs.stop_notifications_mini_mode and self.gui.mode == GuiMode.MINI:
 				return
 
 			track = self.pctl.playing_object()
@@ -18185,7 +18185,7 @@ class Tauon:
 		self.gui.drop_playlist_target = 0
 		#logging.info(event.drop)
 
-		if i_y < self.gui.panelY and not self.gui.new_playlist_cooldown and self.gui.mode == 1:
+		if i_y < self.gui.panelY and not self.gui.new_playlist_cooldown and self.gui.mode == GuiMode.MAIN:
 			x = self.top_panel.tabs_left_x
 			for tab in self.top_panel.shown_tabs:
 				wid = self.top_panel.tab_text_spaces[tab] + self.top_panel.tab_extra_width
@@ -18207,7 +18207,7 @@ class Tauon:
 					if not target.lower().endswith(".xspf"):
 						self.gui.drop_playlist_target = self.new_playlist()
 					self.gui.new_playlist_cooldown = True
-		elif self.gui.lsp and self.gui.panelY < i_y < self.window_size[1] - self.gui.panelBY and i_x < self.gui.lspw and self.gui.mode == 1:
+		elif self.gui.lsp and self.gui.panelY < i_y < self.window_size[1] - self.gui.panelBY and i_x < self.gui.lspw and self.gui.mode == GuiMode.MAIN:
 			y = self.gui.panelY
 			y += 5 * self.gui.scale
 			y += self.playlist_box.tab_h + self.playlist_box.gap
@@ -21148,9 +21148,9 @@ class AlbumArt:
 			if artist and artist in self.prefs.bg_flips:
 				im = im.transpose(Image.FLIP_LEFT_RIGHT)
 
-		if (ox_size < 500 or self.prefs.art_bg_always_blur) or self.gui.mode == 3:
+		if (ox_size < 500 or self.prefs.art_bg_always_blur) or self.gui.mode == GuiMode.MINI:
 			blur = self.prefs.art_bg_blur
-			if self.prefs.mini_mode_mode == 5 and self.gui.mode == 3:
+			if self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == GuiMode.MINI:
 				blur = 160
 				pix = im.getpixel((new_x // 2, new_y // 4 * 3))
 				pixel_sum = sum(pix) / (255 * 3)
@@ -21687,7 +21687,7 @@ class StyleOverlay:
 
 	def worker(self) -> None:
 		if self.stage == 0:
-			if (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
+			if (self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
 				pass
 			elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
 				return
@@ -21795,7 +21795,7 @@ class StyleOverlay:
 							self.parent_path != self.pctl.playing_object().parent_folder_path or self.current_track_album != self.pctl.playing_object().album):
 						self.stage = 0
 
-		if self.gui.mode == 3 and self.prefs.mini_mode_mode == 5:
+		if self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE:
 			pass
 		elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
 			return
@@ -21849,7 +21849,7 @@ class StyleOverlay:
 					self.flush()
 					return
 
-			if self.prefs.bg_showcase_only and not (self.prefs.mini_mode_mode == 5 and self.gui.mode == 3):
+			if self.prefs.bg_showcase_only and not (self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == GuiMode.MINI):
 				tb = sdl3.SDL_FRect(0, 0, self.window_size[0], self.gui.panelY)
 				bb = sdl3.SDL_FRect(0, self.window_size[1] - self.gui.panelBY, self.window_size[0], self.gui.panelBY)
 				self.hole_punches.append(tb)
@@ -21876,7 +21876,7 @@ class StyleOverlay:
 
 			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 			opacity = self.prefs.art_bg_opacity
-			if self.prefs.mini_mode_mode == 5 and self.gui.mode == 3:
+			if self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == GuiMode.MINI:
 				opacity = 255
 
 			sdl3.SDL_SetTextureAlphaMod(self.gui.main_texture_overlay_temp, opacity)
@@ -24068,7 +24068,7 @@ class Over:
 		if not self.phazor_found:
 			x += round(20 * self.gui.scale)
 			self.ddt.text((x, y - 25 * self.gui.scale), _("PHAzOR DLL not found!"), colour, 213)
-		elif self.prefs.backend == 4:
+		elif self.prefs.backend == Backend.PHAZOR:
 			y = y0 + round(20 * self.gui.scale)
 			x = x0 + 20 * self.gui.scale
 
@@ -25734,7 +25734,7 @@ class Over:
 		self.toggle_square(x, y, self.tauon.toggle_level_meter, _("Top-panel visualiser"))
 
 		y += 25 * gui.scale
-		if prefs.backend == 4:
+		if prefs.backend == Backend.PHAZOR:
 			self.toggle_square(x, y, self.tauon.toggle_showcase_vis, _("Showcase visualisation"))
 
 		y += round(30 * gui.scale)
@@ -25899,7 +25899,7 @@ class Over:
 		if self.cred_page == 0:
 			ddt.text((x, y - 6 * gui.scale), self.t_version, colours.box_text_label, 313)
 			y += 19 * gui.scale
-			ddt.text((x, y), "Copyright © 2015-2025 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
+			ddt.text((x, y), "Copyright © 2015-2026 Taiko2k captain.gxj@gmail.com", colours.box_sub_text, 13)
 
 			y += 19 * gui.scale
 			link_pa = self.tauon.draw_linked_text(
@@ -28330,7 +28330,7 @@ class BottomBarType1:
 		# BUTTONS
 		# bottom buttons
 
-		if gui.mode == 1:
+		if gui.mode == GuiMode.MAIN:
 			# PLAY---
 			buttons_x_offset = 0
 			compact = False
@@ -28916,7 +28916,7 @@ class BottomBarType_ao1:
 		# BUTTONS
 		# bottom buttons
 
-		if self.gui.mode == 1:
+		if self.gui.mode == GuiMode.MAIN:
 			# PLAY---
 			buttons_x_offset = 0
 			compact = False
@@ -31325,7 +31325,7 @@ class RadioBox:
 		if url.endswith(".ts"):
 			self.run_proxy = False
 
-		if self.run_proxy and not self.proxy_started and self.prefs.backend != 4:
+		if self.run_proxy and not self.proxy_started and self.prefs.backend != Backend.PHAZOR:
 			shoot = threading.Thread(target=stream_proxy, args=[self.tauon])
 			shoot.daemon = True
 			shoot.start()
@@ -36364,9 +36364,6 @@ class Showcase:
 				# x = int((self.window_size[0]) / 2)
 				y = int(self.window_size[1] / 2) - round(60 * self.gui.scale)
 
-				if self.prefs.showcase_vis and self.prefs.backend == 1:
-					y -= round(30 * self.gui.scale)
-
 				if track.artist == "" and track.title == "":
 					self.ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w)
 				else:
@@ -39351,8 +39348,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("volume-curve", prefs.volume_power)
 	cf.update_value("jump-start-dl", prefs.jump_start)
 	# cf.update_value("force-mono", prefs.mono)
-	# cf.update_value("disconnect-device-pause", prefs.dc_device_setting)
-	# cf.update_value("use-short-buffering", prefs.short_buffer)
 
 	# cf.update_value("gst-output", prefs.gst_output)
 	# cf.update_value("gst-use-custom-output", prefs.gst_use_custom_output)
@@ -39551,19 +39546,12 @@ def load_prefs(bag: Bag) -> None:
 		"Start playing a network track before it has finished downloading")
 
 	# prefs.mono = cf.sync_add("bool", "force-mono", prefs.mono, "This is a placeholder setting and currently has no effect.")
-	# prefs.dc_device_setting = cf.sync_add("string", "disconnect-device-pause", prefs.dc_device_setting, "Can be \"on\" or \"off\". BASS only. When off, connection to device will he held open.")
-	# prefs.short_buffer = cf.sync_add("bool", "use-short-buffering", prefs.short_buffer, "BASS only.")
 
 	# cf.br()
 	# cf.add_text("[audio (gstreamer only)]")
 	#
 	# prefs.gst_output = cf.sync_add("string", "gst-output", prefs.gst_output, "GStreamer output pipeline specification. Only used with GStreamer backend.")
 	# prefs.gst_use_custom_output = cf.sync_add("bool", "gst-use-custom-output", prefs.gst_use_custom_output, "Set this to true to apply any manual edits of the above string.")
-
-	if prefs.dc_device_setting == "on":
-		prefs.dc_device = True
-	elif prefs.dc_device_setting == "off":
-		prefs.dc_device = False
 
 	cf.br()
 	cf.add_text("[locale]")
@@ -40536,7 +40524,7 @@ def worker4(tauon: Tauon) -> None:
 	pctl = tauon.pctl
 	gui.style_worker_timer.set()
 	while True:
-		if prefs.art_bg or (gui.mode == 3 and prefs.mini_mode_mode == 5):
+		if prefs.art_bg or (gui.mode == GuiMode.MINI and prefs.mini_mode_mode == MiniModeMode.SLATE):
 			tauon.style_overlay.worker()
 
 		time.sleep(0.01)
@@ -42567,9 +42555,6 @@ def main(holder: Holder) -> None:
 	force_subpixel_text = False
 	if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
 		force_subpixel_text = True
-	dc_device = False  # (BASS) Disconnect device on pause
-	if desktop == "KDE":
-		dc_device = True
 	encoder_output = user_directory / "encoder" if music_directory is None else music_directory / "encode-output"
 	power_save = False
 	if macos or phone:
@@ -42591,7 +42576,6 @@ def main(holder: Holder) -> None:
 		power_save=power_save,
 		encoder_output=encoder_output,
 		force_subpixel_text=force_subpixel_text,
-		dc_device=dc_device,
 		macos=macos,
 		macstyle=macos or detect_macstyle,
 		left_window_control=macos or left_window_control,
@@ -43479,8 +43463,8 @@ def main(holder: Holder) -> None:
 	tauon.deco.get_themes = get_themes
 	tauon.deco.renderer = renderer
 
-	if prefs.backend != 4:
-		prefs.backend = 4
+	if prefs.backend != Backend.PHAZOR:
+		prefs.backend = Backend.PHAZOR
 
 	chrome_loaded = is_module_loaded("tauon.t_modules.t_chrome", "Chrome")
 	if chrome_loaded:
@@ -44492,9 +44476,9 @@ def main(holder: Holder) -> None:
 	logging.info(f"Using SDL version: {sdl_version!s}")
 
 	# C-ML
-	# if prefs.backend == 2:
+	# if prefs.backend == Backend.GSTREAMER:
 	#     logging.warning("Using GStreamer as fallback. Some functions disabled")
-	if prefs.backend == 0:
+	if prefs.backend == Backend.NONE:
 		tauon.show_message(_("ERROR: No backend found"), mode="error")
 
 	# SDL_RenderClear(renderer)
@@ -45150,7 +45134,7 @@ def main(holder: Holder) -> None:
 					#	logical_size[0] = event.window.data1
 					#	logical_size[1] = event.window.data2
 
-					#	if gui.mode != 3:
+					#	if gui.mode != GuiMode.MINI:
 					#		logical_size[0] = max(300, logical_size[0])
 					#		logical_size[1] = max(300, logical_size[1])
 
@@ -45201,7 +45185,7 @@ def main(holder: Holder) -> None:
 				#     # inp.k_input = True
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_MAXIMIZED:
-					if gui.mode != 3:  # TODO(Taiko): workaround. sdl bug? gives event on window size set
+					if gui.mode != GuiMode.MINI:  # TODO(Taiko): workaround. sdl bug? gives event on window size set
 						gui.maximized = True
 					gui.update_layout = True
 					gui.pl_update = 1
@@ -45450,7 +45434,7 @@ def main(holder: Holder) -> None:
 					tauon.console.toggle()
 
 				if keymaps.test("toggle-fullscreen"):
-					if not gui.fullscreen and gui.mode != 3:
+					if not gui.fullscreen and gui.mode != GuiMode.MINI:
 						gui.fullscreen = True
 						sdl3.SDL_SetWindowFullscreenMode(t_window, None)
 						sdl3.SDL_SetWindowFullscreen(t_window, True)
@@ -45591,7 +45575,7 @@ def main(holder: Holder) -> None:
 					pass
 				pass
 
-			if gui.mode < 3:
+			if gui.mode == GuiMode.MAIN:
 				if keymaps.test("toggle-auto-theme"):
 					prefs.colour_from_image ^= True
 					if prefs.colour_from_image:
@@ -45689,7 +45673,7 @@ def main(holder: Holder) -> None:
 				if keymaps.test("toggle-show-art"):
 					tauon.toggle_side_art()
 
-			elif gui.mode == 3:
+			elif gui.mode == GuiMode.MINI:
 				if keymaps.test("toggle-minimode"):
 					tauon.restore_full_mode()
 					gui.update += 1
@@ -46133,7 +46117,7 @@ def main(holder: Holder) -> None:
 		# GUI DRAWING------
 		#logging.info(gui.update)
 		#logging.info(gui.lowered)
-		if gui.mode == 3:
+		if gui.mode == GuiMode.MINI:
 			gui.pl_update = 0
 
 		if gui.pl_update and not gui.update:
@@ -46207,8 +46191,7 @@ def main(holder: Holder) -> None:
 					gbc.enable()
 					#logging.info("Enabling garbage collecting")
 
-			if gui.mode in (1, 2):
-
+			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
 
 				# Side Bar Draging----------
@@ -47952,7 +47935,7 @@ def main(holder: Holder) -> None:
 				# NEW TOP BAR
 				# C-TBR
 
-				if gui.mode == 1:
+				if gui.mode == GuiMode.MAIN:
 					tauon.top_panel.render()
 
 				# RENDER EXTRA FRAME DOUBLE
@@ -48469,7 +48452,7 @@ def main(holder: Holder) -> None:
 							else:
 								ddt.text((x2, y1), tc.comment, value_colour, 12)
 
-				if tauon.draw_border and gui.mode != 3:
+				if tauon.draw_border and gui.mode != GuiMode.MINI:
 					tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
 					if prefs.left_window_control:
 						tool_rect[0] = 0
@@ -48900,24 +48883,24 @@ def main(holder: Holder) -> None:
 							pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
 							if prefs.album_mode:
 								tauon.goto_album(pctl.playlist_playing_position)
-			elif gui.mode == 3:
+			elif gui.mode == GuiMode.MINI:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
-					if prefs.mini_mode_mode == 4:
-						prefs.mini_mode_mode = 1
+					if prefs.mini_mode_mode == MiniModeMode.TAB:
+						prefs.mini_mode_mode = MiniModeMode.SQUARE
 						window_size[0] = int(330 * gui.scale)
 						window_size[1] = int(330 * gui.scale)
 						sdl3.SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
 						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 					else:
-						prefs.mini_mode_mode = 4
+						prefs.mini_mode_mode = MiniModeMode.TAB
 						window_size[0] = int(320 * gui.scale)
 						window_size[1] = int(90 * gui.scale)
 						sdl3.SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
 						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
 
-				if prefs.mini_mode_mode == 5:
+				if prefs.mini_mode_mode == MiniModeMode.SLATE:
 					tauon.mini_mode3.render()
-				elif prefs.mini_mode_mode == 4:
+				elif prefs.mini_mode_mode == MiniModeMode.TAB:
 					tauon.mini_mode2.render()
 				else:
 					tauon.mini_mode.render()
@@ -49213,7 +49196,7 @@ def main(holder: Holder) -> None:
 		# gui.vis = 5
 		# gui.level_update = True
 
-		if gui.level_update is True and not resize_mode and gui.mode != 3:
+		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI:
 			gui.level_update = False
 
 			sdl3.SDL_SetRenderTarget(renderer, None)
@@ -49380,7 +49363,7 @@ def main(holder: Holder) -> None:
 					sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
 			if gui.vis == 1:
-				if prefs.backend == 2 or True:
+				if prefs.backend == Backend.GSTREAMER or True:
 					if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						# gui.level_update = True
 						while tauon.level_train and tauon.level_train[0][0] < time.time():
@@ -49411,7 +49394,7 @@ def main(holder: Holder) -> None:
 				x = round(gui.level_ww - 9 * gui.scale)
 				y = 10 * gui.scale
 
-				if prefs.backend == 2 or True:
+				if prefs.backend == Backend.GSTREAMER or True:
 					if (gui.level_peak[0] > 0 or gui.level_peak[1] > 0):
 						# gui.level_update = True
 						if pctl.playing_time < 1:
@@ -49583,7 +49566,7 @@ def main(holder: Holder) -> None:
 		tauon.lfm_scrobbler.start_queue()
 		logging.info("Sending scrobble before close...")
 
-	if gui.mode < 3:
+	if gui.mode == GuiMode.MAIN:
 		tauon.old_window_position = get_window_position(t_window)
 
 

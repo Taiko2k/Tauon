@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_enums import MiniModeMode
 from tauon.t_modules.t_extra import RadioStation
 
 if TYPE_CHECKING:
@@ -25,7 +26,6 @@ class Prefs:
 	macos:                   bool
 	phone:                   bool
 	force_subpixel_text:     bool
-	dc_device:               bool
 	desktop:                 str
 	album_mode:              bool = False
 	colour_from_image:       bool = False
@@ -195,7 +195,6 @@ class Prefs:
 	sync_lyrics_time_offset: int = -150  # in milliseconds
 
 	playback_follow_cursor: bool = False
-	short_buffer: bool = False
 
 	gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
@@ -227,8 +226,7 @@ class Prefs:
 
 	artist_list_prefer_album_artist: bool = True
 
-	mini_mode_mode = 0
-	dc_device_setting = "on"
+	mini_mode_mode = MiniModeMode.MINI
 
 	download_dir1 = ""
 	dd_index: bool = False

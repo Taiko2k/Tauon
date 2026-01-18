@@ -29,3 +29,23 @@ class StopMode(IntEnum):
 	ALBUM = 2
 	TRACK_PERSIST = 3
 	ALBUM_PERSIST = 4
+
+
+class Backend(IntEnum):
+	NONE = 0
+	GSTREAMER = 2
+	PHAZOR = 4
+
+
+class MiniModeMode(IntEnum):
+	MINI = 0
+	SQUARE = 1
+	LARGE = 2
+	SQUARE_LARGE = 3
+	TAB = 4
+	SLATE = 5
+
+
+class GuiMode(IntEnum):
+	MAIN = 1
+	MINI = 3
