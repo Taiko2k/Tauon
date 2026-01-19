@@ -30896,7 +30896,7 @@ class ArtBox:
 					gui.delay_frame(0.007)  # 60 fps
 
 		# Draw faint border on album art
-		if tight_border:
+		if tight_border and not show_vis:
 			if result == 0 and gui.art_drawn_rect:
 				border = gui.art_drawn_rect
 				ddt.rect_s(gui.art_drawn_rect, colours.art_box, 1 * gui.scale)
@@ -30960,7 +30960,8 @@ class ArtBox:
 				xw = gui.art_drawn_rect[0] + gui.art_drawn_rect[2]
 				yh = gui.art_drawn_rect[1] + gui.art_drawn_rect[3]
 
-			self.tauon.art_metadata_overlay(xw, yh, showc)
+			if not show_vis:
+				self.tauon.art_metadata_overlay(xw, yh, showc)
 
 			if show_vis:
 				line = tauon.milky.projectm.get_current_name()
