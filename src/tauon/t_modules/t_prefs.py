@@ -428,3 +428,5 @@ class Prefs:
 	milk: bool = False
 	auto_milk: bool = True
 	loaded_preset = None
+
+	taskbar_progress: bool = True
