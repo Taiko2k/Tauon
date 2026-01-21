@@ -1689,6 +1689,41 @@ class GMETrackInfo(Structure):
 		("s15", c_char_p),
 	]
 
+class WinTask:
+	def __init__(self, tauon: Tauon) -> None:
+		self.pctl = tauon.pctl
+		self.prefs = tauon.prefs
+		self.tauon = tauon
+		self.start = time.time()
+		self.updated_state = 0
+
+	def update(self) -> None:
+
+		if self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
+            self.updated_state = 0
+            sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
+            sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
+
+		elif self.prefs.taskbar_progress:
+
+			if self.pctl.playing_state == PlayingState.PLAYING:
+				if self.updated_state != 1:
+					sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NORMAL)
+
+				self.updated_state = 1
+				if self.pctl.playing_length > 1.1:
+					frac = self.pctl.playing_time / self.pctl.playing_length
+				else:
+					frac = 0.0
+
+				frac = min(max(frac, 0.0), 1.0)
+				sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, frac)
+
+			elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
+				self.updated_state = 2
+				sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_PAUSED)
+
+
 class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 
@@ -1724,7 +1759,6 @@ class PlayerCtl:
 		self.artist_list_box: ArtistList      = ArtistList(tauon=tauon, pctl=self)
 		self.install_directory: Path          = self.bag.dirs.install_directory
 		self.loading_in_progress:        bool = False
-		self.taskbar_progress:           bool = True
 		self.album_dex: list[int]                 = self.tauon.album_dex
 
 		self.cargo: list[int]          = []
@@ -1821,7 +1855,7 @@ class PlayerCtl:
 
 		self.playing_time_int = 0  # playing time but with no decimel
 
-		self.windows_progress = None
+		self.windows_progress = WinTask(tauon)
 
 		self.finish_transition = False
 		# self.queue_target = 0
@@ -2416,6 +2450,8 @@ class PlayerCtl:
 		if self.prefs.art_bg or (self.gui.mode == 3 and self.prefs.mini_mode_mode == 5):
 			self.tauon.thread_manager.ready("style")
 
+		self.windows_progress.update()
+
 	def get_url(self, track_object: TrackClass) -> tuple[list[str], str | None, dict | None] | None:
 		if track_object.file_ext == "TIDAL":
 			return self.tauon.tidal.resolve_stream(track_object), None
@@ -2446,8 +2482,6 @@ class PlayerCtl:
 		return self.default_playlist and self.selected_in_playlist < len(self.default_playlist)
 
 	def render_playlist(self) -> None:
-		if self.taskbar_progress and self.msys and self.windows_progress:
-			self.windows_progress.update(True)
 		self.gui.pl_update = 1
 
 	def show_selected(self) -> int:
@@ -3097,8 +3131,7 @@ class PlayerCtl:
 			self.playerCommandReady = True
 			self.playing_time = self.new_time
 
-			if self.msys and self.taskbar_progress and self.windows_progress:
-				self.windows_progress.update(True)
+			self.windows_progress.update()
 
 			if self.mpris is not None:
 				self.mpris.seek_do(self.playing_time)
@@ -3241,8 +3274,7 @@ class PlayerCtl:
 		if self.tauon.spot_ctl.playing or self.tauon.chrome_mode:
 			gap_extra = 3
 
-		if self.msys and self.taskbar_progress and self.windows_progress:
-			self.windows_progress.update(True)
+		self.windows_progress.update()
 
 		if self.commit is not None:
 			return
@@ -37309,50 +37341,6 @@ class GetSDLInput:
 			sdl3.SDL_CaptureMouse(False)
 			self.mouse_capture = False
 
-class WinTask:
-	def __init__(self, tauon: Tauon) -> None:
-		self.pctl = tauon.pctl
-		self.start = time.time()
-		self.updated_state = 0
-		self.window_id = tauon.gui.window_id
-		import comtypes.client as cc
-		cc.GetModule(str(tauon.install_directory / "TaskbarLib.tlb"))
-		import comtypes.gen.TaskbarLib as tbl
-		self.taskbar = cc.CreateObject(
-			"{56FDF344-FD6D-11d0-958A-006097C9A090}",
-			interface=tbl.ITaskbarList3)
-		self.taskbar.HrInit()
-
-		self.d_timer = Timer()
-
-	def update(self, force: bool = False) -> None:
-		if self.d_timer.get() > 2 or force:
-			self.d_timer.set()
-
-			if self.pctl.playing_state == PlayingState.PLAYING and self.updated_state != 1:
-				self.taskbar.SetProgressState(self.window_id, 0x2)
-
-			if self.pctl.playing_state == PlayingState.PLAYING:
-				self.updated_state = 1
-				if self.pctl.playing_length > 2:
-					perc = int(self.pctl.playing_time * 100 / int(self.pctl.playing_length))
-					if perc < 2:
-						perc = 1
-					elif perc > 100:
-						prec = 100
-				else:
-					perc = 0
-
-				self.taskbar.SetProgressValue(self.window_id, perc, 100)
-
-			elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
-				self.updated_state = 2
-				self.taskbar.SetProgressState(self.window_id, 0x8)
-
-			elif self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
-				self.updated_state = 0
-				self.taskbar.SetProgressState(self.window_id, 0x2)
-				self.taskbar.SetProgressValue(self.window_id, 0, 100)
 
 class XcursorImage(ctypes.Structure):
 	_fields_ = [
@@ -39459,6 +39447,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
 	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
+	cf.update_value("taskbar-status", prefs.taskbar_progress)
 
 	cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
 	cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -39846,6 +39835,9 @@ def load_prefs(bag: Bag) -> None:
 		"When enabled, shortcuts will map to the physical keyboard layout")
 	prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
 		"When enabled, pressing single letter keyboard key will activate the global search")
+
+	prefs.taskbar_progress = cf.sync_add("bool", "taskbar-status", prefs.tastbar_progress,
+		"When enabled, show playback progress on taskbar (supported DE only)")
 
 	cf.br()
 	cf.add_text("[tokens]")
@@ -43573,14 +43565,6 @@ def main(holder: Holder) -> None:
 	if system == "Windows" or tauon.msys:
 		gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
 		#gui.window_id = sss.info.win.window
-
-	if sys.platform == "win32" and pctl.taskbar_progress:
-		if (install_directory / "TaskbarLib.tlb").is_file():
-			logging.info("Taskbar progress enabled")
-			pctl.windows_progress = WinTask(tauon)
-		else:
-			pctl.taskbar_progress = False
-			logging.warning("Could not find TaskbarLib.tlb")
 
 	ddt = tauon.ddt
 	ddt.scale = gui.scale
