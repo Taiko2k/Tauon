@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-01-19 11:01+0000\n"
+"PO-Revision-Date: 2026-01-22 15:01+0000\n"
 "Last-Translator: RBuzz RBuzz <rbuzz@gmx.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
@@ -2719,15 +2719,15 @@ msgstr "Uwaga: To API nie jest zbyt bezpieczne."
 #: src/tauon/t_modules/t_main.py:24704
 msgid ""
 "Only enable in a trusted LAN and do not expose port (7814) to the internet"
-msgstr ""
+msgstr "Włącz tylko w zaufanym LAN i nie otwieraj portu 7814 na internet"
 
 #: src/tauon/t_modules/t_main.py:24709
 msgid "Block suspend"
-msgstr ""
+msgstr "Blokowanie zawieszone"
 
 #: src/tauon/t_modules/t_main.py:24710
 msgid "Prevent system suspend during playback"
-msgstr ""
+msgstr "Nie wstrzymuj systemu podczas odtwarzania"
 
 #: src/tauon/t_modules/t_main.py:24714
 msgid "Resume from suspend"
