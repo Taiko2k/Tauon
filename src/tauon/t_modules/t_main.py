@@ -39836,7 +39836,7 @@ def load_prefs(bag: Bag) -> None:
 	prefs.search_on_letter = cf.sync_add("bool", "alpha_key_activate_search", prefs.search_on_letter,
 		"When enabled, pressing single letter keyboard key will activate the global search")
 
-	prefs.taskbar_progress = cf.sync_add("bool", "taskbar-status", prefs.tastbar_progress,
+	prefs.taskbar_progress = cf.sync_add("bool", "taskbar-status", prefs.taskbar_progress,
 		"When enabled, show playback progress on taskbar (supported DE only)")
 
 	cf.br()
