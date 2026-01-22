@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-01-22 15:01+0000\n"
+"PO-Revision-Date: 2026-01-22 20:40+0000\n"
 "Last-Translator: RBuzz RBuzz <rbuzz@gmx.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
@@ -2731,15 +2731,15 @@ msgstr "Nie wstrzymuj systemu podczas odtwarzania"
 
 #: src/tauon/t_modules/t_main.py:24714
 msgid "Resume from suspend"
-msgstr ""
+msgstr "Wznów po zawieszeniu"
 
 #: src/tauon/t_modules/t_main.py:24715
 msgid "Continue playback when waking from sleep"
-msgstr ""
+msgstr "Kontynuuj odtwarzanie po wybudzeniu"
 
 #: src/tauon/t_modules/t_main.py:24720
 msgid "Record Radio"
-msgstr ""
+msgstr "Nagrywaj radio"
 
 #: src/tauon/t_modules/t_main.py:24721
 msgid "Record and split songs when playing internet radio"
@@ -2756,127 +2756,126 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:24739
 msgid "Enable Discord Rich Presence"
-msgstr ""
+msgstr "Włącz Rich Presence Discorda"
 
 #: src/tauon/t_modules/t_main.py:24743
 msgid "For troubleshooting Discord RP"
-msgstr ""
+msgstr "Dla debugowania Discord RP"
 
 #: src/tauon/t_modules/t_main.py:24748
 msgid "Sorry, this feature is unavailable with snap"
-msgstr ""
+msgstr "Przykro mi, ta funkcja nie jest dostępna ze snap"
 
 #: src/tauon/t_modules/t_main.py:24751
 msgid "Missing dependency python-lynxpresence"
-msgstr ""
+msgstr "Brakująca zależność od python-lynxpresence"
 
 #: src/tauon/t_modules/t_main.py:24760 src/tauon/t_modules/t_main.py:32378
 msgid "Disabled"
-msgstr ""
+msgstr "Wyłączone"
 
 #: src/tauon/t_modules/t_main.py:24763
 msgid "Status: {state}"
-msgstr ""
+msgstr "Stan: {state}"
 
 #: src/tauon/t_modules/t_main.py:24966 src/tauon/t_modules/t_main.py:25634
 msgid "Show threshold marker"
-msgstr ""
+msgstr "Pokaż wskaźnik bufora"
 
 #: src/tauon/t_modules/t_main.py:24977
 msgid "Logout"
-msgstr ""
+msgstr "Wyloguj"
 
 #: src/tauon/t_modules/t_main.py:24980 src/tauon/t_modules/t_main.py:25574
 #: src/tauon/t_modules/t_main.py:25576
 msgid "Login"
-msgstr ""
+msgstr "Zaloguj"
 
 #: src/tauon/t_modules/t_main.py:24988
 msgid "Copy the full URL of the resulting 'oops' page"
-msgstr ""
+msgstr "Skopiuj pełny adres URL strony błędu"
 
 #: src/tauon/t_modules/t_main.py:24990
 msgid "Paste Redirect URL"
-msgstr ""
+msgstr "Wklej przekierowanie URL"
 
 #: src/tauon/t_modules/t_main.py:24997
 msgid "Paste TIDAL URL's into Tauon using ctrl+v"
-msgstr ""
+msgstr "Wklej URL Tidal do Tauon przy użyciu ctrl+v"
 
 #: src/tauon/t_modules/t_main.py:24999
-#, fuzzy
 msgid "Import Albums"
-msgstr "Albumy Spotify"
+msgstr "Importuj albumy"
 
 #: src/tauon/t_modules/t_main.py:25000 src/tauon/t_modules/t_main.py:25005
 msgid "Fetching playlist..."
-msgstr ""
+msgstr "Wczytywanie list..."
 
 #: src/tauon/t_modules/t_main.py:25004
 msgid "Import Tracks"
-msgstr ""
+msgstr "Importuj utwory"
 
 #: src/tauon/t_modules/t_main.py:25014
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: src/tauon/t_modules/t_main.py:25032
 msgid "Playlist name"
-msgstr ""
+msgstr "Nazwa listy"
 
 #: src/tauon/t_modules/t_main.py:25045
 msgid "Get playlist"
-msgstr ""
+msgstr "Pobierz listę"
 
 #: src/tauon/t_modules/t_main.py:25047
 msgid "An operation is already running"
-msgstr ""
+msgstr "Operacja w toku"
 
 #: src/tauon/t_modules/t_main.py:25051
 msgid "Maloja Server"
-msgstr ""
+msgstr "Serwer Maloja"
 
 #: src/tauon/t_modules/t_main.py:25054
 msgid "Maloja is a self-hosted scrobble server."
-msgstr ""
+msgstr "Maloja to własny serwer skroblowania."
 
 #: src/tauon/t_modules/t_main.py:25055
 msgid "See here to learn more: {link}"
-msgstr ""
+msgstr "Więcej informacji tutaj: {link}"
 
 #: src/tauon/t_modules/t_main.py:25066 src/tauon/t_modules/t_main.py:25246
 #: src/tauon/t_modules/t_main.py:25307 src/tauon/t_modules/t_main.py:25379
 msgid "Server URL"
-msgstr ""
+msgstr "URL serwera"
 
 #: src/tauon/t_modules/t_main.py:25082
 msgid "API Key"
-msgstr ""
+msgstr "Klucz API"
 
 #: src/tauon/t_modules/t_main.py:25098 src/tauon/t_modules/t_main.py:25337
 msgid "Test connectivity"
-msgstr ""
+msgstr "Test połączenia"
 
 #: src/tauon/t_modules/t_main.py:25112
 msgid "Connection appeared successful but the API key was invalid"
-msgstr ""
+msgstr "Połączenie udane ale klucz API błędny"
 
 #: src/tauon/t_modules/t_main.py:25114
 msgid "Connection to Maloja server was successful."
-msgstr ""
+msgstr "Połączenie z serwerem Majola udane."
 
 #: src/tauon/t_modules/t_main.py:25116
 msgid "The Maloja server returned an error"
-msgstr ""
+msgstr "Serwer Majola zwrócił błąd"
 
 #: src/tauon/t_modules/t_main.py:25119
 msgid "Could not communicate with the Maloja server"
-msgstr ""
+msgstr "Nie można się skomunikować z serwerem Maloja"
 
 #: src/tauon/t_modules/t_main.py:25123 src/tauon/t_modules/t_main.py:25125
 #: src/tauon/t_modules/t_main.py:25600 src/tauon/t_modules/t_main.py:25617
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Pobierz licznik skrobli"
 
 #: src/tauon/t_modules/t_main.py:25124 src/tauon/t_modules/t_main.py:25127
 #: src/tauon/t_modules/t_main.py:25601 src/tauon/t_modules/t_main.py:25606
@@ -2888,148 +2887,155 @@ msgstr "Wyczyść"
 
 #: src/tauon/t_modules/t_main.py:25135
 msgid "View setup instructions"
-msgstr ""
+msgstr "Zobacz instrukcję"
 
 #: src/tauon/t_modules/t_main.py:25143
 msgid "Client ID"
-msgstr ""
+msgstr "ID klienta"
 
 #: src/tauon/t_modules/t_main.py:25159
+#, fuzzy
 msgid "Client Secret"
-msgstr ""
+msgstr "Tajemnica klienta"
 
 #: src/tauon/t_modules/t_main.py:25176
 msgid "Forget Account"
-msgstr ""
+msgstr "Zapomnij konto"
 
 #: src/tauon/t_modules/t_main.py:25182
 msgid "Authorise"
-msgstr ""
+msgstr "Autoryzuj"
 
 #: src/tauon/t_modules/t_main.py:25193
 msgid "Prefer launching web player"
-msgstr ""
+msgstr "Preferuj odtwarzacz web"
 
 #: src/tauon/t_modules/t_main.py:25200
 msgid "Enable local audio playback"
-msgstr ""
+msgstr "Włącz lokalne odtwarzanie audio"
 
 #: src/tauon/t_modules/t_main.py:25203
 msgid "Librespot not installed?"
-msgstr ""
+msgstr "Librespot nie zainstalowany?"
 
 #: src/tauon/t_modules/t_main.py:25208
 msgid "Airsonic/Subsonic network streaming"
-msgstr ""
+msgstr "Przesyłanie sieciowe Airsonic/Subsonic"
 
 #: src/tauon/t_modules/t_main.py:25218 src/tauon/t_modules/t_main.py:25351
 #: src/tauon/t_modules/t_main.py:25407
 msgid "Username / Email"
-msgstr ""
+msgstr "Użytkownik / email"
 
 #: src/tauon/t_modules/t_main.py:25232 src/tauon/t_modules/t_main.py:25293
 #: src/tauon/t_modules/t_main.py:25365 src/tauon/t_modules/t_main.py:25421
 msgid "Password"
-msgstr ""
+msgstr "Hasło"
 
 #: src/tauon/t_modules/t_main.py:25260 src/tauon/t_modules/t_main.py:25322
 #: src/tauon/t_modules/t_main.py:25394 src/tauon/t_modules/t_main.py:25449
 msgid "Import music to playlist"
-msgstr ""
+msgstr "Importuj muzykę do listy"
 
 #: src/tauon/t_modules/t_main.py:25265
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Używaj autoryzacji otwartym tekstem"
 
 #: src/tauon/t_modules/t_main.py:25266
 msgid "Needed for Nextcloud Music"
-msgstr ""
+msgstr "Potrzebne dla Nextcloud Music"
 
 #: src/tauon/t_modules/t_main.py:25269
 msgid "Jellyfin network streaming"
-msgstr ""
+msgstr "Odtwarzanie sieciowe Jellyfin"
 
 #: src/tauon/t_modules/t_main.py:25279
 msgid "Username"
-msgstr ""
+msgstr "Użytkownik"
 
 #: src/tauon/t_modules/t_main.py:25325
 msgid "Import playlists"
-msgstr ""
+msgstr "Importuj listy"
 
 #: src/tauon/t_modules/t_main.py:25332
 msgid "Run music import first"
-msgstr ""
+msgstr "Najpierw zaimportuj muzykę"
 
 #: src/tauon/t_modules/t_main.py:25341
 msgid "koel network streaming"
-msgstr ""
+msgstr "Odtwarzanie sieciowe koel"
 
 #: src/tauon/t_modules/t_main.py:25397
 msgid "PLEX network streaming"
-msgstr ""
+msgstr "Odtwarzanie sieciowe PLEX"
 
 #: src/tauon/t_modules/t_main.py:25435
 msgid "Server name"
-msgstr ""
+msgstr "Nazwa serwera"
 
 #: src/tauon/t_modules/t_main.py:25458
 msgid "Fanart.tv can be used for sourcing of artist images and cover art."
 msgstr ""
+"Fanart.tv można użyć jako źródło dla obrazów artystów i okładek albumów."
 
 #: src/tauon/t_modules/t_main.py:25473
 msgid "Cover art (Manual only)"
-msgstr ""
+msgstr "Okładki (manualne)"
 
 #: src/tauon/t_modules/t_main.py:25477
 msgid "Artist images (Automatic)"
-msgstr ""
+msgstr "Obrazy artystów (automatyczne)"
 
 #: src/tauon/t_modules/t_main.py:25483
+#, fuzzy
 msgid "Flip current"
-msgstr ""
+msgstr "Obróć obecne"
 
 #: src/tauon/t_modules/t_main.py:25486
+#, fuzzy
 msgid "Reset flips"
-msgstr ""
+msgstr "Resetuj obroty"
 
 #: src/tauon/t_modules/t_main.py:25496 src/tauon/t_modules/t_main.py:32376
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/tauon/t_modules/t_main.py:25565 src/tauon/t_modules/t_main.py:25566
 msgid "Username:"
-msgstr ""
+msgstr "Użytkownik:"
 
 #: src/tauon/t_modules/t_main.py:25575 src/tauon/t_modules/t_main.py:25577
 msgid "Done"
-msgstr ""
+msgstr "Gotowe"
 
 #: src/tauon/t_modules/t_main.py:25581
 msgid "Use LibreFM"
-msgstr ""
+msgstr "Używaj LibreFM"
 
 #: src/tauon/t_modules/t_main.py:25586
 msgid ""
 "Click login to open the last.fm web authorisation page (paste from clipboard "
 "if it didn't open) and follow prompt. Then return here and click \"Done\"."
 msgstr ""
+"Kliknij Zaloguj, aby otworzyć stronę autoryzacji last.fm (wklej dane ze "
+"schowka, jeśli się nie otworzyła) i postępuj zgodnie z instrukcjami. "
+"Następnie wróć tutaj i kliknij „Gotowe”."
 
 #: src/tauon/t_modules/t_main.py:25590
 msgid "Forget account"
-msgstr ""
+msgstr "Zapomnij konto"
 
 #: src/tauon/t_modules/t_main.py:25597 src/tauon/t_modules/t_main.py:25605
 msgid "Get user loves"
-msgstr ""
+msgstr "Pobierz lajki użytkowników"
 
 #: src/tauon/t_modules/t_main.py:25598
 msgid "Clear local loves"
-msgstr ""
+msgstr "Wyczyść lokalne lajki"
 
 #: src/tauon/t_modules/t_main.py:25599 src/tauon/t_modules/t_main.py:25613
 msgid "Get friend loves"
-msgstr ""
+msgstr "Pobierz lajki od znajomych"
 
 #: src/tauon/t_modules/t_main.py:25626
 msgid "Pull love on scrobble/rescan"
