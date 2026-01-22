@@ -44,7 +44,10 @@ a = Analysis(
 	hookspath=["extra/pyinstaller-hooks"],
 	hooksconfig={},
 	runtime_hooks=[],
-	excludes=[],
+	excludes=[
+		'OpenSSL',
+		'cryptography',
+	],
 	noarchive=False,
 	optimize=0,
 )
