@@ -391,7 +391,6 @@ jobs:
         run: |
           curl -L -o lrclib-solver.exe https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/lrclib-solver.exe
           curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
-          curl -L -o TaskbarLib.tlb https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/TaskbarLib.tlb
           curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/TauonSMTC.dll
           mkdir fonts
           curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
