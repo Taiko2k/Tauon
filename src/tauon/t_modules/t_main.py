@@ -1690,11 +1690,11 @@ class GMETrackInfo(Structure):
 	]
 
 class WinTask:
-	def __init__(self, tauon: Tauon) -> None:
-		self.pctl = tauon.pctl
-		self.prefs = tauon.prefs
-		self.tauon = tauon
-		self.start = time.time()
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+		self.pctl: PlayerCtl = pctl
+		self.prefs: Prefs = tauon.prefs
+		self.tauon: Tauon = tauon
+		self.start: float = time.time()
 		self.updated_state = 0
 
 	def update(self) -> None:
@@ -1855,7 +1855,7 @@ class PlayerCtl:
 
 		self.playing_time_int = 0  # playing time but with no decimel
 
-		self.windows_progress = WinTask(tauon)
+		self.windows_progress = WinTask(tauon, self)
 
 		self.finish_transition = False
 		# self.queue_target = 0
