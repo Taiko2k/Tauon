@@ -1700,9 +1700,9 @@ class WinTask:
 	def update(self) -> None:
 
 		if self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
-            self.updated_state = 0
-            sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
-            sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
+			self.updated_state = 0
+			sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
+			sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
 
 		elif self.prefs.taskbar_progress:
 
