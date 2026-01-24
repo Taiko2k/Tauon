@@ -12062,6 +12062,9 @@ class Tauon:
 	#def open_donate_link() -> None:
 	#	webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
 
+	def open_manual_link() -> None:
+		webbrowser.open("https://tauonmusicbox.rocks/manual/overview/", new=2, autoraise=True)
+
 	def stop_quick_add(self) -> None:
 		self.pctl.quick_add_target = None
 
@@ -44362,9 +44365,10 @@ def main(holder: Holder) -> None:
 		listen_icon = None
 
 	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
-	x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
+	#x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
 	x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), tauon.toggle_shuffle_layout, tauon.toggle_shuffle_layout_deco)) #show_test=tauon.exit_shuffle_layout))
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
+	x_menu.add(MenuItem(_("Online Manual"), open_manual_link))
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
 
