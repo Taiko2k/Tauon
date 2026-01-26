@@ -24133,10 +24133,10 @@ class Over:
 			if self.prefs.avoid_resampling != old:
 				self.pctl.playerCommand = "reload"
 				self.pctl.playerCommandReady = True
-				if not old:
-					self.show_message(
-						_("Tip: To get samplerate to DAC you may need to check some settings, see:"),
-						"https://github.com/Taiko2k/Tauon/wiki/Audio-Specs", mode="link")
+				# if not old:
+				# 	self.show_message(
+				# 		_("Tip: To get samplerate to DAC you may need to check some settings, see:"),
+				# 		"https://github.com/Taiko2k/Tauon/wiki/Audio-Specs", mode="link")
 
 			self.device_scroll_bar_position -= self.scroll
 			self.device_scroll_bar_position = max(self.device_scroll_bar_position, 0)
@@ -24480,10 +24480,10 @@ class Over:
 			old = prefs.discord_enable
 			prefs.discord_enable = self.toggle_square(x, y, prefs.discord_enable, _("Enable Discord Rich Presence"))
 
-			if self.flatpak_mode and self.button(x + 215 * gui.scale, y, _("?")):
-				self.show_message(
-					_("For troubleshooting Discord RP"),
-					"https://github.com/Taiko2k/TauonMusicBox/wiki/Discord-RP", mode="link")
+			# if self.flatpak_mode and self.button(x + 215 * gui.scale, y, _("?")):
+			# 	self.show_message(
+			# 		_("For troubleshooting Discord RP"),
+			# 		"https://github.com/Taiko2k/TauonMusicBox/wiki/Discord-RP", mode="link")
 
 			if prefs.discord_enable and not old:
 				if self.snap_mode:
@@ -24922,7 +24922,7 @@ class Over:
 			y += round(30 * gui.scale)
 
 			if self.button(x, y, _("View setup instructions")):
-				webbrowser.open("https://github.com/Taiko2k/Tauon/wiki/Spotify", new=2, autoraise=True)
+				webbrowser.open("https://tauonmusicbox.rocks/manual/spotify/", new=2, autoraise=True)
 
 			field_width = round(245 * gui.scale)
 
@@ -25644,7 +25644,7 @@ class Over:
 			if self.button(x + 485 * gui.scale, y, _("?")):
 				self.show_message(
 					_("See here for detailed instructions"),
-					"https://github.com/Taiko2k/Tauon/wiki/Transcode-and-Sync", mode="link")
+					"https://tauonmusicbox.rocks/manual/transcoding/", mode="link")
 
 			return
 
@@ -41499,14 +41499,7 @@ def worker1(tauon: Tauon) -> None:
 				items_in_dir.sort()
 		except PermissionError:
 			logging.exception("Permission error accessing one or more files")
-			if tauon.snap_mode:
-				tauon.show_message(
-					_("Permission error accessing one or more files."),
-					_("If this location is on external media, see https://") + "github.com/Taiko2k/TauonMusicBox/wiki/Snap-Permissions",
-					mode="bubble")
-			else:
-				tauon.show_message(_("Permission error accessing one or more files"), mode="warning")
-
+			tauon.show_message(_("Permission error accessing one or more files"), mode="warning"
 			return
 		except Exception:
 			logging.exception("Unknown error accessing one or more files")
