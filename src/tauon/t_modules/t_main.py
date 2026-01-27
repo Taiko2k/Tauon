@@ -12070,7 +12070,7 @@ class Tauon:
 	#def open_donate_link() -> None:
 	#	webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
 
-	def open_manual_link() -> None:
+	def open_manual_link(self) -> None:
 		webbrowser.open("https://tauonmusicbox.rocks/manual/overview/", new=2, autoraise=True)
 
 	def stop_quick_add(self) -> None:
