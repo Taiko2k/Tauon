@@ -85,10 +85,28 @@ clean_venv_run() {
 
 compile_phazor() {
 	outFile="build/libphazor.so"
+	python_link_flags=""
+	if [[ "$(uname -s)" == "Darwin" ]]; then
+		outFile="build/libphazor.dylib"
+    # Allow unresolved Py* symbols at link time; they resolve from the host process.
+		python_link_flags="-Wl,-undefined,dynamic_lookup"
+	fi
 	mkdir -p build
+	# Homebrew's opusfile installs headers under include/opus/opusfile.h, but the code uses <opus/opusfile.h>.
+	# Ensure the parent include dir (the one containing the `opus/` folder) is on the include path.
+	opusfile_root_include=""
+	if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists opusfile 2>/dev/null; then
+		opusfile_incdir="$(pkg-config --variable=includedir opusfile 2>/dev/null || true)"
+		if [ -n "${opusfile_incdir}" ]; then
+			# `includedir` is typically `<prefix>/include`, which should contain `opus/opusfile.h`.
+			opusfile_root_include="-I${opusfile_incdir}"
+		fi
+	fi
 	gcc \
 		src/phazor/kissfft/kiss_fftr.c src/phazor/kissfft/kiss_fft.c src/phazor/phazor.c \
+		${opusfile_root_include} \
 		$(pkg-config --cflags --libs python3 samplerate wavpack opusfile vorbisfile libmpg123 flac libopenmpt libgme) \
+		${python_link_flags} \
 		-shared -o ${outFile} -fPIC -Wall -O3 -g
 	echo "Compiled as ${outFile}!"
 }
@@ -112,7 +130,7 @@ show_menu() {
 }
 
 process_answer() {
-	if [[ -v yn ]]; then
+	if [ -n "${yn-}" ]; then
 		answer="${yn},${REPLY}"
 	else
 		answer="${1}"
