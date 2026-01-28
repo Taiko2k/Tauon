@@ -851,6 +851,8 @@ def controller(tauon: Tauon) -> None:
 				tauon.toggle_random()
 			if path == "/repeat":
 				tauon.toggle_repeat()
+			if path == "/randomalbum":
+				tauon.random_album()
 			if path.startswith("/open/"):
 				rest = path[6:]
 				path = base64.urlsafe_b64decode(rest.encode()).decode()
