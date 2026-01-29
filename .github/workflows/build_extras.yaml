@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
@@ -52,7 +52,7 @@ jobs:
       #    Write-Output "##vso[task.setvariable variable=LibrespotPath]$BinPath"
 
       - name: Upload librespot.exe artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: librespot-windows
           path: C:\Users\runneradmin\.cargo\bin\librespot.exe # ${{ env.LibrespotPath }}
@@ -64,7 +64,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
@@ -91,7 +91,7 @@ jobs:
           cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
 
       - name: Upload lrclib-solver.exe artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lrclib-solver-windows
           path: src/lrclib-solver/target/release/lrclib-solver.exe
@@ -103,7 +103,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Locate Windows SDK
         shell: pwsh
@@ -159,7 +159,7 @@ jobs:
 
       # Upload TaskbarLib.tlb as artifact
       - name: Upload TaskbarLib.tlb artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TaskbarLib-tlb
           path: extra\TaskbarLib.tlb
@@ -171,7 +171,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Locate MSBuild via vswhere and add to PATH
         shell: pwsh
@@ -209,7 +209,7 @@ jobs:
           Write-Host "Found: $($dll.FullName)"
 
       - name: Upload TauonSMTC.dll artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TauonSMTC-dll
           path: ${{ env.TAUON_SMTC_DLL }}
@@ -221,7 +221,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -234,7 +234,7 @@ jobs:
           cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
 
       - name: Upload lrclib-solver artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lrclib-solver-linux
           path: src/lrclib-solver/target/release/lrclib-solver
@@ -246,7 +246,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -259,7 +259,7 @@ jobs:
           cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
 
       - name: Upload lrclib-solver artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lrclib-solver-macos
           path: src/lrclib-solver/target/release/lrclib-solver

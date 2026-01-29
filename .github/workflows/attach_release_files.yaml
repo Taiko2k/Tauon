@@ -11,9 +11,10 @@ jobs:
       actions: read     # read artifacts via API
     steps:
       - name: DL repo for getting tags
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
       - name: Get commit SHA for release tag
         id: get_sha
         run: |
@@ -26,14 +27,16 @@ jobs:
 
           echo "Commit SHA for $TAG_NAME is $COMMIT_SHA"
           echo "sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+
       - name: Download artifacts from CI run for this commit/tag
-        uses: dawidd6/action-download-artifact@v11
+        uses: dawidd6/action-download-artifact@v12
         with:
           repo: ${{ github.repository }}
           workflow: build_and_release.yaml
           commit: ${{ steps.get_sha.outputs.sha }}
           path: dist
           if_no_artifact_found: fail
+
       - name: Upload files to this release
         uses: softprops/action-gh-release@v2
         with:
