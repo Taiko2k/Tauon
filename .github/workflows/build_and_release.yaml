@@ -171,7 +171,7 @@ jobs:
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6.6
         with:
-          bundle: tauonmb.flatpak
+          bundle: TauonMusicBox-x64.flatpak
           manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
           cache-key: flatpak-builder-${{ github.sha }}
 
@@ -453,11 +453,17 @@ jobs:
       #  shell: msys2 {0}
       #  run: find .
 
+      - name: Rename installer
+        run: |
+          mv \
+            "extra/Output/tauonsetup-${{ steps.version.outputs.version }}.exe" \
+            "extra/Output/TauonMusicBox-windows-installer.exe"
+
       - name: Upload EXE installer
         uses: actions/upload-artifact@v6
         with:
           name: TauonMusicBox-windows-installer
-          path: extra/Output/tauonsetup-${{ steps.version.outputs.version }}.exe
+          path: extra/Output/TauonMusicBox-windows-installer.exe
 
   get-info:
     runs-on: ubuntu-24.04
@@ -487,17 +493,6 @@ jobs:
         with:
           path: ~/artifacts
 
-      - name: Compress individual directories (without parent directory)
-        run: |
-          cd ~/artifacts
-          for dir in */; do
-            if [ -d "$dir" ]; then
-              dir_name=${dir%/}
-              echo "Creating zip for $dir_name"
-              (cd "$dir_name" && zip -r "../${dir_name}.zip" .)
-            fi
-          done
-
       - name: Get latest release information
         id: get_latest_release
         env:
@@ -526,7 +521,11 @@ jobs:
           prerelease: true
           #body: "Full Changelog: [${{ env.last_release_tag }}...${{ needs.get-info.outputs.shorthash }}](https://github.com/Taiko2k/Tauon/compare/${{ env.last_release_tag }}...${{ needs.get-info.outputs.fullhash }})"
           bodyFile: ${{ github.workspace }}/.github/release_body.md
-          artifacts: ~/artifacts/*.zip
+          artifacts: |
+            ~/artifacts/**/**/*.7z
+            ~/artifacts/**/**/*.dmg
+            ~/artifacts/**/**/*.exe
+            ~/artifacts/**/**/*.flatpak
 
       - name: Publish to Release Repository
         env:
@@ -535,7 +534,7 @@ jobs:
           ARTIFACTS_DIR=~/artifacts
           REPO="Taiko2k/Tauon"
 
-          for file in "$ARTIFACTS_DIR"/*.zip; do
+          for file in "$ARTIFACTS_DIR"/**/*.{7z,dmg,exe,flatpak}; do
             filename=$(basename "$file")
             # Check if release already exists and get ID
             release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
