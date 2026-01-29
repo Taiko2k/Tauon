@@ -208,6 +208,8 @@ def get_lrclib_challenge(user_agent: str = "TauonMusicBox/Devel") -> tuple[str, 
 		r = requests.post("https://lrclib.net/api/request-challenge", headers=h, timeout=10)
 	except requests.exceptions.ConnectionError:
 		return "", ""
+	except Exception:
+		logging.exception()
 	if r.status_code == HTTPStatus.OK:
 		p = r.json().get("prefix")
 		t = r.json().get("target")
