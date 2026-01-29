@@ -454,6 +454,7 @@ jobs:
       #  run: find .
 
       - name: Rename installer
+        shell: bash
         run: |
           mv \
             "extra/Output/tauonsetup-${{ steps.version.outputs.version }}.exe" \
