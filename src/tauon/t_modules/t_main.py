@@ -41540,6 +41540,13 @@ def worker1(tauon: Tauon) -> None:
 		if p and t:
 			logging.info("LRCLIB upload: step 1 (of 3) complete")
 		else:
+			tauon.lrclib_uploads = []
+			tauon.show_message(
+				_("Connection error"),
+				_("We can't upload your lyrics because we can't connect to the server."),
+				_("Are you offline?"),
+				mode="error"
+			)
 			return False
 		if tauon.msys:
 			binary = str( tauon.install_directory / "lrclib-solver.exe" )
@@ -41589,6 +41596,13 @@ def worker1(tauon: Tauon) -> None:
 		r = requests.post("https://lrclib.net/api/publish", headers=h, json=upload, timeout=10)
 		if r.status_code == 201:
 			logging.info("LRCLIB upload: step 3 (of 3) complete")
+		else:
+			tauon.lrclib_uploads = []
+			tauon.show_message(
+				_("Something went wrong"),
+				_("Lyrics upload failed with error code: ") + str(r.status_code),
+				mode="error"
+			)
 		return r.status_code == 201
 
 
