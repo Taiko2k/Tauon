@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
           cache: 'pip'
@@ -103,7 +103,7 @@ jobs:
           7z a -r "${ARCHIVE_PATH}" "."
 
       - name: Upload 7Z artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TauonMusicBox-linux
           path: TauonMusicBox-linux.7z
@@ -121,7 +121,7 @@ jobs:
       options: --privileged
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download jq
         run: |
@@ -169,7 +169,7 @@ jobs:
 
       # https://github.com/marketplace/actions/flatpak-builder
       - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.4
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.6
         with:
           bundle: tauonmb.flatpak
           manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
@@ -180,12 +180,12 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: Setup pip cache-key
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: startsWith(runner.os, 'macOS')
         with:
           path: ~/Library/Caches/pip
@@ -291,7 +291,7 @@ jobs:
           done
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TauonMusicBox-dmg
           path: dist/dmg/TauonMusicBox.dmg
@@ -306,12 +306,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: Setup pip cache-key
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         if: startsWith(runner.os, 'Windows')
         with:
           path: ~\AppData\Local\pip\Cache
@@ -427,7 +427,7 @@ jobs:
       #  run: find .
 
       - name: Upload 7Z artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TauonMusicBox-windows
           path: TauonMusicBox-windows.7z
@@ -454,7 +454,7 @@ jobs:
       #  run: find .
 
       - name: Upload EXE installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TauonMusicBox-windows-installer
           path: extra/Output/tauonsetup-${{ steps.version.outputs.version }}.exe
@@ -466,7 +466,7 @@ jobs:
       shorthash: ${{ steps.vars.outputs.shorthash }}
       fullhash: ${{ steps.vars.outputs.fullhash }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Get date and git hash
         id: vars
         run: |
@@ -483,7 +483,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: ~/artifacts
 
@@ -508,7 +508,7 @@ jobs:
           echo "last_release_tag=$(echo "$latest_release_info" | jq -r '.tag_name')" >> $GITHUB_ENV
 
       - name: Checkout the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Process template release_body.md
         run: |
