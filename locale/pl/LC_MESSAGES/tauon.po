@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-01-22 20:40+0000\n"
+"PO-Revision-Date: 2026-01-31 21:01+0000\n"
 "Last-Translator: RBuzz RBuzz <rbuzz@gmx.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
@@ -2743,16 +2743,18 @@ msgstr "Nagrywaj radio"
 
 #: src/tauon/t_modules/t_main.py:24721
 msgid "Record and split songs when playing internet radio"
-msgstr ""
+msgstr "Nagrywaj i dziel utwory podczas odtwarzania radia internetowego"
 
 #: src/tauon/t_modules/t_main.py:24724
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
 msgstr ""
+"Utwory zostaną teraz nagrane. Aby zmiany zostały wprowadzone, należy "
+"ponownie uruchomić odtwarzanie."
 
 #: src/tauon/t_modules/t_main.py:24725
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Utwory zostaną zapisane na liście \"Zapisane Utwory Radiowe\"."
 
 #: src/tauon/t_modules/t_main.py:24739
 msgid "Enable Discord Rich Presence"
@@ -3049,20 +3051,19 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:25641 src/tauon/t_modules/t_main.py:25643
 msgid "Paste Token"
-msgstr ""
+msgstr "Wklej token"
 
 #: src/tauon/t_modules/t_main.py:25667
 msgid "This will mark all tracks in local database as unloved!"
-msgstr ""
+msgstr "To odznaczy wszystkie ulubione utwory w lokalnej bazie danych!"
 
 #: src/tauon/t_modules/t_main.py:25677
 msgid "Cleared all loves"
-msgstr ""
+msgstr "Ulubione wyczyszczone"
 
 #: src/tauon/t_modules/t_main.py:25683
-#, fuzzy
 msgid "Error, not  connected to last.fm"
-msgstr "Wystąpił błąd podczas synchronizowania polubień do last.fm!"
+msgstr "Błąd połączenia z last.fm!"
 
 #: src/tauon/t_modules/t_main.py:25686
 msgid "Warning: This process will take approximately {T} minutes to complete."
