@@ -62,10 +62,11 @@
   <releases>
 
 
-    <release version="8.2.3" date="2025-12-15">
+    <release version="9.0.0" date="2026-01-31">
       <description>
         <ul>
-          <li>Bug fixes</li>
+          <li>Added Milkdrop visualiser support</li>
+          <li>Various tweaks and fixes</li>
         </ul>
       </description>
     </release>

@@ -20,7 +20,8 @@ import logging
 import os
 import pickle
 import sys
-from ctypes import byref, c_float, c_int, pointer
+import ctypes
+from ctypes import byref, c_float, c_int, pointer, util
 from pathlib import Path
 
 from gi.repository import GLib
@@ -58,7 +59,7 @@ if not sys.warnoptions:
 if sys.platform != "win32":
 	import fcntl
 
-n_version = "8.2.3" # Should also be bumped in pyproject.toml, extra/*.appdata.xml
+n_version = "9.0.0" # Should also be bumped in pyproject.toml, extra/*.appdata.xml
 t_version = "v" + n_version
 t_title = "Tauon"
 t_id = "tauonmb"
@@ -222,17 +223,28 @@ if Path(user_directory / "x11").exists():
 	logging.debug("Forcing X11 due to user prefs")
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
-# We currently only properly package SDL3 on Windows and macOS, remove the if check when Linux is fixed
-#if sys.platform in ("win32", "darwin"):
-# os.environ["SDL_BINARY_PATH"]              = "." # Set the path to your binaries,               "sdl3/bin" by default.
-if str(install_directory).startswith("/app/"):
-	os.environ["SDL_BINARY_PATH"] = "/app/lib"
-	# Disabling causes crash with AUR package as it ships docs and disabling them attempts a removal on system libraries
-	# Enabling crashes our Flatpak builds as we don't ship the docs there and it attempts a generation on a read-only fs
-	# So just disable it on Flatpak until https://github.com/Aermoss/PySDL3/issues/22 is resolved
-	os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation                       "1"        by default.
+# Pysdl3 doesn't seem to find system sdl3. REF: https://github.com/Aermoss/PySDL3/issues/35 pysdl
+# As a workaround we try find it ourselves
+sdl_dll_name = ctypes.util.find_library("SDL3")
+candidates = [
+	"./" + sdl_dll_name,
+	os.path.join("/app/lib", sdl_dll_name),
+	os.path.join("/usr/lib", sdl_dll_name),
+	os.path.join("/usr/lib64", sdl_dll_name),
+	os.path.join("/lib", sdl_dll_name),
+	os.path.join("/lib64", sdl_dll_name),
+	os.path.join("/usr/local/lib", sdl_dll_name),
+	os.path.join("/usr/local/lib64", sdl_dll_name),
+]
+sdl_library_path = next((p for p in candidates if p and os.path.exists(p)), None)
+if sdl_library_path:
+	os.environ["SDL_BINARY_PATH"] = os.path.dirname(sdl_library_path)
+
+os.environ["SDL_FIND_BINARIES"] = "1"
 if pyinstaller_mode:
-	os.environ["SDL_FIND_BINARIES"]            = "0" # Search for binaries in the system libraries, "1"        by default.
+	os.environ["SDL_FIND_BINARIES"]            = "0" # Disable binary searching,                   "1"        by default.
+
+os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation                       "1"        by default.
 os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
 os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,                    "1"        by default.
 os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
@@ -244,14 +256,7 @@ import sdl3  # noqa: E402
 sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 if sethint_result is None:
 	logging.error("Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround")
-	os.environ["SDL_BINARY_PATH"] = "/usr/lib"
-	import importlib
-	importlib.reload(sdl3)
-
-	sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
-	if sethint_result is None:
-		logging.critical("Could not call SetHint, crashing")
-		sys.exit(1)
+	sys.exit(1)
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
