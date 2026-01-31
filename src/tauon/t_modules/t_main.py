@@ -223,16 +223,6 @@ if sys.platform == "darwin":
 	import gi
 	from gi.repository import GLib
 
-# Log to debug as we don't care at all when user does not have this
-try:
-	import colored_traceback.always
-
-	logging.debug("Found colored_traceback for colored crash tracebacks")
-except ModuleNotFoundError:
-	logging.debug("Unable to import colored_traceback, tracebacks will be dull.")
-except Exception:  # noqa: BLE001
-	logging.info("Error trying to import colored_traceback, tracebacks will be dull.")
-
 try:
 	from jxlpy import JXLImagePlugin
 
