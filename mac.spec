@@ -27,6 +27,12 @@ x64_path   = f"build/lib.macosx-13.0-x86_64-cpython-{python_ver_dotless}/phazor.
 arm64_path = f"build/lib.macosx-15.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
 phazor_path = x64_path if Path(x64_path).exists() else arm64_path
 
+# Optional: macOS Now Playing helper app (built by src/nowplaying/build_app.sh)
+nowplaying_app_src = Path("src/nowplaying/build/TauonNowPlaying.app")
+nowplaying_datas = []
+if nowplaying_app_src.exists():
+	nowplaying_datas.append((str(nowplaying_app_src), "lib/TauonNowPlaying.app"))
+
 a = Analysis(
 	["src/tauon/__main__.py"],
 	binaries=[
@@ -41,6 +47,7 @@ a = Analysis(
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 		("lrclib-solver", "."),
+		*nowplaying_datas,
 	],
 	hiddenimports=[
 		"phazor",
