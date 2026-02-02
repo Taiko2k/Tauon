@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### Upcoming
+### v9.0.0
 
  - **Added** Takbar progress on Linux for supported DEs
  - **Added** Support for long paths on Windows
