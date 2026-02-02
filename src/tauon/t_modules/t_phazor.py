@@ -553,7 +553,7 @@ def find_library(libname: str) -> Path | None:
 def get_phazor_path(pctl: PlayerCtl) -> Path:
 	"""Locate the PHaZOR library in the specified priority order.
 
-	Tries .so, .dll, .pyd, .dynlib in that order and finally uses find_library as a fallback.
+	Tries .so, .dll, .pyd, .dylib in that order and finally uses find_library as a fallback.
 
 	:param pctl: PlayerCtl object containing installation details
 	:return: Path to the library file
@@ -565,7 +565,7 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	# Define the library name and extensions in priority order
 	lib_name = "phazor-pw" if (not pctl.msys and not pctl.tauon.macos) and pctl.prefs.pipewire else "phazor"
 
-	extensions = [".so", ".dll", ".pyd", ".dynlib"]
+	extensions = [".so", ".dll", ".pyd", ".dylib"]
 
 	# Check explicitly for each file
 	for ext in extensions:
