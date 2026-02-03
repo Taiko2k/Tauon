@@ -39166,7 +39166,7 @@ class Bag:
 	default_playlist:        list[int] = field(default_factory=list[int])
 	sm:                      CDLL | None = None
 	nowplaying:              bool = False
-	nowplaying_helper:       object | None = None
+	nowplaying_helper:       MacNowPlayingHelper | None = None
 	song_notification:       None = None
 	active_playlist_viewing: int = 0
 	active_playlist_playing: int = 0
