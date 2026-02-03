@@ -274,7 +274,7 @@ jobs:
 
       - name: Ensure Now Playing helper is executable
         run: |
-          chmod +x "dist/TauonMusicBox.app/Contents/Resources/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying" || true
+          chmod +x "dist/TauonMusicBox.app/Contents/Resources/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying"
 
       - name: "[DEBUG] List all files in .app"
         run: find "dist/TauonMusicBox.app"
