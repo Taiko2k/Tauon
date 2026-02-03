@@ -4,11 +4,12 @@ Changelog
 
 ### v9.0.0
 
+ - **Added** Milkdrop visualizer support
+ - **Added** macOS desktop/media key support
  - **Added** Takbar progress on Linux for supported DEs
- - **Added** Support for long paths on Windows
  - **Added** Subsonic favorites integration
+ - **Added** Long path support on Windows
  - **Added** Jellyfin import timeout to GUI settings
- - **Added** Visualizer with Milkdrop support - this depends on libprojectm 4.2 which is not released at the time of writing
  - **Added** ReplayGain support for M4A
  - **Fixed** Phazor deadlocks when PipeWire server goes away
  - **Fixed** Phazor not reconnecting to PipeWire and Tauon not resuming playback when PW goes away
