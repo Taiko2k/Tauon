@@ -200,6 +200,7 @@ from tauon.t_modules.t_svgout import render_icons  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
+from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
 	VorbisMonitor,
 	authserve,
@@ -2437,6 +2438,36 @@ class PlayerCtl:
 				self.sm.update(
 					state, tr.title.encode("utf-16"), len(tr.title), tr.artist.encode("utf-16"), len(tr.artist),
 					image_path.encode("utf-16"), len(image_path))
+
+		helper = self.tauon.bag.nowplaying_helper
+		if helper is not None:
+			tr = self.playing_object()
+			try:
+				if tr:
+					art_path = ""
+					try:
+						art_path = self.tauon.thumb_tracks.path(tr) or ""
+					except Exception:
+						logging.exception("Failed to get thumb path for macOS Now Playing")
+
+					state = 0
+					if self.playing_state == PlayingState.PLAYING:
+						state = 1
+					if self.playing_state == PlayingState.PAUSED:
+						state = 2
+					helper.update(
+						title=tr.title,
+						artist=tr.artist,
+						album=tr.album,
+						art_path=art_path,
+						state=state,
+						duration=float(self.playing_length),
+						elapsed=float(self.playing_time),
+					)
+				else:
+					helper.clear()
+			except Exception:
+				logging.exception("Failed to update macOS Now Playing helper")
 
 		if self.mpris is not None and mpris is True:
 			while self.notify_in_progress:
@@ -39124,6 +39155,8 @@ class Bag:
 	loaded_asset_dc:         dict[str, WhiteModImageAsset | LoadImageAsset]
 	default_playlist:        list[int] = field(default_factory=list[int])
 	sm:                      CDLL | None = None
+	nowplaying:              bool = False
+	nowplaying_helper:       MacNowPlayingHelper | None = None
 	song_notification:       None = None
 	active_playlist_viewing: int = 0
 	active_playlist_playing: int = 0
@@ -43272,6 +43305,91 @@ def main(holder: Holder) -> None:
 				logging.exception("Failed to load TauonSMTC.dll - Media keys will not work!")
 		else:
 			logging.warning("Failed to load TauonSMTC.dll - Media keys will not work!")
+
+	if bag.macos:
+		# macOS Now Playing helper (native app) - communicates over stdin/stdout JSON lines.
+		helper_exe: Path | None = None
+		candidate_paths: list[Path] = []
+		env_helper = os.environ.get("TAUON_NOWPLAYING_HELPER", "").strip()
+		if env_helper:
+			candidate_paths.append(Path(env_helper))
+		candidate_paths.extend(
+			[
+				install_directory
+				/ "lib"
+				/ "TauonNowPlaying.app"
+				/ "Contents"
+				/ "MacOS"
+				/ "TauonNowPlaying",
+				# Development tree default (src/nowplaying/build)
+				Path(__file__).resolve().parents[2]
+				/ "nowplaying"
+				/ "build"
+				/ "TauonNowPlaying.app"
+				/ "Contents"
+				/ "MacOS"
+				/ "TauonNowPlaying",
+			]
+		)
+
+		for candidate in candidate_paths:
+			try:
+				if candidate.exists() and candidate.is_file() and os.access(candidate, os.X_OK):
+					helper_exe = candidate
+					break
+			except Exception:
+				logging.debug(f"Failed validating Now Playing helper candidate: {candidate}")
+
+		if helper_exe is None:
+			logging.debug("Now Playing helper not found; macOS media keys disabled")
+		else:
+			def _mac_media_key(name: str) -> None:
+				logging.debug(f"NowPlaying sent key: {name}")
+				# Reuse existing media key input handling.
+				if name in {"PlayPause", "Play"}:
+					inp.media_key = "Play"
+				elif name == "Pause":
+					inp.media_key = "Pause"
+				elif name == "Next":
+					inp.media_key = "Next"
+				elif name == "Previous":
+					inp.media_key = "Previous"
+				elif name == "Stop":
+					inp.media_key = "Stop"
+				else:
+					return
+				gui.update += 1
+				tauon.wake()
+
+			def _mac_seek_abs(seconds: float) -> None:
+				try:
+					tauon.pctl.seek_time(float(seconds))
+				except Exception:
+					logging.exception("Failed to seek via macOS Now Playing")
+				else:
+					gui.update += 1
+					tauon.wake()
+
+			def _mac_seek_rel(delta: float) -> None:
+				try:
+					tauon.pctl.seek_time(tauon.pctl.playing_time + float(delta))
+				except Exception:
+					logging.exception("Failed to seek relative via macOS Now Playing")
+				else:
+					gui.update += 1
+					tauon.wake()
+
+			bag.nowplaying_helper = MacNowPlayingHelper(
+				executable=helper_exe,
+				on_media_key=_mac_media_key,
+				on_seek=_mac_seek_abs,
+				on_seek_relative=_mac_seek_rel,
+			)
+			bag.nowplaying = bool(bag.nowplaying_helper.start())
+			if bag.nowplaying:
+				logging.info(f"Now Playing helper started: {helper_exe}")
+			else:
+				bag.nowplaying_helper = None
 
 	try:
 		prefs.update_title  = prefs.view_prefs["update-title"]
@@ -49615,6 +49733,12 @@ def main(holder: Holder) -> None:
 		tauon.tray.stop()
 		if pctl.smtc:
 			pctl.sm.unload()
+	elif sys.platform == "darwin":
+		if getattr(bag, "nowplaying_helper", None) is not None:
+			try:
+				bag.nowplaying_helper.stop()
+			except Exception:
+				logging.exception("Failed to stop macOS Now Playing helper")
 	elif tauon.de_notify_support:
 		try:
 			tauon.song_notification.close()

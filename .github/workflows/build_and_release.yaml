@@ -226,6 +226,10 @@ jobs:
         run: |
           curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/v8.1.4/lrclib-solver-macos
 
+      - name: Build macOS Now Playing helper
+        run: |
+          bash src/nowplaying/build_app.sh
+
       - name: Install Python dependencies and setup venv
         run: |
           export CXXFLAGS="-I/opt/homebrew/include"
@@ -267,6 +271,10 @@ jobs:
         #  source .venv/bin/activate
         env:
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
+
+      - name: Ensure Now Playing helper is executable
+        run: |
+          chmod +x "dist/TauonMusicBox.app/Contents/Resources/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying"
 
       - name: "[DEBUG] List all files in .app"
         run: find "dist/TauonMusicBox.app"
