@@ -48,7 +48,7 @@ jobs:
             libsamplerate0-dev \
             libvorbis-dev \
             libwavpack-dev \
-            p7zip
+            zip
           # JPEG-XL hack since 24.04 is too old
           sudo apt-get install -y \
             libgif7 \
@@ -93,20 +93,72 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
 
-      - name: Create 7Z
+      - name: Create ZIP
         run: |
           APP_NAME="TauonMusicBox"
           cd "dist/${APP_NAME}"
 
-          ARCHIVE_PATH="../../${APP_NAME}-linux.7z"
+          ARCHIVE_PATH="../../${APP_NAME}-linux.zip"
 
-          7z a -r "${ARCHIVE_PATH}" "."
+          zip -r "${ARCHIVE_PATH}" "."
 
-      - name: Upload 7Z artifact
+      - name: Build AppImage
+        run: |
+          APP_NAME="TauonMusicBox"
+          APP_ID="com.github.taiko2k.tauonmb"
+          APPDIR="dist/AppDir"
+
+          mkdir -p "${APPDIR}/usr/bin"
+          mkdir -p "${APPDIR}/usr/share/applications"
+          mkdir -p "${APPDIR}/usr/share/icons/hicolor/128x128/apps"
+          mkdir -p "${APPDIR}/usr/share/metainfo"
+
+          cp -a "dist/${APP_NAME}/." "${APPDIR}/usr/bin/"
+          cp "src/tauon/assets/icon-128.png" "${APPDIR}/usr/share/icons/hicolor/128x128/apps/${APP_ID}.png"
+          cp "extra/com.github.taiko2k.tauonmb.appdata.xml" "${APPDIR}/usr/share/metainfo/${APP_ID}.appdata.xml"
+          cp "extra/com.github.taiko2k.tauonmb.desktop" "${APPDIR}/usr/share/applications/${APP_ID}.desktop"
+
+          cat > "${APPDIR}/usr/bin/tauonmb" << 'EOF'
+          #!/bin/sh
+          exec "$(dirname "$(readlink -f "$0")")/Tauon Music Box" "$@"
+          EOF
+          chmod +x "${APPDIR}/usr/bin/tauonmb"
+
+          sed -i \
+            -e 's|^Exec=.* %U$|Exec=tauonmb %U|' \
+            -e 's|^Exec=.* --no-start --play-pause$|Exec=tauonmb --no-start --play-pause|' \
+            -e 's|^Exec=.* --no-start --previous$|Exec=tauonmb --no-start --previous|' \
+            -e 's|^Exec=.* --no-start --next$|Exec=tauonmb --no-start --next|' \
+            -e 's|^Exec=.* --no-start --stop$|Exec=tauonmb --no-start --stop|' \
+            "${APPDIR}/usr/share/applications/${APP_ID}.desktop"
+
+          cp "${APPDIR}/usr/share/applications/${APP_ID}.desktop" "${APPDIR}/${APP_ID}.desktop"
+          cp "${APPDIR}/usr/share/icons/hicolor/128x128/apps/${APP_ID}.png" "${APPDIR}/${APP_ID}.png"
+          ln -s "${APP_ID}.png" "${APPDIR}/.DirIcon"
+
+          cat > "${APPDIR}/AppRun" << 'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          export APPDIR="${HERE}"
+          exec "${APPDIR}/usr/bin/tauonmb" "$@"
+          EOF
+          chmod +x "${APPDIR}/AppRun"
+
+          wget -q -O appimagetool.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool.AppImage
+          ARCH=x86_64 ./appimagetool.AppImage --appimage-extract-and-run "${APPDIR}" "TauonMusicBox-linux-x86_64.AppImage"
+
+      - name: Upload ZIP artifact
         uses: actions/upload-artifact@v6
         with:
-          name: TauonMusicBox-linux
-          path: TauonMusicBox-linux.7z
+          name: TauonMusicBox-linux-zip
+          path: TauonMusicBox-linux.zip
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: TauonMusicBox-linux-appimage
+          path: TauonMusicBox-linux-x86_64.AppImage
 
       #- name: Run Tauon for testing
       #  run: |
@@ -546,6 +598,8 @@ jobs:
           bodyFile: ${{ github.workspace }}/.github/release_body.md
           artifacts: |
             ~/artifacts/**/**/*.7z
+            ~/artifacts/**/**/*.zip
+            ~/artifacts/**/**/*.AppImage
             ~/artifacts/**/**/*.dmg
             ~/artifacts/**/**/*.exe
             ~/artifacts/**/**/*.flatpak
@@ -557,7 +611,7 @@ jobs:
           ARTIFACTS_DIR=~/artifacts
           REPO="Taiko2k/Tauon"
 
-          for file in "$ARTIFACTS_DIR"/**/*.{7z,dmg,exe,flatpak}; do
+          for file in "$ARTIFACTS_DIR"/**/*.{7z,zip,AppImage,dmg,exe,flatpak}; do
             filename=$(basename "$file")
             # Check if release already exists and get ID
             release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \

@@ -128,7 +128,12 @@ if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
 # If we're installed, use home data locations
-install_mode = bool(str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")) or sys.platform in ("darwin", "win32"))
+install_mode = bool(
+	str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/"))
+	or sys.platform in ("darwin", "win32")
+	or os.environ.get("APPIMAGE")
+	or os.environ.get("APPDIR")
+)
 
 # Assume that it's a classic Linux install, use standard paths
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
