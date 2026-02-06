@@ -213,6 +213,7 @@ jobs:
             libopenmpt \
             wavpack \
             game-music-emu \
+            create-dmg \
             Python@3.14
 
       - name: Remove aws-sam-cli as it makes pydantic core preinstalled in brew but we want to use pip's
@@ -279,6 +280,10 @@ jobs:
       - name: "[DEBUG] List all files in .app"
         run: find "dist/TauonMusicBox.app"
 
+      - name: Generate DMG background image
+        run: |
+          $(brew --prefix python)/libexec/bin/python extra/generate_dmg_background.py dist/dmg-background.png
+
       - name: Create DMG
         run: |
           mkdir -p dist/dmg
@@ -286,13 +291,22 @@ jobs:
           APP_PATH="dist/${APP_NAME}.app"
           DMG_PATH="dist/dmg/${APP_NAME}.dmg"
 
-          # Create a .dmg package
           # FIXME: Undo this overengineered crap once the following issue gets figured out:
           #        https://github.com/actions/runner-images/issues/7522
           i=0
-          until hdiutil create -volname "${APP_NAME}" -srcfolder "${APP_PATH}" -ov -format UDZO "${DMG_PATH}"; do
+          until create-dmg \
+            --volname "${APP_NAME}" \
+            --background "dist/dmg-background.png" \
+            --window-pos 200 120 \
+            --window-size 540 400 \
+            --icon-size 100 \
+            --icon "${APP_NAME}.app" 150 170 \
+            --hide-extension "${APP_NAME}.app" \
+            --app-drop-link 390 170 \
+            "${DMG_PATH}" \
+            "${APP_PATH}"; do
             if [[ ${i} -eq 10 ]]; then
-              echo "Error: hdiutil did not succeed even after 10 tries."
+              echo "Error: create-dmg did not succeed even after 10 tries."
               exit 1
             fi
             i=$((i+1))
