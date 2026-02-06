@@ -33,7 +33,7 @@ HEAD_LENGTH = 16
 HEAD_HALF_HEIGHT = 8
 
 # Background color – a neutral light grey matching typical macOS DMGs
-BG_COLOR = (236, 236, 236, 255)
+BG_COLOR = (220, 220, 220, 255)
 
 
 def main() -> None:
