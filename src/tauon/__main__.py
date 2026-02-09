@@ -19,6 +19,7 @@
 import logging
 import os
 import pickle
+import subprocess
 import sys
 import ctypes
 from ctypes import byref, c_float, c_int, pointer, util
@@ -75,6 +76,17 @@ def open_discord() -> None:
 
 def open_github() -> None:
 	webbrowser.open("https://github.com/Taiko2k/Tauon/issues")
+
+def open_crash_log(path: Path) -> None:
+	try:
+		if sys.platform == "win32":
+			os.startfile(path)  # type: ignore[attr-defined]
+		elif sys.platform == "darwin":
+			subprocess.Popen(["open", str(path)])
+		else:
+			subprocess.Popen(["xdg-open", str(path)])
+	except Exception:
+		webbrowser.open(path.as_uri())
 
 def main() -> None:
 	"""Launch Tauon by means of importing t_main.py"""
@@ -523,12 +535,14 @@ if __name__ == "__main__":
 
 		BUTTON_ID_GITHUB = 1
 		BUTTON_ID_DISCORD = 2
-		BUTTON_ID_QUIT = 3
+		BUTTON_ID_OPEN_LOG = 3
+		BUTTON_ID_QUIT = 4
 
 		# Create buttons
-		button_array = (sdl3.SDL_MessageBoxButtonData * 3)(
+		button_array = (sdl3.SDL_MessageBoxButtonData * 4)(
 			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_GITHUB, b"GitHub"),
 			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_DISCORD, b"Discord"),
+			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_OPEN_LOG, b"Open Crash Log"),
 			sdl3.SDL_MessageBoxButtonData(sdl3.SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, BUTTON_ID_QUIT, b"Quit"),
 		)
 		messageboxdata = sdl3.SDL_MessageBoxData(
@@ -536,7 +550,7 @@ if __name__ == "__main__":
 			window=None,
 			title=b"Tauon Music Box crashed :(",
 			message=str.encode(f"{error_message}\n\nShortlog:\n{e}"),
-			numbuttons=3,
+			numbuttons=4,
 			buttons=button_array,
 			color_scheme=None,
 		)
@@ -551,5 +565,7 @@ if __name__ == "__main__":
 			open_discord()
 		elif buttonid.value == BUTTON_ID_GITHUB:
 			open_github()
+		elif buttonid.value == BUTTON_ID_OPEN_LOG:
+			open_crash_log(crash_log_path)
 		elif buttonid.value == BUTTON_ID_QUIT:
 			pass
