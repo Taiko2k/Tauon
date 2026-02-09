@@ -655,7 +655,7 @@ void fade_fx() {
 FILE *fptr;
 
 struct stat st;
-int load_file_size = 0;
+off_t load_file_size = 0;
 int samples_decoded = 0;
 
 // Secret Rabbit Code --------------------------------------------------
@@ -2592,31 +2592,47 @@ void pump_decode() {
 
 	} else if (codec == OPUS) {
 		if (opus_dec != NULL) {
-			unsigned int done;
+			int done;
 
 			if (src_channels == 1) {
 				done = op_read(opus_dec, opus_buffer, 4096, NULL);
 			}
-			else done = op_read_stereo(opus_dec, opus_buffer, 1024 * 2) * 2;
+			else {
+				int frames = op_read_stereo(opus_dec, opus_buffer, 1024 * 2);
+				if (frames < 0) done = frames;
+				else done = frames * 2;
+			}
 
-			pthread_mutex_lock(&buffer_mutex);
-			read_to_buffer_s16int(opus_buffer, done);
-			samples_decoded += done;
-
-			pthread_mutex_unlock(&buffer_mutex);
+			if (done > 0) {
+				pthread_mutex_lock(&buffer_mutex);
+				read_to_buffer_s16int(opus_buffer, done);
+				samples_decoded += done;
+				pthread_mutex_unlock(&buffer_mutex);
+			}
 			if (done == 0) {
 
 				// Check if file was appended to...
-				uni_stat(loaded_target_file, &st);
-				if (load_file_size != st.st_size) {
+				if (uni_stat(loaded_target_file, &st) == 0 && load_file_size != st.st_size) {
 					log_msg(LOG_WARNING, "pa: Ogg file size changed!");
 					int e = 0;
-					op_free(opus_dec);
-					opus_dec = op_open_file(loaded_target_file, &e);
-					op_pcm_seek(opus_dec, samples_decoded / 2);
-					return;
+					OggOpusFile *new_opus_dec = op_open_file(loaded_target_file, &e);
+					if (new_opus_dec != NULL && e == 0) {
+						op_free(opus_dec);
+						opus_dec = new_opus_dec;
+						// Reset the size baseline so true EOF can flow to decoder_eos().
+						load_file_size = st.st_size;
+						if (op_pcm_seek(opus_dec, samples_decoded / 2) == 0) {
+							return;
+						}
+						log_msg(LOG_WARNING, "pa: Failed to seek reopened Opus stream");
+					} else {
+						log_msg(LOG_WARNING, "pa: Failed to reopen appended Opus stream (err %d)", e);
+					}
 				}
 
+				decoder_eos();
+			} else if (done < 0) {
+				log_msg(LOG_ERROR, "pa: Opus decode error: %d", done);
 				decoder_eos();
 			}
 		}
