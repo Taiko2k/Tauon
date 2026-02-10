@@ -1853,6 +1853,8 @@ class PlayerCtl:
 		self.enable_eq = True  # not used
 
 		self.playing_time_int = 0  # playing time but with no decimel
+		self.ab_repeat_a: float = -1.0
+		self.ab_repeat_b: float = -1.0
 
 		self.windows_progress = WinTask(tauon, self)
 
@@ -2788,6 +2790,19 @@ class PlayerCtl:
 		if notify:
 			self.notify_update()
 
+	def clear_ab_repeat(self, update_gui: bool = True) -> None:
+		self.ab_repeat_a = -1.0
+		self.ab_repeat_b = -1.0
+		if update_gui:
+			self.tauon.gui.update += 1
+
+	def reset_ab_repeat_on_track_change(self, track_id: int) -> None:
+		if self.ab_repeat_a < 0 and self.ab_repeat_b < 0:
+			return
+		if self.target_object is not None and self.target_object.index == track_id:
+			return
+		self.clear_ab_repeat()
+
 	def revert(self) -> None:
 		if self.queue_step == 0:
 			return
@@ -2811,6 +2826,7 @@ class PlayerCtl:
 			logging.error("There is no previous track?")
 			return
 
+		self.reset_ab_repeat_on_track_change(self.track_queue[self.queue_step])
 		self.target_open = self.master_library[self.track_queue[self.queue_step]].fullpath
 		self.target_object = self.master_library[self.track_queue[self.queue_step]]
 		self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
@@ -2854,9 +2870,11 @@ class PlayerCtl:
 			random_start = 0
 
 		self.playing_time = random_start
-		self.target_open = self.master_library[self.track_queue[self.queue_step]].fullpath
-		self.target_object = self.master_library[self.track_queue[self.queue_step]]
-		self.start_time = self.master_library[self.track_queue[self.queue_step]].start_time
+		target_id = self.track_queue[self.queue_step]
+		self.reset_ab_repeat_on_track_change(target_id)
+		self.target_open = self.master_library[target_id].fullpath
+		self.target_object = self.master_library[target_id]
+		self.start_time = self.master_library[target_id].start_time
 		self.start_time_target = self.start_time
 		self.jump_time = random_start
 		if play:
@@ -2882,6 +2900,7 @@ class PlayerCtl:
 		self.playing_time = 0
 		self.decode_time = 0
 		target = self.master_library[self.track_queue[self.queue_step]]
+		self.reset_ab_repeat_on_track_change(target.index)
 		self.target_open = target.fullpath
 		self.target_object = target
 		self.start_time = target.start_time
@@ -3308,6 +3327,14 @@ class PlayerCtl:
 		if self.commit is not None:
 			return
 
+		if self.playing_state == PlayingState.PLAYING and self.ab_repeat_b > self.ab_repeat_a >= 0:
+			if self.ab_repeat_b <= self.decode_time <= self.ab_repeat_b + 2 and self.playing_length > 0:
+				self.decode_time = self.ab_repeat_a
+				self.seek_decimal(self.ab_repeat_a / self.playing_length)
+				return
+		if self.ab_repeat_a >= 0:
+			gap_extra = 0  # disable gapless for ab repeat
+
 		if self.playing_state == PlayingState.PLAYING and self.multi_playlist[self.active_playlist_playing].persist_time_positioning:
 			tr = self.playing_object()
 			if tr:
@@ -3483,6 +3510,7 @@ class PlayerCtl:
 	def start_commit(self, commit_id: int, repeat: bool = False) -> None:
 		self.commit = commit_id
 		target = self.get_track(commit_id)
+		self.reset_ab_repeat_on_track_change(target.index)
 		self.target_open = target.fullpath
 		self.target_object = target
 		self.start_time = target.start_time
@@ -6149,6 +6177,29 @@ class Tauon:
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
 
+	def draw_ab_repeat_markers(self, seek_x: int | float, seek_y: int | float, seek_w: int | float, seek_h: int | float) -> None:
+		if self.pctl.playing_length <= 0 or seek_w <= 0:
+			return
+
+		marker_w = max(1, round(2 * self.gui.scale))
+		marker_h = max(round(seek_h + (8 * self.gui.scale)), marker_w + 2)
+		marker_y = round(seek_y - ((marker_h - seek_h) / 2))
+		seek_start = round(seek_x)
+		seek_end = round(seek_x + seek_w)
+		if seek_end - seek_start <= marker_w:
+			return
+
+		def draw_marker(timestamp: float, colour: ColourRGBA) -> None:
+			if timestamp < 0:
+				return
+			timestamp = min(timestamp, self.pctl.playing_length)
+			marker_x = round(seek_x + seek_w * (timestamp / self.pctl.playing_length))
+			marker_x = min(max(marker_x - marker_w // 2, seek_start), seek_end - marker_w)
+			self.ddt.rect((marker_x, marker_y, marker_w, marker_h), colour)
+
+		draw_marker(self.pctl.ab_repeat_a, ColourRGBA(0, 255, 0, 255))
+		draw_marker(self.pctl.ab_repeat_b, ColourRGBA(0, 255, 255, 255))
+
 	def scan_ffprobe(self, nt: TrackClass) -> None:
 		startupinfo = None
 		if self.system == "Windows" or self.msys:
@@ -7201,6 +7252,34 @@ class Tauon:
 		self.pctl.album_repeat_mode = True
 		if self.pctl.mpris is not None:
 			self.pctl.mpris.update_loop()
+
+	def menu_ab_repeat_deco(self) -> Decorator:
+		text = _("A/B Repeat")
+		if self.pctl.ab_repeat_a >= 0:
+			text = _("Set B Marker")
+		if self.pctl.ab_repeat_b >= 0:
+			text = _("Clear A/B")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
+
+	def menu_ab_repeat(self) -> None:
+		if self.pctl.playing_state == PlayingState.STOPPED or self.pctl.playing_length <= 0:
+			return
+
+		marker_time = min(max(self.pctl.playing_time, 0), self.pctl.playing_length)
+
+		if self.pctl.ab_repeat_a < 0:
+			self.pctl.ab_repeat_a = marker_time
+			self.pctl.ab_repeat_b = -1.0
+		elif self.pctl.ab_repeat_b < 0:
+			if marker_time <= self.pctl.ab_repeat_a:
+				marker_time = min(self.pctl.playing_length, self.pctl.ab_repeat_a + 0.1)
+				if marker_time <= self.pctl.ab_repeat_a:
+					return
+			self.pctl.ab_repeat_b = marker_time
+		else:
+			self.pctl.clear_ab_repeat(update_gui=False)
+
+		self.gui.update += 1
 
 	def toggle_random(self) -> None:
 		self.gui.update += 1
@@ -28063,6 +28142,9 @@ class BottomBarType1:
 				int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
 				self.seek_bar_size[1])
 			ddt.rect(gui.seek_bar_rect, colours.seek_bar_fill)
+			tauon.draw_ab_repeat_markers(
+				self.seek_bar_position[0], self.seek_bar_position[1],
+				self.seek_bar_size[0], self.seek_bar_size[1])
 
 		if gui.seek_cur_show:
 			if self.coll(
@@ -29188,6 +29270,7 @@ class MiniMode:
 			seek_w = int(w * 0.70)
 
 			seek_r = [(w - seek_w) // 2, y1 + 58 * self.gui.scale, seek_w, 6 * self.gui.scale]
+			seek_marker_rect = tuple(seek_r)
 			seek_r_hit = [seek_r[0], seek_r[1] - 4 * self.gui.scale, seek_r[2], seek_r[3] + 8 * self.gui.scale]
 
 			if w != h or mouse_in_area:
@@ -29237,6 +29320,7 @@ class MiniMode:
 					seek_r[3] -= 4 * self.gui.scale
 
 				self.ddt.rect(seek_r, seek_colour)
+				self.tauon.draw_ab_repeat_markers(*seek_marker_rect)
 
 		left_area = (1, y1, seek_r[0] - 1, 45 * self.gui.scale)
 		right_area = (seek_r[0] + seek_w, y1, seek_r[0] - 2, 45 * self.gui.scale)
@@ -29460,6 +29544,8 @@ class MiniMode2:
 					colour = ColourRGBA(210, 40, 100, 255)
 				self.ddt.rect(seek_rect, colour)
 
+		self.tauon.draw_ab_repeat_markers(*bg_rect)
+
 class MiniMode3:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
@@ -29604,6 +29690,7 @@ class MiniMode3:
 			seek_w = int(w * 0.80)
 
 			seek_r = [(w - seek_w) // 2, y1 + 58 * self.gui.scale, seek_w, 9 * self.gui.scale]
+			seek_marker_rect = tuple(seek_r)
 			seek_r_hit = [seek_r[0], seek_r[1] - 5 * self.gui.scale, seek_r[2], seek_r[3] + 12 * self.gui.scale]
 
 			if w != h or mouse_in_area:
@@ -29637,8 +29724,7 @@ class MiniMode3:
 				seek_r[2] = progress_w
 
 			self.ddt.rect(seek_r, seek_colour)
-
-
+			self.tauon.draw_ab_repeat_markers(*seek_marker_rect)
 
 			volume_w = int(w * 0.50)
 			volume_r = [(w - volume_w) // 2, y1 + 80 * self.gui.scale, volume_w, 6 * self.gui.scale]
@@ -43793,6 +43879,7 @@ def main(holder: Holder) -> None:
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
 	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
+	repeat_menu.add(MenuItem(_("A/B Repeat"), tauon.menu_ab_repeat, tauon.menu_ab_repeat_deco))
 
 	shuffle_menu.add(MenuItem(_("Shuffle Lockdown"), tauon.toggle_shuffle_layout))
 	shuffle_menu.add(MenuItem(_("Shuffle Lockdown Albums"), tauon.toggle_shuffle_layout_albums))
