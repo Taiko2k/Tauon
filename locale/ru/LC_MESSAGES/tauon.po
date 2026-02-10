@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-11-11 18:51+0000\n"
-"Last-Translator: Martin <spleefer90@gmail.com>\n"
+"PO-Revision-Date: 2026-02-10 10:09+0000\n"
+"Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.15-dev\n"
+"X-Generator: Weblate 5.16-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
@@ -119,38 +119,35 @@ msgstr " ГБ"
 
 #: src/tauon/t_modules/t_extra.py:554
 msgid "Not yet"
-msgstr ""
+msgstr "Пока нет"
 
 #: src/tauon/t_modules/t_extra.py:556
 msgid "Now"
-msgstr ""
+msgstr "Сейчас"
 
 #: src/tauon/t_modules/t_extra.py:560
-#, fuzzy
 msgid "min"
-msgstr "Прикрепить"
+msgstr "мин"
 
 #: src/tauon/t_modules/t_extra.py:564
 msgid "hr"
-msgstr ""
+msgstr "ч"
 
 #: src/tauon/t_modules/t_extra.py:568
-#, fuzzy
 msgid "dy"
-msgstr "день"
+msgstr "дн"
 
 #: src/tauon/t_modules/t_extra.py:570
 msgid "wk"
-msgstr ""
+msgstr "нед"
 
 #: src/tauon/t_modules/t_extra.py:572
 msgid "mnth"
-msgstr ""
+msgstr "мес"
 
 #: src/tauon/t_modules/t_extra.py:577
-#, fuzzy
 msgid "Unknown"
-msgstr "Неизвестный трек"
+msgstr "Неизвестно"
 
 #: src/tauon/t_modules/t_guitar_chords.py:92
 msgid "Insufficient metadata to search"
@@ -507,9 +504,8 @@ msgid "The destination and source folders are the same."
 msgstr "Папки назначения и источника одинаковы."
 
 #: src/tauon/t_modules/t_main.py:7297 src/tauon/t_modules/t_main.py:9975
-#, fuzzy
 msgid "Safety interrupt! The source path seems oddly short."
-msgstr "Прерывание безопасности! Путь источника кажется странно коротким."
+msgstr "Прерывание безопасности! Путь к источнику кажется странно коротким."
 
 #: src/tauon/t_modules/t_main.py:7304 src/tauon/t_modules/t_main.py:9989
 msgid "Better not do anything to that folder!"
@@ -603,19 +599,19 @@ msgstr "Показать синхронизированные тексты пе�
 
 #: src/tauon/t_modules/t_main.py:7794 src/tauon/t_modules/t_main.py:7813
 msgid "Could not write lyrics to file"
-msgstr ""
+msgstr "Не удалось записать текст песни в файл"
 
 #: src/tauon/t_modules/t_main.py:7795
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr ""
+msgstr "Мы не знаем, как записывать тексты песен для файлов типа: "
 
 #: src/tauon/t_modules/t_main.py:7796 src/tauon/t_modules/t_main.py:7815
 msgid "(We still saved to the internal database)"
-msgstr ""
+msgstr "(Мы по-прежнему сохраняем данные во внутренней базе данных)"
 
 #: src/tauon/t_modules/t_main.py:7814
 msgid "File doesn't exist or is not accessible"
-msgstr ""
+msgstr "Файл не существует или недоступен"
 
 #: src/tauon/t_modules/t_main.py:7840 src/tauon/t_modules/t_main.py:21042
 msgid "Saving network images not implemented"
@@ -729,14 +725,15 @@ msgid "There are no tracks in this playlist. Nothing to export"
 msgstr "В этом плейлисте нет треков. Нечего экспортировать."
 
 #: src/tauon/t_modules/t_main.py:8284 src/tauon/t_modules/t_main.py:8329
-#, fuzzy
 msgid "Cannot use relative paths"
-msgstr "Использовать относительный путь"
+msgstr "Невозможно использовать относительные пути"
 
 #: src/tauon/t_modules/t_main.py:8285 src/tauon/t_modules/t_main.py:8330
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
 msgstr ""
+"Одна или несколько дорожек хранятся на отдельном диске, отличном от файла "
+"списка воспроизведения."
 
 #: src/tauon/t_modules/t_main.py:8380
 msgid "Playlist is locked to prevent accidental erasure"
@@ -1080,7 +1077,6 @@ msgid "The source directory is missing!"
 msgstr "Отсутствует исходный каталог!"
 
 #: src/tauon/t_modules/t_main.py:9998
-#, fuzzy
 msgid "Safety interrupt! The source folder seems to have many files."
 msgstr "Прерывание безопасности! В исходной папке, похоже, много файлов."
 
@@ -1448,14 +1444,12 @@ msgid "Is CUE Sheet"
 msgstr "Является CUE Sheet"
 
 #: src/tauon/t_modules/t_main.py:10919
-#, fuzzy
 msgid "Internal Track ID"
-msgstr "Инвертировать дорожки"
+msgstr "Внутренний ИД дорожки"
 
 #: src/tauon/t_modules/t_main.py:10920
-#, fuzzy
 msgid "File Changed"
-msgstr "Имя файла"
+msgstr "Файл изменён"
 
 #: src/tauon/t_modules/t_main.py:10925
 msgid "Auto Resize"
