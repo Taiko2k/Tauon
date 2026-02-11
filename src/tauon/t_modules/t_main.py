@@ -44866,7 +44866,6 @@ def main(holder: Holder) -> None:
 			inp.d_mouse_click = False
 			inp.right_click = False
 			inp.level_2_right_click = False
-			inp.mouse_click = False
 			inp.middle_click = False
 			inp.mouse_up = False
 			inp.key_return_press = False
@@ -44904,7 +44903,7 @@ def main(holder: Holder) -> None:
 		focused = False
 		mouse_moved = False
 		gui.level_2_click = False
-
+		inp.mouse_click = False
 		# gui.update = 2
 
 		while sdl3.SDL_PollEvent(ctypes.byref(event)) != 0:
