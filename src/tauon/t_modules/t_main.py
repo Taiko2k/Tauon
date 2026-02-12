@@ -4461,6 +4461,7 @@ class LastFMapi:
 					loves = friend.get_loved_tracks(limit=None)
 				except Exception:
 					logging.exception("Failed to get_loved_tracks!")
+					continue
 
 				for track in loves:
 					title = track.track.title.casefold()
@@ -15030,6 +15031,7 @@ class Tauon:
 			except Exception as e:
 				logging.exception("Download failed")
 				self.show_message(_("Download failed"), str(e), mode="error")
+				return
 
 			f.seek(0)
 			checksum = hashlib.sha256(f.read()).hexdigest()
@@ -37214,6 +37216,7 @@ class DLMon:
 						continue
 					except Exception:
 						logging.exception("Unknown error getting folder size")
+						continue
 					if path in self.watching:
 						# Check if size is stable, then scan for audio files
 						if size == self.watching[path]:
