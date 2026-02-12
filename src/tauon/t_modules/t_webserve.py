@@ -165,15 +165,25 @@ def send_file(path: str, mime: str, server) -> None:
 	end = None
 
 	if "Range" in server.headers:
-		range_req = True
-		b = server.headers["Range"].split("=")[1]
-		start_str, end_str = b.split("-", 1)
-		start = int(start_str) if start_str else 0
-		end = int(end_str) if end_str else None
+		try:
+			range_req = True
+			b = server.headers["Range"].split("=", 1)[1]
+			start_str, end_str = b.split("-", 1)
+			start = int(start_str) if start_str else 0
+			end = int(end_str) if end_str else None
+		except (IndexError, ValueError):
+			range_req = False
+			start = 0
+			end = None
 
 	with open(path, "rb") as f:
 		f.seek(0, 2)
 		length = f.tell()
+		if range_req and (start < 0 or start >= length):
+			server.send_response(416)
+			server.send_header("Content-Range", f"bytes */{length}")
+			server.end_headers()
+			return
 		f.seek(start, 0)
 
 		if range_req:
