@@ -238,16 +238,19 @@ if Path(user_directory / "x11").exists():
 # Pysdl3 doesn't seem to find system sdl3. REF: https://github.com/Aermoss/PySDL3/issues/35 pysdl
 # As a workaround we try find it ourselves
 sdl_dll_name = ctypes.util.find_library("SDL3")
-candidates = [
-	"./" + sdl_dll_name,
-	os.path.join("/app/lib", sdl_dll_name),
-	os.path.join("/usr/lib", sdl_dll_name),
-	os.path.join("/usr/lib64", sdl_dll_name),
-	os.path.join("/lib", sdl_dll_name),
-	os.path.join("/lib64", sdl_dll_name),
-	os.path.join("/usr/local/lib", sdl_dll_name),
-	os.path.join("/usr/local/lib64", sdl_dll_name),
-]
+if sdl_dll_name:
+	candidates = [
+		"./" + sdl_dll_name,
+		os.path.join("/app/lib", sdl_dll_name),
+		os.path.join("/usr/lib", sdl_dll_name),
+		os.path.join("/usr/lib64", sdl_dll_name),
+		os.path.join("/lib", sdl_dll_name),
+		os.path.join("/lib64", sdl_dll_name),
+		os.path.join("/usr/local/lib", sdl_dll_name),
+		os.path.join("/usr/local/lib64", sdl_dll_name),
+	]
+else:
+	candidates = []
 sdl_library_path = next((p for p in candidates if p and os.path.exists(p)), None)
 if sdl_library_path:
 	os.environ["SDL_BINARY_PATH"] = os.path.dirname(sdl_library_path)
