@@ -190,17 +190,17 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
+from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, LibreSpot, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_spot import SpotCtl  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
-from tauon.t_modules.t_subsonic import SubsonicService  #noqa: E402
+from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
-from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
 	VorbisMonitor,
 	authserve,
@@ -309,7 +309,7 @@ if TYPE_CHECKING:
 	from subprocess import Popen
 
 	from mutagen.id3 import ID3
-	from pylast import LastFMNetwork
+	from pylast import LastFMNetwork, SessionKeyGenerator
 
 	from tauon.t_modules.t_webserve import ThreadedHTTPServer
 
@@ -777,7 +777,7 @@ class GuiVar:
 		self.auto_play_import: bool = False
 
 		self.transcoding_batch_total = 0
-		self.transcoding_bach_done = 0
+		self.transcoding_batch_done = 0
 
 		self.seek_bar_rect = (0, 0, 0, 0)
 		self.volume_bar_rect = (0, 0, 0, 0)
@@ -786,7 +786,7 @@ class GuiVar:
 
 		self.opened_config_file: bool = False
 
-		self.notify_main_id: bool = None
+		self.notify_main_id: bool | None = None
 
 		self.halt_image_rendering: bool = False
 		self.generating_chart: bool = False
@@ -1171,10 +1171,10 @@ class Input:
 		self.mouse_down:          bool = False
 		self.mouse_up:            bool = False
 		self.right_down:          bool = False
-		self.click_location            = [200, 200]
-		self.last_click_location       = [0, 0]
-		self.mouse_position            = [0, 0]
-		self.mouse_up_position         = [0, 0]
+		self.click_location:      list[int] = [200, 200]
+		self.last_click_location: list[int] = [0, 0]
+		self.mouse_position:      list[int] = [0, 0]
+		self.mouse_up_position:   list[int] = [0, 0]
 		self.drag_mode:           bool = False
 		self.quick_drag:          bool = False
 		self.clicked:             bool = False
@@ -1244,7 +1244,7 @@ class KeyMap:
 		self.bag: Bag = bag
 		self.inp: Input = inp
 		self.hits: list[str | sdl3.SDL_Scancode] = []  # The keys hit this frame
-		self.maps: dict[str, tuple[str | sdl3.SDL_Scancode, list[str]]] = {}  # Loaded from input.txt
+		self.maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}  # Loaded from input.txt
 
 	def load(self) -> None:
 		path = self.bag.dirs.config_directory / "input.txt"
@@ -1282,7 +1282,7 @@ class KeyMap:
 					else:
 						self.maps[function] = [(key, mod)]
 
-	def test(self, function) -> bool:
+	def test(self, function: str) -> bool:
 		inp = self.inp
 		if not self.hits:
 			return False
@@ -1801,7 +1801,7 @@ class PlayerCtl:
 		self.default_playlist: list[int] = []
 		self.queue_step: int = self.bag.playing_in_queue
 		self.playing_time: float = 0
-		self.last_real_position = 0
+		self.last_real_position: float = 0
 		self.playlist_playing_position: int = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
@@ -1811,9 +1811,9 @@ class PlayerCtl:
 		self.target_object: TrackClass | None = None
 		self.start_time = 0
 		self.b_start_time = 0
-		self.playerCommand = ""
-		self.playerSubCommand = ""
-		self.playerCommandReady = False
+		self.playerCommand: str = ""
+		self.playerSubCommand: str = ""
+		self.playerCommandReady: bool = False
 		self.playing_state: PlayingState = PlayingState.STOPPED
 		self.playing_length: float = 0
 		self.jump_time:      float = 0.0
@@ -1823,7 +1823,7 @@ class PlayerCtl:
 		self.album_shuffle_mode: bool = self.prefs.album_shuffle_mode
 		# self.album_shuffle_pool = []
 		# self.album_shuffle_id = ""
-		self.last_playing_time = 0
+		self.last_playing_time: float = 0
 		self.multi_playlist: list[TauonPlaylist] = self.bag.multi_playlist
 		self.active_playlist_viewing: int = self.bag.active_playlist_viewing  # the playlist index that is being viewed
 		self.active_playlist_playing: int = self.bag.active_playlist_playing  # the playlist index that is playing from
@@ -1833,17 +1833,17 @@ class PlayerCtl:
 		self.left_index: int = 0
 		self.player_volume: float = self.bag.volume
 		self.volume_store: float = 50  # Used to save the previous volume when muted
-		self.new_time = 0
+		self.new_time: float = 0
 		#self.time_to_get = []
 		self.a_time: float = 0
 		self.b_time: float = 0
 		# self.playlist_backup = []
 		self.active_replaygain: int = 0
 		self.stop_mode: StopMode = StopMode.OFF
-		self.stop_ref = None
+		self.stop_ref: tuple[str, str] | None = None
 
-		self.record_stream = False
-		self.record_title = ""
+		self.record_stream: bool = False
+		self.record_title: str = ""
 
 		#self.gst_devices = []  # Display names
 		#self.gst_outputs = {}  # Display name : (sink, device)
@@ -2483,7 +2483,7 @@ class PlayerCtl:
 
 		self.windows_progress.update()
 
-	def get_url(self, track_object: TrackClass) -> tuple[list[str], str | None, dict | None] | None:
+	def get_url(self, track_object: TrackClass) -> tuple[list[str] | str | None, dict[str, str] | None]:
 		if track_object.file_ext == "TIDAL":
 			return self.tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
@@ -3054,7 +3054,7 @@ class PlayerCtl:
 		self.lfm_scrobbler.start_queue()
 		self.gui.pl_update += 1
 
-	def stop(self, block: bool = False, run : bool = False, update_gui: bool = True) -> int:
+	def stop(self, block: bool = False, run: bool = False, update_gui: bool = True) -> int:
 		self.playerCommand = "stop"
 		if run:
 			self.playerCommand = "runstop"
@@ -3068,7 +3068,7 @@ class PlayerCtl:
 				self.tauon.thread_manager.player_lock.release()
 			except RuntimeError as e:
 				if str(e) == "release unlocked lock":
-					logging.error("RuntimeError: Attempted to release already unlocked tray_lock")  # noqa: TRY400
+					logging.error("RuntimeError: Attempted to release already unlocked player_lock")  # noqa: TRY400
 				else:
 					logging.exception("Unknown RuntimeError trying to release player_lock")
 			except Exception:
@@ -3165,7 +3165,7 @@ class PlayerCtl:
 		else:
 			self.play()
 
-	def seek_decimal(self, decimal: int) -> None:
+	def seek_decimal(self, decimal: float) -> None:
 		# if self.commit:
 		#	 return
 		if self.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED) or (self.playing_state == PlayingState.URL_STREAM and self.tauon.spot_ctl.coasting):
@@ -4046,14 +4046,14 @@ class PlayerCtl:
 
 class LastFMapi:
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
-		self.tauon          = tauon
-		self.star_store     = pctl.star_store
-		self.show_message   = tauon.show_message
-		self.last_fm_enable = tauon.bag.last_fm_enable
-		self.gui            = self.tauon.gui
-		self.pctl           = pctl
-		self.prefs          = self.tauon.prefs
-		self.sg             = None
+		self.tauon: Tauon = tauon
+		self.star_store: StarStore = pctl.star_store
+		self.show_message = tauon.show_message
+		self.last_fm_enable: bool = tauon.bag.last_fm_enable
+		self.gui: GuiVar = self.tauon.gui
+		self.pctl: PlayerCtl = pctl
+		self.prefs: Prefs = self.tauon.prefs
+		self.sg: SessionKeyGenerator | None = None
 		self.url: str | None = None
 		self.API_SECRET = "6e433964d3ff5e817b7724d16a9cf0cc"  # noqa: S105
 		self.connected = False
@@ -4068,7 +4068,7 @@ class LastFMapi:
 		self.scanning_loves = False
 		self.scanning_scrobbles = False
 
-	def get_network(self) -> type[LibreFMNetwork]:
+	def get_network(self) -> type[LibreFMNetwork] | type[LastFMNetwork]:
 		if self.prefs.use_libre_fm:
 			return pylast.LibreFMNetwork
 		return pylast.LastFMNetwork
@@ -4954,21 +4954,21 @@ class MenuItem:
 		self, title: str, func, render_func: Callable[[int], Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
-		self.title = title
-		self.is_sub_menu = is_sub_menu
+		self.title: str = title
+		self.is_sub_menu: bool = is_sub_menu
 		self.func = func
 		self.render_func = render_func
 		self.no_exit = no_exit
 		self.pass_ref = pass_ref
 		self.hint = hint
-		self.icon = icon
+		self.icon: MenuIcon | None = icon
 		self.show_test = show_test
-		self.pass_ref_deco = pass_ref_deco
+		self.pass_ref_deco: bool = pass_ref_deco
 		self.disable_test = disable_test
-		self.set_ref = set_ref
+		self.set_ref: int | str | None = set_ref
 		self.args = args
-		self.sub_menu_number = sub_menu_number
-		self.sub_menu_width = sub_menu_width
+		self.sub_menu_number: int | None = sub_menu_number
+		self.sub_menu_width: int = sub_menu_width
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
@@ -5037,7 +5037,7 @@ class Menu:
 		self.pos: list[float] = [0, 0]
 		self.rescale()
 
-		self.reference: int = 0
+		self.reference: int | str | None = 0
 		self.items: list[MenuItem | None] = []
 		self.subs: list[list[MenuItem]] = []
 		self.selected = -1
@@ -5052,9 +5052,9 @@ class Menu:
 
 		Menu.count += 1
 
-		self.sub_number:    int = 0
-		self.sub_active:    int = -1
-		self.sub_y_postion: int = 0
+		self.sub_number:     int = 0
+		self.sub_active:     int = -1
+		self.sub_y_position: int = 0
 		Menu.instances.append(self)
 
 		self.spring_loading_timer: Timer = Timer()
@@ -5256,7 +5256,7 @@ class Menu:
 					elif self.clicked or springing:
 						self.clicked = False
 						self.sub_active = self.items[i].sub_menu_number
-						self.sub_y_postion = y_run
+						self.sub_y_position = y_run
 
 				# Draw tab
 				ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
@@ -5317,7 +5317,7 @@ class Menu:
 				if self.sub_active > -1 and self.items[i].is_sub_menu and self.sub_active == self.items[i].sub_menu_number:
 
 					# sub_pos = [x_run + self.w, self.pos[1] + i * self.h]
-					sub_pos = [x_run + self.w, self.sub_y_postion]
+					sub_pos = [x_run + self.w, self.sub_y_position]
 					sub_w = self.items[i].sub_menu_width * gui.scale
 
 					if sub_pos[0] + sub_w > self.window_size[0]:
@@ -6067,36 +6067,36 @@ class Tauon:
 		if self.system == "Linux" and not self.macos and not self.msys:
 			self.gnome = Gnome(tauon=self)
 
-		self.text_plex_usr     = TextBox2(tauon=self)
-		self.text_plex_pas     = TextBox2(tauon=self)
-		self.text_plex_ser     = TextBox2(tauon=self)
-		self.text_plex_2fa     = TextBox2(tauon=self)
+		self.text_plex_usr: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_pas: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_ser: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_2fa: TextBox2 = TextBox2(tauon=self)
 
 		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
 		self.text_jelly_pas:     TextBox2 = TextBox2(tauon=self)
 		self.text_jelly_ser:     TextBox2 = TextBox2(tauon=self)
 		self.text_jelly_timeout: TextBox2 = TextBox2(tauon=self)
 
-		self.text_koel_usr     = TextBox2(tauon=self)
-		self.text_koel_pas     = TextBox2(tauon=self)
-		self.text_koel_ser     = TextBox2(tauon=self)
+		self.text_koel_usr: TextBox2 = TextBox2(tauon=self)
+		self.text_koel_pas: TextBox2 = TextBox2(tauon=self)
+		self.text_koel_ser: TextBox2 = TextBox2(tauon=self)
 
-		self.text_air_usr      = TextBox2(tauon=self)
-		self.text_air_pas      = TextBox2(tauon=self)
-		self.text_air_ser      = TextBox2(tauon=self)
+		self.text_air_usr: TextBox2 = TextBox2(tauon=self)
+		self.text_air_pas: TextBox2 = TextBox2(tauon=self)
+		self.text_air_ser: TextBox2 = TextBox2(tauon=self)
 
-		self.text_spot_client       = TextBox2(tauon=self)
-		self.text_spot_secret       = TextBox2(tauon=self)
-		#self.text_spot_username     = TextBox2(tauon=self)
-		#self.text_spot_password     = TextBox2(tauon=self)
+		self.text_spot_client: TextBox2 = TextBox2(tauon=self)
+		self.text_spot_secret: TextBox2 = TextBox2(tauon=self)
+		#self.text_spot_username: TextBox2 = TextBox2(tauon=self)
+		#self.text_spot_password: TextBox2 = TextBox2(tauon=self)
 
-		self.text_maloja_url   = TextBox2(tauon=self)
-		self.text_maloja_key   = TextBox2(tauon=self)
+		self.text_maloja_url: TextBox2 = TextBox2(tauon=self)
+		self.text_maloja_key: TextBox2 = TextBox2(tauon=self)
 
-		self.text_sat_url      = TextBox2(tauon=self)
-		self.text_sat_playlist = TextBox2(tauon=self)
+		self.text_sat_url:      TextBox2 = TextBox2(tauon=self)
+		self.text_sat_playlist: TextBox2 = TextBox2(tauon=self)
 
-		self.rename_folder     = TextBox2(tauon=self)
+		self.rename_folder: TextBox2 = TextBox2(tauon=self)
 		self.transcode_list:      list[list[int]] = []
 		self.transcode_state:                 str = ""
 		self.loaderCommand:                   int = LoaderCommand.NONE
@@ -6107,7 +6107,7 @@ class Tauon:
 		self.load_orders:         list[LoadClass] = []
 		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
-		self.album_info_cache_key                 = (-1, -1)
+		self.album_info_cache_key: tuple[int, int] = (-1, -1)
 		self.console:                    DConsole = bag.console
 		self.TrackClass                           = TrackClass
 		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
@@ -6136,7 +6136,7 @@ class Tauon:
 		self.pl_to_id = self.pctl.pl_to_id
 		self.id_to_pl = self.pctl.id_to_pl
 
-		self.copied_track = None
+		self.copied_track: int | None = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.player4_state:       PlayerState = PlayerState.STOPPED
@@ -6693,7 +6693,7 @@ class Tauon:
 		if self.album_mode_art_size > 150:
 			self.prefs.thin_gallery_borders = False
 
-	def fix_encoding(self, index: int, mode: int, enc :str) -> None:
+	def fix_encoding(self, index: int, mode: int, enc: str) -> None:
 		todo: list[int] = []
 		# TODO(Martin): What's the point of this? It was global before but is only used here
 		enc_field = "All"
@@ -6771,7 +6771,7 @@ class Tauon:
 		if not self.gui.radio_view:
 			self.enter_radio_view()
 
-	def parse_m3u(self, m3u_path: str) -> tuple[ list[int], list[RadioStation] ]:
+	def parse_m3u(self, m3u_path: str) -> tuple[list[int], list[RadioStation]]:
 		"""Read specified .m3u[8] playlist file, return list of track IDs/stations"""
 		playlist: list[int] = []
 		stations: list[RadioStation] = []
@@ -6784,11 +6784,11 @@ class Tauon:
 			with path.open(encoding="utf-8") as file:
 				lines = file.readlines()
 		except UnicodeDecodeError as e:
-			self.show_message(_("Error importing M3U playlist"), _(f"Error trying to parse trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
+			self.show_message(_("Error importing M3U playlist"), _("Error trying to parse trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
 			logging.error(f"Error trying to parse trying to parse playlist as UTF-8: {e}")
 			return [], []
 		except Exception as e:
-			self.show_message(_("Exception importing M3U playlist"), _(f"Unknown exception trying to parse playlist") + f" {e}", mode="warning")
+			self.show_message(_("Exception importing M3U playlist"), _("Unknown exception trying to parse playlist") + f" {e}", mode="warning")
 			logging.exception("Unknown exception trying to parse playlist")
 			return [], []
 
@@ -6938,7 +6938,7 @@ class Tauon:
 				lines = f.readlines()
 				self.read_pls(lines, path)
 
-	def parse_xspf(self, path:str) -> tuple[ list[int], list[RadioStation], str]:
+	def parse_xspf(self, path: str) -> tuple[list[int], list[RadioStation], str]:
 		"""Read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
 		try:
 			parser = ET.XMLParser(encoding="utf-8")
@@ -9374,7 +9374,7 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[index].title + "\" a pt>"
 		return None
 
-	def gen_folder_top(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
+	def gen_folder_top(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | list[tuple[list[int], int]] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		if len(source) < 3:
@@ -9480,7 +9480,7 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[pl].title + "\" a rata>"
 		return None
 
-	def gen_lyrics(self, pl: int, custom_list: list[int] | None = None)-> list[int] | None:
+	def gen_lyrics(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
 		playlist: list[int] = []
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
@@ -12625,7 +12625,7 @@ class Tauon:
 	# 		colour = self.colours.menu_text_disabled
 	# 	return Decorator(self.colour, self.colours.menu_background, line)
 
-	def art_metadata_overlay(self, right: float, bottom: float, showc: list[tuple[str, int, int, int, str]]) -> None:
+	def art_metadata_overlay(self, right: float, bottom: float, showc: list[tuple[int, int, int, int, str]]) -> None:
 		if not showc:
 			return
 
@@ -15309,7 +15309,7 @@ class Tauon:
 
 					self.star_store.db[new_key] = new_star
 
-		self.gui.transcoding_bach_done += 1
+		self.gui.transcoding_batch_done += 1
 		if cleanup:
 			os.remove(path)
 		self.core_use -= 1
@@ -20786,7 +20786,7 @@ class AlbumArt:
 		self.download_in_progress = False
 		self.gui.update += 1
 
-	def get_info(self, track_object: TrackClass) -> list[tuple[str, int, int, int, str]] | None:
+	def get_info(self, track_object: TrackClass) -> list[tuple[int, int, int, int, str]] | None:
 		sources = self.get_sources(track_object)
 		if len(sources) == 0:
 			return None
@@ -27897,7 +27897,7 @@ class TopPanel:
 				# ddt.rect_r(box, ColourRGBA(100, 100, 100, 255))
 				ddt.rect(box, c1)
 
-				done = round(gui.transcoding_bach_done / gui.transcoding_batch_total * 100)
+				done = round(gui.transcoding_batch_done / gui.transcoding_batch_total * 100)
 				doing = round(self.tauon.core_use / gui.transcoding_batch_total * 100)
 
 				ddt.rect([x, yy, done, h], c3)
@@ -34754,18 +34754,18 @@ class QueueBox:
 class MetaBox:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon           = tauon
-		self.ddt             = tauon.ddt
-		self.gui             = tauon.gui
-		self.inp             = tauon.inp
+		self.tauon: Tauon = tauon
+		self.ddt: TDraw = tauon.ddt
+		self.gui: GuiVar = tauon.gui
+		self.inp: Input = tauon.inp
 		self.coll            = tauon.coll
-		self.pctl            = tauon.pctl
-		self.fonts           = tauon.fonts
-		self.prefs           = tauon.prefs
-		self.fields          = tauon.fields
-		self.colours         = tauon.colours
-		self.showcase_menu   = tauon.showcase_menu
-		self.lyrics_ren_mini = tauon.lyrics_ren_mini
+		self.pctl: PlayerCtl = tauon.pctl
+		self.fonts: Fonts = tauon.fonts
+		self.prefs: Prefs = tauon.prefs
+		self.fields: Fields = tauon.fields
+		self.colours: ColoursClass = tauon.colours
+		self.showcase_menu: Menu = tauon.showcase_menu
+		self.lyrics_ren_mini: LyricsRenMini = tauon.lyrics_ren_mini
 
 	def l_panel(self, x: int, y: int, w: int, h: int, track: TrackClass, top_border: bool = True) -> None:
 		colours = self.colours
@@ -34799,7 +34799,7 @@ class MetaBox:
 		if w < h * 1.9:
 			compact_mode = True
 
-		art_rect = [
+		art_rect: list[float] = [
 			x + insert - 2 * self.gui.scale, y + insert, h - insert * 2 + 1 * self.gui.scale, h - insert * 2 + 1 * self.gui.scale]
 
 		if compact_mode:
@@ -36045,7 +36045,7 @@ class ProjectM:
 			logging.info("init project m...")
 			self.pm_instance = self.lib.projectm_create()
 			if self.pm_instance:
-				logging.info(f"ProjectM initialized successfully")
+				logging.info("ProjectM initialized successfully")
 				logging.info(f"Preset path: {preset_path}")
 
 				aud = self.tauon.aud
@@ -41961,7 +41961,7 @@ def worker1(tauon: Tauon) -> None:
 
 					total = len(folder_items)
 					gui.transcoding_batch_total = total
-					gui.transcoding_bach_done = 0
+					gui.transcoding_batch_done = 0
 					dones = []
 
 					q = 0
