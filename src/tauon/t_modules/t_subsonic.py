@@ -248,6 +248,8 @@ class SubsonicService:
 				return
 			except Exception:
 				logging.exception("Unknown Error reading Airsonic directory")
+				if not inner:
+					statuses[index] = 2
 				return
 
 			items = d["subsonic-response"]["directory"]["child"]
