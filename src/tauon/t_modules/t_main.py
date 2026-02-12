@@ -2562,7 +2562,7 @@ class PlayerCtl:
 		if self.playing_state == PlayingState.URL_STREAM:
 			return self.radiobox.dummy_track
 
-		if 3 > self.playing_state != PlayingState.STOPPED:
+		if self.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 			target_track = self.playing_object()
 
 		elif self.playing_state == PlayingState.STOPPED and self.prefs.meta_shows_selected:
