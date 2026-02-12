@@ -875,7 +875,13 @@ def controller(tauon: Tauon) -> None:
 				tauon.toggle_repeat()
 			if path.startswith("/open/"):
 				rest = path[6:]
-				path = base64.urlsafe_b64decode(rest.encode()).decode()
+				try:
+					path = base64.urlsafe_b64decode(rest.encode()).decode()
+				except Exception:
+					logging.exception("Invalid /open/ payload")
+					self.send_response(400)
+					self.end_headers()
+					return
 				tauon.open_uri(path)
 
 			self.send_response(200)
