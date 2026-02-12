@@ -25,6 +25,7 @@ Finally add provider name and function reference to lyric_sources dict below
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import logging
 import urllib.parse
 from http import HTTPStatus
 

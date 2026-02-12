@@ -127,7 +127,7 @@ class SubsonicService:
 		if self.prefs.network_stream_bitrate > 0:
 			p["maxBitRate"] = self.prefs.network_stream_bitrate
 
-		return self.r("stream", p={"id": key}, get_url=True)
+		return self.r("stream", p=p, get_url=True)
 		# logging.info(response.content)
 
 	def listen(self, track_object: TrackClass, submit: bool = False) -> bool:
@@ -191,6 +191,11 @@ class SubsonicService:
 			a = self.r("getIndexes")
 		except Exception:
 			logging.exception("Error connecting to Airsonic server")
+			self.show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.scanning = False
+			return []
+		if not a or "subsonic-response" not in a:
+			logging.error("Invalid response from Airsonic getIndexes")
 			self.show_message(_("Error connecting to Airsonic server"), mode="error")
 			self.scanning = False
 			return []

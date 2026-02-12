@@ -80,6 +80,9 @@ class Chrome:
 		self.tauon.start_remote()
 		ccs, browser = pychromecast.get_listed_chromecasts(friendly_names=[item[1]], discovery_timeout=3.0)
 		self.browser = browser
+		if not ccs:
+			logging.error("No Chromecast found for selected device")
+			return
 		self.cast = ccs[0]
 		self.cast.wait()
 		self.save_vol = self.tauon.pctl.player_volume

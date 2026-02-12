@@ -162,13 +162,14 @@ class VorbisMonitor:
 def send_file(path: str, mime: str, server) -> None:
 	range_req = False
 	start = 0
-	end = 0
+	end = None
 
 	if "Range" in server.headers:
 		range_req = True
 		b = server.headers["Range"].split("=")[1]
-		start, end = b.split("-")
-		start = int(start)
+		start_str, end_str = b.split("-", 1)
+		start = int(start_str) if start_str else 0
+		end = int(end_str) if end_str else None
 
 	with open(path, "rb") as f:
 		f.seek(0, 2)
@@ -176,9 +177,12 @@ def send_file(path: str, mime: str, server) -> None:
 		f.seek(start, 0)
 
 		if range_req:
+			if end is None or end >= length:
+				end = length - 1
+			chunk_length = end - start + 1
 			server.send_response(206)
-			server.send_header("Content-Range", f"bytes {start}-{length - 1}/{length}")
-			server.send_header("Content-Length", str(length))
+			server.send_header("Content-Range", f"bytes {start}-{end}/{length}")
+			server.send_header("Content-Length", str(chunk_length))
 			server.send_header("Content-Type", mime)
 			f.seek(start)
 
@@ -190,11 +194,17 @@ def send_file(path: str, mime: str, server) -> None:
 
 		server.end_headers()
 
+		remaining = end - start + 1 if range_req else None
 		while True:
-			data = f.read(1000)
+			read_size = 1000 if remaining is None else min(1000, remaining)
+			if read_size <= 0:
+				break
+			data = f.read(read_size)
 			if not data:
 				break
 			server.wfile.write(data)
+			if remaining is not None:
+				remaining -= len(data)
 
 
 def webserve(
@@ -377,7 +387,9 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			if len(both) > 1:
 				pairs = both[1].split("&")
 				for p in pairs:
-					aa, bb = p.split("=")
+					if "=" not in p:
+						continue
+					aa, bb = p.split("=", 1)
 					params[aa] = bb
 
 			return levels, params
@@ -433,7 +445,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			if path.startswith("/api1/pic/small/"):
 				value = path[16:]
-				if value.isalnum() and int(value) in pctl.master_library:
+				if value.isdigit() and int(value) in pctl.master_library:
 					track = pctl.get_track(int(value))
 					raw = album_art_gen.save_thumb(track, (75, 75), "")
 					if raw:
@@ -451,10 +463,10 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					self.end_headers()
 					self.wfile.write(b"Invalid parameter")
 
-			if path.startswith("/api1/pic/medium/"):
+			elif path.startswith("/api1/pic/medium/"):
 				value = path[17:]
 				logging.info(value)
-				if value.isalnum() and int(value) in pctl.master_library:
+				if value.isdigit() and int(value) in pctl.master_library:
 					track = pctl.get_track(int(value))
 					raw = album_art_gen.save_thumb(track, (1000, 1000), "")
 					if raw:
@@ -472,9 +484,9 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					self.end_headers()
 					self.wfile.write(b"Invalid parameter")
 
-			if path.startswith("/api1/lyrics/"):
+			elif path.startswith("/api1/lyrics/"):
 				value = path[13:]
-				if value.isalnum() and int(value) in pctl.master_library:
+				if value.isdigit() and int(value) in pctl.master_library:
 					track = pctl.get_track(int(value))
 					data = {}
 					data["track_id"] = track.index

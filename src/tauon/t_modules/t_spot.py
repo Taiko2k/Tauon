@@ -152,7 +152,6 @@ class SpotCtl:
 					self.token = tk.refresh_pkce_token(self.tauon.prefs.spot_client, self.tauon.prefs.spotify_token)
 			except Exception:
 				logging.exception("FAILED TO LOAD TOKEN")
-				raise
 				self.show_message(_("Please re-authenticate Spotify in settings"))
 				self.tauon.prefs.spotify_token = ""
 		else:
