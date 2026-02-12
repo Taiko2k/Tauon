@@ -211,6 +211,7 @@ def get_lrclib_challenge(user_agent: str = "TauonMusicBox/Devel") -> tuple[str, 
 		return "", ""
 	except Exception:
 		logging.exception()
+		return "", ""
 	if r.status_code == HTTPStatus.OK:
 		p = r.json().get("prefix")
 		t = r.json().get("target")

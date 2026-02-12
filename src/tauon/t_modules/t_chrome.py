@@ -105,13 +105,18 @@ class Chrome:
 	def update(self) -> tuple:
 		if self.cast is None:
 			logging.critical("self.cast was None, this should not happen!")
-			return ()
+			return (0.0, None, None, 0.0)
 		self.cast.media_controller.update_status()
+		status = self.cast.media_controller.status
+		if status is None:
+			logging.critical("self.cast.media_controller.status was None, this should not happen!")
+			return (0.0, None, None, 0.0)
+		custom_data = status.media_custom_data if isinstance(status.media_custom_data, dict) else {}
 		return (
-			self.cast.media_controller.status.current_time,
-			self.cast.media_controller.status.media_custom_data.get("id"),
-			self.cast.media_controller.status.player_state,
-			self.cast.media_controller.status.duration,
+			status.current_time,
+			custom_data.get("id"),
+			status.player_state,
+			status.duration,
 		)
 
 	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> None:
