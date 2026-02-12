@@ -4604,6 +4604,7 @@ class ListenBrainz:
 			return True
 		if self.prefs.lb_token is None:
 			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
+			return
 
 		title = track_object.title
 		album = track_object.album
