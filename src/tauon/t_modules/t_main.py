@@ -14229,7 +14229,7 @@ class Tauon:
 
 			elif cm[:2] == "y<":
 				value = cm[2:]
-				if value and value.isdigit:
+				if value and value.isdigit():
 					value = int(value)
 					temp = []
 					for item in playlist:
