@@ -277,13 +277,12 @@ except Exception:
 
 try:
 	from tauon.t_modules.t_chrome import Chrome
+	logging.debug("Found Chrome(pychromecast) for chromecast support")
 except ModuleNotFoundError as e:
 	logging.debug(f"pychromecast import error: {e}")
 	logging.warning("Unable to import Chrome(pychromecast), chromecast support will be disabled.")
 except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
-finally:
-	logging.debug("Found Chrome(pychromecast) for chromecast support")
 
 try:
 	# pyLast needs to be imported AFTER setup_tls() else pyinstaller breaks - we reimport it later
