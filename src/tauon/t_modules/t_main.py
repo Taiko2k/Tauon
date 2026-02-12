@@ -35460,9 +35460,10 @@ class ArtistInfoBox:
 				self.artist_picture_render.show = True
 			if silent:
 				return None
+
 			# Trigger reload of thumbnail in artist list box
 			for key, value in list(self.tauon.artist_list_box.thumb_cache.items()):
-				if key is None and key == artist:
+				if key == artist:
 					del self.tauon.artist_list_box.thumb_cache[artist]
 					break
 
