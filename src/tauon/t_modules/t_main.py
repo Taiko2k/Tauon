@@ -16720,7 +16720,7 @@ class Tauon:
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id])
 				if self.pctl.master_library[track_id].file_ext == "SUB":
-					self.jellyfin.star_track(self.pctl.master_library[track_id])
+					self.subsonic.star_track(self.pctl.master_library[track_id])
 		else:
 			time.sleep(delay)
 			self.gui.update += 1
@@ -16739,7 +16739,7 @@ class Tauon:
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id], un=True)
 				if self.pctl.master_library[track_id].file_ext == "SUB":
-					self.jellyfin.unstar_track(self.pctl.master_library[track_id])
+					self.subsonic.unstar_track(self.pctl.master_library[track_id])
 
 		self.gui.pl_update = 2
 		self.gui.update += 1
