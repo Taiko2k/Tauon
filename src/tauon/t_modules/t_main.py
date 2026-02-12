@@ -12282,7 +12282,7 @@ class Tauon:
 				num -= 1
 
 	def update_playlist_call(self) -> None:
-		self.gui.update + 2
+		self.gui.update += 2
 		self.gui.pl_update = 2
 
 	def pl_is_mut(self, pl: int) -> bool:
