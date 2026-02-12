@@ -78,7 +78,7 @@ class VorbisMonitor:
 		ogg = b.read(4)
 
 		if ogg != b"OggS":
-			f = data.find(b"Oggs")
+			f = data.find(b"OggS")
 			self.reset(self.tries)
 			if f > -1:
 				logging.info("Ogg stream synced")
@@ -375,7 +375,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			both = text.split("?")
 			levels = both[0].split("/")
 			if len(both) > 1:
-				pairs = both[2].split("&")
+				pairs = both[1].split("&")
 				for p in pairs:
 					aa, bb = p.split("=")
 					params[aa] = bb
