@@ -570,15 +570,21 @@ class SpotCtl:
 						start_callback()
 
 					# self.tauon.pctl.playing_state = 3
-				elif self.tauon.msys:
-					self.launching_spotify = True
-					p = os.getenv("APPDATA") + "\\Spotify\\Spotify.exe"
-					if not os.path.isfile(p):
-						self.launching_spotify = False
-						self.preparing_spotify = False
-						logging.info("Spotify app exe not found, aborting.")
-						return
-					subprocess.Popen([p])
+					elif self.tauon.msys:
+						self.launching_spotify = True
+						appdata = os.getenv("APPDATA")
+						if not appdata:
+							self.launching_spotify = False
+							self.preparing_spotify = False
+							logging.info("APPDATA is not set, cannot locate Spotify app.")
+							return
+						p = appdata + "\\Spotify\\Spotify.exe"
+						if not os.path.isfile(p):
+							self.launching_spotify = False
+							self.preparing_spotify = False
+							logging.info("Spotify app exe not found, aborting.")
+							return
+						subprocess.Popen([p])
 					logging.info("Launching spotify app exe")
 					time.sleep(3)
 				else:
