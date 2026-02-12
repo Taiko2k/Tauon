@@ -807,7 +807,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				data["album_id"] = 0
 				playlist = pctl.playing_playlist()
 
-				if p < len(playlist):
+				if track is not None and p < len(playlist):
 					while True:
 						if p < 0 or pctl.get_track(playlist[p]).parent_folder_path != track.parent_folder_path:
 							p += 1
