@@ -175,7 +175,8 @@ class Tidal:
 
 	def new_track(self, track: Track) -> TrackClass:
 		new = False
-		nt = self.import_cache.get(track.id)
+		track_id = str(track.id)
+		nt = self.import_cache.get(track_id)
 
 		if not nt:
 			new = True
@@ -184,7 +185,7 @@ class Tidal:
 
 		nt.is_network = True
 		nt.file_ext = "TIDAL"
-		nt.url_key = str(track.id)
+		nt.url_key = track_id
 
 		nt.track_number = str(track.track_num)
 		nt.title = track.name
