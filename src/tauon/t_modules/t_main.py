@@ -9258,6 +9258,7 @@ class Tauon:
 		self.pctl.multi_playlist[pl].persist_time_positioning ^= True
 
 	def set_download_deco(self, pl: int) -> Decorator:
+		id = self.pctl.pl_to_id(pl)
 		text = _("Set as Downloads Playlist")
 		if id == self.prefs.download_playlist:
 			text = _("Un-set as Downloads Playlist")
