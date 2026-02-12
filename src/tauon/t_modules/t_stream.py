@@ -120,6 +120,7 @@ class StreamEnc:
 		retry = 5
 		while True:
 			try:
+				urllib.request.http.client.HTTPResponse._read_status = NiceToICY
 				r = urllib.request.Request(self.url)
 				# r.add_header('GET', '1')
 				if not self.url.endswith(".ts"):
@@ -140,6 +141,8 @@ class StreamEnc:
 				logging.error("Connection failed")
 				self.tauon.show_message(_("Failed to establish a connection"), str(e), mode="error")
 				return False
+			finally:
+				urllib.request.http.client.HTTPResponse._read_status = ORIGINAL_HTTP_CLIENT_READ_STATUS
 			break
 
 		self.download_process = threading.Thread(target=self.run_download, args=([r]))
