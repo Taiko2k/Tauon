@@ -894,33 +894,33 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str = "") -> fl
 				return 0
 
 		elif ext == "zip":
-			zip_ref = zipfile.ZipFile(path, "r")
-			matches = 0
-			count = 0
-			# logging.info(zip_ref.namelist())
-			for fi in zip_ref.namelist():
-				for ty in extensions:
-					if fi[len(ty) * -1 :].lower() == ty:
-						matches += 1
-						break
-					if is_ignorable_file(fi):
-						count -= 1
-						break
-					if is_music_related(fi):
-						matches += 5
-				count += 1
-			if count == 0:
-				# logging.info("Archive has no files")
-				# logging.info("   --- " + path)
-				return 0
-			if count > 300:
-				# logging.info("Zip archive has many files")
-				# logging.info("   --- " + path)
-				return 0
-			if matches == 0:
-				# logging.info("Zip archive does not appear to contain audio files")
-				# logging.info("   --- " + path)
-				return 0
+			with zipfile.ZipFile(path, "r") as zip_ref:
+				matches = 0
+				count = 0
+				# logging.info(zip_ref.namelist())
+				for fi in zip_ref.namelist():
+					for ty in extensions:
+						if fi[len(ty) * -1 :].lower() == ty:
+							matches += 1
+							break
+						if is_ignorable_file(fi):
+							count -= 1
+							break
+						if is_music_related(fi):
+							matches += 5
+					count += 1
+				if count == 0:
+					# logging.info("Archive has no files")
+					# logging.info("   --- " + path)
+					return 0
+				if count > 300:
+					# logging.info("Zip archive has many files")
+					# logging.info("   --- " + path)
+					return 0
+				if matches == 0:
+					# logging.info("Zip archive does not appear to contain audio files")
+					# logging.info("   --- " + path)
+					return 0
 		else:
 			return 0
 
