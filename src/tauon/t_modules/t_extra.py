@@ -471,7 +471,7 @@ def point_proximity_test(a: list[int], b: list[int], p: float) -> bool:
 
 def point_distance(a: list[int], b: list[int]) -> float:
 	"""Get distance between two points"""
-	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
+	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(a[1] - b[1]) ** 2)
 
 
 def rm_16(line: str) -> str:
