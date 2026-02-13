@@ -765,7 +765,7 @@ def is_light(colour: ColourRGBA) -> bool:
 	return test_lumi(colour) < 0.2
 
 
-def folder_file_scan(path: str, extensions: str) -> float:
+def folder_file_scan(path: str, extensions: set[str]) -> float:
 	match = 0
 	count = sum([len(files) for r, d, files in os.walk(path)])
 	for ext in extensions:
