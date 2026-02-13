@@ -819,7 +819,7 @@ def is_music_related(string: str) -> bool:
 	return False
 
 
-def archive_file_scan(path: str, extensions: str, launch_prefix: str = "") -> float:
+def archive_file_scan(path: str, extensions: set[str], launch_prefix: str = "") -> float:
 	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
 	# logging.info(path)
