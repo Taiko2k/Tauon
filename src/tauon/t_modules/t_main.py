@@ -37118,13 +37118,13 @@ class ViewBox:
 class DLMon:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon           = tauon
-		self.gui             = tauon.gui
-		self.msys            = tauon.msys
-		self.pctl            = tauon.pctl
-		self.prefs           = tauon.prefs
-		self.formats         = tauon.formats
-		self.music_directory = tauon.music_directory
+		self.tauon: Tauon = tauon
+		self.gui: GuiVar = tauon.gui
+		self.msys: bool = tauon.msys
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs: Prefs = tauon.prefs
+		self.formats: Formats = tauon.formats
+		self.music_directory: Path = tauon.music_directory
 		self.ticker = Timer()
 		self.ticker.force_set(8)
 
