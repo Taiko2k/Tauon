@@ -9290,7 +9290,7 @@ class Tauon:
 
 		filepath = self.user_directory / f"{name}.csv"
 		with open(filepath, "w", encoding="utf-8") as xport:
-			xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
+			xport.write("Album name,Artist,Release date,Genre,Rating,Playtime,Folder path")
 
 			for id in albums:
 				track = self.pctl.get_track(id)
@@ -11521,7 +11521,7 @@ class Tauon:
 		path = self.user_directory / "DatabaseExport.csv"
 		xport = path.open("w", encoding="utf-8")
 
-		xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
+		xport.write("Artist,Title,Album,Album artist,Track number,Type,Duration,Release date,Genre,Playtime,File path")
 
 		for index, track in self.pctl.master_library.items():
 			xport.write("\n")
