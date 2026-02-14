@@ -19781,7 +19781,7 @@ class TimedLyricsRen:
 			self.ready = False
 			self.generate(self.pctl.master_library[index])
 			self.lrm.to_reload = False
-		line_positions: list[ tuple[ list[int], list[float,str], int ] ] = []
+		line_positions: list[tuple[list[int], list[float | str], int]] = []
 		# saves collider positions alongside their respective lines
 
 		if self.inp.right_click and x and y and self.coll((x, y, w, h)):
