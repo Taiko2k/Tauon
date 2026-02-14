@@ -42,8 +42,8 @@ class GetThemesFn(Protocol):
 	def __call__(self, *, dirs: Directories, deco: bool) -> list[str] | dict[str, str]: ...
 
 def get_colour_from_line(cline: str) -> ColourRGBA:
-	colour = [-1, -1, -1, -1]
-	colour_str = ["", "", "", ""]
+	colour: list[int] = [-1, -1, -1, -1]
+	colour_str: list[str] = ["", "", "", ""]
 	mode = 0
 
 	is_hex = False
