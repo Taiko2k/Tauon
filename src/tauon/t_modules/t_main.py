@@ -11774,7 +11774,7 @@ class Tauon:
 			else:
 				self.show_message(_("No results found"))
 
-	def get_album_spot_url_actove_deco(self) -> Decorator:
+	def get_album_spot_url_active_deco(self) -> Decorator:
 		tr = self.pctl.playing_object()
 		text = _("Copy Album URL")
 		if not tr:
