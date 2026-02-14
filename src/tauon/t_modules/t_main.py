@@ -17978,12 +17978,12 @@ class Tauon:
 			return self.prefs.ui_scale == 1.25
 		return None
 
-		self.prefs.ui_scale = 1.25
-		self.pref_box.large_preset()
+		#self.prefs.ui_scale = 1.25
+		#self.pref_box.large_preset()
 
-		if self.prefs.ui_scale != self.gui.scale:
-			self.show_message(_("Change will be applied on restart."))
-		return None
+		#if self.prefs.ui_scale != self.gui.scale:
+		#	self.show_message(_("Change will be applied on restart."))
+		#return None
 
 	def toggle_use_tray(self, mode: int = 0) -> bool | None:
 		if mode == 1:
