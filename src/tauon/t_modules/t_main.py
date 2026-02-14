@@ -19115,7 +19115,7 @@ class KoelService:
 			if "track" in song and song["track"] is not None:
 				nt.track_number = song["track"]
 			if "disc" in song and song["disc"] is not None:
-				nt.disc = song["disc"]
+				nt.disc_number = song["disc"]
 			nt.length = float(song["length"])
 
 			nt.artist = artist_ids.get(song["artist_id"], "")
