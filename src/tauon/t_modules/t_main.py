@@ -119,6 +119,7 @@ from tauon.t_modules.t_enums import (  # noqa: E402
 	MiniModeMode,
 	PlayerState,
 	PlayingState,
+	QueueType,
 	StopMode,
 )
 from tauon.t_modules.t_extra import (  # noqa: E402
@@ -3574,8 +3575,7 @@ class PlayerCtl:
 			q = self.force_queue[0]
 			target_index = q.track_id
 
-			if q.type == 1:
-				# This is an album type
+			if q.type == QueueType.ALBUM:
 				if q.album_stage == 0:
 					# We have not started playing the album yet
 					# So we go to that track
@@ -7625,9 +7625,10 @@ class Tauon:
 
 		if not self.pctl.force_queue:
 			self.pctl.force_queue.insert(
-				0, queue_item_gen(playing_object.index,
-				self.pctl.playlist_playing_position,
-				self.pctl.pl_to_id(self.pctl.active_playlist_playing), 1, 1))
+				0, queue_item_gen(
+					playing_object.index,
+					self.pctl.playlist_playing_position,
+					self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 1))
 
 	def add_album_to_queue(self, ref: int, position: int | None = None, playlist_id: int | None = None) -> None:
 		if position is None:
@@ -7641,7 +7642,7 @@ class Tauon:
 			if self.pctl.get_track(ref).parent_folder_path == playing_object.parent_folder_path:
 				partway = 1
 
-		queue_object = queue_item_gen(ref, position, playlist_id, 1, partway)
+		queue_object = queue_item_gen(ref, position, playlist_id, QueueType.ALBUM, partway)
 		self.pctl.force_queue.append(queue_object)
 		self.queue_timer_set(queue_object=queue_object)
 		if self.prefs.stop_end_queue:
@@ -7656,13 +7657,13 @@ class Tauon:
 
 		if not self.pctl.force_queue:
 			queue_item = queue_item_gen(
-				playing_object.index, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), 1, 1)
+				playing_object.index, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 1)
 			self.pctl.force_queue.insert(0, queue_item)
 			self.add_album_to_queue(ref)
 			return
 
 		if self.pctl.force_queue[0].album_stage == 1:
-			queue_item = queue_item_gen(ref, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), 1, 0)
+			queue_item = queue_item_gen(ref, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 0)
 			self.pctl.force_queue.insert(1, queue_item)
 		else:
 			p = self.pctl.get_track(ref).parent_folder_path
@@ -7676,12 +7677,12 @@ class Tauon:
 					queue_item = queue_item_gen(
 						ref,
 						self.pctl.playlist_playing_position,
-						self.pctl.pl_to_id(self.pctl.active_playlist_playing), 1, 0)
+						self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 0)
 					self.pctl.force_queue.insert(i, queue_item)
 					break
 			else:
 				queue_item = queue_item_gen(
-					ref, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), 1, 0)
+					ref, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 0)
 				self.pctl.force_queue.insert(len(self.pctl.force_queue), queue_item)
 		if queue_item:
 			self.queue_timer_set(queue_object=queue_item)
@@ -16962,7 +16963,7 @@ class Tauon:
 				for i, item in enumerate(self.pctl.force_queue):
 					if item.track_id == n_track.index and item.position == p_track and item.playlist_id == self.pctl.pl_to_id(
 							self.pctl.active_playlist_viewing):
-						if item.type == 0:  # Only show mark if track type
+						if item.type == QueueType.TRACK:  # Only show mark if track type
 							marks.append(i)
 						# else:
 						# 	album_type = True
@@ -34216,7 +34217,7 @@ class QueueBox:
 		if self.pctl.force_queue:
 			playlist = []
 			for item in self.pctl.force_queue:
-				if item.type == 0:
+				if item.type == QueueType.TRACK:
 					playlist.append(item.track_id)
 				else:
 
@@ -34272,7 +34273,7 @@ class QueueBox:
 			else:
 				# Add as album type
 				self.pctl.force_queue.insert(
-					insert_position, queue_item_gen(main_track_id, main_track_position, playlist_id, 1))
+					insert_position, queue_item_gen(main_track_id, main_track_position, playlist_id, QueueType.ALBUM))
 				return
 
 		if len(self.gui.shift_selection) == 1:
@@ -34323,7 +34324,7 @@ class QueueBox:
 
 		self.pctl.jump(target_track_id, queue_item.position)
 
-		if queue_item.type == 1:  # is album type
+		if queue_item.type == QueueType.ALBUM:
 			queue_item.album_stage = 1  # set as partway playing
 			self.pctl.force_queue.insert(0, queue_item)
 
@@ -34374,7 +34375,7 @@ class QueueBox:
 		# text_colour = ColourRGBA(230, 230, 230, 255)
 		bg = self.colours.queue_background
 
-		# if fq[i].type == 0:
+		# if fq[i].type == QueueType.TRACK:
 
 		rect = (x + 13 * self.gui.scale, yy, w - 28 * self.gui.scale, self.tab_h)
 
@@ -34393,7 +34394,7 @@ class QueueBox:
 		self.ddt.rect((rect[0] + 4 * self.gui.scale, rect[1] + 4 * self.gui.scale, 26, 26), ColourRGBA(0, 0, 0, 6))
 
 		line = track.album
-		if fqo.type == 0:
+		if fqo.type == QueueType.TRACK:
 			line = track.title
 
 		if not line:
@@ -34402,10 +34403,10 @@ class QueueBox:
 		line2y = yy + 14 * self.gui.scale
 
 		artist_line = track.artist
-		if fqo.type == 1 and track.album_artist:
+		if fqo.type == QueueType.ALBUM and track.album_artist:
 			artist_line = track.album_artist
 
-		if fqo.type == 0 and not artist_line:
+		if fqo.type == QueueType.TRACK and not artist_line:
 			line2y -= 7 * self.gui.scale
 
 		self.ddt.text(
@@ -34417,7 +34418,7 @@ class QueueBox:
 			max_w=rect[2] - 60 * self.gui.scale, bg=bg)
 
 		if draw_album_indicator:
-			if fqo.type == 1:
+			if fqo.type == QueueType.ALBUM:
 				if fqo.album_stage == 0:
 					self.ddt.rect((rect[0] + rect[2] - 5 * self.gui.scale, rect[1], 5 * self.gui.scale, rect[3]), ColourRGBA(220, 130, 20, 255))
 				else:
@@ -34425,7 +34426,7 @@ class QueueBox:
 
 			if fqo.auto_stop:
 				xx = rect[0] + rect[2] - 9 * self.gui.scale
-				if fqo.type == 1:
+				if fqo.type == QueueType.ALBUM:
 					xx -= 11 * self.gui.scale
 				self.ddt.rect((xx, rect[1] + 5 * self.gui.scale, 7 * self.gui.scale, 7 * self.gui.scale), ColourRGBA(230, 190, 0, 255))
 
@@ -34687,7 +34688,7 @@ class QueueBox:
 		tracks = 0
 
 		for item in fq:
-			if item.type == 0:
+			if item.type == QueueType.TRACK:
 				duration += self.pctl.get_track(item.track_id).length
 				tracks += 1
 			else:
@@ -39332,12 +39333,9 @@ def no_padding() -> int:
 def uid_gen() -> int:
 	return random.randrange(1, 100000000)
 
-def queue_item_gen(track_id: int, position: int, pl_id: int, type: int = 0, album_stage: int = 0) -> TauonQueueItem:
-	# type; 0 is track, 1 is album
+def queue_item_gen(track_id: int, position: int, pl_id: int, queue_type: QueueType = QueueType.TRACK, album_stage: int = 0) -> TauonQueueItem:
 	auto_stop = False
-
-	#return [track_id, position, pl_id, type, album_stage, uid_gen(), auto_stop]
-	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
+	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=queue_type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
 
 def get_themes(dirs: Directories, deco: bool = False) -> list[tuple[str, str]] | dict[str, str]:
 	themes: list[tuple[str, str]] = []  # full path, theme file name
@@ -49163,8 +49161,8 @@ def main(holder: Holder) -> None:
 					top_text = _("Track")
 					if gui.queue_toast_plural:
 						top_text = "Album"
-						fqo.type = 1
-					if pctl.force_queue[-1].type == 1:
+						fqo.type = QueueType.ALBUM
+					if pctl.force_queue[-1].type == QueueType.ALBUM:
 						top_text = "Album"
 
 					tauon.queue_box.draw_card(
