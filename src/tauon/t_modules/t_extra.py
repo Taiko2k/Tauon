@@ -45,6 +45,7 @@ from gi.repository import GLib
 if TYPE_CHECKING:
 	from collections.abc import Callable
 
+	from tauon.t_modules.t_enums import QueueType
 	from tauon.t_modules.t_main import TrackClass
 	from tauon.t_modules.t_tagscan import TrackFile
 
@@ -116,7 +117,7 @@ class TauonQueueItem:
 	track_id: int
 	position: int
 	playlist_id: int
-	type: int
+	type: QueueType
 	album_stage: int
 	uuid_int: int
 	auto_stop: bool
