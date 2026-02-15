@@ -10516,7 +10516,7 @@ class Tauon:
 		del self.pctl.force_queue[0]
 
 		for part in reversed(parts):
-			self.pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item.type))
+			self.pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], queue_type=item.type))
 		return (len(parts))
 
 	def add_to_queue_next(self, ref: int) -> None:
