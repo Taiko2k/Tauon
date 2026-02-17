@@ -9290,7 +9290,7 @@ class Tauon:
 
 		filepath = self.user_directory / f"{name}.csv"
 		with open(filepath, "w", encoding="utf-8") as xport:
-			xport.write("Album name;Artist;Release date;Genre;Rating;Playtime;Folder path")
+			xport.write("Album name,Artist,Release date,Genre,Rating,Playtime,Folder path")
 
 			for id in albums:
 				track = self.pctl.get_track(id)
@@ -11521,7 +11521,7 @@ class Tauon:
 		path = self.user_directory / "DatabaseExport.csv"
 		xport = path.open("w", encoding="utf-8")
 
-		xport.write("Artist;Title;Album;Album artist;Track number;Type;Duration;Release date;Genre;Playtime;File path")
+		xport.write("Artist,Title,Album,Album artist,Track number,Type,Duration,Release date,Genre,Playtime,File path")
 
 		for index, track in self.pctl.master_library.items():
 			xport.write("\n")
@@ -11774,7 +11774,7 @@ class Tauon:
 			else:
 				self.show_message(_("No results found"))
 
-	def get_album_spot_url_actove_deco(self) -> Decorator:
+	def get_album_spot_url_active_deco(self) -> Decorator:
 		tr = self.pctl.playing_object()
 		text = _("Copy Album URL")
 		if not tr:
@@ -17978,12 +17978,12 @@ class Tauon:
 			return self.prefs.ui_scale == 1.25
 		return None
 
-		self.prefs.ui_scale = 1.25
-		self.pref_box.large_preset()
+		#self.prefs.ui_scale = 1.25
+		#self.pref_box.large_preset()
 
-		if self.prefs.ui_scale != self.gui.scale:
-			self.show_message(_("Change will be applied on restart."))
-		return None
+		#if self.prefs.ui_scale != self.gui.scale:
+		#	self.show_message(_("Change will be applied on restart."))
+		#return None
 
 	def toggle_use_tray(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -19781,7 +19781,7 @@ class TimedLyricsRen:
 			self.ready = False
 			self.generate(self.pctl.master_library[index])
 			self.lrm.to_reload = False
-		line_positions: list[ tuple[ list[int], list[float,str], int ] ] = []
+		line_positions: list[tuple[list[int], list[float | str], int]] = []
 		# saves collider positions alongside their respective lines
 
 		if self.inp.right_click and x and y and self.coll((x, y, w, h)):
@@ -37118,13 +37118,13 @@ class ViewBox:
 class DLMon:
 
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon           = tauon
-		self.gui             = tauon.gui
-		self.msys            = tauon.msys
-		self.pctl            = tauon.pctl
-		self.prefs           = tauon.prefs
-		self.formats         = tauon.formats
-		self.music_directory = tauon.music_directory
+		self.tauon: Tauon = tauon
+		self.gui: GuiVar = tauon.gui
+		self.msys: bool = tauon.msys
+		self.pctl: PlayerCtl = tauon.pctl
+		self.prefs: Prefs = tauon.prefs
+		self.formats: Formats = tauon.formats
+		self.music_directory: Path = tauon.music_directory
 		self.ticker = Timer()
 		self.ticker.force_set(8)
 
@@ -44781,8 +44781,7 @@ def main(holder: Holder) -> None:
 	block_size = 3
 
 	x = 0
-	# TODO(Martin): Remove workaround when https://github.com/astral-sh/ty/issues/232 is fixed
-	y = cast(int, 0)
+	y = 0
 	while y < 300:
 		x = 0
 		while x < 300:
