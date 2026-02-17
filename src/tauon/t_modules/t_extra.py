@@ -471,7 +471,7 @@ def point_proximity_test(a: list[int], b: list[int], p: float) -> bool:
 
 def point_distance(a: list[int], b: list[int]) -> float:
 	"""Get distance between two points"""
-	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(b[1] - b[1]) ** 2)
+	return math.sqrt(abs(a[0] - b[0]) ** 2 + abs(a[1] - b[1]) ** 2)
 
 
 def rm_16(line: str) -> str:
@@ -765,7 +765,7 @@ def is_light(colour: ColourRGBA) -> bool:
 	return test_lumi(colour) < 0.2
 
 
-def folder_file_scan(path: str, extensions: str) -> float:
+def folder_file_scan(path: str, extensions: set[str]) -> float:
 	match = 0
 	count = sum([len(files) for r, d, files in os.walk(path)])
 	for ext in extensions:
@@ -819,7 +819,7 @@ def is_music_related(string: str) -> bool:
 	return False
 
 
-def archive_file_scan(path: str, extensions: str, launch_prefix: str = "") -> float:
+def archive_file_scan(path: str, extensions: set[str], launch_prefix: str = "") -> float:
 	"""Get ratio of given file extensions in archive"""
 	ext = os.path.splitext(path)[1][1:].lower()
 	# logging.info(path)
@@ -894,33 +894,33 @@ def archive_file_scan(path: str, extensions: str, launch_prefix: str = "") -> fl
 				return 0
 
 		elif ext == "zip":
-			zip_ref = zipfile.ZipFile(path, "r")
-			matches = 0
-			count = 0
-			# logging.info(zip_ref.namelist())
-			for fi in zip_ref.namelist():
-				for ty in extensions:
-					if fi[len(ty) * -1 :].lower() == ty:
-						matches += 1
-						break
-					if is_ignorable_file(fi):
-						count -= 1
-						break
-					if is_music_related(fi):
-						matches += 5
-				count += 1
-			if count == 0:
-				# logging.info("Archive has no files")
-				# logging.info("   --- " + path)
-				return 0
-			if count > 300:
-				# logging.info("Zip archive has many files")
-				# logging.info("   --- " + path)
-				return 0
-			if matches == 0:
-				# logging.info("Zip archive does not appear to contain audio files")
-				# logging.info("   --- " + path)
-				return 0
+			with zipfile.ZipFile(path, "r") as zip_ref:
+				matches = 0
+				count = 0
+				# logging.info(zip_ref.namelist())
+				for fi in zip_ref.namelist():
+					for ty in extensions:
+						if fi[len(ty) * -1 :].lower() == ty:
+							matches += 1
+							break
+						if is_ignorable_file(fi):
+							count -= 1
+							break
+						if is_music_related(fi):
+							matches += 5
+					count += 1
+				if count == 0:
+					# logging.info("Archive has no files")
+					# logging.info("   --- " + path)
+					return 0
+				if count > 300:
+					# logging.info("Zip archive has many files")
+					# logging.info("   --- " + path)
+					return 0
+				if matches == 0:
+					# logging.info("Zip archive does not appear to contain audio files")
+					# logging.info("   --- " + path)
+					return 0
 		else:
 			return 0
 
