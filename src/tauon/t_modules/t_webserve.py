@@ -163,58 +163,80 @@ def send_file(path: str, mime: str, server) -> None:
 	range_req = False
 	start = 0
 	end = None
+	range_header = server.headers.get("Range")
 
-	if "Range" in server.headers:
-		try:
-			range_req = True
-			b = server.headers["Range"].split("=", 1)[1]
-			start_str, end_str = b.split("-", 1)
-			start = int(start_str) if start_str else 0
-			end = int(end_str) if end_str else None
-		except (IndexError, ValueError):
-			range_req = False
-			start = 0
-			end = None
+	try:
+		with open(path, "rb") as f:
+			f.seek(0, 2)
+			length = f.tell()
 
-	with open(path, "rb") as f:
-		f.seek(0, 2)
-		length = f.tell()
-		if range_req and (start < 0 or start >= length):
-			server.send_response(416)
-			server.send_header("Content-Range", f"bytes */{length}")
+			if range_header:
+				try:
+					unit, value = range_header.split("=", 1)
+					if unit.strip().lower() != "bytes" or "," in value:
+						raise ValueError
+					start_str, end_str = value.split("-", 1)
+					if not start_str and not end_str:
+						raise ValueError
+					if start_str:
+						start = int(start_str)
+						if start < 0:
+							raise ValueError
+						end = int(end_str) if end_str else length - 1
+						if end < 0:
+							raise ValueError
+					else:
+						# Suffix ranges: bytes=-500 means last 500 bytes
+						suffix_length = int(end_str)
+						if suffix_length <= 0:
+							raise ValueError
+						start = max(0, length - suffix_length)
+						end = length - 1
+					range_req = True
+				except (IndexError, ValueError):
+					range_req = False
+					start = 0
+					end = None
+
+			if range_req:
+				if start >= length or end is None or end < start:
+					server.send_response(416)
+					server.send_header("Accept-Ranges", "bytes")
+					server.send_header("Content-Range", f"bytes */{length}")
+					server.end_headers()
+					return
+				if end >= length:
+					end = length - 1
+				chunk_length = end - start + 1
+				server.send_response(206)
+				server.send_header("Accept-Ranges", "bytes")
+				server.send_header("Content-Range", f"bytes {start}-{end}/{length}")
+				server.send_header("Content-Length", str(chunk_length))
+				server.send_header("Content-Type", mime)
+				f.seek(start)
+			else:
+				server.send_response(200)
+				server.send_header("Accept-Ranges", "bytes")
+				server.send_header("Content-Type", mime)
+				server.send_header("Content-Length", str(length))
+				f.seek(0)
+
 			server.end_headers()
-			return
-		f.seek(start, 0)
 
-		if range_req:
-			if end is None or end >= length:
-				end = length - 1
-			chunk_length = end - start + 1
-			server.send_response(206)
-			server.send_header("Content-Range", f"bytes {start}-{end}/{length}")
-			server.send_header("Content-Length", str(chunk_length))
-			server.send_header("Content-Type", mime)
-			f.seek(start)
-
-		else:
-			server.send_response(200)
-			server.send_header("Accept-Ranges", "bytes")
-			server.send_header("Content-Type", mime)
-			server.send_header("Content-Length", str(length))
-
+			remaining = end - start + 1 if range_req else None
+			while True:
+				read_size = 65536 if remaining is None else min(65536, remaining)
+				if read_size <= 0:
+					break
+				data = f.read(read_size)
+				if not data:
+					break
+				server.wfile.write(data)
+				if remaining is not None:
+					remaining -= len(data)
+	except OSError:
+		server.send_response(404)
 		server.end_headers()
-
-		remaining = end - start + 1 if range_req else None
-		while True:
-			read_size = 1000 if remaining is None else min(1000, remaining)
-			if read_size <= 0:
-				break
-			data = f.read(read_size)
-			if not data:
-				break
-			server.wfile.write(data)
-			if remaining is not None:
-				remaining -= len(data)
 
 
 def webserve(
@@ -551,14 +573,23 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 				if param.isdigit() and int(param) in pctl.master_library:
 					track = pctl.master_library[int(param)]
-					mime = "audio/mpeg"
-					if track.file_ext == "FLAC":
-						mime = "audio/flac"
-					if track.file_ext in {"OGG", "OPUS", "OGA"}:
-						mime = "audio/ogg"
-					if track.file_ext == "M4A":
-						mime = "audio/mp4"
-					send_file(track.fullpath, mime, self)
+					if not track.fullpath or not os.path.isfile(track.fullpath):
+						self.send_response(404)
+						self.end_headers()
+						self.wfile.write(b"File unavailable")
+					else:
+						mime = "audio/mpeg"
+						if track.file_ext == "FLAC":
+							mime = "audio/flac"
+						if track.file_ext in {"OGG", "OPUS", "OGA"}:
+							mime = "audio/ogg"
+						if track.file_ext == "M4A":
+							mime = "audio/mp4"
+						send_file(track.fullpath, mime, self)
+				else:
+					self.send_response(404)
+					self.end_headers()
+					self.wfile.write(b"Invalid parameter")
 
 			elif path.startswith("/api1/start/"):
 				levels, _ = self.parse_trail(path)
