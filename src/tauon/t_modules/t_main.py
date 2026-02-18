@@ -9088,7 +9088,7 @@ class Tauon:
 
 		# Get list of folder names on device
 		logging.info("Getting folder list from device...")
-		d_folder_names = path.iterdir()
+		d_folder_names = [p.name for p in path.iterdir()]
 		logging.info("Got list")
 
 		# Get list of folders we want
