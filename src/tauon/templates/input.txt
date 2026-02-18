@@ -92,7 +92,6 @@ playlist-toggle-breaks F1
 
 toggle-auto-theme F3
 find-playing-artist F4
-toggle-broadcast F6
 testkey F7
 show-encode-folder F9
 toggle-fullscreen F11
