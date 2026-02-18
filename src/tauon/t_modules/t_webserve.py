@@ -412,6 +412,10 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			callback()
 			self.wfile.write(b"OK")
 
+		def toggle_album_shuffle(self) -> None:
+			pctl.album_shuffle_mode ^= True
+			tauon.gui.update += 1
+
 		def parse_trail(self, text: str) -> tuple[list[str], dict[str, str]]:
 			params: dict[str, str] = {}
 			both = text.split("?")
@@ -615,12 +619,16 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				self.run_command(tauon.pctl.play)
 			elif path == "/api1/pause":
 				self.run_command(tauon.pctl.pause_only)
+			elif path == "/api1/stop":
+				self.run_command(tauon.pctl.stop)
 			elif path == "/api1/next":
 				self.run_command(tauon.pctl.advance)
 			elif path == "/api1/back":
 				self.run_command(tauon.pctl.back)
 			elif path == "/api1/shuffle":
 				self.run_command(tauon.toggle_random)
+			elif path == "/api1/album-shuffle":
+				self.run_command(self.toggle_album_shuffle)
 			elif path == "/api1/repeat":
 				self.run_command(tauon.toggle_repeat)
 			elif path == "/api1/auto-stop":
@@ -813,6 +821,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					"status": "stopped",
 					"inc": pctl.db_inc,
 					"shuffle": pctl.random_mode is True,
+					"album_shuffle": pctl.album_shuffle_mode is True,
 					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
 					"auto_stop": tauon.pctl.stop_mode != StopMode.OFF,
