@@ -51,7 +51,6 @@ import pickle
 import platform
 import random
 import re
-import secrets
 import shlex
 import shutil
 import signal
@@ -85,7 +84,7 @@ from ctypes import (
 )
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal
 
 import certifi
 import musicbrainzngs
@@ -293,7 +292,7 @@ except Exception:
 if TYPE_CHECKING:
 	from ctypes import CDLL
 	from io import BufferedReader, BytesIO
-	from typing import Any, ClassVar
+	from typing import ClassVar
 
 	from PIL.ImageFile import ImageFile
 	from pylast import LibreFMNetwork
@@ -1927,7 +1926,7 @@ class PlayerCtl:
 		d = str(tr.disc_number)
 
 		if "/" in d:
-			d = d.split("/")[0]
+			d = d.split("/", maxsplit=1)[0]
 
 		# Make sure the value for disc number is an int, make 1 if 0, otherwise ignore
 		if d:
@@ -4067,7 +4066,7 @@ class LastFMapi:
 		self.scanning_loves = False
 		self.scanning_scrobbles = False
 
-	def get_network(self) -> type[LibreFMNetwork] | type[LastFMNetwork]:
+	def get_network(self) -> type[LibreFMNetwork | LastFMNetwork]:
 		if self.prefs.use_libre_fm:
 			return pylast.LibreFMNetwork
 		return pylast.LastFMNetwork
@@ -4597,14 +4596,14 @@ class ListenBrainz:
 			url += "/"
 		return url + "1/submit-listens"
 
-	def listen_full(self, track_object: TrackClass, time: int) -> bool:
+	def listen_full(self, track_object: TrackClass, time: int) -> bool | None:
 		if self.enable is False:
 			return True
 		if self.prefs.scrobble_hold is True:
 			return True
 		if self.prefs.lb_token is None:
 			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
-			return
+			return None
 
 		title = track_object.title
 		album = track_object.album
@@ -5743,7 +5742,7 @@ class ThumbTracks:
 
 	def pixbuf(self, track: TrackClass) -> GdkPixbuf | None:
 		try:
-			source, offset = self.tauon.gall_ren.get_file_source(track)
+			source, _offset = self.tauon.gall_ren.get_file_source(track)
 			if source is False:  # No art
 				return None
 			source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
@@ -6178,7 +6177,7 @@ class Tauon:
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
 
-	def draw_ab_repeat_markers(self, seek_x: int | float, seek_y: int | float, seek_w: int | float, seek_h: int | float) -> None:
+	def draw_ab_repeat_markers(self, seek_x: float, seek_y: float, seek_w: float, seek_h: float) -> None:
 		if self.pctl.playing_length <= 0 or seek_w <= 0:
 			return
 
@@ -6370,18 +6369,18 @@ class Tauon:
 		last_width = 0
 
 		xx = 0
-		l = prefs.left_window_control
-		r = not l
+		left = prefs.left_window_control
+		right = not left
 		focused = window_is_focused(self.t_window)
 
 		# Close
-		if r:
+		if right:
 			xx = window_size[0] - x_width
 			xx -= round(2 * gui.scale)
 
 		if macstyle:
 			xx = window_size[0] - 27 * gui.scale
-			if l:
+			if left:
 				xx = round(4 * gui.scale)
 			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 			self.fields.add(rect)
@@ -6406,9 +6405,9 @@ class Tauon:
 
 		# Macstyle restore
 		if gui.mode == GuiMode.MINI and macstyle:
-			if r:
+			if right:
 				xx -= round(20 * gui.scale)
-			if l:
+			if left:
 				xx += round(20 * gui.scale)
 			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
@@ -6426,9 +6425,9 @@ class Tauon:
 
 		if self.draw_max_button and gui.mode != GuiMode.MINI:
 			if macstyle:
-				if r:
+				if right:
 					xx -= round(20 * gui.scale)
-				if l:
+				if left:
 					xx += round(20 * gui.scale)
 				rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
@@ -6442,9 +6441,9 @@ class Tauon:
 						self.do_minimize_button()
 
 			else:
-				if r:
+				if right:
 					xx -= ma_width
-				if l:
+				if left:
 					xx += last_width
 				rect = (xx, y, ma_width, h)
 				last_width = ma_width
@@ -6465,9 +6464,9 @@ class Tauon:
 			# if draw_max_button and not gui.mode == GuiMode.MINI:
 			#	 x -= round(34 * gui.scale)
 			if macstyle:
-				if r:
+				if right:
 					xx -= round(20 * gui.scale)
-				if l:
+				if left:
 					xx += round(20 * gui.scale)
 				rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
@@ -6480,9 +6479,9 @@ class Tauon:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_maximize_button()
 			else:
-				if r:
+				if right:
 					xx -= mi_width
-				if l:
+				if left:
 					xx += last_width
 
 				rect = (xx, y, mi_width, h)
@@ -6507,9 +6506,9 @@ class Tauon:
 			if macstyle:
 				pass
 			else:
-				if r:
+				if right:
 					xx -= re_width
-				if l:
+				if left:
 					xx += last_width
 
 				rect = (xx, y, re_width, h)
@@ -6812,7 +6811,7 @@ class Tauon:
 				if line.startswith("http"):
 					radio: RadioStation = RadioStation(
 						stream_url=line,
-						title=line_title if line_title else os.path.splitext(os.path.basename(path))[0].strip())
+						title=line_title or os.path.splitext(os.path.basename(path))[0].strip())
 					stations.append(radio)
 
 					if self.gui.auto_play_import:
@@ -6855,7 +6854,7 @@ class Tauon:
 						playlist.append(titles[line_title].index)
 						found_title += 1
 					else:
-						log_line = line_title if line_title else line
+						log_line = line_title or line
 						logging.info(f"track \"{log_line}\" not found")
 						not_found += 1
 		logging.info(f"playlist imported with {found_imported} tracks already in library, {found_file} found from filepath, {found_title} from title and {not_found} not found")
@@ -6966,20 +6965,20 @@ class Tauon:
 								if "title" in field.tag and field.text:
 									b["title"] = field.text
 								if "location" in field.tag and field.text:
-									l = field.text
-									l = str(urllib.parse.unquote(l))
+									loc = field.text
+									loc = str(urllib.parse.unquote(loc))
 
 									try:
-										l = str( Path.from_uri(l) )
+										loc = str( Path.from_uri(loc) )
 									except Exception:
 										logging.exception("Unknown error getting Path from URI")
 
-									if not Path(l).is_absolute():
-										l = str(Path(pl_dir / Path(l)).resolve())
+									if not Path(loc).is_absolute():
+										loc = str(Path(pl_dir / Path(loc)).resolve())
 									else:
-										l = str( Path(l).resolve() )
+										loc = str( Path(loc).resolve() )
 
-									b["location"] = l
+									b["location"] = loc
 								if "creator" in field.tag and field.text:
 									b["artist"] = field.text
 								if "album" in field.tag and field.text:
@@ -8054,7 +8053,7 @@ class Tauon:
 				audio["Lyrics"] = lyrics
 			elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 				audio = mutagen.mp4.MP4(track.fullpath)
-				audio['\xa9lyr'] = lyrics
+				audio["\xa9lyr"] = lyrics
 			else:
 				if loud:
 					self.show_message(
@@ -8282,10 +8281,10 @@ class Tauon:
 					t.seek(0)
 					t.write(response.read())
 					t.seek(0, 2)
-					l = t.tell()
+					buffer_size = t.tell()
 					t.seek(0)
 
-					if info.get_content_maintype() == "image" and l > 1000:
+					if info.get_content_maintype() == "image" and buffer_size > 1000:
 						if info.get_content_subtype() == "jpeg":
 							filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
 						elif info.get_content_subtype() == "png":
@@ -8294,9 +8293,8 @@ class Tauon:
 							self.show_message(_("Could not detect downloaded filetype."), mode="error")
 							return
 
-						f = open(filepath, "wb")
-						f.write(t.read())
-						f.close()
+						with open(filepath, "wb") as f:
+							f.write(t.read())
 
 						self.show_message(_("Cover art downloaded from fanart.tv"), mode="done")
 						# self.clear_img_cache()
@@ -8309,11 +8307,11 @@ class Tauon:
 
 			self.show_message(_("Searching MusicBrainz for cover art..."))
 			t = io.BytesIO(musicbrainzngs.get_release_group_image_front(album_id, size=None))
-			l = 0
+			buffer_size = 0
 			t.seek(0, 2)
-			l = t.tell()
+			buffer_size = t.tell()
 			t.seek(0)
-			if l > 1000:
+			if buffer_size > 1000:
 				filepath = os.path.join(tr.parent_folder_path, album_id + ".jpg")
 				f = open(filepath, "wb")
 				f.write(t.read())
@@ -8960,7 +8958,7 @@ class Tauon:
 		self.tree_view_box.clear_target_pl(pl)
 
 	def year_sort(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
-		playlist = custom_list if custom_list else self.pctl.multi_playlist[pl].playlist_ids
+		playlist = custom_list or self.pctl.multi_playlist[pl].playlist_ids
 		plt: list[tuple[list[int], str, str]] = []
 		pl2: list[int] = []
 		artist = ""
@@ -9088,7 +9086,7 @@ class Tauon:
 
 		# Get list of folder names on device
 		logging.info("Getting folder list from device...")
-		d_folder_names = path.iterdir()
+		d_folder_names = [p.name for p in path.iterdir()]
 		logging.info("Got list")
 
 		# Get list of folders we want
@@ -12110,7 +12108,7 @@ class Tauon:
 				if len(title) > 150:
 					title = _("Unknown Track")
 
-				artist = tr.artist if tr.artist else _("Unknown Artist")
+				artist = tr.artist or _("Unknown Artist")
 
 				if self.pctl.playing_state == PlayingState.URL_STREAM and tr.album:
 					album = self.radiobox.loaded_station["title"]
@@ -16175,9 +16173,8 @@ class Tauon:
 			if not self.plex.connect(code=code):
 				return
 			self.text_plex_2fa.text = ""
-		else:
-			if not self.plex.connect():
-				return
+		elif not self.plex.connect():
+			return
 
 		self.pref_box.close()
 		save_prefs(bag=self.bag)
@@ -18803,8 +18800,8 @@ class PlexService:
 			return False
 
 		try:
-			from plexapi.myplex import MyPlexAccount
 			from plexapi.exceptions import TwoFactorRequired
+			from plexapi.myplex import MyPlexAccount
 		except ModuleNotFoundError:
 			logging.warning("Unable to import python-plexapi, plex support will be disabled.")
 			self.scanning = False
@@ -19118,7 +19115,7 @@ class KoelService:
 			if "track" in song and song["track"] is not None:
 				nt.track_number = song["track"]
 			if "disc" in song and song["disc"] is not None:
-				nt.disc = song["disc"]
+				nt.disc_number = song["disc"]
 			nt.length = float(song["length"])
 
 			nt.artist = artist_ids.get(song["artist_id"], "")
@@ -19475,8 +19472,8 @@ class Drawing:
 		self, text: str, x: int, y: int, w: int | None = None, h: int | None = None, font: int = 212, text_highlight_colour: ColourRGBA | None = None, text_colour: ColourRGBA | None = None,
 		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None, press: bool | None = None, tooltip: str = "") -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
-		refresh when you pan the mouse over it"""
-
+		refresh when you pan the mouse over it
+		"""
 		if w is None:
 			w = self.ddt.get_text_w(text, font) + 18 * self.gui.scale
 		if h is None:
@@ -24704,7 +24701,8 @@ class Over:
 
 	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
-		refresh when you pan the mouse over it"""
+		refresh when you pan the mouse over it
+		"""
 		w = width
 		if w == 0:
 			w = self.ddt.get_text_w(text, 211) + round(10 * self.gui.scale)
@@ -24740,7 +24738,8 @@ class Over:
 
 	def button2(self, x: int, y: int, text: str, width: int = 0, center_text: bool = False, force_on: bool = False) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
-		refresh when you pan the mouse over it"""
+		refresh when you pan the mouse over it
+		"""
 		w = width
 		if w == 0:
 			w = self.ddt.get_text_w(text, 211) + 10 * self.gui.scale
@@ -31080,12 +31079,11 @@ class ArtBox:
 		# Activate picture context menu on right click
 		if inp.right_click and tauon.prefs.milk and self.coll(rect):
 			self.tauon.milky_menu.activate(in_reference=target_track)
-		else:
-			if tight_border and gui.art_drawn_rect:
-				if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
-					self.tauon.picture_menu.activate(in_reference=target_track)
-			elif inp.right_click and self.coll(rect) and target_track:
+		elif tight_border and gui.art_drawn_rect:
+			if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
 				self.tauon.picture_menu.activate(in_reference=target_track)
+		elif inp.right_click and self.coll(rect) and target_track:
+			self.tauon.picture_menu.activate(in_reference=target_track)
 
 		# Draw picture metadata
 		if showc is not None and self.coll(border) \
@@ -31129,12 +31127,14 @@ class ArtBox:
 					tag_width, tag_height = self.ddt.get_text_wh(line, 12, max_x = mw)
 					tag_width += round(14 * self.gui.scale)
 
-					self.ddt.rect_a((xx, yy), (tag_width, 18 * self.gui.scale),
-									ColourRGBA(8, 8, 8, 255))
-					self.ddt.text(((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(210, 210, 210, 255),
-								  12, bg=ColourRGBA(30, 30, 30, 255), max_w = mw)
+					self.ddt.rect_a(
+						(xx, yy), (tag_width, 18 * self.gui.scale),
+						ColourRGBA(8, 8, 8, 255))
+					self.ddt.text(
+						((xx) + (6 * self.gui.scale + padding), yy), line, ColourRGBA(210, 210, 210, 255),
+						12, bg=ColourRGBA(30, 30, 30, 255), max_w = mw)
 
-				if not self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+				if self.tauon.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 					tauon.milky.fps.reset()
 				line = f"FPS: {round(tauon.milky.fps.get())}"
 				yy += round(30 * gui.scale)
@@ -35884,16 +35884,40 @@ try:
 	# Disable error checking as SDL can generate errors we do not otherwise catch, crashing PyOpenGL
 	OpenGL.ERROR_CHECKING = False
 	from OpenGL.GL import (
-		glGenTextures, glBindTexture, glTexImage2D, glTexParameteri,
-		glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
-		glCheckFramebufferStatus, glDeleteFramebuffers, glDeleteTextures,
-		glViewport, glClear, glClearColor, glGetIntegerv,
-		GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_TEXTURE_MIN_FILTER,
-		GL_TEXTURE_MAG_FILTER, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_S,
-		GL_TEXTURE_WRAP_T, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-		GL_FRAMEBUFFER_COMPLETE, GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT,
-		GL_TEXTURE_BINDING_2D, glFlush, glGetString, GL_VERSION, glFinish,
-		GL_FRAMEBUFFER_BINDING
+		GL_CLAMP_TO_EDGE,
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_BUFFER_BIT,
+		GL_DEPTH_BUFFER_BIT,
+		GL_FRAMEBUFFER,
+		GL_FRAMEBUFFER_BINDING,
+		GL_FRAMEBUFFER_COMPLETE,
+		GL_LINEAR,
+		GL_RGBA,
+		GL_TEXTURE_2D,
+		GL_TEXTURE_BINDING_2D,
+		GL_TEXTURE_MAG_FILTER,
+		GL_TEXTURE_MIN_FILTER,
+		GL_TEXTURE_WRAP_S,
+		GL_TEXTURE_WRAP_T,
+		GL_UNSIGNED_BYTE,
+		GL_VERSION,
+		glBindFramebuffer,
+		glBindTexture,
+		glCheckFramebufferStatus,
+		glClear,
+		glClearColor,
+		glDeleteFramebuffers,
+		glDeleteTextures,
+		glFinish,
+		glFlush,
+		glFramebufferTexture2D,
+		glGenFramebuffers,
+		glGenTextures,
+		glGetIntegerv,
+		glGetString,
+		glTexImage2D,
+		glTexParameteri,
+		glViewport,
 	)
 except ModuleNotFoundError:
 	logging.warning("PyOpenGL not found, Milkdrop visualizer will be disabled")
@@ -36084,10 +36108,9 @@ class ProjectM:
 			for item in dir.iterdir():
 				if item.is_dir():
 					scan_folder(item)
-				else:
-					if item.suffix.lower() == ".milk":
-						#logging.info(f"Found milkdrop {item.stem}")
-						self.presets.append(item)
+				elif item.suffix.lower() == ".milk":
+					#logging.info(f"Found milkdrop {item.stem}")
+					self.presets.append(item)
 
 		self.presets.clear()
 		for dir in self.dirs:
@@ -36779,7 +36802,8 @@ class ViewBox:
 	def button(
 		self, x: float, y: float, asset: WhiteModImageAsset | LoadImageAsset, test, colour_get: ColourPulse2 | None = None, name: str = "Unknown", animate: bool = True, low: ColourRGBA = ColourRGBA(0,0,0,255), high: ColourRGBA = ColourRGBA(0,0,0,255)):
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
-		refresh when you pan the mouse over it"""
+		refresh when you pan the mouse over it
+		"""
 		on = test()
 		rect = [
 			x - 8 * self.gui.scale,
@@ -37733,10 +37757,10 @@ class TimedLyricsEdit:
 			bg: ColourRGBA | None = None, active_bg: ColourRGBA | None = None,
 			txt: ColourRGBA | None = None, active_txt: ColourRGBA | None = None,
 			tooltip: str = "", off: bool = False, return_rect: bool = False) -> tuple[ bool | None, tuple[int, int, int, int] | None ]:
-		"""button centered around text display. off will disable the button if the condition is true,
+		"""Button centered around text display. off will disable the button if the condition is true,
 		return_rect will return the rect as a second parameter. returns True for click, False for right click,
-		None for nothing"""
-
+		None for nothing
+		"""
 		if bg is None:
 			bg = self.colours.box_button_background
 		if active_bg is None:
@@ -37766,7 +37790,7 @@ class TimedLyricsEdit:
 				if return_rect:
 					return True, rect
 				return True, None
-			elif self.inp.right_click:
+			if self.inp.right_click:
 				self.inp.right_click = False
 				if return_rect:
 					return False, rect
@@ -37833,10 +37857,9 @@ class TimedLyricsEdit:
 					stamp = line.split("]")[0].lstrip("[")
 					time = self.get_time_from_stamp( line )
 					line = line.split("]",1)[1]
-					if line.startswith(" "):
-						line = line[1:]
-						# LRCLIB returns lines with spaces at the start of them
-						# it's not important when displaying but it kind of is in editing
+					# LRCLIB returns lines with spaces at the start of them
+					# it's not important when displaying but it kind of is in editing
+					line = line.removeprefix(" ")
 					self.structure.append( (stamp,time,line) )
 					continue
 
@@ -37958,7 +37981,7 @@ class TimedLyricsEdit:
 				return True
 		elif track.file_ext in ("MP4","M4A","M4B","M4P"):
 			audio = mutagen.mp4.MP4(track.fullpath)
-			if '\xa9lyr' in audio:
+			if "\xa9lyr" in audio:
 				return True
 		return False
 
@@ -37971,7 +37994,7 @@ class TimedLyricsEdit:
 				stamp, time, line = line
 				if stamp == _("tag"):
 					stamp = "tag"
-				lyrics_file.write( f"{stamp},{str(time)},{line}\n")
+				lyrics_file.write( f"{stamp},{time!s},{line}\n")
 		self.autosaved = True
 
 	def autoload(self) -> None:
@@ -38020,7 +38043,7 @@ class TimedLyricsEdit:
 		self.pctl.seek_time(prev + self.prefs.sync_lyrics_time_offset/1000)
 		if (self.inp.key_lalt or self.inp.key_ralt):
 			self.alted = True
-		if ((len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0)) and self.structure[self.line_active][1]>prev \
+		if (len(self.structure)==self.line_active+1 or self.structure[self.line_active+1][1]<0) and self.structure[self.line_active][1]>prev \
 			and not (self.inp.key_lalt or self.inp.key_ralt):
 			stamp, time, line = self.structure[self.line_active]
 			stamp = "??:??.??"
@@ -38238,9 +38261,8 @@ class TimedLyricsEdit:
 			if line_number >= self.line_active:
 				if (self.inp.key_lalt or self.inp.key_ralt):
 					self.scroll_position += self.yy
-			else:
-				if not (self.inp.key_lalt or self.inp.key_ralt):
-					self.scroll_position -= self.yy
+			elif not (self.inp.key_lalt or self.inp.key_ralt):
+				self.scroll_position -= self.yy
 			self.allow_scroll = False
 		x += round(30*self.gui.scale)
 		x = min( x, self.window_size[0]-self.line_height*0.9)
@@ -38664,7 +38686,7 @@ class TimedLyricsEdit:
 
 		# end of stuff blocked by boxes being open
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" or self.prefs.synced_lyrics_editor_track_end_mode == "repeat" and self.pctl.playing_state == PlayingState.PLAYING:
+		if self.prefs.synced_lyrics_editor_track_end_mode == "stop" or (self.prefs.synced_lyrics_editor_track_end_mode == "repeat" and self.pctl.playing_state == PlayingState.PLAYING):
 			if self.pctl.playing_length - self.pctl.decode_time < 5.5:
 				self.queue_next_frame = True
 			if self.pctl.playing_length - self.pctl.decode_time < 2.1:
@@ -40337,13 +40359,11 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 				except ValueError:
 					if just_check:
 						return False
-					else:
-						break
+					break
 				if not just_check:
 					track.synced = track.lyrics
 					return split_lines
-				else:
-					return True
+				return True
 			break
 
 
@@ -41342,7 +41362,6 @@ def worker1(tauon: Tauon) -> None:
 
 	def add_file(path: str, force_scan: bool = False, show_errors: bool = False) -> int | None:
 		"""Import file from path - playlists, audio, zips etc"""
-
 		try:
 			Path(path).stat().st_size
 		except FileNotFoundError:
@@ -42635,7 +42654,7 @@ def main(holder: Holder) -> None:
 
 	mpt: CDLL | None = None
 	p = ctypes.util.find_library("openmpt") # Linux
-	p = p if p else ctypes.util.find_library("libopenmpt-0") # Windows
+	p = p or ctypes.util.find_library("libopenmpt-0") # Windows
 	try:
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
@@ -42652,7 +42671,7 @@ def main(holder: Holder) -> None:
 
 	gme: CDLL | None = None
 	p = ctypes.util.find_library("gme") # Linux
-	p = p if p else ctypes.util.find_library("libgme") # Windows
+	p = p or ctypes.util.find_library("libgme") # Windows
 	try:
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
@@ -42880,7 +42899,7 @@ def main(holder: Holder) -> None:
 
 			if len(save) > 0 and save[0] is not None:
 				bag.master_library = save[0]
-				# try: # todo remove me before release!
+				# try: # TODO(Taiko): remove me before release!
 				# 	from watchpoints import watch
 				# 	def logchange3(frame, elem, exec_info):
 				# 		logging.warning(f"Master library was modified! @ {exec_info}")
@@ -42889,7 +42908,7 @@ def main(holder: Holder) -> None:
 				# except Exception:
 				# 	logging.exception("Module Watchpoints not found")
 			bag.master_count = save[1]
-			# try: # todo remove me before release!
+			# try: # TODO(Taiko): remove me before release!
 			# 	from watchpoints import watch
 			# 	def logchange2(frame, elem, exec_info):
 			# 		logging.warning(f"Master count was modified! @ {exec_info}")
@@ -42909,7 +42928,7 @@ def main(holder: Holder) -> None:
 						p = TauonPlaylist(**d)
 						bag.multi_playlist.append(p)
 
-						# try:  # todo remove me before release!
+						# try:  # TODO(Taiko): remove me before release!
 						# 	from watchpoints import watch
 						# 	def logchange(frame, elem, exec_info):
 						# 		logging.warning(f"A playlist was modified! @ {exec_info}")
@@ -43508,7 +43527,7 @@ def main(holder: Holder) -> None:
 
 	mpt: CDLL | None = None
 	p = ctypes.util.find_library("openmpt") # Linux
-	p = p if p else ctypes.util.find_library("libopenmpt-0") # Windows
+	p = p or ctypes.util.find_library("libopenmpt-0") # Windows
 	try:
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
@@ -43525,7 +43544,7 @@ def main(holder: Holder) -> None:
 
 	gme: CDLL | None = None
 	p = ctypes.util.find_library("gme") # Linux
-	p = p if p else ctypes.util.find_library("libgme") # Windows
+	p = p or ctypes.util.find_library("libgme") # Windows
 	try:
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
