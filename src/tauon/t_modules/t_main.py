@@ -4067,7 +4067,7 @@ class LastFMapi:
 		self.scanning_loves = False
 		self.scanning_scrobbles = False
 
-	def get_network(self) -> type[LibreFMNetwork] | type[LastFMNetwork]:
+	def get_network(self) -> type[LibreFMNetwork | LastFMNetwork]:
 		if self.prefs.use_libre_fm:
 			return pylast.LibreFMNetwork
 		return pylast.LastFMNetwork
@@ -4597,14 +4597,14 @@ class ListenBrainz:
 			url += "/"
 		return url + "1/submit-listens"
 
-	def listen_full(self, track_object: TrackClass, time: int) -> bool:
+	def listen_full(self, track_object: TrackClass, time: int) -> bool | None:
 		if self.enable is False:
 			return True
 		if self.prefs.scrobble_hold is True:
 			return True
 		if self.prefs.lb_token is None:
 			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
-			return
+			return None
 
 		title = track_object.title
 		album = track_object.album
@@ -5743,7 +5743,7 @@ class ThumbTracks:
 
 	def pixbuf(self, track: TrackClass) -> GdkPixbuf | None:
 		try:
-			source, offset = self.tauon.gall_ren.get_file_source(track)
+			source, _offset = self.tauon.gall_ren.get_file_source(track)
 			if source is False:  # No art
 				return None
 			source_image = self.album_art_gen.get_source_raw(0, 0, track, subsource=source)
@@ -6178,7 +6178,7 @@ class Tauon:
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
 
-	def draw_ab_repeat_markers(self, seek_x: int | float, seek_y: int | float, seek_w: int | float, seek_h: int | float) -> None:
+	def draw_ab_repeat_markers(self, seek_x: float, seek_y: float, seek_w: float, seek_h: float) -> None:
 		if self.pctl.playing_length <= 0 or seek_w <= 0:
 			return
 
@@ -6370,18 +6370,18 @@ class Tauon:
 		last_width = 0
 
 		xx = 0
-		l = prefs.left_window_control
-		r = not l
+		left = prefs.left_window_control
+		right = not left
 		focused = window_is_focused(self.t_window)
 
 		# Close
-		if r:
+		if right:
 			xx = window_size[0] - x_width
 			xx -= round(2 * gui.scale)
 
 		if macstyle:
 			xx = window_size[0] - 27 * gui.scale
-			if l:
+			if left:
 				xx = round(4 * gui.scale)
 			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 			self.fields.add(rect)
@@ -6406,9 +6406,9 @@ class Tauon:
 
 		# Macstyle restore
 		if gui.mode == GuiMode.MINI and macstyle:
-			if r:
+			if right:
 				xx -= round(20 * gui.scale)
-			if l:
+			if left:
 				xx += round(20 * gui.scale)
 			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
@@ -6426,9 +6426,9 @@ class Tauon:
 
 		if self.draw_max_button and gui.mode != GuiMode.MINI:
 			if macstyle:
-				if r:
+				if right:
 					xx -= round(20 * gui.scale)
-				if l:
+				if left:
 					xx += round(20 * gui.scale)
 				rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
@@ -6442,9 +6442,9 @@ class Tauon:
 						self.do_minimize_button()
 
 			else:
-				if r:
+				if right:
 					xx -= ma_width
-				if l:
+				if left:
 					xx += last_width
 				rect = (xx, y, ma_width, h)
 				last_width = ma_width
@@ -6465,9 +6465,9 @@ class Tauon:
 			# if draw_max_button and not gui.mode == GuiMode.MINI:
 			#	 x -= round(34 * gui.scale)
 			if macstyle:
-				if r:
+				if right:
 					xx -= round(20 * gui.scale)
-				if l:
+				if left:
 					xx += round(20 * gui.scale)
 				rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 
@@ -6480,9 +6480,9 @@ class Tauon:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_maximize_button()
 			else:
-				if r:
+				if right:
 					xx -= mi_width
-				if l:
+				if left:
 					xx += last_width
 
 				rect = (xx, y, mi_width, h)
@@ -6507,9 +6507,9 @@ class Tauon:
 			if macstyle:
 				pass
 			else:
-				if r:
+				if right:
 					xx -= re_width
-				if l:
+				if left:
 					xx += last_width
 
 				rect = (xx, y, re_width, h)
@@ -6966,20 +6966,20 @@ class Tauon:
 								if "title" in field.tag and field.text:
 									b["title"] = field.text
 								if "location" in field.tag and field.text:
-									l = field.text
-									l = str(urllib.parse.unquote(l))
+									loc = field.text
+									loc = str(urllib.parse.unquote(loc))
 
 									try:
-										l = str( Path.from_uri(l) )
+										loc = str( Path.from_uri(loc) )
 									except Exception:
 										logging.exception("Unknown error getting Path from URI")
 
-									if not Path(l).is_absolute():
-										l = str(Path(pl_dir / Path(l)).resolve())
+									if not Path(loc).is_absolute():
+										loc = str(Path(pl_dir / Path(loc)).resolve())
 									else:
-										l = str( Path(l).resolve() )
+										loc = str( Path(loc).resolve() )
 
-									b["location"] = l
+									b["location"] = loc
 								if "creator" in field.tag and field.text:
 									b["artist"] = field.text
 								if "album" in field.tag and field.text:
@@ -8282,10 +8282,10 @@ class Tauon:
 					t.seek(0)
 					t.write(response.read())
 					t.seek(0, 2)
-					l = t.tell()
+					buffer_size = t.tell()
 					t.seek(0)
 
-					if info.get_content_maintype() == "image" and l > 1000:
+					if info.get_content_maintype() == "image" and buffer_size > 1000:
 						if info.get_content_subtype() == "jpeg":
 							filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
 						elif info.get_content_subtype() == "png":
@@ -8294,9 +8294,8 @@ class Tauon:
 							self.show_message(_("Could not detect downloaded filetype."), mode="error")
 							return
 
-						f = open(filepath, "wb")
-						f.write(t.read())
-						f.close()
+						with open(filepath, "wb") as f:
+							f.write(t.read())
 
 						self.show_message(_("Cover art downloaded from fanart.tv"), mode="done")
 						# self.clear_img_cache()
@@ -8309,11 +8308,11 @@ class Tauon:
 
 			self.show_message(_("Searching MusicBrainz for cover art..."))
 			t = io.BytesIO(musicbrainzngs.get_release_group_image_front(album_id, size=None))
-			l = 0
+			buffer_size = 0
 			t.seek(0, 2)
-			l = t.tell()
+			buffer_size = t.tell()
 			t.seek(0)
-			if l > 1000:
+			if buffer_size > 1000:
 				filepath = os.path.join(tr.parent_folder_path, album_id + ".jpg")
 				f = open(filepath, "wb")
 				f.write(t.read())
@@ -8960,7 +8959,7 @@ class Tauon:
 		self.tree_view_box.clear_target_pl(pl)
 
 	def year_sort(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
-		playlist = custom_list if custom_list else self.pctl.multi_playlist[pl].playlist_ids
+		playlist = custom_list or self.pctl.multi_playlist[pl].playlist_ids
 		plt: list[tuple[list[int], str, str]] = []
 		pl2: list[int] = []
 		artist = ""
