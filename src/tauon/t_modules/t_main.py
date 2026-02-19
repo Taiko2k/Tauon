@@ -19663,10 +19663,7 @@ class TimedLyricsToStatic:
 			return ""
 		if track == self.cache_key:
 			return self.cache_lyrics
-		if track.lyrics:
-			data = track.lyrics.splitlines()
-		else:
-			data = find_synced_lyric_data(track)
+		data = track.lyrics.splitlines() if track.lyrics else find_synced_lyric_data(track)
 
 		if data is None:
 			self.cache_lyrics = ""
@@ -40336,9 +40333,8 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	See https://en.wikipedia.org/wiki/LRC_(file_format)
 	"""
 	if not just_check:
-		if not reload:
-			if track.synced:
-				return track.synced.splitlines()
+		if not reload and track.synced:
+			return track.synced.splitlines()
 		if track.is_network:
 			return None
 
