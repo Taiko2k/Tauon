@@ -1173,7 +1173,7 @@ def sleep_timeout(condition_function: Callable[[], bool], time_limit: int = 2) -
 		return
 	timer = Timer()
 	timer.set()
-	while condition_function():
+	while not condition_function():
 		time.sleep(0.01)
 		if timer.get() > time_limit:
 			break
