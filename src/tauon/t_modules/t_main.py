@@ -16319,6 +16319,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.disc_number = audio.disc_number
 					nt.lyrics = audio.lyrics
+					nt.synced = audio.synced_lyrics
 					if nt.length:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 					nt.track_total = audio.track_total
@@ -16368,6 +16369,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.bitrate = audio.bit_rate
 					nt.lyrics = audio.lyrics
+					nt.synced = audio.synced_lyrics
 					nt.disc_number = audio.disc_number
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
