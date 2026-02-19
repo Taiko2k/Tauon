@@ -40373,9 +40373,7 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	direc = Path(track.parent_folder_path)
 	if not direc.is_dir():
 		logging.warning(f"Could not find directory: {track.parent_folder_path}")
-		track.synced = ""
 		return None
-	# TODO: i feel like this is gonna delete correct synced lyrics in some situations
 
 	name = os.path.splitext(track.filename)[0]
 
@@ -40400,7 +40398,6 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 		track.synced = "\n".join(data)
 		return data
 
-	track.synced = ""
 	return None
 
 def close_all_menus() -> None:
