@@ -134,7 +134,7 @@ class TauonPlaylist:
 		4 hide_title on playlist folders (bool)
 		5 selected (int)
 		6 uuid_int (int)
-		7 last_folder import path (string)
+		7 last_folder import paths (list[str])
 		8 hidden (bool)
 		9 locked (bool)
 		10 parent_playlist_id <- Filter (int)
@@ -150,7 +150,7 @@ class TauonPlaylist:
 	uuid_int: int
 	last_folder: list[
 		str
-	]  # last folder import path (string) - TODO(Martin): BUG - we are using this both as string and list of strings in various parts of code
+	]  # last folder import paths
 	hidden: bool
 	locked: bool
 	parent_playlist_id: int  # Filter parent playlist id

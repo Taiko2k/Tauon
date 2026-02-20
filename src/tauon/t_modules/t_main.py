@@ -8640,7 +8640,7 @@ class Tauon:
 			self.show_message(_("Playlist is locked to prevent accidental erasure"))
 			return
 
-		self.pctl.multi_playlist[index].last_folder.clear()  # clear import folder list # TODO(Martin): This was actually a string not a list wth?
+		self.pctl.multi_playlist[index].last_folder.clear()  # clear import folder list
 
 		if not self.pctl.multi_playlist[index].playlist_ids:
 			logging.info("Playlist is already empty")
@@ -13300,8 +13300,10 @@ class Tauon:
 			self.gui.add_music_folder_ready = False
 			return
 
+		music_path = os.path.normpath(str(self.music_directory))
+
 		for item in self.pctl.multi_playlist:
-			if item.last_folder == str(self.music_directory):
+			if any(os.path.normpath(path) == music_path for path in item.last_folder):
 				self.gui.add_music_folder_ready = False
 				break
 
@@ -42643,7 +42645,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 73
+	latest_db_version: float = 74
 
 	rename_files_previous = ""
 	rename_folder_previous = ""

@@ -640,4 +640,23 @@ def database_migrate(
 			if relative:
 				playlist.relative_export = relative
 
+	if db_version <= 73:  # noqa: PLR2004
+		logging.info("Updating database to version 74")
+		for playlist in multi_playlist:
+			if not isinstance(playlist, TauonPlaylist):
+				continue
+
+			last_folder = playlist.last_folder
+			if isinstance(last_folder, str):
+				playlist.last_folder = [last_folder] if last_folder else []
+			elif last_folder is None:
+				playlist.last_folder = []
+			elif isinstance(last_folder, list):
+				playlist.last_folder = [str(path) for path in last_folder if path]
+			else:
+				try:
+					playlist.last_folder = [str(path) for path in last_folder if path]
+				except TypeError:
+					playlist.last_folder = [str(last_folder)] if last_folder else []
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
