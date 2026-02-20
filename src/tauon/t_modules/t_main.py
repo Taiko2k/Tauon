@@ -43788,72 +43788,7 @@ def main(holder: Holder) -> None:
 	ddt.scale = gui.scale
 	ddt.force_subpixel_text = prefs.force_subpixel_text
 
-	if system == "Linux":
-		tauon.prime_fonts()
-	else:
-		# standard_font = "Meiryo"
-		standard_font = "Arial"
-		# semibold_font = "Meiryo Semibold"
-		semibold_font = "Arial Bold"
-		standard_weight = 500
-		bold_weight = 600
-		ddt.win_prime_font(standard_font, 14, 10, weight=standard_weight, y_offset=0)
-		ddt.win_prime_font(standard_font, 15, 11, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 15, 11.5, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 15, 12, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 15, 13, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 16, 14, weight=standard_weight, y_offset=0)
-		ddt.win_prime_font(standard_font, 16, 14.5, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 17, 15, weight=standard_weight, y_offset=-1)
-		ddt.win_prime_font(standard_font, 20, 16, weight=standard_weight, y_offset=-2)
-		ddt.win_prime_font(standard_font, 20, 17, weight=standard_weight, y_offset=-1)
-
-		ddt.win_prime_font(standard_font, 30 + 4, 30, weight=standard_weight, y_offset=-12)
-		ddt.win_prime_font(semibold_font, 9, 209, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font("Arial", 10 + 4, 210, weight=600, y_offset=2)
-		ddt.win_prime_font("Arial", 11 + 3, 211, weight=600, y_offset=2)
-		ddt.win_prime_font(semibold_font, 12 + 4, 212, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 13 + 3, 213, weight=bold_weight, y_offset=-1)
-		ddt.win_prime_font(semibold_font, 14 + 2, 214, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 15 + 2, 215, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 16 + 2, 216, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 17 + 2, 218, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 18 + 2, 218, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 19 + 2, 220, weight=bold_weight, y_offset=1)
-		ddt.win_prime_font(semibold_font, 28 + 2, 228, weight=bold_weight, y_offset=1)
-
-		standard_weight = 550
-		ddt.win_prime_font(standard_font, 14, 310, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 15, 311, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 16, 312, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 17, 313, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 18, 314, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 19, 315, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 20, 316, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 21, 317, weight=standard_weight, y_offset=1)
-
-		standard_font = "Arial Narrow"
-		standard_weight = 500
-
-		ddt.win_prime_font(standard_font, 14, 410, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 15, 411, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 16, 412, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 17, 413, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 18, 414, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 19, 415, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 20, 416, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 21, 417, weight=standard_weight, y_offset=1)
-
-		standard_weight = 600
-
-		ddt.win_prime_font(standard_font, 14, 510, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 15, 511, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 16, 512, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 17, 513, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 18, 514, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 19, 515, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 20, 516, weight=standard_weight, y_offset=1)
-		ddt.win_prime_font(standard_font, 21, 517, weight=standard_weight, y_offset=1)
+	tauon.prime_fonts()
 
 	text_box_canvas_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 	text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
