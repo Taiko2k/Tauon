@@ -7621,6 +7621,7 @@ class Tauon:
 		playing_object = self.pctl.playing_object()
 		if playing_object is None:
 			self.show_message("")
+			return
 
 		if not self.pctl.force_queue:
 			self.pctl.force_queue.insert(
@@ -7650,6 +7651,7 @@ class Tauon:
 		playing_object = self.pctl.playing_object()
 		if playing_object is None:
 			self.show_message("")
+			return
 
 		queue_item = None
 
