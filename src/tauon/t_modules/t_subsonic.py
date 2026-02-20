@@ -330,15 +330,15 @@ class SubsonicService:
 			logging.exception("Error connecting to Airsonic server")
 			self.show_message(_("Error connecting to Airsonic server"), mode="error")
 			return []
-		b = a["subsonic-response"]["starred2"]
-
 		liked_tracks: list[str] = []
-
-		for id in b["song"]:
-			#print(id["id"])
-			liked_tracks.append((
-				id["id"]
-				))
+		starred2 = a.get("subsonic-response", {}).get("starred2", {})
+		starred_songs = starred2.get("song", [])
+		if isinstance(starred_songs, dict):
+			starred_songs = [starred_songs]
+		for song in starred_songs:
+			song_id = song.get("id")
+			if song_id:
+				liked_tracks.append(song_id)
 
 		for sset in songsets:
 			for nt, name, song_id, rating in sset:
