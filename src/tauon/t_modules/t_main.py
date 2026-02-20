@@ -313,8 +313,7 @@ if TYPE_CHECKING:
 
 # Detect platform
 macos: bool = False
-msys: bool = False
-system: str = "Linux"
+windows: bool = False
 arch: str = platform.machine()
 platform_release: str = platform.release()
 platform_system: str = platform.system()
@@ -326,22 +325,17 @@ if platform_system == "Windows":
 		logging.exception("Failed getting Windows version from platform.release()")
 
 if sys.platform == "win32":
-	# system = 'Windows'
-	system = "Linux"
-	msys = True
-	if msys:
-		import gi
-		from gi.repository import GLib
-else:
-	system = "Linux"
+	windows = True
+	import gi
+	from gi.repository import GLib
 
 if sys.platform == "darwin":
 	macos = True
 
-if system == "Linux" and not macos and not msys:
+if not macos and not windows:
 	from tauon.t_modules.t_dbus import Gnome
 
-if system == "Windows" or msys:
+if windows:
 	from lynxtray import SysTrayIcon
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
@@ -621,8 +615,6 @@ class GuiVar:
 		self.universal_y_text_offset = 0
 
 		self.star_text_y_offset = 0
-		if self.bag.system == "Windows":
-			self.star_text_y_offset = -2
 
 		self.set_bar: bool = True
 		self.set_mode: bool = False
@@ -952,7 +944,7 @@ class GuiVar:
 		self.toast_length = 1
 
 
-		if bag.msys:
+		if bag.windows:
 			self.cursor_br_corner = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
 			self.cursor_right_side = self.cursor_shift
 			self.cursor_left_side = self.cursor_shift
@@ -1745,7 +1737,7 @@ class PlayerCtl:
 		self.tree_view_scroll: ScrollBox      = ScrollBox(tauon=tauon, pctl=self)
 		self.radio_view_scroll: ScrollBox     = ScrollBox(tauon=tauon, pctl=self)
 		self.tree_view_box: TreeView          = TreeView(tauon=tauon, pctl=self)
-		self.msys: bool                       = self.tauon.msys
+		self.windows: bool                       = self.tauon.windows
 		self.queue_box: QueueBox              = QueueBox(tauon=tauon, pctl=self)
 		self.running:                    bool = True
 		self.prefs: Prefs                     = self.bag.prefs
@@ -5804,11 +5796,10 @@ class Tauon:
 		self.mac_close: ColourRGBA             = bag.mac_close
 		self.mac_maximize: ColourRGBA          = bag.mac_maximize
 		self.mac_minimize: ColourRGBA          = bag.mac_minimize
-		self.system: str                       = bag.system
 		self.platform_system: str              = bag.platform_system
 		self.primary_stations: list[RadioStation] = bag.primary_stations
 		self.wayland: bool                      = bag.wayland
-		self.msys: bool                         = bag.msys
+		self.windows: bool                         = bag.windows
 		self.dirs: Directories                  = bag.dirs
 		self.colours: ColoursClass              = bag.colours
 		self.download_directories: list[str]    = bag.download_directories
@@ -6066,7 +6057,7 @@ class Tauon:
 		self.nagbox:                              NagBox = NagBox(tauon=self)
 		self.tray:                                STray = STray(self)
 
-		if self.system == "Linux" and not self.macos and not self.msys:
+		if not self.macos and not self.windows:
 			self.gnome = Gnome(tauon=self)
 
 		self.text_plex_usr: TextBox2 = TextBox2(tauon=self)
@@ -6204,7 +6195,7 @@ class Tauon:
 
 	def scan_ffprobe(self, nt: TrackClass) -> None:
 		startupinfo = None
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		try:
@@ -6253,10 +6244,9 @@ class Tauon:
 	def hit_callback(self, win, point, data):
 		gui          = self.gui
 		inp          = self.inp
-		msys         = self.msys
+		windows         = self.windows
 		prefs        = self.prefs
 		macos        = self.macos
-		system       = self.system
 		logical_size = self.logical_size
 		window_size  = self.window_size
 
@@ -6319,8 +6309,8 @@ class Tauon:
 				if self.tab_menu.active or inp.mouse_up or inp.mouse_down:  # mouse up/down is workaround for Wayland
 					return sdl3.SDL_HITTEST_NORMAL
 
-				if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (macos or system == "Windows" or msys)) \
-				or (not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (macos or system == "Windows" or msys)):
+				if (prefs.left_window_control and x > window_size[0] - (100 * gui.scale) and (macos or windows)) \
+				or (not prefs.left_window_control and x > window_size[0] - (160 * gui.scale) and (macos or windows)):
 					return sdl3.SDL_HITTEST_NORMAL
 				return sdl3.SDL_HITTEST_DRAGGABLE
 
@@ -6569,7 +6559,7 @@ class Tauon:
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
-		# if self.msys:
+		# if self.windows:
 		#	 standard_font = self.prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
 		self.ddt.prime_font(standard_font, 8, 9)
 		self.ddt.prime_font(standard_font, 8, 10)
@@ -6591,7 +6581,7 @@ class Tauon:
 		self.ddt.prime_font(standard_font, 10, 413)
 
 		standard_font = self.prefs.linux_font_semibold
-		# if self.msys:
+		# if self.windows:
 		#	 standard_font = self.prefs.linux_font_semibold + ", Noto Sans Med, Sans" #, Noto Sans CJK JP Medium, Noto Sans CJK Medium, Sans"
 
 		self.ddt.prime_font(standard_font, 8, 309)
@@ -6608,7 +6598,7 @@ class Tauon:
 		self.ddt.prime_font(standard_font, 24, 330)
 
 		standard_font = self.prefs.linux_font_bold
-		# if self.msys:
+		# if self.windows:
 		#	 standard_font = self.prefs.linux_font_bold + ", Noto Sans, Sans Bold"
 
 		self.ddt.prime_font(standard_font, 6, 209)
@@ -6626,7 +6616,7 @@ class Tauon:
 		self.ddt.prime_font(standard_font, 25, 228)
 
 		standard_font = self.prefs.linux_font_condensed
-		# if self.msys:
+		# if self.windows:
 		#	 standard_font = "Noto Sans ExtCond, Sans"
 		self.ddt.prime_font(standard_font, 10, 413)
 		self.ddt.prime_font(standard_font, 11, 414)
@@ -6634,7 +6624,7 @@ class Tauon:
 		self.ddt.prime_font(standard_font, 13, 416)
 
 		standard_font = self.prefs.linux_font_condensed_bold  # "Noto Sans, ExtraCondensed Bold"
-		# if self.msys:
+		# if self.windows:
 		#	 standard_font = "Noto Sans ExtCond, Sans Bold"
 		# self.ddt.prime_font(standard_font, 9, 512)
 		self.ddt.prime_font(standard_font, 10, 513)
@@ -7406,7 +7396,7 @@ class Tauon:
 		self.pctl.render_playlist()
 
 	def open_folder_stem(self, path: str) -> None:
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			line = r'explorer /select,"{}"'.format(path.replace("/", "\\"))
 			subprocess.Popen(line)
 		else:
@@ -7427,7 +7417,7 @@ class Tauon:
 			self.show_message(_("Can't open folder of a network track."))
 			return
 
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			line = r'explorer /select,"{}"'.format(track.fullpath.replace("/", "\\"))
 			subprocess.Popen(line)
 		else:
@@ -7808,7 +7798,7 @@ class Tauon:
 		self.open_file_browser_at(target)
 
 	def open_file_browser_at(self, path) -> None:
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			line = r'explorer /select,"{}"'.format(str(path).replace("/", "\\"))
 			subprocess.Popen(line)
 		else:
@@ -8914,7 +8904,7 @@ class Tauon:
 		xport.write(line)
 		xport.close()
 		target = str(self.user_directory / "stats.txt")
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			os.startfile(target)
 		elif self.macos:
 			subprocess.call(["open", target])
@@ -10015,7 +10005,7 @@ class Tauon:
 	def open_config_file(self) -> None:
 		save_prefs(bag=self.bag)
 		target = str(self.config_directory / "tauon.conf")
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			os.startfile(target)
 		elif self.macos:
 			subprocess.call(["open", "-t", target])
@@ -10033,7 +10023,7 @@ class Tauon:
 			self.show_message(_("Input file missing"))
 			return
 
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			os.startfile(target)
 		elif self.macos:
 			subprocess.call(["open", target])
@@ -10045,7 +10035,7 @@ class Tauon:
 			self.show_message(_("Input file missing"))
 			return
 
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			os.startfile(target)
 		elif self.macos:
 			subprocess.call(["open", target])
@@ -10054,7 +10044,7 @@ class Tauon:
 
 	def open_data_directory(self) -> None:
 		target = str(self.user_directory)
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			os.startfile(target)
 		elif self.macos:
 			subprocess.call(["open", target])
@@ -10530,7 +10520,7 @@ class Tauon:
 		tr = self.pctl.get_track(track_ref)
 		fullpath = tr.fullpath
 
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			fullpath = fullpath.replace("/", "\\")
 
 		if tr.is_network:
@@ -10608,7 +10598,7 @@ class Tauon:
 
 			if force:
 				shutil.rmtree(old)
-			elif self.system == "Windows" or self.msys:
+			elif self.windows:
 				send2trash(old.replace("/", "\\"))
 			else:
 				send2trash(old)
@@ -13466,7 +13456,7 @@ class Tauon:
 	def open_encode_out(self) -> None:
 		if not self.prefs.encoder_output.exists():
 			self.prefs.encoder_output.mkdir()
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			subprocess.Popen(["explorer", self.prefs.encoder_output])
 		elif self.macos:
 			subprocess.Popen(["open", self.prefs.encoder_output])
@@ -14845,13 +14835,13 @@ class Tauon:
 			file_line += self.pctl.master_library[track].fullpath
 			file_line += '"'
 
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			file_line = file_line.replace("/", "\\")
 
 		prefix = ""
 		app = self.prefs.tag_editor_target
 
-		if (self.system == "Windows" or self.msys) and app:
+		if self.windows and app:
 			if app[0] != '"':
 				app = '"' + app
 			if app[-1] != '"':
@@ -14859,19 +14849,9 @@ class Tauon:
 
 		app_switch = ""
 
-		ok = False
-
 		prefix = self.launch_prefix
 
-		if self.system == "Linux":
-			ok = whicher(self.prefs.tag_editor_target, self.flatpak_mode)
-		else:
-			if not os.path.isfile(self.prefs.tag_editor_target.strip('"')):
-				logging.info(self.prefs.tag_editor_target)
-				self.show_message(_("Application not found"), self.prefs.tag_editor_target, mode="info")
-				return
-
-			ok = True
+		ok = whicher(self.prefs.tag_editor_target, self.flatpak_mode)
 
 		if not ok:
 			self.show_message(_("Tag editor app does not appear to be installed."), mode="warning")
@@ -15251,11 +15231,11 @@ class Tauon:
 
 		# logging.info(shlex.split(command))
 		startupinfo = None
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-		if not self.msys:
+		if not self.windows:
 			command = shlex.split(command)
 
 		subprocess.call(command, stdout=subprocess.PIPE, shell=False, startupinfo=startupinfo)
@@ -16473,7 +16453,7 @@ class Tauon:
 					if not nt.length:
 						try:
 							startupinfo = None
-							if self.system == "Windows" or self.msys:
+							if self.windows:
 								startupinfo = subprocess.STARTUPINFO()
 								startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 							result = subprocess.run([self.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
@@ -17426,9 +17406,6 @@ class Tauon:
 		elif self.gui.scale != 1:
 			tweak = round(tweak * self.gui.scale)
 			tweak += 2
-
-		if self.system == "Windows":
-			tweak += 1
 
 		# self.ddt.line(x + left, y + tweak + 2, x + right, y + tweak + 2, alpha_mod(self.colours.link_text, 120))
 		self.ddt.rect((x + left, y + tweak + 2, right - left, round(1 * self.gui.scale)), alpha_mod(self.colours.link_text, 120))
@@ -18714,7 +18691,7 @@ class Tauon:
 	def test_ffmpeg(self) -> bool:
 		if self.get_ffmpeg():
 			return True
-		if self.msys:
+		if self.windows:
 			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (92MB)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
 			self.gui.message_box_no_callback = None
@@ -18725,7 +18702,7 @@ class Tauon:
 
 	def get_ffmpeg(self) -> Path | None:
 		path = self.user_directory / "ffmpeg.exe"
-		if self.msys and path.is_file():
+		if self.windows and path.is_file():
 			return path
 
 		# macOS
@@ -18740,7 +18717,7 @@ class Tauon:
 
 	def get_ffprobe(self) -> Path | None:
 		path = self.user_directory / "ffprobe.exe"
-		if self.msys and path.is_file():
+		if self.windows and path.is_file():
 			return path
 
 		# macOS
@@ -20746,10 +20723,9 @@ class AlbumArt:
 		self.gui: GuiVar                  = tauon.gui
 		self.ddt: TDraw                  = tauon.ddt
 		self.pctl: PlayerCtl                 = tauon.pctl
-		self.msys: bool                 = tauon.msys
+		self.windows: bool                 = tauon.windows
 		self.macos: bool                = tauon.macos
 		self.prefs: Prefs                = tauon.prefs
-		self.system: str               = tauon.system
 		self.temp_dest: sdl3.SDL_FRect            = tauon.temp_dest
 		self.a_cache_directory: Path    = tauon.dirs.a_cache_directory
 		self.b_cache_directory: Path    = tauon.dirs.b_cache_directory
@@ -20981,7 +20957,7 @@ class AlbumArt:
 		else:
 			target = source[offset][1]
 
-		if self.system == "Windows" or self.msys:
+		if self.windows:
 			os.startfile(target)
 		elif self.macos:
 			subprocess.call(["open", target])
@@ -23829,9 +23805,8 @@ class Over:
 		self.snap_mode:          bool = tauon.snap_mode
 		self.t_version:           str = tauon.t_version
 		self.wayland:            bool = tauon.wayland
-		self.system:              str = tauon.system
 		self.macos:              bool = tauon.macos
-		self.msys:               bool = tauon.msys
+		self.windows:               bool = tauon.windows
 		self.phazor_found:       bool = phazor_exists(tauon.pctl)
 		self.init2done:          bool = False
 
@@ -24553,7 +24528,7 @@ class Over:
 			self.toggle_square(x + 10 * gui.scale, y, tauon.toggle_music_ex, _("Always extract to Music folder"))
 
 			y += 38 * gui.scale
-			if not self.msys:
+			if not self.windows:
 				self.toggle_square(x, y, tauon.toggle_use_tray, _("Show icon in system tray"))
 
 				y += 25 * gui.scale
@@ -25849,8 +25824,7 @@ class Over:
 
 		# self.ddt.text((x, y), _("Window"),self.colours.box_text_label, 12)
 
-		if self.system == "Linux":
-			self.toggle_square(x, y, self.tauon.toggle_notifications, _("Emit track change notifications"))
+		self.toggle_square(x, y, self.tauon.toggle_notifications, _("Emit track change notifications"))
 
 		y += 25 * gui.scale
 		self.toggle_square(x, y, self.tauon.toggle_borderless, _("Draw own window decorations"))
@@ -25881,7 +25855,7 @@ class Over:
 			self.toggle_square(x, y, self.tauon.toggle_showcase_vis, _("Showcase visualisation"))
 
 		y += round(30 * gui.scale)
-		# if not msys:
+		# if not windows:
 		# y += round(15 * gui.scale)
 
 		self.ddt.text((x, y), _("UI scale for HiDPI displays"), colours.box_text_label, 12)
@@ -25948,7 +25922,7 @@ class Over:
 				gui.update_layout = True
 
 		y += round(25 * gui.scale)
-		if not self.msys and not self.macos:
+		if not self.windows and not self.macos:
 			x11_path = self.user_directory / "x11"
 			x11 = x11_path.exists()
 			old = x11
@@ -26407,7 +26381,7 @@ class Over:
 			return
 
 		ww = ddt.get_text_w(_("Chart generator..."), 211) + 30 * gui.scale
-		if self.system == "Linux" and self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
+		if self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
 			self.chart_view = 1
 
 		ddt.text_background_colour = colours.box_background
@@ -27936,7 +27910,6 @@ class BottomBarType1:
 		self.coll          = tauon.coll
 		self.pctl          = tauon.pctl
 		self.prefs         = tauon.prefs
-		self.system        = tauon.system
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
 		self.renderer      = tauon.renderer
@@ -28413,9 +28386,6 @@ class BottomBarType1:
 
 			offset1 = 10 * gui.scale
 
-			if self.system == "Windows":
-				offset1 += 2 * gui.scale
-
 			offset2 = offset1 + 7 * gui.scale
 
 			ddt.text(
@@ -28457,8 +28427,6 @@ class BottomBarType1:
 				fonts.bottom_panel_time)
 
 			offset1 = 10 * gui.scale
-			if self.system == "Windows":
-				offset1 += 2 * gui.scale
 			offset2 = offset1 + 7 * gui.scale
 
 			ddt.text(
@@ -28803,7 +28771,6 @@ class BottomBarType_ao1:
 		self.pctl          = tauon.pctl
 		self.fonts         = tauon.fonts
 		self.prefs         = tauon.prefs
-		self.system        = tauon.system
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
 		self.renderer      = tauon.renderer
@@ -29007,9 +28974,6 @@ class BottomBarType_ao1:
 
 			offset1 = 10 * self.gui.scale
 
-			if self.system == "Windows":
-				offset1 += 2 * self.gui.scale
-
 			offset2 = offset1 + 7 * self.gui.scale
 
 			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
@@ -29047,8 +29011,6 @@ class BottomBarType_ao1:
 			self.ddt.text((x - 25 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
 
 			offset1 = 10 * self.gui.scale
-			if self.system == "Windows":
-				offset1 += 2 * self.gui.scale
 			offset2 = offset1 + 7 * self.gui.scale
 
 			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
@@ -33630,7 +33592,7 @@ class TreeView:
 		self.inp                   = tauon.inp
 		self.gui                   = tauon.gui
 		self.coll                  = tauon.coll
-		self.msys                  = tauon.msys
+		self.windows                  = tauon.windows
 		self.prefs                 = tauon.prefs
 		self.fields                = tauon.fields
 		self.colours               = tauon.colours
@@ -33915,7 +33877,7 @@ class TreeView:
 				elif self.inp.right_click:
 					if item[3]:
 						for p, id in enumerate(self.pctl.multi_playlist[self.pctl.id_to_pl(pl_id)].playlist_ids):
-							if self.msys:
+							if self.windows:
 								if self.pctl.get_track(id).fullpath.startswith(target.lstrip("/")):
 									self.folder_tree_menu.activate(in_reference=id)
 									self.menu_selected = full_folder_path
@@ -33924,7 +33886,7 @@ class TreeView:
 								self.folder_tree_menu.activate(in_reference=id)
 								self.menu_selected = full_folder_path
 								break
-					elif self.msys:
+					elif self.windows:
 						self.folder_tree_stem_menu.activate(in_reference=full_folder_path.lstrip("/"))
 						self.menu_selected = full_folder_path.lstrip("/")
 					else:
@@ -33951,7 +33913,7 @@ class TreeView:
 						# Locate the first track of folder in playlist
 						track_id = None
 						for p, id in enumerate(self.pctl.default_playlist):
-							if self.msys:
+							if self.windows:
 								if self.pctl.get_track(id).fullpath.startswith(target.lstrip("/")):
 									track_id = id
 									break
@@ -34069,7 +34031,7 @@ class TreeView:
 			self.gui.shift_selection.clear()
 			self.gui.set_drag_source()
 			for p, id in enumerate(self.pctl.multi_playlist[self.pctl.id_to_pl(pl_id)].playlist_ids):
-				if self.msys:
+				if self.windows:
 					if self.pctl.get_track(id).fullpath.startswith(
 							self.click_drag_source[1].lstrip("/") + "/" + self.click_drag_source[0] + "/"):
 						self.gui.shift_selection.append(p)
@@ -37150,7 +37112,7 @@ class DLMon:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon: Tauon = tauon
 		self.gui: GuiVar = tauon.gui
-		self.msys: bool = tauon.msys
+		self.windows: bool = tauon.windows
 		self.pctl: PlayerCtl = tauon.pctl
 		self.prefs: Prefs = tauon.prefs
 		self.formats: Formats = tauon.formats
@@ -37197,7 +37159,7 @@ class DLMon:
 				min_age = (time.time() - stamp) / 60
 				ext = os.path.splitext(path)[1][1:].lower()
 
-				if self.msys and "TauonMusicBox" in path:
+				if self.windows and "TauonMusicBox" in path:
 					continue
 
 				if min_age < 240 and os.path.isfile(path) and ext in self.formats.Archive:
@@ -38034,7 +37996,7 @@ class TimedLyricsEdit:
 				else:
 					lyrics_file.write( _("Put the lyrics in this file."))
 
-		if self.tauon.system == "Windows" or self.tauon.msys:
+		if self.tauon.windows:
 			os.startfile(target)
 		elif self.tauon.macos:
 			subprocess.call(["open", "-t", target])
@@ -38725,7 +38687,7 @@ class TimedLyricsEdit:
 				lyrics_file.write( self.text )
 			else:
 				lyrics_file.write( _("Put the lyrics in this file and save it."))
-		if self.tauon.system == "Windows" or self.tauon.msys:
+		if self.tauon.windows:
 			os.startfile(target)
 		elif self.tauon.macos:
 			subprocess.call(["open", "-t", target])
@@ -38904,7 +38866,7 @@ class TimedLyricsEdit:
 			else:
 				x0 += offset + widths[3]
 			if self.button(_("Reopen Editor"), x0, y0, self.font, tooltip=_("In case you closed it by accident."))[0]:
-				if self.tauon.system == "Windows" or self.tauon.msys:
+				if self.tauon.windows:
 					os.startfile(lyric_file)
 				elif self.tauon.macos:
 					subprocess.call(["open", "-t", lyric_file])
@@ -39229,7 +39191,7 @@ class Bag:
 	tls_context:             ssl.SSLContext
 	dev_mode:                bool
 	macos:                   bool
-	msys:                    bool
+	windows:                    bool
 	phone:                   bool
 	pump:                    bool
 	snap_mode:               bool
@@ -39242,7 +39204,6 @@ class Bag:
 	wayland:                 bool
 	should_save_state:       bool
 	desktop:                 str | None
-	system:                  str
 	launch_prefix:           str
 	platform_system:         str
 	album_mode_art_size:     int
@@ -39703,7 +39664,7 @@ def load_prefs(bag: Bag) -> None:
 
 	cf.br()
 	cf.add_text("[tag-editor]")
-	if bag.system == "Windows" or bag.msys:
+	if bag.windows:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target",
@@ -39853,30 +39814,29 @@ def load_prefs(bag: Bag) -> None:
 	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
 	# show-current-on-transition", prefs.show_current_on_transition)
-	if bag.system != "Windows":
-		cf.br()
-		cf.add_text("[fonts]")
-		cf.add_comment("Changes will require app restart.")
-		prefs.use_custom_fonts = cf.sync_add(
-			"bool", "use-custom-fonts", prefs.use_custom_fonts,
-			"Setting to false will reset below settings to default on restart")
-		if prefs.use_custom_fonts:
-			prefs.linux_font = cf.sync_add(
-				"string", "font-main-standard", prefs.linux_font,
-				"Suggested alternate: Liberation Sans")
-			prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
-			prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
-			prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
-			prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+	cf.br()
+	cf.add_text("[fonts]")
+	cf.add_comment("Changes will require app restart.")
+	prefs.use_custom_fonts = cf.sync_add(
+		"bool", "use-custom-fonts", prefs.use_custom_fonts,
+		"Setting to false will reset below settings to default on restart")
+	if prefs.use_custom_fonts:
+		prefs.linux_font = cf.sync_add(
+			"string", "font-main-standard", prefs.linux_font,
+			"Suggested alternate: Liberation Sans")
+		prefs.linux_font_semibold = cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+		prefs.linux_font_bold = cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+		prefs.linux_font_condensed = cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+		prefs.linux_font_condensed_bold = cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
-		else:
-			cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
-			cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
-			cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
-			cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
-			cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
+	else:
+		cf.sync_add("string", "font-main-standard", prefs.linux_font, "Suggested alternate: Liberation Sans")
+		cf.sync_add("string", "font-main-medium", prefs.linux_font_semibold)
+		cf.sync_add("string", "font-main-bold", prefs.linux_font_bold)
+		cf.sync_add("string", "font-main-condensed", prefs.linux_font_condensed)
+		cf.sync_add("string", "font-main-condensed-bold", prefs.linux_font_condensed_bold)
 
-		# prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
+	# prefs.force_subpixel_text = cf.sync_add("bool", "force-subpixel-text", prefs.force_subpixel_text, "(Subpixel rendering defaults to off with Flatpak)")
 
 	cf.br()
 	cf.add_text("[tracklist]")
@@ -41084,7 +41044,7 @@ def worker1(tauon: Tauon) -> None:
 		return content.split()[0]
 
 	def add_from_cue(path: str) -> int | None:
-		if not tauon.msys:  # Windows terminal doesn't like unicode
+		if not tauon.windows:  # Windows terminal doesn't like unicode
 			logging.info(f"Reading CUE file: {path}")
 
 		try:
@@ -41687,7 +41647,7 @@ def worker1(tauon: Tauon) -> None:
 				mode="error"
 			)
 			return False
-		if tauon.msys:
+		if tauon.windows:
 			binary = str( tauon.install_directory / "lrclib-solver.exe" )
 		else:
 			binary = str( tauon.install_directory / "lrclib-solver" )
@@ -42056,7 +42016,7 @@ def worker1(tauon: Tauon) -> None:
 					if not gui.sync_progress:
 						if not gui.message_box:
 							tauon.show_message(_("Encoding complete."), line, mode="done")
-						if tauon.system == "Linux" and tauon.de_notify_support:
+						if tauon.de_notify_support:
 							tauon.g_tc_notify.show()
 
 		if tauon.to_scan:
@@ -42229,7 +42189,7 @@ def main(holder: Holder) -> None:
 	discord_allow = is_module_loaded("pypresence", "ActivityType")
 	#ctypes = sys.modules.get("ctypes")  # Fetch from loaded modules
 
-	if sys.platform == "win32" and msys:
+	if sys.platform == "win32" and windows:
 		font_folder = str(install_directory / "fonts")
 		if os.path.isdir(font_folder):
 			logging.info(f"Fonts directory:           {font_folder}")
@@ -42332,7 +42292,7 @@ def main(holder: Holder) -> None:
 		logging.info("Pyinstaller mode")
 
 	# If we're installed, use home data locations
-	if (install_mode and system == "Linux") or macos or msys:
+	if (install_mode) or macos or windows:
 		cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
 		#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 		config_directory = user_directory
@@ -42352,19 +42312,6 @@ def main(holder: Holder) -> None:
 
 		if not (user_directory / "encoder").is_dir():
 			os.makedirs(user_directory / "encoder")
-
-
-	# elif (system == 'Windows' or msys) and (
-	# 	'Program Files' in install_directory or
-	# 	os.path.isfile(install_directory + '\\unins000.exe')):
-	#
-	#	 user_directory = os.path.expanduser('~').replace("\\", '/') + "/Music/TauonMusicBox"
-	#	 config_directory = user_directory
-	#	 cache_directory = user_directory / "cache"
-	#	 logging.info(f"User Directory: {user_directory}")
-	#	 install_mode = True
-	#	 if not os.path.isdir(user_directory):
-	#		 os.makedirs(user_directory)
 
 	else:
 		logging.info("Running in portable mode")
@@ -42575,9 +42522,6 @@ def main(holder: Holder) -> None:
 	except Exception:
 		logging.exception("SET LOCALE ERROR")
 
-	if system == "Windows":
-		os.environ["SDL_BINARY_PATH"] = str(install_directory / "lib")
-
 	wayland = True
 	if os.environ.get("SDL_VIDEODRIVER") != "wayland":
 		wayland = False
@@ -42664,7 +42608,7 @@ def main(holder: Holder) -> None:
 	try:
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
-		elif msys:
+		elif windows:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 		else:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
@@ -42681,7 +42625,7 @@ def main(holder: Holder) -> None:
 	try:
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
-		elif msys:
+		elif windows:
 			gme = ctypes.cdll.LoadLibrary("libgme.dll")
 		else:
 			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
@@ -42742,7 +42686,6 @@ def main(holder: Holder) -> None:
 		formats=formats,
 		renderer=renderer,
 		#sdl_syswminfo=sss,
-		system=system,
 		pump=True,
 		wayland=wayland,
 		# de_notify_support = desktop == 'GNOME' or desktop == 'KDE'
@@ -42757,7 +42700,7 @@ def main(holder: Holder) -> None:
 		mac_close=mac_close,
 		mac_maximize=mac_maximize,
 		mac_minimize=mac_minimize,
-		msys=msys,
+		windows=windows,
 		phone=phone,
 		should_save_state=True,
 		old_window_position=old_window_position,
@@ -43393,7 +43336,7 @@ def main(holder: Holder) -> None:
 	if prefs.use_gamepad:
 		sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
-	if bag.msys and win_ver >= 10:
+	if bag.windows and win_ver >= 10:
 		#logging.info(sss.info.win.window)
 		SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
 		if SMTC_path.exists():
@@ -43537,7 +43480,7 @@ def main(holder: Holder) -> None:
 	try:
 		if p:
 			mpt = ctypes.cdll.LoadLibrary(p)
-		elif msys:
+		elif windows:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
 		else:
 			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
@@ -43554,7 +43497,7 @@ def main(holder: Holder) -> None:
 	try:
 		if p:
 			gme = ctypes.cdll.LoadLibrary(p)
-		elif msys:
+		elif windows:
 			gme = ctypes.cdll.LoadLibrary("libgme.dll")
 		else:
 			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
@@ -43662,7 +43605,7 @@ def main(holder: Holder) -> None:
 			logging.exception("Unknown error running database migration!")
 			sys.exit(42)
 
-	if system == "Linux" and not macos and not tauon.msys:
+	if not macos and not tauon.windows:
 		try:
 			Notify.init("Tauon Music Box")
 			tauon.g_tc_notify = Notify.Notification.new(
@@ -43697,7 +43640,7 @@ def main(holder: Holder) -> None:
 	if chrome_loaded:
 		tauon.chrome = Chrome(tauon)
 
-	if system == "Linux" and not macos and not tauon.msys:
+	if not macos and not tauon.windows:
 		try:
 			gnome_thread = threading.Thread(target=tauon.gnome.main)
 			gnome_thread.daemon = True
@@ -43733,7 +43676,7 @@ def main(holder: Holder) -> None:
 	# -------------------------------------------------------------------------------------------
 	# initiate SDL3 --------------------------------------------------------------------C-IS-----
 
-	if not tauon.msys and system == "Linux" and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
+	if not tauon.windows and "XCURSOR_THEME" in os.environ and "XCURSOR_SIZE" in os.environ:
 		try:
 			try:
 				xcu = ctypes.cdll.LoadLibrary("libXcursor.so.1")
@@ -43780,7 +43723,7 @@ def main(holder: Holder) -> None:
 
 	props = sdl3.SDL_GetWindowProperties(t_window)
 
-	if system == "Windows" or tauon.msys:
+	if tauon.windows:
 		gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
 		#gui.window_id = sss.info.win.window
 
@@ -44756,7 +44699,7 @@ def main(holder: Holder) -> None:
 	tauon.sync_target.text = prefs.sync_target
 	sdl3.SDL_SetRenderTarget(renderer, None)
 
-	if tauon.msys:
+	if tauon.windows:
 		sdl3.SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
 
 	# Generate theme buttons
@@ -44985,7 +44928,7 @@ def main(holder: Holder) -> None:
 					elif ( tauon.is_level_zero() or gui.quick_search_mode ) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(-1)
 			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
-				if not tauon.msys:
+				if not tauon.windows:
 					reset_render = True
 			elif event.type == sdl3.SDL_EVENT_DROP_TEXT:
 				power += 5
@@ -44994,7 +44937,7 @@ def main(holder: Holder) -> None:
 				#logging.info(link)
 
 				if pctl.playing_ready() and link.startswith("http"):
-					if system != "Windows" and sdl3.SDL_version >= 204:
+					if sdl3.SDL_version >= 204:
 						gmp = get_global_mouse()
 						gwp = get_window_position(t_window)
 						i_x = gmp[0] - gwp[0]
@@ -45247,7 +45190,7 @@ def main(holder: Holder) -> None:
 				if event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_GAINED:
 					#logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
-					if system == "Linux" and not macos and not tauon.msys:
+					if not macos and not tauon.windows:
 						tauon.gnome.focus()
 					inp.k_input = True
 
@@ -48374,7 +48317,7 @@ def main(holder: Holder) -> None:
 						rect = [x1, y1, 450 * gui.scale, 16 * gui.scale]
 						tauon.fields.add(rect)
 						path = tc.fullpath
-						if tauon.msys:
+						if tauon.windows:
 							path = path.replace("/", "\\")
 						if tauon.coll(rect):
 							ddt.text((x1, y1), _("Path"), key_colour_on, 212)
