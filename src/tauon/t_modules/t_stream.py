@@ -269,6 +269,7 @@ class StreamEnc:
 				rate = "44100"
 
 			target_file = self.tauon.cache_directory / "stream" / ext
+			target_file.parent.mkdir(parents=True, exist_ok=True)
 			if target_file.is_file():
 				target_file.unlink()
 
