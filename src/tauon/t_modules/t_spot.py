@@ -570,7 +570,7 @@ class SpotCtl:
 						start_callback()
 
 					# self.tauon.pctl.playing_state = 3
-					elif self.tauon.msys:
+					elif self.tauon.windows:
 						self.launching_spotify = True
 						appdata = os.getenv("APPDATA")
 						if not appdata:

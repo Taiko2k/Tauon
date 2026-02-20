@@ -60,7 +60,7 @@ class LibreSpot:
 		self.tauon:      Tauon = tauon
 		self.aud:         CDLL = tauon.aud
 		self.gui:       GuiVar = tauon.gui
-		self.msys:        bool = tauon.msys
+		self.windows:        bool = tauon.windows
 		self.pctl:   PlayerCtl = tauon.pctl
 		self.prefs:      Prefs = tauon.prefs
 		self.spot_ctl: SpotCtl = tauon.spot_ctl
@@ -145,7 +145,7 @@ class LibreSpot:
 		self.running = False
 		self.pctl.spot_playing = False
 		if self.librespot_p:
-			if self.msys:
+			if self.windows:
 				self.librespot_p.terminate()
 				# self.librespot_p.communicate()
 			else:
@@ -563,7 +563,7 @@ def get_phazor_path(pctl: PlayerCtl) -> Path:
 	base_path = Path(pctl.install_directory).parent.parent / "build"
 
 	# Define the library name and extensions in priority order
-	lib_name = "phazor-pw" if (not pctl.msys and not pctl.tauon.macos) and pctl.prefs.pipewire else "phazor"
+	lib_name = "phazor-pw" if (not pctl.windows and not pctl.tauon.macos) and pctl.prefs.pipewire else "phazor"
 
 	extensions = [".so", ".dll", ".pyd", ".dylib"]
 

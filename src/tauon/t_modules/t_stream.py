@@ -173,7 +173,7 @@ class StreamEnc:
 		# fmt:on
 
 		startupinfo = None
-		if self.tauon.msys:
+		if self.tauon.windows:
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
