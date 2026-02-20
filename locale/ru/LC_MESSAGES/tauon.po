@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-02-20 03:09+0000\n"
+"PO-Revision-Date: 2026-02-21 12:09+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -2227,15 +2227,15 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:22933
 msgid "Disable to move playlist files while keeping audio in one location"
 msgstr ""
+"Отключите, чтобы перемещать файлы плейлиста, сохраняя аудио в одном месте"
 
 #: src/tauon/t_modules/t_main.py:22937
 msgid "Auto-export"
 msgstr "Автоматический экспорт"
 
 #: src/tauon/t_modules/t_main.py:22938
-#, fuzzy
 msgid "Auto-import"
-msgstr "Автоматический экспорт"
+msgstr "Автоматический импорт"
 
 #: src/tauon/t_modules/t_main.py:22942 src/tauon/t_modules/t_main.py:22945
 msgid "Export"
@@ -2586,9 +2586,8 @@ msgid "Downloads data in background when artist panel is open"
 msgstr "Загружать данные в фоне, когда панель исполнителя открыта"
 
 #: src/tauon/t_modules/t_main.py:24556
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Автоматически пересоздавать плейлисты"
+msgstr "Автоматически обновлять плейлисты"
 
 #: src/tauon/t_modules/t_main.py:24557
 #, fuzzy
