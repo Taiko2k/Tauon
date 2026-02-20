@@ -46017,7 +46017,7 @@ def main(holder: Holder) -> None:
 
 					if inp.key_a_press and inp.key_ctrl_down:
 						gui.pl_update = 1
-						gui.shift_selection = range(len(pctl.default_playlist)) # TODO(Martin): This can under some circumstances end up doing a range.clear()
+						gui.shift_selection = list(range(len(pctl.default_playlist)))
 
 					if keymaps.test("revert"):
 						pctl.revert()
