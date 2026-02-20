@@ -4004,6 +4004,8 @@ class PlayerCtl:
 							#if play:
 							self.play_target(jump=not end, play=play)
 							break
+					else:
+						# There was no different album; restart from the first album in the playlist.
 						a = 0
 						self.playlist_playing_position = a
 						self.track_queue.append(self.playing_playlist()[a])
