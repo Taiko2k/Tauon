@@ -243,6 +243,12 @@ class StreamEnc:
 		self.encode_running = True
 
 		try:
+			ffmpeg_path = self.tauon.get_ffmpeg()
+			if ffmpeg_path is None:
+				logging.error("FFMPEG could not be found for stream encoder")
+				self.encode_running = False
+				return
+
 			while self.c < 20:
 				if self.abort:
 					self.encode_running = False
@@ -268,7 +274,7 @@ class StreamEnc:
 
 			# fmt:off
 			cmd = [
-				str(self.tauon.get_ffmpeg()),
+				str(ffmpeg_path),
 				"-loglevel", "quiet",
 				"-i", "pipe:0",
 				"-acodec", "pcm_s16le",
@@ -290,7 +296,7 @@ class StreamEnc:
 			##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
 			# fmt:off
 			cmd = [
-				"ffmpeg",
+				str(ffmpeg_path),
 				"-loglevel", "quiet",
 				"-f", "s16le",
 				"-ar", rate,
