@@ -41282,14 +41282,14 @@ def worker1(tauon: Tauon) -> None:
 
 					if cue_disc:
 						track.disc_number = cue_disc
-					elif len(cds) == 0:
+					elif len(cds) <= 1:
 						track.disc_number = ""
 					else:
-						track.disc_number = str(cdn)
+						track.disc_number = str(cdn + 1)
 
 					if cue_disc_total:
 						track.disc_total = cue_disc_total
-					elif len(cds) == 0:
+					elif len(cds) <= 1:
 						track.disc_total = ""
 					else:
 						track.disc_total = str(len(cds))
