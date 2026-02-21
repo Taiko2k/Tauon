@@ -35134,7 +35134,7 @@ class ArtistInfoBox:
 			shoot_dl.start()
 
 	def draw(self, x: int, y: int, w: int, h: int) -> None:
-		if self.gui.artist_panel_height > 300 and w < 500 * self.gui.scale:
+		if self.gui.artist_panel_height > 300 * self.gui.scale and w < 500 * self.gui.scale:
 			self.tauon.bio_set_small()
 
 		if w < 300 * self.gui.scale:
