@@ -973,7 +973,9 @@ def filename_to_metadata(filename: str) -> tuple[str, str]:
 
 def get_artist_strip_feat(track_object: TrackClass) -> str:
 	artist_name = track_object.artist  # .lower()
-	if track_object.album_artist:
+	if track_object.misc.get("artists"):
+		artist_name = track_object.misc["artists"][0]
+	elif track_object.album_artist:
 		if (
 			"feat." in artist_name
 			or "pres." in artist_name
