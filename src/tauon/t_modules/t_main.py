@@ -24264,9 +24264,8 @@ class Over:
 					self.device_scroll_bar_position,
 					len(self.prefs.phazor_devices) - 11, click=self.click)
 
-			i = 0
 			reload = False
-			for name in self.prefs.phazor_devices:
+			for i, name in enumerate(self.prefs.phazor_devices):
 				if i < self.device_scroll_bar_position:
 					continue
 				if y > self.box_y + self.h - 40 * self.gui.scale:
@@ -24290,7 +24289,6 @@ class Over:
 				else:
 					self.ddt.text((x, y), line, self.colours.box_text_label, 10)
 				y += 14 * self.gui.scale
-				i += 1
 
 			if reload:
 				self.pctl.playerCommand = "set-device"
