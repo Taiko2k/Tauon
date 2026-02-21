@@ -10320,6 +10320,8 @@ class Tauon:
 		self.gui.pl_update = 1
 
 		if not self.gui.shift_selection:
+			if not self.pctl.selected_ready():
+				return
 			self.gui.shift_selection = [self.pctl.selected_in_playlist]
 
 		if not self.pctl.default_playlist:
@@ -10328,7 +10330,7 @@ class Tauon:
 		li: list[tuple[int, int]] = []
 
 		for item in reversed(self.gui.shift_selection):
-			if item > len(self.pctl.default_playlist) - 1:
+			if not 0 <= item < len(self.pctl.default_playlist):
 				return
 
 			li.append((item, self.pctl.default_playlist[item]))  # take note for force delete
@@ -45852,7 +45854,7 @@ def main(holder: Holder) -> None:
 			if keymaps.test("pagedown"):  # key_PGD:
 				if len(pctl.default_playlist) > 10:
 					pctl.playlist_view_position += gui.playlist_view_length - 4
-					if pctl.playlist_view_position > len(pctl.default_playlist):
+					if pctl.playlist_view_position >= len(pctl.default_playlist):
 						pctl.playlist_view_position = len(pctl.default_playlist) - 2
 					gui.pl_update = 1
 					pctl.selected_in_playlist = pctl.playlist_view_position
@@ -45869,12 +45871,12 @@ def main(holder: Holder) -> None:
 
 			if gui.quick_search_mode is False and tauon.rename_track_box.active is False and gui.rename_folder_box is False and gui.rename_playlist_box is False and not pref_box.enabled and not radiobox.active:
 				if keymaps.test("info-playing"):
-					if pctl.selected_in_playlist < len(pctl.default_playlist):
+					if pctl.selected_ready():
 						pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
 						gui.track_box = True
 
 				if keymaps.test("info-show"):
-					if pctl.selected_in_playlist < len(pctl.default_playlist):
+					if pctl.selected_ready():
 						pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
 						gui.track_box = True
 
