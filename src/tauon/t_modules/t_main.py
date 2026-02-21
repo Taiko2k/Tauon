@@ -5781,6 +5781,7 @@ class Tauon:
 	def __init__(self, holder: Holder, bag: Bag, gui: GuiVar) -> None:
 		self.use_cc                       = is_module_loaded("opencc")
 		self.use_natsort                  = is_module_loaded("natsort")
+		self._opencc_local                = threading.local()
 
 		self.bag: Bag                          = bag
 		self.log: LogHistoryHandler            = bag.log
@@ -13826,6 +13827,351 @@ class Tauon:
 			self.show_message(_("Updated Spotify playlist"), mode="done")
 		self.spot_ctl.upload_playlist(id, urls)
 
+	def _build_search_results(
+		self,
+		query_text: str,
+		*,
+		all_folders: bool = False,
+		cancel_check: Callable[[], bool] | None = None,
+	) -> list[list[int | str | None]]:
+		temp_results: list[list[int | str | None] | None] = []
+
+		artists = {}
+		albums = {}
+		genres = {}
+		metas = {}
+		composers = {}
+		years = {}
+		tracks = set()
+
+		br = 0
+		o_text = query_text.lower().replace("-", "")
+		if o_text in ("the", "and"):
+			return []
+
+		dia_mode = all([ord(c) < 128 for c in o_text])
+
+		artist_mode = False
+		if o_text.startswith("artist "):
+			o_text = o_text[7:]
+			artist_mode = True
+
+		album_mode = False
+		if o_text.startswith("album "):
+			o_text = o_text[6:]
+			album_mode = True
+
+		composer_mode = False
+		if o_text.startswith("composer "):
+			o_text = o_text[9:]
+			composer_mode = True
+
+		year_mode = False
+		if o_text.startswith("year "):
+			o_text = o_text[5:]
+			year_mode = True
+
+		cn_mode = False
+		if self.use_cc and re.search(
+			r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]",
+			o_text,
+		):
+			s2t, t2s = self._get_opencc_converters()
+			if s2t and t2s:
+				t_cn = s2t.convert(o_text)
+				s_cn = t2s.convert(o_text)
+				cn_mode = True
+
+		s_text = o_text
+		searched = set()
+
+		for playlist in self.pctl.multi_playlist:
+			for track in playlist.playlist_ids:
+				if track in searched:
+					continue
+				searched.add(track)
+
+				if cn_mode:
+					s_text = o_text
+					cache_string = self.search_string_cache.get(track)
+					if cache_string:
+						if search_magic_any(s_text, cache_string):
+							pass
+						elif search_magic_any(t_cn, cache_string):
+							s_text = t_cn
+						elif search_magic_any(s_cn, cache_string):
+							s_text = s_cn
+
+				if dia_mode:
+					cache_string = self.search_dia_string_cache.get(track)
+					if cache_string is not None:
+						if not search_magic_any(s_text, cache_string):
+							continue
+				else:
+					cache_string = self.search_string_cache.get(track)
+					if cache_string is not None:
+						if not search_magic_any(s_text, cache_string):
+							continue
+
+				t = self.pctl.master_library[track]
+
+				title = t.title.lower().replace("-", "")
+				artist = t.artist.lower().replace("-", "")
+				album_artist = t.album_artist.lower().replace("-", "")
+				composer = t.composer.lower().replace("-", "")
+				date = t.date.lower().replace("-", "")
+				album = t.album.lower().replace("-", "")
+				genre = t.genre.lower().replace("-", "")
+				genre_nospace = t.genre.lower().replace("-", "").replace(" ", "")
+				filename = t.filename.lower().replace("-", "")
+				stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
+				sartist = t.misc.get("artist_sort", "").lower()
+
+				if cache_string is None:
+					if not dia_mode:
+						self.search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+
+					if cn_mode:
+						cache_string = self.search_string_cache.get(track)
+						if cache_string:
+							if search_magic_any(s_text, cache_string):
+								pass
+							elif search_magic_any(t_cn, cache_string):
+								s_text = t_cn
+							elif search_magic_any(s_cn, cache_string):
+								s_text = s_cn
+
+				if dia_mode:
+					title = unidecode(title)
+					artist = unidecode(artist)
+					album_artist = unidecode(album_artist)
+					composer = unidecode(composer)
+					album = unidecode(album)
+					filename = unidecode(filename)
+					sartist = unidecode(sartist)
+
+					if cache_string is None:
+						self.search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+
+				stem = os.path.dirname(t.parent_folder_path)
+
+				if len(s_text) > 2 and s_text in stem.replace("-", "").lower():
+					if stem in metas:
+						metas[stem] += 2
+					else:
+						temp_results.append([5, stem, track, playlist.uuid_int, 0])
+						metas[stem] = 2
+
+				if s_text.replace(" ", "") in genre_nospace:
+					if "/" in genre or "," in genre or ";" in genre:
+						for split in genre.replace(";", "/").replace(",", "/").split("/"):
+							if s_text.replace(" ", "") in split.replace(" ", ""):
+								split = genre_correct(split)
+								if self.prefs.sep_genre_multi:
+									split += "+"
+								if split in genres:
+									genres[split] += 3
+								else:
+									temp_results.append([3, split, track, playlist.uuid_int, 0])
+									genres[split] = 1
+									if split.replace(" ", "") == genre_nospace:
+										genres[split] += 10000
+					else:
+						name = genre_correct(t.genre)
+						if name in genres:
+							genres[name] += 3
+						else:
+							temp_results.append([3, name, track, playlist.uuid_int, 0])
+							genres[name] = 1
+							if s_text.replace(" ", "") == genre_nospace:
+								genres[name] += 10000
+
+				if s_text in composer:
+					if t.composer in composers:
+						composers[t.composer] += 2
+					else:
+						temp_results.append([6, t.composer, track, playlist.uuid_int, 0])
+						composers[t.composer] = 2
+
+				if s_text in date:
+					year = get_year_from_string(date)
+					if year:
+						if year in years:
+							years[year] += 1
+						else:
+							temp_results.append([7, year, track, playlist.uuid_int, 0])
+							years[year] = 1000
+
+				if search_magic(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist):
+					if t.misc.get("artists"):
+						for a in t.misc["artists"]:
+							if search_magic(s_text, a.lower()):
+								value = 1
+								if a.lower().startswith(s_text):
+									value = 5
+
+								if a in artists:
+									artists[a] += value
+								else:
+									temp_results.append([0, a, track, playlist.uuid_int, 0])
+									artists[a] = value
+
+								if t.album in albums:
+									albums[t.album] += 1
+								else:
+									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
+									albums[t.album] = 1
+
+					elif search_magic(s_text, artist + sartist):
+						value = 1
+						if artist.startswith(s_text):
+							value = 10
+
+						if t.artist in artists:
+							artists[t.artist] += value
+						else:
+							temp_results.append([0, t.artist, track, playlist.uuid_int, 0])
+							artists[t.artist] = value
+
+						if t.album in albums:
+							albums[t.album] += 1
+						else:
+							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
+							albums[t.album] = 1
+
+					elif search_magic(s_text, album_artist):
+						value = 1
+						if t.album_artist.startswith(s_text):
+							value = 5
+
+						if t.album_artist in artists:
+							artists[t.album_artist] += value
+						else:
+							temp_results.append([0, t.album_artist, track, playlist.uuid_int, 0])
+							artists[t.album_artist] = value
+
+						if t.album in albums:
+							albums[t.album] += 1
+						else:
+							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
+							albums[t.album] = 1
+
+					if s_text in album:
+						value = 1
+						if s_text == album:
+							value = 3
+
+						if t.album in albums:
+							albums[t.album] += value
+						else:
+							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
+							albums[t.album] = value
+
+					if search_magic(s_text, artist + sartist) or search_magic(s_text, album):
+						if t.album in albums:
+							albums[t.album] += 3
+						else:
+							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
+							albums[t.album] = 3
+
+					elif search_magic_any(s_text, artist + sartist) and search_magic_any(s_text, album):
+						if t.album in albums:
+							albums[t.album] += 3
+						else:
+							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
+							albums[t.album] = 3
+
+					if s_text in title:
+						if t not in tracks:
+							value = 50
+							if s_text == title:
+								value = 200
+							temp_results.append([2, t.title, track, playlist.uuid_int, value])
+							tracks.add(t)
+					elif t not in tracks:
+						temp_results.append([2, t.title, track, playlist.uuid_int, 1])
+						tracks.add(t)
+
+				br += 1
+				if br > 800:
+					time.sleep(0.005)  # Throttle thread
+					br = 0
+					if cancel_check and cancel_check():
+						break
+
+		if artist_mode:
+			for i in reversed(range(len(temp_results))):
+				if temp_results[i][0] != 0:
+					del temp_results[i]
+
+		elif album_mode:
+			for i in reversed(range(len(temp_results))):
+				if temp_results[i][0] != 1:
+					del temp_results[i]
+
+		elif composer_mode:
+			for i in reversed(range(len(temp_results))):
+				if temp_results[i][0] != 6:
+					del temp_results[i]
+
+		elif year_mode:
+			for i in reversed(range(len(temp_results))):
+				if temp_results[i][0] != 7:
+					del temp_results[i]
+
+		for i, item in enumerate(temp_results):
+			if item[0] == 0:
+				temp_results[i][4] = artists[item[1]]
+			if item[0] == 1:
+				temp_results[i][4] = albums[item[1]]
+			if item[0] == 3:
+				temp_results[i][4] = genres[item[1]]
+			if item[0] == 5:
+				temp_results[i][4] = metas[item[1]]
+				if not all_folders and metas[item[1]] < 42:
+					temp_results[i] = None
+			if item[0] == 6:
+				temp_results[i][4] = composers[item[1]]
+			if item[0] == 7:
+				temp_results[i][4] = years[item[1]]
+			# 8 is playlists
+
+		temp_results[:] = [item for item in temp_results if item is not None]
+		results = sorted(temp_results, key=lambda x: x[4], reverse=True)
+
+		i = 0
+		for playlist in self.pctl.multi_playlist:
+			if search_magic(s_text, playlist.title.lower()):
+				item = [8, playlist.title, None, playlist.uuid_int, 100000]
+				results.insert(0, item)
+				i += 1
+				if i > 3:
+					break
+
+		return results
+
+	def _get_opencc_converters(self):
+		"""Return thread-local OpenCC converters to avoid re-instantiation in hot paths."""
+		if not self.use_cc:
+			return None, None
+
+		s2t = getattr(self._opencc_local, "s2t", None)
+		t2s = getattr(self._opencc_local, "t2s", None)
+		if s2t and t2s:
+			return s2t, t2s
+
+		try:
+			s2t = opencc.OpenCC("s2t")
+			t2s = opencc.OpenCC("t2s")
+		except Exception:
+			logging.exception("Failed to initialize OpenCC converters")
+			self.use_cc = False
+			return None, None
+
+		self._opencc_local.s2t = s2t
+		self._opencc_local.t2s = t2s
+		return s2t, t2s
+
 	def regenerate_playlist(self, pl: int = -1, silent: bool = False, id: int | None = None) -> None:
 		if id is None and pl == -1:
 			return
@@ -14253,34 +14599,16 @@ class Tauon:
 						if is_source_type(code):
 							selections.append(plist.playlist_ids)
 
-				search = quote
-				self.search_over.all_folders = True
-				self.search_over.sip = True
-				self.search_over.search_text.text = search
-				if self.worker2_lock.locked():
-					try:
-						self.worker2_lock.release()
-					except RuntimeError as e:
-						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
-						else:
-							logging.exception("Unknown RuntimeError trying to release worker2_lock")
-					except Exception:
-						logging.exception("Unknown error trying to release worker2_lock")
-				while self.search_over.sip:
-					time.sleep(0.01)
-
+				results = self._build_search_results(quote, all_folders=True)
 				found_name = ""
-
-				for result in self.search_over.results:
+				for result in results:
 					if result[0] == 5:
 						found_name = result[1]
 						break
-				else:
+
+				if not found_name or not isinstance(found_name, str):
 					logging.info("No folder search result found")
 					continue
-
-				self.search_over.clear()
 
 				playlist += self.search_over.click_meta(found_name, get_list=True, search_lists=selections)
 
@@ -14292,47 +14620,29 @@ class Tauon:
 						if is_source_type(code):
 							selections.append(plist.playlist_ids)
 
-				g_search = quote.lower().replace("-", "")  # .replace(" ", "")
-
-				search = g_search
-				self.search_over.sip = True
-				self.search_over.search_text.text = search
-				if self.worker2_lock.locked():
-					try:
-						self.worker2_lock.release()
-					except RuntimeError as e:
-						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
-						else:
-							logging.exception("Unknown RuntimeError trying to release worker2_lock")
-					except Exception:
-						logging.exception("Unknown error trying to release worker2_lock")
-				while self.search_over.sip:
-					time.sleep(0.01)
-
+				g_search = quote.lower().replace("-", "")
+				results = self._build_search_results(g_search)
 				found_name = ""
 
 				if cm.startswith("g=\""):
-					for result in self.search_over.results:
-						if result[0] == 3 and result[1].lower().replace("-", "") == g_search:
+					for result in results:
+						if result[0] == 3 and isinstance(result[1], str) and result[1].lower().replace("-", "") == g_search:
 							found_name = result[1]
 							break
 				elif cm.startswith("g\"") or not self.prefs.sep_genre_multi:
-					for result in self.search_over.results:
-						if result[0] == 3:
+					for result in results:
+						if result[0] == 3 and isinstance(result[1], str):
 							found_name = result[1]
 							break
 				elif cm.startswith("gm\""):
-					for result in self.search_over.results:
-						if result[0] == 3 and result[1].endswith("+"):
+					for result in results:
+						if result[0] == 3 and isinstance(result[1], str) and result[1].endswith("+"):
 							found_name = result[1]
 							break
 
 				if not found_name:
 					logging.warning("No genre search result found")
 					continue
-
-				self.search_over.clear()
 
 				playlist += self.search_over.click_genre(found_name, get_list=True, search_lists=selections)
 
@@ -14344,35 +14654,17 @@ class Tauon:
 						if is_source_type(code):
 							selections.append(plist.playlist_ids)
 
-				search = quote
-				self.search_over.sip = True
-				self.search_over.search_text.text = "artist " + search
-				if self.worker2_lock.locked():
-					try:
-						self.worker2_lock.release()
-					except RuntimeError as e:
-						if str(e) == "release unlocked lock":
-							logging.error("RuntimeError: Attempted to release already unlocked worker2_lock")  # noqa: TRY400
-						else:
-							logging.exception("Unknown RuntimeError trying to release worker2_lock")
-					except Exception:
-						logging.exception("Unknown error trying to release worker2_lock")
-				while self.search_over.sip:
-					time.sleep(0.01)
-
+				results = self._build_search_results("artist " + quote)
 				found_name = ""
-
-				for result in self.search_over.results:
+				for result in results:
 					if result[0] == 0:
 						found_name = result[1]
 						break
-				else:
+
+				if not found_name or not isinstance(found_name, str):
 					logging.warning("No artist search result found")
 					continue
 
-				self.search_over.clear()
-				# for item in self.search_over.click_artist(found_name, get_list=True, search_lists=selections):
-				#	 playlist.append(item)
 				playlist += self.search_over.click_artist(found_name, get_list=True, search_lists=selections)
 
 			elif cm.startswith("ff\""):
@@ -40621,9 +40913,6 @@ def worker4(tauon: Tauon) -> None:
 			return
 
 def worker2(tauon: Tauon) -> None:
-	if tauon.use_cc:
-		s2t = opencc.OpenCC("s2t")
-		t2s = opencc.OpenCC("t2s")
 	search_over = tauon.search_over
 	while True:
 		tauon.worker2_lock.acquire()
@@ -40632,7 +40921,7 @@ def worker2(tauon: Tauon) -> None:
 				t = tauon.spot_search_rate_timer.get()
 				if t < 1:
 					time.sleep(1 - t)
-					tauon.spot_search_rate_timer.set()
+				tauon.spot_search_rate_timer.set()
 				logging.info("Spotify search")
 				search_over.results.clear()
 				results = tauon.spot_ctl.search(search_over.search_text.text)
@@ -40645,361 +40934,19 @@ def worker2(tauon: Tauon) -> None:
 						mode="warning")
 				search_over.searched_text = search_over.search_text.text
 				search_over.sip = False
-			elif True:
-				# tauon.perf_timer.set()
-				temp_results = []
-
+			else:
 				search_over.searched_text = search_over.search_text.text
-
-				artists = {}
-				albums = {}
-				genres = {}
-				metas = {}
-				composers = {}
-				years = {}
-
-				tracks = set()
-
-				br = 0
-
-				if search_over.searched_text in ("the", "and"):
-					continue
-
 				search_over.sip = True
 				tauon.gui.update += 1
 
-				o_text = search_over.search_text.text.lower().replace("-", "")
-
-				dia_mode = False
-				if all([ord(c) < 128 for c in o_text]):
-					dia_mode = True
-
-				artist_mode = False
-				if o_text.startswith("artist "):
-					o_text = o_text[7:]
-					artist_mode = True
-
-				album_mode = False
-				if o_text.startswith("album "):
-					o_text = o_text[6:]
-					album_mode = True
-
-				composer_mode = False
-				if o_text.startswith("composer "):
-					o_text = o_text[9:]
-					composer_mode = True
-
-				year_mode = False
-				if o_text.startswith("year "):
-					o_text = o_text[5:]
-					year_mode = True
-
-				cn_mode = False
-				if tauon.use_cc and re.search(r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]", o_text):
-					t_cn = s2t.convert(o_text)
-					s_cn = t2s.convert(o_text)
-					cn_mode = True
-
-				s_text = o_text
-
-				searched = set()
-
-				for playlist in tauon.pctl.multi_playlist:
-					# if "<" in playlist.title:
-					# 	#logging.info("Skipping search on derivative playlist: " + playlist.title)
-					# 	continue
-
-					for track in playlist.playlist_ids:
-						if track in searched:
-							continue
-						searched.add(track)
-
-
-						if cn_mode:
-							s_text = o_text
-							cache_string = tauon.search_string_cache.get(track)
-							if cache_string:
-								if search_magic_any(s_text, cache_string):
-									pass
-								elif search_magic_any(t_cn, cache_string):
-									s_text = t_cn
-								elif search_magic_any(s_cn, cache_string):
-									s_text = s_cn
-
-						if dia_mode:
-							cache_string = tauon.search_dia_string_cache.get(track)
-							if cache_string is not None:
-								if not search_magic_any(s_text, cache_string):
-									continue
-								# if s_text not in cache_string:
-								#     continue
-						else:
-							cache_string = tauon.search_string_cache.get(track)
-							if cache_string is not None:
-								if not search_magic_any(s_text, cache_string):
-									continue
-
-						t = tauon.pctl.master_library[track]
-
-						title = t.title.lower().replace("-", "")
-						artist = t.artist.lower().replace("-", "")
-						album_artist = t.album_artist.lower().replace("-", "")
-						composer = t.composer.lower().replace("-", "")
-						date = t.date.lower().replace("-", "")
-						album = t.album.lower().replace("-", "")
-						genre = t.genre.lower().replace("-", "")
-						genre_nospace = t.genre.lower().replace("-", "").replace(" ", "")
-						filename = t.filename.lower().replace("-", "")
-						stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
-						sartist = t.misc.get("artist_sort", "").lower()
-
-						if cache_string is None:
-							if not dia_mode:
-								tauon.search_string_cache[
-									track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
-
-							if cn_mode:
-								cache_string = tauon.search_string_cache.get(track)
-								if cache_string:
-									if search_magic_any(s_text, cache_string):
-										pass
-									elif search_magic_any(t_cn, cache_string):
-										s_text = t_cn
-									elif search_magic_any(s_cn, cache_string):
-										s_text = s_cn
-
-						if dia_mode:
-							title = unidecode(title)
-
-							artist = unidecode(artist)
-							album_artist = unidecode(album_artist)
-							composer = unidecode(composer)
-							album = unidecode(album)
-							filename = unidecode(filename)
-							sartist = unidecode(sartist)
-
-							if cache_string is None:
-								tauon.search_dia_string_cache[
-									track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
-
-						stem = os.path.dirname(t.parent_folder_path)
-
-						if len(s_text) > 2 and s_text in stem.replace("-", "").lower():
-							# if search_over.all_folders or (artist not in stem.lower() and album not in stem.lower()):
-							if stem in metas:
-								metas[stem] += 2
-							else:
-								temp_results.append([5, stem, track, playlist.uuid_int, 0])
-								metas[stem] = 2
-
-						if s_text.replace(" ", "") in genre_nospace:
-							if "/" in genre or "," in genre or ";" in genre:
-								for split in genre.replace(";", "/").replace(",", "/").split("/"):
-									if s_text.replace(" ", "") in split.replace(" ", ""):
-										split = genre_correct(split)
-										if tauon.prefs.sep_genre_multi:
-											split += "+"
-										if split in genres:
-											genres[split] += 3
-										else:
-											temp_results.append([3, split, track, playlist.uuid_int, 0])
-											genres[split] = 1
-											if split.replace(" ", "") == genre_nospace:
-												genres[split] += 10000
-							else:
-								name = genre_correct(t.genre)
-								if name in genres:
-									genres[name] += 3
-								else:
-									temp_results.append([3, name, track, playlist.uuid_int, 0])
-									genres[name] = 1
-									if s_text.replace(" ", "") == genre_nospace:
-										genres[name] += 10000
-
-						if s_text in composer:
-							if t.composer in composers:
-								composers[t.composer] += 2
-							else:
-								temp_results.append([6, t.composer, track, playlist.uuid_int, 0])
-								composers[t.composer] = 2
-
-						if s_text in date:
-							year = get_year_from_string(date)
-							if year:
-								if year in years:
-									years[year] += 1
-								else:
-									temp_results.append([7, year, track, playlist.uuid_int, 0])
-									years[year] = 1000
-
-						if search_magic(s_text, title + " " + artist + " " + filename + " " + album + " " +  sartist + " " + album_artist):
-							if t.misc.get("artists"):
-								for a in t.misc["artists"]:
-									if search_magic(s_text, a.lower()):
-
-										value = 1
-										if a.lower().startswith(s_text):
-											value = 5
-
-										# Add artist
-										if a in artists:
-											artists[a] += value
-										else:
-											temp_results.append([0, a, track, playlist.uuid_int, 0])
-											artists[a] = value
-
-										if t.album in albums:
-											albums[t.album] += 1
-										else:
-											temp_results.append([1, t.album, track, playlist.uuid_int, 0])
-											albums[t.album] = 1
-
-							elif search_magic(s_text, artist + sartist):
-								value = 1
-								if artist.startswith(s_text):
-									value = 10
-
-								# Add artist
-								if t.artist in artists:
-									artists[t.artist] += value
-								else:
-									temp_results.append([0, t.artist, track, playlist.uuid_int, 0])
-									artists[t.artist] = value
-
-								if t.album in albums:
-									albums[t.album] += 1
-								else:
-									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
-									albums[t.album] = 1
-
-							elif search_magic(s_text, album_artist):
-								# Add album artist
-								value = 1
-								if t.album_artist.startswith(s_text):
-									value = 5
-
-								if t.album_artist in artists:
-									artists[t.album_artist] += value
-								else:
-									temp_results.append([0, t.album_artist, track, playlist.uuid_int, 0])
-									artists[t.album_artist] = value
-
-								if t.album in albums:
-									albums[t.album] += 1
-								else:
-									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
-									albums[t.album] = 1
-
-							if s_text in album:
-
-								value = 1
-								if s_text == album:
-									value = 3
-
-								if t.album in albums:
-									albums[t.album] += value
-								else:
-									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
-									albums[t.album] = value
-
-							if search_magic(s_text, artist + sartist) or search_magic(s_text, album):
-
-								if t.album in albums:
-									albums[t.album] += 3
-								else:
-									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
-									albums[t.album] = 3
-
-							elif search_magic_any(s_text, artist + sartist) and search_magic_any(s_text, album):
-
-								if t.album in albums:
-									albums[t.album] += 3
-								else:
-									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
-									albums[t.album] = 3
-
-							if s_text in title:
-
-								if t not in tracks:
-
-									value = 50
-									if s_text == title:
-										value = 200
-
-									temp_results.append([2, t.title, track, playlist.uuid_int, value])
-
-									tracks.add(t)
-
-							elif t not in tracks:
-								temp_results.append([2, t.title, track, playlist.uuid_int, 1])
-
-								tracks.add(t)
-
-						br += 1
-						if br > 800:
-							time.sleep(0.005)  # Throttle thread
-							br = 0
-							if search_over.searched_text != search_over.search_text.text:
-								break
-
+				search_over.results = tauon._build_search_results(
+					search_over.search_text.text,
+					all_folders=search_over.all_folders,
+					cancel_check=lambda: search_over.searched_text != search_over.search_text.text,
+				)
 				search_over.sip = False
 				search_over.on = 0
 				tauon.gui.update += 1
-
-				# Remove results not matching any filter keyword
-
-				if artist_mode:
-					for i in reversed(range(len(temp_results))):
-						if temp_results[i][0] != 0:
-							del temp_results[i]
-
-				elif album_mode:
-					for i in reversed(range(len(temp_results))):
-						if temp_results[i][0] != 1:
-							del temp_results[i]
-
-				elif composer_mode:
-					for i in reversed(range(len(temp_results))):
-						if temp_results[i][0] != 6:
-							del temp_results[i]
-
-				elif year_mode:
-					for i in reversed(range(len(temp_results))):
-						if temp_results[i][0] != 7:
-							del temp_results[i]
-
-				# Sort results by weightings
-				for i, item in enumerate(temp_results):
-					if item[0] == 0:
-						temp_results[i][4] = artists[item[1]]
-					if item[0] == 1:
-						temp_results[i][4] = albums[item[1]]
-					if item[0] == 3:
-						temp_results[i][4] = genres[item[1]]
-					if item[0] == 5:
-						temp_results[i][4] = metas[item[1]]
-						if not search_over.all_folders:
-							if metas[item[1]] < 42:
-								temp_results[i] = None
-					if item[0] == 6:
-						temp_results[i][4] = composers[item[1]]
-					if item[0] == 7:
-						temp_results[i][4] = years[item[1]]
-					# 8 is playlists
-
-				temp_results[:] = [item for item in temp_results if item is not None]
-				search_over.results = sorted(temp_results, key=lambda x: x[4], reverse=True)
-				#logging.info(search_over.results)
-
-				i = 0
-				for playlist in tauon.pctl.multi_playlist:
-					if search_magic(s_text, playlist.title.lower()):
-						item = [8, playlist.title, None, playlist.uuid_int, 100000]
-						search_over.results.insert(0, item)
-						i += 1
-						if i > 3:
-							break
-
 				search_over.on = 0
 				search_over.force_select = 0
 				#logging.info(perf_timer.get())
