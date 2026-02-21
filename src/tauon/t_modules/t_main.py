@@ -46574,7 +46574,7 @@ def main(holder: Holder) -> None:
 										x = (l_area + dev * a) - int(tauon.album_mode_art_size / 2) + int(dev / 2) + int(
 											compact / 2) - a_offset
 
-										if tauon.album_dex[album_on] > len(pctl.default_playlist):
+										if tauon.album_dex[album_on] >= len(pctl.default_playlist):
 											break
 
 										rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
@@ -46756,7 +46756,7 @@ def main(holder: Holder) -> None:
 									x = (l_area + dev * a) - int(tauon.album_mode_art_size / 2) + int(dev / 2) + int(
 										compact / 2) - a_offset
 
-									if tauon.album_dex[album_on] > len(pctl.default_playlist):
+									if tauon.album_dex[album_on] >= len(pctl.default_playlist):
 										break
 
 									track = pctl.master_library[pctl.default_playlist[tauon.album_dex[album_on]]]
