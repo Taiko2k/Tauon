@@ -274,6 +274,10 @@ except ModuleNotFoundError:
 except Exception:
 	logging.exception("Unknown error trying to import natsort, playlists may not sort as intended!")
 
+CJK_SEARCH_PATTERN = re.compile(
+	r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]"
+)
+
 try:
 	from tauon.t_modules.t_chrome import Chrome
 	logging.debug("Found Chrome(pychromecast) for chromecast support")
@@ -13834,6 +13838,16 @@ class Tauon:
 		all_folders: bool = False,
 		cancel_check: Callable[[], bool] | None = None,
 	) -> list[list[int | str | None]]:
+		search_magic_local = search_magic
+		search_magic_any_local = search_magic_any
+		genre_correct_local = genre_correct
+		get_year_from_string_local = get_year_from_string
+		use_sep_genre_multi = self.prefs.sep_genre_multi
+		search_string_cache = self.search_string_cache
+		search_dia_string_cache = self.search_dia_string_cache
+		pctl = self.pctl
+		master_library = pctl.master_library
+		multi_playlist = pctl.multi_playlist
 		temp_results: list[list[int | str | None] | None] = []
 
 		artists = {}
@@ -13849,7 +13863,7 @@ class Tauon:
 		if o_text in ("the", "and"):
 			return []
 
-		dia_mode = all([ord(c) < 128 for c in o_text])
+		dia_mode = o_text.isascii()
 
 		artist_mode = False
 		if o_text.startswith("artist "):
@@ -13872,10 +13886,7 @@ class Tauon:
 			year_mode = True
 
 		cn_mode = False
-		if self.use_cc and re.search(
-			r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]",
-			o_text,
-		):
+		if self.use_cc and CJK_SEARCH_PATTERN.search(o_text):
 			s2t, t2s = self._get_opencc_converters()
 			if s2t and t2s:
 				t_cn = s2t.convert(o_text)
@@ -13884,8 +13895,9 @@ class Tauon:
 
 		s_text = o_text
 		searched = set()
+		s_text_nospace = s_text.replace(" ", "")
 
-		for playlist in self.pctl.multi_playlist:
+		for playlist in multi_playlist:
 			for track in playlist.playlist_ids:
 				if track in searched:
 					continue
@@ -13893,27 +13905,30 @@ class Tauon:
 
 				if cn_mode:
 					s_text = o_text
-					cache_string = self.search_string_cache.get(track)
+					s_text_nospace = s_text.replace(" ", "")
+					cache_string = search_string_cache.get(track)
 					if cache_string:
-						if search_magic_any(s_text, cache_string):
+						if search_magic_any_local(s_text, cache_string):
 							pass
-						elif search_magic_any(t_cn, cache_string):
+						elif search_magic_any_local(t_cn, cache_string):
 							s_text = t_cn
-						elif search_magic_any(s_cn, cache_string):
+							s_text_nospace = s_text.replace(" ", "")
+						elif search_magic_any_local(s_cn, cache_string):
 							s_text = s_cn
+							s_text_nospace = s_text.replace(" ", "")
 
 				if dia_mode:
-					cache_string = self.search_dia_string_cache.get(track)
+					cache_string = search_dia_string_cache.get(track)
 					if cache_string is not None:
-						if not search_magic_any(s_text, cache_string):
+						if not search_magic_any_local(s_text, cache_string):
 							continue
 				else:
-					cache_string = self.search_string_cache.get(track)
+					cache_string = search_string_cache.get(track)
 					if cache_string is not None:
-						if not search_magic_any(s_text, cache_string):
+						if not search_magic_any_local(s_text, cache_string):
 							continue
 
-				t = self.pctl.master_library[track]
+				t = master_library[track]
 
 				title = t.title.lower().replace("-", "")
 				artist = t.artist.lower().replace("-", "")
@@ -13929,17 +13944,19 @@ class Tauon:
 
 				if cache_string is None:
 					if not dia_mode:
-						self.search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
 					if cn_mode:
-						cache_string = self.search_string_cache.get(track)
+						cache_string = search_string_cache.get(track)
 						if cache_string:
-							if search_magic_any(s_text, cache_string):
+							if search_magic_any_local(s_text, cache_string):
 								pass
-							elif search_magic_any(t_cn, cache_string):
+							elif search_magic_any_local(t_cn, cache_string):
 								s_text = t_cn
-							elif search_magic_any(s_cn, cache_string):
+								s_text_nospace = s_text.replace(" ", "")
+							elif search_magic_any_local(s_cn, cache_string):
 								s_text = s_cn
+								s_text_nospace = s_text.replace(" ", "")
 
 				if dia_mode:
 					title = unidecode(title)
@@ -13951,7 +13968,7 @@ class Tauon:
 					sartist = unidecode(sartist)
 
 					if cache_string is None:
-						self.search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
 
 				stem = os.path.dirname(t.parent_folder_path)
 
@@ -13962,12 +13979,12 @@ class Tauon:
 						temp_results.append([5, stem, track, playlist.uuid_int, 0])
 						metas[stem] = 2
 
-				if s_text.replace(" ", "") in genre_nospace:
+				if s_text_nospace in genre_nospace:
 					if "/" in genre or "," in genre or ";" in genre:
 						for split in genre.replace(";", "/").replace(",", "/").split("/"):
-							if s_text.replace(" ", "") in split.replace(" ", ""):
-								split = genre_correct(split)
-								if self.prefs.sep_genre_multi:
+							if s_text_nospace in split.replace(" ", ""):
+								split = genre_correct_local(split)
+								if use_sep_genre_multi:
 									split += "+"
 								if split in genres:
 									genres[split] += 3
@@ -13977,13 +13994,13 @@ class Tauon:
 									if split.replace(" ", "") == genre_nospace:
 										genres[split] += 10000
 					else:
-						name = genre_correct(t.genre)
+						name = genre_correct_local(t.genre)
 						if name in genres:
 							genres[name] += 3
 						else:
 							temp_results.append([3, name, track, playlist.uuid_int, 0])
 							genres[name] = 1
-							if s_text.replace(" ", "") == genre_nospace:
+							if s_text_nospace == genre_nospace:
 								genres[name] += 10000
 
 				if s_text in composer:
@@ -13994,7 +14011,7 @@ class Tauon:
 						composers[t.composer] = 2
 
 				if s_text in date:
-					year = get_year_from_string(date)
+					year = get_year_from_string_local(date)
 					if year:
 						if year in years:
 							years[year] += 1
@@ -14002,10 +14019,10 @@ class Tauon:
 							temp_results.append([7, year, track, playlist.uuid_int, 0])
 							years[year] = 1000
 
-				if search_magic(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist):
+				if search_magic_local(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist):
 					if t.misc.get("artists"):
 						for a in t.misc["artists"]:
-							if search_magic(s_text, a.lower()):
+							if search_magic_local(s_text, a.lower()):
 								value = 1
 								if a.lower().startswith(s_text):
 									value = 5
@@ -14022,7 +14039,7 @@ class Tauon:
 									temp_results.append([1, t.album, track, playlist.uuid_int, 0])
 									albums[t.album] = 1
 
-					elif search_magic(s_text, artist + sartist):
+					elif search_magic_local(s_text, artist + sartist):
 						value = 1
 						if artist.startswith(s_text):
 							value = 10
@@ -14039,7 +14056,7 @@ class Tauon:
 							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
 							albums[t.album] = 1
 
-					elif search_magic(s_text, album_artist):
+					elif search_magic_local(s_text, album_artist):
 						value = 1
 						if t.album_artist.startswith(s_text):
 							value = 5
@@ -14067,14 +14084,14 @@ class Tauon:
 							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
 							albums[t.album] = value
 
-					if search_magic(s_text, artist + sartist) or search_magic(s_text, album):
+					if search_magic_local(s_text, artist + sartist) or search_magic_local(s_text, album):
 						if t.album in albums:
 							albums[t.album] += 3
 						else:
 							temp_results.append([1, t.album, track, playlist.uuid_int, 0])
 							albums[t.album] = 3
 
-					elif search_magic_any(s_text, artist + sartist) and search_magic_any(s_text, album):
+					elif search_magic_any_local(s_text, artist + sartist) and search_magic_any_local(s_text, album):
 						if t.album in albums:
 							albums[t.album] += 3
 						else:
@@ -14140,8 +14157,8 @@ class Tauon:
 		results = sorted(temp_results, key=lambda x: x[4], reverse=True)
 
 		i = 0
-		for playlist in self.pctl.multi_playlist:
-			if search_magic(s_text, playlist.title.lower()):
+		for playlist in multi_playlist:
+			if search_magic_local(s_text, playlist.title.lower()):
 				item = [8, playlist.title, None, playlist.uuid_int, 100000]
 				results.insert(0, item)
 				i += 1
@@ -14202,12 +14219,22 @@ class Tauon:
 		selections: list[list[int]] = []
 		errors = False
 		selections_searched = 0
+		search_results_cache: dict[tuple[str, bool], list[list[int | str | None]]] = {}
 
 		def is_source_type(code: str | None) -> bool:
 			return \
 				code is None or \
 				code == "" or \
 				code.startswith(("self", "jelly", "plex", "koel", "tau", "air", "sal"))
+
+		def get_search_results(query: str, *, all_folders: bool = False) -> list[list[int | str | None]]:
+			key = (query, all_folders)
+			cached = search_results_cache.get(key)
+			if cached is not None:
+				return cached
+			results = self._build_search_results(query, all_folders=all_folders)
+			search_results_cache[key] = results
+			return results
 
 		#logging.info(cmds)
 		#logging.info(quotes)
@@ -14599,7 +14626,7 @@ class Tauon:
 						if is_source_type(code):
 							selections.append(plist.playlist_ids)
 
-				results = self._build_search_results(quote, all_folders=True)
+				results = get_search_results(quote, all_folders=True)
 				found_name = ""
 				for result in results:
 					if result[0] == 5:
@@ -14621,7 +14648,7 @@ class Tauon:
 							selections.append(plist.playlist_ids)
 
 				g_search = quote.lower().replace("-", "")
-				results = self._build_search_results(g_search)
+				results = get_search_results(g_search)
 				found_name = ""
 
 				if cm.startswith("g=\""):
@@ -14654,7 +14681,7 @@ class Tauon:
 						if is_source_type(code):
 							selections.append(plist.playlist_ids)
 
-				results = self._build_search_results("artist " + quote)
+				results = get_search_results("artist " + quote)
 				found_name = ""
 				for result in results:
 					if result[0] == 0:
