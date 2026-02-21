@@ -24254,9 +24254,8 @@ class Over:
 				# 		"https://github.com/Taiko2k/Tauon/wiki/Audio-Specs", mode="link")
 
 			self.device_scroll_bar_position -= self.scroll
-			self.device_scroll_bar_position = max(self.device_scroll_bar_position, 0)
-			if self.device_scroll_bar_position > len(self.prefs.phazor_devices) - 11 > 11:
-				self.device_scroll_bar_position = len(self.prefs.phazor_devices) - 11
+			max_device_scroll = max(len(self.prefs.phazor_devices) - 11, 0)
+			self.device_scroll_bar_position = min(max(self.device_scroll_bar_position, 0), max_device_scroll)
 
 			if len(self.prefs.phazor_devices) > 13:
 				self.device_scroll_bar_position = self.tauon.device_scroll.draw(
