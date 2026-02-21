@@ -810,17 +810,35 @@ class Ape(TrackFile):
 
 		elif ".tta" in self.filepath:
 			a.seek(0)
-			header = struct.unpack("<4c3H3L", a.read(22))
+			signature = a.read(4)
 
-			if b"".join(header[0:3]) != b"TTA1":
-				self.sample_rate = header[7]
-				bps = header[6]
-				self.bit_depth = bps
-				# channels = header[5]
-				self.length = header[8] / self.sample_rate
-			elif b"".join(header[0:3]) != b"TTA2":
-				logging.info("WARNING: TTA2 type TTA file not supported")
-				# To do
+			if signature == b"TTA1":
+				header = a.read(18)
+				if len(header) != 18:
+					logging.info("WARNING: TTA1 header is incomplete")
+				else:
+					_audio_format, _channels, bps, sample_rate, total_samples, _crc32 = struct.unpack("<3H3L", header)
+					if sample_rate > 0:
+						self.sample_rate = sample_rate
+					self.bit_depth = bps
+					if self.sample_rate > 0:
+						self.length = total_samples / self.sample_rate
+
+			elif signature == b"TTA2":
+				# TTA2 header:
+				# channels(2), bits_per_sample(2), sample_rate(4), channel_mask(4),
+				# total_samples(8), data_size(8)
+				header = a.read(28)
+				if len(header) != 28:
+					logging.info("WARNING: TTA2 header is incomplete")
+				else:
+					_channels, bps, sample_rate, _channel_mask, total_samples, _data_size = struct.unpack("<HHIIQQ", header)
+					if sample_rate > 0:
+						self.sample_rate = sample_rate
+					self.bit_depth = bps
+					if self.sample_rate > 0 and total_samples > 0:
+						self.length = total_samples / self.sample_rate
+
 			else:
 				logging.info("WARNING: Does not appear to be a valid TTA file")
 		elif ".wv" in self.filepath:
