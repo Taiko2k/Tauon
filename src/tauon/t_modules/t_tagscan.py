@@ -110,6 +110,46 @@ def parse_picture_block(f: BufferedReader) -> bytes:
 	return f.read(a)
 
 
+def parse_wavpack_header(header_data: bytes) -> tuple[int, float] | None:
+	"""Parse a WavPack block header and return (sample_rate, length_seconds)."""
+	if len(header_data) < 32:
+		return None
+
+	try:
+		header = struct.unpack("<4cIH2B5I", header_data[:32])
+	except struct.error:
+		return None
+
+	sample_rates = [
+		6000,
+		8000,
+		9600,
+		11025,
+		12000,
+		16000,
+		22050,
+		24000,
+		32000,
+		44100,
+		48000,
+		64000,
+		88200,
+		96000,
+		192000,
+	]  # Adapted from example in WavPack/cli/wvparser.c
+
+	sample_rate_index = (header[11] & (15 << 23)) >> 23
+	if sample_rate_index >= len(sample_rates):
+		return None
+
+	sample_rate = sample_rates[sample_rate_index]
+	if sample_rate <= 0:
+		return None
+
+	length = header[8] / sample_rate
+	return sample_rate, length
+
+
 class TrackFile:
 	"""Base class for codec classes"""
 
@@ -789,37 +829,42 @@ class Ape(TrackFile):
 
 			a.seek(0)
 
-			#  I found that some WavPack files have padding at the beginning
-			#  So here I crudely search for the actual start
-			off = 0
-			while off < file_size - 100:
-				if a.read(4) == b"wvpk":
-					a.seek(-4, 1)
-					b = a.read(32)
-					header = struct.unpack("<4cIH2B5I", b)
+			found_wvpk = False
+			chunk_size = 64 * 1024
+			scan_limit = max(file_size - 31, 0)  # Need 32 bytes remaining to parse a full header
+			scan_pos = 0
 
-					sample_rates = [
-						6000,
-						8000,
-						9600,
-						11025,
-						12000,
-						16000,
-						22050,
-						24000,
-						32000,
-						44100,
-						48000,
-						64000,
-						88200,
-						96000,
-						192000,
-					]  # Adapted from example in WavPack/cli/wvparser.c
-					n = (header[11] & (15 << 23)) >> 23  # Does my head in this
-					self.sample_rate = sample_rates[n]
-					self.length = header[8] / self.sample_rate
+			while scan_pos < scan_limit:
+				a.seek(scan_pos)
+				read_size = min(chunk_size, scan_limit - scan_pos)
+				chunk = a.read(read_size)
+				if not chunk:
 					break
-			else:
+
+				search_from = 0
+				while True:
+					relative_pos = chunk.find(b"wvpk", search_from)
+					if relative_pos == -1:
+						break
+
+					signature_pos = scan_pos + relative_pos
+					a.seek(signature_pos)
+					parsed = parse_wavpack_header(a.read(32))
+					if parsed:
+						self.sample_rate, self.length = parsed
+						found_wvpk = True
+						break
+					search_from = relative_pos + 1
+
+				if found_wvpk:
+					break
+
+				# Step by chunk minus 3 bytes so signatures split across chunk boundaries are still visible.
+				if read_size <= 3:
+					break
+				scan_pos += read_size - 3
+
+			if not found_wvpk:
 				logging.info("Tag Scanner: Cannot verify WavPack file")
 		else:
 			logging.info("Tag Scanner: Does not appear to be an APE file")
