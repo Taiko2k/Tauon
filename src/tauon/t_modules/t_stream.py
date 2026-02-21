@@ -485,6 +485,12 @@ class StreamEnc:
 					logging.info("Abort stream connection")
 					self.download_running = False
 					return
+				if not chunk:
+					r.close()
+					logging.info("Stream connection closed")
+					self.download_running = False
+					self.abort = True
+					return
 
 				if chunk:
 					if not icy or m_remain > len(chunk):
