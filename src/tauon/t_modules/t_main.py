@@ -2500,7 +2500,7 @@ class PlayerCtl:
 		return len(self.track_queue) > 0
 
 	def selected_ready(self) -> bool:
-		return self.default_playlist and self.selected_in_playlist < len(self.default_playlist)
+		return bool(self.default_playlist) and -1 < self.selected_in_playlist < len(self.default_playlist)
 
 	def render_playlist(self) -> None:
 		self.gui.pl_update = 1
