@@ -247,7 +247,6 @@ class Prefs:
 	hide_queue: bool = True
 	show_playlist_list: bool = True
 	thin_gallery_borders: bool = False
-	show_current_on_transition: bool = False
 
 	chart_rows = 3
 	chart_columns = 3

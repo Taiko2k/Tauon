@@ -3532,8 +3532,7 @@ class PlayerCtl:
 		if not dry:
 			self.tauon.quick_d_timer.set()
 
-		if self.prefs.show_current_on_transition:
-			quiet = False
+		quiet = False
 
 		# Trim the history if it gets too long
 		while len(self.track_queue) > 250:
@@ -39563,8 +39562,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("lastfm-pull-love", prefs.lastfm_pull_love)
 
 	cf.update_value("broadcast-page-port", prefs.metadata_page_port)
-	cf.update_value("show-current-on-transition", prefs.show_current_on_transition)
-
 	cf.update_value("chart-columns", prefs.chart_columns)
 	cf.update_value("chart-rows", prefs.chart_rows)
 	cf.update_value("chart-uses-text", prefs.chart_text)
@@ -39768,10 +39765,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.hide_queue = cf.sync_add("bool", "hide-queue-when-empty", prefs.hide_queue)
 	# prefs.show_playlist_list = cf.sync_add("bool", "show-playlist-list", prefs.show_playlist_list)
 
-	prefs.show_current_on_transition = cf.sync_add(
-		"bool", "show-current-on-transition",
-		prefs.show_current_on_transition,
-		"Always jump to new playing track even with natural transition (broken setting, is always enabled")
 	prefs.art_in_top_panel = cf.sync_add(
 		"bool", "enable-art-header-bar", prefs.art_in_top_panel,
 		"Show art in top panel when window is narrow")
@@ -39813,7 +39806,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
 	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
 
-	# show-current-on-transition", prefs.show_current_on_transition)
 	cf.br()
 	cf.add_text("[fonts]")
 	cf.add_comment("Changes will require app restart.")
