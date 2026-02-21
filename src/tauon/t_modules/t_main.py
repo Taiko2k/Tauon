@@ -15548,7 +15548,7 @@ class Tauon:
 				if artist in (track.artist, track.album_artist) or ("artists" in track.misc and artist in track.misc["artists"]):
 					block_starts.append(i)
 					current = True
-			elif (artist not in (track.artist, track.album_artist)) or (
+			elif (artist not in (track.artist, track.album_artist)) and not (
 					"artists" in track.misc and artist in track.misc["artists"]):
 				current = False
 
