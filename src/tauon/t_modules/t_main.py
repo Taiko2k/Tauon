@@ -5873,6 +5873,8 @@ class Tauon:
 		self.device: str                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
 		self.search_dia_string_cache: dict[int, str] = {}
+		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str]] = {}
+		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str]] = {}
 		self.albums:            list[int] = []
 		self.added:             list[int] = []
 		self.album_dex:         list[int] = []
@@ -10704,6 +10706,8 @@ class Tauon:
 
 				self.search_string_cache.pop(object.index, None)
 				self.search_dia_string_cache.pop(object.index, None)
+				self.search_field_cache.pop(object.index, None)
+				self.search_dia_field_cache.pop(object.index, None)
 
 			# Fix any other tracks paths that contain the old path
 			if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
@@ -10713,6 +10717,8 @@ class Tauon:
 
 				self.search_string_cache.pop(object.index, None)
 				self.search_dia_string_cache.pop(object.index, None)
+				self.search_field_cache.pop(object.index, None)
+				self.search_dia_field_cache.pop(object.index, None)
 
 		if new_parent_path is not None:
 			try:
@@ -10805,6 +10811,8 @@ class Tauon:
 
 				self.search_string_cache.pop(object.index, None)
 				self.search_dia_string_cache.pop(object.index, None)
+				self.search_field_cache.pop(object.index, None)
+				self.search_dia_field_cache.pop(object.index, None)
 
 				logging.info(object.fullpath)
 				logging.info(object.parent_folder_path)
@@ -10979,6 +10987,8 @@ class Tauon:
 
 				self.search_string_cache.pop(track.index, None)
 				self.search_dia_string_cache.pop(track.index, None)
+				self.search_field_cache.pop(track.index, None)
+				self.search_dia_field_cache.pop(track.index, None)
 		else:
 			self.show_message(_("Autodetect failed"))
 
@@ -13845,6 +13855,8 @@ class Tauon:
 		use_sep_genre_multi = self.prefs.sep_genre_multi
 		search_string_cache = self.search_string_cache
 		search_dia_string_cache = self.search_dia_string_cache
+		search_field_cache = self.search_field_cache
+		search_dia_field_cache = self.search_dia_field_cache
 		pctl = self.pctl
 		master_library = pctl.master_library
 		multi_playlist = pctl.multi_playlist
@@ -13919,32 +13931,48 @@ class Tauon:
 
 				if dia_mode:
 					cache_string = search_dia_string_cache.get(track)
-					if cache_string is not None:
-						if not search_magic_any_local(s_text, cache_string):
-							continue
+					if cache_string is not None and not search_magic_any_local(s_text, cache_string):
+						continue
 				else:
 					cache_string = search_string_cache.get(track)
-					if cache_string is not None:
-						if not search_magic_any_local(s_text, cache_string):
-							continue
+					if cache_string is not None and not search_magic_any_local(s_text, cache_string):
+						continue
 
 				t = master_library[track]
-
-				title = t.title.lower().replace("-", "")
-				artist = t.artist.lower().replace("-", "")
-				album_artist = t.album_artist.lower().replace("-", "")
-				composer = t.composer.lower().replace("-", "")
-				date = t.date.lower().replace("-", "")
-				album = t.album.lower().replace("-", "")
-				genre = t.genre.lower().replace("-", "")
-				genre_nospace = t.genre.lower().replace("-", "").replace(" ", "")
-				filename = t.filename.lower().replace("-", "")
-				stem = os.path.dirname(t.parent_folder_path).lower().replace("-", "")
-				sartist = t.misc.get("artist_sort", "").lower()
+				fields = search_field_cache.get(track)
+				if fields is None:
+					title = t.title.lower().replace("-", "")
+					artist = t.artist.lower().replace("-", "")
+					album_artist = t.album_artist.lower().replace("-", "")
+					composer = t.composer.lower().replace("-", "")
+					date = t.date.lower().replace("-", "")
+					album = t.album.lower().replace("-", "")
+					genre = t.genre.lower().replace("-", "")
+					genre_nospace = genre.replace(" ", "")
+					filename = t.filename.lower().replace("-", "")
+					sartist = t.misc.get("artist_sort", "").lower()
+					stem_raw = os.path.dirname(t.parent_folder_path)
+					stem_search = stem_raw.lower().replace("-", "")
+					search_field_cache[track] = (
+						title,
+						artist,
+						album_artist,
+						composer,
+						date,
+						album,
+						genre,
+						genre_nospace,
+						filename,
+						sartist,
+						stem_search,
+						stem_raw,
+					)
+				else:
+					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw = fields
 
 				if cache_string is None:
 					if not dia_mode:
-						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search
 
 					if cn_mode:
 						cache_string = search_string_cache.get(track)
@@ -13959,25 +13987,44 @@ class Tauon:
 								s_text_nospace = s_text.replace(" ", "")
 
 				if dia_mode:
-					title = unidecode(title)
-					artist = unidecode(artist)
-					album_artist = unidecode(album_artist)
-					composer = unidecode(composer)
-					album = unidecode(album)
-					filename = unidecode(filename)
-					sartist = unidecode(sartist)
+					dia_fields = search_dia_field_cache.get(track)
+					if dia_fields is None:
+						d_title = unidecode(title)
+						d_artist = unidecode(artist)
+						d_album_artist = unidecode(album_artist)
+						d_composer = unidecode(composer)
+						d_album = unidecode(album)
+						d_filename = unidecode(filename)
+						d_sartist = unidecode(sartist)
+						search_dia_field_cache[track] = (
+							d_title,
+							d_artist,
+							d_album_artist,
+							d_composer,
+							d_album,
+							d_filename,
+							d_sartist,
+						)
+					else:
+						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist = dia_fields
+
+					title = d_title
+					artist = d_artist
+					album_artist = d_album_artist
+					composer = d_composer
+					album = d_album
+					filename = d_filename
+					sartist = d_sartist
 
 					if cache_string is None:
-						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem
+						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search
 
-				stem = os.path.dirname(t.parent_folder_path)
-
-				if len(s_text) > 2 and s_text in stem.replace("-", "").lower():
-					if stem in metas:
-						metas[stem] += 2
+				if len(s_text) > 2 and s_text in stem_search:
+					if stem_raw in metas:
+						metas[stem_raw] += 2
 					else:
-						temp_results.append([5, stem, track, playlist.uuid_int, 0])
-						metas[stem] = 2
+						temp_results.append([5, stem_raw, track, playlist.uuid_int, 0])
+						metas[stem_raw] = 2
 
 				if s_text_nospace in genre_nospace:
 					if "/" in genre or "," in genre or ";" in genre:
@@ -14022,9 +14069,10 @@ class Tauon:
 				if search_magic_local(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist):
 					if t.misc.get("artists"):
 						for a in t.misc["artists"]:
-							if search_magic_local(s_text, a.lower()):
+							a_lower = a.lower()
+							if search_magic_local(s_text, a_lower):
 								value = 1
-								if a.lower().startswith(s_text):
+								if a_lower.startswith(s_text):
 									value = 5
 
 								if a in artists:
@@ -15055,6 +15103,8 @@ class Tauon:
 		for track in self.todo:
 			self.search_string_cache.pop(track.index, None)
 			self.search_dia_string_cache.pop(track.index, None)
+			self.search_field_cache.pop(track.index, None)
+			self.search_dia_field_cache.pop(track.index, None)
 
 			#logging.info('Reloading Metadata for ' + track.filename)
 			if keep_star:
@@ -22631,6 +22681,8 @@ class RenameTrackBox:
 
 					self.tauon.search_string_cache.pop(item, None)
 					self.tauon.search_dia_string_cache.pop(item, None)
+					self.tauon.search_field_cache.pop(item, None)
+					self.tauon.search_dia_field_cache.pop(item, None)
 
 					if star is not None:
 						self.star_store.insert(item, star)
@@ -41866,6 +41918,8 @@ def worker1(tauon: Tauon) -> None:
 
 			tauon.search_dia_string_cache.clear()
 			tauon.search_string_cache.clear()
+			tauon.search_field_cache.clear()
+			tauon.search_dia_field_cache.clear()
 			tauon.search_over.results.clear()
 
 			pctl.notify_change()
