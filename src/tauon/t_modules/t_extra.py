@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from gi.repository import GLib
+from tauon.t_modules.t_enum import QueueType
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
@@ -116,7 +117,7 @@ class TauonQueueItem:
 	track_id: int
 	position: int
 	playlist_id: int
-	type: int
+	type: QueueType
 	album_stage: int
 	uuid_int: int
 	auto_stop: bool

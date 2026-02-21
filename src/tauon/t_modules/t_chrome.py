@@ -74,7 +74,7 @@ class Chrome:
 	def three(self, _, item: tuple) -> None:
 		shooter(self.four, [item])
 
-	def four(self, item: dict) -> None:
+	def four(self, item: list) -> None:
 		if self.active:
 			self.end()
 		self.tauon.start_remote()
