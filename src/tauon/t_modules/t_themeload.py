@@ -71,8 +71,13 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 	for i in cline:
 		if i.isdigit():
 			colour_str[mode] += i
-		elif i == ",":
+		elif i == "," and mode < 3:
 			mode += 1
+		# Stop parsing after RGB/RGBA values so we don't absorb digits in labels such as "mini text 2"
+		elif i.isspace() and mode >= 2 and colour_str[mode]:
+			break
+		elif mode >= 2 and colour_str[mode]:
+			break
 
 	# Convert str list to int list
 	for b in range(len(colour_str)):
