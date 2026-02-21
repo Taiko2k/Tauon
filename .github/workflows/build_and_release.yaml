@@ -139,10 +139,10 @@ jobs:
           . "$HOME/.cargo/env"
           rustup toolchain install stable
 
-      - name: Clone Flatpak repo
+      - name: Clone Flatpak repo and switch to beta branch
         run: |
           git clone --recurse-submodules https://github.com/flathub/com.github.taiko2k.tauonmb.git tauon-flatpak
-        #  cd tauon-flatpak; git checkout tekoreless
+          cd tauon-flatpak; git checkout beta
 
       - name: "[DEBUG] List all files"
         run: find .
