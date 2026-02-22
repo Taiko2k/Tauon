@@ -933,6 +933,13 @@ class Wav(TrackFile):
 							f.read(1)
 
 						remain -= 8 + size
+				else:
+					# Skip non-INFO LIST chunks (e.g. adtl) to avoid desyncing the chunk parser.
+					remaining_list_bytes = max(remain - 4, 0)
+					if remaining_list_bytes:
+						f.seek(remaining_list_bytes, io.SEEK_CUR)
+					if remain % 2 == 1:
+						f.seek(1, io.SEEK_CUR)
 
 		with wave.open(self.filepath, "rb") as wav:
 			self.sample_rate = wav.getframerate()
