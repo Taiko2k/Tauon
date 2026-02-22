@@ -248,7 +248,7 @@ else:
 # except Exception:
 # 	logging.exception("Unable to import rpc, Discord Rich Presence will be disabled.")
 try:
-	from pypresence import ActivityType, Presence
+	from pypresence import ActivityType, StatusDisplayType, Presence
 except ModuleNotFoundError:
 	logging.warning("Unable to import pypresence, Discord Rich Presence will be disabled.")
 except Exception:
@@ -12140,6 +12140,7 @@ class Tauon:
 						small_image = "tauon-standard"
 					RPC.update(
 						activity_type = ActivityType.LISTENING,
+						status_display_type = StatusDisplayType.STATE,
 						pid=self.pid,
 						**({"state": artist} if self.pctl.playing_state != PlayingState.URL_STREAM else {"state": album}),
 						details=title,
