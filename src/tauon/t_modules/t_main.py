@@ -44949,6 +44949,8 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
 				if not tauon.windows:
 					reset_render = True
+				gui.pl_update = 1
+				gui.update += 2
 			elif event.type == sdl3.SDL_EVENT_DROP_TEXT:
 				power += 5
 
@@ -45014,10 +45016,6 @@ def main(holder: Holder) -> None:
 					dropped_file_sdl.decode("utf-8", errors="surrogateescape"))).replace("file:///", "/").replace("\r", "")
 				#logging.info(target)
 				tauon.drop_file(target)
-
-			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
-				gui.pl_update = 1
-				gui.update += 2
 
 			elif event.type == sdl3.SDL_EVENT_QUIT:
 				power += 5
