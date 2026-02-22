@@ -625,6 +625,8 @@ class Gnome:
 							pctl.play()
 
 			def PrepareForShutdown(active: int) -> None:
+				if active != 1:
+					return
 				logging.info("The system is shutting down!")
 				tauon.quick_close = True
 				tauon.exit("System shutdown signal received")
