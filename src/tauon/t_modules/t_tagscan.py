@@ -907,7 +907,8 @@ class Wav(TrackFile):
 			remain = int.from_bytes(f.read(4), "little")
 
 			if wav_type != b"LIST":
-				f.seek(remain, io.SEEK_CUR)
+				# RIFF chunks are word-aligned, so odd-sized chunks include a pad byte.
+				f.seek(remain + (remain % 2), io.SEEK_CUR)
 			else:
 				info = f.read(4)
 				if info == b"INFO":
