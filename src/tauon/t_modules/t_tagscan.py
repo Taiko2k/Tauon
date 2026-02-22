@@ -813,7 +813,7 @@ class Ape(TrackFile):
 			else:
 				logging.info("Note: Old APE file format version")
 
-		elif ".tta" in self.filepath:
+		elif Path(self.filepath).suffix.lower() == ".tta":
 			a.seek(0)
 			signature = a.read(4)
 
@@ -846,7 +846,7 @@ class Ape(TrackFile):
 
 			else:
 				logging.info("WARNING: Does not appear to be a valid TTA file")
-		elif ".wv" in self.filepath:
+		elif Path(self.filepath).suffix.lower() == ".wv":
 			#  We can handle WavPack files here too
 			#  This code likely won't cover all cases as is, I only tested it on a few files
 
