@@ -79,7 +79,7 @@ class Jellyfin:
 				headers={
 					"Content-type": "application/json",
 					"X-Application": self.tauon.t_agent,
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 				},
 				data=json.dumps({"username": username, "Pw": password}),
 				timeout=(5, 10),

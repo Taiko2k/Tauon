@@ -12,7 +12,7 @@ Changelog
  - **Added** Jellyfin import timeout to GUI settings
  - **Added** ReplayGain support for M4A
  - **Added** A/B Repeat support
- - **Fixed** header in CSV exports
+ - **Fixed** Header in CSV exports
  - **Fixed** Phazor deadlocks when PipeWire server goes away
  - **Fixed** Phazor not reconnecting to PipeWire and Tauon not resuming playback when PW goes away
  - **Fixed** Tidal integration on newer tidalapi versions
@@ -22,6 +22,7 @@ Changelog
  - **Fixed** Playback of 4-channel VORBIS being half the speed
  - **Fixed** Radio playback of some ogg streams
  - **Fixed** Radio volume being muted when starting a radio station from a paused state
+ - **Fixed** Jellyfin using a deprecated login header, preventing login from succeeding
  - **Tweaked** Default to the PipeWire backend on Linux
 
 ### v8.2.3
