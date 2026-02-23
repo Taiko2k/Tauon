@@ -16676,6 +16676,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.disc_number = audio.disc_number
 					nt.lyrics = audio.lyrics
+					nt.synced = audio.synced_lyrics
 					if nt.length:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 					nt.track_total = audio.track_total
@@ -16725,6 +16726,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.bitrate = audio.bit_rate
 					nt.lyrics = audio.lyrics
+					nt.synced = audio.synced_lyrics
 					nt.disc_number = audio.disc_number
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
@@ -20015,10 +20017,7 @@ class TimedLyricsToStatic:
 			return ""
 		if track == self.cache_key:
 			return self.cache_lyrics
-		if track.lyrics:
-			data = track.lyrics.splitlines()
-		else:
-			data = find_synced_lyric_data(track)
+		data = track.lyrics.splitlines() if track.lyrics else find_synced_lyric_data(track)
 
 		if data is None:
 			self.cache_lyrics = ""
@@ -40663,9 +40662,8 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	See https://en.wikipedia.org/wiki/LRC_(file_format)
 	"""
 	if not just_check:
-		if not reload:
-			if track.synced:
-				return track.synced.splitlines()
+		if not reload and track.synced:
+			return track.synced.splitlines()
 		if track.is_network:
 			return None
 
@@ -40700,9 +40698,7 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	direc = Path(track.parent_folder_path)
 	if not direc.is_dir():
 		logging.warning(f"Could not find directory: {track.parent_folder_path}")
-		track.synced = ""
 		return None
-	# TODO: i feel like this is gonna delete correct synced lyrics in some situations
 
 	name = os.path.splitext(track.filename)[0]
 
@@ -40727,7 +40723,6 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 		track.synced = "\n".join(data)
 		return data
 
-	track.synced = ""
 	return None
 
 def close_all_menus() -> None:
