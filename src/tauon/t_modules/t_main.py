@@ -14837,6 +14837,9 @@ class Tauon:
 		if not playlist and not errors:
 			self.gui.gen_code_errors = "empty"
 
+		# Eliminate duplicates
+		if playlist:
+			playlist = list(dict.fromkeys(playlist))
 		if self.gui.rename_playlist_box and (not playlist or cmds.count("a") > 1):
 			pass
 		else:
