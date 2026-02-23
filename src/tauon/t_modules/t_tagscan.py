@@ -158,22 +158,23 @@ class TrackFile:
 		self.file: BufferedReader | None = None
 		self.has_picture = False # Wav does not need this
 
-		self.picture      = "" # Wav does not need this
-		self.filepath     = ""
-		self.album_artist = ""
-		self.artist       = ""
-		self.genre        = ""
-		self.date         = "" # Wav does not need this
-		self.comment      = "" # Wav does not need this
-		self.album        = ""
-		self.track_number = ""
-		self.track_total  = "" # Wav does not need this
-		self.title        = ""
-		self.encoder      = "" # Wav does not need this
-		self.disc_number  = "" # Wav does not need this
-		self.disc_total   = "" # Wav does not need this
-		self.lyrics       = "" # Wav does not need this
-		self.composer     = "" # Wav does not need this
+		self.picture       = "" # Wav does not need this
+		self.filepath      = ""
+		self.album_artist  = ""
+		self.artist        = ""
+		self.genre         = ""
+		self.date          = "" # Wav does not need this
+		self.comment       = "" # Wav does not need this
+		self.album         = ""
+		self.track_number  = ""
+		self.track_total   = "" # Wav does not need this
+		self.title         = ""
+		self.encoder       = "" # Wav does not need this
+		self.disc_number   = "" # Wav does not need this
+		self.disc_total    = "" # Wav does not need this
+		self.lyrics        = "" # Wav does not need this
+		self.synced_lyrics = ""
+		self.composer      = "" # Wav does not need this
 		self.misc: dict[str, str | float | list[str]] = {} # Wav does not need this
 
 		self.sample_rate = 48000 # OPUS files are always 48000
@@ -286,7 +287,9 @@ class Flac(TrackFile):
 					elif a == "metadata_block_picture":
 						logging.info("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
 						logging.info(f"      In file: {self.filepath}")
-					elif a in ("lyrics", "unsyncedlyrics"):
+					elif a == "lyrics":
+						self.synced_lyrics = b.decode("utf-8")
+					elif a == "unsyncedlyrics":
 						self.lyrics = b.decode("utf-8")
 					elif a == "replaygain_track_gain":
 						self.misc["replaygain_track_gain"] = float(
@@ -577,7 +580,9 @@ class Opus(TrackFile):
 						self.disc_number = b.decode("utf-8")
 					elif a in ("disctotal", "totaldiscs"):
 						self.disc_total = b.decode("utf-8")
-					elif a in ("lyrics", "unsyncedlyrics"):
+					elif a == "lyrics":
+						self.synced_lyrics = b.decode("utf-8")
+					elif a == "unsyncedlyrics":
 						self.lyrics = b.decode("utf-8")
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
