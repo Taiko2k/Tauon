@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-02-10 10:09+0000\n"
+"PO-Revision-Date: 2026-02-21 12:09+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.16-dev\n"
+"X-Generator: Weblate 5.16.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
@@ -1776,9 +1776,8 @@ msgid "Starting download..."
 msgstr "Запуск загрузки…"
 
 #: src/tauon/t_modules/t_main.py:14770
-#, fuzzy
 msgid "Downloading... {MB}/{total_mb}"
-msgstr "Загружается… {N}/80 МБ"
+msgstr "Загружается… {MB}/{total_mb}"
 
 #: src/tauon/t_modules/t_main.py:14773
 msgid "Download failed"
@@ -1953,10 +1952,11 @@ msgstr ""
 msgid ""
 "The target will may be lost on reboot without necessary Flatpak permissions."
 msgstr ""
+"Без необходимых разрешений Flatpak цель может быть утрачена при перезагрузке."
 
 #: src/tauon/t_modules/t_main.py:18089
 msgid "Path may be transient! Continue? Press \"No\" for more information."
-msgstr ""
+msgstr "Путь может быть временным! Продолжить? Нажмите «Нет» для подробностей."
 
 #: src/tauon/t_modules/t_main.py:18268
 msgid "Stop the sync before exiting!"
@@ -1971,9 +1971,9 @@ msgid "Web server starting"
 msgstr "Запуск веб-сервера"
 
 #: src/tauon/t_modules/t_main.py:18416
-#, fuzzy
 msgid "This feature requires FFMPEG. Shall I can download that for you? (92MB)"
-msgstr "Для этой функции требуется FFMPEG. Могу я скачать его для вас? (80 МБ)"
+msgstr ""
+"Для этой функции требуется FFMPEG. Следует ли его загрузить для вас? (92 МБ)"
 
 #: src/tauon/t_modules/t_main.py:18421
 msgid "FFMPEG could not be found"
@@ -2187,36 +2187,32 @@ msgid "with"
 msgstr "на"
 
 #: src/tauon/t_modules/t_main.py:22865
-#, fuzzy
 msgid "Import/Export Playlist"
-msgstr "Экспортировать плейлист"
+msgstr "Импорт/экспорт плейлиста"
 
 #: src/tauon/t_modules/t_main.py:22870
-#, fuzzy
 msgid "Target folder or file"
-msgstr "Каталог не выбран"
+msgstr "Целевая папка или файл"
 
 #: src/tauon/t_modules/t_main.py:22889
 msgid "Will overwrite existing file: "
-msgstr ""
+msgstr "Перезапишет существующий файл: "
 
 #: src/tauon/t_modules/t_main.py:22892
-#, fuzzy
 msgid "Will save with playlist name:"
-msgstr "Нет названия плейлиста"
+msgstr "Сохранит с именем плейлиста:"
 
 #: src/tauon/t_modules/t_main.py:22895
 msgid "No file extension?"
-msgstr ""
+msgstr "Нет расширения файла?"
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "Неверное расширение?"
 
 #: src/tauon/t_modules/t_main.py:22905
-#, fuzzy
 msgid "Will create directory"
-msgstr "Каталог сохранения"
+msgstr "Создаст каталог"
 
 #: src/tauon/t_modules/t_main.py:22927 src/tauon/t_modules/t_main.py:22929
 msgid "Use relative paths"
@@ -2225,19 +2221,21 @@ msgstr "Использовать относительный путь"
 #: src/tauon/t_modules/t_main.py:22932
 msgid "Enable relative paths when keeping playlist files together with audio"
 msgstr ""
+"Включить относительные пути при хранении файлов плейлиста вместе с "
+"аудиофайлами"
 
 #: src/tauon/t_modules/t_main.py:22933
 msgid "Disable to move playlist files while keeping audio in one location"
 msgstr ""
+"Отключите, чтобы перемещать файлы плейлиста, сохраняя аудио в одном месте"
 
 #: src/tauon/t_modules/t_main.py:22937
 msgid "Auto-export"
 msgstr "Автоматический экспорт"
 
 #: src/tauon/t_modules/t_main.py:22938
-#, fuzzy
 msgid "Auto-import"
-msgstr "Автоматический экспорт"
+msgstr "Автоматический импорт"
 
 #: src/tauon/t_modules/t_main.py:22942 src/tauon/t_modules/t_main.py:22945
 msgid "Export"
@@ -2588,9 +2586,8 @@ msgid "Downloads data in background when artist panel is open"
 msgstr "Загружать данные в фоне, когда панель исполнителя открыта"
 
 #: src/tauon/t_modules/t_main.py:24556
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Автоматически пересоздавать плейлисты"
+msgstr "Автоматически обновлять плейлисты"
 
 #: src/tauon/t_modules/t_main.py:24557
 #, fuzzy
