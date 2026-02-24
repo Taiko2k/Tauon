@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import struct
+import subprocess
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
@@ -412,6 +413,73 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			callback()
 			self.wfile.write(b"OK")
 
+		def stream_opus_file(self, track: TrackClass) -> None:
+			ffmpeg_path = tauon.get_ffmpeg()
+			if ffmpeg_path is None:
+				self.send_response(503)
+				self.end_headers()
+				self.wfile.write(b"ffmpeg unavailable")
+				return
+
+			command = [str(ffmpeg_path), "-v", "error"]
+			if track.start_time:
+				command.extend(["-ss", str(track.start_time)])
+				if track.length > 0:
+					command.extend(["-t", str(track.length)])
+			command.extend([
+				"-i", track.fullpath,
+				"-vn",
+				"-c:a", "libopus",
+				"-b:a", "84k",
+				"-f", "ogg",
+				"-",
+			])
+
+			try:
+				encoder = subprocess.Popen(
+					command,
+					stdin=subprocess.DEVNULL,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.DEVNULL,
+				)
+			except OSError:
+				logging.exception("Failed to start ffmpeg for /api1/fileopus")
+				self.send_response(500)
+				self.end_headers()
+				self.wfile.write(b"Transcode start failed")
+				return
+
+			if encoder.stdout is None:
+				self.send_response(500)
+				self.end_headers()
+				self.wfile.write(b"Transcode stream unavailable")
+				return
+
+			self.send_response(200)
+			self.send_header("Content-type", "audio/ogg")
+			self.send_header("Content-Disposition", 'attachment; filename="track.opus"')
+			self.send_header("Connection", "close")
+			self.end_headers()
+			self.close_connection = True
+
+			try:
+				while True:
+					data = encoder.stdout.read(65536)
+					if not data:
+						break
+					self.wfile.write(data)
+			except (BrokenPipeError, ConnectionResetError):
+				pass
+			finally:
+				encoder.stdout.close()
+				if encoder.poll() is None:
+					encoder.terminate()
+					try:
+						encoder.wait(timeout=1)
+					except subprocess.TimeoutExpired:
+						encoder.kill()
+						encoder.wait(timeout=1)
+
 		def toggle_album_shuffle(self) -> None:
 			pctl.album_shuffle_mode ^= True
 			tauon.gui.update += 1
@@ -472,7 +540,9 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				self.wfile.write(b"404 Not found")
 				return
 			if tauon.remote_limited and (
-				not path.startswith("/api1/pic/medium/") and not path.startswith("/api1/file/")
+				not path.startswith("/api1/pic/medium/")
+				and not path.startswith("/api1/file/")
+				and not path.startswith("/api1/fileopus")
 			):
 				self.send_response(404)
 				self.end_headers()
@@ -590,6 +660,24 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 						if track.file_ext == "M4A":
 							mime = "audio/mp4"
 						send_file(track.fullpath, mime, self)
+				else:
+					self.send_response(404)
+					self.end_headers()
+					self.wfile.write(b"Invalid parameter")
+
+			elif path.startswith("/api1/fileopus/"):
+				param = path[15:].split("?", 1)[0]
+
+				play_timer.hit()
+
+				if param.isdigit() and int(param) in pctl.master_library:
+					track = pctl.master_library[int(param)]
+					if not track.fullpath or not os.path.isfile(track.fullpath):
+						self.send_response(404)
+						self.end_headers()
+						self.wfile.write(b"File unavailable")
+					else:
+						self.stream_opus_file(track)
 				else:
 					self.send_response(404)
 					self.end_headers()
