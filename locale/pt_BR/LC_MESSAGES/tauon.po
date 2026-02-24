@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2025-07-04 08:13+0000\n"
+"PO-Revision-Date: 2026-02-26 00:09+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 5.16.1-dev\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
 msgid ""
@@ -113,20 +113,19 @@ msgstr " GB"
 
 #: src/tauon/t_modules/t_extra.py:554
 msgid "Not yet"
-msgstr ""
+msgstr "Não ainda"
 
 #: src/tauon/t_modules/t_extra.py:556
 msgid "Now"
-msgstr ""
+msgstr "Agora"
 
 #: src/tauon/t_modules/t_extra.py:560
-#, fuzzy
 msgid "min"
-msgstr "Fixar"
+msgstr "min"
 
 #: src/tauon/t_modules/t_extra.py:564
 msgid "hr"
-msgstr ""
+msgstr "h"
 
 #: src/tauon/t_modules/t_extra.py:568
 #, fuzzy
