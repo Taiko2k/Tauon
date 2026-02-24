@@ -42272,6 +42272,19 @@ def _ensure_rounded_corner_cache(
 			outer_row.append(outer_alpha)
 			border_row.append(border_alpha)
 
+		# Ensure the curved stroke joins cleanly with the straight top/bottom border strips.
+		# Keep the outermost AA edge pixel, but fill the rest of the row to the tangent point.
+		if border_rgba[3] > 0 and y < bw:
+			first_edge = None
+			for x, alpha in enumerate(outer_row):
+				if alpha > 0:
+					first_edge = x
+					break
+			if first_edge is not None:
+				for x in range(first_edge + 1, radius):
+					if outer_row[x] > 0:
+						border_row[x] = max(border_row[x], border_rgba[3])
+
 		clear_w = 0
 		while clear_w < radius and outer_row[clear_w] == 0:
 			clear_w += 1
