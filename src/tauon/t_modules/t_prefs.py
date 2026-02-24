@@ -27,6 +27,7 @@ class Prefs:
 	phone:                   bool
 	force_subpixel_text:     bool
 	desktop:                 str
+	rounded_window_corners:  bool = False
 	album_mode:              bool = False
 	colour_from_image:       bool = False
 	dim_art:                 bool = False

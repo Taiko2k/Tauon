@@ -6557,11 +6557,11 @@ class Tauon:
 			gui.cursor_want = 11
 
 		colour = colours.window_frame
-
-		ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour)
-		ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
-		ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
-		ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
+		if not self.prefs.rounded_window_corners:
+			ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour)
+			ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
+			ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
+			ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
@@ -18092,6 +18092,14 @@ class Tauon:
 		self.gui.pl_update += 1
 		return None
 
+	def toggle_rounded_window_corners(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.rounded_window_corners
+
+		self.prefs.rounded_window_corners ^= True
+		self.gui.update += 1
+		return None
+
 	def toggle_auto_bg(self, mode: int= 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.art_bg
@@ -24281,6 +24289,8 @@ class Over:
 		self.toggle_square(x + round(280 * gui.scale), y, self.tauon.toggle_transparent_accent, _("Transparent accent"))
 
 		y += 23 * gui.scale
+		self.toggle_square(
+			x + round(280 * gui.scale), y, self.tauon.toggle_rounded_window_corners, _("Rounded corners"))
 
 		old = prefs.enable_fanart_bg
 		prefs.enable_fanart_bg = self.toggle_square(
@@ -39865,6 +39875,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
+	cf.update_value("rounded-window-corners", prefs.rounded_window_corners)
 	cf.update_value("mac-style", prefs.macstyle)
 	cf.update_value("allow-art-zoom", prefs.zoom_art)
 
@@ -40129,6 +40140,9 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
+	prefs.rounded_window_corners = cf.sync_add(
+		"bool", "rounded-window-corners", prefs.rounded_window_corners,
+		"Use transparency to mask the window into rounded corners. Disable if unsupported.")
 	macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
 	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
 	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
@@ -42140,6 +42154,227 @@ def visit_radio_station(item: tuple[int, RadioStation]) -> None:
 def window_is_focused(t_window: sdl3.LP_SDL_Window) -> bool:
 	"""Thread safe?"""
 	return bool(sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
+
+@dataclass
+class RoundedCornerRow:
+	clear_w: int = 0
+	mask_partials: list[tuple[int, int]] = field(default_factory=list)
+	border_runs: list[tuple[int, int, int]] = field(default_factory=list)
+
+@dataclass
+class RoundedCornerCache:
+	renderer_id: int = 0
+	width: int = 0
+	height: int = 0
+	radius: int = 0
+	border_width: int = 0
+	border_colour: tuple[int, int, int, int] = (0, 0, 0, 0)
+	samples: int = 0
+	rows: list[RoundedCornerRow] = field(default_factory=list)
+	border_texture: sdl3.LP_SDL_Texture | None = None
+
+_ROUNDED_CORNER_AA_SAMPLES = 8
+_rounded_corner_cache = RoundedCornerCache()
+
+def _rounded_corner_renderer_id(renderer: sdl3.LP_SDL_Renderer) -> int:
+	return int(ctypes.cast(renderer, c_void_p).value or 0)
+
+def _rounded_corner_pixel_coverage(radius: float, x: int, y: int, samples: int) -> int:
+	if radius <= 0:
+		return 0
+
+	total = samples * samples
+	step = 1.0 / samples
+	offset = step * 0.5
+	center = radius
+	r2 = radius * radius
+	inside = 0
+	for sy in range(samples):
+		py = y + offset + (sy * step)
+		dy = py - center
+		for sx in range(samples):
+			px = x + offset + (sx * step)
+			dx = px - center
+			if dx * dx + dy * dy <= r2:
+				inside += 1
+
+	return int(round((inside * 255) / total))
+
+def _draw_mirror_spans(
+	renderer: sdl3.LP_SDL_Renderer,
+	width: int,
+	height: int,
+	x: int,
+	y: int,
+	w: int,
+	h: int,
+) -> None:
+	if w <= 0 or h <= 0:
+		return
+	top_y = y
+	bottom_y = height - y - h
+	left_x = x
+	right_x = width - x - w
+	sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(left_x, top_y, w, h))
+	if right_x != left_x:
+		sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(right_x, top_y, w, h))
+	if bottom_y != top_y:
+		sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(left_x, bottom_y, w, h))
+		if right_x != left_x:
+			sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(right_x, bottom_y, w, h))
+
+def _ensure_rounded_corner_cache(
+	renderer: sdl3.LP_SDL_Renderer,
+	width: int,
+	height: int,
+	radius: int,
+	border_colour: ColourRGBA | None,
+	border_width: int,
+) -> RoundedCornerCache:
+	global _rounded_corner_cache  # noqa: PLW0603
+
+	border_rgba = (0, 0, 0, 0)
+	if border_colour is not None:
+		border_rgba = (border_colour.r, border_colour.g, border_colour.b, border_colour.a)
+	bw = max(1, min(int(border_width), radius))
+	renderer_id = _rounded_corner_renderer_id(renderer)
+
+	if (
+		_rounded_corner_cache.border_texture is not None
+		and _rounded_corner_cache.renderer_id == renderer_id
+		and _rounded_corner_cache.width == width
+		and _rounded_corner_cache.height == height
+		and _rounded_corner_cache.radius == radius
+		and _rounded_corner_cache.border_width == bw
+		and _rounded_corner_cache.border_colour == border_rgba
+		and _rounded_corner_cache.samples == _ROUNDED_CORNER_AA_SAMPLES
+	):
+		return _rounded_corner_cache
+
+	if _rounded_corner_cache.border_texture is not None:
+		sdl3.SDL_DestroyTexture(_rounded_corner_cache.border_texture)
+		_rounded_corner_cache.border_texture = None
+
+	rows: list[RoundedCornerRow] = []
+	outer_radius_f = float(radius)
+	inner_radius_f = max(0.0, float(radius - bw))
+
+	for y in range(radius):
+		outer_row: list[int] = []
+		border_row: list[int] = []
+		for x in range(radius):
+			outer_alpha = _rounded_corner_pixel_coverage(outer_radius_f, x, y, _ROUNDED_CORNER_AA_SAMPLES)
+			inner_alpha = _rounded_corner_pixel_coverage(inner_radius_f, x, y, _ROUNDED_CORNER_AA_SAMPLES) if inner_radius_f > 0 else 0
+			border_alpha = max(0, outer_alpha - inner_alpha)
+			if border_rgba[3] != 255:
+				border_alpha = int(round((border_alpha * border_rgba[3]) / 255))
+
+			outer_row.append(outer_alpha)
+			border_row.append(border_alpha)
+
+		clear_w = 0
+		while clear_w < radius and outer_row[clear_w] == 0:
+			clear_w += 1
+
+		mask_partials = [(x, a) for x, a in enumerate(outer_row) if 0 < a < 255]
+
+		border_runs: list[tuple[int, int, int]] = []
+		x = 0
+		while x < radius:
+			alpha = border_row[x]
+			if alpha <= 0:
+				x += 1
+				continue
+			start = x
+			x += 1
+			while x < radius and border_row[x] == alpha:
+				x += 1
+			border_runs.append((start, x - start, alpha))
+
+		rows.append(RoundedCornerRow(clear_w=clear_w, mask_partials=mask_partials, border_runs=border_runs))
+
+	border_texture: sdl3.LP_SDL_Texture | None = None
+	if border_rgba[3] > 0:
+		border_texture = sdl3.SDL_CreateTexture(
+			renderer,
+			sdl3.SDL_PIXELFORMAT_ARGB8888,
+			sdl3.SDL_TEXTUREACCESS_TARGET,
+			width,
+			height,
+		)
+		if border_texture:
+			sdl3.SDL_SetTextureBlendMode(border_texture, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.SDL_SetRenderTarget(renderer, border_texture)
+			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+			sdl3.SDL_RenderClear(renderer)
+
+			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.SDL_SetRenderDrawColor(renderer, border_rgba[0], border_rgba[1], border_rgba[2], border_rgba[3])
+
+			inner_w = width - (radius * 2)
+			inner_h = height - (radius * 2)
+			if inner_w > 0:
+				sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(radius, 0, inner_w, bw))
+				sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(radius, height - bw, inner_w, bw))
+			if inner_h > 0:
+				sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(0, radius, bw, inner_h))
+				sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(width - bw, radius, bw, inner_h))
+
+			for y, row in enumerate(rows):
+				for x, run_w, alpha in row.border_runs:
+					sdl3.SDL_SetRenderDrawColor(renderer, border_rgba[0], border_rgba[1], border_rgba[2], alpha)
+					_draw_mirror_spans(renderer, width, height, x, y, run_w, 1)
+
+			sdl3.SDL_SetRenderTarget(renderer, None)
+			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+
+	_rounded_corner_cache = RoundedCornerCache(
+		renderer_id=renderer_id,
+		width=width,
+		height=height,
+		radius=radius,
+		border_width=bw,
+		border_colour=border_rgba,
+		samples=_ROUNDED_CORNER_AA_SAMPLES,
+		rows=rows,
+		border_texture=border_texture,
+	)
+	return _rounded_corner_cache
+
+def apply_rounded_window_corners(
+	renderer: sdl3.LP_SDL_Renderer,
+	window_size: list[int],
+	radius: int,
+	border_colour: ColourRGBA | None = None,
+	border_width: int = 1,
+) -> None:
+	"""Apply a cached supersampled corner mask and rounded border overlay."""
+	width = int(window_size[0])
+	height = int(window_size[1])
+	if radius <= 1 or width <= 2 or height <= 2:
+		return
+
+	radius = min(radius, width // 2, height // 2)
+	if radius <= 1:
+		return
+
+	cache = _ensure_rounded_corner_cache(renderer, width, height, radius, border_colour, border_width)
+
+	sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+	sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+	for y, row in enumerate(cache.rows):
+		if row.clear_w > 0:
+			_draw_mirror_spans(renderer, width, height, 0, y, row.clear_w, 1)
+
+	for y, row in enumerate(cache.rows):
+		for x, alpha in row.mask_partials:
+			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, alpha)
+			_draw_mirror_spans(renderer, width, height, x, y, 1, 1)
+
+	sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+	if cache.border_texture is not None:
+		sdl3.SDL_RenderTexture(renderer, cache.border_texture, None, None)
 
 def menu_is_open() -> bool:
 	for menu in Menu.instances:
@@ -49653,6 +49888,14 @@ def main(holder: Holder) -> None:
 
 		if gui.present:
 			sdl3.SDL_SetRenderTarget(renderer, None)
+			if prefs.rounded_window_corners and not gui.fullscreen and not gui.maximized:
+				apply_rounded_window_corners(
+					renderer,
+					window_size,
+					round(12 * gui.scale),
+					colours.window_frame,
+					max(1, round(gui.scale)),
+				)
 			sdl3.SDL_RenderPresent(renderer)
 
 			gui.present = False
