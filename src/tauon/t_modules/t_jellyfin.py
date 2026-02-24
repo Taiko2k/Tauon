@@ -121,7 +121,7 @@ class Jellyfin:
 		# headers = {
 		# "Token": self.accessToken,
 		# "X-Application": "Tauon/1.0",
-		# "x-emby-authorization": self._get_jellyfin_auth(),
+		# "Authorization": self._get_jellyfin_auth(),
 		# }
 		params = {
 			"UserId": self.userId,
@@ -151,7 +151,7 @@ class Jellyfin:
 		headers = {
 			"Token": self.accessToken,
 			"X-Application": "Tauon/1.0",
-			"x-emby-authorization": self._get_jellyfin_auth(),
+			"Authorization": self._get_jellyfin_auth(),
 		}
 		params = {}
 		base_url = f"{self.prefs.jelly_server_url}/Items/{track.art_url_key}/Images/Primary"
@@ -173,7 +173,7 @@ class Jellyfin:
 			headers = {
 				"Token": self.accessToken,
 				"X-Application": "Tauon/1.0",
-				"x-emby-authorization": self._get_jellyfin_auth(),
+				"Authorization": self._get_jellyfin_auth(),
 			}
 
 			params = {}
@@ -211,7 +211,7 @@ class Jellyfin:
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 					"Content-Type": "text/json",
 				},
 				params={
@@ -241,7 +241,7 @@ class Jellyfin:
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 				},
 				params={
 					"UserId": self.userId,
@@ -261,7 +261,7 @@ class Jellyfin:
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 				},
 				params={
 					"UserId": self.userId,
@@ -280,7 +280,7 @@ class Jellyfin:
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 					"Content-Type": "text/json",
 				},
 				params={
@@ -301,7 +301,7 @@ class Jellyfin:
 			headers={
 				"Token": self.accessToken,
 				"X-Application": "Tauon/1.0",
-				"x-emby-authorization": self._get_jellyfin_auth(),
+				"Authorization": self._get_jellyfin_auth(),
 			},
 			params={
 				"UserId": self.userId,
@@ -349,7 +349,7 @@ class Jellyfin:
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 				},
 				params={
 					"UserId": self.userId,
@@ -404,7 +404,7 @@ class Jellyfin:
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
-					"x-emby-authorization": self._get_jellyfin_auth(),
+					"Authorization": self._get_jellyfin_auth(),
 				},
 				params={
 					"userId": self.userId,
@@ -642,7 +642,7 @@ class Jellyfin:
 			headers={
 				"Token": self.accessToken,
 				"X-Application": "Tauon/1.0",
-				"x-emby-authorization": self._get_jellyfin_auth(),
+				"Authorization": self._get_jellyfin_auth(),
 				"Content-Type": "application/json",
 			},
 			timeout=10,
