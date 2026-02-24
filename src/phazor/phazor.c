@@ -259,6 +259,30 @@ int config_volume_power = 2;
 int config_feed_samplerate = 48000;
 int config_min_buffer = 30000;
 
+#define EQ_BAND_COUNT 10
+
+typedef struct {
+	float b0;
+	float b1;
+	float b2;
+	float a1;
+	float a2;
+	float z1_l;
+	float z2_l;
+	float z1_r;
+	float z2_r;
+} eq_biquad_t;
+
+static const float eq_band_freqs[EQ_BAND_COUNT] = {
+	31.25f, 62.5f, 125.0f, 250.0f, 500.0f, 1000.0f, 2000.0f, 4000.0f, 8000.0f, 16000.0f
+};
+eq_biquad_t eq_bands[EQ_BAND_COUNT];
+float eq_band_gain_db[EQ_BAND_COUNT] = {0};
+int eq_enabled = 0;
+int eq_active = 0;
+int eq_coeff_sample_rate = 0;
+bool eq_dirty = true;
+
 unsigned int test1 = 0;
 
 enum status {
@@ -1345,6 +1369,99 @@ void stop_decoder() {
 	decoder_allocated = 0;
 }
 
+static void eq_reset_state() {
+	for (int i = 0; i < EQ_BAND_COUNT; i++) {
+		eq_bands[i].z1_l = 0.0f;
+		eq_bands[i].z2_l = 0.0f;
+		eq_bands[i].z1_r = 0.0f;
+		eq_bands[i].z2_r = 0.0f;
+	}
+}
+
+static void eq_set_identity(eq_biquad_t *f) {
+	f->b0 = 1.0f;
+	f->b1 = 0.0f;
+	f->b2 = 0.0f;
+	f->a1 = 0.0f;
+	f->a2 = 0.0f;
+}
+
+static void eq_rebuild_coefficients(int sample_rate) {
+	const float q = 1.41421356237f;
+	const float two_pi = 6.28318530717958647692f;
+	bool reset_state = (eq_coeff_sample_rate != sample_rate);
+
+	if (sample_rate <= 0) return;
+
+	eq_active = 0;
+
+	for (int i = 0; i < EQ_BAND_COUNT; i++) {
+		float gain_db = eq_band_gain_db[i];
+		float freq = eq_band_freqs[i];
+		eq_biquad_t *f = &eq_bands[i];
+
+		if (gain_db > 12.0f) gain_db = 12.0f;
+		if (gain_db < -12.0f) gain_db = -12.0f;
+		eq_band_gain_db[i] = gain_db;
+
+		if (fabsf(gain_db) < 0.01f || freq >= (sample_rate * 0.49f)) {
+			eq_set_identity(f);
+			continue;
+		}
+
+		float w0 = two_pi * (freq / (float) sample_rate);
+		float cw = cosf(w0);
+		float sw = sinf(w0);
+		float alpha = sw / (2.0f * q);
+		float a = powf(10.0f, gain_db / 40.0f);
+		float b0 = 1.0f + (alpha * a);
+		float b1 = -2.0f * cw;
+		float b2 = 1.0f - (alpha * a);
+		float a0 = 1.0f + (alpha / a);
+		float a1 = -2.0f * cw;
+		float a2 = 1.0f - (alpha / a);
+
+		if (a0 == 0.0f || !isfinite(b0) || !isfinite(b1) || !isfinite(b2) || !isfinite(a1) || !isfinite(a2)) {
+			eq_set_identity(f);
+			continue;
+		}
+
+		f->b0 = b0 / a0;
+		f->b1 = b1 / a0;
+		f->b2 = b2 / a0;
+		f->a1 = a1 / a0;
+		f->a2 = a2 / a0;
+		eq_active = 1;
+	}
+
+	eq_coeff_sample_rate = sample_rate;
+	eq_dirty = false;
+	if (reset_state) eq_reset_state();
+}
+
+static inline float eq_process_biquad(float x, eq_biquad_t *f, bool left) {
+	float *z1 = left ? &f->z1_l : &f->z1_r;
+	float *z2 = left ? &f->z2_l : &f->z2_r;
+	float y = (f->b0 * x) + *z1;
+	*z1 = (f->b1 * x) - (f->a1 * y) + *z2;
+	*z2 = (f->b2 * x) - (f->a2 * y);
+	return y;
+}
+
+static inline void eq_process_stereo(float *l, float *r) {
+	if (!eq_enabled || !eq_active) return;
+
+	float ll = *l;
+	float rr = *r;
+	for (int i = 0; i < EQ_BAND_COUNT; i++) {
+		ll = eq_process_biquad(ll, &eq_bands[i], true);
+		rr = eq_process_biquad(rr, &eq_bands[i], false);
+	}
+
+	*l = ll;
+	*r = rr;
+}
+
 int get_audio(int max, float* buff) {
 		int b = 0;
 
@@ -1397,6 +1514,9 @@ int get_audio(int max, float* buff) {
 		else if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
 
 			//pthread_mutex_lock(&buffer_mutex);
+			if (eq_enabled && current_sample_rate > 0 && (eq_dirty || eq_coeff_sample_rate != current_sample_rate)) {
+				eq_rebuild_coefficients(current_sample_rate);
+			}
 
 			b = 0; // byte number
 
@@ -1455,6 +1575,7 @@ int get_audio(int max, float* buff) {
 
 				float l = bfl[low];
 				float r = bfr[low];
+				eq_process_stereo(&l, &r);
 
 				if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
 				if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
@@ -3248,6 +3369,35 @@ EXPORT int ramp_volume(int percent, int speed) {
 	volume_ramp_speed = speed;
 	volume_want = percent / 100.0;
 	return 0;
+}
+
+EXPORT void eq_set_enable(int n) {
+	pthread_mutex_lock(&buffer_mutex);
+	eq_enabled = (n != 0);
+	eq_dirty = true;
+	if (!eq_enabled) eq_reset_state();
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT void eq_set_band(int band, float gain_db) {
+	if (band < 0 || band >= EQ_BAND_COUNT) return;
+	if (gain_db > 12.0f) gain_db = 12.0f;
+	if (gain_db < -12.0f) gain_db = -12.0f;
+
+	pthread_mutex_lock(&buffer_mutex);
+	eq_band_gain_db[band] = gain_db;
+	eq_dirty = true;
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT void eq_reset() {
+	pthread_mutex_lock(&buffer_mutex);
+	for (int i = 0; i < EQ_BAND_COUNT; i++) {
+		eq_band_gain_db[i] = 0.0f;
+	}
+	eq_dirty = true;
+	eq_reset_state();
+	pthread_mutex_unlock(&buffer_mutex);
 }
 
 EXPORT int get_position_ms() {

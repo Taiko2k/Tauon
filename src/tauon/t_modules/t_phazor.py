@@ -669,6 +669,34 @@ def player4(tauon: Tauon) -> None:
 			prefs.volume_power = 2
 		aud.config_set_volume_power(prefs.volume_power)
 		aud.config_set_resample(prefs.avoid_resampling ^ True)
+		apply_eq_settings()
+
+	def normalise_eq_bands() -> list[float]:
+		try:
+			bands = list(getattr(prefs, "eq", []) or [])
+		except TypeError:
+			bands = []
+		if len(bands) < 10:
+			bands.extend([0.0] * (10 - len(bands)))
+		elif len(bands) > 10:
+			bands = bands[:10]
+		out: list[float] = []
+		for v in bands:
+			try:
+				fv = float(v)
+			except (TypeError, ValueError):
+				fv = 0.0
+			out.append(float(max(min(fv, 12.0), -12.0)))
+		bands = out
+		prefs.eq = bands
+		return bands
+
+	def apply_eq_settings() -> None:
+		if not hasattr(aud, "eq_set_enable") or not hasattr(aud, "eq_set_band"):
+			return
+		aud.eq_set_enable(1 if prefs.use_eq else 0)
+		for i, gain in enumerate(normalise_eq_bands()):
+			aud.eq_set_band(i, ctypes.c_float(gain))
 
 	def run_vis() -> None:
 		if gui.turbo:  # and pctl.playing_time > 0.5:
@@ -794,6 +822,14 @@ def player4(tauon: Tauon) -> None:
 	aud.feed_raw.restype = None
 	aud.set_volume(int(pctl.player_volume))
 
+	try:
+		aud.eq_set_enable.argtypes = (ctypes.c_int,)
+		aud.eq_set_enable.restype = None
+		aud.eq_set_band.argtypes = (ctypes.c_int, ctypes.c_float)
+		aud.eq_set_band.restype = None
+	except AttributeError:
+		logging.warning("PHAzOR build does not expose EQ controls")
+
 	bins1 = (ctypes.c_float * 24)()
 	bins2 = (ctypes.c_float * 45)()
 
@@ -913,6 +949,8 @@ def player4(tauon: Tauon) -> None:
 					chrome_cool_timer.set()
 					pctl.playing_time = pctl.new_time
 					pctl.decode_time = pctl.playing_time
+				if command == "seteq":
+					apply_eq_settings()
 				if command == "stop":
 					tauon.player4_state = PlayerState.STOPPED
 					tauon.chrome.stop()
@@ -1388,6 +1426,9 @@ def player4(tauon: Tauon) -> None:
 					tauon.spot_ctl.control("volume", int(pctl.player_volume))
 				else:
 					aud.ramp_volume(int(pctl.player_volume), 750)
+
+			if command == "seteq":
+				apply_eq_settings()
 
 			if command == "runstop":
 				length = aud.get_length_ms() / 1000

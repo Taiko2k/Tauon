@@ -2,6 +2,10 @@
 Changelog
 ---------
 
+### v9.1.0
+
+ - **Added** 10 band EQ support to Phazor backend
+
 ### v9.0.0
 
  - **Added** Milkdrop visualizer support
