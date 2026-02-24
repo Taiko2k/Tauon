@@ -24486,22 +24486,41 @@ class Over:
 			self.colours.box_text_label, 12)
 
 	def eq(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		if not isinstance(self.prefs.eq, list):
+			try:
+				self.prefs.eq = list(self.prefs.eq)
+			except Exception:
+				self.prefs.eq = []
+		if len(self.prefs.eq) < 10:
+			self.prefs.eq.extend([0.0] * (10 - len(self.prefs.eq)))
+		elif len(self.prefs.eq) > 10:
+			self.prefs.eq = self.prefs.eq[:10]
+
 		y = y0 + 55 * self.gui.scale
 		x = x0 + 130 * self.gui.scale
 
-		if self.button(x - 110 * self.gui.scale, y + 180 * self.gui.scale, _("Return"), width=75 * self.gui.scale):
+		if self.button(x - 110 * self.gui.scale, y + 186 * self.gui.scale, _("Return"), width=75 * self.gui.scale):
 			self.eq_view = False
+		if self.button(x - 25 * self.gui.scale, y + 186 * self.gui.scale, _("Reset"), width=75 * self.gui.scale):
+			for i in range(10):
+				self.prefs.eq[i] = 0.0
+			self.gui.update += 1
+			self.pctl.playerCommand = "seteq"
+			self.pctl.playerCommandReady = True
 
-		base_dis = 160 * self.gui.scale
+		base_dis = 150 * self.gui.scale
 		center = base_dis // 2
 		width = 25 * self.gui.scale
+		labels = ("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
-		range = 12
+		db_range = 12
 
 		self.toggle_square(x - 90 * self.gui.scale, y - 35 * self.gui.scale, self.tauon.toggle_eq, _("Enable"))
+		self.ddt.text((x + 110 * self.gui.scale, y - 35 * self.gui.scale), _("10 Band EQ"), self.colours.box_text_label, 13)
 
 		self.ddt.text((x - 17 * self.gui.scale, y + 2 * self.gui.scale), "+", self.colours.grey(130), 16)
 		self.ddt.text((x - 17 * self.gui.scale, y + base_dis - 15 * self.gui.scale), "-", self.colours.grey(130), 16)
+		self.ddt.rect([x, y + center, round(290 * self.gui.scale), 1], ColourRGBA(255, 255, 255, 35))
 
 		for i, q in enumerate(self.prefs.eq):
 			bar = [x, y, width, base_dis]
@@ -24516,27 +24535,30 @@ class Over:
 			if self.coll(bar):
 				if self.inp.mouse_down:
 					target = self.inp.mouse_position[1] - y - center
-					target = (target / center) * range
-					target = min(target, range)
-					target = max(target, range * -1)
+					target = (target / center) * db_range * -1
+					target = min(target, db_range)
+					target = max(target, db_range * -1)
 					if -0.1 < target < 0.1:
 						target = 0
 
 					self.prefs.eq[i] = target
+					self.gui.update += 1
 
 					self.pctl.playerCommand = "seteq"
 					self.pctl.playerCommandReady = True
 
 				if self.right_click:
 					self.prefs.eq[i] = 0
+					self.gui.update += 1
 					self.pctl.playerCommand = "seteq"
 					self.pctl.playerCommandReady = True
 
-			start = (q / range) * center
+			start = (q / db_range) * center * -1
 
 			bar = [x, y + center, width, start]
 
 			self.ddt.rect(bar, ColourRGBA(100, 200, 100, 255))
+			self.ddt.text((x, y + base_dis + 8 * self.gui.scale), labels[i], self.colours.box_text_label, 10)
 
 			x += round(29 * self.gui.scale)
 
@@ -24571,12 +24593,17 @@ class Over:
 			y += round(23 * self.gui.scale)
 			self.prefs.back_restarts = self.toggle_square(x, y, self.prefs.back_restarts, _("Back restarts to beginning"))
 
-			y += round(40 * self.gui.scale)
+			y += round(35 * self.gui.scale)
 			if self.button(x, y, _("ReplayGain")):
 				self.inp.mouse_down = False
 				self.rg_view = True
 
-			y += round(45 * self.gui.scale)
+			y += round(35 * self.gui.scale)
+			if self.button(x, y, _("Equalizer")):
+				self.inp.mouse_down = False
+				self.eq_view = True
+
+			y += round(40 * self.gui.scale)
 			self.prefs.precache = self.toggle_square(x, y, self.prefs.precache, _("Cache local files (for smb/nfs)"))
 			y += round(23 * self.gui.scale)
 			old = self.prefs.tmp_cache
