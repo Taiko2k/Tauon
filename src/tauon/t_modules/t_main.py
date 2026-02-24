@@ -24289,8 +24289,6 @@ class Over:
 		self.toggle_square(x + round(280 * gui.scale), y, self.tauon.toggle_transparent_accent, _("Transparent accent"))
 
 		y += 23 * gui.scale
-		self.toggle_square(
-			x + round(280 * gui.scale), y, self.tauon.toggle_rounded_window_corners, _("Rounded corners"))
 
 		old = prefs.enable_fanart_bg
 		prefs.enable_fanart_bg = self.toggle_square(
@@ -26245,6 +26243,9 @@ class Over:
 		y += 25 * gui.scale
 		if not self.tauon.draw_border:
 			self.toggle_square(x, y, self.tauon.toggle_titlebar_line, _("Show playing in titlebar"))
+
+		y += 25 * gui.scale
+		self.toggle_square(x, y, self.tauon.toggle_rounded_window_corners, _("Rounded corners"))
 
 		#y += 25 * gui.scale
 		# if system != "Windows" and (self.flatpak_mode or snap_mode):
