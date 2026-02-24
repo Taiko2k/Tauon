@@ -5,6 +5,9 @@ Changelog
 ### v9.1.0
 
  - **Added** 10 band EQ support to Phazor backend
+ - **Fixed** Jellyfin using a deprecated login header, preventing login from succeeding
+ - **Fixed** lyrics.ovh and Genius lyrics scraping being broken, regression introduced in 9.0.0
+ - **Fixed** Genius scraping when artist/title contains "feat."
 
 ### v9.0.0
 
@@ -26,7 +29,6 @@ Changelog
  - **Fixed** Playback of 4-channel VORBIS being half the speed
  - **Fixed** Radio playback of some ogg streams
  - **Fixed** Radio volume being muted when starting a radio station from a paused state
- - **Fixed** Jellyfin using a deprecated login header, preventing login from succeeding
  - **Tweaked** Default to the PipeWire backend on Linux
 
 ### v8.2.3
