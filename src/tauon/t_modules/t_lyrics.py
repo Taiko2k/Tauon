@@ -54,8 +54,8 @@ def genius(
 	user_agent: str = "unused here but it needs to exist in every lyrics function",
 ) -> tuple[str, str] | str:
 	"""Scrape lyrics from genius.com"""
-	artist = artist.split("feat.")[0]
-	title = title.split("(feat.")[0]
+	artist = artist.split("feat.", maxsplit=1)[0].strip()
+	title = title.split("(feat.", maxsplit=1)[0].strip()
 	line = f"{artist}-{title}"
 	line = re.sub("[,._@!#%^*+:;'()]", "", line)
 	line = line.replace("]", "")
