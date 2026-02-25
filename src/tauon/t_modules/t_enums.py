@@ -49,3 +49,7 @@ class MiniModeMode(IntEnum):
 class GuiMode(IntEnum):
 	MAIN = 1
 	MINI = 3
+
+class QueueType(IntEnum):
+	TRACK = 0
+	ALBUM = 1
