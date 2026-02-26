@@ -242,8 +242,10 @@ class FunctionStore:
 
 j_chars = "あおいえうんわらまやはなたさかみりひにちしきるゆむぬつすくれめへねてせけをろもほのとそこアイウエオンヲラマハナタサカミヒニチシキルユムフヌツスクレメヘネテセケロヨモホノトソコ"
 year_search = re.compile(r"\d{4}")
-# Pre-compile the regular expression pattern for dates starting with the year
+# Pre-compile the regular expression pattern for dates like YYYY-MM-DD or DD-MM-YYYY
 date_pattern = re.compile(r"\b(?:\d{2}([/. -])\d{2}\1(\d{4})|\b(\d{4})([/. -])\d{2}\4\d{2}).*")
+# YYYY or YYYY-MM
+year_month_pattern = re.compile(r"^(\d{4})$|^(\d{4})([/. -])\d{2}$")
 
 genre_corrections = [
 	"J-Pop",
@@ -797,7 +799,11 @@ def get_year_from_string(s: str) -> str:
 
 	# Extract and return the year if a match is found
 	if match:
-		return match.group(2) if match.group(2) else match.group(3)
+		return match.group(2) or match.group(3)
+
+	match2 = year_month_pattern.search(s)
+	if match2:
+		return match2.group(1) or match2.group(2)
 
 	return ""
 
