@@ -36329,10 +36329,10 @@ class ProjectM:
 			if self.lib:
 				logging.info(f"Successfully loaded: {lib_name}")
 			else:
-				logging.warning("Could not find libprojectM-4")
+				logging.warning("Could not load libprojectM-4")
 				self.lib_error = True
 		except OSError:
-			logging.warning("Could not find libprojectM-4")
+			logging.exception("Could not load libprojectM-4")
 			self.lib_error = True
 		except Exception:
 			logging.exception("Unkown error loading libprojectM-4")
