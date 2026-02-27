@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-02-21 12:09+0000\n"
+"PO-Revision-Date: 2026-02-28 07:09+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -2590,9 +2590,8 @@ msgid "Auto reload playlists"
 msgstr "Автоматически обновлять плейлисты"
 
 #: src/tauon/t_modules/t_main.py:24557
-#, fuzzy
 msgid "Playlists rescan/regenerate when re-entering"
-msgstr "Сгенерированные плейлисты перезагружаются при повторном входе"
+msgstr "Повторное сканирование/создание плейлистов при повторном входе"
 
 #: src/tauon/t_modules/t_main.py:24561
 msgid "Tabs in top panel"
@@ -2711,13 +2710,12 @@ msgid "Change requires restart"
 msgstr "Изменение требует перезагрузки"
 
 #: src/tauon/t_modules/t_main.py:24663
-#, fuzzy
 msgid "Default playlist export folder"
-msgstr "Плейлист экспортирован"
+msgstr "Папка экспорта списка воспроизведения по умолчанию"
 
 #: src/tauon/t_modules/t_main.py:24684
 msgid "Also auto-import new playlists from here"
-msgstr ""
+msgstr "Также автоматически импортировать новые списки воспроизведения отсюда"
 
 #: src/tauon/t_modules/t_main.py:24685
 #, fuzzy
