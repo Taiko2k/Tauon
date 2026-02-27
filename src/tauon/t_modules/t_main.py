@@ -1953,7 +1953,7 @@ class PlayerCtl:
 		# This splits the line by groups of numbers, causing the sorting algorithm to sort
 		# by those numbers. Should work for filenames, even with the disc number in the name
 		try:
-			return [tryint(c) for c in re.split("([0-9]+)", s)]
+			return [tryint(c) for c in re.split(r"(\d+)", s)]
 		except Exception:
 			logging.exception("Failed to parse as int, returning 'a'")
 			return "a"
