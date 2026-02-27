@@ -563,7 +563,7 @@ if __name__ == "__main__":
 		success = sdl3.SDL_ShowMessageBox(ctypes.byref(messageboxdata), ctypes.byref(buttonid))
 
 		if not success:
-			logging.error("SDL_ShowMessageBox failed:", sdl3.SDL_GetError().decode())
+			logging.error(f"SDL_ShowMessageBox failed: {sdl3.SDL_GetError().decode()}")
 		elif buttonid.value == BUTTON_ID_DISCORD:
 			open_discord()
 		elif buttonid.value == BUTTON_ID_GITHUB:
