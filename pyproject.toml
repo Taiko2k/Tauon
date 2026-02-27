@@ -212,6 +212,7 @@
 			'EM101',   # raw-string-in-exception                   - We do not care about .format in exceptions, readability is not *our* problem, traceback should be colorized to avoid this instead
 			'EM102',   # f-string-in-exception                     - ^
 			'EM103',   # dot-format-in-exception                   - ^
+			'S301',    # suspicious-pickle-usage                   - We never load untrusted pickle files
 			'S311',    # suspicious-non-cryptographic-random-usage - We aren't using random for anything important
 			'ERA001',  # commented-out-code                        - Tests for commented out code, but it has way too many false positives, so disable
 			'FBT001',  # boolean-type-hint-positional-argument     - Allow positional booleans in functions, it's not really that much of an issue
