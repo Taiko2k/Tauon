@@ -520,7 +520,7 @@ class GuiVar:
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_Rect, tracklist_texture: sdl3.LP_SDL_Texture, main_texture_overlay_temp: sdl3.LP_SDL_Texture, main_texture: sdl3.LP_SDL_Texture, max_window_tex: int) -> None:
+	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_FRect, tracklist_texture: sdl3.LP_SDL_Texture, main_texture_overlay_temp: sdl3.LP_SDL_Texture, main_texture: sdl3.LP_SDL_Texture, max_window_tex: int) -> None:
 		self.bag: Bag = bag
 		self.console: DConsole = bag.console
 		self.inp: Input = Input(gui=self)
@@ -642,7 +642,7 @@ class GuiVar:
 		self.playlist_text_offset: float = 0
 		self.row_font_size:          int = 13
 		self.compact_bar: bool = False
-		self.tracklist_texture_rect: sdl3.SDL_Rect = tracklist_texture_rect
+		self.tracklist_texture_rect: sdl3.SDL_FRect = tracklist_texture_rect
 		self.tracklist_texture = tracklist_texture
 
 		self.trunk_end = "..."  # "…"
@@ -17874,12 +17874,12 @@ class Tauon:
 		current_folder = ""
 		current_album = ""
 		current_date = ""
-		albums = []
+		albums: list[int] = []
 		playlist = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		for i in range(len(playlist)):
 			tr = self.pctl.master_library[playlist[i]]
-			track_date = tr.misc["rdat"] if "rdat" in tr.misc else tr.date
+			track_date = tr.misc.get("rdat", tr.date)
 			if i == 0:
 				albums.append(i)
 				current_folder = tr.parent_folder_path
@@ -39590,7 +39590,7 @@ class Bag:
 	tls_context:             ssl.SSLContext
 	dev_mode:                bool
 	macos:                   bool
-	windows:                    bool
+	windows:                 bool
 	phone:                   bool
 	pump:                    bool
 	snap_mode:               bool
