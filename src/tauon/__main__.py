@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import ctypes
+import ctypes.util
 import logging
 import os
 import pickle
 import subprocess
 import sys
-import ctypes
-from ctypes import byref, c_float, c_int, pointer, util
+from ctypes import byref, c_float, c_int, pointer
 from pathlib import Path
 
 from gi.repository import GLib
