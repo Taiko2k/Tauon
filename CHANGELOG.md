@@ -9,7 +9,6 @@ Changelog
  - **Fixed** lyrics.ovh and Genius lyrics scraping being broken, regression introduced in 9.0.0
  - **Fixed** Genius scraping when artist/title contains "feat."
  - **Fixed** Milkdrop not showing in lyrics panel
- - **Fixed** An issue with Jellyfin
 
 ### v9.0.0
 
