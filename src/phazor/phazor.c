@@ -260,6 +260,10 @@ int config_feed_samplerate = 48000;
 int config_min_buffer = 30000;
 
 #define EQ_BAND_COUNT 10
+#define EQ_AUTO_HEADROOM_MARGIN_DB 1.0f
+#define LIMITER_THRESHOLD 0.89125093813f // -1 dBFS
+#define LIMITER_ATTACK_MS 1.5f
+#define LIMITER_RELEASE_MS 120.0f
 
 typedef struct {
 	float b0;
@@ -282,6 +286,12 @@ int eq_enabled = 0;
 int eq_active = 0;
 int eq_coeff_sample_rate = 0;
 bool eq_dirty = true;
+float eq_headroom_db = 0.0f;
+float eq_headroom_gain = 1.0f;
+float limiter_gain = 1.0f;
+float limiter_attack_coeff = 0.0f;
+float limiter_release_coeff = 0.0f;
+int limiter_coeff_sample_rate = 0;
 
 unsigned int test1 = 0;
 
@@ -1378,6 +1388,80 @@ static void eq_reset_state() {
 	}
 }
 
+static void limiter_reset_state() {
+	limiter_gain = 1.0f;
+}
+
+static void limiter_update_coefficients(int sample_rate) {
+	if (sample_rate <= 0) return;
+
+	float attack_samples = (LIMITER_ATTACK_MS * 0.001f) * (float)sample_rate;
+	float release_samples = (LIMITER_RELEASE_MS * 0.001f) * (float)sample_rate;
+
+	if (attack_samples < 1.0f) attack_samples = 1.0f;
+	if (release_samples < 1.0f) release_samples = 1.0f;
+
+	limiter_attack_coeff = expf(-1.0f / attack_samples);
+	limiter_release_coeff = expf(-1.0f / release_samples);
+	limiter_coeff_sample_rate = sample_rate;
+}
+
+static float eq_biquad_magnitude(const eq_biquad_t *f, float w) {
+	float cos_w = cosf(w);
+	float sin_w = sinf(w);
+	float cos_2w = cosf(2.0f * w);
+	float sin_2w = sinf(2.0f * w);
+
+	float nr = f->b0 + (f->b1 * cos_w) + (f->b2 * cos_2w);
+	float ni = -(f->b1 * sin_w) - (f->b2 * sin_2w);
+	float dr = 1.0f + (f->a1 * cos_w) + (f->a2 * cos_2w);
+	float di = -(f->a1 * sin_w) - (f->a2 * sin_2w);
+
+	float den = (dr * dr) + (di * di);
+	if (den <= 1e-20f) return 1.0f;
+
+	float mag2 = ((nr * nr) + (ni * ni)) / den;
+	if (mag2 <= 0.0f || !isfinite(mag2)) return 1.0f;
+
+	return sqrtf(mag2);
+}
+
+static void eq_update_auto_headroom(int sample_rate) {
+	const float two_pi = 6.28318530717958647692f;
+	const float min_freq = 20.0f;
+	const int sweep_points = 192;
+
+	eq_headroom_db = 0.0f;
+	eq_headroom_gain = 1.0f;
+
+	if (!eq_enabled || !eq_active || sample_rate <= 0) return;
+
+	float max_freq = sample_rate * 0.49f;
+	if (max_freq <= min_freq) return;
+
+	float ratio = max_freq / min_freq;
+	float max_mag = 1.0f;
+
+	for (int i = 0; i < sweep_points; i++) {
+		float t = i / (float)(sweep_points - 1);
+		float freq = min_freq * powf(ratio, t);
+		float w = two_pi * (freq / (float)sample_rate);
+		float total_mag = 1.0f;
+
+		for (int band = 0; band < EQ_BAND_COUNT; band++) {
+			if (fabsf(eq_band_gain_db[band]) < 0.01f) continue;
+			total_mag *= eq_biquad_magnitude(&eq_bands[band], w);
+		}
+
+		if (isfinite(total_mag) && total_mag > max_mag) max_mag = total_mag;
+	}
+
+	if (max_mag > 1.0f) {
+		eq_headroom_db = (20.0f * log10f(max_mag)) + EQ_AUTO_HEADROOM_MARGIN_DB;
+		eq_headroom_gain = powf(10.0f, -eq_headroom_db / 20.0f);
+	}
+}
+
 static void eq_set_identity(eq_biquad_t *f) {
 	f->b0 = 1.0f;
 	f->b1 = 0.0f;
@@ -1436,7 +1520,12 @@ static void eq_rebuild_coefficients(int sample_rate) {
 
 	eq_coeff_sample_rate = sample_rate;
 	eq_dirty = false;
-	if (reset_state) eq_reset_state();
+	eq_update_auto_headroom(sample_rate);
+	if (reset_state) {
+		eq_reset_state();
+		limiter_reset_state();
+		limiter_update_coefficients(sample_rate);
+	}
 }
 
 static inline float eq_process_biquad(float x, eq_biquad_t *f, bool left) {
@@ -1460,6 +1549,37 @@ static inline void eq_process_stereo(float *l, float *r) {
 
 	*l = ll;
 	*r = rr;
+}
+
+static inline void limiter_process_stereo(float *l, float *r) {
+	if (!eq_enabled || !eq_active) return;
+
+	if (current_sample_rate > 0 && limiter_coeff_sample_rate != current_sample_rate) {
+		limiter_update_coefficients(current_sample_rate);
+	}
+
+	float peak = fmaxf(fabsf(*l), fabsf(*r));
+	float target_gain = 1.0f;
+	if (peak > LIMITER_THRESHOLD) {
+		target_gain = LIMITER_THRESHOLD / (peak + 1e-20f);
+	}
+
+	if (target_gain < limiter_gain) {
+		limiter_gain = target_gain + (limiter_attack_coeff * (limiter_gain - target_gain));
+	} else {
+		limiter_gain = target_gain + (limiter_release_coeff * (limiter_gain - target_gain));
+	}
+
+	if (!isfinite(limiter_gain) || limiter_gain <= 0.0f) limiter_gain = 1.0f;
+
+	*l *= limiter_gain;
+	*r *= limiter_gain;
+
+	// final guard against any possible hard clipping
+	if (*l > 1.0f) *l = 1.0f;
+	else if (*l < -1.0f) *l = -1.0f;
+	if (*r > 1.0f) *r = 1.0f;
+	else if (*r < -1.0f) *r = -1.0f;
 }
 
 int get_audio(int max, float* buff) {
@@ -1589,8 +1709,10 @@ int get_audio(int max, float* buff) {
 
 				// Apply final volume adjustment
 				float final_vol = pow((gate * volume_on), config_volume_power);
+				if (eq_enabled && eq_active) final_vol *= eq_headroom_gain;
 				l = l * final_vol;
 				r = r * final_vol;
+				limiter_process_stereo(&l, &r);
 
 				buff[b] = l;
 				buff[b + 1] = r;
@@ -3375,7 +3497,12 @@ EXPORT void eq_set_enable(int n) {
 	pthread_mutex_lock(&buffer_mutex);
 	eq_enabled = (n != 0);
 	eq_dirty = true;
-	if (!eq_enabled) eq_reset_state();
+	if (!eq_enabled) {
+		eq_headroom_db = 0.0f;
+		eq_headroom_gain = 1.0f;
+		eq_reset_state();
+	}
+	limiter_reset_state();
 	pthread_mutex_unlock(&buffer_mutex);
 }
 
@@ -3396,7 +3523,10 @@ EXPORT void eq_reset() {
 		eq_band_gain_db[i] = 0.0f;
 	}
 	eq_dirty = true;
+	eq_headroom_db = 0.0f;
+	eq_headroom_gain = 1.0f;
 	eq_reset_state();
+	limiter_reset_state();
 	pthread_mutex_unlock(&buffer_mutex);
 }
 
