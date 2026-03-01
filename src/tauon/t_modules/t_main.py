@@ -31392,12 +31392,10 @@ class ArtBox:
 			showc = tauon.album_art_gen.get_info(target_track)
 
 			# Milkdrop visualiser
+			# code mirrored in l_panel
 			if tauon.prefs.milk and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
-
 				if self.pctl.a_time < 1.3:
 					if 1 < self.pctl.a_time < 1.3:
-						# not sure why running this at 0 spases the window out
-						# hopefully this ghost wont come back to haunt us
 						tauon.milky.render(discard=True)
 						tauon.milky.burn(target_track)
 				else:
@@ -35179,12 +35177,20 @@ class MetaBox:
 		border_rect = (
 			art_rect[0] - border, art_rect[1] - border, art_rect[2] + (border * 2), art_rect[3] + (border * 2))
 
+		self.gui.main_art_box = art_rect
+
+
 		if (self.inp.mouse_click or self.inp.right_click) and self.tauon.is_level_zero(False):
 			if self.coll(border_rect):
 				if self.inp.mouse_click:
+					self.tauon.milky.projectm.load_next = "random"
+				else:
 					self.tauon.album_art_gen.cycle_offset(track)
 				if self.inp.right_click:
-					self.tauon.picture_menu.activate(in_reference=track)
+					if self.tauon.prefs.milk:
+						self.tauon.milky_menu.activate(in_reference=track)
+					else:
+						self.tauon.picture_menu.activate(in_reference=track)
 			elif self.coll(rect):
 				if self.inp.mouse_click:
 					self.pctl.show_current()
@@ -35193,10 +35199,26 @@ class MetaBox:
 
 		ddt.rect(border_rect, border_colour)
 		ddt.rect(art_rect, colours.gallery_background)
+
+
+
 		self.tauon.album_art_gen.display(track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
 
 		self.fields.add(border_rect)
-		if self.coll(border_rect) and self.tauon.is_level_zero(True):
+
+		if self.tauon.prefs.milk and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM,
+																  PlayingState.PAUSED):
+			if self.pctl.a_time < 1.3:
+				if 1 < self.pctl.a_time < 1.3:
+					self.tauon.milky.render(discard=True)
+					self.tauon.milky.burn(track)
+			else:
+				self.tauon.milky.render()
+			if self.tauon.pctl.playing_state != PlayingState.PAUSED:
+				# gui.update += 1
+				self.gui.delay_frame(0.007)  # 60 fps
+
+		elif self.coll(border_rect) and self.tauon.is_level_zero(True):
 			showc = self.tauon.album_art_gen.get_info(track)
 			self.tauon.art_metadata_overlay(
 				art_rect[0] + art_rect[2] + 2 * self.gui.scale, art_rect[1] + art_rect[3] + 12 * self.gui.scale, showc)
@@ -45707,10 +45729,10 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: test
-				try:
-					shutil.copy(tauon.milky.projectm.loaded_preset, tauon.user_directory / "presets")
-				except:
-					pass
+				# try:
+				# 	shutil.copy(tauon.milky.projectm.loaded_preset, tauon.user_directory / "presets")
+				# except:
+				# 	pass
 				pass
 
 			if gui.mode == GuiMode.MAIN:
