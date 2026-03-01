@@ -5811,6 +5811,9 @@ class Tauon:
 		self.overlay_texture_texture            = bag.overlay_texture_texture
 		self.de_notify_support: bool            = bag.de_notify_support
 		self.old_window_position: tuple[int, int]          = bag.old_window_position
+		self.mini_mode_wm_forced_floating: bool = False
+		self.mini_mode_wm_was_floating: bool = False
+		self._wayland_wm_ipc_warned: bool = False
 		self.cache_directory: Path              = bag.dirs.cache_directory
 		self.config_directory: Path             = bag.dirs.config_directory
 		self.user_directory: Path               = bag.dirs.user_directory
@@ -12323,6 +12326,152 @@ class Tauon:
 		self.gui.message_box_confirm_reference = (id,)
 		self.show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
 
+	def _window_is_maximized(self) -> bool:
+		flags = sdl3.SDL_GetWindowFlags(self.t_window)
+		return bool(flags & sdl3.SDL_WINDOW_MAXIMIZED)
+
+	def _is_wayland_standalone_wm(self) -> bool:
+		if not self.wayland:
+			return False
+		desktop = (self.desktop or "").lower()
+		de_names = ("gnome", "kde", "plasma", "xfce", "cinnamon", "mate", "unity", "lxqt", "lxde", "budgie", "pantheon", "cosmic")
+		return not any(name in desktop for name in de_names)
+
+	def _get_wayland_wm_controller(self) -> Literal["sway", "hyprland"] | None:
+		if os.environ.get("SWAYSOCK"):
+			return "sway"
+		if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+			return "hyprland"
+		return None
+
+	def _run_wm_command(self, cmd: list[str]) -> str | None:
+		binary = cmd[0]
+		if shutil.which(binary) is None:
+			if not self._wayland_wm_ipc_warned:
+				logging.warning("Wayland mini-mode WM integration unavailable: missing %s", binary)
+				self._wayland_wm_ipc_warned = True
+			return None
+		try:
+			result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=0.8)
+		except Exception:
+			return None
+		if result.returncode != 0:
+			return None
+		return result.stdout
+
+	def _reset_mini_mode_wm_tracking(self) -> None:
+		self.mini_mode_wm_forced_floating = False
+		self.mini_mode_wm_was_floating = False
+
+	def _get_sway_focused_floating_state(self) -> bool | None:
+		tree_raw = self._run_wm_command(["swaymsg", "-t", "get_tree", "-r"])
+		if not tree_raw:
+			return None
+		try:
+			tree = json.loads(tree_raw)
+		except json.JSONDecodeError:
+			return None
+
+		stack = [tree]
+		while stack:
+			node = stack.pop()
+			if node.get("focused"):
+				fstate = node.get("floating")
+				return fstate in ("user_on", "auto_on")
+			stack.extend(node.get("nodes", []))
+			stack.extend(node.get("floating_nodes", []))
+		return None
+
+	def _get_hyprland_active_window(self) -> dict[str, object] | None:
+		active_raw = self._run_wm_command(["hyprctl", "-j", "activewindow"])
+		if not active_raw:
+			return None
+		try:
+			active = json.loads(active_raw)
+		except json.JSONDecodeError:
+			return None
+		if not isinstance(active, dict):
+			return None
+		return active
+
+
+	def _wayland_window_is_floating(self) -> bool | None:
+		if not self._is_wayland_standalone_wm():
+			return None
+
+		wm_controller = self._get_wayland_wm_controller()
+		if wm_controller == "sway":
+			return self._get_sway_focused_floating_state()
+
+		if wm_controller == "hyprland":
+			active = self._get_hyprland_active_window()
+			if active is None:
+				return None
+			return bool(active.get("floating", False))
+
+		return None
+
+	def _set_wayland_mini_mode_window_state(self, entering: bool, width: int = 0, height: int = 0, reset_tracking: bool = True) -> None:
+		if not self._is_wayland_standalone_wm():
+			return
+		if entering and reset_tracking:
+			self._reset_mini_mode_wm_tracking()
+
+		wm_controller = self._get_wayland_wm_controller()
+		if wm_controller is None:
+			if not entering:
+				self._reset_mini_mode_wm_tracking()
+			return
+
+		if wm_controller == "sway":
+			if entering:
+				if reset_tracking:
+					floating_state = self._get_sway_focused_floating_state()
+					if floating_state is not None:
+						self.mini_mode_wm_was_floating = floating_state
+
+					if not self.mini_mode_wm_was_floating:
+						self._run_wm_command(["swaymsg", "floating", "enable"])
+						self.mini_mode_wm_forced_floating = True
+				elif self.mini_mode_wm_forced_floating:
+					self._run_wm_command(["swaymsg", "floating", "enable"])
+
+				if width > 0 and height > 0:
+					self._run_wm_command(["swaymsg", "resize", "set", "width", f"{width}px", "height", f"{height}px"])
+			else:
+				if self.mini_mode_wm_forced_floating and not self.mini_mode_wm_was_floating:
+					self._run_wm_command(["swaymsg", "floating", "disable"])
+				self._reset_mini_mode_wm_tracking()
+			return
+
+		if wm_controller == "hyprland":
+			active = self._get_hyprland_active_window()
+			if active is None:
+				if not entering:
+					self._reset_mini_mode_wm_tracking()
+				return
+			address = str(active.get("address", ""))
+			if not address:
+				if not entering:
+					self._reset_mini_mode_wm_tracking()
+				return
+
+			if entering:
+				if reset_tracking:
+					self.mini_mode_wm_was_floating = bool(active.get("floating", False))
+					if not self.mini_mode_wm_was_floating:
+						self._run_wm_command(["hyprctl", "dispatch", "togglefloating", f"address:{address}"])
+						self.mini_mode_wm_forced_floating = True
+				elif self.mini_mode_wm_forced_floating and not bool(active.get("floating", False)):
+					self._run_wm_command(["hyprctl", "dispatch", "togglefloating", f"address:{address}"])
+
+				if width > 0 and height > 0:
+					self._run_wm_command(["hyprctl", "dispatch", "resizeactive", "exact", str(width), str(height)])
+			else:
+				if self.mini_mode_wm_forced_floating and not self.mini_mode_wm_was_floating:
+					self._run_wm_command(["hyprctl", "dispatch", "togglefloating", f"address:{address}"])
+				self._reset_mini_mode_wm_tracking()
+
 	def set_mini_mode(self) -> None:
 		if self.gui.fullscreen:
 			return
@@ -12331,14 +12480,23 @@ class Tauon:
 		self.inp.mouse_up = False
 		self.inp.mouse_click = False
 
-		if self.gui.maximized:
+		is_wayland_standalone_wm = self._is_wayland_standalone_wm()
+		is_floating_wayland_window = self._wayland_window_is_floating() if is_wayland_standalone_wm else None
+
+		# Standalone Wayland WMs can report maximized flags while window is already floating.
+		# Treat already-floating windows as non-maximized for mini-mode transitions.
+		self.gui.mini_mode_return_maximized = self._window_is_maximized() and not bool(is_floating_wayland_window)
+		if self.gui.mini_mode_return_maximized:
 			sdl3.SDL_RestoreWindow(self.t_window)
+			sdl3.SDL_SyncWindow(self.t_window)
+			sdl3.SDL_PumpEvents()
+			self.gui.maximized = False
 			self.update_layout_do()
 
 		if self.gui.mode == GuiMode.MAIN:
 			self.old_window_position = get_window_position(self.t_window)
 
-		if self.prefs.mini_mode_on_top:
+		if self.prefs.mini_mode_on_top and not self.wayland:
 			sdl3.SDL_SetWindowAlwaysOnTop(self.t_window, True)
 
 		self.gui.mode = GuiMode.MINI
@@ -12353,7 +12511,8 @@ class Tauon:
 		self.gui.save_position = (i_x.contents.value, i_y.contents.value)
 
 		self.mini_mode.was_borderless = self.draw_border
-		sdl3.SDL_SetWindowBordered(self.t_window, False)
+		if not is_wayland_standalone_wm:
+			sdl3.SDL_SetWindowBordered(self.t_window, False)
 
 		size = (350, 429)
 		if self.prefs.mini_mode_mode == MiniModeMode.MINI:
@@ -12376,9 +12535,11 @@ class Tauon:
 		self.logical_size[1] = size[1]
 
 		sdl3.SDL_SetWindowMinimumSize(self.t_window, 100, 80)
-
-		sdl3.SDL_SetWindowResizable(self.t_window, False)
+		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1])
+		sdl3.SDL_SetWindowResizable(self.t_window, True)
 		sdl3.SDL_SetWindowSize(self.t_window, self.logical_size[0], self.logical_size[1])
+		if not is_wayland_standalone_wm:
+			sdl3.SDL_SetWindowResizable(self.t_window, False)
 
 		if self.mini_mode.save_position:
 			sdl3.SDL_SetWindowPosition(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
@@ -12413,6 +12574,7 @@ class Tauon:
 		self.restore_ignore_timer.set()  # Hacky
 
 		self.gui.mode = GuiMode.MAIN
+		self._set_wayland_mini_mode_window_state(False)
 
 		sdl3.SDL_SyncWindow(self.t_window)
 		sdl3.SDL_PumpEvents()
@@ -12421,13 +12583,15 @@ class Tauon:
 		self.inp.mouse_up = False
 		self.inp.mouse_click = False
 
-		if self.gui.maximized:
+		if self.gui.mini_mode_return_maximized:
 			sdl3.SDL_MaximizeWindow(self.t_window)
 			time.sleep(0.05)
 			sdl3.SDL_PumpEvents()
 			sdl3.SDL_GetWindowSize(self.t_window, i_x, i_y)
 			self.logical_size[0] = i_x.contents.value
 			self.logical_size[1] = i_y.contents.value
+			self.gui.maximized = True
+		self.gui.mini_mode_return_maximized = False
 
 			#logging.info(self.window_size)
 
@@ -49047,16 +49211,19 @@ def main(holder: Holder) -> None:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 					if prefs.mini_mode_mode == MiniModeMode.TAB:
 						prefs.mini_mode_mode = MiniModeMode.SQUARE
-						window_size[0] = int(330 * gui.scale)
-						window_size[1] = int(330 * gui.scale)
-						sdl3.SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
-						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+						size = (int(330 * gui.scale), int(330 * gui.scale))
 					else:
 						prefs.mini_mode_mode = MiniModeMode.TAB
-						window_size[0] = int(320 * gui.scale)
-						window_size[1] = int(90 * gui.scale)
-						sdl3.SDL_SetWindowMinimumSize(t_window, window_size[0], window_size[1])
-						sdl3.SDL_SetWindowSize(t_window, window_size[0], window_size[1])
+						size = (int(320 * gui.scale), int(90 * gui.scale))
+
+					logical_size[0] = size[0]
+					logical_size[1] = size[1]
+					window_size[0] = size[0]
+					window_size[1] = size[1]
+
+					tauon._set_wayland_mini_mode_window_state(True, size[0], size[1], reset_tracking=False)
+					sdl3.SDL_SetWindowMinimumSize(t_window, size[0], size[1])
+					sdl3.SDL_SetWindowSize(t_window, size[0], size[1])
 
 				if prefs.mini_mode_mode == MiniModeMode.SLATE:
 					tauon.mini_mode3.render()
