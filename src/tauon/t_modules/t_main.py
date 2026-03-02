@@ -15369,48 +15369,69 @@ class Tauon:
 			self.web_thread.start()
 			self.web_running = True
 
-	def download_ffmpeg(self, x) -> None:
+	def download_ffmpeg(self, _x) -> None:
+		"""Download FFmpeg portable binary to User Data dir, supports x64 Windows and Linux"""
 		def go() -> None:
-			url = "https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-essentials_build.zip"
-			sha = "04861d3339c5ebe38b56c19a15cf2c0cc97f5de4fa8910e4d47e5e6404e4a2d4"
+			if self.windows:
+				url = "https://github.com/GyanD/codexffmpeg/releases/download/8.0.1/ffmpeg-8.0.1-essentials_build.zip"
+				sha = "e2aaeaa0fdbc397d4794828086424d4aaa2102cef1fb6874f6ffd29c0b88b673"
+			elif not self.macos:
+				url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-03-02-13-06/ffmpeg-n8.0.1-66-g27b8d1a017-linux64-gpl-8.0.tar.xz"
+				sha = "e6f31af6c1ef49ceec8361185d70283ea8ad6c8ceed652d5dee66ec174a11eea"
 			self.show_message(_("Starting download..."))
-			try:
-				f = io.BytesIO()
-				with requests.get(url, stream=True, timeout=1800) as r: # ffmpeg is 92MB, give it half an hour in case someone is willing to suffer it on a slow connection
-					dl = 0
-					total_bytes = int(r.headers.get("Content-Length", 0))
-					total_mb = round(total_bytes / 1000 / 1000) if total_bytes else 92
+			with io.BytesIO() as f:
+				try:
+					with requests.get(url, stream=True, timeout=1800) as r: # Windows ffmpeg is 101MB, Linux 130MB, give it half an hour in case someone is willing to suffer it on a slow connection
+						dl = 0
+						total_bytes = int(r.headers.get("Content-Length", 0))
+						if self.windows:
+							fallback_mb = 101
+						elif not self.macos:
+							fallback_mb = 130
+						total_mb = round(total_bytes / 1000 / 1000) if total_bytes else fallback_mb
 
-					for data in r.iter_content(chunk_size=4096):
-						dl += len(data)
-						f.write(data)
-						mb = round(dl / 1000 / 1000)
-						if mb % 5 == 0:
-							self.show_message(_("Downloading... {MB}/{total_mb}").format(MB=mb, total_mb=total_mb))
-			except Exception as e:
-				logging.exception("Download failed")
-				self.show_message(_("Download failed"), str(e), mode="error")
-				return
+						for data in r.iter_content(chunk_size=4096):
+							dl += len(data)
+							f.write(data)
+							mb = round(dl / 1000 / 1000)
+							if mb % 5 == 0:
+								self.show_message(_("Downloading... {MB}/{total_mb}").format(MB=mb, total_mb=total_mb))
+				except Exception as e:
+					logging.exception("Download failed")
+					self.show_message(_("Download failed"), str(e), mode="error")
+					return
 
-			f.seek(0)
-			checksum = hashlib.sha256(f.read()).hexdigest()
-			if checksum != sha:
-				self.show_message(_("Download completed but checksum failed"), mode="error")
-				logging.error(f"Checksum was {checksum} but expected {sha}")
-				return
-			self.show_message(_("Download completed.. extracting"))
-			f.seek(0)
-			z = zipfile.ZipFile(f, mode="r")
-			exe = z.open("ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe")
-			with (self.user_directory / "ffmpeg.exe").open("wb") as file:
-				file.write(exe.read())
+				f.seek(0)
+				checksum = hashlib.sha256(f.read()).hexdigest()
+				if checksum != sha:
+					self.show_message(_("Download completed but checksum failed"), mode="error")
+					logging.error(f"Checksum was {checksum} but expected {sha}")
+					return
+				self.show_message(_("Download completed.. extracting"))
+				f.seek(0)
+				if self.windows:
+					z = zipfile.ZipFile(f, mode="r")
+					with z.open("ffmpeg-8.0.1-essentials_build/bin/ffmpeg.exe") as exe, (self.user_directory / "ffmpeg.exe").open("wb") as file:
+						file.write(exe.read())
 
-			exe = z.open("ffmpeg-7.1.1-essentials_build/bin/ffprobe.exe")
-			with (self.user_directory / "ffprobe.exe").open("wb") as file:
-				file.write(exe.read())
+					with z.open("ffmpeg-8.0.1-essentials_build/bin/ffprobe.exe") as exe, (self.user_directory / "ffprobe.exe").open("wb") as file:
+						file.write(exe.read())
+				elif not self.macos:
+					import tarfile
 
-			exe.close()
-			self.show_message(_("FFMPEG fetch complete"), mode="done")
+					output_dir = self.user_directory
+					wanted = {"ffmpeg", "ffprobe"}
+
+					with tarfile.open(fileobj=f, mode="r:xz") as tar:
+						for member in tar.getmembers():
+							filename = Path(member.name).name
+
+							if filename in wanted and member.isfile():
+								member.name = filename  # strip directory structure
+								tar.extract(member, path=output_dir)
+
+
+			self.show_message(_("FFmpeg fetch complete"), mode="done")
 
 		shooter(go)
 
@@ -19068,13 +19089,13 @@ class Tauon:
 	def test_ffmpeg(self) -> bool:
 		if self.get_ffmpeg():
 			return True
-		if self.windows:
-			self.show_message(_("This feature requires FFMPEG. Shall I can download that for you? (92MB)"), mode="confirm")
+		if not self.macos:
+			self.show_message(_("This feature requires FFmpeg. Shall I can download that for you? (100MB~)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
 			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (None,)
 		else:
-			self.show_message(_("FFMPEG could not be found"))
+			self.show_message(_("FFmpeg could not be found"))
 		return False
 
 	def get_ffmpeg(self) -> Path | None:
@@ -19084,6 +19105,11 @@ class Tauon:
 
 		# macOS
 		path = self.install_directory / "ffmpeg"
+		if path.is_file():
+			return path
+
+		# Portable Linux
+		path = self.user_directory / "ffmpeg"
 		if path.is_file():
 			return path
 
@@ -19099,6 +19125,11 @@ class Tauon:
 
 		# macOS
 		path = self.install_directory / "ffprobe"
+		if path.is_file():
+			return path
+
+		# Portable Linux
+		path = self.user_directory / "ffprobe"
 		if path.is_file():
 			return path
 
@@ -40049,7 +40080,7 @@ def load_prefs(bag: Bag) -> None:
 		"Cache files from local sources too. (Useful for mounted network drives)")
 	prefs.always_ffmpeg = cf.sync_add(
 		"bool", "always-ffmpeg", prefs.always_ffmpeg,
-		"Prefer decoding using FFMPEG. Fixes stuttering on Raspberry Pi OS.")
+		"Prefer decoding using FFmpeg. Fixes stuttering on Raspberry Pi OS.")
 	prefs.volume_power = cf.sync_add(
 		"int", "volume-curve", prefs.volume_power,
 		"1=Linear volume control. Values above one give greater control bias over lower volume range. Default: 2")
