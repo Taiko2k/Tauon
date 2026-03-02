@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 	from pathlib import Path
 	from typing import Literal
 
+
 @dataclass
 class Prefs:
 	"""Used to hold any kind of settings"""
@@ -163,7 +164,7 @@ class Prefs:
 	jelly_username: str = ""
 	jelly_password: str = ""
 	jelly_server_url: str = "http://localhost:8096"
-	jelly_timeout: int = 300 # Make configurable in case user has a large/slow setup
+	jelly_timeout: int = 300  # Make configurable in case user has a large/slow setup
 
 	auto_lyrics_checked: list = field(default_factory=list)
 
@@ -327,7 +328,7 @@ class Prefs:
 	autoscan_playlist_folder: bool = False
 	playlist_folder_path: str = ""
 
-	synced_lyrics_editor_track_end_mode: Literal["stop","autosave","full save","repeat"] = "repeat"
+	synced_lyrics_editor_track_end_mode: Literal["stop", "autosave", "full save", "repeat"] = "repeat"
 	save_lyrics_changes_to_files: bool = False
 
 	sep_genre_multi: bool = False
