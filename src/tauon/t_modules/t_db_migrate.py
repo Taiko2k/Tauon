@@ -12,6 +12,7 @@ from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, Tau
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, Tauon, TrackClass
 
+
 def migrate_star_store_71(tauon: Tauon) -> None:
 	import pickle  # noqa: PLC0415
 
@@ -25,9 +26,7 @@ def migrate_star_store_71(tauon: Tauon) -> None:
 	old_record: list[int | str] = []  # Here just for typing
 	for key, old_record in tauon.star_store.db.items():
 		if isinstance(old_record, StarRecord):
-			logging.warning(
-				f"Record {old_record} was already a StarRecord, skipping this migration over…"
-			)
+			logging.warning(f"Record {old_record} was already a StarRecord, skipping this migration over…")
 			break
 		new_record = StarRecord()
 		new_record.playtime = old_record[0]

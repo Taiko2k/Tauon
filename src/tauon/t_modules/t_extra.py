@@ -149,9 +149,7 @@ class TauonPlaylist:
 	hide_title: bool  # hide playlist folder titles (bool)
 	selected: int
 	uuid_int: int
-	last_folder: list[
-		str
-	]  # last folder import paths
+	last_folder: list[str]  # last folder import paths
 	hidden: bool
 	locked: bool
 	parent_playlist_id: int  # Filter parent playlist id
@@ -550,28 +548,29 @@ def get_filesize_string_rounded(file_bytes: int) -> str:
 		line = str(file_mb) + _(" MB")
 	return line
 
+
 def get_modify_date_string(modify_date: float) -> str:
 	ago = round(time.time() - modify_date)
 	if ago < 0:
 		ago_str = _("Not yet")
-	elif ago < 60: # < minute
+	elif ago < 60:  # < minute
 		ago_str = _("Now")
 	else:
 		ago = ago // 60
-		if ago < 60: # minutes
+		if ago < 60:  # minutes
 			ago_str = str(ago) + _("min")
 		else:
 			ago = ago // 60
-			if ago < 24: # hours
+			if ago < 24:  # hours
 				ago_str = str(ago) + _("hr")
 			else:
 				ago = ago // 24
-				if ago < 7: # days
+				if ago < 7:  # days
 					ago_str = str(ago) + _("dy")
-				elif ago < 31: # weeks
-					ago_str = str(ago//7) + _("wk")
-				elif ago < 90: # months. dont worry about it
-					ago_str = str(ago//30) + _("mnth")
+				elif ago < 31:  # weeks
+					ago_str = str(ago // 7) + _("wk")
+				elif ago < 90:  # months. dont worry about it
+					ago_str = str(ago // 30) + _("mnth")
 				else:
 					try:
 						modify_date = time.localtime(modify_date)
@@ -579,9 +578,9 @@ def get_modify_date_string(modify_date: float) -> str:
 						ago_str = _("Unknown")
 					else:
 						if ago < 365:
-							ago_str = time.strftime( "%d %b", modify_date)
+							ago_str = time.strftime("%d %b", modify_date)
 						else:
-							ago_str = time.strftime( "%b '%y", modify_date)
+							ago_str = time.strftime("%b '%y", modify_date)
 	return ago_str
 
 
@@ -1241,8 +1240,7 @@ class FPSCounter:
 		current_time = time.perf_counter()
 
 		# Return cached value if we updated recently
-		if (self.last_update_time is not None and
-				current_time - self.last_update_time < self.min_update_interval):
+		if self.last_update_time is not None and current_time - self.last_update_time < self.min_update_interval:
 			return self.cached_fps
 
 		# Calculate new FPS value

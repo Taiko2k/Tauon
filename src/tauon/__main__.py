@@ -34,7 +34,9 @@ sys.path.insert(0, str(install_directory.parent))
 from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
 from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler  # noqa: E402
 
-pyinstaller_mode = bool(hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal"))
+pyinstaller_mode = bool(
+	hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal")
+)
 
 log = LogHistoryHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
@@ -46,7 +48,7 @@ logging.basicConfig(
 	handlers=[
 		logging.StreamHandler(),
 		log,
-#		logging.FileHandler('/tmp/tauon.log'),
+		# logging.FileHandler('/tmp/tauon.log'),
 	],
 )
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
@@ -55,13 +57,14 @@ logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 logging.captureWarnings(capture=True)
 if not sys.warnoptions:
 	import warnings
+
 	warnings.simplefilter("default")
-	os.environ["PYTHONWARNINGS"] = "default" # Also affect subprocesses
+	os.environ["PYTHONWARNINGS"] = "default"  # Also affect subprocesses
 
 if sys.platform != "win32":
 	import fcntl
 
-n_version = "9.1.0" # Should also be bumped in pyproject.toml, extra/*.appdata.xml
+n_version = "9.1.0"  # Should also be bumped in pyproject.toml, extra/*.appdata.xml
 t_version = "v" + n_version
 t_title = "Tauon"
 t_id = "tauonmb"
@@ -72,11 +75,14 @@ logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
 
 logging.info(f"Started with arguments: {sys.argv}")
 
+
 def open_discord() -> None:
 	webbrowser.open("https://discord.gg/v4EmhES")
 
+
 def open_github() -> None:
 	webbrowser.open("https://github.com/Taiko2k/Tauon/issues")
+
 
 def open_crash_log(path: Path) -> None:
 	try:
@@ -89,14 +95,18 @@ def open_crash_log(path: Path) -> None:
 	except Exception:
 		webbrowser.open(path.as_uri())
 
+
 def main() -> None:
 	"""Launch Tauon by means of importing t_main.py"""
 	from tauon.t_modules.t_main import main as t_main
+
 	t_main(holder)
+
 
 def transfer_args_and_exit() -> None:
 	"""Early arg processing"""
 	import urllib.request
+
 	base = "http://localhost:7813/"
 
 	if len(sys.argv) <= 1:
@@ -104,9 +114,14 @@ def transfer_args_and_exit() -> None:
 		urllib.request.urlopen(url)
 
 	for item in sys.argv:
-
-		if not item.endswith(".py") and not item.startswith("-") and not item.endswith("exe") and (item.startswith("file://") or Path(item).exists()):
+		if (
+			not item.endswith(".py")
+			and not item.startswith("-")
+			and not item.endswith("exe")
+			and (item.startswith("file://") or Path(item).exists())
+		):
 			import base64
+
 			url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
 			urllib.request.urlopen(url)
 		if item == "--play-pause":
@@ -141,7 +156,10 @@ if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
 # If we're installed, use home data locations
-install_mode = bool(str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")) or sys.platform in ("darwin", "win32"))
+install_mode = bool(
+	str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/"))
+	or sys.platform in ("darwin", "win32")
+)
 
 # Assume that it's a classic Linux install, use standard paths
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
@@ -157,13 +175,13 @@ if (install_directory / "portable").is_file():
 
 # Handle regular install, running from a directory and finally a portable install, usually a venv
 if install_mode:
-#	logging.info("Running in installed mode")
+	# logging.info("Running in installed mode")
 	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 elif install_directory.parent.name == "src":
-#	logging.info("Running in portable mode from cloned dir")
+	# logging.info("Running in portable mode from cloned dir")
 	user_directory = install_directory.parent.parent / "user-data"
 else:
-#	logging.info("Running in portable mode")
+	# logging.info("Running in portable mode")
 	user_directory = install_directory / "user-data"
 
 debug = bool((user_directory / "debug").is_file())
@@ -209,7 +227,7 @@ else:
 			# TODO(Martin): Silent crash
 			transfer_args_and_exit()
 	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts") #"C:\\msys64\\mingw64\\etc\\fonts"
+		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts")  # "C:\\msys64\\mingw64\\etc\\fonts"
 
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
@@ -219,7 +237,7 @@ if d in ["GNOME:Phosh"]:
 
 os.environ["SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"] = "0"  # emergency crash workaround
 
-if pyinstaller_mode: # and sys.platform == 'darwin':
+if pyinstaller_mode:  # and sys.platform == 'darwin':
 	os.environ["SDL_BINARY_PATH"] = str(install_directory)
 
 fs_mode = False
@@ -271,7 +289,9 @@ import sdl3  # noqa: E402
 # Test the first SetHint to catch if we loaded SDL3 correctly
 sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
 if sethint_result is None:
-	logging.error("Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround")
+	logging.error(
+		"Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround"
+	)
 	sys.exit(1)
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
@@ -286,8 +306,8 @@ if phone:
 	w = 720
 	h = 1800
 window_default_size: tuple[int, int] = (w, h)
-window_size:         list[int] = [w, h]
-logical_size:        list[int] = [w, h]
+window_size: list[int] = [w, h]
+logical_size: list[int] = [w, h]
 window_opacity = 1
 scale = 1
 if sys.platform == "darwin":
@@ -296,7 +316,7 @@ if phone:
 	scale = 1.3
 
 maximized = False
-old_window_position: tuple [int, int] | None = None
+old_window_position: tuple[int, int] | None = None
 
 window_p = user_directory / "window.p"
 if window_p.is_file() and not fs_mode:
@@ -347,8 +367,11 @@ err = sdl3.SDL_GetError()
 if err and "GLX" in err.decode():
 	logging.error(f"SDL init error: {err.decode()}")
 	sdl3.SDL_ShowSimpleMessageBox(
-		sdl3.SDL_MESSAGEBOX_ERROR, b"Tauon Music Box failed to start :(",
-		b"Error: " + err + b".\n If you're using Flatpak, try running `$ flatpak update`", None)
+		sdl3.SDL_MESSAGEBOX_ERROR,
+		b"Tauon Music Box failed to start :(",
+		b"Error: " + err + b".\n If you're using Flatpak, try running `$ flatpak update`",
+		None,
+	)
 	sys.exit(1)
 
 window_title = t_title
@@ -376,8 +399,10 @@ if "--tray" in sys.argv:
 t_window = sdl3.SDL_CreateWindow(  # TODO(Taiko): use SDL_CreateWindowAndRenderer()
 	window_title,
 	# o_x, o_y,
-	logical_size[0], logical_size[1],
-	flags)
+	logical_size[0],
+	logical_size[1],
+	flags,
+)
 
 if not t_window:
 	logging.error("ERROR CREATING WINDOW!")
@@ -392,18 +417,20 @@ if not t_window:
 	if sdl_err and sdl_err.decode() == "x11 not available":
 		x11_path = user_directory / "x11"
 		if x11_path.exists():
-			logging.critical("Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034")
+			logging.critical(
+				"Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034"
+			)
 			x11_path.unlink()
 			# TODO(Martin): This does not seem to work on SDL3, it attempts to relaunch under x11 again
-			#os.environ["SDL_VIDEODRIVER"] = "wayland"
-			#t_window = sdl3.SDL_CreateWindow(
-			#	window_title,
-			#	o_x, o_y,
-			#	logical_size[0], logical_size[1],
-			#	flags)
-			#if not t_window:
-			#	logging.error(f"Failed to create Wayland fallback window - SDL Error: {sdl3.SDL_GetError()}")
-			#	sys.exit(1)
+			# os.environ["SDL_VIDEODRIVER"] = "wayland"
+			# t_window = sdl3.SDL_CreateWindow(
+			# 	window_title,
+			# 	o_x, o_y,
+			# 	logical_size[0], logical_size[1],
+			# 	flags)
+			# if not t_window:
+			# 	logging.error(f"Failed to create Wayland fallback window - SDL Error: {sdl3.SDL_GetError()}")
+			# 	sys.exit(1)
 			sys.exit(1)
 		else:
 			logging.critical(f"Failed to find {x11_path} but got 'x11 not available' error, hm?")
@@ -443,7 +470,9 @@ sdl3.SDL_RenderClear(renderer)
 
 logging.info(f"SDL window system: {sdl3.SDL_GetCurrentVideoDriver().decode()}")
 
-sdl3.SDL_SetRenderVSync(renderer, 1) # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
+sdl3.SDL_SetRenderVSync(
+	renderer, 1
+)  # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
 
 i_x = pointer(c_int(0))
 i_y = pointer(c_int(0))
@@ -477,8 +506,6 @@ w = i_x.value
 h = i_y.value
 rect = sdl3.SDL_FRect(window_size[0] // 2 - w // 2, window_size[1] // 2 - h // 2, w, h)
 sdl3.SDL_RenderTexture(renderer, texture, None, rect)
-
-
 
 
 sdl3.SDL_RenderPresent(renderer)

@@ -462,7 +462,9 @@ class SpotCtl:
 
 		self.preparing_spotify = False
 
-	def play_target(self, id: int | str, force_new_device: bool = False, start_time: int | None = 0, start_callback=None) -> None:
+	def play_target(
+		self, id: int | str, force_new_device: bool = False, start_time: int | None = 0, start_callback=None
+	) -> None:
 		start_time = None if not start_time else int(start_time * 1000)
 
 		self.coasting = False

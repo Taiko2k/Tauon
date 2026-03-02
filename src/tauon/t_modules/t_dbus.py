@@ -42,11 +42,11 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon
 
-class MPRIS(dbus.service.Object):
 
+class MPRIS(dbus.service.Object):
 	def __init__(self, object_path: str, tauon: Tauon) -> None:
-		self.tauon:    Tauon = tauon
-		self.gui:     GuiVar = tauon.gui
+		self.tauon: Tauon = tauon
+		self.gui: GuiVar = tauon.gui
 		self.pctl: PlayerCtl = tauon.pctl
 		bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
 		self.bus_name = dbus.service.BusName("org.mpris.MediaPlayer2.tauon", bus)  # This object must be kept alive
@@ -161,18 +161,12 @@ class MPRIS(dbus.service.Object):
 			self.player_properties["Metadata"] = dbus.Dictionary(d, signature="sv")
 			changed["Metadata"] = self.player_properties["Metadata"]
 
-			if (
-				self.pctl.playing_state == PlayingState.URL_STREAM
-				and self.player_properties["CanPause"] is True
-			):
+			if self.pctl.playing_state == PlayingState.URL_STREAM and self.player_properties["CanPause"] is True:
 				self.player_properties["CanPause"] = False
 				self.player_properties["CanSeek"] = False
 				changed["CanPause"] = self.player_properties["CanPause"]
 				changed["CanSeek"] = self.player_properties["CanSeek"]
-			elif (
-				self.pctl.playing_state == PlayingState.PLAYING
-				and self.player_properties["CanPause"] is False
-			):
+			elif self.pctl.playing_state == PlayingState.PLAYING and self.player_properties["CanPause"] is False:
 				self.player_properties["CanPause"] = True
 				self.player_properties["CanSeek"] = True
 				changed["CanPause"] = self.player_properties["CanPause"]
@@ -208,9 +202,7 @@ class MPRIS(dbus.service.Object):
 
 	def update_loop(self) -> None:
 		self.player_properties["LoopStatus"] = self.get_loop_status()
-		self.PropertiesChanged(
-			"org.mpris.MediaPlayer2.Player", {"LoopStatus": self.get_loop_status()}, []
-		)
+		self.PropertiesChanged("org.mpris.MediaPlayer2.Player", {"LoopStatus": self.get_loop_status()}, [])
 
 	def get_loop_status(self) -> str:
 		if self.pctl.repeat_mode:
