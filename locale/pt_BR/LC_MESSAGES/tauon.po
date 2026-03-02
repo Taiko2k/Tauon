@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2025-12-04 13:28+0100\n"
-"PO-Revision-Date: 2026-02-26 00:09+0000\n"
+"PO-Revision-Date: 2026-03-03 16:09+0000\n"
 "Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.16.1-dev\n"
+"X-Generator: Weblate 5.17-dev\n"
 
 #: src/tauon/t_modules/t_db_migrate.py:169
 msgid ""
@@ -128,22 +128,20 @@ msgid "hr"
 msgstr "h"
 
 #: src/tauon/t_modules/t_extra.py:568
-#, fuzzy
 msgid "dy"
-msgstr "dia"
+msgstr "d"
 
 #: src/tauon/t_modules/t_extra.py:570
 msgid "wk"
-msgstr ""
+msgstr "sem."
 
 #: src/tauon/t_modules/t_extra.py:572
 msgid "mnth"
-msgstr ""
+msgstr "mês"
 
 #: src/tauon/t_modules/t_extra.py:577
-#, fuzzy
 msgid "Unknown"
-msgstr "Faixa desconhecida"
+msgstr "Desconhecida"
 
 #: src/tauon/t_modules/t_guitar_chords.py:92
 msgid "Insufficient metadata to search"
@@ -500,7 +498,6 @@ msgid "The destination and source folders are the same."
 msgstr "As pastas de destino e de origem são as mesmas."
 
 #: src/tauon/t_modules/t_main.py:7297 src/tauon/t_modules/t_main.py:9975
-#, fuzzy
 msgid "Safety interrupt! The source path seems oddly short."
 msgstr ""
 "Interrupção de segurança! O caminho de origem parece estranhamente curto."
@@ -597,19 +594,19 @@ msgstr "Mostrar letras sincronizadas"
 
 #: src/tauon/t_modules/t_main.py:7794 src/tauon/t_modules/t_main.py:7813
 msgid "Could not write lyrics to file"
-msgstr ""
+msgstr "Não foi possível escrever letras no arquivo"
 
 #: src/tauon/t_modules/t_main.py:7795
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr ""
+msgstr "Nós não sabemos como escrever letras para o tipo de arquivo: "
 
 #: src/tauon/t_modules/t_main.py:7796 src/tauon/t_modules/t_main.py:7815
 msgid "(We still saved to the internal database)"
-msgstr ""
+msgstr "(Mesmo assim foi salvo para a base de dados)"
 
 #: src/tauon/t_modules/t_main.py:7814
 msgid "File doesn't exist or is not accessible"
-msgstr ""
+msgstr "Arquivo não existe ou não está acessível"
 
 #: src/tauon/t_modules/t_main.py:7840 src/tauon/t_modules/t_main.py:21042
 msgid "Saving network images not implemented"
@@ -723,14 +720,15 @@ msgid "There are no tracks in this playlist. Nothing to export"
 msgstr "Não há faixas nessa lista de reprodução. Nada para exportar"
 
 #: src/tauon/t_modules/t_main.py:8284 src/tauon/t_modules/t_main.py:8329
-#, fuzzy
 msgid "Cannot use relative paths"
-msgstr "Usar caminhos relativos"
+msgstr "Não pode-se usar caminhos relativos"
 
 #: src/tauon/t_modules/t_main.py:8285 src/tauon/t_modules/t_main.py:8330
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
 msgstr ""
+"Uma ou mais faixas foram armazenadas em um drive separado do arquivo de "
+"playlist."
 
 #: src/tauon/t_modules/t_main.py:8380
 msgid "Playlist is locked to prevent accidental erasure"
@@ -1072,10 +1070,8 @@ msgid "The source directory is missing!"
 msgstr "O diretório de origem não encontrado!"
 
 #: src/tauon/t_modules/t_main.py:9998
-#, fuzzy
 msgid "Safety interrupt! The source folder seems to have many files."
-msgstr ""
-"Interrupção de segurança! A pasta de origem parece ter muitos arquivos."
+msgstr "Interrupção de segurança! A pasta de origem parece ter muitos arquivos."
 
 #: src/tauon/t_modules/t_main.py:10008
 msgid "The track needs to have an artist name."
@@ -1440,14 +1436,12 @@ msgid "Is CUE Sheet"
 msgstr "É folha CUE"
 
 #: src/tauon/t_modules/t_main.py:10919
-#, fuzzy
 msgid "Internal Track ID"
-msgstr "Inverter trilhas"
+msgstr "Id Internal de Trilha"
 
 #: src/tauon/t_modules/t_main.py:10920
-#, fuzzy
 msgid "File Changed"
-msgstr "Nome de arquivo"
+msgstr "Arquivo Mudou"
 
 #: src/tauon/t_modules/t_main.py:10925
 msgid "Auto Resize"
@@ -1656,7 +1650,7 @@ msgstr "Músic"
 
 #: src/tauon/t_modules/t_main.py:13446
 msgid "Url copied to clipboard"
-msgstr "URL copiado na área de transferência"
+msgstr "URL copiado para a área de transferência"
 
 #: src/tauon/t_modules/t_main.py:13471
 msgid "Looks like that's the only track in the album"
@@ -1773,9 +1767,8 @@ msgid "Starting download..."
 msgstr "Iniciando transferência..."
 
 #: src/tauon/t_modules/t_main.py:14770
-#, fuzzy
 msgid "Downloading... {MB}/{total_mb}"
-msgstr "Baixando... {N}/80MB"
+msgstr "Baixando... {MB}/{total_mb}"
 
 #: src/tauon/t_modules/t_main.py:14773
 msgid "Download failed"
@@ -1949,10 +1942,14 @@ msgstr "Acesso impossibilitado! Verifique as permissões Flatpak."
 msgid ""
 "The target will may be lost on reboot without necessary Flatpak permissions."
 msgstr ""
+"O alvo poderá ser perdido após um reinício sem as permissões Flatpak "
+"necessárias ."
 
 #: src/tauon/t_modules/t_main.py:18089
 msgid "Path may be transient! Continue? Press \"No\" for more information."
 msgstr ""
+"Caminho pode ser transitório! Continuar? Pressione \"Não\" para mais "
+"informações."
 
 #: src/tauon/t_modules/t_main.py:18268
 msgid "Stop the sync before exiting!"
@@ -1967,9 +1964,8 @@ msgid "Web server starting"
 msgstr "Servidor web iniciando"
 
 #: src/tauon/t_modules/t_main.py:18416
-#, fuzzy
 msgid "This feature requires FFMPEG. Shall I can download that for you? (92MB)"
-msgstr "Este recurso requer FFMPEG. Devo baixar isso para você? (80 MB)"
+msgstr "Este recurso requer FFMPEG. Devo baixar isso para você? (92 MB)"
 
 #: src/tauon/t_modules/t_main.py:18421
 msgid "FFMPEG could not be found"
@@ -2183,36 +2179,32 @@ msgid "with"
 msgstr "com"
 
 #: src/tauon/t_modules/t_main.py:22865
-#, fuzzy
 msgid "Import/Export Playlist"
-msgstr "Exportar Playlist"
+msgstr "Importar/Exportar Playlist"
 
 #: src/tauon/t_modules/t_main.py:22870
-#, fuzzy
 msgid "Target folder or file"
-msgstr "A cópia de pasta falhou!"
+msgstr "Pasta ou arquivo de destino"
 
 #: src/tauon/t_modules/t_main.py:22889
 msgid "Will overwrite existing file: "
-msgstr ""
+msgstr "Sobrescreverá o arquivo existente: "
 
 #: src/tauon/t_modules/t_main.py:22892
-#, fuzzy
 msgid "Will save with playlist name:"
-msgstr "Sem nome de playlist"
+msgstr "Salvará com o nome da playlist:"
 
 #: src/tauon/t_modules/t_main.py:22895
 msgid "No file extension?"
-msgstr ""
+msgstr "Sem extensão de arquivo?"
 
 #: src/tauon/t_modules/t_main.py:22899 src/tauon/t_modules/t_main.py:22902
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "Extensão incorreta?"
 
 #: src/tauon/t_modules/t_main.py:22905
-#, fuzzy
 msgid "Will create directory"
-msgstr "Salvar diretório"
+msgstr "Criará diretório"
 
 #: src/tauon/t_modules/t_main.py:22927 src/tauon/t_modules/t_main.py:22929
 msgid "Use relative paths"
@@ -2221,19 +2213,20 @@ msgstr "Usar caminhos relativos"
 #: src/tauon/t_modules/t_main.py:22932
 msgid "Enable relative paths when keeping playlist files together with audio"
 msgstr ""
+"Ativar caminhos relativos ao manter arquivos de playlist junto com os áudios"
 
 #: src/tauon/t_modules/t_main.py:22933
 msgid "Disable to move playlist files while keeping audio in one location"
 msgstr ""
+"Desativar mover arquivos de playlist quando o áudio é mantido em um só local"
 
 #: src/tauon/t_modules/t_main.py:22937
 msgid "Auto-export"
 msgstr "Auto-exportar"
 
 #: src/tauon/t_modules/t_main.py:22938
-#, fuzzy
 msgid "Auto-import"
-msgstr "Auto-exportar"
+msgstr "Auto-importar"
 
 #: src/tauon/t_modules/t_main.py:22942 src/tauon/t_modules/t_main.py:22945
 msgid "Export"
@@ -2572,7 +2565,7 @@ msgstr "Mostrar painel de info de artista"
 
 #: src/tauon/t_modules/t_main.py:24542
 msgid "You can also toggle this with ctrl+o"
-msgstr "Você pode também mudar com CTRL + o"
+msgstr "Você pode também alternar com ctrl+o"
 
 #: src/tauon/t_modules/t_main.py:24550
 msgid "Auto fetch artist data"
@@ -2583,14 +2576,12 @@ msgid "Downloads data in background when artist panel is open"
 msgstr "Baixa dados em segundo plano quando o painel estiver aberto"
 
 #: src/tauon/t_modules/t_main.py:24556
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Auto-regerar playlists"
+msgstr "Auto-reler playlists"
 
 #: src/tauon/t_modules/t_main.py:24557
-#, fuzzy
 msgid "Playlists rescan/regenerate when re-entering"
-msgstr "Playlists geradas recarregam ao reentrar"
+msgstr "Playlists recarregam/re-geram ao reentrar"
 
 #: src/tauon/t_modules/t_main.py:24561
 msgid "Tabs in top panel"
@@ -2709,27 +2700,28 @@ msgid "Change requires restart"
 msgstr "Mudanças requerem reinício"
 
 #: src/tauon/t_modules/t_main.py:24663
-#, fuzzy
 msgid "Default playlist export folder"
-msgstr "Playlist exportada"
+msgstr "Pasta padrão para exportação de playlist"
 
 #: src/tauon/t_modules/t_main.py:24684
 msgid "Also auto-import new playlists from here"
-msgstr ""
+msgstr "Também auto-importar novas playlists à partir daqui"
 
 #: src/tauon/t_modules/t_main.py:24685
-#, fuzzy
 msgid "Only runs during \"Rescan All Folders\""
-msgstr "Reexaminar todas pastas"
+msgstr "Só executa durante \"Reexaminar Todas Pastas\""
 
 #: src/tauon/t_modules/t_main.py:24689
 msgid "Save \"simple\" lyrics changes back to their original files"
 msgstr ""
+"Salvar mudanças \"simples\" de letras de volta para seus respectivos arquivos"
 
 #: src/tauon/t_modules/t_main.py:24690
 msgid ""
 "Includes search, clear, paste, etc. Manual edits will always save this way."
 msgstr ""
+"Inclue buscar, limpar, colar etc. Edições manuais sempre salvarão dessa "
+"forma."
 
 #: src/tauon/t_modules/t_main.py:24697
 msgid "Enable remote control"
@@ -3492,9 +3484,8 @@ msgid "Scanning Tags...  {N} remaining"
 msgstr "Varrendo Tags...  {N} restantes"
 
 #: src/tauon/t_modules/t_main.py:27824
-#, fuzzy
 msgid "Auto-importing playlists..."
-msgstr "Importando playlist XSPF..."
+msgstr "Auto-Importando playlist..."
 
 #: src/tauon/t_modules/t_main.py:27826
 msgid "File copy in progress..."
@@ -3545,9 +3536,8 @@ msgid "Stopping transcode..."
 msgstr "Parando transcodificação..."
 
 #: src/tauon/t_modules/t_main.py:27873
-#, fuzzy
 msgid "Uploading lyrics to LRCLIB..."
-msgstr "Carregando Lista de Artistas..."
+msgstr "Enviando letras para LRCLIB..."
 
 #: src/tauon/t_modules/t_main.py:27875
 msgid "Scanning: "
@@ -4101,7 +4091,7 @@ msgstr "Não existem mais passos para desfazer."
 
 #: src/tauon/t_modules/t_main.py:37175 src/tauon/t_modules/t_main.py:37189
 msgid "Exit Lyrics Editor"
-msgstr ""
+msgstr "Sair do Editor de Letras"
 
 #: src/tauon/t_modules/t_main.py:37176 src/tauon/t_modules/t_main.py:37190
 #: src/tauon/t_modules/t_main.py:43428 src/tauon/t_modules/t_main.py:43446
@@ -4111,78 +4101,74 @@ msgstr "Buscar por Letra"
 
 #: src/tauon/t_modules/t_main.py:37177
 msgid "Copy From Synced"
-msgstr ""
+msgstr "Copiar De Sincronizado"
 
 #: src/tauon/t_modules/t_main.py:37178 src/tauon/t_modules/t_main.py:37195
 msgid "Upload To LRCLIB"
-msgstr ""
+msgstr "Enviar para LRCLIB"
 
 #: src/tauon/t_modules/t_main.py:37191
 msgid "Copy From Unsynced"
-msgstr ""
+msgstr "Copiar De Não-sincronizado"
 
 #: src/tauon/t_modules/t_main.py:37192
 msgid "Clear All Section Markers"
-msgstr ""
+msgstr "Limpar Todos Marcadores de Seção"
 
 #: src/tauon/t_modules/t_main.py:37193
 msgid "Clear All Timestamps"
-msgstr ""
+msgstr "Limpar Todos Marcadores de Tempo"
 
 #: src/tauon/t_modules/t_main.py:37194
-#, fuzzy
 msgid "Clear All Lyrics"
-msgstr "Limpar Letra"
+msgstr "Limpar Todas Letras"
 
 #: src/tauon/t_modules/t_main.py:37197
 msgid "Backups..."
-msgstr ""
+msgstr "Backups..."
 
 #: src/tauon/t_modules/t_main.py:37198
 msgid "Load Current Backup"
-msgstr ""
+msgstr "Carregar Backup Atual"
 
 #: src/tauon/t_modules/t_main.py:37199
-#, fuzzy
 msgid "Visit Current Backup"
-msgstr "↳ Depois da Faixa Atual"
+msgstr "Visitar Backup Atual"
 
 #: src/tauon/t_modules/t_main.py:37200
-#, fuzzy
 msgid "Delete All Backups"
-msgstr "Apagar Arquivos"
+msgstr "Apagar Todos Backups"
 
 #: src/tauon/t_modules/t_main.py:37202
 msgid "When track ends..."
-msgstr ""
+msgstr "Quando a faixa termina..."
 
 #: src/tauon/t_modules/t_main.py:37209 src/tauon/t_modules/t_main.py:37211
 msgid "Stop immediately"
-msgstr ""
+msgstr "Para imediatamente"
 
 #: src/tauon/t_modules/t_main.py:37214 src/tauon/t_modules/t_main.py:37216
 msgid "Backup and continue"
-msgstr ""
+msgstr "Fazer backup e continuar"
 
 #: src/tauon/t_modules/t_main.py:37219 src/tauon/t_modules/t_main.py:37221
 msgid "Fully save and continue"
-msgstr ""
+msgstr "Salvar completamente e continuar"
 
 #: src/tauon/t_modules/t_main.py:37227
-#, fuzzy
 msgid "Save synced to .lrc"
-msgstr "Mostrar letras sincronizadas"
+msgstr "Salvamento sincronizado par a .lrc"
 
 #: src/tauon/t_modules/t_main.py:37251 src/tauon/t_modules/t_main.py:37557
 #: src/tauon/t_modules/t_main.py:37569 src/tauon/t_modules/t_main.py:37584
 #: src/tauon/t_modules/t_main.py:38283 src/tauon/t_modules/t_main.py:38301
 #: src/tauon/t_modules/t_main.py:38384
 msgid "lyrics-editor"
-msgstr ""
+msgstr "Editor de letras"
 
 #: src/tauon/t_modules/t_main.py:37261
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
+msgstr "Você colou uma pasta na pasta do editor de letras. Não faça isso."
 
 #: src/tauon/t_modules/t_main.py:37266 src/tauon/t_modules/t_main.py:37277
 #: src/tauon/t_modules/t_main.py:37414 src/tauon/t_modules/t_main.py:37454
@@ -4191,88 +4177,87 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:37733 src/tauon/t_modules/t_main.py:37767
 #: src/tauon/t_modules/t_main.py:37961
 msgid "tag"
-msgstr ""
+msgstr "tag"
 
 #: src/tauon/t_modules/t_main.py:37312
 msgid "Be careful!"
-msgstr ""
+msgstr "Seja cuidadoso!"
 
 #: src/tauon/t_modules/t_main.py:37313
 msgid ""
 "A file's metadata can only store ONE type of lyrics data, synced or static, "
 "at a time."
 msgstr ""
+"Metadados de um arquivo pode somente armazenar um tipo de dados de letras, "
+"sincronizado ou estático, por vez."
 
 #: src/tauon/t_modules/t_main.py:37314
 msgid ""
 "Saving one type will now OVERWRITE the other in the files. (Tauon itself "
 "doesn't care.)"
 msgstr ""
+"Salvando um tipo sobrescreverá agora os outros nos arquivos. (Tauon não dá a "
+"mínima.)"
 
 #: src/tauon/t_modules/t_main.py:37475
 msgid "Lyrics will misbehave if only some of them are timed."
-msgstr ""
+msgstr "Letras se comportarão mal se somente algumas delas forem temporizadas."
 
 #: src/tauon/t_modules/t_main.py:37476
 msgid "You can time all of them or none of them, either will work."
-msgstr ""
+msgstr "Você pode cronometrar todos ou nenhum deles, ambos funcionarão."
 
 #: src/tauon/t_modules/t_main.py:37477 src/tauon/t_modules/t_main.py:37487
-#, fuzzy
 msgid "Alternatively, save again while holding Alt to override."
-msgstr "Tente novamente pressionando Shift para forçar a exclusão."
+msgstr "Alternativamente, salve novamente segurando Alt para sobrescrever."
 
 #: src/tauon/t_modules/t_main.py:37485
 msgid "Lyrics might misbehave if their timestamps are out of order."
-msgstr ""
+msgstr "Letras podem se mal comportar se seus tempos estiverem fora de ordem."
 
 #: src/tauon/t_modules/t_main.py:37486
 msgid "Please make sure all timestamps are ordered correctly."
-msgstr ""
+msgstr "Certifique-se que todos tempos estão ordenados corretamente."
 
 #: src/tauon/t_modules/t_main.py:37501 src/tauon/t_modules/t_main.py:37507
 msgid "Synced lyrics saved successfully"
-msgstr ""
+msgstr "Letras sincronizadas salvas com sucesso"
 
 #: src/tauon/t_modules/t_main.py:37502 src/tauon/t_modules/t_main.py:37520
 msgid "Destroyed previously existing lyrics in file"
-msgstr ""
+msgstr "Destruiu arquivos de letras existentes anteriores"
 
 #: src/tauon/t_modules/t_main.py:37519 src/tauon/t_modules/t_main.py:37525
 msgid "Unsynced lyrics saved successfully"
-msgstr ""
+msgstr "Letras dessincronizadas salvas com sucesso"
 
 #: src/tauon/t_modules/t_main.py:37589
-#, fuzzy
 msgid "Backup file does not exist"
-msgstr "Diretório não existe"
+msgstr "Arquivo de backup não exite"
 
 #: src/tauon/t_modules/t_main.py:37597
 msgid "Put the lyrics in this file."
-msgstr ""
+msgstr "Coloque as letras neste arquivo."
 
 #: src/tauon/t_modules/t_main.py:37768
 msgid "Teleport to timestamp"
-msgstr ""
+msgstr "Teleportar para o tempo"
 
 #: src/tauon/t_modules/t_main.py:37775
-#, fuzzy
 msgid "Delete timestamp"
-msgstr "Apagar Arquivos"
+msgstr "Apagar carimbo de data"
 
 #: src/tauon/t_modules/t_main.py:37781
 msgid "Timestamp unknown"
-msgstr ""
+msgstr "Tempo desconhecido"
 
 #: src/tauon/t_modules/t_main.py:37827
-#, fuzzy
 msgid "Delete line"
-msgstr "Apagar Arquivos"
+msgstr "Apagar linha"
 
 #: src/tauon/t_modules/t_main.py:37840
-#, fuzzy
 msgid "Add line"
-msgstr "Adicionar Estação"
+msgstr "Adicionar linha"
 
 #: src/tauon/t_modules/t_main.py:38134 src/tauon/t_modules/t_main.py:38195
 #: src/tauon/t_modules/t_main.py:43481
@@ -4282,52 +4267,48 @@ msgstr "Anterior"
 #: src/tauon/t_modules/t_main.py:38135 src/tauon/t_modules/t_main.py:38202
 #: src/tauon/t_modules/t_main.py:38203
 msgid "CURRENT"
-msgstr ""
+msgstr "ATUAL"
 
 #: src/tauon/t_modules/t_main.py:38135 src/tauon/t_modules/t_main.py:38205
 #: src/tauon/t_modules/t_main.py:38206
 msgid "ADD TIME"
-msgstr ""
+msgstr "ADICIONAR TEMPO"
 
 #: src/tauon/t_modules/t_main.py:38135 src/tauon/t_modules/t_main.py:38208
 #: src/tauon/t_modules/t_main.py:38209
 msgid "TIME"
-msgstr ""
+msgstr "TEMPO"
 
 #: src/tauon/t_modules/t_main.py:38136 src/tauon/t_modules/t_main.py:38173
 #: src/tauon/t_modules/t_main.py:38371 src/tauon/t_modules/t_main.py:38395
 msgid "SAVE"
-msgstr ""
+msgstr "SALVAR"
 
 #: src/tauon/t_modules/t_main.py:38137 src/tauon/t_modules/t_main.py:38179
 #: src/tauon/t_modules/t_main.py:38372 src/tauon/t_modules/t_main.py:38401
-#, fuzzy
 msgid "Discard"
-msgstr "Disco"
+msgstr "Discartar"
 
 #: src/tauon/t_modules/t_main.py:38229
-#, fuzzy
 msgid "Errored"
-msgstr "Erro"
+msgstr "Com erro"
 
 #: src/tauon/t_modules/t_main.py:38242 src/tauon/t_modules/t_main.py:38244
 #: src/tauon/t_modules/t_main.py:38424 src/tauon/t_modules/t_main.py:38426
-#, fuzzy
 msgid "Failed"
-msgstr "Falha de Carregamento"
+msgstr "Falhou"
 
 #: src/tauon/t_modules/t_main.py:38290 src/tauon/t_modules/t_main.py:38305
 msgid "Put the lyrics in this file and save it."
-msgstr ""
+msgstr "Colocar as letras no arquivo e salvá-lo."
 
 #: src/tauon/t_modules/t_main.py:38368 src/tauon/t_modules/t_main.py:38412
-#, fuzzy
 msgid "Edit Lyrics"
-msgstr "Ocultar Letra"
+msgstr "Editar Letras"
 
 #: src/tauon/t_modules/t_main.py:38369 src/tauon/t_modules/t_main.py:38459
 msgid "Read Back"
-msgstr ""
+msgstr "Reler"
 
 #: src/tauon/t_modules/t_main.py:38370 src/tauon/t_modules/t_main.py:38462
 #: src/tauon/t_modules/t_main.py:38697 src/tauon/t_modules/t_main.py:38732
@@ -4337,55 +4318,57 @@ msgstr "Cancelar"
 
 #: src/tauon/t_modules/t_main.py:38373 src/tauon/t_modules/t_main.py:38469
 msgid "Reopen Editor"
-msgstr ""
+msgstr "Reabrir Editor"
 
 #: src/tauon/t_modules/t_main.py:38412
 msgid "Opens an external editor."
-msgstr ""
+msgstr "Abrir um editor externo."
 
 #: src/tauon/t_modules/t_main.py:38437 src/tauon/t_modules/t_main.py:38455
 msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
 msgstr ""
+"Edite as letras abertas no seu editor de texto, então salve o arquivo e "
+"clique \"Reler.\""
 
 #: src/tauon/t_modules/t_main.py:38459
 msgid "Make sure to save your changes."
-msgstr ""
+msgstr "Certifique-se de salvar suas alterações."
 
 #: src/tauon/t_modules/t_main.py:38462 src/tauon/t_modules/t_main.py:38732
-#, fuzzy
 msgid "Delete the file."
-msgstr "Apagar Arquivo de Imagem"
+msgstr "Apagar o arquivo."
 
 #: src/tauon/t_modules/t_main.py:38469
 msgid "In case you closed it by accident."
-msgstr ""
+msgstr "Em caso de você ter fechado por acidente."
 
 #: src/tauon/t_modules/t_main.py:38667 src/tauon/t_modules/t_main.py:38693
 msgid "Upload lyrics for {artist} - {title}?"
-msgstr ""
+msgstr "Enviar letras para {artist} - {title}?"
 
 #: src/tauon/t_modules/t_main.py:38696 src/tauon/t_modules/t_main.py:38702
-#, fuzzy
 msgid "Synced"
-msgstr "Sincr..."
+msgstr "Sincrcronizado"
 
 #: src/tauon/t_modules/t_main.py:38715
 msgid "Lyrics must be formatted correctly"
-msgstr ""
+msgstr "Letras tem de estar formatadas corretamente"
 
 #: src/tauon/t_modules/t_main.py:38716
 msgid "Your synced lyrics are either out of order or not fully timed."
 msgstr ""
+"As suas letras sincronizados ou estão fora de ordem, ou não completamente "
+"temporizadas."
 
 #: src/tauon/t_modules/t_main.py:38717
 msgid "We cannot upload broken lyrics to LRCLIB."
-msgstr ""
+msgstr "Não podemos enviar letras quebradas para LRCLIB."
 
 #: src/tauon/t_modules/t_main.py:38722
 msgid "Unsynced"
-msgstr ""
+msgstr "Não sincronizado"
 
 #: src/tauon/t_modules/t_main.py:38724 src/tauon/t_modules/t_main.py:43530
 #: src/tauon/t_modules/t_main.py:43532
@@ -4402,27 +4385,27 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:40946
 msgid "Files missing or inaccessible"
-msgstr ""
+msgstr "Arquivos não exitem ou inacessíveis"
 
 #: src/tauon/t_modules/t_main.py:40947
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
+msgstr "Se você estiver usando Flatpak, você provavelmente deveria seguir isso:"
 
 #: src/tauon/t_modules/t_main.py:40955
 msgid "Bad permissions"
-msgstr ""
+msgstr "Permissões ruins"
 
 #: src/tauon/t_modules/t_main.py:40956
 msgid "We don't have permissions to access {file}"
-msgstr ""
+msgstr "Nós não temos permissões para acessar {file}"
 
 #: src/tauon/t_modules/t_main.py:40964
 msgid "Can't import that"
-msgstr ""
+msgstr "Não consigo importar isso"
 
 #: src/tauon/t_modules/t_main.py:40965
 msgid "We can't import the file {path} and we're not sure why."
-msgstr ""
+msgstr "Nós não podemos importar o arquivo {path} e não sabemos porquê."
 
 #: src/tauon/t_modules/t_main.py:41002
 msgid "You attempted to drop an archive."
@@ -4481,17 +4464,16 @@ msgid "Permission error accessing one or more files"
 msgstr "Erro de permissão acessando um ou mais arquivos"
 
 #: src/tauon/t_modules/t_main.py:41271
-#, fuzzy
 msgid "The following file is missing:"
-msgstr "Uma ou mais pastas estão faltando"
+msgstr "O seguinte arquivo está faltando:"
 
 #: src/tauon/t_modules/t_main.py:41280
 msgid "We don't have the proper permissions to run the file:"
-msgstr ""
+msgstr "Nós não temos a permissões apropriadas para abrir o arquivo:"
 
 #: src/tauon/t_modules/t_main.py:41289
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
+msgstr "Nós não podemos enviar suas letras, e não sabermos porquê."
 
 #: src/tauon/t_modules/t_main.py:41415
 msgid "Folder copy error."
@@ -4676,9 +4658,8 @@ msgid "Toggle Lyrics"
 msgstr "Alternar Letras"
 
 #: src/tauon/t_modules/t_main.py:43436 src/tauon/t_modules/t_main.py:43449
-#, fuzzy
 msgid "Lyrics Editor"
-msgstr "Letra"
+msgstr "Editor de Letras"
 
 #: src/tauon/t_modules/t_main.py:43437 src/tauon/t_modules/t_main.py:43451
 #: src/tauon/t_modules/t_main.py:43563
@@ -4793,9 +4774,8 @@ msgid "Append Playing"
 msgstr "Acrescentar Tocando"
 
 #: src/tauon/t_modules/t_main.py:43561
-#, fuzzy
 msgid "Import/export…"
-msgstr "Importar Spotify…"
+msgstr "Importar/exportar…"
 
 #: src/tauon/t_modules/t_main.py:43564
 msgid "Export Playlist Stats"
@@ -5064,7 +5044,6 @@ msgid "Export as CSV"
 msgstr "Exportar como CSV"
 
 #: src/tauon/t_modules/t_main.py:43926
-#, fuzzy
 msgid "Reload All Folders"
 msgstr "Reexaminar todas pastas"
 
@@ -5181,9 +5160,8 @@ msgid "Start Spotify Remote"
 msgstr "Iniciar Spotify Remoto"
 
 #: src/tauon/t_modules/t_main.py:44046
-#, fuzzy
 msgid "Synced Lyrics Editor"
-msgstr "Mostrar letras sincronizadas"
+msgstr "Mostrar Letras Sincronizadas"
 
 #: src/tauon/t_modules/t_main.py:44050
 msgid "Disengage Quick Add"
