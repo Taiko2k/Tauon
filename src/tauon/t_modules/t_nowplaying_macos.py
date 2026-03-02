@@ -4,9 +4,11 @@ import json
 import logging
 import subprocess
 import threading
-from pathlib import Path
-from typing import Any
-from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+	from collections.abc import Callable
+	from pathlib import Path
 
 
 class MacNowPlayingHelper:

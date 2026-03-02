@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import copy
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import GuiVar, Prefs, StarStore, Tauon, TrackClass
+	from pathlib import Path
+
+	from tauon.t_modules.t_main import GuiVar, Prefs, Tauon, TrackClass
 
 
 def migrate_star_store_71(tauon: Tauon) -> None:

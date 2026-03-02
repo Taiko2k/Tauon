@@ -36,6 +36,7 @@ from tauon.t_modules.t_extra import StarRecord
 
 if TYPE_CHECKING:
 	from io import BytesIO
+	from typing import Any
 
 	from tauon.t_modules.t_main import AlbumStarStore, GuiVar, PlayerCtl, StarStore, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
@@ -138,14 +139,14 @@ class SubsonicService:
 			logging.exception("Error connecting for scrobble on airsonic")
 		return True
 
-	def set_rating(self, track_object: TrackClass, rating) -> bool:
+	def set_rating(self, track_object: TrackClass, rating: int) -> bool:
 		try:
 			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
 		except Exception:
 			logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def set_album_rating(self, track_object: TrackClass, rating) -> bool:
+	def set_album_rating(self, track_object: TrackClass, rating: int) -> bool:
 		id = track_object.misc.get("subsonic-folder-id")
 		if id is not None:
 			try:
