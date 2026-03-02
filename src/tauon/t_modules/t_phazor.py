@@ -180,7 +180,7 @@ class LibreSpot:
 
 class FFRun:
 	def __init__(self, tauon: Tauon) -> None:
-		self.tauon = tauon
+		self.tauon: Tauon = tauon
 		self.decoder = None
 
 	def close(self) -> None:
@@ -200,10 +200,11 @@ class FFRun:
 
 	def start(self, uri: bytes, start_ms: int, samplerate: int) -> int:
 		self.close()
-		path = str(self.tauon.get_ffmpeg())
-		if not path:
+		ffmpeg_path = self.tauon.get_ffmpeg()
+		if ffmpeg_path is None:
 			self.tauon.test_ffmpeg()
 			return 1
+		path = str(ffmpeg_path)
 		cmd = [path]
 		cmd += ["-loglevel", "quiet"]
 		if start_ms > 0:
@@ -216,7 +217,7 @@ class FFRun:
 		try:
 			self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
 		except Exception:
-			logging.exception("Failed to start ffmpeg")
+			logging.exception("Failed to start FFmpeg")
 			return 1
 		return 0
 

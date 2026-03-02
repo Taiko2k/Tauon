@@ -734,7 +734,7 @@ openmpt_module* mod = 0;
 
 Music_Emu* emu;
 
-// FFMPEG related -----------------------------------------------------
+// FFmpeg related -----------------------------------------------------
 
 FILE *ffm;
 char exe_string[4096];
@@ -749,12 +749,12 @@ void start_ffmpeg(char uri[], int start_ms) {
 	int status = 0;
 	if (ff_start != NULL) status = ff_start(uri, start_ms, sample_rate_out);
 	else {
-		log_msg(LOG_ERROR, "pa: FFMPEG callback is NULL");
+		log_msg(LOG_ERROR, "pa: FFmpeg callback is NULL");
 		return;
 	}
 
 	if (status != 0) {
-		log_msg(LOG_ERROR, "pa: Error starting FFMPEG");
+		log_msg(LOG_ERROR, "pa: Error starting FFmpeg");
 		return;
 	}
 
@@ -2405,7 +2405,7 @@ int load_next() {
 
 	if (codec == UNKNOWN || config_always_ffmpeg == 1) {
 		codec = FFMPEG;
-		log_msg(LOG_INFO, "pa: Decode using FFMPEG\n");
+		log_msg(LOG_INFO, "pa: Decode using FFmpeg\n");
 	}
 
 	// Start decoders
@@ -2974,7 +2974,7 @@ void pump_decode() {
 		int b = 0;
 		if (ff_read != NULL) b = ff_read(ffm_buffer, 2048);
 		else {
-			log_msg(LOG_WARNING, "pa: FFMPEG read callback is NULL");
+			log_msg(LOG_WARNING, "pa: FFmpeg read callback is NULL");
 			decoder_eos();
 			return;
 		}
@@ -2989,7 +2989,7 @@ void pump_decode() {
 		read_to_buffer_char16(ffm_buffer, b);
 		pthread_mutex_unlock(&buffer_mutex);
 		if (b == 0) {
-			log_msg(LOG_INFO, "pa: FFMPEG has finished");
+			log_msg(LOG_INFO, "pa: FFmpeg has finished");
 			decoder_eos();
 		}
 	}
