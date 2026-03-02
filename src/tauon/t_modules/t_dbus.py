@@ -301,7 +301,7 @@ class MPRIS(dbus.service.Object):
 		self.pctl.seek_time(self.pctl.playing_time + (offset / 1000000))
 
 	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
-	def SetPosition(self, id: int, position: str) -> None:
+	def SetPosition(self, id: str, position: int) -> None:
 		self.pctl.seek_time(position / 1000000)
 
 		self.player_properties["Position"] = dbus.Int64(int(position))
