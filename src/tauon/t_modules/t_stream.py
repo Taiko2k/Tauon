@@ -245,7 +245,7 @@ class StreamEnc:
 		try:
 			ffmpeg_path = self.tauon.get_ffmpeg()
 			if ffmpeg_path is None:
-				logging.error("FFMPEG could not be found for stream encoder")
+				logging.error("FFmpeg could not be found for stream encoder")
 				self.encode_running = False
 				return
 
