@@ -837,7 +837,9 @@ class Ape(TrackFile):
 				if len(header) != 28:
 					logging.info("WARNING: TTA2 header is incomplete")
 				else:
-					_channels, bps, sample_rate, _channel_mask, total_samples, _data_size = struct.unpack("<HHIIQQ", header)
+					_channels, bps, sample_rate, _channel_mask, total_samples, _data_size = struct.unpack(
+						"<HHIIQQ", header
+					)
 					if sample_rate > 0:
 						self.sample_rate = sample_rate
 					self.bit_depth = bps
@@ -1151,7 +1153,7 @@ class M4a(TrackFile):
 			if name == b"":
 				return False
 
-			#logging.info(f"NAME: {tail}{b'.'}{name}")
+			# logging.info(f"NAME: {tail}{b'.'}{name}")
 
 			# Too lazy to parse each sub atom, lets just grab the data out the sub atom and
 			# hope the file is formatted normally

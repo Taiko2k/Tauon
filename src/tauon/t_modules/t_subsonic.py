@@ -36,12 +36,13 @@ from tauon.t_modules.t_extra import StarRecord
 
 if TYPE_CHECKING:
 	from io import BytesIO
+	from typing import Any
 
 	from tauon.t_modules.t_main import AlbumStarStore, GuiVar, PlayerCtl, StarStore, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
 
-class SubsonicService:
 
+class SubsonicService:
 	def __init__(self, tauon: Tauon, album_star_store: AlbumStarStore) -> None:
 		self.tauon: Tauon = tauon
 		self.gui: GuiVar = tauon.gui
@@ -50,9 +51,9 @@ class SubsonicService:
 		self.t_title: str = tauon.t_title
 		self.star_store: StarStore = tauon.star_store
 		self.album_star_store: AlbumStarStore = album_star_store
-		self.show_message     = tauon.show_message
-		self.playlists        = tauon.prefs.subsonic_playlists
-		self.scanning: bool= False
+		self.show_message = tauon.show_message
+		self.playlists = tauon.prefs.subsonic_playlists
+		self.scanning: bool = False
 
 	def r(self, point: str, p: dict[str, str] | None = None, binary: bool = False, get_url: bool = False):
 		salt = secrets.token_hex(8)
@@ -122,7 +123,7 @@ class SubsonicService:
 
 		return io.BytesIO(response)
 
-	def resolve_stream(self, key: str) -> (tuple[str, dict[str, str]] | bytes | Any | None):
+	def resolve_stream(self, key: str) -> tuple[str, dict[str, str]] | bytes | Any | None:
 		p = {"id": key}
 		if self.prefs.network_stream_bitrate > 0:
 			p["maxBitRate"] = self.prefs.network_stream_bitrate
@@ -138,14 +139,14 @@ class SubsonicService:
 			logging.exception("Error connecting for scrobble on airsonic")
 		return True
 
-	def set_rating(self, track_object: TrackClass, rating) -> bool:
+	def set_rating(self, track_object: TrackClass, rating: int) -> bool:
 		try:
 			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
 		except Exception:
 			logging.exception("Error connect for set rating on airsonic")
 		return True
 
-	def set_album_rating(self, track_object: TrackClass, rating) -> bool:
+	def set_album_rating(self, track_object: TrackClass, rating: int) -> bool:
 		id = track_object.misc.get("subsonic-folder-id")
 		if id is not None:
 			try:
@@ -158,14 +159,14 @@ class SubsonicService:
 		try:
 			a = self.r("star", p={"id": track_object.url_key})
 		except Exception:
-			logging.exception('Error connect for star track on airsonic')
+			logging.exception("Error connect for star track on airsonic")
 		return True
 
 	def unstar_track(self, track_object: TrackClass) -> bool:
 		try:
 			a = self.r("unstar", p={"id": track_object.url_key})
 		except Exception:
-			logging.exception('Error connect for unstar track on airsonic')
+			logging.exception("Error connect for unstar track on airsonic")
 		return True
 
 	def star_album(self, track_object: TrackClass) -> bool:
@@ -205,11 +206,17 @@ class SubsonicService:
 			self.scanning = False
 			if "error" in a["subsonic-response"]:
 				logging.debug(a["subsonic-response"])
-				self.show_message(_("Error connecting to Airsonic server"), f'{a["subsonic-response"]["error"]["code"]}: {a["subsonic-response"]["error"]["message"]}', mode="error")
+				self.show_message(
+					_("Error connecting to Airsonic server"),
+					f"{a['subsonic-response']['error']['code']}: {a['subsonic-response']['error']['message']}",
+					mode="error",
+				)
 				return None
 			logging.critical("Failed to find expected key 'indexes', report a bug with the log below!")
 			logging.critical(a["subsonic-response"])
-			self.show_message(_("Error connecting to Airsonic server"), "See console log for more details", mode="error")
+			self.show_message(
+				_("Error connecting to Airsonic server"), "See console log for more details", mode="error"
+			)
 			return None
 
 		b = a["subsonic-response"]["indexes"]["index"]
@@ -219,20 +226,24 @@ class SubsonicService:
 		for letter in b:
 			artists = letter["artist"]
 			for artist in artists:
-				folders.append((
-					artist["id"],
-					artist["name"],
-				))
+				folders.append(
+					(
+						artist["id"],
+						artist["name"],
+					)
+				)
 
 		playlist: list[int] = []
 		songsets: list[tuple[TrackClass, str, str, int]] = []
 		for i in range(len(folders)):
 			songsets.append([])
 		statuses = [0] * len(folders)
-		#dupes = []
+		# dupes = []
 		liked_track_ids: list[int] = []
 
-		def getsongs(index: int, folder_id: str, name: str, inner: bool = False, parent: dict[str, str | int] | None = None) -> None:
+		def getsongs(
+			index: int, folder_id: str, name: str, inner: bool = False, parent: dict[str, str | int] | None = None
+		) -> None:
 			try:
 				d = self.r("getMusicDirectory", p={"id": folder_id})
 				if "child" not in d["subsonic-response"]["directory"]:
@@ -257,14 +268,19 @@ class SubsonicService:
 			self.gui.update = 2
 
 			for item in items:
-				#logging.debug(f"song: {item}")
+				# logging.debug(f"song: {item}")
 				if item.get("isDir"):
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
-						if self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0 and rating == 0:
+						if (
+							self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0
+							and rating == 0
+						):
 							pass
 						else:
-							self.album_star_store.set_rating_artist_title(item["artist"], item["title"], int(rating * 2))
+							self.album_star_store.set_rating_artist_title(
+								item["artist"], item["title"], int(rating * 2)
+							)
 
 					getsongs(index, item["id"], item["title"], inner=True, parent=item)
 					continue
@@ -365,7 +381,7 @@ class SubsonicService:
 				else:
 					self.star_store.set_rating(nt.index, rating * 2)
 
-		def set_favs(d:list[int]) -> None:
+		def set_favs(d: list[int]) -> None:
 			for track_id in d:
 				if track_id == 0:
 					continue
@@ -376,6 +392,7 @@ class SubsonicService:
 				if not star.loved:
 					star.loved = True
 				self.tauon.star_store.insert(track_id, star)
+
 		set_favs(liked_track_ids)
 
 		self.scanning = False

@@ -444,7 +444,9 @@ class Jellyfin:
 		else:
 			logging.error(f"Error accessing Jellyfin: [{response.status_code}] {response.reason}")
 			self.scanning = False
-			self.show_message(_("Error accessing Jellyfin"), f"[{response.status_code}] {response.reason}", mode="warning")
+			self.show_message(
+				_("Error accessing Jellyfin"), f"[{response.status_code}] {response.reason}", mode="warning"
+			)
 			return None
 
 		fav_status: dict[TrackClass, bool] = {}
