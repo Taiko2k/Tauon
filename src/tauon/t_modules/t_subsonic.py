@@ -157,16 +157,50 @@ class SubsonicService:
 
 	def star_track(self, track_object: TrackClass) -> bool:
 		try:
-			a = self.r("star", p={"id": track_object.url_key})
+			response = self.r("star", p={"id": track_object.url_key})
 		except Exception:
 			logging.exception("Error connect for star track on airsonic")
+			return False
+
+		if not response:
+			logging.error(f"Airsonic star request returned no response for track id={track_object.url_key!r}")
+			return False
+
+		subsonic_response = response.get("subsonic-response", {})
+		if subsonic_response.get("status") != "ok":
+			error = subsonic_response.get("error", {})
+			logging.error(
+				"Airsonic star request failed for track id=%r code=%r message=%r",
+				track_object.url_key,
+				error.get("code"),
+				error.get("message"),
+			)
+			return False
+
 		return True
 
 	def unstar_track(self, track_object: TrackClass) -> bool:
 		try:
-			a = self.r("unstar", p={"id": track_object.url_key})
+			response = self.r("unstar", p={"id": track_object.url_key})
 		except Exception:
 			logging.exception("Error connect for unstar track on airsonic")
+			return False
+
+		if not response:
+			logging.error(f"Airsonic unstar request returned no response for track id={track_object.url_key!r}")
+			return False
+
+		subsonic_response = response.get("subsonic-response", {})
+		if subsonic_response.get("status") != "ok":
+			error = subsonic_response.get("error", {})
+			logging.error(
+				"Airsonic unstar request failed for track id=%r code=%r message=%r",
+				track_object.url_key,
+				error.get("code"),
+				error.get("message"),
+			)
+			return False
+
 		return True
 
 	def star_album(self, track_object: TrackClass) -> bool:
