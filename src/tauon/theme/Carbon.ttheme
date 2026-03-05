@@ -3,65 +3,65 @@
 
 #-Backgrounds-----
 
-30,30,30		top panel
-16,16,16	  	tracklist panel
-15,15,15		side panel
-92,75,185		bottom panel
+30,30,30        top panel
+16,16,16        tracklist panel
+15,15,15        side panel
+92,75,185        bottom panel
 18,18,18        queue panel
 
 #-Playlist-------
 
-122,122,122		track line
-122,122,122		track time
-122,122,122		track index
-122,122,122		track artist
-122,122,122		album line
+122,122,122     track line
+122,122,122     track time
+122,122,122     track index
+122,122,122     track artist
+122,122,122     album line
 
-245,245,245		track playing
-245,245,245		index playing
-245,245,245		artist playing
-245,245,245		album playing
-245,245,245		time playing
+245,245,245     track playing
+245,245,245     index playing
+245,245,245     artist playing
+245,245,245     album playing
+245,245,245     time playing
 
-85,85,85		track missing
+85,85,85        track missing
 
-100,100,100		fav line
-40,40,40		folder line
-175,175,175		folder title
+100,100,100     fav line
+40,40,40        folder line
+175,175,175     folder title
 #8,250,134
 
-255,255,255,5		playing highlight
-255,255,255,6		select highlight
-32,178,170		gallery highlight
+255,255,255,5   playing highlight
+255,255,255,6   select highlight
+32,178,170      gallery highlight
 
 #-Bottom panel------
 
-255,255,255,130		buttons off
-255,255,255		buttons over
-255,255,255		buttons active
+255,255,255,130 buttons off
+255,255,255     buttons over
+255,255,255     buttons active
 
-255,255,255		playing time
+255,255,255     playing time
 
-255,255,255		seek bar
-255,255,255		volume bar
-255,255,255,60		seek bg
-255,255,255,60		volume bg
-40,40,40		scroll bar
+255,255,255     seek bar
+255,255,255     volume bar
+255,255,255,60  seek bg
+255,255,255,60  volume bg
+40,40,40        scroll bar
 
-255,255,255,100		mode off
-255,255,255		mode over
-255,255,255		mode on
+255,255,255,100 mode off
+255,255,255     mode over
+255,255,255     mode on
 
-255,255,255		bottom title
+255,255,255     bottom title
 
 #-Top panel---------
 
-255,255,255		tab active line
-230,230,230		tab line
-30,30,30		tab background
-40,40,40		tab over
-65,65,65		tab active background
-190,190,190		music vis
+255,255,255     tab active line
+230,230,230     tab line
+30,30,30        tab background
+40,40,40        tab over
+65,65,65        tab active background
+190,190,190     music vis
 
 #-Menu-------------
 20,20,20        menu background
@@ -71,13 +71,13 @@
 
 #-Misc--------------
 
-28,28,28		playlist background
+28,28,28        playlist background
 
 #-Side panel--------
 
-255,255,255		title info
-220,220,220		extra info
-21,21,21		art border
+255,255,255     title info
+220,220,220     extra info
+21,21,21        art border
 
 #-Mini Mode---------
 
