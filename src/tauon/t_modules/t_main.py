@@ -6924,8 +6924,8 @@ class Tauon:
 		for id in ids:
 			if id in urls:
 				radio = RadioStation(
-					stream_url=titles[id] if id in titles else urls[id],
-					title=os.path.splitext(os.path.basename(path))[0],
+					stream_url=urls[id],
+					title=titles[id] if id in titles else os.path.splitext(os.path.basename(path))[0],
 					#scroll=0, # TODO(Martin): This was here wrong as scrolling is meant to be for RadioPlaylist?
 					)
 
@@ -6981,16 +6981,22 @@ class Tauon:
 								if "location" in field.tag and field.text:
 									loc = field.text
 									loc = str(urllib.parse.unquote(loc))
+									parsed_loc = urllib.parse.urlparse(loc)
 
-									try:
-										loc = str( Path.from_uri(loc) )
-									except Exception:
-										logging.exception("Unknown error getting Path from URI")
-
-									if not Path(loc).is_absolute():
-										loc = str(Path(pl_dir / Path(loc)).resolve())
+									# Preserve remote stream URLs; only normalize filesystem paths.
+									if parsed_loc.scheme and parsed_loc.scheme != "file":
+										pass
 									else:
-										loc = str( Path(loc).resolve() )
+										if parsed_loc.scheme == "file":
+											try:
+												loc = str(Path.from_uri(loc))
+											except Exception:
+												logging.exception("Unknown error getting Path from URI")
+
+										if not Path(loc).is_absolute():
+											loc = str(Path(pl_dir / Path(loc)).resolve())
+										else:
+											loc = str(Path(loc).resolve())
 
 									b["location"] = loc
 								if "creator" in field.tag and field.text:
