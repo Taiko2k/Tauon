@@ -3360,20 +3360,29 @@ class PlayerCtl:
 				if self.stop_mode == StopMode.ALBUM:
 					tr = self.playing_object()
 					i = self.advance(dry=True)
-					tr2 = self.get_track(i)
-					if (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
+					if i is None:
 						self.stop(run=True)
 						self.stop_mode = StopMode.OFF
 						stopped = True
+					else:
+						tr2 = self.get_track(i)
+						if (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
+							self.stop(run=True)
+							self.stop_mode = StopMode.OFF
+							stopped = True
 				if self.stop_mode == StopMode.TRACK_PERSIST:
 					self.stop(run=True)
 					stopped = True
 				if self.stop_mode == StopMode.ALBUM_PERSIST:
 					i = self.advance(dry=True)
-					tr2 = self.get_track(i)
-					if self.stop_ref != (tr2.parent_folder_path, tr2.album):
+					if i is None:
 						self.stop(run=True)
 						stopped = True
+					else:
+						tr2 = self.get_track(i)
+						if self.stop_ref != (tr2.parent_folder_path, tr2.album):
+							self.stop(run=True)
+							stopped = True
 				if stopped is True:
 					if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
 						self.advance(play=False)
