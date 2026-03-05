@@ -60,7 +60,6 @@ jobs:
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
           curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux
           sudo dpkg -i *.deb
-        #    libsdl2-image-dev \
 
       - name: Install Python dependencies and setup venv
         run: |
@@ -88,10 +87,12 @@ jobs:
       - name: "[DEBUG] List all files"
         run: find .
 
+      # (Martin): ln hack is due to https://github.com/Taiko2k/Tauon/issues/2052
       - name: Build Linux App with PyInstaller
         run: |
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG linux.spec
+          ln -s _internal/libSDL3.so dist/TauonMusicBox/libSDL3.so.0
 
       - name: Create 7Z
         run: |
@@ -100,7 +101,7 @@ jobs:
 
           ARCHIVE_PATH="../../${APP_NAME}-linux.7z"
 
-          7z a -r "${ARCHIVE_PATH}" "."
+          7z a -r -snl "${ARCHIVE_PATH}" "."
 
       - name: Upload 7Z artifact
         uses: actions/upload-artifact@v6
