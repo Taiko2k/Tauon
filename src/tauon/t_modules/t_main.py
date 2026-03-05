@@ -35185,7 +35185,7 @@ class QueueBox:
 
 				if self.tauon.d_click_timer.get() < 1:
 					if self.d_click_ref == fq[i].uuid_int:
-						pl = self.pctl.id_to_pl(fq[i].uuid_int)
+						pl = self.pctl.id_to_pl(fq[i].playlist_id)
 						if pl is not None:
 							self.pctl.switch_playlist(pl)
 
