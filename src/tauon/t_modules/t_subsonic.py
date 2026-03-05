@@ -55,6 +55,15 @@ class SubsonicService:
 		self.playlists = tauon.prefs.subsonic_playlists
 		self.scanning: bool = False
 
+
+	def _as_list(self, value):
+		"""Subsonic can return a dict instead of a list for single-item collections."""
+		if value is None:
+			return []
+		if isinstance(value, list):
+			return value
+		return [value]
+
 	def r(self, point: str, p: dict[str, str] | None = None, binary: bool = False, get_url: bool = False):
 		salt = secrets.token_hex(8)
 		server = self.prefs.subsonic_server.rstrip("/") + "/"
@@ -253,12 +262,12 @@ class SubsonicService:
 			)
 			return None
 
-		b = a["subsonic-response"]["indexes"]["index"]
+		indexes = self._as_list(a["subsonic-response"]["indexes"].get("index"))
 
 		folders: list[tuple[str, str]] = []
 
-		for letter in b:
-			artists = letter["artist"]
+		for letter in indexes:
+			artists = self._as_list(letter.get("artist"))
 			for artist in artists:
 				folders.append(
 					(
@@ -272,7 +281,6 @@ class SubsonicService:
 		for i in range(len(folders)):
 			songsets.append([])
 		statuses = [0] * len(folders)
-		# dupes = []
 		liked_track_ids: list[int] = []
 
 		def getsongs(
@@ -297,12 +305,11 @@ class SubsonicService:
 					statuses[index] = 2
 				return
 
-			items = d["subsonic-response"]["directory"]["child"]
+			items = self._as_list(d["subsonic-response"]["directory"].get("child"))
 
 			self.gui.update = 2
 
 			for item in items:
-				# logging.debug(f"song: {item}")
 				if item.get("isDir"):
 					if "userRating" in item and "artist" in item:
 						rating = item["userRating"]
@@ -361,13 +368,13 @@ class SubsonicService:
 			statuses[index] = 2
 
 		i = -1
-		for id, name in folders:
+		for folder_id, name in folders:
 			i += 1
 			while statuses.count(1) > 3:
 				time.sleep(0.1)
 
 			statuses[i] = 1
-			t = threading.Thread(target=getsongs, args=([i, id, name]))
+			t = threading.Thread(target=getsongs, args=([i, folder_id, name]))
 			t.daemon = True
 			t.start()
 
@@ -381,12 +388,10 @@ class SubsonicService:
 			self.show_message(_("Error connecting to Airsonic server"), mode="error")
 			self.scanning = False
 			return []
+
 		liked_tracks: list[str] = []
 		starred2 = a.get("subsonic-response", {}).get("starred2", {})
-		starred_songs = starred2.get("song", [])
-		if isinstance(starred_songs, dict):
-			starred_songs = [starred_songs]
-		for song in starred_songs:
+		for song in self._as_list(starred2.get("song")):
 			song_id = song.get("id")
 			if song_id:
 				liked_tracks.append(song_id)
