@@ -2099,7 +2099,7 @@ class PlayerCtl:
 
 		if self.prefs.shuffle_lock:
 			self.tauon.view_box.lyrics(hit=True)
-			if self.active_playlist_viewing:
+			if self.active_playlist_viewing is not None:
 				self.active_playlist_playing = self.active_playlist_viewing
 				self.tauon.random_track()
 
@@ -49022,19 +49022,19 @@ def main(holder: Holder) -> None:
 									if line in tauon.formats.colours:
 										e_colour = tauon.formats.colours[line]
 
-								ddt.rect(ext_rect, e_colour)
-								colour = alpha_blend(ColourRGBA(10, 10, 10, 235), e_colour)
-								if colour_value(e_colour) < 180:
-									colour = alpha_blend(ColourRGBA(200, 200, 200, 235), e_colour)
-								ddt.text(
-									(int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)),
-									line,
-									colour,
-									211,
-									bg=e_colour,
-								)
-								ext_rect[1] += 16 * gui.scale
-								y += 16 * gui.scale
+									ddt.rect(ext_rect, e_colour)
+									colour = alpha_blend(ColourRGBA(10, 10, 10, 235), e_colour)
+									if colour_value(e_colour) < 180:
+										colour = alpha_blend(ColourRGBA(200, 200, 200, 235), e_colour)
+									ddt.text(
+										(int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)),
+										line,
+										colour,
+										211,
+										bg=e_colour,
+									)
+									ext_rect[1] += 16 * gui.scale
+									y += 16 * gui.scale
 
 							ddt.rect(ext_rect, ex_colour)
 							colour = alpha_blend(ColourRGBA(10, 10, 10, 235), ex_colour)
