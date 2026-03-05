@@ -45894,6 +45894,10 @@ def main(holder: Holder) -> None:
 				and not tauon.trans_edit_box.active
 				and not gui.timed_lyrics_editing_now
 			):
+				# On macOS, the key labeled Delete reports as BACKSPACE in SDL.
+				# Require Command+Backspace here so plain Backspace keeps its normal meaning.
+				macos_delete_shortcut = macos and inp.key_ctrl_down and inp.key_backspace_press and not gui.quick_search_mode
+
 				if not gui.quick_search_mode and not tauon.search_over.active:
 					if (
 						prefs.album_mode
@@ -45916,7 +45920,7 @@ def main(holder: Holder) -> None:
 							inp.key_down_press = False
 
 				if not tauon.search_over.active:
-					if inp.key_del:
+					if inp.key_del or macos_delete_shortcut:
 						close_all_menus()
 						tauon.del_selected()
 
