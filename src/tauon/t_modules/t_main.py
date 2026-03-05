@@ -10519,7 +10519,7 @@ class Tauon:
 		del self.pctl.force_queue[0]
 
 		for part in reversed(parts):
-			self.pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], queue_type=item.type))
+			self.pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item.playlist_id, queue_type=item.type))
 		return (len(parts))
 
 	def add_to_queue_next(self, ref: int) -> None:
@@ -24085,7 +24085,9 @@ class SearchOverlay:
 						case 7:
 							self.pctl.default_playlist.extend(self.click_year(item[1], get_list=True))
 						case 8:
-							self.pctl.default_playlist.extend(self.pctl.multi_playlist[pl].playlist_ids)
+							pl = self.pctl.id_to_pl(item[3])
+							if pl is not None:
+								self.pctl.default_playlist.extend(self.pctl.multi_playlist[pl].playlist_ids)
 						case 12:
 							self.tauon.spot_ctl.append_track(item[2])
 							self.tauon.reload_albums()
@@ -24099,7 +24101,7 @@ class SearchOverlay:
 								self.tauon.show_in_gal(0)
 						case 8:
 							pl = self.pctl.id_to_pl(item[3])
-							if pl:
+							if pl is not None:
 								self.pctl.switch_playlist(pl)
 				elif go:
 					match n:
@@ -24124,7 +24126,7 @@ class SearchOverlay:
 							self.click_year(item[1])
 						case 8:
 							pl = self.pctl.id_to_pl(item[3])
-							if pl:
+							if pl is not None:
 								self.pctl.switch_playlist(pl)
 						case 11:
 							self.tauon.spot_ctl.album_playlist(item[2])
