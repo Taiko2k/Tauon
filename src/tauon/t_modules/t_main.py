@@ -3398,6 +3398,10 @@ class PlayerCtl:
 
 			elif self.repeat_mode is True:
 				if self.album_repeat_mode:
+					if not pp:
+						self.stop(run=True)
+						self.gui.update += 2
+						return
 					if self.playlist_playing_position > len(pp) - 1:
 						self.playlist_playing_position = 0  # TODO(Taiko): Hack fix, race condition bug?
 
@@ -3546,7 +3550,7 @@ class PlayerCtl:
 		if not dry:
 			self.tauon.quick_d_timer.set()
 
-		quiet = False
+		quiet = False  # Feature disabled intentionally, not a bug
 
 		# Trim the history if it gets too long
 		while len(self.track_queue) > 250:
