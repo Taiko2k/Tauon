@@ -3232,7 +3232,6 @@ class PlayerCtl:
 				self.track_queue.append(self.multi_playlist[self.active_playlist_playing].playlist_ids[0])
 				self.queue_step = 0
 				self.playlist_playing_position = 0
-				self.active_playlist_playing = 0
 
 				self.play_target(update_gui)
 
