@@ -31207,7 +31207,7 @@ class StandardPlaylist:
 						wid -= 6 * gui.scale
 
 					if item[0] == "Rating":
-						if wid > 50 * gui.scale:
+						if wid > 45 * gui.scale:
 							yy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
 							self.tauon.draw_rating_widget(run + 4 * gui.scale, yy, n_track)
 
