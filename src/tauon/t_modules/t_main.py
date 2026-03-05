@@ -2960,7 +2960,7 @@ class PlayerCtl:
 			self.stop_ref = (tr.parent_folder_path, tr.album)
 
 		if self.force_queue and not self.pause_queue:
-			if self.force_queue[0].uuid_int == 1: # TODO(Martin): How can the UUID be 1 when we're doing a random on 1-1m except for massive chance? Is that the point?
+			if self.force_queue[0].type == QueueType.ALBUM and self.force_queue[0].album_stage == 1:
 				if self.get_track(self.force_queue[0].track_id).parent_folder_path != self.get_track(index).parent_folder_path:
 					del self.force_queue[0]
 
