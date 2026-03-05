@@ -2280,7 +2280,10 @@ class PlayerCtl:
 		self.delete_playlist(index, force=True, check_lock=True)
 
 	def delete_playlist_by_id(self, pl_id: int, force: bool = False, check_lock: bool = False) -> None:
-		self.delete_playlist(self.id_to_pl(pl_id), force=force, check_lock=check_lock)
+		pl = self.id_to_pl(pl_id)
+		if pl is None:
+			return
+		self.delete_playlist(pl, force=force, check_lock=check_lock)
 
 	def delete_playlist_ask(self, index: int) -> None:
 		if self.gui.radio_view:
@@ -2385,7 +2388,11 @@ class PlayerCtl:
 				self.lfm_scrobbler.scrob_full_track(copy.deepcopy(self.radiobox.dummy_track))
 
 	def update_shuffle_pool(self, pl_id: int) -> None:
-		new_pool = copy.deepcopy(self.multi_playlist[self.id_to_pl(pl_id)].playlist_ids)
+		pl = self.id_to_pl(pl_id)
+		if pl is None:
+			self.shuffle_pools.pop(pl_id, None)
+			return
+		new_pool = copy.deepcopy(self.multi_playlist[pl].playlist_ids)
 		random.shuffle(new_pool)
 		self.shuffle_pools[pl_id] = new_pool
 		logging.info("Refill shuffle pool")
@@ -17223,7 +17230,7 @@ class Tauon:
 			discord_t.start()
 
 	def love(self, set: bool = True, track_id: int | None = None, no_delay: bool = False, notify: bool = False, sync: bool = True) -> bool | None:
-		if len(self.pctl.track_queue) < 1:
+		if track_id is None and len(self.pctl.track_queue) < 1:
 			return False
 
 		if track_id is not None and track_id < 0:
