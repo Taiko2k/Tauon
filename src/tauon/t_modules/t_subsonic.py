@@ -379,6 +379,7 @@ class SubsonicService:
 		except Exception:
 			logging.exception("Error connecting to Airsonic server")
 			self.show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.scanning = False
 			return []
 		liked_tracks: list[str] = []
 		starred2 = a.get("subsonic-response", {}).get("starred2", {})
