@@ -34317,8 +34317,11 @@ class TreeView:
 		self.gui.update += 1
 
 	def get_pl_id(self) -> int:
-		if self.lock_pl:
-			return self.lock_pl
+		if self.lock_pl is not None:
+			# The locked playlist may have been deleted; unlock automatically.
+			if self.pctl.id_to_pl(self.lock_pl) is not None:
+				return self.lock_pl
+			self.lock_pl = None
 		return self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int
 
 	def render(self, x: int, y: int, w: int, h: int) -> None:
@@ -34695,6 +34698,9 @@ class TreeView:
 	def gen_tree(self, pl_id: int) -> None:
 		pl_no = self.pctl.id_to_pl(pl_id)
 		if pl_no is None:
+			self.background_processing = False
+			self.gui.update += 1
+			self.tauon.wake()
 			return
 
 		playlist = self.pctl.multi_playlist[pl_no].playlist_ids
