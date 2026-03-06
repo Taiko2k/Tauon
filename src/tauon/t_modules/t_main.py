@@ -3442,9 +3442,8 @@ class PlayerCtl:
 					self.jump(pp[i], i, jump=False)
 
 				elif self.prefs.playback_follow_cursor and self.playing_ready() \
-						and self.multi_playlist[self.active_playlist_viewing].playlist_ids[
-					self.selected_in_playlist] != self.playing_object().index \
-						and -1 < self.selected_in_playlist < len(self.default_playlist):
+						and self.selected_ready() \
+						and self.default_playlist[self.selected_in_playlist] != self.playing_object().index:
 
 					logging.info("Repeat follow cursor")
 
@@ -3748,9 +3747,8 @@ class PlayerCtl:
 
 		# Playback follow cursor
 		elif self.prefs.playback_follow_cursor and self.playing_ready() \
-				and self.multi_playlist[self.active_playlist_viewing].playlist_ids[
-			self.selected_in_playlist] != self.playing_object().index \
-				and -1 < self.selected_in_playlist < len(self.default_playlist):
+				and self.selected_ready() \
+				and self.default_playlist[self.selected_in_playlist] != self.playing_object().index:
 
 			if dry:
 				return self.default_playlist[self.selected_in_playlist]
