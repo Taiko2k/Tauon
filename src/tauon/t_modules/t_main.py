@@ -351,6 +351,12 @@ class Decorator:
 	bg_colour: ColourRGBA | None
 	text: str | None
 
+@dataclass(frozen=True)
+class MenuTrackRef:
+	track_id: int
+	position: int
+	playlist_id: int
+
 
 class LoadImageAsset:
 	# TODO(Martin): Global class var!
@@ -556,6 +562,7 @@ class GuiVar:
 		self.pl_rect = (2, 12, 10, 10)
 
 		self.track_box: bool = False
+		self.track_box_track_id: int = 0
 
 		self.move_on_title: bool = False
 
@@ -1777,11 +1784,6 @@ class PlayerCtl:
 		self.mbid_image_url_cache = {}
 
 		# ----------------------------------------
-		# Playlist right click menu
-
-		self.r_menu_index: int = 0
-		self.r_menu_position: int = 0
-
 		# Misc player control
 
 		self.url: str = ""
@@ -4967,8 +4969,8 @@ class MenuItem:
 		"sub_menu_width",  # 14
 	]
 	def __init__(
-		self, title: str, func, render_func: Callable[[int], Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
-		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: int | str | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
+		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
+		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: object | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 	) -> None:
 		self.title: str = title
 		self.is_sub_menu: bool = is_sub_menu
@@ -4981,7 +4983,7 @@ class MenuItem:
 		self.show_test = show_test
 		self.pass_ref_deco: bool = pass_ref_deco
 		self.disable_test = disable_test
-		self.set_ref: int | str | None = set_ref
+		self.set_ref: object | None = set_ref
 		self.args = args
 		self.sub_menu_number: int | None = sub_menu_number
 		self.sub_menu_width: int = sub_menu_width
@@ -5053,7 +5055,7 @@ class Menu:
 		self.pos: list[float] = [0, 0]
 		self.rescale()
 
-		self.reference: int | str | None = 0
+		self.reference: object | None = 0
 		self.items: list[MenuItem | None] = []
 		self.subs: list[list[MenuItem]] = []
 		self.selected = -1
@@ -5103,7 +5105,7 @@ class Menu:
 		self.subs[sub_menu_index].append(menu_item)
 
 	def test_item_active(self, item: MenuItem) -> bool:
-		return not (item.show_test is not None and item.show_test(1) is False)
+		return not (item.show_test is not None and item.show_test(self.reference) is False)
 
 	def is_item_disabled(self, item: MenuItem) -> bool | None:
 		if item.disable_test is not None:
@@ -5438,7 +5440,7 @@ class Menu:
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 			self.can_be_spring_clicked = self.can_be_spring_clicked and ( self.inp.right_down or self.inp.mouse_down )
 
-	def activate(self, in_reference: int = 0, position: list[int] | None = None) -> None:
+	def activate(self, in_reference: object = 0, position: list[int] | None = None) -> None:
 		Menu.active = True
 
 		if position is not None:
@@ -7445,6 +7447,9 @@ class Tauon:
 		track = self.pctl.master_library[index]
 		return track.is_network and not os.path.isdir(track.parent_folder_path)
 
+	def menu_open_folder_disable_test(self, ref: MenuTrackRef) -> bool:
+		return self.open_folder_disable_test(ref.track_id)
+
 	def open_folder(self, index: int) -> None:
 		track = self.pctl.master_library[index]
 		if self.open_folder_disable_test(index):
@@ -7463,12 +7468,15 @@ class Tauon:
 			else:
 				subprocess.Popen(["xdg-open", line])
 
+	def menu_open_folder(self, ref: MenuTrackRef) -> None:
+		self.open_folder(ref.track_id)
+
 	def tag_to_new_playlist(self, tag_item) -> None:
 		logging.critical(type(tag_item))
 		self.path_stem_to_playlist(tag_item.path, tag_item.name)
 
-	def folder_to_new_playlist_by_track_id(self, track_id: int) -> None:
-		track = self.pctl.get_track(track_id)
+	def folder_to_new_playlist_by_track_id(self, track_ref: MenuTrackRef) -> None:
+		track = self.pctl.get_track(track_ref.track_id)
 		self.path_stem_to_playlist(track.parent_folder_path, track.parent_folder_name)
 
 	def stem_to_new_playlist(self, path: str) -> None:
@@ -7584,24 +7592,15 @@ class Tauon:
 	def move_playing_folder_to_tag(self, tag_item) -> None:
 		self.move_playing_folder_to_stem(tag_item.path)
 
-	def re_import4(self, id: int) -> None:
-		p = None
-		for i, idd in enumerate(self.pctl.default_playlist):
-			if idd == id:
-				p = i
-				break
-
+	def re_import4(self, track_ref: MenuTrackRef) -> None:
 		load_order = LoadClass()
-
-		if p is not None:
-			load_order.playlist_position = p
-
+		load_order.playlist_position = track_ref.position
 		load_order.replace_stem = True
-		load_order.target = self.pctl.get_track(id).parent_folder_path
+		load_order.target = self.pctl.get_track(track_ref.track_id).parent_folder_path
 		load_order.notify = True
-		load_order.playlist = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int
+		load_order.playlist = track_ref.playlist_id
 		self.load_orders.append(copy.deepcopy(load_order))
-		self.show_message(_("Rescanning folder..."), self.pctl.get_track(id).parent_folder_path, mode="info")
+		self.show_message(_("Rescanning folder..."), self.pctl.get_track(track_ref.track_id).parent_folder_path, mode="info")
 
 	def re_import3(self, stem) -> None:
 		p = None
@@ -7656,25 +7655,23 @@ class Tauon:
 					self.pctl.playlist_playing_position,
 					self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 1))
 
-	def add_album_to_queue(self, ref: int, position: int | None = None, playlist_id: int | None = None) -> None:
-		if position is None:
-			position = self.pctl.r_menu_position
-		if playlist_id is None:
-			playlist_id = self.pctl.pl_to_id(self.pctl.active_playlist_viewing)
-
+	def add_album_to_queue(self, track_id: int, position: int, playlist_id: int) -> None:
 		partway = 0
 		playing_object = self.pctl.playing_object()
 		if not self.pctl.force_queue and playing_object is not None:
-			if self.pctl.get_track(ref).parent_folder_path == playing_object.parent_folder_path:
+			if self.pctl.get_track(track_id).parent_folder_path == playing_object.parent_folder_path:
 				partway = 1
 
-		queue_object = queue_item_gen(ref, position, playlist_id, QueueType.ALBUM, partway)
+		queue_object = queue_item_gen(track_id, position, playlist_id, QueueType.ALBUM, partway)
 		self.pctl.force_queue.append(queue_object)
 		self.queue_timer_set(queue_object=queue_object)
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
 
-	def add_album_to_queue_fc(self, ref: int) -> None:
+	def menu_add_album_to_queue(self, ref: MenuTrackRef) -> None:
+		self.add_album_to_queue(ref.track_id, ref.position, ref.playlist_id)
+
+	def add_album_to_queue_fc(self, ref: MenuTrackRef) -> None:
 		playing_object = self.pctl.playing_object()
 		if playing_object is None:
 			self.show_message("")
@@ -7686,14 +7683,14 @@ class Tauon:
 			queue_item = queue_item_gen(
 				playing_object.index, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 1)
 			self.pctl.force_queue.insert(0, queue_item)
-			self.add_album_to_queue(ref)
+			self.add_album_to_queue(ref.track_id, ref.position, ref.playlist_id)
 			return
 
 		if self.pctl.force_queue[0].album_stage == 1:
-			queue_item = queue_item_gen(ref, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 0)
+			queue_item = queue_item_gen(ref.track_id, ref.position, ref.playlist_id, QueueType.ALBUM, 0)
 			self.pctl.force_queue.insert(1, queue_item)
 		else:
-			p = self.pctl.get_track(ref).parent_folder_path
+			p = self.pctl.get_track(ref.track_id).parent_folder_path
 			p = ""
 			if self.pctl.playing_ready():
 				p = self.pctl.playing_object().parent_folder_path
@@ -7702,14 +7699,14 @@ class Tauon:
 			for i, item in enumerate(self.pctl.force_queue):
 				if p != self.pctl.get_track(item.track_id).parent_folder_path:
 					queue_item = queue_item_gen(
-						ref,
-						self.pctl.playlist_playing_position,
-						self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 0)
+						ref.track_id,
+						ref.position,
+						ref.playlist_id, QueueType.ALBUM, 0)
 					self.pctl.force_queue.insert(i, queue_item)
 					break
 			else:
 				queue_item = queue_item_gen(
-					ref, self.pctl.playlist_playing_position, self.pctl.pl_to_id(self.pctl.active_playlist_playing), QueueType.ALBUM, 0)
+					ref.track_id, ref.position, ref.playlist_id, QueueType.ALBUM, 0)
 				self.pctl.force_queue.insert(len(self.pctl.force_queue), queue_item)
 		if queue_item:
 			self.queue_timer_set(queue_object=queue_item)
@@ -8119,14 +8116,13 @@ class Tauon:
 	def show_sub_search(self, track_object: TrackClass) -> None:
 		self.sub_lyrics_box.activate(track_object)
 
-	def save_embed_img_disable_test(self, track_object: TrackClass | int) -> bool:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def save_embed_img_disable_test(self, track_object: TrackClass) -> bool:
 		return track_object.is_network
 
-	def save_embed_img(self, track_object: TrackClass | int) -> None:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_save_embed_img_disable_test(self, ref: MenuTrackRef) -> bool:
+		return self.save_embed_img_disable_test(self.pctl.get_track(ref.track_id))
+
+	def save_embed_img(self, track_object: TrackClass) -> None:
 		filepath = track_object.fullpath
 		folder = track_object.parent_folder_path
 		ext = track_object.file_ext
@@ -8163,9 +8159,10 @@ class Tauon:
 			logging.exception("Unknown error trying to save an image")
 			self.show_message(_("Image save error."), _("A mysterious error occurred"), mode="error")
 
-	def open_image_deco(self, track_object: TrackClass | int)-> Decorator:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_save_embed_img(self, ref: MenuTrackRef) -> None:
+		self.save_embed_img(self.pctl.get_track(ref.track_id))
+
+	def open_image_deco(self, track_object: TrackClass)-> Decorator:
 		info = self.album_art_gen.get_info(track_object)
 
 		if info is None:
@@ -8174,19 +8171,22 @@ class Tauon:
 		line_colour = self.colours.menu_text
 		return Decorator(line_colour, self.colours.menu_background, None)
 
-	def open_image_disable_test(self, track_object: TrackClass | int) -> bool:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_open_image_deco(self, ref: MenuTrackRef) -> Decorator:
+		return self.open_image_deco(self.pctl.get_track(ref.track_id))
+
+	def open_image_disable_test(self, track_object: TrackClass) -> bool:
 		return track_object.is_network
 
-	def open_image(self, track_object: TrackClass | int) -> None:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_open_image_disable_test(self, ref: MenuTrackRef) -> bool:
+		return self.open_image_disable_test(self.pctl.get_track(ref.track_id))
+
+	def open_image(self, track_object: TrackClass) -> None:
 		self.album_art_gen.open_external(track_object)
 
-	def extract_image_deco(self, track_object: TrackClass | int) -> Decorator:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_open_image(self, ref: MenuTrackRef) -> None:
+		self.open_image(self.pctl.get_track(ref.track_id))
+
+	def extract_image_deco(self, track_object: TrackClass) -> Decorator:
 		info = self.album_art_gen.get_info(track_object)
 
 		if info is None:
@@ -8194,6 +8194,9 @@ class Tauon:
 
 		line_colour = self.colours.menu_text if info[0] == 1 else self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, None)
+
+	def menu_extract_image_deco(self, ref: MenuTrackRef) -> Decorator:
+		return self.extract_image_deco(self.pctl.get_track(ref.track_id))
 
 	def cycle_image_deco(self, track_object: TrackClass) -> Decorator:
 		info = self.album_art_gen.get_info(track_object)
@@ -8205,30 +8208,28 @@ class Tauon:
 
 		return Decorator(line_colour, self.colours.menu_background, None)
 
-	def cycle_image_gal_deco(self, track_object: TrackClass | int) -> Decorator:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
-		info = self.album_art_gen.get_info(track_object)
+	def cycle_image_gal_deco(self, ref: MenuTrackRef) -> Decorator:
+		info = self.album_art_gen.get_info(self.pctl.get_track(ref.track_id))
 
 		line_colour = self.colours.menu_text if info is not None and info[1] > 1 else self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, None)
 
-	def cycle_offset(self, track_object: TrackClass | int) -> None:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def cycle_offset(self, track_object: TrackClass) -> None:
 		self.album_art_gen.cycle_offset(track_object)
 
-	def cycle_offset_back(self, track_object: TrackClass | int) -> None:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
-		self.album_art_gen.cycle_offset_reverse(track_object)
+	def menu_cycle_offset(self, ref: MenuTrackRef) -> None:
+		self.cycle_offset(self.pctl.get_track(ref.track_id))
 
-	def dl_art_deco(self, track_object: TrackClass | int) -> Decorator:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def cycle_offset_back(self, ref: MenuTrackRef) -> None:
+		self.album_art_gen.cycle_offset_reverse(self.pctl.get_track(ref.track_id))
+
+	def dl_art_deco(self, track_object: TrackClass) -> Decorator:
 		if not track_object.album or not track_object.artist:
 			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, None)
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
+
+	def menu_dl_art_deco(self, ref: MenuTrackRef) -> Decorator:
+		return self.dl_art_deco(self.pctl.get_track(ref.track_id))
 
 	def download_art1(self, tr: TrackClass) -> None:
 		if tr.is_network:
@@ -8360,17 +8361,19 @@ class Tauon:
 			logging.exception("Matching cover art or ID could not be found.")
 			self.show_message(_("Matching cover art or ID could not be found."))
 
-	def download_art1_fire_disable_test(self, track_object: TrackClass | int) -> bool:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def download_art1_fire_disable_test(self, track_object: TrackClass) -> bool:
 		return track_object.is_network
 
-	def download_art1_fire(self, track_object: TrackClass | int) -> None:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_download_art1_fire_disable_test(self, ref: MenuTrackRef) -> bool:
+		return self.download_art1_fire_disable_test(self.pctl.get_track(ref.track_id))
+
+	def download_art1_fire(self, track_object: TrackClass) -> None:
 		shoot_dl = threading.Thread(target=self.download_art1, args=[track_object])
 		shoot_dl.daemon = True
 		shoot_dl.start()
+
+	def menu_download_art1_fire(self, ref: MenuTrackRef) -> None:
+		self.download_art1_fire(self.pctl.get_track(ref.track_id))
 
 	def remove_embed_picture(self, track_object: TrackClass, dry: bool = True) -> int | None:
 		"""Return amount of removed objects or None"""
@@ -8475,9 +8478,7 @@ class Tauon:
 			logging.exception("Failed to delete file")
 			self.show_message(_("Something went wrong"), mode="error")
 
-	def delete_track_image_deco(self, track_object: TrackClass | int) -> Decorator:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def delete_track_image_deco(self, track_object: TrackClass) -> Decorator:
 		info = self.album_art_gen.get_info(track_object)
 
 		text = _("Delete Image File")
@@ -8500,9 +8501,10 @@ class Tauon:
 				text = _("Delete Embedded | Track")
 		return Decorator(line_colour, self.colours.menu_background, text)
 
-	def delete_track_image(self, track_object: TrackClass | int) -> None:
-		if type(track_object) is int:
-			track_object = self.pctl.master_library[track_object]
+	def menu_delete_track_image_deco(self, ref: MenuTrackRef) -> Decorator:
+		return self.delete_track_image_deco(self.pctl.get_track(ref.track_id))
+
+	def delete_track_image(self, track_object: TrackClass) -> None:
 		if track_object.is_network:
 			return
 		info = self.album_art_gen.get_info(track_object)
@@ -8514,6 +8516,9 @@ class Tauon:
 			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (track_object, False)
 			self.show_message(_("This will erase any embedded image in {N} files. Are you sure?").format(N=n), mode="confirm")
+
+	def menu_delete_track_image(self, ref: MenuTrackRef) -> None:
+		self.delete_track_image(self.pctl.get_track(ref.track_id))
 
 	def search_image_deco(self, track_object: TrackClass) -> Decorator:
 		if track_object.artist and track_object.album:
@@ -10093,17 +10098,18 @@ class Tauon:
 				del self.pctl.default_playlist[b]
 		self.reload()
 
-	def convert_folder(self, index: int) -> None:
+	def convert_folder(self, ref: MenuTrackRef) -> None:
 		if not self.test_ffmpeg():
 			return
 
+		track_id = ref.track_id
 		folder = []
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
-			track_object = self.pctl.get_track(index)
+			track_object = self.pctl.get_track(track_id)
 			if track_object.is_network:
 				self.show_message(_("Transcoding tracks from network locations is not supported"))
 				return
-			folder = [index]
+			folder = [track_id]
 
 			if self.prefs.transcode_codec == "flac" and track_object.file_ext.lower() in (
 				"mp3", "opus",
@@ -10113,10 +10119,10 @@ class Tauon:
 					mode="warning")
 
 				return
-			folder = [index]
+			folder = [track_id]
 
 		else:
-			r_folder = self.pctl.master_library[index].parent_folder_path
+			r_folder = self.pctl.master_library[track_id].parent_folder_path
 			for item in self.pctl.default_playlist:
 				if r_folder == self.pctl.master_library[item].parent_folder_path:
 
@@ -10197,13 +10203,20 @@ class Tauon:
 		self.pctl.cargo = []
 		self.transfer(ref, args=[1, 2])
 
-	def activate_track_box(self, index: int) -> None:
-		self.pctl.r_menu_index = index
+	def show_track_box(self, track_id: int) -> None:
+		self.gui.track_box_track_id = track_id
 		self.gui.track_box = True
 		self.track_box_path_tool_timer.set()
 
-	def menu_paste(self, position) -> None:
-		self.paste(None, position)
+	def sync_track_box_to_selected(self) -> None:
+		if self.gui.track_box and self.pctl.selected_ready():
+			self.gui.track_box_track_id = self.pctl.default_playlist[self.pctl.selected_in_playlist]
+
+	def activate_track_box(self, ref: MenuTrackRef) -> None:
+		self.show_track_box(ref.track_id)
+
+	def menu_paste(self, ref: MenuTrackRef) -> None:
+		self.paste(None, ref.track_id, ref.position)
 
 	def lightning_paste(self) -> None:
 		move = True
@@ -10412,20 +10425,22 @@ class Tauon:
 	def force_del_selected(self) -> None:
 		self.del_selected(force_delete=True)
 
-	def test_show(self, _: int) -> bool:
+	def test_show(self, _: MenuTrackRef) -> bool:
 		return self.prefs.album_mode
 
-	def show_in_gal(self, _track: TrackClass, silent: bool = False) -> None:
-		# self.goto_album(self.pctl.playlist_selected)
-		self.gui.gallery_animate_highlight_on = self.goto_album(self.pctl.selected_in_playlist)
+	def show_in_gal(self, position: int, silent: bool = False) -> None:
+		self.gui.gallery_animate_highlight_on = self.goto_album(position)
 		if not silent:
 			self.gallery_select_animate_timer.set()
+
+	def menu_show_in_gal(self, ref: MenuTrackRef) -> None:
+		self.show_in_gal(ref.position)
 
 	def last_fm_test(self, _ignore) -> bool:
 		return self.lastfm.connected
 
 	def heart_xmenu_colour(self) -> ColourRGBA | None:
-		if self.love(False, self.pctl.r_menu_index):
+		if self.love(False, self.track_menu.reference.track_id):
 			return ColourRGBA(245, 60, 60, 255)
 		if self.colours.lm:
 			return ColourRGBA(255, 150, 180, 255)
@@ -10439,33 +10454,29 @@ class Tauon:
 			return ColourRGBA(30, 215, 96, 255)
 		return None
 
-	def love_decox(self) -> Decorator:
-		if self.love(False, self.pctl.r_menu_index):
+	def love_decox(self, ref: MenuTrackRef) -> Decorator:
+		if self.love(False, ref.track_id):
 			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Un-Love Track"))
 		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Love Track"))
 
-	def love_index(self) -> None:
+	def love_index(self, ref: MenuTrackRef) -> None:
 		notify = False
 		if not self.gui.show_hearts:
 			notify = True
 
-		# love(True, self.pctl.r_menu_index)
-		shoot_love = threading.Thread(target=self.love, args=[True, self.pctl.r_menu_index, False, notify])
+		shoot_love = threading.Thread(target=self.love, args=[True, ref.track_id, False, notify])
 		shoot_love.daemon = True
 		shoot_love.start()
 
-	def toggle_spotify_like_ref(self) -> None:
-		tr = self.pctl.get_track(self.pctl.r_menu_index)
+	def toggle_spotify_like_ref(self, ref: MenuTrackRef) -> None:
+		tr = self.pctl.get_track(ref.track_id)
 		if tr:
 			shoot_dl = threading.Thread(target=self.toggle_spotify_like_active2, args=([tr]))
 			shoot_dl.daemon = True
 			shoot_dl.start()
 
-	def toggle_spotify_like3(self) -> None:
-		self.toggle_spotify_like_active2(self.pctl.get_track(self.pctl.r_menu_index))
-
-	def toggle_spotify_like_row_deco(self) -> Decorator:
-		tr = self.pctl.get_track(self.pctl.r_menu_index)
+	def toggle_spotify_like_row_deco(self, ref: MenuTrackRef) -> Decorator:
+		tr = self.pctl.get_track(ref.track_id)
 		text = _("Spotify Like Track")
 
 		# if self.pctl.playing_state == PlayingState.STOPPED or not tr or not "spotify-track-url" in tr.misc:
@@ -10474,17 +10485,17 @@ class Tauon:
 			text = _("Un-like Spotify Track")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def spot_like_show_test(self, _) -> bool:
-		return self.spotify_show_test and self.pctl.get_track(self.pctl.r_menu_index).file_ext == "SPTY"
+	def spot_like_show_test(self, ref: MenuTrackRef) -> bool:
+		return self.prefs.spot_mode and self.pctl.get_track(ref.track_id).file_ext == "SPTY"
 
 	def spot_heart_menu_colour(self) -> ColourRGBA | None:
-		tr = self.pctl.get_track(self.pctl.r_menu_index)
+		tr = self.pctl.get_track(self.track_menu.reference.track_id)
 		if tr and "spotify-liked" in tr.misc:
 			return ColourRGBA(30, 215, 96, 255)
 		return None
 
-	def add_to_queue(self, ref: int) -> None:
-		self.pctl.force_queue.append(queue_item_gen(ref, self.pctl.r_menu_position, self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
+	def add_to_queue(self, ref: MenuTrackRef) -> None:
+		self.pctl.force_queue.append(queue_item_gen(ref.track_id, ref.position, ref.playlist_id))
 		self.queue_timer_set()
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
@@ -10494,7 +10505,11 @@ class Tauon:
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
 		if self.gui.album_tab_mode:
-			self.add_album_to_queue(self.pctl.default_playlist[self.get_album_info(self.pctl.selected_in_playlist)[1][0]], self.pctl.selected_in_playlist)
+			self.add_album_to_queue(
+				self.pctl.default_playlist[self.get_album_info(self.pctl.selected_in_playlist)[1][0]],
+				self.pctl.selected_in_playlist,
+				self.pctl.pl_to_id(self.pctl.active_playlist_viewing),
+			)
 			self.queue_timer_set()
 		else:
 			self.pctl.force_queue.append(
@@ -10547,14 +10562,14 @@ class Tauon:
 			self.pctl.force_queue.insert(0, queue_item_gen(part[0], part[1], item.playlist_id, queue_type=item.type))
 		return (len(parts))
 
-	def add_to_queue_next(self, ref: int) -> None:
+	def add_to_queue_next(self, ref: MenuTrackRef) -> None:
 		if self.pctl.force_queue and self.pctl.force_queue[0].album_stage == 1:
 			self.split_queue_album(None)
 
-		self.pctl.force_queue.insert(0, queue_item_gen(ref, self.pctl.r_menu_position, self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
+		self.pctl.force_queue.insert(0, queue_item_gen(ref.track_id, ref.position, ref.playlist_id))
 
-	def delete_track(self, track_ref) -> None:
-		tr = self.pctl.get_track(track_ref)
+	def delete_track(self, ref: MenuTrackRef) -> None:
+		tr = self.pctl.get_track(ref.track_id)
 		fullpath = tr.fullpath
 
 		if self.windows:
@@ -10564,8 +10579,8 @@ class Tauon:
 			self.show_message(_("Cannot delete a network track"))
 			return
 
-		while track_ref in self.pctl.default_playlist:
-			self.pctl.default_playlist.remove(track_ref)
+		while ref.track_id in self.pctl.default_playlist:
+			self.pctl.default_playlist.remove(ref.track_id)
 
 		try:
 			send2trash(fullpath)
@@ -10592,7 +10607,7 @@ class Tauon:
 		self.refind_playing()
 		self.pctl.notify_change()
 
-	def rename_tracks_deco(self, _track_id: int) -> Decorator:
+	def rename_tracks_deco(self, _track_ref: MenuTrackRef) -> Decorator:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
 			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Rename (Single track)"))
 		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Rename Tracks…"))
@@ -10766,14 +10781,15 @@ class Tauon:
 		self.tree_view_box.clear_target_pl(self.pctl.active_playlist_viewing)
 		self.pctl.notify_change()
 
-	def rename_folders_disable_test(self, index: int) -> bool:
-		return self.pctl.get_track(index).is_network
+	def rename_folders_disable_test(self, ref: MenuTrackRef) -> bool:
+		return self.pctl.get_track(ref.track_id).is_network
 
-	def rename_folders(self, index: int) -> None:
+	def rename_folders(self, ref: MenuTrackRef) -> None:
+		track_id = ref.track_id
 		self.gui.track_box = False
-		self.gui.rename_index = index
+		self.gui.rename_index = track_id
 
-		if self.rename_folders_disable_test(index):
+		if self.rename_folders_disable_test(ref):
 			self.show_message(_("Not applicable for a network track."))
 			return
 
@@ -10896,10 +10912,11 @@ class Tauon:
 	def reset_play_count(self, index: int) -> None:
 		self.star_store.remove(index)
 
-	def vacuum_playtimes(self, index: int) -> None:
+	def vacuum_playtimes(self, ref: MenuTrackRef) -> None:
+		track_id = ref.track_id
 		todo = []
 		for k in self.pctl.default_playlist:
-			if self.pctl.master_library[index].parent_folder_name == self.pctl.master_library[k].parent_folder_name:
+			if self.pctl.master_library[track_id].parent_folder_name == self.pctl.master_library[k].parent_folder_name:
 				todo.append(k)
 
 		for track in todo:
@@ -10928,10 +10945,11 @@ class Tauon:
 			else:
 				logging.error("KEY ALREADY HERE?")
 
-	def intel_moji(self, index: int) -> None:
+	def intel_moji(self, ref: MenuTrackRef) -> None:
 		self.gui.pl_update += 1
 		self.gui.update += 1
 
+		index = ref.track_id
 		track = self.pctl.master_library[index]
 		lot = []
 
@@ -11042,8 +11060,8 @@ class Tauon:
 			line = self.pctl.master_library[index].artist
 		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
 
-	def clip_title(self, index: int) -> None:
-		n_track = self.pctl.master_library[index]
+	def clip_title(self, ref: MenuTrackRef) -> None:
+		n_track = self.pctl.get_track(ref.track_id)
 
 		if not self.prefs.use_title and n_track.album_artist and n_track.album:
 			line = n_track.album_artist + " - " + n_track.album
@@ -11060,8 +11078,8 @@ class Tauon:
 			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Transcode Single"))
 		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Transcode Folder"))
 
-	def get_album_spot_url(self, track_id: int) -> None:
-		track_object = self.pctl.get_track(track_id)
+	def get_album_spot_url(self, ref: MenuTrackRef) -> None:
+		track_object = self.pctl.get_track(ref.track_id)
 		url = self.spot_ctl.get_album_url_from_local(track_object)
 		if url:
 			copy_to_clipboard(url)
@@ -11069,16 +11087,16 @@ class Tauon:
 		else:
 			self.show_message(_("No results found"))
 
-	def get_album_spot_url_deco(self, track_id: int) -> Decorator:
-		track_object = self.pctl.get_track(track_id)
+	def get_album_spot_url_deco(self, ref: MenuTrackRef) -> Decorator:
+		track_object = self.pctl.get_track(ref.track_id)
 		if "spotify-album-url" in track_object.misc:
 			text = _("Copy Spotify Album URL")
 		else:
 			text = _("Lookup Spotify Album URL")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def add_to_spotify_library_deco(self, track_id: int) -> Decorator:
-		track_object = self.pctl.get_track(track_id)
+	def add_to_spotify_library_deco(self, ref: MenuTrackRef) -> Decorator:
+		track_object = self.pctl.get_track(ref.track_id)
 		text = _("Save Album to Spotify")
 		if track_object.file_ext != "SPTY":
 			return Decorator(self.colours.menu_text_disabled, self.colours.menu_background, text)
@@ -11100,8 +11118,8 @@ class Tauon:
 				logging.info("Fetching Spotify Library...")
 				self.regenerate_playlist(i, silent=True)
 
-	def add_to_spotify_library(self, track_id: int) -> None:
-		track_object = self.pctl.get_track(track_id)
+	def add_to_spotify_library(self, ref: MenuTrackRef) -> None:
+		track_object = self.pctl.get_track(ref.track_id)
 		album_url = track_object.misc.get("spotify-album-url")
 		if track_object.file_ext != "SPTY" or not album_url:
 			return
@@ -11127,15 +11145,16 @@ class Tauon:
 		else:
 			self.show_message(_("No matching artist result found"))
 
-	def ser_band(self, track_id: int) -> None:
-		tr = self.pctl.get_track(track_id)
+	def ser_band(self, ref: MenuTrackRef) -> None:
+		tr = self.pctl.get_track(ref.track_id)
 		if tr.artist:
 			shoot_dl = threading.Thread(target=bandcamp_search, args=([tr.artist, self.ser_band_done]))
 			shoot_dl.daemon = True
 			shoot_dl.start()
 			self.show_message(_("Searching..."))
 
-	def ser_rym(self, index: int) -> None:
+	def ser_rym(self, ref: MenuTrackRef) -> None:
+		index = ref.track_id
 		if len(self.pctl.master_library[index].artist) < 2:
 			return
 		line = "https://rateyourmusic.com/search?searchtype=a&searchterm=" + urllib.parse.quote(
@@ -13861,8 +13880,8 @@ class Tauon:
 			webbrowser.open(line, new=2, autoraise=True)
 			self.gui.message_box = False
 
-	def ser_gen(self, track_id: int, get_lyrics: bool = False) -> None:
-		tr = self.pctl.master_library[track_id]
+	def ser_gen(self, ref: MenuTrackRef, get_lyrics: bool = False) -> None:
+		tr = self.pctl.get_track(ref.track_id)
 		if len(tr.title) < 1:
 			return
 
@@ -13872,17 +13891,20 @@ class Tauon:
 		shoot.daemon = True
 		shoot.start()
 
-	def ser_wiki(self, index: int) -> None:
+	def ser_wiki(self, ref: MenuTrackRef) -> None:
+		index = ref.track_id
 		if len(self.pctl.master_library[index].artist) < 2:
 			return
 		line = "https://en.wikipedia.org/wiki/Special:Search?search=" + urllib.parse.quote(self.pctl.master_library[index].artist)
 		webbrowser.open(line, new=2, autoraise=True)
 
-	def clip_ar_tr(self, index: int) -> None:
+	def clip_ar_tr(self, ref: MenuTrackRef) -> None:
+		index = ref.track_id
 		line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].title
 		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
 
-	def tidal_copy_album(self, index: int) -> None:
+	def tidal_copy_album(self, ref: MenuTrackRef) -> None:
+		index = ref.track_id
 		t = self.pctl.master_library.get(index)
 		if t and t.file_ext == "TIDAL":
 			id = t.misc.get("tidal_album")
@@ -13890,16 +13912,11 @@ class Tauon:
 				url = "https://listen.tidal.com/album/" + str(id)
 				copy_to_clipboard(url)
 
-	def is_tidal_track(self, _) -> bool:
-		return self.pctl.master_library[self.pctl.r_menu_index].file_ext == "TIDAL"
+	def is_tidal_track(self, ref: MenuTrackRef) -> bool:
+		return self.pctl.master_library[ref.track_id].file_ext == "TIDAL"
 
-	# def get_track_spot_url_show_test(self, _) -> bool:
-	# 	if self.pctl.get_track(self.pctl.r_menu_index).misc.get("spotify-track-url"):
-	# 		return True
-	# 	return False
-
-	def get_track_spot_url(self, track_id: int) -> None:
-		track_object = self.pctl.get_track(track_id)
+	def get_track_spot_url(self, ref: MenuTrackRef) -> None:
+		track_object = self.pctl.get_track(ref.track_id)
 		url = track_object.misc.get("spotify-track-url")
 		if url:
 			copy_to_clipboard(url)
@@ -13907,15 +13924,15 @@ class Tauon:
 		else:
 			self.show_message(_("No results found"))
 
-	def get_track_spot_url_deco(self) -> Decorator:
-		if self.pctl.get_track(self.pctl.r_menu_index).misc.get("spotify-track-url"):
+	def get_track_spot_url_deco(self, ref: MenuTrackRef) -> Decorator:
+		if self.pctl.get_track(ref.track_id).misc.get("spotify-track-url"):
 			line_colour = self.colours.menu_text
 		else:
 			line_colour = self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, None)
 
-	def get_spot_artist_track(self, index: int) -> None:
-		self.get_artist_spot(self.pctl.get_track(index))
+	def get_spot_artist_track(self, ref: MenuTrackRef) -> None:
+		self.get_artist_spot(self.pctl.get_track(ref.track_id))
 
 	def get_album_spot_active(self, tr: TrackClass | None = None) -> None:
 		if tr is None:
@@ -13937,8 +13954,8 @@ class Tauon:
 				hide_title=False))
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
-	def get_spot_album_track(self, index: int) -> None:
-		self.get_album_spot_active(self.pctl.get_track(index))
+	def get_spot_album_track(self, ref: MenuTrackRef) -> None:
+		self.get_album_spot_active(self.pctl.get_track(ref.track_id))
 
 	# def get_spot_recs(self, tr: TrackClass | None = None) -> None:
 	# 	if not tr:
@@ -15319,6 +15336,9 @@ class Tauon:
 		self.gui.pl_update += 1
 		self.thread_manager.ready("worker")
 
+	def menu_reload_metadata(self, ref: MenuTrackRef) -> None:
+		self.reload_metadata(ref.track_id)
+
 	def edit_generator_box(self, index: int) -> None:
 		self.rename_playlist(index, generator=True)
 
@@ -15489,27 +15509,27 @@ class Tauon:
 		self.gui.update = 1
 		self.pctl.notify_change()
 
-	def launch_editor(self, index: int) -> bool | None:
+	def launch_editor(self, ref: MenuTrackRef) -> bool | None:
 		if self.snap_mode:
 			self.show_message(_("Sorry, this feature isn't (yet) available with Snap."))
 			return None
 
-		if self.launch_editor_disable_test(index):
+		if self.launch_editor_disable_test(ref):
 			self.show_message(_("Cannot edit tags of a network track."))
 			return None
 
-		mini_t = threading.Thread(target=self.editor, args=[index])
+		mini_t = threading.Thread(target=self.editor, args=[ref.track_id])
 		mini_t.daemon = True
 		mini_t.start()
 
-	def launch_editor_selection_disable_test(self, index: int) -> bool:
+	def launch_editor_selection_disable_test(self, _ref: object) -> bool:
 		for position in self.gui.shift_selection:
 			if self.pctl.get_track(self.pctl.default_playlist[position]).is_network:
 				return True
 		return False
 
-	def launch_editor_selection(self, index: int) -> None:
-		if self.launch_editor_selection_disable_test(index):
+	def launch_editor_selection(self, ref: object) -> None:
+		if self.launch_editor_selection_disable_test(ref):
 			self.show_message(_("Cannot edit tags of a network track."))
 			return
 
@@ -15517,17 +15537,17 @@ class Tauon:
 		mini_t.daemon = True
 		mini_t.start()
 
-	def edit_deco(self, _index: int) -> Decorator:
+	def edit_deco(self, _ref: object) -> Decorator:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
 			return Decorator(self.colours.menu_text, self.colours.menu_background, self.prefs.tag_editor_name + " (Single track)")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Edit with ") + self.prefs.tag_editor_name)
 
-	def launch_editor_disable_test(self, index: int) -> bool:
-		return self.pctl.get_track(index).is_network
+	def launch_editor_disable_test(self, ref: MenuTrackRef) -> bool:
+		return self.pctl.get_track(ref.track_id).is_network
 
-	def show_lyrics_menu(self, _index: int) -> None:
+	def show_lyrics_menu(self, ref: MenuTrackRef) -> None:
 		self.gui.track_box = False
-		self.enter_showcase_view(track_id=self.pctl.r_menu_index)
+		self.enter_showcase_view(track_id=ref.track_id)
 		self.inp.mouse_click = False
 
 	def show_message(self, line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
@@ -19004,7 +19024,7 @@ class Tauon:
 	def s_append(self, index: int) -> None:
 		self.paste(playlist_no=index)
 
-	def paste(self, playlist_no: int | None = None, track_id: int | None = None) -> None:
+	def paste(self, playlist_no: int | None = None, track_id: int | None = None, target_position: int | None = None) -> None:
 		clip = copy_from_clipboard()
 		logging.info(clip)
 		if "tidal.com/album/" in clip:
@@ -19069,8 +19089,8 @@ class Tauon:
 
 					if playlist_no is not None:
 						load_order.playlist = self.pctl.pl_to_id(playlist_no)
-					if track_id is not None:
-						load_order.playlist_position = self.pctl.r_menu_position
+					if target_position is not None:
+						load_order.playlist_position = target_position
 
 					self.load_orders.append(copy.deepcopy(load_order))
 					found = True
@@ -22742,15 +22762,16 @@ class RenameTrackBox:
 		self.target_track_id = None
 		self.single_only = False
 
-	def activate(self, track_id: int) -> None:
+	def activate(self, track_ref: MenuTrackRef) -> None:
 		self.active = True
-		self.target_track_id = track_id
+		self.target_track_id = track_ref.track_id
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
 			self.single_only = True
 		else:
 			self.single_only = False
 
-	def disable_test(self, track_id: int) -> bool:
+	def disable_test(self, track_ref: MenuTrackRef) -> bool:
+		track_id = track_ref.track_id
 		single_only = bool(self.inp.key_shift_down or self.inp.key_shiftr_down)
 
 		if not single_only:
@@ -30664,7 +30685,7 @@ class StandardPlaylist:
 									pctl.stop_mode = StopMode.OFF
 
 							else:  # Add as grouped album
-								self.tauon.add_album_to_queue(track_id, track_position)
+								self.tauon.add_album_to_queue(track_id, track_position, pctl.pl_to_id(pctl.active_playlist_viewing))
 							pctl.selected_in_playlist = track_position
 							gui.shift_selection = [pctl.selected_in_playlist]
 							gui.pl_update += 1
@@ -30682,8 +30703,9 @@ class StandardPlaylist:
 
 						# Show selection menu if right clicked after select
 						if inp.right_click:
-							self.tauon.folder_menu.activate(track_id)
-							pctl.r_menu_position = track_position
+							self.tauon.folder_menu.activate(
+								MenuTrackRef(track_id, track_position, pctl.pl_to_id(pctl.active_playlist_viewing))
+							)
 							gui.selection_stage = 2
 							gui.pl_update = 1
 
@@ -30886,9 +30908,13 @@ class StandardPlaylist:
 					self.tauon.selection_menu.activate(pctl.default_playlist[track_position])
 					gui.selection_stage = 2
 				else:
-					self.pctl.r_menu_index = pctl.default_playlist[track_position]
-					self.pctl.r_menu_position = track_position
-					self.tauon.track_menu.activate(pctl.default_playlist[track_position])
+					self.tauon.track_menu.activate(
+						MenuTrackRef(
+							pctl.default_playlist[track_position],
+							track_position,
+							pctl.pl_to_id(pctl.active_playlist_viewing),
+						)
+					)
 					gui.pl_update += 1
 					gui.update += 1
 
@@ -34502,11 +34528,11 @@ class TreeView:
 						for p, id in enumerate(self.pctl.multi_playlist[self.pctl.id_to_pl(pl_id)].playlist_ids):
 							if self.windows:
 								if self.pctl.get_track(id).fullpath.startswith(target.lstrip("/")):
-									self.folder_tree_menu.activate(in_reference=id)
+									self.folder_tree_menu.activate(in_reference=MenuTrackRef(id, p, pl_id))
 									self.menu_selected = full_folder_path
 									break
 							elif self.pctl.get_track(id).fullpath.startswith(target):
-								self.folder_tree_menu.activate(in_reference=id)
+								self.folder_tree_menu.activate(in_reference=MenuTrackRef(id, p, pl_id))
 								self.menu_selected = full_folder_path
 								break
 					elif self.windows:
@@ -44099,7 +44125,7 @@ def main(holder: Holder) -> None:
 	gui.info_icon.colour = ColourRGBA(61, 247, 163, 255)
 
 	folder_tree_stem_menu.add(MenuItem(_("Open Folder"), tauon.open_folder_stem, pass_ref=True, icon=gui.folder_icon))
-	folder_tree_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.open_folder_disable_test))
+	folder_tree_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
 
 	lightning_menu.add(MenuItem(_("Filter to New Playlist"), tauon.tag_to_new_playlist, pass_ref=True, icon=gui.filter_icon))
 	folder_tree_menu.add(MenuItem(_("Filter to New Playlist"), tauon.folder_to_new_playlist_by_track_id, pass_ref=True, icon=gui.filter_icon))
@@ -44117,10 +44143,10 @@ def main(holder: Holder) -> None:
 	folder_tree_stem_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
 	# folder_tree_menu.add("lock", lock_folder_tree, tauon.lock_folder_tree_deco)
 
-	gallery_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.open_folder_disable_test))
+	gallery_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
 	gallery_menu.add(MenuItem(_("Show in Playlist"), tauon.show_in_playlist))
 	gallery_menu.add_sub(_("Image…"), 160)
-	gallery_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
+	gallery_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
 	gallery_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
@@ -44188,12 +44214,12 @@ def main(holder: Holder) -> None:
 	milky_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 
-	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
+	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.menu_cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
 	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
-	gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
-	gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), tauon.save_embed_img, tauon.extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.save_embed_img_disable_test))
-	gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), tauon.delete_track_image, tauon.delete_track_image_deco, pass_ref=True, pass_ref_deco=True)) #, icon=delete_icon)
-	gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), tauon.download_art1_fire, tauon.dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.download_art1_fire_disable_test))
+	gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), tauon.menu_open_image, tauon.menu_open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.menu_open_image_disable_test))
+	gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), tauon.menu_save_embed_img, tauon.menu_extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.menu_save_embed_img_disable_test))
+	gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), tauon.menu_delete_track_image, tauon.menu_delete_track_image_deco, pass_ref=True, pass_ref_deco=True)) #, icon=delete_icon)
+	gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), tauon.menu_download_art1_fire, tauon.menu_dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.menu_download_art1_fire_disable_test))
 	# playlist_menu.add('Paste', append_here, paste_deco)
 
 	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
@@ -44358,7 +44384,7 @@ def main(holder: Holder) -> None:
 	playlist_menu.add(MenuItem(_("Add Playing Spotify Track"), tauon.paste_playlist_coast_track, tauon.paste_playlist_coast_album_deco,
 		show_test=tauon.spotify_show_test))
 
-	track_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.open_folder_disable_test))
+	track_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
 	track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=gui.info_icon))
 
 	gui.heartx_icon.colour = ColourRGBA(55, 55, 55, 255)
@@ -44372,7 +44398,7 @@ def main(holder: Holder) -> None:
 	gui.spot_heartx_icon.colour_callback = tauon.spot_heart_xmenu_colour
 
 	# Mark track as 'liked'
-	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, icon=gui.heartx_icon))
+	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, pass_ref=True, pass_ref_deco=True, icon=gui.heartx_icon))
 
 	heart_spot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "heart-menu.png", True))
 	heart_spot_icon.colour = ColourRGBA(30, 215, 96, 255)
@@ -44380,13 +44406,14 @@ def main(holder: Holder) -> None:
 	heart_spot_icon.yoff = 0
 	heart_spot_icon.colour_callback = tauon.spot_heart_menu_colour
 
-	track_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_ref, tauon.toggle_spotify_like_row_deco, show_test=tauon.spot_like_show_test, icon=heart_spot_icon))
+	track_menu.add(MenuItem("Spotify Like Track", tauon.toggle_spotify_like_ref, tauon.toggle_spotify_like_row_deco,
+		pass_ref=True, pass_ref_deco=True, show_test=tauon.spot_like_show_test, icon=heart_spot_icon))
 
 	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
 
 	track_menu.add(MenuItem(_("↳ After Current Track"), tauon.add_to_queue_next, pass_ref=True, show_test=inp.test_shift))
 
-	track_menu.add(MenuItem(_("Show in Gallery"), tauon.show_in_gal, pass_ref=True, show_test=tauon.test_show))
+	track_menu.add(MenuItem(_("Show in Gallery"), tauon.menu_show_in_gal, pass_ref=True, show_test=tauon.test_show))
 
 	track_menu.add_sub(_("Meta…"), 160)
 
@@ -44419,7 +44446,7 @@ def main(holder: Holder) -> None:
 	# track_menu.add_to_sub("Reset Track Play Count", 0, tauon.reset_play_count, pass_ref=True)
 
 	# track_menu.add('Reload Metadata', tauon.reload_metadata, pass_ref=True)
-	track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
+	track_menu.add_to_sub(0, MenuItem(_("Rescan Tags"), tauon.menu_reload_metadata, pass_ref=True))
 
 	mbp_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "mbp-g.png"))
 	mbp_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "mbp-gs.png")
@@ -44439,12 +44466,12 @@ def main(holder: Holder) -> None:
 	track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
 	# track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
 
-	folder_menu.add(MenuItem(_("Open Folder"), tauon.open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.open_folder_disable_test))
+	folder_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
 
 	folder_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
 	folder_tree_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
 	# folder_menu.add(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True)
-	folder_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
+	folder_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
 	folder_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 
 	gallery_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
@@ -44457,7 +44484,7 @@ def main(holder: Holder) -> None:
 		folder_menu.add(MenuItem("Edit with", tauon.launch_editor_selection, pass_ref=True,
 			pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
 
-	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True))
+	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
 	folder_tree_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 
 	folder_tree_menu.br()
@@ -44467,7 +44494,7 @@ def main(holder: Holder) -> None:
 	# selection_menu.br()
 
 	gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
-	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata, pass_ref=True))
+	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.menu_reload_metadata, pass_ref=True))
 	folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
 	folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
 	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
@@ -44538,7 +44565,7 @@ def main(holder: Holder) -> None:
 	track_menu.add_sub(_("Spotify…"), 190, show_test=tauon.spotify_show_test)
 	track_menu.add_to_sub(1, MenuItem(_("Show Full Artist"), tauon.get_spot_artist_track, pass_ref=True, icon=spot_icon))
 	track_menu.add_to_sub(1, MenuItem(_("Show Full Album"), tauon.get_spot_album_track, pass_ref=True, icon=spot_icon))
-	track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), tauon.get_track_spot_url, tauon.get_track_spot_url_deco, pass_ref=True,
+	track_menu.add_to_sub(1, MenuItem(_("Copy Track URL"), tauon.get_track_spot_url, tauon.get_track_spot_url_deco, pass_ref=True, pass_ref_deco=True,
 		icon=spot_icon))
 	# track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), tauon.get_spot_recs_track, pass_ref=True, icon=spot_icon))
 
@@ -46233,13 +46260,11 @@ def main(holder: Holder) -> None:
 			):
 				if keymaps.test("info-playing"):
 					if pctl.selected_ready():
-						pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
-						gui.track_box = True
+						tauon.show_track_box(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index)
 
 				if keymaps.test("info-show"):
 					if pctl.selected_ready():
-						pctl.r_menu_index = pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index
-						gui.track_box = True
+						tauon.show_track_box(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index)
 
 				# These need to be disabled when text fields are active
 				if (
@@ -47141,7 +47166,9 @@ def main(holder: Holder) -> None:
 												else:
 													# Add to queue grouped
 													tauon.add_album_to_queue(
-														pctl.default_playlist[tauon.album_dex[album_on]]
+														pctl.default_playlist[tauon.album_dex[album_on]],
+														tauon.album_dex[album_on],
+														pctl.pl_to_id(pctl.active_playlist_viewing),
 													)
 											elif inp.right_click:
 												if pctl.quick_add_target:
@@ -47182,10 +47209,11 @@ def main(holder: Holder) -> None:
 													pctl.selected_in_playlist = tauon.album_dex[album_on]
 													# playlist_position = pctl.playlist_selected
 													gui.shift_selection = [pctl.selected_in_playlist]
-													gallery_menu.activate(
-														pctl.default_playlist[pctl.selected_in_playlist]
-													)
-													pctl.r_menu_position = pctl.selected_in_playlist
+													gallery_menu.activate(MenuTrackRef(
+														pctl.default_playlist[pctl.selected_in_playlist],
+														pctl.selected_in_playlist,
+														pctl.pl_to_id(pctl.active_playlist_viewing),
+													))
 
 													gui.shift_selection = []
 													u = pctl.selected_in_playlist
@@ -48926,7 +48954,7 @@ def main(holder: Holder) -> None:
 						inp.mouse_click = True
 					gui.level_2_click = False
 
-					tc = pctl.master_library[pctl.r_menu_index]
+					tc = pctl.master_library[gui.track_box_track_id]
 
 					w = round(540 * gui.scale)
 					h = round(240 * gui.scale)
@@ -49308,11 +49336,11 @@ def main(holder: Holder) -> None:
 
 						y1 += int(23 * gui.scale)
 
-						total = tauon.star_store.get(pctl.r_menu_index)
+						total = tauon.star_store.get(gui.track_box_track_id)
 
 						ratio = 0
 
-						if total > 0 and pctl.master_library[pctl.r_menu_index].length > 1:
+						if total > 0 and pctl.master_library[gui.track_box_track_id].length > 1:
 							ratio = total / (tc.length - 1)
 
 						ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70 * gui.scale)
@@ -49323,7 +49351,7 @@ def main(holder: Holder) -> None:
 						rect = [x1, y1, 150, 14]
 
 						if tauon.coll(rect) and inp.key_shift_down and inp.mouse_wheel != 0:
-							tauon.star_store.add(pctl.r_menu_index, 60 * inp.mouse_wheel)
+							tauon.star_store.add(gui.track_box_track_id, 60 * inp.mouse_wheel)
 
 						line = time.strftime("%H:%M:%S", time.gmtime(total))
 
@@ -49335,7 +49363,7 @@ def main(holder: Holder) -> None:
 							if pctl.draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
 								prefs.show_lyrics_showcase = True
 								gui.track_box = False
-								tauon.enter_showcase_view(track_id=pctl.r_menu_index)
+								tauon.enter_showcase_view(track_id=gui.track_box_track_id)
 								inp.mouse_click = False
 
 						if len(tc.comment) > 0:
@@ -49858,7 +49886,6 @@ def main(holder: Holder) -> None:
 						if not keymaps.test("shift-up"):
 							if pctl.selected_in_playlist > 0:
 								pctl.selected_in_playlist -= 1
-								pctl.r_menu_index = pctl.default_playlist[pctl.selected_in_playlist]
 							gui.shift_selection = []
 
 						if (
@@ -49872,6 +49899,7 @@ def main(holder: Holder) -> None:
 							gui.frame_callback_list.append(TestTimer(0.9))
 
 						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist))
+						tauon.sync_track_box_to_selected()
 
 					if pctl.selected_in_playlist < len(pctl.default_playlist) and (
 						(
@@ -49892,7 +49920,6 @@ def main(holder: Holder) -> None:
 						if not keymaps.test("shift-down"):
 							if pctl.selected_in_playlist < len(pctl.default_playlist) - 1:
 								pctl.selected_in_playlist += 1
-								pctl.r_menu_index = pctl.default_playlist[pctl.selected_in_playlist]
 							gui.shift_selection = []
 
 						if (
@@ -49907,6 +49934,7 @@ def main(holder: Holder) -> None:
 							gui.frame_callback_list.append(TestTimer(0.9))
 
 						pctl.selected_in_playlist = max(pctl.selected_in_playlist, 0)
+						tauon.sync_track_box_to_selected()
 
 					if (
 						inp.key_return_press
