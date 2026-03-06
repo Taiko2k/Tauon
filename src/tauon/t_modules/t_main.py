@@ -7107,7 +7107,7 @@ class Tauon:
 				if found is True:
 					continue
 
-			if (not found and "location" in track) or "title" in track:
+			if "location" in track or "title" in track:
 				nt = TrackClass()
 				nt.index = self.pctl.master_count
 				nt.found = False
@@ -20173,6 +20173,15 @@ class DropShadow:
 		unit[0].y = round(y) - round(self.underscan)
 		sdl3.SDL_RenderTexture(self.renderer, unit[1], None, unit[0])
 
+def strip_lrc_formatting(lyrics: str) -> str:
+	text = ""
+	for line in lyrics.split("\n"):
+		if len(line) < 10 or (line[0] != "[" or (line[9] != "]" and ":" not in line)) or "." not in line:
+			text += line + "\n"
+		else:
+			text += line.split("]")[-1] + "\n"
+	return text
+
 class LyricsRenMini:
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -20187,14 +20196,7 @@ class LyricsRenMini:
 		self.lyrics_position = 0
 
 	def generate(self, index: int, w: float) -> None:
-		self.text = ""
-
-		# LRC formatting search & destroy
-		for line in self.pctl.master_library[index].lyrics.split("\n"):
-			if len(line) < 10 or ( line[0] != "[" or (line[9] != "]" and ":" not in line) ) or "." not in line:
-				self.text += line + "\n"
-			else:
-				self.text += line.split("]")[-1] + "\n"
+		self.text = strip_lrc_formatting(self.pctl.master_library[index].lyrics)
 		self.lyrics_position = 0
 
 	def render(self, index: int, x: float, y: float, w: float, h: None, p: int) -> None:
@@ -20227,16 +20229,8 @@ class LyricsRen:
 
 	def test_update(self, track_object: TrackClass) -> None:
 		if track_object.index != self.index or self.lrm.to_reload: # or self.text != track_object.lyrics:
-			self.text = ""
 			self.index = track_object.index
-			# old line: self.text = track_object.lyrics
-			# get rid of LRC formatting if you can:
-			for line in track_object.lyrics.split("\n"):
-				if len(line) < 10 or ( (line[0] != "[" and line[9] != "]") or ":" not in line ) or "." not in line:
-					self.text += line + "\n"
-				else:
-					self.text += line.split("]")[-1] + "\n"
-			# TODO (Flynn): fix the conditional for this section to run?
+			self.text = strip_lrc_formatting(track_object.lyrics)
 			self.lyrics_position = 0
 			self.lrm.to_reload = False
 
