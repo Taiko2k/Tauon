@@ -10356,14 +10356,29 @@ class Tauon:
 		self.pctl.cargo.clear()
 		self.gui.lightning_copy = False
 
-	def refind_playing(self) -> None:
-		# Refind playing index
-		if self.pctl.playing_ready():
-			current_track_id = self.pctl.track_queue[self.pctl.queue_step]
-			for i, n in enumerate(self.pctl.playing_playlist()):
-				if current_track_id == n:
-					self.pctl.playlist_playing_position = i
-					break
+	def repair_playing_position_after_removals(self, removed_positions: list[int], playlist_index: int) -> None:
+		if self.pctl.active_playlist_playing != playlist_index:
+			return
+		if self.pctl.playlist_playing_position < 0 or not removed_positions:
+			return
+
+		current_position = self.pctl.playlist_playing_position
+		removed_positions = sorted(set(removed_positions))
+		removed_before_current = sum(item < current_position for item in removed_positions)
+
+		if current_position in removed_positions:
+			self.pctl.playlist_playing_position = current_position - removed_before_current - 1
+		else:
+			self.pctl.playlist_playing_position = current_position - removed_before_current
+
+		if not self.pctl.playing_playlist():
+			self.pctl.playlist_playing_position = -1
+		else:
+			self.pctl.playlist_playing_position = max(self.pctl.playlist_playing_position, 0)
+			self.pctl.playlist_playing_position = min(
+				self.pctl.playlist_playing_position,
+				len(self.pctl.playing_playlist()) - 1,
+			)
 
 	def del_selected(self, force_delete: bool = False) -> None:
 		self.gui.update += 1
@@ -10378,6 +10393,7 @@ class Tauon:
 			return
 
 		li: list[tuple[int, int]] = []
+		removed_positions = sorted(self.gui.shift_selection)
 
 		for item in reversed(self.gui.shift_selection):
 			if not 0 <= item < len(self.pctl.default_playlist):
@@ -10385,12 +10401,9 @@ class Tauon:
 
 			li.append((item, self.pctl.default_playlist[item]))  # take note for force delete
 
-			# Correct track playing position
-			if self.pctl.active_playlist_playing == self.pctl.active_playlist_viewing:
-				if 0 < self.pctl.playlist_playing_position + 1 > item:
-					self.pctl.playlist_playing_position -= 1
-
 			del self.pctl.default_playlist[item]
+
+		self.repair_playing_position_after_removals(removed_positions, self.pctl.active_playlist_viewing)
 
 		if force_delete:
 			for item in li:
@@ -10420,8 +10433,6 @@ class Tauon:
 
 		self.gui.shift_selection = [self.pctl.selected_in_playlist]
 		self.gui.pl_update += 1
-		if self.pctl.active_playlist_playing == self.pctl.active_playlist_viewing:
-			self.refind_playing()
 		self.pctl.notify_change()
 
 	def force_del_selected(self) -> None:
@@ -10581,8 +10592,10 @@ class Tauon:
 			self.show_message(_("Cannot delete a network track"))
 			return
 
+		removed_positions = [i for i, track_id in enumerate(self.pctl.default_playlist) if track_id == ref.track_id]
 		while ref.track_id in self.pctl.default_playlist:
 			self.pctl.default_playlist.remove(ref.track_id)
+		self.repair_playing_position_after_removals(removed_positions, self.pctl.active_playlist_viewing)
 
 		try:
 			send2trash(fullpath)
@@ -10606,8 +10619,6 @@ class Tauon:
 				self.show_message(_("Error deleting file"), fullpath, mode="error")
 
 		self.reload()
-		if self.pctl.active_playlist_playing == self.pctl.active_playlist_viewing:
-			self.refind_playing()
 		self.pctl.notify_change()
 
 	def rename_tracks_deco(self, _track_ref: MenuTrackRef) -> Decorator:
