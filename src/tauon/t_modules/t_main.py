@@ -10359,8 +10359,9 @@ class Tauon:
 	def refind_playing(self) -> None:
 		# Refind playing index
 		if self.pctl.playing_ready():
-			for i, n in enumerate(self.pctl.default_playlist):
-				if self.pctl.track_queue[self.pctl.queue_step] == n:
+			current_track_id = self.pctl.track_queue[self.pctl.queue_step]
+			for i, n in enumerate(self.pctl.playing_playlist()):
+				if current_track_id == n:
 					self.pctl.playlist_playing_position = i
 					break
 
@@ -10419,7 +10420,8 @@ class Tauon:
 
 		self.gui.shift_selection = [self.pctl.selected_in_playlist]
 		self.gui.pl_update += 1
-		self.refind_playing()
+		if self.pctl.active_playlist_playing == self.pctl.active_playlist_viewing:
+			self.refind_playing()
 		self.pctl.notify_change()
 
 	def force_del_selected(self) -> None:
@@ -10604,7 +10606,8 @@ class Tauon:
 				self.show_message(_("Error deleting file"), fullpath, mode="error")
 
 		self.reload()
-		self.refind_playing()
+		if self.pctl.active_playlist_playing == self.pctl.active_playlist_viewing:
+			self.refind_playing()
 		self.pctl.notify_change()
 
 	def rename_tracks_deco(self, _track_ref: MenuTrackRef) -> Decorator:
