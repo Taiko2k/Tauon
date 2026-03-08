@@ -2,6 +2,9 @@
 Changelog
 ---------
 
+### UPCOMING
+ - **Fixed** APE tag scanning (regression)
+
 ### v9.1.0
 
  - **Added** 10 band EQ support to Phazor backend

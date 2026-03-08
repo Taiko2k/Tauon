@@ -16760,27 +16760,27 @@ class Tauon:
 					if nt.bitrate == 0 and nt.length > 0:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 			elif nt.file_ext == "APE":
-				with mutagen.File(nt.fullpath) as audio:
-					nt.length = audio.info.length
-					nt.bit_depth = audio.info.bits_per_sample
-					nt.samplerate = audio.info.sample_rate
-					nt.size = os.path.getsize(nt.fullpath)
-					if nt.length > 0:
-						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+				audio = mutagen.File(nt.fullpath)
+				nt.length = audio.info.length
+				nt.bit_depth = audio.info.bits_per_sample
+				nt.samplerate = audio.info.sample_rate
+				nt.size = os.path.getsize(nt.fullpath)
+				if nt.length > 0:
+					nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 
-					# # def getter(audio, key, type):
-					# #	 if
-					# t = audio.tags
-					# logging.info(t.keys())
-					# nt.size = os.path.getsize(nt.fullpath)
-					# nt.title = str(t.get("title", ""))
-					# nt.album = str(t.get("album", ""))
-					# nt.date = str(t.get("year", ""))
-					# nt.disc_number = str(t.get("discnumber", ""))
-					# nt.comment = str(t.get("comment", ""))
-					# nt.artist = str(t.get("artist", ""))
-					# nt.composer = str(t.get("composer", ""))
-					# nt.composer = str(t.get("composer", ""))
+				# # def getter(audio, key, type):
+				# #	 if
+				# t = audio.tags
+				# logging.info(t.keys())
+				# nt.size = os.path.getsize(nt.fullpath)
+				# nt.title = str(t.get("title", ""))
+				# nt.album = str(t.get("album", ""))
+				# nt.date = str(t.get("year", ""))
+				# nt.disc_number = str(t.get("discnumber", ""))
+				# nt.comment = str(t.get("comment", ""))
+				# nt.artist = str(t.get("artist", ""))
+				# nt.composer = str(t.get("composer", ""))
+				# nt.composer = str(t.get("composer", ""))
 
 				with Ape(nt.fullpath) as audio:
 					audio.read()
@@ -16859,7 +16859,7 @@ class Tauon:
 						except Exception:
 							logging.exception("FFPROBE couldn't supply a duration")
 
-					if type(audio.tags) == mutagen.mp4.MP4Tags:
+					if type(audio.tags) is mutagen.mp4.MP4Tags:
 						tags = audio.tags
 
 						def in_get(key, tags):
