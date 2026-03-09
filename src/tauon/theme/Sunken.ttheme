@@ -78,7 +78,7 @@
 7,11,18         menu background
 35,50,55        menu highlight
 33,50,62        menu border
-250,255.250     menu text
+250,255,250     menu text
 200,230,200,40  menu disable text
 33,50,62        menu icons
 
