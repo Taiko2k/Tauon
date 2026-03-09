@@ -62,11 +62,18 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 		cline = cline.removeprefix("#")
 		ll = cline
 		a = 255
-		r = int(ll[0] + ll[1], 16)
-		g = int(ll[2] + ll[3], 16)
-		b = int(ll[4] + ll[5], 16)
-		if ll[6].isalnum() and ll[7].isalnum():
-			a = int(ll[6] + ll[7], 16)
+		try:
+			r = int(ll[0] + ll[1], 16)
+			g = int(ll[2] + ll[3], 16)
+			b = int(ll[4] + ll[5], 16)
+			if ll[6].isalnum() and ll[7].isalnum():
+				a = int(ll[6] + ll[7], 16)
+		except ValueError:
+			logging.error(f"Error parsing theme line {cline}, we will ignore it")
+			return ColourRGBA(255, 255, 255, 255)
+		except Exception:
+			logging.exception(f"Unknown error parsing theme line {cline}")
+			return ColourRGBA(255, 255, 255, 255)
 		return ColourRGBA(r, g, b, a)
 	# rgb mode
 	for i in cline:
@@ -75,9 +82,7 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 		elif i == "," and mode < 3:
 			mode += 1
 		# Stop parsing after RGB/RGBA values so we don't absorb digits in labels such as "mini text 2"
-		elif i.isspace() and mode >= 2 and colour_str[mode]:
-			break
-		elif mode >= 2 and colour_str[mode]:
+		elif (i.isspace() and mode >= 2 and colour_str[mode]) or (mode >= 2 and colour_str[mode]):
 			break
 
 	# Convert str list to int list
@@ -86,6 +91,15 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 			colour[b] = 255
 		else:
 			colour[b] = int(colour_str[b])
+
+	if (
+		(colour[0] < 0 or colour[0] > 255) or
+		(colour[1] < 0 or colour[1] > 255) or
+		(colour[2] < 0 or colour[2] > 255) or
+		(colour[3] < 0 or colour[3] > 255)
+	):
+		logging.error(f"Got nonsense colour value parsed from {cline}, we will ignore it")
+		return ColourRGBA(255, 255, 255, 255)
 
 	return ColourRGBA(colour[0], colour[1], colour[2], colour[3])
 
