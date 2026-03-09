@@ -13730,6 +13730,9 @@ class Tauon:
 			self.gui.update_layout = True
 
 	def exit_combo(self, restore: bool = False) -> None:
+		if self.prefs.shuffle_lock and not restore:
+			self.toggle_shuffle_layout()
+			return
 		if self.gui.combo_mode:
 			if self.gui.combo_was_album and restore:
 				self.force_album_view()
@@ -48114,7 +48117,10 @@ def main(holder: Holder) -> None:
 						ddt.rect_si(rect, ColourRGBA(80, 200, 180, 255), round(3 * gui.scale))
 					tauon.fields.add(rect)
 
-					if gui.combo_mode and inp.key_esc_press and tauon.is_level_zero():
+					if prefs.shuffle_lock and inp.key_esc_press and tauon.is_level_zero():
+						tauon.toggle_shuffle_layout()
+						inp.key_esc_press = False
+					elif gui.combo_mode and inp.key_esc_press and tauon.is_level_zero():
 						tauon.exit_combo()
 
 					if not gui.set_bar and gui.set_mode and not gui.combo_mode:
