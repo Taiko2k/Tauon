@@ -2,7 +2,9 @@
 Changelog
 ---------
 
-### UPCOMING
+### v9.1.1
+
+ - **Fixed** Shuffle lockdown missing exit button
  - **Fixed** APE tag scanning (regression)
 
 ### v9.1.0
