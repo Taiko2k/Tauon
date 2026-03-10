@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2026-02-16 12:09+0000\n"
+"PO-Revision-Date: 2026-03-11 23:09+0000\n"
 "Last-Translator: RBuzz RBuzz <rbuzz@gmx.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.16-dev\n"
+"X-Generator: Weblate 5.17-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
@@ -372,22 +372,20 @@ msgid "Quit"
 msgstr "Zrezygnuj"
 
 #: src/tauon/t_modules/t_main.py:6788
-#, fuzzy
 msgid "Error importing M3U playlist"
-msgstr "Błąd importu playlisty XSPF."
+msgstr "Błąd importu playlisty M3U"
 
 #: src/tauon/t_modules/t_main.py:6788
 msgid "Error trying to parse trying to parse playlist as UTF-8:"
-msgstr ""
+msgstr "Błąd parsowania listy jako UTF-8:"
 
 #: src/tauon/t_modules/t_main.py:6792
-#, fuzzy
 msgid "Exception importing M3U playlist"
-msgstr "Błąd importu playlisty XSPF."
+msgstr "Wyjątek importu listy M3U"
 
 #: src/tauon/t_modules/t_main.py:6792
 msgid "Unknown exception trying to parse playlist"
-msgstr ""
+msgstr "Nieznany wyjątek próba parsowania listy"
 
 #: src/tauon/t_modules/t_main.py:6997
 msgid "Error importing XSPF playlist."
@@ -402,18 +400,16 @@ msgid "Failed to locate {N} out of {T} tracks."
 msgstr "Błąd odnajdywania {N} spośród {T} utworów."
 
 #: src/tauon/t_modules/t_main.py:7258 src/tauon/t_modules/t_main.py:44050
-#, fuzzy
 msgid "A/B Repeat"
-msgstr "Powtarzanie włączone"
+msgstr "Powtarzanie A/B"
 
 #: src/tauon/t_modules/t_main.py:7260
 msgid "Set B Marker"
-msgstr ""
+msgstr "Ustaw jako B"
 
 #: src/tauon/t_modules/t_main.py:7262
-#, fuzzy
 msgid "Clear A/B"
-msgstr "Oczyść biografię"
+msgstr "Oczyść A/B"
 
 #: src/tauon/t_modules/t_main.py:7347 src/tauon/t_modules/t_main.py:44052
 msgid "Shuffle Lockdown"
@@ -502,11 +498,11 @@ msgstr "Panel ponad tekstami utworów"
 
 #: src/tauon/t_modules/t_main.py:7733
 msgid "Enable Milkdrop Visualiser"
-msgstr ""
+msgstr "Aktywuj mleczne wizualizacje"
 
 #: src/tauon/t_modules/t_main.py:7735
 msgid "Disable Milkdrop Visualiser"
-msgstr ""
+msgstr "Deaktywuj mleczne wizualizacje"
 
 #: src/tauon/t_modules/t_main.py:7739
 #, fuzzy
@@ -535,11 +531,11 @@ msgstr "Pobieranie danych..."
 
 #: src/tauon/t_modules/t_main.py:7784
 msgid "Presets ready"
-msgstr ""
+msgstr "Ustawienia gotowe"
 
 #: src/tauon/t_modules/t_main.py:7792
 msgid "No presets loaded. Download preset pack? (~5MB)"
-msgstr ""
+msgstr "Brak załadowanych ustawień. Pobrać paczkę ustawień? (~5MB)"
 
 #: src/tauon/t_modules/t_main.py:7852
 msgid "There are no lyric sources enabled."
@@ -1830,7 +1826,7 @@ msgstr "Już skanuję!"
 
 #: src/tauon/t_modules/t_main.py:16717
 msgid "Enter two-factor code"
-msgstr ""
+msgstr "Wprowadź kod autoryzacji"
 
 #: src/tauon/t_modules/t_main.py:17173
 msgid "End of playlist"
@@ -1969,7 +1965,7 @@ msgstr "401 Nieudana autoryzacja"
 
 #: src/tauon/t_modules/t_main.py:19383
 msgid "Enter the verification code and try again."
-msgstr ""
+msgstr "Wprowadź kod i spróbuj ponownie."
 
 #: src/tauon/t_modules/t_main.py:19392
 msgid "Error connecting to PLEX server"
@@ -2409,7 +2405,7 @@ msgstr "Włącz"
 
 #: src/tauon/t_modules/t_main.py:24715
 msgid "10 Band EQ"
-msgstr ""
+msgstr "10zakresowy equalizer"
 
 #: src/tauon/t_modules/t_main.py:24779
 msgid "PHAzOR DLL not found!"
@@ -2429,7 +2425,7 @@ msgstr "Cofnij zawraca do początku"
 
 #: src/tauon/t_modules/t_main.py:24798
 msgid "Equalizer"
-msgstr ""
+msgstr "Equalizer"
 
 #: src/tauon/t_modules/t_main.py:24803
 msgid "Cache local files (for smb/nfs)"
@@ -2449,7 +2445,7 @@ msgstr "Ustaw wyjście audio"
 
 #: src/tauon/t_modules/t_main.py:24838
 msgid "PipeWire"
-msgstr ""
+msgstr "PipeWire"
 
 #: src/tauon/t_modules/t_main.py:24841
 msgid "PulseAudio"
@@ -2971,7 +2967,7 @@ msgstr "Odtwarzanie sieciowe PLEX"
 
 #: src/tauon/t_modules/t_main.py:25927
 msgid "Two-factor code"
-msgstr ""
+msgstr "Kod autoryzacji"
 
 #: src/tauon/t_modules/t_main.py:25967
 msgid "Server name"
@@ -4467,7 +4463,7 @@ msgstr "Nie możemy przesłać twojego tekstu i nie wiemy dlaczego."
 
 #: src/tauon/t_modules/t_main.py:41904
 msgid "Are you offline?"
-msgstr ""
+msgstr "Czy jesteś offline?"
 
 #: src/tauon/t_modules/t_main.py:41924
 msgid "The following file is missing:"
@@ -4483,7 +4479,7 @@ msgstr "Nie możemy przesłać twojego tekstu i nie wiemy dlaczego."
 
 #: src/tauon/t_modules/t_main.py:41960
 msgid "Lyrics upload failed with error code: "
-msgstr ""
+msgstr "Ładowanie tekstów nieudane z kodem błędu: "
 
 #: src/tauon/t_modules/t_main.py:42075
 msgid "Folder copy error."
@@ -4570,6 +4566,8 @@ msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
 msgstr ""
+"Ponowne skanowanie utworów sieciowych nie jest wspierane, zamiast tego "
+"należy ponownie importować listy."
 
 #: src/tauon/t_modules/t_main.py:44040
 msgid "Playlists + Queue"
@@ -5187,7 +5185,7 @@ msgstr "Uruchom Spotify Remote"
 
 #: src/tauon/t_modules/t_main.py:44725
 msgid "Online Manual"
-msgstr ""
+msgstr "Instrukcja online"
 
 #: src/tauon/t_modules/t_main.py:44727
 msgid "Disengage Quick Add"
