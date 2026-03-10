@@ -5596,6 +5596,9 @@ class GallClass:
 					# else:
 					#	 source_image = open(source[1], 'rb')
 					source_image = self.album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
+				if source_image is None:
+					logging.debug(f"Image for {key[0].fullpath} not found")
+					continue
 
 				g = io.BytesIO()
 				g.seek(0)
