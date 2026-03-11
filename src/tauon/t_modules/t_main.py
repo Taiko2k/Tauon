@@ -24152,8 +24152,7 @@ class SearchOverlay:
 					match n:
 						case 0 | 1 | 2 | 3 | 5 | 6 | 7 | 10:
 							self.pctl.show_current(index=item[2], playing=False)
-							if prefs.album_mode:
-								self.tauon.show_in_gal(0)
+
 						case 8:
 							pl = self.pctl.id_to_pl(item[3])
 							if pl is not None:
