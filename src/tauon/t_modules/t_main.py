@@ -40333,7 +40333,7 @@ def load_prefs(bag: Bag) -> None:
 	cf.add_text("[locale]")
 	prefs.ui_lang = cf.sync_add(
 		"string", "display-language", prefs.ui_lang, "Override display language to use if "
-		"available. E.g. \"en\", \"ja\", \"zh_CH\". "
+		"available. E.g. \"en\", \"ja\", \"zh_CN\". "
 		"Default: \"auto\"")
 	# prefs.diacritic_search = cf.sync_add("bool", "decode-search", prefs.diacritic_search, "Allow searching of diacritics etc using ascii in search functions. (Disablng may speed up search)")
 	cf.br()
