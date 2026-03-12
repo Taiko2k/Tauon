@@ -1118,7 +1118,7 @@ class AlbumStarStore:
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.db: dict[str, int] = {}
-		self.subsonic = SubsonicService(tauon=tauon, album_star_store=self)
+		self.subsonic: SubsonicService = SubsonicService(tauon=tauon, album_star_store=self)
 
 	def get_key(self, track_object: TrackClass) -> str:
 		artist = track_object.album_artist
@@ -5481,25 +5481,25 @@ class Menu:
 
 class GallClass:
 	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True) -> None:
-		self.tauon                = tauon
-		self.tls_context          = tauon.tls_context
+		self.tauon: Tauon = tauon
+		self.tls_context: ssl.SSLContext = tauon.tls_context
 		self.renderer             = tauon.renderer
-		self.ddt                  = tauon.ddt
-		self.quickthumbnail       = tauon.quickthumbnail
-		self.folder_image_offsets = tauon.folder_image_offsets
-		self.g_cache_directory    = tauon.g_cache_directory
-		self.gui                  = tauon.gui
-		self.prefs                = tauon.prefs
-		self.search_over          = tauon.search_over
-		self.album_art_gen        = tauon.album_art_gen
-		self.size                 = size
+		self.ddt: TDraw = tauon.ddt
+		self.quickthumbnail: QuickThumbnail = tauon.quickthumbnail
+		self.folder_image_offsets: dict[str, int] = tauon.folder_image_offsets
+		self.g_cache_directory: Path = tauon.g_cache_directory
+		self.gui: GuiVar = tauon.gui
+		self.prefs: Prefs = tauon.prefs
+		self.search_over: SearchOverlay = tauon.search_over
+		self.album_art_gen: AlbumArt = tauon.album_art_gen
+		self.size: int = size
 		self.gall: dict[tuple[TrackClass, int, int], list[int | BytesIO | None]] = {}
 		self.queue:    list[tuple[TrackClass, int, int]] = []
 		self.key_list: list[tuple[TrackClass, int, int]] = []
-		self.save_out             = save_out
-		self.i                    = 0
-		self.lock                 = threading.Lock()
-		self.limit                = 60
+		self.save_out: bool = save_out
+		self.i: int = 0
+		self.lock: threading.LockType = threading.Lock()
+		self.limit: int = 60
 
 	def get_file_source(self, track_object: TrackClass) -> tuple[bool, int] | tuple[tuple[int, str], int]:
 		sources = self.album_art_gen.get_sources(track_object)
@@ -5565,7 +5565,6 @@ class GallClass:
 						slow_load = True
 
 				if slow_load:
-
 					source, c_offset = self.get_file_source(key[0])
 
 					if source is False:
@@ -5597,6 +5596,9 @@ class GallClass:
 					# else:
 					#	 source_image = open(source[1], 'rb')
 					source_image = self.album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
+				if source_image is None:
+					logging.debug(f"Image for {key[0].fullpath} not found")
+					continue
 
 				g = io.BytesIO()
 				g.seek(0)
@@ -6180,13 +6182,13 @@ class Tauon:
 		self.chrome: Chrome | None = None
 		self.chrome_menu: Menu | None = None
 
-		self.tidal             = Tidal(self)
-		self.plex              = PlexService(self)
-		self.jellyfin          = Jellyfin(self)
-		self.koel              = KoelService(self)
-		self.tau               = TauService(self)
-		self.album_star_store  = AlbumStarStore(self)
-		self.subsonic          = self.album_star_store.subsonic
+		self.tidal: Tidal       = Tidal(self)
+		self.plex: PlexService  = PlexService(self)
+		self.jellyfin: Jellyfin = Jellyfin(self)
+		self.koel: KoelService  = KoelService(self)
+		self.tau: TauService    = TauService(self)
+		self.album_star_store: AlbumStarStore = AlbumStarStore(self)
+		self.subsonic: SubsonicService = self.album_star_store.subsonic
 
 		self.playlist_autoscan = False
 		self.dropped_playlist = -1
@@ -21676,7 +21678,7 @@ class AlbumArt:
 		# self.embed_cached = (track, pic)
 		return pic
 
-	def get_source_raw(self, offset: int, sources: list[tuple[int, str]] | int, track: TrackClass, subsource: list[tuple[int, str]] | None = None):
+	def get_source_raw(self, offset: int, sources: list[tuple[int, str]] | int, track: TrackClass, subsource: list[tuple[int, str]] | None = None) -> BytesIO | BufferedReader[_BufferedReaderStream] | None:
 		"""Caller has to call .close() on the returned object afterwards"""
 		source_image = None
 
