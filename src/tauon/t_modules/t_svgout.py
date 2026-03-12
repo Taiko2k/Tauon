@@ -46,7 +46,9 @@ def render_icons(source_directory: str, output_directory: str, scale: int) -> No
 
 		handle = Rsvg.Handle()
 		svg = handle.new_from_file(in_path)
-
+		if svg is None:
+			logging.error(f"Couldn't load {in_path}")
+			continue
 		unscaled_width = svg.props.width
 		unscaled_height = svg.props.height
 
