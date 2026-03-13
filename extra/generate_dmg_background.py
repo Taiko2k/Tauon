@@ -5,7 +5,7 @@ to the Applications folder, guiding the user to drag-and-drop install.
 
 Window and icon layout must match the create-dmg arguments:
   --window-size 540 400
-  --icon "TauonMusicBox.app" 150 170
+  --icon "Tauon.app" 150 170
   --app-drop-link 390 170
 """
 
