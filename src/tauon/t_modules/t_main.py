@@ -9759,15 +9759,21 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[index].title + "\" a d>"
 		return None
 
-	def gen_folder_duration(self, pl: int, get_sets: bool = False) -> list[tuple[list[int], float]] | None:
-		if len(self.pctl.multi_playlist[pl].playlist_ids) < 3:
+	def gen_folder_duration(
+		self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None, reverse: bool = True,
+	) -> list[int] | list[tuple[list[int], float]] | None:
+		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
+
+		if not source:
+			if custom_list is not None or get_sets:
+				return []
 			return None
 
 		sets: list[list[int]] = []
 		se:         list[int] = []
-		last = self.pctl.master_library[self.pctl.multi_playlist[pl].playlist_ids[0]].parent_folder_path
-		last_al = self.pctl.master_library[self.pctl.multi_playlist[pl].playlist_ids[0]].album
-		for track in self.pctl.multi_playlist[pl].playlist_ids:
+		last = self.pctl.master_library[source[0]].parent_folder_path
+		last_al = self.pctl.master_library[source[0]].album
+		for track in source:
 			if last != self.pctl.master_library[track].parent_folder_path or last_al != self.pctl.master_library[track].album:
 				last = self.pctl.master_library[track].parent_folder_path
 				last_al = self.pctl.master_library[track].album
@@ -9788,17 +9794,21 @@ class Tauon:
 				r.append((item, best(item)))
 			return r
 
-		sets = sorted(sets, key=best, reverse=True)
+		sets = sorted(sets, key=best, reverse=reverse)
 		playlist: list[int] = []
 
 		for se in sets:
 			playlist += se
+
+		if custom_list is not None:
+			return playlist
 
 		self.pctl.multi_playlist.append(
 			self.pl_gen(
 				title=self.pctl.multi_playlist[pl].title + add_pl_tag(_("Longest Albums")),
 				playlist_ids=copy.deepcopy(playlist),
 				hide_title=False))
+		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "s\"" + self.pctl.multi_playlist[pl].title + "\" a ad>"
 		return None
 
 	def gen_sort_date(self, index: int, rev: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
@@ -14509,6 +14519,14 @@ class Tauon:
 			search_results_cache[key] = results
 			return results
 
+		def parse_minutes(value: str) -> float | None:
+			if not value:
+				return None
+			try:
+				return float(value) * 60
+			except ValueError:
+				return None
+
 		#logging.info(cmds)
 		#logging.info(quotes)
 
@@ -14749,18 +14767,16 @@ class Tauon:
 				playlist = list(reversed(playlist))
 
 			elif cm[:2] == "d<":
-				value = cm[2:]
-				if value and value.isdigit():
-					value = int(value)
+				value = parse_minutes(cm[2:])
+				if value is not None:
 					for i in reversed(range(len(playlist))):
 						tr = self.pctl.get_track(playlist[i])
 						if not value > tr.length:
 							del playlist[i]
 
 			elif cm[:2] == "d>":
-				value = cm[2:]
-				if value and value.isdigit():
-					value = int(value)
+				value = parse_minutes(cm[2:])
+				if value is not None:
 					for i in reversed(range(len(playlist))):
 						tr = self.pctl.get_track(playlist[i])
 						if not value < tr.length:
@@ -14775,6 +14791,30 @@ class Tauon:
 			elif cm == "pa<":
 				playlist = self.gen_folder_top(0, custom_list=playlist)
 				playlist = self.gen_folder_reverse(0, playlist)
+
+			elif cm == "ad>":
+				playlist = self.gen_folder_duration(0, custom_list=playlist)
+
+			elif cm == "ad<":
+				playlist = self.gen_folder_duration(0, custom_list=playlist, reverse=False)
+
+			elif cm[:3] == "ad>":
+				value = parse_minutes(cm[3:])
+				if value is not None:
+					temp: list[int] = []
+					for album, duration in self.gen_folder_duration(0, get_sets=True, custom_list=playlist) or []:
+						if duration > value:
+							temp.extend(album)
+					playlist = temp
+
+			elif cm[:3] == "ad<":
+				value = parse_minutes(cm[3:])
+				if value is not None:
+					temp: list[int] = []
+					for album, duration in self.gen_folder_duration(0, get_sets=True, custom_list=playlist) or []:
+						if duration < value:
+							temp.extend(album)
+					playlist = temp
 
 			elif cm in ("pt>", "pc>"):
 				playlist = self.gen_top_100(0, custom_list=playlist)
@@ -32932,8 +32972,11 @@ class RenamePlaylistBox:
 			self.ddt.text((xx, yy), "pc>5", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Play count: >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "d>120", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Duration (seconds): >, <"), hint_colour, hint_font)
+			self.ddt.text((xx, yy), "d>3", code_colour, code_font)
+			self.ddt.text((xx2, yy), _("Track duration (minutes): >, <"), hint_colour, hint_font)
+			yy += round(12 * self.gui.scale)
+			self.ddt.text((xx, yy), "ad>5", code_colour, code_font)
+			self.ddt.text((xx2, yy), _("Album duration (minutes): >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "rat>3.5", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Track rating 0-5: >, <, ="), hint_colour, hint_font)
@@ -32975,13 +33018,16 @@ class RenamePlaylistBox:
 			self.ddt.text((xx2, yy), _("Year: >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "d>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Duration: >, <"), hint_colour, hint_font)
+			self.ddt.text((xx2, yy), _("Track duration: >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "pt>", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Track Playtime: >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "pa>", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Album playtime: >, <"), hint_colour, hint_font)
+			yy += round(12 * self.gui.scale)
+			self.ddt.text((xx, yy), "ad>", code_colour, code_font)
+			self.ddt.text((xx2, yy), _("Album duration: >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "rv", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Invert tracks"), hint_colour, hint_font)
