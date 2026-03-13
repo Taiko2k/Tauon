@@ -7,7 +7,7 @@ from pathlib import Path
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 python_ver_dotless = f"{sys.version_info.major}{sys.version_info.minor}"
 block_cipher = None
-# default PATH=/usr/bin:/bin:/usr/sbin:/sbin:/Applications/TauonMusicBox.app/Contents/Frameworks
+# default PATH=/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Tauon.app/Contents/Frameworks
 
 # Should resolve as /opt/homebrew
 prefix = subprocess.run(["brew", "--prefix"], capture_output=True, text=True).stdout.strip()
@@ -75,7 +75,7 @@ exe = EXE(
 	a.scripts,
 	[],
 	exclude_binaries=True,
-	name="Tauon Music Box",
+	name="Tauon",
 	debug=False,
 	bootloader_ignore_signals=False,
 	strip=False,
@@ -95,14 +95,16 @@ coll = COLLECT(
 	strip=False,
 	upx=True,
 	upx_exclude=[],
-	name="TauonMusicBox")
+	name="Tauon")
 
 app = BUNDLE(
 	coll,
-	name="TauonMusicBox.app",
+	name="Tauon.app",
 	icon="src/tauon/assets/tau-mac.icns",
 	bundle_identifier=None,
 	info_plist={
+		"CFBundleName": "Tauon",
+		"CFBundleDisplayName": "Tauon",
 		"LSEnvironment": {
 			"LANG": "en_US.UTF-8",
 			"LC_CTYPE": "en_US.UTF-8",

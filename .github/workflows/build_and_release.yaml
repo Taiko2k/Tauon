@@ -276,10 +276,10 @@ jobs:
 
       - name: Ensure Now Playing helper is executable
         run: |
-          chmod +x "dist/TauonMusicBox.app/Contents/Resources/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying"
+          chmod +x "dist/Tauon.app/Contents/Resources/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying"
 
       - name: "[DEBUG] List all files in .app"
-        run: find "dist/TauonMusicBox.app"
+        run: find "dist/Tauon.app"
 
       - name: Generate DMG background image
         run: |
@@ -288,7 +288,7 @@ jobs:
       - name: Create DMG
         run: |
           mkdir -p dist/dmg
-          APP_NAME="TauonMusicBox"
+          APP_NAME="Tauon"
           APP_PATH="dist/${APP_NAME}.app"
           DMG_PATH="dist/dmg/${APP_NAME}.dmg"
 
@@ -316,13 +316,13 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v6
         with:
-          name: TauonMusicBox-dmg
-          path: dist/dmg/TauonMusicBox.dmg
+          name: Tauon-dmg
+          path: dist/dmg/Tauon.dmg
 
       #- name: Run Tauon for testing
       #  run: |
-      #    hdiutil attach dist/dmg/TauonMusicBox.dmg
-      #    /Volumes/TauonMusicBox/TauonMusicBox.app/Contents/MacOS/Tauon\ Music\ Box
+      #    hdiutil attach dist/dmg/Tauon.dmg
+      #    /Volumes/Tauon/Tauon.app/Contents/MacOS/Tauon
 
   build-windows:
     name: "Windows"
