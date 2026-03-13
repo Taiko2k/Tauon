@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import socket
+import threading
 from typing import TYPE_CHECKING
 
 import pychromecast
+import zeroconf
 
 from tauon.t_modules.t_extra import shooter
 
@@ -13,6 +15,9 @@ if TYPE_CHECKING:
 	from pychromecast.discovery import CastBrowser
 
 	from tauon.t_modules.t_main import Tauon
+
+
+DISCOVERY_TIMEOUT = 5.0
 
 
 def get_ip() -> str:
@@ -38,7 +43,30 @@ class Chrome:
 		self.cast: Chromecast | None = None
 		self.save_vol: float = 100
 		self.ip: str = ""
-		self.browser: CastBrowser
+		self.browser: CastBrowser | None = None
+
+	def discover_services(self, timeout: float = DISCOVERY_TIMEOUT) -> list[list[str]]:
+		zconf = zeroconf.Zeroconf()
+		try:
+			browser = pychromecast.discovery.CastBrowser(
+				pychromecast.discovery.SimpleCastListener(),
+				zconf,
+			)
+		except Exception:
+			zconf.close()
+			raise
+		try:
+			browser.start_discovery()
+			threading.Event().wait(timeout)
+		finally:
+			browser.stop_discovery()
+		return sorted(
+			[
+				[str(device.uuid), str(device.friendly_name)]
+				for device in browser.devices.values()
+			],
+			key=lambda service: service[1].casefold(),
+		)
 
 	def rescan(self) -> None:
 		logging.info("Scanning for chromecasts...")
@@ -46,27 +74,33 @@ class Chrome:
 		if True:  # not self.services:
 			try:
 				# self.tauon.show_message(self.tauon.strings.scan_chrome)
-				services, browser = pychromecast.discovery.discover_chromecasts()
-				browser.stop_discovery()
+				services = self.discover_services()
 				menu = self.tauon.chrome_menu
 				if menu is None:
 					logging.critical("menu was None, this should not happen!")
 					return
 				MenuItem = self.tauon.MenuItem
+				chrome_submenu_index = len(menu.subs) - 1
+				if chrome_submenu_index < 0:
+					logging.critical("Chromecast submenu was missing, this should not happen!")
+					return
 
-				# menu.items.clear()
-				for item in services:
-					self.services.append([str(item.uuid), str(item.friendly_name)])
+				self.services = services
+				menu.subs[chrome_submenu_index].clear()
+				for item in self.services:
 					menu.add_to_sub(
-						1,
+						chrome_submenu_index,
 						MenuItem(
-							self.tauon.strings.cast_to % str(item.friendly_name),
+							self.tauon.strings.cast_to % item[1],
 							self.three,
 							pass_ref=True,
-							args=[str(item.uuid), str(item.friendly_name)],
+							args=item,
 						),
 					)
-				menu.add_to_sub(1, MenuItem(self.tauon.strings.stop_cast, self.end, show_test=lambda x: self.active))
+				menu.add_to_sub(
+					chrome_submenu_index,
+					MenuItem(self.tauon.strings.stop_cast, self.end, show_test=lambda x: self.active),
+				)
 			except Exception:
 				logging.exception("Failed to get chromecasts")
 				raise
