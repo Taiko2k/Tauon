@@ -67,13 +67,40 @@ if sys.platform != "win32":
 n_version = "9.1.1"  # Should also be bumped in pyproject.toml, extra/*.appdata.xml
 t_version = "v" + n_version
 t_title = "Tauon"
-t_id = "tauonmb"
-t_agent = "TauonMusicBox/" + n_version
+t_id = "com.github.taiko2k.tauonmb"
+t_agent = f"{t_title}/" + n_version
+t_creator = "Taiko2k"
+t_copyright = "Copyright 2015-2026 Taiko2k"
+t_url = "https://tauonmusicbox.rocks/"
+t_type = "mediaplayer"
 
 logging.info(f"{t_title} {t_version}")
-logging.info("Copyright 2015-2025 Taiko2k captain.gxj@gmail.com\n")
+logging.info(f"{t_copyright} captain.gxj@gmail.com\n")
 
 logging.info(f"Started with arguments: {sys.argv}")
+
+
+def set_sdl_app_metadata() -> None:
+	"""Populate SDL app metadata before SDL_Init()."""
+	if not sdl3.SDL_SetAppMetadata(
+		t_title.encode("utf-8"),
+		n_version.encode("utf-8"),
+		t_id.encode("utf-8"),
+	):
+		logging.warning("Failed to set SDL app metadata")
+
+	metadata_properties = (
+		(sdl3.SDL_PROP_APP_METADATA_NAME_STRING, t_title.encode("utf-8")),
+		(sdl3.SDL_PROP_APP_METADATA_VERSION_STRING, n_version.encode("utf-8")),
+		(sdl3.SDL_PROP_APP_METADATA_IDENTIFIER_STRING, t_id.encode("utf-8")),
+		(sdl3.SDL_PROP_APP_METADATA_CREATOR_STRING, t_creator.encode("utf-8")),
+		(sdl3.SDL_PROP_APP_METADATA_COPYRIGHT_STRING, t_copyright.encode("utf-8")),
+		(sdl3.SDL_PROP_APP_METADATA_URL_STRING, t_url.encode("utf-8")),
+		(sdl3.SDL_PROP_APP_METADATA_TYPE_STRING, t_type.encode("utf-8")),
+	)
+	for key, value in metadata_properties:
+		if not sdl3.SDL_SetAppMetadataProperty(key, value):
+			logging.warning(f"Failed to set SDL app metadata property: {key!r}")
 
 
 def open_discord() -> None:
@@ -164,11 +191,6 @@ install_mode = bool(
 # Assume that it's a classic Linux install, use standard paths
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
 	install_directory = Path("/usr/share/TauonMusicBox")
-
-if str(install_directory).startswith("/app/"):
-	# Its Flatpak
-	t_id = "com.github.taiko2k.tauonmb"
-
 
 if (install_directory / "portable").is_file():
 	install_mode = False
@@ -293,6 +315,8 @@ if sethint_result is None:
 		"Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround"
 	)
 	sys.exit(1)
+
+set_sdl_app_metadata()
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
