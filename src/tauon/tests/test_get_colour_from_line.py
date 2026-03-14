@@ -1,7 +1,8 @@
 
 import os
 
-os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
+os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method
+os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation
 
 from tauon.t_modules.t_themeload import get_colour_from_line
 
