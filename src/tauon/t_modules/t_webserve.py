@@ -24,6 +24,7 @@ import io
 import json
 import logging
 import os
+import socket
 import struct
 import subprocess
 import time
@@ -34,10 +35,96 @@ from typing import TYPE_CHECKING
 from tauon.t_modules.t_enums import Backend, PlayingState, StopMode
 from tauon.t_modules.t_extra import Timer
 
+try:
+	from zeroconf import ServiceInfo, Zeroconf
+except ModuleNotFoundError:
+	ServiceInfo = None
+	Zeroconf = None
+except Exception:
+	logging.exception("Failed to import zeroconf, remote API discovery will be disabled.")
+	ServiceInfo = None
+	Zeroconf = None
+
 if TYPE_CHECKING:
 	from typing import Any
 
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
+
+
+REMOTE_API_PORT = 7814
+REMOTE_API_SERVICE_TYPE = "_tauon-remote._tcp.local."
+
+
+def get_local_ipv4_address() -> str | None:
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.settimeout(0)
+	try:
+		# Doesn't need to be reachable, only needs to select the active local interface.
+		s.connect(("10.255.255.255", 1))
+		return s.getsockname()[0]
+	except Exception:
+		logging.exception("Failed to determine local IPv4 address for remote API discovery.")
+		return None
+	finally:
+		s.close()
+
+
+class RemoteAPIZeroconfPublisher:
+	def __init__(self, port: int = REMOTE_API_PORT) -> None:
+		self.port = port
+		self.zeroconf: Zeroconf | None = None
+		self.service_info: ServiceInfo | None = None
+
+	def start(self) -> None:
+		if Zeroconf is None or ServiceInfo is None:
+			logging.info("zeroconf unavailable, skipping remote API discovery registration.")
+			return
+
+		address = get_local_ipv4_address()
+		if address is None:
+			logging.warning("Remote API discovery registration skipped because no local IPv4 address was available.")
+			return
+
+		host_name = socket.gethostname().split(".")[0].strip() or "Tauon"
+		server_name = f"{host_name}.local."
+		service_name = f"Tauon Remote ({host_name}).{REMOTE_API_SERVICE_TYPE}"
+		properties = {
+			"app": "Tauon",
+			"path": "/api1",
+			"version": "1",
+		}
+
+		self.zeroconf = Zeroconf()
+		self.service_info = ServiceInfo(
+			REMOTE_API_SERVICE_TYPE,
+			service_name,
+			addresses=[socket.inet_aton(address)],
+			port=self.port,
+			properties=properties,
+			server=server_name,
+		)
+		try:
+			self.zeroconf.register_service(self.service_info)
+			logging.info(f"Registered Tauon remote API discovery on {address}:{self.port}")
+		except Exception:
+			logging.exception("Failed to register Tauon remote API discovery service.")
+			self.stop()
+
+	def stop(self) -> None:
+		if self.zeroconf is None:
+			return
+		if self.service_info is not None:
+			try:
+				self.zeroconf.unregister_service(self.service_info)
+			except Exception:
+				logging.exception("Failed to unregister Tauon remote API discovery service.")
+		try:
+			self.zeroconf.close()
+		except Exception:
+			logging.exception("Failed to close zeroconf after remote API discovery shutdown.")
+		finally:
+			self.zeroconf = None
+			self.service_info = None
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -401,6 +488,7 @@ def webserve(
 
 def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 	play_timer = Timer()
+	discovery_publisher = RemoteAPIZeroconfPublisher()
 
 	class Server(BaseHTTPRequestHandler):
 		def log_message(self, format: str, *args) -> None:
@@ -953,7 +1041,9 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			tauon.wake()
 
 	try:
-		httpd = ThreadedHTTPServer(("0.0.0.0", 7814), Server)
+		logging.info("Starting remote control server")
+		httpd = ThreadedHTTPServer(("0.0.0.0", REMOTE_API_PORT), Server)
+		discovery_publisher.start()
 		httpd.serve_forever()
 		httpd.server_close()
 	except OSError as e:
@@ -963,6 +1053,8 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			logging.exception("Unknown OSError starting web api server!")
 	except Exception:
 		logging.exception("Failed starting web api server!")
+	finally:
+		discovery_publisher.stop()
 
 
 def controller(tauon: Tauon) -> None:
