@@ -24,6 +24,7 @@ natsort # optional
 PyChromecast # optional
 setproctitle # optional
 tidalapi # optional
+zeroconf # optional
 colored_traceback;           sys_platform != 'win32' # optional - Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 PyOpenGL
 #pyinstaller

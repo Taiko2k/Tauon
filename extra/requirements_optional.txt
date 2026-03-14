@@ -12,3 +12,4 @@ pypresence>=4.5.0
 setproctitle
 tekore
 tidalapi
+zeroconf
