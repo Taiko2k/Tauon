@@ -234,14 +234,15 @@ except ModuleNotFoundError:
 except Exception:
 	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
 
-try:
-	import setproctitle
-except ModuleNotFoundError:
-	logging.warning("Unable to import setproctitle, won't be setting process title.")
-except Exception:
-	logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
-else:
-	setproctitle.setproctitle("tauonmb")
+if not sys.platform == "darwin":
+	try:
+		import setproctitle
+	except ModuleNotFoundError:
+		logging.warning("Unable to import setproctitle, won't be setting process title.")
+	except Exception:
+		logging.exception("Unknown error trying to import setproctitle, won't be setting process title.")
+	else:
+		setproctitle.setproctitle("tauonmb")
 
 # try:
 # 	import rpc
