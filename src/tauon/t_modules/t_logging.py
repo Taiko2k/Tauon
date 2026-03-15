@@ -1,6 +1,8 @@
 import logging
 from logging import LogRecord
-from typing import override
+
+# This needs 3.12
+#from typing import override
 
 
 class CustomLoggingFormatter(logging.Formatter):
@@ -43,7 +45,7 @@ class CustomLoggingFormatter(logging.Formatter):
 			}
 		# fmt:on
 
-	@override
+	#@override
 	def format(self, record: LogRecord) -> str:
 		log_fmt = self.FORMATS.get(record.levelno)
 		# Remove the milliseconds(%f) from the default string
@@ -60,7 +62,7 @@ class LogHistoryHandler(logging.Handler):
 		super().__init__()
 		self.log_history: list[LogRecord] = []
 
-	@override
+	#@override
 	def emit(self, record: LogRecord) -> None:
 		self.log_history.append(record)
 		if len(self.log_history) > 50:
