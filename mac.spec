@@ -50,6 +50,9 @@ a = Analysis(
 		*nowplaying_datas,
 	],
 	hiddenimports=[
+		"AppKit",
+		"Foundation",
+		"objc",
 		"phazor",
 		"pylast",
 		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840

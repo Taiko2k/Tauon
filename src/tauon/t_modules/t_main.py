@@ -45055,6 +45055,17 @@ def main(holder: Holder) -> None:
 	if gui.restore_radio_view:
 		tauon.enter_radio_view()
 
+	if bag.macos:
+		try:
+			from tauon.t_modules.t_macos_menubar import MacMenuBar
+		except ModuleNotFoundError:
+			logging.warning("Unable to import PyObjC menubar support, macOS menus will be unavailable.")
+		except Exception:
+			logging.exception("Failed to initialise macOS menubar support.")
+		else:
+			tauon.macos_menu_bar = MacMenuBar(tauon)
+			tauon.macos_menu_bar.install()
+
 	# pctl.switch_playlist(len(pctl.multi_playlist) - 1)
 
 	sdl3.SDL_SetRenderTarget(renderer, overlay_texture_texture)
