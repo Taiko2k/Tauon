@@ -34,6 +34,14 @@ class _MenuTarget(AppKit.NSObject):
 		self.controller.open_tracks_art()
 
 	@objc.IBAction
+	def importFolderToCurrentPlaylist_(self, _: object) -> None:
+		self.controller.import_folder_to_current_playlist()
+
+	@objc.IBAction
+	def clearCurrentPlaylist_(self, _: object) -> None:
+		self.controller.clear_current_playlist()
+
+	@objc.IBAction
 	def openGallery_(self, _: object) -> None:
 		self.controller.open_gallery()
 
@@ -154,6 +162,27 @@ class MacMenuBar:
 		self._install_app_menu(main_menu)
 		self._install_menu(
 			main_menu,
+			"File",
+			[
+				(
+					"file_import_folder_to_current_playlist",
+					"Import Folder to Current Playlist",
+					"importFolderToCurrentPlaylist:",
+					"",
+					0,
+				),
+				(
+					"file_clear_current_playlist",
+					"Clear Current Playlist",
+					"clearCurrentPlaylist:",
+					"",
+					0,
+				),
+			],
+			insert_at=1,
+		)
+		self._install_menu(
+			main_menu,
 			"Navigation",
 			[
 				("navigation_tracks_art", "Tracks & Art", "openTracksArt:", "", 0),
@@ -245,6 +274,7 @@ class MacMenuBar:
 		main_menu: AppKit.NSMenu,
 		title: str,
 		items: list[tuple[str, str, str, str, int] | None],
+		insert_at: int | None = None,
 	) -> AppKit.NSMenu:
 		existing = self._find_item(main_menu, title)
 		if existing is not None:
@@ -266,7 +296,10 @@ class MacMenuBar:
 
 		menu_item = AppKit.NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, None, "")
 		menu_item.setSubmenu_(menu)
-		main_menu.addItem_(menu_item)
+		if insert_at is None:
+			main_menu.addItem_(menu_item)
+		else:
+			main_menu.insertItem_atIndex_(menu_item, min(insert_at, main_menu.numberOfItems()))
 		return menu
 
 	def _move_window_menu_before_help(
@@ -392,6 +425,7 @@ class MacMenuBar:
 		self._set_enabled("lockdown_exit", True)
 
 		play_state = pctl.playing_state
+		current_playlist_locked = self.tauon.pl_is_locked(pctl.active_playlist_viewing)
 		current_track_available = bool(pctl.track_queue) or self.tauon.spot_ctl.coasting
 		playlist_available = bool(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids)
 		love_track_title = "Love Playing Track"
@@ -399,6 +433,8 @@ class MacMenuBar:
 			love_track_title = "Unlove Playing Track"
 
 		self._set_title("love_track", love_track_title)
+		self._set_enabled("file_import_folder_to_current_playlist", not current_playlist_locked)
+		self._set_enabled("file_clear_current_playlist", not current_playlist_locked)
 		self._set_enabled("play", play_state in (PlayingState.STOPPED, PlayingState.PAUSED))
 		self._set_enabled("pause", play_state == PlayingState.PLAYING)
 		self._set_enabled("stop", play_state != PlayingState.STOPPED)
@@ -423,6 +459,32 @@ class MacMenuBar:
 		item = self.items.get(key)
 		if item is not None and item.title() != title:
 			item.setTitle_(title)
+
+	def import_folder_to_current_playlist(self) -> None:
+		panel = AppKit.NSOpenPanel.openPanel()
+		panel.setCanChooseFiles_(False)
+		panel.setCanChooseDirectories_(True)
+		panel.setAllowsMultipleSelection_(False)
+		panel.setCanCreateDirectories_(False)
+		panel.setMessage_("Choose a folder to import into the current playlist.")
+		panel.setPrompt_("Import")
+		panel.setDirectoryURL_(AppKit.NSURL.fileURLWithPath_(str(self.tauon.music_directory)))
+		if panel.runModal() != AppKit.NSModalResponseOK:
+			return
+
+		url = panel.URL()
+		if url is None:
+			return
+		path = url.path()
+		if not path:
+			return
+
+		self.tauon.import_folder_to_current_playlist(path)
+		self.refresh_states()
+
+	def clear_current_playlist(self) -> None:
+		self.tauon.clear_current_playlist()
+		self.refresh_states()
 
 	def open_settings(self) -> None:
 		self.tauon.activate_info_box()

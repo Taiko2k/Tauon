@@ -8697,6 +8697,31 @@ class Tauon:
 
 		self.gui.pl_update = 1
 
+	def clear_current_playlist(self) -> None:
+		self.clear_playlist(self.pctl.active_playlist_viewing)
+
+	def import_folder_to_current_playlist(self, path: str) -> None:
+		pl = self.pctl.active_playlist_viewing
+		if self.pl_is_locked(pl):
+			self.show_message(_("Playlist is locked"))
+			return
+
+		target = path.replace("\\", "/")
+		if not os.path.isdir(target):
+			self.show_message(_("Folder not found"), mode="warning")
+			return
+
+		load_order = LoadClass()
+		load_order.target = target
+		load_order.playlist = self.pctl.multi_playlist[pl].uuid_int
+
+		self.quick_import_done.append(load_order.target)
+		self.pctl.multi_playlist[pl].last_folder.append(load_order.target)
+		reduce_paths(self.pctl.multi_playlist[pl].last_folder)
+
+		self.load_orders.append(copy.deepcopy(load_order))
+		self.gui.update += 1
+
 	def convert_playlist(self, pl: int, get_list: bool = False) -> list[list[int]] | None:
 		if not self.test_ffmpeg():
 			return None
