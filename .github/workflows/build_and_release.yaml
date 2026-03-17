@@ -213,6 +213,8 @@ jobs:
             opusfile \
             libopenmpt \
             wavpack \
+            flac \
+            mpg123 \
             game-music-emu \
             create-dmg \
             Python@3.14
