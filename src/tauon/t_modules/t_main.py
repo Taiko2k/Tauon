@@ -42829,10 +42829,11 @@ def main(holder: Holder) -> None:
 
 	if not macos:
 		icon = sdl3.IMG_Load(str(asset_directory / "icon-64.png").encode())
-	else:
-		icon = sdl3.IMG_Load(str(asset_directory / "tau-mac.png").encode())
+		sdl3.SDL_SetWindowIcon(t_window, icon)
 
-	sdl3.SDL_SetWindowIcon(t_window, icon)
+	# else:
+	# 	icon = sdl3.IMG_Load(str(asset_directory / "tau-mac.png").encode())
+
 
 	if not phone:
 		if window_size[0] != logical_size[0]:
