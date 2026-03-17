@@ -67,13 +67,17 @@
 	#define MA_NO_DECODING
 	#define MA_NO_ENCODING
 	#define MA_ENABLE_ONLY_SPECIFIC_BACKENDS
-	#define MA_ENABLE_WASAPI
-	#define MA_ENABLE_PULSEAUDIO
-	#define MA_ENABLE_COREAUDIO
-	#define MA_ENABLE_OSS
-	#define MA_ENABLE_SNDIO
-	#define MA_ENABLE_AUDIO4
-	//#define MA_DEBUG_OUTPUT
+	#if defined(__ANDROID__)
+		#define MA_ENABLE_AAUDIO
+		#define MA_ENABLE_OPENSL
+	#else
+		#define MA_ENABLE_WASAPI
+		#define MA_ENABLE_PULSEAUDIO
+		#define MA_ENABLE_COREAUDIO
+		#define MA_ENABLE_OSS
+		#define MA_ENABLE_SNDIO
+		#define MA_ENABLE_AUDIO4
+	#endif	//#define MA_DEBUG_OUTPUT
 	#include "miniaudio/miniaudio.h"
 #endif
 
