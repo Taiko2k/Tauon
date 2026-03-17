@@ -6410,6 +6410,8 @@ class Tauon:
 			colour = self.mac_close
 			if not focused:
 				colour = ColourRGBA(86, 85, 86, 255)
+			elif self.coll(rect):
+				colour = rgb_add_hls(colour, 0, 0.11, 0.05)
 			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 			if self.coll(rect) and not gui.mouse_unknown and coll_point(inp.last_click_location, rect):
 				self.do_exit_button()
@@ -6438,6 +6440,8 @@ class Tauon:
 			colour = ColourRGBA(160, 55, 225, 255)
 			if not focused:
 				colour = ColourRGBA(86, 85, 86, 255)
+			elif self.coll(rect):
+				colour = rgb_add_hls(colour, 0, 0.1, 0.04)
 			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 			if self.coll(rect) and not gui.mouse_unknown:
 				if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
@@ -6458,6 +6462,8 @@ class Tauon:
 				colour = self.mac_maximize
 				if not focused:
 					colour = ColourRGBA(86, 85, 86, 255)
+				elif self.coll(rect):
+					colour = rgb_add_hls(colour, 0, 0.11, 0.05)
 				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 				if self.coll(rect) and not gui.mouse_unknown:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
@@ -6497,6 +6503,8 @@ class Tauon:
 				colour = self.mac_minimize
 				if not focused:
 					colour = ColourRGBA(86, 85, 86, 255)
+				elif self.coll(rect):
+					colour = rgb_add_hls(colour, 0, 0.1, 0.04)
 				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
 				if self.coll(rect) and not gui.mouse_unknown:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
