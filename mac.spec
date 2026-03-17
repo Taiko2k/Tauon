@@ -42,6 +42,7 @@ a = Analysis(
 	],
 	datas=[
 		(certifi.where(), "certifi"),
+		("src/tauon/assets/Assets.car", "."),
 		("src/tauon/assets", "assets"),
 		("src/tauon/locale", "locale"),
 		("src/tauon/theme", "theme"),
@@ -108,6 +109,7 @@ app = BUNDLE(
 	info_plist={
 		"CFBundleName": "Tauon",
 		"CFBundleDisplayName": "Tauon",
+		"CFBundleIconName": "tau",
 		"LSEnvironment": {
 			"LANG": "en_US.UTF-8",
 			"LC_CTYPE": "en_US.UTF-8",
