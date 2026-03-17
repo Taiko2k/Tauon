@@ -6,71 +6,77 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2026-03-17 22:09+0000\n"
+"Last-Translator: khangreat <mengalhammad777@gmail.com>\n"
+"Language-Team: Brahui <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/brh/>\n"
 "Language: brh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.17-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
 msgid "Failed to start indicator"
-msgstr ""
+msgstr "انڈیکیٹر شروع مننگ کتو"
 
 #: src/tauon/t_modules/t_extra.py:527 src/tauon/t_modules/t_extra.py:544
+#, fuzzy
 msgid " B"
-msgstr ""
+msgstr " B"
 
 #: src/tauon/t_modules/t_extra.py:530 src/tauon/t_modules/t_extra.py:547
+#, fuzzy
 msgid " KB"
-msgstr ""
+msgstr " KB"
 
 #: src/tauon/t_modules/t_extra.py:533 src/tauon/t_modules/t_extra.py:550
+#, fuzzy
 msgid " MB"
-msgstr ""
+msgstr " MB"
 
 #: src/tauon/t_modules/t_extra.py:536 src/tauon/t_modules/t_main.py:24815
 msgid " GB"
-msgstr ""
+msgstr " GB"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
-msgstr ""
+msgstr "داسکان اف"
 
 #: src/tauon/t_modules/t_extra.py:559
 msgid "Now"
-msgstr ""
+msgstr "داسہ"
 
 #: src/tauon/t_modules/t_extra.py:563
 msgid "min"
-msgstr ""
+msgstr "منٹ"
 
 #: src/tauon/t_modules/t_extra.py:567
+#, fuzzy
 msgid "hr"
-msgstr ""
+msgstr "ساعت"
 
 #: src/tauon/t_modules/t_extra.py:571
 msgid "dy"
-msgstr ""
+msgstr "دے"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr ""
+msgstr "ہفتہ"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
-msgstr ""
+msgstr "تو"
 
 #: src/tauon/t_modules/t_extra.py:580
 msgid "Unknown"
-msgstr ""
+msgstr "معلوم اف"
 
 #: src/tauon/t_modules/t_guitar_chords.py:93
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "پٹنگ کن میٹاڈیٹا ناکافی اے"
 
 #: src/tauon/t_modules/t_guitar_chords.py:107
 msgid "Clipboard has no text"
@@ -306,7 +312,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:4888
 msgid "Error starting Spotify"
-msgstr ""
+msgstr "Spotify شروع مننگ Error"
 
 #: src/tauon/t_modules/t_main.py:4889
 msgid "Please authorise Spotify in settings!"
@@ -370,7 +376,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:6788
 msgid "Error importing M3U playlist"
-msgstr ""
+msgstr "M3U پلےلسٹ اتنگ ٹی ایرر"
 
 #: src/tauon/t_modules/t_main.py:6788
 msgid "Error trying to parse trying to parse playlist as UTF-8:"
@@ -442,11 +448,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:7493
 msgid "The destination folder does not exist."
-msgstr ""
+msgstr "خواست ا فولڈر موجود اف۔"
 
 #: src/tauon/t_modules/t_main.py:7497
 msgid "The destination and source folders are the same."
-msgstr ""
+msgstr "خواست و اصل فوڈر اسٹ او۔"
 
 #: src/tauon/t_modules/t_main.py:7501 src/tauon/t_modules/t_main.py:10236
 msgid "Safety interrupt! The source path seems oddly short."
@@ -512,16 +518,16 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:7748 src/tauon/t_modules/t_main.py:7754
 #: src/tauon/t_modules/t_main.py:7759
 msgid "Hide Lyrics"
-msgstr ""
+msgstr "شیرمتن اے ڈک"
 
 #: src/tauon/t_modules/t_main.py:7748 src/tauon/t_modules/t_main.py:7754
 #: src/tauon/t_modules/t_main.py:7759
 msgid "Show Lyrics"
-msgstr ""
+msgstr "شیرمتن اے نشان ایت"
 
 #: src/tauon/t_modules/t_main.py:7769
 msgid "Downloading..."
-msgstr ""
+msgstr "ڈاونلوڈ مرسہ۔۔۔"
 
 #: src/tauon/t_modules/t_main.py:7784
 msgid "Presets ready"
@@ -661,11 +667,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8433
 msgid "Deleted embedded picture from file"
-msgstr ""
+msgstr "اوار ا تصویر فائل ان مٹائنگا"
 
 #: src/tauon/t_modules/t_main.py:8435
 msgid "{N} files processed"
-msgstr ""
+msgstr "{N} فائلاک پروسسمسر"
 
 #: src/tauon/t_modules/t_main.py:8451 src/tauon/t_modules/t_main.py:41923
 #: src/tauon/t_modules/t_main.py:41932 src/tauon/t_modules/t_main.py:41941
@@ -740,11 +746,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8812
 msgid "Total playtime:"
-msgstr ""
+msgstr "کل بننگ نا وختپاس:"
 
 #: src/tauon/t_modules/t_main.py:8814
 msgid "Track types:"
-msgstr ""
+msgstr "شیر نا قسم اک:"
 
 #: src/tauon/t_modules/t_main.py:8830
 msgid "Percent of tracks are CUE type:"
@@ -4795,16 +4801,16 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:44459
 msgid "Add to queue"
-msgstr ""
+msgstr "قطار اٹ شا"
 
 #: src/tauon/t_modules/t_main.py:44472
 msgid "Cut"
-msgstr ""
+msgstr "کاٹ"
 
 #: src/tauon/t_modules/t_main.py:44473 src/tauon/t_modules/t_main.py:44481
 #: src/tauon/t_modules/t_main.py:44482 src/tauon/t_modules/t_main.py:44769
 msgid "Remove"
-msgstr ""
+msgstr "کش"
 
 #: src/tauon/t_modules/t_main.py:44474
 msgid "Delete Files"
@@ -4844,7 +4850,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:44508
 msgid "Copy Track URL"
-msgstr ""
+msgstr "شعر لنک اے کاپی کر"
 
 #: src/tauon/t_modules/t_main.py:44526
 msgid "Always stop after album"
@@ -4888,7 +4894,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:44549
 msgid "Time"
-msgstr ""
+msgstr "وخت"
 
 #: src/tauon/t_modules/t_main.py:44556
 msgid "Show bar"
@@ -4992,7 +4998,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:44627
 msgid "Square"
-msgstr ""
+msgstr "چقور"
 
 #: src/tauon/t_modules/t_main.py:44628
 msgid "Square Large"
@@ -5024,23 +5030,23 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:44662
 msgid "Go To Playing"
-msgstr ""
+msgstr "چلنگنگ اے ان"
 
 #: src/tauon/t_modules/t_main.py:44668
 msgid "Import Spotify…"
-msgstr ""
+msgstr "Spotify ان ات…"
 
 #: src/tauon/t_modules/t_main.py:44670
 msgid "Liked Albums"
-msgstr ""
+msgstr "دوست ا البم اک"
 
 #: src/tauon/t_modules/t_main.py:44671
 msgid "Liked Tracks"
-msgstr ""
+msgstr "دوستا شعر اک"
 
 #: src/tauon/t_modules/t_main.py:44673
 msgid "Playlist…"
-msgstr ""
+msgstr "شعر فہرست…"
 
 #: src/tauon/t_modules/t_main.py:44674
 msgid "Current Context"
@@ -5072,7 +5078,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:44759
 msgid "Sort by Popularity"
-msgstr ""
+msgstr "مشہوری اٹ ترتیب"
 
 #: src/tauon/t_modules/t_main.py:44760
 msgid "Sort by Playtime"
@@ -5124,7 +5130,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:47528 src/tauon/t_modules/t_main.py:47545
 msgid "Various Artists"
-msgstr ""
+msgstr "باز آرٹسٹ"
 
 #: src/tauon/t_modules/t_main.py:47796
 msgid "Rescan folders complete."
@@ -5168,11 +5174,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:49203 src/tauon/t_modules/t_main.py:49209
 msgid "File size"
-msgstr ""
+msgstr "فائل نا کچ"
 
 #: src/tauon/t_modules/t_main.py:49216
 msgid "Disc"
-msgstr ""
+msgstr "ڈسک"
 
 #: src/tauon/t_modules/t_main.py:49281
 msgid "Play count"
@@ -5180,7 +5186,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:49293
 msgid "Play time"
-msgstr ""
+msgstr "چلنگ نا وخت حصاب"
 
 #: src/tauon/t_modules/t_main.py:49396
 msgid "Folder Modification"
@@ -5224,7 +5230,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:49489
 msgid "NEW"
-msgstr ""
+msgstr "پوسکن"
 
 #: src/tauon/t_modules/t_main.py:49575
 msgid "Folder filter mode. Enter path segment."
