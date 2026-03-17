@@ -178,7 +178,7 @@ jobs:
 
   build-macos:
     name: "macOS"
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -273,6 +273,10 @@ jobs:
         #  source .venv/bin/activate
         env:
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
+
+      - name: Compile Tauon icon asset catalog
+        run: |
+          bash extra/build_macos_icon_assets.sh dist/Tauon.app
 
       - name: Ensure Now Playing helper is executable
         run: |
