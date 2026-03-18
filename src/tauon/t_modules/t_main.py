@@ -22445,7 +22445,7 @@ class AlbumArt:
 		self.current_wu = None
 		self.downloaded_track = None
 
-		self.base64cahce = (0, 0, "")
+		self.base64cache = (0, 0, "")
 		self.processing64on = None
 		self.bin_cached = (None, None, None)
 		self.loading_bin = (None, None)
