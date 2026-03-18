@@ -136,10 +136,28 @@ jobs:
           cp "${APPDIR}/usr/share/icons/hicolor/128x128/apps/${APP_ID}.png" "${APPDIR}/${APP_ID}.png"
           ln -s "${APP_ID}.png" "${APPDIR}/.DirIcon"
 
+          # AppImages should use the host graphics and Wayland stack. Shipping these
+          # distro-specific libraries from the build machine is a common source of
+          # Wayland-only launch failures.
+          find "${APPDIR}/usr/bin" -maxdepth 1 \
+            \( -type f -o -type l \) \
+            \( \
+              -name 'libEGL.so*' -o \
+              -name 'libGL.so*' -o \
+              -name 'libOpenGL.so*' -o \
+              -name 'libGLESv2.so*' -o \
+              -name 'libdrm.so*' -o \
+              -name 'libgbm.so*' -o \
+              -name 'libwayland-*.so*' -o \
+              -name 'libxkbcommon*.so*' \
+            \) \
+            -delete
+
           cat > "${APPDIR}/AppRun" << 'EOF'
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "$0")")"
           export APPDIR="${HERE}"
+          export XDG_DATA_DIRS="${APPDIR}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
           exec "${APPDIR}/usr/bin/tauonmb" "$@"
           EOF
           chmod +x "${APPDIR}/AppRun"
