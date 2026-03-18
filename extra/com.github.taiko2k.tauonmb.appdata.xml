@@ -65,7 +65,6 @@
     <release version="9.1.2" date="2026-03-18">
       <description>
         <ul>
-          <li>Added Milkdrop visualiser support</li>
           <li>Various tweaks and fixes</li>
         </ul>
       </description>
