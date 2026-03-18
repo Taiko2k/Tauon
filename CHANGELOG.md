@@ -2,6 +2,12 @@
 Changelog
 ---------
 
+### v9.1.2
+
+ - Added menu bar support to for macOS
+ - Updated macOS icon to liquid glass style
+ - Added zeroconf support to remote API
+
 ### v9.1.1
 
  - **Fixed** Shuffle lockdown missing exit button
