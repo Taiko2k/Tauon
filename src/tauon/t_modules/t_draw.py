@@ -22,7 +22,8 @@ import ctypes
 import io
 import logging
 import math
-from ctypes import byref, c_bool, c_float, c_size_t, pointer
+from collections import OrderedDict
+from ctypes import byref, c_bool, c_float, c_size_t
 from typing import TYPE_CHECKING
 
 import sdl3
@@ -149,11 +150,18 @@ class TDraw:
 		self.alpha_bg: bool = False
 		self.force_gray: bool = False
 		self.f_dict: dict[float, tuple[str, int, float]] = {}
+		self.font_desc_cache: dict[float, Pango.FontDescription] = {}
 		self.ttc: dict[
 			tuple[int, str, int, int, int, int, int, int, int, int],
 			list[sdl3.SDL_FRect | sdl3.LP_SDL_Texture | int | bool],
 		] = {}
 		self.ttl: list[tuple[int, str, int, int, int, int, int, int, int, int]] = []
+		self.text_texture_cache_bytes = 0
+		self.max_text_texture_cache_items = 96
+		self.max_text_texture_cache_bytes = 12 * 1024 * 1024
+		self.max_text_texture_cache_item_bytes = 256 * 1024
+		self.text_wh_cache: OrderedDict[tuple[str, int, int, bool], tuple[int, int]] = OrderedDict()
+		self.max_text_wh_cache_items = 2048
 
 		self.was_truncated = False
 
@@ -274,12 +282,33 @@ class TDraw:
 
 		self.ttc.clear()
 		self.ttl.clear()
+		self.text_texture_cache_bytes = 0
+		self.text_wh_cache.clear()
 
 	def prime_font(self, name: str, size: float, user_handle: float, offset: int = 0) -> None:
 		self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale)
+		self.font_desc_cache[user_handle] = Pango.FontDescription(self.f_dict[user_handle][0])
+		self.text_wh_cache.clear()
+
+	def _font_description(self, font: int) -> Pango.FontDescription:
+		cached = self.font_desc_cache.get(font)
+		if cached is not None:
+			return cached
+
+		font_description = Pango.FontDescription(self.f_dict[font][0])
+		self.font_desc_cache[font] = font_description
+		return font_description
 
 	def get_text_wh(self, text: str, font: int, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
-		self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+		cache_key = None
+		if len(text) <= 256:
+			cache_key = (text, font, max_x, wrap)
+			cached = self.text_wh_cache.get(cache_key)
+			if cached is not None:
+				self.text_wh_cache.move_to_end(cache_key)
+				return cached
+
+		self.layout.set_font_description(self._font_description(font))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
 		self.layout.set_width(max_x * 1000)
 		if wrap:
@@ -293,11 +322,16 @@ class TDraw:
 			logging.exception(f"Exception in get_text_wh for: {text}")
 			self.layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
 
-		return self.layout.get_pixel_size()
+		result = self.layout.get_pixel_size()
+		if cache_key is not None:
+			self.text_wh_cache[cache_key] = result
+			if len(self.text_wh_cache) > self.max_text_wh_cache_items:
+				self.text_wh_cache.popitem(last=False)
+		return result
 
 	def get_y_offset(self, text: str, font: int, max_x: int, wrap: bool = False) -> int:
 		"""HACKY"""
-		self.layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+		self.layout.set_font_description(self._font_description(font))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
 		self.layout.set_width(max_x * 1000)
 		if wrap:
@@ -393,7 +427,6 @@ class TDraw:
 
 			if align == 1:
 				quick_box[0] = x - quick_box[2]
-
 			elif align == 2:
 				quick_box[0] -= int(quick_box[2] / 2)
 
@@ -443,130 +476,178 @@ class TDraw:
 		if wrap:
 			w = max_x + 1
 
-		data = ctypes.c_buffer(b"\x00" * (h * (w * 4)))
-		ptr = pointer(data)
-
-		if real_bg:
-			box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
-
-			if align == 1:
-				box.x = x - box.w
-
-			elif align == 2:
-				box.x -= int(box.w / 2)
-
-			ssurf = sdl3.SDL_RenderReadPixels(
-				self.renderer, box
-			)  # , sdl3.SDL_PIXELFORMAT_XRGB8888, ctypes.pointer(data), (w * 4))
-			ptr = ssurf.contents.pixels
-			size = w * h * 4
-			data_array = (ctypes.c_ubyte * size).from_address(ptr)
-			data = memoryview(data_array)
-
-		if alpha_bg:
-			surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h)
-		else:
-			surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h)
-
-		context = cairo.Context(surf)
-
-		if force_gray:
-			options = context.get_font_options()
-			options.set_antialias(cairo.ANTIALIAS_GRAY)
-			# options.set_hint_style(cairo.HINT_STYLE_NONE)
-			context.set_font_options(options)
-		elif self.force_subpixel_text:
-			options = context.get_font_options()
-			# options.set_antialias(cairo.ANTIALIAS_NONE)
-			# options.set_antialias(cairo.ANTIALIAS_GRAY)
-			options.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
-			context.set_font_options(options)
-
-		layout = PangoCairo.create_layout(context)
-		layout.set_auto_dir(False)
-
-		if max_y is not None:
-			layout.set_ellipsize(Pango.EllipsizeMode.END)
-			layout.set_width(max_x * 1000)
-			layout.set_height(max_y * 1000)
-		else:
-			layout.set_ellipsize(Pango.EllipsizeMode.END)
-			layout.set_width(max_x * 1000)
-
-			extra = 0
-			if wrap:  # Compensate for height measurement being 1-2 lines too short. Pango bug?
-				extra = round(400000 * self.scale)
-
-			layout.set_height(h * 1000 + extra)
-
-		if not wrap and max_y is None:
-			layout.set_height(-1)
-
-		# Attributes don't seem to be implemented in gi?
-		# attrs = Pango.AttrList()
-		# attrs.insert(Pango.Attribute(Pango.Underline.SINGLE))
-		# layout.set_attributes(attrs)
-
-		context.rectangle(0, 0, w, h)
-
-		if not real_bg and not alpha_bg:
-			context.set_source_rgb(bg.r / 255, bg.g / 255, bg.b / 255)
-			# context.set_source_rgba(0, 0, 0, 0)
-			context.fill()
-
-		context.set_source_rgb(colour.r / 255, colour.g / 255, colour.b / 255)
-
 		if font not in self.f_dict:
 			logging.info(f"Font not loaded: {font!s}")
 			return 10
 
-		# desc = Pango.FontDescription(self.f_dict[font][0])
-		# desc.set_family("Arial")
-
-		layout.set_font_description(Pango.FontDescription(self.f_dict[font][0]))
+		format = sdl3.SDL_PIXELFORMAT_ARGB8888 if alpha_bg else sdl3.SDL_PIXELFORMAT_XRGB8888
+		surface = None
+		surface_locked = False
+		pixel_data = None
+		data = None
+		surf = None
+		context = None
+		layout = None
+		c = None
+		y_off = 0
 
 		try:
-			layout.set_text(text, -1)
-		except Exception:
-			logging.exception(f"Text error on text: {text}")
-			layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
+			if real_bg:
+				box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
-		# logging.info(layout.get_direction(0))
+				if align == 1:
+					box.x = x - box.w
+				elif align == 2:
+					box.x -= int(box.w / 2)
 
-		y_off = layout.get_baseline() / 1000
-		y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
+				ssurf = sdl3.SDL_RenderReadPixels(self.renderer, box)
+				if not ssurf:
+					logging.warning("SDL_RenderReadPixels failed while rendering text background")
+					return 0
 
-		PangoCairo.show_layout(context, layout)
+				if ssurf.contents.format != format:
+					surface = sdl3.SDL_ConvertSurface(ssurf, format)
+					sdl3.SDL_DestroySurface(ssurf)
+					if not surface:
+						logging.warning("SDL_ConvertSurface failed while rendering text background")
+						return 0
+				else:
+					surface = ssurf
+			else:
+				surface = sdl3.SDL_CreateSurface(w, h, format)
+				if not surface:
+					logging.warning("SDL_CreateSurface failed while rendering text")
+					return 0
+				ctypes.memset(surface.contents.pixels, 0, surface.contents.pitch * h)
 
-		self.was_truncated = layout.is_ellipsized()
+			if not sdl3.SDL_LockSurface(surface):
+				logging.warning("SDL_LockSurface failed while rendering text")
+				return 0
+			surface_locked = True
 
-		if alpha_bg:
-			# sdl3.SDL_surface = sdl3.SDL_CreateRGBSurfaceWithFormatFrom(ctypes.pointer(data), w, h, 32, w * 4, sdl3.SDL_PIXELFORMAT_ARGB8888)
-			format = sdl3.SDL_PIXELFORMAT_ARGB8888
-			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ptr, w * 4)
-		else:
-			format = sdl3.SDL_PIXELFORMAT_XRGB8888
-			surface = sdl3.SDL_CreateSurfaceFrom(w, h, format, ptr, w * 4)
+			pixel_size = surface.contents.pitch * h
+			pixel_data = (ctypes.c_ubyte * pixel_size).from_address(surface.contents.pixels)
+			data = memoryview(pixel_data)
 
-		# Here the background colour is keyed out allowing lines to overlap slightly
-		if not real_bg and not alpha_bg:
-			format_details = sdl3.SDL_GetPixelFormatDetails(format)
-			ke = sdl3.SDL_MapRGB(format_details, None, bg.r, bg.g, bg.b)
-			sdl3.SDL_SetSurfaceColorKey(surface, True, ke)
+			if alpha_bg:
+				surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h, surface.contents.pitch)
+			else:
+				surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h, surface.contents.pitch)
 
-		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
-		sdl3.SDL_DestroySurface(surface)
+			context = cairo.Context(surf)
 
-		if alpha_bg:
-			blend_mode = sdl3.SDL_ComposeCustomBlendMode(
-				sdl3.SDL_BLENDFACTOR_ONE,
-				sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-				sdl3.SDL_BLENDOPERATION_ADD,
-				sdl3.SDL_BLENDFACTOR_ONE,
-				sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-				sdl3.SDL_BLENDOPERATION_ADD,
-			)
-			sdl3.SDL_SetTextureBlendMode(c, blend_mode)
+			if force_gray:
+				options = context.get_font_options()
+				options.set_antialias(cairo.ANTIALIAS_GRAY)
+				# options.set_hint_style(cairo.HINT_STYLE_NONE)
+				context.set_font_options(options)
+			elif self.force_subpixel_text:
+				options = context.get_font_options()
+				# options.set_antialias(cairo.ANTIALIAS_NONE)
+				# options.set_antialias(cairo.ANTIALIAS_GRAY)
+				options.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
+				context.set_font_options(options)
+
+			layout = PangoCairo.create_layout(context)
+			layout.set_auto_dir(False)
+
+			if max_y is not None:
+				layout.set_ellipsize(Pango.EllipsizeMode.END)
+				layout.set_width(max_x * 1000)
+				layout.set_height(max_y * 1000)
+			else:
+				layout.set_ellipsize(Pango.EllipsizeMode.END)
+				layout.set_width(max_x * 1000)
+
+				extra = 0
+				if wrap:  # Compensate for height measurement being 1-2 lines too short. Pango bug?
+					extra = round(400000 * self.scale)
+
+				layout.set_height(h * 1000 + extra)
+
+			if not wrap and max_y is None:
+				layout.set_height(-1)
+
+			# Attributes don't seem to be implemented in gi?
+			# attrs = Pango.AttrList()
+			# attrs.insert(Pango.Attribute(Pango.Underline.SINGLE))
+			# layout.set_attributes(attrs)
+
+			context.rectangle(0, 0, w, h)
+
+			if not real_bg and not alpha_bg:
+				context.set_source_rgb(bg.r / 255, bg.g / 255, bg.b / 255)
+				# context.set_source_rgba(0, 0, 0, 0)
+				context.fill()
+
+			context.set_source_rgb(colour.r / 255, colour.g / 255, colour.b / 255)
+
+			# desc = Pango.FontDescription(self.f_dict[font][0])
+			# desc.set_family("Arial")
+
+			layout.set_font_description(self._font_description(font))
+
+			try:
+				layout.set_text(text, -1)
+			except Exception:
+				logging.exception(f"Text error on text: {text}")
+				layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
+
+			# logging.info(layout.get_direction(0))
+
+			y_off = layout.get_baseline() / 1000
+			y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
+
+			PangoCairo.show_layout(context, layout)
+
+			self.was_truncated = layout.is_ellipsized()
+			surf.flush()
+			surf.finish()
+			surf = None
+			layout = None
+			context = None
+			data.release()
+			data = None
+			pixel_data = None
+			sdl3.SDL_UnlockSurface(surface)
+			surface_locked = False
+
+			# Here the background colour is keyed out allowing lines to overlap slightly
+			if not real_bg and not alpha_bg:
+				format_details = sdl3.SDL_GetPixelFormatDetails(format)
+				ke = sdl3.SDL_MapRGB(format_details, None, bg.r, bg.g, bg.b)
+				sdl3.SDL_SetSurfaceColorKey(surface, True, ke)
+
+			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
+			if not c:
+				logging.warning("SDL_CreateTextureFromSurface failed while rendering text")
+				return 0
+
+			sdl3.SDL_DestroySurface(surface)
+			surface = None
+
+			if alpha_bg:
+				blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+					sdl3.SDL_BLENDFACTOR_ONE,
+					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+					sdl3.SDL_BLENDOPERATION_ADD,
+					sdl3.SDL_BLENDFACTOR_ONE,
+					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+					sdl3.SDL_BLENDOPERATION_ADD,
+				)
+				sdl3.SDL_SetTextureBlendMode(c, blend_mode)
+		finally:
+			layout = None
+			context = None
+			if surf is not None:
+				surf.finish()
+			if data is not None:
+				data.release()
+			pixel_data = None
+			if surface_locked and surface is not None:
+				sdl3.SDL_UnlockSurface(surface)
+			if surface is not None:
+				sdl3.SDL_DestroySurface(surface)
 
 		dst = sdl3.SDL_FRect(round(x), round(y))
 		dst.w = round(w)
@@ -574,19 +655,37 @@ class TDraw:
 		dst.y = round(y) - y_off
 
 		pack = [dst, c, y_off, self.was_truncated]
+		cache_item_bytes = w * h * 4
+		texture_cached = False
 
-		self.__render_text(pack, x, y, range_top, range_height, align)
+		try:
+			self.__render_text(pack, x, y, range_top, range_height, align)
 
-		# Don't cache if using real background data
-		if not real_bg or force_cache:
-			self.ttc[key] = pack
-			self.ttl.append(key)
-			if len(self.ttl) > 350:
-				key = self.ttl[0]
-				so = self.ttc[key]
-				sdl3.SDL_DestroyTexture(so[1])
-				del self.ttc[key]
-				del self.ttl[0]
+			# Don't cache if using real background data
+			cache_texture = not real_bg and (
+				force_cache or cache_item_bytes <= self.max_text_texture_cache_item_bytes
+			)
+			if cache_texture:
+				pack.append(cache_item_bytes)
+				self.ttc[key] = pack
+				self.ttl.append(key)
+				self.text_texture_cache_bytes += cache_item_bytes
+				texture_cached = True
+				while (
+					len(self.ttl) > self.max_text_texture_cache_items
+					or self.text_texture_cache_bytes > self.max_text_texture_cache_bytes
+				):
+					key = self.ttl[0]
+					so = self.ttc[key]
+					sdl3.SDL_DestroyTexture(so[1])
+					if len(so) > 4:
+						self.text_texture_cache_bytes -= so[4]
+					del self.ttc[key]
+					del self.ttl[0]
+		finally:
+			if c is not None and not texture_cached:
+				sdl3.SDL_DestroyTexture(c)
+
 		if wrap:
 			return dst.h
 		return dst.w
