@@ -14882,7 +14882,8 @@ class Tauon:
 					for i in reversed(range(len(playlist))):
 						t_time = self.star_store.get(playlist[i])
 						tr = self.pctl.get_track(playlist[i])
-						if tr.length < 1 or not value < t_time / tr.length:
+						# Use the same formula as for calculating Play count
+						if tr.length < 1 or not value < t_time / (tr.length - 1):
 							del playlist[i]
 
 			elif cm[:3] == "pc<":
@@ -14893,7 +14894,8 @@ class Tauon:
 						t_time = self.star_store.get(playlist[i])
 						tr = self.pctl.get_track(playlist[i])
 						if tr.length > 0:
-							if not value > t_time / tr.length:
+							# Use the same formula as for calculating Play count
+							if not value > t_time / (tr.length - 1):
 								del playlist[i]
 
 			elif cm == "y<":
