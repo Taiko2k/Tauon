@@ -172,6 +172,7 @@ class Chrome:
 			logging.critical("self.media_controller was None, this should not happen!")
 			return
 		self.cast.wait()
+		self.cast.start_app(STYLED_RECEIVER_APP_ID)
 		tr = self.tauon.pctl.get_track(track_id)
 		n = 0
 		try:
