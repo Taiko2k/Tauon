@@ -5945,6 +5945,7 @@ class Tauon:
 		self.vis_decay_timer: Timer              = Timer()
 		self.scroll_timer: Timer                 = Timer()
 		self.scroll_timer.set()
+		self.scroll_animation_deadline: float    = 0.0
 		self.perf_timer: Timer                   = Timer() # Reassigned later
 		self.quick_d_timer: Timer                = Timer()
 		self.core_timer: Timer                   = Timer() # Reassigned later
@@ -36156,16 +36157,17 @@ class ArtistInfoBox:
 				or touch_scroll
 				or self.smooth_scroll.active("artistinfo")
 			)
+			artistinfo_scroll_step = round(10 * self.gui.scale)
 			if use_smooth_scroll:
 				if self.coll((x, y, w, h)) and self.inp.mouse_wheel:
-					self.smooth_scroll.add_wheel_motion("artistinfo", -self.inp.mouse_wheel, 20)
+					self.smooth_scroll.add_wheel_motion("artistinfo", -self.inp.mouse_wheel, artistinfo_scroll_step)
 				if touch_scroll:
 					self.smooth_scroll.apply_touch_drag("artistinfo", -self.inp.touch_scroll_y)
 				elif self.inp.touch_released:
 					self.smooth_scroll.release_touch("artistinfo")
 				self.scroll_y += self.smooth_scroll.step_motion("artistinfo")
 			elif self.coll((x, y, w, h)):
-				scroll_distance = self.smooth_scroll.scroll("artistinfo", 20)
+				scroll_distance = self.smooth_scroll.scroll("artistinfo", artistinfo_scroll_step)
 				self.scroll_y -= scroll_distance
 			self.scroll_y = max(self.scroll_y, 0)
 			self.scroll_y = min(self.scroll_y, scroll_max)
@@ -38405,22 +38407,27 @@ class XcursorImage(ctypes.Structure):
 SCROLL_PHYSICS_WHEEL_VELOCITY = 18.0
 SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.35
 SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE = 0.82
-SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 30.0
+SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 15.0
 SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW = 0.25
 SCROLL_PHYSICS_REPEAT_WINDOW = 0.22
 SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.2
 SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER = 1.0
 SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER = 1.15
+SCROLL_ANIMATION_MAX_FPS = 144.0
+SCROLL_ANIMATION_FRAME_INTERVAL = 1.0 / SCROLL_ANIMATION_MAX_FPS
+SCROLL_PHYSICS_FIXED_TIMESTEP = 1.0 / 240.0
+SCROLL_PHYSICS_MAX_TIMESTEP = 0.05
 SCROLL_PHYSICS_ACCELERATION_BOOST = 2
 SCROLL_PHYSICS_DAMPING = 0.84
-SCROLL_PHYSICS_MAX_VELOCITY = 4200.0
-SCROLL_PHYSICS_MIN_VELOCITY = 16.0
+SCROLL_PHYSICS_MAX_VELOCITY = 2100.0
+SCROLL_PHYSICS_MIN_VELOCITY = 8.0
 
 
 @dataclass
 class ScrollMotionState:
 	velocity: float = 0.0
 	pending: float = 0.0
+	accumulator: float = 0.0
 	touching: bool = False
 	from_touch: bool = False
 	wheel_streak: int = 0
@@ -38432,10 +38439,20 @@ class ScrollMotionState:
 class SmoothScroll:
 	def __init__(self, tauon: Tauon) -> None:
 		self.inp = tauon.inp
+		self.gui = tauon.gui
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
 		self.timeout = 0.5
+
+	def _pixel_scale(self) -> float:
+		return max(self.gui.scale, 0.1)
+
+	def _scaled_max_velocity(self) -> float:
+		return SCROLL_PHYSICS_MAX_VELOCITY * self._pixel_scale()
+
+	def _scaled_min_velocity(self) -> float:
+		return SCROLL_PHYSICS_MIN_VELOCITY * self._pixel_scale()
 
 	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
@@ -38501,6 +38518,7 @@ class SmoothScroll:
 			return
 		state.velocity = 0.0
 		state.pending = 0.0
+		state.accumulator = 0.0
 		state.touching = False
 		state.from_touch = False
 		state.wheel_streak = 0
@@ -38520,6 +38538,7 @@ class SmoothScroll:
 			return
 
 		state = self._state(source)
+		max_velocity = self._scaled_max_velocity()
 		state.from_touch = False
 		if self.inp.mouse_wheel_precise:
 			state.velocity = 0.0
@@ -38527,22 +38546,23 @@ class SmoothScroll:
 			state.pending += delta * precise_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER * precise_scale
 		else:
 			repeat_boost = self._wheel_boost(state, delta)
-			boost = 1.0 + min(abs(state.velocity) / SCROLL_PHYSICS_MAX_VELOCITY, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
+			boost = 1.0 + min(abs(state.velocity) / max_velocity, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
 			impulse = delta * px_per_unit * repeat_boost
 			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
-		state.velocity = max(min(state.velocity, SCROLL_PHYSICS_MAX_VELOCITY), -SCROLL_PHYSICS_MAX_VELOCITY)
+		state.velocity = max(min(state.velocity, max_velocity), -max_velocity)
 		state.touching = False
 		state.last_update = time.monotonic()
 
 	def apply_touch_drag(self, source: str, delta_pixels: float) -> None:
 		state = self._state(source)
+		max_velocity = self._scaled_max_velocity()
 		now = time.monotonic()
 		dt = max(now - state.last_update, 1 / 240)
 		state.touching = True
 		state.from_touch = True
 		state.pending += delta_pixels * SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER
 		state.velocity = delta_pixels / dt * SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER
-		state.velocity = max(min(state.velocity, SCROLL_PHYSICS_MAX_VELOCITY), -SCROLL_PHYSICS_MAX_VELOCITY)
+		state.velocity = max(min(state.velocity, max_velocity), -max_velocity)
 		state.last_update = now
 
 	def release_touch(self, source: str) -> None:
@@ -38553,23 +38573,38 @@ class SmoothScroll:
 
 	def step_motion(self, source: str) -> float:
 		state = self._state(source)
+		min_velocity = self._scaled_min_velocity()
 		now = time.monotonic()
-		dt = min(max(now - state.last_update, 1 / 240), 0.05)
+		dt = min(max(now - state.last_update, 0.0), SCROLL_PHYSICS_MAX_TIMESTEP)
 		state.last_update = now
+		state.accumulator = min(state.accumulator + dt, SCROLL_PHYSICS_MAX_TIMESTEP)
 
 		delta = state.pending
 		state.pending = 0.0
 
 		if state.touching:
+			state.accumulator = 0.0
 			return delta
 
-		if abs(state.velocity) < SCROLL_PHYSICS_MIN_VELOCITY:
+		if abs(state.velocity) < min_velocity:
 			state.velocity = 0.0
+			state.accumulator = 0.0
 			return delta
 
-		delta += state.velocity * dt
-		state.velocity *= SCROLL_PHYSICS_DAMPING ** (dt * 60)
-		if abs(state.velocity) < SCROLL_PHYSICS_MIN_VELOCITY:
+		damping = SCROLL_PHYSICS_DAMPING ** (SCROLL_PHYSICS_FIXED_TIMESTEP * 60)
+		while state.accumulator >= SCROLL_PHYSICS_FIXED_TIMESTEP:
+			delta += state.velocity * SCROLL_PHYSICS_FIXED_TIMESTEP
+			state.velocity *= damping
+			state.accumulator -= SCROLL_PHYSICS_FIXED_TIMESTEP
+			if abs(state.velocity) < min_velocity:
+				state.velocity = 0.0
+				state.accumulator = 0.0
+				break
+
+		if state.velocity != 0.0 and state.accumulator > 0:
+			delta += state.velocity * state.accumulator
+
+		if abs(state.velocity) < min_velocity:
 			state.velocity = 0.0
 		return delta
 
@@ -38577,7 +38612,7 @@ class SmoothScroll:
 		state = self.physics_states.get(source)
 		if state is None:
 			return False
-		return state.touching or abs(state.velocity) >= SCROLL_PHYSICS_MIN_VELOCITY or abs(state.pending) >= 0.01
+		return state.touching or abs(state.velocity) >= self._scaled_min_velocity() or abs(state.pending) >= 0.01
 
 	def any_active(self) -> bool:
 		return any(self.active(source) for source in self.physics_states)
@@ -46143,6 +46178,21 @@ def main(holder: Holder) -> None:
 		if tauon.smooth_scroll.any_active():
 			power = 1000
 			gui.pl_update = max(gui.pl_update, 1)
+			gui.update = max(gui.update, 1)
+			now = time.monotonic()
+			if tauon.scroll_animation_deadline <= 0:
+				tauon.scroll_animation_deadline = now + SCROLL_ANIMATION_FRAME_INTERVAL
+			elif now - tauon.scroll_animation_deadline > SCROLL_ANIMATION_FRAME_INTERVAL * 4:
+				tauon.scroll_animation_deadline = now + SCROLL_ANIMATION_FRAME_INTERVAL
+
+			frame_wait = tauon.scroll_animation_deadline - now
+			if frame_wait > 0:
+				time.sleep(frame_wait)
+				now = time.monotonic()
+			while tauon.scroll_animation_deadline <= now:
+				tauon.scroll_animation_deadline += SCROLL_ANIMATION_FRAME_INTERVAL
+		else:
+			tauon.scroll_animation_deadline = 0.0
 
 		if prefs.art_bg and tauon.core_timer.get() < 3:
 			power = 1000
@@ -47381,7 +47431,7 @@ def main(holder: Holder) -> None:
 								)  # 90
 							else:
 								if precise_gallery_scroll:
-									gui.album_scroll_px -= inp.mouse_wheel * SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE
+									gui.album_scroll_px -= inp.mouse_wheel * SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE * gui.scale
 								else:
 									gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
 
