@@ -54,6 +54,8 @@ class Prefs:
 
 	update_title:  bool = False
 	scroll_enable: bool = True
+	smooth_scroll_enable: bool = False
+	trackpad_natural_scroll: bool = True
 	break_enable:  bool = True
 
 	transcode_codec:   str = "opus"
@@ -65,7 +67,7 @@ class Prefs:
 	device_name: str = ""
 
 	cache_gallery:           bool = True
-	gallery_row_scroll:      bool = True
+	gallery_row_scroll:      bool = False
 	gallery_scroll_wheel_px: int = 90
 
 	playlist_font_size:  int = 15
