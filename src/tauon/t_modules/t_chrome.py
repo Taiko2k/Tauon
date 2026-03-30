@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pychromecast
 import zeroconf
+from pychromecast.controllers.media import BaseMediaPlayer, MediaController, MediaStatus
 
 from tauon.t_modules.t_extra import shooter
 
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
 
 
 DISCOVERY_TIMEOUT = 5.0
+STYLED_RECEIVER_APP_ID = "2F76715B"
 
 
 def get_ip() -> str:
@@ -35,6 +37,15 @@ def get_ip() -> str:
 	return ipv4
 
 
+class StyledMediaController(MediaController):
+	def __init__(self, app_id: str) -> None:
+		BaseMediaPlayer.__init__(self, supporting_app_id=app_id, app_must_match=False)
+		self.media_session_id = 0
+		self.status = MediaStatus()
+		self.session_active_event = threading.Event()
+		self._status_listeners = []
+
+
 class Chrome:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon: Tauon = tauon
@@ -44,6 +55,7 @@ class Chrome:
 		self.save_vol: float = 100
 		self.ip: str = ""
 		self.browser: CastBrowser | None = None
+		self.media_controller: StyledMediaController | None = None
 
 	def discover_services(self, timeout: float = DISCOVERY_TIMEOUT) -> list[list[str]]:
 		zconf = zeroconf.Zeroconf()
@@ -125,9 +137,8 @@ class Chrome:
 			logging.critical("self.cast.status was None, this should not happen!")
 		self.tauon.pctl.player_volume = min(volume * 100, 100)
 		self.ip = get_ip()
-
-		mc = self.cast.media_controller
-		mc.app_id = "2F76715B"
+		self.media_controller = StyledMediaController(STYLED_RECEIVER_APP_ID)
+		self.cast.register_handler(self.media_controller)
 
 		self.tauon.chrome_mode = True
 		self.active = True
@@ -137,13 +148,13 @@ class Chrome:
 		self.tauon.thread_manager.ready_playback()
 
 	def update(self) -> tuple:
-		if self.cast is None:
-			logging.critical("self.cast was None, this should not happen!")
+		if self.media_controller is None:
+			logging.critical("self.media_controller was None, this should not happen!")
 			return (0.0, None, None, 0.0)
-		self.cast.media_controller.update_status()
-		status = self.cast.media_controller.status
+		self.media_controller.update_status()
+		status = self.media_controller.status
 		if status is None:
-			logging.critical("self.cast.media_controller.status was None, this should not happen!")
+			logging.critical("self.media_controller.status was None, this should not happen!")
 			return (0.0, None, None, 0.0)
 		custom_data = status.media_custom_data if isinstance(status.media_custom_data, dict) else {}
 		return (
@@ -156,6 +167,9 @@ class Chrome:
 	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> None:
 		if self.cast is None:
 			logging.critical("self.cast was None, this should not happen!")
+			return
+		if self.media_controller is None:
+			logging.critical("self.media_controller was None, this should not happen!")
 			return
 		self.cast.wait()
 		tr = self.tauon.pctl.get_track(track_id)
@@ -185,33 +199,33 @@ class Chrome:
 			url = url.replace("localhost", self.ip)
 			url = url.replace("127.0.0.1", self.ip)
 
-		self.cast.media_controller.play_media(
+		self.media_controller.play_media(
 			url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue
 		)
 
 	def stop(self) -> None:
-		if self.cast is None:
-			logging.critical("self.cast was None, this should not happen!")
+		if self.media_controller is None:
+			logging.critical("self.media_controller was None, this should not happen!")
 			return
-		self.cast.media_controller.stop()
+		self.media_controller.stop()
 
 	def play(self) -> None:
-		if self.cast is None:
-			logging.critical("self.cast was None, this should not happen!")
+		if self.media_controller is None:
+			logging.critical("self.media_controller was None, this should not happen!")
 			return
-		self.cast.media_controller.play()
+		self.media_controller.play()
 
 	def pause(self) -> None:
-		if self.cast is None:
-			logging.critical("self.cast was None, this should not happen!")
+		if self.media_controller is None:
+			logging.critical("self.media_controller was None, this should not happen!")
 			return
-		self.cast.media_controller.pause()
+		self.media_controller.pause()
 
 	def seek(self, position: float) -> None:
-		if self.cast is None:
-			logging.critical("self.cast was None, this should not happen!")
+		if self.media_controller is None:
+			logging.critical("self.media_controller was None, this should not happen!")
 			return
-		self.cast.media_controller.seek(position)
+		self.media_controller.seek(position)
 
 	def volume(self, decimal: int) -> None:
 		if self.cast is None:
@@ -223,9 +237,9 @@ class Chrome:
 		self.tauon.pctl.playerCommand = "endchrome"
 		self.tauon.pctl.playerCommandReady = True
 		if self.active:
-			if self.cast:
-				mc = self.cast.media_controller
-				mc.stop()
+			if self.media_controller:
+				self.media_controller.stop()
 			self.active = False
 		self.tauon.chrome_mode = False
 		self.tauon.pctl.player_volume = self.save_vol
+		self.media_controller = None
