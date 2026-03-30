@@ -320,6 +320,8 @@ set_sdl_app_metadata()
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
+if sys.platform == "darwin" and hasattr(sdl3, "SDL_HINT_MAC_SCROLL_MOMENTUM"):
+	sdl3.SDL_SetHint(sdl3.SDL_HINT_MAC_SCROLL_MOMENTUM, b"1")
 # sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_ID, t_id.encode("utf-8"))
 # sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_NAME, t_title.encode("utf-8"))
 

@@ -1185,6 +1185,7 @@ class Input:
 		self.touch_active:        bool = False
 		self.touch_released:      bool = False
 		self.active_touch_id = None
+		self.trackpad_scroll_mode_until: float = 0.0
 		self.drag_mode:           bool = False
 		self.quick_drag:          bool = False
 		self.clicked:             bool = False
@@ -17801,7 +17802,6 @@ class Tauon:
 		# view_prefs['pl-follow'] = pl_follow
 		view_prefs["scroll-enable"] = prefs.scroll_enable
 		view_prefs["smooth-scroll-enable"] = prefs.smooth_scroll_enable
-		view_prefs["trackpad-natural-scroll"] = prefs.trackpad_natural_scroll
 		view_prefs["break-enable"] = prefs.break_enable
 		view_prefs["append-date"] = prefs.append_date
 
@@ -18743,15 +18743,6 @@ class Tauon:
 			return self.prefs.smooth_scroll_enable
 
 		self.prefs.smooth_scroll_enable ^= True
-		self.gui.pl_update = 1
-		self.gui.update += 1
-		return None
-
-	def toggle_trackpad_natural_scroll(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.trackpad_natural_scroll
-
-		self.prefs.trackpad_natural_scroll ^= True
 		self.gui.pl_update = 1
 		self.gui.update += 1
 		return None
@@ -25109,12 +25100,7 @@ class Over:
 		y += 25 * self.gui.scale
 		self.toggle_square(
 			x, y, self.tauon.toggle_smooth_scroll, _("Smooth scrolling"),
-			subtitle=_("Adds inertia to scrollable views. Touch scrolling is always smooth."))
-
-		y += 25 * self.gui.scale
-		self.toggle_square(
-			x, y, self.tauon.toggle_trackpad_natural_scroll, _("Natural trackpad scrolling"),
-			subtitle=_("Precise/trackpad scroll follows natural direction by default."))
+			subtitle=_("Adds inertia to mouse wheel scrolling. Trackpad and touch scrolling stay smooth."))
 
 		y += 38 * self.gui.scale
 		self.ddt.text((x, y), _("Metadata side panel"), self.colours.box_text_label, 12)
@@ -30699,7 +30685,6 @@ class StandardPlaylist:
 		)
 		use_smooth_scroll = (
 			prefs.smooth_scroll_enable
-			or inp.mouse_wheel_precise
 			or touch_scroll
 			or self.smooth_scroll.active("playlist")
 		)
@@ -30719,7 +30704,9 @@ class StandardPlaylist:
 		# Mouse wheel scrolling
 		if use_smooth_scroll:
 			if mouse_scroll:
-				self.smooth_scroll.add_wheel_motion("playlist", -inp.mouse_wheel, gui.playlist_row_height * mx)
+				self.smooth_scroll.add_wheel_motion(
+					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
+				)
 			if touch_scroll:
 				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
 			elif inp.touch_released:
@@ -33318,7 +33305,6 @@ class PlaylistBox:
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
 		use_smooth_scroll = (
 			self.prefs.smooth_scroll_enable
-			or self.inp.mouse_wheel_precise
 			or touch_scroll
 			or self.tauon.smooth_scroll.active(scroll_source)
 		)
@@ -34357,7 +34343,6 @@ class ArtistList:
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, area)
 		use_smooth_scroll = (
 			self.prefs.smooth_scroll_enable
-			or self.inp.mouse_wheel_precise
 			or touch_scroll
 			or self.smooth_scroll.active("artist list")
 		)
@@ -34664,7 +34649,6 @@ class TreeView:
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, area)
 		use_smooth_scroll = (
 			self.prefs.smooth_scroll_enable
-			or self.inp.mouse_wheel_precise
 			or touch_scroll
 			or self.smooth_scroll.active("tree view")
 		)
@@ -36169,7 +36153,6 @@ class ArtistInfoBox:
 			touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, (x, y, w, h))
 			use_smooth_scroll = (
 				self.prefs.smooth_scroll_enable
-				or self.inp.mouse_wheel_precise
 				or touch_scroll
 				or self.smooth_scroll.active("artistinfo")
 			)
@@ -36651,7 +36634,6 @@ class RadioView:
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
 		use_smooth_scroll = (
 			self.prefs.smooth_scroll_enable
-			or self.inp.mouse_wheel_precise
 			or touch_scroll
 			or self.smooth_scroll.active("radios")
 		)
@@ -38421,14 +38403,15 @@ class XcursorImage(ctypes.Structure):
 
 
 SCROLL_PHYSICS_WHEEL_VELOCITY = 18.0
-SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.11
-SCROLL_PHYSICS_PRECISE_WHEEL_VELOCITY = 4.5
-SCROLL_PHYSICS_PRECISE_WHEEL_MAGNITUDE_BOOST = 0.3
+SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.35
+SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE = 0.82
+SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 30.0
+SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW = 0.25
 SCROLL_PHYSICS_REPEAT_WINDOW = 0.22
 SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.2
 SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER = 1.0
 SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER = 1.15
-SCROLL_PHYSICS_ACCELERATION_BOOST = 0.45
+SCROLL_PHYSICS_ACCELERATION_BOOST = 2
 SCROLL_PHYSICS_DAMPING = 0.84
 SCROLL_PHYSICS_MAX_VELOCITY = 4200.0
 SCROLL_PHYSICS_MIN_VELOCITY = 16.0
@@ -38439,6 +38422,7 @@ class ScrollMotionState:
 	velocity: float = 0.0
 	pending: float = 0.0
 	touching: bool = False
+	from_touch: bool = False
 	wheel_streak: int = 0
 	last_wheel_direction: float = 0.0
 	last_wheel_time: float = 0.0
@@ -38491,8 +38475,9 @@ class SmoothScroll:
 			self.physics_states[source] = ScrollMotionState()
 		return self.physics_states[source]
 
-	def _wheel_boost(self, state: ScrollMotionState, delta: float) -> float:
+	def _update_wheel_streak(self, state: ScrollMotionState, delta: float) -> tuple[float, float]:
 		now = time.monotonic()
+		dt = now - state.last_wheel_time if state.last_wheel_time else SCROLL_PHYSICS_REPEAT_WINDOW
 		direction = 1.0 if delta > 0 else -1.0
 		if (
 			state.last_wheel_direction == direction
@@ -38503,7 +38488,12 @@ class SmoothScroll:
 			state.wheel_streak = 0
 		state.last_wheel_direction = direction
 		state.last_wheel_time = now
-		return 1.0 + min(state.wheel_streak, 8) * SCROLL_PHYSICS_REPEAT_ACCELERATION
+		repeat_boost = 1.0 + min(state.wheel_streak, 8) * SCROLL_PHYSICS_REPEAT_ACCELERATION
+		return repeat_boost, dt
+
+	def _wheel_boost(self, state: ScrollMotionState, delta: float) -> float:
+		repeat_boost, _ = self._update_wheel_streak(state, delta)
+		return repeat_boost
 
 	def reset_motion(self, source: str) -> None:
 		state = self.physics_states.get(source)
@@ -38512,27 +38502,32 @@ class SmoothScroll:
 		state.velocity = 0.0
 		state.pending = 0.0
 		state.touching = False
+		state.from_touch = False
 		state.wheel_streak = 0
 		state.last_wheel_direction = 0.0
 		state.last_wheel_time = 0.0
 		state.last_update = time.monotonic()
 
-	def add_wheel_motion(self, source: str, delta: float, px_per_unit: float) -> None:
+	def reset_disabled_motion(self) -> None:
+		for source, state in self.physics_states.items():
+			if not state.from_touch:
+				self.reset_motion(source)
+
+	def add_wheel_motion(
+		self, source: str, delta: float, px_per_unit: float, precise_scale: float = 1.0, precise_px_per_unit: float | None = None
+	) -> None:
 		if delta == 0:
 			return
 
 		state = self._state(source)
-		repeat_boost = self._wheel_boost(state, delta)
-		boost = 1.0 + min(abs(state.velocity) / SCROLL_PHYSICS_MAX_VELOCITY, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
+		state.from_touch = False
 		if self.inp.mouse_wheel_precise:
-			if state.velocity != 0 and ((delta > 0) != (state.velocity > 0)):
-				state.velocity = 0.0
-				state.pending = 0.0
-			pixel_delta = delta * px_per_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER
-			magnitude_boost = 1.0 + min(abs(delta), 6.0) * SCROLL_PHYSICS_PRECISE_WHEEL_MAGNITUDE_BOOST
-			state.pending += pixel_delta
-			state.velocity += pixel_delta * SCROLL_PHYSICS_PRECISE_WHEEL_VELOCITY * repeat_boost * magnitude_boost * boost
+			state.velocity = 0.0
+			precise_unit = precise_px_per_unit if precise_px_per_unit is not None else px_per_unit
+			state.pending += delta * precise_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER * precise_scale
 		else:
+			repeat_boost = self._wheel_boost(state, delta)
+			boost = 1.0 + min(abs(state.velocity) / SCROLL_PHYSICS_MAX_VELOCITY, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
 			impulse = delta * px_per_unit * repeat_boost
 			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
 		state.velocity = max(min(state.velocity, SCROLL_PHYSICS_MAX_VELOCITY), -SCROLL_PHYSICS_MAX_VELOCITY)
@@ -38544,6 +38539,7 @@ class SmoothScroll:
 		now = time.monotonic()
 		dt = max(now - state.last_update, 1 / 240)
 		state.touching = True
+		state.from_touch = True
 		state.pending += delta_pixels * SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER
 		state.velocity = delta_pixels / dt * SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER
 		state.velocity = max(min(state.velocity, SCROLL_PHYSICS_MAX_VELOCITY), -SCROLL_PHYSICS_MAX_VELOCITY)
@@ -38552,6 +38548,7 @@ class SmoothScroll:
 	def release_touch(self, source: str) -> None:
 		if source in self.physics_states:
 			self.physics_states[source].touching = False
+			self.physics_states[source].from_touch = True
 			self.physics_states[source].last_update = time.monotonic()
 
 	def step_motion(self, source: str) -> float:
@@ -43387,7 +43384,6 @@ def main(holder: Holder) -> None:
 		"pl-follow": False,
 		"scroll-enable": True,
 		"smooth-scroll-enable": False,
-		"trackpad-natural-scroll": True,
 	}
 
 	prefs = Prefs(
@@ -44190,7 +44186,6 @@ def main(holder: Holder) -> None:
 		#pl_follow          = view_prefs['pl-follow']
 		prefs.scroll_enable = prefs.view_prefs["scroll-enable"]
 		prefs.smooth_scroll_enable = prefs.view_prefs.get("smooth-scroll-enable", False)
-		prefs.trackpad_natural_scroll = prefs.view_prefs.get("trackpad-natural-scroll", True)
 		if "break-enable" in prefs.view_prefs:
 			prefs.break_enable = prefs.view_prefs["break-enable"]
 		else:
@@ -45942,16 +45937,14 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_MOUSE_WHEEL:
 				inp.k_input = True
 				power += 6
-				direction = 1
-				if event.wheel.direction == sdl3.SDL_MOUSEWHEEL_FLIPPED:
-					direction = -1
-				scroll_y = event.wheel.y * direction
-				integer_y = event.wheel.integer_y * direction
-				is_precise = scroll_y != integer_y
-				if is_precise and prefs.trackpad_natural_scroll:
-					scroll_y *= -1
-				inp.mouse_wheel += scroll_y
-				inp.mouse_wheel_precise = inp.mouse_wheel_precise or is_precise
+				now = time.monotonic()
+				raw_scroll_y = event.wheel.y
+				is_precise = raw_scroll_y != event.wheel.integer_y
+				if is_precise:
+					inp.trackpad_scroll_mode_until = now + SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW
+				trackpad_like = is_precise or now < inp.trackpad_scroll_mode_until
+				inp.mouse_wheel += raw_scroll_y
+				inp.mouse_wheel_precise = inp.mouse_wheel_precise or trackpad_like
 
 				gui.update += 1
 			elif event.type == sdl3.SDL_EVENT_FINGER_DOWN:
@@ -46143,6 +46136,9 @@ def main(holder: Holder) -> None:
 
 		if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
 			power = 1000
+
+		if not prefs.smooth_scroll_enable:
+			tauon.smooth_scroll.reset_disabled_motion()
 
 		if tauon.smooth_scroll.any_active():
 			power = 1000
@@ -47366,13 +47362,9 @@ def main(holder: Holder) -> None:
 						# Mouse wheel scrolling
 						gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
 						touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
-						use_smooth_gallery = touch_scroll or (
-							not prefs.gallery_row_scroll and (
-								prefs.smooth_scroll_enable
-								or inp.mouse_wheel_precise
-								or tauon.smooth_scroll.active("gallery")
-							)
-						)
+						precise_gallery_scroll = inp.mouse_wheel_precise or time.monotonic() < inp.trackpad_scroll_mode_until
+						use_smooth_gallery = touch_scroll or tauon.smooth_scroll.active("gallery")
+						row_gallery_scroll = prefs.gallery_row_scroll and not precise_gallery_scroll and not touch_scroll
 						if (
 							not tauon.search_over.active
 							and not radiobox.active
@@ -47383,20 +47375,23 @@ def main(holder: Holder) -> None:
 								tauon.scroll_gallery_hide_timer.set()
 								gui.frame_callback_list.append(TestTimer(0.9))
 
-							if use_smooth_gallery:
-								if inp.mouse_wheel != 0:
-									tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
-								if touch_scroll:
-									tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
-								elif inp.touch_released:
-									tauon.smooth_scroll.release_touch("gallery")
-								gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
-							elif prefs.gallery_row_scroll:
+							if row_gallery_scroll:
 								gui.album_scroll_px -= inp.mouse_wheel * (
 									tauon.album_mode_art_size + gui.album_v_gap
 								)  # 90
 							else:
-								gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
+								if precise_gallery_scroll:
+									gui.album_scroll_px -= inp.mouse_wheel * SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE
+								else:
+									gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
+
+							if touch_scroll:
+								tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+							elif inp.touch_released:
+								tauon.smooth_scroll.release_touch("gallery")
+
+							if use_smooth_gallery:
+								gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
 
 							if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 								gui.album_scroll_px = round(gui.album_v_slide_value * -1)
@@ -47426,7 +47421,7 @@ def main(holder: Holder) -> None:
 									gui.album_scroll_px = max_scroll
 									gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
 
-						if use_smooth_gallery and tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
+						if tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
 							not tauon.search_over.active
 							and not radiobox.active
 							and inp.mouse_position[0] > window_size[0] - w

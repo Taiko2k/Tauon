@@ -55,7 +55,6 @@ class Prefs:
 	update_title:  bool = False
 	scroll_enable: bool = True
 	smooth_scroll_enable: bool = False
-	trackpad_natural_scroll: bool = True
 	break_enable:  bool = True
 
 	transcode_codec:   str = "opus"
