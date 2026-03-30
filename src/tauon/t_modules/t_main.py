@@ -558,7 +558,7 @@ class GuiVar:
 		self.album_v_gap:       float = 66
 		self.album_h_gap:       float = 30
 		self.album_v_slide_value: int = 50
-		self.album_scroll_px: int = self.album_v_slide_value
+		self.album_scroll_px: float = self.album_v_slide_value
 		# Playlist Panel
 		self.pl_rect = (2, 12, 10, 10)
 
@@ -601,6 +601,7 @@ class GuiVar:
 		self.playlist_hold_position = 0
 		self.playlist_hold: bool = False
 		self.selection_stage = 0
+		self.playlist_scroll_pixels: float = 0
 
 		self.shift_selection: list[int] = []
 
@@ -740,7 +741,7 @@ class GuiVar:
 		self.gallery_scroll_field_left = 1
 		self.combo_was_album: bool = False
 
-		self.gallery_positions: dict[int, int] = {}
+		self.gallery_positions: dict[int, float] = {}
 
 		self.remember_library_mode: bool = False
 
@@ -1171,6 +1172,7 @@ class Input:
 		self.level_2_enter:       bool = False
 		self.backspace_press:      int = 0
 		self.mouse_wheel:        float = 0
+		self.mouse_wheel_precise: bool = False
 		self.mouse_down:          bool = False
 		self.mouse_up:            bool = False
 		self.right_down:          bool = False
@@ -1178,6 +1180,11 @@ class Input:
 		self.last_click_location: list[int] = [0, 0]
 		self.mouse_position:      list[int] = [0, 0]
 		self.mouse_up_position:   list[int] = [0, 0]
+		self.touch_position:      list[int] = [0, 0]
+		self.touch_scroll_y:     float = 0
+		self.touch_active:        bool = False
+		self.touch_released:      bool = False
+		self.active_touch_id = None
 		self.drag_mode:           bool = False
 		self.quick_drag:          bool = False
 		self.clicked:             bool = False
@@ -17793,6 +17800,8 @@ class Tauon:
 		view_prefs["dim-art"] = prefs.dim_art
 		# view_prefs['pl-follow'] = pl_follow
 		view_prefs["scroll-enable"] = prefs.scroll_enable
+		view_prefs["smooth-scroll-enable"] = prefs.smooth_scroll_enable
+		view_prefs["trackpad-natural-scroll"] = prefs.trackpad_natural_scroll
 		view_prefs["break-enable"] = prefs.break_enable
 		view_prefs["append-date"] = prefs.append_date
 
@@ -18727,6 +18736,24 @@ class Tauon:
 		self.prefs.scroll_enable ^= True
 		self.gui.pl_update = 1
 		self.gui.update_layout = True
+		return None
+
+	def toggle_smooth_scroll(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.smooth_scroll_enable
+
+		self.prefs.smooth_scroll_enable ^= True
+		self.gui.pl_update = 1
+		self.gui.update += 1
+		return None
+
+	def toggle_trackpad_natural_scroll(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.trackpad_natural_scroll
+
+		self.prefs.trackpad_natural_scroll ^= True
+		self.gui.pl_update = 1
+		self.gui.update += 1
 		return None
 
 	def toggle_hide_bar(self, mode: int = 0) -> bool | None:
@@ -25077,6 +25104,19 @@ class Over:
 
 		self.ddt.text_background_colour = self.colours.box_background
 
+		self.ddt.text((x, y), _("Scrolling"), self.colours.box_text_label, 12)
+
+		y += 25 * self.gui.scale
+		self.toggle_square(
+			x, y, self.tauon.toggle_smooth_scroll, _("Smooth scrolling"),
+			subtitle=_("Adds inertia to scrollable views. Touch scrolling is always smooth."))
+
+		y += 25 * self.gui.scale
+		self.toggle_square(
+			x, y, self.tauon.toggle_trackpad_natural_scroll, _("Natural trackpad scrolling"),
+			subtitle=_("Precise/trackpad scroll follows natural direction by default."))
+
+		y += 38 * self.gui.scale
 		self.ddt.text((x, y), _("Metadata side panel"), self.colours.box_text_label, 12)
 
 		y += 25 * self.gui.scale
@@ -25093,6 +25133,9 @@ class Over:
 		y += 25 * self.gui.scale
 		# self.toggle_square(x, y, self.tauon.toggle_dim_albums, "Dim gallery when playing")
 		self.toggle_square(x, y, self.tauon.toggle_gallery_click, _("Single click to play"))
+		y += 25 * self.gui.scale
+		self.prefs.gallery_row_scroll = self.toggle_square(
+			x, y, self.prefs.gallery_row_scroll, _("Scroll gallery by row"))
 		y += 25 * self.gui.scale
 		self.toggle_square(x, y, self.tauon.toggle_gallery_combine, _("Combine multi-discs"))
 		y += 25 * self.gui.scale
@@ -30565,6 +30608,41 @@ class StandardPlaylist:
 		self.window_size   = tauon.window_size
 		self.smooth_scroll = tauon.smooth_scroll
 
+	def _tracklist_step_height(self, track_position: int) -> float:
+		if track_position < 0 or track_position >= len(self.pctl.default_playlist):
+			return float(self.gui.playlist_row_height)
+
+		step = float(self.gui.playlist_row_height)
+		if not self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title and self.prefs.break_enable:
+			if track_position == 0 or self.pctl.get_track(self.pctl.default_playlist[track_position]).parent_folder_path != self.pctl.get_track(
+				self.pctl.default_playlist[track_position - 1]
+			).parent_folder_path:
+				step += self.gui.playlist_row_height
+		return step
+
+	def _apply_tracklist_pixel_scroll(self) -> None:
+		pctl = self.pctl
+		gui = self.gui
+
+		while pctl.playlist_view_position < len(pctl.default_playlist) and gui.playlist_scroll_pixels >= self._tracklist_step_height(
+			pctl.playlist_view_position
+		):
+			gui.playlist_scroll_pixels -= self._tracklist_step_height(pctl.playlist_view_position)
+			pctl.playlist_view_position += 1
+
+		while gui.playlist_scroll_pixels < 0 and pctl.playlist_view_position > 0:
+			pctl.playlist_view_position -= 1
+			gui.playlist_scroll_pixels += self._tracklist_step_height(pctl.playlist_view_position)
+
+		if pctl.playlist_view_position <= 0 and gui.playlist_scroll_pixels < 0:
+			gui.playlist_scroll_pixels = 0
+			self.smooth_scroll.reset_motion("playlist")
+
+		if pctl.playlist_view_position >= len(pctl.default_playlist):
+			pctl.playlist_view_position = len(pctl.default_playlist)
+			gui.playlist_scroll_pixels = 0
+			self.smooth_scroll.reset_motion("playlist")
+
 	def full_render(self) -> None:
 		tauon       = self.tauon
 		prefs       = self.prefs
@@ -30609,34 +30687,58 @@ class StandardPlaylist:
 				xx -= round(15 * gui.scale)
 			deco.draw(ddt, xx, window_size[1] - gui.panelBY, pretty_text=True)
 
-		# Mouse wheel scrolling
-		if inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
+		scroll_area = (gui.playlist_left, gui.panelY, gui.plw, window_size[1] - (gui.panelBY + gui.panelY))
+		mouse_scroll = inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
 			1] > gui.panelY - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
-				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active:
+				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active
+		touch_scroll = (
+			inp.touch_scroll_y != 0
+			and coll_point(inp.touch_position, scroll_area)
+			and not tauon.search_over.active
+			and not tauon.radiobox.active
+		)
+		use_smooth_scroll = (
+			prefs.smooth_scroll_enable
+			or inp.mouse_wheel_precise
+			or touch_scroll
+			or self.smooth_scroll.active("playlist")
+		)
+		if not use_smooth_scroll and inp.k_input and not mouse_scroll and not touch_scroll:
+			gui.playlist_scroll_pixels = 0
+		a = gui.playlist_view_length
+		match a:
+			case _ if a < 10:
+				mx = 2
+			case _ if a < 25:
+				mx = 3
+			case _ if a > 40:
+				mx = 5
+			case _:
+				mx = 4
 
-			# set scroll speed
-			a = gui.playlist_view_length
-			match a:
-				case _ if a < 10:
-					mx = 2
-				case _ if a < 25:
-					mx = 3
-				case _ if a > 40:
-					mx = 5
-				case _:
-					mx = 4
+		# Mouse wheel scrolling
+		if use_smooth_scroll:
+			if mouse_scroll:
+				self.smooth_scroll.add_wheel_motion("playlist", -inp.mouse_wheel, gui.playlist_row_height * mx)
+			if touch_scroll:
+				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
+			elif inp.touch_released:
+				self.smooth_scroll.release_touch("playlist")
 
+			gui.playlist_scroll_pixels += self.smooth_scroll.step_motion("playlist")
+			self._apply_tracklist_pixel_scroll()
+
+			if mouse_scroll or touch_scroll or self.smooth_scroll.active("playlist"):
+				tauon.scroll_hide_timer.set()
+				gui.frame_callback_list.append(TestTimer(0.9))
+		elif mouse_scroll:
+			gui.playlist_scroll_pixels = 0
 			pctl.playlist_view_position -= self.smooth_scroll.scroll("playlist", mx)
 
-			#if inp.mouse_wheel:
-				#logging.debug("Position changed by mouse wheel scroll: " + str(inp.mouse_wheel))
-
 			pctl.playlist_view_position = min(pctl.playlist_view_position, len(pctl.default_playlist))
-				#logging.debug("Position changed by range bound")
 			if pctl.playlist_view_position < 1:
 				pctl.playlist_view_position = 0
 				if pctl.default_playlist:
-					# edge_playlist.pulse()
 					tauon.edge_playlist2.pulse()
 
 			tauon.scroll_hide_timer.set()
@@ -30705,22 +30807,23 @@ class StandardPlaylist:
 		# type (0 is track, 1 is fold title), track_position, track_object, box, input_box,
 		list_items = []
 		number = 0
+		render_rows = gui.playlist_view_length + 2
 
-		for i in range(gui.playlist_view_length + 1):
+		for i in range(render_rows):
 			track_position = i + pctl.playlist_view_position
 
 			# Make sure the view position is valid
 			pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 
 			# Break if we are at end of playlist
-			if len(pctl.default_playlist) <= track_position or number > gui.playlist_view_length:
+			if len(pctl.default_playlist) <= track_position or number >= render_rows:
 				break
 
 			track_object = pctl.get_track(pctl.default_playlist[track_position])
 			track_id = track_object.index
 			self.gui.move_on_title = False
 
-			line_y = gui.playlist_top + gui.playlist_row_height * number
+			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 
 			track_box = (
 				left + gui.highlight_left, line_y, highlight_width,
@@ -30847,7 +30950,7 @@ class StandardPlaylist:
 						(1, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, False))
 					number += 1
 
-			if number > gui.playlist_view_length:
+			if number >= render_rows:
 				break
 
 			# Standard track ---------------------------------------------------------------------
@@ -30855,7 +30958,7 @@ class StandardPlaylist:
 
 			highlight = False
 			drag_highlight = False
-			line_y = gui.playlist_top + gui.playlist_row_height * number
+			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 
 			track_box = (
 				left + gui.highlight_left, line_y, highlight_width,
@@ -31054,7 +31157,7 @@ class StandardPlaylist:
 				(0, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, playing))
 			number += 1
 
-			if number > gui.playlist_view_length:
+			if number >= render_rows:
 				break
 		# ---------------------------------------------------------------------------------------
 
@@ -31063,7 +31166,7 @@ class StandardPlaylist:
 		gui.tracklist_bg_is_light = test_lumi(colours.playlist_panel_background) < 0.55
 
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
-			line_y = gui.playlist_top + gui.playlist_row_height * number
+			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 			ddt.text_background_colour = colours.playlist_panel_background
 
 			if type == 1:
@@ -31178,7 +31281,7 @@ class StandardPlaylist:
 						colours.row_select_highlight,
 						colours.playlist_panel_background)
 					ddt.rect_a(
-						(left + gui.highlight_left, gui.playlist_top + gui.playlist_row_height * number),
+						(left + gui.highlight_left, gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels),
 						(highlight_width, gui.playlist_row_height), colours.row_select_highlight)
 
 				#logging.info(d_date) # date of album release / release year
@@ -31336,8 +31439,8 @@ class StandardPlaylist:
 
 				for h, item in enumerate(gui.pl_st):
 					wid = item[1] - 20 * gui.scale
-					y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number
-					ry = gui.playlist_top + gui.playlist_row_height * number
+					y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
+					ry = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 
 					if run > end - 50 * gui.scale:
 						break
@@ -31383,7 +31486,7 @@ class StandardPlaylist:
 									if playing and colours.star_line_playing is not None:
 										colour = colours.star_line_playing
 
-									sy = (gui.playlist_top + gui.playlist_row_height * number) + int(
+									sy = (gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels) + int(
 										gui.playlist_row_height / 2)
 									ddt.rect((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colour)
 					else:
@@ -31867,7 +31970,7 @@ class ScrollBox:
 		self.d_position = 0
 
 	def draw(
-		self, x: int, y: int, w: int, h: int, value: int, max_value: int, force_dark_theme: bool = False, click: bool | None = None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> int:
+		self, x: int, y: int, w: int, h: int, value: float, max_value: float, force_dark_theme: bool = False, click: bool | None = None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> float:
 		if max_value < 2:
 			return 0
 
@@ -33210,7 +33313,24 @@ class PlaylistBox:
 		if self.window_size[0] < 700 * self.gui.scale:
 			tab_start = x + 4 * self.gui.scale
 
-		if self.inp.mouse_wheel != 0 and self.coll((x, y, w, h)):
+		scroll_area = (x, y, w, h)
+		scroll_source = "playlist side pane"
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
+		use_smooth_scroll = (
+			self.prefs.smooth_scroll_enable
+			or self.inp.mouse_wheel_precise
+			or touch_scroll
+			or self.tauon.smooth_scroll.active(scroll_source)
+		)
+		if use_smooth_scroll:
+			if self.inp.mouse_wheel != 0 and self.coll(scroll_area):
+				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, self.gap + self.tab_h)
+			if touch_scroll:
+				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
+			elif self.inp.touch_released:
+				self.tauon.smooth_scroll.release_touch(scroll_source)
+			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(self.gap + self.tab_h, 1)
+		elif self.inp.mouse_wheel != 0 and self.coll(scroll_area):
 			self.scroll_on -= self.inp.mouse_wheel
 
 		self.scroll_on = min(self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
@@ -33246,12 +33366,14 @@ class PlaylistBox:
 		# Process inputs
 		delete_pl = None
 		tab_on = 0
-		yy = y + 5 * gui.scale
+		scroll_start = int(self.scroll_on)
+		scroll_offset = (self.scroll_on - scroll_start) * max(self.tab_h + self.gap, 1)
+		yy = y + 5 * gui.scale - scroll_offset
 		for i, pl in enumerate(pctl.multi_playlist):
 
 			if tab_on >= max_tabs:
 				break
-			if i < self.scroll_on:
+			if i < scroll_start:
 				continue
 
 			# if not pl.hidden and i in tabs_on_top:
@@ -34231,11 +34353,29 @@ class ArtistList:
 		self.ddt.rect(area, self.colours.side_panel_background)
 		self.ddt.text_background_colour = self.colours.side_panel_background
 
-		if self.coll(area) and self.inp.mouse_wheel:
+		item_height = self.tab_h
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, area)
+		use_smooth_scroll = (
+			self.prefs.smooth_scroll_enable
+			or self.inp.mouse_wheel_precise
+			or touch_scroll
+			or self.smooth_scroll.active("artist list")
+		)
+		if use_smooth_scroll:
+			if self.coll(area) and self.inp.mouse_wheel:
+				mx = 1
+				if self.prefs.artist_list_style == 2:
+					mx = 3
+				self.smooth_scroll.add_wheel_motion("artist list", -self.inp.mouse_wheel, item_height * mx)
+			if touch_scroll:
+				self.smooth_scroll.apply_touch_drag("artist list", -self.inp.touch_scroll_y)
+			elif self.inp.touch_released:
+				self.smooth_scroll.release_touch("artist list")
+			self.scroll_position += self.smooth_scroll.step_motion("artist list") / max(item_height, 1)
+		elif self.coll(area) and self.inp.mouse_wheel:
 			mx = 1
 			if self.prefs.artist_list_style == 2:
 				mx = 3
-
 			self.scroll_position -= self.smooth_scroll.scroll("artist list", mx)
 
 		self.scroll_position = max(self.scroll_position, 0)
@@ -34281,9 +34421,8 @@ class ArtistList:
 				(x + w // 2, y + (h // 7), 2), text, alpha_mod(self.colours.side_bar_line2, 100), 212,
 				max_w=w - 17 * self.gui.scale)
 
-		yy = y + 12 * self.gui.scale
-
 		i = int(self.scroll_position)
+		yy = y + 12 * self.gui.scale - ((self.scroll_position - i) * self.tab_h)
 
 		if viewing_pl_id in self.saves:
 			self.saves[viewing_pl_id].scroll_position = self.scroll_position
@@ -34518,16 +34657,30 @@ class TreeView:
 				212, max_w=w - 17 * self.gui.scale)
 			return
 
-		yy = y + round(11 * self.gui.scale)
-		xx = x + round(22 * self.gui.scale)
-
 		spacing = round(21 * self.gui.scale)
 		max_scroll = len(self.rows) - (h // round(22 * self.gui.scale))
 
 		mouse_in = self.coll(area)
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, area)
+		use_smooth_scroll = (
+			self.prefs.smooth_scroll_enable
+			or self.inp.mouse_wheel_precise
+			or touch_scroll
+			or self.smooth_scroll.active("tree view")
+		)
 
 		# Mouse wheel scrolling
-		if mouse_in and self.inp.mouse_wheel:
+		if use_smooth_scroll:
+			if mouse_in and self.inp.mouse_wheel:
+				self.smooth_scroll.add_wheel_motion("tree view", -self.inp.mouse_wheel, spacing * 2)
+			if touch_scroll:
+				self.smooth_scroll.apply_touch_drag("tree view", -self.inp.touch_scroll_y)
+			elif self.inp.touch_released:
+				self.smooth_scroll.release_touch("tree view")
+			scroll_position += self.smooth_scroll.step_motion("tree view") / max(spacing, 1)
+			scroll_position = max(scroll_position, 0)
+			scroll_position = min(scroll_position, max_scroll)
+		elif mouse_in and self.inp.mouse_wheel:
 			scroll_position -= self.smooth_scroll.scroll("tree view",2)
 			scroll_position = max(scroll_position, 0)
 			scroll_position = min(scroll_position, max_scroll)
@@ -34542,6 +34695,10 @@ class TreeView:
 				max_scroll, r_click=self.inp.right_click, jump_distance=40)
 
 		self.scroll_positions[pl_id] = scroll_position
+		scroll_start = int(scroll_position)
+		scroll_offset = (scroll_position - scroll_start) * spacing
+		yy = y + round(11 * self.gui.scale) - scroll_offset
+		xx = x + round(22 * self.gui.scale)
 
 		# Draw folder rows
 		playing_track = self.pctl.playing_object()
@@ -34552,7 +34709,7 @@ class TreeView:
 
 		for i, item in enumerate(self.rows):
 
-			if i < scroll_position:
+			if i < scroll_start:
 				continue
 
 			if yy > y + h - spacing:
@@ -36009,7 +36166,22 @@ class ArtistInfoBox:
 
 			scroll_max = self.th - (h - 26)
 
-			if self.coll((x, y, w, h)):
+			touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, (x, y, w, h))
+			use_smooth_scroll = (
+				self.prefs.smooth_scroll_enable
+				or self.inp.mouse_wheel_precise
+				or touch_scroll
+				or self.smooth_scroll.active("artistinfo")
+			)
+			if use_smooth_scroll:
+				if self.coll((x, y, w, h)) and self.inp.mouse_wheel:
+					self.smooth_scroll.add_wheel_motion("artistinfo", -self.inp.mouse_wheel, 20)
+				if touch_scroll:
+					self.smooth_scroll.apply_touch_drag("artistinfo", -self.inp.touch_scroll_y)
+				elif self.inp.touch_released:
+					self.smooth_scroll.release_touch("artistinfo")
+				self.scroll_y += self.smooth_scroll.step_motion("artistinfo")
+			elif self.coll((x, y, w, h)):
 				scroll_distance = self.smooth_scroll.scroll("artistinfo", 20)
 				self.scroll_y -= scroll_distance
 			self.scroll_y = max(self.scroll_y, 0)
@@ -36379,6 +36551,7 @@ class RadioView:
 		self.pctl          = tauon.pctl
 		self.fields        = tauon.fields
 		self.colours       = tauon.colours
+		self.prefs         = tauon.prefs
 		self.radiobox      = tauon.radiobox
 		self.window_size   = tauon.window_size
 		self.smooth_scroll = tauon.smooth_scroll
@@ -36474,8 +36647,25 @@ class RadioView:
 
 		count = 0
 		scroll = pctl.radio_playlists[pctl.radio_playlist_viewing].scroll
+		scroll_area = (0, gui.panelY, w + round(70 * gui.scale), window_size[1] - gui.panelBY - gui.panelY)
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
+		use_smooth_scroll = (
+			self.prefs.smooth_scroll_enable
+			or self.inp.mouse_wheel_precise
+			or touch_scroll
+			or self.smooth_scroll.active("radios")
+		)
 		if not radiobox.active or (radiobox.active and not self.coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
-			if gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
+			if use_smooth_scroll:
+				if gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
+				and self.inp.mouse_position[0] < w + round(70 * gui.scale) and self.inp.mouse_wheel:
+					self.smooth_scroll.add_wheel_motion("radios", -self.inp.mouse_wheel, h + gap)
+				if touch_scroll:
+					self.smooth_scroll.apply_touch_drag("radios", -self.inp.touch_scroll_y)
+				elif self.inp.touch_released:
+					self.smooth_scroll.release_touch("radios")
+				scroll += self.smooth_scroll.step_motion("radios") / max(h + gap, 1)
+			elif gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
 			and self.inp.mouse_position[0] < w + round(70 * gui.scale):
 				scroll_distance = self.smooth_scroll.scroll("radios")
 				scroll -= scroll_distance
@@ -36490,11 +36680,14 @@ class RadioView:
 
 		pctl.radio_playlists[pctl.radio_playlist_viewing].scroll = scroll
 		insert = None
+		scroll_start = int(scroll)
+		scroll_offset = (scroll - scroll_start) * max(h + gap, 1)
+		yy = y - scroll_offset
 
 		for i, radio in enumerate(radios):
 			if count == mm:
 				break
-			if i < scroll:
+			if i < scroll_start:
 				continue
 			count += 1
 			rect = (x, yy, w, h)
@@ -38227,11 +38420,37 @@ class XcursorImage(ctypes.Structure):
 		]
 
 
+SCROLL_PHYSICS_WHEEL_VELOCITY = 18.0
+SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.11
+SCROLL_PHYSICS_PRECISE_WHEEL_VELOCITY = 4.5
+SCROLL_PHYSICS_PRECISE_WHEEL_MAGNITUDE_BOOST = 0.3
+SCROLL_PHYSICS_REPEAT_WINDOW = 0.22
+SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.2
+SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER = 1.0
+SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER = 1.15
+SCROLL_PHYSICS_ACCELERATION_BOOST = 0.45
+SCROLL_PHYSICS_DAMPING = 0.84
+SCROLL_PHYSICS_MAX_VELOCITY = 4200.0
+SCROLL_PHYSICS_MIN_VELOCITY = 16.0
+
+
+@dataclass
+class ScrollMotionState:
+	velocity: float = 0.0
+	pending: float = 0.0
+	touching: bool = False
+	wheel_streak: int = 0
+	last_wheel_direction: float = 0.0
+	last_wheel_time: float = 0.0
+	last_update: float = field(default_factory=time.monotonic)
+
+
 class SmoothScroll:
 	def __init__(self, tauon: Tauon) -> None:
 		self.inp = tauon.inp
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
+		self.physics_states: dict[str, ScrollMotionState] = {}
 		self.timeout = 0.5
 
 	def scroll(self, source: str, coeff: float = 1) -> int:
@@ -38239,9 +38458,14 @@ class SmoothScroll:
 		Coeff should be the number that the scroll would be multiplied by if the scroll input was an integer;
 		Source keeps everything straight (the string's contents don't matter at all).
 		"""
+		state = self._state(source)
+		effective_wheel = self.inp.mouse_wheel
+		if effective_wheel != 0:
+			effective_wheel *= self._wheel_boost(state, effective_wheel)
+
 		# if smooth scrolling isn't necessary
-		if self.inp.mouse_wheel % 1 == 0:
-			return int( self.inp.mouse_wheel * coeff )
+		if effective_wheel % 1 == 0:
+			return int(effective_wheel * coeff)
 		try:
 			self.scroll_bins[source]
 		except KeyError: # create for first time
@@ -38251,16 +38475,115 @@ class SmoothScroll:
 		# tally up float inputs over time & only return when the final output can be integerized
 		if self.scroll_timeouts[source].get() > self.timeout:
 			self.scroll_bins[source] = []
-		self.scroll_bins[source].append( self.inp.mouse_wheel )
+		self.scroll_bins[source].append(effective_wheel)
 
-		if sum( self.scroll_bins[source] ) * coeff > 1 or sum( self.scroll_bins[source] ) * coeff < -1:
-			scroll_distance = int( sum(self.scroll_bins[source]) * coeff )
-			self.scroll_bins[source] = [ sum(self.scroll_bins[source]) % (1/coeff) ] # save the remainder
+		if sum(self.scroll_bins[source]) * coeff > 1 or sum(self.scroll_bins[source]) * coeff < -1:
+			scroll_distance = int(sum(self.scroll_bins[source]) * coeff)
+			self.scroll_bins[source] = [sum(self.scroll_bins[source]) % (1 / coeff)] # save the remainder
 		else:
 			scroll_distance = 0
 		self.scroll_timeouts[source].set()
 
 		return scroll_distance
+
+	def _state(self, source: str) -> ScrollMotionState:
+		if source not in self.physics_states:
+			self.physics_states[source] = ScrollMotionState()
+		return self.physics_states[source]
+
+	def _wheel_boost(self, state: ScrollMotionState, delta: float) -> float:
+		now = time.monotonic()
+		direction = 1.0 if delta > 0 else -1.0
+		if (
+			state.last_wheel_direction == direction
+			and now - state.last_wheel_time <= SCROLL_PHYSICS_REPEAT_WINDOW
+		):
+			state.wheel_streak = min(state.wheel_streak + 1, 10)
+		else:
+			state.wheel_streak = 0
+		state.last_wheel_direction = direction
+		state.last_wheel_time = now
+		return 1.0 + min(state.wheel_streak, 8) * SCROLL_PHYSICS_REPEAT_ACCELERATION
+
+	def reset_motion(self, source: str) -> None:
+		state = self.physics_states.get(source)
+		if state is None:
+			return
+		state.velocity = 0.0
+		state.pending = 0.0
+		state.touching = False
+		state.wheel_streak = 0
+		state.last_wheel_direction = 0.0
+		state.last_wheel_time = 0.0
+		state.last_update = time.monotonic()
+
+	def add_wheel_motion(self, source: str, delta: float, px_per_unit: float) -> None:
+		if delta == 0:
+			return
+
+		state = self._state(source)
+		repeat_boost = self._wheel_boost(state, delta)
+		boost = 1.0 + min(abs(state.velocity) / SCROLL_PHYSICS_MAX_VELOCITY, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
+		if self.inp.mouse_wheel_precise:
+			if state.velocity != 0 and ((delta > 0) != (state.velocity > 0)):
+				state.velocity = 0.0
+				state.pending = 0.0
+			pixel_delta = delta * px_per_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER
+			magnitude_boost = 1.0 + min(abs(delta), 6.0) * SCROLL_PHYSICS_PRECISE_WHEEL_MAGNITUDE_BOOST
+			state.pending += pixel_delta
+			state.velocity += pixel_delta * SCROLL_PHYSICS_PRECISE_WHEEL_VELOCITY * repeat_boost * magnitude_boost * boost
+		else:
+			impulse = delta * px_per_unit * repeat_boost
+			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
+		state.velocity = max(min(state.velocity, SCROLL_PHYSICS_MAX_VELOCITY), -SCROLL_PHYSICS_MAX_VELOCITY)
+		state.touching = False
+		state.last_update = time.monotonic()
+
+	def apply_touch_drag(self, source: str, delta_pixels: float) -> None:
+		state = self._state(source)
+		now = time.monotonic()
+		dt = max(now - state.last_update, 1 / 240)
+		state.touching = True
+		state.pending += delta_pixels * SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER
+		state.velocity = delta_pixels / dt * SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER
+		state.velocity = max(min(state.velocity, SCROLL_PHYSICS_MAX_VELOCITY), -SCROLL_PHYSICS_MAX_VELOCITY)
+		state.last_update = now
+
+	def release_touch(self, source: str) -> None:
+		if source in self.physics_states:
+			self.physics_states[source].touching = False
+			self.physics_states[source].last_update = time.monotonic()
+
+	def step_motion(self, source: str) -> float:
+		state = self._state(source)
+		now = time.monotonic()
+		dt = min(max(now - state.last_update, 1 / 240), 0.05)
+		state.last_update = now
+
+		delta = state.pending
+		state.pending = 0.0
+
+		if state.touching:
+			return delta
+
+		if abs(state.velocity) < SCROLL_PHYSICS_MIN_VELOCITY:
+			state.velocity = 0.0
+			return delta
+
+		delta += state.velocity * dt
+		state.velocity *= SCROLL_PHYSICS_DAMPING ** (dt * 60)
+		if abs(state.velocity) < SCROLL_PHYSICS_MIN_VELOCITY:
+			state.velocity = 0.0
+		return delta
+
+	def active(self, source: str) -> bool:
+		state = self.physics_states.get(source)
+		if state is None:
+			return False
+		return state.touching or abs(state.velocity) >= SCROLL_PHYSICS_MIN_VELOCITY or abs(state.pending) >= 0.01
+
+	def any_active(self) -> bool:
+		return any(self.active(source) for source in self.physics_states)
 
 
 
@@ -40235,7 +40558,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("allow-art-zoom", prefs.zoom_art)
 
 	cf.update_value("scroll-gallery-by-row", prefs.gallery_row_scroll)
-	cf.update_value("prefs.gallery_scroll_wheel_px", prefs.gallery_row_scroll)
+	cf.update_value("scroll-gallery-distance", prefs.gallery_scroll_wheel_px)
 	cf.update_value("scroll-spectrogram", prefs.spec2_scroll)
 	cf.update_value("mascot-opacity", prefs.custom_bg_opacity)
 	cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
@@ -40497,7 +40820,7 @@ def load_prefs(bag: Bag) -> None:
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
 	prefs.macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
 	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
-	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", True)
+	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", False)
 	prefs.gallery_scroll_wheel_px = cf.sync_add(
 		"int", "scroll-gallery-distance", 90,
 		"Only has effect if scroll-gallery-by-row is false.")
@@ -43063,6 +43386,8 @@ def main(holder: Holder) -> None:
 		"dim-art": False,
 		"pl-follow": False,
 		"scroll-enable": True,
+		"smooth-scroll-enable": False,
+		"trackpad-natural-scroll": True,
 	}
 
 	prefs = Prefs(
@@ -43864,6 +44189,8 @@ def main(holder: Holder) -> None:
 		prefs.dim_art       = False  # view_prefs['dim-art']
 		#pl_follow          = view_prefs['pl-follow']
 		prefs.scroll_enable = prefs.view_prefs["scroll-enable"]
+		prefs.smooth_scroll_enable = prefs.view_prefs.get("smooth-scroll-enable", False)
+		prefs.trackpad_natural_scroll = prefs.view_prefs.get("trackpad-natural-scroll", True)
 		if "break-enable" in prefs.view_prefs:
 			prefs.break_enable = prefs.view_prefs["break-enable"]
 		else:
@@ -45218,6 +45545,9 @@ def main(holder: Holder) -> None:
 			inp.key_home_press = False
 			inp.key_end_press = False
 			inp.mouse_wheel = 0
+			inp.mouse_wheel_precise = False
+			inp.touch_scroll_y = 0
+			inp.touch_released = False
 			pref_box.scroll = 0
 			gui.new_playlist_cooldown = False
 			inp.input_text = ""
@@ -45612,9 +45942,47 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_MOUSE_WHEEL:
 				inp.k_input = True
 				power += 6
-				inp.mouse_wheel += event.wheel.y
+				direction = 1
+				if event.wheel.direction == sdl3.SDL_MOUSEWHEEL_FLIPPED:
+					direction = -1
+				scroll_y = event.wheel.y * direction
+				integer_y = event.wheel.integer_y * direction
+				is_precise = scroll_y != integer_y
+				if is_precise and prefs.trackpad_natural_scroll:
+					scroll_y *= -1
+				inp.mouse_wheel += scroll_y
+				inp.mouse_wheel_precise = inp.mouse_wheel_precise or is_precise
 
 				gui.update += 1
+			elif event.type == sdl3.SDL_EVENT_FINGER_DOWN:
+				if inp.active_touch_id is None:
+					inp.active_touch_id = event.tfinger.fingerID
+				if event.tfinger.fingerID == inp.active_touch_id:
+					inp.k_input = True
+					inp.touch_active = True
+					inp.touch_released = False
+					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+					gui.update += 1
+			elif event.type == sdl3.SDL_EVENT_FINGER_MOTION:
+				if inp.active_touch_id is None:
+					inp.active_touch_id = event.tfinger.fingerID
+				if event.tfinger.fingerID == inp.active_touch_id:
+					inp.k_input = True
+					inp.touch_active = True
+					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+					inp.touch_scroll_y += event.tfinger.dy * window_size[1]
+					gui.update += 1
+			elif event.type in (sdl3.SDL_EVENT_FINGER_UP, sdl3.SDL_EVENT_FINGER_CANCELED):
+				if event.tfinger.fingerID == inp.active_touch_id:
+					inp.k_input = True
+					inp.touch_active = False
+					inp.touch_released = True
+					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+					inp.active_touch_id = None
+					gui.update += 1
 			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST:
 				power += 5
 				# logging.info(event.type)
@@ -45776,6 +46144,10 @@ def main(holder: Holder) -> None:
 		if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
 			power = 1000
 
+		if tauon.smooth_scroll.any_active():
+			power = 1000
+			gui.pl_update = max(gui.pl_update, 1)
+
 		if prefs.art_bg and tauon.core_timer.get() < 3:
 			power = 1000
 
@@ -45903,6 +46275,9 @@ def main(holder: Holder) -> None:
 				inp.key_home_press = False
 				inp.key_end_press = False
 				inp.mouse_wheel = 0
+				inp.mouse_wheel_precise = False
+				inp.touch_scroll_y = 0
+				inp.touch_released = False
 				pref_box.scroll = 0
 				inp.input_text = ""
 				inp.level_2_enter = False
@@ -46989,6 +47364,15 @@ def main(holder: Holder) -> None:
 						) - round(50 * gui.scale)
 
 						# Mouse wheel scrolling
+						gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
+						touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
+						use_smooth_gallery = touch_scroll or (
+							not prefs.gallery_row_scroll and (
+								prefs.smooth_scroll_enable
+								or inp.mouse_wheel_precise
+								or tauon.smooth_scroll.active("gallery")
+							)
+						)
 						if (
 							not tauon.search_over.active
 							and not radiobox.active
@@ -46999,7 +47383,15 @@ def main(holder: Holder) -> None:
 								tauon.scroll_gallery_hide_timer.set()
 								gui.frame_callback_list.append(TestTimer(0.9))
 
-							if prefs.gallery_row_scroll:
+							if use_smooth_gallery:
+								if inp.mouse_wheel != 0:
+									tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
+								if touch_scroll:
+									tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+								elif inp.touch_released:
+									tauon.smooth_scroll.release_touch("gallery")
+								gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+							elif prefs.gallery_row_scroll:
 								gui.album_scroll_px -= inp.mouse_wheel * (
 									tauon.album_mode_art_size + gui.album_v_gap
 								)  # 90
@@ -47011,6 +47403,38 @@ def main(holder: Holder) -> None:
 								if tauon.album_dex:
 									tauon.gallery_pulse_top.pulse()
 
+							if gui.album_scroll_px > max_scroll:
+								gui.album_scroll_px = max_scroll
+								gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+						elif touch_scroll:
+							tauon.scroll_gallery_hide_timer.set()
+							gui.frame_callback_list.append(TestTimer(0.9))
+							tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+							gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+							if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+								gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+							if gui.album_scroll_px > max_scroll:
+								gui.album_scroll_px = max_scroll
+								gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+						elif inp.touch_released:
+							tauon.smooth_scroll.release_touch("gallery")
+							if tauon.smooth_scroll.active("gallery"):
+								gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+								if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+									gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+								if gui.album_scroll_px > max_scroll:
+									gui.album_scroll_px = max_scroll
+									gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+
+						if use_smooth_gallery and tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
+							not tauon.search_over.active
+							and not radiobox.active
+							and inp.mouse_position[0] > window_size[0] - w
+							and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+						):
+							gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+							if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+								gui.album_scroll_px = round(gui.album_v_slide_value * -1)
 							if gui.album_scroll_px > max_scroll:
 								gui.album_scroll_px = max_scroll
 								gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
@@ -48846,6 +49270,7 @@ def main(holder: Holder) -> None:
 									sbp = top
 								per = (sbp - top) / (ey - top - sbl)
 								pctl.playlist_view_position = int(len(pctl.default_playlist) * per)
+								gui.playlist_scroll_pixels = 0
 								logging.debug("Position set by scroll bar (right click)")
 								pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 
@@ -48876,6 +49301,7 @@ def main(holder: Holder) -> None:
 								if sbp < inp.mouse_position[1] < sbp + sbl:
 									gui.scroll_direction = 0
 								pctl.playlist_view_position += gui.scroll_direction * 2
+								gui.playlist_scroll_pixels = 0
 								logging.debug("Position set by scroll bar (slide)")
 								pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 								pctl.playlist_view_position = min(
@@ -48904,10 +49330,11 @@ def main(holder: Holder) -> None:
 								sbp = top
 							per = (sbp - top) / (ey - top - sbl)
 							pctl.playlist_view_position = int(len(pctl.default_playlist) * per)
+							gui.playlist_scroll_pixels = 0
 							logging.debug("Position set by scroll bar (drag)")
 
 						elif len(pctl.default_playlist) > 0:
-							per = pctl.playlist_view_position / len(pctl.default_playlist)
+							per = (pctl.playlist_view_position + (gui.playlist_scroll_pixels / max(gui.playlist_row_height, 1))) / len(pctl.default_playlist)
 							sbp = int((ey - top - sbl) * per) + top + 1
 
 						bg = ColourRGBA(255, 255, 255, 6)
