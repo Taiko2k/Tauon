@@ -38416,7 +38416,9 @@ SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE = 0.82
 SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 13.0
 SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW = 0.25
 SCROLL_PHYSICS_REPEAT_WINDOW = 0.22
-SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.2
+SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.35
+SCROLL_PHYSICS_REPEAT_CURVE = 0.08
+SCROLL_PHYSICS_WHEEL_MAGNITUDE_ACCELERATION = 0.45
 SCROLL_PHYSICS_WHEEL_MAX_VELOCITY_MULTIPLIER = 12.0
 SCROLL_PHYSICS_PRECISE_DIRECT_PORTION = 0.55
 SCROLL_PHYSICS_PRECISE_SMOOTHING = 0.02
@@ -38519,7 +38521,11 @@ class SmoothScroll:
 			state.wheel_streak = 0
 		state.last_wheel_direction = direction
 		state.last_wheel_time = now
-		repeat_boost = 1.0 + min(state.wheel_streak, 8) * SCROLL_PHYSICS_REPEAT_ACCELERATION
+		streak = min(state.wheel_streak, 8)
+		repeat_boost = 1.0 + streak * SCROLL_PHYSICS_REPEAT_ACCELERATION
+		if streak > 1:
+			repeat_boost += (streak - 1) ** 2 * SCROLL_PHYSICS_REPEAT_CURVE
+		repeat_boost += max(abs(delta) - 1.0, 0.0) * SCROLL_PHYSICS_WHEEL_MAGNITUDE_ACCELERATION
 		return repeat_boost, dt
 
 	def _wheel_boost(self, state: ScrollMotionState, delta: float) -> float:
