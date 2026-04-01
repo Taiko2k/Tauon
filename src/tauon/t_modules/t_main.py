@@ -38417,6 +38417,7 @@ SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 13.0
 SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW = 0.25
 SCROLL_PHYSICS_REPEAT_WINDOW = 0.22
 SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.2
+SCROLL_PHYSICS_WHEEL_MAX_VELOCITY_MULTIPLIER = 6.0
 SCROLL_PHYSICS_PRECISE_DIRECT_PORTION = 0.55
 SCROLL_PHYSICS_PRECISE_SMOOTHING = 0.02
 SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER = 1.0
@@ -38553,6 +38554,7 @@ class SmoothScroll:
 
 		state = self._state(source)
 		max_velocity = self._scaled_max_velocity()
+		velocity_limit = max_velocity
 		state.from_touch = False
 		if self.precise_scroll_active():
 			state.velocity = 0.0
@@ -38561,12 +38563,13 @@ class SmoothScroll:
 			state.pending += pixel_delta * SCROLL_PHYSICS_PRECISE_DIRECT_PORTION
 			state.precise_buffer += pixel_delta * (1.0 - SCROLL_PHYSICS_PRECISE_DIRECT_PORTION)
 		else:
+			velocity_limit *= SCROLL_PHYSICS_WHEEL_MAX_VELOCITY_MULTIPLIER
 			repeat_boost = self._wheel_boost(state, delta)
-			boost = 1.0 + min(abs(state.velocity) / max_velocity, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
+			boost = 1.0 + min(abs(state.velocity) / velocity_limit, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
 			impulse = delta * px_per_unit * repeat_boost
 			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
 			state.last_update = time.monotonic()
-		state.velocity = max(min(state.velocity, max_velocity), -max_velocity)
+		state.velocity = max(min(state.velocity, velocity_limit), -velocity_limit)
 		state.touching = False
 
 	def apply_touch_drag(self, source: str, delta_pixels: float) -> None:
@@ -47444,8 +47447,13 @@ def main(holder: Holder) -> None:
 						gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
 						touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
 						precise_gallery_scroll = inp.mouse_wheel_precise or time.monotonic() < inp.trackpad_scroll_mode_until
-						use_smooth_gallery = precise_gallery_scroll or touch_scroll or tauon.smooth_scroll.active("gallery")
-						row_gallery_scroll = prefs.gallery_row_scroll and not precise_gallery_scroll and not touch_scroll
+						use_smooth_gallery = (
+							prefs.smooth_scroll_enable
+							or precise_gallery_scroll
+							or touch_scroll
+							or tauon.smooth_scroll.active("gallery")
+						)
+						row_gallery_scroll = prefs.gallery_row_scroll and not use_smooth_gallery and not touch_scroll
 						if (
 							not tauon.search_over.active
 							and not radiobox.active
@@ -47456,11 +47464,7 @@ def main(holder: Holder) -> None:
 								tauon.scroll_gallery_hide_timer.set()
 								gui.frame_callback_list.append(TestTimer(0.9))
 
-							if row_gallery_scroll:
-								gui.album_scroll_px -= inp.mouse_wheel * (
-									tauon.album_mode_art_size + gui.album_v_gap
-								)  # 90
-							else:
+							if use_smooth_gallery and inp.mouse_wheel != 0:
 								if precise_gallery_scroll:
 									gallery_precise_unit = (SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE * gui.scale) / max(
 										SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER, 0.001
@@ -47469,7 +47473,13 @@ def main(holder: Holder) -> None:
 										"gallery", -inp.mouse_wheel, gallery_precise_unit, precise_px_per_unit=gallery_precise_unit
 									)
 								else:
-									gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
+									tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
+							elif row_gallery_scroll:
+								gui.album_scroll_px -= inp.mouse_wheel * (
+									tauon.album_mode_art_size + gui.album_v_gap
+								)  # 90
+							else:
+								gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
 
 							if touch_scroll:
 								tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
