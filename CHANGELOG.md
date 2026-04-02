@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v9.2.0
+
+ - Added inertial scrolling option
+ - Redesigned settings box layout
+
 ### v9.1.2
 
  - Added menu bar support to for macOS
