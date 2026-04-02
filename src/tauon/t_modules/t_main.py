@@ -24569,18 +24569,24 @@ class Over:
 
 		self.func_page = 0
 		self.tab_active = 0
+		self.settings_nav_scroll = 0.0
+		self.settings_nav_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.tabs = [
-			[_("Function"), self.funcs],
-			[_("Audio"), self.audio],
-			[_("Tracklist"), self.config_v],
-			[_("Theme"), self.theme],
-			[_("Window"), self.config_b],
-			[_("View"), self.view2],
-			[_("Transcode"), self.codec_config],
-			[_("Lyrics"), self.lyrics],
-			[_("Accounts"), self.last_fm_box],
-			[_("Stats"), self.stats],
-			[_("About"), self.about],
+			(_("General"), _("Core behaviour and everyday preferences"), self.funcs_general),
+			(_("Behaviour"), _("Playback flow, track actions and session behaviour"), self.funcs_behaviour),
+			(_("Features"), _("Import helpers and optional actions"), self.funcs_imports),
+			(_("Connections"), _("Remote control and external integrations"), self.funcs_connected),
+			(_("Advanced"), _("Debugging, gamepad input and specialist options"), self.funcs_advanced),
+			(_("Audio"), _("Playback sound, loudness and output devices"), self.audio),
+			(_("Tracklist"), _("Row layout, spacing and metadata density"), self.config_v),
+			(_("Theme"), _("Background treatment and color themes"), self.theme),
+			(_("View"), _("Scrolling, gallery layout and side panels"), self.view2),
+			(_("Window"), _("Window chrome, tray behaviour and scaling"), self.config_b),
+			(_("Transcode"), _("Transcoding, export and device sync"), self.codec_config),
+			(_("Lyrics"), _("Lyric sources and chord tools"), self.lyrics),
+			(_("Services"), _("Accounts, scrobbling and network sources"), self.services),
+			(_("Stats"), _("Playlist and collection statistics"), self.stats),
+			(_("About"), _("Version, credits and license details"), self.about),
 		]
 
 		self.stats_timer = Timer()
@@ -24614,6 +24620,67 @@ class Over:
 		self.key_box = TextBox2(tauon)
 		self.key_box_focused = False
 
+	def settings_card_colours(self) -> tuple[ColourRGBA, ColourRGBA]:
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 12), self.colours.box_background)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 20), self.colours.box_text_border)
+		return fill, border
+
+	def draw_settings_card(self, rect: tuple[int, int, int, int]) -> None:
+		fill, border = self.settings_card_colours()
+		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
+
+	def sync_settings_nav_scroll(self, scroll_area: tuple[int, int, int, int], row_height: int, visible_rows: int) -> float:
+		scroll_source = "settings nav"
+		max_scroll = max(len(self.tabs) - visible_rows, 0)
+		if max_scroll <= 0:
+			self.settings_nav_scroll = 0
+			self.tauon.smooth_scroll.reset_motion(scroll_source)
+			return 0
+
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
+		use_smooth_scroll = (
+			self.prefs.smooth_scroll_enable
+			or self.tauon.smooth_scroll.precise_scroll_active()
+			or touch_scroll
+			or self.tauon.smooth_scroll.active(scroll_source)
+		)
+		if use_smooth_scroll:
+			if self.coll(scroll_area) and self.inp.mouse_wheel:
+				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, row_height)
+			if touch_scroll:
+				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
+			elif self.inp.touch_released:
+				self.tauon.smooth_scroll.release_touch(scroll_source)
+			self.settings_nav_scroll += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_height, 1)
+		elif self.coll(scroll_area) and self.inp.mouse_wheel:
+			self.settings_nav_scroll -= self.inp.mouse_wheel
+
+		self.settings_nav_scroll = min(max(self.settings_nav_scroll, 0), max_scroll)
+		return max_scroll
+
+	def services(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		self.last_fm_box(x0, y0, w0, h0)
+
+	def funcs_general(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		self.func_page = 0
+		self.funcs(x0, y0, w0, h0)
+
+	def funcs_behaviour(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		self.func_page = 1
+		self.funcs(x0, y0, w0, h0)
+
+	def funcs_imports(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		self.func_page = 2
+		self.funcs(x0, y0, w0, h0)
+
+	def funcs_connected(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		self.func_page = 3
+		self.funcs(x0, y0, w0, h0)
+
+	def funcs_advanced(self, x0: int, y0: int, w0: int, h0: int) -> None:
+		self.func_page = 4
+		self.funcs(x0, y0, w0, h0)
+
 	def theme(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		gui = self.gui
 		prefs = self.prefs
@@ -24638,7 +24705,7 @@ class Over:
 			prefs.auto_dl_artist_data = True
 			self.show_message(
 				_("Also enabling 'auto-fech artist data' to scrape last.fm."),
-				_("You can toggle this back off under Settings > Function"))
+				_("You can toggle this back off under Settings > General"))
 		y += 23 * gui.scale
 
 		self.toggle_square(x + 10 * gui.scale, y, self.tauon.toggle_auto_bg_strong, _("Stronger"))
@@ -25156,7 +25223,7 @@ class Over:
 		ddt     = self.ddt
 		colours = self.colours
 		x = x0 + 25 * gui.scale
-		y = y0 - 10 * gui.scale
+		y = y0 + round(8 * gui.scale)
 
 		ddt.text_background_colour = colours.box_background
 
@@ -25165,10 +25232,7 @@ class Over:
 			prefs.playlist_folder_path = ""
 			prefs.autoscan_playlist_folder = False
 
-
 		if self.func_page == 0:
-			y += 23 * gui.scale
-
 			old = gui.artist_info_panel
 			new = self.toggle_square(
 				x, y, gui.artist_info_panel,
@@ -25216,8 +25280,50 @@ class Over:
 			self.button(x + wb + round(20 * gui.scale), y, _("Open keymap file"), tauon.open_keymap_file, width=ww)
 
 		elif self.func_page == 1:
-			y += 23 * gui.scale
-			ddt.text((x, y), _("Enable/Disable track context menu functions:"), colours.box_text_label, 11)
+			ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 12)
+			y += 25 * gui.scale
+			column_width = max(
+				ddt.get_text_w(_("Repeat playlist"), 13),
+				ddt.get_text_w(_("Play next playlist"), 13),
+				ddt.get_text_w(_("Cycle all playlists"), 13)) + round(40 * gui.scale)
+			self.toggle_square(x, y, self.set_playlist_stop, _("Stop playback"))
+			y += 25 * gui.scale
+			self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
+			y -= 25 * gui.scale
+			x += column_width
+			self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
+			y += 25 * gui.scale
+			self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
+
+			x = x0 + self.item_x_offset
+			y += 38 * gui.scale
+			play_lock_old = prefs.block_suspend
+			prefs.block_suspend = self.toggle_square(
+				x, y, prefs.block_suspend, _("Block suspend"),
+				subtitle=_("Prevent system suspend during playback"))
+			y += 37 * gui.scale
+			prefs.resume_play_wake = self.toggle_square(
+				x, y, prefs.resume_play_wake, _("Resume from suspend"),
+				subtitle=_("Continue playback when waking from sleep"))
+
+			y += 37 * gui.scale
+			auto_rec_old = prefs.auto_rec
+			prefs.auto_rec = self.toggle_square(
+				x, y, prefs.auto_rec, _("Record Radio"),
+				subtitle=_("Record and split songs when playing internet radio"))
+			if prefs.auto_rec != auto_rec_old and prefs.auto_rec:
+				self.show_message(
+					_("Tracks will now be recorded. Restart any playback for change to take effect."),
+					_("Tracks will be saved to \"Saved Radio Tracks\" playlist."),
+					mode="info")
+
+			if tauon.update_play_lock is None:
+				prefs.block_suspend = False
+			elif play_lock_old != prefs.block_suspend:
+				tauon.update_play_lock()
+
+		elif self.func_page == 2:
+			ddt.text((x, y), _("Track context menu"), colours.box_text_label, 11)
 			y += 25 * gui.scale
 
 			self.toggle_square(x, y, tauon.toggle_wiki, _("Wikipedia artist search"))
@@ -25225,38 +25331,12 @@ class Over:
 			self.toggle_square(x, y, tauon.toggle_rym, _("Sonemic artist search"))
 			y += 23 * gui.scale
 			self.toggle_square(x, y, tauon.toggle_band, _("Bandcamp artist page search"))
-			# y += 23 * gui.scale
-			# self.toggle_square(x, y, tauon.toggle_gimage, _("Google image search"))
 			y += 23 * gui.scale
 			self.toggle_square(x, y, tauon.toggle_gen, _("Genius track search"))
 			y += 23 * gui.scale
 			self.toggle_square(x, y, tauon.toggle_transcode, _("Transcode folder"))
 
-			y += 28 * gui.scale
-
-			x = x0 + self.item_x_offset
-
-			ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 12)
-
-			y += 25 * gui.scale
-			wa = ddt.get_text_w(_("Stop playback"), 13) + 10 * gui.scale
-			wb = ddt.get_text_w(_("Repeat playlist"), 13) + 10 * gui.scale
-			wc = max(wa, wb) + 20 * gui.scale
-
-			self.toggle_square(x, y, self.set_playlist_stop, _("Stop playback"))
-			y += 25 * gui.scale
-			self.toggle_square(x, y, self.set_playlist_repeat, _("Repeat playlist"))
-			# y += 25
-			y -= 25 * gui.scale
-			x += wc
-			self.toggle_square(x, y, self.set_playlist_advance, _("Play next playlist"))
-			y += 25 * gui.scale
-			self.toggle_square(x, y, self.set_playlist_cycle, _("Cycle all playlists"))
-
-		elif self.func_page == 2:
-			y += 23 * gui.scale
-			# ddt.text((x, y), _("Auto download monitor and archive extractor"), colours.box_text_label, 11)
-			# y += 25 * gui.scale
+			y += 35 * gui.scale
 			self.toggle_square(
 				x, y, tauon.toggle_extract, _("Extract archives"),
 				subtitle=_("Extracts zip archives on drag and drop"))
@@ -25269,70 +25349,20 @@ class Over:
 			y += 23 * gui.scale
 			self.toggle_square(x + 10 * gui.scale, y, tauon.toggle_music_ex, _("Always extract to Music folder"))
 
-			y += 38 * gui.scale
-			if not self.windows:
-				self.toggle_square(x, y, tauon.toggle_use_tray, _("Show icon in system tray"))
-
-				y += 25 * gui.scale
-				self.toggle_square(x + round(10 * gui.scale), y, tauon.toggle_min_tray, _("Close to tray"))
-
-				y += 25 * gui.scale
-				self.toggle_square(x + round(10 * gui.scale), y, tauon.toggle_text_tray, _("Show title text"))
-
-				old = prefs.tray_theme
-				if not self.toggle_square(x + round(190 * gui.scale), y, prefs.tray_theme == "gray", _("Monochrome")):
-					prefs.tray_theme = "pink"
-				else:
-					prefs.tray_theme = "gray"
-				if prefs.tray_theme != old:
-					tauon.set_tray_icons(force=True)
-					self.show_message(_("Restart Tauon for change to take effect"))
-			else:
-				self.toggle_square(x, y, tauon.toggle_min_tray, _("Close to tray"))
-
 		elif self.func_page == 3:
-			y += 23 * gui.scale
-			old = prefs.enable_remote
+			remote_old = prefs.enable_remote
 			prefs.enable_remote = self.toggle_square(
 				x, y, prefs.enable_remote, _("Enable remote control"),
 				subtitle=_("Change requires restart"))
 			y += 37 * gui.scale
 
-			if prefs.enable_remote and prefs.enable_remote != old:
+			if prefs.enable_remote and prefs.enable_remote != remote_old:
 				self.show_message(
 					_("Notice: This API is not security hardened."),
 					_("Only enable in a trusted LAN and do not expose port (7814) to the internet"),
 					mode="warning")
 
-			old = prefs.block_suspend
-			prefs.block_suspend = self.toggle_square(
-				x, y, prefs.block_suspend, _("Block suspend"),
-				subtitle=_("Prevent system suspend during playback"))
-			y += 37 * gui.scale
-			old = prefs.block_suspend
-			prefs.resume_play_wake = self.toggle_square(
-				x, y, prefs.resume_play_wake, _("Resume from suspend"),
-				subtitle=_("Continue playback when waking from sleep"))
-
-			y += 37 * gui.scale
-			old = prefs.auto_rec
-			prefs.auto_rec = self.toggle_square(
-				x, y, prefs.auto_rec, _("Record Radio"),
-				subtitle=_("Record and split songs when playing internet radio"))
-			if prefs.auto_rec != old and prefs.auto_rec:
-				self.show_message(
-					_("Tracks will now be recorded. Restart any playback for change to take effect."),
-					_("Tracks will be saved to \"Saved Radio Tracks\" playlist."),
-					mode="info")
-
-			if tauon.update_play_lock is None:
-				prefs.block_suspend = False
-				# if self.flatpak_mode:
-				# 	self.show_message("Sandbox support not implemented")
-			elif old != prefs.block_suspend:
-				tauon.update_play_lock()
-
-			y += 37 * gui.scale
+			y += 42 * gui.scale
 			ddt.text((x, y), "Discord", colours.box_text_label, 11)
 			y += 25 * gui.scale
 			old = prefs.discord_enable
@@ -25361,8 +25391,25 @@ class Over:
 			if prefs.discord_enable:
 				text = gui.discord_status
 			ddt.text((x, y), _("Status: {state}").format(state=text), colours.box_text, 11)
+
+			y += 38 * gui.scale
+			self.toggle_square(
+				x, y, tauon.toggle_enable_web, _("Enable Listen Along"),
+				subtitle=_("Start server for remote web playback"))
+			if tauon.toggle_enable_web(1):
+				link_pa2 = self.tauon.draw_linked_text(
+					(x + 300 * gui.scale, y - 1 * gui.scale),
+					f"http://localhost:{prefs.metadata_page_port!s}/listenalong",
+					colours.grey_blend_bg(190), 13)
+				link_rect2 = [x + 300 * gui.scale, y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
+				self.fields.add(link_rect2)
+				if self.coll(link_rect2):
+					if not self.click:
+						gui.cursor_want = 3
+					if self.click:
+						webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
 		elif self.func_page == 4:
-			y += 23 * gui.scale
 			prefs.use_gamepad = self.toggle_square(
 				x, y, prefs.use_gamepad, _("Enable use of gamepad as input"),
 				subtitle=_("Change requires restart"))
@@ -25399,25 +25446,6 @@ class Over:
 			)
 
 			y += round(35 * gui.scale)
-			self.toggle_square(
-				x, y, tauon.toggle_enable_web, _("Enable Listen Along"), subtitle=_("Start server for remote web playback"))
-
-			if tauon.toggle_enable_web(1):
-				link_pa2 = self.tauon.draw_linked_text(
-					(x + 300 * gui.scale, y - 1 * gui.scale),
-					f"http://localhost:{prefs.metadata_page_port!s}/listenalong",
-					colours.grey_blend_bg(190), 13)
-				link_rect2 = [x + 300 * gui.scale, y - 1 * gui.scale, link_pa2[1], 20 * gui.scale]
-				self.fields.add(link_rect2)
-
-				if self.coll(link_rect2):
-					if not self.click:
-						gui.cursor_want = 3
-
-					if self.click:
-						webbrowser.open(link_pa2[2], new=2, autoraise=True)
-
-			y += round(35 * gui.scale)
 			debug_path = self.user_directory / "debug"
 			debug_state = debug_path.exists()
 			old = debug_state
@@ -25427,17 +25455,6 @@ class Over:
 					pass
 			elif old is True and debug_state is False:
 				os.remove(debug_path)
-
-		# Switcher
-		pages = 5
-		x = x0 + round(18 * gui.scale)
-		y = (y0 + h0) - round(29 * gui.scale)
-		ww = round(40 * gui.scale)
-
-		for p in range(pages):
-			if self.button2(x, y, str(p + 1), width=ww, center_text=True, force_on=self.func_page == p):
-				self.func_page = p
-			x += ww
 
 	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
@@ -25485,10 +25502,11 @@ class Over:
 			w = self.ddt.get_text_w(text, 211) + 10 * self.gui.scale
 		rect = (x, y, w, 20 * self.gui.scale)
 
-		bg_colour = self.colours.box_button_background
+		border_colour = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		bg_colour = alpha_blend(ColourRGBA(255, 255, 255, 8), self.colours.box_button_background)
 		real_bg = bg_colour
 
-		self.ddt.rect(rect, bg_colour)
+		self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
 		self.fields.add(rect)
 		hit = False
 
@@ -25497,9 +25515,9 @@ class Over:
 			text_position = (x + rect[2] // 2, rect[1] + 1 * self.gui.scale, 2)
 
 		if self.coll(rect) or force_on:
-			self.ddt.rect(rect, self.colours.box_button_background_highlight)
-			bg_colour = self.colours.box_button_background
-			real_bg = alpha_blend(self.colours.box_button_background_highlight, bg_colour)
+			bg_colour = alpha_blend(self.colours.box_button_background_highlight, bg_colour)
+			real_bg = bg_colour
+			self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
 			self.ddt.text(text_position, text, self.colours.box_button_text_highlight, 211, bg=real_bg)
 			if self.click and not force_on:
 				hit = True
@@ -25564,75 +25582,63 @@ class Over:
 		inp     = self.inp
 		prefs   = self.prefs
 		colours = self.colours
-		x = x0 + round(20 * gui.scale)
-		y = y0 + round(15 * gui.scale)
-
 		ddt.text_background_colour = colours.box_background
-
-		text = "Last.fm"
-		if prefs.use_libre_fm:
-			text = "Libre.fm"
-		if self.button2(x, y, text, width=84 * gui.scale):
+		if self.account_view == 0:
 			self.account_view = 1
-		self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, self.tauon.toggle_lfm_auto, _("Enable"))
 
-		y += 28 * gui.scale
+		nav_rect = (
+			x0 + round(10 * gui.scale), y0 + round(6 * gui.scale),
+			round(230 * gui.scale), h0 - round(12 * gui.scale))
+		detail_rect = (
+			x0 + round(255 * gui.scale), y0 + round(6 * gui.scale),
+			w0 - round(265 * gui.scale), h0 - round(12 * gui.scale))
+		self.draw_settings_card(nav_rect)
+		self.draw_settings_card(detail_rect)
 
-		if self.button2(x, y, "ListenBrainz", width=84 * gui.scale):
-			self.account_view = 2
-		self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, self.tauon.toggle_lb, _("Enable"))
+		x = nav_rect[0] + round(14 * gui.scale)
+		y = nav_rect[1] + round(14 * gui.scale)
+		button_w = round(116 * gui.scale)
+		toggle_x = x + round(130 * gui.scale)
 
-		y += 28 * gui.scale
+		scrobble_services = [
+			("Last.fm" if not prefs.use_libre_fm else "Libre.fm", 1, self.tauon.toggle_lfm_auto),
+			("ListenBrainz", 2, self.tauon.toggle_lb),
+			("Maloja", 9, self.tauon.toggle_maloja),
+		]
+		streaming_services = [
+			("Jellyfin", 10, None),
+			("TIDAL", 12, None),
+			("Airsonic", 7, None),
+			("PLEX", 5, None),
+			("Spotify", 8, None),
+			("Tauon", 11, None),
+		]
 
-		if self.button2(x, y, "Maloja", width=84 * gui.scale):
-			self.account_view = 9
-		self.toggle_square(x + 105 * gui.scale, y + 2 * gui.scale, self.tauon.toggle_maloja, _("Enable"))
+		if inp.key_shift_down:
+			streaming_services.insert(0, ("koel", 6, None))
 
-		# if self.button2(x, y, "Discogs", width=84*gui.scale):
-		#     self.account_view = 3
-
-		y += 28 * gui.scale
-
-		if self.button2(x, y, "fanart.tv", width=84 * gui.scale):
-			self.account_view = 4
-
-		y += 28 * gui.scale
-		y += 28 * gui.scale
-
-		y += 15 * gui.scale
-
-		if inp.key_shift_down and self.button2(x + round(95 * gui.scale), y, "koel", width=84 * gui.scale):
-			self.account_view = 6
-
-		if self.button2(x, y, "Jellyfin", width=84 * gui.scale):
-			self.account_view = 10
-
-		if self.button2(x + round(95 * gui.scale), y, "TIDAL", width=84 * gui.scale):
-			self.account_view = 12
-
-		y += 28 * gui.scale
-
-		if self.button2(x, y, "Airsonic", width=84 * gui.scale):
-			self.account_view = 7
-
-		if self.button2(x + round(95 * gui.scale), y, "PLEX", width=84 * gui.scale):
-			self.account_view = 5
-
-		y += 28 * gui.scale
-
-		if self.button2(x, y, "Spotify", width=84 * gui.scale):
-			self.account_view = 8
-
-		if self.button2(x + round(95 * gui.scale), y, "Satellite", width=84 * gui.scale):
-			self.account_view = 11
+		for heading, services in (
+			(_("Scrobbling"), scrobble_services),
+			(_("Artwork"), [("fanart.tv", 4, None)]),
+			(_("Streaming"), streaming_services),
+		):
+			ddt.text((x, y), heading, colours.box_text_label, 12)
+			y += round(18 * gui.scale)
+			for label, view, toggle in services:
+				if self.button2(x, y, label, width=button_w, force_on=self.account_view == view):
+					self.account_view = view
+				if toggle is not None:
+					self.toggle_square(toggle_x, y + round(2 * gui.scale), toggle, _("Enable"))
+				y += round(26 * gui.scale)
+			y += round(8 * gui.scale)
 
 		if self.account_view in (9, 2):
 			self.toggle_square(
-				x0 + 230 * gui.scale, y + 2 * gui.scale, self.tauon.toggle_scrobble_mark,
-				_("Show threshold marker"))
+				detail_rect[0] + round(16 * gui.scale), detail_rect[1] + detail_rect[3] - round(34 * gui.scale),
+				self.tauon.toggle_scrobble_mark, _("Show threshold marker"))
 
-		x = x0 + 230 * gui.scale
-		y = y0 + round(20 * gui.scale)
+		x = detail_rect[0] + round(18 * gui.scale)
+		y = detail_rect[1] + round(16 * gui.scale)
 
 		if self.account_view == 12:
 			ddt.text((x, y), "TIDAL", colours.box_sub_text, 213)
@@ -25672,7 +25678,7 @@ class Over:
 					shooter(tauon.tidal.fav_tracks)
 
 		if self.account_view == 11:
-			ddt.text((x, y), "Tauon Satellite", colours.box_sub_text, 213)
+			ddt.text((x, y), "Tauon", colours.box_sub_text, 213)
 
 			y += round(30 * gui.scale)
 
@@ -26613,9 +26619,28 @@ class Over:
 		if prefs.backend == Backend.PHAZOR:
 			self.toggle_square(x, y, self.tauon.toggle_showcase_vis, _("Showcase visualisation"))
 
-		y += round(30 * gui.scale)
-		# if not windows:
-		# y += round(15 * gui.scale)
+		y += round(35 * gui.scale)
+		self.ddt.text((x, y), _("System tray"), colours.box_text_label, 12)
+		y += round(25 * gui.scale)
+
+		if not self.windows:
+			self.toggle_square(x, y, self.tauon.toggle_use_tray, _("Show icon in system tray"))
+			y += round(25 * gui.scale)
+			self.toggle_square(x + round(10 * gui.scale), y, self.tauon.toggle_min_tray, _("Close to tray"))
+			y += round(25 * gui.scale)
+			self.toggle_square(x + round(10 * gui.scale), y, self.tauon.toggle_text_tray, _("Show title text"))
+			old = prefs.tray_theme
+			if not self.toggle_square(x + round(190 * gui.scale), y, prefs.tray_theme == "gray", _("Monochrome")):
+				prefs.tray_theme = "pink"
+			else:
+				prefs.tray_theme = "gray"
+			if prefs.tray_theme != old:
+				self.tauon.set_tray_icons(force=True)
+				self.show_message(_("Restart Tauon for change to take effect"))
+			y += round(35 * gui.scale)
+		else:
+			self.toggle_square(x, y, self.tauon.toggle_min_tray, _("Close to tray"))
+			y += round(35 * gui.scale)
 
 		self.ddt.text((x, y), _("UI scale for HiDPI displays"), colours.box_text_label, 12)
 
@@ -27139,10 +27164,6 @@ class Over:
 			self.topchart(x0, y0, w0, h0)
 			return
 
-		ww = ddt.get_text_w(_("Chart generator..."), 211) + 30 * gui.scale
-		if self.button(x0 + w0 - ww, y + 15 * gui.scale, _("Chart generator...")):
-			self.chart_view = 1
-
 		ddt.text_background_colour = colours.box_background
 		lt_font = 312
 		lt_colour = colours.box_text_label
@@ -27230,6 +27251,11 @@ class Over:
 		y1 += 20 * gui.scale
 		ddt.text((x1, y1), _("Total playtime"), lt_colour, lt_font)
 		ddt.text((x2, y1), seconds_to_day_hms(pctl.total_playtime, strings.day, strings.days), colours.box_sub_text, 15)
+
+		ww = ddt.get_text_w(_("Chart generator..."), 211) + 30 * gui.scale
+		chart_y = y0 + h0 - round(36 * gui.scale)
+		if self.button(x0 + w0 - ww, chart_y, _("Chart generator...")):
+			self.chart_view = 1
 
 		# Ratio bar
 		if len(pctl.master_library) > 115 * gui.scale:
@@ -27479,6 +27505,7 @@ class Over:
 
 	def close(self) -> None:
 		self.enabled = False
+		self.tauon.smooth_scroll.reset_motion("settings nav")
 		self.tauon.fader.fall()
 		if self.gui.opened_config_file:
 			self.tauon.reload_config_file()
@@ -27495,24 +27522,11 @@ class Over:
 		if inp.key_esc_press:
 			self.close()
 
-		tab_width = 115 * gui.scale
-
-		side_width = 115 * gui.scale
-		header_width = 0
-
-		top_mode = False
-		if self.window_size[0] < 700 * gui.scale:
-			top_mode = True
-			side_width = 0 * gui.scale
-			header_width = round(48 * gui.scale)  # 48
-
-		content_width = round(545 * gui.scale)
-		content_height = round(275 * gui.scale)  # 275
-		full_width = content_width
-		full_height = content_height
-
-		full_width += side_width
-		full_height += header_width
+		full_width = min(round(875 * gui.scale), self.window_size[0] - round(40 * gui.scale))
+		full_height = min(round(500 * gui.scale), self.window_size[1] - round(44 * gui.scale))
+		side_width = min(round(188 * gui.scale), max(round(140 * gui.scale), full_width // 3))
+		content_width = full_width - side_width
+		content_height = full_height
 
 		x = int(self.window_size[0] / 2) - int(full_width / 2)
 		y = int(self.window_size[1] / 2) - int(full_height / 2)
@@ -27523,13 +27537,9 @@ class Over:
 		self.h = full_height
 
 		border_colour = colours.box_border
-
 		ddt.rect(
 			(x - 5 * gui.scale, y - 5 * gui.scale, full_width + 10 * gui.scale, full_height + 10 * gui.scale), border_colour)
 		ddt.rect_a((x, y), (full_width, full_height), colours.box_background)
-
-		current_tab = 0
-		tab_height = round(24 * gui.scale)  # 30
 
 		tab_bg = colours.sys_tab_bg
 		tab_hl = colours.sys_tab_hl
@@ -27538,91 +27548,108 @@ class Over:
 			h, l, s = rgb_to_hls(tab_bg.r, tab_bg.g, tab_bg.b)
 			l = 0.1
 			tab_text = hls_to_rgb(h, l, s)
-		tab_over = alpha_mod(rgb_add_hls(tab_bg, 0, 0.5, 0), 13)
 
-		if top_mode:
-			xx = x
-			yy = y
-			tab_width = 90 * gui.scale
+		if self.click and gui.message_box:
+			if not self.coll(tauon.message_box.get_rect()):
+				gui.message_box = False
+			else:
+				inp.mouse_click = True
+				self.click = False
 
-			ddt.rect_a((x, y), (full_width, header_width), tab_bg)
+		old_tab = self.tab_active
+		ddt.rect_a((x, y), (side_width, full_height), tab_bg)
+		ddt.rect_a(
+			(x + side_width - round(1 * gui.scale), y),
+			(round(1 * gui.scale), full_height),
+			alpha_mod(colours.box_text_border, 170))
 
-			for item in self.tabs:
-				if self.click and gui.message_box:
-					gui.message_box = False
+		nav_x = x + round(10 * gui.scale)
+		nav_y = y + round(14 * gui.scale)
+		nav_h = full_height - round(28 * gui.scale)
+		row_step = round(28 * gui.scale)
+		row_height = round(26 * gui.scale)
+		visible_rows = max(1, nav_h // max(row_step, 1))
+		max_nav_scroll = self.sync_settings_nav_scroll((x, y, side_width, full_height), row_step, visible_rows)
+		nav_w = side_width - round(12 * gui.scale)
+		if max_nav_scroll > 0:
+			scrollbar_w = round(10 * gui.scale)
+			scrollbar_gap = round(8 * gui.scale)
+			scrollbar_x = x + side_width - scrollbar_w - round(6 * gui.scale)
+			nav_w -= scrollbar_w + scrollbar_gap
+			self.settings_nav_scroll = self.settings_nav_scroll_bar.draw(
+				scrollbar_x,
+				y + round(8 * gui.scale),
+				scrollbar_w,
+				full_height - round(16 * gui.scale),
+				self.settings_nav_scroll,
+				max_nav_scroll,
+				click=self.click,
+				extend_field=round(4 * gui.scale))
 
-				box = [xx, yy, tab_width, tab_height]
-				box2 = [xx, yy, tab_width, tab_height - 1]
-				self.fields.add(box2)
+		scroll_start = int(self.settings_nav_scroll)
+		scroll_offset = (self.settings_nav_scroll - scroll_start) * max(row_step, 1)
+		active_bg = alpha_blend(alpha_mod(tab_hl, 160), tab_bg)
+		hover_bg = alpha_blend(alpha_mod(tab_hl, 70), tab_bg)
+		yy = nav_y - scroll_offset
+		for index, item in enumerate(self.tabs):
+			if index < scroll_start:
+				continue
+			if yy > nav_y + nav_h - row_step:
+				break
 
-				if self.click and self.coll(box2):
-					self.tab_active = current_tab
-					self.lyrics_panel = False
+			rect = (nav_x, round(yy), nav_w, row_height)
+			self.fields.add(rect)
+			hovered = self.coll(rect)
+			row_bg = tab_bg
+			if self.tab_active == index:
+				row_bg = active_bg
+				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), row_bg)
+			elif hovered:
+				row_bg = hover_bg
+				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), row_bg)
+			ddt.text(
+				(rect[0] + round(11 * gui.scale), rect[1] + round(4 * gui.scale)),
+				item[0],
+				colours.box_text if self.tab_active == index else tab_text,
+				212,
+				bg=row_bg,
+				max_w=rect[2] - round(18 * gui.scale))
+			if hovered and self.click:
+				self.tab_active = index
+			yy += row_step
 
-				if current_tab == self.tab_active:
-					colour = copy.deepcopy(colours.sys_tab_hl)
-					ddt.text_background_colour = colour
-					ddt.rect(box, colour)
-				else:
-					ddt.text_background_colour = tab_bg
-					ddt.rect(box, tab_bg)
+		if self.tab_active != old_tab:
+			self.lyrics_panel = False
 
-				if self.coll(box2):
-					ddt.rect(box, tab_over)
+		content_x = x + side_width
+		content_y = y
+		header_height = round(66 * gui.scale)
+		inner_pad_x = round(22 * gui.scale)
+		inner_pad_y = round(14 * gui.scale)
 
-				alpha = 100
-				if current_tab == self.tab_active:
-					alpha = 240
+		ddt.rect_a(
+			(content_x, content_y), (content_width, header_height),
+			alpha_blend(ColourRGBA(255, 255, 255, 10), colours.box_background))
+		ddt.rect_a(
+			(content_x, content_y + header_height - round(1 * gui.scale)),
+			(content_width, round(1 * gui.scale)),
+			alpha_mod(colours.box_text_border, 170))
 
-				ddt.text((xx + (tab_width // 2), yy + 4 * gui.scale, 2), item[0], tab_text, 212)
+		title, subtitle, render_tab = self.tabs[self.tab_active]
+		ddt.text((content_x + inner_pad_x, content_y + round(16 * gui.scale)), title, colours.box_text, 214)
+		ddt.text((content_x + inner_pad_x, content_y + round(40 * gui.scale)), subtitle, colours.box_text_label, 12)
 
-				current_tab += 1
-				xx += tab_width
-				if current_tab == 6:
-					yy += round(24 * gui.scale)  # 30
-					xx = x
-		else:
-			ddt.rect_a((x, y), (tab_width, full_height), tab_bg)
-			for item in self.tabs:
-				if self.click and gui.message_box:
-					if not self.coll(tauon.message_box.get_rect()):
-						gui.message_box = False
-					else:
-						inp.mouse_click = True
-						self.click = False
+		close_w = ddt.get_text_w(_("Close"), 211) + round(18 * gui.scale)
+		self.button(
+			content_x + content_width - close_w - round(18 * gui.scale),
+			content_y + round(16 * gui.scale),
+			_("Close"), self.close, width=close_w)
 
-				box = [x, y + (current_tab * tab_height), tab_width, tab_height]
-				box2 = [x, y + (current_tab * tab_height), tab_width, tab_height - 1]
-				self.fields.add(box2)
-
-				if self.click and self.coll(box2):
-					self.tab_active = current_tab
-					self.lyrics_panel = False
-
-				if current_tab == self.tab_active:
-					bg_colour = copy.deepcopy(colours.sys_tab_hl)
-					ddt.text_background_colour = bg_colour
-					ddt.rect(box, bg_colour)
-				else:
-					ddt.text_background_colour = tab_bg
-					ddt.rect(box, tab_bg)
-
-				if self.coll(box2):
-					ddt.rect(box, tab_over)
-
-				yy = box[1] + 4 * gui.scale
-
-				if current_tab == self.tab_active:
-					ddt.text(
-						(box[0] + (tab_width // 2), yy, 2), item[0], alpha_blend(colours.tab_text_active, ddt.text_background_colour), 213)
-				else:
-					ddt.text((box[0] + (tab_width // 2), yy, 2), item[0], tab_text, 213)
-
-				current_tab += 1
-
-		# ddt.line(x + 110, self.box_y + 1, self.box_x + 110, self.box_y + self.h, colours.grey(50))
-
-		self.tabs[self.tab_active][1](x + side_width, y + header_width, content_width, content_height)
+		render_tab(
+			content_x + inner_pad_x,
+			content_y + header_height + inner_pad_y,
+			content_width - inner_pad_x * 2,
+			content_height - header_height - inner_pad_y * 2)
 
 		self.click = False
 		self.right_click = False
@@ -38529,7 +38556,7 @@ class SmoothScroll:
 		return repeat_boost, dt
 
 	def _wheel_boost(self, state: ScrollMotionState, delta: float) -> float:
-		repeat_boost, _ = self._update_wheel_streak(state, delta)
+		repeat_boost, dt = self._update_wheel_streak(state, delta)
 		return repeat_boost
 
 	def reset_motion(self, source: str) -> None:
