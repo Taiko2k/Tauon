@@ -24575,7 +24575,7 @@ class Over:
 			(_("General"), _("Core behaviour and everyday preferences"), self.funcs_general),
 			(_("Behaviour"), _("Playback flow, track actions and session behaviour"), self.funcs_behaviour),
 			(_("Features"), _("Import helpers and optional actions"), self.funcs_imports),
-			(_("Connections"), _("Remote control and external integrations"), self.funcs_connected),
+			(_("Connections"), _("Remote control, lyric sources and external integrations"), self.funcs_connected),
 			(_("Advanced"), _("Debugging, gamepad input and specialist options"), self.funcs_advanced),
 			(_("Audio"), _("Playback sound, loudness and output devices"), self.audio),
 			(_("Tracklist"), _("Row layout, spacing and metadata density"), self.config_v),
@@ -24583,7 +24583,6 @@ class Over:
 			(_("View"), _("Scrolling, gallery layout and side panels"), self.view2),
 			(_("Window"), _("Window chrome, tray behaviour and scaling"), self.config_b),
 			(_("Transcode"), _("Transcoding, export and device sync"), self.codec_config),
-			(_("Lyrics"), _("Lyric sources and chord tools"), self.lyrics),
 			(_("Services"), _("Accounts, scrobbling and network sources"), self.services),
 			(_("Stats"), _("Playlist and collection statistics"), self.stats),
 			(_("About"), _("Version, credits and license details"), self.about),
@@ -25134,41 +25133,57 @@ class Over:
 	def toggle_lyrics_view(self) -> None:
 		self.lyrics_panel ^= True
 
-	def lyrics(self, x0: int, y0: int, w0: int, h0: int) -> None:
-		x = x0 + 25 * self.gui.scale
-		y = y0 - 10 * self.gui.scale
-		y += 30 * self.gui.scale
+	def draw_lyrics_source_settings(self, x: int, y: float, max_width: int) -> None:
+		self.ddt.text((x, y), _("Lyrics Sources"), self.colours.box_text_label, 11)
+		#y += round(25 * self.gui.scale)
 
-		self.ddt.text_background_colour = self.colours.box_background
+		# if self.prefs.auto_lyrics:
+		# 	if self.prefs.auto_lyrics_checked and self.button(x, y, _("Reset failed list")):
+		# 		self.prefs.auto_lyrics_checked.clear()
+		# 	y += round(30 * self.gui.scale)
 
-		# self.toggle_square(x, y, self.tauon.toggle_auto_lyrics, _("Auto search lyrics"))
-		if self.prefs.auto_lyrics:
-			if self.prefs.auto_lyrics_checked and self.button(x, y, _("Reset failed list")):
-				self.prefs.auto_lyrics_checked.clear()
-			y += 30 * self.gui.scale
+		#self.ddt.text((x, y), _("Sources:"), self.colours.box_text_label, 11)
+		y += round(23 * self.gui.scale)
 
-		y += round(10 * self.gui.scale)
-		self.ddt.text((x, y), _("Sources:"), self.colours.box_text_label, 11)
-		y += 23 * self.gui.scale
+		start_x = x
+		current_x = x
+		current_y = y
+		row_height = round(23 * self.gui.scale)
+		column_gap = round(26 * self.gui.scale)
 
 		for name in lyric_sources:
 			enabled = name in self.prefs.lyrics_enables
 			title = _(name)
 			if name in uses_scraping:
 				title += "*"
-			new = self.toggle_square(x, y, enabled, title)
-			y += round(23 * self.gui.scale)
+			item_width = self.ddt.get_text_w(title, 13) + round(34 * self.gui.scale)
+
+			if current_x > start_x and current_x + item_width > start_x + max_width:
+				current_x = start_x
+				current_y += row_height
+
+			new = self.toggle_square(current_x, current_y, enabled, title)
 			if new != enabled:
 				if enabled:
 					self.prefs.lyrics_enables.clear()
 				else:
 					self.prefs.lyrics_enables.append(name)
+			current_x += item_width + column_gap
 
-		y += round(6 * self.gui.scale)
-		self.ddt.text((x + 12 * self.gui.scale, y), _("*Uses scraping. Enable at your own discretion."), self.colours.box_text_label, 11)
-		y += 20 * self.gui.scale
-		self.ddt.text((x + 12 * self.gui.scale, y), _("Tip: The order enabled will be the order searched."), self.colours.box_text_label, 11)
-		y += 20 * self.gui.scale
+		y = current_y + row_height + round(6 * self.gui.scale)
+		self.ddt.text(
+			(x + 12 * self.gui.scale, y),
+			_("*Uses scraping. Enable at your own discretion."),
+			self.colours.box_text_label,
+			11,
+		)
+		y += round(20 * self.gui.scale)
+		self.ddt.text(
+			(x + 12 * self.gui.scale, y),
+			_("Tip: The order enabled will be the order searched."),
+			self.colours.box_text_label,
+			11,
+		)
 
 	def view2(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		x = x0 + 25 * self.gui.scale
@@ -25367,7 +25382,7 @@ class Over:
 			prefs.enable_remote = self.toggle_square(
 				x, y, prefs.enable_remote, _("Enable remote control"),
 				subtitle=_("Change requires restart"))
-			y += 37 * gui.scale
+			y += 15 * gui.scale
 
 			if prefs.enable_remote and prefs.enable_remote != remote_old:
 				self.show_message(
@@ -25375,7 +25390,7 @@ class Over:
 					_("Only enable in a trusted LAN and do not expose port (7814) to the internet"),
 					mode="warning")
 
-			y += 42 * gui.scale
+			y += round(28 * gui.scale)
 			ddt.text((x, y), "Discord", colours.box_text_label, 11)
 			y += 25 * gui.scale
 			old = prefs.discord_enable
@@ -25421,6 +25436,9 @@ class Over:
 						gui.cursor_want = 3
 					if self.click:
 						webbrowser.open(link_pa2[2], new=2, autoraise=True)
+
+			y += round(48 * gui.scale)
+			self.draw_lyrics_source_settings(x, y, w0 - round(50 * gui.scale))
 
 		elif self.func_page == 4:
 			prefs.use_gamepad = self.toggle_square(
@@ -25628,11 +25646,11 @@ class Over:
 		]
 
 		if inp.key_shift_down:
+			scrobble_services.append(("fanart.tv", 4, None))
 			streaming_services.insert(0, ("koel", 6, None))
 
 		for heading, services in (
 			(_("Scrobbling"), scrobble_services),
-			(_("Artwork"), [("fanart.tv", 4, None)]),
 			(_("Streaming"), streaming_services),
 		):
 			ddt.text((x, y), heading, colours.box_text_label, 12)
@@ -26647,7 +26665,7 @@ class Over:
 		if prefs.backend == Backend.PHAZOR:
 			self.toggle_square(x, y, self.tauon.toggle_showcase_vis, _("Showcase visualisation"))
 
-		y += round(35 * gui.scale)
+		y += round(25 * gui.scale)
 		self.ddt.text((x, y), _("System tray"), colours.box_text_label, 12)
 		y += round(25 * gui.scale)
 
@@ -27561,7 +27579,7 @@ class Over:
 			self.close()
 
 		full_width = min(round(875 * gui.scale), self.window_size[0] - round(40 * gui.scale))
-		full_height = min(round(500 * gui.scale), self.window_size[1] - round(44 * gui.scale))
+		full_height = min(round(440 * gui.scale), self.window_size[1] - round(44 * gui.scale))
 		side_width = min(round(188 * gui.scale), max(round(140 * gui.scale), full_width // 3))
 		content_width = full_width - side_width
 		content_height = full_height
