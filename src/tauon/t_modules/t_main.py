@@ -25043,27 +25043,39 @@ class Over:
 
 			# if self.prefs.device_buffer > 100:
 			# 	self.prefs.pa_fast_seek = True
-			# else:
-			# 	self.prefs.pa_fast_seek = False
+				# else:
+				# 	self.prefs.pa_fast_seek = False
 
-			y = y0 + 37 * self.gui.scale
-			x = x0 + 270 * self.gui.scale
+			device_rect = (
+				x0 + round(250 * self.gui.scale), y0 + round(10 * self.gui.scale),
+				w0 - round(258 * self.gui.scale), h0 - round(20 * self.gui.scale))
+			self.draw_settings_card(device_rect)
+
+			y = device_rect[1] + round(26 * self.gui.scale)
+			x = device_rect[0] + round(18 * self.gui.scale)
+			device_list_y = y
+			device_list_x = x
+			device_list_w = min(round(245 * self.gui.scale), device_rect[2] - round(38 * self.gui.scale))
+			scrollbar_x = device_rect[0] + device_rect[2] - round(18 * self.gui.scale)
+			device_list_bottom = device_rect[1] + device_rect[3] - round(70 * self.gui.scale)
 			self.ddt.text_background_colour = self.colours.box_background
-			self.ddt.text((x, y - 22 * self.gui.scale), _("Set audio output device"), self.colours.box_text_label, 212)
+			self.ddt.text((x, y - round(18 * self.gui.scale)), _("Set audio output device"), self.colours.box_text_label, 212)
 
 			if self.platform_system == "Linux":
 				old = self.prefs.pipewire
 				self.prefs.pipewire = self.toggle_square(
-					x + round(self.gui.scale * 110), self.box_y + self.h - 50 * self.gui.scale,
+					x + round(self.gui.scale * 110), device_rect[1] + device_rect[3] - round(48 * self.gui.scale),
 					self.prefs.pipewire, _("PipeWire"))
 				self.prefs.pipewire = self.toggle_square(
-					x, self.box_y + self.h - 50 * self.gui.scale,
+					x, device_rect[1] + device_rect[3] - round(48 * self.gui.scale),
 					self.prefs.pipewire ^ True, _("PulseAudio")) ^ True
 				if old != self.prefs.pipewire:
 					self.show_message(_("Please restart Tauon for this change to take effect"))
 
 			old = self.prefs.avoid_resampling
-			self.prefs.avoid_resampling = self.toggle_square(x, self.box_y + self.h - 27 * self.gui.scale, self.prefs.avoid_resampling, _("Avoid resampling"))
+			self.prefs.avoid_resampling = self.toggle_square(
+				x, device_rect[1] + device_rect[3] - round(25 * self.gui.scale),
+				self.prefs.avoid_resampling, _("Avoid resampling"))
 			if self.prefs.avoid_resampling != old:
 				self.pctl.playerCommand = "reload"
 				self.pctl.playerCommandReady = True
@@ -25078,24 +25090,27 @@ class Over:
 
 			if len(self.prefs.phazor_devices) > 13:
 				self.device_scroll_bar_position = self.tauon.device_scroll.draw(
-					x + 250 * self.gui.scale, y, 11, 180,
+					scrollbar_x, device_list_y - round(4 * self.gui.scale), 11,
+					device_list_bottom - device_list_y + round(8 * self.gui.scale),
 					self.device_scroll_bar_position,
 					len(self.prefs.phazor_devices) - 11, click=self.click)
 
 			reload = False
+			y = device_list_y
+			x = device_list_x
 			for i, name in enumerate(self.prefs.phazor_devices):
 				if i < self.device_scroll_bar_position:
 					continue
-				if y > self.box_y + self.h - 40 * self.gui.scale:
+				if y > device_list_bottom:
 					break
 
-				rect = (x, y + 4 * self.gui.scale, 245 * self.gui.scale, 13)
+				rect = (x, y + 4 * self.gui.scale, device_list_w, 13)
 
 				if self.click and self.coll(rect):
 					self.prefs.phazor_device_selected = name
 					reload = True
 
-				line = self.tauon.trunc_line(name, 10, 245 * self.gui.scale)
+				line = self.tauon.trunc_line(name, 10, device_list_w)
 
 				self.fields.add(rect)
 
@@ -25132,9 +25147,7 @@ class Over:
 				self.prefs.auto_lyrics_checked.clear()
 			y += 30 * self.gui.scale
 
-		self.toggle_square(x, y, self.tauon.toggle_guitar_chords, _("Enable chord lyrics"))
-
-		y += 40 * self.gui.scale
+		y += round(10 * self.gui.scale)
 		self.ddt.text((x, y), _("Sources:"), self.colours.box_text_label, 11)
 		y += 23 * self.gui.scale
 
@@ -25587,11 +25600,11 @@ class Over:
 			self.account_view = 1
 
 		nav_rect = (
-			x0 + round(10 * gui.scale), y0 + round(6 * gui.scale),
+			x0 + round(2 * gui.scale), y0 + round(6 * gui.scale),
 			round(230 * gui.scale), h0 - round(12 * gui.scale))
 		detail_rect = (
-			x0 + round(255 * gui.scale), y0 + round(6 * gui.scale),
-			w0 - round(265 * gui.scale), h0 - round(12 * gui.scale))
+			x0 + round(247 * gui.scale), y0 + round(6 * gui.scale),
+			w0 - round(249 * gui.scale), h0 - round(12 * gui.scale))
 		self.draw_settings_card(nav_rect)
 		self.draw_settings_card(detail_rect)
 
@@ -26266,37 +26279,52 @@ class Over:
 			if prefs.use_libre_fm:
 				text = "Libre.fm"
 
-			ddt.text((x, y), text, colours.box_sub_text, 213)
+			section_x = x
+			section_w = detail_rect[2] - round(36 * gui.scale)
+			button_gap = round(12 * gui.scale)
 
-			ww = ddt.get_text_w(_("Username:"), 212)
-			ddt.text((x + 65 * gui.scale, y - 0 * gui.scale), _("Username:"), colours.box_text_label, 212)
+			ddt.text((section_x, y), text, colours.box_sub_text, 213)
+
+			y += round(28 * gui.scale)
+			username_label = _("Username:")
+			label_w = ddt.get_text_w(username_label, 212)
+			ddt.text((section_x, y), username_label, colours.box_text_label, 212)
+			username_text = prefs.last_fm_username or _("Not connected")
+			username_colour = colours.box_sub_text if prefs.last_fm_username else colours.box_text_label
 			ddt.text(
-				(x + ww + 65 * gui.scale + 7 * gui.scale, y - 0 * gui.scale), prefs.last_fm_username,
-				colours.box_sub_text, 213)
+				(section_x + label_w + round(12 * gui.scale), y),
+				username_text,
+				username_colour,
+				213,
+				max_w=section_w - label_w - round(12 * gui.scale))
 
-			y += 25 * gui.scale
+			y += round(30 * gui.scale)
 
 			if prefs.last_fm_token is None:
-				ww = ddt.get_text_w(_("Login"), 211) + 10 * gui.scale
-				ww2 = ddt.get_text_w(_("Done"), 211) + 40 * gui.scale
-				self.button(x, y, _("Login"), self.lastfm.auth1)
-				self.button(x + ww + 10 * gui.scale, y, _("Done"), self.lastfm.auth2)
+				login_w = ddt.get_text_w(_("Login"), 211) + 10 * gui.scale
+				done_w = ddt.get_text_w(_("Done"), 211) + 10 * gui.scale
+				self.button(section_x, y, _("Login"), self.lastfm.auth1, width=login_w)
+				self.button(section_x + login_w + button_gap, y, _("Done"), self.lastfm.auth2, width=done_w)
+
+				y += round(30 * gui.scale)
 
 				if prefs.last_fm_token is None and self.lastfm.url is None:
 					prefs.use_libre_fm = self.toggle_square(
-						x + ww + ww2, y + round(1 * gui.scale), prefs.use_libre_fm, _("Use LibreFM"))
+						section_x, y, prefs.use_libre_fm, _("Use LibreFM"))
+					y += round(30 * gui.scale)
 
-				y += 25 * gui.scale
 				ddt.text(
-					(x + 2 * gui.scale, y, 4, 270 * gui.scale, 300 * gui.scale),
+					(section_x + 2 * gui.scale, y, 4, section_w, 300 * gui.scale),
 					_("Click login to open the last.fm web authorisation page (paste from clipboard if it didn't open) and follow prompt. Then return here and click \"Done\"."),
-					colours.box_text_label, 11, max_w=270 * gui.scale)
+					colours.box_text_label, 11, max_w=section_w)
+				y += round(46 * gui.scale)
 
 			else:
-				self.button(x, y, _("Forget account"), self.lastfm.auth3)
+				self.button(section_x, y, _("Forget account"), self.lastfm.auth3)
+				y += round(34 * gui.scale)
 
-			x = x0 + 230 * gui.scale
-			y = y0 + round(130 * gui.scale)
+			x = section_x
+			y = max(y + round(12 * gui.scale), detail_rect[1] + round(130 * gui.scale))
 
 			# self.toggle_square(x, y, toggle_scrobble_mark, "Show scrobble marker")
 
@@ -26731,7 +26759,9 @@ class Over:
 		pctl    = self.pctl
 		colours = self.colours
 		x = x0 + int(w0 * 0.3) - 10 * gui.scale
-		y = y0 + 85 * gui.scale
+		about_content_h = max(self.about_image.h, round(167 * gui.scale))
+		about_top = y0 + max((h0 - about_content_h) / 2, 0)
+		y = about_top + round(15 * gui.scale)
 
 		ddt.text_background_colour = colours.box_background
 
@@ -27258,11 +27288,11 @@ class Over:
 			self.chart_view = 1
 
 		# Ratio bar
-		if len(pctl.master_library) > 115 * gui.scale:
-			x = x0
-			y = y0 + h0 - 7 * gui.scale
-
-			full_rect = [x, y, w0, 7 * gui.scale]
+		if pctl.master_library:
+			x = x0 + round(10 * gui.scale)
+			y = chart_y - round(22 * gui.scale)
+			bar_h = round(11 * gui.scale)
+			full_rect = [x, y, w0 - round(20 * gui.scale), bar_h]
 			d = 0
 
 			# Stats
@@ -27276,6 +27306,10 @@ class Over:
 						else:
 							self.ext_ratio[value.file_ext] = 1
 
+				track_colour = alpha_blend(ColourRGBA(255, 255, 255, 10), colours.box_background)
+				track_border = alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
+				ddt.bordered_rect(tuple(full_rect), track_colour, track_border, round(1 * gui.scale))
+
 				for key, value in self.ext_ratio.items():
 					colour = ColourRGBA(200, 200, 200, 255)
 					if key in self.formats.colours:
@@ -27286,9 +27320,13 @@ class Over:
 					colour = ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), 255)
 
 					h = round(value / len(pctl.master_library) * full_rect[2])
+					if h <= 0:
+						continue
 					block_rect = [full_rect[0] + d, full_rect[1], h, full_rect[3]]
 
 					ddt.rect(block_rect, colour)
+					if block_rect[2] > round(1 * gui.scale):
+						ddt.rect((block_rect[0], block_rect[1], round(1 * gui.scale), block_rect[3]), track_border)
 					d += h
 
 					block_rect = (block_rect[0], block_rect[1], block_rect[2] - 1, block_rect[3])
@@ -27297,7 +27335,7 @@ class Over:
 						xx = block_rect[0] + int(block_rect[2] / 2)
 						xx = max(xx, x + 30 * gui.scale)
 						xx = min(xx, x0 + w0 - 30 * gui.scale)
-						ddt.text((xx, y0 + h0 - 35 * gui.scale, 2), key, colours.grey_blend_bg(220), 13)
+						ddt.text((xx, full_rect[1] - round(18 * gui.scale), 2), key, colours.grey_blend_bg(220), 13)
 
 						if self.click:
 							self.tauon.gen_codec_pl(key)
