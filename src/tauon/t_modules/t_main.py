@@ -25295,7 +25295,7 @@ class Over:
 		y += 25 * self.gui.scale
 		self.toggle_square(
 			x, y, self.tauon.toggle_smooth_scroll, _("Smooth scrolling"),
-			subtitle=_("Adds inertia to mouse wheel scrolling. Trackpad and touch scrolling stay smooth."))
+			subtitle=_("Adds inertia to mouse wheel scrolling. (Trackpad scrolling is always smooth)"))
 
 		y += 38 * self.gui.scale
 		self.ddt.text((x, y), _("Metadata side panel"), self.colours.box_text_label, 12)
@@ -38809,7 +38809,21 @@ class SmoothScroll:
 		)
 
 	def reset_disabled_motion(self) -> None:
+		now = time.monotonic()
 		for source, state in self.physics_states.items():
+			# Keep precise trackpad motion alive even when smooth scrolling is disabled.
+			# The global toggle should only suppress classic wheel inertia.
+			if (
+				abs(state.precise_buffer) >= 0.01
+				or (state.last_precise_input and now - state.last_precise_input < SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW)
+			):
+				state.velocity = 0.0
+				state.pending = 0.0
+				state.accumulator = 0.0
+				state.wheel_streak = 0
+				state.last_wheel_direction = 0.0
+				state.last_wheel_time = 0.0
+				continue
 			if not state.from_touch:
 				self.reset_motion(source)
 
