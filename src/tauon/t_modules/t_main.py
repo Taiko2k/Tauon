@@ -1186,6 +1186,8 @@ class Input:
 		self.touch_released:      bool = False
 		self.active_touch_id = None
 		self.trackpad_scroll_mode_until: float = 0.0
+		self.scroll_debug_last_mode: str = ""
+		self.scroll_debug_last_log: float = 0.0
 		self.drag_mode:           bool = False
 		self.quick_drag:          bool = False
 		self.clicked:             bool = False
@@ -30792,16 +30794,22 @@ class StandardPlaylist:
 	def _apply_tracklist_pixel_scroll(self) -> None:
 		pctl = self.pctl
 		gui = self.gui
+		position_before = pctl.playlist_view_position
+		pixels_before = gui.playlist_scroll_pixels
+		forward_steps = 0
+		backward_steps = 0
 
 		while pctl.playlist_view_position < len(pctl.default_playlist) and gui.playlist_scroll_pixels >= self._tracklist_step_height(
 			pctl.playlist_view_position
 		):
 			gui.playlist_scroll_pixels -= self._tracklist_step_height(pctl.playlist_view_position)
 			pctl.playlist_view_position += 1
+			forward_steps += 1
 
 		while gui.playlist_scroll_pixels < 0 and pctl.playlist_view_position > 0:
 			pctl.playlist_view_position -= 1
 			gui.playlist_scroll_pixels += self._tracklist_step_height(pctl.playlist_view_position)
+			backward_steps += 1
 
 		if pctl.playlist_view_position <= 0 and gui.playlist_scroll_pixels < 0:
 			gui.playlist_scroll_pixels = 0
@@ -30811,6 +30819,22 @@ class StandardPlaylist:
 			pctl.playlist_view_position = len(pctl.default_playlist)
 			gui.playlist_scroll_pixels = 0
 			self.smooth_scroll.reset_motion("playlist")
+
+		if logging.getLogger().isEnabledFor(logging.DEBUG) and (
+			forward_steps
+			or backward_steps
+			or position_before != pctl.playlist_view_position
+			or abs(pixels_before - gui.playlist_scroll_pixels) >= 0.01
+		):
+			logging.debug(
+				"Playlist pixel scroll apply pos_before=%d pos_after=%d pixels_before=%.4f pixels_after=%.4f forward_steps=%d backward_steps=%d",
+				position_before,
+				pctl.playlist_view_position,
+				pixels_before,
+				gui.playlist_scroll_pixels,
+				forward_steps,
+				backward_steps,
+			)
 
 	def full_render(self) -> None:
 		tauon       = self.tauon
@@ -38593,17 +38617,19 @@ class XcursorImage(ctypes.Structure):
 
 
 SCROLL_PHYSICS_WHEEL_VELOCITY = 16.0
-SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.31
-SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE = 0.82
-SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 13.0
+SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.11
+SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE = 1.0
+SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE = 15
 SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW = 0.25
 SCROLL_PHYSICS_REPEAT_WINDOW = 0.22
 SCROLL_PHYSICS_REPEAT_ACCELERATION = 0.35
 SCROLL_PHYSICS_REPEAT_CURVE = 0.08
 SCROLL_PHYSICS_WHEEL_MAGNITUDE_ACCELERATION = 0.45
 SCROLL_PHYSICS_WHEEL_MAX_VELOCITY_MULTIPLIER = 5.0
-SCROLL_PHYSICS_PRECISE_DIRECT_PORTION = 0.55
-SCROLL_PHYSICS_PRECISE_SMOOTHING = 0.02
+SCROLL_PHYSICS_PRECISE_SMOOTHING = 0.026
+SCROLL_PHYSICS_PRECISE_MAX_TIMESTEP = 1.0 / 60.0
+SCROLL_PHYSICS_PRECISE_RELEASE_GRACE = 0.03
+SCROLL_PHYSICS_PRECISE_STOP_THRESHOLD = 5.0
 SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER = 1.0
 SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER = 1.15
 SCROLL_ANIMATION_MAX_FPS = 144.0
@@ -38623,6 +38649,7 @@ class ScrollMotionState:
 	pending: float = 0.0
 	accumulator: float = 0.0
 	precise_buffer: float = 0.0
+	last_precise_input: float = 0.0
 	touching: bool = False
 	from_touch: bool = False
 	wheel_streak: int = 0
@@ -38638,6 +38665,8 @@ class SmoothScroll:
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
+		self.scroll_debug_modes: dict[str, str] = {}
+		self.scroll_debug_last_logs: dict[str, float] = {}
 		self.timeout = 0.5
 
 	def _pixel_scale(self) -> float:
@@ -38651,6 +38680,33 @@ class SmoothScroll:
 
 	def precise_scroll_active(self) -> bool:
 		return self.inp.mouse_wheel_precise or time.monotonic() < self.inp.trackpad_scroll_mode_until
+
+	def _debug_enabled(self) -> bool:
+		return logging.getLogger().isEnabledFor(logging.DEBUG)
+
+	@staticmethod
+	def _format_debug_value(value: object) -> str:
+		if isinstance(value, float):
+			return f"{value:.4f}"
+		return str(value)
+
+	def _log_scroll_detail(self, source: str, event: str, throttle: float = 0.0, **fields: object) -> None:
+		if not self._debug_enabled():
+			return
+		now = time.monotonic()
+		key = f"{source}:{event}"
+		if throttle > 0 and now - self.scroll_debug_last_logs.get(key, 0.0) < throttle:
+			return
+		if throttle > 0:
+			self.scroll_debug_last_logs[key] = now
+		payload = " ".join(
+			f"{name}={self._format_debug_value(value)}"
+			for name, value in fields.items()
+		)
+		if payload:
+			logging.debug("Smooth scroll %s source=%s %s", event, source, payload)
+		else:
+			logging.debug("Smooth scroll %s source=%s", event, source)
 
 	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
@@ -38722,12 +38778,35 @@ class SmoothScroll:
 		state.pending = 0.0
 		state.accumulator = 0.0
 		state.precise_buffer = 0.0
+		state.last_precise_input = 0.0
 		state.touching = False
 		state.from_touch = False
 		state.wheel_streak = 0
 		state.last_wheel_direction = 0.0
 		state.last_wheel_time = 0.0
 		state.last_update = time.monotonic()
+		self.scroll_debug_modes.pop(source, None)
+		for key in [k for k in self.scroll_debug_last_logs if k.startswith(f"{source}:")]:
+			del self.scroll_debug_last_logs[key]
+
+	def _log_scroll_mode(
+		self, source: str, mode: str, delta: float, px_per_unit: float, precise_scale: float, precise_px_per_unit: float | None
+	) -> None:
+		prev_mode = self.scroll_debug_modes.get(source)
+		if prev_mode == mode:
+			return
+		self.scroll_debug_modes[source] = mode
+		self._log_scroll_detail(
+			source,
+			"route",
+			mode=mode,
+			delta=delta,
+			px_per_unit=px_per_unit,
+			precise_scale=precise_scale,
+			precise_px_per_unit=precise_px_per_unit if precise_px_per_unit is not None else "None",
+			wheel_precise=self.inp.mouse_wheel_precise,
+			window_active=time.monotonic() < self.inp.trackpad_scroll_mode_until,
+		)
 
 	def reset_disabled_motion(self) -> None:
 		for source, state in self.physics_states.items():
@@ -38743,14 +38822,25 @@ class SmoothScroll:
 		state = self._state(source)
 		max_velocity = self._scaled_max_velocity()
 		velocity_limit = max_velocity
+		pending_before = state.pending
+		precise_before = state.precise_buffer
+		velocity_before = state.velocity
 		state.from_touch = False
+		route = "wheel"
+		precise_unit = precise_px_per_unit if precise_px_per_unit is not None else px_per_unit
+		pixel_delta = 0.0
+		repeat_boost = 0.0
+		boost = 0.0
+		impulse = 0.0
 		if self.precise_scroll_active():
+			route = "precise"
+			self._log_scroll_mode(source, "precise", delta, px_per_unit, precise_scale, precise_px_per_unit)
 			state.velocity = 0.0
-			precise_unit = precise_px_per_unit if precise_px_per_unit is not None else px_per_unit
 			pixel_delta = delta * precise_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER * precise_scale
-			state.pending += pixel_delta * SCROLL_PHYSICS_PRECISE_DIRECT_PORTION
-			state.precise_buffer += pixel_delta * (1.0 - SCROLL_PHYSICS_PRECISE_DIRECT_PORTION)
+			state.precise_buffer += pixel_delta
+			state.last_precise_input = time.monotonic()
 		else:
+			self._log_scroll_mode(source, "wheel", delta, px_per_unit, precise_scale, precise_px_per_unit)
 			velocity_limit *= SCROLL_PHYSICS_WHEEL_MAX_VELOCITY_MULTIPLIER
 			repeat_boost = self._wheel_boost(state, delta)
 			boost = 1.0 + min(abs(state.velocity) / velocity_limit, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
@@ -38759,12 +38849,35 @@ class SmoothScroll:
 			state.last_update = time.monotonic()
 		state.velocity = max(min(state.velocity, velocity_limit), -velocity_limit)
 		state.touching = False
+		self._log_scroll_detail(
+			source,
+			"wheel-input",
+			route=route,
+			delta=delta,
+			px_per_unit=px_per_unit,
+			precise_scale=precise_scale,
+			precise_unit=precise_unit,
+			pixel_delta=pixel_delta,
+			repeat_boost=repeat_boost,
+			boost=boost,
+			impulse=impulse,
+			pending_before=pending_before,
+			pending_after=state.pending,
+			precise_before=precise_before,
+			precise_after=state.precise_buffer,
+			velocity_before=velocity_before,
+			velocity_after=state.velocity,
+			velocity_limit=velocity_limit,
+		)
 
 	def apply_touch_drag(self, source: str, delta_pixels: float) -> None:
 		state = self._state(source)
 		max_velocity = self._scaled_max_velocity()
 		now = time.monotonic()
 		dt = max(now - state.last_update, 1 / 240)
+		pending_before = state.pending
+		precise_before = state.precise_buffer
+		velocity_before = state.velocity
 		state.touching = True
 		state.from_touch = True
 		state.precise_buffer = 0.0
@@ -38772,48 +38885,129 @@ class SmoothScroll:
 		state.velocity = delta_pixels / dt * SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER
 		state.velocity = max(min(state.velocity, max_velocity), -max_velocity)
 		state.last_update = now
+		self._log_scroll_detail(
+			source,
+			"touch-drag",
+			delta_pixels=delta_pixels,
+			dt=dt,
+			pending_before=pending_before,
+			pending_after=state.pending,
+			precise_before=precise_before,
+			precise_after=state.precise_buffer,
+			velocity_before=velocity_before,
+			velocity_after=state.velocity,
+			max_velocity=max_velocity,
+		)
 
 	def release_touch(self, source: str) -> None:
 		if source in self.physics_states:
 			self.physics_states[source].touching = False
 			self.physics_states[source].from_touch = True
 			self.physics_states[source].last_update = time.monotonic()
+			state = self.physics_states[source]
+			self._log_scroll_detail(
+				source,
+				"touch-release",
+				pending=state.pending,
+				precise_buffer=state.precise_buffer,
+				velocity=state.velocity,
+			)
 
 	def step_motion(self, source: str) -> float:
 		state = self._state(source)
 		min_velocity = self._scaled_min_velocity()
 		now = time.monotonic()
 		dt = min(max(now - state.last_update, 0.0), SCROLL_PHYSICS_MAX_TIMESTEP)
+		accumulator_before = state.accumulator
+		velocity_before = state.velocity
+		pending_before = state.pending
+		precise_before = state.precise_buffer
 		state.last_update = now
 		state.accumulator = min(state.accumulator + dt, SCROLL_PHYSICS_MAX_TIMESTEP)
 
 		delta = state.pending
 		state.pending = 0.0
+		precise_dt = 0.0
+		precise_delta = 0.0
+		precise_release_age = 0.0
+		precise_snapped = False
+		fixed_steps = 0
+		exit_reason = "active"
 
 		if abs(state.precise_buffer) >= 0.01:
-			precise_alpha = 1.0 - math.exp(-dt / max(SCROLL_PHYSICS_PRECISE_SMOOTHING, 1e-4))
+			precise_dt = min(max(dt, 1 / 240), SCROLL_PHYSICS_PRECISE_MAX_TIMESTEP)
+			precise_alpha = 1.0 - math.exp(-precise_dt / max(SCROLL_PHYSICS_PRECISE_SMOOTHING, 1e-4))
 			precise_delta = state.precise_buffer * precise_alpha
 			delta += precise_delta
 			state.precise_buffer -= precise_delta
+			if state.last_precise_input:
+				precise_release_age = max(now - state.last_precise_input, 0.0)
+			if (
+				precise_release_age >= SCROLL_PHYSICS_PRECISE_RELEASE_GRACE
+				and abs(state.precise_buffer) <= SCROLL_PHYSICS_PRECISE_STOP_THRESHOLD
+			):
+				state.precise_buffer = 0.0
+				precise_snapped = True
 			if abs(state.precise_buffer) < 0.01:
 				state.precise_buffer = 0.0
 
 		if state.touching:
 			state.accumulator = 0.0
+			self._log_scroll_detail(
+				source,
+				"step",
+				dt=dt,
+				accumulator_before=accumulator_before,
+				accumulator_after=state.accumulator,
+				pending_before=pending_before,
+				precise_before=precise_before,
+				precise_dt=precise_dt,
+				precise_delta=precise_delta,
+				precise_release_age=precise_release_age,
+				precise_snapped=precise_snapped,
+				precise_after=state.precise_buffer,
+				velocity_before=velocity_before,
+				velocity_after=state.velocity,
+				fixed_steps=fixed_steps,
+				delta_out=delta,
+				reason="touching",
+			)
 			return delta
 
 		if abs(state.velocity) < min_velocity:
 			state.velocity = 0.0
 			state.accumulator = 0.0
+			self._log_scroll_detail(
+				source,
+				"step",
+				dt=dt,
+				accumulator_before=accumulator_before,
+				accumulator_after=state.accumulator,
+				pending_before=pending_before,
+				precise_before=precise_before,
+				precise_dt=precise_dt,
+				precise_delta=precise_delta,
+				precise_release_age=precise_release_age,
+				precise_snapped=precise_snapped,
+				precise_after=state.precise_buffer,
+				velocity_before=velocity_before,
+				velocity_after=state.velocity,
+				fixed_steps=fixed_steps,
+				delta_out=delta,
+				min_velocity=min_velocity,
+				reason="below-min-velocity",
+			)
 			return delta
 
 		while state.accumulator >= SCROLL_PHYSICS_FIXED_TIMESTEP:
+			fixed_steps += 1
 			delta += state.velocity * SCROLL_PHYSICS_FIXED_TIMESTEP
 			state.velocity *= SCROLL_PHYSICS_FIXED_DAMPING
 			state.accumulator -= SCROLL_PHYSICS_FIXED_TIMESTEP
 			if abs(state.velocity) < min_velocity:
 				state.velocity = 0.0
 				state.accumulator = 0.0
+				exit_reason = "damped-below-min"
 				break
 
 		if state.velocity != 0.0 and state.accumulator > 0:
@@ -38823,6 +39017,29 @@ class SmoothScroll:
 
 		if abs(state.velocity) < min_velocity:
 			state.velocity = 0.0
+			if exit_reason == "active":
+				exit_reason = "clamped-below-min"
+		self._log_scroll_detail(
+			source,
+			"step",
+			dt=dt,
+			accumulator_before=accumulator_before,
+			accumulator_after=state.accumulator,
+			pending_before=pending_before,
+			pending_after=state.pending,
+			precise_before=precise_before,
+			precise_dt=precise_dt,
+			precise_delta=precise_delta,
+			precise_release_age=precise_release_age,
+			precise_snapped=precise_snapped,
+			precise_after=state.precise_buffer,
+			velocity_before=velocity_before,
+			velocity_after=state.velocity,
+			min_velocity=min_velocity,
+			fixed_steps=fixed_steps,
+			delta_out=delta,
+			reason=exit_reason,
+		)
 		return delta
 
 	def active(self, source: str) -> bool:
@@ -46195,12 +46412,37 @@ def main(holder: Holder) -> None:
 				inp.k_input = True
 				power += 6
 				now = time.monotonic()
+				wheel_before = inp.mouse_wheel
+				window_active_before = now < inp.trackpad_scroll_mode_until
 				raw_scroll_y = event.wheel.y
 				is_precise = raw_scroll_y != event.wheel.integer_y
 				if is_precise:
 					inp.trackpad_scroll_mode_until = now + SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW
 				trackpad_like = is_precise or now < inp.trackpad_scroll_mode_until
+				event_mode = "trackpad" if trackpad_like else "wheel"
+				if event_mode != inp.scroll_debug_last_mode or now - inp.scroll_debug_last_log > 1.0:
+					logging.debug(
+						"Wheel event mode=%s raw_y=%.3f integer_y=%d precise=%s gesture_window_before=%s gesture_window_after=%s wheel_before=%.3f mouse=(%d,%d)",
+						event_mode,
+						raw_scroll_y,
+						event.wheel.integer_y,
+						is_precise,
+						window_active_before,
+						now < inp.trackpad_scroll_mode_until,
+						wheel_before,
+						inp.mouse_position[0],
+						inp.mouse_position[1],
+					)
+					inp.scroll_debug_last_mode = event_mode
+					inp.scroll_debug_last_log = now
 				inp.mouse_wheel += raw_scroll_y
+				if logging.getLogger().isEnabledFor(logging.DEBUG):
+					logging.debug(
+						"Wheel event accumulate mode=%s wheel_after=%.3f trackpad_until_in=%.3f",
+						event_mode,
+						inp.mouse_wheel,
+						max(inp.trackpad_scroll_mode_until - now, 0.0),
+					)
 				inp.mouse_wheel_precise = inp.mouse_wheel_precise or trackpad_like
 
 				gui.update += 1
@@ -47654,7 +47896,7 @@ def main(holder: Holder) -> None:
 
 							if use_smooth_gallery and inp.mouse_wheel != 0:
 								if precise_gallery_scroll:
-									gallery_precise_unit = (SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE * gui.scale) / max(
+									gallery_precise_unit = SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE / max(
 										SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER, 0.001
 									)
 									tauon.smooth_scroll.add_wheel_motion(
