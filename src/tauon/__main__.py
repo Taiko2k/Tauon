@@ -67,7 +67,10 @@ if sys.platform != "win32":
 n_version = "9.2.0"  # Should also be bumped in pyproject.toml, extra/*.appdata.xml
 t_version = "v" + n_version
 t_title = "Tauon"
-t_id = "com.github.taiko2k.tauonmb"
+t_id = "tauonmb"
+if str(install_directory).startswith("/app/") or sys.platform == "darwin":
+	# Its Flatpak or macOS
+	t_id = "com.github.taiko2k.tauonmb"
 t_agent = f"{t_title}/" + n_version
 t_creator = "Taiko2k"
 t_copyright = "Copyright 2015-2026 Taiko2k"
