@@ -24572,20 +24572,20 @@ class Over:
 		self.settings_nav_scroll = 0.0
 		self.settings_nav_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.tabs = [
-			(_("General"), _("Core behaviour and everyday preferences"), self.funcs_general),
-			(_("Behaviour"), _("Playback flow, track actions and session behaviour"), self.funcs_behaviour),
-			(_("Features"), _("Import helpers and optional actions"), self.funcs_imports),
-			(_("Connections"), _("Remote control, lyric sources and external integrations"), self.funcs_connected),
-			(_("Audio"), _("Playback sound, loudness and output devices"), self.audio),
-			(_("Tracklist"), _("Row layout, spacing and metadata density"), self.config_v),
-			(_("Theme"), _("Background treatment and color themes"), self.theme),
-			(_("View"), _("Scrolling, gallery layout and side panels"), self.view2),
-			(_("Window"), _("Window chrome, tray behaviour and scaling"), self.config_b),
-			(_("Transcode"), _("Transcoding, export and device sync"), self.codec_config),
-			(_("Services"), _("Accounts, scrobbling and network sources"), self.services),
-			(_("Advanced"), _("Debugging, gamepad input and specialist options"), self.funcs_advanced),
-			(_("Stats"), _("Playlist and collection statistics"), self.stats),
-			(_("About"), _("Version, credits and license details"), self.about),
+			(_("General"), _("Everyday settings"), self.funcs_general),
+			(_("Behaviour"), _("Playback and track actions"), self.funcs_behaviour),
+			(_("Features"), _("Extra tools and actions"), self.funcs_imports),
+			(_("Connections"), _("Remote control and integrations"), self.funcs_connected),
+			(_("Audio"), _("Sound, volume and devices"), self.audio),
+			(_("Tracklist"), _("Track rows and spacing"), self.config_v),
+			(_("Theme"), _("Colors and backgrounds"), self.theme),
+			(_("View"), _("Panels, scrolling and layout"), self.view2),
+			(_("Window"), _("Window, tray and scaling"), self.config_b),
+			(_("Transcode"), _("Convert files and sync devices"), self.codec_config),
+			(_("Services"), _("Accounts and scrobbling"), self.services),
+			(_("Advanced"), _("Debugging and advanced options"), self.funcs_advanced),
+			(_("Stats"), _("Library and playlist stats"), self.stats),
+			(_("About"), _("Version, credits and license"), self.about),
 		]
 
 		self.stats_timer = Timer()
