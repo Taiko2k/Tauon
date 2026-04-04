@@ -24576,7 +24576,6 @@ class Over:
 			(_("Behaviour"), _("Playback flow, track actions and session behaviour"), self.funcs_behaviour),
 			(_("Features"), _("Import helpers and optional actions"), self.funcs_imports),
 			(_("Connections"), _("Remote control, lyric sources and external integrations"), self.funcs_connected),
-			(_("Advanced"), _("Debugging, gamepad input and specialist options"), self.funcs_advanced),
 			(_("Audio"), _("Playback sound, loudness and output devices"), self.audio),
 			(_("Tracklist"), _("Row layout, spacing and metadata density"), self.config_v),
 			(_("Theme"), _("Background treatment and color themes"), self.theme),
@@ -24584,6 +24583,7 @@ class Over:
 			(_("Window"), _("Window chrome, tray behaviour and scaling"), self.config_b),
 			(_("Transcode"), _("Transcoding, export and device sync"), self.codec_config),
 			(_("Services"), _("Accounts, scrobbling and network sources"), self.services),
+			(_("Advanced"), _("Debugging, gamepad input and specialist options"), self.funcs_advanced),
 			(_("Stats"), _("Playlist and collection statistics"), self.stats),
 			(_("About"), _("Version, credits and license details"), self.about),
 		]
@@ -25034,6 +25034,18 @@ class Over:
 					x + round(22 * self.gui.scale), y, None, _(" GB"), self.prefs.cache_limit / 1000, 0.5,
 					1000, 0.5) * 1000)
 
+			y += round(32 * self.gui.scale)
+			old = self.prefs.avoid_resampling
+			self.prefs.avoid_resampling = self.toggle_square(
+				x, y, self.prefs.avoid_resampling, _("Avoid resampling"))
+			if self.prefs.avoid_resampling != old:
+				self.pctl.playerCommand = "reload"
+				self.pctl.playerCommandReady = True
+				# if not old:
+				# 	self.show_message(
+				# 		_("Tip: To get samplerate to DAC you may need to check some settings, see:"),
+				# 		"https://github.com/Taiko2k/Tauon/wiki/Audio-Specs", mode="link")
+
 			y += round(30 * self.gui.scale)
 			# self.prefs.device_buffer = self.slide_control(
 			# 	x + round(270 * self.gui.scale), y, _("Output buffer"), 'ms',
@@ -25045,86 +25057,171 @@ class Over:
 				# else:
 				# 	self.prefs.pa_fast_seek = False
 
+			left_column_w = round(252 * self.gui.scale)
+			device_gap = round(68 * self.gui.scale)
 			device_rect = (
-				x0 + round(250 * self.gui.scale), y0 + round(10 * self.gui.scale),
-				w0 - round(258 * self.gui.scale), h0 - round(20 * self.gui.scale))
-			self.draw_settings_card(device_rect)
+				x0 + left_column_w + device_gap,
+				y0 + round(12 * self.gui.scale),
+				w0 - left_column_w - device_gap - round(8 * self.gui.scale),
+				h0 - round(24 * self.gui.scale),
+			)
+			self.draw_audio_device_selector(device_rect)
 
-			y = device_rect[1] + round(26 * self.gui.scale)
-			x = device_rect[0] + round(18 * self.gui.scale)
-			device_list_y = y
-			device_list_x = x
-			device_list_w = min(round(245 * self.gui.scale), device_rect[2] - round(38 * self.gui.scale))
-			scrollbar_x = device_rect[0] + device_rect[2] - round(18 * self.gui.scale)
-			device_list_bottom = device_rect[1] + device_rect[3] - round(70 * self.gui.scale)
-			self.ddt.text_background_colour = self.colours.box_background
-			self.ddt.text((x, y - round(18 * self.gui.scale)), _("Set audio output device"), self.colours.box_text_label, 212)
+	def draw_audio_device_selector(self, rect: tuple[int, int, int, int]) -> None:
+		gui = self.gui
+		ddt = self.ddt
+		prefs = self.prefs
+		colours = self.colours
 
-			if self.platform_system == "Linux":
-				old = self.prefs.pipewire
-				self.prefs.pipewire = self.toggle_square(
-					x + round(self.gui.scale * 110), device_rect[1] + device_rect[3] - round(48 * self.gui.scale),
-					self.prefs.pipewire, _("PipeWire"))
-				self.prefs.pipewire = self.toggle_square(
-					x, device_rect[1] + device_rect[3] - round(48 * self.gui.scale),
-					self.prefs.pipewire ^ True, _("PulseAudio")) ^ True
-				if old != self.prefs.pipewire:
-					self.show_message(_("Please restart Tauon for this change to take effect"))
+		x, y, w, h = rect
+		self.draw_settings_card(rect)
 
-			old = self.prefs.avoid_resampling
-			self.prefs.avoid_resampling = self.toggle_square(
-				x, device_rect[1] + device_rect[3] - round(25 * self.gui.scale),
-				self.prefs.avoid_resampling, _("Avoid resampling"))
-			if self.prefs.avoid_resampling != old:
-				self.pctl.playerCommand = "reload"
-				self.pctl.playerCommandReady = True
-				# if not old:
-				# 	self.show_message(
-				# 		_("Tip: To get samplerate to DAC you may need to check some settings, see:"),
-				# 		"https://github.com/Taiko2k/Tauon/wiki/Audio-Specs", mode="link")
+		inner_pad = round(20 * gui.scale)
+		header_h = round(50 * gui.scale)
+		footer_h = round(42 * gui.scale) if self.platform_system == "Linux" else 0
+		footer_top = y + h - footer_h if footer_h else y + h
 
+		list_fill = alpha_blend(ColourRGBA(255, 255, 255, 5), colours.box_background)
+		list_border = alpha_blend(ColourRGBA(255, 255, 255, 16), colours.box_text_border)
+		selected_fill = alpha_blend(alpha_mod(colours.toggle_box_on, 38), list_fill)
+		hover_fill = alpha_blend(ColourRGBA(255, 255, 255, 14), list_fill)
+		divider = alpha_mod(colours.box_text_border, 150)
+
+		if footer_h:
+			ddt.rect_a((x + inner_pad, footer_top), (w - inner_pad * 2, round(1 * gui.scale)), divider)
+
+		title_x = x + inner_pad
+		title_y = y + round(10 * gui.scale)
+		ddt.text((title_x, title_y), _("Audio Output Device"), colours.box_text, 213)
+		ddt.text(
+			(title_x, title_y + round(18 * gui.scale)),
+			_("Choose where Tauon sends playback."),
+			colours.box_text_label,
+			11,
+		)
+
+		selected_device = prefs.phazor_device_selected
+		if selected_device not in prefs.phazor_devices and prefs.phazor_devices:
+			selected_device = prefs.phazor_devices[0]
+		if not selected_device:
+			selected_device = _("No device selected")
+
+		list_rect = (
+			title_x,
+			y + header_h + round(4 * gui.scale),
+			w - inner_pad * 2,
+			max(round(72 * gui.scale), footer_top - y - header_h - round(18 * gui.scale)),
+		)
+		ddt.bordered_rect(list_rect, list_fill, list_border, round(1 * gui.scale))
+		self.fields.add(list_rect)
+
+		content_pad_x = round(8 * gui.scale)
+		content_pad_y = round(6 * gui.scale)
+		row_h = round(24 * gui.scale)
+		row_gap = round(5 * gui.scale)
+		row_step = row_h + row_gap
+		scrollbar_w = round(10 * gui.scale)
+		scrollbar_gap = round(8 * gui.scale)
+
+		visible_rows = max(1, (list_rect[3] - content_pad_y * 2 + row_gap) // max(row_step, 1))
+		max_device_scroll = max(len(prefs.phazor_devices) - visible_rows, 0)
+		if self.coll(list_rect) and self.scroll:
 			self.device_scroll_bar_position -= self.scroll
-			max_device_scroll = max(len(self.prefs.phazor_devices) - 11, 0)
-			self.device_scroll_bar_position = min(max(self.device_scroll_bar_position, 0), max_device_scroll)
+		self.device_scroll_bar_position = min(max(self.device_scroll_bar_position, 0), max_device_scroll)
+		scroll_index = int(self.device_scroll_bar_position)
 
-			if len(self.prefs.phazor_devices) > 13:
-				self.device_scroll_bar_position = self.tauon.device_scroll.draw(
-					scrollbar_x, device_list_y - round(4 * self.gui.scale), 11,
-					device_list_bottom - device_list_y + round(8 * self.gui.scale),
-					self.device_scroll_bar_position,
-					len(self.prefs.phazor_devices) - 11, click=self.click)
+		row_w = list_rect[2] - content_pad_x * 2
+		if max_device_scroll > 0:
+			row_w -= scrollbar_w + scrollbar_gap
+			scrollbar_x = list_rect[0] + list_rect[2] - scrollbar_w - content_pad_x
+			self.device_scroll_bar_position = self.tauon.device_scroll.draw(
+				scrollbar_x,
+				list_rect[1] + content_pad_y,
+				scrollbar_w,
+				list_rect[3] - content_pad_y * 2,
+				self.device_scroll_bar_position,
+				max_device_scroll,
+				click=self.click,
+			)
+			scroll_index = int(self.device_scroll_bar_position)
 
+		if not prefs.phazor_devices:
+			ddt.text(
+				(list_rect[0] + list_rect[2] // 2, list_rect[1] + list_rect[3] // 2 - round(8 * gui.scale), 2),
+				_("No output devices detected"),
+				colours.box_text_label,
+				212,
+				max_w=list_rect[2] - content_pad_x * 2,
+			)
+			ddt.text(
+				(list_rect[0] + list_rect[2] // 2, list_rect[1] + list_rect[3] // 2 + round(10 * gui.scale), 2),
+				_("Try refreshing audio or restarting Tauon."),
+				colours.box_text_label,
+				10,
+				max_w=list_rect[2] - content_pad_x * 2,
+			)
+		else:
 			reload = False
-			y = device_list_y
-			x = device_list_x
-			for i, name in enumerate(self.prefs.phazor_devices):
-				if i < self.device_scroll_bar_position:
-					continue
-				if y > device_list_bottom:
-					break
+			row_y = list_rect[1] + content_pad_y
+			for name in prefs.phazor_devices[scroll_index:scroll_index + visible_rows]:
+				row_rect = (list_rect[0] + content_pad_x, row_y, row_w, row_h)
+				row_hover = self.coll(row_rect)
+				row_selected = selected_device == name
 
-				rect = (x, y + 4 * self.gui.scale, device_list_w, 13)
-
-				if self.click and self.coll(rect):
-					self.prefs.phazor_device_selected = name
+				if self.click and row_hover and not row_selected:
+					prefs.phazor_device_selected = name
+					selected_device = name
+					row_selected = True
 					reload = True
 
-				line = self.tauon.trunc_line(name, 10, device_list_w)
+				row_fill = list_fill
+				if row_hover:
+					row_fill = hover_fill
+				if row_selected:
+					row_fill = selected_fill
 
-				self.fields.add(rect)
+				ddt.bordered_rect(row_rect, row_fill, list_border, round(1 * gui.scale))
+				if row_selected:
+					ddt.rect(
+						(row_rect[0], row_rect[1], round(5 * gui.scale), row_rect[3]),
+						colours.toggle_box_on,
+					)
 
-				if self.prefs.phazor_device_selected == name:
-					self.ddt.text((x, y), line, self.colours.box_sub_text, 10)
-					self.ddt.text((x - 12 * self.gui.scale, y + 1 * self.gui.scale), ">", self.colours.box_sub_text, 213)
-				elif self.coll(rect):
-					self.ddt.text((x, y), line, self.colours.box_sub_text, 10)
-				else:
-					self.ddt.text((x, y), line, self.colours.box_text_label, 10)
-				y += 14 * self.gui.scale
+				label_max_w = row_rect[2] - round(22 * gui.scale)
+				device_name = self.tauon.trunc_line(name, 11, label_max_w)
+				text_colour = colours.box_sub_text if row_selected or row_hover else colours.box_text
+				ddt.text(
+					(row_rect[0] + round(14 * gui.scale), row_rect[1] + round(4 * gui.scale)),
+					device_name,
+					text_colour,
+					11,
+					bg=row_fill,
+					max_w=label_max_w,
+				)
+				self.fields.add(row_rect)
+				row_y += row_step
 
 			if reload:
 				self.pctl.playerCommand = "set-device"
 				self.pctl.playerCommandReady = True
+
+		option_y = footer_top + round(12 * gui.scale)
+		if footer_h and self.platform_system == "Linux":
+			old_pipewire = prefs.pipewire
+			prefs.pipewire = self.toggle_square(
+				title_x,
+				option_y,
+				prefs.pipewire ^ True,
+				_("PulseAudio"),
+			) ^ True
+			prefs.pipewire = self.toggle_square(
+				title_x + round(122 * gui.scale),
+				option_y,
+				prefs.pipewire,
+				_("PipeWire"),
+			)
+			if old_pipewire != prefs.pipewire:
+				self.show_message(_("Please restart Tauon for this change to take effect"))
 
 	def reload_device(self, _) -> None:
 		self.pctl.playerCommand = "reload"
@@ -25364,7 +25461,9 @@ class Over:
 			y += 23 * gui.scale
 			self.toggle_square(x, y, tauon.toggle_transcode, _("Transcode folder"))
 
-			y += 35 * gui.scale
+			y += 34 * gui.scale
+			ddt.text((x, y), _("Archive imports"), colours.box_text_label, 11)
+			y += 28 * gui.scale
 			self.toggle_square(
 				x, y, tauon.toggle_extract, _("Extract archives"),
 				subtitle=_("Extracts zip archives on drag and drop"))
