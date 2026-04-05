@@ -25451,6 +25451,89 @@ class Over:
 
 		return active
 
+	def settings_toggle_chip(
+		self,
+		rect: tuple[int, int, int, int],
+		function: Callable[[int], bool | None] | bool,
+		title: str,
+		subtitle: str = "",
+		accent: ColourRGBA | None = None,
+		show_active_bar: bool = True,
+	) -> bool:
+		if accent is None:
+			accent = self.settings_page_accent()
+
+		x, y, w, h = tuple(round(v) for v in rect)
+		active = function if type(function) is bool else function(1)
+		hover = self.coll((x, y, w, h))
+
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		if active:
+			fill = alpha_blend(alpha_mod(accent, 22), fill)
+		if hover:
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
+
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		if active:
+			border = alpha_blend(alpha_mod(accent, 90), border)
+
+		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
+		if active and show_active_bar:
+			self.ddt.rect((x, y, w, round(3 * self.gui.scale)), accent)
+
+		self.fields.add((x, y, w, h))
+		if hover and self.click:
+			self.inp.global_clicked = True
+			if type(function) is bool:
+				active ^= True
+			else:
+				function()
+				active = function(1)
+
+		indicator_w = round(12 * self.gui.scale)
+		indicator_h = round(12 * self.gui.scale)
+		indicator_rect = (
+			x + w - indicator_w - round(10 * self.gui.scale),
+			y + round(10 * self.gui.scale),
+			indicator_w,
+			indicator_h,
+		)
+		self.ddt.bordered_rect(
+			indicator_rect,
+			alpha_blend(ColourRGBA(255, 255, 255, 8), fill),
+			alpha_blend(ColourRGBA(255, 255, 255, 18), border),
+			round(1 * self.gui.scale),
+		)
+		if active:
+			self.ddt.rect(
+				(
+					indicator_rect[0] + round(3 * self.gui.scale),
+					indicator_rect[1] + round(3 * self.gui.scale),
+					indicator_rect[2] - round(6 * self.gui.scale),
+					indicator_rect[3] - round(6 * self.gui.scale),
+				),
+				accent,
+			)
+
+		title_max_w = w - round(32 * self.gui.scale)
+		self.ddt.text(
+			(x + round(12 * self.gui.scale), y + round(11 * self.gui.scale)),
+			title,
+			self.colours.box_text,
+			12,
+			bg=fill,
+			max_w=title_max_w,
+		)
+		if subtitle:
+			self.ddt.text(
+				(x + round(12 * self.gui.scale), y + round(25 * self.gui.scale), 4, title_max_w, h - round(28 * self.gui.scale)),
+				subtitle,
+				self.colours.box_text_label,
+				10,
+			)
+
+		return active
+
 	def settings_action_tile(
 		self,
 		rect: tuple[int, int, int, int],
@@ -25494,6 +25577,94 @@ class Over:
 		self.ddt.rect((x + w - round(16 * self.gui.scale), arrow_y - round(1 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
 
 		return hit
+
+	def settings_stepper_row(
+		self,
+		rect: tuple[int, int, int, int],
+		title: str,
+		value: int,
+		lower_limit: int,
+		upper_limit: int,
+		units: str = "",
+		step: int = 1,
+		accent: ColourRGBA | None = None,
+		callback=None,
+		formatter=None,
+	) -> int:
+		if accent is None:
+			accent = self.settings_page_accent()
+
+		x, y, w, h = tuple(round(v) for v in rect)
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		if self.coll((x, y, w, h)):
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
+
+		self.ddt.text(
+			(x + round(12 * self.gui.scale), y + round(8 * self.gui.scale)),
+			title,
+			self.colours.box_text,
+			12,
+			bg=fill,
+			max_w=w - round(130 * self.gui.scale),
+		)
+
+		button_w = round(22 * self.gui.scale)
+		value_w = round(54 * self.gui.scale)
+		control_gap = round(4 * self.gui.scale)
+		control_h = round(20 * self.gui.scale)
+		control_x = x + w - (button_w * 2 + value_w + control_gap * 2) - round(10 * self.gui.scale)
+		control_y = y + (h - control_h) // 2
+		dec_rect = (control_x, control_y, button_w, control_h)
+		value_rect = (control_x + button_w + control_gap, control_y, value_w, control_h)
+		inc_rect = (value_rect[0] + value_rect[2] + control_gap, control_y, button_w, control_h)
+
+		def draw_button(button_rect: tuple[int, int, int, int], label: str) -> bool:
+			hovered = self.coll(button_rect)
+			button_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+			if hovered:
+				button_fill = alpha_blend(alpha_mod(accent, 18), button_fill)
+			self.ddt.bordered_rect(button_rect, button_fill, border, round(1 * self.gui.scale))
+			self.fields.add(button_rect)
+			self.ddt.text(
+				(button_rect[0] + button_rect[2] // 2, button_rect[1] + round(2 * self.gui.scale), 2),
+				label,
+				accent if hovered else self.colours.box_text_label,
+				211,
+				bg=button_fill,
+			)
+			return hovered and self.click
+
+		changed = False
+		if draw_button(dec_rect, "−") and value > lower_limit:
+			value -= step
+			changed = True
+
+		value_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), fill)
+		self.ddt.bordered_rect(value_rect, value_fill, border, round(1 * self.gui.scale))
+		if formatter is not None:
+			display_text = formatter(value)
+		else:
+			display_text = f"{value}{units}"
+		self.ddt.text(
+			(value_rect[0] + value_rect[2] // 2, value_rect[1] + round(2 * self.gui.scale), 2),
+			display_text,
+			self.colours.box_sub_text,
+			211,
+			bg=value_fill,
+		)
+
+		if draw_button(inc_rect, "+") and value < upper_limit:
+			value += step
+			changed = True
+
+		if changed:
+			self.gui.update_layout = True
+			if callback is not None:
+				callback(value)
+
+		return value
 
 	def settings_choice_tile(
 		self,
@@ -27980,98 +28151,114 @@ class Over:
 		ddt     = self.ddt
 		colours = self.colours
 		prefs   = self.prefs
-		self.ddt.text_background_colour = self.colours.box_background
+		accent  = ColourRGBA(100, 171, 158, 255)
+		ddt.text_background_colour = colours.box_background
 
-		x = x0 + self.item_x_offset
-		y = y0 + 17 * gui.scale
+		column_gap = round(12 * gui.scale)
+		left_w = max(round(282 * gui.scale), min(round(w0 * 0.56), w0 - round(208 * gui.scale)))
+		right_w = w0 - left_w - column_gap
+		left_rect = (x0, y0, left_w, h0)
+		right_rect = (x0 + left_w + column_gap, y0, right_w, h0)
 
+		chip_gap = round(6 * gui.scale)
+		chip_h = round(32 * gui.scale)
+		x, y, w, section_h = self.draw_settings_section(
+			left_rect,
+			_("Tracklist items"),
+			accent=accent,
+		)
+		chip_w = (w - chip_gap) // 2
 
-		#y += round(35 * gui.scale)
-		self.toggle_square(x, y, self.tauon.heart_toggle, "     ")
-		gui.heart_row_icon.render(x + round(23 * gui.scale), y + round(2 * gui.scale), colours.box_text)
-		rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
-		self.fields.add(rect)
-		if self.coll(rect):
-			self.tauon.ex_tool_tip(x + round(45 * gui.scale), y - 20 * gui.scale, 0, _("Show track loves"), 12)
-		y += round(25 * gui.scale)
+		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.heart_toggle, _("Loves"), accent=accent, show_active_bar=False)
+		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.rating_toggle, _("Track ratings"), accent=accent, show_active_bar=False)
+		y += chip_h + chip_gap
 
-		self.toggle_square(x, y, self.tauon.rating_toggle, _("Track ratings"))
-		y += round(25 * gui.scale)
-		self.toggle_square(x, y, self.tauon.album_rating_toggle, _("Album ratings"))
-		y += round(35 * gui.scale)
+		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.album_rating_toggle, _("Album ratings"), accent=accent, show_active_bar=False)
+		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.star_toggle, _("Playtime stars"), accent=accent, show_active_bar=False)
+		y += chip_h + chip_gap
 
+		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.star_line_toggle, _("Playcount lines"), accent=accent, show_active_bar=False)
+		old_left_align = prefs.row_title_format == 2
+		left_align = self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), old_left_align, _("Left align"), accent=accent, show_active_bar=False)
+		if left_align != old_left_align:
+			prefs.row_title_format = 2 if left_align else 1
+			gui.update += 1
+			gui.pl_update = 1
+		y += chip_h + chip_gap
 
-		self.toggle_square(x, y, self.tauon.star_toggle, "     ")
-		gui.star_row_icon.render(x + round(22 * gui.scale), y + round(0 * gui.scale), colours.box_text)
-		rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
-		self.fields.add(rect)
-		if self.coll(rect):
-			self.tauon.ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playtime as stars"), 12)
+		old_genre = prefs.row_title_genre
+		prefs.row_title_genre = self.settings_toggle_chip((x, y, chip_w, chip_h), prefs.row_title_genre, _("Genre"), accent=accent, show_active_bar=False)
+		if prefs.row_title_genre != old_genre:
+			gui.update += 1
+			gui.pl_update = 1
 
-		x += (55 * gui.scale)
-		self.toggle_square(x, y, self.tauon.star_line_toggle, "     ")
-		ddt.rect(
-			(x + round(21 * gui.scale), y + round(6 * gui.scale), round(15 * gui.scale), round(1 * gui.scale)),
-			colours.box_text)
-		rect = (x, y + round(2 * gui.scale), 40 * gui.scale, 15 * gui.scale)
-		self.fields.add(rect)
-		if self.coll(rect):
-			self.tauon.ex_tool_tip(x + round(35 * gui.scale), y - 20 * gui.scale, 0, _("Represent playcount as lines"), 12)
+		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.toggle_append_date, _("Year"), accent=accent, show_active_bar=False)
+		y += chip_h + chip_gap
 
-		x = x0 + self.item_x_offset
-		#x += (55 * gui.scale)
+		self.settings_toggle_chip((x, y, w, chip_h), self.tauon.toggle_append_total_time, _("Duration"), accent=accent, show_active_bar=False)
 
-		# y += round(25 * gui.scale)
+		x, y, w, section_h = self.draw_settings_section(
+			right_rect,
+			_("Sizing"),
+			accent=accent,
+		)
+		row_gap = round(6 * gui.scale)
+		row_h = round(30 * gui.scale)
 
-		# self.toggle_square(x, y, self.tauon.star_line_toggle, _('Show playtime lines'))
-		y += round(15 * gui.scale)
+		prefs.playlist_font_size = self.settings_stepper_row(
+			(x, y, w, row_h),
+			_("Font size"),
+			prefs.playlist_font_size,
+			12,
+			17,
+			accent=accent,
+		)
+		y += row_h + row_gap
+		prefs.playlist_row_height = self.settings_stepper_row(
+			(x, y, w, row_h),
+			_("Row height"),
+			prefs.playlist_row_height,
+			15,
+			45,
+			units="px",
+			accent=accent,
+		)
+		y += row_h + row_gap
+		prefs.tracklist_y_text_offset = self.settings_stepper_row(
+			(x, y, w, row_h),
+			_("Text baseline"),
+			prefs.tracklist_y_text_offset,
+			-10,
+			10,
+			accent=accent,
+			formatter=lambda number: f"{number:+d}px" if number else "0px",
+		)
+		y += row_h + row_gap
 
-		# if gui.show_ratings:
-		# 	x += round(10 * gui.scale)
-		# #self.toggle_square(x, y, self.tauon.star_toggle, _('Show playtime stars'))
-		# if gui.show_ratings:
-		# 	x -= round(10 * gui.scale)
+		tile_gap = round(8 * gui.scale)
+		tile_h = round(30 * gui.scale)
+		tile_w = (w - tile_gap) // 2
+		small_active = (
+			prefs.playlist_font_size == 15
+			and prefs.playlist_row_height == round(22 * prefs.ui_scale)
+			and prefs.tracklist_y_text_offset == 0
+		)
+		large_active = (
+			prefs.playlist_font_size == 15
+			and prefs.playlist_row_height == round(27 * prefs.ui_scale)
+		)
+		self.settings_action_tile((x, y, tile_w, tile_h), _("Thin default"), self.small_preset, accent, emphasis=small_active)
+		self.settings_action_tile((x + tile_w + tile_gap, y, tile_w, tile_h), _("Thick default"), self.large_preset, accent, emphasis=large_active)
 
-
-		y += round(25 * gui.scale)
-
-		if self.toggle_square(x, y, prefs.row_title_format == 2, _("Left align title style")):
-			prefs.row_title_format = 2
-		else:
-			prefs.row_title_format = 1
-
-		y += round(25 * gui.scale)
-
-		prefs.row_title_genre = self.toggle_square(x + round(10 * gui.scale), y, prefs.row_title_genre, _("Show album genre"))
-		y += round(25 * gui.scale)
-
-		self.toggle_square(x, y, self.tauon.toggle_append_date, _("Show album release year"))
-		y += round(25 * gui.scale)
-
-		self.toggle_square(x, y, self.tauon.toggle_append_total_time, _("Show album duration"))
-		y += round(35 * gui.scale)
-
-		# if self.toggle_square(x, y, prefs.row_title_separator_type == 0, " - "):
-		# 	prefs.row_title_separator_type = 0
-		# if self.toggle_square(x + round(55 * gui.scale), y,  prefs.row_title_separator_type == 1, " ‒ "):  # noqa: RUF003 - The separator is correct here
-		# 	prefs.row_title_separator_type = 1
-		# if self.toggle_square(x + round(110 * gui.scale), y,  prefs.row_title_separator_type == 2, " ⦁ "):
-		# 	prefs.row_title_separator_type = 2
-		x = x0 + 330 * gui.scale
-		y = y0 + 25 * gui.scale
-
-		prefs.playlist_font_size = self.slide_control(x, y, _("Font Size"), "", prefs.playlist_font_size, 12, 17)
-		y += 25 * gui.scale
-		prefs.playlist_row_height = self.slide_control(x, y, _("Row Size"), "px", prefs.playlist_row_height, 15, 45)
-		y += 25 * gui.scale
-		prefs.tracklist_y_text_offset = self.slide_control(
-			x, y, _("Baseline offset"), "px", prefs.tracklist_y_text_offset, -10, 10)
-		y += 25 * gui.scale
-
-		x += 65 * gui.scale
-		self.button(x, y, _("Thin default"), self.small_preset, 124 * gui.scale)
-		y += 27 * gui.scale
-		self.button(x, y, _("Thick default"), self.large_preset, 124 * gui.scale)
+		bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
+		remaining_h = bottom - y - tile_h
+		if remaining_h > round(40 * gui.scale):
+			self.draw_settings_note(
+				(x, y + tile_h + row_gap, w, remaining_h - row_gap),
+				_("Use a preset to reset the layout, then adjust row height or baseline."),
+				accent,
+				_("Presets"),
+			)
 
 
 	def set_playlist_cycle(self, mode: int = 0) -> bool | None:
