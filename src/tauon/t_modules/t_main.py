@@ -25411,26 +25411,6 @@ class Over:
 		self.settings_content_scroll = min(max(self.settings_content_scroll, 0), max_scroll)
 		return max_scroll
 
-	def draw_settings_category_header(
-		self,
-		x: int,
-		y: int,
-		w: int,
-		title: str,
-		subtitle: str,
-		accent: ColourRGBA,
-		draw: bool = True,
-	) -> int:
-		header_h = round(54 * self.gui.scale)
-		if draw:
-			label_y = y + round(3 * self.gui.scale)
-			self.ddt.text((x, label_y), title, self.colours.box_text, 214)
-			self.ddt.text((x, label_y + round(22 * self.gui.scale)), subtitle, self.colours.box_text_label, 11, max_w=w - round(70 * self.gui.scale))
-			self.ddt.rect((x, y + header_h - round(1 * self.gui.scale), w, round(1 * self.gui.scale)), alpha_blend(alpha_mod(accent, 90), self.colours.box_text_border))
-			pill_w = round(36 * self.gui.scale)
-			self.ddt.rect((x + w - pill_w, y + round(10 * self.gui.scale), pill_w, round(4 * self.gui.scale)), accent)
-		return header_h
-
 	def draw_settings_range_slider(
 		self,
 		rect: tuple[int, int, int, int],
@@ -28525,7 +28505,7 @@ class Over:
 
 	def render_settings_func_category(self, page: int, x: int, y: int, w: int, draw: bool = True) -> int:
 		heights = (
-			round(246 * self.gui.scale),
+			round(270 * self.gui.scale),
 			round(224 * self.gui.scale),
 			round(232 * self.gui.scale),
 			round(300 * self.gui.scale),
@@ -29361,10 +29341,8 @@ class Over:
 		return row1_h + row2_h + column_gap
 
 	def render_settings_category(self, index: int, x: int, y: int, w: int, draw: bool = True) -> int:
-		title, subtitle, tab_renderer = self.tabs[index]
 		accent = self.settings_tab_accent(index)
-		header_h = self.draw_settings_category_header(x, y, w, title, subtitle, accent, draw=draw)
-		body_y = y + header_h + round(14 * self.gui.scale)
+		body_y = y
 
 		if index == 0:
 			body_h = self.render_settings_func_category(0, x, body_y, w, draw)
@@ -29399,7 +29377,7 @@ class Over:
 		else:
 			body_h = self.render_settings_about_category(x, body_y, w, accent, draw)
 
-		return header_h + round(14 * self.gui.scale) + body_h
+		return body_h
 
 	# def style_up(self) -> None:
 	# 	self.prefs.line_style += 1
@@ -29502,25 +29480,28 @@ class Over:
 		content_y = y
 		header_height = round(58 * gui.scale)
 		inner_pad_x = round(22 * gui.scale)
-		inner_pad_y = round(14 * gui.scale)
-		scrollbar_w = round(10 * gui.scale)
+		content_top_pad = round(12 * gui.scale)
+		content_bottom_pad = 0
+		scrollbar_w = round(12 * gui.scale)
 		scrollbar_gap = round(8 * gui.scale)
+		scrollbar_right_inset = round(4 * gui.scale)
 		view_rect = (
 			content_x + inner_pad_x,
-			content_y + header_height + inner_pad_y,
+			content_y + header_height,
 			content_width - inner_pad_x * 2,
-			content_height - header_height - inner_pad_y * 2,
+			content_height - header_height - content_bottom_pad,
 		)
-		doc_w = view_rect[2] - scrollbar_w - scrollbar_gap
+		scrollbar_x = content_x + content_width - scrollbar_right_inset - scrollbar_w
+		doc_w = scrollbar_x - scrollbar_gap - view_rect[0]
 		if doc_w < round(260 * gui.scale):
 			doc_w = view_rect[2]
 
 		self.settings_category_offsets = []
 		category_heights: list[int] = []
-		doc_height = 0
-		category_gap = round(28 * gui.scale)
+		doc_height = content_top_pad
+		category_gap = round(18 * gui.scale)
 		for index in range(len(self.tabs)):
-			self.settings_category_offsets.append(doc_height)
+			self.settings_category_offsets.append(doc_height - content_top_pad)
 			category_h = self.render_settings_category(index, view_rect[0], view_rect[1], doc_w, draw=False)
 			category_heights.append(category_h)
 			doc_height += category_h + category_gap
@@ -29536,6 +29517,8 @@ class Over:
 
 		scroll_start = int(self.settings_nav_scroll)
 		scroll_offset = (self.settings_nav_scroll - scroll_start) * max(row_step, 1)
+		active_bg = alpha_blend(alpha_mod(tab_hl, 160), tab_bg)
+		hover_bg = alpha_blend(alpha_mod(tab_hl, 70), tab_bg)
 		yy = nav_y - scroll_offset
 		for index, item in enumerate(self.tabs):
 			if index < scroll_start:
@@ -29547,13 +29530,9 @@ class Over:
 			self.fields.add(rect)
 			hovered = self.coll(rect)
 			row_bg = tab_bg
-			accent = self.settings_tab_accent(index)
-			active_bg = alpha_blend(alpha_mod(accent, 64), tab_bg)
-			hover_bg = alpha_blend(alpha_mod(accent, 26), tab_bg)
 			if self.tab_active == index:
 				row_bg = active_bg
 				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), row_bg)
-				ddt.rect((rect[0], rect[1], round(4 * gui.scale), rect[3]), accent)
 			elif hovered:
 				row_bg = hover_bg
 				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), row_bg)
@@ -29588,7 +29567,6 @@ class Over:
 			content_y + round(16 * gui.scale),
 			_("Close"), self.close, width=close_w)
 
-		scrollbar_x = view_rect[0] + view_rect[2] - scrollbar_w
 		if max_content_scroll > 0:
 			self.settings_content_scroll = self.settings_content_scroll_bar.draw(
 				scrollbar_x,
@@ -29608,7 +29586,7 @@ class Over:
 		sdl3.SDL_RenderClear(self.renderer)
 
 		doc_x = view_rect[0]
-		doc_y = view_rect[1] - self.settings_content_scroll
+		doc_y = view_rect[1] + content_top_pad - self.settings_content_scroll
 		visible_top = view_rect[1] - round(80 * gui.scale)
 		visible_bottom = view_rect[1] + view_rect[3] + round(80 * gui.scale)
 		for index, category_h in enumerate(category_heights):
