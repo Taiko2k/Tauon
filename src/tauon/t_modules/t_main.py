@@ -25568,7 +25568,7 @@ class Over:
 				active = function(1)
 
 		text_x = x + round(14 * self.gui.scale)
-		title_y = y + round(8 * self.gui.scale) if subtitle else y + round(12 * self.gui.scale)
+		title_y = y + round(8 * self.gui.scale) if subtitle else y + round(8 * self.gui.scale)
 		title_max_w = w - round(84 * self.gui.scale)
 		self.ddt.text((text_x, title_y), title, self.colours.box_text, 13, bg=fill, max_w=title_max_w)
 		if subtitle:
@@ -26195,7 +26195,7 @@ class Over:
 
 		elif self.func_page == 2:
 			x, y, w, section_h = self.draw_settings_section(
-				left_rect,
+				right_rect,
 				_("Track menu extras"),
 				_("Optional items in the track menu."),
 				accent,
@@ -26211,7 +26211,7 @@ class Over:
 				y += small_row_h + row_gap
 
 			x, y, w, section_h = self.draw_settings_section(
-				right_rect,
+				left_rect,
 				_("Archive imports"),
 				_("How Tauon handles archives and Downloads."),
 				accent,
@@ -26246,7 +26246,7 @@ class Over:
 				accent=accent,
 			)
 
-			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
+			bottom = left_rect[1] + left_rect[3] - round(14 * gui.scale)
 			remaining_h = bottom - y - small_row_h
 			if remaining_h > round(50 * gui.scale):
 				self.draw_settings_note(
@@ -28506,11 +28506,11 @@ class Over:
 
 	def render_settings_func_category(self, page: int, x: int, y: int, w: int, draw: bool = True) -> int:
 		heights = (
-			round(270 * self.gui.scale),
+			round(275 * self.gui.scale),
 			round(224 * self.gui.scale),
-			round(232 * self.gui.scale),
+			round(262 * self.gui.scale),
 			round(300 * self.gui.scale),
-			round(286 * self.gui.scale),
+			round(350 * self.gui.scale),
 		)
 		height = heights[page]
 		if draw:
