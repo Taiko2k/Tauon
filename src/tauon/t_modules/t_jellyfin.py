@@ -62,6 +62,11 @@ class Jellyfin:
 		self.session_last_item: dict[str, list[str] | bool | int | str] | None = None
 		self.playlists = []
 
+	@property
+	def server_url(self) -> str:
+		"""Return the Jellyfin server URL with trailing slashes stripped."""
+		return self.prefs.jelly_server_url.rstrip("/")
+
 	def _get_jellyfin_auth(self) -> str:
 		auth_str = f"MediaBrowser Client={self.tauon.t_title}, Device={self.tauon.device}, DeviceId=-, Version={self.tauon.t_version}"
 		if self.accessToken:
@@ -71,7 +76,7 @@ class Jellyfin:
 	def _authenticate(self, debug: bool = False) -> None:
 		username = self.prefs.jelly_username
 		password = self.prefs.jelly_password
-		server = self.prefs.jelly_server_url
+		server = self.server_url
 
 		try:
 			response = requests.post(
@@ -117,7 +122,7 @@ class Jellyfin:
 		if not self.connected:
 			return ""
 
-		base_url = f"{self.prefs.jelly_server_url}/Audio/{stream_id}/stream"
+		base_url = f"{self.server_url}/Audio/{stream_id}/stream"
 		# headers = {
 		# "Token": self.accessToken,
 		# "X-Application": "Tauon/1.0",
@@ -154,7 +159,7 @@ class Jellyfin:
 			"Authorization": self._get_jellyfin_auth(),
 		}
 		params = {}
-		base_url = f"{self.prefs.jelly_server_url}/Items/{track.art_url_key}/Images/Primary"
+		base_url = f"{self.server_url}/Items/{track.art_url_key}/Images/Primary"
 		response = requests.get(base_url, headers=headers, params=params, timeout=10)
 
 		if response.status_code == HTTPStatus.OK:
@@ -177,7 +182,7 @@ class Jellyfin:
 			}
 
 			params = {}
-			base_url = f"{self.prefs.jelly_server_url}/Users/{self.userId}/FavoriteItems/{track.url_key}"
+			base_url = f"{self.server_url}/Users/{self.userId}/FavoriteItems/{track.url_key}"
 			if un:
 				response = requests.delete(base_url, headers=headers, params=params, timeout=10)
 			else:
@@ -206,7 +211,7 @@ class Jellyfin:
 
 		if 'jelly"' not in codes:
 			response = requests.post(
-				f"{self.prefs.jelly_server_url}/Playlists",
+				f"{self.server_url}/Playlists",
 				data={},
 				headers={
 					"Token": self.accessToken,
@@ -237,7 +242,7 @@ class Jellyfin:
 
 			# upload difference
 			response = requests.get(
-				f"{self.prefs.jelly_server_url}/Playlists/{code}/Items",
+				f"{self.server_url}/Playlists/{code}/Items",
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
@@ -257,7 +262,7 @@ class Jellyfin:
 				d_ids.append(item["PlaylistItemId"])
 
 			response = requests.delete(
-				f"{self.prefs.jelly_server_url}/Playlists/{code}/Items",
+				f"{self.server_url}/Playlists/{code}/Items",
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
@@ -275,7 +280,7 @@ class Jellyfin:
 				return
 
 			response = requests.post(
-				f"{self.prefs.jelly_server_url}/Playlists/{code}/Items",
+				f"{self.server_url}/Playlists/{code}/Items",
 				data={},
 				headers={
 					"Token": self.accessToken,
@@ -297,7 +302,7 @@ class Jellyfin:
 		if not self.connected:
 			return []
 		response = requests.get(
-			f"{self.prefs.jelly_server_url}/Playlists/{playlist_id}/Items",
+			f"{self.server_url}/Playlists/{playlist_id}/Items",
 			headers={
 				"Token": self.accessToken,
 				"X-Application": "Tauon/1.0",
@@ -345,7 +350,7 @@ class Jellyfin:
 
 			# Get Playlist
 			response = requests.get(
-				f"{self.prefs.jelly_server_url}/Playlists/{p['Id']}/Items",
+				f"{self.server_url}/Playlists/{p['Id']}/Items",
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
@@ -400,7 +405,7 @@ class Jellyfin:
 
 		try:
 			response = requests.get(
-				f"{self.prefs.jelly_server_url}/Items",
+				f"{self.server_url}/Items",
 				headers={
 					"Token": self.accessToken,
 					"X-Application": "Tauon/1.0",
@@ -639,7 +644,7 @@ class Jellyfin:
 
 	def session_send(self, point: str, data: dict | None) -> None:
 		response = requests.post(
-			f"{self.prefs.jelly_server_url}/{point}",
+			f"{self.server_url}/{point}",
 			data=json.dumps(data),
 			headers={
 				"Token": self.accessToken,
