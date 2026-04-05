@@ -25286,7 +25286,7 @@ class Over:
 
 	def view2(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		x = x0 + 25 * self.gui.scale
-		y = y0 + 20 * self.gui.scale
+		y = y0 + 10 * self.gui.scale
 
 		self.ddt.text_background_colour = self.colours.box_background
 
@@ -25465,7 +25465,7 @@ class Over:
 
 			y += 34 * gui.scale
 			ddt.text((x, y), _("Archive imports"), colours.box_text_label, 11)
-			y += 28 * gui.scale
+			y += 22 * gui.scale
 			self.toggle_square(
 				x, y, tauon.toggle_extract, _("Extract archives"),
 				subtitle=_("Extracts zip archives on drag and drop"))
@@ -27472,8 +27472,6 @@ class Over:
 		y = y0 + 17 * gui.scale
 
 
-
-
 		#y += round(35 * gui.scale)
 		self.toggle_square(x, y, self.tauon.heart_toggle, "     ")
 		gui.heart_row_icon.render(x + round(23 * gui.scale), y + round(2 * gui.scale), colours.box_text)
@@ -27679,9 +27677,9 @@ class Over:
 		if inp.key_esc_press:
 			self.close()
 
-		full_width = min(round(875 * gui.scale), self.window_size[0] - round(40 * gui.scale))
-		full_height = min(round(440 * gui.scale), self.window_size[1] - round(44 * gui.scale))
-		side_width = min(round(188 * gui.scale), max(round(140 * gui.scale), full_width // 3))
+		full_width = round(875 * gui.scale)
+		full_height = round(440 * gui.scale)
+		side_width = round(150 * gui.scale)
 		content_width = full_width - side_width
 		content_height = full_height
 
