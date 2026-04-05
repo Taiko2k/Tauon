@@ -2,6 +2,10 @@
 Changelog
 ---------
 
+### v9.1.3
+
+ - Fixes Window icon on Linux
+
 ### v9.1.2
 
  - Added menu bar support to for macOS
