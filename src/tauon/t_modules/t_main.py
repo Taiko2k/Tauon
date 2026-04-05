@@ -20790,6 +20790,7 @@ class TextBox2:
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
+		previous_target = sdl3.SDL_GetRenderTarget(self.renderer)
 		sdl3.SDL_SetRenderTarget(self.renderer, self.tauon.text_box_canvas)
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
@@ -21126,7 +21127,7 @@ class TextBox2:
 		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_hide_rect)
 
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
 
 		self.tauon.text_box_canvas_rect.x = round(x)
 		self.tauon.text_box_canvas_rect.y = round(y)
@@ -25572,7 +25573,7 @@ class Over:
 		self.ddt.text((text_x, title_y), title, self.colours.box_text, 13, bg=fill, max_w=title_max_w)
 		if subtitle:
 			self.ddt.text(
-				(text_x, y + round(25 * self.gui.scale)),
+				(text_x, y + round(23 * self.gui.scale)),
 				subtitle,
 				self.colours.box_text_label,
 				11,
@@ -26041,7 +26042,7 @@ class Over:
 		if self.func_page == 0:
 			x, y, w, section_h = self.draw_settings_section(
 				left_rect,
-				_("Daily flow"),
+				_("Common settings"),
 				_("Common library and panel settings."),
 				accent,
 			)
@@ -28509,7 +28510,7 @@ class Over:
 			round(224 * self.gui.scale),
 			round(232 * self.gui.scale),
 			round(300 * self.gui.scale),
-			round(228 * self.gui.scale),
+			round(286 * self.gui.scale),
 		)
 		height = heights[page]
 		if draw:
@@ -29017,8 +29018,14 @@ class Over:
 		gui = self.gui
 		prefs = self.prefs
 		column_gap = round(12 * gui.scale)
-		row1_h = round(236 * gui.scale)
-		row2_h = round(284 * gui.scale)
+		section_header_h = round(66 * gui.scale)
+		section_bottom_pad = round(14 * gui.scale)
+		row1_h = section_header_h + round(210 * gui.scale) + section_bottom_pad
+		if prefs.transcode_codec == "opus":
+			row1_h += round(36 * gui.scale)
+		if prefs.transcode_codec != "flac":
+			row1_h += round(30 * gui.scale)
+		row2_h = section_header_h + round(302 * gui.scale) + section_bottom_pad
 		if not draw:
 			return row1_h + row2_h + column_gap
 
@@ -29479,12 +29486,12 @@ class Over:
 		content_x = x + side_width
 		content_y = y
 		header_height = round(58 * gui.scale)
-		inner_pad_x = round(22 * gui.scale)
+		inner_pad_x = round(12 * gui.scale)
 		content_top_pad = round(12 * gui.scale)
 		content_bottom_pad = 0
-		scrollbar_w = round(12 * gui.scale)
+		scrollbar_w = round(16 * gui.scale)
 		scrollbar_gap = round(8 * gui.scale)
-		scrollbar_right_inset = round(4 * gui.scale)
+		scrollbar_right_inset = 0
 		view_rect = (
 			content_x + inner_pad_x,
 			content_y + header_height,
@@ -29499,7 +29506,7 @@ class Over:
 		self.settings_category_offsets = []
 		category_heights: list[int] = []
 		doc_height = content_top_pad
-		category_gap = round(18 * gui.scale)
+		category_gap = round(14 * gui.scale)
 		for index in range(len(self.tabs)):
 			self.settings_category_offsets.append(doc_height - content_top_pad)
 			category_h = self.render_settings_category(index, view_rect[0], view_rect[1], doc_w, draw=False)
