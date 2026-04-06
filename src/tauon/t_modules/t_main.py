@@ -25209,11 +25209,13 @@ class Over:
 			)
 			self.draw_audio_device_selector(device_rect)
 
-	def draw_audio_device_selector(self, rect: tuple[int, int, int, int]) -> None:
+	def draw_audio_device_selector(self, rect: tuple[int, int, int, int], accent: ColourRGBA | None = None) -> None:
 		gui = self.gui
 		ddt = self.ddt
 		prefs = self.prefs
 		colours = self.colours
+		if accent is None:
+			accent = self.settings_page_accent()
 
 		x, y, w, h = rect
 		self.draw_settings_card(rect)
@@ -25225,9 +25227,9 @@ class Over:
 
 		list_fill = alpha_blend(ColourRGBA(255, 255, 255, 5), colours.box_background)
 		list_border = alpha_blend(ColourRGBA(255, 255, 255, 16), colours.box_text_border)
-		selected_fill = alpha_blend(alpha_mod(colours.toggle_box_on, 38), list_fill)
+		selected_fill = alpha_blend(alpha_mod(accent, 38), list_fill)
 		hover_fill = alpha_blend(ColourRGBA(255, 255, 255, 14), list_fill)
-		divider = alpha_mod(colours.box_text_border, 150)
+		divider = alpha_blend(alpha_mod(accent, 80), colours.box_text_border)
 
 		if footer_h:
 			ddt.rect_a((x + inner_pad, footer_top), (w - inner_pad * 2, round(1 * gui.scale)), divider)
@@ -25326,7 +25328,7 @@ class Over:
 				if row_selected:
 					ddt.rect(
 						(row_rect[0], row_rect[1], round(5 * gui.scale), row_rect[3]),
-						colours.toggle_box_on,
+						accent,
 					)
 
 				label_max_w = row_rect[2] - round(22 * gui.scale)
@@ -26102,16 +26104,6 @@ class Over:
 			y += tile_h + row_gap
 			self.settings_action_tile((x, y, w, tile_h), _("Open keymap file"), tauon.open_keymap_file, accent)
 
-			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
-			remaining_h = bottom - y - tile_h
-			if remaining_h > round(52 * gui.scale):
-				note_text = (
-					_("The config file is open. Use Reload to apply your changes.")
-					if gui.opened_config_file else
-					_("Open the config file to edit it manually. Reload appears here while it is open.")
-				)
-				self.draw_settings_note((x, y + tile_h + row_gap, w, remaining_h - row_gap), note_text, accent, _("Live editing"))
-
 		elif self.func_page == 1:
 			x, y, w, section_h = self.draw_settings_section(
 				left_rect,
@@ -26279,7 +26271,6 @@ class Over:
 					_("Only enable in a trusted LAN and do not expose port (7814) to the internet"),
 					mode="warning")
 
-			y += row_h + row_gap
 			listen_along_enabled = self.settings_switch_row(
 				(x, y, w, row_h),
 				tauon.toggle_enable_web,
@@ -28531,6 +28522,7 @@ class Over:
 			return right_rect[3]
 
 		row_h = round(42 * gui.scale)
+		compact_row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
@@ -28548,15 +28540,15 @@ class Over:
 		)
 		inner_y += row_h + row_gap
 		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.tauon.toggle_side_panel_layout,
 			_("Centered metadata side panel"),
 			accent=accent,
 		)
-		inner_y += row_h + row_gap
+		inner_y += compact_row_h + row_gap
 		old_zoom = self.prefs.zoom_art
 		self.prefs.zoom_art = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.prefs.zoom_art,
 			_("Zoom album art to fit"),
 			accent=accent,
@@ -28571,40 +28563,40 @@ class Over:
 			accent,
 		)
 		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.tauon.toggle_gallery_click,
 			_("Single click to play"),
 			accent=accent,
 		)
-		inner_y += row_h + row_gap
+		inner_y += compact_row_h + row_gap
 		self.prefs.gallery_row_scroll = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.prefs.gallery_row_scroll,
 			_("Scroll gallery by row"),
 			accent=accent,
 		)
-		inner_y += row_h + row_gap
+		inner_y += compact_row_h + row_gap
 		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.tauon.toggle_gallery_combine,
 			_("Combine multi-discs"),
 			accent=accent,
 		)
-		inner_y += row_h + row_gap
+		inner_y += compact_row_h + row_gap
 		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.tauon.toggle_galler_text,
 			_("Show titles"),
 			accent=accent,
 		)
-		inner_y += row_h + row_gap
+		inner_y += compact_row_h + row_gap
 		self.prefs.center_gallery_text = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
+			(inner_x, inner_y, inner_w, compact_row_h),
 			self.prefs.center_gallery_text,
 			_("Center title text"),
 			accent=accent,
 		)
-		inner_y += row_h + row_gap
+		inner_y += compact_row_h + row_gap
 		self.album_mode_art_size = int(self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
 			_("Thumbnail size"),
@@ -28619,7 +28611,7 @@ class Over:
 		if self.album_mode_art_size < 160:
 			inner_y += round(52 * gui.scale)
 			self.settings_switch_row(
-				(inner_x, inner_y, inner_w, row_h),
+				(inner_x, inner_y, inner_w, compact_row_h),
 				self.tauon.toggle_gallery_thin,
 				_("Prefer thinner padding"),
 				accent=accent,
@@ -28640,7 +28632,7 @@ class Over:
 		if not draw:
 			return max(left_rect[3], right_rect[3])
 
-		row_h = round(42 * gui.scale)
+		row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
@@ -28748,7 +28740,7 @@ class Over:
 		if not draw:
 			return max(left_rect[3], right_rect[3])
 
-		row_h = round(42 * gui.scale)
+		row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
@@ -28809,8 +28801,6 @@ class Over:
 			gui.update += 1
 			gui.update_layout = True
 
-		self.draw_settings_note((inner_x, inner_y, inner_w, round(36 * gui.scale)), _("UI scale for HiDPI displays."), accent, _("Scale"))
-		inner_y += round(44 * gui.scale)
 		scale_text = _("auto") if prefs.x_scale else f"{prefs.scale_want:.2f}x"
 		self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
@@ -28856,12 +28846,12 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
-		row1_h = round(320 * gui.scale)
+		row1_h = round(380 * gui.scale)
 		row2_h = round(286 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
 
-		row_h = round(42 * gui.scale)
+		row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
 		left_rect = (x, y, left_w, row1_h)
 		right_rect = (x + left_w + column_gap, y, right_w, row1_h)
@@ -28901,7 +28891,7 @@ class Over:
 			self.pctl.playerCommand = "reload"
 			self.pctl.playerCommandReady = True
 
-		self.draw_audio_device_selector(right_rect)
+		self.draw_audio_device_selector(right_rect, accent)
 
 		row2_y = y + row1_h + column_gap
 		left_rect = (x, row2_y, left_w, row2_h)
@@ -28960,6 +28950,7 @@ class Over:
 		elif len(prefs.eq) > 10:
 			prefs.eq = prefs.eq[:10]
 
+		eq_enabled = self.tauon.toggle_eq(1)
 		switch_w = round(150 * gui.scale)
 		self.settings_switch_row((inner_x, inner_y, switch_w, round(30 * gui.scale)), self.tauon.toggle_eq, _("Enable EQ"), accent=accent)
 		reset_w = round(96 * gui.scale)
@@ -28973,6 +28964,7 @@ class Over:
 		db_range = 12
 		labels = ("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 		self.ddt.rect((inner_x, bar_y + center, inner_w, round(1 * gui.scale)), alpha_blend(ColourRGBA(255, 255, 255, 20), self.colours.box_text_border))
+		bar_fill_colour = accent if eq_enabled else alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.box_text_border)
 		bar_x = inner_x
 		for i, q in enumerate(prefs.eq):
 			track_rect = (bar_x, bar_y, bar_w, bar_h)
@@ -28999,7 +28991,7 @@ class Over:
 
 			start = (q / db_range) * center * -1
 			fill_rect = (bar_x, bar_y + center, bar_w, start)
-			self.ddt.rect(fill_rect, accent)
+			self.ddt.rect(fill_rect, bar_fill_colour)
 			self.ddt.text((bar_x + bar_w // 2, bar_y + bar_h + round(6 * gui.scale), 2), labels[i], self.colours.box_text_label, 10)
 			bar_x += bar_w + bar_gap
 
@@ -29083,9 +29075,9 @@ class Over:
 		)
 		self.settings_action_tile((inner_x, inner_y, inner_w, round(36 * gui.scale)), _("Open output folder"), self.tauon.open_encode_out, accent)
 		inner_y += round(42 * gui.scale)
-		self.settings_switch_row((inner_x, inner_y, inner_w, round(42 * gui.scale)), self.tauon.toggle_transcode_output, _("Save to output folder"), accent=accent)
-		inner_y += round(48 * gui.scale)
-		self.settings_switch_row((inner_x, inner_y, inner_w, round(42 * gui.scale)), self.tauon.toggle_transcode_inplace, _("Save and overwrite files in place"), accent=accent)
+		self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), self.tauon.toggle_transcode_output, _("Save to output folder"), accent=accent)
+		inner_y += round(36 * gui.scale)
+		self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), self.tauon.toggle_transcode_inplace, _("Save and overwrite files in place"), accent=accent)
 
 		row2_y = y + row1_h + column_gap
 		sync_rect = (x, row2_y, w, row2_h)
@@ -29132,12 +29124,12 @@ class Over:
 					self.show_message(_("Could not auto-detect mounted device path."), _("Make sure the device is mounted and path is accessible."))
 		gui.power_bar_icon.render(icon_rect[0], icon_rect[1], icon_colour)
 		inner_y += round(34 * gui.scale)
-		prefs.sync_deletes = self.settings_switch_row((inner_x, inner_y, inner_w, round(42 * gui.scale)), prefs.sync_deletes, _("Delete other folders in target"), accent=accent)
-		inner_y += round(48 * gui.scale)
-		prefs.bypass_transcode = self.settings_switch_row((inner_x, inner_y, inner_w, round(42 * gui.scale)), prefs.bypass_transcode ^ True, _("Transcode files"), accent=accent) ^ True
-		inner_y += round(48 * gui.scale)
-		prefs.smart_bypass = self.settings_switch_row((inner_x, inner_y, inner_w, round(42 * gui.scale)), prefs.smart_bypass ^ True, _("Bypass low bitrate"), accent=accent) ^ True
-		inner_y += round(52 * gui.scale)
+		prefs.sync_deletes = self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), prefs.sync_deletes, _("Delete other folders in target"), accent=accent)
+		inner_y += round(36 * gui.scale)
+		prefs.bypass_transcode = self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), prefs.bypass_transcode ^ True, _("Transcode files"), accent=accent) ^ True
+		inner_y += round(36 * gui.scale)
+		prefs.smart_bypass = self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), prefs.smart_bypass ^ True, _("Bypass low bitrate"), accent=accent) ^ True
+		inner_y += round(40 * gui.scale)
 		start_label = _("Start Sync") if prefs.bypass_transcode else _("Start Transcode and Sync")
 		if gui.stop_sync:
 			self.settings_action_tile((inner_x, inner_y, inner_w, round(36 * gui.scale)), _("Stopping..."), accent=accent, emphasis=True)
