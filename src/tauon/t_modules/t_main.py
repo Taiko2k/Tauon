@@ -15780,13 +15780,23 @@ class Tauon:
 
 		shooter(go)
 
-	def draw_rating_widget(self, x: int, y: int, n_track: TrackClass, album: bool = False) -> None:
+	def draw_rating_widget(
+		self,
+		x: int,
+		y: int,
+		n_track: TrackClass,
+		album: bool = False,
+		allow_input: bool = True,
+		hint_only: bool = False,
+	) -> None:
 		rat = self.album_star_store.get_rating(n_track) if album else self.star_store.get_rating(n_track.index)
+		display_rat = 0 if hint_only else rat
 
 		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(16 * self.gui.scale))
-		self.gui.heart_fields.append(rect)
+		if allow_input:
+			self.gui.heart_fields.append(rect)
 
-		if self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
+		if allow_input and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
 			self.gui.pl_update = 2
 			pp = self.inp.mouse_position[0] - x
 
@@ -15803,6 +15813,7 @@ class Tauon:
 					self.album_star_store.set_rating(n_track, rat)
 				else:
 					self.star_store.set_rating(n_track.index, rat, write=True)
+				display_rat = rat
 
 		# bg = self.colours.grey(40)
 		bg = ColourRGBA(255, 255, 255, 17)
@@ -15813,7 +15824,7 @@ class Tauon:
 			fg = self.colours.grey(70)
 
 		playtime_stars = 0
-		if self.prefs.rating_playtime_stars and rat == 0 and not album:
+		if self.prefs.rating_playtime_stars and not album and (hint_only or display_rat == 0):
 			playtime_stars = star_count3(self.star_store.get(n_track.index), n_track.length)
 			if self.gui.tracklist_bg_is_light:
 				fg2 = alpha_blend(ColourRGBA(0, 0, 0, 70), self.ddt.text_background_colour)
@@ -15831,9 +15842,9 @@ class Tauon:
 					self.gui.star_half_row_icon.render(xx, y, fg2)
 				else:
 					self.gui.star_row_icon.render(xx, y, fg2)
-			elif rat - 1 < ss * 2:
+			elif display_rat - 1 < ss * 2:
 				self.gui.star_row_icon.render(xx, y, bg)
-			elif rat - 1 == ss * 2:
+			elif display_rat - 1 == ss * 2:
 				self.gui.star_row_icon.render(xx, y, bg)
 				self.gui.star_half_row_icon.render(xx, y, fg)
 			else:
@@ -17634,68 +17645,21 @@ class Tauon:
 
 					star_x += 6 * self.gui.scale
 
-			if self.gui.show_ratings:
+			show_rating_stars = self.gui.show_ratings or self.prefs.rating_playtime_stars
+			if show_rating_stars:
 				sx = round(width + start_x - round(40 * self.gui.scale) - offset_font_extra)
 				sy = round(ry + (self.gui.playlist_row_height // 2) - round(7 * self.gui.scale))
 				sx -= round(68 * self.gui.scale)
 
-				self.draw_rating_widget(sx, sy, n_track)
+				self.draw_rating_widget(
+					sx,
+					sy,
+					n_track,
+					allow_input=self.gui.show_ratings,
+					hint_only=not self.gui.show_ratings,
+				)
 
 				star_x += round(70 * self.gui.scale)
-
-			if self.gui.star_mode == "star" and total > 0 and self.pctl.master_library[index].length != 0:
-				sx = width + start_x - 40 * self.gui.scale - offset_font_extra
-				sy = ry + (self.gui.playlist_row_height // 2) - (6 * self.gui.scale)
-				# if self.gui.scale == 1.25:
-				# 	sy += 1
-				playtime_stars = star_count(total, self.pctl.master_library[index].length) - 1
-
-				sx2 = sx
-				selected_star = -2
-				rated_star = -1
-
-				# if self.inp.key_ctrl_down:
-
-				c = 60
-				d = 6
-
-				colour = ColourRGBA(70, 70, 70, 255)
-				if self.colours.lm:
-					colour = ColourRGBA(90, 90, 90, 255)
-				# colour = alpha_mod(indexc, album_fade)
-
-				for count in range(8):
-					if selected_star < count and playtime_stars < count and rated_star < count:
-						break
-
-					if count == 0:
-						sx -= round(13 * self.gui.scale)
-						star_x += round(13 * self.gui.scale)
-					elif playtime_stars > 3:
-						dd = round((13 - (playtime_stars - 3)) * self.gui.scale)
-						sx -= dd
-						star_x += dd
-					else:
-						sx -= round(13 * self.gui.scale)
-						star_x += round(13 * self.gui.scale)
-
-					# if playtime_stars > 4:
-					# 	colour = ColourRGBA(c + d * count, c + d * count, c + d * count, 255)
-					# if playtime_stars > 6: # and count < 1:
-					# 	colour = ColourRGBA(230, 220, 60, 255)
-					if self.gui.tracklist_bg_is_light:
-						colour = alpha_blend(ColourRGBA(0, 0, 0, 200), self.ddt.text_background_colour)
-					else:
-						colour = alpha_blend(ColourRGBA(255, 255, 255, 50), self.ddt.text_background_colour)
-
-					# if selected_star > -2:
-					# 	if selected_star >= count:
-					# 		colour = ColourRGBA(220, 200, 60, 255)
-					# else:
-					# 	if rated_star >= count:
-					# 		colour = ColourRGBA(220, 200, 60, 255)
-
-					self.gui.star_pc_icon.render(sx, sy, colour)
 
 			if self.gui.show_hearts:
 				xxx = star_x
@@ -17977,7 +17941,7 @@ class Tauon:
 			self.prefs.album_mode,
 			None,  # gui.album_playlist_width
 			prefs.transcode_opus_as,
-			gui.star_mode,
+			gui.star_mode if gui.star_mode == "line" else "none",
 			prefs.prefer_side,  # gui.rsp,
 			gui.lsp,
 			gui.rspw,
@@ -18638,26 +18602,20 @@ class Tauon:
 			self.gui.star_mode = "none"
 		else:
 			self.gui.star_mode = "line"
-
-		self.gui.show_ratings = False
+			self.gui.show_ratings = False
+			self.prefs.rating_playtime_stars = False
 
 		self.gui.update += 1
 		self.gui.pl_update = 1
 		return None
 
 	def star_toggle(self, mode: int = 0) -> bool | None:
-		if self.gui.show_ratings:
-			if mode == 1:
-				return self.prefs.rating_playtime_stars
-			self.prefs.rating_playtime_stars ^= True
-		else:
-			if mode == 1:
-				return self.gui.star_mode == "star"
+		if mode == 1:
+			return self.prefs.rating_playtime_stars
 
-			if self.gui.star_mode == "star":
-				self.gui.star_mode = "none"
-			else:
-				self.gui.star_mode = "star"
+		self.prefs.rating_playtime_stars ^= True
+		if self.prefs.rating_playtime_stars or self.gui.star_mode == "star":
+			self.gui.star_mode = "none"
 
 		# self.gui.show_ratings = False
 		self.gui.update += 1
@@ -28314,7 +28272,7 @@ class Over:
 		y += chip_h + chip_gap
 
 		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.album_rating_toggle, _("Album ratings"), accent=accent, show_active_bar=False)
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.star_toggle, _("Playtime stars"), accent=accent, show_active_bar=False)
+		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.star_toggle, _("Star hints"), accent=accent, show_active_bar=False)
 		y += chip_h + chip_gap
 
 		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.star_line_toggle, _("Playcount lines"), accent=accent, show_active_bar=False)
@@ -33452,38 +33410,18 @@ class StandardPlaylist:
 						total = self.star_store.get_by_object(n_track)
 
 						if total > 0 and n_track.length != 0 and wid > 0:
-							if gui.star_mode == "star":
-								star = star_count(total, n_track.length) - 1
-								rr = 0
-								if star > -1:
-									if gui.tracklist_bg_is_light:
-										colour = alpha_blend(ColourRGBA(0, 0, 0, 200), ddt.text_background_colour)
-									else:
-										colour = alpha_blend(ColourRGBA(255, 255, 255, 50), ddt.text_background_colour)
+							ratio = total / n_track.length
+							if ratio > 0.55:
+								star_x = int(ratio * (4 * gui.scale))
+								star_x = min(star_x, wid)
 
-									sx = run + 6 * gui.scale
-									sy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
-									for count in range(8):
-										if star < count or rr > wid + round(6 * gui.scale):
-											break
-										gui.star_pc_icon.render(sx, sy, colour)
-										sx += round(13) * gui.scale
-										rr += round(13) * gui.scale
+								colour = colours.star_line
+								if playing and colours.star_line_playing is not None:
+									colour = colours.star_line_playing
 
-							else:
-
-								ratio = total / n_track.length
-								if ratio > 0.55:
-									star_x = int(ratio * (4 * gui.scale))
-									star_x = min(star_x, wid)
-
-									colour = colours.star_line
-									if playing and colours.star_line_playing is not None:
-										colour = colours.star_line_playing
-
-									sy = (gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels) + int(
-										gui.playlist_row_height / 2)
-									ddt.rect((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colour)
+								sy = (gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels) + int(
+									gui.playlist_row_height / 2)
+								ddt.rect((run + 4 * gui.scale, sy, star_x, 1 * gui.scale), colour)
 					else:
 						text = ""
 						font = gui.row_font_size
@@ -43179,7 +43117,7 @@ def load_prefs(bag: Bag) -> None:
 		"Include album name in track change notifications")
 	prefs.rating_playtime_stars = cf.sync_add(
 		"bool", "show-rating-hint", prefs.rating_playtime_stars,
-		"Indicate playtime in rating stars")
+		"Show playtime hint in stars")
 
 	prefs.drag_to_unpin = cf.sync_add(
 		"bool", "drag-tab-to-unpin", prefs.drag_to_unpin,
@@ -46050,6 +45988,9 @@ def main(holder: Holder) -> None:
 				prefs.transcode_opus_as = save[68]
 			if len(save) > 69 and save[69] is not None:
 				gui.star_mode = save[69]
+				if gui.star_mode == "star":
+					gui.star_mode = "none"
+					prefs.rating_playtime_stars = True
 			if len(save) > 70 and save[70] is not None:
 				gui.rsp = save[70]
 			if len(save) > 71 and save[71] is not None:
