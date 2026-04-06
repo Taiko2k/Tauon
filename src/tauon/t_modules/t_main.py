@@ -17937,7 +17937,7 @@ class Tauon:
 			prefs.enable_web,
 			prefs.allow_remote,
 			prefs.expose_web,
-			prefs.enable_transcode,
+			None,  # prefs.enable_transcode, legacy slot kept for state.p compatibility
 			prefs.show_rym,
 			None,  # was combo mode art size
 			gui.maximized,
@@ -18351,12 +18351,6 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.show_gimage
 		self.prefs.show_gimage ^= True
-		return None
-
-	def toggle_transcode(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.enable_transcode
-		self.prefs.enable_transcode ^= True
 		return None
 
 	def toggle_chromecast(self, mode: int = 0) -> bool | None:
@@ -26197,7 +26191,6 @@ class Over:
 				(tauon.toggle_rym, _("Sonemic artist search")),
 				(tauon.toggle_band, _("Bandcamp artist page search")),
 				(tauon.toggle_gen, _("Genius track search")),
-				(tauon.toggle_transcode, _("Transcode folder")),
 			):
 				self.settings_switch_row((x, y, w, small_row_h), callback, title, accent=accent)
 				y += small_row_h + row_gap
@@ -45979,8 +45972,7 @@ def main(holder: Holder) -> None:
 				prefs.allow_remote = save[27]
 			if len(save) > 28 and save[28] is not None:
 				prefs.expose_web = save[28]
-			if len(save) > 29 and save[29] is not None:
-				prefs.enable_transcode = save[29]
+			# save[29] stored prefs.enable_transcode in older versions; transcode folder is now always shown
 			if len(save) > 30 and save[30] is not None:
 				prefs.show_rym = save[30]
 			# if len(save) > 31 and save[31] is not None:
@@ -47250,10 +47242,8 @@ def main(holder: Holder) -> None:
 	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.menu_reload_metadata, pass_ref=True))
 	folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
 	folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
-	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
-		show_test=tauon.toggle_transcode))
-	gallery_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
-		show_test=tauon.toggle_transcode))
+	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
+	gallery_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 	folder_menu.br()
 
 	# Copy album title text to clipboard
@@ -47323,8 +47313,7 @@ def main(holder: Holder) -> None:
 	# track_menu.add_to_sub(1, MenuItem(_("Get Recommended"), tauon.get_spot_recs_track, pass_ref=True, icon=spot_icon))
 
 	track_menu.br()
-	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon,
-		show_test=tauon.toggle_transcode))
+	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 
 
 	# Create top menu

@@ -43,7 +43,6 @@ class Prefs:
 	allow_remote: bool = False
 	expose_web:   bool = True
 
-	enable_transcode:    bool = True
 	show_rym:            bool = False
 	show_band:           bool = False
 	show_wiki:           bool = False
