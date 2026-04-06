@@ -27952,105 +27952,41 @@ class Over:
 			self.ani_cred = 1
 			self.ani_fade_on_timer.set()
 
-	def topchart(self, x0: int, y0: int, w0: int, h0: int, show_return: bool = True) -> None:
-		x = x0 + round(25 * self.gui.scale)
-		y = y0 + 20 * self.gui.scale
+	def topchart(
+		self,
+		x0: int,
+		y0: int,
+		w0: int,
+		h0: int,
+		show_return: bool = True,
+		accent: ColourRGBA | None = None,
+	) -> None:
+		gui = self.gui
+		prefs = self.prefs
+		colours = self.colours
 
-		self.ddt.text_background_colour = self.colours.box_background
+		if accent is None:
+			accent = self.settings_tab_accent(12)
 
-		self.ddt.text((x, y), _("Chart Grid Generator"), self.colours.box_text, 214)
+		self.ddt.text_background_colour = colours.box_background
 
-		y += 25 * self.gui.scale
-		ww = self.ddt.text((x, y), _("Target playlist:   "), self.colours.box_sub_text, 312)
-		self.ddt.text(
-			(x + ww, y), self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title, self.colours.box_text_label, 12,
-			400 * self.gui.scale)
-		# x -= 210 * self.gui.scale
+		def set_chart_mode(cascade: bool) -> None:
+			prefs.chart_cascade = cascade
+			self.gui.update_layout = True
 
-		y += 30 * self.gui.scale
-
-		if self.prefs.chart_cascade:
-			if self.prefs.chart_d1:
-				self.prefs.chart_c1 = self.slide_control(x, y, _("Level 1"), "", self.prefs.chart_c1, 2, 20, 1, width=35)
-			y += 22 * self.gui.scale
-			if self.prefs.chart_d2:
-				self.prefs.chart_c2 = self.slide_control(x, y, _("Level 2"), "", self.prefs.chart_c2, 2, 20, 1, width=35)
-			y += 22 * self.gui.scale
-			if self.prefs.chart_d3:
-				self.prefs.chart_c3 = self.slide_control(x, y, _("Level 3"), "", self.prefs.chart_c3, 2, 20, 1, width=35)
-
-			y -= 44 * self.gui.scale
-			x += 133 * self.gui.scale
-			self.prefs.chart_d1 = self.slide_control(x, y, _("by"), "", self.prefs.chart_d1, 0, 10, 1, width=35)
-			y += 22 * self.gui.scale
-			self.prefs.chart_d2 = self.slide_control(x, y, _("by"), "", self.prefs.chart_d2, 0, 10, 1, width=35)
-			y += 22 * self.gui.scale
-			self.prefs.chart_d3 = self.slide_control(x, y, _("by"), "", self.prefs.chart_d3, 0, 10, 1, width=35)
-			x -= 133 * self.gui.scale
-		else:
-			self.prefs.chart_rows = self.slide_control(x, y, _("Rows"), "", self.prefs.chart_rows, 1, 100, 1, width=35)
-			y += 22 * self.gui.scale
-			self.prefs.chart_columns = self.slide_control(x, y, _("Columns"), "", self.prefs.chart_columns, 1, 100, 1, width=35)
-			y += 22 * self.gui.scale
-
-		y += 35 * self.gui.scale
-		x += 5 * self.gui.scale
-
-		self.prefs.chart_cascade = self.toggle_square(x, y, self.prefs.chart_cascade, _("Cascade style"))
-		y += 25 * self.gui.scale
-		self.prefs.chart_tile = self.toggle_square(x, y, self.prefs.chart_tile ^ True, _("Use padding")) ^ True
-
-		y -= 25 * self.gui.scale
-		x += 170 * self.gui.scale
-
-		self.prefs.chart_text = self.toggle_square(x, y, self.prefs.chart_text, _("Include album titles"))
-		y += 25 * self.gui.scale
-		self.prefs.topchart_sorts_played = self.toggle_square(x, y, self.prefs.topchart_sorts_played, _("Sort by top played"))
-
-		x = x0 + 15 * self.gui.scale + 320 * self.gui.scale
-		y = y0 + 100 * self.gui.scale
-
-		# . Limited width. Max 13 chars
-		if self.button(x, y, _("Randomise BG")):
-
+		def randomise_bg() -> None:
 			r = round(random.random() * 40)
 			g = round(random.random() * 40)
 			b = round(random.random() * 40)
-
-			self.prefs.chart_bg = [r, g, b]
-
-			d = random.randrange(0, 4)
-
-			if d == 1:
+			prefs.chart_bg = [r, g, b]
+			if random.randrange(0, 4) == 1:
 				c = 5 + round(random.random() * 20)
-				self.prefs.chart_bg = [c, c, c]
+				prefs.chart_bg = [c, c, c]
 
-		x += 100 * self.gui.scale
-		y -= 20 * self.gui.scale
-
-		display_colour = ColourRGBA(self.prefs.chart_bg[0], self.prefs.chart_bg[1], self.prefs.chart_bg[2], 255)
-
-		rect = (x, y, 70 * self.gui.scale, 70 * self.gui.scale)
-		self.ddt.rect(rect, display_colour)
-
-		self.ddt.rect_s(rect, ColourRGBA(50, 50, 50, 255), round(1 * self.gui.scale))
-
-		# x = self.box_x + self.item_x_offset + 200 * self.gui.scale
-		# y = self.box_y + 180 * self.gui.scale
-
-		x = x0 + 260 * self.gui.scale
-		y = y0 + 180 * self.gui.scale
-
-		dex = self.tauon.reload_albums(quiet=True, return_playlist=self.pctl.active_playlist_viewing)
-
-		x = x0 + round(110 * self.gui.scale)
-		y = y0 + 240 * self.gui.scale
-
-		# . Limited width. Max 9 chars
-		if self.button(x, y, _("Generate"), width=80 * self.gui.scale):
+		def start_generate() -> None:
 			if self.gui.generating_chart:
 				self.show_message(_("Be patient!"))
-			elif not self.prefs.chart_font:
+			elif not prefs.chart_font:
 				self.show_message(_("No font set in config"), mode="error")
 			else:
 				shoot = threading.Thread(target=self.tauon.gen_chart)
@@ -28058,29 +27994,171 @@ class Over:
 				shoot.start()
 				self.gui.generating_chart = True
 
-		x += round(95 * self.gui.scale)
-		if self.gui.generating_chart:
-			self.ddt.text((x, y + round(1 * self.gui.scale)), _("Generating..."), self.colours.box_text_label, 12)
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			(x0, y0, w0, h0),
+			_("Grid generator"),
+			_("Build an album grid from the current playlist."),
+			accent,
+		)
+
+		row_gap = round(8 * gui.scale)
+		column_gap = round(10 * gui.scale)
+		tile_h = round(46 * gui.scale)
+		row_h = round(30 * gui.scale)
+		action_h = round(36 * gui.scale)
+		info_h = round(44 * gui.scale)
+
+		dex = self.tauon.reload_albums(quiet=True, return_playlist=self.pctl.active_playlist_viewing)
+		count = prefs.chart_rows * prefs.chart_columns
+		if prefs.chart_cascade:
+			count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
+
+		info_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), colours.box_background)
+		info_border = alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
+		info_rect = (inner_x, inner_y, inner_w, info_h)
+		self.ddt.bordered_rect(info_rect, info_fill, info_border, round(1 * gui.scale))
+		text_x = info_rect[0] + round(14 * gui.scale)
+		text_y = info_rect[1] + round(8 * gui.scale)
+		self.ddt.text((text_x, text_y), _("Target playlist"), colours.box_text_label, 11, bg=info_fill)
+		self.ddt.text(
+			(text_x, text_y + round(15 * gui.scale)),
+			self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title,
+			colours.box_text,
+			13,
+			bg=info_fill,
+			max_w=info_rect[2] - round(120 * gui.scale),
+		)
+		self.ddt.text(
+			(info_rect[0] + info_rect[2] - round(14 * gui.scale), text_y + round(15 * gui.scale), 1),
+			_("{N} albums").format(N=str(len(dex))),
+			colours.box_sub_text,
+			12,
+			bg=info_fill,
+		)
+		inner_y += info_h + row_gap
+
+		left_w = max(round(250 * gui.scale), min(round(inner_w * 0.52), inner_w - round(200 * gui.scale)))
+		right_w = inner_w - left_w - column_gap
+		left_x = inner_x
+		right_x = inner_x + left_w + column_gap
+		mode_w = (left_w - column_gap) // 2
+		right_y = inner_y
+
+		self.settings_choice_tile(
+			(left_x, inner_y, mode_w, tile_h),
+			_("Grid"),
+			_("Rows and columns"),
+			not prefs.chart_cascade,
+			callback=lambda: set_chart_mode(False),
+			accent=accent,
+			show_active_bar=False,
+		)
+		self.settings_choice_tile(
+			(left_x + mode_w + column_gap, inner_y, mode_w, tile_h),
+			_("Cascade"),
+			_("Stacked groups"),
+			prefs.chart_cascade,
+			callback=lambda: set_chart_mode(True),
+			accent=accent,
+			show_active_bar=False,
+		)
+		inner_y += tile_h + row_gap
+
+		if prefs.chart_cascade:
+			step_w = (left_w - column_gap) // 2
+			for level_name, count_key, by_key in (
+				(_("Level 1"), "chart_c1", "chart_d1"),
+				(_("Level 2"), "chart_c2", "chart_d2"),
+				(_("Level 3"), "chart_c3", "chart_d3"),
+			):
+				count_value = int(getattr(prefs, count_key))
+				count_value = int(self.settings_stepper_row((left_x, inner_y, step_w, row_h), level_name, count_value, 2, 20, accent=accent))
+				setattr(prefs, count_key, count_value)
+
+				by_value = int(getattr(prefs, by_key))
+				by_value = int(self.settings_stepper_row((left_x + step_w + column_gap, inner_y, step_w, row_h), _("By"), by_value, 0, 10, accent=accent))
+				setattr(prefs, by_key, by_value)
+				inner_y += row_h + row_gap
 		else:
-			count = self.prefs.chart_rows * self.prefs.chart_columns
-			if self.prefs.chart_cascade:
-				count = self.prefs.chart_c1 * self.prefs.chart_d1 + self.prefs.chart_c2 * self.prefs.chart_d2 + self.prefs.chart_c3 * self.prefs.chart_d3
+			prefs.chart_rows = int(self.settings_stepper_row((left_x, inner_y, left_w, row_h), _("Rows"), int(prefs.chart_rows), 1, 100, accent=accent))
+			inner_y += row_h + row_gap
+			prefs.chart_columns = int(self.settings_stepper_row((left_x, inner_y, left_w, row_h), _("Columns"), int(prefs.chart_columns), 1, 100, accent=accent))
+			inner_y += row_h + row_gap
 
-			line = _("{N} Album chart").format(N=str(count))
+		swatch_w = max(round(108 * gui.scale), right_w - round(126 * gui.scale))
+		random_w = right_w - swatch_w - column_gap
+		swatch_rect = (right_x, right_y, swatch_w, tile_h)
+		self.ddt.bordered_rect(swatch_rect, info_fill, info_border, round(1 * gui.scale))
+		self.ddt.text((swatch_rect[0] + round(12 * gui.scale), swatch_rect[1] + round(8 * gui.scale)), _("Background"), colours.box_text_label, 11, bg=info_fill)
+		display_colour = ColourRGBA(prefs.chart_bg[0], prefs.chart_bg[1], prefs.chart_bg[2], 255)
+		preview_rect = (swatch_rect[0] + round(12 * gui.scale), swatch_rect[1] + round(25 * gui.scale), round(34 * gui.scale), round(12 * gui.scale))
+		self.ddt.rect(preview_rect, display_colour)
+		self.ddt.rect_s(preview_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), colours.box_text_border), round(1 * gui.scale))
+		self.ddt.text(
+			(preview_rect[0] + preview_rect[2] + round(10 * gui.scale), swatch_rect[1] + round(22 * gui.scale)),
+			f"{prefs.chart_bg[0]}, {prefs.chart_bg[1]}, {prefs.chart_bg[2]}",
+			colours.box_sub_text,
+			11,
+			bg=info_fill,
+			max_w=swatch_rect[2] - preview_rect[2] - round(34 * gui.scale),
+		)
+		self.settings_action_tile((right_x + swatch_w + column_gap, right_y, random_w, tile_h), _("Randomize"), randomise_bg, accent)
+		right_y += tile_h + row_gap
 
-			ww = self.ddt.text((x, y + round(1 * self.gui.scale)), line, self.colours.box_text_label, 12)
+		use_padding = not prefs.chart_tile
+		new_padding = self.settings_switch_row((right_x, right_y, right_w, row_h), use_padding, _("Use padding"), accent=accent)
+		if new_padding != use_padding:
+			prefs.chart_tile = not new_padding
+		right_y += row_h + row_gap
 
-			if len(dex) < count:
+		prefs.chart_text = self.settings_switch_row((right_x, right_y, right_w, row_h), prefs.chart_text, _("Include album titles"), accent=accent)
+		right_y += row_h + row_gap
+		prefs.topchart_sorts_played = self.settings_switch_row((right_x, right_y, right_w, row_h), prefs.topchart_sorts_played, _("Sort by top played"), accent=accent)
+
+		bottom_y = max(inner_y, right_y + row_h) + row_gap
+		generate_w = round(136 * gui.scale)
+		return_w = round(98 * gui.scale) if show_return else 0
+		status_x = inner_x
+		if show_return:
+			if self.settings_action_tile((inner_x, bottom_y, return_w, action_h), _("Return"), None, accent):
+				self.chart_view = 0
+			status_x += return_w + column_gap
+
+		self.settings_action_tile((status_x, bottom_y, generate_w, action_h), _("Generate"), start_generate, accent, emphasis=True)
+		status_x += generate_w + column_gap
+		status_w = inner_x + inner_w - status_x
+
+		if status_w > round(120 * gui.scale):
+			status_rect = (status_x, bottom_y, status_w, action_h)
+			self.ddt.bordered_rect(status_rect, info_fill, info_border, round(1 * gui.scale))
+			line_y = status_rect[1] + round(8 * gui.scale)
+			if self.gui.generating_chart:
+				self.ddt.text((status_rect[0] + round(12 * gui.scale), line_y), _("Generating..."), colours.box_text, 12, bg=info_fill)
+				self.ddt.text((status_rect[0] + round(12 * gui.scale), line_y + round(14 * gui.scale)), _("Please wait."), colours.box_text_label, 11, bg=info_fill)
+			else:
 				self.ddt.text(
-					(x + ww + round(10 * self.gui.scale), y + 1 * self.gui.scale), _("Not enough albums in the playlist!"),
-					ColourRGBA(255, 120, 125, 255), 12)
-
-		x = x0 + round(20 * self.gui.scale)
-		y = y0 + 240 * self.gui.scale
-
-		# . Limited width. Max 8 chars
-		if show_return and self.button(x, y, _("Return"), width=75 * self.gui.scale):
-			self.chart_view = 0
+					(status_rect[0] + round(12 * gui.scale), line_y),
+					_("{N} Album chart").format(N=str(count)),
+					colours.box_text,
+					12,
+					bg=info_fill,
+				)
+				if len(dex) < count:
+					self.ddt.text(
+						(status_rect[0] + round(12 * gui.scale), line_y + round(14 * gui.scale)),
+						_("Not enough albums in the playlist!"),
+						ColourRGBA(255, 120, 125, 255),
+						11,
+						bg=info_fill,
+					)
+				else:
+					self.ddt.text(
+						(status_rect[0] + round(12 * gui.scale), line_y + round(14 * gui.scale)),
+						_("Ready"),
+						colours.box_text_label,
+						11,
+						bg=info_fill,
+					)
 
 	def stats(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		tauon   = self.tauon
@@ -29121,7 +29199,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		row1_h = round(154 * gui.scale)
 		row2_h = round(96 * gui.scale)
-		row3_h = round(314 * gui.scale)
+		row3_h = round(322 * gui.scale)
 		if self.stats_pl != pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int or self.stats_pl_timer.get() > 5:
 			self.stats_pl = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 			self.stats_pl_timer.set()
@@ -29255,7 +29333,7 @@ class Over:
 				logging.exception("Error draw ext bar")
 
 		row3_y = row2_y + row2_h + column_gap
-		self.topchart(x, row3_y, w, row3_h, show_return=False)
+		self.topchart(x, row3_y, w, row3_h, show_return=False, accent=accent)
 		return row1_h + row2_h + row3_h + column_gap * 2
 
 	def render_settings_about_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
