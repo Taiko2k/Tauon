@@ -2605,18 +2605,21 @@ class PlayerCtl:
 		line = ""
 		track = self.playing_object()
 		if track:
-				title = track.title or ""
-				artist = track.artist or ""
+			title = track.title
+			artist = track.artist
 
-				# If both empty, prefer tag/meta or filename
-				if not title and not artist:
-					if self.playing_state == PlayingState.URL_STREAM:
-						return self.tag_meta
-					return clean_string(track.filename)
+			if not title:
+				line = clean_string(track.filename)
+			else:
 				if artist:
+					line += artist
+				if title:
 					if line:
 						line += "  -  "
-					line += artist
+					line += title
+
+			if self.playing_state == PlayingState.URL_STREAM and not title and not artist:
+				return self.tag_meta
 
 		return line
 
@@ -12143,178 +12146,154 @@ class Tauon:
 
 		return None
 
-	def clean_track_title(self, title: str | None) -> str:
-		if not title:
-			return ""
-
-		cleaned = title.strip()
-		cleaned = re.sub(r"[\(\[\{].*?[\)\]\}]", "", cleaned)
-		cleaned = re.split(r"\s*(?:ft\.?|feat\.?|featuring|with)\b", cleaned, flags=re.I)[0]
-		if " - " in cleaned:
-			left, right = cleaned.split(" - ", 1)
-			if re.search(r"(?i)(remix|mix|version|edit|remaster|remastered|live|acoustic|instrumental|single|radio|bonus)", right):
-				cleaned = left
-		cleaned = cleaned.strip()
-		cleaned = re.sub(r"[-–—:;]+$", "", cleaned).strip()
-		return cleaned or title.strip()
-
 	def discord_loop(self) -> None:
+		self.prefs.discord_active = True
+
 		try:
-			from tauon.t_modules.t_discord import discord_loop_entrypoint
+			if not self.pctl.playing_ready():
+				return
+			asyncio.set_event_loop(asyncio.new_event_loop())
+
+			# logging.info("Attempting to connect to Discord...")
+			client_id = "954253873160286278"
+			RPC = Presence(client_id)
+			RPC.connect()
+
+			logging.info("Discord RPC connection successful.")
+			time.sleep(1)
+			start_time = time.time()
+			idle_time = Timer()
+
+			state = 0
+			index = -1
+			br = False
+			self.gui.discord_status = "Connected"
+			self.gui.update += 1
+			current_state = 0
+
+			while True:
+				while True:
+
+					current_index = self.pctl.playing_object().index
+					if self.pctl.playing_state == PlayingState.URL_STREAM:
+						current_index = self.radiobox.song_key
+
+					if current_state == 0 and self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+						current_state = 1
+					elif current_state == 1 and self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+						current_state = 0
+						idle_time.set()
+
+					if state != current_state or index != current_index:
+						if self.pctl.a_time > 4 or current_state != 1:
+							state = current_state
+							index = current_index
+							break
+					if abs(start_time - (time.time() - self.pctl.playing_time)) > 1:
+						start_time = time.time() - self.pctl.playing_time
+					else:
+						break
+
+					if current_state == 0 and idle_time.get() > 13:
+						logging.info("Pause discord RPC...")
+						self.gui.discord_status = "Idle"
+						RPC.clear(self.pid)
+						# RPC.close()
+
+						while True:
+							if self.prefs.disconnect_discord:
+								break
+							if self.pctl.playing_state == PlayingState.PLAYING:
+								logging.info("Reconnect discord...")
+								RPC.connect()
+								self.gui.discord_status = "Connected"
+								break
+							time.sleep(1)
+
+						if not self.prefs.disconnect_discord:
+							continue
+
+					time.sleep(1)
+
+					if self.prefs.disconnect_discord:
+						RPC.clear(self.pid)
+						RPC.close()
+						self.prefs.disconnect_discord = False
+						self.gui.discord_status = "Not connected"
+						br = True
+						break
+
+				if br:
+					break
+
+				title = _("Unknown Track")
+				tr = self.pctl.playing_object()
+				if tr.artist and tr.title and self.pctl.playing_state == PlayingState.URL_STREAM:
+					title = tr.title + " | " + tr.artist
+				else:
+					title = tr.title
+				if len(title) > 150:
+					title = _("Unknown Track")
+
+				artist = tr.artist or _("Unknown Artist")
+
+				if self.pctl.playing_state == PlayingState.URL_STREAM and tr.album:
+					album = self.radiobox.loaded_station["title"]
+				else:
+					album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
+
+				if album and len(album) == 1:
+					album += " "
+
+				if state == 1:
+					#logging.info("PLAYING: " + title)
+					#logging.info(start_time)
+					url = self.get_album_art_url(self.pctl.playing_object())
+
+					large_image = "tauon-standard"
+					small_image = None
+					if url:
+						large_image = url
+						small_image = "tauon-standard"
+					RPC.update(
+						activity_type = ActivityType.LISTENING,
+						status_display_type = StatusDisplayType.STATE,
+						pid=self.pid,
+						**({"state": artist} if self.pctl.playing_state != PlayingState.URL_STREAM else {"state": album}),
+						details=title,
+						start=int(start_time),
+						**({"end": int(start_time + tr.length)} if self.pctl.playing_state != PlayingState.URL_STREAM else {}),
+						**({"large_text": album} if album and self.pctl.playing_state != PlayingState.URL_STREAM else {}),
+						large_image=large_image,
+						small_image=small_image)
+
+				else:
+					#logging.info("Discord RPC - Stop")
+					RPC.update(
+						activity_type = ActivityType.LISTENING,
+						pid=self.pid,
+						state="Idle",
+						large_image="tauon-standard")
+
+				time.sleep(2)
+
+				if self.prefs.disconnect_discord:
+					RPC.clear(self.pid)
+					RPC.close()
+					self.prefs.disconnect_discord = False
+					break
+
 		except Exception:
-			logging.exception("Failed to import Discord module")
-			return
+			logging.exception("Error connecting to Discord - is Discord running?")
+			# self.show_message(_("Error connecting to Discord", mode='error')
+			self.gui.discord_status = _("Error - Discord not running?")
+			self.prefs.disconnect_discord = False
 
-		discord_loop_entrypoint(self)
-
-	# def discord_loop(self) -> None:
-	# 	self.prefs.discord_active = True
-
-	# 	try:
-	# 		if not self.pctl.playing_ready():
-	# 			return
-	# 		asyncio.set_event_loop(asyncio.new_event_loop())
-
-	# 		# logging.info("Attempting to connect to Discord...")
-	# 		client_id = "954253873160286278"
-	# 		RPC = Presence(client_id)
-	# 		RPC.connect()
-
-	# 		logging.info("Discord RPC connection successful.")
-	# 		time.sleep(1)
-	# 		start_time = time.time()
-	# 		idle_time = Timer()
-
-	# 		state = 0
-	# 		index = -1
-	# 		br = False
-	# 		self.gui.discord_status = "Connected"
-	# 		self.gui.update += 1
-	# 		current_state = 0
-
-	# 		while True:
-	# 			while True:
-
-	# 				current_index = self.pctl.playing_object().index
-	# 				if self.pctl.playing_state == PlayingState.URL_STREAM:
-	# 					current_index = self.radiobox.song_key
-
-	# 				if current_state == 0 and self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-	# 					current_state = 1
-	# 				elif current_state == 1 and self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-	# 					current_state = 0
-	# 					idle_time.set()
-
-	# 				if state != current_state or index != current_index:
-	# 					if self.pctl.a_time > 4 or current_state != 1:
-	# 						state = current_state
-	# 						index = current_index
-	# 						break
-	# 				if abs(start_time - (time.time() - self.pctl.playing_time)) > 1:
-	# 					start_time = time.time() - self.pctl.playing_time
-	# 				else:
-	# 					break
-
-	# 				if current_state == 0 and idle_time.get() > 13:
-	# 					logging.info("Pause discord RPC...")
-	# 					self.gui.discord_status = "Idle"
-	# 					RPC.clear(self.pid)
-	# 					# RPC.close()
-
-	# 					while True:
-	# 						if self.prefs.disconnect_discord:
-	# 							break
-	# 						if self.pctl.playing_state == PlayingState.PLAYING:
-	# 							logging.info("Reconnect discord...")
-	# 							RPC.connect()
-	# 							self.gui.discord_status = "Connected"
-	# 							break
-	# 						time.sleep(1)
-
-	# 					if not self.prefs.disconnect_discord:
-	# 						continue
-
-	# 				time.sleep(1)
-
-	# 				if self.prefs.disconnect_discord:
-	# 					RPC.clear(self.pid)
-	# 					RPC.close()
-	# 					self.prefs.disconnect_discord = False
-	# 					self.gui.discord_status = "Not connected"
-	# 					br = True
-	# 					break
-
-	# 			if br:
-	# 				break
-
-	# 			title = _("Unknown Track")
-	# 			tr = self.pctl.playing_object()
-	# 			if tr.artist and tr.title and self.pctl.playing_state == PlayingState.URL_STREAM:
-	# 				title = tr.title + " | " + tr.artist
-	# 			else:
-	# 				title = tr.title
-	# 			if len(title) > 150:
-	# 				title = _("Unknown Track")
-
-	# 			artist = tr.artist or _("Unknown Artist")
-
-	# 			if self.pctl.playing_state == PlayingState.URL_STREAM and tr.album:
-	# 				album = self.radiobox.loaded_station["title"]
-	# 			else:
-	# 				album = None if tr.album.lower() in (tr.title.lower(), tr.artist.lower()) else tr.album
-
-	# 			if album and len(album) == 1:
-	# 				album += " "
-
-	# 			if state == 1:
-	# 				#logging.info("PLAYING: " + title)
-	# 				#logging.info(start_time)
-	# 				url = self.get_album_art_url(self.pctl.playing_object())
-
-	# 				large_image = "tauon-standard"
-	# 				small_image = None
-	# 				if url:
-	# 					large_image = url
-	# 					small_image = "tauon-standard"
-	# 				RPC.update(
-	# 					activity_type = ActivityType.LISTENING,
-	# 					status_display_type = StatusDisplayType.STATE,
-	# 					pid=self.pid,
-	# 					**({"state": artist} if self.pctl.playing_state != PlayingState.URL_STREAM else {"state": album}),
-	# 					details=title,
-	# 					start=int(start_time),
-	# 					**({"end": int(start_time + tr.length)} if self.pctl.playing_state != PlayingState.URL_STREAM else {}),
-	# 					**({"large_text": album} if album and self.pctl.playing_state != PlayingState.URL_STREAM else {}),
-	# 					large_image=large_image,
-	# 					small_image=small_image)
-
-	# 			else:
-	# 				#logging.info("Discord RPC - Stop")
-	# 				RPC.update(
-	# 					activity_type = ActivityType.LISTENING,
-	# 					pid=self.pid,
-	# 					state="Idle",
-	# 					large_image="tauon-standard")
-
-	# 			time.sleep(2)
-
-	# 			if self.prefs.disconnect_discord:
-	# 				RPC.clear(self.pid)
-	# 				RPC.close()
-	# 				self.prefs.disconnect_discord = False
-	# 				break
-
-	# 	except Exception:
-	# 		logging.exception("Error connecting to Discord - is Discord running?")
-	# 		# self.show_message(_("Error connecting to Discord", mode='error')
-	# 		self.gui.discord_status = _("Error - Discord not running?")
-	# 		self.prefs.disconnect_discord = False
-
-	# 	finally:
-	# 		loop = asyncio.get_event_loop()
-	# 		if not loop.is_closed():
-	# 			loop.close()
-	# 		self.prefs.discord_active = False
+		finally:
+			loop = asyncio.get_event_loop()
+			if not loop.is_closed():
+				loop.close()
+			self.prefs.discord_active = False
 
 	#def open_donate_link() -> None:
 	#	webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
@@ -17368,28 +17347,10 @@ class Tauon:
 					self.prefs.auto_lyrics_checked.append(track_object.index)
 
 	def hit_discord(self) -> None:
-		if not (self.prefs.discord_enable and self.prefs.discord_allow):
-			return
-
-		if not hasattr(self, "_discord_loop_guard_lock"):
-			self._discord_loop_guard_lock = threading.Lock()
-			self._discord_loop_guard_running = False
-
-		with self._discord_loop_guard_lock:
-			if self._discord_loop_guard_running:
-				return
-			self._discord_loop_guard_running = True
-			self.prefs.discord_active = True
-
-		try:
+		if self.prefs.discord_enable and self.prefs.discord_allow and not self.prefs.discord_active:
 			discord_t = threading.Thread(target=self.discord_loop)
 			discord_t.daemon = True
 			discord_t.start()
-		except Exception:
-			with self._discord_loop_guard_lock:
-				self._discord_loop_guard_running = False
-				self.prefs.discord_active = False
-			raise
 
 	def love(self, set: bool = True, track_id: int | None = None, no_delay: bool = False, notify: bool = False, sync: bool = True) -> bool | None:
 		if track_id is None and len(self.pctl.track_queue) < 1:
@@ -24187,20 +24148,30 @@ class SearchOverlay:
 				if n in (12,):  # Spotify Track
 					yyy = yy
 					yyy += round(6 * gui.scale)
-					
-					if isinstance(item[1], (list, tuple)):
-						title_val = item[1][0]
-						artist_val = item[1][1] if len(item[1]) > 1 else None
-					else:
-						title_val = item[1]
-						artist_val = None
-
-					xx = self.ddt.text((text_lx, yyy), title_val, ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
+					xx = self.ddt.text((text_lx, yyy), item[1][0], ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
 					xx += 9 * gui.scale
 					self.ddt.text((xx + text_lx, yyy), _("BY"), ColourRGBA(250, 160, 110, int(255 * fade)), 212)
-					if artist_val:
-						xx += 8 * gui.scale
-						xx += self.ddt.text((xx + text_lx, yyy), artist_val, ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
+					xx += 25 * gui.scale
+					xx += self.ddt.text((xx + text_lx, yyy), item[1][1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
+				if n in (2, ):  # Track
+					yyy = yy
+					yyy += round(6 * gui.scale)
+					track = self.pctl.master_library[item[2]]
+					if track.artist == track.title == "":
+						text = os.path.splitext(track.filename)[0]
+						xx = self.ddt.text((text_lx, yyy + pad), text, ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
+					else:
+						xx = self.ddt.text((text_lx, yyy), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_font)
+						xx += 9 * gui.scale
+						self.ddt.text((xx + text_lx, yyy), _("BY"), ColourRGBA(250, 160, 110, int(255 * fade)), 212)
+						xx += 25 * gui.scale
+						artist = track.artist
+						xx += self.ddt.text((xx + text_lx, yyy), artist, ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
+						if track.album:
+							xx += 9 * gui.scale
+							xx += self.ddt.text((xx + text_lx, yyy), _("FROM"), ColourRGBA(120, 120, 120, int(255 * fade)), 212)
+							xx += 8 * gui.scale
+							xx += self.ddt.text((xx + text_lx, yyy), track.album, ColourRGBA(80, 80, 80, int(255 * fade)), 212)
 
 				if n in (1,):  # Two line album
 					track = self.pctl.master_library[item[2]]
@@ -25543,95 +25514,12 @@ class Over:
 
 			if old and not prefs.discord_enable and prefs.discord_active:
 				prefs.disconnect_discord = True
+
+			y += 22 * gui.scale
+			text = _("Disabled")
 			if prefs.discord_enable:
-				y += 26 * gui.scale
-				card_label = _("Song then artist") if prefs.discord_card_layout == "title_artist" else _("Artist then song")
-				ml_label = _("Song name") if prefs.discord_member_list_display == "song" else _("Artist name")
-
-				profile_text = _("Profile card: {fmt}").format(fmt=card_label)
-				try:
-					w_profile = self.ddt.get_text_w(profile_text, 11)
-				except Exception:
-					w_profile = self.ddt.get_text_w(profile_text, 11)
-				ddt.text((x, y), profile_text, colours.box_text, 11)
-				change_x_profile = x + round(w_profile + 12 * gui.scale)
-				
-				if change_x_profile < x + round(160 * gui.scale):
-					change_x_profile = x + round(160 * gui.scale)
-				if self.button(change_x_profile, y - 3 * gui.scale, _("Change"), width=round(90 * gui.scale)):
-					prefs.discord_card_layout = "artist_title" if prefs.discord_card_layout == "title_artist" else "title_artist"
-
-				
-				try:
-					mid_x = x + round(w0 / 2) - round(40 * gui.scale)
-				except NameError:
-					mid_x = x + round(260 * gui.scale)
-				mid_text = _("Member list shows: {fmt}").format(fmt=ml_label)
-				try:
-					w_mid = self.ddt.get_text_w(mid_text, 11)
-				except Exception:
-					w_mid = self.ddt.get_text_w(mid_text, 11)
-				ddt.text((mid_x, y), mid_text, colours.box_text, 11)
-				change_x_mid = mid_x + round(w_mid + 12 * gui.scale)
-				if change_x_mid < mid_x + round(140 * gui.scale):
-					change_x_mid = mid_x + round(140 * gui.scale)
-				if self.button(change_x_mid, y - 3 * gui.scale, _("Change"), width=round(90 * gui.scale)):
-					prefs.discord_member_list_display = "artist" if prefs.discord_member_list_display == "song" else "song"
-
-				first_labels = [
-					_("Clean title (remove feat/remix extras)"),
-					_("Show Track Info button"),
-				]
-				max_w = 0
-				for lbl in first_labels:
-					try:
-						w_lbl = self.ddt.get_text_w(lbl, 13)
-					except Exception:
-						w_lbl = self.ddt.get_text_w(lbl, 13)
-					if w_lbl > max_w:
-						max_w = w_lbl
-
-				
-				change_x = x + round(230 * gui.scale)
-				change_w = round(90 * gui.scale)
-				
-				min_second = change_x + change_w + round(8 * gui.scale)
-
-				
-				default_second = x + round(max_w + 24 * gui.scale)
-
-				try:
-					available_w = w0
-				except NameError:
-					available_w = round(800 * gui.scale)
-				max_allowed_second = x + max(0, (available_w - round(120 * gui.scale)))
-
-				second_col = max(default_second, min_second)
-				if second_col > max_allowed_second:
-					second_col = min_second
-
-				
-				toggle_y = y + round(24 * gui.scale)
-
-				prefs.discord_clean_title = self.toggle_square(
-					x, toggle_y, prefs.discord_clean_title, _("Clean title (remove feat/remix extras)"))
-				prefs.discord_fast_updates = self.toggle_square(
-					second_col, toggle_y, prefs.discord_fast_updates, _("Fast presence updates"))
-
-				toggle_y += 22 * gui.scale
-				prefs.discord_lastfm_button = self.toggle_square(
-					x, toggle_y, prefs.discord_lastfm_button, _("Show Track Info button"))
-				prefs.discord_show_tauon_button = self.toggle_square(
-					second_col, toggle_y, prefs.discord_show_tauon_button, _("Show Tauon button"))
-
-				
-				y = toggle_y + round(6 * gui.scale)
-
-				y += 22 * gui.scale
-				text = _("Disabled")
-				if prefs.discord_enable:
-					text = gui.discord_status
-				ddt.text((x, y), _("Status: {state}").format(state=text), colours.box_text, 11)
+				text = gui.discord_status
+			ddt.text((x, y), _("Status: {state}").format(state=text), colours.box_text, 11)
 
 			y += 38 * gui.scale
 			self.toggle_square(
@@ -41228,12 +41116,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("write-ratings-to-tag", prefs.write_ratings)
 	cf.update_value("enable-spotify", prefs.spot_mode)
 	cf.update_value("enable-discord-rpc", prefs.discord_enable)
-	cf.update_value("discord-card-layout",         prefs.discord_card_layout)
-	cf.update_value("discord-member-list-display",  prefs.discord_member_list_display)
-	cf.update_value("discord-clean-title",          prefs.discord_clean_title)
-	cf.update_value("discord-fast-updates",         prefs.discord_fast_updates)
-	cf.update_value("discord-lastfm-button",        prefs.discord_lastfm_button)
-	cf.update_value("discord-show-tauon-button",    prefs.discord_show_tauon_button)
 	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
 	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
@@ -41601,28 +41483,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.discord_enable = cf.sync_add(
 		"bool", "enable-discord-rpc", prefs.discord_enable,
 		"Show track info in running Discord application")
-	prefs.discord_presence_layout = cf.sync_add(
-		"string", "discord-presence-layout", prefs.discord_presence_layout,
-		"title_artist = Song title first, artist_title = Artist first")
-	prefs.discord_card_layout = cf.sync_add(
-		"string", "discord-card-layout", prefs.discord_card_layout,
-		"Card layout: title_artist = Song title first, artist_title = Artist first")
-	prefs.discord_clean_title = cf.sync_add(
-		"bool", "discord-clean-title", prefs.discord_clean_title,
-		"Remove feat/remix/version suffixes in Discord title")
-	prefs.discord_fast_updates = cf.sync_add(
-		"bool", "discord-fast-updates", prefs.discord_fast_updates,
-		"Use faster Discord update polling for rapid track changes")
-	prefs.discord_lastfm_button = cf.sync_add(
-		"bool", "discord-lastfm-button", prefs.discord_lastfm_button,
-		"Show Track Info button in Discord rich presence")
-	prefs.discord_show_tauon_button = cf.sync_add(
-		"bool", "discord-show-tauon-button", prefs.discord_show_tauon_button,
-		"Show Tauon website button in Discord rich presence")
-	if prefs.discord_presence_layout not in ("title_artist", "artist_title"):
-		prefs.discord_presence_layout = "title_artist"
-	if prefs.discord_card_layout not in ("title_artist", "artist_title"):
-		prefs.discord_card_layout = "title_artist"
 	prefs.auto_lyrics = cf.sync_add(
 		"bool", "auto-search-lyrics", prefs.auto_lyrics,
 		"Automatically search internet for lyrics when display is wanted")
@@ -44872,12 +44732,6 @@ def main(holder: Holder) -> None:
 		bag=bag,
 		gui=gui,
 	)
-
-	try:
-		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:
-			tauon.hit_discord()
-	except Exception:
-		logging.exception("Failed to start Discord RPC at startup")
 
 	auto_scale(bag)
 	scale_assets(tauon, bag, gui, prefs.scale_want)
