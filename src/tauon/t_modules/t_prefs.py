@@ -118,6 +118,13 @@ class Prefs:
 	discord_active:     bool = False
 	discord_ready:      bool = False
 	disconnect_discord: bool = False
+	discord_presence_layout: str = "title_artist"
+	discord_card_layout: str = "title_artist"
+	discord_member_list_display: str = "song"
+	discord_clean_title:         bool = True
+	discord_fast_updates:        bool = True
+	discord_lastfm_button:       bool = True
+	discord_show_tauon_button:   bool = True
 
 	monitor_downloads: bool = True
 	extract_to_music:  bool = False
