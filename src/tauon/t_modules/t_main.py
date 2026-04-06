@@ -13262,9 +13262,6 @@ class Tauon:
 		else:
 			prefs.art_bg_opacity = 10
 
-		if prefs.bg_showcase_only:
-			prefs.art_bg_opacity += 21
-
 		# -----
 
 		# Adjust for for compact window sizes ----
@@ -13299,10 +13296,6 @@ class Tauon:
 				self.artist_info_box.get_data(self.artist_info_box.artist_on)
 			gui.last_artist_panel_height = gui.artist_panel_height
 
-		# prefs.art_bg_blur = 9
-		# if prefs.bg_showcase_only:
-		#     prefs.art_bg_blur = 15
-		#
 		# if w / h == 16 / 9:
 		#     logging.info("YEP")
 		# elif w / h < 16 / 9:
@@ -18000,7 +17993,7 @@ class Tauon:
 			None,  # prefs.auto_sort,
 			prefs.lyrics_enables,
 			prefs.fanart_notify,
-			prefs.bg_showcase_only,
+			None,  # legacy removed background mode slot,
 			None,  # prefs.discogs_pat,
 			prefs.mini_mode_mode,
 			self.after_scan,
@@ -18528,13 +18521,6 @@ class Tauon:
 		self.prefs.art_bg_always_blur ^= True
 		self.style_overlay.flush()
 		self.thread_manager.ready("style")
-		return None
-
-	def toggle_auto_bg_showcase(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.bg_showcase_only
-		self.prefs.bg_showcase_only ^= True
-		self.gui.update_layout = True
 		return None
 
 	def toggle_notifications(self, mode: int = 0) -> bool | None:
@@ -22567,8 +22553,6 @@ class StyleOverlay:
 		if self.stage == 0:
 			if (self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
 				pass
-			elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
-				return
 
 			if self.pctl.playing_ready() and self.min_on_timer.get() > 0:
 
@@ -22675,8 +22659,6 @@ class StyleOverlay:
 
 		if self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE:
 			pass
-		elif self.prefs.bg_showcase_only and not self.gui.combo_mode:
-			return
 
 		t = self.fade_on_timer.get()
 		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
@@ -22726,12 +22708,6 @@ class StyleOverlay:
 					self.go_to_sleep = False
 					self.flush()
 					return
-
-			if self.prefs.bg_showcase_only and not (self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == GuiMode.MINI):
-				tb = sdl3.SDL_FRect(0, 0, self.window_size[0], self.gui.panelY)
-				bb = sdl3.SDL_FRect(0, self.window_size[1] - self.gui.panelBY, self.window_size[0], self.gui.panelBY)
-				self.hole_punches.append(tb)
-				self.hole_punches.append(bb)
 
 			# Center image
 			if self.window_size[0] < 900 * self.gui.scale:
@@ -24806,14 +24782,6 @@ class Over:
 
 		#y += 23 * gui.scale
 		self.toggle_square(x + 120 * gui.scale, y, self.tauon.toggle_auto_bg_blur, _("Blur"))
-
-		y += 23 * gui.scale
-		self.toggle_square(x + 10 * gui.scale, y, self.tauon.toggle_auto_bg_showcase, _("Showcase only"))
-
-		y += 23 * gui.scale
-		# prefs.center_bg = self.toggle_square(x + 10 * gui.scale, y, prefs.center_bg, _("Always center"))
-		prefs.showcase_overlay_texture = self.toggle_square(
-			x + 20 * gui.scale, y, prefs.showcase_overlay_texture, _("Pattern style"))
 
 		y += 25 * gui.scale
 
@@ -28682,15 +28650,24 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(250 * gui.scale)))
 		right_w = w - left_w - column_gap
-		rows = max(1, math.ceil(max(len(self.themes), 1) / 4))
-		grid_height = round(118 * gui.scale) + rows * round(32 * gui.scale)
-		left_rect = (x, y, left_w, max(round(292 * gui.scale), grid_height))
-		right_rect = (x + left_w + column_gap, y, right_w, max(round(292 * gui.scale), grid_height))
+		row_h = round(30 * gui.scale)
+		row_gap = round(6 * gui.scale)
+		preset_gap = round(6 * gui.scale)
+		preset_w = round(28 * gui.scale)
+		preset_h = round(16 * gui.scale)
+		right_inner_w = right_w - round(36 * gui.scale)
+		theme_count = max(len(self.themes), 1)
+		preset_columns = max(1, min(theme_count, (right_inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
+		preset_rows = max(1, math.ceil(theme_count / preset_columns))
+		preset_grid_h = preset_rows * preset_h + max(0, preset_rows - 1) * preset_gap
+		left_min_h = round(80 * gui.scale) + row_h * 5 + row_gap * 4
+		right_min_h = round(124 * gui.scale) + preset_grid_h + row_gap + row_h
+		card_h = max(left_min_h, right_min_h)
+		left_rect = (x, y, left_w, card_h)
+		right_rect = (x + left_w + column_gap, y, right_w, card_h)
 		if not draw:
 			return max(left_rect[3], right_rect[3])
 
-		row_h = round(30 * gui.scale)
-		row_gap = round(6 * gui.scale)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
 			_("Background"),
@@ -28698,8 +28675,6 @@ class Over:
 			accent,
 		)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_bg, _("Use album art as background"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_transparent_accent, _("Transparent accent"), accent=accent)
 		inner_y += row_h + row_gap
 		old_fanart = prefs.enable_fanart_bg
 		prefs.enable_fanart_bg = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.enable_fanart_bg, _("Prefer artist backgrounds"), accent=accent)
@@ -28714,10 +28689,6 @@ class Over:
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_bg_blur, _("Blur background"), accent=accent)
 		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_bg_showcase, _("Showcase only"), accent=accent)
-		inner_y += row_h + row_gap
-		prefs.showcase_overlay_texture = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.showcase_overlay_texture, _("Pattern overlay"), accent=accent)
-		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_theme, _("Auto-theme from album art"), accent=accent)
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
@@ -28726,34 +28697,42 @@ class Over:
 			gui.theme_name,
 			accent,
 		)
-		square = round(12 * gui.scale)
-		border = round(4 * gui.scale)
-		outer_border = round(2 * gui.scale)
-		cell = round(32 * gui.scale)
-		grid_x = inner_x
+		preset_columns = max(1, min(theme_count, (inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
+		preset_rows = max(1, math.ceil(theme_count / preset_columns))
+		grid_w = preset_columns * preset_w + max(0, preset_columns - 1) * preset_gap
+		grid_x = inner_x + max(0, (inner_w - grid_w) // 2)
 		grid_y = inner_y + round(4 * gui.scale)
-		columns = 4
 		for index, (theme_colours, theme_name, theme_number) in enumerate(self.themes):
-			col = index % columns
-			row = index // columns
-			cell_x = grid_x + col * cell
-			cell_y = grid_y + row * cell
-			if theme_name == gui.theme_name:
-				self.ddt.rect(
+			col = index % preset_columns
+			row = index // preset_columns
+			cell_x = grid_x + col * (preset_w + preset_gap)
+			cell_y = grid_y + row * (preset_h + preset_gap)
+			rect = (cell_x, cell_y, preset_w, preset_h)
+			hit_rect = grow_rect(rect, round(4 * gui.scale))
+			hover = self.coll(hit_rect)
+			active = theme_name == gui.theme_name
+			if active:
+				self.ddt.bordered_rect(
 					(
-						cell_x - outer_border,
-						cell_y - outer_border,
-						border * 2 + square * 2 + outer_border * 2,
-						border * 2 + square * 2 + outer_border * 2,
+						cell_x - round(2 * gui.scale),
+						cell_y - round(2 * gui.scale),
+						preset_w + round(4 * gui.scale),
+						preset_h + round(4 * gui.scale),
 					),
-					self.colours.box_text_label,
+					alpha_blend(alpha_mod(accent, 20), self.colours.box_background),
+					alpha_blend(alpha_mod(accent, 120), self.colours.box_text_border),
+					round(1 * gui.scale),
 				)
 
-			rect = (cell_x, cell_y, border * 2 + square * 2, border * 2 + square * 2)
-			self.ddt.rect(rect, ColourRGBA(5, 5, 5, 255))
-			hit_rect = grow_rect(rect, round(3 * gui.scale))
+			base_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+			if hover:
+				base_fill = alpha_blend(ColourRGBA(255, 255, 255, 10), base_fill)
+			border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			if active:
+				border = alpha_blend(alpha_mod(accent, 90), border)
+			self.ddt.bordered_rect(rect, base_fill, border, round(1 * gui.scale))
 			self.fields.add(hit_rect)
-			if self.coll(hit_rect) and self.click:
+			if hover and self.click:
 				prefs.theme = theme_number
 				gui.reload_theme = True
 
@@ -28779,10 +28758,22 @@ class Over:
 				c4 = ColourRGBA(59, 115, 109, 255)
 				c1 = c4
 
-			self.ddt.rect((cell_x + border, cell_y + border, square, square), c1)
-			self.ddt.rect((cell_x + border + square, cell_y + border, square, square), c2)
-			self.ddt.rect((cell_x + border, cell_y + border + square, square, square), c3)
-			self.ddt.rect((cell_x + border + square, cell_y + border + square, square, square), c4)
+			strip_x = cell_x + round(2 * gui.scale)
+			strip_y = cell_y + round(2 * gui.scale)
+			strip_w = preset_w - round(4 * gui.scale)
+			strip_h = preset_h - round(4 * gui.scale)
+			colours = (c1, c2, c3, c4)
+			segment_w = max(1, strip_w // len(colours))
+			for colour_index, colour_value in enumerate(colours):
+				segment_x = strip_x + colour_index * segment_w
+				if colour_index == len(colours) - 1:
+					segment_width = strip_x + strip_w - segment_x
+				else:
+					segment_width = segment_w
+				self.ddt.rect((segment_x, strip_y, segment_width, strip_h), colour_value)
+
+		toggle_y = right_rect[1] + right_rect[3] - round(14 * gui.scale) - row_h
+		self.settings_switch_row((inner_x, toggle_y, inner_w, row_h), self.tauon.toggle_transparent_accent, _("Transparent accent"), accent=accent)
 
 		return max(left_rect[3], right_rect[3])
 
@@ -39342,11 +39333,6 @@ class Showcase:
 			bfg = alpha_blend(ColourRGBA(255, 255, 255, 60), self.colours.vis_colour)
 			bft = self.colours.grey(250)
 			bbt = self.colours.grey(245)
-		elif self.prefs.art_bg and self.prefs.bg_showcase_only:
-			bbg = ColourRGBA(255, 255, 255, 18)
-			bfg = ColourRGBA(255, 255, 255, 30)
-			bft = ColourRGBA(255, 255, 255, 250)
-			bbt = ColourRGBA(255, 255, 255, 200)
 
 		if test_lumi(self.colours.lyrics_panel_background) < 0.7:
 			light_mode = True
@@ -39354,32 +39340,6 @@ class Showcase:
 			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
 
 		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.lyrics_panel_background)
-
-		if self.prefs.bg_showcase_only and self.prefs.art_bg:
-			self.tauon.style_overlay.display()
-
-			# Draw textured background
-			if not light_mode and not self.colours.lm and self.prefs.showcase_overlay_texture:
-				rect = sdl3.SDL_FRect()
-				rect.x = 0
-				rect.y = 0
-				rect.w = 300
-				rect.h = 300
-
-				xx = 0
-				yy = 0
-				while yy < self.window_size[1]:
-					xx = 0
-					while xx < self.window_size[0]:
-						rect.x = xx
-						rect.y = yy
-						sdl3.SDL_RenderTexture(self.renderer, self.tauon.overlay_texture_texture, None, rect)
-						xx += 300
-					yy += 300
-
-		if self.prefs.bg_showcase_only and self.prefs.art_bg:
-			self.ddt.alpha_bg = True
-			self.ddt.force_gray = True
 
 		# if not self.prefs.shuffle_lock:
 		# 	if draw.button(_("Return"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 40 * self.gui.scale,
@@ -39408,10 +39368,6 @@ class Showcase:
 
 			# if self.pctl.draw.button("Return", 20, self.gui.panelY + 5, bg=colours.grey(30)):
 			# 	pass
-
-			if self.prefs.bg_showcase_only and self.prefs.art_bg:
-				self.ddt.alpha_bg = True
-				self.ddt.force_gray = True
 
 			if self.gui.force_showcase_index >= 0:
 				if self.pctl.draw.button(
@@ -42353,11 +42309,6 @@ class TimedLyricsEdit:
 			bfg = alpha_blend(ColourRGBA(255, 255, 255, 60), self.colours.vis_colour)
 			bft = self.colours.grey(250)
 			bbt = self.colours.grey(245)
-		elif self.prefs.art_bg and self.prefs.bg_showcase_only:
-			bbg = ColourRGBA(255, 255, 255, 18)
-			bfg = ColourRGBA(255, 255, 255, 30)
-			bft = ColourRGBA(255, 255, 255, 250)
-			bbt = ColourRGBA(255, 255, 255, 200)
 
 		if test_lumi(self.colours.lyrics_panel_background) < 0.7:
 			light_mode = True
@@ -42365,32 +42316,6 @@ class TimedLyricsEdit:
 			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
 
 		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.lyrics_panel_background)
-
-		if self.prefs.bg_showcase_only and self.prefs.art_bg:
-			self.tauon.style_overlay.display()
-
-			# Draw textured background
-			if not light_mode and not self.colours.lm and self.prefs.showcase_overlay_texture:
-				rect = sdl3.SDL_FRect()
-				rect.x = 0
-				rect.y = 0
-				rect.w = 300
-				rect.h = 300
-
-				xx = 0
-				yy = 0
-				while yy < self.window_size[1]:
-					xx = 0
-					while xx < self.window_size[0]:
-						rect.x = xx
-						rect.y = yy
-						sdl3.SDL_RenderTexture(self.renderer, self.tauon.overlay_texture_texture, None, rect)
-						xx += 300
-					yy += 300
-
-		if self.prefs.bg_showcase_only and self.prefs.art_bg:
-			self.ddt.alpha_bg = True
-			self.ddt.force_gray = True
 
 		if self.pctl.playing_state == PlayingState.URL_STREAM and not self.tauon.radiobox.dummy_track.title:
 			if not self.pctl.tag_meta:
@@ -42409,10 +42334,6 @@ class TimedLyricsEdit:
 
 			# if self.pctl.draw.button("Return", 20, self.gui.panelY + 5, bg=colours.grey(30)):
 			# 	pass
-
-			if self.prefs.bg_showcase_only and self.prefs.art_bg:
-				self.ddt.alpha_bg = True
-				self.ddt.force_gray = True
 
 			if self.gui.force_showcase_index >= 0:
 				if self.pctl.draw.button(
@@ -42902,7 +42823,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("enable-art-header-bar", prefs.art_in_top_panel)
 	cf.update_value("always-art-header-bar", prefs.always_art_header)
 	# cf.update_value("prefer-center-bg", prefs.center_bg)
-	cf.update_value("showcase-texture-background", prefs.showcase_overlay_texture)
 	cf.update_value("side-panel-style", prefs.side_panel_layout)
 	cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
 	cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
@@ -43198,9 +43118,6 @@ def load_prefs(bag: Bag) -> None:
 		"Show art in top panel at any size. (Requires enable-art-header-bar)")
 
 	# prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
-	prefs.showcase_overlay_texture = cf.sync_add(
-		"bool", "showcase-texture-background", prefs.showcase_overlay_texture,
-		"Draw pattern over background art")
 	prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
 	prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
 	prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
@@ -46217,8 +46134,6 @@ def main(holder: Holder) -> None:
 				prefs.lyrics_enables = save[126]
 			if len(save) > 127 and save[127] is not None:
 				prefs.fanart_notify = save[127]
-			if len(save) > 128 and save[128] is not None:
-				prefs.bg_showcase_only = save[128]
 			if len(save) > 129 and save[129] is not None:
 				prefs.discogs_pat = save[129]
 			if len(save) > 130 and save[130] is not None:
@@ -51842,7 +51757,7 @@ def main(holder: Holder) -> None:
 				else:
 					tauon.bottom_bar1.render()
 
-				if prefs.art_bg and not prefs.bg_showcase_only:
+				if prefs.art_bg:
 					tauon.style_overlay.display()
 					# if inp.key_shift_down:
 					#     ddt.rect_r(gui.seek_bar_rect,

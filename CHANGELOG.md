@@ -5,9 +5,10 @@ Changelog
 ### v9.2.0
 
  - Added inertial smooth scrolling option
- - Redesigned settings box layout
+ - Redesigned settings box layout and style
  - Removed trancode menu toggle
  - Removed 'star' playcount display option
+ - Removed 'showcase only' background functions
 
 ### v9.1.2
 

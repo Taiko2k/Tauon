@@ -223,8 +223,6 @@ class Prefs:
 
 	transcode_inplace: bool = False
 
-	bg_showcase_only: bool = False
-
 	lyrics_enables: list[str] = field(default_factory=list)
 
 	fatvap = "6b2a9499238ce6416783fc8129b8ac67"
@@ -325,8 +323,6 @@ class Prefs:
 	radio_urls: list[RadioStation] = field(default_factory=list[RadioStation])
 
 	lyric_metadata_panel_top: bool = False
-	showcase_overlay_texture: bool = False
-
 	sync_target = ""
 	sync_deletes: bool = False
 	sync_playlist: int | None = None
