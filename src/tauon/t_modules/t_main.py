@@ -24625,14 +24625,11 @@ class Over:
 		self.settings_doc_texture_size = (0, 0)
 		self.tabs = [
 			(_("General"), _("Everyday settings"), self.funcs_general),
-			(_("Behaviour"), _("Playback and track actions"), self.funcs_behaviour),
-			(_("Features"), _("Extra tools and actions"), self.funcs_imports),
 			(_("Connections"), _("Remote control and integrations"), self.funcs_connected),
 			(_("Audio"), _("Sound, volume and devices"), self.audio),
 			(_("Tracklist"), _("Track rows and spacing"), self.config_v),
 			(_("Theme"), _("Colors and backgrounds"), self.theme),
-			(_("View"), _("Panels, scrolling and layout"), self.view2),
-			(_("Window"), _("Window, tray and scaling"), self.config_b),
+			(_("View"), _("Panels, layout, tray and scale"), self.view2),
 			(_("Transcode"), _("Convert files and sync devices"), self.codec_config),
 			(_("Services"), _("Accounts and scrobbling"), self.services),
 			(_("Advanced"), _("Debugging and advanced options"), self.funcs_advanced),
@@ -24710,7 +24707,8 @@ class Over:
 			ColourRGBA(140, 174, 232, 255),
 			ColourRGBA(184, 184, 196, 255),
 		)
-		return accents[index % len(accents)]
+		tab_map = (0, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13)
+		return accents[tab_map[index % len(tab_map)]]
 
 	def settings_card_colours(self) -> tuple[ColourRGBA, ColourRGBA]:
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 12), self.colours.box_background)
@@ -25967,13 +25965,13 @@ class Over:
 		self.album_mode_art_size = self.slide_control(
 			x + 25 * self.gui.scale, y, _("Thumbnail size"), "px", self.album_mode_art_size, 70, 400, 10, self.tauon.img_slide_update_gall)
 
-	def funcs(self, x0: int, y0: int, w0: int, h0: int) -> None:
+	def funcs(self, x0: int, y0: int, w0: int, h0: int, accent_override: ColourRGBA | None = None) -> None:
 		tauon   = self.tauon
 		prefs   = self.prefs
 		gui     = self.gui
 		ddt     = self.ddt
 		colours = self.colours
-		accent  = self.settings_page_accent()
+		accent  = accent_override if accent_override is not None else self.settings_page_accent()
 
 		ddt.text_background_colour = colours.box_background
 
@@ -25986,6 +25984,8 @@ class Over:
 		card_y = y0
 		card_h = h0
 		left_w = max(round(270 * gui.scale), min(round(w0 * 0.56), w0 - round(220 * gui.scale)))
+		if self.func_page == 1:
+			left_w = (w0 - column_gap) // 2
 		right_w = w0 - left_w - column_gap
 		left_rect = (x0, card_y, left_w, card_h)
 		right_rect = (x0 + left_w + column_gap, card_y, right_w, card_h)
@@ -26147,7 +26147,7 @@ class Over:
 			for callback, title in (
 				(tauon.toggle_wiki, _("Wikipedia artist search")),
 				(tauon.toggle_rym, _("Sonemic artist search")),
-				(tauon.toggle_band, _("Bandcamp artist page search")),
+				(tauon.toggle_band, _("Bandcamp artist search")),
 				(tauon.toggle_gen, _("Genius track search")),
 			):
 				self.settings_switch_row((x, y, w, small_row_h), callback, title, accent=accent)
@@ -26211,7 +26211,7 @@ class Over:
 				(x, y, w, row_h),
 				prefs.enable_remote,
 				_("Enable remote control"),
-				_("Change requires restart. Use only on a trusted local network."),
+				_("Change requires restart."),
 				accent,
 			)
 			y += row_h + row_gap
@@ -27966,7 +27966,7 @@ class Over:
 		colours = self.colours
 
 		if accent is None:
-			accent = self.settings_tab_accent(12)
+			accent = self.settings_tab_accent(max(len(self.tabs) - 2, 0))
 
 		self.ddt.text_background_colour = colours.box_background
 
@@ -28524,7 +28524,15 @@ class Over:
 
 		return value
 
-	def render_settings_func_category(self, page: int, x: int, y: int, w: int, draw: bool = True) -> int:
+	def render_settings_func_category(
+		self,
+		page: int,
+		x: int,
+		y: int,
+		w: int,
+		draw: bool = True,
+		accent_override: ColourRGBA | None = None,
+	) -> int:
 		heights = (
 			round(275 * self.gui.scale),
 			round(224 * self.gui.scale),
@@ -28536,19 +28544,33 @@ class Over:
 		if draw:
 			old_page = self.func_page
 			self.func_page = page
-			self.funcs(x, y, w, height)
+			self.funcs(x, y, w, height, accent_override=accent_override)
 			self.func_page = old_page
 		return height
+
+	def render_settings_general_category(self, x: int, y: int, w: int, draw: bool = True) -> int:
+		block_gap = round(12 * self.gui.scale)
+		general_accent = self.settings_page_accent(0)
+		general_h = self.render_settings_func_category(0, x, y, w, draw, accent_override=general_accent)
+		behaviour_y = y + general_h + block_gap
+		behaviour_h = self.render_settings_func_category(1, x, behaviour_y, w, draw, accent_override=general_accent)
+		features_y = behaviour_y + behaviour_h + block_gap
+		features_h = self.render_settings_func_category(2, x, features_y, w, draw, accent_override=general_accent)
+		return general_h + behaviour_h + features_h + block_gap * 2
 
 	def render_settings_view_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		column_gap = round(12 * gui.scale)
+		block_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
 		left_rect = (x, y, left_w, round(186 * gui.scale))
 		right_rect = (x + left_w + column_gap, y, right_w, round(246 * gui.scale))
+		view_h = right_rect[3]
+		window_y = y + view_h + block_gap
+		window_h = self.render_settings_window_category(x, window_y, w, accent, draw)
 		if not draw:
-			return right_rect[3]
+			return view_h + window_h + block_gap
 
 		row_h = round(42 * gui.scale)
 		compact_row_h = round(30 * gui.scale)
@@ -28646,7 +28668,7 @@ class Over:
 				accent=accent,
 			)
 
-		return right_rect[3]
+		return view_h + window_h + block_gap
 
 	def render_settings_theme_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
@@ -29389,34 +29411,28 @@ class Over:
 		body_y = y
 
 		if index == 0:
-			body_h = self.render_settings_func_category(0, x, body_y, w, draw)
+			body_h = self.render_settings_general_category(x, body_y, w, draw)
 		elif index == 1:
-			body_h = self.render_settings_func_category(1, x, body_y, w, draw)
-		elif index == 2:
-			body_h = self.render_settings_func_category(2, x, body_y, w, draw)
-		elif index == 3:
 			body_h = self.render_settings_func_category(3, x, body_y, w, draw)
-		elif index == 4:
+		elif index == 2:
 			body_h = self.render_settings_audio_category(x, body_y, w, accent, draw)
-		elif index == 5:
+		elif index == 3:
 			body_h = round(238 * self.gui.scale)
 			if draw:
 				self.config_v(x, body_y, w, body_h)
-		elif index == 6:
+		elif index == 4:
 			body_h = self.render_settings_theme_category(x, body_y, w, accent, draw)
-		elif index == 7:
+		elif index == 5:
 			body_h = self.render_settings_view_category(x, body_y, w, accent, draw)
-		elif index == 8:
-			body_h = self.render_settings_window_category(x, body_y, w, accent, draw)
-		elif index == 9:
+		elif index == 6:
 			body_h = self.render_settings_transcode_category(x, body_y, w, accent, draw)
-		elif index == 10:
+		elif index == 7:
 			body_h = round(440 * self.gui.scale)
 			if draw:
 				self.last_fm_box(x, body_y, w, body_h)
-		elif index == 11:
+		elif index == 8:
 			body_h = self.render_settings_func_category(4, x, body_y, w, draw)
-		elif index == 12:
+		elif index == 9:
 			body_h = self.render_settings_stats_category(x, body_y, w, accent, draw)
 		else:
 			body_h = self.render_settings_about_category(x, body_y, w, accent, draw)
