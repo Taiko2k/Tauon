@@ -25880,7 +25880,10 @@ class Over:
 
 		row_h = round(40 * self.gui.scale)
 		row_gap = round(6 * self.gui.scale)
-		for name in lyric_sources:
+		source_names = [name for name in lyric_sources if name != "Genius"]
+		if "Genius" in lyric_sources:
+			source_names.append("Genius")
+		for name in source_names:
 			enabled = name in self.prefs.lyrics_enables
 			subtitle = _("Scraping source") if name in uses_scraping else _("API source")
 			new = self.settings_switch_row(
@@ -25897,14 +25900,6 @@ class Over:
 				else:
 					self.prefs.lyrics_enables.append(name)
 			content_y += row_h + row_gap
-
-		note_h = max(round(40 * self.gui.scale), y + h - round(14 * self.gui.scale) - content_y)
-		self.draw_settings_note(
-			(content_x, content_y, content_w, note_h),
-			_("Sources are checked top to bottom. Scraping sources may break when websites change."),
-			accent,
-			_("Search order"),
-		)
 
 	def view2(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		x = x0 + 25 * self.gui.scale
