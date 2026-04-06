@@ -25375,6 +25375,7 @@ class Over:
 		accent: ColourRGBA | None = None,
 		formatter=None,
 		callback=None,
+		log_scale: bool = False,
 	) -> float:
 		if accent is None:
 			accent = self.settings_page_accent()
@@ -25414,7 +25415,14 @@ class Over:
 		slider_rect = (slider_x, slider_y, slider_w, slider_h)
 		grip_w = round(8 * self.gui.scale)
 		grip_h = round(14 * self.gui.scale)
-		ratio = 0.0 if max_value == min_value else (value - min_value) / (max_value - min_value)
+		use_log_scale = log_scale and min_value > 0 and max_value > min_value
+		if use_log_scale:
+			log_min = math.log(min_value)
+			log_max = math.log(max_value)
+			safe_value = min(max(value, min_value), max_value)
+			ratio = 0.0 if log_max == log_min else (math.log(safe_value) - log_min) / (log_max - log_min)
+		else:
+			ratio = 0.0 if max_value == min_value else (value - min_value) / (max_value - min_value)
 		ratio = min(max(ratio, 0.0), 1.0)
 		grip_x = slider_x + round(slider_w * ratio) - grip_w // 2
 		grip_rect = (grip_x, slider_y - (grip_h // 2) + slider_h // 2, grip_w, grip_h)
@@ -25428,7 +25436,10 @@ class Over:
 		if self.coll(hit_rect) and self.inp.mouse_down:
 			portion = (self.inp.mouse_position[0] - slider_x) / max(slider_w, 1)
 			portion = min(max(portion, 0.0), 1.0)
-			raw_value = min_value + (max_value - min_value) * portion
+			if use_log_scale:
+				raw_value = math.exp(log_min + (log_max - log_min) * portion)
+			else:
+				raw_value = min_value + (max_value - min_value) * portion
 			if step:
 				raw_value = round(round(raw_value / step) * step, 3)
 			value = min(max(raw_value, min_value), max_value)
@@ -28920,16 +28931,18 @@ class Over:
 		if old_tmp_cache != prefs.tmp_cache and self.tauon.cachement:
 			self.tauon.cachement.__init__(self.tauon)
 		inner_y += row_h + row_gap
-		prefs.cache_limit = int(self.draw_settings_range_slider(
+		cache_size_gb = round(self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
 			_("Cache size"),
 			float(self.prefs.cache_limit / 1000),
 			0.5,
 			1000,
-			0.5,
+			0,
 			accent=accent,
-			formatter=lambda number: f"{number:g} GB",
-		) * 1000)
+			formatter=lambda number: f"{round(number, 1):.1f} GB",
+			log_scale=True,
+		), 1)
+		prefs.cache_limit = int(cache_size_gb * 1000)
 		inner_y += round(52 * gui.scale)
 		old_resample = prefs.avoid_resampling
 		prefs.avoid_resampling = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.avoid_resampling, _("Avoid resampling"), accent=accent)
