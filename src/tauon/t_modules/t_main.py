@@ -29021,16 +29021,35 @@ class Over:
 		if not draw:
 			return row1_h + row2_h + column_gap
 
-		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
-		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, row1_h)
-		right_rect = (x + left_w + column_gap, y, right_w, row1_h)
+		row1_rect = (x, y, w, row1_h)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			left_rect,
-			_("Encoding"),
-			_("Codec and bitrate."),
+			row1_rect,
+			"",
+			"",
 			accent,
 		)
+		inner_column_gap = round(18 * gui.scale)
+		left_w = max(round(270 * gui.scale), min(round(inner_w * 0.53), inner_w - round(220 * gui.scale)))
+		right_w = inner_w - left_w - inner_column_gap
+		left_x = inner_x
+		right_x = left_x + left_w + inner_column_gap
+		column_label_y = inner_y
+		column_subtitle_y = column_label_y + round(16 * gui.scale)
+		column_body_y = column_label_y + round(34 * gui.scale)
+		divider_x = left_x + left_w + inner_column_gap // 2
+		divider_h = row1_rect[1] + row1_rect[3] - round(14 * gui.scale) - column_label_y
+		self.ddt.text((left_x, column_label_y), _("Encoding"), self.colours.box_text, 212)
+		self.ddt.text((left_x, column_subtitle_y), _("Codec and bitrate."), self.colours.box_text_label, 10, max_w=left_w)
+		self.ddt.text((right_x, column_label_y), _("Files"), self.colours.box_text, 212)
+		self.ddt.text((right_x, column_subtitle_y), _("Output location and overwrite rules."), self.colours.box_text_label, 10, max_w=right_w)
+		self.ddt.rect(
+			(divider_x, column_label_y, round(1 * gui.scale), divider_h),
+			alpha_blend(alpha_mod(accent, 70), self.colours.box_text_border),
+		)
+
+		inner_x = left_x
+		inner_y = column_body_y
+		inner_w = left_w
 		tile_gap = round(8 * gui.scale)
 		tile_h = round(62 * gui.scale)
 		tile_w = (inner_w - tile_gap) // 2
@@ -29067,12 +29086,9 @@ class Over:
 				formatter=lambda number: f"{int(number)} kbps",
 			))
 
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Files"),
-			_("Output location and overwrite rules."),
-			accent,
-		)
+		inner_x = right_x
+		inner_y = column_body_y
+		inner_w = right_w
 		self.settings_action_tile((inner_x, inner_y, inner_w, round(36 * gui.scale)), _("Open output folder"), self.tauon.open_encode_out, accent)
 		inner_y += round(42 * gui.scale)
 		self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), self.tauon.toggle_transcode_output, _("Save to output folder"), accent=accent)
