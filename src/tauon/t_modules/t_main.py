@@ -25640,21 +25640,22 @@ class Over:
 			accent = self.settings_page_accent()
 
 		x, y, w, h = tuple(round(v) for v in rect)
-		hover = self.coll((x, y, w, h))
+		button_h = round(34 * self.gui.scale)
+		button_y = y + max(0, (h - button_h) // 2)
+		button_rect = (x, button_y, w, button_h)
+		hover = self.coll(button_rect)
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 8), self.colours.box_button_background)
 		if emphasis:
-			fill = alpha_blend(alpha_mod(accent, 16), fill)
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 4), fill)
 		if hover:
 			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
 		if emphasis:
-			border = alpha_blend(alpha_mod(accent, 90), border)
+			border = alpha_blend(ColourRGBA(255, 255, 255, 10), border)
 
-		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
-		if emphasis:
-			self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+		self.ddt.bordered_rect(button_rect, fill, border, round(1 * self.gui.scale))
 
-		self.fields.add((x, y, w, h))
+		self.fields.add(button_rect)
 		hit = False
 		if hover and self.click:
 			self.inp.global_clicked = True
@@ -25667,11 +25668,11 @@ class Over:
 		text_max_w = w - round(44 * self.gui.scale)
 		text_metrics = self.ddt.get_text_wh(title, text_font, text_max_w)
 		text_h = text_metrics[1] if text_metrics is not None else round(14 * self.gui.scale)
-		text_y = y + max(0, (h - text_h) // 2)
+		text_y = (button_y + max(0, (button_h - text_h) // 2)) - round(2 * self.gui.scale)
 		self.ddt.text((x + round(14 * self.gui.scale), text_y), title, text_colour, text_font, bg=fill, max_w=text_max_w)
 
-		arrow_y = y + h // 2
-		arrow_colour = accent if hover or emphasis else self.colours.box_text_label
+		arrow_y = button_y + button_h // 2
+		arrow_colour = self.colours.box_text if hover else self.colours.box_text_label
 		self.ddt.rect((x + w - round(20 * self.gui.scale), arrow_y - round(3 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
 		self.ddt.rect((x + w - round(16 * self.gui.scale), arrow_y - round(1 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
 
@@ -29212,7 +29213,7 @@ class Over:
 		divider_x = left_x + left_w + inner_column_gap // 2
 		divider_h = row1_rect[1] + row1_rect[3] - round(14 * gui.scale) - column_label_y
 		self.ddt.text((left_x, column_label_y), _("Encoding"), self.colours.box_text, 212)
-		self.ddt.text((left_x, column_subtitle_y), _("Codec and bitrate."), self.colours.box_text_label, 10, max_w=left_w)
+		self.ddt.text((left_x, column_subtitle_y), _("Select default codec and bitrate."), self.colours.box_text_label, 10, max_w=left_w)
 		self.ddt.text((right_x, column_label_y), _("Files"), self.colours.box_text, 212)
 		self.ddt.text((right_x, column_subtitle_y), _("Output location and overwrite rules."), self.colours.box_text_label, 10, max_w=right_w)
 		self.ddt.rect(
