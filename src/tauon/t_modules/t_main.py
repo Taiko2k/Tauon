@@ -2948,7 +2948,12 @@ class PlayerCtl:
 		if self.prefs.update_title and update_gui:
 			self.tauon.update_title_do()
 		self.notify_update()
-		self.tauon.hit_discord()
+		# Wake and start Discord RPC worker immediately on change
+		try:
+			self.tauon._signal_discord()
+		except Exception:
+			# Fallback to legacy start if signalling fails
+			self.tauon.hit_discord()
 		if update_gui:
 			self.render_playlist()
 
@@ -17397,6 +17402,42 @@ class Tauon:
 				self.prefs.discord_active = False
 			raise
 
+	def _signal_discord(self) -> None:
+		"""Ensure Discord RPC thread is running and wake it immediately.
+
+		This starts the RPC thread if needed and sets the wakeup event so
+		the background loop processes updates instantly.
+		"""
+		try:
+			# Ensure thread is started
+			try:
+				self.hit_discord()
+			except Exception:
+				# hit_discord already logs on failure; continue to attempt wake
+				pass
+
+			# Try to set the wakeup event (may be created by the RPC thread).
+			ev = getattr(self, "_discord_wakeup_event", None)
+			if ev is not None:
+				try:
+					ev.set()
+					return
+				except Exception:
+					pass
+
+			# Small retry window for the RPC thread to create the event
+			for _ in range(6):
+				ev = getattr(self, "_discord_wakeup_event", None)
+				if ev is not None:
+					try:
+						ev.set()
+						return
+					except Exception:
+						pass
+				time.sleep(0.05)
+		except Exception:
+			logging.exception("Failed to signal Discord wakeup")
+
 	def love(self, set: bool = True, track_id: int | None = None, no_delay: bool = False, notify: bool = False, sync: bool = True) -> bool | None:
 		if track_id is None and len(self.pctl.track_queue) < 1:
 			return False
@@ -25560,7 +25601,11 @@ class Over:
 					self.show_message(_("Missing dependency python-pypresence"))
 					prefs.discord_enable = False
 				else:
-					tauon.hit_discord()
+					# start and wake the RPC immediately when enabling in prefs
+					try:
+						tauon._signal_discord()
+					except Exception:
+						tauon.hit_discord()
 
 			if old and not prefs.discord_enable and prefs.discord_active:
 				prefs.disconnect_discord = True
@@ -32632,7 +32677,11 @@ class RadioBox:
 		self.pctl.decode_time = 0
 		self.pctl.playing_length = 0
 		self.tauon.thread_manager.ready_playback()
-		self.tauon.hit_discord()
+		# ensure RPC is started and woken immediately for radio start
+		try:
+			self.tauon._signal_discord()
+		except Exception:
+			self.tauon.hit_discord()
 
 		if self.tauon.update_play_lock is not None:
 			self.tauon.update_play_lock()
@@ -44886,7 +44935,10 @@ def main(holder: Holder) -> None:
 
 	try:
 		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:
-			tauon.hit_discord()
+			try:
+				tauon._signal_discord()
+			except Exception:
+				tauon.hit_discord()
 	except Exception:
 		logging.exception("Failed to start Discord RPC at startup")
 

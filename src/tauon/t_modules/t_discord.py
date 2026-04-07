@@ -1,7 +1,3 @@
-"""Discord rich-presence helper module for Tauon Music Box.
-
-Self-contained Discord RPC loop and helpers.
-"""
 from __future__ import annotations
 
 import asyncio
@@ -11,6 +7,7 @@ import logging
 import threading
 import time
 import urllib.parse
+from collections import deque
 from typing import Optional
 
 import requests
@@ -22,55 +19,47 @@ except Exception:
     Presence          = None  # type: ignore
     StatusDisplayType = None  # type: ignore
 
-
-_LFM_CACHE_MAX    = 256
-_DEBOUNCE_S       = 0.6
-_MIN_UPDATE_GAP_S = 4.0
+_LFM_CACHE_MAX           = 256
+_RPC_WINDOW_S            = 15.0
+_RPC_BUDGET              = 3
+_DEBOUNCE_S              = 0.25
+_MIN_UPDATE_GAP_S        = 15.0
+_MIN_UPDATE_GAP_CHANGE_S = 1.5
 
 
 def build_lastfm_track_url(artist: Optional[str], title: Optional[str]) -> Optional[str]:
     a = (artist or "").strip()
     t = (title or "").strip()
-
     if a and t:
         return (
             f"https://www.last.fm/music/{urllib.parse.quote(a, safe='')}/"
             f"_/{urllib.parse.quote(t, safe='')}"
         )
-
     query = f"{a} {t}".strip()
     if query:
         return "https://www.last.fm/search/tracks?q=" + urllib.parse.quote(query, safe="")
-
     return None
 
 
 def resolve_lastfm_button_url_async(main, artist: Optional[str], title: Optional[str]) -> Optional[str]:
-    """Return cached Last.fm URL instantly. Kicks off a background thread on first call per track.
-
-    """
     a = (artist or "").strip()
     t = (title or "").strip()
     query = f"{a} {t}".strip()
-
     if not query:
         return None
-
     search_url = "https://www.last.fm/search/tracks?q=" + urllib.parse.quote(query, safe="")
     if not a or not t:
         return search_url
-
     cache_key = (a.casefold(), t.casefold())
-    cache: dict  = main.__dict__.setdefault("_discord_lastfm_url_cache",    {})
-    pending: set = main.__dict__.setdefault("_discord_lastfm_url_pending",  set())
-    lock: threading.Lock = main.__dict__.setdefault("_discord_lastfm_url_lock", threading.Lock())
-
+    cache:   dict           = main.__dict__.setdefault("_discord_lastfm_url_cache",   {})
+    pending: set            = main.__dict__.setdefault("_discord_lastfm_url_pending", set())
+    lock:    threading.Lock = main.__dict__.setdefault("_discord_lastfm_url_lock",    threading.Lock())
     with lock:
         val = cache.get(cache_key)
         if val is not None:
             return val
         if cache_key in pending:
-            return None 
+            return None
         pending.add(cache_key)
 
     def _resolve() -> None:
@@ -93,11 +82,10 @@ def resolve_lastfm_button_url_async(main, artist: Optional[str], title: Optional
             pending.discard(cache_key)
 
     threading.Thread(target=_resolve, daemon=True).start()
-    return None  # will be in cache on the next iteration(s)
+    return None
 
 
 def discord_loop_entrypoint(main) -> None:
-    """Main Discord RPC loop — runs in its own thread."""
     try:
         from tauon.t_modules.t_main import PlayingState
     except Exception:
@@ -109,9 +97,9 @@ def discord_loop_entrypoint(main) -> None:
 
     if Presence is None or ActivityType is None or StatusDisplayType is None:
         logging.warning("pypresence unavailable; Discord RPC disabled")
-        prefs.discord_active = False
+        prefs.discord_active     = False
         prefs.disconnect_discord = False
-        gui.discord_status = "Not connected"
+        gui.discord_status       = "Not connected"
         gui.update += 1
         if hasattr(main, "_discord_loop_guard_lock"):
             with main._discord_loop_guard_lock:
@@ -122,6 +110,8 @@ def discord_loop_entrypoint(main) -> None:
     gui.discord_status   = "Standby"
     gui.update += 1
 
+    wakeup: threading.Event = main.__dict__.setdefault("_discord_wakeup_event", threading.Event())
+
     CLIENT_ID = "954253873160286278"
 
     rpc: Optional[Presence] = None
@@ -130,10 +120,11 @@ def discord_loop_entrypoint(main) -> None:
     reconnect_delay      = 2.0
     consecutive_failures = 0
 
-    last_sent_sig    = ""
-    last_sent_at     = 0.0
-    pending_sig      = ""
-    pending_since    = 0.0
+    last_sent_sig         = ""
+    last_sent_at          = 0.0
+    pending_sig           = ""
+    pending_since         = 0.0
+    last_sent_track_index = -1
 
     last_playing_state = False
     last_track_index   = -1
@@ -145,7 +136,13 @@ def discord_loop_entrypoint(main) -> None:
     cached_small_image     = None
     last_art_lookup        = 0.0
 
-    last_debug_state = None
+    last_debug_state  = None
+    _update_times: deque[float] = deque()
+
+    def _rpc_budget_ok(now: float) -> bool:
+        while _update_times and now - _update_times[0] > _RPC_WINDOW_S:
+            _update_times.popleft()
+        return len(_update_times) < _RPC_BUDGET
 
     def log(msg: str) -> None:
         logging.info("[DiscordRPC] %s", msg)
@@ -169,9 +166,22 @@ def discord_loop_entrypoint(main) -> None:
         asyncio.set_event_loop(new_loop)
         return new_loop
 
+    def _try_clear() -> None:
+        try:
+            rpc.clear()
+        except Exception:
+            try:
+                rpc.clear(main.pid)
+            except Exception:
+                pass
+
     def close_rpc() -> None:
         nonlocal rpc, connected
         if rpc is not None:
+            try:
+                _try_clear()
+            except Exception:
+                pass
             try:
                 rpc.close()
             except Exception:
@@ -202,7 +212,7 @@ def discord_loop_entrypoint(main) -> None:
             if prefs.disconnect_discord or not prefs.discord_enable:
                 if connected and rpc is not None and prefs.disconnect_discord:
                     try:
-                        rpc.clear(main.pid)
+                        _try_clear()
                     except Exception:
                         logging.exception("Error clearing Discord presence on shutdown")
                 close_rpc()
@@ -215,7 +225,8 @@ def discord_loop_entrypoint(main) -> None:
 
             if not connected:
                 if now < next_reconnect_at:
-                    time.sleep(0.25)
+                    wakeup.wait(timeout=0.25)
+                    wakeup.clear()
                     continue
 
                 if consecutive_failures >= 3:
@@ -240,10 +251,10 @@ def discord_loop_entrypoint(main) -> None:
                     reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
                     log(f"Connection failed ({consecutive_failures}): {exc}")
                     set_status(builtins._("Reconnecting to Discord..."))
-                    time.sleep(0.25)
+                    wakeup.wait(timeout=0.25)
+                    wakeup.clear()
                     continue
 
-            # Snapshot playback state atomically — nothing below may block
             if not pctl.playing_ready():
                 tr        = None
                 state_now = None
@@ -378,29 +389,48 @@ def discord_loop_entrypoint(main) -> None:
                 last_track_index   = current_index
                 last_playing_state = is_playing
 
-            payload_sig = json.dumps(payload, sort_keys=True, default=str)
+            sig_idx = -1
+            if not is_idle:
+                try:
+                    sig_idx = int(current_index)
+                except Exception:
+                    sig_idx = -1
+            payload_sig = json.dumps(payload, sort_keys=True, default=str) + f"::idx={sig_idx}"
+
+            track_changed = sig_idx >= 0 and sig_idx != last_sent_track_index
 
             if payload_sig != pending_sig:
                 pending_sig   = payload_sig
-                pending_since = now
+                pending_since = (now - _DEBOUNCE_S) if track_changed else now
 
             time_since_change = now - pending_since
             time_since_sent   = now - last_sent_at
-            rate_ok           = time_since_sent >= _MIN_UPDATE_GAP_S or last_sent_at == 0.0
-            ready_to_send     = (
+
+            min_gap = (
+                0.0
+                if last_sent_at == 0.0
+                else _MIN_UPDATE_GAP_CHANGE_S if track_changed else _MIN_UPDATE_GAP_S
+            )
+
+            rate_ok = _rpc_budget_ok(now) and time_since_sent >= min_gap
+
+            ready_to_send = (
                 pending_sig != last_sent_sig
                 and time_since_change >= _DEBOUNCE_S
                 and rate_ok
             )
-            if force_update and pending_sig != last_sent_sig:
-                ready_to_send = rate_ok
+
+            if force_update and pending_sig != last_sent_sig and rate_ok:
+                ready_to_send = True
 
             if ready_to_send:
                 try:
                     rpc.update(**payload)
-                    last_sent_sig        = payload_sig
-                    last_sent_at         = now
-                    consecutive_failures = 0
+                    _update_times.append(now)
+                    last_sent_sig         = payload_sig
+                    last_sent_at          = now
+                    last_sent_track_index = sig_idx
+                    consecutive_failures  = 0
                     set_status("Connected")
                 except Exception as exc:
                     consecutive_failures += 1
@@ -409,10 +439,19 @@ def discord_loop_entrypoint(main) -> None:
                     next_reconnect_at = time.time() + reconnect_delay
                     reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
                     set_status(builtins._("Reconnecting to Discord..."))
-                    time.sleep(0.5)
+                    wakeup.wait(timeout=0.5)
+                    wakeup.clear()
                     continue
 
-            time.sleep(poll_interval)
+            if pending_sig != last_sent_sig and not rate_ok and _update_times:
+                budget_opens_at = _update_times[0] + _RPC_WINDOW_S
+                sleep_time = max(0.05, min(poll_interval, budget_opens_at - now))
+                if sleep_time > 1.0:
+                    set_status(builtins._("Waiting for Discord rate limit…"))
+                wakeup.wait(timeout=sleep_time)
+            else:
+                wakeup.wait(timeout=poll_interval)
+            wakeup.clear()
 
     except Exception as exc:
         log(f"Fatal error in Discord RPC loop: {exc}")
