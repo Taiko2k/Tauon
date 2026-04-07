@@ -61,16 +61,17 @@ def resolve_lastfm_button_url_async(main, artist: Optional[str], title: Optional
         return search_url
 
     cache_key = (a.casefold(), t.casefold())
-    cache: dict   = main.__dict__.setdefault("_discord_lastfm_url_cache",    {})
-    pending: set  = main.__dict__.setdefault("_discord_lastfm_url_pending",  set())
+    cache: dict  = main.__dict__.setdefault("_discord_lastfm_url_cache",    {})
+    pending: set = main.__dict__.setdefault("_discord_lastfm_url_pending",  set())
+    lock: threading.Lock = main.__dict__.setdefault("_discord_lastfm_url_lock", threading.Lock())
 
-    if cache_key in cache:
-        return cache[cache_key]
-
-    if cache_key in pending:
-        return None  # still resolving — caller skips the button this iteration
-
-    pending.add(cache_key)
+    with lock:
+        val = cache.get(cache_key)
+        if val is not None:
+            return val
+        if cache_key in pending:
+            return None 
+        pending.add(cache_key)
 
     def _resolve() -> None:
         track_url = build_lastfm_track_url(a, t)
@@ -82,13 +83,14 @@ def resolve_lastfm_button_url_async(main, artist: Optional[str], title: Optional
                     resolved = track_url
             except Exception:
                 pass
-        if len(cache) >= _LFM_CACHE_MAX:
-            try:
-                cache.pop(next(iter(cache)))
-            except StopIteration:
-                pass
-        cache[cache_key] = resolved
-        pending.discard(cache_key)
+        with lock:
+            if len(cache) >= _LFM_CACHE_MAX:
+                try:
+                    cache.pop(next(iter(cache)))
+                except StopIteration:
+                    pass
+            cache[cache_key] = resolved
+            pending.discard(cache_key)
 
     threading.Thread(target=_resolve, daemon=True).start()
     return None  # will be in cache on the next iteration(s)
@@ -104,6 +106,17 @@ def discord_loop_entrypoint(main) -> None:
     prefs = main.prefs
     gui   = main.gui
     pctl  = main.pctl
+
+    if Presence is None or ActivityType is None or StatusDisplayType is None:
+        logging.warning("pypresence unavailable; Discord RPC disabled")
+        prefs.discord_active = False
+        prefs.disconnect_discord = False
+        gui.discord_status = "Not connected"
+        gui.update += 1
+        if hasattr(main, "_discord_loop_guard_lock"):
+            with main._discord_loop_guard_lock:
+                main._discord_loop_guard_running = False
+        return
 
     prefs.discord_active = True
     gui.discord_status   = "Standby"
@@ -146,14 +159,15 @@ def discord_loop_entrypoint(main) -> None:
         clean = " ".join((text or "").split()).strip() or fallback
         return clean[:120]
 
-    def reset_asyncio_loop() -> None:
+    def reset_asyncio_loop(current_loop: asyncio.AbstractEventLoop) -> asyncio.AbstractEventLoop:
         try:
-            old = asyncio.get_event_loop()
-            if not old.is_closed():
-                old.close()
+            if current_loop and not current_loop.is_closed():
+                current_loop.close()
         except Exception:
             pass
-        asyncio.set_event_loop(asyncio.new_event_loop())
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        return new_loop
 
     def close_rpc() -> None:
         nonlocal rpc, connected
@@ -206,7 +220,7 @@ def discord_loop_entrypoint(main) -> None:
 
                 if consecutive_failures >= 3:
                     log("Multiple failures — resetting asyncio loop before retry")
-                    reset_asyncio_loop()
+                    loop = reset_asyncio_loop(loop)
                     consecutive_failures = 0
 
                 try:
@@ -407,8 +421,11 @@ def discord_loop_entrypoint(main) -> None:
 
     finally:
         close_rpc()
-        if not loop.is_closed():
-            loop.close()
+        try:
+            if loop and not loop.is_closed():
+                loop.close()
+        except Exception:
+            pass
         prefs.discord_active = False
         set_status("Not connected")
         if hasattr(main, "_discord_loop_guard_lock"):
