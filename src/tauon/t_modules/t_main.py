@@ -24596,6 +24596,7 @@ class Over:
 		self.settings_nav_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.settings_content_scroll = 0.0
 		self.settings_content_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
+		self.settings_scale_preview_value: float | None = None
 		self.settings_category_offsets: list[float] = []
 		self.settings_doc_texture: sdl3.LP_SDL_Texture | None = None
 		self.settings_doc_texture_size = (0, 0)
@@ -29155,30 +29156,47 @@ class Over:
 			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
 			inner_y += row_h + row_gap
 
+		def normalize_scale_value(value: float) -> float:
+			scale_value = max(min(round(round(value / 0.05) * 0.05, 2), 3.5), 0.5)
+			if scale_value in (0.95, 1.05):
+				scale_value = 1.0
+			if scale_value in (1.95, 2.05):
+				scale_value = 2.0
+			if scale_value in (2.95, 3.05):
+				scale_value = 3.0
+			return scale_value
+
 		def set_scale(value: float) -> None:
-			prefs.scale_want = max(min(round(round(value / 0.05) * 0.05, 2), 3.5), 0.5)
-			if prefs.scale_want in (0.95, 1.05):
-				prefs.scale_want = 1.0
-			if prefs.scale_want in (1.95, 2.05):
-				prefs.scale_want = 2.0
-			if prefs.scale_want in (2.95, 3.05):
-				prefs.scale_want = 3.0
+			prefs.scale_want = normalize_scale_value(value)
 			prefs.x_scale = False
 			gui.update += 1
 			gui.update_layout = True
 
-		scale_text = _("auto") if prefs.x_scale else f"{prefs.scale_want:.2f}x"
-		self.draw_settings_range_slider(
+		preview_scale = float(
+			prefs.scale_want
+			if self.settings_scale_preview_value is None else
+			self.settings_scale_preview_value
+		)
+		new_preview_scale = self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
 			_("Interface scale"),
-			float(prefs.scale_want),
+			preview_scale,
 			0.5,
 			3.5,
 			0.05,
 			accent=accent,
-			formatter=lambda value: scale_text,
-			callback=set_scale,
+			formatter=lambda value: (
+				_("auto")
+				if prefs.x_scale and not self.inp.mouse_down and self.settings_scale_preview_value is None else
+				f"{normalize_scale_value(value):.2f}x"
+			),
 		)
+		new_preview_scale = normalize_scale_value(new_preview_scale)
+		if abs(new_preview_scale - preview_scale) > 0.0001:
+			self.settings_scale_preview_value = new_preview_scale
+		if self.inp.mouse_up and self.settings_scale_preview_value is not None:
+			set_scale(self.settings_scale_preview_value)
+			self.settings_scale_preview_value = None
 		inner_y += round(52 * gui.scale)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.toggle_x_scale, _("Auto scale"), accent=accent)
 		inner_y += row_h + row_gap
@@ -30774,6 +30792,7 @@ class Over:
 		self.tauon.smooth_scroll.reset_motion("settings nav")
 		self.tauon.smooth_scroll.reset_motion("settings content")
 		self.settings_content_scroll = 0
+		self.settings_scale_preview_value = None
 		self.tab_active = 0
 		self.destroy_settings_texture()
 		self.tauon.fader.fall()
