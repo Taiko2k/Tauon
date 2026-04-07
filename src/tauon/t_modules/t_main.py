@@ -30692,7 +30692,11 @@ class Over:
 			doc_height += category_h + category_gap
 		if category_heights:
 			doc_height -= category_gap
-		doc_height += round(16 * gui.scale)
+		doc_bottom_pad = round(16 * gui.scale)
+		if category_heights:
+			# Add enough trailing space for the final category to reach the top inset.
+			doc_bottom_pad += max(0, view_rect[3] - (content_top_pad + category_heights[-1] + doc_bottom_pad))
+		doc_height += doc_bottom_pad
 
 		max_content_scroll = self.sync_settings_content_scroll((content_x, content_y + header_height, content_width, content_height - header_height), doc_height)
 		active_anchor = self.settings_content_scroll + round(24 * gui.scale)
