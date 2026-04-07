@@ -24726,7 +24726,7 @@ class Over:
 		return max_scroll
 
 	def services(self, x0: int, y0: int, w0: int, h0: int) -> None:
-		self.last_fm_box(x0, y0, w0, h0)
+		self.render_settings_services_category(x0, y0, w0, self.settings_tab_accent(7), draw=True)
 
 	def funcs_general(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		self.func_page = 0
@@ -25499,9 +25499,12 @@ class Over:
 				active = function(1)
 
 		text_x = x + round(14 * self.gui.scale)
-		title_y = y + round(8 * self.gui.scale) if subtitle else y + round(8 * self.gui.scale)
+		title_font = 13
 		title_max_w = w - round(84 * self.gui.scale)
-		self.ddt.text((text_x, title_y), title, self.colours.box_text, 13, bg=fill, max_w=title_max_w)
+		title_metrics = self.ddt.get_text_wh(title, title_font, title_max_w)
+		title_h = title_metrics[1] if title_metrics is not None else round(14 * self.gui.scale)
+		title_y = y + round(8 * self.gui.scale) if subtitle else y + max(0, (h - title_h) // 2)
+		self.ddt.text((text_x, title_y), title, self.colours.box_text, title_font, bg=fill, max_w=title_max_w)
 		if subtitle:
 			self.ddt.text(
 				(text_x, y + round(23 * self.gui.scale)),
@@ -25578,9 +25581,10 @@ class Over:
 
 		indicator_w = round(12 * self.gui.scale)
 		indicator_h = round(12 * self.gui.scale)
+		indicator_y = y + round(10 * self.gui.scale) if subtitle else y + max(0, (h - indicator_h) // 2)
 		indicator_rect = (
 			x + w - indicator_w - round(10 * self.gui.scale),
-			y + round(10 * self.gui.scale),
+			indicator_y,
 			indicator_w,
 			indicator_h,
 		)
@@ -25602,11 +25606,15 @@ class Over:
 			)
 
 		title_max_w = w - round(32 * self.gui.scale)
+		title_font = 12
+		title_metrics = self.ddt.get_text_wh(title, title_font, title_max_w)
+		title_h = title_metrics[1] if title_metrics is not None else round(13 * self.gui.scale)
+		title_y = y + round(11 * self.gui.scale) if subtitle else y + max(0, (h - title_h) // 2)
 		self.ddt.text(
-			(x + round(12 * self.gui.scale), y + round(11 * self.gui.scale)),
+			(x + round(12 * self.gui.scale), title_y),
 			title,
 			self.colours.box_text,
-			12,
+			title_font,
 			bg=fill,
 			max_w=title_max_w,
 		)
@@ -25655,7 +25663,12 @@ class Over:
 				plug()
 
 		text_colour = self.colours.box_text if hover or emphasis else self.colours.box_button_text
-		self.ddt.text((x + round(14 * self.gui.scale), y + round(11 * self.gui.scale)), title, text_colour, 211, bg=fill)
+		text_font = 212
+		text_max_w = w - round(44 * self.gui.scale)
+		text_metrics = self.ddt.get_text_wh(title, text_font, text_max_w)
+		text_h = text_metrics[1] if text_metrics is not None else round(14 * self.gui.scale)
+		text_y = y + max(0, (h - text_h) // 2)
+		self.ddt.text((x + round(14 * self.gui.scale), text_y), title, text_colour, text_font, bg=fill, max_w=text_max_w)
 
 		arrow_y = y + h // 2
 		arrow_colour = accent if hover or emphasis else self.colours.box_text_label
@@ -25788,7 +25801,9 @@ class Over:
 			if callback is not None:
 				callback()
 
-		indicator_rect = (x + round(14 * self.gui.scale), y + round(12 * self.gui.scale), round(12 * self.gui.scale), round(12 * self.gui.scale))
+		indicator_h = round(12 * self.gui.scale)
+		indicator_y = y + round(12 * self.gui.scale) if subtitle else y + max(0, (h - indicator_h) // 2)
+		indicator_rect = (x + round(14 * self.gui.scale), indicator_y, round(12 * self.gui.scale), indicator_h)
 		self.ddt.bordered_rect(
 			indicator_rect,
 			alpha_blend(ColourRGBA(255, 255, 255, 8), fill),
@@ -25807,13 +25822,19 @@ class Over:
 			)
 
 		text_x = x + round(34 * self.gui.scale)
-		self.ddt.text((text_x, y + round(9 * self.gui.scale)), title, self.colours.box_text, 13, bg=fill, max_w=w - round(46 * self.gui.scale))
-		self.ddt.text(
-			(text_x, y + round(27 * self.gui.scale), 4, w - round(46 * self.gui.scale), round(34 * self.gui.scale)),
-			subtitle,
-			self.colours.box_text_label,
-			11,
-		)
+		title_font = 13
+		title_max_w = w - round(46 * self.gui.scale)
+		title_metrics = self.ddt.get_text_wh(title, title_font, title_max_w)
+		title_h = title_metrics[1] if title_metrics is not None else round(14 * self.gui.scale)
+		title_y = y + round(9 * self.gui.scale) if subtitle else y + max(0, (h - title_h) // 2)
+		self.ddt.text((text_x, title_y), title, self.colours.box_text, title_font, bg=fill, max_w=title_max_w)
+		if subtitle:
+			self.ddt.text(
+				(text_x, y + round(27 * self.gui.scale), 4, title_max_w, round(34 * self.gui.scale)),
+				subtitle,
+				self.colours.box_text_label,
+				11,
+			)
 
 		return hit
 
@@ -25841,6 +25862,107 @@ class Over:
 			self.colours.box_text_label,
 			11,
 		)
+
+	def select_account_view(self, view: int) -> None:
+		self.account_view = view
+		self.account_text_field = 0
+		self.gui.update_layout = True
+
+	def cycle_account_fields(self, max_field: int) -> None:
+		if max_field < 0:
+			self.account_text_field = -1
+			return
+		if self.account_text_field < 0 or self.account_text_field > max_field:
+			self.account_text_field = 0
+		if self.inp.key_tab_press:
+			if self.inp.key_shift_down or self.inp.key_shiftr_down:
+				self.account_text_field -= 1
+			else:
+				self.account_text_field += 1
+			if self.account_text_field < 0:
+				self.account_text_field = max_field
+			if self.account_text_field > max_field:
+				self.account_text_field = 0
+
+	def draw_settings_action_row(
+		self,
+		rect: tuple[int, int, int, int],
+		items: list[tuple[str, Callable[[], None] | None, bool]],
+		accent: ColourRGBA | None = None,
+	) -> None:
+		if accent is None:
+			accent = self.settings_page_accent()
+		if not items:
+			return
+
+		x, y, w, h = tuple(round(v) for v in rect)
+		gap = round(8 * self.gui.scale)
+		count = len(items)
+		tile_w = (w - gap * (count - 1)) // max(count, 1)
+		tile_x = x
+		for index, (title, callback, emphasis) in enumerate(items):
+			current_w = tile_w if index < count - 1 else x + w - tile_x
+			self.settings_action_tile((tile_x, y, current_w, h), title, callback, accent, emphasis=emphasis)
+			tile_x += current_w + gap
+
+	def settings_text_input(
+		self,
+		rect: tuple[int, int, int, int],
+		title: str,
+		text_box: TextBox2,
+		field_id: int,
+		stored_value: str,
+		accent: ColourRGBA | None = None,
+		secret: bool = False,
+		placeholder: str = "",
+	) -> str:
+		if accent is None:
+			accent = self.settings_page_accent()
+
+		x, y, w, h = tuple(round(v) for v in rect)
+		active = self.account_text_field == field_id
+		if not active and text_box.text != stored_value:
+			text_box.text = stored_value
+
+		label_y = y
+		field_y = y + round(16 * self.gui.scale)
+		field_h = max(round(22 * self.gui.scale), h - round(18 * self.gui.scale))
+		field_rect = (x, field_y, w, field_h)
+		hover = self.coll(field_rect)
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		if hover or active:
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		if active:
+			border = alpha_blend(alpha_mod(accent, 90), border)
+
+		self.ddt.text((x, label_y), title, self.colours.box_text_label, 11)
+		self.fields.add(field_rect)
+		if hover and (self.click or self.inp.level_2_right_click):
+			self.account_text_field = field_id
+			active = True
+			border = alpha_blend(alpha_mod(accent, 90), border)
+
+		self.ddt.bordered_rect(field_rect, fill, border, round(1 * self.gui.scale))
+		if placeholder and not text_box.text and not active:
+			self.ddt.text(
+				(field_rect[0] + round(5 * self.gui.scale), field_rect[1] + round(2 * self.gui.scale)),
+				placeholder,
+				self.colours.box_text_label,
+				12,
+				bg=fill,
+			)
+
+		text_box.draw(
+			field_rect[0] + round(4 * self.gui.scale),
+			field_rect[1] + round(2 * self.gui.scale),
+			self.colours.box_input_text,
+			active,
+			secret=secret,
+			width=field_rect[2] - round(8 * self.gui.scale),
+			click=self.click,
+		)
+		return text_box.text
 
 	def toggle_lyrics_view(self) -> None:
 		self.lyrics_panel ^= True
@@ -28536,23 +28658,24 @@ class Over:
 		gui = self.gui
 		column_gap = round(12 * gui.scale)
 		block_gap = round(12 * gui.scale)
+		row_h = round(42 * gui.scale)
+		compact_row_h = round(30 * gui.scale)
+		row_gap = round(6 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, round(186 * gui.scale))
-		right_rect = (x + left_w + column_gap, y, right_w, round(246 * gui.scale))
-		view_h = right_rect[3]
+		view_h = round(299 * gui.scale)
+		if self.album_mode_art_size < 160:
+			view_h += compact_row_h + row_gap
+		left_rect = (x, y, left_w, view_h)
+		right_rect = (x + left_w + column_gap, y, right_w, view_h)
 		window_y = y + view_h + block_gap
 		window_h = self.render_settings_window_category(x, window_y, w, accent, draw)
 		if not draw:
 			return view_h + window_h + block_gap
 
-		row_h = round(42 * gui.scale)
-		compact_row_h = round(30 * gui.scale)
-		row_gap = round(6 * gui.scale)
-
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
-			_("Scrolling"),
+			_("View"),
 			_("Scroll feel and side panel layout."),
 			accent,
 		)
@@ -28783,7 +28906,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, round(284 * gui.scale))
+		left_rect = (x, y, left_w, round(320 * gui.scale))
 		right_rect = (x + left_w + column_gap, y, right_w, round(320 * gui.scale))
 		if not draw:
 			return max(left_rect[3], right_rect[3])
@@ -29212,6 +29335,1015 @@ class Over:
 			self.settings_action_tile((inner_x, inner_y, inner_w, round(36 * gui.scale)), start_label, start_sync, accent, emphasis=True)
 		return row1_h + row2_h + column_gap
 
+	def settings_account_services(self) -> tuple[list[tuple[int, str, str]], list[tuple[int, str, str]]]:
+		prefs = self.prefs
+		scrobbling = [
+			(1, "Last.fm" if not prefs.use_libre_fm else "Libre.fm", _("Scrobbles and loves.")),
+			(2, "ListenBrainz", _("Token-based scrobbling.")),
+			(9, "Maloja", _("Self-hosted scrobbling.")),
+		]
+		streaming = [
+			(10, "Jellyfin", _("Network library.")),
+			(12, "TIDAL", _("Albums and tracks.")),
+			(7, "Airsonic", _("Subsonic library.")),
+			(5, "PLEX", _("Network library.")),
+			(8, "Spotify", _("Remote and imports.")),
+			(11, "Tauon", _("Tauon-to-Tauon sync.")),
+		]
+
+		if self.inp.key_shift_down:
+			scrobbling.append((4, "fanart.tv", _("Artwork sources.")))
+			streaming.insert(0, (6, "koel", _("Network library.")))
+
+		return scrobbling, streaming
+
+	def render_settings_service_detail(
+		self,
+		view: int,
+		x: int,
+		y: int,
+		w: int,
+		accent: ColourRGBA,
+		draw: bool = True,
+	) -> int:
+		gui = self.gui
+		tauon = self.tauon
+		prefs = self.prefs
+		card_gap = round(12 * gui.scale)
+		row_h = round(30 * gui.scale)
+		info_row_h = round(42 * gui.scale)
+		row_gap = round(6 * gui.scale)
+		action_h = round(36 * gui.scale)
+		field_h = round(42 * gui.scale)
+		note_h = round(46 * gui.scale)
+
+		if view == 1:
+			service_name = "Last.fm" if not prefs.use_libre_fm else "Libre.fm"
+			account_subtitle = prefs.last_fm_username or _("Account not connected.")
+			card1_h = round(252 * gui.scale) if prefs.last_fm_token is None else round(216 * gui.scale)
+			card2_h = round(200 * gui.scale)
+			card3_h = round(146 * gui.scale)
+			total_h = card1_h + card_gap + card2_h + card_gap + card3_h
+			if not draw:
+				return total_h
+
+			card_y = y
+			rect = (x, card_y, w, card1_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				service_name,
+				_("Scrobble playback and sync loves."),
+				accent,
+			)
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				self.tauon.toggle_lfm_auto,
+				_("Enable scrobbling"),
+				account_subtitle,
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			if prefs.last_fm_token is None:
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Login"), self.lastfm.auth1, True),
+						(_("Done"), self.lastfm.auth2, False),
+					],
+					accent,
+				)
+				inner_y += action_h + row_gap
+				if self.lastfm.url is None:
+					prefs.use_libre_fm = self.settings_switch_row(
+						(inner_x, inner_y, inner_w, row_h),
+						prefs.use_libre_fm,
+						_("Use LibreFM"),
+						accent=accent,
+					)
+					inner_y += row_h + row_gap
+				note_text = _("Use Login, finish the browser step, then click Done.")
+				if self.lastfm.url is not None:
+					note_text = _("Finish authorisation in the browser, then click Done.")
+				self.draw_settings_note((inner_x, inner_y, inner_w, note_h), note_text, accent, _("Authorisation"))
+			else:
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Forget account"), self.lastfm.auth3, True),
+					],
+					accent,
+				)
+				inner_y += action_h + row_gap
+				self.draw_settings_note((inner_x, inner_y, inner_w, note_h), prefs.last_fm_username, accent, _("Signed in as"))
+
+			card_y += card1_h + card_gap
+			rect = (x, card_y, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Library sync"),
+				_("Pull loves and scrobble counts into Tauon."),
+				accent,
+			)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Get user loves"), self.get_user_love, True),
+					(_("Clear local loves"), self.clear_local_loves, False),
+				],
+				accent,
+			)
+			inner_y += action_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Get friend loves"), self.get_friend_love, True),
+					(_("Clear friend loves"), self.lastfm.clear_friends_love, False),
+				],
+				accent,
+			)
+			inner_y += action_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Get scrobble counts"), self.get_scrobble_counts, True),
+					(_("Clear counts"), self.clear_scrobble_counts, False),
+				],
+				accent,
+			)
+
+			card_y += card2_h + card_gap
+			rect = (x, card_y, w, card3_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Options"),
+				_("Controls for import and playback display."),
+				accent,
+			)
+			old_pull = prefs.lastfm_pull_love
+			prefs.lastfm_pull_love = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.lastfm_pull_love,
+				_("Pull love on scrobble/rescan"),
+				accent=accent,
+			)
+			if old_pull != prefs.lastfm_pull_love and prefs.lastfm_pull_love:
+				self.show_message(_("This will overwrite local love state when it differs from last.fm."))
+			inner_y += row_h + row_gap
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				self.tauon.toggle_scrobble_mark,
+				_("Show threshold marker"),
+				accent=accent,
+			)
+			return total_h
+
+		if view == 2:
+			card1_h = round(210 * gui.scale)
+			card2_h = round(152 * gui.scale)
+			total_h = card1_h + card_gap + card2_h
+			if not draw:
+				return total_h
+
+			rect = (x, y, w, card1_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"ListenBrainz",
+				_("Token-based scrobbling."),
+				accent,
+			)
+			token_status = _("Token saved.") if prefs.lb_token else _("Paste a token to enable ListenBrainz.")
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				self.tauon.toggle_lb,
+				_("Enable scrobbling"),
+				token_status,
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Paste token"), self.tauon.lb.paste_key, True),
+					(_("Clear"), self.tauon.lb.clear_key, False),
+				],
+				accent,
+			)
+			inner_y += action_h + row_gap
+			endpoint_note = prefs.listenbrainz_url or _("Using the default ListenBrainz endpoint.")
+			self.draw_settings_note((inner_x, inner_y, inner_w, note_h), endpoint_note, accent, _("Endpoint"))
+
+			rect = (x, y + card1_h + card_gap, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Options"),
+				_("Extra controls for ListenBrainz."),
+				accent,
+			)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Open profile"), lambda: webbrowser.open("https://listenbrainz.org/profile/", new=2, autoraise=True), True),
+				],
+				accent,
+			)
+			inner_y += action_h + row_gap
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				self.tauon.toggle_scrobble_mark,
+				_("Show threshold marker"),
+				accent=accent,
+			)
+			return total_h
+
+		if view == 4:
+			card_h = round(240 * gui.scale)
+			if not draw:
+				return card_h
+
+			def flip_current_artist() -> None:
+				if self.inp.key_shift_down:
+					prefs.bg_flips.clear()
+					self.show_message(_("Reset flips"), mode="done")
+					return
+				track = self.pctl.playing_object()
+				artist = get_artist_safe(track)
+				if artist:
+					if artist not in prefs.bg_flips:
+						prefs.bg_flips.add(artist)
+					else:
+						prefs.bg_flips.remove(artist)
+					tauon.style_overlay.flush()
+				self.show_message(_("OK"), mode="done")
+
+			rect = (x, y, w, card_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"fanart.tv",
+				_("Artwork sources for artist images and covers."),
+				accent,
+			)
+			self.draw_settings_note(
+				(inner_x, inner_y, inner_w, note_h),
+				_("Use fanart.tv for artist images and manual cover art lookup."),
+				accent,
+				_("About"),
+			)
+			inner_y += note_h + row_gap
+			prefs.enable_fanart_cover = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.enable_fanart_cover,
+				_("Cover art (manual only)"),
+				accent=accent,
+			)
+			inner_y += row_h + row_gap
+			prefs.enable_fanart_artist = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.enable_fanart_artist,
+				_("Artist images (automatic)"),
+				accent=accent,
+			)
+			inner_y += row_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Flip current"), flip_current_artist, True),
+				],
+				accent,
+			)
+			return card_h
+
+		if view == 5:
+			two_factor = tauon.plex.two_factor_required
+			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
+			card2_h = round(116 * gui.scale)
+			total_h = card1_h + card_gap + card2_h
+			if not draw:
+				return total_h
+
+			if two_factor:
+				self.cycle_account_fields(0)
+			else:
+				self.cycle_account_fields(2)
+
+			rect = (x, y, w, card1_h)
+			subtitle = _("Finish the sign-in step to continue.") if two_factor else _("Connect to a Plex server.")
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(rect, "PLEX", subtitle, accent)
+			if two_factor:
+				two_factor_text = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Two-factor code"),
+					tauon.text_plex_2fa,
+					0,
+					tauon.text_plex_2fa.text,
+					accent,
+				)
+				tauon.text_plex_2fa.text = two_factor_text
+			else:
+				prefs.plex_username = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Username / Email"),
+					tauon.text_plex_usr,
+					0,
+					prefs.plex_username,
+					accent,
+				)
+				inner_y += field_h + row_gap
+				prefs.plex_password = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Password"),
+					tauon.text_plex_pas,
+					1,
+					prefs.plex_password,
+					accent,
+					secret=True,
+				)
+				inner_y += field_h + row_gap
+				prefs.plex_servername = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Server name"),
+					tauon.text_plex_ser,
+					2,
+					prefs.plex_servername,
+					accent,
+				)
+
+			rect = (x, y + card1_h + card_gap, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Actions"),
+				_("Import from Plex."),
+				accent,
+			)
+			if two_factor:
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Continue"), tauon.plex_get_album_thread, True),
+						(_("Cancel"), tauon.plex_cancel_two_factor, False),
+					],
+					accent,
+				)
+			else:
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Import music to playlist"), tauon.plex_get_album_thread, True),
+					],
+					accent,
+				)
+			return total_h
+
+		if view == 6:
+			card1_h = round(218 * gui.scale)
+			card2_h = round(116 * gui.scale)
+			total_h = card1_h + card_gap + card2_h
+			if not draw:
+				return total_h
+
+			self.cycle_account_fields(2)
+			rect = (x, y, w, card1_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"koel",
+				_("Connect to a koel server."),
+				accent,
+			)
+			prefs.koel_username = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Username / Email"),
+				tauon.text_koel_usr,
+				0,
+				prefs.koel_username,
+				accent,
+			)
+			inner_y += field_h + row_gap
+			prefs.koel_password = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Password"),
+				tauon.text_koel_pas,
+				1,
+				prefs.koel_password,
+				accent,
+				secret=True,
+			)
+			inner_y += field_h + row_gap
+			prefs.koel_server_url = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Server URL"),
+				tauon.text_koel_ser,
+				2,
+				prefs.koel_server_url,
+				accent,
+			)
+
+			rect = (x, y + card1_h + card_gap, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Actions"),
+				_("Import from koel."),
+				accent,
+			)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Import music to playlist"), tauon.koel_get_album_thread, True),
+				],
+				accent,
+			)
+			return total_h
+
+		if view == 7:
+			card1_h = round(218 * gui.scale)
+			card2_h = round(164 * gui.scale)
+			total_h = card1_h + card_gap + card2_h
+			if not draw:
+				return total_h
+
+			self.cycle_account_fields(2)
+			rect = (x, y, w, card1_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Airsonic / Subsonic"),
+				_("Connect to a Subsonic-compatible server."),
+				accent,
+			)
+			prefs.subsonic_user = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Username / Email"),
+				tauon.text_air_usr,
+				0,
+				prefs.subsonic_user,
+				accent,
+			)
+			inner_y += field_h + row_gap
+			prefs.subsonic_password = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Password"),
+				tauon.text_air_pas,
+				1,
+				prefs.subsonic_password,
+				accent,
+				secret=True,
+			)
+			inner_y += field_h + row_gap
+			prefs.subsonic_server = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Server URL"),
+				tauon.text_air_ser,
+				2,
+				prefs.subsonic_server,
+				accent,
+			)
+
+			rect = (x, y + card1_h + card_gap, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Options"),
+				_("Import and authentication settings."),
+				accent,
+			)
+			prefs.subsonic_password_plain = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				prefs.subsonic_password_plain,
+				_("Use plain text authentication"),
+				_("Needed for Nextcloud Music."),
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Import music to playlist"), tauon.sub_get_album_thread, True),
+				],
+				accent,
+			)
+			return total_h
+
+		if view == 8:
+			card1_h = round(216 * gui.scale)
+			card2_h = round(170 * gui.scale)
+			card3_h = round(146 * gui.scale)
+			total_h = card1_h + card_gap + card2_h + card_gap + card3_h
+			if not draw:
+				return total_h
+
+			self.cycle_account_fields(1)
+
+			def authorise_spotify() -> None:
+				web_thread = threading.Thread(target=authserve, args=[tauon])
+				web_thread.daemon = True
+				web_thread.start()
+				time.sleep(0.1)
+				tauon.spot_ctl.auth()
+
+			def forget_spotify() -> None:
+				tauon.spot_ctl.delete_token()
+				tauon.spot_ctl.cache_saved_albums.clear()
+				prefs.spot_username = ""
+				if not prefs.launch_spotify_local:
+					prefs.spot_password = ""
+
+			rect = (x, y, w, card1_h)
+			status_text = _("Authorised.") if prefs.spotify_token else _("Not authorised.")
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"Spotify",
+				_("Remote control and library import."),
+				accent,
+			)
+			prefs.spot_mode = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				prefs.spot_mode,
+				_("Enable Spotify features"),
+				status_text,
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			account_note = prefs.spot_username if prefs.spot_username else _("Authorise after entering your client credentials.")
+			self.draw_settings_note((inner_x, inner_y, inner_w, note_h), account_note, accent, _("Status"))
+			inner_y += note_h + row_gap
+			account_action = (_("Forget account"), forget_spotify, True) if prefs.spotify_token else (_("Authorise"), authorise_spotify, True)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Setup guide"), lambda: webbrowser.open("https://tauonmusicbox.rocks/manual/spotify/", new=2, autoraise=True), False),
+					account_action,
+				],
+				accent,
+			)
+
+			card_y = y + card1_h + card_gap
+			rect = (x, card_y, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Credentials"),
+				_("Spotify application credentials."),
+				accent,
+			)
+			prefs.spot_client = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Client ID"),
+				tauon.text_spot_client,
+				0,
+				prefs.spot_client,
+				accent,
+			).strip()
+			inner_y += field_h + row_gap
+			prefs.spot_secret = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Client Secret"),
+				tauon.text_spot_secret,
+				1,
+				prefs.spot_secret,
+				accent,
+				secret=True,
+			).strip()
+
+			card_y += card2_h + card_gap
+			rect = (x, card_y, w, card3_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Playback"),
+				_("How Spotify launches and plays back."),
+				accent,
+			)
+			prefs.launch_spotify_web = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.launch_spotify_web,
+				_("Prefer launching web player"),
+				accent=accent,
+			)
+			inner_y += row_h + row_gap
+			old_local = prefs.launch_spotify_local
+			prefs.launch_spotify_local = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.launch_spotify_local,
+				_("Enable local audio playback"),
+				accent=accent,
+			)
+			if prefs.launch_spotify_local and not tauon.enable_librespot:
+				self.show_message(_("Librespot not installed?"))
+				prefs.launch_spotify_local = False
+			if prefs.launch_spotify_local != old_local:
+				self.gui.update_layout = True
+			return total_h
+
+		if view == 9:
+			card1_h = round(158 * gui.scale)
+			card2_h = round(170 * gui.scale)
+			card3_h = round(158 * gui.scale)
+			total_h = card1_h + card_gap + card2_h + card_gap + card3_h
+			if not draw:
+				return total_h
+
+			self.cycle_account_fields(1)
+
+			def test_maloja() -> None:
+				if not prefs.maloja_url or not prefs.maloja_key:
+					self.show_message(_("One or more fields is missing."))
+					return
+				url = prefs.maloja_url
+				if not url.endswith("/mlj_1"):
+					if not url.endswith("/"):
+						url += "/"
+					url += "apis/mlj_1"
+				url += "/test"
+				try:
+					result = requests.get(url, params={"key": prefs.maloja_key}, timeout=10)
+					if result.status_code == 403:
+						self.show_message(_("Connection looked successful but the API key was invalid."), mode="warning")
+					elif result.status_code == 200:
+						self.show_message(_("Connection to Maloja server was successful."), mode="done")
+					else:
+						self.show_message(_("The Maloja server returned an error."), result.text, mode="warning")
+				except Exception:
+					logging.exception("Could not communicate with the Maloja server")
+					self.show_message(_("Could not communicate with the Maloja server."), mode="warning")
+
+			rect = (x, y, w, card1_h)
+			status_text = prefs.maloja_url or _("No server configured.")
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"Maloja",
+				_("Self-hosted scrobble server."),
+				accent,
+			)
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				self.tauon.toggle_maloja,
+				_("Enable scrobbling"),
+				status_text,
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				self.tauon.toggle_scrobble_mark,
+				_("Show threshold marker"),
+				accent=accent,
+			)
+
+			card_y = y + card1_h + card_gap
+			rect = (x, card_y, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Credentials"),
+				_("Server address and API key."),
+				accent,
+			)
+			prefs.maloja_url = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Server URL"),
+				tauon.text_maloja_url,
+				0,
+				prefs.maloja_url,
+				accent,
+			).strip()
+			inner_y += field_h + row_gap
+			prefs.maloja_key = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("API key"),
+				tauon.text_maloja_key,
+				1,
+				prefs.maloja_key,
+				accent,
+				secret=True,
+			).strip()
+
+			card_y += card2_h + card_gap
+			rect = (x, card_y, w, card3_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Actions"),
+				_("Connectivity and library import."),
+				accent,
+			)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("About Maloja"), lambda: webbrowser.open("https://github.com/krateng/maloja", new=2, autoraise=True), False),
+					(_("Test connectivity"), test_maloja, True),
+				],
+				accent,
+			)
+			inner_y += action_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Get scrobble counts"), lambda: shooter(tauon.maloja_get_scrobble_counts), True),
+					(_("Clear counts"), self.clear_scrobble_counts, False),
+				],
+				accent,
+			)
+			return total_h
+
+		if view == 10:
+			card1_h = round(266 * gui.scale)
+			card2_h = round(158 * gui.scale)
+			total_h = card1_h + card_gap + card2_h
+			if not draw:
+				return total_h
+
+			self.cycle_account_fields(3)
+
+			def import_jelly_playlists() -> None:
+				found = False
+				for value in self.pctl.gen_codes.values():
+					if value.startswith("jelly"):
+						found = True
+						break
+				if not found:
+					self.show_message(_("Run music import first"))
+				else:
+					tauon.jellyfin_get_playlists_thread()
+
+			rect = (x, y, w, card1_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"Jellyfin",
+				_("Connect to a Jellyfin server."),
+				accent,
+			)
+			prefs.jelly_username = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Username"),
+				tauon.text_jelly_usr,
+				0,
+				prefs.jelly_username,
+				accent,
+			)
+			inner_y += field_h + row_gap
+			prefs.jelly_password = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Password"),
+				tauon.text_jelly_pas,
+				1,
+				prefs.jelly_password,
+				accent,
+				secret=True,
+			)
+			inner_y += field_h + row_gap
+			prefs.jelly_server_url = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Server URL"),
+				tauon.text_jelly_ser,
+				2,
+				prefs.jelly_server_url,
+				accent,
+			)
+			inner_y += field_h + row_gap
+			timeout_text = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Import timeout"),
+				tauon.text_jelly_timeout,
+				3,
+				str(prefs.jelly_timeout),
+				accent,
+			).strip()
+			try:
+				prefs.jelly_timeout = int(timeout_text)
+			except ValueError:
+				pass
+
+			rect = (x, y + card1_h + card_gap, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Actions"),
+				_("Import music and playlists."),
+				accent,
+			)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Import music"), tauon.jellyfin_get_library_thread, True),
+					(_("Import playlists"), import_jelly_playlists, False),
+				],
+				accent,
+			)
+			inner_y += action_h + row_gap
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Test connectivity"), tauon.jellyfin.test, False),
+				],
+				accent,
+			)
+			return total_h
+
+		if view == 11:
+			card1_h = round(170 * gui.scale)
+			card2_h = round(116 * gui.scale)
+			total_h = card1_h + card_gap + card2_h
+			if not draw:
+				return total_h
+
+			self.cycle_account_fields(1)
+			rect = (x, y, w, card1_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"Tauon",
+				_("Fetch a playlist from another Tauon instance."),
+				accent,
+			)
+			prefs.sat_url = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("IP"),
+				tauon.text_sat_url,
+				0,
+				prefs.sat_url,
+				accent,
+			).strip()
+			inner_y += field_h + row_gap
+			playlist_name = self.settings_text_input(
+				(inner_x, inner_y, inner_w, field_h),
+				_("Playlist name"),
+				tauon.text_sat_playlist,
+				1,
+				tauon.text_sat_playlist.text,
+				accent,
+			)
+			tauon.text_sat_playlist.text = playlist_name
+
+			def load_remote_playlist() -> None:
+				if tauon.tau.processing:
+					self.show_message(_("An operation is already running"))
+				else:
+					shooter(tauon.tau.get_playlist)
+
+			rect = (x, y + card1_h + card_gap, w, card2_h)
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				_("Actions"),
+				_("Fetch the named playlist."),
+				accent,
+			)
+			self.draw_settings_action_row(
+				(inner_x, inner_y, inner_w, action_h),
+				[
+					(_("Get playlist"), load_remote_playlist, True),
+				],
+				accent,
+			)
+			return total_h
+
+		if view == 12:
+			logged_in = os.path.isfile(tauon.tidal.save_path)
+			waiting_for_redirect = tauon.tidal.login_stage != 0 and not logged_in
+			card1_h = round(224 * gui.scale) if waiting_for_redirect else round(168 * gui.scale)
+			card2_h = round(116 * gui.scale) if logged_in else 0
+			total_h = card1_h + (card_gap + card2_h if card2_h else 0)
+			if not draw:
+				return total_h
+
+			def paste_tidal_redirect() -> None:
+				text = copy_from_clipboard()
+				if text:
+					tauon.tidal.login2(text)
+
+			rect = (x, y, w, card1_h)
+			subtitle = _("Signed in.") if logged_in else (_("Waiting for redirect.") if waiting_for_redirect else _("Not connected."))
+			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+				rect,
+				"TIDAL",
+				_("Authorise TIDAL and import favourites."),
+				accent,
+			)
+			self.draw_settings_note((inner_x, inner_y, inner_w, note_h), subtitle, accent, _("Status"))
+			inner_y += note_h + row_gap
+			if logged_in:
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Logout"), tauon.tidal.logout, True),
+					],
+					accent,
+				)
+			elif waiting_for_redirect:
+				self.draw_settings_note(
+					(inner_x, inner_y, inner_w, note_h),
+					_("Copy the full URL of the resulting page, then paste it here."),
+					accent,
+					_("Redirect"),
+				)
+				inner_y += note_h + row_gap
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Paste redirect URL"), paste_tidal_redirect, True),
+					],
+					accent,
+				)
+			else:
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Login"), tauon.tidal.login1, True),
+					],
+					accent,
+				)
+
+			if logged_in:
+				rect = (x, y + card1_h + card_gap, w, card2_h)
+				inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+					rect,
+					_("Imports"),
+					_("Pull favourites into Tauon."),
+					accent,
+				)
+				self.draw_settings_action_row(
+					(inner_x, inner_y, inner_w, action_h),
+					[
+						(_("Import albums"), lambda: shooter(tauon.tidal.fav_albums), True),
+						(_("Import tracks"), lambda: shooter(tauon.tidal.fav_tracks), False),
+					],
+					accent,
+				)
+			return total_h
+
+		card1_h = round(164 * gui.scale)
+		card2_h = round(104 * gui.scale)
+		total_h = card1_h + card_gap + card2_h
+		if not draw:
+			return total_h
+
+		self.cycle_account_fields(2 if view == 7 else 0)
+		rect = (x, y, w, card1_h)
+		inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+			rect,
+			_("Service"),
+			_("No layout available."),
+			accent,
+		)
+		self.draw_settings_note((inner_x, inner_y, inner_w, note_h), _("This service view is not available right now."), accent)
+		rect = (x, y + card1_h + card_gap, w, card2_h)
+		inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(rect, _("Actions"), "", accent)
+		self.draw_settings_action_row((inner_x, inner_y, inner_w, action_h), [(_("Back to Last.fm"), lambda: self.select_account_view(1), True)], accent)
+		return total_h
+
+	def render_settings_services_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
+		gui = self.gui
+		column_gap = round(12 * gui.scale)
+		left_w = max(round(250 * gui.scale), min(round(w * 0.34), w - round(320 * gui.scale)))
+		right_w = w - left_w - column_gap
+		scrobbling, streaming = self.settings_account_services()
+		valid_views = {view for view, title, subtitle in scrobbling + streaming}
+		if self.account_view not in valid_views:
+			self.account_view = 1
+			self.account_text_field = 0
+
+		tile_h = round(40 * gui.scale)
+		tile_gap = round(8 * gui.scale)
+		group_gap = round(12 * gui.scale)
+		tile_w = (left_w - round(40 * gui.scale) - tile_gap) // 2
+		scrobble_rows = max(1, math.ceil(len(scrobbling) / 2))
+		stream_rows = max(1, math.ceil(len(streaming) / 2))
+		nav_h = (
+			round(122 * gui.scale)
+			+ scrobble_rows * tile_h
+			+ max(0, scrobble_rows - 1) * tile_gap
+			+ group_gap
+			+ round(18 * gui.scale)
+			+ stream_rows * tile_h
+			+ max(0, stream_rows - 1) * tile_gap
+		)
+		detail_h = self.render_settings_service_detail(self.account_view, x + left_w + column_gap, y, right_w, accent, draw=False)
+		body_h = max(nav_h, detail_h)
+		if not draw:
+			return body_h
+
+		left_rect = (x, y, left_w, body_h)
+		inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+			left_rect,
+			_("Accounts"),
+			_("Pick a service to configure."),
+			accent,
+		)
+		tile_w = (inner_w - tile_gap) // 2
+
+		for heading, items in (
+			(_("Scrobbling"), scrobbling),
+			(_("Streaming"), streaming),
+		):
+			self.ddt.text((inner_x, inner_y), heading, self.colours.box_text_label, 11)
+			inner_y += round(16 * gui.scale)
+			for index, (view, title, subtitle_text) in enumerate(items):
+				row = index // 2
+				col = index % 2
+				cell_x = inner_x + col * (tile_w + tile_gap)
+				cell_y = inner_y + row * (tile_h + tile_gap)
+				self.settings_choice_tile(
+					(cell_x, cell_y, tile_w, tile_h),
+					title,
+					"",
+					self.account_view == view,
+					callback=lambda view=view: self.select_account_view(view),
+					accent=accent,
+				)
+			inner_y += max(1, math.ceil(len(items) / 2)) * tile_h + max(0, math.ceil(len(items) / 2) - 1) * tile_gap + group_gap
+
+		self.render_settings_service_detail(self.account_view, x + left_w + column_gap, y, right_w, accent, draw=True)
+		return body_h
+
 	def render_settings_stats_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		pctl = self.pctl
@@ -29220,7 +30352,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		row1_h = round(154 * gui.scale)
 		row2_h = round(96 * gui.scale)
-		row3_h = round(322 * gui.scale)
+		row3_h = round(364 * gui.scale) if self.prefs.chart_cascade else round(334 * gui.scale)
 		if self.stats_pl != pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int or self.stats_pl_timer.get() > 5:
 			self.stats_pl = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 			self.stats_pl_timer.set()
@@ -29360,28 +30492,31 @@ class Over:
 	def render_settings_about_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		column_gap = round(12 * gui.scale)
-		row1_h = round(192 * gui.scale)
-		row2_h = round(176 * gui.scale)
+		left_h = round(224 * gui.scale)
+		right_h = left_h
+		row_h = max(left_h, right_h)
 		if not draw:
-			return row1_h + row2_h + column_gap
+			return row_h
 
 		left_w = max(round(260 * gui.scale), min(round(w * 0.46), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, row1_h)
-		right_rect = (x + left_w + column_gap, y, right_w, row1_h)
+		left_rect = (x, y, left_w, left_h)
+		right_rect = (x + left_w + column_gap, y, right_w, right_h)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
 			_("Tauon"),
 			self.t_version,
 			accent,
 		)
+		action_h = round(34 * gui.scale)
+		action_gap = round(8 * gui.scale)
 		self.ddt.text((inner_x, inner_y), "Copyright © 2015-2026 Taiko2k", self.colours.box_sub_text, 13)
 		inner_y += round(24 * gui.scale)
 		self.ddt.text((inner_x, inner_y, 4, inner_w, round(44 * gui.scale)), _("This program comes with absolutely no warranty."), self.colours.box_text_label, 11)
-		inner_y += round(50 * gui.scale)
-		self.settings_action_tile((inner_x, inner_y, inner_w, round(34 * gui.scale)), _("Open website"), lambda: webbrowser.open("https://tauonmusicbox.rocks", new=2, autoraise=True), accent)
-		inner_y += round(40 * gui.scale)
-		self.settings_action_tile((inner_x, inner_y, inner_w, round(34 * gui.scale)), _("Open GPL license"), lambda: webbrowser.open("https://www.gnu.org/licenses/gpl-3.0.html", new=2, autoraise=True), accent)
+		button_y = left_rect[1] + left_rect[3] - round(14 * gui.scale) - action_h * 2 - action_gap
+		self.settings_action_tile((inner_x, button_y, inner_w, action_h), _("Open website"), lambda: webbrowser.open("https://tauonmusicbox.rocks", new=2, autoraise=True), accent)
+		button_y += action_h + action_gap
+		self.settings_action_tile((inner_x, button_y, inner_w, action_h), _("Open GPL license"), lambda: webbrowser.open("https://www.gnu.org/licenses/gpl-3.0.html", new=2, autoraise=True), accent)
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			right_rect,
@@ -29392,18 +30527,10 @@ class Over:
 		self.ddt.text((inner_x, inner_y), _("Created by"), self.colours.box_text_label, 12)
 		self.ddt.text((inner_x + round(110 * gui.scale), inner_y), "Taiko2k", self.colours.box_sub_text, 13)
 		inner_y += round(28 * gui.scale)
-		self.settings_action_tile((inner_x, inner_y, inner_w, round(34 * gui.scale)), _("Contributors"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon/graphs/contributors", new=2, autoraise=True), accent)
+		self.settings_action_tile((inner_x, inner_y, inner_w, action_h), _("Contributors"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon/graphs/contributors", new=2, autoraise=True), accent)
 		inner_y += round(40 * gui.scale)
-		self.settings_action_tile((inner_x, inner_y, inner_w, round(34 * gui.scale)), _("Source code"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon", new=2, autoraise=True), accent)
-
-		row2_y = y + row1_h + column_gap
-		self.draw_settings_note(
-			(x, row2_y, w, row2_h),
-			_("Uses SDL, Cairo, Pango, FFmpeg, Pillow, PySDL3, Tekore, pyLast, Mutagen, Send2Trash, and other open source libraries."),
-			accent,
-			_("Open source"),
-		)
-		return row1_h + row2_h + column_gap
+		self.settings_action_tile((inner_x, inner_y, inner_w, action_h), _("Source code"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon", new=2, autoraise=True), accent)
+		return row_h
 
 	def render_settings_category(self, index: int, x: int, y: int, w: int, draw: bool = True) -> int:
 		accent = self.settings_tab_accent(index)
@@ -29426,9 +30553,7 @@ class Over:
 		elif index == 6:
 			body_h = self.render_settings_transcode_category(x, body_y, w, accent, draw)
 		elif index == 7:
-			body_h = round(440 * self.gui.scale)
-			if draw:
-				self.last_fm_box(x, body_y, w, body_h)
+			body_h = self.render_settings_services_category(x, body_y, w, accent, draw)
 		elif index == 8:
 			body_h = self.render_settings_func_category(4, x, body_y, w, draw)
 		elif index == 9:
