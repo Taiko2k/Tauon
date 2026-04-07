@@ -24741,8 +24741,7 @@ class Over:
 		self.funcs(x0, y0, w0, h0)
 
 	def funcs_connected(self, x0: int, y0: int, w0: int, h0: int) -> None:
-		self.func_page = 3
-		self.funcs(x0, y0, w0, h0)
+		self.render_settings_connections_category(x0, y0, w0, self.settings_tab_accent(1), draw=True)
 
 	def funcs_advanced(self, x0: int, y0: int, w0: int, h0: int) -> None:
 		self.func_page = 4
@@ -28655,6 +28654,201 @@ class Over:
 		features_h = self.render_settings_func_category(2, x, features_y, w, draw, accent_override=general_accent)
 		return general_h + behaviour_h + features_h + block_gap * 2
 
+	def render_settings_connections_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
+		gui = self.gui
+		tauon = self.tauon
+		prefs = self.prefs
+		ddt = self.ddt
+		colours = self.colours
+
+		column_gap = round(12 * gui.scale)
+		block_gap = round(12 * gui.scale)
+		row_gap = round(6 * gui.scale)
+		row_h = round(42 * gui.scale)
+		compact_row_h = round(30 * gui.scale)
+		choice_h = round(42 * gui.scale)
+		label_gap = round(16 * gui.scale)
+		tile_gap = round(8 * gui.scale)
+		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
+		right_w = w - left_w - column_gap
+		top_row_h = round(286 * gui.scale)
+		discord_h = round(234 * gui.scale) if prefs.discord_enable else 0
+		total_h = top_row_h + (block_gap + discord_h if discord_h else 0)
+		if not draw:
+			return total_h
+
+		left_rect = (x, y, left_w, top_row_h)
+		right_rect = (x + left_w + column_gap, y, right_w, top_row_h)
+
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			left_rect,
+			_("Remote, presence and sharing"),
+			_("Network and sharing features."),
+			accent,
+		)
+		remote_old = prefs.enable_remote
+		prefs.enable_remote = self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h),
+			prefs.enable_remote,
+			_("Enable remote control"),
+			_("Change requires restart."),
+			accent,
+		)
+		inner_y += row_h + row_gap
+
+		if prefs.enable_remote and prefs.enable_remote != remote_old:
+			self.show_message(
+				_("Notice: This API is not security hardened."),
+				_("Only enable in a trusted LAN and do not expose port (7814) to the internet"),
+				mode="warning",
+			)
+
+		listen_along_enabled = self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h),
+			tauon.toggle_enable_web,
+			_("Enable Listen Along"),
+			_("Start the web server for remote playback."),
+			accent,
+		)
+		inner_y += row_h + row_gap
+		link = f"http://localhost:{prefs.metadata_page_port!s}/listenalong"
+
+		def open_listenalong() -> None:
+			webbrowser.open(link, new=2, autoraise=True)
+
+		if listen_along_enabled:
+			self.settings_action_tile(
+				(inner_x, inner_y, inner_w, round(36 * gui.scale)),
+				_("Open Listen Along page"),
+				open_listenalong,
+				accent,
+				emphasis=True,
+			)
+			inner_y += round(36 * gui.scale) + row_gap
+
+		discord_old = prefs.discord_enable
+		discord_state = gui.discord_status if prefs.discord_enable else _("Disabled")
+		discord_subtitle = _("Discord status: {state}").format(state=discord_state)
+		prefs.discord_enable = self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h),
+			prefs.discord_enable,
+			_("Enable Discord Rich Presence"),
+			discord_subtitle,
+			accent,
+		)
+
+		if prefs.discord_enable and not discord_old:
+			if self.snap_mode:
+				self.show_message(_("Sorry, this feature is unavailable with snap"), mode="error")
+				prefs.discord_enable = False
+			elif not self.prefs.discord_allow:
+				self.show_message(_("Missing dependency python-pypresence"))
+				prefs.discord_enable = False
+			else:
+				try:
+					tauon._signal_discord()
+				except Exception:
+					tauon.hit_discord()
+
+		if discord_old and not prefs.discord_enable and prefs.discord_active:
+			prefs.disconnect_discord = True
+
+		self.draw_lyrics_source_settings(right_rect, accent)
+
+		if not prefs.discord_enable:
+			return total_h
+
+		discord_rect = (x, y + top_row_h + block_gap, w, discord_h)
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			discord_rect,
+			_("Discord"),
+			_("Layout and buttons."),
+			accent,
+		)
+
+		left_col_w = (inner_w - column_gap) // 2
+		right_col_x = inner_x + left_col_w + column_gap
+		right_col_w = inner_w - left_col_w - column_gap
+		choice_w = (left_col_w - tile_gap) // 2
+
+		def set_discord_card_layout(layout: str) -> None:
+			prefs.discord_card_layout = layout
+			prefs.discord_presence_layout = layout
+
+		def set_member_list_display(display: str) -> None:
+			prefs.discord_member_list_display = display
+
+		ddt.text((inner_x, inner_y), _("Card order"), colours.box_text_label, 11)
+		choice_y = inner_y + label_gap
+		self.settings_choice_tile(
+			(inner_x, choice_y, choice_w, choice_h),
+			_("Song first"),
+			"",
+			prefs.discord_card_layout == "title_artist",
+			lambda: set_discord_card_layout("title_artist"),
+			accent,
+		)
+		self.settings_choice_tile(
+			(inner_x + choice_w + tile_gap, choice_y, choice_w, choice_h),
+			_("Artist first"),
+			"",
+			prefs.discord_card_layout == "artist_title",
+			lambda: set_discord_card_layout("artist_title"),
+			accent,
+		)
+
+		member_y = choice_y + choice_h + round(12 * gui.scale)
+		ddt.text((inner_x, member_y), _("Member list shows:"), colours.box_text_label, 11)
+		member_choice_y = member_y + label_gap
+		self.settings_choice_tile(
+			(inner_x, member_choice_y, choice_w, choice_h),
+			_("Song"),
+			"",
+			prefs.discord_member_list_display == "song",
+			lambda: set_member_list_display("song"),
+			accent,
+		)
+		self.settings_choice_tile(
+			(inner_x + choice_w + tile_gap, member_choice_y, choice_w, choice_h),
+			_("Artist"),
+			"",
+			prefs.discord_member_list_display == "artist",
+			lambda: set_member_list_display("artist"),
+			accent,
+		)
+
+		ddt.text((right_col_x, inner_y), _("Options"), colours.box_text_label, 11)
+		option_y = inner_y + label_gap
+		prefs.discord_clean_title = self.settings_switch_row(
+			(right_col_x, option_y, right_col_w, compact_row_h),
+			prefs.discord_clean_title,
+			_("Clean title (Removes .feat etc)"),
+			accent=accent,
+		)
+		option_y += compact_row_h + row_gap
+		prefs.discord_fast_updates = self.settings_switch_row(
+			(right_col_x, option_y, right_col_w, compact_row_h),
+			prefs.discord_fast_updates,
+			_("Fast updates"),
+			accent=accent,
+		)
+		option_y += compact_row_h + row_gap
+		prefs.discord_lastfm_button = self.settings_switch_row(
+			(right_col_x, option_y, right_col_w, compact_row_h),
+			prefs.discord_lastfm_button,
+			_("Last.fm link button"),
+			accent=accent,
+		)
+		option_y += compact_row_h + row_gap
+		prefs.discord_show_tauon_button = self.settings_switch_row(
+			(right_col_x, option_y, right_col_w, compact_row_h),
+			prefs.discord_show_tauon_button,
+			_("Tauon webstite button"),
+			accent=accent,
+		)
+
+		return total_h
+
 	def render_settings_view_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		column_gap = round(12 * gui.scale)
@@ -30540,7 +30734,7 @@ class Over:
 		if index == 0:
 			body_h = self.render_settings_general_category(x, body_y, w, draw)
 		elif index == 1:
-			body_h = self.render_settings_func_category(3, x, body_y, w, draw)
+			body_h = self.render_settings_connections_category(x, body_y, w, accent, draw)
 		elif index == 2:
 			body_h = self.render_settings_audio_category(x, body_y, w, accent, draw)
 		elif index == 3:
