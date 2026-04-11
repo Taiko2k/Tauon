@@ -25501,13 +25501,11 @@ class Over:
 		text_x = x + round(14 * self.gui.scale)
 		title_font = 13
 		title_max_w = w - round(84 * self.gui.scale)
-		title_metrics = self.ddt.get_text_wh(title, title_font, title_max_w)
-		title_h = title_metrics[1] if title_metrics is not None else round(14 * self.gui.scale)
-		title_y = y + round(8 * self.gui.scale) if subtitle else y + max(0, (h - title_h) // 2)
+		title_y = y + round(6 * self.gui.scale) if subtitle else y + round(7 * self.gui.scale)
 		self.ddt.text((text_x, title_y), title, self.colours.box_text, title_font, bg=fill, max_w=title_max_w)
 		if subtitle:
 			self.ddt.text(
-				(text_x, y + round(23 * self.gui.scale)),
+				(text_x, y + round(21 * self.gui.scale)),
 				subtitle,
 				self.colours.box_text_label,
 				11,
@@ -25666,9 +25664,8 @@ class Over:
 		text_colour = self.colours.box_text if hover or emphasis else self.colours.box_button_text
 		text_font = 212
 		text_max_w = w - round(44 * self.gui.scale)
-		text_metrics = self.ddt.get_text_wh(title, text_font, text_max_w)
-		text_h = text_metrics[1] if text_metrics is not None else round(14 * self.gui.scale)
-		text_y = (button_y + max(0, (button_h - text_h) // 2)) - round(2 * self.gui.scale)
+		# text_metrics = self.ddt.get_text_wh(title, text_font, text_max_w)
+		text_y = button_y + round(8 * self.gui.scale)
 		self.ddt.text((x + round(14 * self.gui.scale), text_y), title, text_colour, text_font, bg=fill, max_w=text_max_w)
 
 		arrow_y = button_y + button_h // 2
@@ -30564,7 +30561,7 @@ class Over:
 		strings = self.tauon.strings
 		column_gap = round(12 * gui.scale)
 		row1_h = round(154 * gui.scale)
-		row2_h = round(96 * gui.scale)
+		row2_h = round(109 * gui.scale)
 		row3_h = round(364 * gui.scale) if self.prefs.chart_cascade else round(334 * gui.scale)
 		if self.stats_pl != pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int or self.stats_pl_timer.get() > 5:
 			self.stats_pl = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
