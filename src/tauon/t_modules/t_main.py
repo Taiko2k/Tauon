@@ -49981,9 +49981,25 @@ def main(holder: Holder) -> None:
 				gui.delay_frame(0.02)
 				inp.k_input = True
 
+		text_entry_shortcuts_blocked = (
+			gui.rename_folder_box
+			or tauon.rename_track_box.active
+			or gui.rename_playlist_box
+			or radiobox.active
+			or pref_box.enabled
+			or tauon.trans_edit_box.active
+			or gui.timed_lyrics_editing_now
+			or tauon.export_playlist_box.active
+		)
+
 		if inp.k_input and inp.key_focused == 0:
 			if gui.timed_lyrics_editing_now:
 				keymaps.hits.clear()
+			elif text_entry_shortcuts_blocked and keymaps.hits:
+				escape_pressed = keymaps.test("escape")
+				keymaps.hits.clear()
+				if escape_pressed:
+					inp.key_esc_press = True
 			if keymaps.hits:
 				n = 1
 				while n < 10:
@@ -50052,15 +50068,7 @@ def main(holder: Holder) -> None:
 				sdl3.SDL_SetWindowFullscreen(t_window, 0)
 
 			# Disable keys for text cursor control
-			if (
-				not gui.rename_folder_box
-				and not tauon.rename_track_box.active
-				and not gui.rename_playlist_box
-				and not radiobox.active
-				and not pref_box.enabled
-				and not tauon.trans_edit_box.active
-				and not gui.timed_lyrics_editing_now
-			):
+			if not text_entry_shortcuts_blocked:
 				# On macOS, the key labeled Delete reports as BACKSPACE in SDL.
 				# Require Command+Backspace here so plain Backspace keeps its normal meaning.
 				macos_delete_shortcut = macos and inp.key_ctrl_down and inp.key_backspace_press and not gui.quick_search_mode
@@ -50120,17 +50128,7 @@ def main(holder: Holder) -> None:
 					pctl.selected_in_playlist = len(pctl.default_playlist) - 1
 					gui.pl_update = 1
 
-			if (
-				not pref_box.enabled
-				and not radiobox.active
-				and not tauon.rename_track_box.active
-				and not gui.rename_folder_box
-				and not gui.rename_playlist_box
-				and not tauon.search_over.active
-				and not gui.box_over
-				and not tauon.trans_edit_box.active
-				and not gui.timed_lyrics_editing_now
-			):
+			if not text_entry_shortcuts_blocked and not tauon.search_over.active and not gui.box_over:
 				if gui.quick_search_mode:
 					if keymaps.test("add-to-queue") and pctl.selected_ready():
 						tauon.add_selected_to_queue()
@@ -50155,7 +50153,7 @@ def main(holder: Holder) -> None:
 				inp.key_return_press = False
 				inp.level_2_enter = True
 
-			if inp.key_ctrl_down and inp.key_z_press:
+			if inp.key_ctrl_down and inp.key_z_press and not text_entry_shortcuts_blocked:
 				tauon.undo.undo()
 
 			if keymaps.test("quit"):
