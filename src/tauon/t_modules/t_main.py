@@ -28529,16 +28529,6 @@ class Over:
 		self.settings_action_tile((x, y, tile_w, tile_h), _("Thin default"), self.small_preset, accent, emphasis=small_active)
 		self.settings_action_tile((x + tile_w + tile_gap, y, tile_w, tile_h), _("Thick default"), self.large_preset, accent, emphasis=large_active)
 
-		bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
-		remaining_h = bottom - y - tile_h
-		if remaining_h > round(40 * gui.scale):
-			self.draw_settings_note(
-				(x, y + tile_h + row_gap, w, remaining_h - row_gap),
-				_("Use a preset to reset the layout, then adjust row height or baseline."),
-				accent,
-				_("Presets"),
-			)
-
 
 	def set_playlist_cycle(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -30818,7 +30808,8 @@ class Over:
 			self.close()
 
 		full_width = round(875 * gui.scale)
-		full_height = round(440 * gui.scale)
+		header_height = round(58 * gui.scale)
+		full_height = round(440 * gui.scale) - header_height // 2
 		side_width = round(150 * gui.scale)
 		content_width = full_width - side_width
 		content_height = full_height
@@ -30882,7 +30873,6 @@ class Over:
 
 		content_x = x + side_width
 		content_y = y
-		header_height = round(58 * gui.scale)
 		inner_pad_x = round(12 * gui.scale)
 		content_top_pad = round(12 * gui.scale)
 		content_bottom_pad = 0
@@ -30891,9 +30881,9 @@ class Over:
 		scrollbar_right_inset = 0
 		view_rect = (
 			content_x + inner_pad_x,
-			content_y + header_height,
+			content_y,
 			content_width - inner_pad_x * 2,
-			content_height - header_height - content_bottom_pad,
+			content_height - content_bottom_pad,
 		)
 		scrollbar_x = content_x + content_width - scrollbar_right_inset - scrollbar_w
 		doc_w = scrollbar_x - scrollbar_gap - view_rect[0]
@@ -30917,7 +30907,7 @@ class Over:
 			doc_bottom_pad += max(0, view_rect[3] - (content_top_pad + category_heights[-1] + doc_bottom_pad))
 		doc_height += doc_bottom_pad
 
-		max_content_scroll = self.sync_settings_content_scroll((content_x, content_y + header_height, content_width, content_height - header_height), doc_height)
+		max_content_scroll = self.sync_settings_content_scroll((content_x, content_y, content_width, content_height), doc_height)
 		active_anchor = self.settings_content_scroll + round(24 * gui.scale)
 		for index, offset in enumerate(self.settings_category_offsets):
 			if active_anchor >= offset:
@@ -30962,23 +30952,6 @@ class Over:
 					self.tauon.smooth_scroll.reset_motion("settings content")
 					self.lyrics_panel = False
 			yy += row_step
-
-		header_bg = alpha_blend(ColourRGBA(255, 255, 255, 10), colours.box_background)
-		ddt.rect_a(
-			(content_x, content_y), (content_width, header_height),
-			header_bg)
-		ddt.rect_a(
-			(content_x, content_y + header_height - round(1 * gui.scale)),
-			(content_width, round(1 * gui.scale)),
-			alpha_mod(colours.box_text_border, 170))
-
-		ddt.text((content_x + inner_pad_x, content_y + round(18 * gui.scale)), _("Settings"), colours.box_text, 214, bg=header_bg)
-
-		close_w = ddt.get_text_w(_("Close"), 211) + round(18 * gui.scale)
-		self.button(
-			content_x + content_width - close_w - round(18 * gui.scale),
-			content_y + round(16 * gui.scale),
-			_("Close"), self.close, width=close_w)
 
 		if max_content_scroll > 0:
 			self.settings_content_scroll = self.settings_content_scroll_bar.draw(
