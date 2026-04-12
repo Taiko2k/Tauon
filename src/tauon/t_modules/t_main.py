@@ -25148,18 +25148,20 @@ class Over:
 		selected_fill = alpha_blend(alpha_mod(accent, 38), list_fill)
 		hover_fill = alpha_blend(ColourRGBA(255, 255, 255, 14), list_fill)
 		divider = alpha_blend(alpha_mod(accent, 80), colours.box_text_border)
+		card_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), colours.box_background)
 
 		if footer_h:
 			ddt.rect_a((x + inner_pad, footer_top), (w - inner_pad * 2, round(1 * gui.scale)), divider)
 
 		title_x = x + inner_pad
 		title_y = y + round(10 * gui.scale)
-		ddt.text((title_x, title_y), _("Audio Output Device"), colours.box_text, 213)
+		ddt.text((title_x, title_y), _("Audio Output Device"), colours.box_text, 213, bg=card_fill)
 		ddt.text(
 			(title_x, title_y + round(18 * gui.scale)),
 			_("Choose where Tauon sends playback."),
 			colours.box_text_label,
 			11,
+			bg=card_fill,
 		)
 
 		selected_device = prefs.phazor_device_selected
@@ -25213,6 +25215,7 @@ class Over:
 				_("No output devices detected"),
 				colours.box_text_label,
 				212,
+				bg=list_fill,
 				max_w=list_rect[2] - content_pad_x * 2,
 			)
 			ddt.text(
@@ -25220,6 +25223,7 @@ class Over:
 				_("Try refreshing audio or restarting Tauon."),
 				colours.box_text_label,
 				10,
+				bg=list_fill,
 				max_w=list_rect[2] - content_pad_x * 2,
 			)
 		else:
@@ -25432,6 +25436,7 @@ class Over:
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
 		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
 		self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+		self.ddt.text_background_colour = fill
 
 		pad_x = round(16 * self.gui.scale)
 		inner_x = x + pad_x + round(4 * self.gui.scale)
@@ -25439,7 +25444,7 @@ class Over:
 		inner_w = w - pad_x * 2 - round(4 * self.gui.scale)
 
 		if title:
-			self.ddt.text((inner_x, inner_y), title, self.colours.box_text, 213)
+			self.ddt.text((inner_x, inner_y), title, self.colours.box_text, 213, bg=fill)
 			inner_y += round(20 * self.gui.scale)
 		if subtitle:
 			sub_h = self.ddt.text(
@@ -25447,6 +25452,7 @@ class Over:
 				subtitle,
 				self.colours.box_text_label,
 				11,
+				bg=fill,
 			) or 0
 			inner_y += max(sub_h, round(14 * self.gui.scale))
 
@@ -25622,6 +25628,7 @@ class Over:
 				subtitle,
 				self.colours.box_text_label,
 				10,
+				bg=fill,
 			)
 
 		return active
@@ -25832,6 +25839,7 @@ class Over:
 				subtitle,
 				self.colours.box_text_label,
 				11,
+				bg=fill,
 			)
 
 		return hit
@@ -25859,6 +25867,7 @@ class Over:
 			text,
 			self.colours.box_text_label,
 			11,
+			bg=fill,
 		)
 
 	def select_account_view(self, view: int) -> None:
@@ -25934,7 +25943,7 @@ class Over:
 		if active:
 			border = alpha_blend(alpha_mod(accent, 90), border)
 
-		self.ddt.text((x, label_y), title, self.colours.box_text_label, 11)
+		self.ddt.text((x, label_y), title, self.colours.box_text_label, 11, bg=self.ddt.text_background_colour)
 		self.fields.add(field_rect)
 		if hover and (self.click or self.inp.level_2_right_click):
 			self.account_text_field = field_id
@@ -30753,7 +30762,7 @@ class Over:
 		elif index == 2:
 			body_h = self.render_settings_audio_category(x, body_y, w, accent, draw)
 		elif index == 3:
-			body_h = round(238 * self.gui.scale)
+			body_h = round(248 * self.gui.scale)
 			if draw:
 				self.config_v(x, body_y, w, body_h)
 		elif index == 4:
@@ -30916,8 +30925,12 @@ class Over:
 
 		scroll_start = int(self.settings_nav_scroll)
 		scroll_offset = (self.settings_nav_scroll - scroll_start) * max(row_step, 1)
-		active_bg = alpha_blend(alpha_mod(tab_hl, 160), tab_bg)
-		hover_bg = alpha_blend(alpha_mod(tab_hl, 70), tab_bg)
+		if is_light(tab_bg):
+			active_bg = rgb_add_hls(tab_bg, l=-0.09, s=0.03)
+			hover_bg = rgb_add_hls(tab_bg, l=-0.05, s=0.02)
+		else:
+			active_bg = rgb_add_hls(tab_bg, l=0.08, s=0.03)
+			hover_bg = rgb_add_hls(tab_bg, l=0.04, s=0.02)
 		yy = nav_y - scroll_offset
 		for index, item in enumerate(self.tabs):
 			if index < scroll_start:
@@ -30950,15 +30963,16 @@ class Over:
 					self.lyrics_panel = False
 			yy += row_step
 
+		header_bg = alpha_blend(ColourRGBA(255, 255, 255, 10), colours.box_background)
 		ddt.rect_a(
 			(content_x, content_y), (content_width, header_height),
-			alpha_blend(ColourRGBA(255, 255, 255, 10), colours.box_background))
+			header_bg)
 		ddt.rect_a(
 			(content_x, content_y + header_height - round(1 * gui.scale)),
 			(content_width, round(1 * gui.scale)),
 			alpha_mod(colours.box_text_border, 170))
 
-		ddt.text((content_x + inner_pad_x, content_y + round(18 * gui.scale)), _("Settings"), colours.box_text, 214)
+		ddt.text((content_x + inner_pad_x, content_y + round(18 * gui.scale)), _("Settings"), colours.box_text, 214, bg=header_bg)
 
 		close_w = ddt.get_text_w(_("Close"), 211) + round(18 * gui.scale)
 		self.button(
