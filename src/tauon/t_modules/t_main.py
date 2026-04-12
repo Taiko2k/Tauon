@@ -25644,6 +25644,8 @@ class Over:
 		title_max_w = w - round(32 * self.gui.scale)
 		title_font = 12
 		title_y = y + round(11 * self.gui.scale)
+		if not subtitle:
+			title_y -= round(2 * self.gui.scale)
 		self.ddt.text(
 			(x + round(12 * self.gui.scale), title_y),
 			title,
@@ -25885,7 +25887,7 @@ class Over:
 		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
 
 		text_x = x + round(14 * self.gui.scale)
-		text_y = y + round(10 * self.gui.scale)
+		text_y = y + round(7 * self.gui.scale)
 		if title:
 			self.ddt.text((text_x, text_y), title, self.colours.box_text, 212, bg=fill)
 			text_y += round(17 * self.gui.scale)
@@ -29485,7 +29487,7 @@ class Over:
 			row1_h += round(36 * gui.scale)
 		if prefs.transcode_codec != "flac":
 			row1_h += round(30 * gui.scale)
-		row2_h = section_header_h + round(302 * gui.scale) + section_bottom_pad
+		row2_h = section_header_h + round(322 * gui.scale) + section_bottom_pad
 		if not draw:
 			return row1_h + row2_h + column_gap
 
@@ -29579,9 +29581,11 @@ class Over:
 		selected_playlist = _("No sync playlist selected")
 		if prefs.sync_playlist and pl is not None:
 			selected_playlist = self.pctl.multi_playlist[pl].title
-		self.draw_settings_note((inner_x, inner_y, inner_w, round(42 * gui.scale)), selected_playlist, accent, _("Playlist"))
+		self.draw_settings_note((inner_x, inner_y, inner_w, round(42 * gui.scale)), selected_playlist, accent, _("Source Playlist"))
 		inner_y += round(50 * gui.scale)
 
+		self.ddt.text((inner_x, inner_y), _("Target folder"), self.colours.box_text_label, 11, bg=self.ddt.text_background_colour)
+		inner_y += round(18 * gui.scale)
 		field_h = round(24 * gui.scale)
 		rect1 = (inner_x, inner_y, inner_w - round(42 * gui.scale), field_h)
 		self.draw_settings_text_field(
