@@ -24639,6 +24639,10 @@ class Over:
 		self.sync_view = False
 
 		self.account_text_field: int = -1
+		self.settings_text_focus: TextBox2 | None = None
+		self.settings_text_order: list[TextBox2] = []
+		self.settings_text_seen: list[TextBox2] = []
+		self.settings_text_hit = False
 
 		self.themes = []
 		self.view_supporters = False
@@ -25136,33 +25140,21 @@ class Over:
 			accent = self.settings_page_accent()
 
 		x, y, w, h = rect
-		self.draw_settings_card(rect)
-
-		inner_pad = round(20 * gui.scale)
-		header_h = round(50 * gui.scale)
-		footer_h = round(42 * gui.scale) if self.platform_system == "Linux" else 0
-		footer_top = y + h - footer_h if footer_h else y + h
-
-		list_fill = alpha_blend(ColourRGBA(255, 255, 255, 5), colours.box_background)
-		list_border = alpha_blend(ColourRGBA(255, 255, 255, 16), colours.box_text_border)
-		selected_fill = alpha_blend(alpha_mod(accent, 38), list_fill)
-		hover_fill = alpha_blend(ColourRGBA(255, 255, 255, 14), list_fill)
-		divider = alpha_blend(alpha_mod(accent, 80), colours.box_text_border)
-		card_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), colours.box_background)
-
-		if footer_h:
-			ddt.rect_a((x + inner_pad, footer_top), (w - inner_pad * 2, round(1 * gui.scale)), divider)
-
-		title_x = x + inner_pad
-		title_y = y + round(10 * gui.scale)
-		ddt.text((title_x, title_y), _("Audio Output Device"), colours.box_text, 213, bg=card_fill)
-		ddt.text(
-			(title_x, title_y + round(18 * gui.scale)),
+		inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
+			rect,
+			_("Audio Output Device"),
 			_("Choose where Tauon sends playback."),
-			colours.box_text_label,
-			11,
-			bg=card_fill,
+			accent,
 		)
+
+		section_bottom = y + h - round(14 * gui.scale)
+		panel_fill = alpha_blend(ColourRGBA(255, 255, 255, 5), colours.box_background)
+		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 16), colours.box_text_border)
+		selected_fill = alpha_blend(alpha_mod(accent, 34), panel_fill)
+		hover_fill = alpha_blend(ColourRGBA(255, 255, 255, 12), panel_fill)
+		badge_fill = alpha_blend(alpha_mod(accent, 22), panel_fill)
+		badge_border = alpha_blend(alpha_mod(accent, 90), panel_border)
+		panel_gap = round(8 * gui.scale)
 
 		selected_device = prefs.phazor_device_selected
 		if selected_device not in prefs.phazor_devices and prefs.phazor_devices:
@@ -25170,24 +25162,32 @@ class Over:
 		if not selected_device:
 			selected_device = _("No device selected")
 
+		stack_label_h = round(16 * gui.scale) if self.platform_system == "Linux" else 0
+		stack_choice_h = round(42 * gui.scale) if self.platform_system == "Linux" else 0
+		stack_gap = round(8 * gui.scale) if self.platform_system == "Linux" else 0
+		list_y = inner_y
+		list_bottom = section_bottom
+		if self.platform_system == "Linux":
+			list_bottom -= stack_choice_h + stack_gap + stack_label_h + round(10 * gui.scale)
+
 		list_rect = (
-			title_x,
-			y + header_h + round(4 * gui.scale),
-			w - inner_pad * 2,
-			max(round(72 * gui.scale), footer_top - y - header_h - round(18 * gui.scale)),
+			inner_x,
+			list_y,
+			inner_w,
+			max(round(92 * gui.scale), list_bottom - list_y),
 		)
-		ddt.bordered_rect(list_rect, list_fill, list_border, round(1 * gui.scale))
+		ddt.bordered_rect(list_rect, panel_fill, panel_border, round(1 * gui.scale))
 		self.fields.add(list_rect)
 
 		content_pad_x = round(8 * gui.scale)
-		content_pad_y = round(6 * gui.scale)
-		row_h = round(24 * gui.scale)
-		row_gap = round(5 * gui.scale)
+		content_pad_y = round(8 * gui.scale)
+		row_h = round(34 * gui.scale)
+		row_gap = round(6 * gui.scale)
 		row_step = row_h + row_gap
 		scrollbar_w = round(10 * gui.scale)
 		scrollbar_gap = round(8 * gui.scale)
 
-		visible_rows = max(1, (list_rect[3] - content_pad_y * 2 + row_gap) // max(row_step, 1))
+		visible_rows = int(max(1, (list_rect[3] - content_pad_y * 2 + row_gap) // max(row_step, 1)))
 		max_device_scroll = max(len(prefs.phazor_devices) - visible_rows, 0)
 		if self.coll(list_rect) and self.scroll:
 			self.device_scroll_bar_position -= self.scroll
@@ -25207,6 +25207,7 @@ class Over:
 				max_device_scroll,
 				click=self.click,
 			)
+			self.device_scroll_bar_position = min(max(self.device_scroll_bar_position, 0), max_device_scroll)
 			scroll_index = int(self.device_scroll_bar_position)
 
 		if not prefs.phazor_devices:
@@ -25215,7 +25216,7 @@ class Over:
 				_("No output devices detected"),
 				colours.box_text_label,
 				212,
-				bg=list_fill,
+				bg=panel_fill,
 				max_w=list_rect[2] - content_pad_x * 2,
 			)
 			ddt.text(
@@ -25223,13 +25224,14 @@ class Over:
 				_("Try refreshing audio or restarting Tauon."),
 				colours.box_text_label,
 				10,
-				bg=list_fill,
+				bg=panel_fill,
 				max_w=list_rect[2] - content_pad_x * 2,
 			)
 		else:
 			reload = False
 			row_y = list_rect[1] + content_pad_y
-			for name in prefs.phazor_devices[scroll_index:scroll_index + visible_rows]:
+			slice_end = int(scroll_index + visible_rows)
+			for name in prefs.phazor_devices[scroll_index:slice_end]:
 				row_rect = (list_rect[0] + content_pad_x, row_y, row_w, row_h)
 				row_hover = self.coll(row_rect)
 				row_selected = selected_device == name
@@ -25240,24 +25242,44 @@ class Over:
 					row_selected = True
 					reload = True
 
-				row_fill = list_fill
+				row_fill = panel_fill
 				if row_hover:
 					row_fill = hover_fill
 				if row_selected:
 					row_fill = selected_fill
 
-				ddt.bordered_rect(row_rect, row_fill, list_border, round(1 * gui.scale))
+				row_border = badge_border if row_selected else panel_border
+				ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
+
+				indicator_rect = (
+					row_rect[0] + round(10 * gui.scale),
+					row_rect[1] + (row_rect[3] - round(12 * gui.scale)) // 2,
+					round(12 * gui.scale),
+					round(12 * gui.scale),
+				)
+				ddt.bordered_rect(
+					indicator_rect,
+					alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill),
+					row_border,
+					round(1 * gui.scale),
+				)
 				if row_selected:
 					ddt.rect(
-						(row_rect[0], row_rect[1], round(5 * gui.scale), row_rect[3]),
+						(
+							indicator_rect[0] + round(3 * gui.scale),
+							indicator_rect[1] + round(3 * gui.scale),
+							indicator_rect[2] - round(6 * gui.scale),
+							indicator_rect[3] - round(6 * gui.scale),
+						),
 						accent,
 					)
 
-				label_max_w = row_rect[2] - round(22 * gui.scale)
+				label_x = indicator_rect[0] + indicator_rect[2] + round(10 * gui.scale)
+				label_max_w = row_rect[2] - (label_x - row_rect[0]) - round(12 * gui.scale)
 				device_name = self.tauon.trunc_line(name, 11, label_max_w)
 				text_colour = colours.box_sub_text if row_selected or row_hover else colours.box_text
 				ddt.text(
-					(row_rect[0] + round(14 * gui.scale), row_rect[1] + round(4 * gui.scale)),
+					(label_x, row_rect[1] + round(8 * gui.scale)),
 					device_name,
 					text_colour,
 					11,
@@ -25271,23 +25293,33 @@ class Over:
 				self.pctl.playerCommand = "set-device"
 				self.pctl.playerCommandReady = True
 
-		option_y = footer_top + round(12 * gui.scale)
-		if footer_h and self.platform_system == "Linux":
-			old_pipewire = prefs.pipewire
-			prefs.pipewire = self.toggle_square(
-				title_x,
-				option_y,
-				prefs.pipewire ^ True,
+		if self.platform_system == "Linux":
+			def set_pipewire(enabled: bool) -> None:
+				old_pipewire = prefs.pipewire
+				prefs.pipewire = enabled
+				if prefs.pipewire != old_pipewire:
+					self.show_message(_("Please restart Tauon for this change to take effect"))
+
+			footer_label_y = section_bottom - stack_choice_h - stack_gap - stack_label_h
+			ddt.text((inner_x, footer_label_y), _("Audio stack"), colours.box_text_label, 11, bg=self.ddt.text_background_colour)
+			choice_y = footer_label_y + stack_label_h
+			choice_w = (inner_w - panel_gap) // 2
+			self.settings_choice_tile(
+				(inner_x, choice_y, choice_w, stack_choice_h),
 				_("PulseAudio"),
-			) ^ True
-			prefs.pipewire = self.toggle_square(
-				title_x + round(122 * gui.scale),
-				option_y,
-				prefs.pipewire,
-				_("PipeWire"),
+				"",
+				not prefs.pipewire,
+				lambda: set_pipewire(False),
+				accent,
 			)
-			if old_pipewire != prefs.pipewire:
-				self.show_message(_("Please restart Tauon for this change to take effect"))
+			self.settings_choice_tile(
+				(inner_x + choice_w + panel_gap, choice_y, choice_w, stack_choice_h),
+				_("PipeWire"),
+				"",
+				prefs.pipewire,
+				lambda: set_pipewire(True),
+				accent,
+			)
 
 	def reload_device(self, _) -> None:
 		self.pctl.playerCommand = "reload"
@@ -25611,9 +25643,7 @@ class Over:
 
 		title_max_w = w - round(32 * self.gui.scale)
 		title_font = 12
-		title_metrics = self.ddt.get_text_wh(title, title_font, title_max_w)
-		title_h = title_metrics[1] if title_metrics is not None else round(13 * self.gui.scale)
-		title_y = y + round(11 * self.gui.scale) if subtitle else y + max(0, (h - title_h) // 2)
+		title_y = y + round(11 * self.gui.scale)
 		self.ddt.text(
 			(x + round(12 * self.gui.scale), title_y),
 			title,
@@ -25829,9 +25859,7 @@ class Over:
 		text_x = x + round(34 * self.gui.scale)
 		title_font = 13
 		title_max_w = w - round(46 * self.gui.scale)
-		title_metrics = self.ddt.get_text_wh(title, title_font, title_max_w)
-		title_h = title_metrics[1] if title_metrics is not None else round(14 * self.gui.scale)
-		title_y = y + round(9 * self.gui.scale) if subtitle else y + max(0, (h - title_h) // 2)
+		title_y = y + round(9 * self.gui.scale)
 		self.ddt.text((text_x, title_y), title, self.colours.box_text, title_font, bg=fill, max_w=title_max_w)
 		if subtitle:
 			self.ddt.text(
@@ -25873,6 +25901,7 @@ class Over:
 	def select_account_view(self, view: int) -> None:
 		self.account_view = view
 		self.account_text_field = 0
+		self.settings_text_focus = None
 		self.gui.update_layout = True
 
 	def cycle_account_fields(self, max_field: int) -> None:
@@ -25890,6 +25919,98 @@ class Over:
 				self.account_text_field = max_field
 			if self.account_text_field > max_field:
 				self.account_text_field = 0
+
+	def begin_settings_text_inputs(self) -> None:
+		self.settings_text_seen = []
+		self.settings_text_hit = False
+		if self.inp.key_tab_press and self.settings_text_order:
+			step = -1 if self.inp.key_shift_down or self.inp.key_shiftr_down else 1
+			if self.settings_text_focus not in self.settings_text_order:
+				self.settings_text_focus = self.settings_text_order[-1] if step < 0 else self.settings_text_order[0]
+			else:
+				index = self.settings_text_order.index(self.settings_text_focus)
+				self.settings_text_focus = self.settings_text_order[(index + step) % len(self.settings_text_order)]
+
+	def finish_settings_text_inputs(self) -> None:
+		self.settings_text_order = self.settings_text_seen[:]
+		if self.settings_text_focus not in self.settings_text_order:
+			self.settings_text_focus = None
+		elif (self.click or self.inp.level_2_right_click) and not self.settings_text_hit:
+			self.settings_text_focus = None
+
+	def settings_text_field_state(
+		self,
+		field_rect: tuple[int, int, int, int],
+		text_box: TextBox2,
+		accent: ColourRGBA,
+		editable: bool = True,
+	) -> tuple[bool, ColourRGBA, ColourRGBA]:
+		if text_box not in self.settings_text_seen:
+			self.settings_text_seen.append(text_box)
+
+		hover = self.coll(field_rect)
+		active = editable and self.settings_text_focus is text_box
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		if hover or active:
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		active_border = alpha_blend(alpha_mod(accent, 90), border)
+		if active:
+			border = active_border
+
+		self.fields.add(field_rect)
+		if hover and ((self.click and editable) or self.inp.level_2_right_click):
+			self.inp.global_clicked = True
+			self.settings_text_focus = text_box
+			self.settings_text_hit = True
+			active = editable
+			if editable:
+				border = active_border
+		elif hover and editable:
+			self.settings_text_hit = self.settings_text_hit or self.inp.mouse_down
+
+		return active, fill, border
+
+	def draw_settings_text_field(
+		self,
+		rect: tuple[int, int, int, int],
+		text_box: TextBox2,
+		accent: ColourRGBA,
+		stored_value: str | None = None,
+		text_colour: ColourRGBA | None = None,
+		secret: bool = False,
+		placeholder: str = "",
+		editable: bool = True,
+		border_override: ColourRGBA | None = None,
+	) -> str:
+		x, y, w, h = tuple(round(v) for v in rect)
+		if stored_value is not None and self.settings_text_focus is not text_box and text_box.text != stored_value:
+			text_box.text = stored_value
+
+		active, fill, border = self.settings_text_field_state((x, y, w, h), text_box, accent, editable=editable)
+		if border_override is not None and not active:
+			border = border_override
+		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
+
+		if placeholder and not text_box.text and not active:
+			self.ddt.text(
+				(x + round(5 * self.gui.scale), y + round(2 * self.gui.scale)),
+				placeholder,
+				self.colours.box_text_label,
+				12,
+				bg=fill,
+			)
+
+		text_box.draw(
+			x + round(4 * self.gui.scale),
+			y + round(2 * self.gui.scale),
+			text_colour or self.colours.box_input_text,
+			active,
+			secret=secret,
+			width=w - round(8 * self.gui.scale),
+			click=self.click,
+		)
+		return text_box.text
 
 	def draw_settings_action_row(
 		self,
@@ -25927,49 +26048,18 @@ class Over:
 			accent = self.settings_page_accent()
 
 		x, y, w, h = tuple(round(v) for v in rect)
-		active = self.account_text_field == field_id
-		if not active and text_box.text != stored_value:
-			text_box.text = stored_value
-
 		label_y = y
 		field_y = y + round(16 * self.gui.scale)
 		field_h = max(round(22 * self.gui.scale), h - round(18 * self.gui.scale))
-		field_rect = (x, field_y, w, field_h)
-		hover = self.coll(field_rect)
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		if hover or active:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		if active:
-			border = alpha_blend(alpha_mod(accent, 90), border)
-
 		self.ddt.text((x, label_y), title, self.colours.box_text_label, 11, bg=self.ddt.text_background_colour)
-		self.fields.add(field_rect)
-		if hover and (self.click or self.inp.level_2_right_click):
-			self.account_text_field = field_id
-			active = True
-			border = alpha_blend(alpha_mod(accent, 90), border)
-
-		self.ddt.bordered_rect(field_rect, fill, border, round(1 * self.gui.scale))
-		if placeholder and not text_box.text and not active:
-			self.ddt.text(
-				(field_rect[0] + round(5 * self.gui.scale), field_rect[1] + round(2 * self.gui.scale)),
-				placeholder,
-				self.colours.box_text_label,
-				12,
-				bg=fill,
-			)
-
-		text_box.draw(
-			field_rect[0] + round(4 * self.gui.scale),
-			field_rect[1] + round(2 * self.gui.scale),
-			self.colours.box_input_text,
-			active,
+		return self.draw_settings_text_field(
+			(x, field_y, w, field_h),
+			text_box,
+			accent,
+			stored_value=stored_value,
 			secret=secret,
-			width=field_rect[2] - round(8 * self.gui.scale),
-			click=self.click,
+			placeholder=placeholder,
 		)
-		return text_box.text
 
 	def toggle_lyrics_view(self) -> None:
 		self.lyrics_panel ^= True
@@ -26395,25 +26485,21 @@ class Over:
 			ddt.text((x, y), _("Default playlist export folder"), colours.box_text_label, 11)
 			y += round(18 * gui.scale)
 			rect1 = (x, y, w, round(22 * gui.scale))
-			self.fields.add(rect1)
-			field_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), colours.box_background)
 			field_path = tauon.playlist_folder_box.text
 			if self.prefs.playlist_folder_path:
 				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
 				field_path = tauon.playlist_folder_box.text
 			path_invalid = bool(field_path) and not Path(field_path).is_dir()
 			field_border = colours.status_text_over if path_invalid else alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
-			ddt.bordered_rect(rect1, field_fill, field_border, round(1 * gui.scale))
 			field_colour = colours.status_text_over if path_invalid else colours.box_input_text
-			tauon.playlist_folder_box.draw(
-				x + round(4 * gui.scale),
-				y + round(2 * gui.scale),
-				field_colour,
-				True,
-				width=rect1[2] - round(8 * gui.scale),
-				click=gui.level_2_click,
+			self.prefs.playlist_folder_path = self.draw_settings_text_field(
+				rect1,
+				tauon.playlist_folder_box,
+				accent,
+				stored_value=self.prefs.playlist_folder_path,
+				text_colour=field_colour,
+				border_override=field_border,
 			)
-			self.prefs.playlist_folder_path = tauon.playlist_folder_box.text
 			y += round(31 * gui.scale)
 
 			helper_text = (
@@ -29498,15 +29584,12 @@ class Over:
 
 		field_h = round(24 * gui.scale)
 		rect1 = (inner_x, inner_y, inner_w - round(42 * gui.scale), field_h)
-		self.fields.add(rect1)
-		self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * gui.scale))
-		self.tauon.sync_target.draw(
-			rect1[0] + round(4 * gui.scale),
-			rect1[1] + round(2 * gui.scale),
-			self.colours.box_input_text,
-			not gui.sync_progress,
-			width=rect1[2] - round(8 * gui.scale),
-			click=self.click,
+		self.draw_settings_text_field(
+			rect1,
+			self.tauon.sync_target,
+			accent,
+			stored_value=self.tauon.sync_target.text,
+			editable=not gui.sync_progress,
 		)
 		icon_rect = (rect1[0] + rect1[2] + round(8 * gui.scale), inner_y + round(1 * gui.scale), round(20 * gui.scale), round(20 * gui.scale))
 		self.fields.add(icon_rect)
@@ -30789,6 +30872,10 @@ class Over:
 		self.tauon.smooth_scroll.reset_motion("settings content")
 		self.settings_content_scroll = 0
 		self.settings_scale_preview_value = None
+		self.settings_text_focus = None
+		self.settings_text_order = []
+		self.settings_text_seen = []
+		self.settings_text_hit = False
 		self.tab_active = 0
 		self.destroy_settings_texture()
 		self.tauon.fader.fall()
@@ -30841,6 +30928,8 @@ class Over:
 			else:
 				inp.mouse_click = True
 				self.click = False
+
+		self.begin_settings_text_inputs()
 
 		ddt.rect_a((x, y), (side_width, full_height), tab_bg)
 		ddt.rect_a(
@@ -30986,6 +31075,7 @@ class Over:
 		dst_rect = sdl3.SDL_FRect(view_rect[0], view_rect[1], view_rect[2], view_rect[3])
 		sdl3.SDL_RenderTexture(self.renderer, texture, src_rect, dst_rect)
 
+		self.finish_settings_text_inputs()
 		self.click = False
 		self.right_click = False
 
