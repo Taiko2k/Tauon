@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2025-05-04 09:07+0000\n"
+"PO-Revision-Date: 2026-04-08 12:09+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.15-dev\n"
+"X-Generator: Weblate 5.17-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
@@ -40,11 +40,11 @@ msgstr " GB"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
-msgstr ""
+msgstr "Non ancora"
 
 #: src/tauon/t_modules/t_extra.py:559
 msgid "Now"
-msgstr ""
+msgstr "Adesso"
 
 #: src/tauon/t_modules/t_extra.py:563
 #, fuzzy
@@ -53,7 +53,7 @@ msgstr "Appendi"
 
 #: src/tauon/t_modules/t_extra.py:567
 msgid "hr"
-msgstr ""
+msgstr "ora"
 
 #: src/tauon/t_modules/t_extra.py:571
 #, fuzzy
@@ -62,11 +62,11 @@ msgstr "Giorno"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr ""
+msgstr "settimana"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
-msgstr ""
+msgstr "mese"
 
 #: src/tauon/t_modules/t_extra.py:580
 #, fuzzy
