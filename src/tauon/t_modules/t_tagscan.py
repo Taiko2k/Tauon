@@ -262,6 +262,9 @@ class Flac(TrackFile):
 						self.date = b.decode("utf-8")
 					elif a == "originaldate":
 						odat = b.decode("utf-8")
+					elif a == "originalyear":
+						if odat == "":
+							odat = b.decode("utf-8")
 					elif a == "comment":
 						self.comment = b.decode("utf-8")
 					elif a == "album":
@@ -543,6 +546,9 @@ class Opus(TrackFile):
 						self.date = b.decode("utf-8")
 					elif a == "originaldate":
 						odat = b.decode("utf-8")
+					elif a == "originalyear":
+						if odat == "":
+							odat = b.decode("utf-8")
 					elif a == "comment":
 						self.comment = b.decode("utf-8")
 					elif a == "album":
