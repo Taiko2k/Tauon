@@ -25874,6 +25874,63 @@ class Over:
 
 		return hit
 
+	def settings_switcher_tile(
+		self,
+		rect: tuple[int, int, int, int],
+		title: str,
+		active: bool,
+		callback: Callable[[], None] | None = None,
+		accent: ColourRGBA | None = None,
+	) -> bool:
+		if accent is None:
+			accent = self.settings_page_accent()
+
+		x, y, w, h = tuple(round(v) for v in rect)
+		hover = self.coll((x, y, w, h))
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 5), self.colours.box_background)
+		if active:
+			fill = alpha_blend(alpha_mod(accent, 24), fill)
+		if hover:
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 9), fill)
+
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		if active:
+			border = alpha_blend(alpha_mod(accent, 90), border)
+
+		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
+
+		self.fields.add((x, y, w, h))
+		hit = False
+		if hover and self.click:
+			self.inp.global_clicked = True
+			hit = True
+			if callback is not None:
+				callback()
+
+		text_colour = self.colours.box_text if active or hover else self.colours.box_button_text
+		self.ddt.text(
+			(x + round(12 * self.gui.scale), y + round(8 * self.gui.scale)),
+			title,
+			text_colour,
+			13,
+			bg=fill,
+			max_w=w - round(40 * self.gui.scale),
+		)
+
+		arrow_colour = accent if active else (self.colours.box_text if hover else self.colours.box_text_label)
+		arrow_x = x + w - round(20 * self.gui.scale)
+		arrow_y = y + h // 2
+		self.ddt.rect(
+			(arrow_x - round(4 * self.gui.scale), arrow_y - round(3 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)),
+			arrow_colour,
+		)
+		self.ddt.rect(
+			(arrow_x, arrow_y - round(1 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)),
+			arrow_colour,
+		)
+
+		return hit
+
 	def draw_settings_note(
 		self,
 		rect: tuple[int, int, int, int],
@@ -30587,12 +30644,11 @@ class Over:
 			self.account_view = 1
 			self.account_text_field = 0
 
-		tile_h = round(40 * gui.scale)
+		tile_h = round(34 * gui.scale)
 		tile_gap = round(8 * gui.scale)
 		group_gap = round(12 * gui.scale)
-		tile_w = (left_w - round(40 * gui.scale) - tile_gap) // 2
-		scrobble_rows = max(1, math.ceil(len(scrobbling) / 2))
-		stream_rows = max(1, math.ceil(len(streaming) / 2))
+		scrobble_rows = max(1, len(scrobbling))
+		stream_rows = max(1, len(streaming))
 		nav_h = (
 			round(122 * gui.scale)
 			+ scrobble_rows * tile_h
@@ -30614,7 +30670,7 @@ class Over:
 			_("Pick a service to configure."),
 			accent,
 		)
-		tile_w = (inner_w - tile_gap) // 2
+		tile_w = inner_w
 
 		for heading, items in (
 			(_("Scrobbling"), scrobbling),
@@ -30622,20 +30678,16 @@ class Over:
 		):
 			self.ddt.text((inner_x, inner_y), heading, self.colours.box_text_label, 11)
 			inner_y += round(16 * gui.scale)
-			for index, (view, title, subtitle_text) in enumerate(items):
-				row = index // 2
-				col = index % 2
-				cell_x = inner_x + col * (tile_w + tile_gap)
-				cell_y = inner_y + row * (tile_h + tile_gap)
-				self.settings_choice_tile(
-					(cell_x, cell_y, tile_w, tile_h),
+			for view, title, subtitle_text in items:
+				self.settings_switcher_tile(
+					(inner_x, inner_y, tile_w, tile_h),
 					title,
-					"",
 					self.account_view == view,
 					callback=lambda view=view: self.select_account_view(view),
 					accent=accent,
 				)
-			inner_y += max(1, math.ceil(len(items) / 2)) * tile_h + max(0, math.ceil(len(items) / 2) - 1) * tile_gap + group_gap
+				inner_y += tile_h + tile_gap
+			inner_y += group_gap - tile_gap
 
 		self.render_settings_service_detail(self.account_view, x + left_w + column_gap, y, right_w, accent, draw=True)
 		return body_h
@@ -30821,7 +30873,7 @@ class Over:
 			accent,
 		)
 		self.ddt.text((inner_x, inner_y), _("Created by"), self.colours.box_text_label, 12)
-		self.ddt.text((inner_x + round(110 * gui.scale), inner_y), "Taiko2k", self.colours.box_sub_text, 13)
+		self.ddt.text((inner_x + round(75 * gui.scale), inner_y), "Taiko2k", self.colours.box_sub_text, 13)
 		inner_y += round(28 * gui.scale)
 		self.settings_action_tile((inner_x, inner_y, inner_w, action_h), _("Contributors"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon/graphs/contributors", new=2, autoraise=True), accent)
 		inner_y += round(40 * gui.scale)
