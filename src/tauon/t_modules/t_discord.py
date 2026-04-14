@@ -19,12 +19,13 @@ except Exception:
     Presence          = None  # type: ignore
     StatusDisplayType = None  # type: ignore
 
-_LFM_CACHE_MAX           = 256
+_LFM_CACHE_MAX = 256
 _RPC_WINDOW_S            = 15.0
 _RPC_BUDGET              = 3
 _DEBOUNCE_S              = 0.25
 _MIN_UPDATE_GAP_S        = 15.0
 _MIN_UPDATE_GAP_CHANGE_S = 1.5
+_POLL_INTERVAL_S         = 1
 
 
 def build_lastfm_track_url(artist: Optional[str], title: Optional[str]) -> Optional[str]:
@@ -194,7 +195,7 @@ def discord_loop_entrypoint(main) -> None:
 
     try:
         while True:
-            poll_interval = 0.35 if prefs.discord_fast_updates else 0.8
+            poll_interval = _POLL_INTERVAL_S
 
             prefs_sig = (
                 getattr(prefs, "discord_card_layout",         "title_artist"),

@@ -26000,13 +26000,6 @@ class Over:
 			accent=accent,
 		)
 		option_y += compact_row_h + row_gap
-		prefs.discord_fast_updates = self.settings_switch_row(
-			(right_col_x, option_y, right_col_w, compact_row_h),
-			prefs.discord_fast_updates,
-			_("Fast updates"),
-			accent=accent,
-		)
-		option_y += compact_row_h + row_gap
 		prefs.discord_lastfm_button = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_lastfm_button,
@@ -41562,7 +41555,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("discord-card-layout",         prefs.discord_card_layout)
 	cf.update_value("discord-member-list-display",  prefs.discord_member_list_display)
 	cf.update_value("discord-clean-title",          prefs.discord_clean_title)
-	cf.update_value("discord-fast-updates",         prefs.discord_fast_updates)
 	cf.update_value("discord-lastfm-button",        prefs.discord_lastfm_button)
 	cf.update_value("discord-show-tauon-button",    prefs.discord_show_tauon_button)
 	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
@@ -41934,9 +41926,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.discord_clean_title = cf.sync_add(
 		"bool", "discord-clean-title", prefs.discord_clean_title,
 		"Remove feat/remix/version suffixes in Discord title")
-	prefs.discord_fast_updates = cf.sync_add(
-		"bool", "discord-fast-updates", prefs.discord_fast_updates,
-		"Use faster Discord update polling for rapid track changes")
 	prefs.discord_lastfm_button = cf.sync_add(
 		"bool", "discord-lastfm-button", prefs.discord_lastfm_button,
 		"Show Track Info button in Discord rich presence")
