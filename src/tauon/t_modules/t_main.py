@@ -1883,6 +1883,10 @@ class PlayerCtl:
 
 		self.regen_in_progress = False
 		self.notify_in_progress = False
+		self.mac_nowplaying_art_generation = 0
+		self.mac_nowplaying_art_track_index = -1
+		self.mac_nowplaying_art_path = ""
+		self.mac_nowplaying_art_ready = False
 
 		self.radio_playlists = self.bag.radio_playlists
 		self.radio_playlist_viewing = self.bag.radio_playlist_viewing
@@ -2414,6 +2418,44 @@ class PlayerCtl:
 		#	 self.tray_update()
 		self.notify_in_progress = False
 
+	def update_macos_nowplaying_art_async(self, helper, track_index: int, generation: int) -> None:
+		art_path = ""
+		try:
+			track = self.get_track(track_index)
+			art_path = self.tauon.thumb_tracks.path(track) or ""
+		except Exception:
+			logging.exception("Failed to get thumb path for macOS Now Playing")
+
+		if generation != self.mac_nowplaying_art_generation:
+			return
+
+		current_track = self.playing_object()
+		if helper is not self.tauon.bag.nowplaying_helper or current_track is None or current_track.index != track_index:
+			return
+
+		self.mac_nowplaying_art_track_index = track_index
+		self.mac_nowplaying_art_path = art_path
+		self.mac_nowplaying_art_ready = True
+
+		state = 0
+		if self.playing_state == PlayingState.PLAYING:
+			state = 1
+		if self.playing_state == PlayingState.PAUSED:
+			state = 2
+
+		try:
+			helper.update(
+				title=current_track.title,
+				artist=current_track.artist,
+				album=current_track.album,
+				art_path=art_path,
+				state=state,
+				duration=float(self.playing_length),
+				elapsed=float(self.playing_time),
+			)
+		except Exception:
+			logging.exception("Failed to update macOS Now Playing helper")
+
 	def notify_update(self, mpris: bool = True) -> None:
 		self.tauon.tray_releases += 1
 		if self.tauon.tray_lock.locked():
@@ -2456,27 +2498,39 @@ class PlayerCtl:
 			tr = self.playing_object()
 			try:
 				if tr:
-					art_path = ""
-					try:
-						art_path = self.tauon.thumb_tracks.path(tr) or ""
-					except Exception:
-						logging.exception("Failed to get thumb path for macOS Now Playing")
-
 					state = 0
 					if self.playing_state == PlayingState.PLAYING:
 						state = 1
 					if self.playing_state == PlayingState.PAUSED:
 						state = 2
-					helper.update(
-						title=tr.title,
-						artist=tr.artist,
-						album=tr.album,
-						art_path=art_path,
-						state=state,
-						duration=float(self.playing_length),
-						elapsed=float(self.playing_time),
-					)
+
+					art_path = self.mac_nowplaying_art_path if tr.index == self.mac_nowplaying_art_track_index else ""
+					if tr.index != self.mac_nowplaying_art_track_index:
+						self.mac_nowplaying_art_generation += 1
+						self.mac_nowplaying_art_track_index = tr.index
+						self.mac_nowplaying_art_path = ""
+						self.mac_nowplaying_art_ready = False
+						shoot = threading.Thread(
+							target=self.update_macos_nowplaying_art_async,
+							args=(helper, tr.index, self.mac_nowplaying_art_generation),
+							daemon=True,
+						)
+						shoot.start()
+					elif self.mac_nowplaying_art_ready:
+						helper.update(
+							title=tr.title,
+							artist=tr.artist,
+							album=tr.album,
+							art_path=art_path,
+							state=state,
+							duration=float(self.playing_length),
+							elapsed=float(self.playing_time),
+						)
 				else:
+					self.mac_nowplaying_art_generation += 1
+					self.mac_nowplaying_art_track_index = -1
+					self.mac_nowplaying_art_path = ""
+					self.mac_nowplaying_art_ready = False
 					helper.clear()
 			except Exception:
 				logging.exception("Failed to update macOS Now Playing helper")
@@ -45918,6 +45972,14 @@ def main(holder: Holder) -> None:
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
+
+	extra_menu.add_sub(_("Mini Mode"), 175)
+	extra_menu.add_to_sub(0, MenuItem(_("Tab"), tauon.set_mini_mode_D))
+	extra_menu.add_to_sub(0, MenuItem(_("Mini"), tauon.set_mini_mode_A1))
+	extra_menu.add_to_sub(0, MenuItem(_("Signal"), tauon.set_mini_mode_E))
+	extra_menu.add_to_sub(0, MenuItem(_("Slate"), tauon.set_mini_mode_C1))
+	extra_menu.add_to_sub(0, MenuItem(_("Square"), tauon.set_mini_mode_B1))
+	extra_menu.add_to_sub(0, MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
 
 	extra_menu.add(MenuItem(_("Random Track"), tauon.random_track, hint=";"))
 
