@@ -163,10 +163,6 @@ class Prefs:
 	plex_password = ""
 	plex_servername = ""
 
-	koel_username = "admin@example.com"
-	koel_password = "admin"  # noqa: S105
-	koel_server_url = "http://localhost:8050"
-
 	auto_lyrics: bool = False  # Function has been disabled
 	jelly_username: str = ""
 	jelly_password: str = ""

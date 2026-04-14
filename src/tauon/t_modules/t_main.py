@@ -2502,9 +2502,6 @@ class PlayerCtl:
 		if track_object.file_ext == "JELY":
 			return self.tauon.jellyfin.resolve_stream(track_object.url_key)
 
-		if track_object.file_ext == "KOEL":
-			return self.tauon.koel.resolve_stream(track_object.url_key)
-
 		if track_object.file_ext == "SUB":
 			return self.tauon.subsonic.resolve_stream(track_object.url_key)
 
@@ -4680,8 +4677,6 @@ class LastScrob:
 					success = self.tauon.maloja_scrobble(tr[0], tr[1])
 				elif tr[2] == "air":
 					success = self.tauon.subsonic.listen(tr[0], submit=True)
-				elif tr[2] == "koel":
-					success = self.tauon.koel.listen(tr[0], submit=True)
 
 				if not success:
 					logging.info("Re-queue scrobble")
@@ -4772,8 +4767,6 @@ class LastScrob:
 		if track_object.is_network:
 			if track_object.file_ext == "SUB":
 				self.queue.append((track_object, int(time.time()), "air"))
-			if track_object.file_ext == "KOEL":
-				self.queue.append((track_object, int(time.time()), "koel"))
 
 		if not self.prefs.scrobble_hold:
 			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
@@ -5978,10 +5971,6 @@ class Tauon:
 		self.text_jelly_ser:     TextBox2 = TextBox2(tauon=self)
 		self.text_jelly_timeout: TextBox2 = TextBox2(tauon=self)
 
-		self.text_koel_usr: TextBox2 = TextBox2(tauon=self)
-		self.text_koel_pas: TextBox2 = TextBox2(tauon=self)
-		self.text_koel_ser: TextBox2 = TextBox2(tauon=self)
-
 		self.text_air_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_air_pas: TextBox2 = TextBox2(tauon=self)
 		self.text_air_ser: TextBox2 = TextBox2(tauon=self)
@@ -6054,7 +6043,6 @@ class Tauon:
 		self.tidal: Tidal       = Tidal(self)
 		self.plex: PlexService  = PlexService(self)
 		self.jellyfin: Jellyfin = Jellyfin(self)
-		self.koel: KoelService  = KoelService(self)
 		self.tau: TauService    = TauService(self)
 		self.album_star_store: AlbumStarStore = AlbumStarStore(self)
 		self.subsonic: SubsonicService = self.album_star_store.subsonic
@@ -14114,7 +14102,7 @@ class Tauon:
 			return \
 				code is None or \
 				code == "" or \
-				code.startswith(("self", "jelly", "plex", "koel", "tau", "air", "sal"))
+				code.startswith(("self", "jelly", "plex", "tau", "air", "sal"))
 
 		def get_search_results(query: str, *, all_folders: bool = False) -> list[list[int | str | None]]:
 			key = (query, all_folders)
@@ -14188,10 +14176,6 @@ class Tauon:
 			elif cm == "jelly":
 				if not self.jellyfin.scanning:
 					playlist.extend(self.jellyfin.ingest_library(return_list=True))
-
-			elif cm == "koel":
-				if not self.koel.scanning:
-					playlist.extend(self.koel.get_albums(return_list=True))
 
 			elif cm == "tau":
 				if not self.tau.processing:
@@ -15939,7 +15923,6 @@ class Tauon:
 			"rt"     not in cmds and
 			"plex"   not in cmds and
 			"jelly"  not in cmds and
-			"koel"   not in cmds and
 			"tau"    not in cmds and
 			"air"    not in cmds and
 			"sal"    not in cmds and
@@ -16337,10 +16320,6 @@ class Tauon:
 		#	assert url is not None
 		#	assert url
 		#	return url
-		if track_object.file_ext == "KOEL":
-			url = track_object.art_url_key
-			assert url
-			return url
 		if track_object.file_ext == "TAU":
 			url = self.tau.resolve_picture(track_object.art_url_key)
 			assert url
@@ -16415,19 +16394,6 @@ class Tauon:
 		self.subsonic.scanning = True
 
 		shoot_dl = threading.Thread(target=self.subsonic.get_music3)
-		shoot_dl.daemon = True
-		shoot_dl.start()
-
-	def koel_get_album_thread(self) -> None:
-		self.pref_box.close()
-		save_prefs(bag=self.bag)
-		if self.koel.scanning:
-			self.inp.mouse_click = False
-			self.show_message(_("Already scanning!"))
-			return
-		self.koel.scanning = True
-
-		shoot_dl = threading.Thread(target=self.koel.get_albums)
 		shoot_dl.daemon = True
 		shoot_dl.start()
 
@@ -19104,211 +19070,6 @@ class PlexService:
 
 		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("PLEX Collection"), playlist_ids=playlist))
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "plex path"
-		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
-		return None
-
-class KoelService:
-
-	def __init__(self, tauon: Tauon) -> None:
-		self.tauon        = tauon
-		self.gui          = tauon.gui
-		self.pctl         = tauon.pctl
-		self.prefs        = tauon.prefs
-		self.show_message = tauon.show_message
-		self.connected: bool = False
-		self.resource = None
-		self.scanning:  bool = False
-		self.server:     str = ""
-
-		self.token:      str = ""
-
-	def connect(self) -> None:
-		logging.info("Connect to koel...")
-		if not self.prefs.koel_username or not self.prefs.koel_password or not self.prefs.koel_server_url:
-			self.show_message(_("Missing username, password and/or server URL"), mode="warning")
-			self.scanning = False
-			return
-
-		if self.token:
-			self.connected = True
-			logging.info("Already authorised")
-			return
-
-		password = self.prefs.koel_password
-		username = self.prefs.koel_username
-		server   = self.prefs.koel_server_url
-		self.server = server
-
-		target = server + "/api/me"
-
-		headers = {
-			"Accept": "application/json",
-			"Content-Type": "application/json",
-		}
-		body = {
-			"email": username,
-			"password": password,
-		}
-
-		try:
-			r = requests.post(target, json=body, headers=headers, timeout=10)
-		except Exception:
-			logging.exception("Could not establish connection")
-			self.show_message(_("Could not establish connection"), mode="error")
-			return
-
-		if r.status_code == 200:
-			# logging.info(r.json())
-			self.token = r.json()["token"]
-			if self.token:
-				logging.info("GOT KOEL TOKEN")
-				self.connected = True
-
-			else:
-				logging.info("AUTH ERROR")
-
-		else:
-			error = ""
-			j = r.json()
-			if "message" in j:
-				error = j["message"]
-
-			self.show_message(_("Could not establish connection/authorisation"), error, mode="error")
-
-	def resolve_stream(self, id: str) -> tuple[str, dict[str, str]]:
-		if not self.connected:
-			self.connect()
-
-		if self.prefs.network_stream_bitrate > 0:
-			target = f"{self.server}/api/{id}/play/1/{self.prefs.network_stream_bitrate}"
-		else:
-			target = f"{self.server}/api/{id}/play/0/0"
-		params = {"jwt-token": self.token }
-
-		# if prefs.network_stream_bitrate > 0:
-		#	 target = f"{self.server}/api/play/{id}/1/{prefs.network_stream_bitrate}"
-		# else:
-		#target = f"{self.server}/api/play/{id}/0/0"
-		#target = f"{self.server}/api/{id}/play"
-
-		#params = {"token": self.token, }
-
-		#target = f"{self.server}/api/download/songs"
-		#params["songs"] = [id,]
-		logging.info(target)
-		logging.info(urllib.parse.urlencode(params))
-
-		return target, params
-
-	def listen(self, track_object: TrackClass, submit: bool = False) -> None:
-		if submit:
-			try:
-				target = self.server + "/api/interaction/play"
-				headers = {
-					"Authorization": "Bearer " + self.token,
-					"Accept": "application/json",
-					"Content-Type": "application/json",
-				}
-
-				r = requests.post(target, headers=headers, json={"song": track_object.url_key}, timeout=10)
-				# logging.info(r.status_code)
-				# logging.info(r.text)
-			except Exception:
-				logging.exception("error submitting listen to koel")
-
-	def get_albums(self, return_list: bool = False) -> list[int] | None:
-		self.gui.update += 1
-		self.scanning = True
-
-		if not self.connected:
-			self.connect()
-
-		if not self.connected:
-			self.scanning = False
-			return []
-
-		playlist = []
-
-		target = self.server + "/api/data"
-		headers = {
-			"Authorization": "Bearer " + self.token,
-			"Accept": "application/json",
-			"Content-Type": "application/json",
-		}
-
-		r = requests.get(target, headers=headers, timeout=10)
-		data = r.json()
-
-		artists = data["artists"]
-		albums = data["albums"]
-		songs = data["songs"]
-
-		artist_ids = {}
-		for artist in artists:
-			id = artist["id"]
-			if id not in artist_ids:
-				artist_ids[id] = artist["name"]
-
-		album_ids = {}
-		covers = {}
-		for album in albums:
-			id = album["id"]
-			if id not in album_ids:
-				album_ids[id] = album["name"]
-				if "cover" in album:
-					covers[id] = album["cover"]
-
-		existing = {}
-
-		for track_id, track in self.pctl.master_library.items():
-			if track.is_network and track.file_ext == "KOEL":
-				existing[track.url_key] = track_id
-
-		for song in songs:
-			id = self.pctl.master_count
-			replace_existing = False
-
-			e = existing.get(song["id"])
-			if e is not None:
-				id = e
-				replace_existing = True
-
-			nt = TrackClass()
-
-			nt.title = song["title"]
-			nt.index = id
-			if "track" in song and song["track"] is not None:
-				nt.track_number = song["track"]
-			if "disc" in song and song["disc"] is not None:
-				nt.disc_number = song["disc"]
-			nt.length = float(song["length"])
-
-			nt.artist = artist_ids.get(song["artist_id"], "")
-			nt.album = album_ids.get(song["album_id"], "")
-			nt.parent_folder_name = (nt.artist + " - " + nt.album).strip("- ")
-			nt.parent_folder_path = nt.album + "/" + nt.parent_folder_name
-
-			nt.art_url_key = covers.get(song["album_id"], "")
-			nt.url_key = song["id"]
-
-			nt.is_network = True
-			nt.file_ext = "KOEL"
-
-			self.pctl.master_library[id] = nt
-
-			if not replace_existing:
-				self.pctl.master_count += 1
-
-			playlist.append(nt.index)
-
-		self.scanning = False
-
-		if return_list:
-			return playlist
-
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Koel Collection"), playlist_ids=playlist))
-		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "koel path tn"
-		self.tauon.standard_sort(len(self.pctl.multi_playlist) - 1)
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		return None
 
@@ -26935,7 +26696,6 @@ class Over:
 
 		if self.inp.key_shift_down:
 			scrobbling.append((4, "fanart.tv", _("Artwork sources.")))
-			streaming.insert(0, (6, "koel", _("Network library.")))
 
 		return scrobbling, streaming
 
@@ -27264,61 +27024,6 @@ class Over:
 					],
 					accent,
 				)
-			return total_h
-
-		if view == 6:
-			card1_h = round(218 * gui.scale)
-			card2_h = round(116 * gui.scale)
-			total_h = card1_h + card_gap + card2_h
-			if not draw:
-				return total_h
-
-			rect = (x, y, w, card1_h)
-			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
-				rect,
-				"koel",
-				_("Connect to a koel server."),
-				accent,
-			)
-			prefs.koel_username = self.settings_text_input(
-				(inner_x, inner_y, inner_w, field_h),
-				_("Username / Email"),
-				tauon.text_koel_usr,
-				prefs.koel_username,
-				accent,
-			)
-			inner_y += field_h + row_gap
-			prefs.koel_password = self.settings_text_input(
-				(inner_x, inner_y, inner_w, field_h),
-				_("Password"),
-				tauon.text_koel_pas,
-				prefs.koel_password,
-				accent,
-				secret=True,
-			)
-			inner_y += field_h + row_gap
-			prefs.koel_server_url = self.settings_text_input(
-				(inner_x, inner_y, inner_w, field_h),
-				_("Server URL"),
-				tauon.text_koel_ser,
-				prefs.koel_server_url,
-				accent,
-			)
-
-			rect = (x, y + card1_h + card_gap, w, card2_h)
-			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
-				rect,
-				_("Actions"),
-				_("Import from koel."),
-				accent,
-			)
-			self.draw_settings_action_row(
-				(inner_x, inner_y, inner_w, action_h),
-				[
-					(_("Import music to playlist"), tauon.koel_get_album_thread, True),
-				],
-				accent,
-			)
 			return total_h
 
 		if view == 7:
@@ -28378,7 +28083,7 @@ class TopPanel:
 						tauon.move_in_progress or \
 						tauon.plex.scanning or \
 						tauon.transcode_list or tauon.subsonic.scanning or \
-						tauon.koel.scanning or gui.sync_progress or tauon.lastfm.scanning_scrobbles:
+						gui.sync_progress or tauon.lastfm.scanning_scrobbles:
 					ddt.rect(
 						(window_size[0] - (gui.panelY + 20), gui.panelY - gui.panelY2, gui.panelY + 25, gui.panelY2),
 						colours.top_panel_background)
@@ -29138,9 +28843,6 @@ class TopPanel:
 			if gui.to_got:
 				text += f" {gui.to_got}"
 			bg = ColourRGBA(58, 194, 224, 255)
-		elif tauon.koel.scanning:
-			text = _("Accessing KOEL library...")
-			bg = ColourRGBA(111, 98, 190, 255)
 		elif tauon.jellyfin.scanning:
 			text = _("Accessing JELLYFIN library...")
 			bg = ColourRGBA(90, 170, 240, 255)
@@ -41694,9 +41396,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 	cf.update_value("jelly-timeout", prefs.jelly_timeout)
 
-	cf.update_value("koel-username", prefs.koel_username)
-	cf.update_value("koel-password", prefs.koel_password)
-	cf.update_value("koel-server-url", prefs.koel_server_url)
 	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
 
 	cf.update_value("display-language", prefs.ui_lang)
@@ -42278,15 +41977,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
 
 	cf.br()
-	cf.add_text("[koel_account]")
-	prefs.koel_username = cf.sync_add("string", "koel-username", prefs.koel_username, "E.g. admin@example.com")
-	prefs.koel_password = cf.sync_add("string", "koel-password", prefs.koel_password, "The default is admin")
-	prefs.koel_server_url = cf.sync_add(
-		"string", "koel-server-url", prefs.koel_server_url,
-		"The URL or IP:Port where the Koel server is hosted. E.g. http://localhost:8050 or https://localhost:8060")
-	prefs.koel_server_url = prefs.koel_server_url.rstrip("/")
-
-	cf.br()
 	cf.add_text("[jellyfin_account]")
 	prefs.jelly_username = cf.sync_add("string", "jelly-username", prefs.jelly_username, "")
 	prefs.jelly_password = cf.sync_add("string", "jelly-password", prefs.jelly_password, "")
@@ -42302,7 +41992,7 @@ def load_prefs(bag: Bag) -> None:
 	cf.add_text("[network]")
 	prefs.network_stream_bitrate = cf.sync_add(
 		"int", "stream-bitrate", prefs.network_stream_bitrate,
-		"Optional bitrate koel/subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
+		"Optional bitrate subsonic should transcode to (Server may need to be configured for this). Set to 0 to disable transcoding.")
 
 	cf.br()
 	cf.add_text("[listenalong]")
@@ -44464,7 +44154,6 @@ def main(holder: Holder) -> None:
 			"AAC":   ColourRGBA(79,  247, 168, 255),  # Teal
 			"WV":    ColourRGBA(229, 23,  18,  255),  # Deep red
 			"PLEX":  ColourRGBA(229, 160, 13,  255),  # Orange-brown
-			"KOEL":  ColourRGBA(111, 98,  190, 255),  # Lavender
 			"TAU":   ColourRGBA(111, 98,  190, 255),  # Lavender
 			"SUB":   ColourRGBA(235, 140, 20,  255),  # Golden yellow
 			"TIDAL": ColourRGBA(0,   0,   0,   255),  # Black
