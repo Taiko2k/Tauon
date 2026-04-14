@@ -27,4 +27,4 @@ jobs:
       # Test
 #      - run: python -m pytest tests
       # Compile translations
-      - run: python -m compile_translations
+      - run: python -m tools.i18n.compile_translations

@@ -1,7 +1,12 @@
-"""Compile language files from ./locale"""
+"""Compile language files from the repository locale directory."""
 import logging
 import subprocess
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+	sys.path.insert(0, str(REPO_ROOT))
 
 from src.tauon.t_modules.t_logging import CustomLoggingFormatter
 
@@ -19,8 +24,7 @@ logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
 def main() -> None:
 	compile_failure = False
-	script_dir = Path(__file__).parent
-	locale_folder = script_dir / "locale"
+	locale_folder = REPO_ROOT / "locale"
 	languages = locale_folder.iterdir()
 
 	for lang_file in languages:
@@ -30,11 +34,11 @@ def main() -> None:
 
 		po_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.po"
 #		mo_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.mo"
-		mo_dirpath = script_dir / "src" / "tauon" / "locale" / lang_file.name / "LC_MESSAGES"
+		mo_dirpath = REPO_ROOT / "src" / "tauon" / "locale" / lang_file.name / "LC_MESSAGES"
 		mo_path = mo_dirpath / "tauon.mo"
 
 		if not mo_path.exists():
-			(mo_dirpath).mkdir(parents=True)
+			mo_dirpath.mkdir(parents=True)
 
 		if po_path.exists():
 			try:

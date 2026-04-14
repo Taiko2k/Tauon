@@ -27,7 +27,7 @@ lib/
 dist/
 *.exe
 .dev
-.venv
+.venv/
 src/tauon_music_box.egg-info
 kissfft.tar.gz
 miniaudio.tar.gz

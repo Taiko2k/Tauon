@@ -4,6 +4,8 @@ import certifi
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 python_ver_dotless = f"{sys.version_info.major}{sys.version_info.minor}"
 block_cipher = None
@@ -23,31 +25,31 @@ libs = [
 ]
 
 lib_paths = [(f"{prefix}/lib/{lib}", ".") for lib in libs]
-x64_path   = f"build/lib.macosx-13.0-x86_64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
-arm64_path = f"build/lib.macosx-15.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
-phazor_path = x64_path if Path(x64_path).exists() else arm64_path
+x64_path = REPO_ROOT / f"build/lib.macosx-13.0-x86_64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+arm64_path = REPO_ROOT / f"build/lib.macosx-15.0-arm64-cpython-{python_ver_dotless}/phazor.cpython-{python_ver_dotless}-darwin.so"
+phazor_path = x64_path if x64_path.exists() else arm64_path
 
 # Optional: macOS Now Playing helper app (built by src/nowplaying/build_app.sh)
-nowplaying_app_src = Path("src/nowplaying/build/TauonNowPlaying.app")
+nowplaying_app_src = REPO_ROOT / "src/nowplaying/build/TauonNowPlaying.app"
 nowplaying_datas = []
 if nowplaying_app_src.exists():
 	nowplaying_datas.append((str(nowplaying_app_src), "lib/TauonNowPlaying.app"))
 
 a = Analysis(
-	["src/tauon/__main__.py"],
+	[str(REPO_ROOT / "src/tauon/__main__.py")],
 	binaries=[
 		*lib_paths,
-		(phazor_path, "."),
+		(str(phazor_path), "."),
 		(f"{prefix}/bin/ffmpeg", "."),
 	],
 	datas=[
 		(certifi.where(), "certifi"),
-		("src/tauon/assets/Assets.car", "."),
-		("src/tauon/assets", "assets"),
-		("src/tauon/locale", "locale"),
-		("src/tauon/theme", "theme"),
-		("src/tauon/templates", "templates"),
-		("lrclib-solver", "."),
+		(str(REPO_ROOT / "src/tauon/assets/Assets.car"), "."),
+		(str(REPO_ROOT / "src/tauon/assets"), "assets"),
+		(str(REPO_ROOT / "src/tauon/locale"), "locale"),
+		(str(REPO_ROOT / "src/tauon/theme"), "theme"),
+		(str(REPO_ROOT / "src/tauon/templates"), "templates"),
+		(str(REPO_ROOT / "lrclib-solver"), "."),
 		*nowplaying_datas,
 	],
 	hiddenimports=[
@@ -60,7 +62,7 @@ a = Analysis(
 		"zeroconf._utils.ipaddress",
 		"zeroconf._handlers.answers",
 	],
-	hookspath=["extra/pyinstaller-hooks"],
+	hookspath=[str(REPO_ROOT / "extra/pyinstaller-hooks")],
 	hooksconfig={},
 	runtime_hooks=[],
 	excludes=[],
@@ -89,7 +91,7 @@ exe = EXE(
 	target_arch=None,
 	codesign_identity=None,
 	entitlements_file=None,
-	icon="src/tauon/assets/tau-mac.icns")
+	icon=str(REPO_ROOT / "src/tauon/assets/tau-mac.icns"))
 
 coll = COLLECT(
 	exe,
@@ -104,7 +106,7 @@ coll = COLLECT(
 app = BUNDLE(
 	coll,
 	name="Tauon.app",
-	icon="src/tauon/assets/tau-mac.icns",
+	icon=str(REPO_ROOT / "src/tauon/assets/tau-mac.icns"),
 	bundle_identifier=None,
 	info_plist={
 		"CFBundleName": "Tauon",

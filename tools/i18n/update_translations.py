@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Update language files from ./locale"""
+"""Update language files from the repository locale directory."""
 import logging
 import os
 import subprocess
@@ -7,15 +7,17 @@ import sys
 import sysconfig
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 def find_pygettext() -> Path | None:
-	"""Find pygettext.py, either in the standard stdlib dir or locally in the project"""
+	"""Find pygettext.py, either in the standard stdlib dir or locally in the project."""
 	stdlib = sysconfig.get_path("stdlib")
 	path = Path(stdlib) / "Tools" / "i18n" / "pygettext.py"
 	if path.exists():
 		return path
 
-	path = Path.cwd() / "pygettext.py"
+	path = REPO_ROOT / "pygettext.py"
 	if path.exists():
 		return path
 
@@ -24,15 +26,15 @@ def find_pygettext() -> Path | None:
 def main() -> None:
 	pygettext_path = find_pygettext()
 	if not pygettext_path:
-		logging.error("Please add a copy of pygettext.py to this dir from the Python Tools dir")
+		logging.error("Please add a copy of pygettext.py to the repository root from the Python Tools dir")
 		sys.exit()
 
-	locale_folder = Path("locale")
+	locale_folder = REPO_ROOT / "locale"
 	pot_path = locale_folder / "messages.pot"
 
 	logging.info("Generate template")
 
-	root_dir = "src"
+	root_dir = REPO_ROOT / "src"
 	# Collect all .py file paths
 	py_files: list[str] = []
 	for dirpath, _, filenames in os.walk(root_dir):
@@ -42,8 +44,8 @@ def main() -> None:
 		_ = subprocess.run(["/usr/bin/python", str(pygettext_path), *py_files], check=True)  # noqa: S603
 
 	logging.info("Copy template")
-	_ = subprocess.run(["/usr/bin/cp", "messages.pot", pot_path], check=True)  # noqa: S603
-	_ = subprocess.run(["/usr/bin/rm", "messages.pot"], check=True)
+	_ = subprocess.run(["/usr/bin/cp", str(REPO_ROOT / "messages.pot"), str(pot_path)], check=True)  # noqa: S603
+	_ = subprocess.run(["/usr/bin/rm", str(REPO_ROOT / "messages.pot")], check=True)
 
 	languages = locale_folder.iterdir()
 
@@ -53,8 +55,8 @@ def main() -> None:
 
 		po_path = locale_folder / lang_file.name / "LC_MESSAGES" / "tauon.po"
 
-		if Path(po_path).exists():
-			_ = subprocess.run(["/usr/bin/msgmerge", "-U", po_path, pot_path], check=True)  # noqa: S603
+		if po_path.exists():
+			_ = subprocess.run(["/usr/bin/msgmerge", "-U", str(po_path), str(pot_path)], check=True)  # noqa: S603
 
 			logging.info(f"Updated: {lang_file.name}")
 

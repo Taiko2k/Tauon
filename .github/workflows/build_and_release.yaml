@@ -76,7 +76,7 @@ jobs:
       - name: Build the project using python-build
         run: |
           source .venv/bin/activate
-          python -m compile_translations
+          python -m tools.i18n.compile_translations
           python -m build --wheel
 
       - name: Install the project into a venv
@@ -91,7 +91,7 @@ jobs:
       - name: Build Linux App with PyInstaller
         run: |
           source .venv/bin/activate
-          pyinstaller --log-level=DEBUG linux.spec
+          pyinstaller --log-level=DEBUG packaging/pyinstaller/linux.spec
           ln -s _internal/libSDL3.so dist/TauonMusicBox/libSDL3.so.0
 
       - name: Create 7Z
@@ -250,7 +250,7 @@ jobs:
 
       - name: Build the project using python-build
         run: |
-          $(brew --prefix python)/libexec/bin/python -m compile_translations
+          $(brew --prefix python)/libexec/bin/python -m tools.i18n.compile_translations
           $(brew --prefix python)/libexec/bin/python -m build --wheel
         #  source .venv/bin/activate
 
@@ -269,7 +269,7 @@ jobs:
 
       - name: Build macOS app with PyInstaller
         run: |
-          pyinstaller --log-level=DEBUG mac.spec
+          pyinstaller --log-level=DEBUG packaging/pyinstaller/mac.spec
         #  source .venv/bin/activate
         env:
           DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
@@ -399,7 +399,7 @@ jobs:
         shell: msys2 {0}
         run: |
           source .venv/bin/activate
-          python -m compile_translations
+          python -m tools.i18n.compile_translations
           python -m build --wheel
 
       - name: Install the project into a venv
@@ -433,7 +433,7 @@ jobs:
         shell: msys2 {0}
         run: |
           source .venv/bin/activate
-          pyinstaller --log-level=DEBUG windows.spec
+          pyinstaller --log-level=DEBUG packaging/pyinstaller/windows.spec
 
       - name: Create 7Z
         shell: msys2 {0}

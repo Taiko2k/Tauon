@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Bootstraps native Android dependencies for the Phazor p4a recipe.
 #
-# Default output layout:
+# Default output layout from the repository root:
 #   ./android-deps/<abi>/{include,lib}
 #
 # The current Phazor recipe expects these shared libraries:
@@ -15,7 +15,8 @@ set -euo pipefail
 # - It prefers SDL3_mixer vendored source trees from an existing .buildozer checkout.
 # - It falls back to upstream release archives when vendored sources are unavailable.
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 ABI="${ABI:-arm64-v8a}"
 API="${API:-24}"
@@ -494,7 +495,7 @@ Output prefix:
 
 Next steps:
   export PHAZOR_ANDROID_DEPS_PREFIX="$DEPS_ROOT"
-  buildozer android debug
+  buildozer -f packaging/android/buildozer.spec android debug
 
 Because buildozer.spec now packages android-deps/${ABI}/lib/*.so, the shared
 libraries from this prefix will be copied into the APK for ${ABI}.

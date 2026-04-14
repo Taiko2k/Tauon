@@ -6,7 +6,7 @@ from setuptools.command.build import build as _build
 from setuptools.command.sdist import sdist as _sdist
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from compile_translations import main as compile_translations
+from tools.i18n.compile_translations import main as compile_translations
 
 
 class BuildWithTranslations(_build):

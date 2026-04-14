@@ -74,7 +74,7 @@ jobs:
       - name: Build the project using python-build
         run: |
           source .venv/bin/activate
-          python -m compile_translations
+          python -m tools.i18n.compile_translations
           python -m build --wheel
 
       - name: Install the project into a venv

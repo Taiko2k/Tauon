@@ -6,7 +6,7 @@ win_build() {
 	rm -rf dist/tauon
 	# Had to do Windows Security -> Virus & thread protection*2 -> Manage settings -> Windows Real-time protection: off
 
-	pyinstaller --log-level=DEBUG windows.spec
+	pyinstaller --log-level=DEBUG packaging/pyinstaller/windows.spec
 
 	mkdir -p dist/TauonMusicBox/etc
 	#mkdir fonts
@@ -70,7 +70,7 @@ clean_venv_run() {
 	export CFLAGS="-I/mingw64/include"
 #	export LDFLAGS="-L/mingw64/lib"
 	pip install -r requirements.txt -r requirements_devel.txt build
-	python -m compile_translations
+	python -m tools.i18n.compile_translations
 	python -m build --wheel
 	pip install --prefix ".venv" dist/*.whl --force-reinstall
 	tauonmb # "${@}" # Passing args is broken atm
