@@ -32184,10 +32184,10 @@ class MiniModeSignal:
 		grid_step = round(20 * scale)
 		self._grid(grid_rect, grid_line, grid_step)
 		self.ddt.text_background_colour = shell_fill
-		self.ddt.text((box_rect[0] + round(14 * scale), box_rect[1] + round(12 * scale)), "TAUON \\\\ SIGNAL", text_main, 210, round(120 * scale))
-		self.ddt.text((box_rect[0] + box_rect[2] - round(104 * scale), box_rect[1] + round(12 * scale)), "SPECTRUM ARRAY", text_dim, 210, round(90 * scale))
+		self.ddt.text((box_rect[0] + round(14 * scale), box_rect[1] + round(12 * scale)), "TAUON \\\\ SIGNAL", text_main, 210, round(120 * scale), shell_fill)
+		self.ddt.text((box_rect[0] + box_rect[2] - round(104 * scale), box_rect[1] + round(12 * scale)), "SPECTRUM ARRAY", text_dim, 210, round(90 * scale), shell_fill)
 		fps_text = f"{int(round(self.fps.get()))} FPS"
-		self.ddt.text((box_rect[0] + box_rect[2] - round(56 * scale), box_rect[1] + box_rect[3] - round(16 * scale)), fps_text, text_faint, 209, round(52 * scale))
+		self.ddt.text((box_rect[0] + box_rect[2] - round(56 * scale), box_rect[1] + box_rect[3] - round(16 * scale)), fps_text, text_faint, 209, round(52 * scale), shell_fill)
 		theme_rect = (
 			box_rect[0] + round(16 * scale),
 			box_rect[1] + box_rect[3] - round(40 * scale),
@@ -32204,7 +32204,7 @@ class MiniModeSignal:
 		elif self.coll(theme_rect):
 			theme_colour = text_dim
 		self.ddt.text_background_colour = shell_fill
-		self.ddt.text((theme_rect[0] + round(4 * scale), theme_rect[1] - round(1 * scale)), theme_label, theme_colour, 209, theme_rect[2] - round(4 * scale))
+		self.ddt.text((theme_rect[0] + round(4 * scale), theme_rect[1] - round(1 * scale)), theme_label, theme_colour, 209, theme_rect[2] - round(4 * scale), shell_fill)
 		self.ddt.text_background_colour = shell_fill
 
 		track = self.pctl.playing_object()
@@ -32321,7 +32321,7 @@ class MiniModeSignal:
 							self.pending_jump_frames = 1
 							self.inp.mouse_click = False
 							clicked_track = True
-					self.ddt.text((tx, ty), title, colour, font, round(box_rect[2] * 0.54))
+					self.ddt.text((tx, ty), title, colour, font, round(box_rect[2] * 0.54), shell_fill)
 					if is_current:
 						underline_y = round(ty + th + 1 * scale)
 						underline_w = min(round(tw), round(box_rect[2] * 0.44))
@@ -32340,7 +32340,7 @@ class MiniModeSignal:
 			self.ddt.rect(art_inner, alpha_blend(ColourRGBA(255, 255, 255, 8), art_fill))
 			self._corner_marks(art_inner, secondary, round(10 * scale))
 			self.ddt.text_background_colour = art_fill
-			self.ddt.text((art_rect[0] + art_rect[2] // 2, art_rect[1] + round(34 * scale), 2), "NO ART", text_main, 210, art_rect[2] - round(14 * scale))
+			self.ddt.text((art_rect[0] + art_rect[2] // 2, art_rect[1] + round(34 * scale), 2), "NO ART", text_main, 210, art_rect[2] - round(14 * scale), art_fill)
 
 		if self.coll(art_rect) and self.inp.right_click:
 			self.pctl.play_pause()
