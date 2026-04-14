@@ -23,6 +23,8 @@ win_build() {
 	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc # TODO(Martin): Why is this here?
 	if [[ -e TaskbarLib.tlb ]]; then
 		cp TaskbarLib.tlb dist/TauonMusicBox/
+	elif [[ -e extra/TaskbarLib.tlb ]]; then
+		cp extra/TaskbarLib.tlb dist/TauonMusicBox/TaskbarLib.tlb
 	else
 		echo 'TaskbarLib.tlb is not present!'
 	fi

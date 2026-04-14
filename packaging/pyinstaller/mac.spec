@@ -4,7 +4,8 @@ import certifi
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+SPEC_DIR = Path(globals().get("SPECPATH", Path.cwd() / "packaging/pyinstaller")).resolve()
+REPO_ROOT = SPEC_DIR.parents[1]
 
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 python_ver_dotless = f"{sys.version_info.major}{sys.version_info.minor}"

@@ -495,8 +495,10 @@ Output prefix:
 
 Next steps:
   export PHAZOR_ANDROID_DEPS_PREFIX="$DEPS_ROOT"
-  buildozer -f packaging/android/buildozer.spec android debug
+  cd packaging/android
+  buildozer -f buildozer.spec android debug
 
-Because buildozer.spec now packages android-deps/${ABI}/lib/*.so, the shared
-libraries from this prefix will be copied into the APK for ${ABI}.
+Make sure your buildozer configuration copies the shared libraries from:
+  $PREFIX/lib
+into the APK for ${ABI}. This script only prepares those native dependencies.
 EOF

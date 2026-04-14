@@ -20,7 +20,8 @@ def find_msys64_path() -> Path:
 	raise FileNotFoundError("MSYS2 base path not found in common locations")
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+SPEC_DIR = Path(globals().get("SPECPATH", Path.cwd() / "packaging/pyinstaller")).resolve()
+REPO_ROOT = SPEC_DIR.parents[1]
 
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 msys64_path = Path(find_msys64_path())
