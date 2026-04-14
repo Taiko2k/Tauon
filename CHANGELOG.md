@@ -2,6 +2,14 @@
 Changelog
 ---------
 
+### v10.0.0
+
+ - Redesigned settings UI
+ - Added smooth scroll support
+ - Added new mini mode Signal
+ - Removed Spotify support
+ - Remove koel support
+
 ### v9.2.0
 
  - Added inertial smooth scrolling option
