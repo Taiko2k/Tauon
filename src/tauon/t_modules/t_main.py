@@ -16923,32 +16923,19 @@ class Tauon:
 		the background loop processes updates instantly.
 		"""
 		try:
-			# Ensure thread is started
+			if not (self.prefs.discord_enable and self.prefs.discord_allow):
+				return
+
+			# Create and set the wakeup event immediately so the RPC thread can
+			# observe it without the UI thread polling and sleeping.
+			ev = self.__dict__.setdefault("_discord_wakeup_event", threading.Event())
+			ev.set()
+
 			try:
 				self.hit_discord()
 			except Exception:
-				# hit_discord already logs on failure; continue to attempt wake
+				# hit_discord already logs on failure; nothing else to do here
 				pass
-
-			# Try to set the wakeup event (may be created by the RPC thread).
-			ev = getattr(self, "_discord_wakeup_event", None)
-			if ev is not None:
-				try:
-					ev.set()
-					return
-				except Exception:
-					pass
-
-			# Small retry window for the RPC thread to create the event
-			for _ in range(6):
-				ev = getattr(self, "_discord_wakeup_event", None)
-				if ev is not None:
-					try:
-						ev.set()
-						return
-					except Exception:
-						pass
-				time.sleep(0.05)
 		except Exception:
 			logging.exception("Failed to signal Discord wakeup")
 
