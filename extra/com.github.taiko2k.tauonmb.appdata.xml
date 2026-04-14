@@ -32,7 +32,6 @@
     <p>Features:</p>
     <ul>
       <li>Playback local audio files including MP3, FLAC and OGG</li>
-      <li>Import Spotify tracks and manage Spotify playlists</li>
       <li>Add network tracks from Jellyfin, Airsonic and Plex servers</li>
       <li>Gapless playback</li>
       <li>Automatic CUE sheet detection</li>

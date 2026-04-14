@@ -1128,7 +1128,6 @@ def authserve(tauon: Tauon) -> None:
 			logging.info(format % args)
 
 		def do_GET(self) -> None:
-			code = ""
 			path = self.path
 			# if path.startswith("/tidalredir"):
 			# 	self.send_response(200)
@@ -1138,22 +1137,8 @@ def authserve(tauon: Tauon) -> None:
 			# 	tauon.tidal.login2(path)
 			# 	self.wfile.write(b"You can close this now and return to Tauon Music Box")
 
-			if path.startswith("/spotredir"):
-				self.send_response(200)
-				self.send_header("Content-type", "text/plain")
-				self.end_headers()
-				code = path.split("code=")
-				if len(code) > 1:
-					code = code[1]
-					self.wfile.write(_("You can close this now and return to Tauon Music Box").encode("UTF-8"))
-				tauon.wake()
-
-			else:
-				self.send_response(400)
-				self.end_headers()
-
-			if code:
-				tauon.spot_ctl.paste_code(code)
+			self.send_response(400)
+			self.end_headers()
 
 	httpd = HTTPServer(("127.0.0.1", 7811), Server)
 	httpd.serve_forever()

@@ -30,7 +30,6 @@ import hashlib
 import importlib.machinery
 import math
 import os.path
-import shutil
 import subprocess
 import sysconfig
 import threading
@@ -47,135 +46,9 @@ from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
-	from subprocess import Popen
 
 	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
-	from tauon.t_modules.t_spot import SpotCtl
-
-
-class LibreSpot:
-	def __init__(self, tauon: Tauon) -> None:
-		# fmt:off
-		self.tauon:      Tauon = tauon
-		self.aud:         CDLL = tauon.aud
-		self.gui:       GuiVar = tauon.gui
-		self.windows:        bool = tauon.windows
-		self.pctl:   PlayerCtl = tauon.pctl
-		self.prefs:      Prefs = tauon.prefs
-		self.spot_ctl: SpotCtl = tauon.spot_ctl
-		self.librespot_p: Popen[bytes] | None = tauon.librespot_p
-		self.show_message    = tauon.show_message
-		self.cache_directory: Path = tauon.cache_directory
-		self.running:   bool = False
-		self.flush:     bool = False
-		# fmt:on
-
-	def go(self, force: bool = False) -> int:
-		self.aud.config_set_feed_samplerate(44100)
-		self.aud.config_set_min_buffer(1000)
-		if not shutil.which("librespot"):
-			self.show_message(_("SPP: Error, librespot not found"))
-			return 1
-		# if not prefs.spot_username or not prefs.spot_password:
-		# 	self.show_message("Please enter your spotify username and password in settings")
-		# 	return 1
-		if self.librespot_p:
-			if force:
-				logging.info("SPP: Force restart librespot")
-				self.end()
-				self.librespot_p = None
-			else:
-				self.flush = True
-
-		self.pctl.spot_playing = True
-
-		if not self.librespot_p:
-			logging.info("SPP: Librespot not running")
-			username = self.spot_ctl.get_username()
-			if not username or not self.prefs.spotify_token:
-				logging.error("SPP: Missing auth data")
-				return 1
-
-			cache = str(self.cache_directory / "lsspot")
-			if not Path(cache).exists():
-				os.makedirs(cache)
-
-			access_token = str(self.spot_ctl.spotify.token.access_token)
-
-			cmd = [
-				"librespot",
-				"-k",
-				access_token,
-				"--backend",
-				"pipe",
-				"-n",
-				"Tauon",
-				"--disable-audio-cache",
-				"--device-type",
-				"computer",
-				"--volume-ctrl",
-				"fixed",
-				"--initial-volume",
-				"100",
-			]
-
-			# self.spot_ctl.preparing_spotify = True
-			self.gui.update += 1
-
-			startupinfo = None
-			if sys.platform == "win32":
-				startupinfo = subprocess.STARTUPINFO()
-				startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-			try:
-				self.librespot_p = subprocess.Popen(cmd, stdout=subprocess.PIPE, startupinfo=startupinfo)
-				logging.info("SPP: Librespot now started")
-			except Exception:
-				logging.exception("SPP: Error starting librespot")
-				# tauon.spot_ctl.preparing_spotify = False
-				self.gui.update += 1
-				return 1
-		return 0
-
-	def soft_end(self) -> None:
-		self.running = False
-		self.pctl.spot_playing = False
-
-	def end(self) -> None:
-		self.running = False
-		self.pctl.spot_playing = False
-		if self.librespot_p:
-			if self.windows:
-				self.librespot_p.terminate()
-				# self.librespot_p.communicate()
-			else:
-				import signal
-
-				self.librespot_p.send_signal(signal.SIGINT)  # terminate() doesn't work
-
-	def worker(self) -> None:
-		self.running = True
-		logging.info("SPP: Enter librespot feeder thread")
-		while True:
-			if self.running is False:
-				logging.info("SPP: Exit Librespot worker thread")
-				return
-			if self.flush:
-				self.flush = False
-				logging.info("SPP: Flushing some data...")
-				if self.librespot_p is not None:
-					self.librespot_p.stdout.read(70000)  # rough
-				logging.info("SPP: Done flush")
-			if self.aud.feed_ready(1000) == 1 and self.aud.get_buff_fill() < 2000 and self.librespot_p is not None:
-				data = self.librespot_p.stdout.read(1000)
-				self.aud.feed_raw(len(data), data)
-
-			if self.tauon.player4_state == PlayerState.STOPPED:
-				if self.librespot_p is not None:
-					self.librespot_p.stdout.read(50)
-				time.sleep(0.0002)
-			else:
-				time.sleep(0.002)
 
 
 class FFRun:
@@ -781,7 +654,7 @@ def player4(tauon: Tauon) -> None:
 		# 	return
 		if track.is_network:
 			if track.file_ext == "SPTY":
-				logging.error("Spotify cast not supported")
+				logging.error("Unsupported network source for cast")
 				return
 			network_url, params = pctl.get_url(track)
 			if params:
@@ -792,13 +665,6 @@ def player4(tauon: Tauon) -> None:
 			tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
 		else:
 			tauon.chrome.start(track.index, enqueue=enqueue, t=t)
-
-	def start_librespot() -> None:
-		logging.info("SPP: Start librespot command received. Set Phazor input raw mode")
-		aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
-		spotc.go(force=True)
-		if not spotc.running:
-			shooter(spotc.worker)
 
 	# fmt:off
 	gui   = tauon.gui
@@ -840,7 +706,6 @@ def player4(tauon: Tauon) -> None:
 	active_timer = Timer()
 
 	scan_device()
-	spotc = tauon.spotc
 	ff_run = FFRun(tauon)
 
 	if sys.platform == "win32":
@@ -872,17 +737,11 @@ def player4(tauon: Tauon) -> None:
 		time.sleep(0.016)
 		if tauon.player4_state == PlayerState.PAUSED:
 			time.sleep(0.05)
-		if (
-			tauon.player4_state != PlayerState.STOPPED
-			or tauon.spot_ctl.playing
-			or tauon.spot_ctl.coasting
-			or tauon.chrome_mode
-		):
+		if tauon.player4_state != PlayerState.STOPPED or tauon.chrome_mode:
 			active_timer.set()
 		if active_timer.get() > 7:
 			aud.stop()
 			aud.phazor_shutdown()
-			spotc.soft_end()
 			break
 
 		# Level meter
@@ -986,14 +845,6 @@ def player4(tauon: Tauon) -> None:
 			pctl.playerCommandReady = False
 			# logging.info(command)
 
-			if command == "spotcon":
-				# aud.stop()
-				logging.info("SPP: Start librespot command received. Set Phazor input raw mode")
-				start_librespot()
-				tauon.player4_state = PlayerState.SPOTIFY_MODE
-				# time.sleep(20)
-				# tauon.spot_ctl.preparing_spotify = False
-
 			if command == "startchrome":
 				aud.stop()
 				if tauon.player4_state == PlayerState.PLAYING:
@@ -1050,56 +901,14 @@ def player4(tauon: Tauon) -> None:
 				except Exception:
 					logging.exception("Failed to get extension - maybe file name does not have any dots?")
 
-				if (tauon.spot_ctl.playing or tauon.spot_ctl.coasting) and target_object.file_ext != "SPTY":
-					tauon.spot_ctl.control("stop")
-
 				if target_object.is_network:
 					if target_object.file_ext == "SPTY":
-						tauon.level_train.clear()
-						if target_object.found is False:
-							pctl.playing_state = PlayingState.STOPPED
-							pctl.jump_time = 0.0
-							pctl.advance(inplace=True, play=True)
-							continue
-						if tauon.player4_state not in (PlayerState.STOPPED, PlayerState.SPOTIFY_MODE):
-							aud.stop()
-						if tauon.player4_state != PlayerState.SPOTIFY_MODE:
-							tauon.player4_state = PlayerState.STOPPED
-
-						try:
-							f = False
-							if spotc.running and tauon.player4_state != PlayerState.SPOTIFY_MODE:
-								aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
-								tauon.player4_state = PlayerState.SPOTIFY_MODE
-							if prefs.launch_spotify_local and not spotc.running:
-								aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
-								tauon.player4_state = PlayerState.SPOTIFY_MODE
-								if not tauon.librespot_p:
-									tauon.spot_ctl.preparing_spotify = True
-									f = True
-								spotc.go()
-								if not spotc.running:
-									shooter(spotc.worker)
-
-							tauon.spot_ctl.play_target(
-								target_object.url_key, force_new_device=f, start_callback=start_librespot
-							)
-							# tauon.spot_ctl.preparing_spotify = False
-							if pctl.playerCommand == "spotcon":  # such spaghetti code
-								tauon.player4_state = PlayerState.SPOTIFY_MODE
-								pctl.playerCommand = ""
-								pctl.playerCommandReady = False
-
-						except Exception:
-							logging.exception("Failed to start Spotify track")
-							# tauon.spot_ctl.preparing_spotify = False
-							pctl.playerCommand = "stop"
-							pctl.playerCommandReady = True
+						logging.warning("This network source is no longer supported")
+						target_object.found = False
+						pctl.playing_state = PlayingState.STOPPED
+						pctl.jump_time = 0.0
 						continue
 
-					spotc.running = False
-					# tauon.spot_ctl.preparing_spotify = False
-					pctl.spot_playing = False
 					timer = Timer()
 					timer.set()
 					while True:
@@ -1169,7 +978,6 @@ def player4(tauon: Tauon) -> None:
 				if not target_object.found:
 					pctl.reset_missing_flags()
 
-				spotc.running = False
 				length: float = 0
 				remain: float = 0
 				position: float = 0
@@ -1360,10 +1168,7 @@ def player4(tauon: Tauon) -> None:
 				wall_timer.force_set(3)
 
 			if command == "seek":
-				if tauon.spot_ctl.coasting or tauon.spot_ctl.playing:
-					tauon.spot_ctl.control("seek", int(pctl.new_time * 1000))
-					pctl.playing_time = pctl.new_time
-				elif tauon.player4_state != PlayerState.STOPPED:
+				if tauon.player4_state != PlayerState.STOPPED:
 					if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
 						timer = Timer()
 						timer.set()
@@ -1423,10 +1228,7 @@ def player4(tauon: Tauon) -> None:
 				wall_timer.set()
 
 			if command == "volume":
-				if (tauon.spot_ctl.coasting or tauon.spot_ctl.playing) and not spotc.running:
-					tauon.spot_ctl.control("volume", int(pctl.player_volume))
-				else:
-					aud.ramp_volume(int(pctl.player_volume), 750)
+				aud.ramp_volume(int(pctl.player_volume), 750)
 
 			if command == "seteq":
 				apply_eq_settings()
@@ -1454,7 +1256,6 @@ def player4(tauon: Tauon) -> None:
 				tauon.player4_state = PlayerState.STOPPED
 				pctl.playing_time = 0
 				aud.stop()
-				spotc.running = False
 				time.sleep(0.1)
 				aud.set_volume(int(pctl.player_volume))
 
@@ -1504,7 +1305,6 @@ def player4(tauon: Tauon) -> None:
 					aud.ramp_volume(0, int(speed))
 					time.sleep((fade_time + 100) / 1000)
 
-				spotc.end()
 				aud.stop()
 				aud.phazor_shutdown()
 
@@ -1515,11 +1315,6 @@ def player4(tauon: Tauon) -> None:
 				pctl.playerCommandReady = True
 				break
 		else:
-			pctl.spot_test_progress()
-
-			if tauon.player4_state == PlayerState.SPOTIFY_MODE:
-				run_vis()
-
 			if tauon.player4_state == PlayerState.URL_STREAM:
 				pctl.radio_progress()
 				run_vis()

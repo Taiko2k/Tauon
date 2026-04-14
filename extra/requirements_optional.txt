@@ -1,6 +1,5 @@
 colored_traceback;           sys_platform != 'win32' # Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 jxlpy
-#librespot - https://github.com/kokarare1212/librespot-python/pull/286
 natsort
 opencc;                      sys_platform != 'win32'
 opencc-python-reimplemented; sys_platform == 'win32'
@@ -10,6 +9,5 @@ PyChromecast
 #python-magic # WIP
 pypresence>=4.5.0
 setproctitle
-tekore
 tidalapi
 zeroconf

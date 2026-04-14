@@ -426,7 +426,7 @@ class MacMenuBar:
 
 		play_state = pctl.playing_state
 		current_playlist_locked = self.tauon.pl_is_locked(pctl.active_playlist_viewing)
-		current_track_available = bool(pctl.track_queue) or self.tauon.spot_ctl.coasting
+		current_track_available = bool(pctl.track_queue)
 		playlist_available = bool(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids)
 		love_track_title = "Love Playing Track"
 		if play_state in (PlayingState.PLAYING, PlayingState.PAUSED) and self.tauon.love(False):

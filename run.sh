@@ -9,8 +9,6 @@ win_build() {
 	pyinstaller --log-level=DEBUG windows.spec
 
 	mkdir -p dist/TauonMusicBox/etc
-#	mkdir -p dist/TauonMusicBox/tekore
-#	cp C:/msys64/mingw64/lib/python3.13/site-packages/tekore/VERSION dist/tauon/tekore/VERSION
 	#mkdir fonts
 	#curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf # 800KB
 	#curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
@@ -23,11 +21,6 @@ win_build() {
 	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
 	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
 	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc # TODO(Martin): Why is this here?
-	if [[ -e librespot.exe ]]; then
-		cp librespot.exe dist/TauonMusicBox/
-	else
-		echo 'librespot.exe is not present!'
-	fi
 	if [[ -e TaskbarLib.tlb ]]; then
 		cp TaskbarLib.tlb dist/TauonMusicBox/
 	else

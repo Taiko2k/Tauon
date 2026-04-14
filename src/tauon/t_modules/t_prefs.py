@@ -337,13 +337,6 @@ class Prefs:
 	sep_genre_multi: bool = False
 	topchart_sorts_played: bool = True
 
-	spot_client = ""
-	spot_secret = ""
-	spot_username = ""
-	spot_password = ""
-	spot_mode: bool = False
-	launch_spotify_web: bool = False
-	launch_spotify_local: bool = False
 	remove_network_tracks: bool = False
 	bypass_transcode: bool = False
 	force_hide_max_button: bool = False
@@ -356,7 +349,6 @@ class Prefs:
 	cache_list: list[str] = field(default_factory=list[str])
 	cache_limit = 2000  # in mb
 	save_window_position: bool = True
-	spotify_token = ""
 	always_ffmpeg: bool = False
 
 	use_libre_fm: bool = False

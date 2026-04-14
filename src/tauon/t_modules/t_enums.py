@@ -13,7 +13,6 @@ class PlayerState(IntEnum):
 	PLAYING = 1
 	PAUSED = 2
 	URL_STREAM = 3
-	SPOTIFY_MODE = 4
 
 
 class PlayingState(IntEnum):

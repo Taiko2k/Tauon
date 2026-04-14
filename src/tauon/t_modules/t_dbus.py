@@ -592,7 +592,7 @@ class Gnome:
 			def PrepareForSleep(active: int) -> None:
 				if active == 1 and tauon.sleep_lock is not None:
 					logging.info("System is suspending!")
-					if pctl.playing_state == PlayingState.URL_STREAM and not tauon.spot_ctl.coasting:
+					if pctl.playing_state == PlayingState.URL_STREAM:
 						pctl.stop(block=True)
 						if prefs.resume_play_wake:
 							pctl.playing_state = PlayingState.URL_STREAM

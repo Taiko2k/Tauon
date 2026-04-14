@@ -49,13 +49,11 @@ a = Analysis(
 		("src/tauon/theme", "theme"),
 		("src/tauon/templates", "templates"),
 		("fonts", "fonts"),
-		("librespot.exe", "."),
 		("lrclib-solver.exe", "."),
 		("TauonSMTC.dll", "lib"),
 	],
 	hiddenimports=[
 		"pylast",
-		"tekore",
 		"phazor",
 		# Zeroconf is hacked until this issue is resolved: https://github.com/pyinstaller/pyinstaller-hooks-contrib/issues/840
 		"zeroconf._utils.ipaddress",
