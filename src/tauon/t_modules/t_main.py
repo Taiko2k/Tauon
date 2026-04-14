@@ -5847,6 +5847,7 @@ class Tauon:
 		self.overlay_texture_texture            = bag.overlay_texture_texture
 		self.de_notify_support: bool            = bag.de_notify_support
 		self.old_window_position: tuple[int, int]          = bag.old_window_position
+		self.mini_mode_restore_size: tuple[int, int] | None = None
 		self.mini_mode_wm_forced_floating: bool = False
 		self.mini_mode_wm_was_floating: bool = False
 		self._wayland_wm_ipc_warned: bool = False
@@ -6096,6 +6097,7 @@ class Tauon:
 		self.mini_mode:                           MiniMode = MiniMode(tauon=self)
 		self.mini_mode2:                          MiniMode2 = MiniMode2(tauon=self)
 		self.mini_mode3:                          MiniMode3 = MiniMode3(tauon=self)
+		self.mini_mode_signal:                    MiniModeSignal = MiniModeSignal(tauon=self)
 		self.vb:                                  VorbisMonitor = VorbisMonitor(tauon=self)
 		self.bottom_playlist2:                    EdgePulse2 = EdgePulse2(tauon=self)
 		self.gallery_pulse_top:                   EdgePulse2 = EdgePulse2(tauon=self)
@@ -6312,6 +6314,19 @@ class Tauon:
 
 			if y < gui.window_control_hit_area_h and x > window_size[
 				0] - gui.window_control_hit_area_w:
+				return sdl3.SDL_HITTEST_NORMAL
+
+			if prefs.mini_mode_mode == MiniModeMode.SIGNAL:
+				drag_left = round(16 * gui.scale)
+				drag_right = window_size[0] - round(16 * gui.scale)
+				if prefs.left_window_control:
+					if x < gui.window_control_hit_area_w and y < gui.window_control_hit_area_h:
+						return sdl3.SDL_HITTEST_NORMAL
+					drag_left = round(gui.window_control_hit_area_w + 8 * gui.scale)
+				drag_top = round(8 * gui.scale)
+				drag_bottom = round(52 * gui.scale)
+				if drag_left < x < drag_right and drag_top < y < drag_bottom:
+					return sdl3.SDL_HITTEST_DRAGGABLE
 				return sdl3.SDL_HITTEST_NORMAL
 
 			# Square modes
@@ -11809,6 +11824,10 @@ class Tauon:
 		self.prefs.mini_mode_mode = MiniModeMode.TAB
 		self.set_mini_mode()
 
+	def set_mini_mode_E(self) -> None:
+		self.prefs.mini_mode_mode = MiniModeMode.SIGNAL
+		self.set_mini_mode()
+
 	def copy_bb_metadata(self) -> str | None:
 		tr = self.pctl.playing_object()
 		if tr is None:
@@ -12640,15 +12659,21 @@ class Tauon:
 
 		if self.gui.mode == GuiMode.MAIN:
 			self.old_window_position = get_window_position(self.t_window)
+			saved_w = pointer(c_int(0))
+			saved_h = pointer(c_int(0))
+			sdl3.SDL_GetWindowSize(self.t_window, saved_w, saved_h)
+			self.mini_mode_restore_size = (saved_w.contents.value, saved_h.contents.value)
+			self.gui.save_size[0] = self.mini_mode_restore_size[0]
+			self.gui.save_size[1] = self.mini_mode_restore_size[1]
 
 		if self.prefs.mini_mode_on_top and not self.wayland:
 			sdl3.SDL_SetWindowAlwaysOnTop(self.t_window, True)
 
 		self.gui.mode = GuiMode.MINI
 		self.gui.vis = 0
-		self.gui.turbo = False
+		self.gui.turbo = self.prefs.mini_mode_mode == MiniModeMode.SIGNAL
 		self.gui.draw_vis4_top = False
-		self.gui.level_update = False
+		self.gui.level_update = self.prefs.mini_mode_mode == MiniModeMode.SIGNAL
 
 		i_y = pointer(c_int(0))
 		i_x = pointer(c_int(0))
@@ -12672,6 +12697,8 @@ class Tauon:
 			size = (350, 545)
 			self.style_overlay.flush()
 			self.thread_manager.ready("style")
+		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
+			size = (400, 310)
 
 		if self.logical_size == self.window_size:
 			size = (int(size[0] * self.gui.scale), int(size[1] * self.gui.scale))
@@ -12679,7 +12706,10 @@ class Tauon:
 		self.logical_size[0] = size[0]
 		self.logical_size[1] = size[1]
 
-		sdl3.SDL_SetWindowMinimumSize(self.t_window, 100, 80)
+		min_size = (100, 80)
+		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
+			min_size = (round(320 * self.gui.scale), round(230 * self.gui.scale))
+		sdl3.SDL_SetWindowMinimumSize(self.t_window, min_size[0], min_size[1])
 		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1])
 		sdl3.SDL_SetWindowResizable(self.t_window, True)
 		sdl3.SDL_SetWindowSize(self.t_window, self.logical_size[0], self.logical_size[1])
@@ -12701,8 +12731,9 @@ class Tauon:
 		if not self.mini_mode.was_borderless:
 			sdl3.SDL_SetWindowBordered(self.t_window, True)
 
-		self.logical_size[0] = self.gui.save_size[0]
-		self.logical_size[1] = self.gui.save_size[1]
+		restore_size = self.mini_mode_restore_size or (self.gui.save_size[0], self.gui.save_size[1])
+		self.logical_size[0] = restore_size[0]
+		self.logical_size[1] = restore_size[1]
 
 		sdl3.SDL_SetWindowPosition(self.t_window, self.gui.save_position[0], self.gui.save_position[1])
 
@@ -12714,7 +12745,10 @@ class Tauon:
 		# if self.macos:
 		# 	sdl3.SDLSetWindowMinimumSize(self.t_window, 560, 330)
 		# else:
-		sdl3.SDL_SetWindowMinimumSize(self.t_window, 560, 330)
+		if self.logical_size[0] != self.window_size[0]:
+			sdl3.SDL_SetWindowMinimumSize(self.t_window, 560, 330)
+		else:
+			sdl3.SDL_SetWindowMinimumSize(self.t_window, round(560 * self.gui.scale), round(330 * self.gui.scale))
 
 		self.restore_ignore_timer.set()  # Hacky
 
@@ -12723,6 +12757,11 @@ class Tauon:
 
 		sdl3.SDL_SyncWindow(self.t_window)
 		sdl3.SDL_PumpEvents()
+		sdl3.SDL_GetWindowSize(self.t_window, i_x, i_y)
+		self.window_size[0] = i_x.contents.value
+		self.window_size[1] = i_y.contents.value
+		self.logical_size[0] = i_x.contents.value
+		self.logical_size[1] = i_y.contents.value
 
 		self.inp.mouse_down = False
 		self.inp.mouse_up = False
@@ -12737,8 +12776,9 @@ class Tauon:
 			self.logical_size[1] = i_y.contents.value
 			self.gui.maximized = True
 		self.gui.mini_mode_return_maximized = False
+		self.mini_mode_restore_size = None
 
-			#logging.info(self.window_size)
+		#logging.info(self.window_size)
 
 		self.gui.update_layout = True
 		if self.prefs.art_bg:
@@ -13317,9 +13357,13 @@ class Tauon:
 		#     prefs.spec2_multiply = [1, -1, 0.4]
 
 		gui.draw_vis4_top = False
+		mini_signal_vis = gui.mode == GuiMode.MINI and prefs.mini_mode_mode == MiniModeMode.SIGNAL
 
 		if gui.combo_mode and gui.showcase_mode and prefs.showcase_vis and gui.mode != GuiMode.MINI and prefs.backend == Backend.PHAZOR:
 			gui.vis = 4
+			gui.turbo = True
+		elif mini_signal_vis:
+			gui.vis = 2 if prefs.backend == Backend.PHAZOR else 0
 			gui.turbo = True
 		elif gui.vis_want == 0:
 			gui.turbo = False
@@ -13330,7 +13374,7 @@ class Tauon:
 				gui.turbo = True
 
 		# Disable vis when in compact view
-		if gui.mode == GuiMode.MINI or gui.top_bar_mode2:  # or prefs.backend == Backend.GSTREAMER:
+		if ((gui.mode == GuiMode.MINI and not mini_signal_vis) or gui.top_bar_mode2):  # or prefs.backend == Backend.GSTREAMER:
 			if not gui.combo_mode:
 				gui.vis = 0
 				gui.turbo = False
@@ -31938,6 +31982,416 @@ class MiniMode3:
 		# 		self.ddt.rect_s((2, 2, w - 4, h - 4), self.colours.mini_mode_border, 1 * self.gui.scale)
 		self.ddt.alpha_bg = False
 
+class MiniModeSignal:
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.ddt           = tauon.ddt
+		self.inp           = tauon.inp
+		self.gui           = tauon.gui
+		self.coll          = tauon.coll
+		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
+		self.fields        = tauon.fields
+		self.colours       = tauon.colours
+		self.window_size   = tauon.window_size
+		self.album_art_gen = tauon.album_art_gen
+		self.smooth_scroll = tauon.smooth_scroll
+		self.save_position = None
+		self.was_borderless = True
+		self.volume_timer = Timer()
+		self.volume_timer.force_set(100)
+		self.visual_timer = Timer()
+		self.motion_timer = Timer()
+		self.fps = FPSCounter(window_size=20, min_update_interval=0.12, max_frame_time=0.5)
+		self.visual_levels = [0.0] * 18
+		self.focus_position = 0.0
+		self.focus_target = 0.0
+		self.focus_ready = False
+		self.light_theme = False
+		self.pending_track_jump: tuple[int, int] | None = None
+		self.pending_jump_frames = 0
+
+	def _cut_panel(
+		self,
+		rect: tuple[int, int, int, int],
+		fill: ColourRGBA,
+		border: ColourRGBA,
+		cut: int,
+		accent: ColourRGBA | None = None,
+	) -> None:
+		x, y, w, h = (round(v) for v in rect)
+		cut = max(6, min(cut, max(6, w // 4), max(6, h // 4)))
+		self.ddt.rect((x, y, w - cut, h), fill)
+		self.ddt.rect((x, y + cut, w, h - cut), fill)
+		for offset in range(cut):
+			xx = x + w - cut + offset
+			self.ddt.line(xx, y + offset, xx, y + cut, fill)
+		self.ddt.line(x, y, x + w - cut, y, border)
+		self.ddt.line(x + w - cut, y, x + w, y + cut, border)
+		self.ddt.line(x + w, y + cut, x + w, y + h, border)
+		self.ddt.line(x + w, y + h, x, y + h, border)
+		self.ddt.line(x, y + h, x, y, border)
+		if accent is not None:
+			bar_w = min(round(92 * self.gui.scale), max(24, w - cut - 16))
+			self.ddt.rect((x + round(10 * self.gui.scale), y + round(10 * self.gui.scale), bar_w, round(3 * self.gui.scale)), accent)
+
+	def _corner_marks(self, rect: tuple[int, int, int, int], colour: ColourRGBA, size: int) -> None:
+		x, y, w, h = (round(v) for v in rect)
+		size = max(6, size)
+		self.ddt.line(x, y + size, x, y, colour)
+		self.ddt.line(x, y, x + size, y, colour)
+		self.ddt.line(x + w - size, y, x + w, y, colour)
+		self.ddt.line(x + w, y, x + w, y + size, colour)
+		self.ddt.line(x, y + h - size, x, y + h, colour)
+		self.ddt.line(x, y + h, x + size, y + h, colour)
+		self.ddt.line(x + w - size, y + h, x + w, y + h, colour)
+		self.ddt.line(x + w, y + h - size, x + w, y + h, colour)
+
+	def _grid(self, rect: tuple[int, int, int, int], colour: ColourRGBA, step: int) -> None:
+		x, y, w, h = (round(v) for v in rect)
+		step = max(8, step)
+		for xx in range(x + step, x + w, step):
+			self.ddt.line(xx, y, xx, y + h, colour)
+		for yy in range(y + step, y + h, step):
+			self.ddt.line(x, yy, x + w, yy, colour)
+
+	def _spectrum_targets(self) -> list[float]:
+		source = self.gui.spec if self.gui.spec else []
+		band_count = len(self.visual_levels)
+		if source:
+			targets = []
+			source_len = len(source)
+			# Keep a light lower/mid emphasis so the visualiser stays lively
+			# while remaining close to the original full-range mapping.
+			usable_len = max(1, round(source_len * 0.945))
+			for i in range(band_count):
+				left = (i / band_count) ** 1.175
+				right = ((i + 1) / band_count) ** 1.175
+				start = min(source_len - 1, int(left * usable_len))
+				end = max(start + 1, int(right * usable_len))
+				end = min(source_len, end + 1)
+				segment = source[start:end]
+				value = max(segment) if segment else 0
+				gain = 1.0 + (1.0 - min(1.0, i / max(1, band_count - 1))) * 0.055
+				targets.append(max(0.0, min((value * gain) / 20, 1.0)))
+			return targets
+		t = time.time() * 1.8
+		return [0.08 + ((math.sin(t + i * 0.45) + 1) * 0.08) for i in range(band_count)]
+
+	def _update_visual_levels(self) -> list[float]:
+		dt = min(self.visual_timer.hit(), 0.08)
+		targets = self._spectrum_targets()
+		for i, target in enumerate(targets):
+			current = self.visual_levels[i]
+			if target > current:
+				current += (target - current) * min(1.0, dt * 12)
+			else:
+				current = max(target, current - dt * 1.35)
+			self.visual_levels[i] = current
+		return self.visual_levels
+
+	def _current_playlist_position(self) -> int:
+		playlist = self.pctl.default_playlist
+		if not playlist:
+			return -1
+		if 0 <= self.pctl.playlist_playing_position < len(playlist):
+			return self.pctl.playlist_playing_position
+		track = self.pctl.playing_object()
+		if track is not None:
+			try:
+				return playlist.index(track.index)
+			except ValueError:
+				pass
+		if 0 <= self.pctl.selected_in_playlist < len(playlist):
+			return self.pctl.selected_in_playlist
+		return 0
+
+	def _update_focus_position(self, current_index: int) -> None:
+		if current_index < 0:
+			return
+		self.focus_target = float(current_index)
+		if not self.focus_ready:
+			self.focus_position = float(current_index)
+			self.focus_ready = True
+			self.motion_timer.force_set(0)
+			return
+		dt = min(self.motion_timer.hit(), 0.08)
+		delta = self.focus_target - self.focus_position
+		step = dt * 8.0
+		if abs(delta) <= step:
+			self.focus_position = self.focus_target
+		else:
+			self.focus_position += math.copysign(step, delta)
+
+	def _track_title(self, track: TrackClass) -> str:
+		return track.title or track.filename or "Unknown track"
+
+	def render(self) -> None:
+		self.fps.tick()
+		w = self.window_size[0]
+		h = self.window_size[1]
+		scale = self.gui.scale
+
+		clear_bg = ColourRGBA(0, 0, 0, 0)
+		if self.light_theme:
+			shell_fill = ColourRGBA(254, 254, 254, 255)
+			shell_border = ColourRGBA(4, 4, 6, 255)
+			art_fill = ColourRGBA(246, 246, 243, 252)
+			text_main = ColourRGBA(0, 0, 0, 255)
+			text_dim = ColourRGBA(34, 34, 38, 255)
+			text_faint = ColourRGBA(0, 0, 0, 112)
+			track_text = ColourRGBA(62, 62, 66, 255)
+			primary = ColourRGBA(0, 0, 0, 255)
+			secondary = ColourRGBA(72, 72, 76, 255)
+			grid_line = ColourRGBA(0, 0, 0, 28)
+			point_marker = ColourRGBA(0, 0, 0, 200)
+		else:
+			shell_fill = ColourRGBA(16, 16, 18, 236)
+			shell_border = ColourRGBA(96, 96, 106, 255)
+			art_fill = ColourRGBA(22, 22, 26, 244)
+			text_main = ColourRGBA(236, 236, 240, 255)
+			text_dim = ColourRGBA(154, 154, 164, 255)
+			text_faint = ColourRGBA(255, 255, 255, 30)
+			track_text = ColourRGBA(154, 154, 164, 255)
+			primary = ColourRGBA(235, 72, 170, 255)
+			secondary = ColourRGBA(64, 232, 224, 255)
+			grid_line = ColourRGBA(255, 255, 255, 24)
+			point_marker = ColourRGBA(255, 255, 255, 180)
+
+		self.ddt.alpha_bg = True
+		self.ddt.clear_rect((0, 0, w, h))
+		self.ddt.text_background_colour = clear_bg
+
+		frame = round(14 * scale)
+		box_y = round(14 * scale)
+		box_side = min(w - frame * 2, h - round(30 * scale))
+		box_rect = (frame, box_y, w - frame * 2, box_side)
+		seek_bar = [
+			box_rect[0] + round(18 * scale),
+			box_rect[1] + box_rect[3] - round(18 * scale),
+			box_rect[2] - round(36 * scale),
+			max(4, round(5 * scale)),
+		]
+		seek_hit = [
+			seek_bar[0],
+			seek_bar[1] - round(8 * scale),
+			seek_bar[2],
+			seek_bar[3] + round(16 * scale),
+		]
+
+		self._cut_panel(box_rect, shell_fill, shell_border, round(16 * scale), accent=primary)
+		grid_rect = (box_rect[0] + round(10 * scale), box_rect[1] + round(10 * scale), box_rect[2] - round(20 * scale), box_rect[3] - round(20 * scale))
+		grid_step = round(20 * scale)
+		self._grid(grid_rect, grid_line, grid_step)
+		self.ddt.text_background_colour = shell_fill
+		self.ddt.text((box_rect[0] + round(14 * scale), box_rect[1] + round(12 * scale)), "TAUON \\\\ SIGNAL", text_main, 210, round(120 * scale))
+		self.ddt.text((box_rect[0] + box_rect[2] - round(104 * scale), box_rect[1] + round(12 * scale)), "SPECTRUM ARRAY", text_dim, 210, round(90 * scale))
+		fps_text = f"{int(round(self.fps.get()))} FPS"
+		self.ddt.text((box_rect[0] + box_rect[2] - round(56 * scale), box_rect[1] + box_rect[3] - round(16 * scale)), fps_text, text_faint, 209, round(52 * scale))
+		theme_rect = (
+			box_rect[0] + round(16 * scale),
+			box_rect[1] + box_rect[3] - round(40 * scale),
+			round(54 * scale),
+			round(16 * scale),
+		)
+		self.fields.add(theme_rect)
+		theme_label = "LIGHT" if not self.light_theme else "DARK"
+		theme_colour = text_faint
+		if self.coll(theme_rect) and self.inp.mouse_click:
+			self.light_theme = not self.light_theme
+			self.inp.mouse_click = False
+			theme_colour = text_main
+		elif self.coll(theme_rect):
+			theme_colour = text_dim
+		self.ddt.text_background_colour = shell_fill
+		self.ddt.text((theme_rect[0] + round(4 * scale), theme_rect[1] - round(1 * scale)), theme_label, theme_colour, 209, theme_rect[2] - round(4 * scale))
+		self.ddt.text_background_colour = shell_fill
+
+		track = self.pctl.playing_object()
+		playlist = self.pctl.default_playlist
+
+		if self.inp.mouse_wheel != 0:
+			self.volume_timer.set()
+			scroll_distance = self.smooth_scroll.scroll("volume bar")
+			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
+			if self.pctl.player_volume < 1:
+				self.pctl.player_volume = 0
+			elif self.pctl.player_volume > 100:
+				self.pctl.player_volume = 100
+			self.pctl.player_volume = int(self.pctl.player_volume)
+			self.pctl.set_volume()
+
+		box_restore_rect = (box_rect[0], box_rect[1], box_rect[2], round(34 * scale))
+		self.fields.add(box_restore_rect)
+		if self.coll(box_restore_rect) and self.inp.mouse_click:
+			if self.tauon.d_click_timer.get() < 0.3:
+				self.ddt.alpha_bg = False
+				self.tauon.restore_full_mode()
+				self.gui.update += 1
+				return
+			self.tauon.d_click_timer.set()
+
+		art_size = round(127 * scale)
+		art_rect = (
+			box_rect[0] + box_rect[2] - art_size - round(18 * scale),
+			box_rect[1] + round(34 * scale),
+			art_size,
+			art_size,
+		)
+		art_inner = (art_rect[0] + round(7 * scale), art_rect[1] + round(7 * scale), art_rect[2] - round(14 * scale), art_rect[3] - round(14 * scale))
+
+		levels = self._update_visual_levels()
+		self.fields.add(tuple(seek_hit))
+		self.ddt.rect(tuple(seek_bar), alpha_blend(ColourRGBA(255, 255, 255, 14), shell_fill))
+		for i in range(1, 9):
+			x = seek_bar[0] + round(seek_bar[2] * (i / 10))
+			self.ddt.line(x, seek_bar[1] - round(4 * scale), x, seek_bar[1] + seek_bar[3] + round(4 * scale), ColourRGBA(255, 255, 255, 18))
+		progress = 0.0
+		if self.pctl.playing_length > 0:
+			progress = max(0.0, min(self.pctl.playing_time / self.pctl.playing_length, 1.0))
+		progress_w = round((seek_bar[2] - round(4 * scale)) * progress)
+		if progress_w > 0:
+			self.ddt.rect((seek_bar[0] + round(2 * scale), seek_bar[1] + round(2 * scale), progress_w, seek_bar[3] - round(4 * scale)), primary)
+			marker_x = seek_bar[0] + round(progress * seek_bar[2])
+			self.ddt.rect((marker_x - round(1 * scale), seek_bar[1] - round(4 * scale), round(3 * scale), seek_bar[3] + round(8 * scale)), secondary)
+		if self.inp.mouse_up and self.coll(tuple(seek_hit)) and self.pctl.playing_length > 0:
+			click_x = min(max(self.inp.mouse_position[0], seek_bar[0]), seek_bar[0] + seek_bar[2]) - seek_bar[0]
+			self.pctl.seek_decimal(click_x / seek_bar[2])
+
+		graph_rect = (
+			box_rect[0] + round(12 * scale),
+			box_rect[1] + round(28 * scale),
+			box_rect[2] - round(24 * scale),
+			box_rect[3] - round(54 * scale),
+		)
+		baseline = graph_rect[1] + graph_rect[3] - round(16 * scale)
+		midline = graph_rect[1] + graph_rect[3] // 2
+		self.ddt.line(graph_rect[0], baseline, graph_rect[0] + graph_rect[2], baseline, alpha_blend(ColourRGBA(255, 255, 255, 18), shell_border))
+		self.ddt.line(graph_rect[0], midline, graph_rect[0] + graph_rect[2], midline, ColourRGBA(255, 255, 255, 10))
+
+		current_index = self._current_playlist_position()
+		self._update_focus_position(current_index)
+
+		anchor_x = box_rect[0] + round(box_rect[2] * 0.32) + round(90 * scale)
+		anchor_y = box_rect[1] + round(box_rect[3] * 0.24)
+		x_step = round(18 * scale)
+		y_step = round(16 * scale)
+		max_delta = 7
+		clicked_track = False
+		if playlist:
+				start = max(0, int(math.floor(self.focus_position)) - max_delta)
+				end = min(len(playlist), int(math.ceil(self.focus_position)) + max_delta + 1)
+				for i in range(start, end):
+					rel = i - self.focus_position
+					if abs(rel) > 7:
+						continue
+					tx = anchor_x + round(rel * x_step)
+					ty = anchor_y + round(rel * y_step)
+					if ty < graph_rect[1] - round(20 * scale) or ty > baseline - round(4 * scale):
+						continue
+
+					track_object = self.pctl.get_track(playlist[i])
+					title = self._track_title(track_object)
+					is_current = i == current_index
+					font = 413 if is_current else 211
+					alpha = max(18, 170 - int(abs(rel) * 22) - max(0, int(-rel)) * 12)
+					colour = text_main if is_current else ColourRGBA(track_text.r, track_text.g, track_text.b, alpha)
+					tw = self.ddt.get_text_w(title, font)
+					th = self.ddt.get_text_w(title, font, height=True)
+					if tw is None:
+						tw = round(120 * scale)
+					if th is None:
+						th = round(14 * scale)
+					if tx > graph_rect[0] + graph_rect[2] or tx + round(tw) < graph_rect[0]:
+						continue
+					hit_rect = (
+						round(tx) - round(4 * scale),
+						round(ty) - round(2 * scale),
+						round(tw) + round(8 * scale),
+						round(th) + round(4 * scale),
+					)
+					self.fields.add(hit_rect)
+					if self.coll(hit_rect):
+						colour = text_main if not is_current else secondary
+						if self.inp.mouse_click:
+							self.pctl.selected_in_playlist = i
+							self.gui.shift_selection = [i]
+							self.focus_target = float(i)
+							self.pending_track_jump = (playlist[i], i)
+							self.pending_jump_frames = 1
+							self.inp.mouse_click = False
+							clicked_track = True
+					self.ddt.text((tx, ty), title, colour, font, round(box_rect[2] * 0.54))
+					if is_current:
+						underline_y = round(ty + th + 1 * scale)
+						underline_w = min(round(tw), round(box_rect[2] * 0.44))
+						self.ddt.rect((round(tx), underline_y, underline_w, max(1, round(2 * scale))), secondary)
+
+		self.ddt.rect(art_rect, art_fill)
+		self.ddt.rect((art_rect[0], art_rect[1], art_rect[2], 1), shell_border)
+		self.ddt.rect((art_rect[0], art_rect[1] + art_rect[3] - 1, art_rect[2], 1), shell_border)
+		self.ddt.rect((art_rect[0], art_rect[1], 1, art_rect[3]), shell_border)
+		self.ddt.rect((art_rect[0] + art_rect[2] - 1, art_rect[1], 1, art_rect[3]), shell_border)
+		self.ddt.rect((art_rect[0] + round(10 * scale), art_rect[1] + round(10 * scale), min(round(92 * self.gui.scale), max(24, art_rect[2] - 16)), round(3 * scale)), secondary)
+		if track is not None:
+			self.album_art_gen.display(track, (art_inner[0], art_inner[1]), (art_inner[2], art_inner[3]))
+			self._corner_marks(art_inner, secondary, round(10 * scale))
+		else:
+			self.ddt.rect(art_inner, alpha_blend(ColourRGBA(255, 255, 255, 8), art_fill))
+			self._corner_marks(art_inner, secondary, round(10 * scale))
+			self.ddt.text_background_colour = art_fill
+			self.ddt.text((art_rect[0] + art_rect[2] // 2, art_rect[1] + round(34 * scale), 2), "NO ART", text_main, 210, art_rect[2] - round(14 * scale))
+
+		if self.coll(art_rect) and self.inp.right_click:
+			self.pctl.play_pause()
+
+		if self.pending_track_jump is not None:
+			if self.pending_jump_frames > 0:
+				self.pending_jump_frames -= 1
+			else:
+				track_id, pl_position = self.pending_track_jump
+				self.pending_track_jump = None
+				self.pctl.jump(track_id, pl_position=pl_position)
+
+		bar_gap = round(4 * scale)
+		bar_w = max(round(5 * scale), (graph_rect[2] - bar_gap * (len(levels) - 1)) // len(levels))
+		max_h = graph_rect[3] - round(24 * scale)
+		prev_point = None
+		time_bias = time.time() * 3
+		for i, value in enumerate(levels):
+			x = graph_rect[0] + i * (bar_w + bar_gap)
+			bar_h = max(round(value * max_h), 0)
+			segments = max(1, bar_h // max(1, round(6 * scale)))
+			for seg in range(segments):
+				y = baseline - round((seg + 1) * (5 * scale))
+				height = round(3 * scale)
+				seg_colour = colour_slide(primary, secondary, seg, max(segments, 1))
+				self.ddt.rect((x, y, bar_w, height), seg_colour)
+			reflection = max(round(bar_h * 0.25), 0)
+			if reflection > 0 and not self.light_theme:
+				self.ddt.rect((x + round(1 * scale), midline + round(4 * scale), max(1, bar_w - round(2 * scale)), reflection), ColourRGBA(primary.r, primary.g, primary.b, 36))
+			point_x = x + bar_w // 2
+			point_y = midline - round(value * (graph_rect[3] * 0.22)) - round(math.sin(time_bias + i * 0.35) * 4 * scale)
+			if prev_point is not None:
+				self.ddt.line(prev_point[0], prev_point[1], point_x, point_y, secondary)
+			prev_point = (point_x, point_y)
+			self.ddt.rect((point_x - round(1 * scale), point_y - round(1 * scale), round(3 * scale), round(3 * scale)), point_marker)
+
+		self._corner_marks(graph_rect, primary, round(10 * scale))
+
+		if self.coll(box_rect) and self.inp.mouse_click and not clicked_track and not self.coll(tuple(seek_hit)):
+			self.tauon.d_click_timer.set()
+
+		tool_rect = [self.window_size[0] - 110 * self.gui.scale, 2, 108 * self.gui.scale, 45 * self.gui.scale]
+		if self.prefs.left_window_control:
+			tool_rect[0] = 0
+		self.fields.add(tool_rect)
+		if self.coll(tool_rect):
+			self.tauon.draw_window_tools()
+
+		self.gui.update += 1
+		self.ddt.alpha_bg = False
+
 class StandardPlaylist:
 	def __init__(self, tauon: Tauon, pl_bg: LoadImageAsset | None) -> None:
 		self.tauon         = tauon
@@ -46708,6 +47162,7 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Tab"), tauon.set_mini_mode_D))
 	mode_menu.add(MenuItem(_("Mini"), tauon.set_mini_mode_A1))
 	# mode_menu.add(_('Mini Mode Large'), tauon.set_mini_mode_A2)
+	mode_menu.add(MenuItem(_("Signal"), tauon.set_mini_mode_E))
 	mode_menu.add(MenuItem(_("Slate"), tauon.set_mini_mode_C1))
 	mode_menu.add(MenuItem(_("Square"), tauon.set_mini_mode_B1))
 	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
@@ -52162,6 +52617,8 @@ def main(holder: Holder) -> None:
 
 				if prefs.mini_mode_mode == MiniModeMode.SLATE:
 					tauon.mini_mode3.render()
+				elif prefs.mini_mode_mode == MiniModeMode.SIGNAL:
+					tauon.mini_mode_signal.render()
 				elif prefs.mini_mode_mode == MiniModeMode.TAB:
 					tauon.mini_mode2.render()
 				else:
