@@ -12,7 +12,7 @@ You can also use the github discussions feature. If your question is implicitly 
 
 ## Code Contributions
 
-The UI has strict minimally focused design. For contributions please try to understand thid existing design language as much as possible.
+The UI has strict minimally focused design. For contributions please try to understand the existing design language as much as possible.
 
 Large scale automated edits will likely be rejected.
 
