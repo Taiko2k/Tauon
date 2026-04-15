@@ -414,14 +414,16 @@ def discord_loop_entrypoint(main) -> None:
             )
 
             rate_ok = _rpc_budget_ok(now) and time_since_sent >= min_gap
+            position_ok = is_idle or pctl.playing_time >= 2.0
 
             ready_to_send = (
                 pending_sig != last_sent_sig
                 and time_since_change >= _DEBOUNCE_S
                 and rate_ok
+                and position_ok
             )
 
-            if force_update and pending_sig != last_sent_sig and rate_ok:
+            if force_update and pending_sig != last_sent_sig and rate_ok and position_ok:
                 ready_to_send = True
 
             if ready_to_send:

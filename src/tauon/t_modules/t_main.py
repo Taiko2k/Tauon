@@ -25949,7 +25949,6 @@ class Over:
 
 		def set_discord_card_layout(layout: str) -> None:
 			prefs.discord_card_layout = layout
-			prefs.discord_presence_layout = layout
 
 		def set_member_list_display(display: str) -> None:
 			prefs.discord_member_list_display = display
@@ -26012,7 +26011,7 @@ class Over:
 		prefs.discord_show_tauon_button = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_show_tauon_button,
-			_("Tauon webstite button"),
+			_("Tauon website button"),
 			accent=accent,
 		)
 
@@ -41555,7 +41554,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
 	cf.update_value("write-ratings-to-tag", prefs.write_ratings)
 	cf.update_value("enable-discord-rpc", prefs.discord_enable)
-	cf.update_value("discord-presence-layout",     prefs.discord_presence_layout)
 	cf.update_value("discord-card-layout",         prefs.discord_card_layout)
 	cf.update_value("discord-member-list-display",  prefs.discord_member_list_display)
 	cf.update_value("discord-clean-title",          prefs.discord_clean_title)
@@ -41918,9 +41916,6 @@ def load_prefs(bag: Bag) -> None:
 	prefs.discord_enable = cf.sync_add(
 		"bool", "enable-discord-rpc", prefs.discord_enable,
 		"Show track info in running Discord application")
-	prefs.discord_presence_layout = cf.sync_add(
-		"string", "discord-presence-layout", prefs.discord_presence_layout,
-		"title_artist = Song title first, artist_title = Artist first")
 	prefs.discord_card_layout = cf.sync_add(
 		"string", "discord-card-layout", prefs.discord_card_layout,
 		"Card layout: title_artist = Song title first, artist_title = Artist first")
@@ -41936,12 +41931,10 @@ def load_prefs(bag: Bag) -> None:
 	prefs.discord_show_tauon_button = cf.sync_add(
 		"bool", "discord-show-tauon-button", prefs.discord_show_tauon_button,
 		"Show Tauon website button in Discord rich presence")
-	if prefs.discord_presence_layout not in ("title_artist", "artist_title"):
-		prefs.discord_presence_layout = "title_artist"
 	if prefs.discord_card_layout not in ("title_artist", "artist_title"):
 		prefs.discord_card_layout = "title_artist"
 	if prefs.discord_member_list_display not in ("song", "artist"):
-		prefs.discord_member_list_display = "song"
+		prefs.discord_member_list_display = "artist"
 	prefs.auto_lyrics = cf.sync_add(
 		"bool", "auto-search-lyrics", prefs.auto_lyrics,
 		"Automatically search internet for lyrics when display is wanted")
