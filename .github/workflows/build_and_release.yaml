@@ -114,68 +114,6 @@ jobs:
       #    source .venv/bin/activate
       #    tauonmb
 
-  build-flatpak:
-    name: "Flatpak"
-    runs-on: ubuntu-24.04
-    container:
-      image: bilelmoussaoui/flatpak-github-actions:freedesktop-24.08
-      options: --privileged
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Download jq
-        run: |
-          mkdir -p $HOME/bin
-          curl -Lo $HOME/bin/jq https://github.com/stedolan/jq/releases/latest/download/jq-linux64
-          chmod +x $HOME/bin/jq
-          echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Install rustup
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-      - name: Run rustup
-        run: |
-          . "$HOME/.cargo/env"
-          rustup toolchain install stable
-
-      - name: Clone Flatpak repo and switch to beta branch
-        run: |
-          git clone --recurse-submodules https://github.com/flathub/com.github.taiko2k.tauonmb.git tauon-flatpak
-          cd tauon-flatpak; git checkout beta
-
-      - name: "[DEBUG] List all files"
-        run: find .
-
-      - name: Get repository and commit info
-        run: |
-          REPO_URL="https://github.com/${{ github.repository }}.git"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
-          else
-            COMMIT_SHA="${{ github.sha }}"
-          fi
-          echo "Repository URL: $REPO_URL"
-          echo "Commit SHA: $COMMIT_SHA"
-
-          # Modify JSON file
-          jq --arg repo "$REPO_URL" --arg commit "$COMMIT_SHA" '
-            (.modules[] | select(type == "object" and .name == "tauonmb-git").sources[] | select(type == "object") | select(.type == "git")) |= {type: "git", url: $repo, commit: $commit}
-          ' tauon-flatpak/com.github.taiko2k.tauonmb.json > updated.json
-          mv updated.json tauon-flatpak/com.github.taiko2k.tauonmb.json
-
-      - name: Verify JSON changes
-        run: cat tauon-flatpak/com.github.taiko2k.tauonmb.json
-
-      # https://github.com/marketplace/actions/flatpak-builder
-      - name: Build Flatpak
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.6
-        with:
-          bundle: TauonMusicBox-x64.flatpak
-          manifest-path: tauon-flatpak/com.github.taiko2k.tauonmb.json
-          cache-key: flatpak-builder-${{ github.sha }}
-
   build-macos:
     name: "macOS"
     runs-on: macos-15
@@ -509,7 +447,7 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux, build-flatpak, build-windows, build-macos]
+    needs: [get-info, build-linux, build-windows, build-macos]
     runs-on: ubuntu-24.04
     steps:
       - name: Download all artifacts
@@ -549,7 +487,6 @@ jobs:
             ~/artifacts/**/**/*.7z
             ~/artifacts/**/**/*.dmg
             ~/artifacts/**/**/*.exe
-            ~/artifacts/**/**/*.flatpak
 
       - name: Publish to Release Repository
         env:
@@ -558,7 +495,7 @@ jobs:
           ARTIFACTS_DIR=~/artifacts
           REPO="Taiko2k/Tauon"
 
-          for file in "$ARTIFACTS_DIR"/**/*.{7z,dmg,exe,flatpak}; do
+          for file in "$ARTIFACTS_DIR"/**/*.{7z,dmg,exe}; do
             filename=$(basename "$file")
             # Check if release already exists and get ID
             release_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \

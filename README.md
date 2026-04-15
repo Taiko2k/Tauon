@@ -37,7 +37,7 @@ For Windows installer see the [releases](https://github.com/Taiko2k/TauonMusicBo
 
 ### Linux
 
-Installation is available on [Arch Linux](https://archlinux.org/packages/extra/x86_64/tauon-music-box/) or as a Flatpak. You can also install portable binaires from the [releases](https://github.com/Taiko2k/Tauon/releases) page.
+Installation is available on [Arch Linux](https://archlinux.org/packages/extra/x86_64/tauon-music-box/). Tauon is also available on Flathub, and portable binaries are published on the [releases](https://github.com/Taiko2k/Tauon/releases) page.
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
