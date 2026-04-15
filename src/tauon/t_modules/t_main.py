@@ -17544,6 +17544,8 @@ class Tauon:
 			prefs.milk,
 			prefs.auto_milk,
 			prefs.loaded_preset,
+			int(pctl.stop_mode),
+			pctl.stop_ref,
 		]
 
 		try:
@@ -41256,6 +41258,8 @@ class Bag:
 	song_notification:       None = None
 	active_playlist_viewing: int = 0
 	active_playlist_playing: int = 0
+	loaded_stop_mode:        int = 0
+	loaded_stop_ref:         tuple[str, str] | None = None
 
 @dataclass
 class Formats:
@@ -44862,6 +44866,10 @@ def main(holder: Holder) -> None:
 				prefs.auto_milk = save[185]
 			if len(save) > 186 and save[186] is not None:
 				prefs.loaded_preset = save[186]
+			if len(save) > 187 and save[187] is not None:
+				bag.loaded_stop_mode = save[187]
+			if len(save) > 188 and save[188] is not None:
+				bag.loaded_stop_ref = save[188]
 
 			del save
 			break
@@ -45148,6 +45156,12 @@ def main(holder: Holder) -> None:
 	tauon.search_dia_string_cache = search_dia_string_cache
 	signal.signal(signal.SIGINT, tauon.signal_handler)
 	pctl = tauon.pctl
+	try:
+		pctl.stop_mode = StopMode(bag.loaded_stop_mode)
+	except ValueError:
+		logging.warning(f"Invalid saved stop_mode value: {bag.loaded_stop_mode}")
+		pctl.stop_mode = StopMode.OFF
+	pctl.stop_ref = bag.loaded_stop_ref if pctl.stop_mode != StopMode.OFF else None
 	if bag.multi_playlist:
 		pctl.multi_playlist = bag.multi_playlist
 		pctl.default_playlist = bag.default_playlist
