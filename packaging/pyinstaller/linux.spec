@@ -44,7 +44,7 @@ a = Analysis(
 		"zeroconf._handlers.answers",
 		"OpenGL.platform.egl",
 	],
-	hookspath=[str(REPO_ROOT / "extra/pyinstaller-hooks")],
+	hookspath=[str(REPO_ROOT / "packaging/pyinstaller/hooks")],
 	hooksconfig={},
 	runtime_hooks=[],
 	excludes=[
