@@ -38756,6 +38756,7 @@ class DLMon:
 		self.watching: dict[str, int] = {}
 		self.ready = set()
 		self.done = set()
+		self.unavailable_directories: set[str] = set()
 
 	def scan(self) -> None:
 		if len(self.watching) == 0:
@@ -38767,7 +38768,21 @@ class DLMon:
 		self.ticker.set()
 
 		for downloads in self.tauon.download_directories:
-			for item in os.listdir(downloads):
+			try:
+				items = os.listdir(downloads)
+			except PermissionError:
+				if downloads not in self.unavailable_directories:
+					logging.warning(f"Skipping unreadable download directory: {downloads}")
+					self.unavailable_directories.add(downloads)
+				continue
+			except OSError:
+				logging.exception(f"Failed to scan download directory: {downloads}")
+				self.unavailable_directories.add(downloads)
+				continue
+			else:
+				self.unavailable_directories.discard(downloads)
+
+			for item in items:
 				path = os.path.join(downloads, item)
 
 				if path in self.done:
