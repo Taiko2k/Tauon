@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2025-05-04 09:07+0000\n"
+"PO-Revision-Date: 2026-04-17 01:35+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Japanese <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ja/>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.17.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
@@ -2049,8 +2049,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:18921
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
-"アクセスできませんでした！ Flatpakの権限が不十分である可能性があります。"
+msgstr "アクセスできませんでした！ Flatpakの権限が不十分である可能性があります。"
 
 #: src/tauon/t_modules/t_main.py:18928
 msgid ""

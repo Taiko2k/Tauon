@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2025-12-09 20:00+0000\n"
-"Last-Translator: Lorsoen <fashim99@gmail.com>\n"
+"PO-Revision-Date: 2026-04-17 01:35+0000\n"
+"Last-Translator: Martin <spleefer90@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fr/>\n"
 "Language: fr_FR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.15-dev\n"
+"X-Generator: Weblate 5.17.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
@@ -2755,8 +2755,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:25161
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
-"Les pistes seront enregistrées dans la playlist « Saved Radio Tracks »."
+msgstr "Les pistes seront enregistrées dans la playlist « Saved Radio Tracks »."
 
 #: src/tauon/t_modules/t_main.py:25175
 msgid "Enable Discord Rich Presence"
@@ -2797,8 +2796,7 @@ msgstr "Ne se lance que pendant une réanalyse de tous les dossiers"
 
 #: src/tauon/t_modules/t_main.py:25233
 msgid "Save \"simple\" lyrics changes back to their original files"
-msgstr ""
-"Sauvegarder les modifications « simples » des paroles vers leur fichier"
+msgstr "Sauvegarder les modifications « simples » des paroles vers leur fichier"
 
 #: src/tauon/t_modules/t_main.py:25234
 msgid ""
@@ -3076,8 +3074,8 @@ msgid ""
 "if it didn't open) and follow prompt. Then return here and click \"Done\"."
 msgstr ""
 "Cliquez « Se connecter » pour ouvrir la page de connexion (coller le lien en "
-"cas d'échec), suivez les instructions puis revenez ici et cliquez "
-"« Valider »."
+"cas d'échec), suivez les instructions puis revenez ici et cliquez « Valider "
+"»."
 
 #: src/tauon/t_modules/t_main.py:26126
 msgid "Forget account"
@@ -3753,8 +3751,8 @@ msgstr "Entrez un lien de flux"
 #: src/tauon/t_modules/t_main.py:32522
 msgid "Could not validate URL. Must start with https:// or http://"
 msgstr ""
-"Impossible de valider le lien. Il doit commencer par « https:// » ou "
-"« http:// »"
+"Impossible de valider le lien. Il doit commencer par « https:// » ou « "
+"http:// »"
 
 #: src/tauon/t_modules/t_main.py:32685 src/tauon/t_modules/t_main.py:32691
 #: src/tauon/t_modules/t_main.py:32698
@@ -3767,8 +3765,7 @@ msgstr "Veuillez arrêter la lecture avant de changer cette préférence"
 
 #: src/tauon/t_modules/t_main.py:32693
 msgid "Please stop playback first to end current recording"
-msgstr ""
-"Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
+msgstr "Veuillez arrêter la lecture avant de terminer l’enregistrement en cours"
 
 #: src/tauon/t_modules/t_main.py:32702
 msgid "Tracks will now be recorded."
@@ -4251,8 +4248,8 @@ msgid ""
 "Saving one type will now OVERWRITE the other in the files. (Tauon itself "
 "doesn't care.)"
 msgstr ""
-"Enregistrer un type ÉCRASERA les autres des fichiers (Tauon, lui, s'en "
-"fiche)."
+"Enregistrer un type ÉCRASERA les autres des fichiers (Tauon, lui, s'en fiche)"
+"."
 
 #: src/tauon/t_modules/t_main.py:38492
 msgid "Lyrics will misbehave if only some of them are timed."
@@ -5495,8 +5492,7 @@ msgstr "Erreur - Appareil Tauon introuvable"
 #: src/tauon/t_modules/t_spot.py:475
 msgid ""
 "Error. You may need to click Authorise in Settings > Accounts > Spotify."
-msgstr ""
-"Erreur. Cliquez sur « Autoriser » dans « Options > Comptes > Spotify »."
+msgstr "Erreur. Cliquez sur « Autoriser » dans « Options > Comptes > Spotify »."
 
 #: src/tauon/t_modules/t_spot.py:930
 msgid "Spotify upload error!"
@@ -5544,8 +5540,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_webserve.py:1056
 msgid "You can close this now and return to Tauon Music Box"
-msgstr ""
-"Vous pouvez maintenant fermer cet onglet et revenir sur Tauon Music Box"
+msgstr "Vous pouvez maintenant fermer cet onglet et revenir sur Tauon Music Box"
 
 #~ msgid ""
 #~ "Error loading old database, did the program not exit properly after "

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2025-05-06 07:01+0000\n"
-"Last-Translator: Kosťantin Horovij <lg096066587039@gmail.com>\n"
+"PO-Revision-Date: 2026-04-17 01:40+0000\n"
+"Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/tauon-music-"
 "box/tauon-music-box/uk/>\n"
 "Language: uk\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.17.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
@@ -325,8 +325,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:4890
 msgid "Please authorise and click the enable toggle first!"
-msgstr ""
-"Будь ласка, спочатку авторизуйтесь і натисніть на перемикач увімкнення!"
+msgstr "Будь ласка, спочатку авторизуйтесь і натисніть на перемикач увімкнення!"
 
 #: src/tauon/t_modules/t_main.py:4891
 msgid "Spotify import complete"
@@ -1472,8 +1471,7 @@ msgstr "{N} рейтингів імпортовано"
 
 #: src/tauon/t_modules/t_main.py:11634
 msgid "This will delete all track and album ratings from the local database!"
-msgstr ""
-"Це видалить усі рейтинги композицій та альбомів з локальної бази даних!"
+msgstr "Це видалить усі рейтинги композицій та альбомів з локальної бази даних!"
 
 #: src/tauon/t_modules/t_main.py:11635 src/tauon/t_modules/t_main.py:26204
 msgid ""
@@ -1685,8 +1683,8 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
 msgstr ""
-"Ви можете вилучити або відредагувати цю поведінку, перейшовши за посиланням "
-"«Різне...» > «Редагувати виробника...»"
+"Ви можете вилучити або відредагувати цю поведінку, перейшовши за посиланням «"
+"Різне...» > «Редагувати виробника...»"
 
 #: src/tauon/t_modules/t_main.py:15041
 msgid "A regen is already in progress..."
@@ -2742,8 +2740,8 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:25161
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
-"Композиції будуть збережені до списку відтворення «Збережені радіо-"
-"композиції»."
+"Композиції будуть збережені до списку відтворення «Збережені радіо-композиції"
+"»."
 
 #: src/tauon/t_modules/t_main.py:25175
 msgid "Enable Discord Rich Presence"
