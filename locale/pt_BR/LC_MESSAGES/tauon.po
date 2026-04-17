@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
 "PO-Revision-Date: 2026-04-17 01:33+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -1062,8 +1062,7 @@ msgstr "O diretório de origem não encontrado!"
 
 #: src/tauon/t_modules/t_main.py:10259
 msgid "Safety interrupt! The source folder seems to have many files."
-msgstr ""
-"Interrupção de segurança! A pasta de origem parece ter muitos arquivos."
+msgstr "Interrupção de segurança! A pasta de origem parece ter muitos arquivos."
 
 #: src/tauon/t_modules/t_main.py:10269
 msgid "The track needs to have an artist name."
@@ -1989,8 +1988,7 @@ msgstr "Erro conectando ao servidor PLEX"
 
 #: src/tauon/t_modules/t_main.py:19393
 msgid "Try checking login credentials and that the server is accessible."
-msgstr ""
-"Tente verificar as credenciais de login e se o servidor está acessível."
+msgstr "Tente verificar as credenciais de login e se o servidor está acessível."
 
 #: src/tauon/t_modules/t_main.py:19495
 msgid "PLEX Collection"
@@ -4407,8 +4405,7 @@ msgstr "Arquivos não exitem ou inacessíveis"
 
 #: src/tauon/t_modules/t_main.py:41596
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
-"Se você estiver usando Flatpak, você provavelmente deveria seguir isso:"
+msgstr "Se você estiver usando Flatpak, você provavelmente deveria seguir isso:"
 
 #: src/tauon/t_modules/t_main.py:41604
 msgid "Bad permissions"
