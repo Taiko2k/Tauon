@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2026-03-11 23:09+0000\n"
+"PO-Revision-Date: 2026-04-17 01:36+0000\n"
 "Last-Translator: RBuzz RBuzz <rbuzz@gmx.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.17-dev\n"
+"X-Generator: Weblate 5.17.1-dev\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
@@ -821,8 +821,7 @@ msgstr "Ostrzeżenie synchronizacji"
 
 #: src/tauon/t_modules/t_main.py:9159 src/tauon/t_modules/t_main.py:9189
 msgid "One or more folders to sync has the same name. Skipping."
-msgstr ""
-"Jeden lub wiele folderów do synchronizacji ma tę samą nazwę. Pomijanie."
+msgstr "Jeden lub wiele folderów do synchronizacji ma tę samą nazwę. Pomijanie."
 
 #: src/tauon/t_modules/t_main.py:9165
 msgid "One or more folders is missing"
@@ -1918,8 +1917,7 @@ msgstr "Brak dostępu! Prawdopodobnie niewystarczające uprawnienia Flatpak."
 #: src/tauon/t_modules/t_main.py:18928
 msgid ""
 "The target will may be lost on reboot without necessary Flatpak permissions."
-msgstr ""
-"Bez wymaganych uprawnień Flatpak cel może zostać utracony po restarcie."
+msgstr "Bez wymaganych uprawnień Flatpak cel może zostać utracony po restarcie."
 
 #: src/tauon/t_modules/t_main.py:18931
 msgid "Path may be transient! Continue? Press \"No\" for more information."
@@ -4322,8 +4320,8 @@ msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
 msgstr ""
-"Edytuj otwarty tekst w edytorze tekstu, a następnie zapisz plik i kliknij "
-"„Odczytaj ponownie.”"
+"Edytuj otwarty tekst w edytorze tekstu, a następnie zapisz plik i kliknij „"
+"Odczytaj ponownie.”"
 
 #: src/tauon/t_modules/t_main.py:39475
 msgid "Make sure to save your changes."
