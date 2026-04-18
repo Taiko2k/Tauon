@@ -198,7 +198,7 @@ from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
 from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
-from tauon.t_modules.t_themeload import Deco, load_theme  # noqa: E402
+from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
 	VorbisMonitor,
@@ -23801,6 +23801,19 @@ class Over:
 		self.settings_text_hit = False
 
 		self.themes = []
+		self.theme_editor_enabled = False
+		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_clipboard: ColourRGBA | None = None
+		self.theme_editor_list_scroll = 0.0
+		self.theme_editor_list_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
+		self.theme_editor_title_box: TextBox2 = TextBox2(tauon=tauon)
+		self.theme_editor_original_colours: ColoursClass | None = None
+		self.theme_editor_draft_colours: ColoursClass | None = None
+		self.theme_editor_original_theme_name = ""
+		self.theme_editor_original_theme_number = 0
+		self.theme_editor_target_path: Path | None = None
+		self.theme_editor_is_new = False
+		self.theme_editor_dirty = False
 		self.view_supporters = False
 
 	def destroy_settings_texture(self) -> None:
@@ -24080,6 +24093,243 @@ class Over:
 		if page is None:
 			page = self.func_page
 		return accents[page % len(accents)]
+
+	def refresh_theme_presets(self) -> None:
+		self.themes = [(ColoursClass(), "Mindaro", 0)]
+		for index, theme in enumerate(get_themes(self.dirs)):
+			colours = ColoursClass()
+			try:
+				load_theme(colours, Path(theme[0]))
+			except Exception:
+				logging.exception("Error loading theme preset preview")
+				continue
+			self.themes.append((colours, theme[1], index + 1))
+
+	def get_active_theme_item(self) -> tuple[str, str] | None:
+		if self.prefs.theme <= 0:
+			return None
+		themes = get_themes(self.dirs)
+		theme_index = self.prefs.theme - 1
+		if theme_index < 0 or theme_index >= len(themes):
+			return None
+		return themes[theme_index]
+
+	def theme_path_is_user(self, path: Path) -> bool:
+		if self.dirs.user_directory == self.dirs.install_directory:
+			return False
+		try:
+			path.resolve().relative_to((self.dirs.user_directory / "theme").resolve())
+		except ValueError:
+			return False
+		return True
+
+	def active_theme_path(self) -> Path | None:
+		theme_item = self.get_active_theme_item()
+		if theme_item is None:
+			return None
+		return Path(theme_item[0])
+
+	def active_theme_is_user_editable(self) -> bool:
+		path = self.active_theme_path()
+		return path is not None and self.theme_path_is_user(path)
+
+	def theme_editor_selected_label(self) -> str:
+		for label, attr in THEME_EDITOR_COMPONENTS:
+			if attr == self.theme_editor_selected_attr:
+				return _(label)
+		return _("Component")
+
+	def theme_colour_to_hex(self, colour: ColourRGBA) -> str:
+		return f"#{colour.r:02X}{colour.g:02X}{colour.b:02X}{colour.a:02X}"
+
+	def parse_theme_colour_text(self, text: str) -> ColourRGBA | None:
+		match = re.fullmatch(r"#?([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})", text.strip())
+		if not match:
+			return None
+		value = match.group(1)
+		if len(value) == 6:
+			value += "FF"
+		return ColourRGBA(
+			int(value[0:2], 16),
+			int(value[2:4], 16),
+			int(value[4:6], 16),
+			int(value[6:8], 16),
+		)
+
+	def theme_editor_current_colour(self) -> ColourRGBA:
+		source = self.theme_editor_draft_colours or self.colours
+		colour = getattr(source, self.theme_editor_selected_attr, None)
+		if colour is None:
+			return ColourRGBA(255, 255, 255, 255)
+		return ColourRGBA(colour.r, colour.g, colour.b, colour.a)
+
+	def apply_theme_preview_colours(self, source: ColoursClass) -> None:
+		preview = clone_theme_colours(source)
+		if self.prefs.transparent_mode:
+			preview.apply_transparency()
+		self.colours.__dict__.clear()
+		self.colours.__dict__.update(copy.deepcopy(preview.__dict__))
+		if self.colours.deco:
+			self.tauon.deco.load(self.colours.deco)
+		else:
+			self.tauon.deco.unload()
+		if self.colours.lm:
+			self.gui.info_icon.colour = ColourRGBA(60, 60, 60, 255)
+			self.gui.folder_icon.colour = ColourRGBA(255, 190, 80, 255)
+			self.gui.settings_icon.colour = ColourRGBA(85, 187, 250, 255)
+			self.gui.radiorandom_icon.colour = ColourRGBA(120, 200, 120, 255)
+		else:
+			self.gui.info_icon.colour = ColourRGBA(61, 247, 163, 255)
+			self.gui.folder_icon.colour = ColourRGBA(244, 220, 66, 255)
+			self.gui.settings_icon.colour = ColourRGBA(232, 200, 96, 255)
+			self.gui.radiorandom_icon.colour = ColourRGBA(153, 229, 133, 255)
+		self.ddt.text_background_colour = self.colours.playlist_panel_background
+		self.gui.update_layout = True
+
+	def begin_theme_editor(self, title: str, target_path: Path | None, is_new: bool) -> None:
+		self.enabled = True
+		self.theme_editor_enabled = True
+		self.tauon.fader.fall()
+		self.theme_editor_list_scroll = 0.0
+		self.theme_editor_dirty = False
+		self.theme_editor_is_new = is_new
+		self.theme_editor_target_path = target_path
+		self.theme_editor_original_colours = clone_theme_colours(self.colours)
+		self.theme_editor_draft_colours = clone_theme_colours(self.colours)
+		self.theme_editor_original_theme_name = self.gui.theme_name
+		self.theme_editor_original_theme_number = self.prefs.theme
+		self.theme_editor_title_box.set_text(title)
+		self.theme_editor_title_box.cursor_position = 0
+		self.theme_editor_title_box.selection = 0
+		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
+
+	def clear_theme_editor_state(self) -> None:
+		self.theme_editor_enabled = False
+		self.theme_editor_draft_colours = None
+		self.theme_editor_original_colours = None
+		self.theme_editor_target_path = None
+		self.theme_editor_dirty = False
+
+	def open_theme_editor(self) -> None:
+		if not self.active_theme_is_user_editable():
+			self.show_message(
+				_("Bundled themes are read-only"),
+				_("Create a new theme first to edit a copy of the active look."),
+				mode="warning",
+			)
+			return
+		self.begin_theme_editor(self.gui.theme_name, self.active_theme_path(), is_new=False)
+
+	def close_theme_editor(self) -> None:
+		self.clear_theme_editor_state()
+		self.tauon.fader.rise()
+		self.destroy_settings_texture()
+		self.gui.update_layout = True
+
+	def create_user_theme(self) -> None:
+		base_name = filename_safe(f"{self.gui.theme_name} Copy" if self.gui.theme_name else _("Custom Theme")).strip()
+		if not base_name:
+			base_name = _("Custom Theme")
+		self.begin_theme_editor(base_name, None, is_new=True)
+
+	def delete_active_user_theme(self) -> None:
+		path = self.active_theme_path()
+		if path is None or not self.theme_path_is_user(path):
+			self.show_message(_("Only user themes can be deleted"), mode="warning")
+			return
+
+		try:
+			path.unlink()
+		except OSError:
+			logging.exception("Failed deleting theme file")
+			self.show_message(_("Could not delete theme file"), mode="error")
+			return
+
+		self.refresh_theme_presets()
+		self.theme_editor_enabled = False
+		self.prefs.theme = 0
+		self.prefs.theme_name = "Mindaro"
+		self.gui.theme_name = "Mindaro"
+		self.gui.reload_theme = True
+		self.gui.update_layout = True
+		self.show_message(_("Deleted theme"), path.stem, mode="done")
+
+	def save_active_user_theme(self) -> bool:
+		if self.theme_editor_draft_colours is None:
+			return False
+		target_name = filename_safe(self.theme_editor_title_box.text.strip())
+		if not target_name:
+			self.show_message(_("Theme title cannot be empty"), mode="error")
+			return False
+
+		target_dir = self.dirs.user_directory / "theme"
+		target_path = target_dir / f"{target_name}.ttheme"
+		original_path = self.theme_editor_target_path
+		if original_path is not None and target_path != original_path and target_path.exists():
+			self.show_message(_("A theme with that title already exists"), mode="error")
+			return False
+		if original_path is None and target_path.exists():
+			self.show_message(_("A theme with that title already exists"), mode="error")
+			return False
+
+		try:
+			save_theme(self.theme_editor_draft_colours, target_path)
+			if original_path is not None and original_path != target_path and original_path.exists():
+				original_path.unlink()
+		except OSError:
+			logging.exception("Failed saving theme file")
+			self.show_message(_("Could not save theme file"), mode="error")
+			return False
+
+		self.theme_editor_target_path = target_path
+		self.theme_editor_original_colours = clone_theme_colours(self.theme_editor_draft_colours)
+		self.theme_editor_original_theme_name = target_name
+		self.theme_editor_original_theme_number = get_theme_number(self.dirs, target_name)
+		self.theme_editor_is_new = False
+		self.theme_editor_dirty = False
+		self.refresh_theme_presets()
+		self.prefs.theme = get_theme_number(self.dirs, target_name)
+		self.prefs.theme_name = target_name
+		self.gui.theme_name = target_name
+		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
+		self.gui.update_layout = True
+		self.show_message(_("Saved theme"), target_name, mode="done")
+		return True
+
+	def apply_theme_editor_colour(self, attr: str, colour: ColourRGBA) -> None:
+		if self.theme_editor_draft_colours is None:
+			return
+		setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
+		self.theme_editor_dirty = True
+		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
+
+	def theme_editor_current_hsv(self) -> tuple[float, float, float]:
+		colour = self.theme_editor_current_colour()
+		return colorsys.rgb_to_hsv(colour.r / 255, colour.g / 255, colour.b / 255)
+
+	def apply_theme_editor_hsv(self, hue: float, sat: float, val: float) -> None:
+		colour = self.theme_editor_current_colour()
+		r, g, b = colorsys.hsv_to_rgb(min(max(hue, 0.0), 1.0), min(max(sat, 0.0), 1.0), min(max(val, 0.0), 1.0))
+		self.apply_theme_editor_colour(
+			self.theme_editor_selected_attr,
+			ColourRGBA(int(r * 255), int(g * 255), int(b * 255), colour.a),
+		)
+
+	def theme_editor_copy_colour(self) -> None:
+		self.theme_editor_clipboard = self.theme_editor_current_colour()
+		copy_to_clipboard(self.theme_colour_to_hex(self.theme_editor_clipboard))
+		self.show_message(_("Copied colour"), self.theme_colour_to_hex(self.theme_editor_clipboard), mode="done")
+
+	def theme_editor_paste_colour(self) -> None:
+		colour = self.theme_editor_clipboard
+		if colour is None:
+			colour = self.parse_theme_colour_text(copy_from_clipboard())
+		if colour is None:
+			self.show_message(_("There is no colour in the clipboard"), mode="error")
+			return
+		self.apply_theme_editor_colour(self.theme_editor_selected_attr, colour)
+		self.theme_editor_clipboard = ColourRGBA(colour.r, colour.g, colour.b, colour.a)
+		self.show_message(_("Pasted colour"), self.theme_editor_selected_label(), mode="done")
 
 	def sync_settings_content_scroll(self, scroll_area: tuple[int, int, int, int], content_height: int) -> float:
 		scroll_source = "settings content"
@@ -24416,6 +24666,7 @@ class Over:
 		plug: Callable[[], None] | None = None,
 		accent: ColourRGBA | None = None,
 		emphasis: bool = False,
+		show_arrow: bool = True,
 	) -> bool:
 		if accent is None:
 			accent = self.settings_page_accent()
@@ -24446,15 +24697,16 @@ class Over:
 
 		text_colour = self.colours.box_text if hover or emphasis else self.colours.box_button_text
 		text_font = 212
-		text_max_w = w - round(44 * self.gui.scale)
+		text_max_w = w - (round(44 * self.gui.scale) if show_arrow else round(28 * self.gui.scale))
 		# text_metrics = self.ddt.get_text_wh(title, text_font, text_max_w)
 		text_y = button_y + round(8 * self.gui.scale)
 		self.ddt.text((x + round(14 * self.gui.scale), text_y), title, text_colour, text_font, bg=fill, max_w=text_max_w)
 
-		arrow_y = button_y + button_h // 2
-		arrow_colour = self.colours.box_text if hover else self.colours.box_text_label
-		self.ddt.rect((x + w - round(20 * self.gui.scale), arrow_y - round(3 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
-		self.ddt.rect((x + w - round(16 * self.gui.scale), arrow_y - round(1 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
+		if show_arrow:
+			arrow_y = button_y + button_h // 2
+			arrow_colour = self.colours.box_text if hover else self.colours.box_text_label
+			self.ddt.rect((x + w - round(20 * self.gui.scale), arrow_y - round(3 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
+			self.ddt.rect((x + w - round(16 * self.gui.scale), arrow_y - round(1 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
 
 		return hit
 
@@ -26181,6 +26433,7 @@ class Over:
 		right_w = w - left_w - column_gap
 		row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
+		action_h = round(36 * gui.scale)
 		preset_gap = round(6 * gui.scale)
 		preset_w = round(28 * gui.scale)
 		preset_h = round(16 * gui.scale)
@@ -26190,7 +26443,7 @@ class Over:
 		preset_rows = max(1, math.ceil(theme_count / preset_columns))
 		preset_grid_h = preset_rows * preset_h + max(0, preset_rows - 1) * preset_gap
 		left_min_h = round(80 * gui.scale) + row_h * 5 + row_gap * 4
-		right_min_h = round(124 * gui.scale) + preset_grid_h + row_gap + row_h
+		right_min_h = round(132 * gui.scale) + preset_grid_h + row_gap * 3 + action_h + row_h
 		card_h = max(left_min_h, right_min_h)
 		left_rect = (x, y, left_w, card_h)
 		right_rect = (x + left_w + column_gap, y, right_w, card_h)
@@ -26223,7 +26476,7 @@ class Over:
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			right_rect,
 			_("Theme preset"),
-			gui.theme_name,
+			_("{name}").format(name=gui.theme_name),
 			accent,
 		)
 		preset_columns = max(1, min(theme_count, (inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
@@ -26302,6 +26555,16 @@ class Over:
 				self.ddt.rect((segment_x, strip_y, segment_width, strip_h), colour_value)
 
 		toggle_y = right_rect[1] + right_rect[3] - round(14 * gui.scale) - row_h
+		action_y = toggle_y - row_gap - action_h
+		self.draw_settings_action_row(
+			(inner_x, action_y, inner_w, action_h),
+			[
+				(_("Duplicate"), self.create_user_theme, True),
+				(_("Edit"), self.open_theme_editor, False),
+				(_("Delete"), self.delete_active_user_theme, False),
+			],
+			accent=accent,
+		)
 		self.settings_switch_row((inner_x, toggle_y, inner_w, row_h), self.tauon.toggle_transparent_accent, _("Transparent accent"), accent=accent)
 
 		return max(left_rect[3], right_rect[3])
@@ -27795,6 +28058,7 @@ class Over:
 
 	def close(self) -> None:
 		self.enabled = False
+		self.clear_theme_editor_state()
 		self.tauon.smooth_scroll.reset_motion("settings nav")
 		self.tauon.smooth_scroll.reset_motion("settings content")
 		self.settings_scale_preview_value = None
@@ -27807,6 +28071,234 @@ class Over:
 		if self.gui.opened_config_file:
 			self.tauon.reload_config_file()
 
+	def render_theme_editor_window(self) -> None:
+		gui = self.gui
+		ddt = self.ddt
+		colours = self.colours
+		current_colour = self.theme_editor_current_colour()
+		hue, sat, val = self.theme_editor_current_hsv()
+
+		full_width = round(610 * gui.scale)
+		full_height = round(375 * gui.scale)
+		x = int(self.window_size[0] / 2) - int(full_width / 2)
+		y = int(self.window_size[1] / 2) - int(full_height / 2)
+		self.box_x = x
+		self.box_y = y
+		self.w = full_width
+		self.h = full_height
+
+		ddt.rect(
+			(x - 5 * gui.scale, y - 5 * gui.scale, full_width + 10 * gui.scale, full_height + 10 * gui.scale),
+			colours.box_border,
+		)
+		ddt.rect_a((x, y), (full_width, full_height), colours.box_background)
+		ddt.text_background_colour = colours.box_background
+
+		self.begin_settings_text_inputs()
+
+		pad = round(12 * gui.scale)
+		column_gap = round(10 * gui.scale)
+		row_gap = round(6 * gui.scale)
+		header_h = round(72 * gui.scale)
+		left_w = round(full_width * 0.42)
+		right_w = full_width - left_w - column_gap - pad * 2
+		left_x = x + pad
+		right_x = left_x + left_w + column_gap
+		header_y = y + pad
+
+		title_field_w = full_width - pad * 2 - round(190 * gui.scale)
+		self.ddt.text((left_x, header_y), _("Theme title"), colours.box_text_label, 11, bg=colours.box_background)
+		self.draw_settings_text_field(
+			(left_x, header_y + round(14 * gui.scale), title_field_w, round(22 * gui.scale)),
+			self.theme_editor_title_box,
+			self.settings_page_accent(4),
+			stored_value=self.theme_editor_title_box.text,
+			placeholder=_("Theme title"),
+		)
+		if self.theme_editor_dirty:
+			self.ddt.text(
+				(left_x, header_y + round(42 * gui.scale)),
+				_("Unsaved changes!"),
+				colours.box_text_label,
+				11,
+				bg=colours.box_background,
+			)
+
+		button_w = round(78 * gui.scale)
+		button_h = round(30 * gui.scale)
+		close_x = x + full_width - pad - button_w
+		save_x = close_x - column_gap - button_w
+		self.settings_action_tile((save_x, header_y + round(12 * gui.scale), button_w, button_h), _("Save"), self.save_active_user_theme, self.settings_page_accent(4), emphasis=True)
+		self.settings_action_tile((close_x, header_y + round(12 * gui.scale), button_w, button_h), _("Close"), self.close_theme_editor, self.settings_page_accent(4))
+
+		panel_y = y + header_h
+		panel_h = full_height - header_h - pad
+		left_rect = (left_x, panel_y, left_w, panel_h)
+		right_rect = (right_x, panel_y, right_w, panel_h)
+		panel_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), colours.box_background)
+		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
+		ddt.bordered_rect(left_rect, panel_fill, panel_border, round(1 * gui.scale))
+		ddt.bordered_rect(right_rect, panel_fill, panel_border, round(1 * gui.scale))
+
+		left_inner_x = left_rect[0] + pad
+		left_inner_y = left_rect[1] + pad
+		left_inner_w = left_rect[2] - pad * 2
+		left_inner_h = left_rect[3] - pad * 2
+		ddt.text((left_inner_x, left_inner_y - round(3 * gui.scale)), _("Components"), colours.box_text, 12, bg=panel_fill)
+		list_y = left_inner_y + round(16 * gui.scale)
+		row_h = round(26 * gui.scale)
+		row_step = row_h + row_gap
+		list_rect = (left_inner_x, list_y, left_inner_w, left_inner_h - round(10 * gui.scale))
+		visible_rows = max(1, int((list_rect[3] + row_gap) // max(row_step, 1)))
+		max_scroll = max(len(THEME_EDITOR_COMPONENTS) - visible_rows, 0)
+		if self.coll(left_rect) and self.scroll:
+			self.theme_editor_list_scroll -= self.scroll
+		self.theme_editor_list_scroll = min(max(self.theme_editor_list_scroll, 0), max_scroll)
+		scroll_index = int(self.theme_editor_list_scroll)
+		scrollbar_w = round(10 * gui.scale)
+		scrollbar_gap = round(8 * gui.scale)
+		row_w = list_rect[2]
+		if max_scroll > 0:
+			row_w -= scrollbar_w + scrollbar_gap
+			self.theme_editor_list_scroll = self.theme_editor_list_scroll_bar.draw(
+				list_rect[0] + list_rect[2] - scrollbar_w,
+				list_rect[1],
+				scrollbar_w,
+				list_rect[3],
+				self.theme_editor_list_scroll,
+				max_scroll,
+				click=self.click,
+				extend_field=round(4 * gui.scale),
+			)
+			scroll_index = int(self.theme_editor_list_scroll)
+
+		row_y = list_rect[1]
+		for label, attr in THEME_EDITOR_COMPONENTS[scroll_index : scroll_index + visible_rows]:
+			row_rect = (list_rect[0], row_y, row_w, row_h)
+			hover = self.coll(row_rect)
+			active = self.theme_editor_selected_attr == attr
+			row_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
+			if active:
+				row_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
+			elif hover:
+				row_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill)
+			row_border = alpha_blend(ColourRGBA(255, 255, 255, 18), panel_border)
+			if active:
+				row_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
+			ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
+			self.fields.add(row_rect)
+			if hover and self.click:
+				self.theme_editor_selected_attr = attr
+
+			component_colour = getattr(self.theme_editor_draft_colours, attr, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
+			ddt.rect(swatch_rect, component_colour)
+			ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
+			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
+			row_y += row_step
+
+		right_inner_x = right_rect[0] + pad
+		right_inner_y = right_rect[1] + pad
+		right_inner_w = right_rect[2] - pad * 2
+
+		preview_y = right_inner_y
+		button_w = round(62 * gui.scale)
+		preview_gap = row_gap
+		preview_rect = (
+			right_inner_x,
+			preview_y,
+			right_inner_w - button_w * 2 - preview_gap * 2,
+			round(36 * gui.scale),
+		)
+		ddt.bordered_rect(preview_rect, current_colour, panel_border, round(1 * gui.scale))
+		preview_text = ColourRGBA(25, 25, 25, 255) if is_light(current_colour) else ColourRGBA(245, 245, 245, 255)
+		ddt.text((preview_rect[0] + preview_rect[2] // 2, preview_rect[1] + round(8 * gui.scale), 2), self.theme_colour_to_hex(current_colour), preview_text, 212, bg=current_colour)
+
+		button_y = preview_rect[1] + max(0, (preview_rect[3] - button_h) // 2)
+		copy_x = preview_rect[0] + preview_rect[2] + preview_gap
+		paste_x = copy_x + button_w + preview_gap
+		self.settings_action_tile((copy_x, button_y, button_w, button_h), _("Copy"), self.theme_editor_copy_colour, self.settings_page_accent(4), show_arrow=False)
+		self.settings_action_tile((paste_x, button_y, button_w, button_h), _("Paste"), self.theme_editor_paste_colour, self.settings_page_accent(4), show_arrow=False)
+
+		picker_top = preview_rect[1] + preview_rect[3] + round(20 * gui.scale)
+		alpha_gap = round(8 * gui.scale)
+		alpha_w = round(18 * gui.scale)
+		hue_h = round(14 * gui.scale)
+		hue_gap = round(12 * gui.scale)
+		picker_area_h = right_rect[1] + right_rect[3] - pad - picker_top - round(10 * gui.scale)
+		sv_available_w = right_inner_w - alpha_w - alpha_gap - round(20 * gui.scale)
+		sv_available_h = picker_area_h - hue_gap - hue_h
+		sv_side = max(round(150 * gui.scale), min(sv_available_w, sv_available_h))
+		selector_w = sv_side + alpha_gap + alpha_w
+		selector_h = sv_side + hue_gap + hue_h
+		selector_x = right_inner_x + max(0, (right_inner_w - selector_w) // 2)
+		selector_y = picker_top + max(0, (picker_area_h - selector_h) // 2)
+		sv_rect = (selector_x, selector_y, sv_side, sv_side)
+		steps = 24
+		cell_w = max(1, sv_rect[2] // steps)
+		cell_h = max(1, sv_rect[3] // steps)
+		for row in range(steps):
+			for col in range(steps):
+				sv_s = col / max(steps - 1, 1)
+				sv_v = 1 - (row / max(steps - 1, 1))
+				r, g, b = colorsys.hsv_to_rgb(hue, sv_s, sv_v)
+				cell_rect = (
+					sv_rect[0] + col * cell_w,
+					sv_rect[1] + row * cell_h,
+					cell_w + (1 if col == steps - 1 else 0),
+					cell_h + (1 if row == steps - 1 else 0),
+				)
+				ddt.rect(cell_rect, ColourRGBA(int(r * 255), int(g * 255), int(b * 255), 255))
+		ddt.rect_s(sv_rect, panel_border, round(1 * gui.scale))
+		marker_x = sv_rect[0] + round(sat * sv_rect[2])
+		marker_y = sv_rect[1] + round((1 - val) * sv_rect[3])
+		ddt.rect((marker_x - round(4 * gui.scale), marker_y - round(4 * gui.scale), round(8 * gui.scale), round(8 * gui.scale)), preview_text)
+		self.fields.add(sv_rect)
+		if self.coll(sv_rect) and self.inp.mouse_down:
+			new_sat = (self.inp.mouse_position[0] - sv_rect[0]) / max(sv_rect[2], 1)
+			new_val = 1 - ((self.inp.mouse_position[1] - sv_rect[1]) / max(sv_rect[3], 1))
+			self.apply_theme_editor_hsv(hue, new_sat, new_val)
+
+		alpha_rect = (sv_rect[0] + sv_rect[2] + alpha_gap, sv_rect[1], alpha_w, sv_rect[3])
+		alpha_steps = 32
+		for index in range(alpha_steps):
+			start_y = alpha_rect[1] + round(index * alpha_rect[3] / alpha_steps)
+			end_y = alpha_rect[1] + round((index + 1) * alpha_rect[3] / alpha_steps)
+			alpha_value = 255 - round(index * 255 / max(alpha_steps - 1, 1))
+			ddt.rect((alpha_rect[0], start_y, alpha_rect[2], max(end_y - start_y, 1)), ColourRGBA(current_colour.r, current_colour.g, current_colour.b, alpha_value))
+		ddt.rect_s(alpha_rect, panel_border, round(1 * gui.scale))
+		alpha_marker_y = alpha_rect[1] + round((1 - (current_colour.a / 255)) * alpha_rect[3])
+		ddt.rect((alpha_rect[0] - round(3 * gui.scale), alpha_marker_y - round(2 * gui.scale), alpha_rect[2] + round(6 * gui.scale), round(4 * gui.scale)), preview_text)
+		self.fields.add(alpha_rect)
+		if self.coll(alpha_rect) and self.inp.mouse_down:
+			alpha_portion = (self.inp.mouse_position[1] - alpha_rect[1]) / max(alpha_rect[3], 1)
+			new_alpha = int((1 - min(max(alpha_portion, 0.0), 1.0)) * 255)
+			if new_alpha != current_colour.a:
+				self.apply_theme_editor_colour(
+					self.theme_editor_selected_attr,
+					ColourRGBA(current_colour.r, current_colour.g, current_colour.b, new_alpha),
+				)
+
+		hue_y = sv_rect[1] + sv_rect[3] + hue_gap
+		hue_rect = (right_inner_x, hue_y, sv_rect[2], round(14 * gui.scale))
+		hue_rect = (selector_x, hue_y, sv_rect[2], hue_h)
+		hue_steps = 36
+		for index in range(hue_steps):
+			start_x = hue_rect[0] + round(index * hue_rect[2] / hue_steps)
+			end_x = hue_rect[0] + round((index + 1) * hue_rect[2] / hue_steps)
+			r, g, b = colorsys.hsv_to_rgb(index / max(hue_steps - 1, 1), 1, 1)
+			ddt.rect((start_x, hue_rect[1], max(end_x - start_x, 1), hue_rect[3]), ColourRGBA(int(r * 255), int(g * 255), int(b * 255), 255))
+		ddt.rect_s(hue_rect, panel_border, round(1 * gui.scale))
+		hue_marker_x = hue_rect[0] + round(hue * hue_rect[2])
+		ddt.rect((hue_marker_x - round(2 * gui.scale), hue_rect[1] - round(3 * gui.scale), round(4 * gui.scale), hue_rect[3] + round(6 * gui.scale)), preview_text)
+		self.fields.add(hue_rect)
+		if self.coll(hue_rect) and self.inp.mouse_down:
+			new_hue = (self.inp.mouse_position[0] - hue_rect[0]) / max(hue_rect[2], 1)
+			self.apply_theme_editor_hsv(new_hue, sat, val)
+		self.finish_settings_text_inputs()
+		self.click = False
+		self.right_click = False
+
 	def render(self) -> None:
 		tauon   = self.tauon
 		inp     = self.inp
@@ -27816,8 +28308,12 @@ class Over:
 		if self.init2done is False:
 			self.init2()
 
-		if inp.key_esc_press:
+		if inp.key_esc_press and not self.theme_editor_enabled:
 			self.close()
+
+		if self.theme_editor_enabled:
+			self.render_theme_editor_window()
+			return
 
 		full_width = round(875 * gui.scale)
 		header_height = round(58 * gui.scale)
@@ -38990,6 +39486,8 @@ class Fader:
 		self.total_timer.set()
 
 	def fall(self) -> None:
+		if self.state == 0:
+			return
 		self.state = 0
 		self.timer.hit()
 		self.total_timer.set()
@@ -41460,6 +41958,53 @@ def get_theme_name(dirs: Directories, number: int) -> str:
 	if len(themes) > number:
 		return themes[number][1]
 	return ""
+
+
+THEME_EDITOR_COMPONENTS: tuple[tuple[str, str], ...] = (
+	("Window frame", "window_frame"),
+	("Top panel", "top_panel_background"),
+	("Side panel", "side_panel_background"),
+	("Lyrics panel", "lyrics_panel_background"),
+	("Gallery background", "gallery_background"),
+	("Tracklist panel", "playlist_panel_background"),
+	("Queue panel", "queue_background"),
+	("Bottom panel", "bottom_panel_colour"),
+	("Track title", "title_text"),
+	("Track artist", "artist_text"),
+	("Track album", "album_text"),
+	("Playing title", "title_playing"),
+	("Playing artist", "artist_playing"),
+	("Playing album", "album_playing"),
+	("Playing index", "index_playing"),
+	("Playing time", "time_playing"),
+	("Track index", "index_text"),
+	("Track time", "bar_time"),
+	("Playing row highlight", "row_playing_highlight"),
+	("Selection highlight", "row_select_highlight"),
+	("Folder title", "folder_title"),
+	("Folder line", "folder_line"),
+	("Scroll bar", "scroll_colour"),
+	("Tab background", "tab_background"),
+	("Tab active background", "tab_background_active"),
+	("Tab text", "tab_text"),
+	("Tab active text", "tab_text_active"),
+	("Menu background", "menu_background"),
+	("Menu text", "menu_text"),
+	("Box background", "box_background"),
+	("Box title text", "box_title_text"),
+	("Box body text", "box_text"),
+	("Seek fill", "seek_bar_fill"),
+	("Seek background", "seek_bar_background"),
+	("Volume fill", "volume_bar_fill"),
+	("Volume background", "volume_bar_background"),
+)
+
+
+def clone_theme_colours(colours: ColoursClass) -> ColoursClass:
+	clone = ColoursClass()
+	for key, value in colours.__dict__.items():
+		setattr(clone, key, copy.deepcopy(value))
+	return clone
 
 def get_end_folder(direc: str) -> str | None:
 	for w in range(len(direc)):
@@ -46355,12 +46900,7 @@ def main(holder: Holder) -> None:
 		sdl3.SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
 
 	# Generate theme buttons
-	tauon.pref_box.themes.append((ColoursClass(), "Mindaro", 0))
-	theme_files = get_themes(dirs)
-	for i, theme in enumerate(theme_files):
-		c = ColoursClass()
-		load_theme(c, Path(theme[0]))
-		tauon.pref_box.themes.append((c, theme[1], i + 1))
+	tauon.pref_box.refresh_theme_presets()
 
 	pctl.total_playtime = tauon.star_store.get_total()
 

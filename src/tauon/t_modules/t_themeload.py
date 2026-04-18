@@ -42,6 +42,97 @@ class GetThemesFn(Protocol):
 	def __call__(self, *, dirs: Directories, deco: bool) -> list[str] | dict[str, str]: ...
 
 
+THEME_SERIALISABLE_COLOURS: tuple[tuple[str, str], ...] = (
+	("window frame", "window_frame"),
+	("gallery highlight", "gallery_highlight"),
+	("index playing", "index_playing"),
+	("time playing", "time_text"),
+	("artist playing", "artist_playing"),
+	("track album", "album_text"),
+	("album playing", "album_playing"),
+	("top panel", "top_panel_background"),
+	("corner button off", "corner_button"),
+	("corner button on", "corner_button_active"),
+	("menu button normal", "status_text_normal"),
+	("menu button hover", "status_text_over"),
+	("queue panel", "queue_background"),
+	("side panel", "side_panel_background"),
+	("lyrics panel", "lyrics_panel_background"),
+	("gallery background", "gallery_background"),
+	("tracklist panel", "playlist_panel_background"),
+	("track line", "title_text"),
+	("track missing", "playlist_text_missing"),
+	("playing highlight", "row_playing_highlight"),
+	("track time", "bar_time"),
+	("fav line", "star_line"),
+	("folder title", "folder_title"),
+	("folder line", "folder_line"),
+	("buttons off", "media_buttons_off"),
+	("buttons over", "media_buttons_over"),
+	("buttons active", "media_buttons_active"),
+	("playing time", "time_playing"),
+	("track index", "index_text"),
+	("track playing", "title_playing"),
+	("select highlight", "row_select_highlight"),
+	("track artist", "artist_text"),
+	("tab active text", "tab_text_active"),
+	("tab text", "tab_text"),
+	("tab background", "tab_background"),
+	("tab over", "tab_highlight"),
+	("tab active background", "tab_background_active"),
+	("title info", "side_bar_line1"),
+	("extra info", "side_bar_line2"),
+	("bottom title", "bar_title_text"),
+	("scroll bar", "scroll_colour"),
+	("seek bar", "seek_bar_fill"),
+	("seek bg", "seek_bar_background"),
+	("volume bar", "volume_bar_fill"),
+	("volume bg", "volume_bar_background"),
+	("mode off", "mode_button_off"),
+	("mode over", "mode_button_over"),
+	("mode on", "mode_button_active"),
+	("art border", "art_box"),
+	("tb line", "tb_line"),
+	("music vis", "vis_colour"),
+	("menu background", "menu_background"),
+	("menu text", "menu_text"),
+	("menu disable", "menu_text_disabled"),
+	("menu icons", "menu_icons"),
+	("menu highlight", "menu_highlight_background"),
+	("menu border", "menu_tab"),
+	("lyrics text", "lyrics"),
+	("active lyric", "active_lyric"),
+	("bottom panel", "bottom_panel_colour"),
+	("mini bg", "mini_mode_background"),
+	("mini border", "mini_mode_border"),
+	("mini text 1", "mini_mode_text_1"),
+	("mini text 2", "mini_mode_text_2"),
+	("playlist background", "playlist_box_background"),
+	("box background", "box_background"),
+	("box border", "box_border"),
+	("box text border", "box_text_border"),
+	("box text label", "box_text_label"),
+	("box title text", "box_title_text"),
+	("box text normal", "box_text"),
+	("box sub text", "box_sub_text"),
+	("box input text", "box_input_text"),
+	("box button text highlight", "box_button_text_highlight"),
+	("box button text normal", "box_button_text"),
+	("box button background normal", "box_button_background"),
+	("box button background highlight", "box_button_background_highlight"),
+	("box button border", "box_check_border"),
+	("window buttons background", "window_buttons_bg"),
+	("window buttons on", "window_buttons_bg_over"),
+	("window buttons icon off", "window_button_icon_off"),
+	("window buttons icon over", "window_buttons_icon_over"),
+	("window button x on", "window_button_x_on"),
+	("window button x off", "window_button_x_off"),
+	("column bar background", "column_bar_background"),
+	("artist bio background", "artist_bio_background"),
+	("artist bio text", "artist_bio_text"),
+)
+
+
 def get_colour_from_line(cline: str) -> ColourRGBA:
 	colour: list[int] = [-1, -1, -1, -1]
 	colour_str: list[str] = ["", "", "", ""]
@@ -102,6 +193,29 @@ def get_colour_from_line(cline: str) -> ColourRGBA:
 		return ColourRGBA(255, 255, 255, 255)
 
 	return ColourRGBA(colour[0], colour[1], colour[2], colour[3])
+
+
+def save_theme(colours: ColoursClass, path: Path) -> None:
+	lines = ["# Tauon user theme\n"]
+
+	if colours.deco:
+		lines.append(f"deco={colours.deco}\n")
+	if colours.lm:
+		lines.append("light-mode\n")
+
+	for key, attr in THEME_SERIALISABLE_COLOURS:
+		colour = getattr(colours, attr, None)
+		if colour is None:
+			continue
+		lines.append(f"{colour.r},{colour.g},{colour.b},{colour.a}    {key}\n")
+
+	for key, value in sorted(colours.column_colours.items()):
+		lines.append(f"{value.r},{value.g},{value.b},{value.a}    column-{key.lower().replace(' ', '-')}\n")
+	for key, value in sorted(colours.column_colours_playing.items()):
+		lines.append(f"{value.r},{value.g},{value.b},{value.a}    column+{key.lower().replace(' ', '-')}\n")
+
+	path.parent.mkdir(parents=True, exist_ok=True)
+	path.write_text("".join(lines), encoding="utf-8")
 
 
 def load_theme(colours: ColoursClass, path: Path) -> None:
