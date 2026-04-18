@@ -27797,13 +27797,11 @@ class Over:
 		self.enabled = False
 		self.tauon.smooth_scroll.reset_motion("settings nav")
 		self.tauon.smooth_scroll.reset_motion("settings content")
-		self.settings_content_scroll = 0
 		self.settings_scale_preview_value = None
 		self.settings_text_focus = None
 		self.settings_text_order = []
 		self.settings_text_seen = []
 		self.settings_text_hit = False
-		self.tab_active = 0
 		self.destroy_settings_texture()
 		self.tauon.fader.fall()
 		if self.gui.opened_config_file:
@@ -31597,6 +31595,7 @@ class StandardPlaylist:
 		list_items = []
 		number = 0
 		render_rows = gui.playlist_view_length + 2
+		row_input_right_pad = round(18 * gui.scale) if gui.rsp_on_left and prefs.scroll_enable else 0
 
 		for i in range(render_rows):
 			track_position = i + pctl.playlist_view_position
@@ -31618,7 +31617,12 @@ class StandardPlaylist:
 				left + gui.highlight_left, line_y, highlight_width,
 				gui.playlist_row_height - 1)
 
-			input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
+			input_box = (
+				track_box[0] + 30 * gui.scale,
+				track_box[1] + 1,
+				track_box[2] - 36 * gui.scale - row_input_right_pad,
+				track_box[3],
+			)
 
 			# Are folder titles enabled?
 			if not pctl.multi_playlist[pctl.active_playlist_viewing].hide_title and self.prefs.break_enable:
@@ -31753,7 +31757,12 @@ class StandardPlaylist:
 				left + gui.highlight_left, line_y, highlight_width,
 				gui.playlist_row_height - 1)
 
-			input_box = (track_box[0] + 30 * gui.scale, track_box[1] + 1, track_box[2] - 36 * gui.scale, track_box[3])
+			input_box = (
+				track_box[0] + 30 * gui.scale,
+				track_box[1] + 1,
+				track_box[2] - 36 * gui.scale - row_input_right_pad,
+				track_box[3],
+			)
 
 			# Test if line has mouse over or been clicked
 			line_over = False
@@ -31826,7 +31835,7 @@ class StandardPlaylist:
 
 			# Shift Move Selection
 			if gui.move_on_title or (self.inp.mouse_up and self.gui.playlist_hold is True and self.coll((
-					left + gui.highlight_left, line_y, highlight_width, gui.playlist_row_height))):
+					left + gui.highlight_left, line_y, highlight_width - row_input_right_pad, gui.playlist_row_height))):
 
 				if len(self.gui.shift_selection) > 1 or self.inp.key_shift_down:
 					if track_position not in self.gui.shift_selection:  # p_track != self.gui.playlist_hold_position and
