@@ -15,6 +15,11 @@ if TYPE_CHECKING:
 class Prefs:
 	"""Used to hold any kind of settings"""
 
+	def __post_init__(self) -> None:
+		# Scale the built-in large row-height default for fresh configs.
+		if self.playlist_row_height == 27:
+			self.playlist_row_height = round(27 * self.ui_scale)
+
 	# fmt:off
 	view_prefs:              dict[str, bool]
 	encoder_output:          Path
