@@ -269,6 +269,7 @@ class Prefs:
 	# center_bg = True
 	ui_lang: str = "auto"
 	side_panel_layout = 0
+	side_panel_left: bool = False
 	use_absolute_track_index: bool = False
 
 	hide_bottom_title: bool = True

@@ -716,7 +716,11 @@ class GuiVar:
 		self.rspw: float = round(300 * self.scale)
 		self.lsp: bool = False
 		self.lspw: float = round(220 * self.scale)
+		self.lsp_x: float = 0
 		self.plw: float | None = None
+		self.rsp_on_left: bool = False
+		self.rsp_x: float = 0
+		self.rsp_split_x: float = 0
 
 		self.pref_rspw = 300
 
@@ -13161,13 +13165,22 @@ class Tauon:
 					gui.rspw = min(gui.rspw, window_size[1] - gui.panelY - gui.panelBY)
 
 			# Determine how wide the playlist need to be
+			gui.rsp_on_left = bool(gui.rsp and prefs.side_panel_left and not prefs.album_mode)
+			gui.lsp_x = 0
+			gui.rsp_x = window_size[0] - gui.rspw
+			gui.rsp_split_x = gui.rsp_x
+
 			gui.plw = window_size[0]
 			gui.playlist_left = 0
 			if gui.lsp:
-				# if gui.plw > gui.lspw:
 				gui.plw -= gui.lspw
-				gui.playlist_left = gui.lspw
-			if gui.rsp:
+				gui.playlist_left += gui.lspw
+			if gui.rsp and gui.rsp_on_left:
+				gui.rsp_x = gui.playlist_left
+				gui.rsp_split_x = gui.rsp_x + gui.rspw
+				gui.plw -= gui.rspw
+				gui.playlist_left += gui.rspw
+			elif gui.rsp:
 				gui.plw -= gui.rspw
 
 			# Shrink side panel if playlist gets too small
@@ -13181,13 +13194,22 @@ class Tauon:
 						#     gui.pref_gallery_w = gui.rspw
 
 			# Determine how wide the playlist need to be (again)
+			gui.rsp_on_left = bool(gui.rsp and prefs.side_panel_left and not prefs.album_mode)
+			gui.lsp_x = 0
+			gui.rsp_x = window_size[0] - gui.rspw
+			gui.rsp_split_x = gui.rsp_x
+
 			gui.plw = window_size[0]
 			gui.playlist_left = 0
 			if gui.lsp:
-				# if gui.plw > gui.lspw:
 				gui.plw -= gui.lspw
-				gui.playlist_left = gui.lspw
-			if gui.rsp:
+				gui.playlist_left += gui.lspw
+			if gui.rsp and gui.rsp_on_left:
+				gui.rsp_x = gui.playlist_left
+				gui.rsp_split_x = gui.rsp_x + gui.rspw
+				gui.plw -= gui.rspw
+				gui.playlist_left += gui.rspw
+			elif gui.rsp:
 				gui.plw -= gui.rspw
 
 			if window_size[0] < 630 * gui.scale:
@@ -13220,6 +13242,10 @@ class Tauon:
 			if gui.lsp:
 				inset_left -= 10 * gui.scale
 				inset_width += 10 * gui.scale
+
+			if gui.rsp_on_left:
+				inset_left -= 10 * gui.scale
+				inset_width += 5 * gui.scale
 
 			if center_mode:
 				if gui.set_mode:
@@ -18162,6 +18188,16 @@ class Tauon:
 			self.prefs.side_panel_layout = 0
 		else:
 			self.prefs.side_panel_layout = 1
+		self.gui.update_layout = True
+		self.gui.update += 1
+		return None
+
+	def toggle_side_panel_side(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.side_panel_left
+		self.prefs.side_panel_left ^= True
+		self.gui.update_layout = True
+		self.gui.update += 1
 		return None
 
 	def toggle_meta_shows_selected(self, mode: int = 0) -> bool | None:
@@ -18562,7 +18598,7 @@ class Tauon:
 					if not target.lower().endswith(".xspf"):
 						self.gui.drop_playlist_target = self.new_playlist()
 					self.gui.new_playlist_cooldown = True
-		elif self.gui.lsp and self.gui.panelY < i_y < self.window_size[1] - self.gui.panelBY and i_x < self.gui.lspw and self.gui.mode == GuiMode.MAIN:
+		elif self.gui.lsp and self.gui.panelY < i_y < self.window_size[1] - self.gui.panelBY and self.gui.lsp_x < i_x < self.gui.lsp_x + self.gui.lspw and self.gui.mode == GuiMode.MAIN:
 			y = self.gui.panelY
 			y += 5 * self.gui.scale
 			y += self.playlist_box.tab_h + self.playlist_box.gap
@@ -19757,7 +19793,7 @@ class TimedLyricsRen:
 			bg = self.colours.lyrics_panel_background
 			font_size = 15
 			spacing = round(6 * self.gui.scale)
-			self.ddt.rect((self.window_size[0] - self.gui.rspw, y, self.gui.rspw, h), bg)
+			self.ddt.rect((self.gui.rsp_x, y, self.gui.rspw, h), bg)
 			y += 25 * self.gui.scale
 			y_center = y + (h/2) - (spacing)
 			allowed_width = round(w - 20 * self.gui.scale)
@@ -23070,7 +23106,7 @@ class SearchOverlay:
 					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
 
 				# Divert to artist list if mouse over
-				if gui.lsp and prefs.left_panel_mode == "artist list" and 2 < inp.mouse_position[0] < gui.lspw \
+				if gui.lsp and prefs.left_panel_mode == "artist list" and gui.lsp_x + 2 < inp.mouse_position[0] < gui.lsp_x + gui.lspw \
 						and gui.panelY < inp.mouse_position[1] < self.window_size[1] - gui.panelBY:
 					self.tauon.artist_list_box.locate_artist_letter(inp.input_text)
 					return
@@ -26057,6 +26093,13 @@ class Over:
 			accent=accent,
 		)
 		inner_y += compact_row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, compact_row_h),
+			self.tauon.toggle_side_panel_side,
+			_("Metadata panel on left"),
+			accent=accent,
+		)
+		inner_y += compact_row_h + row_gap
 		old_zoom = self.prefs.zoom_art
 		self.prefs.zoom_art = self.settings_switch_row(
 			(inner_x, inner_y, inner_w, compact_row_h),
@@ -28250,7 +28293,7 @@ class TopPanel:
 
 		if tauon.playlist_box.drag and not gui.radio_view:
 			if self.inp.mouse_up:
-				if self.inp.mouse_up_position[0] > (gui.lspw if gui.lsp else 0) and self.inp.mouse_up_position[1] > gui.panelY:
+				if self.inp.mouse_up_position[0] > gui.playlist_left and self.inp.mouse_up_position[1] > gui.panelY:
 					tauon.playlist_box.drag = False
 					if prefs.drag_to_unpin:
 						if tauon.playlist_box.drag_source == 0:
@@ -31999,7 +32042,9 @@ class StandardPlaylist:
 				if prefs.append_total_time:
 					date += duration
 
+				folder_title_right_pad = round(3 * gui.scale) if gui.rsp_on_left else 0
 				ex = left + gui.highlight_left + highlight_width - 7 * gui.scale
+				ex -= folder_title_right_pad
 
 				height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
 
@@ -32074,7 +32119,7 @@ class StandardPlaylist:
 							(ex - run, height, 1), tr.genre, colour,
 							gui.row_font_size + gui.pl_title_font_offset)
 
-					w2 = ddt.text((xx, height), title_line, colours.folder_title, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale)))
+					w2 = ddt.text((xx, height), title_line, colours.folder_title, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale) + folder_title_right_pad))
 				else:
 					date_w = 0
 					if date:
@@ -32099,7 +32144,7 @@ class StandardPlaylist:
 							(left + gui.highlight_left + 8 * gui.scale + extra, height), line,
 							colours.folder_title,
 							gui.row_font_size + gui.pl_title_font_offset,
-							highlight_width - date_w - extra - star_offset)
+							highlight_width - date_w - extra - star_offset - folder_title_right_pad)
 					else:
 						ddt.text(
 							(ex - date_w, height, 1), line,
@@ -32163,8 +32208,8 @@ class StandardPlaylist:
 				if center_mode:
 					start = inset_left
 
-				elif gui.lsp:
-					start += gui.lspw
+				elif gui.playlist_left:
+					start += gui.playlist_left
 
 				run = start
 				end = start + gui.plw
@@ -36029,7 +36074,7 @@ class QueueBox:
 			self.ddt.text_background_colour = alpha_blend(ColourRGBA(255, 255, 255, 2), self.ddt.text_background_colour)
 
 		if self.prefs.show_playlist_list:  # draw top separator line
-			rect = (0, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
+			rect = (self.gui.lsp_x, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
 			self.ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
 			self.ddt.rect(rect, sep_colour)
 
@@ -41512,6 +41557,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("always-art-header-bar", prefs.always_art_header)
 	# cf.update_value("prefer-center-bg", prefs.center_bg)
 	cf.update_value("side-panel-style", prefs.side_panel_layout)
+	cf.update_value("side-panel-left", prefs.side_panel_left)
 	cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
 	cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
 	cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
@@ -41798,6 +41844,7 @@ def load_prefs(bag: Bag) -> None:
 
 	# prefs.center_bg = cf.sync_add("bool", "prefer-center-bg", prefs.center_bg, "Always center art for the background art function")
 	prefs.side_panel_layout = cf.sync_add("int", "side-panel-style", prefs.side_panel_layout, "0:default, 1:centered")
+	prefs.side_panel_left = cf.sync_add("bool", "side-panel-left", prefs.side_panel_left)
 	prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
 	prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
 	prefs.use_absolute_track_index = cf.sync_add(
@@ -48056,7 +48103,7 @@ def main(holder: Holder) -> None:
 					gui.side_drag = False
 
 				rect = (
-					window_size[0] - gui.rspw - 5 * gui.scale,
+					gui.rsp_split_x - 5 * gui.scale,
 					gui.panelY,
 					12 * gui.scale,
 					window_size[1] - gui.panelY - gui.panelBY,
@@ -48094,7 +48141,10 @@ def main(holder: Holder) -> None:
 
 				# side drag update
 				if gui.side_drag:
-					offset = gui.side_bar_drag_source - inp.mouse_position[0]
+					if gui.rsp_on_left:
+						offset = inp.mouse_position[0] - gui.side_bar_drag_source
+					else:
+						offset = gui.side_bar_drag_source - inp.mouse_position[0]
 
 					target = gui.side_bar_drag_original + offset
 
@@ -48193,9 +48243,7 @@ def main(holder: Holder) -> None:
 						h = window_size[1] - gui.panelY - gui.panelBY
 
 						if not gui.show_playlist and inp.mouse_click:
-							left = 0
-							if gui.lsp:
-								left = gui.lspw
+							left = gui.playlist_left
 
 							if (
 								left < inp.mouse_position[0] < left + 20 * gui.scale
@@ -49362,9 +49410,7 @@ def main(holder: Holder) -> None:
 						top += gui.artist_panel_height
 
 					if gui.set_mode and not gui.set_bar:
-						left = 0
-						if gui.lsp:
-							left = gui.lspw
+						left = gui.playlist_left
 						rect = [left, top, gui.plw, 12 * gui.scale]
 						if inp.right_click and tauon.coll(rect):
 							tauon.set_menu_hidden.activate()
@@ -49372,9 +49418,7 @@ def main(holder: Holder) -> None:
 
 					width = gui.plw
 					if gui.set_bar and gui.set_mode:
-						left = 0
-						if gui.lsp:
-							left = gui.lspw
+						left = gui.playlist_left
 
 						if gui.tracklist_center_mode:
 							left = gui.tracklist_inset_left - round(20 * gui.scale)
@@ -49538,9 +49582,7 @@ def main(holder: Holder) -> None:
 
 					if not gui.set_bar and gui.set_mode and not gui.combo_mode:
 						width = gui.plw
-						left = 0
-						if gui.lsp:
-							left = gui.lspw
+						left = gui.playlist_left
 						if gui.tracklist_center_mode:
 							left = gui.tracklist_highlight_left
 							width = gui.tracklist_highlight_width
@@ -49557,9 +49599,7 @@ def main(holder: Holder) -> None:
 							gui.bar_hover_timer.set()
 
 					if gui.set_bar and gui.set_mode and not gui.combo_mode:
-						x = 0
-						if gui.lsp:
-							x = gui.lspw
+						x = gui.playlist_left
 
 						width = gui.plw
 
@@ -49704,11 +49744,12 @@ def main(holder: Holder) -> None:
 					if gui.rsp and not prefs.album_mode:
 						gui.showing_l_panel = False
 						target_track = pctl.show_object()
+						rsp_x = gui.rsp_x
 
 						if inp.middle_click:
 							if tauon.coll(
 								(
-									window_size[0] - gui.rspw,
+									rsp_x,
 									gui.panelY,
 									gui.rspw,
 									window_size[1] - gui.panelY - gui.panelBY,
@@ -49749,31 +49790,27 @@ def main(holder: Holder) -> None:
 								if not prefs.lyric_metadata_panel_top:
 									tauon.timed_lyrics_ren.render(
 										target_track.index,
-										(window_size[0] - gui.rspw) + 9 * gui.scale,
+										rsp_x + 9 * gui.scale,
 										gui.panelY,
 										side_panel=True,
 										w=gui.rspw,
 										h=window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h,
 									)
-									meta_box.l_panel(
-										window_size[0] - gui.rspw, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track
-									)
+									meta_box.l_panel(rsp_x, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track)
 								else:
 									tauon.timed_lyrics_ren.render(
 										target_track.index,
-										(window_size[0] - gui.rspw) + 9 * gui.scale,
+										rsp_x + 9 * gui.scale,
 										gui.panelY + gui.l_panel_h,
 										side_panel=True,
 										w=gui.rspw,
 										h=window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h,
 									)
-									meta_box.l_panel(
-										window_size[0] - gui.rspw, gui.panelY, gui.rspw, gui.l_panel_h, target_track
-									)
+									meta_box.l_panel(rsp_x, gui.panelY, gui.rspw, gui.l_panel_h, target_track)
 							else:
 								tauon.timed_lyrics_ren.render(
 									target_track.index,
-									(window_size[0] - gui.rspw) + 9 * gui.scale,
+									rsp_x + 9 * gui.scale,
 									gui.panelY,
 									side_panel=True,
 									w=gui.rspw,
@@ -49782,7 +49819,7 @@ def main(holder: Holder) -> None:
 
 								if inp.right_click and tauon.coll(
 									(
-										window_size[0] - gui.rspw,
+										rsp_x,
 										gui.panelY,
 										gui.rspw,
 										window_size[1] - (gui.panelBY + gui.panelY),
@@ -49802,18 +49839,16 @@ def main(holder: Holder) -> None:
 
 								if not prefs.lyric_metadata_panel_top:
 									meta_box.lyrics(
-										window_size[0] - gui.rspw,
+										rsp_x,
 										gui.panelY,
 										gui.rspw,
 										window_size[1] - gui.panelY - gui.panelBY - gui.l_panel_h,
 										target_track,
 									)
-									meta_box.l_panel(
-										window_size[0] - gui.rspw, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track
-									)
+									meta_box.l_panel(rsp_x, gui.l_panel_y, gui.rspw, gui.l_panel_h, target_track)
 								else:
 									meta_box.lyrics(
-										window_size[0] - gui.rspw,
+										rsp_x,
 										gui.panelY + gui.l_panel_h,
 										gui.rspw,
 										window_size[1] - (gui.panelY + gui.panelBY + gui.l_panel_h),
@@ -49821,7 +49856,7 @@ def main(holder: Holder) -> None:
 									)
 
 									meta_box.l_panel(
-										window_size[0] - gui.rspw,
+										rsp_x,
 										gui.panelY,
 										gui.rspw,
 										gui.l_panel_h,
@@ -49830,7 +49865,7 @@ def main(holder: Holder) -> None:
 									)
 							else:
 								meta_box.lyrics(
-									window_size[0] - gui.rspw,
+									rsp_x,
 									gui.panelY,
 									gui.rspw,
 									window_size[1] - gui.panelY - gui.panelBY,
@@ -49843,7 +49878,7 @@ def main(holder: Holder) -> None:
 
 							if prefs.show_side_art:
 								meta_box.draw(
-									window_size[0] - gui.rspw,
+									rsp_x,
 									gui.panelY + boxh,
 									gui.rspw,
 									window_size[1] - gui.panelY - gui.panelBY - boxh,
@@ -49852,13 +49887,11 @@ def main(holder: Holder) -> None:
 
 								boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
 
-								tauon.art_box.draw(
-									window_size[0] - gui.rspw, gui.panelY, boxw, boxh, target_track=target_track
-								)
+								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track)
 
 							else:
 								meta_box.draw(
-									window_size[0] - gui.rspw,
+									rsp_x,
 									gui.panelY,
 									gui.rspw,
 									window_size[1] - gui.panelY - gui.panelBY,
@@ -49867,7 +49900,7 @@ def main(holder: Holder) -> None:
 
 						elif prefs.side_panel_layout == 1:
 							h = window_size[1] - (gui.panelY + gui.panelBY)
-							x = window_size[0] - gui.rspw
+							x = rsp_x
 							y = gui.panelY
 							w = gui.rspw
 
@@ -50011,9 +50044,9 @@ def main(holder: Holder) -> None:
 						# Draw Highlight when mouse over
 						if draw_sep_hl:
 							ddt.line(
-								window_size[0] - gui.rspw + 1 * gui.scale,
+								gui.rsp_split_x + (1 * gui.scale if not gui.rsp_on_left else -1 * gui.scale),
 								gui.panelY + 1 * gui.scale,
-								window_size[0] - gui.rspw + 1 * gui.scale,
+								gui.rsp_split_x + (1 * gui.scale if not gui.rsp_on_left else -1 * gui.scale),
 								window_size[1] - 50 * gui.scale,
 								ColourRGBA(100, 100, 100, 70),
 							)
@@ -50029,13 +50062,14 @@ def main(holder: Holder) -> None:
 					h_estimate = (
 						(tauon.playlist_box.tab_h + tauon.playlist_box.gap) * gui.scale * len(pctl.multi_playlist)
 					) + 13 * gui.scale
+					panel_x = gui.lsp_x
 
 					full = window_size[1] - (gui.panelY + gui.panelBY)
 					half = round(full / 2)
 
 					gui.pl_box_h = full
 
-					panel_rect = (0, gui.panelY, gui.lspw, gui.pl_box_h)
+					panel_rect = (panel_x, gui.panelY, gui.lspw, gui.pl_box_h)
 					tauon.fields.add(panel_rect)
 
 					if gui.force_side_on_drag and not inp.quick_drag and not tauon.coll(panel_rect):
@@ -50052,7 +50086,7 @@ def main(holder: Holder) -> None:
 							tauon.update_layout_do()
 
 					if prefs.left_panel_mode == "folder view" and not gui.force_side_on_drag:
-						tauon.tree_view_box.render(0, gui.panelY, gui.lspw, gui.pl_box_h)
+						tauon.tree_view_box.render(panel_x, gui.panelY, gui.lspw, gui.pl_box_h)
 					elif prefs.left_panel_mode == "artist list" and not gui.force_side_on_drag:
 						tauon.artist_list_box.render(*panel_rect)
 					else:
@@ -50076,19 +50110,19 @@ def main(holder: Holder) -> None:
 								gui.pl_box_h = round(full * 5 / 6)
 
 						if prefs.left_panel_mode != "queue":
-							tauon.playlist_box.draw(0, gui.panelY, gui.lspw, gui.pl_box_h)
+							tauon.playlist_box.draw(panel_x, gui.panelY, gui.lspw, gui.pl_box_h)
 						else:
 							gui.pl_box_h = 0
 
 						if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
-							tauon.queue_box.draw(0, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
+							tauon.queue_box.draw(panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 						elif prefs.left_panel_mode == "queue":
 							text = _("Queue is Empty")
-							rect = (0, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
+							rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 							ddt.rect(rect, colours.queue_background)
 							ddt.text_background_colour = colours.queue_background
 							ddt.text(
-								(0 + (gui.lspw // 2), gui.panelY + gui.pl_box_h + 15 * gui.scale, 2),
+								(panel_x + (gui.lspw // 2), gui.panelY + gui.pl_box_h + 15 * gui.scale, 2),
 								text,
 								alpha_mod(colours.index_text, 200),
 								212,
@@ -50110,8 +50144,10 @@ def main(holder: Holder) -> None:
 				width = 15 * gui.scale
 
 				x = 0
-				if gui.lsp:  # Move left so it sits over panel divide
-					x = gui.lspw - 1 * gui.scale
+				if gui.rsp_on_left:
+					x = gui.playlist_left + gui.plw - width - 2 * gui.scale
+				elif gui.playlist_left:  # Move left so it sits over panel divide
+					x = gui.playlist_left - 1 * gui.scale
 					if not gui.set_mode:
 						width = 11 * gui.scale
 				if gui.set_mode and prefs.left_align_album_artist_title:
@@ -50261,7 +50297,7 @@ def main(holder: Holder) -> None:
 					if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
 						ddt.rect(
 							(
-								0 + gui.lspw - 6 * gui.scale,
+								gui.lsp_x + gui.lspw - 6 * gui.scale,
 								gui.panelY,
 								6 * gui.scale,
 								round(window_size[1] - gui.panelY - gui.panelBY),
@@ -50270,7 +50306,7 @@ def main(holder: Holder) -> None:
 						)
 						ddt.rect(
 							(
-								0 + gui.lspw - 5 * gui.scale,
+								gui.lsp_x + gui.lspw - 5 * gui.scale,
 								gui.panelY - 1,
 								4 * gui.scale,
 								round(window_size[1] - gui.panelY - gui.panelBY) + 1,
@@ -50278,7 +50314,7 @@ def main(holder: Holder) -> None:
 							colours.grey(245),
 						)
 					if gui.rsp and gui.show_playlist:
-						w = window_size[0] - gui.rspw
+						w = gui.rsp_split_x
 						ddt.rect(
 							(
 								w - round(3 * gui.scale),
@@ -50300,10 +50336,10 @@ def main(holder: Holder) -> None:
 					if gui.queue_frame_draw is not None:
 						if gui.lsp:
 							ddt.rect(
-								(0, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200)
+								(gui.lsp_x, gui.queue_frame_draw, gui.lspw - 6 * gui.scale, 6 * gui.scale), colours.grey(200)
 							)
 							ddt.rect(
-								(0, gui.queue_frame_draw + 1 * gui.scale, gui.lspw - 5 * gui.scale, 4 * gui.scale),
+								(gui.lsp_x, gui.queue_frame_draw + 1 * gui.scale, gui.lspw - 5 * gui.scale, 4 * gui.scale),
 								colours.grey(250),
 							)
 
@@ -51383,9 +51419,7 @@ def main(holder: Holder) -> None:
 			if t < 1.8 and gui.toast_love_object is not None:
 				track = gui.toast_love_object
 
-				ww = 0
-				if gui.lsp:
-					ww = gui.lspw
+				ww = gui.playlist_left or 0
 
 				rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
 				tauon.fields.add(rect)
@@ -51425,9 +51459,7 @@ def main(holder: Holder) -> None:
 			if t < 2.5 and gui.toast_queue_object:
 				track = pctl.get_track(gui.toast_queue_object.track_id)
 
-				ww = 0
-				if gui.lsp:
-					ww = gui.lspw
+				ww = gui.playlist_left or 0
 				if tauon.search_over.active:
 					ww = window_size[0] // 2 - (215 * gui.scale // 2)
 
@@ -51482,8 +51514,8 @@ def main(holder: Holder) -> None:
 				wid = max(round(68 * gui.scale), wid)
 
 				ww = round(7 * gui.scale)
-				if gui.lsp and not gui.combo_mode:
-					ww += gui.lspw
+				if gui.playlist_left and not gui.combo_mode:
+					ww += gui.playlist_left
 
 				rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
 				tauon.fields.add(rect)
