@@ -16,9 +16,9 @@ class Prefs:
 	"""Used to hold any kind of settings"""
 
 	def __post_init__(self) -> None:
-		# Scale the built-in large row-height default for fresh configs.
-		if self.playlist_row_height == 27:
-			self.playlist_row_height = round(27 * self.ui_scale)
+		# Scale the built-in thin row-height default for fresh configs.
+		if self.playlist_row_height == 22:
+			self.playlist_row_height = round(22 * self.ui_scale)
 
 	# fmt:off
 	view_prefs:              dict[str, bool]
@@ -74,7 +74,7 @@ class Prefs:
 	gallery_scroll_wheel_px: int = 90
 
 	playlist_font_size:  int = 15
-	playlist_row_height: int = 27
+	playlist_row_height: int = 22
 
 	tag_editor_name:   str = ""
 	tag_editor_target: str = ""

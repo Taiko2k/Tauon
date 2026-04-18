@@ -13244,8 +13244,8 @@ class Tauon:
 				inset_width += 10 * gui.scale
 
 			if gui.rsp_on_left:
-				inset_left -= 10 * gui.scale
-				inset_width += 5 * gui.scale
+				inset_left -= 11 * gui.scale
+				inset_width += 6 * gui.scale
 
 			if center_mode:
 				if gui.set_mode:
@@ -18211,7 +18211,7 @@ class Tauon:
 			return self.prefs.ui_scale == 1
 
 		self.prefs.ui_scale = 1
-		self.pref_box.large_preset()
+		self.pref_box.small_preset()
 
 		if self.prefs.ui_scale != self.gui.scale:
 			self.show_message(_("Change will be applied on restart."))
@@ -18258,7 +18258,7 @@ class Tauon:
 			return self.prefs.ui_scale == 2
 
 		self.prefs.ui_scale = 2
-		self.pref_box.large_preset()
+		self.pref_box.small_preset()
 
 		if self.prefs.ui_scale != self.gui.scale:
 			self.show_message(_("Change will be applied on restart."))
