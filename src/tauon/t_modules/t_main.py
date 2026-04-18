@@ -24133,6 +24133,17 @@ class Over:
 		path = self.active_theme_path()
 		return path is not None and self.theme_path_is_user(path)
 
+	def unique_theme_name(self, base_name: str) -> str:
+		existing_names = {theme[1] for theme in get_themes(self.dirs)}
+		if base_name not in existing_names and base_name != "Mindaro":
+			return base_name
+		index = 2
+		while True:
+			candidate = f"{base_name} {index}"
+			if candidate not in existing_names and candidate != "Mindaro":
+				return candidate
+			index += 1
+
 	def theme_editor_selected_label(self) -> str:
 		for label, attr in THEME_EDITOR_COMPONENTS:
 			if attr == self.theme_editor_selected_attr:
@@ -24230,7 +24241,23 @@ class Over:
 		base_name = filename_safe(f"{self.gui.theme_name} Copy" if self.gui.theme_name else _("Custom Theme")).strip()
 		if not base_name:
 			base_name = _("Custom Theme")
-		self.begin_theme_editor(base_name, None, is_new=True)
+		target_name = self.unique_theme_name(base_name)
+		target_path = self.dirs.user_directory / "theme" / f"{target_name}.ttheme"
+		try:
+			save_theme(clone_theme_colours(self.colours), target_path)
+		except OSError:
+			logging.exception("Failed saving duplicated theme file")
+			self.show_message(_("Could not save theme file"), mode="error")
+			return
+
+		self.refresh_theme_presets()
+		self.prefs.theme = get_theme_number(self.dirs, target_name)
+		self.prefs.theme_name = target_name
+		self.gui.theme_name = target_name
+		self.gui.reload_theme = True
+		self.gui.update_layout = True
+		self.destroy_settings_texture()
+		self.show_message(_("Duplicated theme"), target_name, mode="done")
 
 	def delete_active_user_theme(self) -> None:
 		path = self.active_theme_path()
@@ -24709,6 +24736,58 @@ class Over:
 			self.ddt.rect((x + w - round(16 * self.gui.scale), arrow_y - round(1 * self.gui.scale), round(7 * self.gui.scale), round(2 * self.gui.scale)), arrow_colour)
 
 		return hit
+
+	def settings_icon_button(
+		self,
+		rect: tuple[int, int, int, int],
+		plug: Callable[[], None] | None = None,
+		accent: ColourRGBA | None = None,
+		emphasis: bool = False,
+		icon: MenuIcon | None = None,
+		draw_icon: Callable[[tuple[int, int, int, int], ColourRGBA], None] | None = None,
+		tooltip: str = "",
+	) -> bool:
+		if accent is None:
+			accent = self.settings_page_accent()
+
+		x, y, w, h = tuple(round(v) for v in rect)
+		button_size = min(w, h, round(30 * self.gui.scale))
+		button_x = x + max(0, (w - button_size) // 2)
+		button_y = y + max(0, (h - button_size) // 2)
+		button_rect = (button_x, button_y, button_size, button_size)
+		hover = self.coll(button_rect)
+		if hover and tooltip:
+			self.tauon.tool_tip.test(button_rect[0] + 15 * self.gui.scale, button_rect[1] - 28 * self.gui.scale, tooltip)
+		self.fields.add(button_rect)
+		hit = False
+		if hover and self.click:
+			self.inp.global_clicked = True
+			hit = True
+			if plug is not None:
+				plug()
+
+		icon_colour = self.colours.box_text if hover or emphasis else self.colours.box_text_label
+		if draw_icon is not None:
+			draw_icon(button_rect, icon_colour)
+		elif icon is not None:
+			icon_x = button_rect[0] + (button_rect[2] - round(16 * self.gui.scale)) // 2 + round(icon.xoff * self.gui.scale)
+			icon_y = button_rect[1] + (button_rect[3] - round(16 * self.gui.scale)) // 2 + round(icon.yoff * self.gui.scale)
+			if icon.base_asset is None:
+				icon.asset.render(icon_x, icon_y, icon_colour)
+			else:
+				icon.asset.render(icon_x, icon_y)
+
+		return hit
+
+	def draw_duplicate_theme_icon(self, rect: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		size = round(10 * self.gui.scale)
+		shift = round(3 * self.gui.scale)
+		x = rect[0] + (rect[2] - size - shift) // 2
+		y = rect[1] + (rect[3] - size - shift) // 2
+		back_rect = (x, y, size, size)
+		front_rect = (x + shift, y + shift, size, size)
+		self.ddt.rect_s(back_rect, colour, round(1 * self.gui.scale))
+		self.ddt.rect_s(front_rect, colour, round(1 * self.gui.scale))
 
 	def settings_stepper_row(
 		self,
@@ -26556,14 +26635,30 @@ class Over:
 
 		toggle_y = right_rect[1] + right_rect[3] - round(14 * gui.scale) - row_h
 		action_y = toggle_y - row_gap - action_h
-		self.draw_settings_action_row(
-			(inner_x, action_y, inner_w, action_h),
-			[
-				(_("Duplicate"), self.create_user_theme, True),
-				(_("Edit"), self.open_theme_editor, False),
-				(_("Delete"), self.delete_active_user_theme, False),
-			],
+		icon_button_w = round(26 * gui.scale)
+		icon_gap = round(4 * gui.scale)
+		action_total_w = icon_button_w * 3 + icon_gap * 2
+		action_x = inner_x + inner_w - action_total_w
+		self.settings_icon_button(
+			(action_x, action_y, icon_button_w, action_h),
+			self.create_user_theme,
 			accent=accent,
+			draw_icon=self.draw_duplicate_theme_icon,
+			tooltip=_("Duplicate"),
+		)
+		self.settings_icon_button(
+			(action_x + icon_button_w + icon_gap, action_y, icon_button_w, action_h),
+			self.open_theme_editor,
+			accent=accent,
+			icon=self.gui.rename_tracks_icon,
+			tooltip=_("Edit"),
+		)
+		self.settings_icon_button(
+			(action_x + (icon_button_w + icon_gap) * 2, action_y, icon_button_w, action_h),
+			self.delete_active_user_theme,
+			accent=accent,
+			icon=self.gui.delete_icon,
+			tooltip=_("Delete"),
 		)
 		self.settings_switch_row((inner_x, toggle_y, inner_w, row_h), self.tauon.toggle_transparent_accent, _("Transparent accent"), accent=accent)
 
@@ -28203,22 +28298,23 @@ class Over:
 
 		preview_y = right_inner_y
 		button_w = round(62 * gui.scale)
+		action_button_h = round(34 * gui.scale)
 		preview_gap = row_gap
 		preview_rect = (
 			right_inner_x,
 			preview_y,
 			right_inner_w - button_w * 2 - preview_gap * 2,
-			round(36 * gui.scale),
+			action_button_h,
 		)
 		ddt.bordered_rect(preview_rect, current_colour, panel_border, round(1 * gui.scale))
 		preview_text = ColourRGBA(25, 25, 25, 255) if is_light(current_colour) else ColourRGBA(245, 245, 245, 255)
 		ddt.text((preview_rect[0] + preview_rect[2] // 2, preview_rect[1] + round(8 * gui.scale), 2), self.theme_colour_to_hex(current_colour), preview_text, 212, bg=current_colour)
 
-		button_y = preview_rect[1] + max(0, (preview_rect[3] - button_h) // 2)
+		button_y = preview_rect[1]
 		copy_x = preview_rect[0] + preview_rect[2] + preview_gap
 		paste_x = copy_x + button_w + preview_gap
-		self.settings_action_tile((copy_x, button_y, button_w, button_h), _("Copy"), self.theme_editor_copy_colour, self.settings_page_accent(4), show_arrow=False)
-		self.settings_action_tile((paste_x, button_y, button_w, button_h), _("Paste"), self.theme_editor_paste_colour, self.settings_page_accent(4), show_arrow=False)
+		self.settings_action_tile((copy_x, button_y, button_w, action_button_h), _("Copy"), self.theme_editor_copy_colour, self.settings_page_accent(4), show_arrow=False)
+		self.settings_action_tile((paste_x, button_y, button_w, action_button_h), _("Paste"), self.theme_editor_paste_colour, self.settings_page_accent(4), show_arrow=False)
 
 		picker_top = preview_rect[1] + preview_rect[3] + round(20 * gui.scale)
 		alpha_gap = round(8 * gui.scale)
