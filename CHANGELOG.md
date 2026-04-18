@@ -7,6 +7,7 @@ Changelog
  - Redesigned settings UI
  - Added smooth scroll support
  - Added new mini mode Signal
+ - Added theme editor
  - Removed Spotify support
  - Remove koel support
 
