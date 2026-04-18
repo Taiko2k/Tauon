@@ -23818,6 +23818,7 @@ class Over:
 		self.theme_editor_sv_texture_key: tuple[int, int, int] | None = None
 		self.theme_editor_hue_texture = None
 		self.theme_editor_hue_texture_key: tuple[int, int] | None = None
+		self.theme_editor_drag_target: str | None = None
 		self.view_supporters = False
 
 	def destroy_settings_texture(self) -> None:
@@ -24234,6 +24235,7 @@ class Over:
 		self.theme_editor_original_colours = None
 		self.theme_editor_target_path = None
 		self.theme_editor_dirty = False
+		self.theme_editor_drag_target = None
 		self.destroy_theme_editor_gradient_textures()
 
 	def open_theme_editor(self) -> None:
@@ -28425,17 +28427,28 @@ class Over:
 		selector_x = right_inner_x + max(0, (right_inner_w - selector_w) // 2)
 		selector_y = picker_top + max(0, (picker_area_h - selector_h) // 2)
 		sv_rect = (selector_x, selector_y, sv_side, sv_side)
-		sv_texture = self.ensure_theme_editor_sv_texture(sv_rect[2], sv_rect[3], hue)
+		hue_y = sv_rect[1] + sv_rect[3] + hue_gap
+		hue_rect = (selector_x, hue_y, sv_rect[2], hue_h)
+		display_hue = hue
+		if self.theme_editor_drag_target == "hue" and self.inp.mouse_down:
+			display_hue = min(max((self.inp.mouse_position[0] - hue_rect[0]) / max(hue_rect[2], 1), 0.0), 1.0)
+		applied_hue = min(display_hue, 1.0 - (1.0 / max(hue_rect[2], 1)))
+		display_sat = sat
+		display_val = val
+		if self.theme_editor_drag_target == "sv" and self.inp.mouse_down:
+			display_sat = min(max((self.inp.mouse_position[0] - sv_rect[0]) / max(sv_rect[2], 1), 0.0), 1.0)
+			display_val = min(max(1 - ((self.inp.mouse_position[1] - sv_rect[1]) / max(sv_rect[3], 1)), 0.0), 1.0)
+		sv_texture = self.ensure_theme_editor_sv_texture(sv_rect[2], sv_rect[3], applied_hue)
 		self.render_theme_editor_texture(sv_texture, sv_rect)
 		ddt.rect_s(sv_rect, panel_border, round(1 * gui.scale))
-		marker_x = sv_rect[0] + round(sat * sv_rect[2])
-		marker_y = sv_rect[1] + round((1 - val) * sv_rect[3])
+		marker_x = sv_rect[0] + round(display_sat * sv_rect[2])
+		marker_y = sv_rect[1] + round((1 - display_val) * sv_rect[3])
 		ddt.rect((marker_x - round(4 * gui.scale), marker_y - round(4 * gui.scale), round(8 * gui.scale), round(8 * gui.scale)), preview_text)
 		self.fields.add(sv_rect)
-		if self.coll(sv_rect) and self.inp.mouse_down:
-			new_sat = (self.inp.mouse_position[0] - sv_rect[0]) / max(sv_rect[2], 1)
-			new_val = 1 - ((self.inp.mouse_position[1] - sv_rect[1]) / max(sv_rect[3], 1))
-			self.apply_theme_editor_hsv(hue, new_sat, new_val)
+		if self.click and self.coll(sv_rect):
+			self.theme_editor_drag_target = "sv"
+		if self.theme_editor_drag_target == "sv" and self.inp.mouse_down:
+			self.apply_theme_editor_hsv(applied_hue, display_sat, display_val)
 
 		alpha_rect = (sv_rect[0] + sv_rect[2] + alpha_gap, sv_rect[1], alpha_w, sv_rect[3])
 		checker_size = max(2, round(6 * gui.scale))
@@ -28458,7 +28471,9 @@ class Over:
 		alpha_marker_y = alpha_rect[1] + round((1 - (current_colour.a / 255)) * alpha_rect[3])
 		ddt.rect((alpha_rect[0] - round(3 * gui.scale), alpha_marker_y - round(2 * gui.scale), alpha_rect[2] + round(6 * gui.scale), round(4 * gui.scale)), preview_text)
 		self.fields.add(alpha_rect)
-		if self.coll(alpha_rect) and self.inp.mouse_down:
+		if self.click and self.coll(alpha_rect):
+			self.theme_editor_drag_target = "alpha"
+		if self.theme_editor_drag_target == "alpha" and self.inp.mouse_down:
 			alpha_portion = (self.inp.mouse_position[1] - alpha_rect[1]) / max(alpha_rect[3], 1)
 			new_alpha = int((1 - min(max(alpha_portion, 0.0), 1.0)) * 255)
 			if new_alpha != current_colour.a:
@@ -28467,18 +28482,18 @@ class Over:
 					ColourRGBA(current_colour.r, current_colour.g, current_colour.b, new_alpha),
 				)
 
-		hue_y = sv_rect[1] + sv_rect[3] + hue_gap
-		hue_rect = (right_inner_x, hue_y, sv_rect[2], round(14 * gui.scale))
-		hue_rect = (selector_x, hue_y, sv_rect[2], hue_h)
 		hue_texture = self.ensure_theme_editor_hue_texture(hue_rect[2], hue_rect[3])
 		self.render_theme_editor_texture(hue_texture, hue_rect)
 		ddt.rect_s(hue_rect, panel_border, round(1 * gui.scale))
-		hue_marker_x = hue_rect[0] + round(hue * hue_rect[2])
+		hue_marker_x = hue_rect[0] + round(display_hue * hue_rect[2])
 		ddt.rect((hue_marker_x - round(2 * gui.scale), hue_rect[1] - round(3 * gui.scale), round(4 * gui.scale), hue_rect[3] + round(6 * gui.scale)), preview_text)
 		self.fields.add(hue_rect)
-		if self.coll(hue_rect) and self.inp.mouse_down:
-			new_hue = (self.inp.mouse_position[0] - hue_rect[0]) / max(hue_rect[2], 1)
-			self.apply_theme_editor_hsv(new_hue, sat, val)
+		if self.click and self.coll(hue_rect):
+			self.theme_editor_drag_target = "hue"
+		if self.theme_editor_drag_target == "hue" and self.inp.mouse_down:
+			self.apply_theme_editor_hsv(applied_hue, sat, val)
+		if self.inp.mouse_up or not self.inp.mouse_down:
+			self.theme_editor_drag_target = None
 		self.finish_settings_text_inputs()
 		self.click = False
 		self.right_click = False
