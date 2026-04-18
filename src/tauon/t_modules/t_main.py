@@ -23819,6 +23819,10 @@ class Over:
 		self.theme_editor_hue_texture = None
 		self.theme_editor_hue_texture_key: tuple[int, int] | None = None
 		self.theme_editor_drag_target: str | None = None
+		self.theme_editor_hue_value = 0.0
+		self.theme_editor_sat_value = 1.0
+		self.theme_editor_val_value = 1.0
+		self.theme_editor_alpha_value = 1.0
 		self.view_supporters = False
 
 	def destroy_settings_texture(self) -> None:
@@ -24212,6 +24216,18 @@ class Over:
 		self.ddt.text_background_colour = self.colours.playlist_panel_background
 		self.gui.update_layout = True
 
+	def sync_theme_editor_controls_from_current_colour(self) -> None:
+		current_colour = self.theme_editor_current_colour()
+		hue, sat, val = colorsys.rgb_to_hsv(
+			current_colour.r / 255,
+			current_colour.g / 255,
+			current_colour.b / 255,
+		)
+		self.theme_editor_hue_value = hue
+		self.theme_editor_sat_value = sat
+		self.theme_editor_val_value = val
+		self.theme_editor_alpha_value = current_colour.a / 255
+
 	def begin_theme_editor(self, title: str, target_path: Path | None, is_new: bool) -> None:
 		self.enabled = True
 		self.theme_editor_enabled = True
@@ -24227,6 +24243,7 @@ class Over:
 		self.theme_editor_title_box.set_text(title)
 		self.theme_editor_title_box.cursor_position = 0
 		self.theme_editor_title_box.selection = 0
+		self.sync_theme_editor_controls_from_current_colour()
 		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
 
 	def clear_theme_editor_state(self) -> None:
@@ -24236,6 +24253,10 @@ class Over:
 		self.theme_editor_target_path = None
 		self.theme_editor_dirty = False
 		self.theme_editor_drag_target = None
+		self.theme_editor_hue_value = 0.0
+		self.theme_editor_sat_value = 1.0
+		self.theme_editor_val_value = 1.0
+		self.theme_editor_alpha_value = 1.0
 		self.destroy_theme_editor_gradient_textures()
 
 	def open_theme_editor(self) -> None:
@@ -24353,10 +24374,25 @@ class Over:
 
 	def apply_theme_editor_hsv(self, hue: float, sat: float, val: float) -> None:
 		colour = self.theme_editor_current_colour()
-		r, g, b = colorsys.hsv_to_rgb(min(max(hue, 0.0), 1.0), min(max(sat, 0.0), 1.0), min(max(val, 0.0), 1.0))
+		hue = min(max(hue, 0.0), 1.0)
+		sat = min(max(sat, 0.0), 1.0)
+		val = min(max(val, 0.0), 1.0)
+		self.theme_editor_hue_value = hue
+		self.theme_editor_sat_value = sat
+		self.theme_editor_val_value = val
+		r, g, b = colorsys.hsv_to_rgb(hue, sat, val)
 		self.apply_theme_editor_colour(
 			self.theme_editor_selected_attr,
 			ColourRGBA(int(r * 255), int(g * 255), int(b * 255), colour.a),
+		)
+
+	def apply_theme_editor_alpha(self, alpha: float) -> None:
+		colour = self.theme_editor_current_colour()
+		alpha = min(max(alpha, 0.0), 1.0)
+		self.theme_editor_alpha_value = alpha
+		self.apply_theme_editor_colour(
+			self.theme_editor_selected_attr,
+			ColourRGBA(colour.r, colour.g, colour.b, int(alpha * 255)),
 		)
 
 	def theme_editor_texture_from_pixels(self, width: int, height: int, pixel_bytes: bytes) -> sdl3.LP_SDL_Texture | None:
@@ -28268,7 +28304,9 @@ class Over:
 		ddt = self.ddt
 		colours = self.colours
 		current_colour = self.theme_editor_current_colour()
-		hue, sat, val = self.theme_editor_current_hsv()
+		hue = self.theme_editor_hue_value
+		sat = self.theme_editor_sat_value
+		val = self.theme_editor_val_value
 
 		full_width = round(610 * gui.scale)
 		full_height = round(375 * gui.scale)
@@ -28381,6 +28419,8 @@ class Over:
 			self.fields.add(row_rect)
 			if hover and self.click:
 				self.theme_editor_selected_attr = attr
+				self.theme_editor_drag_target = None
+				self.sync_theme_editor_controls_from_current_colour()
 
 			component_colour = getattr(self.theme_editor_draft_colours, attr, current_colour) if self.theme_editor_draft_colours is not None else current_colour
 			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
@@ -28468,19 +28508,14 @@ class Over:
 			alpha_value = 255 - round((alpha_progress ** 2.0) * 255)
 			ddt.rect((alpha_rect[0], start_y, alpha_rect[2], max(end_y - start_y, 1)), ColourRGBA(current_colour.r, current_colour.g, current_colour.b, alpha_value))
 		ddt.rect_s(alpha_rect, panel_border, round(1 * gui.scale))
-		alpha_marker_y = alpha_rect[1] + round((1 - (current_colour.a / 255)) * alpha_rect[3])
+		alpha_marker_y = alpha_rect[1] + round((1 - self.theme_editor_alpha_value) * alpha_rect[3])
 		ddt.rect((alpha_rect[0] - round(3 * gui.scale), alpha_marker_y - round(2 * gui.scale), alpha_rect[2] + round(6 * gui.scale), round(4 * gui.scale)), preview_text)
 		self.fields.add(alpha_rect)
 		if self.click and self.coll(alpha_rect):
 			self.theme_editor_drag_target = "alpha"
 		if self.theme_editor_drag_target == "alpha" and self.inp.mouse_down:
-			alpha_portion = (self.inp.mouse_position[1] - alpha_rect[1]) / max(alpha_rect[3], 1)
-			new_alpha = int((1 - min(max(alpha_portion, 0.0), 1.0)) * 255)
-			if new_alpha != current_colour.a:
-				self.apply_theme_editor_colour(
-					self.theme_editor_selected_attr,
-					ColourRGBA(current_colour.r, current_colour.g, current_colour.b, new_alpha),
-				)
+			alpha_portion = min(max((self.inp.mouse_position[1] - alpha_rect[1]) / max(alpha_rect[3], 1), 0.0), 1.0)
+			self.apply_theme_editor_alpha(1 - alpha_portion)
 
 		hue_texture = self.ensure_theme_editor_hue_texture(hue_rect[2], hue_rect[3])
 		self.render_theme_editor_texture(hue_texture, hue_rect)
