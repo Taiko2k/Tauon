@@ -28356,11 +28356,21 @@ class Over:
 			self.apply_theme_editor_hsv(hue, new_sat, new_val)
 
 		alpha_rect = (sv_rect[0] + sv_rect[2] + alpha_gap, sv_rect[1], alpha_w, sv_rect[3])
+		checker_size = max(2, round(6 * gui.scale))
+		checker_light = alpha_blend(ColourRGBA(255, 255, 255, 48), panel_fill)
+		checker_dark = alpha_blend(ColourRGBA(0, 0, 0, 36), panel_fill)
+		for check_y in range(alpha_rect[1], alpha_rect[1] + alpha_rect[3], checker_size):
+			cell_h = min(checker_size, alpha_rect[1] + alpha_rect[3] - check_y)
+			for check_x in range(alpha_rect[0], alpha_rect[0] + alpha_rect[2], checker_size):
+				cell_w = min(checker_size, alpha_rect[0] + alpha_rect[2] - check_x)
+				colour = checker_light if ((check_x - alpha_rect[0]) // checker_size + (check_y - alpha_rect[1]) // checker_size) % 2 == 0 else checker_dark
+				ddt.rect((check_x, check_y, cell_w, cell_h), colour)
 		alpha_steps = 32
 		for index in range(alpha_steps):
 			start_y = alpha_rect[1] + round(index * alpha_rect[3] / alpha_steps)
 			end_y = alpha_rect[1] + round((index + 1) * alpha_rect[3] / alpha_steps)
-			alpha_value = 255 - round(index * 255 / max(alpha_steps - 1, 1))
+			alpha_progress = index / max(alpha_steps - 1, 1)
+			alpha_value = 255 - round((alpha_progress ** 2.0) * 255)
 			ddt.rect((alpha_rect[0], start_y, alpha_rect[2], max(end_y - start_y, 1)), ColourRGBA(current_colour.r, current_colour.g, current_colour.b, alpha_value))
 		ddt.rect_s(alpha_rect, panel_border, round(1 * gui.scale))
 		alpha_marker_y = alpha_rect[1] + round((1 - (current_colour.a / 255)) * alpha_rect[3])
