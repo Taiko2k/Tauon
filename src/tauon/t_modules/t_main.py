@@ -23814,6 +23814,10 @@ class Over:
 		self.theme_editor_target_path: Path | None = None
 		self.theme_editor_is_new = False
 		self.theme_editor_dirty = False
+		self.theme_editor_sv_texture = None
+		self.theme_editor_sv_texture_key: tuple[int, int, int] | None = None
+		self.theme_editor_hue_texture = None
+		self.theme_editor_hue_texture_key: tuple[int, int] | None = None
 		self.view_supporters = False
 
 	def destroy_settings_texture(self) -> None:
@@ -23821,6 +23825,16 @@ class Over:
 			sdl3.SDL_DestroyTexture(self.settings_doc_texture)
 			self.settings_doc_texture = None
 			self.settings_doc_texture_size = (0, 0)
+
+	def destroy_theme_editor_gradient_textures(self) -> None:
+		if self.theme_editor_sv_texture is not None:
+			sdl3.SDL_DestroyTexture(self.theme_editor_sv_texture)
+			self.theme_editor_sv_texture = None
+		if self.theme_editor_hue_texture is not None:
+			sdl3.SDL_DestroyTexture(self.theme_editor_hue_texture)
+			self.theme_editor_hue_texture = None
+		self.theme_editor_sv_texture_key = None
+		self.theme_editor_hue_texture_key = None
 
 	def ensure_settings_texture(self, size: tuple[int, int]) -> sdl3.LP_SDL_Texture:
 		if self.settings_doc_texture is not None and self.settings_doc_texture_size == size:
@@ -24220,6 +24234,7 @@ class Over:
 		self.theme_editor_original_colours = None
 		self.theme_editor_target_path = None
 		self.theme_editor_dirty = False
+		self.destroy_theme_editor_gradient_textures()
 
 	def open_theme_editor(self) -> None:
 		if not self.active_theme_is_user_editable():
@@ -24341,6 +24356,86 @@ class Over:
 			self.theme_editor_selected_attr,
 			ColourRGBA(int(r * 255), int(g * 255), int(b * 255), colour.a),
 		)
+
+	def theme_editor_texture_from_pixels(self, width: int, height: int, pixel_bytes: bytes) -> sdl3.LP_SDL_Texture | None:
+		buffer = ctypes.create_string_buffer(pixel_bytes)
+		surface = sdl3.SDL_CreateSurfaceFrom(
+			width,
+			height,
+			sdl3.SDL_PIXELFORMAT_ARGB8888,
+			ctypes.cast(buffer, c_void_p),
+			width * 4,
+		)
+		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
+		sdl3.SDL_DestroySurface(surface)
+		if texture is not None:
+			sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
+			if hasattr(sdl3, "SDL_SetTextureScaleMode") and hasattr(sdl3, "SDL_SCALEMODE_LINEAR"):
+				sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
+		return texture
+
+	def render_theme_editor_texture(self, texture, rect: tuple[int, int, int, int]) -> None:
+		if texture is None:
+			return
+		dest_rect = sdl3.SDL_FRect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+		sdl3.SDL_RenderTexture(self.renderer, texture, None, dest_rect)
+
+	def ensure_theme_editor_sv_texture(self, width: int, height: int, hue: float):
+		downscale = 10
+		hue_buckets = max(48, min(width // 2, 144))
+		quantized_hue = round(hue * hue_buckets) / max(hue_buckets, 1)
+		texture_key = (width, height, round(quantized_hue * hue_buckets))
+		if self.theme_editor_sv_texture is not None and self.theme_editor_sv_texture_key == texture_key:
+			return self.theme_editor_sv_texture
+
+		if self.theme_editor_sv_texture is not None:
+			sdl3.SDL_DestroyTexture(self.theme_editor_sv_texture)
+			self.theme_editor_sv_texture = None
+
+		source_width = max(1, width // downscale)
+		source_height = max(1, height // downscale)
+		pixels = bytearray(source_width * source_height * 4)
+		for y_pos in range(source_height):
+			value = 1 - (y_pos / max(source_height - 1, 1))
+			for x_pos in range(source_width):
+				saturation = x_pos / max(source_width - 1, 1)
+				r, g, b = colorsys.hsv_to_rgb(quantized_hue, saturation, value)
+				offset = (y_pos * source_width + x_pos) * 4
+				pixels[offset] = int(b * 255)
+				pixels[offset + 1] = int(g * 255)
+				pixels[offset + 2] = int(r * 255)
+				pixels[offset + 3] = 255
+
+		self.theme_editor_sv_texture = self.theme_editor_texture_from_pixels(source_width, source_height, bytes(pixels))
+		self.theme_editor_sv_texture_key = texture_key
+		return self.theme_editor_sv_texture
+
+	def ensure_theme_editor_hue_texture(self, width: int, height: int):
+		downscale = 10
+		texture_key = (width, height)
+		if self.theme_editor_hue_texture is not None and self.theme_editor_hue_texture_key == texture_key:
+			return self.theme_editor_hue_texture
+
+		if self.theme_editor_hue_texture is not None:
+			sdl3.SDL_DestroyTexture(self.theme_editor_hue_texture)
+			self.theme_editor_hue_texture = None
+
+		source_width = max(1, width // downscale)
+		source_height = max(1, height // downscale)
+		row_bytes = bytearray(source_width * 4)
+		for x_pos in range(source_width):
+			hue_value = x_pos / max(source_width - 1, 1)
+			r, g, b = colorsys.hsv_to_rgb(hue_value, 1, 1)
+			offset = x_pos * 4
+			row_bytes[offset] = int(b * 255)
+			row_bytes[offset + 1] = int(g * 255)
+			row_bytes[offset + 2] = int(r * 255)
+			row_bytes[offset + 3] = 255
+		pixels = bytes(row_bytes) * source_height
+
+		self.theme_editor_hue_texture = self.theme_editor_texture_from_pixels(source_width, source_height, pixels)
+		self.theme_editor_hue_texture_key = texture_key
+		return self.theme_editor_hue_texture
 
 	def theme_editor_copy_colour(self) -> None:
 		self.theme_editor_clipboard = self.theme_editor_current_colour()
@@ -28330,21 +28425,8 @@ class Over:
 		selector_x = right_inner_x + max(0, (right_inner_w - selector_w) // 2)
 		selector_y = picker_top + max(0, (picker_area_h - selector_h) // 2)
 		sv_rect = (selector_x, selector_y, sv_side, sv_side)
-		steps = 24
-		cell_w = max(1, sv_rect[2] // steps)
-		cell_h = max(1, sv_rect[3] // steps)
-		for row in range(steps):
-			for col in range(steps):
-				sv_s = col / max(steps - 1, 1)
-				sv_v = 1 - (row / max(steps - 1, 1))
-				r, g, b = colorsys.hsv_to_rgb(hue, sv_s, sv_v)
-				cell_rect = (
-					sv_rect[0] + col * cell_w,
-					sv_rect[1] + row * cell_h,
-					cell_w + (1 if col == steps - 1 else 0),
-					cell_h + (1 if row == steps - 1 else 0),
-				)
-				ddt.rect(cell_rect, ColourRGBA(int(r * 255), int(g * 255), int(b * 255), 255))
+		sv_texture = self.ensure_theme_editor_sv_texture(sv_rect[2], sv_rect[3], hue)
+		self.render_theme_editor_texture(sv_texture, sv_rect)
 		ddt.rect_s(sv_rect, panel_border, round(1 * gui.scale))
 		marker_x = sv_rect[0] + round(sat * sv_rect[2])
 		marker_y = sv_rect[1] + round((1 - val) * sv_rect[3])
@@ -28388,12 +28470,8 @@ class Over:
 		hue_y = sv_rect[1] + sv_rect[3] + hue_gap
 		hue_rect = (right_inner_x, hue_y, sv_rect[2], round(14 * gui.scale))
 		hue_rect = (selector_x, hue_y, sv_rect[2], hue_h)
-		hue_steps = 36
-		for index in range(hue_steps):
-			start_x = hue_rect[0] + round(index * hue_rect[2] / hue_steps)
-			end_x = hue_rect[0] + round((index + 1) * hue_rect[2] / hue_steps)
-			r, g, b = colorsys.hsv_to_rgb(index / max(hue_steps - 1, 1), 1, 1)
-			ddt.rect((start_x, hue_rect[1], max(end_x - start_x, 1), hue_rect[3]), ColourRGBA(int(r * 255), int(g * 255), int(b * 255), 255))
+		hue_texture = self.ensure_theme_editor_hue_texture(hue_rect[2], hue_rect[3])
+		self.render_theme_editor_texture(hue_texture, hue_rect)
 		ddt.rect_s(hue_rect, panel_border, round(1 * gui.scale))
 		hue_marker_x = hue_rect[0] + round(hue * hue_rect[2])
 		ddt.rect((hue_marker_x - round(2 * gui.scale), hue_rect[1] - round(3 * gui.scale), round(4 * gui.scale), hue_rect[3] + round(6 * gui.scale)), preview_text)
