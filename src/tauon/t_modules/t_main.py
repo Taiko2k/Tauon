@@ -32218,7 +32218,14 @@ class StandardPlaylist:
 			or touch_scroll
 			or self.smooth_scroll.active("playlist")
 		)
-		if not use_smooth_scroll and inp.k_input and not mouse_scroll and not touch_scroll:
+		pointer_input = (
+			inp.mouse_click
+			or inp.right_click
+			or inp.middle_click
+			or inp.mouse_down
+			or inp.mouse_up
+		)
+		if not use_smooth_scroll and inp.k_input and not pointer_input and not mouse_scroll and not touch_scroll:
 			gui.playlist_scroll_pixels = 0
 		a = gui.playlist_view_length
 		match a:
@@ -32260,6 +32267,8 @@ class StandardPlaylist:
 
 			tauon.scroll_hide_timer.set()
 			gui.frame_callback_list.append(TestTimer(0.9))
+
+		align_tracklist_to_row = False
 
 		# Show notice if playlist empty
 		if len(pctl.default_playlist) == 0:
@@ -32406,6 +32415,7 @@ class StandardPlaylist:
 						if inp.d_mouse_click and track_position in self.gui.shift_selection and coll_point(
 							self.inp.last_click_location, (input_box)):
 							gui.click_time -= 1.5
+							align_tracklist_to_row = True
 							pctl.jump(track_id, track_position)
 							line_hit = False
 							inp.mouse_click = False
@@ -32516,6 +32526,7 @@ class StandardPlaylist:
 			if self.inp.key_shift_down is False and inp.d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
 					self.inp.last_click_location, input_box):
 
+				align_tracklist_to_row = True
 				pctl.jump(track_id, track_position)
 
 				gui.click_time -= 1.5
@@ -32640,7 +32651,6 @@ class StandardPlaylist:
 						self.gui.shift_selection = [pctl.selected_in_playlist]
 
 			if line_over and inp.mouse_click:
-
 				if track_position in self.gui.shift_selection:
 					pass
 				else:
@@ -32688,6 +32698,9 @@ class StandardPlaylist:
 			if number >= render_rows:
 				break
 		# ---------------------------------------------------------------------------------------
+
+		if align_tracklist_to_row:
+			gui.playlist_scroll_pixels = 0
 
 		# For every track in view
 		# for i in range(gui.playlist_view_length + 1):
