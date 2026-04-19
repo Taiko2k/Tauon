@@ -22034,6 +22034,7 @@ class ToolTip:
 			self.x = x
 			self.y = y
 			self.w = self.ddt.get_text_w(text, self.font) + 20 * self.gui.scale
+			self.h = 24 * self.gui.scale
 
 		self.called = True
 
