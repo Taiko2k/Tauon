@@ -37,3 +37,4 @@ lrclib-solver
 android-deps
 .buildozer
 bin
+.codex/
