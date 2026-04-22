@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2026-04-17 01:39+0000\n"
-"Last-Translator: Martin <spleefer90@gmail.com>\n"
+"PO-Revision-Date: 2026-04-23 01:10+0000\n"
+"Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -2322,7 +2322,7 @@ msgstr "О программе"
 
 #: src/tauon/t_modules/t_main.py:24475
 msgid "Use album art as background"
-msgstr "Использовать обложку альбома в качестве фона"
+msgstr "Фон в виде обложки альбома"
 
 #: src/tauon/t_modules/t_main.py:24477
 msgid "Transparent accent"
@@ -2330,7 +2330,7 @@ msgstr "Прозрачный акцент"
 
 #: src/tauon/t_modules/t_main.py:24483
 msgid "Prefer artist backgrounds"
-msgstr "Предпочитать изображения артистов в качестве фона"
+msgstr "Предпочитать изображения артистов для фона"
 
 #: src/tauon/t_modules/t_main.py:24487
 msgid "Also enabling 'auto-fech artist data' to scrape last.fm."
@@ -4849,7 +4849,7 @@ msgstr "Самые длинные дорожки"
 
 #: src/tauon/t_modules/t_main.py:44284 src/tauon/t_modules/t_main.py:44285
 msgid "Year by Oldest"
-msgstr "Год по возрасту"
+msgstr "Самые старые по году"
 
 #: src/tauon/t_modules/t_main.py:44287 src/tauon/t_modules/t_main.py:44288
 msgid "Year by Latest"
