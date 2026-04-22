@@ -79,7 +79,7 @@ class Prefs:
 	tag_editor_name:   str = ""
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""
-	use_lrc_instead: bool = True
+	save_synced_to_lrc: bool = True
 
 	use_title:    bool = False
 	auto_extract: bool = False

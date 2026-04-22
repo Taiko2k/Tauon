@@ -7866,8 +7866,11 @@ class Tauon:
 							track_object.synced = synced
 							self.gui.lyrics_editor_update_now[1] = True
 							# TODO (Flynn): SYLT
-							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
-								self.write_lyrics(track_object, True)
+							if not self.gui.timed_lyrics_edit_view:
+								if self.prefs.save_synced_to_lrc:
+									self.write_lyrics(track_object, True, synced_target="lrc")
+								if self.prefs.save_lyrics_changes_to_files:
+									self.write_lyrics(track_object, True, synced_target="tags")
 						found = True
 						break
 				except Exception:
@@ -7958,6 +7961,76 @@ class Tauon:
 			self.write_lyrics(track_object)
 		self.lyrics_ren_mini.to_reload = True
 
+	def track_has_synced_lyrics(self, track_object: TrackClass) -> bool:
+		return find_synced_lyric_data(track_object) is not None
+
+	def clear_synced_lyrics_disable_test(self, track_object: TrackClass) -> bool:
+		return not self.track_has_synced_lyrics(track_object)
+
+	def clear_synced_lyrics(self, track_object: TrackClass) -> None:
+		had_embedded_synced = find_synced_lyric_data(track_object, just_check=True)
+		lrc_path: Path | None = None
+		had_cached_synced = bool(track_object.synced)
+		deleted_lrc = False
+		cleared_tags = False
+		kept_lrc = False
+
+		if not track_object.is_network:
+			direc = Path(track_object.parent_folder_path)
+			name = Path(track_object.filename).stem
+			if direc.is_dir():
+				lrc_path = next(
+					(
+						f for f in direc.iterdir()
+						if f.is_file()
+						and f.stem == name
+						and f.suffix.lower() == ".lrc"
+					),
+					None,
+				)
+
+		track_object.synced = ""
+
+		if had_embedded_synced:
+			track_object.lyrics = ""
+			if self.prefs.save_lyrics_changes_to_files:
+				self.write_lyrics(track_object)
+				cleared_tags = True
+
+		if lrc_path and lrc_path.is_file():
+			if self.prefs.save_synced_to_lrc:
+				try:
+					lrc_path.unlink()
+					deleted_lrc = True
+				except Exception:
+					logging.exception("Failed to delete synced lyrics file")
+					self.show_message(
+						_("Could not clear synced lyrics"),
+						_("The .lrc file could not be deleted."),
+						mode="error",
+					)
+					return
+			else:
+				kept_lrc = True
+
+		self.lyrics_ren_mini.to_reload = True
+		if deleted_lrc and cleared_tags:
+			self.show_message(_("Cleared synced lyrics"), _("Removed from .lrc and tags"), mode="done")
+		elif deleted_lrc:
+			self.show_message(_("Cleared synced lyrics"), _("Removed from .lrc"), mode="done")
+		elif cleared_tags:
+			self.show_message(_("Cleared synced lyrics"), _("Removed from tags"), mode="done")
+		elif kept_lrc:
+			self.show_message(
+				_("Cleared synced lyrics in Tauon only"),
+				_("The .lrc file was kept because \"Save Synced to .lrc\" is off."),
+				mode="done",
+			)
+		elif had_embedded_synced or had_cached_synced:
+			self.show_message(_("Cleared synced lyrics in Tauon only"), mode="done")
+		else:
+			self.show_message(_("No synced lyrics were cleared"), mode="info")
+
 	def split_lyrics(self, track_object: TrackClass) -> None:
 		if track_object.lyrics:
 			track_object.lyrics = track_object.lyrics.replace(". ", ". \n")
@@ -7985,11 +8058,20 @@ class Tauon:
 		return Decorator(line_colour, self.colours.menu_background, None)
 
 
-	def write_lyrics(self, track: TrackClass, synced: bool = False, loud: bool = False) -> bool:
+	def write_lyrics(
+		self,
+		track: TrackClass,
+		synced: bool = False,
+		loud: bool = False,
+		synced_target: Literal["auto", "lrc", "tags"] = "auto",
+	) -> bool:
 		lyrics = track.synced if synced else track.lyrics
 		if track.is_network or not track.fullpath:
 			logging.warning(f"Cannot write lyrics to network track {track.artist} - {track.title}")
-		if synced and self.prefs.use_lrc_instead:
+		write_synced_to_lrc = synced and (
+			synced_target == "lrc" or (synced_target == "auto" and self.prefs.save_synced_to_lrc)
+		)
+		if write_synced_to_lrc:
 			with open( Path(track.fullpath).with_suffix(".lrc"), "w", encoding="utf-8") as lrc:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
@@ -25824,40 +25906,36 @@ class Over:
 				_("Lyrics writeback and debug settings."),
 				accent,
 			)
-			prefs.save_lyrics_changes_to_files = self.settings_switch_row(
-				(x, y, w, row_h),
-				prefs.save_lyrics_changes_to_files,
-				_("Save simple lyrics edits back to files"),
-				_("Search, clear and paste save to the original file. Manual edits always do."),
-				accent,
+			prefs.save_synced_to_lrc = self.settings_switch_row(
+				(x, y, w, small_row_h),
+				prefs.save_synced_to_lrc,
+				_("Save Synced to .lrc"),
+				accent=accent,
 			)
 
-			y += row_h + row_gap
+			y += small_row_h + row_gap
+			prefs.save_lyrics_changes_to_files = self.settings_switch_row(
+				(x, y, w, small_row_h),
+				prefs.save_lyrics_changes_to_files,
+				_("Save lyrics edits to tags"),
+				accent=accent,
+			)
+
+			y += small_row_h + row_gap
 			debug_path = self.user_directory / "debug"
 			debug_state = debug_path.exists()
 			old = debug_state
 			debug_state = self.settings_switch_row(
-				(x, y, w, row_h),
+				(x, y, w, small_row_h),
 				debug_state,
 				_("Enable debug mode"),
-				_("Create a debug flag file in your user directory."),
-				accent,
+				accent=accent,
 			)
 			if old is False and debug_state is True:
 				with debug_path.open("a"):
 					pass
 			elif old is True and debug_state is False:
 				os.remove(debug_path)
-
-			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
-			remaining_h = bottom - y - row_h
-			if remaining_h > round(52 * gui.scale):
-				note_text = (
-					_("Debug mode is enabled. Turn it off when you no longer need extra logging.")
-					if debug_state else
-					_("Enable debug mode when you need extra logs.")
-				)
-				self.draw_settings_note((x, y + row_h + row_gap, w, remaining_h - row_gap), note_text, accent, _("Diagnostics"))
 
 	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
@@ -40596,7 +40674,7 @@ class TimedLyricsEdit:
 		else:
 			self.menu.add_to_sub(1, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
 
-		if self.prefs.use_lrc_instead:
+		if self.prefs.save_synced_to_lrc:
 			lrc = "✓ "
 		else:
 			lrc = "x  "
@@ -40682,8 +40760,8 @@ class TimedLyricsEdit:
 		self.potential_uploads[self.struct_track] = p
 
 	def toggle_lrc(self) -> None:
-		self.prefs.use_lrc_instead = not self.prefs.use_lrc_instead
-		if not self.prefs.use_lrc_instead:
+		self.prefs.save_synced_to_lrc = not self.prefs.save_synced_to_lrc
+		if not self.prefs.save_synced_to_lrc:
 			self.tauon.show_message(
 				_("Be careful!"),
 				_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
@@ -40813,7 +40891,13 @@ class TimedLyricsEdit:
 		self.autosaved = True
 		self.queue_next_frame = True
 
-	def save(self, synced: bool = True, fetch_text: bool = False) -> None | str:
+	def save(
+		self,
+		synced: bool = True,
+		fetch_text: bool = False,
+		save_to_lrc: bool | None = None,
+		save_to_tags: bool | None = None,
+	) -> None | str:
 		lyrics: str = ""
 		warning: list[bool] = [False, False, False]
 		timed: int = 0
@@ -40821,6 +40905,8 @@ class TimedLyricsEdit:
 
 		track = self.pctl.master_library[self.struct_track]
 		over = self.will_overwrite_lyrics(track)
+		save_tags = self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags
+		save_lrc = self.prefs.save_synced_to_lrc if save_to_lrc is None else save_to_lrc
 
 		if synced:
 			for line in self.structure:
@@ -40870,25 +40956,49 @@ class TimedLyricsEdit:
 				if fetch_text:
 					return lyrics
 				track.synced = lyrics
-				if self.tauon.write_lyrics(track, True, True):
-					if over and not self.prefs.use_lrc_instead:
+				saved_lrc = False
+				saved_tags = False
+				if save_lrc:
+					saved_lrc = self.tauon.write_lyrics(track, True, True, synced_target="lrc")
+				if save_tags:
+					saved_tags = self.tauon.write_lyrics(track, True, True, synced_target="tags")
+
+				if saved_lrc and saved_tags:
+					self.tauon.show_message(
+						_("Synced lyrics saved successfully"),
+						_("Saved to .lrc and tags"),
+						mode="done"
+					)
+				elif saved_lrc:
+					self.tauon.show_message(
+						_("Synced lyrics saved successfully"),
+						_("Saved to .lrc"),
+						mode="done"
+					)
+				elif saved_tags:
+					if over:
 						self.tauon.show_message(
-							_("Synced lyrics saved successfully"),
+							_("Synced lyrics saved to tags"),
 							_("Destroyed previously existing lyrics in file"),
 							mode="done"
 						)
 					else:
 						self.tauon.show_message(
-							_("Synced lyrics saved successfully"),
+							_("Synced lyrics saved to tags"),
 							mode="done"
 						)
+				else:
+					self.tauon.show_message(
+						_("Synced lyrics saved in Tauon only"),
+						mode="done"
+					)
 			else:
 				if fetch_text:
 					return "failed"
 					# we don't want to upload any synced lyrics to LRCLIB
 					# that are not actually synced properly
 				track.lyrics = lyrics
-				if self.tauon.write_lyrics(track, False, True):
+				if save_tags and self.tauon.write_lyrics(track, False, True):
 					if over:
 						self.tauon.show_message(
 							_("Unsynced lyrics saved successfully"),
@@ -40900,6 +41010,11 @@ class TimedLyricsEdit:
 							_("Unsynced lyrics saved successfully"),
 							mode="done"
 						)
+				elif not save_tags:
+					self.tauon.show_message(
+						_("Unsynced lyrics saved in Tauon only"),
+						mode="done"
+					)
 			self.test_update()
 		self.queue_next_frame = True
 		return None
@@ -41508,6 +41623,8 @@ class TimedLyricsEdit:
 				self.ddt.get_text_w(_("Previous"), self.font),
 				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("ADD TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
 				self.ddt.get_text_w(_("SAVE"), self.font),
+				self.ddt.get_text_w(_("Save to .lrc"), self.font),
+				self.ddt.get_text_w(_("Save to tags"), self.font),
 				self.ddt.get_text_w(_("Discard"), self.font),
 				self.ddt.get_text_w("   ", self.font)
 			]
@@ -41519,6 +41636,7 @@ class TimedLyricsEdit:
 				buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 				buttons_x = 25*self.gui.scale
 				x_gap = self.yy
+			save_gap = round(12 * self.gui.scale)
 
 			# DELETE LINES WHILE PLAYING
 			if self.inp.key_del and self.pctl.playing_state == PlayingState.PLAYING:
@@ -41539,20 +41657,28 @@ class TimedLyricsEdit:
 				self.view_is_synced = False
 				self.queue_next_frame = True
 			self.synced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
-			buttons_x += widths[5] + x_gap
+			buttons_x += widths[7] + x_gap
 
 			# SAVE AND DISCARD
 			gn = copy.deepcopy(self.colours.level_green)
 			gn.a = round(gn.a * 0.3)
 			if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
 				self.save()
-			buttons_x += widths[3] + x_gap
+			buttons_x += widths[3] + save_gap
+
+			if self.button(_("Save to .lrc"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+				self.save(save_to_lrc=True, save_to_tags=False)
+			buttons_x += widths[4] + save_gap
+
+			if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+				self.save(save_to_lrc=False, save_to_tags=True)
+			buttons_x += widths[5] + save_gap
 
 			rd = copy.deepcopy(self.colours.level_red)
 			rd.a = round(rd.a * 0.3)
 			if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 				self.structurize_current(self.pctl.master_library[self.struct_track])
-			buttons_x += widths[4] + x_gap
+			buttons_x += widths[6] + x_gap
 
 			if not hide_art:
 				btx_top: float = 25*self.gui.scale
@@ -41743,6 +41869,7 @@ class TimedLyricsEdit:
 			self.ddt.get_text_w(_("Read Back"), self.font),
 			self.ddt.get_text_w(_("Cancel"), self.font),
 			self.ddt.get_text_w(_("SAVE"), self.font),
+			self.ddt.get_text_w(_("Save to tags"), self.font),
 			self.ddt.get_text_w(_("Discard"), self.font),
 			self.ddt.get_text_w(_("Reopen Editor"), self.font)
 		]
@@ -41754,6 +41881,7 @@ class TimedLyricsEdit:
 			buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 			buttons_x = 25*self.gui.scale
 			x_gap = self.yy
+		save_gap = round(12 * self.gui.scale)
 
 		lyric_file = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
 		can_load = lyric_file.is_file()
@@ -41768,13 +41896,17 @@ class TimedLyricsEdit:
 		gn.a = round(gn.a * 0.3)
 		if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
 			self.save(False)
-		buttons_x += widths[4] + x_gap
+		buttons_x += widths[4] + save_gap
+
+		if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+			self.save(False, save_to_tags=True)
+		buttons_x += widths[5] + save_gap
 
 		rd = copy.deepcopy(self.colours.level_red)
 		rd.a = round(rd.a * 0.3)
 		if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 			self.structurize_current(self.pctl.master_library[self.struct_track])
-		buttons_x += widths[5] + x_gap
+		buttons_x += widths[6] + x_gap
 
 		if not hide_art:
 			btx_top = 25*self.gui.scale
@@ -42503,7 +42635,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
 	cf.update_value("save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files)
-	cf.update_value("use_lrc_instead", prefs.use_lrc_instead)
+	cf.update_value("use_lrc_instead", prefs.save_synced_to_lrc)
 
 	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
 
@@ -42659,12 +42791,12 @@ def load_prefs(bag: Bag) -> None:
 		prefs.tag_editor_target = cf.sync_add(
 			"string", "tag-editor-target", "picard",
 			"The name of the binary to call.")
-	prefs.use_lrc_instead = cf.sync_add(
-		"bool", "use_lrc_instead", prefs.use_lrc_instead,
-		"Save separate .LRC files instead of file metadata for synced lyrics.")
+	prefs.save_synced_to_lrc = cf.sync_add(
+		"bool", "use_lrc_instead", prefs.save_synced_to_lrc,
+		"Save synced lyrics to separate .LRC files.")
 	prefs.save_lyrics_changes_to_files = cf.sync_add(
 		"bool", "save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files,
-		"Lyrics edited in the editor will always try to save back to their original files. Should we do the same thing when you clear/paste/search for lyrics?")
+		"Save lyrics edits to tags when searching, clearing, pasting, or using the editor.")
 	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
 		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
 		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
@@ -46459,6 +46591,7 @@ def main(holder: Holder) -> None:
 	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add_to_sub(0, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -46473,6 +46606,7 @@ def main(holder: Holder) -> None:
 	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
