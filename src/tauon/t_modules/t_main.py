@@ -23618,85 +23618,193 @@ class MessageBox:
 			ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
 
 class NagBox:
+	SPLASH_VERSION = "10.0.0"
+	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
+	DONATE_URL = "https://github.com/sponsors/Taiko2k"
+	CHANGELOG_ITEMS = (
+		("Added setting for metadata panel location", False),
+		("Added built-in theme editor 🎨  ", False),
+		("Added smooth scroll support", False),
+		("Redesigned settings UI", False),
+		("Added new mini mode: Signal (Just for fun)", False),
+		("Removed Spotify support", True),
+	)
+
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon        = tauon
 		self.gui          = tauon.gui
+		self.inp          = tauon.inp
 		self.ddt          = tauon.ddt
 		self.prefs        = tauon.prefs
 		self.colours      = tauon.colours
 		self.window_size  = tauon.window_size
+		self.drawer       = tauon.draw
 		self.wiggle_timer = Timer(10)
 
+	def dismiss(self) -> None:
+		self.prefs.show_nag = False
+		self.gui.update += 1
+		self.gui.level_2_click = False
+		self.inp.mouse_click = False
+		self.inp.key_return_press = False
+		self.inp.key_esc_press = False
+
+	def show(self) -> None:
+		self.prefs.show_nag = True
+		self.gui.update += 1
+		self.gui.level_2_click = False
+		self.inp.mouse_click = False
+
+	def draw_section(
+		self,
+		rect: tuple[int, int, int, int],
+		title: str,
+		subtitle: str = "",
+		accent: ColourRGBA | None = None,
+	) -> tuple[int, int, int, ColourRGBA]:
+		if accent is None:
+			accent = self.colours.link_text
+
+		x, y, w, h = rect
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 8), self.colours.box_button_background)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
+		self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+		self.ddt.text_background_colour = fill
+
+		pad_x = round(16 * self.gui.scale)
+		inner_x = x + pad_x + round(4 * self.gui.scale)
+		inner_y = y + round(14 * self.gui.scale)
+		inner_w = w - pad_x * 2 - round(4 * self.gui.scale)
+
+		if title:
+			self.ddt.text((inner_x, inner_y), title, self.colours.box_text, 213, bg=fill)
+			inner_y += round(20 * self.gui.scale)
+		if subtitle:
+			sub_h = self.ddt.text(
+				(inner_x, inner_y, 4, inner_w, round(48 * self.gui.scale)),
+				subtitle,
+				self.colours.box_text_label,
+				11,
+				bg=fill,
+			) or 0
+			inner_y += max(sub_h, round(16 * self.gui.scale))
+
+		if title or subtitle:
+			divider = alpha_blend(alpha_mod(accent, 80), self.colours.box_text_border)
+			inner_y += round(6 * self.gui.scale)
+			self.ddt.rect((inner_x, inner_y, inner_w, round(1 * self.gui.scale)), divider)
+			inner_y += round(12 * self.gui.scale)
+
+		return inner_x, inner_y, inner_w, fill
+
+	def open_release_notes(self) -> None:
+		webbrowser.open(self.RELEASE_NOTES_URL, new=2, autoraise=True)
+
+	def open_donate_link(self) -> None:
+		webbrowser.open(self.DONATE_URL, new=2, autoraise=True)
+
 	def draw(self) -> None:
-		w = 485 * self.gui.scale
-		h = 165 * self.gui.scale
+		w = round(640 * self.gui.scale)
+		h = round(392 * self.gui.scale)
 		x = int(self.window_size[0] / 2) - int(w / 2)
-		# if self.wiggle_timer.get() < 0.5:
-		#     gui.update += 1
-		#     x += math.sin(tauon.core_timer.get() * 40) * 4
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
-		# xx = x - round(8 * gui.scale)
-		# hh = 0.0 #349 / 360
-		# while xx < x + w + round(8 * gui.scale):
-		# 	re = [xx, y - round(8 * gui.scale), 3, h + round(8 * gui.scale) + round(8 * gui.scale)]
-		# 	hh -= 0.0007
-		# 	c = hsl_to_rgb(hh, 0.9, 0.7)
-		# 	#c = hsl_to_rgb(hh, 0.63, 0.43)
-		# 	ddt.rect(re, c)
-		# 	xx += 3
+		if self.inp.key_esc_press or self.inp.key_return_press or self.inp.backspace_press:
+			self.dismiss()
+			return
 
-		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale),
-			self.colours.box_text_border)
-		self.ddt.rect_a((x, y), (w, h), self.colours.message_box_bg)
+		if self.gui.level_2_click and not self.tauon.coll((x, y, w, h)):
+			self.dismiss()
+			return
 
-		# if gui.level_2_click and not self.coll((x, y, w, h)):
-		# 	if tauon.core_timer.get() < 2:
-		# 		self.wiggle_timer.set()
-		# 	else:
-		# 		prefs.show_nag = False
-		#
-		# 	gui.update += 1
+		accent = self.colours.link_text
+		accent_warm = ColourRGBA(255, 158, 94, 255)
+		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		panel_fill = self.colours.message_box_bg
+		inner_x = x + round(18 * self.gui.scale)
+		inner_y = y + round(18 * self.gui.scale)
+		inner_w = w - round(36 * self.gui.scale)
 
-		self.ddt.text_background_colour = self.colours.message_box_bg
+		self.ddt.bordered_rect((x, y, w, h), panel_fill, panel_border, round(1 * self.gui.scale))
+		self.ddt.rect((x, y, w, round(5 * self.gui.scale)), accent)
+		self.ddt.text_background_colour = panel_fill
 
-		x += round(10 * self.gui.scale)
-		y += round(13 * self.gui.scale)
-		self.ddt.text((x, y), _("Welcome to v7.2.0!"), self.colours.message_box_text, 212)
-		y += round(20 * self.gui.scale)
+		inner_y += round(6 * self.gui.scale)
+		self.ddt.text(
+			(inner_x, inner_y),
+			"You're now running Tauon v{version} ✨  ".format(version=self.SPLASH_VERSION),
+			self.colours.box_title_text,
+			216,
+			bg=panel_fill,
+		)
+		inner_y += round(22 * self.gui.scale)
 
-		link_pa = self.tauon.draw_linked_text(
-			(x, y),
-			_("You can check out the release notes on the https://") + "github.com/Taiko2k/TauonMusicBox/releases",
-			self.colours.message_box_text, 12, replace=_("Github release page."))
-		self.tauon.link_activate(x, y, link_pa, click=self.gui.level_2_click)
+		intro_h = self.ddt.text(
+			(inner_x, inner_y, 4, inner_w, round(60 * self.gui.scale)),
+			"Welcome to the biggest update to Tauon yet! This release contains the single most anticipated feature, yes it’s finally here, you can now have the side panel on the left side! Just go MENU > Settings > View > and select Metadata Panel on Left.",
+			self.colours.box_text,
+			12,
+			bg=panel_fill,
+		) or 0
+		inner_y += round(28 * self.gui.scale)
 
-		self.gui.heart_notify_icon.render(x + round(425 * self.gui.scale), y + round(80 * self.gui.scale), ColourRGBA(255, 90, 90, 255))
+		inner_y += round(26 * self.gui.scale)
+		changelog_h = round(180 * self.gui.scale)
 
-		y += round(30 * self.gui.scale)
-		self.ddt.text((x, y), _("New supporter bonuses!"), self.colours.message_box_text, 212)
+		section_x, section_y, section_w, section_fill = self.draw_section(
+			(inner_x, inner_y, inner_w, changelog_h),
+			"Changelog",
+			accent=accent,
+		)
+		row_y = section_y
+		for item, removed in self.CHANGELOG_ITEMS:
+			bullet_colour = accent_warm if removed else accent
+			text_colour = self.colours.box_text_label if removed else self.colours.box_text
+			self.ddt.rect(
+				(section_x, row_y + round(4 * self.gui.scale), round(8 * self.gui.scale), round(8 * self.gui.scale)),
+				bullet_colour,
+			)
+			self.ddt.text(
+				(section_x + round(18 * self.gui.scale), row_y),
+				item,
+				text_colour,
+				12,
+				bg=section_fill,
+				max_w=section_w - round(22 * self.gui.scale),
+			)
+			row_y += round(18 * self.gui.scale)
 
-		y += round(20 * self.gui.scale)
+		support_y = y + h - round(88 * self.gui.scale)
+		divider = alpha_blend(alpha_mod(accent_warm, 80), self.colours.box_text_border)
+		self.ddt.rect((inner_x, support_y - round(10 * self.gui.scale), inner_w, round(1 * self.gui.scale)), divider)
+		self.ddt.text((inner_x, support_y), _("Re: Message from Taiko2k"), self.colours.box_text, 212, bg=panel_fill)
+		donate_link = self.tauon.draw_linked_text(
+			(inner_x, support_y + round(18 * self.gui.scale)),
+			_("Please consider supporting me on https://github.com/sponsors/Taiko2k  🙏  💶   "),
+			self.colours.box_text_label,
+			12,
+			replace=_("GitHub Sponsors"),
+		)
+		self.tauon.link_activate(inner_x, support_y + round(18 * self.gui.scale), donate_link, click=self.gui.level_2_click)
 
-		self.ddt.text((x, y), _("A new supporter bonus theme is now available! Check it out at the above link!"),
-			self.colours.message_box_text, 12)
-		# tauon.link_activate(x, y, link_pa, click=gui.level_2_click)
+		button_y = y + h - round(48 * self.gui.scale)
+		button_h = round(30 * self.gui.scale)
+		close_w = round(92 * self.gui.scale)
+		release_w = round(130 * self.gui.scale)
+		donate_w = round(104 * self.gui.scale)
 
-		y += round(20 * self.gui.scale)
-		self.ddt.text((x, y), _("Your support means a lot! Love you!"), self.colours.message_box_text, 12)
+		close_x = x + w - close_w - round(18 * self.gui.scale)
+		release_x = close_x - release_w - round(8 * self.gui.scale)
+		donate_x = release_x
 
-		y += round(30 * self.gui.scale)
+		donate_bg = alpha_blend(alpha_mod(accent_warm, 44), self.colours.box_button_background)
+		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 68), self.colours.box_button_background_highlight)
+		release_bg = alpha_blend(alpha_mod(accent, 26), self.colours.box_button_background)
+		release_bg_hover = alpha_blend(alpha_mod(accent, 52), self.colours.box_button_background_highlight)
 
-		# TODO(Martin): The draw function has no button?
-		if self.draw.button("Close", x, y, press=self.gui.level_2_click):
-			self.prefs.show_nag = False
-			# self.show_message("Oh... :( 💔")
-		# if draw.button("Show supporter page", x + round(304 * gui.scale), y, background_colour=[60, 140, 60, 255], background_highlight_colour=[60, 150, 60, 255], press=gui.level_2_click):
-		#     webbrowser.open("https://github.com/sponsors/Taiko2k", new=2, autoraise=True)
-		# prefs.show_nag = False
-		# if draw.button("I already am!", x + round(360), y, press=gui.level_2_click):
-		#     self.show_message("Oh hey, thanks! :)")
-		#     prefs.show_nag = False
+		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
+			self.dismiss()
 
 class PowerTag:
 
@@ -42402,6 +42510,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("use-system-tray", prefs.use_tray)
 	cf.update_value("use-gamepad", prefs.use_gamepad)
 	cf.update_value("enable-remote-interface", prefs.enable_remote)
+	cf.update_value("release-splash-version", prefs.release_splash_version)
 
 	cf.update_value("enable-mpris", prefs.enable_mpris)
 	cf.update_value("hide-maximize-button", prefs.force_hide_max_button)
@@ -42754,6 +42863,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.enable_remote = cf.sync_add(
 		"bool", "enable-remote-interface", prefs.enable_remote,
 		"For use with Tauon Music Remote for Android")
+	prefs.release_splash_version = cf.sync_add(
+		"string", "release-splash-version", prefs.release_splash_version,
+		"Records which one-time upgrade splash has already been shown.")
 	prefs.use_gamepad = cf.sync_add("bool", "use-gamepad", prefs.use_gamepad, "Use game controller for UI control, restart on change.")
 	prefs.use_tray = cf.sync_add("bool", "use-system-tray", prefs.use_tray)
 	prefs.force_hide_max_button = cf.sync_add("bool", "hide-maximize-button", prefs.force_hide_max_button)
@@ -45776,6 +45888,11 @@ def main(holder: Holder) -> None:
 		bag.download_directories.append(str(music_directory))
 
 	load_prefs(bag)
+	show_upgrade_splash = False
+	# Uncomment to show splash on upgrade
+	# show_upgrade_splash = prefs.release_splash_version != NagBox.SPLASH_VERSION
+	# if show_upgrade_splash:
+	# 	prefs.release_splash_version = NagBox.SPLASH_VERSION
 	save_prefs(bag)
 
 	# Temporary
@@ -45995,6 +46112,8 @@ def main(holder: Holder) -> None:
 		bag=bag,
 		gui=gui,
 	)
+	if show_upgrade_splash:
+		prefs.show_nag = True
 
 	try:
 		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:
@@ -46898,6 +47017,7 @@ def main(holder: Holder) -> None:
 	#x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
 	x_menu.add(MenuItem(_("Online Manual"), tauon.open_manual_link))
+	x_menu.add(MenuItem(_("Show Release Notes"), tauon.nagbox.show))
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
 	x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), tauon.toggle_shuffle_layout, tauon.toggle_shuffle_layout_deco, show_test=tauon.exit_shuffle_layout))
@@ -48913,6 +49033,7 @@ def main(holder: Holder) -> None:
 					and radiobox.active is False
 					and gui.rename_playlist_box is False
 					and gui.message_box is False
+					and prefs.show_nag is False
 					and pref_box.enabled is False
 					and gui.track_box is False
 					and not gui.rename_folder_box

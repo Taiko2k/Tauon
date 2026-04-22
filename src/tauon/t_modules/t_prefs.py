@@ -383,6 +383,7 @@ class Prefs:
 	album_shuffle_lock_mode: bool = False
 	premium: bool = False
 	radio_thumb_bans: list[str] = field(default_factory=list[str])
+	release_splash_version: str = ""
 	show_nag: bool = False
 
 	playlist_exports = {}
