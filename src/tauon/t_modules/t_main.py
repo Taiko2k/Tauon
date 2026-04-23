@@ -26537,7 +26537,7 @@ class Over:
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
 		top_row_h = round(286 * gui.scale)
-		discord_h = round(234 * gui.scale) if prefs.discord_enable else 0
+		discord_h = round(252 * gui.scale) if prefs.discord_enable else 0
 		total_h = top_row_h + (block_gap + discord_h if discord_h else 0)
 		if not draw:
 			return total_h
@@ -26627,7 +26627,7 @@ class Over:
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			discord_rect,
 			_("Discord"),
-			_("Layout and buttons."),
+			_("Layout, buttons and idle behavior."),
 			accent,
 		)
 
@@ -26701,6 +26701,13 @@ class Over:
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_show_tauon_button,
 			_("Tauon website button"),
+			accent=accent,
+		)
+		option_y += compact_row_h + row_gap
+		prefs.discord_keep_idle = self.settings_switch_row(
+			(right_col_x, option_y, right_col_w, compact_row_h),
+			prefs.discord_keep_idle,
+			_("Keep idle"),
 			accent=accent,
 		)
 
@@ -42665,6 +42672,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("discord-clean-title",          prefs.discord_clean_title)
 	cf.update_value("discord-lastfm-button",        prefs.discord_lastfm_button)
 	cf.update_value("discord-show-tauon-button",    prefs.discord_show_tauon_button)
+	cf.update_value("discord-keep-idle",            prefs.discord_keep_idle)
 	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
 	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
@@ -43041,6 +43049,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.discord_show_tauon_button = cf.sync_add(
 		"bool", "discord-show-tauon-button", prefs.discord_show_tauon_button,
 		"Show Tauon website button in Discord rich presence")
+	prefs.discord_keep_idle = cf.sync_add(
+		"bool", "discord-keep-idle", prefs.discord_keep_idle,
+		"Keep Discord rich presence visible while playback is idle")
 	if prefs.discord_card_layout not in ("title_artist", "artist_title"):
 		prefs.discord_card_layout = "title_artist"
 	if prefs.discord_member_list_display not in ("song", "artist"):

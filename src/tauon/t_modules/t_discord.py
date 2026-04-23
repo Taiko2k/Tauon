@@ -206,12 +206,15 @@ def discord_loop_entrypoint(main) -> None:
                 prefs.discord_clean_title,
                 prefs.discord_lastfm_button,
                 prefs.discord_show_tauon_button,
+                prefs.discord_keep_idle,
             )
             force_update = prefs_sig != last_prefs_sig
             if force_update:
                 log(f"Preferences changed: {prefs_sig}")
                 last_prefs_sig = prefs_sig
                 pending_since  = 0.0
+                if prefs.discord_keep_idle:
+                    activity_hidden = False
 
             if prefs.disconnect_discord or not prefs.discord_enable:
                 if connected and rpc is not None and prefs.disconnect_discord:
@@ -294,6 +297,7 @@ def discord_loop_entrypoint(main) -> None:
 
             if (
                 is_inactive
+                and not prefs.discord_keep_idle
                 and not activity_hidden
                 and idle_started_at is not None
                 and now - idle_started_at >= _IDLE_CLEAR_DELAY_S

@@ -127,6 +127,7 @@ class Prefs:
 	discord_clean_title:         bool = True
 	discord_lastfm_button:       bool = True
 	discord_show_tauon_button:   bool = True
+	discord_keep_idle:           bool = False
 
 	monitor_downloads: bool = True
 	extract_to_music:  bool = False
