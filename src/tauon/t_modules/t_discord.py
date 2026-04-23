@@ -26,6 +26,7 @@ _DEBOUNCE_S              = 0.25
 _MIN_UPDATE_GAP_S        = 15.0
 _MIN_UPDATE_GAP_CHANGE_S = 1.5
 _POLL_INTERVAL_S         = 1
+_IDLE_CLEAR_DELAY_S      = 30.0
 
 
 def build_lastfm_track_url(artist: Optional[str], title: Optional[str]) -> Optional[str]:
@@ -131,6 +132,8 @@ def discord_loop_entrypoint(main) -> None:
     last_track_index   = -1
     start_time         = time.time()
     last_prefs_sig: tuple = ()
+    idle_started_at: Optional[float] = None
+    activity_hidden = False
 
     cached_art_track_index = -1
     cached_large_image     = "tauon-standard"
@@ -268,6 +271,10 @@ def discord_loop_entrypoint(main) -> None:
                 if PlayingState is not None and state_now is not None
                 else False
             )
+            is_paused = (
+                PlayingState is not None
+                and state_now == PlayingState.PAUSED
+            )
             is_idle = tr is None or (
                 PlayingState is not None
                 and state_now not in (
@@ -276,6 +283,45 @@ def discord_loop_entrypoint(main) -> None:
                     PlayingState.URL_STREAM,
                 )
             )
+            is_inactive = is_idle or is_paused
+
+            if is_inactive:
+                if idle_started_at is None:
+                    idle_started_at = now
+            else:
+                idle_started_at  = None
+                activity_hidden = False
+
+            if (
+                is_inactive
+                and not activity_hidden
+                and idle_started_at is not None
+                and now - idle_started_at >= _IDLE_CLEAR_DELAY_S
+            ):
+                try:
+                    _try_clear()
+                    _update_times.append(now)
+                    last_sent_sig         = ""
+                    last_sent_track_index = -1
+                    pending_sig           = ""
+                    pending_since         = 0.0
+                    activity_hidden       = True
+                    set_status("Idle")
+                except Exception as exc:
+                    consecutive_failures += 1
+                    log(f"RPC clear failed ({consecutive_failures}): {exc}; will reconnect")
+                    close_rpc()
+                    next_reconnect_at = time.time() + reconnect_delay
+                    reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
+                    set_status(builtins._("Reconnecting to Discord..."))
+                    wakeup.wait(timeout=0.5)
+                    wakeup.clear()
+                    continue
+
+            if activity_hidden:
+                wakeup.wait(timeout=poll_interval)
+                wakeup.clear()
+                continue
 
             if is_idle:
                 payload: dict = {
