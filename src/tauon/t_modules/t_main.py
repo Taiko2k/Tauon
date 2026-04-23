@@ -2561,6 +2561,7 @@ class PlayerCtl:
 			return self.tauon.jellyfin.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "SUB":
+			self.tauon.subsonic.scan_lyrics(track_object)
 			return self.tauon.subsonic.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "TAU":
@@ -8068,6 +8069,7 @@ class Tauon:
 		lyrics = track.synced if synced else track.lyrics
 		if track.is_network or not track.fullpath:
 			logging.warning(f"Cannot write lyrics to network track {track.artist} - {track.title}")
+			return False
 		write_synced_to_lrc = synced and (
 			synced_target == "lrc" or (synced_target == "auto" and self.prefs.save_synced_to_lrc)
 		)

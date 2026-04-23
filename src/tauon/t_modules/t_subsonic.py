@@ -54,6 +54,9 @@ class SubsonicService:
 		self.show_message = tauon.show_message
 		self.playlists = tauon.prefs.subsonic_playlists
 		self.scanning: bool = False
+		self.lyrics_scan_lock = threading.Lock()
+		self.lyrics_scan_pending: set[str] = set()
+		self.lyrics_scan_checked: set[str] = set()
 
 
 	def _as_list(self, value):
@@ -64,7 +67,14 @@ class SubsonicService:
 			return value
 		return [value]
 
-	def r(self, point: str, p: dict[str, str] | None = None, binary: bool = False, get_url: bool = False):
+	def r(
+		self,
+		point: str,
+		p: dict[str, str] | None = None,
+		binary: bool = False,
+		get_url: bool = False,
+		show_errors: bool = True,
+	):
 		salt = secrets.token_hex(8)
 		server = self.prefs.subsonic_server.rstrip("/") + "/"
 
@@ -116,11 +126,155 @@ class SubsonicService:
 			return None
 		# logging.info(d)
 
-		if d["subsonic-response"]["status"] != "ok":
-			self.show_message(_("Subsonic Error: ") + response.text, mode="warning")
-			logging.error(f"Subsonic Error: {response.text}")
+		subsonic_response = d["subsonic-response"]
+		if subsonic_response["status"] != "ok":
+			if show_errors:
+				self.show_message(_("Subsonic Error: ") + response.text, mode="warning")
+				logging.error(f"Subsonic Error: {response.text}")
+			else:
+				logging.debug(f"Subsonic request failed for {point}: {subsonic_response.get('error')}")
 
 		return d
+
+	def _timestamp_from_milliseconds(self, milliseconds: int) -> str:
+		milliseconds = max(0, milliseconds)
+		minutes = milliseconds // 60000
+		seconds = (milliseconds % 60000) // 1000
+		remainder = milliseconds % 1000
+		return f"{minutes:02d}:{seconds:02d}.{remainder:03d}"
+
+	def _plain_from_structured_lyrics(self, structured_lyrics: dict) -> str:
+		lines = []
+		for line in self._as_list(structured_lyrics.get("line")):
+			if not isinstance(line, dict):
+				continue
+			value = line.get("value")
+			if value is not None:
+				lines.append(str(value))
+		return "\n".join(lines).strip()
+
+	def _lrc_from_structured_lyrics(self, structured_lyrics: dict) -> str:
+		try:
+			offset = int(float(structured_lyrics.get("offset", 0)))
+		except (TypeError, ValueError):
+			offset = 0
+
+		lines = []
+		for line in self._as_list(structured_lyrics.get("line")):
+			if not isinstance(line, dict):
+				continue
+			value = line.get("value")
+			if value is None or "start" not in line:
+				continue
+			try:
+				start = int(float(line["start"]) - offset)
+			except (TypeError, ValueError):
+				continue
+			lines.append(f"[{self._timestamp_from_milliseconds(start)}]{value}")
+		return "\n".join(lines).strip()
+
+	def _lyrics_from_structured_response(self, response: dict | None) -> tuple[str, str]:
+		if not response:
+			return "", ""
+
+		subsonic_response = response.get("subsonic-response", {})
+		if subsonic_response.get("status") != "ok":
+			return "", ""
+
+		lyrics_list = subsonic_response.get("lyricsList", {})
+		structured_lyrics = self._as_list(lyrics_list.get("structuredLyrics"))
+		main_lyrics = [
+			lyrics for lyrics in structured_lyrics
+			if isinstance(lyrics, dict) and lyrics.get("kind", "main") == "main"
+		]
+		structured_lyrics = main_lyrics or [lyrics for lyrics in structured_lyrics if isinstance(lyrics, dict)]
+
+		for lyrics in structured_lyrics:
+			if lyrics.get("synced"):
+				plain = self._plain_from_structured_lyrics(lyrics)
+				synced = self._lrc_from_structured_lyrics(lyrics)
+				if synced:
+					return plain, synced
+
+		for lyrics in structured_lyrics:
+			plain = self._plain_from_structured_lyrics(lyrics)
+			if plain:
+				return plain, ""
+
+		return "", ""
+
+	def _lyrics_from_legacy_response(self, response: dict | None) -> tuple[str, str]:
+		if not response:
+			return "", ""
+
+		subsonic_response = response.get("subsonic-response", {})
+		if subsonic_response.get("status") != "ok":
+			return "", ""
+
+		lyrics = subsonic_response.get("lyrics", {})
+		if isinstance(lyrics, dict):
+			return str(lyrics.get("value") or "").strip(), ""
+		if isinstance(lyrics, str):
+			return lyrics.strip(), ""
+		return "", ""
+
+	def get_lyrics(self, track_object: TrackClass) -> tuple[str, str]:
+		if track_object.url_key:
+			try:
+				response = self.r("getLyricsBySongId", p={"id": track_object.url_key}, show_errors=False)
+				lyrics, synced = self._lyrics_from_structured_response(response)
+				if lyrics or synced:
+					return lyrics, synced
+			except Exception:
+				logging.exception("Error connecting for OpenSubsonic lyrics")
+
+		if track_object.artist and track_object.title:
+			try:
+				response = self.r(
+					"getLyrics",
+					p={"artist": track_object.artist, "title": track_object.title},
+					show_errors=False,
+				)
+				return self._lyrics_from_legacy_response(response)
+			except Exception:
+				logging.exception("Error connecting for Subsonic lyrics")
+
+		return "", ""
+
+	def scan_lyrics(self, track_object: TrackClass) -> None:
+		if not track_object.url_key or track_object.lyrics or track_object.synced:
+			return
+
+		with self.lyrics_scan_lock:
+			if track_object.url_key in self.lyrics_scan_pending or track_object.url_key in self.lyrics_scan_checked:
+				return
+			self.lyrics_scan_pending.add(track_object.url_key)
+
+		def worker() -> None:
+			try:
+				lyrics, synced = self.get_lyrics(track_object)
+				if lyrics:
+					track_object.lyrics = lyrics
+					self.gui.lyrics_editor_update_now[0] = True
+				if synced:
+					track_object.synced = synced
+					self.gui.lyrics_editor_update_now[1] = True
+				if lyrics or synced:
+					logging.info(f"Found lyrics from Subsonic server for {track_object.artist} - {track_object.title}")
+					self.gui.update += 1
+					self.tauon.lyrics_ren_mini.to_reload = True
+					self.tauon.timed_lyrics_ren.index = -1
+					self.pctl.notify_change()
+			except Exception:
+				logging.exception("Failed to scan lyrics from Subsonic server")
+			finally:
+				with self.lyrics_scan_lock:
+					self.lyrics_scan_pending.discard(track_object.url_key)
+					self.lyrics_scan_checked.add(track_object.url_key)
+
+		thread = threading.Thread(target=worker)
+		thread.daemon = True
+		thread.start()
 
 	def get_cover(self, track_object: TrackClass) -> BytesIO:
 		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
