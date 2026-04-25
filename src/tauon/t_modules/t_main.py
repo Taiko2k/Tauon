@@ -12572,14 +12572,13 @@ class Tauon:
 		this_pl = self.pctl.active_playlist_viewing
 
 		if self.pctl.multi_playlist[source_pl].parent_playlist_id:
-			if self.pctl.multi_playlist[source_pl].title.startswith("Artist:"):
-				new = self.pctl.id_to_pl(self.pctl.multi_playlist[source_pl].parent_playlist_id)
-				if new is None:
-					# The original playlist is now gone
-					self.pctl.multi_playlist[source_pl].parent_playlist_id = 0
-				else:
-					source_pl = new
-					# replace = True
+			new = self.pctl.id_to_pl(self.pctl.multi_playlist[source_pl].parent_playlist_id)
+			if new is None:
+				# The original playlist is now gone
+				self.pctl.multi_playlist[source_pl].parent_playlist_id = 0
+			else:
+				source_pl = new
+				# replace = True
 
 		playlist = []
 
@@ -35839,10 +35838,13 @@ class ArtistList:
 
 				self.click_highlight_timer.set()
 				replace = False
-				if self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id and \
-						self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title.startswith("Artist:"):
-					self.tauon.create_artist_pl(artist, replace=True)
-					replace = True
+				parent_playlist_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id
+				if parent_playlist_id:
+					if self.pctl.id_to_pl(parent_playlist_id) is None:
+						self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id = 0
+					else:
+						self.tauon.create_artist_pl(artist, replace=True)
+						replace = True
 
 				blocks = []
 				current_block = []
@@ -36023,7 +36025,7 @@ class ArtistList:
 
 			# test if parent still exists
 			new = self.pctl.id_to_pl(self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id)
-			if new is None or not self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title.startswith("Artist:"):
+			if new is None:
 				self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id = 0
 			else:
 				viewing_pl_id = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].parent_playlist_id
