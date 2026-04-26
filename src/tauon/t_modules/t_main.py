@@ -4352,7 +4352,7 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
-		artist_object = pylast.Artist(artist, self.lastfm_network)
+		artist_object = pylast.Artist(get_first_artist(artist), self.lastfm_network)
 		bio = artist_object.get_bio_summary(language="en")
 		# logging.info(artist_object.get_cover_image())
 		# logging.info("\n\n")
