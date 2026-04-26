@@ -129,7 +129,7 @@ class MPRIS(dbus.service.Object):
 				"xesam:albumArtist": dbus.Array([track.album_artist]),
 				"xesam:artist": dbus.Array([track.artist]),
 				"xesam:title": track.title,
-				"xesam:asText": track.lyrics,
+				"xesam:asText": track.synced if track.synced else track.lyrics,
 				"xesam:autoRating": star_count2(self.tauon.star_store.get(track.index)),
 				"xesam:composer": dbus.Array([track.composer]),
 				"tauon:loved": self.tauon.love(False, track.index),
