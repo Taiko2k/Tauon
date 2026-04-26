@@ -151,6 +151,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	genre_correct,
 	get_artist_safe,
 	get_artist_strip_feat,
+	get_first_artist,
 	get_display_time,
 	get_filesize_string,
 	get_filesize_string_rounded,
@@ -4227,9 +4228,7 @@ class LastFMapi:
 
 		try:
 			if artist:
-				l_artist = pylast.Artist(
-					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
-					self.lastfm_network)
+				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
 				bio = l_artist.get_bio_content()
 				# cover_link = l_artist.get_cover_image()
 				mbid = l_artist.get_mbid()
@@ -4247,9 +4246,7 @@ class LastFMapi:
 
 		try:
 			if artist:
-				l_artist = pylast.Artist(
-					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
-					self.lastfm_network)
+				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
 				return l_artist.get_mbid()
 		except Exception:
 			logging.exception("last.fm get artist mbid info failed")
