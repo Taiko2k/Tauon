@@ -1016,7 +1016,7 @@ def get_first_artist(artist: str) -> str:
 		if idx != -1:
 			artist = artist[:idx]
 			break
-	return artist.strip()
+	return artist.replace("/", "").replace("\\", "").strip()
 
 
 def get_split_artists(track: TrackClass) -> list[str]:
