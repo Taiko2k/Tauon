@@ -25436,7 +25436,7 @@ class Over:
 
 		if placeholder and not text_box.text and not active:
 			self.ddt.text(
-				(x + round(5 * self.gui.scale), y + round(2 * self.gui.scale)),
+				(x + round(5 * self.gui.scale), y + round(3 * self.gui.scale)),
 				placeholder,
 				self.colours.box_text_label,
 				12,
@@ -25445,7 +25445,7 @@ class Over:
 
 		text_box.draw(
 			x + round(4 * self.gui.scale),
-			y + round(2 * self.gui.scale),
+			y + round(3 * self.gui.scale),
 			text_colour or self.colours.box_input_text,
 			active,
 			secret=secret,
@@ -26200,10 +26200,10 @@ class Over:
 		info_rect = (inner_x, inner_y, inner_w, info_h)
 		self.ddt.bordered_rect(info_rect, info_fill, info_border, round(1 * gui.scale))
 		text_x = info_rect[0] + round(14 * gui.scale)
-		text_y = info_rect[1] + round(8 * gui.scale)
+		text_y = info_rect[1] + round(5 * gui.scale)
 		self.ddt.text((text_x, text_y), _("Target playlist"), colours.box_text_label, 11, bg=info_fill)
 		self.ddt.text(
-			(text_x, text_y + round(15 * gui.scale)),
+			(text_x, text_y + round(17 * gui.scale)),
 			self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title,
 			colours.box_text,
 			13,
@@ -26211,7 +26211,7 @@ class Over:
 			max_w=info_rect[2] - round(120 * gui.scale),
 		)
 		self.ddt.text(
-			(info_rect[0] + info_rect[2] - round(14 * gui.scale), text_y + round(15 * gui.scale), 1),
+			(info_rect[0] + info_rect[2] - round(14 * gui.scale), text_y + round(17 * gui.scale), 1),
 			_("{N} albums").format(N=str(len(dex))),
 			colours.box_sub_text,
 			12,
@@ -26313,7 +26313,7 @@ class Over:
 		if status_w > round(120 * gui.scale):
 			status_rect = (status_x, bottom_y, status_w, action_h)
 			self.ddt.bordered_rect(status_rect, info_fill, info_border, round(1 * gui.scale))
-			line_y = status_rect[1] + round(8 * gui.scale)
+			line_y = status_rect[1] + round(4 * gui.scale)
 			if self.gui.generating_chart:
 				self.ddt.text((status_rect[0] + round(12 * gui.scale), line_y), _("Generating..."), colours.box_text, 12, bg=info_fill)
 				self.ddt.text((status_rect[0] + round(12 * gui.scale), line_y + round(14 * gui.scale)), _("Please wait."), colours.box_text_label, 11, bg=info_fill)
@@ -27127,7 +27127,7 @@ class Over:
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
 		row1_h = round(380 * gui.scale)
-		row2_h = round(286 * gui.scale)
+		row2_h = round(291 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
 
@@ -28534,7 +28534,7 @@ class Over:
 		title_field_w = full_width - pad * 2 - round(190 * gui.scale)
 		self.ddt.text((left_x, header_y), _("Theme title"), colours.box_text_label, 11, bg=colours.box_background)
 		self.draw_settings_text_field(
-			(left_x, header_y + round(14 * gui.scale), title_field_w, round(22 * gui.scale)),
+			(left_x, header_y + round(17 * gui.scale), title_field_w, round(22 * gui.scale)),
 			self.theme_editor_title_box,
 			self.settings_page_accent(4),
 			stored_value=self.theme_editor_title_box.text,
