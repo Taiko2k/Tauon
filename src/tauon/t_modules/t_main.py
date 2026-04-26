@@ -2413,9 +2413,9 @@ class PlayerCtl:
 		self.shuffle_pools[pl_id] = new_pool
 		logging.info("Refill shuffle pool")
 
-	def notify_update_fire(self) -> None:
+	def notify_update_fire(self, force: bool = False) -> None:
 		if self.mpris is not None:
-			self.mpris.update()
+			self.mpris.update(force=force)
 		if self.tauon.update_play_lock is not None:
 			self.tauon.update_play_lock()
 		# if self.tray_update is not None:
@@ -2460,7 +2460,7 @@ class PlayerCtl:
 		except Exception:
 			logging.exception("Failed to update macOS Now Playing helper")
 
-	def notify_update(self, mpris: bool = True) -> None:
+	def notify_update(self, mpris: bool = True, force: bool = False) -> None:
 		self.tauon.tray_releases += 1
 		if self.tauon.tray_lock.locked():
 			try:
@@ -2543,7 +2543,7 @@ class PlayerCtl:
 			while self.notify_in_progress:
 				time.sleep(0.01)
 			self.notify_in_progress = True
-			shoot = threading.Thread(target=self.notify_update_fire)
+			shoot = threading.Thread(target=self.notify_update_fire, args=(force,))
 			shoot.daemon = True
 			shoot.start()
 		if self.prefs.art_bg or (self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
