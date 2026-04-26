@@ -37813,7 +37813,7 @@ class ArtistInfoBox:
 			return
 
 		# Check if the artist has changed
-		self.artist_on = track.artist
+		self.artist_on = get_first_artist(track.artist)
 
 		if not self.lock and self.artist_on:
 			self.lock = True
@@ -37841,7 +37841,7 @@ class ArtistInfoBox:
 			return
 
 		# Check if the artist has changed
-		artist = track.artist
+		artist = get_first_artist(track.artist)
 		wait = False
 
 		# Activate menu
