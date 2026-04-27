@@ -23762,8 +23762,6 @@ class NagBox:
 		self.colours      = tauon.colours
 		self.window_size  = tauon.window_size
 		self.drawer       = tauon.draw
-		self.wiggle_timer = Timer(10)
-		self.rainbow_frame_timer = Timer(1)
 
 	def dismiss(self) -> None:
 		self.prefs.show_nag = False
@@ -23779,101 +23777,11 @@ class NagBox:
 		self.gui.level_2_click = False
 		self.inp.mouse_click = False
 
-	def draw_section(
-		self,
-		rect: tuple[int, int, int, int],
-		title: str,
-		subtitle: str = "",
-		accent: ColourRGBA | None = None,
-	) -> tuple[int, int, int, ColourRGBA]:
-		if accent is None:
-			accent = self.colours.link_text
-
-		x, y, w, h = rect
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 8), self.colours.box_button_background)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
-		self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
-		self.ddt.text_background_colour = fill
-
-		pad_x = round(16 * self.gui.scale)
-		inner_x = x + pad_x + round(4 * self.gui.scale)
-		inner_y = y + round(14 * self.gui.scale)
-		inner_w = w - pad_x * 2 - round(4 * self.gui.scale)
-
-		if title:
-			self.ddt.text((inner_x, inner_y), title, self.colours.box_text, 213, bg=fill)
-			inner_y += round(20 * self.gui.scale)
-		if subtitle:
-			sub_h = self.ddt.text(
-				(inner_x, inner_y, 4, inner_w, round(48 * self.gui.scale)),
-				subtitle,
-				self.colours.box_text_label,
-				11,
-				bg=fill,
-			) or 0
-			inner_y += max(sub_h, round(16 * self.gui.scale))
-
-		if title or subtitle:
-			divider = alpha_blend(alpha_mod(accent, 80), self.colours.box_text_border)
-			inner_y += round(6 * self.gui.scale)
-			self.ddt.rect((inner_x, inner_y, inner_w, round(1 * self.gui.scale)), divider)
-			inner_y += round(12 * self.gui.scale)
-
-		return inner_x, inner_y, inner_w, fill
-
 	def open_release_notes(self) -> None:
 		webbrowser.open(self.RELEASE_NOTES_URL, new=2, autoraise=True)
 
 	def open_donate_link(self) -> None:
 		webbrowser.open(self.DONATE_URL, new=2, autoraise=True)
-
-	def rainbow_border_colour(self, offset: float) -> ColourRGBA:
-		palette = (
-			ColourRGBA(255, 179, 186, 255),
-			ColourRGBA(255, 223, 186, 255),
-			ColourRGBA(255, 255, 186, 255),
-			ColourRGBA(186, 255, 201, 255),
-			ColourRGBA(186, 225, 255, 255),
-			ColourRGBA(218, 186, 255, 255),
-		)
-		position = (time.monotonic() * 0.28 + offset) % 1
-		scaled_position = position * len(palette)
-		colour_index = int(scaled_position)
-		blend = scaled_position - colour_index
-		start_colour = palette[colour_index % len(palette)]
-		end_colour = palette[(colour_index + 1) % len(palette)]
-		return ColourRGBA(
-			round(start_colour.r + (end_colour.r - start_colour.r) * blend),
-			round(start_colour.g + (end_colour.g - start_colour.g) * blend),
-			round(start_colour.b + (end_colour.b - start_colour.b) * blend),
-			255,
-		)
-
-	def draw_rainbow_border(self, rect: tuple[int, int, int, int]) -> None:
-		x, y, w, h = rect
-		border = max(3, round(3 * self.gui.scale))
-		segments_x = max(24, round(w / max(4 * self.gui.scale, 1)))
-		segments_y = max(8, round(h / max(4 * self.gui.scale, 1)))
-
-		for index in range(segments_x):
-			segment_x = x + round(index * w / segments_x)
-			next_x = x + round((index + 1) * w / segments_x)
-			segment_w = max(next_x - segment_x, 1)
-			colour = self.rainbow_border_colour(index / segments_x)
-			self.ddt.rect((segment_x, y, segment_w, border), colour)
-			self.ddt.rect((x + w - (segment_x - x) - segment_w, y + h - border, segment_w, border), colour)
-
-		side_y = y + border
-		side_h = h - border * 2
-		for index in range(segments_y):
-			segment_y = side_y + round(index * side_h / segments_y)
-			next_y = side_y + round((index + 1) * side_h / segments_y)
-			segment_h = max(next_y - segment_y, 1)
-			left_colour = self.rainbow_border_colour(0.25 + index / segments_y)
-			right_colour = self.rainbow_border_colour(0.75 - index / segments_y)
-			self.ddt.rect((x, segment_y, border, segment_h), left_colour)
-			self.ddt.rect((x + w - border, segment_y, border, segment_h), right_colour)
 
 	def draw_donate_button(
 		self,
@@ -23881,18 +23789,12 @@ class NagBox:
 		background_colour: ColourRGBA,
 		background_highlight_colour: ColourRGBA,
 	) -> bool:
-		x, y, w, h = rect
-		border = max(3, round(3 * self.gui.scale))
-		self.draw_rainbow_border((x - border, y - border, w + border * 2, h + border * 2))
-		if self.rainbow_frame_timer.get() > 0.03:
-			self.rainbow_frame_timer.set()
-			self.gui.delay_frame(0.03)
 		return self.drawer.button(
 			_("Donate"),
-			x,
-			y,
-			w=w,
-			h=h,
+			rect[0],
+			rect[1],
+			w=rect[2],
+			h=rect[3],
 			background_colour=background_colour,
 			background_highlight_colour=background_highlight_colour,
 			press=self.gui.level_2_click,
@@ -23900,7 +23802,7 @@ class NagBox:
 
 	def draw(self) -> None:
 		w = round(640 * self.gui.scale)
-		h = round(392 * self.gui.scale)
+		h = round(384 * self.gui.scale)
 		x = int(self.window_size[0] / 2) - int(w / 2)
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
@@ -23912,88 +23814,102 @@ class NagBox:
 			self.dismiss()
 			return
 
+		scale = self.gui.scale
 		accent = self.colours.link_text
 		accent_warm = ColourRGBA(255, 158, 94, 255)
-		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 20), self.colours.box_text_border)
 		panel_fill = self.colours.message_box_bg
-		inner_x = x + round(18 * self.gui.scale)
-		inner_y = y + round(18 * self.gui.scale)
-		inner_w = w - round(36 * self.gui.scale)
+		section_fill = alpha_blend(ColourRGBA(255, 255, 255, 7), self.colours.box_button_background)
+		divider = alpha_blend(ColourRGBA(255, 255, 255, 24), self.colours.box_text_border)
+		inner_pad = round(24 * scale)
+		inner_x = x + inner_pad
+		inner_y = y + round(22 * scale)
+		inner_w = w - inner_pad * 2
 
-		self.ddt.bordered_rect((x, y, w, h), panel_fill, panel_border, round(1 * self.gui.scale))
-		self.ddt.rect((x, y, w, round(5 * self.gui.scale)), accent)
+		self.ddt.bordered_rect((x, y, w, h), panel_fill, panel_border, round(1 * scale))
+		self.ddt.rect((x, y, round(5 * scale), h), accent)
 		self.ddt.text_background_colour = panel_fill
 
-		inner_y += round(6 * self.gui.scale)
+		version_text = _("Tauon v{version}").format(version=self.SPLASH_VERSION)
+		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
-			(inner_x, inner_y),
-			"You're now running Tauon v{version} ✨  ".format(version=self.SPLASH_VERSION),
-			self.colours.box_title_text,
-			217,
+			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
+			_("Highlights from the latest Tauon release."),
+			self.colours.box_text_label,
+			12,
 			bg=panel_fill,
 		)
-		inner_y += round(22 * self.gui.scale)
 
-		intro_h = self.ddt.text(
-			(inner_x, inner_y, 4, inner_w, round(60 * self.gui.scale)),
-			"Welcome to the biggest update to Tauon yet! This release contains the single most anticipated feature, yes it’s finally here, you can now have the side panel on the left side! Just go MENU > Settings > View > and select Metadata Panel on Left.",
+		changelog_y = inner_y + round(58 * scale)
+		changelog_h = round(172 * scale)
+		self.ddt.rect((inner_x, changelog_y, inner_w, changelog_h), section_fill)
+		self.ddt.rect((inner_x, changelog_y, inner_w, round(1 * scale)), divider)
+		self.ddt.rect((inner_x, changelog_y + changelog_h - round(1 * scale), inner_w, round(1 * scale)), divider)
+		self.ddt.text(
+			(inner_x + round(16 * scale), changelog_y + round(13 * scale)),
+			_("Changelog"),
 			self.colours.box_text,
-			13,
-			bg=panel_fill,
-		) or 0
-		inner_y += round(28 * self.gui.scale)
-
-		inner_y += round(26 * self.gui.scale)
-		changelog_h = round(180 * self.gui.scale)
-
-		section_x, section_y, section_w, section_fill = self.draw_section(
-			(inner_x, inner_y, inner_w, changelog_h),
-			"Changelog",
-			accent=accent,
+			213,
+			bg=section_fill,
 		)
-		row_y = section_y
+
+		row_y = changelog_y + round(42 * scale)
+		row_gap = round(18 * scale)
 		for item, removed in self.CHANGELOG_ITEMS:
 			bullet_colour = accent_warm if removed else accent
 			text_colour = self.colours.box_text_label if removed else self.colours.box_text
 			self.ddt.rect(
-				(section_x, row_y + round(4 * self.gui.scale), round(8 * self.gui.scale), round(8 * self.gui.scale)),
+				(inner_x + round(17 * scale), row_y + round(5 * scale), round(6 * scale), round(6 * scale)),
 				bullet_colour,
 			)
 			self.ddt.text(
-				(section_x + round(18 * self.gui.scale), row_y),
+				(inner_x + round(34 * scale), row_y),
 				item,
 				text_colour,
 				13,
 				bg=section_fill,
-				max_w=section_w - round(22 * self.gui.scale),
+				max_w=inner_w - round(52 * scale),
 			)
-			row_y += round(18 * self.gui.scale)
+			row_y += row_gap
 
-		support_y = y + h - round(88 * self.gui.scale)
-		divider = alpha_blend(alpha_mod(accent_warm, 80), self.colours.box_text_border)
-		self.ddt.rect((inner_x, support_y - round(10 * self.gui.scale), inner_w, round(1 * self.gui.scale)), divider)
-		self.ddt.text((inner_x, support_y), _("Re: Message from Taiko2k"), self.colours.box_text, 213, bg=panel_fill)
+		support_y = changelog_y + changelog_h + round(18 * scale)
+		self.ddt.text((inner_x, support_y), _("Support Tauon"), self.colours.box_text, 213, bg=panel_fill)
 		donate_link = self.tauon.draw_linked_text(
-			(inner_x, support_y + round(18 * self.gui.scale)),
-			_("Please consider supporting me on https://github.com/sponsors/Taiko2k  ❤️   "),
+			(inner_x, support_y + round(19 * scale)),
+			_("Support development at https://github.com/sponsors/Taiko2k"),
 			self.colours.box_text_label,
-			13,
+			12,
 			replace=_("GitHub Sponsors"),
 		)
-		self.tauon.link_activate(inner_x, support_y + round(18 * self.gui.scale), donate_link, click=self.gui.level_2_click)
+		self.tauon.link_activate(inner_x, support_y + round(19 * scale), donate_link, click=self.gui.level_2_click)
 
-		button_y = y + h - round(48 * self.gui.scale)
-		button_h = round(30 * self.gui.scale)
-		close_w = round(92 * self.gui.scale)
-		donate_w = round(104 * self.gui.scale)
-		button_gap = round(10 * self.gui.scale)
+		button_y = y + h - round(46 * scale)
+		button_h = round(30 * scale)
+		button_gap = round(8 * scale)
+		close_w = max(round(84 * scale), self.ddt.get_text_w(_("Close"), 212) + round(22 * scale))
+		donate_w = max(round(96 * scale), self.ddt.get_text_w(_("Donate"), 212) + round(22 * scale))
+		release_w = max(round(124 * scale), self.ddt.get_text_w(_("Release Notes"), 212) + round(22 * scale))
 
-		close_x = x + w - close_w - round(18 * self.gui.scale)
+		close_x = x + w - close_w - inner_pad
 		donate_x = close_x - donate_w - button_gap
+		release_x = donate_x - release_w - button_gap
 
-		donate_bg = alpha_blend(alpha_mod(accent_warm, 44), self.colours.box_button_background)
-		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 68), self.colours.box_button_background_highlight)
+		donate_bg = alpha_blend(alpha_mod(accent_warm, 42), self.colours.box_button_background)
+		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 72), self.colours.box_button_background_highlight)
+		release_bg = alpha_blend(alpha_mod(accent, 30), self.colours.box_button_background)
+		release_bg_hover = alpha_blend(alpha_mod(accent, 56), self.colours.box_button_background_highlight)
 
+		if self.drawer.button(
+			_("Release Notes"),
+			release_x,
+			button_y,
+			w=release_w,
+			h=button_h,
+			background_colour=release_bg,
+			background_highlight_colour=release_bg_hover,
+			press=self.gui.level_2_click,
+		):
+			self.open_release_notes()
 		if self.draw_donate_button((donate_x, button_y, donate_w, button_h), donate_bg, donate_bg_hover):
 			self.open_donate_link()
 		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
