@@ -264,8 +264,8 @@ class SubsonicService:
 					self.gui.update += 1
 					self.tauon.lyrics_ren_mini.to_reload = True
 					self.tauon.timed_lyrics_ren.index = -1
-					self.pctl.notify_change()
-					self.pctl.notify_update(force=True)
+					self.pctl.notify_database_changed()
+					self.pctl.refresh_now_playing(force=True)
 			except Exception:
 				logging.exception("Failed to scan lyrics from Subsonic server")
 			finally:

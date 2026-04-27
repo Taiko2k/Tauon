@@ -2324,7 +2324,7 @@ class PlayerCtl:
 	def pl_to_id(self, pl: int) -> int:
 		return self.multi_playlist[pl].uuid_int
 
-	def notify_change(self) -> None:
+	def notify_database_changed(self) -> None:
 		self.db_inc += 1
 		self.tauon.bg_save()
 
@@ -2392,7 +2392,7 @@ class PlayerCtl:
 				except Exception:
 					logging.exception("Get art error")
 
-				self.notify_update(mpris=False)
+				self.refresh_now_playing(mpris=False)
 				if self.mpris:
 					self.mpris.update(force=True)
 
@@ -2413,7 +2413,7 @@ class PlayerCtl:
 		self.shuffle_pools[pl_id] = new_pool
 		logging.info("Refill shuffle pool")
 
-	def notify_update_fire(self, force: bool = False) -> None:
+	def refresh_now_playing_fire(self, force: bool = False) -> None:
 		if self.mpris is not None:
 			self.mpris.update(force=force)
 		if self.tauon.update_play_lock is not None:
@@ -2460,7 +2460,7 @@ class PlayerCtl:
 		except Exception:
 			logging.exception("Failed to update macOS Now Playing helper")
 
-	def notify_update(self, mpris: bool = True, force: bool = False) -> None:
+	def refresh_now_playing(self, mpris: bool = True, force: bool = False) -> None:
 		self.tauon.tray_releases += 1
 		if self.tauon.tray_lock.locked():
 			try:
@@ -2543,7 +2543,7 @@ class PlayerCtl:
 			while self.notify_in_progress:
 				time.sleep(0.01)
 			self.notify_in_progress = True
-			shoot = threading.Thread(target=self.notify_update_fire, args=(force,))
+			shoot = threading.Thread(target=self.refresh_now_playing_fire, args=(force,))
 			shoot.daemon = True
 			shoot.start()
 		if self.prefs.art_bg or (self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
@@ -2825,7 +2825,7 @@ class PlayerCtl:
 			self.playerCommand = "volume"
 			self.playerCommandReady = True
 		if notify:
-			self.notify_update()
+			self.refresh_now_playing()
 
 	def clear_ab_repeat(self, update_gui: bool = True) -> None:
 		self.ab_repeat_a = -1.0
@@ -2970,7 +2970,7 @@ class PlayerCtl:
 	def update_change(self, update_gui: bool = True) -> None:
 		if self.prefs.update_title and update_gui:
 			self.tauon.update_title_do()
-		self.notify_update()
+		self.refresh_now_playing()
 		# Wake and start Discord RPC worker immediately on change
 		try:
 			self.tauon._signal_discord()
@@ -3084,7 +3084,7 @@ class PlayerCtl:
 			self.show_current()
 
 		self.render_playlist()
-		self.notify_update()
+		self.refresh_now_playing()
 		self.tauon.notify_song()
 		self.lfm_scrobbler.start_queue()
 		self.gui.pl_update += 1
@@ -3135,7 +3135,7 @@ class PlayerCtl:
 			if self.tauon.stream_proxy.download_running:
 				sleep_timeout(lambda: self.tauon.stream_proxy.download_running, 2)
 
-		self.notify_update()
+		self.refresh_now_playing()
 		self.lfm_scrobbler.start_queue()
 		return previous_state
 
@@ -3154,7 +3154,7 @@ class PlayerCtl:
 		self.playerCommandReady = True
 
 		self.render_playlist()
-		self.notify_update()
+		self.refresh_now_playing()
 
 	def pause_only(self) -> None:
 		if self.playing_state == PlayingState.PLAYING:
@@ -3163,7 +3163,7 @@ class PlayerCtl:
 
 			self.playerCommandReady = True
 			self.render_playlist()
-			self.notify_update()
+			self.refresh_now_playing()
 
 	def play_pause(self) -> None:
 		if self.playing_state == PlayingState.URL_STREAM:
@@ -3219,7 +3219,7 @@ class PlayerCtl:
 			self.playerCommand = "pauseoff"
 			self.playerCommandReady = True
 			self.playing_state = PlayingState.PLAYING
-			self.notify_update()
+			self.refresh_now_playing()
 
 		# If stopped
 		elif self.playing_state == PlayingState.STOPPED:
@@ -3465,7 +3465,7 @@ class PlayerCtl:
 
 				if self.prefs.update_title:
 					self.tauon.update_title_do()
-				self.notify_update()
+				self.refresh_now_playing()
 			else:
 				# self.advance(quiet=True, end=True)
 
@@ -3993,7 +3993,7 @@ class PlayerCtl:
 
 		self.render_playlist()
 
-		self.notify_update()
+		self.refresh_now_playing()
 		self.lfm_scrobbler.start_queue()
 		if play:
 			self.tauon.notify_song(end_of_playlist, delay=1.3)
@@ -7891,7 +7891,7 @@ class Tauon:
 			self.gui.update += 1
 			self.lyrics_ren.lyrics_position = 0
 			self.timed_lyrics_ren.index = -1
-			self.pctl.notify_change()
+			self.pctl.notify_database_changed()
 			self.now_searching = "success"
 		return None
 
@@ -10476,7 +10476,7 @@ class Tauon:
 
 		self.gui.shift_selection = [self.pctl.selected_in_playlist]
 		self.gui.pl_update += 1
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 	def force_del_selected(self) -> None:
 		self.del_selected(force_delete=True)
@@ -10628,7 +10628,7 @@ class Tauon:
 				self.show_message(_("Error deleting file"), fullpath, mode="error")
 
 		self.reload()
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 	def rename_tracks_deco(self, _track_ref: MenuTrackRef) -> Decorator:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
@@ -10706,7 +10706,7 @@ class Tauon:
 
 		self.tree_view_box.clear_target_pl(self.pctl.active_playlist_viewing)
 		self.gui.pl_update += 1
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 	def rename_parent(self, index: int, template: str) -> None:
 		# template = prefs.rename_folder_template
@@ -10802,7 +10802,7 @@ class Tauon:
 			self.pctl.revert()
 
 		self.tree_view_box.clear_target_pl(self.pctl.active_playlist_viewing)
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 	def rename_folders_disable_test(self, ref: MenuTrackRef) -> bool:
 		return self.pctl.get_track(ref.track_id).is_network
@@ -13823,7 +13823,7 @@ class Tauon:
 		if self.tree_view_box.dragging_name:
 			self.pctl.multi_playlist[pl].title = self.tree_view_box.dragging_name
 		self.dropped_playlist = pl
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 	def queue_deco(self) -> Decorator:
 		line_colour = self.colours.menu_text if len(self.pctl.force_queue) > 0 else self.colours.menu_text_disabled
@@ -14860,7 +14860,7 @@ class Tauon:
 		self.gui.pl_update = 1
 		self.reload()
 		self.dropped_playlist = pl
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 		#logging.info(cmds)
 
@@ -14944,7 +14944,7 @@ class Tauon:
 		if playlist_ids is None:
 			playlist_ids = []
 		if notify:
-			self.pctl.notify_change()
+			self.pctl.notify_database_changed()
 
 		#return copy.deepcopy([title, playing, playlist, position, hide_title, selected, uid_gen(), [], hidden, False, parent, False])
 		return TauonPlaylist(title=title, playing=playing, playlist_ids=playlist_ids, position=position, hide_title=hide_title, selected=selected, uuid_int=uid_gen(), last_folder=[], hidden=hidden, locked=False, parent_playlist_id=parent, persist_time_positioning=False, playlist_file=playlist_file, file_size=file_size, auto_export=auto_export, auto_import=auto_import, export_type=export_type, relative_export=relative_export)
@@ -15131,7 +15131,7 @@ class Tauon:
 				# 	if star is not None and (star.playtime > 0 or star.flags or star.rating > 0):
 				# 		self.star_store.merge(track.index, star)
 
-				self.pctl.notify_change()
+				self.pctl.notify_database_changed()
 
 		self.gui.pl_update += 1
 		self.thread_manager.ready("worker")
@@ -15307,7 +15307,7 @@ class Tauon:
 
 		self.gui.pl_update = 1
 		self.gui.update = 1
-		self.pctl.notify_change()
+		self.pctl.notify_database_changed()
 
 	def launch_editor(self, ref: MenuTrackRef) -> bool | None:
 		if self.snap_mode:
@@ -18327,7 +18327,7 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.tray_show_title
 		self.prefs.tray_show_title ^= True
-		self.pctl.notify_update()
+		self.pctl.refresh_now_playing()
 		return None
 
 	def toggle_min_tray(self, mode: int = 0) -> bool | None:
@@ -22425,7 +22425,7 @@ class RenameTrackBox:
 					_("Rename complete."),
 					_("{N} / {T} filenames were written.")
 					.format(N=str(total_todo), T=str(len(r_todo))), mode="done")
-			self.pctl.notify_change()
+			self.pctl.notify_database_changed()
 
 class TransEditBox:
 
@@ -29567,7 +29567,7 @@ class TopPanel:
 					if modified:
 						pctl.after_import_flag = True
 						tauon.dropped_playlist = i
-						pctl.notify_change()
+						pctl.notify_database_changed()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tauon.tree_view_box.clear_target_pl(i)
 						tauon.thread_manager.ready("worker")
@@ -32888,7 +32888,7 @@ class StandardPlaylist:
 							gui.pl_update += 1
 
 						tauon.reload_albums(True)
-						pctl.notify_change()
+						pctl.notify_database_changed()
 
 			# Test show drag indicator
 			if self.inp.mouse_down and self.gui.playlist_hold and self.coll(input_box) and track_position not in self.gui.shift_selection:
@@ -35224,7 +35224,7 @@ class PlaylistBox:
 						pctl.after_import_flag = True
 						tauon.dropped_playlist = i
 						tauon.thread_manager.ready("worker")
-						pctl.notify_change()
+						pctl.notify_database_changed()
 						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
 						tauon.tree_view_box.clear_target_pl(i)
 
@@ -44716,7 +44716,7 @@ def worker1(tauon: Tauon) -> None:
 
 			gui.update = 1
 			gui.pl_update = 1
-			pctl.notify_change()
+			pctl.notify_database_changed()
 
 			tauon.search_dia_string_cache.clear()
 			tauon.search_string_cache.clear()
@@ -44724,7 +44724,7 @@ def worker1(tauon: Tauon) -> None:
 			tauon.search_dia_field_cache.clear()
 			tauon.search_over.results.clear()
 
-			pctl.notify_change()
+			pctl.notify_database_changed()
 
 		# FOLDER ENC
 		if tauon.transcode_list:
@@ -44858,7 +44858,7 @@ def worker1(tauon: Tauon) -> None:
 				del tauon.to_scan[0]
 				gui.update += 1
 			gui.album_artist_dict.clear()
-			pctl.notify_change()
+			pctl.notify_database_changed()
 			gui.pl_update += 1
 			if network_warn:
 				tauon.show_message(_("Some tracks could not be rescanned"), _("Rescanning network tracks is unsupported, please reimport your playlist instead."))
@@ -46361,7 +46361,7 @@ def main(holder: Holder) -> None:
 	else:
 		pctl.multi_playlist = [tauon.pl_gen(notify=False)]
 		pctl.default_playlist = pctl.multi_playlist[0].playlist_ids
-	notify_change = pctl.notify_change
+	notify_database_changed = pctl.notify_database_changed
 
 	lastfm = tauon.lastfm
 	lb = tauon.lb
@@ -47396,7 +47396,7 @@ def main(holder: Holder) -> None:
 		pctl.jump_time = prefs.reload_state[1]
 		pctl.play()
 
-	pctl.notify_update()
+	pctl.refresh_now_playing()
 
 	prefs.theme = get_theme_number(dirs, prefs.theme_name)
 
@@ -49052,7 +49052,7 @@ def main(holder: Holder) -> None:
 
 		elif pctl.loading_in_progress is True:
 			pctl.loading_in_progress = False
-			pctl.notify_change()
+			pctl.notify_database_changed()
 
 		if tauon.loaderCommand == LoaderCommand.DONE:
 			tauon.loaderCommand = LoaderCommand.NONE
@@ -49683,7 +49683,7 @@ def main(holder: Holder) -> None:
 												gui.playlist_hold = False
 
 												tauon.reload_albums(True)
-												pctl.notify_change()
+												pctl.notify_database_changed()
 										elif not gui.side_drag and tauon.is_level_zero():
 											if (
 												coll_point(inp.click_location, rect)
@@ -50513,7 +50513,7 @@ def main(holder: Holder) -> None:
 
 							if not tauon.load_orders:
 								pctl.loading_in_progress = False
-								pctl.notify_change()
+								pctl.notify_database_changed()
 								gui.auto_play_import = False
 								gui.album_artist_dict.clear()
 							break
