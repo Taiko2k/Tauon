@@ -47626,10 +47626,10 @@ def main(holder: Holder) -> None:
 				sub_icon_space = 0
 				for sub_item in menu.subs[item.sub_menu_number]:
 					if sub_item.icon is not None:
-						sub_icon_space = 25 * gui.scale
+						sub_icon_space = 25
 						break
 				for sub_item in menu.subs[item.sub_menu_number]:
-					test_width = ddt.get_text_w(sub_item.title, menu.font) + sub_icon_space + 23 * gui.scale
+					test_width = math.ceil(ddt.get_text_w(sub_item.title, menu.font) / gui.scale) + sub_icon_space + 23
 					ww = max(test_width, ww)
 
 				item.sub_menu_width = max(ww, item.sub_menu_width)
