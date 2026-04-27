@@ -5,6 +5,7 @@ Changelog
 ### v10.0.0
 
  - Redesigned settings UI
+ - Added album art to columns view
  - Added smooth scroll support
  - Added new mini mode Signal
  - Added theme editor
