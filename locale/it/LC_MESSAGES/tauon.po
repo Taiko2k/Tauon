@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-03-04 22:24+0100\n"
-"PO-Revision-Date: 2026-04-18 14:09+0000\n"
+"PO-Revision-Date: 2026-04-28 14:09+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -373,7 +373,7 @@ msgstr "Esci"
 
 #: src/tauon/t_modules/t_main.py:6788
 msgid "Error importing M3U playlist"
-msgstr "Errore nell'importare una scaletta M3U."
+msgstr "Errore importazione scaletta M3U"
 
 #: src/tauon/t_modules/t_main.py:6788
 msgid "Error trying to parse trying to parse playlist as UTF-8:"
@@ -775,15 +775,15 @@ msgstr "Bitrate OGG (kbps):"
 
 #: src/tauon/t_modules/t_main.py:8897
 msgid "Top Artists"
-msgstr "Artisti Più Ascoltati"
+msgstr "Artisti più ascoltati"
 
 #: src/tauon/t_modules/t_main.py:8903
 msgid "Top Albums"
-msgstr "Album Più Ascoltati"
+msgstr "Album più ascoltati"
 
 #: src/tauon/t_modules/t_main.py:8907
 msgid "Top Genres"
-msgstr "Generi Più Ascoltati"
+msgstr "Generi più ascoltati"
 
 #: src/tauon/t_modules/t_main.py:8926 src/tauon/t_modules/t_main.py:8937
 #: src/tauon/t_modules/t_main.py:8956 src/tauon/t_modules/t_main.py:11430
@@ -878,22 +878,22 @@ msgstr "Salvato come: "
 #: src/tauon/t_modules/t_main.py:9357 src/tauon/t_modules/t_main.py:44266
 #: src/tauon/t_modules/t_main.py:44267
 msgid "Top Rated Tracks"
-msgstr "Tracce Più Amate"
+msgstr "Tracce più votate"
 
 #: src/tauon/t_modules/t_main.py:9374 src/tauon/t_modules/t_main.py:44260
 #: src/tauon/t_modules/t_main.py:44261
 msgid "Top Played Tracks"
-msgstr "Tracce Più Riprodotte"
+msgstr "Tracce più riprodotte"
 
 #: src/tauon/t_modules/t_main.py:9432 src/tauon/t_modules/t_main.py:44263
 #: src/tauon/t_modules/t_main.py:44264
 msgid "Top Played Albums"
-msgstr "Dischi Più Riprodotti"
+msgstr "Dischi più riprodotti"
 
 #: src/tauon/t_modules/t_main.py:9480 src/tauon/t_modules/t_main.py:44269
 #: src/tauon/t_modules/t_main.py:44270
 msgid "Top Rated Albums"
-msgstr "Dischi Più Amati"
+msgstr "Dischi più votati"
 
 #: src/tauon/t_modules/t_main.py:9501
 msgid "Tracks with lyrics"
@@ -938,7 +938,7 @@ msgstr "Nessuna traccia preferita è stata trovata."
 
 #: src/tauon/t_modules/t_main.py:9684
 msgid "Interesting Comments"
-msgstr "Commenti Più Interessanti"
+msgstr "Commenti più interessanti"
 
 #: src/tauon/t_modules/t_main.py:9688
 msgid "Nothing of interest was found."
@@ -3173,7 +3173,7 @@ msgstr "Ferma"
 
 #: src/tauon/t_modules/t_main.py:26359
 msgid "See here for detailed instructions"
-msgstr "Vedi qui per istruzioni più dettagliate"
+msgstr "Vedi quì per istruzioni più dettagliate"
 
 #: src/tauon/t_modules/t_main.py:26366
 msgid "Output codec setting:"
@@ -3657,7 +3657,7 @@ msgstr "Cerca"
 
 #: src/tauon/t_modules/t_main.py:32264 src/tauon/t_modules/t_main.py:32267
 msgid "Get Top Voted"
-msgstr "Ottieni i Più Votati"
+msgstr "Ottieni i più votati"
 
 #: src/tauon/t_modules/t_main.py:32268
 msgid "Developer Picks"
@@ -4847,11 +4847,11 @@ msgstr "Tracce più lunghe"
 
 #: src/tauon/t_modules/t_main.py:44284 src/tauon/t_modules/t_main.py:44285
 msgid "Year by Oldest"
-msgstr "Anno dal Più Vecchio"
+msgstr "Anno dal più vecchio"
 
 #: src/tauon/t_modules/t_main.py:44287 src/tauon/t_modules/t_main.py:44288
 msgid "Year by Latest"
-msgstr "Anno dal Più Nuovo"
+msgstr "Anno dal più recente"
 
 #: src/tauon/t_modules/t_main.py:44302 src/tauon/t_modules/t_main.py:44303
 msgid "Reverse Tracks"
@@ -4863,7 +4863,7 @@ msgstr "Inverti dischi"
 
 #: src/tauon/t_modules/t_main.py:44316 src/tauon/t_modules/t_main.py:44317
 msgid "Has Comment"
-msgstr "Ha Commenti"
+msgstr "Ha commenti"
 
 #: src/tauon/t_modules/t_main.py:44323
 msgid "Add Playing Spotify Album"
