@@ -23503,14 +23503,47 @@ class SearchOverlay:
 					artist_val = track.artist
 					album_val = track.album
 
-					yyy = yy + round(5 * gui.scale)
-					self.ddt.text((text_lx, yyy), title_val, ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
-					if artist_val:
-						yyy2 = yy + round(28 * gui.scale)
-						self.ddt.text((text_lx + 5 * gui.scale, yyy2), _("BY"), ColourRGBA(250, 240, 110, int(255 * fade)), 212)
-						self.ddt.text((text_lx + 30 * gui.scale, yyy2), artist_val, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
-					elif album_val:
-						self.ddt.text((text_lx, yy + round(28 * gui.scale)), album_val, ColourRGBA(220, 220, 220, int(255 * fade)), s_font)
+					yyy = yy + pad + round(3 * gui.scale)
+					text_max_w = max(round(80 * gui.scale), self.window_size[0] - text_lx - round(24 * gui.scale))
+					text_max_w = min(round(560 * gui.scale), text_max_w)
+					metadata_val = artist_val or album_val
+					if metadata_val:
+						gap = round(8 * gui.scale)
+						by_label = _("BY") if artist_val else ""
+						by_width = self.ddt.get_text_w(by_label, 212) if by_label else 0
+						metadata_width = self.ddt.get_text_w(metadata_val, s_font)
+						if by_label:
+							metadata_width += by_width + gap
+						min_title_width = round(120 * gui.scale)
+						if metadata_width + min_title_width + gap > text_max_w:
+							metadata_width = max(round(70 * gui.scale), text_max_w - min_title_width - gap)
+						title_width = max(round(40 * gui.scale), text_max_w - metadata_width - gap)
+						drawn_title_width = self.ddt.text(
+							(text_lx, yyy),
+							title_val,
+							ColourRGBA(255, 255, 255, int(255 * fade)),
+							s_b_font,
+							max_w=title_width,
+						) or 0
+						meta_x = text_lx + drawn_title_width + gap
+						if by_label:
+							self.ddt.text((meta_x, yyy), by_label, ColourRGBA(250, 240, 110, int(255 * fade)), 212)
+							meta_x += by_width + gap
+						self.ddt.text(
+							(meta_x, yyy),
+							metadata_val,
+							ColourRGBA(250, 250, 250, int(255 * fade)) if artist_val else ColourRGBA(220, 220, 220, int(255 * fade)),
+							s_font,
+							max_w=max(round(1 * gui.scale), text_max_w - (meta_x - text_lx)),
+						)
+					else:
+						self.ddt.text(
+							(text_lx, yyy),
+							title_val,
+							ColourRGBA(255, 255, 255, int(255 * fade)),
+							s_b_font,
+							max_w=text_max_w,
+						)
 
 				if n in (1,):  # Two line album
 					track = self.pctl.master_library[item[2]]
