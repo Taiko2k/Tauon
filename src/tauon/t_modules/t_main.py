@@ -151,6 +151,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	genre_correct,
 	get_artist_safe,
 	get_artist_strip_feat,
+	get_first_artist,
 	get_display_time,
 	get_filesize_string,
 	get_filesize_string_rounded,
@@ -4227,9 +4228,7 @@ class LastFMapi:
 
 		try:
 			if artist:
-				l_artist = pylast.Artist(
-					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
-					self.lastfm_network)
+				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
 				bio = l_artist.get_bio_content()
 				# cover_link = l_artist.get_cover_image()
 				mbid = l_artist.get_mbid()
@@ -4247,9 +4246,7 @@ class LastFMapi:
 
 		try:
 			if artist:
-				l_artist = pylast.Artist(
-					artist.replace("/", "").replace("\\", "").replace(" & ", " and ").replace("&", " "),
-					self.lastfm_network)
+				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
 				return l_artist.get_mbid()
 		except Exception:
 			logging.exception("last.fm get artist mbid info failed")
@@ -4355,7 +4352,7 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
-		artist_object = pylast.Artist(artist, self.lastfm_network)
+		artist_object = pylast.Artist(get_first_artist(artist), self.lastfm_network)
 		bio = artist_object.get_bio_summary(language="en")
 		# logging.info(artist_object.get_cover_image())
 		# logging.info("\n\n")
@@ -37924,7 +37921,7 @@ class ArtistInfoBox:
 			return
 
 		# Check if the artist has changed
-		self.artist_on = track.artist
+		self.artist_on = get_first_artist(track.artist)
 
 		if not self.lock and self.artist_on:
 			self.lock = True
@@ -37952,7 +37949,7 @@ class ArtistInfoBox:
 			return
 
 		# Check if the artist has changed
-		artist = track.artist
+		artist = get_first_artist(track.artist)
 		wait = False
 
 		# Activate menu

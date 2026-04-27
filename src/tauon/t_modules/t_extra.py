@@ -1008,6 +1008,17 @@ def get_artist_safe(track: TrackClass | None) -> str:
 	return ""
 
 
+def get_first_artist(artist: str) -> str:
+	if not artist:
+		return ""
+	for sep in (" & ", " &", " ; ", ";", "ft. ", " feat. ", " feat(", ", ", ","):
+		idx = artist.find(sep)
+		if idx != -1:
+			artist = artist[:idx]
+			break
+	return artist.replace("/", "").replace("\\", "").strip()
+
+
 def get_split_artists(track: TrackClass) -> list[str]:
 	if "artists" in track.misc:
 		return track.misc["artists"]
