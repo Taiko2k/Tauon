@@ -5430,6 +5430,9 @@ class GallClass:
 		self.lock: threading.LockType = threading.Lock()
 		self.limit: int = 60
 
+	def album_art_column_is_shown(self) -> bool:
+		return self.gui.set_mode and any(column[0] == "Album Art" for column in self.gui.pl_st)
+
 	def get_file_source(self, track_object: TrackClass) -> tuple[bool, int] | tuple[tuple[int, str], int]:
 		sources = self.album_art_gen.get_sources(track_object)
 
@@ -5562,6 +5565,8 @@ class GallClass:
 				self.gall[key] = order
 
 				self.gui.update += 1
+				if self.album_art_column_is_shown():
+					self.gui.pl_update += 1
 				if source_image:
 					source_image.close()
 					source_image = None
@@ -5584,7 +5589,13 @@ class GallClass:
 			return True
 		return False
 
-	def render(self, track: TrackClass, location, size: int | None = None, force_offset: int | None = None) -> bool | None:
+	def render(
+			self,
+			track: TrackClass,
+			location,
+			size: int | None = None,
+			force_offset: int | None = None,
+			max_height: int | None = None) -> bool | None:
 		if self.tauon.gallery_load_delay.get() < 0.5:
 			return None
 
@@ -5649,7 +5660,23 @@ class GallClass:
 				order[3].y = y
 				order[3].x = int((size - order[3].w) / 2) + order[3].x
 				order[3].y = int((size - order[3].h) / 2) + order[3].y
-				sdl3.SDL_RenderTexture(self.renderer, order[2], None, order[3])
+
+				if max_height is None:
+					sdl3.SDL_RenderTexture(self.renderer, order[2], None, order[3])
+				else:
+					max_height = round(max_height)
+					clip_top = y
+					clip_bottom = y + max_height
+					dst_top = order[3].y
+					dst_bottom = order[3].y + order[3].h
+					render_top = max(dst_top, clip_top)
+					render_bottom = min(dst_bottom, clip_bottom)
+					if render_bottom > render_top and order[3].h > 0:
+						source_y = ((render_top - dst_top) / order[3].h) * order[3].h
+						source_h = ((render_bottom - render_top) / order[3].h) * order[3].h
+						source_rect = sdl3.SDL_FRect(0, source_y, order[3].w, source_h)
+						dest_rect = sdl3.SDL_FRect(order[3].x, render_top, order[3].w, render_bottom - render_top)
+						sdl3.SDL_RenderTexture(self.renderer, order[2], source_rect, dest_rect)
 
 				if (track, size, offset) in self.key_list:
 					self.key_list.remove((track, size, offset))
@@ -5804,6 +5831,7 @@ class Tauon:
 			"Artist",
 			"Album Artist",
 			"Album",
+			"Album Art",
 			"Title",
 			"Composer",
 			"Time",
@@ -11181,6 +11209,7 @@ class Tauon:
 			[_("Artist"),"Artist", self.sa_artist],
 			[_("Title"), "Title", self.sa_title],
 			[_("Album"), "Album", self.sa_album],
+			[_("Album Art"), "Album Art", self.sa_album_art],
 			[_("Duration"), "Time", self.sa_time],
 			[_("Date"), "Date", self.sa_date],
 			[_("Genre"), "Genre", self.sa_genre],
@@ -11272,6 +11301,12 @@ class Tauon:
 	def sa_album(self) -> None:
 		if not self.sa_try_uncheck("Album"):
 			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album", 220, False])
+		self.gui.update_layout = True
+		self.sa_regen_menu()
+
+	def sa_album_art(self) -> None:
+		if not self.sa_try_uncheck("Album Art"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album Art", 72, True])
 		self.gui.update_layout = True
 		self.sa_regen_menu()
 
@@ -15046,6 +15081,10 @@ class Tauon:
 			if item[0] == "Rating":
 				item[1] = round(80 * self.gui.scale)
 				total  -= round(80 * self.gui.scale)
+
+			if item[0] == "Album Art":
+				item[1] = round(72 * self.gui.scale)
+				total  -= round(72 * self.gui.scale)
 
 			if item[0] == "Starline":
 				item[1] = round(78 * self.gui.scale)
@@ -32423,6 +32462,117 @@ class StandardPlaylist:
 				backward_steps,
 			)
 
+	def _same_album_art_block(self, track_a: TrackClass, track_b: TrackClass) -> bool:
+		return (
+			track_a.parent_folder_path == track_b.parent_folder_path
+			and track_a.album == track_b.album
+			and track_a.album_artist == track_b.album_artist
+		)
+
+	def _album_art_block_bounds(self, track_position: int) -> tuple[int, int]:
+		pctl = self.pctl
+		if track_position < 0 or track_position >= len(pctl.default_playlist):
+			return track_position, track_position
+
+		start = track_position
+		while start > 0:
+			track = pctl.get_track(pctl.default_playlist[start])
+			previous_track = pctl.get_track(pctl.default_playlist[start - 1])
+			if not self._same_album_art_block(track, previous_track):
+				break
+			start -= 1
+
+		end = track_position + 1
+		while end < len(pctl.default_playlist):
+			track = pctl.get_track(pctl.default_playlist[end - 1])
+			next_track = pctl.get_track(pctl.default_playlist[end])
+			if not self._same_album_art_block(track, next_track):
+				break
+			end += 1
+
+		return start, end
+
+	def _folder_title_would_appear(self, track_position: int) -> bool:
+		pctl = self.pctl
+		if (
+			pctl.multi_playlist[pctl.active_playlist_viewing].hide_title
+			or not self.prefs.break_enable
+			or track_position < 0
+			or track_position >= len(pctl.default_playlist)
+		):
+			return False
+		if track_position == 0:
+			return True
+		track = pctl.get_track(pctl.default_playlist[track_position])
+		previous_track = pctl.get_track(pctl.default_playlist[track_position - 1])
+		return track.parent_folder_path != previous_track.parent_folder_path
+
+	def _queue_album_art_column(
+			self,
+			track_position: int,
+			row_y: float,
+			column_x: float,
+			column_width: float,
+			rendered_blocks: set[int],
+			draws: list[tuple[TrackClass, tuple[float, float], int, int]]) -> None:
+		block_start, block_end = self._album_art_block_bounds(track_position)
+		block_row_offset = track_position - block_start
+		block_y = row_y - self.gui.playlist_row_height * block_row_offset
+		self._queue_album_art_block(block_start, block_end, block_y, column_x, column_width, rendered_blocks, draws)
+
+	def _queue_previous_album_art_for_folder_title(
+			self,
+			track_position: int,
+			title_y: float,
+			column_x: float,
+			column_width: float,
+			rendered_blocks: set[int],
+			draws: list[tuple[TrackClass, tuple[float, float], int, int]]) -> None:
+		if track_position <= 0 or not self._folder_title_would_appear(track_position):
+			return
+
+		block_start, block_end = self._album_art_block_bounds(track_position - 1)
+		if block_end != track_position:
+			return
+
+		block_y = title_y - (block_end - block_start) * self.gui.playlist_row_height
+		self._queue_album_art_block(block_start, block_end, block_y, column_x, column_width, rendered_blocks, draws)
+
+	def _queue_album_art_block(
+			self,
+			block_start: int,
+			block_end: int,
+			block_y: float,
+			column_x: float,
+			column_width: float,
+			rendered_blocks: set[int],
+			draws: list[tuple[TrackClass, tuple[float, float], int, int]]) -> None:
+		if column_width <= 8 * self.gui.scale:
+			return
+
+		if block_start in rendered_blocks:
+			return
+		rendered_blocks.add(block_start)
+
+		horizontal_padding = round(1 * self.gui.scale)
+		vertical_padding = round(5 * self.gui.scale)
+		folder_title_bottom_gap = round(5 * self.gui.scale)
+
+		art_size = max(1, round(column_width) - horizontal_padding * 2)
+		block_height = (block_end - block_start) * self.gui.playlist_row_height
+		allowed_bottom = block_y + block_height - vertical_padding
+		if self._folder_title_would_appear(block_end):
+			allowed_bottom = block_y + block_height + self.gui.playlist_row_height - folder_title_bottom_gap
+		draw_y = block_y + vertical_padding
+		draw_height = min(art_size, allowed_bottom - draw_y)
+
+		playlist_bottom = self.window_size[1] - self.gui.panelBY
+		if draw_height <= 0 or draw_y >= playlist_bottom or draw_y + draw_height <= self.gui.playlist_top:
+			return
+
+		track = self.pctl.get_track(self.pctl.default_playlist[block_start])
+		draws.append((track, (column_x + horizontal_padding, draw_y), art_size, round(draw_height)))
+
 	def full_render(self) -> None:
 		tauon       = self.tauon
 		prefs       = self.prefs
@@ -32970,6 +33120,8 @@ class StandardPlaylist:
 		# For every track in view
 		# for i in range(gui.playlist_view_length + 1):
 		gui.tracklist_bg_is_light = test_lumi(colours.playlist_panel_background) < 0.55
+		album_art_rendered_blocks: set[int] = set()
+		album_art_column_draws: list[tuple[TrackClass, tuple[float, float], int, int]] = []
 
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
 			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
@@ -33181,6 +33333,32 @@ class StandardPlaylist:
 						[left + gui.highlight_left, line_y + gui.playlist_row_height - 1 * gui.scale,
 						highlight_width, 3 * gui.scale], ColourRGBA(135, 145, 190, 255))
 
+				if gui.set_mode:
+					start = 18 * gui.scale
+					if center_mode:
+						start = inset_left
+					elif gui.playlist_left:
+						start += gui.playlist_left
+
+					run = start
+					end = start + gui.plw
+					if center_mode:
+						end = highlight_width + start
+
+					for item in gui.pl_st:
+						column_width = min(item[1], end - run)
+						if run > end - 50 * gui.scale:
+							break
+						if item[0] == "Album Art":
+							self._queue_previous_album_art_for_folder_title(
+								track_position,
+								line_y,
+								run,
+								column_width,
+								album_art_rendered_blocks,
+								album_art_column_draws)
+						run += item[1]
+
 				continue
 
 			# Draw playing highlight
@@ -33240,6 +33418,7 @@ class StandardPlaylist:
 
 				for h, item in enumerate(gui.pl_st):
 					wid = item[1] - 20 * gui.scale
+					column_width = min(item[1], end - run)
 					y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 					ry = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 
@@ -33248,6 +33427,15 @@ class StandardPlaylist:
 
 					if len(gui.pl_st) == h + 1:
 						wid -= 6 * gui.scale
+
+					if item[0] == "Album Art":
+						self._queue_album_art_column(
+							track_position,
+							ry,
+							run,
+							column_width,
+							album_art_rendered_blocks,
+							album_art_column_draws)
 
 					if item[0] == "Rating":
 						if wid > 45 * gui.scale:
@@ -33530,6 +33718,9 @@ class StandardPlaylist:
 			# w += 1
 			# if w > gui.playlist_view_length:
 			#     break
+
+		for track, location, art_size, draw_height in album_art_column_draws:
+			tauon.gall_ren.render(track, location, art_size, max_height=draw_height)
 
 		# This is a bit hacky since its only generated after drawing
 		# Used to keep track of how many tracks are actually in view
