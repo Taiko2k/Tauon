@@ -23745,6 +23745,7 @@ class NagBox:
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	CHANGELOG_ITEMS = (
 		("Added setting for metadata panel location", False),
+		("Added album art to columns view", False),
 		("Added built-in theme editor 🎨  ", False),
 		("Added smooth scroll support", False),
 		("Redesigned settings UI", False),
