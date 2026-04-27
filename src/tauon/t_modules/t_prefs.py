@@ -125,7 +125,7 @@ class Prefs:
 	discord_card_layout: str = "title_artist"
 	discord_member_list_display: str = "artist"
 	discord_clean_title:         bool = True
-	discord_lastfm_button:       bool = True
+	discord_lastfm_button:       bool = False
 	discord_show_tauon_button:   bool = True
 	discord_keep_idle:           bool = False
 
