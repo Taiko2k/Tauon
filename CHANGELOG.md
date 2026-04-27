@@ -9,13 +9,10 @@ Changelog
  - Added smooth scroll support
  - Added new mini mode Signal
  - Added theme editor
- - Removed Spotify support
- - Remove koel support
-
-### v9.2.0
-
  - Added inertial smooth scrolling option
  - Redesigned settings box layout and style
+ - Removed Spotify support
+ - Removed koel support
  - Removed trancode menu toggle
  - Removed 'star' playcount display option
  - Removed 'showcase only' background functions
