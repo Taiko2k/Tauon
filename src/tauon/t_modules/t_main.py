@@ -23211,6 +23211,32 @@ class SearchOverlay:
 		self.pctl.show_current()
 		self.inp.key_return_press = False
 
+	def queue_track_result(self, track_id: int, playlist_id: int) -> None:
+		pl = self.pctl.id_to_pl(playlist_id)
+		if pl is None:
+			return
+
+		playlist = self.pctl.multi_playlist[pl].playlist_ids
+		if track_id not in playlist:
+			return
+
+		queue_object = queue_item_gen(track_id, playlist.index(track_id), playlist_id)
+		self.pctl.force_queue.append(queue_object)
+		self.tauon.queue_timer_set(queue_object=queue_object)
+		if self.prefs.stop_end_queue:
+			self.pctl.stop_mode = StopMode.OFF
+
+	def queue_album_result(self, track_id: int, playlist_id: int) -> None:
+		pl = self.pctl.id_to_pl(playlist_id)
+		if pl is None:
+			return
+
+		playlist = self.pctl.multi_playlist[pl].playlist_ids
+		if track_id not in playlist:
+			return
+
+		self.tauon.add_album_to_queue(track_id, playlist.index(track_id), playlist_id)
+
 	def render(self) -> None:
 		prefs = self.prefs
 		inp   = self.inp
@@ -23562,6 +23588,7 @@ class SearchOverlay:
 				show = False
 				go = False
 				extend = False
+				queue_result = False
 				if self.coll(s_rect) and mouse_change:
 					if self.force_select != p:
 						self.force_select = p
@@ -23578,6 +23605,10 @@ class SearchOverlay:
 						show = True
 						clear = True
 
+					if inp.middle_click and n in (1, 2):
+						queue_result = True
+						inp.middle_click = False
+
 				if enter and inp.key_shift_down and fade == 1:
 					show = True
 					clear = True
@@ -23590,7 +23621,13 @@ class SearchOverlay:
 						go = True
 						clear = True
 
-				if extend:
+				if queue_result:
+					match n:
+						case 1:
+							self.queue_album_result(item[2], item[3])
+						case 2:
+							self.queue_track_result(item[2], item[3])
+				elif extend:
 					match n:
 						case 0:
 							self.pctl.default_playlist.extend(self.click_artist(item[1], get_list=True))
@@ -23645,12 +23682,7 @@ class SearchOverlay:
 							if pl is not None:
 								self.pctl.switch_playlist(pl)
 				if n in (2,) and gui.keymaps.test("add-to-queue") and fade == 1:
-					queue_object = queue_item_gen(
-						item[2],
-						self.pctl.multi_playlist[self.pctl.id_to_pl(item[3])].playlist_ids.index(item[2]),
-						item[3])
-					self.pctl.force_queue.append(queue_object)
-					self.tauon.queue_timer_set(queue_object=queue_object)
+					self.queue_track_result(item[2], item[3])
 
 				# ----
 
