@@ -11303,7 +11303,7 @@ class Tauon:
 
 	def sa_album_art(self) -> None:
 		if not self.sa_try_uncheck("Album Art"):
-			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album Art", 72, True])
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Album Art", 140, False])
 		self.gui.update_layout = True
 		self.sa_regen_menu()
 
