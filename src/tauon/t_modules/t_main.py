@@ -23875,6 +23875,7 @@ class NagBox:
 	SPLASH_VERSION = "10.0.0"
 	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
+	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
 		("Added setting for metadata panel location", False),
 		("Added album art to columns view", False),
@@ -23932,6 +23933,22 @@ class NagBox:
 			press=self.gui.level_2_click,
 		)
 
+	def draw_left_accent_gradient(self, x: int, y: int, w: int, h: int) -> None:
+		top = ColourRGBA(126, 82, 255, 255)
+		bottom = ColourRGBA(244, 65, 190, 255)
+		steps = max(1, round(h / max(self.gui.scale, 1)))
+		for step in range(steps):
+			ratio = step / max(steps - 1, 1)
+			colour = ColourRGBA(
+				round(top.r + (bottom.r - top.r) * ratio),
+				round(top.g + (bottom.g - top.g) * ratio),
+				round(top.b + (bottom.b - top.b) * ratio),
+				255,
+			)
+			y1 = y + round((h * step) / steps)
+			y2 = y + round((h * (step + 1)) / steps)
+			self.ddt.rect((x, y1, w, max(1, y2 - y1)), colour)
+
 	def draw(self) -> None:
 		w = round(640 * self.gui.scale)
 		h = round(384 * self.gui.scale)
@@ -23959,7 +23976,7 @@ class NagBox:
 		inner_w = w - inner_pad * 2
 
 		self.ddt.bordered_rect((x, y, w, h), panel_fill, panel_border, round(1 * scale))
-		self.ddt.rect((x, y, round(5 * scale), h), accent)
+		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
 		version_text = _("Tauon v{version}").format(version=self.SPLASH_VERSION)
@@ -24014,34 +24031,38 @@ class NagBox:
 			replace=_("GitHub Sponsors"),
 		)
 		self.tauon.link_activate(inner_x, support_y + round(19 * scale), donate_link, click=self.gui.level_2_click)
+		patreon_x = inner_x + donate_link[0] + donate_link[1] + self.ddt.get_text_w(" ", 12)
+		patreon_prefix = _("or on my ")
+		self.ddt.text(
+			(patreon_x, support_y + round(19 * scale)),
+			patreon_prefix,
+			self.colours.box_text_label,
+			12,
+			bg=panel_fill,
+		)
+		patreon_link_x = patreon_x + self.ddt.get_text_w(patreon_prefix, 12)
+		patreon_link = self.tauon.draw_linked_text(
+			(patreon_link_x, support_y + round(19 * scale)),
+			self.PATREON_URL,
+			self.colours.box_text_label,
+			12,
+			force=True,
+			replace="Patreon",
+		)
+		self.tauon.link_activate(patreon_link_x, support_y + round(19 * scale), patreon_link, click=self.gui.level_2_click)
 
 		button_y = y + h - round(46 * scale)
 		button_h = round(30 * scale)
 		button_gap = round(8 * scale)
 		close_w = max(round(84 * scale), self.ddt.get_text_w(_("Close"), 212) + round(22 * scale))
 		donate_w = max(round(96 * scale), self.ddt.get_text_w(_("Donate"), 212) + round(22 * scale))
-		release_w = max(round(124 * scale), self.ddt.get_text_w(_("Release Notes"), 212) + round(22 * scale))
 
 		close_x = x + w - close_w - inner_pad
 		donate_x = close_x - donate_w - button_gap
-		release_x = donate_x - release_w - button_gap
 
 		donate_bg = alpha_blend(alpha_mod(accent_warm, 42), self.colours.box_button_background)
 		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 72), self.colours.box_button_background_highlight)
-		release_bg = alpha_blend(alpha_mod(accent, 30), self.colours.box_button_background)
-		release_bg_hover = alpha_blend(alpha_mod(accent, 56), self.colours.box_button_background_highlight)
 
-		if self.drawer.button(
-			_("Release Notes"),
-			release_x,
-			button_y,
-			w=release_w,
-			h=button_h,
-			background_colour=release_bg,
-			background_highlight_colour=release_bg_hover,
-			press=self.gui.level_2_click,
-		):
-			self.open_release_notes()
 		if self.draw_donate_button((donate_x, button_y, donate_w, button_h), donate_bg, donate_bg_hover):
 			self.open_donate_link()
 		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
@@ -51581,14 +51602,16 @@ def main(holder: Holder) -> None:
 				)
 
 				tauon.fields.add(gui.scroll_hide_box)
-				if tauon.scroll_hide_timer.get() < 0.9 or (
-					(tauon.coll(gui.scroll_hide_box) or scroll_hold or gui.quick_search_mode)
-					and not menu_is_open()
-					and not pref_box.enabled
-					and not gui.rename_playlist_box
-					and gui.layer_focus == 0
-					and gui.show_playlist
-					and not tauon.search_over.active
+				if not prefs.show_nag and (
+					tauon.scroll_hide_timer.get() < 0.9 or (
+						(tauon.coll(gui.scroll_hide_box) or scroll_hold or gui.quick_search_mode)
+						and not menu_is_open()
+						and not pref_box.enabled
+						and not gui.rename_playlist_box
+						and gui.layer_focus == 0
+						and gui.show_playlist
+						and not tauon.search_over.active
+					)
 				):
 					scroll_opacity = 255
 
