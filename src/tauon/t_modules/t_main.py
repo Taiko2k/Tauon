@@ -23237,6 +23237,73 @@ class SearchOverlay:
 
 		self.tauon.add_album_to_queue(track_id, playlist.index(track_id), playlist_id)
 
+	def render_help_legend(self) -> None:
+		gui = self.gui
+		icon_size = round(26 * gui.scale)
+		margin = round(18 * gui.scale)
+		icon_rect = (
+			self.window_size[0] - margin - icon_size,
+			self.window_size[1] - margin - icon_size,
+			icon_size,
+			icon_size,
+		)
+		self.fields.add(icon_rect)
+
+		hover = self.coll(icon_rect)
+		icon_text = ColourRGBA(210, 210, 215, 105)
+		if hover:
+			icon_text = ColourRGBA(245, 245, 245, 230)
+
+		cx = icon_rect[0] + icon_size // 2
+		self.ddt.text(
+			(cx, icon_rect[1] + round(3 * gui.scale), 2),
+			"?",
+			icon_text,
+			214,
+		)
+
+		if not hover:
+			return
+
+		lines = [
+			(_("Go / open:"), _("left-click or press Enter.")),
+			(_("Show / reveal:"), _("right-click or press Shift+Enter.")),
+			(_("Add to current playlist:"), _("Ctrl+left-click.")),
+			(_("Add to queue:"), _("middle-click (track or album).")),
+		]
+		font = 13
+		label_font = 213
+		pad = round(12 * gui.scale)
+		label_gap = round(5 * gui.scale)
+		line_h = round(22 * gui.scale)
+		width = max(
+			self.ddt.get_text_w(label, label_font) + label_gap + self.ddt.get_text_w(text, font)
+			for label, text in lines
+		) + pad * 2
+		height = line_h * len(lines) + pad * 2
+		tooltip_x = max(margin, self.window_size[0] - margin - width)
+		tooltip_y = max(margin, icon_rect[1] - height - round(10 * gui.scale))
+		tooltip_bg = ColourRGBA(18, 18, 22, 245)
+
+		self.ddt.rect((tooltip_x, tooltip_y, width, height), tooltip_bg)
+		for i, (label, text) in enumerate(lines):
+			line_x = tooltip_x + pad
+			line_y = tooltip_y + pad + i * line_h
+			label_width = self.ddt.text(
+				(line_x, line_y),
+				label,
+				ColourRGBA(245, 245, 245, 255),
+				label_font,
+				bg=tooltip_bg,
+			)
+			self.ddt.text(
+				(line_x + label_width + label_gap, line_y),
+				text,
+				ColourRGBA(245, 245, 245, 255),
+				font,
+				bg=tooltip_bg,
+			)
+
 	def render(self) -> None:
 		prefs = self.prefs
 		inp   = self.inp
@@ -23699,6 +23766,9 @@ class SearchOverlay:
 				self.search_text.text = ""
 				self.results.clear()
 				self.searched_text = ""
+
+			if self.active:
+				self.render_help_legend()
 
 class MessageBox:
 
