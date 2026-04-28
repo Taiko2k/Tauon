@@ -10,6 +10,7 @@ Changelog
  - Added new mini mode Signal
  - Added theme editor
  - Added inertial smooth scrolling option
+ - Moved scroll bar to the right of tracklist
  - Redesigned settings box layout and style
  - Removed Spotify support
  - Removed koel support

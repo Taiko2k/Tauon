@@ -32539,6 +32539,19 @@ class StandardPlaylist:
 		inset_width        = gui.tracklist_inset_width
 		inset_left         = gui.tracklist_inset_left
 		center_mode        = gui.tracklist_center_mode
+		scrollbar_width    = 15 * gui.scale
+		if gui.set_mode and prefs.left_align_album_artist_title:
+			scrollbar_width = 11 * gui.scale
+		scrollbar_x = gui.playlist_left + gui.plw - scrollbar_width - 2 * gui.scale
+		scrollbar_hitbox_width = 28 * gui.scale
+		scrollbar_hitbox_right = scrollbar_x + scrollbar_width + 1 * gui.scale
+		scrollbar_hitbox_left = scrollbar_hitbox_right - scrollbar_hitbox_width
+		scrollbar_hitbox = (
+			scrollbar_hitbox_left,
+			gui.panelY,
+			scrollbar_hitbox_width,
+			window_size[1] - gui.panelBY - gui.panelY,
+		)
 
 		w = 0
 		gui.row_extra = 0
@@ -32696,7 +32709,10 @@ class StandardPlaylist:
 		list_items = []
 		number = 0
 		render_rows = gui.playlist_view_length + 2
-		row_input_right_pad = round(18 * gui.scale) if gui.rsp_on_left and prefs.scroll_enable else 0
+		row_input_right_pad = 0
+		if prefs.scroll_enable:
+			tracklist_right = left + gui.highlight_left + highlight_width
+			row_input_right_pad = max(0, round(tracklist_right - scrollbar_hitbox_left))
 
 		for i in range(render_rows):
 			track_position = i + pctl.playlist_view_position
@@ -32804,8 +32820,11 @@ class StandardPlaylist:
 									u += 1
 
 						# Add folder to selection if clicked
-						if inp.mouse_click \
-						and not (prefs.scroll_enable and inp.mouse_position[0] < 30 * gui.scale) and not gui.side_drag:
+						if (
+							inp.mouse_click
+							and not (prefs.scroll_enable and self.coll(scrollbar_hitbox))
+							and not gui.side_drag
+						):
 							self.inp.quick_drag = True
 							gui.set_drag_source()
 
@@ -32881,7 +32900,7 @@ class StandardPlaylist:
 				line_over = False
 
 			# Prevent click if near scroll bar
-			if prefs.scroll_enable and self.inp.mouse_position[0] < 30:
+			if prefs.scroll_enable and self.coll(scrollbar_hitbox):
 				line_hit = False
 
 			# Double click to play
@@ -49376,8 +49395,13 @@ def main(holder: Holder) -> None:
 				if not inp.mouse_down:
 					gui.side_drag = False
 
+				side_drag_x = gui.rsp_split_x - 5 * gui.scale
+				if not gui.rsp_on_left:
+					side_drag_x = gui.rsp_split_x + 4 * gui.scale
+					if prefs.scroll_enable:
+						side_drag_x = gui.rsp_split_x - 1 * gui.scale
 				rect = (
-					gui.rsp_split_x - 5 * gui.scale,
+					side_drag_x,
 					gui.panelY,
 					12 * gui.scale,
 					window_size[1] - gui.panelY - gui.panelBY,
@@ -51318,10 +51342,13 @@ def main(holder: Holder) -> None:
 					if gui.rsp:
 						# Draw Highlight when mouse over
 						if draw_sep_hl:
+							sep_x = gui.rsp_split_x + 1 * gui.scale
+							if gui.rsp_on_left or prefs.scroll_enable:
+								sep_x = gui.rsp_split_x - 1 * gui.scale
 							ddt.line(
-								gui.rsp_split_x + (1 * gui.scale if not gui.rsp_on_left else -1 * gui.scale),
+								sep_x,
 								gui.panelY + 1 * gui.scale,
-								gui.rsp_split_x + (1 * gui.scale if not gui.rsp_on_left else -1 * gui.scale),
+								sep_x,
 								window_size[1] - 50 * gui.scale,
 								ColourRGBA(100, 100, 100, 70),
 							)
@@ -51418,15 +51445,12 @@ def main(holder: Holder) -> None:
 
 				width = 15 * gui.scale
 
-				x = 0
-				if gui.rsp_on_left:
-					x = gui.playlist_left + gui.plw - width - 2 * gui.scale
-				elif gui.playlist_left:  # Move left so it sits over panel divide
-					x = gui.playlist_left - 1 * gui.scale
-					if not gui.set_mode:
-						width = 11 * gui.scale
 				if gui.set_mode and prefs.left_align_album_artist_title:
 					width = 11 * gui.scale
+				x = gui.playlist_left + gui.plw - width - 2 * gui.scale
+				scroll_hitbox_width = 28 * gui.scale
+				scroll_hitbox_right = x + width + 1 * gui.scale
+				scroll_hitbox_x = scroll_hitbox_right - scroll_hitbox_width
 
 				# x = gui.plw
 				# width = round(14 * gui.scale)
@@ -51435,9 +51459,9 @@ def main(holder: Holder) -> None:
 				# x -= width
 
 				gui.scroll_hide_box = (
-					x + 1 if not gui.maximized else x,
+					scroll_hitbox_x,
 					top,
-					28 * gui.scale,
+					scroll_hitbox_width,
 					window_size[1] - gui.panelBY - top,
 				)
 
@@ -51464,11 +51488,11 @@ def main(holder: Holder) -> None:
 						else:
 							sbl = 105 * gui.scale
 
-						tauon.fields.add((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl))
+						tauon.fields.add((scroll_hitbox_x, sbp, scroll_hitbox_width, sbl))
 						if (
-							tauon.coll((x, top, 28 * gui.scale, ey - top))
+							tauon.coll((scroll_hitbox_x, top, scroll_hitbox_width, ey - top))
 							and (inp.mouse_down or inp.right_click)
-							and coll_point(inp.click_location, (x, top, 28 * gui.scale, ey - top))
+							and coll_point(inp.click_location, (scroll_hitbox_x, top, scroll_hitbox_width, ey - top))
 						):
 							gui.pl_update = 1
 							if inp.right_click:
@@ -51557,7 +51581,7 @@ def main(holder: Holder) -> None:
 						ddt.rect_a((x + 1, sbp), (width, sbl), alpha_mod(fg, scroll_opacity))
 
 						if (
-							tauon.coll((x + 2 * gui.scale, sbp, 20 * gui.scale, sbl)) and inp.mouse_position[0] != 0
+							tauon.coll((scroll_hitbox_x, sbp, scroll_hitbox_width, sbl)) and inp.mouse_position[0] != 0
 						) or scroll_hold:
 							ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), ColourRGBA(255, 255, 255, 19))
 
