@@ -30779,12 +30779,13 @@ class BottomBarType1:
 				#y += round(3 * gui.scale)
 				#ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc)
 
+				icon_x_shift = round(2 * gui.scale)
 				if pctl.album_shuffle_mode:
-					self.shuffle_button_a.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+					self.shuffle_button_a.render(x + round(1 * gui.scale) + icon_x_shift, y + round(1 * gui.scale), rpbc)
 				elif off:
-					self.shuffle_button_off.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+					self.shuffle_button_off.render(x + round(1 * gui.scale) + icon_x_shift, y + round(1 * gui.scale), rpbc)
 				else:
-					self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
+					self.shuffle_button.render(x + round(1 * gui.scale) + icon_x_shift, y + round(1 * gui.scale), rpbc)
 
 					#ddt.rect_a((x + 25 * gui.scale, y), (23 * gui.scale, 3 * gui.scale), rpbc)
 
@@ -30852,12 +30853,12 @@ class BottomBarType1:
 				h = round(5 * gui.scale)
 
 				if pctl.album_repeat_mode:
-					self.repeat_button_a.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+					self.repeat_button_a.render(ar - round(45 * gui.scale) + icon_x_shift, y - round(2 * gui.scale), rpbc)
 					#ddt.rect_a((x + round(4 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
 				elif off:
-					self.repeat_button_off.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+					self.repeat_button_off.render(ar - round(45 * gui.scale) + icon_x_shift, y - round(2 * gui.scale), rpbc)
 				else:
-					self.repeat_button.render(ar - round(45 * gui.scale), y - round(2 * gui.scale), rpbc)
+					self.repeat_button.render(ar - round(45 * gui.scale) + icon_x_shift, y - round(2 * gui.scale), rpbc)
 				#ddt.rect_a((ar - round(25 * gui.scale), y), (round(25 * gui.scale), w), rpbc)
 				#ddt.rect_a((ar - w, y), (w, h), rpbc)
 				#ddt.rect_a((ar - round(50 * gui.scale), y + h), (round(50 * gui.scale), w), rpbc)
@@ -43471,6 +43472,15 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	bag.album_mode_art_size = int(bag.album_mode_art_size * diff_ratio)
 
 
+def clear_icon_cache(scaled_asset_directory: Path) -> None:
+	if not scaled_asset_directory.exists() and not scaled_asset_directory.is_symlink():
+		return
+	logging.info("Clearing scaled icon cache for database upgrade")
+	if scaled_asset_directory.is_dir() and not scaled_asset_directory.is_symlink():
+		shutil.rmtree(scaled_asset_directory)
+		return
+	scaled_asset_directory.unlink()
+
 
 def get_global_mouse() -> tuple[float, float]:
 	i_y = pointer(c_float(0))
@@ -45564,7 +45574,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 74
+	latest_db_version: float = 75
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -46497,6 +46507,9 @@ def main(holder: Holder) -> None:
 				tauon.hit_discord()
 	except Exception:
 		logging.exception("Failed to start Discord RPC at startup")
+
+	if db_version > 0 and db_version < latest_db_version:
+		clear_icon_cache(bag.dirs.scaled_asset_directory)
 
 	auto_scale(bag)
 	scale_assets(tauon, bag, gui, prefs.scale_want)
