@@ -185,6 +185,7 @@ class Prefs:
 
 	showcase_vis: bool = True
 	show_lyrics_showcase: bool = True
+	showcase_wide_art: bool = False
 
 	spec2_colour_mode = 0
 

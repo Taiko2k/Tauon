@@ -7725,6 +7725,17 @@ class Tauon:
 			text = _("Disable Auto Cycle")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
+	def toggle_showcase_wide_art_deco(self, _track_object: TrackClass) -> Decorator:
+		text = _("Disable Wide Mode") if self.prefs.showcase_wide_art else _("Enable Wide Mode")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
+
+	def toggle_showcase_wide_art(self, _track_object: TrackClass) -> None:
+		self.prefs.showcase_wide_art ^= True
+		self.gui.update = 2
+
+	def showcase_mode_show_test(self, _track_object: TrackClass) -> bool:
+		return self.gui.showcase_mode
+
 	def toggle_lyrics_deco(self, track_object: TrackClass) -> Decorator:
 		colour = self.colours.menu_text
 
@@ -39288,26 +39299,35 @@ class Milky:
 		self.fps.tick()
 
 
-def draw_showcase_art_box(tauon: Tauon, track: TrackClass, x: int | float, y: int | float, box: int | float) -> None:
+def draw_showcase_art_box(
+	tauon: Tauon,
+	track: TrackClass,
+	x: int | float,
+	y: int | float,
+	box_w: int | float,
+	box_h: int | float | None = None,
+) -> None:
 	gui = tauon.gui
 	inp = tauon.inp
 	ddt = tauon.ddt
-	rect = (x, y, box, box)
+	if box_h is None:
+		box_h = box_w
+	rect = (x, y, box_w, box_h)
 	gui.main_art_box = rect
 
 	ddt.rect(
 		(
 			x - round(2 * gui.scale),
 			y - round(2 * gui.scale),
-			box + round(4 * gui.scale),
-			box + round(4 * gui.scale),
+			box_w + round(4 * gui.scale),
+			box_h + round(4 * gui.scale),
 		),
 		ColourRGBA(60, 60, 60, 135),
 	)
 	ddt.rect(rect, tauon.colours.playlist_panel_background)
-	tauon.style_overlay.hole_punches.append(sdl3.SDL_FRect(round(x), round(y), round(box), round(box)))
+	tauon.style_overlay.hole_punches.append(sdl3.SDL_FRect(round(x), round(y), round(box_w), round(box_h)))
 
-	tauon.album_art_gen.display(track, (x, y), (box, box))
+	tauon.album_art_gen.display(track, (x, y), (box_w, box_h))
 	show_vis = False
 
 	if tauon.prefs.milk and tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
@@ -39369,8 +39389,9 @@ class Showcase:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
 
+		wide_art = self.prefs.showcase_wide_art and self.window_size[0] >= 500 * self.gui.scale
 		hide_art = False
-		if self.window_size[0] < 900 * self.gui.scale:
+		if self.window_size[0] < 900 * self.gui.scale and not wide_art:
 			hide_art = True
 
 		x = int(self.window_size[0] * 0.15)
@@ -39389,6 +39410,7 @@ class Showcase:
 		t1 = self.colours.grey(250)
 
 		self.gui.vis_4_colour = None
+		self.gui.draw_vis4_top = False
 		light_mode = False
 		if self.colours.lm:
 			bbg = self.colours.vis_colour
@@ -39446,6 +39468,46 @@ class Showcase:
 			else:
 				index = self.pctl.track_queue[self.pctl.queue_step]
 				track = self.pctl.master_library[index]
+
+			if wide_art:
+				available_h = self.window_size[1] - self.gui.panelY - self.gui.panelBY
+				box_w = min(round(self.window_size[0] * 0.756), round(954 * self.gui.scale))
+				box_w = max(round(280 * self.gui.scale), box_w)
+				box_h = round(box_w * 0.45)
+				max_box_h = max(round(160 * self.gui.scale), available_h - round(150 * self.gui.scale))
+				if box_h > max_box_h:
+					box_h = max_box_h
+					box_w = round(box_h / 0.45)
+				x = round((self.window_size[0] - box_w) / 2)
+				y = round(self.gui.panelY + max(round(22 * self.gui.scale), (available_h - box_h - round(108 * self.gui.scale)) / 2))
+				draw_showcase_art_box(self.tauon, track, x, y, box_w, box_h)
+
+				meta_gap = round(34 * self.gui.scale)
+				meta_block_h = round(78 * self.gui.scale)
+				meta_area_top = y + box_h + meta_gap
+				meta_area_bottom = self.window_size[1] - self.gui.panelBY - round(14 * self.gui.scale)
+				meta_y = meta_area_top
+				if meta_area_bottom > meta_area_top + meta_block_h:
+					meta_y = round(meta_area_top + ((meta_area_bottom - meta_area_top - meta_block_h) / 2))
+				meta_w = min(box_w, self.window_size[0] - round(60 * self.gui.scale))
+				meta_x = round(self.window_size[0] / 2)
+				title = clean_string(track.filename) if track.title == "" else track.title
+				self.ddt.text((meta_x, meta_y, 2), title, t1, 219, meta_w)
+				meta_y += round(32 * self.gui.scale)
+				if track.artist:
+					self.ddt.text((meta_x, meta_y, 2), track.artist, alpha_mod(t1, 210), 316, meta_w)
+					meta_y += round(23 * self.gui.scale)
+				if track.album:
+					album_line = track.album
+					if track.date:
+						album_line = f"{album_line} - {track.date}"
+					self.ddt.text((meta_x, meta_y, 2), album_line, alpha_mod(t1, 160), 14, meta_w)
+				elif track.date:
+					self.ddt.text((meta_x, meta_y, 2), track.date, alpha_mod(t1, 160), 14, meta_w)
+				self.gui.showed_title = True
+				self.ddt.alpha_bg = False
+				self.ddt.force_gray = False
+				return
 
 			if not hide_art:
 				draw_showcase_art_box(self.tauon, track, x, y, box)
@@ -42968,6 +43030,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("side-panel-left", prefs.side_panel_left)
 	cf.update_value("side-lyrics-art", prefs.show_side_lyrics_art_panel)
 	cf.update_value("side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
+	cf.update_value("showcase-wide-art", prefs.showcase_wide_art)
 	cf.update_value("absolute-track-indices", prefs.use_absolute_track_index)
 	cf.update_value("auto-hide-bottom-title", prefs.hide_bottom_title)
 	cf.update_value("auto-show-playing", prefs.auto_goto_playing)
@@ -43257,6 +43320,7 @@ def load_prefs(bag: Bag) -> None:
 	prefs.side_panel_left = cf.sync_add("bool", "side-panel-left", prefs.side_panel_left)
 	prefs.show_side_lyrics_art_panel = cf.sync_add("bool", "side-lyrics-art", prefs.show_side_lyrics_art_panel)
 	prefs.lyric_metadata_panel_top = cf.sync_add("bool", "side-lyrics-art-on-top", prefs.lyric_metadata_panel_top)
+	prefs.showcase_wide_art = cf.sync_add("bool", "showcase-wide-art", prefs.showcase_wide_art)
 	prefs.use_absolute_track_index = cf.sync_add(
 		"bool", "absolute-track-indices", prefs.use_absolute_track_index,
 		"For playlists with titles disabled only")
@@ -47014,10 +47078,26 @@ def main(holder: Holder) -> None:
 	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	picture_menu.br()
+	picture_menu.add(MenuItem(
+		_("Enable Wide Mode"),
+		tauon.toggle_showcase_wide_art,
+		tauon.toggle_showcase_wide_art_deco,
+		pass_ref=True,
+		pass_ref_deco=True,
+		show_test=tauon.showcase_mode_show_test,
+	))
 	if milky_ready:
 		picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(
+		_("Enable Wide Mode"),
+		tauon.toggle_showcase_wide_art,
+		tauon.toggle_showcase_wide_art_deco,
+		pass_ref=True,
+		pass_ref_deco=True,
+		show_test=tauon.showcase_mode_show_test,
+	))
 	milky_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
 
 	milky_menu.br()
