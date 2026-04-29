@@ -24001,22 +24001,9 @@ class NagBox:
 	def open_donate_link(self) -> None:
 		webbrowser.open(self.DONATE_URL, new=2, autoraise=True)
 
-	def draw_donate_button(
-		self,
-		rect: tuple[int, int, int, int],
-		background_colour: ColourRGBA,
-		background_highlight_colour: ColourRGBA,
-	) -> bool:
-		return self.drawer.button(
-			_("Donate"),
-			rect[0],
-			rect[1],
-			w=rect[2],
-			h=rect[3],
-			background_colour=background_colour,
-			background_highlight_colour=background_highlight_colour,
-			press=self.gui.level_2_click,
-		)
+	def thank_donor(self) -> None:
+		self.dismiss()
+		self.tauon.show_message(_("Yay! Thank you!! 🎉 ✨"), mode="done")
 
 	def draw_left_accent_gradient(self, x: int, y: int, w: int, h: int) -> None:
 		top = ColourRGBA(126, 82, 255, 255)
@@ -24107,10 +24094,10 @@ class NagBox:
 			row_y += row_gap
 
 		support_y = changelog_y + changelog_h + round(18 * scale)
-		self.ddt.text((inner_x, support_y), _("Support Tauon"), self.colours.box_text, 213, bg=panel_fill)
+		self.ddt.text((inner_x, support_y), _("The time has come to open thy heart and thy wallet ❤️  "), self.colours.box_text, 213, bg=panel_fill)
 		donate_link = self.tauon.draw_linked_text(
 			(inner_x, support_y + round(19 * scale)),
-			_("Support development at https://github.com/sponsors/Taiko2k"),
+			_("A ton of work went into this release. Please consider donating at https://github.com/sponsors/Taiko2k"),
 			self.colours.box_text_label,
 			12,
 			replace=_("GitHub Sponsors"),
@@ -24139,18 +24126,27 @@ class NagBox:
 		button_y = y + h - round(46 * scale)
 		button_h = round(30 * scale)
 		button_gap = round(8 * scale)
-		close_w = max(round(84 * scale), self.ddt.get_text_w(_("Close"), 212) + round(22 * scale))
-		donate_w = max(round(96 * scale), self.ddt.get_text_w(_("Donate"), 212) + round(22 * scale))
+		no_thanks_w = max(round(96 * scale), self.ddt.get_text_w(_("No thanks"), 212) + round(22 * scale))
+		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Yes, I have donated"), 212) + round(22 * scale))
 
-		close_x = x + w - close_w - inner_pad
-		donate_x = close_x - donate_w - button_gap
+		no_thanks_x = x + w - no_thanks_w - inner_pad
+		yes_donated_x = no_thanks_x - yes_donated_w - button_gap
 
 		donate_bg = alpha_blend(alpha_mod(accent_warm, 42), self.colours.box_button_background)
 		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 72), self.colours.box_button_background_highlight)
 
-		if self.draw_donate_button((donate_x, button_y, donate_w, button_h), donate_bg, donate_bg_hover):
-			self.open_donate_link()
-		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
+		if self.drawer.button(
+			_("Yes, I have donated"),
+			yes_donated_x,
+			button_y,
+			w=yes_donated_w,
+			h=button_h,
+			background_colour=donate_bg,
+			background_highlight_colour=donate_bg_hover,
+			press=self.gui.level_2_click,
+		):
+			self.thank_donor()
+		if self.drawer.button(_("No thanks"), no_thanks_x, button_y, w=no_thanks_w, h=button_h, press=self.gui.level_2_click):
 			self.dismiss()
 
 class PowerTag:
