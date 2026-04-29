@@ -7859,6 +7859,17 @@ class Tauon:
 
 		self.prefs.milk ^= True
 
+	def toggle_milky_settings(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.milk
+
+		if not self.prefs.milk and not milky_ready:
+			self.show_message(_("Not supported on this platform"), mode="error")
+			return None
+
+		self.toggle_milky(self.pctl.playing_object())
+		return None
+
 	def toggle_milky_auto(self, _track_object: TrackClass) -> None:
 		self.milky.projectm.auto_frames = 0
 		self.milky.projectm.timer.set()
@@ -25104,6 +25115,8 @@ class Over:
 		accent: ColourRGBA | None = None,
 		click: bool = False,
 		show_active_bar: bool = False,
+		disabled: bool = False,
+		disabled_click: bool = False,
 	) -> bool:
 		if accent is None:
 			accent = self.settings_page_accent()
@@ -25113,23 +25126,29 @@ class Over:
 		hover = self.coll((x, y, w, h))
 
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		if active:
+		if disabled:
+			fill = alpha_blend(ColourRGBA(128, 128, 128, 8), self.colours.box_background)
+		elif active:
 			fill = alpha_blend(alpha_mod(accent, 26), fill)
-		if hover:
+		if hover and not disabled:
 			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
 
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		if active:
+		if disabled:
+			border = alpha_blend(ColourRGBA(128, 128, 128, 36), self.colours.box_text_border)
+		elif active:
 			border = alpha_blend(alpha_mod(accent, 90), border)
 
 		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
-		if active and show_active_bar:
+		if active and show_active_bar and not disabled:
 			self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
 
 		self.fields.add((x, y, w, h))
 		if (self.click or click) and hover:
 			self.inp.global_clicked = True
-			if type(function) is bool:
+			if disabled and not disabled_click:
+				pass
+			elif type(function) is bool:
 				active ^= True
 			else:
 				function()
@@ -25139,12 +25158,14 @@ class Over:
 		title_font = 13
 		title_max_w = w - round(84 * self.gui.scale)
 		title_y = y + round(6 * self.gui.scale) if subtitle else y + round(7 * self.gui.scale)
-		self.ddt.text((text_x, title_y), title, self.colours.box_text, title_font, bg=fill, max_w=title_max_w)
+		title_colour = alpha_mod(self.colours.box_text_label, 150) if disabled else self.colours.box_text
+		subtitle_colour = alpha_mod(self.colours.box_text_label, 130) if disabled else self.colours.box_text_label
+		self.ddt.text((text_x, title_y), title, title_colour, title_font, bg=fill, max_w=title_max_w)
 		if subtitle:
 			self.ddt.text(
 				(text_x, y + round(21 * self.gui.scale)),
 				subtitle,
-				self.colours.box_text_label,
+				subtitle_colour,
 				11,
 				bg=fill,
 				max_w=title_max_w,
@@ -25155,11 +25176,15 @@ class Over:
 		switch_x = x + w - switch_w - round(12 * self.gui.scale)
 		switch_y = y + (h - switch_h) // 2
 		switch_fill = (
+			alpha_blend(ColourRGBA(128, 128, 128, 24), fill)
+			if disabled else
 			alpha_blend(alpha_mod(accent, 54), fill)
 			if active else
 			alpha_blend(ColourRGBA(255, 255, 255, 16), fill)
 		)
 		switch_border = (
+			border
+			if disabled else
 			alpha_blend(alpha_mod(accent, 120), border)
 			if active else
 			border
@@ -25170,7 +25195,7 @@ class Over:
 		knob_h = switch_h - round(6 * self.gui.scale)
 		knob_x = switch_x + (switch_w - knob_w - round(3 * self.gui.scale) if active else round(3 * self.gui.scale))
 		knob_y = switch_y + round(3 * self.gui.scale)
-		knob_colour = self.colours.box_title_text if active else self.colours.box_text_label
+		knob_colour = alpha_mod(self.colours.box_text_label, 120) if disabled else self.colours.box_title_text if active else self.colours.box_text_label
 		self.ddt.rect((knob_x, knob_y, knob_w, knob_h), knob_colour)
 
 		return active
@@ -26975,6 +27000,9 @@ class Over:
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
 		view_h = round(304 * gui.scale)
+		view_h += compact_row_h + row_gap
+		if self.prefs.backend == Backend.PHAZOR:
+			view_h += compact_row_h + row_gap
 		if self.album_mode_art_size < 160:
 			view_h += compact_row_h + row_gap
 		left_rect = (x, y, left_w, view_h)
@@ -27021,6 +27049,23 @@ class Over:
 		)
 		if self.prefs.zoom_art != old_zoom:
 			self.tauon.album_art_gen.clear_cache()
+		inner_y += compact_row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, compact_row_h),
+			self.tauon.toggle_milky_settings,
+			_("MilkDrop visualiser"),
+			accent=accent,
+			disabled=not milky_ready and not self.prefs.milk,
+			disabled_click=True,
+		)
+		if self.prefs.backend == Backend.PHAZOR:
+			inner_y += compact_row_h + row_gap
+			self.settings_switch_row(
+				(inner_x, inner_y, inner_w, compact_row_h),
+				self.tauon.toggle_showcase_vis,
+				_("Showcase visualisation"),
+				accent=accent,
+			)
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			right_rect,
@@ -27277,9 +27322,6 @@ class Over:
 			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"))
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_level_meter, _("Top-panel visualiser"), accent=accent)
-		if prefs.backend == Backend.PHAZOR:
-			inner_y += row_h + row_gap
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_showcase_vis, _("Showcase visualisation"), accent=accent)
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			right_rect,
