@@ -6240,17 +6240,29 @@ class Tauon:
 				return sdl3.SDL_HITTEST_NORMAL
 
 			if prefs.mini_mode_mode == MiniModeMode.SIGNAL:
-				drag_left = round(16 * gui.scale)
-				drag_right = window_size[0] - round(16 * gui.scale)
 				if prefs.left_window_control:
 					if x < gui.window_control_hit_area_w and y < gui.window_control_hit_area_h:
 						return sdl3.SDL_HITTEST_NORMAL
-					drag_left = round(gui.window_control_hit_area_w + 8 * gui.scale)
-				drag_top = round(8 * gui.scale)
-				drag_bottom = round(52 * gui.scale)
-				if drag_left < x < drag_right and drag_top < y < drag_bottom:
-					return sdl3.SDL_HITTEST_DRAGGABLE
-				return sdl3.SDL_HITTEST_NORMAL
+
+				for field, _callback in self.fields.field_array:
+					if coll_point((x, y), field):
+						return sdl3.SDL_HITTEST_NORMAL
+
+				frame = round(14 * gui.scale)
+				box_y = round(14 * gui.scale)
+				box_side = min(window_size[0] - frame * 2, window_size[1] - round(30 * gui.scale))
+				box_rect = (frame, box_y, window_size[0] - frame * 2, box_side)
+				art_size = round(127 * gui.scale)
+				art_rect = (
+					box_rect[0] + box_rect[2] - art_size - round(18 * gui.scale),
+					box_rect[1] + round(34 * gui.scale),
+					art_size,
+					art_size,
+				)
+				if coll_point((x, y), art_rect):
+					return sdl3.SDL_HITTEST_NORMAL
+
+				return sdl3.SDL_HITTEST_DRAGGABLE
 
 			# Square modes
 			y1 = window_size[0]
@@ -12508,15 +12520,17 @@ class Tauon:
 		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
 			size = (400, 310)
 
-		if self.logical_size == self.window_size:
-			size = (int(size[0] * self.gui.scale), int(size[1] * self.gui.scale))
+		scale_window_size = self.logical_size == self.window_size
+		if scale_window_size:
+			size_scale = 2 if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL else self.gui.scale
+			size = (int(size[0] * size_scale), int(size[1] * size_scale))
 
 		self.logical_size[0] = size[0]
 		self.logical_size[1] = size[1]
 
 		min_size = (100, 80)
 		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
-			min_size = (round(320 * self.gui.scale), round(230 * self.gui.scale))
+			min_size = (640, 460) if scale_window_size else (320, 230)
 		sdl3.SDL_SetWindowMinimumSize(self.t_window, min_size[0], min_size[1])
 		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1])
 		sdl3.SDL_SetWindowResizable(self.t_window, True)
@@ -32390,7 +32404,7 @@ class MiniModeSignal:
 							clicked_track = True
 					self.ddt.text((tx, ty), title, colour, font, round(box_rect[2] * 0.54), shell_fill)
 					if is_current:
-						underline_y = round(ty + th + 1 * scale)
+						underline_y = round(ty + 15 * scale)
 						underline_w = min(round(tw), round(box_rect[2] * 0.44))
 						self.ddt.rect((round(tx), underline_y, underline_w, max(1, round(2 * scale))), secondary)
 
