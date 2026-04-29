@@ -6252,6 +6252,62 @@ class Tauon:
 				box_y = round(14 * gui.scale)
 				box_side = min(window_size[0] - frame * 2, window_size[1] - round(30 * gui.scale))
 				box_rect = (frame, box_y, window_size[0] - frame * 2, box_side)
+				graph_rect = (
+					box_rect[0] + round(12 * gui.scale),
+					box_rect[1] + round(28 * gui.scale),
+					box_rect[2] - round(24 * gui.scale),
+					box_rect[3] - round(54 * gui.scale),
+				)
+				baseline = graph_rect[1] + graph_rect[3] - round(16 * gui.scale)
+				playlist = self.pctl.default_playlist
+				if playlist:
+					tracklist_focus = self.mini_mode_signal.focus_position
+					if not self.mini_mode_signal.focus_ready:
+						tracklist_focus = float(self.mini_mode_signal._current_playlist_position())
+					current_index = self.mini_mode_signal._current_playlist_position()
+					anchor_x = box_rect[0] + round(box_rect[2] * 0.32) + round(75 * gui.scale)
+					anchor_y = box_rect[1] + round(box_rect[3] * 0.24)
+					x_step = round(18 * gui.scale)
+					y_step = round(16 * gui.scale)
+					max_delta = 7
+					start = max(0, int(math.floor(tracklist_focus)) - max_delta)
+					end = min(len(playlist), int(math.ceil(tracklist_focus)) + max_delta + 1)
+					for i in range(start, end):
+						rel = i - tracklist_focus
+						if abs(rel) > max_delta:
+							continue
+						tx = anchor_x + round(rel * x_step)
+						ty = anchor_y + round(rel * y_step)
+						if ty < graph_rect[1] - round(20 * gui.scale) or ty > baseline - round(4 * gui.scale):
+							continue
+
+						track_object = self.pctl.get_track(playlist[i])
+						title = self.mini_mode_signal._track_title(track_object)
+						font = 413 if i == current_index else 211
+						tw = self.ddt.get_text_w(title, font)
+						th = self.ddt.get_text_w(title, font, height=True)
+						if tw is None:
+							tw = round(120 * gui.scale)
+						if th is None:
+							th = round(14 * gui.scale)
+						if tx > graph_rect[0] + graph_rect[2] or tx + round(tw) < graph_rect[0]:
+							continue
+						track_hit_rect = (
+							round(tx) - round(4 * gui.scale),
+							round(ty) - round(2 * gui.scale),
+							round(tw) + round(8 * gui.scale),
+							round(th) + round(4 * gui.scale),
+						)
+						track_drag_gap = round(6 * gui.scale)
+						track_drag_clear_rect = (
+							track_hit_rect[0] - track_drag_gap,
+							track_hit_rect[1] - track_drag_gap,
+							track_hit_rect[2] + track_drag_gap * 2,
+							track_hit_rect[3] + track_drag_gap * 2,
+						)
+						if coll_point((x, y), track_drag_clear_rect):
+							return sdl3.SDL_HITTEST_NORMAL
+
 				art_size = round(127 * gui.scale)
 				art_rect = (
 					box_rect[0] + box_rect[2] - art_size - round(18 * gui.scale),
@@ -12518,19 +12574,12 @@ class Tauon:
 			self.style_overlay.flush()
 			self.thread_manager.ready("style")
 		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
-			size = (400, 310)
-
-		scale_window_size = self.logical_size == self.window_size
-		if scale_window_size:
-			size_scale = 2 if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL else self.gui.scale
-			size = (int(size[0] * size_scale), int(size[1] * size_scale))
+			size = (640, 460)
 
 		self.logical_size[0] = size[0]
 		self.logical_size[1] = size[1]
 
 		min_size = (100, 80)
-		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
-			min_size = (640, 460) if scale_window_size else (320, 230)
 		sdl3.SDL_SetWindowMinimumSize(self.t_window, min_size[0], min_size[1])
 		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1])
 		sdl3.SDL_SetWindowResizable(self.t_window, True)
@@ -32353,7 +32402,7 @@ class MiniModeSignal:
 		current_index = self._current_playlist_position()
 		self._update_focus_position(current_index)
 
-		anchor_x = box_rect[0] + round(box_rect[2] * 0.32) + round(90 * scale)
+		anchor_x = box_rect[0] + round(box_rect[2] * 0.32) + round(75 * scale)
 		anchor_y = box_rect[1] + round(box_rect[3] * 0.24)
 		x_step = round(18 * scale)
 		y_step = round(16 * scale)
