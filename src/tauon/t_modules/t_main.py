@@ -39288,6 +39288,57 @@ class Milky:
 		self.fps.tick()
 
 
+def draw_showcase_art_box(tauon: Tauon, track: TrackClass, x: int | float, y: int | float, box: int | float) -> None:
+	gui = tauon.gui
+	inp = tauon.inp
+	ddt = tauon.ddt
+	rect = (x, y, box, box)
+	gui.main_art_box = rect
+
+	ddt.rect(
+		(
+			x - round(2 * gui.scale),
+			y - round(2 * gui.scale),
+			box + round(4 * gui.scale),
+			box + round(4 * gui.scale),
+		),
+		ColourRGBA(60, 60, 60, 135),
+	)
+	ddt.rect(rect, tauon.colours.playlist_panel_background)
+	tauon.style_overlay.hole_punches.append(sdl3.SDL_FRect(round(x), round(y), round(box), round(box)))
+
+	tauon.album_art_gen.display(track, (x, y), (box, box))
+	show_vis = False
+
+	if tauon.prefs.milk and tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
+		if tauon.pctl.a_time < 1.3:
+			if 1 < tauon.pctl.a_time < 1.3:
+				tauon.milky.render(discard=True)
+				tauon.milky.burn(track)
+		else:
+			tauon.milky.render()
+			show_vis = True
+		if tauon.pctl.playing_state != PlayingState.PAUSED:
+			gui.delay_frame(0.007)
+
+	tauon.fields.add(rect)
+	if tauon.coll(rect) and tauon.is_level_zero(False):
+		if inp.mouse_click and inp.key_focused == 0:
+			if show_vis:
+				tauon.milky.projectm.load_next = "random"
+			else:
+				tauon.album_art_gen.cycle_offset(track)
+				if tauon.pctl.mpris:
+					tauon.pctl.mpris.update(force=True)
+
+		if inp.right_click:
+			if tauon.prefs.milk:
+				tauon.milky_menu.activate(in_reference=track)
+			else:
+				tauon.picture_menu.activate(in_reference=track)
+			inp.right_click = False
+
+
 class Showcase:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon:                       Tauon = tauon
@@ -39397,25 +39448,7 @@ class Showcase:
 				track = self.pctl.master_library[index]
 
 			if not hide_art:
-				# Draw frame around art box
-				# self.tauon.drop_shadow.render(x + 5 * self.gui.scale, y + 5 * self.gui.scale, box + 10 * self.gui.scale, box + 10 * self.gui.scale)
-				self.ddt.rect(
-					(x - round(2 * self.gui.scale), y - round(2 * self.gui.scale), box + round(4 * self.gui.scale),
-					box + round(4 * self.gui.scale)), ColourRGBA(60, 60, 60, 135))
-				self.ddt.rect((x, y, box, box), self.colours.playlist_panel_background)
-				rect = sdl3.SDL_FRect(round(x), round(y), round(box), round(box))
-				self.tauon.style_overlay.hole_punches.append(rect)
-
-				# Draw album art in box
-				self.tauon.album_art_gen.display(track, (x, y), (box, box))
-
-				# Click art to cycle
-				if self.coll((x, y, box, box)):
-					if self.inp.mouse_click is True:
-						self.tauon.album_art_gen.cycle_offset(track)
-					if self.inp.right_click:
-						self.tauon.picture_menu.activate(in_reference=track)
-						self.inp.right_click = False
+				draw_showcase_art_box(self.tauon, track, x, y, box)
 
 			# Check for lyrics if auto setting
 			self.tauon.test_auto_lyrics(track)
@@ -42434,25 +42467,7 @@ class TimedLyricsEdit:
 				track = self.pctl.master_library[index]
 
 			if not hide_art:
-				# Draw frame around art box
-				# self.tauon.drop_shadow.render(x + 5 * self.gui.scale, y + 5 * self.gui.scale, box + 10 * self.gui.scale, box + 10 * self.gui.scale)
-				self.ddt.rect(
-					(x - round(2 * self.gui.scale), y - round(2 * self.gui.scale), box + round(4 * self.gui.scale),
-					box + round(4 * self.gui.scale)), ColourRGBA(60, 60, 60, 135))
-				self.ddt.rect((x, y, box, box), self.colours.playlist_panel_background)
-				rect = sdl3.SDL_FRect(round(x), round(y), round(box), round(box))
-				self.tauon.style_overlay.hole_punches.append(rect)
-
-				# Draw album art in box
-				self.tauon.album_art_gen.display(track, (x, y), (box, box))
-
-				# Click art to cycle
-				if self.coll((x, y, box, box)):
-					if self.inp.mouse_click is True:
-						self.tauon.album_art_gen.cycle_offset(track)
-					if self.inp.right_click:
-						self.tauon.picture_menu.activate(in_reference=track)
-						self.inp.right_click = False
+				draw_showcase_art_box(self.tauon, track, x, y, box)
 
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 50 * self.gui.scale
