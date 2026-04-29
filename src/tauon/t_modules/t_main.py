@@ -26020,12 +26020,14 @@ class Over:
 				accent,
 			)
 			y += row_h + row_gap
+			extract_archives_enabled = tauon.toggle_extract(1)
 			self.settings_switch_row(
 				(x, y, w, row_h),
 				tauon.toggle_dl_mon,
 				_("Enable download monitor"),
 				_("Watch Downloads for one-click imports."),
 				accent,
+				disabled=not extract_archives_enabled,
 			)
 			y += row_h + row_gap
 			self.settings_switch_row(
@@ -26033,6 +26035,7 @@ class Over:
 				tauon.toggle_ex_del,
 				_("Trash archive after extraction"),
 				accent=accent,
+				disabled=not extract_archives_enabled,
 			)
 			y += small_row_h + row_gap
 			self.settings_switch_row(
@@ -26040,6 +26043,7 @@ class Over:
 				tauon.toggle_music_ex,
 				_("Always extract to Music folder"),
 				accent=accent,
+				disabled=not extract_archives_enabled,
 			)
 
 			bottom = left_rect[1] + left_rect[3] - round(14 * gui.scale)
