@@ -26900,7 +26900,7 @@ class Over:
 		row_gap = round(6 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		view_h = round(299 * gui.scale)
+		view_h = round(304 * gui.scale)
 		if self.album_mode_art_size < 160:
 			view_h += compact_row_h + row_gap
 		left_rect = (x, y, left_w, view_h)
@@ -27200,7 +27200,7 @@ class Over:
 		old_on_top = prefs.mini_mode_on_top
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
-			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"), _("You can enable the x11 setting below as a workaround"))
+			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"))
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_level_meter, _("Top-panel visualiser"), accent=accent)
 		if prefs.backend == Backend.PHAZOR:
@@ -27274,17 +27274,6 @@ class Over:
 			self.settings_scale_preview_value = None
 		inner_y += round(52 * gui.scale)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.toggle_x_scale, _("Auto scale"), accent=accent)
-		inner_y += row_h + row_gap
-		if not self.windows and not self.macos:
-			x11_path = self.user_directory / "x11"
-			x11 = x11_path.exists()
-			old_x11 = x11
-			x11 = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), x11, _("Prefer x11 when running in Wayland"), accent=accent)
-			if old_x11 is False and x11 is True:
-				with x11_path.open("a"):
-					pass
-			elif old_x11 is True and x11 is False:
-				os.remove(x11_path)
 
 		return max(left_rect[3], right_rect[3])
 
