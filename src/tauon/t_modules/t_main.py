@@ -49532,6 +49532,35 @@ def main(holder: Holder) -> None:
 					window_size[1] - gui.panelY - gui.panelBY,
 				)
 				tauon.fields.add(rect)
+				tracklist_scroll_top = gui.panelY
+				if gui.artist_info_panel:
+					tracklist_scroll_top += gui.artist_panel_height
+				tracklist_scrollbar_width = 15 * gui.scale
+				if gui.set_mode and prefs.left_align_album_artist_title:
+					tracklist_scrollbar_width = 11 * gui.scale
+				tracklist_scrollbar_x = gui.playlist_left + gui.plw - tracklist_scrollbar_width - 2 * gui.scale
+				tracklist_scroll_hitbox_width = 28 * gui.scale
+				tracklist_scroll_hitbox_right = tracklist_scrollbar_x + tracklist_scrollbar_width + 1 * gui.scale
+				tracklist_scroll_hitbox = (
+					tracklist_scroll_hitbox_right - tracklist_scroll_hitbox_width,
+					tracklist_scroll_top,
+					tracklist_scroll_hitbox_width,
+					window_size[1] - gui.panelBY - tracklist_scroll_top,
+				)
+				scroll_bar_held = (
+					scroll_hold
+					or tauon.mini_lyrics_scroll.held
+					or tauon.playlist_panel_scroll.held
+					or tauon.artist_info_scroll.held
+					or tauon.device_scroll.held
+					or tauon.artist_list_scroll.held
+					or tauon.gallery_scroll.held
+					or tauon.tree_view_scroll.held
+					or tauon.radio_view_scroll.held
+				)
+				scroll_bar_blocks_side_drag = scroll_bar_held or tauon.coll(tracklist_scroll_hitbox)
+				if scroll_bar_held:
+					gui.side_drag = False
 
 				if (
 					(tauon.coll(rect) or gui.side_drag is True)
@@ -49546,7 +49575,7 @@ def main(holder: Holder) -> None:
 					and not gui.timed_lyrics_editing_now
 					and not Menu.active
 					and (gui.rsp or prefs.album_mode)
-					and not tauon.artist_info_scroll.held
+					and not scroll_bar_blocks_side_drag
 					and gui.layer_focus == 0
 					and gui.show_playlist
 				):
