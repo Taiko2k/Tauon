@@ -38,6 +38,7 @@ a = Analysis(
 		(str(msys64_path / "mingw64" / "bin" / "libopenmpt-0.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libopus-0.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libopusfile-0.dll"), "."),
+		(str(msys64_path / "mingw64" / "bin" / "libprojectM-4-4.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libsamplerate-0.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libvorbis-0.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libvorbisfile-3.dll"), "."),
@@ -46,6 +47,9 @@ a = Analysis(
 		(str(msys64_path / "mingw64" / "bin" / "SDL3_image.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "SDL3_ttf.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "glew32.dll"), "."),
+		(str(msys64_path / "mingw64" / "bin" / "libgcc_s_seh-1.dll"), "."),
+		(str(msys64_path / "mingw64" / "bin" / "libstdc++-6.dll"), "."),
+		(str(msys64_path / "mingw64" / "bin" / "libwinpthread-1.dll"), "."),
 	],
 	datas=[
 		(certifi.where(), "certifi"),

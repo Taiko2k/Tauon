@@ -39015,7 +39015,22 @@ except Exception:
 	logging.exception("Unknown error importing PyOpenGL, Milkdrop visualizer will be disabled")
 	milky_ready = False
 
-if not ctypes.util.find_library("projectM-4"):
+
+def find_projectm_library() -> str | None:
+	if sys.platform == "win32":
+		for base_dir in (Path(sys.executable).parent, Path.cwd()):
+			for dll_name in ("libprojectM-4-4.dll", "libprojectM-4.dll", "projectM-4.dll"):
+				path = base_dir / dll_name
+				if path.is_file():
+					return str(path)
+	for lib_name in ("projectM-4", "libprojectM-4-4", "libprojectM-4"):
+		path = ctypes.util.find_library(lib_name)
+		if path:
+			return path
+	return None
+
+
+if not find_projectm_library():
 	milky_ready = False
 
 class ProjectM:
@@ -39042,7 +39057,7 @@ class ProjectM:
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
-		lib_name = ctypes.util.find_library("projectM-4")
+		lib_name = find_projectm_library()
 		if not lib_name:
 			logging.warning("Could not find libprojectM-4")
 			self.tauon.show_message("Package ProjectM-4 not found", "Milkdrop feature will be unavailable", mode="error")
