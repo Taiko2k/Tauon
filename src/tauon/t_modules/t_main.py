@@ -39528,11 +39528,30 @@ class ProjectM:
 			return self.loaded_preset.stem
 		return "Default"
 
+	def log_preset_load_event(self, event: str, preset: Path, fade: bool) -> None:
+		try:
+			log_path = self.tauon.user_directory / "milkdrop-preset-load.log"
+			timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+			previous = str(self.loaded_preset) if self.loaded_preset else ""
+			exists = preset.is_file()
+			size = preset.stat().st_size if exists else -1
+			with log_path.open("a", encoding="utf-8") as file:
+				file.write(
+					f"{timestamp}\t{event}\tfade={fade}\texists={exists}\tsize={size}"
+					f"\tprevious={previous}\tpreset={preset}\n"
+				)
+				file.flush()
+				os.fsync(file.fileno())
+		except Exception:
+			logging.exception("Failed to write Milkdrop preset load log")
+
 	def load_preset(self, preset: Path, fade: bool = False) -> None:
+		self.log_preset_load_event("LOADING", preset, fade)
 		self.loaded_preset = preset
 		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
+		self.log_preset_load_event("LOADED_OK", preset, fade)
 		self.auto_frames = 0
 		self.timer.set()
 
@@ -45947,6 +45966,14 @@ def main(holder: Holder) -> None:
 	else:
 		logging.info("Running in portable mode")
 		config_directory = user_directory
+
+	milkdrop_preset_load_log = user_directory / "milkdrop-preset-load.log"
+	if milkdrop_preset_load_log.exists():
+		try:
+			milkdrop_preset_load_log.unlink()
+			logging.info("Removed previous Milkdrop preset load log: %s", milkdrop_preset_load_log)
+		except Exception:
+			logging.exception("Failed to remove previous Milkdrop preset load log: %s", milkdrop_preset_load_log)
 
 	if not (user_directory / "state.p").is_file() and cache_directory.is_dir():
 		logging.info("Clearing old cache directory")
