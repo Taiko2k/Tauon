@@ -1,134 +1,121 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="500"
-   height="500"
-   viewBox="0 0 132.292 132.292"
+   width="500.00003"
+   height="500.00003"
+   viewBox="0 0 132.29201 132.29201"
    version="1.1"
    id="svg7"
-   sodipodi:docname="tauonmb.svg"
-   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview7"
-     pagecolor="#ffffff"
-     bordercolor="#000000"
-     borderopacity="0.25"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.4025"
-     inkscape:cx="-519.25466"
-     inkscape:cy="197.51553"
-     inkscape:window-width="2560"
-     inkscape:window-height="1011"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg7" />
   <defs
      id="defs2">
-    <linearGradient
-       xlink:href="#a"
-       id="b"
-       x1="72.597"
-       x2="35.013"
-       y1="14.935"
-       y2="82.095"
-       gradientTransform="translate(-238.353 73.89)scale(5.03622)"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="a">
-      <stop
-         offset="0"
-         style="stop-color:#f53bdc;stop-opacity:1"
-         id="stop1" />
-      <stop
-         offset="1"
-         style="stop-color:#1ccdfe;stop-opacity:1"
-         id="stop2" />
-    </linearGradient>
-    <linearGradient
-       xlink:href="#a-6"
-       id="b-3"
-       x1="71.509125"
-       x2="55.41832"
-       y1="14.516761"
-       y2="39.33279"
-       gradientTransform="matrix(5.0119566,0,0,5.0125024,-410.39528,-67.779769)"
-       gradientUnits="userSpaceOnUse" />
     <linearGradient
        id="a-6">
       <stop
          offset="0"
-         style="stop-color:#ef2acf;stop-opacity:1;"
-         id="stop6" />
+         style="stop-color:#fa6ba3;stop-opacity:1;"
+         id="stop5" />
+      <stop
+         offset="0.52113491"
+         style="stop-color:#ba3feb;stop-opacity:1;"
+         id="stop8" />
       <stop
          offset="1"
-         style="stop-color:#8476f1;stop-opacity:1;"
+         style="stop-color:#4572f7;stop-opacity:1;"
+         id="stop9" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#a-6"
+       id="b-3"
+       x1="68.732147"
+       x2="52.031483"
+       y1="25.66061"
+       y2="37.558453"
+       gradientTransform="matrix(5.0119566,0,0,5.0125024,-236.9348,-89.245578)"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       id="a-8">
+      <stop
+         offset="0"
+         style="stop-color:#6977eb;stop-opacity:1;"
+         id="stop3" />
+      <stop
+         offset="1"
+         style="stop-color:#6100ff;stop-opacity:0;"
          id="stop7" />
     </linearGradient>
+    <radialGradient
+       xlink:href="#a-8"
+       id="radialGradient5"
+       cx="-37.106171"
+       cy="-9.41961"
+       fx="-37.106171"
+       fy="-9.41961"
+       r="61.085987"
+       gradientTransform="matrix(1.5879592,0.94404719,-0.5110877,0.85968842,6.4027662,1.062204)"
+       gradientUnits="userSpaceOnUse" />
+    <radialGradient
+       xlink:href="#a-8"
+       id="radialGradient12"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.560381,0.98896441,-0.70841362,1.11773,17.36133,-14.346192)"
+       cx="121.7567"
+       cy="38.518688"
+       fx="121.7567"
+       fy="38.518688"
+       r="61.085987" />
   </defs>
-  <g
-     id="g7"
-     transform="translate(173.46048,-21.465809)">
-    <ellipse
-       cx="-107.32499"
-       cy="87.607582"
-       rx="61.085987"
-       ry="61.094383"
-       style="display:inline;fill:url(#b-3);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="ellipse2" />
-    <path
-       style="display:inline;fill:#ffffff;fill-opacity:0.156182;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="path9"
-       sodipodi:type="arc"
-       sodipodi:cx="-107.32499"
-       sodipodi:cy="-87.607582"
-       sodipodi:rx="61.085987"
-       sodipodi:ry="61.094383"
-       sodipodi:start="0"
-       sodipodi:end="1.5707963"
-       sodipodi:arc-type="slice"
-       d="m -46.239002,-87.607582 a 61.085987,61.094383 0 0 1 -61.085988,61.094383 v -61.094383 z"
-       transform="scale(1,-1)" />
-    <path
-       style="display:inline;fill:#ffffff;fill-opacity:0.156182;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="ellipse6"
-       sodipodi:type="arc"
-       sodipodi:cx="107.32499"
-       sodipodi:cy="87.607582"
-       sodipodi:rx="61.085987"
-       sodipodi:ry="61.094383"
-       sodipodi:start="0"
-       sodipodi:end="1.5707963"
-       sodipodi:arc-type="slice"
-       d="M 168.41098,87.607582 A 61.085987,61.094383 0 0 1 107.32499,148.70197 V 87.607582 Z"
-       transform="scale(-1,1)" />
-    <ellipse
-       cx="-107.32499"
-       cy="87.607582"
-       rx="21.190527"
-       ry="21.194725"
-       style="display:inline;fill:#313131;fill-opacity:1;stroke:none;stroke-width:4.31054;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="ellipse3" />
-    <circle
-       cx="-107.32499"
-       cy="87.607582"
-       r="3.5604453"
-       style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="circle3-7" />
-    <path
-       d="m -107.30398,26.546834 a 61.090186,61.090186 0 0 0 -61.09019,61.094385 l 0.0378,0.982477 a 61.090186,61.090186 0 0 1 61.05239,-60.401625 61.090186,61.090186 0 0 1 61.056605,60.116113 l 0.0336,-0.696965 A 61.090186,61.090186 0 0 0 -107.30398,26.551027 Z"
-       style="display:inline;opacity:0.187;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="path5-5" />
-    <path
-       d="m -46.276785,86.528587 a 61.090186,61.090186 0 0 1 -61.048195,60.321853 61.090186,61.090186 0 0 1 -61.0482,-60.002761 l -0.042,0.772541 a 61.090186,61.090186 0 0 0 61.09018,61.0902 61.090186,61.090186 0 0 0 61.090185,-61.0902 z"
-       style="display:inline;fill:#000000;fill-opacity:0.0912281;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-       id="path6-3" />
-  </g>
+  <ellipse
+     cx="66.13549"
+     cy="66.141769"
+     rx="61.085987"
+     ry="61.094383"
+     style="display:inline;fill:url(#b-3);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse2" />
+  <path
+     style="display:inline;fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="path9"
+     d="M 127.22148,-66.141769 A 61.085987,61.094383 0 0 1 66.13549,-5.0473862 V -66.141769 Z"
+     transform="scale(1,-1)" />
+  <path
+     style="display:inline;fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse6"
+     d="M -5.0495033,66.141769 A 61.085987,61.094383 0 0 1 -66.13549,127.23615 V 66.141769 Z"
+     transform="scale(-1,1)" />
+  <ellipse
+     cx="66.13549"
+     cy="66.141769"
+     rx="23.223633"
+     ry="23.228233"
+     style="display:inline;fill:#292929;fill-opacity:1;stroke:none;stroke-width:4.72411;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse3" />
+  <circle
+     cx="66.13549"
+     cy="66.141769"
+     r="3.9020491"
+     style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:14.613;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="circle3-7" />
+  <path
+     d="M 66.1565,5.081025 A 61.090186,61.090186 0 0 0 5.06631,66.17541 l 0.0378,0.982477 A 61.090186,61.090186 0 0 1 66.1565,6.756262 61.090186,61.090186 0 0 1 127.2131,66.872375 l 0.0336,-0.696965 A 61.090186,61.090186 0 0 0 66.1565,5.085218 Z"
+     style="display:inline;opacity:0.187;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="path5-5" />
+  <path
+     d="M 127.1837,65.062778 A 61.090186,61.090186 0 0 1 66.1355,125.38463 61.090186,61.090186 0 0 1 5.0873,65.38187 l -0.042,0.772541 a 61.090186,61.090186 0 0 0 61.09018,61.090199 61.090186,61.090186 0 0 0 61.09018,-61.090199 z"
+     style="display:inline;fill:#000000;fill-opacity:0.0912281;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="path6-3" />
+  <ellipse
+     cx="66.13549"
+     cy="66.141769"
+     rx="61.085987"
+     ry="61.094383"
+     style="display:inline;fill:url(#radialGradient5);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse5" />
+  <ellipse
+     cx="66.13549"
+     cy="66.141769"
+     rx="61.085987"
+     ry="61.094383"
+     style="display:inline;fill:url(#radialGradient12);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
+     id="ellipse12" />
 </svg>
