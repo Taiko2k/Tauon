@@ -38988,11 +38988,13 @@ try:
 		GL_TEXTURE_WRAP_T,
 		GL_UNSIGNED_BYTE,
 		GL_VERSION,
+		GL_VIEWPORT,
 		glBindFramebuffer,
 		glBindTexture,
 		glCheckFramebufferStatus,
 		glClear,
 		glClearColor,
+		glCopyTexSubImage2D,
 		glDeleteFramebuffers,
 		glDeleteTextures,
 		glFinish,
@@ -39034,6 +39036,9 @@ class ProjectM:
 		self.frame_timer: Timer = Timer()
 		self.first_frame: bool = True
 		self.lib_error: bool = False
+		self.render_frame_fbo_available: bool = False
+		self.burn_texture_available: bool = False
+		self.set_frame_time_available: bool = False
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
@@ -39079,9 +39084,13 @@ class ProjectM:
 			self.lib.projectm_opengl_render_frame.argtypes = [c_void_p]
 			self.lib.projectm_opengl_render_frame.restype = None
 
-			# # projectm_opengl_render_frame_fbo - Render frame
-			self.lib.projectm_opengl_render_frame_fbo.argtypes = [c_void_p, c_uint32]
-			self.lib.projectm_opengl_render_frame_fbo.restype = None
+			try:
+				self.lib.projectm_opengl_render_frame_fbo.argtypes = [c_void_p, c_uint32]
+				self.lib.projectm_opengl_render_frame_fbo.restype = None
+				self.render_frame_fbo_available = True
+			except AttributeError:
+				self.render_frame_fbo_available = False
+				logging.warning("projectm_opengl_render_frame_fbo not found, using backbuffer copy fallback")
 
 			# projectm_set_window_size - Render frame
 			self.lib.projectm_set_window_size.argtypes = [c_void_p, c_uint, c_uint]
@@ -39094,8 +39103,13 @@ class ProjectM:
 			self.lib.projectm_set_fps.argtypes = [c_void_p, ctypes.c_int32]
 			self.lib.projectm_set_fps.restype = None
 
-			self.lib.projectm_set_frame_time.argtypes = [c_void_p, ctypes.c_double]
-			self.lib.projectm_set_frame_time.restype = None
+			try:
+				self.lib.projectm_set_frame_time.argtypes = [c_void_p, ctypes.c_double]
+				self.lib.projectm_set_frame_time.restype = None
+				self.set_frame_time_available = True
+			except AttributeError:
+				self.set_frame_time_available = False
+				logging.warning("projectm_set_frame_time not found, frame timing override will be unavailable")
 
 			self.lib.projectm_set_texture_search_paths.argtypes = [
 				c_void_p,  # instance
@@ -39104,8 +39118,13 @@ class ProjectM:
 			]
 			self.lib.projectm_set_texture_search_paths.restype = None
 
-			self.lib.projectm_opengl_burn_texture.argtypes = [c_void_p, c_uint32, c_int, c_int, c_int, c_int]
-			self.lib.projectm_opengl_burn_texture.restype = None
+			try:
+				self.lib.projectm_opengl_burn_texture.argtypes = [c_void_p, c_uint32, c_int, c_int, c_int, c_int]
+				self.lib.projectm_opengl_burn_texture.restype = None
+				self.burn_texture_available = True
+			except AttributeError:
+				self.burn_texture_available = False
+				logging.warning("projectm_opengl_burn_texture not found, album art burn-in will be skipped")
 
 			logging.debug("Function signatures set up successfully")
 
@@ -39224,7 +39243,7 @@ class ProjectM:
 		self.auto_frames = 0
 		self.timer.set()
 
-	def render_frame(self, framebuffer) -> bool:
+	def render_frame(self, framebuffer=None) -> bool:
 		"""Render a projectM frame"""
 		if not self.pm_instance:
 			return False
@@ -39267,7 +39286,24 @@ class ProjectM:
 					fps = 1
 
 				self.lib.projectm_set_fps(self.pm_instance, fps)
-				self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
+				if self.render_frame_fbo_available:
+					self.lib.projectm_opengl_render_frame_fbo(self.pm_instance, framebuffer)
+				else:
+					saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
+					saved_viewport = glGetIntegerv(GL_VIEWPORT)
+					try:
+						if framebuffer is not None:
+							glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
+						glViewport(0, 0, int(self.tauon.gui.main_art_box[2]), int(self.tauon.gui.main_art_box[3]))
+						self.lib.projectm_opengl_render_frame(self.pm_instance)
+					finally:
+						glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
+						glViewport(
+							int(saved_viewport[0]),
+							int(saved_viewport[1]),
+							int(saved_viewport[2]),
+							int(saved_viewport[3]),
+						)
 			except Exception as e:
 				logging.warning(f"Error rendering frame: {e}")
 
@@ -39294,6 +39330,8 @@ class Milky:
 
 	def burn(self, target_track: TrackClass) -> None:
 		if not self.ready:
+			return
+		if not self.projectm.burn_texture_available:
 			return
 
 		w = int(self.tauon.gui.main_art_box[2])
@@ -39391,10 +39429,20 @@ class Milky:
 			# Create SDL texture from the OpenGL texture
 			self.render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
 
-		sdl3.SDL_FlushRenderer(self.renderer)
-		glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
-
-		self.projectm.render_frame(self.framebuffer)
+		if self.projectm.render_frame_fbo_available:
+			sdl3.SDL_FlushRenderer(self.renderer)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			self.projectm.render_frame(self.framebuffer)
+		else:
+			current_target = sdl3.SDL_GetRenderTarget(self.renderer)
+			sdl3.SDL_SetRenderTarget(self.renderer, None)
+			sdl3.SDL_FlushRenderer(self.renderer)
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			self.projectm.render_frame()
+			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
+			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, int(w), int(h))
+			glBindTexture(GL_TEXTURE_2D, 0)
+			sdl3.SDL_SetRenderTarget(self.renderer, current_target)
 
 		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
 		glFlush()
