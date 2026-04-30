@@ -48270,7 +48270,7 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_DROP_TEXT:
 				power += 5
 
-				link = event.drop.file.decode()
+				link = event.drop.data.decode("utf-8", errors="surrogateescape")
 				# logging.info(link)
 
 				if pctl.playing_ready() and link.startswith("http"):
