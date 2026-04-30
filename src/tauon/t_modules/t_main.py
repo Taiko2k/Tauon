@@ -6017,6 +6017,7 @@ class Tauon:
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
+		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
 		self.search_text                          = self.search_over.search_text
 		self.sync_target:                         TextBox2 = TextBox2(tauon=self)
 		self.playlist_folder_box:                 TextBox2 = TextBox2(tauon=self)
@@ -7829,22 +7830,151 @@ class Tauon:
 			self.milky.projectm.rescan_presets()
 			if not self.milky.projectm.presets:
 				def download_presets() -> None:
-					self.show_message(_("Downloading..."))
+					self.preset_download_box.start()
 					def dl() -> None:
 						url = "https://github.com/Taiko2k/Tauon/releases/download/Extras/creamingsodav1.zip"
 						assert url
 						target_directory = self.user_directory / "presets"
 						target_directory.mkdir(parents=True, exist_ok=True)
+						logging.info(
+							"Preset download starting: url=%s user_directory=%s target_directory=%s dirs=%s",
+							url,
+							self.user_directory,
+							target_directory,
+							[str(path) for path in self.milky.projectm.dirs],
+						)
 
-						response = requests.get(url)
-						response.raise_for_status()  # fail if download failed
+						def count_installed_presets() -> int:
+							try:
+								return sum(1 for path in target_directory.rglob("*.milk") if path.is_file())
+							except Exception:
+								logging.exception("Failed to count installed Milkdrop presets in %s", target_directory)
+								return -1
 
-						# Open ZIP from memory and extract
-						with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-							z.extractall(target_directory)
+						def enable_milkdrop(status: str, detail: str = "") -> None:
+							count_before = len(self.milky.projectm.presets)
+							self.prefs.milk = True
+							try:
+								self.milky.projectm.rescan_presets()
+							except Exception:
+								logging.exception("Preset rescan failed after download")
+								if not detail:
+									detail = _("Restart Tauon if presets are not visible yet.")
+							logging.info(
+								"Preset download enable complete: status=%s detail=%s prefs.milk=%s scanned_before=%s scanned_after=%s installed_count=%s",
+								status,
+								detail,
+								self.prefs.milk,
+								count_before,
+								len(self.milky.projectm.presets),
+								count_installed_presets(),
+							)
+							self.preset_download_box.complete(status, detail)
 
-						self.prefs.milk = True
-						self.show_message(_("Presets ready"), mode="done")
+						try:
+							with io.BytesIO() as buffer:
+								with requests.get(url, stream=True, timeout=1800) as response:
+									response.raise_for_status()  # fail if download failed
+									total_bytes = int(response.headers.get("Content-Length", 0))
+									downloaded = 0
+									last_logged_mb = -1
+									logging.info(
+										"Preset download response: status=%s content_length=%s final_url=%s",
+										response.status_code,
+										total_bytes,
+										response.url,
+									)
+
+									for data in response.iter_content(chunk_size=65536):
+										if self.preset_download_box.cancel_requested:
+											logging.info("Preset download cancelled during download after %s bytes", downloaded)
+											enable_milkdrop(
+												_("Preset download cancelled"),
+												_("Milkdrop visualiser enabled."),
+											)
+											return
+										if not data:
+											continue
+
+										buffer.write(data)
+										downloaded += len(data)
+										if total_bytes:
+											progress = min(0.95, downloaded / total_bytes * 0.95)
+											total_mb = total_bytes / 1000 / 1000
+											detail = f"{downloaded / 1000 / 1000:.1f} / {total_mb:.1f} MB"
+										else:
+											progress = None
+											detail = f"{downloaded / 1000 / 1000:.1f} MB"
+										current_mb = int(downloaded / 1000 / 1000)
+										if current_mb != last_logged_mb:
+											last_logged_mb = current_mb
+											logging.info(
+												"Preset download progress: downloaded=%s total=%s detail=%s",
+												downloaded,
+												total_bytes,
+												detail,
+											)
+										self.preset_download_box.update(progress, _("Downloading preset pack..."), detail)
+
+								buffer.seek(0)
+								self.preset_download_box.update(0.95, _("Extracting presets..."))
+								logging.info("Preset download complete: bytes=%s target=%s", buffer.getbuffer().nbytes, target_directory)
+								with zipfile.ZipFile(buffer) as z:
+									members = z.infolist()
+									total_members = len(members) or 1
+									target_root = target_directory.resolve()
+									extracted = 0
+									skipped = 0
+									logging.info("Preset package opened: members=%s target_root=%s", len(members), target_root)
+									for index, member in enumerate(members):
+										if self.preset_download_box.cancel_requested:
+											logging.info("Preset download cancelled during extraction at index=%s extracted=%s skipped=%s", index, extracted, skipped)
+											enable_milkdrop(
+												_("Preset download cancelled"),
+												_("Milkdrop visualiser enabled."),
+											)
+											return
+
+										member_path = (target_directory / member.filename).resolve()
+										if target_root not in (member_path, *member_path.parents):
+											raise ValueError(_("Preset package contains an unsafe path"))
+										try:
+											z.extract(member, target_directory)
+											extracted += 1
+										except FileNotFoundError:
+											if self.windows and len(str(member_path)) >= 240:
+												skipped += 1
+												logging.warning(
+													"Skipping preset package member with too-long Windows path: index=%s name=%r target_length=%s target=%s",
+													index,
+													member.filename,
+													len(str(member_path)),
+													member_path,
+													exc_info=True,
+												)
+											else:
+												logging.exception(
+													"Preset package member extraction failed: index=%s name=%r target_length=%s target=%s",
+													index,
+													member.filename,
+													len(str(member_path)),
+													member_path,
+												)
+												raise
+										progress = 0.95 + 0.05 * ((index + 1) / total_members)
+										self.preset_download_box.update(progress, _("Extracting presets..."), member.filename)
+									logging.info(
+										"Preset extraction complete: extracted=%s skipped=%s installed_count=%s target=%s",
+										extracted,
+										skipped,
+										count_installed_presets(),
+										target_directory,
+									)
+
+							enable_milkdrop(_("Presets ready"), _("Milkdrop visualiser enabled."))
+						except Exception as e:
+							logging.exception("Preset download failed")
+							self.preset_download_box.fail(_("Download failed"), f"{type(e).__name__}: {e}")
 
 					shooter(dl)
 				def skip_presets() -> None:
@@ -23955,6 +24085,120 @@ class MessageBox:
 					12)
 		else:
 			ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
+
+class PresetDownloadBox:
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.gui = tauon.gui
+		self.inp = tauon.inp
+		self.ddt = tauon.ddt
+		self.draw = tauon.draw
+		self.colours = tauon.colours
+		self.window_size = tauon.window_size
+		self.active: bool = False
+		self.cancel_requested: bool = False
+		self.progress: float = 0.0
+		self.title: str = ""
+		self.status: str = ""
+		self.detail: str = ""
+		self.done: bool = False
+
+	def start(self) -> None:
+		self.active = True
+		self.cancel_requested = False
+		self.done = False
+		self.progress = 0.0
+		self.title = _("Downloading Milkdrop presets")
+		self.status = _("Starting download...")
+		self.detail = ""
+		self.gui.update = max(self.gui.update, 2)
+
+	def update(self, progress: float | None, status: str, detail: str = "") -> None:
+		if progress is not None:
+			self.progress = max(0.0, min(1.0, progress))
+		self.status = status
+		self.detail = detail
+		self.gui.update = max(self.gui.update, 2)
+
+	def finish(self) -> None:
+		self.active = False
+		self.cancel_requested = False
+		self.done = False
+		self.gui.update = max(self.gui.update, 2)
+
+	def complete(self, status: str, detail: str = "") -> None:
+		self.active = True
+		self.cancel_requested = False
+		self.done = True
+		self.progress = 1.0
+		self.status = status
+		self.detail = detail
+		self.gui.update = max(self.gui.update, 2)
+
+	def fail(self, status: str, detail: str = "") -> None:
+		self.active = True
+		self.cancel_requested = False
+		self.done = True
+		self.status = status
+		self.detail = detail
+		self.gui.update = max(self.gui.update, 2)
+
+	def cancel(self) -> None:
+		self.cancel_requested = True
+		self.status = _("Cancelling...")
+		self.detail = _("Milkdrop will still be enabled.")
+		self.gui.update = max(self.gui.update, 2)
+
+	def render(self) -> None:
+		if not self.active:
+			return
+
+		gui = self.gui
+		ddt = self.ddt
+		scale = gui.scale
+		w = round(430 * scale)
+		h = round(134 * scale)
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
+
+		panel = self.colours.message_box_bg
+		border = self.colours.box_text_border
+		ddt.rect_a((x - 2 * scale, y - 2 * scale), (w + 4 * scale, h + 4 * scale), border)
+		ddt.rect_a((x, y), (w, h), panel)
+		ddt.text_background_colour = panel
+
+		ddt.text((x + 22 * scale, y + 16 * scale), self.title, self.colours.message_box_text, 15)
+		ddt.text((x + 22 * scale, y + 43 * scale), self.status, self.colours.box_text_label, 12, max_w=w - 44 * scale)
+		if self.detail:
+			ddt.text((x + 22 * scale, y + 62 * scale), self.detail, self.colours.box_text_label, 12, max_w=w - 44 * scale)
+
+		bar_x = x + round(22 * scale)
+		bar_y = y + round(86 * scale)
+		bar_w = w - round(44 * scale)
+		bar_h = round(10 * scale)
+		fill_w = round(bar_w * self.progress)
+		ddt.rect((bar_x, bar_y, bar_w, bar_h), self.colours.box_button_background)
+		if fill_w > 0:
+			ddt.rect((bar_x, bar_y, fill_w, bar_h), self.colours.link_text)
+		percent = f"{round(self.progress * 100)}%"
+		ddt.text((bar_x + bar_w, bar_y + round(15 * scale), 1), percent, self.colours.box_text_label, 12)
+
+		if self.done:
+			label = _("Close")
+			press = None
+		elif self.cancel_requested:
+			label = _("Cancelling...")
+			press = False
+		else:
+			label = _("Cancel")
+			press = None
+		button_w = round((112 if self.cancel_requested else 74) * scale)
+		if self.draw.button(label, x + w - button_w - round(22 * scale), y + h - round(34 * scale), w=button_w, press=press):
+			if self.done:
+				self.finish()
+			else:
+				self.cancel()
 
 class NagBox:
 	SPLASH_VERSION = "10.0.0"
@@ -52768,6 +53012,8 @@ def main(holder: Holder) -> None:
 
 				if gui.message_box:
 					tauon.message_box.render()
+
+				tauon.preset_download_box.render()
 
 				if prefs.show_nag:
 					tauon.nagbox.draw()
