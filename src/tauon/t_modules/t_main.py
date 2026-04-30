@@ -24463,6 +24463,7 @@ class Over:
 		self.settings_category_offsets: list[float] = []
 		self.settings_doc_texture: sdl3.LP_SDL_Texture | None = None
 		self.settings_doc_texture_size = (0, 0)
+		self.app_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "app-icon.png")
 		self.tabs = [
 			_("General"),
 			_("Connections"),
@@ -28943,8 +28944,16 @@ class Over:
 		)
 		action_h = round(34 * gui.scale)
 		action_gap = round(8 * gui.scale)
-		self.ddt.text((inner_x, inner_y), "Copyright © 2015-2026 Taiko2k", self.colours.box_sub_text, 13)
-		inner_y += round(24 * gui.scale)
+		icon_x = left_rect[0] + left_rect[2] - round(16 * gui.scale) - round(self.app_icon.w)
+		icon_y = left_rect[1] + round(10 * gui.scale)
+		self.app_icon.render(icon_x, icon_y)
+		copyright_h = self.ddt.text(
+			(inner_x, inner_y, 4, inner_w, round(40 * gui.scale)),
+			"Copyright © 2015-2026 Taiko2k",
+			self.colours.box_sub_text,
+			13,
+		) or round(18 * gui.scale)
+		inner_y += max(copyright_h + round(6 * gui.scale), round(24 * gui.scale))
 		self.ddt.text((inner_x, inner_y, 4, inner_w, round(44 * gui.scale)), _("This program comes with absolutely no warranty."), self.colours.box_text_label, 11)
 		button_y = left_rect[1] + left_rect[3] - round(14 * gui.scale) - action_h * 2 - action_gap
 		self.settings_action_tile((inner_x, button_y, inner_w, action_h), _("Open website"), lambda: webbrowser.open("https://tauonmusicbox.rocks", new=2, autoraise=True), accent)
