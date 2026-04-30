@@ -29430,6 +29430,25 @@ class Over:
 						self.lyrics_panel = False
 				yy += row_step
 
+		content_scrollbar_extend = round(4 * gui.scale)
+		content_scrollbar_click = (
+			max_content_scroll > 0
+			and (self.click or self.inp.mouse_down)
+			and self.coll((scrollbar_x - content_scrollbar_extend, view_rect[1], scrollbar_w + content_scrollbar_extend, view_rect[3]))
+		)
+		if content_scrollbar_click:
+			self.click = False
+			bar_height = round(90 * gui.scale)
+			if view_rect[3] > 400 * gui.scale and max_content_scroll < 20:
+				bar_height = round(180 * gui.scale)
+			half = bar_height // 2
+			distance = max(view_rect[3] - bar_height, 1)
+			position = min(max(self.inp.mouse_position[1] - view_rect[1] - half, 0), distance)
+			self.settings_content_scroll_bar.held = True
+			self.settings_content_scroll_bar.source_click_y = self.inp.mouse_position[1]
+			self.settings_content_scroll_bar.source_bar_y = position
+			self.settings_content_scroll_bar.input_sdl.mouse_capture_want = True
+			self.settings_content_scroll = round(max_content_scroll * (position / distance))
 		if max_content_scroll > 0:
 			self.settings_content_scroll = self.settings_content_scroll_bar.draw(
 				scrollbar_x,
@@ -29438,8 +29457,8 @@ class Over:
 				view_rect[3],
 				self.settings_content_scroll,
 				max_content_scroll,
-				click=self.click,
-				extend_field=round(4 * gui.scale),
+				click=content_scrollbar_click,
+				extend_field=content_scrollbar_extend,
 			)
 
 		texture = self.ensure_settings_texture((max(1, int(self.window_size[0])), max(1, int(self.window_size[1]))))
