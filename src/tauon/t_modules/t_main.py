@@ -39110,7 +39110,7 @@ class ProjectM:
 				self.render_frame_fbo_available = True
 			except AttributeError:
 				self.render_frame_fbo_available = False
-				logging.warning("projectm_opengl_render_frame_fbo not found, using backbuffer copy fallback")
+				logging.warning("projectm_opengl_render_frame_fbo not found, using default framebuffer copy fallback")
 
 			# projectm_set_window_size - Render frame
 			self.lib.projectm_set_window_size.argtypes = [c_void_p, c_uint, c_uint]
@@ -39495,6 +39495,8 @@ class Milky:
 			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
 			glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, int(w), int(h))
 			glBindTexture(GL_TEXTURE_2D, 0)
+			glClearColor(0.0, 0.0, 0.0, 0.0)
+			glClear(GL_COLOR_BUFFER_BIT)
 			sdl3.SDL_SetRenderTarget(self.renderer, current_target)
 
 		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
