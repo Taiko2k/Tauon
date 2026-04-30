@@ -481,7 +481,7 @@ logging.debug(f"SDL available drivers: {drivers}")
 logging.debug(f"PATH that will be used for ffmpeg/ffprobe and similar: {os.environ.get('PATH')}")
 
 driver = None
-if "opengl" in drivers:
+if b"opengl" in drivers:
 	driver = b"opengl"
 
 renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC

@@ -39018,7 +39018,8 @@ except Exception:
 
 def find_projectm_library() -> str | None:
 	if sys.platform == "win32":
-		for base_dir in (Path(sys.executable).parent, Path.cwd()):
+		module_dir = Path(__file__).resolve().parents[2]
+		for base_dir in (module_dir, Path(sys.executable).parent, Path.cwd()):
 			for dll_name in ("libprojectM-4-4.dll", "libprojectM-4.dll", "projectM-4.dll"):
 				path = base_dir / dll_name
 				if path.is_file():
@@ -39054,6 +39055,8 @@ class ProjectM:
 		self.render_frame_fbo_available: bool = False
 		self.burn_texture_available: bool = False
 		self.set_frame_time_available: bool = False
+		self.lib_path: Path | None = None
+		self.glew = None
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
@@ -39066,6 +39069,8 @@ class ProjectM:
 		try:
 			self.lib = ctypes.CDLL(lib_name)
 			if self.lib:
+				if Path(lib_name).is_file():
+					self.lib_path = Path(lib_name)
 				logging.info(f"Successfully loaded: {lib_name}")
 			else:
 				logging.warning("Could not load libprojectM-4")
@@ -39150,6 +39155,30 @@ class ProjectM:
 			logging.warning(f"Error setting up function signatures: {e}")
 			raise
 
+	def init_glew(self) -> bool:
+		if sys.platform != "win32":
+			return True
+
+		glew_path: str | Path = "glew32.dll"
+		if self.lib_path:
+			candidate = self.lib_path.with_name("glew32.dll")
+			if candidate.is_file():
+				glew_path = candidate
+
+		try:
+			self.glew = ctypes.CDLL(str(glew_path))
+			self.glew.glewInit.argtypes = []
+			self.glew.glewInit.restype = c_uint
+			result = self.glew.glewInit()
+			if result != 0:
+				logging.warning(f"GLEW initialization failed with error code {result}")
+				return False
+			logging.info("GLEW initialized successfully")
+			return True
+		except Exception:
+			logging.exception("Failed to initialize GLEW")
+			return False
+
 	def set_texture_paths(self) -> None:
 		path_bytes = []
 		for path in self.dirs:
@@ -39183,6 +39212,11 @@ class ProjectM:
 			self.setup_function_signatures()
 		except Exception:
 			logging.warning("Failed to bind projectm functions, milkdrop visualiser will be unavailable")
+			self.lib_error = True
+			self.lib = None
+			return False
+
+		if not self.init_glew():
 			self.lib_error = True
 			self.lib = None
 			return False
@@ -39386,6 +39420,10 @@ class Milky:
 		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
 
 		if not self.ready:
+			sdl3.SDL_FlushRenderer(self.renderer)
+			context = sdl3.SDL_GL_GetCurrentContext()
+			if context:
+				sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
 			self.projectm.load_library()
 			self.projectm.init()
 			if self.projectm.lib:
