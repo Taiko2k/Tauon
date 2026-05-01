@@ -15708,10 +15708,14 @@ class Tauon:
 		display_rat = 0 if hint_only else rat
 
 		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(16 * self.gui.scale))
-		if allow_input:
+		boundary = 3 * self.gui.scale
+		tracklist_top = self.gui.playlist_top + boundary
+		tracklist_bottom = self.window_size[1] - self.gui.panelBY - boundary
+		input_in_bounds = tracklist_top < self.inp.mouse_position[1] <= tracklist_bottom
+		if allow_input and input_in_bounds:
 			self.gui.heart_fields.append(rect)
 
-		if allow_input and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
+		if allow_input and input_in_bounds and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
 			self.gui.pl_update = 2
 			pp = self.inp.mouse_position[0] - x
 
