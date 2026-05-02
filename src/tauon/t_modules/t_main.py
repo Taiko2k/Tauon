@@ -11969,7 +11969,7 @@ class Tauon:
 			if not self.chrome:
 				self.show_message(_("pychromecast not found"))
 				return
-			self.show_message(_("Searching for Chomecasts..."))
+			self.show_message(_("Searching for Chromecasts..."))
 			shooter(self.cast_search2)
 
 	def clear_queue(self) -> None:
@@ -15707,7 +15707,7 @@ class Tauon:
 					self.show_message(_("Download completed but checksum failed"), mode="error")
 					logging.error(f"Checksum was {checksum} but expected {sha}")
 					return
-				self.show_message(_("Download completed.. extracting"))
+				self.show_message(_("Download completed. Extracting..."))
 				f.seek(0)
 				if self.windows:
 					z = zipfile.ZipFile(f, mode="r")
@@ -18751,7 +18751,7 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.maloja_enable
 		if not self.prefs.maloja_url or not self.prefs.maloja_key:
-			self.show_message(_("One or more fields is missing."), mode="warning")
+			self.show_message(_("One or more fields are missing."), mode="warning")
 			return None
 		self.prefs.maloja_enable ^= True
 		return None
@@ -19014,7 +19014,7 @@ class Tauon:
 				self.gui.message_box_confirm_reference = (copy.deepcopy(load_order),)
 				self.gui.message_box_confirm_callback = lambda x: self.load_orders.append(x)
 				self.gui.message_box_no_callback = lambda x: self.show_message(
-					_("The target will may be lost on reboot without necessary Flatpak permissions."),
+						_("The target may be lost on reboot without necessary Flatpak permissions."),
 					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
 					mode="bubble")
 				self.show_message(_("Path may be transient! Continue? Press \"No\" for more information."),
@@ -19287,7 +19287,7 @@ class Tauon:
 		if self.get_ffmpeg():
 			return True
 		if not self.macos:
-			self.show_message(_("This feature requires FFmpeg. Shall I can download that for you? (100MB~)"), mode="confirm")
+			self.show_message(_("This feature requires FFmpeg. Should I download it for you? (~100 MB)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
 			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (None,)
@@ -23859,7 +23859,7 @@ class SearchOverlay:
 					metadata_val = artist_val or album_val
 					if metadata_val:
 						gap = round(8 * gui.scale)
-						by_label = _("BY") if artist_val else ""
+						by_label = "BY" if artist_val else ""
 						by_width = self.ddt.get_text_w(by_label, 212) if by_label else 0
 						metadata_width = self.ddt.get_text_w(metadata_val, s_font)
 						if by_label:
@@ -23903,7 +23903,7 @@ class SearchOverlay:
 
 					xx = self.ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 
-					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), _("BY"), ColourRGBA(250, 240, 110, int(255 * fade)), 212)
+					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", ColourRGBA(250, 240, 110, int(255 * fade)), 212)
 					xx += 8 * gui.scale
 					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
 
@@ -26641,7 +26641,7 @@ class Over:
 		if not self.inp.key_shift_down:
 			t = self.lastfm.get_all_scrobbles_estimate_time()
 			if not t:
-				self.show_message(_("Error, not  connected to last.fm"))
+				self.show_message(_("Error, not connected to last.fm"))
 				return
 			self.show_message(
 				_("Warning: This process will take approximately {T} minutes to complete.").format(T=(t // 60)),
@@ -27455,7 +27455,7 @@ class Over:
 		if prefs.enable_fanart_bg and prefs.enable_fanart_bg != old_fanart and not prefs.auto_dl_artist_data:
 			prefs.auto_dl_artist_data = True
 			self.show_message(
-				_("Also enabling 'auto-fech artist data' to scrape last.fm."),
+				_("Also enabling 'auto-fetch artist data' to scrape last.fm."),
 				_("You can toggle this back off under Settings > General"),
 			)
 		inner_y += row_h + row_gap
@@ -27468,7 +27468,7 @@ class Over:
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			right_rect,
 			_("Theme preset"),
-			_("{name}").format(name=gui.theme_name),
+				gui.theme_name,
 			accent,
 		)
 		preset_columns = max(1, min(theme_count, (inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
@@ -28434,7 +28434,7 @@ class Over:
 
 			def test_maloja() -> None:
 				if not prefs.maloja_url or not prefs.maloja_key:
-					self.show_message(_("One or more fields is missing."))
+					self.show_message(_("One or more fields are missing."))
 					return
 				url = prefs.maloja_url
 				if not url.endswith("/mlj_1"):
@@ -35162,7 +35162,7 @@ class RadioBox:
 			if self.tauon.stream_proxy.s_format:
 				text = str(self.tauon.stream_proxy.s_format)
 			if self.tauon.stream_proxy.s_bitrate and self.tauon.stream_proxy.s_bitrate.isnumeric():
-				text += " " + self.tauon.stream_proxy.s_bitrate + _("kbps")
+				text += " " + self.tauon.stream_proxy.s_bitrate + "kbps"
 
 			self.ddt.text((x + 495 * self.gui.scale, yy + 8 * self.gui.scale, 1), text, self.colours.box_title_text, 311)
 			# if tauon.stream_proxy.s_format:

@@ -8,7 +8,7 @@ You can also use the github discussions feature. If your question is implicitly 
 
 ## Translations
 
-[See here](https://github.com/Taiko2k/TauonMusicBox/wiki/Translations)
+Edit applicable .po files in the /locale directory. Please do not edit the .pot file directly. Then send a PR.
 
 ## Code Contributions
 
