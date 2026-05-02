@@ -6837,8 +6837,8 @@ class Tauon:
 			with path.open(encoding="utf-8") as file:
 				lines = file.readlines()
 		except UnicodeDecodeError as e:
-			self.show_message(_("Error importing M3U playlist"), _("Error trying to parse trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
-			logging.error(f"Error trying to parse trying to parse playlist as UTF-8: {e}")
+			self.show_message(_("Error importing M3U playlist"), _("Error trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
+			logging.error(f"Error trying to parse playlist as UTF-8: {e}")
 			return [], []
 		except Exception as e:
 			self.show_message(_("Exception importing M3U playlist"), _("Unknown exception trying to parse playlist") + f" {e}", mode="warning")
@@ -8400,7 +8400,7 @@ class Tauon:
 			pic = self.album_art_gen.get_embed(track_object)
 
 			if not pic:
-				self.show_message(_("Image save error."), _("No embedded album art found file."), mode="warning")
+				self.show_message(_("Image save error."), _("No embedded album art found in file."), mode="warning")
 				return
 
 			source_image = io.BytesIO(pic)
@@ -9464,7 +9464,7 @@ class Tauon:
 				if source_parent.exists():
 					if (path / item).exists():
 						self.show_message(
-							_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
 						continue
 
 					(path / item).mkdir()
@@ -9494,7 +9494,7 @@ class Tauon:
 				if encode_done.exists():
 					if (path / item).exists():
 						self.show_message(
-							_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
 						continue
 
 					(path / item).mkdir()
@@ -10403,7 +10403,7 @@ class Tauon:
 				"mp3", "opus",
 				"mp4", "ogg",
 				"aac"):
-				self.show_message(_("NO! Bad user!"), _("Im not going to let you transcode a lossy codec to a lossless one!"),
+				self.show_message(_("NO! Bad user!"), _("I'm not going to let you transcode a lossy codec to a lossless one!"),
 					mode="warning")
 
 				return
@@ -10427,7 +10427,7 @@ class Tauon:
 						"mp3", "opus",
 						"mp4", "ogg",
 						"aac"):
-						self.show_message(_("NO! Bad user!"), _("Im not going to let you transcode a lossy codec to a lossless one!"),
+						self.show_message(_("NO! Bad user!"), _("I'm not going to let you transcode a lossy codec to a lossless one!"),
 							mode="warning")
 
 						return
@@ -15708,10 +15708,14 @@ class Tauon:
 		display_rat = 0 if hint_only else rat
 
 		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(16 * self.gui.scale))
-		if allow_input:
+		boundary = 3 * self.gui.scale
+		tracklist_top = self.gui.playlist_top + boundary
+		tracklist_bottom = self.window_size[1] - self.gui.panelBY - boundary
+		input_in_bounds = tracklist_top < self.inp.mouse_position[1] <= tracklist_bottom
+		if allow_input and input_in_bounds:
 			self.gui.heart_fields.append(rect)
 
-		if allow_input and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
+		if allow_input and input_in_bounds and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
 			self.gui.pl_update = 2
 			pp = self.inp.mouse_position[0] - x
 
@@ -24463,6 +24467,7 @@ class Over:
 		self.settings_category_offsets: list[float] = []
 		self.settings_doc_texture: sdl3.LP_SDL_Texture | None = None
 		self.settings_doc_texture_size = (0, 0)
+		self.app_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "app-icon.png")
 		self.tabs = [
 			_("General"),
 			_("Connections"),
@@ -28943,8 +28948,16 @@ class Over:
 		)
 		action_h = round(34 * gui.scale)
 		action_gap = round(8 * gui.scale)
-		self.ddt.text((inner_x, inner_y), "Copyright © 2015-2026 Taiko2k", self.colours.box_sub_text, 13)
-		inner_y += round(24 * gui.scale)
+		icon_x = left_rect[0] + left_rect[2] - round(16 * gui.scale) - round(self.app_icon.w)
+		icon_y = left_rect[1] + round(10 * gui.scale)
+		self.app_icon.render(icon_x, icon_y)
+		copyright_h = self.ddt.text(
+			(inner_x, inner_y, 4, inner_w, round(40 * gui.scale)),
+			"Copyright © 2015-2026 Taiko2k",
+			self.colours.box_sub_text,
+			13,
+		) or round(18 * gui.scale)
+		inner_y += max(copyright_h + round(6 * gui.scale), round(24 * gui.scale))
 		self.ddt.text((inner_x, inner_y, 4, inner_w, round(44 * gui.scale)), _("This program comes with absolutely no warranty."), self.colours.box_text_label, 11)
 		button_y = left_rect[1] + left_rect[3] - round(14 * gui.scale) - action_h * 2 - action_gap
 		self.settings_action_tile((inner_x, button_y, inner_w, action_h), _("Open website"), lambda: webbrowser.open("https://tauonmusicbox.rocks", new=2, autoraise=True), accent)
@@ -29421,6 +29434,25 @@ class Over:
 						self.lyrics_panel = False
 				yy += row_step
 
+		content_scrollbar_extend = round(4 * gui.scale)
+		content_scrollbar_click = (
+			max_content_scroll > 0
+			and (self.click or self.inp.mouse_down)
+			and self.coll((scrollbar_x - content_scrollbar_extend, view_rect[1], scrollbar_w + content_scrollbar_extend, view_rect[3]))
+		)
+		if content_scrollbar_click:
+			self.click = False
+			bar_height = round(90 * gui.scale)
+			if view_rect[3] > 400 * gui.scale and max_content_scroll < 20:
+				bar_height = round(180 * gui.scale)
+			half = bar_height // 2
+			distance = max(view_rect[3] - bar_height, 1)
+			position = min(max(self.inp.mouse_position[1] - view_rect[1] - half, 0), distance)
+			self.settings_content_scroll_bar.held = True
+			self.settings_content_scroll_bar.source_click_y = self.inp.mouse_position[1]
+			self.settings_content_scroll_bar.source_bar_y = position
+			self.settings_content_scroll_bar.input_sdl.mouse_capture_want = True
+			self.settings_content_scroll = round(max_content_scroll * (position / distance))
 		if max_content_scroll > 0:
 			self.settings_content_scroll = self.settings_content_scroll_bar.draw(
 				scrollbar_x,
@@ -29429,8 +29461,8 @@ class Over:
 				view_rect[3],
 				self.settings_content_scroll,
 				max_content_scroll,
-				click=self.click,
-				extend_field=round(4 * gui.scale),
+				click=content_scrollbar_click,
+				extend_field=content_scrollbar_extend,
 			)
 
 		texture = self.ensure_settings_texture((max(1, int(self.window_size[0])), max(1, int(self.window_size[1]))))
