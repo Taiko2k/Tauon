@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 12:20+1200\n"
+"POT-Creation-Date: 2026-05-02 12:42+1200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -40,22 +40,6 @@ msgstr ""
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:527 src/tauon/t_modules/t_extra.py:544
-msgid " B"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:530 src/tauon/t_modules/t_extra.py:547
-msgid " KB"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:533 src/tauon/t_modules/t_extra.py:550
-msgid " MB"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:536
-msgid " GB"
 msgstr ""
 
 #: src/tauon/t_modules/t_extra.py:557

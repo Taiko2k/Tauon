@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v5.4.2\n"
-"POT-Creation-Date: 2026-05-02 12:16+1200\n"
+"POT-Creation-Date: 2026-05-02 12:42+1200\n"
 "PO-Revision-Date: 2026-04-17 01:41+0000\n"
 "Last-Translator: Ricardo Simões <xmcorporation@gmail.com>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
@@ -48,22 +48,6 @@ msgstr ""
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:527 src/tauon/t_modules/t_extra.py:544
-msgid " B"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:530 src/tauon/t_modules/t_extra.py:547
-msgid " KB"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:533 src/tauon/t_modules/t_extra.py:550
-msgid " MB"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:536
-msgid " GB"
 msgstr ""
 
 #: src/tauon/t_modules/t_extra.py:557

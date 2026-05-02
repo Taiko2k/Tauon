@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 12:16+1200\n"
+"POT-Creation-Date: 2026-05-02 12:42+1200\n"
 "PO-Revision-Date: 2026-04-17 01:35+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Japanese <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -20,7 +20,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_dbus.py:364
 msgid "Failed to start indicator"
-msgstr ""
+msgstr "インジケーターの起動に失敗しました"
 
 #: src/tauon/t_modules/t_discord.py:260 src/tauon/t_modules/t_discord.py:320
 #: src/tauon/t_modules/t_discord.py:494
@@ -42,35 +42,19 @@ msgstr "ランダムアルバム"
 
 #: src/tauon/t_modules/t_discord.py:503
 msgid "Waiting for Discord rate limit…"
-msgstr ""
+msgstr "Discord のレート制限解除を待機中…"
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:527 src/tauon/t_modules/t_extra.py:544
-msgid " B"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:530 src/tauon/t_modules/t_extra.py:547
-msgid " KB"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:533 src/tauon/t_modules/t_extra.py:550
-msgid " MB"
-msgstr ""
-
-#: src/tauon/t_modules/t_extra.py:536
-msgid " GB"
-msgstr ""
+msgstr "エラー - Discord が起動していませんか？"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
-msgstr ""
+msgstr "まだ"
 
 #: src/tauon/t_modules/t_extra.py:559
 msgid "Now"
-msgstr ""
+msgstr "たった今"
 
 #: src/tauon/t_modules/t_extra.py:563
 #, fuzzy
@@ -79,19 +63,19 @@ msgstr "現在"
 
 #: src/tauon/t_modules/t_extra.py:567
 msgid "hr"
-msgstr ""
+msgstr "時間"
 
 #: src/tauon/t_modules/t_extra.py:571
 msgid "dy"
-msgstr ""
+msgstr "日"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr ""
+msgstr "週"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
-msgstr ""
+msgstr "か月"
 
 #: src/tauon/t_modules/t_extra.py:580
 #, fuzzy
@@ -100,39 +84,39 @@ msgstr "好きじゃない"
 
 #: src/tauon/t_modules/t_guitar_chords.py:93
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "検索に必要なメタデータが不足しています"
 
 #: src/tauon/t_modules/t_guitar_chords.py:107
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "クリップボードにテキストがありません"
 
 #: src/tauon/t_modules/t_guitar_chords.py:208
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "GuitarParty で一致するトラックを検索できませんでした"
 
 #: src/tauon/t_modules/t_guitar_chords.py:224
 msgid "Track not found on GuitarParty"
-msgstr ""
+msgstr "GuitarParty でトラックが見つかりませんでした"
 
 #: src/tauon/t_modules/t_guitar_chords.py:240
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "GuitarParty から曲を取得できませんでした"
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:97
 msgid "Could not establish connection to server."
-msgstr ""
+msgstr "サーバーに接続できませんでした。"
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:98
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "サーバーが起動していて、URL が正しいか確認してください。"
 
 #: src/tauon/t_modules/t_jellyfin.py:109
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "接続と認証に成功しました"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 認証に失敗しました"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "Check username and password."
