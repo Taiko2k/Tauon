@@ -526,6 +526,23 @@ def player4(tauon: Tauon) -> None:
 		pctl.active_replaygain = g
 		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
+	def smart_fade_ms(current_track, next_track) -> int:
+		"""Smart Mix: calcula crossfade dinamico segun BPM y ReplayGain"""
+		bpm_a = getattr(current_track, "bpm", 0.0)
+		bpm_b = getattr(next_track, "bpm", 0.0)
+		if bpm_a > 0 and bpm_b > 0:
+			bpm_score = max(0.0, 100.0 - abs(bpm_a - bpm_b) * 2.5)
+		else:
+			bpm_score = 50.0
+		try:
+			rg_a = float(current_track.misc.get("replaygain_track_gain", 0) or 0)
+			rg_b = float(next_track.misc.get("replaygain_track_gain", 0) or 0)
+			rg_score = max(0.0, 100.0 - abs(rg_a - rg_b) * 10.0)
+		except (TypeError, ValueError):
+			rg_score = 50.0
+		score = bpm_score * 0.6 + rg_score * 0.4
+		return max(200, min(2000, int(400 + (100.0 - score) * 16)))
+
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)
 		aud.config_set_fade_duration(prefs.cross_fade_time)
@@ -1096,12 +1113,16 @@ def player4(tauon: Tauon) -> None:
 						fade = 1
 
 					logging.info("Transition jump")
+					# Smart Mix: fade dinamico
+					if fade and loaded_track is not None and target_object is not None:
+						aud.config_set_fade_duration(smart_fade_ms(loaded_track, target_object))
 					aud.start(
 						target_path.encode(errors="surrogateescape"),
 						int((pctl.start_time_target + pctl.jump_time) * 1000),
 						fade,
 						ctypes.c_float(calc_rg(target_object)),
 					)
+					aud.config_set_fade_duration(prefs.cross_fade_time)  # restaurar
 					loaded_track = target_object
 					pctl.playing_time = pctl.jump_time
 					if pctl.jump_time:
