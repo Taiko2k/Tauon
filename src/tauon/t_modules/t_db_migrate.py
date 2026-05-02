@@ -227,4 +227,10 @@ def database_migrate(
 	if db_version <= 74:  # noqa: PLR2004
 		logging.info("Updating database to version 75")
 
+	if db_version <= 75:  # noqa: PLR2004
+		logging.info("Updating database to version 76")
+		for track in master_library.values():
+			if not hasattr(track, "bpm"):
+				track.bpm = 0.0
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
