@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 12:16+1200\n"
-"PO-Revision-Date: 2026-04-18 14:09+0000\n"
+"POT-Creation-Date: 2026-05-02 12:20+1200\n"
+"PO-Revision-Date: 2026-04-28 14:09+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
@@ -349,7 +349,7 @@ msgstr "Esci"
 
 #: src/tauon/t_modules/t_main.py:6840
 msgid "Error importing M3U playlist"
-msgstr "Errore nell'importare una scaletta M3U."
+msgstr "Errore importazione scaletta M3U"
 
 #: src/tauon/t_modules/t_main.py:6840
 msgid "Error trying to parse trying to parse playlist as UTF-8:"
@@ -847,15 +847,15 @@ msgstr "Bitrate OGG (kbps):"
 
 #: src/tauon/t_modules/t_main.py:9209
 msgid "Top Artists"
-msgstr "Artisti Più Ascoltati"
+msgstr "Artisti più ascoltati"
 
 #: src/tauon/t_modules/t_main.py:9215
 msgid "Top Albums"
-msgstr "Album Più Ascoltati"
+msgstr "Album più ascoltati"
 
 #: src/tauon/t_modules/t_main.py:9219
 msgid "Top Genres"
-msgstr "Generi Più Ascoltati"
+msgstr "Generi più ascoltati"
 
 #: src/tauon/t_modules/t_main.py:9375
 msgid "Cannot sync when in transcode inplace mode"
@@ -941,22 +941,22 @@ msgstr "Salvato come: "
 #: src/tauon/t_modules/t_main.py:9665 src/tauon/t_modules/t_main.py:47719
 #: src/tauon/t_modules/t_main.py:47720
 msgid "Top Rated Tracks"
-msgstr "Tracce Più Amate"
+msgstr "Tracce più votate"
 
 #: src/tauon/t_modules/t_main.py:9682 src/tauon/t_modules/t_main.py:47713
 #: src/tauon/t_modules/t_main.py:47714
 msgid "Top Played Tracks"
-msgstr "Tracce Più Riprodotte"
+msgstr "Tracce più riprodotte"
 
 #: src/tauon/t_modules/t_main.py:9740 src/tauon/t_modules/t_main.py:47716
 #: src/tauon/t_modules/t_main.py:47717
 msgid "Top Played Albums"
-msgstr "Dischi Più Riprodotti"
+msgstr "Dischi più riprodotti"
 
 #: src/tauon/t_modules/t_main.py:9788 src/tauon/t_modules/t_main.py:47722
 #: src/tauon/t_modules/t_main.py:47723
 msgid "Top Rated Albums"
-msgstr "Dischi Più Amati"
+msgstr "Dischi più votati"
 
 #: src/tauon/t_modules/t_main.py:9809
 msgid "Tracks with lyrics"
@@ -1001,7 +1001,7 @@ msgstr "Nessuna traccia preferita è stata trovata."
 
 #: src/tauon/t_modules/t_main.py:9992
 msgid "Interesting Comments"
-msgstr "Commenti Più Interessanti"
+msgstr "Commenti più interessanti"
 
 #: src/tauon/t_modules/t_main.py:9996
 msgid "Nothing of interest was found."
@@ -4305,7 +4305,7 @@ msgstr "Cerca"
 
 #: src/tauon/t_modules/t_main.py:34943 src/tauon/t_modules/t_main.py:34946
 msgid "Get Top Voted"
-msgstr "Ottieni i Più Votati"
+msgstr "Ottieni i più votati"
 
 #: src/tauon/t_modules/t_main.py:34947
 msgid "Developer Picks"
@@ -5527,11 +5527,11 @@ msgstr "Tracce più lunghe"
 
 #: src/tauon/t_modules/t_main.py:47737 src/tauon/t_modules/t_main.py:47738
 msgid "Year by Oldest"
-msgstr "Anno dal Più Vecchio"
+msgstr "Anno dal più vecchio"
 
 #: src/tauon/t_modules/t_main.py:47740 src/tauon/t_modules/t_main.py:47741
 msgid "Year by Latest"
-msgstr "Anno dal Più Nuovo"
+msgstr "Anno dal più recente"
 
 #: src/tauon/t_modules/t_main.py:47755 src/tauon/t_modules/t_main.py:47756
 msgid "Reverse Tracks"
@@ -5543,7 +5543,7 @@ msgstr "Inverti dischi"
 
 #: src/tauon/t_modules/t_main.py:47769 src/tauon/t_modules/t_main.py:47770
 msgid "Has Comment"
-msgstr "Ha Commenti"
+msgstr "Ha commenti"
 
 #: src/tauon/t_modules/t_main.py:47777
 msgid "Track Info…"
@@ -6374,7 +6374,7 @@ msgstr "Errore di accesso a TIDAL, per favore prova di nuovo"
 #~ msgstr "Percorso della cartella musica:   "
 
 #~ msgid "See here for detailed instructions"
-#~ msgstr "Vedi qui per istruzioni più dettagliate"
+#~ msgstr "Vedi quì per istruzioni più dettagliate"
 
 #~ msgid "Output codec setting:"
 #~ msgstr "Impostazioni codec di destinazione:"
