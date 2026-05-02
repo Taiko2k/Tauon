@@ -174,6 +174,7 @@ class TrackFile:
 		self.disc_total    = "" # Wav does not need this
 		self.lyrics        = "" # Wav does not need this
 		self.synced_lyrics = ""
+		self.bpm:    float = 0.0
 		self.composer      = "" # Wav does not need this
 		self.misc: dict[str, str | float | list[str]] = {} # Wav does not need this
 
@@ -771,6 +772,11 @@ class Ape(TrackFile):
 					self.label = value
 				elif key == "lyrics":
 					self.lyrics = value
+				elif key == "bpm":
+					try:
+						self.bpm = float(value)
+					except (ValueError, TypeError):
+						self.bpm = 0.0
 				elif key == "replaygain_track_gain":
 					self.misc["replaygain_track_gain"] = float(value.lower().strip(" db"))
 				elif key == "replaygain_track_peak":

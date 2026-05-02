@@ -1641,6 +1641,7 @@ class TrackClass:
 		self.disc_number:  str = ""
 		self.disc_total:   str = ""
 		self.lyrics:       str = ""
+		self.bpm:        float = 0.0
 		self.synced:       str = ""
 
 		self.lfm_friend_likes   = set()
@@ -16924,6 +16925,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.disc_number = audio.disc_number
 					nt.lyrics = audio.lyrics
+					nt.bpm = audio.bpm
 					nt.synced = audio.synced_lyrics
 					if nt.length:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
@@ -16974,6 +16976,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.bitrate = audio.bit_rate
 					nt.lyrics = audio.lyrics
+					nt.bpm = audio.bpm
 					nt.synced = audio.synced_lyrics
 					nt.disc_number = audio.disc_number
 					nt.track_total = audio.track_total
@@ -44211,6 +44214,22 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 	natural_get(tags, nt, "TDRC", "date")
 	natural_get(tags, nt, "TCOM", "composer")
 	natural_get(tags, nt, "COMM", "comment")
+
+	# Smart Mix: leer BPM desde etiqueta ID3 TBPM
+	tbpm_frames = tags.getall("TBPM")
+	if tbpm_frames and tbpm_frames[0].text:
+		try:
+			nt.bpm = float(str(tbpm_frames[0].text[0]))
+		except (ValueError, TypeError):
+			nt.bpm = 0.0
+
+	# Smart Mix: leer BPM desde etiqueta ID3 TBPM
+	tbpm_frames = tags.getall("TBPM")
+	if tbpm_frames and tbpm_frames[0].text:
+		try:
+			nt.bpm = float(str(tbpm_frames[0].text[0]))
+		except (ValueError, TypeError):
+			nt.bpm = 0.0
 
 	process_odat(nt, natural_get(tags, None, "TDOR", None))
 
