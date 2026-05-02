@@ -4226,17 +4226,25 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return False, "", ""
 
-		try:
-			if artist:
-				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
+		if artist:
+			first_artist = get_first_artist(artist)
+			logging.info(f"Artist info lookup: '{artist}' -> first_artist='{first_artist}'")
+			attempts = [artist] if artist != first_artist else []
+			attempts.append(first_artist)
+		else:
+			attempts = []
+
+		for attempt_artist in attempts:
+			try:
+				logging.info(f"Trying Last.fm: '{attempt_artist}'")
+				l_artist = pylast.Artist(attempt_artist, self.lastfm_network)
 				bio = l_artist.get_bio_content()
-				# cover_link = l_artist.get_cover_image()
 				mbid = l_artist.get_mbid()
 				url = l_artist.get_url()
-
+				logging.info(f"Success for '{attempt_artist}'")
 				return True, bio, "", mbid, url
-		except Exception:
-			logging.exception(f"last.fm get artist info failed for '{artist}'")
+			except Exception:
+				logging.exception(f"last.fm get artist info failed for '{attempt_artist}'")
 
 		return False, "", "", "", ""
 
@@ -4244,12 +4252,19 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
-		try:
-			if artist:
-				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
+		if artist:
+			first_artist = get_first_artist(artist)
+			attempts = [artist] if artist != first_artist else []
+			attempts.append(first_artist)
+		else:
+			attempts = []
+
+		for attempt_artist in attempts:
+			try:
+				l_artist = pylast.Artist(attempt_artist, self.lastfm_network)
 				return l_artist.get_mbid()
-		except Exception:
-			logging.exception("last.fm get artist mbid info failed")
+			except Exception:
+				logging.exception("last.fm get artist mbid info failed")
 
 		return ""
 
@@ -4352,14 +4367,24 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
-		artist_object = pylast.Artist(get_first_artist(artist), self.lastfm_network)
-		bio = artist_object.get_bio_summary(language="en")
+		first_artist = get_first_artist(artist)
+		attempts = [artist] if artist != first_artist else []
+		attempts.append(first_artist)
+
+		for attempt_artist in attempts:
+			try:
+				artist_object = pylast.Artist(attempt_artist, self.lastfm_network)
+				return artist_object.get_bio_summary(language="en")
+			except Exception:
+				logging.exception(f"Last.fm bio lookup failed for '{attempt_artist}'")
+
+		return ""
 		# logging.info(artist_object.get_cover_image())
 		# logging.info("\n\n")
 		# logging.info(bio)
 		# logging.info("\n\n")
 		# logging.info(artist_object.get_bio_content())
-		return bio
+		# return bio
 		# else:
 		#	return ""
 
@@ -7448,6 +7473,21 @@ class Tauon:
 			os.remove(os.path.join(self.a_cache_directory, artist + "-lfm.txt"))
 		self.artist_info_box.text = ""
 		self.artist_info_box.artist_on = None
+
+	def clear_artist_cache(self) -> None:
+		if os.path.isdir(self.a_cache_directory):
+			for filename in os.listdir(self.a_cache_directory):
+				if filename.endswith(("-lfm.txt", "-lfm.png", "-lfm.jpg", "-lfm.webp", "-ftv-full.jpg", "-dcg.jpg")):
+					os.remove(os.path.join(self.a_cache_directory, filename))
+		artist_pictures_dir = self.user_directory / "artist-pictures"
+		if artist_pictures_dir.is_dir():
+			for ext in ("png", "jpg", "webp"):
+				for f in artist_pictures_dir.glob(f"*.{ext}"):
+					f.unlink()
+		self.artist_info_box.text = ""
+		self.artist_info_box.artist_on = None
+		self.artist_info_box.lock = False
+		self.artist_info_box.status = ""
 
 	def test_artist_dl(self, _: int) -> bool:
 		return not self.prefs.auto_dl_artist_data
@@ -38488,7 +38528,7 @@ class ArtistInfoBox:
 			self.status = _("Looking up...")
 			self.process_text_artist = ""
 
-			shoot_dl = threading.Thread(target=self.get_data, args=([self.artist_on, False, True]))
+			shoot_dl = threading.Thread(target=self.get_data, args=([track.artist, False, True]))
 			shoot_dl.daemon = True
 			shoot_dl.start()
 
@@ -38542,7 +38582,7 @@ class ArtistInfoBox:
 				self.scroll_y = 0
 				self.status = _("Loading...")
 
-				shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
+				shoot_dl = threading.Thread(target=self.get_data, args=([track.artist]))
 				shoot_dl.daemon = True
 				shoot_dl.start()
 
@@ -38671,7 +38711,7 @@ class ArtistInfoBox:
 			logging.info("Load Bio Data")
 
 		if not silent and artist is None and not get_img_path:
-			self.artist_on = artist
+			self.artist_on = None
 			self.lock = False
 			return ""
 
@@ -38720,7 +38760,7 @@ class ArtistInfoBox:
 					self.text = f.read()
 				self.status = "Ready"
 				self.gui.update = 2
-				self.artist_on = artist
+				self.artist_on = get_first_artist(artist)
 				self.lock = False
 
 				return ""
@@ -38728,7 +38768,7 @@ class ArtistInfoBox:
 			if not silent and not force_dl and not self.prefs.auto_dl_artist_data:
 				# . Alt: No artist data has been downloaded (try imply this needs to be manually triggered)
 				self.status = _("No artist data downloaded")
-				self.artist_on = artist
+				self.artist_on = get_first_artist(artist)
 				self.artist_picture_render.show = False
 				self.lock = False
 				return None
@@ -38749,7 +38789,7 @@ class ArtistInfoBox:
 				if not silent:
 					self.artist_picture_render.show = False
 					self.status = _("No artist bio found")
-					self.artist_on = artist
+					self.artist_on = get_first_artist(artist)
 					self.lock = False
 				return None
 			if data[1]:
@@ -38786,8 +38826,8 @@ class ArtistInfoBox:
 					r = requests.get(data[4], timeout=10)
 					html = BeautifulSoup(r.text, "html.parser")
 					tag = html.find("meta", property="og:image")
-					url = tag["content"]
-					if url:
+					if tag and tag.get("content"):
+						url = tag["content"]
 						r = requests.get(url, timeout=10)
 						assert len(r.content) > 1000
 						with open(standard_path, "wb") as f:
@@ -38796,6 +38836,9 @@ class ArtistInfoBox:
 
 				except Exception:
 					logging.exception("Failed to scrape art")
+				else:
+					if not got_image_path:
+						logging.info(f"No artist image found for '{artist}'")
 
 			if not silent and got_image_path:
 				self.artist_picture_render.load(got_image_path, box_size)
@@ -38844,7 +38887,7 @@ class ArtistInfoBox:
 			logging.exception("Failed to load bio")
 			self.status = _("Load Failed")
 
-		self.artist_on = artist
+		self.artist_on = get_first_artist(artist)
 		self.processed_text = ""
 		self.process_text_artist = ""
 		self.min_rq_timer.set()
@@ -48017,6 +48060,7 @@ def main(holder: Holder) -> None:
 	x_menu.add_to_sub(0, MenuItem(_("Reload All Folders"), pctl.rescan_all_folders))
 	x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), tauon.q_to_playlist))
 	x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), tauon.clear_img_cache))
+	x_menu.add_to_sub(0, MenuItem(_("Clear Artist Cache"), tauon.clear_artist_cache))
 
 	x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), tauon.clean_db2))
 	x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), tauon.clean_db))
