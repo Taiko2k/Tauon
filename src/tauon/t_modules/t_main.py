@@ -20266,8 +20266,6 @@ class TimedLyricsRen:
 
 				if i == line_active and highlight:
 					colour = self.colours.active_lyric
-					if self.colours.lm:
-						colour = ColourRGBA(180, 130, 210, 255)
 
 				location = [ round(x), round(possible_y), 4, allowed_width - 12 ]
 				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
@@ -42501,8 +42499,6 @@ class TimedLyricsEdit:
 
 				if i == self.line_active and highlight and test_time >= line[1]:
 					colour = self.colours.active_lyric
-					if self.colours.lm:
-						colour = ColourRGBA(180, 130, 210, 255)
 
 				location[1] = round(possible_y)
 				text = line[2]
