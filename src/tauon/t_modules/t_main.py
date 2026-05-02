@@ -48222,6 +48222,13 @@ def main(holder: Holder) -> None:
 	tauon.thread_manager.ready("gallery")
 	tauon.thread_manager.ready("worker")
 
+	# Smart Mix: analizar BPM de canciones existentes al arrancar
+	try:
+		from tauon.t_modules import t_autobpm
+		t_autobpm.queue_library(pctl.master_library)
+	except Exception as e:
+		logging.warning(f"Smart Mix autobpm startup: {e}")
+
 	# thread = threading.Thread(target=worker1)
 	# thread.daemon = True
 	# thread.start()
@@ -51457,6 +51464,12 @@ def main(holder: Holder) -> None:
 								pctl.notify_database_changed()
 								gui.auto_play_import = False
 								gui.album_artist_dict.clear()
+								# Smart Mix: analizar BPM en segundo plano
+								try:
+									from tauon.t_modules import t_autobpm
+									t_autobpm.queue_library(pctl.master_library)
+								except Exception as e:
+									logging.warning(f"Smart Mix autobpm: {e}")
 							break
 
 				if gui.show_playlist:
