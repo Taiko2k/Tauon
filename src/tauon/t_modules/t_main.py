@@ -17103,6 +17103,12 @@ class Tauon:
 						nt.genre = in_get("\xa9gen", tags)
 						if "\xa9lyr" in tags:
 							nt.lyrics = in_get("\xa9lyr", tags)
+						# Smart Mix: BPM para M4A/AAC/ALAC
+						if "tmpo" in tags:
+							try:
+								nt.bpm = float(tags["tmpo"][0])
+							except (ValueError, TypeError):
+								nt.bpm = 0.0
 						nt.track_total = ""
 						nt.track_number = ""
 						t = in_get("trkn", tags)
