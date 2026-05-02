@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-05-02 12:42+1200\n"
+"POT-Creation-Date: 2026-05-02 13:13+1200\n"
 "PO-Revision-Date: 2026-04-17 01:36+0000\n"
 "Last-Translator: Sketch6580 <sketch6580@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
@@ -338,7 +338,7 @@ msgid "Error importing M3U playlist"
 msgstr "导入 XSPF 播放列表时出错。"
 
 #: src/tauon/t_modules/t_main.py:6840
-msgid "Error trying to parse trying to parse playlist as UTF-8:"
+msgid "Error trying to parse playlist as UTF-8:"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:6844
@@ -650,7 +650,8 @@ msgid "Saving network images not implemented"
 msgstr "未实现保存网络图像"
 
 #: src/tauon/t_modules/t_main.py:8403
-msgid "No embedded album art found file."
+#, fuzzy
+msgid "No embedded album art found in file."
 msgstr "未找到嵌入的专辑封面文件。"
 
 #: src/tauon/t_modules/t_main.py:8403 src/tauon/t_modules/t_main.py:8425
@@ -870,7 +871,8 @@ msgid "Sync warning"
 msgstr "同步警告"
 
 #: src/tauon/t_modules/t_main.py:9467 src/tauon/t_modules/t_main.py:9497
-msgid "One or more folders to sync has the same name. Skipping."
+#, fuzzy
+msgid "Multiple folders to sync have the same name. Skipping."
 msgstr "一个或多个要同步的文件夹具有相同的名称。跳过。"
 
 #: src/tauon/t_modules/t_main.py:9473
@@ -1078,7 +1080,8 @@ msgid "NO! Bad user!"
 msgstr "不！坏用户！"
 
 #: src/tauon/t_modules/t_main.py:10406 src/tauon/t_modules/t_main.py:10430
-msgid "Im not going to let you transcode a lossy codec to a lossless one!"
+#, fuzzy
+msgid "I'm not going to let you transcode a lossy codec to a lossless one!"
 msgstr "我不会让你将有损编解码器转码为无损编解码器！"
 
 #: src/tauon/t_modules/t_main.py:10419

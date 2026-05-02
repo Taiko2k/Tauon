@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 12:42+1200\n"
+"POT-Creation-Date: 2026-05-02 13:13+1200\n"
 "PO-Revision-Date: 2026-04-28 14:09+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -336,7 +336,8 @@ msgid "Error importing M3U playlist"
 msgstr "Errore importazione scaletta M3U"
 
 #: src/tauon/t_modules/t_main.py:6840
-msgid "Error trying to parse trying to parse playlist as UTF-8:"
+#, fuzzy
+msgid "Error trying to parse playlist as UTF-8:"
 msgstr "Errore nel tentativo di analizzare la scaletta come UTF-8:"
 
 #: src/tauon/t_modules/t_main.py:6844
@@ -646,7 +647,8 @@ msgid "Saving network images not implemented"
 msgstr "Salvare immagini dalla rete ancora non è stato implementato"
 
 #: src/tauon/t_modules/t_main.py:8403
-msgid "No embedded album art found file."
+#, fuzzy
+msgid "No embedded album art found in file."
 msgstr "Nessuna copertina incorporata nel file trovata."
 
 #: src/tauon/t_modules/t_main.py:8403 src/tauon/t_modules/t_main.py:8425
@@ -871,7 +873,8 @@ msgid "Sync warning"
 msgstr "Avviso di sincronizzazione"
 
 #: src/tauon/t_modules/t_main.py:9467 src/tauon/t_modules/t_main.py:9497
-msgid "One or more folders to sync has the same name. Skipping."
+#, fuzzy
+msgid "Multiple folders to sync have the same name. Skipping."
 msgstr "Una o più cartelle da sincronizzare hanno lo stesso nome. Le salto."
 
 #: src/tauon/t_modules/t_main.py:9473
@@ -1081,7 +1084,8 @@ msgid "NO! Bad user!"
 msgstr "NO! Utente cattivo!"
 
 #: src/tauon/t_modules/t_main.py:10406 src/tauon/t_modules/t_main.py:10430
-msgid "Im not going to let you transcode a lossy codec to a lossless one!"
+#, fuzzy
+msgid "I'm not going to let you transcode a lossy codec to a lossless one!"
 msgstr "Non puoi convertire un codec lossy ad uno lossless!"
 
 #: src/tauon/t_modules/t_main.py:10419

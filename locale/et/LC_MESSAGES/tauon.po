@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 12:42+1200\n"
+"POT-Creation-Date: 2026-05-02 13:13+1200\n"
 "PO-Revision-Date: 2026-04-17 01:39+0000\n"
 "Last-Translator: \"Webnetic s. r. o.\" <infowebnetic@gmail.com>\n"
 "Language-Team: Estonian <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -347,7 +347,7 @@ msgid "Error importing M3U playlist"
 msgstr "Viga Spotify esitusloendi loomisel"
 
 #: src/tauon/t_modules/t_main.py:6840
-msgid "Error trying to parse trying to parse playlist as UTF-8:"
+msgid "Error trying to parse playlist as UTF-8:"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:6844
@@ -652,7 +652,7 @@ msgid "Saving network images not implemented"
 msgstr "Võrgus asuvate lugude muutmine pole soovitatav!"
 
 #: src/tauon/t_modules/t_main.py:8403
-msgid "No embedded album art found file."
+msgid "No embedded album art found in file."
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8403 src/tauon/t_modules/t_main.py:8425
@@ -881,7 +881,7 @@ msgid "Sync warning"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:9467 src/tauon/t_modules/t_main.py:9497
-msgid "One or more folders to sync has the same name. Skipping."
+msgid "Multiple folders to sync have the same name. Skipping."
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:9473
@@ -1092,7 +1092,7 @@ msgid "NO! Bad user!"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:10406 src/tauon/t_modules/t_main.py:10430
-msgid "Im not going to let you transcode a lossy codec to a lossless one!"
+msgid "I'm not going to let you transcode a lossy codec to a lossless one!"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:10419

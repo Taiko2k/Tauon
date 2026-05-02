@@ -6837,8 +6837,8 @@ class Tauon:
 			with path.open(encoding="utf-8") as file:
 				lines = file.readlines()
 		except UnicodeDecodeError as e:
-			self.show_message(_("Error importing M3U playlist"), _("Error trying to parse trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
-			logging.error(f"Error trying to parse trying to parse playlist as UTF-8: {e}")
+			self.show_message(_("Error importing M3U playlist"), _("Error trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
+			logging.error(f"Error trying to parse playlist as UTF-8: {e}")
 			return [], []
 		except Exception as e:
 			self.show_message(_("Exception importing M3U playlist"), _("Unknown exception trying to parse playlist") + f" {e}", mode="warning")
@@ -8400,7 +8400,7 @@ class Tauon:
 			pic = self.album_art_gen.get_embed(track_object)
 
 			if not pic:
-				self.show_message(_("Image save error."), _("No embedded album art found file."), mode="warning")
+				self.show_message(_("Image save error."), _("No embedded album art found in file."), mode="warning")
 				return
 
 			source_image = io.BytesIO(pic)
@@ -9464,7 +9464,7 @@ class Tauon:
 				if source_parent.exists():
 					if (path / item).exists():
 						self.show_message(
-							_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
 						continue
 
 					(path / item).mkdir()
@@ -9494,7 +9494,7 @@ class Tauon:
 				if encode_done.exists():
 					if (path / item).exists():
 						self.show_message(
-							_("Sync warning"), _("One or more folders to sync has the same name. Skipping."), mode="warning")
+							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
 						continue
 
 					(path / item).mkdir()
@@ -10403,7 +10403,7 @@ class Tauon:
 				"mp3", "opus",
 				"mp4", "ogg",
 				"aac"):
-				self.show_message(_("NO! Bad user!"), _("Im not going to let you transcode a lossy codec to a lossless one!"),
+				self.show_message(_("NO! Bad user!"), _("I'm not going to let you transcode a lossy codec to a lossless one!"),
 					mode="warning")
 
 				return
@@ -10427,7 +10427,7 @@ class Tauon:
 						"mp3", "opus",
 						"mp4", "ogg",
 						"aac"):
-						self.show_message(_("NO! Bad user!"), _("Im not going to let you transcode a lossy codec to a lossless one!"),
+						self.show_message(_("NO! Bad user!"), _("I'm not going to let you transcode a lossy codec to a lossless one!"),
 							mode="warning")
 
 						return
