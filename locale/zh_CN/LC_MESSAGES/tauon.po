@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:36+0000\n"
 "Last-Translator: Sketch6580 <sketch6580@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/"
@@ -1570,7 +1570,7 @@ msgstr "他们鼓励您在 {link} 做出贡献"
 msgid "Resume Queue"
 msgstr "继续队列"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "暂停队列"
 
@@ -1655,7 +1655,7 @@ msgstr "未找到艺术家图像。"
 msgid "No providers are enabled in settings!"
 msgstr "未设置供应商！"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "置顶"
 
@@ -2841,7 +2841,8 @@ msgstr "自动重新加载播放列表"
 msgid "Target playlist"
 msgstr "目标播放列表：   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 msgid "{N} albums"
 msgstr "{N} 专辑"
 
@@ -4078,7 +4079,8 @@ msgid "Copy"
 msgstr "复制"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "粘贴"
 
@@ -4526,23 +4528,21 @@ msgstr "结果为空"
 msgid "Close quotation..."
 msgstr "关闭引文..."
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 msgid "{N} tracks"
 msgstr "{N} 曲目"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 msgid "{N} track"
 msgstr "{N} 曲目"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+msgid "{N} album"
+msgstr "{N} 专辑"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
 msgstr "正在下载数据..."
-
-#: src/tauon/t_modules/t_main.py:36532
-msgid "{N} album"
-msgstr "{N} 专辑"
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4603,6 +4603,11 @@ msgstr "文件夹树"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "现在播放"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "自动停止"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -4792,26 +4797,9 @@ msgstr "备份并继续"
 msgid "Save synced to .lrc"
 msgstr "显示同步歌词"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-#, fuzzy
-msgid "lyrics-editor"
-msgstr "歌词编辑器"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
 msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
-msgstr "标签"
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
@@ -5294,6 +5282,11 @@ msgstr "将播放文件夹移到此处"
 msgid "Collapse All"
 msgstr "全部折叠"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "解锁"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "在播放列表中表示"
@@ -5311,6 +5304,11 @@ msgstr "加入专辑到队列"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "下一个列队专辑"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "切换歌词"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5382,6 +5380,16 @@ msgstr "提取图片"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr "快速获取封面艺术图"
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+#, fuzzy
+msgid "Toggle Milkdrop Visualiser"
+msgstr "顶部面板可视化器"
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "切换筛选器"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5520,6 +5528,11 @@ msgstr "有注释的"
 msgid "Track Info…"
 msgstr "曲目信息..."
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+#, fuzzy
+msgid "Love"
+msgstr "喜欢"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "↳ 在当前曲目之后"
@@ -5546,7 +5559,7 @@ msgstr "编辑字段…"
 msgid "Modify Folder…"
 msgstr "修改文件夹…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
 msgstr "编辑"
 
@@ -5850,6 +5863,10 @@ msgstr "清除 Bio"
 msgid "Edit..."
 msgstr "编辑..."
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr "错误：未找到后端"
@@ -5905,10 +5922,6 @@ msgstr "路径"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "采样数"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr " kbps"
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -6047,6 +6060,120 @@ msgstr "Tidalapi 包未加载"
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr "无法加载 TIDAL 登录信息，请尝试重新登录"
+
+#~ msgid " kbps"
+#~ msgstr " kbps"
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "窗口"
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "顶部面板中的选项卡"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "歌词"
+
+#, fuzzy
+#~ msgid "Gallery background"
+#~ msgstr "将专辑艺术图作为背景"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "曲目列表"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "队列 %d"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "曲目评分"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "曲编号"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "播放时间"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "转到正在播放"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "转到正在播放"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "转到正在播放"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "播放时间"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "曲目标题"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "曲目标题"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "文件夹树"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "文件夹树"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "显示分栏"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "将专辑艺术图作为背景"
+
+#, fuzzy
+#~ msgid "Tab active background"
+#~ msgstr "将专辑艺术图作为背景"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "显示标题文本"
+
+#, fuzzy
+#~ msgid "Menu background"
+#~ msgstr "将专辑艺术图作为背景"
+
+#, fuzzy
+#~ msgid "Box background"
+#~ msgstr "将专辑艺术图作为背景"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "显示标题文本"
+
+#, fuzzy
+#~ msgid "Seek background"
+#~ msgstr "首选艺术家背景"
+
+#, fuzzy
+#~ msgid "Volume background"
+#~ msgstr "将专辑艺术图作为背景"
+
+#, fuzzy
+#~ msgid "lyrics-editor"
+#~ msgstr "歌词编辑器"
+
+#~ msgid "tag"
+#~ msgstr "标签"
 
 #~ msgid "kbps"
 #~ msgstr "kbps"
@@ -6633,9 +6760,6 @@ msgstr "无法加载 TIDAL 登录信息，请尝试重新登录"
 #~ msgid ""
 #~ "See MENU > SETTINGS > ACCOUNT > SPOTIFY > Enable local audio playback."
 #~ msgstr "请参阅菜单 > 设置 > 帐户 > SPOTIFY > 启用本地音频播放。"
-
-#~ msgid "Queue %d"
-#~ msgstr "队列 %d"
 
 #~ msgid ""
 #~ "DANGER! This will delete the original files. You may want to have backups "

@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:41+0000\n"
 "Last-Translator: Micke Nilsson <mikni@proton.me>\n"
 "Language-Team: Swedish <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -1684,7 +1684,7 @@ msgstr "De uppmuntrar dig till att bidra på https://fanart.tv"
 msgid "Resume Queue"
 msgstr "Återuppta kön"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "Pausa kön"
 
@@ -1779,7 +1779,7 @@ msgstr "Ingen artistbild hittades."
 msgid "No providers are enabled in settings!"
 msgstr "Inga leverantörer aktiverade i inställningarna!"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "Fäst"
 
@@ -3020,7 +3020,8 @@ msgstr "Uppdatera genererade listor automatiskt"
 msgid "Target playlist"
 msgstr "Målspelningslista:   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 #, fuzzy
 msgid "{N} albums"
 msgstr "Sammanlagt antal album"
@@ -4260,7 +4261,8 @@ msgid "Copy"
 msgstr "Kopiera"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Klistra in"
 
@@ -4755,26 +4757,24 @@ msgstr "Kön är tom"
 msgid "Close quotation..."
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 #, fuzzy
 msgid "{N} tracks"
 msgstr "Nästa Spår"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 #, fuzzy
 msgid "{N} track"
 msgstr "Nästa Spår"
 
-#: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
-msgid "Downloading data..."
-msgstr "Laddar ner data..."
-
-#: src/tauon/t_modules/t_main.py:36532
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
 #, fuzzy
 msgid "{N} album"
 msgstr "Sammanlagt antal album"
+
+#: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
+msgid "Downloading data..."
+msgstr "Laddar ner data..."
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4835,6 +4835,11 @@ msgstr "Mappträd"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "Spela nu"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Autostopp"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -5032,25 +5037,8 @@ msgstr ""
 msgid "Save synced to .lrc"
 msgstr "Visa sångtext"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-#, fuzzy
-msgid "lyrics-editor"
-msgstr "Sångtext"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41756
@@ -5558,6 +5546,11 @@ msgstr "Flytta spelande mapp hit"
 msgid "Collapse All"
 msgstr "Komprimera alla"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Lås upp"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Visa i spelningslista"
@@ -5575,6 +5568,11 @@ msgstr "Lägg till album i kön"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "Köa album som nästa"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Sångtext på/av"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5649,6 +5647,16 @@ msgstr "Extrahera bild"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr "Snabbhämta omslagsbild"
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+#, fuzzy
+msgid "Toggle Milkdrop Visualiser"
+msgstr "Toppanelvisualisering"
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Sångtext på/av"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5793,6 +5801,11 @@ msgstr "Har kommentar"
 msgid "Track Info…"
 msgstr "Spårinfo…"
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+#, fuzzy
+msgid "Love"
+msgstr "Älskad"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "↳ Efter aktuellt spår"
@@ -5819,7 +5832,7 @@ msgstr ""
 msgid "Modify Folder…"
 msgstr "Ändra mapp…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 #, fuzzy
 msgid "Edit with"
 msgstr "Redigera med "
@@ -6147,6 +6160,10 @@ msgstr "Ta bort biografi"
 msgid "Edit..."
 msgstr "Redigera med "
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr ""
@@ -6205,10 +6222,6 @@ msgstr "Sökväg"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "Samplingsfrekvens"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -6354,6 +6367,121 @@ msgstr ""
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "Fönster"
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Aktivera flikar i toppanelen"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Sångtext"
+
+#, fuzzy
+#~ msgid "Gallery background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Spårlista"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Köa"
+
+#~ msgid "Bottom panel"
+#~ msgstr "Bottenpanel"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Spårranking"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Spårnummer"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Speltid"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "Spelar"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "Spelar"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "Spelar"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Speltid"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Spår gain"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Låttitel"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Mappträd"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Mappträd"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Visa fält"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "Tab active background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "Visa titlar"
+
+#, fuzzy
+#~ msgid "Menu background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "Menu text"
+#~ msgstr "Inkludera text"
+
+#, fuzzy
+#~ msgid "Box background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "Visa titlar"
+
+#, fuzzy
+#~ msgid "Seek background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "Volume background"
+#~ msgstr "Använd omslagsbild som bakgrund"
+
+#, fuzzy
+#~ msgid "lyrics-editor"
+#~ msgstr "Sångtext"
 
 #, fuzzy
 #~ msgid "{name}"
@@ -6689,10 +6817,6 @@ msgstr ""
 #~ msgid "Stop, RC: Toggle auto-stop"
 #~ msgstr "Stopp, RC: Autostopp av/på"
 
-#, fuzzy
-#~ msgid "Queue %d"
-#~ msgstr "Köa"
-
 #~ msgid ""
 #~ "DANGER! This will delete the original files. You may want to have backups "
 #~ "in case of malfunction."
@@ -6819,9 +6943,6 @@ msgstr ""
 #~ msgid "Set List Sorting..."
 #~ msgstr "Stoppar..."
 
-#~ msgid "Track gain"
-#~ msgstr "Spår gain"
-
 #~ msgid "Show in context menus:"
 #~ msgstr "Visa i kontextmenyer:"
 
@@ -6897,9 +7018,6 @@ msgstr ""
 #~ msgid "Genius*"
 #~ msgstr "Genius*"
 
-#~ msgid "Bottom panel"
-#~ msgstr "Bottenpanel"
-
 #~ msgid "Hide title when already shown"
 #~ msgstr "Dölj titel när redan visad"
 
@@ -6923,9 +7041,6 @@ msgstr ""
 
 #~ msgid "Misc"
 #~ msgstr "Diverse"
-
-#~ msgid "Include text"
-#~ msgstr "Inkludera text"
 
 #~ msgid "Show love hearts"
 #~ msgstr "Visa kärlekshjärtan"

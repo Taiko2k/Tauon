@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-28 14:09+0000\n"
 "Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -1573,7 +1573,7 @@ msgstr "Ti incoraggiano a contribuire a {link}"
 msgid "Resume Queue"
 msgstr "Riprendi Coda"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "Metti in Pausa la Coda"
 
@@ -1664,7 +1664,7 @@ msgstr "Nessun immagine dell'artista trovata."
 msgid "No providers are enabled in settings!"
 msgstr "Nessun fornitore di servizi abilitato nelle impostazioni!"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "Appendi"
 
@@ -2864,7 +2864,8 @@ msgstr "Auto ricarica scalette"
 msgid "Target playlist"
 msgstr "Scaletta di destinazione:   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 msgid "{N} albums"
 msgstr "{N} dischi"
 
@@ -4106,7 +4107,8 @@ msgid "Copy"
 msgstr "Copia"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Incolla"
 
@@ -4554,23 +4556,21 @@ msgstr "Nessun risultato"
 msgid "Close quotation..."
 msgstr "Chiudi citazione..."
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 msgid "{N} tracks"
 msgstr "{N} tracce"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 msgid "{N} track"
 msgstr "{N} traccia"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+msgid "{N} album"
+msgstr "{N} disco"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
 msgstr "Scaricando dati..."
-
-#: src/tauon/t_modules/t_main.py:36532
-msgid "{N} album"
-msgstr "{N} disco"
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4631,6 +4631,11 @@ msgstr "Elenco Cartelle"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "Riproduci Adesso"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Ferma Automatico"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -4814,26 +4819,10 @@ msgstr "Salva tutto e continua"
 msgid "Save synced to .lrc"
 msgstr "Salva sincronizzato su .lrc"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-msgid "lyrics-editor"
-msgstr "editor testi"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
 msgstr ""
 "Hai messo una cartella nella directory dell'editor dei testi. Non farlo."
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
-msgstr "tag"
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
@@ -5324,6 +5313,11 @@ msgstr "Sposta Cartella di Riproduzione Qui"
 msgid "Collapse All"
 msgstr "Richiudi Tutto"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Sblocca"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Mostra nella Scaletta"
@@ -5341,6 +5335,11 @@ msgstr "Aggiungi Disco alla Coda"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "Inserisci Disco come Prossimo in Coda"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Mostra / nascondi Testi"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5412,6 +5411,16 @@ msgstr "Estrai Immagine"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr "Ricerca veloce Copertina"
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+#, fuzzy
+msgid "Toggle Milkdrop Visualiser"
+msgstr "Abilita Visualizzatore Milkdrop"
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Nascondi/mostra Filtro"
 
 #: src/tauon/t_modules/t_main.py:47651
 msgid "Open Preset Folder"
@@ -5549,6 +5558,11 @@ msgstr "Ha commenti"
 msgid "Track Info…"
 msgstr "Informazioni traccia…"
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+#, fuzzy
+msgid "Love"
+msgstr "Amata"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "Dopo la Traccia Corrente"
@@ -5575,7 +5589,7 @@ msgstr "Modifica campi…"
 msgid "Modify Folder…"
 msgstr "Modifica Cartella…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
 msgstr "Modifica con"
 
@@ -5879,6 +5893,10 @@ msgstr "Pulisci Biografia"
 msgid "Edit..."
 msgstr "Modifica..."
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr "Errore: nessun backend trovato"
@@ -5934,10 +5952,6 @@ msgstr "Percorso"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "Campione qualità"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr " kbps"
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -6078,6 +6092,123 @@ msgstr "Pacchetto tidalapi non caricato"
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr "Errore di accesso a TIDAL, per favore prova di nuovo"
+
+#~ msgid " kbps"
+#~ msgstr " kbps"
+
+#, fuzzy
+#~ msgid "CUE"
+#~ msgstr "ATTUALE"
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "Finestra"
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Schede nel pannello in alto"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Testi"
+
+#, fuzzy
+#~ msgid "Gallery background"
+#~ msgstr "Usa copertina come sfondo"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Elenco Tracce"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Coda %d"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Voti tracce"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Numero Traccia"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Tempo Riproduzioni"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "In Riproduzione"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "In Riproduzione"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "In Riproduzione"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Tempo Riproduzioni"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Titolo traccia"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Titolo traccia"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Elenco Cartelle"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Elenco Cartelle"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Mostra Barra"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Usa copertina come sfondo"
+
+#, fuzzy
+#~ msgid "Tab active background"
+#~ msgstr "Usa copertina come sfondo"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "Mostra titolo"
+
+#, fuzzy
+#~ msgid "Menu background"
+#~ msgstr "Usa copertina come sfondo"
+
+#, fuzzy
+#~ msgid "Box background"
+#~ msgstr "Usa copertina come sfondo"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "Mostra titolo"
+
+#, fuzzy
+#~ msgid "Seek background"
+#~ msgstr "Usa artista come sfondo"
+
+#, fuzzy
+#~ msgid "Volume background"
+#~ msgstr "Usa copertina come sfondo"
+
+#~ msgid "lyrics-editor"
+#~ msgstr "editor testi"
+
+#~ msgid "tag"
+#~ msgstr "tag"
 
 #~ msgid "kbps"
 #~ msgstr "kbps"
@@ -6717,9 +6848,6 @@ msgstr "Errore di accesso a TIDAL, per favore prova di nuovo"
 #~ msgstr ""
 #~ "Vedi MENU > IMPOSTAZIONI > ACCOUNT > SPOTIFY > Abilita riproduzione "
 #~ "locale audio."
-
-#~ msgid "Queue %d"
-#~ msgstr "Coda %d"
 
 #~ msgid ""
 #~ "DANGER! This will delete the original files. You may want to have backups "

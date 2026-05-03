@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:35+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Japanese <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -1543,7 +1543,7 @@ msgstr "{link} での投稿が推奨されています"
 msgid "Resume Queue"
 msgstr "キューを再開"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "キューを一時停止"
 
@@ -1632,7 +1632,7 @@ msgstr "アーティスト画像が見つかりません"
 msgid "No providers are enabled in settings!"
 msgstr "設定で有効になっているプロバイダーはありません！"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "ピン留め"
 
@@ -2780,7 +2780,8 @@ msgstr "現在のプレイリストからアルバムグリッドを作成しま
 msgid "Target playlist"
 msgstr "対象プレイリスト"
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 msgid "{N} albums"
 msgstr "{N} 枚のアルバム"
 
@@ -3914,7 +3915,8 @@ msgid "Copy"
 msgstr "コピー"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "ペースト"
 
@@ -4157,7 +4159,8 @@ msgstr "ストリーム URL を入力してください"
 
 #: src/tauon/t_modules/t_main.py:35239
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr "URL を検証できませんでした。https:// または http:// で始まる必要があります"
+msgstr ""
+"URL を検証できませんでした。https:// または http:// で始まる必要があります"
 
 #: src/tauon/t_modules/t_main.py:35402 src/tauon/t_modules/t_main.py:35408
 #: src/tauon/t_modules/t_main.py:35415
@@ -4185,262 +4188,224 @@ msgid "Browse"
 msgstr "参照"
 
 #: src/tauon/t_modules/t_main.py:35429
-#, fuzzy
 msgid "Saved"
-msgstr "保存先: "
+msgstr "保存済み"
 
 #: src/tauon/t_modules/t_main.py:35542
 msgid "Type codes separated by spaces. Codes will be executed left to right."
-msgstr ""
+msgstr "コードをスペース区切りで入力します。左から右へ実行されます。"
 
 #: src/tauon/t_modules/t_main.py:35544
-#, fuzzy
 msgid "Select sources: (default: all playlists)"
-msgstr "次"
+msgstr "ソースを選択: (既定: すべてのプレイリスト)"
 
 #: src/tauon/t_modules/t_main.py:35547
-#, fuzzy
 msgid "Select source playlist by name"
-msgstr "次"
+msgstr "名前で元プレイリストを選択"
 
 #: src/tauon/t_modules/t_main.py:35550
-#, fuzzy
 msgid "Select playlist itself"
-msgstr "繰り返す"
+msgstr "このプレイリスト自身を選択"
 
 #: src/tauon/t_modules/t_main.py:35553
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr ""
+msgstr "ソースからトラックを追加: (1 つ以上必須)"
 
 #: src/tauon/t_modules/t_main.py:35557
-#, fuzzy
 msgid "Search artist name"
-msgstr "Sonemicで検索"
+msgstr "アーティスト名を検索"
 
 #: src/tauon/t_modules/t_main.py:35560
-#, fuzzy
 msgid "Search genre"
-msgstr "検索中..."
+msgstr "ジャンルを検索"
 
 #: src/tauon/t_modules/t_main.py:35567
 msgid "Find / Search / Path"
-msgstr ""
+msgstr "検索 / パス検索"
 
 #: src/tauon/t_modules/t_main.py:35575
-#, fuzzy
 msgid "Add all tracks"
-msgstr "このアルバム数"
+msgstr "すべてのトラックを追加"
 
 #: src/tauon/t_modules/t_main.py:35578
-#, fuzzy
 msgid "Filters"
-msgstr "歌詞をトグル"
+msgstr "フィルター"
 
 #: src/tauon/t_modules/t_main.py:35581
 msgid "Limit to number of tracks"
-msgstr ""
+msgstr "トラック数を制限"
 
 #: src/tauon/t_modules/t_main.py:35584
 msgid "Year: >, <, ="
-msgstr ""
+msgstr "年: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35587
-#, fuzzy
 msgid "Play count: >, <"
-msgstr "プレイ回数"
+msgstr "再生回数: >, <"
 
 #: src/tauon/t_modules/t_main.py:35590
-#, fuzzy
 msgid "Track duration (minutes): >, <"
-msgstr "トラックゲイン"
+msgstr "トラック長 (分): >, <"
 
 #: src/tauon/t_modules/t_main.py:35593
-#, fuzzy
 msgid "Album duration (minutes): >, <"
-msgstr "アルバム数"
+msgstr "アルバム長 (分): >, <"
 
 #: src/tauon/t_modules/t_main.py:35596
-#, fuzzy
 msgid "Track rating 0-5: >, <, ="
-msgstr "トラックゲイン"
+msgstr "トラック評価 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35599
-#, fuzzy
 msgid "Loved tracks"
-msgstr "好き"
+msgstr "Love したトラック"
 
 #: src/tauon/t_modules/t_main.py:35602
-#, fuzzy
 msgid "Has lyrics"
 msgstr "歌詞あり"
 
 #: src/tauon/t_modules/t_main.py:35605
-#, fuzzy
 msgid "Search and keep"
-msgstr "検索中..."
+msgstr "検索して保持"
 
 #: src/tauon/t_modules/t_main.py:35608
-#, fuzzy
 msgid "Search and exclude"
-msgstr "Geniusでトラックを検索"
+msgstr "検索して除外"
 
 #: src/tauon/t_modules/t_main.py:35622
 msgid "Sorters"
-msgstr ""
+msgstr "ソート"
 
 #: src/tauon/t_modules/t_main.py:35626
-#, fuzzy
 msgid "Shuffle tracks"
-msgstr "シャッフルトラック"
+msgstr "トラックをシャッフル"
 
 #: src/tauon/t_modules/t_main.py:35629
-#, fuzzy
 msgid "Shuffle albums"
-msgstr "シャッフルアルバム"
+msgstr "アルバムをシャッフル"
 
 #: src/tauon/t_modules/t_main.py:35632
 msgid "Year: >, <"
-msgstr ""
+msgstr "年: >, <"
 
 #: src/tauon/t_modules/t_main.py:35635
-#, fuzzy
 msgid "Track duration: >, <"
-msgstr "トラックゲイン"
+msgstr "トラック長: >, <"
 
 #: src/tauon/t_modules/t_main.py:35638
-#, fuzzy
 msgid "Track Playtime: >, <"
-msgstr "真空プレイタイム"
+msgstr "トラック再生時間: >, <"
 
 #: src/tauon/t_modules/t_main.py:35641
-#, fuzzy
 msgid "Album playtime: >, <"
-msgstr "アルバムゲイン"
+msgstr "アルバム再生時間: >, <"
 
 #: src/tauon/t_modules/t_main.py:35644
-#, fuzzy
 msgid "Album duration: >, <"
-msgstr "アルバム数"
+msgstr "アルバム長: >, <"
 
 #: src/tauon/t_modules/t_main.py:35647
-#, fuzzy
 msgid "Invert tracks"
-msgstr "好き"
+msgstr "トラック順を反転"
 
 #: src/tauon/t_modules/t_main.py:35650
-#, fuzzy
 msgid "Invert albums"
-msgstr "最長アルバム"
+msgstr "アルバム順を反転"
 
 #: src/tauon/t_modules/t_main.py:35653
-#, fuzzy
 msgid "Track rating: >, <"
-msgstr "トラックゲイン"
+msgstr "トラック評価: >, <"
 
 #: src/tauon/t_modules/t_main.py:35656
-#, fuzzy
 msgid "Album rating: >, <"
-msgstr "アルバム数"
+msgstr "アルバム評価: >, <"
 
 #: src/tauon/t_modules/t_main.py:35659
 msgid "Modification date: >, <"
-msgstr ""
+msgstr "更新日: >, <"
 
 #: src/tauon/t_modules/t_main.py:35665
-#, fuzzy
 msgid "Track number per album"
-msgstr "番号"
+msgstr "アルバムごとのトラック番号"
 
 #: src/tauon/t_modules/t_main.py:35668
-#, fuzzy
 msgid "Year per artist"
-msgstr "アーティストごとのソート年"
+msgstr "アーティストごとの年"
 
 #: src/tauon/t_modules/t_main.py:35671
 msgid "Sort by column name: >, <"
-msgstr ""
+msgstr "列名でソート: >, <"
 
 #: src/tauon/t_modules/t_main.py:35674
 msgid "Special"
-msgstr ""
+msgstr "特殊"
 
 #: src/tauon/t_modules/t_main.py:35677
-#, fuzzy
 msgid "Automatically reload on imports"
-msgstr "インポート時の自動ソート"
+msgstr "インポート時に自動再読み込み"
 
 #: src/tauon/t_modules/t_main.py:35682
-#, fuzzy
 msgid "Status:"
-msgstr "統計"
+msgstr "状態:"
 
 #: src/tauon/t_modules/t_main.py:35686
-#, fuzzy
 msgid "Playlist not found"
-msgstr "プレイリストの長さ"
+msgstr "プレイリストが見つかりません"
 
 #: src/tauon/t_modules/t_main.py:35688
-#, fuzzy
 msgid "Result is empty"
-msgstr "プレイリストが空です"
+msgstr "結果が空です"
 
 #: src/tauon/t_modules/t_main.py:35690
 msgid "Close quotation..."
-msgstr ""
+msgstr "引用符を閉じてください..."
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 msgid "{N} tracks"
-msgstr "繰り返しトラック"
+msgstr "{N} 曲"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 msgid "{N} track"
-msgstr "繰り返しトラック"
+msgstr "{N} 曲"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+msgid "{N} album"
+msgstr "{N} 枚のアルバム"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
-#, fuzzy
 msgid "Downloading data..."
-msgstr "ダウンロードしています...お待ちください"
-
-#: src/tauon/t_modules/t_main.py:36532
-#, fuzzy
-msgid "{N} album"
-msgstr "合計アルバム"
+msgstr "データをダウンロード中..."
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
-msgstr ""
+msgstr "アーティストのアルバムの先頭 ({N} 枚)"
 
 #: src/tauon/t_modules/t_main.py:36721
 msgid "Last of artist's albums ({N} albums)"
-msgstr ""
+msgstr "アーティストのアルバムの末尾 ({N} 枚)"
 
 #: src/tauon/t_modules/t_main.py:36733
 msgid "Start of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "場所 {N}/{T} の先頭 ({Nb} 枚)"
 
 #: src/tauon/t_modules/t_main.py:36736 src/tauon/t_modules/t_main.py:36746
 msgid "Location {N} of {T}"
-msgstr ""
+msgstr "場所 {N}/{T}"
 
 #: src/tauon/t_modules/t_main.py:36743
 msgid "End of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "場所 {N}/{T} の末尾 ({Nb} 枚)"
 
 #: src/tauon/t_modules/t_main.py:36755
 msgid "Start of location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "場所 1/{N} の先頭 ({Nb} 枚)"
 
 #: src/tauon/t_modules/t_main.py:36758
 msgid "Location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "場所 1/{N} ({Nb} 枚)"
 
 #: src/tauon/t_modules/t_main.py:36761
 msgid "Location 1 of {N}"
-msgstr ""
+msgstr "場所 1/{N}"
 
 #: src/tauon/t_modules/t_main.py:36884
 msgid "No artists in playlist"
@@ -4470,6 +4435,10 @@ msgstr "フォルダーツリー"
 msgid "Play Now"
 msgstr "今すぐプレイ"
 
+#: src/tauon/t_modules/t_main.py:37541
+msgid "Auto-Stop Here"
+msgstr "ここで自動停止"
+
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
 msgstr "キューをクリア"
@@ -4483,9 +4452,8 @@ msgid "Queue to New Playlist"
 msgstr "プレイリストへ"
 
 #: src/tauon/t_modules/t_main.py:37589
-#, fuzzy
 msgid "Queued Tracks"
-msgstr "好き"
+msgstr "キューされたトラック"
 
 #: src/tauon/t_modules/t_main.py:37686
 msgid "Cancel Auto-Stop"
@@ -4497,11 +4465,11 @@ msgstr "自動停止"
 
 #: src/tauon/t_modules/t_main.py:37694
 msgid "Eh?"
-msgstr ""
+msgstr "えっ？"
 
 #: src/tauon/t_modules/t_main.py:37702
 msgid "Looks like it's gone now anyway"
-msgstr ""
+msgstr "どうやらもう消えているようです"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47522
 msgid "Queue"
@@ -4512,24 +4480,20 @@ msgid "Add to Queue"
 msgstr "キューに追加する"
 
 #: src/tauon/t_modules/t_main.py:37825
-#, fuzzy
 msgid "Up Next:"
-msgstr "次"
+msgstr "次に再生:"
 
 #: src/tauon/t_modules/t_main.py:38068
-#, fuzzy
 msgid "{N} Track"
-msgstr "繰り返しトラック"
+msgstr "{N} 曲"
 
 #: src/tauon/t_modules/t_main.py:38071
-#, fuzzy
 msgid "{N} Tracks"
-msgstr "繰り返しトラック"
+msgstr "{N} 曲"
 
 #: src/tauon/t_modules/t_main.py:38515
-#, fuzzy
 msgid "No artist name found"
-msgstr "アーティスト画像が見つかりません"
+msgstr "アーティスト名が見つかりません"
 
 #: src/tauon/t_modules/t_main.py:38526 src/tauon/t_modules/t_main.py:38779
 msgid "Looking up..."
@@ -4552,9 +4516,8 @@ msgid "No artist bio found"
 msgstr "バイオが見つかりません"
 
 #: src/tauon/t_modules/t_main.py:38886
-#, fuzzy
 msgid "Load Failed"
-msgstr "名前変更完了。"
+msgstr "読み込みに失敗しました"
 
 #: src/tauon/t_modules/t_main.py:40002 src/tauon/t_modules/t_main.py:43059
 msgid "Playing"
@@ -4565,38 +4528,32 @@ msgid "Auto-Scroll"
 msgstr "スクロール"
 
 #: src/tauon/t_modules/t_main.py:40593
-#, fuzzy
 msgid "Tracks + Art"
-msgstr "トラックリスト"
+msgstr "トラック + アート"
 
 #: src/tauon/t_modules/t_main.py:40626
-#, fuzzy
 msgid "Tracks only"
-msgstr "このトラック数"
+msgstr "トラックのみ"
 
 #: src/tauon/t_modules/t_main.py:40642
-#, fuzzy
 msgid "Showcase + Lyrics"
-msgstr "歌詞を示す"
+msgstr "ショーケース + 歌詞"
 
 #: src/tauon/t_modules/t_main.py:40671
 msgid "Radio"
-msgstr ""
+msgstr "ラジオ"
 
 #: src/tauon/t_modules/t_main.py:40685
-#, fuzzy
 msgid "Toggle columns"
-msgstr "歌詞をトグル"
+msgstr "列を切り替え"
 
 #: src/tauon/t_modules/t_main.py:41000
-#, fuzzy
 msgid "There are no more steps to undo."
-msgstr "有効な歌詞ソースはありません。"
+msgstr "これ以上元に戻せる手順はありません。"
 
 #: src/tauon/t_modules/t_main.py:41619 src/tauon/t_modules/t_main.py:41633
-#, fuzzy
 msgid "Exit Lyrics Editor"
-msgstr "歌詞"
+msgstr "歌詞エディターを終了"
 
 #: src/tauon/t_modules/t_main.py:41620 src/tauon/t_modules/t_main.py:41634
 #: src/tauon/t_modules/t_main.py:47576 src/tauon/t_modules/t_main.py:47595
@@ -4606,200 +4563,170 @@ msgstr "歌詞を検索"
 
 #: src/tauon/t_modules/t_main.py:41621
 msgid "Copy From Synced"
-msgstr ""
+msgstr "同期歌詞からコピー"
 
 #: src/tauon/t_modules/t_main.py:41622 src/tauon/t_modules/t_main.py:41639
-#, fuzzy
 msgid "Upload To LRCLIB"
-msgstr "アーティスト読み込み中..."
+msgstr "LRCLIB にアップロード"
 
 #: src/tauon/t_modules/t_main.py:41635
 msgid "Copy From Unsynced"
-msgstr ""
+msgstr "非同期歌詞からコピー"
 
 #: src/tauon/t_modules/t_main.py:41636
 msgid "Clear All Section Markers"
-msgstr ""
+msgstr "すべてのセクションマーカーを消去"
 
 #: src/tauon/t_modules/t_main.py:41637
-#, fuzzy
 msgid "Clear All Timestamps"
-msgstr "歌詞を消す"
+msgstr "すべてのタイムスタンプを消去"
 
 #: src/tauon/t_modules/t_main.py:41638
-#, fuzzy
 msgid "Clear All Lyrics"
-msgstr "歌詞を消す"
+msgstr "すべての歌詞を消去"
 
 #: src/tauon/t_modules/t_main.py:41641
 msgid "Backups..."
-msgstr ""
+msgstr "バックアップ..."
 
 #: src/tauon/t_modules/t_main.py:41642
-#, fuzzy
 msgid "Load Current Backup"
-msgstr "現行のアルバムの後"
+msgstr "現在のバックアップを読み込み"
 
 #: src/tauon/t_modules/t_main.py:41643
-#, fuzzy
 msgid "Visit Current Backup"
-msgstr "現行のアルバムの後"
+msgstr "現在のバックアップを開く"
 
 #: src/tauon/t_modules/t_main.py:41644
-#, fuzzy
 msgid "Delete All Backups"
-msgstr "ファイルを削除する"
+msgstr "すべてのバックアップを削除"
 
 #: src/tauon/t_modules/t_main.py:41646
 msgid "When track ends..."
-msgstr ""
+msgstr "トラック終了時..."
 
 #: src/tauon/t_modules/t_main.py:41653 src/tauon/t_modules/t_main.py:41655
 msgid "Stop immediately"
-msgstr ""
+msgstr "すぐに停止"
 
 #: src/tauon/t_modules/t_main.py:41658 src/tauon/t_modules/t_main.py:41660
 msgid "Backup and continue"
-msgstr ""
+msgstr "バックアップして続行"
 
 #: src/tauon/t_modules/t_main.py:41663 src/tauon/t_modules/t_main.py:41665
 msgid "Fully save and continue"
-msgstr ""
+msgstr "完全に保存して続行"
 
 #: src/tauon/t_modules/t_main.py:41671
-#, fuzzy
 msgid "Save synced to .lrc"
-msgstr "歌詞を示す"
-
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-#, fuzzy
-msgid "lyrics-editor"
-msgstr "歌詞"
+msgstr "同期歌詞を .lrc に保存"
 
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
 msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
-msgstr ""
+"lyrics-editor ディレクトリにフォルダーが置かれています。やめてください。"
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
-msgstr ""
+msgstr "注意してください！"
 
 #: src/tauon/t_modules/t_main.py:41757
 msgid ""
 "A file's metadata can only store ONE type of lyrics data, synced or static, "
 "at a time."
 msgstr ""
+"ファイルのメタデータには、同期歌詞か静的歌詞のどちらか 1 種類しか同時に保存で"
+"きません。"
 
 #: src/tauon/t_modules/t_main.py:41758
 msgid ""
 "Saving one type will now OVERWRITE the other in the files. (Tauon itself "
 "doesn't care.)"
 msgstr ""
+"片方を保存すると、ファイル内のもう片方は上書きされます。(Tauon 自体は気にしま"
+"せん。)"
 
 #: src/tauon/t_modules/t_main.py:41926
 msgid "Lyrics will misbehave if only some of them are timed."
-msgstr ""
+msgstr "一部の行だけに時刻が付いていると、歌詞の動作がおかしくなります。"
 
 #: src/tauon/t_modules/t_main.py:41927
 msgid "You can time all of them or none of them, either will work."
 msgstr ""
+"すべての行に時刻を付けるか、まったく付けないかのどちらかにしてください。"
 
 #: src/tauon/t_modules/t_main.py:41928 src/tauon/t_modules/t_main.py:41938
-#, fuzzy
 msgid "Alternatively, save again while holding Alt to override."
-msgstr "Shift キーを押しながら再試行すると強制削除できます。"
+msgstr "または、Alt キーを押しながらもう一度保存すると上書きできます。"
 
 #: src/tauon/t_modules/t_main.py:41936
 msgid "Lyrics might misbehave if their timestamps are out of order."
 msgstr ""
+"タイムスタンプの順序が乱れていると、歌詞の動作がおかしくなる場合があります。"
 
 #: src/tauon/t_modules/t_main.py:41937
 msgid "Please make sure all timestamps are ordered correctly."
-msgstr ""
+msgstr "すべてのタイムスタンプが正しい順序になっているか確認してください。"
 
 #: src/tauon/t_modules/t_main.py:41958 src/tauon/t_modules/t_main.py:41964
-#, fuzzy
 msgid "Synced lyrics saved successfully"
-msgstr "歌詞を示す"
+msgstr "同期歌詞を保存しました"
 
 #: src/tauon/t_modules/t_main.py:41959
-#, fuzzy
 msgid "Saved to .lrc and tags"
-msgstr "歌詞を示す"
+msgstr ".lrc とタグに保存しました"
 
 #: src/tauon/t_modules/t_main.py:41965
-#, fuzzy
 msgid "Saved to .lrc"
-msgstr "歌詞を示す"
+msgstr ".lrc に保存しました"
 
 #: src/tauon/t_modules/t_main.py:41971 src/tauon/t_modules/t_main.py:41977
-#, fuzzy
 msgid "Synced lyrics saved to tags"
-msgstr "歌詞を示す"
+msgstr "同期歌詞をタグに保存しました"
 
 #: src/tauon/t_modules/t_main.py:41972 src/tauon/t_modules/t_main.py:41995
 msgid "Destroyed previously existing lyrics in file"
-msgstr ""
+msgstr "ファイル内の既存の歌詞を上書きしました"
 
 #: src/tauon/t_modules/t_main.py:41982
-#, fuzzy
 msgid "Synced lyrics saved in Tauon only"
-msgstr "歌詞を示す"
+msgstr "同期歌詞を Tauon 内にのみ保存しました"
 
 #: src/tauon/t_modules/t_main.py:41994 src/tauon/t_modules/t_main.py:42000
-#, fuzzy
 msgid "Unsynced lyrics saved successfully"
-msgstr "歌詞を示す"
+msgstr "非同期歌詞を保存しました"
 
 #: src/tauon/t_modules/t_main.py:42005
-#, fuzzy
 msgid "Unsynced lyrics saved in Tauon only"
-msgstr "歌詞を示す"
+msgstr "非同期歌詞を Tauon 内にのみ保存しました"
 
 #: src/tauon/t_modules/t_main.py:42069
-#, fuzzy
 msgid "Backup file does not exist"
-msgstr "移動元フォルダーが存在しません。"
+msgstr "バックアップファイルが存在しません"
 
 #: src/tauon/t_modules/t_main.py:42077
-#, fuzzy
 msgid "Put the lyrics in this file."
-msgstr "歌詞をファイルに書き込めませんでした"
+msgstr "このファイルに歌詞を入力してください。"
 
 #: src/tauon/t_modules/t_main.py:42248
-#, fuzzy
 msgid "Teleport to timestamp"
-msgstr "ファイルを削除する"
+msgstr "タイムスタンプへ移動"
 
 #: src/tauon/t_modules/t_main.py:42255
-#, fuzzy
 msgid "Delete timestamp"
-msgstr "ファイルを削除する"
+msgstr "タイムスタンプを削除"
 
 #: src/tauon/t_modules/t_main.py:42261
 msgid "Timestamp unknown"
-msgstr ""
+msgstr "タイムスタンプ不明"
 
 #: src/tauon/t_modules/t_main.py:42307
-#, fuzzy
 msgid "Delete line"
-msgstr "ファイルを削除する"
+msgstr "行を削除"
 
 #: src/tauon/t_modules/t_main.py:42319
 msgid "Add line"
-msgstr ""
+msgstr "行を追加"
 
 #: src/tauon/t_modules/t_main.py:42611 src/tauon/t_modules/t_main.py:42683
 #: src/tauon/t_modules/t_main.py:47658
@@ -4809,327 +4736,300 @@ msgstr "前"
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42690
 #: src/tauon/t_modules/t_main.py:42691
 msgid "CURRENT"
-msgstr ""
+msgstr "現在"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42693
 #: src/tauon/t_modules/t_main.py:42694
 msgid "ADD TIME"
-msgstr ""
+msgstr "時刻追加"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42696
 #: src/tauon/t_modules/t_main.py:42697
 msgid "TIME"
-msgstr ""
+msgstr "時刻"
 
 #: src/tauon/t_modules/t_main.py:42613 src/tauon/t_modules/t_main.py:42653
 #: src/tauon/t_modules/t_main.py:42859 src/tauon/t_modules/t_main.py:42885
 msgid "SAVE"
-msgstr ""
+msgstr "保存"
 
 #: src/tauon/t_modules/t_main.py:42614 src/tauon/t_modules/t_main.py:42657
-#, fuzzy
 msgid "Save to .lrc"
-msgstr "歌詞を示す"
+msgstr ".lrc に保存"
 
 #: src/tauon/t_modules/t_main.py:42615 src/tauon/t_modules/t_main.py:42661
 #: src/tauon/t_modules/t_main.py:42860 src/tauon/t_modules/t_main.py:42889
-#, fuzzy
 msgid "Save to tags"
-msgstr "歌詞を示す"
+msgstr "タグに保存"
 
 #: src/tauon/t_modules/t_main.py:42616 src/tauon/t_modules/t_main.py:42667
 #: src/tauon/t_modules/t_main.py:42861 src/tauon/t_modules/t_main.py:42895
-#, fuzzy
 msgid "Discard"
-msgstr "ディスク"
+msgstr "破棄"
 
 #: src/tauon/t_modules/t_main.py:42717
-#, fuzzy
 msgid "Errored"
 msgstr "エラー"
 
 #: src/tauon/t_modules/t_main.py:42730 src/tauon/t_modules/t_main.py:42732
 #: src/tauon/t_modules/t_main.py:42918 src/tauon/t_modules/t_main.py:42920
-#, fuzzy
 msgid "Failed"
-msgstr "名前変更完了。"
+msgstr "失敗"
 
 #: src/tauon/t_modules/t_main.py:42778 src/tauon/t_modules/t_main.py:42793
 msgid "Put the lyrics in this file and save it."
-msgstr ""
+msgstr "このファイルに歌詞を入力して保存してください。"
 
 #: src/tauon/t_modules/t_main.py:42856 src/tauon/t_modules/t_main.py:42906
-#, fuzzy
 msgid "Edit Lyrics"
-msgstr "歌詞を隠す"
+msgstr "歌詞を編集"
 
 #: src/tauon/t_modules/t_main.py:42857 src/tauon/t_modules/t_main.py:42953
 msgid "Read Back"
-msgstr ""
+msgstr "読み戻す"
 
 #: src/tauon/t_modules/t_main.py:42862 src/tauon/t_modules/t_main.py:42963
 msgid "Reopen Editor"
-msgstr ""
+msgstr "エディターを再度開く"
 
 #: src/tauon/t_modules/t_main.py:42906
 msgid "Opens an external editor."
-msgstr ""
+msgstr "外部エディターを開きます。"
 
 #: src/tauon/t_modules/t_main.py:42931 src/tauon/t_modules/t_main.py:42949
 msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
 msgstr ""
+"開いた歌詞をテキストエディターで編集し、ファイルを保存してから「読み戻す」を"
+"クリックしてください。"
 
 #: src/tauon/t_modules/t_main.py:42953
 msgid "Make sure to save your changes."
-msgstr ""
+msgstr "変更を必ず保存してください。"
 
 #: src/tauon/t_modules/t_main.py:42956 src/tauon/t_modules/t_main.py:43173
-#, fuzzy
 msgid "Delete the file."
-msgstr "画像ファイルを削除"
+msgstr "ファイルを削除します。"
 
 #: src/tauon/t_modules/t_main.py:42963
 msgid "In case you closed it by accident."
-msgstr ""
+msgstr "誤って閉じてしまった場合に使います。"
 
 #: src/tauon/t_modules/t_main.py:43108 src/tauon/t_modules/t_main.py:43134
 msgid "Upload lyrics for {artist} - {title}?"
-msgstr ""
+msgstr "{artist} - {title} の歌詞をアップロードしますか？"
 
 #: src/tauon/t_modules/t_main.py:43137 src/tauon/t_modules/t_main.py:43143
-#, fuzzy
 msgid "Synced"
-msgstr "名前変更完了。"
+msgstr "同期"
 
 #: src/tauon/t_modules/t_main.py:43156
 msgid "Lyrics must be formatted correctly"
-msgstr ""
+msgstr "歌詞は正しく整形されている必要があります"
 
 #: src/tauon/t_modules/t_main.py:43157
 msgid "Your synced lyrics are either out of order or not fully timed."
-msgstr ""
+msgstr "同期歌詞の順序が乱れているか、すべての行に時刻が付いていません。"
 
 #: src/tauon/t_modules/t_main.py:43158
-#, fuzzy
 msgid "We cannot upload broken lyrics to LRCLIB."
-msgstr "アーティスト読み込み中..."
+msgstr "壊れた歌詞は LRCLIB にアップロードできません。"
 
 #: src/tauon/t_modules/t_main.py:43163
-#, fuzzy
 msgid "Unsynced"
-msgstr "名前変更完了。"
+msgstr "非同期"
 
 #: src/tauon/t_modules/t_main.py:43165 src/tauon/t_modules/t_main.py:47702
-#, fuzzy
 msgid "Upload"
-msgstr "リロード"
+msgstr "アップロード"
 
 #: src/tauon/t_modules/t_main.py:45070
-#, fuzzy
 msgid "Files missing or inaccessible"
 msgstr "ファイルが存在しないか、アクセスできません"
 
 #: src/tauon/t_modules/t_main.py:45071
 msgid "If you're using Flatpak, you should probably follow this:"
 msgstr ""
+"Flatpak を使用している場合は、おそらくこちらの手順に従う必要があります:"
 
 #: src/tauon/t_modules/t_main.py:45079
 msgid "Bad permissions"
-msgstr ""
+msgstr "権限が不足しています"
 
 #: src/tauon/t_modules/t_main.py:45080
-#, fuzzy
 msgid "We don't have permissions to access {file}"
-msgstr "ファイルが存在しないか、アクセスできません"
+msgstr "{file} にアクセスする権限がありません"
 
 #: src/tauon/t_modules/t_main.py:45088
 msgid "Can't import that"
-msgstr ""
+msgstr "インポートできません"
 
 #: src/tauon/t_modules/t_main.py:45089
 msgid "We can't import the file {path} and we're not sure why."
-msgstr ""
+msgstr "{path} をインポートできません。理由は不明です。"
 
 #: src/tauon/t_modules/t_main.py:45130
-#, fuzzy
 msgid "You attempted to drop an archive."
-msgstr "インポート時にアーカイブを抽出する"
+msgstr "アーカイブをドロップしようとしました。"
 
 #: src/tauon/t_modules/t_main.py:45131
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "ただし、「アーカイブを抽出」機能が有効になっていません。"
 
 #: src/tauon/t_modules/t_main.py:45141
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "サイズが大きすぎる zip ファイルをスキップします (>4GB)"
 
 #: src/tauon/t_modules/t_main.py:45158 src/tauon/t_modules/t_main.py:45163
 #: src/tauon/t_modules/t_main.py:45171
-#, fuzzy
 msgid "Failed to extract zip archive."
-msgstr "インポート時にアーカイブを抽出する"
+msgstr "zip アーカイブの抽出に失敗しました。"
 
 #: src/tauon/t_modules/t_main.py:45159
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
 msgstr ""
+"アーカイブは暗号化されています。パスワードを使って手動で抽出する必要がありま"
+"す。"
 
 #: src/tauon/t_modules/t_main.py:45164 src/tauon/t_modules/t_main.py:45172
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
 msgstr ""
+"アーカイブが壊れている可能性があります。ディスクの空き容量と書き込み権限を確"
+"認してください。"
 
 #: src/tauon/t_modules/t_main.py:45188
-#, fuzzy
 msgid "Failed to extract rar archive."
-msgstr "インポート時にアーカイブを抽出する"
+msgstr "rar アーカイブの抽出に失敗しました。"
 
 #: src/tauon/t_modules/t_main.py:45204
-#, fuzzy
 msgid "Failed to extract 7z archive."
-msgstr "インポート時にアーカイブを抽出する"
+msgstr "7z アーカイブの抽出に失敗しました。"
 
 #: src/tauon/t_modules/t_main.py:45232
-#, fuzzy
 msgid "Could not move archive to trash"
-msgstr "リバーストラック"
+msgstr "アーカイブをゴミ箱へ移動できませんでした"
 
 #: src/tauon/t_modules/t_main.py:45329
-#, fuzzy
 msgid "Permission error accessing one or more files"
-msgstr "1 つ以上のファイルの削除中にエラーが発生しました"
+msgstr "1 つ以上のファイルへのアクセスで権限エラーが発生しました"
 
 #: src/tauon/t_modules/t_main.py:45377
-#, fuzzy
 msgid "Connection error"
-msgstr "生成中。。。"
+msgstr "接続エラー"
 
 #: src/tauon/t_modules/t_main.py:45378
 msgid "We can't upload your lyrics because we can't connect to the server."
-msgstr ""
+msgstr "サーバーに接続できないため、歌詞をアップロードできません。"
 
 #: src/tauon/t_modules/t_main.py:45379
 msgid "Are you offline?"
-msgstr ""
+msgstr "オフラインになっていませんか？"
 
 #: src/tauon/t_modules/t_main.py:45399
-#, fuzzy
 msgid "The following file is missing:"
-msgstr "1 つ以上のフォルダーが見つかりません"
+msgstr "次のファイルが見つかりません:"
 
 #: src/tauon/t_modules/t_main.py:45408
-#, fuzzy
 msgid "We don't have the proper permissions to run the file:"
-msgstr "このファイル形式には歌詞を書き込む方法がわかりません: "
+msgstr "このファイルを実行するための適切な権限がありません:"
 
 #: src/tauon/t_modules/t_main.py:45417
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
+msgstr "歌詞をアップロードできません。理由は不明です。"
 
 #: src/tauon/t_modules/t_main.py:45435
 msgid "Lyrics upload failed with error code: "
-msgstr ""
+msgstr "歌詞のアップロードに失敗しました。エラーコード: "
 
 #: src/tauon/t_modules/t_main.py:45550
-#, fuzzy
 msgid "Folder copy error."
-msgstr "フォルダーの再スキャンが完了しました.。"
+msgstr "フォルダーコピーエラー。"
 
 #: src/tauon/t_modules/t_main.py:45550
-#, fuzzy
 msgid "The target and source are the same."
-msgstr "有効な歌詞ソースはありません。"
+msgstr "コピー元とコピー先が同じです。"
 
 #: src/tauon/t_modules/t_main.py:45561
-#, fuzzy
 msgid "The folder copy has failed!"
-msgstr "カバーアートまたはIDが見つかりませんでした"
+msgstr "フォルダーのコピーに失敗しました！"
 
 #: src/tauon/t_modules/t_main.py:45561
-#, fuzzy
 msgid "Some files may have been written."
-msgstr "　ファイル名が書き込まれました。"
+msgstr "一部のファイルは書き込まれた可能性があります。"
 
 #: src/tauon/t_modules/t_main.py:45570
-#, fuzzy
 msgid "Something has gone horribly wrong!"
-msgstr "問題が発生しました"
+msgstr "重大な問題が発生しました！"
 
 #: src/tauon/t_modules/t_main.py:45570
-#, fuzzy
 msgid "Could not delete {name}"
-msgstr "画像ファイルを削除"
+msgstr "{name} を削除できませんでした"
 
 #: src/tauon/t_modules/t_main.py:45575
-#, fuzzy
 msgid "Folder move complete."
-msgstr "名前変更完了。"
+msgstr "フォルダーの移動が完了しました。"
 
 #: src/tauon/t_modules/t_main.py:45575 src/tauon/t_modules/t_main.py:45577
-#, fuzzy
 msgid "Folder name: {name}"
-msgstr "フォルダーツリー"
+msgstr "フォルダー名: {name}"
 
 #: src/tauon/t_modules/t_main.py:45577
-#, fuzzy
 msgid "Folder copy complete."
-msgstr "フォルダーの再スキャンが完了しました.。"
+msgstr "フォルダーのコピーが完了しました。"
 
 #: src/tauon/t_modules/t_main.py:45610
-#, fuzzy
 msgid "Cleaning complete."
-msgstr "名前変更完了。"
+msgstr "クリーンアップが完了しました。"
 
 #: src/tauon/t_modules/t_main.py:45611
-#, fuzzy
 msgid "{N} items were removed from the database."
-msgstr "完了！ {N} 件の古い項目を削除しました。"
+msgstr "{N} 件の項目をデータベースから削除しました。"
 
 #: src/tauon/t_modules/t_main.py:45721
-#, fuzzy
 msgid "Transcode failed."
-msgstr "１つトランスコード"
+msgstr "トランスコードに失敗しました。"
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "An error was encountered."
-msgstr ""
+msgstr "エラーが発生しました。"
 
 #: src/tauon/t_modules/t_main.py:45730
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "トランスコードは完了前にキャンセルされました。"
 
 #: src/tauon/t_modules/t_main.py:45731
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "未完成のファイルが残ります。"
 
 #: src/tauon/t_modules/t_main.py:45734
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "F9 を押すと出力を表示できます。"
 
 #: src/tauon/t_modules/t_main.py:45736
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
-msgstr ""
+msgstr "関連する出力画像はサムネイルであり、完全なコピーではありません。"
 
 #: src/tauon/t_modules/t_main.py:45739
-#, fuzzy
 msgid "Encoding complete."
-msgstr "名前変更完了。"
+msgstr "エンコードが完了しました。"
 
 #: src/tauon/t_modules/t_main.py:45764
-#, fuzzy
 msgid "Some tracks could not be rescanned"
-msgstr "カバーアートまたはIDが見つかりませんでした"
+msgstr "一部のトラックを再スキャンできませんでした"
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
 msgstr ""
+"ネットワークトラックの再スキャンには対応していません。代わりにプレイリストを"
+"再インポートしてください。"
 
 #: src/tauon/t_modules/t_main.py:47521
 msgid "Playlists + Queue"
@@ -5156,9 +5056,8 @@ msgid "Repeat Album"
 msgstr "リピートアルバム"
 
 #: src/tauon/t_modules/t_main.py:47534
-#, fuzzy
 msgid "Shuffle Lockdown Albums"
-msgstr "シャッフルON"
+msgstr "アルバムのシャッフルロック"
 
 #: src/tauon/t_modules/t_main.py:47536
 msgid "Shuffle OFF"
@@ -5204,13 +5103,17 @@ msgstr "再生フォルダをここに移動"
 msgid "Collapse All"
 msgstr "すべて折りたたむ"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+msgid "lock"
+msgstr "ロック"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "プレイリストに表示"
 
 #: src/tauon/t_modules/t_main.py:47570
 msgid "Image…"
-msgstr ""
+msgstr "画像..."
 
 #: src/tauon/t_modules/t_main.py:47571 src/tauon/t_modules/t_main.py:47888
 #: src/tauon/t_modules/t_main.py:47901
@@ -5222,20 +5125,21 @@ msgstr "キューに追加"
 msgid "Enqueue Album Next"
 msgstr "次をキューに入れる"
 
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+msgid "Toggle synced"
+msgstr "同期を切り替え"
+
 #: src/tauon/t_modules/t_main.py:47579
-#, fuzzy
 msgid "Search GuitarParty"
-msgstr "歌詞を検索"
+msgstr "GuitarParty で検索"
 
 #: src/tauon/t_modules/t_main.py:47580
-#, fuzzy
 msgid "Paste Chord Lyrics"
-msgstr "歌詞をペースト"
+msgstr "コード付き歌詞を貼り付け"
 
 #: src/tauon/t_modules/t_main.py:47581
-#, fuzzy
 msgid "Clear Chord Lyrics"
-msgstr "歌詞を消す"
+msgstr "コード付き歌詞を消去"
 
 #: src/tauon/t_modules/t_main.py:47583 src/tauon/t_modules/t_main.py:47596
 #: src/tauon/t_modules/t_main.py:47628 src/tauon/t_modules/t_main.py:47654
@@ -5243,9 +5147,8 @@ msgid "Toggle Lyrics"
 msgstr "歌詞をトグル"
 
 #: src/tauon/t_modules/t_main.py:47584 src/tauon/t_modules/t_main.py:47598
-#, fuzzy
 msgid "Lyrics Editor"
-msgstr "歌詞"
+msgstr "歌詞エディター"
 
 #: src/tauon/t_modules/t_main.py:47585 src/tauon/t_modules/t_main.py:47600
 #: src/tauon/t_modules/t_main.py:47734
@@ -5254,7 +5157,7 @@ msgstr "その他..."
 
 #: src/tauon/t_modules/t_main.py:47586 src/tauon/t_modules/t_main.py:47601
 msgid "Substitute Search..."
-msgstr ""
+msgstr "代替検索..."
 
 #: src/tauon/t_modules/t_main.py:47587 src/tauon/t_modules/t_main.py:47602
 msgid "Paste Lyrics"
@@ -5269,28 +5172,24 @@ msgid "Clear Lyrics"
 msgstr "歌詞を消す"
 
 #: src/tauon/t_modules/t_main.py:47590 src/tauon/t_modules/t_main.py:47605
-#, fuzzy
 msgid "Clear Synced Lyrics"
-msgstr "歌詞を消す"
+msgstr "同期歌詞を消去"
 
 #: src/tauon/t_modules/t_main.py:47591 src/tauon/t_modules/t_main.py:47606
-#, fuzzy
 msgid "Toggle art panel"
-msgstr "画像をトグル"
+msgstr "アートパネルを切り替え"
 
 #: src/tauon/t_modules/t_main.py:47592 src/tauon/t_modules/t_main.py:47607
-#, fuzzy
 msgid "Toggle art position"
-msgstr "画像をトグル"
+msgstr "アート位置を切り替え"
 
 #: src/tauon/t_modules/t_main.py:47610 src/tauon/t_modules/t_main.py:47659
 msgid "Open Image"
 msgstr "画像を開く"
 
 #: src/tauon/t_modules/t_main.py:47612
-#, fuzzy
 msgid "Next Image"
-msgstr "画像を開く"
+msgstr "次の画像"
 
 #: src/tauon/t_modules/t_main.py:47616 src/tauon/t_modules/t_main.py:47660
 msgid "Extract Image"
@@ -5300,19 +5199,25 @@ msgstr "画像を抽出"
 msgid "Quick-Fetch Cover Art"
 msgstr "カバーアートを取得"
 
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+msgid "Toggle Milkdrop Visualiser"
+msgstr "Milkdrop ビジュアライザーを切り替え"
+
+#: src/tauon/t_modules/t_main.py:47642
+msgid "Toggle Milkdrop Auto"
+msgstr "Milkdrop 自動切り替え"
+
 #: src/tauon/t_modules/t_main.py:47651
-#, fuzzy
 msgid "Open Preset Folder"
-msgstr "フォルダを開く"
+msgstr "プリセットフォルダーを開く"
 
 #: src/tauon/t_modules/t_main.py:47657
 msgid "Next"
 msgstr "次"
 
 #: src/tauon/t_modules/t_main.py:47661
-#, fuzzy
 msgid "Delete Image <combined>"
-msgstr "画像ファイルを削除"
+msgstr "画像を削除 <統合>"
 
 #: src/tauon/t_modules/t_main.py:47665 src/tauon/t_modules/t_main.py:47668
 #: src/tauon/t_modules/t_main.py:53016
@@ -5320,18 +5225,16 @@ msgid "Rename"
 msgstr "リネーム"
 
 #: src/tauon/t_modules/t_main.py:47705
-#, fuzzy
 msgid "Regenerate"
-msgstr "生成する"
+msgstr "再生成"
 
 #: src/tauon/t_modules/t_main.py:47706
 msgid "Generate…"
 msgstr "生成する..."
 
 #: src/tauon/t_modules/t_main.py:47707
-#, fuzzy
 msgid "Edit Generator..."
-msgstr "チャート"
+msgstr "ジェネレーターを編集..."
 
 #: src/tauon/t_modules/t_main.py:47708
 msgid "Sort…"
@@ -5342,14 +5245,12 @@ msgid "From Current…"
 msgstr "現行から..."
 
 #: src/tauon/t_modules/t_main.py:47714
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "ファイルパスで並べ替え"
+msgstr "インポートしたトラック順でソート"
 
 #: src/tauon/t_modules/t_main.py:47715
-#, fuzzy
 msgid "Sort by Imported Folders"
-msgstr "ファイルパスで並べ替え"
+msgstr "インポートしたフォルダー順でソート"
 
 #: src/tauon/t_modules/t_main.py:47716
 msgid "Sort by Filepath"
@@ -5364,32 +5265,28 @@ msgid "Sort Year per Artist"
 msgstr "アーティストごとのソート年"
 
 #: src/tauon/t_modules/t_main.py:47719
-#, fuzzy
 msgid "Make Playlist Auto-Sorting"
-msgstr "プレイリストの長さ"
+msgstr "プレイリストを自動ソートにする"
 
 #: src/tauon/t_modules/t_main.py:47726
 msgid "Append Playing"
 msgstr "再生を追加"
 
 #: src/tauon/t_modules/t_main.py:47731
-#, fuzzy
 msgid "Import/Export…"
-msgstr "ソート..."
+msgstr "インポート/エクスポート..."
 
 #: src/tauon/t_modules/t_main.py:47733
-#, fuzzy
 msgid "Toggle Grouping"
-msgstr "歌詞をトグル"
+msgstr "グループ化を切り替え"
 
 #: src/tauon/t_modules/t_main.py:47735
 msgid "Export Playlist Stats"
 msgstr "統計をエクスポート"
 
 #: src/tauon/t_modules/t_main.py:47736
-#, fuzzy
 msgid "Export Albums CSV"
-msgstr "CSVとしてエクスポート"
+msgstr "アルバム CSV をエクスポート"
 
 #: src/tauon/t_modules/t_main.py:47737
 msgid "Transcode All"
@@ -5402,22 +5299,19 @@ msgstr "タグの再スキャン"
 
 #: src/tauon/t_modules/t_main.py:47743
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "ギャラリークイック追加を開始"
 
 #: src/tauon/t_modules/t_main.py:47746
-#, fuzzy
 msgid "Set podcast mode"
-msgstr "放送開始"
+msgstr "ポッドキャストモードに設定"
 
 #: src/tauon/t_modules/t_main.py:47747
-#, fuzzy
 msgid "Remove Duplicates"
-msgstr "複写"
+msgstr "重複を削除"
 
 #: src/tauon/t_modules/t_main.py:47748
-#, fuzzy
 msgid "Toggle Console"
-msgstr "歌詞をトグル"
+msgstr "コンソールを切り替え"
 
 #: src/tauon/t_modules/t_main.py:47770 src/tauon/t_modules/t_main.py:47771
 msgid "Longest Tracks"
@@ -5447,6 +5341,10 @@ msgstr "コメントあり"
 msgid "Track Info…"
 msgstr "トラック情報..."
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+msgid "Love"
+msgstr "Love"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "現行のアルバムの後"
@@ -5466,17 +5364,16 @@ msgstr "ファイルを削除する"
 #: src/tauon/t_modules/t_main.py:47854 src/tauon/t_modules/t_main.py:47912
 #: src/tauon/t_modules/t_main.py:47927
 msgid "Edit fields…"
-msgstr ""
+msgstr "フィールドを編集..."
 
 #: src/tauon/t_modules/t_main.py:47857 src/tauon/t_modules/t_main.py:47885
 #: src/tauon/t_modules/t_main.py:47886 src/tauon/t_modules/t_main.py:47891
 msgid "Modify Folder…"
 msgstr "フォルダーを変更"
 
-#: src/tauon/t_modules/t_main.py:47878
-#, fuzzy
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
-msgstr "編集: "
+msgstr "次で編集"
 
 #: src/tauon/t_modules/t_main.py:47879
 msgid "Lyrics..."
@@ -5495,9 +5392,8 @@ msgid "Copy \"Artist - Album\""
 msgstr "「アーティストーアルバム」"
 
 #: src/tauon/t_modules/t_main.py:47924
-#, fuzzy
 msgid "Add to queue"
-msgstr "キューに追加する"
+msgstr "キューに追加"
 
 #: src/tauon/t_modules/t_main.py:47937
 msgid "Cut"
@@ -5525,52 +5421,44 @@ msgid "Search Artist on Sonemic"
 msgstr "Sonemicで検索"
 
 #: src/tauon/t_modules/t_main.py:47963
-#, fuzzy
 msgid "Search Artist on Bandcamp"
-msgstr "Sonemicで検索"
+msgstr "Bandcamp でアーティストを検索"
 
 #: src/tauon/t_modules/t_main.py:47967
 msgid "Copy \"Artist - Track\""
 msgstr "「アーティストートラック」"
 
 #: src/tauon/t_modules/t_main.py:47968
-#, fuzzy
 msgid "Copy TIDAL Album URL"
-msgstr "「アルバムタイトル」"
+msgstr "TIDAL アルバム URL をコピー"
 
 #: src/tauon/t_modules/t_main.py:47983
-#, fuzzy
 msgid "Always stop after album"
-msgstr "人気のアルバム"
+msgstr "常にアルバム後に停止"
 
 #: src/tauon/t_modules/t_main.py:47984
-#, fuzzy
 msgid "Always stop after track"
-msgstr "人気のトラック"
+msgstr "常にトラック後に停止"
 
 #: src/tauon/t_modules/t_main.py:47985
-#, fuzzy
 msgid "Stop after album"
-msgstr "人気のアルバム"
+msgstr "アルバム後に停止"
 
 #: src/tauon/t_modules/t_main.py:47986
-#, fuzzy
 msgid "Stop after track"
-msgstr "人気のトラック"
+msgstr "トラック後に停止"
 
 #: src/tauon/t_modules/t_main.py:47987
 msgid "Continue Play"
-msgstr ""
+msgstr "再生を続行"
 
 #: src/tauon/t_modules/t_main.py:47989
-#, fuzzy
 msgid "Minimize"
-msgstr "ミニ"
+msgstr "最小化"
 
 #: src/tauon/t_modules/t_main.py:47990
-#, fuzzy
 msgid "Maximize"
-msgstr "ミニ"
+msgstr "最大化"
 
 #: src/tauon/t_modules/t_main.py:47991 src/tauon/t_modules/t_main.py:48168
 msgid "Exit"
@@ -5605,37 +5493,32 @@ msgid "Database…"
 msgstr "データベース..."
 
 #: src/tauon/t_modules/t_main.py:48042
-#, fuzzy
 msgid "Enabled saving state"
-msgstr "自動テーマを無効にしました"
+msgstr "状態保存を有効にしました"
 
 #: src/tauon/t_modules/t_main.py:48046
-#, fuzzy
 msgid "Disabled saving state"
-msgstr "自動テーマを無効にしました"
+msgstr "状態保存を無効にしました"
 
 #: src/tauon/t_modules/t_main.py:48048
 msgid "Dev Mode"
-msgstr ""
+msgstr "開発者モード"
 
 #: src/tauon/t_modules/t_main.py:48049
-#, fuzzy
 msgid "Enable Saving State"
-msgstr "自動テーマを無効にしました"
+msgstr "状態保存を有効化"
 
 #: src/tauon/t_modules/t_main.py:48050
-#, fuzzy
 msgid "Disable Saving State"
-msgstr "自動テーマを無効にしました"
+msgstr "状態保存を無効化"
 
 #: src/tauon/t_modules/t_main.py:48055
 msgid "Export as CSV"
 msgstr "CSVとしてエクスポート"
 
 #: src/tauon/t_modules/t_main.py:48056
-#, fuzzy
 msgid "Reload All Folders"
-msgstr "フォルダースキャン"
+msgstr "すべてのフォルダーを再読み込み"
 
 #: src/tauon/t_modules/t_main.py:48057
 msgid "Play History to Playlist"
@@ -5646,14 +5529,12 @@ msgid "Reset Image Cache"
 msgstr "画像キャッシュをリセット"
 
 #: src/tauon/t_modules/t_main.py:48059
-#, fuzzy
 msgid "Clear Artist Cache"
-msgstr "Sonemicで検索"
+msgstr "アーティストキャッシュを消去"
 
 #: src/tauon/t_modules/t_main.py:48061
-#, fuzzy
 msgid "Remove Network Tracks"
-msgstr "リバーストラック"
+msgstr "ネットワークトラックを削除"
 
 #: src/tauon/t_modules/t_main.py:48062
 msgid "Remove Missing Tracks"
@@ -5661,33 +5542,31 @@ msgstr "クリーン"
 
 #: src/tauon/t_modules/t_main.py:48063
 msgid "Import FMPS Ratings"
-msgstr ""
+msgstr "FMPS 評価をインポート"
 
 #: src/tauon/t_modules/t_main.py:48064
 msgid "Import POPM Ratings"
-msgstr ""
+msgstr "POPM 評価をインポート"
 
 #: src/tauon/t_modules/t_main.py:48065
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "ユーザー評価をリセット"
 
 #: src/tauon/t_modules/t_main.py:48066
-#, fuzzy
 msgid "Find Incomplete Albums"
-msgstr "ランダムアルバム"
+msgstr "不完全なアルバムを検索"
 
 #: src/tauon/t_modules/t_main.py:48067
 msgid "Mark Missing as Found"
 msgstr "見つからないことをマークする"
 
 #: src/tauon/t_modules/t_main.py:48070
-#, fuzzy
 msgid "Chromecast…"
-msgstr "これを放送する"
+msgstr "Chromecast..."
 
 #: src/tauon/t_modules/t_main.py:48078 src/tauon/t_modules/t_main.py:48090
 msgid "Tab"
-msgstr ""
+msgstr "タブ"
 
 #: src/tauon/t_modules/t_main.py:48079 src/tauon/t_modules/t_main.py:48091
 msgid "Mini"
@@ -5695,11 +5574,11 @@ msgstr "ミニ"
 
 #: src/tauon/t_modules/t_main.py:48081 src/tauon/t_modules/t_main.py:48092
 msgid "Signal"
-msgstr ""
+msgstr "シグナル"
 
 #: src/tauon/t_modules/t_main.py:48082 src/tauon/t_modules/t_main.py:48093
 msgid "Slate"
-msgstr ""
+msgstr "スレート"
 
 #: src/tauon/t_modules/t_main.py:48083 src/tauon/t_modules/t_main.py:48094
 msgid "Square"
@@ -5710,14 +5589,12 @@ msgid "Square Large"
 msgstr "大平方"
 
 #: src/tauon/t_modules/t_main.py:48087
-#, fuzzy
 msgid "Copy Title to Clipboard"
-msgstr "テキストをクリップボードにコピーしました"
+msgstr "タイトルをクリップボードにコピー"
 
 #: src/tauon/t_modules/t_main.py:48089
-#, fuzzy
 msgid "Mini Mode"
-msgstr "ミニ"
+msgstr "ミニモード"
 
 #: src/tauon/t_modules/t_main.py:48097
 msgid "Random Track"
@@ -5745,67 +5622,63 @@ msgstr "現在の歌に行く"
 
 #: src/tauon/t_modules/t_main.py:48166
 msgid "Online Manual"
-msgstr ""
+msgstr "オンラインマニュアル"
 
 #: src/tauon/t_modules/t_main.py:48167
-#, fuzzy
 msgid "Show Release Notes"
-msgstr "プレイリストの長さ"
+msgstr "リリースノートを表示"
 
 #: src/tauon/t_modules/t_main.py:48169
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "クイック追加を解除"
 
 #: src/tauon/t_modules/t_main.py:48197 src/tauon/t_modules/t_main.py:48212
 msgid "Visit Website"
-msgstr ""
+msgstr "ウェブサイトを開く"
 
 #: src/tauon/t_modules/t_main.py:48201
-#, fuzzy
 msgid "View..."
-msgstr "ビュー "
+msgstr "表示..."
 
 #: src/tauon/t_modules/t_main.py:48202
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "アルファベット順にソート"
 
 #: src/tauon/t_modules/t_main.py:48203
-#, fuzzy
 msgid "Sort by Popularity"
-msgstr "ファイルパスで並べ替え"
+msgstr "人気順にソート"
 
 #: src/tauon/t_modules/t_main.py:48204
-#, fuzzy
 msgid "Sort by Playtime"
-msgstr "ファイルパスで並べ替え"
+msgstr "再生時間順にソート"
 
 #: src/tauon/t_modules/t_main.py:48205
-#, fuzzy
 msgid "Toggle Thumbnails"
-msgstr "歌詞をトグル"
+msgstr "サムネイルを切り替え"
 
 #: src/tauon/t_modules/t_main.py:48206
-#, fuzzy
 msgid "Toggle Filter"
-msgstr "歌詞をトグル"
+msgstr "フィルターを切り替え"
 
 #: src/tauon/t_modules/t_main.py:48208
-#, fuzzy
 msgid "Download Artist Data"
-msgstr "ダウンロードしています...お待ちください"
+msgstr "アーティストデータをダウンロード"
 
 #: src/tauon/t_modules/t_main.py:48209
 msgid "Clear Bio"
 msgstr "クリアバイオ"
 
 #: src/tauon/t_modules/t_main.py:48210
-#, fuzzy
 msgid "Edit..."
-msgstr "編集: "
+msgstr "編集..."
+
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr "閉じる"
 
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "エラー: バックエンドが見つかりません"
 
 #: src/tauon/t_modules/t_main.py:49508
 msgid "Enabled auto theme"
@@ -5817,36 +5690,31 @@ msgstr "自動テーマを無効にしました"
 
 #: src/tauon/t_modules/t_main.py:49553
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "まず元にするトラックをクリップボードにコピーして選択してください"
 
 #: src/tauon/t_modules/t_main.py:49870
-#, fuzzy
 msgid "Track already has lyrics"
-msgstr "このトラック数"
+msgstr "トラックにはすでに歌詞があります"
 
 #: src/tauon/t_modules/t_main.py:50055
-#, fuzzy
 msgid "Error loading theme file"
-msgstr "ファイルの削除中にエラーが発生しました"
+msgstr "テーマファイルの読み込みエラー"
 
 #: src/tauon/t_modules/t_main.py:51163 src/tauon/t_modules/t_main.py:51180
-#, fuzzy
 msgid "Various Artists"
-msgstr "上位アーティスト"
+msgstr "Various Artists"
 
 #: src/tauon/t_modules/t_main.py:51431
-#, fuzzy
 msgid "Rescan folders complete."
-msgstr "フォルダーの再スキャンが完了しました.。"
+msgstr "フォルダーの再スキャンが完了しました。"
 
 #: src/tauon/t_modules/t_main.py:51470
 msgid "Auto sort skipped because playlist is locked."
-msgstr ""
+msgstr "プレイリストがロックされているため、自動ソートをスキップしました。"
 
 #: src/tauon/t_modules/t_main.py:52222
-#, fuzzy
 msgid "Queue is Empty"
-msgstr "プレイリストが空です"
+msgstr "キューは空です"
 
 #: src/tauon/t_modules/t_main.py:52651 src/tauon/t_modules/t_main.py:52670
 #: src/tauon/t_modules/t_main.py:52690 src/tauon/t_modules/t_main.py:52713
@@ -5863,10 +5731,6 @@ msgstr "ファイル"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "サンプル"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -5902,20 +5766,19 @@ msgstr "フォルダーを変更"
 
 #: src/tauon/t_modules/t_main.py:53020
 msgid "Renames the physical folder based on the template"
-msgstr ""
+msgstr "テンプレートに基づいて実際のフォルダー名を変更します"
 
 #: src/tauon/t_modules/t_main.py:53028
 msgid "Trash"
 msgstr "ゴミ箱に移動"
 
 #: src/tauon/t_modules/t_main.py:53029
-#, fuzzy
 msgid "Moves folder to system trash"
-msgstr "フォルダーをゴミ箱に移動しました。"
+msgstr "フォルダーをシステムのゴミ箱へ移動します"
 
 #: src/tauon/t_modules/t_main.py:53032
 msgid "Physically deletes folder from disk"
-msgstr ""
+msgstr "フォルダーをディスクから物理的に削除します"
 
 #: src/tauon/t_modules/t_main.py:53052
 msgid "Raise"
@@ -5923,94 +5786,204 @@ msgstr "上げる"
 
 #: src/tauon/t_modules/t_main.py:53056
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
+msgstr "フォルダーを 2 階層上へ移動し、古い親フォルダーを削除します"
 
 #: src/tauon/t_modules/t_main.py:53068
 msgid "Deletes some unnecessary files from folder"
-msgstr ""
+msgstr "フォルダー内の不要なファイルを削除します"
 
 #: src/tauon/t_modules/t_main.py:53073
 msgid "PATH"
-msgstr ""
+msgstr "パス"
 
 #: src/tauon/t_modules/t_main.py:53084
 msgid "OLD"
-msgstr ""
+msgstr "旧"
 
 #: src/tauon/t_modules/t_main.py:53091
 msgid "NEW"
-msgstr ""
+msgstr "新"
 
 #: src/tauon/t_modules/t_main.py:53179
 msgid "Folder filter mode. Enter path segment."
-msgstr ""
+msgstr "フォルダーフィルターモードです。パスの一部を入力してください。"
 
 #: src/tauon/t_modules/t_main.py:53187
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
-msgstr ""
+msgstr "上下キーで移動。Shift + Enter で新しいプレイリスト。"
 
 #: src/tauon/t_modules/t_main.py:53189
 msgid "Quick find"
-msgstr ""
+msgstr "クイック検索"
 
 #: src/tauon/t_modules/t_main.py:53285
-#, fuzzy
 msgid "Search Results"
-msgstr "検索中..."
+msgstr "検索結果"
 
 #: src/tauon/t_modules/t_main.py:53541
-#, fuzzy
 msgid "Loved track"
-msgstr "好き"
+msgstr "トラックを Love しました"
 
 #: src/tauon/t_modules/t_main.py:53546
-#, fuzzy
 msgid "Un-Loved track"
-msgstr "好きじゃない"
+msgstr "トラックの Love を解除しました"
 
 #: src/tauon/t_modules/t_main.py:53711
-#, fuzzy
 msgid "Lines copied to clipboard"
-msgstr "テキストをクリップボードにコピーしました"
+msgstr "行をクリップボードにコピーしました"
 
 #: src/tauon/t_modules/t_phazor.py:1140
 msgid "Error loading track"
-msgstr ""
+msgstr "トラックの読み込みエラー"
 
 #: src/tauon/t_modules/t_stream.py:142
 msgid "Failed to establish a connection"
-msgstr ""
+msgstr "接続を確立できませんでした"
 
 #: src/tauon/t_modules/t_stream.py:559
 msgid "Data malformation detected. Stream aborted."
-msgstr ""
+msgstr "データの不正な形式を検出しました。ストリームを中止しました。"
 
 #: src/tauon/t_modules/t_subsonic.py:132
 msgid "Subsonic Error: "
-msgstr ""
+msgstr "Subsonic エラー: "
 
 #: src/tauon/t_modules/t_subsonic.py:393 src/tauon/t_modules/t_subsonic.py:398
 #: src/tauon/t_modules/t_subsonic.py:408 src/tauon/t_modules/t_subsonic.py:416
 #: src/tauon/t_modules/t_subsonic.py:543
-#, fuzzy
 msgid "Error connecting to Airsonic server"
-msgstr "PLEXサーバーへの接続エラー"
+msgstr "Airsonic サーバーへの接続エラー"
 
 #: src/tauon/t_modules/t_subsonic.py:455
 msgid "Error reading Airsonic directory!"
-msgstr ""
+msgstr "Airsonic ディレクトリの読み込みエラー！"
 
 #: src/tauon/t_modules/t_subsonic.py:597
 msgid "Airsonic Collection"
-msgstr ""
+msgstr "Airsonic コレクション"
 
 #: src/tauon/t_modules/t_tidal.py:44 src/tauon/t_modules/t_tidal.py:67
 msgid "Tidalapi package not loaded"
-msgstr ""
+msgstr "Tidalapi パッケージが読み込まれていません"
 
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
-msgstr ""
+msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ログインしてください"
+
+#~ msgid "CUE"
+#~ msgstr "CUE"
+
+#~ msgid "ID"
+#~ msgstr "ID"
+
+#~ msgid "Window frame"
+#~ msgstr "ウィンドウ枠"
+
+#~ msgid "Top panel"
+#~ msgstr "上部パネル"
+
+#~ msgid "Side panel"
+#~ msgstr "サイドパネル"
+
+#~ msgid "Lyrics panel"
+#~ msgstr "歌詞パネル"
+
+#~ msgid "Gallery background"
+#~ msgstr "ギャラリー背景"
+
+#~ msgid "Tracklist panel"
+#~ msgstr "トラックリストパネル"
+
+#~ msgid "Queue panel"
+#~ msgstr "キューパネル"
+
+#~ msgid "Bottom panel"
+#~ msgstr "ボトムパネル"
+
+#~ msgid "Track artist"
+#~ msgstr "トラックアーティスト"
+
+#~ msgid "Track album"
+#~ msgstr "トラックアルバム"
+
+#~ msgid "Playing title"
+#~ msgstr "再生中のタイトル"
+
+#~ msgid "Playing artist"
+#~ msgstr "再生中のアーティスト"
+
+#~ msgid "Playing album"
+#~ msgstr "再生中のアルバム"
+
+#~ msgid "Playing index"
+#~ msgstr "再生中の番号"
+
+#~ msgid "Playing time"
+#~ msgstr "再生中の時間"
+
+#~ msgid "Track index"
+#~ msgstr "トラック番号"
+
+#~ msgid "Track time"
+#~ msgstr "トラック時間"
+
+#~ msgid "Playing row highlight"
+#~ msgstr "再生中行のハイライト"
+
+#~ msgid "Selection highlight"
+#~ msgstr "選択ハイライト"
+
+#~ msgid "Folder title"
+#~ msgstr "フォルダータイトル"
+
+#~ msgid "Folder line"
+#~ msgstr "フォルダー行"
+
+#~ msgid "Scroll bar"
+#~ msgstr "スクロールバー"
+
+#~ msgid "Tab background"
+#~ msgstr "タブ背景"
+
+#~ msgid "Tab active background"
+#~ msgstr "アクティブタブ背景"
+
+#~ msgid "Tab text"
+#~ msgstr "タブ文字"
+
+#~ msgid "Tab active text"
+#~ msgstr "アクティブタブ文字"
+
+#~ msgid "Menu background"
+#~ msgstr "メニュー背景"
+
+#~ msgid "Menu text"
+#~ msgstr "メニュー文字"
+
+#~ msgid "Box background"
+#~ msgstr "ボックス背景"
+
+#~ msgid "Box title text"
+#~ msgstr "ボックスタイトル文字"
+
+#~ msgid "Box body text"
+#~ msgstr "ボックス本文文字"
+
+#~ msgid "Seek fill"
+#~ msgstr "シーク塗り"
+
+#~ msgid "Seek background"
+#~ msgstr "シーク背景"
+
+#~ msgid "Volume fill"
+#~ msgstr "音量塗り"
+
+#~ msgid "Volume background"
+#~ msgstr "音量背景"
+
+#, fuzzy
+#~ msgid "lyrics-editor"
+#~ msgstr "歌詞"
 
 #, fuzzy
 #~ msgid "{name}"
@@ -6266,10 +6239,6 @@ msgstr ""
 #~ msgid "No Spotify context found"
 #~ msgstr "バイオが見つかりません"
 
-#, fuzzy
-#~ msgid "Queue %d"
-#~ msgstr "キュー"
-
 #~ msgid "Broadcast This"
 #~ msgstr "これを放送する"
 
@@ -6333,9 +6302,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Set List Sorting..."
 #~ msgstr "検索中..."
-
-#~ msgid "Track gain"
-#~ msgstr "トラックゲイン"
 
 #~ msgid "Show in context menus:"
 #~ msgstr "コンテキストメニューに表示"
@@ -6428,14 +6394,8 @@ msgstr ""
 #~ msgid "Misc"
 #~ msgstr "その他"
 
-#~ msgid "Bottom panel"
-#~ msgstr "ボトムパネル"
-
 #~ msgid "Hide title when already shown"
 #~ msgstr "タイトルを自動的に隠す"
-
-#~ msgid "Include text"
-#~ msgstr "テキスト"
 
 #~ msgid "Open HTTP Audio Stream"
 #~ msgstr "HTTPオーディオストリームを開く"

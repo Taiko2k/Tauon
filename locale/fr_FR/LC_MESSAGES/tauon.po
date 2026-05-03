@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:35+0000\n"
 "Last-Translator: Martin <spleefer90@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -1586,7 +1586,7 @@ msgstr "Contributions bienvenues sur {link}"
 msgid "Resume Queue"
 msgstr "Reprendre la liste d'attente"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "Mettre en pause la liste d'attente"
 
@@ -1677,7 +1677,7 @@ msgstr "Aucune image de l'artiste trouvée."
 msgid "No providers are enabled in settings!"
 msgstr "Aucune source définie dans les options !"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "Épingler"
 
@@ -2906,7 +2906,8 @@ msgstr "Recharger automatiquement les playlists"
 msgid "Target playlist"
 msgstr "Playlist cible :   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 msgid "{N} albums"
 msgstr "{N} albums"
 
@@ -4156,7 +4157,8 @@ msgid "Copy"
 msgstr "Copier"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Coller"
 
@@ -4608,23 +4610,21 @@ msgstr "Aucun résultat"
 msgid "Close quotation..."
 msgstr "Fermer les guillemets..."
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 msgid "{N} tracks"
 msgstr "{N} pistes"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 msgid "{N} track"
 msgstr "{N} piste"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+msgid "{N} album"
+msgstr "{N} album"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
 msgstr "Téléchargement..."
-
-#: src/tauon/t_modules/t_main.py:36532
-msgid "{N} album"
-msgstr "{N} album"
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4685,6 +4685,11 @@ msgstr "Arborescence de dossiers"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "Lire maintenant"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Arrêt automatique"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -4868,27 +4873,11 @@ msgstr "Sauvegarde complète avant reprise"
 msgid "Save synced to .lrc"
 msgstr "Enregistrer dynamique vers .lrc"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-msgid "lyrics-editor"
-msgstr "lyrics-editor"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
 msgstr ""
 "Vous avez ajouté un dossier dans le répertoire « lyrics-editor ». Ne faites "
 "pas ça."
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
-msgstr "tag"
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
@@ -5380,6 +5369,11 @@ msgstr "Déplacer le dossier en cours de lecture ici"
 msgid "Collapse All"
 msgstr "Tout réduire"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Déverrouiller"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Afficher dans la playlist"
@@ -5397,6 +5391,11 @@ msgstr "Ajouter l'album à la file d'attente"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "Jouer après l'album courant"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Permuter les paroles"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5468,6 +5467,16 @@ msgstr "Extraire l'image"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr "Récupération rapide de la pochette"
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+#, fuzzy
+msgid "Toggle Milkdrop Visualiser"
+msgstr "Visualiseur du panneau supérieur"
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Permuter les filtres"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5606,6 +5615,11 @@ msgstr "Avec commentaires"
 msgid "Track Info…"
 msgstr "Informations sur la piste…"
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+#, fuzzy
+msgid "Love"
+msgstr "Favori"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "↳ ...après la piste courante"
@@ -5632,7 +5646,7 @@ msgstr "Modifier les champs…"
 msgid "Modify Folder…"
 msgstr "Modifier le dossier…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
 msgstr "Modifier avec"
 
@@ -5936,6 +5950,10 @@ msgstr "Effacer la bio"
 msgid "Edit..."
 msgstr "Modifier..."
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr "ERREUR : backend introuvable"
@@ -5992,10 +6010,6 @@ msgstr "Chemin"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "Encodage"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr " ko/s"
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -6136,6 +6150,130 @@ msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
 "Échec du chargement de l'authentification. Veuillez réessayer de vous "
 "connecter."
+
+#~ msgid " kbps"
+#~ msgstr " ko/s"
+
+#, fuzzy
+#~ msgid "CUE"
+#~ msgstr "ACTUEL"
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "Fenêtre"
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Onglets dans le panneau supérieur"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Paroles"
+
+#, fuzzy
+#~ msgid "Gallery background"
+#~ msgstr "Utiliser la pochette comme arrière-plan"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Playlist"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "File d’attente %d"
+
+#~ msgid "Bottom panel"
+#~ msgstr "Panneau inférieur"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Votes de la piste"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Numéro de piste"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Tps. écoute"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "En cours"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "En cours"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "En cours"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Tps. écoute"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Gain par piste"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Titre de piste"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Arborescence de dossiers"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Arborescence de dossiers"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Afficher la barre"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Utiliser la pochette comme arrière-plan"
+
+#, fuzzy
+#~ msgid "Tab active background"
+#~ msgstr "Utiliser la pochette comme arrière-plan"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "Afficher le texte du titre"
+
+#, fuzzy
+#~ msgid "Menu background"
+#~ msgstr "Utiliser la pochette comme arrière-plan"
+
+#, fuzzy
+#~ msgid "Menu text"
+#~ msgstr "Inclure le texte"
+
+#, fuzzy
+#~ msgid "Box background"
+#~ msgstr "Utiliser la pochette comme arrière-plan"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "Afficher le texte du titre"
+
+#, fuzzy
+#~ msgid "Seek background"
+#~ msgstr "Préférer l'artiste comme arrière-plan"
+
+#, fuzzy
+#~ msgid "Volume background"
+#~ msgstr "Utiliser la pochette comme arrière-plan"
+
+#~ msgid "lyrics-editor"
+#~ msgstr "lyrics-editor"
+
+#~ msgid "tag"
+#~ msgstr "tag"
 
 #~ msgid "kbps"
 #~ msgstr "ko/s"
@@ -6772,9 +6910,6 @@ msgstr ""
 #~ "Voir « MENU > Options > Comptes > Spotify > Activer la lecture d'audio "
 #~ "locale »."
 
-#~ msgid "Queue %d"
-#~ msgstr "File d’attente %d"
-
 #~ msgid ""
 #~ "DANGER! This will delete the original files. You may want to have backups "
 #~ "in case of malfunction."
@@ -6900,9 +7035,6 @@ msgstr ""
 #~ msgid "Set List Sorting..."
 #~ msgstr "Arrêt en cours…"
 
-#~ msgid "Track gain"
-#~ msgstr "Gain par piste"
-
 #~ msgid "Show in context menus:"
 #~ msgstr "Afficher dans les menus contextuels :"
 
@@ -6979,9 +7111,6 @@ msgstr ""
 #~ msgid "LyricWiki*"
 #~ msgstr "LyricWiki*"
 
-#~ msgid "Bottom panel"
-#~ msgstr "Panneau inférieur"
-
 #~ msgid "Hide title when already shown"
 #~ msgstr "Masquer le titre losqu'il est déjà affiché"
 
@@ -7003,9 +7132,6 @@ msgstr ""
 
 #~ msgid "Misc"
 #~ msgstr "Divers"
-
-#~ msgid "Include text"
-#~ msgstr "Inclure le texte"
 
 #~ msgid "Show love hearts"
 #~ msgstr "Afficher le nombre de favoris"

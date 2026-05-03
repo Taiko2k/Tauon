@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:37+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Norwegian Bokmål <https://hosted.weblate.org/projects/tauon-"
@@ -1699,7 +1699,7 @@ msgstr ""
 msgid "Resume Queue"
 msgstr "Tøm kø"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 #, fuzzy
 msgid "Pause Queue"
 msgstr "Spillelister+kø"
@@ -1790,7 +1790,7 @@ msgstr "Fant ikke artistbilde."
 msgid "No providers are enabled in settings!"
 msgstr "Ingen tilbydere lagt til i innstillingene."
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 #, fuzzy
 msgid "Pin"
 msgstr "Spiller"
@@ -3013,7 +3013,8 @@ msgstr "Importer brukerspilleliste…"
 msgid "Target playlist"
 msgstr "Ny spilleliste"
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 #, fuzzy
 msgid "{N} albums"
 msgstr "Importer album"
@@ -4236,7 +4237,8 @@ msgid "Copy"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Lim inn"
 
@@ -4747,27 +4749,25 @@ msgstr "Køen er tom"
 msgid "Close quotation..."
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 #, fuzzy
 msgid "{N} tracks"
 msgstr "Gjenta spor"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 #, fuzzy
 msgid "{N} track"
 msgstr "Gjenta spor"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+#, fuzzy
+msgid "{N} album"
+msgstr "Importer album"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 #, fuzzy
 msgid "Downloading data..."
 msgstr "Søker…"
-
-#: src/tauon/t_modules/t_main.py:36532
-#, fuzzy
-msgid "{N} album"
-msgstr "Importer album"
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4833,6 +4833,11 @@ msgstr "Tjenernavn"
 #, fuzzy
 msgid "Play Now"
 msgstr "Avspilleringer"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Automatisk rulling"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -5038,25 +5043,8 @@ msgstr ""
 msgid "Save synced to .lrc"
 msgstr "Vis sangtekster"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-#, fuzzy
-msgid "lyrics-editor"
-msgstr "Skjul sangtekster"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41756
@@ -5561,6 +5549,11 @@ msgstr ""
 msgid "Collapse All"
 msgstr "Fold sammen alle"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Lås opp panel"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Vis i spilleliste"
@@ -5578,6 +5571,11 @@ msgstr "Legg album i kø"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Skru av/på sangtekster"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5657,6 +5655,15 @@ msgstr "Pakk ut bilde"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+msgid "Toggle Milkdrop Visualiser"
+msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Skru av/på sangtekster"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5814,6 +5821,10 @@ msgstr ""
 msgid "Track Info…"
 msgstr ""
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+msgid "Love"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr ""
@@ -5842,7 +5853,7 @@ msgstr ""
 msgid "Modify Folder…"
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 #, fuzzy
 msgid "Edit with"
 msgstr "med"
@@ -6179,6 +6190,10 @@ msgstr "Tøm biografi"
 msgid "Edit..."
 msgstr "med"
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr ""
@@ -6240,10 +6255,6 @@ msgstr "Sti"
 
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
@@ -6392,6 +6403,86 @@ msgstr ""
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Vis i spilleliste"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Skjul sangtekster"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Spor"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Tøm kø"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Kun spor"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Kun spor"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Spilletid"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "Spiller"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "Spiller"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "Spiller"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Spilletid"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Kun spor"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Kun spor"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Tjenernavn"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Tjenernavn"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Vis sangtekster"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Spilletid"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "Vis titler"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "Vis titler"
+
+#, fuzzy
+#~ msgid "lyrics-editor"
+#~ msgstr "Skjul sangtekster"
 
 #, fuzzy
 #~ msgid "{name}"

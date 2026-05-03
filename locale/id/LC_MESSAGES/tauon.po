@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:34+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Indonesian <https://hosted.weblate.org/projects/tauon-music-"
@@ -1658,7 +1658,7 @@ msgstr "Mereka mendorong Anda untuk berkontribusi di https://fanart.tv"
 msgid "Resume Queue"
 msgstr "Lanjutkan Antrian"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "Jeda Antrian"
 
@@ -1750,7 +1750,7 @@ msgstr "Gambar artis tidak ditemukan."
 msgid "No providers are enabled in settings!"
 msgstr "Tidak ada penyedia yang diaktifkan di pengaturan!"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "Pin"
 
@@ -2986,7 +2986,8 @@ msgstr "Otomatis buat ulang daftar putar"
 msgid "Target playlist"
 msgstr "Target daftar putar:   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 #, fuzzy
 msgid "{N} albums"
 msgstr "Total album"
@@ -4226,7 +4227,8 @@ msgid "Copy"
 msgstr "Salin"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Tempel"
 
@@ -4721,26 +4723,24 @@ msgstr "Antrian Kosong"
 msgid "Close quotation..."
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 #, fuzzy
 msgid "{N} tracks"
 msgstr "Trek Berikutnya"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 #, fuzzy
 msgid "{N} track"
 msgstr "Trek Berikutnya"
 
-#: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
-msgid "Downloading data..."
-msgstr "Mengunduh data..."
-
-#: src/tauon/t_modules/t_main.py:36532
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
 #, fuzzy
 msgid "{N} album"
 msgstr "Total album"
+
+#: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
+msgid "Downloading data..."
+msgstr "Mengunduh data..."
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4801,6 +4801,11 @@ msgstr "Bagan Folder"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "Putar Sekarang"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Otomatis Behenti"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -4999,25 +5004,8 @@ msgstr ""
 msgid "Save synced to .lrc"
 msgstr "Tampilkan lirik sinkron"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-#, fuzzy
-msgid "lyrics-editor"
-msgstr "Lirik"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41756
@@ -5524,6 +5512,11 @@ msgstr "Pindahkan Folder Pemutaran Di Sini"
 msgid "Collapse All"
 msgstr "Ciutkan Semua"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Buka Kunci"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Tampilkan di Daftar Putar"
@@ -5541,6 +5534,11 @@ msgstr "Tambahkan Album ke Antrean"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "Antrekan Album Berikutnya"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Toggle Lirik"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5615,6 +5613,16 @@ msgstr "Ekstrak Gambar"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr "Ambil Cepat Gambar Sampul"
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+#, fuzzy
+msgid "Toggle Milkdrop Visualiser"
+msgstr "Panel-atas visualiser"
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Toggle Lirik"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5755,6 +5763,11 @@ msgstr "Memiliki Komentar"
 msgid "Track Info…"
 msgstr "Info Trek…"
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+#, fuzzy
+msgid "Love"
+msgstr "Disukai"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "↳ Setelah Trek Saat Ini"
@@ -5781,7 +5794,7 @@ msgstr "Sunting nilai…"
 msgid "Modify Folder…"
 msgstr "Ubah Folder…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 #, fuzzy
 msgid "Edit with"
 msgstr "Edit dengan "
@@ -6095,6 +6108,10 @@ msgstr "Bersihkan Bio"
 msgid "Edit..."
 msgstr "Sunting..."
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr ""
@@ -6153,10 +6170,6 @@ msgstr "Jalur"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "Samplerate"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -6299,6 +6312,114 @@ msgstr ""
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "Jendela"
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Tab di panel atas"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Lirik"
+
+#, fuzzy
+#~ msgid "Gallery background"
+#~ msgstr "Gunakan album art sebagai latar belakang"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Daftar Trek"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Antrean %d"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Rating trek"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Nomor Trek"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Waktu pemutaran"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "Memutar"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "Memutar"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "Memutar"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Waktu pemutaran"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Judul trek"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Judul trek"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Bagan Folder"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Bagan Folder"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Tampilkan bilah"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Gunakan album art sebagai latar belakang"
+
+#, fuzzy
+#~ msgid "Tab active background"
+#~ msgstr "Gunakan album art sebagai latar belakang"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "Tampilkan teks judul"
+
+#, fuzzy
+#~ msgid "Menu background"
+#~ msgstr "Gunakan album art sebagai latar belakang"
+
+#, fuzzy
+#~ msgid "Box background"
+#~ msgstr "Gunakan album art sebagai latar belakang"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "Tampilkan teks judul"
+
+#, fuzzy
+#~ msgid "Seek background"
+#~ msgstr "Gunakan latar belakang artis"
+
+#, fuzzy
+#~ msgid "Volume background"
+#~ msgstr "Gunakan album art sebagai latar belakang"
+
+#, fuzzy
+#~ msgid "lyrics-editor"
+#~ msgstr "Lirik"
 
 #, fuzzy
 #~ msgid "{name}"
@@ -6754,9 +6875,6 @@ msgstr ""
 
 #~ msgid "Stop, RC: Toggle auto-stop"
 #~ msgstr "Berhenti, RC: Alihkan otomatis-berhenti"
-
-#~ msgid "Queue %d"
-#~ msgstr "Antrean %d"
 
 #~ msgid ""
 #~ "DANGER! This will delete the original files. You may want to have backups "

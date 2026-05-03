@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:40+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/tauon-music-"
@@ -1601,7 +1601,7 @@ msgstr ""
 msgid "Resume Queue"
 msgstr "Продовжити чергу"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "Призупинити чергу"
 
@@ -1693,7 +1693,7 @@ msgstr "Зображення виконавця не знайдено."
 msgid "No providers are enabled in settings!"
 msgstr "У налаштуваннях не ввімкнено жодного сервісу!"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "Прикріпити"
 
@@ -2928,7 +2928,8 @@ msgstr "Автоматично оновлювати списки відтвор�
 msgid "Target playlist"
 msgstr "Список відтворення:   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 #, fuzzy
 msgid "{N} albums"
 msgstr "Усього альбомів"
@@ -4165,7 +4166,8 @@ msgid "Copy"
 msgstr "Копіювати"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Вставити"
 
@@ -4629,24 +4631,22 @@ msgstr "Черга порожня"
 msgid "Close quotation..."
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 msgid "{N} tracks"
 msgstr "{N} композицій"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 msgid "{N} track"
 msgstr "{N} композиція"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+#, fuzzy
+msgid "{N} album"
+msgstr "Усього альбомів"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
 msgstr "Завантаження даних..."
-
-#: src/tauon/t_modules/t_main.py:36532
-#, fuzzy
-msgid "{N} album"
-msgstr "Усього альбомів"
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4708,6 +4708,11 @@ msgstr "Дерево тек"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "Відтворити зараз"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Автоматична зупинка"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
@@ -4904,25 +4909,8 @@ msgstr ""
 msgid "Save synced to .lrc"
 msgstr "Показати синхронізовані слова пісні"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-#, fuzzy
-msgid "lyrics-editor"
-msgstr "Слова"
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41756
@@ -5421,6 +5409,11 @@ msgstr "Перемістити теку з програванням сюди"
 msgid "Collapse All"
 msgstr "Згорнути все"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Розблокувати"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Показати у списку відтворення"
@@ -5438,6 +5431,11 @@ msgstr "Додати альбом до черги"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "Додати альбом наступним до черги"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Перемкнути слова"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5510,6 +5508,16 @@ msgstr "Витягнути зображення"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr "Швидкий пошук обкладинки"
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+#, fuzzy
+msgid "Toggle Milkdrop Visualiser"
+msgstr "Візуалізатор на верхній панелі"
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Перемкнути фільтри"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5651,6 +5659,11 @@ msgstr "Мають коментар"
 msgid "Track Info…"
 msgstr "Відомості про доріжку…"
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+#, fuzzy
+msgid "Love"
+msgstr "Уподобане"
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "↳ Після поточної композиції"
@@ -5677,7 +5690,7 @@ msgstr "Редагувати поля…"
 msgid "Modify Folder…"
 msgstr "Змінити теку…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
 msgstr "Редагувати через"
 
@@ -5988,6 +6001,10 @@ msgstr "Очистити біографію"
 msgid "Edit..."
 msgstr "Змінити…"
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr ""
@@ -6048,10 +6065,6 @@ msgstr "Шлях"
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
 msgstr "Частота дискретизації"
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
-msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
@@ -6195,6 +6208,114 @@ msgstr ""
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "Вікно"
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Вкладки на верхній панелі"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Слова"
+
+#, fuzzy
+#~ msgid "Gallery background"
+#~ msgstr "Обкладинка альбому замість тла"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Список"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Черга"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Рейтинг композицій"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Порядок композиції"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Час відтворення"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "Відтворюється:"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "Відтворюється:"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "Відтворюється:"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Час відтворення"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Назві композиції"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Назві композиції"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Дерево тек"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Дерево тек"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Позказати панель"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Обкладинка альбому замість тла"
+
+#, fuzzy
+#~ msgid "Tab active background"
+#~ msgstr "Обкладинка альбому замість тла"
+
+#, fuzzy
+#~ msgid "Tab active text"
+#~ msgstr "Показати заголовок"
+
+#, fuzzy
+#~ msgid "Menu background"
+#~ msgstr "Обкладинка альбому замість тла"
+
+#, fuzzy
+#~ msgid "Box background"
+#~ msgstr "Обкладинка альбому замість тла"
+
+#, fuzzy
+#~ msgid "Box title text"
+#~ msgstr "Показати заголовок"
+
+#, fuzzy
+#~ msgid "Seek background"
+#~ msgstr "Надавати перевагу тлу викнавця"
+
+#, fuzzy
+#~ msgid "Volume background"
+#~ msgstr "Обкладинка альбому замість тла"
+
+#, fuzzy
+#~ msgid "lyrics-editor"
+#~ msgstr "Слова"
 
 #, fuzzy
 #~ msgid "{name}"

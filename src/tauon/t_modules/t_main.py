@@ -26089,7 +26089,7 @@ class Over:
 			new = self.settings_switch_row(
 				(content_x, content_y, content_w, row_h),
 				enabled,
-				_(name),
+				name,
 				subtitle,
 				accent,
 			)
@@ -30286,7 +30286,7 @@ class TopPanel:
 			gui.pl_update = 1
 			if not prefs.tabs_on_top:
 				if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
-					gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing].title)
+					gui.mode_toast_text = pctl.multi_playlist[pctl.active_playlist_viewing].title
 					tauon.toast_mode_timer.set()
 					gui.frame_callback_list.append(TestTimer(1))
 				else:
@@ -36388,9 +36388,9 @@ class ArtistList:
 		else:
 			album_count = len(self.current_album_counts[artist])
 			if album_count > 1:
-				text = _("{N} tracks").format(N=str(album_count))
+				text = _("{N} albums").format(N=str(album_count))
 			else:
-				text = _("{N} track").format(N=str(album_count))
+				text = _("{N} album").format(N=str(album_count))
 
 		if self.gui.preview_artist_loading == artist:
 			# . Max 20 chars. Alt: Downloading image, Loading image
@@ -37538,9 +37538,9 @@ class QueueBox:
 
 		self.queue_menu.add(MenuItem(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show))
 		self.queue_menu.add(MenuItem(_("Play Now"), self.play_now, show_test=self.queue_remove_show))
-		self.queue_menu.add(MenuItem("Auto-Stop Here", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
+		self.queue_menu.add(MenuItem(_("Auto-Stop Here"), self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
 
-		self.queue_menu.add(MenuItem("Pause Queue", self.toggle_pause, tauon.queue_pause_deco))
+		self.queue_menu.add(MenuItem(_("Pause Queue"), self.toggle_pause, tauon.queue_pause_deco))
 		self.queue_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, hint="Alt+Shift+Q"))
 
 		self.queue_menu.add(MenuItem(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test))
@@ -41692,7 +41692,7 @@ class TimedLyricsEdit:
 
 	def delete_autosaves(self) -> None:
 		count = 0
-		target = self.tauon.config_directory / _("lyrics-editor")
+		target = self.tauon.config_directory / "lyrics-editor"
 		if not target.is_dir():
 			return
 		for child in target.iterdir():
@@ -41707,7 +41707,7 @@ class TimedLyricsEdit:
 
 	def clear_all_timestamps(self) -> None:
 		for i, line in enumerate(self.structure):
-			if line[0] != _("tag"):
+			if line[0] != "tag":
 				self.structure[i] = "??:??.??", -1.0, line[2]
 		self.autosave_timer.set()
 		self.autosaved = False
@@ -41718,7 +41718,7 @@ class TimedLyricsEdit:
 	def clear_section_markers(self) -> None:
 		deletes = []
 		for i, line in enumerate(self.structure):
-			if line[0] == _("tag"):
+			if line[0] == "tag":
 				continue
 			if line[2].startswith("[") and line[2].endswith("]"):
 				deletes.append(i)
@@ -41855,7 +41855,7 @@ class TimedLyricsEdit:
 
 		for i, line in enumerate(lyrics):
 			if any(tag in line for tag in LRC_tags):
-				self.structure.append( (_("tag"), -1.0, line) )
+				self.structure.append( ("tag", -1.0, line) )
 				continue
 
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -41902,7 +41902,7 @@ class TimedLyricsEdit:
 			for line in self.structure:
 				if line[1] < 0:
 					lyrics += line[2].rstrip()
-					if line[0] != _("tag"):
+					if line[0] != "tag":
 						warning[0] = True
 					else:
 						timed += 1
@@ -42034,19 +42034,19 @@ class TimedLyricsEdit:
 		return False
 
 	def autosave(self) -> None:
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w", encoding="utf-8") as lyrics_file:
 			for line in self.structure:
 				stamp, time, line = line
-				if stamp == _("tag"):
+				if stamp == "tag":
 					stamp = "tag"
 				lyrics_file.write( f"{stamp},{time!s},{line}\n")
 		self.autosaved = True
 
 	def autoload(self) -> None:
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
 		with target.open() as lyrics_file:
@@ -42054,14 +42054,14 @@ class TimedLyricsEdit:
 			for lyric in lyrics_file.readlines():
 				stamp, time, line = lyric.strip().split(",", 2)
 				if stamp == "tag":
-					stamp = _("tag")
+					stamp = "tag"
 				time = float(time)
 				self.structure.append( (stamp,time,line) )
 		self.queue_next_frame = True
 
 	def visit_backup(self, synced: bool = True) -> None:
 		suffix = ".csv" if synced else ".txt"
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(suffix)
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(suffix)
 		if not target.parent.is_dir() and not synced:
 			target.parent.mkdir()
 		elif not target.is_file():
@@ -42106,12 +42106,12 @@ class TimedLyricsEdit:
 		time = self.pctl.decode_time
 		if current:
 			self.alted = True
-		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
+		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != "tag":
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
 			self.structure[self.line_active] = full_line
 		else:
-			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
+			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == "tag"):
 				self.line_active += 1 # increment until we're not going to timestanmp a tag
 			if self.line_active == len(self.structure)-1 or (self.inp.key_rctrl_down or self.inp.key_ctrl_down):
 				self.structure.insert( self.line_active+1, (self.get_stamp_from_time(time), time, "") )
@@ -42210,7 +42210,7 @@ class TimedLyricsEdit:
 
 		for i, line in enumerate(pasted_lines): # try to accept LRC-formatted paste text
 			if any(tag in line for tag in LRC_tags):
-					self.structure.append( (_("tag"), -1.0, line) )
+					self.structure.append( ("tag", -1.0, line) )
 					continue
 
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -42244,7 +42244,7 @@ class TimedLyricsEdit:
 		temp = self.structure[line_number]
 
 		# TIMESTAMP - TELEPORT, DELETE AND SCROLL EDIT
-		if stamp != "??:??.??" and stamp != _("tag"):
+		if stamp != "??:??.??" and stamp != "tag":
 			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
 			if time >= 0 and button:
 				self.pctl.stop()
@@ -42437,7 +42437,7 @@ class TimedLyricsEdit:
 			last = 0
 			has_timed = 0
 			for i, line in enumerate(self.structure):
-				if line[0] == _("tag"):
+				if line[0] == "tag":
 					last = i
 					continue
 
@@ -42768,7 +42768,7 @@ class TimedLyricsEdit:
 
 	def edit_static(self) -> None:
 		track_object = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str(self.struct_track)).with_suffix(".txt")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w", encoding="utf-8") as lyrics_file:
@@ -42786,7 +42786,7 @@ class TimedLyricsEdit:
 
 	def reload_lyric_file(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".txt")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
 		with open(target) as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
@@ -42871,7 +42871,7 @@ class TimedLyricsEdit:
 			x_gap = self.yy
 		save_gap = round(12 * self.gui.scale)
 
-		lyric_file = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
+		lyric_file = Path( self.tauon.config_directory / "lyrics-editor" / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
 		can_load = lyric_file.is_file()
 
 		if self.button("   ", buttons_x, buttons_y, self.font, tooltip="Go to Synced View")[0]:
@@ -47562,7 +47562,7 @@ def main(holder: Holder) -> None:
 
 	folder_tree_stem_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
 
-	folder_tree_stem_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
+	folder_tree_stem_menu.add(MenuItem(_("lock"), tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
 	# folder_tree_menu.add("lock", lock_folder_tree, tauon.lock_folder_tree_deco)
 
 	gallery_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
@@ -47574,7 +47574,7 @@ def main(holder: Holder) -> None:
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
 	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
@@ -47594,7 +47594,7 @@ def main(holder: Holder) -> None:
 
 	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	center_info_menu.add_sub(_("Misc…"), 150)
@@ -47637,9 +47637,9 @@ def main(holder: Holder) -> None:
 		show_test=tauon.showcase_mode_show_test,
 	))
 	if milky_ready:
-		picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
+		picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Toggle Milkdrop Auto"), tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem(
 		_("Enable Wide Mode"),
 		tauon.toggle_showcase_wide_art,
@@ -47663,7 +47663,7 @@ def main(holder: Holder) -> None:
 	# playlist_menu.add('Paste', append_here, paste_deco)
 
 	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
-	tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
+	tab_menu.add(MenuItem(_("Pin"), tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
 	tauon.radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
@@ -47810,7 +47810,7 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
 
-	playlist_menu.add(MenuItem("Paste", tauon.paste, tauon.paste_deco))
+	playlist_menu.add(MenuItem(_("Paste"), tauon.paste, tauon.paste_deco))
 
 	track_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
 	track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=gui.info_icon))
@@ -47821,7 +47821,7 @@ def main(holder: Holder) -> None:
 	gui.heartx_icon.colour_callback = tauon.heart_xmenu_colour
 
 	# Mark track as 'liked'
-	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, pass_ref=True, pass_ref_deco=True, icon=gui.heartx_icon))
+	track_menu.add(MenuItem(_("Love"), tauon.love_index, tauon.love_decox, pass_ref=True, pass_ref_deco=True, icon=gui.heartx_icon))
 
 	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
 
@@ -47895,7 +47895,7 @@ def main(holder: Holder) -> None:
 	folder_tree_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
 
 	if not tauon.snap_mode:
-		folder_menu.add(MenuItem("Edit with", tauon.launch_editor_selection, pass_ref=True,
+		folder_menu.add(MenuItem(_("Edit with"), tauon.launch_editor_selection, pass_ref=True,
 			pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
 
 	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
@@ -47903,7 +47903,7 @@ def main(holder: Holder) -> None:
 
 	folder_tree_menu.br()
 	folder_tree_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
-	folder_tree_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
+	folder_tree_menu.add(MenuItem(_("lock"), tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
 
 	# selection_menu.br()
 
@@ -48120,7 +48120,7 @@ def main(holder: Holder) -> None:
 		gui.heart_icon.yoff = 1
 
 	gui.heart_icon.colour_callback = tauon.heart_menu_colour
-	extra_menu.add(MenuItem("Love", tauon.bar_love_notify, tauon.love_deco, icon=gui.heart_icon))
+	extra_menu.add(MenuItem(_("Love"), tauon.bar_love_notify, tauon.love_deco, icon=gui.heart_icon))
 	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
 	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
 	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
@@ -48212,7 +48212,7 @@ def main(holder: Holder) -> None:
 		MenuItem(_("Visit Website"), visit_radio_station, tauon.visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
 	radio_context_menu.add(MenuItem(_("Remove"), tauon.remove_station, pass_ref=True))
 
-	tauon.dl_menu.add(MenuItem("Dismiss", tauon.dismiss_dl))
+	tauon.dl_menu.add(MenuItem(_("Dismiss"), tauon.dismiss_dl))
 
 	# Set SDL window drag areas
 	# if system != "Windows":
@@ -52747,7 +52747,7 @@ def main(holder: Holder) -> None:
 							line = str(tc.bitrate)
 							if tc.file_ext in ("FLAC", "OPUS", "APE", "WV"):
 								line = "≈" + line
-							line += _(" kbps")
+							line += " kbps"
 							ddt.text((x2, y1), line, value_colour, 312)
 
 						# -----------

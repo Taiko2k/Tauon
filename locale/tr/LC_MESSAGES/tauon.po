@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:38+0000\n"
 "Last-Translator: Sabri Ünal <yakushabb@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/tauon-music-box/"
@@ -1672,7 +1672,7 @@ msgstr ""
 msgid "Resume Queue"
 msgstr "Sırayı Duraklat"
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
 msgstr "Sırayı Duraklat"
 
@@ -1763,7 +1763,7 @@ msgstr "Sanatçı resmi bulunamadı."
 msgid "No providers are enabled in settings!"
 msgstr "Ayarlarda hiçbir sağlayıcı etkinleştirilmemiş!"
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr "Sabitle"
 
@@ -2981,7 +2981,8 @@ msgstr "Çalma listesini kendiliğinden yeniden oluştur"
 msgid "Target playlist"
 msgstr "Hedef çalma listesi:   "
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 #, fuzzy
 msgid "{N} albums"
 msgstr "Tamamlanmamış Albümler"
@@ -4210,7 +4211,8 @@ msgid "Copy"
 msgstr "Kopyala"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr "Yapıştır"
 
@@ -4713,26 +4715,24 @@ msgstr "Çalma listesi boş"
 msgid "Close quotation..."
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 #, fuzzy
 msgid "{N} tracks"
 msgstr "Parçayı Yinele"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 #, fuzzy
 msgid "{N} track"
 msgstr "Parçayı Yinele"
 
-#: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
-msgid "Downloading data..."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:36532
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
 #, fuzzy
 msgid "{N} album"
 msgstr "Tamamlanmamış Albümler"
+
+#: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
+msgid "Downloading data..."
+msgstr ""
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4796,6 +4796,11 @@ msgstr "Dosya adı"
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
 msgstr "Şimdi Çal"
+
+#: src/tauon/t_modules/t_main.py:37541
+#, fuzzy
+msgid "Auto-Stop Here"
+msgstr "Kendiliğinden dışa aktar"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 #, fuzzy
@@ -5002,24 +5007,8 @@ msgstr ""
 msgid "Save synced to .lrc"
 msgstr "Sözleri Göster"
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-msgid "lyrics-editor"
-msgstr ""
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41756
@@ -5518,6 +5507,11 @@ msgstr "Çalan Klasörü Buraya Taşı"
 msgid "Collapse All"
 msgstr "Tümünü Daralt"
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+#, fuzzy
+msgid "lock"
+msgstr "Kilidi Kaldır"
+
 #: src/tauon/t_modules/t_main.py:47569
 msgid "Show in Playlist"
 msgstr "Çalma Listesinde Göster"
@@ -5535,6 +5529,11 @@ msgstr "Albümü Sıraya Ekle"
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
 msgstr "Sonraki Albümü Sıraya Al"
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+#, fuzzy
+msgid "Toggle synced"
+msgstr "Sözleri Aç/Kapat"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
@@ -5609,6 +5608,15 @@ msgstr "Resim Ayıkla"
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
 msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+msgid "Toggle Milkdrop Visualiser"
+msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47642
+#, fuzzy
+msgid "Toggle Milkdrop Auto"
+msgstr "Sözleri Aç/Kapat"
 
 #: src/tauon/t_modules/t_main.py:47651
 #, fuzzy
@@ -5752,6 +5760,10 @@ msgstr "Yorumlular"
 msgid "Track Info…"
 msgstr "Parça Bilgisi…"
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+msgid "Love"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr "↳ Geçerli Parçadan Sonra"
@@ -5778,7 +5790,7 @@ msgstr "Alanları düzenle…"
 msgid "Modify Folder…"
 msgstr "Klasörü Değiştir…"
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 #, fuzzy
 msgid "Edit with"
 msgstr "Şununla düzenle "
@@ -6099,6 +6111,10 @@ msgstr "Temizle"
 msgid "Edit..."
 msgstr "Şununla düzenle "
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr ""
@@ -6161,10 +6177,6 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
@@ -6314,6 +6326,74 @@ msgstr ""
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Top panel"
+#~ msgstr "Çalma listesinde sanatçı yok"
+
+#, fuzzy
+#~ msgid "Lyrics panel"
+#~ msgstr "Sözler..."
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Parçayı Yinele"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Sıra %d"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Parça Yeniden Adlandırma"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Parça Numarası"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Çalma süresi"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "Çalıyor"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "Çalıyor"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "Çalıyor"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Çalma süresi"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Parça başlığı"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Parça başlığı"
+
+#, fuzzy
+#~ msgid "Folder title"
+#~ msgstr "Dosya adı"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Dosya adı"
+
+#, fuzzy
+#~ msgid "Scroll bar"
+#~ msgstr "Çubuğu göster"
+
+#, fuzzy
+#~ msgid "Tab background"
+#~ msgstr "Çalma süresi"
 
 #, fuzzy
 #~ msgid "{name}"
@@ -6518,9 +6598,6 @@ msgstr ""
 
 #~ msgid "Are you sure you want to delete this playlist?"
 #~ msgstr "Bu çalma listesini silmek istediğinizden emin misiniz?"
-
-#~ msgid "Queue %d"
-#~ msgstr "Sıra %d"
 
 #~ msgid "Broadcast This"
 #~ msgstr "Bunu Yayınla"

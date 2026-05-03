@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-02 16:58+1200\n"
+"POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:38+0000\n"
 "Last-Translator: Deleted User <noreply+10474@weblate.org>\n"
 "Language-Team: Interlingua <https://hosted.weblate.org/projects/tauon-music-"
@@ -1581,7 +1581,7 @@ msgstr ""
 msgid "Resume Queue"
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:13029
+#: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 #, fuzzy
 msgid "Pause Queue"
 msgstr "Listas de reproduction + Cauda"
@@ -1668,7 +1668,7 @@ msgstr ""
 msgid "No providers are enabled in settings!"
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:15442
+#: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
 msgstr ""
 
@@ -2819,7 +2819,8 @@ msgstr "Fin del lista de reproduction"
 msgid "Target playlist"
 msgstr "Fin del lista de reproduction"
 
-#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36530
+#: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
+#: src/tauon/t_modules/t_main.py:36530
 #, fuzzy
 msgid "{N} albums"
 msgstr "Tracia sequente"
@@ -3979,7 +3980,8 @@ msgid "Copy"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
-#: src/tauon/t_modules/t_main.py:47841 src/tauon/t_modules/t_main.py:47996
+#: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
+#: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
 msgstr ""
 
@@ -4445,26 +4447,24 @@ msgstr "Le cauda es vacue"
 msgid "Close quotation..."
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36391
-#: src/tauon/t_modules/t_main.py:36524
+#: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 #, fuzzy
 msgid "{N} tracks"
 msgstr "Tracia sequente"
 
-#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36393
-#: src/tauon/t_modules/t_main.py:36526
+#: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 #, fuzzy
 msgid "{N} track"
+msgstr "Tracia sequente"
+
+#: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
+#, fuzzy
+msgid "{N} album"
 msgstr "Tracia sequente"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
 msgstr ""
-
-#: src/tauon/t_modules/t_main.py:36532
-#, fuzzy
-msgid "{N} album"
-msgstr "Tracia sequente"
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
@@ -4528,6 +4528,10 @@ msgstr ""
 #, fuzzy
 msgid "Play Now"
 msgstr "Le lista de reproduction es vacue"
+
+#: src/tauon/t_modules/t_main.py:37541
+msgid "Auto-Stop Here"
+msgstr ""
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 #, fuzzy
@@ -4722,24 +4726,8 @@ msgstr ""
 msgid "Save synced to .lrc"
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:41695 src/tauon/t_modules/t_main.py:42037
-#: src/tauon/t_modules/t_main.py:42049 src/tauon/t_modules/t_main.py:42064
-#: src/tauon/t_modules/t_main.py:42771 src/tauon/t_modules/t_main.py:42789
-#: src/tauon/t_modules/t_main.py:42874
-msgid "lyrics-editor"
-msgstr ""
-
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:41710 src/tauon/t_modules/t_main.py:41721
-#: src/tauon/t_modules/t_main.py:41858 src/tauon/t_modules/t_main.py:41905
-#: src/tauon/t_modules/t_main.py:42043 src/tauon/t_modules/t_main.py:42057
-#: src/tauon/t_modules/t_main.py:42109 src/tauon/t_modules/t_main.py:42114
-#: src/tauon/t_modules/t_main.py:42213 src/tauon/t_modules/t_main.py:42247
-#: src/tauon/t_modules/t_main.py:42440
-msgid "tag"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:41756
@@ -5209,6 +5197,10 @@ msgstr ""
 msgid "Collapse All"
 msgstr ""
 
+#: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
+msgid "lock"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:47569
 #, fuzzy
 msgid "Show in Playlist"
@@ -5226,6 +5218,10 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:47572 src/tauon/t_modules/t_main.py:47889
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
+msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
+msgid "Toggle synced"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:47579
@@ -5297,6 +5293,14 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
+msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
+msgid "Toggle Milkdrop Visualiser"
+msgstr ""
+
+#: src/tauon/t_modules/t_main.py:47642
+msgid "Toggle Milkdrop Auto"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:47651
@@ -5439,6 +5443,10 @@ msgstr ""
 msgid "Track Info…"
 msgstr ""
 
+#: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
+msgid "Love"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
 msgstr ""
@@ -5465,7 +5473,7 @@ msgstr ""
 msgid "Modify Folder…"
 msgstr ""
 
-#: src/tauon/t_modules/t_main.py:47878
+#: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
 msgstr ""
 
@@ -5769,6 +5777,10 @@ msgstr ""
 msgid "Edit..."
 msgstr ""
 
+#: src/tauon/t_modules/t_main.py:48215
+msgid "Dismiss"
+msgstr ""
+
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
 msgstr ""
@@ -5824,10 +5836,6 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
-msgstr ""
-
-#: src/tauon/t_modules/t_main.py:52750
-msgid " kbps"
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
@@ -5971,6 +5979,58 @@ msgstr ""
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Window frame"
+#~ msgstr "Fenestra"
+
+#, fuzzy
+#~ msgid "Tracklist panel"
+#~ msgstr "Tracia sequente"
+
+#, fuzzy
+#~ msgid "Queue panel"
+#~ msgstr "Cauda"
+
+#, fuzzy
+#~ msgid "Track artist"
+#~ msgstr "Renomination de tracias"
+
+#, fuzzy
+#~ msgid "Track album"
+#~ msgstr "Renomination de tracias"
+
+#, fuzzy
+#~ msgid "Playing title"
+#~ msgstr "Listas de reproduction + Cauda"
+
+#, fuzzy
+#~ msgid "Playing artist"
+#~ msgstr "Listas de reproduction + Cauda"
+
+#, fuzzy
+#~ msgid "Playing album"
+#~ msgstr "Listas de reproduction + Cauda"
+
+#, fuzzy
+#~ msgid "Playing index"
+#~ msgstr "Listas de reproduction + Cauda"
+
+#, fuzzy
+#~ msgid "Playing time"
+#~ msgstr "Listas de reproduction + Cauda"
+
+#, fuzzy
+#~ msgid "Track index"
+#~ msgstr "Renomination de tracias"
+
+#, fuzzy
+#~ msgid "Track time"
+#~ msgstr "Tracia sequente"
+
+#, fuzzy
+#~ msgid "Folder line"
+#~ msgstr "Listas de reproduction + Cauda"
 
 #~ msgid "Error starting Spotify"
 #~ msgstr "Error al initiar Spotify"
