@@ -24413,7 +24413,7 @@ class NagBox:
 		button_h = round(30 * scale)
 		button_gap = round(8 * scale)
 		no_thanks_w = max(round(96 * scale), self.ddt.get_text_w(_("No thanks"), 212) + round(22 * scale))
-		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Yes, I have donated"), 212) + round(22 * scale))
+		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Okay, I have/will donate"), 212) + round(22 * scale))
 
 		no_thanks_x = x + w - no_thanks_w - inner_pad
 		yes_donated_x = no_thanks_x - yes_donated_w - button_gap
