@@ -1114,7 +1114,7 @@ def player4(tauon: Tauon) -> None:
 
 					logging.info("Transition jump")
 					# Smart Mix: fade dinamico
-					if fade and loaded_track is not None and target_object is not None:
+					if fade and loaded_track is not None and target_object is not None and prefs.use_smart_crossfade:
 						aud.config_set_fade_duration(smart_fade_ms(loaded_track, target_object))
 					aud.start(
 						target_path.encode(errors="surrogateescape"),

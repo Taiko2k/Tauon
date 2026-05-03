@@ -18901,6 +18901,11 @@ class Tauon:
 		self.prefs.use_transition_crossfade ^= True
 		return None
 
+	def toggle_smart_crossfade(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.use_smart_crossfade)
+		self.prefs.use_smart_crossfade ^= True
+		return None
 	def toggle_transition_gapless(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return not self.prefs.use_transition_crossfade
@@ -27686,6 +27691,8 @@ class Over:
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_pause_fade, _("Fade on pause and stop"), accent=accent)
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_jump_crossfade, _("Fade on track jump"), accent=accent)
+		inner_y += row_h
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_smart_crossfade, _("Smart Mix (dynamic crossfade)"), accent=accent)
 		inner_y += row_h + row_gap
 		prefs.back_restarts = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.back_restarts, _("Back restarts to beginning"), accent=accent)
 		inner_y += row_h + row_gap

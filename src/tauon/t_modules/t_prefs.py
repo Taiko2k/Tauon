@@ -137,6 +137,7 @@ class Prefs:
 
 	use_jump_crossfade:       bool = True
 	use_transition_crossfade: bool = False
+	use_smart_crossfade:      bool = True
 	use_pause_fade:           bool = True
 	resume_on_jump:           bool = True
 
