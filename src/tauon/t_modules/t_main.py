@@ -48238,7 +48238,7 @@ def main(holder: Holder) -> None:
 	# Smart Mix: analizar BPM de canciones existentes al arrancar
 	try:
 		from tauon.t_modules import t_autobpm
-		t_autobpm.queue_library(pctl.master_library)
+		t_autobpm.queue_library(pctl.master_library, notify_cb=tauon.show_message)
 	except Exception as e:
 		logging.warning(f"Smart Mix autobpm startup: {e}")
 
@@ -51480,7 +51480,7 @@ def main(holder: Holder) -> None:
 								# Smart Mix: analizar BPM en segundo plano
 								try:
 									from tauon.t_modules import t_autobpm
-									t_autobpm.queue_library(pctl.master_library)
+									t_autobpm.queue_library(pctl.master_library, notify_cb=tauon.show_message)
 								except Exception as e:
 									logging.warning(f"Smart Mix autobpm: {e}")
 							break

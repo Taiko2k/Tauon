@@ -49,10 +49,15 @@ def _analyse_file(filepath: str) -> float:
 		logging.debug(f"t_autobpm: fallo en {filepath}: {e}")
 		return 0.0
 
-def _worker(master_library: dict, save_cb) -> None:
+def _worker(master_library: dict, save_cb, notify_cb) -> None:
 	"""Hilo de análisis: procesa la cola sin saturar CPU."""
 	import time
 	logging.info("t_autobpm: hilo iniciado")
+	if notify_cb:
+		try:
+			notify_cb("Smart Mix: Analysing BPM in background...", mode="info")
+		except Exception:
+			pass
 	while _queue:
 		with _lock:
 			if not _queue:
@@ -75,8 +80,13 @@ def _worker(master_library: dict, save_cb) -> None:
 					pass
 		time.sleep(0.1)
 	logging.info("t_autobpm: hilo terminado")
+	if notify_cb:
+		try:
+			notify_cb("Smart Mix: BPM analysis complete", mode="done")
+		except Exception:
+			pass
 
-def queue_library(master_library: dict, save_cb=None) -> None:
+def queue_library(master_library: dict, save_cb=None, notify_cb=None) -> None:
 	"""Añade canciones sin BPM a la cola y arranca el hilo."""
 	global _thread
 	count = 0
@@ -92,7 +102,7 @@ def queue_library(master_library: dict, save_cb=None) -> None:
 	if _thread is None or not _thread.is_alive():
 		_thread = threading.Thread(
 			target=_worker,
-			args=(master_library, save_cb),
+			args=(master_library, save_cb, notify_cb),
 			daemon=True,
 			name="autobpm-worker",
 		)

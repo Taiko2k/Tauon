@@ -527,21 +527,56 @@ def player4(tauon: Tauon) -> None:
 		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
 	def smart_fade_ms(current_track, next_track) -> int:
-		"""Smart Mix: calcula crossfade dinamico segun BPM y ReplayGain"""
+		"""Smart Mix: crossfade dinamico por BPM y ReplayGain.
+		Logica por zonas (como un DJ profesional):
+		  < 5 BPM diff  -> corte casi limpio (250ms)
+		  5-15 BPM diff -> fade suave (400-700ms)
+		  15-35 BPM diff -> fade notable (700-1400ms)
+		  > 35 BPM diff -> corte directo (200ms, sonar mejor que fade largo)
+		"""
 		bpm_a = getattr(current_track, "bpm", 0.0)
 		bpm_b = getattr(next_track, "bpm", 0.0)
+
+		# Calcular diferencia de BPM considerando armonia ritmica
 		if bpm_a > 0 and bpm_b > 0:
-			bpm_score = max(0.0, 100.0 - abs(bpm_a - bpm_b) * 2.5)
+			# Considerar tambien relaciones armonicas (doble/mitad de tempo)
+			diff_direct = abs(bpm_a - bpm_b)
+			diff_double = abs(bpm_a * 2 - bpm_b)
+			diff_half   = abs(bpm_a / 2 - bpm_b)
+			bpm_diff = min(diff_direct, diff_double, diff_half)
 		else:
-			bpm_score = 50.0
+			bpm_diff = -1  # BPM desconocido
+
+		# Ajuste por ReplayGain (diferencia de volumen percibido)
 		try:
 			rg_a = float(current_track.misc.get("replaygain_track_gain", 0) or 0)
 			rg_b = float(next_track.misc.get("replaygain_track_gain", 0) or 0)
-			rg_score = max(0.0, 100.0 - abs(rg_a - rg_b) * 10.0)
+			rg_diff = abs(rg_a - rg_b)
 		except (TypeError, ValueError):
-			rg_score = 50.0
-		score = bpm_score * 0.6 + rg_score * 0.4
-		return max(200, min(2000, int(400 + (100.0 - score) * 16)))
+			rg_diff = 0.0
+
+		# Logica por zonas segun diferencia de BPM
+		if bpm_diff < 0:
+			# BPM desconocido: fade neutro ajustado por volumen
+			base_ms = 700
+		elif bpm_diff < 5:
+			# Casi identicos: corte limpio con micro-fade
+			base_ms = 250
+		elif bpm_diff < 15:
+			# Compatible: fade suave proporcional
+			base_ms = int(400 + (bpm_diff - 5) * 30)
+		elif bpm_diff < 35:
+			# Notable: fade mas largo
+			base_ms = int(700 + (bpm_diff - 15) * 35)
+		else:
+			# Muy distinto: corte directo (suena mejor que fade largo)
+			base_ms = 200
+
+		# Penalizacion por diferencia de volumen (max +300ms)
+		rg_penalty = int(min(rg_diff * 20, 300))
+		final_ms = base_ms + rg_penalty
+
+		return max(200, min(1500, final_ms))
 
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)
