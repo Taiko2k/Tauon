@@ -537,17 +537,17 @@ def player4(tauon: Tauon) -> None:
 		bpm_a = getattr(current_track, "bpm", 0.0)
 		bpm_b = getattr(next_track, "bpm", 0.0)
 
-		# Calcular diferencia de BPM considerando armonia ritmica
+		# Calculate BPM difference considering rhythmic harmony
 		if bpm_a > 0 and bpm_b > 0:
-			# Considerar tambien relaciones armonicas (doble/mitad de tempo)
+			# Also consider harmonic relationships (double/half tempo)
 			diff_direct = abs(bpm_a - bpm_b)
 			diff_double = abs(bpm_a * 2 - bpm_b)
 			diff_half   = abs(bpm_a / 2 - bpm_b)
 			bpm_diff = min(diff_direct, diff_double, diff_half)
 		else:
-			bpm_diff = -1  # BPM desconocido
+			bpm_diff = -1  # Unknown BPM
 
-		# Ajuste por ReplayGain (diferencia de volumen percibido)
+		# ReplayGain adjustment (perceived volume difference)
 		try:
 			rg_a = float(current_track.misc.get("replaygain_track_gain", 0) or 0)
 			rg_b = float(next_track.misc.get("replaygain_track_gain", 0) or 0)
@@ -555,9 +555,9 @@ def player4(tauon: Tauon) -> None:
 		except (TypeError, ValueError):
 			rg_diff = 0.0
 
-		# Logica por zonas segun diferencia de BPM
+		# Zone-based logic according to BPM difference
 		if bpm_diff < 0:
-			# BPM desconocido: fade neutro ajustado por volumen
+			# Unknown BPM: neutral fade adjusted by volume
 			base_ms = 700
 		elif bpm_diff < 5:
 			# Casi identicos: corte limpio con micro-fade
@@ -572,7 +572,7 @@ def player4(tauon: Tauon) -> None:
 			# Muy distinto: corte directo (suena mejor que fade largo)
 			base_ms = 200
 
-		# Penalizacion por diferencia de volumen (max +300ms)
+		# Volume difference penalty (max +300ms)
 		rg_penalty = int(min(rg_diff * 20, 300))
 		final_ms = base_ms + rg_penalty
 
@@ -1148,7 +1148,7 @@ def player4(tauon: Tauon) -> None:
 						fade = 1
 
 					logging.info("Transition jump")
-					# Smart Mix: fade dinamico
+					# Smart Mix: dynamic fade
 					if fade and loaded_track is not None and target_object is not None and prefs.use_smart_crossfade:
 						aud.config_set_fade_duration(smart_fade_ms(loaded_track, target_object))
 					aud.start(

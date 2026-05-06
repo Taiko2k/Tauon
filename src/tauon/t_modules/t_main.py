@@ -1712,32 +1712,35 @@ class WinTask:
 		self.updated_state = 0
 
 	def update(self) -> None:
+		try:
 
-		if self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
-			self.updated_state = 0
-			sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
-			sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
+			if self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
+				self.updated_state = 0
+				sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
+				sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
 
-		elif self.prefs.taskbar_progress:
+			elif self.prefs.taskbar_progress:
 
-			if self.pctl.playing_state == PlayingState.PLAYING:
-				if self.updated_state != 1:
-					sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NORMAL)
+				if self.pctl.playing_state == PlayingState.PLAYING:
+					if self.updated_state != 1:
+						sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NORMAL)
 
-				self.updated_state = 1
-				if self.pctl.playing_length > 1.1:
-					frac = self.pctl.playing_time / self.pctl.playing_length
-				else:
-					frac = 0.0
+					self.updated_state = 1
+					if self.pctl.playing_length > 1.1:
+						frac = self.pctl.playing_time / self.pctl.playing_length
+					else:
+						frac = 0.0
 
-				frac = min(max(frac, 0.0), 1.0)
-				sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, frac)
+					frac = min(max(frac, 0.0), 1.0)
+					sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, frac)
 
-			elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
-				self.updated_state = 2
-				sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_PAUSED)
+				elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
+					self.updated_state = 2
+					sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_PAUSED)
 
 
+		except Exception:
+			pass
 class PlayerCtl:
 	"""Main class that controls playback (play, pause, stepping, playlists, queue etc). Sends commands to backend."""
 
@@ -17103,7 +17106,7 @@ class Tauon:
 						nt.genre = in_get("\xa9gen", tags)
 						if "\xa9lyr" in tags:
 							nt.lyrics = in_get("\xa9lyr", tags)
-						# Smart Mix: BPM para M4A/AAC/ALAC
+						# Smart Mix: read BPM from M4A/AAC/ALAC tmpo tag
 						if "tmpo" in tags:
 							try:
 								nt.bpm = float(tags["tmpo"][0])
@@ -44228,7 +44231,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 	natural_get(tags, nt, "TCOM", "composer")
 	natural_get(tags, nt, "COMM", "comment")
 
-	# Smart Mix: leer BPM desde etiqueta ID3 TBPM
+	# Smart Mix: read BPM from ID3 TBPM tag
 	tbpm_frames = tags.getall("TBPM")
 	if tbpm_frames and tbpm_frames[0].text:
 		try:
@@ -44236,7 +44239,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 		except (ValueError, TypeError):
 			nt.bpm = 0.0
 
-	# Smart Mix: leer BPM desde etiqueta ID3 TBPM
+	# Smart Mix: read BPM from ID3 TBPM tag
 	tbpm_frames = tags.getall("TBPM")
 	if tbpm_frames and tbpm_frames[0].text:
 		try:
@@ -48235,7 +48238,7 @@ def main(holder: Holder) -> None:
 	tauon.thread_manager.ready("gallery")
 	tauon.thread_manager.ready("worker")
 
-	# Smart Mix: analizar BPM de canciones existentes al arrancar
+	# Smart Mix: analyse BPM of existing tracks on startup
 	try:
 		from tauon.t_modules import t_autobpm
 		t_autobpm.queue_library(pctl.master_library, notify_cb=tauon.show_message)
@@ -51477,7 +51480,7 @@ def main(holder: Holder) -> None:
 								pctl.notify_database_changed()
 								gui.auto_play_import = False
 								gui.album_artist_dict.clear()
-								# Smart Mix: analizar BPM en segundo plano
+								# Smart Mix: analyse BPM in background after import
 								try:
 									from tauon.t_modules import t_autobpm
 									t_autobpm.queue_library(pctl.master_library, notify_cb=tauon.show_message)
