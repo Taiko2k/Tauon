@@ -4230,17 +4230,25 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return False, "", ""
 
-		try:
-			if artist:
-				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
+		if artist:
+			first_artist = get_first_artist(artist)
+			logging.info(f"Artist info lookup: '{artist}' -> first_artist='{first_artist}'")
+			attempts = [artist] if artist != first_artist else []
+			attempts.append(first_artist)
+		else:
+			attempts = []
+
+		for attempt_artist in attempts:
+			try:
+				logging.info(f"Trying Last.fm: '{attempt_artist}'")
+				l_artist = pylast.Artist(attempt_artist, self.lastfm_network)
 				bio = l_artist.get_bio_content()
-				# cover_link = l_artist.get_cover_image()
 				mbid = l_artist.get_mbid()
 				url = l_artist.get_url()
-
+				logging.info(f"Success for '{attempt_artist}'")
 				return True, bio, "", mbid, url
-		except Exception:
-			logging.exception(f"last.fm get artist info failed for '{artist}'")
+			except Exception:
+				logging.exception(f"last.fm get artist info failed for '{attempt_artist}'")
 
 		return False, "", "", "", ""
 
@@ -4248,12 +4256,19 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
-		try:
-			if artist:
-				l_artist = pylast.Artist(get_first_artist(artist), self.lastfm_network)
+		if artist:
+			first_artist = get_first_artist(artist)
+			attempts = [artist] if artist != first_artist else []
+			attempts.append(first_artist)
+		else:
+			attempts = []
+
+		for attempt_artist in attempts:
+			try:
+				l_artist = pylast.Artist(attempt_artist, self.lastfm_network)
 				return l_artist.get_mbid()
-		except Exception:
-			logging.exception("last.fm get artist mbid info failed")
+			except Exception:
+				logging.exception("last.fm get artist mbid info failed")
 
 		return ""
 
@@ -4356,14 +4371,24 @@ class LastFMapi:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
 			return ""
 
-		artist_object = pylast.Artist(get_first_artist(artist), self.lastfm_network)
-		bio = artist_object.get_bio_summary(language="en")
+		first_artist = get_first_artist(artist)
+		attempts = [artist] if artist != first_artist else []
+		attempts.append(first_artist)
+
+		for attempt_artist in attempts:
+			try:
+				artist_object = pylast.Artist(attempt_artist, self.lastfm_network)
+				return artist_object.get_bio_summary(language="en")
+			except Exception:
+				logging.exception(f"Last.fm bio lookup failed for '{attempt_artist}'")
+
+		return ""
 		# logging.info(artist_object.get_cover_image())
 		# logging.info("\n\n")
 		# logging.info(bio)
 		# logging.info("\n\n")
 		# logging.info(artist_object.get_bio_content())
-		return bio
+		# return bio
 		# else:
 		#	return ""
 
@@ -7452,6 +7477,21 @@ class Tauon:
 			os.remove(os.path.join(self.a_cache_directory, artist + "-lfm.txt"))
 		self.artist_info_box.text = ""
 		self.artist_info_box.artist_on = None
+
+	def clear_artist_cache(self) -> None:
+		if os.path.isdir(self.a_cache_directory):
+			for filename in os.listdir(self.a_cache_directory):
+				if filename.endswith(("-lfm.txt", "-lfm.png", "-lfm.jpg", "-lfm.webp", "-ftv-full.jpg", "-dcg.jpg")):
+					os.remove(os.path.join(self.a_cache_directory, filename))
+		artist_pictures_dir = self.user_directory / "artist-pictures"
+		if artist_pictures_dir.is_dir():
+			for ext in ("png", "jpg", "webp"):
+				for f in artist_pictures_dir.glob(f"*.{ext}"):
+					f.unlink()
+		self.artist_info_box.text = ""
+		self.artist_info_box.artist_on = None
+		self.artist_info_box.lock = False
+		self.artist_info_box.status = ""
 
 	def test_artist_dl(self, _: int) -> bool:
 		return not self.prefs.auto_dl_artist_data
@@ -11933,7 +11973,7 @@ class Tauon:
 			if not self.chrome:
 				self.show_message(_("pychromecast not found"))
 				return
-			self.show_message(_("Searching for Chomecasts..."))
+			self.show_message(_("Searching for Chromecasts..."))
 			shooter(self.cast_search2)
 
 	def clear_queue(self) -> None:
@@ -15671,7 +15711,7 @@ class Tauon:
 					self.show_message(_("Download completed but checksum failed"), mode="error")
 					logging.error(f"Checksum was {checksum} but expected {sha}")
 					return
-				self.show_message(_("Download completed.. extracting"))
+				self.show_message(_("Download completed. Extracting..."))
 				f.seek(0)
 				if self.windows:
 					z = zipfile.ZipFile(f, mode="r")
@@ -18723,7 +18763,7 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.maloja_enable
 		if not self.prefs.maloja_url or not self.prefs.maloja_key:
-			self.show_message(_("One or more fields is missing."), mode="warning")
+			self.show_message(_("One or more fields are missing."), mode="warning")
 			return None
 		self.prefs.maloja_enable ^= True
 		return None
@@ -18991,7 +19031,7 @@ class Tauon:
 				self.gui.message_box_confirm_reference = (copy.deepcopy(load_order),)
 				self.gui.message_box_confirm_callback = lambda x: self.load_orders.append(x)
 				self.gui.message_box_no_callback = lambda x: self.show_message(
-					_("The target will may be lost on reboot without necessary Flatpak permissions."),
+						_("The target may be lost on reboot without necessary Flatpak permissions."),
 					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
 					mode="bubble")
 				self.show_message(_("Path may be transient! Continue? Press \"No\" for more information."),
@@ -19264,7 +19304,7 @@ class Tauon:
 		if self.get_ffmpeg():
 			return True
 		if not self.macos:
-			self.show_message(_("This feature requires FFmpeg. Shall I can download that for you? (100MB~)"), mode="confirm")
+			self.show_message(_("This feature requires FFmpeg. Should I download it for you? (~100 MB)"), mode="confirm")
 			self.gui.message_box_confirm_callback = self.download_ffmpeg
 			self.gui.message_box_no_callback = None
 			self.gui.message_box_confirm_reference = (None,)
@@ -20243,8 +20283,6 @@ class TimedLyricsRen:
 
 				if i == line_active and highlight:
 					colour = self.colours.active_lyric
-					if self.colours.lm:
-						colour = ColourRGBA(180, 130, 210, 255)
 
 				location = [ round(x), round(possible_y), 4, allowed_width - 12 ]
 				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
@@ -23838,7 +23876,7 @@ class SearchOverlay:
 					metadata_val = artist_val or album_val
 					if metadata_val:
 						gap = round(8 * gui.scale)
-						by_label = _("BY") if artist_val else ""
+						by_label = "BY" if artist_val else ""
 						by_width = self.ddt.get_text_w(by_label, 212) if by_label else 0
 						metadata_width = self.ddt.get_text_w(metadata_val, s_font)
 						if by_label:
@@ -23882,7 +23920,7 @@ class SearchOverlay:
 
 					xx = self.ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 
-					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), _("BY"), ColourRGBA(250, 240, 110, int(255 * fade)), 212)
+					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", ColourRGBA(250, 240, 110, int(255 * fade)), 212)
 					xx += 8 * gui.scale
 					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
 
@@ -24392,7 +24430,7 @@ class NagBox:
 		button_h = round(30 * scale)
 		button_gap = round(8 * scale)
 		no_thanks_w = max(round(96 * scale), self.ddt.get_text_w(_("No thanks"), 212) + round(22 * scale))
-		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Yes, I have donated"), 212) + round(22 * scale))
+		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Okay, I have/will donate"), 212) + round(22 * scale))
 
 		no_thanks_x = x + w - no_thanks_w - inner_pad
 		yes_donated_x = no_thanks_x - yes_donated_w - button_gap
@@ -26068,7 +26106,7 @@ class Over:
 			new = self.settings_switch_row(
 				(content_x, content_y, content_w, row_h),
 				enabled,
-				_(name),
+				name,
 				subtitle,
 				accent,
 			)
@@ -26620,7 +26658,7 @@ class Over:
 		if not self.inp.key_shift_down:
 			t = self.lastfm.get_all_scrobbles_estimate_time()
 			if not t:
-				self.show_message(_("Error, not  connected to last.fm"))
+				self.show_message(_("Error, not connected to last.fm"))
 				return
 			self.show_message(
 				_("Warning: This process will take approximately {T} minutes to complete.").format(T=(t // 60)),
@@ -27434,7 +27472,7 @@ class Over:
 		if prefs.enable_fanart_bg and prefs.enable_fanart_bg != old_fanart and not prefs.auto_dl_artist_data:
 			prefs.auto_dl_artist_data = True
 			self.show_message(
-				_("Also enabling 'auto-fech artist data' to scrape last.fm."),
+				_("Also enabling 'auto-fetch artist data' to scrape last.fm."),
 				_("You can toggle this back off under Settings > General"),
 			)
 		inner_y += row_h + row_gap
@@ -27447,7 +27485,7 @@ class Over:
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			right_rect,
 			_("Theme preset"),
-			_("{name}").format(name=gui.theme_name),
+				gui.theme_name,
 			accent,
 		)
 		preset_columns = max(1, min(theme_count, (inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
@@ -28415,7 +28453,7 @@ class Over:
 
 			def test_maloja() -> None:
 				if not prefs.maloja_url or not prefs.maloja_key:
-					self.show_message(_("One or more fields is missing."))
+					self.show_message(_("One or more fields are missing."))
 					return
 				url = prefs.maloja_url
 				if not url.endswith("/mlj_1"):
@@ -30267,7 +30305,7 @@ class TopPanel:
 			gui.pl_update = 1
 			if not prefs.tabs_on_top:
 				if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
-					gui.mode_toast_text = _(pctl.multi_playlist[pctl.active_playlist_viewing].title)
+					gui.mode_toast_text = pctl.multi_playlist[pctl.active_playlist_viewing].title
 					tauon.toast_mode_timer.set()
 					gui.frame_callback_list.append(TestTimer(1))
 				else:
@@ -35143,7 +35181,7 @@ class RadioBox:
 			if self.tauon.stream_proxy.s_format:
 				text = str(self.tauon.stream_proxy.s_format)
 			if self.tauon.stream_proxy.s_bitrate and self.tauon.stream_proxy.s_bitrate.isnumeric():
-				text += " " + self.tauon.stream_proxy.s_bitrate + _("kbps")
+				text += " " + self.tauon.stream_proxy.s_bitrate + "kbps"
 
 			self.ddt.text((x + 495 * self.gui.scale, yy + 8 * self.gui.scale, 1), text, self.colours.box_title_text, 311)
 			# if tauon.stream_proxy.s_format:
@@ -36369,9 +36407,9 @@ class ArtistList:
 		else:
 			album_count = len(self.current_album_counts[artist])
 			if album_count > 1:
-				text = _("{N} tracks").format(N=str(album_count))
+				text = _("{N} albums").format(N=str(album_count))
 			else:
-				text = _("{N} track").format(N=str(album_count))
+				text = _("{N} album").format(N=str(album_count))
 
 		if self.gui.preview_artist_loading == artist:
 			# . Max 20 chars. Alt: Downloading image, Loading image
@@ -37519,9 +37557,9 @@ class QueueBox:
 
 		self.queue_menu.add(MenuItem(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show))
 		self.queue_menu.add(MenuItem(_("Play Now"), self.play_now, show_test=self.queue_remove_show))
-		self.queue_menu.add(MenuItem("Auto-Stop Here", self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
+		self.queue_menu.add(MenuItem(_("Auto-Stop Here"), self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
 
-		self.queue_menu.add(MenuItem("Pause Queue", self.toggle_pause, tauon.queue_pause_deco))
+		self.queue_menu.add(MenuItem(_("Pause Queue"), self.toggle_pause, tauon.queue_pause_deco))
 		self.queue_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, hint="Alt+Shift+Q"))
 
 		self.queue_menu.add(MenuItem(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test))
@@ -38507,7 +38545,7 @@ class ArtistInfoBox:
 			self.status = _("Looking up...")
 			self.process_text_artist = ""
 
-			shoot_dl = threading.Thread(target=self.get_data, args=([self.artist_on, False, True]))
+			shoot_dl = threading.Thread(target=self.get_data, args=([track.artist, False, True]))
 			shoot_dl.daemon = True
 			shoot_dl.start()
 
@@ -38561,7 +38599,7 @@ class ArtistInfoBox:
 				self.scroll_y = 0
 				self.status = _("Loading...")
 
-				shoot_dl = threading.Thread(target=self.get_data, args=([artist]))
+				shoot_dl = threading.Thread(target=self.get_data, args=([track.artist]))
 				shoot_dl.daemon = True
 				shoot_dl.start()
 
@@ -38690,7 +38728,7 @@ class ArtistInfoBox:
 			logging.info("Load Bio Data")
 
 		if not silent and artist is None and not get_img_path:
-			self.artist_on = artist
+			self.artist_on = None
 			self.lock = False
 			return ""
 
@@ -38739,7 +38777,7 @@ class ArtistInfoBox:
 					self.text = f.read()
 				self.status = "Ready"
 				self.gui.update = 2
-				self.artist_on = artist
+				self.artist_on = get_first_artist(artist)
 				self.lock = False
 
 				return ""
@@ -38747,7 +38785,7 @@ class ArtistInfoBox:
 			if not silent and not force_dl and not self.prefs.auto_dl_artist_data:
 				# . Alt: No artist data has been downloaded (try imply this needs to be manually triggered)
 				self.status = _("No artist data downloaded")
-				self.artist_on = artist
+				self.artist_on = get_first_artist(artist)
 				self.artist_picture_render.show = False
 				self.lock = False
 				return None
@@ -38768,7 +38806,7 @@ class ArtistInfoBox:
 				if not silent:
 					self.artist_picture_render.show = False
 					self.status = _("No artist bio found")
-					self.artist_on = artist
+					self.artist_on = get_first_artist(artist)
 					self.lock = False
 				return None
 			if data[1]:
@@ -38805,8 +38843,8 @@ class ArtistInfoBox:
 					r = requests.get(data[4], timeout=10)
 					html = BeautifulSoup(r.text, "html.parser")
 					tag = html.find("meta", property="og:image")
-					url = tag["content"]
-					if url:
+					if tag and tag.get("content"):
+						url = tag["content"]
 						r = requests.get(url, timeout=10)
 						assert len(r.content) > 1000
 						with open(standard_path, "wb") as f:
@@ -38815,6 +38853,9 @@ class ArtistInfoBox:
 
 				except Exception:
 					logging.exception("Failed to scrape art")
+				else:
+					if not got_image_path:
+						logging.info(f"No artist image found for '{artist}'")
 
 			if not silent and got_image_path:
 				self.artist_picture_render.load(got_image_path, box_size)
@@ -38863,7 +38904,7 @@ class ArtistInfoBox:
 			logging.exception("Failed to load bio")
 			self.status = _("Load Failed")
 
-		self.artist_on = artist
+		self.artist_on = get_first_artist(artist)
 		self.processed_text = ""
 		self.process_text_artist = ""
 		self.min_rq_timer.set()
@@ -41670,7 +41711,7 @@ class TimedLyricsEdit:
 
 	def delete_autosaves(self) -> None:
 		count = 0
-		target = self.tauon.config_directory / _("lyrics-editor")
+		target = self.tauon.config_directory / "lyrics-editor"
 		if not target.is_dir():
 			return
 		for child in target.iterdir():
@@ -41685,7 +41726,7 @@ class TimedLyricsEdit:
 
 	def clear_all_timestamps(self) -> None:
 		for i, line in enumerate(self.structure):
-			if line[0] != _("tag"):
+			if line[0] != "tag":
 				self.structure[i] = "??:??.??", -1.0, line[2]
 		self.autosave_timer.set()
 		self.autosaved = False
@@ -41696,7 +41737,7 @@ class TimedLyricsEdit:
 	def clear_section_markers(self) -> None:
 		deletes = []
 		for i, line in enumerate(self.structure):
-			if line[0] == _("tag"):
+			if line[0] == "tag":
 				continue
 			if line[2].startswith("[") and line[2].endswith("]"):
 				deletes.append(i)
@@ -41833,7 +41874,7 @@ class TimedLyricsEdit:
 
 		for i, line in enumerate(lyrics):
 			if any(tag in line for tag in LRC_tags):
-				self.structure.append( (_("tag"), -1.0, line) )
+				self.structure.append( ("tag", -1.0, line) )
 				continue
 
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -41880,7 +41921,7 @@ class TimedLyricsEdit:
 			for line in self.structure:
 				if line[1] < 0:
 					lyrics += line[2].rstrip()
-					if line[0] != _("tag"):
+					if line[0] != "tag":
 						warning[0] = True
 					else:
 						timed += 1
@@ -42012,19 +42053,19 @@ class TimedLyricsEdit:
 		return False
 
 	def autosave(self) -> None:
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w", encoding="utf-8") as lyrics_file:
 			for line in self.structure:
 				stamp, time, line = line
-				if stamp == _("tag"):
+				if stamp == "tag":
 					stamp = "tag"
 				lyrics_file.write( f"{stamp},{time!s},{line}\n")
 		self.autosaved = True
 
 	def autoload(self) -> None:
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
 		with target.open() as lyrics_file:
@@ -42032,14 +42073,14 @@ class TimedLyricsEdit:
 			for lyric in lyrics_file.readlines():
 				stamp, time, line = lyric.strip().split(",", 2)
 				if stamp == "tag":
-					stamp = _("tag")
+					stamp = "tag"
 				time = float(time)
 				self.structure.append( (stamp,time,line) )
 		self.queue_next_frame = True
 
 	def visit_backup(self, synced: bool = True) -> None:
 		suffix = ".csv" if synced else ".txt"
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(suffix)
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(suffix)
 		if not target.parent.is_dir() and not synced:
 			target.parent.mkdir()
 		elif not target.is_file():
@@ -42084,12 +42125,12 @@ class TimedLyricsEdit:
 		time = self.pctl.decode_time
 		if current:
 			self.alted = True
-		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != _("tag"):
+		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != "tag":
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
 			self.structure[self.line_active] = full_line
 		else:
-			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == _("tag")):
+			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == "tag"):
 				self.line_active += 1 # increment until we're not going to timestanmp a tag
 			if self.line_active == len(self.structure)-1 or (self.inp.key_rctrl_down or self.inp.key_ctrl_down):
 				self.structure.insert( self.line_active+1, (self.get_stamp_from_time(time), time, "") )
@@ -42188,7 +42229,7 @@ class TimedLyricsEdit:
 
 		for i, line in enumerate(pasted_lines): # try to accept LRC-formatted paste text
 			if any(tag in line for tag in LRC_tags):
-					self.structure.append( (_("tag"), -1.0, line) )
+					self.structure.append( ("tag", -1.0, line) )
 					continue
 
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -42222,7 +42263,7 @@ class TimedLyricsEdit:
 		temp = self.structure[line_number]
 
 		# TIMESTAMP - TELEPORT, DELETE AND SCROLL EDIT
-		if stamp != "??:??.??" and stamp != _("tag"):
+		if stamp != "??:??.??" and stamp != "tag":
 			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
 			if time >= 0 and button:
 				self.pctl.stop()
@@ -42415,7 +42456,7 @@ class TimedLyricsEdit:
 			last = 0
 			has_timed = 0
 			for i, line in enumerate(self.structure):
-				if line[0] == _("tag"):
+				if line[0] == "tag":
 					last = i
 					continue
 
@@ -42477,8 +42518,6 @@ class TimedLyricsEdit:
 
 				if i == self.line_active and highlight and test_time >= line[1]:
 					colour = self.colours.active_lyric
-					if self.colours.lm:
-						colour = ColourRGBA(180, 130, 210, 255)
 
 				location[1] = round(possible_y)
 				text = line[2]
@@ -42748,7 +42787,7 @@ class TimedLyricsEdit:
 
 	def edit_static(self) -> None:
 		track_object = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str(self.struct_track)).with_suffix(".txt")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w", encoding="utf-8") as lyrics_file:
@@ -42766,7 +42805,7 @@ class TimedLyricsEdit:
 
 	def reload_lyric_file(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.struct_track )).with_suffix(".txt")
+		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
 		with open(target) as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
@@ -42851,7 +42890,7 @@ class TimedLyricsEdit:
 			x_gap = self.yy
 		save_gap = round(12 * self.gui.scale)
 
-		lyric_file = Path( self.tauon.config_directory / _("lyrics-editor") / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
+		lyric_file = Path( self.tauon.config_directory / "lyrics-editor" / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
 		can_load = lyric_file.is_file()
 
 		if self.button("   ", buttons_x, buttons_y, self.font, tooltip="Go to Synced View")[0]:
@@ -47558,7 +47597,7 @@ def main(holder: Holder) -> None:
 
 	folder_tree_stem_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
 
-	folder_tree_stem_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
+	folder_tree_stem_menu.add(MenuItem(_("lock"), tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
 	# folder_tree_menu.add("lock", lock_folder_tree, tauon.lock_folder_tree_deco)
 
 	gallery_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
@@ -47570,7 +47609,7 @@ def main(holder: Holder) -> None:
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
 	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
@@ -47590,7 +47629,7 @@ def main(holder: Holder) -> None:
 
 	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem("Toggle synced", tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	center_info_menu.add_sub(_("Misc…"), 150)
@@ -47633,9 +47672,9 @@ def main(holder: Holder) -> None:
 		show_test=tauon.showcase_mode_show_test,
 	))
 	if milky_ready:
-		picture_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem("Toggle Milkdrop Visualiser", tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem("Toggle Milkdrop Auto", tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
+		picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Toggle Milkdrop Auto"), tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem(
 		_("Enable Wide Mode"),
 		tauon.toggle_showcase_wide_art,
@@ -47659,7 +47698,7 @@ def main(holder: Holder) -> None:
 	# playlist_menu.add('Paste', append_here, paste_deco)
 
 	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
-	tab_menu.add(MenuItem("Pin", tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
+	tab_menu.add(MenuItem(_("Pin"), tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
 
 	tauon.radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
@@ -47806,7 +47845,7 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
 	extra_tab_menu.add_to_sub(0, MenuItem(_("Has Lyrics"), tauon.gen_lyrics, pass_ref=True))
 
-	playlist_menu.add(MenuItem("Paste", tauon.paste, tauon.paste_deco))
+	playlist_menu.add(MenuItem(_("Paste"), tauon.paste, tauon.paste_deco))
 
 	track_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
 	track_menu.add(MenuItem(_("Track Info…"), tauon.activate_track_box, pass_ref=True, icon=gui.info_icon))
@@ -47817,7 +47856,7 @@ def main(holder: Holder) -> None:
 	gui.heartx_icon.colour_callback = tauon.heart_xmenu_colour
 
 	# Mark track as 'liked'
-	track_menu.add(MenuItem("Love", tauon.love_index, tauon.love_decox, pass_ref=True, pass_ref_deco=True, icon=gui.heartx_icon))
+	track_menu.add(MenuItem(_("Love"), tauon.love_index, tauon.love_decox, pass_ref=True, pass_ref_deco=True, icon=gui.heartx_icon))
 
 	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
 
@@ -47891,7 +47930,7 @@ def main(holder: Holder) -> None:
 	folder_tree_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
 
 	if not tauon.snap_mode:
-		folder_menu.add(MenuItem("Edit with", tauon.launch_editor_selection, pass_ref=True,
+		folder_menu.add(MenuItem(_("Edit with"), tauon.launch_editor_selection, pass_ref=True,
 			pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
 
 	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
@@ -47899,7 +47938,7 @@ def main(holder: Holder) -> None:
 
 	folder_tree_menu.br()
 	folder_tree_menu.add(MenuItem(_("Collapse All"), tauon.collapse_tree, tauon.collapse_tree_deco))
-	folder_tree_menu.add(MenuItem("lock", tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
+	folder_tree_menu.add(MenuItem(_("lock"), tauon.lock_folder_tree, tauon.lock_folder_tree_deco))
 
 	# selection_menu.br()
 
@@ -48052,6 +48091,7 @@ def main(holder: Holder) -> None:
 	x_menu.add_to_sub(0, MenuItem(_("Reload All Folders"), pctl.rescan_all_folders))
 	x_menu.add_to_sub(0, MenuItem(_("Play History to Playlist"), tauon.q_to_playlist))
 	x_menu.add_to_sub(0, MenuItem(_("Reset Image Cache"), tauon.clear_img_cache))
+	x_menu.add_to_sub(0, MenuItem(_("Clear Artist Cache"), tauon.clear_artist_cache))
 
 	x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), tauon.clean_db2))
 	x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), tauon.clean_db))
@@ -48115,7 +48155,7 @@ def main(holder: Holder) -> None:
 		gui.heart_icon.yoff = 1
 
 	gui.heart_icon.colour_callback = tauon.heart_menu_colour
-	extra_menu.add(MenuItem("Love", tauon.bar_love_notify, tauon.love_deco, icon=gui.heart_icon))
+	extra_menu.add(MenuItem(_("Love"), tauon.bar_love_notify, tauon.love_deco, icon=gui.heart_icon))
 	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
 	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
 	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
@@ -48207,7 +48247,7 @@ def main(holder: Holder) -> None:
 		MenuItem(_("Visit Website"), visit_radio_station, tauon.visit_radio_station_site_deco, pass_ref=True, pass_ref_deco=True))
 	radio_context_menu.add(MenuItem(_("Remove"), tauon.remove_station, pass_ref=True))
 
-	tauon.dl_menu.add(MenuItem("Dismiss", tauon.dismiss_dl))
+	tauon.dl_menu.add(MenuItem(_("Dismiss"), tauon.dismiss_dl))
 
 	# Set SDL window drag areas
 	# if system != "Windows":
@@ -52755,7 +52795,7 @@ def main(holder: Holder) -> None:
 							line = str(tc.bitrate)
 							if tc.file_ext in ("FLAC", "OPUS", "APE", "WV"):
 								line = "≈" + line
-							line += _(" kbps")
+							line += " kbps"
 							ddt.text((x2, y1), line, value_colour, 312)
 
 						# -----------
