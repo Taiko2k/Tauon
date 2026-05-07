@@ -29,7 +29,7 @@ class BpmAnalyser:
 	_BPM_MIN: float = 60.0
 	_BPM_MAX: float = 200.0
 	_SLEEP_BETWEEN_TRACKS: float = 0.1
-	_SILENCE_THRESHOLD_DB: str = "-50dB"
+	_SILENCE_THRESHOLD_DB: str = "-65dB"
 	_SILENCE_MIN_DURATION: str = "0.3"
 
 	def __init__(self) -> None:
