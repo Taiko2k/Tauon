@@ -1,4 +1,4 @@
-"""Smart Mix - Background BPM analysis
+"""Smart Mix - Background BPM analysis and silence detection
 Uses aubio to analyse the first 30s of audio.
 Designed for slow CPUs: does not block the UI.
 """
@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 
 class BpmAnalyser:
-	"""Analyses BPM of audio tracks in a background thread.
+	"""Analyses BPM and silence regions of audio tracks in a background thread.
 
 	Follows the Single Responsibility Principle: this class only
-	manages the BPM analysis queue and worker thread lifecycle.
+	manages the analysis queue and worker thread lifecycle.
 	All I/O side-effects (saving, notifying) are injected as callbacks.
 	"""
 
@@ -29,6 +29,8 @@ class BpmAnalyser:
 	_BPM_MIN: float = 60.0
 	_BPM_MAX: float = 200.0
 	_SLEEP_BETWEEN_TRACKS: float = 0.1
+	_SILENCE_THRESHOLD_DB: str = "-50dB"
+	_SILENCE_MIN_DURATION: str = "0.3"
 
 	def __init__(self) -> None:
 		self._queue: deque[int] = deque()
@@ -49,7 +51,9 @@ class BpmAnalyser:
 		count = 0
 		with self._lock:
 			for track_id, track in master_library.items():
-				if getattr(track, "bpm", 0.0) == 0.0:
+				needs_bpm = getattr(track, "bpm", 0.0) == 0.0
+				needs_silence = getattr(track, "silence_start", -1.0) < 0
+				if needs_bpm or needs_silence:
 					self._queue.append(track_id)
 					count += 1
 
@@ -122,19 +126,34 @@ class BpmAnalyser:
 				track_id = self._queue.popleft()
 
 			track = master_library.get(track_id)
-			if track is None or getattr(track, "bpm", 0.0) > 0:
+			if track is None:
+				continue
+			needs_bpm = getattr(track, "bpm", 0.0) == 0.0
+			needs_silence = getattr(track, "silence_start", -1.0) < 0
+			if not needs_bpm and not needs_silence:
 				continue
 
 			filepath = str(getattr(track, "fullpath", ""))
 			if not filepath or not Path(filepath).exists():
 				continue
 
-			bpm = self._analyse_file(filepath)
-			if bpm > 0:
-				track.bpm = bpm
-				logging.info(f"t_autobpm: {Path(filepath).name} = {bpm} BPM")
-				self._safe_call(save_cb)
+			if needs_bpm:
+				bpm = self._analyse_file(filepath)
+				if bpm > 0:
+					track.bpm = bpm
+					logging.info(f"t_autobpm: {Path(filepath).name} = {bpm} BPM")
 
+			if needs_silence:
+				sil_start, sil_end = self._detect_silence(filepath)
+			track.silence_start = sil_start
+			track.silence_end = sil_end
+			if sil_start > 0.5 or sil_end > 0.5:
+				logging.info(
+					f"t_autobpm: {Path(filepath).name} "
+					f"silence start={sil_start}s end={sil_end}s"
+				)
+
+			self._safe_call(save_cb)
 			time.sleep(self._SLEEP_BETWEEN_TRACKS)
 
 		logging.info("t_autobpm: analysis thread finished")
@@ -173,6 +192,66 @@ class BpmAnalyser:
 		except Exception as e:
 			logging.debug(f"t_autobpm: failed analysing {filepath}: {e}")
 			return 0.0
+
+	@classmethod
+	def _detect_silence(cls, filepath: str) -> tuple[float, float]:
+		"""Detect silence at the start and end of a track using ffmpeg.
+
+		Returns (silence_start_sec, silence_end_sec).
+		Uses ffmpeg silencedetect filter - no extra dependencies required.
+		"""
+		import subprocess
+		import re
+		try:
+			result = subprocess.run(
+				[
+					"ffmpeg", "-i", filepath,
+					"-af",
+					f"silencedetect=noise={cls._SILENCE_THRESHOLD_DB}"
+					f":d={cls._SILENCE_MIN_DURATION}",
+					"-f", "null", "-",
+				],
+				capture_output=True,
+				text=True,
+				timeout=60,
+			)
+			output = result.stderr
+
+			dur_match = re.search(r"Duration: (\d+):(\d+):([\d.]+)", output)
+			if not dur_match:
+				return 0.0, 0.0
+			h, m, s = dur_match.groups()
+			duration = int(h) * 3600 + int(m) * 60 + float(s)
+
+			starts = [
+				float(x)
+				for x in re.findall(r"silence_start: ([\d.e+\-]+)", output)
+			]
+			ends = [
+				float(x)
+				for x in re.findall(r"silence_end: ([\d.e+\-]+)", output)
+			]
+
+			# Silence at start: first silence region begins near 0
+			silence_start = 0.0
+			if starts and starts[0] < 0.5 and ends:
+				silence_start = ends[0]
+
+			# Silence at end: last silence extends to end of file
+			silence_end = 0.0
+			if starts:
+				last_start = starts[-1]
+				if len(ends) < len(starts):
+					# No silence_end emitted: silence runs to EOF
+					silence_end = max(0.0, duration - last_start)
+				elif ends and abs(ends[-1] - duration) < 1.5:
+					silence_end = ends[-1] - last_start
+
+			return round(silence_start, 2), round(silence_end, 2)
+
+		except Exception as e:
+			logging.debug(f"t_autobpm: silence detection failed for {filepath}: {e}")
+			return 0.0, 0.0
 
 	@staticmethod
 	def _safe_call(cb: Callable | None) -> None:

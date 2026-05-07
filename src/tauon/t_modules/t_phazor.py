@@ -576,6 +576,15 @@ def player4(tauon: Tauon) -> None:
 		rg_penalty = int(min(rg_diff * 20, 300))
 		final_ms = base_ms + rg_penalty
 
+		# Silence adjustment: extend crossfade when silence provides a buffer
+		silence_end_a = max(0.0, getattr(current_track, "silence_end", 0.0))
+		silence_start_b = max(0.0, getattr(next_track, "silence_start", 0.0))
+		total_silence = silence_end_a + silence_start_b
+		if total_silence >= 1.0 and prefs.use_silence_crossfade:
+			# Silence buffer: ignore BPM penalty, use a comfortable fade
+			# More silence = longer fade, capped at 8000ms
+			silence_boost = min(int(total_silence * 400), 4000)
+			final_ms = max(final_ms, 3000 + silence_boost)
 		return max(200, min(1500, final_ms))
 
 	def set_config(set_device: bool = False) -> None:
