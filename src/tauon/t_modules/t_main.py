@@ -18238,17 +18238,26 @@ class Tauon:
 		self.prefs.show_rym ^= True
 		return None
 
+	def show_rym_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_rym
+
 	def toggle_band(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.show_band
 		self.prefs.show_band ^= True
 		return None
 
+	def show_band_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_band
+
 	def toggle_wiki(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.show_wiki
 		self.prefs.show_wiki ^= True
 		return None
+
+	def show_wiki_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_wiki
 
 	# def toggle_show_discord(self, mode: int = 0) -> bool:
 	# 	if mode == 1:
@@ -18262,6 +18271,9 @@ class Tauon:
 			return self.prefs.show_gen
 		self.prefs.show_gen ^= True
 		return None
+
+	def show_gen_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_gen
 
 	def toggle_dim_albums(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -47954,21 +47966,21 @@ def main(holder: Holder) -> None:
 	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 
-	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.toggle_wiki))
-	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.toggle_gen))
+	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.show_wiki_menu_item))
+	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.show_gen_menu_item))
 
 	son_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sonemic-g.png"))
 	son_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "sonemic-gs.png")
 
 	son_icon.xoff = 1
-	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.toggle_rym))
+	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.show_rym_menu_item))
 
 	band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
 	band_icon.xoff = 0
 	band_icon.yoff = 1
 	band_icon.colour = ColourRGBA(96, 147, 158, 255)
 
-	track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.toggle_band))
+	track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.show_band_menu_item))
 
 	# Copy metadata to clipboard
 	# track_menu.add(_('Copy "Artist - Album"'), tauon.clip_aar_al, pass_ref=True)
