@@ -11811,6 +11811,8 @@ class Tauon:
 			key = self.key_cue
 		if name == "ID":
 			key = self.key_track_id
+		if name == "=/=":
+			key = self.key_modify_date
 
 		if custom_list is None:
 			if key is not None:
