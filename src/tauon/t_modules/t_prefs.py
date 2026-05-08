@@ -138,6 +138,8 @@ class Prefs:
 	use_jump_crossfade:       bool = True
 	use_transition_crossfade: bool = False
 	use_smart_crossfade:      bool = True
+	use_manual_crossfade:     bool = False
+	manual_crossfade_ms:      int  = 5000  # 2000-15000ms
 	use_silence_crossfade:    bool = True  # extend crossfade over silence regions
 	use_pause_fade:           bool = True
 	resume_on_jump:           bool = True

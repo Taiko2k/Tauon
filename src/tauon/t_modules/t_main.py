@@ -18946,6 +18946,11 @@ class Tauon:
 		self.prefs.use_transition_crossfade ^= True
 		return None
 
+	def toggle_manual_crossfade(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.use_manual_crossfade)
+		self.prefs.use_manual_crossfade ^= True
+		return None
 	def toggle_smart_crossfade(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return bool(self.prefs.use_smart_crossfade)
@@ -27741,6 +27746,8 @@ class Over:
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_jump_crossfade, _("Fade on track jump"), accent=accent)
 		inner_y += row_h
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_smart_crossfade, _("Smart Mix (dynamic crossfade)"), accent=accent)
+		inner_y += row_h
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_manual_crossfade, _("Smart Mix: use fixed duration (set in tauon.conf)"), accent=accent)
 		inner_y += row_h + row_gap
 		prefs.back_restarts = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.back_restarts, _("Back restarts to beginning"), accent=accent)
 		inner_y += row_h + row_gap
@@ -43721,6 +43728,10 @@ def load_prefs(bag: Bag) -> None:
 	prefs.cross_fade_time = cf.sync_add(
 		"int", "cross-fade-time", prefs.cross_fade_time,
 		"In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
+	prefs.manual_crossfade_ms = cf.sync_add(
+		"int", "smart-mix-manual-crossfade-ms", prefs.manual_crossfade_ms,
+		"Smart Mix manual crossfade duration in ms. Min: 2000, Max: 15000, Default: 5000.")
+	prefs.manual_crossfade_ms = max(2000, min(15000, prefs.manual_crossfade_ms))
 
 	prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
 	#prefs.samplerate = cf.sync_add(

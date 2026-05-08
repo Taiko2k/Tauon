@@ -534,6 +534,8 @@ def player4(tauon: Tauon) -> None:
 		  15-35 BPM diff -> fade notable (700-1400ms)
 		  > 35 BPM diff -> corte directo (200ms, sonar mejor que fade largo)
 		"""
+		if prefs.use_manual_crossfade:
+			return max(2000, min(15000, prefs.manual_crossfade_ms))
 		bpm_a = getattr(current_track, "bpm", 0.0)
 		bpm_b = getattr(next_track, "bpm", 0.0)
 
