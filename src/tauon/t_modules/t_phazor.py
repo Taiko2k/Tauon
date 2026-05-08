@@ -1047,8 +1047,14 @@ def player4(tauon: Tauon) -> None:
 					)
 
 					cont = False
-					while r_timer.get() <= remain - prefs.device_buffer / 1000:
-						if pctl.commit:
+					check_timer = Timer()
+					check_timer.set()
+					r_timer_saved = 0.0
+					while True:
+						if tauon.player4_state != PlayerState.PAUSED:
+							if r_timer.get() > remain - prefs.device_buffer / 1000:
+								break
+						if pctl.commit and tauon.player4_state == PlayerState.PLAYING:
 							track(end=False)
 						time.sleep(0.016)
 						if pctl.playerCommandReady and pctl.playerCommand in ("open", "stop"):
@@ -1064,6 +1070,45 @@ def player4(tauon: Tauon) -> None:
 							pctl.decode_time = pctl.new_time
 							cont = True
 							break
+						if pctl.playerCommandReady and pctl.playerCommand == "pauseon":
+							pctl.playerCommandReady = False
+							tauon.player4_state = PlayerState.PAUSED
+							pctl.playerCommand = ""
+							aud.pause()
+							r_timer_saved = r_timer.get()
+						if pctl.playerCommandReady and pctl.playerCommand == "pauseoff":
+							pctl.playerCommandReady = False
+							tauon.player4_state = PlayerState.PLAYING
+							pctl.playerCommand = ""
+							aud.resume()
+							player_timer.set()
+							r_timer.force_set(r_timer_saved)
+						if pctl.playerCommandReady and pctl.playerCommand == "volume":
+							aud.ramp_volume(int(pctl.player_volume), 750)
+							pctl.playerCommandReady = False
+							pctl.playerCommand = ""
+
+						if check_timer.get() > 0.5:
+							check_timer.set()
+							revert = False
+							if pctl.stop_mode in (1, 3):
+								revert = True
+							elif pctl.stop_mode in (2, 4) and pctl.commit:
+								tr = pctl.playing_object()
+								tr2 = pctl.get_track(pctl.commit)
+								if tr and tr2 and (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
+									revert = True
+							
+							if not revert and pctl.commit and pctl.advance(quiet=True, end=True, dry=True) != pctl.commit:
+								revert = True
+								
+							if revert:
+								logging.info("Queue or stop mode revert gapless")
+								pctl.commit = None
+								pctl.jump(loaded_track.index, jump=True)
+								pctl.jump_time = pctl.playing_time
+								cont = True
+								break
 
 					if cont:
 						continue
