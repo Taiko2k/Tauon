@@ -32229,9 +32229,16 @@ class MiniMode3:
 
 		h1 = h - y1
 
+		track = self.pctl.playing_object()
+		wid = (w // 2) + round(60 * self.gui.scale)
+		ins = (self.window_size[0] - wid) / 2
+		art_rect = sdl3.SDL_FRect(round(ins), round(ins), round(wid), round(wid))
+		self.tauon.style_overlay.hole_punches.clear()
+		if track is not None:
+			self.tauon.style_overlay.hole_punches.append(art_rect)
+
 		# Draw background
 		bg = self.colours.mini_mode_background
-		bg = ColourRGBA(0, 0, 0, 0)
 		# bg = [250, 250, 250, 255]
 
 		self.ddt.rect((0, 0, w, h), bg)
@@ -32265,8 +32272,6 @@ class MiniMode3:
 			self.pctl.player_volume = int(self.pctl.player_volume)
 			self.pctl.set_volume()
 
-		track = self.pctl.playing_object()
-
 		control_hit_area = (3, y1 - 15 * self.gui.scale, w - 6, h1 - 3 + 15 * self.gui.scale)
 		mouse_in_area = self.coll(control_hit_area)
 		self.fields.add(control_hit_area)
@@ -32276,8 +32281,6 @@ class MiniMode3:
 
 			# Render album art
 
-			wid = (w // 2) + round(60 * self.gui.scale)
-			ins = (self.window_size[0] - wid) / 2
 			off = round(4 * self.gui.scale)
 
 			self.tauon.drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
