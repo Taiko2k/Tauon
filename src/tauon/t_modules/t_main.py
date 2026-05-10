@@ -27747,7 +27747,20 @@ class Over:
 		inner_y += row_h
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_smart_crossfade, _("Smart Mix (dynamic crossfade)"), accent=accent)
 		inner_y += row_h
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_manual_crossfade, _("Smart Mix: use fixed duration (set in tauon.conf)"), accent=accent)
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_manual_crossfade, _("Smart Mix: fixed duration"), accent=accent)
+		inner_y += row_h
+		manual_cf_s = self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Crossfade duration"),
+			float(prefs.manual_crossfade_ms / 1000),
+			2.0,
+			15.0,
+			0,
+			accent=accent,
+			formatter=lambda number: f"{number:.1f}s",
+		)
+		prefs.manual_crossfade_ms = int(manual_cf_s * 1000)
+		inner_y += round(52 * gui.scale)
 		inner_y += row_h + row_gap
 		prefs.back_restarts = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.back_restarts, _("Back restarts to beginning"), accent=accent)
 		inner_y += row_h + row_gap
