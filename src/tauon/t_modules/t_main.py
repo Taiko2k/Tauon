@@ -9742,7 +9742,7 @@ class Tauon:
 	def gen_folder_top(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | list[tuple[list[int], int]] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
-		if len(source) < 3:
+		if not source:
 			return []
 
 		sets: list[list[int]] = []
@@ -9800,7 +9800,7 @@ class Tauon:
 	def gen_folder_top_rating(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
-		if len(source) < 3:
+		if not source:
 			return []
 
 		sets: list[list[int]] = []
@@ -16565,7 +16565,7 @@ class Tauon:
 				current_date = tr.date
 				current_artist = tr.artist
 
-		if return_playlist > -1 or custom_list:
+		if return_playlist > -1 or custom_list is not None:
 			return dex
 
 		self.album_dex = dex
