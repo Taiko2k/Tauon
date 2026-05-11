@@ -22636,7 +22636,8 @@ class RenameTrackBox:
 		# if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
 		if self.rename_files.text != self.prefs.rename_tracks_template and self.draw.button(
 			_("Default"), x + w - 85 * self.gui.scale, y + h - 35 * self.gui.scale, 70 * self.gui.scale):
-			self.rename_files.text = self.prefs.rename_tracks_template
+			self.rename_files.set_text(self.prefs.rename_tracks_template)
+			self.rename_files.offset = 0
 
 		# ddt.draw_text((x + 14, y + 40,), NRN + cursor, self.colours.grey(150), 12)
 		self.rename_files.draw(
@@ -53053,7 +53054,8 @@ def main(holder: Holder) -> None:
 					if tauon.rename_folder.text != prefs.rename_folder_template and pctl.draw.button(
 						_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale, 70 * gui.scale
 					):
-						tauon.rename_folder.text = prefs.rename_folder_template
+						tauon.rename_folder.set_text(prefs.rename_folder_template)
+						tauon.rename_folder.offset = 0
 
 					tauon.rename_folder.draw(
 						x + 14 * gui.scale,
