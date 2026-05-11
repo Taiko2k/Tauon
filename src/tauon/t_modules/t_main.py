@@ -9327,7 +9327,7 @@ class Tauon:
 		self.tree_view_box.clear_target_pl(pl)
 
 	def year_sort(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
-		playlist = custom_list or self.pctl.multi_playlist[pl].playlist_ids
+		playlist = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 		plt: list[tuple[list[int], str, str]] = []
 		pl2: list[int] = []
 		artist = ""
