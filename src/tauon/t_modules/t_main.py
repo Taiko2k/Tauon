@@ -51200,7 +51200,7 @@ def main(holder: Holder) -> None:
 													pctl.default_playlist[i]
 												].album_artist
 											else:
-												while i < len(pctl.default_playlist) - 1:
+												while i < len(pctl.default_playlist):
 													if (
 														pctl.master_library[pctl.default_playlist[i]].parent_folder_name
 														!= pctl.master_library[
