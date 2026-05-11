@@ -8379,8 +8379,9 @@ class Tauon:
 				audio = mutagen.id3.ID3(track.fullpath)
 				if audio.getall("USLT"):
 					audio.getall("USLT")[0].text = lyrics
+					audio.getall("USLT")[0].encoding = 3
 				else:
-					audio.add( mutagen.id3.USLT( text=lyrics ) )
+					audio.add( mutagen.id3.USLT( encoding=3,text=lyrics ) )
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
 				audio["LYRICS"] = lyrics
@@ -8406,7 +8407,11 @@ class Tauon:
 			if stop:
 				self.pctl.jump_time = self.pctl.decode_time
 				self.pctl.stop(block=True)
-			audio.save()
+			try:
+				lyrics.encode('latin1')
+				audio.save()
+			except UnicodeEncodeError:
+				audio.save(v1=0)
 			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			if resume:
 				self.pctl.play()
