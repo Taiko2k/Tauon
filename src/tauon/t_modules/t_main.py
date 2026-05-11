@@ -9356,7 +9356,7 @@ class Tauon:
 			album.append(playlist[p])
 			t = 1
 
-			while t + p < len(playlist) - 1 and self.get_object(playlist[p + t]).parent_folder_path == on:
+			while t + p < len(playlist) and self.get_object(playlist[p + t]).parent_folder_path == on:
 				album.append(playlist[p + t])
 				t += 1
 
@@ -14582,7 +14582,9 @@ class Tauon:
 			return \
 				code is None or \
 				code == "" or \
-				code.startswith(("self", "jelly", "plex", "tau", "air", "sal"))
+				code.startswith((
+					"self", "jelly", "plex", "tau", "air", "sal",
+					"tpl", "tfa", "tft", "tar", "tmix"))
 
 		def get_search_results(query: str, *, all_folders: bool = False) -> list[list[int | str | None]]:
 			key = (query, all_folders)
