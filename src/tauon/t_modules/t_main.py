@@ -19917,6 +19917,7 @@ class Drawing:
 			background_highlight_colour = self.colours.box_button_background_highlight
 
 		click = False
+		text_y = rect[1] + round(3 * self.gui.scale)
 
 		if press is None:
 			press = self.inp.mouse_click
@@ -19930,7 +19931,7 @@ class Drawing:
 			#	 background_highlight_colour = None
 
 			self.ddt.text(
-				(rect[0] + int(rect[2] / 2), rect[1] + (rect[3]-6*self.gui.scale)/4, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
+				(rect[0] + int(rect[2] / 2), text_y, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
 			if press:
 				click = True
 		else:
@@ -19938,7 +19939,7 @@ class Drawing:
 			if background_highlight_colour.a != 255:
 				background_colour = None
 			self.ddt.text(
-				(rect[0] + int(rect[2] / 2), rect[1] + (rect[3]-6*self.gui.scale)/4, 2), text, text_colour, font, bg=background_colour)
+				(rect[0] + int(rect[2] / 2), text_y, 2), text, text_colour, font, bg=background_colour)
 		return click
 
 class DropShadow:
@@ -22632,10 +22633,11 @@ class RenameTrackBox:
 			r_todo = [self.target_track_id]
 
 		self.ddt.text((x + 10 * self.gui.scale, y + 8 * self.gui.scale), _("Track Renaming"), self.colours.grey(230), 213)
+		input_h = 23 * self.gui.scale
 
 		# if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
 		if self.rename_files.text != self.prefs.rename_tracks_template and self.draw.button(
-			_("Default"), x + w - 85 * self.gui.scale, y + h - 35 * self.gui.scale, 70 * self.gui.scale):
+			_("Default"), x + w - 85 * self.gui.scale, y + h - 35 * self.gui.scale, 70 * self.gui.scale, input_h):
 			self.rename_files.set_text(self.prefs.rename_tracks_template)
 			self.rename_files.offset = 0
 
@@ -22693,7 +22695,7 @@ class RenameTrackBox:
 		label = _("Write") + " (" + str(len(r_todo)) + ")"
 
 		if self.draw.button(
-			label, x + (8 + 300 + 10) * self.gui.scale, y + 36 * self.gui.scale, 80 * self.gui.scale,
+			label, x + (8 + 300 + 10) * self.gui.scale, y + 36 * self.gui.scale, 80 * self.gui.scale, input_h,
 			text_highlight_colour=self.colours.grey(255), background_highlight_colour=colour_warn,
 			tooltip=_("Physically renames all the tracks in the folder")) or self.inp.level_2_enter:
 
@@ -53050,9 +53052,10 @@ def main(holder: Holder) -> None:
 					p = ddt.text(
 						(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), colours.box_title_text, 213
 					)
+					input_h = 23 * gui.scale
 
 					if tauon.rename_folder.text != prefs.rename_folder_template and pctl.draw.button(
-						_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale, 70 * gui.scale
+						_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale, 70 * gui.scale, input_h
 					):
 						tauon.rename_folder.set_text(prefs.rename_folder_template)
 						tauon.rename_folder.offset = 0
@@ -53076,6 +53079,7 @@ def main(holder: Holder) -> None:
 							x + (8 + 300 + 10) * gui.scale,
 							y + 38 * gui.scale,
 							80 * gui.scale,
+							input_h,
 							tooltip=_("Renames the physical folder based on the template"),
 						)
 						or inp.level_2_enter
@@ -53094,6 +53098,7 @@ def main(holder: Holder) -> None:
 						x + (8 + 300 + 10) * gui.scale,
 						y + 11 * gui.scale,
 						80 * gui.scale,
+						input_h,
 						text_highlight_colour=colours.grey(255),
 						background_highlight_colour=ColourRGBA(180, 60, 60, 255),
 						press=inp.mouse_up,
