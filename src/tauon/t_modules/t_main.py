@@ -11045,54 +11045,69 @@ class Tauon:
 		new_parent_path = os.path.join(re, new)
 		logging.info(new_parent_path)
 
-		pre_state = 0
+		if os.path.normpath(new_parent_path) == os.path.normpath(old):
+			self.show_message(_("The folder already has that name."))
+			return
 
-		for key, object in self.pctl.master_library.items():
-			if object.fullpath == "":
+		if os.path.exists(new_parent_path):
+			self.show_message(_("Rename Failed."), _("A folder with that name already exists"), mode="warning")
+			return
+
+		def path_contains(parent: str, child: str) -> bool:
+			try:
+				parent = os.path.normpath(parent)
+				child = os.path.normpath(child)
+				return child != parent and os.path.commonpath([parent, child]) == parent
+			except ValueError:
+				return False
+
+		pre_state = 0
+		affected_tracks: list[tuple[int, TrackClass, str, str, str]] = []
+
+		for key, track_object in self.pctl.master_library.items():
+			if track_object.fullpath == "":
 				continue
 
-			if old == object.parent_folder_path:
-				new_fullpath = os.path.join(new_parent_path, object.filename)
-
-				if os.path.normpath(new_parent_path) == os.path.normpath(old):
-					self.show_message(_("The folder already has that name."))
-					return
-
-				if os.path.exists(new_parent_path):
-					self.show_message(_("Rename Failed."), _("A folder with that name already exists"), mode="warning")
-					return
-
-				if key == self.pctl.track_queue[self.pctl.queue_step] and self.pctl.playing_state != PlayingState.STOPPED:
-					pre_state = self.pctl.stop(True)
-
-				object.parent_folder_name = new
-				object.parent_folder_path = new_parent_path
-				object.fullpath = new_fullpath
-
-				self.search_string_cache.pop(object.index, None)
-				self.search_dia_string_cache.pop(object.index, None)
-				self.search_field_cache.pop(object.index, None)
-				self.search_dia_field_cache.pop(object.index, None)
+			if old == track_object.parent_folder_path:
+				new_fullpath = os.path.join(new_parent_path, track_object.filename)
+				affected_tracks.append((key, track_object, new, new_parent_path, new_fullpath))
 
 			# Fix any other tracks paths that contain the old path
-			if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
-					and os.path.normpath(object.fullpath)[len(old)] in ("/", "\\"):
-				object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip("\\/"))
-				object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip("\\/"))
+			elif path_contains(old, track_object.fullpath):
+				new_fullpath = os.path.join(new_parent_path, os.path.relpath(track_object.fullpath, old))
+				new_folder_path = os.path.join(new_parent_path, os.path.relpath(track_object.parent_folder_path, old))
+				affected_tracks.append((
+					key,
+					track_object,
+					track_object.parent_folder_name,
+					new_folder_path,
+					new_fullpath,
+				))
 
-				self.search_string_cache.pop(object.index, None)
-				self.search_dia_string_cache.pop(object.index, None)
-				self.search_field_cache.pop(object.index, None)
-				self.search_dia_field_cache.pop(object.index, None)
+		if self.pctl.playing_state != PlayingState.STOPPED and self.pctl.track_queue:
+			playing_track = self.pctl.track_queue[self.pctl.queue_step]
+			if any(key == playing_track for key, *_ in affected_tracks):
+				pre_state = self.pctl.stop(True)
 
-		if new_parent_path is not None:
-			try:
-				os.rename(old, new_parent_path)
-				logging.info(new_parent_path)
-			except Exception:
-				logging.exception("Rename failed, something went wrong!")
-				self.show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode="error")
-				return
+		try:
+			os.rename(old, new_parent_path)
+			logging.info(new_parent_path)
+		except Exception:
+			logging.exception("Rename failed, something went wrong!")
+			self.show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode="error")
+			if pre_state == 1:
+				self.pctl.revert()
+			return
+
+		for key, track_object, parent_folder_name, parent_folder_path, fullpath in affected_tracks:
+			track_object.parent_folder_name = parent_folder_name
+			track_object.parent_folder_path = parent_folder_path
+			track_object.fullpath = fullpath
+
+			self.search_string_cache.pop(key, None)
+			self.search_dia_string_cache.pop(key, None)
+			self.search_field_cache.pop(key, None)
+			self.search_dia_field_cache.pop(key, None)
 
 		self.show_message(_("Folder renamed."), _("Renamed to: {name}").format(name=new), mode="done")
 
@@ -22692,7 +22707,7 @@ class RenameTrackBox:
 					logging.info("Renaming...")
 
 					star = self.star_store.full_get(item)
-					self.star_store.remove(item)
+					star_key = self.star_store.key(item)
 
 					oldpath = self.pctl.master_library[item].fullpath
 
@@ -22724,6 +22739,7 @@ class RenameTrackBox:
 					self.tauon.search_dia_field_cache.pop(item, None)
 
 					if star is not None:
+						self.star_store.db.pop(star_key, None)
 						self.star_store.insert(item, star)
 
 				except Exception:
