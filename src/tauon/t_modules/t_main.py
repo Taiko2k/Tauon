@@ -9898,7 +9898,7 @@ class Tauon:
 				for track in tracks:
 					if type(track.track_total) is int or (type(track.track_total) is str and track.track_total.isdigit()):
 						mx = max(mx, int(track.track_total))
-				r = list(range(int(mi), int(mx)))
+				r = list(range(int(mi), int(mx) + 1))
 				for track in tracks:
 					if int(track.track_number) in r:
 						r.remove(int(track.track_number))
@@ -14727,7 +14727,7 @@ class Tauon:
 				playlist = self.gen_last_imported_folders(0, playlist)
 
 			elif cm == "ia<":
-				playlist = self.gen_last_imported_folders(0, playlist, reverse=True)
+				playlist = self.gen_last_imported_folders(0, playlist, reverse=False)
 
 			elif cm == "m>":
 				playlist = self.gen_last_modified(0, playlist)
