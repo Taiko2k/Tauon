@@ -11822,7 +11822,7 @@ class Tauon:
 		if custom_list is None:
 			if key is not None:
 				if ns:
-					key = natsort.natsort_keygen(key=key, alg=natsort.PATH)
+					key = natsort.natsort_keygen(key=key, alg=natsort.PATH|natsort.U|natsort.I)
 
 				playlist.sort(key=key, reverse=invert)
 
