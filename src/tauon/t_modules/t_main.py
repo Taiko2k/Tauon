@@ -20594,17 +20594,18 @@ class TextBox2:
 				t_len += self.ddt.get_text_w(self.gui.editline, font)
 			if not click and not self.down_lock:
 				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
-				if self.cursor_position == 0 or cursor_x < self.offset + round(
-						15 * self.gui.scale) or cursor_x > self.offset + width:
-					if t_len > width:
-						self.offset = t_len - width
-
-						if cursor_x < self.offset:
-							self.offset = cursor_x - round(15 * self.gui.scale)
-
-							self.offset = max(self.offset, 0)
-					else:
-						self.offset = 0
+				margin = round(15 * self.gui.scale)
+				max_offset = max(t_len - width, 0)
+				if self.cursor_position == len(self.text):
+					self.offset = 0
+				elif self.cursor_position == 0:
+					self.offset = max_offset
+				elif cursor_x < self.offset + margin:
+					self.offset = max(cursor_x - margin, 0)
+				elif cursor_x > self.offset + width:
+					self.offset = min(cursor_x - width, max_offset)
+				else:
+					self.offset = min(max(self.offset, 0), max_offset)
 
 			x -= self.offset
 
@@ -22638,7 +22639,12 @@ class RenameTrackBox:
 			self.rename_files.text = self.prefs.rename_tracks_template
 
 		# ddt.draw_text((x + 14, y + 40,), NRN + cursor, self.colours.grey(150), 12)
-		self.rename_files.draw(x + 14 * self.gui.scale, y + 39 * self.gui.scale, self.colours.box_input_text, width=300)
+		self.rename_files.draw(
+			x + 14 * self.gui.scale,
+			y + 39 * self.gui.scale,
+			self.colours.box_input_text,
+			width=300 * self.gui.scale,
+		)
 		NRN = self.rename_files.text
 
 		self.ddt.rect_s(
@@ -53049,7 +53055,12 @@ def main(holder: Holder) -> None:
 					):
 						tauon.rename_folder.text = prefs.rename_folder_template
 
-					tauon.rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.box_input_text, width=300)
+					tauon.rename_folder.draw(
+						x + 14 * gui.scale,
+						y + 41 * gui.scale,
+						colours.box_input_text,
+						width=300 * gui.scale,
+					)
 
 					ddt.rect_s(
 						(x + 8 * gui.scale, y + 38 * gui.scale, 300 * gui.scale, 22 * gui.scale),
