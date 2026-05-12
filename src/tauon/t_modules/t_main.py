@@ -19919,7 +19919,7 @@ class Drawing:
 			background_highlight_colour = self.colours.box_button_background_highlight
 
 		click = False
-		text_y = rect[1] + round(3 * self.gui.scale)
+		text_y = rect[1] + rect[3] / 2 - 9 * self.gui.scale
 
 		if press is None:
 			press = self.inp.mouse_click
