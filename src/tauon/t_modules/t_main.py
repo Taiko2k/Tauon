@@ -24652,23 +24652,19 @@ class Over:
 
 	def settings_tab_accent(self, index: int) -> ColourRGBA:
 		accents = (
-			ColourRGBA(244, 176, 92, 255),
-			ColourRGBA(118, 205, 176, 255),
-			ColourRGBA(107, 187, 236, 255),
-			ColourRGBA(126, 147, 255, 255),
-			ColourRGBA(214, 118, 118, 255),
-			ColourRGBA(100, 171, 158, 255),
-			ColourRGBA(215, 154, 102, 255),
-			ColourRGBA(97, 186, 168, 255),
-			ColourRGBA(186, 150, 228, 255),
-			ColourRGBA(112, 176, 244, 255),
-			ColourRGBA(214, 128, 176, 255),
-			ColourRGBA(205, 147, 116, 255),
-			ColourRGBA(140, 174, 232, 255),
+			ColourRGBA(174, 118, 255, 255),
+			ColourRGBA(196, 102, 244, 255),
+			ColourRGBA(154, 124, 255, 255),
+			ColourRGBA(226, 102, 216, 255),
+			ColourRGBA(204, 122, 238, 255),
+			ColourRGBA(236, 92, 190, 255),
+			ColourRGBA(180, 112, 244, 255),
+			ColourRGBA(216, 116, 230, 255),
+			ColourRGBA(198, 136, 255, 255),
+			ColourRGBA(229, 125, 214, 255),
 			ColourRGBA(184, 184, 196, 255),
 		)
-		tab_map = (0, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13)
-		return accents[tab_map[index % len(tab_map)]]
+		return accents[index % len(accents)]
 
 	def sync_settings_nav_scroll(self, scroll_area: tuple[int, int, int, int], row_height: int, visible_rows: int) -> float:
 		scroll_source = "settings nav"
@@ -24896,11 +24892,11 @@ class Over:
 
 	def settings_page_accent(self, page: int | None = None) -> ColourRGBA:
 		accents = (
-			ColourRGBA(244, 176, 92, 255),
-			ColourRGBA(118, 205, 176, 255),
-			ColourRGBA(107, 187, 236, 255),
-			ColourRGBA(126, 147, 255, 255),
-			ColourRGBA(205, 147, 116, 255),
+			ColourRGBA(174, 118, 255, 255),
+			ColourRGBA(196, 102, 244, 255),
+			ColourRGBA(226, 102, 216, 255),
+			ColourRGBA(180, 112, 244, 255),
+			ColourRGBA(204, 122, 238, 255),
 		)
 		if page is None:
 			page = self.func_page
@@ -26966,7 +26962,7 @@ class Over:
 		ddt     = self.ddt
 		colours = self.colours
 		prefs   = self.prefs
-		accent  = ColourRGBA(100, 171, 158, 255)
+		accent  = ColourRGBA(226, 102, 216, 255)
 		ddt.text_background_colour = colours.box_background
 
 		column_gap = round(12 * gui.scale)
@@ -27241,12 +27237,13 @@ class Over:
 		if not prefs.discord_enable:
 			return total_h
 
+		discord_accent = ColourRGBA(88, 145, 255, 255)
 		discord_rect = (x, y + top_row_h + block_gap, w, discord_h)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			discord_rect,
 			_("Discord"),
 			_("Layout, buttons and idle behavior."),
-			accent,
+			discord_accent,
 		)
 
 		left_col_w = (inner_w - column_gap) // 2
@@ -27268,7 +27265,7 @@ class Over:
 			"",
 			prefs.discord_card_layout == "title_artist",
 			lambda: set_discord_card_layout("title_artist"),
-			accent,
+			discord_accent,
 		)
 		self.settings_choice_tile(
 			(inner_x + choice_w + tile_gap, choice_y, choice_w, choice_h),
@@ -27276,7 +27273,7 @@ class Over:
 			"",
 			prefs.discord_card_layout == "artist_title",
 			lambda: set_discord_card_layout("artist_title"),
-			accent,
+			discord_accent,
 		)
 
 		member_y = choice_y + choice_h + round(12 * gui.scale)
@@ -27288,7 +27285,7 @@ class Over:
 			"",
 			prefs.discord_member_list_display == "song",
 			lambda: set_member_list_display("song"),
-			accent,
+			discord_accent,
 		)
 		self.settings_choice_tile(
 			(inner_x + choice_w + tile_gap, member_choice_y, choice_w, choice_h),
@@ -27296,7 +27293,7 @@ class Over:
 			"",
 			prefs.discord_member_list_display == "artist",
 			lambda: set_member_list_display("artist"),
-			accent,
+			discord_accent,
 		)
 
 		ddt.text((right_col_x, inner_y), _("Options"), colours.box_text_label, 11)
@@ -27305,28 +27302,28 @@ class Over:
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_clean_title,
 			_("Clean title (Removes .feat etc)"),
-			accent=accent,
+			accent=discord_accent,
 		)
 		option_y += compact_row_h + row_gap
 		prefs.discord_lastfm_button = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_lastfm_button,
 			_("Last.fm link button"),
-			accent=accent,
+			accent=discord_accent,
 		)
 		option_y += compact_row_h + row_gap
 		prefs.discord_show_tauon_button = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_show_tauon_button,
 			_("Tauon website button"),
-			accent=accent,
+			accent=discord_accent,
 		)
 		option_y += compact_row_h + row_gap
 		prefs.discord_keep_idle = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_keep_idle,
 			_("Keep idle"),
-			accent=accent,
+			accent=discord_accent,
 		)
 
 		return total_h

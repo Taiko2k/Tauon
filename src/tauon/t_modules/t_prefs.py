@@ -287,8 +287,8 @@ class Prefs:
 	center_gallery_text: bool = False
 
 	tracklist_y_text_offset = 0
-	theme: int = 7
-	theme_name = "Turbo"
+	theme: int = 14
+	theme_name = "Vape"
 	transparent_mode: int = 0
 	left_panel_mode = "playlist"
 
