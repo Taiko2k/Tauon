@@ -24308,7 +24308,7 @@ class NagBox:
 		("Added smooth scroll support", False),
 		("Redesigned settings UI", False),
 		("Added new mini mode: Signal (Just for fun)", False),
-		("Removed Spotify support", True),
+		("Scroll bar is on the right now!", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
