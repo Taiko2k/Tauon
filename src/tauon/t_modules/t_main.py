@@ -24414,7 +24414,7 @@ class NagBox:
 			bg=section_fill,
 		)
 
-		row_y = changelog_y + round(42 * scale)
+		row_y = changelog_y + round(38 * scale)
 		row_gap = round(18 * scale)
 		bullet_colour = ColourRGBA(198, 136, 255, 255)
 		for item, removed in self.CHANGELOG_ITEMS:
@@ -47068,10 +47068,9 @@ def main(holder: Holder) -> None:
 
 	load_prefs(bag)
 	show_upgrade_splash = False
-	# Uncomment to show splash on upgrade
-	# show_upgrade_splash = prefs.release_splash_version != NagBox.SPLASH_VERSION
-	# if show_upgrade_splash:
-	# 	prefs.release_splash_version = NagBox.SPLASH_VERSION
+	if prefs.release_splash_version != NagBox.SPLASH_VERSION:
+		show_upgrade_splash = db_version > 0
+		prefs.release_splash_version = NagBox.SPLASH_VERSION
 	save_prefs(bag)
 
 	# Temporary
