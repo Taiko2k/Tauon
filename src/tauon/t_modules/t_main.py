@@ -24416,8 +24416,8 @@ class NagBox:
 
 		row_y = changelog_y + round(42 * scale)
 		row_gap = round(18 * scale)
+		bullet_colour = ColourRGBA(198, 136, 255, 255)
 		for item, removed in self.CHANGELOG_ITEMS:
-			bullet_colour = accent_warm if removed else accent
 			text_colour = self.colours.box_text_label if removed else self.colours.box_text
 			self.ddt.rect(
 				(inner_x + round(17 * scale), row_y + round(5 * scale), round(6 * scale), round(6 * scale)),
