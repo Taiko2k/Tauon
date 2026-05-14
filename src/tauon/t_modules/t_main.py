@@ -8417,7 +8417,7 @@ class Tauon:
 				self.pctl.play()
 
 		except Exception:
-			logging.exception()
+			logging.exception("Could not write lyrics to file")
 			if loud:
 				self.show_message(
 					_("Could not write lyrics to file"),
@@ -45471,7 +45471,7 @@ def worker1(tauon: Tauon) -> None:
 				_("We can't upload your lyrics, and we don't know why."),
 				mode="error"
 			)
-			logging.exception()
+			logging.exception("Couldn't upload lyrics")
 			return False
 		logging.info("LRCLIB upload: step 2 (of 3) complete")
 		publish_token = p + ":" + nonce.stdout.strip()
