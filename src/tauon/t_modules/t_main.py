@@ -24434,7 +24434,7 @@ class NagBox:
 			row_y += row_gap
 
 		support_y = changelog_y + changelog_h + round(18 * scale)
-		self.ddt.text((inner_x, support_y), _("The time has come to open thy heart and thy wallet ❤️  "), self.colours.box_text, 213, bg=panel_fill)
+		self.ddt.text((inner_x, support_y), _("Please help support me make free software. ❤️  "), self.colours.box_text, 213, bg=panel_fill)
 		donate_link = self.tauon.draw_linked_text(
 			(inner_x, support_y + round(19 * scale)),
 			_("A ton of work went into this release. Please consider donating at https://github.com/sponsors/Taiko2k"),
