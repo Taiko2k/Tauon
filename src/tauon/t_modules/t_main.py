@@ -39336,6 +39336,23 @@ class RadioView:
 			gui.update += 1
 
 
+def get_renderer_name(renderer: sdl3.LP_SDL_Renderer) -> str | None:
+	renderer_name = sdl3.SDL_GetRendererName(renderer)
+	if not renderer_name:
+		logging.warning(f"SDL_GetRendererName failed: {sdl3.SDL_GetError()}")
+		return None
+
+	if isinstance(renderer_name, bytes):
+		return renderer_name.decode("utf-8", errors="replace")
+	return renderer_name
+
+
+def renderer_name_supports_milkdrop(renderer_name: str | None) -> bool:
+	if renderer_name is None:
+		return True
+	return renderer_name.casefold() == "opengl"
+
+
 milky_ready = True
 try:
 	import OpenGL
@@ -39431,6 +39448,12 @@ class ProjectM:
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
+		renderer_name = get_renderer_name(self.tauon.renderer)
+		if renderer_name is not None and renderer_name.casefold() != "opengl":
+			logging.warning(f"Not loading ProjectM because SDL renderer is {renderer_name!r}, not 'opengl'")
+			self.lib_error = True
+			return
+
 		lib_name = find_projectm_library()
 		if not lib_name:
 			logging.warning("Could not find libprojectM-4")
@@ -45929,6 +45952,8 @@ def menu_is_open() -> bool:
 #	extra_menu            = tauon.extra_menu
 
 def main(holder: Holder) -> None:
+	global milky_ready
+
 	t_window               = holder.t_window
 	renderer               = holder.renderer
 	logical_size           = holder.logical_size
@@ -45954,6 +45979,12 @@ def main(holder: Holder) -> None:
 	dev_mode               = holder.dev_mode
 	log                    = holder.log
 	logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
+	renderer_name = get_renderer_name(renderer)
+	if renderer_name is not None:
+		logging.info(f"SDL renderer: {renderer_name}")
+	if not renderer_name_supports_milkdrop(renderer_name):
+		logging.warning("SDL renderer is not OpenGL; disabling Milkdrop visualizer")
+		milky_ready = False
 
 	tls_context = setup_tls(holder)
 	last_fm_enable = is_module_loaded("pylast")

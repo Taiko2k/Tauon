@@ -485,6 +485,12 @@ if b"opengl" in drivers:
 	driver = b"opengl"
 
 renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC
+if not renderer and driver == b"opengl":
+	renderer_error = sdl3.SDL_GetError()
+	logging.warning(f"Failed to create OpenGL renderer: {renderer_error}")
+	logging.warning("Trying SDL default renderer")
+	sdl3.SDL_ClearError()
+	renderer = sdl3.SDL_CreateRenderer(t_window, None)
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")
