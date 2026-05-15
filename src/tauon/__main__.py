@@ -468,7 +468,7 @@ if not t_window:
 if maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-drivers: list[str] = []
+drivers: list[bytes] = []
 i = 0
 while True:
 	x = sdl3.SDL_GetRenderDriver(i)
