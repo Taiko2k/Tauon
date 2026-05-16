@@ -15,7 +15,6 @@ comtypes;                    sys_platform == 'win32'
 dbus-python;                 sys_platform == 'linux'
 jxlpy
 keyboard;                    sys_platform == 'win32'
-lynxtray;                    sys_platform == 'win32'
 opencc;                      sys_platform != 'win32' # optional
 opencc-python-reimplemented; sys_platform == 'win32' # optional
 pypresence>=4.5.0 # optional
