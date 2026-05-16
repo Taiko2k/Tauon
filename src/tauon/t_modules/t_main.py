@@ -6170,9 +6170,9 @@ class Tauon:
 
 		self.now_searching: Literal["off", "searching", "errored", "success"] = "off"
 
-		self.requested_raise = False
-		self.requested_tray  = False
-		self.sdl_tray        = None
+		self.requested_raise: bool = False
+		self.requested_tray: bool = False
+		self.sdl_tray: sdl3.LP_SDL_Tray | None = None
 		self.sdl_tray_state: PlayingState = PlayingState.STOPPED
 		self.sdl_tray_launched: bool = False
 		self.sdl_tray_text: str = ""
@@ -6221,14 +6221,9 @@ class Tauon:
 		sdl3.SDL_SetTrayIcon(self.sdl_tray, surf)
 
 
-	def sdl_tray_set_label (self) -> None:
-		# TODO(Martin): Implement
-		pass
-
-
-	def sdl_tray_set_title (self) -> None:
-		# TODO(Martin): Implement
-		pass
+	def sdl_set_tray_tooltip (self, tooltip: str) -> None:
+		#logging.debug(f"Setting tray tooltip to '{tooltip}'")
+		sdl3.SDL_SetTrayTooltip(self.sdl_tray, tooltip.encode("utf-8"))
 
 	# TODO(Martin): Get this working with native SDL scroll implementation when available
 	#def sdl_tray_scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
@@ -6413,11 +6408,9 @@ class Tauon:
 
 		if self.sdl_tray_launched and text != self.sdl_tray_text:
 			if text:
-				self.sdl_tray_set_label(" " + text, text)
-				self.sdl_tray_set_title(text)
+				self.sdl_set_tray_tooltip(text)
 			else:
-				self.sdl_tray_set_label("", "")
-				self.sdl_tray_set_title(self.t_title)
+				self.sdl_set_tray_tooltip(self.t_title)
 			self.sdl_tray_text = text
 
 	def coll(self, r: list[int]) -> bool:
