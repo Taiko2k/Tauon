@@ -307,8 +307,6 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS
 	from tauon.t_modules.t_logging import LogHistoryHandler
-	if sys.platform == "win32":
-		from lynxtray import SysTrayIcon
 	from collections.abc import Callable
 	from subprocess import Popen
 
@@ -340,9 +338,6 @@ if sys.platform == "darwin":
 
 if not macos and not windows:
 	from tauon.t_modules.t_dbus import Gnome
-
-if windows:
-	from lynxtray import SysTrayIcon
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
@@ -6074,7 +6069,6 @@ class Tauon:
 		self.gallery_pulse_top:                   EdgePulse2 = EdgePulse2(tauon=self)
 		self.art_box:                             ArtBox = ArtBox(tauon=self)
 		self.nagbox:                              NagBox = NagBox(tauon=self)
-		self.tray:                                STray = STray(self)
 
 		if not self.macos and not self.windows:
 			self.gnome = Gnome(tauon=self)
@@ -19923,60 +19917,6 @@ class TauService:
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		self.processing = False
 		return None
-
-class STray:
-
-	def __init__(self, tauon: Tauon) -> None:
-		self.tauon             = tauon
-		self.gui               = tauon.gui
-		self.pctl              = tauon.pctl
-		self.t_window          = tauon.t_window
-		self.install_directory = tauon.install_directory
-		self.systray: SysTrayIcon | None = None
-		self.active = False
-
-	def up(self, _: SysTrayIcon) -> None:
-		sdl3.SDL_ShowWindow(self.t_window)
-		sdl3.SDL_RaiseWindow(self.t_window)
-		sdl3.SDL_RestoreWindow(self.t_window)
-		self.gui.lowered = False
-
-	def down(self) -> None:
-		if self.active:
-			sdl3.SDL_HideWindow(self.t_window)
-
-	def advance(self, _: SysTrayIcon) -> None:
-		self.pctl.advance()
-
-	def back(self, _: SysTrayIcon) -> None:
-		self.pctl.back()
-
-	def pause(self, _: SysTrayIcon) -> None:
-		self.pctl.play_pause()
-
-	def track_stop(self, _: SysTrayIcon) -> None:
-		self.pctl.stop()
-
-	def on_quit_callback(self, _: SysTrayIcon) -> None:
-		self.tauon.exit("Exit called from tray.")
-
-	def start(self) -> None:
-		menu_options = (
-			("Show", None, self.up),
-			("Play/Pause", None, self.pause),
-			("Stop", None, self.track_stop),
-			("Forward", None, self.advance),
-			("Back", None, self.back))
-		self.systray = SysTrayIcon(
-			str(self.install_directory / "assets" / "icon.ico"), "Tauon Music Box",
-			menu_options, on_quit=self.on_quit_callback)
-		self.systray.start()
-		self.active = True
-		self.gui.tray_active = True
-
-	def stop(self) -> None:
-		self.systray.shutdown()
-		self.active = False
 
 class GStats:
 	def __init__(self, tauon: Tauon) -> None:
