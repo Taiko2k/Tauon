@@ -6166,6 +6166,7 @@ class Tauon:
 
 		self.requested_raise: bool = False
 		self.requested_tray: bool = False
+		self.requested_tray_destruct: bool = False
 		self.sdl_tray: sdl3.LP_SDL_Tray | None = None
 		self.sdl_tray_state: PlayingState = PlayingState.STOPPED
 		self.sdl_tray_launched: bool = False
@@ -6237,23 +6238,22 @@ class Tauon:
 	def show_tray(self) -> None:
 		self.requested_tray = True
 
-		return
 		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
-		if not self.sdl_tray_launched:
-			try:
-				self.init_sdl_tray()
-			except Exception:
-				logging.exception("Failed to start tray")
-				self.show_message(_("Failed to start tray"), mode="error")
-		else:
-			self.indicator.set_status(1)
+		#if not self.sdl_tray_launched:
+		#	try:
+		#		self.init_sdl_tray()
+		#	except Exception:
+		#		logging.exception("Failed to start tray")
+		#		self.show_message(_("Failed to start tray"), mode="error")
+		#else:
+		#	self.indicator.set_status(1)
 
 
 	def hide_tray(self) -> None:
-		return
+		self.requested_tray_destruct = True
 		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
-		if self.sdl_tray_launched:
-			self.indicator.set_status(0)
+		#if self.sdl_tray_launched:
+		#	self.indicator.set_status(0)
 
 
 	def tray_icon_play(self) -> None:
@@ -6371,6 +6371,14 @@ class Tauon:
 		sdl3.SDL_SetTrayEntryCallback(prev_entry, self._tray_prev_cb, None)
 
 		self.sdl_tray_launched = True
+
+	def destroy_sdl_tray(self) -> None:
+		if self.sdl_tray is None:
+			logging.warning("Attempted to destroy non-existent tray")
+			return
+		sdl3.SDL_DestroyTray(self.sdl_tray)
+		self.sdl_tray = None
+		self.sdl_tray_launched = False
 
 	def update_sdl_tray(self) -> None:
 		#if self.tray_releases <= 0:
@@ -49446,7 +49454,12 @@ def main(holder: Holder) -> None:
 			tauon.raise_window()
 			tauon.requested_raise = False
 
+		if tauon.requested_tray_destruct:
+			#logging.debug("Destroying tray as it was requested")
+			tauon.destroy_sdl_tray()
+			tauon.requested_tray_destruct = False
 		if tauon.requested_tray:
+			#logging.debug("Creating tray as it was requested")
 			tauon.init_sdl_tray()
 			tauon.requested_tray = False
 
