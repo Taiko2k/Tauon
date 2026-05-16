@@ -76,6 +76,66 @@ class StreamEnc:
 		self.abort = True
 		self.tauon.radiobox.loaded_url = None
 
+	def ffmpeg_popen(
+		self,
+		cmd: list[str],
+		stdin: int | None = None,
+		stdout: int | None = None,
+	) -> subprocess.Popen[bytes]:
+		kwargs = {
+			"stdin": stdin,
+			"stdout": stdout,
+			"stderr": subprocess.DEVNULL,
+		}
+		if self.tauon.windows:
+			startupinfo = subprocess.STARTUPINFO()
+			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+			kwargs["startupinfo"] = startupinfo
+			kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+		return subprocess.Popen(cmd, **kwargs)
+
+	def close_pipe(self, pipe, label: str) -> None:
+		if pipe is None:
+			return
+		try:
+			pipe.close()
+		except BrokenPipeError:
+			pass
+		except Exception:
+			logging.exception("Failed to close %s", label)
+
+	def stop_process(self, process: subprocess.Popen[bytes] | None, label: str, timeout: float = 0.4) -> None:
+		if process is None or process.poll() is not None:
+			return
+		try:
+			process.terminate()
+		except Exception:
+			logging.exception("Failed to terminate %s", label)
+		try:
+			process.wait(timeout=timeout)
+		except subprocess.TimeoutExpired:
+			try:
+				process.kill()
+			except Exception:
+				logging.exception("Failed to kill %s", label)
+			try:
+				process.wait(timeout=timeout)
+			except Exception:
+				logging.exception("Failed to wait for killed %s", label)
+		except Exception:
+			logging.exception("Failed to wait for %s", label)
+
+	def finish_encoder(self, encoder: subprocess.Popen[bytes], timeout: float = 4) -> None:
+		self.close_pipe(encoder.stdin, "encoder stdin")
+		try:
+			encoder.wait(timeout=timeout)
+		except subprocess.TimeoutExpired:
+			logging.warning("Encoder timed out")
+			self.stop_process(encoder, "encoder")
+		except Exception:
+			logging.exception("Failed to wait for encoder")
+			self.stop_process(encoder, "encoder")
+
 	def start_download(self, url: str) -> bool:
 		self.abort = True
 		while self.download_running:
@@ -172,11 +232,7 @@ class StreamEnc:
 		]
 		# fmt:on
 
-		startupinfo = None
-		if self.tauon.windows:
-			startupinfo = subprocess.STARTUPINFO()
-			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-		decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+		decoder = self.ffmpeg_popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 		if sys.platform != "win32":
 			fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
@@ -195,7 +251,10 @@ class StreamEnc:
 							break
 
 						chunk = self.chunks[position]
-						decoder.stdin.write(chunk)
+						try:
+							decoder.stdin.write(chunk)
+						except (BrokenPipeError, OSError, ValueError):
+							break
 						self.tauon.vb.input(self.tauon.stream_proxy.chunks[position])
 						position += 1
 					else:
@@ -206,6 +265,8 @@ class StreamEnc:
 				logging.exception("Feed not running!")
 				self.feed_running = False
 				raise
+			finally:
+				self.close_pipe(decoder.stdin, "decoder stdin")
 			logging.info("Exit feeder")
 
 		feeder = threading.Thread(target=feed, args=[decoder])
@@ -230,28 +291,24 @@ class StreamEnc:
 
 			time.sleep(0.01)
 
-		decoder.terminate()
-		time.sleep(0.1)
-		try:
-			decoder.kill()
-		except Exception:
-			logging.exception("Failed to kill decoder")
+		self.close_pipe(decoder.stdin, "decoder stdin")
+		self.stop_process(decoder, "decoder")
 
 		self.pump_running = False
 
 	def encode(self) -> None:
 		self.encode_running = True
+		decoder: subprocess.Popen[bytes] | None = None
+		encoder: subprocess.Popen[bytes] | None = None
 
 		try:
 			ffmpeg_path = self.tauon.get_ffmpeg()
 			if ffmpeg_path is None:
 				logging.error("FFmpeg could not be found for stream encoder")
-				self.encode_running = False
 				return
 
 			while self.c < 20:
 				if self.abort:
-					self.encode_running = False
 					return
 				time.sleep(0.05)
 
@@ -274,7 +331,7 @@ class StreamEnc:
 				target_file.unlink()
 
 			# fmt:off
-			cmd = [
+			decoder_cmd = [
 				str(ffmpeg_path),
 				"-loglevel", "quiet",
 				"-i", "pipe:0",
@@ -286,17 +343,16 @@ class StreamEnc:
 			]
 			# fmt:on
 
-			decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			decoder = self.ffmpeg_popen(decoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 			if sys.platform != "win32":
 				fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 			position = 0
 			old_metadata = self.tauon.radiobox.song_key
-			old_tags = self.tauon.pctl.found_tags
 
 			##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
 			# fmt:off
-			cmd = [
+			encoder_cmd = [
 				str(ffmpeg_path),
 				"-loglevel", "quiet",
 				"-f", "s16le",
@@ -306,7 +362,34 @@ class StreamEnc:
 				str(target_file),
 			]
 			# fmt:on
-			encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			encoder = self.ffmpeg_popen(encoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+
+			def feed_decoder(decoder: subprocess.Popen[bytes]) -> None:
+				nonlocal position
+				try:
+					while True:
+						if position < self.c:
+							if position not in self.chunks:
+								logging.info("The buffer was deleted too soon!")
+								break
+
+							try:
+								decoder.stdin.write(self.chunks[position])
+							except (BrokenPipeError, OSError, ValueError):
+								break
+							position += 1
+						else:
+							time.sleep(0.005)
+						if self.abort:
+							break
+				except Exception:
+					logging.exception("Encoder feeder thread crashed!")
+				finally:
+					self.close_pipe(decoder.stdin, "decoder stdin")
+
+			feeder = threading.Thread(target=feed_decoder, args=[decoder])
+			feeder.daemon = True
+			feeder.start()
 
 			def save_track() -> None:
 				# self.tauon.recorded_songs.append(song)
@@ -371,30 +454,21 @@ class StreamEnc:
 				self.tauon.load_orders.append(copy.deepcopy(load_order))
 				self.tauon.gui.update += 1
 
+			def save_target_if_large() -> None:
+				if target_file.exists():
+					if target_file.stat().st_size > 256000:
+						logging.info("Save file")
+						save_track()
+					else:
+						logging.info("Discard small file")
+						target_file.unlink()
+
 			while True:
 				if self.abort:
-					decoder.terminate()
-					encoder.terminate()
-					time.sleep(0.1)
-					try:
-						decoder.kill()
-					except Exception:
-						logging.exception("Failed to kill decoder")
-					try:
-						encoder.kill()
-					except Exception:
-						logging.exception("Failed to kill encoder")
-
-					if target_file.exists():
-						if target_file.stat().st_size > 256000:
-							logging.info("Save file")
-							save_track()
-						else:
-							logging.info("Discard small file")
-							target_file.unlink()
-
-					self.encode_running = False
-					self.tauon.pctl.tag_history.clear()
+					self.close_pipe(decoder.stdin, "decoder stdin")
+					self.stop_process(decoder, "decoder")
+					self.finish_encoder(encoder, timeout=2)
+					save_target_if_large()
 					return
 
 				if old_metadata != self.tauon.radiobox.song_key:
@@ -406,38 +480,41 @@ class StreamEnc:
 						old_metadata = self.tauon.radiobox.song_key
 					else:
 						logging.info("Split and save file")
-						encoder.stdin.close()
-						try:
-							encoder.wait(timeout=4)
-						except Exception:
-							logging.exception("Encoder timed out")
-						try:
-							encoder.kill()
-						except Exception:
-							logging.exception("Failed to kill encoder")
-						if target_file.exists():
-							if target_file.stat().st_size > 256000:
-								save_track()
-							else:
-								logging.info("Discard small file")
-								target_file.unlink()
-						encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+						self.finish_encoder(encoder)
+						save_target_if_large()
+						encoder = self.ffmpeg_popen(encoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
-				raw_audio = decoder.stdout.read(1000000)
+				raw_audio = None
+				try:
+					raw_audio = decoder.stdout.read(10000)
+				except BlockingIOError:
+					pass
 				if raw_audio:
-					encoder.stdin.write(raw_audio)
-
-				if position < self.c:
-					chunk = self.chunks[position]
-					position += 1
-					decoder.stdin.write(chunk)
+					try:
+						encoder.stdin.write(raw_audio)
+					except (BrokenPipeError, OSError, ValueError):
+						logging.warning("Encoder pipe closed")
+						break
+				elif raw_audio == b"" or decoder.poll() is not None:
+					logging.info("Decoder stopped")
+					break
 				else:
 					time.sleep(0.005)
 
+			self.finish_encoder(encoder, timeout=2)
+			save_target_if_large()
+
 		except Exception:
 			logging.exception("Encoder thread crashed!")
+		finally:
+			if decoder is not None:
+				self.close_pipe(decoder.stdin, "decoder stdin")
+				self.stop_process(decoder, "decoder")
+			if encoder is not None and encoder.poll() is None:
+				self.close_pipe(encoder.stdin, "encoder stdin")
+				self.stop_process(encoder, "encoder")
 			self.encode_running = False
-			return
+			self.tauon.pctl.tag_history.clear()
 
 	def run_download(self, r: _UrlopenRet) -> None:
 		h = r.info()
