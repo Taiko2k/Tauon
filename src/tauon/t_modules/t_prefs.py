@@ -125,8 +125,9 @@ class Prefs:
 	discord_card_layout: str = "title_artist"
 	discord_member_list_display: str = "artist"
 	discord_clean_title:         bool = True
-	discord_lastfm_button:       bool = True
+	discord_lastfm_button:       bool = False
 	discord_show_tauon_button:   bool = True
+	discord_keep_idle:           bool = False
 
 	monitor_downloads: bool = True
 	extract_to_music:  bool = False
@@ -184,6 +185,7 @@ class Prefs:
 
 	showcase_vis: bool = True
 	show_lyrics_showcase: bool = True
+	showcase_wide_art: bool = False
 
 	spec2_colour_mode = 0
 
@@ -285,8 +287,8 @@ class Prefs:
 	center_gallery_text: bool = False
 
 	tracklist_y_text_offset = 0
-	theme: int = 7
-	theme_name = "Turbo"
+	theme: int = 14
+	theme_name = "Vape"
 	transparent_mode: int = 0
 	left_panel_mode = "playlist"
 

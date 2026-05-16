@@ -5,16 +5,15 @@ Changelog
 ### v10.0.0
 
  - Redesigned settings UI
+ - Added album art to columns view
  - Added smooth scroll support
  - Added new mini mode Signal
  - Added theme editor
- - Removed Spotify support
- - Remove koel support
-
-### v9.2.0
-
  - Added inertial smooth scrolling option
+ - Moved scroll bar to the right of tracklist
  - Redesigned settings box layout and style
+ - Removed Spotify support
+ - Removed koel support
  - Removed trancode menu toggle
  - Removed 'star' playcount display option
  - Removed 'showcase only' background functions

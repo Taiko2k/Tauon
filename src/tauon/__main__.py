@@ -468,7 +468,7 @@ if not t_window:
 if maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-drivers: list[str] = []
+drivers: list[bytes] = []
 i = 0
 while True:
 	x = sdl3.SDL_GetRenderDriver(i)
@@ -481,10 +481,16 @@ logging.debug(f"SDL available drivers: {drivers}")
 logging.debug(f"PATH that will be used for ffmpeg/ffprobe and similar: {os.environ.get('PATH')}")
 
 driver = None
-if "opengl" in drivers:
+if b"opengl" in drivers:
 	driver = b"opengl"
 
 renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC
+if not renderer and driver == b"opengl":
+	renderer_error = sdl3.SDL_GetError()
+	logging.warning(f"Failed to create OpenGL renderer: {renderer_error}")
+	logging.warning("Trying SDL default renderer")
+	sdl3.SDL_ClearError()
+	renderer = sdl3.SDL_CreateRenderer(t_window, None)
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")

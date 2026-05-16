@@ -52,14 +52,15 @@ jobs:
           # JPEG-XL hack since 24.04 is too old
           sudo apt-get install -y \
             libgif7 \
+            liblcms2-dev \
             wget
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
           curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux
           sudo dpkg -i *.deb
+        # wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
 
       - name: Install Python dependencies and setup venv
         run: |

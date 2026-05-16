@@ -224,4 +224,7 @@ def database_migrate(
 				except TypeError:
 					playlist.last_folder = [str(last_folder)] if last_folder else []
 
+	if db_version <= 74:  # noqa: PLR2004
+		logging.info("Updating database to version 75")
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
