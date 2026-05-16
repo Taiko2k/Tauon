@@ -27848,23 +27848,19 @@ class Over:
 			_("System tray and interface scaling."),
 			accent,
 		)
-		if not self.windows:
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
-			inner_y += row_h + row_gap
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
-			inner_y += row_h + row_gap
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
-			inner_y += row_h + row_gap
-			old_theme = prefs.tray_theme
-			mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
-			prefs.tray_theme = "gray" if mono else "pink"
-			if prefs.tray_theme != old_theme:
-				self.tauon.set_tray_icons(force=True)
-				self.show_message(_("Restart Tauon for change to take effect"))
-			inner_y += row_h + row_gap
-		else:
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
-			inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
+		inner_y += row_h + row_gap
+		old_theme = prefs.tray_theme
+		mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
+		prefs.tray_theme = "gray" if mono else "pink"
+		if prefs.tray_theme != old_theme:
+			self.tauon.set_tray_icons(force=True)
+			self.show_message(_("Restart Tauon for change to take effect"))
+		inner_y += row_h + row_gap
 
 		def normalize_scale_value(value: float) -> float:
 			scale_value = max(min(round(round(value / 0.05) * 0.05, 2), 3.5), 0.5)
