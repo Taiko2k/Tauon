@@ -47651,8 +47651,6 @@ def main(holder: Holder) -> None:
 			logging.exception("Could not start Dbus thread")
 
 	if sys.platform == "win32":
-		tauon.tray.start()
-
 		if win_ver < 10:
 			logging.warning("Unsupported Windows version older than W10, hooking media keys the old way without SMTC!")
 			import keyboard
@@ -54577,7 +54575,6 @@ def main(holder: Holder) -> None:
 			logging.exception("Failed to close radio server")
 
 	if sys.platform == "win32":
-		tauon.tray.stop()
 		if pctl.smtc:
 			pctl.sm.unload()
 	elif sys.platform == "darwin":
