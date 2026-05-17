@@ -50503,6 +50503,8 @@ def main(holder: Holder) -> None:
 								inp.mouse_down = False
 
 						rect = [x, gui.panelY, w, h]
+						if not gui.show_playlist and x > gui.playlist_left:
+							ddt.rect([gui.playlist_left, gui.panelY, x - gui.playlist_left, h], colours.gallery_background)
 						ddt.rect(rect, colours.gallery_background)
 
 						# ddt.rect_r(rect, [255, 0, 0, 200], True)
