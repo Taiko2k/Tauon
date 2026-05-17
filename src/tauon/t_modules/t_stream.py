@@ -29,14 +29,13 @@ import sys
 import threading
 import time
 import urllib.request
+from queue import Empty, Queue
 
 import mutagen
 
 from tauon.t_modules.t_enums import Backend
 from tauon.t_modules.t_extra import filename_safe
 
-if sys.platform != "win32":
-	import fcntl
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -67,6 +66,7 @@ class StreamEnc:
 		self.chunks = {}
 		self.c = 0
 		self.url = ""
+		self.request_id = 0
 
 	def stop(self) -> None:
 		if self.tauon.radiobox.websocket:
@@ -136,19 +136,50 @@ class StreamEnc:
 			logging.exception("Failed to wait for encoder")
 			self.stop_process(encoder, "encoder")
 
-	def start_download(self, url: str) -> bool:
+	def read_stdout(
+		self,
+		process: subprocess.Popen[bytes],
+		output: Queue[bytes],
+		read_size: int,
+		label: str,
+		request_id: int,
+	) -> None:
+		try:
+			while not self.abort and self.request_id == request_id:
+				data = process.stdout.read(read_size)
+				if data:
+					output.put(data)
+				elif data == b"":
+					break
+				else:
+					time.sleep(0.005)
+		except (OSError, ValueError):
+			pass
+		except Exception:
+			logging.exception("%s reader thread crashed", label)
+
+	def wait_until_idle(self, request_id: int, timeout: float = 5) -> bool:
+		start = time.monotonic()
+		while self.download_running or self.encode_running or self.pump_running:
+			if self.request_id != request_id:
+				return False
+			if time.monotonic() - start > timeout:
+				logging.warning("Timed out waiting for previous radio stream to stop")
+				return False
+			time.sleep(0.01)
+		return True
+
+	def start_download(self, url: str, request_id: int = 0) -> bool:
 		self.abort = True
-		while self.download_running:
-			time.sleep(0.01)
-		while self.encode_running:
-			time.sleep(0.01)
-		while self.pump_running:
-			time.sleep(0.01)
+		self.request_id = request_id
+		if not self.wait_until_idle(request_id):
+			return False
 
 		self.__init__(self.tauon)
+		self.request_id = request_id
 
 		self.url = url
-		result = self.start_request()
+		result = self.start_request(url, request_id)
 		if not result:
 			return False
 
@@ -157,9 +188,7 @@ class StreamEnc:
 		self.download_process.start()
 		return True
 
-	def start_request(self) -> bool:
-		url = self.url
-
+	def start_request(self, url: str, request_id: int) -> bool:
 		def NiceToICY(self) -> None:
 			class InterceptedHTTPResponse:
 				pass
@@ -181,14 +210,17 @@ class StreamEnc:
 		while True:
 			try:
 				urllib.request.http.client.HTTPResponse._read_status = NiceToICY
-				r = urllib.request.Request(self.url)
+				r = urllib.request.Request(url)
 				# r.add_header('GET', '1')
-				if not self.url.endswith(".ts"):
+				if not url.endswith(".ts"):
 					r.add_header("Icy-MetaData", "1")
 				r.add_header("User-Agent", self.tauon.t_agent)
 				logging.info("Open URL.....")
 				r = urllib.request.urlopen(r, timeout=20, context=self.tauon.tls_context)
 				logging.info("URL opened.")
+				if self.abort or self.request_id != request_id:
+					r.close()
+					return False
 
 			except Exception as e:
 				# TODO(Martin): Specify the exception better and turn the top part into debug statements, then only throw except when Connection fails below
@@ -233,11 +265,11 @@ class StreamEnc:
 		# fmt:on
 
 		decoder = self.ffmpeg_popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-		if sys.platform != "win32":
-			fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 		raw_audio = None
 		max_read = 10000
+		request_id = self.request_id
+		raw_queue: Queue[bytes] = Queue()
 		self.tauon.vb.reset()
 
 		def feed(decoder: Popen[bytes]) -> None:
@@ -273,13 +305,20 @@ class StreamEnc:
 		feeder.daemon = True
 		feeder.start()
 
-		retry = 3
+		reader = threading.Thread(target=self.read_stdout, args=(decoder, raw_queue, max_read, "Radio decoder", request_id))
+		reader.daemon = True
+		reader.start()
 
 		while True:
-			if not self.tauon.stream_proxy.download_running or self.abort:
+			if not self.tauon.stream_proxy.download_running or self.abort or self.request_id != request_id:
 				break
 			if raw_audio is None:
-				raw_audio = decoder.stdout.read(max_read)
+				try:
+					raw_audio = raw_queue.get(timeout=0.01)
+				except Empty:
+					if decoder.poll() is not None:
+						break
+					continue
 			if raw_audio:
 				r = aud.feed_ready(max_read)
 				if r:
@@ -344,11 +383,11 @@ class StreamEnc:
 			# fmt:on
 
 			decoder = self.ffmpeg_popen(decoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			if sys.platform != "win32":
-				fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
 
 			position = 0
+			request_id = self.request_id
 			old_metadata = self.tauon.radiobox.song_key
+			raw_queue: Queue[bytes] = Queue()
 
 			##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
 			# fmt:off
@@ -380,7 +419,7 @@ class StreamEnc:
 							position += 1
 						else:
 							time.sleep(0.005)
-						if self.abort:
+						if self.abort or self.request_id != request_id:
 							break
 				except Exception:
 					logging.exception("Encoder feeder thread crashed!")
@@ -390,6 +429,10 @@ class StreamEnc:
 			feeder = threading.Thread(target=feed_decoder, args=[decoder])
 			feeder.daemon = True
 			feeder.start()
+
+			reader = threading.Thread(target=self.read_stdout, args=(decoder, raw_queue, 10000, "Radio encoder decoder", request_id))
+			reader.daemon = True
+			reader.start()
 
 			def save_track() -> None:
 				# self.tauon.recorded_songs.append(song)
@@ -464,7 +507,7 @@ class StreamEnc:
 						target_file.unlink()
 
 			while True:
-				if self.abort:
+				if self.abort or self.request_id != request_id:
 					self.close_pipe(decoder.stdin, "decoder stdin")
 					self.stop_process(decoder, "decoder")
 					self.finish_encoder(encoder, timeout=2)
@@ -486,18 +529,17 @@ class StreamEnc:
 
 				raw_audio = None
 				try:
-					raw_audio = decoder.stdout.read(10000)
-				except BlockingIOError:
-					pass
+					raw_audio = raw_queue.get(timeout=0.01)
+				except Empty:
+					if decoder.poll() is not None:
+						logging.info("Decoder stopped")
+						break
 				if raw_audio:
 					try:
 						encoder.stdin.write(raw_audio)
 					except (BrokenPipeError, OSError, ValueError):
 						logging.warning("Encoder pipe closed")
 						break
-				elif raw_audio == b"" or decoder.poll() is not None:
-					logging.info("Decoder stopped")
-					break
 				else:
 					time.sleep(0.005)
 

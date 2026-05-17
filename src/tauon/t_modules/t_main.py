@@ -3115,6 +3115,9 @@ class PlayerCtl:
 			self.left_time = self.playing_time
 			self.left_index = self.track_queue[self.queue_step]
 
+		if self.tauon.radiobox.load_connecting or self.playing_state == PlayingState.URL_STREAM:
+			self.tauon.radiobox.abort_load()
+
 		previous_state = self.playing_state
 		self.playing_state = PlayingState.STOPPED
 		if update_gui:
@@ -34681,6 +34684,7 @@ class RadioBox:
 		self.loaded_station: RadioStation | None = None
 		self.load_connecting: bool = False
 		self.load_failed: bool = False
+		self.load_request_id: int = 0
 		self.searching: bool = False
 		self.load_failed_timer: Timer = Timer()
 		self.right_clicked_station: RadioStation | None = None
@@ -34760,6 +34764,20 @@ class RadioBox:
 			logging.exception("Failed to extract M3U")
 			return None
 
+	def abort_load(self, clear_station: bool = True) -> None:
+		self.load_request_id += 1
+		self.load_connecting = False
+		self.load_failed = False
+		self.loaded_url = None
+		if clear_station:
+			self.loaded_station = None
+		if self.websocket:
+			self.websocket.close()
+			logging.info("Websocket closed")
+		self.tauon.stream_proxy.stop()
+		self.pctl.record_stream = False
+		self.gui.update += 1
+
 	def start(self, station: RadioStation) -> None:
 		url = station.stream_url
 		logging.info("Start radio")
@@ -34774,7 +34792,7 @@ class RadioBox:
 				return
 
 		if self.load_connecting:
-			return
+			self.abort_load(clear_station=False)
 
 		if self.websocket:
 			self.websocket.close()
@@ -34818,24 +34836,35 @@ class RadioBox:
 		self.pctl.decode_time = 0
 		self.loaded_station = station
 
-		if self.tauon.stream_proxy.download_running:
-			self.tauon.stream_proxy.abort = True
+		if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running or self.tauon.stream_proxy.pump_running:
+			self.tauon.stream_proxy.stop()
 
+		self.load_request_id += 1
+		request_id = self.load_request_id
 		self.load_connecting = True
 		self.load_failed = False
 
-		shoot = threading.Thread(target=self.start2, args=[url])
+		shoot = threading.Thread(target=self.start2, args=[url, request_id, self.run_proxy])
 		shoot.daemon = True
 		shoot.start()
 
-	def start2(self, url: str) -> None:
-		if self.run_proxy and not self.tauon.stream_proxy.start_download(url):
-			self.load_failed_timer.set()
-			self.load_failed = True
-			self.load_connecting = False
-			self.gui.update += 1
-			logging.error("Starting radio failed")
+	def start2(self, url: str, request_id: int, run_proxy: bool) -> None:
+		if request_id != self.load_request_id:
+			return
+
+		if run_proxy and not self.tauon.stream_proxy.start_download(url, request_id):
+			if request_id == self.load_request_id:
+				self.load_failed_timer.set()
+				self.load_failed = True
+				self.load_connecting = False
+				self.gui.update += 1
+				logging.error("Starting radio failed")
 			# self.show_message(_("Failed to establish a connection"), mode="error")
+			return
+
+		if request_id != self.load_request_id:
+			if run_proxy and self.tauon.stream_proxy.request_id == request_id:
+				self.tauon.stream_proxy.stop()
 			return
 
 		self.loaded_url = url
