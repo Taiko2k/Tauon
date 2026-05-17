@@ -7881,7 +7881,11 @@ class Tauon:
 			self.milky.projectm.rescan_presets()
 			if not self.milky.projectm.presets:
 				def download_presets() -> None:
-					self.preset_download_box.start()
+					self.preset_download_box.start(
+						title=_("Downloading Milkdrop presets"),
+						status=_("Starting download..."),
+						cancel_detail=_("Milkdrop will still be enabled."),
+					)
 					def dl() -> None:
 						url = "https://github.com/Taiko2k/Tauon/releases/download/Extras/creamingsodav1.zip"
 						assert url
@@ -15706,6 +15710,12 @@ class Tauon:
 
 	def download_ffmpeg(self, _x) -> None:
 		"""Download FFmpeg portable binary to User Data dir, supports x64 Windows and Linux"""
+		self.preset_download_box.start(
+			title=_("Downloading FFmpeg"),
+			status=_("Starting download..."),
+			cancel_detail=_("FFmpeg will not be installed."),
+		)
+
 		def go() -> None:
 			if self.windows:
 				url = "https://github.com/GyanD/codexffmpeg/releases/download/8.0.1/ffmpeg-8.0.1-essentials_build.zip"
@@ -15713,10 +15723,10 @@ class Tauon:
 			elif not self.macos:
 				url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-03-02-13-06/ffmpeg-n8.0.1-66-g27b8d1a017-linux64-gpl-8.0.tar.xz"
 				sha = "e6f31af6c1ef49ceec8361185d70283ea8ad6c8ceed652d5dee66ec174a11eea"
-			self.show_message(_("Starting download..."))
 			with io.BytesIO() as f:
 				try:
 					with requests.get(url, stream=True, timeout=1800) as r: # Windows ffmpeg is 101MB, Linux 130MB, give it half an hour in case someone is willing to suffer it on a slow connection
+						r.raise_for_status()
 						dl = 0
 						total_bytes = int(r.headers.get("Content-Length", 0))
 						if self.windows:
@@ -15725,24 +15735,43 @@ class Tauon:
 							fallback_mb = 130
 						total_mb = round(total_bytes / 1000 / 1000) if total_bytes else fallback_mb
 
-						for data in r.iter_content(chunk_size=4096):
+						for data in r.iter_content(chunk_size=65536):
+							if self.preset_download_box.cancel_requested:
+								self.preset_download_box.complete(
+									_("FFmpeg download cancelled"),
+									_("FFmpeg was not installed."),
+								)
+								return
+							if not data:
+								continue
 							dl += len(data)
 							f.write(data)
-							mb = round(dl / 1000 / 1000)
-							if mb % 5 == 0:
-								self.show_message(_("Downloading... {MB}/{total_mb}").format(MB=mb, total_mb=total_mb))
+							mb = dl / 1000 / 1000
+							if total_bytes:
+								progress = min(0.95, dl / total_bytes * 0.95)
+							else:
+								progress = min(0.95, mb / total_mb * 0.95)
+							detail = f"{mb:.1f} / {total_mb:.1f} MB"
+							self.preset_download_box.update(progress, _("Downloading FFmpeg..."), detail)
 				except Exception as e:
 					logging.exception("Download failed")
-					self.show_message(_("Download failed"), str(e), mode="error")
+					self.preset_download_box.fail(_("Download failed"), f"{type(e).__name__}: {e}")
 					return
 
 				f.seek(0)
+				self.preset_download_box.update(0.96, _("Verifying download..."))
 				checksum = hashlib.sha256(f.read()).hexdigest()
 				if checksum != sha:
-					self.show_message(_("Download completed but checksum failed"), mode="error")
+					self.preset_download_box.fail(_("Download completed but checksum failed"))
 					logging.error(f"Checksum was {checksum} but expected {sha}")
 					return
-				self.show_message(_("Download completed. Extracting..."))
+				if self.preset_download_box.cancel_requested:
+					self.preset_download_box.complete(
+						_("FFmpeg download cancelled"),
+						_("FFmpeg was not installed."),
+					)
+					return
+				self.preset_download_box.update(0.98, _("Extracting FFmpeg..."))
 				f.seek(0)
 				if self.windows:
 					z = zipfile.ZipFile(f, mode="r")
@@ -15759,6 +15788,12 @@ class Tauon:
 
 					with tarfile.open(fileobj=f, mode="r:xz") as tar:
 						for member in tar.getmembers():
+							if self.preset_download_box.cancel_requested:
+								self.preset_download_box.complete(
+									_("FFmpeg download cancelled"),
+									_("FFmpeg was not installed."),
+								)
+								return
 							filename = Path(member.name).name
 
 							if filename in wanted and member.isfile():
@@ -15766,7 +15801,7 @@ class Tauon:
 								tar.extract(member, path=output_dir)
 
 
-			self.show_message(_("FFmpeg fetch complete"), mode="done")
+			self.preset_download_box.complete(_("FFmpeg fetch complete"))
 
 		shooter(go)
 
@@ -24202,15 +24237,17 @@ class PresetDownloadBox:
 		self.status: str = ""
 		self.detail: str = ""
 		self.done: bool = False
+		self.cancel_detail: str = ""
 
-	def start(self) -> None:
+	def start(self, *, title: str, status: str, cancel_detail: str) -> None:
 		self.active = True
 		self.cancel_requested = False
 		self.done = False
 		self.progress = 0.0
-		self.title = _("Downloading Milkdrop presets")
-		self.status = _("Starting download...")
+		self.title = title
+		self.status = status
 		self.detail = ""
+		self.cancel_detail = cancel_detail
 		self.gui.update = max(self.gui.update, 2)
 
 	def update(self, progress: float | None, status: str, detail: str = "") -> None:
@@ -24246,7 +24283,7 @@ class PresetDownloadBox:
 	def cancel(self) -> None:
 		self.cancel_requested = True
 		self.status = _("Cancelling...")
-		self.detail = _("Milkdrop will still be enabled.")
+		self.detail = self.cancel_detail
 		self.gui.update = max(self.gui.update, 2)
 
 	def render(self) -> None:
