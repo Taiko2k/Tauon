@@ -68,13 +68,19 @@ class StreamEnc:
 		self.url = ""
 		self.request_id = 0
 		self.download_response = None
+		self.decoder_process: subprocess.Popen[bytes] | None = None
+		self.record_decoder_process: subprocess.Popen[bytes] | None = None
+		self.record_encoder_process: subprocess.Popen[bytes] | None = None
 
 	def state_log(self) -> str:
 		return (
 			f"request_id={self.request_id} abort={self.abort} "
 			f"download_running={self.download_running} encode_running={self.encode_running} "
 			f"pump_running={self.pump_running} feed_running={self.feed_running} "
-			f"chunks={self.c} response_open={self.download_response is not None}"
+			f"chunks={self.c} response_open={self.download_response is not None} "
+			f"decoder_running={self.decoder_process is not None and self.decoder_process.poll() is None} "
+			f"record_decoder_running={self.record_decoder_process is not None and self.record_decoder_process.poll() is None} "
+			f"record_encoder_running={self.record_encoder_process is not None and self.record_encoder_process.poll() is None}"
 		)
 
 	def stop(self) -> None:
@@ -84,6 +90,7 @@ class StreamEnc:
 			logging.info("Websocket closed")
 
 		self.abort = True
+		self.feed_running = False
 		if self.download_response is not None:
 			try:
 				self.download_response.close()
@@ -91,6 +98,12 @@ class StreamEnc:
 			except Exception:
 				logging.exception("Failed to close radio stream response")
 			self.download_response = None
+		self.stop_process(self.decoder_process, "radio decoder")
+		self.decoder_process = None
+		self.stop_process(self.record_decoder_process, "radio recording decoder")
+		self.record_decoder_process = None
+		if self.record_encoder_process is not None:
+			self.close_pipe(self.record_encoder_process.stdin, "radio recording encoder stdin")
 		self.tauon.radiobox.loaded_url = None
 		logging.info(f"Radio stream stop flagged: {self.state_log()}")
 
@@ -319,6 +332,7 @@ class StreamEnc:
 		# fmt:on
 
 		decoder = self.ffmpeg_popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+		self.decoder_process = decoder
 
 		raw_audio = None
 		max_read = 10000
@@ -353,8 +367,8 @@ class StreamEnc:
 				self.feed_running = False
 				raise
 			finally:
-				self.close_pipe(decoder.stdin, "decoder stdin")
 				self.feed_running = False
+				self.close_pipe(decoder.stdin, "decoder stdin")
 			logging.info(
 				f"Radio feeder exiting for request {request_id}; "
 				f"position={position} chunks={self.c} abort={self.abort} pump_running={self.pump_running}"
@@ -368,46 +382,49 @@ class StreamEnc:
 		reader.daemon = True
 		reader.start()
 
-		last_wait_log = time.monotonic()
-		while True:
-			if not self.tauon.stream_proxy.download_running or self.abort or self.request_id != request_id:
-				logging.info(
-					f"Radio pump break for request {request_id}: "
-					f"download_running={self.tauon.stream_proxy.download_running} "
-					f"abort={self.abort} current_request={self.request_id}"
-				)
-				break
-			if raw_audio is None:
-				try:
-					raw_audio = raw_queue.get(timeout=0.01)
-				except Empty:
-					if decoder.poll() is not None:
-						logging.info(f"Radio decoder process ended with code {decoder.poll()} for request {request_id}")
-						break
-					now = time.monotonic()
-					if now - last_wait_log > 1:
-						logging.info(
-							f"Radio pump waiting for decoded audio request={request_id} "
-							f"chunks={self.c} raw_queue={raw_queue.qsize()} decoder_poll={decoder.poll()}"
-						)
-						last_wait_log = now
-					continue
-			if raw_audio:
-				r = aud.feed_ready(max_read)
-				if r:
-					aud.feed_raw(len(raw_audio), raw_audio)
-					if len(raw_audio) < max_read:
-						time.sleep(0.01)
-					raw_audio = None
-					continue
+		try:
+			last_wait_log = time.monotonic()
+			while True:
+				if not self.tauon.stream_proxy.download_running or self.abort or self.request_id != request_id:
+					logging.info(
+						f"Radio pump break for request {request_id}: "
+						f"download_running={self.tauon.stream_proxy.download_running} "
+						f"abort={self.abort} current_request={self.request_id}"
+					)
+					break
+				if raw_audio is None:
+					try:
+						raw_audio = raw_queue.get(timeout=0.01)
+					except Empty:
+						if decoder.poll() is not None:
+							logging.info(f"Radio decoder process ended with code {decoder.poll()} for request {request_id}")
+							break
+						now = time.monotonic()
+						if now - last_wait_log > 1:
+							logging.info(
+								f"Radio pump waiting for decoded audio request={request_id} "
+								f"chunks={self.c} raw_queue={raw_queue.qsize()} decoder_poll={decoder.poll()}"
+							)
+							last_wait_log = now
+						continue
+				if raw_audio:
+					r = aud.feed_ready(max_read)
+					if r:
+						aud.feed_raw(len(raw_audio), raw_audio)
+						if len(raw_audio) < max_read:
+							time.sleep(0.01)
+						raw_audio = None
+						continue
 
-			time.sleep(0.01)
-
-		self.close_pipe(decoder.stdin, "decoder stdin")
-		self.stop_process(decoder, "decoder")
-
-		self.pump_running = False
-		logging.info(f"Radio pump exiting for request {request_id}: {self.state_log()}")
+				time.sleep(0.01)
+		finally:
+			self.feed_running = False
+			self.stop_process(decoder, "decoder")
+			if self.decoder_process is decoder:
+				self.decoder_process = None
+			self.close_pipe(decoder.stdin, "decoder stdin")
+			self.pump_running = False
+			logging.info(f"Radio pump exiting for request {request_id}: {self.state_log()}")
 
 	def encode(self) -> None:
 		self.encode_running = True
@@ -457,6 +474,7 @@ class StreamEnc:
 			# fmt:on
 
 			decoder = self.ffmpeg_popen(decoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			self.record_decoder_process = decoder
 
 			position = 0
 			request_id = self.request_id
@@ -476,6 +494,7 @@ class StreamEnc:
 			]
 			# fmt:on
 			encoder = self.ffmpeg_popen(encoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+			self.record_encoder_process = encoder
 
 			def feed_decoder(decoder: subprocess.Popen[bytes]) -> None:
 				nonlocal position
@@ -498,7 +517,13 @@ class StreamEnc:
 				except Exception:
 					logging.exception("Encoder feeder thread crashed!")
 				finally:
-					self.close_pipe(decoder.stdin, "decoder stdin")
+					logging.info(
+						"Radio recording feeder exiting for request %s; position=%s chunks=%s abort=%s",
+						request_id,
+						position,
+						self.c,
+						self.abort,
+					)
 
 			feeder = threading.Thread(target=feed_decoder, args=[decoder])
 			feeder.daemon = True
@@ -582,9 +607,14 @@ class StreamEnc:
 
 			while True:
 				if self.abort or self.request_id != request_id:
-					self.close_pipe(decoder.stdin, "decoder stdin")
-					self.stop_process(decoder, "decoder")
+					logging.info(f"Radio recording stop requested for request {request_id}: {self.state_log()}")
+					self.stop_process(decoder, "recording decoder")
+					if self.record_decoder_process is decoder:
+						self.record_decoder_process = None
+					self.close_pipe(decoder.stdin, "recording decoder stdin")
 					self.finish_encoder(encoder, timeout=2)
+					if self.record_encoder_process is encoder:
+						self.record_encoder_process = None
 					save_target_if_large()
 					return
 
@@ -598,8 +628,11 @@ class StreamEnc:
 					else:
 						logging.info("Split and save file")
 						self.finish_encoder(encoder)
+						if self.record_encoder_process is encoder:
+							self.record_encoder_process = None
 						save_target_if_large()
 						encoder = self.ffmpeg_popen(encoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+						self.record_encoder_process = encoder
 
 				raw_audio = None
 				try:
@@ -618,17 +651,22 @@ class StreamEnc:
 					time.sleep(0.005)
 
 			self.finish_encoder(encoder, timeout=2)
+			if self.record_encoder_process is encoder:
+				self.record_encoder_process = None
 			save_target_if_large()
 
 		except Exception:
 			logging.exception("Encoder thread crashed!")
 		finally:
 			if decoder is not None:
-				self.close_pipe(decoder.stdin, "decoder stdin")
-				self.stop_process(decoder, "decoder")
+				self.stop_process(decoder, "recording decoder")
+				if self.record_decoder_process is decoder:
+					self.record_decoder_process = None
+				self.close_pipe(decoder.stdin, "recording decoder stdin")
 			if encoder is not None and encoder.poll() is None:
-				self.close_pipe(encoder.stdin, "encoder stdin")
-				self.stop_process(encoder, "encoder")
+				self.finish_encoder(encoder, timeout=2)
+			if self.record_encoder_process is encoder:
+				self.record_encoder_process = None
 			self.encode_running = False
 			self.tauon.pctl.tag_history.clear()
 
