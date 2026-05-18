@@ -47447,6 +47447,13 @@ def main(holder: Holder) -> None:
 	except Exception:
 		logging.exception("Failed to start Discord RPC at startup")
 
+	if tauon.windows:
+		if not (tauon.install_directory / "lrclib-solver.exe").exists():
+			logging.warning("lrclib-solver not found, uploading lyrics to LRCLIB will not be possible")
+	else:
+		if not (tauon.install_directory / "lrclib-solver").exists():
+			logging.warning("lrclib-solver not found, uploading lyrics to LRCLIB will not be possible")
+
 	if db_version > 0 and db_version < latest_db_version:
 		clear_icon_cache(bag.dirs.scaled_asset_directory)
 
