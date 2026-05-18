@@ -24499,9 +24499,17 @@ class NagBox:
 			self.colours.box_text_label,
 			12,
 			force=True,
-			replace="Patreon",
+			replace="Patreon.",
 		)
 		self.tauon.link_activate(patreon_link_x, support_y + round(19 * scale), patreon_link, click=self.gui.level_2_click)
+		self.ddt.text(
+			(inner_x, support_y + round(35 * scale)),
+			_("Your continued support helps keep this app alive."),
+			self.colours.box_text_label,
+			12,
+			bg=panel_fill,
+			max_w=inner_w,
+		)
 
 		button_y = y + h - round(46 * scale)
 		button_h = round(30 * scale)
