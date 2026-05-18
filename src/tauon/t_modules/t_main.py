@@ -3091,6 +3091,13 @@ class PlayerCtl:
 		self.gui.pl_update += 1
 
 	def stop(self, block: bool = False, run: bool = False, update_gui: bool = True) -> int:
+		stream_proxy = getattr(self.tauon, "stream_proxy", None)
+		stream_state = stream_proxy.state_log() if stream_proxy else "unavailable"
+		logging.info(
+			f"Player stop requested block={block} run={run} update_gui={update_gui} "
+			f"playing_state={self.playing_state} player4_state={self.tauon.player4_state} "
+			f"stream_state={stream_state}"
+		)
 		self.playerCommand = "stop"
 		if run:
 			self.playerCommand = "runstop"
@@ -3132,6 +3139,7 @@ class PlayerCtl:
 				self.tauon.update_title_do()  # Update title bar text
 
 		if self.tauon.stream_proxy and self.tauon.stream_proxy.download_running:
+			logging.info(f"Player stop is stopping radio stream: {self.tauon.stream_proxy.state_log()}")
 			self.tauon.stream_proxy.stop()
 
 		if block:
@@ -34810,6 +34818,11 @@ class RadioBox:
 			return None
 
 	def abort_load(self, clear_station: bool = True) -> None:
+		logging.info(
+			f"Radio load abort requested clear_station={clear_station} "
+			f"load_request_id={self.load_request_id} load_connecting={self.load_connecting} "
+			f"loaded_url={self.loaded_url}"
+		)
 		self.load_request_id += 1
 		self.load_connecting = False
 		self.load_failed = False
@@ -34825,10 +34838,13 @@ class RadioBox:
 
 	def start(self, station: RadioStation) -> None:
 		url = station.stream_url
-		logging.info("Start radio")
+		logging.info(
+			f"Start radio station title={station.title!r} url={url!r} "
+			f"load_request_id={self.load_request_id} load_connecting={self.load_connecting} "
+			f"playing_state={self.pctl.playing_state}"
+		)
 		# Otherwise we'll be mute if we're starting from a paused state
 		self.pctl.set_volume()
-		logging.info(url)
 		if self.is_m3u(url):
 			url = self.extract_stream_m3u(url)
 			logging.info(f"Extracted URL is: {url}")
@@ -34882,19 +34898,29 @@ class RadioBox:
 		self.loaded_station = station
 
 		if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running or self.tauon.stream_proxy.pump_running:
+			logging.info(
+				f"Stopping existing radio stream before new request: "
+				f"{self.tauon.stream_proxy.state_log()}"
+			)
 			self.tauon.stream_proxy.stop()
 
 		self.load_request_id += 1
 		request_id = self.load_request_id
 		self.load_connecting = True
 		self.load_failed = False
+		logging.info(f"Radio start request queued request_id={request_id} run_proxy={self.run_proxy} url={url!r}")
 
 		shoot = threading.Thread(target=self.start2, args=[url, request_id, self.run_proxy])
 		shoot.daemon = True
 		shoot.start()
 
 	def start2(self, url: str, request_id: int, run_proxy: bool) -> None:
+		logging.info(
+			f"Radio start2 entered request_id={request_id} current_request={self.load_request_id} "
+			f"run_proxy={run_proxy} url={url!r}"
+		)
 		if request_id != self.load_request_id:
+			logging.info(f"Radio start2 ignoring stale request_id={request_id}")
 			return
 
 		if run_proxy and not self.tauon.stream_proxy.start_download(url, request_id):
@@ -34903,15 +34929,23 @@ class RadioBox:
 				self.load_failed = True
 				self.load_connecting = False
 				self.gui.update += 1
-				logging.error("Starting radio failed")
+				logging.error(
+					f"Starting radio failed request_id={request_id}: "
+					f"{self.tauon.stream_proxy.state_log()}"
+				)
 			# self.show_message(_("Failed to establish a connection"), mode="error")
 			return
 
 		if request_id != self.load_request_id:
+			logging.info(
+				f"Radio start2 became stale after download start request_id={request_id} "
+				f"current_request={self.load_request_id}"
+			)
 			if run_proxy and self.tauon.stream_proxy.request_id == request_id:
 				self.tauon.stream_proxy.stop()
 			return
 
+		logging.info(f"Radio start2 activating playback request_id={request_id} url={url!r}")
 		self.loaded_url = url
 		self.pctl.record_stream = False
 		self.pctl.playerCommand = "url"
