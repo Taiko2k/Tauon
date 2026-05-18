@@ -7914,7 +7914,7 @@ class Tauon:
 								logging.exception("Failed to count installed Milkdrop presets in %s", target_directory)
 								return -1
 
-						def enable_milkdrop(status: str, detail: str = "") -> None:
+						def enable_milkdrop(status: str, detail: str = "", toast_text: str | None = None) -> None:
 							count_before = len(self.milky.projectm.presets)
 							self.prefs.milk = True
 							try:
@@ -7932,7 +7932,7 @@ class Tauon:
 								len(self.milky.projectm.presets),
 								count_installed_presets(),
 							)
-							self.preset_download_box.complete(status, detail)
+							self.preset_download_box.complete(status=status, detail=detail, toast_text=toast_text)
 
 						try:
 							with io.BytesIO() as buffer:
@@ -7952,8 +7952,8 @@ class Tauon:
 										if self.preset_download_box.cancel_requested:
 											logging.info("Preset download cancelled during download after %s bytes", downloaded)
 											enable_milkdrop(
-												_("Preset download cancelled"),
-												_("Milkdrop visualiser enabled."),
+												status=_("Preset download cancelled"),
+												detail=_("Milkdrop visualiser enabled."),
 											)
 											return
 										if not data:
@@ -7993,8 +7993,8 @@ class Tauon:
 										if self.preset_download_box.cancel_requested:
 											logging.info("Preset download cancelled during extraction at index=%s extracted=%s skipped=%s", index, extracted, skipped)
 											enable_milkdrop(
-												_("Preset download cancelled"),
-												_("Milkdrop visualiser enabled."),
+												status=_("Preset download cancelled"),
+												detail=_("Milkdrop visualiser enabled."),
 											)
 											return
 
@@ -8034,7 +8034,11 @@ class Tauon:
 										target_directory,
 									)
 
-							enable_milkdrop(_("Presets ready"), _("Milkdrop visualiser enabled."))
+							enable_milkdrop(
+								status=_("Presets ready"),
+								detail=_("Milkdrop visualiser enabled."),
+								toast_text=_("Download completed"),
+							)
 						except Exception as e:
 							logging.exception("Preset download failed")
 							self.preset_download_box.fail(_("Download failed"), f"{type(e).__name__}: {e}")
@@ -15746,8 +15750,8 @@ class Tauon:
 						for data in r.iter_content(chunk_size=65536):
 							if self.preset_download_box.cancel_requested:
 								self.preset_download_box.complete(
-									_("FFmpeg download cancelled"),
-									_("FFmpeg was not installed."),
+									status=_("FFmpeg download cancelled"),
+									detail=_("FFmpeg was not installed."),
 								)
 								return
 							if not data:
@@ -15775,8 +15779,8 @@ class Tauon:
 					return
 				if self.preset_download_box.cancel_requested:
 					self.preset_download_box.complete(
-						_("FFmpeg download cancelled"),
-						_("FFmpeg was not installed."),
+						status=_("FFmpeg download cancelled"),
+						detail=_("FFmpeg was not installed."),
 					)
 					return
 				self.preset_download_box.update(0.98, _("Extracting FFmpeg..."))
@@ -15798,8 +15802,8 @@ class Tauon:
 						for member in tar.getmembers():
 							if self.preset_download_box.cancel_requested:
 								self.preset_download_box.complete(
-									_("FFmpeg download cancelled"),
-									_("FFmpeg was not installed."),
+									status=_("FFmpeg download cancelled"),
+									detail=_("FFmpeg was not installed."),
 								)
 								return
 							filename = Path(member.name).name
@@ -15809,7 +15813,10 @@ class Tauon:
 								tar.extract(member, path=output_dir)
 
 
-			self.preset_download_box.complete(_("FFmpeg fetch complete"))
+			self.preset_download_box.complete(
+				status=_("FFmpeg fetch complete"),
+				toast_text=_("Download completed"),
+			)
 
 		shooter(go)
 
@@ -24271,14 +24278,13 @@ class PresetDownloadBox:
 		self.done = False
 		self.gui.update = max(self.gui.update, 2)
 
-	def complete(self, status: str, detail: str = "") -> None:
-		self.active = True
-		self.cancel_requested = False
-		self.done = True
+	def complete(self, status: str, detail: str = "", toast_text: str | None = None) -> None:
 		self.progress = 1.0
 		self.status = status
 		self.detail = detail
-		self.gui.update = max(self.gui.update, 2)
+		self.finish()
+		if toast_text:
+			self.tauon.toast(toast_text)
 
 	def fail(self, status: str, detail: str = "") -> None:
 		self.active = True
