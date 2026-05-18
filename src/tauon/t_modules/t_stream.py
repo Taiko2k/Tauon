@@ -67,6 +67,7 @@ class StreamEnc:
 		self.c = 0
 		self.url = ""
 		self.request_id = 0
+		self.download_response = None
 
 	def stop(self) -> None:
 		if self.tauon.radiobox.websocket:
@@ -74,6 +75,13 @@ class StreamEnc:
 			logging.info("Websocket closed")
 
 		self.abort = True
+		if self.download_response is not None:
+			try:
+				self.download_response.close()
+				logging.info("Closed radio stream response")
+			except Exception:
+				logging.exception("Failed to close radio stream response")
+			self.download_response = None
 		self.tauon.radiobox.loaded_url = None
 
 	def ffmpeg_popen(
@@ -217,9 +225,12 @@ class StreamEnc:
 				r.add_header("User-Agent", self.tauon.t_agent)
 				logging.info("Open URL.....")
 				r = urllib.request.urlopen(r, timeout=20, context=self.tauon.tls_context)
+				self.download_response = r
 				logging.info("URL opened.")
 				if self.abort or self.request_id != request_id:
 					r.close()
+					if self.download_response is r:
+						self.download_response = None
 					return False
 
 			except Exception as e:
@@ -678,7 +689,17 @@ class StreamEnc:
 							self.tauon.show_message(_("Data malformation detected. Stream aborted."), mode="error")
 							raise
 		except Exception:
-			logging.exception("Stream download thread crashed!")
-			self.download_running = False
+			if self.abort:
+				logging.info("Abort stream connection")
+			else:
+				logging.exception("Stream download thread crashed!")
 			self.abort = True
 			return
+		finally:
+			try:
+				r.close()
+			except Exception:
+				logging.exception("Failed to close radio stream response")
+			if self.download_response is r:
+				self.download_response = None
+			self.download_running = False
