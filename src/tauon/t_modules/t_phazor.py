@@ -1077,7 +1077,7 @@ def player4(tauon: Tauon) -> None:
 					and not pctl.start_time_target
 					and not pctl.jump_time
 					and loaded_track
-					and 0 < remain < 5.5
+					and 0 < remain < (17.0 if prefs.use_transition_crossfade else 5.5)
 					and not loaded_track.is_cue
 					and subcommand != "now"
 				):
@@ -1094,11 +1094,30 @@ def player4(tauon: Tauon) -> None:
 							time.sleep(0.016)
 						aud.stop()
 
-					aud.next(
-						target_path.encode(),
-						int((pctl.start_time_target + pctl.jump_time) * 1000),
-						ctypes.c_float(calc_rg(target_object)),
-					)
+					if prefs.use_transition_crossfade:
+						_fade_ms = smart_fade_ms(loaded_track, target_object) if prefs.use_smart_crossfade else prefs.cross_fade_time
+						_fade_s = min(_fade_ms / 1000, max(0.1, remain - prefs.device_buffer / 1000 - 0.2))
+						_wait = remain - _fade_s - prefs.device_buffer / 1000
+						while r_timer.get() < _wait:
+							if pctl.commit:
+								track(end=False)
+							time.sleep(0.016)
+							if pctl.playerCommandReady and pctl.playerCommand in ("open", "stop", "seek"):
+								break
+						aud.config_set_fade_duration(int(_fade_s * 1000))
+						aud.start(
+							target_path.encode(errors="surrogateescape"),
+							int((pctl.start_time_target + pctl.jump_time) * 1000),
+							1,
+							ctypes.c_float(calc_rg(target_object)),
+						)
+						aud.config_set_fade_duration(prefs.cross_fade_time)
+					else:
+						aud.next(
+							target_path.encode(),
+							int((pctl.start_time_target + pctl.jump_time) * 1000),
+							ctypes.c_float(calc_rg(target_object)),
+						)
 
 					cont = False
 					while r_timer.get() <= remain - prefs.device_buffer / 1000:

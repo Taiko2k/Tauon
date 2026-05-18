@@ -27745,6 +27745,8 @@ class Over:
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_jump_crossfade, _("Fade on track jump"), accent=accent)
 		inner_y += row_h
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_transition_crossfade, _("Crossfade on track end"), accent=accent)
+		inner_y += row_h
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_smart_crossfade, _("Smart Mix (dynamic crossfade)"), accent=accent)
 		inner_y += row_h
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_manual_crossfade, _("Smart Mix: fixed duration"), accent=accent)
