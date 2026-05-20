@@ -178,6 +178,9 @@ def transfer_args_and_exit() -> None:
 		if item == "--repeat":
 			url = base + "repeat/"
 			urllib.request.urlopen(url)
+		if item == "--reload-theme":
+			url = base + "reloadtheme/"
+			urllib.request.urlopen(url)
 
 	sys.exit()
 

@@ -1093,6 +1093,8 @@ def controller(tauon: Tauon) -> None:
 				tauon.toggle_random()
 			if path == "/repeat":
 				tauon.toggle_repeat()
+			if path == "/reloadtheme":
+				tauon.load_theme()
 			if path.startswith("/open/"):
 				rest = path[6:]
 				try:
