@@ -41508,6 +41508,9 @@ class SmoothScroll:
 			route = "precise"
 			self._log_scroll_mode(source, "precise", delta, px_per_unit, precise_scale, precise_px_per_unit)
 			state.velocity = 0.0
+			state.wheel_streak = 0
+			state.last_wheel_direction = 0.0
+			state.last_wheel_time = 0.0
 			pixel_delta = delta * precise_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER * precise_scale
 			state.precise_buffer += pixel_delta
 			state.last_precise_input = time.monotonic()
@@ -49103,18 +49106,33 @@ def main(holder: Holder) -> None:
 				wheel_before = inp.mouse_wheel
 				window_active_before = now < inp.trackpad_scroll_mode_until
 				raw_scroll_y = event.wheel.y
-				is_precise = raw_scroll_y != event.wheel.integer_y
-				if is_precise:
+				integer_scroll_y = event.wheel.integer_y
+				fractional_scroll = raw_scroll_y != integer_scroll_y
+				matching_integer_scroll = integer_scroll_y != 0 and (
+					raw_scroll_y == 0 or (raw_scroll_y > 0) == (integer_scroll_y > 0)
+				)
+				# SDL3's float y can be fractional for wheel hardware too; integer_y is the
+				# accumulated whole-tick stream used for SDL2-style wheel scrolling.
+				use_integer_scroll = matching_integer_scroll and (
+					not window_active_before and not (macos and fractional_scroll)
+				)
+				scroll_y = float(integer_scroll_y) if use_integer_scroll else raw_scroll_y
+				is_precise = fractional_scroll and not use_integer_scroll
+				if use_integer_scroll:
+					inp.trackpad_scroll_mode_until = 0.0
+				elif is_precise:
 					inp.trackpad_scroll_mode_until = now + SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW
-				trackpad_like = is_precise or now < inp.trackpad_scroll_mode_until
+				trackpad_like = is_precise or (not use_integer_scroll and now < inp.trackpad_scroll_mode_until)
 				event_mode = "trackpad" if trackpad_like else "wheel"
 				if event_mode != inp.scroll_debug_last_mode or now - inp.scroll_debug_last_log > 1.0:
 					logging.debug(
-						"Wheel event mode=%s raw_y=%.3f integer_y=%d precise=%s gesture_window_before=%s gesture_window_after=%s wheel_before=%.3f mouse=(%d,%d)",
+						"Wheel event mode=%s raw_y=%.3f integer_y=%d scroll_y=%.3f precise=%s use_integer=%s gesture_window_before=%s gesture_window_after=%s wheel_before=%.3f mouse=(%d,%d)",
 						event_mode,
 						raw_scroll_y,
-						event.wheel.integer_y,
+						integer_scroll_y,
+						scroll_y,
 						is_precise,
+						use_integer_scroll,
 						window_active_before,
 						now < inp.trackpad_scroll_mode_until,
 						wheel_before,
@@ -49123,15 +49141,16 @@ def main(holder: Holder) -> None:
 					)
 					inp.scroll_debug_last_mode = event_mode
 					inp.scroll_debug_last_log = now
-				inp.mouse_wheel += raw_scroll_y
+				inp.mouse_wheel += scroll_y
 				if logging.getLogger().isEnabledFor(logging.DEBUG):
 					logging.debug(
-						"Wheel event accumulate mode=%s wheel_after=%.3f trackpad_until_in=%.3f",
+						"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f trackpad_until_in=%.3f",
 						event_mode,
+						scroll_y,
 						inp.mouse_wheel,
 						max(inp.trackpad_scroll_mode_until - now, 0.0),
 					)
-				inp.mouse_wheel_precise = inp.mouse_wheel_precise or trackpad_like
+				inp.mouse_wheel_precise = trackpad_like
 
 				gui.update += 1
 			elif event.type == sdl3.SDL_EVENT_FINGER_DOWN:
