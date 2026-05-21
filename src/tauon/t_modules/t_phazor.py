@@ -1088,25 +1088,34 @@ def player4(tauon: Tauon) -> None:
 							pctl.playerCommandReady = False
 							pctl.playerCommand = ""
 
-						if check_timer.get() > 0.5:
+						if tauon.player4_state == PlayerState.PLAYING and check_timer.get() > 0.5:
 							check_timer.set()
-							revert = False
+							abort_gapless = False
 							if pctl.stop_mode in (1, 3):
-								revert = True
+								abort_gapless = True
 							elif pctl.stop_mode in (2, 4) and pctl.commit:
 								tr = pctl.playing_object()
 								tr2 = pctl.get_track(pctl.commit)
 								if tr and tr2 and (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
-									revert = True
-							
-							if not revert and pctl.commit and pctl.advance(quiet=True, end=True, dry=True) != pctl.commit:
-								revert = True
-								
-							if revert:
+									abort_gapless = True
+
+							queue_override = pctl.force_queue and not pctl.pause_queue
+							deterministic_next = queue_override or not pctl.random_mode
+							if not abort_gapless and pctl.commit and deterministic_next:
+								next_commit = pctl.advance(quiet=True, end=True, dry=True)
+								repeat_self_commit = (
+									subcommand == "repeat"
+									and pctl.commit == loaded_track.index
+									and target_object.index == loaded_track.index
+									and not (pctl.force_queue and not pctl.pause_queue)
+								)
+								if next_commit != pctl.commit and not repeat_self_commit:
+									abort_gapless = True
+
+							if abort_gapless:
+								resume_time = pctl.playing_time
 								logging.info("Queue or stop mode revert gapless")
-								pctl.commit = None
-								pctl.jump(loaded_track.index, jump=True)
-								pctl.jump_time = pctl.playing_time
+								pctl.abort_gapless_transition(loaded_track, resume_time)
 								cont = True
 								break
 

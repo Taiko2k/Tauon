@@ -2968,6 +2968,24 @@ class PlayerCtl:
 		self.update_change(update_gui)
 		self.deduct_shuffle(target.index)
 
+	def abort_gapless_transition(self, track: TrackClass, resume_time: float) -> None:
+		self.target_open = track.fullpath
+		self.target_object = track
+		self.start_time = track.start_time
+		self.start_time_target = self.start_time
+		self.playing_length = track.length
+		self.jump_time = resume_time
+		self.playing_time = resume_time
+		self.decode_time = resume_time
+		self.last_playing_time = resume_time
+		self.gui.update_spec = 0
+		self.commit = None
+		self.radiobox.loaded_station = None
+		self.playerCommand = "open"
+		self.playerSubCommand = "now"
+		self.playerCommandReady = True
+		self.playing_state = PlayingState.PLAYING
+
 	def update_change(self, update_gui: bool = True) -> None:
 		if self.prefs.update_title and update_gui:
 			self.tauon.update_title_do()
@@ -3511,8 +3529,9 @@ class PlayerCtl:
 
 		if self.playing_state == PlayingState.PAUSED and not self.prefs.resume_on_jump:
 			play = False
-			self.playerCommand = "stop"
-			self.playerCommandReady = True
+			if not dry:
+				self.playerCommand = "stop"
+				self.playerCommandReady = True
 
 		# Temporary Workaround for UI block causing unwanted dragging
 		if not dry:
@@ -3521,9 +3540,10 @@ class PlayerCtl:
 		quiet = False  # Feature disabled intentionally, not a bug
 
 		# Trim the history if it gets too long
-		while len(self.track_queue) > 250:
-			self.queue_step -= 1
-			del self.track_queue[0]
+		if not dry:
+			while len(self.track_queue) > 250:
+				self.queue_step -= 1
+				del self.track_queue[0]
 
 		# Save info about the track we are leaving
 		if not dry and len(self.track_queue) > 0:
