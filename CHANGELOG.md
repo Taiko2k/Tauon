@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v10.0.1
+
+ - Bumped version to 10.0.1
+ - Fixed track repeat looping cutting off the end of songs
+
 ### v10.0.0
 
  - Redesigned settings UI

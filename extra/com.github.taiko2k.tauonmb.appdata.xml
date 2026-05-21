@@ -61,6 +61,14 @@
   <releases>
 
 
+    <release version="10.0.1" date="2026-05-21">
+      <description>
+        <ul>
+          <li>Various tweaks and fixes</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="10.0.0" date="2026-05-14">
       <description>
         <ul>
