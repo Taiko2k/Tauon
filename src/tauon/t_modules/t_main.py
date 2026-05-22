@@ -198,7 +198,7 @@ from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
-from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
+from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, lyrics_are_synced, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -8423,10 +8423,10 @@ class Tauon:
 					audio.add( mutagen.id3.USLT( encoding=3,text=lyrics ) )
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
-				audio["LYRICS"] = lyrics
+				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
 			elif track.file_ext in ("OPUS", "OGG"):
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-				audio["LYRICS"] = lyrics
+				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
 			elif track.file_ext in ("APE","WV","TTA"):
 				audio = mutagen.apev2.APEv2(track.fullpath)
 				audio["Lyrics"] = lyrics
@@ -20258,6 +20258,8 @@ class TimedLyricsRen:
 				continue
 
 		self.data = sorted(self.data, key=lambda x: x[0])
+		if not self.data:
+			return None
 		self.line_heights = []
 		self.recenter_timeout.set()
 		self.temp_line = -1
@@ -42231,11 +42233,11 @@ class TimedLyricsEdit:
 				return True
 		elif track.file_ext == "FLAC":
 			audio = mutagen.flac.FLAC(track.fullpath)
-			if "LYRICS" in audio:
+			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
 				return True
 		elif track.file_ext in ("OPUS", "OGG"):
 			audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-			if "LYRICS" in audio:
+			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
 				return True
 		elif track.file_ext in ("APE","WV","TTA"):
 			audio = mutagen.apev2.APEv2(track.fullpath)
@@ -44615,35 +44617,27 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	"""
 	if not just_check:
 		if not reload and track.synced:
-			return track.synced.splitlines()
+			if lyrics_are_synced(track.synced):
+				return track.synced.splitlines()
+			logging.warning(
+				f"Synced lyrics for {track.filename} do not look like LRC. Reclassifying them as static lyrics."
+			)
+			if not track.lyrics:
+				track.lyrics = track.synced
+			track.synced = ""
+			return None
 		if track.is_network:
 			return None
 
 	# Check if internal track lyrics are synced lyrics
-	if len(track.lyrics) > 20:
-		split_lines = track.lyrics.splitlines()
-		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:"
-		# Check first line that's not empty or a comment or an LRC tag
-		for line in split_lines:
-			if line == "" or line[0] == "#":
-				continue
-
-			if any(tag in line for tag in LRC_tags):
-				continue
-
-			if line[0] == "[" and ":" in line[:10] \
-			and "." in line[:10] and "]" in line:
-				try:
-					int( line[1] )
-				except ValueError:
-					if just_check:
-						return False
-					break
-				if not just_check:
-					track.synced = track.lyrics
-					return split_lines
-				return True
-			break
+	if track.lyrics:
+		if lyrics_are_synced(track.lyrics):
+			if not just_check:
+				track.synced = track.lyrics
+				return track.lyrics.splitlines()
+			return True
+		if just_check:
+			return False
 
 
 	# Check if we have a .LRC file
