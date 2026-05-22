@@ -1,5 +1,5 @@
 
-<img src="https://github.com/Taiko2k/Tauon/assets/17271572/8ad864c0-dbda-45c2-ac81-e00fbff03c32" height="100px" >
+<img src="extra/tauonmb.svg" height="100px" >
 
 ## Tauon
 
