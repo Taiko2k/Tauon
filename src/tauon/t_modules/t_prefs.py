@@ -21,7 +21,7 @@ class Prefs:
 			self.playlist_row_height = round(22 * self.ui_scale)
 
 	# fmt:off
-	view_prefs:              dict[str, bool]
+	view_prefs:              dict[str, object]
 	encoder_output:          Path
 	window_opacity:          float
 	ui_scale:                float
@@ -59,6 +59,7 @@ class Prefs:
 	update_title:  bool = False
 	scroll_enable: bool = True
 	smooth_scroll_enable: bool = False
+	smooth_scroll_speed:  float = 1.0
 	break_enable:  bool = True
 
 	transcode_codec:   str = "opus"
