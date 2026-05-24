@@ -27457,7 +27457,7 @@ class Over:
 			_("Smooth scroll speed"),
 			prefs.smooth_scroll_speed,
 			0.25,
-			3.0,
+			10.0,
 			0.05,
 			accent=accent,
 			formatter=lambda number: f"{number:.2f}x",
@@ -47399,7 +47399,7 @@ def main(holder: Holder) -> None:
 		prefs.scroll_enable = prefs.view_prefs["scroll-enable"]
 		prefs.smooth_scroll_enable = prefs.view_prefs.get("smooth-scroll-enable", False)
 		prefs.smooth_scroll_speed = float(prefs.view_prefs.get("smooth-scroll-speed", 1.0))
-		prefs.smooth_scroll_speed = min(max(prefs.smooth_scroll_speed, 0.25), 3.0)
+		prefs.smooth_scroll_speed = min(max(prefs.smooth_scroll_speed, 0.25), 10.0)
 		if "break-enable" in prefs.view_prefs:
 			prefs.break_enable = prefs.view_prefs["break-enable"]
 		else:
