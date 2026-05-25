@@ -26210,12 +26210,21 @@ class Over:
 		content_x, content_y, content_w, content_h = self.draw_settings_section(
 			rect,
 			_("Lyrics lookup"),
-			_("Choose which sources Tauon uses for lyrics."),
+			_("Choose when and where Tauon searches for lyrics."),
 			accent,
 		)
 
 		row_h = round(40 * self.gui.scale)
 		row_gap = round(6 * self.gui.scale)
+		self.prefs.auto_lyrics = self.settings_switch_row(
+			(content_x, content_y, content_w, row_h),
+			self.prefs.auto_lyrics,
+			_("Auto-search lyrics"),
+			_("Auto-search when lyrics enabled"),
+			accent,
+		)
+		content_y += row_h + row_gap
+
 		source_names = [name for name in lyric_sources if name != "Genius"]
 		if "Genius" in lyric_sources:
 			source_names.append("Genius")

@@ -4,8 +4,9 @@ Changelog
 
 ### v10.0.1
 
- - Bumped version to 10.0.1
+ - Added auto-search lyrics setting to the settings UI
  - Fixed track repeat looping cutting off the end of songs
+ - Fix auto smooth scroll disable
 
 ### v10.0.0
 
