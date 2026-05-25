@@ -29175,9 +29175,32 @@ class Over:
 		self.settings_action_tile((inner_x, inner_y, inner_w, action_h), _("Source code"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon", new=2, autoraise=True), accent)
 		return row_h
 
+	def draw_settings_category_heading(self, title: str, x: int, y: int, w: int) -> int:
+		heading_h = round(34 * self.gui.scale)
+		text_y = y + round(4 * self.gui.scale)
+		line_y = y + round(14 * self.gui.scale)
+		gap = round(14 * self.gui.scale)
+		min_line_w = round(28 * self.gui.scale)
+		text_w = min(self.ddt.get_text_w(title, 213), max(0, w - (gap + min_line_w) * 2))
+		line_colour = self.colours.box_text_border
+		center_x = x + w // 2
+		left_line_w = max(0, center_x - x - text_w // 2 - gap)
+		right_line_x = center_x + text_w // 2 + gap
+		right_line_w = max(0, x + w - right_line_x)
+		line_h = max(1, round(1 * self.gui.scale))
+		if left_line_w:
+			self.ddt.rect((x, line_y, left_line_w, line_h), line_colour)
+		if right_line_w:
+			self.ddt.rect((right_line_x, line_y, right_line_w, line_h), line_colour)
+		self.ddt.text((center_x, text_y, 2), title, self.colours.box_text, 213, bg=self.colours.box_background, max_w=text_w)
+		return heading_h
+
 	def render_settings_category(self, index: int, x: int, y: int, w: int, draw: bool = True) -> int:
 		accent = self.settings_tab_accent(index)
-		body_y = y
+		heading_h = round(34 * self.gui.scale)
+		if draw and index < len(self.tabs):
+			heading_h = self.draw_settings_category_heading(self.tabs[index], x, y, w)
+		body_y = y + heading_h
 
 		if index == 0:
 			body_h = self.render_settings_general_category(x, body_y, w, draw)
@@ -29204,7 +29227,7 @@ class Over:
 		else:
 			body_h = self.render_settings_about_category(x, body_y, w, accent, draw)
 
-		return body_h
+		return heading_h + body_h
 
 	# def style_up(self) -> None:
 	# 	self.prefs.line_style += 1
