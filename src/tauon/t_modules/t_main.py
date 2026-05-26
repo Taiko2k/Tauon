@@ -24700,6 +24700,9 @@ class Over:
 		self.theme_editor_hue_texture = None
 		self.theme_editor_hue_texture_key: tuple[int, int] | None = None
 		self.theme_editor_drag_target: str | None = None
+		self.theme_editor_window_position: tuple[int, int] | None = None
+		self.theme_editor_window_drag_start_mouse: tuple[int, int] = (0, 0)
+		self.theme_editor_window_drag_start_position: tuple[int, int] = (0, 0)
 		self.theme_editor_hue_value = 0.0
 		self.theme_editor_sat_value = 1.0
 		self.theme_editor_val_value = 1.0
@@ -25112,6 +25115,7 @@ class Over:
 		self.theme_editor_dirty = False
 		self.theme_editor_is_new = is_new
 		self.theme_editor_target_path = target_path
+		self.theme_editor_window_position = None
 		self.theme_editor_original_colours = clone_theme_colours(self.colours)
 		self.theme_editor_draft_colours = clone_theme_colours(self.colours)
 		self.theme_editor_original_theme_name = self.gui.theme_name
@@ -25129,6 +25133,7 @@ class Over:
 		self.theme_editor_target_path = None
 		self.theme_editor_dirty = False
 		self.theme_editor_drag_target = None
+		self.theme_editor_window_position = None
 		self.theme_editor_hue_value = 0.0
 		self.theme_editor_sat_value = 1.0
 		self.theme_editor_val_value = 1.0
@@ -29274,8 +29279,28 @@ class Over:
 
 		full_width = round(510 * gui.scale)
 		full_height = round(375 * gui.scale)
-		x = int(self.window_size[0] / 2) - int(full_width / 2)
-		y = int(self.window_size[1] / 2) - int(full_height / 2)
+		if self.theme_editor_window_position is None:
+			x = int(self.window_size[0] / 2) - int(full_width / 2)
+			y = int(self.window_size[1] / 2) - int(full_height / 2)
+		else:
+			x, y = self.theme_editor_window_position
+		if self.theme_editor_drag_target == "window" and self.inp.mouse_down:
+			x = (
+				self.theme_editor_window_drag_start_position[0]
+				+ self.inp.mouse_position[0]
+				- self.theme_editor_window_drag_start_mouse[0]
+			)
+			y = (
+				self.theme_editor_window_drag_start_position[1]
+				+ self.inp.mouse_position[1]
+				- self.theme_editor_window_drag_start_mouse[1]
+			)
+			self.tauon.input_sdl.mouse_capture_want = True
+			gui.update += 1
+		margin = round(8 * gui.scale)
+		x = min(max(x, margin), max(margin, self.window_size[0] - round(full_width * 0.5)))
+		y = min(max(y, margin), max(margin, self.window_size[1] - round(full_height * 0.5)))
+		self.theme_editor_window_position = (x, y)
 		self.box_x = x
 		self.box_y = y
 		self.w = full_width
@@ -29300,10 +29325,26 @@ class Over:
 		right_x = left_x + left_w + column_gap
 		header_y = y + pad
 
-		title_field_w = full_width - pad * 2 - round(190 * gui.scale)
-		self.ddt.text((left_x, header_y), _("Theme title"), colours.box_text_label, 11, bg=colours.box_background)
+		grip_w = round(23 * gui.scale)
+		grip_gap = round(7 * gui.scale)
+		grip_rect = (left_x, header_y + round(17 * gui.scale), grip_w, round(22 * gui.scale))
+		title_field_x = left_x + grip_w + grip_gap
+		title_field_w = full_width - pad * 2 - round(190 * gui.scale) - grip_w - grip_gap
+		self.ddt.text((title_field_x, header_y), _("Theme title"), colours.box_text_label, 11, bg=colours.box_background)
+		grip_hover = self.coll(grip_rect)
+		self.fields.add(grip_rect)
+		grip_dot = max(2, round(2 * gui.scale))
+		grip_colour = colours.box_text if self.theme_editor_drag_target == "window" else colours.box_text_label
+		for offset_x in (round(4 * gui.scale), round(10 * gui.scale), round(16 * gui.scale)):
+			for offset_y in (round(5 * gui.scale), round(10 * gui.scale), round(15 * gui.scale)):
+				ddt.rect((grip_rect[0] + offset_x, grip_rect[1] + offset_y, grip_dot, grip_dot), grip_colour)
+		if self.click and grip_hover:
+			self.theme_editor_drag_target = "window"
+			self.theme_editor_window_drag_start_mouse = tuple(self.inp.mouse_position)
+			self.theme_editor_window_drag_start_position = (x, y)
+			self.tauon.input_sdl.mouse_capture_want = True
 		self.draw_settings_text_field(
-			(left_x, header_y + round(17 * gui.scale), title_field_w, round(22 * gui.scale)),
+			(title_field_x, header_y + round(17 * gui.scale), title_field_w, round(22 * gui.scale)),
 			self.theme_editor_title_box,
 			self.settings_page_accent(4),
 			stored_value=self.theme_editor_title_box.text,
@@ -29311,7 +29352,7 @@ class Over:
 		)
 		if self.theme_editor_dirty:
 			self.ddt.text(
-				(left_x, header_y + round(42 * gui.scale)),
+				(title_field_x, header_y + round(42 * gui.scale)),
 				_("Unsaved changes!"),
 				colours.box_text_label,
 				11,
