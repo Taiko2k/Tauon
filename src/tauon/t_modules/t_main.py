@@ -26647,6 +26647,14 @@ class Over:
 					pass
 			elif old is True and debug_state is False:
 				os.remove(debug_path)
+			y += small_row_h + row_gap
+
+			tauon.console.show = self.settings_switch_row(
+				(x, y, w, small_row_h),
+				tauon.console.show,
+				_("Toggle Console"),
+				accent=accent,
+			)
 
 	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
@@ -29264,7 +29272,7 @@ class Over:
 		sat = self.theme_editor_sat_value
 		val = self.theme_editor_val_value
 
-		full_width = round(610 * gui.scale)
+		full_width = round(570 * gui.scale)
 		full_height = round(375 * gui.scale)
 		x = int(self.window_size[0] / 2) - int(full_width / 2)
 		y = int(self.window_size[1] / 2) - int(full_height / 2)
@@ -48026,7 +48034,6 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
 
 	# tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
