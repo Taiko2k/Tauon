@@ -5,6 +5,7 @@ Changelog
 ### v10.0.1
 
  - Added auto-search lyrics setting to the settings UI
+ - Added drag grip to the theme editor
  - Fixed track repeat looping cutting off the end of songs
  - Fix auto smooth scroll disable
 
