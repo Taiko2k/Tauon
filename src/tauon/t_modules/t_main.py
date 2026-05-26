@@ -29272,7 +29272,7 @@ class Over:
 		sat = self.theme_editor_sat_value
 		val = self.theme_editor_val_value
 
-		full_width = round(570 * gui.scale)
+		full_width = round(510 * gui.scale)
 		full_height = round(375 * gui.scale)
 		x = int(self.window_size[0] / 2) - int(full_width / 2)
 		y = int(self.window_size[1] / 2) - int(full_height / 2)
