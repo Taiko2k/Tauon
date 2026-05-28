@@ -27469,7 +27469,7 @@ class Over:
 			(inner_x, inner_y, inner_w, row_h),
 			self.tauon.toggle_smooth_scroll,
 			_("Smooth scrolling"),
-			_("Always on for macOS."),
+			_("Use inertial scrolling"),
 			accent=accent,
 			disabled=prefs.macos,
 		)
