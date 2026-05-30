@@ -19582,7 +19582,7 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.resource.library.section(self.tauon.perfs.plex_library).albums()
+		albums = self.resource.library.section(self.prefs.plex_library).albums()
 		self.gui.to_got = 0
 
 		for album in albums:
@@ -28464,8 +28464,8 @@ class Over:
 
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
-			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
-			card2_h = round(116 * gui.scale)
+			card1_h = round(122 * gui.scale) if two_factor else round(266 * gui.scale)
+			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -28513,7 +28513,7 @@ class Over:
 					(inner_x, inner_y, inner_w, field_h),
 					_("Library name"),
 					tauon.text_plex_ser,
-					prefs.plex_librart,
+					prefs.plex_library,
 					accent,
 				)
 
