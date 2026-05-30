@@ -19581,7 +19581,7 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.resource.library.section("Music").albums()
+		albums = self.resource.library.section(self.tauon.perfs.plex_library).albums()
 		self.gui.to_got = 0
 
 		for album in albums:
