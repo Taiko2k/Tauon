@@ -6113,6 +6113,7 @@ class Tauon:
 		self.text_plex_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_pas: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_ser: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_lib: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_2fa: TextBox2 = TextBox2(tauon=self)
 
 		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
@@ -28502,8 +28503,17 @@ class Over:
 				prefs.plex_servername = self.settings_text_input(
 					(inner_x, inner_y, inner_w, field_h),
 					_("Server name"),
-					tauon.text_plex_ser,
+					tauon.text_plex_lib,
 					prefs.plex_servername,
+					accent,
+				)
+
+				inner_y += field_h + row_gap
+				prefs.plex_library = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Library name"),
+					tauon.text_plex_ser,
+					prefs.plex_librart,
 					accent,
 				)
 
