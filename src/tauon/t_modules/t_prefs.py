@@ -167,6 +167,7 @@ class Prefs:
 	plex_username = ""
 	plex_password = ""
 	plex_servername = ""
+	plex_library = ""
 
 	auto_lyrics: bool = False  # Function has been disabled
 	jelly_username: str = ""
