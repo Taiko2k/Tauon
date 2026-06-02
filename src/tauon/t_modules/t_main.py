@@ -43471,6 +43471,8 @@ THEME_EDITOR_COMPONENTS: tuple[tuple[str, str], ...] = (
 	("Selection highlight", "row_select_highlight"),
 	("Folder title", "folder_title"),
 	("Folder line", "folder_line"),
+	("Lyrics", "lyrics"),
+	("Active lyric", "active_lyric"),
 	("Scroll bar", "scroll_colour"),
 	("Tab background", "tab_background"),
 	("Tab active background", "tab_background_active"),
