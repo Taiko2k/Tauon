@@ -47,32 +47,46 @@ def ovh(
 	return "", ""
 
 
-def genius(
-	artist: str,
-	title: str,
-	return_url: bool = False,
-	user_agent: str = "unused here but it needs to exist in every lyrics function",
-) -> tuple[str, str] | str:
-	"""Scrape lyrics from genius.com"""
-	artist = artist.split("feat.", maxsplit=1)[0].strip()
-	title = title.split("(feat.", maxsplit=1)[0].strip()
-	line = f"{artist}-{title}"
-	line = re.sub("[,._@!#%^*+:;'()]", "", line)
-	line = line.replace("]", "")
-	line = line.replace("[", "")
-	line = line.replace("?", "")
-	line = line.replace(" ", "-")
-	line = line.replace("/", "-")
-	line = line.replace("-&-", "-and-")
-	line = line.replace("&", "-and-")
-	line = unidecode(line)
-	line = urllib.parse.quote(line)
-	line = f"https://genius.com/{line}-lyrics"
+def _genius_search(artist: str, title: str) -> str:
 
-	if return_url:
-		return line
+	query = f"{artist} {title}"
+	url = "https://genius.com/api/search/song"
+	params = {"page": 1, "q": query}
+	try:
+		r = requests.get(url, params=params, timeout=10)
+		if r.status_code != HTTPStatus.OK:
+			return ""
+		data = r.json()
+		hits = []
+		for section in data.get("response", {}).get("sections", []):
+			if section.get("type") == "song":
+				hits.extend(section.get("hits", []))
+		if not hits:
+			return ""
+		artist_lower = artist.strip().lower()
+		title_lower = title.strip().lower()
+		for hit in hits:
+			result = hit.get("result", {})
+			song_artist = result.get("artist_names", "").lower()
+			song_title = result.get("title", "").lower()
+			if (artist_lower in song_artist or song_artist in artist_lower) \
+				and (title_lower in song_title or song_title in title_lower):
+				return result.get("url", "")
+		return hits[0].get("result", {}).get("url", "")
+	except Exception:
+		logging.exception("Genius search failed")
+		return ""
 
-	page = requests.get(line, timeout=10)
+
+def _genius_scrape(url: str) -> tuple[str, str]:
+
+	try:
+		page = requests.get(url, timeout=10)
+		if page.status_code != HTTPStatus.OK:
+			return "", ""
+	except Exception:
+		return "", ""
+
 	html = BeautifulSoup(page.text, "html.parser")
 
 	result = html.find("div", class_="lyrics")
@@ -180,6 +194,42 @@ def genius(
 		return final_lyrics, ""
 
 	return "", ""
+
+
+def genius(
+	artist: str,
+	title: str,
+	return_url: bool = False,
+	user_agent: str = "unused here but it needs to exist in every lyrics function",
+) -> tuple[str, str] | str:
+	"""Scrape lyrics from genius.com"""
+	artist = artist.split("feat.", maxsplit=1)[0].strip()
+	title = title.split("(feat.", maxsplit=1)[0].strip()
+	line = f"{artist}-{title}"
+	line = re.sub("[,._@!#%^*+:;'()]", "", line)
+	line = line.replace("]", "")
+	line = line.replace("[", "")
+	line = line.replace("?", "")
+	line = line.replace(" ", "-")
+	line = line.replace("/", "-")
+	line = line.replace("-&-", "-and-")
+	line = line.replace("&", "-and-")
+	line = unidecode(line)
+	line = urllib.parse.quote(line)
+	line = f"https://genius.com/{line}-lyrics"
+
+	if return_url:
+		return line
+
+	lyrics, synced = _genius_scrape(line)
+	if lyrics:
+		return lyrics, synced
+
+	line = _genius_search(artist, title)
+	if not line:
+		return "", ""
+
+	return _genius_scrape(line)
 
 
 def lrclib(artist: str, title: str, user_agent: str = "TauonMusicBox/Devel") -> tuple[str, str]:
