@@ -6113,6 +6113,7 @@ class Tauon:
 		self.text_plex_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_pas: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_ser: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_lib: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_2fa: TextBox2 = TextBox2(tauon=self)
 
 		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
@@ -19581,7 +19582,7 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.resource.library.section("Music").albums()
+		albums = self.resource.library.section(self.prefs.plex_library).albums()
 		self.gui.to_got = 0
 
 		for album in albums:
@@ -28463,8 +28464,8 @@ class Over:
 
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
-			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
-			card2_h = round(116 * gui.scale)
+			card1_h = round(122 * gui.scale) if two_factor else round(266 * gui.scale)
+			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -28502,8 +28503,17 @@ class Over:
 				prefs.plex_servername = self.settings_text_input(
 					(inner_x, inner_y, inner_w, field_h),
 					_("Server name"),
-					tauon.text_plex_ser,
+					tauon.text_plex_lib,
 					prefs.plex_servername,
+					accent,
+				)
+
+				inner_y += field_h + row_gap
+				prefs.plex_library = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Library name"),
+					tauon.text_plex_ser,
+					prefs.plex_library,
 					accent,
 				)
 
