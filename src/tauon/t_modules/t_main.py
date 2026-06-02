@@ -48667,9 +48667,11 @@ def main(holder: Holder) -> None:
 	if gui.remember_library_mode:
 		tauon.toggle_library_mode()
 
-	if prefs.reload_state and prefs.reload_state[0] == 1:
+	if prefs.reload_play_state and prefs.reload_state and prefs.reload_state[0] == PlayingState.PLAYING:
 		pctl.jump_time = prefs.reload_state[1]
 		pctl.play()
+	elif not prefs.reload_play_state:
+		prefs.reload_state = None
 
 	pctl.refresh_now_playing()
 
@@ -54607,6 +54609,8 @@ def main(holder: Holder) -> None:
 	if prefs.reload_play_state and pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 		logging.info("Saving play state...")
 		prefs.reload_state = (pctl.playing_state, pctl.playing_time)
+	else:
+		prefs.reload_state = None
 
 	if bag.should_save_state:
 		with (user_directory / "star.p").open("wb") as file:
