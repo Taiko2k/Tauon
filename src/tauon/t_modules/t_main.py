@@ -26374,7 +26374,7 @@ class Over:
 			x, y, w, section_h = self.draw_settings_section(
 				right_rect,
 				_("Session rules"),
-				_("Playback behavior for sleep, wake and radio."),
+				_("Playback behavior for restarts, sleep, wake and radio."),
 				accent,
 			)
 			play_lock_old = prefs.block_suspend
@@ -26383,6 +26383,14 @@ class Over:
 				prefs.block_suspend,
 				_("Block suspend"),
 				_("Keep the system awake during playback."),
+				accent,
+			)
+			y += row_h + row_gap
+			prefs.reload_play_state = self.settings_switch_row(
+				(x, y, w, row_h),
+				prefs.reload_play_state,
+				_("Resume on restart"),
+				_("Resume playback when Tauon starts."),
 				accent,
 			)
 			y += row_h + row_gap
@@ -27219,7 +27227,7 @@ class Over:
 	) -> int:
 		heights = (
 			round(275 * self.gui.scale),
-			round(224 * self.gui.scale),
+			round(272 * self.gui.scale),
 			round(262 * self.gui.scale),
 			round(300 * self.gui.scale),
 			round(350 * self.gui.scale),
