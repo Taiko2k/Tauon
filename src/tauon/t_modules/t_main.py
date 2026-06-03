@@ -51242,7 +51242,7 @@ def main(holder: Holder) -> None:
 											x + tauon.album_mode_art_size, window_size[0] - round(50 * gui.scale)
 										)
 
-									if info[0] == 1 and (
+									if info[0] == 1 and not info[2] and (
 										pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 									):
 										ddt.rect_a(

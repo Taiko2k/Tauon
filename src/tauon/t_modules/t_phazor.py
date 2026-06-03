@@ -460,7 +460,29 @@ def phazor_exists(pctl: PlayerCtl) -> bool:
 	return get_phazor_path(pctl).exists()
 
 
+_consecutive_load_failures: int = 0
+_load_failure_timer: Timer = Timer()
+MAX_CONSECUTIVE_LOAD_FAILURES: int = 5
+LOAD_FAILURE_WINDOW: float = 3.0
+
+
 def player4(tauon: Tauon) -> None:
+	global _consecutive_load_failures
+
+	def _handle_load_failure() -> bool:
+		global _consecutive_load_failures
+		if _load_failure_timer.get() > LOAD_FAILURE_WINDOW:
+			_consecutive_load_failures = 0
+		_consecutive_load_failures += 1
+		_load_failure_timer.set()
+		if _consecutive_load_failures >= MAX_CONSECUTIVE_LOAD_FAILURES:
+			pctl.stop(run=True)
+			if not gui.message_box:
+				tauon.show_message(_("Multiple tracks could not be loaded"), mode="warning")
+			_consecutive_load_failures = 0
+			return True
+		return False
+
 	def scan_device() -> None:
 		n = aud.scan_devices()
 		devices = ["Default"]
@@ -964,6 +986,8 @@ def player4(tauon: Tauon) -> None:
 						target_object.found = False
 						pctl.playing_state = PlayingState.STOPPED
 						pctl.jump_time = 0.0
+						if _handle_load_failure():
+							continue
 						pctl.advance(inplace=True, play=True)
 						continue
 					target_path = path
@@ -973,8 +997,11 @@ def player4(tauon: Tauon) -> None:
 					if not target_object.is_network:
 						pctl.playing_state = PlayingState.STOPPED
 						pctl.jump_time = 0.0
+						if _handle_load_failure():
+							continue
 						pctl.advance(inplace=True, play=True)
 					continue
+				_consecutive_load_failures = 0
 				if not target_object.found:
 					pctl.reset_missing_flags()
 
