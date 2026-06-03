@@ -6113,6 +6113,7 @@ class Tauon:
 		self.text_plex_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_pas: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_ser: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_lib: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_2fa: TextBox2 = TextBox2(tauon=self)
 
 		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
@@ -19581,7 +19582,7 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.resource.library.section("Music").albums()
+		albums = self.resource.library.section(self.prefs.plex_library).albums()
 		self.gui.to_got = 0
 
 		for album in albums:
@@ -26373,7 +26374,7 @@ class Over:
 			x, y, w, section_h = self.draw_settings_section(
 				right_rect,
 				_("Session rules"),
-				_("Playback behavior for sleep, wake and radio."),
+				_("Playback behavior for restarts, sleep, wake and radio."),
 				accent,
 			)
 			play_lock_old = prefs.block_suspend
@@ -26382,6 +26383,14 @@ class Over:
 				prefs.block_suspend,
 				_("Block suspend"),
 				_("Keep the system awake during playback."),
+				accent,
+			)
+			y += row_h + row_gap
+			prefs.reload_play_state = self.settings_switch_row(
+				(x, y, w, row_h),
+				prefs.reload_play_state,
+				_("Resume on restart"),
+				_("Resume playback when Tauon starts."),
 				accent,
 			)
 			y += row_h + row_gap
@@ -27218,7 +27227,7 @@ class Over:
 	) -> int:
 		heights = (
 			round(275 * self.gui.scale),
-			round(224 * self.gui.scale),
+			round(272 * self.gui.scale),
 			round(262 * self.gui.scale),
 			round(300 * self.gui.scale),
 			round(350 * self.gui.scale),
@@ -28463,8 +28472,8 @@ class Over:
 
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
-			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
-			card2_h = round(116 * gui.scale)
+			card1_h = round(122 * gui.scale) if two_factor else round(266 * gui.scale)
+			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -28502,8 +28511,17 @@ class Over:
 				prefs.plex_servername = self.settings_text_input(
 					(inner_x, inner_y, inner_w, field_h),
 					_("Server name"),
-					tauon.text_plex_ser,
+					tauon.text_plex_lib,
 					prefs.plex_servername,
+					accent,
+				)
+
+				inner_y += field_h + row_gap
+				prefs.plex_library = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Library name"),
+					tauon.text_plex_ser,
+					prefs.plex_library,
 					accent,
 				)
 
@@ -48649,9 +48667,11 @@ def main(holder: Holder) -> None:
 	if gui.remember_library_mode:
 		tauon.toggle_library_mode()
 
-	if prefs.reload_state and prefs.reload_state[0] == 1:
+	if prefs.reload_play_state and prefs.reload_state and prefs.reload_state[0] == PlayingState.PLAYING:
 		pctl.jump_time = prefs.reload_state[1]
 		pctl.play()
+	elif not prefs.reload_play_state:
+		prefs.reload_state = None
 
 	pctl.refresh_now_playing()
 
@@ -50063,8 +50083,9 @@ def main(holder: Holder) -> None:
 				and not radiobox.active
 			):
 				if keymaps.test("info-playing"):
-					if pctl.selected_ready():
-						tauon.show_track_box(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index)
+					playing_track = pctl.playing_object()
+					if playing_track is not None and playing_track.index in pctl.master_library:
+						tauon.show_track_box(playing_track.index)
 
 				if keymaps.test("info-show"):
 					if pctl.selected_ready():
@@ -54589,6 +54610,8 @@ def main(holder: Holder) -> None:
 	if prefs.reload_play_state and pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 		logging.info("Saving play state...")
 		prefs.reload_state = (pctl.playing_state, pctl.playing_time)
+	else:
+		prefs.reload_state = None
 
 	if bag.should_save_state:
 		with (user_directory / "star.p").open("wb") as file:
