@@ -50083,8 +50083,9 @@ def main(holder: Holder) -> None:
 				and not radiobox.active
 			):
 				if keymaps.test("info-playing"):
-					if pctl.selected_ready():
-						tauon.show_track_box(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index)
+					playing_track = pctl.playing_object()
+					if playing_track is not None and playing_track.index in pctl.master_library:
+						tauon.show_track_box(playing_track.index)
 
 				if keymaps.test("info-show"):
 					if pctl.selected_ready():
