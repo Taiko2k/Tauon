@@ -1043,6 +1043,7 @@ def player4(tauon: Tauon) -> None:
 
 				fade = 0
 				error = False
+				target_fully_cached = not target_object.is_network or cachement.get_file_cached_only(target_object) is not None
 				if (
 					tauon.player4_state == PlayerState.PLAYING
 					and length
@@ -1052,7 +1053,7 @@ def player4(tauon: Tauon) -> None:
 					and loaded_track
 					and 0 < remain < 5.5
 					and not loaded_track.is_cue
-					and not loaded_track.is_network
+					and target_fully_cached
 					and subcommand != "now"
 				):
 					logging.info("Transition gapless")
