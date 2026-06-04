@@ -1052,6 +1052,7 @@ def player4(tauon: Tauon) -> None:
 					and loaded_track
 					and 0 < remain < 5.5
 					and not loaded_track.is_cue
+					and not loaded_track.is_network
 					and subcommand != "now"
 				):
 					logging.info("Transition gapless")
@@ -1307,6 +1308,7 @@ def player4(tauon: Tauon) -> None:
 
 				pctl.decode_time = pctl.playing_time
 				wall_timer.set()
+				player_timer.set()
 
 			if command == "volume":
 				aud.ramp_volume(int(pctl.player_volume), 750)
