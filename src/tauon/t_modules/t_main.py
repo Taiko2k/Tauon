@@ -3311,7 +3311,8 @@ class PlayerCtl:
 		#	 #self.gui.update += 1
 		#	 self.playing_time_int = next_round
 
-		gap_extra = 2  # 2
+		tr = self.playing_object()
+		gap_extra = 2 if not (tr and tr.is_network) else 0
 
 		if self.tauon.chrome_mode:
 			gap_extra = 3
