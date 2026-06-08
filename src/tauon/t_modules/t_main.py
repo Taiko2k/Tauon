@@ -838,6 +838,9 @@ class GuiVar:
 		self.playlist_view_length: int = 0
 
 		self.show_album_ratings: bool = False
+		self.album_rating_hover: bool = False
+		self.scrollbar_active: bool = False
+		self.scrollbar_interaction_lock: bool = False
 		self.gen_code_errors: bool = False
 
 		self.regen_single = -1
@@ -15854,7 +15857,7 @@ class Tauon:
 		rat = self.album_star_store.get_rating(n_track) if album else self.star_store.get_rating(n_track.index)
 		display_rat = 0 if hint_only else rat
 
-		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(16 * self.gui.scale))
+		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(24 * self.gui.scale))
 		boundary = 3 * self.gui.scale
 		tracklist_top = self.gui.playlist_top + boundary
 		tracklist_bottom = self.window_size[1] - self.gui.panelBY - boundary
@@ -33330,6 +33333,8 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
+		self.update_album_rating_hover()
+
 		highlight_width    = gui.tracklist_highlight_width
 		gui.highlight_left = gui.tracklist_highlight_left
 		inset_width        = gui.tracklist_inset_width
@@ -33617,7 +33622,7 @@ class StandardPlaylist:
 						# Add folder to selection if clicked
 						if (
 							inp.mouse_click
-							and not (prefs.scroll_enable and self.coll(scrollbar_hitbox))
+							and not (prefs.scroll_enable and self.coll(scrollbar_hitbox) and not gui.album_rating_hover)
 							and not gui.side_drag
 						):
 							self.inp.quick_drag = True
@@ -33695,7 +33700,7 @@ class StandardPlaylist:
 				line_over = False
 
 			# Prevent click if near scroll bar
-			if prefs.scroll_enable and self.coll(scrollbar_hitbox):
+			if prefs.scroll_enable and self.coll(scrollbar_hitbox) and not gui.album_rating_hover:
 				line_hit = False
 
 			# Double click to play
@@ -33982,7 +33987,13 @@ class StandardPlaylist:
 				if gui.show_album_ratings:
 					star_offset = round(72 * gui.scale)
 					ex -= star_offset
-					self.tauon.draw_rating_widget(ex + 6 * gui.scale, height, tr, album=True)
+					self.tauon.draw_rating_widget(
+						ex + 6 * gui.scale,
+						height,
+						tr,
+						album=True,
+						allow_input=not gui.scrollbar_active,
+					)
 
 				light_offset = 0
 				if colours.lm:
@@ -34502,7 +34513,59 @@ class StandardPlaylist:
 		ddt.alpha_bg = False
 
 	def cache_render(self) -> None:
+		self.update_album_rating_hover()
 		sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, None, self.gui.tracklist_texture_rect)
+
+	def update_album_rating_hover(self) -> None:
+		gui = self.gui
+		gui.album_rating_hover = False
+
+		if (
+			not gui.show_album_ratings
+			or gui.combo_mode
+			or not gui.show_playlist
+			or not self.prefs.break_enable
+			or not self.pctl.multi_playlist
+			or self.pctl.active_playlist_viewing >= len(self.pctl.multi_playlist)
+			or self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title
+		):
+			return
+
+		boundary = 3 * gui.scale
+		if not gui.playlist_top + boundary < self.inp.mouse_position[1] <= self.window_size[1] - gui.panelBY - boundary:
+			return
+
+		track_position = max(self.pctl.playlist_view_position, 0)
+		number = 0
+		render_rows = gui.playlist_view_length + 2
+		playlist_length = len(self.pctl.default_playlist)
+
+		while track_position < playlist_length and number < render_rows:
+			if self._folder_title_would_appear(track_position):
+				line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
+				rating_x = (
+					gui.playlist_left
+					+ gui.tracklist_highlight_left
+					+ gui.tracklist_highlight_width
+					- 7 * gui.scale
+					- (round(3 * gui.scale) if gui.rsp_on_left else 0)
+					- round(72 * gui.scale)
+					+ 6 * gui.scale
+				)
+				rating_y = line_y + gui.playlist_row_height - 19 * gui.scale
+				rating_rect = (
+					rating_x - round(5 * gui.scale),
+					rating_y - round(4 * gui.scale),
+					round(80 * gui.scale),
+					round(24 * gui.scale),
+				)
+				if self.coll(rating_rect):
+					gui.album_rating_hover = True
+					return
+				number += 1
+
+			number += 1
+			track_position += 1
 
 class ArtBox:
 
@@ -50515,6 +50578,7 @@ def main(holder: Holder) -> None:
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
+				playlist_render.update_album_rating_hover()
 
 				# Side Bar Draging----------
 
@@ -50559,7 +50623,28 @@ def main(holder: Holder) -> None:
 					or tauon.tree_view_scroll.held
 					or tauon.radio_view_scroll.held
 				)
-				scroll_bar_blocks_side_drag = scroll_bar_held or tauon.coll(tracklist_scroll_hitbox)
+				scrollbar_pointer_in_area = tauon.coll(tracklist_scroll_hitbox)
+				if not scrollbar_pointer_in_area:
+					gui.scrollbar_interaction_lock = False
+				elif (
+					not gui.album_rating_hover
+					and (
+						inp.mouse_click
+						or inp.right_click
+						or (inp.mouse_down and coll_point(inp.click_location, tracklist_scroll_hitbox))
+					)
+				):
+					gui.scrollbar_interaction_lock = True
+				gui.scrollbar_active = scroll_hold or gui.scrollbar_interaction_lock
+				scroll_bar_suppressed_by_album_rating = (
+					gui.album_rating_hover
+					and not scroll_hold
+					and not gui.scrollbar_interaction_lock
+				)
+				scroll_bar_blocks_side_drag = (
+					scroll_bar_held
+					or (tauon.coll(tracklist_scroll_hitbox) and not scroll_bar_suppressed_by_album_rating)
+				)
 				if scroll_bar_held:
 					gui.side_drag = False
 
@@ -52612,8 +52697,14 @@ def main(holder: Holder) -> None:
 					window_size[1] - gui.panelBY - top,
 				)
 
-				tauon.fields.add(gui.scroll_hide_box)
-				if not prefs.show_nag and (
+				scrollbar_hidden_by_album_rating = (
+					gui.album_rating_hover
+					and not scroll_hold
+					and not gui.scrollbar_interaction_lock
+				)
+				if not scrollbar_hidden_by_album_rating:
+					tauon.fields.add(gui.scroll_hide_box)
+				if not scrollbar_hidden_by_album_rating and not prefs.show_nag and (
 					tauon.scroll_hide_timer.get() < 0.9 or (
 						(tauon.coll(gui.scroll_hide_box) or scroll_hold or gui.quick_search_mode)
 						and not menu_is_open()
