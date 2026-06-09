@@ -34,7 +34,7 @@ source.include_patterns = assets/*,templates/*,theme/*,locale/*
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 10.0.1
+version = 10.0.2
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]

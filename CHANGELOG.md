@@ -2,6 +2,16 @@
 Changelog
 ---------
 
+### v10.0.2
+
+ - Added search overlay feedback when adding results to playlists
+ - Added resume on restart setting to the settings UI
+ - Added Plex music library selection
+ - Improved TIDAL favorites and playlists pagination
+ - Fixed album rating and scrollbar interactions
+ - Fixed show playing info shortcut
+ - Fixed resume on restart state handling
+
 ### v10.0.1
 
  - Added auto-search lyrics setting to the settings UI
