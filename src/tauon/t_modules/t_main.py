@@ -23632,6 +23632,47 @@ class SearchOverlay:
 
 		self.tauon.add_album_to_queue(track_id, playlist.index(track_id), playlist_id)
 
+	def tracks_for_result(self, item: list[int | str | None]) -> list[int]:
+		n = item[0]
+		match n:
+			case 0:
+				if isinstance(item[1], str):
+					return self.click_artist(item[1], get_list=True) or []
+			case 1:
+				if isinstance(item[2], int):
+					for k, pl in enumerate(self.pctl.multi_playlist):
+						if item[2] in pl.playlist_ids:
+							return self.tauon.get_album_from_first_track(pl.playlist_ids.index(item[2]), item[2], k)
+			case 2:
+				if isinstance(item[2], int):
+					return [item[2]]
+			case 3:
+				if isinstance(item[1], str):
+					return self.click_genre(item[1], get_list=True) or []
+			case 5:
+				if isinstance(item[1], str):
+					return self.click_meta(item[1], get_list=True) or []
+			case 6:
+				if isinstance(item[1], str):
+					return self.click_composer(item[1], get_list=True) or []
+			case 7:
+				if isinstance(item[1], str):
+					return self.click_year(item[1], get_list=True) or []
+			case 8:
+				if isinstance(item[3], int):
+					pl = self.pctl.id_to_pl(item[3])
+					if pl is not None:
+						return list(self.pctl.multi_playlist[pl].playlist_ids)
+		return []
+
+	def toast_playlist_add(self, added_count: int) -> None:
+		playlist_name = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title
+		if added_count == 1:
+			text = _("Added 1 track to playlist: {name}").format(name=playlist_name)
+		else:
+			text = _("Added {N} tracks to playlist: {name}").format(N=added_count, name=playlist_name)
+		self.tauon.toast(text, duration=2.5)
+
 	def render_help_legend(self) -> None:
 		gui = self.gui
 		icon_size = round(26 * gui.scale)
@@ -23703,12 +23744,13 @@ class SearchOverlay:
 		prefs = self.prefs
 		inp   = self.inp
 		gui   = self.gui
+		control_down = inp.key_ctrl_down or inp.key_rctrl_down
 
 		if self.active is False:
 			# Activate search overlay on key presses
 			if prefs.search_on_letter and inp.input_text and gui.layer_focus == 0 and \
 					not inp.key_lalt and not inp.key_ralt and \
-					not inp.key_ctrl_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
+					not control_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
 					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
@@ -23761,8 +23803,45 @@ class SearchOverlay:
 				mouse_change = True
 			# mouse_change = True
 
+			overlay_background = ColourRGBA(12, 12, 12, 255)
+			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
 			self.ddt.rect((x, y, w, h), ColourRGBA(3, 3, 3, 235))
-			self.ddt.text_background_colour = ColourRGBA(12, 12, 12, 255)
+			if control_down:
+				badge_margin = round(14 * gui.scale) + 5
+				badge_pad = round(5 * gui.scale)
+				badge_h = round(20 * gui.scale)
+				badge_text_y = round(18 * gui.scale)
+				icon_size = round(8 * gui.scale)
+				icon_thickness = max(round(2 * gui.scale), 1)
+				icon_gap = round(5 * gui.scale)
+				badge_text = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title
+				max_badge_w = max(round(120 * gui.scale), self.window_size[0] - badge_margin * 2)
+				badge_w = min(
+					icon_size + icon_gap + self.ddt.get_text_w(badge_text, 312) + badge_pad * 2,
+					max_badge_w,
+				)
+				badge_rect = (self.window_size[0] - badge_margin - badge_w, badge_margin, badge_w, badge_h)
+				self.ddt.rect(badge_rect, track_in_bar_colour)
+				icon_x = badge_rect[0] + badge_pad
+				icon_y = badge_rect[1] + (badge_h - icon_size) // 2
+				self.ddt.rect(
+					(icon_x, icon_y + (icon_size - icon_thickness) // 2, icon_size, icon_thickness),
+					overlay_background,
+				)
+				self.ddt.rect(
+					(icon_x + (icon_size - icon_thickness) // 2, icon_y, icon_thickness, icon_size),
+					overlay_background,
+				)
+				self.ddt.text_background_colour = track_in_bar_colour
+				self.ddt.text(
+					(icon_x + icon_size + icon_gap, badge_text_y),
+					badge_text,
+					overlay_background,
+					312,
+					max_w=badge_rect[2] - badge_pad * 2 - icon_size - icon_gap,
+					bg=track_in_bar_colour,
+				)
+			self.ddt.text_background_colour = overlay_background
 
 
 			input_text_x = 80 * gui.scale
@@ -23883,7 +23962,6 @@ class SearchOverlay:
 			inp.key_return_press = False
 
 			bar_colour = ColourRGBA(140, 80, 240, 255)
-			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
 
 			self.on = max(self.on, 0)
 			self.on = min(len(self.results) - 1, self.on)
@@ -23962,7 +24040,7 @@ class SearchOverlay:
 				if fade == 1:
 					self.ddt.rect((highlight_x, yy + pad, 4 * gui.scale, height), bar_colour)
 				if n in (2,):
-					if inp.key_ctrl_down and item[2] in self.pctl.default_playlist:
+					if control_down and item[2] in self.pctl.default_playlist:
 						self.ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
 
 				# Type text
@@ -24057,7 +24135,7 @@ class SearchOverlay:
 						gui.update = 2
 
 					if gui.level_2_click:
-						if inp.key_ctrl_down:
+						if control_down:
 							extend = True
 						else:
 							go = True
@@ -24090,30 +24168,12 @@ class SearchOverlay:
 						case 2:
 							self.queue_track_result(item[2], item[3])
 				elif extend:
-					match n:
-						case 0:
-							self.pctl.default_playlist.extend(self.click_artist(item[1], get_list=True))
-						case 1:
-							for k, pl in enumerate(self.pctl.multi_playlist):
-								if item[2] in pl.playlist_ids:
-									self.pctl.default_playlist.extend(
-										self.tauon.get_album_from_first_track(pl.playlist_ids.index(item[2]), item[2], k))
-									break
-						case 2:
-							self.pctl.default_playlist.append(item[2])
-						case 3:
-							self.pctl.default_playlist.extend(self.click_genre(item[1], get_list=True))
-						case 5:
-							self.pctl.default_playlist.extend(self.click_meta(item[1], get_list=True))
-						case 6:
-							self.pctl.default_playlist.extend(self.click_composer(item[1], get_list=True))
-						case 7:
-							self.pctl.default_playlist.extend(self.click_year(item[1], get_list=True))
-						case 8:
-							pl = self.pctl.id_to_pl(item[3])
-							if pl is not None:
-								self.pctl.default_playlist.extend(self.pctl.multi_playlist[pl].playlist_ids)
-					gui.pl_update += 1
+					tracks = self.tracks_for_result(item)
+					if tracks:
+						self.pctl.default_playlist.extend(tracks)
+						self.tauon.reload_albums(True)
+						self.pctl.notify_database_changed()
+						self.toast_playlist_add(len(tracks))
 				elif show:
 					match n:
 						case 0 | 1 | 2 | 3 | 5 | 6 | 7:
