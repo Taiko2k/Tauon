@@ -8141,6 +8141,14 @@ class Tauon:
 			#	 self.show_message("No lyrics for this track")
 
 	def get_lyric_fire(self, track_object: TrackClass, silent: bool = False) -> str | None:
+
+		def clear_search_cache(track: TrackClass) -> None:
+			# clear cached search data (user can search by lyrics immediately)
+			self.search_string_cache.pop(track.index, None)
+			self.search_dia_string_cache.pop(track.index, None)
+			self.search_field_cache.pop(track.index, None)
+			self.search_dia_field_cache.pop(track.index, None)
+
 		self.lyrics_ren.lyrics_position = 0
 
 		if not self.prefs.lyrics_enables:
@@ -8197,12 +8205,14 @@ class Tauon:
 						if lyrics:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
+							clear_search_cache(track_object)
 							self.gui.lyrics_editor_update_now[0] = True
 							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
+							clear_search_cache(track_object)
 							self.gui.lyrics_editor_update_now[1] = True
 							# TODO (Flynn): SYLT
 							if not self.gui.timed_lyrics_edit_view:
@@ -42481,6 +42491,13 @@ class TimedLyricsEdit:
 					)
 			self.test_update()
 		self.queue_next_frame = True
+
+		# clear cached search data (user can search by lyrics immediately)
+		self.tauon.search_string_cache.pop(self.struct_track, None)
+		self.tauon.search_dia_string_cache.pop(self.struct_track, None)
+		self.tauon.search_field_cache.pop(self.struct_track, None)
+		self.tauon.search_dia_field_cache.pop(self.struct_track, None)
+
 		return None
 
 	def will_overwrite_lyrics(self, track: TrackClass) -> bool:
