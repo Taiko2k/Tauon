@@ -14529,7 +14529,7 @@ class Tauon:
 					val = search_magic_beefy(s_text, lyrics)
 					if val > 90:
 						if t not in tracks:
-							temp_results.append([9, t.title, track, playlist.uuid_int, val])
+							temp_results.append([9, t.title, track, playlist.uuid_int, val-100])
 							tracks.add(t)
 
 				br += 1
