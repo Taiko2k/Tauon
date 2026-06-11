@@ -41661,10 +41661,10 @@ class SmoothScroll:
 			f"{name}={self._format_debug_value(value)}"
 			for name, value in fields.items()
 		)
-		if payload:
-			logging.debug("Smooth scroll %s source=%s %s", event, source, payload)
-		else:
-			logging.debug("Smooth scroll %s source=%s", event, source)
+		# if payload:
+		# 	logging.debug("Smooth scroll %s source=%s %s", event, source, payload)
+		# else:
+		# 	logging.debug("Smooth scroll %s source=%s", event, source)
 
 	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
@@ -54184,6 +54184,9 @@ def main(holder: Holder) -> None:
 			if tauon.console.show:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 				ddt.rect(rect, ColourRGBA(0, 0, 0, 245))
+
+				if pctl.playing_state == PlayingState.PLAYING:
+					gui.delay_frame(0.05)
 
 				yy = rect[3] + 15 * gui.scale
 				u = False
