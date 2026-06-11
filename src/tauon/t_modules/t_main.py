@@ -176,6 +176,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	rgb_to_hls,
 	search_magic,
 	search_magic_any,
+	search_magic_beefy,
 	seconds_to_day_hms,
 	shooter,
 	sleep_timeout,
@@ -5920,8 +5921,8 @@ class Tauon:
 		self.device: str                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
 		self.search_dia_string_cache: dict[int, str] = {}
-		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str]] = {}
-		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str]] = {}
+		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str, str]] = {}
+		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str, str]] = {}
 		self.albums:            list[int] = []
 		self.added:             list[int] = []
 		self.album_dex:         list[int] = []
@@ -14306,6 +14307,7 @@ class Tauon:
 					sartist = t.misc.get("artist_sort", "").lower()
 					stem_raw = os.path.dirname(t.parent_folder_path)
 					stem_search = stem_raw.lower().replace("-", "")
+					lyrics = t.lyrics.lower().replace("-", "") + " " + t.synced.lower().replace("-", "")
 					search_field_cache[track] = (
 						title,
 						artist,
@@ -14319,13 +14321,14 @@ class Tauon:
 						sartist,
 						stem_search,
 						stem_raw,
+						lyrics,
 					)
 				else:
-					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw = fields
+					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw, lyrics = fields
 
 				if cache_string is None:
 					if not dia_mode:
-						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search
+						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics
 
 					if cn_mode:
 						cache_string = search_string_cache.get(track)
@@ -14349,6 +14352,7 @@ class Tauon:
 						d_album = unidecode(album)
 						d_filename = unidecode(filename)
 						d_sartist = unidecode(sartist)
+						d_lyrics = unidecode(lyrics)
 						search_dia_field_cache[track] = (
 							d_title,
 							d_artist,
@@ -14357,9 +14361,10 @@ class Tauon:
 							d_album,
 							d_filename,
 							d_sartist,
+							d_lyrics,
 						)
 					else:
-						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist = dia_fields
+						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist, d_lyrics = dia_fields
 
 					title = d_title
 					artist = d_artist
@@ -14368,9 +14373,10 @@ class Tauon:
 					album = d_album
 					filename = d_filename
 					sartist = d_sartist
+					lyrics = d_lyrics
 
 					if cache_string is None:
-						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search
+						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics
 
 				if len(s_text) > 2 and s_text in stem_search:
 					if stem_raw in metas:
@@ -14509,6 +14515,12 @@ class Tauon:
 					elif t not in tracks:
 						temp_results.append([2, t.title, track, playlist.uuid_int, 1])
 						tracks.add(t)
+				else:
+					val = search_magic_beefy(s_text, lyrics)
+					if val > 90:
+						if t not in tracks:
+							temp_results.append([9, t.title, track, playlist.uuid_int, val])
+							tracks.add(t)
 
 				br += 1
 				if br > 800:
@@ -18953,12 +18965,7 @@ class Tauon:
 
 	def switch_opus_ogg(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.transcode_opus_as
-		self.prefs.transcode_opus_as ^= True
-		return None
-
-	def toggle_transcode_output(self, mode: int = 0) -> bool | None:
-		if mode == 1:
+				n = item[0]
 			return not self.prefs.transcode_inplace
 		self.prefs.transcode_inplace ^= True
 		if self.prefs.transcode_inplace:
@@ -24008,6 +24015,7 @@ class SearchOverlay:
 					6: "Composer",
 					7: "Year",
 					8: "Playlist",
+					9: "Lyrics",
 				}
 				type_colours = {
 					0:  ColourRGBA(250, 140, 190, 255),  # Artist
@@ -24018,6 +24026,7 @@ class SearchOverlay:
 					6:  ColourRGBA(180, 250, 190, 255),  # Composer
 					7:  ColourRGBA(250, 50,  140, 255),   # Year
 					8:  ColourRGBA(100, 210, 250, 255),  # Playlist
+					9:  ColourRGBA(250, 220, 190, 255),  # Track from lyrics
 				}
 				if n not in names:
 					name = "NYI"
@@ -24044,7 +24053,7 @@ class SearchOverlay:
 						self.ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
 
 				# Type text
-				if n in (0, 3, 5, 6, 7, 8):
+				if n in (0, 3, 5, 6, 7, 8, 9):
 					self.ddt.text((thumbnail_rx, yy + pad + round(3 * gui.scale), 1), names[n], type_colours[n], 214)
 
 				# Thumbnail
@@ -24063,7 +24072,7 @@ class SearchOverlay:
 						self.ddt.text(
 							(xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
 							ColourRGBA(255, 255, 255, int(255 * fade) // 2), 313)
-				if n == 2:  # Local library track
+				if n in (2,9,):  # Local library track
 					track = self.pctl.get_track(item[2])
 					title_val = track.title or clean_string(track.filename)
 					artist_val = track.artist
@@ -24145,7 +24154,7 @@ class SearchOverlay:
 						show = True
 						clear = True
 
-					if inp.middle_click and n in (1, 2):
+					if inp.middle_click and n in (1, 2, 9):
 						queue_result = True
 						inp.middle_click = False
 
@@ -24167,6 +24176,8 @@ class SearchOverlay:
 							self.queue_album_result(item[2], item[3])
 						case 2:
 							self.queue_track_result(item[2], item[3])
+						case 9:
+							self.queue_track_result(item[2], item[3])
 				elif extend:
 					tracks = self.tracks_for_result(item)
 					if tracks:
@@ -24176,7 +24187,7 @@ class SearchOverlay:
 						self.toast_playlist_add(len(tracks))
 				elif show:
 					match n:
-						case 0 | 1 | 2 | 3 | 5 | 6 | 7:
+						case 0 | 1 | 2 | 3 | 5 | 6 | 7 | 9:
 							self.pctl.show_current(index=item[2], playing=False)
 
 						case 8:
@@ -24187,7 +24198,7 @@ class SearchOverlay:
 					match n:
 						case 0:
 							self.click_artist(item[1])
-						case 1 | 2:
+						case 1 | 2 | 9:
 							self.click_album(item[2])
 							self.pctl.show_current(index=item[2])
 							self.pctl.playlist_view_position = self.pctl.selected_in_playlist
@@ -24203,7 +24214,7 @@ class SearchOverlay:
 							pl = self.pctl.id_to_pl(item[3])
 							if pl is not None:
 								self.pctl.switch_playlist(pl)
-				if n in (2,) and gui.keymaps.test("add-to-queue") and fade == 1:
+				if n in (2,9,) and gui.keymaps.test("add-to-queue") and fade == 1:
 					self.queue_track_result(item[2], item[3])
 
 				# ----

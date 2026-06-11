@@ -39,6 +39,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
+from rapidfuzz import fuzz
 
 from gi.repository import GLib
 
@@ -734,6 +735,10 @@ def search_magic(terms: str, evaluate: str) -> bool:
 
 def search_magic_any(terms: str, evaluate: str) -> bool:
 	return any(word in evaluate for word in terms.split())
+
+
+def search_magic_beefy(terms: str, evaluate: str) -> float:
+	return (evaluate != " ") * fuzz.partial_ratio(terms, evaluate)
 
 
 def random_colour(saturation: float, luminance: float) -> ColourRGBA:
