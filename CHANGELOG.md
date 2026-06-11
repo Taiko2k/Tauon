@@ -4,6 +4,7 @@ Changelog
 
 ### v10.0.2
 
+ - Reworked network streaming backend
  - Added search overlay feedback when adding results to playlists
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection

@@ -3315,7 +3315,13 @@ class PlayerCtl:
 		#	 self.playing_time_int = next_round
 
 		tr = self.playing_object()
-		gap_extra = 2 if not (tr and tr.is_network) else 0
+		gap_extra = 2
+		if tr and tr.is_network:
+			# Network tracks can transition gaplessly when streamed natively;
+			# otherwise wait for the very end like before
+			feeder = getattr(self.tauon, "stream_feeder", None)
+			if not (self.prefs.network_stream and feeder is not None and feeder.enabled):
+				gap_extra = 0
 
 		if self.tauon.chrome_mode:
 			gap_extra = 3
@@ -6177,6 +6183,7 @@ class Tauon:
 
 		self.copied_track: int | None = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
+		self.stream_feeder = None  # set by player4; exposes network download stats
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.cachement:              Cachement = Cachement(self)
@@ -27942,7 +27949,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
-		row1_h = round(380 * gui.scale)
+		row1_h = round(416 * gui.scale)
 		row2_h = round(291 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
@@ -27969,6 +27976,10 @@ class Over:
 		prefs.tmp_cache = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tmp_cache ^ True, _("Use persistent network cache"), accent=accent) ^ True
 		if old_tmp_cache != prefs.tmp_cache and self.tauon.cachement:
 			self.tauon.cachement.__init__(self.tauon)
+		inner_y += row_h + row_gap
+		# Applies from the next track load; when off, network tracks are
+		# fully downloaded to the cache before playing like before
+		prefs.network_stream = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.network_stream, _("Stream network tracks directly"), accent=accent)
 		inner_y += row_h + row_gap
 		cache_size_gb = round(self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
@@ -43998,6 +44009,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("precache-local-files", prefs.precache)
 	cf.update_value("cache-use-tmp", prefs.tmp_cache)
 	cf.update_value("cache-limit", prefs.cache_limit)
+	cf.update_value("network-stream", prefs.network_stream)
+	cf.update_value("stream-buffer-size", prefs.stream_buffer)
 	cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
 	cf.update_value("volume-curve", prefs.volume_power)
 	cf.update_value("jump-start-dl", prefs.jump_start)
@@ -44186,6 +44199,12 @@ def load_prefs(bag: Bag) -> None:
 	prefs.cache_limit = cf.sync_add(
 		"int", "cache-limit", prefs.cache_limit,
 		"Limit size of network audio file cache. In MB.")
+	prefs.network_stream = cf.sync_add(
+		"bool", "network-stream", prefs.network_stream,
+		"Stream network tracks directly, buffering in memory, instead of downloading the full file first")
+	prefs.stream_buffer = cf.sync_add(
+		"int", "stream-buffer-size", prefs.stream_buffer,
+		"Size of the in-memory file/stream buffer. In MB. Default: 50. (applies on track change)")
 	prefs.tmp_cache = cf.sync_add(
 		"bool", "cache-use-tmp", prefs.tmp_cache,
 		"Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
@@ -54224,6 +54243,124 @@ def main(holder: Holder) -> None:
 						text += time.strftime("%H:%M:%S", dt) + " " + tauon.log.format(record) + "\n"
 					copy_to_clipboard(text)
 					tauon.show_message(_("Lines copied to clipboard"), mode="done")
+
+				# Track stream/buffer status graph
+				try:
+					s_aud = tauon.aud
+					if s_aud is not None and hasattr(s_aud, "get_stream_stats"):
+						colour_buffered = ColourRGBA(45, 110, 220, 255)
+						colour_decoded = ColourRGBA(50, 200, 110, 255)
+						colour_position = ColourRGBA(255, 80, 160, 255)
+						colour_pcm = ColourRGBA(240, 180, 60, 255)
+						colour_meta = ColourRGBA(150, 95, 220, 255)
+						colour_behind = ColourRGBA(58, 64, 90, 255)
+						colour_track = ColourRGBA(38, 38, 44, 255)
+						colour_text = ColourRGBA(140, 140, 150, 255)
+						text_bg = ColourRGBA(5, 5, 5, 255)
+
+						gx = rect[0]
+						gy = rect[1] + rect[3] + 6 * gui.scale
+						gw = rect[2]
+						gh = 66 * gui.scale
+						ddt.rect((gx, gy, gw, gh), ColourRGBA(0, 0, 0, 245))
+
+						bar_x = round(gx + 10 * gui.scale)
+						bar_w = round(gw - 20 * gui.scale)
+						bar_y = round(gy + 8 * gui.scale)
+						bar_h = round(13 * gui.scale)
+
+						s_size = ctypes.c_longlong(0)
+						s_start = ctypes.c_longlong(0)
+						s_end = ctypes.c_longlong(0)
+						s_pos = ctypes.c_longlong(0)
+						s_meta = ctypes.c_longlong(0)
+						s_net = ctypes.c_int(0)
+						s_eof = ctypes.c_int(0)
+						s_active = s_aud.get_stream_stats(
+							ctypes.byref(s_size), ctypes.byref(s_start), ctypes.byref(s_end),
+							ctypes.byref(s_pos), ctypes.byref(s_meta), ctypes.byref(s_net), ctypes.byref(s_eof))
+
+						pcm_ms = s_aud.get_buffered_ms() if hasattr(s_aud, "get_buffered_ms") else 0
+
+						# Byte map of the file, in playback order: playhead,
+						# then decoded-but-not-yet-played (the PCM buffer
+						# contents), then buffered data waiting on the decoder
+						ddt.rect((bar_x, bar_y, bar_w, bar_h), colour_track)
+						if s_active and s_size.value > 0:
+
+							def stream_graph_x(v: int) -> int:
+								return round(bar_x + bar_w * min(max(v / s_size.value, 0.0), 1.0))
+
+							# Estimate the playhead's byte offset by rewinding
+							# the decode position by the PCM buffer's duration
+							# at the track's average audio byte rate
+							pos_byte = s_pos.value
+							if pctl.playing_length > 0:
+								audio_bytes = max(s_size.value - s_meta.value, 1)
+								pos_byte = s_pos.value - round(pcm_ms / 1000 * (audio_bytes / pctl.playing_length))
+							pos_byte = min(max(pos_byte, s_start.value, s_meta.value), s_pos.value)
+
+							window_x = stream_graph_x(s_start.value)
+							window_e = stream_graph_x(s_end.value)
+							decode_x = stream_graph_x(s_pos.value)
+							play_x = stream_graph_x(pos_byte)
+
+							# Already played but still kept in memory for quick back-seeks
+							if play_x > window_x:
+								ddt.rect((window_x, bar_y, play_x - window_x, bar_h), colour_behind)
+							# Decoded ahead of playback (matches the PCM bar below)
+							if decode_x > play_x:
+								ddt.rect((play_x, bar_y, decode_x - play_x, bar_h), colour_decoded)
+							# Downloaded, waiting on the decoder
+							if window_e > decode_x:
+								ddt.rect((decode_x, bar_y, window_e - decode_x, bar_h), colour_buffered)
+							# Leading metadata block (tags/embedded art)
+							if s_meta.value > 0:
+								meta_x = stream_graph_x(s_meta.value)
+								if meta_x > bar_x:
+									ddt.rect((bar_x, bar_y, meta_x - bar_x, bar_h), colour_meta)
+							# Playhead
+							ddt.rect(
+								(play_x, round(bar_y - 2 * gui.scale),
+									max(round(1 * gui.scale), 1), round(bar_h + 4 * gui.scale)),
+								colour_position)
+
+						# Decoded PCM buffer fill (holds up to ~5s of audio)
+						pcm_y = round(bar_y + bar_h + 6 * gui.scale)
+						pcm_h = round(5 * gui.scale)
+						ddt.rect((bar_x, pcm_y, bar_w, pcm_h), colour_track)
+						ddt.rect((bar_x, pcm_y, round(bar_w * min(pcm_ms / 5000, 1.0)), pcm_h), colour_pcm)
+
+						# Legend and numbers (values quantised to limit text cache churn)
+						ty = pcm_y + pcm_h + 5 * gui.scale
+						lx = bar_x
+						for swatch, label in (
+							(colour_position, _("Position")),
+							(colour_meta, _("Metadata")),
+							(colour_decoded, _("Decoded")),
+							(colour_buffered, _("Buffered")),
+							(colour_pcm, _("PCM {n}ms").format(n=pcm_ms - pcm_ms % 100)),
+						):
+							# Text y is relative to the baseline area; glyph caps sit
+							# roughly 4-13px (scaled) below it, centre the swatch on that
+							ddt.rect((round(lx), round(ty + 5 * gui.scale), round(7 * gui.scale), round(7 * gui.scale)), swatch)
+							lw = ddt.text((lx + 11 * gui.scale, ty), label, colour_text, 311, bg=text_bg) or 0
+							lx += lw + 20 * gui.scale
+
+						if s_active:
+							line = "NET" if s_net.value else "LOCAL"
+							if s_size.value > 0:
+								line += f"  {(s_end.value - s_start.value) / 1000000:.1f} / {s_size.value / 1000000:.1f} MB"
+							if s_eof.value:
+								line += "  EOF"
+						else:
+							line = _("No stream")
+						stream_feeder = getattr(tauon, "stream_feeder", None)
+						if stream_feeder is not None and stream_feeder.speed > 0:
+							line += f"  |  {stream_feeder.speed / 1000:.0f} kB/s"
+						ddt.text((bar_x + bar_w, ty, 1), line, colour_text, 311, bg=text_bg)
+				except Exception:
+					logging.exception("Stream status graph failed")
 
 			if gui.cursor_is != gui.cursor_want:
 				gui.cursor_is = gui.cursor_want

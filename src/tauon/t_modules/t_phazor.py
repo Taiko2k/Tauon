@@ -30,6 +30,7 @@ import hashlib
 import importlib.machinery
 import math
 import os.path
+import shutil
 import subprocess
 import sysconfig
 import threading
@@ -103,6 +104,207 @@ class FFRun:
 		return 0
 
 
+class StreamFeeder:
+	"""Feeds network audio data into the PHAzOR in-memory stream buffer.
+
+	Implements the producer half of phazor's network byte stream. Polls the
+	library for the wanted byte offset, performs HTTP range requests and
+	pushes data in as it becomes available. When the decoder seeks outside
+	the buffered window, phazor requests a new offset and the feeder
+	responds with a new range request.
+	"""
+
+	def __init__(self, tauon: Tauon, aud: CDLL) -> None:
+		self.tauon = tauon
+		self.pctl = tauon.pctl
+		self.aud = aud
+		self.session = requests.Session()
+		self.enabled = True
+		self.speed = 0.0  # measured download rate in bytes/sec, 0 when not downloading
+		self._speed_bytes = 0
+		self._speed_t0 = time.monotonic()
+		try:
+			aud.net_generation.restype = ctypes.c_int
+			aud.net_get_url.restype = ctypes.c_char_p
+			aud.net_want.restype = ctypes.c_longlong
+			aud.net_want.argtypes = (ctypes.c_int,)
+			aud.net_feed.restype = ctypes.c_int
+			aud.net_feed.argtypes = (ctypes.c_int, ctypes.c_longlong, ctypes.c_char_p, ctypes.c_int)
+			aud.net_set_size.restype = None
+			aud.net_set_size.argtypes = (ctypes.c_int, ctypes.c_longlong)
+			aud.net_eof.restype = None
+			aud.net_eof.argtypes = (ctypes.c_int,)
+			aud.net_fail.restype = None
+			aud.net_fail.argtypes = (ctypes.c_int,)
+			aud.net_set_seekable.restype = None
+			aud.net_set_seekable.argtypes = (ctypes.c_int, ctypes.c_int)
+			aud.set_load_net.restype = None
+			aud.set_load_net.argtypes = (ctypes.c_int,)
+		except AttributeError:
+			logging.warning("This PHAzOR build does not support network streaming")
+			self.enabled = False
+			return
+		shoot = threading.Thread(target=self._run)
+		shoot.daemon = True
+		shoot.start()
+
+	def _speed_tick(self, n: int) -> None:
+		"""Account n downloaded bytes towards the measured rate"""
+		now = time.monotonic()
+		self._speed_bytes += n
+		elapsed = now - self._speed_t0
+		if elapsed >= 0.5:
+			self.speed = self._speed_bytes / elapsed
+			self._speed_bytes = 0
+			self._speed_t0 = now
+
+	def _speed_idle(self) -> None:
+		"""Not downloading; the rate is meaningless right now"""
+		self.speed = 0.0
+		self._speed_bytes = 0
+		self._speed_t0 = time.monotonic()
+
+	def _run(self) -> None:
+		aud = self.aud
+		gen = -1
+		resp = None
+		offset = 0
+		size = -1
+		pending = b""
+		no_range = False
+		retries = 0
+
+		def close_response() -> None:
+			nonlocal resp, pending
+			if resp is not None:
+				try:
+					resp.close()
+				except Exception:
+					logging.exception("Stream: error closing response")
+				resp = None
+			pending = b""
+
+		while True:
+			try:
+				g = aud.net_generation()
+				if g == -1:
+					close_response()
+					gen = -1
+					self._speed_idle()
+					time.sleep(0.04)
+					continue
+				if g != gen:
+					# A new stream was opened
+					close_response()
+					gen = g
+					size = -1
+					no_range = False
+					retries = 0
+
+				want = aud.net_want(gen)
+				if want == -2:
+					close_response()
+					continue
+				if want == -1:
+					# Buffered through to end of file, nothing to do
+					close_response()
+					self._speed_idle()
+					time.sleep(0.05)
+					continue
+
+				if pending and offset == want:
+					pass  # previous chunk is still waiting to be accepted
+				elif resp is None or offset != want:
+					# (Re)open the request at the wanted offset
+					close_response()
+					if no_range and want > 0:
+						logging.error("Stream: server does not support range requests")
+						aud.net_fail(gen)
+						continue
+					url = aud.net_get_url().decode()
+					try:
+						resp = self.session.get(
+							url, headers={"Range": f"bytes={want}-"}, stream=True, timeout=(5, 30))
+					except Exception:
+						logging.exception("Stream: request failed")
+						retries += 1
+						if retries > 3:
+							aud.net_fail(gen)
+							retries = 0
+						else:
+							time.sleep(0.5)
+						continue
+					code = resp.status_code
+					if code == HTTPStatus.PARTIAL_CONTENT:
+						total = resp.headers.get("Content-Range", "").rpartition("/")[2]
+						if total.isdigit():
+							size = int(total)
+							aud.net_set_size(gen, size)
+					elif code == HTTPStatus.OK and want == 0:
+						# Server ignored the range header; play linearly
+						no_range = True
+						aud.net_set_seekable(gen, 0)
+						cl = resp.headers.get("Content-Length", "")
+						if cl.isdigit():
+							size = int(cl)
+							aud.net_set_size(gen, size)
+					else:
+						logging.error(f"Stream: server returned status {code}")
+						close_response()
+						aud.net_fail(gen)
+						continue
+					offset = want
+
+				if not pending:
+					try:
+						chunk = resp.raw.read(65536)
+					except Exception:
+						logging.exception("Stream: read failed")
+						close_response()
+						retries += 1
+						if retries > 3:
+							aud.net_fail(gen)
+							retries = 0
+						time.sleep(0.2)
+						continue
+					if not chunk:
+						# End of response body
+						close_response()
+						if size < 0 or offset >= size:
+							aud.net_eof(gen)
+						else:
+							# Connection ended early, resume from current offset
+							retries += 1
+							if retries > 3:
+								aud.net_fail(gen)
+								retries = 0
+							else:
+								time.sleep(0.2)
+						continue
+					retries = 0
+					pending = chunk
+
+				fed = aud.net_feed(gen, offset, pending, len(pending))
+				if fed in (-1, -2):
+					# Stream gone, or a seek redirected the wanted offset
+					close_response()
+					continue
+				if fed == 0:
+					# Buffer is full, wait for the player to consume some
+					self._speed_tick(0)
+					time.sleep(0.05)
+					continue
+				offset += fed
+				self._speed_tick(fed)
+				pending = pending[fed:] if fed < len(pending) else b""
+				if size > 0:
+					self.pctl.buffering_percent = min(100, int(offset * 100 / size))
+			except Exception:
+				logging.exception("Stream feeder error")
+				close_response()
+				time.sleep(0.5)
+
+
 class Cachement:
 	def __init__(self, tauon: Tauon) -> None:
 		# fmt:off
@@ -137,6 +339,22 @@ class Cachement:
 			path = Path(self.direc) / key
 			if path.is_file():
 				return str(path)
+		return None
+
+	def get_local_instant(self, track: TrackClass) -> str | None:
+		"""Return a complete cached file or existing transcode for this track, if any"""
+		path = self.get_file_cached_only(track)
+		if path:
+			return path
+		for codec in (".opus", ".ogg", ".flac", ".mp3"):
+			idea = (
+				os.path.join(
+					self.prefs.encoder_output, self.tauon.encode_folder_name(track), self.tauon.encode_track_name(track)
+				)
+				+ codec
+			)
+			if os.path.isfile(idea):
+				return idea
 		return None
 
 	def get_file(self, track: TrackClass) -> tuple[int, str | None]:
@@ -565,6 +783,8 @@ def player4(tauon: Tauon) -> None:
 			prefs.volume_power = 2
 		aud.config_set_volume_power(prefs.volume_power)
 		aud.config_set_resample(prefs.avoid_resampling ^ True)
+		if hasattr(aud, "config_set_stream_buffer"):
+			aud.config_set_stream_buffer(prefs.stream_buffer)
 		apply_eq_settings()
 
 	def normalise_eq_bands() -> list[float]:
@@ -741,6 +961,14 @@ def player4(tauon: Tauon) -> None:
 	aud.set_callbacks(start_callback, read_callback, close_callback, device_unavailable_callback)
 
 	cachement = tauon.cachement
+	feeder = StreamFeeder(tauon, aud)
+	tauon.stream_feeder = feeder  # the console graph reads download stats from here
+	stream_unsupported: set[int] = set()  # tracks that failed direct streaming this session
+	loaded_track_streamed = False
+
+	def set_load_net(n: int) -> None:
+		if feeder.enabled:
+			aud.set_load_net(n)
 
 	# aud.config_set_samplerate(prefs.samplerate)
 	aud.config_set_resample_quality(prefs.resample)
@@ -882,6 +1110,7 @@ def player4(tauon: Tauon) -> None:
 				pctl.download_time = 0
 				w = 0
 				if not tauon.radiobox.run_proxy:
+					set_load_net(0)
 					aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(calc_rg(None)))
 					tauon.player4_state = PlayerState.URL_STREAM
 					player_timer.hit()
@@ -897,6 +1126,7 @@ def player4(tauon: Tauon) -> None:
 							break
 					else:
 						aud.config_set_feed_samplerate(prefs.samplerate)
+						set_load_net(0)
 						aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
 						tauon.player4_state = PlayerState.URL_STREAM
 						player_timer.hit()
@@ -923,6 +1153,7 @@ def player4(tauon: Tauon) -> None:
 				except Exception:
 					logging.exception("Failed to get extension - maybe file name does not have any dots?")
 
+				stream_url: str | None = None
 				if target_object.is_network:
 					if target_object.file_ext == "SPTY":
 						logging.warning("This network source is no longer supported")
@@ -931,36 +1162,63 @@ def player4(tauon: Tauon) -> None:
 						pctl.jump_time = 0.0
 						continue
 
-					timer = Timer()
-					timer.set()
-					while True:
-						status, path = cachement.get_file(target_object)
+					# Prefer an already complete local copy (cache or transcode)
+					instant = cachement.get_local_instant(target_object)
 
-						if status in (0, 2):
-							break
-						if timer.get() > 0.25 and gui.buffering is False:
-							gui.buffering_text = ""
-							pctl.buffering_percent = 0
-							gui.buffering = True
-							gui.update += 1
-							tauon.wake()
-						if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0.0:
-							break
-						time.sleep(0.05)
-						# logging.info(status)
+					if instant is None and feeder.enabled and prefs.network_stream \
+							and target_object.index not in stream_unsupported:
+						try:
+							network_url, params = pctl.get_url(target_object)
+						except Exception:
+							logging.exception("Failed to resolve track URL")
+							network_url = None
+							params = None
+						# Multi-part urls (some Tidal tracks) use the download path
+						if isinstance(network_url, str) and network_url.startswith("http"):
+							if params:
+								req = PreparedRequest()
+								req.prepare_url(network_url, params)
+								stream_url = req.url
+							else:
+								stream_url = network_url
 
-					gui.buffering = False
-					gui.update += 1
-					tauon.wake()
+					if instant:
+						target_path = instant
+					elif stream_url:
+						# Stream directly; phazor pulls the data through the feeder
+						logging.info("Direct stream network track")
+						target_path = stream_url
+					else:
+						timer = Timer()
+						timer.set()
+						while True:
+							status, path = cachement.get_file(target_object)
 
-					if status == 2:
-						logging.info("Could not locate resource")
-						target_object.found = False
-						pctl.playing_state = PlayingState.STOPPED
-						pctl.jump_time = 0.0
-						# pctl.advance(inplace=True, play=True)
-						continue
-					target_path = path
+							if status in (0, 2):
+								break
+							if timer.get() > 0.25 and gui.buffering is False:
+								gui.buffering_text = ""
+								pctl.buffering_percent = 0
+								gui.buffering = True
+								gui.update += 1
+								tauon.wake()
+							if cachement.ready == target_object and pctl.start_time_target + pctl.jump_time == 0.0:
+								break
+							time.sleep(0.05)
+							# logging.info(status)
+
+						gui.buffering = False
+						gui.update += 1
+						tauon.wake()
+
+						if status == 2:
+							logging.info("Could not locate resource")
+							target_object.found = False
+							pctl.playing_state = PlayingState.STOPPED
+							pctl.jump_time = 0.0
+							# pctl.advance(inplace=True, play=True)
+							continue
+						target_path = path
 
 				elif prefs.precache:
 					timer = Timer()
@@ -992,7 +1250,7 @@ def player4(tauon: Tauon) -> None:
 						continue
 					target_path = path
 
-				if not os.path.isfile(target_path):
+				if stream_url is None and not os.path.isfile(target_path):
 					target_object.found = False
 					if not target_object.is_network:
 						pctl.playing_state = PlayingState.STOPPED
@@ -1009,7 +1267,7 @@ def player4(tauon: Tauon) -> None:
 				remain: float = 0
 				position: float = 0
 
-				if target_path and target_object and target_object.length == 0 and not target_object.is_cue:
+				if target_path and target_object and stream_url is None and target_object.length == 0 and not target_object.is_cue:
 					logging.info("Track has duration of 0, scanning file")
 					temp = tauon.TrackClass()
 					temp.fullpath = target_path
@@ -1036,14 +1294,21 @@ def player4(tauon: Tauon) -> None:
 					logging.info(f" --- position: {position!s}")
 					logging.info(f" --- We are {remain!s} from end")
 
-					if loaded_track.is_network or length == 0:
+					# Directly streamed tracks report an accurate duration from
+					# the decoder; the metadata fallback is for the legacy
+					# cache path where the file may still be growing
+					if (loaded_track.is_network and not loaded_track_streamed) or length == 0:
 						logging.warning("Phazor did not respond with a duration")
 						length = loaded_track.length
 						remain = length - position
 
 				fade = 0
 				error = False
-				target_fully_cached = not target_object.is_network or cachement.get_file_cached_only(target_object) is not None
+				target_gapless_ready = (
+					not target_object.is_network
+					or stream_url is not None
+					or cachement.get_file_cached_only(target_object) is not None
+				)
 				if (
 					tauon.player4_state == PlayerState.PLAYING
 					and length
@@ -1053,7 +1318,7 @@ def player4(tauon: Tauon) -> None:
 					and loaded_track
 					and 0 < remain < 5.5
 					and not loaded_track.is_cue
-					and target_fully_cached
+					and target_gapless_ready
 					and subcommand != "now"
 				):
 					logging.info("Transition gapless")
@@ -1069,6 +1334,7 @@ def player4(tauon: Tauon) -> None:
 							time.sleep(0.016)
 						aud.stop()
 
+					set_load_net(1 if stream_url else 0)
 					aud.next(
 						target_path.encode(),
 						int((pctl.start_time_target + pctl.jump_time) * 1000),
@@ -1168,6 +1434,7 @@ def player4(tauon: Tauon) -> None:
 							pctl.playerCommand = ""
 
 					loaded_track = target_object
+					loaded_track_streamed = stream_url is not None
 					pctl.playing_time = pctl.jump_time
 				else:
 					if pctl.commit and subcommand != "repeat":
@@ -1179,6 +1446,7 @@ def player4(tauon: Tauon) -> None:
 						fade = 1
 
 					logging.info("Transition jump")
+					set_load_net(1 if stream_url else 0)
 					aud.start(
 						target_path.encode(errors="surrogateescape"),
 						int((pctl.start_time_target + pctl.jump_time) * 1000),
@@ -1186,19 +1454,33 @@ def player4(tauon: Tauon) -> None:
 						ctypes.c_float(calc_rg(target_object)),
 					)
 					loaded_track = target_object
+					loaded_track_streamed = stream_url is not None
 					pctl.playing_time = pctl.jump_time
 					if pctl.jump_time:
 						while aud.get_result() == 0:
+							if stream_url and pctl.playerCommandReady and pctl.playerCommand in ("stop", "open"):
+								break
 							time.sleep(0.016)
 							run_vis()
 						aud.set_position_ms(int(pctl.jump_time * 1000))
 
 					# Restart track is failed to load (for some network tracks) (broken with gapless loading)
+					stream_fallback = False
+					buff_timer = Timer()
 					while True:
 						r = aud.get_result()
 						if r == 1:
 							break
 						if r == 2:
+							if stream_url:
+								# Direct streaming didn't work out; fall back
+								# to the legacy download-to-cache path
+								logging.warning("Direct stream failed, falling back to download")
+								stream_unsupported.add(target_object.index)
+								pctl.playerCommand = "open"
+								pctl.playerCommandReady = True
+								stream_fallback = True
+								break
 							if loaded_track.is_network:
 								pctl.buffering_percent = 0
 								gui.buffering = True
@@ -1209,6 +1491,7 @@ def player4(tauon: Tauon) -> None:
 								# 	if pctl.playerCommandReady:
 								# 		break
 								logging.info("Retry start file")
+								set_load_net(0)
 								aud.start(
 									target_path.encode(),
 									int((pctl.start_time_target + pctl.jump_time) * 1000),
@@ -1223,8 +1506,28 @@ def player4(tauon: Tauon) -> None:
 								tauon.show_message(_("Error loading track"), mode="warning")
 							error = True
 							break
+						if stream_url:
+							# Keep commands responsive if the network stalls during load
+							if pctl.playerCommandReady and pctl.playerCommand in ("stop", "open"):
+								logging.info("Command received while stream loading, cancel load")
+								aud.stop()
+								error = True
+								break
+							if buff_timer.get() > 0.25 and gui.buffering is False:
+								gui.buffering_text = ""
+								pctl.buffering_percent = 0
+								gui.buffering = True
+								gui.update += 1
+								tauon.wake()
 						time.sleep(0.016)
 						run_vis()
+
+					if gui.buffering:
+						gui.buffering = False
+						gui.update += 1
+						tauon.wake()
+					if stream_fallback:
+						continue
 
 					tauon.player4_state = PlayerState.PLAYING
 					if error:
@@ -1252,7 +1555,11 @@ def player4(tauon: Tauon) -> None:
 
 			if command == "seek":
 				if tauon.player4_state != PlayerState.STOPPED:
-					if loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
+					if loaded_track.is_network and loaded_track_streamed:
+						# Direct streams seek natively; the decoder requests
+						# the byte range it needs through the feeder
+						aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
+					elif loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
 						timer = Timer()
 						timer.set()
 						i = 0
@@ -1294,6 +1601,7 @@ def player4(tauon: Tauon) -> None:
 							continue
 
 						# The vorbis decoder doesn't like appended files
+						set_load_net(0)
 						aud.start(
 							path.encode(),
 							int(pctl.new_time + pctl.start_time_target) * 1000,
@@ -1413,4 +1721,12 @@ def player4(tauon: Tauon) -> None:
 					gui.update += 1
 
 			if tauon.player4_state == PlayerState.PLAYING:
+				if loaded_track_streamed:
+					# Surface buffering state if the network can't keep up
+					buffering = aud.is_buffering()
+					if gui.buffering != buffering:
+						gui.buffering = buffering
+						gui.buffering_text = ""
+						gui.update += 1
+						tauon.wake()
 				track()

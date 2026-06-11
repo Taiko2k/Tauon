@@ -352,6 +352,8 @@ class Prefs:
 	# TODO(Martin): cache_list isn't really used anywhere and will always be empty?
 	cache_list: list[str] = field(default_factory=list[str])
 	cache_limit = 2000  # in mb
+	network_stream: bool = True  # Stream network tracks directly rather than downloading first
+	stream_buffer = 50  # Size of the in-memory file/stream buffer, in mb
 	save_window_position: bool = True
 	always_ffmpeg: bool = False
 
