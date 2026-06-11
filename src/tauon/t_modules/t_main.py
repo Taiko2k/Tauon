@@ -46262,8 +46262,15 @@ def worker1(tauon: Tauon) -> None:
 			network_warn: bool = False
 			while tauon.to_scan:
 				track = tauon.to_scan[0]
+				def clear_search_cache(track: int) -> None:
+					# clear cached search data (user can search by lyrics immediately)
+					tauon.search_string_cache.pop(track, None)
+					tauon.search_dia_string_cache.pop(track, None)
+					tauon.search_field_cache.pop(track, None)
+					tauon.search_dia_field_cache.pop(track, None)
 				star = tauon.star_store.full_get(track)
 				tauon.star_store.remove(track)
+				clear_search_cache(track)
 				rescanned_track = tauon.tag_scan(pctl.master_library[track])
 				if rescanned_track is None:
 					del tauon.to_scan[0]
