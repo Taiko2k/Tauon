@@ -291,6 +291,8 @@ class Prefs:
 	theme: int = 14
 	theme_name = "Vape"
 	transparent_mode: int = 0
+	rounded_corners: bool = False
+	corner_radius: int = 10
 	left_panel_mode = "playlist"
 
 	folder_tree_codec_colours: bool = False

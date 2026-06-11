@@ -5895,6 +5895,10 @@ class Tauon:
 		self.logical_size: list[int]              = bag.logical_size
 		self.window_size: list[int]               = bag.window_size
 		self.draw_border: bool                    = holder.draw_border
+		self.corner_mask_textures: list | None    = None
+		self.corner_border_textures: list | None  = None
+		self.corner_texture_size: tuple[int, int] = (0, 0)
+		self.corner_textures_failed: bool         = False
 		self.desktop: str | None                  = bag.desktop
 		self.pid: int                             = os.getpid()
 		# List of encodings to check for with the fix mojibake function
@@ -6659,7 +6663,10 @@ class Tauon:
 		corner_icon = self.gui.corner_icon
 		window_size = self.window_size
 
-		corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
+		# The grip triangle would clash with a rounded corner, the resize
+		# hit-zone below still works without it
+		if not self.corner_round_radius():
+			corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
 		corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
 		self.fields.add(corner_rect)
@@ -6689,10 +6696,128 @@ class Tauon:
 
 		colour = colours.window_frame
 
-		ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour)
-		ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
-		ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
-		ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
+		# When corners are rounded, stop the straight edges short so the
+		# corner arc textures can continue the contour
+		inset = self.corner_round_radius()
+
+		ddt.rect((inset, 0, window_size[0] - inset * 2, 1 * gui.scale), colour)
+		ddt.rect((0, inset, 1 * gui.scale, window_size[1] - inset * 2), colour)
+		ddt.rect((inset, window_size[1] - 1 * gui.scale, window_size[0] - inset * 2, 1 * gui.scale), colour)
+		ddt.rect((window_size[0] - 1 * gui.scale, inset, 1 * gui.scale, window_size[1] - inset * 2), colour)
+
+	def corner_round_radius(self) -> int:
+		"""The window corner radius in pixels, 0 when rounding is inactive"""
+		if not self.prefs.rounded_corners or not self.draw_border or self.corner_textures_failed:
+			return 0
+		gui = self.gui
+		if gui.mode == GuiMode.MINI or gui.fullscreen or gui.maximized:
+			return 0
+		return max(2, round(self.prefs.corner_radius * gui.scale))
+
+	def destroy_corner_textures(self) -> None:
+		for textures in (self.corner_mask_textures, self.corner_border_textures):
+			if textures:
+				for texture in textures:
+					sdl3.SDL_DestroyTexture(texture)
+		self.corner_mask_textures = None
+		self.corner_border_textures = None
+		self.corner_texture_size = (0, 0)
+
+	def _build_corner_textures(self, radius: int, thickness: int) -> bool:
+		"""Generate anti-aliased corner cutout masks and border arcs for each window corner
+
+		The mask textures erase the window corners by multiplying destination
+		alpha, the border textures draw the window frame arc over the contour.
+		"""
+		self.destroy_corner_textures()
+
+		# Draw supersampled then downsample for smooth anti-aliased edges
+		ss = 8
+		size = radius * ss
+
+		cutout = Image.new("L", (size, size), 0)
+		draw = ImageDraw.Draw(cutout)
+		draw.ellipse((0, 0, size * 2, size * 2), fill=255)
+		cutout = cutout.resize((radius, radius), Image.Resampling.LANCZOS)
+
+		arc = Image.new("L", (size, size), 0)
+		draw = ImageDraw.Draw(arc)
+		draw.ellipse((0, 0, size * 2, size * 2), outline=255, width=thickness * ss)
+		arc = arc.resize((radius, radius), Image.Resampling.LANCZOS)
+
+		# dst = dst * srcA, keeps pixels inside the corner circle and erases outside
+		mask_blend = sdl3.SDL_ComposeCustomBlendMode(
+			sdl3.SDL_BLENDFACTOR_ZERO,
+			sdl3.SDL_BLENDFACTOR_SRC_ALPHA,
+			sdl3.SDL_BLENDOPERATION_ADD,
+			sdl3.SDL_BLENDFACTOR_ZERO,
+			sdl3.SDL_BLENDFACTOR_SRC_ALPHA,
+			sdl3.SDL_BLENDOPERATION_ADD,
+		)
+
+		# Top-left, top-right, bottom-left, bottom-right
+		transposes = (None, Image.Transpose.FLIP_LEFT_RIGHT, Image.Transpose.FLIP_TOP_BOTTOM, Image.Transpose.ROTATE_180)
+
+		self.corner_mask_textures = []
+		self.corner_border_textures = []
+		for alpha_image, textures, blend in (
+			(cutout, self.corner_mask_textures, mask_blend),
+			(arc, self.corner_border_textures, sdl3.SDL_BLENDMODE_BLEND),
+		):
+			rgba = Image.new("RGBA", (radius, radius), (255, 255, 255, 0))
+			rgba.putalpha(alpha_image)
+			for transpose in transposes:
+				corner = rgba if transpose is None else rgba.transpose(transpose)
+				g = io.BytesIO()
+				corner.save(g, "PNG")
+				g.seek(0)
+				surface = self.ddt.load_image(g)
+				texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
+				sdl3.SDL_DestroySurface(surface)
+				if not texture or not sdl3.SDL_SetTextureBlendMode(texture, blend):
+					logging.warning(f"Failed to create corner texture: {sdl3.SDL_GetError()}")
+					if texture:
+						sdl3.SDL_DestroyTexture(texture)
+					self.destroy_corner_textures()
+					self.corner_textures_failed = True
+					return False
+				textures.append(texture)
+
+		self.corner_texture_size = (radius, thickness)
+		return True
+
+	def render_rounded_corners(self) -> None:
+		"""Cut out the window corners with anti-aliased alpha masks, then draw the frame arcs
+
+		Called on the backbuffer just before present. Per-frame cost is eight
+		small texture copies, the textures themselves are cached.
+		"""
+		radius = self.corner_round_radius()
+		if not radius:
+			return
+
+		thickness = max(1, round(1 * self.gui.scale))
+		if self.corner_mask_textures is None or self.corner_texture_size != (radius, thickness):
+			if not self._build_corner_textures(radius, thickness):
+				return
+
+		w = self.window_size[0]
+		h = self.window_size[1]
+		positions = ((0, 0), (w - radius, 0), (0, h - radius), (w - radius, h - radius))
+		rect = sdl3.SDL_FRect(0.0, 0.0, float(radius), float(radius))
+
+		for texture, (x, y) in zip(self.corner_mask_textures, positions):
+			rect.x = float(x)
+			rect.y = float(y)
+			sdl3.SDL_RenderTexture(self.renderer, texture, None, rect)
+
+		frame = self.colours.window_frame
+		for texture, (x, y) in zip(self.corner_border_textures, positions):
+			sdl3.SDL_SetTextureColorMod(texture, frame.r, frame.g, frame.b)
+			sdl3.SDL_SetTextureAlphaMod(texture, frame.a)
+			rect.x = float(x)
+			rect.y = float(y)
+			sdl3.SDL_RenderTexture(self.renderer, texture, None, rect)
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
@@ -18806,6 +18931,14 @@ class Tauon:
 			sdl3.SDL_SetWindowBordered(self.t_window, True)
 		return None
 
+	def toggle_rounded_corners(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.rounded_corners
+
+		self.prefs.rounded_corners ^= True
+		self.gui.update += 1
+		return None
+
 	def toggle_break(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.break_enable ^ True
@@ -25511,21 +25644,27 @@ class Over:
 		formatter=None,
 		callback=None,
 		log_scale: bool = False,
+		disabled: bool = False,
 	) -> float:
 		if accent is None:
 			accent = self.settings_page_accent()
+		if disabled:
+			accent = alpha_blend(ColourRGBA(128, 128, 128, 90), self.colours.box_background)
 
 		x, y, w, h = tuple(round(v) for v in rect)
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		if self.coll((x, y, w, h)):
+		if disabled:
+			fill = alpha_blend(ColourRGBA(128, 128, 128, 8), self.colours.box_background)
+			border = alpha_blend(ColourRGBA(128, 128, 128, 36), self.colours.box_text_border)
+		elif self.coll((x, y, w, h)):
 			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
 		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
 
 		self.ddt.text(
 			(x + round(12 * self.gui.scale), y + round(8 * self.gui.scale)),
 			title,
-			self.colours.box_text,
+			alpha_mod(self.colours.box_text_label, 150) if disabled else self.colours.box_text,
 			12,
 			bg=fill,
 			max_w=w - round(110 * self.gui.scale),
@@ -25538,7 +25677,7 @@ class Over:
 		self.ddt.text(
 			(x + w - round(12 * self.gui.scale), y + round(8 * self.gui.scale), 1),
 			display,
-			self.colours.box_sub_text,
+			alpha_mod(self.colours.box_text_label, 130) if disabled else self.colours.box_sub_text,
 			211,
 			bg=fill,
 		)
@@ -25565,6 +25704,9 @@ class Over:
 		self.ddt.rect(slider_rect, alpha_blend(ColourRGBA(255, 255, 255, 20), border))
 		self.ddt.rect((slider_x, slider_y, round(slider_w * ratio), slider_h), accent)
 		self.ddt.rect(grip_rect, accent)
+
+		if disabled:
+			return value
 
 		hit_rect = grow_rect((slider_x, slider_y - round(10 * self.gui.scale), slider_w, round(20 * self.gui.scale)), round(4 * self.gui.scale))
 		self.fields.add(hit_rect)
@@ -27860,8 +28002,8 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, round(320 * gui.scale))
-		right_rect = (x + left_w + column_gap, y, right_w, round(320 * gui.scale))
+		left_rect = (x, y, left_w, round(360 * gui.scale))
+		right_rect = (x + left_w + column_gap, y, right_w, round(360 * gui.scale))
 		if not draw:
 			return max(left_rect[3], right_rect[3])
 
@@ -27877,9 +28019,29 @@ class Over:
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_borderless, _("Draw own window decorations"), accent=accent)
 		inner_y += row_h + row_gap
-		if not self.tauon.draw_border:
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_titlebar_line, _("Show playing in titlebar"), accent=accent)
-			inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h), self.tauon.toggle_titlebar_line, _("Show playing in titlebar"),
+			accent=accent, disabled=self.tauon.draw_border)
+		inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h), self.tauon.toggle_rounded_corners, _("Rounded window corners"),
+			accent=accent, disabled=not self.tauon.draw_border)
+		inner_y += row_h + row_gap
+		new_radius = self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Corner radius"),
+			float(prefs.corner_radius),
+			2,
+			30,
+			1,
+			accent=accent,
+			formatter=lambda value: f"{round(value)} px",
+			disabled=not (self.tauon.draw_border and prefs.rounded_corners),
+		)
+		if round(new_radius) != prefs.corner_radius:
+			prefs.corner_radius = round(new_radius)
+			gui.update += 1
+		inner_y += round(52 * gui.scale)
 		old_on_top = prefs.mini_mode_on_top
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
@@ -27932,8 +28094,10 @@ class Over:
 			if self.settings_scale_preview_value is None else
 			self.settings_scale_preview_value
 		)
+		scale_slider_rect = (inner_x, inner_y, inner_w, round(46 * gui.scale))
+		holding_scale_slider = self.inp.mouse_down and self.coll(scale_slider_rect)
 		new_preview_scale = self.draw_settings_range_slider(
-			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			scale_slider_rect,
 			_("Interface scale"),
 			preview_scale,
 			0.5,
@@ -27942,7 +28106,7 @@ class Over:
 			accent=accent,
 			formatter=lambda value: (
 				_("auto")
-				if prefs.x_scale and not self.inp.mouse_down and self.settings_scale_preview_value is None else
+				if prefs.x_scale and not holding_scale_slider and self.settings_scale_preview_value is None else
 				f"{normalize_scale_value(value):.2f}x"
 			),
 		)
@@ -44055,6 +44219,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
+	cf.update_value("rounded-corners", prefs.rounded_corners)
+	cf.update_value("rounded-corner-radius", prefs.corner_radius)
 	cf.update_value("mac-style", prefs.macstyle)
 	cf.update_value("allow-art-zoom", prefs.zoom_art)
 
@@ -44174,7 +44340,9 @@ def load_prefs(bag: Bag) -> None:
 	cf    = bag.cf
 	prefs = bag.prefs
 	cf.reset()
-	cf.load(str(bag.dirs.config_directory / "tauon.conf"))
+	config_file = bag.dirs.config_directory / "tauon.conf"
+	first_run = not config_file.is_file()
+	cf.load(str(config_file))
 
 	cf.add_comment("Tauon Music Box configuration file")
 	cf.br()
@@ -44326,6 +44494,17 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
+	if first_run and prefs.macos:
+		# Round by default on macOS where every other window has rounded corners
+		prefs.rounded_corners = True
+	prefs.rounded_corners = cf.sync_add(
+		"bool", "rounded-corners", prefs.rounded_corners,
+		"Round the window corners. Only applies when drawing own window decorations.")
+	prefs.corner_radius = cf.sync_add(
+		"int", "rounded-corner-radius", prefs.corner_radius, "Window corner radius in logical pixels")
+	if prefs.corner_radius < 2 or prefs.corner_radius > 30:
+		prefs.corner_radius = 10
+		logging.warning("Invalid value for rounded-corner-radius")
 	prefs.macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
 	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
 	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", False)
@@ -50615,6 +50794,7 @@ def main(holder: Holder) -> None:
 				logging.info("Reset render targets!")
 				tauon.clear_img_cache(delete_disk=False)
 				ddt.clear_text_cache()
+				tauon.destroy_corner_textures()
 				for item in WhiteModImageAsset.assets:
 					item.reload()
 				reset_render = False
@@ -54866,6 +55046,7 @@ def main(holder: Holder) -> None:
 
 		if gui.present:
 			sdl3.SDL_SetRenderTarget(renderer, None)
+			tauon.render_rounded_corners()
 			sdl3.SDL_RenderPresent(renderer)
 
 			gui.present = False

@@ -5,6 +5,7 @@ Changelog
 ### v10.0.2
 
  - Reworked network streaming backend
+ - Added rounded corners setting
  - Added search overlay feedback when adding results to playlists
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection
@@ -12,7 +13,8 @@ Changelog
  - Fixed album rating and scrollbar interactions
  - Fixed show playing info shortcut
  - Fixed resume on restart state handling
- - Search overlay now searches track lyrics (rescan all your media tags to start)
+ - Fixed Jellyfin import (again)
+ - Search overlay now searches track lyrics
 
 ### v10.0.1
 
