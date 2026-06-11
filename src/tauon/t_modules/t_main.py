@@ -18975,7 +18975,12 @@ class Tauon:
 
 	def switch_opus_ogg(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-				n = item[0]
+			return self.prefs.transcode_opus_as
+		self.prefs.transcode_opus_as ^= True
+		return None
+
+	def toggle_transcode_output(self, mode: int = 0) -> bool | None:
+		if mode == 1:
 			return not self.prefs.transcode_inplace
 		self.prefs.transcode_inplace ^= True
 		if self.prefs.transcode_inplace:
@@ -49269,8 +49274,7 @@ def main(holder: Holder) -> None:
 
 					inp.mouse_down = True
 				elif event.button.button == sdl3.SDL_BUTTON_MIDDLE:
-					if not tauon.search_over.active:
-						inp.middle_click = True
+					inp.middle_click = True
 					gui.update += 1
 				elif event.button.button == sdl3.SDL_BUTTON_X1:
 					keymaps.hits.append("MB4")
