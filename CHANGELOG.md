@@ -11,6 +11,7 @@ Changelog
  - Fixed album rating and scrollbar interactions
  - Fixed show playing info shortcut
  - Fixed resume on restart state handling
+ - Search overlay now searches track lyrics (rescan all your media tags to start)
 
 ### v10.0.1
 
