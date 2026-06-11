@@ -35248,7 +35248,10 @@ class RadioBox:
 			def send_heartbeat(ws: WebSocketApp) -> None:
 				#logging.info(self.ws_interval)
 				time.sleep(self.ws_interval)
-				ws.send("{\"op\":9}")
+				try:
+					ws.send('{"op":9}')
+				except Exception:
+					logging.info("Websocket already closed")
 				logging.info("Send heartbeat")
 
 			def on_message(ws: WebSocketApp, message: str) -> None:
@@ -35261,7 +35264,10 @@ class RadioBox:
 
 				if d["op"] == 0:
 					self.ws_interval = d["d"]["heartbeat"] / 1000
-					ws.send("{\"op\":9}")
+					try:
+						ws.send('{"op":9}')
+					except Exception:
+						logging.info("Websocket already closed")
 
 				if d["op"] == 1:
 					try:
@@ -35279,21 +35285,23 @@ class RadioBox:
 						self.pctl.found_tags = found_tags
 						self.pctl.tag_meta = line
 
-						filename = d["d"]["song"]["albums"][0]["image"]
-						fulllink = "https://cdn.listen.moe/covers/" + filename
+						album_image = d["d"]["song"]["albums"][0].get("image")
+						if album_image:
+							filename = album_image
+							fulllink = "https://cdn.listen.moe/covers/" + filename
 
-						#logging.info(fulllink)
-						art_response = requests.get(fulllink, timeout=10)
-						#logging.info(art_response.status_code)
+							#logging.info(fulllink)
+							art_response = requests.get(fulllink, timeout=10)
+							#logging.info(art_response.status_code)
 
-						if art_response.status_code == 200:
-							if self.pctl.radio_image_bin:
-								self.pctl.radio_image_bin.close()
-								self.pctl.radio_image_bin = None
-							self.pctl.radio_image_bin = io.BytesIO(art_response.content)
-							self.pctl.radio_image_bin.seek(0)
-							self.dummy_track.art_url_key = "ok"
-							logging.info("Got new art")
+							if art_response.status_code == 200:
+								if self.pctl.radio_image_bin:
+									self.pctl.radio_image_bin.close()
+									self.pctl.radio_image_bin = None
+								self.pctl.radio_image_bin = io.BytesIO(art_response.content)
+								self.pctl.radio_image_bin.seek(0)
+								self.dummy_track.art_url_key = "ok"
+								logging.info("Got new art")
 
 					except Exception:
 						logging.exception("No image")

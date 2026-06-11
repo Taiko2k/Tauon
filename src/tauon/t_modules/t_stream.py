@@ -364,8 +364,6 @@ class StreamEnc:
 						break
 			except Exception:
 				logging.exception("Feed not running!")
-				self.feed_running = False
-				raise
 			finally:
 				self.feed_running = False
 				self.close_pipe(decoder.stdin, "decoder stdin")
