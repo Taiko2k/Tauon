@@ -6127,10 +6127,9 @@ class Tauon:
 		self.text_plex_lib: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_2fa: TextBox2 = TextBox2(tauon=self)
 
-		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
-		self.text_jelly_pas:     TextBox2 = TextBox2(tauon=self)
-		self.text_jelly_ser:     TextBox2 = TextBox2(tauon=self)
-		self.text_jelly_timeout: TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_usr: TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_pas: TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_ser: TextBox2 = TextBox2(tauon=self)
 
 		self.text_air_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_air_pas: TextBox2 = TextBox2(tauon=self)
@@ -28821,7 +28820,7 @@ class Over:
 			return total_h
 
 		if view == 10:
-			card1_h = round(266 * gui.scale)
+			card1_h = round(218 * gui.scale)
 			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
@@ -28869,18 +28868,6 @@ class Over:
 				prefs.jelly_server_url,
 				accent,
 			)
-			inner_y += field_h + row_gap
-			timeout_text = self.settings_text_input(
-				(inner_x, inner_y, inner_w, field_h),
-				_("Import timeout"),
-				tauon.text_jelly_timeout,
-				str(prefs.jelly_timeout),
-				accent,
-			).strip()
-			try:
-				prefs.jelly_timeout = int(timeout_text)
-			except ValueError:
-				pass
 
 			rect = (x, y + card1_h + card_gap, w, card2_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
@@ -44021,7 +44008,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-username", prefs.jelly_username)
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
-	cf.update_value("jelly-timeout", prefs.jelly_timeout)
 
 	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
 
@@ -44621,9 +44607,6 @@ def load_prefs(bag: Bag) -> None:
 		"string", "jelly-server-url", prefs.jelly_server_url,
 		"The IP:Port where the jellyfin server is hosted.")
 	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
-	prefs.jelly_timeout = cf.sync_add(
-		"int", "jelly-timeout", prefs.jelly_timeout,
-		"Timeout for synchronizing library.")
 
 	cf.br()
 	cf.add_text("[network]")

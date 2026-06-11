@@ -173,7 +173,6 @@ class Prefs:
 	jelly_username: str = ""
 	jelly_password: str = ""
 	jelly_server_url: str = "http://localhost:8096"
-	jelly_timeout: int = 300  # Make configurable in case user has a large/slow setup
 
 	auto_lyrics_checked: list = field(default_factory=list)
 
