@@ -758,12 +758,10 @@ static void bs_request_restart_locked(int64_t offset) {
 
 static void bs_wait_locked(int ms) {
 	struct timespec ts;
-	#ifdef WIN64
-		// timespec_get is C11 and available on mingw
-		timespec_get(&ts, TIME_UTC);
-	#else
-		clock_gettime(CLOCK_REALTIME, &ts);
-	#endif
+	// clock_gettime + CLOCK_REALTIME is provided by winpthreads on MinGW
+	// (already linked for pthreads), so this is portable across platforms.
+	// timespec_get() is avoided as it is missing on the MSVCRT runtime.
+	clock_gettime(CLOCK_REALTIME, &ts);
 	ts.tv_sec += ms / 1000;
 	ts.tv_nsec += (long) (ms % 1000) * 1000000L;
 	if (ts.tv_nsec >= 1000000000L) {
