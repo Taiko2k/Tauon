@@ -3145,7 +3145,8 @@ class PlayerCtl:
 			self.left_index = self.track_queue[self.queue_step]
 
 		if self.tauon.radiobox.load_connecting or self.playing_state == PlayingState.URL_STREAM:
-			self.tauon.radiobox.abort_load()
+			# Keep loaded_station so play() can resume the radio after a stop
+			self.tauon.radiobox.abort_load(clear_station=False)
 
 		previous_state = self.playing_state
 		self.playing_state = PlayingState.STOPPED
@@ -50618,10 +50619,7 @@ def main(holder: Holder) -> None:
 
 		if inp.media_key:
 			if inp.media_key == "Play":
-				if pctl.playing_state == PlayingState.STOPPED:
-					pctl.play()
-				else:
-					pctl.pause()
+				pctl.play_pause()
 			elif inp.media_key == "Pause":
 				pctl.pause_only()
 			elif inp.media_key == "Stop":

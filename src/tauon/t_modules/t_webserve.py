@@ -1075,10 +1075,7 @@ def controller(tauon: Tauon) -> None:
 				tauon.gui.reload_theme = True
 				tauon.gui.update += 1
 			if path == "/playpause":
-				if tauon.pctl.playing_state == PlayingState.STOPPED:
-					tauon.pctl.play()
-				else:
-					tauon.pctl.pause()
+				tauon.pctl.play_pause()
 			if path == "/play":
 				tauon.pctl.play()
 			if path == "/pause":
