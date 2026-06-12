@@ -27,7 +27,6 @@
 #		"unidecode",
 #		"dbus-python;                 sys_platform == 'linux'",
 #		"comtypes;                    sys_platform == 'win32'",
-#		"lynxtray;                    sys_platform == 'win32'",
 #		"keyboard;                    sys_platform == 'win32'",
 #		"Pillow;                      sys_platform != 'win32'",
 #		"opencc;                      sys_platform != 'win32'", # OPTDEP
