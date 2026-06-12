@@ -227,4 +227,10 @@ def database_migrate(
 	if db_version <= 74:  # noqa: PLR2004
 		logging.info("Updating database to version 75")
 
+	if db_version <= 75:  # noqa: PLR2004
+		logging.info("Updating database to version 76")
+		logging.info("Clearing search caches")
+		tauon.search_string_cache.clear()
+		tauon.search_dia_string_cache.clear()
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
