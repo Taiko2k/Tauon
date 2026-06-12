@@ -6157,7 +6157,7 @@ class Tauon:
 		self.load_orders:         list[LoadClass] = []
 		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
-		self.album_info_cache_key: tuple[int, int] = (-1, -1)
+		self.album_info_cache_key: tuple[int, TrackClass | None, int] = (-1, None, -1)
 		self.console:                    DConsole = bag.console
 		self.TrackClass                           = TrackClass
 		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
@@ -19504,9 +19504,10 @@ class Tauon:
 		if pl is not None:
 			playlist = pctl.multi_playlist[pl].playlist_ids
 
-		if self.album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
+		cache_key = (pctl.selected_in_playlist, pctl.playing_object(), pctl.playlist_playing_position)
+		if self.album_info_cache_key != cache_key:  # Premature optimisation?
 			self.album_info_cache.clear()
-			self.album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
+			self.album_info_cache_key = cache_key
 
 		if position in self.album_info_cache:
 			return self.album_info_cache[position]
@@ -19534,8 +19535,20 @@ class Tauon:
 			select = True
 
 		if len(pctl.track_queue) > 0 and p < len(playlist):
-			if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
+			playing_track = pctl.track_queue[pctl.queue_step]
+			if playing_track in playlist[start:end]:
 				playing = True
+				# If the album appears more than once in the playlist, only
+				# highlight the instance the playing position is within
+				viewing_pl = pctl.active_playlist_viewing if pl is None else pl
+				pp = pctl.playlist_playing_position
+				if (
+					viewing_pl == pctl.active_playlist_playing
+					and 0 <= pp < len(playlist)
+					and playlist[pp] == playing_track
+					and not start <= pp < end
+				):
+					playing = False
 
 		self.album_info_cache[position] = playing, album, select
 		return playing, album, select
@@ -51618,7 +51631,12 @@ def main(holder: Holder) -> None:
 											x + tauon.album_mode_art_size, window_size[0] - round(50 * gui.scale)
 										)
 
-									if info[0] == 1 and not info[2] and (
+									# Skip if the selection highlight is drawn over this album,
+									# so the two highlights don't show at the same time
+									selection_highlight_shown = (
+										(gui.album_tab_mode or gallery_menu.active) and info[2] is True
+									)
+									if info[0] == 1 and not selection_highlight_shown and (
 										pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 									):
 										ddt.rect_a(
