@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### v10.0.2
+### v10.2.0
 
  - Reworked network streaming backend
  - Added rounded corners setting
