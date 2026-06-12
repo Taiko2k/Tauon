@@ -336,6 +336,10 @@ class Jellyfin:
 		self.scanning = False
 		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{playlist_id}"'
+		self.gui.pl_update = 1
+		self.gui.update += 1
+		self.tauon.reload()
+		self.tauon.wake()
 		return None
 
 	def get_playlists(self) -> None:
@@ -381,6 +385,13 @@ class Jellyfin:
 			self.scanning = False
 			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
 			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{p["Id"]}"'
+
+		# The import may have updated tracks shown in the current view, so
+		# refresh the playlist and gallery
+		self.gui.pl_update = 1
+		self.gui.update += 1
+		self.tauon.reload()
+		self.tauon.wake()
 
 	def ingest_library(self, return_list: bool = False) -> list[int] | None:
 		self.gui.update += 1
@@ -458,6 +469,7 @@ class Jellyfin:
 			logging.info(f"Got {start_index} of {total} items...")
 			self.gui.to_got = start_index
 			self.gui.update += 1
+			self.tauon.wake()
 			if not page or start_index >= total:
 				break
 
@@ -583,10 +595,13 @@ class Jellyfin:
 					star = StarRecord(star.playtime, star.rating)
 					self.tauon.star_store.insert(tr.index, star)
 
+		# Sort before the playlist is shown, otherwise switch_playlist builds
+		# the gallery from the unsorted order and it goes stale once sorted
+		playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
+		self.tauon.sort_track_2(0, playlist)
+		set_favs(fav_status)
+
 		if return_list:
-			playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
-			self.tauon.sort_track_2(0, playlist)
-			set_favs(fav_status)
 			self.scanning = False
 			return playlist
 
@@ -594,9 +609,6 @@ class Jellyfin:
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
 		self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
-		playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
-		self.tauon.sort_track_2(0, playlist)
-		set_favs(fav_status)
 		self.scanning = False
 		self.gui.update += 1
 		self.tauon.wake()
