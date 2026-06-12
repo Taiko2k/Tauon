@@ -1711,7 +1711,8 @@ class WinTask:
 
 	def update(self) -> None:
 
-		if self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
+		# URL streams have no known duration, so show no progress for them either
+		if self.pctl.playing_state in (PlayingState.STOPPED, PlayingState.URL_STREAM) and self.updated_state != 0:
 			self.updated_state = 0
 			sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
 			sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
@@ -6450,6 +6451,14 @@ class Tauon:
 			tr = self.pctl.playing_object()
 			if tr and tr.title and tr.artist:
 				text = tr.artist + " - " + tr.title
+			elif tr and tr.title:
+				text = tr.title
+			elif self.pctl.playing_state == PlayingState.URL_STREAM:
+				# Stream metadata that couldn't be split into artist/title, else the station name
+				if self.pctl.tag_meta:
+					text = self.pctl.tag_meta
+				elif self.radiobox.loaded_station:
+					text = self.radiobox.loaded_station.title
 			elif tr and tr.filename:
 				text = tr.filename
 
@@ -35606,6 +35615,7 @@ class RadioBox:
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
 		self.pctl.playing_length = 0
+		self.pctl.windows_progress.update()
 		self.tauon.thread_manager.ready_playback()
 		# ensure RPC is started and woken immediately for radio start
 		try:
