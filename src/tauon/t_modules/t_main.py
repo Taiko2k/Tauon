@@ -25125,7 +25125,8 @@ class Over:
 
 		self.themes = []
 		self.theme_editor_enabled = False
-		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1][0]
+		self.theme_editor_selected_attrs = THEME_EDITOR_COMPONENTS[0][1]
 		self.theme_editor_clipboard: ColourRGBA | None = None
 		self.theme_editor_list_scroll = 0.0
 		self.theme_editor_list_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
@@ -25486,7 +25487,7 @@ class Over:
 
 	def theme_editor_selected_label(self) -> str:
 		for label, attr in THEME_EDITOR_COMPONENTS:
-			if attr == self.theme_editor_selected_attr:
+			if attr[0] in self.theme_editor_selected_attrs:
 				return _(label)
 		return _("Component")
 
@@ -25684,10 +25685,11 @@ class Over:
 		self.show_message(_("Saved theme"), target_name, mode="done")
 		return True
 
-	def apply_theme_editor_colour(self, attr: str, colour: ColourRGBA) -> None:
+	def apply_theme_editor_colour(self, thing: tuple[str], colour: ColourRGBA) -> None:
 		if self.theme_editor_draft_colours is None:
 			return
-		setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
+		for attr in thing:
+			setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
 		self.theme_editor_dirty = True
 		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
 
@@ -25705,7 +25707,7 @@ class Over:
 		self.theme_editor_val_value = val
 		r, g, b = colorsys.hsv_to_rgb(hue, sat, val)
 		self.apply_theme_editor_colour(
-			self.theme_editor_selected_attr,
+			self.theme_editor_selected_attrs,
 			ColourRGBA(int(r * 255), int(g * 255), int(b * 255), colour.a),
 		)
 
@@ -25714,7 +25716,7 @@ class Over:
 		alpha = min(max(alpha, 0.0), 1.0)
 		self.theme_editor_alpha_value = alpha
 		self.apply_theme_editor_colour(
-			self.theme_editor_selected_attr,
+			self.theme_editor_selected_attrs,
 			ColourRGBA(colour.r, colour.g, colour.b, int(alpha * 255)),
 		)
 
@@ -25810,7 +25812,7 @@ class Over:
 		if colour is None:
 			self.show_message(_("There is no colour in the clipboard"), mode="error")
 			return
-		self.apply_theme_editor_colour(self.theme_editor_selected_attr, colour)
+		self.apply_theme_editor_colour(self.theme_editor_selected_attrs, colour)
 		self.theme_editor_clipboard = ColourRGBA(colour.r, colour.g, colour.b, colour.a)
 		self.show_message(_("Pasted colour"), self.theme_editor_selected_label(), mode="done")
 
@@ -29889,7 +29891,7 @@ class Over:
 		for label, attr in THEME_EDITOR_COMPONENTS[scroll_index : scroll_index + visible_rows]:
 			row_rect = (list_rect[0], row_y, row_w, row_h)
 			hover = self.coll(row_rect)
-			active = self.theme_editor_selected_attr == attr
+			active = self.theme_editor_selected_attrs == attr
 			row_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
 			if active:
 				row_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
@@ -29901,11 +29903,12 @@ class Over:
 			ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
 			self.fields.add(row_rect)
 			if hover and self.click:
-				self.theme_editor_selected_attr = attr
+				self.theme_editor_selected_attr = attr[0]
+				self.theme_editor_selected_attrs = attr
 				self.theme_editor_drag_target = None
 				self.sync_theme_editor_controls_from_current_colour()
 
-			component_colour = getattr(self.theme_editor_draft_colours, attr, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+			component_colour = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
 			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
 			ddt.rect(swatch_rect, component_colour)
 			ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
@@ -44293,46 +44296,46 @@ def get_theme_name(dirs: Directories, number: int) -> str:
 	return ""
 
 
-THEME_EDITOR_COMPONENTS: tuple[tuple[str, str], ...] = (
-	(_("Queue panel BG"), "queue_background"),
-	(_("Side panel BG"), "side_panel_background"),
-	(_("Gallery panel BG"), "gallery_background"),
-	(_("Top panel BG"), "top_panel_background"),
-	(_("Scroll bar"), "scroll_colour"),
-	(_("Window border"), "window_frame"),
-	(_("Tabs: BG"), "tab_background"),
-	(_("Tabs: text"), "tab_text"),
-	(_("Tabs: active BG"), "tab_background_active"),
-	(_("Tabs: active text"), "tab_text_active"),
-	(_("Main menu: BG"), "menu_background"),
-	(_("Main menu: text"), "menu_text"),
-	(_("Boxes: background"), "box_background"),
-	(_("Boxes: title text"), "box_title_text"),
-	(_("Boxes: body text"), "box_text"),
-	(_("Lyrics: panel BG"), "lyrics_panel_background"),
-	(_("Lyrics: text"), "lyrics"),
-	(_("Lyrics: active line"), "active_lyric"),
-	(_("List: BG"), "playlist_panel_background"),
-	(_("List: selected highlight"), "row_select_highlight"),
-	(_("List: title"), "title_text"),
-	(_("List: artist"), "artist_text"),
-	(_("List: album"), "album_text"),
-	(_("List: duration"), "bar_time"),
-	(_("List: other fields"), "index_text"),
-	(_("List: folder title"), "folder_title"),
-	(_("List: folder line"), "folder_line"),
-	(_("List: playing highlight"), "row_playing_highlight"),
-	(_("List: playing title"), "title_playing"),
-	(_("List: playing artist"), "artist_playing"),
-	(_("List: playing album"), "album_playing"),
-	(_("List: playing duration"), "time_text"),
-	(_("List: playing other"), "index_playing"),
-	(_("Bottom: BG"), "bottom_panel_colour"),
-	(_("Bottom: seek bar fill"), "seek_bar_fill"),
-	(_("Bottom: seek bar BG"), "seek_bar_background"),
-	(_("Bottom: volume fill"), "volume_bar_fill"),
-	(_("Bottom: volume BG"), "volume_bar_background"),
-	(_("Bottom: playing time"), "time_playing"),
+THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+	(_("Queue panel BG"), ("queue_background",)),
+	(_("Side panel BG"), ("side_panel_background",)),
+	(_("Gallery panel BG"), ("gallery_background",)),
+	(_("Top panel BG"), ("top_panel_background",)),
+	(_("Scroll bar"), ("scroll_colour",)),
+	(_("Window border"), ("window_frame",)),
+	(_("Tabs: BG"), ("tab_background",)),
+	(_("Tabs: text"), ("tab_text",)),
+	(_("Tabs: active BG"), ("tab_background_active",)),
+	(_("Tabs: active text"), ("tab_text_active",)),
+	(_("Main menu: BG"), ("menu_background",)),
+	(_("Main menu: text"), ("menu_text",)),
+	(_("Boxes: background"), ("box_background",)),
+	(_("Boxes: title text"), ("box_title_text",)),
+	(_("Boxes: body text"), ("box_text",)),
+	(_("Lyrics: panel BG"), ("lyrics_panel_background",)),
+	(_("Lyrics: text"), ("lyrics",)),
+	(_("Lyrics: active line"), ("active_lyric",)),
+	(_("List: BG"), ("playlist_panel_background",)),
+	(_("List: selected highlight"), ("row_select_highlight",)),
+	(_("List: title"), ("title_text",)),
+	(_("List: artist"), ("artist_text",)),
+	(_("List: album"), ("album_text",)),
+	(_("List: duration"), ("bar_time",)),
+	(_("List: other fields"), ("index_text",)),
+	(_("List: folder title"), ("folder_title",)),
+	(_("List: folder line"), ("folder_line",)),
+	(_("List: playing highlight"), ("row_playing_highlight",)),
+	(_("List: playing title"), ("title_playing",)),
+	(_("List: playing artist"), ("artist_playing",)),
+	(_("List: playing album"), ("album_playing",)),
+	(_("List: playing duration"), ("time_text",)),
+	(_("List: playing other"), ("index_playing",)),
+	(_("Bottom: BG"), ("bottom_panel_colour",)),
+	(_("Bottom: seek bar fill"), ("seek_bar_fill",)),
+	(_("Bottom: seek bar BG"), ("seek_bar_background",)),
+	(_("Bottom: volume fill"), ("volume_bar_fill",)),
+	(_("Bottom: volume BG"), ("volume_bar_background",)),
+	(_("Bottom: playing time"), ("time_playing",)),
 )
 
 
