@@ -25812,6 +25812,7 @@ class Over:
 			return
 		self.apply_theme_editor_colour(self.theme_editor_selected_attr, colour)
 		self.theme_editor_clipboard = ColourRGBA(colour.r, colour.g, colour.b, colour.a)
+		self.sync_theme_editor_controls_from_current_colour()
 		self.show_message(_("Pasted colour"), self.theme_editor_selected_label(), mode="done")
 
 	def sync_settings_content_scroll(self, scroll_area: tuple[int, int, int, int], content_height: int) -> float:
