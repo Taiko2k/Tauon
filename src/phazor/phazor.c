@@ -3378,7 +3378,16 @@ int load_next_inner() {
 			}
 			decoder_allocated = 1;
 
-			mpg123_getformat(mh, &rate, &channels, &encoding);
+			int fmt_ret = mpg123_getformat(mh, &rate, &channels, &encoding);
+			if (fmt_ret != MPG123_OK) {
+				log_msg(
+					LOG_ERROR,
+					"pa: mpg123_getformat failed for '%s': %s",
+					loaded_target_file,
+					mpg123_strerror(mh)
+				);
+				return 1;
+			}
 			// Scanning reads the whole file for an exact length, so only do
 			// it when the data is already on disk
 			if (!is_net) mpg123_scan(mh);
@@ -3395,7 +3404,6 @@ int load_next_inner() {
 			current_length_count = mpg_length > 0 ? (unsigned int) mpg_length : 0;
 
 			if (encoding == MPG123_ENC_SIGNED_16) {
-
 				if (load_target_seek > 0) {
 					//log_msg(LOG_INFO, "pa: Start at position %d", load_target_seek);
 					mpg123_seek(mh, (int) rate * (load_target_seek / 1000.0), SEEK_SET);
@@ -3406,7 +3414,6 @@ int load_next_inner() {
 				}
 				pthread_mutex_unlock(&buffer_mutex);
 				return 0;
-
 			} else {
 				// Pretty much every MP3 ive tried is S16, so we might not have
 				// to worry about this.
