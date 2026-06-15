@@ -3370,7 +3370,7 @@ int load_next_inner() {
 			if (ret != MPG123_OK) {
 				log_msg(
 					LOG_ERROR,
-					"pa: mpg123_open failed for '%s': %s",
+					"ph: mpg123_open failed for '%s': %s",
 					loaded_target_file,
 					mpg123_strerror(mh)
 				);
@@ -3378,15 +3378,28 @@ int load_next_inner() {
 			}
 			decoder_allocated = 1;
 
-			int fmt_ret = mpg123_getformat(mh, &rate, &channels, &encoding);
-			if (fmt_ret != MPG123_OK) {
+			ret = mpg123_getformat(mh, &rate, &channels, &encoding);
+			if (ret != MPG123_OK) {
 				log_msg(
-					LOG_ERROR,
+					LOG_WARNING,
 					"pa: mpg123_getformat failed for '%s': %s",
 					loaded_target_file,
 					mpg123_strerror(mh)
 				);
-				return 1;
+				log_msg(LOG_WARNING, "ph: Attempting to find valid frames across the entire file...");
+				// Change resync limit to go through the entire file instead of just first 1KB
+				// This allows us to play weird polyglot or otherwise semi-broken files
+				mpg123_param(mh, MPG123_RESYNC_LIMIT, -1, 0.0);
+				ret = mpg123_getformat(mh, &rate, &channels, &encoding);
+				if (ret != MPG123_OK) {
+					log_msg(
+						LOG_ERROR,
+						"ph: mpg123_open failed again for '%s': %s",
+						loaded_target_file,
+						mpg123_strerror(mh)
+					);
+					return 1;
+				}
 			}
 			// Scanning reads the whole file for an exact length, so only do
 			// it when the data is already on disk
@@ -3417,7 +3430,7 @@ int load_next_inner() {
 			} else {
 				// Pretty much every MP3 ive tried is S16, so we might not have
 				// to worry about this.
-				log_msg(LOG_ERROR, "pa: encoding format not supported!");
+				log_msg(LOG_ERROR, "ph: encoding format not supported!");
 				pthread_mutex_unlock(&buffer_mutex);
 				return 1;
 			}
