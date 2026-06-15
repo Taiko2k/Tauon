@@ -6,7 +6,6 @@ GREEN=$(echo -en '\033[00;32m')
 YELLOW=$(echo -en '\033[00;33m')
 BLUE=$(echo -en '\033[00;34m')
 MAGENTA=$(echo -en '\033[00;35m')
-CYAN=$(echo -en '\033[00;36m')
 BOLD=$(echo -en '\033[1m')
 
 CONTROLLER_HOST="127.0.0.1"
@@ -31,7 +30,6 @@ ${BOLD}${MAGENTA}Commands:${RESTORE}
 
 ${BOLD}${MAGENTA}Options:${RESTORE}
   ${YELLOW}-h, --help${RESTORE}    Show this help message
-  ${YELLOW}-v, --version${RESTORE}  Show version information
 
 ${BLUE}Example:${RESTORE} $(basename "$0") playpause
 EOF
@@ -41,37 +39,6 @@ EOF
 while [[ "$#" -gt 0 ]]; do
   case $1 in
   -h | --help) usage ;;
-  -v | --version)
-    VERSION=$(
-      python3 <<'EOF'
-import ast
-import inspect
-import tauon
-import sys
-try:
-    main_py_path = inspect.getfile(tauon).replace("__init__.py", "__main__.py")
-    with open(main_py_path, "r", encoding="utf-8") as f:
-        source_code = f.read()
-    tree = ast.parse(source_code)
-    n_version = None
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "n_version":
-                    if isinstance(node.value, ast.Constant):
-                        n_version = node.value.value
-                        break
-    if n_version is not None:
-        print(n_version)
-    else:
-        sys.exit(1)
-except Exception as e:
-    sys.exit(1)
-EOF
-    )
-    echo -e "${CYAN}tauonmb v${VERSION}${RESTORE}"
-    exit 0
-    ;;
   -*)
     echo -e "${RED}${BOLD}Error:${RESTORE} Unknown option: $1" >&2
     usage
