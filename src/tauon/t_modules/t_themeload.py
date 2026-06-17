@@ -132,7 +132,6 @@ THEME_SERIALISABLE_COLOURS: tuple[tuple[str, str], ...] = (
 	("artist bio text", "artist_bio_text"),
 	("visualizer bg", "vis_bg"),
 	("link text", "link_text"),
-	("star line normal", "star_line"),
 	("star line playing", "star_line_playing"),
 	("message box bg", "message_box_bg"),
 	("message box text", "message_box_text"),
@@ -258,9 +257,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.time_text = get_colour_from_line(p)
 			elif "artist playing" in p:
 				colours.artist_playing = get_colour_from_line(p)
-			elif "album line" in p:  # Bad name
-				colours.album_text = get_colour_from_line(p)
-			elif "track album" in p:
+			elif "album line" in p or "track album" in p:  # Bad name
 				colours.album_text = get_colour_from_line(p)
 			elif "album playing" in p:
 				colours.album_playing = get_colour_from_line(p)
@@ -304,9 +301,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				lyrics_panel_color_defined = 1
 			elif "gallery background" in p:
 				colours.gallery_background = get_colour_from_line(p)
-			elif "playlist panel" in p:  # bad name
-				colours.playlist_panel_background = get_colour_from_line(p)
-			elif "tracklist panel" in p:
+			elif "playlist panel" in p or "tracklist panel" in p:  # bad name
 				colours.playlist_panel_background = get_colour_from_line(p)
 			elif "track line" in p:
 				colours.title_text = get_colour_from_line(p)
@@ -338,13 +333,9 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.row_select_highlight = get_colour_from_line(p)
 			elif "track artist" in p:
 				colours.artist_text = get_colour_from_line(p)
-			elif "tab active line" in p:  # bad name
+			elif "tab active line" in p or "tab active text" in p:  # bad name
 				colours.tab_text_active = get_colour_from_line(p)
-			elif "tab line" in p:  # bad name
-				colours.tab_text = get_colour_from_line(p)
-			elif "tab active text" in p:
-				colours.tab_text_active = get_colour_from_line(p)
-			elif "tab text" in p:
+			elif "tab line" in p or "tab text" in p:  # bad name
 				colours.tab_text = get_colour_from_line(p)
 			elif "tab background" in p:
 				colours.tab_background = get_colour_from_line(p)
@@ -380,7 +371,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.tb_line = get_colour_from_line(p)
 			elif "music vis" in p:
 				colours.vis_colour = get_colour_from_line(p)
-			elif "menu background" in p:
+			elif "menu background" in p or "menu bg" in p:
 				colours.menu_background = get_colour_from_line(p)
 			elif "menu text" in p:
 				colours.menu_text = get_colour_from_line(p)
@@ -415,11 +406,7 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				key = p[p.find("column+") + 7 :].replace("-", " ").lower().title().rstrip()
 				value = get_colour_from_line(p)
 				colours.column_colours_playing[key] = value
-			elif "menu bg" in p:
-				colours.menu_background = get_colour_from_line(p)
-			elif "playlist box bg" in p:  # bad name
-				colours.playlist_box_background = get_colour_from_line(p)
-			elif "playlist background" in p:
+			elif "playlist box bg" in p or "playlist background" in p:  # bad name
 				colours.playlist_box_background = get_colour_from_line(p)
 
 			elif "box background" in p:
@@ -477,8 +464,6 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.vis_bg = get_colour_from_line(p)
 			elif "link text" in p:
 				colours.link_text = get_colour_from_line(p)
-			elif "star line normal" in p:
-				colours.star_line = get_colour_from_line(p)
 			elif "star line playing" in p:
 				colours.star_line_playing = get_colour_from_line(p)
 			elif "message box bg" in p:
