@@ -25127,6 +25127,7 @@ class Over:
 		self.theme_editor_enabled = False
 		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1][0]
 		self.theme_editor_selected_attrs = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_dropdown_expansions = [False] * len(THEME_EDITOR_COMPONENTS)
 		self.theme_editor_clipboard: ColourRGBA | None = None
 		self.theme_editor_list_scroll = 0.0
 		self.theme_editor_list_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
@@ -29887,8 +29888,12 @@ class Over:
 			)
 			scroll_index = int(self.theme_editor_list_scroll)
 
+		rows_count = 0
 		row_y = list_rect[1]
 		for label, attr in THEME_EDITOR_COMPONENTS[scroll_index : scroll_index + visible_rows]:
+			rows_count += 1
+			if rows_count > visible_rows:
+				break
 			row_rect = (list_rect[0], row_y, row_w, row_h)
 			hover = self.coll(row_rect)
 			active = self.theme_editor_selected_attrs == attr
@@ -29902,16 +29907,75 @@ class Over:
 				row_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
 			ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
 			self.fields.add(row_rect)
-			if hover and self.click:
+
+			subcolors_are_identical = True
+			if len(attr) > 1: # THEME_EDITOR_COMPONENTS is currently set up for a STATIC visible_rows value. if this value ever changes, get smarter.
+				compare_color = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				for color in attr:
+					component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+					subcolors_are_identical = subcolors_are_identical and component_colour == compare_color
+					compare_color = component_colour
+
+				dropdown_rect = (list_rect[0] + row_w - row_h, row_y, row_h, row_h)
+				# ddt.bordered_rect(dropdown_rect, row_fill, row_border, round(1 * gui.scale))
+				ddt.text(
+					(dropdown_rect[0]+ round(10*gui.scale),dropdown_rect[1]+round(4*gui.scale)),
+					"🞃" if self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] else "🞂",
+					colours.box_button_text, 12, bg=row_fill
+					)
+				if self.coll(dropdown_rect) and self.click:
+					self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] = not self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+				dropped_down = self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+				if dropped_down:
+
+					for color in attr:
+						row_y += row_step
+						rows_count += 1
+						if rows_count > visible_rows:
+							break
+
+						sub_rect = (list_rect[0] + round(10*gui.scale), row_y, row_w - round(10*gui.scale), row_h)
+						subhover = self.coll(sub_rect)
+						subactive = self.theme_editor_selected_attrs == color
+						subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
+						if subactive:
+							subrow_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
+						elif subhover:
+							subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill)
+						subrow_border = alpha_blend(ColourRGBA(255, 255, 255, 18), panel_border)
+						if subactive:
+							subrow_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
+						ddt.bordered_rect(sub_rect, subrow_fill, subrow_border, round(1 * gui.scale))
+						self.fields.add(sub_rect)
+
+						if subhover and self.click:
+							self.theme_editor_selected_attr = color
+							self.theme_editor_selected_attrs = (color,)
+							self.theme_editor_drag_target = None
+							self.sync_theme_editor_controls_from_current_colour()
+
+
+						component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+						swatch_rect = (sub_rect[0] + round(8 * gui.scale), sub_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
+						ddt.rect(swatch_rect, component_colour)
+						ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), subrow_border), round(1 * gui.scale))
+						ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), sub_rect[1] + round(4 * gui.scale)), color, colours.box_text if subactive else colours.box_button_text_highlight if subhover else colours.box_button_text, 12, bg=subrow_fill, max_w=sub_rect[2] - round(44 * gui.scale))
+
+
+
+			if hover and self.click and ("dropdown_rect" in locals() and not self.coll(dropdown_rect)):
 				self.theme_editor_selected_attr = attr[0]
 				self.theme_editor_selected_attrs = attr
 				self.theme_editor_drag_target = None
 				self.sync_theme_editor_controls_from_current_colour()
 
-			component_colour = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
 			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
-			ddt.rect(swatch_rect, component_colour)
-			ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
+			if subcolors_are_identical:
+				component_colour = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				ddt.rect(swatch_rect, component_colour)
+				ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
+			else:
+				ddt.text((swatch_rect[0] + round(1*gui.scale), row_rect[1] + round(7 * gui.scale)), "~", colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 20, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
 			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
 			row_y += row_step
 
@@ -44297,13 +44361,14 @@ def get_theme_name(dirs: Directories, number: int) -> str:
 
 
 THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+	(_("Window borders"), ("window_frame", "box_border", "box_check_border", "mini_mode_border", "art_box", "gallery_highlight", )),
 	(_("Top panel BG"), ("top_panel_background",)),
 	(_("Playlist box BG"), ("playlist_box_background",)),
 	(_("Queue panel BG"), ("queue_background",)),
 	(_("Gallery panel BG"), ("gallery_background",)),
 	(_("Info panel: BG"), ("lyrics_panel_background", "side_panel_background",)),
 	(_("Info panel: main text"), ("side_bar_line1", "active_lyric", )),
-	(_("Info panel: 2nd text"), ("lyrics", "side_bar_line2", )),
+	(_("Info panel: 2nd text"), ("side_bar_line2", "lyrics", )),
 	(_("Artist bio: BG"), ("artist_bio_background",)),
 	(_("Artist bio: text"), ("artist_bio_text",)),
 	(_("Bottom panel: BG"), ("bottom_panel_colour",)),
@@ -44319,6 +44384,7 @@ THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 	(_("List: other fields"), ("index_text",)),
 	(_("List: folder title"), ("folder_title",)),
 	(_("List: folder line"), ("folder_line",)),
+	(_("List: star line"), ("star_line", )),
 	(_("List: playing highlight"), ("row_playing_highlight",)),
 	(_("List: playing title"), ("title_playing",)),
 	(_("List: playing artist"), ("artist_playing",)),
@@ -44326,9 +44392,9 @@ THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 	(_("List: playing duration"), ("time_text",)),
 	(_("List: playing other"), ("index_playing",)),
 	(_("Seek/volume: fill"), ("seek_bar_fill", "volume_bar_fill", "vis_colour", )),
-	(_("Seek/volume: BG"), ("seek_bar_background", "volume_bar_background", "vis_bg", )),
+	(_("Seek/volume: BG"), ("seek_bar_background", "volume_bar_background", )), # vis_bg removed because it doesn't save in themes
 	(_("Scroll bar"), ("scroll_colour",)),
-	(_("Buttons: normal"), ("media_buttons_off", "mode_button_off", "status_text_normal", "corner_button", "window_button_icon_off", "window_button_x_off", "menu_icons", "star_line", )),
+	(_("Buttons: normal"), ("media_buttons_off", "mode_button_off", "status_text_normal", "corner_button", "window_button_icon_off", "window_button_x_off", "menu_icons", )),
 	(_("Buttons: hover"), ("media_buttons_over", "mode_button_over", "status_text_over", "window_buttons_icon_over", "window_button_x_on", )),
 	(_("Buttons: active"), ("media_buttons_active", "mode_button_active", "corner_button_active", "time_playing", "pluse_colour", )),
 	(_("Text btn: BG"), ("window_buttons_bg", "box_button_background", "tab_background", "menu_tab",)),
@@ -44349,7 +44415,6 @@ THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 	(_("Mini: BG"), ("mini_mode_background",)),
 	(_("Mini: text 1"), ("mini_mode_text_1",)),
 	(_("Mini: text 2"), ("mini_mode_text_2",)),
-	(_("Window borders"), ("window_frame", "box_border", "box_check_border", "mini_mode_border", "art_box", "gallery_highlight", )),
 )
 
 
