@@ -39,6 +39,11 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
 
+# Library import is fetched in pages so each response stays small enough that
+# a reverse proxy in front of the server won't time out generating it
+ITEM_PAGE_SIZE = 2000
+ITEM_FETCH_TIMEOUT = (10, 60)  # (connect, read) seconds per page
+
 
 class Jellyfin:
 	def __init__(self, tauon: Tauon) -> None:
@@ -331,6 +336,10 @@ class Jellyfin:
 		self.scanning = False
 		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{playlist_id}"'
+		self.gui.pl_update = 1
+		self.gui.update += 1
+		self.tauon.reload()
+		self.tauon.wake()
 		return None
 
 	def get_playlists(self) -> None:
@@ -377,6 +386,13 @@ class Jellyfin:
 			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
 			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{p["Id"]}"'
 
+		# The import may have updated tracks shown in the current view, so
+		# refresh the playlist and gallery
+		self.gui.pl_update = 1
+		self.gui.update += 1
+		self.tauon.reload()
+		self.tauon.wake()
+
 	def ingest_library(self, return_list: bool = False) -> list[int] | None:
 		self.gui.update += 1
 		self.scanning = True
@@ -403,56 +419,74 @@ class Jellyfin:
 
 		logging.info("Get items...")
 
-		try:
-			response = requests.get(
-				f"{self.server_url}/Items",
-				headers={
-					"Token": self.accessToken,
-					"X-Application": "Tauon/1.0",
-					"Authorization": self._get_jellyfin_auth(),
-				},
-				params={
-					"userId": self.userId,
-					"fields": ["Genres", "DateCreated", "MediaSources", "People"],
-					"enableImages": False,
-					"includeItemTypes": ["Audio", "Playlist"],
-					"recursive": True,
-				},
-				# Someone had a local setup with 36k songs where sync took 31s,
-				# so let's wait a nice while before timing out
-				timeout=self.prefs.jelly_timeout,
-				# stream=True,
-			)
+		items: list[dict] = []
+		start_index = 0
 
-		except Exception:
-			logging.exception("Error connecting to Jellyfin for Import")
-			self.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
-			self.scanning = False
-			return None
+		while True:
+			try:
+				response = requests.get(
+					f"{self.server_url}/Items",
+					headers={
+						"Token": self.accessToken,
+						"X-Application": "Tauon/1.0",
+						"Authorization": self._get_jellyfin_auth(),
+					},
+					params={
+						"userId": self.userId,
+						"fields": ["Genres", "DateCreated", "MediaSources", "People"],
+						"enableImages": False,
+						"includeItemTypes": ["Audio", "Playlist"],
+						"recursive": True,
+						# Pages must come back in a stable order, otherwise items
+						# could be missed or duplicated between requests
+						"sortBy": "SortName",
+						"sortOrder": "Ascending",
+						"startIndex": start_index,
+						"limit": ITEM_PAGE_SIZE,
+					},
+					timeout=ITEM_FETCH_TIMEOUT,
+				)
 
-		if response.status_code == HTTPStatus.OK:
-			logging.info("Connection successful, storing items...")
+			except Exception:
+				logging.exception("Error connecting to Jellyfin for Import")
+				self.show_message(_("Error connecting to Jellyfin for Import"), mode="error")
+				self.scanning = False
+				return None
 
-			# filter audio items only
-			audio_items = list(filter(lambda item: item["Type"] == "Audio", response.json()["Items"]))
-			playlist_items = list(filter(lambda item: item["Type"] == "Playlist", response.json()["Items"]))
-			self.playlists = playlist_items
-			# sort by artist, then album, then track number
-			sorted_items = sorted(
-				audio_items,
-				key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)),
-			)
-			# group by parent
-			grouped_items = itertools.groupby(
-				sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- ")
-			)
-		else:
-			logging.error(f"Error accessing Jellyfin: [{response.status_code}] {response.reason}")
-			self.scanning = False
-			self.show_message(
-				_("Error accessing Jellyfin"), f"[{response.status_code}] {response.reason}", mode="warning"
-			)
-			return None
+			if response.status_code != HTTPStatus.OK:
+				logging.error(f"Error accessing Jellyfin: [{response.status_code}] {response.reason}")
+				self.scanning = False
+				self.show_message(
+					_("Error accessing Jellyfin"), f"[{response.status_code}] {response.reason}", mode="warning"
+				)
+				return None
+
+			data = response.json()
+			page = data["Items"]
+			items.extend(page)
+			start_index += len(page)
+			total = data.get("TotalRecordCount", 0)
+			logging.info(f"Got {start_index} of {total} items...")
+			self.gui.to_got = start_index
+			self.gui.update += 1
+			self.tauon.wake()
+			if not page or start_index >= total:
+				break
+
+		logging.info("Storing items...")
+
+		# filter audio items only
+		audio_items = [item for item in items if item["Type"] == "Audio"]
+		self.playlists = [item for item in items if item["Type"] == "Playlist"]
+		# sort by artist, then album, then track number
+		sorted_items = sorted(
+			audio_items,
+			key=lambda item: (item.get("AlbumArtist", ""), item.get("Album", ""), item.get("IndexNumber", -1)),
+		)
+		# group by parent
+		grouped_items = itertools.groupby(
+			sorted_items, lambda item: (item.get("AlbumArtist", "") + " - " + item.get("Album", "")).strip("- ")
+		)
 
 		fav_status: dict[TrackClass, bool] = {}
 		for parent, items in grouped_items:
@@ -561,10 +595,13 @@ class Jellyfin:
 					star = StarRecord(star.playtime, star.rating)
 					self.tauon.star_store.insert(tr.index, star)
 
+		# Sort before the playlist is shown, otherwise switch_playlist builds
+		# the gallery from the unsorted order and it goes stale once sorted
+		playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
+		self.tauon.sort_track_2(0, playlist)
+		set_favs(fav_status)
+
 		if return_list:
-			playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
-			self.tauon.sort_track_2(0, playlist)
-			set_favs(fav_status)
 			self.scanning = False
 			return playlist
 
@@ -572,9 +609,6 @@ class Jellyfin:
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "jelly"
 		self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
-		playlist.sort(key=lambda x: self.pctl.master_library[x].parent_folder_path)
-		self.tauon.sort_track_2(0, playlist)
-		set_favs(fav_status)
 		self.scanning = False
 		self.gui.update += 1
 		self.tauon.wake()

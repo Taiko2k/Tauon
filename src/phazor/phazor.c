@@ -56,6 +56,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <limits.h>
 #include <math.h>
 #include <pthread.h>
 #include <time.h>
@@ -229,6 +231,12 @@ float rg_value_want = 0.0;
 char load_target_file[4096]; // 4069 bytes for max linux filepath
 char loaded_target_file[4096] = ""; // 4069 bytes for max linux filepath
 
+// Marks whether the (pending/loaded) target is a network URL that should be
+// streamed through the byte_stream buffer rather than handed to FFmpeg (radio)
+int load_target_net_pending = 0;
+int load_target_net = 0;
+int loaded_target_net = 0;
+
 unsigned int load_target_seek = 0;
 unsigned int next_ready = 0;
 unsigned int seek_request_ms = 0;
@@ -262,6 +270,7 @@ int config_always_ffmpeg = 0;
 int config_volume_power = 2;
 int config_feed_samplerate = 48000;
 int config_min_buffer = 30000;
+int config_stream_buffer_mb = 50;  // In-memory file/stream buffer size in MB
 
 #define EQ_BAND_COUNT 10
 #define EQ_AUTO_HEADROOM_MARGIN_DB 1.0f
@@ -346,8 +355,6 @@ int decoder_allocated = 0;
 int buffering = 0;
 
 int flac_got_rate = 0;
-
-FILE *d_file;
 
 #ifdef MINI
 	ma_context_config c_config;
@@ -644,6 +651,628 @@ static int uni_stat(const char *path, struct stat *st) {
 #endif
 
 
+// Byte stream ----------------------------------------------------
+// A single in-memory window over the file being played. Data is produced
+// either by a local file reader thread or by the Python network feeder
+// (net_* exports), and consumed by the decoders through small fread-like
+// callbacks. Seeking outside the buffered window redirects the producer,
+// which for network sources becomes an HTTP range request.
+
+#define BS_CHUNK 262144                  // local file read chunk
+#define BS_DECODE_AHEAD 262144           // bytes buffered ahead before (re)starting a network decode
+#define BS_DECODE_CONTINUE 32768         // bytes ahead needed to keep decoding once started
+#define BS_FORWARD_GAP (1024 * 1024)     // forward seeks within this of the tail wait rather than restart
+#define BS_STALL_TIMEOUT_MS 30000        // give up if no data arrives for this long
+
+typedef struct {
+	unsigned char *buf;
+	int64_t capacity;
+	int64_t win_start;      // absolute file offset of the first byte in the window
+	int64_t head;           // physical index in buf of win_start
+	int64_t filled;         // valid bytes in the window
+	int64_t read_pos;       // absolute file offset of the reader
+	int64_t file_size;      // total size, -1 if unknown
+	int64_t want_offset;    // producer restart offset
+	bool want_restart;      // producer must restart at want_offset
+	bool eof;               // producer has delivered up to the end of the file
+	bool error;             // producer failed fatally
+	bool active;
+	bool net;               // true: fed by Python network feeder, false: local thread
+	bool abort;             // cancel all waits and shut the stream down
+	bool seek_ok;           // producer can supply arbitrary offsets (HTTP range support)
+	int generation;
+	FILE *file;             // local source
+	bool thread_running;
+	pthread_t thread;
+	pthread_mutex_t mut;
+	pthread_cond_t cond;
+} byte_stream;
+
+static byte_stream bs = {
+	.file_size = -1,
+	.mut = PTHREAD_MUTEX_INITIALIZER,
+	.cond = PTHREAD_COND_INITIALIZER,
+};
+
+static char bs_net_url[4096];
+static char bs_net_url_out[4096];
+static unsigned char bs_local_chunk[BS_CHUNK];
+
+static int64_t bs_keep_behind() {
+	// Bytes kept behind the read position so small backward seeks stay in memory
+	int64_t k = bs.capacity / 8;
+	if (k > 1024 * 1024) k = 1024 * 1024;
+	return k;
+}
+
+static void bs_window_reset_locked(int64_t offset) {
+	bs.win_start = offset;
+	bs.head = 0;
+	bs.filled = 0;
+	bs.eof = false;
+}
+
+static void bs_discard_front_locked(int64_t n) {
+	if (n > bs.filled) n = bs.filled;
+	bs.head = (bs.head + n) % bs.capacity;
+	bs.win_start += n;
+	bs.filled -= n;
+}
+
+static int64_t bs_make_space_locked() {
+	// Free space the producer may append into, sliding the window forward
+	// over data the reader has already consumed when full
+	int64_t free_space = bs.capacity - bs.filled;
+	if (free_space > 0) return free_space;
+	int64_t discard = (bs.read_pos - bs_keep_behind()) - bs.win_start;
+	if (discard > 0) {
+		bs_discard_front_locked(discard);
+		free_space = bs.capacity - bs.filled;
+	}
+	return free_space;
+}
+
+static void bs_append_locked(const unsigned char *data, int64_t n) {
+	int64_t tail = (bs.head + bs.filled) % bs.capacity;
+	int64_t first = bs.capacity - tail;
+	if (first > n) first = n;
+	memcpy(bs.buf + tail, data, (size_t) first);
+	if (n > first) memcpy(bs.buf, data + first, (size_t) (n - first));
+	bs.filled += n;
+}
+
+static void bs_copy_out_locked(unsigned char *dst, int64_t offset, int64_t n) {
+	int64_t pos = (bs.head + (offset - bs.win_start)) % bs.capacity;
+	int64_t first = bs.capacity - pos;
+	if (first > n) first = n;
+	memcpy(dst, bs.buf + pos, (size_t) first);
+	if (n > first) memcpy(dst + first, bs.buf, (size_t) (n - first));
+}
+
+static void bs_request_restart_locked(int64_t offset) {
+	bs.want_restart = true;
+	bs.want_offset = offset;
+	bs.eof = false;
+	pthread_cond_broadcast(&bs.cond);
+}
+
+static void bs_wait_locked(int ms) {
+	struct timespec ts;
+	// clock_gettime + CLOCK_REALTIME is provided by winpthreads on MinGW
+	// (already linked for pthreads), so this is portable across platforms.
+	// timespec_get() is avoided as it is missing on the MSVCRT runtime.
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += ms / 1000;
+	ts.tv_nsec += (long) (ms % 1000) * 1000000L;
+	if (ts.tv_nsec >= 1000000000L) {
+		ts.tv_sec += 1;
+		ts.tv_nsec -= 1000000000L;
+	}
+	pthread_cond_timedwait(&bs.cond, &bs.mut, &ts);
+}
+
+static void *bs_local_thread(void *arg) {
+	pthread_mutex_lock(&bs.mut);
+	while (bs.active && !bs.abort) {
+		if (bs.want_restart) {
+			int64_t target = bs.want_offset;
+			bs_window_reset_locked(target);
+			bs.want_restart = false;
+			fseek(bs.file, (long) target, SEEK_SET);
+			clearerr(bs.file);
+		}
+		if (bs.eof) {
+			// At end of file; poll for growth, the file may be a cache
+			// file that is still downloading
+			bs_wait_locked(1000);
+			if (!bs.active || bs.abort || bs.want_restart) continue;
+			struct stat fst;
+			if (bs.file != NULL && fstat(fileno(bs.file), &fst) == 0
+					&& (int64_t) fst.st_size > bs.file_size) {
+				bs.file_size = (int64_t) fst.st_size;
+				bs.eof = false;
+				clearerr(bs.file);
+				pthread_cond_broadcast(&bs.cond);
+			}
+			continue;
+		}
+		int64_t free_space = bs_make_space_locked();
+		if (free_space <= 0) {
+			pthread_cond_wait(&bs.cond, &bs.mut);
+			continue;
+		}
+		int64_t off = bs.win_start + bs.filled;
+		int64_t n = free_space < BS_CHUNK ? free_space : BS_CHUNK;
+		pthread_mutex_unlock(&bs.mut);
+
+		size_t got = fread(bs_local_chunk, 1, (size_t) n, bs.file);
+
+		pthread_mutex_lock(&bs.mut);
+		if (!bs.active || bs.abort) break;
+		if (bs.want_restart || bs.win_start + bs.filled != off) {
+			// A restart raced with the read, drop this chunk
+			clearerr(bs.file);
+			continue;
+		}
+		if (got > 0) {
+			bs_append_locked(bs_local_chunk, (int64_t) got);
+			if (bs.file_size >= 0 && bs.win_start + bs.filled >= bs.file_size) bs.eof = true;
+			pthread_cond_broadcast(&bs.cond);
+		} else {
+			bs.eof = true;
+			clearerr(bs.file);
+			pthread_cond_broadcast(&bs.cond);
+		}
+	}
+	pthread_cond_broadcast(&bs.cond);
+	pthread_mutex_unlock(&bs.mut);
+	return arg;
+}
+
+static int bs_ensure_buffer() {
+	int64_t want = (int64_t) config_stream_buffer_mb * 1024 * 1024;
+	if (want < 4 * 1024 * 1024) want = 4 * 1024 * 1024;
+	if (bs.buf != NULL && bs.capacity == want) return 0;
+	free(bs.buf);
+	bs.buf = malloc((size_t) want);
+	if (bs.buf == NULL) {
+		bs.capacity = 0;
+		log_msg(LOG_ERROR, "pa: Failed to allocate stream buffer (%d MB)", config_stream_buffer_mb);
+		return 1;
+	}
+	bs.capacity = want;
+	return 0;
+}
+
+// Cancel any blocking stream waits. Safe to call from any thread.
+static void bs_cancel() {
+	pthread_mutex_lock(&bs.mut);
+	if (bs.active) {
+		bs.abort = true;
+		pthread_cond_broadcast(&bs.cond);
+	}
+	pthread_mutex_unlock(&bs.mut);
+}
+
+// Close the stream and join the local producer. Main loop thread only.
+static void bs_close() {
+	pthread_mutex_lock(&bs.mut);
+	bool was_active = bs.active || bs.thread_running;
+	bs.active = false;
+	bs.abort = true;
+	pthread_cond_broadcast(&bs.cond);
+	bool join = bs.thread_running;
+	bs.thread_running = false;
+	pthread_mutex_unlock(&bs.mut);
+	if (!was_active) return;
+	if (join) pthread_join(bs.thread, NULL);
+	pthread_mutex_lock(&bs.mut);
+	if (bs.file != NULL) {
+		fclose(bs.file);
+		bs.file = NULL;
+	}
+	pthread_mutex_unlock(&bs.mut);
+}
+
+static void bs_reset_state_locked() {
+	bs.read_pos = 0;
+	bs.win_start = 0;
+	bs.head = 0;
+	bs.filled = 0;
+	bs.eof = false;
+	bs.error = false;
+	bs.abort = false;
+	bs.want_restart = false;
+	bs.want_offset = 0;
+	bs.seek_ok = true;
+	bs.generation++;
+}
+
+static int bs_open_local(char *path) {
+	bs_close();
+	if (bs_ensure_buffer() != 0) return 1;
+	FILE *f = uni_fopen(path);
+	if (f == NULL) {
+		log_msg(LOG_ERROR, "pa: Error opening file: '%s' (%s)", path, strerror(errno));
+		return 1;
+	}
+	int64_t size = -1;
+	struct stat fst;
+	if (fstat(fileno(f), &fst) == 0) size = (int64_t) fst.st_size;
+	pthread_mutex_lock(&bs.mut);
+	bs.file = f;
+	bs.net = false;
+	bs.file_size = size;
+	bs_reset_state_locked();
+	bs.active = true;
+	pthread_mutex_unlock(&bs.mut);
+	if (pthread_create(&bs.thread, NULL, bs_local_thread, NULL) != 0) {
+		log_msg(LOG_ERROR, "pa: Failed to create stream reader thread");
+		pthread_mutex_lock(&bs.mut);
+		bs.active = false;
+		bs.file = NULL;
+		pthread_mutex_unlock(&bs.mut);
+		fclose(f);
+		return 1;
+	}
+	bs.thread_running = true;
+	return 0;
+}
+
+static int bs_open_net(char *url) {
+	bs_close();
+	if (bs_ensure_buffer() != 0) return 1;
+	pthread_mutex_lock(&bs.mut);
+	snprintf(bs_net_url, sizeof(bs_net_url), "%s", url);
+	bs.file = NULL;
+	bs.net = true;
+	bs.file_size = -1;
+	bs_reset_state_locked();
+	bs.active = true;
+	pthread_mutex_unlock(&bs.mut);
+	return 0;
+}
+
+// Blocking read at the current read position. Returns bytes read,
+// 0 on end of stream, -1 on abort/error.
+static int bs_read(void *dst, int n) {
+	if (n <= 0) return 0;
+	int64_t got = -1;
+	int waited_ms = 0;
+	pthread_mutex_lock(&bs.mut);
+	while (true) {
+		if (!bs.active || bs.abort || bs.error) {
+			got = -1;
+			break;
+		}
+		if (bs.file_size >= 0 && bs.read_pos >= bs.file_size) {
+			got = 0;
+			break;
+		}
+		int64_t end = bs.win_start + bs.filled;
+		if (bs.read_pos >= bs.win_start && bs.read_pos < end) {
+			int64_t avail = end - bs.read_pos;
+			got = avail < n ? avail : n;
+			bs_copy_out_locked(dst, bs.read_pos, got);
+			bs.read_pos += got;
+			pthread_cond_broadcast(&bs.cond);
+			break;
+		}
+		if (bs.eof && !bs.want_restart && bs.read_pos >= end) {
+			got = 0;
+			break;
+		}
+		// Out of window, redirect the producer
+		if ((bs.read_pos < bs.win_start || bs.read_pos > end + BS_FORWARD_GAP)
+				&& (!bs.want_restart || bs.want_offset != bs.read_pos)) {
+			bs_request_restart_locked(bs.read_pos);
+		}
+		bs_wait_locked(100);
+		waited_ms += 100;
+		if (waited_ms >= BS_STALL_TIMEOUT_MS) {
+			log_msg(LOG_ERROR, "pa: Stream stalled, giving up");
+			bs.error = true;
+			got = -1;
+			break;
+		}
+	}
+	pthread_mutex_unlock(&bs.mut);
+	return (int) got;
+}
+
+static int bs_read_exact(void *dst, int n) {
+	int total = 0;
+	while (total < n) {
+		int r = bs_read((unsigned char *) dst + total, n - total);
+		if (r <= 0) return total;
+		total += r;
+	}
+	return total;
+}
+
+static int bs_seek_abs(int64_t offset) {
+	if (offset < 0) return -1;
+	pthread_mutex_lock(&bs.mut);
+	if (!bs.active) {
+		pthread_mutex_unlock(&bs.mut);
+		return -1;
+	}
+	bs.read_pos = offset;
+	int64_t end = bs.win_start + bs.filled;
+	if (offset < bs.win_start || offset > end + BS_FORWARD_GAP || (bs.eof && offset > end)) {
+		// No data needed when seeking to/past a known end of file
+		if (!(bs.file_size >= 0 && offset >= bs.file_size)) {
+			bs_request_restart_locked(offset);
+		}
+	}
+	pthread_cond_broadcast(&bs.cond);
+	pthread_mutex_unlock(&bs.mut);
+	return 0;
+}
+
+static int64_t bs_tell() {
+	return bs.read_pos;
+}
+
+static int64_t bs_length() {
+	return bs.file_size;
+}
+
+static bool bs_seekable() {
+	return bs.active && bs.file_size >= 0 && bs.seek_ok;
+}
+
+static bool bs_at_eof() {
+	pthread_mutex_lock(&bs.mut);
+	bool r = (bs.file_size >= 0 && bs.read_pos >= bs.file_size)
+		|| (bs.eof && !bs.want_restart && bs.read_pos >= bs.win_start + bs.filled);
+	pthread_mutex_unlock(&bs.mut);
+	return r;
+}
+
+// Whether a network decode can proceed without risking a long block in
+// the decoder read callbacks. Keeps the main loop responsive to commands
+// while the network buffers. Uses hysteresis: after an open, seek or
+// underrun a larger amount must accumulate before decoding (re)starts,
+// then decoding continues as long as a small headroom remains.
+static int64_t bs_decode_need = BS_DECODE_AHEAD;
+
+static bool bs_decode_ready() {
+	if (!bs.active || !bs.net) return true;
+	pthread_mutex_lock(&bs.mut);
+	bool ready = bs.abort || bs.error;
+	int64_t end = bs.win_start + bs.filled;
+	int64_t avail = 0;
+	if (bs.read_pos >= bs.win_start && bs.read_pos < end) avail = end - bs.read_pos;
+	if (avail < BS_DECODE_CONTINUE && !bs.eof) bs_decode_need = BS_DECODE_AHEAD;  // underrun, re-arm
+	if (avail >= bs_decode_need) ready = true;
+	if (bs.eof && !bs.want_restart && bs.read_pos >= bs.win_start) ready = true;
+	if (bs.file_size >= 0 && bs.read_pos >= bs.file_size) ready = true;
+	if (ready) bs_decode_need = BS_DECODE_CONTINUE;
+	pthread_mutex_unlock(&bs.mut);
+	return ready;
+}
+
+// Read the entire stream into memory (for module/GME formats)
+static unsigned char *bs_read_all(int64_t *out_size) {
+	int64_t cap = bs.file_size >= 0 ? bs.file_size : 1024 * 1024;
+	if (cap <= 0) cap = 1024 * 1024;
+	if (cap > 512 * 1024 * 1024) return NULL;
+	unsigned char *data = malloc((size_t) cap);
+	if (data == NULL) return NULL;
+	int64_t size = 0;
+	while (true) {
+		if (size == cap) {
+			if (cap >= 512 * 1024 * 1024) {
+				free(data);
+				return NULL;
+			}
+			cap *= 2;
+			unsigned char *n = realloc(data, (size_t) cap);
+			if (n == NULL) {
+				free(data);
+				return NULL;
+			}
+			data = n;
+		}
+		int64_t want = cap - size;
+		if (want > BS_CHUNK) want = BS_CHUNK;
+		int r = bs_read(data + size, (int) want);
+		if (r < 0) {
+			free(data);
+			return NULL;
+		}
+		if (r == 0) break;
+		size += r;
+	}
+	*out_size = size;
+	return data;
+}
+
+// Decoder I/O callbacks over the byte stream ---------------------
+
+static int64_t bs_whence_target(int64_t offset, int whence) {
+	switch (whence) {
+		case SEEK_SET: return offset;
+		case SEEK_CUR: return bs.read_pos + offset;
+		case SEEK_END:
+			if (bs.file_size < 0) return -1;
+			return bs.file_size + offset;
+	}
+	return -1;
+}
+
+// opusfile
+static int bs_op_read(void *stream, unsigned char *ptr, int nbytes) {
+	int r = bs_read(ptr, nbytes);
+	return r < 0 ? -1 : r;
+}
+
+static int bs_op_seek(void *stream, opus_int64 offset, int whence) {
+	int64_t target = bs_whence_target((int64_t) offset, whence);
+	if (target < 0) return -1;
+	return bs_seek_abs(target) == 0 ? 0 : -1;
+}
+
+static opus_int64 bs_op_tell(void *stream) {
+	return (opus_int64) bs_tell();
+}
+
+static const OpusFileCallbacks bs_op_callbacks = {
+	.read = bs_op_read,
+	.seek = bs_op_seek,
+	.tell = bs_op_tell,
+	.close = NULL,
+};
+
+static const OpusFileCallbacks bs_op_callbacks_unseekable = {
+	.read = bs_op_read,
+	.seek = NULL,
+	.tell = NULL,
+	.close = NULL,
+};
+
+// vorbisfile
+static size_t bs_ov_read(void *ptr, size_t size, size_t nmemb, void *datasource) {
+	if (size == 0) return 0;
+	int64_t want = (int64_t) size * (int64_t) nmemb;
+	if (want > INT_MAX) want = INT_MAX;
+	int r = bs_read(ptr, (int) want);
+	if (r <= 0) return 0;
+	return (size_t) r / size;
+}
+
+static int bs_ov_seek(void *datasource, ogg_int64_t offset, int whence) {
+	if (!bs_seekable()) return -1;
+	int64_t target = bs_whence_target((int64_t) offset, whence);
+	if (target < 0) return -1;
+	return bs_seek_abs(target) == 0 ? 0 : -1;
+}
+
+static long bs_ov_tell(void *datasource) {
+	return (long) bs_tell();
+}
+
+static const ov_callbacks bs_ov_cb = {
+	.read_func = bs_ov_read,
+	.seek_func = bs_ov_seek,
+	.close_func = NULL,
+	.tell_func = bs_ov_tell,
+};
+
+static const ov_callbacks bs_ov_cb_unseekable = {
+	.read_func = bs_ov_read,
+	.seek_func = NULL,
+	.close_func = NULL,
+	.tell_func = NULL,
+};
+
+// FLAC
+static FLAC__StreamDecoderReadStatus bs_flac_read(
+		const FLAC__StreamDecoder *decoder, FLAC__byte buffer[], size_t *bytes, void *client_data) {
+	if (*bytes == 0) return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
+	int64_t want = (int64_t) *bytes;
+	if (want > INT_MAX) want = INT_MAX;
+	int r = bs_read(buffer, (int) want);
+	if (r < 0) {
+		*bytes = 0;
+		return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
+	}
+	*bytes = (size_t) r;
+	if (r == 0) return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
+	return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
+}
+
+static FLAC__StreamDecoderSeekStatus bs_flac_seek(
+		const FLAC__StreamDecoder *decoder, FLAC__uint64 absolute_byte_offset, void *client_data) {
+	if (!bs_seekable()) return FLAC__STREAM_DECODER_SEEK_STATUS_UNSUPPORTED;
+	if (bs_seek_abs((int64_t) absolute_byte_offset) != 0) return FLAC__STREAM_DECODER_SEEK_STATUS_ERROR;
+	return FLAC__STREAM_DECODER_SEEK_STATUS_OK;
+}
+
+static FLAC__StreamDecoderTellStatus bs_flac_tell(
+		const FLAC__StreamDecoder *decoder, FLAC__uint64 *absolute_byte_offset, void *client_data) {
+	*absolute_byte_offset = (FLAC__uint64) bs_tell();
+	return FLAC__STREAM_DECODER_TELL_STATUS_OK;
+}
+
+static FLAC__StreamDecoderLengthStatus bs_flac_length(
+		const FLAC__StreamDecoder *decoder, FLAC__uint64 *stream_length, void *client_data) {
+	int64_t l = bs_length();
+	if (l < 0) return FLAC__STREAM_DECODER_LENGTH_STATUS_UNSUPPORTED;
+	*stream_length = (FLAC__uint64) l;
+	return FLAC__STREAM_DECODER_LENGTH_STATUS_OK;
+}
+
+static FLAC__bool bs_flac_eof(const FLAC__StreamDecoder *decoder, void *client_data) {
+	return bs_at_eof();
+}
+
+// mpg123
+static mpg123_ssize_t bs_mpg_read(void *handle, void *buffer, size_t nbytes) {
+	int64_t want = (int64_t) nbytes;
+	if (want > INT_MAX) want = INT_MAX;
+	return (mpg123_ssize_t) bs_read(buffer, (int) want);
+}
+
+static off_t bs_mpg_lseek(void *handle, off_t offset, int whence) {
+	// Refusing seeks makes mpg123 fall back to its unseekable stream mode
+	if (!bs_seekable()) return (off_t) -1;
+	int64_t target = bs_whence_target((int64_t) offset, whence);
+	if (target < 0) return (off_t) -1;
+	if (bs_seek_abs(target) != 0) return (off_t) -1;
+	return (off_t) target;
+}
+
+// WavPack
+static int32_t bs_wv_read_bytes(void *id, void *data, int32_t bcount) {
+	int r = bs_read_exact(data, bcount);
+	return r < 0 ? 0 : (int32_t) r;
+}
+
+static int64_t bs_wv_get_pos(void *id) {
+	return bs_tell();
+}
+
+static int bs_wv_set_pos_abs(void *id, int64_t pos) {
+	return bs_seek_abs(pos) == 0 ? 0 : -1;
+}
+
+static int bs_wv_set_pos_rel(void *id, int64_t delta, int mode) {
+	int64_t target = bs_whence_target(delta, mode);
+	if (target < 0) return -1;
+	return bs_seek_abs(target) == 0 ? 0 : -1;
+}
+
+static int bs_wv_push_back_byte(void *id, int c) {
+	if (bs_tell() <= 0) return EOF;
+	if (bs_seek_abs(bs_tell() - 1) != 0) return EOF;
+	return c;
+}
+
+static int64_t bs_wv_get_length(void *id) {
+	int64_t l = bs_length();
+	return l < 0 ? 0 : l;
+}
+
+static int bs_wv_can_seek(void *id) {
+	return bs_seekable() ? 1 : 0;
+}
+
+static WavpackStreamReader64 bs_wv_reader = {
+	.read_bytes = bs_wv_read_bytes,
+	.write_bytes = NULL,
+	.get_pos = bs_wv_get_pos,
+	.set_pos_abs = bs_wv_set_pos_abs,
+	.set_pos_rel = bs_wv_set_pos_rel,
+	.push_back_byte = bs_wv_push_back_byte,
+	.get_length = bs_wv_get_length,
+	.can_seek = bs_wv_can_seek,
+	.truncate_here = NULL,
+	.close = NULL,
+};
+
+
 // Misc ----------------------------------------------------------
 
 float ramp_step(int sample_rate, int milliseconds) {
@@ -690,9 +1319,6 @@ void fade_fx() {
 	//pthread_mutex_unlock(&fade_mutex);
 }
 
-FILE *fptr;
-
-struct stat st;
 off_t load_file_size = 0;
 int samples_decoded = 0;
 
@@ -1348,7 +1974,10 @@ FLAC__StreamDecoderInitStatus status;
 
 void stop_decoder() {
 
-	if (decoder_allocated == 0) return;
+	if (decoder_allocated == 0) {
+		bs_close();
+		return;
+	}
 
 	switch (codec) {
 		case OPUS:
@@ -1380,6 +2009,7 @@ void stop_decoder() {
 			break;
 	}
 	//src_reset(src);
+	bs_close();
 	decoder_allocated = 0;
 }
 
@@ -1603,6 +2233,9 @@ int get_audio(int max, float* buff) {
 				buffering = 1;
 			} else buffering = 0;
 		}
+
+		// Don't let a buffering wait hold up draining/stopping
+		if (buffering == 1 && mode != PLAYING) buffering = 0;
 
 
 //		if (get_buff_fill() < max && mode == PLAYING && decoder_allocated == 1) {
@@ -2215,7 +2848,11 @@ void connect_pulse() {
 
 }
 
-int load_next() {
+volatile int stream_loading = 0;  // load_next in progress; loads can block on network I/O
+
+int64_t stream_meta_end = 0;  // bytes of leading metadata (ID3/FLAC blocks) before the audio data
+
+int load_next_inner() {
 	// Function to load a file / prepare decoder
 	#ifdef WIN64
 		free(loaded_target_wpath);
@@ -2225,6 +2862,7 @@ int load_next() {
 	stop_decoder();
 
 	strcpy(loaded_target_file, load_target_file);
+	loaded_target_net = load_target_net;
 
 	int channels;
 	int encoding;
@@ -2233,13 +2871,23 @@ int load_next() {
 	int old_sample_rate = sample_rate_src;
 	src_channels = 2;
 
+	bool is_net = loaded_target_net == 1 && loaded_target_file[0] == 'h';
+
+	// For URLs, ignore any query string when looking at the file extension
+	static char ext_path[4096];
+	strcpy(ext_path, loaded_target_file);
+	if (is_net) {
+		char *q = strchr(ext_path, '?');
+		if (q != NULL) *q = '\0';
+	}
 	char *ext;
-	ext = strrchr(loaded_target_file, '.');
+	ext = strrchr(ext_path, '.');
 
 	codec = UNKNOWN;
 	current_length_count = 0;
 	buffering = 0;
 	samples_decoded = 0;
+	stream_meta_end = 0;
 
 	if (loaded_target_file[0] == 'h') buffering = 1;
 
@@ -2263,8 +2911,8 @@ int load_next() {
 		return 0;
 	}
 
-	// If target is url, use FFMPEG
-	if (loaded_target_file[0] == 'h') {
+	// If target is a radio/plain url, use FFMPEG
+	if (loaded_target_file[0] == 'h' && !is_net) {
 		codec = FFMPEG;
 		start_ffmpeg(loaded_target_file, load_target_seek);
 		load_target_seek = 0;
@@ -2277,20 +2925,23 @@ int load_next() {
 		return 0;
 	}
 
+	// Open the byte stream. For network targets the Python feeder will
+	// notice the new generation and start supplying data.
+	if (is_net) {
+		if (bs_open_net(loaded_target_file) != 0) return 1;
+	} else {
+		if (bs_open_local(loaded_target_file) != 0) return 1;
+	}
 
 	// We need to identify the file type
 	// Peak into file and try to detect signature
 
-	if ((fptr = uni_fopen(loaded_target_file)) == NULL) {
-		log_msg(LOG_ERROR, "pa: Error opening file: '%s' (%s)", loaded_target_file, strerror(errno));
-		perror("Error");
+	if (bs_read_exact(peak, sizeof(peak)) != sizeof(peak)) {
+		log_msg(LOG_ERROR, "pa: Could not read start of file: '%s'", loaded_target_file);
+		bs_close();
 		return 1;
 	}
-
-	uni_stat(loaded_target_file, &st);
-	load_file_size = st.st_size;
-
-	fread(peak, sizeof(peak), 1, fptr);
+	load_file_size = (off_t) bs_length();
 
 	if (memcmp(peak, "fLaC", 4) == 0) {
 		codec = FLAC;
@@ -2333,15 +2984,21 @@ int load_next() {
 
 	} else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
 		int id3_size = (peak[6] << 21) | (peak[7] << 14) | (peak[8] << 7) | peak[9];
-		fseek(fptr, id3_size + 10, SEEK_SET);
 		codec = MPG;
-		unsigned char flac_marker[4];
-		if (fread(flac_marker, 1, 4, fptr) == 4 && memcmp(flac_marker, "fLaC", 4) == 0) {
-			codec = FLAC;
-			log_msg(LOG_INFO, "Detected FLAC with ID3 header\n");
+		stream_meta_end = id3_size + 10;
+		// Probing past the ID3 tag for a FLAC marker would mean an extra
+		// range request round trip on network streams with large embedded
+		// art, so only look when the tag end is near
+		if (!is_net || id3_size + 14 < BS_FORWARD_GAP) {
+			unsigned char flac_marker[4];
+			if (bs_seek_abs(id3_size + 10) == 0 && bs_read_exact(flac_marker, 4) == 4
+					&& memcmp(flac_marker, "fLaC", 4) == 0) {
+				codec = FLAC;
+				log_msg(LOG_INFO, "Detected FLAC with ID3 header\n");
+			}
 		}
 	}
-	fclose(fptr);
+	bs_seek_abs(0);
 
 	// Fallback to detecting using file extension
 	if (codec == UNKNOWN && ext != NULL && (
@@ -2412,8 +3069,35 @@ int load_next() {
 		log_msg(LOG_INFO, "pa: Decode using FFmpeg\n");
 	}
 
+	if (codec == FLAC) {
+		// Walk the metadata block headers to find where the audio frames
+		// start, so the UI can show the metadata region (embedded art can
+		// be large). Only the 4 byte headers are read; block bodies are
+		// skipped over.
+		int64_t p = stream_meta_end + 4;  // past any ID3 tag and the fLaC marker
+		unsigned char bh[4];
+		for (int i = 0; i < 64; i++) {
+			if (is_net && p > (int64_t) BS_FORWARD_GAP) {
+				// Reading the next header would need a new range request;
+				// this position is already at/near the end of the metadata
+				stream_meta_end = p;
+				break;
+			}
+			if (bs_seek_abs(p) != 0 || bs_read_exact(bh, 4) != 4) break;
+			int64_t block_len = ((int64_t) bh[1] << 16) | ((int64_t) bh[2] << 8) | (int64_t) bh[3];
+			p += 4 + block_len;
+			if (bh[0] & 0x80) {  // last-metadata-block flag
+				stream_meta_end = p;
+				break;
+			}
+		}
+		bs_seek_abs(0);
+	}
+
 	// Start decoders
 	if (codec == FFMPEG) {
+		// FFmpeg reads files and URLs itself
+		bs_close();
 		start_ffmpeg(loaded_target_file, load_target_seek);
 		load_target_seek = 0;
 		pthread_mutex_lock(&buffer_mutex);
@@ -2427,7 +3111,24 @@ int load_next() {
 
 	if (codec == GME) {
 		sample_rate_src = 48000;
-		gme_open_file(loaded_target_file, &emu, (long) sample_rate_src);
+		if (is_net) {
+			int64_t data_size = 0;
+			unsigned char *data = bs_read_all(&data_size);
+			bs_close();
+			if (data == NULL) {
+				log_msg(LOG_ERROR, "pa: Failed to read GME stream");
+				return 1;
+			}
+			gme_err_t gme_error = gme_open_data(data, (long) data_size, &emu, (long) sample_rate_src);
+			free(data);
+			if (gme_error != NULL) {
+				log_msg(LOG_ERROR, "pa: GME: %s", gme_error);
+				return 1;
+			}
+		} else {
+			bs_close();
+			gme_open_file(loaded_target_file, &emu, (long) sample_rate_src);
+		}
 		gme_start_track(emu, subtrack);
 
 		if (load_target_seek > 0) gme_seek(emu, (long) load_target_seek);
@@ -2436,17 +3137,33 @@ int load_next() {
 			src_reset(src);
 		}
 
-		pthread_mutex_unlock(&buffer_mutex);
 		decoder_allocated = 1;
 
 		return 0;
 	}
 
 	if (codec == MPT) {
-		mod_file = uni_fopen(loaded_target_file);
-		mod = openmpt_module_create2(openmpt_stream_get_file_callbacks(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		if (is_net) {
+			int64_t data_size = 0;
+			unsigned char *data = bs_read_all(&data_size);
+			bs_close();
+			if (data == NULL) {
+				log_msg(LOG_ERROR, "pa: Failed to read MPT stream");
+				return 1;
+			}
+			mod = openmpt_module_create_from_memory2(data, (size_t) data_size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			free(data);
+		} else {
+			bs_close();
+			mod_file = uni_fopen(loaded_target_file);
+			if (mod_file == NULL) {
+				log_msg(LOG_ERROR, "pa: Error opening MPT file: %s", strerror(errno));
+				return 1;
+			}
+			mod = openmpt_module_create2(openmpt_stream_get_file_callbacks2(), mod_file, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			fclose(mod_file);
+		}
 		src_channels = 2;
-		fclose(mod_file);
 
 		if (mod == NULL) {
 			log_msg(LOG_INFO, "pa: Error creating MPT modules");
@@ -2481,6 +3198,7 @@ int load_next() {
 		// and we dont wanna interrupt the output for too long.
 		//
 		case WAVE:
+			bs_close();
 			if (wave_open(loaded_target_file) != 0) return 1;
 			if (load_target_seek > 0) {
 				wave_seek((int) wave_samplerate * (load_target_seek / 1000.0));
@@ -2501,7 +3219,10 @@ int load_next() {
 			return 0;
 
 		case OPUS:
-			opus_dec = op_open_file(loaded_target_file, &e);
+			opus_dec = op_open_callbacks(
+				&bs,
+				bs_seekable() ? &bs_op_callbacks : &bs_op_callbacks_unseekable,
+				NULL, 0, &e);
 			decoder_allocated = 1;
 
 			if (e != 0) {
@@ -2540,17 +3261,11 @@ int load_next() {
 
 			break;
 		case VORBIS:
-			d_file = uni_fopen(loaded_target_file);
-			if (d_file == NULL) {
-				log_msg(LOG_ERROR, "pa: Error opening VORBIS file: %s", strerror(errno));
-				return 1;
-			}
-			//e = ov_fopen(loaded_target_file, &vf);
-			e = ov_open(d_file, &vf, NULL, 0);
+			e = ov_open_callbacks(&bs, &vf, NULL, 0, bs_seekable() ? bs_ov_cb : bs_ov_cb_unseekable);
 			decoder_allocated = 1;
 			if (e != 0) {
 				log_msg(LOG_ERROR, "pa: Error reading ogg file (expecting vorbis)");
-				fclose(d_file);
+				decoder_allocated = 0;
 
 				return 1;
 			} else {
@@ -2585,10 +3300,13 @@ int load_next() {
 
 			break;
 		case FLAC:
-			d_file = uni_fopen(loaded_target_file);
-			if (FLAC__stream_decoder_init_FILE(
+			if (FLAC__stream_decoder_init_stream(
 					dec,
-					d_file,
+					&bs_flac_read,
+					&bs_flac_seek,
+					&bs_flac_tell,
+					&bs_flac_length,
+					&bs_flac_eof,
 					&f_write,
 					NULL, //&f_meta,
 					&f_err,
@@ -2600,18 +3318,24 @@ int load_next() {
 				return 0;
 
 			} else {
-				FLAC__stream_decoder_delete(dec);
-				fclose(d_file);
+				log_msg(LOG_ERROR, "pa: Error initialising FLAC decoder");
 				return 1;
 			}
 
 			break;
 
-		case WAVPACK:
-			wpc = WavpackOpenFileInput(loaded_target_file, NULL, OPEN_WVC | OPEN_2CH_MAX, 0);
+		case WAVPACK: {
+			char wv_error[80] = "";
+			if (is_net) {
+				wpc = WavpackOpenFileInputEx64(&bs_wv_reader, &bs, NULL, wv_error, OPEN_2CH_MAX, 0);
+			} else {
+				// Keep the path based open for local files so the .wvc
+				// correction file keeps working
+				bs_close();
+				wpc = WavpackOpenFileInput(loaded_target_file, wv_error, OPEN_WVC | OPEN_2CH_MAX, 0);
+			}
 			if (wpc == NULL) {
-				log_msg(LOG_ERROR, "pa: Error loading wavpak file");
-				WavpackCloseFile(wpc);
+				log_msg(LOG_ERROR, "pa: Error loading wavpak file (%s)", wv_error);
 				return 1;
 			}
 			src_channels = WavpackGetReducedChannels(wpc);
@@ -2637,15 +3361,16 @@ int load_next() {
 			}
 
 			current_length_count = WavpackGetNumSamples(wpc);
+			decoder_allocated = 1;
 			return 0;
-			break;
+		}
 
-		case MPG:
-			int ret = mpg123_open(mh, loaded_target_file);
+		case MPG: {
+			int ret = mpg123_open_handle(mh, &bs);
 			if (ret != MPG123_OK) {
 				log_msg(
 					LOG_ERROR,
-					"pa: mpg123_open failed for '%s': %s",
+					"ph: mpg123_open failed for '%s': %s",
 					loaded_target_file,
 					mpg123_strerror(mh)
 				);
@@ -2653,8 +3378,32 @@ int load_next() {
 			}
 			decoder_allocated = 1;
 
-			mpg123_getformat(mh, &rate, &channels, &encoding);
-			mpg123_scan(mh);
+			ret = mpg123_getformat(mh, &rate, &channels, &encoding);
+			if (ret != MPG123_OK) {
+				log_msg(
+					LOG_WARNING,
+					"pa: mpg123_getformat failed for '%s': %s",
+					loaded_target_file,
+					mpg123_strerror(mh)
+				);
+				log_msg(LOG_WARNING, "ph: Attempting to find valid frames across the entire file...");
+				// Change resync limit to go through the entire file instead of just first 1KB
+				// This allows us to play weird polyglot or otherwise semi-broken files
+				mpg123_param(mh, MPG123_RESYNC_LIMIT, -1, 0.0);
+				ret = mpg123_getformat(mh, &rate, &channels, &encoding);
+				if (ret != MPG123_OK) {
+					log_msg(
+						LOG_ERROR,
+						"ph: mpg123_open failed again for '%s': %s",
+						loaded_target_file,
+						mpg123_strerror(mh)
+					);
+					return 1;
+				}
+			}
+			// Scanning reads the whole file for an exact length, so only do
+			// it when the data is already on disk
+			if (!is_net) mpg123_scan(mh);
 			//log_msg(LOG_INFO, "pa: %lu. / %d. / %d", rate, channels, encoding);
 
 			pthread_mutex_lock(&buffer_mutex);
@@ -2664,10 +3413,10 @@ int load_next() {
 			if (old_sample_rate != sample_rate_src) {
 				src_reset(src);
 			}
-			current_length_count = (unsigned int) mpg123_length(mh);
+			off_t mpg_length = mpg123_length(mh);
+			current_length_count = mpg_length > 0 ? (unsigned int) mpg_length : 0;
 
 			if (encoding == MPG123_ENC_SIGNED_16) {
-
 				if (load_target_seek > 0) {
 					//log_msg(LOG_INFO, "pa: Start at position %d", load_target_seek);
 					mpg123_seek(mh, (int) rate * (load_target_seek / 1000.0), SEEK_SET);
@@ -2678,18 +3427,25 @@ int load_next() {
 				}
 				pthread_mutex_unlock(&buffer_mutex);
 				return 0;
-
 			} else {
 				// Pretty much every MP3 ive tried is S16, so we might not have
 				// to worry about this.
-				log_msg(LOG_ERROR, "pa: encoding format not supported!");
+				log_msg(LOG_ERROR, "ph: encoding format not supported!");
 				pthread_mutex_unlock(&buffer_mutex);
 				return 1;
 			}
 
 			break;
+		}
 	}
 	return 1;
+}
+
+int load_next() {
+	stream_loading = 1;
+	int r = load_next_inner();
+	stream_loading = 0;
+	return r;
 }
 
 void end() {
@@ -2817,6 +3573,11 @@ void pump_decode() {
 		if (dec != NULL) {
 			switch (FLAC__stream_decoder_get_state(dec)) {
 				case FLAC__STREAM_DECODER_END_OF_STREAM:
+				// Fatal states; process_single() would make no further
+				// progress (aborted happens when a stream is cancelled)
+				case FLAC__STREAM_DECODER_ABORTED:
+				case FLAC__STREAM_DECODER_SEEK_ERROR:
+				case FLAC__STREAM_DECODER_MEMORY_ALLOCATION_ERROR:
 					decoder_eos();
 					break;
 
@@ -2858,16 +3619,19 @@ void pump_decode() {
 			}
 			if (done == 0) {
 
-				// Check if file was appended to...
-				if (uni_stat(loaded_target_file, &st) == 0 && load_file_size != st.st_size) {
+				// Check if file was appended to... (a local cache file that
+				// is still downloading). The stream producer re-stats on EOF,
+				// so a grown bs.file_size signals more data appeared.
+				if (bs.active && !bs.net && load_file_size != (off_t) bs_length()) {
 					log_msg(LOG_WARNING, "pa: Ogg file size changed!");
 					int e = 0;
-					OggOpusFile *new_opus_dec = op_open_file(loaded_target_file, &e);
+					bs_seek_abs(0);
+					OggOpusFile *new_opus_dec = op_open_callbacks(&bs, &bs_op_callbacks, NULL, 0, &e);
 					if (new_opus_dec != NULL && e == 0) {
 						op_free(opus_dec);
 						opus_dec = new_opus_dec;
 						// Reset the size baseline so true EOF can flow to decoder_eos().
-						load_file_size = st.st_size;
+						load_file_size = (off_t) bs_length();
 						if (op_pcm_seek(opus_dec, samples_decoded / 2) == 0) {
 							return;
 						}
@@ -2949,7 +3713,10 @@ void pump_decode() {
 			int samples;
 			int32_t buffer[4 * 1024 * 2];
 			samples = WavpackUnpackSamples(wpc, buffer, 1024);
-			if (wp_float) {
+			if (samples == 0) {
+				// End of file or unrecoverable error
+				decoder_eos();
+			} else if (wp_float) {
 				read_to_buffer_float32_fs(buffer, samples);
 			} else if (wp_bit == 16) {
 				read_to_buffer_16in32_fs(buffer, samples);
@@ -2959,7 +3726,7 @@ void pump_decode() {
 				read_to_buffer_32in32_fs(buffer, samples);
 			}
 			samples_decoded += samples;
-		}
+		} else decoder_eos();
 
 	} else if (codec == MPG) {
 		// MP3 decoding
@@ -3034,6 +3801,8 @@ void *main_loop(void *thread_id) {
 
 	int load_result = 0;
 	bool using_fade = false;
+	int load_prepared = 0;     // target loaded, transition cutover pending
+	int preload_waited_ms = 0;
 
 	// SRC ----------------------------
 
@@ -3058,6 +3827,7 @@ void *main_loop(void *thread_id) {
 	}
 	mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_QUIET | MPG123_SKIP_ID3V2, 0);
 	mpg123_param(mh, MPG123_RESYNC_LIMIT, 10000, 0);
+	mpg123_replace_reader_handle(mh, &bs_mpg_read, &bs_mpg_lseek, NULL);
 
 	// FLAC decoder ----------------------------------------------------------------
 
@@ -3149,7 +3919,9 @@ void *main_loop(void *thread_id) {
 				case STOP:
 					if (mode == STOPPED) {
 						command = NONE;
-					} else if (mode == PLAYING) {
+					} else if (mode == PLAYING || mode == ENDING) {
+						// ENDING can also be reached when a stream is
+						// cancelled; ramp down rather than draining it all
 						mode = RAMP_DOWN;
 					}
 					if ((mode == RAMP_DOWN && (gate == 0 || get_buff_fill() == 0)) || mode == PAUSED) {
@@ -3158,17 +3930,37 @@ void *main_loop(void *thread_id) {
 					break;
 
 				case START:
-					if (mode == PLAYING) {
-						mode = RAMP_DOWN;
-					}
-					if (mode == RAMP_DOWN && gate == 0) {
-						command = LOAD;
-					} else break;
-
 				case LOAD:
+					// Load/prepare the new target first; already decoded
+					// audio of the current track keeps playing out of the
+					// main buffer in the meantime
+					if (!load_prepared) {
+						load_result = load_next();
+						load_prepared = 1;
+						preload_waited_ms = 0;
+					}
+
+					// For network streams, hold the transition until enough
+					// data is buffered (or 1.5s passes) so fast connections
+					// switch tracks without an audible gap
+					if (load_result == 0 && mode == PLAYING && get_buff_fill() > 0
+							&& preload_waited_ms < 1500 && !bs_decode_ready()) {
+						preload_waited_ms += 5;
+						break;
+					}
+
+					if (command == START) {
+						if (mode == PLAYING) {
+							mode = RAMP_DOWN;
+						}
+						if (mode == RAMP_DOWN && gate == 0) {
+							command = LOAD;
+						} else break;
+					}
+
 					// Prepare for a crossfade if enabled and suitable
 					using_fade = false;
-					if (config_fade_jump == 1 && mode == PLAYING) {
+					if (load_result == 0 && config_fade_jump == 1 && mode == PLAYING) {
 						pthread_mutex_lock(&buffer_mutex);
 						if (fade_fill > 0) {
 							log_msg(LOG_WARNING, "pa: Fade already in progress");
@@ -3207,8 +3999,6 @@ void *main_loop(void *thread_id) {
 						pthread_mutex_unlock(&buffer_mutex);
 					}
 
-					load_result = load_next();
-
 					if (!using_fade) {
 						// Jump immediately
 						//log_msg(LOG_INFO, "ph: Jump");
@@ -3228,10 +4018,12 @@ void *main_loop(void *thread_id) {
 						command = NONE;
 					} else {
 						log_msg(LOG_ERROR, "ph: Load file failed");
+						stop_decoder();  // release any half opened stream
 						result_status = FAILURE;
 						command = NONE;
 						mode = STOPPED;
 					}
+					load_prepared = 0;
 
 					break;
 
@@ -3288,10 +4080,22 @@ void *main_loop(void *thread_id) {
 			}
 		}
 
-		// Refill the buffer
-		if (mode == PLAYING && codec != FEED) {
+		// Refill the buffer. Held off while a loaded track waits for its
+		// transition cutover, the buffer still holds the previous track then.
+		if (mode == PLAYING && codec != FEED && !load_prepared) {
+			int idle_pumps = 0;
 			while (get_buff_fill() < BUFF_SAFE && mode != ENDING) {
+				// Wait for enough network data so decoding can't block
+				// the loop for long; commands stay responsive meanwhile
+				if (!bs_decode_ready()) break;
+				int before = get_buff_fill();
 				pump_decode();
+				// Headers/metadata produce no PCM, but a decoder that makes
+				// no progress at all must not starve command processing
+				if (get_buff_fill() == before) {
+					idle_pumps++;
+					if (idle_pumps > 500) break;
+				} else idle_pumps = 0;
 			}
 		}
 
@@ -3330,6 +4134,10 @@ void *main_loop(void *thread_id) {
 
 	stop_out();
 	disconnect_pulse();
+	bs_close();
+	free(bs.buf);
+	bs.buf = NULL;
+	bs.capacity = 0;
 	#ifdef MINI
 		if (context_allocated == 1) {
 			ma_context_uninit(&context);
@@ -3388,7 +4196,10 @@ EXPORT int get_result() {
 
 EXPORT int start(char *filename, int start_ms, int fade, float rg) {
 
-	while (command != NONE) {
+	// If a previous load is blocked waiting on (network) data, abort it
+	// so the command queue keeps moving
+	while (command != NONE || stream_loading) {
+		if (stream_loading) bs_cancel();
 		usleep(1000);
 	}
 
@@ -3399,6 +4210,7 @@ EXPORT int start(char *filename, int start_ms, int fade, float rg) {
 
 	load_target_seek = start_ms;
 	strcpy(load_target_file, filename);
+	load_target_net = load_target_net_pending;
 
 	if (mode == PLAYING) {
 		if (fade == 1) command = LOAD;
@@ -3421,6 +4233,7 @@ EXPORT int next(char *filename, int start_ms, float rg) {
 	} else {
 		load_target_seek = start_ms;
 		strcpy(load_target_file, filename);
+		load_target_net = load_target_net_pending;
 		rg_value_want = rg;
 		next_ready = 1;
 	}
@@ -3453,9 +4266,13 @@ EXPORT int resume() {
 }
 
 EXPORT int stop() {
-	while (command != NONE) {
+	// Abort any blocked load, pre-buffer wait or in-flight network
+	// transfers immediately
+	while (command != NONE || stream_loading) {
+		bs_cancel();
 		usleep(1000);
 	}
+	bs_cancel();
 	command = STOP;
 	return 0;
 }
@@ -3596,6 +4413,125 @@ EXPORT void config_set_min_buffer(int n) {
 	config_min_buffer = n;
 }
 
+EXPORT void config_set_stream_buffer(int mb) {
+	if (mb < 4) mb = 4;
+	if (mb > 2048) mb = 2048;
+	config_stream_buffer_mb = mb;
+}
+
+// Mark whether the next start()/next() target is a network track to be
+// streamed through the byte stream (as opposed to a radio URL or local file)
+EXPORT void set_load_net(int n) {
+	load_target_net_pending = n;
+}
+
+// Network feeder protocol -----------------------------------------------
+// The Python side polls net_generation(); when an active network stream
+// exists it fetches net_get_url() with HTTP range requests starting at
+// net_want() and pushes data in with net_feed().
+
+EXPORT int net_generation() {
+	pthread_mutex_lock(&bs.mut);
+	int g = (bs.active && bs.net && !bs.abort && !bs.error) ? bs.generation : -1;
+	pthread_mutex_unlock(&bs.mut);
+	return g;
+}
+
+EXPORT char* net_get_url() {
+	pthread_mutex_lock(&bs.mut);
+	memcpy(bs_net_url_out, bs_net_url, sizeof(bs_net_url_out));
+	pthread_mutex_unlock(&bs.mut);
+	return bs_net_url_out;
+}
+
+// Returns the next file offset the feeder should supply data from,
+// -1 if no data is currently needed (end of file reached),
+// -2 if the stream is gone (stop feeding)
+EXPORT long long net_want(int gen) {
+	pthread_mutex_lock(&bs.mut);
+	long long r = -2;
+	if (bs.active && bs.net && !bs.abort && !bs.error && gen == bs.generation) {
+		if (bs.want_restart) r = (long long) bs.want_offset;
+		else if (bs.eof) r = -1;
+		else if (bs.file_size >= 0 && bs.win_start + bs.filled >= bs.file_size) r = -1;
+		else r = (long long) (bs.win_start + bs.filled);
+	}
+	pthread_mutex_unlock(&bs.mut);
+	return r;
+}
+
+// Append data at the given absolute file offset. Returns the number of
+// bytes accepted (0 = buffer full, try again shortly), -1 if the stream
+// is gone, -2 if the offset no longer matches (re-check net_want)
+EXPORT int net_feed(int gen, long long offset, char *data, int len) {
+	if (len < 0) return -1;
+	pthread_mutex_lock(&bs.mut);
+	if (!bs.active || !bs.net || bs.abort || gen != bs.generation) {
+		pthread_mutex_unlock(&bs.mut);
+		return -1;
+	}
+	if (bs.want_restart) {
+		if (offset == (long long) bs.want_offset) {
+			bs_window_reset_locked((int64_t) offset);
+			bs.want_restart = false;
+		} else {
+			pthread_mutex_unlock(&bs.mut);
+			return -2;
+		}
+	} else if (offset != (long long) (bs.win_start + bs.filled)) {
+		pthread_mutex_unlock(&bs.mut);
+		return -2;
+	}
+	int64_t space = bs_make_space_locked();
+	int64_t n = len < space ? len : space;
+	if (n > 0) {
+		bs_append_locked((unsigned char *) data, n);
+		if (bs.file_size >= 0 && bs.win_start + bs.filled >= bs.file_size) bs.eof = true;
+		pthread_cond_broadcast(&bs.cond);
+	}
+	pthread_mutex_unlock(&bs.mut);
+	return (int) n;
+}
+
+EXPORT void net_set_size(int gen, long long size) {
+	pthread_mutex_lock(&bs.mut);
+	if (bs.active && bs.net && gen == bs.generation && size >= 0) {
+		bs.file_size = (int64_t) size;
+		pthread_cond_broadcast(&bs.cond);
+	}
+	pthread_mutex_unlock(&bs.mut);
+}
+
+EXPORT void net_eof(int gen) {
+	pthread_mutex_lock(&bs.mut);
+	if (bs.active && bs.net && gen == bs.generation && !bs.want_restart) {
+		bs.eof = true;
+		// The response ended; if no length was known before, we know it now
+		if (bs.file_size < 0) bs.file_size = bs.win_start + bs.filled;
+		pthread_cond_broadcast(&bs.cond);
+	}
+	pthread_mutex_unlock(&bs.mut);
+}
+
+// Tell the stream whether the server honours range requests. Must be
+// called before the first data is fed so the decoders open appropriately.
+EXPORT void net_set_seekable(int gen, int seekable) {
+	pthread_mutex_lock(&bs.mut);
+	if (bs.active && bs.net && gen == bs.generation) {
+		bs.seek_ok = seekable != 0;
+	}
+	pthread_mutex_unlock(&bs.mut);
+}
+
+EXPORT void net_fail(int gen) {
+	pthread_mutex_lock(&bs.mut);
+	if (bs.active && bs.net && gen == bs.generation) {
+		bs.error = true;
+		pthread_cond_broadcast(&bs.cond);
+	}
+	pthread_mutex_unlock(&bs.mut);
+}
+
 EXPORT float get_level_peak_l() {
 	float peak = peak_l;
 	peak_l = 0.0;
@@ -3666,6 +4602,30 @@ EXPORT int is_buffering() {
 	return (int) (get_buff_fill() / config_min_buffer * 100.0);
 }
 
+// How much decoded audio is waiting in the PCM buffer
+EXPORT int get_buffered_ms() {
+	if (sample_rate_out <= 0) return 0;
+	return (int) ((int64_t) get_buff_fill() * 1000 / sample_rate_out);
+}
+
+// Snapshot of the byte stream state, for the in-app console graph.
+// Returns whether a stream is active.
+EXPORT int get_stream_stats(
+		long long *size, long long *start, long long *end, long long *pos,
+		long long *meta, int *net, int *eof) {
+	pthread_mutex_lock(&bs.mut);
+	int active = bs.active ? 1 : 0;
+	*size = (long long) bs.file_size;
+	*start = (long long) bs.win_start;
+	*end = (long long) (bs.win_start + bs.filled);
+	*pos = (long long) bs.read_pos;
+	*meta = (long long) stream_meta_end;
+	*net = bs.net ? 1 : 0;
+	*eof = bs.eof ? 1 : 0;
+	pthread_mutex_unlock(&bs.mut);
+	return active;
+}
+
 /* EXPORT int get_latency() { */
 /*	return active_latency / 1000; */
 /* } */
@@ -3703,9 +4663,11 @@ EXPORT void reset_vis_side_buffer(){
 	}
 
 EXPORT int phazor_shutdown() {
-	while (command != NONE) {
+	while (command != NONE || stream_loading) {
+		bs_cancel();
 		usleep(1000);
 	}
+	bs_cancel();
 	command = EXIT;
 	return 0;
 }

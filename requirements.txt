@@ -8,6 +8,7 @@ pylast>=3.1.0
 pyobjc-framework-Cocoa;     sys_platform == 'darwin'
 PySDL3
 #python-magic # optional
+rapidfuzz
 requests
 Send2Trash
 unidecode
@@ -15,7 +16,6 @@ comtypes;                    sys_platform == 'win32'
 dbus-python;                 sys_platform == 'linux'
 jxlpy
 keyboard;                    sys_platform == 'win32'
-lynxtray;                    sys_platform == 'win32'
 opencc;                      sys_platform != 'win32' # optional
 opencc-python-reimplemented; sys_platform == 'win32' # optional
 pypresence>=4.5.0 # optional
@@ -23,7 +23,7 @@ natsort # optional
 #picard # optional
 PyChromecast # optional
 setproctitle # optional
-tidalapi # optional
+tidalapi>=0.8.7 # optional
 zeroconf # optional
 colored_traceback;           sys_platform != 'win32' # optional - Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 PyOpenGL

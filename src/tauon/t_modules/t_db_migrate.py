@@ -229,40 +229,31 @@ def database_migrate(
 
 	if db_version <= 75:  # noqa: PLR2004
 		logging.info("Updating database to version 76")
+		logging.info("Clearing search caches")
+		tauon.search_string_cache.clear()
+		tauon.search_dia_string_cache.clear()
+	if db_version <= 76:  # noqa: PLR2004
+		logging.info("Updating database to version 77")
 		for track in master_library.values():
 			if not hasattr(track, "bpm"):
 				track.bpm = 0.0
-
-	if db_version <= 76:  # noqa: PLR2004
-		logging.info("Updating database to version 77")
+	if db_version <= 77:  # noqa: PLR2004
+		logging.info("Updating database to version 78")
 		for track in master_library.values():
 			if not hasattr(track, "silence_start"):
 				track.silence_start = -1.0
 			if not hasattr(track, "silence_end"):
 				track.silence_end = -1.0
-
-	if db_version <= 77:  # noqa: PLR2004
-		logging.info("Updating database to version 78")
-		for track in master_library.values():
-			track.silence_start = -1.0
-			track.silence_end = -1.0
-
 	if db_version <= 78:  # noqa: PLR2004
 		logging.info("Updating database to version 79")
 		for track in master_library.values():
 			track.silence_start = -1.0
 			track.silence_end = -1.0
-
-
 	if db_version <= 79:  # noqa: PLR2004
 		logging.info("Updating database to version 80")
 		for track in master_library.values():
-			if not hasattr(track, "key"):
-				track.key = -1
-
-	if db_version <= 79:  # noqa: PLR2004
-		logging.info("Updating database to version 80")
-		for track in master_library.values():
+			track.silence_start = -1.0
+			track.silence_end = -1.0
 			if not hasattr(track, "key"):
 				track.key = -1
 

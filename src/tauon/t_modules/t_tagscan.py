@@ -27,6 +27,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import re
 import struct
 import wave
 from pathlib import Path
@@ -39,6 +40,35 @@ if TYPE_CHECKING:
 	from types import TracebackType
 
 	from typing_extensions import Self
+
+
+LRC_TIMESTAMP_RE = re.compile(r"\[\d+:\d{1,2}\.\d{2,3}\]")
+LRC_INFO_TAGS = (
+	"[ti:",
+	"[ar:",
+	"[al:",
+	"[au:",
+	"[lr:",
+	"[length:",
+	"[by:",
+	"[offset:",
+	"[re:",
+	"[tool:",
+	"[ve:",
+	"[#:",
+)
+
+
+def lyrics_are_synced(lyrics: str) -> bool:
+	for line in lyrics.splitlines():
+		line = line.strip().lower()
+		if not line or line.startswith("#"):
+			continue
+		if any(line.startswith(tag) for tag in LRC_INFO_TAGS):
+			continue
+		if LRC_TIMESTAMP_RE.search(line):
+			return True
+	return False
 
 
 def parse_mbids_from_vorbis(obj: Ape | Flac | Opus, key: str, value: str | bytes) -> bool:
@@ -203,6 +233,19 @@ class TrackFile:
 			self.file.close()
 		self.file = None
 
+	def set_vorbis_lyrics(self, key: str, value: bytes) -> None:
+		lyrics = value.decode("utf-8")
+		if key == "unsyncedlyrics":
+			self.lyrics = lyrics
+		elif key == "syncedlyrics":
+			self.synced_lyrics = lyrics
+		elif key == "lyrics":
+			if lyrics_are_synced(lyrics):
+				if not self.synced_lyrics:
+					self.synced_lyrics = lyrics
+			elif not self.lyrics:
+				self.lyrics = lyrics
+
 
 class Flac(TrackFile):
 	def __init__(self, file: str) -> None:
@@ -291,10 +334,8 @@ class Flac(TrackFile):
 					elif a == "metadata_block_picture":
 						logging.info("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
 						logging.info(f"      In file: {self.filepath}")
-					elif a == "lyrics":
-						self.synced_lyrics = b.decode("utf-8")
-					elif a == "unsyncedlyrics":
-						self.lyrics = b.decode("utf-8")
+					elif a in ("lyrics", "syncedlyrics", "unsyncedlyrics"):
+						self.set_vorbis_lyrics(a, b)
 					elif a == "replaygain_track_gain":
 						self.misc["replaygain_track_gain"] = float(
 							b.decode("utf-8").lower().strip(" db").replace(",", ".")
@@ -587,10 +628,8 @@ class Opus(TrackFile):
 						self.disc_number = b.decode("utf-8")
 					elif a in ("disctotal", "totaldiscs"):
 						self.disc_total = b.decode("utf-8")
-					elif a == "lyrics":
-						self.synced_lyrics = b.decode("utf-8")
-					elif a == "unsyncedlyrics":
-						self.lyrics = b.decode("utf-8")
+					elif a in ("lyrics", "syncedlyrics", "unsyncedlyrics"):
+						self.set_vorbis_lyrics(a, b)
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
 					elif a == "fmps_rating":

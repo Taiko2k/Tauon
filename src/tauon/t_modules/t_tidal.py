@@ -234,7 +234,7 @@ class Tidal:
 			return []
 
 		playlist = []
-		for album in f.albums():
+		for album in f.albums_paginated():
 			for track in album.tracks():
 				nt = self.new_track(track)
 				playlist.append(nt.index)
@@ -260,7 +260,7 @@ class Tidal:
 			return []
 
 		playlist = []
-		for track in f.tracks():
+		for track in f.tracks_paginated():
 			nt = self.new_track(track)
 			playlist.append(nt.index)
 
@@ -285,7 +285,7 @@ class Tidal:
 			return []
 
 		playlist = []
-		for track in p.tracks():
+		for track in p.tracks_paginated():
 			nt = self.new_track(track)
 			playlist.append(nt.index)
 

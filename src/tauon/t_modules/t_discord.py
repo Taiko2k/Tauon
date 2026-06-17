@@ -262,12 +262,17 @@ def discord_loop_entrypoint(main) -> None:
                     wakeup.clear()
                     continue
 
-            if not pctl.playing_ready():
+            state_now = pctl.playing_state
+            radio_live = (
+                PlayingState is not None
+                and state_now == PlayingState.URL_STREAM
+            )
+            # Radio plays without a track queue, so playing_ready() alone can't gate it
+            if radio_live or pctl.playing_ready():
+                tr = pctl.playing_object()
+            else:
                 tr        = None
                 state_now = None
-            else:
-                tr        = pctl.playing_object()
-                state_now = pctl.playing_state
 
             is_playing = (
                 state_now in (PlayingState.PLAYING, PlayingState.URL_STREAM)
@@ -349,7 +354,11 @@ def discord_loop_entrypoint(main) -> None:
                     elif abs(start_time - (now - pctl.playing_time)) > 1.0:
                         start_time = now - pctl.playing_time
 
-                raw_title = tr.title or builtins._("Unknown Track")
+                station_title = ""
+                if radio_live and main.radiobox.loaded_station is not None:
+                    station_title = (main.radiobox.loaded_station.title or "").strip()
+
+                raw_title = tr.title or station_title or builtins._("Unknown Track")
                 if prefs.discord_clean_title:
                     try:
                         title_for_presence = main.clean_track_title(raw_title)
@@ -360,8 +369,18 @@ def discord_loop_entrypoint(main) -> None:
 
                 artist = tr.artist or builtins._("Unknown Artist")
 
-                if state_now == PlayingState.URL_STREAM:
-                    album = main.radiobox.loaded_station.get("title", tr.album) if tr.album else None
+                if radio_live:
+                    if not tr.artist:
+                        # No artist tag; attribute the line to the station,
+                        # unless the station is already shown as the title
+                        artist = (
+                            builtins._("Live radio")
+                            if not tr.title
+                            else station_title or builtins._("Live radio")
+                        )
+                    album = station_title or None
+                    if album and album.lower() in (title_for_presence.lower(), artist.lower()):
+                        album = None
                 else:
                     al    = (tr.album or "").lower()
                     album = (
@@ -427,7 +446,7 @@ def discord_loop_entrypoint(main) -> None:
                     payload["start"] = int(start_time)
                     if state_now != PlayingState.URL_STREAM:
                         payload["end"] = int(start_time + tr.length)
-                if album and state_now != PlayingState.URL_STREAM:
+                if album:
                     payload["large_text"] = safe_text(album, "Tauon")
                 if cached_small_image:
                     payload["small_text"] = "Tauon"

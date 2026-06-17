@@ -176,6 +176,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	rgb_to_hls,
 	search_magic,
 	search_magic_any,
+	search_magic_beefy,
 	seconds_to_day_hms,
 	shooter,
 	sleep_timeout,
@@ -198,7 +199,7 @@ from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
-from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, parse_picture_block  # noqa: E402
+from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, lyrics_are_synced, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -307,8 +308,6 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS
 	from tauon.t_modules.t_logging import LogHistoryHandler
-	if sys.platform == "win32":
-		from lynxtray import SysTrayIcon
 	from collections.abc import Callable
 	from subprocess import Popen
 
@@ -340,9 +339,6 @@ if sys.platform == "darwin":
 
 if not macos and not windows:
 	from tauon.t_modules.t_dbus import Gnome
-
-if windows:
-	from lynxtray import SysTrayIcon
 
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
@@ -838,6 +834,9 @@ class GuiVar:
 		self.playlist_view_length: int = 0
 
 		self.show_album_ratings: bool = False
+		self.album_rating_hover: bool = False
+		self.scrollbar_active: bool = False
+		self.scrollbar_interaction_lock: bool = False
 		self.gen_code_errors: bool = False
 
 		self.regen_single = -1
@@ -1717,7 +1716,8 @@ class WinTask:
 	def update(self) -> None:
 		try:
 
-			if self.pctl.playing_state == PlayingState.STOPPED and self.updated_state != 0:
+			# URL streams have no known duration, so show no progress for them either
+			if self.pctl.playing_state in (PlayingState.STOPPED, PlayingState.URL_STREAM) and self.updated_state != 0:
 				self.updated_state = 0
 				sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
 				sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
@@ -2975,6 +2975,24 @@ class PlayerCtl:
 		self.update_change(update_gui)
 		self.deduct_shuffle(target.index)
 
+	def abort_gapless_transition(self, track: TrackClass, resume_time: float) -> None:
+		self.target_open = track.fullpath
+		self.target_object = track
+		self.start_time = track.start_time
+		self.start_time_target = self.start_time
+		self.playing_length = track.length
+		self.jump_time = resume_time
+		self.playing_time = resume_time
+		self.decode_time = resume_time
+		self.last_playing_time = resume_time
+		self.gui.update_spec = 0
+		self.commit = None
+		self.radiobox.loaded_station = None
+		self.playerCommand = "open"
+		self.playerSubCommand = "now"
+		self.playerCommandReady = True
+		self.playing_state = PlayingState.PLAYING
+
 	def update_change(self, update_gui: bool = True) -> None:
 		if self.prefs.update_title and update_gui:
 			self.tauon.update_title_do()
@@ -3098,6 +3116,13 @@ class PlayerCtl:
 		self.gui.pl_update += 1
 
 	def stop(self, block: bool = False, run: bool = False, update_gui: bool = True) -> int:
+		stream_proxy = getattr(self.tauon, "stream_proxy", None)
+		stream_state = stream_proxy.state_log() if stream_proxy else "unavailable"
+		logging.info(
+			f"Player stop requested block={block} run={run} update_gui={update_gui} "
+			f"playing_state={self.playing_state} player4_state={self.tauon.player4_state} "
+			f"stream_state={stream_state}"
+		)
 		self.playerCommand = "stop"
 		if run:
 			self.playerCommand = "runstop"
@@ -3122,6 +3147,10 @@ class PlayerCtl:
 			self.left_time = self.playing_time
 			self.left_index = self.track_queue[self.queue_step]
 
+		if self.tauon.radiobox.load_connecting or self.playing_state == PlayingState.URL_STREAM:
+			# Keep loaded_station so play() can resume the radio after a stop
+			self.tauon.radiobox.abort_load(clear_station=False)
+
 		previous_state = self.playing_state
 		self.playing_state = PlayingState.STOPPED
 		if update_gui:
@@ -3136,6 +3165,7 @@ class PlayerCtl:
 				self.tauon.update_title_do()  # Update title bar text
 
 		if self.tauon.stream_proxy and self.tauon.stream_proxy.download_running:
+			logging.info(f"Player stop is stopping radio stream: {self.tauon.stream_proxy.state_log()}")
 			self.tauon.stream_proxy.stop()
 
 		if block:
@@ -3289,7 +3319,14 @@ class PlayerCtl:
 		#	 #self.gui.update += 1
 		#	 self.playing_time_int = next_round
 
-		gap_extra = 2  # 2
+		tr = self.playing_object()
+		gap_extra = 2
+		if tr and tr.is_network:
+			# Network tracks can transition gaplessly when streamed natively;
+			# otherwise wait for the very end like before
+			feeder = getattr(self.tauon, "stream_feeder", None)
+			if not (self.prefs.network_stream and feeder is not None and feeder.enabled):
+				gap_extra = 0
 
 		if self.tauon.chrome_mode:
 			gap_extra = 3
@@ -3507,8 +3544,9 @@ class PlayerCtl:
 
 		if self.playing_state == PlayingState.PAUSED and not self.prefs.resume_on_jump:
 			play = False
-			self.playerCommand = "stop"
-			self.playerCommandReady = True
+			if not dry:
+				self.playerCommand = "stop"
+				self.playerCommandReady = True
 
 		# Temporary Workaround for UI block causing unwanted dragging
 		if not dry:
@@ -3517,9 +3555,10 @@ class PlayerCtl:
 		quiet = False  # Feature disabled intentionally, not a bug
 
 		# Trim the history if it gets too long
-		while len(self.track_queue) > 250:
-			self.queue_step -= 1
-			del self.track_queue[0]
+		if not dry:
+			while len(self.track_queue) > 250:
+				self.queue_step -= 1
+				del self.track_queue[0]
 
 		# Save info about the track we are leaving
 		if not dry and len(self.track_queue) > 0:
@@ -5767,7 +5806,15 @@ class ThumbTracks:
 		if source is False:  # No art
 			return None
 
-		image_name = track.album + track.parent_folder_path + str(offset)
+		source_type, source_location = source
+		source_mtime = ""
+		if source_type in (0, 1):
+			try:
+				source_mtime = str(os.path.getmtime(source_location))
+			except OSError:
+				source_mtime = str(track.modified_time)
+
+		image_name = f"{source_type}:{source_location}:{offset}:{source_mtime}"
 		image_name = hashlib.md5(image_name.encode("utf-8", "replace")).hexdigest()  # noqa: S324 - not a security hash
 
 		t_path = self.tauon.e_cache_directory / f"{image_name}.jpg"
@@ -5852,6 +5899,10 @@ class Tauon:
 		self.logical_size: list[int]              = bag.logical_size
 		self.window_size: list[int]               = bag.window_size
 		self.draw_border: bool                    = holder.draw_border
+		self.corner_mask_textures: list | None    = None
+		self.corner_border_textures: list | None  = None
+		self.corner_texture_size: tuple[int, int] = (0, 0)
+		self.corner_textures_failed: bool         = False
 		self.desktop: str | None                  = bag.desktop
 		self.pid: int                             = os.getpid()
 		# List of encodings to check for with the fix mojibake function
@@ -5884,8 +5935,8 @@ class Tauon:
 		self.device: str                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
 		self.search_dia_string_cache: dict[int, str] = {}
-		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str]] = {}
-		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str]] = {}
+		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str, str]] = {}
+		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str, str]] = {}
 		self.albums:            list[int] = []
 		self.added:             list[int] = []
 		self.album_dex:         list[int] = []
@@ -6073,7 +6124,6 @@ class Tauon:
 		self.gallery_pulse_top:                   EdgePulse2 = EdgePulse2(tauon=self)
 		self.art_box:                             ArtBox = ArtBox(tauon=self)
 		self.nagbox:                              NagBox = NagBox(tauon=self)
-		self.tray:                                STray = STray(self)
 
 		if not self.macos and not self.windows:
 			self.gnome = Gnome(tauon=self)
@@ -6081,12 +6131,12 @@ class Tauon:
 		self.text_plex_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_pas: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_ser: TextBox2 = TextBox2(tauon=self)
+		self.text_plex_lib: TextBox2 = TextBox2(tauon=self)
 		self.text_plex_2fa: TextBox2 = TextBox2(tauon=self)
 
-		self.text_jelly_usr:     TextBox2 = TextBox2(tauon=self)
-		self.text_jelly_pas:     TextBox2 = TextBox2(tauon=self)
-		self.text_jelly_ser:     TextBox2 = TextBox2(tauon=self)
-		self.text_jelly_timeout: TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_usr: TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_pas: TextBox2 = TextBox2(tauon=self)
+		self.text_jelly_ser: TextBox2 = TextBox2(tauon=self)
 
 		self.text_air_usr: TextBox2 = TextBox2(tauon=self)
 		self.text_air_pas: TextBox2 = TextBox2(tauon=self)
@@ -6109,7 +6159,7 @@ class Tauon:
 		self.load_orders:         list[LoadClass] = []
 		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
-		self.album_info_cache_key: tuple[int, int] = (-1, -1)
+		self.album_info_cache_key: tuple[int, TrackClass | None, int] = (-1, None, -1)
 		self.console:                    DConsole = bag.console
 		self.TrackClass                           = TrackClass
 		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
@@ -6140,6 +6190,7 @@ class Tauon:
 
 		self.copied_track: int | None = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
+		self.stream_feeder = None  # set by player4; exposes network download stats
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.cachement:              Cachement = Cachement(self)
@@ -6169,7 +6220,264 @@ class Tauon:
 
 		self.now_searching: Literal["off", "searching", "errored", "success"] = "off"
 
-		self.requested_raise = False
+		self.requested_raise: bool = False
+		self.requested_tray: bool = False
+		self.requested_tray_destruct: bool = False
+		self.sdl_tray: sdl3.LP_SDL_Tray | None = None
+		self.sdl_tray_state: PlayingState = PlayingState.STOPPED
+		self.sdl_tray_launched: bool = False
+		self.sdl_tray_text: str = ""
+		self._tray_quit_cb = None
+		self._tray_open_cb = None
+		self._tray_playpause_cb = None
+		self._tray_next_cb = None
+		self._tray_prev_cb = None
+
+	def tray_quit_callback(self, userdata, entry) -> None:
+		"""Called when the 'Quit' tray entry is clicked."""
+		logging.info("Exit via tray")
+		self.exit("Exit received from app indicator")
+
+	def tray_open_callback(self, userdata, entry) -> None:
+		"""Open Tauon main UI."""
+		# Adjust to whatever your real function is
+		self.request_raise()
+
+
+	def tray_playpause_callback(self, userdata, entry) -> None:
+		"""Toggle play/pause."""
+		self.pctl.play_pause()
+
+
+	def tray_next_callback(self, userdata, entry) -> None:
+		"""Next track."""
+		self.pctl.advance()
+
+
+	def tray_prev_callback(self, userdata, entry) -> None:
+		"""Previous track."""
+		self.pctl.back()
+
+	def load_sdl_icon(self, path: Path) -> sdl3.LP_SDL_Surface:
+		"""Load an image file into an SDL_Surface suitable for a tray icon."""
+		surf = sdl3.IMG_Load(str(path).encode("utf-8"))
+		if not surf:
+			raise RuntimeError(f"IMG_Load failed: {sdl3.SDL_GetError().decode()}")
+		return surf
+
+
+	def update_tray_icon(self, name: str) -> None:
+		"""Name like \"tray-indicator-stop\""""
+		surf = self.load_sdl_icon(Path(self.get_tray_icon(name)))
+		sdl3.SDL_SetTrayIcon(self.sdl_tray, surf)
+
+
+	def sdl_set_tray_tooltip (self, tooltip: str) -> None:
+		#logging.debug(f"Setting tray tooltip to '{tooltip}'")
+		sdl3.SDL_SetTrayTooltip(self.sdl_tray, tooltip.encode("utf-8"))
+
+	# TODO(Martin): Get this working with native SDL scroll implementation when available
+	#def sdl_tray_scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
+	#	if direction == Gdk.ScrollDirection.UP:
+	#		self.tauon.pctl.player_volume += 4
+	#		self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
+	#		self.tauon.pctl.set_volume()
+	#	if direction == Gdk.ScrollDirection.DOWN:
+	#		if self.tauon.pctl.player_volume > 4:
+	#			self.tauon.pctl.player_volume -= 4
+	#		else:
+	#			self.tauon.pctl.player_volume = 0
+	#		self.tauon.pctl.set_volume()
+	#	self.tauon.gui.update += 1
+
+
+	def show_tray(self) -> None:
+		self.requested_tray = True
+
+		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+		#if not self.sdl_tray_launched:
+		#	try:
+		#		self.init_sdl_tray()
+		#	except Exception:
+		#		logging.exception("Failed to start tray")
+		#		self.show_message(_("Failed to start tray"), mode="error")
+		#else:
+		#	self.indicator.set_status(1)
+
+
+	def hide_tray(self) -> None:
+		self.requested_tray_destruct = True
+		# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+		#if self.sdl_tray_launched:
+		#	self.indicator.set_status(0)
+
+
+	def tray_icon_play(self) -> None:
+		if self.sdl_tray_launched:
+			self.update_tray_icon("tray-indicator-play")
+			# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+			#self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-play"), "playing")
+
+
+	def tray_icon_pause(self) -> None:
+		if self.sdl_tray_launched:
+			self.update_tray_icon("tray-indicator-pause")
+			# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+			#self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-pause"), "paused")
+
+
+	def tray_icon_stop(self) -> None:
+		if self.sdl_tray_launched:
+			self.update_tray_icon("tray-indicator-default")
+			# TODO(Martin): https://github.com/libsdl-org/SDL/pull/14582#issuecomment-3627318392
+			#self.indicator.set_icon_full(self.tauon.get_tray_icon("tray-indicator-default"), "default")
+
+
+	def init_sdl_tray(self) -> None:
+		icon_surface = self.load_sdl_icon(Path(self.get_tray_icon("tray-indicator-default")))
+		# Create tray (no icon, just tooltip)
+		self.sdl_tray = sdl3.SDL_CreateTray(icon_surface, b"Tauon Music Box")
+		if not self.sdl_tray:
+			raise RuntimeError(f"SDL_CreateTray failed: {sdl3.SDL_GetError().decode()}")
+		# Create menu
+		menu = sdl3.SDL_CreateTrayMenu(self.sdl_tray)
+		if not menu:
+			raise RuntimeError(f"SDL_CreateTrayMenu failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Open Tauon Music Box ---
+		open_entry = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			b"Open Tauon Music Box",
+			sdl3.SDL_TRAYENTRY_BUTTON,
+		)
+		if not open_entry:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(Open) failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Separator ---
+		sep1 = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			None,  # NULL label => separator
+			0,     # flags ignored for separators
+		)
+		if not sep1:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(sep1) failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Play/Pause ---
+		playpause_entry = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			b"Play/Pause",
+			sdl3.SDL_TRAYENTRY_BUTTON,
+		)
+		if not playpause_entry:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(Play/Pause) failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Next Track ---
+		next_entry = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			b"Next Track",
+			sdl3.SDL_TRAYENTRY_BUTTON,
+		)
+		if not next_entry:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(Next) failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Previous Track ---
+		prev_entry = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			b"Previous Track",
+			sdl3.SDL_TRAYENTRY_BUTTON,
+		)
+		if not prev_entry:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(Previous) failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Separator ---
+		sep2 = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			None,  # separator
+			0,
+		)
+		if not sep2:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(sep2) failed: {sdl3.SDL_GetError().decode()}")
+
+		# --- Quit ---
+		quit_entry = sdl3.SDL_InsertTrayEntryAt(
+			menu,
+			-1,
+			b"Quit",
+			sdl3.SDL_TRAYENTRY_BUTTON,
+		)
+		if not quit_entry:
+			raise RuntimeError(f"SDL_InsertTrayEntryAt(Quit) failed: {sdl3.SDL_GetError().decode()}")
+
+		self._tray_open_cb =      sdl3.SDL_TrayCallback(self.tray_open_callback)
+		self._tray_playpause_cb = sdl3.SDL_TrayCallback(self.tray_playpause_callback)
+		self._tray_next_cb =      sdl3.SDL_TrayCallback(self.tray_next_callback)
+		self._tray_quit_cb =      sdl3.SDL_TrayCallback(self.tray_quit_callback)
+		self._tray_prev_cb =      sdl3.SDL_TrayCallback(self.tray_prev_callback)
+
+		sdl3.SDL_SetTrayEntryCallback(open_entry, self._tray_open_cb, None)
+		sdl3.SDL_SetTrayEntryCallback(playpause_entry, self._tray_playpause_cb, None)
+		sdl3.SDL_SetTrayEntryCallback(next_entry, self._tray_next_cb, None)
+		sdl3.SDL_SetTrayEntryCallback(quit_entry, self._tray_quit_cb, None)
+		sdl3.SDL_SetTrayEntryCallback(prev_entry, self._tray_prev_cb, None)
+
+		self.sdl_tray_launched = True
+
+	def destroy_sdl_tray(self) -> None:
+		if self.sdl_tray is None:
+			logging.warning("Attempted to destroy non-existent tray")
+			return
+		sdl3.SDL_DestroyTray(self.sdl_tray)
+		self.sdl_tray = None
+		self.sdl_tray_launched = False
+
+	def update_sdl_tray(self) -> None:
+		#if self.tray_releases <= 0:
+		#	self.tray_lock.acquire()
+		#self.tray_releases -= 1
+
+		if self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+			if self.sdl_tray_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+				self.sdl_tray_state = self.pctl.playing_state
+				self.tray_icon_play()
+		elif self.pctl.playing_state == PlayingState.PAUSED:
+			if self.sdl_tray_state != PlayingState.PAUSED:
+				self.sdl_tray_state = PlayingState.PAUSED
+				self.tray_icon_pause()
+		elif self.sdl_tray_state != PlayingState.STOPPED:
+			self.sdl_tray_state = PlayingState.STOPPED
+			self.tray_icon_stop()
+
+		text = ""
+		if self.prefs.tray_show_title:
+			tr = self.pctl.playing_object()
+			if tr and tr.title and tr.artist:
+				text = tr.artist + " - " + tr.title
+			elif tr and tr.title:
+				text = tr.title
+			elif self.pctl.playing_state == PlayingState.URL_STREAM:
+				# Stream metadata that couldn't be split into artist/title, else the station name
+				if self.pctl.tag_meta:
+					text = self.pctl.tag_meta
+				elif self.radiobox.loaded_station:
+					text = self.radiobox.loaded_station.title
+			elif tr and tr.filename:
+				text = tr.filename
+
+			if self.pctl.playing_state == PlayingState.STOPPED:
+				text = ""
+
+		if self.sdl_tray_launched and text != self.sdl_tray_text:
+			if text:
+				self.sdl_set_tray_tooltip(text)
+			else:
+				self.sdl_set_tray_tooltip(self.t_title)
+			self.sdl_tray_text = text
 
 	def coll(self, r: list[int]) -> bool:
 		return r[0] < self.inp.mouse_position[0] <= r[0] + r[2] and r[1] <= self.inp.mouse_position[1] <= r[1] + r[3]
@@ -6615,7 +6923,10 @@ class Tauon:
 		corner_icon = self.gui.corner_icon
 		window_size = self.window_size
 
-		corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
+		# The grip triangle would clash with a rounded corner, the resize
+		# hit-zone below still works without it
+		if not self.corner_round_radius():
+			corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
 		corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
 		self.fields.add(corner_rect)
@@ -6645,10 +6956,128 @@ class Tauon:
 
 		colour = colours.window_frame
 
-		ddt.rect((0, 0, window_size[0], 1 * gui.scale), colour)
-		ddt.rect((0, 0, 1 * gui.scale, window_size[1]), colour)
-		ddt.rect((0, window_size[1] - 1 * gui.scale, window_size[0], 1 * gui.scale), colour)
-		ddt.rect((window_size[0] - 1 * gui.scale, 0, 1 * gui.scale, window_size[1]), colour)
+		# When corners are rounded, stop the straight edges short so the
+		# corner arc textures can continue the contour
+		inset = self.corner_round_radius()
+
+		ddt.rect((inset, 0, window_size[0] - inset * 2, 1 * gui.scale), colour)
+		ddt.rect((0, inset, 1 * gui.scale, window_size[1] - inset * 2), colour)
+		ddt.rect((inset, window_size[1] - 1 * gui.scale, window_size[0] - inset * 2, 1 * gui.scale), colour)
+		ddt.rect((window_size[0] - 1 * gui.scale, inset, 1 * gui.scale, window_size[1] - inset * 2), colour)
+
+	def corner_round_radius(self) -> int:
+		"""The window corner radius in pixels, 0 when rounding is inactive"""
+		if not self.prefs.rounded_corners or not self.draw_border or self.corner_textures_failed:
+			return 0
+		gui = self.gui
+		if gui.mode == GuiMode.MINI or gui.fullscreen or gui.maximized:
+			return 0
+		return max(2, round(self.prefs.corner_radius * gui.scale))
+
+	def destroy_corner_textures(self) -> None:
+		for textures in (self.corner_mask_textures, self.corner_border_textures):
+			if textures:
+				for texture in textures:
+					sdl3.SDL_DestroyTexture(texture)
+		self.corner_mask_textures = None
+		self.corner_border_textures = None
+		self.corner_texture_size = (0, 0)
+
+	def _build_corner_textures(self, radius: int, thickness: int) -> bool:
+		"""Generate anti-aliased corner cutout masks and border arcs for each window corner
+
+		The mask textures erase the window corners by multiplying destination
+		alpha, the border textures draw the window frame arc over the contour.
+		"""
+		self.destroy_corner_textures()
+
+		# Draw supersampled then downsample for smooth anti-aliased edges
+		ss = 8
+		size = radius * ss
+
+		cutout = Image.new("L", (size, size), 0)
+		draw = ImageDraw.Draw(cutout)
+		draw.ellipse((0, 0, size * 2, size * 2), fill=255)
+		cutout = cutout.resize((radius, radius), Image.Resampling.LANCZOS)
+
+		arc = Image.new("L", (size, size), 0)
+		draw = ImageDraw.Draw(arc)
+		draw.ellipse((0, 0, size * 2, size * 2), outline=255, width=thickness * ss)
+		arc = arc.resize((radius, radius), Image.Resampling.LANCZOS)
+
+		# dst = dst * srcA, keeps pixels inside the corner circle and erases outside
+		mask_blend = sdl3.SDL_ComposeCustomBlendMode(
+			sdl3.SDL_BLENDFACTOR_ZERO,
+			sdl3.SDL_BLENDFACTOR_SRC_ALPHA,
+			sdl3.SDL_BLENDOPERATION_ADD,
+			sdl3.SDL_BLENDFACTOR_ZERO,
+			sdl3.SDL_BLENDFACTOR_SRC_ALPHA,
+			sdl3.SDL_BLENDOPERATION_ADD,
+		)
+
+		# Top-left, top-right, bottom-left, bottom-right
+		transposes = (None, Image.Transpose.FLIP_LEFT_RIGHT, Image.Transpose.FLIP_TOP_BOTTOM, Image.Transpose.ROTATE_180)
+
+		self.corner_mask_textures = []
+		self.corner_border_textures = []
+		for alpha_image, textures, blend in (
+			(cutout, self.corner_mask_textures, mask_blend),
+			(arc, self.corner_border_textures, sdl3.SDL_BLENDMODE_BLEND),
+		):
+			rgba = Image.new("RGBA", (radius, radius), (255, 255, 255, 0))
+			rgba.putalpha(alpha_image)
+			for transpose in transposes:
+				corner = rgba if transpose is None else rgba.transpose(transpose)
+				g = io.BytesIO()
+				corner.save(g, "PNG")
+				g.seek(0)
+				surface = self.ddt.load_image(g)
+				texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
+				sdl3.SDL_DestroySurface(surface)
+				if not texture or not sdl3.SDL_SetTextureBlendMode(texture, blend):
+					logging.warning(f"Failed to create corner texture: {sdl3.SDL_GetError()}")
+					if texture:
+						sdl3.SDL_DestroyTexture(texture)
+					self.destroy_corner_textures()
+					self.corner_textures_failed = True
+					return False
+				textures.append(texture)
+
+		self.corner_texture_size = (radius, thickness)
+		return True
+
+	def render_rounded_corners(self) -> None:
+		"""Cut out the window corners with anti-aliased alpha masks, then draw the frame arcs
+
+		Called on the backbuffer just before present. Per-frame cost is eight
+		small texture copies, the textures themselves are cached.
+		"""
+		radius = self.corner_round_radius()
+		if not radius:
+			return
+
+		thickness = max(1, round(1 * self.gui.scale))
+		if self.corner_mask_textures is None or self.corner_texture_size != (radius, thickness):
+			if not self._build_corner_textures(radius, thickness):
+				return
+
+		w = self.window_size[0]
+		h = self.window_size[1]
+		positions = ((0, 0), (w - radius, 0), (0, h - radius), (w - radius, h - radius))
+		rect = sdl3.SDL_FRect(0.0, 0.0, float(radius), float(radius))
+
+		for texture, (x, y) in zip(self.corner_mask_textures, positions):
+			rect.x = float(x)
+			rect.y = float(y)
+			sdl3.SDL_RenderTexture(self.renderer, texture, None, rect)
+
+		frame = self.colours.window_frame
+		for texture, (x, y) in zip(self.corner_border_textures, positions):
+			sdl3.SDL_SetTextureColorMod(texture, frame.r, frame.g, frame.b)
+			sdl3.SDL_SetTextureAlphaMod(texture, frame.a)
+			rect.x = float(x)
+			rect.y = float(y)
+			sdl3.SDL_RenderTexture(self.renderer, texture, None, rect)
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
@@ -7877,7 +8306,11 @@ class Tauon:
 			self.milky.projectm.rescan_presets()
 			if not self.milky.projectm.presets:
 				def download_presets() -> None:
-					self.preset_download_box.start()
+					self.preset_download_box.start(
+						title=_("Downloading Milkdrop presets"),
+						status=_("Starting download..."),
+						cancel_detail=_("Milkdrop will still be enabled."),
+					)
 					def dl() -> None:
 						url = "https://github.com/Taiko2k/Tauon/releases/download/Extras/creamingsodav1.zip"
 						assert url
@@ -7898,7 +8331,7 @@ class Tauon:
 								logging.exception("Failed to count installed Milkdrop presets in %s", target_directory)
 								return -1
 
-						def enable_milkdrop(status: str, detail: str = "") -> None:
+						def enable_milkdrop(status: str, detail: str = "", toast_text: str | None = None) -> None:
 							count_before = len(self.milky.projectm.presets)
 							self.prefs.milk = True
 							try:
@@ -7916,7 +8349,7 @@ class Tauon:
 								len(self.milky.projectm.presets),
 								count_installed_presets(),
 							)
-							self.preset_download_box.complete(status, detail)
+							self.preset_download_box.complete(status=status, detail=detail, toast_text=toast_text)
 
 						try:
 							with io.BytesIO() as buffer:
@@ -7936,8 +8369,8 @@ class Tauon:
 										if self.preset_download_box.cancel_requested:
 											logging.info("Preset download cancelled during download after %s bytes", downloaded)
 											enable_milkdrop(
-												_("Preset download cancelled"),
-												_("Milkdrop visualiser enabled."),
+												status=_("Preset download cancelled"),
+												detail=_("Milkdrop visualiser enabled."),
 											)
 											return
 										if not data:
@@ -7977,8 +8410,8 @@ class Tauon:
 										if self.preset_download_box.cancel_requested:
 											logging.info("Preset download cancelled during extraction at index=%s extracted=%s skipped=%s", index, extracted, skipped)
 											enable_milkdrop(
-												_("Preset download cancelled"),
-												_("Milkdrop visualiser enabled."),
+												status=_("Preset download cancelled"),
+												detail=_("Milkdrop visualiser enabled."),
 											)
 											return
 
@@ -8018,7 +8451,11 @@ class Tauon:
 										target_directory,
 									)
 
-							enable_milkdrop(_("Presets ready"), _("Milkdrop visualiser enabled."))
+							enable_milkdrop(
+								status=_("Presets ready"),
+								detail=_("Milkdrop visualiser enabled."),
+								toast_text=_("Download completed"),
+							)
 						except Exception as e:
 							logging.exception("Preset download failed")
 							self.preset_download_box.fail(_("Download failed"), f"{type(e).__name__}: {e}")
@@ -8095,6 +8532,14 @@ class Tauon:
 			#	 self.show_message("No lyrics for this track")
 
 	def get_lyric_fire(self, track_object: TrackClass, silent: bool = False) -> str | None:
+
+		def clear_search_cache(track: TrackClass) -> None:
+			# clear cached search data (user can search by lyrics immediately)
+			self.search_string_cache.pop(track.index, None)
+			self.search_dia_string_cache.pop(track.index, None)
+			self.search_field_cache.pop(track.index, None)
+			self.search_dia_field_cache.pop(track.index, None)
+
 		self.lyrics_ren.lyrics_position = 0
 
 		if not self.prefs.lyrics_enables:
@@ -8151,12 +8596,14 @@ class Tauon:
 						if lyrics:
 							logging.info(f"Found lyrics from {name}")
 							track_object.lyrics = lyrics
+							clear_search_cache(track_object)
 							self.gui.lyrics_editor_update_now[0] = True
 							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
 								self.write_lyrics(track_object)
 						if synced:
 							logging.info("Found synced lyrics")
 							track_object.synced = synced
+							clear_search_cache(track_object)
 							self.gui.lyrics_editor_update_now[1] = True
 							# TODO (Flynn): SYLT
 							if not self.gui.timed_lyrics_edit_view:
@@ -8378,14 +8825,15 @@ class Tauon:
 				audio = mutagen.id3.ID3(track.fullpath)
 				if audio.getall("USLT"):
 					audio.getall("USLT")[0].text = lyrics
+					audio.getall("USLT")[0].encoding = 3
 				else:
-					audio.add( mutagen.id3.USLT( text=lyrics ) )
+					audio.add( mutagen.id3.USLT( encoding=3,text=lyrics ) )
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
-				audio["LYRICS"] = lyrics
+				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
 			elif track.file_ext in ("OPUS", "OGG"):
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-				audio["LYRICS"] = lyrics
+				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
 			elif track.file_ext in ("APE","WV","TTA"):
 				audio = mutagen.apev2.APEv2(track.fullpath)
 				audio["Lyrics"] = lyrics
@@ -8405,13 +8853,17 @@ class Tauon:
 			if stop:
 				self.pctl.jump_time = self.pctl.decode_time
 				self.pctl.stop(block=True)
-			audio.save()
+			try:
+				lyrics.encode('latin1')
+				audio.save()
+			except UnicodeEncodeError:
+				audio.save(v1=0)
 			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 			if resume:
 				self.pctl.play()
 
 		except Exception:
-			logging.exception()
+			logging.exception("Could not write lyrics to file")
 			if loud:
 				self.show_message(
 					_("Could not write lyrics to file"),
@@ -9321,7 +9773,7 @@ class Tauon:
 		self.tree_view_box.clear_target_pl(pl)
 
 	def year_sort(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
-		playlist = custom_list or self.pctl.multi_playlist[pl].playlist_ids
+		playlist = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 		plt: list[tuple[list[int], str, str]] = []
 		pl2: list[int] = []
 		artist = ""
@@ -9350,7 +9802,7 @@ class Tauon:
 			album.append(playlist[p])
 			t = 1
 
-			while t + p < len(playlist) - 1 and self.get_object(playlist[p + t]).parent_folder_path == on:
+			while t + p < len(playlist) and self.get_object(playlist[p + t]).parent_folder_path == on:
 				album.append(playlist[p + t])
 				t += 1
 
@@ -9736,7 +10188,7 @@ class Tauon:
 	def gen_folder_top(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | list[tuple[list[int], int]] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
-		if len(source) < 3:
+		if not source:
 			return []
 
 		sets: list[list[int]] = []
@@ -9794,7 +10246,7 @@ class Tauon:
 	def gen_folder_top_rating(self, pl: int, get_sets: bool = False, custom_list: list[int] | None = None) -> list[int] | None:
 		source = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
-		if len(source) < 3:
+		if not source:
 			return []
 
 		sets: list[list[int]] = []
@@ -9892,7 +10344,7 @@ class Tauon:
 				for track in tracks:
 					if type(track.track_total) is int or (type(track.track_total) is str and track.track_total.isdigit()):
 						mx = max(mx, int(track.track_total))
-				r = list(range(int(mi), int(mx)))
+				r = list(range(int(mi), int(mx) + 1))
 				for track in tracks:
 					if int(track.track_number) in r:
 						r.remove(int(track.track_number))
@@ -11039,54 +11491,69 @@ class Tauon:
 		new_parent_path = os.path.join(re, new)
 		logging.info(new_parent_path)
 
-		pre_state = 0
+		if os.path.normpath(new_parent_path) == os.path.normpath(old):
+			self.show_message(_("The folder already has that name."))
+			return
 
-		for key, object in self.pctl.master_library.items():
-			if object.fullpath == "":
+		if os.path.exists(new_parent_path):
+			self.show_message(_("Rename Failed."), _("A folder with that name already exists"), mode="warning")
+			return
+
+		def path_contains(parent: str, child: str) -> bool:
+			try:
+				parent = os.path.normpath(parent)
+				child = os.path.normpath(child)
+				return child != parent and os.path.commonpath([parent, child]) == parent
+			except ValueError:
+				return False
+
+		pre_state = 0
+		affected_tracks: list[tuple[int, TrackClass, str, str, str]] = []
+
+		for key, track_object in self.pctl.master_library.items():
+			if track_object.fullpath == "":
 				continue
 
-			if old == object.parent_folder_path:
-				new_fullpath = os.path.join(new_parent_path, object.filename)
-
-				if os.path.normpath(new_parent_path) == os.path.normpath(old):
-					self.show_message(_("The folder already has that name."))
-					return
-
-				if os.path.exists(new_parent_path):
-					self.show_message(_("Rename Failed."), _("A folder with that name already exists"), mode="warning")
-					return
-
-				if key == self.pctl.track_queue[self.pctl.queue_step] and self.pctl.playing_state != PlayingState.STOPPED:
-					pre_state = self.pctl.stop(True)
-
-				object.parent_folder_name = new
-				object.parent_folder_path = new_parent_path
-				object.fullpath = new_fullpath
-
-				self.search_string_cache.pop(object.index, None)
-				self.search_dia_string_cache.pop(object.index, None)
-				self.search_field_cache.pop(object.index, None)
-				self.search_dia_field_cache.pop(object.index, None)
+			if old == track_object.parent_folder_path:
+				new_fullpath = os.path.join(new_parent_path, track_object.filename)
+				affected_tracks.append((key, track_object, new, new_parent_path, new_fullpath))
 
 			# Fix any other tracks paths that contain the old path
-			if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
-					and os.path.normpath(object.fullpath)[len(old)] in ("/", "\\"):
-				object.fullpath = os.path.join(new_parent_path, object.fullpath[len(old):].lstrip("\\/"))
-				object.parent_folder_path = os.path.join(new_parent_path, object.parent_folder_path[len(old):].lstrip("\\/"))
+			elif path_contains(old, track_object.fullpath):
+				new_fullpath = os.path.join(new_parent_path, os.path.relpath(track_object.fullpath, old))
+				new_folder_path = os.path.join(new_parent_path, os.path.relpath(track_object.parent_folder_path, old))
+				affected_tracks.append((
+					key,
+					track_object,
+					track_object.parent_folder_name,
+					new_folder_path,
+					new_fullpath,
+				))
 
-				self.search_string_cache.pop(object.index, None)
-				self.search_dia_string_cache.pop(object.index, None)
-				self.search_field_cache.pop(object.index, None)
-				self.search_dia_field_cache.pop(object.index, None)
+		if self.pctl.playing_state != PlayingState.STOPPED and self.pctl.track_queue:
+			playing_track = self.pctl.track_queue[self.pctl.queue_step]
+			if any(key == playing_track for key, *_ in affected_tracks):
+				pre_state = self.pctl.stop(True)
 
-		if new_parent_path is not None:
-			try:
-				os.rename(old, new_parent_path)
-				logging.info(new_parent_path)
-			except Exception:
-				logging.exception("Rename failed, something went wrong!")
-				self.show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode="error")
-				return
+		try:
+			os.rename(old, new_parent_path)
+			logging.info(new_parent_path)
+		except Exception:
+			logging.exception("Rename failed, something went wrong!")
+			self.show_message(_("Rename Failed!"), _("Something went wrong, sorry."), mode="error")
+			if pre_state == 1:
+				self.pctl.revert()
+			return
+
+		for key, track_object, parent_folder_name, parent_folder_path, fullpath in affected_tracks:
+			track_object.parent_folder_name = parent_folder_name
+			track_object.parent_folder_path = parent_folder_path
+			track_object.fullpath = fullpath
+
+			self.search_string_cache.pop(key, None)
+			self.search_dia_string_cache.pop(key, None)
+			self.search_field_cache.pop(key, None)
+			self.search_dia_field_cache.pop(key, None)
 
 		self.show_message(_("Folder renamed."), _("Renamed to: {name}").format(name=new), mode="done")
 
@@ -11810,11 +12277,13 @@ class Tauon:
 			key = self.key_cue
 		if name == "ID":
 			key = self.key_track_id
+		if name == "=/=":
+			key = self.key_modify_date
 
 		if custom_list is None:
 			if key is not None:
 				if ns:
-					key = natsort.natsort_keygen(key=key, alg=natsort.PATH)
+					key = natsort.natsort_keygen(key=key, alg=natsort.PATH|natsort.U|natsort.I)
 
 				playlist.sort(key=key, reverse=invert)
 
@@ -14239,6 +14708,7 @@ class Tauon:
 					sartist = t.misc.get("artist_sort", "").lower()
 					stem_raw = os.path.dirname(t.parent_folder_path)
 					stem_search = stem_raw.lower().replace("-", "")
+					lyrics = t.lyrics.lower().replace("-", "") + " " + t.synced.lower().replace("-", "")
 					search_field_cache[track] = (
 						title,
 						artist,
@@ -14252,13 +14722,14 @@ class Tauon:
 						sartist,
 						stem_search,
 						stem_raw,
+						lyrics,
 					)
 				else:
-					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw = fields
+					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw, lyrics = fields
 
 				if cache_string is None:
 					if not dia_mode:
-						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search
+						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics
 
 					if cn_mode:
 						cache_string = search_string_cache.get(track)
@@ -14282,6 +14753,7 @@ class Tauon:
 						d_album = unidecode(album)
 						d_filename = unidecode(filename)
 						d_sartist = unidecode(sartist)
+						d_lyrics = unidecode(lyrics)
 						search_dia_field_cache[track] = (
 							d_title,
 							d_artist,
@@ -14290,9 +14762,10 @@ class Tauon:
 							d_album,
 							d_filename,
 							d_sartist,
+							d_lyrics,
 						)
 					else:
-						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist = dia_fields
+						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist, d_lyrics = dia_fields
 
 					title = d_title
 					artist = d_artist
@@ -14301,9 +14774,10 @@ class Tauon:
 					album = d_album
 					filename = d_filename
 					sartist = d_sartist
+					lyrics = d_lyrics
 
 					if cache_string is None:
-						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search
+						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics
 
 				if len(s_text) > 2 and s_text in stem_search:
 					if stem_raw in metas:
@@ -14442,6 +14916,12 @@ class Tauon:
 					elif t not in tracks:
 						temp_results.append([2, t.title, track, playlist.uuid_int, 1])
 						tracks.add(t)
+				else:
+					val = search_magic_beefy(s_text, lyrics)
+					if val > 90:
+						if t not in tracks:
+							temp_results.append([9, t.title, track, playlist.uuid_int, val-100])
+							tracks.add(t)
 
 				br += 1
 				if br > 800:
@@ -14559,7 +15039,9 @@ class Tauon:
 			return \
 				code is None or \
 				code == "" or \
-				code.startswith(("self", "jelly", "plex", "tau", "air", "sal"))
+				code.startswith((
+					"self", "jelly", "plex", "tau", "air", "sal",
+					"tpl", "tfa", "tft", "tar", "tmix"))
 
 		def get_search_results(query: str, *, all_folders: bool = False) -> list[list[int | str | None]]:
 			key = (query, all_folders)
@@ -14704,7 +15186,7 @@ class Tauon:
 				playlist = self.gen_last_imported_folders(0, playlist)
 
 			elif cm == "ia<":
-				playlist = self.gen_last_imported_folders(0, playlist, reverse=True)
+				playlist = self.gen_last_imported_folders(0, playlist, reverse=False)
 
 			elif cm == "m>":
 				playlist = self.gen_last_modified(0, playlist)
@@ -15678,6 +16160,12 @@ class Tauon:
 
 	def download_ffmpeg(self, _x) -> None:
 		"""Download FFmpeg portable binary to User Data dir, supports x64 Windows and Linux"""
+		self.preset_download_box.start(
+			title=_("Downloading FFmpeg"),
+			status=_("Starting download..."),
+			cancel_detail=_("FFmpeg will not be installed."),
+		)
+
 		def go() -> None:
 			if self.windows:
 				url = "https://github.com/GyanD/codexffmpeg/releases/download/8.0.1/ffmpeg-8.0.1-essentials_build.zip"
@@ -15685,10 +16173,10 @@ class Tauon:
 			elif not self.macos:
 				url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-03-02-13-06/ffmpeg-n8.0.1-66-g27b8d1a017-linux64-gpl-8.0.tar.xz"
 				sha = "e6f31af6c1ef49ceec8361185d70283ea8ad6c8ceed652d5dee66ec174a11eea"
-			self.show_message(_("Starting download..."))
 			with io.BytesIO() as f:
 				try:
 					with requests.get(url, stream=True, timeout=1800) as r: # Windows ffmpeg is 101MB, Linux 130MB, give it half an hour in case someone is willing to suffer it on a slow connection
+						r.raise_for_status()
 						dl = 0
 						total_bytes = int(r.headers.get("Content-Length", 0))
 						if self.windows:
@@ -15697,24 +16185,43 @@ class Tauon:
 							fallback_mb = 130
 						total_mb = round(total_bytes / 1000 / 1000) if total_bytes else fallback_mb
 
-						for data in r.iter_content(chunk_size=4096):
+						for data in r.iter_content(chunk_size=65536):
+							if self.preset_download_box.cancel_requested:
+								self.preset_download_box.complete(
+									status=_("FFmpeg download cancelled"),
+									detail=_("FFmpeg was not installed."),
+								)
+								return
+							if not data:
+								continue
 							dl += len(data)
 							f.write(data)
-							mb = round(dl / 1000 / 1000)
-							if mb % 5 == 0:
-								self.show_message(_("Downloading... {MB}/{total_mb}").format(MB=mb, total_mb=total_mb))
+							mb = dl / 1000 / 1000
+							if total_bytes:
+								progress = min(0.95, dl / total_bytes * 0.95)
+							else:
+								progress = min(0.95, mb / total_mb * 0.95)
+							detail = f"{mb:.1f} / {total_mb:.1f} MB"
+							self.preset_download_box.update(progress, _("Downloading FFmpeg..."), detail)
 				except Exception as e:
 					logging.exception("Download failed")
-					self.show_message(_("Download failed"), str(e), mode="error")
+					self.preset_download_box.fail(_("Download failed"), f"{type(e).__name__}: {e}")
 					return
 
 				f.seek(0)
+				self.preset_download_box.update(0.96, _("Verifying download..."))
 				checksum = hashlib.sha256(f.read()).hexdigest()
 				if checksum != sha:
-					self.show_message(_("Download completed but checksum failed"), mode="error")
+					self.preset_download_box.fail(_("Download completed but checksum failed"))
 					logging.error(f"Checksum was {checksum} but expected {sha}")
 					return
-				self.show_message(_("Download completed. Extracting..."))
+				if self.preset_download_box.cancel_requested:
+					self.preset_download_box.complete(
+						status=_("FFmpeg download cancelled"),
+						detail=_("FFmpeg was not installed."),
+					)
+					return
+				self.preset_download_box.update(0.98, _("Extracting FFmpeg..."))
 				f.seek(0)
 				if self.windows:
 					z = zipfile.ZipFile(f, mode="r")
@@ -15731,6 +16238,12 @@ class Tauon:
 
 					with tarfile.open(fileobj=f, mode="r:xz") as tar:
 						for member in tar.getmembers():
+							if self.preset_download_box.cancel_requested:
+								self.preset_download_box.complete(
+									status=_("FFmpeg download cancelled"),
+									detail=_("FFmpeg was not installed."),
+								)
+								return
 							filename = Path(member.name).name
 
 							if filename in wanted and member.isfile():
@@ -15738,7 +16251,10 @@ class Tauon:
 								tar.extract(member, path=output_dir)
 
 
-			self.show_message(_("FFmpeg fetch complete"), mode="done")
+			self.preset_download_box.complete(
+				status=_("FFmpeg fetch complete"),
+				toast_text=_("Download completed"),
+			)
 
 		shooter(go)
 
@@ -15754,7 +16270,7 @@ class Tauon:
 		rat = self.album_star_store.get_rating(n_track) if album else self.star_store.get_rating(n_track.index)
 		display_rat = 0 if hint_only else rat
 
-		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(16 * self.gui.scale))
+		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(24 * self.gui.scale))
 		boundary = 3 * self.gui.scale
 		tracklist_top = self.gui.playlist_top + boundary
 		tracklist_bottom = self.window_size[1] - self.gui.panelBY - boundary
@@ -16540,7 +17056,7 @@ class Tauon:
 				current_date = tr.date
 				current_artist = tr.artist
 
-		if return_playlist > -1 or custom_list:
+		if return_playlist > -1 or custom_list is not None:
 			return dex
 
 		self.album_dex = dex
@@ -17759,6 +18275,7 @@ class Tauon:
 		# view_prefs['pl-follow'] = pl_follow
 		view_prefs["scroll-enable"] = prefs.scroll_enable
 		view_prefs["smooth-scroll-enable"] = prefs.smooth_scroll_enable
+		view_prefs["smooth-scroll-speed"] = prefs.smooth_scroll_speed
 		view_prefs["break-enable"] = prefs.break_enable
 		view_prefs["append-date"] = prefs.append_date
 
@@ -18245,17 +18762,26 @@ class Tauon:
 		self.prefs.show_rym ^= True
 		return None
 
+	def show_rym_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_rym
+
 	def toggle_band(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.show_band
 		self.prefs.show_band ^= True
 		return None
 
+	def show_band_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_band
+
 	def toggle_wiki(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.show_wiki
 		self.prefs.show_wiki ^= True
 		return None
+
+	def show_wiki_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_wiki
 
 	# def toggle_show_discord(self, mode: int = 0) -> bool:
 	# 	if mode == 1:
@@ -18269,6 +18795,9 @@ class Tauon:
 			return self.prefs.show_gen
 		self.prefs.show_gen ^= True
 		return None
+
+	def show_gen_menu_item(self, _reference: object) -> bool:
+		return self.prefs.show_gen
 
 	def toggle_dim_albums(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -18628,9 +19157,9 @@ class Tauon:
 		self.prefs.use_tray ^= True
 		if not self.prefs.use_tray:
 			self.prefs.min_to_tray = False
-			self.gnome.hide_indicator()
+			self.hide_tray()
 		else:
-			self.gnome.show_indicator()
+			self.show_tray()
 		return None
 
 	def toggle_text_tray(self, mode: int = 0) -> bool | None:
@@ -18670,6 +19199,14 @@ class Tauon:
 			sdl3.SDL_SetWindowBordered(self.t_window, True)
 		return None
 
+	def toggle_rounded_corners(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.rounded_corners
+
+		self.prefs.rounded_corners ^= True
+		self.gui.update += 1
+		return None
+
 	def toggle_break(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.break_enable ^ True
@@ -18688,7 +19225,10 @@ class Tauon:
 
 	def toggle_smooth_scroll(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.smooth_scroll_enable
+			return self.smooth_scroll.enabled()
+
+		if self.prefs.macos:
+			return None
 
 		self.prefs.smooth_scroll_enable ^= True
 		self.gui.pl_update = 1
@@ -19246,9 +19786,10 @@ class Tauon:
 		if pl is not None:
 			playlist = pctl.multi_playlist[pl].playlist_ids
 
-		if self.album_info_cache_key != (pctl.selected_in_playlist, pctl.playing_object()):  # Premature optimisation?
+		cache_key = (pctl.selected_in_playlist, pctl.playing_object(), pctl.playlist_playing_position)
+		if self.album_info_cache_key != cache_key:  # Premature optimisation?
 			self.album_info_cache.clear()
-			self.album_info_cache_key = (pctl.selected_in_playlist, pctl.playing_object())
+			self.album_info_cache_key = cache_key
 
 		if position in self.album_info_cache:
 			return self.album_info_cache[position]
@@ -19276,8 +19817,20 @@ class Tauon:
 			select = True
 
 		if len(pctl.track_queue) > 0 and p < len(playlist):
-			if pctl.track_queue[pctl.queue_step] in playlist[start:end]:
+			playing_track = pctl.track_queue[pctl.queue_step]
+			if playing_track in playlist[start:end]:
 				playing = True
+				# If the album appears more than once in the playlist, only
+				# highlight the instance the playing position is within
+				viewing_pl = pctl.active_playlist_viewing if pl is None else pl
+				pp = pctl.playlist_playing_position
+				if (
+					viewing_pl == pctl.active_playlist_playing
+					and 0 <= pp < len(playlist)
+					and playlist[pp] == playing_track
+					and not start <= pp < end
+				):
+					playing = False
 
 		self.album_info_cache[position] = playing, album, select
 		return playing, album, select
@@ -19490,7 +20043,7 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.resource.library.section("Music").albums()
+		albums = self.resource.library.section(self.prefs.plex_library).albums()
 		self.gui.to_got = 0
 
 		for album in albums:
@@ -19668,60 +20221,6 @@ class TauService:
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		self.processing = False
 		return None
-
-class STray:
-
-	def __init__(self, tauon: Tauon) -> None:
-		self.tauon             = tauon
-		self.gui               = tauon.gui
-		self.pctl              = tauon.pctl
-		self.t_window          = tauon.t_window
-		self.install_directory = tauon.install_directory
-		self.systray: SysTrayIcon | None = None
-		self.active = False
-
-	def up(self, _: SysTrayIcon) -> None:
-		sdl3.SDL_ShowWindow(self.t_window)
-		sdl3.SDL_RaiseWindow(self.t_window)
-		sdl3.SDL_RestoreWindow(self.t_window)
-		self.gui.lowered = False
-
-	def down(self) -> None:
-		if self.active:
-			sdl3.SDL_HideWindow(self.t_window)
-
-	def advance(self, _: SysTrayIcon) -> None:
-		self.pctl.advance()
-
-	def back(self, _: SysTrayIcon) -> None:
-		self.pctl.back()
-
-	def pause(self, _: SysTrayIcon) -> None:
-		self.pctl.play_pause()
-
-	def track_stop(self, _: SysTrayIcon) -> None:
-		self.pctl.stop()
-
-	def on_quit_callback(self, _: SysTrayIcon) -> None:
-		self.tauon.exit("Exit called from tray.")
-
-	def start(self) -> None:
-		menu_options = (
-			("Show", None, self.up),
-			("Play/Pause", None, self.pause),
-			("Stop", None, self.track_stop),
-			("Forward", None, self.advance),
-			("Back", None, self.back))
-		self.systray = SysTrayIcon(
-			str(self.install_directory / "assets" / "icon.ico"), "Tauon Music Box",
-			menu_options, on_quit=self.on_quit_callback)
-		self.systray.start()
-		self.active = True
-		self.gui.tray_active = True
-
-	def stop(self) -> None:
-		self.systray.shutdown()
-		self.active = False
 
 class GStats:
 	def __init__(self, tauon: Tauon) -> None:
@@ -19905,6 +20404,7 @@ class Drawing:
 			background_highlight_colour = self.colours.box_button_background_highlight
 
 		click = False
+		text_y = rect[1] + rect[3] / 2 - 9 * self.gui.scale
 
 		if press is None:
 			press = self.inp.mouse_click
@@ -19918,7 +20418,7 @@ class Drawing:
 			#	 background_highlight_colour = None
 
 			self.ddt.text(
-				(rect[0] + int(rect[2] / 2), rect[1] + (rect[3]-6*self.gui.scale)/4, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
+				(rect[0] + int(rect[2] / 2), text_y, 2), text, text_highlight_colour, font, bg=background_highlight_colour)
 			if press:
 				click = True
 		else:
@@ -19926,7 +20426,7 @@ class Drawing:
 			if background_highlight_colour.a != 255:
 				background_colour = None
 			self.ddt.text(
-				(rect[0] + int(rect[2] / 2), rect[1] + (rect[3]-6*self.gui.scale)/4, 2), text, text_colour, font, bg=background_colour)
+				(rect[0] + int(rect[2] / 2), text_y, 2), text, text_colour, font, bg=background_colour)
 		return click
 
 class DropShadow:
@@ -20170,6 +20670,8 @@ class TimedLyricsRen:
 				continue
 
 		self.data = sorted(self.data, key=lambda x: x[0])
+		if not self.data:
+			return None
 		self.line_heights = []
 		self.recenter_timeout.set()
 		self.temp_line = -1
@@ -20582,17 +21084,18 @@ class TextBox2:
 				t_len += self.ddt.get_text_w(self.gui.editline, font)
 			if not click and not self.down_lock:
 				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
-				if self.cursor_position == 0 or cursor_x < self.offset + round(
-						15 * self.gui.scale) or cursor_x > self.offset + width:
-					if t_len > width:
-						self.offset = t_len - width
-
-						if cursor_x < self.offset:
-							self.offset = cursor_x - round(15 * self.gui.scale)
-
-							self.offset = max(self.offset, 0)
-					else:
-						self.offset = 0
+				margin = round(15 * self.gui.scale)
+				max_offset = max(t_len - width, 0)
+				if self.cursor_position == len(self.text):
+					self.offset = 0
+				elif self.cursor_position == 0:
+					self.offset = max_offset
+				elif cursor_x < self.offset + margin:
+					self.offset = max(cursor_x - margin, 0)
+				elif cursor_x > self.offset + width:
+					self.offset = min(cursor_x - width, max_offset)
+				else:
+					self.offset = min(max(self.offset, 0), max_offset)
 
 			x -= self.offset
 
@@ -22619,14 +23122,21 @@ class RenameTrackBox:
 			r_todo = [self.target_track_id]
 
 		self.ddt.text((x + 10 * self.gui.scale, y + 8 * self.gui.scale), _("Track Renaming"), self.colours.grey(230), 213)
+		input_h = 23 * self.gui.scale
 
 		# if draw.button("Default", x + 230 * gui.scale, y + 8 * gui.scale,
 		if self.rename_files.text != self.prefs.rename_tracks_template and self.draw.button(
-			_("Default"), x + w - 85 * self.gui.scale, y + h - 35 * self.gui.scale, 70 * self.gui.scale):
-			self.rename_files.text = self.prefs.rename_tracks_template
+			_("Default"), x + w - 85 * self.gui.scale, y + h - 35 * self.gui.scale, 70 * self.gui.scale, input_h):
+			self.rename_files.set_text(self.prefs.rename_tracks_template)
+			self.rename_files.offset = 0
 
 		# ddt.draw_text((x + 14, y + 40,), NRN + cursor, self.colours.grey(150), 12)
-		self.rename_files.draw(x + 14 * self.gui.scale, y + 39 * self.gui.scale, self.colours.box_input_text, width=300)
+		self.rename_files.draw(
+			x + 14 * self.gui.scale,
+			y + 39 * self.gui.scale,
+			self.colours.box_input_text,
+			width=300 * self.gui.scale,
+		)
 		NRN = self.rename_files.text
 
 		self.ddt.rect_s(
@@ -22674,7 +23184,7 @@ class RenameTrackBox:
 		label = _("Write") + " (" + str(len(r_todo)) + ")"
 
 		if self.draw.button(
-			label, x + (8 + 300 + 10) * self.gui.scale, y + 36 * self.gui.scale, 80 * self.gui.scale,
+			label, x + (8 + 300 + 10) * self.gui.scale, y + 36 * self.gui.scale, 80 * self.gui.scale, input_h,
 			text_highlight_colour=self.colours.grey(255), background_highlight_colour=colour_warn,
 			tooltip=_("Physically renames all the tracks in the folder")) or self.inp.level_2_enter:
 
@@ -22695,7 +23205,7 @@ class RenameTrackBox:
 					logging.info("Renaming...")
 
 					star = self.star_store.full_get(item)
-					self.star_store.remove(item)
+					star_key = self.star_store.key(item)
 
 					oldpath = self.pctl.master_library[item].fullpath
 
@@ -22727,6 +23237,7 @@ class RenameTrackBox:
 					self.tauon.search_dia_field_cache.pop(item, None)
 
 					if star is not None:
+						self.star_store.db.pop(star_key, None)
 						self.star_store.insert(item, star)
 
 				except Exception:
@@ -23524,6 +24035,47 @@ class SearchOverlay:
 
 		self.tauon.add_album_to_queue(track_id, playlist.index(track_id), playlist_id)
 
+	def tracks_for_result(self, item: list[int | str | None]) -> list[int]:
+		n = item[0]
+		match n:
+			case 0:
+				if isinstance(item[1], str):
+					return self.click_artist(item[1], get_list=True) or []
+			case 1:
+				if isinstance(item[2], int):
+					for k, pl in enumerate(self.pctl.multi_playlist):
+						if item[2] in pl.playlist_ids:
+							return self.tauon.get_album_from_first_track(pl.playlist_ids.index(item[2]), item[2], k)
+			case 2:
+				if isinstance(item[2], int):
+					return [item[2]]
+			case 3:
+				if isinstance(item[1], str):
+					return self.click_genre(item[1], get_list=True) or []
+			case 5:
+				if isinstance(item[1], str):
+					return self.click_meta(item[1], get_list=True) or []
+			case 6:
+				if isinstance(item[1], str):
+					return self.click_composer(item[1], get_list=True) or []
+			case 7:
+				if isinstance(item[1], str):
+					return self.click_year(item[1], get_list=True) or []
+			case 8:
+				if isinstance(item[3], int):
+					pl = self.pctl.id_to_pl(item[3])
+					if pl is not None:
+						return list(self.pctl.multi_playlist[pl].playlist_ids)
+		return []
+
+	def toast_playlist_add(self, added_count: int) -> None:
+		playlist_name = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title
+		if added_count == 1:
+			text = _("Added 1 track to playlist: {name}").format(name=playlist_name)
+		else:
+			text = _("Added {N} tracks to playlist: {name}").format(N=added_count, name=playlist_name)
+		self.tauon.toast(text, duration=2.5)
+
 	def render_help_legend(self) -> None:
 		gui = self.gui
 		icon_size = round(26 * gui.scale)
@@ -23595,12 +24147,13 @@ class SearchOverlay:
 		prefs = self.prefs
 		inp   = self.inp
 		gui   = self.gui
+		control_down = inp.key_ctrl_down or inp.key_rctrl_down
 
 		if self.active is False:
 			# Activate search overlay on key presses
 			if prefs.search_on_letter and inp.input_text and gui.layer_focus == 0 and \
 					not inp.key_lalt and not inp.key_ralt and \
-					not inp.key_ctrl_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
+					not control_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
 					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
@@ -23653,8 +24206,45 @@ class SearchOverlay:
 				mouse_change = True
 			# mouse_change = True
 
+			overlay_background = ColourRGBA(12, 12, 12, 255)
+			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
 			self.ddt.rect((x, y, w, h), ColourRGBA(3, 3, 3, 235))
-			self.ddt.text_background_colour = ColourRGBA(12, 12, 12, 255)
+			if control_down:
+				badge_margin = round(14 * gui.scale) + 5
+				badge_pad = round(5 * gui.scale)
+				badge_h = round(20 * gui.scale)
+				badge_text_y = round(18 * gui.scale)
+				icon_size = round(8 * gui.scale)
+				icon_thickness = max(round(2 * gui.scale), 1)
+				icon_gap = round(5 * gui.scale)
+				badge_text = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title
+				max_badge_w = max(round(120 * gui.scale), self.window_size[0] - badge_margin * 2)
+				badge_w = min(
+					icon_size + icon_gap + self.ddt.get_text_w(badge_text, 312) + badge_pad * 2,
+					max_badge_w,
+				)
+				badge_rect = (self.window_size[0] - badge_margin - badge_w, badge_margin, badge_w, badge_h)
+				self.ddt.rect(badge_rect, track_in_bar_colour)
+				icon_x = badge_rect[0] + badge_pad
+				icon_y = badge_rect[1] + (badge_h - icon_size) // 2
+				self.ddt.rect(
+					(icon_x, icon_y + (icon_size - icon_thickness) // 2, icon_size, icon_thickness),
+					overlay_background,
+				)
+				self.ddt.rect(
+					(icon_x + (icon_size - icon_thickness) // 2, icon_y, icon_thickness, icon_size),
+					overlay_background,
+				)
+				self.ddt.text_background_colour = track_in_bar_colour
+				self.ddt.text(
+					(icon_x + icon_size + icon_gap, badge_text_y),
+					badge_text,
+					overlay_background,
+					312,
+					max_w=badge_rect[2] - badge_pad * 2 - icon_size - icon_gap,
+					bg=track_in_bar_colour,
+				)
+			self.ddt.text_background_colour = overlay_background
 
 
 			input_text_x = 80 * gui.scale
@@ -23775,7 +24365,6 @@ class SearchOverlay:
 			inp.key_return_press = False
 
 			bar_colour = ColourRGBA(140, 80, 240, 255)
-			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
 
 			self.on = max(self.on, 0)
 			self.on = min(len(self.results) - 1, self.on)
@@ -23822,6 +24411,7 @@ class SearchOverlay:
 					6: "Composer",
 					7: "Year",
 					8: "Playlist",
+					9: "Lyrics",
 				}
 				type_colours = {
 					0:  ColourRGBA(250, 140, 190, 255),  # Artist
@@ -23832,6 +24422,7 @@ class SearchOverlay:
 					6:  ColourRGBA(180, 250, 190, 255),  # Composer
 					7:  ColourRGBA(250, 50,  140, 255),   # Year
 					8:  ColourRGBA(100, 210, 250, 255),  # Playlist
+					9:  ColourRGBA(250, 220, 190, 255),  # Track from lyrics
 				}
 				if n not in names:
 					name = "NYI"
@@ -23854,11 +24445,11 @@ class SearchOverlay:
 				if fade == 1:
 					self.ddt.rect((highlight_x, yy + pad, 4 * gui.scale, height), bar_colour)
 				if n in (2,):
-					if inp.key_ctrl_down and item[2] in self.pctl.default_playlist:
+					if control_down and item[2] in self.pctl.default_playlist:
 						self.ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
 
 				# Type text
-				if n in (0, 3, 5, 6, 7, 8):
+				if n in (0, 3, 5, 6, 7, 8, 9):
 					self.ddt.text((thumbnail_rx, yy + pad + round(3 * gui.scale), 1), names[n], type_colours[n], 214)
 
 				# Thumbnail
@@ -23877,7 +24468,7 @@ class SearchOverlay:
 						self.ddt.text(
 							(xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
 							ColourRGBA(255, 255, 255, int(255 * fade) // 2), 313)
-				if n == 2:  # Local library track
+				if n in (2,9,):  # Local library track
 					track = self.pctl.get_track(item[2])
 					title_val = track.title or clean_string(track.filename)
 					artist_val = track.artist
@@ -23949,7 +24540,7 @@ class SearchOverlay:
 						gui.update = 2
 
 					if gui.level_2_click:
-						if inp.key_ctrl_down:
+						if control_down:
 							extend = True
 						else:
 							go = True
@@ -23959,7 +24550,7 @@ class SearchOverlay:
 						show = True
 						clear = True
 
-					if inp.middle_click and n in (1, 2):
+					if inp.middle_click and n in (1, 2, 9):
 						queue_result = True
 						inp.middle_click = False
 
@@ -23981,34 +24572,18 @@ class SearchOverlay:
 							self.queue_album_result(item[2], item[3])
 						case 2:
 							self.queue_track_result(item[2], item[3])
+						case 9:
+							self.queue_track_result(item[2], item[3])
 				elif extend:
-					match n:
-						case 0:
-							self.pctl.default_playlist.extend(self.click_artist(item[1], get_list=True))
-						case 1:
-							for k, pl in enumerate(self.pctl.multi_playlist):
-								if item[2] in pl.playlist_ids:
-									self.pctl.default_playlist.extend(
-										self.tauon.get_album_from_first_track(pl.playlist_ids.index(item[2]), item[2], k))
-									break
-						case 2:
-							self.pctl.default_playlist.append(item[2])
-						case 3:
-							self.pctl.default_playlist.extend(self.click_genre(item[1], get_list=True))
-						case 5:
-							self.pctl.default_playlist.extend(self.click_meta(item[1], get_list=True))
-						case 6:
-							self.pctl.default_playlist.extend(self.click_composer(item[1], get_list=True))
-						case 7:
-							self.pctl.default_playlist.extend(self.click_year(item[1], get_list=True))
-						case 8:
-							pl = self.pctl.id_to_pl(item[3])
-							if pl is not None:
-								self.pctl.default_playlist.extend(self.pctl.multi_playlist[pl].playlist_ids)
-					gui.pl_update += 1
+					tracks = self.tracks_for_result(item)
+					if tracks:
+						self.pctl.default_playlist.extend(tracks)
+						self.tauon.reload_albums(True)
+						self.pctl.notify_database_changed()
+						self.toast_playlist_add(len(tracks))
 				elif show:
 					match n:
-						case 0 | 1 | 2 | 3 | 5 | 6 | 7:
+						case 0 | 1 | 2 | 3 | 5 | 6 | 7 | 9:
 							self.pctl.show_current(index=item[2], playing=False)
 
 						case 8:
@@ -24019,7 +24594,7 @@ class SearchOverlay:
 					match n:
 						case 0:
 							self.click_artist(item[1])
-						case 1 | 2:
+						case 1 | 2 | 9:
 							self.click_album(item[2])
 							self.pctl.show_current(index=item[2])
 							self.pctl.playlist_view_position = self.pctl.selected_in_playlist
@@ -24035,7 +24610,7 @@ class SearchOverlay:
 							pl = self.pctl.id_to_pl(item[3])
 							if pl is not None:
 								self.pctl.switch_playlist(pl)
-				if n in (2,) and gui.keymaps.test("add-to-queue") and fade == 1:
+				if n in (2,9,) and gui.keymaps.test("add-to-queue") and fade == 1:
 					self.queue_track_result(item[2], item[3])
 
 				# ----
@@ -24175,15 +24750,17 @@ class PresetDownloadBox:
 		self.status: str = ""
 		self.detail: str = ""
 		self.done: bool = False
+		self.cancel_detail: str = ""
 
-	def start(self) -> None:
+	def start(self, *, title: str, status: str, cancel_detail: str) -> None:
 		self.active = True
 		self.cancel_requested = False
 		self.done = False
 		self.progress = 0.0
-		self.title = _("Downloading Milkdrop presets")
-		self.status = _("Starting download...")
+		self.title = title
+		self.status = status
 		self.detail = ""
+		self.cancel_detail = cancel_detail
 		self.gui.update = max(self.gui.update, 2)
 
 	def update(self, progress: float | None, status: str, detail: str = "") -> None:
@@ -24199,14 +24776,13 @@ class PresetDownloadBox:
 		self.done = False
 		self.gui.update = max(self.gui.update, 2)
 
-	def complete(self, status: str, detail: str = "") -> None:
-		self.active = True
-		self.cancel_requested = False
-		self.done = True
+	def complete(self, status: str, detail: str = "", toast_text: str | None = None) -> None:
 		self.progress = 1.0
 		self.status = status
 		self.detail = detail
-		self.gui.update = max(self.gui.update, 2)
+		self.finish()
+		if toast_text:
+			self.tauon.toast(toast_text)
 
 	def fail(self, status: str, detail: str = "") -> None:
 		self.active = True
@@ -24219,7 +24795,7 @@ class PresetDownloadBox:
 	def cancel(self) -> None:
 		self.cancel_requested = True
 		self.status = _("Cancelling...")
-		self.detail = _("Milkdrop will still be enabled.")
+		self.detail = self.cancel_detail
 		self.gui.update = max(self.gui.update, 2)
 
 	def render(self) -> None:
@@ -24284,7 +24860,7 @@ class NagBox:
 		("Added smooth scroll support", False),
 		("Redesigned settings UI", False),
 		("Added new mini mode: Signal (Just for fun)", False),
-		("Removed Spotify support", True),
+		("Scroll bar is on the right now!", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -24390,10 +24966,10 @@ class NagBox:
 			bg=section_fill,
 		)
 
-		row_y = changelog_y + round(42 * scale)
+		row_y = changelog_y + round(38 * scale)
 		row_gap = round(18 * scale)
+		bullet_colour = ColourRGBA(198, 136, 255, 255)
 		for item, removed in self.CHANGELOG_ITEMS:
-			bullet_colour = accent_warm if removed else accent
 			text_colour = self.colours.box_text_label if removed else self.colours.box_text
 			self.ddt.rect(
 				(inner_x + round(17 * scale), row_y + round(5 * scale), round(6 * scale), round(6 * scale)),
@@ -24410,7 +24986,7 @@ class NagBox:
 			row_y += row_gap
 
 		support_y = changelog_y + changelog_h + round(18 * scale)
-		self.ddt.text((inner_x, support_y), _("The time has come to open thy heart and thy wallet ❤️  "), self.colours.box_text, 213, bg=panel_fill)
+		self.ddt.text((inner_x, support_y), _("Please help support me make free software. ❤️  "), self.colours.box_text, 213, bg=panel_fill)
 		donate_link = self.tauon.draw_linked_text(
 			(inner_x, support_y + round(19 * scale)),
 			_("A ton of work went into this release. Please consider donating at https://github.com/sponsors/Taiko2k"),
@@ -24435,9 +25011,17 @@ class NagBox:
 			self.colours.box_text_label,
 			12,
 			force=True,
-			replace="Patreon",
+			replace="Patreon.",
 		)
 		self.tauon.link_activate(patreon_link_x, support_y + round(19 * scale), patreon_link, click=self.gui.level_2_click)
+		self.ddt.text(
+			(inner_x, support_y + round(35 * scale)),
+			_("Your continued support helps keep this app alive."),
+			self.colours.box_text_label,
+			12,
+			bg=panel_fill,
+			max_w=inner_w,
+		)
 
 		button_y = y + h - round(46 * scale)
 		button_h = round(30 * scale)
@@ -24571,7 +25155,9 @@ class Over:
 
 		self.themes = []
 		self.theme_editor_enabled = False
-		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1][0]
+		self.theme_editor_selected_attrs = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_dropdown_expansions = [False] * len(THEME_EDITOR_COMPONENTS)
 		self.theme_editor_clipboard: ColourRGBA | None = None
 		self.theme_editor_list_scroll = 0.0
 		self.theme_editor_list_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
@@ -24588,6 +25174,9 @@ class Over:
 		self.theme_editor_hue_texture = None
 		self.theme_editor_hue_texture_key: tuple[int, int] | None = None
 		self.theme_editor_drag_target: str | None = None
+		self.theme_editor_window_position: tuple[int, int] | None = None
+		self.theme_editor_window_drag_start_mouse: tuple[int, int] = (0, 0)
+		self.theme_editor_window_drag_start_position: tuple[int, int] = (0, 0)
 		self.theme_editor_hue_value = 0.0
 		self.theme_editor_sat_value = 1.0
 		self.theme_editor_val_value = 1.0
@@ -24628,23 +25217,19 @@ class Over:
 
 	def settings_tab_accent(self, index: int) -> ColourRGBA:
 		accents = (
-			ColourRGBA(244, 176, 92, 255),
-			ColourRGBA(118, 205, 176, 255),
-			ColourRGBA(107, 187, 236, 255),
-			ColourRGBA(126, 147, 255, 255),
-			ColourRGBA(214, 118, 118, 255),
-			ColourRGBA(100, 171, 158, 255),
-			ColourRGBA(215, 154, 102, 255),
-			ColourRGBA(97, 186, 168, 255),
-			ColourRGBA(186, 150, 228, 255),
-			ColourRGBA(112, 176, 244, 255),
-			ColourRGBA(214, 128, 176, 255),
-			ColourRGBA(205, 147, 116, 255),
-			ColourRGBA(140, 174, 232, 255),
+			ColourRGBA(174, 118, 255, 255),
+			ColourRGBA(196, 102, 244, 255),
+			ColourRGBA(154, 124, 255, 255),
+			ColourRGBA(226, 102, 216, 255),
+			ColourRGBA(204, 122, 238, 255),
+			ColourRGBA(236, 92, 190, 255),
+			ColourRGBA(180, 112, 244, 255),
+			ColourRGBA(216, 116, 230, 255),
+			ColourRGBA(198, 136, 255, 255),
+			ColourRGBA(229, 125, 214, 255),
 			ColourRGBA(184, 184, 196, 255),
 		)
-		tab_map = (0, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13)
-		return accents[tab_map[index % len(tab_map)]]
+		return accents[index % len(accents)]
 
 	def sync_settings_nav_scroll(self, scroll_area: tuple[int, int, int, int], row_height: int, visible_rows: int) -> float:
 		scroll_source = "settings nav"
@@ -24657,8 +25242,7 @@ class Over:
 
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
 		use_smooth_scroll = (
-			self.prefs.smooth_scroll_enable
-			or self.tauon.smooth_scroll.precise_scroll_active()
+			self.tauon.smooth_scroll.enabled()
 			or touch_scroll
 			or self.tauon.smooth_scroll.active(scroll_source)
 		)
@@ -24872,11 +25456,11 @@ class Over:
 
 	def settings_page_accent(self, page: int | None = None) -> ColourRGBA:
 		accents = (
-			ColourRGBA(244, 176, 92, 255),
-			ColourRGBA(118, 205, 176, 255),
-			ColourRGBA(107, 187, 236, 255),
-			ColourRGBA(126, 147, 255, 255),
-			ColourRGBA(205, 147, 116, 255),
+			ColourRGBA(174, 118, 255, 255),
+			ColourRGBA(196, 102, 244, 255),
+			ColourRGBA(226, 102, 216, 255),
+			ColourRGBA(180, 112, 244, 255),
+			ColourRGBA(204, 122, 238, 255),
 		)
 		if page is None:
 			page = self.func_page
@@ -24934,7 +25518,7 @@ class Over:
 
 	def theme_editor_selected_label(self) -> str:
 		for label, attr in THEME_EDITOR_COMPONENTS:
-			if attr == self.theme_editor_selected_attr:
+			if attr[0] in self.theme_editor_selected_attrs:
 				return _(label)
 		return _("Component")
 
@@ -25005,6 +25589,7 @@ class Over:
 		self.theme_editor_dirty = False
 		self.theme_editor_is_new = is_new
 		self.theme_editor_target_path = target_path
+		self.theme_editor_window_position = None
 		self.theme_editor_original_colours = clone_theme_colours(self.colours)
 		self.theme_editor_draft_colours = clone_theme_colours(self.colours)
 		self.theme_editor_original_theme_name = self.gui.theme_name
@@ -25022,6 +25607,7 @@ class Over:
 		self.theme_editor_target_path = None
 		self.theme_editor_dirty = False
 		self.theme_editor_drag_target = None
+		self.theme_editor_window_position = None
 		self.theme_editor_hue_value = 0.0
 		self.theme_editor_sat_value = 1.0
 		self.theme_editor_val_value = 1.0
@@ -25130,10 +25716,11 @@ class Over:
 		self.show_message(_("Saved theme"), target_name, mode="done")
 		return True
 
-	def apply_theme_editor_colour(self, attr: str, colour: ColourRGBA) -> None:
+	def apply_theme_editor_colour(self, thing: tuple[str], colour: ColourRGBA) -> None:
 		if self.theme_editor_draft_colours is None:
 			return
-		setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
+		for attr in thing:
+			setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
 		self.theme_editor_dirty = True
 		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
 
@@ -25151,7 +25738,7 @@ class Over:
 		self.theme_editor_val_value = val
 		r, g, b = colorsys.hsv_to_rgb(hue, sat, val)
 		self.apply_theme_editor_colour(
-			self.theme_editor_selected_attr,
+			self.theme_editor_selected_attrs,
 			ColourRGBA(int(r * 255), int(g * 255), int(b * 255), colour.a),
 		)
 
@@ -25160,7 +25747,7 @@ class Over:
 		alpha = min(max(alpha, 0.0), 1.0)
 		self.theme_editor_alpha_value = alpha
 		self.apply_theme_editor_colour(
-			self.theme_editor_selected_attr,
+			self.theme_editor_selected_attrs,
 			ColourRGBA(colour.r, colour.g, colour.b, int(alpha * 255)),
 		)
 
@@ -25256,8 +25843,9 @@ class Over:
 		if colour is None:
 			self.show_message(_("There is no colour in the clipboard"), mode="error")
 			return
-		self.apply_theme_editor_colour(self.theme_editor_selected_attr, colour)
+		self.apply_theme_editor_colour(self.theme_editor_selected_attrs, colour)
 		self.theme_editor_clipboard = ColourRGBA(colour.r, colour.g, colour.b, colour.a)
+		self.sync_theme_editor_controls_from_current_colour()
 		self.show_message(_("Pasted colour"), self.theme_editor_selected_label(), mode="done")
 
 	def sync_settings_content_scroll(self, scroll_area: tuple[int, int, int, int], content_height: int) -> float:
@@ -25271,8 +25859,7 @@ class Over:
 
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
 		use_smooth_scroll = (
-			self.prefs.smooth_scroll_enable
-			or self.tauon.smooth_scroll.precise_scroll_active()
+			self.tauon.smooth_scroll.enabled()
 			or touch_scroll
 			or self.tauon.smooth_scroll.active(scroll_source)
 		)
@@ -25303,21 +25890,27 @@ class Over:
 		formatter=None,
 		callback=None,
 		log_scale: bool = False,
+		disabled: bool = False,
 	) -> float:
 		if accent is None:
 			accent = self.settings_page_accent()
+		if disabled:
+			accent = alpha_blend(ColourRGBA(128, 128, 128, 90), self.colours.box_background)
 
 		x, y, w, h = tuple(round(v) for v in rect)
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		if self.coll((x, y, w, h)):
+		if disabled:
+			fill = alpha_blend(ColourRGBA(128, 128, 128, 8), self.colours.box_background)
+			border = alpha_blend(ColourRGBA(128, 128, 128, 36), self.colours.box_text_border)
+		elif self.coll((x, y, w, h)):
 			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
 		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
 
 		self.ddt.text(
 			(x + round(12 * self.gui.scale), y + round(8 * self.gui.scale)),
 			title,
-			self.colours.box_text,
+			alpha_mod(self.colours.box_text_label, 150) if disabled else self.colours.box_text,
 			12,
 			bg=fill,
 			max_w=w - round(110 * self.gui.scale),
@@ -25330,7 +25923,7 @@ class Over:
 		self.ddt.text(
 			(x + w - round(12 * self.gui.scale), y + round(8 * self.gui.scale), 1),
 			display,
-			self.colours.box_sub_text,
+			alpha_mod(self.colours.box_text_label, 130) if disabled else self.colours.box_sub_text,
 			211,
 			bg=fill,
 		)
@@ -25357,6 +25950,9 @@ class Over:
 		self.ddt.rect(slider_rect, alpha_blend(ColourRGBA(255, 255, 255, 20), border))
 		self.ddt.rect((slider_x, slider_y, round(slider_w * ratio), slider_h), accent)
 		self.ddt.rect(grip_rect, accent)
+
+		if disabled:
+			return value
 
 		hit_rect = grow_rect((slider_x, slider_y - round(10 * self.gui.scale), slider_w, round(20 * self.gui.scale)), round(4 * self.gui.scale))
 		self.fields.add(hit_rect)
@@ -26104,12 +26700,21 @@ class Over:
 		content_x, content_y, content_w, content_h = self.draw_settings_section(
 			rect,
 			_("Lyrics lookup"),
-			_("Choose which sources Tauon uses for lyrics."),
+			_("Choose when and where Tauon searches for lyrics."),
 			accent,
 		)
 
 		row_h = round(40 * self.gui.scale)
 		row_gap = round(6 * self.gui.scale)
+		self.prefs.auto_lyrics = self.settings_switch_row(
+			(content_x, content_y, content_w, row_h),
+			self.prefs.auto_lyrics,
+			_("Auto-search lyrics"),
+			_("Auto-search when lyrics enabled"),
+			accent,
+		)
+		content_y += row_h + row_gap
+
 		source_names = [name for name in lyric_sources if name != "Genius"]
 		if "Genius" in lyric_sources:
 			source_names.append("Genius")
@@ -26253,7 +26858,7 @@ class Over:
 			x, y, w, section_h = self.draw_settings_section(
 				right_rect,
 				_("Session rules"),
-				_("Playback behavior for sleep, wake and radio."),
+				_("Playback behavior for restarts, sleep, wake and radio."),
 				accent,
 			)
 			play_lock_old = prefs.block_suspend
@@ -26262,6 +26867,14 @@ class Over:
 				prefs.block_suspend,
 				_("Block suspend"),
 				_("Keep the system awake during playback."),
+				accent,
+			)
+			y += row_h + row_gap
+			prefs.reload_play_state = self.settings_switch_row(
+				(x, y, w, row_h),
+				prefs.reload_play_state,
+				_("Resume on restart"),
+				_("Resume playback when Tauon starts."),
 				accent,
 			)
 			y += row_h + row_gap
@@ -26532,6 +27145,14 @@ class Over:
 					pass
 			elif old is True and debug_state is False:
 				os.remove(debug_path)
+			y += small_row_h + row_gap
+
+			tauon.console.show = self.settings_switch_row(
+				(x, y, w, small_row_h),
+				tauon.console.show,
+				_("Toggle Console"),
+				accent=accent,
+			)
 
 	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
@@ -26942,7 +27563,7 @@ class Over:
 		ddt     = self.ddt
 		colours = self.colours
 		prefs   = self.prefs
-		accent  = ColourRGBA(100, 171, 158, 255)
+		accent  = ColourRGBA(226, 102, 216, 255)
 		ddt.text_background_colour = colours.box_background
 
 		column_gap = round(12 * gui.scale)
@@ -27090,7 +27711,7 @@ class Over:
 	) -> int:
 		heights = (
 			round(275 * self.gui.scale),
-			round(224 * self.gui.scale),
+			round(272 * self.gui.scale),
 			round(262 * self.gui.scale),
 			round(300 * self.gui.scale),
 			round(350 * self.gui.scale),
@@ -27217,12 +27838,13 @@ class Over:
 		if not prefs.discord_enable:
 			return total_h
 
+		discord_accent = ColourRGBA(88, 145, 255, 255)
 		discord_rect = (x, y + top_row_h + block_gap, w, discord_h)
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			discord_rect,
 			_("Discord"),
 			_("Layout, buttons and idle behavior."),
-			accent,
+			discord_accent,
 		)
 
 		left_col_w = (inner_w - column_gap) // 2
@@ -27244,7 +27866,7 @@ class Over:
 			"",
 			prefs.discord_card_layout == "title_artist",
 			lambda: set_discord_card_layout("title_artist"),
-			accent,
+			discord_accent,
 		)
 		self.settings_choice_tile(
 			(inner_x + choice_w + tile_gap, choice_y, choice_w, choice_h),
@@ -27252,7 +27874,7 @@ class Over:
 			"",
 			prefs.discord_card_layout == "artist_title",
 			lambda: set_discord_card_layout("artist_title"),
-			accent,
+			discord_accent,
 		)
 
 		member_y = choice_y + choice_h + round(12 * gui.scale)
@@ -27264,7 +27886,7 @@ class Over:
 			"",
 			prefs.discord_member_list_display == "song",
 			lambda: set_member_list_display("song"),
-			accent,
+			discord_accent,
 		)
 		self.settings_choice_tile(
 			(inner_x + choice_w + tile_gap, member_choice_y, choice_w, choice_h),
@@ -27272,7 +27894,7 @@ class Over:
 			"",
 			prefs.discord_member_list_display == "artist",
 			lambda: set_member_list_display("artist"),
-			accent,
+			discord_accent,
 		)
 
 		ddt.text((right_col_x, inner_y), _("Options"), colours.box_text_label, 11)
@@ -27281,34 +27903,35 @@ class Over:
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_clean_title,
 			_("Clean title (Removes .feat etc)"),
-			accent=accent,
+			accent=discord_accent,
 		)
 		option_y += compact_row_h + row_gap
 		prefs.discord_lastfm_button = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_lastfm_button,
 			_("Last.fm link button"),
-			accent=accent,
+			accent=discord_accent,
 		)
 		option_y += compact_row_h + row_gap
 		prefs.discord_show_tauon_button = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_show_tauon_button,
 			_("Tauon website button"),
-			accent=accent,
+			accent=discord_accent,
 		)
 		option_y += compact_row_h + row_gap
 		prefs.discord_keep_idle = self.settings_switch_row(
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_keep_idle,
 			_("Keep idle"),
-			accent=accent,
+			accent=discord_accent,
 		)
 
 		return total_h
 
 	def render_settings_view_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
+		prefs = self.prefs
 		column_gap = round(12 * gui.scale)
 		block_gap = round(12 * gui.scale)
 		row_h = round(42 * gui.scale)
@@ -27316,7 +27939,7 @@ class Over:
 		row_gap = round(6 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		view_h = round(304 * gui.scale)
+		view_h = round(356 * gui.scale)
 		view_h += compact_row_h + row_gap
 		if self.prefs.backend == Backend.PHAZOR:
 			view_h += compact_row_h + row_gap
@@ -27339,10 +27962,22 @@ class Over:
 			(inner_x, inner_y, inner_w, row_h),
 			self.tauon.toggle_smooth_scroll,
 			_("Smooth scrolling"),
-			_("Trackpad scrolling stays smooth either way."),
-			accent,
+			_("Use inertial scrolling"),
+			accent=accent,
+			disabled=prefs.macos,
 		)
 		inner_y += row_h + row_gap
+		prefs.smooth_scroll_speed = self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Smooth scroll speed"),
+			prefs.smooth_scroll_speed,
+			0.25,
+			10.0,
+			0.05,
+			accent=accent,
+			formatter=lambda number: f"{number:.2f}x",
+		)
+		inner_y += round(52 * gui.scale)
 		self.settings_switch_row(
 			(inner_x, inner_y, inner_w, compact_row_h),
 			self.tauon.toggle_side_panel_layout,
@@ -27613,8 +28248,8 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, round(320 * gui.scale))
-		right_rect = (x + left_w + column_gap, y, right_w, round(320 * gui.scale))
+		left_rect = (x, y, left_w, round(360 * gui.scale))
+		right_rect = (x + left_w + column_gap, y, right_w, round(360 * gui.scale))
 		if not draw:
 			return max(left_rect[3], right_rect[3])
 
@@ -27630,9 +28265,29 @@ class Over:
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_borderless, _("Draw own window decorations"), accent=accent)
 		inner_y += row_h + row_gap
-		if not self.tauon.draw_border:
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_titlebar_line, _("Show playing in titlebar"), accent=accent)
-			inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h), self.tauon.toggle_titlebar_line, _("Show playing in titlebar"),
+			accent=accent, disabled=self.tauon.draw_border)
+		inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h), self.tauon.toggle_rounded_corners, _("Rounded window corners"),
+			accent=accent, disabled=not self.tauon.draw_border)
+		inner_y += row_h + row_gap
+		new_radius = self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Corner radius"),
+			float(prefs.corner_radius),
+			2,
+			30,
+			1,
+			accent=accent,
+			formatter=lambda value: f"{round(value)} px",
+			disabled=not (self.tauon.draw_border and prefs.rounded_corners),
+		)
+		if round(new_radius) != prefs.corner_radius:
+			prefs.corner_radius = round(new_radius)
+			gui.update += 1
+		inner_y += round(52 * gui.scale)
 		old_on_top = prefs.mini_mode_on_top
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
@@ -27646,23 +28301,19 @@ class Over:
 			_("System tray and interface scaling."),
 			accent,
 		)
-		if not self.windows:
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
-			inner_y += row_h + row_gap
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
-			inner_y += row_h + row_gap
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
-			inner_y += row_h + row_gap
-			old_theme = prefs.tray_theme
-			mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
-			prefs.tray_theme = "gray" if mono else "pink"
-			if prefs.tray_theme != old_theme:
-				self.tauon.set_tray_icons(force=True)
-				self.show_message(_("Restart Tauon for change to take effect"))
-			inner_y += row_h + row_gap
-		else:
-			self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
-			inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
+		inner_y += row_h + row_gap
+		old_theme = prefs.tray_theme
+		mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
+		prefs.tray_theme = "gray" if mono else "pink"
+		if prefs.tray_theme != old_theme:
+			self.tauon.set_tray_icons(force=True)
+			self.show_message(_("Restart Tauon for change to take effect"))
+		inner_y += row_h + row_gap
 
 		def normalize_scale_value(value: float) -> float:
 			scale_value = max(min(round(round(value / 0.05) * 0.05, 2), 3.5), 0.5)
@@ -27685,8 +28336,10 @@ class Over:
 			if self.settings_scale_preview_value is None else
 			self.settings_scale_preview_value
 		)
+		scale_slider_rect = (inner_x, inner_y, inner_w, round(46 * gui.scale))
+		holding_scale_slider = self.inp.mouse_down and self.coll(scale_slider_rect)
 		new_preview_scale = self.draw_settings_range_slider(
-			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			scale_slider_rect,
 			_("Interface scale"),
 			preview_scale,
 			0.5,
@@ -27695,7 +28348,7 @@ class Over:
 			accent=accent,
 			formatter=lambda value: (
 				_("auto")
-				if prefs.x_scale and not self.inp.mouse_down and self.settings_scale_preview_value is None else
+				if prefs.x_scale and not holding_scale_slider and self.settings_scale_preview_value is None else
 				f"{normalize_scale_value(value):.2f}x"
 			),
 		)
@@ -27727,7 +28380,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
-		row1_h = round(380 * gui.scale)
+		row1_h = round(416 * gui.scale)
 		row2_h = round(291 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
@@ -27776,6 +28429,10 @@ class Over:
 		prefs.tmp_cache = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tmp_cache ^ True, _("Use persistent network cache"), accent=accent) ^ True
 		if old_tmp_cache != prefs.tmp_cache and self.tauon.cachement:
 			self.tauon.cachement.__init__(self.tauon)
+		inner_y += row_h + row_gap
+		# Applies from the next track load; when off, network tracks are
+		# fully downloaded to the cache before playing like before
+		prefs.network_stream = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.network_stream, _("Stream network tracks directly"), accent=accent)
 		inner_y += row_h + row_gap
 		cache_size_gb = round(self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
@@ -28343,8 +29000,8 @@ class Over:
 
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
-			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
-			card2_h = round(116 * gui.scale)
+			card1_h = round(122 * gui.scale) if two_factor else round(266 * gui.scale)
+			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -28382,8 +29039,17 @@ class Over:
 				prefs.plex_servername = self.settings_text_input(
 					(inner_x, inner_y, inner_w, field_h),
 					_("Server name"),
-					tauon.text_plex_ser,
+					tauon.text_plex_lib,
 					prefs.plex_servername,
+					accent,
+				)
+
+				inner_y += field_h + row_gap
+				prefs.plex_library = self.settings_text_input(
+					(inner_x, inner_y, inner_w, field_h),
+					_("Library name"),
+					tauon.text_plex_ser,
+					prefs.plex_library,
 					accent,
 				)
 
@@ -28582,7 +29248,7 @@ class Over:
 			return total_h
 
 		if view == 10:
-			card1_h = round(266 * gui.scale)
+			card1_h = round(218 * gui.scale)
 			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
@@ -28630,18 +29296,6 @@ class Over:
 				prefs.jelly_server_url,
 				accent,
 			)
-			inner_y += field_h + row_gap
-			timeout_text = self.settings_text_input(
-				(inner_x, inner_y, inner_w, field_h),
-				_("Import timeout"),
-				tauon.text_jelly_timeout,
-				str(prefs.jelly_timeout),
-				accent,
-			).strip()
-			try:
-				prefs.jelly_timeout = int(timeout_text)
-			except ValueError:
-				pass
 
 			rect = (x, y + card1_h + card_gap, w, card2_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
@@ -29068,9 +29722,32 @@ class Over:
 		self.settings_action_tile((inner_x, inner_y, inner_w, action_h), _("Source code"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon", new=2, autoraise=True), accent)
 		return row_h
 
+	def draw_settings_category_heading(self, title: str, x: int, y: int, w: int) -> int:
+		heading_h = round(34 * self.gui.scale)
+		text_y = y + round(4 * self.gui.scale)
+		line_y = y + round(14 * self.gui.scale)
+		gap = round(14 * self.gui.scale)
+		min_line_w = round(28 * self.gui.scale)
+		text_w = min(self.ddt.get_text_w(title, 213), max(0, w - (gap + min_line_w) * 2))
+		line_colour = self.colours.box_text_border
+		center_x = x + w // 2
+		left_line_w = max(0, center_x - x - text_w // 2 - gap)
+		right_line_x = center_x + text_w // 2 + gap
+		right_line_w = max(0, x + w - right_line_x)
+		line_h = max(1, round(1 * self.gui.scale))
+		if left_line_w:
+			self.ddt.rect((x, line_y, left_line_w, line_h), line_colour)
+		if right_line_w:
+			self.ddt.rect((right_line_x, line_y, right_line_w, line_h), line_colour)
+		self.ddt.text((center_x, text_y, 2), title, self.colours.box_text, 213, bg=self.colours.box_background, max_w=text_w)
+		return heading_h
+
 	def render_settings_category(self, index: int, x: int, y: int, w: int, draw: bool = True) -> int:
 		accent = self.settings_tab_accent(index)
-		body_y = y
+		heading_h = round(34 * self.gui.scale)
+		if draw and index < len(self.tabs):
+			heading_h = self.draw_settings_category_heading(self.tabs[index], x, y, w)
+		body_y = y + heading_h
 
 		if index == 0:
 			body_h = self.render_settings_general_category(x, body_y, w, draw)
@@ -29097,7 +29774,7 @@ class Over:
 		else:
 			body_h = self.render_settings_about_category(x, body_y, w, accent, draw)
 
-		return body_h
+		return heading_h + body_h
 
 	# def style_up(self) -> None:
 	# 	self.prefs.line_style += 1
@@ -29134,10 +29811,30 @@ class Over:
 		sat = self.theme_editor_sat_value
 		val = self.theme_editor_val_value
 
-		full_width = round(610 * gui.scale)
+		full_width = round(510 * gui.scale)
 		full_height = round(375 * gui.scale)
-		x = int(self.window_size[0] / 2) - int(full_width / 2)
-		y = int(self.window_size[1] / 2) - int(full_height / 2)
+		if self.theme_editor_window_position is None:
+			x = int(self.window_size[0] / 2) - int(full_width / 2)
+			y = int(self.window_size[1] / 2) - int(full_height / 2)
+		else:
+			x, y = self.theme_editor_window_position
+		if self.theme_editor_drag_target == "window" and self.inp.mouse_down:
+			x = (
+				self.theme_editor_window_drag_start_position[0]
+				+ self.inp.mouse_position[0]
+				- self.theme_editor_window_drag_start_mouse[0]
+			)
+			y = (
+				self.theme_editor_window_drag_start_position[1]
+				+ self.inp.mouse_position[1]
+				- self.theme_editor_window_drag_start_mouse[1]
+			)
+			self.tauon.input_sdl.mouse_capture_want = True
+			gui.update += 1
+		margin = round(8 * gui.scale)
+		x = min(max(x, margin), max(margin, self.window_size[0] - round(full_width * 0.5)))
+		y = min(max(y, margin), max(margin, self.window_size[1] - round(full_height * 0.5)))
+		self.theme_editor_window_position = (x, y)
 		self.box_x = x
 		self.box_y = y
 		self.w = full_width
@@ -29162,10 +29859,26 @@ class Over:
 		right_x = left_x + left_w + column_gap
 		header_y = y + pad
 
-		title_field_w = full_width - pad * 2 - round(190 * gui.scale)
-		self.ddt.text((left_x, header_y), _("Theme title"), colours.box_text_label, 11, bg=colours.box_background)
+		grip_w = round(23 * gui.scale)
+		grip_gap = round(7 * gui.scale)
+		grip_rect = (left_x, header_y + round(17 * gui.scale), grip_w, round(22 * gui.scale))
+		title_field_x = left_x + grip_w + grip_gap
+		title_field_w = full_width - pad * 2 - round(190 * gui.scale) - grip_w - grip_gap
+		self.ddt.text((title_field_x, header_y), _("Theme title"), colours.box_text_label, 11, bg=colours.box_background)
+		grip_hover = self.coll(grip_rect)
+		self.fields.add(grip_rect)
+		grip_dot = max(2, round(2 * gui.scale))
+		grip_colour = colours.box_text if self.theme_editor_drag_target == "window" else colours.box_text_label
+		for offset_x in (round(4 * gui.scale), round(10 * gui.scale), round(16 * gui.scale)):
+			for offset_y in (round(5 * gui.scale), round(10 * gui.scale), round(15 * gui.scale)):
+				ddt.rect((grip_rect[0] + offset_x, grip_rect[1] + offset_y, grip_dot, grip_dot), grip_colour)
+		if self.click and grip_hover:
+			self.theme_editor_drag_target = "window"
+			self.theme_editor_window_drag_start_mouse = tuple(self.inp.mouse_position)
+			self.theme_editor_window_drag_start_position = (x, y)
+			self.tauon.input_sdl.mouse_capture_want = True
 		self.draw_settings_text_field(
-			(left_x, header_y + round(17 * gui.scale), title_field_w, round(22 * gui.scale)),
+			(title_field_x, header_y + round(17 * gui.scale), title_field_w, round(22 * gui.scale)),
 			self.theme_editor_title_box,
 			self.settings_page_accent(4),
 			stored_value=self.theme_editor_title_box.text,
@@ -29173,7 +29886,7 @@ class Over:
 		)
 		if self.theme_editor_dirty:
 			self.ddt.text(
-				(left_x, header_y + round(42 * gui.scale)),
+				(title_field_x, header_y + round(42 * gui.scale)),
 				_("Unsaved changes!"),
 				colours.box_text_label,
 				11,
@@ -29228,11 +29941,15 @@ class Over:
 			)
 			scroll_index = int(self.theme_editor_list_scroll)
 
+		rows_count = 0
 		row_y = list_rect[1]
 		for label, attr in THEME_EDITOR_COMPONENTS[scroll_index : scroll_index + visible_rows]:
+			rows_count += 1
+			if rows_count > visible_rows:
+				break
 			row_rect = (list_rect[0], row_y, row_w, row_h)
 			hover = self.coll(row_rect)
-			active = self.theme_editor_selected_attr == attr
+			active = self.theme_editor_selected_attrs == attr
 			row_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
 			if active:
 				row_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
@@ -29243,16 +29960,76 @@ class Over:
 				row_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
 			ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
 			self.fields.add(row_rect)
-			if hover and self.click:
-				self.theme_editor_selected_attr = attr
+
+			subcolors_are_identical = True
+			if len(attr) > 1: # THEME_EDITOR_COMPONENTS is currently set up for a STATIC visible_rows value. if this value ever changes, get smarter.
+				compare_color = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				for color in attr:
+					component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+					subcolors_are_identical = subcolors_are_identical and component_colour == compare_color
+					compare_color = component_colour
+
+				dropdown_rect = (list_rect[0] + row_w - row_h, row_y, row_h, row_h)
+				# ddt.bordered_rect(dropdown_rect, row_fill, row_border, round(1 * gui.scale))
+				ddt.text(
+					(dropdown_rect[0]+ round(10*gui.scale),dropdown_rect[1]+round(4*gui.scale)),
+					"🞃" if self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] else "🞂",
+					colours.box_button_text, 12, bg=row_fill
+					)
+				if self.coll(dropdown_rect) and self.click:
+					self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] = not self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+				dropped_down = self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+				if dropped_down:
+
+					for color in attr:
+						row_y += row_step
+						rows_count += 1
+						if rows_count > visible_rows:
+							break
+
+						sub_rect = (list_rect[0] + round(10*gui.scale), row_y, row_w - round(10*gui.scale), row_h)
+						subhover = self.coll(sub_rect)
+						subactive = self.theme_editor_selected_attrs == color
+						subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
+						if subactive:
+							subrow_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
+						elif subhover:
+							subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill)
+						subrow_border = alpha_blend(ColourRGBA(255, 255, 255, 18), panel_border)
+						if subactive:
+							subrow_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
+						ddt.bordered_rect(sub_rect, subrow_fill, subrow_border, round(1 * gui.scale))
+						self.fields.add(sub_rect)
+
+						if subhover and self.click:
+							self.theme_editor_selected_attr = color
+							self.theme_editor_selected_attrs = (color,)
+							self.theme_editor_drag_target = None
+							self.sync_theme_editor_controls_from_current_colour()
+
+
+						component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+						swatch_rect = (sub_rect[0] + round(8 * gui.scale), sub_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
+						ddt.rect(swatch_rect, component_colour)
+						ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), subrow_border), round(1 * gui.scale))
+						ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), sub_rect[1] + round(4 * gui.scale)), color, colours.box_text if subactive else colours.box_button_text_highlight if subhover else colours.box_button_text, 12, bg=subrow_fill, max_w=sub_rect[2] - round(44 * gui.scale))
+
+
+
+			if hover and self.click and ("dropdown_rect" in locals() and not self.coll(dropdown_rect)):
+				self.theme_editor_selected_attr = attr[0]
+				self.theme_editor_selected_attrs = attr
 				self.theme_editor_drag_target = None
 				self.sync_theme_editor_controls_from_current_colour()
 
-			component_colour = getattr(self.theme_editor_draft_colours, attr, current_colour) if self.theme_editor_draft_colours is not None else current_colour
 			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
-			ddt.rect(swatch_rect, component_colour)
-			ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
-			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
+			if subcolors_are_identical:
+				component_colour = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				ddt.rect(swatch_rect, component_colour)
+				ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
+			else:
+				ddt.text((swatch_rect[0] + round(1*gui.scale), row_rect[1] + round(7 * gui.scale)), "~", colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 20, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
+			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
 			row_y += row_step
 
 		right_inner_x = right_rect[0] + pad
@@ -32259,9 +33036,16 @@ class MiniMode3:
 
 		h1 = h - y1
 
+		track = self.pctl.playing_object()
+		wid = (w // 2) + round(60 * self.gui.scale)
+		ins = (self.window_size[0] - wid) / 2
+		art_rect = sdl3.SDL_FRect(round(ins), round(ins), round(wid), round(wid))
+		self.tauon.style_overlay.hole_punches.clear()
+		if track is not None:
+			self.tauon.style_overlay.hole_punches.append(art_rect)
+
 		# Draw background
 		bg = self.colours.mini_mode_background
-		bg = ColourRGBA(0, 0, 0, 0)
 		# bg = [250, 250, 250, 255]
 
 		self.ddt.rect((0, 0, w, h), bg)
@@ -32295,8 +33079,6 @@ class MiniMode3:
 			self.pctl.player_volume = int(self.pctl.player_volume)
 			self.pctl.set_volume()
 
-		track = self.pctl.playing_object()
-
 		control_hit_area = (3, y1 - 15 * self.gui.scale, w - 6, h1 - 3 + 15 * self.gui.scale)
 		mouse_in_area = self.coll(control_hit_area)
 		self.fields.add(control_hit_area)
@@ -32306,8 +33088,6 @@ class MiniMode3:
 
 			# Render album art
 
-			wid = (w // 2) + round(60 * self.gui.scale)
-			ins = (self.window_size[0] - wid) / 2
 			off = round(4 * self.gui.scale)
 
 			self.tauon.drop_shadow.render(ins + off, ins + off, wid + off * 2, wid + off * 2)
@@ -33129,6 +33909,8 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
+		self.update_album_rating_hover()
+
 		highlight_width    = gui.tracklist_highlight_width
 		gui.highlight_left = gui.tracklist_highlight_left
 		inset_width        = gui.tracklist_inset_width
@@ -33183,8 +33965,7 @@ class StandardPlaylist:
 			and not tauon.radiobox.active
 		)
 		use_smooth_scroll = (
-			prefs.smooth_scroll_enable
-			or self.smooth_scroll.precise_scroll_active()
+			self.smooth_scroll.enabled()
 			or touch_scroll
 			or self.smooth_scroll.active("playlist")
 		)
@@ -33417,7 +34198,7 @@ class StandardPlaylist:
 						# Add folder to selection if clicked
 						if (
 							inp.mouse_click
-							and not (prefs.scroll_enable and self.coll(scrollbar_hitbox))
+							and not (prefs.scroll_enable and self.coll(scrollbar_hitbox) and not gui.album_rating_hover)
 							and not gui.side_drag
 						):
 							self.inp.quick_drag = True
@@ -33495,7 +34276,7 @@ class StandardPlaylist:
 				line_over = False
 
 			# Prevent click if near scroll bar
-			if prefs.scroll_enable and self.coll(scrollbar_hitbox):
+			if prefs.scroll_enable and self.coll(scrollbar_hitbox) and not gui.album_rating_hover:
 				line_hit = False
 
 			# Double click to play
@@ -33782,7 +34563,13 @@ class StandardPlaylist:
 				if gui.show_album_ratings:
 					star_offset = round(72 * gui.scale)
 					ex -= star_offset
-					self.tauon.draw_rating_widget(ex + 6 * gui.scale, height, tr, album=True)
+					self.tauon.draw_rating_widget(
+						ex + 6 * gui.scale,
+						height,
+						tr,
+						album=True,
+						allow_input=not gui.scrollbar_active,
+					)
 
 				light_offset = 0
 				if colours.lm:
@@ -34302,7 +35089,59 @@ class StandardPlaylist:
 		ddt.alpha_bg = False
 
 	def cache_render(self) -> None:
+		self.update_album_rating_hover()
 		sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, None, self.gui.tracklist_texture_rect)
+
+	def update_album_rating_hover(self) -> None:
+		gui = self.gui
+		gui.album_rating_hover = False
+
+		if (
+			not gui.show_album_ratings
+			or gui.combo_mode
+			or not gui.show_playlist
+			or not self.prefs.break_enable
+			or not self.pctl.multi_playlist
+			or self.pctl.active_playlist_viewing >= len(self.pctl.multi_playlist)
+			or self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title
+		):
+			return
+
+		boundary = 3 * gui.scale
+		if not gui.playlist_top + boundary < self.inp.mouse_position[1] <= self.window_size[1] - gui.panelBY - boundary:
+			return
+
+		track_position = max(self.pctl.playlist_view_position, 0)
+		number = 0
+		render_rows = gui.playlist_view_length + 2
+		playlist_length = len(self.pctl.default_playlist)
+
+		while track_position < playlist_length and number < render_rows:
+			if self._folder_title_would_appear(track_position):
+				line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
+				rating_x = (
+					gui.playlist_left
+					+ gui.tracklist_highlight_left
+					+ gui.tracklist_highlight_width
+					- 7 * gui.scale
+					- (round(3 * gui.scale) if gui.rsp_on_left else 0)
+					- round(72 * gui.scale)
+					+ 6 * gui.scale
+				)
+				rating_y = line_y + gui.playlist_row_height - 19 * gui.scale
+				rating_rect = (
+					rating_x - round(5 * gui.scale),
+					rating_y - round(4 * gui.scale),
+					round(80 * gui.scale),
+					round(24 * gui.scale),
+				)
+				if self.coll(rating_rect):
+					gui.album_rating_hover = True
+					return
+				number += 1
+
+			number += 1
+			track_position += 1
 
 class ArtBox:
 
@@ -34497,7 +35336,7 @@ class ScrollBox:
 
 	def draw(
 		self, x: int, y: int, w: int, h: int, value: float, max_value: float, force_dark_theme: bool = False, click: bool | None = None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> float:
-		if max_value < 2:
+		if max_value <= 0:
 			return 0
 
 		if click is None:
@@ -34615,7 +35454,7 @@ class ScrollBox:
 			position = min(position, distance)
 
 			ratio = position / distance
-			value = round(max_value * ratio)
+			value = max_value * ratio
 
 		colour = fg_off
 		rect = (x, mi + position - half, w, bar_height)
@@ -34679,6 +35518,7 @@ class RadioBox:
 		self.loaded_station: RadioStation | None = None
 		self.load_connecting: bool = False
 		self.load_failed: bool = False
+		self.load_request_id: int = 0
 		self.searching: bool = False
 		self.load_failed_timer: Timer = Timer()
 		self.right_clicked_station: RadioStation | None = None
@@ -34758,12 +35598,34 @@ class RadioBox:
 			logging.exception("Failed to extract M3U")
 			return None
 
+	def abort_load(self, clear_station: bool = True) -> None:
+		logging.info(
+			f"Radio load abort requested clear_station={clear_station} "
+			f"load_request_id={self.load_request_id} load_connecting={self.load_connecting} "
+			f"loaded_url={self.loaded_url}"
+		)
+		self.load_request_id += 1
+		self.load_connecting = False
+		self.load_failed = False
+		self.loaded_url = None
+		if clear_station:
+			self.loaded_station = None
+		if self.websocket:
+			self.websocket.close()
+			logging.info("Websocket closed")
+		self.tauon.stream_proxy.stop()
+		self.pctl.record_stream = False
+		self.gui.update += 1
+
 	def start(self, station: RadioStation) -> None:
 		url = station.stream_url
-		logging.info("Start radio")
+		logging.info(
+			f"Start radio station title={station.title!r} url={url!r} "
+			f"load_request_id={self.load_request_id} load_connecting={self.load_connecting} "
+			f"playing_state={self.pctl.playing_state}"
+		)
 		# Otherwise we'll be mute if we're starting from a paused state
 		self.pctl.set_volume()
-		logging.info(url)
 		if self.is_m3u(url):
 			url = self.extract_stream_m3u(url)
 			logging.info(f"Extracted URL is: {url}")
@@ -34772,7 +35634,7 @@ class RadioBox:
 				return
 
 		if self.load_connecting:
-			return
+			self.abort_load(clear_station=False)
 
 		if self.websocket:
 			self.websocket.close()
@@ -34816,26 +35678,55 @@ class RadioBox:
 		self.pctl.decode_time = 0
 		self.loaded_station = station
 
-		if self.tauon.stream_proxy.download_running:
-			self.tauon.stream_proxy.abort = True
+		if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running or self.tauon.stream_proxy.pump_running:
+			logging.info(
+				f"Stopping existing radio stream before new request: "
+				f"{self.tauon.stream_proxy.state_log()}"
+			)
+			self.tauon.stream_proxy.stop()
 
+		self.load_request_id += 1
+		request_id = self.load_request_id
 		self.load_connecting = True
 		self.load_failed = False
+		logging.info(f"Radio start request queued request_id={request_id} run_proxy={self.run_proxy} url={url!r}")
 
-		shoot = threading.Thread(target=self.start2, args=[url])
+		shoot = threading.Thread(target=self.start2, args=[url, request_id, self.run_proxy])
 		shoot.daemon = True
 		shoot.start()
 
-	def start2(self, url: str) -> None:
-		if self.run_proxy and not self.tauon.stream_proxy.start_download(url):
-			self.load_failed_timer.set()
-			self.load_failed = True
-			self.load_connecting = False
-			self.gui.update += 1
-			logging.error("Starting radio failed")
+	def start2(self, url: str, request_id: int, run_proxy: bool) -> None:
+		logging.info(
+			f"Radio start2 entered request_id={request_id} current_request={self.load_request_id} "
+			f"run_proxy={run_proxy} url={url!r}"
+		)
+		if request_id != self.load_request_id:
+			logging.info(f"Radio start2 ignoring stale request_id={request_id}")
+			return
+
+		if run_proxy and not self.tauon.stream_proxy.start_download(url, request_id):
+			if request_id == self.load_request_id:
+				self.load_failed_timer.set()
+				self.load_failed = True
+				self.load_connecting = False
+				self.gui.update += 1
+				logging.error(
+					f"Starting radio failed request_id={request_id}: "
+					f"{self.tauon.stream_proxy.state_log()}"
+				)
 			# self.show_message(_("Failed to establish a connection"), mode="error")
 			return
 
+		if request_id != self.load_request_id:
+			logging.info(
+				f"Radio start2 became stale after download start request_id={request_id} "
+				f"current_request={self.load_request_id}"
+			)
+			if run_proxy and self.tauon.stream_proxy.request_id == request_id:
+				self.tauon.stream_proxy.stop()
+			return
+
+		logging.info(f"Radio start2 activating playback request_id={request_id} url={url!r}")
 		self.loaded_url = url
 		self.pctl.record_stream = False
 		self.pctl.playerCommand = "url"
@@ -34844,6 +35735,7 @@ class RadioBox:
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
 		self.pctl.playing_length = 0
+		self.pctl.windows_progress.update()
 		self.tauon.thread_manager.ready_playback()
 		# ensure RPC is started and woken immediately for radio start
 		try:
@@ -34873,7 +35765,10 @@ class RadioBox:
 			def send_heartbeat(ws: WebSocketApp) -> None:
 				#logging.info(self.ws_interval)
 				time.sleep(self.ws_interval)
-				ws.send("{\"op\":9}")
+				try:
+					ws.send('{"op":9}')
+				except Exception:
+					logging.info("Websocket already closed")
 				logging.info("Send heartbeat")
 
 			def on_message(ws: WebSocketApp, message: str) -> None:
@@ -34886,7 +35781,10 @@ class RadioBox:
 
 				if d["op"] == 0:
 					self.ws_interval = d["d"]["heartbeat"] / 1000
-					ws.send("{\"op\":9}")
+					try:
+						ws.send('{"op":9}')
+					except Exception:
+						logging.info("Websocket already closed")
 
 				if d["op"] == 1:
 					try:
@@ -34904,21 +35802,23 @@ class RadioBox:
 						self.pctl.found_tags = found_tags
 						self.pctl.tag_meta = line
 
-						filename = d["d"]["song"]["albums"][0]["image"]
-						fulllink = "https://cdn.listen.moe/covers/" + filename
+						album_image = d["d"]["song"]["albums"][0].get("image")
+						if album_image:
+							filename = album_image
+							fulllink = "https://cdn.listen.moe/covers/" + filename
 
-						#logging.info(fulllink)
-						art_response = requests.get(fulllink, timeout=10)
-						#logging.info(art_response.status_code)
+							#logging.info(fulllink)
+							art_response = requests.get(fulllink, timeout=10)
+							#logging.info(art_response.status_code)
 
-						if art_response.status_code == 200:
-							if self.pctl.radio_image_bin:
-								self.pctl.radio_image_bin.close()
-								self.pctl.radio_image_bin = None
-							self.pctl.radio_image_bin = io.BytesIO(art_response.content)
-							self.pctl.radio_image_bin.seek(0)
-							self.dummy_track.art_url_key = "ok"
-							logging.info("Got new art")
+							if art_response.status_code == 200:
+								if self.pctl.radio_image_bin:
+									self.pctl.radio_image_bin.close()
+									self.pctl.radio_image_bin = None
+								self.pctl.radio_image_bin = io.BytesIO(art_response.content)
+								self.pctl.radio_image_bin.seek(0)
+								self.dummy_track.art_url_key = "ok"
+								logging.info("Got new art")
 
 					except Exception:
 						logging.exception("No image")
@@ -35816,9 +36716,15 @@ class PlaylistBox:
 		self.ddt.rect((x, y, w, h), self.colours.playlist_box_background)
 		self.ddt.text_background_colour = self.colours.playlist_box_background
 
-		max_tabs = (h - 10 * self.gui.scale) // (self.gap + self.tab_h)
+		row_step = self.gap + self.tab_h
+		top_pad = 5 * gui.scale
+		max_tabs = max(0, int((h - top_pad + self.gap) // max(row_step, 1)))
+		scroll_needed = len(pctl.multi_playlist) > max_tabs
+		bottom_pad = 12 * gui.scale if scroll_needed else 0
+		visible_scroll_rows = max(0, ((h - top_pad - bottom_pad - self.tab_h) / max(row_step, 1)) + 1)
+		max_scroll = max(len(pctl.multi_playlist) - visible_scroll_rows, 0)
 
-		tab_title_colour = ColourRGBA(230, 230, 230, 255)
+		tab_title_colour = self.colours.tab_text
 
 		bg_lumi = test_lumi(self.colours.playlist_box_background)
 		light_mode = False
@@ -35843,27 +36749,25 @@ class PlaylistBox:
 		scroll_source = "playlist side pane"
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
 		use_smooth_scroll = (
-			self.prefs.smooth_scroll_enable
-			or self.tauon.smooth_scroll.precise_scroll_active()
+			self.tauon.smooth_scroll.enabled()
 			or touch_scroll
 			or self.tauon.smooth_scroll.active(scroll_source)
 		)
 		if use_smooth_scroll:
 			if self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, self.gap + self.tab_h)
+				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, row_step)
 			if touch_scroll:
 				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
 			elif self.inp.touch_released:
 				self.tauon.smooth_scroll.release_touch(scroll_source)
-			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(self.gap + self.tab_h, 1)
+			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_step, 1)
 		elif self.inp.mouse_wheel != 0 and self.coll(scroll_area):
 			self.scroll_on -= self.inp.mouse_wheel
 
-		self.scroll_on = min(self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
-
+		self.scroll_on = min(self.scroll_on, max_scroll)
 		self.scroll_on = max(self.scroll_on, 0)
 
-		if len(pctl.multi_playlist) > max_tabs:
+		if scroll_needed:
 			show_scroll = True
 		else:
 			self.scroll_on = 0
@@ -35874,11 +36778,19 @@ class PlaylistBox:
 		if self.colours.lm:
 			w -= round(6 * gui.scale)
 		tab_width = w - tab_start  # - 0 * gui.scale
+		visible_tab_limit = max_tabs + 1 if show_scroll else max_tabs
+
+		def clipped_to_box(rect):
+			rect_y = max(rect[1], y)
+			rect_bottom = min(rect[1] + rect[3], y + h)
+			if rect_bottom <= rect_y:
+				return None
+			return (rect[0], rect_y, rect[2], rect_bottom - rect_y)
 
 		# Draw scroll bar
 		if show_scroll:
 			self.scroll_on = self.tauon.playlist_panel_scroll.draw(
-				x + 2, y + 1, 15 * self.gui.scale, h, self.scroll_on, len(pctl.multi_playlist) - max_tabs + 1)
+				x + 2, y + 1, 15 * self.gui.scale, h, self.scroll_on, max_scroll)
 
 		draw_pin_indicator = False  # self.prefs.tabs_on_top
 
@@ -35893,11 +36805,11 @@ class PlaylistBox:
 		delete_pl = None
 		tab_on = 0
 		scroll_start = int(self.scroll_on)
-		scroll_offset = (self.scroll_on - scroll_start) * max(self.tab_h + self.gap, 1)
-		yy = y + 5 * gui.scale - scroll_offset
+		scroll_offset = (self.scroll_on - scroll_start) * max(row_step, 1)
+		yy = y + top_pad - scroll_offset
 		for i, pl in enumerate(pctl.multi_playlist):
 
-			if tab_on >= max_tabs:
+			if tab_on >= visible_tab_limit:
 				break
 			if i < scroll_start:
 				continue
@@ -35906,8 +36818,9 @@ class PlaylistBox:
 			# 	continue
 
 			tab_on += 1
+			tab_hit_rect = clipped_to_box((tab_start, yy - 1, tab_width, (self.tab_h + 1)))
 
-			if self.coll((tab_start, yy - 1, tab_width, (self.tab_h + 1))):
+			if tab_hit_rect is not None and self.coll(tab_hit_rect):
 				if self.inp.right_click:
 					if gui.radio_view:
 						tauon.radio_tab_menu.activate(i, self.inp.mouse_position)
@@ -35920,7 +36833,7 @@ class PlaylistBox:
 					# delete_playlist(i)
 					# break
 
-				if self.inp.mouse_up and self.drag and coll_point(self.inp.mouse_up_position, (tab_start, yy - 1, tab_width, (self.tab_h + 1))):
+				if self.inp.mouse_up and self.drag and coll_point(self.inp.mouse_up_position, tab_hit_rect):
 					# If drag from top bar to side panel, make hidden
 					if self.drag_source == 0 and self.prefs.drag_to_unpin:
 						pctl.multi_playlist[self.drag_on].hidden = True
@@ -35981,8 +36894,8 @@ class PlaylistBox:
 						tauon.tree_view_box.clear_target_pl(i)
 
 			# Toggle hidden flag on click
-			if draw_pin_indicator and self.inp.mouse_click and self.coll(
-					(tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale, 26 * gui.scale)):
+			pin_hit_rect = clipped_to_box((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale, 26 * gui.scale))
+			if draw_pin_indicator and self.inp.mouse_click and pin_hit_rect is not None and self.coll(pin_hit_rect):
 				pl.hidden ^= True
 
 			yy += self.tab_h + self.gap
@@ -35990,14 +36903,14 @@ class PlaylistBox:
 		# Draw tabs
 		# delete_pl = None
 		tab_on = 0
-		yy = y + 5 * gui.scale
+		yy = y + top_pad - scroll_offset
 		for i, pl in enumerate(pctl.multi_playlist):
 
 			# if yy + self.tab_h > y + h:
 			#     break
-			if tab_on >= max_tabs:
+			if tab_on >= visible_tab_limit:
 				break
-			if i < self.scroll_on:
+			if i < scroll_start:
 				continue
 
 			tab_on += 1
@@ -36010,6 +36923,10 @@ class PlaylistBox:
 			if self.prefs.transparent_mode:
 				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.09, 0)
 				bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+
+			drop_hit_rect = clipped_to_box(
+				(tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))
+			)
 
 			# Highlight if playlist selected (viewing)
 			if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
@@ -36024,8 +36941,7 @@ class PlaylistBox:
 					bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 
 			# Highlight target playlist when tragging tracks over
-			if self.coll(
-				(tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1))) and self.inp.quick_drag and not (
+			if drop_hit_rect is not None and self.coll(drop_hit_rect) and self.inp.quick_drag and not (
 				pctl.gen_codes.get(pctl.pl_to_id(i)) and "self" not in pctl.gen_codes[pctl.pl_to_id(i)]):
 				# bg = [255, 255, 255, 15]
 				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.04, 0)
@@ -36057,10 +36973,10 @@ class PlaylistBox:
 			# if indicator_run_x:
 			#     text_max_w = tab_width - (indicator_run_x + text_start + 17 * gui.scale + slide)
 			self.ddt.text(
-				(tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w, bg=real_bg)
+				(tab_start + text_start, yy + self.text_offset), name, tab_title_colour if i != pctl.active_playlist_viewing else self.colours.tab_text_active, 211, max_w=text_max_w, bg=real_bg)
 
 			# Is mouse collided with tab?
-			hit = self.coll((tab_start + 50 * gui.scale, yy - 1, tab_width - 50 * gui.scale, (self.tab_h + 1)))
+			hit = drop_hit_rect is not None and self.coll(drop_hit_rect)
 
 			# if not self.prefs.tabs_on_top:
 			if i == pctl.active_playlist_playing:
@@ -36125,10 +37041,12 @@ class PlaylistBox:
 			gui.update += 1
 
 		# Create new playlist if drag in blank space after tabs
-		rect = (x, yy, w - 10 * gui.scale, h - (yy - y))
-		self.fields.add(rect)
+		rect_y = max(yy, y)
+		rect = (x, rect_y, w - 10 * gui.scale, max(0, y + h - rect_y))
+		if rect[3] > 0:
+			self.fields.add(rect)
 
-		if self.coll(rect):
+		if rect[3] > 0 and self.coll(rect):
 			if self.inp.quick_drag or gui.ext_drop_mode:
 				ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
 				if self.inp.mouse_up:
@@ -36881,8 +37799,7 @@ class ArtistList:
 		item_height = self.tab_h
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, area)
 		use_smooth_scroll = (
-			self.prefs.smooth_scroll_enable
-			or self.smooth_scroll.precise_scroll_active()
+			self.smooth_scroll.enabled()
 			or touch_scroll
 			or self.smooth_scroll.active("artist list")
 		)
@@ -37188,8 +38105,7 @@ class TreeView:
 		mouse_in = self.coll(area)
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, area)
 		use_smooth_scroll = (
-			self.prefs.smooth_scroll_enable
-			or self.smooth_scroll.precise_scroll_active()
+			self.smooth_scroll.enabled()
 			or touch_scroll
 			or self.smooth_scroll.active("tree view")
 		)
@@ -38691,8 +39607,7 @@ class ArtistInfoBox:
 
 			touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, (x, y, w, h))
 			use_smooth_scroll = (
-				self.prefs.smooth_scroll_enable
-				or self.smooth_scroll.precise_scroll_active()
+				self.smooth_scroll.enabled()
 				or touch_scroll
 				or self.smooth_scroll.active("artistinfo")
 			)
@@ -39177,8 +40092,7 @@ class RadioView:
 		scroll_area = (0, gui.panelY, w + round(70 * gui.scale), window_size[1] - gui.panelBY - gui.panelY)
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
 		use_smooth_scroll = (
-			self.prefs.smooth_scroll_enable
-			or self.smooth_scroll.precise_scroll_active()
+			self.smooth_scroll.enabled()
 			or touch_scroll
 			or self.smooth_scroll.active("radios")
 		)
@@ -39334,6 +40248,23 @@ class RadioView:
 			gui.update += 1
 
 
+def get_renderer_name(renderer: sdl3.LP_SDL_Renderer) -> str | None:
+	renderer_name = sdl3.SDL_GetRendererName(renderer)
+	if not renderer_name:
+		logging.warning(f"SDL_GetRendererName failed: {sdl3.SDL_GetError()}")
+		return None
+
+	if isinstance(renderer_name, bytes):
+		return renderer_name.decode("utf-8", errors="replace")
+	return renderer_name
+
+
+def renderer_name_supports_milkdrop(renderer_name: str | None) -> bool:
+	if renderer_name is None:
+		return True
+	return renderer_name.casefold() == "opengl"
+
+
 milky_ready = True
 try:
 	import OpenGL
@@ -39429,6 +40360,12 @@ class ProjectM:
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
+		renderer_name = get_renderer_name(self.tauon.renderer)
+		if renderer_name is not None and renderer_name.casefold() != "opengl":
+			logging.warning(f"Not loading ProjectM because SDL renderer is {renderer_name!r}, not 'opengl'")
+			self.lib_error = True
+			return
+
 		lib_name = find_projectm_library()
 		if not lib_name:
 			logging.warning("Could not find libprojectM-4")
@@ -41179,6 +42116,7 @@ class ScrollMotionState:
 
 class SmoothScroll:
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
 		self.inp = tauon.inp
 		self.gui = tauon.gui
 		self.scroll_bins:    dict[str:list[float]] = {}
@@ -41197,8 +42135,15 @@ class SmoothScroll:
 	def _scaled_min_velocity(self) -> float:
 		return SCROLL_PHYSICS_MIN_VELOCITY * self._pixel_scale()
 
+	def enabled(self) -> bool:
+		prefs = self.tauon.prefs
+		return prefs.smooth_scroll_enable or prefs.macos
+
+	def speed(self) -> float:
+		return max(self.tauon.prefs.smooth_scroll_speed, 0.05)
+
 	def precise_scroll_active(self) -> bool:
-		return self.inp.mouse_wheel_precise or time.monotonic() < self.inp.trackpad_scroll_mode_until
+		return self.enabled() and self.inp.mouse_wheel_precise
 
 	def _debug_enabled(self) -> bool:
 		return logging.getLogger().isEnabledFor(logging.DEBUG)
@@ -41222,10 +42167,10 @@ class SmoothScroll:
 			f"{name}={self._format_debug_value(value)}"
 			for name, value in fields.items()
 		)
-		if payload:
-			logging.debug("Smooth scroll %s source=%s %s", event, source, payload)
-		else:
-			logging.debug("Smooth scroll %s source=%s", event, source)
+		# if payload:
+		# 	logging.debug("Smooth scroll %s source=%s %s", event, source, payload)
+		# else:
+		# 	logging.debug("Smooth scroll %s source=%s", event, source)
 
 	def scroll(self, source: str, coeff: float = 1) -> int:
 		"""Used for sections that require integer scroll values, e.g. pixels or lines.
@@ -41328,21 +42273,7 @@ class SmoothScroll:
 		)
 
 	def reset_disabled_motion(self) -> None:
-		now = time.monotonic()
 		for source, state in self.physics_states.items():
-			# Keep precise trackpad motion alive even when smooth scrolling is disabled.
-			# The global toggle should only suppress classic wheel inertia.
-			if (
-				abs(state.precise_buffer) >= 0.01
-				or (state.last_precise_input and now - state.last_precise_input < SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW)
-			):
-				state.velocity = 0.0
-				state.pending = 0.0
-				state.accumulator = 0.0
-				state.wheel_streak = 0
-				state.last_wheel_direction = 0.0
-				state.last_wheel_time = 0.0
-				continue
 			if not state.from_touch:
 				self.reset_motion(source)
 
@@ -41360,6 +42291,7 @@ class SmoothScroll:
 		velocity_before = state.velocity
 		state.from_touch = False
 		route = "wheel"
+		speed = self.speed()
 		precise_unit = precise_px_per_unit if precise_px_per_unit is not None else px_per_unit
 		pixel_delta = 0.0
 		repeat_boost = 0.0
@@ -41369,7 +42301,10 @@ class SmoothScroll:
 			route = "precise"
 			self._log_scroll_mode(source, "precise", delta, px_per_unit, precise_scale, precise_px_per_unit)
 			state.velocity = 0.0
-			pixel_delta = delta * precise_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER * precise_scale
+			state.wheel_streak = 0
+			state.last_wheel_direction = 0.0
+			state.last_wheel_time = 0.0
+			pixel_delta = delta * precise_unit * SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER * precise_scale * speed
 			state.precise_buffer += pixel_delta
 			state.last_precise_input = time.monotonic()
 		else:
@@ -41377,7 +42312,7 @@ class SmoothScroll:
 			velocity_limit *= SCROLL_PHYSICS_WHEEL_MAX_VELOCITY_MULTIPLIER
 			repeat_boost = self._wheel_boost(state, delta)
 			boost = 1.0 + min(abs(state.velocity) / velocity_limit, 1.0) * SCROLL_PHYSICS_ACCELERATION_BOOST
-			impulse = delta * px_per_unit * repeat_boost
+			impulse = delta * px_per_unit * repeat_boost * speed
 			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
 			state.last_update = time.monotonic()
 		state.velocity = max(min(state.velocity, velocity_limit), -velocity_limit)
@@ -41389,6 +42324,7 @@ class SmoothScroll:
 			delta=delta,
 			px_per_unit=px_per_unit,
 			precise_scale=precise_scale,
+			speed=speed,
 			precise_unit=precise_unit,
 			pixel_delta=pixel_delta,
 			repeat_boost=repeat_boost,
@@ -42059,6 +42995,13 @@ class TimedLyricsEdit:
 					)
 			self.test_update()
 		self.queue_next_frame = True
+
+		# clear cached search data (user can search by lyrics immediately)
+		self.tauon.search_string_cache.pop(self.struct_track, None)
+		self.tauon.search_dia_string_cache.pop(self.struct_track, None)
+		self.tauon.search_field_cache.pop(self.struct_track, None)
+		self.tauon.search_dia_field_cache.pop(self.struct_track, None)
+
 		return None
 
 	def will_overwrite_lyrics(self, track: TrackClass) -> bool:
@@ -42069,11 +43012,11 @@ class TimedLyricsEdit:
 				return True
 		elif track.file_ext == "FLAC":
 			audio = mutagen.flac.FLAC(track.fullpath)
-			if "LYRICS" in audio:
+			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
 				return True
 		elif track.file_ext in ("OPUS", "OGG"):
 			audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
-			if "LYRICS" in audio:
+			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
 				return True
 		elif track.file_ext in ("APE","WV","TTA"):
 			audio = mutagen.apev2.APEv2(track.fullpath)
@@ -43470,43 +44413,61 @@ def get_theme_name(dirs: Directories, number: int) -> str:
 	return ""
 
 
-THEME_EDITOR_COMPONENTS: tuple[tuple[str, str], ...] = (
-	("Window frame", "window_frame"),
-	("Top panel", "top_panel_background"),
-	("Side panel", "side_panel_background"),
-	("Lyrics panel", "lyrics_panel_background"),
-	("Gallery background", "gallery_background"),
-	("Tracklist panel", "playlist_panel_background"),
-	("Queue panel", "queue_background"),
-	("Bottom panel", "bottom_panel_colour"),
-	("Track title", "title_text"),
-	("Track artist", "artist_text"),
-	("Track album", "album_text"),
-	("Playing title", "title_playing"),
-	("Playing artist", "artist_playing"),
-	("Playing album", "album_playing"),
-	("Playing index", "index_playing"),
-	("Playing time", "time_playing"),
-	("Track index", "index_text"),
-	("Track time", "bar_time"),
-	("Playing row highlight", "row_playing_highlight"),
-	("Selection highlight", "row_select_highlight"),
-	("Folder title", "folder_title"),
-	("Folder line", "folder_line"),
-	("Scroll bar", "scroll_colour"),
-	("Tab background", "tab_background"),
-	("Tab active background", "tab_background_active"),
-	("Tab text", "tab_text"),
-	("Tab active text", "tab_text_active"),
-	("Menu background", "menu_background"),
-	("Menu text", "menu_text"),
-	("Box background", "box_background"),
-	("Box title text", "box_title_text"),
-	("Box body text", "box_text"),
-	("Seek fill", "seek_bar_fill"),
-	("Seek background", "seek_bar_background"),
-	("Volume fill", "volume_bar_fill"),
-	("Volume background", "volume_bar_background"),
+THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+	(_("Window borders"), ("window_frame", "box_border", "box_check_border", "mini_mode_border", "art_box", "gallery_highlight", )),
+	(_("Top panel BG"), ("top_panel_background",)),
+	(_("Playlist box BG"), ("playlist_box_background",)),
+	(_("Queue panel BG"), ("queue_background",)),
+	(_("Gallery panel BG"), ("gallery_background",)),
+	(_("Info panel: BG"), ("lyrics_panel_background", "side_panel_background",)),
+	(_("Info panel: main text"), ("side_bar_line1", "active_lyric", )),
+	(_("Info panel: 2nd text"), ("side_bar_line2", "lyrics", )),
+	(_("Artist bio: BG"), ("artist_bio_background",)),
+	(_("Artist bio: text"), ("artist_bio_text",)),
+	(_("Bottom panel: BG"), ("bottom_panel_colour",)),
+	(_("Bottom panel: text"), ("bar_title_text",)),
+	(_("List: BG"), ("playlist_panel_background",)),
+	(_("List: column bar"), ("column_bar_background",)),
+	(_("List: selected highlight"), ("row_select_highlight",)),
+	(_("List: missing track"), ("playlist_text_missing",)),
+	(_("List: title"), ("title_text",)),
+	(_("List: artist"), ("artist_text",)),
+	(_("List: album"), ("album_text",)),
+	(_("List: duration"), ("bar_time",)),
+	(_("List: other fields"), ("index_text",)),
+	(_("List: folder title"), ("folder_title",)),
+	(_("List: folder line"), ("folder_line",)),
+	(_("List: star line"), ("star_line", )),
+	(_("List: playing highlight"), ("row_playing_highlight",)),
+	(_("List: playing title"), ("title_playing",)),
+	(_("List: playing artist"), ("artist_playing",)),
+	(_("List: playing album"), ("album_playing",)),
+	(_("List: playing duration"), ("time_text",)),
+	(_("List: playing other"), ("index_playing",)),
+	(_("Seek/volume: fill"), ("seek_bar_fill", "volume_bar_fill", "vis_colour", )),
+	(_("Seek/volume: BG"), ("seek_bar_background", "volume_bar_background", )), # vis_bg removed because it doesn't save in themes
+	(_("Scroll bar"), ("scroll_colour",)),
+	(_("Buttons: normal"), ("media_buttons_off", "mode_button_off", "status_text_normal", "corner_button", "window_button_icon_off", "window_button_x_off", "menu_icons", )),
+	(_("Buttons: hover"), ("media_buttons_over", "mode_button_over", "status_text_over", "window_buttons_icon_over", "window_button_x_on", )),
+	(_("Buttons: active"), ("media_buttons_active", "mode_button_active", "corner_button_active", "time_playing", "pluse_colour", )),
+	(_("Text btn: BG"), ("window_buttons_bg", "box_button_background", "tab_background", "menu_tab",)),
+	(_("Text btn: text"), ("box_button_text", "tab_text",  )),
+	(_("Text btn: BG hover"), ( "box_button_background_highlight", "tab_highlight", )),
+	(_("Text btn: text hover"), ("window_buttons_bg_over", "box_button_text_highlight", )),
+	(_("Text btn: BG active"), ("tab_background_active",)),
+	(_("Text btn: text active"), ("tab_text_active", )),
+	(_("Context menu: BG"), ("menu_background", )),
+	(_("Context menu: text"), ("menu_text", )),
+	(_("Context menu: invalid text"), ("menu_text_disabled",)),
+	(_("Context menu: highlight"), ("menu_highlight_background",)),
+	(_("Boxes: background"), ("box_background",)),
+	(_("Boxes: title text"), ("box_title_text", "box_text_label",)),
+	(_("Boxes: body text"), ("box_text",)),
+	(_("Boxes: sub text"), ("box_sub_text",)),
+	(_("Boxes: input text"), ("box_input_text",)),
+	(_("Mini: BG"), ("mini_mode_background",)),
+	(_("Mini: text 1"), ("mini_mode_text_1",)),
+	(_("Mini: text 2"), ("mini_mode_text_2",)),
 )
 
 
@@ -43555,7 +44516,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-username", prefs.jelly_username)
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
-	cf.update_value("jelly-timeout", prefs.jelly_timeout)
 
 	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
 
@@ -43576,6 +44536,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("precache-local-files", prefs.precache)
 	cf.update_value("cache-use-tmp", prefs.tmp_cache)
 	cf.update_value("cache-limit", prefs.cache_limit)
+	cf.update_value("network-stream", prefs.network_stream)
+	cf.update_value("stream-buffer-size", prefs.stream_buffer)
 	cf.update_value("always-ffmpeg", prefs.always_ffmpeg)
 	cf.update_value("volume-curve", prefs.volume_power)
 	cf.update_value("jump-start-dl", prefs.jump_start)
@@ -43601,6 +44563,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
+	cf.update_value("rounded-corners", prefs.rounded_corners)
+	cf.update_value("rounded-corner-radius", prefs.corner_radius)
 	cf.update_value("mac-style", prefs.macstyle)
 	cf.update_value("allow-art-zoom", prefs.zoom_art)
 
@@ -43720,7 +44684,9 @@ def load_prefs(bag: Bag) -> None:
 	cf    = bag.cf
 	prefs = bag.prefs
 	cf.reset()
-	cf.load(str(bag.dirs.config_directory / "tauon.conf"))
+	config_file = bag.dirs.config_directory / "tauon.conf"
+	first_run = not config_file.is_file()
+	cf.load(str(config_file))
 
 	cf.add_comment("Tauon Music Box configuration file")
 	cf.br()
@@ -43768,6 +44734,12 @@ def load_prefs(bag: Bag) -> None:
 	prefs.cache_limit = cf.sync_add(
 		"int", "cache-limit", prefs.cache_limit,
 		"Limit size of network audio file cache. In MB.")
+	prefs.network_stream = cf.sync_add(
+		"bool", "network-stream", prefs.network_stream,
+		"Stream network tracks directly, buffering in memory, instead of downloading the full file first")
+	prefs.stream_buffer = cf.sync_add(
+		"int", "stream-buffer-size", prefs.stream_buffer,
+		"Size of the in-memory file/stream buffer. In MB. Default: 50. (applies on track change)")
 	prefs.tmp_cache = cf.sync_add(
 		"bool", "cache-use-tmp", prefs.tmp_cache,
 		"Use /tmp for cache. When enabled, above setting overridden to a small value. (applies on restart)")
@@ -43870,6 +44842,17 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
+	if first_run and prefs.macos:
+		# Round by default on macOS where every other window has rounded corners
+		prefs.rounded_corners = True
+	prefs.rounded_corners = cf.sync_add(
+		"bool", "rounded-corners", prefs.rounded_corners,
+		"Round the window corners. Only applies when drawing own window decorations.")
+	prefs.corner_radius = cf.sync_add(
+		"int", "rounded-corner-radius", prefs.corner_radius, "Window corner radius in logical pixels")
+	if prefs.corner_radius < 2 or prefs.corner_radius > 30:
+		prefs.corner_radius = 10
+		logging.warning("Invalid value for rounded-corner-radius")
 	prefs.macstyle = cf.sync_add("bool", "mac-style", prefs.macstyle, "Use macOS style window buttons")
 	prefs.zoom_art = cf.sync_add("bool", "allow-art-zoom", prefs.zoom_art)
 	prefs.gallery_row_scroll = cf.sync_add("bool", "scroll-gallery-by-row", False)
@@ -44151,9 +45134,6 @@ def load_prefs(bag: Bag) -> None:
 		"string", "jelly-server-url", prefs.jelly_server_url,
 		"The IP:Port where the jellyfin server is hosted.")
 	prefs.jelly_server_url = prefs.jelly_server_url.rstrip("/")
-	prefs.jelly_timeout = cf.sync_add(
-		"int", "jelly-timeout", prefs.jelly_timeout,
-		"Timeout for synchronizing library.")
 
 	cf.br()
 	cf.add_text("[network]")
@@ -44473,35 +45453,27 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	"""
 	if not just_check:
 		if not reload and track.synced:
-			return track.synced.splitlines()
+			if lyrics_are_synced(track.synced):
+				return track.synced.splitlines()
+			logging.warning(
+				f"Synced lyrics for {track.filename} do not look like LRC. Reclassifying them as static lyrics."
+			)
+			if not track.lyrics:
+				track.lyrics = track.synced
+			track.synced = ""
+			return None
 		if track.is_network:
 			return None
 
 	# Check if internal track lyrics are synced lyrics
-	if len(track.lyrics) > 20:
-		split_lines = track.lyrics.splitlines()
-		LRC_tags = "ti:", "ar:", "al:", "au:", "lr:", "length:", "by:", "offset:", "re:", "tool:", "ve:"
-		# Check first line that's not empty or a comment or an LRC tag
-		for line in split_lines:
-			if line == "" or line[0] == "#":
-				continue
-
-			if any(tag in line for tag in LRC_tags):
-				continue
-
-			if line[0] == "[" and ":" in line[:10] \
-			and "." in line[:10] and "]" in line:
-				try:
-					int( line[1] )
-				except ValueError:
-					if just_check:
-						return False
-					break
-				if not just_check:
-					track.synced = track.lyrics
-					return split_lines
-				return True
-			break
+	if track.lyrics:
+		if lyrics_are_synced(track.lyrics):
+			if not just_check:
+				track.synced = track.lyrics
+				return track.lyrics.splitlines()
+			return True
+		if just_check:
+			return False
 
 
 	# Check if we have a .LRC file
@@ -45489,7 +46461,7 @@ def worker1(tauon: Tauon) -> None:
 				_("We can't upload your lyrics, and we don't know why."),
 				mode="error"
 			)
-			logging.exception()
+			logging.exception("Couldn't upload lyrics")
 			return False
 		logging.info("LRCLIB upload: step 2 (of 3) complete")
 		publish_token = p + ":" + nonce.stdout.strip()
@@ -45816,8 +46788,15 @@ def worker1(tauon: Tauon) -> None:
 			network_warn: bool = False
 			while tauon.to_scan:
 				track = tauon.to_scan[0]
+				def clear_search_cache(track: int) -> None:
+					# clear cached search data (user can search by lyrics immediately)
+					tauon.search_string_cache.pop(track, None)
+					tauon.search_dia_string_cache.pop(track, None)
+					tauon.search_field_cache.pop(track, None)
+					tauon.search_dia_field_cache.pop(track, None)
 				star = tauon.star_store.full_get(track)
 				tauon.star_store.remove(track)
+				clear_search_cache(track)
 				rescanned_track = tauon.tag_scan(pctl.master_library[track])
 				if rescanned_track is None:
 					del tauon.to_scan[0]
@@ -45947,6 +46926,8 @@ def menu_is_open() -> bool:
 #	extra_menu            = tauon.extra_menu
 
 def main(holder: Holder) -> None:
+	global milky_ready
+
 	t_window               = holder.t_window
 	renderer               = holder.renderer
 	logical_size           = holder.logical_size
@@ -45972,6 +46953,12 @@ def main(holder: Holder) -> None:
 	dev_mode               = holder.dev_mode
 	log                    = holder.log
 	logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
+	renderer_name = get_renderer_name(renderer)
+	if renderer_name is not None:
+		logging.info(f"SDL renderer: {renderer_name}")
+	if not renderer_name_supports_milkdrop(renderer_name):
+		logging.warning("SDL renderer is not OpenGL; disabling Milkdrop visualizer")
+		milky_ready = False
 
 	tls_context = setup_tls(holder)
 	last_fm_enable = is_module_loaded("pylast")
@@ -46452,6 +47439,7 @@ def main(holder: Holder) -> None:
 		"pl-follow": False,
 		"scroll-enable": True,
 		"smooth-scroll-enable": False,
+		"smooth-scroll-speed": 1.0,
 	}
 
 	prefs = Prefs(
@@ -47086,10 +48074,9 @@ def main(holder: Holder) -> None:
 
 	load_prefs(bag)
 	show_upgrade_splash = False
-	# Uncomment to show splash on upgrade
-	# show_upgrade_splash = prefs.release_splash_version != NagBox.SPLASH_VERSION
-	# if show_upgrade_splash:
-	# 	prefs.release_splash_version = NagBox.SPLASH_VERSION
+	if prefs.release_splash_version != NagBox.SPLASH_VERSION:
+		show_upgrade_splash = db_version > 0
+		prefs.release_splash_version = NagBox.SPLASH_VERSION
 	save_prefs(bag)
 
 	# Temporary
@@ -47249,6 +48236,8 @@ def main(holder: Holder) -> None:
 		#pl_follow          = view_prefs['pl-follow']
 		prefs.scroll_enable = prefs.view_prefs["scroll-enable"]
 		prefs.smooth_scroll_enable = prefs.view_prefs.get("smooth-scroll-enable", False)
+		prefs.smooth_scroll_speed = float(prefs.view_prefs.get("smooth-scroll-speed", 1.0))
+		prefs.smooth_scroll_speed = min(max(prefs.smooth_scroll_speed, 0.25), 10.0)
 		if "break-enable" in prefs.view_prefs:
 			prefs.break_enable = prefs.view_prefs["break-enable"]
 		else:
@@ -47320,6 +48309,13 @@ def main(holder: Holder) -> None:
 				tauon.hit_discord()
 	except Exception:
 		logging.exception("Failed to start Discord RPC at startup")
+
+	if tauon.windows:
+		if not (tauon.install_directory / "lrclib-solver.exe").exists():
+			logging.warning("lrclib-solver not found, uploading lyrics to LRCLIB will not be possible")
+	else:
+		if not (tauon.install_directory / "lrclib-solver").exists():
+			logging.warning("lrclib-solver not found, uploading lyrics to LRCLIB will not be possible")
 
 	if db_version > 0 and db_version < latest_db_version:
 		clear_icon_cache(bag.dirs.scaled_asset_directory)
@@ -47462,8 +48458,6 @@ def main(holder: Holder) -> None:
 			logging.exception("Could not start Dbus thread")
 
 	if sys.platform == "win32":
-		tauon.tray.start()
-
 		if win_ver < 10:
 			logging.warning("Unsupported Windows version older than W10, hooking media keys the old way without SMTC!")
 			import keyboard
@@ -47817,7 +48811,6 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(2, MenuItem(_("Set as Downloads Playlist"), tauon.set_download_playlist, tauon.set_download_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Set podcast mode"), tauon.set_podcast_playlist, tauon.set_podcast_deco, pass_ref_deco=True, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Remove Duplicates"), tauon.remove_duplicates, pass_ref=True))
-	tab_menu.add_to_sub(2, MenuItem(_("Toggle Console"), tauon.console.toggle))
 
 	# tab_menu.add_to_sub("Empty Playlist", 0, new_playlist)
 
@@ -48018,21 +49011,21 @@ def main(holder: Holder) -> None:
 	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 
-	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.toggle_wiki))
-	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.toggle_gen))
+	track_menu.add(MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True, show_test=tauon.show_wiki_menu_item))
+	track_menu.add(MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, show_test=tauon.show_gen_menu_item))
 
 	son_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sonemic-g.png"))
 	son_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "sonemic-gs.png")
 
 	son_icon.xoff = 1
-	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.toggle_rym))
+	track_menu.add(MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon, show_test=tauon.show_rym_menu_item))
 
 	band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
 	band_icon.xoff = 0
 	band_icon.yoff = 1
 	band_icon.colour = ColourRGBA(96, 147, 158, 255)
 
-	track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.toggle_band))
+	track_menu.add(MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon, show_test=tauon.show_band_menu_item))
 
 	# Copy metadata to clipboard
 	# track_menu.add(_('Copy "Artist - Album"'), tauon.clip_aar_al, pass_ref=True)
@@ -48399,9 +49392,11 @@ def main(holder: Holder) -> None:
 	if gui.remember_library_mode:
 		tauon.toggle_library_mode()
 
-	if prefs.reload_state and prefs.reload_state[0] == 1:
+	if prefs.reload_play_state and prefs.reload_state and prefs.reload_state[0] == PlayingState.PLAYING:
 		pctl.jump_time = prefs.reload_state[1]
 		pctl.play()
+	elif not prefs.reload_play_state:
+		prefs.reload_state = None
 
 	pctl.refresh_now_playing()
 
@@ -48552,7 +49547,12 @@ def main(holder: Holder) -> None:
 
 	render_heartbeat_timer = Timer()
 
+	tauon.set_tray_icons()
+	if prefs.use_tray:
+		tauon.show_tray()
+
 	while pctl.running:
+		tauon.update_sdl_tray()
 		# bm.get('main')
 		# time.sleep(100)
 
@@ -48844,8 +49844,7 @@ def main(holder: Holder) -> None:
 
 					inp.mouse_down = True
 				elif event.button.button == sdl3.SDL_BUTTON_MIDDLE:
-					if not tauon.search_over.active:
-						inp.middle_click = True
+					inp.middle_click = True
 					gui.update += 1
 				elif event.button.button == sdl3.SDL_BUTTON_X1:
 					keymaps.hits.append("MB4")
@@ -48982,37 +49981,38 @@ def main(holder: Holder) -> None:
 				power += 6
 				now = time.monotonic()
 				wheel_before = inp.mouse_wheel
-				window_active_before = now < inp.trackpad_scroll_mode_until
 				raw_scroll_y = event.wheel.y
-				is_precise = raw_scroll_y != event.wheel.integer_y
-				if is_precise:
-					inp.trackpad_scroll_mode_until = now + SCROLL_PHYSICS_TRACKPAD_GESTURE_WINDOW
-				trackpad_like = is_precise or now < inp.trackpad_scroll_mode_until
-				event_mode = "trackpad" if trackpad_like else "wheel"
+				integer_scroll_y = event.wheel.integer_y
+				smooth_enabled = tauon.smooth_scroll.enabled()
+				precise_input = smooth_enabled and (macos or raw_scroll_y != integer_scroll_y)
+				scroll_y = raw_scroll_y if smooth_enabled else float(integer_scroll_y)
+				event_mode = "precise-smooth" if precise_input else "smooth" if smooth_enabled else "line"
 				if event_mode != inp.scroll_debug_last_mode or now - inp.scroll_debug_last_log > 1.0:
 					logging.debug(
-						"Wheel event mode=%s raw_y=%.3f integer_y=%d precise=%s gesture_window_before=%s gesture_window_after=%s wheel_before=%.3f mouse=(%d,%d)",
+						"Wheel event mode=%s raw_y=%.3f integer_y=%d scroll_y=%.3f smooth_enabled=%s precise_input=%s speed=%.3f wheel_before=%.3f mouse=(%d,%d)",
 						event_mode,
 						raw_scroll_y,
-						event.wheel.integer_y,
-						is_precise,
-						window_active_before,
-						now < inp.trackpad_scroll_mode_until,
+						integer_scroll_y,
+						scroll_y,
+						smooth_enabled,
+						precise_input,
+						tauon.smooth_scroll.speed(),
 						wheel_before,
 						inp.mouse_position[0],
 						inp.mouse_position[1],
 					)
 					inp.scroll_debug_last_mode = event_mode
 					inp.scroll_debug_last_log = now
-				inp.mouse_wheel += raw_scroll_y
+				inp.mouse_wheel += scroll_y
 				if logging.getLogger().isEnabledFor(logging.DEBUG):
 					logging.debug(
-						"Wheel event accumulate mode=%s wheel_after=%.3f trackpad_until_in=%.3f",
+						"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f",
 						event_mode,
+						scroll_y,
 						inp.mouse_wheel,
-						max(inp.trackpad_scroll_mode_until - now, 0.0),
 					)
-				inp.mouse_wheel_precise = inp.mouse_wheel_precise or trackpad_like
+				inp.mouse_wheel_precise = precise_input
+				inp.trackpad_scroll_mode_until = 0.0
 
 				gui.update += 1
 			elif event.type == sdl3.SDL_EVENT_FINGER_DOWN:
@@ -49205,7 +50205,7 @@ def main(holder: Holder) -> None:
 		if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
 			power = 1000
 
-		if not prefs.smooth_scroll_enable:
+		if not tauon.smooth_scroll.enabled():
 			tauon.smooth_scroll.reset_disabled_motion()
 
 		if tauon.smooth_scroll.any_active():
@@ -49260,6 +50260,15 @@ def main(holder: Holder) -> None:
 		if tauon.requested_raise:
 			tauon.raise_window()
 			tauon.requested_raise = False
+
+		if tauon.requested_tray_destruct:
+			#logging.debug("Destroying tray as it was requested")
+			tauon.destroy_sdl_tray()
+			tauon.requested_tray_destruct = False
+		if tauon.requested_tray:
+			#logging.debug("Creating tray as it was requested")
+			tauon.init_sdl_tray()
+			tauon.requested_tray = False
 
 		if pctl.playing_state != PlayingState.STOPPED:
 			power += 400
@@ -49812,8 +50821,9 @@ def main(holder: Holder) -> None:
 				and not radiobox.active
 			):
 				if keymaps.test("info-playing"):
-					if pctl.selected_ready():
-						tauon.show_track_box(pctl.get_track(pctl.default_playlist[pctl.selected_in_playlist]).index)
+					playing_track = pctl.playing_object()
+					if playing_track is not None and playing_track.index in pctl.master_library:
+						tauon.show_track_box(playing_track.index)
 
 				if keymaps.test("info-show"):
 					if pctl.selected_ready():
@@ -49991,10 +51001,7 @@ def main(holder: Holder) -> None:
 
 		if inp.media_key:
 			if inp.media_key == "Play":
-				if pctl.playing_state == PlayingState.STOPPED:
-					pctl.play()
-				else:
-					pctl.pause()
+				pctl.play_pause()
 			elif inp.media_key == "Pause":
 				pctl.pause_only()
 			elif inp.media_key == "Stop":
@@ -50167,6 +51174,7 @@ def main(holder: Holder) -> None:
 				logging.info("Reset render targets!")
 				tauon.clear_img_cache(delete_disk=False)
 				ddt.clear_text_cache()
+				tauon.destroy_corner_textures()
 				for item in WhiteModImageAsset.assets:
 					item.reload()
 				reset_render = False
@@ -50239,6 +51247,7 @@ def main(holder: Holder) -> None:
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
+				playlist_render.update_album_rating_hover()
 
 				# Side Bar Draging----------
 
@@ -50283,7 +51292,28 @@ def main(holder: Holder) -> None:
 					or tauon.tree_view_scroll.held
 					or tauon.radio_view_scroll.held
 				)
-				scroll_bar_blocks_side_drag = scroll_bar_held or tauon.coll(tracklist_scroll_hitbox)
+				scrollbar_pointer_in_area = tauon.coll(tracklist_scroll_hitbox)
+				if not scrollbar_pointer_in_area:
+					gui.scrollbar_interaction_lock = False
+				elif (
+					not gui.album_rating_hover
+					and (
+						inp.mouse_click
+						or inp.right_click
+						or (inp.mouse_down and coll_point(inp.click_location, tracklist_scroll_hitbox))
+					)
+				):
+					gui.scrollbar_interaction_lock = True
+				gui.scrollbar_active = scroll_hold or gui.scrollbar_interaction_lock
+				scroll_bar_suppressed_by_album_rating = (
+					gui.album_rating_hover
+					and not scroll_hold
+					and not gui.scrollbar_interaction_lock
+				)
+				scroll_bar_blocks_side_drag = (
+					scroll_bar_held
+					or (tauon.coll(tracklist_scroll_hitbox) and not scroll_bar_suppressed_by_album_rating)
+				)
 				if scroll_bar_held:
 					gui.side_drag = False
 
@@ -50432,6 +51462,8 @@ def main(holder: Holder) -> None:
 								inp.mouse_down = False
 
 						rect = [x, gui.panelY, w, h]
+						if not gui.show_playlist and x > gui.playlist_left:
+							ddt.rect([gui.playlist_left, gui.panelY, x - gui.playlist_left, h], colours.gallery_background)
 						ddt.rect(rect, colours.gallery_background)
 
 						# ddt.rect_r(rect, [255, 0, 0, 200], True)
@@ -50479,10 +51511,8 @@ def main(holder: Holder) -> None:
 						# Mouse wheel scrolling
 						gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
 						touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
-						precise_gallery_scroll = inp.mouse_wheel_precise or time.monotonic() < inp.trackpad_scroll_mode_until
 						use_smooth_gallery = (
-							prefs.smooth_scroll_enable
-							or precise_gallery_scroll
+							tauon.smooth_scroll.enabled()
 							or touch_scroll
 							or tauon.smooth_scroll.active("gallery")
 						)
@@ -50498,15 +51528,7 @@ def main(holder: Holder) -> None:
 								gui.frame_callback_list.append(TestTimer(0.9))
 
 							if use_smooth_gallery and inp.mouse_wheel != 0:
-								if precise_gallery_scroll:
-									gallery_precise_unit = SCROLL_PHYSICS_GALLERY_PRECISE_PIXEL_BASE / max(
-										SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER, 0.001
-									)
-									tauon.smooth_scroll.add_wheel_motion(
-										"gallery", -inp.mouse_wheel, gallery_precise_unit, precise_px_per_unit=gallery_precise_unit
-									)
-								else:
-									tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
+								tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
 							elif row_gallery_scroll:
 								gui.album_scroll_px -= inp.mouse_wheel * (
 									tauon.album_mode_art_size + gui.album_v_gap
@@ -50978,7 +52000,12 @@ def main(holder: Holder) -> None:
 											x + tauon.album_mode_art_size, window_size[0] - round(50 * gui.scale)
 										)
 
-									if info[0] == 1 and (
+									# Skip if the selection highlight is drawn over this album,
+									# so the two highlights don't show at the same time
+									selection_highlight_shown = (
+										(gui.album_tab_mode or gallery_menu.active) and info[2] is True
+									)
+									if info[0] == 1 and not selection_highlight_shown and (
 										pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 									):
 										ddt.rect_a(
@@ -51222,7 +52249,7 @@ def main(holder: Holder) -> None:
 													pctl.default_playlist[i]
 												].album_artist
 											else:
-												while i < len(pctl.default_playlist) - 1:
+												while i < len(pctl.default_playlist):
 													if (
 														pctl.master_library[pctl.default_playlist[i]].parent_folder_name
 														!= pctl.master_library[
@@ -52350,8 +53377,14 @@ def main(holder: Holder) -> None:
 					window_size[1] - gui.panelBY - top,
 				)
 
-				tauon.fields.add(gui.scroll_hide_box)
-				if not prefs.show_nag and (
+				scrollbar_hidden_by_album_rating = (
+					gui.album_rating_hover
+					and not scroll_hold
+					and not gui.scrollbar_interaction_lock
+				)
+				if not scrollbar_hidden_by_album_rating:
+					tauon.fields.add(gui.scroll_hide_box)
+				if not scrollbar_hidden_by_album_rating and not prefs.show_nag and (
 					tauon.scroll_hide_timer.get() < 0.9 or (
 						(tauon.coll(gui.scroll_hide_box) or scroll_hold or gui.quick_search_mode)
 						and not menu_is_open()
@@ -53082,13 +54115,20 @@ def main(holder: Holder) -> None:
 					p = ddt.text(
 						(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), colours.box_title_text, 213
 					)
+					input_h = 23 * gui.scale
 
 					if tauon.rename_folder.text != prefs.rename_folder_template and pctl.draw.button(
-						_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale, 70 * gui.scale
+						_("Default"), x + (300 - 63) * gui.scale, y + 11 * gui.scale, 70 * gui.scale, input_h
 					):
-						tauon.rename_folder.text = prefs.rename_folder_template
+						tauon.rename_folder.set_text(prefs.rename_folder_template)
+						tauon.rename_folder.offset = 0
 
-					tauon.rename_folder.draw(x + 14 * gui.scale, y + 41 * gui.scale, colours.box_input_text, width=300)
+					tauon.rename_folder.draw(
+						x + 14 * gui.scale,
+						y + 41 * gui.scale,
+						colours.box_input_text,
+						width=300 * gui.scale,
+					)
 
 					ddt.rect_s(
 						(x + 8 * gui.scale, y + 38 * gui.scale, 300 * gui.scale, 22 * gui.scale),
@@ -53102,6 +54142,7 @@ def main(holder: Holder) -> None:
 							x + (8 + 300 + 10) * gui.scale,
 							y + 38 * gui.scale,
 							80 * gui.scale,
+							input_h,
 							tooltip=_("Renames the physical folder based on the template"),
 						)
 						or inp.level_2_enter
@@ -53120,6 +54161,7 @@ def main(holder: Holder) -> None:
 						x + (8 + 300 + 10) * gui.scale,
 						y + 11 * gui.scale,
 						80 * gui.scale,
+						input_h,
 						text_highlight_colour=colours.grey(255),
 						background_highlight_colour=ColourRGBA(180, 60, 60, 255),
 						press=inp.mouse_up,
@@ -53736,6 +54778,9 @@ def main(holder: Holder) -> None:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 				ddt.rect(rect, ColourRGBA(0, 0, 0, 245))
 
+				if pctl.playing_state == PlayingState.PLAYING:
+					gui.delay_frame(0.05)
+
 				yy = rect[3] + 15 * gui.scale
 				u = False
 				for record in reversed(tauon.log.log_history):
@@ -53794,6 +54839,124 @@ def main(holder: Holder) -> None:
 						text += time.strftime("%H:%M:%S", dt) + " " + tauon.log.format(record) + "\n"
 					copy_to_clipboard(text)
 					tauon.show_message(_("Lines copied to clipboard"), mode="done")
+
+				# Track stream/buffer status graph
+				try:
+					s_aud = tauon.aud
+					if s_aud is not None and hasattr(s_aud, "get_stream_stats"):
+						colour_buffered = ColourRGBA(45, 110, 220, 255)
+						colour_decoded = ColourRGBA(50, 200, 110, 255)
+						colour_position = ColourRGBA(255, 80, 160, 255)
+						colour_pcm = ColourRGBA(240, 180, 60, 255)
+						colour_meta = ColourRGBA(150, 95, 220, 255)
+						colour_behind = ColourRGBA(58, 64, 90, 255)
+						colour_track = ColourRGBA(38, 38, 44, 255)
+						colour_text = ColourRGBA(140, 140, 150, 255)
+						text_bg = ColourRGBA(5, 5, 5, 255)
+
+						gx = rect[0]
+						gy = rect[1] + rect[3] + 6 * gui.scale
+						gw = rect[2]
+						gh = 66 * gui.scale
+						ddt.rect((gx, gy, gw, gh), ColourRGBA(0, 0, 0, 245))
+
+						bar_x = round(gx + 10 * gui.scale)
+						bar_w = round(gw - 20 * gui.scale)
+						bar_y = round(gy + 8 * gui.scale)
+						bar_h = round(13 * gui.scale)
+
+						s_size = ctypes.c_longlong(0)
+						s_start = ctypes.c_longlong(0)
+						s_end = ctypes.c_longlong(0)
+						s_pos = ctypes.c_longlong(0)
+						s_meta = ctypes.c_longlong(0)
+						s_net = ctypes.c_int(0)
+						s_eof = ctypes.c_int(0)
+						s_active = s_aud.get_stream_stats(
+							ctypes.byref(s_size), ctypes.byref(s_start), ctypes.byref(s_end),
+							ctypes.byref(s_pos), ctypes.byref(s_meta), ctypes.byref(s_net), ctypes.byref(s_eof))
+
+						pcm_ms = s_aud.get_buffered_ms() if hasattr(s_aud, "get_buffered_ms") else 0
+
+						# Byte map of the file, in playback order: playhead,
+						# then decoded-but-not-yet-played (the PCM buffer
+						# contents), then buffered data waiting on the decoder
+						ddt.rect((bar_x, bar_y, bar_w, bar_h), colour_track)
+						if s_active and s_size.value > 0:
+
+							def stream_graph_x(v: int) -> int:
+								return round(bar_x + bar_w * min(max(v / s_size.value, 0.0), 1.0))
+
+							# Estimate the playhead's byte offset by rewinding
+							# the decode position by the PCM buffer's duration
+							# at the track's average audio byte rate
+							pos_byte = s_pos.value
+							if pctl.playing_length > 0:
+								audio_bytes = max(s_size.value - s_meta.value, 1)
+								pos_byte = s_pos.value - round(pcm_ms / 1000 * (audio_bytes / pctl.playing_length))
+							pos_byte = min(max(pos_byte, s_start.value, s_meta.value), s_pos.value)
+
+							window_x = stream_graph_x(s_start.value)
+							window_e = stream_graph_x(s_end.value)
+							decode_x = stream_graph_x(s_pos.value)
+							play_x = stream_graph_x(pos_byte)
+
+							# Already played but still kept in memory for quick back-seeks
+							if play_x > window_x:
+								ddt.rect((window_x, bar_y, play_x - window_x, bar_h), colour_behind)
+							# Decoded ahead of playback (matches the PCM bar below)
+							if decode_x > play_x:
+								ddt.rect((play_x, bar_y, decode_x - play_x, bar_h), colour_decoded)
+							# Downloaded, waiting on the decoder
+							if window_e > decode_x:
+								ddt.rect((decode_x, bar_y, window_e - decode_x, bar_h), colour_buffered)
+							# Leading metadata block (tags/embedded art)
+							if s_meta.value > 0:
+								meta_x = stream_graph_x(s_meta.value)
+								if meta_x > bar_x:
+									ddt.rect((bar_x, bar_y, meta_x - bar_x, bar_h), colour_meta)
+							# Playhead
+							ddt.rect(
+								(play_x, round(bar_y - 2 * gui.scale),
+									max(round(1 * gui.scale), 1), round(bar_h + 4 * gui.scale)),
+								colour_position)
+
+						# Decoded PCM buffer fill (holds up to ~5s of audio)
+						pcm_y = round(bar_y + bar_h + 6 * gui.scale)
+						pcm_h = round(5 * gui.scale)
+						ddt.rect((bar_x, pcm_y, bar_w, pcm_h), colour_track)
+						ddt.rect((bar_x, pcm_y, round(bar_w * min(pcm_ms / 5000, 1.0)), pcm_h), colour_pcm)
+
+						# Legend and numbers (values quantised to limit text cache churn)
+						ty = pcm_y + pcm_h + 5 * gui.scale
+						lx = bar_x
+						for swatch, label in (
+							(colour_position, _("Position")),
+							(colour_meta, _("Metadata")),
+							(colour_decoded, _("Decoded")),
+							(colour_buffered, _("Buffered")),
+							(colour_pcm, _("PCM {n}ms").format(n=pcm_ms - pcm_ms % 100)),
+						):
+							# Text y is relative to the baseline area; glyph caps sit
+							# roughly 4-13px (scaled) below it, centre the swatch on that
+							ddt.rect((round(lx), round(ty + 5 * gui.scale), round(7 * gui.scale), round(7 * gui.scale)), swatch)
+							lw = ddt.text((lx + 11 * gui.scale, ty), label, colour_text, 311, bg=text_bg) or 0
+							lx += lw + 20 * gui.scale
+
+						if s_active:
+							line = "NET" if s_net.value else "LOCAL"
+							if s_size.value > 0:
+								line += f"  {(s_end.value - s_start.value) / 1000000:.1f} / {s_size.value / 1000000:.1f} MB"
+							if s_eof.value:
+								line += "  EOF"
+						else:
+							line = _("No stream")
+						stream_feeder = getattr(tauon, "stream_feeder", None)
+						if stream_feeder is not None and stream_feeder.speed > 0:
+							line += f"  |  {stream_feeder.speed / 1000:.0f} kB/s"
+						ddt.text((bar_x + bar_w, ty, 1), line, colour_text, 311, bg=text_bg)
+				except Exception:
+					logging.exception("Stream status graph failed")
 
 			if gui.cursor_is != gui.cursor_want:
 				gui.cursor_is = gui.cursor_want
@@ -54274,6 +55437,7 @@ def main(holder: Holder) -> None:
 
 		if gui.present:
 			sdl3.SDL_SetRenderTarget(renderer, None)
+			tauon.render_rounded_corners()
 			sdl3.SDL_RenderPresent(renderer)
 
 			gui.present = False
@@ -54343,6 +55507,8 @@ def main(holder: Holder) -> None:
 	if prefs.reload_play_state and pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 		logging.info("Saving play state...")
 		prefs.reload_state = (pctl.playing_state, pctl.playing_time)
+	else:
+		prefs.reload_state = None
 
 	if bag.should_save_state:
 		with (user_directory / "star.p").open("wb") as file:
@@ -54383,7 +55549,6 @@ def main(holder: Holder) -> None:
 			logging.exception("Failed to close radio server")
 
 	if sys.platform == "win32":
-		tauon.tray.stop()
 		if pctl.smtc:
 			pctl.sm.unload()
 	elif sys.platform == "darwin":

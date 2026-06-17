@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: Tauon Music Box\n"
 "POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:37+0000\n"
 "Last-Translator: Fjuro <fjuro@users.noreply.hosted.weblate.org>\n"
@@ -20,273 +20,266 @@ msgstr ""
 
 #: src/tauon/t_modules/t_dbus.py:364
 msgid "Failed to start indicator"
-msgstr ""
+msgstr "Nepodařilo se spustit indikátor"
 
 #: src/tauon/t_modules/t_discord.py:260 src/tauon/t_modules/t_discord.py:320
 #: src/tauon/t_modules/t_discord.py:494
-#, fuzzy
 msgid "Reconnecting to Discord..."
-msgstr "Připojování..."
+msgstr "Znovu se připojuje k Discordu..."
 
 #: src/tauon/t_modules/t_discord.py:352 src/tauon/t_modules/t_discord.py:392
 #: src/tauon/t_modules/t_discord.py:395
 msgid "Unknown Track"
-msgstr ""
+msgstr "Neznámá skladba"
 
 #: src/tauon/t_modules/t_discord.py:361 src/tauon/t_modules/t_discord.py:391
 #: src/tauon/t_modules/t_discord.py:396
-#, fuzzy
 msgid "Unknown Artist"
-msgstr "Umělec"
+msgstr "Neznámý interpret"
 
 #: src/tauon/t_modules/t_discord.py:503
 msgid "Waiting for Discord rate limit…"
-msgstr ""
+msgstr "Čeká se na limit požadavků Discordu…"
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr ""
+msgstr "Chyba - Discord není spuštěný?"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
-msgstr ""
+msgstr "Zatím ne"
 
 #: src/tauon/t_modules/t_extra.py:559
 msgid "Now"
-msgstr ""
+msgstr "Teď"
 
 #: src/tauon/t_modules/t_extra.py:563
-#, fuzzy
 msgid "min"
-msgstr "Připnout"
+msgstr "min"
 
 #: src/tauon/t_modules/t_extra.py:567
 msgid "hr"
-msgstr ""
+msgstr "h"
 
 #: src/tauon/t_modules/t_extra.py:571
-#, fuzzy
 msgid "dy"
-msgstr "den"
+msgstr "d"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr ""
+msgstr "týd"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
-msgstr ""
+msgstr "měs"
 
 #: src/tauon/t_modules/t_extra.py:580
-#, fuzzy
 msgid "Unknown"
-msgstr "Umělec"
+msgstr "Neznámé"
 
 #: src/tauon/t_modules/t_guitar_chords.py:93
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "Pro vyhledávání není dostatek metadat"
 
 #: src/tauon/t_modules/t_guitar_chords.py:107
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "Schránka neobsahuje žádný text"
 
 #: src/tauon/t_modules/t_guitar_chords.py:208
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "Chyba při hledání odpovídající skladby na GuitarParty"
 
 #: src/tauon/t_modules/t_guitar_chords.py:224
 msgid "Track not found on GuitarParty"
-msgstr ""
+msgstr "Skladba nebyla na GuitarParty nalezena"
 
 #: src/tauon/t_modules/t_guitar_chords.py:240
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Chyba při získávání písně z GuitarParty"
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:97
 msgid "Could not establish connection to server."
-msgstr ""
+msgstr "Nepodařilo se navázat spojení se serverem."
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:98
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "Zkontrolujte, že server běží a URL je správná."
 
 #: src/tauon/t_modules/t_jellyfin.py:109
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Připojení a autorizace proběhly úspěšně"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Ověření selhalo"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "Check username and password."
-msgstr ""
+msgstr "Zkontrolujte uživatelské jméno a heslo."
 
 #: src/tauon/t_modules/t_jellyfin.py:113
 msgid "Jellyfin auth error"
-msgstr ""
+msgstr "Chyba ověření Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:393
 msgid "Error connecting to Jellyfin"
-msgstr ""
+msgstr "Chyba při připojování k Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:429
 msgid "Error connecting to Jellyfin for Import"
-msgstr ""
+msgstr "Chyba při připojování k Jellyfin pro import"
 
 #: src/tauon/t_modules/t_jellyfin.py:453
 msgid "Error accessing Jellyfin"
-msgstr ""
+msgstr "Chyba při přístupu k Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:571
 msgid "Jellyfin Collection"
-msgstr ""
+msgstr "Kolekce Jellyfin"
 
 #: src/tauon/t_modules/t_main.py:1994
 msgid "Rescanning folders..."
-msgstr ""
+msgstr "Znovu se prohledávají složky..."
 
 #: src/tauon/t_modules/t_main.py:2203 src/tauon/t_modules/t_main.py:2207
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr ""
+msgstr "Seznam skladeb je uzamčen, aby se zabránilo nechtěnému smazání"
 
 #: src/tauon/t_modules/t_main.py:2317
 msgid "Are you sure you want to delete playlist: {name}?"
-msgstr ""
+msgstr "Opravdu chcete smazat seznam skladeb: {name}?"
 
 #: src/tauon/t_modules/t_main.py:4040 src/tauon/t_modules/t_main.py:18733
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Volitelný modul python-pylast není nainstalovaný"
 
 #: src/tauon/t_modules/t_main.py:4059
 msgid "Web auth page opened"
-msgstr ""
+msgstr "Webová stránka ověření byla otevřena"
 
 #: src/tauon/t_modules/t_main.py:4059
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Po autorizaci klikněte na tlačítko 'hotovo'."
 
 #: src/tauon/t_modules/t_main.py:4065
 msgid "You need to log in first"
-msgstr ""
+msgstr "Nejdřív se musíte přihlásit"
 
 #: src/tauon/t_modules/t_main.py:4081
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Chyba - neautorizováno"
 
 #: src/tauon/t_modules/t_main.py:4084
-#, fuzzy
 msgid "Unknown error."
-msgstr "Umělec"
+msgstr "Neznámá chyba."
 
 #: src/tauon/t_modules/t_main.py:4084 src/tauon/t_modules/t_phazor.py:343
 msgid "Error"
-msgstr ""
+msgstr "Chyba"
 
 #: src/tauon/t_modules/t_main.py:4093
 msgid "Logout will complete on app restart."
-msgstr ""
+msgstr "Odhlášení se dokončí po restartu aplikace."
 
 #: src/tauon/t_modules/t_main.py:4101
 msgid "Already connected to Last.fm"
-msgstr ""
+msgstr "Už jste připojeni k Last.fm"
 
 #: src/tauon/t_modules/t_main.py:4105
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "Není zaregistrován žádný účet Last.fm"
 
 #: src/tauon/t_modules/t_main.py:4105
 msgid "Authorise an account in settings"
-msgstr ""
+msgstr "Autorizujte účet v nastavení"
 
 #: src/tauon/t_modules/t_main.py:4116
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Připojení k Last.fm proběhlo úspěšně."
 
 #: src/tauon/t_modules/t_main.py:4123
 msgid "Error connecting to Last.fm network"
-msgstr ""
+msgstr "Chyba při připojování k síti Last.fm"
 
 #: src/tauon/t_modules/t_main.py:4142 src/tauon/t_modules/t_main.py:4155
 msgid "Error communicating with Last.fm network"
-msgstr ""
+msgstr "Chyba při komunikaci se sítí Last.fm"
 
 #: src/tauon/t_modules/t_main.py:4216
 msgid "Scanning failed. Try again?"
-msgstr ""
+msgstr "Prohledávání selhalo. Zkusit znovu?"
 
 #: src/tauon/t_modules/t_main.py:4223 src/tauon/t_modules/t_main.py:16724
 msgid "Scanning scrobbles complete"
-msgstr ""
+msgstr "Prohledávání scrobblů dokončeno"
 
 #: src/tauon/t_modules/t_main.py:4416
 msgid "Removed {N} loves."
-msgstr ""
+msgstr "Odebráno oblíbených: {N}."
 
 #: src/tauon/t_modules/t_main.py:4429
 msgid "There was an error, try re-log in"
-msgstr ""
+msgstr "Došlo k chybě, zkuste se znovu přihlásit"
 
 #: src/tauon/t_modules/t_main.py:4438
 msgid "Getting friend data..."
-msgstr ""
+msgstr "Získávají se data přátel..."
 
 #: src/tauon/t_modules/t_main.py:4438
 msgid "This may take a very long time."
-msgstr ""
+msgstr "Může to trvat velmi dlouho."
 
 #: src/tauon/t_modules/t_main.py:4461
 msgid "There was an error getting friends loves"
-msgstr ""
+msgstr "Při získávání oblíbených skladeb přátel došlo k chybě"
 
 #: src/tauon/t_modules/t_main.py:4469
 msgid "Scanning loved tracks for: {username}"
-msgstr ""
+msgstr "Prohledávají se oblíbené skladby uživatele: {username}"
 
 #: src/tauon/t_modules/t_main.py:4473
-#, fuzzy
 msgid "No username found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebylo nalezeno žádné uživatelské jméno"
 
 #: src/tauon/t_modules/t_main.py:4517
 msgid "User has no loved tracks."
-msgstr ""
+msgstr "Uživatel nemá žádné oblíbené skladby."
 
 #: src/tauon/t_modules/t_main.py:4520
 msgid "{N} matched tracks are up to date."
-msgstr ""
+msgstr "{N} odpovídajících skladeb je aktuálních."
 
 #: src/tauon/t_modules/t_main.py:4523
 msgid "{N} tracks matched. {T} were updated."
-msgstr ""
+msgstr "Nalezeno {N} odpovídajících skladeb. {T} bylo aktualizováno."
 
 #: src/tauon/t_modules/t_main.py:4525
 msgid "Of {N} loved tracks, no matches were found in local db"
-msgstr ""
+msgstr "Z {N} oblíbených skladeb nebyla v místní databázi nalezena žádná shoda"
 
 #: src/tauon/t_modules/t_main.py:4529
 msgid "This doesn't seem to be working :("
-msgstr ""
+msgstr "Zdá se, že to nefunguje :("
 
 #: src/tauon/t_modules/t_main.py:4589 src/tauon/t_modules/t_main.py:4643
 msgid "ListenBrainz is enabled but there is no token."
-msgstr ""
+msgstr "ListenBrainz je zapnutý, ale chybí token."
 
 #: src/tauon/t_modules/t_main.py:4589 src/tauon/t_modules/t_main.py:4643
 msgid "How did this even happen."
-msgstr ""
+msgstr "Jak se tohle vůbec stalo."
 
 #: src/tauon/t_modules/t_main.py:4633 src/tauon/t_modules/t_main.py:4695
 msgid "There was an error submitting data to ListenBrainz"
-msgstr ""
+msgstr "Při odesílání dat do ListenBrainz došlo k chybě"
 
 #: src/tauon/t_modules/t_main.py:4703
 msgid "There is no text in the clipboard"
-msgstr ""
+msgstr "Ve schránce není žádný text"
 
 #: src/tauon/t_modules/t_main.py:4713
 msgid "That is not a valid token."
-msgstr ""
+msgstr "Toto není platný token."
 
 #: src/tauon/t_modules/t_main.py:4863
 msgid "day"
@@ -297,44 +290,40 @@ msgid "days"
 msgstr "dny"
 
 #: src/tauon/t_modules/t_main.py:4866
-#, fuzzy
 msgid "Scanning for Chromecasts..."
-msgstr "Vyhledávání..."
+msgstr "Vyhledávají se zařízení Chromecast..."
 
 #: src/tauon/t_modules/t_main.py:4867
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Odesílat do: %s"
 
 #: src/tauon/t_modules/t_main.py:4868
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyla nalezena žádná zařízení Chromecast"
 
 #: src/tauon/t_modules/t_main.py:4869
-#, fuzzy
 msgid "End Cast"
-msgstr "Konec seznamu skladeb"
+msgstr "Ukončit odesílání"
 
 #: src/tauon/t_modules/t_main.py:4871
 msgid "Web server stopped."
-msgstr ""
+msgstr "Webový server zastaven."
 
 #: src/tauon/t_modules/t_main.py:4873
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Otevřít Tauon Music Box"
 
 #: src/tauon/t_modules/t_main.py:4874
 msgid "Play/Pause"
-msgstr ""
+msgstr "Přehrát/Pozastavit"
 
 #: src/tauon/t_modules/t_main.py:4875
 msgid "Next Track"
-msgstr ""
+msgstr "Další skladba"
 
 #: src/tauon/t_modules/t_main.py:4876
-#, fuzzy
 msgid "Previous Track"
-msgstr "Předchozí"
+msgstr "Předchozí skladba"
 
 #: src/tauon/t_modules/t_main.py:4877
 msgid "Quit"
@@ -342,225 +331,220 @@ msgstr "Ukončit"
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error importing M3U playlist"
-msgstr ""
+msgstr "Chyba při importu seznamu skladeb M3U"
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error trying to parse playlist as UTF-8:"
-msgstr ""
+msgstr "Chyba při pokusu zpracovat seznam skladeb jako UTF-8:"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Exception importing M3U playlist"
-msgstr ""
+msgstr "Výjimka při importu seznamu skladeb M3U"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Unknown exception trying to parse playlist"
-msgstr ""
+msgstr "Neznámá výjimka při pokusu zpracovat seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:7080
 msgid "Error importing XSPF playlist."
-msgstr ""
+msgstr "Chyba při importu seznamu skladeb XSPF."
 
 #: src/tauon/t_modules/t_main.py:7080
 msgid "Sorry about that."
-msgstr ""
+msgstr "Omlouváme se za to."
 
 #: src/tauon/t_modules/t_main.py:7209
 msgid "Failed to locate {N} out of {T} tracks."
-msgstr ""
+msgstr "Nepodařilo se najít {N} z {T} skladeb."
 
 #: src/tauon/t_modules/t_main.py:7341 src/tauon/t_modules/t_main.py:47531
 msgid "A/B Repeat"
-msgstr ""
+msgstr "Opakování A/B"
 
 #: src/tauon/t_modules/t_main.py:7343
 msgid "Set B Marker"
-msgstr ""
+msgstr "Nastavit značku B"
 
 #: src/tauon/t_modules/t_main.py:7345
-#, fuzzy
 msgid "Clear A/B"
-msgstr "Pročistit"
+msgstr "Vymazat A/B"
 
 #: src/tauon/t_modules/t_main.py:7430 src/tauon/t_modules/t_main.py:47533
 msgid "Shuffle Lockdown"
-msgstr ""
+msgstr "Uzamčení náhodného přehrávání"
 
 #: src/tauon/t_modules/t_main.py:7431 src/tauon/t_modules/t_main.py:48170
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Ukončit uzamčení náhodného přehrávání"
 
 #: src/tauon/t_modules/t_main.py:7455
 msgid "Make Large Size"
-msgstr ""
+msgstr "Nastavit velkou velikost"
 
 #: src/tauon/t_modules/t_main.py:7457
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Nastavit kompaktní velikost"
 
 #: src/tauon/t_modules/t_main.py:7527
 msgid "Can't open folder of a network track."
-msgstr ""
+msgstr "Nelze otevřít složku síťové skladby."
 
 #: src/tauon/t_modules/t_main.py:7566
-#, fuzzy
 msgid "No item is currently playing"
-msgstr "Konec seznamu skladeb"
+msgstr "Momentálně se nic nepřehrává"
 
 #: src/tauon/t_modules/t_main.py:7589
 msgid "This track is a networked track."
-msgstr ""
+msgstr "Tato skladba je síťová skladba."
 
 #: src/tauon/t_modules/t_main.py:7593
 msgid "The source folder does not exist."
-msgstr ""
+msgstr "Zdrojová složka neexistuje."
 
 #: src/tauon/t_modules/t_main.py:7597
 msgid "The destination folder does not exist."
-msgstr ""
+msgstr "Cílová složka neexistuje."
 
 #: src/tauon/t_modules/t_main.py:7601
 msgid "The destination and source folders are the same."
-msgstr ""
+msgstr "Cílová a zdrojová složka jsou stejné."
 
 #: src/tauon/t_modules/t_main.py:7605 src/tauon/t_modules/t_main.py:10602
 msgid "Safety interrupt! The source path seems oddly short."
-msgstr ""
+msgstr "Bezpečnostní přerušení! Zdrojová cesta vypadá podezřele krátká."
 
 #: src/tauon/t_modules/t_main.py:7612 src/tauon/t_modules/t_main.py:10616
 msgid "Better not do anything to that folder!"
-msgstr ""
+msgstr "S tou složkou raději nic nedělat!"
 
 #: src/tauon/t_modules/t_main.py:7617 src/tauon/t_modules/t_main.py:10621
 msgid "Folder size safety limit reached! (3GB)"
-msgstr ""
+msgstr "Dosažen bezpečnostní limit velikosti složky! (3 GB)"
 
 #: src/tauon/t_modules/t_main.py:7674 src/tauon/t_modules/t_main.py:7693
-#, fuzzy
 msgid "Rescanning folder..."
-msgstr "Připojování..."
+msgstr "Znovu se prohledává složka..."
 
 #: src/tauon/t_modules/t_main.py:7713
-#, fuzzy
 msgid "Unlock Panel"
-msgstr "Odemknout"
+msgstr "Odemknout panel"
 
 #: src/tauon/t_modules/t_main.py:7714
 msgid "Lock Panel"
-msgstr ""
+msgstr "Uzamknout panel"
 
 #: src/tauon/t_modules/t_main.py:7795 src/tauon/t_modules/t_main.py:9572
 #: src/tauon/t_modules/t_main.py:28007
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Synchronizace se přerušuje"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Hide Metadata Panel"
-msgstr ""
+msgstr "Skrýt panel metadat"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Show Metadata Panel"
-msgstr ""
+msgstr "Zobrazit panel metadat"
 
 #: src/tauon/t_modules/t_main.py:7810
 msgid "Panel Below Lyrics"
-msgstr ""
+msgstr "Panel pod textem písně"
 
 #: src/tauon/t_modules/t_main.py:7810
 msgid "Panel Above Lyrics"
-msgstr ""
+msgstr "Panel nad textem písně"
 
 #: src/tauon/t_modules/t_main.py:7826
 msgid "Enable Milkdrop Visualiser"
-msgstr ""
+msgstr "Zapnout vizualizér Milkdrop"
 
 #: src/tauon/t_modules/t_main.py:7828
 msgid "Disable Milkdrop Visualiser"
-msgstr ""
+msgstr "Vypnout vizualizér Milkdrop"
 
 #: src/tauon/t_modules/t_main.py:7832
 msgid "Enable Auto Cycle"
-msgstr ""
+msgstr "Zapnout automatické cyklování"
 
 #: src/tauon/t_modules/t_main.py:7834
 msgid "Disable Auto Cycle"
-msgstr ""
+msgstr "Vypnout automatické cyklování"
 
 #: src/tauon/t_modules/t_main.py:7838
 msgid "Disable Wide Mode"
-msgstr ""
+msgstr "Vypnout široký režim"
 
 #: src/tauon/t_modules/t_main.py:7838 src/tauon/t_modules/t_main.py:47632
 #: src/tauon/t_modules/t_main.py:47644
 msgid "Enable Wide Mode"
-msgstr ""
+msgstr "Zapnout široký režim"
 
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Hide Lyrics"
-msgstr ""
+msgstr "Skrýt text písně"
 
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Show Lyrics"
-msgstr ""
+msgstr "Zobrazit text písně"
 
 #: src/tauon/t_modules/t_main.py:7902
 msgid "Restart Tauon if presets are not visible yet."
-msgstr ""
+msgstr "Pokud předvolby ještě nejsou vidět, restartujte Tauon."
 
 #: src/tauon/t_modules/t_main.py:7932 src/tauon/t_modules/t_main.py:7973
 msgid "Preset download cancelled"
-msgstr ""
+msgstr "Stahování předvoleb zrušeno"
 
 #: src/tauon/t_modules/t_main.py:7933 src/tauon/t_modules/t_main.py:7974
 #: src/tauon/t_modules/t_main.py:8014
 msgid "Milkdrop visualiser enabled."
-msgstr ""
+msgstr "Vizualizér Milkdrop zapnut."
 
 #: src/tauon/t_modules/t_main.py:7957
-#, fuzzy
 msgid "Downloading preset pack..."
-msgstr "Načítání..."
+msgstr "Stahuje se balíček předvoleb..."
 
 #: src/tauon/t_modules/t_main.py:7960 src/tauon/t_modules/t_main.py:8005
 msgid "Extracting presets..."
-msgstr ""
+msgstr "Rozbalují se předvolby..."
 
 #: src/tauon/t_modules/t_main.py:7980
 msgid "Preset package contains an unsafe path"
-msgstr ""
+msgstr "Balíček předvoleb obsahuje nebezpečnou cestu"
 
 #: src/tauon/t_modules/t_main.py:8014
 msgid "Presets ready"
-msgstr ""
+msgstr "Předvolby jsou připravené"
 
 #: src/tauon/t_modules/t_main.py:8017 src/tauon/t_modules/t_main.py:15701
 msgid "Download failed"
-msgstr ""
+msgstr "Stahování selhalo"
 
 #: src/tauon/t_modules/t_main.py:8025
 msgid "No presets loaded. Download preset pack? (~5MB)"
-msgstr ""
+msgstr "Nejsou načteny žádné předvolby. Stáhnout balíček předvoleb? (~5 MB)"
 
 #: src/tauon/t_modules/t_main.py:8037
 msgid "Not supported on this platform"
-msgstr ""
+msgstr "Na této platformě není podporováno"
 
 #: src/tauon/t_modules/t_main.py:8096
 msgid "There are no lyric sources enabled."
-msgstr ""
+msgstr "Nejsou zapnuté žádné zdroje textů písní."
 
 #: src/tauon/t_modules/t_main.py:8097
 msgid "See 'lyrics settings' under 'functions' tab in settings."
-msgstr ""
+msgstr "Viz 'nastavení textů' na kartě 'funkce' v nastavení."
 
 #: src/tauon/t_modules/t_main.py:8106
 msgid "Let's be polite and try later."
-msgstr ""
+msgstr "Buďme slušní a zkusme to později."
 
 #: src/tauon/t_modules/t_main.py:8109
 msgid "Stop requesting lyrics AAAAAA."
-msgstr ""
+msgstr "Přestaňte vyžadovat texty písní AAAAAA."
 
 #: src/tauon/t_modules/t_main.py:8123 src/tauon/t_modules/t_main.py:11412
 #: src/tauon/t_modules/t_main.py:14060 src/tauon/t_modules/t_main.py:35159
@@ -570,485 +554,459 @@ msgid "Searching..."
 msgstr "Vyhledávání..."
 
 #: src/tauon/t_modules/t_main.py:8171
-#, fuzzy
 msgid "No lyrics for this track were found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Pro tuto skladbu nebyl nalezen žádný text"
 
 #: src/tauon/t_modules/t_main.py:8185
 msgid "Insufficient metadata to get lyrics"
-msgstr ""
+msgstr "Pro získání textu není dostatek metadat"
 
 #: src/tauon/t_modules/t_main.py:8219 src/tauon/t_modules/t_main.py:8225
 msgid "Show static lyrics"
-msgstr ""
+msgstr "Zobrazit statický text"
 
 #: src/tauon/t_modules/t_main.py:8219 src/tauon/t_modules/t_main.py:8227
 msgid "Show synced lyrics"
-msgstr ""
+msgstr "Zobrazit synchronizovaný text"
 
 #: src/tauon/t_modules/t_main.py:8294
 msgid "Could not clear synced lyrics"
-msgstr ""
+msgstr "Nepodařilo se vymazat synchronizovaný text"
 
 #: src/tauon/t_modules/t_main.py:8295
 msgid "The .lrc file could not be deleted."
-msgstr ""
+msgstr "Soubor .lrc se nepodařilo smazat."
 
 #: src/tauon/t_modules/t_main.py:8304
 msgid "Removed from .lrc and tags"
-msgstr ""
+msgstr "Odebráno z .lrc a tagů"
 
 #: src/tauon/t_modules/t_main.py:8304 src/tauon/t_modules/t_main.py:8306
 #: src/tauon/t_modules/t_main.py:8308
 msgid "Cleared synced lyrics"
-msgstr ""
+msgstr "Synchronizovaný text vymazán"
 
 #: src/tauon/t_modules/t_main.py:8306
 msgid "Removed from .lrc"
-msgstr ""
+msgstr "Odebráno z .lrc"
 
 #: src/tauon/t_modules/t_main.py:8308
 msgid "Removed from tags"
-msgstr ""
+msgstr "Odebráno z tagů"
 
 #: src/tauon/t_modules/t_main.py:8311 src/tauon/t_modules/t_main.py:8316
 msgid "Cleared synced lyrics in Tauon only"
-msgstr ""
+msgstr "Synchronizovaný text vymazán pouze v Tauonu"
 
 #: src/tauon/t_modules/t_main.py:8312
 msgid "The .lrc file was kept because \"Save Synced to .lrc\" is off."
-msgstr ""
+msgstr "Soubor .lrc byl ponechán, protože je vypnuto „Ukládat synchronizovaný text do .lrc“."
 
 #: src/tauon/t_modules/t_main.py:8318
-#, fuzzy
 msgid "No synced lyrics were cleared"
-msgstr "Konec seznamu skladeb"
+msgstr "Nebyl vymazán žádný synchronizovaný text"
 
 #: src/tauon/t_modules/t_main.py:8391 src/tauon/t_modules/t_main.py:8410
 msgid "Could not write lyrics to file"
-msgstr ""
+msgstr "Nepodařilo se zapsat text písně do souboru"
 
 #: src/tauon/t_modules/t_main.py:8392
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr ""
+msgstr "Nevíme, jak zapsat text písně do typu souboru: "
 
 #: src/tauon/t_modules/t_main.py:8393 src/tauon/t_modules/t_main.py:8412
 msgid "(We still saved to the internal database)"
-msgstr ""
+msgstr "(Stále jsme ho uložili do interní databáze)"
 
 #: src/tauon/t_modules/t_main.py:8411
 msgid "File doesn't exist or is not accessible"
-msgstr ""
+msgstr "Soubor neexistuje nebo není přístupný"
 
 #: src/tauon/t_modules/t_main.py:8436 src/tauon/t_modules/t_main.py:21323
 msgid "Saving network images not implemented"
-msgstr ""
+msgstr "Ukládání síťových obrázků není implementováno"
 
 #: src/tauon/t_modules/t_main.py:8443
 msgid "No embedded album art found in file."
-msgstr ""
+msgstr "V souboru nebyl nalezen žádný vložený obrázek alba."
 
 #: src/tauon/t_modules/t_main.py:8443 src/tauon/t_modules/t_main.py:8465
 #: src/tauon/t_modules/t_main.py:21328
 msgid "Image save error."
-msgstr ""
+msgstr "Chyba při ukládání obrázku."
 
 #: src/tauon/t_modules/t_main.py:8465
 msgid "A mysterious error occurred"
-msgstr ""
+msgstr "Došlo k záhadné chybě"
 
 #: src/tauon/t_modules/t_main.py:8541
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Nelze stáhnout obrázek pro síťové skladby."
 
 #: src/tauon/t_modules/t_main.py:8565
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Nevypadá to, že by tato složka patřila jednomu albu, omlouváme se"
 
 #: src/tauon/t_modules/t_main.py:8571
 msgid "Directory missing."
-msgstr ""
+msgstr "Adresář chybí."
 
 #: src/tauon/t_modules/t_main.py:8575
 msgid "Looking up MusicBrainz ID..."
-msgstr ""
+msgstr "Vyhledává se ID MusicBrainz..."
 
 #: src/tauon/t_modules/t_main.py:8604
-#, fuzzy
 msgid "Searching fanart.tv for cover art..."
-msgstr "Vyhledávání..."
+msgstr "Vyhledává se obal na fanart.tv..."
 
 #: src/tauon/t_modules/t_main.py:8628
 msgid "Could not detect downloaded filetype."
-msgstr ""
+msgstr "Nepodařilo se zjistit typ staženého souboru."
 
 #: src/tauon/t_modules/t_main.py:8634
 msgid "Cover art downloaded from fanart.tv"
-msgstr ""
+msgstr "Obal stažen z fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:8643
-#, fuzzy
 msgid "Searching MusicBrainz for cover art..."
-msgstr "Vyhledávání..."
+msgstr "Vyhledává se obal na MusicBrainz..."
 
 #: src/tauon/t_modules/t_main.py:8655
 msgid "Cover art downloaded from MusicBrainz"
-msgstr ""
+msgstr "Obal stažen z MusicBrainz"
 
 #: src/tauon/t_modules/t_main.py:8667
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Odpovídající obal nebo ID se nepodařilo najít."
 
 #: src/tauon/t_modules/t_main.py:8690
 msgid "Error - No handling for this kind of track"
-msgstr ""
+msgstr "Chyba - tento druh skladby nelze zpracovat"
 
 #: src/tauon/t_modules/t_main.py:8735
 msgid "Removing vorbis image not implemented"
-msgstr ""
+msgstr "Odebírání obrázku Vorbis není implementováno"
 
 #: src/tauon/t_modules/t_main.py:8756
 msgid "Image remove error"
-msgstr ""
+msgstr "Chyba při odebírání obrázku"
 
 #: src/tauon/t_modules/t_main.py:8763
 msgid "Image removal failed."
-msgstr ""
+msgstr "Odebrání obrázku selhalo."
 
 #: src/tauon/t_modules/t_main.py:8766
 msgid "Deleted embedded picture from file"
-msgstr ""
+msgstr "Vložený obrázek byl ze souboru smazán"
 
 #: src/tauon/t_modules/t_main.py:8768
 msgid "{N} files processed"
-msgstr ""
+msgstr "Zpracováno souborů: {N}"
 
 #: src/tauon/t_modules/t_main.py:8784 src/tauon/t_modules/t_main.py:45398
 #: src/tauon/t_modules/t_main.py:45407 src/tauon/t_modules/t_main.py:45416
 #: src/tauon/t_modules/t_main.py:45434
 msgid "Something went wrong"
-msgstr ""
+msgstr "Něco se pokazilo"
 
 #: src/tauon/t_modules/t_main.py:8789 src/tauon/t_modules/t_main.py:8796
 #: src/tauon/t_modules/t_main.py:47619
-#, fuzzy
 msgid "Delete Image File"
-msgstr "Smazat"
+msgstr "Smazat soubor obrázku"
 
 #: src/tauon/t_modules/t_main.py:8804
 msgid "Delete Embedded | Folder"
-msgstr ""
+msgstr "Smazat vložený | Složka"
 
 #: src/tauon/t_modules/t_main.py:8806
 msgid "Delete Embedded | Track"
-msgstr ""
+msgstr "Smazat vložený | Skladba"
 
 #: src/tauon/t_modules/t_main.py:8823
 msgid "This will erase any embedded image in {N} files. Are you sure?"
-msgstr ""
+msgstr "Tím se smaže každý vložený obrázek v {N} souborech. Opravdu?"
 
 #: src/tauon/t_modules/t_main.py:8867 src/tauon/t_modules/t_main.py:8912
 msgid "There are no tracks in this playlist. Nothing to export"
-msgstr ""
+msgstr "V tomto seznamu skladeb nejsou žádné skladby. Není co exportovat"
 
 #: src/tauon/t_modules/t_main.py:8878 src/tauon/t_modules/t_main.py:8923
 msgid "Cannot use relative paths"
-msgstr ""
+msgstr "Nelze použít relativní cesty"
 
 #: src/tauon/t_modules/t_main.py:8879 src/tauon/t_modules/t_main.py:8924
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
-msgstr ""
+msgstr "Jedna nebo více skladeb je uložena na jiném disku než soubor seznamu skladeb."
 
 #: src/tauon/t_modules/t_main.py:8974
 msgid "Playlist is locked to prevent accidental erasure"
-msgstr ""
+msgstr "Seznam skladeb je uzamčen, aby se zabránilo nechtěnému vymazání"
 
 #: src/tauon/t_modules/t_main.py:9007 src/tauon/t_modules/t_main.py:9278
 #: src/tauon/t_modules/t_main.py:9289 src/tauon/t_modules/t_main.py:9308
 #: src/tauon/t_modules/t_main.py:11739
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "Konec seznamu skladeb"
+msgstr "Seznam skladeb je uzamčen"
 
 #: src/tauon/t_modules/t_main.py:9012
-#, fuzzy
 msgid "Folder not found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Složka nebyla nalezena"
 
 #: src/tauon/t_modules/t_main.py:9046
 msgid "This includes the conversion of a lossy codec to a lossless one!"
-msgstr ""
+msgstr "To zahrnuje převod ztrátového kodeku na bezeztrátový!"
 
 #: src/tauon/t_modules/t_main.py:9154
-#, fuzzy
 msgid "Playlist:"
-msgstr "Konec seznamu skladeb"
+msgstr "Seznam skladeb:"
 
 #: src/tauon/t_modules/t_main.py:9155
-#, fuzzy
 msgid "Generated:"
-msgstr "Generovat"
+msgstr "Vygenerováno:"
 
 #: src/tauon/t_modules/t_main.py:9156
-#, fuzzy
 msgid "Tracks in playlist:"
-msgstr "Konec seznamu skladeb"
+msgstr "Skladeb v seznamu:"
 
 #: src/tauon/t_modules/t_main.py:9158
-#, fuzzy
 msgid "Repeats in playlist:"
-msgstr "Konec seznamu skladeb"
+msgstr "Opakování v seznamu skladeb:"
 
 #: src/tauon/t_modules/t_main.py:9162
 msgid "Total local size:"
-msgstr ""
+msgstr "Celková místní velikost:"
 
 #: src/tauon/t_modules/t_main.py:9163
 msgid "Playlist duration:"
-msgstr ""
+msgstr "Délka seznamu skladeb:"
 
 #: src/tauon/t_modules/t_main.py:9164
 msgid "Total playtime:"
-msgstr ""
+msgstr "Celková doba přehrávání:"
 
 #: src/tauon/t_modules/t_main.py:9166
 msgid "Track types:"
-msgstr ""
+msgstr "Typy skladeb:"
 
 #: src/tauon/t_modules/t_main.py:9182
 msgid "Percent of tracks are CUE type:"
-msgstr ""
+msgstr "Procento skladeb typu CUE:"
 
 #: src/tauon/t_modules/t_main.py:9192
 msgid "MP3 bitrates (kbps):"
-msgstr ""
+msgstr "Datové toky MP3 (kb/s):"
 
 #: src/tauon/t_modules/t_main.py:9206 src/tauon/t_modules/t_main.py:9225
 msgid "Others"
-msgstr ""
+msgstr "Ostatní"
 
 #: src/tauon/t_modules/t_main.py:9211
 msgid "OGG bitrates (kbps):"
-msgstr ""
+msgstr "Datové toky OGG (kb/s):"
 
 #: src/tauon/t_modules/t_main.py:9249
-#, fuzzy
 msgid "Top Artists"
-msgstr "Umělec"
+msgstr "Nejlepší interpreti"
 
 #: src/tauon/t_modules/t_main.py:9255
-#, fuzzy
 msgid "Top Albums"
-msgstr "Album"
+msgstr "Nejlepší alba"
 
 #: src/tauon/t_modules/t_main.py:9259
-#, fuzzy
 msgid "Top Genres"
-msgstr "Žánr"
+msgstr "Nejlepší žánry"
 
 #: src/tauon/t_modules/t_main.py:9415
 msgid "Cannot sync when in transcode inplace mode"
-msgstr ""
+msgstr "Nelze synchronizovat v režimu překódování na místě"
 
 #: src/tauon/t_modules/t_main.py:9425
 msgid "No target folder selected"
-msgstr ""
+msgstr "Není vybrána cílová složka"
 
 #: src/tauon/t_modules/t_main.py:9431
-#, fuzzy
 msgid "Target folder could not be found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Cílovou složku se nepodařilo najít"
 
 #: src/tauon/t_modules/t_main.py:9472
 msgid "Deleting folders..."
-msgstr ""
+msgstr "Mažou se složky..."
 
 #: src/tauon/t_modules/t_main.py:9491 src/tauon/t_modules/t_main.py:9569
 msgid "Copying files to device"
-msgstr ""
+msgstr "Kopírují se soubory do zařízení"
 
 #: src/tauon/t_modules/t_main.py:9497
 msgid "Sync aborted! Low disk space on target device"
-msgstr ""
+msgstr "Synchronizace přerušena! Na cílovém zařízení je málo místa"
 
 #: src/tauon/t_modules/t_main.py:9507 src/tauon/t_modules/t_main.py:9537
 msgid "Sync warning"
-msgstr ""
+msgstr "Varování synchronizace"
 
 #: src/tauon/t_modules/t_main.py:9507 src/tauon/t_modules/t_main.py:9537
 msgid "Multiple folders to sync have the same name. Skipping."
-msgstr ""
+msgstr "Více synchronizovaných složek má stejný název. Přeskakuje se."
 
 #: src/tauon/t_modules/t_main.py:9513
 msgid "One or more folders is missing"
-msgstr ""
+msgstr "Jedna nebo více složek chybí"
 
 #: src/tauon/t_modules/t_main.py:9522
 msgid "{N} Folders Remaining"
-msgstr ""
+msgstr "Zbývá složek: {N}"
 
 #: src/tauon/t_modules/t_main.py:9524
 msgid "{N} Folder Remaining"
-msgstr ""
+msgstr "Zbývá složek: {N}"
 
 #: src/tauon/t_modules/t_main.py:9580
-#, fuzzy
 msgid "Sync completed"
-msgstr "Synchronizovat..."
+msgstr "Synchronizace dokončena"
 
 #: src/tauon/t_modules/t_main.py:9595 src/tauon/t_modules/t_main.py:47744
-#, fuzzy
 msgid "Set as Sync Playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Nastavit jako seznam pro synchronizaci"
 
 #: src/tauon/t_modules/t_main.py:9598
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Zrušit nastavení seznamu pro synchronizaci"
 
 #: src/tauon/t_modules/t_main.py:9613 src/tauon/t_modules/t_main.py:47745
-#, fuzzy
 msgid "Set as Downloads Playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Nastavit jako seznam pro stahování"
 
 #: src/tauon/t_modules/t_main.py:9615
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Zrušit nastavení seznamu pro stahování"
 
 #: src/tauon/t_modules/t_main.py:9619
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Zapnout používání trvalého času"
 
 #: src/tauon/t_modules/t_main.py:9621
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Vypnout používání trvalého času"
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
 msgid "Export complete."
-msgstr ""
+msgstr "Export dokončen."
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
 msgid "Saved as: "
-msgstr ""
+msgstr "Uloženo jako: "
 
 #: src/tauon/t_modules/t_main.py:9705 src/tauon/t_modules/t_main.py:47758
 #: src/tauon/t_modules/t_main.py:47759
 msgid "Top Rated Tracks"
-msgstr ""
+msgstr "Nejlépe hodnocené skladby"
 
 #: src/tauon/t_modules/t_main.py:9722 src/tauon/t_modules/t_main.py:47752
 #: src/tauon/t_modules/t_main.py:47753
 msgid "Top Played Tracks"
-msgstr ""
+msgstr "Nejčastěji přehrávané skladby"
 
 #: src/tauon/t_modules/t_main.py:9780 src/tauon/t_modules/t_main.py:47755
 #: src/tauon/t_modules/t_main.py:47756
 msgid "Top Played Albums"
-msgstr ""
+msgstr "Nejčastěji přehrávaná alba"
 
 #: src/tauon/t_modules/t_main.py:9828 src/tauon/t_modules/t_main.py:47761
 #: src/tauon/t_modules/t_main.py:47762
 msgid "Top Rated Albums"
-msgstr ""
+msgstr "Nejlépe hodnocená alba"
 
 #: src/tauon/t_modules/t_main.py:9849
 msgid "Tracks with lyrics"
-msgstr ""
+msgstr "Skladby s texty"
 
 #: src/tauon/t_modules/t_main.py:9855
-#, fuzzy
 msgid "No tracks with lyrics were found."
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyly nalezeny žádné skladby s texty."
 
 #: src/tauon/t_modules/t_main.py:9900
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
-msgstr ""
+msgstr "Pozor, může to zahrnovat alba, jejichž skladbám pouze chybí tag alba"
 
 #: src/tauon/t_modules/t_main.py:9903
 msgid "Incomplete Albums"
-msgstr ""
+msgstr "Neúplná alba"
 
 #: src/tauon/t_modules/t_main.py:9909
-#, fuzzy
 msgid "No incomplete albums were found."
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyla nalezena žádná neúplná alba."
 
 #: src/tauon/t_modules/t_main.py:9923
-#, fuzzy
 msgid "Codec: "
-msgstr "Kodek"
+msgstr "Kodek: "
 
 #: src/tauon/t_modules/t_main.py:9974 src/tauon/t_modules/t_main.py:47764
 #: src/tauon/t_modules/t_main.py:47765
 msgid "File Modified"
-msgstr ""
+msgstr "Soubor změněn"
 
 #: src/tauon/t_modules/t_main.py:9999 src/tauon/t_modules/t_main.py:11480
 #: src/tauon/t_modules/t_main.py:47806 src/tauon/t_modules/t_main.py:47807
 msgid "Loved"
-msgstr ""
+msgstr "Oblíbené"
 
 #: src/tauon/t_modules/t_main.py:10004
-#, fuzzy
 msgid "No loved tracks were found."
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyly nalezeny žádné oblíbené skladby."
 
 #: src/tauon/t_modules/t_main.py:10032
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Zajímavé komentáře"
 
 #: src/tauon/t_modules/t_main.py:10036
 msgid "Nothing of interest was found."
-msgstr ""
+msgstr "Nebylo nalezeno nic zajímavého."
 
 #: src/tauon/t_modules/t_main.py:10048
 msgid "ReplayGain Tracks"
-msgstr ""
+msgstr "Skladby s ReplayGain"
 
 #: src/tauon/t_modules/t_main.py:10052
-#, fuzzy
 msgid "No replay gain tags were found."
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyly nalezeny žádné tagy ReplayGain."
 
 #: src/tauon/t_modules/t_main.py:10073
-#, fuzzy
 msgid "Duration Sorted"
-msgstr "Délka"
+msgstr "Seřazeno podle délky"
 
 #: src/tauon/t_modules/t_main.py:10126 src/tauon/t_modules/t_main.py:47773
 #: src/tauon/t_modules/t_main.py:47774
-#, fuzzy
 msgid "Longest Albums"
-msgstr "Album"
+msgstr "Nejdelší alba"
 
 #: src/tauon/t_modules/t_main.py:10165
 msgid "Year Sorted"
-msgstr ""
+msgstr "Seřazeno podle roku"
 
 #: src/tauon/t_modules/t_main.py:10194 src/tauon/t_modules/t_main.py:47785
 #: src/tauon/t_modules/t_main.py:47786
 msgid "Shuffled Tracks"
-msgstr ""
+msgstr "Zamíchané skladby"
 
 #: src/tauon/t_modules/t_main.py:10225 src/tauon/t_modules/t_main.py:47788
 #: src/tauon/t_modules/t_main.py:47789
 msgid "Shuffled Albums"
-msgstr ""
+msgstr "Zamíchaná alba"
 
 #: src/tauon/t_modules/t_main.py:10246 src/tauon/t_modules/t_main.py:47791
 #: src/tauon/t_modules/t_main.py:47792
 msgid "Lucky Random"
-msgstr ""
+msgstr "Náhodný výběr"
 
 #: src/tauon/t_modules/t_main.py:10262
-#, fuzzy
 msgid "Reversed"
-msgstr "Vrátit"
+msgstr "Obráceno"
 
 #: src/tauon/t_modules/t_main.py:10293
 msgid "Reversed Albums"
-msgstr ""
+msgstr "Obrácená alba"
 
 #: src/tauon/t_modules/t_main.py:10305 src/tauon/t_modules/t_main.py:27560
 #: src/tauon/t_modules/t_main.py:47800 src/tauon/t_modules/t_main.py:47801
@@ -1056,309 +1014,301 @@ msgid "Duplicate"
 msgstr "Duplikovat"
 
 #: src/tauon/t_modules/t_main.py:10321
-#, fuzzy
 msgid "Filepath Sorted"
-msgstr "Cesta k souboru"
+msgstr "Seřazeno podle cesty k souboru"
 
 #: src/tauon/t_modules/t_main.py:10334
-#, fuzzy
 msgid "Artist Sorted"
-msgstr "Umělec"
+msgstr "Seřazeno podle interpreta"
 
 #: src/tauon/t_modules/t_main.py:10347
-#, fuzzy
 msgid "Album Sorted"
-msgstr "Album"
+msgstr "Seřazeno podle alba"
 
 #: src/tauon/t_modules/t_main.py:10360
 msgid "Cannot reload while a transcode is in progress!"
-msgstr ""
+msgstr "Nelze znovu načíst, dokud probíhá překódování!"
 
 #: src/tauon/t_modules/t_main.py:10370
 msgid "Configuration reloaded"
-msgstr ""
+msgstr "Konfigurace znovu načtena"
 
 #: src/tauon/t_modules/t_main.py:10382
 msgid "Config file opened."
-msgstr ""
+msgstr "Konfigurační soubor otevřen."
 
 #: src/tauon/t_modules/t_main.py:10382
 msgid "Click \"Reload\" if you made any changes"
-msgstr ""
+msgstr "Pokud jste provedli změny, klikněte na „Znovu načíst“"
 
 #: src/tauon/t_modules/t_main.py:10391 src/tauon/t_modules/t_main.py:10403
 msgid "Input file missing"
-msgstr ""
+msgstr "Vstupní soubor chybí"
 
 #: src/tauon/t_modules/t_main.py:10438
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Překódování skladeb ze síťových umístění není podporováno"
 
 #: src/tauon/t_modules/t_main.py:10446 src/tauon/t_modules/t_main.py:10470
 msgid "NO! Bad user!"
-msgstr ""
+msgstr "NE! Zlobivý uživatel!"
 
 #: src/tauon/t_modules/t_main.py:10446 src/tauon/t_modules/t_main.py:10470
 msgid "I'm not going to let you transcode a lossy codec to a lossless one!"
-msgstr ""
+msgstr "Nedovolím vám překódovat ztrátový kodek na bezeztrátový!"
 
 #: src/tauon/t_modules/t_main.py:10459
 msgid "Transcoding this network track type is not possible"
-msgstr ""
+msgstr "Překódování tohoto typu síťové skladby není možné"
 
 #: src/tauon/t_modules/t_main.py:10560
 msgid "More than one folder is in the clipboard"
-msgstr ""
+msgstr "Ve schránce je více než jedna složka"
 
 #: src/tauon/t_modules/t_main.py:10561
 msgid "This function can only move one folder at a time."
-msgstr ""
+msgstr "Tato funkce může přesunout vždy jen jednu složku."
 
 #: src/tauon/t_modules/t_main.py:10606
 msgid "The target directory is missing!"
-msgstr ""
+msgstr "Cílový adresář chybí!"
 
 #: src/tauon/t_modules/t_main.py:10610
 msgid "The source directory is missing!"
-msgstr ""
+msgstr "Zdrojový adresář chybí!"
 
 #: src/tauon/t_modules/t_main.py:10625
 msgid "Safety interrupt! The source folder seems to have many files."
-msgstr ""
+msgstr "Bezpečnostní přerušení! Zdrojová složka zřejmě obsahuje příliš mnoho souborů."
 
 #: src/tauon/t_modules/t_main.py:10635
 msgid "The track needs to have an artist name."
-msgstr ""
+msgstr "Skladba musí mít název interpreta."
 
 #: src/tauon/t_modules/t_main.py:10675
 msgid "Could not find a folder with the artist's name to match level at."
-msgstr ""
+msgstr "Nepodařilo se najít složku se jménem interpreta pro určení úrovně."
 
 #: src/tauon/t_modules/t_main.py:10742
 msgid "Tracks sent to trash"
-msgstr ""
+msgstr "Skladby přesunuty do koše"
 
 #: src/tauon/t_modules/t_main.py:10745
 msgid "One or more tracks could not be sent to trash"
-msgstr ""
+msgstr "Jednu nebo více skladeb se nepodařilo přesunout do koše"
 
 #: src/tauon/t_modules/t_main.py:10750
 msgid "Files deleted"
-msgstr ""
+msgstr "Soubory smazány"
 
 #: src/tauon/t_modules/t_main.py:10753
 msgid "Error deleting one or more files"
-msgstr ""
+msgstr "Chyba při mazání jednoho nebo více souborů"
 
 #: src/tauon/t_modules/t_main.py:10792 src/tauon/t_modules/t_main.py:16191
 msgid "Un-Love Track"
-msgstr ""
+msgstr "Odebrat skladbu z oblíbených"
 
 #: src/tauon/t_modules/t_main.py:10793 src/tauon/t_modules/t_main.py:16193
 #: src/tauon/t_modules/t_main.py:16194
 msgid "Love Track"
-msgstr ""
+msgstr "Přidat skladbu k oblíbeným"
 
 #: src/tauon/t_modules/t_main.py:10886
 msgid "Cannot delete a network track"
-msgstr ""
+msgstr "Síťovou skladbu nelze smazat"
 
 #: src/tauon/t_modules/t_main.py:10900 src/tauon/t_modules/t_main.py:10910
 msgid "File deleted"
-msgstr ""
+msgstr "Soubor smazán"
 
 #: src/tauon/t_modules/t_main.py:10903 src/tauon/t_modules/t_main.py:10913
 msgid "Error deleting file"
-msgstr ""
+msgstr "Chyba při mazání souboru"
 
 #: src/tauon/t_modules/t_main.py:10905
 msgid "File moved to trash"
-msgstr ""
+msgstr "Soubor přesunut do koše"
 
 #: src/tauon/t_modules/t_main.py:10920
 msgid "Rename (Single track)"
-msgstr ""
+msgstr "Přejmenovat (jedna skladba)"
 
 #: src/tauon/t_modules/t_main.py:10921 src/tauon/t_modules/t_main.py:47851
 #: src/tauon/t_modules/t_main.py:47893 src/tauon/t_modules/t_main.py:47895
 msgid "Rename Tracks…"
-msgstr ""
+msgstr "Přejmenovat skladby…"
 
 #: src/tauon/t_modules/t_main.py:10930
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Nelze fyzicky smazat"
 
 #: src/tauon/t_modules/t_main.py:10930 src/tauon/t_modules/t_main.py:11002
 #: src/tauon/t_modules/t_main.py:11115 src/tauon/t_modules/t_main.py:11181
 #: src/tauon/t_modules/t_main.py:22582
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Jedna nebo více skladeb je ze síťového umístění!"
 
 #: src/tauon/t_modules/t_main.py:10936
 msgid "This folder path seems short, I don't wanna try delete that"
-msgstr ""
+msgstr "Tato cesta ke složce vypadá krátká, nechci ji mazat"
 
 #: src/tauon/t_modules/t_main.py:10940
 msgid "Error deleting folder. The folder seems to be missing."
-msgstr ""
+msgstr "Chyba při mazání složky. Zdá se, že složka chybí."
 
 #: src/tauon/t_modules/t_main.py:10940
 msgid "It's gone! Just gone!"
-msgstr ""
+msgstr "Je pryč! Prostě pryč!"
 
 #: src/tauon/t_modules/t_main.py:10947
 msgid "I don't think we should delete that folder."
-msgstr ""
+msgstr "Nemyslím si, že bychom měli tuto složku mazat."
 
 #: src/tauon/t_modules/t_main.py:10947 src/tauon/t_modules/t_main.py:11026
 msgid "Woah, careful there!"
-msgstr ""
+msgstr "Pozor, opatrně!"
 
 #: src/tauon/t_modules/t_main.py:10951
 msgid "Delete size safety limit reached! (1.5GB)"
-msgstr ""
+msgstr "Dosažen bezpečnostní limit velikosti mazání! (1,5 GB)"
 
 #: src/tauon/t_modules/t_main.py:10973
 msgid "Folder deleted."
-msgstr ""
+msgstr "Složka smazána."
 
 #: src/tauon/t_modules/t_main.py:10975
 msgid "Folder sent to trash."
-msgstr ""
+msgstr "Složka přesunuta do koše."
 
 #: src/tauon/t_modules/t_main.py:10977
 msgid "Hmm, its still there"
-msgstr ""
+msgstr "Hmm, pořád tam je"
 
 #: src/tauon/t_modules/t_main.py:10986
 msgid "Unable to comply."
-msgstr ""
+msgstr "Nelze vyhovět."
 
 #: src/tauon/t_modules/t_main.py:10986
 msgid "Could not delete folder. Try checking permissions."
-msgstr ""
+msgstr "Složku se nepodařilo smazat. Zkuste zkontrolovat oprávnění."
 
 #: src/tauon/t_modules/t_main.py:10989
 msgid "Folder could not be trashed."
-msgstr ""
+msgstr "Složku se nepodařilo přesunout do koše."
 
 #: src/tauon/t_modules/t_main.py:10989
 msgid "Try again while holding shift to force delete."
-msgstr ""
+msgstr "Zkuste to znovu se stisknutým Shiftem pro vynucené smazání."
 
 #: src/tauon/t_modules/t_main.py:11002 src/tauon/t_modules/t_main.py:22582
 msgid "Cannot rename"
-msgstr ""
+msgstr "Nelze přejmenovat"
 
 #: src/tauon/t_modules/t_main.py:11011
 msgid "The generated name is too short"
-msgstr ""
+msgstr "Vygenerovaný název je příliš krátký"
 
 #: src/tauon/t_modules/t_main.py:11011 src/tauon/t_modules/t_main.py:11015
-#, fuzzy
 msgid "Rename error."
-msgstr "Přejmenovat"
+msgstr "Chyba přejmenování."
 
 #: src/tauon/t_modules/t_main.py:11015
 msgid "This folder path seems short, I don't wanna try rename that"
-msgstr ""
+msgstr "Tato cesta ke složce vypadá krátká, nechci ji přejmenovávat"
 
 #: src/tauon/t_modules/t_main.py:11019
 msgid "Rename Failed. The original folder is missing."
-msgstr ""
+msgstr "Přejmenování selhalo. Původní složka chybí."
 
 #: src/tauon/t_modules/t_main.py:11026
 msgid "I don't think we should rename that folder."
-msgstr ""
+msgstr "Nemyslím si, že bychom měli tuto složku přejmenovat."
 
 #: src/tauon/t_modules/t_main.py:11045
 msgid "The folder already has that name."
-msgstr ""
+msgstr "Složka už má tento název."
 
 #: src/tauon/t_modules/t_main.py:11049
-#, fuzzy
 msgid "Rename Failed."
-msgstr "Přejmenovat"
+msgstr "Přejmenování selhalo."
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "A folder with that name already exists"
-msgstr ""
+msgstr "Složka s tímto názvem už existuje"
 
 #: src/tauon/t_modules/t_main.py:11081
-#, fuzzy
 msgid "Rename Failed!"
-msgstr "Přejmenovat"
+msgstr "Přejmenování selhalo!"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Something went wrong, sorry."
-msgstr ""
+msgstr "Něco se pokazilo, omlouváme se."
 
 #: src/tauon/t_modules/t_main.py:11084
-#, fuzzy
 msgid "Folder renamed."
-msgstr "Jméno souboru"
+msgstr "Složka přejmenována."
 
 #: src/tauon/t_modules/t_main.py:11084
 msgid "Renamed to: {name}"
-msgstr ""
+msgstr "Přejmenováno na: {name}"
 
 #: src/tauon/t_modules/t_main.py:11101
 msgid "Not applicable for a network track."
-msgstr ""
+msgstr "Nelze použít na síťovou skladbu."
 
 #: src/tauon/t_modules/t_main.py:11115
 msgid "Cannot move"
-msgstr ""
+msgstr "Nelze přesunout"
 
 #: src/tauon/t_modules/t_main.py:11125
 msgid "Error shifting directory"
-msgstr ""
+msgstr "Chyba při přesouvání adresáře"
 
 #: src/tauon/t_modules/t_main.py:11125
 msgid "The directory does not appear to exist"
-msgstr ""
+msgstr "Zdá se, že adresář neexistuje"
 
 #: src/tauon/t_modules/t_main.py:11153
 msgid "System Error!"
-msgstr ""
+msgstr "Systémová chyba!"
 
 #: src/tauon/t_modules/t_main.py:11181
 msgid "Cannot clean"
-msgstr ""
+msgstr "Nelze vyčistit"
 
 #: src/tauon/t_modules/t_main.py:11215
 msgid "Error deleting files."
-msgstr ""
+msgstr "Chyba při mazání souborů."
 
 #: src/tauon/t_modules/t_main.py:11215
 msgid "May not have permission or file may be set to read-only"
-msgstr ""
+msgstr "Možná chybí oprávnění nebo je soubor jen pro čtení"
 
 #: src/tauon/t_modules/t_main.py:11348
 msgid "Autodetect failed"
-msgstr ""
+msgstr "Automatická detekce selhala"
 
 #: src/tauon/t_modules/t_main.py:11386
 msgid "Transcode Single"
-msgstr ""
+msgstr "Překódovat jednu skladbu"
 
 #: src/tauon/t_modules/t_main.py:11387 src/tauon/t_modules/t_main.py:47914
 #: src/tauon/t_modules/t_main.py:47915 src/tauon/t_modules/t_main.py:47971
 msgid "Transcode Folder"
-msgstr ""
+msgstr "Překódovat složku"
 
 #: src/tauon/t_modules/t_main.py:11395
 msgid "Queue {N}"
-msgstr ""
+msgstr "Zařadit do fronty {N}"
 
 #: src/tauon/t_modules/t_main.py:11404
-#, fuzzy
 msgid "No matching artist result found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyl nalezen žádný odpovídající interpret"
 
 #: src/tauon/t_modules/t_main.py:11453
 msgid "Not implemented"
-msgstr ""
+msgstr "Není implementováno"
 
 #: src/tauon/t_modules/t_main.py:11466 src/tauon/t_modules/t_main.py:27241
 #: src/tauon/t_modules/t_main.py:52668 src/tauon/t_modules/t_main.py:52674
@@ -1376,9 +1326,8 @@ msgid "Album"
 msgstr "Album"
 
 #: src/tauon/t_modules/t_main.py:11469
-#, fuzzy
 msgid "Album Art"
-msgstr "Album"
+msgstr "Obrázek alba"
 
 #: src/tauon/t_modules/t_main.py:11470 src/tauon/t_modules/t_main.py:26959
 #: src/tauon/t_modules/t_main.py:28895 src/tauon/t_modules/t_main.py:52784
@@ -1398,12 +1347,11 @@ msgstr "Žánr"
 
 #: src/tauon/t_modules/t_main.py:11473
 msgid "Track Number"
-msgstr ""
+msgstr "Číslo skladby"
 
 #: src/tauon/t_modules/t_main.py:11474
-#, fuzzy
 msgid "Play Count"
-msgstr "Účty"
+msgstr "Počet přehrání"
 
 #: src/tauon/t_modules/t_main.py:11475
 msgid "Codec"
@@ -1412,7 +1360,7 @@ msgstr "Kodek"
 #: src/tauon/t_modules/t_main.py:11476 src/tauon/t_modules/t_main.py:27933
 #: src/tauon/t_modules/t_main.py:52746
 msgid "Bitrate"
-msgstr ""
+msgstr "Datový tok"
 
 #: src/tauon/t_modules/t_main.py:11477
 msgid "Filename"
@@ -1420,7 +1368,7 @@ msgstr "Jméno souboru"
 
 #: src/tauon/t_modules/t_main.py:11478
 msgid "Starline"
-msgstr ""
+msgstr "Řádek hvězdiček"
 
 #: src/tauon/t_modules/t_main.py:11479
 msgid "Rating"
@@ -1428,9 +1376,8 @@ msgstr "Hodnocení"
 
 #: src/tauon/t_modules/t_main.py:11481 src/tauon/t_modules/t_main.py:52759
 #: src/tauon/t_modules/t_main.py:52765
-#, fuzzy
 msgid "Album Artist"
-msgstr "Album"
+msgstr "Interpret alba"
 
 #: src/tauon/t_modules/t_main.py:11482 src/tauon/t_modules/t_main.py:52912
 #: src/tauon/t_modules/t_main.py:52918
@@ -1444,7 +1391,7 @@ msgstr "Cesta k souboru"
 
 #: src/tauon/t_modules/t_main.py:11484
 msgid "Scrobble Count"
-msgstr ""
+msgstr "Počet scrobblů"
 
 #: src/tauon/t_modules/t_main.py:11485 src/tauon/t_modules/t_main.py:52855
 #: src/tauon/t_modules/t_main.py:52861
@@ -1453,183 +1400,175 @@ msgstr "Skladatel"
 
 #: src/tauon/t_modules/t_main.py:11486
 msgid "Disc Number"
-msgstr ""
+msgstr "Číslo disku"
 
 #: src/tauon/t_modules/t_main.py:11487 src/tauon/t_modules/t_main.py:47810
 #: src/tauon/t_modules/t_main.py:47811
 msgid "Has Lyrics"
-msgstr ""
+msgstr "Má text"
 
 #: src/tauon/t_modules/t_main.py:11488
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "Je CUE list"
 
 #: src/tauon/t_modules/t_main.py:11489
 msgid "Internal Track ID"
-msgstr ""
+msgstr "Interní ID skladby"
 
 #: src/tauon/t_modules/t_main.py:11490
-#, fuzzy
 msgid "File Changed"
-msgstr "Jméno souboru"
+msgstr "Soubor změněn"
 
 #: src/tauon/t_modules/t_main.py:11495
 msgid "Auto Resize"
-msgstr ""
+msgstr "Automaticky měnit velikost"
 
 #: src/tauon/t_modules/t_main.py:11496
 msgid "Hide bar"
-msgstr ""
+msgstr "Skrýt lištu"
 
 #: src/tauon/t_modules/t_main.py:11498 src/tauon/t_modules/t_main.py:37539
-#, fuzzy
 msgid "Remove This"
-msgstr "Odstranit"
+msgstr "Odstranit toto"
 
 #: src/tauon/t_modules/t_main.py:11508
 msgid "More…"
-msgstr ""
+msgstr "Více…"
 
 #: src/tauon/t_modules/t_main.py:11522
 msgid "Cannot remove the only column."
-msgstr ""
+msgstr "Nelze odstranit jediný sloupec."
 
 #: src/tauon/t_modules/t_main.py:11871
 msgid "Play History"
-msgstr ""
+msgstr "Historie přehrávání"
 
 #: src/tauon/t_modules/t_main.py:11902
 msgid "{N} ratings imported"
-msgstr ""
+msgstr "Importováno hodnocení: {N}"
 
 #: src/tauon/t_modules/t_main.py:11943
 msgid "This will delete all track and album ratings from the local database!"
-msgstr ""
+msgstr "Tím se z místní databáze smažou všechna hodnocení skladeb a alb!"
 
 #: src/tauon/t_modules/t_main.py:11944 src/tauon/t_modules/t_main.py:26629
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
-msgstr ""
+msgstr "Pokud to opravdu chcete udělat, stiskněte tlačítko znovu se stisknutým Shiftem."
 
 #: src/tauon/t_modules/t_main.py:11958
-#, fuzzy
 msgid "Stop Cast"
-msgstr "Stop"
+msgstr "Zastavit odesílání"
 
 #: src/tauon/t_modules/t_main.py:11970
-#, fuzzy
 msgid "pychromecast not found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "pychromecast nebyl nalezen"
 
 #: src/tauon/t_modules/t_main.py:11972
-#, fuzzy
 msgid "Searching for Chromecasts..."
-msgstr "Vyhledávání..."
+msgstr "Vyhledávají se zařízení Chromecast..."
 
 #: src/tauon/t_modules/t_main.py:12018
 msgid "No metadata available to copy"
-msgstr ""
+msgstr "Nejsou k dispozici žádná metadata ke kopírování"
 
 #: src/tauon/t_modules/t_main.py:12083
 msgid "Please wait for cleaning process to finish"
-msgstr ""
+msgstr "Počkejte prosím, až se dokončí čištění"
 
 #: src/tauon/t_modules/t_main.py:12099
 msgid "ListenBrainz is Paused"
-msgstr ""
+msgstr "ListenBrainz je pozastavený"
 
 #: src/tauon/t_modules/t_main.py:12101
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "Scrobblování je pozastavené"
 
 #: src/tauon/t_modules/t_main.py:12105
 msgid "ListenBrainz is Active"
-msgstr ""
+msgstr "ListenBrainz je aktivní"
 
 #: src/tauon/t_modules/t_main.py:12107
 msgid "Scrobbling is Active"
-msgstr ""
+msgstr "Scrobblování je aktivní"
 
 #: src/tauon/t_modules/t_main.py:12532
 msgid "Okay, it's a normal playlist now."
-msgstr ""
+msgstr "Dobře, teď je to normální seznam skladeb."
 
 #: src/tauon/t_modules/t_main.py:12548
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
-msgstr ""
+msgstr "Přidali jste skladby do generovaného seznamu. Chcete generátor vymazat?"
 
 #: src/tauon/t_modules/t_main.py:12855 src/tauon/t_modules/t_main.py:30105
 #: src/tauon/t_modules/t_main.py:39103 src/tauon/t_modules/t_main.py:39278
 msgid "Added station to: "
-msgstr ""
+msgstr "Stanice přidána do: "
 
 #: src/tauon/t_modules/t_main.py:12879 src/tauon/t_modules/t_main.py:12897
 #: src/tauon/t_modules/t_main.py:23328
-#, fuzzy
 msgid "Artist: "
-msgstr "Umělec"
+msgstr "Interpret: "
 
 #: src/tauon/t_modules/t_main.py:12933
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Filtrovat malé interprety"
 
 #: src/tauon/t_modules/t_main.py:12937
 msgid "Include All Artists"
-msgstr ""
+msgstr "Zahrnout všechny interprety"
 
 #: src/tauon/t_modules/t_main.py:13022
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr ""
+msgstr "Poznámka: obrázek interpreta pochází z fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:13023
 msgid "They encourage you to contribute at {link}"
-msgstr ""
+msgstr "Vybízejí k přispění na {link}"
 
 #: src/tauon/t_modules/t_main.py:13028
 msgid "Resume Queue"
-msgstr ""
+msgstr "Pokračovat ve frontě"
 
 #: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
-msgstr ""
+msgstr "Pozastavit frontu"
 
 #: src/tauon/t_modules/t_main.py:13155
 msgid "Image types other than PNG or JPEG are currently not supported"
-msgstr ""
+msgstr "Jiné typy obrázků než PNG nebo JPEG momentálně nejsou podporovány"
 
 #: src/tauon/t_modules/t_main.py:13157
 msgid "The link does not appear to refer to an image file."
-msgstr ""
+msgstr "Zdá se, že odkaz nevede na soubor obrázku."
 
 #: src/tauon/t_modules/t_main.py:13162
 msgid "Image download failed."
-msgstr ""
+msgstr "Stažení obrázku selhalo."
 
 #: src/tauon/t_modules/t_main.py:13171 src/tauon/t_modules/t_main.py:13186
 msgid "You"
-msgstr ""
+msgstr "Vy"
 
 #: src/tauon/t_modules/t_main.py:13995 src/tauon/t_modules/t_main.py:19176
 msgid "New Radio List"
-msgstr ""
+msgstr "Nový seznam rádií"
 
 #: src/tauon/t_modules/t_main.py:13995 src/tauon/t_modules/t_main.py:19179
 #: src/tauon/t_modules/t_main.py:47700 src/tauon/t_modules/t_main.py:48022
 #: src/tauon/t_modules/t_main.py:51465
-#, fuzzy
 msgid "New Playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Nový seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:14007
 msgid "Done! {N} old items were removed."
-msgstr ""
+msgstr "Hotovo! Odebráno starých položek: {N}."
 
 #: src/tauon/t_modules/t_main.py:14011 src/tauon/t_modules/t_main.py:48024
-#, fuzzy
 msgid "Clean Database!"
-msgstr "Databáze…"
+msgstr "Vyčistit databázi!"
 
 #: src/tauon/t_modules/t_main.py:14017
 msgid "Music"
@@ -1637,40 +1576,38 @@ msgstr "Muzika"
 
 #: src/tauon/t_modules/t_main.py:14536
 msgid "This playlist has no generator"
-msgstr ""
+msgstr "Tento seznam skladeb nemá generátor"
 
 #: src/tauon/t_modules/t_main.py:15157
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr ""
+msgstr "OK. Tento seznam skladeb se odteď bude při importu automaticky řadit"
 
 #: src/tauon/t_modules/t_main.py:15158
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
-msgstr ""
+msgstr "Toto chování odeberete nebo upravíte přes „Různé...“ > „Upravit generátor...“"
 
 #: src/tauon/t_modules/t_main.py:15170
 msgid "A regen is already in progress..."
-msgstr ""
+msgstr "Přegenerování už probíhá..."
 
 #: src/tauon/t_modules/t_main.py:15188
-#, fuzzy
 msgid "No duplicates were found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyly nalezeny žádné duplicity"
 
 #: src/tauon/t_modules/t_main.py:15190
-#, fuzzy
 msgid "{N} duplicates removed"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Odebráno duplicit: {N}"
 
 #: src/tauon/t_modules/t_main.py:15197
 msgid ""
 "You can now add/remove albums to this playlist by right clicking in gallery "
 "of any playlist"
-msgstr ""
+msgstr "Nyní můžete do tohoto seznamu přidávat nebo z něj odebírat alba pravým kliknutím v galerii libovolného seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:15198
 msgid "To exit this mode, click \"Disengage\" from main MENU"
-msgstr ""
+msgstr "Pro ukončení tohoto režimu klikněte v hlavní NABÍDCE na „Odpojit“"
 
 #: src/tauon/t_modules/t_main.py:15288 src/tauon/t_modules/t_main.py:15290
 msgid "No artist image found."
@@ -1698,117 +1635,112 @@ msgstr "Zamknout"
 
 #: src/tauon/t_modules/t_main.py:15532
 msgid "Tag editor app does not appear to be installed."
-msgstr ""
+msgstr "Zdá se, že aplikace pro úpravu tagů není nainstalována."
 
 #: src/tauon/t_modules/t_main.py:15536
 msgid "App not found on host OR insufficient Flatpak permissions."
-msgstr ""
+msgstr "Aplikace nebyla v systému nalezena NEBO chybí oprávnění Flatpaku."
 
 #: src/tauon/t_modules/t_main.py:15537 src/tauon/t_modules/t_main.py:19011
 #: src/tauon/t_modules/t_main.py:19018
 msgid " For details, see {link}"
-msgstr ""
+msgstr " Podrobnosti najdete zde: {link}"
 
 #: src/tauon/t_modules/t_main.py:15605
 msgid "Sorry, this feature isn't (yet) available with Snap."
-msgstr ""
+msgstr "Omlouváme se, tato funkce zatím není dostupná ve Snapu."
 
 #: src/tauon/t_modules/t_main.py:15609 src/tauon/t_modules/t_main.py:15624
 msgid "Cannot edit tags of a network track."
-msgstr ""
+msgstr "Nelze upravovat tagy síťové skladby."
 
 #: src/tauon/t_modules/t_main.py:15634 src/tauon/t_modules/t_main.py:47928
 msgid "Edit with "
-msgstr ""
+msgstr "Upravit pomocí "
 
 #: src/tauon/t_modules/t_main.py:15681 src/tauon/t_modules/t_main.py:24155
 msgid "Starting download..."
-msgstr ""
+msgstr "Spouští se stahování..."
 
 #: src/tauon/t_modules/t_main.py:15698
 msgid "Downloading... {MB}/{total_mb}"
-msgstr ""
+msgstr "Stahování... {MB}/{total_mb}"
 
 #: src/tauon/t_modules/t_main.py:15707
-#, fuzzy
 msgid "Download completed but checksum failed"
-msgstr "Načítání..."
+msgstr "Stahování dokončeno, ale kontrolní součet selhal"
 
 #: src/tauon/t_modules/t_main.py:15710
-#, fuzzy
 msgid "Download completed. Extracting..."
-msgstr "Načítání..."
+msgstr "Stahování dokončeno. Rozbaluje se..."
 
 #: src/tauon/t_modules/t_main.py:15734
 msgid "FFmpeg fetch complete"
-msgstr ""
+msgstr "Stažení FFmpeg dokončeno"
 
 #: src/tauon/t_modules/t_main.py:15845
-#, fuzzy
 msgid "Disable Columns"
-msgstr "Sloupce"
+msgstr "Vypnout sloupce"
 
 #: src/tauon/t_modules/t_main.py:15846
-#, fuzzy
 msgid "Enable Columns"
-msgstr "Sloupce"
+msgstr "Zapnout sloupce"
 
 #: src/tauon/t_modules/t_main.py:15856
 msgid "Disable Title Breaks"
-msgstr ""
+msgstr "Vypnout zalamování názvů"
 
 #: src/tauon/t_modules/t_main.py:15857
 msgid "Enable Title Breaks"
-msgstr ""
+msgstr "Zapnout zalamování názvů"
 
 #: src/tauon/t_modules/t_main.py:15905
 msgid "Encoding warning: Missing one or more files"
-msgstr ""
+msgstr "Varování kódování: chybí jeden nebo více souborů"
 
 #: src/tauon/t_modules/t_main.py:16256
 msgid "No exact matching artist could be found in this playlist"
-msgstr ""
+msgstr "V tomto seznamu skladeb nebyl nalezen přesně odpovídající interpret"
 
 #: src/tauon/t_modules/t_main.py:16621 src/tauon/t_modules/t_main.py:16629
 msgid "There was an error generating the chart"
-msgstr ""
+msgstr "Při generování grafu došlo k chybě"
 
 #: src/tauon/t_modules/t_main.py:16621 src/tauon/t_modules/t_main.py:16629
 msgid "Sorry!"
-msgstr ""
+msgstr "Omlouváme se!"
 
 #: src/tauon/t_modules/t_main.py:16632
-#, fuzzy
 msgid "Chart generated"
-msgstr "Přegenerovat"
+msgstr "Graf vygenerován"
 
 #: src/tauon/t_modules/t_main.py:16688
 msgid "There was an error with the Maloja server"
-msgstr ""
+msgstr "Došlo k chybě na serveru Maloja"
 
 #: src/tauon/t_modules/t_main.py:16693
 msgid "There was an error reaching the Maloja server"
-msgstr ""
+msgstr "Při připojování k serveru Maloja došlo k chybě"
 
 #: src/tauon/t_modules/t_main.py:16728
 msgid "There was an error parsing the data"
-msgstr ""
+msgstr "Při zpracování dat došlo k chybě"
 
 #: src/tauon/t_modules/t_main.py:16761 src/tauon/t_modules/t_main.py:16765
 msgid "There was an error submitting data to Maloja server"
-msgstr ""
+msgstr "Při odesílání dat na server Maloja došlo k chybě"
 
 #: src/tauon/t_modules/t_main.py:16790 src/tauon/t_modules/t_main.py:16802
 msgid "Job already in progress!"
-msgstr ""
+msgstr "Úloha už probíhá!"
 
 #: src/tauon/t_modules/t_main.py:16821 src/tauon/t_modules/t_main.py:16850
 msgid "Already scanning!"
-msgstr ""
+msgstr "Prohledávání už probíhá!"
 
 #: src/tauon/t_modules/t_main.py:16829
 msgid "Enter two-factor code"
-msgstr ""
+msgstr "Zadejte dvoufaktorový kód"
 
 #: src/tauon/t_modules/t_main.py:17272
 msgid "End of playlist"
@@ -1816,164 +1748,160 @@ msgstr "Konec seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:17400 src/tauon/t_modules/t_main.py:17423
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Aktualizace oblíbeného stavu na last.fm selhala"
 
 #: src/tauon/t_modules/t_main.py:17404
 msgid "Error updating love to last.fm!"
-msgstr ""
+msgstr "Chyba při aktualizaci oblíbeného stavu na last.fm!"
 
 #: src/tauon/t_modules/t_main.py:17405
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Zkuste zkontrolovat připojení k internetu a opakovat akci."
 
 #: src/tauon/t_modules/t_main.py:18009 src/tauon/t_modules/t_main.py:54222
 msgid "Permission error encountered while writing database"
-msgstr ""
+msgstr "Při zápisu databáze došlo k chybě oprávnění"
 
 #: src/tauon/t_modules/t_main.py:18222
 msgid "Warning! Using this function moves physical folders."
-msgstr ""
+msgstr "Varování! Použití této funkce přesouvá fyzické složky."
 
 #: src/tauon/t_modules/t_main.py:18223
 msgid ""
 "This menu entry appears after selecting 'copy'. See manual (github wiki) for "
 "more info."
-msgstr ""
+msgstr "Tato položka nabídky se zobrazí po výběru 'kopírovat'. Další informace najdete v manuálu (wiki GitHubu)."
 
 #: src/tauon/t_modules/t_main.py:18429
 msgid "Notifications for this DE not supported"
-msgstr ""
+msgstr "Oznámení pro toto desktopové prostředí nejsou podporována"
 
 #: src/tauon/t_modules/t_main.py:18538
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
-msgstr ""
+msgstr "Hodnocení se ukládají do místní databáze a nezapisují se do tagů."
 
 #: src/tauon/t_modules/t_main.py:18595 src/tauon/t_modules/t_main.py:18642
 msgid "Change will be applied on restart."
-msgstr ""
+msgstr "Změna se projeví po restartu."
 
 #: src/tauon/t_modules/t_main.py:18688
 msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr ""
+msgstr "Tip: Toto můžete přepnout také z kontextové nabídky pravým tlačítkem"
 
 #: src/tauon/t_modules/t_main.py:18745
 msgid "Can't enable this if there's no token."
-msgstr ""
+msgstr "Nelze zapnout bez tokenu."
 
 #: src/tauon/t_modules/t_main.py:18754 src/tauon/t_modules/t_main.py:28437
 msgid "One or more fields are missing."
-msgstr ""
+msgstr "Jedno nebo více polí chybí."
 
 #: src/tauon/t_modules/t_main.py:18841 src/tauon/t_modules/t_main.py:18860
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
-msgstr ""
+msgstr "NEBEZPEČÍ! Tím se smažou původní soubory. Pro případ selhání doporučujeme ponechat zálohu."
 
 #: src/tauon/t_modules/t_main.py:18842
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
-msgstr ""
+msgstr "Kvůli bezpečnosti bude toto nastavení ve výchozím stavu vypnuto. Vložené náhledy se nezachovají, takže je možná budete chtít nejdřív extrahovat."
 
 #: src/tauon/t_modules/t_main.py:18861
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
-msgstr ""
+msgstr "Kvůli bezpečnosti se toto nastavení po restartu resetuje. Vložené náhledy se nezachovají, takže je možná budete chtít nejdřív extrahovat."
 
 #: src/tauon/t_modules/t_main.py:19010
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
+msgstr "Nepodařilo se získat přístup! Možná chybí oprávnění Flatpaku."
 
 #: src/tauon/t_modules/t_main.py:19017
 msgid "The target may be lost on reboot without necessary Flatpak permissions."
-msgstr ""
+msgstr "Bez potřebných oprávnění Flatpaku může být cíl po restartu ztracen."
 
 #: src/tauon/t_modules/t_main.py:19020
 msgid "Path may be transient! Continue? Press \"No\" for more information."
-msgstr ""
+msgstr "Cesta může být dočasná! Pokračovat? Pro více informací stiskněte „Ne“."
 
 #: src/tauon/t_modules/t_main.py:19142
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Před ukončením zastavte synchronizaci!"
 
 #: src/tauon/t_modules/t_main.py:19202
 msgid "Web server starting"
-msgstr ""
+msgstr "Webový server se spouští"
 
 #: src/tauon/t_modules/t_main.py:19202
 msgid "External connections will be accepted."
-msgstr ""
+msgstr "Externí připojení budou přijímána."
 
 #: src/tauon/t_modules/t_main.py:19290
 msgid "This feature requires FFmpeg. Should I download it for you? (~100 MB)"
-msgstr ""
+msgstr "Tato funkce vyžaduje FFmpeg. Mám ho stáhnout? (~100 MB)"
 
 #: src/tauon/t_modules/t_main.py:19295
-#, fuzzy
 msgid "FFmpeg could not be found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "FFmpeg nebyl nalezen"
 
 #: src/tauon/t_modules/t_main.py:19386
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Chybí uživatelské jméno, heslo nebo název serveru"
 
 #: src/tauon/t_modules/t_main.py:19399
 msgid "Error importing python-plexapi"
-msgstr ""
+msgstr "Chyba při importu python-plexapi"
 
 #: src/tauon/t_modules/t_main.py:19415
 msgid "Two-factor authentication required"
-msgstr ""
+msgstr "Je vyžadováno dvoufaktorové ověření"
 
 #: src/tauon/t_modules/t_main.py:19416
 msgid "Enter the verification code and try again."
-msgstr ""
+msgstr "Zadejte ověřovací kód a zkuste to znovu."
 
 #: src/tauon/t_modules/t_main.py:19425
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "Chyba při připojování k serveru PLEX"
 
 #: src/tauon/t_modules/t_main.py:19426
 msgid "Try checking login credentials and that the server is accessible."
-msgstr ""
+msgstr "Zkontrolujte přihlašovací údaje a dostupnost serveru."
 
 #: src/tauon/t_modules/t_main.py:19528
-#, fuzzy
 msgid "PLEX Collection"
-msgstr "Připojování..."
+msgstr "Kolekce PLEX"
 
 #: src/tauon/t_modules/t_main.py:19556
-#, fuzzy
 msgid "Network error"
-msgstr "Připojování..."
+msgstr "Síťová chyba"
 
 #: src/tauon/t_modules/t_main.py:19569
-#, fuzzy
 msgid "No playlist name"
-msgstr "Konec seznamu skladeb"
+msgstr "Chybí název seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:19580
 msgid "Playlist not found on target"
-msgstr ""
+msgstr "Seznam skladeb nebyl v cíli nalezen"
 
 #: src/tauon/t_modules/t_main.py:21328
 msgid "No embedded album art."
-msgstr ""
+msgstr "Žádný vložený obrázek alba."
 
 #: src/tauon/t_modules/t_main.py:22585
 msgid "This function does not support renaming CUE Sheet tracks."
-msgstr ""
+msgstr "Tato funkce nepodporuje přejmenování skladeb z CUE listu."
 
 #: src/tauon/t_modules/t_main.py:22591
 msgid "Track Renaming"
-msgstr ""
+msgstr "Přejmenování skladeb"
 
 #: src/tauon/t_modules/t_main.py:22595 src/tauon/t_modules/t_main.py:53002
 msgid "Default"
-msgstr ""
+msgstr "Výchozí"
 
 #: src/tauon/t_modules/t_main.py:22617
 msgid "BEFORE"
@@ -1985,110 +1913,105 @@ msgstr "PO"
 
 #: src/tauon/t_modules/t_main.py:22627
 msgid "Warning: This may change the file extension"
-msgstr ""
+msgstr "Varování: Může dojít ke změně přípony souboru"
 
 #: src/tauon/t_modules/t_main.py:22634
 msgid "Warning: The filename might not be unique"
-msgstr ""
+msgstr "Varování: Název souboru nemusí být jedinečný"
 
 #: src/tauon/t_modules/t_main.py:22639
 msgid "Warning: A track has incomplete metadata"
-msgstr ""
+msgstr "Varování: Skladba má neúplná metadata"
 
 #: src/tauon/t_modules/t_main.py:22644
 msgid "Write"
-msgstr ""
+msgstr "Zapsat"
 
 #: src/tauon/t_modules/t_main.py:22649
 msgid "Physically renames all the tracks in the folder"
-msgstr ""
+msgstr "Fyzicky přejmenuje všechny skladby ve složce"
 
 #: src/tauon/t_modules/t_main.py:22713 src/tauon/t_modules/t_main.py:22718
 msgid "Rename complete."
-msgstr ""
+msgstr "Přejmenování dokončeno."
 
 #: src/tauon/t_modules/t_main.py:22714 src/tauon/t_modules/t_main.py:22719
 msgid "{N} / {T} filenames were written."
-msgstr ""
+msgstr "Zapsáno názvů souborů: {N} / {T}."
 
 #: src/tauon/t_modules/t_main.py:22804
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Jednoduchý editor tagů"
 
 #: src/tauon/t_modules/t_main.py:22806 src/tauon/t_modules/t_main.py:23207
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: src/tauon/t_modules/t_main.py:22808
 msgid "Press Enter in each field to apply its changes to local database."
-msgstr ""
+msgstr "Stisknutím Enter v každém poli použijete změny v místní databázi."
 
 #: src/tauon/t_modules/t_main.py:22809
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
-msgstr ""
+msgstr "Po dokončení stiskněte ZAPSAT TAGY pro uložení tagů do skutečných souborů. (Volitelné, ale doporučené)"
 
 #: src/tauon/t_modules/t_main.py:22813
 msgid "Number of tracks selected: {N}"
-msgstr ""
+msgstr "Počet vybraných skladeb: {N}"
 
 #: src/tauon/t_modules/t_main.py:22848
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Vybráno více>"
 
 #: src/tauon/t_modules/t_main.py:22856
-#, fuzzy
 msgid "Track title"
-msgstr "Titul"
+msgstr "Název skladby"
 
 #: src/tauon/t_modules/t_main.py:22858
-#, fuzzy
 msgid "Album name"
-msgstr "Album"
+msgstr "Název alba"
 
 #: src/tauon/t_modules/t_main.py:22860
-#, fuzzy
 msgid "Artist name"
-msgstr "Umělec"
+msgstr "Jméno interpreta"
 
 #: src/tauon/t_modules/t_main.py:22862
-#, fuzzy
 msgid "Album-artist name"
-msgstr "Konec seznamu skladeb"
+msgstr "Jméno interpreta alba"
 
 #: src/tauon/t_modules/t_main.py:22868
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Úprava síťových skladeb se nedoporučuje!"
 
 #: src/tauon/t_modules/t_main.py:22897 src/tauon/t_modules/t_main.py:22900
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "ZAPSAT TAGY"
 
 #: src/tauon/t_modules/t_main.py:22903
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Nejdřív použijte změny stisknutím Enter v polích!"
 
 #: src/tauon/t_modules/t_main.py:22914
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Zápis do síťové skladby nelze použít!"
 
 #: src/tauon/t_modules/t_main.py:22918
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Nelze zapisovat typy CUE listu!"
 
 #: src/tauon/t_modules/t_main.py:22927
 msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr ""
+msgstr "Nelze zpracovat více hodnot v poli! Použijte prosím externí editor tagů"
 
 #: src/tauon/t_modules/t_main.py:22946
 msgid "{N} files rewritten"
-msgstr ""
+msgstr "Přepsáno souborů: {N}"
 
 #: src/tauon/t_modules/t_main.py:23014
-#, fuzzy
 msgid "Substitute Lyric Search"
-msgstr "Nahradit"
+msgstr "Náhradní hledání textu"
 
 #: src/tauon/t_modules/t_main.py:23021 src/tauon/t_modules/t_main.py:23044
 msgid "Substitute"
@@ -2096,57 +2019,55 @@ msgstr "Nahradit"
 
 #: src/tauon/t_modules/t_main.py:23027 src/tauon/t_modules/t_main.py:23050
 msgid "with"
-msgstr ""
+msgstr "s"
 
 #: src/tauon/t_modules/t_main.py:23142
-#, fuzzy
 msgid "Import/Export Playlist"
-msgstr "Exportovat…"
+msgstr "Import/export seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:23147
 msgid "Target folder or file"
-msgstr ""
+msgstr "Cílová složka nebo soubor"
 
 #: src/tauon/t_modules/t_main.py:23166
 msgid "Will overwrite existing file: "
-msgstr ""
+msgstr "Přepíše existující soubor: "
 
 #: src/tauon/t_modules/t_main.py:23169
-#, fuzzy
 msgid "Will save with playlist name:"
-msgstr "Konec seznamu skladeb"
+msgstr "Uloží se s názvem seznamu skladeb:"
 
 #: src/tauon/t_modules/t_main.py:23172
 msgid "No file extension?"
-msgstr ""
+msgstr "Chybí přípona souboru?"
 
 #: src/tauon/t_modules/t_main.py:23176 src/tauon/t_modules/t_main.py:23179
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "Nesprávná přípona?"
 
 #: src/tauon/t_modules/t_main.py:23182
 msgid "Will create directory"
-msgstr ""
+msgstr "Vytvoří adresář"
 
 #: src/tauon/t_modules/t_main.py:23204 src/tauon/t_modules/t_main.py:23206
 msgid "Use relative paths"
-msgstr ""
+msgstr "Použít relativní cesty"
 
 #: src/tauon/t_modules/t_main.py:23209
 msgid "Enable relative paths when keeping playlist files together with audio"
-msgstr ""
+msgstr "Zapněte relativní cesty, pokud chcete ponechat soubory seznamů skladeb společně se zvukem"
 
 #: src/tauon/t_modules/t_main.py:23210
 msgid "Disable to move playlist files while keeping audio in one location"
-msgstr ""
+msgstr "Vypněte pro přesun souborů seznamů skladeb při ponechání zvuku na jednom místě"
 
 #: src/tauon/t_modules/t_main.py:23214
 msgid "Auto-export"
-msgstr ""
+msgstr "Automatický export"
 
 #: src/tauon/t_modules/t_main.py:23215
 msgid "Auto-import"
-msgstr ""
+msgstr "Automatický import"
 
 #: src/tauon/t_modules/t_main.py:23219 src/tauon/t_modules/t_main.py:23222
 msgid "Export"
@@ -2154,81 +2075,75 @@ msgstr "Export"
 
 #: src/tauon/t_modules/t_main.py:23265
 msgid "Playlist exported"
-msgstr ""
+msgstr "Seznam skladeb exportován"
 
 #: src/tauon/t_modules/t_main.py:23351
 msgid "Year: "
-msgstr ""
+msgstr "Rok: "
 
 #: src/tauon/t_modules/t_main.py:23374
-#, fuzzy
 msgid "Composer: "
-msgstr "Skladatel"
+msgstr "Skladatel: "
 
 #: src/tauon/t_modules/t_main.py:23446
-#, fuzzy
 msgid "Genre: "
-msgstr "Žánr"
+msgstr "Žánr: "
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "Go / open:"
-msgstr ""
+msgstr "Přejít / otevřít:"
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "left-click or press Enter."
-msgstr ""
+msgstr "klikněte levým tlačítkem nebo stiskněte Enter."
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "Show / reveal:"
-msgstr ""
+msgstr "Zobrazit / odhalit:"
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "right-click or press Shift+Enter."
-msgstr ""
+msgstr "klikněte pravým tlačítkem nebo stiskněte Shift+Enter."
 
 #: src/tauon/t_modules/t_main.py:23528
-#, fuzzy
 msgid "Add to current playlist:"
-msgstr "Konec seznamu skladeb"
+msgstr "Přidat do aktuálního seznamu skladeb:"
 
 #: src/tauon/t_modules/t_main.py:23528
 msgid "Ctrl+left-click."
-msgstr ""
+msgstr "Ctrl+kliknutí levým tlačítkem."
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "Add to queue:"
-msgstr ""
+msgstr "Přidat do fronty:"
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "middle-click (track or album)."
-msgstr ""
+msgstr "kliknutí prostředním tlačítkem (skladba nebo album)."
 
 #: src/tauon/t_modules/t_main.py:23678
-#, fuzzy
 msgid "No results found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyly nalezeny žádné výsledky"
 
 #: src/tauon/t_modules/t_main.py:23848
 msgid "(Include multi-tag results)"
-msgstr ""
+msgstr "(Zahrnout výsledky s více tagy)"
 
 #: src/tauon/t_modules/t_main.py:24154
-#, fuzzy
 msgid "Downloading Milkdrop presets"
-msgstr "Načítání..."
+msgstr "Stahují se předvolby Milkdrop"
 
 #: src/tauon/t_modules/t_main.py:24191 src/tauon/t_modules/t_main.py:24233
-#, fuzzy
 msgid "Cancelling..."
-msgstr "Připojování..."
+msgstr "Ruší se..."
 
 #: src/tauon/t_modules/t_main.py:24192
 msgid "Milkdrop will still be enabled."
-msgstr ""
+msgstr "Milkdrop zůstane zapnutý."
 
 #: src/tauon/t_modules/t_main.py:24230 src/tauon/t_modules/t_main.py:29136
 msgid "Close"
-msgstr ""
+msgstr "Zavřít"
 
 #: src/tauon/t_modules/t_main.py:24236 src/tauon/t_modules/t_main.py:28350
 #: src/tauon/t_modules/t_main.py:42858 src/tauon/t_modules/t_main.py:42956
@@ -2239,55 +2154,53 @@ msgstr "Zrušit"
 
 #: src/tauon/t_modules/t_main.py:24292
 msgid "Yay! Thank you!! 🎉 ✨"
-msgstr ""
+msgstr "Hurá! Děkujeme!! 🎉 ✨"
 
 #: src/tauon/t_modules/t_main.py:24340
 msgid "Tauon v{version}"
-msgstr ""
+msgstr "Tauon v{version}"
 
 #: src/tauon/t_modules/t_main.py:24344
 msgid "Highlights from the latest Tauon release."
-msgstr ""
+msgstr "To nejdůležitější z nejnovější verze Tauonu."
 
 #: src/tauon/t_modules/t_main.py:24357
 msgid "Changelog"
-msgstr ""
+msgstr "Seznam změn"
 
 #: src/tauon/t_modules/t_main.py:24383
 msgid "The time has come to open thy heart and thy wallet ❤️  "
-msgstr ""
+msgstr "Nastal čas otevřít srdce i peněženku ❤️  "
 
 #: src/tauon/t_modules/t_main.py:24386
 msgid ""
 "A ton of work went into this release. Please consider donating at https://"
 "github.com/sponsors/Taiko2k"
-msgstr ""
+msgstr "Do této verze šla spousta práce. Zvažte prosím příspěvek na https://github.com/sponsors/Taiko2k"
 
 #: src/tauon/t_modules/t_main.py:24389
 msgid "GitHub Sponsors"
-msgstr ""
+msgstr "GitHub Sponsors"
 
 #: src/tauon/t_modules/t_main.py:24393
 msgid "or on my "
-msgstr ""
+msgstr "nebo na mém "
 
 #: src/tauon/t_modules/t_main.py:24415 src/tauon/t_modules/t_main.py:24435
 msgid "No thanks"
-msgstr ""
+msgstr "Ne, díky"
 
 #: src/tauon/t_modules/t_main.py:24416 src/tauon/t_modules/t_main.py:24425
 msgid "Yes, I have donated"
-msgstr ""
+msgstr "Ano, přispěl(a) jsem"
 
 #: src/tauon/t_modules/t_main.py:24510
-#, fuzzy
 msgid "General"
-msgstr "Generovat"
+msgstr "Obecné"
 
 #: src/tauon/t_modules/t_main.py:24511
-#, fuzzy
 msgid "Connections"
-msgstr "Připojování..."
+msgstr "Připojení"
 
 #: src/tauon/t_modules/t_main.py:24512
 msgid "Audio"
@@ -2295,601 +2208,575 @@ msgstr "Zvuk"
 
 #: src/tauon/t_modules/t_main.py:24513
 msgid "Tracklist"
-msgstr ""
+msgstr "Seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:24514
-#, fuzzy
 msgid "Theme"
-msgstr "Titul"
+msgstr "Motiv"
 
 #: src/tauon/t_modules/t_main.py:24515 src/tauon/t_modules/t_main.py:27304
 msgid "View"
-msgstr ""
+msgstr "Zobrazení"
 
 #: src/tauon/t_modules/t_main.py:24516
 msgid "Transcode"
-msgstr ""
+msgstr "Překódování"
 
 #: src/tauon/t_modules/t_main.py:24517
 msgid "Services"
-msgstr ""
+msgstr "Služby"
 
 #: src/tauon/t_modules/t_main.py:24518
 msgid "Advanced"
-msgstr ""
+msgstr "Pokročilé"
 
 #: src/tauon/t_modules/t_main.py:24519
 msgid "Stats"
-msgstr ""
+msgstr "Statistiky"
 
 #: src/tauon/t_modules/t_main.py:24520 src/tauon/t_modules/t_main.py:28266
 msgid "About"
-msgstr ""
+msgstr "O aplikaci"
 
 #: src/tauon/t_modules/t_main.py:24660
 msgid "Audio Output Device"
-msgstr ""
+msgstr "Výstupní zvukové zařízení"
 
 #: src/tauon/t_modules/t_main.py:24661
 msgid "Choose where Tauon sends playback."
-msgstr ""
+msgstr "Vyberte, kam má Tauon posílat přehrávání."
 
 #: src/tauon/t_modules/t_main.py:24678
-#, fuzzy
 msgid "No device selected"
-msgstr "Konec seznamu skladeb"
+msgstr "Není vybráno žádné zařízení"
 
 #: src/tauon/t_modules/t_main.py:24731
 msgid "No output devices detected"
-msgstr ""
+msgstr "Nebyla zjištěna žádná výstupní zařízení"
 
 #: src/tauon/t_modules/t_main.py:24739
 msgid "Try refreshing audio or restarting Tauon."
-msgstr ""
+msgstr "Zkuste obnovit zvuk nebo restartovat Tauon."
 
 #: src/tauon/t_modules/t_main.py:24816
 msgid "Please restart Tauon for this change to take effect"
-msgstr ""
+msgstr "Aby se změna projevila, restartujte Tauon"
 
 #: src/tauon/t_modules/t_main.py:24819
-#, fuzzy
 msgid "Audio stack"
-msgstr "Zvuk"
+msgstr "Zvuková vrstva"
 
 #: src/tauon/t_modules/t_main.py:24824
-#, fuzzy
 msgid "PulseAudio"
-msgstr "Zvuk"
+msgstr "PulseAudio"
 
 #: src/tauon/t_modules/t_main.py:24832
 msgid "PipeWire"
-msgstr ""
+msgstr "PipeWire"
 
 #: src/tauon/t_modules/t_main.py:24909
-#, fuzzy
 msgid "Component"
-msgstr "Skladatel"
+msgstr "Komponenta"
 
 #: src/tauon/t_modules/t_main.py:25004
 msgid "Bundled themes are read-only"
-msgstr ""
+msgstr "Přibalené motivy jsou jen pro čtení"
 
 #: src/tauon/t_modules/t_main.py:25005
 msgid "Create a new theme first to edit a copy of the active look."
-msgstr ""
+msgstr "Nejdřív vytvořte nový motiv, abyste mohli upravit kopii aktivního vzhledu."
 
 #: src/tauon/t_modules/t_main.py:25018 src/tauon/t_modules/t_main.py:25020
 msgid "Custom Theme"
-msgstr ""
+msgstr "Vlastní motiv"
 
 #: src/tauon/t_modules/t_main.py:25027 src/tauon/t_modules/t_main.py:25085
 msgid "Could not save theme file"
-msgstr ""
+msgstr "Soubor motivu se nepodařilo uložit"
 
 #: src/tauon/t_modules/t_main.py:25037
-#, fuzzy
 msgid "Duplicated theme"
-msgstr "Duplikovat"
+msgstr "Motiv zduplikován"
 
 #: src/tauon/t_modules/t_main.py:25042
 msgid "Only user themes can be deleted"
-msgstr ""
+msgstr "Smazat lze jen uživatelské motivy"
 
 #: src/tauon/t_modules/t_main.py:25049
 msgid "Could not delete theme file"
-msgstr ""
+msgstr "Soubor motivu se nepodařilo smazat"
 
 #: src/tauon/t_modules/t_main.py:25059
-#, fuzzy
 msgid "Deleted theme"
-msgstr "Smazat"
+msgstr "Motiv smazán"
 
 #: src/tauon/t_modules/t_main.py:25066
 msgid "Theme title cannot be empty"
-msgstr ""
+msgstr "Název motivu nesmí být prázdný"
 
 #: src/tauon/t_modules/t_main.py:25073 src/tauon/t_modules/t_main.py:25076
 msgid "A theme with that title already exists"
-msgstr ""
+msgstr "Motiv s tímto názvem už existuje"
 
 #: src/tauon/t_modules/t_main.py:25100
-#, fuzzy
 msgid "Saved theme"
-msgstr "Duplikovat"
+msgstr "Motiv uložen"
 
 #: src/tauon/t_modules/t_main.py:25220
 msgid "Copied colour"
-msgstr ""
+msgstr "Barva zkopírována"
 
 #: src/tauon/t_modules/t_main.py:25227
 msgid "There is no colour in the clipboard"
-msgstr ""
+msgstr "Ve schránce není žádná barva"
 
 #: src/tauon/t_modules/t_main.py:25231
 msgid "Pasted colour"
-msgstr ""
+msgstr "Barva vložena"
 
 #: src/tauon/t_modules/t_main.py:26076
 msgid "Lyrics lookup"
-msgstr ""
+msgstr "Vyhledávání textů"
 
 #: src/tauon/t_modules/t_main.py:26077
 msgid "Choose which sources Tauon uses for lyrics."
-msgstr ""
+msgstr "Vyberte, které zdroje má Tauon používat pro texty písní."
 
 #: src/tauon/t_modules/t_main.py:26088
 msgid "Scraping source"
-msgstr ""
+msgstr "Zdroj scrapingu"
 
 #: src/tauon/t_modules/t_main.py:26088
 msgid "API source"
-msgstr ""
+msgstr "Zdroj API"
 
 #: src/tauon/t_modules/t_main.py:26135
-#, fuzzy
 msgid "Common settings"
-msgstr "Nastavení"
+msgstr "Společná nastavení"
 
 #: src/tauon/t_modules/t_main.py:26136
-#, fuzzy
 msgid "Common library and panel settings."
-msgstr "Nastavení"
+msgstr "Společná nastavení knihovny a panelu."
 
 #: src/tauon/t_modules/t_main.py:26144
-#, fuzzy
 msgid "Show artist info panel"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Zobrazit informační panel interpreta"
 
 #: src/tauon/t_modules/t_main.py:26145
 msgid "Also available with Ctrl+O."
-msgstr ""
+msgstr "Dostupné také přes Ctrl+O."
 
 #: src/tauon/t_modules/t_main.py:26156
 msgid "Auto fetch artist data"
-msgstr ""
+msgstr "Automaticky načítat data interpreta"
 
 #: src/tauon/t_modules/t_main.py:26157
 msgid "Fetch artist data while the panel is open."
-msgstr ""
+msgstr "Načítat data interpreta, když je panel otevřený."
 
 #: src/tauon/t_modules/t_main.py:26165
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Konec seznamu skladeb"
+msgstr "Automaticky znovu načítat seznamy skladeb"
 
 #: src/tauon/t_modules/t_main.py:26166
 msgid "Rescan playlists when you return to them."
-msgstr ""
+msgstr "Znovu prohledat seznamy skladeb, když se k nim vrátíte."
 
 #: src/tauon/t_modules/t_main.py:26174
 msgid "Tabs in top panel"
-msgstr ""
+msgstr "Karty v horním panelu"
 
 #: src/tauon/t_modules/t_main.py:26175
 msgid "Show tabs in the top panel."
-msgstr ""
+msgstr "Zobrazit karty v horním panelu."
 
 #: src/tauon/t_modules/t_main.py:26181
 msgid "Quick access"
-msgstr ""
+msgstr "Rychlý přístup"
 
 #: src/tauon/t_modules/t_main.py:26182
 msgid "Open the files and folders Tauon uses."
-msgstr ""
+msgstr "Otevřít soubory a složky používané Tauonem."
 
 #: src/tauon/t_modules/t_main.py:26186
 msgid "Open config file"
-msgstr ""
+msgstr "Otevřít konfigurační soubor"
 
 #: src/tauon/t_modules/t_main.py:26189
 msgid "Reload edited config"
-msgstr ""
+msgstr "Znovu načíst upravenou konfiguraci"
 
 #: src/tauon/t_modules/t_main.py:26191
 msgid "Open data folder"
-msgstr ""
+msgstr "Otevřít datovou složku"
 
 #: src/tauon/t_modules/t_main.py:26193
 msgid "Open keymap file"
-msgstr ""
+msgstr "Otevřít soubor mapování kláves"
 
 #: src/tauon/t_modules/t_main.py:26198
-#, fuzzy
 msgid "End of playlist action"
-msgstr "Konec seznamu skladeb"
+msgstr "Akce na konci seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:26199
-#, fuzzy
 msgid "What to do when the current playlist ends."
-msgstr "Konec seznamu skladeb"
+msgstr "Co udělat, když aktuální seznam skladeb skončí."
 
 #: src/tauon/t_modules/t_main.py:26206
 msgid "Stop playback"
-msgstr ""
+msgstr "Zastavit přehrávání"
 
 #: src/tauon/t_modules/t_main.py:26206
-#, fuzzy
 msgid "Stop when the playlist ends."
-msgstr "Konec seznamu skladeb"
+msgstr "Zastavit, když seznam skladeb skončí."
 
 #: src/tauon/t_modules/t_main.py:26207
-#, fuzzy
 msgid "Repeat playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Opakovat seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:26207
-#, fuzzy
 msgid "Start the same playlist again."
-msgstr "Konec seznamu skladeb"
+msgstr "Spustit stejný seznam skladeb znovu."
 
 #: src/tauon/t_modules/t_main.py:26208
-#, fuzzy
 msgid "Play next playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Přehrát další seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:26208
-#, fuzzy
 msgid "Move to the next playlist."
-msgstr "Konec seznamu skladeb"
+msgstr "Přejít na další seznam skladeb."
 
 #: src/tauon/t_modules/t_main.py:26209
-#, fuzzy
 msgid "Cycle all playlists"
-msgstr "Konec seznamu skladeb"
+msgstr "Cyklovat všechny seznamy skladeb"
 
 #: src/tauon/t_modules/t_main.py:26209
 msgid "Keep cycling through playlists."
-msgstr ""
+msgstr "Pokračovat v cyklování seznamů skladeb."
 
 #: src/tauon/t_modules/t_main.py:26225
 msgid "Session rules"
-msgstr ""
+msgstr "Pravidla relace"
 
 #: src/tauon/t_modules/t_main.py:26226
 msgid "Playback behavior for sleep, wake and radio."
-msgstr ""
+msgstr "Chování přehrávání při uspání, probuzení a rádiu."
 
 #: src/tauon/t_modules/t_main.py:26233
 msgid "Block suspend"
-msgstr ""
+msgstr "Blokovat uspání"
 
 #: src/tauon/t_modules/t_main.py:26234
 msgid "Keep the system awake during playback."
-msgstr ""
+msgstr "Udržovat systém vzhůru během přehrávání."
 
 #: src/tauon/t_modules/t_main.py:26241
 msgid "Resume from suspend"
-msgstr ""
+msgstr "Pokračovat po probuzení"
 
 #: src/tauon/t_modules/t_main.py:26242
 msgid "Resume playback after waking."
-msgstr ""
+msgstr "Pokračovat v přehrávání po probuzení."
 
 #: src/tauon/t_modules/t_main.py:26251
 msgid "Record radio"
-msgstr ""
+msgstr "Nahrávat rádio"
 
 #: src/tauon/t_modules/t_main.py:26252
 msgid "Record internet radio and split tracks."
-msgstr ""
+msgstr "Nahrávat internetové rádio a rozdělovat skladby."
 
 #: src/tauon/t_modules/t_main.py:26257
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
-msgstr ""
+msgstr "Skladby se nyní budou nahrávat. Aby se změna projevila, restartujte přehrávání."
 
 #: src/tauon/t_modules/t_main.py:26258
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Skladby se uloží do seznamu „Uložené rádiové skladby“."
 
 #: src/tauon/t_modules/t_main.py:26271
 msgid "Recorded tracks are added to \"Saved Radio Tracks\"."
-msgstr ""
+msgstr "Nahrané skladby se přidají do „Uložené rádiové skladby“."
 
 #: src/tauon/t_modules/t_main.py:26273
 msgid "Radio capture"
-msgstr ""
+msgstr "Záznam rádia"
 
 #: src/tauon/t_modules/t_main.py:26279
 msgid "Track menu extras"
-msgstr ""
+msgstr "Doplňky nabídky skladby"
 
 #: src/tauon/t_modules/t_main.py:26280
 msgid "Optional items in the track menu."
-msgstr ""
+msgstr "Volitelné položky v nabídce skladby."
 
 #: src/tauon/t_modules/t_main.py:26284
 msgid "Wikipedia artist search"
-msgstr ""
+msgstr "Hledání interpreta na Wikipedii"
 
 #: src/tauon/t_modules/t_main.py:26285
 msgid "Sonemic artist search"
-msgstr ""
+msgstr "Hledání interpreta na Sonemic"
 
 #: src/tauon/t_modules/t_main.py:26286
 msgid "Bandcamp artist search"
-msgstr ""
+msgstr "Hledání interpreta na Bandcampu"
 
 #: src/tauon/t_modules/t_main.py:26287
 msgid "Genius track search"
-msgstr ""
+msgstr "Hledání skladby na Genius"
 
 #: src/tauon/t_modules/t_main.py:26294
 msgid "Archive imports"
-msgstr ""
+msgstr "Importy archivů"
 
 #: src/tauon/t_modules/t_main.py:26295
 msgid "How Tauon handles archives and Downloads."
-msgstr ""
+msgstr "Jak Tauon pracuje s archivy a staženými soubory."
 
 #: src/tauon/t_modules/t_main.py:26301
 msgid "Extract archives"
-msgstr ""
+msgstr "Rozbalovat archivy"
 
 #: src/tauon/t_modules/t_main.py:26302
 msgid "Extract supported archives on drag and drop."
-msgstr ""
+msgstr "Rozbalit podporované archivy při přetažení."
 
 #: src/tauon/t_modules/t_main.py:26310
 msgid "Enable download monitor"
-msgstr ""
+msgstr "Zapnout sledování stahování"
 
 #: src/tauon/t_modules/t_main.py:26311
 msgid "Watch Downloads for one-click imports."
-msgstr ""
+msgstr "Sledovat Stažené soubory pro import jedním kliknutím."
 
 #: src/tauon/t_modules/t_main.py:26319
 msgid "Trash archive after extraction"
-msgstr ""
+msgstr "Po rozbalení přesunout archiv do koše"
 
 #: src/tauon/t_modules/t_main.py:26327
 msgid "Always extract to Music folder"
-msgstr ""
+msgstr "Vždy rozbalit do složky Hudba"
 
 #: src/tauon/t_modules/t_main.py:26337
 msgid "Useful if you often import from archives or Downloads."
-msgstr ""
+msgstr "Užitečné, pokud často importujete z archivů nebo ze Stažených souborů."
 
 #: src/tauon/t_modules/t_main.py:26339
-#, fuzzy
 msgid "Import flow"
-msgstr "Exportovat…"
+msgstr "Průběh importu"
 
 #: src/tauon/t_modules/t_main.py:26345 src/tauon/t_modules/t_main.py:27114
 msgid "Remote, presence and sharing"
-msgstr ""
+msgstr "Vzdálené ovládání, přítomnost a sdílení"
 
 #: src/tauon/t_modules/t_main.py:26346 src/tauon/t_modules/t_main.py:27115
 msgid "Network and sharing features."
-msgstr ""
+msgstr "Síťové funkce a sdílení."
 
 #: src/tauon/t_modules/t_main.py:26353 src/tauon/t_modules/t_main.py:27122
 msgid "Enable remote control"
-msgstr ""
+msgstr "Zapnout vzdálené ovládání"
 
 #: src/tauon/t_modules/t_main.py:26354 src/tauon/t_modules/t_main.py:26427
 #: src/tauon/t_modules/t_main.py:27123
 msgid "Change requires restart."
-msgstr ""
+msgstr "Změna vyžaduje restart."
 
 #: src/tauon/t_modules/t_main.py:26361 src/tauon/t_modules/t_main.py:27130
 msgid "Notice: This API is not security hardened."
-msgstr ""
+msgstr "Poznámka: Toto API není bezpečnostně zpevněné."
 
 #: src/tauon/t_modules/t_main.py:26362 src/tauon/t_modules/t_main.py:27131
 msgid ""
 "Only enable in a trusted LAN and do not expose port (7814) to the internet"
-msgstr ""
+msgstr "Zapínejte pouze v důvěryhodné LAN a nevystavujte port (7814) internetu"
 
 #: src/tauon/t_modules/t_main.py:26368 src/tauon/t_modules/t_main.py:27138
 msgid "Enable Listen Along"
-msgstr ""
+msgstr "Zapnout společný poslech"
 
 #: src/tauon/t_modules/t_main.py:26369 src/tauon/t_modules/t_main.py:27139
 msgid "Start the web server for remote playback."
-msgstr ""
+msgstr "Spustit webový server pro vzdálené přehrávání."
 
 #: src/tauon/t_modules/t_main.py:26379 src/tauon/t_modules/t_main.py:27151
 msgid "Open Listen Along page"
-msgstr ""
+msgstr "Otevřít stránku společného poslechu"
 
 #: src/tauon/t_modules/t_main.py:26383 src/tauon/t_modules/t_main.py:27159
 #: src/tauon/t_modules/t_main.py:35696
 msgid "Disabled"
-msgstr ""
+msgstr "Vypnuto"
 
 #: src/tauon/t_modules/t_main.py:26384 src/tauon/t_modules/t_main.py:27160
 msgid "Discord status: {state}"
-msgstr ""
+msgstr "Stav Discordu: {state}"
 
 #: src/tauon/t_modules/t_main.py:26388 src/tauon/t_modules/t_main.py:27164
 msgid "Enable Discord Rich Presence"
-msgstr ""
+msgstr "Zapnout Discord Rich Presence"
 
 #: src/tauon/t_modules/t_main.py:26400 src/tauon/t_modules/t_main.py:27171
 msgid "Sorry, this feature is unavailable with snap"
-msgstr ""
+msgstr "Omlouváme se, tato funkce není ve Snapu dostupná"
 
 #: src/tauon/t_modules/t_main.py:26403 src/tauon/t_modules/t_main.py:27174
 msgid "Missing dependency python-pypresence"
-msgstr ""
+msgstr "Chybí závislost python-pypresence"
 
 #: src/tauon/t_modules/t_main.py:26419
 msgid "Exports and input"
-msgstr ""
+msgstr "Exporty a vstup"
 
 #: src/tauon/t_modules/t_main.py:26420
 msgid "Playlist export and input settings."
-msgstr ""
+msgstr "Nastavení exportu seznamů skladeb a vstupu."
 
 #: src/tauon/t_modules/t_main.py:26426
 msgid "Enable gamepad input"
-msgstr ""
+msgstr "Zapnout vstup z gamepadu"
 
 #: src/tauon/t_modules/t_main.py:26432
 msgid "Default playlist export folder"
-msgstr ""
+msgstr "Výchozí složka pro export seznamů skladeb"
 
 #: src/tauon/t_modules/t_main.py:26453
 msgid "Folder must exist before auto-import can use it."
-msgstr ""
+msgstr "Složka musí existovat, než ji bude moci automatický import použít."
 
 #: src/tauon/t_modules/t_main.py:26455
 msgid "Leave blank to export beside the playlist, or set a folder here."
-msgstr ""
+msgstr "Ponechte prázdné pro export vedle seznamu skladeb, nebo zde nastavte složku."
 
 #: src/tauon/t_modules/t_main.py:26464
 msgid "Auto-import playlists from this folder"
-msgstr ""
+msgstr "Automaticky importovat seznamy skladeb z této složky"
 
 #: src/tauon/t_modules/t_main.py:26465
 msgid "Runs during \"Rescan All Folders\" only."
-msgstr ""
+msgstr "Spouští se pouze při „Znovu prohledat všechny složky“."
 
 #: src/tauon/t_modules/t_main.py:26471
 msgid "Editing and diagnostics"
-msgstr ""
+msgstr "Úpravy a diagnostika"
 
 #: src/tauon/t_modules/t_main.py:26472
 msgid "Lyrics writeback and debug settings."
-msgstr ""
+msgstr "Nastavení zpětného zápisu textů a ladění."
 
 #: src/tauon/t_modules/t_main.py:26478
 msgid "Save Synced to .lrc"
-msgstr ""
+msgstr "Ukládat synchronizovaný text do .lrc"
 
 #: src/tauon/t_modules/t_main.py:26486
 msgid "Save lyrics edits to tags"
-msgstr ""
+msgstr "Ukládat úpravy textů do tagů"
 
 #: src/tauon/t_modules/t_main.py:26497
 msgid "Enable debug mode"
-msgstr ""
+msgstr "Zapnout ladicí režim"
 
 #: src/tauon/t_modules/t_main.py:26628
 msgid "This will mark all tracks in local database as unloved!"
-msgstr ""
+msgstr "Tím se všechny skladby v místní databázi označí jako neoblíbené!"
 
 #: src/tauon/t_modules/t_main.py:26638
 msgid "Cleared all loves"
-msgstr ""
+msgstr "Všechny oblíbené položky vymazány"
 
 #: src/tauon/t_modules/t_main.py:26644
 msgid "Error, not connected to last.fm"
-msgstr ""
+msgstr "Chyba, není připojeno k last.fm"
 
 #: src/tauon/t_modules/t_main.py:26647
 msgid "Warning: This process will take approximately {T} minutes to complete."
-msgstr ""
+msgstr "Varování: dokončení tohoto procesu bude trvat přibližně {T} minut."
 
 #: src/tauon/t_modules/t_main.py:26648 src/tauon/t_modules/t_main.py:26669
 msgid "Press again while holding Shift if you understand"
-msgstr ""
+msgstr "Pokud rozumíte, stiskněte znovu se stisknutým Shiftem"
 
 #: src/tauon/t_modules/t_main.py:26656 src/tauon/t_modules/t_main.py:26678
 #: src/tauon/t_modules/t_main.py:26686
 msgid "A process is already running. Wait for it to finish."
-msgstr ""
+msgstr "Proces už běží. Počkejte na jeho dokončení."
 
 #: src/tauon/t_modules/t_main.py:26662
-#, fuzzy
 msgid "Cleared all scrobble counts"
-msgstr "Účty"
+msgstr "Všechny počty scrobblů vymazány"
 
 #: src/tauon/t_modules/t_main.py:26667
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
-msgstr ""
+msgstr "Varování: dokončení tohoto procesu může trvat dlouho! (až hodinu nebo déle)"
 
 #: src/tauon/t_modules/t_main.py:26668
 msgid "This feature is not recommended for accounts that have many friends."
-msgstr ""
+msgstr "Tato funkce se nedoporučuje pro účty s mnoha přáteli."
 
 #: src/tauon/t_modules/t_main.py:26735
 msgid "Be patient!"
-msgstr ""
+msgstr "Mějte strpení!"
 
 #: src/tauon/t_modules/t_main.py:26737
 msgid "No font set in config"
-msgstr ""
+msgstr "V konfiguraci není nastavené žádné písmo"
 
 #: src/tauon/t_modules/t_main.py:26746
-#, fuzzy
 msgid "Grid generator"
-msgstr "Generovat"
+msgstr "Generátor mřížky"
 
 #: src/tauon/t_modules/t_main.py:26747
-#, fuzzy
 msgid "Build an album grid from the current playlist."
-msgstr "Konec seznamu skladeb"
+msgstr "Vytvořit mřížku alb z aktuálního seznamu skladeb."
 
 #: src/tauon/t_modules/t_main.py:26769
-#, fuzzy
 msgid "Target playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Cílový seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
 #: src/tauon/t_modules/t_main.py:36530
-#, fuzzy
 msgid "{N} albums"
-msgstr "Album"
+msgstr "Alba: {N}"
 
 #: src/tauon/t_modules/t_main.py:26796
 msgid "Grid"
-msgstr ""
+msgstr "Mřížka"
 
 #: src/tauon/t_modules/t_main.py:26797
 msgid "Rows and columns"
-msgstr ""
+msgstr "Řádky a sloupce"
 
 #: src/tauon/t_modules/t_main.py:26805
 msgid "Cascade"
-msgstr ""
+msgstr "Kaskáda"
 
 #: src/tauon/t_modules/t_main.py:26806
 msgid "Stacked groups"
-msgstr ""
+msgstr "Skládané skupiny"
 
 #: src/tauon/t_modules/t_main.py:26817
 msgid "Level 1"
-msgstr ""
+msgstr "Úroveň 1"
 
 #: src/tauon/t_modules/t_main.py:26818
 msgid "Level 2"
-msgstr ""
+msgstr "Úroveň 2"
 
 #: src/tauon/t_modules/t_main.py:26819
 msgid "Level 3"
-msgstr ""
+msgstr "Úroveň 3"
 
 #: src/tauon/t_modules/t_main.py:26826
 msgid "By"
-msgstr ""
+msgstr "Podle"
 
 #: src/tauon/t_modules/t_main.py:26830
 msgid "Rows"
-msgstr ""
+msgstr "Řádky"
 
 #: src/tauon/t_modules/t_main.py:26832
 msgid "Columns"
@@ -2897,27 +2784,27 @@ msgstr "Sloupce"
 
 #: src/tauon/t_modules/t_main.py:26839 src/tauon/t_modules/t_main.py:27447
 msgid "Background"
-msgstr ""
+msgstr "Pozadí"
 
 #: src/tauon/t_modules/t_main.py:26852
 msgid "Randomize"
-msgstr ""
+msgstr "Náhodně"
 
 #: src/tauon/t_modules/t_main.py:26856
 msgid "Use padding"
-msgstr ""
+msgstr "Použít odsazení"
 
 #: src/tauon/t_modules/t_main.py:26861
 msgid "Include album titles"
-msgstr ""
+msgstr "Zahrnout názvy alb"
 
 #: src/tauon/t_modules/t_main.py:26863
 msgid "Sort by top played"
-msgstr ""
+msgstr "Řadit podle nejpřehrávanějších"
 
 #: src/tauon/t_modules/t_main.py:26870
 msgid "Return"
-msgstr ""
+msgstr "Zpět"
 
 #: src/tauon/t_modules/t_main.py:26874
 msgid "Generate"
@@ -2929,160 +2816,156 @@ msgstr "Generuji..."
 
 #: src/tauon/t_modules/t_main.py:26884
 msgid "Please wait."
-msgstr ""
+msgstr "Počkejte prosím."
 
 #: src/tauon/t_modules/t_main.py:26888
-#, fuzzy
 msgid "{N} Album chart"
-msgstr "Album"
+msgstr "Graf alb: {N}"
 
 #: src/tauon/t_modules/t_main.py:26896
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "V seznamu skladeb není dost alb!"
 
 #: src/tauon/t_modules/t_main.py:26904
 msgid "Ready"
-msgstr ""
+msgstr "Připraveno"
 
 #: src/tauon/t_modules/t_main.py:26928
 msgid "Tracklist items"
-msgstr ""
+msgstr "Položky seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:26933
 msgid "Loves"
-msgstr ""
+msgstr "Oblíbené"
 
 #: src/tauon/t_modules/t_main.py:26934
 msgid "Track ratings"
-msgstr ""
+msgstr "Hodnocení skladeb"
 
 #: src/tauon/t_modules/t_main.py:26937
-#, fuzzy
 msgid "Album ratings"
-msgstr "Album"
+msgstr "Hodnocení alb"
 
 #: src/tauon/t_modules/t_main.py:26938
 msgid "Star hints"
-msgstr ""
+msgstr "Nápovědy hvězdiček"
 
 #: src/tauon/t_modules/t_main.py:26941
 msgid "Playcount lines"
-msgstr ""
+msgstr "Řádky počtu přehrání"
 
 #: src/tauon/t_modules/t_main.py:26943
 msgid "Left align"
-msgstr ""
+msgstr "Zarovnat doleva"
 
 #: src/tauon/t_modules/t_main.py:26956
 msgid "Year"
-msgstr ""
+msgstr "Rok"
 
 #: src/tauon/t_modules/t_main.py:26963
 msgid "Sizing"
-msgstr ""
+msgstr "Velikost"
 
 #: src/tauon/t_modules/t_main.py:26971
 msgid "Font size"
-msgstr ""
+msgstr "Velikost písma"
 
 #: src/tauon/t_modules/t_main.py:26980
 msgid "Row height"
-msgstr ""
+msgstr "Výška řádku"
 
 #: src/tauon/t_modules/t_main.py:26990
 msgid "Text baseline"
-msgstr ""
+msgstr "Účaří textu"
 
 #: src/tauon/t_modules/t_main.py:27011
 msgid "Thin default"
-msgstr ""
+msgstr "Výchozí tenké"
 
 #: src/tauon/t_modules/t_main.py:27012
 msgid "Thick default"
-msgstr ""
+msgstr "Výchozí tlusté"
 
 #: src/tauon/t_modules/t_main.py:27193
 msgid "Discord"
-msgstr ""
+msgstr "Discord"
 
 #: src/tauon/t_modules/t_main.py:27194
 msgid "Layout, buttons and idle behavior."
-msgstr ""
+msgstr "Rozvržení, tlačítka a chování při nečinnosti."
 
 #: src/tauon/t_modules/t_main.py:27209
 msgid "Card order"
-msgstr ""
+msgstr "Pořadí karet"
 
 #: src/tauon/t_modules/t_main.py:27213
 msgid "Song first"
-msgstr ""
+msgstr "Nejdřív píseň"
 
 #: src/tauon/t_modules/t_main.py:27221
-#, fuzzy
 msgid "Artist first"
-msgstr "Umělec"
+msgstr "Nejdřív interpret"
 
 #: src/tauon/t_modules/t_main.py:27229
 msgid "Member list shows:"
-msgstr ""
+msgstr "Seznam členů zobrazuje:"
 
 #: src/tauon/t_modules/t_main.py:27233
 msgid "Song"
-msgstr ""
+msgstr "Píseň"
 
 #: src/tauon/t_modules/t_main.py:27248 src/tauon/t_modules/t_main.py:28155
 #: src/tauon/t_modules/t_main.py:28215 src/tauon/t_modules/t_main.py:28406
-#, fuzzy
 msgid "Options"
-msgstr "Funkce"
+msgstr "Možnosti"
 
 #: src/tauon/t_modules/t_main.py:27253
 msgid "Clean title (Removes .feat etc)"
-msgstr ""
+msgstr "Vyčistit název (odstraní .feat apod.)"
 
 #: src/tauon/t_modules/t_main.py:27260
 msgid "Last.fm link button"
-msgstr ""
+msgstr "Tlačítko odkazu Last.fm"
 
 #: src/tauon/t_modules/t_main.py:27267
 msgid "Tauon website button"
-msgstr ""
+msgstr "Tlačítko webu Tauon"
 
 #: src/tauon/t_modules/t_main.py:27274
 msgid "Keep idle"
-msgstr ""
+msgstr "Ponechat nečinné"
 
 #: src/tauon/t_modules/t_main.py:27305
 msgid "Scroll feel and side panel layout."
-msgstr ""
+msgstr "Pocit posouvání a rozvržení bočního panelu."
 
 #: src/tauon/t_modules/t_main.py:27311
 msgid "Smooth scrolling"
-msgstr ""
+msgstr "Plynulé posouvání"
 
 #: src/tauon/t_modules/t_main.py:27312
 msgid "Trackpad scrolling stays smooth either way."
-msgstr ""
+msgstr "Posouvání trackpadem zůstane plynulé v obou případech."
 
 #: src/tauon/t_modules/t_main.py:27319
 msgid "Centered metadata side panel"
-msgstr ""
+msgstr "Vystředěný boční panel metadat"
 
 #: src/tauon/t_modules/t_main.py:27326
 msgid "Metadata panel on left"
-msgstr ""
+msgstr "Panel metadat vlevo"
 
 #: src/tauon/t_modules/t_main.py:27334
 msgid "Zoom album art to fit"
-msgstr ""
+msgstr "Přiblížit obrázek alba tak, aby seděl"
 
 #: src/tauon/t_modules/t_main.py:27343
 msgid "MilkDrop visualiser"
-msgstr ""
+msgstr "Vizualizér MilkDrop"
 
 #: src/tauon/t_modules/t_main.py:27353
 msgid "Showcase visualisation"
-msgstr ""
+msgstr "Prezentační vizualizace"
 
 #: src/tauon/t_modules/t_main.py:27359 src/tauon/t_modules/t_main.py:40609
 #: src/tauon/t_modules/t_main.py:40612
@@ -3091,78 +2974,75 @@ msgstr "Galerie"
 
 #: src/tauon/t_modules/t_main.py:27360
 msgid "Browsing and thumbnail layout."
-msgstr ""
+msgstr "Procházení a rozvržení náhledů."
 
 #: src/tauon/t_modules/t_main.py:27366
 msgid "Single click to play"
-msgstr ""
+msgstr "Přehrát jedním kliknutím"
 
 #: src/tauon/t_modules/t_main.py:27373
 msgid "Scroll gallery by row"
-msgstr ""
+msgstr "Posouvat galerii po řádcích"
 
 #: src/tauon/t_modules/t_main.py:27380
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Sloučit vícedisková alba"
 
 #: src/tauon/t_modules/t_main.py:27387
-#, fuzzy
 msgid "Show titles"
-msgstr "Titul"
+msgstr "Zobrazit názvy"
 
 #: src/tauon/t_modules/t_main.py:27394
 msgid "Center title text"
-msgstr ""
+msgstr "Vystředit text názvu"
 
 #: src/tauon/t_modules/t_main.py:27400
 msgid "Thumbnail size"
-msgstr ""
+msgstr "Velikost náhledu"
 
 #: src/tauon/t_modules/t_main.py:27414
 msgid "Prefer thinner padding"
-msgstr ""
+msgstr "Preferovat menší odsazení"
 
 #: src/tauon/t_modules/t_main.py:27448
 msgid "Artwork and automatic theme changes."
-msgstr ""
+msgstr "Obrázky a automatické změny motivu."
 
 #: src/tauon/t_modules/t_main.py:27451
 msgid "Use album art as background"
-msgstr ""
+msgstr "Použít obrázek alba jako pozadí"
 
 #: src/tauon/t_modules/t_main.py:27454
 msgid "Prefer artist backgrounds"
-msgstr ""
+msgstr "Preferovat pozadí interpretů"
 
 #: src/tauon/t_modules/t_main.py:27458
 msgid "Also enabling 'auto-fetch artist data' to scrape last.fm."
-msgstr ""
+msgstr "Zároveň se zapne 'automaticky načítat data interpreta' pro scraping last.fm."
 
 #: src/tauon/t_modules/t_main.py:27459
 msgid "You can toggle this back off under Settings > General"
-msgstr ""
+msgstr "Můžete to znovu vypnout v Nastavení > Obecné"
 
 #: src/tauon/t_modules/t_main.py:27462
 msgid "Stronger background"
-msgstr ""
+msgstr "Silnější pozadí"
 
 #: src/tauon/t_modules/t_main.py:27464
 msgid "Blur background"
-msgstr ""
+msgstr "Rozmazat pozadí"
 
 #: src/tauon/t_modules/t_main.py:27466
 msgid "Auto-theme from album art"
-msgstr ""
+msgstr "Automatický motiv podle obrázku alba"
 
 #: src/tauon/t_modules/t_main.py:27470
-#, fuzzy
 msgid "Theme preset"
-msgstr "Titul"
+msgstr "Předvolba motivu"
 
 #: src/tauon/t_modules/t_main.py:27567
-#, fuzzy
 msgid "Edit"
-msgstr "Editovat..."
+msgstr "Upravit"
 
 #: src/tauon/t_modules/t_main.py:27574 src/tauon/t_modules/t_main.py:47687
 #: src/tauon/t_modules/t_main.py:47689 src/tauon/t_modules/t_main.py:53031
@@ -3171,7 +3051,7 @@ msgstr "Smazat"
 
 #: src/tauon/t_modules/t_main.py:27576
 msgid "Transparent accent"
-msgstr ""
+msgstr "Průhledný akcent"
 
 #: src/tauon/t_modules/t_main.py:27595
 msgid "Window"
@@ -3179,343 +3059,337 @@ msgstr "Okno"
 
 #: src/tauon/t_modules/t_main.py:27596
 msgid "Notifications and on-screen controls."
-msgstr ""
+msgstr "Oznámení a ovládací prvky na obrazovce."
 
 #: src/tauon/t_modules/t_main.py:27599
 msgid "Emit track change notifications"
-msgstr ""
+msgstr "Posílat oznámení o změně skladby"
 
 #: src/tauon/t_modules/t_main.py:27601
 msgid "Draw own window decorations"
-msgstr ""
+msgstr "Vykreslovat vlastní dekorace okna"
 
 #: src/tauon/t_modules/t_main.py:27604
 msgid "Show playing in titlebar"
-msgstr ""
+msgstr "Zobrazit přehrávání v titulku okna"
 
 #: src/tauon/t_modules/t_main.py:27607
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Mini režim vždy navrchu"
 
 #: src/tauon/t_modules/t_main.py:27609
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr ""
+msgstr "Funkce vždy navrchu zatím není pro režim Wayland implementována"
 
 #: src/tauon/t_modules/t_main.py:27611
 msgid "Top-panel visualiser"
-msgstr ""
+msgstr "Vizualizér v horním panelu"
 
 #: src/tauon/t_modules/t_main.py:27615
 msgid "Tray and scale"
-msgstr ""
+msgstr "Lišta a měřítko"
 
 #: src/tauon/t_modules/t_main.py:27616
 msgid "System tray and interface scaling."
-msgstr ""
+msgstr "Systémová lišta a měřítko rozhraní."
 
 #: src/tauon/t_modules/t_main.py:27620
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Zobrazit ikonu v systémové liště"
 
 #: src/tauon/t_modules/t_main.py:27622 src/tauon/t_modules/t_main.py:27634
 msgid "Close to tray"
-msgstr ""
+msgstr "Zavřít do lišty"
 
 #: src/tauon/t_modules/t_main.py:27624
 msgid "Show title text"
-msgstr ""
+msgstr "Zobrazit text názvu"
 
 #: src/tauon/t_modules/t_main.py:27627
 msgid "Monochrome tray icon"
-msgstr ""
+msgstr "Jednobarevná ikona v liště"
 
 #: src/tauon/t_modules/t_main.py:27631
 msgid "Restart Tauon for change to take effect"
-msgstr ""
+msgstr "Aby se změna projevila, restartujte Tauon"
 
 #: src/tauon/t_modules/t_main.py:27660
 msgid "Interface scale"
-msgstr ""
+msgstr "Měřítko rozhraní"
 
 #: src/tauon/t_modules/t_main.py:27667
 msgid "auto"
-msgstr ""
+msgstr "auto"
 
 #: src/tauon/t_modules/t_main.py:27679
 msgid "Auto scale"
-msgstr ""
+msgstr "Automatické měřítko"
 
 #: src/tauon/t_modules/t_main.py:27691
 msgid "Audio controls are only available with the PHAzOR backend."
-msgstr ""
+msgstr "Ovládání zvuku je dostupné pouze s backendem PHAzOR."
 
 #: src/tauon/t_modules/t_main.py:27693
 msgid "Playback backend"
-msgstr ""
+msgstr "Backend přehrávání"
 
 #: src/tauon/t_modules/t_main.py:27711
 msgid "Playback and cache"
-msgstr ""
+msgstr "Přehrávání a mezipaměť"
 
 #: src/tauon/t_modules/t_main.py:27712
 msgid "Playback behaviour and local file caching."
-msgstr ""
+msgstr "Chování přehrávání a místní ukládání souborů do mezipaměti."
 
 #: src/tauon/t_modules/t_main.py:27715
 msgid "Fade on pause and stop"
-msgstr ""
+msgstr "Zeslabit při pozastavení a zastavení"
 
 #: src/tauon/t_modules/t_main.py:27717
 msgid "Fade on track jump"
-msgstr ""
+msgstr "Zeslabit při skoku na skladbu"
 
 #: src/tauon/t_modules/t_main.py:27719
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Zpět spustí od začátku"
 
 #: src/tauon/t_modules/t_main.py:27721
 msgid "Cache local files"
-msgstr ""
+msgstr "Ukládat místní soubory do mezipaměti"
 
 #: src/tauon/t_modules/t_main.py:27724
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Použít trvalou síťovou mezipaměť"
 
 #: src/tauon/t_modules/t_main.py:27730
 msgid "Cache size"
-msgstr ""
+msgstr "Velikost mezipaměti"
 
 #: src/tauon/t_modules/t_main.py:27742
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Vyhnout se převzorkování"
 
 #: src/tauon/t_modules/t_main.py:27755
 msgid "ReplayGain"
-msgstr ""
+msgstr "ReplayGain"
 
 #: src/tauon/t_modules/t_main.py:27756
 msgid "Playback loudness matching."
-msgstr ""
+msgstr "Srovnávání hlasitosti přehrávání."
 
 #: src/tauon/t_modules/t_main.py:27763
 msgid "Ignore ReplayGain tags."
-msgstr ""
+msgstr "Ignorovat tagy ReplayGain."
 
 #: src/tauon/t_modules/t_main.py:27763 src/tauon/t_modules/t_main.py:48000
 msgid "Off"
-msgstr ""
+msgstr "Vypnuto"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Auto"
-msgstr ""
+msgstr "Automaticky"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Use the best tag available."
-msgstr ""
+msgstr "Použít nejlepší dostupný tag."
 
 #: src/tauon/t_modules/t_main.py:27765
 msgid "Preserve album dynamics."
-msgstr ""
+msgstr "Zachovat dynamiku alba."
 
 #: src/tauon/t_modules/t_main.py:27766
 msgid "Match track loudness."
-msgstr ""
+msgstr "Srovnat hlasitost skladeb."
 
 #: src/tauon/t_modules/t_main.py:27766 src/tauon/t_modules/t_main.py:28893
 #: src/tauon/t_modules/t_main.py:28908
 msgid "Tracks"
-msgstr ""
+msgstr "Skladby"
 
 #: src/tauon/t_modules/t_main.py:27782
 msgid "Pre-amp"
-msgstr ""
+msgstr "Předzesílení"
 
 #: src/tauon/t_modules/t_main.py:27792
 msgid "Equalizer"
-msgstr ""
+msgstr "Ekvalizér"
 
 #: src/tauon/t_modules/t_main.py:27793
 msgid "Ten-band playback EQ."
-msgstr ""
+msgstr "Desetipásmový ekvalizér přehrávání."
 
 #: src/tauon/t_modules/t_main.py:27808
-#, fuzzy
 msgid "Enable EQ"
-msgstr "Zapnout"
+msgstr "Zapnout ekvalizér"
 
 #: src/tauon/t_modules/t_main.py:27811
 msgid "Reset"
-msgstr ""
+msgstr "Resetovat"
 
 #: src/tauon/t_modules/t_main.py:27894
 msgid "Encoding"
-msgstr ""
+msgstr "Kódování"
 
 #: src/tauon/t_modules/t_main.py:27895
 msgid "Select default codec and bitrate."
-msgstr ""
+msgstr "Vyberte výchozí kodek a datový tok."
 
 #: src/tauon/t_modules/t_main.py:27896
-#, fuzzy
 msgid "Files"
-msgstr "Jméno souboru"
+msgstr "Soubory"
 
 #: src/tauon/t_modules/t_main.py:27897
 msgid "Output location and overwrite rules."
-msgstr ""
+msgstr "Umístění výstupu a pravidla přepisování."
 
 #: src/tauon/t_modules/t_main.py:27910
 msgid "Lossless output."
-msgstr ""
+msgstr "Bezeztrátový výstup."
 
 #: src/tauon/t_modules/t_main.py:27911
 msgid "Small files, good quality."
-msgstr ""
+msgstr "Malé soubory, dobrá kvalita."
 
 #: src/tauon/t_modules/t_main.py:27912
 msgid "Compatible lossy output."
-msgstr ""
+msgstr "Kompatibilní ztrátový výstup."
 
 #: src/tauon/t_modules/t_main.py:27913
 msgid "Universal compatibility."
-msgstr ""
+msgstr "Univerzální kompatibilita."
 
 #: src/tauon/t_modules/t_main.py:27928
 msgid "Save opus as .ogg"
-msgstr ""
+msgstr "Ukládat Opus jako .ogg"
 
 #: src/tauon/t_modules/t_main.py:27945
 msgid "Open output folder"
-msgstr ""
+msgstr "Otevřít výstupní složku"
 
 #: src/tauon/t_modules/t_main.py:27947
 msgid "Save to output folder"
-msgstr ""
+msgstr "Uložit do výstupní složky"
 
 #: src/tauon/t_modules/t_main.py:27949
 msgid "Save and overwrite files in place"
-msgstr ""
+msgstr "Uložit a přepsat soubory na místě"
 
 #: src/tauon/t_modules/t_main.py:27955
 msgid "Sync to device"
-msgstr ""
+msgstr "Synchronizovat do zařízení"
 
 #: src/tauon/t_modules/t_main.py:27956
 msgid "Transcode and copy a selected playlist."
-msgstr ""
+msgstr "Překódovat a zkopírovat vybraný seznam skladeb."
 
 #: src/tauon/t_modules/t_main.py:27964
-#, fuzzy
 msgid "No sync playlist selected"
-msgstr "Konec seznamu skladeb"
+msgstr "Není vybrán žádný seznam pro synchronizaci"
 
 #: src/tauon/t_modules/t_main.py:27967
-#, fuzzy
 msgid "Source Playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Zdrojový seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:27970
 msgid "Target folder"
-msgstr ""
+msgstr "Cílová složka"
 
 #: src/tauon/t_modules/t_main.py:27990
 msgid "A mounted music folder was found!"
-msgstr ""
+msgstr "Byla nalezena připojená hudební složka!"
 
 #: src/tauon/t_modules/t_main.py:27992
 msgid "Could not auto-detect mounted device path."
-msgstr ""
+msgstr "Nepodařilo se automaticky zjistit cestu k připojenému zařízení."
 
 #: src/tauon/t_modules/t_main.py:27992
 msgid "Make sure the device is mounted and path is accessible."
-msgstr ""
+msgstr "Zkontrolujte, že je zařízení připojené a cesta je přístupná."
 
 #: src/tauon/t_modules/t_main.py:27995
 msgid "Delete other folders in target"
-msgstr ""
+msgstr "Smazat ostatní složky v cíli"
 
 #: src/tauon/t_modules/t_main.py:27997
 msgid "Transcode files"
-msgstr ""
+msgstr "Překódovat soubory"
 
 #: src/tauon/t_modules/t_main.py:27999
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Přeskočit nízký datový tok"
 
 #: src/tauon/t_modules/t_main.py:28001
 msgid "Start Sync"
-msgstr ""
+msgstr "Spustit synchronizaci"
 
 #: src/tauon/t_modules/t_main.py:28001
 msgid "Start Transcode and Sync"
-msgstr ""
+msgstr "Spustit překódování a synchronizaci"
 
 #: src/tauon/t_modules/t_main.py:28003
-#, fuzzy
 msgid "Stopping..."
-msgstr "Načítání..."
+msgstr "Zastavuje se..."
 
 #: src/tauon/t_modules/t_main.py:28005
 msgid "Stop"
 msgstr "Stop"
 
 #: src/tauon/t_modules/t_main.py:28013
-#, fuzzy
 msgid "Select a source playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Vyberte zdrojový seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:28013
 msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr ""
+msgstr "Pravé kliknutí na kartu > Různé... > Nastavit jako seznam pro synchronizaci"
 
 #: src/tauon/t_modules/t_main.py:28020
 msgid "Scrobbles and loves."
-msgstr ""
+msgstr "Scrobbly a oblíbené položky."
 
 #: src/tauon/t_modules/t_main.py:28021 src/tauon/t_modules/t_main.py:28188
 msgid "Token-based scrobbling."
-msgstr ""
+msgstr "Scrobblování založené na tokenu."
 
 #: src/tauon/t_modules/t_main.py:28022
 msgid "Self-hosted scrobbling."
-msgstr ""
+msgstr "Vlastní scrobblování."
 
 #: src/tauon/t_modules/t_main.py:28025 src/tauon/t_modules/t_main.py:28028
 msgid "Network library."
-msgstr ""
+msgstr "Síťová knihovna."
 
 #: src/tauon/t_modules/t_main.py:28026
 msgid "Albums and tracks."
-msgstr ""
+msgstr "Alba a skladby."
 
 #: src/tauon/t_modules/t_main.py:28027
 msgid "Subsonic library."
-msgstr ""
+msgstr "Knihovna Subsonic."
 
 #: src/tauon/t_modules/t_main.py:28029
 msgid "Tauon-to-Tauon sync."
-msgstr ""
+msgstr "Synchronizace Tauon-Tauon."
 
 #: src/tauon/t_modules/t_main.py:28033
 msgid "Artwork sources."
-msgstr ""
+msgstr "Zdroje obrázků."
 
 #: src/tauon/t_modules/t_main.py:28059
 msgid "Account not connected."
-msgstr ""
+msgstr "Účet není připojen."
 
 #: src/tauon/t_modules/t_main.py:28072
 msgid "Scrobble playback and sync loves."
-msgstr ""
+msgstr "Scrobblovat přehrávání a synchronizovat oblíbené."
 
 #: src/tauon/t_modules/t_main.py:28078 src/tauon/t_modules/t_main.py:28195
 #: src/tauon/t_modules/t_main.py:28468
 msgid "Enable scrobbling"
-msgstr ""
+msgstr "Zapnout scrobblování"
 
 #: src/tauon/t_modules/t_main.py:28087 src/tauon/t_modules/t_main.py:28723
 msgid "Login"
-msgstr ""
+msgstr "Přihlášení"
 
 #: src/tauon/t_modules/t_main.py:28088
 msgid "Done"
@@ -3523,92 +3397,88 @@ msgstr "Hotovo"
 
 #: src/tauon/t_modules/t_main.py:28097
 msgid "Use LibreFM"
-msgstr ""
+msgstr "Použít LibreFM"
 
 #: src/tauon/t_modules/t_main.py:28101
 msgid "Use Login, finish the browser step, then click Done."
-msgstr ""
+msgstr "Použijte Přihlášení, dokončete krok v prohlížeči a klikněte na Hotovo."
 
 #: src/tauon/t_modules/t_main.py:28103
 msgid "Finish authorisation in the browser, then click Done."
-msgstr ""
+msgstr "Dokončete autorizaci v prohlížeči a klikněte na Hotovo."
 
 #: src/tauon/t_modules/t_main.py:28104
-#, fuzzy
 msgid "Authorisation"
-msgstr "Autorizovat"
+msgstr "Autorizace"
 
 #: src/tauon/t_modules/t_main.py:28109
 msgid "Forget account"
-msgstr ""
+msgstr "Zapomenout účet"
 
 #: src/tauon/t_modules/t_main.py:28114
 msgid "Signed in as"
-msgstr ""
+msgstr "Přihlášen jako"
 
 #: src/tauon/t_modules/t_main.py:28120
 msgid "Library sync"
-msgstr ""
+msgstr "Synchronizace knihovny"
 
 #: src/tauon/t_modules/t_main.py:28121
 msgid "Pull loves and scrobble counts into Tauon."
-msgstr ""
+msgstr "Načíst oblíbené a počty scrobblů do Tauonu."
 
 #: src/tauon/t_modules/t_main.py:28127
 msgid "Get user loves"
-msgstr ""
+msgstr "Získat oblíbené uživatele"
 
 #: src/tauon/t_modules/t_main.py:28128
-#, fuzzy
 msgid "Clear local loves"
-msgstr "Účty"
+msgstr "Vymazat místní oblíbené"
 
 #: src/tauon/t_modules/t_main.py:28136
 msgid "Get friend loves"
-msgstr ""
+msgstr "Získat oblíbené přátel"
 
 #: src/tauon/t_modules/t_main.py:28137
 msgid "Clear friend loves"
-msgstr ""
+msgstr "Vymazat oblíbené přátel"
 
 #: src/tauon/t_modules/t_main.py:28145 src/tauon/t_modules/t_main.py:28525
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Získat počty scrobblů"
 
 #: src/tauon/t_modules/t_main.py:28146 src/tauon/t_modules/t_main.py:28526
-#, fuzzy
 msgid "Clear counts"
-msgstr "Účty"
+msgstr "Vymazat počty"
 
 #: src/tauon/t_modules/t_main.py:28156
 msgid "Controls for import and playback display."
-msgstr ""
+msgstr "Ovládání importu a zobrazení přehrávání."
 
 #: src/tauon/t_modules/t_main.py:28163
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Načíst oblíbenost při scrobblu/prohledání"
 
 #: src/tauon/t_modules/t_main.py:28167
 msgid "This will overwrite local love state when it differs from last.fm."
-msgstr ""
+msgstr "Tím se přepíše místní stav oblíbenosti, pokud se liší od last.fm."
 
 #: src/tauon/t_modules/t_main.py:28172 src/tauon/t_modules/t_main.py:28230
 #: src/tauon/t_modules/t_main.py:28476
 msgid "Show threshold marker"
-msgstr ""
+msgstr "Zobrazit značku prahu"
 
 #: src/tauon/t_modules/t_main.py:28191
 msgid "Token saved."
-msgstr ""
+msgstr "Token uložen."
 
 #: src/tauon/t_modules/t_main.py:28191
 msgid "Paste a token to enable ListenBrainz."
-msgstr ""
+msgstr "Vložte token pro zapnutí ListenBrainz."
 
 #: src/tauon/t_modules/t_main.py:28203
-#, fuzzy
 msgid "Paste token"
-msgstr "Vložit"
+msgstr "Vložit token"
 
 #: src/tauon/t_modules/t_main.py:28204 src/tauon/t_modules/t_main.py:47682
 #: src/tauon/t_modules/t_main.py:47998
@@ -3617,64 +3487,63 @@ msgstr "Pročistit"
 
 #: src/tauon/t_modules/t_main.py:28209
 msgid "Using the default ListenBrainz endpoint."
-msgstr ""
+msgstr "Používá se výchozí koncový bod ListenBrainz."
 
 #: src/tauon/t_modules/t_main.py:28210
 msgid "Endpoint"
-msgstr ""
+msgstr "Koncový bod"
 
 #: src/tauon/t_modules/t_main.py:28216
 msgid "Extra controls for ListenBrainz."
-msgstr ""
+msgstr "Další ovládání pro ListenBrainz."
 
 #: src/tauon/t_modules/t_main.py:28222
 msgid "Open profile"
-msgstr ""
+msgstr "Otevřít profil"
 
 #: src/tauon/t_modules/t_main.py:28243
 msgid "Reset flips"
-msgstr ""
+msgstr "Resetovat otočení"
 
 #: src/tauon/t_modules/t_main.py:28253 src/tauon/t_modules/t_main.py:35694
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/tauon/t_modules/t_main.py:28259
 msgid "Artwork sources for artist images and covers."
-msgstr ""
+msgstr "Zdroje obrázků interpretů a obalů."
 
 #: src/tauon/t_modules/t_main.py:28264
 msgid "Use fanart.tv for artist images and manual cover art lookup."
-msgstr ""
+msgstr "Použít fanart.tv pro obrázky interpretů a ruční vyhledávání obalů."
 
 #: src/tauon/t_modules/t_main.py:28272
 msgid "Cover art (manual only)"
-msgstr ""
+msgstr "Obaly (pouze ručně)"
 
 #: src/tauon/t_modules/t_main.py:28279
 msgid "Artist images (automatic)"
-msgstr ""
+msgstr "Obrázky interpretů (automaticky)"
 
 #: src/tauon/t_modules/t_main.py:28286
 msgid "Flip current"
-msgstr ""
+msgstr "Otočit aktuální"
 
 #: src/tauon/t_modules/t_main.py:28301
 msgid "Finish the sign-in step to continue."
-msgstr ""
+msgstr "Pro pokračování dokončete přihlášení."
 
 #: src/tauon/t_modules/t_main.py:28301
 msgid "Connect to a Plex server."
-msgstr ""
+msgstr "Připojit k serveru Plex."
 
 #: src/tauon/t_modules/t_main.py:28306
 msgid "Two-factor code"
-msgstr ""
+msgstr "Dvoufaktorový kód"
 
 #: src/tauon/t_modules/t_main.py:28315 src/tauon/t_modules/t_main.py:28380
-#, fuzzy
 msgid "Username / Email"
-msgstr "Jméno"
+msgstr "Uživatelské jméno / e-mail"
 
 #: src/tauon/t_modules/t_main.py:28323 src/tauon/t_modules/t_main.py:28388
 #: src/tauon/t_modules/t_main.py:28567
@@ -3682,233 +3551,219 @@ msgid "Password"
 msgstr "Heslo"
 
 #: src/tauon/t_modules/t_main.py:28332
-#, fuzzy
 msgid "Server name"
-msgstr "Jméno"
+msgstr "Název serveru"
 
 #: src/tauon/t_modules/t_main.py:28341 src/tauon/t_modules/t_main.py:28509
 #: src/tauon/t_modules/t_main.py:28597 src/tauon/t_modules/t_main.py:28659
 #: src/tauon/t_modules/t_main.py:28761
-#, fuzzy
 msgid "Actions"
-msgstr "Funkce"
+msgstr "Akce"
 
 #: src/tauon/t_modules/t_main.py:28342
-#, fuzzy
 msgid "Import from Plex."
-msgstr "Exportovat…"
+msgstr "Importovat z Plexu."
 
 #: src/tauon/t_modules/t_main.py:28349
 msgid "Continue"
-msgstr ""
+msgstr "Pokračovat"
 
 #: src/tauon/t_modules/t_main.py:28358 src/tauon/t_modules/t_main.py:28421
-#, fuzzy
 msgid "Import music to playlist"
-msgstr "Exportovat…"
+msgstr "Importovat hudbu do seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:28374
 msgid "Airsonic / Subsonic"
-msgstr ""
+msgstr "Airsonic / Subsonic"
 
 #: src/tauon/t_modules/t_main.py:28375
 msgid "Connect to a Subsonic-compatible server."
-msgstr ""
+msgstr "Připojit k serveru kompatibilnímu se Subsonic."
 
 #: src/tauon/t_modules/t_main.py:28397 src/tauon/t_modules/t_main.py:28490
 #: src/tauon/t_modules/t_main.py:28576
 msgid "Server URL"
-msgstr ""
+msgstr "URL serveru"
 
 #: src/tauon/t_modules/t_main.py:28407
 msgid "Import and authentication settings."
-msgstr ""
+msgstr "Nastavení importu a ověření."
 
 #: src/tauon/t_modules/t_main.py:28413
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Použít ověření prostým textem"
 
 #: src/tauon/t_modules/t_main.py:28414
 msgid "Needed for Nextcloud Music."
-msgstr ""
+msgstr "Vyžadováno pro Nextcloud Music."
 
 #: src/tauon/t_modules/t_main.py:28448
 msgid "Connection looked successful but the API key was invalid."
-msgstr ""
+msgstr "Připojení vypadalo úspěšně, ale klíč API byl neplatný."
 
 #: src/tauon/t_modules/t_main.py:28450
 msgid "Connection to Maloja server was successful."
-msgstr ""
+msgstr "Připojení k serveru Maloja proběhlo úspěšně."
 
 #: src/tauon/t_modules/t_main.py:28452
 msgid "The Maloja server returned an error."
-msgstr ""
+msgstr "Server Maloja vrátil chybu."
 
 #: src/tauon/t_modules/t_main.py:28455
 msgid "Could not communicate with the Maloja server."
-msgstr ""
+msgstr "Nepodařilo se komunikovat se serverem Maloja."
 
 #: src/tauon/t_modules/t_main.py:28458
 msgid "No server configured."
-msgstr ""
+msgstr "Není nakonfigurován žádný server."
 
 #: src/tauon/t_modules/t_main.py:28462
 msgid "Self-hosted scrobble server."
-msgstr ""
+msgstr "Vlastní scrobble server."
 
 #: src/tauon/t_modules/t_main.py:28484
 msgid "Credentials"
-msgstr ""
+msgstr "Přihlašovací údaje"
 
 #: src/tauon/t_modules/t_main.py:28485
 msgid "Server address and API key."
-msgstr ""
+msgstr "Adresa serveru a klíč API."
 
 #: src/tauon/t_modules/t_main.py:28498
 msgid "API key"
-msgstr ""
+msgstr "Klíč API"
 
 #: src/tauon/t_modules/t_main.py:28510
 msgid "Connectivity and library import."
-msgstr ""
+msgstr "Připojení a import knihovny."
 
 #: src/tauon/t_modules/t_main.py:28516
 msgid "About Maloja"
-msgstr ""
+msgstr "O službě Maloja"
 
 #: src/tauon/t_modules/t_main.py:28517 src/tauon/t_modules/t_main.py:28613
 msgid "Test connectivity"
-msgstr ""
+msgstr "Otestovat připojení"
 
 #: src/tauon/t_modules/t_main.py:28546
 msgid "Run music import first"
-msgstr ""
+msgstr "Nejdřív spusťte import hudby"
 
 #: src/tauon/t_modules/t_main.py:28554
 msgid "Connect to a Jellyfin server."
-msgstr ""
+msgstr "Připojit k serveru Jellyfin."
 
 #: src/tauon/t_modules/t_main.py:28559
 msgid "Username"
 msgstr "Jméno"
 
 #: src/tauon/t_modules/t_main.py:28584
-#, fuzzy
 msgid "Import timeout"
-msgstr "Exportovat…"
+msgstr "Časový limit importu"
 
 #: src/tauon/t_modules/t_main.py:28598
-#, fuzzy
 msgid "Import music and playlists."
-msgstr "Exportovat…"
+msgstr "Importovat hudbu a seznamy skladeb."
 
 #: src/tauon/t_modules/t_main.py:28604
-#, fuzzy
 msgid "Import music"
-msgstr "Exportovat…"
+msgstr "Importovat hudbu"
 
 #: src/tauon/t_modules/t_main.py:28605
-#, fuzzy
 msgid "Import playlists"
-msgstr "Konec seznamu skladeb"
+msgstr "Importovat seznamy skladeb"
 
 #: src/tauon/t_modules/t_main.py:28630
 msgid "Fetch a playlist from another Tauon instance."
-msgstr ""
+msgstr "Načíst seznam skladeb z jiné instance Tauonu."
 
 #: src/tauon/t_modules/t_main.py:28635
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: src/tauon/t_modules/t_main.py:28643
-#, fuzzy
 msgid "Playlist name"
-msgstr "Konec seznamu skladeb"
+msgstr "Název seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:28652
 msgid "An operation is already running"
-msgstr ""
+msgstr "Operace už běží"
 
 #: src/tauon/t_modules/t_main.py:28660
-#, fuzzy
 msgid "Fetch the named playlist."
-msgstr "Konec seznamu skladeb"
+msgstr "Načíst pojmenovaný seznam skladeb."
 
 #: src/tauon/t_modules/t_main.py:28666
-#, fuzzy
 msgid "Get playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Získat seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Signed in."
-msgstr ""
+msgstr "Přihlášeno."
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Waiting for redirect."
-msgstr ""
+msgstr "Čeká se na přesměrování."
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Not connected."
-msgstr ""
+msgstr "Nepřipojeno."
 
 #: src/tauon/t_modules/t_main.py:28691
 msgid "Authorise TIDAL and import favourites."
-msgstr ""
+msgstr "Autorizovat TIDAL a importovat oblíbené."
 
 #: src/tauon/t_modules/t_main.py:28694
 msgid "Status"
-msgstr ""
+msgstr "Stav"
 
 #: src/tauon/t_modules/t_main.py:28700
 msgid "Logout"
-msgstr ""
+msgstr "Odhlásit se"
 
 #: src/tauon/t_modules/t_main.py:28707
 msgid "Copy the full URL of the resulting page, then paste it here."
-msgstr ""
+msgstr "Zkopírujte úplnou URL výsledné stránky a vložte ji sem."
 
 #: src/tauon/t_modules/t_main.py:28709
 msgid "Redirect"
-msgstr ""
+msgstr "Přesměrování"
 
 #: src/tauon/t_modules/t_main.py:28715
 msgid "Paste redirect URL"
-msgstr ""
+msgstr "Vložit URL přesměrování"
 
 #: src/tauon/t_modules/t_main.py:28732
-#, fuzzy
 msgid "Imports"
-msgstr "Export"
+msgstr "Importy"
 
 #: src/tauon/t_modules/t_main.py:28733
 msgid "Pull favourites into Tauon."
-msgstr ""
+msgstr "Načíst oblíbené do Tauonu."
 
 #: src/tauon/t_modules/t_main.py:28739
-#, fuzzy
 msgid "Import albums"
-msgstr "Exportovat…"
+msgstr "Importovat alba"
 
 #: src/tauon/t_modules/t_main.py:28740
-#, fuzzy
 msgid "Import tracks"
-msgstr "Export"
+msgstr "Importovat skladby"
 
 #: src/tauon/t_modules/t_main.py:28755
 msgid "Service"
-msgstr ""
+msgstr "Služba"
 
 #: src/tauon/t_modules/t_main.py:28756
 msgid "No layout available."
-msgstr ""
+msgstr "Není dostupné žádné rozvržení."
 
 #: src/tauon/t_modules/t_main.py:28759
 msgid "This service view is not available right now."
-msgstr ""
+msgstr "Toto zobrazení služby teď není dostupné."
 
 #: src/tauon/t_modules/t_main.py:28762
 msgid "Back to Last.fm"
-msgstr ""
+msgstr "Zpět na Last.fm"
 
 #: src/tauon/t_modules/t_main.py:28797
 msgid "Accounts"
@@ -3916,92 +3771,87 @@ msgstr "Účty"
 
 #: src/tauon/t_modules/t_main.py:28798
 msgid "Pick a service to configure."
-msgstr ""
+msgstr "Vyberte službu ke konfiguraci."
 
 #: src/tauon/t_modules/t_main.py:28804
 msgid "Scrobbling"
-msgstr ""
+msgstr "Scrobblování"
 
 #: src/tauon/t_modules/t_main.py:28805
 msgid "Streaming"
-msgstr ""
+msgstr "Streamování"
 
 #: src/tauon/t_modules/t_main.py:28887
-#, fuzzy
 msgid "Current playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Aktuální seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:28894 src/tauon/t_modules/t_main.py:28909
-#, fuzzy
 msgid "Albums"
-msgstr "Album"
+msgstr "Alba"
 
 #: src/tauon/t_modules/t_main.py:28903
 msgid "Library"
-msgstr ""
+msgstr "Knihovna"
 
 #: src/tauon/t_modules/t_main.py:28904
 msgid "Totals across the database."
-msgstr ""
+msgstr "Souhrny celé databáze."
 
 #: src/tauon/t_modules/t_main.py:28910
 msgid "Playtime"
-msgstr ""
+msgstr "Doba přehrávání"
 
 #: src/tauon/t_modules/t_main.py:28920
-#, fuzzy
 msgid "File formats"
-msgstr "Cesta k souboru"
+msgstr "Formáty souborů"
 
 #: src/tauon/t_modules/t_main.py:28921
 msgid "Click a segment to build a playlist for that format."
-msgstr ""
+msgstr "Kliknutím na segment vytvoříte seznam skladeb pro daný formát."
 
 #: src/tauon/t_modules/t_main.py:28983
 msgid "Tauon"
-msgstr ""
+msgstr "Tauon"
 
 #: src/tauon/t_modules/t_main.py:28999
 msgid "This program comes with absolutely no warranty."
-msgstr ""
+msgstr "Tento program je poskytován zcela bez záruky."
 
 #: src/tauon/t_modules/t_main.py:29001
 msgid "Open website"
-msgstr ""
+msgstr "Otevřít web"
 
 #: src/tauon/t_modules/t_main.py:29003
 msgid "Open GPL license"
-msgstr ""
+msgstr "Otevřít licenci GPL"
 
 #: src/tauon/t_modules/t_main.py:29007
 msgid "Credits"
-msgstr ""
+msgstr "Zásluhy"
 
 #: src/tauon/t_modules/t_main.py:29008
 msgid "People and project links."
-msgstr ""
+msgstr "Lidé a odkazy projektu."
 
 #: src/tauon/t_modules/t_main.py:29011
 msgid "Created by"
-msgstr ""
+msgstr "Vytvořil"
 
 #: src/tauon/t_modules/t_main.py:29014
 msgid "Contributors"
-msgstr ""
+msgstr "Přispěvatelé"
 
 #: src/tauon/t_modules/t_main.py:29016
-#, fuzzy
 msgid "Source code"
-msgstr "Zdroje:"
+msgstr "Zdrojový kód"
 
 #: src/tauon/t_modules/t_main.py:29114 src/tauon/t_modules/t_main.py:29120
-#, fuzzy
 msgid "Theme title"
-msgstr "Titul"
+msgstr "Název motivu"
 
 #: src/tauon/t_modules/t_main.py:29125
 msgid "Unsaved changes!"
-msgstr ""
+msgstr "Neuložené změny!"
 
 #: src/tauon/t_modules/t_main.py:29135 src/tauon/t_modules/t_main.py:35221
 #: src/tauon/t_modules/t_main.py:48198
@@ -4009,9 +3859,8 @@ msgid "Save"
 msgstr "Uložit"
 
 #: src/tauon/t_modules/t_main.py:29151
-#, fuzzy
 msgid "Components"
-msgstr "Skladatel"
+msgstr "Komponenty"
 
 #: src/tauon/t_modules/t_main.py:29227 src/tauon/t_modules/t_main.py:47837
 #: src/tauon/t_modules/t_main.py:47936 src/tauon/t_modules/t_main.py:47941
@@ -4027,203 +3876,196 @@ msgstr "Vložit"
 
 #: src/tauon/t_modules/t_main.py:29669
 msgid "Tauon SHUFFLE!"
-msgstr ""
+msgstr "Tauon NÁHODNĚ!"
 
 #: src/tauon/t_modules/t_main.py:29671
 msgid "ALBUM SHUFFLE"
-msgstr ""
+msgstr "NÁHODNÁ ALBA"
 
 #: src/tauon/t_modules/t_main.py:30304
 msgid "MENU"
-msgstr ""
+msgstr "NABÍDKA"
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "It looks like something is being downloaded..."
-msgstr ""
+msgstr "Vypadá to, že se něco stahuje..."
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "Let's check back later..."
-msgstr ""
+msgstr "Zkusme to znovu později..."
 
 #: src/tauon/t_modules/t_main.py:30408
 msgid "Importing XSPF playlist"
-msgstr ""
+msgstr "Importuje se seznam skladeb XSPF"
 
 #: src/tauon/t_modules/t_main.py:30410
 msgid "Importing XSPF playlist..."
-msgstr ""
+msgstr "Importuje se seznam skladeb XSPF..."
 
 #: src/tauon/t_modules/t_main.py:30412
 msgid "Extracting Archive..."
-msgstr ""
+msgstr "Rozbaluje se archiv..."
 
 #: src/tauon/t_modules/t_main.py:30414
 msgid "Importing...  "
-msgstr ""
+msgstr "Importuje se...  "
 
 #: src/tauon/t_modules/t_main.py:30420
 msgid "Scanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Prohledávají se tagy... zbývá {N}"
 
 #: src/tauon/t_modules/t_main.py:30424
-#, fuzzy
 msgid "Auto-importing playlists..."
-msgstr "Konec seznamu skladeb"
+msgstr "Automaticky se importují seznamy skladeb..."
 
 #: src/tauon/t_modules/t_main.py:30426
 msgid "File copy in progress..."
-msgstr ""
+msgstr "Probíhá kopírování souborů..."
 
 #: src/tauon/t_modules/t_main.py:30430
 msgid "Cleaning db...  "
-msgstr ""
+msgstr "Čistí se databáze...  "
 
 #: src/tauon/t_modules/t_main.py:30433
 msgid "Rescanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Znovu se prohledávají tagy... zbývá {N}"
 
 #: src/tauon/t_modules/t_main.py:30436
 msgid "Accessing PLEX library..."
-msgstr ""
+msgstr "Přistupuje se ke knihovně PLEX..."
 
 #: src/tauon/t_modules/t_main.py:30441
 msgid "Accessing AIRSONIC library..."
-msgstr ""
+msgstr "Přistupuje se ke knihovně AIRSONIC..."
 
 #: src/tauon/t_modules/t_main.py:30446
 msgid "Accessing JELLYFIN library..."
-msgstr ""
+msgstr "Přistupuje se ke knihovně JELLYFIN..."
 
 #: src/tauon/t_modules/t_main.py:30449
 msgid "Chromecast Mode"
-msgstr ""
+msgstr "Režim Chromecast"
 
 #: src/tauon/t_modules/t_main.py:30458
 msgid "Stopping transcode..."
-msgstr ""
+msgstr "Zastavuje se překódování..."
 
 #: src/tauon/t_modules/t_main.py:30461
 msgid "Uploading lyrics to LRCLIB..."
-msgstr ""
+msgstr "Nahrávají se texty do LRCLIB..."
 
 #: src/tauon/t_modules/t_main.py:30463
 msgid "Scanning: "
-msgstr ""
+msgstr "Prohledává se: "
 
 #: src/tauon/t_modules/t_main.py:30466
 msgid "Scanning Scrobbles..."
-msgstr ""
+msgstr "Prohledávají se scrobbly..."
 
 #: src/tauon/t_modules/t_main.py:30469
-#, fuzzy
 msgid "Buffering... "
-msgstr "Vyhledávání..."
+msgstr "Načítá se do vyrovnávací paměti... "
 
 #: src/tauon/t_modules/t_main.py:30473
 msgid "Network error. Will try again later."
-msgstr ""
+msgstr "Síťová chyba. Zkusí se to znovu později."
 
 #: src/tauon/t_modules/t_main.py:30484
 msgid "{N} listening along"
-msgstr ""
+msgstr "Společně poslouchá: {N}"
 
 #: src/tauon/t_modules/t_main.py:30502
 msgid "Transcoding"
-msgstr ""
+msgstr "Překódování"
 
 #: src/tauon/t_modules/t_main.py:30541
 msgid "{N} Folder Remaining {T}"
-msgstr ""
+msgstr "Zbývá složek: {N} {T}"
 
 #: src/tauon/t_modules/t_main.py:30543
 msgid "{N} Folders Remaining {T}"
-msgstr ""
+msgstr "Zbývá složek: {N} {T}"
 
 #: src/tauon/t_modules/t_main.py:31137 src/tauon/t_modules/t_main.py:31718
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Přehrát, PT: přejít na přehrávané"
 
 #: src/tauon/t_modules/t_main.py:31162 src/tauon/t_modules/t_main.py:31743
 msgid "Pause"
-msgstr ""
+msgstr "Pozastavit"
 
 #: src/tauon/t_modules/t_main.py:31202 src/tauon/t_modules/t_main.py:31765
 msgid "Shuffle On"
-msgstr ""
+msgstr "Náhodné přehrávání zapnuto"
 
 #: src/tauon/t_modules/t_main.py:31205 src/tauon/t_modules/t_main.py:31768
 msgid "Shuffle Off"
-msgstr ""
+msgstr "Náhodné přehrávání vypnuto"
 
 #: src/tauon/t_modules/t_main.py:31236
 msgid "Repeat On"
-msgstr ""
+msgstr "Opakování zapnuto"
 
 #: src/tauon/t_modules/t_main.py:31239
 msgid "Repeat Off"
-msgstr ""
+msgstr "Opakování vypnuto"
 
 #: src/tauon/t_modules/t_main.py:31246
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Zpět, PT: přepnout opakování, ST: vrátit"
 
 #: src/tauon/t_modules/t_main.py:31263
 msgid "Playback menu"
-msgstr ""
+msgstr "Nabídka přehrávání"
 
 #: src/tauon/t_modules/t_main.py:31303 src/tauon/t_modules/t_main.py:31305
 msgid "Shuffle"
-msgstr ""
+msgstr "Náhodné přehrávání"
 
 #: src/tauon/t_modules/t_main.py:31362 src/tauon/t_modules/t_main.py:31370
 msgid "Repeat album"
-msgstr ""
+msgstr "Opakovat album"
 
 #: src/tauon/t_modules/t_main.py:31364 src/tauon/t_modules/t_main.py:31372
 #: src/tauon/t_modules/t_main.py:41648 src/tauon/t_modules/t_main.py:41650
 msgid "Repeat track"
-msgstr ""
+msgstr "Opakovat skladbu"
 
 #: src/tauon/t_modules/t_main.py:33210
 msgid "Playlist is empty"
-msgstr ""
+msgstr "Seznam skladeb je prázdný"
 
 #: src/tauon/t_modules/t_main.py:33213
 msgid "Drag and drop files to import"
-msgstr ""
+msgstr "Přetáhněte soubory pro import"
 
 #: src/tauon/t_modules/t_main.py:33236
-#, fuzzy
 msgid "End of Playlist"
 msgstr "Konec seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:34338
-#, fuzzy
 msgid "Fetching image..."
-msgstr "Vyhledávání..."
+msgstr "Načítá se obrázek..."
 
 #: src/tauon/t_modules/t_main.py:34402
 msgid "Auto Cycle"
-msgstr ""
+msgstr "Automatické cyklování"
 
 #: src/tauon/t_modules/t_main.py:34647
-#, fuzzy
 msgid "Search Tag"
-msgstr "Hledat"
+msgstr "Hledat tag"
 
 #: src/tauon/t_modules/t_main.py:34648
 msgid "Search Country Code"
-msgstr ""
+msgstr "Hledat kód země"
 
 #: src/tauon/t_modules/t_main.py:34649
-#, fuzzy
 msgid "Search Title"
-msgstr "Hledat"
+msgstr "Hledat název"
 
 #: src/tauon/t_modules/t_main.py:34964
-#, fuzzy
 msgid "Search text…"
-msgstr "Hledat"
+msgstr "Hledat text…"
 
 #: src/tauon/t_modules/t_main.py:34973
 msgid "Search"
@@ -4231,23 +4073,23 @@ msgstr "Hledat"
 
 #: src/tauon/t_modules/t_main.py:34981 src/tauon/t_modules/t_main.py:34984
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Získat nejlépe hodnocené"
 
 #: src/tauon/t_modules/t_main.py:34985
 msgid "Developer Picks"
-msgstr ""
+msgstr "Výběr vývojáře"
 
 #: src/tauon/t_modules/t_main.py:35121
 msgid "Add Station"
-msgstr ""
+msgstr "Přidat stanici"
 
 #: src/tauon/t_modules/t_main.py:35123
 msgid "Edit Station"
-msgstr ""
+msgstr "Upravit stanici"
 
 #: src/tauon/t_modules/t_main.py:35148
 msgid "Station Browser"
-msgstr ""
+msgstr "Prohlížeč stanic"
 
 #: src/tauon/t_modules/t_main.py:35152
 msgid "Connecting..."
@@ -4255,418 +4097,400 @@ msgstr "Připojování..."
 
 #: src/tauon/t_modules/t_main.py:35154
 msgid "Failed to connect!"
-msgstr ""
+msgstr "Připojení selhalo!"
 
 #: src/tauon/t_modules/t_main.py:35198
-#, fuzzy
 msgid "Name / Title"
-msgstr "Titul"
+msgstr "Název / titul"
 
 #: src/tauon/t_modules/t_main.py:35216
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr ""
+msgstr "Přímá URL streamu http://example.stream:1234"
 
 #: src/tauon/t_modules/t_main.py:35223
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Zadejte URL streamu"
 
 #: src/tauon/t_modules/t_main.py:35239
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr ""
+msgstr "URL se nepodařilo ověřit. Musí začínat https:// nebo http://"
 
 #: src/tauon/t_modules/t_main.py:35402 src/tauon/t_modules/t_main.py:35408
 #: src/tauon/t_modules/t_main.py:35415
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Nahrávat a automaticky dělit písně"
 
 #: src/tauon/t_modules/t_main.py:35404
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Před přepnutím tohoto nastavení nejdřív zastavte přehrávání"
 
 #: src/tauon/t_modules/t_main.py:35410
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Pro ukončení aktuálního nahrávání nejdřív zastavte přehrávání"
 
 #: src/tauon/t_modules/t_main.py:35419
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Skladby se nyní budou nahrávat."
 
 #: src/tauon/t_modules/t_main.py:35420
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Tip: Výstupní složku zobrazíte stisknutím F9."
 
 #: src/tauon/t_modules/t_main.py:35424
 msgid "Browse"
-msgstr ""
+msgstr "Procházet"
 
 #: src/tauon/t_modules/t_main.py:35429
-#, fuzzy
 msgid "Saved"
-msgstr "Uložit"
+msgstr "Uloženo"
 
 #: src/tauon/t_modules/t_main.py:35542
 msgid "Type codes separated by spaces. Codes will be executed left to right."
-msgstr ""
+msgstr "Zadejte kódy oddělené mezerami. Kódy se provedou zleva doprava."
 
 #: src/tauon/t_modules/t_main.py:35544
 msgid "Select sources: (default: all playlists)"
-msgstr ""
+msgstr "Vyberte zdroje: (výchozí: všechny seznamy skladeb)"
 
 #: src/tauon/t_modules/t_main.py:35547
-#, fuzzy
 msgid "Select source playlist by name"
-msgstr "Konec seznamu skladeb"
+msgstr "Vybrat zdrojový seznam skladeb podle názvu"
 
 #: src/tauon/t_modules/t_main.py:35550
 msgid "Select playlist itself"
-msgstr ""
+msgstr "Vybrat samotný seznam skladeb"
 
 #: src/tauon/t_modules/t_main.py:35553
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr ""
+msgstr "Přidat skladby ze zdrojů: (vyžadován alespoň 1)"
 
 #: src/tauon/t_modules/t_main.py:35557
-#, fuzzy
 msgid "Search artist name"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Hledat jméno interpreta"
 
 #: src/tauon/t_modules/t_main.py:35560
-#, fuzzy
 msgid "Search genre"
-msgstr "Hledat"
+msgstr "Hledat žánr"
 
 #: src/tauon/t_modules/t_main.py:35567
 msgid "Find / Search / Path"
-msgstr ""
+msgstr "Najít / Hledat / Cesta"
 
 #: src/tauon/t_modules/t_main.py:35575
 msgid "Add all tracks"
-msgstr ""
+msgstr "Přidat všechny skladby"
 
 #: src/tauon/t_modules/t_main.py:35578
 msgid "Filters"
-msgstr ""
+msgstr "Filtry"
 
 #: src/tauon/t_modules/t_main.py:35581
 msgid "Limit to number of tracks"
-msgstr ""
+msgstr "Omezit na počet skladeb"
 
 #: src/tauon/t_modules/t_main.py:35584
 msgid "Year: >, <, ="
-msgstr ""
+msgstr "Rok: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35587
 msgid "Play count: >, <"
-msgstr ""
+msgstr "Počet přehrání: >, <"
 
 #: src/tauon/t_modules/t_main.py:35590
 msgid "Track duration (minutes): >, <"
-msgstr ""
+msgstr "Délka skladby (minuty): >, <"
 
 #: src/tauon/t_modules/t_main.py:35593
 msgid "Album duration (minutes): >, <"
-msgstr ""
+msgstr "Délka alba (minuty): >, <"
 
 #: src/tauon/t_modules/t_main.py:35596
 msgid "Track rating 0-5: >, <, ="
-msgstr ""
+msgstr "Hodnocení skladby 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35599
 msgid "Loved tracks"
-msgstr ""
+msgstr "Oblíbené skladby"
 
 #: src/tauon/t_modules/t_main.py:35602
 msgid "Has lyrics"
-msgstr ""
+msgstr "Má text"
 
 #: src/tauon/t_modules/t_main.py:35605
 msgid "Search and keep"
-msgstr ""
+msgstr "Hledat a ponechat"
 
 #: src/tauon/t_modules/t_main.py:35608
 msgid "Search and exclude"
-msgstr ""
+msgstr "Hledat a vyloučit"
 
 #: src/tauon/t_modules/t_main.py:35622
 msgid "Sorters"
-msgstr ""
+msgstr "Řazení"
 
 #: src/tauon/t_modules/t_main.py:35626
 msgid "Shuffle tracks"
-msgstr ""
+msgstr "Zamíchat skladby"
 
 #: src/tauon/t_modules/t_main.py:35629
 msgid "Shuffle albums"
-msgstr ""
+msgstr "Zamíchat alba"
 
 #: src/tauon/t_modules/t_main.py:35632
 msgid "Year: >, <"
-msgstr ""
+msgstr "Rok: >, <"
 
 #: src/tauon/t_modules/t_main.py:35635
 msgid "Track duration: >, <"
-msgstr ""
+msgstr "Délka skladby: >, <"
 
 #: src/tauon/t_modules/t_main.py:35638
 msgid "Track Playtime: >, <"
-msgstr ""
+msgstr "Doba přehrávání skladby: >, <"
 
 #: src/tauon/t_modules/t_main.py:35641
 msgid "Album playtime: >, <"
-msgstr ""
+msgstr "Doba přehrávání alba: >, <"
 
 #: src/tauon/t_modules/t_main.py:35644
 msgid "Album duration: >, <"
-msgstr ""
+msgstr "Délka alba: >, <"
 
 #: src/tauon/t_modules/t_main.py:35647
 msgid "Invert tracks"
-msgstr ""
+msgstr "Obrátit skladby"
 
 #: src/tauon/t_modules/t_main.py:35650
 msgid "Invert albums"
-msgstr ""
+msgstr "Obrátit alba"
 
 #: src/tauon/t_modules/t_main.py:35653
 msgid "Track rating: >, <"
-msgstr ""
+msgstr "Hodnocení skladby: >, <"
 
 #: src/tauon/t_modules/t_main.py:35656
 msgid "Album rating: >, <"
-msgstr ""
+msgstr "Hodnocení alba: >, <"
 
 #: src/tauon/t_modules/t_main.py:35659
 msgid "Modification date: >, <"
-msgstr ""
+msgstr "Datum změny: >, <"
 
 #: src/tauon/t_modules/t_main.py:35665
 msgid "Track number per album"
-msgstr ""
+msgstr "Číslo skladby na album"
 
 #: src/tauon/t_modules/t_main.py:35668
 msgid "Year per artist"
-msgstr ""
+msgstr "Rok podle interpreta"
 
 #: src/tauon/t_modules/t_main.py:35671
 msgid "Sort by column name: >, <"
-msgstr ""
+msgstr "Řadit podle názvu sloupce: >, <"
 
 #: src/tauon/t_modules/t_main.py:35674
 msgid "Special"
-msgstr ""
+msgstr "Speciální"
 
 #: src/tauon/t_modules/t_main.py:35677
 msgid "Automatically reload on imports"
-msgstr ""
+msgstr "Automaticky znovu načíst při importech"
 
 #: src/tauon/t_modules/t_main.py:35682
 msgid "Status:"
-msgstr ""
+msgstr "Stav:"
 
 #: src/tauon/t_modules/t_main.py:35686
-#, fuzzy
 msgid "Playlist not found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Seznam skladeb nebyl nalezen"
 
 #: src/tauon/t_modules/t_main.py:35688
 msgid "Result is empty"
-msgstr ""
+msgstr "Výsledek je prázdný"
 
 #: src/tauon/t_modules/t_main.py:35690
 msgid "Close quotation..."
-msgstr ""
+msgstr "Uzavřít uvozovky..."
 
 #: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
 msgid "{N} tracks"
-msgstr ""
+msgstr "Skladeb: {N}"
 
 #: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
 msgid "{N} track"
-msgstr ""
+msgstr "Skladeb: {N}"
 
 #: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
 msgid "{N} album"
-msgstr ""
+msgstr "Alba: {N}"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
-#, fuzzy
 msgid "Downloading data..."
-msgstr "Načítání..."
+msgstr "Stahují se data..."
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
-msgstr ""
+msgstr "První z alb interpreta ({N} alb)"
 
 #: src/tauon/t_modules/t_main.py:36721
 msgid "Last of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Poslední z alb interpreta ({N} alb)"
 
 #: src/tauon/t_modules/t_main.py:36733
 msgid "Start of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Začátek umístění {N} z {T} ({Nb} alb)"
 
 #: src/tauon/t_modules/t_main.py:36736 src/tauon/t_modules/t_main.py:36746
 msgid "Location {N} of {T}"
-msgstr ""
+msgstr "Umístění {N} z {T}"
 
 #: src/tauon/t_modules/t_main.py:36743
 msgid "End of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Konec umístění {N} z {T} ({Nb} alb)"
 
 #: src/tauon/t_modules/t_main.py:36755
 msgid "Start of location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Začátek umístění 1 z {N} ({Nb} alb)"
 
 #: src/tauon/t_modules/t_main.py:36758
 msgid "Location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Umístění 1 z {N} ({Nb} alb)"
 
 #: src/tauon/t_modules/t_main.py:36761
 msgid "Location 1 of {N}"
-msgstr ""
+msgstr "Umístění 1 z {N}"
 
 #: src/tauon/t_modules/t_main.py:36884
-#, fuzzy
 msgid "No artists in playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "V seznamu skladeb nejsou žádní interpreti"
 
 #: src/tauon/t_modules/t_main.py:36887
 msgid "Artist threshold not met"
-msgstr ""
+msgstr "Práh interpreta nebyl splněn"
 
 #: src/tauon/t_modules/t_main.py:36889
-#, fuzzy
 msgid "Loading Artist List..."
-msgstr "Načítání..."
+msgstr "Načítá se seznam interpretů..."
 
 #: src/tauon/t_modules/t_main.py:36891
 msgid "Busy..."
-msgstr ""
+msgstr "Zaneprázdněno..."
 
 #: src/tauon/t_modules/t_main.py:37103
-#, fuzzy
 msgid "Loading Folder Tree..."
-msgstr "Načítání..."
+msgstr "Načítá se strom složek..."
 
 #: src/tauon/t_modules/t_main.py:37113 src/tauon/t_modules/t_main.py:37129
 msgid "Folder Tree"
-msgstr ""
+msgstr "Strom složek"
 
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
-msgstr ""
+msgstr "Přehrát nyní"
 
 #: src/tauon/t_modules/t_main.py:37541
-#, fuzzy
 msgid "Auto-Stop Here"
-msgstr "Stop"
+msgstr "Automaticky zastavit zde"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
-#, fuzzy
 msgid "Clear Queue"
-msgstr "Pročistit"
+msgstr "Vymazat frontu"
 
 #: src/tauon/t_modules/t_main.py:37546
 msgid "↳ Except for This"
-msgstr ""
+msgstr "↳ Kromě tohoto"
 
 #: src/tauon/t_modules/t_main.py:37548
-#, fuzzy
 msgid "Queue to New Playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Frontu do nového seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:37589
 msgid "Queued Tracks"
-msgstr ""
+msgstr "Skladby ve frontě"
 
 #: src/tauon/t_modules/t_main.py:37686
 msgid "Cancel Auto-Stop"
-msgstr ""
+msgstr "Zrušit automatické zastavení"
 
 #: src/tauon/t_modules/t_main.py:37687
-#, fuzzy
 msgid "Auto-Stop"
-msgstr "Stop"
+msgstr "Automatické zastavení"
 
 #: src/tauon/t_modules/t_main.py:37694
 msgid "Eh?"
-msgstr ""
+msgstr "Co?"
 
 #: src/tauon/t_modules/t_main.py:37702
 msgid "Looks like it's gone now anyway"
-msgstr ""
+msgstr "Vypadá to, že už je to stejně pryč"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47522
 msgid "Queue"
-msgstr ""
+msgstr "Fronta"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47826
 msgid "Add to Queue"
-msgstr ""
+msgstr "Přidat do fronty"
 
 #: src/tauon/t_modules/t_main.py:37825
-#, fuzzy
 msgid "Up Next:"
-msgstr "Další"
+msgstr "Následuje:"
 
 #: src/tauon/t_modules/t_main.py:38068
 msgid "{N} Track"
-msgstr ""
+msgstr "Skladeb: {N}"
 
 #: src/tauon/t_modules/t_main.py:38071
 msgid "{N} Tracks"
-msgstr ""
+msgstr "Skladeb: {N}"
 
 #: src/tauon/t_modules/t_main.py:38515
-#, fuzzy
 msgid "No artist name found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebylo nalezeno žádné jméno interpreta"
 
 #: src/tauon/t_modules/t_main.py:38526 src/tauon/t_modules/t_main.py:38779
 msgid "Looking up..."
-msgstr ""
+msgstr "Vyhledává se..."
 
 #: src/tauon/t_modules/t_main.py:38566
 msgid "Cooldown..."
-msgstr ""
+msgstr "Čekací doba..."
 
 #: src/tauon/t_modules/t_main.py:38581
 msgid "Loading..."
 msgstr "Načítání..."
 
 #: src/tauon/t_modules/t_main.py:38768
-#, fuzzy
 msgid "No artist data downloaded"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyla stažena žádná data interpreta"
 
 #: src/tauon/t_modules/t_main.py:38789
-#, fuzzy
 msgid "No artist bio found"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Nebyla nalezena žádná biografie interpreta"
 
 #: src/tauon/t_modules/t_main.py:38886
 msgid "Load Failed"
-msgstr ""
+msgstr "Načtení selhalo"
 
 #: src/tauon/t_modules/t_main.py:40002 src/tauon/t_modules/t_main.py:43059
 msgid "Playing"
-msgstr ""
+msgstr "Přehrává se"
 
 #: src/tauon/t_modules/t_main.py:40095
 msgid "Auto-Scroll"
-msgstr ""
+msgstr "Automatické posouvání"
 
 #: src/tauon/t_modules/t_main.py:40593
 msgid "Tracks + Art"
-msgstr ""
+msgstr "Skladby + obrázky"
 
 #: src/tauon/t_modules/t_main.py:40626
 msgid "Tracks only"
-msgstr ""
+msgstr "Pouze skladby"
 
 #: src/tauon/t_modules/t_main.py:40642
 msgid "Showcase + Lyrics"
-msgstr ""
+msgstr "Prezentace + texty"
 
 #: src/tauon/t_modules/t_main.py:40671
 msgid "Radio"
@@ -4674,184 +4498,181 @@ msgstr "Rádio"
 
 #: src/tauon/t_modules/t_main.py:40685
 msgid "Toggle columns"
-msgstr ""
+msgstr "Přepnout sloupce"
 
 #: src/tauon/t_modules/t_main.py:41000
 msgid "There are no more steps to undo."
-msgstr ""
+msgstr "Nejsou žádné další kroky k vrácení."
 
 #: src/tauon/t_modules/t_main.py:41619 src/tauon/t_modules/t_main.py:41633
 msgid "Exit Lyrics Editor"
-msgstr ""
+msgstr "Ukončit editor textů"
 
 #: src/tauon/t_modules/t_main.py:41620 src/tauon/t_modules/t_main.py:41634
 #: src/tauon/t_modules/t_main.py:47576 src/tauon/t_modules/t_main.py:47595
 #: src/tauon/t_modules/t_main.py:47627
-#, fuzzy
 msgid "Search for Lyrics"
-msgstr "Vyhledávání..."
+msgstr "Hledat texty"
 
 #: src/tauon/t_modules/t_main.py:41621
 msgid "Copy From Synced"
-msgstr ""
+msgstr "Kopírovat ze synchronizovaného"
 
 #: src/tauon/t_modules/t_main.py:41622 src/tauon/t_modules/t_main.py:41639
 msgid "Upload To LRCLIB"
-msgstr ""
+msgstr "Nahrát do LRCLIB"
 
 #: src/tauon/t_modules/t_main.py:41635
 msgid "Copy From Unsynced"
-msgstr ""
+msgstr "Kopírovat z nesynchronizovaného"
 
 #: src/tauon/t_modules/t_main.py:41636
 msgid "Clear All Section Markers"
-msgstr ""
+msgstr "Vymazat všechny značky sekcí"
 
 #: src/tauon/t_modules/t_main.py:41637
 msgid "Clear All Timestamps"
-msgstr ""
+msgstr "Vymazat všechny časové značky"
 
 #: src/tauon/t_modules/t_main.py:41638
 msgid "Clear All Lyrics"
-msgstr ""
+msgstr "Vymazat všechny texty"
 
 #: src/tauon/t_modules/t_main.py:41641
 msgid "Backups..."
-msgstr ""
+msgstr "Zálohy..."
 
 #: src/tauon/t_modules/t_main.py:41642
 msgid "Load Current Backup"
-msgstr ""
+msgstr "Načíst aktuální zálohu"
 
 #: src/tauon/t_modules/t_main.py:41643
 msgid "Visit Current Backup"
-msgstr ""
+msgstr "Otevřít aktuální zálohu"
 
 #: src/tauon/t_modules/t_main.py:41644
 msgid "Delete All Backups"
-msgstr ""
+msgstr "Smazat všechny zálohy"
 
 #: src/tauon/t_modules/t_main.py:41646
 msgid "When track ends..."
-msgstr ""
+msgstr "Když skladba skončí..."
 
 #: src/tauon/t_modules/t_main.py:41653 src/tauon/t_modules/t_main.py:41655
 msgid "Stop immediately"
-msgstr ""
+msgstr "Okamžitě zastavit"
 
 #: src/tauon/t_modules/t_main.py:41658 src/tauon/t_modules/t_main.py:41660
 msgid "Backup and continue"
-msgstr ""
+msgstr "Zálohovat a pokračovat"
 
 #: src/tauon/t_modules/t_main.py:41663 src/tauon/t_modules/t_main.py:41665
 msgid "Fully save and continue"
-msgstr ""
+msgstr "Plně uložit a pokračovat"
 
 #: src/tauon/t_modules/t_main.py:41671
 msgid "Save synced to .lrc"
-msgstr ""
+msgstr "Uložit synchronizované do .lrc"
 
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
+msgstr "Vložili jste složku do adresáře editoru textů. Nedělejte to."
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
-msgstr ""
+msgstr "Buďte opatrní!"
 
 #: src/tauon/t_modules/t_main.py:41757
 msgid ""
 "A file's metadata can only store ONE type of lyrics data, synced or static, "
 "at a time."
-msgstr ""
+msgstr "Metadata souboru mohou najednou uložit pouze JEDEN typ textů, synchronizovaný nebo statický."
 
 #: src/tauon/t_modules/t_main.py:41758
 msgid ""
 "Saving one type will now OVERWRITE the other in the files. (Tauon itself "
 "doesn't care.)"
-msgstr ""
+msgstr "Uložení jednoho typu nyní v souborech PŘEPÍŠE druhý. (Samotnému Tauonu je to jedno.)"
 
 #: src/tauon/t_modules/t_main.py:41926
 msgid "Lyrics will misbehave if only some of them are timed."
-msgstr ""
+msgstr "Texty se budou chovat špatně, pokud jsou načasované jen některé řádky."
 
 #: src/tauon/t_modules/t_main.py:41927
 msgid "You can time all of them or none of them, either will work."
-msgstr ""
+msgstr "Můžete načasovat všechny nebo žádné, fungovat bude obojí."
 
 #: src/tauon/t_modules/t_main.py:41928 src/tauon/t_modules/t_main.py:41938
 msgid "Alternatively, save again while holding Alt to override."
-msgstr ""
+msgstr "Případně uložte znovu se stisknutým Altem pro přepsání."
 
 #: src/tauon/t_modules/t_main.py:41936
 msgid "Lyrics might misbehave if their timestamps are out of order."
-msgstr ""
+msgstr "Texty se mohou chovat špatně, pokud jsou časové značky mimo pořadí."
 
 #: src/tauon/t_modules/t_main.py:41937
 msgid "Please make sure all timestamps are ordered correctly."
-msgstr ""
+msgstr "Zkontrolujte prosím, že jsou všechny časové značky správně seřazené."
 
 #: src/tauon/t_modules/t_main.py:41958 src/tauon/t_modules/t_main.py:41964
 msgid "Synced lyrics saved successfully"
-msgstr ""
+msgstr "Synchronizovaný text byl úspěšně uložen"
 
 #: src/tauon/t_modules/t_main.py:41959
 msgid "Saved to .lrc and tags"
-msgstr ""
+msgstr "Uloženo do .lrc a tagů"
 
 #: src/tauon/t_modules/t_main.py:41965
 msgid "Saved to .lrc"
-msgstr ""
+msgstr "Uloženo do .lrc"
 
 #: src/tauon/t_modules/t_main.py:41971 src/tauon/t_modules/t_main.py:41977
 msgid "Synced lyrics saved to tags"
-msgstr ""
+msgstr "Synchronizovaný text uložen do tagů"
 
 #: src/tauon/t_modules/t_main.py:41972 src/tauon/t_modules/t_main.py:41995
 msgid "Destroyed previously existing lyrics in file"
-msgstr ""
+msgstr "Dříve existující texty v souboru byly odstraněny"
 
 #: src/tauon/t_modules/t_main.py:41982
 msgid "Synced lyrics saved in Tauon only"
-msgstr ""
+msgstr "Synchronizovaný text uložen pouze v Tauonu"
 
 #: src/tauon/t_modules/t_main.py:41994 src/tauon/t_modules/t_main.py:42000
 msgid "Unsynced lyrics saved successfully"
-msgstr ""
+msgstr "Nesynchronizovaný text byl úspěšně uložen"
 
 #: src/tauon/t_modules/t_main.py:42005
 msgid "Unsynced lyrics saved in Tauon only"
-msgstr ""
+msgstr "Nesynchronizovaný text uložen pouze v Tauonu"
 
 #: src/tauon/t_modules/t_main.py:42069
 msgid "Backup file does not exist"
-msgstr ""
+msgstr "Soubor zálohy neexistuje"
 
 #: src/tauon/t_modules/t_main.py:42077
 msgid "Put the lyrics in this file."
-msgstr ""
+msgstr "Vložte text písně do tohoto souboru."
 
 #: src/tauon/t_modules/t_main.py:42248
 msgid "Teleport to timestamp"
-msgstr ""
+msgstr "Přejít na časovou značku"
 
 #: src/tauon/t_modules/t_main.py:42255
-#, fuzzy
 msgid "Delete timestamp"
-msgstr "Smazat"
+msgstr "Smazat časovou značku"
 
 #: src/tauon/t_modules/t_main.py:42261
 msgid "Timestamp unknown"
-msgstr ""
+msgstr "Časová značka neznámá"
 
 #: src/tauon/t_modules/t_main.py:42307
-#, fuzzy
 msgid "Delete line"
-msgstr "Smazat"
+msgstr "Smazat řádek"
 
 #: src/tauon/t_modules/t_main.py:42319
 msgid "Add line"
-msgstr ""
+msgstr "Přidat řádek"
 
 #: src/tauon/t_modules/t_main.py:42611 src/tauon/t_modules/t_main.py:42683
 #: src/tauon/t_modules/t_main.py:47658
@@ -4861,110 +4682,107 @@ msgstr "Předchozí"
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42690
 #: src/tauon/t_modules/t_main.py:42691
 msgid "CURRENT"
-msgstr ""
+msgstr "AKTUÁLNÍ"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42693
 #: src/tauon/t_modules/t_main.py:42694
 msgid "ADD TIME"
-msgstr ""
+msgstr "PŘIDAT ČAS"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42696
 #: src/tauon/t_modules/t_main.py:42697
 msgid "TIME"
-msgstr ""
+msgstr "ČAS"
 
 #: src/tauon/t_modules/t_main.py:42613 src/tauon/t_modules/t_main.py:42653
 #: src/tauon/t_modules/t_main.py:42859 src/tauon/t_modules/t_main.py:42885
 msgid "SAVE"
-msgstr ""
+msgstr "ULOŽIT"
 
 #: src/tauon/t_modules/t_main.py:42614 src/tauon/t_modules/t_main.py:42657
 msgid "Save to .lrc"
-msgstr ""
+msgstr "Uložit do .lrc"
 
 #: src/tauon/t_modules/t_main.py:42615 src/tauon/t_modules/t_main.py:42661
 #: src/tauon/t_modules/t_main.py:42860 src/tauon/t_modules/t_main.py:42889
 msgid "Save to tags"
-msgstr ""
+msgstr "Uložit do tagů"
 
 #: src/tauon/t_modules/t_main.py:42616 src/tauon/t_modules/t_main.py:42667
 #: src/tauon/t_modules/t_main.py:42861 src/tauon/t_modules/t_main.py:42895
 msgid "Discard"
-msgstr ""
+msgstr "Zahodit"
 
 #: src/tauon/t_modules/t_main.py:42717
 msgid "Errored"
-msgstr ""
+msgstr "Chyba"
 
 #: src/tauon/t_modules/t_main.py:42730 src/tauon/t_modules/t_main.py:42732
 #: src/tauon/t_modules/t_main.py:42918 src/tauon/t_modules/t_main.py:42920
 msgid "Failed"
-msgstr ""
+msgstr "Selhalo"
 
 #: src/tauon/t_modules/t_main.py:42778 src/tauon/t_modules/t_main.py:42793
 msgid "Put the lyrics in this file and save it."
-msgstr ""
+msgstr "Vložte text písně do tohoto souboru a uložte ho."
 
 #: src/tauon/t_modules/t_main.py:42856 src/tauon/t_modules/t_main.py:42906
 msgid "Edit Lyrics"
-msgstr ""
+msgstr "Upravit texty"
 
 #: src/tauon/t_modules/t_main.py:42857 src/tauon/t_modules/t_main.py:42953
 msgid "Read Back"
-msgstr ""
+msgstr "Načíst zpět"
 
 #: src/tauon/t_modules/t_main.py:42862 src/tauon/t_modules/t_main.py:42963
 msgid "Reopen Editor"
-msgstr ""
+msgstr "Znovu otevřít editor"
 
 #: src/tauon/t_modules/t_main.py:42906
 msgid "Opens an external editor."
-msgstr ""
+msgstr "Otevře externí editor."
 
 #: src/tauon/t_modules/t_main.py:42931 src/tauon/t_modules/t_main.py:42949
 msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
-msgstr ""
+msgstr "Upravte otevřený text v textovém editoru, soubor uložte a klikněte na „Načíst zpět“."
 
 #: src/tauon/t_modules/t_main.py:42953
 msgid "Make sure to save your changes."
-msgstr ""
+msgstr "Nezapomeňte změny uložit."
 
 #: src/tauon/t_modules/t_main.py:42956 src/tauon/t_modules/t_main.py:43173
-#, fuzzy
 msgid "Delete the file."
-msgstr "Smazat"
+msgstr "Smazat soubor."
 
 #: src/tauon/t_modules/t_main.py:42963
 msgid "In case you closed it by accident."
-msgstr ""
+msgstr "Pro případ, že jste ho omylem zavřeli."
 
 #: src/tauon/t_modules/t_main.py:43108 src/tauon/t_modules/t_main.py:43134
 msgid "Upload lyrics for {artist} - {title}?"
-msgstr ""
+msgstr "Nahrát text pro {artist} - {title}?"
 
 #: src/tauon/t_modules/t_main.py:43137 src/tauon/t_modules/t_main.py:43143
-#, fuzzy
 msgid "Synced"
-msgstr "Synchronizovat..."
+msgstr "Synchronizované"
 
 #: src/tauon/t_modules/t_main.py:43156
 msgid "Lyrics must be formatted correctly"
-msgstr ""
+msgstr "Texty musí být správně formátované"
 
 #: src/tauon/t_modules/t_main.py:43157
 msgid "Your synced lyrics are either out of order or not fully timed."
-msgstr ""
+msgstr "Vaše synchronizované texty jsou buď mimo pořadí, nebo nejsou plně načasované."
 
 #: src/tauon/t_modules/t_main.py:43158
 msgid "We cannot upload broken lyrics to LRCLIB."
-msgstr ""
+msgstr "Poškozené texty nemůžeme nahrát do LRCLIB."
 
 #: src/tauon/t_modules/t_main.py:43163
-#, fuzzy
 msgid "Unsynced"
-msgstr "Synchronizovat..."
+msgstr "Nesynchronizované"
 
 #: src/tauon/t_modules/t_main.py:43165 src/tauon/t_modules/t_main.py:47702
 msgid "Upload"
@@ -4972,268 +4790,263 @@ msgstr "Nahrát"
 
 #: src/tauon/t_modules/t_main.py:45070
 msgid "Files missing or inaccessible"
-msgstr ""
+msgstr "Soubory chybí nebo nejsou přístupné"
 
 #: src/tauon/t_modules/t_main.py:45071
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
+msgstr "Pokud používáte Flatpak, pravděpodobně byste měli postupovat podle tohoto:"
 
 #: src/tauon/t_modules/t_main.py:45079
 msgid "Bad permissions"
-msgstr ""
+msgstr "Špatná oprávnění"
 
 #: src/tauon/t_modules/t_main.py:45080
 msgid "We don't have permissions to access {file}"
-msgstr ""
+msgstr "Nemáme oprávnění k přístupu k {file}"
 
 #: src/tauon/t_modules/t_main.py:45088
 msgid "Can't import that"
-msgstr ""
+msgstr "Tohle nelze importovat"
 
 #: src/tauon/t_modules/t_main.py:45089
 msgid "We can't import the file {path} and we're not sure why."
-msgstr ""
+msgstr "Soubor {path} nelze importovat a nevíme přesně proč."
 
 #: src/tauon/t_modules/t_main.py:45130
 msgid "You attempted to drop an archive."
-msgstr ""
+msgstr "Pokusili jste se přetáhnout archiv."
 
 #: src/tauon/t_modules/t_main.py:45131
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "Funkce „rozbalit archiv“ ale není zapnutá."
 
 #: src/tauon/t_modules/t_main.py:45141
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Přeskakuje se příliš velký soubor zip (>4 GB)"
 
 #: src/tauon/t_modules/t_main.py:45158 src/tauon/t_modules/t_main.py:45163
 #: src/tauon/t_modules/t_main.py:45171
 msgid "Failed to extract zip archive."
-msgstr ""
+msgstr "Rozbalení archivu zip selhalo."
 
 #: src/tauon/t_modules/t_main.py:45159
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
-msgstr ""
+msgstr "Archiv je šifrovaný. Budete ho muset rozbalit ručně s heslem."
 
 #: src/tauon/t_modules/t_main.py:45164 src/tauon/t_modules/t_main.py:45172
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
-msgstr ""
+msgstr "Možná je archiv poškozený? Je na disku dost místa a máte oprávnění k zápisu?"
 
 #: src/tauon/t_modules/t_main.py:45188
 msgid "Failed to extract rar archive."
-msgstr ""
+msgstr "Rozbalení archivu rar selhalo."
 
 #: src/tauon/t_modules/t_main.py:45204
 msgid "Failed to extract 7z archive."
-msgstr ""
+msgstr "Rozbalení archivu 7z selhalo."
 
 #: src/tauon/t_modules/t_main.py:45232
 msgid "Could not move archive to trash"
-msgstr ""
+msgstr "Archiv se nepodařilo přesunout do koše"
 
 #: src/tauon/t_modules/t_main.py:45329
 msgid "Permission error accessing one or more files"
-msgstr ""
+msgstr "Chyba oprávnění při přístupu k jednomu nebo více souborům"
 
 #: src/tauon/t_modules/t_main.py:45377
-#, fuzzy
 msgid "Connection error"
-msgstr "Připojování..."
+msgstr "Chyba připojení"
 
 #: src/tauon/t_modules/t_main.py:45378
 msgid "We can't upload your lyrics because we can't connect to the server."
-msgstr ""
+msgstr "Nemůžeme nahrát vaše texty, protože se nemůžeme připojit k serveru."
 
 #: src/tauon/t_modules/t_main.py:45379
 msgid "Are you offline?"
-msgstr ""
+msgstr "Jste offline?"
 
 #: src/tauon/t_modules/t_main.py:45399
 msgid "The following file is missing:"
-msgstr ""
+msgstr "Chybí následující soubor:"
 
 #: src/tauon/t_modules/t_main.py:45408
 msgid "We don't have the proper permissions to run the file:"
-msgstr ""
+msgstr "Nemáme správná oprávnění ke spuštění souboru:"
 
 #: src/tauon/t_modules/t_main.py:45417
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
+msgstr "Nemůžeme nahrát vaše texty a nevíme proč."
 
 #: src/tauon/t_modules/t_main.py:45435
 msgid "Lyrics upload failed with error code: "
-msgstr ""
+msgstr "Nahrání textů selhalo s chybovým kódem: "
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "Folder copy error."
-msgstr ""
+msgstr "Chyba kopírování složky."
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "The target and source are the same."
-msgstr ""
+msgstr "Cíl a zdroj jsou stejné."
 
 #: src/tauon/t_modules/t_main.py:45561
 msgid "The folder copy has failed!"
-msgstr ""
+msgstr "Kopírování složky selhalo!"
 
 #: src/tauon/t_modules/t_main.py:45561
 msgid "Some files may have been written."
-msgstr ""
+msgstr "Některé soubory mohly být zapsány."
 
 #: src/tauon/t_modules/t_main.py:45570
 msgid "Something has gone horribly wrong!"
-msgstr ""
+msgstr "Něco se strašně pokazilo!"
 
 #: src/tauon/t_modules/t_main.py:45570
 msgid "Could not delete {name}"
-msgstr ""
+msgstr "Nepodařilo se smazat {name}"
 
 #: src/tauon/t_modules/t_main.py:45575
 msgid "Folder move complete."
-msgstr ""
+msgstr "Přesun složky dokončen."
 
 #: src/tauon/t_modules/t_main.py:45575 src/tauon/t_modules/t_main.py:45577
 msgid "Folder name: {name}"
-msgstr ""
+msgstr "Název složky: {name}"
 
 #: src/tauon/t_modules/t_main.py:45577
 msgid "Folder copy complete."
-msgstr ""
+msgstr "Kopírování složky dokončeno."
 
 #: src/tauon/t_modules/t_main.py:45610
 msgid "Cleaning complete."
-msgstr ""
+msgstr "Čištění dokončeno."
 
 #: src/tauon/t_modules/t_main.py:45611
 msgid "{N} items were removed from the database."
-msgstr ""
+msgstr "Z databáze bylo odebráno položek: {N}."
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "Transcode failed."
-msgstr ""
+msgstr "Překódování selhalo."
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "An error was encountered."
-msgstr ""
+msgstr "Došlo k chybě."
 
 #: src/tauon/t_modules/t_main.py:45730
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "Překódování bylo před dokončením zrušeno."
 
 #: src/tauon/t_modules/t_main.py:45731
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "Nedokončené soubory zůstanou."
 
 #: src/tauon/t_modules/t_main.py:45734
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "Stisknutím F9 zobrazíte výstup."
 
 #: src/tauon/t_modules/t_main.py:45736
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
-msgstr ""
+msgstr "Pozor, každý související výstupní obrázek je náhled, ne přesná kopie."
 
 #: src/tauon/t_modules/t_main.py:45739
 msgid "Encoding complete."
-msgstr ""
+msgstr "Kódování dokončeno."
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid "Some tracks could not be rescanned"
-msgstr ""
+msgstr "Některé skladby se nepodařilo znovu prohledat"
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
-msgstr ""
+msgstr "Opětovné prohledávání síťových skladeb není podporováno, místo toho seznam skladeb znovu importujte."
 
 #: src/tauon/t_modules/t_main.py:47521
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Seznamy skladeb + fronta"
 
 #: src/tauon/t_modules/t_main.py:47524
-#, fuzzy
 msgid "Artist List"
-msgstr "Umělec"
+msgstr "Seznam interpretů"
 
 #: src/tauon/t_modules/t_main.py:47526
 msgid "Folder Navigator"
-msgstr ""
+msgstr "Navigátor složek"
 
 #: src/tauon/t_modules/t_main.py:47528
 msgid "Repeat OFF"
-msgstr ""
+msgstr "Opakování VYPNUTO"
 
 #: src/tauon/t_modules/t_main.py:47529
 msgid "Repeat Track"
-msgstr ""
+msgstr "Opakovat skladbu"
 
 #: src/tauon/t_modules/t_main.py:47530
 msgid "Repeat Album"
-msgstr ""
+msgstr "Opakovat album"
 
 #: src/tauon/t_modules/t_main.py:47534
 msgid "Shuffle Lockdown Albums"
-msgstr ""
+msgstr "Uzamčené náhodné přehrávání alb"
 
 #: src/tauon/t_modules/t_main.py:47536
 msgid "Shuffle OFF"
-msgstr ""
+msgstr "Náhodné přehrávání VYPNUTO"
 
 #: src/tauon/t_modules/t_main.py:47537
 msgid "Shuffle Tracks"
-msgstr ""
+msgstr "Náhodně skladby"
 
 #: src/tauon/t_modules/t_main.py:47538
-#, fuzzy
 msgid "Random Albums"
-msgstr "Album"
+msgstr "Náhodná alba"
 
 #: src/tauon/t_modules/t_main.py:47540
 msgid "Close Panel"
-msgstr ""
+msgstr "Zavřít panel"
 
 #: src/tauon/t_modules/t_main.py:47541
 msgid "Make Large"
-msgstr ""
+msgstr "Zvětšit"
 
 #: src/tauon/t_modules/t_main.py:47549 src/tauon/t_modules/t_main.py:47550
 #: src/tauon/t_modules/t_main.py:47568 src/tauon/t_modules/t_main.py:47815
 #: src/tauon/t_modules/t_main.py:47883
 msgid "Open Folder"
-msgstr ""
+msgstr "Otevřít složku"
 
 #: src/tauon/t_modules/t_main.py:47552 src/tauon/t_modules/t_main.py:47553
 #: src/tauon/t_modules/t_main.py:47554 src/tauon/t_modules/t_main.py:48200
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Filtrovat do nového seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:47555 src/tauon/t_modules/t_main.py:47556
 #: src/tauon/t_modules/t_main.py:47723
 msgid "Rescan Folder"
-msgstr ""
+msgstr "Znovu prohledat složku"
 
 #: src/tauon/t_modules/t_main.py:47557 src/tauon/t_modules/t_main.py:47559
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Přesunout přehrávanou složku sem"
 
 #: src/tauon/t_modules/t_main.py:47563 src/tauon/t_modules/t_main.py:47905
 msgid "Collapse All"
-msgstr ""
+msgstr "Sbalit vše"
 
 #: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
-#, fuzzy
 msgid "lock"
-msgstr "Odemknout"
+msgstr "uzamknout"
 
 #: src/tauon/t_modules/t_main.py:47569
-#, fuzzy
 msgid "Show in Playlist"
-msgstr "Konec seznamu skladeb"
+msgstr "Zobrazit v seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:47570
 msgid "Image…"
@@ -5242,100 +5055,98 @@ msgstr "Obrázek…"
 #: src/tauon/t_modules/t_main.py:47571 src/tauon/t_modules/t_main.py:47888
 #: src/tauon/t_modules/t_main.py:47901
 msgid "Add Album to Queue"
-msgstr ""
+msgstr "Přidat album do fronty"
 
 #: src/tauon/t_modules/t_main.py:47572 src/tauon/t_modules/t_main.py:47889
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Zařadit album jako další"
 
 #: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
 msgid "Toggle synced"
-msgstr ""
+msgstr "Přepnout synchronizované"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
-msgstr ""
+msgstr "Hledat na GuitarParty"
 
 #: src/tauon/t_modules/t_main.py:47580
 msgid "Paste Chord Lyrics"
-msgstr ""
+msgstr "Vložit text s akordy"
 
 #: src/tauon/t_modules/t_main.py:47581
 msgid "Clear Chord Lyrics"
-msgstr ""
+msgstr "Vymazat text s akordy"
 
 #: src/tauon/t_modules/t_main.py:47583 src/tauon/t_modules/t_main.py:47596
 #: src/tauon/t_modules/t_main.py:47628 src/tauon/t_modules/t_main.py:47654
 msgid "Toggle Lyrics"
-msgstr ""
+msgstr "Přepnout texty"
 
 #: src/tauon/t_modules/t_main.py:47584 src/tauon/t_modules/t_main.py:47598
 msgid "Lyrics Editor"
-msgstr ""
+msgstr "Editor textů"
 
 #: src/tauon/t_modules/t_main.py:47585 src/tauon/t_modules/t_main.py:47600
 #: src/tauon/t_modules/t_main.py:47734
 msgid "Misc…"
-msgstr ""
+msgstr "Různé…"
 
 #: src/tauon/t_modules/t_main.py:47586 src/tauon/t_modules/t_main.py:47601
-#, fuzzy
 msgid "Substitute Search..."
-msgstr "Nahradit"
+msgstr "Náhradní hledání..."
 
 #: src/tauon/t_modules/t_main.py:47587 src/tauon/t_modules/t_main.py:47602
 msgid "Paste Lyrics"
-msgstr ""
+msgstr "Vložit text"
 
 #: src/tauon/t_modules/t_main.py:47588 src/tauon/t_modules/t_main.py:47603
 msgid "Copy Lyrics"
-msgstr ""
+msgstr "Kopírovat text"
 
 #: src/tauon/t_modules/t_main.py:47589 src/tauon/t_modules/t_main.py:47604
-#, fuzzy
 msgid "Clear Lyrics"
-msgstr "Účty"
+msgstr "Vymazat text"
 
 #: src/tauon/t_modules/t_main.py:47590 src/tauon/t_modules/t_main.py:47605
 msgid "Clear Synced Lyrics"
-msgstr ""
+msgstr "Vymazat synchronizovaný text"
 
 #: src/tauon/t_modules/t_main.py:47591 src/tauon/t_modules/t_main.py:47606
 msgid "Toggle art panel"
-msgstr ""
+msgstr "Přepnout panel obrázků"
 
 #: src/tauon/t_modules/t_main.py:47592 src/tauon/t_modules/t_main.py:47607
 msgid "Toggle art position"
-msgstr ""
+msgstr "Přepnout pozici obrázku"
 
 #: src/tauon/t_modules/t_main.py:47610 src/tauon/t_modules/t_main.py:47659
 msgid "Open Image"
-msgstr ""
+msgstr "Otevřít obrázek"
 
 #: src/tauon/t_modules/t_main.py:47612
 msgid "Next Image"
-msgstr ""
+msgstr "Další obrázek"
 
 #: src/tauon/t_modules/t_main.py:47616 src/tauon/t_modules/t_main.py:47660
 msgid "Extract Image"
-msgstr ""
+msgstr "Extrahovat obrázek"
 
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
-msgstr ""
+msgstr "Rychle získat obal"
 
 #: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
 msgid "Toggle Milkdrop Visualiser"
-msgstr ""
+msgstr "Přepnout vizualizér Milkdrop"
 
 #: src/tauon/t_modules/t_main.py:47642
 msgid "Toggle Milkdrop Auto"
-msgstr ""
+msgstr "Přepnout automatiku Milkdrop"
 
 #: src/tauon/t_modules/t_main.py:47651
 msgid "Open Preset Folder"
-msgstr ""
+msgstr "Otevřít složku předvoleb"
 
 #: src/tauon/t_modules/t_main.py:47657
 msgid "Next"
@@ -5343,7 +5154,7 @@ msgstr "Další"
 
 #: src/tauon/t_modules/t_main.py:47661
 msgid "Delete Image <combined>"
-msgstr ""
+msgstr "Smazat obrázek <kombinované>"
 
 #: src/tauon/t_modules/t_main.py:47665 src/tauon/t_modules/t_main.py:47668
 #: src/tauon/t_modules/t_main.py:53016
@@ -5359,9 +5170,8 @@ msgid "Generate…"
 msgstr "Generovat…"
 
 #: src/tauon/t_modules/t_main.py:47707
-#, fuzzy
 msgid "Edit Generator..."
-msgstr "Generuji..."
+msgstr "Upravit generátor..."
 
 #: src/tauon/t_modules/t_main.py:47708
 msgid "Sort…"
@@ -5369,171 +5179,162 @@ msgstr "Seřadit…"
 
 #: src/tauon/t_modules/t_main.py:47709
 msgid "From Current…"
-msgstr ""
+msgstr "Z aktuálního…"
 
 #: src/tauon/t_modules/t_main.py:47714
 msgid "Sort by Imported Tracks"
-msgstr ""
+msgstr "Řadit podle importovaných skladeb"
 
 #: src/tauon/t_modules/t_main.py:47715
 msgid "Sort by Imported Folders"
-msgstr ""
+msgstr "Řadit podle importovaných složek"
 
 #: src/tauon/t_modules/t_main.py:47716
-#, fuzzy
 msgid "Sort by Filepath"
-msgstr "Cesta k souboru"
+msgstr "Řadit podle cesty k souboru"
 
 #: src/tauon/t_modules/t_main.py:47717
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Seřadit čísla skladeb"
 
 #: src/tauon/t_modules/t_main.py:47718
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Seřadit rok podle interpreta"
 
 #: src/tauon/t_modules/t_main.py:47719
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Nastavit automatické řazení seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:47726
 msgid "Append Playing"
-msgstr ""
+msgstr "Připojit přehrávané"
 
 #: src/tauon/t_modules/t_main.py:47731
-#, fuzzy
 msgid "Import/Export…"
-msgstr "Exportovat…"
+msgstr "Import/export…"
 
 #: src/tauon/t_modules/t_main.py:47733
 msgid "Toggle Grouping"
-msgstr ""
+msgstr "Přepnout seskupování"
 
 #: src/tauon/t_modules/t_main.py:47735
-#, fuzzy
 msgid "Export Playlist Stats"
-msgstr "Konec seznamu skladeb"
+msgstr "Exportovat statistiky seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:47736
 msgid "Export Albums CSV"
-msgstr ""
+msgstr "Exportovat alba CSV"
 
 #: src/tauon/t_modules/t_main.py:47737
 msgid "Transcode All"
-msgstr ""
+msgstr "Překódovat vše"
 
 #: src/tauon/t_modules/t_main.py:47738 src/tauon/t_modules/t_main.py:47863
 #: src/tauon/t_modules/t_main.py:47911 src/tauon/t_modules/t_main.py:47926
 msgid "Rescan Tags"
-msgstr ""
+msgstr "Znovu prohledat tagy"
 
 #: src/tauon/t_modules/t_main.py:47743
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Zapnout rychlé přidávání v galerii"
 
 #: src/tauon/t_modules/t_main.py:47746
 msgid "Set podcast mode"
-msgstr ""
+msgstr "Nastavit režim podcastu"
 
 #: src/tauon/t_modules/t_main.py:47747
-#, fuzzy
 msgid "Remove Duplicates"
-msgstr "Duplikovat"
+msgstr "Odstranit duplicity"
 
 #: src/tauon/t_modules/t_main.py:47748
 msgid "Toggle Console"
-msgstr ""
+msgstr "Přepnout konzoli"
 
 #: src/tauon/t_modules/t_main.py:47770 src/tauon/t_modules/t_main.py:47771
 msgid "Longest Tracks"
-msgstr ""
+msgstr "Nejdelší skladby"
 
 #: src/tauon/t_modules/t_main.py:47776 src/tauon/t_modules/t_main.py:47777
 msgid "Year by Oldest"
-msgstr ""
+msgstr "Rok podle nejstaršího"
 
 #: src/tauon/t_modules/t_main.py:47779 src/tauon/t_modules/t_main.py:47780
 msgid "Year by Latest"
-msgstr ""
+msgstr "Rok podle nejnovějšího"
 
 #: src/tauon/t_modules/t_main.py:47794 src/tauon/t_modules/t_main.py:47795
 msgid "Reverse Tracks"
-msgstr ""
+msgstr "Obrátit skladby"
 
 #: src/tauon/t_modules/t_main.py:47797 src/tauon/t_modules/t_main.py:47798
-#, fuzzy
 msgid "Reverse Albums"
-msgstr "Album"
+msgstr "Obrátit alba"
 
 #: src/tauon/t_modules/t_main.py:47808 src/tauon/t_modules/t_main.py:47809
-#, fuzzy
 msgid "Has Comment"
-msgstr "Komentář"
+msgstr "Má komentář"
 
 #: src/tauon/t_modules/t_main.py:47816
 msgid "Track Info…"
-msgstr ""
+msgstr "Informace o skladbě…"
 
 #: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
 msgid "Love"
-msgstr ""
+msgstr "Oblíbit"
 
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
-msgstr ""
+msgstr "↳ Po aktuální skladbě"
 
 #: src/tauon/t_modules/t_main.py:47830
-#, fuzzy
 msgid "Show in Gallery"
-msgstr "Galerie"
+msgstr "Zobrazit v galerii"
 
 #: src/tauon/t_modules/t_main.py:47832
 msgid "Meta…"
-msgstr ""
+msgstr "Meta…"
 
 #: src/tauon/t_modules/t_main.py:47843
-#, fuzzy
 msgid "Delete Track File"
-msgstr "Smazat"
+msgstr "Smazat soubor skladby"
 
 #: src/tauon/t_modules/t_main.py:47854 src/tauon/t_modules/t_main.py:47912
 #: src/tauon/t_modules/t_main.py:47927
 msgid "Edit fields…"
-msgstr ""
+msgstr "Upravit pole…"
 
 #: src/tauon/t_modules/t_main.py:47857 src/tauon/t_modules/t_main.py:47885
 #: src/tauon/t_modules/t_main.py:47886 src/tauon/t_modules/t_main.py:47891
 msgid "Modify Folder…"
-msgstr ""
+msgstr "Upravit složku…"
 
 #: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
-#, fuzzy
 msgid "Edit with"
-msgstr "Editovat..."
+msgstr "Upravit pomocí"
 
 #: src/tauon/t_modules/t_main.py:47879
 msgid "Lyrics..."
-msgstr ""
+msgstr "Texty..."
 
 #: src/tauon/t_modules/t_main.py:47880
 msgid "Fix Mojibake"
-msgstr ""
+msgstr "Opravit Mojibake"
 
 #: src/tauon/t_modules/t_main.py:47913
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Vyčistit doby přehrávání"
 
 #: src/tauon/t_modules/t_main.py:47919
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "Kopírovat „Interpret - Album“"
 
 #: src/tauon/t_modules/t_main.py:47924
 msgid "Add to queue"
-msgstr ""
+msgstr "Přidat do fronty"
 
 #: src/tauon/t_modules/t_main.py:47937
 msgid "Cut"
-msgstr ""
+msgstr "Vyjmout"
 
 #: src/tauon/t_modules/t_main.py:47938 src/tauon/t_modules/t_main.py:47946
 #: src/tauon/t_modules/t_main.py:47947 src/tauon/t_modules/t_main.py:48213
@@ -5541,53 +5342,52 @@ msgid "Remove"
 msgstr "Odstranit"
 
 #: src/tauon/t_modules/t_main.py:47939
-#, fuzzy
 msgid "Delete Files"
-msgstr "Smazat"
+msgstr "Smazat soubory"
 
 #: src/tauon/t_modules/t_main.py:47949
 msgid "Search Artist on Wikipedia"
-msgstr ""
+msgstr "Hledat interpreta na Wikipedii"
 
 #: src/tauon/t_modules/t_main.py:47950
 msgid "Search Track on Genius"
-msgstr ""
+msgstr "Hledat skladbu na Genius"
 
 #: src/tauon/t_modules/t_main.py:47956
 msgid "Search Artist on Sonemic"
-msgstr ""
+msgstr "Hledat interpreta na Sonemic"
 
 #: src/tauon/t_modules/t_main.py:47963
 msgid "Search Artist on Bandcamp"
-msgstr ""
+msgstr "Hledat interpreta na Bandcampu"
 
 #: src/tauon/t_modules/t_main.py:47967
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "Kopírovat „Interpret - Skladba“"
 
 #: src/tauon/t_modules/t_main.py:47968
 msgid "Copy TIDAL Album URL"
-msgstr ""
+msgstr "Kopírovat URL alba TIDAL"
 
 #: src/tauon/t_modules/t_main.py:47983
 msgid "Always stop after album"
-msgstr ""
+msgstr "Vždy zastavit po albu"
 
 #: src/tauon/t_modules/t_main.py:47984
 msgid "Always stop after track"
-msgstr ""
+msgstr "Vždy zastavit po skladbě"
 
 #: src/tauon/t_modules/t_main.py:47985
 msgid "Stop after album"
-msgstr ""
+msgstr "Zastavit po albu"
 
 #: src/tauon/t_modules/t_main.py:47986
 msgid "Stop after track"
-msgstr ""
+msgstr "Zastavit po skladbě"
 
 #: src/tauon/t_modules/t_main.py:47987
 msgid "Continue Play"
-msgstr ""
+msgstr "Pokračovat v přehrávání"
 
 #: src/tauon/t_modules/t_main.py:47989
 msgid "Minimize"
@@ -5599,15 +5399,15 @@ msgstr "Maximizovat"
 
 #: src/tauon/t_modules/t_main.py:47991 src/tauon/t_modules/t_main.py:48168
 msgid "Exit"
-msgstr ""
+msgstr "Ukončit"
 
 #: src/tauon/t_modules/t_main.py:48001
 msgid "Level Meter"
-msgstr ""
+msgstr "Měřič úrovně"
 
 #: src/tauon/t_modules/t_main.py:48002
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Spektrální vizualizér"
 
 #: src/tauon/t_modules/t_main.py:48006
 msgid "Time"
@@ -5615,12 +5415,11 @@ msgstr "Čas"
 
 #: src/tauon/t_modules/t_main.py:48013
 msgid "Show bar"
-msgstr ""
+msgstr "Zobrazit lištu"
 
 #: src/tauon/t_modules/t_main.py:48028
-#, fuzzy
 msgid "Import Music Folder"
-msgstr "Exportovat…"
+msgstr "Importovat hudební složku"
 
 #: src/tauon/t_modules/t_main.py:48036
 msgid "Settings"
@@ -5632,185 +5431,179 @@ msgstr "Databáze…"
 
 #: src/tauon/t_modules/t_main.py:48042
 msgid "Enabled saving state"
-msgstr ""
+msgstr "Ukládání stavu zapnuto"
 
 #: src/tauon/t_modules/t_main.py:48046
 msgid "Disabled saving state"
-msgstr ""
+msgstr "Ukládání stavu vypnuto"
 
 #: src/tauon/t_modules/t_main.py:48048
 msgid "Dev Mode"
-msgstr ""
+msgstr "Vývojářský režim"
 
 #: src/tauon/t_modules/t_main.py:48049
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Zapnout ukládání stavu"
 
 #: src/tauon/t_modules/t_main.py:48050
 msgid "Disable Saving State"
-msgstr ""
+msgstr "Vypnout ukládání stavu"
 
 #: src/tauon/t_modules/t_main.py:48055
-#, fuzzy
 msgid "Export as CSV"
-msgstr "Export"
+msgstr "Exportovat jako CSV"
 
 #: src/tauon/t_modules/t_main.py:48056
 msgid "Reload All Folders"
-msgstr ""
+msgstr "Znovu načíst všechny složky"
 
 #: src/tauon/t_modules/t_main.py:48057
 msgid "Play History to Playlist"
-msgstr ""
+msgstr "Historii přehrávání do seznamu skladeb"
 
 #: src/tauon/t_modules/t_main.py:48058
 msgid "Reset Image Cache"
-msgstr ""
+msgstr "Resetovat mezipaměť obrázků"
 
 #: src/tauon/t_modules/t_main.py:48059
 msgid "Clear Artist Cache"
-msgstr ""
+msgstr "Vymazat mezipaměť interpretů"
 
 #: src/tauon/t_modules/t_main.py:48061
 msgid "Remove Network Tracks"
-msgstr ""
+msgstr "Odstranit síťové skladby"
 
 #: src/tauon/t_modules/t_main.py:48062
 msgid "Remove Missing Tracks"
-msgstr ""
+msgstr "Odstranit chybějící skladby"
 
 #: src/tauon/t_modules/t_main.py:48063
 msgid "Import FMPS Ratings"
-msgstr ""
+msgstr "Importovat hodnocení FMPS"
 
 #: src/tauon/t_modules/t_main.py:48064
 msgid "Import POPM Ratings"
-msgstr ""
+msgstr "Importovat hodnocení POPM"
 
 #: src/tauon/t_modules/t_main.py:48065
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "Resetovat uživatelská hodnocení"
 
 #: src/tauon/t_modules/t_main.py:48066
 msgid "Find Incomplete Albums"
-msgstr ""
+msgstr "Najít neúplná alba"
 
 #: src/tauon/t_modules/t_main.py:48067
 msgid "Mark Missing as Found"
-msgstr ""
+msgstr "Označit chybějící jako nalezené"
 
 #: src/tauon/t_modules/t_main.py:48070
 msgid "Chromecast…"
-msgstr ""
+msgstr "Chromecast…"
 
 #: src/tauon/t_modules/t_main.py:48078 src/tauon/t_modules/t_main.py:48090
 msgid "Tab"
-msgstr ""
+msgstr "Karta"
 
 #: src/tauon/t_modules/t_main.py:48079 src/tauon/t_modules/t_main.py:48091
-#, fuzzy
 msgid "Mini"
-msgstr "Minimalizovat"
+msgstr "Mini"
 
 #: src/tauon/t_modules/t_main.py:48081 src/tauon/t_modules/t_main.py:48092
 msgid "Signal"
-msgstr ""
+msgstr "Signál"
 
 #: src/tauon/t_modules/t_main.py:48082 src/tauon/t_modules/t_main.py:48093
 msgid "Slate"
-msgstr ""
+msgstr "Břidlice"
 
 #: src/tauon/t_modules/t_main.py:48083 src/tauon/t_modules/t_main.py:48094
 msgid "Square"
-msgstr ""
+msgstr "Čtverec"
 
 #: src/tauon/t_modules/t_main.py:48084 src/tauon/t_modules/t_main.py:48095
 msgid "Square Large"
-msgstr ""
+msgstr "Velký čtverec"
 
 #: src/tauon/t_modules/t_main.py:48087
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Kopírovat název do schránky"
 
 #: src/tauon/t_modules/t_main.py:48089
 msgid "Mini Mode"
-msgstr ""
+msgstr "Mini režim"
 
 #: src/tauon/t_modules/t_main.py:48097
 msgid "Random Track"
-msgstr ""
+msgstr "Náhodná skladba"
 
 #: src/tauon/t_modules/t_main.py:48102
 msgid "Radio Random"
-msgstr ""
+msgstr "Náhodné rádio"
 
 #: src/tauon/t_modules/t_main.py:48107
 msgid "Revert"
 msgstr "Vrátit"
 
 #: src/tauon/t_modules/t_main.py:48124
-#, fuzzy
 msgid "Global Search"
-msgstr "Hledat"
+msgstr "Globální hledání"
 
 #: src/tauon/t_modules/t_main.py:48125
-#, fuzzy
 msgid "Locate Artist"
-msgstr "Umělec"
+msgstr "Najít interpreta"
 
 #: src/tauon/t_modules/t_main.py:48126
 msgid "Go To Playing"
-msgstr ""
+msgstr "Přejít na přehrávané"
 
 #: src/tauon/t_modules/t_main.py:48166
 msgid "Online Manual"
-msgstr ""
+msgstr "Online manuál"
 
 #: src/tauon/t_modules/t_main.py:48167
 msgid "Show Release Notes"
-msgstr ""
+msgstr "Zobrazit poznámky k vydání"
 
 #: src/tauon/t_modules/t_main.py:48169
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "Vypnout rychlé přidávání"
 
 #: src/tauon/t_modules/t_main.py:48197 src/tauon/t_modules/t_main.py:48212
 msgid "Visit Website"
-msgstr ""
+msgstr "Navštívit web"
 
 #: src/tauon/t_modules/t_main.py:48201
 msgid "View..."
-msgstr ""
+msgstr "Zobrazit..."
 
 #: src/tauon/t_modules/t_main.py:48202
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Řadit abecedně"
 
 #: src/tauon/t_modules/t_main.py:48203
 msgid "Sort by Popularity"
-msgstr ""
+msgstr "Řadit podle popularity"
 
 #: src/tauon/t_modules/t_main.py:48204
 msgid "Sort by Playtime"
-msgstr ""
+msgstr "Řadit podle doby přehrávání"
 
 #: src/tauon/t_modules/t_main.py:48205
 msgid "Toggle Thumbnails"
-msgstr ""
+msgstr "Přepnout náhledy"
 
 #: src/tauon/t_modules/t_main.py:48206
 msgid "Toggle Filter"
-msgstr ""
+msgstr "Přepnout filtr"
 
 #: src/tauon/t_modules/t_main.py:48208
-#, fuzzy
 msgid "Download Artist Data"
-msgstr "Načítání..."
+msgstr "Stáhnout data interpreta"
 
 #: src/tauon/t_modules/t_main.py:48209
-#, fuzzy
 msgid "Clear Bio"
-msgstr "Pročistit"
+msgstr "Vymazat bio"
 
 #: src/tauon/t_modules/t_main.py:48210
 msgid "Edit..."
@@ -5818,48 +5611,47 @@ msgstr "Editovat..."
 
 #: src/tauon/t_modules/t_main.py:48215
 msgid "Dismiss"
-msgstr ""
+msgstr "Zavřít"
 
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "CHYBA: Nebyl nalezen žádný backend"
 
 #: src/tauon/t_modules/t_main.py:49508
 msgid "Enabled auto theme"
-msgstr ""
+msgstr "Automatický motiv zapnut"
 
 #: src/tauon/t_modules/t_main.py:49510
-#, fuzzy
 msgid "Disabled auto theme"
-msgstr "Duplikovat"
+msgstr "Automatický motiv vypnut"
 
 #: src/tauon/t_modules/t_main.py:49553
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Nejdřív vyberte zdrojovou skladbu zkopírováním do schránky"
 
 #: src/tauon/t_modules/t_main.py:49870
 msgid "Track already has lyrics"
-msgstr ""
+msgstr "Skladba už má text"
 
 #: src/tauon/t_modules/t_main.py:50055
 msgid "Error loading theme file"
-msgstr ""
+msgstr "Chyba při načítání souboru motivu"
 
 #: src/tauon/t_modules/t_main.py:51163 src/tauon/t_modules/t_main.py:51180
 msgid "Various Artists"
-msgstr ""
+msgstr "Různí interpreti"
 
 #: src/tauon/t_modules/t_main.py:51431
 msgid "Rescan folders complete."
-msgstr ""
+msgstr "Opětovné prohledání složek dokončeno."
 
 #: src/tauon/t_modules/t_main.py:51470
 msgid "Auto sort skipped because playlist is locked."
-msgstr ""
+msgstr "Automatické řazení přeskočeno, protože seznam skladeb je uzamčen."
 
 #: src/tauon/t_modules/t_main.py:52222
 msgid "Queue is Empty"
-msgstr ""
+msgstr "Fronta je prázdná"
 
 #: src/tauon/t_modules/t_main.py:52651 src/tauon/t_modules/t_main.py:52670
 #: src/tauon/t_modules/t_main.py:52690 src/tauon/t_modules/t_main.py:52713
@@ -5867,7 +5659,7 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:52829 src/tauon/t_modules/t_main.py:52843
 #: src/tauon/t_modules/t_main.py:52857 src/tauon/t_modules/t_main.py:52914
 msgid "Copied text to clipboard"
-msgstr ""
+msgstr "Text zkopírován do schránky"
 
 #: src/tauon/t_modules/t_main.py:52711 src/tauon/t_modules/t_main.py:52717
 msgid "Path"
@@ -5875,208 +5667,142 @@ msgstr "Cesta"
 
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
-msgstr ""
+msgstr "Vzorkovací frekvence"
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
-msgstr ""
+msgstr " z "
 
 #: src/tauon/t_modules/t_main.py:52798 src/tauon/t_modules/t_main.py:53581
 msgid "Track"
-msgstr ""
+msgstr "Skladba"
 
 #: src/tauon/t_modules/t_main.py:52805 src/tauon/t_modules/t_main.py:52811
-#, fuzzy
 msgid "File size"
-msgstr "Jméno souboru"
+msgstr "Velikost souboru"
 
 #: src/tauon/t_modules/t_main.py:52818
 msgid "Disc"
-msgstr ""
+msgstr "Disk"
 
 #: src/tauon/t_modules/t_main.py:52883
-#, fuzzy
 msgid "Play count"
-msgstr "Účty"
+msgstr "Počet přehrání"
 
 #: src/tauon/t_modules/t_main.py:52895
 msgid "Play time"
-msgstr ""
+msgstr "Doba přehrávání"
 
 #: src/tauon/t_modules/t_main.py:52900
 msgid "Lyrics"
-msgstr ""
+msgstr "Texty"
 
 #: src/tauon/t_modules/t_main.py:52998
-#, fuzzy
 msgid "Folder Modification"
-msgstr "Nebyl nalezen žádný obrázek umělce."
+msgstr "Úprava složky"
 
 #: src/tauon/t_modules/t_main.py:53020
 msgid "Renames the physical folder based on the template"
-msgstr ""
+msgstr "Přejmenuje fyzickou složku podle šablony"
 
 #: src/tauon/t_modules/t_main.py:53028
 msgid "Trash"
-msgstr ""
+msgstr "Koš"
 
 #: src/tauon/t_modules/t_main.py:53029
 msgid "Moves folder to system trash"
-msgstr ""
+msgstr "Přesune složku do systémového koše"
 
 #: src/tauon/t_modules/t_main.py:53032
 msgid "Physically deletes folder from disk"
-msgstr ""
+msgstr "Fyzicky smaže složku z disku"
 
 #: src/tauon/t_modules/t_main.py:53052
 msgid "Raise"
-msgstr ""
+msgstr "Zvednout"
 
 #: src/tauon/t_modules/t_main.py:53056
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
+msgstr "Přesune složku o 2 úrovně výš a smaže starou nadřazenou složku"
 
 #: src/tauon/t_modules/t_main.py:53068
 msgid "Deletes some unnecessary files from folder"
-msgstr ""
+msgstr "Smaže ze složky některé nepotřebné soubory"
 
 #: src/tauon/t_modules/t_main.py:53073
 msgid "PATH"
-msgstr ""
+msgstr "CESTA"
 
 #: src/tauon/t_modules/t_main.py:53084
 msgid "OLD"
-msgstr ""
+msgstr "STARÉ"
 
 #: src/tauon/t_modules/t_main.py:53091
 msgid "NEW"
-msgstr ""
+msgstr "NOVÉ"
 
 #: src/tauon/t_modules/t_main.py:53179
 msgid "Folder filter mode. Enter path segment."
-msgstr ""
+msgstr "Režim filtru složek. Zadejte část cesty."
 
 #: src/tauon/t_modules/t_main.py:53187
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
-msgstr ""
+msgstr "NAHORU / DOLŮ pro navigaci. SHIFT + RETURN pro nový seznam skladeb."
 
 #: src/tauon/t_modules/t_main.py:53189
 msgid "Quick find"
-msgstr ""
+msgstr "Rychlé hledání"
 
 #: src/tauon/t_modules/t_main.py:53285
-#, fuzzy
 msgid "Search Results"
-msgstr "Hledat"
+msgstr "Výsledky hledání"
 
 #: src/tauon/t_modules/t_main.py:53541
 msgid "Loved track"
-msgstr ""
+msgstr "Skladba oblíbena"
 
 #: src/tauon/t_modules/t_main.py:53546
 msgid "Un-Loved track"
-msgstr ""
+msgstr "Skladba odebrána z oblíbených"
 
 #: src/tauon/t_modules/t_main.py:53711
 msgid "Lines copied to clipboard"
-msgstr ""
+msgstr "Řádky zkopírovány do schránky"
 
 #: src/tauon/t_modules/t_phazor.py:1140
 msgid "Error loading track"
-msgstr ""
+msgstr "Chyba při načítání skladby"
 
 #: src/tauon/t_modules/t_stream.py:142
 msgid "Failed to establish a connection"
-msgstr ""
+msgstr "Nepodařilo se navázat spojení"
 
 #: src/tauon/t_modules/t_stream.py:559
 msgid "Data malformation detected. Stream aborted."
-msgstr ""
+msgstr "Zjištěna nesprávná struktura dat. Stream přerušen."
 
 #: src/tauon/t_modules/t_subsonic.py:132
 msgid "Subsonic Error: "
-msgstr ""
+msgstr "Chyba Subsonic: "
 
 #: src/tauon/t_modules/t_subsonic.py:393 src/tauon/t_modules/t_subsonic.py:398
 #: src/tauon/t_modules/t_subsonic.py:408 src/tauon/t_modules/t_subsonic.py:416
 #: src/tauon/t_modules/t_subsonic.py:543
 msgid "Error connecting to Airsonic server"
-msgstr ""
+msgstr "Chyba při připojování k serveru Airsonic"
 
 #: src/tauon/t_modules/t_subsonic.py:455
 msgid "Error reading Airsonic directory!"
-msgstr ""
+msgstr "Chyba při čtení adresáře Airsonic!"
 
 #: src/tauon/t_modules/t_subsonic.py:597
 msgid "Airsonic Collection"
-msgstr ""
+msgstr "Kolekce Airsonic"
 
 #: src/tauon/t_modules/t_tidal.py:44 src/tauon/t_modules/t_tidal.py:67
 msgid "Tidalapi package not loaded"
-msgstr ""
+msgstr "Balíček tidalapi není načten"
 
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
-msgstr ""
-
-#, fuzzy
-#~ msgid "Window frame"
-#~ msgstr "Okno"
-
-#, fuzzy
-#~ msgid "Top panel"
-#~ msgstr "Žánr"
-
-#, fuzzy
-#~ msgid "Tracklist panel"
-#~ msgstr "Titul"
-
-#, fuzzy
-#~ msgid "Track artist"
-#~ msgstr "Titul"
-
-#, fuzzy
-#~ msgid "Track album"
-#~ msgstr "Titul"
-
-#, fuzzy
-#~ msgid "Playing artist"
-#~ msgstr "Konec seznamu skladeb"
-
-#, fuzzy
-#~ msgid "Playing album"
-#~ msgstr "Konec seznamu skladeb"
-
-#, fuzzy
-#~ msgid "Playing index"
-#~ msgstr "Konec seznamu skladeb"
-
-#, fuzzy
-#~ msgid "Playing time"
-#~ msgstr "Konec seznamu skladeb"
-
-#, fuzzy
-#~ msgid "Track index"
-#~ msgstr "Titul"
-
-#, fuzzy
-#~ msgid "Track time"
-#~ msgstr "Titul"
-
-#, fuzzy
-#~ msgid "Folder title"
-#~ msgstr "Titul"
-
-#, fuzzy
-#~ msgid "Folder line"
-#~ msgstr "Jméno souboru"
-
-#, fuzzy
-#~ msgid "{name}"
-#~ msgstr "Přejmenovat"
-
-#~ msgid "Username:"
-#~ msgstr "Jméno:"
-
-#~ msgid "Sync..."
-#~ msgstr "Synchronizovat..."
+msgstr "Načtení přihlášení TIDAL selhalo, zkuste se prosím přihlásit znovu"

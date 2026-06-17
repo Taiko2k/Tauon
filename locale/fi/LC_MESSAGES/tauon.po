@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:36+0000\n"
 "Last-Translator: Ricky Tigg <ricky.tigg@gmail.com>\n"
@@ -20,143 +20,142 @@ msgstr ""
 
 #: src/tauon/t_modules/t_dbus.py:364
 msgid "Failed to start indicator"
-msgstr ""
+msgstr "Ilmaisimen käynnistys epäonnistui"
 
 #: src/tauon/t_modules/t_discord.py:260 src/tauon/t_modules/t_discord.py:320
 #: src/tauon/t_modules/t_discord.py:494
 msgid "Reconnecting to Discord..."
-msgstr ""
+msgstr "Yhdistetään uudelleen Discordiin..."
 
 #: src/tauon/t_modules/t_discord.py:352 src/tauon/t_modules/t_discord.py:392
 #: src/tauon/t_modules/t_discord.py:395
 msgid "Unknown Track"
-msgstr ""
+msgstr "Tuntematon kappale"
 
 #: src/tauon/t_modules/t_discord.py:361 src/tauon/t_modules/t_discord.py:391
 #: src/tauon/t_modules/t_discord.py:396
 msgid "Unknown Artist"
-msgstr ""
+msgstr "Tuntematon artisti"
 
 #: src/tauon/t_modules/t_discord.py:503
 msgid "Waiting for Discord rate limit…"
-msgstr ""
+msgstr "Odotetaan Discordin nopeusrajoitusta..."
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr ""
+msgstr "Virhe - eikö Discord ole käynnissä?"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
-msgstr ""
+msgstr "Ei vielä"
 
 #: src/tauon/t_modules/t_extra.py:559
 msgid "Now"
-msgstr ""
+msgstr "Nyt"
 
 #: src/tauon/t_modules/t_extra.py:563
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: src/tauon/t_modules/t_extra.py:567
 msgid "hr"
-msgstr ""
+msgstr "t"
 
 #: src/tauon/t_modules/t_extra.py:571
-#, fuzzy
 msgid "dy"
-msgstr "päivä"
+msgstr "pv"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr ""
+msgstr "vk"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
-msgstr ""
+msgstr "kk"
 
 #: src/tauon/t_modules/t_extra.py:580
 msgid "Unknown"
-msgstr ""
+msgstr "Tuntematon"
 
 #: src/tauon/t_modules/t_guitar_chords.py:93
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "Metadataa ei ole tarpeeksi hakuun"
 
 #: src/tauon/t_modules/t_guitar_chords.py:107
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "Leikepöydällä ei ole tekstiä"
 
 #: src/tauon/t_modules/t_guitar_chords.py:208
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "Vastaavan kappaleen haku GuitarPartysta epäonnistui"
 
 #: src/tauon/t_modules/t_guitar_chords.py:224
 msgid "Track not found on GuitarParty"
-msgstr ""
+msgstr "Kappaletta ei löytynyt GuitarPartysta"
 
 #: src/tauon/t_modules/t_guitar_chords.py:240
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Kappaleen nouto GuitarPartysta epäonnistui"
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:97
 msgid "Could not establish connection to server."
-msgstr ""
+msgstr "Yhteyttä palvelimeen ei voitu muodostaa."
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:98
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "Tarkista, että palvelin on käynnissä ja URL on oikein."
 
 #: src/tauon/t_modules/t_jellyfin.py:109
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Yhteys ja valtuutus onnistuivat"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Tunnistautuminen epäonnistui"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "Check username and password."
-msgstr ""
+msgstr "Tarkista käyttäjänimi ja salasana."
 
 #: src/tauon/t_modules/t_jellyfin.py:113
 msgid "Jellyfin auth error"
-msgstr ""
+msgstr "Jellyfin-tunnistautumisvirhe"
 
 #: src/tauon/t_modules/t_jellyfin.py:393
 msgid "Error connecting to Jellyfin"
-msgstr ""
+msgstr "Yhteys Jellyfiniin epäonnistui"
 
 #: src/tauon/t_modules/t_jellyfin.py:429
 msgid "Error connecting to Jellyfin for Import"
-msgstr ""
+msgstr "Yhteys Jellyfiniin tuontia varten epäonnistui"
 
 #: src/tauon/t_modules/t_jellyfin.py:453
 msgid "Error accessing Jellyfin"
-msgstr ""
+msgstr "Jellyfinin käyttö epäonnistui"
 
 #: src/tauon/t_modules/t_jellyfin.py:571
 msgid "Jellyfin Collection"
-msgstr ""
+msgstr "Jellyfin-kokoelma"
 
 #: src/tauon/t_modules/t_main.py:1994
 msgid "Rescanning folders..."
-msgstr ""
+msgstr "Kansioita tarkistetaan uudelleen..."
 
 #: src/tauon/t_modules/t_main.py:2203 src/tauon/t_modules/t_main.py:2207
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr ""
+msgstr "Soittolista on lukittu tahattoman poiston estämiseksi"
 
 #: src/tauon/t_modules/t_main.py:2317
 msgid "Are you sure you want to delete playlist: {name}?"
-msgstr ""
+msgstr "Haluatko varmasti poistaa soittolistan: {name}?"
 
 #: src/tauon/t_modules/t_main.py:4040 src/tauon/t_modules/t_main.py:18733
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Valinnaista moduulia python-pylast ei ole asennettu"
 
 #: src/tauon/t_modules/t_main.py:4059
 msgid "Web auth page opened"
-msgstr ""
+msgstr "Verkkotunnistautumissivu avattiin"
 
 #: src/tauon/t_modules/t_main.py:4059
 msgid "Once authorised click the 'done' button."
@@ -168,27 +167,27 @@ msgstr "Sinun on ensin kirjauduttava sisään"
 
 #: src/tauon/t_modules/t_main.py:4081
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Virhe - ei valtuutettu"
 
 #: src/tauon/t_modules/t_main.py:4084
 msgid "Unknown error."
-msgstr ""
+msgstr "Tuntematon virhe."
 
 #: src/tauon/t_modules/t_main.py:4084 src/tauon/t_modules/t_phazor.py:343
 msgid "Error"
-msgstr ""
+msgstr "Virhe"
 
 #: src/tauon/t_modules/t_main.py:4093
 msgid "Logout will complete on app restart."
-msgstr ""
+msgstr "Uloskirjautuminen valmistuu, kun sovellus käynnistetään uudelleen."
 
 #: src/tauon/t_modules/t_main.py:4101
 msgid "Already connected to Last.fm"
-msgstr ""
+msgstr "Yhteys Last.fm:ään on jo muodostettu"
 
 #: src/tauon/t_modules/t_main.py:4105
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "Last.fm-tiliä ei ole rekisteröity"
 
 #: src/tauon/t_modules/t_main.py:4105
 msgid "Authorise an account in settings"
@@ -196,15 +195,15 @@ msgstr "Valtuuta tili asetuksissa"
 
 #: src/tauon/t_modules/t_main.py:4116
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Yhteys Last.fm:ään onnistui."
 
 #: src/tauon/t_modules/t_main.py:4123
 msgid "Error connecting to Last.fm network"
-msgstr ""
+msgstr "Yhteys Last.fm-verkkoon epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:4142 src/tauon/t_modules/t_main.py:4155
 msgid "Error communicating with Last.fm network"
-msgstr ""
+msgstr "Viestintä Last.fm-verkon kanssa epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:4216
 msgid "Scanning failed. Try again?"
@@ -212,15 +211,15 @@ msgstr "Skannaaminen epäonnistui. Yritetäänkö uudelleen?"
 
 #: src/tauon/t_modules/t_main.py:4223 src/tauon/t_modules/t_main.py:16724
 msgid "Scanning scrobbles complete"
-msgstr ""
+msgstr "Scrobblejen tarkistus valmis"
 
 #: src/tauon/t_modules/t_main.py:4416
 msgid "Removed {N} loves."
-msgstr ""
+msgstr "Poistettiin {N} suosikkimerkintää."
 
 #: src/tauon/t_modules/t_main.py:4429
 msgid "There was an error, try re-log in"
-msgstr ""
+msgstr "Tapahtui virhe, yritä kirjautua uudelleen"
 
 #: src/tauon/t_modules/t_main.py:4438
 msgid "Getting friend data..."
@@ -232,57 +231,55 @@ msgstr "Tämä voi kestää todella pitkään."
 
 #: src/tauon/t_modules/t_main.py:4461
 msgid "There was an error getting friends loves"
-msgstr ""
+msgstr "Ystävien suosikkien noudossa tapahtui virhe"
 
 #: src/tauon/t_modules/t_main.py:4469
 msgid "Scanning loved tracks for: {username}"
-msgstr ""
+msgstr "Tarkistetaan käyttäjän {username} suosikkikappaleita"
 
 #: src/tauon/t_modules/t_main.py:4473
-#, fuzzy
 msgid "No username found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Käyttäjänimeä ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:4517
-#, fuzzy
 msgid "User has no loved tracks."
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Käyttäjällä ei ole suosikkikappaleita."
 
 #: src/tauon/t_modules/t_main.py:4520
 msgid "{N} matched tracks are up to date."
-msgstr ""
+msgstr "{N} täsmäävää kappaletta ovat ajan tasalla."
 
 #: src/tauon/t_modules/t_main.py:4523
 msgid "{N} tracks matched. {T} were updated."
-msgstr ""
+msgstr "{N} kappaletta täsmäsi. {T} päivitettiin."
 
 #: src/tauon/t_modules/t_main.py:4525
 msgid "Of {N} loved tracks, no matches were found in local db"
-msgstr ""
+msgstr "{N} suosikkikappaleesta yhtään vastaavuutta ei löytynyt paikallisesta tietokannasta"
 
 #: src/tauon/t_modules/t_main.py:4529
 msgid "This doesn't seem to be working :("
-msgstr ""
+msgstr "Tämä ei näytä toimivan :("
 
 #: src/tauon/t_modules/t_main.py:4589 src/tauon/t_modules/t_main.py:4643
 msgid "ListenBrainz is enabled but there is no token."
-msgstr ""
+msgstr "ListenBrainz on käytössä, mutta tunnusta ei ole."
 
 #: src/tauon/t_modules/t_main.py:4589 src/tauon/t_modules/t_main.py:4643
 msgid "How did this even happen."
-msgstr ""
+msgstr "Miten tässä edes kävi näin."
 
 #: src/tauon/t_modules/t_main.py:4633 src/tauon/t_modules/t_main.py:4695
 msgid "There was an error submitting data to ListenBrainz"
-msgstr ""
+msgstr "Tietojen lähetys ListenBrainziin epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:4703
 msgid "There is no text in the clipboard"
-msgstr ""
+msgstr "Leikepöydällä ei ole tekstiä"
 
 #: src/tauon/t_modules/t_main.py:4713
 msgid "That is not a valid token."
-msgstr ""
+msgstr "Tuo ei ole kelvollinen tunnus."
 
 #: src/tauon/t_modules/t_main.py:4863
 msgid "day"
@@ -290,25 +287,23 @@ msgstr "päivä"
 
 #: src/tauon/t_modules/t_main.py:4864
 msgid "days"
-msgstr ""
+msgstr "päivää"
 
 #: src/tauon/t_modules/t_main.py:4866
 msgid "Scanning for Chromecasts..."
-msgstr ""
+msgstr "Etsitään Chromecasteja..."
 
 #: src/tauon/t_modules/t_main.py:4867
 msgid "Cast to: %s"
-msgstr ""
+msgstr "Suoratoista kohteeseen: %s"
 
 #: src/tauon/t_modules/t_main.py:4868
-#, fuzzy
 msgid "No Chromecast devices found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Chromecast-laitteita ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:4869
-#, fuzzy
 msgid "End Cast"
-msgstr "Soittolistan loppu"
+msgstr "Lopeta suoratoisto"
 
 #: src/tauon/t_modules/t_main.py:4871
 msgid "Web server stopped."
@@ -316,7 +311,7 @@ msgstr "Verkkopalvelin pysäytetty."
 
 #: src/tauon/t_modules/t_main.py:4873
 msgid "Open Tauon Music Box"
-msgstr ""
+msgstr "Avaa Tauon Music Box"
 
 #: src/tauon/t_modules/t_main.py:4874
 msgid "Play/Pause"
@@ -336,1211 +331,1167 @@ msgstr "Sulje"
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error importing M3U playlist"
-msgstr ""
+msgstr "M3U-soittolistan tuonti epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error trying to parse playlist as UTF-8:"
-msgstr ""
+msgstr "Virhe yritettäessä tulkita soittolistaa UTF-8-muodossa:"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Exception importing M3U playlist"
-msgstr ""
+msgstr "Poikkeus M3U-soittolistaa tuotaessa"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Unknown exception trying to parse playlist"
-msgstr ""
+msgstr "Tuntematon poikkeus soittolistaa tulkittaessa"
 
 #: src/tauon/t_modules/t_main.py:7080
 msgid "Error importing XSPF playlist."
-msgstr ""
+msgstr "XSPF-soittolistan tuonti epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:7080
 msgid "Sorry about that."
-msgstr ""
+msgstr "Pahoittelut siitä."
 
 #: src/tauon/t_modules/t_main.py:7209
 msgid "Failed to locate {N} out of {T} tracks."
-msgstr ""
+msgstr "{N}/{T} kappaletta ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:7341 src/tauon/t_modules/t_main.py:47531
 msgid "A/B Repeat"
-msgstr ""
+msgstr "A/B-toisto"
 
 #: src/tauon/t_modules/t_main.py:7343
 msgid "Set B Marker"
-msgstr ""
+msgstr "Aseta B-merkki"
 
 #: src/tauon/t_modules/t_main.py:7345
 msgid "Clear A/B"
-msgstr ""
+msgstr "Tyhjennä A/B"
 
 #: src/tauon/t_modules/t_main.py:7430 src/tauon/t_modules/t_main.py:47533
 msgid "Shuffle Lockdown"
-msgstr ""
+msgstr "Sekoituksen lukitus"
 
 #: src/tauon/t_modules/t_main.py:7431 src/tauon/t_modules/t_main.py:48170
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Poistu sekoituksen lukituksesta"
 
 #: src/tauon/t_modules/t_main.py:7455
 msgid "Make Large Size"
-msgstr ""
+msgstr "Tee suureksi"
 
 #: src/tauon/t_modules/t_main.py:7457
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Tee kompaktiksi"
 
 #: src/tauon/t_modules/t_main.py:7527
 msgid "Can't open folder of a network track."
-msgstr ""
+msgstr "Verkkokappaleen kansiota ei voi avata."
 
 #: src/tauon/t_modules/t_main.py:7566
-#, fuzzy
 msgid "No item is currently playing"
-msgstr "Soittolistan loppu"
+msgstr "Mikään kohde ei ole parhaillaan toistossa"
 
 #: src/tauon/t_modules/t_main.py:7589
-#, fuzzy
 msgid "This track is a networked track."
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Tämä kappale on verkkokappale."
 
 #: src/tauon/t_modules/t_main.py:7593
 msgid "The source folder does not exist."
-msgstr ""
+msgstr "Lähdekansiota ei ole olemassa."
 
 #: src/tauon/t_modules/t_main.py:7597
 msgid "The destination folder does not exist."
-msgstr ""
+msgstr "Kohdekansiota ei ole olemassa."
 
 #: src/tauon/t_modules/t_main.py:7601
 msgid "The destination and source folders are the same."
-msgstr ""
+msgstr "Kohde- ja lähdekansio ovat samat."
 
 #: src/tauon/t_modules/t_main.py:7605 src/tauon/t_modules/t_main.py:10602
 msgid "Safety interrupt! The source path seems oddly short."
-msgstr ""
+msgstr "Turvakeskeytys! Lähdepolku vaikuttaa epäilyttävän lyhyeltä."
 
 #: src/tauon/t_modules/t_main.py:7612 src/tauon/t_modules/t_main.py:10616
 msgid "Better not do anything to that folder!"
-msgstr ""
+msgstr "On parempi olla tekemättä mitään tuolle kansiolle!"
 
 #: src/tauon/t_modules/t_main.py:7617 src/tauon/t_modules/t_main.py:10621
 msgid "Folder size safety limit reached! (3GB)"
-msgstr ""
+msgstr "Kansion koon turvaraja saavutettu! (3 Gt)"
 
 #: src/tauon/t_modules/t_main.py:7674 src/tauon/t_modules/t_main.py:7693
 msgid "Rescanning folder..."
-msgstr ""
+msgstr "Kansiota tarkistetaan uudelleen..."
 
 #: src/tauon/t_modules/t_main.py:7713
 msgid "Unlock Panel"
-msgstr ""
+msgstr "Avaa paneelin lukitus"
 
 #: src/tauon/t_modules/t_main.py:7714
 msgid "Lock Panel"
-msgstr ""
+msgstr "Lukitse paneeli"
 
 #: src/tauon/t_modules/t_main.py:7795 src/tauon/t_modules/t_main.py:9572
 #: src/tauon/t_modules/t_main.py:28007
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Keskeytetään synkronointi"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Hide Metadata Panel"
-msgstr ""
+msgstr "Piilota metadatapaneeli"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Show Metadata Panel"
-msgstr ""
+msgstr "Näytä metadatapaneeli"
 
 #: src/tauon/t_modules/t_main.py:7810
 msgid "Panel Below Lyrics"
-msgstr ""
+msgstr "Paneeli sanoitusten alla"
 
 #: src/tauon/t_modules/t_main.py:7810
 msgid "Panel Above Lyrics"
-msgstr ""
+msgstr "Paneeli sanoitusten yllä"
 
 #: src/tauon/t_modules/t_main.py:7826
 msgid "Enable Milkdrop Visualiser"
-msgstr ""
+msgstr "Ota Milkdrop-visualisointi käyttöön"
 
 #: src/tauon/t_modules/t_main.py:7828
 msgid "Disable Milkdrop Visualiser"
-msgstr ""
+msgstr "Poista Milkdrop-visualisointi käytöstä"
 
 #: src/tauon/t_modules/t_main.py:7832
 msgid "Enable Auto Cycle"
-msgstr ""
+msgstr "Ota automaattinen kierto käyttöön"
 
 #: src/tauon/t_modules/t_main.py:7834
 msgid "Disable Auto Cycle"
-msgstr ""
+msgstr "Poista automaattinen kierto käytöstä"
 
 #: src/tauon/t_modules/t_main.py:7838
 msgid "Disable Wide Mode"
-msgstr ""
+msgstr "Poista leveä tila käytöstä"
 
 #: src/tauon/t_modules/t_main.py:7838 src/tauon/t_modules/t_main.py:47632
 #: src/tauon/t_modules/t_main.py:47644
 msgid "Enable Wide Mode"
-msgstr ""
+msgstr "Ota leveä tila käyttöön"
 
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Hide Lyrics"
-msgstr ""
+msgstr "Piilota sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Show Lyrics"
-msgstr ""
+msgstr "Näytä sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:7902
 msgid "Restart Tauon if presets are not visible yet."
-msgstr ""
+msgstr "Käynnistä Tauon uudelleen, jos esiasetukset eivät vielä näy."
 
 #: src/tauon/t_modules/t_main.py:7932 src/tauon/t_modules/t_main.py:7973
 msgid "Preset download cancelled"
-msgstr ""
+msgstr "Esiasetusten lataus peruttiin"
 
 #: src/tauon/t_modules/t_main.py:7933 src/tauon/t_modules/t_main.py:7974
 #: src/tauon/t_modules/t_main.py:8014
 msgid "Milkdrop visualiser enabled."
-msgstr ""
+msgstr "Milkdrop-visualisointi otettu käyttöön."
 
 #: src/tauon/t_modules/t_main.py:7957
 msgid "Downloading preset pack..."
-msgstr ""
+msgstr "Ladataan esiasetuspakettia..."
 
 #: src/tauon/t_modules/t_main.py:7960 src/tauon/t_modules/t_main.py:8005
 msgid "Extracting presets..."
-msgstr ""
+msgstr "Puretaan esiasetuksia..."
 
 #: src/tauon/t_modules/t_main.py:7980
 msgid "Preset package contains an unsafe path"
-msgstr ""
+msgstr "Esiasetuspaketti sisältää turvattoman polun"
 
 #: src/tauon/t_modules/t_main.py:8014
 msgid "Presets ready"
-msgstr ""
+msgstr "Esiasetukset valmiina"
 
 #: src/tauon/t_modules/t_main.py:8017 src/tauon/t_modules/t_main.py:15701
 msgid "Download failed"
-msgstr ""
+msgstr "Lataus epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:8025
 msgid "No presets loaded. Download preset pack? (~5MB)"
-msgstr ""
+msgstr "Esiasetuksia ei ole ladattu. Ladataanko esiasetuspaketti? (~5 Mt)"
 
 #: src/tauon/t_modules/t_main.py:8037
 msgid "Not supported on this platform"
-msgstr ""
+msgstr "Ei tuettu tällä alustalla"
 
 #: src/tauon/t_modules/t_main.py:8096
 msgid "There are no lyric sources enabled."
-msgstr ""
+msgstr "Sanoituslähteitä ei ole käytössä."
 
 #: src/tauon/t_modules/t_main.py:8097
 msgid "See 'lyrics settings' under 'functions' tab in settings."
-msgstr ""
+msgstr "Katso asetusten 'toiminnot'-välilehden sanoitusasetukset."
 
 #: src/tauon/t_modules/t_main.py:8106
 msgid "Let's be polite and try later."
-msgstr ""
+msgstr "Ollaan kohteliaita ja yritetään myöhemmin."
 
 #: src/tauon/t_modules/t_main.py:8109
 msgid "Stop requesting lyrics AAAAAA."
-msgstr ""
+msgstr "Lopeta sanoitusten pyytäminen AAAAAA."
 
 #: src/tauon/t_modules/t_main.py:8123 src/tauon/t_modules/t_main.py:11412
 #: src/tauon/t_modules/t_main.py:14060 src/tauon/t_modules/t_main.py:35159
 #: src/tauon/t_modules/t_main.py:42717 src/tauon/t_modules/t_main.py:42726
 #: src/tauon/t_modules/t_main.py:42914
 msgid "Searching..."
-msgstr ""
+msgstr "Haetaan..."
 
 #: src/tauon/t_modules/t_main.py:8171
-#, fuzzy
 msgid "No lyrics for this track were found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Tälle kappaleelle ei löytynyt sanoituksia"
 
 #: src/tauon/t_modules/t_main.py:8185
 msgid "Insufficient metadata to get lyrics"
-msgstr ""
+msgstr "Metadataa ei ole tarpeeksi sanoitusten noutoon"
 
 #: src/tauon/t_modules/t_main.py:8219 src/tauon/t_modules/t_main.py:8225
 msgid "Show static lyrics"
-msgstr ""
+msgstr "Näytä staattiset sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:8219 src/tauon/t_modules/t_main.py:8227
 msgid "Show synced lyrics"
-msgstr ""
+msgstr "Näytä synkronoidut sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:8294
 msgid "Could not clear synced lyrics"
-msgstr ""
+msgstr "Synkronoituja sanoituksia ei voitu tyhjentää"
 
 #: src/tauon/t_modules/t_main.py:8295
 msgid "The .lrc file could not be deleted."
-msgstr ""
+msgstr ".lrc-tiedostoa ei voitu poistaa."
 
 #: src/tauon/t_modules/t_main.py:8304
-#, fuzzy
 msgid "Removed from .lrc and tags"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Poistettu .lrc-tiedostosta ja tunnisteista"
 
 #: src/tauon/t_modules/t_main.py:8304 src/tauon/t_modules/t_main.py:8306
 #: src/tauon/t_modules/t_main.py:8308
 msgid "Cleared synced lyrics"
-msgstr ""
+msgstr "Synkronoidut sanoitukset tyhjennetty"
 
 #: src/tauon/t_modules/t_main.py:8306
-#, fuzzy
 msgid "Removed from .lrc"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Poistettu .lrc-tiedostosta"
 
 #: src/tauon/t_modules/t_main.py:8308
-#, fuzzy
 msgid "Removed from tags"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Poistettu tunnisteista"
 
 #: src/tauon/t_modules/t_main.py:8311 src/tauon/t_modules/t_main.py:8316
 msgid "Cleared synced lyrics in Tauon only"
-msgstr ""
+msgstr "Synkronoidut sanoitukset tyhjennetty vain Tauonissa"
 
 #: src/tauon/t_modules/t_main.py:8312
 msgid "The .lrc file was kept because \"Save Synced to .lrc\" is off."
-msgstr ""
+msgstr ".lrc-tiedosto säilytettiin, koska \"Tallenna synkronoidut .lrc:hen\" ei ole käytössä."
 
 #: src/tauon/t_modules/t_main.py:8318
-#, fuzzy
 msgid "No synced lyrics were cleared"
-msgstr "Soittolistan loppu"
+msgstr "Synkronoituja sanoituksia ei tyhjennetty"
 
 #: src/tauon/t_modules/t_main.py:8391 src/tauon/t_modules/t_main.py:8410
 msgid "Could not write lyrics to file"
-msgstr ""
+msgstr "Sanoituksia ei voitu kirjoittaa tiedostoon"
 
 #: src/tauon/t_modules/t_main.py:8392
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr ""
+msgstr "Sanoituksia ei osata kirjoittaa tiedostotyyppiin: "
 
 #: src/tauon/t_modules/t_main.py:8393 src/tauon/t_modules/t_main.py:8412
 msgid "(We still saved to the internal database)"
-msgstr ""
+msgstr "(Tallensimme silti sisäiseen tietokantaan)"
 
 #: src/tauon/t_modules/t_main.py:8411
 msgid "File doesn't exist or is not accessible"
-msgstr ""
+msgstr "Tiedostoa ei ole olemassa tai sitä ei voi käyttää"
 
 #: src/tauon/t_modules/t_main.py:8436 src/tauon/t_modules/t_main.py:21323
 msgid "Saving network images not implemented"
-msgstr ""
+msgstr "Verkkokuvien tallennusta ei ole toteutettu"
 
 #: src/tauon/t_modules/t_main.py:8443
 msgid "No embedded album art found in file."
-msgstr ""
+msgstr "Tiedostosta ei löytynyt upotettua kansikuvaa."
 
 #: src/tauon/t_modules/t_main.py:8443 src/tauon/t_modules/t_main.py:8465
 #: src/tauon/t_modules/t_main.py:21328
 msgid "Image save error."
-msgstr ""
+msgstr "Kuvan tallennusvirhe."
 
 #: src/tauon/t_modules/t_main.py:8465
 msgid "A mysterious error occurred"
-msgstr ""
+msgstr "Tapahtui salaperäinen virhe"
 
 #: src/tauon/t_modules/t_main.py:8541
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Verkkokappaleille ei voi ladata kuvitusta."
 
 #: src/tauon/t_modules/t_main.py:8565
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Tämä kansio ei näytä kuuluvan yhteen albumiin, pahoittelut"
 
 #: src/tauon/t_modules/t_main.py:8571
 msgid "Directory missing."
-msgstr ""
+msgstr "Hakemisto puuttuu."
 
 #: src/tauon/t_modules/t_main.py:8575
 msgid "Looking up MusicBrainz ID..."
-msgstr ""
+msgstr "Etsitään MusicBrainz-tunnistetta..."
 
 #: src/tauon/t_modules/t_main.py:8604
 msgid "Searching fanart.tv for cover art..."
-msgstr ""
+msgstr "Etsitään kansikuvaa fanart.tv:stä..."
 
 #: src/tauon/t_modules/t_main.py:8628
 msgid "Could not detect downloaded filetype."
-msgstr ""
+msgstr "Ladatun tiedoston tyyppiä ei voitu tunnistaa."
 
 #: src/tauon/t_modules/t_main.py:8634
 msgid "Cover art downloaded from fanart.tv"
-msgstr ""
+msgstr "Kansikuva ladattu fanart.tv:stä"
 
 #: src/tauon/t_modules/t_main.py:8643
 msgid "Searching MusicBrainz for cover art..."
-msgstr ""
+msgstr "Etsitään kansikuvaa MusicBrainzista..."
 
 #: src/tauon/t_modules/t_main.py:8655
 msgid "Cover art downloaded from MusicBrainz"
-msgstr ""
+msgstr "Kansikuva ladattu MusicBrainzista"
 
 #: src/tauon/t_modules/t_main.py:8667
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Vastaavaa kansikuvaa tai tunnistetta ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:8690
 msgid "Error - No handling for this kind of track"
-msgstr ""
+msgstr "Virhe - tämän tyyppiselle kappaleelle ei ole käsittelyä"
 
 #: src/tauon/t_modules/t_main.py:8735
 msgid "Removing vorbis image not implemented"
-msgstr ""
+msgstr "Vorbis-kuvan poistamista ei ole toteutettu"
 
 #: src/tauon/t_modules/t_main.py:8756
 msgid "Image remove error"
-msgstr ""
+msgstr "Kuvan poistovirhe"
 
 #: src/tauon/t_modules/t_main.py:8763
 msgid "Image removal failed."
-msgstr ""
+msgstr "Kuvan poistaminen epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:8766
 msgid "Deleted embedded picture from file"
-msgstr ""
+msgstr "Upotettu kuva poistettiin tiedostosta"
 
 #: src/tauon/t_modules/t_main.py:8768
 msgid "{N} files processed"
-msgstr ""
+msgstr "{N} tiedostoa käsitelty"
 
 #: src/tauon/t_modules/t_main.py:8784 src/tauon/t_modules/t_main.py:45398
 #: src/tauon/t_modules/t_main.py:45407 src/tauon/t_modules/t_main.py:45416
 #: src/tauon/t_modules/t_main.py:45434
 msgid "Something went wrong"
-msgstr ""
+msgstr "Jokin meni pieleen"
 
 #: src/tauon/t_modules/t_main.py:8789 src/tauon/t_modules/t_main.py:8796
 #: src/tauon/t_modules/t_main.py:47619
 msgid "Delete Image File"
-msgstr ""
+msgstr "Poista kuvatiedosto"
 
 #: src/tauon/t_modules/t_main.py:8804
 msgid "Delete Embedded | Folder"
-msgstr ""
+msgstr "Poista upotettu | Kansio"
 
 #: src/tauon/t_modules/t_main.py:8806
 msgid "Delete Embedded | Track"
-msgstr ""
+msgstr "Poista upotettu | Kappale"
 
 #: src/tauon/t_modules/t_main.py:8823
 msgid "This will erase any embedded image in {N} files. Are you sure?"
-msgstr ""
+msgstr "Tämä poistaa kaikki upotetut kuvat {N} tiedostosta. Oletko varma?"
 
 #: src/tauon/t_modules/t_main.py:8867 src/tauon/t_modules/t_main.py:8912
 msgid "There are no tracks in this playlist. Nothing to export"
-msgstr ""
+msgstr "Tässä soittolistassa ei ole kappaleita. Ei mitään vietävää"
 
 #: src/tauon/t_modules/t_main.py:8878 src/tauon/t_modules/t_main.py:8923
 msgid "Cannot use relative paths"
-msgstr ""
+msgstr "Suhteellisia polkuja ei voi käyttää"
 
 #: src/tauon/t_modules/t_main.py:8879 src/tauon/t_modules/t_main.py:8924
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
-msgstr ""
+msgstr "Yksi tai useampi kappale on eri asemalla kuin soittolistatiedosto."
 
 #: src/tauon/t_modules/t_main.py:8974
 msgid "Playlist is locked to prevent accidental erasure"
-msgstr ""
+msgstr "Soittolista on lukittu tahattoman poistamisen estämiseksi"
 
 #: src/tauon/t_modules/t_main.py:9007 src/tauon/t_modules/t_main.py:9278
 #: src/tauon/t_modules/t_main.py:9289 src/tauon/t_modules/t_main.py:9308
 #: src/tauon/t_modules/t_main.py:11739
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "Soittolistan loppu"
+msgstr "Soittolista on lukittu"
 
 #: src/tauon/t_modules/t_main.py:9012
-#, fuzzy
 msgid "Folder not found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Kansiota ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:9046
 msgid "This includes the conversion of a lossy codec to a lossless one!"
-msgstr ""
+msgstr "Tämä sisältää häviöllisen koodekin muuntamisen häviöttömäksi!"
 
 #: src/tauon/t_modules/t_main.py:9154
-#, fuzzy
 msgid "Playlist:"
-msgstr "Soittolistan loppu"
+msgstr "Soittolista:"
 
 #: src/tauon/t_modules/t_main.py:9155
 msgid "Generated:"
-msgstr ""
+msgstr "Luotu:"
 
 #: src/tauon/t_modules/t_main.py:9156
 msgid "Tracks in playlist:"
 msgstr "Kappaleet soittolistalla:"
 
 #: src/tauon/t_modules/t_main.py:9158
-#, fuzzy
 msgid "Repeats in playlist:"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Toistot soittolistassa:"
 
 #: src/tauon/t_modules/t_main.py:9162
 msgid "Total local size:"
-msgstr ""
+msgstr "Paikallinen koko yhteensä:"
 
 #: src/tauon/t_modules/t_main.py:9163
 msgid "Playlist duration:"
-msgstr ""
+msgstr "Soittolistan kesto:"
 
 #: src/tauon/t_modules/t_main.py:9164
 msgid "Total playtime:"
-msgstr ""
+msgstr "Kokonaistoistoaika:"
 
 #: src/tauon/t_modules/t_main.py:9166
-#, fuzzy
 msgid "Track types:"
-msgstr "Seuraava kappale"
+msgstr "Kappaletyypit:"
 
 #: src/tauon/t_modules/t_main.py:9182
 msgid "Percent of tracks are CUE type:"
-msgstr ""
+msgstr "CUE-tyyppisten kappaleiden osuus:"
 
 #: src/tauon/t_modules/t_main.py:9192
 msgid "MP3 bitrates (kbps):"
-msgstr ""
+msgstr "MP3-bittinopeudet (kbps):"
 
 #: src/tauon/t_modules/t_main.py:9206 src/tauon/t_modules/t_main.py:9225
 msgid "Others"
-msgstr ""
+msgstr "Muut"
 
 #: src/tauon/t_modules/t_main.py:9211
 msgid "OGG bitrates (kbps):"
-msgstr ""
+msgstr "OGG-bittinopeudet (kbps):"
 
 #: src/tauon/t_modules/t_main.py:9249
 msgid "Top Artists"
-msgstr ""
+msgstr "Suosituimmat artistit"
 
 #: src/tauon/t_modules/t_main.py:9255
-#, fuzzy
 msgid "Top Albums"
-msgstr "Seuraava kappale"
+msgstr "Suosituimmat albumit"
 
 #: src/tauon/t_modules/t_main.py:9259
 msgid "Top Genres"
-msgstr ""
+msgstr "Suosituimmat tyylilajit"
 
 #: src/tauon/t_modules/t_main.py:9415
 msgid "Cannot sync when in transcode inplace mode"
-msgstr ""
+msgstr "Synkronointi ei onnistu paikallaan transkoodauksen tilassa"
 
 #: src/tauon/t_modules/t_main.py:9425
 msgid "No target folder selected"
-msgstr ""
+msgstr "Kohdekansiota ei ole valittu"
 
 #: src/tauon/t_modules/t_main.py:9431
-#, fuzzy
 msgid "Target folder could not be found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Kohdekansiota ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:9472
 msgid "Deleting folders..."
-msgstr ""
+msgstr "Poistetaan kansioita..."
 
 #: src/tauon/t_modules/t_main.py:9491 src/tauon/t_modules/t_main.py:9569
 msgid "Copying files to device"
-msgstr ""
+msgstr "Kopioidaan tiedostoja laitteelle"
 
 #: src/tauon/t_modules/t_main.py:9497
 msgid "Sync aborted! Low disk space on target device"
-msgstr ""
+msgstr "Synkronointi keskeytetty! Kohdelaitteella on vähän levytilaa"
 
 #: src/tauon/t_modules/t_main.py:9507 src/tauon/t_modules/t_main.py:9537
 msgid "Sync warning"
-msgstr ""
+msgstr "Synkronointivaroitus"
 
 #: src/tauon/t_modules/t_main.py:9507 src/tauon/t_modules/t_main.py:9537
 msgid "Multiple folders to sync have the same name. Skipping."
-msgstr ""
+msgstr "Usealla synkronoitavalla kansiolla on sama nimi. Ohitetaan."
 
 #: src/tauon/t_modules/t_main.py:9513
 msgid "One or more folders is missing"
-msgstr ""
+msgstr "Yksi tai useampi kansio puuttuu"
 
 #: src/tauon/t_modules/t_main.py:9522
 msgid "{N} Folders Remaining"
-msgstr ""
+msgstr "{N} kansiota jäljellä"
 
 #: src/tauon/t_modules/t_main.py:9524
 msgid "{N} Folder Remaining"
-msgstr ""
+msgstr "{N} kansio jäljellä"
 
 #: src/tauon/t_modules/t_main.py:9580
-#, fuzzy
 msgid "Sync completed"
-msgstr "Spotify-tuonti valmis"
+msgstr "Synkronointi valmis"
 
 #: src/tauon/t_modules/t_main.py:9595 src/tauon/t_modules/t_main.py:47744
-#, fuzzy
 msgid "Set as Sync Playlist"
-msgstr "Soittolistan loppu"
+msgstr "Aseta synkronointisoittolistaksi"
 
 #: src/tauon/t_modules/t_main.py:9598
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Poista synkronointisoittolistan asetus"
 
 #: src/tauon/t_modules/t_main.py:9613 src/tauon/t_modules/t_main.py:47745
-#, fuzzy
 msgid "Set as Downloads Playlist"
-msgstr "Soittolistan loppu"
+msgstr "Aseta lataussoittolistaksi"
 
 #: src/tauon/t_modules/t_main.py:9615
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Poista lataussoittolistan asetus"
 
 #: src/tauon/t_modules/t_main.py:9619
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Ota pysyvä aika käyttöön"
 
 #: src/tauon/t_modules/t_main.py:9621
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Poista pysyvä aika käytöstä"
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
-#, fuzzy
 msgid "Export complete."
-msgstr "Spotify-tuonti valmis"
+msgstr "Vienti valmis."
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
 msgid "Saved as: "
-msgstr ""
+msgstr "Tallennettu nimellä: "
 
 #: src/tauon/t_modules/t_main.py:9705 src/tauon/t_modules/t_main.py:47758
 #: src/tauon/t_modules/t_main.py:47759
-#, fuzzy
 msgid "Top Rated Tracks"
-msgstr "Seuraava kappale"
+msgstr "Parhaiten arvioidut kappaleet"
 
 #: src/tauon/t_modules/t_main.py:9722 src/tauon/t_modules/t_main.py:47752
 #: src/tauon/t_modules/t_main.py:47753
-#, fuzzy
 msgid "Top Played Tracks"
-msgstr "Seuraava kappale"
+msgstr "Eniten toistetut kappaleet"
 
 #: src/tauon/t_modules/t_main.py:9780 src/tauon/t_modules/t_main.py:47755
 #: src/tauon/t_modules/t_main.py:47756
 msgid "Top Played Albums"
-msgstr ""
+msgstr "Eniten toistetut albumit"
 
 #: src/tauon/t_modules/t_main.py:9828 src/tauon/t_modules/t_main.py:47761
 #: src/tauon/t_modules/t_main.py:47762
 msgid "Top Rated Albums"
-msgstr ""
+msgstr "Parhaiten arvioidut albumit"
 
 #: src/tauon/t_modules/t_main.py:9849
-#, fuzzy
 msgid "Tracks with lyrics"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Kappaleet, joissa on sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:9855
-#, fuzzy
 msgid "No tracks with lyrics were found."
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Sanoituksellisia kappaleita ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:9900
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
-msgstr ""
+msgstr "Huomaa, että tähän voi sisältyä albumeita, joiden kappaleilta vain puuttuu albumitunniste"
 
 #: src/tauon/t_modules/t_main.py:9903
-#, fuzzy
 msgid "Incomplete Albums"
-msgstr "Seuraava kappale"
+msgstr "Puutteelliset albumit"
 
 #: src/tauon/t_modules/t_main.py:9909
-#, fuzzy
 msgid "No incomplete albums were found."
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Puutteellisia albumeita ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:9923
 msgid "Codec: "
-msgstr ""
+msgstr "Koodekki: "
 
 #: src/tauon/t_modules/t_main.py:9974 src/tauon/t_modules/t_main.py:47764
 #: src/tauon/t_modules/t_main.py:47765
 msgid "File Modified"
-msgstr ""
+msgstr "Tiedostoa muokattu"
 
 #: src/tauon/t_modules/t_main.py:9999 src/tauon/t_modules/t_main.py:11480
 #: src/tauon/t_modules/t_main.py:47806 src/tauon/t_modules/t_main.py:47807
 msgid "Loved"
-msgstr ""
+msgstr "Suosikki"
 
 #: src/tauon/t_modules/t_main.py:10004
-#, fuzzy
 msgid "No loved tracks were found."
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Suosikkikappaleita ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:10032
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Kiinnostavat kommentit"
 
 #: src/tauon/t_modules/t_main.py:10036
 msgid "Nothing of interest was found."
-msgstr ""
+msgstr "Mitään kiinnostavaa ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:10048
 msgid "ReplayGain Tracks"
-msgstr ""
+msgstr "ReplayGain-kappaleet"
 
 #: src/tauon/t_modules/t_main.py:10052
-#, fuzzy
 msgid "No replay gain tags were found."
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "ReplayGain-tunnisteita ei löytynyt."
 
 #: src/tauon/t_modules/t_main.py:10073
 msgid "Duration Sorted"
-msgstr ""
+msgstr "Keston mukaan lajiteltu"
 
 #: src/tauon/t_modules/t_main.py:10126 src/tauon/t_modules/t_main.py:47773
 #: src/tauon/t_modules/t_main.py:47774
-#, fuzzy
 msgid "Longest Albums"
-msgstr "Seuraava kappale"
+msgstr "Pisimmät albumit"
 
 #: src/tauon/t_modules/t_main.py:10165
 msgid "Year Sorted"
-msgstr ""
+msgstr "Vuoden mukaan lajiteltu"
 
 #: src/tauon/t_modules/t_main.py:10194 src/tauon/t_modules/t_main.py:47785
 #: src/tauon/t_modules/t_main.py:47786
-#, fuzzy
 msgid "Shuffled Tracks"
-msgstr "Seuraava kappale"
+msgstr "Sekoitetut kappaleet"
 
 #: src/tauon/t_modules/t_main.py:10225 src/tauon/t_modules/t_main.py:47788
 #: src/tauon/t_modules/t_main.py:47789
 msgid "Shuffled Albums"
-msgstr ""
+msgstr "Sekoitetut albumit"
 
 #: src/tauon/t_modules/t_main.py:10246 src/tauon/t_modules/t_main.py:47791
 #: src/tauon/t_modules/t_main.py:47792
 msgid "Lucky Random"
-msgstr ""
+msgstr "Onnekas satunnainen"
 
 #: src/tauon/t_modules/t_main.py:10262
 msgid "Reversed"
-msgstr ""
+msgstr "Käänteinen"
 
 #: src/tauon/t_modules/t_main.py:10293
 msgid "Reversed Albums"
-msgstr ""
+msgstr "Käänteiset albumit"
 
 #: src/tauon/t_modules/t_main.py:10305 src/tauon/t_modules/t_main.py:27560
 #: src/tauon/t_modules/t_main.py:47800 src/tauon/t_modules/t_main.py:47801
 msgid "Duplicate"
-msgstr ""
+msgstr "Kopioi"
 
 #: src/tauon/t_modules/t_main.py:10321
 msgid "Filepath Sorted"
-msgstr ""
+msgstr "Tiedostopolun mukaan lajiteltu"
 
 #: src/tauon/t_modules/t_main.py:10334
 msgid "Artist Sorted"
-msgstr ""
+msgstr "Artistin mukaan lajiteltu"
 
 #: src/tauon/t_modules/t_main.py:10347
 msgid "Album Sorted"
-msgstr ""
+msgstr "Albumin mukaan lajiteltu"
 
 #: src/tauon/t_modules/t_main.py:10360
 msgid "Cannot reload while a transcode is in progress!"
-msgstr ""
+msgstr "Ei voi ladata uudelleen, kun transkoodaus on käynnissä!"
 
 #: src/tauon/t_modules/t_main.py:10370
 msgid "Configuration reloaded"
-msgstr ""
+msgstr "Kokoonpano ladattu uudelleen"
 
 #: src/tauon/t_modules/t_main.py:10382
 msgid "Config file opened."
-msgstr ""
+msgstr "Asetustiedosto avattu."
 
 #: src/tauon/t_modules/t_main.py:10382
 msgid "Click \"Reload\" if you made any changes"
-msgstr ""
+msgstr "Napsauta \"Lataa uudelleen\", jos teit muutoksia"
 
 #: src/tauon/t_modules/t_main.py:10391 src/tauon/t_modules/t_main.py:10403
 msgid "Input file missing"
-msgstr ""
+msgstr "Syötetiedosto puuttuu"
 
 #: src/tauon/t_modules/t_main.py:10438
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Kappaleiden transkoodausta verkkosijainneista ei tueta"
 
 #: src/tauon/t_modules/t_main.py:10446 src/tauon/t_modules/t_main.py:10470
 msgid "NO! Bad user!"
-msgstr ""
+msgstr "EI! Tuhma käyttäjä!"
 
 #: src/tauon/t_modules/t_main.py:10446 src/tauon/t_modules/t_main.py:10470
 msgid "I'm not going to let you transcode a lossy codec to a lossless one!"
-msgstr ""
+msgstr "En aio antaa sinun transkoodata häviöllistä koodekkia häviöttömäksi!"
 
 #: src/tauon/t_modules/t_main.py:10459
 msgid "Transcoding this network track type is not possible"
-msgstr ""
+msgstr "Tämän verkkokappaletyypin transkoodaus ei ole mahdollista"
 
 #: src/tauon/t_modules/t_main.py:10560
 msgid "More than one folder is in the clipboard"
-msgstr ""
+msgstr "Leikepöydällä on useampi kuin yksi kansio"
 
 #: src/tauon/t_modules/t_main.py:10561
 msgid "This function can only move one folder at a time."
-msgstr ""
+msgstr "Tämä toiminto voi siirtää vain yhden kansion kerrallaan."
 
 #: src/tauon/t_modules/t_main.py:10606
 msgid "The target directory is missing!"
-msgstr ""
+msgstr "Kohdehakemisto puuttuu!"
 
 #: src/tauon/t_modules/t_main.py:10610
 msgid "The source directory is missing!"
-msgstr ""
+msgstr "Lähdehakemisto puuttuu!"
 
 #: src/tauon/t_modules/t_main.py:10625
 msgid "Safety interrupt! The source folder seems to have many files."
-msgstr ""
+msgstr "Turvakeskeytys! Lähdekansiossa näyttää olevan paljon tiedostoja."
 
 #: src/tauon/t_modules/t_main.py:10635
 msgid "The track needs to have an artist name."
-msgstr ""
+msgstr "Kappaleella täytyy olla artistin nimi."
 
 #: src/tauon/t_modules/t_main.py:10675
 msgid "Could not find a folder with the artist's name to match level at."
-msgstr ""
+msgstr "Artistin nimistä kansiota ei löytynyt tasokohdistusta varten."
 
 #: src/tauon/t_modules/t_main.py:10742
-#, fuzzy
 msgid "Tracks sent to trash"
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Kappaleet siirretty roskakoriin"
 
 #: src/tauon/t_modules/t_main.py:10745
 msgid "One or more tracks could not be sent to trash"
-msgstr ""
+msgstr "Yhtä tai useampaa kappaletta ei voitu siirtää roskakoriin"
 
 #: src/tauon/t_modules/t_main.py:10750
 msgid "Files deleted"
-msgstr ""
+msgstr "Tiedostot poistettu"
 
 #: src/tauon/t_modules/t_main.py:10753
 msgid "Error deleting one or more files"
-msgstr ""
+msgstr "Virhe poistettaessa yhtä tai useampaa tiedostoa"
 
 #: src/tauon/t_modules/t_main.py:10792 src/tauon/t_modules/t_main.py:16191
-#, fuzzy
 msgid "Un-Love Track"
-msgstr "Seuraava kappale"
+msgstr "Poista kappale suosikeista"
 
 #: src/tauon/t_modules/t_main.py:10793 src/tauon/t_modules/t_main.py:16193
 #: src/tauon/t_modules/t_main.py:16194
-#, fuzzy
 msgid "Love Track"
-msgstr "Seuraava kappale"
+msgstr "Lisää kappale suosikiksi"
 
 #: src/tauon/t_modules/t_main.py:10886
 msgid "Cannot delete a network track"
-msgstr ""
+msgstr "Verkkokappaletta ei voi poistaa"
 
 #: src/tauon/t_modules/t_main.py:10900 src/tauon/t_modules/t_main.py:10910
 msgid "File deleted"
-msgstr ""
+msgstr "Tiedosto poistettu"
 
 #: src/tauon/t_modules/t_main.py:10903 src/tauon/t_modules/t_main.py:10913
-#, fuzzy
 msgid "Error deleting file"
-msgstr "Virhe Spotifyn käynnistyksessä"
+msgstr "Virhe tiedostoa poistettaessa"
 
 #: src/tauon/t_modules/t_main.py:10905
-#, fuzzy
 msgid "File moved to trash"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Tiedosto siirretty roskakoriin"
 
 #: src/tauon/t_modules/t_main.py:10920
 msgid "Rename (Single track)"
-msgstr ""
+msgstr "Nimeä uudelleen (yksi kappale)"
 
 #: src/tauon/t_modules/t_main.py:10921 src/tauon/t_modules/t_main.py:47851
 #: src/tauon/t_modules/t_main.py:47893 src/tauon/t_modules/t_main.py:47895
-#, fuzzy
 msgid "Rename Tracks…"
-msgstr "Seuraava kappale"
+msgstr "Nimeä kappaleita uudelleen..."
 
 #: src/tauon/t_modules/t_main.py:10930
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Fyysinen poisto ei onnistu"
 
 #: src/tauon/t_modules/t_main.py:10930 src/tauon/t_modules/t_main.py:11002
 #: src/tauon/t_modules/t_main.py:11115 src/tauon/t_modules/t_main.py:11181
 #: src/tauon/t_modules/t_main.py:22582
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Yksi tai useampi kappale on verkkosijainnista!"
 
 #: src/tauon/t_modules/t_main.py:10936
 msgid "This folder path seems short, I don't wanna try delete that"
-msgstr ""
+msgstr "Tämä kansiopolku vaikuttaa lyhyeltä, en halua yrittää poistaa sitä"
 
 #: src/tauon/t_modules/t_main.py:10940
 msgid "Error deleting folder. The folder seems to be missing."
-msgstr ""
+msgstr "Virhe kansiota poistettaessa. Kansio näyttää puuttuvan."
 
 #: src/tauon/t_modules/t_main.py:10940
 msgid "It's gone! Just gone!"
-msgstr ""
+msgstr "Se on poissa! Kerta kaikkiaan poissa!"
 
 #: src/tauon/t_modules/t_main.py:10947
 msgid "I don't think we should delete that folder."
-msgstr ""
+msgstr "En usko, että meidän pitäisi poistaa tuota kansiota."
 
 #: src/tauon/t_modules/t_main.py:10947 src/tauon/t_modules/t_main.py:11026
 msgid "Woah, careful there!"
-msgstr ""
+msgstr "Huh, varovasti siellä!"
 
 #: src/tauon/t_modules/t_main.py:10951
 msgid "Delete size safety limit reached! (1.5GB)"
-msgstr ""
+msgstr "Poiston kokoturvaraja saavutettu! (1,5 Gt)"
 
 #: src/tauon/t_modules/t_main.py:10973
 msgid "Folder deleted."
-msgstr ""
+msgstr "Kansio poistettu."
 
 #: src/tauon/t_modules/t_main.py:10975
-#, fuzzy
 msgid "Folder sent to trash."
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Kansio siirretty roskakoriin."
 
 #: src/tauon/t_modules/t_main.py:10977
 msgid "Hmm, its still there"
-msgstr ""
+msgstr "Hmm, se on yhä siellä"
 
 #: src/tauon/t_modules/t_main.py:10986
 msgid "Unable to comply."
-msgstr ""
+msgstr "Pyyntöä ei voida toteuttaa."
 
 #: src/tauon/t_modules/t_main.py:10986
 msgid "Could not delete folder. Try checking permissions."
-msgstr ""
+msgstr "Kansiota ei voitu poistaa. Tarkista käyttöoikeudet."
 
 #: src/tauon/t_modules/t_main.py:10989
 msgid "Folder could not be trashed."
-msgstr ""
+msgstr "Kansiota ei voitu siirtää roskakoriin."
 
 #: src/tauon/t_modules/t_main.py:10989
 msgid "Try again while holding shift to force delete."
-msgstr ""
+msgstr "Yritä uudelleen pitämällä Shift painettuna pakottaaksesi poiston."
 
 #: src/tauon/t_modules/t_main.py:11002 src/tauon/t_modules/t_main.py:22582
 msgid "Cannot rename"
-msgstr ""
+msgstr "Ei voi nimetä uudelleen"
 
 #: src/tauon/t_modules/t_main.py:11011
 msgid "The generated name is too short"
-msgstr ""
+msgstr "Luotu nimi on liian lyhyt"
 
 #: src/tauon/t_modules/t_main.py:11011 src/tauon/t_modules/t_main.py:11015
 msgid "Rename error."
-msgstr ""
+msgstr "Uudelleennimeämisvirhe."
 
 #: src/tauon/t_modules/t_main.py:11015
 msgid "This folder path seems short, I don't wanna try rename that"
-msgstr ""
+msgstr "Tämä kansiopolku vaikuttaa lyhyeltä, en halua yrittää nimetä sitä uudelleen"
 
 #: src/tauon/t_modules/t_main.py:11019
 msgid "Rename Failed. The original folder is missing."
-msgstr ""
+msgstr "Uudelleennimeäminen epäonnistui. Alkuperäinen kansio puuttuu."
 
 #: src/tauon/t_modules/t_main.py:11026
 msgid "I don't think we should rename that folder."
-msgstr ""
+msgstr "En usko, että meidän pitäisi nimetä tuota kansiota uudelleen."
 
 #: src/tauon/t_modules/t_main.py:11045
 msgid "The folder already has that name."
-msgstr ""
+msgstr "Kansiolla on jo tuo nimi."
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "Rename Failed."
-msgstr ""
+msgstr "Uudelleennimeäminen epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "A folder with that name already exists"
-msgstr ""
+msgstr "Samanniminen kansio on jo olemassa"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Rename Failed!"
-msgstr ""
+msgstr "Uudelleennimeäminen epäonnistui!"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Something went wrong, sorry."
-msgstr ""
+msgstr "Jokin meni pieleen, pahoittelut."
 
 #: src/tauon/t_modules/t_main.py:11084
 msgid "Folder renamed."
-msgstr ""
+msgstr "Kansio nimetty uudelleen."
 
 #: src/tauon/t_modules/t_main.py:11084
 msgid "Renamed to: {name}"
-msgstr ""
+msgstr "Uusi nimi: {name}"
 
 #: src/tauon/t_modules/t_main.py:11101
-#, fuzzy
 msgid "Not applicable for a network track."
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Ei sovellu verkkokappaleelle."
 
 #: src/tauon/t_modules/t_main.py:11115
 msgid "Cannot move"
-msgstr ""
+msgstr "Ei voi siirtää"
 
 #: src/tauon/t_modules/t_main.py:11125
-#, fuzzy
 msgid "Error shifting directory"
-msgstr "Virhe Spotifyn käynnistyksessä"
+msgstr "Virhe hakemistoa siirrettäessä"
 
 #: src/tauon/t_modules/t_main.py:11125
 msgid "The directory does not appear to exist"
-msgstr ""
+msgstr "Hakemistoa ei näytä olevan olemassa"
 
 #: src/tauon/t_modules/t_main.py:11153
 msgid "System Error!"
-msgstr ""
+msgstr "Järjestelmävirhe!"
 
 #: src/tauon/t_modules/t_main.py:11181
 msgid "Cannot clean"
-msgstr ""
+msgstr "Ei voi siivota"
 
 #: src/tauon/t_modules/t_main.py:11215
 msgid "Error deleting files."
-msgstr ""
+msgstr "Virhe tiedostoja poistettaessa."
 
 #: src/tauon/t_modules/t_main.py:11215
 msgid "May not have permission or file may be set to read-only"
-msgstr ""
+msgstr "Käyttöoikeus voi puuttua tai tiedosto voi olla vain luku -tilassa"
 
 #: src/tauon/t_modules/t_main.py:11348
 msgid "Autodetect failed"
-msgstr ""
+msgstr "Automaattinen tunnistus epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:11386
 msgid "Transcode Single"
-msgstr ""
+msgstr "Transkoodaa yksittäinen"
 
 #: src/tauon/t_modules/t_main.py:11387 src/tauon/t_modules/t_main.py:47914
 #: src/tauon/t_modules/t_main.py:47915 src/tauon/t_modules/t_main.py:47971
 msgid "Transcode Folder"
-msgstr ""
+msgstr "Transkoodaa kansio"
 
 #: src/tauon/t_modules/t_main.py:11395
 msgid "Queue {N}"
-msgstr ""
+msgstr "Lisää jonoon {N}"
 
 #: src/tauon/t_modules/t_main.py:11404
-#, fuzzy
 msgid "No matching artist result found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Vastaavaa artistitulosta ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:11453
 msgid "Not implemented"
-msgstr ""
+msgstr "Ei toteutettu"
 
 #: src/tauon/t_modules/t_main.py:11466 src/tauon/t_modules/t_main.py:27241
 #: src/tauon/t_modules/t_main.py:52668 src/tauon/t_modules/t_main.py:52674
 msgid "Artist"
-msgstr ""
+msgstr "Artisti"
 
 #: src/tauon/t_modules/t_main.py:11467 src/tauon/t_modules/t_main.py:52649
 #: src/tauon/t_modules/t_main.py:52655
 msgid "Title"
-msgstr ""
+msgstr "Nimi"
 
 #: src/tauon/t_modules/t_main.py:11468 src/tauon/t_modules/t_main.py:27765
 #: src/tauon/t_modules/t_main.py:52688 src/tauon/t_modules/t_main.py:52694
-#, fuzzy
 msgid "Album"
-msgstr "Seuraava kappale"
+msgstr "Albumi"
 
 #: src/tauon/t_modules/t_main.py:11469
-#, fuzzy
 msgid "Album Art"
-msgstr "Seuraava kappale"
+msgstr "Kansikuva"
 
 #: src/tauon/t_modules/t_main.py:11470 src/tauon/t_modules/t_main.py:26959
 #: src/tauon/t_modules/t_main.py:28895 src/tauon/t_modules/t_main.py:52784
 #: src/tauon/t_modules/t_main.py:52790
 msgid "Duration"
-msgstr ""
+msgstr "Kesto"
 
 #: src/tauon/t_modules/t_main.py:11471 src/tauon/t_modules/t_main.py:52841
 #: src/tauon/t_modules/t_main.py:52847
 msgid "Date"
-msgstr ""
+msgstr "Päiväys"
 
 #: src/tauon/t_modules/t_main.py:11472 src/tauon/t_modules/t_main.py:26951
 #: src/tauon/t_modules/t_main.py:52827 src/tauon/t_modules/t_main.py:52833
 msgid "Genre"
-msgstr ""
+msgstr "Tyylilaji"
 
 #: src/tauon/t_modules/t_main.py:11473
-#, fuzzy
 msgid "Track Number"
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Kappalenumero"
 
 #: src/tauon/t_modules/t_main.py:11474
 msgid "Play Count"
-msgstr ""
+msgstr "Toistokerrat"
 
 #: src/tauon/t_modules/t_main.py:11475
 msgid "Codec"
-msgstr ""
+msgstr "Koodekki"
 
 #: src/tauon/t_modules/t_main.py:11476 src/tauon/t_modules/t_main.py:27933
 #: src/tauon/t_modules/t_main.py:52746
 msgid "Bitrate"
-msgstr ""
+msgstr "Bittinopeus"
 
 #: src/tauon/t_modules/t_main.py:11477
 msgid "Filename"
-msgstr ""
+msgstr "Tiedostonimi"
 
 #: src/tauon/t_modules/t_main.py:11478
 msgid "Starline"
-msgstr ""
+msgstr "Tähtirivi"
 
 #: src/tauon/t_modules/t_main.py:11479
 msgid "Rating"
-msgstr ""
+msgstr "Arvio"
 
 #: src/tauon/t_modules/t_main.py:11481 src/tauon/t_modules/t_main.py:52759
 #: src/tauon/t_modules/t_main.py:52765
-#, fuzzy
 msgid "Album Artist"
-msgstr "Seuraava kappale"
+msgstr "Albumin artisti"
 
 #: src/tauon/t_modules/t_main.py:11482 src/tauon/t_modules/t_main.py:52912
 #: src/tauon/t_modules/t_main.py:52918
 msgid "Comment"
-msgstr ""
+msgstr "Kommentti"
 
 #: src/tauon/t_modules/t_main.py:11483 src/tauon/t_modules/t_main.py:35662
 #: src/tauon/t_modules/t_main.py:48007
 msgid "Filepath"
-msgstr ""
+msgstr "Tiedostopolku"
 
 #: src/tauon/t_modules/t_main.py:11484
 msgid "Scrobble Count"
-msgstr ""
+msgstr "Scrobble-määrä"
 
 #: src/tauon/t_modules/t_main.py:11485 src/tauon/t_modules/t_main.py:52855
 #: src/tauon/t_modules/t_main.py:52861
 msgid "Composer"
-msgstr ""
+msgstr "Säveltäjä"
 
 #: src/tauon/t_modules/t_main.py:11486
 msgid "Disc Number"
-msgstr ""
+msgstr "Levynumero"
 
 #: src/tauon/t_modules/t_main.py:11487 src/tauon/t_modules/t_main.py:47810
 #: src/tauon/t_modules/t_main.py:47811
 msgid "Has Lyrics"
-msgstr ""
+msgstr "Sisältää sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:11488
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "On CUE-tiedosto"
 
 #: src/tauon/t_modules/t_main.py:11489
-#, fuzzy
 msgid "Internal Track ID"
-msgstr "Seuraava kappale"
+msgstr "Sisäinen kappaletunniste"
 
 #: src/tauon/t_modules/t_main.py:11490
 msgid "File Changed"
-msgstr ""
+msgstr "Tiedosto muuttunut"
 
 #: src/tauon/t_modules/t_main.py:11495
 msgid "Auto Resize"
-msgstr ""
+msgstr "Automaattinen koon muutos"
 
 #: src/tauon/t_modules/t_main.py:11496
 msgid "Hide bar"
-msgstr ""
+msgstr "Piilota palkki"
 
 #: src/tauon/t_modules/t_main.py:11498 src/tauon/t_modules/t_main.py:37539
 msgid "Remove This"
-msgstr ""
+msgstr "Poista tämä"
 
 #: src/tauon/t_modules/t_main.py:11508
 msgid "More…"
-msgstr ""
+msgstr "Lisää..."
 
 #: src/tauon/t_modules/t_main.py:11522
 msgid "Cannot remove the only column."
-msgstr ""
+msgstr "Ainoaa saraketta ei voi poistaa."
 
 #: src/tauon/t_modules/t_main.py:11871
 msgid "Play History"
-msgstr ""
+msgstr "Toistohistoria"
 
 #: src/tauon/t_modules/t_main.py:11902
 msgid "{N} ratings imported"
-msgstr ""
+msgstr "{N} arviota tuotu"
 
 #: src/tauon/t_modules/t_main.py:11943
 msgid "This will delete all track and album ratings from the local database!"
-msgstr ""
+msgstr "Tämä poistaa kaikki kappale- ja albumiarviot paikallisesta tietokannasta!"
 
 #: src/tauon/t_modules/t_main.py:11944 src/tauon/t_modules/t_main.py:26629
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
-msgstr ""
+msgstr "Paina painiketta uudelleen Shift-näppäin pohjassa, jos olet varma."
 
 #: src/tauon/t_modules/t_main.py:11958
 msgid "Stop Cast"
-msgstr ""
+msgstr "Lopeta suoratoisto"
 
 #: src/tauon/t_modules/t_main.py:11970
-#, fuzzy
 msgid "pychromecast not found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "pychromecastia ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:11972
 msgid "Searching for Chromecasts..."
-msgstr ""
+msgstr "Etsitään Chromecasteja..."
 
 #: src/tauon/t_modules/t_main.py:12018
 msgid "No metadata available to copy"
-msgstr ""
+msgstr "Kopioitavaa metadataa ei ole saatavilla"
 
 #: src/tauon/t_modules/t_main.py:12083
 msgid "Please wait for cleaning process to finish"
-msgstr ""
+msgstr "Odota, että siivousprosessi valmistuu"
 
 #: src/tauon/t_modules/t_main.py:12099
 msgid "ListenBrainz is Paused"
-msgstr ""
+msgstr "ListenBrainz on keskeytetty"
 
 #: src/tauon/t_modules/t_main.py:12101
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "Scrobbling on keskeytetty"
 
 #: src/tauon/t_modules/t_main.py:12105
 msgid "ListenBrainz is Active"
-msgstr ""
+msgstr "ListenBrainz on aktiivinen"
 
 #: src/tauon/t_modules/t_main.py:12107
 msgid "Scrobbling is Active"
-msgstr ""
+msgstr "Scrobbling on aktiivinen"
 
 #: src/tauon/t_modules/t_main.py:12532
 msgid "Okay, it's a normal playlist now."
@@ -1549,117 +1500,114 @@ msgstr "Selvä, se on nyt tavallinen soittolista."
 #: src/tauon/t_modules/t_main.py:12548
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
-msgstr ""
+msgstr "Lisäsit kappaleita generaattorisoittolistaan. Haluatko tyhjentää generaattorin?"
 
 #: src/tauon/t_modules/t_main.py:12855 src/tauon/t_modules/t_main.py:30105
 #: src/tauon/t_modules/t_main.py:39103 src/tauon/t_modules/t_main.py:39278
 msgid "Added station to: "
-msgstr ""
+msgstr "Asema lisätty kohteeseen: "
 
 #: src/tauon/t_modules/t_main.py:12879 src/tauon/t_modules/t_main.py:12897
 #: src/tauon/t_modules/t_main.py:23328
 msgid "Artist: "
-msgstr ""
+msgstr "Artisti: "
 
 #: src/tauon/t_modules/t_main.py:12933
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Suodata pienet artistit"
 
 #: src/tauon/t_modules/t_main.py:12937
 msgid "Include All Artists"
-msgstr ""
+msgstr "Sisällytä kaikki artistit"
 
 #: src/tauon/t_modules/t_main.py:13022
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr ""
+msgstr "Huomautus: artistikuva on peräisin fanart.tv:stä"
 
 #: src/tauon/t_modules/t_main.py:13023
 msgid "They encourage you to contribute at {link}"
-msgstr ""
+msgstr "He kannustavat osallistumaan osoitteessa {link}"
 
 #: src/tauon/t_modules/t_main.py:13028
 msgid "Resume Queue"
-msgstr ""
+msgstr "Jatka jonoa"
 
 #: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
 msgid "Pause Queue"
-msgstr ""
+msgstr "Keskeytä jono"
 
 #: src/tauon/t_modules/t_main.py:13155
 msgid "Image types other than PNG or JPEG are currently not supported"
-msgstr ""
+msgstr "Muita kuvatyyppejä kuin PNG ja JPEG ei tällä hetkellä tueta"
 
 #: src/tauon/t_modules/t_main.py:13157
 msgid "The link does not appear to refer to an image file."
-msgstr ""
+msgstr "Linkki ei näytä viittaavan kuvatiedostoon."
 
 #: src/tauon/t_modules/t_main.py:13162
 msgid "Image download failed."
-msgstr ""
+msgstr "Kuvan lataus epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:13171 src/tauon/t_modules/t_main.py:13186
 msgid "You"
-msgstr ""
+msgstr "Sinä"
 
 #: src/tauon/t_modules/t_main.py:13995 src/tauon/t_modules/t_main.py:19176
 msgid "New Radio List"
-msgstr ""
+msgstr "Uusi radiolista"
 
 #: src/tauon/t_modules/t_main.py:13995 src/tauon/t_modules/t_main.py:19179
 #: src/tauon/t_modules/t_main.py:47700 src/tauon/t_modules/t_main.py:48022
 #: src/tauon/t_modules/t_main.py:51465
-#, fuzzy
 msgid "New Playlist"
-msgstr "Soittolistan loppu"
+msgstr "Uusi soittolista"
 
 #: src/tauon/t_modules/t_main.py:14007
 msgid "Done! {N} old items were removed."
-msgstr ""
+msgstr "Valmis! {N} vanhaa kohdetta poistettiin."
 
 #: src/tauon/t_modules/t_main.py:14011 src/tauon/t_modules/t_main.py:48024
 msgid "Clean Database!"
-msgstr ""
+msgstr "Siivoa tietokanta!"
 
 #: src/tauon/t_modules/t_main.py:14017
 msgid "Music"
-msgstr ""
+msgstr "Musiikki"
 
 #: src/tauon/t_modules/t_main.py:14536
 msgid "This playlist has no generator"
-msgstr ""
+msgstr "Tällä soittolistalla ei ole generaattoria"
 
 #: src/tauon/t_modules/t_main.py:15157
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr ""
+msgstr "OK. Tämä soittolista lajitellaan jatkossa automaattisesti tuonnin yhteydessä"
 
 #: src/tauon/t_modules/t_main.py:15158
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
-msgstr ""
+msgstr "Voit poistaa tai muokata tätä toimintaa valitsemalla \"Sekalaiset...\" > \"Muokkaa generaattoria...\""
 
 #: src/tauon/t_modules/t_main.py:15170
 msgid "A regen is already in progress..."
-msgstr ""
+msgstr "Uudelleenluonti on jo käynnissä..."
 
 #: src/tauon/t_modules/t_main.py:15188
-#, fuzzy
 msgid "No duplicates were found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Kaksoiskappaleita ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:15190
-#, fuzzy
 msgid "{N} duplicates removed"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "{N} kaksoiskappaletta poistettu"
 
 #: src/tauon/t_modules/t_main.py:15197
 msgid ""
 "You can now add/remove albums to this playlist by right clicking in gallery "
 "of any playlist"
-msgstr ""
+msgstr "Voit nyt lisätä tai poistaa albumeita tähän soittolistaan napsauttamalla minkä tahansa soittolistan galleriaa oikealla painikkeella"
 
 #: src/tauon/t_modules/t_main.py:15198
 msgid "To exit this mode, click \"Disengage\" from main MENU"
-msgstr ""
+msgstr "Poistu tästä tilasta valitsemalla päävalikosta \"Poista käytöstä\""
 
 #: src/tauon/t_modules/t_main.py:15288 src/tauon/t_modules/t_main.py:15290
 msgid "No artist image found."
@@ -1671,129 +1619,128 @@ msgstr "Asetuksissa ei ole otettu käyttöön yhtään palveluntarjoajaa!"
 
 #: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
-msgstr ""
+msgstr "Kiinnitä"
 
 #: src/tauon/t_modules/t_main.py:15443
 msgid "Unpin"
-msgstr ""
+msgstr "Poista kiinnitys"
 
 #: src/tauon/t_modules/t_main.py:15447
 msgid "Unlock"
-msgstr ""
+msgstr "Avaa lukitus"
 
 #: src/tauon/t_modules/t_main.py:15448 src/tauon/t_modules/t_main.py:47678
 msgid "Lock"
-msgstr ""
+msgstr "Lukitse"
 
 #: src/tauon/t_modules/t_main.py:15532
 msgid "Tag editor app does not appear to be installed."
-msgstr ""
+msgstr "Tunniste-editorisovellusta ei näytä olevan asennettu."
 
 #: src/tauon/t_modules/t_main.py:15536
 msgid "App not found on host OR insufficient Flatpak permissions."
-msgstr ""
+msgstr "Sovellusta ei löytynyt isännästä TAI Flatpak-oikeudet eivät riitä."
 
 #: src/tauon/t_modules/t_main.py:15537 src/tauon/t_modules/t_main.py:19011
 #: src/tauon/t_modules/t_main.py:19018
 msgid " For details, see {link}"
-msgstr ""
+msgstr " Lisätietoja: {link}"
 
 #: src/tauon/t_modules/t_main.py:15605
 msgid "Sorry, this feature isn't (yet) available with Snap."
-msgstr ""
+msgstr "Pahoittelut, tämä ominaisuus ei ole (vielä) saatavilla Snapissa."
 
 #: src/tauon/t_modules/t_main.py:15609 src/tauon/t_modules/t_main.py:15624
-#, fuzzy
 msgid "Cannot edit tags of a network track."
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Verkkokappaleen tunnisteita ei voi muokata."
 
 #: src/tauon/t_modules/t_main.py:15634 src/tauon/t_modules/t_main.py:47928
 msgid "Edit with "
-msgstr ""
+msgstr "Muokkaa sovelluksella "
 
 #: src/tauon/t_modules/t_main.py:15681 src/tauon/t_modules/t_main.py:24155
 msgid "Starting download..."
-msgstr ""
+msgstr "Aloitetaan lataus..."
 
 #: src/tauon/t_modules/t_main.py:15698
 msgid "Downloading... {MB}/{total_mb}"
-msgstr ""
+msgstr "Ladataan... {MB}/{total_mb}"
 
 #: src/tauon/t_modules/t_main.py:15707
 msgid "Download completed but checksum failed"
-msgstr ""
+msgstr "Lataus valmistui, mutta tarkistussumma epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:15710
 msgid "Download completed. Extracting..."
-msgstr ""
+msgstr "Lataus valmis. Puretaan..."
 
 #: src/tauon/t_modules/t_main.py:15734
 msgid "FFmpeg fetch complete"
-msgstr ""
+msgstr "FFmpeg noudettu"
 
 #: src/tauon/t_modules/t_main.py:15845
 msgid "Disable Columns"
-msgstr ""
+msgstr "Poista sarakkeet käytöstä"
 
 #: src/tauon/t_modules/t_main.py:15846
 msgid "Enable Columns"
-msgstr ""
+msgstr "Ota sarakkeet käyttöön"
 
 #: src/tauon/t_modules/t_main.py:15856
 msgid "Disable Title Breaks"
-msgstr ""
+msgstr "Poista otsikkokatkot käytöstä"
 
 #: src/tauon/t_modules/t_main.py:15857
 msgid "Enable Title Breaks"
-msgstr ""
+msgstr "Ota otsikkokatkot käyttöön"
 
 #: src/tauon/t_modules/t_main.py:15905
 msgid "Encoding warning: Missing one or more files"
-msgstr ""
+msgstr "Koodausvaroitus: yksi tai useampi tiedosto puuttuu"
 
 #: src/tauon/t_modules/t_main.py:16256
 msgid "No exact matching artist could be found in this playlist"
-msgstr ""
+msgstr "Tästä soittolistasta ei löytynyt täsmälleen vastaavaa artistia"
 
 #: src/tauon/t_modules/t_main.py:16621 src/tauon/t_modules/t_main.py:16629
 msgid "There was an error generating the chart"
-msgstr ""
+msgstr "Kaavion luomisessa tapahtui virhe"
 
 #: src/tauon/t_modules/t_main.py:16621 src/tauon/t_modules/t_main.py:16629
 msgid "Sorry!"
-msgstr ""
+msgstr "Pahoittelut!"
 
 #: src/tauon/t_modules/t_main.py:16632
 msgid "Chart generated"
-msgstr ""
+msgstr "Kaavio luotu"
 
 #: src/tauon/t_modules/t_main.py:16688
 msgid "There was an error with the Maloja server"
-msgstr ""
+msgstr "Maloja-palvelimessa tapahtui virhe"
 
 #: src/tauon/t_modules/t_main.py:16693
 msgid "There was an error reaching the Maloja server"
-msgstr ""
+msgstr "Maloja-palvelimeen ei saatu yhteyttä"
 
 #: src/tauon/t_modules/t_main.py:16728
 msgid "There was an error parsing the data"
-msgstr ""
+msgstr "Tietojen jäsentämisessä tapahtui virhe"
 
 #: src/tauon/t_modules/t_main.py:16761 src/tauon/t_modules/t_main.py:16765
 msgid "There was an error submitting data to Maloja server"
-msgstr ""
+msgstr "Tietojen lähetys Maloja-palvelimelle epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:16790 src/tauon/t_modules/t_main.py:16802
 msgid "Job already in progress!"
-msgstr ""
+msgstr "Työ on jo käynnissä!"
 
 #: src/tauon/t_modules/t_main.py:16821 src/tauon/t_modules/t_main.py:16850
 msgid "Already scanning!"
-msgstr ""
+msgstr "Tarkistus on jo käynnissä!"
 
 #: src/tauon/t_modules/t_main.py:16829
 msgid "Enter two-factor code"
-msgstr ""
+msgstr "Syötä kaksivaiheisen tunnistautumisen koodi"
 
 #: src/tauon/t_modules/t_main.py:17272
 msgid "End of playlist"
@@ -1801,11 +1748,11 @@ msgstr "Soittolistan loppu"
 
 #: src/tauon/t_modules/t_main.py:17400 src/tauon/t_modules/t_main.py:17423
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Last.fm-suosikkitilan päivitys epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:17404
 msgid "Error updating love to last.fm!"
-msgstr ""
+msgstr "Suosikin päivitys Last.fm:ään epäonnistui!"
 
 #: src/tauon/t_modules/t_main.py:17405
 msgid "Maybe check your internet connection and try again?"
@@ -1813,94 +1760,92 @@ msgstr "Tarkistaisitko internet-yhteytesi ja yrittäisit uudelleen?"
 
 #: src/tauon/t_modules/t_main.py:18009 src/tauon/t_modules/t_main.py:54222
 msgid "Permission error encountered while writing database"
-msgstr ""
+msgstr "Tietokantaa kirjoitettaessa havaittiin käyttöoikeusvirhe"
 
 #: src/tauon/t_modules/t_main.py:18222
 msgid "Warning! Using this function moves physical folders."
-msgstr ""
+msgstr "Varoitus! Tämä toiminto siirtää fyysisiä kansioita."
 
 #: src/tauon/t_modules/t_main.py:18223
 msgid ""
 "This menu entry appears after selecting 'copy'. See manual (github wiki) for "
 "more info."
-msgstr ""
+msgstr "Tämä valikkokohta näkyy, kun olet valinnut 'kopioi'. Lisätietoja on käyttöohjeessa (GitHub-wiki)."
 
 #: src/tauon/t_modules/t_main.py:18429
 msgid "Notifications for this DE not supported"
-msgstr ""
+msgstr "Tämän työpöytäympäristön ilmoituksia ei tueta"
 
 #: src/tauon/t_modules/t_main.py:18538
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
-msgstr ""
+msgstr "Huomaa, että arviot tallennetaan paikalliseen tietokantaan eikä niitä kirjoiteta tunnisteisiin."
 
 #: src/tauon/t_modules/t_main.py:18595 src/tauon/t_modules/t_main.py:18642
 msgid "Change will be applied on restart."
-msgstr ""
+msgstr "Muutos otetaan käyttöön uudelleenkäynnistyksen jälkeen."
 
 #: src/tauon/t_modules/t_main.py:18688
 msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr ""
+msgstr "Vinkki: voit vaihtaa tämän myös oikean painikkeen kontekstivalikosta"
 
 #: src/tauon/t_modules/t_main.py:18745
 msgid "Can't enable this if there's no token."
-msgstr ""
+msgstr "Tätä ei voi ottaa käyttöön ilman tunnusta."
 
 #: src/tauon/t_modules/t_main.py:18754 src/tauon/t_modules/t_main.py:28437
 msgid "One or more fields are missing."
-msgstr ""
+msgstr "Yksi tai useampi kenttä puuttuu."
 
 #: src/tauon/t_modules/t_main.py:18841 src/tauon/t_modules/t_main.py:18860
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
-msgstr ""
+msgstr "VAARA! Tämä poistaa alkuperäiset tiedostot. Varmuuskopion säilyttäminen on suositeltavaa virhetilanteiden varalta."
 
 #: src/tauon/t_modules/t_main.py:18842
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
-msgstr ""
+msgstr "Turvallisuuden vuoksi tämä asetus on oletuksena pois päältä. Upotettuja pikkukuvia ei säilytetä, joten ne kannattaa ehkä purkaa ensin."
 
 #: src/tauon/t_modules/t_main.py:18861
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
-msgstr ""
+msgstr "Turvallisuuden vuoksi tämä asetus nollataan uudelleenkäynnistyksessä. Upotettuja pikkukuvia ei säilytetä, joten ne kannattaa ehkä purkaa ensin."
 
 #: src/tauon/t_modules/t_main.py:19010
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
+msgstr "Käyttö epäonnistui! Flatpak-oikeudet eivät ehkä riitä."
 
 #: src/tauon/t_modules/t_main.py:19017
 msgid "The target may be lost on reboot without necessary Flatpak permissions."
-msgstr ""
+msgstr "Kohde voi kadota uudelleenkäynnistyksessä ilman tarvittavia Flatpak-oikeuksia."
 
 #: src/tauon/t_modules/t_main.py:19020
 msgid "Path may be transient! Continue? Press \"No\" for more information."
-msgstr ""
+msgstr "Polku voi olla tilapäinen! Jatketaanko? Paina \"Ei\" saadaksesi lisätietoja."
 
 #: src/tauon/t_modules/t_main.py:19142
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Pysäytä synkronointi ennen poistumista!"
 
 #: src/tauon/t_modules/t_main.py:19202
-#, fuzzy
 msgid "Web server starting"
-msgstr "Verkkopalvelin pysäytetty."
+msgstr "Verkkopalvelin käynnistyy"
 
 #: src/tauon/t_modules/t_main.py:19202
 msgid "External connections will be accepted."
-msgstr ""
+msgstr "Ulkoiset yhteydet hyväksytään."
 
 #: src/tauon/t_modules/t_main.py:19290
 msgid "This feature requires FFmpeg. Should I download it for you? (~100 MB)"
-msgstr ""
+msgstr "Tämä ominaisuus vaatii FFmpegin. Ladataanko se sinulle? (~100 Mt)"
 
 #: src/tauon/t_modules/t_main.py:19295
-#, fuzzy
 msgid "FFmpeg could not be found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "FFmpegia ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:19386
 msgid "Missing username, password and/or server name"
@@ -1908,3909 +1853,3805 @@ msgstr "Käyttäjänimi, salasana ja/tai palvelimen nimi puuttuu"
 
 #: src/tauon/t_modules/t_main.py:19399
 msgid "Error importing python-plexapi"
-msgstr ""
+msgstr "python-plexapin tuonti epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:19415
 msgid "Two-factor authentication required"
-msgstr ""
+msgstr "Kaksivaiheinen tunnistautuminen vaaditaan"
 
 #: src/tauon/t_modules/t_main.py:19416
 msgid "Enter the verification code and try again."
-msgstr ""
+msgstr "Syötä vahvistuskoodi ja yritä uudelleen."
 
 #: src/tauon/t_modules/t_main.py:19425
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "Yhteys PLEX-palvelimeen epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:19426
 msgid "Try checking login credentials and that the server is accessible."
-msgstr ""
+msgstr "Tarkista kirjautumistiedot ja että palvelin on käytettävissä."
 
 #: src/tauon/t_modules/t_main.py:19528
 msgid "PLEX Collection"
-msgstr ""
+msgstr "PLEX-kokoelma"
 
 #: src/tauon/t_modules/t_main.py:19556
 msgid "Network error"
-msgstr ""
+msgstr "Verkkovirhe"
 
 #: src/tauon/t_modules/t_main.py:19569
-#, fuzzy
 msgid "No playlist name"
-msgstr "Soittolistan loppu"
+msgstr "Soittolistan nimeä ei ole"
 
 #: src/tauon/t_modules/t_main.py:19580
 msgid "Playlist not found on target"
-msgstr ""
+msgstr "Soittolistaa ei löytynyt kohteesta"
 
 #: src/tauon/t_modules/t_main.py:21328
 msgid "No embedded album art."
-msgstr ""
+msgstr "Ei upotettua kansikuvaa."
 
 #: src/tauon/t_modules/t_main.py:22585
 msgid "This function does not support renaming CUE Sheet tracks."
-msgstr ""
+msgstr "Tämä toiminto ei tue CUE Sheet -kappaleiden uudelleennimeämistä."
 
 #: src/tauon/t_modules/t_main.py:22591
 msgid "Track Renaming"
-msgstr ""
+msgstr "Kappaleiden uudelleennimeäminen"
 
 #: src/tauon/t_modules/t_main.py:22595 src/tauon/t_modules/t_main.py:53002
 msgid "Default"
-msgstr ""
+msgstr "Oletus"
 
 #: src/tauon/t_modules/t_main.py:22617
 msgid "BEFORE"
-msgstr ""
+msgstr "ENNEN"
 
 #: src/tauon/t_modules/t_main.py:22621
 msgid "AFTER"
-msgstr ""
+msgstr "JÄLKEEN"
 
 #: src/tauon/t_modules/t_main.py:22627
 msgid "Warning: This may change the file extension"
-msgstr ""
+msgstr "Varoitus: tämä voi muuttaa tiedostopäätettä"
 
 #: src/tauon/t_modules/t_main.py:22634
 msgid "Warning: The filename might not be unique"
-msgstr ""
+msgstr "Varoitus: tiedostonimi ei ehkä ole yksilöllinen"
 
 #: src/tauon/t_modules/t_main.py:22639
 msgid "Warning: A track has incomplete metadata"
-msgstr ""
+msgstr "Varoitus: kappaleen metadata on puutteellinen"
 
 #: src/tauon/t_modules/t_main.py:22644
 msgid "Write"
-msgstr ""
+msgstr "Kirjoita"
 
 #: src/tauon/t_modules/t_main.py:22649
 msgid "Physically renames all the tracks in the folder"
-msgstr ""
+msgstr "Nimeää fyysisesti uudelleen kaikki kansion kappaleet"
 
 #: src/tauon/t_modules/t_main.py:22713 src/tauon/t_modules/t_main.py:22718
-#, fuzzy
 msgid "Rename complete."
-msgstr "Spotify-tuonti valmis"
+msgstr "Uudelleennimeäminen valmis."
 
 #: src/tauon/t_modules/t_main.py:22714 src/tauon/t_modules/t_main.py:22719
 msgid "{N} / {T} filenames were written."
-msgstr ""
+msgstr "{N}/{T} tiedostonimeä kirjoitettiin."
 
 #: src/tauon/t_modules/t_main.py:22804
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Yksinkertainen tunniste-editori"
 
 #: src/tauon/t_modules/t_main.py:22806 src/tauon/t_modules/t_main.py:23207
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: src/tauon/t_modules/t_main.py:22808
 msgid "Press Enter in each field to apply its changes to local database."
-msgstr ""
+msgstr "Paina Enteriä kussakin kentässä tallentaaksesi muutokset paikalliseen tietokantaan."
 
 #: src/tauon/t_modules/t_main.py:22809
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
-msgstr ""
+msgstr "Kun olet valmis, paina KIRJOITA TUNNISTEET tallentaaksesi tunnisteet varsinaisiin tiedostoihin. (Valinnainen mutta suositeltava)"
 
 #: src/tauon/t_modules/t_main.py:22813
 msgid "Number of tracks selected: {N}"
-msgstr ""
+msgstr "Valittujen kappaleiden määrä: {N}"
 
 #: src/tauon/t_modules/t_main.py:22848
 msgid "<Multiple selected>"
-msgstr ""
+msgstr "<Useita valittu>"
 
 #: src/tauon/t_modules/t_main.py:22856
 msgid "Track title"
-msgstr ""
+msgstr "Kappaleen nimi"
 
 #: src/tauon/t_modules/t_main.py:22858
-#, fuzzy
 msgid "Album name"
-msgstr "Seuraava kappale"
+msgstr "Albumin nimi"
 
 #: src/tauon/t_modules/t_main.py:22860
-#, fuzzy
 msgid "Artist name"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Artistin nimi"
 
 #: src/tauon/t_modules/t_main.py:22862
-#, fuzzy
 msgid "Album-artist name"
-msgstr "Soittolistan loppu"
+msgstr "Albumiartistin nimi"
 
 #: src/tauon/t_modules/t_main.py:22868
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Verkkokappaleiden muokkaamista ei suositella!"
 
 #: src/tauon/t_modules/t_main.py:22897 src/tauon/t_modules/t_main.py:22900
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "KIRJOITA TUNNISTEET"
 
 #: src/tauon/t_modules/t_main.py:22903
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Paina ensin kentissä Enteriä, jotta muutokset otetaan käyttöön!"
 
 #: src/tauon/t_modules/t_main.py:22914
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Verkkokappaleeseen kirjoittaminen ei ole sovellettavissa!"
 
 #: src/tauon/t_modules/t_main.py:22918
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "CUE Sheet -tyyppeihin ei voi kirjoittaa!"
 
 #: src/tauon/t_modules/t_main.py:22927
 msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr ""
+msgstr "Monikenttää ei voi käsitellä! Käytä ulkoista tunniste-editoria"
 
 #: src/tauon/t_modules/t_main.py:22946
 msgid "{N} files rewritten"
-msgstr ""
+msgstr "{N} tiedostoa kirjoitettu uudelleen"
 
 #: src/tauon/t_modules/t_main.py:23014
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Korvaava sanoitushaku"
 
 #: src/tauon/t_modules/t_main.py:23021 src/tauon/t_modules/t_main.py:23044
 msgid "Substitute"
-msgstr ""
+msgstr "Korvaa"
 
 #: src/tauon/t_modules/t_main.py:23027 src/tauon/t_modules/t_main.py:23050
 msgid "with"
-msgstr ""
+msgstr "arvolla"
 
 #: src/tauon/t_modules/t_main.py:23142
 msgid "Import/Export Playlist"
-msgstr ""
+msgstr "Tuo/vie soittolista"
 
 #: src/tauon/t_modules/t_main.py:23147
 msgid "Target folder or file"
-msgstr ""
+msgstr "Kohdekansio tai -tiedosto"
 
 #: src/tauon/t_modules/t_main.py:23166
 msgid "Will overwrite existing file: "
-msgstr ""
+msgstr "Korvaa olemassa olevan tiedoston: "
 
 #: src/tauon/t_modules/t_main.py:23169
-#, fuzzy
 msgid "Will save with playlist name:"
-msgstr "Soittolistan loppu"
+msgstr "Tallennetaan soittolistan nimellä:"
 
 #: src/tauon/t_modules/t_main.py:23172
 msgid "No file extension?"
-msgstr ""
+msgstr "Ei tiedostopäätettä?"
 
 #: src/tauon/t_modules/t_main.py:23176 src/tauon/t_modules/t_main.py:23179
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "Väärä tiedostopääte?"
 
 #: src/tauon/t_modules/t_main.py:23182
 msgid "Will create directory"
-msgstr ""
+msgstr "Luo hakemiston"
 
 #: src/tauon/t_modules/t_main.py:23204 src/tauon/t_modules/t_main.py:23206
 msgid "Use relative paths"
-msgstr ""
+msgstr "Käytä suhteellisia polkuja"
 
 #: src/tauon/t_modules/t_main.py:23209
 msgid "Enable relative paths when keeping playlist files together with audio"
-msgstr ""
+msgstr "Ota suhteelliset polut käyttöön, kun soittolistatiedostot pidetään äänen kanssa yhdessä"
 
 #: src/tauon/t_modules/t_main.py:23210
 msgid "Disable to move playlist files while keeping audio in one location"
-msgstr ""
+msgstr "Poista käytöstä, jos haluat siirtää soittolistatiedostoja pitäen äänen yhdessä sijainnissa"
 
 #: src/tauon/t_modules/t_main.py:23214
 msgid "Auto-export"
-msgstr ""
+msgstr "Automaattinen vienti"
 
 #: src/tauon/t_modules/t_main.py:23215
 msgid "Auto-import"
-msgstr ""
+msgstr "Automaattinen tuonti"
 
 #: src/tauon/t_modules/t_main.py:23219 src/tauon/t_modules/t_main.py:23222
-#, fuzzy
 msgid "Export"
-msgstr "Seuraava kappale"
+msgstr "Vie"
 
 #: src/tauon/t_modules/t_main.py:23265
 msgid "Playlist exported"
-msgstr ""
+msgstr "Soittolista viety"
 
 #: src/tauon/t_modules/t_main.py:23351
 msgid "Year: "
-msgstr ""
+msgstr "Vuosi: "
 
 #: src/tauon/t_modules/t_main.py:23374
 msgid "Composer: "
-msgstr ""
+msgstr "Säveltäjä: "
 
 #: src/tauon/t_modules/t_main.py:23446
 msgid "Genre: "
-msgstr ""
+msgstr "Tyylilaji: "
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "Go / open:"
-msgstr ""
+msgstr "Siirry / avaa:"
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "left-click or press Enter."
-msgstr ""
+msgstr "napsauta vasemmalla tai paina Enteriä."
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "Show / reveal:"
-msgstr ""
+msgstr "Näytä / paljasta:"
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "right-click or press Shift+Enter."
-msgstr ""
+msgstr "napsauta oikealla tai paina Shift+Enter."
 
 #: src/tauon/t_modules/t_main.py:23528
-#, fuzzy
 msgid "Add to current playlist:"
-msgstr "Soittolistan loppu"
+msgstr "Lisää nykyiseen soittolistaan:"
 
 #: src/tauon/t_modules/t_main.py:23528
 msgid "Ctrl+left-click."
-msgstr ""
+msgstr "Ctrl+vasen napsautus."
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "Add to queue:"
-msgstr ""
+msgstr "Lisää jonoon:"
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "middle-click (track or album)."
-msgstr ""
+msgstr "keskipainikkeen napsautus (kappale tai albumi)."
 
 #: src/tauon/t_modules/t_main.py:23678
-#, fuzzy
 msgid "No results found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Tuloksia ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:23848
 msgid "(Include multi-tag results)"
-msgstr ""
+msgstr "(Sisällytä monitunnistetulokset)"
 
 #: src/tauon/t_modules/t_main.py:24154
 msgid "Downloading Milkdrop presets"
-msgstr ""
+msgstr "Ladataan Milkdrop-esiasetuksia"
 
 #: src/tauon/t_modules/t_main.py:24191 src/tauon/t_modules/t_main.py:24233
 msgid "Cancelling..."
-msgstr ""
+msgstr "Perutaan..."
 
 #: src/tauon/t_modules/t_main.py:24192
 msgid "Milkdrop will still be enabled."
-msgstr ""
+msgstr "Milkdrop pysyy käytössä."
 
 #: src/tauon/t_modules/t_main.py:24230 src/tauon/t_modules/t_main.py:29136
 msgid "Close"
-msgstr ""
+msgstr "Sulje"
 
 #: src/tauon/t_modules/t_main.py:24236 src/tauon/t_modules/t_main.py:28350
 #: src/tauon/t_modules/t_main.py:42858 src/tauon/t_modules/t_main.py:42956
 #: src/tauon/t_modules/t_main.py:43138 src/tauon/t_modules/t_main.py:43173
 #: src/tauon/t_modules/t_main.py:47574
 msgid "Cancel"
-msgstr ""
+msgstr "Peruuta"
 
 #: src/tauon/t_modules/t_main.py:24292
 msgid "Yay! Thank you!! 🎉 ✨"
-msgstr ""
+msgstr "Jee! Kiitos paljon!! 🎉 ✨"
 
 #: src/tauon/t_modules/t_main.py:24340
 msgid "Tauon v{version}"
-msgstr ""
+msgstr "Tauon v{version}"
 
 #: src/tauon/t_modules/t_main.py:24344
 msgid "Highlights from the latest Tauon release."
-msgstr ""
+msgstr "Uusimman Tauon-julkaisun kohokohdat."
 
 #: src/tauon/t_modules/t_main.py:24357
 msgid "Changelog"
-msgstr ""
+msgstr "Muutosloki"
 
 #: src/tauon/t_modules/t_main.py:24383
 msgid "The time has come to open thy heart and thy wallet ❤️  "
-msgstr ""
+msgstr "Aika on koittanut avata sydämesi ja lompakkosi ❤️  "
 
 #: src/tauon/t_modules/t_main.py:24386
 msgid ""
 "A ton of work went into this release. Please consider donating at https://"
 "github.com/sponsors/Taiko2k"
-msgstr ""
+msgstr "Tähän julkaisuun meni valtavasti työtä. Harkitse lahjoittamista osoitteessa https://github.com/sponsors/Taiko2k"
 
 #: src/tauon/t_modules/t_main.py:24389
 msgid "GitHub Sponsors"
-msgstr ""
+msgstr "GitHub Sponsors"
 
 #: src/tauon/t_modules/t_main.py:24393
 msgid "or on my "
-msgstr ""
+msgstr "tai minun "
 
 #: src/tauon/t_modules/t_main.py:24415 src/tauon/t_modules/t_main.py:24435
 msgid "No thanks"
-msgstr ""
+msgstr "Ei kiitos"
 
 #: src/tauon/t_modules/t_main.py:24416 src/tauon/t_modules/t_main.py:24425
 msgid "Yes, I have donated"
-msgstr ""
+msgstr "Kyllä, olen lahjoittanut"
 
 #: src/tauon/t_modules/t_main.py:24510
 msgid "General"
-msgstr ""
+msgstr "Yleiset"
 
 #: src/tauon/t_modules/t_main.py:24511
 msgid "Connections"
-msgstr ""
+msgstr "Yhteydet"
 
 #: src/tauon/t_modules/t_main.py:24512
 msgid "Audio"
-msgstr ""
+msgstr "Ääni"
 
 #: src/tauon/t_modules/t_main.py:24513
-#, fuzzy
 msgid "Tracklist"
-msgstr "Seuraava kappale"
+msgstr "Kappalelista"
 
 #: src/tauon/t_modules/t_main.py:24514
 msgid "Theme"
-msgstr ""
+msgstr "Teema"
 
 #: src/tauon/t_modules/t_main.py:24515 src/tauon/t_modules/t_main.py:27304
 msgid "View"
-msgstr ""
+msgstr "Näkymä"
 
 #: src/tauon/t_modules/t_main.py:24516
 msgid "Transcode"
-msgstr ""
+msgstr "Transkoodaus"
 
 #: src/tauon/t_modules/t_main.py:24517
 msgid "Services"
-msgstr ""
+msgstr "Palvelut"
 
 #: src/tauon/t_modules/t_main.py:24518
 msgid "Advanced"
-msgstr ""
+msgstr "Lisäasetukset"
 
 #: src/tauon/t_modules/t_main.py:24519
 msgid "Stats"
-msgstr ""
+msgstr "Tilastot"
 
 #: src/tauon/t_modules/t_main.py:24520 src/tauon/t_modules/t_main.py:28266
 msgid "About"
-msgstr ""
+msgstr "Tietoja"
 
 #: src/tauon/t_modules/t_main.py:24660
 msgid "Audio Output Device"
-msgstr ""
+msgstr "Äänen ulostulolaite"
 
 #: src/tauon/t_modules/t_main.py:24661
 msgid "Choose where Tauon sends playback."
-msgstr ""
+msgstr "Valitse, minne Tauon lähettää toiston."
 
 #: src/tauon/t_modules/t_main.py:24678
-#, fuzzy
 msgid "No device selected"
-msgstr "Soittolistan loppu"
+msgstr "Laitetta ei ole valittu"
 
 #: src/tauon/t_modules/t_main.py:24731
 msgid "No output devices detected"
-msgstr ""
+msgstr "Ulostulolaitteita ei havaittu"
 
 #: src/tauon/t_modules/t_main.py:24739
 msgid "Try refreshing audio or restarting Tauon."
-msgstr ""
+msgstr "Yritä päivittää ääni tai käynnistää Tauon uudelleen."
 
 #: src/tauon/t_modules/t_main.py:24816
 msgid "Please restart Tauon for this change to take effect"
-msgstr ""
+msgstr "Käynnistä Tauon uudelleen, jotta muutos tulee voimaan"
 
 #: src/tauon/t_modules/t_main.py:24819
 msgid "Audio stack"
-msgstr ""
+msgstr "Äänipino"
 
 #: src/tauon/t_modules/t_main.py:24824
 msgid "PulseAudio"
-msgstr ""
+msgstr "PulseAudio"
 
 #: src/tauon/t_modules/t_main.py:24832
 msgid "PipeWire"
-msgstr ""
+msgstr "PipeWire"
 
 #: src/tauon/t_modules/t_main.py:24909
 msgid "Component"
-msgstr ""
+msgstr "Komponentti"
 
 #: src/tauon/t_modules/t_main.py:25004
 msgid "Bundled themes are read-only"
-msgstr ""
+msgstr "Mukana tulevat teemat ovat vain luettavissa"
 
 #: src/tauon/t_modules/t_main.py:25005
 msgid "Create a new theme first to edit a copy of the active look."
-msgstr ""
+msgstr "Luo ensin uusi teema muokataksesi kopiota nykyisestä ulkoasusta."
 
 #: src/tauon/t_modules/t_main.py:25018 src/tauon/t_modules/t_main.py:25020
 msgid "Custom Theme"
-msgstr ""
+msgstr "Mukautettu teema"
 
 #: src/tauon/t_modules/t_main.py:25027 src/tauon/t_modules/t_main.py:25085
 msgid "Could not save theme file"
-msgstr ""
+msgstr "Teematiedostoa ei voitu tallentaa"
 
 #: src/tauon/t_modules/t_main.py:25037
 msgid "Duplicated theme"
-msgstr ""
+msgstr "Teema monistettu"
 
 #: src/tauon/t_modules/t_main.py:25042
 msgid "Only user themes can be deleted"
-msgstr ""
+msgstr "Vain käyttäjän teemoja voi poistaa"
 
 #: src/tauon/t_modules/t_main.py:25049
 msgid "Could not delete theme file"
-msgstr ""
+msgstr "Teematiedostoa ei voitu poistaa"
 
 #: src/tauon/t_modules/t_main.py:25059
 msgid "Deleted theme"
-msgstr ""
+msgstr "Teema poistettu"
 
 #: src/tauon/t_modules/t_main.py:25066
 msgid "Theme title cannot be empty"
-msgstr ""
+msgstr "Teeman nimi ei voi olla tyhjä"
 
 #: src/tauon/t_modules/t_main.py:25073 src/tauon/t_modules/t_main.py:25076
 msgid "A theme with that title already exists"
-msgstr ""
+msgstr "Samanniminen teema on jo olemassa"
 
 #: src/tauon/t_modules/t_main.py:25100
 msgid "Saved theme"
-msgstr ""
+msgstr "Teema tallennettu"
 
 #: src/tauon/t_modules/t_main.py:25220
 msgid "Copied colour"
-msgstr ""
+msgstr "Väri kopioitu"
 
 #: src/tauon/t_modules/t_main.py:25227
 msgid "There is no colour in the clipboard"
-msgstr ""
+msgstr "Leikepöydällä ei ole väriä"
 
 #: src/tauon/t_modules/t_main.py:25231
 msgid "Pasted colour"
-msgstr ""
+msgstr "Väri liitetty"
 
 #: src/tauon/t_modules/t_main.py:26076
 msgid "Lyrics lookup"
-msgstr ""
+msgstr "Sanoitusten haku"
 
 #: src/tauon/t_modules/t_main.py:26077
 msgid "Choose which sources Tauon uses for lyrics."
-msgstr ""
+msgstr "Valitse, mitä lähteitä Tauon käyttää sanoituksiin."
 
 #: src/tauon/t_modules/t_main.py:26088
 msgid "Scraping source"
-msgstr ""
+msgstr "Keräyslähde"
 
 #: src/tauon/t_modules/t_main.py:26088
 msgid "API source"
-msgstr ""
+msgstr "API-lähde"
 
 #: src/tauon/t_modules/t_main.py:26135
 msgid "Common settings"
-msgstr ""
+msgstr "Yleiset asetukset"
 
 #: src/tauon/t_modules/t_main.py:26136
 msgid "Common library and panel settings."
-msgstr ""
+msgstr "Kirjaston ja paneelien yleiset asetukset."
 
 #: src/tauon/t_modules/t_main.py:26144
-#, fuzzy
 msgid "Show artist info panel"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Näytä artistitietopaneeli"
 
 #: src/tauon/t_modules/t_main.py:26145
 msgid "Also available with Ctrl+O."
-msgstr ""
+msgstr "Saatavilla myös näppäimillä Ctrl+O."
 
 #: src/tauon/t_modules/t_main.py:26156
 msgid "Auto fetch artist data"
-msgstr ""
+msgstr "Nouda artistitiedot automaattisesti"
 
 #: src/tauon/t_modules/t_main.py:26157
 msgid "Fetch artist data while the panel is open."
-msgstr ""
+msgstr "Nouda artistitiedot, kun paneeli on auki."
 
 #: src/tauon/t_modules/t_main.py:26165
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Soittolistan loppu"
+msgstr "Lataa soittolistat automaattisesti uudelleen"
 
 #: src/tauon/t_modules/t_main.py:26166
 msgid "Rescan playlists when you return to them."
-msgstr ""
+msgstr "Tarkista soittolistat uudelleen, kun palaat niihin."
 
 #: src/tauon/t_modules/t_main.py:26174
 msgid "Tabs in top panel"
-msgstr ""
+msgstr "Välilehdet yläpaneelissa"
 
 #: src/tauon/t_modules/t_main.py:26175
 msgid "Show tabs in the top panel."
-msgstr ""
+msgstr "Näytä välilehdet yläpaneelissa."
 
 #: src/tauon/t_modules/t_main.py:26181
 msgid "Quick access"
-msgstr ""
+msgstr "Pikakäyttö"
 
 #: src/tauon/t_modules/t_main.py:26182
 msgid "Open the files and folders Tauon uses."
-msgstr ""
+msgstr "Avaa Tauonin käyttämät tiedostot ja kansiot."
 
 #: src/tauon/t_modules/t_main.py:26186
 msgid "Open config file"
-msgstr ""
+msgstr "Avaa asetustiedosto"
 
 #: src/tauon/t_modules/t_main.py:26189
 msgid "Reload edited config"
-msgstr ""
+msgstr "Lataa muokattu asetus uudelleen"
 
 #: src/tauon/t_modules/t_main.py:26191
 msgid "Open data folder"
-msgstr ""
+msgstr "Avaa datakansio"
 
 #: src/tauon/t_modules/t_main.py:26193
 msgid "Open keymap file"
-msgstr ""
+msgstr "Avaa näppäinkarttatiedosto"
 
 #: src/tauon/t_modules/t_main.py:26198
-#, fuzzy
 msgid "End of playlist action"
-msgstr "Soittolistan loppu"
+msgstr "Toiminto soittolistan lopussa"
 
 #: src/tauon/t_modules/t_main.py:26199
-#, fuzzy
 msgid "What to do when the current playlist ends."
-msgstr "Soittolistan loppu"
+msgstr "Mitä tehdään, kun nykyinen soittolista päättyy."
 
 #: src/tauon/t_modules/t_main.py:26206
 msgid "Stop playback"
-msgstr ""
+msgstr "Pysäytä toisto"
 
 #: src/tauon/t_modules/t_main.py:26206
-#, fuzzy
 msgid "Stop when the playlist ends."
-msgstr "Soittolistan loppu"
+msgstr "Pysäytä, kun soittolista päättyy."
 
 #: src/tauon/t_modules/t_main.py:26207
-#, fuzzy
 msgid "Repeat playlist"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Toista soittolista uudelleen"
 
 #: src/tauon/t_modules/t_main.py:26207
-#, fuzzy
 msgid "Start the same playlist again."
-msgstr "Soittolistan loppu"
+msgstr "Aloita sama soittolista uudelleen."
 
 #: src/tauon/t_modules/t_main.py:26208
-#, fuzzy
 msgid "Play next playlist"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Toista seuraava soittolista"
 
 #: src/tauon/t_modules/t_main.py:26208
-#, fuzzy
 msgid "Move to the next playlist."
-msgstr "Soittolistan loppu"
+msgstr "Siirry seuraavaan soittolistaan."
 
 #: src/tauon/t_modules/t_main.py:26209
-#, fuzzy
 msgid "Cycle all playlists"
-msgstr "Soittolistan loppu"
+msgstr "Kierrä kaikkia soittolistoja"
 
 #: src/tauon/t_modules/t_main.py:26209
 msgid "Keep cycling through playlists."
-msgstr ""
+msgstr "Jatka soittolistojen kiertämistä."
 
 #: src/tauon/t_modules/t_main.py:26225
 msgid "Session rules"
-msgstr ""
+msgstr "Istunnon säännöt"
 
 #: src/tauon/t_modules/t_main.py:26226
 msgid "Playback behavior for sleep, wake and radio."
-msgstr ""
+msgstr "Toiston toiminta lepotilan, herätyksen ja radion yhteydessä."
 
 #: src/tauon/t_modules/t_main.py:26233
 msgid "Block suspend"
-msgstr ""
+msgstr "Estä lepotila"
 
 #: src/tauon/t_modules/t_main.py:26234
 msgid "Keep the system awake during playback."
-msgstr ""
+msgstr "Pidä järjestelmä hereillä toiston aikana."
 
 #: src/tauon/t_modules/t_main.py:26241
-#, fuzzy
 msgid "Resume from suspend"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Jatka lepotilasta"
 
 #: src/tauon/t_modules/t_main.py:26242
 msgid "Resume playback after waking."
-msgstr ""
+msgstr "Jatka toistoa heräämisen jälkeen."
 
 #: src/tauon/t_modules/t_main.py:26251
 msgid "Record radio"
-msgstr ""
+msgstr "Tallenna radio"
 
 #: src/tauon/t_modules/t_main.py:26252
 msgid "Record internet radio and split tracks."
-msgstr ""
+msgstr "Tallenna internet-radio ja jaa kappaleet."
 
 #: src/tauon/t_modules/t_main.py:26257
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
-msgstr ""
+msgstr "Kappaleet tallennetaan nyt. Käynnistä toisto uudelleen, jotta muutos tulee voimaan."
 
 #: src/tauon/t_modules/t_main.py:26258
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Kappaleet tallennetaan \"Tallennetut radiokappaleet\" -soittolistaan."
 
 #: src/tauon/t_modules/t_main.py:26271
 msgid "Recorded tracks are added to \"Saved Radio Tracks\"."
-msgstr ""
+msgstr "Tallennetut kappaleet lisätään \"Tallennetut radiokappaleet\" -soittolistaan."
 
 #: src/tauon/t_modules/t_main.py:26273
 msgid "Radio capture"
-msgstr ""
+msgstr "Radiotallennus"
 
 #: src/tauon/t_modules/t_main.py:26279
-#, fuzzy
 msgid "Track menu extras"
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Kappalevalikon lisäkohdat"
 
 #: src/tauon/t_modules/t_main.py:26280
 msgid "Optional items in the track menu."
-msgstr ""
+msgstr "Valinnaiset kohdat kappalevalikossa."
 
 #: src/tauon/t_modules/t_main.py:26284
 msgid "Wikipedia artist search"
-msgstr ""
+msgstr "Artistihaku Wikipediasta"
 
 #: src/tauon/t_modules/t_main.py:26285
 msgid "Sonemic artist search"
-msgstr ""
+msgstr "Artistihaku Sonemicista"
 
 #: src/tauon/t_modules/t_main.py:26286
 msgid "Bandcamp artist search"
-msgstr ""
+msgstr "Artistihaku Bandcampista"
 
 #: src/tauon/t_modules/t_main.py:26287
 msgid "Genius track search"
-msgstr ""
+msgstr "Kappalehaku Geniuksesta"
 
 #: src/tauon/t_modules/t_main.py:26294
 msgid "Archive imports"
-msgstr ""
+msgstr "Arkistojen tuonti"
 
 #: src/tauon/t_modules/t_main.py:26295
 msgid "How Tauon handles archives and Downloads."
-msgstr ""
+msgstr "Miten Tauon käsittelee arkistoja ja Lataukset-kansiota."
 
 #: src/tauon/t_modules/t_main.py:26301
 msgid "Extract archives"
-msgstr ""
+msgstr "Pura arkistot"
 
 #: src/tauon/t_modules/t_main.py:26302
 msgid "Extract supported archives on drag and drop."
-msgstr ""
+msgstr "Pura tuetut arkistot vedettäessä ja pudotettaessa."
 
 #: src/tauon/t_modules/t_main.py:26310
 msgid "Enable download monitor"
-msgstr ""
+msgstr "Ota latausten valvonta käyttöön"
 
 #: src/tauon/t_modules/t_main.py:26311
 msgid "Watch Downloads for one-click imports."
-msgstr ""
+msgstr "Valvo Lataukset-kansiota yhden napsautuksen tuonteja varten."
 
 #: src/tauon/t_modules/t_main.py:26319
 msgid "Trash archive after extraction"
-msgstr ""
+msgstr "Siirrä arkisto roskakoriin purkamisen jälkeen"
 
 #: src/tauon/t_modules/t_main.py:26327
 msgid "Always extract to Music folder"
-msgstr ""
+msgstr "Pura aina Musiikki-kansioon"
 
 #: src/tauon/t_modules/t_main.py:26337
 msgid "Useful if you often import from archives or Downloads."
-msgstr ""
+msgstr "Hyödyllinen, jos tuot usein arkistoista tai Lataukset-kansiosta."
 
 #: src/tauon/t_modules/t_main.py:26339
-#, fuzzy
 msgid "Import flow"
-msgstr "Seuraava kappale"
+msgstr "Tuonnin kulku"
 
 #: src/tauon/t_modules/t_main.py:26345 src/tauon/t_modules/t_main.py:27114
 msgid "Remote, presence and sharing"
-msgstr ""
+msgstr "Etäkäyttö, läsnäolo ja jakaminen"
 
 #: src/tauon/t_modules/t_main.py:26346 src/tauon/t_modules/t_main.py:27115
 msgid "Network and sharing features."
-msgstr ""
+msgstr "Verkko- ja jakamistoiminnot."
 
 #: src/tauon/t_modules/t_main.py:26353 src/tauon/t_modules/t_main.py:27122
 msgid "Enable remote control"
-msgstr ""
+msgstr "Ota etäohjaus käyttöön"
 
 #: src/tauon/t_modules/t_main.py:26354 src/tauon/t_modules/t_main.py:26427
 #: src/tauon/t_modules/t_main.py:27123
 msgid "Change requires restart."
-msgstr ""
+msgstr "Muutos vaatii uudelleenkäynnistyksen."
 
 #: src/tauon/t_modules/t_main.py:26361 src/tauon/t_modules/t_main.py:27130
 msgid "Notice: This API is not security hardened."
-msgstr ""
+msgstr "Huomautus: tätä APIa ei ole kovennettu turvallisuuden kannalta."
 
 #: src/tauon/t_modules/t_main.py:26362 src/tauon/t_modules/t_main.py:27131
 msgid ""
 "Only enable in a trusted LAN and do not expose port (7814) to the internet"
-msgstr ""
+msgstr "Ota käyttöön vain luotetussa lähiverkossa äläkä altista porttia (7814) internetiin"
 
 #: src/tauon/t_modules/t_main.py:26368 src/tauon/t_modules/t_main.py:27138
 msgid "Enable Listen Along"
-msgstr ""
+msgstr "Ota yhteiskuuntelu käyttöön"
 
 #: src/tauon/t_modules/t_main.py:26369 src/tauon/t_modules/t_main.py:27139
 msgid "Start the web server for remote playback."
-msgstr ""
+msgstr "Käynnistä verkkopalvelin etätoistoa varten."
 
 #: src/tauon/t_modules/t_main.py:26379 src/tauon/t_modules/t_main.py:27151
 msgid "Open Listen Along page"
-msgstr ""
+msgstr "Avaa yhteiskuuntelusivu"
 
 #: src/tauon/t_modules/t_main.py:26383 src/tauon/t_modules/t_main.py:27159
 #: src/tauon/t_modules/t_main.py:35696
 msgid "Disabled"
-msgstr ""
+msgstr "Pois käytöstä"
 
 #: src/tauon/t_modules/t_main.py:26384 src/tauon/t_modules/t_main.py:27160
 msgid "Discord status: {state}"
-msgstr ""
+msgstr "Discord-tila: {state}"
 
 #: src/tauon/t_modules/t_main.py:26388 src/tauon/t_modules/t_main.py:27164
 msgid "Enable Discord Rich Presence"
-msgstr ""
+msgstr "Ota Discord Rich Presence käyttöön"
 
 #: src/tauon/t_modules/t_main.py:26400 src/tauon/t_modules/t_main.py:27171
 msgid "Sorry, this feature is unavailable with snap"
-msgstr ""
+msgstr "Pahoittelut, tämä ominaisuus ei ole saatavilla Snapilla"
 
 #: src/tauon/t_modules/t_main.py:26403 src/tauon/t_modules/t_main.py:27174
 msgid "Missing dependency python-pypresence"
-msgstr ""
+msgstr "Puuttuva riippuvuus python-pypresence"
 
 #: src/tauon/t_modules/t_main.py:26419
 msgid "Exports and input"
-msgstr ""
+msgstr "Vienti ja syöte"
 
 #: src/tauon/t_modules/t_main.py:26420
-#, fuzzy
 msgid "Playlist export and input settings."
-msgstr "Todenna Spotify asetuksissa"
+msgstr "Soittolistan viennin ja syötteen asetukset."
 
 #: src/tauon/t_modules/t_main.py:26426
 msgid "Enable gamepad input"
-msgstr ""
+msgstr "Ota peliohjainsyöte käyttöön"
 
 #: src/tauon/t_modules/t_main.py:26432
 msgid "Default playlist export folder"
-msgstr ""
+msgstr "Soittolistojen oletusvientikansio"
 
 #: src/tauon/t_modules/t_main.py:26453
 msgid "Folder must exist before auto-import can use it."
-msgstr ""
+msgstr "Kansion on oltava olemassa ennen kuin automaattinen tuonti voi käyttää sitä."
 
 #: src/tauon/t_modules/t_main.py:26455
 msgid "Leave blank to export beside the playlist, or set a folder here."
-msgstr ""
+msgstr "Jätä tyhjäksi viedäksesi soittolistan viereen tai määritä kansio tähän."
 
 #: src/tauon/t_modules/t_main.py:26464
 msgid "Auto-import playlists from this folder"
-msgstr ""
+msgstr "Tuo soittolistat automaattisesti tästä kansiosta"
 
 #: src/tauon/t_modules/t_main.py:26465
 msgid "Runs during \"Rescan All Folders\" only."
-msgstr ""
+msgstr "Suoritetaan vain \"Tarkista kaikki kansiot uudelleen\" -toiminnon aikana."
 
 #: src/tauon/t_modules/t_main.py:26471
 msgid "Editing and diagnostics"
-msgstr ""
+msgstr "Muokkaus ja diagnostiikka"
 
 #: src/tauon/t_modules/t_main.py:26472
 msgid "Lyrics writeback and debug settings."
-msgstr ""
+msgstr "Sanoitusten takaisin kirjoituksen ja vianjäljityksen asetukset."
 
 #: src/tauon/t_modules/t_main.py:26478
 msgid "Save Synced to .lrc"
-msgstr ""
+msgstr "Tallenna synkronoidut .lrc-tiedostoon"
 
 #: src/tauon/t_modules/t_main.py:26486
 msgid "Save lyrics edits to tags"
-msgstr ""
+msgstr "Tallenna sanoitusmuokkaukset tunnisteisiin"
 
 #: src/tauon/t_modules/t_main.py:26497
 msgid "Enable debug mode"
-msgstr ""
+msgstr "Ota vianjäljitystila käyttöön"
 
 #: src/tauon/t_modules/t_main.py:26628
 msgid "This will mark all tracks in local database as unloved!"
-msgstr ""
+msgstr "Tämä merkitsee kaikki paikallisen tietokannan kappaleet ei-suosikeiksi!"
 
 #: src/tauon/t_modules/t_main.py:26638
 msgid "Cleared all loves"
-msgstr ""
+msgstr "Kaikki suosikkimerkinnät tyhjennetty"
 
 #: src/tauon/t_modules/t_main.py:26644
-#, fuzzy
 msgid "Error, not connected to last.fm"
-msgstr "Spotify-tili yhdistetty"
+msgstr "Virhe, ei yhteyttä Last.fm:ään"
 
 #: src/tauon/t_modules/t_main.py:26647
 msgid "Warning: This process will take approximately {T} minutes to complete."
-msgstr ""
+msgstr "Varoitus: tämän prosessin valmistuminen kestää noin {T} minuuttia."
 
 #: src/tauon/t_modules/t_main.py:26648 src/tauon/t_modules/t_main.py:26669
 msgid "Press again while holding Shift if you understand"
-msgstr ""
+msgstr "Paina uudelleen Shift pohjassa, jos ymmärrät"
 
 #: src/tauon/t_modules/t_main.py:26656 src/tauon/t_modules/t_main.py:26678
 #: src/tauon/t_modules/t_main.py:26686
 msgid "A process is already running. Wait for it to finish."
-msgstr ""
+msgstr "Prosessi on jo käynnissä. Odota sen valmistumista."
 
 #: src/tauon/t_modules/t_main.py:26662
 msgid "Cleared all scrobble counts"
-msgstr ""
+msgstr "Kaikki scrobble-määrät tyhjennetty"
 
 #: src/tauon/t_modules/t_main.py:26667
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
-msgstr ""
+msgstr "Varoitus: tämän prosessin valmistuminen voi kestää kauan! (jopa tunnin tai enemmän)"
 
 #: src/tauon/t_modules/t_main.py:26668
 msgid "This feature is not recommended for accounts that have many friends."
-msgstr ""
+msgstr "Tätä ominaisuutta ei suositella tileille, joilla on paljon ystäviä."
 
 #: src/tauon/t_modules/t_main.py:26735
 msgid "Be patient!"
-msgstr ""
+msgstr "Ole kärsivällinen!"
 
 #: src/tauon/t_modules/t_main.py:26737
 msgid "No font set in config"
-msgstr ""
+msgstr "Asetuksissa ei ole määritetty fonttia"
 
 #: src/tauon/t_modules/t_main.py:26746
 msgid "Grid generator"
-msgstr ""
+msgstr "Ruudukkogeneraattori"
 
 #: src/tauon/t_modules/t_main.py:26747
-#, fuzzy
 msgid "Build an album grid from the current playlist."
-msgstr "Soittolistan loppu"
+msgstr "Rakenna albumiruudukko nykyisestä soittolistasta."
 
 #: src/tauon/t_modules/t_main.py:26769
-#, fuzzy
 msgid "Target playlist"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Kohdesoittolista"
 
 #: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
 #: src/tauon/t_modules/t_main.py:36530
-#, fuzzy
 msgid "{N} albums"
-msgstr "Seuraava kappale"
+msgstr "{N} albumia"
 
 #: src/tauon/t_modules/t_main.py:26796
 msgid "Grid"
-msgstr ""
+msgstr "Ruudukko"
 
 #: src/tauon/t_modules/t_main.py:26797
 msgid "Rows and columns"
-msgstr ""
+msgstr "Rivit ja sarakkeet"
 
 #: src/tauon/t_modules/t_main.py:26805
 msgid "Cascade"
-msgstr ""
+msgstr "Kaskadi"
 
 #: src/tauon/t_modules/t_main.py:26806
 msgid "Stacked groups"
-msgstr ""
+msgstr "Pinotut ryhmät"
 
 #: src/tauon/t_modules/t_main.py:26817
 msgid "Level 1"
-msgstr ""
+msgstr "Taso 1"
 
 #: src/tauon/t_modules/t_main.py:26818
 msgid "Level 2"
-msgstr ""
+msgstr "Taso 2"
 
 #: src/tauon/t_modules/t_main.py:26819
 msgid "Level 3"
-msgstr ""
+msgstr "Taso 3"
 
 #: src/tauon/t_modules/t_main.py:26826
 msgid "By"
-msgstr ""
+msgstr "Tekijä"
 
 #: src/tauon/t_modules/t_main.py:26830
 msgid "Rows"
-msgstr ""
+msgstr "Rivit"
 
 #: src/tauon/t_modules/t_main.py:26832
 msgid "Columns"
-msgstr ""
+msgstr "Sarakkeet"
 
 #: src/tauon/t_modules/t_main.py:26839 src/tauon/t_modules/t_main.py:27447
 msgid "Background"
-msgstr ""
+msgstr "Tausta"
 
 #: src/tauon/t_modules/t_main.py:26852
 msgid "Randomize"
-msgstr ""
+msgstr "Satunnaista"
 
 #: src/tauon/t_modules/t_main.py:26856
 msgid "Use padding"
-msgstr ""
+msgstr "Käytä täytettä"
 
 #: src/tauon/t_modules/t_main.py:26861
 msgid "Include album titles"
-msgstr ""
+msgstr "Sisällytä albumien nimet"
 
 #: src/tauon/t_modules/t_main.py:26863
 msgid "Sort by top played"
-msgstr ""
+msgstr "Lajittele eniten toistettujen mukaan"
 
 #: src/tauon/t_modules/t_main.py:26870
 msgid "Return"
-msgstr ""
+msgstr "Palaa"
 
 #: src/tauon/t_modules/t_main.py:26874
 msgid "Generate"
-msgstr ""
+msgstr "Luo"
 
 #: src/tauon/t_modules/t_main.py:26883
 msgid "Generating..."
-msgstr ""
+msgstr "Luodaan..."
 
 #: src/tauon/t_modules/t_main.py:26884
 msgid "Please wait."
-msgstr ""
+msgstr "Odota."
 
 #: src/tauon/t_modules/t_main.py:26888
-#, fuzzy
 msgid "{N} Album chart"
-msgstr "Seuraava kappale"
+msgstr "{N} albumin kaavio"
 
 #: src/tauon/t_modules/t_main.py:26896
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "Soittolistassa ei ole tarpeeksi albumeita!"
 
 #: src/tauon/t_modules/t_main.py:26904
 msgid "Ready"
-msgstr ""
+msgstr "Valmis"
 
 #: src/tauon/t_modules/t_main.py:26928
 msgid "Tracklist items"
-msgstr ""
+msgstr "Kappalelistan kohteet"
 
 #: src/tauon/t_modules/t_main.py:26933
 msgid "Loves"
-msgstr ""
+msgstr "Suosikit"
 
 #: src/tauon/t_modules/t_main.py:26934
-#, fuzzy
 msgid "Track ratings"
-msgstr "Seuraava kappale"
+msgstr "Kappalearviot"
 
 #: src/tauon/t_modules/t_main.py:26937
-#, fuzzy
 msgid "Album ratings"
-msgstr "Seuraava kappale"
+msgstr "Albumiarviot"
 
 #: src/tauon/t_modules/t_main.py:26938
 msgid "Star hints"
-msgstr ""
+msgstr "Tähtivihjeet"
 
 #: src/tauon/t_modules/t_main.py:26941
 msgid "Playcount lines"
-msgstr ""
+msgstr "Toistomäärärivit"
 
 #: src/tauon/t_modules/t_main.py:26943
 msgid "Left align"
-msgstr ""
+msgstr "Tasaa vasemmalle"
 
 #: src/tauon/t_modules/t_main.py:26956
 msgid "Year"
-msgstr ""
+msgstr "Vuosi"
 
 #: src/tauon/t_modules/t_main.py:26963
 msgid "Sizing"
-msgstr ""
+msgstr "Kokoasetukset"
 
 #: src/tauon/t_modules/t_main.py:26971
 msgid "Font size"
-msgstr ""
+msgstr "Fonttikoko"
 
 #: src/tauon/t_modules/t_main.py:26980
 msgid "Row height"
-msgstr ""
+msgstr "Rivin korkeus"
 
 #: src/tauon/t_modules/t_main.py:26990
 msgid "Text baseline"
-msgstr ""
+msgstr "Tekstin perusviiva"
 
 #: src/tauon/t_modules/t_main.py:27011
 msgid "Thin default"
-msgstr ""
+msgstr "Ohut oletus"
 
 #: src/tauon/t_modules/t_main.py:27012
 msgid "Thick default"
-msgstr ""
+msgstr "Paksu oletus"
 
 #: src/tauon/t_modules/t_main.py:27193
 msgid "Discord"
-msgstr ""
+msgstr "Discord"
 
 #: src/tauon/t_modules/t_main.py:27194
 msgid "Layout, buttons and idle behavior."
-msgstr ""
+msgstr "Asettelu, painikkeet ja joutotilan toiminta."
 
 #: src/tauon/t_modules/t_main.py:27209
 msgid "Card order"
-msgstr ""
+msgstr "Korttien järjestys"
 
 #: src/tauon/t_modules/t_main.py:27213
 msgid "Song first"
-msgstr ""
+msgstr "Kappale ensin"
 
 #: src/tauon/t_modules/t_main.py:27221
 msgid "Artist first"
-msgstr ""
+msgstr "Artisti ensin"
 
 #: src/tauon/t_modules/t_main.py:27229
 msgid "Member list shows:"
-msgstr ""
+msgstr "Jäsenlista näyttää:"
 
 #: src/tauon/t_modules/t_main.py:27233
 msgid "Song"
-msgstr ""
+msgstr "Kappale"
 
 #: src/tauon/t_modules/t_main.py:27248 src/tauon/t_modules/t_main.py:28155
 #: src/tauon/t_modules/t_main.py:28215 src/tauon/t_modules/t_main.py:28406
 msgid "Options"
-msgstr ""
+msgstr "Valinnat"
 
 #: src/tauon/t_modules/t_main.py:27253
 msgid "Clean title (Removes .feat etc)"
-msgstr ""
+msgstr "Siisti nimi (poistaa .feat ym.)"
 
 #: src/tauon/t_modules/t_main.py:27260
 msgid "Last.fm link button"
-msgstr ""
+msgstr "Last.fm-linkkipainike"
 
 #: src/tauon/t_modules/t_main.py:27267
 msgid "Tauon website button"
-msgstr ""
+msgstr "Tauonin verkkosivupainike"
 
 #: src/tauon/t_modules/t_main.py:27274
 msgid "Keep idle"
-msgstr ""
+msgstr "Pidä joutilas"
 
 #: src/tauon/t_modules/t_main.py:27305
 msgid "Scroll feel and side panel layout."
-msgstr ""
+msgstr "Vieritystuntuma ja sivupaneelin asettelu."
 
 #: src/tauon/t_modules/t_main.py:27311
 msgid "Smooth scrolling"
-msgstr ""
+msgstr "Sulava vieritys"
 
 #: src/tauon/t_modules/t_main.py:27312
 msgid "Trackpad scrolling stays smooth either way."
-msgstr ""
+msgstr "Ohjauslevyn vieritys pysyy sulavana kummassakin tapauksessa."
 
 #: src/tauon/t_modules/t_main.py:27319
 msgid "Centered metadata side panel"
-msgstr ""
+msgstr "Keskitetty metadatan sivupaneeli"
 
 #: src/tauon/t_modules/t_main.py:27326
 msgid "Metadata panel on left"
-msgstr ""
+msgstr "Metadatapaneeli vasemmalla"
 
 #: src/tauon/t_modules/t_main.py:27334
 msgid "Zoom album art to fit"
-msgstr ""
+msgstr "Sovita kansikuva zoomaamalla"
 
 #: src/tauon/t_modules/t_main.py:27343
 msgid "MilkDrop visualiser"
-msgstr ""
+msgstr "MilkDrop-visualisointi"
 
 #: src/tauon/t_modules/t_main.py:27353
 msgid "Showcase visualisation"
-msgstr ""
+msgstr "Esittelyvisualisointi"
 
 #: src/tauon/t_modules/t_main.py:27359 src/tauon/t_modules/t_main.py:40609
 #: src/tauon/t_modules/t_main.py:40612
 msgid "Gallery"
-msgstr ""
+msgstr "Galleria"
 
 #: src/tauon/t_modules/t_main.py:27360
 msgid "Browsing and thumbnail layout."
-msgstr ""
+msgstr "Selaus- ja pikkukuva-asettelu."
 
 #: src/tauon/t_modules/t_main.py:27366
 msgid "Single click to play"
-msgstr ""
+msgstr "Toista yhdellä napsautuksella"
 
 #: src/tauon/t_modules/t_main.py:27373
 msgid "Scroll gallery by row"
-msgstr ""
+msgstr "Vieritä galleriaa riveittäin"
 
 #: src/tauon/t_modules/t_main.py:27380
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Yhdistä monilevyiset"
 
 #: src/tauon/t_modules/t_main.py:27387
 msgid "Show titles"
-msgstr ""
+msgstr "Näytä nimet"
 
 #: src/tauon/t_modules/t_main.py:27394
 msgid "Center title text"
-msgstr ""
+msgstr "Keskitä nimen teksti"
 
 #: src/tauon/t_modules/t_main.py:27400
 msgid "Thumbnail size"
-msgstr ""
+msgstr "Pikkukuvan koko"
 
 #: src/tauon/t_modules/t_main.py:27414
 msgid "Prefer thinner padding"
-msgstr ""
+msgstr "Suosi ohuempaa täytettä"
 
 #: src/tauon/t_modules/t_main.py:27448
 msgid "Artwork and automatic theme changes."
-msgstr ""
+msgstr "Kuvitus ja automaattiset teemamuutokset."
 
 #: src/tauon/t_modules/t_main.py:27451
 msgid "Use album art as background"
-msgstr ""
+msgstr "Käytä kansikuvaa taustana"
 
 #: src/tauon/t_modules/t_main.py:27454
 msgid "Prefer artist backgrounds"
-msgstr ""
+msgstr "Suosi artistitaustoja"
 
 #: src/tauon/t_modules/t_main.py:27458
 msgid "Also enabling 'auto-fetch artist data' to scrape last.fm."
-msgstr ""
+msgstr "Ottaa myös käyttöön artistitietojen automaattisen noudon Last.fm:stä keräämistä varten."
 
 #: src/tauon/t_modules/t_main.py:27459
 msgid "You can toggle this back off under Settings > General"
-msgstr ""
+msgstr "Voit poistaa tämän käytöstä kohdassa Asetukset > Yleiset"
 
 #: src/tauon/t_modules/t_main.py:27462
 msgid "Stronger background"
-msgstr ""
+msgstr "Vahvempi tausta"
 
 #: src/tauon/t_modules/t_main.py:27464
 msgid "Blur background"
-msgstr ""
+msgstr "Sumenna tausta"
 
 #: src/tauon/t_modules/t_main.py:27466
 msgid "Auto-theme from album art"
-msgstr ""
+msgstr "Automaattinen teema kansikuvasta"
 
 #: src/tauon/t_modules/t_main.py:27470
 msgid "Theme preset"
-msgstr ""
+msgstr "Teemaesiasetus"
 
 #: src/tauon/t_modules/t_main.py:27567
 msgid "Edit"
-msgstr ""
+msgstr "Muokkaa"
 
 #: src/tauon/t_modules/t_main.py:27574 src/tauon/t_modules/t_main.py:47687
 #: src/tauon/t_modules/t_main.py:47689 src/tauon/t_modules/t_main.py:53031
 msgid "Delete"
-msgstr ""
+msgstr "Poista"
 
 #: src/tauon/t_modules/t_main.py:27576
 msgid "Transparent accent"
-msgstr ""
+msgstr "Läpinäkyvä korostus"
 
 #: src/tauon/t_modules/t_main.py:27595
 msgid "Window"
-msgstr ""
+msgstr "Ikkuna"
 
 #: src/tauon/t_modules/t_main.py:27596
 msgid "Notifications and on-screen controls."
-msgstr ""
+msgstr "Ilmoitukset ja näytön ohjaimet."
 
 #: src/tauon/t_modules/t_main.py:27599
 msgid "Emit track change notifications"
-msgstr ""
+msgstr "Lähetä ilmoitukset kappaleen vaihtuessa"
 
 #: src/tauon/t_modules/t_main.py:27601
 msgid "Draw own window decorations"
-msgstr ""
+msgstr "Piirrä omat ikkunakoristeet"
 
 #: src/tauon/t_modules/t_main.py:27604
 msgid "Show playing in titlebar"
-msgstr ""
+msgstr "Näytä toistettava otsikkopalkissa"
 
 #: src/tauon/t_modules/t_main.py:27607
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Minitila aina päällimmäisenä"
 
 #: src/tauon/t_modules/t_main.py:27609
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr ""
+msgstr "Aina päällimmäisenä -toimintoa ei ole vielä toteutettu Wayland-tilassa"
 
 #: src/tauon/t_modules/t_main.py:27611
 msgid "Top-panel visualiser"
-msgstr ""
+msgstr "Yläpaneelin visualisointi"
 
 #: src/tauon/t_modules/t_main.py:27615
 msgid "Tray and scale"
-msgstr ""
+msgstr "Ilmaisinalue ja skaalaus"
 
 #: src/tauon/t_modules/t_main.py:27616
 msgid "System tray and interface scaling."
-msgstr ""
+msgstr "Ilmaisinalue ja käyttöliittymän skaalaus."
 
 #: src/tauon/t_modules/t_main.py:27620
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Näytä kuvake ilmaisinalueella"
 
 #: src/tauon/t_modules/t_main.py:27622 src/tauon/t_modules/t_main.py:27634
 msgid "Close to tray"
-msgstr ""
+msgstr "Sulje ilmaisinalueelle"
 
 #: src/tauon/t_modules/t_main.py:27624
 msgid "Show title text"
-msgstr ""
+msgstr "Näytä otsikkoteksti"
 
 #: src/tauon/t_modules/t_main.py:27627
 msgid "Monochrome tray icon"
-msgstr ""
+msgstr "Yksivärinen ilmaisinalueen kuvake"
 
 #: src/tauon/t_modules/t_main.py:27631
 msgid "Restart Tauon for change to take effect"
-msgstr ""
+msgstr "Käynnistä Tauon uudelleen, jotta muutos tulee voimaan"
 
 #: src/tauon/t_modules/t_main.py:27660
 msgid "Interface scale"
-msgstr ""
+msgstr "Käyttöliittymän skaalaus"
 
 #: src/tauon/t_modules/t_main.py:27667
 msgid "auto"
-msgstr ""
+msgstr "auto"
 
 #: src/tauon/t_modules/t_main.py:27679
 msgid "Auto scale"
-msgstr ""
+msgstr "Automaattinen skaalaus"
 
 #: src/tauon/t_modules/t_main.py:27691
 msgid "Audio controls are only available with the PHAzOR backend."
-msgstr ""
+msgstr "Ääniohjaimet ovat käytettävissä vain PHAzOR-taustajärjestelmällä."
 
 #: src/tauon/t_modules/t_main.py:27693
 msgid "Playback backend"
-msgstr ""
+msgstr "Toiston taustajärjestelmä"
 
 #: src/tauon/t_modules/t_main.py:27711
 msgid "Playback and cache"
-msgstr ""
+msgstr "Toisto ja välimuisti"
 
 #: src/tauon/t_modules/t_main.py:27712
 msgid "Playback behaviour and local file caching."
-msgstr ""
+msgstr "Toiston toiminta ja paikallisten tiedostojen välimuisti."
 
 #: src/tauon/t_modules/t_main.py:27715
 msgid "Fade on pause and stop"
-msgstr ""
+msgstr "Häivytä tauolla ja pysäytyksessä"
 
 #: src/tauon/t_modules/t_main.py:27717
 msgid "Fade on track jump"
-msgstr ""
+msgstr "Häivytä kappalehyppyjen yhteydessä"
 
 #: src/tauon/t_modules/t_main.py:27719
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Takaisin aloittaa alusta"
 
 #: src/tauon/t_modules/t_main.py:27721
 msgid "Cache local files"
-msgstr ""
+msgstr "Tallenna paikalliset tiedostot välimuistiin"
 
 #: src/tauon/t_modules/t_main.py:27724
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Käytä pysyvää verkkovälimuistia"
 
 #: src/tauon/t_modules/t_main.py:27730
 msgid "Cache size"
-msgstr ""
+msgstr "Välimuistin koko"
 
 #: src/tauon/t_modules/t_main.py:27742
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Vältä uudelleennäytteistystä"
 
 #: src/tauon/t_modules/t_main.py:27755
 msgid "ReplayGain"
-msgstr ""
+msgstr "ReplayGain"
 
 #: src/tauon/t_modules/t_main.py:27756
 msgid "Playback loudness matching."
-msgstr ""
+msgstr "Toiston äänenvoimakkuuden tasaus."
 
 #: src/tauon/t_modules/t_main.py:27763
 msgid "Ignore ReplayGain tags."
-msgstr ""
+msgstr "Ohita ReplayGain-tunnisteet."
 
 #: src/tauon/t_modules/t_main.py:27763 src/tauon/t_modules/t_main.py:48000
 msgid "Off"
-msgstr ""
+msgstr "Pois"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Auto"
-msgstr ""
+msgstr "Automaattinen"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Use the best tag available."
-msgstr ""
+msgstr "Käytä parasta saatavilla olevaa tunnistetta."
 
 #: src/tauon/t_modules/t_main.py:27765
 msgid "Preserve album dynamics."
-msgstr ""
+msgstr "Säilytä albumin dynamiikka."
 
 #: src/tauon/t_modules/t_main.py:27766
 msgid "Match track loudness."
-msgstr ""
+msgstr "Tasaa kappaleiden äänenvoimakkuus."
 
 #: src/tauon/t_modules/t_main.py:27766 src/tauon/t_modules/t_main.py:28893
 #: src/tauon/t_modules/t_main.py:28908
-#, fuzzy
 msgid "Tracks"
-msgstr "Seuraava kappale"
+msgstr "Kappaleet"
 
 #: src/tauon/t_modules/t_main.py:27782
 msgid "Pre-amp"
-msgstr ""
+msgstr "Esivahvistus"
 
 #: src/tauon/t_modules/t_main.py:27792
 msgid "Equalizer"
-msgstr ""
+msgstr "Taajuuskorjain"
 
 #: src/tauon/t_modules/t_main.py:27793
 msgid "Ten-band playback EQ."
-msgstr ""
+msgstr "Kymmenkaistainen toiston taajuuskorjain."
 
 #: src/tauon/t_modules/t_main.py:27808
 msgid "Enable EQ"
-msgstr ""
+msgstr "Ota taajuuskorjain käyttöön"
 
 #: src/tauon/t_modules/t_main.py:27811
 msgid "Reset"
-msgstr ""
+msgstr "Nollaa"
 
 #: src/tauon/t_modules/t_main.py:27894
 msgid "Encoding"
-msgstr ""
+msgstr "Koodaus"
 
 #: src/tauon/t_modules/t_main.py:27895
 msgid "Select default codec and bitrate."
-msgstr ""
+msgstr "Valitse oletuskoodekki ja bittinopeus."
 
 #: src/tauon/t_modules/t_main.py:27896
 msgid "Files"
-msgstr ""
+msgstr "Tiedostot"
 
 #: src/tauon/t_modules/t_main.py:27897
 msgid "Output location and overwrite rules."
-msgstr ""
+msgstr "Tulostussijainti ja ylikirjoitussäännöt."
 
 #: src/tauon/t_modules/t_main.py:27910
 msgid "Lossless output."
-msgstr ""
+msgstr "Häviötön ulostulo."
 
 #: src/tauon/t_modules/t_main.py:27911
 msgid "Small files, good quality."
-msgstr ""
+msgstr "Pienet tiedostot, hyvä laatu."
 
 #: src/tauon/t_modules/t_main.py:27912
 msgid "Compatible lossy output."
-msgstr ""
+msgstr "Yhteensopiva häviöllinen ulostulo."
 
 #: src/tauon/t_modules/t_main.py:27913
 msgid "Universal compatibility."
-msgstr ""
+msgstr "Yleinen yhteensopivuus."
 
 #: src/tauon/t_modules/t_main.py:27928
 msgid "Save opus as .ogg"
-msgstr ""
+msgstr "Tallenna Opus .ogg-muodossa"
 
 #: src/tauon/t_modules/t_main.py:27945
 msgid "Open output folder"
-msgstr ""
+msgstr "Avaa tulostuskansio"
 
 #: src/tauon/t_modules/t_main.py:27947
 msgid "Save to output folder"
-msgstr ""
+msgstr "Tallenna tulostuskansioon"
 
 #: src/tauon/t_modules/t_main.py:27949
 msgid "Save and overwrite files in place"
-msgstr ""
+msgstr "Tallenna ja korvaa tiedostot paikallaan"
 
 #: src/tauon/t_modules/t_main.py:27955
 msgid "Sync to device"
-msgstr ""
+msgstr "Synkronoi laitteelle"
 
 #: src/tauon/t_modules/t_main.py:27956
 msgid "Transcode and copy a selected playlist."
-msgstr ""
+msgstr "Transkoodaa ja kopioi valittu soittolista."
 
 #: src/tauon/t_modules/t_main.py:27964
-#, fuzzy
 msgid "No sync playlist selected"
-msgstr "Soittolistan loppu"
+msgstr "Synkronointisoittolistaa ei ole valittu"
 
 #: src/tauon/t_modules/t_main.py:27967
-#, fuzzy
 msgid "Source Playlist"
-msgstr "Soittolistan loppu"
+msgstr "Lähdesoittolista"
 
 #: src/tauon/t_modules/t_main.py:27970
 msgid "Target folder"
-msgstr ""
+msgstr "Kohdekansio"
 
 #: src/tauon/t_modules/t_main.py:27990
 msgid "A mounted music folder was found!"
-msgstr ""
+msgstr "Liitetty musiikkikansio löytyi!"
 
 #: src/tauon/t_modules/t_main.py:27992
 msgid "Could not auto-detect mounted device path."
-msgstr ""
+msgstr "Liitetyn laitteen polkua ei voitu tunnistaa automaattisesti."
 
 #: src/tauon/t_modules/t_main.py:27992
 msgid "Make sure the device is mounted and path is accessible."
-msgstr ""
+msgstr "Varmista, että laite on liitetty ja polku on käytettävissä."
 
 #: src/tauon/t_modules/t_main.py:27995
 msgid "Delete other folders in target"
-msgstr ""
+msgstr "Poista muut kansiot kohteesta"
 
 #: src/tauon/t_modules/t_main.py:27997
 msgid "Transcode files"
-msgstr ""
+msgstr "Transkoodaa tiedostot"
 
 #: src/tauon/t_modules/t_main.py:27999
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Ohita matala bittinopeus"
 
 #: src/tauon/t_modules/t_main.py:28001
 msgid "Start Sync"
-msgstr ""
+msgstr "Aloita synkronointi"
 
 #: src/tauon/t_modules/t_main.py:28001
 msgid "Start Transcode and Sync"
-msgstr ""
+msgstr "Aloita transkoodaus ja synkronointi"
 
 #: src/tauon/t_modules/t_main.py:28003
 msgid "Stopping..."
-msgstr ""
+msgstr "Pysäytetään..."
 
 #: src/tauon/t_modules/t_main.py:28005
 msgid "Stop"
-msgstr ""
+msgstr "Pysäytä"
 
 #: src/tauon/t_modules/t_main.py:28013
-#, fuzzy
 msgid "Select a source playlist"
-msgstr "Soittolistan loppu"
+msgstr "Valitse lähdesoittolista"
 
 #: src/tauon/t_modules/t_main.py:28013
 msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr ""
+msgstr "Napsauta välilehteä oikealla > Sekalaiset... > Aseta synkronointisoittolistaksi"
 
 #: src/tauon/t_modules/t_main.py:28020
 msgid "Scrobbles and loves."
-msgstr ""
+msgstr "Scrobblet ja suosikit."
 
 #: src/tauon/t_modules/t_main.py:28021 src/tauon/t_modules/t_main.py:28188
 msgid "Token-based scrobbling."
-msgstr ""
+msgstr "Tunnukseen perustuva scrobbling."
 
 #: src/tauon/t_modules/t_main.py:28022
 msgid "Self-hosted scrobbling."
-msgstr ""
+msgstr "Itse ylläpidetty scrobbling."
 
 #: src/tauon/t_modules/t_main.py:28025 src/tauon/t_modules/t_main.py:28028
 msgid "Network library."
-msgstr ""
+msgstr "Verkkokirjasto."
 
 #: src/tauon/t_modules/t_main.py:28026
-#, fuzzy
 msgid "Albums and tracks."
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Albumit ja kappaleet."
 
 #: src/tauon/t_modules/t_main.py:28027
 msgid "Subsonic library."
-msgstr ""
+msgstr "Subsonic-kirjasto."
 
 #: src/tauon/t_modules/t_main.py:28029
 msgid "Tauon-to-Tauon sync."
-msgstr ""
+msgstr "Tauonista Tauoniin -synkronointi."
 
 #: src/tauon/t_modules/t_main.py:28033
 msgid "Artwork sources."
-msgstr ""
+msgstr "Kuvituslähteet."
 
 #: src/tauon/t_modules/t_main.py:28059
-#, fuzzy
 msgid "Account not connected."
-msgstr "Spotify-tili yhdistetty"
+msgstr "Tiliä ei ole yhdistetty."
 
 #: src/tauon/t_modules/t_main.py:28072
 msgid "Scrobble playback and sync loves."
-msgstr ""
+msgstr "Scrobblaa toisto ja synkronoi suosikit."
 
 #: src/tauon/t_modules/t_main.py:28078 src/tauon/t_modules/t_main.py:28195
 #: src/tauon/t_modules/t_main.py:28468
 msgid "Enable scrobbling"
-msgstr ""
+msgstr "Ota scrobbling käyttöön"
 
 #: src/tauon/t_modules/t_main.py:28087 src/tauon/t_modules/t_main.py:28723
 msgid "Login"
-msgstr ""
+msgstr "Kirjaudu sisään"
 
 #: src/tauon/t_modules/t_main.py:28088
 msgid "Done"
-msgstr ""
+msgstr "Valmis"
 
 #: src/tauon/t_modules/t_main.py:28097
 msgid "Use LibreFM"
-msgstr ""
+msgstr "Käytä LibreFM:ää"
 
 #: src/tauon/t_modules/t_main.py:28101
 msgid "Use Login, finish the browser step, then click Done."
-msgstr ""
+msgstr "Käytä kirjautumista, suorita selainvaihe ja napsauta sitten Valmis."
 
 #: src/tauon/t_modules/t_main.py:28103
 msgid "Finish authorisation in the browser, then click Done."
-msgstr ""
+msgstr "Viimeistele valtuutus selaimessa ja napsauta sitten Valmis."
 
 #: src/tauon/t_modules/t_main.py:28104
 msgid "Authorisation"
-msgstr ""
+msgstr "Valtuutus"
 
 #: src/tauon/t_modules/t_main.py:28109
 msgid "Forget account"
-msgstr ""
+msgstr "Unohda tili"
 
 #: src/tauon/t_modules/t_main.py:28114
 msgid "Signed in as"
-msgstr ""
+msgstr "Kirjautuneena käyttäjänä"
 
 #: src/tauon/t_modules/t_main.py:28120
 msgid "Library sync"
-msgstr ""
+msgstr "Kirjaston synkronointi"
 
 #: src/tauon/t_modules/t_main.py:28121
 msgid "Pull loves and scrobble counts into Tauon."
-msgstr ""
+msgstr "Nouda suosikit ja scrobble-määrät Tauoniin."
 
 #: src/tauon/t_modules/t_main.py:28127
 msgid "Get user loves"
-msgstr ""
+msgstr "Nouda käyttäjän suosikit"
 
 #: src/tauon/t_modules/t_main.py:28128
 msgid "Clear local loves"
-msgstr ""
+msgstr "Tyhjennä paikalliset suosikit"
 
 #: src/tauon/t_modules/t_main.py:28136
 msgid "Get friend loves"
-msgstr ""
+msgstr "Nouda ystävän suosikit"
 
 #: src/tauon/t_modules/t_main.py:28137
 msgid "Clear friend loves"
-msgstr ""
+msgstr "Tyhjennä ystävän suosikit"
 
 #: src/tauon/t_modules/t_main.py:28145 src/tauon/t_modules/t_main.py:28525
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Nouda scrobble-määrät"
 
 #: src/tauon/t_modules/t_main.py:28146 src/tauon/t_modules/t_main.py:28526
 msgid "Clear counts"
-msgstr ""
+msgstr "Tyhjennä määrät"
 
 #: src/tauon/t_modules/t_main.py:28156
 msgid "Controls for import and playback display."
-msgstr ""
+msgstr "Tuonnin ja toistonäytön ohjaimet."
 
 #: src/tauon/t_modules/t_main.py:28163
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Nouda suosikki scrobblessa/uudelleentarkistuksessa"
 
 #: src/tauon/t_modules/t_main.py:28167
 msgid "This will overwrite local love state when it differs from last.fm."
-msgstr ""
+msgstr "Tämä korvaa paikallisen suosikkitilan, kun se eroaa Last.fm:stä."
 
 #: src/tauon/t_modules/t_main.py:28172 src/tauon/t_modules/t_main.py:28230
 #: src/tauon/t_modules/t_main.py:28476
 msgid "Show threshold marker"
-msgstr ""
+msgstr "Näytä kynnysmerkki"
 
 #: src/tauon/t_modules/t_main.py:28191
 msgid "Token saved."
-msgstr ""
+msgstr "Tunnus tallennettu."
 
 #: src/tauon/t_modules/t_main.py:28191
 msgid "Paste a token to enable ListenBrainz."
-msgstr ""
+msgstr "Liitä tunnus ottaaksesi ListenBrainzin käyttöön."
 
 #: src/tauon/t_modules/t_main.py:28203
 msgid "Paste token"
-msgstr ""
+msgstr "Liitä tunnus"
 
 #: src/tauon/t_modules/t_main.py:28204 src/tauon/t_modules/t_main.py:47682
 #: src/tauon/t_modules/t_main.py:47998
 msgid "Clear"
-msgstr ""
+msgstr "Tyhjennä"
 
 #: src/tauon/t_modules/t_main.py:28209
 msgid "Using the default ListenBrainz endpoint."
-msgstr ""
+msgstr "Käytetään ListenBrainzin oletuspäätepistettä."
 
 #: src/tauon/t_modules/t_main.py:28210
 msgid "Endpoint"
-msgstr ""
+msgstr "Päätepiste"
 
 #: src/tauon/t_modules/t_main.py:28216
 msgid "Extra controls for ListenBrainz."
-msgstr ""
+msgstr "ListenBrainzin lisäohjaimet."
 
 #: src/tauon/t_modules/t_main.py:28222
 msgid "Open profile"
-msgstr ""
+msgstr "Avaa profiili"
 
 #: src/tauon/t_modules/t_main.py:28243
 msgid "Reset flips"
-msgstr ""
+msgstr "Nollaa käännöt"
 
 #: src/tauon/t_modules/t_main.py:28253 src/tauon/t_modules/t_main.py:35694
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/tauon/t_modules/t_main.py:28259
 msgid "Artwork sources for artist images and covers."
-msgstr ""
+msgstr "Kuvituslähteet artistikuville ja kansikuville."
 
 #: src/tauon/t_modules/t_main.py:28264
 msgid "Use fanart.tv for artist images and manual cover art lookup."
-msgstr ""
+msgstr "Käytä fanart.tv:tä artistikuviin ja manuaaliseen kansikuvahakuun."
 
 #: src/tauon/t_modules/t_main.py:28272
 msgid "Cover art (manual only)"
-msgstr ""
+msgstr "Kansikuva (vain manuaalinen)"
 
 #: src/tauon/t_modules/t_main.py:28279
 msgid "Artist images (automatic)"
-msgstr ""
+msgstr "Artistikuvat (automaattinen)"
 
 #: src/tauon/t_modules/t_main.py:28286
 msgid "Flip current"
-msgstr ""
+msgstr "Käännä nykyinen"
 
 #: src/tauon/t_modules/t_main.py:28301
 msgid "Finish the sign-in step to continue."
-msgstr ""
+msgstr "Viimeistele sisäänkirjautuminen jatkaaksesi."
 
 #: src/tauon/t_modules/t_main.py:28301
 msgid "Connect to a Plex server."
-msgstr ""
+msgstr "Yhdistä Plex-palvelimeen."
 
 #: src/tauon/t_modules/t_main.py:28306
 msgid "Two-factor code"
-msgstr ""
+msgstr "Kaksivaiheinen koodi"
 
 #: src/tauon/t_modules/t_main.py:28315 src/tauon/t_modules/t_main.py:28380
 msgid "Username / Email"
-msgstr ""
+msgstr "Käyttäjänimi / sähköposti"
 
 #: src/tauon/t_modules/t_main.py:28323 src/tauon/t_modules/t_main.py:28388
 #: src/tauon/t_modules/t_main.py:28567
 msgid "Password"
-msgstr ""
+msgstr "Salasana"
 
 #: src/tauon/t_modules/t_main.py:28332
 msgid "Server name"
-msgstr ""
+msgstr "Palvelimen nimi"
 
 #: src/tauon/t_modules/t_main.py:28341 src/tauon/t_modules/t_main.py:28509
 #: src/tauon/t_modules/t_main.py:28597 src/tauon/t_modules/t_main.py:28659
 #: src/tauon/t_modules/t_main.py:28761
 msgid "Actions"
-msgstr ""
+msgstr "Toiminnot"
 
 #: src/tauon/t_modules/t_main.py:28342
-#, fuzzy
 msgid "Import from Plex."
-msgstr "Spotify-tuonti valmis"
+msgstr "Tuo Plexistä."
 
 #: src/tauon/t_modules/t_main.py:28349
 msgid "Continue"
-msgstr ""
+msgstr "Jatka"
 
 #: src/tauon/t_modules/t_main.py:28358 src/tauon/t_modules/t_main.py:28421
-#, fuzzy
 msgid "Import music to playlist"
-msgstr "Seuraava kappale"
+msgstr "Tuo musiikki soittolistaan"
 
 #: src/tauon/t_modules/t_main.py:28374
 msgid "Airsonic / Subsonic"
-msgstr ""
+msgstr "Airsonic / Subsonic"
 
 #: src/tauon/t_modules/t_main.py:28375
 msgid "Connect to a Subsonic-compatible server."
-msgstr ""
+msgstr "Yhdistä Subsonic-yhteensopivaan palvelimeen."
 
 #: src/tauon/t_modules/t_main.py:28397 src/tauon/t_modules/t_main.py:28490
 #: src/tauon/t_modules/t_main.py:28576
 msgid "Server URL"
-msgstr ""
+msgstr "Palvelimen URL"
 
 #: src/tauon/t_modules/t_main.py:28407
-#, fuzzy
 msgid "Import and authentication settings."
-msgstr "Todenna Spotify asetuksissa"
+msgstr "Tuonnin ja tunnistautumisen asetukset."
 
 #: src/tauon/t_modules/t_main.py:28413
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Käytä selväkielistä tunnistautumista"
 
 #: src/tauon/t_modules/t_main.py:28414
 msgid "Needed for Nextcloud Music."
-msgstr ""
+msgstr "Tarvitaan Nextcloud Musicille."
 
 #: src/tauon/t_modules/t_main.py:28448
 msgid "Connection looked successful but the API key was invalid."
-msgstr ""
+msgstr "Yhteys näytti onnistuneen, mutta API-avain oli virheellinen."
 
 #: src/tauon/t_modules/t_main.py:28450
 msgid "Connection to Maloja server was successful."
-msgstr ""
+msgstr "Yhteys Maloja-palvelimeen onnistui."
 
 #: src/tauon/t_modules/t_main.py:28452
 msgid "The Maloja server returned an error."
-msgstr ""
+msgstr "Maloja-palvelin palautti virheen."
 
 #: src/tauon/t_modules/t_main.py:28455
 msgid "Could not communicate with the Maloja server."
-msgstr ""
+msgstr "Maloja-palvelimen kanssa ei voitu viestiä."
 
 #: src/tauon/t_modules/t_main.py:28458
-#, fuzzy
 msgid "No server configured."
-msgstr "Verkkopalvelin pysäytetty."
+msgstr "Palvelinta ei ole määritetty."
 
 #: src/tauon/t_modules/t_main.py:28462
 msgid "Self-hosted scrobble server."
-msgstr ""
+msgstr "Itse ylläpidetty scrobble-palvelin."
 
 #: src/tauon/t_modules/t_main.py:28484
 msgid "Credentials"
-msgstr ""
+msgstr "Kirjautumistiedot"
 
 #: src/tauon/t_modules/t_main.py:28485
 msgid "Server address and API key."
-msgstr ""
+msgstr "Palvelimen osoite ja API-avain."
 
 #: src/tauon/t_modules/t_main.py:28498
 msgid "API key"
-msgstr ""
+msgstr "API-avain"
 
 #: src/tauon/t_modules/t_main.py:28510
 msgid "Connectivity and library import."
-msgstr ""
+msgstr "Yhteys ja kirjaston tuonti."
 
 #: src/tauon/t_modules/t_main.py:28516
 msgid "About Maloja"
-msgstr ""
+msgstr "Tietoja Malojasta"
 
 #: src/tauon/t_modules/t_main.py:28517 src/tauon/t_modules/t_main.py:28613
 msgid "Test connectivity"
-msgstr ""
+msgstr "Testaa yhteys"
 
 #: src/tauon/t_modules/t_main.py:28546
 msgid "Run music import first"
-msgstr ""
+msgstr "Suorita musiikin tuonti ensin"
 
 #: src/tauon/t_modules/t_main.py:28554
 msgid "Connect to a Jellyfin server."
-msgstr ""
+msgstr "Yhdistä Jellyfin-palvelimeen."
 
 #: src/tauon/t_modules/t_main.py:28559
 msgid "Username"
-msgstr ""
+msgstr "Käyttäjänimi"
 
 #: src/tauon/t_modules/t_main.py:28584
-#, fuzzy
 msgid "Import timeout"
-msgstr "Seuraava kappale"
+msgstr "Tuonnin aikakatkaisu"
 
 #: src/tauon/t_modules/t_main.py:28598
-#, fuzzy
 msgid "Import music and playlists."
-msgstr "Seuraava kappale"
+msgstr "Tuo musiikki ja soittolistat."
 
 #: src/tauon/t_modules/t_main.py:28604
-#, fuzzy
 msgid "Import music"
-msgstr "Seuraava kappale"
+msgstr "Tuo musiikki"
 
 #: src/tauon/t_modules/t_main.py:28605
-#, fuzzy
 msgid "Import playlists"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Tuo soittolistat"
 
 #: src/tauon/t_modules/t_main.py:28630
 msgid "Fetch a playlist from another Tauon instance."
-msgstr ""
+msgstr "Nouda soittolista toisesta Tauon-instanssista."
 
 #: src/tauon/t_modules/t_main.py:28635
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: src/tauon/t_modules/t_main.py:28643
-#, fuzzy
 msgid "Playlist name"
-msgstr "Soittolistan loppu"
+msgstr "Soittolistan nimi"
 
 #: src/tauon/t_modules/t_main.py:28652
 msgid "An operation is already running"
-msgstr ""
+msgstr "Toiminto on jo käynnissä"
 
 #: src/tauon/t_modules/t_main.py:28660
-#, fuzzy
 msgid "Fetch the named playlist."
-msgstr "Soittolistan loppu"
+msgstr "Nouda nimetty soittolista."
 
 #: src/tauon/t_modules/t_main.py:28666
-#, fuzzy
 msgid "Get playlist"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Nouda soittolista"
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Signed in."
-msgstr ""
+msgstr "Kirjautunut."
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Waiting for redirect."
-msgstr ""
+msgstr "Odotetaan uudelleenohjausta."
 
 #: src/tauon/t_modules/t_main.py:28687
-#, fuzzy
 msgid "Not connected."
-msgstr "Spotify-tili yhdistetty"
+msgstr "Ei yhdistetty."
 
 #: src/tauon/t_modules/t_main.py:28691
 msgid "Authorise TIDAL and import favourites."
-msgstr ""
+msgstr "Valtuuta TIDAL ja tuo suosikit."
 
 #: src/tauon/t_modules/t_main.py:28694
 msgid "Status"
-msgstr ""
+msgstr "Tila"
 
 #: src/tauon/t_modules/t_main.py:28700
 msgid "Logout"
-msgstr ""
+msgstr "Kirjaudu ulos"
 
 #: src/tauon/t_modules/t_main.py:28707
 msgid "Copy the full URL of the resulting page, then paste it here."
-msgstr ""
+msgstr "Kopioi tulossivun koko URL ja liitä se tähän."
 
 #: src/tauon/t_modules/t_main.py:28709
 msgid "Redirect"
-msgstr ""
+msgstr "Uudelleenohjaus"
 
 #: src/tauon/t_modules/t_main.py:28715
 msgid "Paste redirect URL"
-msgstr ""
+msgstr "Liitä uudelleenohjauksen URL"
 
 #: src/tauon/t_modules/t_main.py:28732
-#, fuzzy
 msgid "Imports"
-msgstr "Seuraava kappale"
+msgstr "Tuonnit"
 
 #: src/tauon/t_modules/t_main.py:28733
 msgid "Pull favourites into Tauon."
-msgstr ""
+msgstr "Nouda suosikit Tauoniin."
 
 #: src/tauon/t_modules/t_main.py:28739
-#, fuzzy
 msgid "Import albums"
-msgstr "Seuraava kappale"
+msgstr "Tuo albumit"
 
 #: src/tauon/t_modules/t_main.py:28740
-#, fuzzy
 msgid "Import tracks"
-msgstr "Seuraava kappale"
+msgstr "Tuo kappaleet"
 
 #: src/tauon/t_modules/t_main.py:28755
 msgid "Service"
-msgstr ""
+msgstr "Palvelu"
 
 #: src/tauon/t_modules/t_main.py:28756
 msgid "No layout available."
-msgstr ""
+msgstr "Asettelua ei ole saatavilla."
 
 #: src/tauon/t_modules/t_main.py:28759
 msgid "This service view is not available right now."
-msgstr ""
+msgstr "Tämä palvelunäkymä ei ole nyt saatavilla."
 
 #: src/tauon/t_modules/t_main.py:28762
 msgid "Back to Last.fm"
-msgstr ""
+msgstr "Takaisin Last.fm:ään"
 
 #: src/tauon/t_modules/t_main.py:28797
 msgid "Accounts"
-msgstr ""
+msgstr "Tilit"
 
 #: src/tauon/t_modules/t_main.py:28798
-#, fuzzy
 msgid "Pick a service to configure."
-msgstr "Verkkopalvelin pysäytetty."
+msgstr "Valitse määritettävä palvelu."
 
 #: src/tauon/t_modules/t_main.py:28804
 msgid "Scrobbling"
-msgstr ""
+msgstr "Scrobbling"
 
 #: src/tauon/t_modules/t_main.py:28805
 msgid "Streaming"
-msgstr ""
+msgstr "Suoratoisto"
 
 #: src/tauon/t_modules/t_main.py:28887
-#, fuzzy
 msgid "Current playlist"
-msgstr "Soittolistan loppu"
+msgstr "Nykyinen soittolista"
 
 #: src/tauon/t_modules/t_main.py:28894 src/tauon/t_modules/t_main.py:28909
-#, fuzzy
 msgid "Albums"
-msgstr "Seuraava kappale"
+msgstr "Albumit"
 
 #: src/tauon/t_modules/t_main.py:28903
 msgid "Library"
-msgstr ""
+msgstr "Kirjasto"
 
 #: src/tauon/t_modules/t_main.py:28904
 msgid "Totals across the database."
-msgstr ""
+msgstr "Yhteismäärät koko tietokannassa."
 
 #: src/tauon/t_modules/t_main.py:28910
 msgid "Playtime"
-msgstr ""
+msgstr "Toistoaika"
 
 #: src/tauon/t_modules/t_main.py:28920
 msgid "File formats"
-msgstr ""
+msgstr "Tiedostomuodot"
 
 #: src/tauon/t_modules/t_main.py:28921
 msgid "Click a segment to build a playlist for that format."
-msgstr ""
+msgstr "Napsauta segmenttiä luodaksesi soittolistan kyseiselle muodolle."
 
 #: src/tauon/t_modules/t_main.py:28983
 msgid "Tauon"
-msgstr ""
+msgstr "Tauon"
 
 #: src/tauon/t_modules/t_main.py:28999
 msgid "This program comes with absolutely no warranty."
-msgstr ""
+msgstr "Tällä ohjelmalla ei ole minkäänlaista takuuta."
 
 #: src/tauon/t_modules/t_main.py:29001
 msgid "Open website"
-msgstr ""
+msgstr "Avaa verkkosivusto"
 
 #: src/tauon/t_modules/t_main.py:29003
 msgid "Open GPL license"
-msgstr ""
+msgstr "Avaa GPL-lisenssi"
 
 #: src/tauon/t_modules/t_main.py:29007
 msgid "Credits"
-msgstr ""
+msgstr "Tekijätiedot"
 
 #: src/tauon/t_modules/t_main.py:29008
 msgid "People and project links."
-msgstr ""
+msgstr "Henkilöt ja projektin linkit."
 
 #: src/tauon/t_modules/t_main.py:29011
 msgid "Created by"
-msgstr ""
+msgstr "Tekijä"
 
 #: src/tauon/t_modules/t_main.py:29014
 msgid "Contributors"
-msgstr ""
+msgstr "Avustajat"
 
 #: src/tauon/t_modules/t_main.py:29016
 msgid "Source code"
-msgstr ""
+msgstr "Lähdekoodi"
 
 #: src/tauon/t_modules/t_main.py:29114 src/tauon/t_modules/t_main.py:29120
 msgid "Theme title"
-msgstr ""
+msgstr "Teeman nimi"
 
 #: src/tauon/t_modules/t_main.py:29125
 msgid "Unsaved changes!"
-msgstr ""
+msgstr "Tallentamattomia muutoksia!"
 
 #: src/tauon/t_modules/t_main.py:29135 src/tauon/t_modules/t_main.py:35221
 #: src/tauon/t_modules/t_main.py:48198
 msgid "Save"
-msgstr ""
+msgstr "Tallenna"
 
 #: src/tauon/t_modules/t_main.py:29151
 msgid "Components"
-msgstr ""
+msgstr "Komponentit"
 
 #: src/tauon/t_modules/t_main.py:29227 src/tauon/t_modules/t_main.py:47837
 #: src/tauon/t_modules/t_main.py:47936 src/tauon/t_modules/t_main.py:47941
 #: src/tauon/t_modules/t_main.py:47942 src/tauon/t_modules/t_main.py:47994
 msgid "Copy"
-msgstr ""
+msgstr "Kopioi"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
 #: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
 #: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
-msgstr ""
+msgstr "Liitä"
 
 #: src/tauon/t_modules/t_main.py:29669
 msgid "Tauon SHUFFLE!"
-msgstr ""
+msgstr "Tauon-SEKOITUS!"
 
 #: src/tauon/t_modules/t_main.py:29671
 msgid "ALBUM SHUFFLE"
-msgstr ""
+msgstr "ALBUMISEKOITUS"
 
 #: src/tauon/t_modules/t_main.py:30304
 msgid "MENU"
-msgstr ""
+msgstr "VALIKKO"
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "It looks like something is being downloaded..."
-msgstr ""
+msgstr "Näyttää siltä, että jotain ladataan..."
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "Let's check back later..."
-msgstr ""
+msgstr "Tarkistetaan myöhemmin..."
 
 #: src/tauon/t_modules/t_main.py:30408
 msgid "Importing XSPF playlist"
-msgstr ""
+msgstr "Tuodaan XSPF-soittolistaa"
 
 #: src/tauon/t_modules/t_main.py:30410
 msgid "Importing XSPF playlist..."
-msgstr ""
+msgstr "Tuodaan XSPF-soittolistaa..."
 
 #: src/tauon/t_modules/t_main.py:30412
 msgid "Extracting Archive..."
-msgstr ""
+msgstr "Puretaan arkistoa..."
 
 #: src/tauon/t_modules/t_main.py:30414
 msgid "Importing...  "
-msgstr ""
+msgstr "Tuodaan...  "
 
 #: src/tauon/t_modules/t_main.py:30420
 msgid "Scanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Tarkistetaan tunnisteita...  {N} jäljellä"
 
 #: src/tauon/t_modules/t_main.py:30424
-#, fuzzy
 msgid "Auto-importing playlists..."
-msgstr "Soittolistan loppu"
+msgstr "Tuodaan soittolistoja automaattisesti..."
 
 #: src/tauon/t_modules/t_main.py:30426
 msgid "File copy in progress..."
-msgstr ""
+msgstr "Tiedoston kopiointi käynnissä..."
 
 #: src/tauon/t_modules/t_main.py:30430
 msgid "Cleaning db...  "
-msgstr ""
+msgstr "Siivotaan tietokantaa...  "
 
 #: src/tauon/t_modules/t_main.py:30433
 msgid "Rescanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Tarkistetaan tunnisteita uudelleen...  {N} jäljellä"
 
 #: src/tauon/t_modules/t_main.py:30436
 msgid "Accessing PLEX library..."
-msgstr ""
+msgstr "Käytetään PLEX-kirjastoa..."
 
 #: src/tauon/t_modules/t_main.py:30441
 msgid "Accessing AIRSONIC library..."
-msgstr ""
+msgstr "Käytetään AIRSONIC-kirjastoa..."
 
 #: src/tauon/t_modules/t_main.py:30446
 msgid "Accessing JELLYFIN library..."
-msgstr ""
+msgstr "Käytetään JELLYFIN-kirjastoa..."
 
 #: src/tauon/t_modules/t_main.py:30449
 msgid "Chromecast Mode"
-msgstr ""
+msgstr "Chromecast-tila"
 
 #: src/tauon/t_modules/t_main.py:30458
 msgid "Stopping transcode..."
-msgstr ""
+msgstr "Pysäytetään transkoodausta..."
 
 #: src/tauon/t_modules/t_main.py:30461
 msgid "Uploading lyrics to LRCLIB..."
-msgstr ""
+msgstr "Lähetetään sanoituksia LRCLIBiin..."
 
 #: src/tauon/t_modules/t_main.py:30463
 msgid "Scanning: "
-msgstr ""
+msgstr "Tarkistetaan: "
 
 #: src/tauon/t_modules/t_main.py:30466
 msgid "Scanning Scrobbles..."
-msgstr ""
+msgstr "Tarkistetaan scrobbleja..."
 
 #: src/tauon/t_modules/t_main.py:30469
 msgid "Buffering... "
-msgstr ""
+msgstr "Puskuroidaan... "
 
 #: src/tauon/t_modules/t_main.py:30473
 msgid "Network error. Will try again later."
-msgstr ""
+msgstr "Verkkovirhe. Yritetään myöhemmin uudelleen."
 
 #: src/tauon/t_modules/t_main.py:30484
 msgid "{N} listening along"
-msgstr ""
+msgstr "{N} yhteiskuuntelussa"
 
 #: src/tauon/t_modules/t_main.py:30502
 msgid "Transcoding"
-msgstr ""
+msgstr "Transkoodataan"
 
 #: src/tauon/t_modules/t_main.py:30541
 msgid "{N} Folder Remaining {T}"
-msgstr ""
+msgstr "{N} kansio jäljellä {T}"
 
 #: src/tauon/t_modules/t_main.py:30543
 msgid "{N} Folders Remaining {T}"
-msgstr ""
+msgstr "{N} kansiota jäljellä {T}"
 
 #: src/tauon/t_modules/t_main.py:31137 src/tauon/t_modules/t_main.py:31718
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Toista, OP: siirry toistettavaan"
 
 #: src/tauon/t_modules/t_main.py:31162 src/tauon/t_modules/t_main.py:31743
-#, fuzzy
 msgid "Pause"
-msgstr "Toista/tauko"
+msgstr "Tauko"
 
 #: src/tauon/t_modules/t_main.py:31202 src/tauon/t_modules/t_main.py:31765
 msgid "Shuffle On"
-msgstr ""
+msgstr "Sekoitus päällä"
 
 #: src/tauon/t_modules/t_main.py:31205 src/tauon/t_modules/t_main.py:31768
 msgid "Shuffle Off"
-msgstr ""
+msgstr "Sekoitus pois"
 
 #: src/tauon/t_modules/t_main.py:31236
 msgid "Repeat On"
-msgstr ""
+msgstr "Toisto päällä"
 
 #: src/tauon/t_modules/t_main.py:31239
 msgid "Repeat Off"
-msgstr ""
+msgstr "Toisto pois"
 
 #: src/tauon/t_modules/t_main.py:31246
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Takaisin, OP: vaihda toistoa, KP: palauta"
 
 #: src/tauon/t_modules/t_main.py:31263
 msgid "Playback menu"
-msgstr ""
+msgstr "Toistovalikko"
 
 #: src/tauon/t_modules/t_main.py:31303 src/tauon/t_modules/t_main.py:31305
 msgid "Shuffle"
-msgstr ""
+msgstr "Sekoitus"
 
 #: src/tauon/t_modules/t_main.py:31362 src/tauon/t_modules/t_main.py:31370
-#, fuzzy
 msgid "Repeat album"
-msgstr "Seuraava kappale"
+msgstr "Toista albumi uudelleen"
 
 #: src/tauon/t_modules/t_main.py:31364 src/tauon/t_modules/t_main.py:31372
 #: src/tauon/t_modules/t_main.py:41648 src/tauon/t_modules/t_main.py:41650
-#, fuzzy
 msgid "Repeat track"
-msgstr "Seuraava kappale"
+msgstr "Toista kappale uudelleen"
 
 #: src/tauon/t_modules/t_main.py:33210
 msgid "Playlist is empty"
-msgstr ""
+msgstr "Soittolista on tyhjä"
 
 #: src/tauon/t_modules/t_main.py:33213
 msgid "Drag and drop files to import"
-msgstr ""
+msgstr "Vedä ja pudota tiedostoja tuodaksesi ne"
 
 #: src/tauon/t_modules/t_main.py:33236
-#, fuzzy
 msgid "End of Playlist"
 msgstr "Soittolistan loppu"
 
 #: src/tauon/t_modules/t_main.py:34338
 msgid "Fetching image..."
-msgstr ""
+msgstr "Noudetaan kuvaa..."
 
 #: src/tauon/t_modules/t_main.py:34402
 msgid "Auto Cycle"
-msgstr ""
+msgstr "Automaattinen kierto"
 
 #: src/tauon/t_modules/t_main.py:34647
 msgid "Search Tag"
-msgstr ""
+msgstr "Hae tunnistetta"
 
 #: src/tauon/t_modules/t_main.py:34648
 msgid "Search Country Code"
-msgstr ""
+msgstr "Hae maakoodia"
 
 #: src/tauon/t_modules/t_main.py:34649
 msgid "Search Title"
-msgstr ""
+msgstr "Hae nimeä"
 
 #: src/tauon/t_modules/t_main.py:34964
 msgid "Search text…"
-msgstr ""
+msgstr "Hakuteksti..."
 
 #: src/tauon/t_modules/t_main.py:34973
 msgid "Search"
-msgstr ""
+msgstr "Hae"
 
 #: src/tauon/t_modules/t_main.py:34981 src/tauon/t_modules/t_main.py:34984
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Nouda eniten äänestetyt"
 
 #: src/tauon/t_modules/t_main.py:34985
 msgid "Developer Picks"
-msgstr ""
+msgstr "Kehittäjän valinnat"
 
 #: src/tauon/t_modules/t_main.py:35121
 msgid "Add Station"
-msgstr ""
+msgstr "Lisää asema"
 
 #: src/tauon/t_modules/t_main.py:35123
 msgid "Edit Station"
-msgstr ""
+msgstr "Muokkaa asemaa"
 
 #: src/tauon/t_modules/t_main.py:35148
 msgid "Station Browser"
-msgstr ""
+msgstr "Asemaselain"
 
 #: src/tauon/t_modules/t_main.py:35152
 msgid "Connecting..."
-msgstr ""
+msgstr "Yhdistetään..."
 
 #: src/tauon/t_modules/t_main.py:35154
 msgid "Failed to connect!"
-msgstr ""
+msgstr "Yhdistäminen epäonnistui!"
 
 #: src/tauon/t_modules/t_main.py:35198
 msgid "Name / Title"
-msgstr ""
+msgstr "Nimi / otsikko"
 
 #: src/tauon/t_modules/t_main.py:35216
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr ""
+msgstr "Raaka suoratoisto-URL http://example.stream:1234"
 
 #: src/tauon/t_modules/t_main.py:35223
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Syötä suoratoisto-URL"
 
 #: src/tauon/t_modules/t_main.py:35239
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr ""
+msgstr "URL:ia ei voitu vahvistaa. Sen täytyy alkaa https:// tai http://"
 
 #: src/tauon/t_modules/t_main.py:35402 src/tauon/t_modules/t_main.py:35408
 #: src/tauon/t_modules/t_main.py:35415
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Tallenna ja jaa kappaleet automaattisesti"
 
 #: src/tauon/t_modules/t_main.py:35404
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Pysäytä toisto ennen tämän asetuksen vaihtamista"
 
 #: src/tauon/t_modules/t_main.py:35410
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Pysäytä toisto ensin nykyisen tallennuksen lopettamiseksi"
 
 #: src/tauon/t_modules/t_main.py:35419
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Kappaleet tallennetaan nyt."
 
 #: src/tauon/t_modules/t_main.py:35420
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Vinkki: voit painaa F9 nähdäksesi tulostuskansion."
 
 #: src/tauon/t_modules/t_main.py:35424
 msgid "Browse"
-msgstr ""
+msgstr "Selaa"
 
 #: src/tauon/t_modules/t_main.py:35429
 msgid "Saved"
-msgstr ""
+msgstr "Tallennettu"
 
 #: src/tauon/t_modules/t_main.py:35542
 msgid "Type codes separated by spaces. Codes will be executed left to right."
-msgstr ""
+msgstr "Kirjoita koodit välilyönneillä erotettuina. Koodit suoritetaan vasemmalta oikealle."
 
 #: src/tauon/t_modules/t_main.py:35544
 msgid "Select sources: (default: all playlists)"
-msgstr ""
+msgstr "Valitse lähteet: (oletus: kaikki soittolistat)"
 
 #: src/tauon/t_modules/t_main.py:35547
-#, fuzzy
 msgid "Select source playlist by name"
-msgstr "Soittolistan loppu"
+msgstr "Valitse lähdesoittolista nimen perusteella"
 
 #: src/tauon/t_modules/t_main.py:35550
 msgid "Select playlist itself"
-msgstr ""
+msgstr "Valitse soittolista itse"
 
 #: src/tauon/t_modules/t_main.py:35553
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr ""
+msgstr "Lisää kappaleita lähteistä: (vähintään 1 vaaditaan)"
 
 #: src/tauon/t_modules/t_main.py:35557
-#, fuzzy
 msgid "Search artist name"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Hae artistin nimeä"
 
 #: src/tauon/t_modules/t_main.py:35560
 msgid "Search genre"
-msgstr ""
+msgstr "Hae tyylilajia"
 
 #: src/tauon/t_modules/t_main.py:35567
 msgid "Find / Search / Path"
-msgstr ""
+msgstr "Etsi / haku / polku"
 
 #: src/tauon/t_modules/t_main.py:35575
-#, fuzzy
 msgid "Add all tracks"
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Lisää kaikki kappaleet"
 
 #: src/tauon/t_modules/t_main.py:35578
 msgid "Filters"
-msgstr ""
+msgstr "Suodattimet"
 
 #: src/tauon/t_modules/t_main.py:35581
 msgid "Limit to number of tracks"
-msgstr ""
+msgstr "Rajoita kappalemäärään"
 
 #: src/tauon/t_modules/t_main.py:35584
 msgid "Year: >, <, ="
-msgstr ""
+msgstr "Vuosi: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35587
 msgid "Play count: >, <"
-msgstr ""
+msgstr "Toistokerrat: >, <"
 
 #: src/tauon/t_modules/t_main.py:35590
 msgid "Track duration (minutes): >, <"
-msgstr ""
+msgstr "Kappaleen kesto (minuuttia): >, <"
 
 #: src/tauon/t_modules/t_main.py:35593
 msgid "Album duration (minutes): >, <"
-msgstr ""
+msgstr "Albumin kesto (minuuttia): >, <"
 
 #: src/tauon/t_modules/t_main.py:35596
 msgid "Track rating 0-5: >, <, ="
-msgstr ""
+msgstr "Kappaleen arvio 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35599
-#, fuzzy
 msgid "Loved tracks"
-msgstr "Seuraava kappale"
+msgstr "Suosikkikappaleet"
 
 #: src/tauon/t_modules/t_main.py:35602
 msgid "Has lyrics"
-msgstr ""
+msgstr "Sisältää sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:35605
 msgid "Search and keep"
-msgstr ""
+msgstr "Hae ja säilytä"
 
 #: src/tauon/t_modules/t_main.py:35608
 msgid "Search and exclude"
-msgstr ""
+msgstr "Hae ja sulje pois"
 
 #: src/tauon/t_modules/t_main.py:35622
 msgid "Sorters"
-msgstr ""
+msgstr "Lajittelijat"
 
 #: src/tauon/t_modules/t_main.py:35626
 msgid "Shuffle tracks"
-msgstr ""
+msgstr "Sekoita kappaleet"
 
 #: src/tauon/t_modules/t_main.py:35629
 msgid "Shuffle albums"
-msgstr ""
+msgstr "Sekoita albumit"
 
 #: src/tauon/t_modules/t_main.py:35632
 msgid "Year: >, <"
-msgstr ""
+msgstr "Vuosi: >, <"
 
 #: src/tauon/t_modules/t_main.py:35635
 msgid "Track duration: >, <"
-msgstr ""
+msgstr "Kappaleen kesto: >, <"
 
 #: src/tauon/t_modules/t_main.py:35638
 msgid "Track Playtime: >, <"
-msgstr ""
+msgstr "Kappaleen toistoaika: >, <"
 
 #: src/tauon/t_modules/t_main.py:35641
 msgid "Album playtime: >, <"
-msgstr ""
+msgstr "Albumin toistoaika: >, <"
 
 #: src/tauon/t_modules/t_main.py:35644
 msgid "Album duration: >, <"
-msgstr ""
+msgstr "Albumin kesto: >, <"
 
 #: src/tauon/t_modules/t_main.py:35647
-#, fuzzy
 msgid "Invert tracks"
-msgstr "Seuraava kappale"
+msgstr "Käännä kappaleet"
 
 #: src/tauon/t_modules/t_main.py:35650
-#, fuzzy
 msgid "Invert albums"
-msgstr "Seuraava kappale"
+msgstr "Käännä albumit"
 
 #: src/tauon/t_modules/t_main.py:35653
 msgid "Track rating: >, <"
-msgstr ""
+msgstr "Kappaleen arvio: >, <"
 
 #: src/tauon/t_modules/t_main.py:35656
 msgid "Album rating: >, <"
-msgstr ""
+msgstr "Albumin arvio: >, <"
 
 #: src/tauon/t_modules/t_main.py:35659
 msgid "Modification date: >, <"
-msgstr ""
+msgstr "Muokkauspäivä: >, <"
 
 #: src/tauon/t_modules/t_main.py:35665
-#, fuzzy
 msgid "Track number per album"
-msgstr "Kappale lisätty tykättyihin kappaleisiin"
+msgstr "Kappalenumero albumia kohti"
 
 #: src/tauon/t_modules/t_main.py:35668
 msgid "Year per artist"
-msgstr ""
+msgstr "Vuosi artistia kohti"
 
 #: src/tauon/t_modules/t_main.py:35671
 msgid "Sort by column name: >, <"
-msgstr ""
+msgstr "Lajittele sarakkeen nimen mukaan: >, <"
 
 #: src/tauon/t_modules/t_main.py:35674
 msgid "Special"
-msgstr ""
+msgstr "Erityinen"
 
 #: src/tauon/t_modules/t_main.py:35677
 msgid "Automatically reload on imports"
-msgstr ""
+msgstr "Lataa automaattisesti uudelleen tuonneissa"
 
 #: src/tauon/t_modules/t_main.py:35682
 msgid "Status:"
-msgstr ""
+msgstr "Tila:"
 
 #: src/tauon/t_modules/t_main.py:35686
-#, fuzzy
 msgid "Playlist not found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Soittolistaa ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:35688
 msgid "Result is empty"
-msgstr ""
+msgstr "Tulos on tyhjä"
 
 #: src/tauon/t_modules/t_main.py:35690
 msgid "Close quotation..."
-msgstr ""
+msgstr "Sulje lainausmerkki..."
 
 #: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
-#, fuzzy
 msgid "{N} tracks"
-msgstr "Seuraava kappale"
+msgstr "{N} kappaletta"
 
 #: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
-#, fuzzy
 msgid "{N} track"
-msgstr "Seuraava kappale"
+msgstr "{N} kappale"
 
 #: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
-#, fuzzy
 msgid "{N} album"
-msgstr "Seuraava kappale"
+msgstr "{N} albumi"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
-msgstr ""
+msgstr "Ladataan tietoja..."
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Ensimmäinen artistin albumeista ({N} albumia)"
 
 #: src/tauon/t_modules/t_main.py:36721
 msgid "Last of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Viimeinen artistin albumeista ({N} albumia)"
 
 #: src/tauon/t_modules/t_main.py:36733
 msgid "Start of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Sijainnin {N}/{T} alku ({Nb} albumia)"
 
 #: src/tauon/t_modules/t_main.py:36736 src/tauon/t_modules/t_main.py:36746
 msgid "Location {N} of {T}"
-msgstr ""
+msgstr "Sijainti {N}/{T}"
 
 #: src/tauon/t_modules/t_main.py:36743
 msgid "End of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Sijainnin {N}/{T} loppu ({Nb} albumia)"
 
 #: src/tauon/t_modules/t_main.py:36755
 msgid "Start of location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Sijainnin 1/{N} alku ({Nb} albumia)"
 
 #: src/tauon/t_modules/t_main.py:36758
 msgid "Location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Sijainti 1/{N} ({Nb} albumia)"
 
 #: src/tauon/t_modules/t_main.py:36761
 msgid "Location 1 of {N}"
-msgstr ""
+msgstr "Sijainti 1/{N}"
 
 #: src/tauon/t_modules/t_main.py:36884
-#, fuzzy
 msgid "No artists in playlist"
-msgstr "Kappaleet soittolistalla:"
+msgstr "Soittolistassa ei ole artisteja"
 
 #: src/tauon/t_modules/t_main.py:36887
 msgid "Artist threshold not met"
-msgstr ""
+msgstr "Artistin kynnys ei täyty"
 
 #: src/tauon/t_modules/t_main.py:36889
 msgid "Loading Artist List..."
-msgstr ""
+msgstr "Ladataan artistilistaa..."
 
 #: src/tauon/t_modules/t_main.py:36891
 msgid "Busy..."
-msgstr ""
+msgstr "Varattu..."
 
 #: src/tauon/t_modules/t_main.py:37103
 msgid "Loading Folder Tree..."
-msgstr ""
+msgstr "Ladataan kansiopuuta..."
 
 #: src/tauon/t_modules/t_main.py:37113 src/tauon/t_modules/t_main.py:37129
 msgid "Folder Tree"
-msgstr ""
+msgstr "Kansiopuu"
 
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
-msgstr ""
+msgstr "Toista nyt"
 
 #: src/tauon/t_modules/t_main.py:37541
 msgid "Auto-Stop Here"
-msgstr ""
+msgstr "Automaattinen pysäytys tähän"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
-msgstr ""
+msgstr "Tyhjennä jono"
 
 #: src/tauon/t_modules/t_main.py:37546
 msgid "↳ Except for This"
-msgstr ""
+msgstr "↳ Paitsi tämä"
 
 #: src/tauon/t_modules/t_main.py:37548
-#, fuzzy
 msgid "Queue to New Playlist"
-msgstr "Soittolistan loppu"
+msgstr "Jono uuteen soittolistaan"
 
 #: src/tauon/t_modules/t_main.py:37589
-#, fuzzy
 msgid "Queued Tracks"
-msgstr "Seuraava kappale"
+msgstr "Jonossa olevat kappaleet"
 
 #: src/tauon/t_modules/t_main.py:37686
 msgid "Cancel Auto-Stop"
-msgstr ""
+msgstr "Peruuta automaattinen pysäytys"
 
 #: src/tauon/t_modules/t_main.py:37687
 msgid "Auto-Stop"
-msgstr ""
+msgstr "Automaattinen pysäytys"
 
 #: src/tauon/t_modules/t_main.py:37694
 msgid "Eh?"
-msgstr ""
+msgstr "Häh?"
 
 #: src/tauon/t_modules/t_main.py:37702
 msgid "Looks like it's gone now anyway"
-msgstr ""
+msgstr "Näyttää siltä, että se katosi joka tapauksessa"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47522
 msgid "Queue"
-msgstr ""
+msgstr "Jono"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47826
 msgid "Add to Queue"
-msgstr ""
+msgstr "Lisää jonoon"
 
 #: src/tauon/t_modules/t_main.py:37825
 msgid "Up Next:"
-msgstr ""
+msgstr "Seuraavaksi:"
 
 #: src/tauon/t_modules/t_main.py:38068
-#, fuzzy
 msgid "{N} Track"
-msgstr "Seuraava kappale"
+msgstr "{N} kappale"
 
 #: src/tauon/t_modules/t_main.py:38071
-#, fuzzy
 msgid "{N} Tracks"
-msgstr "Seuraava kappale"
+msgstr "{N} kappaletta"
 
 #: src/tauon/t_modules/t_main.py:38515
-#, fuzzy
 msgid "No artist name found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Artistin nimeä ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:38526 src/tauon/t_modules/t_main.py:38779
 msgid "Looking up..."
-msgstr ""
+msgstr "Haetaan..."
 
 #: src/tauon/t_modules/t_main.py:38566
 msgid "Cooldown..."
-msgstr ""
+msgstr "Jäähdyttely..."
 
 #: src/tauon/t_modules/t_main.py:38581
 msgid "Loading..."
-msgstr ""
+msgstr "Ladataan..."
 
 #: src/tauon/t_modules/t_main.py:38768
-#, fuzzy
 msgid "No artist data downloaded"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Artistitietoja ei ladattu"
 
 #: src/tauon/t_modules/t_main.py:38789
-#, fuzzy
 msgid "No artist bio found"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Artistin elämäkertaa ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:38886
 msgid "Load Failed"
-msgstr ""
+msgstr "Lataus epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:40002 src/tauon/t_modules/t_main.py:43059
 msgid "Playing"
-msgstr ""
+msgstr "Toistetaan"
 
 #: src/tauon/t_modules/t_main.py:40095
 msgid "Auto-Scroll"
-msgstr ""
+msgstr "Automaattinen vieritys"
 
 #: src/tauon/t_modules/t_main.py:40593
-#, fuzzy
 msgid "Tracks + Art"
-msgstr "Seuraava kappale"
+msgstr "Kappaleet + kuvitus"
 
 #: src/tauon/t_modules/t_main.py:40626
-#, fuzzy
 msgid "Tracks only"
-msgstr "Seuraava kappale"
+msgstr "Vain kappaleet"
 
 #: src/tauon/t_modules/t_main.py:40642
 msgid "Showcase + Lyrics"
-msgstr ""
+msgstr "Esittely + sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:40671
 msgid "Radio"
-msgstr ""
+msgstr "Radio"
 
 #: src/tauon/t_modules/t_main.py:40685
 msgid "Toggle columns"
-msgstr ""
+msgstr "Vaihda sarakkeet"
 
 #: src/tauon/t_modules/t_main.py:41000
 msgid "There are no more steps to undo."
-msgstr ""
+msgstr "Kumottavia vaiheita ei ole enää."
 
 #: src/tauon/t_modules/t_main.py:41619 src/tauon/t_modules/t_main.py:41633
 msgid "Exit Lyrics Editor"
-msgstr ""
+msgstr "Poistu sanoituseditorista"
 
 #: src/tauon/t_modules/t_main.py:41620 src/tauon/t_modules/t_main.py:41634
 #: src/tauon/t_modules/t_main.py:47576 src/tauon/t_modules/t_main.py:47595
 #: src/tauon/t_modules/t_main.py:47627
 msgid "Search for Lyrics"
-msgstr ""
+msgstr "Hae sanoituksia"
 
 #: src/tauon/t_modules/t_main.py:41621
 msgid "Copy From Synced"
-msgstr ""
+msgstr "Kopioi synkronoiduista"
 
 #: src/tauon/t_modules/t_main.py:41622 src/tauon/t_modules/t_main.py:41639
 msgid "Upload To LRCLIB"
-msgstr ""
+msgstr "Lähetä LRCLIBiin"
 
 #: src/tauon/t_modules/t_main.py:41635
 msgid "Copy From Unsynced"
-msgstr ""
+msgstr "Kopioi synkronoimattomista"
 
 #: src/tauon/t_modules/t_main.py:41636
 msgid "Clear All Section Markers"
-msgstr ""
+msgstr "Tyhjennä kaikki osamerkit"
 
 #: src/tauon/t_modules/t_main.py:41637
 msgid "Clear All Timestamps"
-msgstr ""
+msgstr "Tyhjennä kaikki aikaleimat"
 
 #: src/tauon/t_modules/t_main.py:41638
 msgid "Clear All Lyrics"
-msgstr ""
+msgstr "Tyhjennä kaikki sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:41641
 msgid "Backups..."
-msgstr ""
+msgstr "Varmuuskopiot..."
 
 #: src/tauon/t_modules/t_main.py:41642
 msgid "Load Current Backup"
-msgstr ""
+msgstr "Lataa nykyinen varmuuskopio"
 
 #: src/tauon/t_modules/t_main.py:41643
 msgid "Visit Current Backup"
-msgstr ""
+msgstr "Avaa nykyinen varmuuskopio"
 
 #: src/tauon/t_modules/t_main.py:41644
 msgid "Delete All Backups"
-msgstr ""
+msgstr "Poista kaikki varmuuskopiot"
 
 #: src/tauon/t_modules/t_main.py:41646
 msgid "When track ends..."
-msgstr ""
+msgstr "Kun kappale päättyy..."
 
 #: src/tauon/t_modules/t_main.py:41653 src/tauon/t_modules/t_main.py:41655
 msgid "Stop immediately"
-msgstr ""
+msgstr "Pysäytä heti"
 
 #: src/tauon/t_modules/t_main.py:41658 src/tauon/t_modules/t_main.py:41660
 msgid "Backup and continue"
-msgstr ""
+msgstr "Varmuuskopioi ja jatka"
 
 #: src/tauon/t_modules/t_main.py:41663 src/tauon/t_modules/t_main.py:41665
 msgid "Fully save and continue"
-msgstr ""
+msgstr "Tallenna kokonaan ja jatka"
 
 #: src/tauon/t_modules/t_main.py:41671
 msgid "Save synced to .lrc"
-msgstr ""
+msgstr "Tallenna synkronoidut .lrc-tiedostoon"
 
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
+msgstr "Laitoit kansion sanoituseditorin hakemistoon. Älä tee niin."
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
-msgstr ""
+msgstr "Ole varovainen!"
 
 #: src/tauon/t_modules/t_main.py:41757
 msgid ""
 "A file's metadata can only store ONE type of lyrics data, synced or static, "
 "at a time."
-msgstr ""
+msgstr "Tiedoston metadata voi tallentaa kerrallaan vain YHDEN tyyppistä sanoitusdataa, synkronoitua tai staattista."
 
 #: src/tauon/t_modules/t_main.py:41758
 msgid ""
 "Saving one type will now OVERWRITE the other in the files. (Tauon itself "
 "doesn't care.)"
-msgstr ""
+msgstr "Yhden tyypin tallentaminen KORVAA nyt toisen tiedostoissa. (Tauon itse ei välitä.)"
 
 #: src/tauon/t_modules/t_main.py:41926
 msgid "Lyrics will misbehave if only some of them are timed."
-msgstr ""
+msgstr "Sanoitukset käyttäytyvät väärin, jos vain osa niistä on ajastettu."
 
 #: src/tauon/t_modules/t_main.py:41927
 msgid "You can time all of them or none of them, either will work."
-msgstr ""
+msgstr "Voit ajastaa ne kaikki tai et yhtään; kumpikin toimii."
 
 #: src/tauon/t_modules/t_main.py:41928 src/tauon/t_modules/t_main.py:41938
 msgid "Alternatively, save again while holding Alt to override."
-msgstr ""
+msgstr "Vaihtoehtoisesti tallenna uudelleen Alt pohjassa ohittaaksesi tämän."
 
 #: src/tauon/t_modules/t_main.py:41936
 msgid "Lyrics might misbehave if their timestamps are out of order."
-msgstr ""
+msgstr "Sanoitukset voivat käyttäytyä väärin, jos aikaleimat ovat väärässä järjestyksessä."
 
 #: src/tauon/t_modules/t_main.py:41937
 msgid "Please make sure all timestamps are ordered correctly."
-msgstr ""
+msgstr "Varmista, että kaikki aikaleimat ovat oikeassa järjestyksessä."
 
 #: src/tauon/t_modules/t_main.py:41958 src/tauon/t_modules/t_main.py:41964
 msgid "Synced lyrics saved successfully"
-msgstr ""
+msgstr "Synkronoidut sanoitukset tallennettu onnistuneesti"
 
 #: src/tauon/t_modules/t_main.py:41959
-#, fuzzy
 msgid "Saved to .lrc and tags"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Tallennettu .lrc-tiedostoon ja tunnisteisiin"
 
 #: src/tauon/t_modules/t_main.py:41965
-#, fuzzy
 msgid "Saved to .lrc"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Tallennettu .lrc-tiedostoon"
 
 #: src/tauon/t_modules/t_main.py:41971 src/tauon/t_modules/t_main.py:41977
 msgid "Synced lyrics saved to tags"
-msgstr ""
+msgstr "Synkronoidut sanoitukset tallennettu tunnisteisiin"
 
 #: src/tauon/t_modules/t_main.py:41972 src/tauon/t_modules/t_main.py:41995
 msgid "Destroyed previously existing lyrics in file"
-msgstr ""
+msgstr "Tiedoston aiemmat sanoitukset poistettiin"
 
 #: src/tauon/t_modules/t_main.py:41982
 msgid "Synced lyrics saved in Tauon only"
-msgstr ""
+msgstr "Synkronoidut sanoitukset tallennettu vain Tauoniin"
 
 #: src/tauon/t_modules/t_main.py:41994 src/tauon/t_modules/t_main.py:42000
 msgid "Unsynced lyrics saved successfully"
-msgstr ""
+msgstr "Synkronoimattomat sanoitukset tallennettu onnistuneesti"
 
 #: src/tauon/t_modules/t_main.py:42005
 msgid "Unsynced lyrics saved in Tauon only"
-msgstr ""
+msgstr "Synkronoimattomat sanoitukset tallennettu vain Tauoniin"
 
 #: src/tauon/t_modules/t_main.py:42069
 msgid "Backup file does not exist"
-msgstr ""
+msgstr "Varmuuskopiotiedostoa ei ole olemassa"
 
 #: src/tauon/t_modules/t_main.py:42077
 msgid "Put the lyrics in this file."
-msgstr ""
+msgstr "Laita sanoitukset tähän tiedostoon."
 
 #: src/tauon/t_modules/t_main.py:42248
 msgid "Teleport to timestamp"
-msgstr ""
+msgstr "Siirry aikaleimaan"
 
 #: src/tauon/t_modules/t_main.py:42255
 msgid "Delete timestamp"
-msgstr ""
+msgstr "Poista aikaleima"
 
 #: src/tauon/t_modules/t_main.py:42261
 msgid "Timestamp unknown"
-msgstr ""
+msgstr "Aikaleima tuntematon"
 
 #: src/tauon/t_modules/t_main.py:42307
 msgid "Delete line"
-msgstr ""
+msgstr "Poista rivi"
 
 #: src/tauon/t_modules/t_main.py:42319
 msgid "Add line"
-msgstr ""
+msgstr "Lisää rivi"
 
 #: src/tauon/t_modules/t_main.py:42611 src/tauon/t_modules/t_main.py:42683
 #: src/tauon/t_modules/t_main.py:47658
-#, fuzzy
 msgid "Previous"
-msgstr "Edellinen kappale"
+msgstr "Edellinen"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42690
 #: src/tauon/t_modules/t_main.py:42691
 msgid "CURRENT"
-msgstr ""
+msgstr "NYKYINEN"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42693
 #: src/tauon/t_modules/t_main.py:42694
 msgid "ADD TIME"
-msgstr ""
+msgstr "LISÄÄ AIKA"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42696
 #: src/tauon/t_modules/t_main.py:42697
 msgid "TIME"
-msgstr ""
+msgstr "AIKA"
 
 #: src/tauon/t_modules/t_main.py:42613 src/tauon/t_modules/t_main.py:42653
 #: src/tauon/t_modules/t_main.py:42859 src/tauon/t_modules/t_main.py:42885
 msgid "SAVE"
-msgstr ""
+msgstr "TALLENNA"
 
 #: src/tauon/t_modules/t_main.py:42614 src/tauon/t_modules/t_main.py:42657
-#, fuzzy
 msgid "Save to .lrc"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Tallenna .lrc-tiedostoon"
 
 #: src/tauon/t_modules/t_main.py:42615 src/tauon/t_modules/t_main.py:42661
 #: src/tauon/t_modules/t_main.py:42860 src/tauon/t_modules/t_main.py:42889
-#, fuzzy
 msgid "Save to tags"
-msgstr "Kappale poistettu tykätyistä kappaleista"
+msgstr "Tallenna tunnisteisiin"
 
 #: src/tauon/t_modules/t_main.py:42616 src/tauon/t_modules/t_main.py:42667
 #: src/tauon/t_modules/t_main.py:42861 src/tauon/t_modules/t_main.py:42895
 msgid "Discard"
-msgstr ""
+msgstr "Hylkää"
 
 #: src/tauon/t_modules/t_main.py:42717
 msgid "Errored"
-msgstr ""
+msgstr "Virheellinen"
 
 #: src/tauon/t_modules/t_main.py:42730 src/tauon/t_modules/t_main.py:42732
 #: src/tauon/t_modules/t_main.py:42918 src/tauon/t_modules/t_main.py:42920
 msgid "Failed"
-msgstr ""
+msgstr "Epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:42778 src/tauon/t_modules/t_main.py:42793
 msgid "Put the lyrics in this file and save it."
-msgstr ""
+msgstr "Laita sanoitukset tähän tiedostoon ja tallenna se."
 
 #: src/tauon/t_modules/t_main.py:42856 src/tauon/t_modules/t_main.py:42906
 msgid "Edit Lyrics"
-msgstr ""
+msgstr "Muokkaa sanoituksia"
 
 #: src/tauon/t_modules/t_main.py:42857 src/tauon/t_modules/t_main.py:42953
 msgid "Read Back"
-msgstr ""
+msgstr "Lue takaisin"
 
 #: src/tauon/t_modules/t_main.py:42862 src/tauon/t_modules/t_main.py:42963
 msgid "Reopen Editor"
-msgstr ""
+msgstr "Avaa editori uudelleen"
 
 #: src/tauon/t_modules/t_main.py:42906
 msgid "Opens an external editor."
-msgstr ""
+msgstr "Avaa ulkoisen editorin."
 
 #: src/tauon/t_modules/t_main.py:42931 src/tauon/t_modules/t_main.py:42949
 msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
-msgstr ""
+msgstr "Muokkaa avattuja sanoituksia tekstieditorissasi, tallenna tiedosto ja napsauta \"Lue takaisin\"."
 
 #: src/tauon/t_modules/t_main.py:42953
 msgid "Make sure to save your changes."
-msgstr ""
+msgstr "Varmista, että tallennat muutoksesi."
 
 #: src/tauon/t_modules/t_main.py:42956 src/tauon/t_modules/t_main.py:43173
 msgid "Delete the file."
-msgstr ""
+msgstr "Poista tiedosto."
 
 #: src/tauon/t_modules/t_main.py:42963
 msgid "In case you closed it by accident."
-msgstr ""
+msgstr "Siltä varalta, että suljit sen vahingossa."
 
 #: src/tauon/t_modules/t_main.py:43108 src/tauon/t_modules/t_main.py:43134
 msgid "Upload lyrics for {artist} - {title}?"
-msgstr ""
+msgstr "Lähetetäänkö sanoitukset: {artist} - {title}?"
 
 #: src/tauon/t_modules/t_main.py:43137 src/tauon/t_modules/t_main.py:43143
 msgid "Synced"
-msgstr ""
+msgstr "Synkronoitu"
 
 #: src/tauon/t_modules/t_main.py:43156
 msgid "Lyrics must be formatted correctly"
-msgstr ""
+msgstr "Sanoitusten täytyy olla oikein muotoiltu"
 
 #: src/tauon/t_modules/t_main.py:43157
 msgid "Your synced lyrics are either out of order or not fully timed."
-msgstr ""
+msgstr "Synkronoidut sanoituksesi ovat joko väärässä järjestyksessä tai eivät ole täysin ajastettuja."
 
 #: src/tauon/t_modules/t_main.py:43158
 msgid "We cannot upload broken lyrics to LRCLIB."
-msgstr ""
+msgstr "Rikkinäisiä sanoituksia ei voi lähettää LRCLIBiin."
 
 #: src/tauon/t_modules/t_main.py:43163
 msgid "Unsynced"
-msgstr ""
+msgstr "Synkronoimaton"
 
 #: src/tauon/t_modules/t_main.py:43165 src/tauon/t_modules/t_main.py:47702
 msgid "Upload"
-msgstr ""
+msgstr "Lähetä"
 
 #: src/tauon/t_modules/t_main.py:45070
 msgid "Files missing or inaccessible"
-msgstr ""
+msgstr "Tiedostoja puuttuu tai niihin ei pääse käsiksi"
 
 #: src/tauon/t_modules/t_main.py:45071
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
+msgstr "Jos käytät Flatpakia, sinun kannattaa luultavasti seurata tätä:"
 
 #: src/tauon/t_modules/t_main.py:45079
 msgid "Bad permissions"
-msgstr ""
+msgstr "Virheelliset käyttöoikeudet"
 
 #: src/tauon/t_modules/t_main.py:45080
 msgid "We don't have permissions to access {file}"
-msgstr ""
+msgstr "Meillä ei ole oikeuksia käyttää tiedostoa {file}"
 
 #: src/tauon/t_modules/t_main.py:45088
 msgid "Can't import that"
-msgstr ""
+msgstr "Tuota ei voi tuoda"
 
 #: src/tauon/t_modules/t_main.py:45089
 msgid "We can't import the file {path} and we're not sure why."
-msgstr ""
+msgstr "Tiedostoa {path} ei voi tuoda, emmekä ole varmoja miksi."
 
 #: src/tauon/t_modules/t_main.py:45130
 msgid "You attempted to drop an archive."
-msgstr ""
+msgstr "Yritit pudottaa arkiston."
 
 #: src/tauon/t_modules/t_main.py:45131
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "Arkiston purkutoiminto ei kuitenkaan ole käytössä."
 
 #: src/tauon/t_modules/t_main.py:45141
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Ohitetaan liian suuri zip-tiedosto (>4 Gt)"
 
 #: src/tauon/t_modules/t_main.py:45158 src/tauon/t_modules/t_main.py:45163
 #: src/tauon/t_modules/t_main.py:45171
 msgid "Failed to extract zip archive."
-msgstr ""
+msgstr "Zip-arkiston purku epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:45159
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
-msgstr ""
+msgstr "Arkisto on salattu. Sinun täytyy purkaa se käsin salasanalla."
 
 #: src/tauon/t_modules/t_main.py:45164 src/tauon/t_modules/t_main.py:45172
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
-msgstr ""
+msgstr "Ehkä arkisto on vioittunut? Onko levyllä tarpeeksi tilaa ja kirjoitusoikeus?"
 
 #: src/tauon/t_modules/t_main.py:45188
 msgid "Failed to extract rar archive."
-msgstr ""
+msgstr "Rar-arkiston purku epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:45204
 msgid "Failed to extract 7z archive."
-msgstr ""
+msgstr "7z-arkiston purku epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:45232
 msgid "Could not move archive to trash"
-msgstr ""
+msgstr "Arkistoa ei voitu siirtää roskakoriin"
 
 #: src/tauon/t_modules/t_main.py:45329
 msgid "Permission error accessing one or more files"
-msgstr ""
+msgstr "Käyttöoikeusvirhe käytettäessä yhtä tai useampaa tiedostoa"
 
 #: src/tauon/t_modules/t_main.py:45377
 msgid "Connection error"
-msgstr ""
+msgstr "Yhteysvirhe"
 
 #: src/tauon/t_modules/t_main.py:45378
 msgid "We can't upload your lyrics because we can't connect to the server."
-msgstr ""
+msgstr "Sanoituksia ei voi lähettää, koska palvelimeen ei saada yhteyttä."
 
 #: src/tauon/t_modules/t_main.py:45379
 msgid "Are you offline?"
-msgstr ""
+msgstr "Oletko offline-tilassa?"
 
 #: src/tauon/t_modules/t_main.py:45399
 msgid "The following file is missing:"
-msgstr ""
+msgstr "Seuraava tiedosto puuttuu:"
 
 #: src/tauon/t_modules/t_main.py:45408
 msgid "We don't have the proper permissions to run the file:"
-msgstr ""
+msgstr "Meillä ei ole tarvittavia oikeuksia suorittaa tiedostoa:"
 
 #: src/tauon/t_modules/t_main.py:45417
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
+msgstr "Sanoituksia ei voi lähettää, emmekä tiedä miksi."
 
 #: src/tauon/t_modules/t_main.py:45435
 msgid "Lyrics upload failed with error code: "
-msgstr ""
+msgstr "Sanoitusten lähetys epäonnistui virhekoodilla: "
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "Folder copy error."
-msgstr ""
+msgstr "Kansion kopiointivirhe."
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "The target and source are the same."
-msgstr ""
+msgstr "Kohde ja lähde ovat samat."
 
 #: src/tauon/t_modules/t_main.py:45561
 msgid "The folder copy has failed!"
-msgstr ""
+msgstr "Kansion kopiointi epäonnistui!"
 
 #: src/tauon/t_modules/t_main.py:45561
 msgid "Some files may have been written."
-msgstr ""
+msgstr "Joitakin tiedostoja on ehkä kirjoitettu."
 
 #: src/tauon/t_modules/t_main.py:45570
 msgid "Something has gone horribly wrong!"
-msgstr ""
+msgstr "Jokin meni aivan pahasti pieleen!"
 
 #: src/tauon/t_modules/t_main.py:45570
 msgid "Could not delete {name}"
-msgstr ""
+msgstr "Kohdetta {name} ei voitu poistaa"
 
 #: src/tauon/t_modules/t_main.py:45575
-#, fuzzy
 msgid "Folder move complete."
-msgstr "Spotify-tuonti valmis"
+msgstr "Kansion siirto valmis."
 
 #: src/tauon/t_modules/t_main.py:45575 src/tauon/t_modules/t_main.py:45577
 msgid "Folder name: {name}"
-msgstr ""
+msgstr "Kansion nimi: {name}"
 
 #: src/tauon/t_modules/t_main.py:45577
-#, fuzzy
 msgid "Folder copy complete."
-msgstr "Spotify-tuonti valmis"
+msgstr "Kansion kopiointi valmis."
 
 #: src/tauon/t_modules/t_main.py:45610
 msgid "Cleaning complete."
-msgstr ""
+msgstr "Siivous valmis."
 
 #: src/tauon/t_modules/t_main.py:45611
 msgid "{N} items were removed from the database."
-msgstr ""
+msgstr "{N} kohdetta poistettiin tietokannasta."
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "Transcode failed."
-msgstr ""
+msgstr "Transkoodaus epäonnistui."
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "An error was encountered."
-msgstr ""
+msgstr "Havaittiin virhe."
 
 #: src/tauon/t_modules/t_main.py:45730
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "Transkoodaus peruttiin ennen valmistumista."
 
 #: src/tauon/t_modules/t_main.py:45731
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "Keskeneräiset tiedostot jäävät jäljelle."
 
 #: src/tauon/t_modules/t_main.py:45734
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "Näytä tulostus painamalla F9."
 
 #: src/tauon/t_modules/t_main.py:45736
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
-msgstr ""
+msgstr "Huomaa, että siihen liittyvä tulostuskuva on pikkukuva eikä tarkka kopio."
 
 #: src/tauon/t_modules/t_main.py:45739
-#, fuzzy
 msgid "Encoding complete."
-msgstr "Spotify-tuonti valmis"
+msgstr "Koodaus valmis."
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid "Some tracks could not be rescanned"
-msgstr ""
+msgstr "Joitakin kappaleita ei voitu tarkistaa uudelleen"
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
-msgstr ""
+msgstr "Verkkokappaleiden uudelleentarkistusta ei tueta; tuo soittolista sen sijaan uudelleen."
 
 #: src/tauon/t_modules/t_main.py:47521
 msgid "Playlists + Queue"
-msgstr ""
+msgstr "Soittolistat + jono"
 
 #: src/tauon/t_modules/t_main.py:47524
 msgid "Artist List"
-msgstr ""
+msgstr "Artistilista"
 
 #: src/tauon/t_modules/t_main.py:47526
 msgid "Folder Navigator"
-msgstr ""
+msgstr "Kansioselain"
 
 #: src/tauon/t_modules/t_main.py:47528
 msgid "Repeat OFF"
-msgstr ""
+msgstr "Toisto pois"
 
 #: src/tauon/t_modules/t_main.py:47529
-#, fuzzy
 msgid "Repeat Track"
-msgstr "Seuraava kappale"
+msgstr "Toista kappale"
 
 #: src/tauon/t_modules/t_main.py:47530
 msgid "Repeat Album"
-msgstr ""
+msgstr "Toista albumi"
 
 #: src/tauon/t_modules/t_main.py:47534
 msgid "Shuffle Lockdown Albums"
-msgstr ""
+msgstr "Albumien sekoituslukitus"
 
 #: src/tauon/t_modules/t_main.py:47536
 msgid "Shuffle OFF"
-msgstr ""
+msgstr "Sekoitus pois"
 
 #: src/tauon/t_modules/t_main.py:47537
-#, fuzzy
 msgid "Shuffle Tracks"
-msgstr "Seuraava kappale"
+msgstr "Sekoita kappaleet"
 
 #: src/tauon/t_modules/t_main.py:47538
-#, fuzzy
 msgid "Random Albums"
-msgstr "Seuraava kappale"
+msgstr "Satunnaiset albumit"
 
 #: src/tauon/t_modules/t_main.py:47540
 msgid "Close Panel"
-msgstr ""
+msgstr "Sulje paneeli"
 
 #: src/tauon/t_modules/t_main.py:47541
 msgid "Make Large"
-msgstr ""
+msgstr "Suurenna"
 
 #: src/tauon/t_modules/t_main.py:47549 src/tauon/t_modules/t_main.py:47550
 #: src/tauon/t_modules/t_main.py:47568 src/tauon/t_modules/t_main.py:47815
 #: src/tauon/t_modules/t_main.py:47883
 msgid "Open Folder"
-msgstr ""
+msgstr "Avaa kansio"
 
 #: src/tauon/t_modules/t_main.py:47552 src/tauon/t_modules/t_main.py:47553
 #: src/tauon/t_modules/t_main.py:47554 src/tauon/t_modules/t_main.py:48200
 msgid "Filter to New Playlist"
-msgstr ""
+msgstr "Suodata uuteen soittolistaan"
 
 #: src/tauon/t_modules/t_main.py:47555 src/tauon/t_modules/t_main.py:47556
 #: src/tauon/t_modules/t_main.py:47723
 msgid "Rescan Folder"
-msgstr ""
+msgstr "Tarkista kansio uudelleen"
 
 #: src/tauon/t_modules/t_main.py:47557 src/tauon/t_modules/t_main.py:47559
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Siirrä toistettava kansio tähän"
 
 #: src/tauon/t_modules/t_main.py:47563 src/tauon/t_modules/t_main.py:47905
 msgid "Collapse All"
-msgstr ""
+msgstr "Supista kaikki"
 
 #: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
 msgid "lock"
-msgstr ""
+msgstr "lukitse"
 
 #: src/tauon/t_modules/t_main.py:47569
-#, fuzzy
 msgid "Show in Playlist"
-msgstr "Soittolistan loppu"
+msgstr "Näytä soittolistassa"
 
 #: src/tauon/t_modules/t_main.py:47570
 msgid "Image…"
-msgstr ""
+msgstr "Kuva..."
 
 #: src/tauon/t_modules/t_main.py:47571 src/tauon/t_modules/t_main.py:47888
 #: src/tauon/t_modules/t_main.py:47901
 msgid "Add Album to Queue"
-msgstr ""
+msgstr "Lisää albumi jonoon"
 
 #: src/tauon/t_modules/t_main.py:47572 src/tauon/t_modules/t_main.py:47889
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Lisää albumi jonoon seuraavaksi"
 
 #: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
 msgid "Toggle synced"
-msgstr ""
+msgstr "Vaihda synkronointi"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
-msgstr ""
+msgstr "Hae GuitarPartysta"
 
 #: src/tauon/t_modules/t_main.py:47580
 msgid "Paste Chord Lyrics"
-msgstr ""
+msgstr "Liitä sointusanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47581
 msgid "Clear Chord Lyrics"
-msgstr ""
+msgstr "Tyhjennä sointusanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47583 src/tauon/t_modules/t_main.py:47596
 #: src/tauon/t_modules/t_main.py:47628 src/tauon/t_modules/t_main.py:47654
 msgid "Toggle Lyrics"
-msgstr ""
+msgstr "Vaihda sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47584 src/tauon/t_modules/t_main.py:47598
 msgid "Lyrics Editor"
-msgstr ""
+msgstr "Sanoituseditori"
 
 #: src/tauon/t_modules/t_main.py:47585 src/tauon/t_modules/t_main.py:47600
 #: src/tauon/t_modules/t_main.py:47734
 msgid "Misc…"
-msgstr ""
+msgstr "Sekalaiset..."
 
 #: src/tauon/t_modules/t_main.py:47586 src/tauon/t_modules/t_main.py:47601
 msgid "Substitute Search..."
-msgstr ""
+msgstr "Korvaava haku..."
 
 #: src/tauon/t_modules/t_main.py:47587 src/tauon/t_modules/t_main.py:47602
 msgid "Paste Lyrics"
-msgstr ""
+msgstr "Liitä sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47588 src/tauon/t_modules/t_main.py:47603
 msgid "Copy Lyrics"
-msgstr ""
+msgstr "Kopioi sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47589 src/tauon/t_modules/t_main.py:47604
 msgid "Clear Lyrics"
-msgstr ""
+msgstr "Tyhjennä sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47590 src/tauon/t_modules/t_main.py:47605
 msgid "Clear Synced Lyrics"
-msgstr ""
+msgstr "Tyhjennä synkronoidut sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:47591 src/tauon/t_modules/t_main.py:47606
 msgid "Toggle art panel"
-msgstr ""
+msgstr "Vaihda kuvapaneeli"
 
 #: src/tauon/t_modules/t_main.py:47592 src/tauon/t_modules/t_main.py:47607
 msgid "Toggle art position"
-msgstr ""
+msgstr "Vaihda kuvan sijainti"
 
 #: src/tauon/t_modules/t_main.py:47610 src/tauon/t_modules/t_main.py:47659
 msgid "Open Image"
-msgstr ""
+msgstr "Avaa kuva"
 
 #: src/tauon/t_modules/t_main.py:47612
-#, fuzzy
 msgid "Next Image"
-msgstr "Seuraava kappale"
+msgstr "Seuraava kuva"
 
 #: src/tauon/t_modules/t_main.py:47616 src/tauon/t_modules/t_main.py:47660
 msgid "Extract Image"
-msgstr ""
+msgstr "Pura kuva"
 
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
-msgstr ""
+msgstr "Nouda kansikuva nopeasti"
 
 #: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
 msgid "Toggle Milkdrop Visualiser"
-msgstr ""
+msgstr "Vaihda Milkdrop-visualisointi"
 
 #: src/tauon/t_modules/t_main.py:47642
 msgid "Toggle Milkdrop Auto"
-msgstr ""
+msgstr "Vaihda Milkdrop-auto"
 
 #: src/tauon/t_modules/t_main.py:47651
 msgid "Open Preset Folder"
-msgstr ""
+msgstr "Avaa esiasetuskansio"
 
 #: src/tauon/t_modules/t_main.py:47657
 msgid "Next"
-msgstr ""
+msgstr "Seuraava"
 
 #: src/tauon/t_modules/t_main.py:47661
 msgid "Delete Image <combined>"
-msgstr ""
+msgstr "Poista kuva <yhdistetty>"
 
 #: src/tauon/t_modules/t_main.py:47665 src/tauon/t_modules/t_main.py:47668
 #: src/tauon/t_modules/t_main.py:53016
 msgid "Rename"
-msgstr ""
+msgstr "Nimeä uudelleen"
 
 #: src/tauon/t_modules/t_main.py:47705
 msgid "Regenerate"
-msgstr ""
+msgstr "Luo uudelleen"
 
 #: src/tauon/t_modules/t_main.py:47706
 msgid "Generate…"
-msgstr ""
+msgstr "Luo..."
 
 #: src/tauon/t_modules/t_main.py:47707
 msgid "Edit Generator..."
-msgstr ""
+msgstr "Muokkaa generaattoria..."
 
 #: src/tauon/t_modules/t_main.py:47708
 msgid "Sort…"
-msgstr ""
+msgstr "Lajittele..."
 
 #: src/tauon/t_modules/t_main.py:47709
 msgid "From Current…"
-msgstr ""
+msgstr "Nykyisestä..."
 
 #: src/tauon/t_modules/t_main.py:47714
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "Seuraava kappale"
+msgstr "Lajittele tuotujen kappaleiden mukaan"
 
 #: src/tauon/t_modules/t_main.py:47715
 msgid "Sort by Imported Folders"
-msgstr ""
+msgstr "Lajittele tuotujen kansioiden mukaan"
 
 #: src/tauon/t_modules/t_main.py:47716
 msgid "Sort by Filepath"
-msgstr ""
+msgstr "Lajittele tiedostopolun mukaan"
 
 #: src/tauon/t_modules/t_main.py:47717
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Lajittele kappalenumerot"
 
 #: src/tauon/t_modules/t_main.py:47718
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Lajittele vuosi artistia kohti"
 
 #: src/tauon/t_modules/t_main.py:47719
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Tee soittolistasta automaattisesti lajitteleva"
 
 #: src/tauon/t_modules/t_main.py:47726
 msgid "Append Playing"
-msgstr ""
+msgstr "Liitä toistettava"
 
 #: src/tauon/t_modules/t_main.py:47731
 msgid "Import/Export…"
-msgstr ""
+msgstr "Tuo/vie..."
 
 #: src/tauon/t_modules/t_main.py:47733
 msgid "Toggle Grouping"
-msgstr ""
+msgstr "Vaihda ryhmittely"
 
 #: src/tauon/t_modules/t_main.py:47735
-#, fuzzy
 msgid "Export Playlist Stats"
-msgstr "Soittolistan loppu"
+msgstr "Vie soittolistan tilastot"
 
 #: src/tauon/t_modules/t_main.py:47736
-#, fuzzy
 msgid "Export Albums CSV"
-msgstr "Seuraava kappale"
+msgstr "Vie albumit CSV:nä"
 
 #: src/tauon/t_modules/t_main.py:47737
 msgid "Transcode All"
-msgstr ""
+msgstr "Transkoodaa kaikki"
 
 #: src/tauon/t_modules/t_main.py:47738 src/tauon/t_modules/t_main.py:47863
 #: src/tauon/t_modules/t_main.py:47911 src/tauon/t_modules/t_main.py:47926
 msgid "Rescan Tags"
-msgstr ""
+msgstr "Tarkista tunnisteet uudelleen"
 
 #: src/tauon/t_modules/t_main.py:47743
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Ota gallerian pikalisäys käyttöön"
 
 #: src/tauon/t_modules/t_main.py:47746
 msgid "Set podcast mode"
-msgstr ""
+msgstr "Aseta podcast-tila"
 
 #: src/tauon/t_modules/t_main.py:47747
 msgid "Remove Duplicates"
-msgstr ""
+msgstr "Poista kaksoiskappaleet"
 
 #: src/tauon/t_modules/t_main.py:47748
 msgid "Toggle Console"
-msgstr ""
+msgstr "Vaihda konsoli"
 
 #: src/tauon/t_modules/t_main.py:47770 src/tauon/t_modules/t_main.py:47771
-#, fuzzy
 msgid "Longest Tracks"
-msgstr "Seuraava kappale"
+msgstr "Pisimmät kappaleet"
 
 #: src/tauon/t_modules/t_main.py:47776 src/tauon/t_modules/t_main.py:47777
 msgid "Year by Oldest"
-msgstr ""
+msgstr "Vuosi vanhimmasta"
 
 #: src/tauon/t_modules/t_main.py:47779 src/tauon/t_modules/t_main.py:47780
 msgid "Year by Latest"
-msgstr ""
+msgstr "Vuosi uusimmasta"
 
 #: src/tauon/t_modules/t_main.py:47794 src/tauon/t_modules/t_main.py:47795
-#, fuzzy
 msgid "Reverse Tracks"
-msgstr "Seuraava kappale"
+msgstr "Käännä kappalejärjestys"
 
 #: src/tauon/t_modules/t_main.py:47797 src/tauon/t_modules/t_main.py:47798
-#, fuzzy
 msgid "Reverse Albums"
-msgstr "Seuraava kappale"
+msgstr "Käännä albumijärjestys"
 
 #: src/tauon/t_modules/t_main.py:47808 src/tauon/t_modules/t_main.py:47809
 msgid "Has Comment"
-msgstr ""
+msgstr "Sisältää kommentin"
 
 #: src/tauon/t_modules/t_main.py:47816
 msgid "Track Info…"
-msgstr ""
+msgstr "Kappaletiedot..."
 
 #: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
 msgid "Love"
-msgstr ""
+msgstr "Suosikki"
 
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
-msgstr ""
+msgstr "↳ Nykyisen kappaleen jälkeen"
 
 #: src/tauon/t_modules/t_main.py:47830
 msgid "Show in Gallery"
-msgstr ""
+msgstr "Näytä galleriassa"
 
 #: src/tauon/t_modules/t_main.py:47832
 msgid "Meta…"
-msgstr ""
+msgstr "Meta..."
 
 #: src/tauon/t_modules/t_main.py:47843
 msgid "Delete Track File"
-msgstr ""
+msgstr "Poista kappaletiedosto"
 
 #: src/tauon/t_modules/t_main.py:47854 src/tauon/t_modules/t_main.py:47912
 #: src/tauon/t_modules/t_main.py:47927
 msgid "Edit fields…"
-msgstr ""
+msgstr "Muokkaa kenttiä..."
 
 #: src/tauon/t_modules/t_main.py:47857 src/tauon/t_modules/t_main.py:47885
 #: src/tauon/t_modules/t_main.py:47886 src/tauon/t_modules/t_main.py:47891
 msgid "Modify Folder…"
-msgstr ""
+msgstr "Muokkaa kansiota..."
 
 #: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
-msgstr ""
+msgstr "Muokkaa sovelluksella"
 
 #: src/tauon/t_modules/t_main.py:47879
 msgid "Lyrics..."
-msgstr ""
+msgstr "Sanoitukset..."
 
 #: src/tauon/t_modules/t_main.py:47880
 msgid "Fix Mojibake"
-msgstr ""
+msgstr "Korjaa mojibake"
 
 #: src/tauon/t_modules/t_main.py:47913
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Tiivistä toistoajat"
 
 #: src/tauon/t_modules/t_main.py:47919
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "Kopioi \"Artisti - Albumi\""
 
 #: src/tauon/t_modules/t_main.py:47924
 msgid "Add to queue"
-msgstr ""
+msgstr "Lisää jonoon"
 
 #: src/tauon/t_modules/t_main.py:47937
 msgid "Cut"
-msgstr ""
+msgstr "Leikkaa"
 
 #: src/tauon/t_modules/t_main.py:47938 src/tauon/t_modules/t_main.py:47946
 #: src/tauon/t_modules/t_main.py:47947 src/tauon/t_modules/t_main.py:48213
 msgid "Remove"
-msgstr ""
+msgstr "Poista"
 
 #: src/tauon/t_modules/t_main.py:47939
 msgid "Delete Files"
-msgstr ""
+msgstr "Poista tiedostot"
 
 #: src/tauon/t_modules/t_main.py:47949
 msgid "Search Artist on Wikipedia"
-msgstr ""
+msgstr "Hae artistia Wikipediasta"
 
 #: src/tauon/t_modules/t_main.py:47950
 msgid "Search Track on Genius"
-msgstr ""
+msgstr "Hae kappaletta Geniuksesta"
 
 #: src/tauon/t_modules/t_main.py:47956
 msgid "Search Artist on Sonemic"
-msgstr ""
+msgstr "Hae artistia Sonemicista"
 
 #: src/tauon/t_modules/t_main.py:47963
 msgid "Search Artist on Bandcamp"
-msgstr ""
+msgstr "Hae artistia Bandcampista"
 
 #: src/tauon/t_modules/t_main.py:47967
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "Kopioi \"Artisti - Kappale\""
 
 #: src/tauon/t_modules/t_main.py:47968
 msgid "Copy TIDAL Album URL"
-msgstr ""
+msgstr "Kopioi TIDAL-albumin URL"
 
 #: src/tauon/t_modules/t_main.py:47983
 msgid "Always stop after album"
-msgstr ""
+msgstr "Pysäytä aina albumin jälkeen"
 
 #: src/tauon/t_modules/t_main.py:47984
 msgid "Always stop after track"
-msgstr ""
+msgstr "Pysäytä aina kappaleen jälkeen"
 
 #: src/tauon/t_modules/t_main.py:47985
 msgid "Stop after album"
-msgstr ""
+msgstr "Pysäytä albumin jälkeen"
 
 #: src/tauon/t_modules/t_main.py:47986
 msgid "Stop after track"
-msgstr ""
+msgstr "Pysäytä kappaleen jälkeen"
 
 #: src/tauon/t_modules/t_main.py:47987
 msgid "Continue Play"
-msgstr ""
+msgstr "Jatka toistoa"
 
 #: src/tauon/t_modules/t_main.py:47989
 msgid "Minimize"
-msgstr ""
+msgstr "Pienennä"
 
 #: src/tauon/t_modules/t_main.py:47990
 msgid "Maximize"
-msgstr ""
+msgstr "Suurenna"
 
 #: src/tauon/t_modules/t_main.py:47991 src/tauon/t_modules/t_main.py:48168
 msgid "Exit"
-msgstr ""
+msgstr "Poistu"
 
 #: src/tauon/t_modules/t_main.py:48001
 msgid "Level Meter"
-msgstr ""
+msgstr "Tasomittari"
 
 #: src/tauon/t_modules/t_main.py:48002
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Spektrivisualisointi"
 
 #: src/tauon/t_modules/t_main.py:48006
 msgid "Time"
-msgstr ""
+msgstr "Aika"
 
 #: src/tauon/t_modules/t_main.py:48013
 msgid "Show bar"
-msgstr ""
+msgstr "Näytä palkki"
 
 #: src/tauon/t_modules/t_main.py:48028
-#, fuzzy
 msgid "Import Music Folder"
-msgstr "Seuraava kappale"
+msgstr "Tuo musiikkikansio"
 
 #: src/tauon/t_modules/t_main.py:48036
 msgid "Settings"
-msgstr ""
+msgstr "Asetukset"
 
 #: src/tauon/t_modules/t_main.py:48037
 msgid "Database…"
-msgstr ""
+msgstr "Tietokanta..."
 
 #: src/tauon/t_modules/t_main.py:48042
 msgid "Enabled saving state"
-msgstr ""
+msgstr "Tilan tallennus käytössä"
 
 #: src/tauon/t_modules/t_main.py:48046
 msgid "Disabled saving state"
-msgstr ""
+msgstr "Tilan tallennus pois käytöstä"
 
 #: src/tauon/t_modules/t_main.py:48048
 msgid "Dev Mode"
-msgstr ""
+msgstr "Kehittäjätila"
 
 #: src/tauon/t_modules/t_main.py:48049
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Ota tilan tallennus käyttöön"
 
 #: src/tauon/t_modules/t_main.py:48050
 msgid "Disable Saving State"
-msgstr ""
+msgstr "Poista tilan tallennus käytöstä"
 
 #: src/tauon/t_modules/t_main.py:48055
 msgid "Export as CSV"
-msgstr ""
+msgstr "Vie CSV:nä"
 
 #: src/tauon/t_modules/t_main.py:48056
 msgid "Reload All Folders"
-msgstr ""
+msgstr "Lataa kaikki kansiot uudelleen"
 
 #: src/tauon/t_modules/t_main.py:48057
 msgid "Play History to Playlist"
-msgstr ""
+msgstr "Toistohistoria soittolistaksi"
 
 #: src/tauon/t_modules/t_main.py:48058
 msgid "Reset Image Cache"
-msgstr ""
+msgstr "Nollaa kuvavälimuisti"
 
 #: src/tauon/t_modules/t_main.py:48059
 msgid "Clear Artist Cache"
-msgstr ""
+msgstr "Tyhjennä artistivälimuisti"
 
 #: src/tauon/t_modules/t_main.py:48061
 msgid "Remove Network Tracks"
-msgstr ""
+msgstr "Poista verkkokappaleet"
 
 #: src/tauon/t_modules/t_main.py:48062
 msgid "Remove Missing Tracks"
-msgstr ""
+msgstr "Poista puuttuvat kappaleet"
 
 #: src/tauon/t_modules/t_main.py:48063
 msgid "Import FMPS Ratings"
-msgstr ""
+msgstr "Tuo FMPS-arviot"
 
 #: src/tauon/t_modules/t_main.py:48064
 msgid "Import POPM Ratings"
-msgstr ""
+msgstr "Tuo POPM-arviot"
 
 #: src/tauon/t_modules/t_main.py:48065
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "Nollaa käyttäjäarviot"
 
 #: src/tauon/t_modules/t_main.py:48066
 msgid "Find Incomplete Albums"
-msgstr ""
+msgstr "Etsi puutteelliset albumit"
 
 #: src/tauon/t_modules/t_main.py:48067
 msgid "Mark Missing as Found"
-msgstr ""
+msgstr "Merkitse puuttuvat löydetyiksi"
 
 #: src/tauon/t_modules/t_main.py:48070
 msgid "Chromecast…"
-msgstr ""
+msgstr "Chromecast..."
 
 #: src/tauon/t_modules/t_main.py:48078 src/tauon/t_modules/t_main.py:48090
 msgid "Tab"
-msgstr ""
+msgstr "Välilehti"
 
 #: src/tauon/t_modules/t_main.py:48079 src/tauon/t_modules/t_main.py:48091
 msgid "Mini"
-msgstr ""
+msgstr "Mini"
 
 #: src/tauon/t_modules/t_main.py:48081 src/tauon/t_modules/t_main.py:48092
 msgid "Signal"
-msgstr ""
+msgstr "Signaali"
 
 #: src/tauon/t_modules/t_main.py:48082 src/tauon/t_modules/t_main.py:48093
 msgid "Slate"
-msgstr ""
+msgstr "Laatta"
 
 #: src/tauon/t_modules/t_main.py:48083 src/tauon/t_modules/t_main.py:48094
 msgid "Square"
-msgstr ""
+msgstr "Neliö"
 
 #: src/tauon/t_modules/t_main.py:48084 src/tauon/t_modules/t_main.py:48095
 msgid "Square Large"
-msgstr ""
+msgstr "Suuri neliö"
 
 #: src/tauon/t_modules/t_main.py:48087
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Kopioi nimi leikepöydälle"
 
 #: src/tauon/t_modules/t_main.py:48089
 msgid "Mini Mode"
-msgstr ""
+msgstr "Minitila"
 
 #: src/tauon/t_modules/t_main.py:48097
 msgid "Random Track"
-msgstr ""
+msgstr "Satunnainen kappale"
 
 #: src/tauon/t_modules/t_main.py:48102
 msgid "Radio Random"
-msgstr ""
+msgstr "Satunnainen radio"
 
 #: src/tauon/t_modules/t_main.py:48107
 msgid "Revert"
-msgstr ""
+msgstr "Palauta"
 
 #: src/tauon/t_modules/t_main.py:48124
 msgid "Global Search"
-msgstr ""
+msgstr "Yleishaku"
 
 #: src/tauon/t_modules/t_main.py:48125
 msgid "Locate Artist"
-msgstr ""
+msgstr "Paikanna artisti"
 
 #: src/tauon/t_modules/t_main.py:48126
 msgid "Go To Playing"
-msgstr ""
+msgstr "Siirry toistettavaan"
 
 #: src/tauon/t_modules/t_main.py:48166
 msgid "Online Manual"
-msgstr ""
+msgstr "Verkkokäsikirja"
 
 #: src/tauon/t_modules/t_main.py:48167
 msgid "Show Release Notes"
-msgstr ""
+msgstr "Näytä julkaisutiedot"
 
 #: src/tauon/t_modules/t_main.py:48169
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "Poista pikalisäys käytöstä"
 
 #: src/tauon/t_modules/t_main.py:48197 src/tauon/t_modules/t_main.py:48212
 msgid "Visit Website"
-msgstr ""
+msgstr "Avaa verkkosivusto"
 
 #: src/tauon/t_modules/t_main.py:48201
 msgid "View..."
-msgstr ""
+msgstr "Näytä..."
 
 #: src/tauon/t_modules/t_main.py:48202
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Lajittele aakkosittain"
 
 #: src/tauon/t_modules/t_main.py:48203
 msgid "Sort by Popularity"
-msgstr ""
+msgstr "Lajittele suosion mukaan"
 
 #: src/tauon/t_modules/t_main.py:48204
 msgid "Sort by Playtime"
-msgstr ""
+msgstr "Lajittele toistoajan mukaan"
 
 #: src/tauon/t_modules/t_main.py:48205
 msgid "Toggle Thumbnails"
-msgstr ""
+msgstr "Vaihda pikkukuvat"
 
 #: src/tauon/t_modules/t_main.py:48206
 msgid "Toggle Filter"
-msgstr ""
+msgstr "Vaihda suodatin"
 
 #: src/tauon/t_modules/t_main.py:48208
 msgid "Download Artist Data"
-msgstr ""
+msgstr "Lataa artistitiedot"
 
 #: src/tauon/t_modules/t_main.py:48209
 msgid "Clear Bio"
-msgstr ""
+msgstr "Tyhjennä bio"
 
 #: src/tauon/t_modules/t_main.py:48210
 msgid "Edit..."
-msgstr ""
+msgstr "Muokkaa..."
 
 #: src/tauon/t_modules/t_main.py:48215
 msgid "Dismiss"
-msgstr ""
+msgstr "Ohita"
 
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "VIRHE: taustajärjestelmää ei löytynyt"
 
 #: src/tauon/t_modules/t_main.py:49508
 msgid "Enabled auto theme"
-msgstr ""
+msgstr "Automaattinen teema otettu käyttöön"
 
 #: src/tauon/t_modules/t_main.py:49510
 msgid "Disabled auto theme"
-msgstr ""
+msgstr "Automaattinen teema poistettu käytöstä"
 
 #: src/tauon/t_modules/t_main.py:49553
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Valitse ensin lähdekappale kopioimalla se leikepöydälle"
 
 #: src/tauon/t_modules/t_main.py:49870
-#, fuzzy
 msgid "Track already has lyrics"
-msgstr "Kappale on jo tykätty"
+msgstr "Kappaleella on jo sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:50055
 msgid "Error loading theme file"
-msgstr ""
+msgstr "Teematiedoston lataus epäonnistui"
 
 #: src/tauon/t_modules/t_main.py:51163 src/tauon/t_modules/t_main.py:51180
 msgid "Various Artists"
-msgstr ""
+msgstr "Useita artisteja"
 
 #: src/tauon/t_modules/t_main.py:51431
-#, fuzzy
 msgid "Rescan folders complete."
-msgstr "Spotify-tuonti valmis"
+msgstr "Kansioiden uudelleentarkistus valmis."
 
 #: src/tauon/t_modules/t_main.py:51470
 msgid "Auto sort skipped because playlist is locked."
-msgstr ""
+msgstr "Automaattinen lajittelu ohitettiin, koska soittolista on lukittu."
 
 #: src/tauon/t_modules/t_main.py:52222
 msgid "Queue is Empty"
-msgstr ""
+msgstr "Jono on tyhjä"
 
 #: src/tauon/t_modules/t_main.py:52651 src/tauon/t_modules/t_main.py:52670
 #: src/tauon/t_modules/t_main.py:52690 src/tauon/t_modules/t_main.py:52713
@@ -5818,157 +5659,153 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:52829 src/tauon/t_modules/t_main.py:52843
 #: src/tauon/t_modules/t_main.py:52857 src/tauon/t_modules/t_main.py:52914
 msgid "Copied text to clipboard"
-msgstr ""
+msgstr "Teksti kopioitu leikepöydälle"
 
 #: src/tauon/t_modules/t_main.py:52711 src/tauon/t_modules/t_main.py:52717
 msgid "Path"
-msgstr ""
+msgstr "Polku"
 
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
-msgstr ""
+msgstr "Näytteenottotaajuus"
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
-msgstr ""
+msgstr "/"
 
 #: src/tauon/t_modules/t_main.py:52798 src/tauon/t_modules/t_main.py:53581
-#, fuzzy
 msgid "Track"
-msgstr "Seuraava kappale"
+msgstr "Kappale"
 
 #: src/tauon/t_modules/t_main.py:52805 src/tauon/t_modules/t_main.py:52811
 msgid "File size"
-msgstr ""
+msgstr "Tiedostokoko"
 
 #: src/tauon/t_modules/t_main.py:52818
 msgid "Disc"
-msgstr ""
+msgstr "Levy"
 
 #: src/tauon/t_modules/t_main.py:52883
 msgid "Play count"
-msgstr ""
+msgstr "Toistokerrat"
 
 #: src/tauon/t_modules/t_main.py:52895
 msgid "Play time"
-msgstr ""
+msgstr "Toistoaika"
 
 #: src/tauon/t_modules/t_main.py:52900
 msgid "Lyrics"
-msgstr ""
+msgstr "Sanoitukset"
 
 #: src/tauon/t_modules/t_main.py:52998
-#, fuzzy
 msgid "Folder Modification"
-msgstr "Esittäjän kuvaa ei löydy."
+msgstr "Kansion muokkaus"
 
 #: src/tauon/t_modules/t_main.py:53020
 msgid "Renames the physical folder based on the template"
-msgstr ""
+msgstr "Nimeää fyysisen kansion uudelleen mallin perusteella"
 
 #: src/tauon/t_modules/t_main.py:53028
 msgid "Trash"
-msgstr ""
+msgstr "Roskakori"
 
 #: src/tauon/t_modules/t_main.py:53029
 msgid "Moves folder to system trash"
-msgstr ""
+msgstr "Siirtää kansion järjestelmän roskakoriin"
 
 #: src/tauon/t_modules/t_main.py:53032
 msgid "Physically deletes folder from disk"
-msgstr ""
+msgstr "Poistaa kansion fyysisesti levyltä"
 
 #: src/tauon/t_modules/t_main.py:53052
 msgid "Raise"
-msgstr ""
+msgstr "Nosta"
 
 #: src/tauon/t_modules/t_main.py:53056
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
+msgstr "Siirtää kansion kaksi tasoa ylemmäs ja poistaa vanhan säiliökansion"
 
 #: src/tauon/t_modules/t_main.py:53068
 msgid "Deletes some unnecessary files from folder"
-msgstr ""
+msgstr "Poistaa kansiosta joitakin tarpeettomia tiedostoja"
 
 #: src/tauon/t_modules/t_main.py:53073
 msgid "PATH"
-msgstr ""
+msgstr "POLKU"
 
 #: src/tauon/t_modules/t_main.py:53084
 msgid "OLD"
-msgstr ""
+msgstr "VANHA"
 
 #: src/tauon/t_modules/t_main.py:53091
 msgid "NEW"
-msgstr ""
+msgstr "UUSI"
 
 #: src/tauon/t_modules/t_main.py:53179
 msgid "Folder filter mode. Enter path segment."
-msgstr ""
+msgstr "Kansiosuodatintila. Syötä polun osa."
 
 #: src/tauon/t_modules/t_main.py:53187
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
-msgstr ""
+msgstr "YLÖS / ALAS liikkumiseen. SHIFT + ENTER uuteen soittolistaan."
 
 #: src/tauon/t_modules/t_main.py:53189
 msgid "Quick find"
-msgstr ""
+msgstr "Pikahaku"
 
 #: src/tauon/t_modules/t_main.py:53285
 msgid "Search Results"
-msgstr ""
+msgstr "Hakutulokset"
 
 #: src/tauon/t_modules/t_main.py:53541
-#, fuzzy
 msgid "Loved track"
-msgstr "Seuraava kappale"
+msgstr "Suosikkikappale"
 
 #: src/tauon/t_modules/t_main.py:53546
-#, fuzzy
 msgid "Un-Loved track"
-msgstr "Seuraava kappale"
+msgstr "Poistettu suosikeista"
 
 #: src/tauon/t_modules/t_main.py:53711
 msgid "Lines copied to clipboard"
-msgstr ""
+msgstr "Rivit kopioitu leikepöydälle"
 
 #: src/tauon/t_modules/t_phazor.py:1140
 msgid "Error loading track"
-msgstr ""
+msgstr "Kappaleen lataus epäonnistui"
 
 #: src/tauon/t_modules/t_stream.py:142
 msgid "Failed to establish a connection"
-msgstr ""
+msgstr "Yhteyden muodostus epäonnistui"
 
 #: src/tauon/t_modules/t_stream.py:559
 msgid "Data malformation detected. Stream aborted."
-msgstr ""
+msgstr "Havaittiin virheellisesti muodostettua dataa. Virta keskeytettiin."
 
 #: src/tauon/t_modules/t_subsonic.py:132
 msgid "Subsonic Error: "
-msgstr ""
+msgstr "Subsonic-virhe: "
 
 #: src/tauon/t_modules/t_subsonic.py:393 src/tauon/t_modules/t_subsonic.py:398
 #: src/tauon/t_modules/t_subsonic.py:408 src/tauon/t_modules/t_subsonic.py:416
 #: src/tauon/t_modules/t_subsonic.py:543
 msgid "Error connecting to Airsonic server"
-msgstr ""
+msgstr "Yhteys Airsonic-palvelimeen epäonnistui"
 
 #: src/tauon/t_modules/t_subsonic.py:455
 msgid "Error reading Airsonic directory!"
-msgstr ""
+msgstr "Airsonic-hakemiston lukeminen epäonnistui!"
 
 #: src/tauon/t_modules/t_subsonic.py:597
 msgid "Airsonic Collection"
-msgstr ""
+msgstr "Airsonic-kokoelma"
 
 #: src/tauon/t_modules/t_tidal.py:44 src/tauon/t_modules/t_tidal.py:67
 msgid "Tidalapi package not loaded"
-msgstr ""
+msgstr "Tidalapi-pakettia ei ole ladattu"
 
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
-msgstr ""
+msgstr "TIDAL-kirjautumisen lataus epäonnistui, yritä kirjautua uudelleen"
 
 #, fuzzy
 #~ msgid "Tracklist panel"

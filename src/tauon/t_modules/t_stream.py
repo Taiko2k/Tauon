@@ -29,14 +29,13 @@ import sys
 import threading
 import time
 import urllib.request
+from queue import Empty, Queue
 
 import mutagen
 
 from tauon.t_modules.t_enums import Backend
 from tauon.t_modules.t_extra import filename_safe
 
-if sys.platform != "win32":
-	import fcntl
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -67,39 +66,187 @@ class StreamEnc:
 		self.chunks = {}
 		self.c = 0
 		self.url = ""
+		self.request_id = 0
+		self.download_response = None
+		self.decoder_process: subprocess.Popen[bytes] | None = None
+		self.record_decoder_process: subprocess.Popen[bytes] | None = None
+		self.record_encoder_process: subprocess.Popen[bytes] | None = None
+
+	def state_log(self) -> str:
+		return (
+			f"request_id={self.request_id} abort={self.abort} "
+			f"download_running={self.download_running} encode_running={self.encode_running} "
+			f"pump_running={self.pump_running} feed_running={self.feed_running} "
+			f"chunks={self.c} response_open={self.download_response is not None} "
+			f"decoder_running={self.decoder_process is not None and self.decoder_process.poll() is None} "
+			f"record_decoder_running={self.record_decoder_process is not None and self.record_decoder_process.poll() is None} "
+			f"record_encoder_running={self.record_encoder_process is not None and self.record_encoder_process.poll() is None}"
+		)
 
 	def stop(self) -> None:
+		logging.info(f"Radio stream stop requested: {self.state_log()}")
 		if self.tauon.radiobox.websocket:
 			self.tauon.radiobox.websocket.close()
 			logging.info("Websocket closed")
 
 		self.abort = True
+		self.feed_running = False
+		if self.download_response is not None:
+			try:
+				self.download_response.close()
+				logging.info("Closed radio stream response")
+			except Exception:
+				logging.exception("Failed to close radio stream response")
+			self.download_response = None
+		self.stop_process(self.decoder_process, "radio decoder")
+		self.decoder_process = None
+		self.stop_process(self.record_decoder_process, "radio recording decoder")
+		self.record_decoder_process = None
+		if self.record_encoder_process is not None:
+			self.close_pipe(self.record_encoder_process.stdin, "radio recording encoder stdin")
 		self.tauon.radiobox.loaded_url = None
+		logging.info(f"Radio stream stop flagged: {self.state_log()}")
 
-	def start_download(self, url: str) -> bool:
+	def ffmpeg_popen(
+		self,
+		cmd: list[str],
+		stdin: int | None = None,
+		stdout: int | None = None,
+	) -> subprocess.Popen[bytes]:
+		kwargs = {
+			"stdin": stdin,
+			"stdout": stdout,
+			"stderr": subprocess.DEVNULL,
+		}
+		if self.tauon.windows:
+			startupinfo = subprocess.STARTUPINFO()
+			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+			kwargs["startupinfo"] = startupinfo
+			kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+		return subprocess.Popen(cmd, **kwargs)
+
+	def close_pipe(self, pipe, label: str) -> None:
+		if pipe is None:
+			return
+		try:
+			pipe.close()
+			logging.info(f"Closed {label}")
+		except BrokenPipeError:
+			logging.info(f"{label} already closed")
+			pass
+		except Exception:
+			logging.exception("Failed to close %s", label)
+
+	def stop_process(self, process: subprocess.Popen[bytes] | None, label: str, timeout: float = 0.4) -> None:
+		if process is None or process.poll() is not None:
+			if process is not None:
+				logging.info(f"{label} already stopped with return code {process.poll()}")
+			return
+		logging.info(f"Stopping {label} process")
+		try:
+			process.terminate()
+		except Exception:
+			logging.exception("Failed to terminate %s", label)
+		try:
+			process.wait(timeout=timeout)
+		except subprocess.TimeoutExpired:
+			try:
+				process.kill()
+			except Exception:
+				logging.exception("Failed to kill %s", label)
+			try:
+				process.wait(timeout=timeout)
+			except Exception:
+				logging.exception("Failed to wait for killed %s", label)
+		except Exception:
+			logging.exception("Failed to wait for %s", label)
+
+	def finish_encoder(self, encoder: subprocess.Popen[bytes], timeout: float = 4) -> None:
+		self.close_pipe(encoder.stdin, "encoder stdin")
+		try:
+			encoder.wait(timeout=timeout)
+		except subprocess.TimeoutExpired:
+			logging.warning("Encoder timed out")
+			self.stop_process(encoder, "encoder")
+		except Exception:
+			logging.exception("Failed to wait for encoder")
+			self.stop_process(encoder, "encoder")
+
+	def read_stdout(
+		self,
+		process: subprocess.Popen[bytes],
+		output: Queue[bytes],
+		read_size: int,
+		label: str,
+		request_id: int,
+	) -> None:
+		logging.info(f"{label} reader started for request {request_id}")
+		try:
+			while not self.abort and self.request_id == request_id:
+				data = process.stdout.read(read_size)
+				if data:
+					output.put(data)
+				elif data == b"":
+					logging.info(f"{label} reader got EOF for request {request_id}")
+					break
+				else:
+					time.sleep(0.005)
+		except (OSError, ValueError):
+			logging.info(f"{label} reader stopped after pipe close for request {request_id}")
+		except Exception:
+			logging.exception("%s reader thread crashed", label)
+		finally:
+			logging.info(
+				f"{label} reader exiting for request {request_id}; "
+				f"current_request={self.request_id} abort={self.abort} queue_size={output.qsize()}"
+			)
+
+	def wait_until_idle(self, request_id: int, timeout: float = 5) -> bool:
+		start = time.monotonic()
+		next_log = start
+		logging.info(f"Waiting for radio stream idle before request {request_id}: {self.state_log()}")
+		while self.download_running or self.encode_running or self.pump_running:
+			if self.request_id != request_id:
+				logging.info(
+					f"Radio stream idle wait abandoned for request {request_id}; "
+					f"current request is {self.request_id}: {self.state_log()}"
+				)
+				return False
+			now = time.monotonic()
+			if now >= next_log:
+				logging.info(f"Still waiting for radio stream idle: {self.state_log()}")
+				next_log = now + 0.5
+			if now - start > timeout:
+				logging.warning(f"Timed out waiting for previous radio stream to stop: {self.state_log()}")
+				return False
+			time.sleep(0.01)
+		logging.info(f"Radio stream is idle before request {request_id}")
+		return True
+
+	def start_download(self, url: str, request_id: int = 0) -> bool:
+		logging.info(f"Radio stream start_download request={request_id} url={url}")
 		self.abort = True
-		while self.download_running:
-			time.sleep(0.01)
-		while self.encode_running:
-			time.sleep(0.01)
-		while self.pump_running:
-			time.sleep(0.01)
+		self.request_id = request_id
+		if not self.wait_until_idle(request_id):
+			logging.warning(f"Radio stream start_download failed waiting for idle: {self.state_log()}")
+			return False
 
 		self.__init__(self.tauon)
+		self.request_id = request_id
 
 		self.url = url
-		result = self.start_request()
+		result = self.start_request(url, request_id)
 		if not result:
+			logging.warning(f"Radio stream start_request failed for request {request_id}")
 			return False
 
 		self.download_process = threading.Thread(target=self.pump)
 		self.download_process.daemon = True
 		self.download_process.start()
+		logging.info(f"Radio stream pump thread started for request {request_id}")
 		return True
 
-	def start_request(self) -> bool:
-		url = self.url
-
+	def start_request(self, url: str, request_id: int) -> bool:
 		def NiceToICY(self) -> None:
 			class InterceptedHTTPResponse:
 				pass
@@ -121,14 +268,24 @@ class StreamEnc:
 		while True:
 			try:
 				urllib.request.http.client.HTTPResponse._read_status = NiceToICY
-				r = urllib.request.Request(self.url)
+				r = urllib.request.Request(url)
 				# r.add_header('GET', '1')
-				if not self.url.endswith(".ts"):
+				if not url.endswith(".ts"):
 					r.add_header("Icy-MetaData", "1")
 				r.add_header("User-Agent", self.tauon.t_agent)
 				logging.info("Open URL.....")
 				r = urllib.request.urlopen(r, timeout=20, context=self.tauon.tls_context)
-				logging.info("URL opened.")
+				self.download_response = r
+				logging.info(f"URL opened for radio request {request_id}; headers={dict(r.info())}")
+				if self.abort or self.request_id != request_id:
+					logging.info(
+						f"Closing newly opened radio response for stale request {request_id}; "
+						f"current_request={self.request_id} abort={self.abort}"
+					)
+					r.close()
+					if self.download_response is r:
+						self.download_response = None
+					return False
 
 			except Exception as e:
 				# TODO(Martin): Specify the exception better and turn the top part into debug statements, then only throw except when Connection fails below
@@ -149,9 +306,11 @@ class StreamEnc:
 		self.download_process.daemon = True
 		self.download_process.start()
 		self.download_running = True
+		logging.info(f"Radio stream download thread started for request {request_id}")
 		return True
 
 	def pump(self) -> None:
+		logging.info(f"Radio pump starting: {self.state_log()}")
 		aud = self.tauon.aud
 		if self.tauon.prefs.backend != Backend.PHAZOR or not aud:
 			logging.error("Radio error: Phazor not loaded")
@@ -172,21 +331,19 @@ class StreamEnc:
 		]
 		# fmt:on
 
-		startupinfo = None
-		if self.tauon.windows:
-			startupinfo = subprocess.STARTUPINFO()
-			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-		decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
-		if sys.platform != "win32":
-			fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+		decoder = self.ffmpeg_popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+		self.decoder_process = decoder
 
 		raw_audio = None
 		max_read = 10000
+		request_id = self.request_id
+		raw_queue: Queue[bytes] = Queue()
 		self.tauon.vb.reset()
 
 		def feed(decoder: Popen[bytes]) -> None:
 			position = 0
 			self.feed_running = True
+			logging.info(f"Radio feeder starting for request {request_id}")
 			try:
 				while True:
 					if position < self.tauon.stream_proxy.c:
@@ -195,7 +352,10 @@ class StreamEnc:
 							break
 
 						chunk = self.chunks[position]
-						decoder.stdin.write(chunk)
+						try:
+							decoder.stdin.write(chunk)
+						except (BrokenPipeError, OSError, ValueError):
+							break
 						self.tauon.vb.input(self.tauon.stream_proxy.chunks[position])
 						position += 1
 					else:
@@ -204,54 +364,79 @@ class StreamEnc:
 						break
 			except Exception:
 				logging.exception("Feed not running!")
+			finally:
 				self.feed_running = False
-				raise
-			logging.info("Exit feeder")
+				self.close_pipe(decoder.stdin, "decoder stdin")
+			logging.info(
+				f"Radio feeder exiting for request {request_id}; "
+				f"position={position} chunks={self.c} abort={self.abort} pump_running={self.pump_running}"
+			)
 
 		feeder = threading.Thread(target=feed, args=[decoder])
 		feeder.daemon = True
 		feeder.start()
 
-		retry = 3
+		reader = threading.Thread(target=self.read_stdout, args=(decoder, raw_queue, max_read, "Radio decoder", request_id))
+		reader.daemon = True
+		reader.start()
 
-		while True:
-			if not self.tauon.stream_proxy.download_running or self.abort:
-				break
-			if raw_audio is None:
-				raw_audio = decoder.stdout.read(max_read)
-			if raw_audio:
-				r = aud.feed_ready(max_read)
-				if r:
-					aud.feed_raw(len(raw_audio), raw_audio)
-					if len(raw_audio) < max_read:
-						time.sleep(0.01)
-					raw_audio = None
-					continue
-
-			time.sleep(0.01)
-
-		decoder.terminate()
-		time.sleep(0.1)
 		try:
-			decoder.kill()
-		except Exception:
-			logging.exception("Failed to kill decoder")
+			last_wait_log = time.monotonic()
+			while True:
+				if not self.tauon.stream_proxy.download_running or self.abort or self.request_id != request_id:
+					logging.info(
+						f"Radio pump break for request {request_id}: "
+						f"download_running={self.tauon.stream_proxy.download_running} "
+						f"abort={self.abort} current_request={self.request_id}"
+					)
+					break
+				if raw_audio is None:
+					try:
+						raw_audio = raw_queue.get(timeout=0.01)
+					except Empty:
+						if decoder.poll() is not None:
+							logging.info(f"Radio decoder process ended with code {decoder.poll()} for request {request_id}")
+							break
+						now = time.monotonic()
+						if now - last_wait_log > 1:
+							logging.info(
+								f"Radio pump waiting for decoded audio request={request_id} "
+								f"chunks={self.c} raw_queue={raw_queue.qsize()} decoder_poll={decoder.poll()}"
+							)
+							last_wait_log = now
+						continue
+				if raw_audio:
+					r = aud.feed_ready(max_read)
+					if r:
+						aud.feed_raw(len(raw_audio), raw_audio)
+						if len(raw_audio) < max_read:
+							time.sleep(0.01)
+						raw_audio = None
+						continue
 
-		self.pump_running = False
+				time.sleep(0.01)
+		finally:
+			self.feed_running = False
+			self.stop_process(decoder, "decoder")
+			if self.decoder_process is decoder:
+				self.decoder_process = None
+			self.close_pipe(decoder.stdin, "decoder stdin")
+			self.pump_running = False
+			logging.info(f"Radio pump exiting for request {request_id}: {self.state_log()}")
 
 	def encode(self) -> None:
 		self.encode_running = True
+		decoder: subprocess.Popen[bytes] | None = None
+		encoder: subprocess.Popen[bytes] | None = None
 
 		try:
 			ffmpeg_path = self.tauon.get_ffmpeg()
 			if ffmpeg_path is None:
 				logging.error("FFmpeg could not be found for stream encoder")
-				self.encode_running = False
 				return
 
 			while self.c < 20:
 				if self.abort:
-					self.encode_running = False
 					return
 				time.sleep(0.05)
 
@@ -274,7 +459,7 @@ class StreamEnc:
 				target_file.unlink()
 
 			# fmt:off
-			cmd = [
+			decoder_cmd = [
 				str(ffmpeg_path),
 				"-loglevel", "quiet",
 				"-i", "pipe:0",
@@ -286,17 +471,17 @@ class StreamEnc:
 			]
 			# fmt:on
 
-			decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-			if sys.platform != "win32":
-				fcntl.fcntl(decoder.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
+			decoder = self.ffmpeg_popen(decoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			self.record_decoder_process = decoder
 
 			position = 0
+			request_id = self.request_id
 			old_metadata = self.tauon.radiobox.song_key
-			old_tags = self.tauon.pctl.found_tags
+			raw_queue: Queue[bytes] = Queue()
 
 			##cmd = ["opusenc", "--raw", "--raw-rate", "48000", "-", target_file]
 			# fmt:off
-			cmd = [
+			encoder_cmd = [
 				str(ffmpeg_path),
 				"-loglevel", "quiet",
 				"-f", "s16le",
@@ -306,7 +491,45 @@ class StreamEnc:
 				str(target_file),
 			]
 			# fmt:on
-			encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+			encoder = self.ffmpeg_popen(encoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+			self.record_encoder_process = encoder
+
+			def feed_decoder(decoder: subprocess.Popen[bytes]) -> None:
+				nonlocal position
+				try:
+					while True:
+						if position < self.c:
+							if position not in self.chunks:
+								logging.info("The buffer was deleted too soon!")
+								break
+
+							try:
+								decoder.stdin.write(self.chunks[position])
+							except (BrokenPipeError, OSError, ValueError):
+								break
+							position += 1
+						else:
+							time.sleep(0.005)
+						if self.abort or self.request_id != request_id:
+							break
+				except Exception:
+					logging.exception("Encoder feeder thread crashed!")
+				finally:
+					logging.info(
+						"Radio recording feeder exiting for request %s; position=%s chunks=%s abort=%s",
+						request_id,
+						position,
+						self.c,
+						self.abort,
+					)
+
+			feeder = threading.Thread(target=feed_decoder, args=[decoder])
+			feeder.daemon = True
+			feeder.start()
+
+			reader = threading.Thread(target=self.read_stdout, args=(decoder, raw_queue, 10000, "Radio encoder decoder", request_id))
+			reader.daemon = True
+			reader.start()
 
 			def save_track() -> None:
 				# self.tauon.recorded_songs.append(song)
@@ -371,30 +594,26 @@ class StreamEnc:
 				self.tauon.load_orders.append(copy.deepcopy(load_order))
 				self.tauon.gui.update += 1
 
+			def save_target_if_large() -> None:
+				if target_file.exists():
+					if target_file.stat().st_size > 256000:
+						logging.info("Save file")
+						save_track()
+					else:
+						logging.info("Discard small file")
+						target_file.unlink()
+
 			while True:
-				if self.abort:
-					decoder.terminate()
-					encoder.terminate()
-					time.sleep(0.1)
-					try:
-						decoder.kill()
-					except Exception:
-						logging.exception("Failed to kill decoder")
-					try:
-						encoder.kill()
-					except Exception:
-						logging.exception("Failed to kill encoder")
-
-					if target_file.exists():
-						if target_file.stat().st_size > 256000:
-							logging.info("Save file")
-							save_track()
-						else:
-							logging.info("Discard small file")
-							target_file.unlink()
-
-					self.encode_running = False
-					self.tauon.pctl.tag_history.clear()
+				if self.abort or self.request_id != request_id:
+					logging.info(f"Radio recording stop requested for request {request_id}: {self.state_log()}")
+					self.stop_process(decoder, "recording decoder")
+					if self.record_decoder_process is decoder:
+						self.record_decoder_process = None
+					self.close_pipe(decoder.stdin, "recording decoder stdin")
+					self.finish_encoder(encoder, timeout=2)
+					if self.record_encoder_process is encoder:
+						self.record_encoder_process = None
+					save_target_if_large()
 					return
 
 				if old_metadata != self.tauon.radiobox.song_key:
@@ -406,40 +625,52 @@ class StreamEnc:
 						old_metadata = self.tauon.radiobox.song_key
 					else:
 						logging.info("Split and save file")
-						encoder.stdin.close()
-						try:
-							encoder.wait(timeout=4)
-						except Exception:
-							logging.exception("Encoder timed out")
-						try:
-							encoder.kill()
-						except Exception:
-							logging.exception("Failed to kill encoder")
-						if target_file.exists():
-							if target_file.stat().st_size > 256000:
-								save_track()
-							else:
-								logging.info("Discard small file")
-								target_file.unlink()
-						encoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+						self.finish_encoder(encoder)
+						if self.record_encoder_process is encoder:
+							self.record_encoder_process = None
+						save_target_if_large()
+						encoder = self.ffmpeg_popen(encoder_cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
+						self.record_encoder_process = encoder
 
-				raw_audio = decoder.stdout.read(1000000)
+				raw_audio = None
+				try:
+					raw_audio = raw_queue.get(timeout=0.01)
+				except Empty:
+					if decoder.poll() is not None:
+						logging.info("Decoder stopped")
+						break
 				if raw_audio:
-					encoder.stdin.write(raw_audio)
-
-				if position < self.c:
-					chunk = self.chunks[position]
-					position += 1
-					decoder.stdin.write(chunk)
+					try:
+						encoder.stdin.write(raw_audio)
+					except (BrokenPipeError, OSError, ValueError):
+						logging.warning("Encoder pipe closed")
+						break
 				else:
 					time.sleep(0.005)
 
+			self.finish_encoder(encoder, timeout=2)
+			if self.record_encoder_process is encoder:
+				self.record_encoder_process = None
+			save_target_if_large()
+
 		except Exception:
 			logging.exception("Encoder thread crashed!")
+		finally:
+			if decoder is not None:
+				self.stop_process(decoder, "recording decoder")
+				if self.record_decoder_process is decoder:
+					self.record_decoder_process = None
+				self.close_pipe(decoder.stdin, "recording decoder stdin")
+			if encoder is not None and encoder.poll() is None:
+				self.finish_encoder(encoder, timeout=2)
+			if self.record_encoder_process is encoder:
+				self.record_encoder_process = None
 			self.encode_running = False
-			return
+			self.tauon.pctl.tag_history.clear()
 
 	def run_download(self, r: _UrlopenRet) -> None:
+		request_id = self.request_id
+		logging.info(f"Radio download thread entering for request {request_id}")
 		h = r.info()
 
 		self.s_name = h.get("icy-name")
@@ -449,7 +680,10 @@ class StreamEnc:
 		self.s_description = h.get("icy-description")
 		self.s_mime = h.get("Content-Type")
 
-		logging.info(self.s_mime)
+		logging.info(
+			f"Radio stream headers request={request_id} mime={self.s_mime} "
+			f"metaint={metaint} bitrate={self.s_bitrate} name={self.s_name}"
+		)
 		if self.s_mime == "audio/mpeg":
 			self.s_format = "MP3"
 		if self.s_mime == "audio/ogg":
@@ -472,22 +706,24 @@ class StreamEnc:
 		maybe = b""
 
 		if self.tauon.prefs.auto_rec:
+			logging.info(f"Starting radio auto-record encoder for request {request_id}")
 			self.download_process = threading.Thread(target=self.encode)
 			self.download_process.daemon = True
 			self.download_process.start()
 
 		try:
+			logging.info(f"Radio download read loop starting for request {request_id}")
 			while True:
 				chunk = r.read(256)
 
 				if self.abort:
 					r.close()
-					logging.info("Abort stream connection")
+					logging.info(f"Abort stream connection for request {request_id}; chunks={self.c}")
 					self.download_running = False
 					return
 				if not chunk:
 					r.close()
-					logging.info("Stream connection closed")
+					logging.info(f"Stream connection closed for request {request_id}; chunks={self.c}")
 					self.download_running = False
 					self.abort = True
 					return
@@ -559,7 +795,19 @@ class StreamEnc:
 							self.tauon.show_message(_("Data malformation detected. Stream aborted."), mode="error")
 							raise
 		except Exception:
-			logging.exception("Stream download thread crashed!")
-			self.download_running = False
+			if self.abort:
+				logging.info(f"Abort stream connection for request {request_id}; chunks={self.c}")
+			else:
+				logging.exception(f"Stream download thread crashed for request {request_id}!")
 			self.abort = True
 			return
+		finally:
+			logging.info(f"Radio download cleanup starting for request {request_id}: {self.state_log()}")
+			try:
+				r.close()
+			except Exception:
+				logging.exception("Failed to close radio stream response")
+			if self.download_response is r:
+				self.download_response = None
+			self.download_running = False
+			logging.info(f"Radio download cleanup complete for request {request_id}: {self.state_log()}")

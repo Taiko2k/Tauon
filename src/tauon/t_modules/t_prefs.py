@@ -21,7 +21,7 @@ class Prefs:
 			self.playlist_row_height = round(22 * self.ui_scale)
 
 	# fmt:off
-	view_prefs:              dict[str, bool]
+	view_prefs:              dict[str, object]
 	encoder_output:          Path
 	window_opacity:          float
 	ui_scale:                float
@@ -59,6 +59,7 @@ class Prefs:
 	update_title:  bool = False
 	scroll_enable: bool = True
 	smooth_scroll_enable: bool = False
+	smooth_scroll_speed:  float = 1.0
 	break_enable:  bool = True
 
 	transcode_codec:   str = "opus"
@@ -170,12 +171,12 @@ class Prefs:
 	plex_username = ""
 	plex_password = ""
 	plex_servername = ""
+	plex_library = ""
 
 	auto_lyrics: bool = False  # Function has been disabled
 	jelly_username: str = ""
 	jelly_password: str = ""
 	jelly_server_url: str = "http://localhost:8096"
-	jelly_timeout: int = 300  # Make configurable in case user has a large/slow setup
 
 	auto_lyrics_checked: list = field(default_factory=list)
 
@@ -291,9 +292,11 @@ class Prefs:
 	center_gallery_text: bool = False
 
 	tracklist_y_text_offset = 0
-	theme: int = 7
-	theme_name = "Turbo"
+	theme: int = 14
+	theme_name = "Vape"
 	transparent_mode: int = 0
+	rounded_corners: bool = False
+	corner_radius: int = 10
 	left_panel_mode = "playlist"
 
 	folder_tree_codec_colours: bool = False
@@ -354,6 +357,8 @@ class Prefs:
 	# TODO(Martin): cache_list isn't really used anywhere and will always be empty?
 	cache_list: list[str] = field(default_factory=list[str])
 	cache_limit = 2000  # in mb
+	network_stream: bool = True  # Stream network tracks directly rather than downloading first
+	stream_buffer = 50  # Size of the in-memory file/stream buffer, in mb
 	save_window_position: bool = True
 	always_ffmpeg: bool = False
 

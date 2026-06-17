@@ -2,6 +2,27 @@
 Changelog
 ---------
 
+### v10.2.0
+
+ - Reworked network streaming backend
+ - Added rounded corners setting
+ - Added search overlay feedback when adding results to playlists
+ - Added resume on restart setting to the settings UI
+ - Added Plex music library selection
+ - Improved TIDAL favorites and playlists pagination
+ - Fixed album rating and scrollbar interactions
+ - Fixed show playing info shortcut
+ - Fixed resume on restart state handling
+ - Fixed Jellyfin import (again)
+ - Search overlay now searches track lyrics
+
+### v10.0.1
+
+ - Added auto-search lyrics setting to the settings UI
+ - Added drag grip to the theme editor
+ - Fixed track repeat looping cutting off the end of songs
+ - Fix auto smooth scroll disable
+
 ### v10.0.0
 
  - Redesigned settings UI

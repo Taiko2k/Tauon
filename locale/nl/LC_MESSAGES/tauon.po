@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: Tauon Music Box\n"
 "POT-Creation-Date: 2026-05-03 19:15+1200\n"
 "PO-Revision-Date: 2026-04-17 01:42+0000\n"
 "Last-Translator: zeskeertwee <zeskeertwee@gmail.com>\n"
@@ -20,217 +20,210 @@ msgstr ""
 
 #: src/tauon/t_modules/t_dbus.py:364
 msgid "Failed to start indicator"
-msgstr ""
+msgstr "Indicator starten mislukt"
 
 #: src/tauon/t_modules/t_discord.py:260 src/tauon/t_modules/t_discord.py:320
 #: src/tauon/t_modules/t_discord.py:494
-#, fuzzy
 msgid "Reconnecting to Discord..."
-msgstr "Open Map"
+msgstr "Opnieuw verbinden met Discord..."
 
 #: src/tauon/t_modules/t_discord.py:352 src/tauon/t_modules/t_discord.py:392
 #: src/tauon/t_modules/t_discord.py:395
 msgid "Unknown Track"
-msgstr ""
+msgstr "Onbekend nummer"
 
 #: src/tauon/t_modules/t_discord.py:361 src/tauon/t_modules/t_discord.py:391
 #: src/tauon/t_modules/t_discord.py:396
-#, fuzzy
 msgid "Unknown Artist"
-msgstr "Artiestlijst"
+msgstr "Onbekende artiest"
 
 #: src/tauon/t_modules/t_discord.py:503
 msgid "Waiting for Discord rate limit…"
-msgstr ""
+msgstr "Wachten op Discord-snelheidslimiet…"
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr ""
+msgstr "Fout - draait Discord niet?"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
-msgstr ""
+msgstr "Nog niet"
 
 #: src/tauon/t_modules/t_extra.py:559
 msgid "Now"
-msgstr ""
+msgstr "Nu"
 
 #: src/tauon/t_modules/t_extra.py:563
 msgid "min"
-msgstr ""
+msgstr "min"
 
 #: src/tauon/t_modules/t_extra.py:567
 msgid "hr"
-msgstr ""
+msgstr "u"
 
 #: src/tauon/t_modules/t_extra.py:571
-#, fuzzy
 msgid "dy"
-msgstr "dag"
+msgstr "d"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr ""
+msgstr "wk"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
-msgstr ""
+msgstr "mnd"
 
 #: src/tauon/t_modules/t_extra.py:580
-#, fuzzy
 msgid "Unknown"
-msgstr "Artiestlijst"
+msgstr "Onbekend"
 
 #: src/tauon/t_modules/t_guitar_chords.py:93
 msgid "Insufficient metadata to search"
-msgstr ""
+msgstr "Onvoldoende metadata om te zoeken"
 
 #: src/tauon/t_modules/t_guitar_chords.py:107
 msgid "Clipboard has no text"
-msgstr ""
+msgstr "Klembord bevat geen tekst"
 
 #: src/tauon/t_modules/t_guitar_chords.py:208
 msgid "Error finding matching track on GuitarParty"
-msgstr ""
+msgstr "Fout bij zoeken naar overeenkomend nummer op GuitarParty"
 
 #: src/tauon/t_modules/t_guitar_chords.py:224
 msgid "Track not found on GuitarParty"
-msgstr ""
+msgstr "Nummer niet gevonden op GuitarParty"
 
 #: src/tauon/t_modules/t_guitar_chords.py:240
 msgid "Error getting song from GuitarParty"
-msgstr ""
+msgstr "Fout bij ophalen van nummer van GuitarParty"
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:97
 msgid "Could not establish connection to server."
-msgstr ""
+msgstr "Kon geen verbinding maken met de server."
 
 #: src/tauon/t_modules/t_jellyfin.py:94 src/tauon/t_modules/t_jellyfin.py:98
 msgid "Check server is running and URL is correct."
-msgstr ""
+msgstr "Controleer of de server draait en de URL klopt."
 
 #: src/tauon/t_modules/t_jellyfin.py:109
 msgid "Connection and authorisation successful"
-msgstr ""
+msgstr "Verbinding en autorisatie gelukt"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "401 Authentication failed"
-msgstr ""
+msgstr "401 Authenticatie mislukt"
 
 #: src/tauon/t_modules/t_jellyfin.py:111
 msgid "Check username and password."
-msgstr ""
+msgstr "Controleer gebruikersnaam en wachtwoord."
 
 #: src/tauon/t_modules/t_jellyfin.py:113
 msgid "Jellyfin auth error"
-msgstr ""
+msgstr "Jellyfin-autorisatiefout"
 
 #: src/tauon/t_modules/t_jellyfin.py:393
 msgid "Error connecting to Jellyfin"
-msgstr ""
+msgstr "Fout bij verbinden met Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:429
 msgid "Error connecting to Jellyfin for Import"
-msgstr ""
+msgstr "Fout bij verbinden met Jellyfin voor import"
 
 #: src/tauon/t_modules/t_jellyfin.py:453
 msgid "Error accessing Jellyfin"
-msgstr ""
+msgstr "Fout bij toegang tot Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:571
 msgid "Jellyfin Collection"
-msgstr ""
+msgstr "Jellyfin-collectie"
 
 #: src/tauon/t_modules/t_main.py:1994
-#, fuzzy
 msgid "Rescanning folders..."
-msgstr "Open Map"
+msgstr "Mappen opnieuw scannen..."
 
 #: src/tauon/t_modules/t_main.py:2203 src/tauon/t_modules/t_main.py:2207
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr ""
+msgstr "Afspeellijst is vergrendeld om per ongeluk verwijderen te voorkomen"
 
 #: src/tauon/t_modules/t_main.py:2317
 msgid "Are you sure you want to delete playlist: {name}?"
-msgstr ""
+msgstr "Weet je zeker dat je afspeellijst {name} wilt verwijderen?"
 
 #: src/tauon/t_modules/t_main.py:4040 src/tauon/t_modules/t_main.py:18733
 msgid "Optional module python-pylast not installed"
-msgstr ""
+msgstr "Optionele module python-pylast is niet geïnstalleerd"
 
 #: src/tauon/t_modules/t_main.py:4059
 msgid "Web auth page opened"
-msgstr ""
+msgstr "Webautorisatiepagina geopend"
 
 #: src/tauon/t_modules/t_main.py:4059
 msgid "Once authorised click the 'done' button."
-msgstr ""
+msgstr "Klik na autorisatie op de knop 'klaar'."
 
 #: src/tauon/t_modules/t_main.py:4065
 msgid "You need to log in first"
-msgstr ""
+msgstr "Je moet eerst inloggen"
 
 #: src/tauon/t_modules/t_main.py:4081
 msgid "Error - Not authorized"
-msgstr ""
+msgstr "Fout - niet geautoriseerd"
 
 #: src/tauon/t_modules/t_main.py:4084
-#, fuzzy
 msgid "Unknown error."
-msgstr "Artiestlijst"
+msgstr "Onbekende fout."
 
 #: src/tauon/t_modules/t_main.py:4084 src/tauon/t_modules/t_phazor.py:343
 msgid "Error"
-msgstr ""
+msgstr "Fout"
 
 #: src/tauon/t_modules/t_main.py:4093
 msgid "Logout will complete on app restart."
-msgstr ""
+msgstr "Uitloggen wordt voltooid na herstart van de app."
 
 #: src/tauon/t_modules/t_main.py:4101
 msgid "Already connected to Last.fm"
-msgstr ""
+msgstr "Al verbonden met Last.fm"
 
 #: src/tauon/t_modules/t_main.py:4105
 msgid "No Last.Fm account registered"
-msgstr ""
+msgstr "Geen Last.fm-account geregistreerd"
 
 #: src/tauon/t_modules/t_main.py:4105
 msgid "Authorise an account in settings"
-msgstr ""
+msgstr "Autoriseer een account in de instellingen"
 
 #: src/tauon/t_modules/t_main.py:4116
 msgid "Connection to Last.fm was successful."
-msgstr ""
+msgstr "Verbinding met Last.fm is gelukt."
 
 #: src/tauon/t_modules/t_main.py:4123
 msgid "Error connecting to Last.fm network"
-msgstr ""
+msgstr "Fout bij verbinden met het Last.fm-netwerk"
 
 #: src/tauon/t_modules/t_main.py:4142 src/tauon/t_modules/t_main.py:4155
 msgid "Error communicating with Last.fm network"
-msgstr ""
+msgstr "Fout bij communiceren met het Last.fm-netwerk"
 
 #: src/tauon/t_modules/t_main.py:4216
 msgid "Scanning failed. Try again?"
 msgstr "Scannen mislukt. Opnieuw proberen?"
 
 #: src/tauon/t_modules/t_main.py:4223 src/tauon/t_modules/t_main.py:16724
-#, fuzzy
 msgid "Scanning scrobbles complete"
-msgstr "Zoeken naar Chromecasts..."
+msgstr "Scrobbles scannen voltooid"
 
 #: src/tauon/t_modules/t_main.py:4416
 msgid "Removed {N} loves."
-msgstr ""
+msgstr "{N} loves verwijderd."
 
 #: src/tauon/t_modules/t_main.py:4429
 msgid "There was an error, try re-log in"
-msgstr ""
+msgstr "Er is een fout opgetreden, probeer opnieuw in te loggen"
 
 #: src/tauon/t_modules/t_main.py:4438
 msgid "Getting friend data..."
-msgstr ""
+msgstr "Vriendgegevens ophalen..."
 
 #: src/tauon/t_modules/t_main.py:4438
 msgid "This may take a very long time."
@@ -238,56 +231,55 @@ msgstr "Dit kan erg lang duren."
 
 #: src/tauon/t_modules/t_main.py:4461
 msgid "There was an error getting friends loves"
-msgstr ""
+msgstr "Er is een fout opgetreden bij het ophalen van loves van vrienden"
 
 #: src/tauon/t_modules/t_main.py:4469
 msgid "Scanning loved tracks for: {username}"
-msgstr ""
+msgstr "Geliefde nummers scannen voor: {username}"
 
 #: src/tauon/t_modules/t_main.py:4473
-#, fuzzy
 msgid "No username found"
-msgstr "Artiestnaam"
+msgstr "Geen gebruikersnaam gevonden"
 
 #: src/tauon/t_modules/t_main.py:4517
 msgid "User has no loved tracks."
-msgstr ""
+msgstr "Gebruiker heeft geen geliefde nummers."
 
 #: src/tauon/t_modules/t_main.py:4520
 msgid "{N} matched tracks are up to date."
-msgstr ""
+msgstr "{N} overeenkomende nummers zijn bijgewerkt."
 
 #: src/tauon/t_modules/t_main.py:4523
 msgid "{N} tracks matched. {T} were updated."
-msgstr ""
+msgstr "{N} nummers kwamen overeen. {T} zijn bijgewerkt."
 
 #: src/tauon/t_modules/t_main.py:4525
 msgid "Of {N} loved tracks, no matches were found in local db"
-msgstr ""
+msgstr "Van {N} geliefde nummers zijn geen overeenkomsten gevonden in de lokale database"
 
 #: src/tauon/t_modules/t_main.py:4529
 msgid "This doesn't seem to be working :("
-msgstr ""
+msgstr "Dit lijkt niet te werken :("
 
 #: src/tauon/t_modules/t_main.py:4589 src/tauon/t_modules/t_main.py:4643
 msgid "ListenBrainz is enabled but there is no token."
-msgstr ""
+msgstr "ListenBrainz is ingeschakeld, maar er is geen token."
 
 #: src/tauon/t_modules/t_main.py:4589 src/tauon/t_modules/t_main.py:4643
 msgid "How did this even happen."
-msgstr ""
+msgstr "Hoe is dit überhaupt gebeurd."
 
 #: src/tauon/t_modules/t_main.py:4633 src/tauon/t_modules/t_main.py:4695
 msgid "There was an error submitting data to ListenBrainz"
-msgstr ""
+msgstr "Er is een fout opgetreden bij het verzenden van gegevens naar ListenBrainz"
 
 #: src/tauon/t_modules/t_main.py:4703
 msgid "There is no text in the clipboard"
-msgstr ""
+msgstr "Er staat geen tekst op het klembord"
 
 #: src/tauon/t_modules/t_main.py:4713
 msgid "That is not a valid token."
-msgstr ""
+msgstr "Dat is geen geldig token."
 
 #: src/tauon/t_modules/t_main.py:4863
 msgid "day"
@@ -323,7 +315,7 @@ msgstr "Open Tauon Music Box"
 
 #: src/tauon/t_modules/t_main.py:4874
 msgid "Play/Pause"
-msgstr ""
+msgstr "Afspelen/pauzeren"
 
 #: src/tauon/t_modules/t_main.py:4875
 msgid "Next Track"
@@ -339,106 +331,99 @@ msgstr "Afsluiten"
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error importing M3U playlist"
-msgstr ""
+msgstr "Fout bij importeren van M3U-afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error trying to parse playlist as UTF-8:"
-msgstr ""
+msgstr "Fout bij parsen van afspeellijst als UTF-8:"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Exception importing M3U playlist"
-msgstr ""
+msgstr "Uitzondering bij importeren van M3U-afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Unknown exception trying to parse playlist"
-msgstr ""
+msgstr "Onbekende uitzondering bij parsen van afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:7080
 msgid "Error importing XSPF playlist."
-msgstr ""
+msgstr "Fout bij importeren van XSPF-afspeellijst."
 
 #: src/tauon/t_modules/t_main.py:7080
 msgid "Sorry about that."
-msgstr ""
+msgstr "Sorry daarvoor."
 
 #: src/tauon/t_modules/t_main.py:7209
 msgid "Failed to locate {N} out of {T} tracks."
-msgstr ""
+msgstr "Kon {N} van {T} nummers niet vinden."
 
 #: src/tauon/t_modules/t_main.py:7341 src/tauon/t_modules/t_main.py:47531
-#, fuzzy
 msgid "A/B Repeat"
-msgstr "Herhalen UIT"
+msgstr "A/B-herhaling"
 
 #: src/tauon/t_modules/t_main.py:7343
 msgid "Set B Marker"
-msgstr ""
+msgstr "B-markering instellen"
 
 #: src/tauon/t_modules/t_main.py:7345
 msgid "Clear A/B"
-msgstr ""
+msgstr "A/B wissen"
 
 #: src/tauon/t_modules/t_main.py:7430 src/tauon/t_modules/t_main.py:47533
 msgid "Shuffle Lockdown"
-msgstr ""
+msgstr "Shuffle-vergrendeling"
 
 #: src/tauon/t_modules/t_main.py:7431 src/tauon/t_modules/t_main.py:48170
 msgid "Exit Shuffle Lockdown"
-msgstr ""
+msgstr "Shuffle-vergrendeling verlaten"
 
 #: src/tauon/t_modules/t_main.py:7455
-#, fuzzy
 msgid "Make Large Size"
-msgstr "Maak Groot"
+msgstr "Groot formaat maken"
 
 #: src/tauon/t_modules/t_main.py:7457
 msgid "Make Compact Size"
-msgstr ""
+msgstr "Compact formaat maken"
 
 #: src/tauon/t_modules/t_main.py:7527
 msgid "Can't open folder of a network track."
-msgstr ""
+msgstr "Kan de map van een netwerknummer niet openen."
 
 #: src/tauon/t_modules/t_main.py:7566
-#, fuzzy
 msgid "No item is currently playing"
-msgstr "Einde van de afspeellijst"
+msgstr "Er wordt momenteel niets afgespeeld"
 
 #: src/tauon/t_modules/t_main.py:7589
 msgid "This track is a networked track."
-msgstr ""
+msgstr "Dit nummer is een netwerknummer."
 
 #: src/tauon/t_modules/t_main.py:7593
-#, fuzzy
 msgid "The source folder does not exist."
-msgstr "Map bestaat niet"
+msgstr "De bronmap bestaat niet."
 
 #: src/tauon/t_modules/t_main.py:7597
-#, fuzzy
 msgid "The destination folder does not exist."
-msgstr "Map bestaat niet"
+msgstr "De doelmap bestaat niet."
 
 #: src/tauon/t_modules/t_main.py:7601
-#, fuzzy
 msgid "The destination and source folders are the same."
-msgstr "Map bestaat niet"
+msgstr "De doelmap en bronmap zijn hetzelfde."
 
 #: src/tauon/t_modules/t_main.py:7605 src/tauon/t_modules/t_main.py:10602
 msgid "Safety interrupt! The source path seems oddly short."
-msgstr ""
+msgstr "Veiligheidsonderbreking! Het bronpad lijkt vreemd kort."
 
 #: src/tauon/t_modules/t_main.py:7612 src/tauon/t_modules/t_main.py:10616
 msgid "Better not do anything to that folder!"
-msgstr ""
+msgstr "Beter niets met die map doen!"
 
 #: src/tauon/t_modules/t_main.py:7617 src/tauon/t_modules/t_main.py:10621
 msgid "Folder size safety limit reached! (3GB)"
-msgstr ""
+msgstr "Veiligheidslimiet voor mapgrootte bereikt! (3GB)"
 
 #: src/tauon/t_modules/t_main.py:7674 src/tauon/t_modules/t_main.py:7693
-#, fuzzy
 msgid "Rescanning folder..."
-msgstr "Open Map"
+msgstr "Map opnieuw scannen..."
 
 #: src/tauon/t_modules/t_main.py:7713
 msgid "Unlock Panel"
@@ -451,1365 +436,1311 @@ msgstr "Vergrendel Paneel"
 #: src/tauon/t_modules/t_main.py:7795 src/tauon/t_modules/t_main.py:9572
 #: src/tauon/t_modules/t_main.py:28007
 msgid "Aborting Sync"
-msgstr ""
+msgstr "Synchronisatie afbreken"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Hide Metadata Panel"
-msgstr ""
+msgstr "Metadatapaneel verbergen"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Show Metadata Panel"
-msgstr ""
+msgstr "Metadatapaneel tonen"
 
 #: src/tauon/t_modules/t_main.py:7810
 msgid "Panel Below Lyrics"
-msgstr ""
+msgstr "Paneel onder songteksten"
 
 #: src/tauon/t_modules/t_main.py:7810
 msgid "Panel Above Lyrics"
-msgstr ""
+msgstr "Paneel boven songteksten"
 
 #: src/tauon/t_modules/t_main.py:7826
 msgid "Enable Milkdrop Visualiser"
-msgstr ""
+msgstr "Milkdrop-visualizer inschakelen"
 
 #: src/tauon/t_modules/t_main.py:7828
 msgid "Disable Milkdrop Visualiser"
-msgstr ""
+msgstr "Milkdrop-visualizer uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:7832
 msgid "Enable Auto Cycle"
-msgstr ""
+msgstr "Automatisch wisselen inschakelen"
 
 #: src/tauon/t_modules/t_main.py:7834
 msgid "Disable Auto Cycle"
-msgstr ""
+msgstr "Automatisch wisselen uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:7838
 msgid "Disable Wide Mode"
-msgstr ""
+msgstr "Brede modus uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:7838 src/tauon/t_modules/t_main.py:47632
 #: src/tauon/t_modules/t_main.py:47644
 msgid "Enable Wide Mode"
-msgstr ""
+msgstr "Brede modus inschakelen"
 
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Hide Lyrics"
-msgstr ""
+msgstr "Songteksten verbergen"
 
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Show Lyrics"
-msgstr ""
+msgstr "Songteksten tonen"
 
 #: src/tauon/t_modules/t_main.py:7902
 msgid "Restart Tauon if presets are not visible yet."
-msgstr ""
+msgstr "Herstart Tauon als presets nog niet zichtbaar zijn."
 
 #: src/tauon/t_modules/t_main.py:7932 src/tauon/t_modules/t_main.py:7973
 msgid "Preset download cancelled"
-msgstr ""
+msgstr "Download van presets geannuleerd"
 
 #: src/tauon/t_modules/t_main.py:7933 src/tauon/t_modules/t_main.py:7974
 #: src/tauon/t_modules/t_main.py:8014
 msgid "Milkdrop visualiser enabled."
-msgstr ""
+msgstr "Milkdrop-visualizer ingeschakeld."
 
 #: src/tauon/t_modules/t_main.py:7957
 msgid "Downloading preset pack..."
-msgstr ""
+msgstr "Presetpakket downloaden..."
 
 #: src/tauon/t_modules/t_main.py:7960 src/tauon/t_modules/t_main.py:8005
 msgid "Extracting presets..."
-msgstr ""
+msgstr "Presets uitpakken..."
 
 #: src/tauon/t_modules/t_main.py:7980
 msgid "Preset package contains an unsafe path"
-msgstr ""
+msgstr "Presetpakket bevat een onveilig pad"
 
 #: src/tauon/t_modules/t_main.py:8014
 msgid "Presets ready"
-msgstr ""
+msgstr "Presets klaar"
 
 #: src/tauon/t_modules/t_main.py:8017 src/tauon/t_modules/t_main.py:15701
 msgid "Download failed"
-msgstr ""
+msgstr "Download mislukt"
 
 #: src/tauon/t_modules/t_main.py:8025
 msgid "No presets loaded. Download preset pack? (~5MB)"
-msgstr ""
+msgstr "Geen presets geladen. Presetpakket downloaden? (~5MB)"
 
 #: src/tauon/t_modules/t_main.py:8037
 msgid "Not supported on this platform"
-msgstr ""
+msgstr "Niet ondersteund op dit platform"
 
 #: src/tauon/t_modules/t_main.py:8096
 msgid "There are no lyric sources enabled."
-msgstr ""
+msgstr "Er zijn geen songtekstbronnen ingeschakeld."
 
 #: src/tauon/t_modules/t_main.py:8097
 msgid "See 'lyrics settings' under 'functions' tab in settings."
-msgstr ""
+msgstr "Zie 'songtekstinstellingen' onder het tabblad 'functies' in de instellingen."
 
 #: src/tauon/t_modules/t_main.py:8106
 msgid "Let's be polite and try later."
-msgstr ""
+msgstr "Laten we beleefd zijn en het later proberen."
 
 #: src/tauon/t_modules/t_main.py:8109
 msgid "Stop requesting lyrics AAAAAA."
-msgstr ""
+msgstr "Stop met songteksten aanvragen AAAAAA."
 
 #: src/tauon/t_modules/t_main.py:8123 src/tauon/t_modules/t_main.py:11412
 #: src/tauon/t_modules/t_main.py:14060 src/tauon/t_modules/t_main.py:35159
 #: src/tauon/t_modules/t_main.py:42717 src/tauon/t_modules/t_main.py:42726
 #: src/tauon/t_modules/t_main.py:42914
-#, fuzzy
 msgid "Searching..."
-msgstr "Stoppen..."
+msgstr "Zoeken..."
 
 #: src/tauon/t_modules/t_main.py:8171
 msgid "No lyrics for this track were found"
-msgstr ""
+msgstr "Er zijn geen songteksten voor dit nummer gevonden"
 
 #: src/tauon/t_modules/t_main.py:8185
 msgid "Insufficient metadata to get lyrics"
-msgstr ""
+msgstr "Onvoldoende metadata om songteksten op te halen"
 
 #: src/tauon/t_modules/t_main.py:8219 src/tauon/t_modules/t_main.py:8225
 msgid "Show static lyrics"
-msgstr ""
+msgstr "Statische songteksten tonen"
 
 #: src/tauon/t_modules/t_main.py:8219 src/tauon/t_modules/t_main.py:8227
 msgid "Show synced lyrics"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten tonen"
 
 #: src/tauon/t_modules/t_main.py:8294
 msgid "Could not clear synced lyrics"
-msgstr ""
+msgstr "Kon gesynchroniseerde songteksten niet wissen"
 
 #: src/tauon/t_modules/t_main.py:8295
 msgid "The .lrc file could not be deleted."
-msgstr ""
+msgstr "Het .lrc-bestand kon niet worden verwijderd."
 
 #: src/tauon/t_modules/t_main.py:8304
 msgid "Removed from .lrc and tags"
-msgstr ""
+msgstr "Verwijderd uit .lrc en tags"
 
 #: src/tauon/t_modules/t_main.py:8304 src/tauon/t_modules/t_main.py:8306
 #: src/tauon/t_modules/t_main.py:8308
 msgid "Cleared synced lyrics"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten gewist"
 
 #: src/tauon/t_modules/t_main.py:8306
 msgid "Removed from .lrc"
-msgstr ""
+msgstr "Verwijderd uit .lrc"
 
 #: src/tauon/t_modules/t_main.py:8308
 msgid "Removed from tags"
-msgstr ""
+msgstr "Verwijderd uit tags"
 
 #: src/tauon/t_modules/t_main.py:8311 src/tauon/t_modules/t_main.py:8316
 msgid "Cleared synced lyrics in Tauon only"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten alleen in Tauon gewist"
 
 #: src/tauon/t_modules/t_main.py:8312
 msgid "The .lrc file was kept because \"Save Synced to .lrc\" is off."
-msgstr ""
+msgstr "Het .lrc-bestand is bewaard omdat \"Gesynchroniseerd opslaan naar .lrc\" uit staat."
 
 #: src/tauon/t_modules/t_main.py:8318
-#, fuzzy
 msgid "No synced lyrics were cleared"
-msgstr "Einde van de afspeellijst"
+msgstr "Er zijn geen gesynchroniseerde songteksten gewist"
 
 #: src/tauon/t_modules/t_main.py:8391 src/tauon/t_modules/t_main.py:8410
 msgid "Could not write lyrics to file"
-msgstr ""
+msgstr "Kon songteksten niet naar bestand schrijven"
 
 #: src/tauon/t_modules/t_main.py:8392
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr ""
+msgstr "We weten niet hoe we songteksten moeten schrijven naar bestandstype: "
 
 #: src/tauon/t_modules/t_main.py:8393 src/tauon/t_modules/t_main.py:8412
 msgid "(We still saved to the internal database)"
-msgstr ""
+msgstr "(We hebben nog wel opgeslagen in de interne database)"
 
 #: src/tauon/t_modules/t_main.py:8411
 msgid "File doesn't exist or is not accessible"
-msgstr ""
+msgstr "Bestand bestaat niet of is niet toegankelijk"
 
 #: src/tauon/t_modules/t_main.py:8436 src/tauon/t_modules/t_main.py:21323
 msgid "Saving network images not implemented"
-msgstr ""
+msgstr "Netwerkafbeeldingen opslaan is niet geïmplementeerd"
 
 #: src/tauon/t_modules/t_main.py:8443
 msgid "No embedded album art found in file."
-msgstr ""
+msgstr "Geen ingesloten albumhoes gevonden in bestand."
 
 #: src/tauon/t_modules/t_main.py:8443 src/tauon/t_modules/t_main.py:8465
 #: src/tauon/t_modules/t_main.py:21328
 msgid "Image save error."
-msgstr ""
+msgstr "Fout bij opslaan van afbeelding."
 
 #: src/tauon/t_modules/t_main.py:8465
 msgid "A mysterious error occurred"
-msgstr ""
+msgstr "Er is een mysterieuze fout opgetreden"
 
 #: src/tauon/t_modules/t_main.py:8541
 msgid "Cannot download art for network tracks."
-msgstr ""
+msgstr "Kan geen artwork downloaden voor netwerknummers."
 
 #: src/tauon/t_modules/t_main.py:8565
 msgid "It doesn't look like this folder belongs to a single album, sorry"
-msgstr ""
+msgstr "Het lijkt er niet op dat deze map bij één album hoort, sorry"
 
 #: src/tauon/t_modules/t_main.py:8571
 msgid "Directory missing."
-msgstr ""
+msgstr "Map ontbreekt."
 
 #: src/tauon/t_modules/t_main.py:8575
 msgid "Looking up MusicBrainz ID..."
-msgstr ""
+msgstr "MusicBrainz-ID opzoeken..."
 
 #: src/tauon/t_modules/t_main.py:8604
-#, fuzzy
 msgid "Searching fanart.tv for cover art..."
-msgstr "Zoeken naar Chromecasts..."
+msgstr "fanart.tv doorzoeken naar albumhoezen..."
 
 #: src/tauon/t_modules/t_main.py:8628
 msgid "Could not detect downloaded filetype."
-msgstr ""
+msgstr "Kon het gedownloade bestandstype niet detecteren."
 
 #: src/tauon/t_modules/t_main.py:8634
 msgid "Cover art downloaded from fanart.tv"
-msgstr ""
+msgstr "Albumhoes gedownload van fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:8643
-#, fuzzy
 msgid "Searching MusicBrainz for cover art..."
-msgstr "Zoeken naar Chromecasts..."
+msgstr "MusicBrainz doorzoeken naar albumhoezen..."
 
 #: src/tauon/t_modules/t_main.py:8655
 msgid "Cover art downloaded from MusicBrainz"
-msgstr ""
+msgstr "Albumhoes gedownload van MusicBrainz"
 
 #: src/tauon/t_modules/t_main.py:8667
 msgid "Matching cover art or ID could not be found."
-msgstr ""
+msgstr "Overeenkomende albumhoes of ID kon niet worden gevonden."
 
 #: src/tauon/t_modules/t_main.py:8690
 msgid "Error - No handling for this kind of track"
-msgstr ""
+msgstr "Fout - geen afhandeling voor dit soort nummer"
 
 #: src/tauon/t_modules/t_main.py:8735
 msgid "Removing vorbis image not implemented"
-msgstr ""
+msgstr "Vorbis-afbeelding verwijderen is niet geïmplementeerd"
 
 #: src/tauon/t_modules/t_main.py:8756
 msgid "Image remove error"
-msgstr ""
+msgstr "Fout bij verwijderen van afbeelding"
 
 #: src/tauon/t_modules/t_main.py:8763
 msgid "Image removal failed."
-msgstr ""
+msgstr "Afbeelding verwijderen mislukt."
 
 #: src/tauon/t_modules/t_main.py:8766
 msgid "Deleted embedded picture from file"
-msgstr ""
+msgstr "Ingesloten afbeelding uit bestand verwijderd"
 
 #: src/tauon/t_modules/t_main.py:8768
 msgid "{N} files processed"
-msgstr ""
+msgstr "{N} bestanden verwerkt"
 
 #: src/tauon/t_modules/t_main.py:8784 src/tauon/t_modules/t_main.py:45398
 #: src/tauon/t_modules/t_main.py:45407 src/tauon/t_modules/t_main.py:45416
 #: src/tauon/t_modules/t_main.py:45434
 msgid "Something went wrong"
-msgstr ""
+msgstr "Er is iets misgegaan"
 
 #: src/tauon/t_modules/t_main.py:8789 src/tauon/t_modules/t_main.py:8796
 #: src/tauon/t_modules/t_main.py:47619
 msgid "Delete Image File"
-msgstr ""
+msgstr "Afbeeldingsbestand verwijderen"
 
 #: src/tauon/t_modules/t_main.py:8804
 msgid "Delete Embedded | Folder"
-msgstr ""
+msgstr "Ingesloten verwijderen | Map"
 
 #: src/tauon/t_modules/t_main.py:8806
 msgid "Delete Embedded | Track"
-msgstr ""
+msgstr "Ingesloten verwijderen | Nummer"
 
 #: src/tauon/t_modules/t_main.py:8823
 msgid "This will erase any embedded image in {N} files. Are you sure?"
-msgstr ""
+msgstr "Dit wist elke ingesloten afbeelding in {N} bestanden. Weet je het zeker?"
 
 #: src/tauon/t_modules/t_main.py:8867 src/tauon/t_modules/t_main.py:8912
 msgid "There are no tracks in this playlist. Nothing to export"
-msgstr ""
+msgstr "Er staan geen nummers in deze afspeellijst. Niets om te exporteren"
 
 #: src/tauon/t_modules/t_main.py:8878 src/tauon/t_modules/t_main.py:8923
 msgid "Cannot use relative paths"
-msgstr ""
+msgstr "Kan geen relatieve paden gebruiken"
 
 #: src/tauon/t_modules/t_main.py:8879 src/tauon/t_modules/t_main.py:8924
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
-msgstr ""
+msgstr "Een of meer nummers staan op een andere schijf dan het afspeellijstbestand."
 
 #: src/tauon/t_modules/t_main.py:8974
 msgid "Playlist is locked to prevent accidental erasure"
-msgstr ""
+msgstr "Afspeellijst is vergrendeld om per ongeluk wissen te voorkomen"
 
 #: src/tauon/t_modules/t_main.py:9007 src/tauon/t_modules/t_main.py:9278
 #: src/tauon/t_modules/t_main.py:9289 src/tauon/t_modules/t_main.py:9308
 #: src/tauon/t_modules/t_main.py:11739
-#, fuzzy
 msgid "Playlist is locked"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijst is vergrendeld"
 
 #: src/tauon/t_modules/t_main.py:9012
-#, fuzzy
 msgid "Folder not found"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Map niet gevonden"
 
 #: src/tauon/t_modules/t_main.py:9046
 msgid "This includes the conversion of a lossy codec to a lossless one!"
-msgstr ""
+msgstr "Dit omvat het converteren van een verliesgevende codec naar een verliesvrije!"
 
 #: src/tauon/t_modules/t_main.py:9154
-#, fuzzy
 msgid "Playlist:"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijst:"
 
 #: src/tauon/t_modules/t_main.py:9155
 msgid "Generated:"
-msgstr ""
+msgstr "Gegenereerd:"
 
 #: src/tauon/t_modules/t_main.py:9156
-#, fuzzy
 msgid "Tracks in playlist:"
-msgstr "Einde van de afspeellijst"
+msgstr "Nummers in afspeellijst:"
 
 #: src/tauon/t_modules/t_main.py:9158
-#, fuzzy
 msgid "Repeats in playlist:"
-msgstr "Einde van de afspeellijst"
+msgstr "Herhalingen in afspeellijst:"
 
 #: src/tauon/t_modules/t_main.py:9162
 msgid "Total local size:"
-msgstr ""
+msgstr "Totale lokale grootte:"
 
 #: src/tauon/t_modules/t_main.py:9163
-#, fuzzy
 msgid "Playlist duration:"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Duur van afspeellijst:"
 
 #: src/tauon/t_modules/t_main.py:9164
-#, fuzzy
 msgid "Total playtime:"
-msgstr "Albumtitel"
+msgstr "Totale afspeeltijd:"
 
 #: src/tauon/t_modules/t_main.py:9166
-#, fuzzy
 msgid "Track types:"
-msgstr "Volgend Nummer"
+msgstr "Nummertypen:"
 
 #: src/tauon/t_modules/t_main.py:9182
 msgid "Percent of tracks are CUE type:"
-msgstr ""
+msgstr "Percentage nummers van CUE-type:"
 
 #: src/tauon/t_modules/t_main.py:9192
 msgid "MP3 bitrates (kbps):"
-msgstr ""
+msgstr "MP3-bitrates (kbps):"
 
 #: src/tauon/t_modules/t_main.py:9206 src/tauon/t_modules/t_main.py:9225
 msgid "Others"
-msgstr ""
+msgstr "Overige"
 
 #: src/tauon/t_modules/t_main.py:9211
 msgid "OGG bitrates (kbps):"
-msgstr ""
+msgstr "OGG-bitrates (kbps):"
 
 #: src/tauon/t_modules/t_main.py:9249
-#, fuzzy
 msgid "Top Artists"
-msgstr "Artiestlijst"
+msgstr "Topartiesten"
 
 #: src/tauon/t_modules/t_main.py:9255
-#, fuzzy
 msgid "Top Albums"
-msgstr "Spotify Albums"
+msgstr "Topalbums"
 
 #: src/tauon/t_modules/t_main.py:9259
 msgid "Top Genres"
-msgstr ""
+msgstr "Topgenres"
 
 #: src/tauon/t_modules/t_main.py:9415
 msgid "Cannot sync when in transcode inplace mode"
-msgstr ""
+msgstr "Kan niet synchroniseren in modus voor ter plekke transcoderen"
 
 #: src/tauon/t_modules/t_main.py:9425
 msgid "No target folder selected"
-msgstr ""
+msgstr "Geen doelmap geselecteerd"
 
 #: src/tauon/t_modules/t_main.py:9431
-#, fuzzy
 msgid "Target folder could not be found"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Doelmap kon niet worden gevonden"
 
 #: src/tauon/t_modules/t_main.py:9472
-#, fuzzy
 msgid "Deleting folders..."
-msgstr "Open Map"
+msgstr "Mappen verwijderen..."
 
 #: src/tauon/t_modules/t_main.py:9491 src/tauon/t_modules/t_main.py:9569
 msgid "Copying files to device"
-msgstr ""
+msgstr "Bestanden naar apparaat kopiëren"
 
 #: src/tauon/t_modules/t_main.py:9497
 msgid "Sync aborted! Low disk space on target device"
-msgstr ""
+msgstr "Synchronisatie afgebroken! Weinig schijfruimte op doelapparaat"
 
 #: src/tauon/t_modules/t_main.py:9507 src/tauon/t_modules/t_main.py:9537
 msgid "Sync warning"
-msgstr ""
+msgstr "Synchronisatiewaarschuwing"
 
 #: src/tauon/t_modules/t_main.py:9507 src/tauon/t_modules/t_main.py:9537
 msgid "Multiple folders to sync have the same name. Skipping."
-msgstr ""
+msgstr "Meerdere te synchroniseren mappen hebben dezelfde naam. Overslaan."
 
 #: src/tauon/t_modules/t_main.py:9513
 msgid "One or more folders is missing"
-msgstr ""
+msgstr "Een of meer mappen ontbreken"
 
 #: src/tauon/t_modules/t_main.py:9522
 msgid "{N} Folders Remaining"
-msgstr ""
+msgstr "{N} mappen resterend"
 
 #: src/tauon/t_modules/t_main.py:9524
 msgid "{N} Folder Remaining"
-msgstr ""
+msgstr "{N} map resterend"
 
 #: src/tauon/t_modules/t_main.py:9580
-#, fuzzy
 msgid "Sync completed"
-msgstr "Synchronizeer..."
+msgstr "Synchronisatie voltooid"
 
 #: src/tauon/t_modules/t_main.py:9595 src/tauon/t_modules/t_main.py:47744
-#, fuzzy
 msgid "Set as Sync Playlist"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Instellen als synchronisatieafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:9598
 msgid "Un-set as Sync Playlist"
-msgstr ""
+msgstr "Niet meer instellen als synchronisatieafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:9613 src/tauon/t_modules/t_main.py:47745
-#, fuzzy
 msgid "Set as Downloads Playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Instellen als downloadafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:9615
 msgid "Un-set as Downloads Playlist"
-msgstr ""
+msgstr "Niet meer instellen als downloadafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:9619
 msgid "Set Use Persistent Time"
-msgstr ""
+msgstr "Blijvende tijd gebruiken instellen"
 
 #: src/tauon/t_modules/t_main.py:9621
 msgid "Un-set Use Persistent Time"
-msgstr ""
+msgstr "Blijvende tijd gebruiken uitzetten"
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
-#, fuzzy
 msgid "Export complete."
-msgstr "Spotify account verbonden"
+msgstr "Export voltooid."
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
 msgid "Saved as: "
-msgstr ""
+msgstr "Opgeslagen als: "
 
 #: src/tauon/t_modules/t_main.py:9705 src/tauon/t_modules/t_main.py:47758
 #: src/tauon/t_modules/t_main.py:47759
-#, fuzzy
 msgid "Top Rated Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Best beoordeelde nummers"
 
 #: src/tauon/t_modules/t_main.py:9722 src/tauon/t_modules/t_main.py:47752
 #: src/tauon/t_modules/t_main.py:47753
-#, fuzzy
 msgid "Top Played Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Meest afgespeelde nummers"
 
 #: src/tauon/t_modules/t_main.py:9780 src/tauon/t_modules/t_main.py:47755
 #: src/tauon/t_modules/t_main.py:47756
-#, fuzzy
 msgid "Top Played Albums"
-msgstr "Spotify Albums"
+msgstr "Meest afgespeelde albums"
 
 #: src/tauon/t_modules/t_main.py:9828 src/tauon/t_modules/t_main.py:47761
 #: src/tauon/t_modules/t_main.py:47762
-#, fuzzy
 msgid "Top Rated Albums"
-msgstr "Spotify Albums"
+msgstr "Best beoordeelde albums"
 
 #: src/tauon/t_modules/t_main.py:9849
 msgid "Tracks with lyrics"
-msgstr ""
+msgstr "Nummers met songteksten"
 
 #: src/tauon/t_modules/t_main.py:9855
 msgid "No tracks with lyrics were found."
-msgstr ""
+msgstr "Er zijn geen nummers met songteksten gevonden."
 
 #: src/tauon/t_modules/t_main.py:9900
 msgid ""
 "Note this may include albums that simply have tracks missing an album tag"
-msgstr ""
+msgstr "Let op: dit kan albums bevatten waarvan nummers simpelweg een albumtag missen"
 
 #: src/tauon/t_modules/t_main.py:9903
-#, fuzzy
 msgid "Incomplete Albums"
-msgstr "Spotify Albums"
+msgstr "Onvolledige albums"
 
 #: src/tauon/t_modules/t_main.py:9909
 msgid "No incomplete albums were found."
-msgstr ""
+msgstr "Er zijn geen onvolledige albums gevonden."
 
 #: src/tauon/t_modules/t_main.py:9923
 msgid "Codec: "
-msgstr ""
+msgstr "Codec: "
 
 #: src/tauon/t_modules/t_main.py:9974 src/tauon/t_modules/t_main.py:47764
 #: src/tauon/t_modules/t_main.py:47765
 msgid "File Modified"
-msgstr ""
+msgstr "Bestand gewijzigd"
 
 #: src/tauon/t_modules/t_main.py:9999 src/tauon/t_modules/t_main.py:11480
 #: src/tauon/t_modules/t_main.py:47806 src/tauon/t_modules/t_main.py:47807
 msgid "Loved"
-msgstr ""
+msgstr "Geliefd"
 
 #: src/tauon/t_modules/t_main.py:10004
 msgid "No loved tracks were found."
-msgstr ""
+msgstr "Er zijn geen geliefde nummers gevonden."
 
 #: src/tauon/t_modules/t_main.py:10032
 msgid "Interesting Comments"
-msgstr ""
+msgstr "Interessante opmerkingen"
 
 #: src/tauon/t_modules/t_main.py:10036
 msgid "Nothing of interest was found."
-msgstr ""
+msgstr "Er is niets interessants gevonden."
 
 #: src/tauon/t_modules/t_main.py:10048
-#, fuzzy
 msgid "ReplayGain Tracks"
-msgstr "Herhaal Nummer"
+msgstr "ReplayGain-nummers"
 
 #: src/tauon/t_modules/t_main.py:10052
 msgid "No replay gain tags were found."
-msgstr ""
+msgstr "Er zijn geen ReplayGain-tags gevonden."
 
 #: src/tauon/t_modules/t_main.py:10073
 msgid "Duration Sorted"
-msgstr ""
+msgstr "Gesorteerd op duur"
 
 #: src/tauon/t_modules/t_main.py:10126 src/tauon/t_modules/t_main.py:47773
 #: src/tauon/t_modules/t_main.py:47774
-#, fuzzy
 msgid "Longest Albums"
-msgstr "Spotify Albums"
+msgstr "Langste albums"
 
 #: src/tauon/t_modules/t_main.py:10165
 msgid "Year Sorted"
-msgstr ""
+msgstr "Gesorteerd op jaar"
 
 #: src/tauon/t_modules/t_main.py:10194 src/tauon/t_modules/t_main.py:47785
 #: src/tauon/t_modules/t_main.py:47786
-#, fuzzy
 msgid "Shuffled Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Geschudde nummers"
 
 #: src/tauon/t_modules/t_main.py:10225 src/tauon/t_modules/t_main.py:47788
 #: src/tauon/t_modules/t_main.py:47789
-#, fuzzy
 msgid "Shuffled Albums"
-msgstr "Spotify Albums"
+msgstr "Geschudde albums"
 
 #: src/tauon/t_modules/t_main.py:10246 src/tauon/t_modules/t_main.py:47791
 #: src/tauon/t_modules/t_main.py:47792
 msgid "Lucky Random"
-msgstr ""
+msgstr "Gelukswillekeurig"
 
 #: src/tauon/t_modules/t_main.py:10262
 msgid "Reversed"
-msgstr ""
+msgstr "Omgekeerd"
 
 #: src/tauon/t_modules/t_main.py:10293
-#, fuzzy
 msgid "Reversed Albums"
-msgstr "Herhaal Album"
+msgstr "Omgekeerde albums"
 
 #: src/tauon/t_modules/t_main.py:10305 src/tauon/t_modules/t_main.py:27560
 #: src/tauon/t_modules/t_main.py:47800 src/tauon/t_modules/t_main.py:47801
 msgid "Duplicate"
-msgstr ""
+msgstr "Duplicaat"
 
 #: src/tauon/t_modules/t_main.py:10321
 msgid "Filepath Sorted"
-msgstr ""
+msgstr "Gesorteerd op bestandspad"
 
 #: src/tauon/t_modules/t_main.py:10334
-#, fuzzy
 msgid "Artist Sorted"
-msgstr "Artiestlijst"
+msgstr "Gesorteerd op artiest"
 
 #: src/tauon/t_modules/t_main.py:10347
-#, fuzzy
 msgid "Album Sorted"
-msgstr "Albumtitel"
+msgstr "Gesorteerd op album"
 
 #: src/tauon/t_modules/t_main.py:10360
 msgid "Cannot reload while a transcode is in progress!"
-msgstr ""
+msgstr "Kan niet herladen terwijl transcoderen bezig is!"
 
 #: src/tauon/t_modules/t_main.py:10370
 msgid "Configuration reloaded"
-msgstr ""
+msgstr "Configuratie herladen"
 
 #: src/tauon/t_modules/t_main.py:10382
 msgid "Config file opened."
-msgstr ""
+msgstr "Configuratiebestand geopend."
 
 #: src/tauon/t_modules/t_main.py:10382
 msgid "Click \"Reload\" if you made any changes"
-msgstr ""
+msgstr "Klik op \"Herladen\" als je wijzigingen hebt aangebracht"
 
 #: src/tauon/t_modules/t_main.py:10391 src/tauon/t_modules/t_main.py:10403
 msgid "Input file missing"
-msgstr ""
+msgstr "Invoerbestand ontbreekt"
 
 #: src/tauon/t_modules/t_main.py:10438
 msgid "Transcoding tracks from network locations is not supported"
-msgstr ""
+msgstr "Transcoderen van nummers vanaf netwerklocaties wordt niet ondersteund"
 
 #: src/tauon/t_modules/t_main.py:10446 src/tauon/t_modules/t_main.py:10470
 msgid "NO! Bad user!"
-msgstr ""
+msgstr "NEE! Foute gebruiker!"
 
 #: src/tauon/t_modules/t_main.py:10446 src/tauon/t_modules/t_main.py:10470
 msgid "I'm not going to let you transcode a lossy codec to a lossless one!"
-msgstr ""
+msgstr "Ik laat je geen verliesgevende codec naar een verliesvrije transcoderen!"
 
 #: src/tauon/t_modules/t_main.py:10459
 msgid "Transcoding this network track type is not possible"
-msgstr ""
+msgstr "Dit type netwerknummer transcoderen is niet mogelijk"
 
 #: src/tauon/t_modules/t_main.py:10560
 msgid "More than one folder is in the clipboard"
-msgstr ""
+msgstr "Er staat meer dan één map op het klembord"
 
 #: src/tauon/t_modules/t_main.py:10561
 msgid "This function can only move one folder at a time."
-msgstr ""
+msgstr "Deze functie kan maar één map tegelijk verplaatsen."
 
 #: src/tauon/t_modules/t_main.py:10606
 msgid "The target directory is missing!"
-msgstr ""
+msgstr "De doelmap ontbreekt!"
 
 #: src/tauon/t_modules/t_main.py:10610
 msgid "The source directory is missing!"
-msgstr ""
+msgstr "De bronmap ontbreekt!"
 
 #: src/tauon/t_modules/t_main.py:10625
 msgid "Safety interrupt! The source folder seems to have many files."
-msgstr ""
+msgstr "Veiligheidsonderbreking! De bronmap lijkt veel bestanden te bevatten."
 
 #: src/tauon/t_modules/t_main.py:10635
 msgid "The track needs to have an artist name."
-msgstr ""
+msgstr "Het nummer moet een artiestnaam hebben."
 
 #: src/tauon/t_modules/t_main.py:10675
 msgid "Could not find a folder with the artist's name to match level at."
-msgstr ""
+msgstr "Kon geen map met de artiestnaam vinden om het niveau mee te bepalen."
 
 #: src/tauon/t_modules/t_main.py:10742
 msgid "Tracks sent to trash"
-msgstr ""
+msgstr "Nummers naar prullenbak verplaatst"
 
 #: src/tauon/t_modules/t_main.py:10745
 msgid "One or more tracks could not be sent to trash"
-msgstr ""
+msgstr "Een of meer nummers konden niet naar de prullenbak worden verplaatst"
 
 #: src/tauon/t_modules/t_main.py:10750
 msgid "Files deleted"
-msgstr ""
+msgstr "Bestanden verwijderd"
 
 #: src/tauon/t_modules/t_main.py:10753
 msgid "Error deleting one or more files"
-msgstr ""
+msgstr "Fout bij verwijderen van een of meer bestanden"
 
 #: src/tauon/t_modules/t_main.py:10792 src/tauon/t_modules/t_main.py:16191
-#, fuzzy
 msgid "Un-Love Track"
-msgstr "Volgend Nummer"
+msgstr "Nummer niet meer liefhebben"
 
 #: src/tauon/t_modules/t_main.py:10793 src/tauon/t_modules/t_main.py:16193
 #: src/tauon/t_modules/t_main.py:16194
-#, fuzzy
 msgid "Love Track"
-msgstr "Volgend Nummer"
+msgstr "Nummer liefhebben"
 
 #: src/tauon/t_modules/t_main.py:10886
 msgid "Cannot delete a network track"
-msgstr ""
+msgstr "Kan een netwerknummer niet verwijderen"
 
 #: src/tauon/t_modules/t_main.py:10900 src/tauon/t_modules/t_main.py:10910
 msgid "File deleted"
-msgstr ""
+msgstr "Bestand verwijderd"
 
 #: src/tauon/t_modules/t_main.py:10903 src/tauon/t_modules/t_main.py:10913
 msgid "Error deleting file"
-msgstr ""
+msgstr "Fout bij verwijderen van bestand"
 
 #: src/tauon/t_modules/t_main.py:10905
 msgid "File moved to trash"
-msgstr ""
+msgstr "Bestand naar prullenbak verplaatst"
 
 #: src/tauon/t_modules/t_main.py:10920
 msgid "Rename (Single track)"
-msgstr ""
+msgstr "Hernoemen (enkel nummer)"
 
 #: src/tauon/t_modules/t_main.py:10921 src/tauon/t_modules/t_main.py:47851
 #: src/tauon/t_modules/t_main.py:47893 src/tauon/t_modules/t_main.py:47895
-#, fuzzy
 msgid "Rename Tracks…"
-msgstr "Herhaal Nummer"
+msgstr "Nummers hernoemen…"
 
 #: src/tauon/t_modules/t_main.py:10930
 msgid "Cannot physically delete"
-msgstr ""
+msgstr "Kan niet fysiek verwijderen"
 
 #: src/tauon/t_modules/t_main.py:10930 src/tauon/t_modules/t_main.py:11002
 #: src/tauon/t_modules/t_main.py:11115 src/tauon/t_modules/t_main.py:11181
 #: src/tauon/t_modules/t_main.py:22582
 msgid "One or more tracks is from a network location!"
-msgstr ""
+msgstr "Een of meer nummers komen van een netwerklocatie!"
 
 #: src/tauon/t_modules/t_main.py:10936
 msgid "This folder path seems short, I don't wanna try delete that"
-msgstr ""
+msgstr "Dit mappad lijkt kort, ik wil niet proberen dat te verwijderen"
 
 #: src/tauon/t_modules/t_main.py:10940
 msgid "Error deleting folder. The folder seems to be missing."
-msgstr ""
+msgstr "Fout bij verwijderen van map. De map lijkt te ontbreken."
 
 #: src/tauon/t_modules/t_main.py:10940
 msgid "It's gone! Just gone!"
-msgstr ""
+msgstr "Het is weg! Gewoon weg!"
 
 #: src/tauon/t_modules/t_main.py:10947
 msgid "I don't think we should delete that folder."
-msgstr ""
+msgstr "Ik denk niet dat we die map moeten verwijderen."
 
 #: src/tauon/t_modules/t_main.py:10947 src/tauon/t_modules/t_main.py:11026
 msgid "Woah, careful there!"
-msgstr ""
+msgstr "Ho, voorzichtig daar!"
 
 #: src/tauon/t_modules/t_main.py:10951
 msgid "Delete size safety limit reached! (1.5GB)"
-msgstr ""
+msgstr "Veiligheidslimiet voor verwijderen bereikt! (1.5GB)"
 
 #: src/tauon/t_modules/t_main.py:10973
 msgid "Folder deleted."
-msgstr ""
+msgstr "Map verwijderd."
 
 #: src/tauon/t_modules/t_main.py:10975
 msgid "Folder sent to trash."
-msgstr ""
+msgstr "Map naar prullenbak verplaatst."
 
 #: src/tauon/t_modules/t_main.py:10977
 msgid "Hmm, its still there"
-msgstr ""
+msgstr "Hmm, hij staat er nog"
 
 #: src/tauon/t_modules/t_main.py:10986
 msgid "Unable to comply."
-msgstr ""
+msgstr "Kan niet voldoen."
 
 #: src/tauon/t_modules/t_main.py:10986
 msgid "Could not delete folder. Try checking permissions."
-msgstr ""
+msgstr "Kon map niet verwijderen. Controleer de rechten."
 
 #: src/tauon/t_modules/t_main.py:10989
 msgid "Folder could not be trashed."
-msgstr ""
+msgstr "Map kon niet naar de prullenbak worden verplaatst."
 
 #: src/tauon/t_modules/t_main.py:10989
 msgid "Try again while holding shift to force delete."
-msgstr ""
+msgstr "Probeer opnieuw terwijl je Shift ingedrukt houdt om geforceerd te verwijderen."
 
 #: src/tauon/t_modules/t_main.py:11002 src/tauon/t_modules/t_main.py:22582
 msgid "Cannot rename"
-msgstr ""
+msgstr "Kan niet hernoemen"
 
 #: src/tauon/t_modules/t_main.py:11011
 msgid "The generated name is too short"
-msgstr ""
+msgstr "De gegenereerde naam is te kort"
 
 #: src/tauon/t_modules/t_main.py:11011 src/tauon/t_modules/t_main.py:11015
 msgid "Rename error."
-msgstr ""
+msgstr "Fout bij hernoemen."
 
 #: src/tauon/t_modules/t_main.py:11015
 msgid "This folder path seems short, I don't wanna try rename that"
-msgstr ""
+msgstr "Dit mappad lijkt kort, ik wil niet proberen dat te hernoemen"
 
 #: src/tauon/t_modules/t_main.py:11019
 msgid "Rename Failed. The original folder is missing."
-msgstr ""
+msgstr "Hernoemen mislukt. De oorspronkelijke map ontbreekt."
 
 #: src/tauon/t_modules/t_main.py:11026
 msgid "I don't think we should rename that folder."
-msgstr ""
+msgstr "Ik denk niet dat we die map moeten hernoemen."
 
 #: src/tauon/t_modules/t_main.py:11045
 msgid "The folder already has that name."
-msgstr ""
+msgstr "De map heeft die naam al."
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "Rename Failed."
-msgstr ""
+msgstr "Hernoemen mislukt."
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "A folder with that name already exists"
-msgstr ""
+msgstr "Er bestaat al een map met die naam"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Rename Failed!"
-msgstr ""
+msgstr "Hernoemen mislukt!"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Something went wrong, sorry."
-msgstr ""
+msgstr "Er is iets misgegaan, sorry."
 
 #: src/tauon/t_modules/t_main.py:11084
 msgid "Folder renamed."
-msgstr ""
+msgstr "Map hernoemd."
 
 #: src/tauon/t_modules/t_main.py:11084
 msgid "Renamed to: {name}"
-msgstr ""
+msgstr "Hernoemd naar: {name}"
 
 #: src/tauon/t_modules/t_main.py:11101
 msgid "Not applicable for a network track."
-msgstr ""
+msgstr "Niet van toepassing op een netwerknummer."
 
 #: src/tauon/t_modules/t_main.py:11115
 msgid "Cannot move"
-msgstr ""
+msgstr "Kan niet verplaatsen"
 
 #: src/tauon/t_modules/t_main.py:11125
 msgid "Error shifting directory"
-msgstr ""
+msgstr "Fout bij verschuiven van map"
 
 #: src/tauon/t_modules/t_main.py:11125
-#, fuzzy
 msgid "The directory does not appear to exist"
-msgstr "Map bestaat niet"
+msgstr "De map lijkt niet te bestaan"
 
 #: src/tauon/t_modules/t_main.py:11153
 msgid "System Error!"
-msgstr ""
+msgstr "Systeemfout!"
 
 #: src/tauon/t_modules/t_main.py:11181
 msgid "Cannot clean"
-msgstr ""
+msgstr "Kan niet opschonen"
 
 #: src/tauon/t_modules/t_main.py:11215
 msgid "Error deleting files."
-msgstr ""
+msgstr "Fout bij verwijderen van bestanden."
 
 #: src/tauon/t_modules/t_main.py:11215
 msgid "May not have permission or file may be set to read-only"
-msgstr ""
+msgstr "Mogelijk geen rechten of bestand is alleen-lezen"
 
 #: src/tauon/t_modules/t_main.py:11348
 msgid "Autodetect failed"
-msgstr ""
+msgstr "Automatisch detecteren mislukt"
 
 #: src/tauon/t_modules/t_main.py:11386
 msgid "Transcode Single"
-msgstr ""
+msgstr "Eén nummer transcoderen"
 
 #: src/tauon/t_modules/t_main.py:11387 src/tauon/t_modules/t_main.py:47914
 #: src/tauon/t_modules/t_main.py:47915 src/tauon/t_modules/t_main.py:47971
 msgid "Transcode Folder"
-msgstr ""
+msgstr "Map transcoderen"
 
 #: src/tauon/t_modules/t_main.py:11395
-#, fuzzy
 msgid "Queue {N}"
-msgstr "Wachtrij"
+msgstr "Wachtrij {N}"
 
 #: src/tauon/t_modules/t_main.py:11404
-#, fuzzy
 msgid "No matching artist result found"
-msgstr "Artiestnaam"
+msgstr "Geen overeenkomend artiestresultaat gevonden"
 
 #: src/tauon/t_modules/t_main.py:11453
 msgid "Not implemented"
-msgstr ""
+msgstr "Niet geïmplementeerd"
 
 #: src/tauon/t_modules/t_main.py:11466 src/tauon/t_modules/t_main.py:27241
 #: src/tauon/t_modules/t_main.py:52668 src/tauon/t_modules/t_main.py:52674
-#, fuzzy
 msgid "Artist"
-msgstr "Artiestlijst"
+msgstr "Artiest"
 
 #: src/tauon/t_modules/t_main.py:11467 src/tauon/t_modules/t_main.py:52649
 #: src/tauon/t_modules/t_main.py:52655
 msgid "Title"
-msgstr ""
+msgstr "Titel"
 
 #: src/tauon/t_modules/t_main.py:11468 src/tauon/t_modules/t_main.py:27765
 #: src/tauon/t_modules/t_main.py:52688 src/tauon/t_modules/t_main.py:52694
-#, fuzzy
 msgid "Album"
-msgstr "Spotify Albums"
+msgstr "Album"
 
 #: src/tauon/t_modules/t_main.py:11469
-#, fuzzy
 msgid "Album Art"
-msgstr "Albumtitel"
+msgstr "Albumhoes"
 
 #: src/tauon/t_modules/t_main.py:11470 src/tauon/t_modules/t_main.py:26959
 #: src/tauon/t_modules/t_main.py:28895 src/tauon/t_modules/t_main.py:52784
 #: src/tauon/t_modules/t_main.py:52790
 msgid "Duration"
-msgstr ""
+msgstr "Duur"
 
 #: src/tauon/t_modules/t_main.py:11471 src/tauon/t_modules/t_main.py:52841
 #: src/tauon/t_modules/t_main.py:52847
 msgid "Date"
-msgstr ""
+msgstr "Datum"
 
 #: src/tauon/t_modules/t_main.py:11472 src/tauon/t_modules/t_main.py:26951
 #: src/tauon/t_modules/t_main.py:52827 src/tauon/t_modules/t_main.py:52833
 msgid "Genre"
-msgstr ""
+msgstr "Genre"
 
 #: src/tauon/t_modules/t_main.py:11473
 msgid "Track Number"
-msgstr ""
+msgstr "Nummerpositie"
 
 #: src/tauon/t_modules/t_main.py:11474
 msgid "Play Count"
-msgstr ""
+msgstr "Aantal keer afgespeeld"
 
 #: src/tauon/t_modules/t_main.py:11475
 msgid "Codec"
-msgstr ""
+msgstr "Codec"
 
 #: src/tauon/t_modules/t_main.py:11476 src/tauon/t_modules/t_main.py:27933
 #: src/tauon/t_modules/t_main.py:52746
 msgid "Bitrate"
-msgstr ""
+msgstr "Bitrate"
 
 #: src/tauon/t_modules/t_main.py:11477
 msgid "Filename"
-msgstr ""
+msgstr "Bestandsnaam"
 
 #: src/tauon/t_modules/t_main.py:11478
 msgid "Starline"
-msgstr ""
+msgstr "Sterrenregel"
 
 #: src/tauon/t_modules/t_main.py:11479
 msgid "Rating"
-msgstr ""
+msgstr "Beoordeling"
 
 #: src/tauon/t_modules/t_main.py:11481 src/tauon/t_modules/t_main.py:52759
 #: src/tauon/t_modules/t_main.py:52765
-#, fuzzy
 msgid "Album Artist"
-msgstr "Albumtitel"
+msgstr "Albumartiest"
 
 #: src/tauon/t_modules/t_main.py:11482 src/tauon/t_modules/t_main.py:52912
 #: src/tauon/t_modules/t_main.py:52918
 msgid "Comment"
-msgstr ""
+msgstr "Opmerking"
 
 #: src/tauon/t_modules/t_main.py:11483 src/tauon/t_modules/t_main.py:35662
 #: src/tauon/t_modules/t_main.py:48007
 msgid "Filepath"
-msgstr ""
+msgstr "Bestandspad"
 
 #: src/tauon/t_modules/t_main.py:11484
 msgid "Scrobble Count"
-msgstr ""
+msgstr "Aantal scrobbles"
 
 #: src/tauon/t_modules/t_main.py:11485 src/tauon/t_modules/t_main.py:52855
 #: src/tauon/t_modules/t_main.py:52861
 msgid "Composer"
-msgstr ""
+msgstr "Componist"
 
 #: src/tauon/t_modules/t_main.py:11486
 msgid "Disc Number"
-msgstr ""
+msgstr "Schijfnummer"
 
 #: src/tauon/t_modules/t_main.py:11487 src/tauon/t_modules/t_main.py:47810
 #: src/tauon/t_modules/t_main.py:47811
 msgid "Has Lyrics"
-msgstr ""
+msgstr "Heeft songteksten"
 
 #: src/tauon/t_modules/t_main.py:11488
 msgid "Is CUE Sheet"
-msgstr ""
+msgstr "Is CUE-sheet"
 
 #: src/tauon/t_modules/t_main.py:11489
-#, fuzzy
 msgid "Internal Track ID"
-msgstr "Volgend Nummer"
+msgstr "Interne nummer-ID"
 
 #: src/tauon/t_modules/t_main.py:11490
 msgid "File Changed"
-msgstr ""
+msgstr "Bestand gewijzigd"
 
 #: src/tauon/t_modules/t_main.py:11495
 msgid "Auto Resize"
-msgstr ""
+msgstr "Automatisch formaat aanpassen"
 
 #: src/tauon/t_modules/t_main.py:11496
 msgid "Hide bar"
-msgstr ""
+msgstr "Balk verbergen"
 
 #: src/tauon/t_modules/t_main.py:11498 src/tauon/t_modules/t_main.py:37539
 msgid "Remove This"
-msgstr ""
+msgstr "Deze verwijderen"
 
 #: src/tauon/t_modules/t_main.py:11508
 msgid "More…"
-msgstr ""
+msgstr "Meer…"
 
 #: src/tauon/t_modules/t_main.py:11522
 msgid "Cannot remove the only column."
-msgstr ""
+msgstr "Kan de enige kolom niet verwijderen."
 
 #: src/tauon/t_modules/t_main.py:11871
-#, fuzzy
 msgid "Play History"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeelgeschiedenis"
 
 #: src/tauon/t_modules/t_main.py:11902
 msgid "{N} ratings imported"
-msgstr ""
+msgstr "{N} beoordelingen geïmporteerd"
 
 #: src/tauon/t_modules/t_main.py:11943
 msgid "This will delete all track and album ratings from the local database!"
-msgstr ""
+msgstr "Dit verwijdert alle nummer- en albumbeoordelingen uit de lokale database!"
 
 #: src/tauon/t_modules/t_main.py:11944 src/tauon/t_modules/t_main.py:26629
 msgid ""
 "Press button again while holding shift key if you're sure you want to do "
 "that."
-msgstr ""
+msgstr "Druk nogmaals op de knop terwijl je Shift ingedrukt houdt als je zeker weet dat je dit wilt doen."
 
 #: src/tauon/t_modules/t_main.py:11958
 msgid "Stop Cast"
-msgstr ""
+msgstr "Cast stoppen"
 
 #: src/tauon/t_modules/t_main.py:11970
-#, fuzzy
 msgid "pychromecast not found"
-msgstr "Geen Chromecasts gevonden"
+msgstr "pychromecast niet gevonden"
 
 #: src/tauon/t_modules/t_main.py:11972
-#, fuzzy
 msgid "Searching for Chromecasts..."
 msgstr "Zoeken naar Chromecasts..."
 
 #: src/tauon/t_modules/t_main.py:12018
 msgid "No metadata available to copy"
-msgstr ""
+msgstr "Geen metadata beschikbaar om te kopiëren"
 
 #: src/tauon/t_modules/t_main.py:12083
 msgid "Please wait for cleaning process to finish"
-msgstr ""
+msgstr "Wacht tot het opschonen is voltooid"
 
 #: src/tauon/t_modules/t_main.py:12099
 msgid "ListenBrainz is Paused"
-msgstr ""
+msgstr "ListenBrainz is gepauzeerd"
 
 #: src/tauon/t_modules/t_main.py:12101
 msgid "Scrobbling is Paused"
-msgstr ""
+msgstr "Scrobblen is gepauzeerd"
 
 #: src/tauon/t_modules/t_main.py:12105
 msgid "ListenBrainz is Active"
-msgstr ""
+msgstr "ListenBrainz is actief"
 
 #: src/tauon/t_modules/t_main.py:12107
 msgid "Scrobbling is Active"
-msgstr ""
+msgstr "Scrobblen is actief"
 
 #: src/tauon/t_modules/t_main.py:12532
 msgid "Okay, it's a normal playlist now."
-msgstr ""
+msgstr "Oké, het is nu een normale afspeellijst."
 
 #: src/tauon/t_modules/t_main.py:12548
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
-msgstr ""
+msgstr "Je hebt nummers toegevoegd aan een generatorafspeellijst. Wil je de generator wissen?"
 
 #: src/tauon/t_modules/t_main.py:12855 src/tauon/t_modules/t_main.py:30105
 #: src/tauon/t_modules/t_main.py:39103 src/tauon/t_modules/t_main.py:39278
 msgid "Added station to: "
-msgstr ""
+msgstr "Station toegevoegd aan: "
 
 #: src/tauon/t_modules/t_main.py:12879 src/tauon/t_modules/t_main.py:12897
 #: src/tauon/t_modules/t_main.py:23328
-#, fuzzy
 msgid "Artist: "
-msgstr "Artiestlijst"
+msgstr "Artiest: "
 
 #: src/tauon/t_modules/t_main.py:12933
 msgid "Filter Small Artists"
-msgstr ""
+msgstr "Kleine artiesten filteren"
 
 #: src/tauon/t_modules/t_main.py:12937
 msgid "Include All Artists"
-msgstr ""
+msgstr "Alle artiesten opnemen"
 
 #: src/tauon/t_modules/t_main.py:13022
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr ""
+msgstr "Let op: artiestafbeelding afkomstig van fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:13023
 msgid "They encourage you to contribute at {link}"
-msgstr ""
+msgstr "Ze moedigen je aan bij te dragen via {link}"
 
 #: src/tauon/t_modules/t_main.py:13028
 msgid "Resume Queue"
-msgstr ""
+msgstr "Wachtrij hervatten"
 
 #: src/tauon/t_modules/t_main.py:13029 src/tauon/t_modules/t_main.py:37543
-#, fuzzy
 msgid "Pause Queue"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Wachtrij pauzeren"
 
 #: src/tauon/t_modules/t_main.py:13155
 msgid "Image types other than PNG or JPEG are currently not supported"
-msgstr ""
+msgstr "Andere afbeeldingstypen dan PNG of JPEG worden momenteel niet ondersteund"
 
 #: src/tauon/t_modules/t_main.py:13157
-#, fuzzy
 msgid "The link does not appear to refer to an image file."
-msgstr "Map bestaat niet"
+msgstr "De link lijkt niet naar een afbeeldingsbestand te verwijzen."
 
 #: src/tauon/t_modules/t_main.py:13162
 msgid "Image download failed."
-msgstr ""
+msgstr "Afbeelding downloaden mislukt."
 
 #: src/tauon/t_modules/t_main.py:13171 src/tauon/t_modules/t_main.py:13186
 msgid "You"
-msgstr ""
+msgstr "Jij"
 
 #: src/tauon/t_modules/t_main.py:13995 src/tauon/t_modules/t_main.py:19176
 msgid "New Radio List"
-msgstr ""
+msgstr "Nieuwe radiolijst"
 
 #: src/tauon/t_modules/t_main.py:13995 src/tauon/t_modules/t_main.py:19179
 #: src/tauon/t_modules/t_main.py:47700 src/tauon/t_modules/t_main.py:48022
 #: src/tauon/t_modules/t_main.py:51465
-#, fuzzy
 msgid "New Playlist"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Nieuwe afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:14007
 msgid "Done! {N} old items were removed."
-msgstr ""
+msgstr "Klaar! {N} oude items zijn verwijderd."
 
 #: src/tauon/t_modules/t_main.py:14011 src/tauon/t_modules/t_main.py:48024
 msgid "Clean Database!"
-msgstr ""
+msgstr "Database opschonen!"
 
 #: src/tauon/t_modules/t_main.py:14017
 msgid "Music"
-msgstr ""
+msgstr "Muziek"
 
 #: src/tauon/t_modules/t_main.py:14536
 msgid "This playlist has no generator"
-msgstr ""
+msgstr "Deze afspeellijst heeft geen generator"
 
 #: src/tauon/t_modules/t_main.py:15157
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr ""
+msgstr "Oké. Deze afspeellijst wordt vanaf nu automatisch gesorteerd bij importeren"
 
 #: src/tauon/t_modules/t_main.py:15158
 msgid ""
 "You remove or edit this behavior by going \"Misc...\" > \"Edit generator...\""
-msgstr ""
+msgstr "Je verwijdert of bewerkt dit gedrag via \"Diversen...\" > \"Generator bewerken...\""
 
 #: src/tauon/t_modules/t_main.py:15170
 msgid "A regen is already in progress..."
-msgstr ""
+msgstr "Er is al een regeneratie bezig..."
 
 #: src/tauon/t_modules/t_main.py:15188
-#, fuzzy
 msgid "No duplicates were found"
-msgstr "Artiestnaam"
+msgstr "Er zijn geen duplicaten gevonden"
 
 #: src/tauon/t_modules/t_main.py:15190
 msgid "{N} duplicates removed"
-msgstr ""
+msgstr "{N} duplicaten verwijderd"
 
 #: src/tauon/t_modules/t_main.py:15197
 msgid ""
 "You can now add/remove albums to this playlist by right clicking in gallery "
 "of any playlist"
-msgstr ""
+msgstr "Je kunt nu albums aan deze afspeellijst toevoegen of eruit verwijderen door met rechts te klikken in de galerij van een afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:15198
 msgid "To exit this mode, click \"Disengage\" from main MENU"
-msgstr ""
+msgstr "Klik in het hoofdMENU op \"Uitschakelen\" om deze modus te verlaten"
 
 #: src/tauon/t_modules/t_main.py:15288 src/tauon/t_modules/t_main.py:15290
-#, fuzzy
 msgid "No artist image found."
-msgstr "Artiestnaam"
+msgstr "Geen artiestafbeelding gevonden."
 
 #: src/tauon/t_modules/t_main.py:15290
 msgid "No providers are enabled in settings!"
-msgstr ""
+msgstr "Er zijn geen providers ingeschakeld in de instellingen!"
 
 #: src/tauon/t_modules/t_main.py:15442 src/tauon/t_modules/t_main.py:47666
 msgid "Pin"
-msgstr ""
+msgstr "Vastmaken"
 
 #: src/tauon/t_modules/t_main.py:15443
 msgid "Unpin"
-msgstr ""
+msgstr "Losmaken"
 
 #: src/tauon/t_modules/t_main.py:15447
-#, fuzzy
 msgid "Unlock"
-msgstr "Ontgrendel Paneel"
+msgstr "Ontgrendelen"
 
 #: src/tauon/t_modules/t_main.py:15448 src/tauon/t_modules/t_main.py:47678
 msgid "Lock"
-msgstr ""
+msgstr "Vergrendelen"
 
 #: src/tauon/t_modules/t_main.py:15532
-#, fuzzy
 msgid "Tag editor app does not appear to be installed."
-msgstr "Map bestaat niet"
+msgstr "De tag-editorapp lijkt niet geïnstalleerd te zijn."
 
 #: src/tauon/t_modules/t_main.py:15536
 msgid "App not found on host OR insufficient Flatpak permissions."
-msgstr ""
+msgstr "App niet gevonden op host OF onvoldoende Flatpak-rechten."
 
 #: src/tauon/t_modules/t_main.py:15537 src/tauon/t_modules/t_main.py:19011
 #: src/tauon/t_modules/t_main.py:19018
 msgid " For details, see {link}"
-msgstr ""
+msgstr " Zie {link} voor details"
 
 #: src/tauon/t_modules/t_main.py:15605
 msgid "Sorry, this feature isn't (yet) available with Snap."
-msgstr ""
+msgstr "Sorry, deze functie is (nog) niet beschikbaar met Snap."
 
 #: src/tauon/t_modules/t_main.py:15609 src/tauon/t_modules/t_main.py:15624
 msgid "Cannot edit tags of a network track."
-msgstr ""
+msgstr "Kan tags van een netwerknummer niet bewerken."
 
 #: src/tauon/t_modules/t_main.py:15634 src/tauon/t_modules/t_main.py:47928
 msgid "Edit with "
-msgstr ""
+msgstr "Bewerken met "
 
 #: src/tauon/t_modules/t_main.py:15681 src/tauon/t_modules/t_main.py:24155
 msgid "Starting download..."
-msgstr ""
+msgstr "Download starten..."
 
 #: src/tauon/t_modules/t_main.py:15698
 msgid "Downloading... {MB}/{total_mb}"
-msgstr ""
+msgstr "Downloaden... {MB}/{total_mb}"
 
 #: src/tauon/t_modules/t_main.py:15707
 msgid "Download completed but checksum failed"
-msgstr ""
+msgstr "Download voltooid, maar controlesom mislukt"
 
 #: src/tauon/t_modules/t_main.py:15710
 msgid "Download completed. Extracting..."
-msgstr ""
+msgstr "Download voltooid. Uitpakken..."
 
 #: src/tauon/t_modules/t_main.py:15734
 msgid "FFmpeg fetch complete"
-msgstr ""
+msgstr "FFmpeg ophalen voltooid"
 
 #: src/tauon/t_modules/t_main.py:15845
 msgid "Disable Columns"
-msgstr ""
+msgstr "Kolommen uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:15846
 msgid "Enable Columns"
-msgstr ""
+msgstr "Kolommen inschakelen"
 
 #: src/tauon/t_modules/t_main.py:15856
 msgid "Disable Title Breaks"
-msgstr ""
+msgstr "Titelonderbrekingen uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:15857
 msgid "Enable Title Breaks"
-msgstr ""
+msgstr "Titelonderbrekingen inschakelen"
 
 #: src/tauon/t_modules/t_main.py:15905
 msgid "Encoding warning: Missing one or more files"
-msgstr ""
+msgstr "Coderingswaarschuwing: een of meer bestanden ontbreken"
 
 #: src/tauon/t_modules/t_main.py:16256
 msgid "No exact matching artist could be found in this playlist"
-msgstr ""
+msgstr "In deze afspeellijst kon geen exact overeenkomende artiest worden gevonden"
 
 #: src/tauon/t_modules/t_main.py:16621 src/tauon/t_modules/t_main.py:16629
 msgid "There was an error generating the chart"
-msgstr ""
+msgstr "Er is een fout opgetreden bij het genereren van de grafiek"
 
 #: src/tauon/t_modules/t_main.py:16621 src/tauon/t_modules/t_main.py:16629
 msgid "Sorry!"
-msgstr ""
+msgstr "Sorry!"
 
 #: src/tauon/t_modules/t_main.py:16632
 msgid "Chart generated"
-msgstr ""
+msgstr "Grafiek gegenereerd"
 
 #: src/tauon/t_modules/t_main.py:16688
 msgid "There was an error with the Maloja server"
-msgstr ""
+msgstr "Er is een fout opgetreden met de Maloja-server"
 
 #: src/tauon/t_modules/t_main.py:16693
 msgid "There was an error reaching the Maloja server"
-msgstr ""
+msgstr "Er is een fout opgetreden bij het bereiken van de Maloja-server"
 
 #: src/tauon/t_modules/t_main.py:16728
 msgid "There was an error parsing the data"
-msgstr ""
+msgstr "Er is een fout opgetreden bij het parsen van de gegevens"
 
 #: src/tauon/t_modules/t_main.py:16761 src/tauon/t_modules/t_main.py:16765
 msgid "There was an error submitting data to Maloja server"
-msgstr ""
+msgstr "Er is een fout opgetreden bij het verzenden van gegevens naar de Maloja-server"
 
 #: src/tauon/t_modules/t_main.py:16790 src/tauon/t_modules/t_main.py:16802
 msgid "Job already in progress!"
-msgstr ""
+msgstr "Taak is al bezig!"
 
 #: src/tauon/t_modules/t_main.py:16821 src/tauon/t_modules/t_main.py:16850
 msgid "Already scanning!"
-msgstr ""
+msgstr "Scannen is al bezig!"
 
 #: src/tauon/t_modules/t_main.py:16829
 msgid "Enter two-factor code"
-msgstr ""
+msgstr "Voer tweefactorcode in"
 
 #: src/tauon/t_modules/t_main.py:17272
 msgid "End of playlist"
@@ -1817,222 +1748,218 @@ msgstr "Einde van de afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:17400 src/tauon/t_modules/t_main.py:17423
 msgid "Failed updating last.fm love status"
-msgstr ""
+msgstr "Bijwerken van Last.fm-love-status mislukt"
 
 #: src/tauon/t_modules/t_main.py:17404
 msgid "Error updating love to last.fm!"
-msgstr ""
+msgstr "Fout bij bijwerken van love naar Last.fm!"
 
 #: src/tauon/t_modules/t_main.py:17405
 msgid "Maybe check your internet connection and try again?"
-msgstr ""
+msgstr "Controleer misschien je internetverbinding en probeer het opnieuw?"
 
 #: src/tauon/t_modules/t_main.py:18009 src/tauon/t_modules/t_main.py:54222
 msgid "Permission error encountered while writing database"
-msgstr ""
+msgstr "Rechtenfout opgetreden bij schrijven van database"
 
 #: src/tauon/t_modules/t_main.py:18222
 msgid "Warning! Using this function moves physical folders."
-msgstr ""
+msgstr "Waarschuwing! Deze functie verplaatst fysieke mappen."
 
 #: src/tauon/t_modules/t_main.py:18223
 msgid ""
 "This menu entry appears after selecting 'copy'. See manual (github wiki) for "
 "more info."
-msgstr ""
+msgstr "Deze menuoptie verschijnt na het selecteren van 'kopiëren'. Zie de handleiding (GitHub-wiki) voor meer informatie."
 
 #: src/tauon/t_modules/t_main.py:18429
 msgid "Notifications for this DE not supported"
-msgstr ""
+msgstr "Meldingen voor deze desktopomgeving worden niet ondersteund"
 
 #: src/tauon/t_modules/t_main.py:18538
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
-msgstr ""
+msgstr "Let op: beoordelingen worden opgeslagen in de lokale database en niet naar tags geschreven."
 
 #: src/tauon/t_modules/t_main.py:18595 src/tauon/t_modules/t_main.py:18642
 msgid "Change will be applied on restart."
-msgstr ""
+msgstr "Wijziging wordt toegepast na herstart."
 
 #: src/tauon/t_modules/t_main.py:18688
 msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr ""
+msgstr "Tip: je kunt dit ook omschakelen vanuit een rechtsklik-contextmenu"
 
 #: src/tauon/t_modules/t_main.py:18745
 msgid "Can't enable this if there's no token."
-msgstr ""
+msgstr "Kan dit niet inschakelen als er geen token is."
 
 #: src/tauon/t_modules/t_main.py:18754 src/tauon/t_modules/t_main.py:28437
 msgid "One or more fields are missing."
-msgstr ""
+msgstr "Een of meer velden ontbreken."
 
 #: src/tauon/t_modules/t_main.py:18841 src/tauon/t_modules/t_main.py:18860
 msgid ""
 "DANGER! This will delete the original files. Keeping a backup is recommended "
 "in case of malfunction."
-msgstr ""
+msgstr "GEVAAR! Dit verwijdert de oorspronkelijke bestanden. Een back-up bewaren wordt aanbevolen voor het geval er iets misgaat."
 
 #: src/tauon/t_modules/t_main.py:18842
 msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
-msgstr ""
+msgstr "Voor de veiligheid staat deze instelling standaard uit. Ingesloten miniaturen blijven niet behouden, dus je wilt ze misschien eerst extraheren."
 
 #: src/tauon/t_modules/t_main.py:18861
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
-msgstr ""
+msgstr "Voor de veiligheid wordt deze instelling bij herstart teruggezet. Ingesloten miniaturen blijven niet behouden, dus je wilt ze misschien eerst extraheren."
 
 #: src/tauon/t_modules/t_main.py:19010
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
+msgstr "Geen toegang! Mogelijk onvoldoende Flatpak-rechten."
 
 #: src/tauon/t_modules/t_main.py:19017
 msgid "The target may be lost on reboot without necessary Flatpak permissions."
-msgstr ""
+msgstr "Het doel kan na herstart verloren gaan zonder de benodigde Flatpak-rechten."
 
 #: src/tauon/t_modules/t_main.py:19020
 msgid "Path may be transient! Continue? Press \"No\" for more information."
-msgstr ""
+msgstr "Pad kan tijdelijk zijn! Doorgaan? Druk op \"Nee\" voor meer informatie."
 
 #: src/tauon/t_modules/t_main.py:19142
 msgid "Stop the sync before exiting!"
-msgstr ""
+msgstr "Stop de synchronisatie voordat je afsluit!"
 
 #: src/tauon/t_modules/t_main.py:19202
-#, fuzzy
 msgid "Web server starting"
-msgstr "Webserver gestopt."
+msgstr "Webserver start"
 
 #: src/tauon/t_modules/t_main.py:19202
 msgid "External connections will be accepted."
-msgstr ""
+msgstr "Externe verbindingen worden geaccepteerd."
 
 #: src/tauon/t_modules/t_main.py:19290
 msgid "This feature requires FFmpeg. Should I download it for you? (~100 MB)"
-msgstr ""
+msgstr "Deze functie vereist FFmpeg. Zal ik het voor je downloaden? (~100 MB)"
 
 #: src/tauon/t_modules/t_main.py:19295
-#, fuzzy
 msgid "FFmpeg could not be found"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "FFmpeg kon niet worden gevonden"
 
 #: src/tauon/t_modules/t_main.py:19386
 msgid "Missing username, password and/or server name"
-msgstr ""
+msgstr "Gebruikersnaam, wachtwoord en/of servernaam ontbreken"
 
 #: src/tauon/t_modules/t_main.py:19399
 msgid "Error importing python-plexapi"
-msgstr ""
+msgstr "Fout bij importeren van python-plexapi"
 
 #: src/tauon/t_modules/t_main.py:19415
 msgid "Two-factor authentication required"
-msgstr ""
+msgstr "Tweefactorauthenticatie vereist"
 
 #: src/tauon/t_modules/t_main.py:19416
 msgid "Enter the verification code and try again."
-msgstr ""
+msgstr "Voer de verificatiecode in en probeer het opnieuw."
 
 #: src/tauon/t_modules/t_main.py:19425
 msgid "Error connecting to PLEX server"
-msgstr ""
+msgstr "Fout bij verbinden met PLEX-server"
 
 #: src/tauon/t_modules/t_main.py:19426
 msgid "Try checking login credentials and that the server is accessible."
-msgstr ""
+msgstr "Controleer de inloggegevens en of de server toegankelijk is."
 
 #: src/tauon/t_modules/t_main.py:19528
 msgid "PLEX Collection"
-msgstr ""
+msgstr "PLEX-collectie"
 
 #: src/tauon/t_modules/t_main.py:19556
 msgid "Network error"
-msgstr ""
+msgstr "Netwerkfout"
 
 #: src/tauon/t_modules/t_main.py:19569
-#, fuzzy
 msgid "No playlist name"
-msgstr "Einde van de afspeellijst"
+msgstr "Geen afspeellijstnaam"
 
 #: src/tauon/t_modules/t_main.py:19580
-#, fuzzy
 msgid "Playlist not found on target"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijst niet gevonden op doel"
 
 #: src/tauon/t_modules/t_main.py:21328
 msgid "No embedded album art."
-msgstr ""
+msgstr "Geen ingesloten albumhoes."
 
 #: src/tauon/t_modules/t_main.py:22585
 msgid "This function does not support renaming CUE Sheet tracks."
-msgstr ""
+msgstr "Deze functie ondersteunt het hernoemen van CUE-sheetnummers niet."
 
 #: src/tauon/t_modules/t_main.py:22591
 msgid "Track Renaming"
-msgstr ""
+msgstr "Nummers hernoemen"
 
 #: src/tauon/t_modules/t_main.py:22595 src/tauon/t_modules/t_main.py:53002
 msgid "Default"
-msgstr ""
+msgstr "Standaard"
 
 #: src/tauon/t_modules/t_main.py:22617
 msgid "BEFORE"
-msgstr ""
+msgstr "VOOR"
 
 #: src/tauon/t_modules/t_main.py:22621
 msgid "AFTER"
-msgstr ""
+msgstr "NA"
 
 #: src/tauon/t_modules/t_main.py:22627
 msgid "Warning: This may change the file extension"
-msgstr ""
+msgstr "Waarschuwing: dit kan de bestandsextensie wijzigen"
 
 #: src/tauon/t_modules/t_main.py:22634
 msgid "Warning: The filename might not be unique"
-msgstr ""
+msgstr "Waarschuwing: de bestandsnaam is mogelijk niet uniek"
 
 #: src/tauon/t_modules/t_main.py:22639
 msgid "Warning: A track has incomplete metadata"
-msgstr ""
+msgstr "Waarschuwing: een nummer heeft onvolledige metadata"
 
 #: src/tauon/t_modules/t_main.py:22644
 msgid "Write"
-msgstr ""
+msgstr "Schrijven"
 
 #: src/tauon/t_modules/t_main.py:22649
 msgid "Physically renames all the tracks in the folder"
-msgstr ""
+msgstr "Hernoemt fysiek alle nummers in de map"
 
 #: src/tauon/t_modules/t_main.py:22713 src/tauon/t_modules/t_main.py:22718
 msgid "Rename complete."
-msgstr ""
+msgstr "Hernoemen voltooid."
 
 #: src/tauon/t_modules/t_main.py:22714 src/tauon/t_modules/t_main.py:22719
 msgid "{N} / {T} filenames were written."
-msgstr ""
+msgstr "{N} / {T} bestandsnamen zijn geschreven."
 
 #: src/tauon/t_modules/t_main.py:22804
 msgid "Simple tag editor"
-msgstr ""
+msgstr "Eenvoudige tag-editor"
 
 #: src/tauon/t_modules/t_main.py:22806 src/tauon/t_modules/t_main.py:23207
 msgid "?"
-msgstr ""
+msgstr "?"
 
 #: src/tauon/t_modules/t_main.py:22808
 msgid "Press Enter in each field to apply its changes to local database."
-msgstr ""
+msgstr "Druk in elk veld op Enter om de wijzigingen toe te passen op de lokale database."
 
 #: src/tauon/t_modules/t_main.py:22809
 msgid ""
 "When done, press WRITE TAGS to save to tags in actual files. (Optional but "
 "recommended)"
-msgstr ""
+msgstr "Druk wanneer je klaar bent op TAGS SCHRIJVEN om naar tags in de echte bestanden op te slaan. (Optioneel maar aanbevolen)"
 
 #: src/tauon/t_modules/t_main.py:22813
 msgid "Number of tracks selected: {N}"
-msgstr ""
+msgstr "Aantal geselecteerde nummers: {N}"
 
 #: src/tauon/t_modules/t_main.py:22848
 msgid "<Multiple selected>"
@@ -2040,7 +1967,7 @@ msgstr "<Meerdere geselecteerd>"
 
 #: src/tauon/t_modules/t_main.py:22856
 msgid "Track title"
-msgstr ""
+msgstr "Nummertitel"
 
 #: src/tauon/t_modules/t_main.py:22858
 msgid "Album name"
@@ -2056,1393 +1983,1348 @@ msgstr "Album-artiestnaam"
 
 #: src/tauon/t_modules/t_main.py:22868
 msgid "Editing network tracks is not recommended!"
-msgstr ""
+msgstr "Netwerknummers bewerken wordt niet aanbevolen!"
 
 #: src/tauon/t_modules/t_main.py:22897 src/tauon/t_modules/t_main.py:22900
 msgid "WRITE TAGS"
-msgstr ""
+msgstr "TAGS SCHRIJVEN"
 
 #: src/tauon/t_modules/t_main.py:22903
 msgid "Press enter on fields to apply your changes first!"
-msgstr ""
+msgstr "Druk eerst in de velden op Enter om je wijzigingen toe te passen!"
 
 #: src/tauon/t_modules/t_main.py:22914
 msgid "Writing to a network track is not applicable!"
-msgstr ""
+msgstr "Schrijven naar een netwerknummer is niet van toepassing!"
 
 #: src/tauon/t_modules/t_main.py:22918
 msgid "Cannot write CUE sheet types!"
-msgstr ""
+msgstr "Kan geen CUE-sheettypen schrijven!"
 
 #: src/tauon/t_modules/t_main.py:22927
 msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr ""
+msgstr "Kan meerveld niet verwerken! Gebruik een externe tag-editor"
 
 #: src/tauon/t_modules/t_main.py:22946
 msgid "{N} files rewritten"
-msgstr ""
+msgstr "{N} bestanden herschreven"
 
 #: src/tauon/t_modules/t_main.py:23014
 msgid "Substitute Lyric Search"
-msgstr ""
+msgstr "Vervangende songtekstzoekopdracht"
 
 #: src/tauon/t_modules/t_main.py:23021 src/tauon/t_modules/t_main.py:23044
 msgid "Substitute"
-msgstr ""
+msgstr "Vervangen"
 
 #: src/tauon/t_modules/t_main.py:23027 src/tauon/t_modules/t_main.py:23050
 msgid "with"
-msgstr ""
+msgstr "met"
 
 #: src/tauon/t_modules/t_main.py:23142
 msgid "Import/Export Playlist"
-msgstr ""
+msgstr "Afspeellijst importeren/exporteren"
 
 #: src/tauon/t_modules/t_main.py:23147
 msgid "Target folder or file"
-msgstr ""
+msgstr "Doelmap of -bestand"
 
 #: src/tauon/t_modules/t_main.py:23166
 msgid "Will overwrite existing file: "
-msgstr ""
+msgstr "Zal bestaand bestand overschrijven: "
 
 #: src/tauon/t_modules/t_main.py:23169
-#, fuzzy
 msgid "Will save with playlist name:"
-msgstr "Einde van de afspeellijst"
+msgstr "Zal opslaan met afspeellijstnaam:"
 
 #: src/tauon/t_modules/t_main.py:23172
 msgid "No file extension?"
-msgstr ""
+msgstr "Geen bestandsextensie?"
 
 #: src/tauon/t_modules/t_main.py:23176 src/tauon/t_modules/t_main.py:23179
 msgid "Incorrect extension?"
-msgstr ""
+msgstr "Onjuiste extensie?"
 
 #: src/tauon/t_modules/t_main.py:23182
 msgid "Will create directory"
-msgstr ""
+msgstr "Zal map aanmaken"
 
 #: src/tauon/t_modules/t_main.py:23204 src/tauon/t_modules/t_main.py:23206
 msgid "Use relative paths"
-msgstr ""
+msgstr "Relatieve paden gebruiken"
 
 #: src/tauon/t_modules/t_main.py:23209
 msgid "Enable relative paths when keeping playlist files together with audio"
-msgstr ""
+msgstr "Schakel relatieve paden in wanneer afspeellijstbestanden samen met audio worden bewaard"
 
 #: src/tauon/t_modules/t_main.py:23210
 msgid "Disable to move playlist files while keeping audio in one location"
-msgstr ""
+msgstr "Schakel uit om afspeellijstbestanden te verplaatsen terwijl audio op één locatie blijft"
 
 #: src/tauon/t_modules/t_main.py:23214
 msgid "Auto-export"
-msgstr ""
+msgstr "Automatisch exporteren"
 
 #: src/tauon/t_modules/t_main.py:23215
 msgid "Auto-import"
-msgstr ""
+msgstr "Automatisch importeren"
 
 #: src/tauon/t_modules/t_main.py:23219 src/tauon/t_modules/t_main.py:23222
 msgid "Export"
 msgstr "Exporteer"
 
 #: src/tauon/t_modules/t_main.py:23265
-#, fuzzy
 msgid "Playlist exported"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijst geëxporteerd"
 
 #: src/tauon/t_modules/t_main.py:23351
 msgid "Year: "
-msgstr ""
+msgstr "Jaar: "
 
 #: src/tauon/t_modules/t_main.py:23374
 msgid "Composer: "
-msgstr ""
+msgstr "Componist: "
 
 #: src/tauon/t_modules/t_main.py:23446
 msgid "Genre: "
-msgstr ""
+msgstr "Genre: "
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "Go / open:"
-msgstr ""
+msgstr "Ga / open:"
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "left-click or press Enter."
-msgstr ""
+msgstr "linksklik of druk op Enter."
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "Show / reveal:"
-msgstr ""
+msgstr "Tonen / weergeven:"
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "right-click or press Shift+Enter."
-msgstr ""
+msgstr "rechtsklik of druk op Shift+Enter."
 
 #: src/tauon/t_modules/t_main.py:23528
-#, fuzzy
 msgid "Add to current playlist:"
-msgstr "Einde van de afspeellijst"
+msgstr "Toevoegen aan huidige afspeellijst:"
 
 #: src/tauon/t_modules/t_main.py:23528
 msgid "Ctrl+left-click."
-msgstr ""
+msgstr "Ctrl+linksklik."
 
 #: src/tauon/t_modules/t_main.py:23529
-#, fuzzy
 msgid "Add to queue:"
-msgstr "Voeg Album toe aan Wachtrij"
+msgstr "Toevoegen aan wachtrij:"
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "middle-click (track or album)."
-msgstr ""
+msgstr "middelklik (nummer of album)."
 
 #: src/tauon/t_modules/t_main.py:23678
-#, fuzzy
 msgid "No results found"
-msgstr "Artiestnaam"
+msgstr "Geen resultaten gevonden"
 
 #: src/tauon/t_modules/t_main.py:23848
 msgid "(Include multi-tag results)"
-msgstr ""
+msgstr "(Multi-tagresultaten opnemen)"
 
 #: src/tauon/t_modules/t_main.py:24154
 msgid "Downloading Milkdrop presets"
-msgstr ""
+msgstr "Milkdrop-presets downloaden"
 
 #: src/tauon/t_modules/t_main.py:24191 src/tauon/t_modules/t_main.py:24233
 msgid "Cancelling..."
-msgstr ""
+msgstr "Annuleren..."
 
 #: src/tauon/t_modules/t_main.py:24192
 msgid "Milkdrop will still be enabled."
-msgstr ""
+msgstr "Milkdrop blijft ingeschakeld."
 
 #: src/tauon/t_modules/t_main.py:24230 src/tauon/t_modules/t_main.py:29136
-#, fuzzy
 msgid "Close"
-msgstr "Sluit Paneel"
+msgstr "Sluiten"
 
 #: src/tauon/t_modules/t_main.py:24236 src/tauon/t_modules/t_main.py:28350
 #: src/tauon/t_modules/t_main.py:42858 src/tauon/t_modules/t_main.py:42956
 #: src/tauon/t_modules/t_main.py:43138 src/tauon/t_modules/t_main.py:43173
 #: src/tauon/t_modules/t_main.py:47574
 msgid "Cancel"
-msgstr ""
+msgstr "Annuleren"
 
 #: src/tauon/t_modules/t_main.py:24292
 msgid "Yay! Thank you!! 🎉 ✨"
-msgstr ""
+msgstr "Hoera! Dank je wel!! 🎉 ✨"
 
 #: src/tauon/t_modules/t_main.py:24340
 msgid "Tauon v{version}"
-msgstr ""
+msgstr "Tauon v{version}"
 
 #: src/tauon/t_modules/t_main.py:24344
 msgid "Highlights from the latest Tauon release."
-msgstr ""
+msgstr "Hoogtepunten uit de nieuwste Tauon-release."
 
 #: src/tauon/t_modules/t_main.py:24357
 msgid "Changelog"
-msgstr ""
+msgstr "Wijzigingslog"
 
 #: src/tauon/t_modules/t_main.py:24383
 msgid "The time has come to open thy heart and thy wallet ❤️  "
-msgstr ""
+msgstr "De tijd is gekomen om je hart en je portemonnee te openen ❤️  "
 
 #: src/tauon/t_modules/t_main.py:24386
 msgid ""
 "A ton of work went into this release. Please consider donating at https://"
 "github.com/sponsors/Taiko2k"
-msgstr ""
+msgstr "Er is enorm veel werk in deze release gestoken. Overweeg te doneren via https://github.com/sponsors/Taiko2k"
 
 #: src/tauon/t_modules/t_main.py:24389
 msgid "GitHub Sponsors"
-msgstr ""
+msgstr "GitHub Sponsors"
 
 #: src/tauon/t_modules/t_main.py:24393
 msgid "or on my "
-msgstr ""
+msgstr "of op mijn "
 
 #: src/tauon/t_modules/t_main.py:24415 src/tauon/t_modules/t_main.py:24435
 msgid "No thanks"
-msgstr ""
+msgstr "Nee bedankt"
 
 #: src/tauon/t_modules/t_main.py:24416 src/tauon/t_modules/t_main.py:24425
 msgid "Yes, I have donated"
-msgstr ""
+msgstr "Ja, ik heb gedoneerd"
 
 #: src/tauon/t_modules/t_main.py:24510
 msgid "General"
-msgstr ""
+msgstr "Algemeen"
 
 #: src/tauon/t_modules/t_main.py:24511
 msgid "Connections"
-msgstr ""
+msgstr "Verbindingen"
 
 #: src/tauon/t_modules/t_main.py:24512
 msgid "Audio"
-msgstr ""
+msgstr "Audio"
 
 #: src/tauon/t_modules/t_main.py:24513
-#, fuzzy
 msgid "Tracklist"
-msgstr "Volgend Nummer"
+msgstr "Nummerlijst"
 
 #: src/tauon/t_modules/t_main.py:24514
 msgid "Theme"
-msgstr ""
+msgstr "Thema"
 
 #: src/tauon/t_modules/t_main.py:24515 src/tauon/t_modules/t_main.py:27304
 msgid "View"
-msgstr ""
+msgstr "Weergave"
 
 #: src/tauon/t_modules/t_main.py:24516
 msgid "Transcode"
-msgstr ""
+msgstr "Transcoderen"
 
 #: src/tauon/t_modules/t_main.py:24517
 msgid "Services"
-msgstr ""
+msgstr "Diensten"
 
 #: src/tauon/t_modules/t_main.py:24518
 msgid "Advanced"
-msgstr ""
+msgstr "Geavanceerd"
 
 #: src/tauon/t_modules/t_main.py:24519
 msgid "Stats"
-msgstr ""
+msgstr "Statistieken"
 
 #: src/tauon/t_modules/t_main.py:24520 src/tauon/t_modules/t_main.py:28266
 msgid "About"
-msgstr ""
+msgstr "Over"
 
 #: src/tauon/t_modules/t_main.py:24660
 msgid "Audio Output Device"
-msgstr ""
+msgstr "Audio-uitvoerapparaat"
 
 #: src/tauon/t_modules/t_main.py:24661
 msgid "Choose where Tauon sends playback."
-msgstr ""
+msgstr "Kies waar Tauon het afspelen naartoe stuurt."
 
 #: src/tauon/t_modules/t_main.py:24678
-#, fuzzy
 msgid "No device selected"
-msgstr "Einde van de afspeellijst"
+msgstr "Geen apparaat geselecteerd"
 
 #: src/tauon/t_modules/t_main.py:24731
 msgid "No output devices detected"
-msgstr ""
+msgstr "Geen uitvoerapparaten gedetecteerd"
 
 #: src/tauon/t_modules/t_main.py:24739
 msgid "Try refreshing audio or restarting Tauon."
-msgstr ""
+msgstr "Probeer audio te vernieuwen of Tauon te herstarten."
 
 #: src/tauon/t_modules/t_main.py:24816
 msgid "Please restart Tauon for this change to take effect"
-msgstr ""
+msgstr "Herstart Tauon om deze wijziging van kracht te laten worden"
 
 #: src/tauon/t_modules/t_main.py:24819
 msgid "Audio stack"
-msgstr ""
+msgstr "Audiostack"
 
 #: src/tauon/t_modules/t_main.py:24824
 msgid "PulseAudio"
-msgstr ""
+msgstr "PulseAudio"
 
 #: src/tauon/t_modules/t_main.py:24832
 msgid "PipeWire"
-msgstr ""
+msgstr "PipeWire"
 
 #: src/tauon/t_modules/t_main.py:24909
 msgid "Component"
-msgstr ""
+msgstr "Component"
 
 #: src/tauon/t_modules/t_main.py:25004
 msgid "Bundled themes are read-only"
-msgstr ""
+msgstr "Meegeleverde thema's zijn alleen-lezen"
 
 #: src/tauon/t_modules/t_main.py:25005
 msgid "Create a new theme first to edit a copy of the active look."
-msgstr ""
+msgstr "Maak eerst een nieuw thema om een kopie van de actieve stijl te bewerken."
 
 #: src/tauon/t_modules/t_main.py:25018 src/tauon/t_modules/t_main.py:25020
 msgid "Custom Theme"
-msgstr ""
+msgstr "Aangepast thema"
 
 #: src/tauon/t_modules/t_main.py:25027 src/tauon/t_modules/t_main.py:25085
 msgid "Could not save theme file"
-msgstr ""
+msgstr "Kon themabestand niet opslaan"
 
 #: src/tauon/t_modules/t_main.py:25037
 msgid "Duplicated theme"
-msgstr ""
+msgstr "Thema gedupliceerd"
 
 #: src/tauon/t_modules/t_main.py:25042
 msgid "Only user themes can be deleted"
-msgstr ""
+msgstr "Alleen gebruikersthema's kunnen worden verwijderd"
 
 #: src/tauon/t_modules/t_main.py:25049
 msgid "Could not delete theme file"
-msgstr ""
+msgstr "Kon themabestand niet verwijderen"
 
 #: src/tauon/t_modules/t_main.py:25059
 msgid "Deleted theme"
-msgstr ""
+msgstr "Thema verwijderd"
 
 #: src/tauon/t_modules/t_main.py:25066
 msgid "Theme title cannot be empty"
-msgstr ""
+msgstr "Thematitel mag niet leeg zijn"
 
 #: src/tauon/t_modules/t_main.py:25073 src/tauon/t_modules/t_main.py:25076
 msgid "A theme with that title already exists"
-msgstr ""
+msgstr "Er bestaat al een thema met die titel"
 
 #: src/tauon/t_modules/t_main.py:25100
 msgid "Saved theme"
-msgstr ""
+msgstr "Thema opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:25220
 msgid "Copied colour"
-msgstr ""
+msgstr "Kleur gekopieerd"
 
 #: src/tauon/t_modules/t_main.py:25227
 msgid "There is no colour in the clipboard"
-msgstr ""
+msgstr "Er staat geen kleur op het klembord"
 
 #: src/tauon/t_modules/t_main.py:25231
 msgid "Pasted colour"
-msgstr ""
+msgstr "Kleur geplakt"
 
 #: src/tauon/t_modules/t_main.py:26076
 msgid "Lyrics lookup"
-msgstr ""
+msgstr "Songteksten opzoeken"
 
 #: src/tauon/t_modules/t_main.py:26077
 msgid "Choose which sources Tauon uses for lyrics."
-msgstr ""
+msgstr "Kies welke bronnen Tauon gebruikt voor songteksten."
 
 #: src/tauon/t_modules/t_main.py:26088
 msgid "Scraping source"
-msgstr ""
+msgstr "Scrapingbron"
 
 #: src/tauon/t_modules/t_main.py:26088
 msgid "API source"
-msgstr ""
+msgstr "API-bron"
 
 #: src/tauon/t_modules/t_main.py:26135
 msgid "Common settings"
-msgstr ""
+msgstr "Algemene instellingen"
 
 #: src/tauon/t_modules/t_main.py:26136
 msgid "Common library and panel settings."
-msgstr ""
+msgstr "Algemene bibliotheek- en paneelinstellingen."
 
 #: src/tauon/t_modules/t_main.py:26144
-#, fuzzy
 msgid "Show artist info panel"
-msgstr "Artiestnaam"
+msgstr "Artiestinfopaneel tonen"
 
 #: src/tauon/t_modules/t_main.py:26145
 msgid "Also available with Ctrl+O."
-msgstr ""
+msgstr "Ook beschikbaar met Ctrl+O."
 
 #: src/tauon/t_modules/t_main.py:26156
-#, fuzzy
 msgid "Auto fetch artist data"
-msgstr "Artiestnaam"
+msgstr "Artiestgegevens automatisch ophalen"
 
 #: src/tauon/t_modules/t_main.py:26157
 msgid "Fetch artist data while the panel is open."
-msgstr ""
+msgstr "Haal artiestgegevens op terwijl het paneel open is."
 
 #: src/tauon/t_modules/t_main.py:26165
-#, fuzzy
 msgid "Auto reload playlists"
-msgstr "Einde van de afspeellijst"
+msgstr "Afspeellijsten automatisch herladen"
 
 #: src/tauon/t_modules/t_main.py:26166
 msgid "Rescan playlists when you return to them."
-msgstr ""
+msgstr "Scan afspeellijsten opnieuw wanneer je ernaar terugkeert."
 
 #: src/tauon/t_modules/t_main.py:26174
 msgid "Tabs in top panel"
-msgstr ""
+msgstr "Tabbladen in bovenpaneel"
 
 #: src/tauon/t_modules/t_main.py:26175
 msgid "Show tabs in the top panel."
-msgstr ""
+msgstr "Toon tabbladen in het bovenpaneel."
 
 #: src/tauon/t_modules/t_main.py:26181
 msgid "Quick access"
-msgstr ""
+msgstr "Snelle toegang"
 
 #: src/tauon/t_modules/t_main.py:26182
 msgid "Open the files and folders Tauon uses."
-msgstr ""
+msgstr "Open de bestanden en mappen die Tauon gebruikt."
 
 #: src/tauon/t_modules/t_main.py:26186
-#, fuzzy
 msgid "Open config file"
-msgstr "Open Map"
+msgstr "Configuratiebestand openen"
 
 #: src/tauon/t_modules/t_main.py:26189
 msgid "Reload edited config"
-msgstr ""
+msgstr "Bewerkte configuratie herladen"
 
 #: src/tauon/t_modules/t_main.py:26191
-#, fuzzy
 msgid "Open data folder"
-msgstr "Open Map"
+msgstr "Gegevensmap openen"
 
 #: src/tauon/t_modules/t_main.py:26193
-#, fuzzy
 msgid "Open keymap file"
-msgstr "Open Map"
+msgstr "Toetsenmapbestand openen"
 
 #: src/tauon/t_modules/t_main.py:26198
-#, fuzzy
 msgid "End of playlist action"
-msgstr "Einde van de afspeellijst"
+msgstr "Actie aan einde van afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:26199
-#, fuzzy
 msgid "What to do when the current playlist ends."
-msgstr "Einde van de afspeellijst"
+msgstr "Wat te doen wanneer de huidige afspeellijst eindigt."
 
 #: src/tauon/t_modules/t_main.py:26206
 msgid "Stop playback"
-msgstr ""
+msgstr "Afspelen stoppen"
 
 #: src/tauon/t_modules/t_main.py:26206
-#, fuzzy
 msgid "Stop when the playlist ends."
-msgstr "Einde van de afspeellijst"
+msgstr "Stoppen wanneer de afspeellijst eindigt."
 
 #: src/tauon/t_modules/t_main.py:26207
-#, fuzzy
 msgid "Repeat playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Afspeellijst herhalen"
 
 #: src/tauon/t_modules/t_main.py:26207
-#, fuzzy
 msgid "Start the same playlist again."
-msgstr "Einde van de afspeellijst"
+msgstr "Dezelfde afspeellijst opnieuw starten."
 
 #: src/tauon/t_modules/t_main.py:26208
-#, fuzzy
 msgid "Play next playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Volgende afspeellijst afspelen"
 
 #: src/tauon/t_modules/t_main.py:26208
-#, fuzzy
 msgid "Move to the next playlist."
-msgstr "Einde van de afspeellijst"
+msgstr "Naar de volgende afspeellijst gaan."
 
 #: src/tauon/t_modules/t_main.py:26209
-#, fuzzy
 msgid "Cycle all playlists"
-msgstr "Einde van de afspeellijst"
+msgstr "Alle afspeellijsten doorlopen"
 
 #: src/tauon/t_modules/t_main.py:26209
 msgid "Keep cycling through playlists."
-msgstr ""
+msgstr "Blijf door afspeellijsten heen lopen."
 
 #: src/tauon/t_modules/t_main.py:26225
 msgid "Session rules"
-msgstr ""
+msgstr "Sessieregels"
 
 #: src/tauon/t_modules/t_main.py:26226
 msgid "Playback behavior for sleep, wake and radio."
-msgstr ""
+msgstr "Afspeelgedrag voor slaapstand, ontwaken en radio."
 
 #: src/tauon/t_modules/t_main.py:26233
 msgid "Block suspend"
-msgstr ""
+msgstr "Slaapstand blokkeren"
 
 #: src/tauon/t_modules/t_main.py:26234
 msgid "Keep the system awake during playback."
-msgstr ""
+msgstr "Houd het systeem wakker tijdens afspelen."
 
 #: src/tauon/t_modules/t_main.py:26241
 msgid "Resume from suspend"
-msgstr ""
+msgstr "Hervatten uit slaapstand"
 
 #: src/tauon/t_modules/t_main.py:26242
 msgid "Resume playback after waking."
-msgstr ""
+msgstr "Afspelen hervatten na ontwaken."
 
 #: src/tauon/t_modules/t_main.py:26251
 msgid "Record radio"
-msgstr ""
+msgstr "Radio opnemen"
 
 #: src/tauon/t_modules/t_main.py:26252
 msgid "Record internet radio and split tracks."
-msgstr ""
+msgstr "Neem internetradio op en splits nummers."
 
 #: src/tauon/t_modules/t_main.py:26257
 msgid ""
 "Tracks will now be recorded. Restart any playback for change to take effect."
-msgstr ""
+msgstr "Nummers worden nu opgenomen. Herstart afspelen om de wijziging van kracht te laten worden."
 
 #: src/tauon/t_modules/t_main.py:26258
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
-msgstr ""
+msgstr "Nummers worden opgeslagen in de afspeellijst \"Opgeslagen radionummers\"."
 
 #: src/tauon/t_modules/t_main.py:26271
 msgid "Recorded tracks are added to \"Saved Radio Tracks\"."
-msgstr ""
+msgstr "Opgenomen nummers worden toegevoegd aan \"Opgeslagen radionummers\"."
 
 #: src/tauon/t_modules/t_main.py:26273
 msgid "Radio capture"
-msgstr ""
+msgstr "Radio-opname"
 
 #: src/tauon/t_modules/t_main.py:26279
 msgid "Track menu extras"
-msgstr ""
+msgstr "Extra's in nummermenu"
 
 #: src/tauon/t_modules/t_main.py:26280
 msgid "Optional items in the track menu."
-msgstr ""
+msgstr "Optionele items in het nummermenu."
 
 #: src/tauon/t_modules/t_main.py:26284
 msgid "Wikipedia artist search"
-msgstr ""
+msgstr "Artiest zoeken op Wikipedia"
 
 #: src/tauon/t_modules/t_main.py:26285
-#, fuzzy
 msgid "Sonemic artist search"
-msgstr "Artiestnaam"
+msgstr "Artiest zoeken op Sonemic"
 
 #: src/tauon/t_modules/t_main.py:26286
 msgid "Bandcamp artist search"
-msgstr ""
+msgstr "Artiest zoeken op Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:26287
 msgid "Genius track search"
-msgstr ""
+msgstr "Nummer zoeken op Genius"
 
 #: src/tauon/t_modules/t_main.py:26294
 msgid "Archive imports"
-msgstr ""
+msgstr "Archiefimport"
 
 #: src/tauon/t_modules/t_main.py:26295
 msgid "How Tauon handles archives and Downloads."
-msgstr ""
+msgstr "Hoe Tauon omgaat met archieven en Downloads."
 
 #: src/tauon/t_modules/t_main.py:26301
 msgid "Extract archives"
-msgstr ""
+msgstr "Archieven uitpakken"
 
 #: src/tauon/t_modules/t_main.py:26302
 msgid "Extract supported archives on drag and drop."
-msgstr ""
+msgstr "Ondersteunde archieven uitpakken bij slepen en neerzetten."
 
 #: src/tauon/t_modules/t_main.py:26310
 msgid "Enable download monitor"
-msgstr ""
+msgstr "Downloadmonitor inschakelen"
 
 #: src/tauon/t_modules/t_main.py:26311
 msgid "Watch Downloads for one-click imports."
-msgstr ""
+msgstr "Downloads bewaken voor import met één klik."
 
 #: src/tauon/t_modules/t_main.py:26319
 msgid "Trash archive after extraction"
-msgstr ""
+msgstr "Archief na uitpakken naar prullenbak"
 
 #: src/tauon/t_modules/t_main.py:26327
 msgid "Always extract to Music folder"
-msgstr ""
+msgstr "Altijd uitpakken naar Muziek-map"
 
 #: src/tauon/t_modules/t_main.py:26337
 msgid "Useful if you often import from archives or Downloads."
-msgstr ""
+msgstr "Nuttig als je vaak importeert uit archieven of Downloads."
 
 #: src/tauon/t_modules/t_main.py:26339
-#, fuzzy
 msgid "Import flow"
-msgstr "Spotify Albums"
+msgstr "Importstroom"
 
 #: src/tauon/t_modules/t_main.py:26345 src/tauon/t_modules/t_main.py:27114
 msgid "Remote, presence and sharing"
-msgstr ""
+msgstr "Afstandsbediening, aanwezigheid en delen"
 
 #: src/tauon/t_modules/t_main.py:26346 src/tauon/t_modules/t_main.py:27115
 msgid "Network and sharing features."
-msgstr ""
+msgstr "Netwerk- en deelfuncties."
 
 #: src/tauon/t_modules/t_main.py:26353 src/tauon/t_modules/t_main.py:27122
 msgid "Enable remote control"
-msgstr ""
+msgstr "Afstandsbediening inschakelen"
 
 #: src/tauon/t_modules/t_main.py:26354 src/tauon/t_modules/t_main.py:26427
 #: src/tauon/t_modules/t_main.py:27123
 msgid "Change requires restart."
-msgstr ""
+msgstr "Wijziging vereist herstart."
 
 #: src/tauon/t_modules/t_main.py:26361 src/tauon/t_modules/t_main.py:27130
 msgid "Notice: This API is not security hardened."
-msgstr ""
+msgstr "Let op: deze API is niet beveiligingsgehard."
 
 #: src/tauon/t_modules/t_main.py:26362 src/tauon/t_modules/t_main.py:27131
 msgid ""
 "Only enable in a trusted LAN and do not expose port (7814) to the internet"
-msgstr ""
+msgstr "Alleen inschakelen in een vertrouwd LAN en poort (7814) niet aan internet blootstellen"
 
 #: src/tauon/t_modules/t_main.py:26368 src/tauon/t_modules/t_main.py:27138
 msgid "Enable Listen Along"
-msgstr ""
+msgstr "Meeluisteren inschakelen"
 
 #: src/tauon/t_modules/t_main.py:26369 src/tauon/t_modules/t_main.py:27139
 msgid "Start the web server for remote playback."
-msgstr ""
+msgstr "Start de webserver voor afspelen op afstand."
 
 #: src/tauon/t_modules/t_main.py:26379 src/tauon/t_modules/t_main.py:27151
 msgid "Open Listen Along page"
-msgstr ""
+msgstr "Meeluisterpagina openen"
 
 #: src/tauon/t_modules/t_main.py:26383 src/tauon/t_modules/t_main.py:27159
 #: src/tauon/t_modules/t_main.py:35696
 msgid "Disabled"
-msgstr ""
+msgstr "Uitgeschakeld"
 
 #: src/tauon/t_modules/t_main.py:26384 src/tauon/t_modules/t_main.py:27160
 msgid "Discord status: {state}"
-msgstr ""
+msgstr "Discord-status: {state}"
 
 #: src/tauon/t_modules/t_main.py:26388 src/tauon/t_modules/t_main.py:27164
 msgid "Enable Discord Rich Presence"
-msgstr ""
+msgstr "Discord Rich Presence inschakelen"
 
 #: src/tauon/t_modules/t_main.py:26400 src/tauon/t_modules/t_main.py:27171
 msgid "Sorry, this feature is unavailable with snap"
-msgstr ""
+msgstr "Sorry, deze functie is niet beschikbaar met snap"
 
 #: src/tauon/t_modules/t_main.py:26403 src/tauon/t_modules/t_main.py:27174
 msgid "Missing dependency python-pypresence"
-msgstr ""
+msgstr "Ontbrekende afhankelijkheid python-pypresence"
 
 #: src/tauon/t_modules/t_main.py:26419
 msgid "Exports and input"
-msgstr ""
+msgstr "Export en invoer"
 
 #: src/tauon/t_modules/t_main.py:26420
-#, fuzzy
 msgid "Playlist export and input settings."
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Instellingen voor afspeellijstexport en invoer."
 
 #: src/tauon/t_modules/t_main.py:26426
 msgid "Enable gamepad input"
-msgstr ""
+msgstr "Gamepad-invoer inschakelen"
 
 #: src/tauon/t_modules/t_main.py:26432
-#, fuzzy
 msgid "Default playlist export folder"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Standaardmap voor afspeellijstexport"
 
 #: src/tauon/t_modules/t_main.py:26453
 msgid "Folder must exist before auto-import can use it."
-msgstr ""
+msgstr "Map moet bestaan voordat automatisch importeren deze kan gebruiken."
 
 #: src/tauon/t_modules/t_main.py:26455
 msgid "Leave blank to export beside the playlist, or set a folder here."
-msgstr ""
+msgstr "Laat leeg om naast de afspeellijst te exporteren, of stel hier een map in."
 
 #: src/tauon/t_modules/t_main.py:26464
-#, fuzzy
 msgid "Auto-import playlists from this folder"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijsten automatisch uit deze map importeren"
 
 #: src/tauon/t_modules/t_main.py:26465
-#, fuzzy
 msgid "Runs during \"Rescan All Folders\" only."
-msgstr "Open Map"
+msgstr "Wordt alleen uitgevoerd tijdens \"Alle mappen opnieuw scannen\"."
 
 #: src/tauon/t_modules/t_main.py:26471
 msgid "Editing and diagnostics"
-msgstr ""
+msgstr "Bewerken en diagnose"
 
 #: src/tauon/t_modules/t_main.py:26472
-#, fuzzy
 msgid "Lyrics writeback and debug settings."
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Instellingen voor songteksten terugschrijven en debuggen."
 
 #: src/tauon/t_modules/t_main.py:26478
 msgid "Save Synced to .lrc"
-msgstr ""
+msgstr "Gesynchroniseerd opslaan naar .lrc"
 
 #: src/tauon/t_modules/t_main.py:26486
 msgid "Save lyrics edits to tags"
-msgstr ""
+msgstr "Bewerkingen aan songteksten opslaan naar tags"
 
 #: src/tauon/t_modules/t_main.py:26497
 msgid "Enable debug mode"
-msgstr ""
+msgstr "Debugmodus inschakelen"
 
 #: src/tauon/t_modules/t_main.py:26628
 msgid "This will mark all tracks in local database as unloved!"
-msgstr ""
+msgstr "Dit markeert alle nummers in de lokale database als niet geliefd!"
 
 #: src/tauon/t_modules/t_main.py:26638
 msgid "Cleared all loves"
-msgstr ""
+msgstr "Alle loves gewist"
 
 #: src/tauon/t_modules/t_main.py:26644
-#, fuzzy
 msgid "Error, not connected to last.fm"
-msgstr "Spotify account verbonden"
+msgstr "Fout, niet verbonden met Last.fm"
 
 #: src/tauon/t_modules/t_main.py:26647
 msgid "Warning: This process will take approximately {T} minutes to complete."
-msgstr ""
+msgstr "Waarschuwing: dit proces duurt ongeveer {T} minuten om te voltooien."
 
 #: src/tauon/t_modules/t_main.py:26648 src/tauon/t_modules/t_main.py:26669
 msgid "Press again while holding Shift if you understand"
-msgstr ""
+msgstr "Druk opnieuw terwijl je Shift ingedrukt houdt als je het begrijpt"
 
 #: src/tauon/t_modules/t_main.py:26656 src/tauon/t_modules/t_main.py:26678
 #: src/tauon/t_modules/t_main.py:26686
 msgid "A process is already running. Wait for it to finish."
-msgstr ""
+msgstr "Er draait al een proces. Wacht tot het klaar is."
 
 #: src/tauon/t_modules/t_main.py:26662
 msgid "Cleared all scrobble counts"
-msgstr ""
+msgstr "Alle scrobble-aantallen gewist"
 
 #: src/tauon/t_modules/t_main.py:26667
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
-msgstr ""
+msgstr "Waarschuwing: dit proces kan lang duren! (tot een uur of meer)"
 
 #: src/tauon/t_modules/t_main.py:26668
 msgid "This feature is not recommended for accounts that have many friends."
-msgstr ""
+msgstr "Deze functie wordt niet aanbevolen voor accounts met veel vrienden."
 
 #: src/tauon/t_modules/t_main.py:26735
 msgid "Be patient!"
-msgstr ""
+msgstr "Heb geduld!"
 
 #: src/tauon/t_modules/t_main.py:26737
 msgid "No font set in config"
-msgstr ""
+msgstr "Geen lettertype ingesteld in configuratie"
 
 #: src/tauon/t_modules/t_main.py:26746
 msgid "Grid generator"
-msgstr ""
+msgstr "Rastergenerator"
 
 #: src/tauon/t_modules/t_main.py:26747
-#, fuzzy
 msgid "Build an album grid from the current playlist."
-msgstr "Einde van de afspeellijst"
+msgstr "Maak een albumraster van de huidige afspeellijst."
 
 #: src/tauon/t_modules/t_main.py:26769
-#, fuzzy
 msgid "Target playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Doelafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:26780 src/tauon/t_modules/t_main.py:36391
 #: src/tauon/t_modules/t_main.py:36530
-#, fuzzy
 msgid "{N} albums"
-msgstr "Spotify Albums"
+msgstr "{N} albums"
 
 #: src/tauon/t_modules/t_main.py:26796
 msgid "Grid"
-msgstr ""
+msgstr "Raster"
 
 #: src/tauon/t_modules/t_main.py:26797
 msgid "Rows and columns"
-msgstr ""
+msgstr "Rijen en kolommen"
 
 #: src/tauon/t_modules/t_main.py:26805
 msgid "Cascade"
-msgstr ""
+msgstr "Cascade"
 
 #: src/tauon/t_modules/t_main.py:26806
 msgid "Stacked groups"
-msgstr ""
+msgstr "Gestapelde groepen"
 
 #: src/tauon/t_modules/t_main.py:26817
 msgid "Level 1"
-msgstr ""
+msgstr "Niveau 1"
 
 #: src/tauon/t_modules/t_main.py:26818
 msgid "Level 2"
-msgstr ""
+msgstr "Niveau 2"
 
 #: src/tauon/t_modules/t_main.py:26819
 msgid "Level 3"
-msgstr ""
+msgstr "Niveau 3"
 
 #: src/tauon/t_modules/t_main.py:26826
 msgid "By"
-msgstr ""
+msgstr "Op"
 
 #: src/tauon/t_modules/t_main.py:26830
 msgid "Rows"
-msgstr ""
+msgstr "Rijen"
 
 #: src/tauon/t_modules/t_main.py:26832
 msgid "Columns"
-msgstr ""
+msgstr "Kolommen"
 
 #: src/tauon/t_modules/t_main.py:26839 src/tauon/t_modules/t_main.py:27447
 msgid "Background"
-msgstr ""
+msgstr "Achtergrond"
 
 #: src/tauon/t_modules/t_main.py:26852
 msgid "Randomize"
-msgstr ""
+msgstr "Willekeurig maken"
 
 #: src/tauon/t_modules/t_main.py:26856
 msgid "Use padding"
-msgstr ""
+msgstr "Opvulling gebruiken"
 
 #: src/tauon/t_modules/t_main.py:26861
 msgid "Include album titles"
-msgstr ""
+msgstr "Albumtitels opnemen"
 
 #: src/tauon/t_modules/t_main.py:26863
 msgid "Sort by top played"
-msgstr ""
+msgstr "Sorteren op meest afgespeeld"
 
 #: src/tauon/t_modules/t_main.py:26870
 msgid "Return"
-msgstr ""
+msgstr "Terug"
 
 #: src/tauon/t_modules/t_main.py:26874
 msgid "Generate"
-msgstr ""
+msgstr "Genereren"
 
 #: src/tauon/t_modules/t_main.py:26883
 msgid "Generating..."
-msgstr ""
+msgstr "Genereren..."
 
 #: src/tauon/t_modules/t_main.py:26884
 msgid "Please wait."
-msgstr ""
+msgstr "Even geduld."
 
 #: src/tauon/t_modules/t_main.py:26888
-#, fuzzy
 msgid "{N} Album chart"
-msgstr "Albumtitel"
+msgstr "{N} albumgrafiek"
 
 #: src/tauon/t_modules/t_main.py:26896
 msgid "Not enough albums in the playlist!"
-msgstr ""
+msgstr "Niet genoeg albums in de afspeellijst!"
 
 #: src/tauon/t_modules/t_main.py:26904
 msgid "Ready"
-msgstr ""
+msgstr "Klaar"
 
 #: src/tauon/t_modules/t_main.py:26928
 msgid "Tracklist items"
-msgstr ""
+msgstr "Nummerlijstitems"
 
 #: src/tauon/t_modules/t_main.py:26933
 msgid "Loves"
-msgstr ""
+msgstr "Loves"
 
 #: src/tauon/t_modules/t_main.py:26934
-#, fuzzy
 msgid "Track ratings"
-msgstr "Volgend Nummer"
+msgstr "Nummerbeoordelingen"
 
 #: src/tauon/t_modules/t_main.py:26937
-#, fuzzy
 msgid "Album ratings"
-msgstr "Albumtitel"
+msgstr "Albumbeoordelingen"
 
 #: src/tauon/t_modules/t_main.py:26938
 msgid "Star hints"
-msgstr ""
+msgstr "Sterhints"
 
 #: src/tauon/t_modules/t_main.py:26941
 msgid "Playcount lines"
-msgstr ""
+msgstr "Regels met afspeeltelling"
 
 #: src/tauon/t_modules/t_main.py:26943
 msgid "Left align"
-msgstr ""
+msgstr "Links uitlijnen"
 
 #: src/tauon/t_modules/t_main.py:26956
 msgid "Year"
-msgstr ""
+msgstr "Jaar"
 
 #: src/tauon/t_modules/t_main.py:26963
 msgid "Sizing"
-msgstr ""
+msgstr "Formaat"
 
 #: src/tauon/t_modules/t_main.py:26971
 msgid "Font size"
-msgstr ""
+msgstr "Lettergrootte"
 
 #: src/tauon/t_modules/t_main.py:26980
 msgid "Row height"
-msgstr ""
+msgstr "Rijhoogte"
 
 #: src/tauon/t_modules/t_main.py:26990
 msgid "Text baseline"
-msgstr ""
+msgstr "Tekstbasislijn"
 
 #: src/tauon/t_modules/t_main.py:27011
 msgid "Thin default"
-msgstr ""
+msgstr "Dunne standaard"
 
 #: src/tauon/t_modules/t_main.py:27012
 msgid "Thick default"
-msgstr ""
+msgstr "Dikke standaard"
 
 #: src/tauon/t_modules/t_main.py:27193
 msgid "Discord"
-msgstr ""
+msgstr "Discord"
 
 #: src/tauon/t_modules/t_main.py:27194
 msgid "Layout, buttons and idle behavior."
-msgstr ""
+msgstr "Lay-out, knoppen en inactief gedrag."
 
 #: src/tauon/t_modules/t_main.py:27209
 msgid "Card order"
-msgstr ""
+msgstr "Kaartvolgorde"
 
 #: src/tauon/t_modules/t_main.py:27213
 msgid "Song first"
-msgstr ""
+msgstr "Nummer eerst"
 
 #: src/tauon/t_modules/t_main.py:27221
-#, fuzzy
 msgid "Artist first"
-msgstr "Artiestlijst"
+msgstr "Artiest eerst"
 
 #: src/tauon/t_modules/t_main.py:27229
 msgid "Member list shows:"
-msgstr ""
+msgstr "Ledenlijst toont:"
 
 #: src/tauon/t_modules/t_main.py:27233
 msgid "Song"
-msgstr ""
+msgstr "Nummer"
 
 #: src/tauon/t_modules/t_main.py:27248 src/tauon/t_modules/t_main.py:28155
 #: src/tauon/t_modules/t_main.py:28215 src/tauon/t_modules/t_main.py:28406
 msgid "Options"
-msgstr ""
+msgstr "Opties"
 
 #: src/tauon/t_modules/t_main.py:27253
 msgid "Clean title (Removes .feat etc)"
-msgstr ""
+msgstr "Titel opschonen (verwijdert .feat enz.)"
 
 #: src/tauon/t_modules/t_main.py:27260
 msgid "Last.fm link button"
-msgstr ""
+msgstr "Last.fm-linkknop"
 
 #: src/tauon/t_modules/t_main.py:27267
 msgid "Tauon website button"
-msgstr ""
+msgstr "Tauon-websiteknop"
 
 #: src/tauon/t_modules/t_main.py:27274
 msgid "Keep idle"
-msgstr ""
+msgstr "Inactief houden"
 
 #: src/tauon/t_modules/t_main.py:27305
 msgid "Scroll feel and side panel layout."
-msgstr ""
+msgstr "Scrollgevoel en lay-out van zijpaneel."
 
 #: src/tauon/t_modules/t_main.py:27311
 msgid "Smooth scrolling"
-msgstr ""
+msgstr "Vloeiend scrollen"
 
 #: src/tauon/t_modules/t_main.py:27312
 msgid "Trackpad scrolling stays smooth either way."
-msgstr ""
+msgstr "Trackpadscrollen blijft hoe dan ook vloeiend."
 
 #: src/tauon/t_modules/t_main.py:27319
 msgid "Centered metadata side panel"
-msgstr ""
+msgstr "Gecentreerd metadatapaneel aan de zijkant"
 
 #: src/tauon/t_modules/t_main.py:27326
 msgid "Metadata panel on left"
-msgstr ""
+msgstr "Metadatapaneel links"
 
 #: src/tauon/t_modules/t_main.py:27334
 msgid "Zoom album art to fit"
-msgstr ""
+msgstr "Albumhoes zoomen zodat die past"
 
 #: src/tauon/t_modules/t_main.py:27343
 msgid "MilkDrop visualiser"
-msgstr ""
+msgstr "MilkDrop-visualizer"
 
 #: src/tauon/t_modules/t_main.py:27353
 msgid "Showcase visualisation"
-msgstr ""
+msgstr "Showcase-visualisatie"
 
 #: src/tauon/t_modules/t_main.py:27359 src/tauon/t_modules/t_main.py:40609
 #: src/tauon/t_modules/t_main.py:40612
 msgid "Gallery"
-msgstr ""
+msgstr "Galerij"
 
 #: src/tauon/t_modules/t_main.py:27360
 msgid "Browsing and thumbnail layout."
-msgstr ""
+msgstr "Bladeren en miniatuurweergave."
 
 #: src/tauon/t_modules/t_main.py:27366
 msgid "Single click to play"
-msgstr ""
+msgstr "Eén klik om af te spelen"
 
 #: src/tauon/t_modules/t_main.py:27373
 msgid "Scroll gallery by row"
-msgstr ""
+msgstr "Galerij per rij scrollen"
 
 #: src/tauon/t_modules/t_main.py:27380
 msgid "Combine multi-discs"
-msgstr ""
+msgstr "Meerdere schijven combineren"
 
 #: src/tauon/t_modules/t_main.py:27387
 msgid "Show titles"
-msgstr ""
+msgstr "Titels tonen"
 
 #: src/tauon/t_modules/t_main.py:27394
 msgid "Center title text"
-msgstr ""
+msgstr "Titeltekst centreren"
 
 #: src/tauon/t_modules/t_main.py:27400
 msgid "Thumbnail size"
-msgstr ""
+msgstr "Miniatuurgrootte"
 
 #: src/tauon/t_modules/t_main.py:27414
 msgid "Prefer thinner padding"
-msgstr ""
+msgstr "Dunnere opvulling gebruiken"
 
 #: src/tauon/t_modules/t_main.py:27448
 msgid "Artwork and automatic theme changes."
-msgstr ""
+msgstr "Artwork en automatische themawijzigingen."
 
 #: src/tauon/t_modules/t_main.py:27451
 msgid "Use album art as background"
-msgstr ""
+msgstr "Albumhoes als achtergrond gebruiken"
 
 #: src/tauon/t_modules/t_main.py:27454
 msgid "Prefer artist backgrounds"
-msgstr ""
+msgstr "Artiestachtergronden verkiezen"
 
 #: src/tauon/t_modules/t_main.py:27458
 msgid "Also enabling 'auto-fetch artist data' to scrape last.fm."
-msgstr ""
+msgstr "Schakelt ook 'artiestgegevens automatisch ophalen' in om Last.fm te scrapen."
 
 #: src/tauon/t_modules/t_main.py:27459
 msgid "You can toggle this back off under Settings > General"
-msgstr ""
+msgstr "Je kunt dit weer uitzetten onder Instellingen > Algemeen"
 
 #: src/tauon/t_modules/t_main.py:27462
 msgid "Stronger background"
-msgstr ""
+msgstr "Sterkere achtergrond"
 
 #: src/tauon/t_modules/t_main.py:27464
 msgid "Blur background"
-msgstr ""
+msgstr "Achtergrond vervagen"
 
 #: src/tauon/t_modules/t_main.py:27466
 msgid "Auto-theme from album art"
-msgstr ""
+msgstr "Automatisch thema uit albumhoes"
 
 #: src/tauon/t_modules/t_main.py:27470
 msgid "Theme preset"
-msgstr ""
+msgstr "Themapreset"
 
 #: src/tauon/t_modules/t_main.py:27567
 msgid "Edit"
-msgstr ""
+msgstr "Bewerken"
 
 #: src/tauon/t_modules/t_main.py:27574 src/tauon/t_modules/t_main.py:47687
 #: src/tauon/t_modules/t_main.py:47689 src/tauon/t_modules/t_main.py:53031
 msgid "Delete"
-msgstr ""
+msgstr "Verwijderen"
 
 #: src/tauon/t_modules/t_main.py:27576
 msgid "Transparent accent"
-msgstr ""
+msgstr "Transparant accent"
 
 #: src/tauon/t_modules/t_main.py:27595
 msgid "Window"
-msgstr ""
+msgstr "Venster"
 
 #: src/tauon/t_modules/t_main.py:27596
 msgid "Notifications and on-screen controls."
-msgstr ""
+msgstr "Meldingen en bediening op het scherm."
 
 #: src/tauon/t_modules/t_main.py:27599
 msgid "Emit track change notifications"
-msgstr ""
+msgstr "Meldingen bij nummerwisseling verzenden"
 
 #: src/tauon/t_modules/t_main.py:27601
 msgid "Draw own window decorations"
-msgstr ""
+msgstr "Eigen vensterdecoraties tekenen"
 
 #: src/tauon/t_modules/t_main.py:27604
 msgid "Show playing in titlebar"
-msgstr ""
+msgstr "Afspelend nummer in titelbalk tonen"
 
 #: src/tauon/t_modules/t_main.py:27607
 msgid "Mini-mode always on top"
-msgstr ""
+msgstr "Minimodus altijd bovenaan"
 
 #: src/tauon/t_modules/t_main.py:27609
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr ""
+msgstr "Altijd-bovenaan is nog niet geïmplementeerd voor Wayland-modus"
 
 #: src/tauon/t_modules/t_main.py:27611
 msgid "Top-panel visualiser"
-msgstr ""
+msgstr "Visualisatie in bovenpaneel"
 
 #: src/tauon/t_modules/t_main.py:27615
 msgid "Tray and scale"
-msgstr ""
+msgstr "Systeemvak en schaal"
 
 #: src/tauon/t_modules/t_main.py:27616
 msgid "System tray and interface scaling."
-msgstr ""
+msgstr "Systeemvak en interfaceschaling."
 
 #: src/tauon/t_modules/t_main.py:27620
 msgid "Show icon in system tray"
-msgstr ""
+msgstr "Pictogram in systeemvak tonen"
 
 #: src/tauon/t_modules/t_main.py:27622 src/tauon/t_modules/t_main.py:27634
 msgid "Close to tray"
-msgstr ""
+msgstr "Sluiten naar systeemvak"
 
 #: src/tauon/t_modules/t_main.py:27624
 msgid "Show title text"
-msgstr ""
+msgstr "Titeltekst tonen"
 
 #: src/tauon/t_modules/t_main.py:27627
 msgid "Monochrome tray icon"
-msgstr ""
+msgstr "Monochroom systeemvakpictogram"
 
 #: src/tauon/t_modules/t_main.py:27631
 msgid "Restart Tauon for change to take effect"
-msgstr ""
+msgstr "Herstart Tauon om de wijziging van kracht te laten worden"
 
 #: src/tauon/t_modules/t_main.py:27660
 msgid "Interface scale"
-msgstr ""
+msgstr "Interfaceschaal"
 
 #: src/tauon/t_modules/t_main.py:27667
 msgid "auto"
-msgstr ""
+msgstr "automatisch"
 
 #: src/tauon/t_modules/t_main.py:27679
 msgid "Auto scale"
-msgstr ""
+msgstr "Automatische schaal"
 
 #: src/tauon/t_modules/t_main.py:27691
 msgid "Audio controls are only available with the PHAzOR backend."
-msgstr ""
+msgstr "Audiobediening is alleen beschikbaar met de PHAzOR-backend."
 
 #: src/tauon/t_modules/t_main.py:27693
 msgid "Playback backend"
-msgstr ""
+msgstr "Afspeelbackend"
 
 #: src/tauon/t_modules/t_main.py:27711
 msgid "Playback and cache"
-msgstr ""
+msgstr "Afspelen en cache"
 
 #: src/tauon/t_modules/t_main.py:27712
 msgid "Playback behaviour and local file caching."
-msgstr ""
+msgstr "Afspeelgedrag en lokale bestandscache."
 
 #: src/tauon/t_modules/t_main.py:27715
 msgid "Fade on pause and stop"
-msgstr ""
+msgstr "Faden bij pauzeren en stoppen"
 
 #: src/tauon/t_modules/t_main.py:27717
 msgid "Fade on track jump"
-msgstr ""
+msgstr "Faden bij nummersprong"
 
 #: src/tauon/t_modules/t_main.py:27719
 msgid "Back restarts to beginning"
-msgstr ""
+msgstr "Terug start opnieuw vanaf begin"
 
 #: src/tauon/t_modules/t_main.py:27721
 msgid "Cache local files"
-msgstr ""
+msgstr "Lokale bestanden cachen"
 
 #: src/tauon/t_modules/t_main.py:27724
 msgid "Use persistent network cache"
-msgstr ""
+msgstr "Blijvende netwerkcache gebruiken"
 
 #: src/tauon/t_modules/t_main.py:27730
 msgid "Cache size"
-msgstr ""
+msgstr "Cachegrootte"
 
 #: src/tauon/t_modules/t_main.py:27742
 msgid "Avoid resampling"
-msgstr ""
+msgstr "Resampling vermijden"
 
 #: src/tauon/t_modules/t_main.py:27755
-#, fuzzy
 msgid "ReplayGain"
-msgstr "Herhaal Nummer"
+msgstr "ReplayGain"
 
 #: src/tauon/t_modules/t_main.py:27756
 msgid "Playback loudness matching."
-msgstr ""
+msgstr "Afstemming van afspeelluidheid."
 
 #: src/tauon/t_modules/t_main.py:27763
-#, fuzzy
 msgid "Ignore ReplayGain tags."
-msgstr "Herhaal Nummer"
+msgstr "ReplayGain-tags negeren."
 
 #: src/tauon/t_modules/t_main.py:27763 src/tauon/t_modules/t_main.py:48000
 msgid "Off"
-msgstr ""
+msgstr "Uit"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Auto"
-msgstr ""
+msgstr "Auto"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Use the best tag available."
-msgstr ""
+msgstr "Gebruik de beste beschikbare tag."
 
 #: src/tauon/t_modules/t_main.py:27765
 msgid "Preserve album dynamics."
-msgstr ""
+msgstr "Albumdynamiek behouden."
 
 #: src/tauon/t_modules/t_main.py:27766
 msgid "Match track loudness."
-msgstr ""
+msgstr "Nummers op gelijke luidheid brengen."
 
 #: src/tauon/t_modules/t_main.py:27766 src/tauon/t_modules/t_main.py:28893
 #: src/tauon/t_modules/t_main.py:28908
-#, fuzzy
 msgid "Tracks"
-msgstr "Volgend Nummer"
+msgstr "Nummers"
 
 #: src/tauon/t_modules/t_main.py:27782
 msgid "Pre-amp"
-msgstr ""
+msgstr "Voorversterking"
 
 #: src/tauon/t_modules/t_main.py:27792
 msgid "Equalizer"
-msgstr ""
+msgstr "Equalizer"
 
 #: src/tauon/t_modules/t_main.py:27793
 msgid "Ten-band playback EQ."
-msgstr ""
+msgstr "Tienbands afspeel-EQ."
 
 #: src/tauon/t_modules/t_main.py:27808
 msgid "Enable EQ"
-msgstr ""
+msgstr "EQ inschakelen"
 
 #: src/tauon/t_modules/t_main.py:27811
 msgid "Reset"
-msgstr ""
+msgstr "Resetten"
 
 #: src/tauon/t_modules/t_main.py:27894
 msgid "Encoding"
-msgstr ""
+msgstr "Codering"
 
 #: src/tauon/t_modules/t_main.py:27895
 msgid "Select default codec and bitrate."
-msgstr ""
+msgstr "Selecteer standaardcodec en bitrate."
 
 #: src/tauon/t_modules/t_main.py:27896
 msgid "Files"
-msgstr ""
+msgstr "Bestanden"
 
 #: src/tauon/t_modules/t_main.py:27897
 msgid "Output location and overwrite rules."
-msgstr ""
+msgstr "Uitvoerlocatie en overschrijfregels."
 
 #: src/tauon/t_modules/t_main.py:27910
 msgid "Lossless output."
-msgstr ""
+msgstr "Verliesvrije uitvoer."
 
 #: src/tauon/t_modules/t_main.py:27911
 msgid "Small files, good quality."
-msgstr ""
+msgstr "Kleine bestanden, goede kwaliteit."
 
 #: src/tauon/t_modules/t_main.py:27912
 msgid "Compatible lossy output."
-msgstr ""
+msgstr "Compatibele verliesgevende uitvoer."
 
 #: src/tauon/t_modules/t_main.py:27913
 msgid "Universal compatibility."
-msgstr ""
+msgstr "Universele compatibiliteit."
 
 #: src/tauon/t_modules/t_main.py:27928
-#, fuzzy
 msgid "Save opus as .ogg"
-msgstr "Sla opus op als .ogg extensie"
+msgstr "opus opslaan als .ogg"
 
 #: src/tauon/t_modules/t_main.py:27945
-#, fuzzy
 msgid "Open output folder"
-msgstr "Open Map"
+msgstr "Uitvoermap openen"
 
 #: src/tauon/t_modules/t_main.py:27947
 msgid "Save to output folder"
-msgstr ""
+msgstr "Opslaan naar uitvoermap"
 
 #: src/tauon/t_modules/t_main.py:27949
-#, fuzzy
 msgid "Save and overwrite files in place"
-msgstr "Sla op en overschrijf bestanden"
+msgstr "Bestanden ter plekke opslaan en overschrijven"
 
 #: src/tauon/t_modules/t_main.py:27955
 msgid "Sync to device"
-msgstr ""
+msgstr "Synchroniseren naar apparaat"
 
 #: src/tauon/t_modules/t_main.py:27956
 msgid "Transcode and copy a selected playlist."
-msgstr ""
+msgstr "Transcodeer en kopieer een geselecteerde afspeellijst."
 
 #: src/tauon/t_modules/t_main.py:27964
-#, fuzzy
 msgid "No sync playlist selected"
-msgstr "Einde van de afspeellijst"
+msgstr "Geen synchronisatieafspeellijst geselecteerd"
 
 #: src/tauon/t_modules/t_main.py:27967
-#, fuzzy
 msgid "Source Playlist"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Bronafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:27970
 msgid "Target folder"
-msgstr ""
+msgstr "Doelmap"
 
 #: src/tauon/t_modules/t_main.py:27990
 msgid "A mounted music folder was found!"
-msgstr ""
+msgstr "Er is een aangekoppelde muziekmap gevonden!"
 
 #: src/tauon/t_modules/t_main.py:27992
 msgid "Could not auto-detect mounted device path."
-msgstr ""
+msgstr "Kon aangekoppeld apparaatpad niet automatisch detecteren."
 
 #: src/tauon/t_modules/t_main.py:27992
 msgid "Make sure the device is mounted and path is accessible."
-msgstr ""
+msgstr "Zorg dat het apparaat is aangekoppeld en het pad toegankelijk is."
 
 #: src/tauon/t_modules/t_main.py:27995
 msgid "Delete other folders in target"
-msgstr ""
+msgstr "Andere mappen in doel verwijderen"
 
 #: src/tauon/t_modules/t_main.py:27997
 msgid "Transcode files"
-msgstr ""
+msgstr "Bestanden transcoderen"
 
 #: src/tauon/t_modules/t_main.py:27999
 msgid "Bypass low bitrate"
-msgstr ""
+msgstr "Lage bitrate overslaan"
 
 #: src/tauon/t_modules/t_main.py:28001
 msgid "Start Sync"
-msgstr ""
+msgstr "Synchronisatie starten"
 
 #: src/tauon/t_modules/t_main.py:28001
 msgid "Start Transcode and Sync"
-msgstr ""
+msgstr "Transcoderen en synchroniseren starten"
 
 #: src/tauon/t_modules/t_main.py:28003
 msgid "Stopping..."
@@ -3450,1721 +3332,1641 @@ msgstr "Stoppen..."
 
 #: src/tauon/t_modules/t_main.py:28005
 msgid "Stop"
-msgstr ""
+msgstr "Stoppen"
 
 #: src/tauon/t_modules/t_main.py:28013
-#, fuzzy
 msgid "Select a source playlist"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Selecteer een bronafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:28013
 msgid "Right click tab > Misc... > Set as sync playlist"
-msgstr ""
+msgstr "Rechtsklik op tabblad > Diversen... > Instellen als synchronisatieafspeellijst"
 
 #: src/tauon/t_modules/t_main.py:28020
 msgid "Scrobbles and loves."
-msgstr ""
+msgstr "Scrobbles en loves."
 
 #: src/tauon/t_modules/t_main.py:28021 src/tauon/t_modules/t_main.py:28188
 msgid "Token-based scrobbling."
-msgstr ""
+msgstr "Scrobblen op basis van token."
 
 #: src/tauon/t_modules/t_main.py:28022
 msgid "Self-hosted scrobbling."
-msgstr ""
+msgstr "Zelf gehost scrobblen."
 
 #: src/tauon/t_modules/t_main.py:28025 src/tauon/t_modules/t_main.py:28028
 msgid "Network library."
-msgstr ""
+msgstr "Netwerkbibliotheek."
 
 #: src/tauon/t_modules/t_main.py:28026
 msgid "Albums and tracks."
-msgstr ""
+msgstr "Albums en nummers."
 
 #: src/tauon/t_modules/t_main.py:28027
 msgid "Subsonic library."
-msgstr ""
+msgstr "Subsonic-bibliotheek."
 
 #: src/tauon/t_modules/t_main.py:28029
 msgid "Tauon-to-Tauon sync."
-msgstr ""
+msgstr "Tauon-naar-Tauon-synchronisatie."
 
 #: src/tauon/t_modules/t_main.py:28033
 msgid "Artwork sources."
-msgstr ""
+msgstr "Artworkbronnen."
 
 #: src/tauon/t_modules/t_main.py:28059
-#, fuzzy
 msgid "Account not connected."
-msgstr "Spotify account verbonden"
+msgstr "Account niet verbonden."
 
 #: src/tauon/t_modules/t_main.py:28072
 msgid "Scrobble playback and sync loves."
-msgstr ""
+msgstr "Scrobble afspelen en synchroniseer loves."
 
 #: src/tauon/t_modules/t_main.py:28078 src/tauon/t_modules/t_main.py:28195
 #: src/tauon/t_modules/t_main.py:28468
 msgid "Enable scrobbling"
-msgstr ""
+msgstr "Scrobblen inschakelen"
 
 #: src/tauon/t_modules/t_main.py:28087 src/tauon/t_modules/t_main.py:28723
 msgid "Login"
-msgstr ""
+msgstr "Inloggen"
 
 #: src/tauon/t_modules/t_main.py:28088
 msgid "Done"
-msgstr ""
+msgstr "Klaar"
 
 #: src/tauon/t_modules/t_main.py:28097
 msgid "Use LibreFM"
-msgstr ""
+msgstr "LibreFM gebruiken"
 
 #: src/tauon/t_modules/t_main.py:28101
 msgid "Use Login, finish the browser step, then click Done."
-msgstr ""
+msgstr "Gebruik Inloggen, voltooi de browserstap en klik daarna op Klaar."
 
 #: src/tauon/t_modules/t_main.py:28103
 msgid "Finish authorisation in the browser, then click Done."
-msgstr ""
+msgstr "Voltooi de autorisatie in de browser en klik daarna op Klaar."
 
 #: src/tauon/t_modules/t_main.py:28104
 msgid "Authorisation"
-msgstr ""
+msgstr "Autorisatie"
 
 #: src/tauon/t_modules/t_main.py:28109
 msgid "Forget account"
-msgstr ""
+msgstr "Account vergeten"
 
 #: src/tauon/t_modules/t_main.py:28114
 msgid "Signed in as"
-msgstr ""
+msgstr "Ingelogd als"
 
 #: src/tauon/t_modules/t_main.py:28120
 msgid "Library sync"
-msgstr ""
+msgstr "Bibliotheeksynchronisatie"
 
 #: src/tauon/t_modules/t_main.py:28121
 msgid "Pull loves and scrobble counts into Tauon."
-msgstr ""
+msgstr "Haal loves en scrobble-aantallen naar Tauon."
 
 #: src/tauon/t_modules/t_main.py:28127
 msgid "Get user loves"
-msgstr ""
+msgstr "Gebruikersloves ophalen"
 
 #: src/tauon/t_modules/t_main.py:28128
 msgid "Clear local loves"
-msgstr ""
+msgstr "Lokale loves wissen"
 
 #: src/tauon/t_modules/t_main.py:28136
 msgid "Get friend loves"
-msgstr ""
+msgstr "Vriendloves ophalen"
 
 #: src/tauon/t_modules/t_main.py:28137
 msgid "Clear friend loves"
-msgstr ""
+msgstr "Vriendloves wissen"
 
 #: src/tauon/t_modules/t_main.py:28145 src/tauon/t_modules/t_main.py:28525
 msgid "Get scrobble counts"
-msgstr ""
+msgstr "Scrobble-aantallen ophalen"
 
 #: src/tauon/t_modules/t_main.py:28146 src/tauon/t_modules/t_main.py:28526
 msgid "Clear counts"
-msgstr ""
+msgstr "Aantallen wissen"
 
 #: src/tauon/t_modules/t_main.py:28156
 msgid "Controls for import and playback display."
-msgstr ""
+msgstr "Bediening voor import en afspeelweergave."
 
 #: src/tauon/t_modules/t_main.py:28163
 msgid "Pull love on scrobble/rescan"
-msgstr ""
+msgstr "Love ophalen bij scrobble/opnieuw scannen"
 
 #: src/tauon/t_modules/t_main.py:28167
 msgid "This will overwrite local love state when it differs from last.fm."
-msgstr ""
+msgstr "Dit overschrijft de lokale love-status wanneer die afwijkt van Last.fm."
 
 #: src/tauon/t_modules/t_main.py:28172 src/tauon/t_modules/t_main.py:28230
 #: src/tauon/t_modules/t_main.py:28476
 msgid "Show threshold marker"
-msgstr ""
+msgstr "Drempelmarkering tonen"
 
 #: src/tauon/t_modules/t_main.py:28191
 msgid "Token saved."
-msgstr ""
+msgstr "Token opgeslagen."
 
 #: src/tauon/t_modules/t_main.py:28191
 msgid "Paste a token to enable ListenBrainz."
-msgstr ""
+msgstr "Plak een token om ListenBrainz in te schakelen."
 
 #: src/tauon/t_modules/t_main.py:28203
 msgid "Paste token"
-msgstr ""
+msgstr "Token plakken"
 
 #: src/tauon/t_modules/t_main.py:28204 src/tauon/t_modules/t_main.py:47682
 #: src/tauon/t_modules/t_main.py:47998
 msgid "Clear"
-msgstr ""
+msgstr "Wissen"
 
 #: src/tauon/t_modules/t_main.py:28209
 msgid "Using the default ListenBrainz endpoint."
-msgstr ""
+msgstr "Standaard ListenBrainz-eindpunt wordt gebruikt."
 
 #: src/tauon/t_modules/t_main.py:28210
 msgid "Endpoint"
-msgstr ""
+msgstr "Eindpunt"
 
 #: src/tauon/t_modules/t_main.py:28216
 msgid "Extra controls for ListenBrainz."
-msgstr ""
+msgstr "Extra bediening voor ListenBrainz."
 
 #: src/tauon/t_modules/t_main.py:28222
-#, fuzzy
 msgid "Open profile"
-msgstr "Open Map"
+msgstr "Profiel openen"
 
 #: src/tauon/t_modules/t_main.py:28243
 msgid "Reset flips"
-msgstr ""
+msgstr "Flips resetten"
 
 #: src/tauon/t_modules/t_main.py:28253 src/tauon/t_modules/t_main.py:35694
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: src/tauon/t_modules/t_main.py:28259
 msgid "Artwork sources for artist images and covers."
-msgstr ""
+msgstr "Artworkbronnen voor artiestafbeeldingen en hoezen."
 
 #: src/tauon/t_modules/t_main.py:28264
 msgid "Use fanart.tv for artist images and manual cover art lookup."
-msgstr ""
+msgstr "fanart.tv gebruiken voor artiestafbeeldingen en handmatig zoeken naar albumhoezen."
 
 #: src/tauon/t_modules/t_main.py:28272
 msgid "Cover art (manual only)"
-msgstr ""
+msgstr "Albumhoezen (alleen handmatig)"
 
 #: src/tauon/t_modules/t_main.py:28279
 msgid "Artist images (automatic)"
-msgstr ""
+msgstr "Artiestafbeeldingen (automatisch)"
 
 #: src/tauon/t_modules/t_main.py:28286
 msgid "Flip current"
-msgstr ""
+msgstr "Huidige omkeren"
 
 #: src/tauon/t_modules/t_main.py:28301
 msgid "Finish the sign-in step to continue."
-msgstr ""
+msgstr "Voltooi de aanmeldstap om door te gaan."
 
 #: src/tauon/t_modules/t_main.py:28301
 msgid "Connect to a Plex server."
-msgstr ""
+msgstr "Verbinden met een Plex-server."
 
 #: src/tauon/t_modules/t_main.py:28306
 msgid "Two-factor code"
-msgstr ""
+msgstr "Tweefactorcode"
 
 #: src/tauon/t_modules/t_main.py:28315 src/tauon/t_modules/t_main.py:28380
 msgid "Username / Email"
-msgstr ""
+msgstr "Gebruikersnaam / e-mail"
 
 #: src/tauon/t_modules/t_main.py:28323 src/tauon/t_modules/t_main.py:28388
 #: src/tauon/t_modules/t_main.py:28567
 msgid "Password"
-msgstr ""
+msgstr "Wachtwoord"
 
 #: src/tauon/t_modules/t_main.py:28332
-#, fuzzy
 msgid "Server name"
-msgstr "Artiestnaam"
+msgstr "Servernaam"
 
 #: src/tauon/t_modules/t_main.py:28341 src/tauon/t_modules/t_main.py:28509
 #: src/tauon/t_modules/t_main.py:28597 src/tauon/t_modules/t_main.py:28659
 #: src/tauon/t_modules/t_main.py:28761
 msgid "Actions"
-msgstr ""
+msgstr "Acties"
 
 #: src/tauon/t_modules/t_main.py:28342
-#, fuzzy
 msgid "Import from Plex."
-msgstr "Spotify Albums"
+msgstr "Importeren uit Plex."
 
 #: src/tauon/t_modules/t_main.py:28349
 msgid "Continue"
-msgstr ""
+msgstr "Doorgaan"
 
 #: src/tauon/t_modules/t_main.py:28358 src/tauon/t_modules/t_main.py:28421
-#, fuzzy
 msgid "Import music to playlist"
-msgstr "Spotify Albums"
+msgstr "Muziek naar afspeellijst importeren"
 
 #: src/tauon/t_modules/t_main.py:28374
 msgid "Airsonic / Subsonic"
-msgstr ""
+msgstr "Airsonic / Subsonic"
 
 #: src/tauon/t_modules/t_main.py:28375
 msgid "Connect to a Subsonic-compatible server."
-msgstr ""
+msgstr "Verbinden met een Subsonic-compatibele server."
 
 #: src/tauon/t_modules/t_main.py:28397 src/tauon/t_modules/t_main.py:28490
 #: src/tauon/t_modules/t_main.py:28576
 msgid "Server URL"
-msgstr ""
+msgstr "Server-URL"
 
 #: src/tauon/t_modules/t_main.py:28407
-#, fuzzy
 msgid "Import and authentication settings."
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Import- en authenticatie-instellingen."
 
 #: src/tauon/t_modules/t_main.py:28413
 msgid "Use plain text authentication"
-msgstr ""
+msgstr "Authenticatie met platte tekst gebruiken"
 
 #: src/tauon/t_modules/t_main.py:28414
 msgid "Needed for Nextcloud Music."
-msgstr ""
+msgstr "Nodig voor Nextcloud Music."
 
 #: src/tauon/t_modules/t_main.py:28448
 msgid "Connection looked successful but the API key was invalid."
-msgstr ""
+msgstr "De verbinding leek geslaagd, maar de API-sleutel was ongeldig."
 
 #: src/tauon/t_modules/t_main.py:28450
 msgid "Connection to Maloja server was successful."
-msgstr ""
+msgstr "Verbinding met Maloja-server is gelukt."
 
 #: src/tauon/t_modules/t_main.py:28452
 msgid "The Maloja server returned an error."
-msgstr ""
+msgstr "De Maloja-server gaf een fout terug."
 
 #: src/tauon/t_modules/t_main.py:28455
 msgid "Could not communicate with the Maloja server."
-msgstr ""
+msgstr "Kon niet communiceren met de Maloja-server."
 
 #: src/tauon/t_modules/t_main.py:28458
-#, fuzzy
 msgid "No server configured."
-msgstr "Webserver gestopt."
+msgstr "Geen server geconfigureerd."
 
 #: src/tauon/t_modules/t_main.py:28462
 msgid "Self-hosted scrobble server."
-msgstr ""
+msgstr "Zelf gehoste scrobble-server."
 
 #: src/tauon/t_modules/t_main.py:28484
 msgid "Credentials"
-msgstr ""
+msgstr "Inloggegevens"
 
 #: src/tauon/t_modules/t_main.py:28485
 msgid "Server address and API key."
-msgstr ""
+msgstr "Serveradres en API-sleutel."
 
 #: src/tauon/t_modules/t_main.py:28498
 msgid "API key"
-msgstr ""
+msgstr "API-sleutel"
 
 #: src/tauon/t_modules/t_main.py:28510
 msgid "Connectivity and library import."
-msgstr ""
+msgstr "Connectiviteit en bibliotheekimport."
 
 #: src/tauon/t_modules/t_main.py:28516
 msgid "About Maloja"
-msgstr ""
+msgstr "Over Maloja"
 
 #: src/tauon/t_modules/t_main.py:28517 src/tauon/t_modules/t_main.py:28613
 msgid "Test connectivity"
-msgstr ""
+msgstr "Connectiviteit testen"
 
 #: src/tauon/t_modules/t_main.py:28546
 msgid "Run music import first"
-msgstr ""
+msgstr "Voer eerst muziekimport uit"
 
 #: src/tauon/t_modules/t_main.py:28554
 msgid "Connect to a Jellyfin server."
-msgstr ""
+msgstr "Verbinden met een Jellyfin-server."
 
 #: src/tauon/t_modules/t_main.py:28559
 msgid "Username"
-msgstr ""
+msgstr "Gebruikersnaam"
 
 #: src/tauon/t_modules/t_main.py:28584
-#, fuzzy
 msgid "Import timeout"
-msgstr "Spotify Albums"
+msgstr "Importtime-out"
 
 #: src/tauon/t_modules/t_main.py:28598
-#, fuzzy
 msgid "Import music and playlists."
-msgstr "Spotify Albums"
+msgstr "Muziek en afspeellijsten importeren."
 
 #: src/tauon/t_modules/t_main.py:28604
-#, fuzzy
 msgid "Import music"
-msgstr "Spotify Albums"
+msgstr "Muziek importeren"
 
 #: src/tauon/t_modules/t_main.py:28605
-#, fuzzy
 msgid "Import playlists"
-msgstr "Einde van de afspeellijst"
+msgstr "Afspeellijsten importeren"
 
 #: src/tauon/t_modules/t_main.py:28630
 msgid "Fetch a playlist from another Tauon instance."
-msgstr ""
+msgstr "Haal een afspeellijst op van een andere Tauon-instantie."
 
 #: src/tauon/t_modules/t_main.py:28635
 msgid "IP"
-msgstr ""
+msgstr "IP"
 
 #: src/tauon/t_modules/t_main.py:28643
-#, fuzzy
 msgid "Playlist name"
-msgstr "Einde van de afspeellijst"
+msgstr "Afspeellijstnaam"
 
 #: src/tauon/t_modules/t_main.py:28652
 msgid "An operation is already running"
-msgstr ""
+msgstr "Er loopt al een bewerking"
 
 #: src/tauon/t_modules/t_main.py:28660
-#, fuzzy
 msgid "Fetch the named playlist."
-msgstr "Einde van de afspeellijst"
+msgstr "Haal de genoemde afspeellijst op."
 
 #: src/tauon/t_modules/t_main.py:28666
-#, fuzzy
 msgid "Get playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Afspeellijst ophalen"
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Signed in."
-msgstr ""
+msgstr "Ingelogd."
 
 #: src/tauon/t_modules/t_main.py:28687
 msgid "Waiting for redirect."
-msgstr ""
+msgstr "Wachten op omleiding."
 
 #: src/tauon/t_modules/t_main.py:28687
-#, fuzzy
 msgid "Not connected."
-msgstr "Spotify account verbonden"
+msgstr "Niet verbonden."
 
 #: src/tauon/t_modules/t_main.py:28691
 msgid "Authorise TIDAL and import favourites."
-msgstr ""
+msgstr "Autoriseer TIDAL en importeer favorieten."
 
 #: src/tauon/t_modules/t_main.py:28694
 msgid "Status"
-msgstr ""
+msgstr "Status"
 
 #: src/tauon/t_modules/t_main.py:28700
 msgid "Logout"
-msgstr ""
+msgstr "Uitloggen"
 
 #: src/tauon/t_modules/t_main.py:28707
 msgid "Copy the full URL of the resulting page, then paste it here."
-msgstr ""
+msgstr "Kopieer de volledige URL van de resulterende pagina en plak die hier."
 
 #: src/tauon/t_modules/t_main.py:28709
 msgid "Redirect"
-msgstr ""
+msgstr "Omleiding"
 
 #: src/tauon/t_modules/t_main.py:28715
 msgid "Paste redirect URL"
-msgstr ""
+msgstr "Omleidings-URL plakken"
 
 #: src/tauon/t_modules/t_main.py:28732
-#, fuzzy
 msgid "Imports"
-msgstr "Spotify Albums"
+msgstr "Imports"
 
 #: src/tauon/t_modules/t_main.py:28733
 msgid "Pull favourites into Tauon."
-msgstr ""
+msgstr "Haal favorieten naar Tauon."
 
 #: src/tauon/t_modules/t_main.py:28739
-#, fuzzy
 msgid "Import albums"
-msgstr "Spotify Albums"
+msgstr "Albums importeren"
 
 #: src/tauon/t_modules/t_main.py:28740
-#, fuzzy
 msgid "Import tracks"
-msgstr "Herhaal Nummer"
+msgstr "Nummers importeren"
 
 #: src/tauon/t_modules/t_main.py:28755
 msgid "Service"
-msgstr ""
+msgstr "Dienst"
 
 #: src/tauon/t_modules/t_main.py:28756
 msgid "No layout available."
-msgstr ""
+msgstr "Geen lay-out beschikbaar."
 
 #: src/tauon/t_modules/t_main.py:28759
 msgid "This service view is not available right now."
-msgstr ""
+msgstr "Deze dienstweergave is nu niet beschikbaar."
 
 #: src/tauon/t_modules/t_main.py:28762
 msgid "Back to Last.fm"
-msgstr ""
+msgstr "Terug naar Last.fm"
 
 #: src/tauon/t_modules/t_main.py:28797
 msgid "Accounts"
-msgstr ""
+msgstr "Accounts"
 
 #: src/tauon/t_modules/t_main.py:28798
-#, fuzzy
 msgid "Pick a service to configure."
-msgstr "Webserver gestopt."
+msgstr "Kies een dienst om te configureren."
 
 #: src/tauon/t_modules/t_main.py:28804
 msgid "Scrobbling"
-msgstr ""
+msgstr "Scrobblen"
 
 #: src/tauon/t_modules/t_main.py:28805
 msgid "Streaming"
-msgstr ""
+msgstr "Streamen"
 
 #: src/tauon/t_modules/t_main.py:28887
-#, fuzzy
 msgid "Current playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Huidige afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:28894 src/tauon/t_modules/t_main.py:28909
-#, fuzzy
 msgid "Albums"
-msgstr "Spotify Albums"
+msgstr "Albums"
 
 #: src/tauon/t_modules/t_main.py:28903
 msgid "Library"
-msgstr ""
+msgstr "Bibliotheek"
 
 #: src/tauon/t_modules/t_main.py:28904
 msgid "Totals across the database."
-msgstr ""
+msgstr "Totalen in de database."
 
 #: src/tauon/t_modules/t_main.py:28910
 msgid "Playtime"
-msgstr ""
+msgstr "Afspeeltijd"
 
 #: src/tauon/t_modules/t_main.py:28920
 msgid "File formats"
-msgstr ""
+msgstr "Bestandsformaten"
 
 #: src/tauon/t_modules/t_main.py:28921
 msgid "Click a segment to build a playlist for that format."
-msgstr ""
+msgstr "Klik op een segment om een afspeellijst voor dat formaat te maken."
 
 #: src/tauon/t_modules/t_main.py:28983
 msgid "Tauon"
-msgstr ""
+msgstr "Tauon"
 
 #: src/tauon/t_modules/t_main.py:28999
 msgid "This program comes with absolutely no warranty."
-msgstr ""
+msgstr "Dit programma wordt geleverd zonder enige garantie."
 
 #: src/tauon/t_modules/t_main.py:29001
-#, fuzzy
 msgid "Open website"
-msgstr "Open Map"
+msgstr "Website openen"
 
 #: src/tauon/t_modules/t_main.py:29003
 msgid "Open GPL license"
-msgstr ""
+msgstr "GPL-licentie openen"
 
 #: src/tauon/t_modules/t_main.py:29007
 msgid "Credits"
-msgstr ""
+msgstr "Credits"
 
 #: src/tauon/t_modules/t_main.py:29008
 msgid "People and project links."
-msgstr ""
+msgstr "Personen en projectlinks."
 
 #: src/tauon/t_modules/t_main.py:29011
 msgid "Created by"
-msgstr ""
+msgstr "Gemaakt door"
 
 #: src/tauon/t_modules/t_main.py:29014
 msgid "Contributors"
-msgstr ""
+msgstr "Bijdragers"
 
 #: src/tauon/t_modules/t_main.py:29016
 msgid "Source code"
-msgstr ""
+msgstr "Broncode"
 
 #: src/tauon/t_modules/t_main.py:29114 src/tauon/t_modules/t_main.py:29120
 msgid "Theme title"
-msgstr ""
+msgstr "Thematitel"
 
 #: src/tauon/t_modules/t_main.py:29125
 msgid "Unsaved changes!"
-msgstr ""
+msgstr "Niet-opgeslagen wijzigingen!"
 
 #: src/tauon/t_modules/t_main.py:29135 src/tauon/t_modules/t_main.py:35221
 #: src/tauon/t_modules/t_main.py:48198
 msgid "Save"
-msgstr ""
+msgstr "Opslaan"
 
 #: src/tauon/t_modules/t_main.py:29151
 msgid "Components"
-msgstr ""
+msgstr "Componenten"
 
 #: src/tauon/t_modules/t_main.py:29227 src/tauon/t_modules/t_main.py:47837
 #: src/tauon/t_modules/t_main.py:47936 src/tauon/t_modules/t_main.py:47941
 #: src/tauon/t_modules/t_main.py:47942 src/tauon/t_modules/t_main.py:47994
 msgid "Copy"
-msgstr ""
+msgstr "Kopiëren"
 
 #: src/tauon/t_modules/t_main.py:29228 src/tauon/t_modules/t_main.py:47725
 #: src/tauon/t_modules/t_main.py:47813 src/tauon/t_modules/t_main.py:47841
 #: src/tauon/t_modules/t_main.py:47996
 msgid "Paste"
-msgstr ""
+msgstr "Plakken"
 
 #: src/tauon/t_modules/t_main.py:29669
-#, fuzzy
 msgid "Tauon SHUFFLE!"
-msgstr "Open Tauon Music Box"
+msgstr "Tauon SHUFFLE!"
 
 #: src/tauon/t_modules/t_main.py:29671
-#, fuzzy
 msgid "ALBUM SHUFFLE"
-msgstr "Open Tauon Music Box"
+msgstr "ALBUM SHUFFLE"
 
 #: src/tauon/t_modules/t_main.py:30304
 msgid "MENU"
-msgstr ""
+msgstr "MENU"
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "It looks like something is being downloaded..."
-msgstr ""
+msgstr "Het lijkt erop dat er iets wordt gedownload..."
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "Let's check back later..."
-msgstr ""
+msgstr "Laten we later nog eens kijken..."
 
 #: src/tauon/t_modules/t_main.py:30408
 msgid "Importing XSPF playlist"
-msgstr ""
+msgstr "XSPF-afspeellijst importeren"
 
 #: src/tauon/t_modules/t_main.py:30410
 msgid "Importing XSPF playlist..."
-msgstr ""
+msgstr "XSPF-afspeellijst importeren..."
 
 #: src/tauon/t_modules/t_main.py:30412
 msgid "Extracting Archive..."
-msgstr ""
+msgstr "Archief uitpakken..."
 
 #: src/tauon/t_modules/t_main.py:30414
 msgid "Importing...  "
-msgstr ""
+msgstr "Importeren...  "
 
 #: src/tauon/t_modules/t_main.py:30420
 msgid "Scanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Tags scannen...  {N} resterend"
 
 #: src/tauon/t_modules/t_main.py:30424
-#, fuzzy
 msgid "Auto-importing playlists..."
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijsten automatisch importeren..."
 
 #: src/tauon/t_modules/t_main.py:30426
 msgid "File copy in progress..."
-msgstr ""
+msgstr "Bestanden kopiëren is bezig..."
 
 #: src/tauon/t_modules/t_main.py:30430
-#, fuzzy
 msgid "Cleaning db...  "
-msgstr "Open Map"
+msgstr "Database opschonen...  "
 
 #: src/tauon/t_modules/t_main.py:30433
 msgid "Rescanning Tags...  {N} remaining"
-msgstr ""
+msgstr "Tags opnieuw scannen...  {N} resterend"
 
 #: src/tauon/t_modules/t_main.py:30436
 msgid "Accessing PLEX library..."
-msgstr ""
+msgstr "PLEX-bibliotheek openen..."
 
 #: src/tauon/t_modules/t_main.py:30441
 msgid "Accessing AIRSONIC library..."
-msgstr ""
+msgstr "AIRSONIC-bibliotheek openen..."
 
 #: src/tauon/t_modules/t_main.py:30446
 msgid "Accessing JELLYFIN library..."
-msgstr ""
+msgstr "JELLYFIN-bibliotheek openen..."
 
 #: src/tauon/t_modules/t_main.py:30449
-#, fuzzy
 msgid "Chromecast Mode"
-msgstr "Geen Chromecasts gevonden"
+msgstr "Chromecast-modus"
 
 #: src/tauon/t_modules/t_main.py:30458
-#, fuzzy
 msgid "Stopping transcode..."
-msgstr "Stoppen..."
+msgstr "Transcoderen stoppen..."
 
 #: src/tauon/t_modules/t_main.py:30461
 msgid "Uploading lyrics to LRCLIB..."
-msgstr ""
+msgstr "Songteksten uploaden naar LRCLIB..."
 
 #: src/tauon/t_modules/t_main.py:30463
 msgid "Scanning: "
-msgstr ""
+msgstr "Scannen: "
 
 #: src/tauon/t_modules/t_main.py:30466
-#, fuzzy
 msgid "Scanning Scrobbles..."
-msgstr "Zoeken naar Chromecasts..."
+msgstr "Scrobbles scannen..."
 
 #: src/tauon/t_modules/t_main.py:30469
 msgid "Buffering... "
-msgstr ""
+msgstr "Bufferen... "
 
 #: src/tauon/t_modules/t_main.py:30473
 msgid "Network error. Will try again later."
-msgstr ""
+msgstr "Netwerkfout. Probeer het later opnieuw."
 
 #: src/tauon/t_modules/t_main.py:30484
 msgid "{N} listening along"
-msgstr ""
+msgstr "{N} luisteren mee"
 
 #: src/tauon/t_modules/t_main.py:30502
 msgid "Transcoding"
-msgstr ""
+msgstr "Transcoderen"
 
 #: src/tauon/t_modules/t_main.py:30541
 msgid "{N} Folder Remaining {T}"
-msgstr ""
+msgstr "{N} map resterend {T}"
 
 #: src/tauon/t_modules/t_main.py:30543
 msgid "{N} Folders Remaining {T}"
-msgstr ""
+msgstr "{N} mappen resterend {T}"
 
 #: src/tauon/t_modules/t_main.py:31137 src/tauon/t_modules/t_main.py:31718
 msgid "Play, RC: Go to playing"
-msgstr ""
+msgstr "Afspelen, RK: ga naar afspelend nummer"
 
 #: src/tauon/t_modules/t_main.py:31162 src/tauon/t_modules/t_main.py:31743
 msgid "Pause"
-msgstr ""
+msgstr "Pauzeren"
 
 #: src/tauon/t_modules/t_main.py:31202 src/tauon/t_modules/t_main.py:31765
 msgid "Shuffle On"
-msgstr ""
+msgstr "Shuffle aan"
 
 #: src/tauon/t_modules/t_main.py:31205 src/tauon/t_modules/t_main.py:31768
 msgid "Shuffle Off"
-msgstr ""
+msgstr "Shuffle uit"
 
 #: src/tauon/t_modules/t_main.py:31236
-#, fuzzy
 msgid "Repeat On"
-msgstr "Herhalen UIT"
+msgstr "Herhalen aan"
 
 #: src/tauon/t_modules/t_main.py:31239
-#, fuzzy
 msgid "Repeat Off"
-msgstr "Herhalen UIT"
+msgstr "Herhalen uit"
 
 #: src/tauon/t_modules/t_main.py:31246
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr ""
+msgstr "Terug, RK: herhalen omschakelen, MK: terugzetten"
 
 #: src/tauon/t_modules/t_main.py:31263
 msgid "Playback menu"
-msgstr ""
+msgstr "Afspeelmenu"
 
 #: src/tauon/t_modules/t_main.py:31303 src/tauon/t_modules/t_main.py:31305
 msgid "Shuffle"
-msgstr ""
+msgstr "Shuffle"
 
 #: src/tauon/t_modules/t_main.py:31362 src/tauon/t_modules/t_main.py:31370
-#, fuzzy
 msgid "Repeat album"
-msgstr "Herhaal Album"
+msgstr "Album herhalen"
 
 #: src/tauon/t_modules/t_main.py:31364 src/tauon/t_modules/t_main.py:31372
 #: src/tauon/t_modules/t_main.py:41648 src/tauon/t_modules/t_main.py:41650
-#, fuzzy
 msgid "Repeat track"
-msgstr "Herhaal Nummer"
+msgstr "Nummer herhalen"
 
 #: src/tauon/t_modules/t_main.py:33210
-#, fuzzy
 msgid "Playlist is empty"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijst is leeg"
 
 #: src/tauon/t_modules/t_main.py:33213
 msgid "Drag and drop files to import"
-msgstr ""
+msgstr "Sleep bestanden hierheen om te importeren"
 
 #: src/tauon/t_modules/t_main.py:33236
-#, fuzzy
 msgid "End of Playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Einde van afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:34338
 msgid "Fetching image..."
-msgstr ""
+msgstr "Afbeelding ophalen..."
 
 #: src/tauon/t_modules/t_main.py:34402
 msgid "Auto Cycle"
-msgstr ""
+msgstr "Automatisch wisselen"
 
 #: src/tauon/t_modules/t_main.py:34647
 msgid "Search Tag"
-msgstr ""
+msgstr "Tag zoeken"
 
 #: src/tauon/t_modules/t_main.py:34648
 msgid "Search Country Code"
-msgstr ""
+msgstr "Landcode zoeken"
 
 #: src/tauon/t_modules/t_main.py:34649
-#, fuzzy
 msgid "Search Title"
-msgstr "Artiestnaam"
+msgstr "Titel zoeken"
 
 #: src/tauon/t_modules/t_main.py:34964
 msgid "Search text…"
-msgstr ""
+msgstr "Tekst zoeken…"
 
 #: src/tauon/t_modules/t_main.py:34973
 msgid "Search"
-msgstr ""
+msgstr "Zoeken"
 
 #: src/tauon/t_modules/t_main.py:34981 src/tauon/t_modules/t_main.py:34984
 msgid "Get Top Voted"
-msgstr ""
+msgstr "Hoogst gewaardeerde ophalen"
 
 #: src/tauon/t_modules/t_main.py:34985
 msgid "Developer Picks"
-msgstr ""
+msgstr "Keuzes van ontwikkelaar"
 
 #: src/tauon/t_modules/t_main.py:35121
 msgid "Add Station"
-msgstr ""
+msgstr "Station toevoegen"
 
 #: src/tauon/t_modules/t_main.py:35123
 msgid "Edit Station"
-msgstr ""
+msgstr "Station bewerken"
 
 #: src/tauon/t_modules/t_main.py:35148
 msgid "Station Browser"
-msgstr ""
+msgstr "Stationbrowser"
 
 #: src/tauon/t_modules/t_main.py:35152
-#, fuzzy
 msgid "Connecting..."
-msgstr "Open Map"
+msgstr "Verbinden..."
 
 #: src/tauon/t_modules/t_main.py:35154
 msgid "Failed to connect!"
-msgstr ""
+msgstr "Verbinden mislukt!"
 
 #: src/tauon/t_modules/t_main.py:35198
 msgid "Name / Title"
-msgstr ""
+msgstr "Naam / titel"
 
 #: src/tauon/t_modules/t_main.py:35216
 msgid "Raw Stream URL http://example.stream:1234"
-msgstr ""
+msgstr "Ruwe stream-URL http://example.stream:1234"
 
 #: src/tauon/t_modules/t_main.py:35223
 msgid "Enter a stream URL"
-msgstr ""
+msgstr "Voer een stream-URL in"
 
 #: src/tauon/t_modules/t_main.py:35239
 msgid "Could not validate URL. Must start with https:// or http://"
-msgstr ""
+msgstr "Kon URL niet valideren. Moet beginnen met https:// of http://"
 
 #: src/tauon/t_modules/t_main.py:35402 src/tauon/t_modules/t_main.py:35408
 #: src/tauon/t_modules/t_main.py:35415
 msgid "Record and auto split songs"
-msgstr ""
+msgstr "Nummers opnemen en automatisch splitsen"
 
 #: src/tauon/t_modules/t_main.py:35404
 msgid "Please stop playback first before toggling this setting"
-msgstr ""
+msgstr "Stop eerst met afspelen voordat je deze instelling omschakelt"
 
 #: src/tauon/t_modules/t_main.py:35410
 msgid "Please stop playback first to end current recording"
-msgstr ""
+msgstr "Stop eerst met afspelen om de huidige opname te beëindigen"
 
 #: src/tauon/t_modules/t_main.py:35419
 msgid "Tracks will now be recorded."
-msgstr ""
+msgstr "Nummers worden nu opgenomen."
 
 #: src/tauon/t_modules/t_main.py:35420
 msgid "Tip: You can press F9 to view the output folder."
-msgstr ""
+msgstr "Tip: druk op F9 om de uitvoermap te bekijken."
 
 #: src/tauon/t_modules/t_main.py:35424
 msgid "Browse"
-msgstr ""
+msgstr "Bladeren"
 
 #: src/tauon/t_modules/t_main.py:35429
 msgid "Saved"
-msgstr ""
+msgstr "Opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:35542
 msgid "Type codes separated by spaces. Codes will be executed left to right."
-msgstr ""
+msgstr "Typ codes gescheiden door spaties. Codes worden van links naar rechts uitgevoerd."
 
 #: src/tauon/t_modules/t_main.py:35544
 msgid "Select sources: (default: all playlists)"
-msgstr ""
+msgstr "Selecteer bronnen: (standaard: alle afspeellijsten)"
 
 #: src/tauon/t_modules/t_main.py:35547
-#, fuzzy
 msgid "Select source playlist by name"
-msgstr "Einde van de afspeellijst"
+msgstr "Selecteer bronafspeellijst op naam"
 
 #: src/tauon/t_modules/t_main.py:35550
 msgid "Select playlist itself"
-msgstr ""
+msgstr "Selecteer de afspeellijst zelf"
 
 #: src/tauon/t_modules/t_main.py:35553
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr ""
+msgstr "Voeg nummers toe uit bronnen: (minstens 1 vereist)"
 
 #: src/tauon/t_modules/t_main.py:35557
-#, fuzzy
 msgid "Search artist name"
-msgstr "Artiestnaam"
+msgstr "Artiestnaam zoeken"
 
 #: src/tauon/t_modules/t_main.py:35560
-#, fuzzy
 msgid "Search genre"
-msgstr "Artiestnaam"
+msgstr "Genre zoeken"
 
 #: src/tauon/t_modules/t_main.py:35567
 msgid "Find / Search / Path"
-msgstr ""
+msgstr "Vinden / zoeken / pad"
 
 #: src/tauon/t_modules/t_main.py:35575
 msgid "Add all tracks"
-msgstr ""
+msgstr "Alle nummers toevoegen"
 
 #: src/tauon/t_modules/t_main.py:35578
 msgid "Filters"
-msgstr ""
+msgstr "Filters"
 
 #: src/tauon/t_modules/t_main.py:35581
 msgid "Limit to number of tracks"
-msgstr ""
+msgstr "Beperken tot aantal nummers"
 
 #: src/tauon/t_modules/t_main.py:35584
 msgid "Year: >, <, ="
-msgstr ""
+msgstr "Jaar: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35587
 msgid "Play count: >, <"
-msgstr ""
+msgstr "Aantal keer afgespeeld: >, <"
 
 #: src/tauon/t_modules/t_main.py:35590
-#, fuzzy
 msgid "Track duration (minutes): >, <"
-msgstr "Albumtitel"
+msgstr "Nummerduur (minuten): >, <"
 
 #: src/tauon/t_modules/t_main.py:35593
-#, fuzzy
 msgid "Album duration (minutes): >, <"
-msgstr "Albumtitel"
+msgstr "Albumduur (minuten): >, <"
 
 #: src/tauon/t_modules/t_main.py:35596
 msgid "Track rating 0-5: >, <, ="
-msgstr ""
+msgstr "Nummerbeoordeling 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35599
-#, fuzzy
 msgid "Loved tracks"
-msgstr "Volgend Nummer"
+msgstr "Geliefde nummers"
 
 #: src/tauon/t_modules/t_main.py:35602
 msgid "Has lyrics"
-msgstr ""
+msgstr "Heeft songteksten"
 
 #: src/tauon/t_modules/t_main.py:35605
-#, fuzzy
 msgid "Search and keep"
-msgstr "Artiestnaam"
+msgstr "Zoeken en behouden"
 
 #: src/tauon/t_modules/t_main.py:35608
 msgid "Search and exclude"
-msgstr ""
+msgstr "Zoeken en uitsluiten"
 
 #: src/tauon/t_modules/t_main.py:35622
 msgid "Sorters"
-msgstr ""
+msgstr "Sorteerders"
 
 #: src/tauon/t_modules/t_main.py:35626
 msgid "Shuffle tracks"
-msgstr ""
+msgstr "Nummers shufflen"
 
 #: src/tauon/t_modules/t_main.py:35629
 msgid "Shuffle albums"
-msgstr ""
+msgstr "Albums shufflen"
 
 #: src/tauon/t_modules/t_main.py:35632
 msgid "Year: >, <"
-msgstr ""
+msgstr "Jaar: >, <"
 
 #: src/tauon/t_modules/t_main.py:35635
-#, fuzzy
 msgid "Track duration: >, <"
-msgstr "Albumtitel"
+msgstr "Nummerduur: >, <"
 
 #: src/tauon/t_modules/t_main.py:35638
-#, fuzzy
 msgid "Track Playtime: >, <"
-msgstr "Albumtitel"
+msgstr "Afspeeltijd nummer: >, <"
 
 #: src/tauon/t_modules/t_main.py:35641
-#, fuzzy
 msgid "Album playtime: >, <"
-msgstr "Albumtitel"
+msgstr "Afspeeltijd album: >, <"
 
 #: src/tauon/t_modules/t_main.py:35644
-#, fuzzy
 msgid "Album duration: >, <"
-msgstr "Albumtitel"
+msgstr "Albumduur: >, <"
 
 #: src/tauon/t_modules/t_main.py:35647
-#, fuzzy
 msgid "Invert tracks"
-msgstr "Volgend Nummer"
+msgstr "Nummers omkeren"
 
 #: src/tauon/t_modules/t_main.py:35650
-#, fuzzy
 msgid "Invert albums"
-msgstr "Spotify Albums"
+msgstr "Albums omkeren"
 
 #: src/tauon/t_modules/t_main.py:35653
-#, fuzzy
 msgid "Track rating: >, <"
-msgstr "Albumtitel"
+msgstr "Nummerbeoordeling: >, <"
 
 #: src/tauon/t_modules/t_main.py:35656
-#, fuzzy
 msgid "Album rating: >, <"
-msgstr "Albumtitel"
+msgstr "Albumbeoordeling: >, <"
 
 #: src/tauon/t_modules/t_main.py:35659
 msgid "Modification date: >, <"
-msgstr ""
+msgstr "Wijzigingsdatum: >, <"
 
 #: src/tauon/t_modules/t_main.py:35665
 msgid "Track number per album"
-msgstr ""
+msgstr "Nummerpositie per album"
 
 #: src/tauon/t_modules/t_main.py:35668
-#, fuzzy
 msgid "Year per artist"
-msgstr "Artiestnaam"
+msgstr "Jaar per artiest"
 
 #: src/tauon/t_modules/t_main.py:35671
 msgid "Sort by column name: >, <"
-msgstr ""
+msgstr "Sorteren op kolomnaam: >, <"
 
 #: src/tauon/t_modules/t_main.py:35674
 msgid "Special"
-msgstr ""
+msgstr "Speciaal"
 
 #: src/tauon/t_modules/t_main.py:35677
 msgid "Automatically reload on imports"
-msgstr ""
+msgstr "Automatisch herladen bij importeren"
 
 #: src/tauon/t_modules/t_main.py:35682
 msgid "Status:"
-msgstr ""
+msgstr "Status:"
 
 #: src/tauon/t_modules/t_main.py:35686
-#, fuzzy
 msgid "Playlist not found"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijst niet gevonden"
 
 #: src/tauon/t_modules/t_main.py:35688
 msgid "Result is empty"
-msgstr ""
+msgstr "Resultaat is leeg"
 
 #: src/tauon/t_modules/t_main.py:35690
 msgid "Close quotation..."
-msgstr ""
+msgstr "Aanhaling sluiten..."
 
 #: src/tauon/t_modules/t_main.py:36385 src/tauon/t_modules/t_main.py:36524
-#, fuzzy
 msgid "{N} tracks"
-msgstr "Volgend Nummer"
+msgstr "{N} nummers"
 
 #: src/tauon/t_modules/t_main.py:36387 src/tauon/t_modules/t_main.py:36526
-#, fuzzy
 msgid "{N} track"
-msgstr "Volgend Nummer"
+msgstr "{N} nummer"
 
 #: src/tauon/t_modules/t_main.py:36393 src/tauon/t_modules/t_main.py:36532
-#, fuzzy
 msgid "{N} album"
-msgstr "Spotify Albums"
+msgstr "{N} album"
 
 #: src/tauon/t_modules/t_main.py:36397 src/tauon/t_modules/t_main.py:36536
 msgid "Downloading data..."
-msgstr ""
+msgstr "Gegevens downloaden..."
 
 #: src/tauon/t_modules/t_main.py:36717
 msgid "First of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Eerste van albums van artiest ({N} albums)"
 
 #: src/tauon/t_modules/t_main.py:36721
 msgid "Last of artist's albums ({N} albums)"
-msgstr ""
+msgstr "Laatste van albums van artiest ({N} albums)"
 
 #: src/tauon/t_modules/t_main.py:36733
 msgid "Start of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Begin van locatie {N} van {T} ({Nb} albums)"
 
 #: src/tauon/t_modules/t_main.py:36736 src/tauon/t_modules/t_main.py:36746
 msgid "Location {N} of {T}"
-msgstr ""
+msgstr "Locatie {N} van {T}"
 
 #: src/tauon/t_modules/t_main.py:36743
 msgid "End of location {N} of {T} ({Nb} albums)"
-msgstr ""
+msgstr "Einde van locatie {N} van {T} ({Nb} albums)"
 
 #: src/tauon/t_modules/t_main.py:36755
 msgid "Start of location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Begin van locatie 1 van {N} ({Nb} albums)"
 
 #: src/tauon/t_modules/t_main.py:36758
 msgid "Location 1 of {N} ({Nb} albums)"
-msgstr ""
+msgstr "Locatie 1 van {N} ({Nb} albums)"
 
 #: src/tauon/t_modules/t_main.py:36761
 msgid "Location 1 of {N}"
-msgstr ""
+msgstr "Locatie 1 van {N}"
 
 #: src/tauon/t_modules/t_main.py:36884
-#, fuzzy
 msgid "No artists in playlist"
-msgstr "Einde van de afspeellijst"
+msgstr "Geen artiesten in afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:36887
 msgid "Artist threshold not met"
-msgstr ""
+msgstr "Artiestdrempel niet gehaald"
 
 #: src/tauon/t_modules/t_main.py:36889
-#, fuzzy
 msgid "Loading Artist List..."
-msgstr "Artiestlijst"
+msgstr "Artiestenlijst laden..."
 
 #: src/tauon/t_modules/t_main.py:36891
 msgid "Busy..."
-msgstr ""
+msgstr "Bezig..."
 
 #: src/tauon/t_modules/t_main.py:37103
-#, fuzzy
 msgid "Loading Folder Tree..."
-msgstr "Open Map"
+msgstr "Mappenboom laden..."
 
 #: src/tauon/t_modules/t_main.py:37113 src/tauon/t_modules/t_main.py:37129
 msgid "Folder Tree"
-msgstr ""
+msgstr "Mappenboom"
 
 #: src/tauon/t_modules/t_main.py:37540
 msgid "Play Now"
-msgstr ""
+msgstr "Nu afspelen"
 
 #: src/tauon/t_modules/t_main.py:37541
 msgid "Auto-Stop Here"
-msgstr ""
+msgstr "Hier automatisch stoppen"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
-#, fuzzy
 msgid "Clear Queue"
-msgstr "Wachtrij"
+msgstr "Wachtrij wissen"
 
 #: src/tauon/t_modules/t_main.py:37546
 msgid "↳ Except for This"
-msgstr ""
+msgstr "↳ Behalve deze"
 
 #: src/tauon/t_modules/t_main.py:37548
-#, fuzzy
 msgid "Queue to New Playlist"
-msgstr "Filter naar niewe afspeellijst"
+msgstr "Wachtrij naar nieuwe afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:37589
-#, fuzzy
 msgid "Queued Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Nummers in wachtrij"
 
 #: src/tauon/t_modules/t_main.py:37686
 msgid "Cancel Auto-Stop"
-msgstr ""
+msgstr "Automatisch stoppen annuleren"
 
 #: src/tauon/t_modules/t_main.py:37687
 msgid "Auto-Stop"
-msgstr ""
+msgstr "Automatisch stoppen"
 
 #: src/tauon/t_modules/t_main.py:37694
 msgid "Eh?"
-msgstr ""
+msgstr "Hè?"
 
 #: src/tauon/t_modules/t_main.py:37702
 msgid "Looks like it's gone now anyway"
-msgstr ""
+msgstr "Het lijkt er toch op dat het nu weg is"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47522
 msgid "Queue"
 msgstr "Wachtrij"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47826
-#, fuzzy
 msgid "Add to Queue"
-msgstr "Voeg Album toe aan Wachtrij"
+msgstr "Aan wachtrij toevoegen"
 
 #: src/tauon/t_modules/t_main.py:37825
 msgid "Up Next:"
-msgstr ""
+msgstr "Hierna:"
 
 #: src/tauon/t_modules/t_main.py:38068
-#, fuzzy
 msgid "{N} Track"
-msgstr "Volgend Nummer"
+msgstr "{N} nummer"
 
 #: src/tauon/t_modules/t_main.py:38071
-#, fuzzy
 msgid "{N} Tracks"
-msgstr "Volgend Nummer"
+msgstr "{N} nummers"
 
 #: src/tauon/t_modules/t_main.py:38515
-#, fuzzy
 msgid "No artist name found"
-msgstr "Artiestnaam"
+msgstr "Geen artiestnaam gevonden"
 
 #: src/tauon/t_modules/t_main.py:38526 src/tauon/t_modules/t_main.py:38779
 msgid "Looking up..."
-msgstr ""
+msgstr "Opzoeken..."
 
 #: src/tauon/t_modules/t_main.py:38566
 msgid "Cooldown..."
-msgstr ""
+msgstr "Afkoelen..."
 
 #: src/tauon/t_modules/t_main.py:38581
-#, fuzzy
 msgid "Loading..."
-msgstr "Stoppen..."
+msgstr "Laden..."
 
 #: src/tauon/t_modules/t_main.py:38768
-#, fuzzy
 msgid "No artist data downloaded"
-msgstr "Artiestnaam"
+msgstr "Geen artiestgegevens gedownload"
 
 #: src/tauon/t_modules/t_main.py:38789
-#, fuzzy
 msgid "No artist bio found"
-msgstr "Artiestnaam"
+msgstr "Geen artiestbio gevonden"
 
 #: src/tauon/t_modules/t_main.py:38886
 msgid "Load Failed"
-msgstr ""
+msgstr "Laden mislukt"
 
 #: src/tauon/t_modules/t_main.py:40002 src/tauon/t_modules/t_main.py:43059
-#, fuzzy
 msgid "Playing"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Wordt afgespeeld"
 
 #: src/tauon/t_modules/t_main.py:40095
 msgid "Auto-Scroll"
-msgstr ""
+msgstr "Automatisch scrollen"
 
 #: src/tauon/t_modules/t_main.py:40593
-#, fuzzy
 msgid "Tracks + Art"
-msgstr "Volgend Nummer"
+msgstr "Nummers + hoezen"
 
 #: src/tauon/t_modules/t_main.py:40626
-#, fuzzy
 msgid "Tracks only"
-msgstr "Volgend Nummer"
+msgstr "Alleen nummers"
 
 #: src/tauon/t_modules/t_main.py:40642
 msgid "Showcase + Lyrics"
-msgstr ""
+msgstr "Showcase + songteksten"
 
 #: src/tauon/t_modules/t_main.py:40671
 msgid "Radio"
-msgstr ""
+msgstr "Radio"
 
 #: src/tauon/t_modules/t_main.py:40685
 msgid "Toggle columns"
-msgstr ""
+msgstr "Kolommen omschakelen"
 
 #: src/tauon/t_modules/t_main.py:41000
 msgid "There are no more steps to undo."
-msgstr ""
+msgstr "Er zijn geen stappen meer om ongedaan te maken."
 
 #: src/tauon/t_modules/t_main.py:41619 src/tauon/t_modules/t_main.py:41633
 msgid "Exit Lyrics Editor"
-msgstr ""
+msgstr "Songteksteditor verlaten"
 
 #: src/tauon/t_modules/t_main.py:41620 src/tauon/t_modules/t_main.py:41634
 #: src/tauon/t_modules/t_main.py:47576 src/tauon/t_modules/t_main.py:47595
 #: src/tauon/t_modules/t_main.py:47627
-#, fuzzy
 msgid "Search for Lyrics"
-msgstr "Zoeken naar Chromecasts..."
+msgstr "Songteksten zoeken"
 
 #: src/tauon/t_modules/t_main.py:41621
 msgid "Copy From Synced"
-msgstr ""
+msgstr "Kopiëren uit gesynchroniseerd"
 
 #: src/tauon/t_modules/t_main.py:41622 src/tauon/t_modules/t_main.py:41639
 msgid "Upload To LRCLIB"
-msgstr ""
+msgstr "Uploaden naar LRCLIB"
 
 #: src/tauon/t_modules/t_main.py:41635
 msgid "Copy From Unsynced"
-msgstr ""
+msgstr "Kopiëren uit niet-gesynchroniseerd"
 
 #: src/tauon/t_modules/t_main.py:41636
 msgid "Clear All Section Markers"
-msgstr ""
+msgstr "Alle sectiemarkeringen wissen"
 
 #: src/tauon/t_modules/t_main.py:41637
 msgid "Clear All Timestamps"
-msgstr ""
+msgstr "Alle tijdstempels wissen"
 
 #: src/tauon/t_modules/t_main.py:41638
 msgid "Clear All Lyrics"
-msgstr ""
+msgstr "Alle songteksten wissen"
 
 #: src/tauon/t_modules/t_main.py:41641
 msgid "Backups..."
-msgstr ""
+msgstr "Back-ups..."
 
 #: src/tauon/t_modules/t_main.py:41642
 msgid "Load Current Backup"
-msgstr ""
+msgstr "Huidige back-up laden"
 
 #: src/tauon/t_modules/t_main.py:41643
 msgid "Visit Current Backup"
-msgstr ""
+msgstr "Huidige back-up openen"
 
 #: src/tauon/t_modules/t_main.py:41644
 msgid "Delete All Backups"
-msgstr ""
+msgstr "Alle back-ups verwijderen"
 
 #: src/tauon/t_modules/t_main.py:41646
 msgid "When track ends..."
-msgstr ""
+msgstr "Wanneer nummer eindigt..."
 
 #: src/tauon/t_modules/t_main.py:41653 src/tauon/t_modules/t_main.py:41655
 msgid "Stop immediately"
-msgstr ""
+msgstr "Onmiddellijk stoppen"
 
 #: src/tauon/t_modules/t_main.py:41658 src/tauon/t_modules/t_main.py:41660
 msgid "Backup and continue"
-msgstr ""
+msgstr "Back-up maken en doorgaan"
 
 #: src/tauon/t_modules/t_main.py:41663 src/tauon/t_modules/t_main.py:41665
 msgid "Fully save and continue"
-msgstr ""
+msgstr "Volledig opslaan en doorgaan"
 
 #: src/tauon/t_modules/t_main.py:41671
 msgid "Save synced to .lrc"
-msgstr ""
+msgstr "Gesynchroniseerd opslaan naar .lrc"
 
 #: src/tauon/t_modules/t_main.py:41705
 msgid "You put a folder in the lyrics-editor directory. Don't do that."
-msgstr ""
+msgstr "Je hebt een map in de songteksteditormap gezet. Doe dat niet."
 
 #: src/tauon/t_modules/t_main.py:41756
 msgid "Be careful!"
-msgstr ""
+msgstr "Wees voorzichtig!"
 
 #: src/tauon/t_modules/t_main.py:41757
 msgid ""
 "A file's metadata can only store ONE type of lyrics data, synced or static, "
 "at a time."
-msgstr ""
+msgstr "De metadata van een bestand kan maar ÉÉN type songtekstgegevens tegelijk opslaan: gesynchroniseerd of statisch."
 
 #: src/tauon/t_modules/t_main.py:41758
 msgid ""
 "Saving one type will now OVERWRITE the other in the files. (Tauon itself "
 "doesn't care.)"
-msgstr ""
+msgstr "Het ene type opslaan zal nu het andere in de bestanden OVERSCHRIJVEN. (Tauon zelf maakt dat niets uit.)"
 
 #: src/tauon/t_modules/t_main.py:41926
 msgid "Lyrics will misbehave if only some of them are timed."
-msgstr ""
+msgstr "Songteksten gedragen zich verkeerd als slechts sommige regels getimed zijn."
 
 #: src/tauon/t_modules/t_main.py:41927
 msgid "You can time all of them or none of them, either will work."
-msgstr ""
+msgstr "Je kunt ze allemaal timen of geen enkele; beide werken."
 
 #: src/tauon/t_modules/t_main.py:41928 src/tauon/t_modules/t_main.py:41938
 msgid "Alternatively, save again while holding Alt to override."
-msgstr ""
+msgstr "Of sla opnieuw op terwijl je Alt ingedrukt houdt om dit te negeren."
 
 #: src/tauon/t_modules/t_main.py:41936
 msgid "Lyrics might misbehave if their timestamps are out of order."
-msgstr ""
+msgstr "Songteksten kunnen zich verkeerd gedragen als hun tijdstempels niet op volgorde staan."
 
 #: src/tauon/t_modules/t_main.py:41937
 msgid "Please make sure all timestamps are ordered correctly."
-msgstr ""
+msgstr "Zorg dat alle tijdstempels correct geordend zijn."
 
 #: src/tauon/t_modules/t_main.py:41958 src/tauon/t_modules/t_main.py:41964
 msgid "Synced lyrics saved successfully"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten succesvol opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:41959
 msgid "Saved to .lrc and tags"
-msgstr ""
+msgstr "Opgeslagen naar .lrc en tags"
 
 #: src/tauon/t_modules/t_main.py:41965
 msgid "Saved to .lrc"
-msgstr ""
+msgstr "Opgeslagen naar .lrc"
 
 #: src/tauon/t_modules/t_main.py:41971 src/tauon/t_modules/t_main.py:41977
 msgid "Synced lyrics saved to tags"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten naar tags opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:41972 src/tauon/t_modules/t_main.py:41995
 msgid "Destroyed previously existing lyrics in file"
-msgstr ""
+msgstr "Eerder bestaande songteksten in bestand vernietigd"
 
 #: src/tauon/t_modules/t_main.py:41982
 msgid "Synced lyrics saved in Tauon only"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten alleen in Tauon opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:41994 src/tauon/t_modules/t_main.py:42000
 msgid "Unsynced lyrics saved successfully"
-msgstr ""
+msgstr "Niet-gesynchroniseerde songteksten succesvol opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:42005
 msgid "Unsynced lyrics saved in Tauon only"
-msgstr ""
+msgstr "Niet-gesynchroniseerde songteksten alleen in Tauon opgeslagen"
 
 #: src/tauon/t_modules/t_main.py:42069
-#, fuzzy
 msgid "Backup file does not exist"
-msgstr "Map bestaat niet"
+msgstr "Back-upbestand bestaat niet"
 
 #: src/tauon/t_modules/t_main.py:42077
 msgid "Put the lyrics in this file."
-msgstr ""
+msgstr "Zet de songteksten in dit bestand."
 
 #: src/tauon/t_modules/t_main.py:42248
 msgid "Teleport to timestamp"
-msgstr ""
+msgstr "Naar tijdstempel springen"
 
 #: src/tauon/t_modules/t_main.py:42255
 msgid "Delete timestamp"
-msgstr ""
+msgstr "Tijdstempel verwijderen"
 
 #: src/tauon/t_modules/t_main.py:42261
 msgid "Timestamp unknown"
-msgstr ""
+msgstr "Tijdstempel onbekend"
 
 #: src/tauon/t_modules/t_main.py:42307
 msgid "Delete line"
-msgstr ""
+msgstr "Regel verwijderen"
 
 #: src/tauon/t_modules/t_main.py:42319
 msgid "Add line"
-msgstr ""
+msgstr "Regel toevoegen"
 
 #: src/tauon/t_modules/t_main.py:42611 src/tauon/t_modules/t_main.py:42683
 #: src/tauon/t_modules/t_main.py:47658
-#, fuzzy
 msgid "Previous"
-msgstr "Vorig Nummer"
+msgstr "Vorige"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42690
 #: src/tauon/t_modules/t_main.py:42691
 msgid "CURRENT"
-msgstr ""
+msgstr "HUIDIG"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42693
 #: src/tauon/t_modules/t_main.py:42694
 msgid "ADD TIME"
-msgstr ""
+msgstr "TIJD TOEVOEGEN"
 
 #: src/tauon/t_modules/t_main.py:42612 src/tauon/t_modules/t_main.py:42696
 #: src/tauon/t_modules/t_main.py:42697
 msgid "TIME"
-msgstr ""
+msgstr "TIJD"
 
 #: src/tauon/t_modules/t_main.py:42613 src/tauon/t_modules/t_main.py:42653
 #: src/tauon/t_modules/t_main.py:42859 src/tauon/t_modules/t_main.py:42885
 msgid "SAVE"
-msgstr ""
+msgstr "OPSLAAN"
 
 #: src/tauon/t_modules/t_main.py:42614 src/tauon/t_modules/t_main.py:42657
 msgid "Save to .lrc"
-msgstr ""
+msgstr "Opslaan naar .lrc"
 
 #: src/tauon/t_modules/t_main.py:42615 src/tauon/t_modules/t_main.py:42661
 #: src/tauon/t_modules/t_main.py:42860 src/tauon/t_modules/t_main.py:42889
-#, fuzzy
 msgid "Save to tags"
-msgstr "Sla opus op als .ogg extensie"
+msgstr "Opslaan naar tags"
 
 #: src/tauon/t_modules/t_main.py:42616 src/tauon/t_modules/t_main.py:42667
 #: src/tauon/t_modules/t_main.py:42861 src/tauon/t_modules/t_main.py:42895
 msgid "Discard"
-msgstr ""
+msgstr "Verwerpen"
 
 #: src/tauon/t_modules/t_main.py:42717
 msgid "Errored"
-msgstr ""
+msgstr "Fout opgetreden"
 
 #: src/tauon/t_modules/t_main.py:42730 src/tauon/t_modules/t_main.py:42732
 #: src/tauon/t_modules/t_main.py:42918 src/tauon/t_modules/t_main.py:42920
 msgid "Failed"
-msgstr ""
+msgstr "Mislukt"
 
 #: src/tauon/t_modules/t_main.py:42778 src/tauon/t_modules/t_main.py:42793
 msgid "Put the lyrics in this file and save it."
-msgstr ""
+msgstr "Zet de songteksten in dit bestand en sla het op."
 
 #: src/tauon/t_modules/t_main.py:42856 src/tauon/t_modules/t_main.py:42906
 msgid "Edit Lyrics"
-msgstr ""
+msgstr "Songteksten bewerken"
 
 #: src/tauon/t_modules/t_main.py:42857 src/tauon/t_modules/t_main.py:42953
 msgid "Read Back"
-msgstr ""
+msgstr "Teruglezen"
 
 #: src/tauon/t_modules/t_main.py:42862 src/tauon/t_modules/t_main.py:42963
 msgid "Reopen Editor"
-msgstr ""
+msgstr "Editor opnieuw openen"
 
 #: src/tauon/t_modules/t_main.py:42906
 msgid "Opens an external editor."
-msgstr ""
+msgstr "Opent een externe editor."
 
 #: src/tauon/t_modules/t_main.py:42931 src/tauon/t_modules/t_main.py:42949
 msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
-msgstr ""
+msgstr "Bewerk de geopende songteksten in je teksteditor, sla het bestand op en klik op \"Teruglezen.\""
 
 #: src/tauon/t_modules/t_main.py:42953
 msgid "Make sure to save your changes."
-msgstr ""
+msgstr "Zorg dat je je wijzigingen opslaat."
 
 #: src/tauon/t_modules/t_main.py:42956 src/tauon/t_modules/t_main.py:43173
 msgid "Delete the file."
-msgstr ""
+msgstr "Verwijder het bestand."
 
 #: src/tauon/t_modules/t_main.py:42963
 msgid "In case you closed it by accident."
-msgstr ""
+msgstr "Voor het geval je het per ongeluk hebt gesloten."
 
 #: src/tauon/t_modules/t_main.py:43108 src/tauon/t_modules/t_main.py:43134
 msgid "Upload lyrics for {artist} - {title}?"
-msgstr ""
+msgstr "Songteksten uploaden voor {artist} - {title}?"
 
 #: src/tauon/t_modules/t_main.py:43137 src/tauon/t_modules/t_main.py:43143
-#, fuzzy
 msgid "Synced"
-msgstr "Synchronizeer..."
+msgstr "Gesynchroniseerd"
 
 #: src/tauon/t_modules/t_main.py:43156
 msgid "Lyrics must be formatted correctly"
-msgstr ""
+msgstr "Songteksten moeten correct geformatteerd zijn"
 
 #: src/tauon/t_modules/t_main.py:43157
 msgid "Your synced lyrics are either out of order or not fully timed."
-msgstr ""
+msgstr "Je gesynchroniseerde songteksten staan niet op volgorde of zijn niet volledig getimed."
 
 #: src/tauon/t_modules/t_main.py:43158
 msgid "We cannot upload broken lyrics to LRCLIB."
-msgstr ""
+msgstr "We kunnen kapotte songteksten niet naar LRCLIB uploaden."
 
 #: src/tauon/t_modules/t_main.py:43163
-#, fuzzy
 msgid "Unsynced"
-msgstr "Synchronizeer..."
+msgstr "Niet-gesynchroniseerd"
 
 #: src/tauon/t_modules/t_main.py:43165 src/tauon/t_modules/t_main.py:47702
 msgid "Upload"
-msgstr ""
+msgstr "Uploaden"
 
 #: src/tauon/t_modules/t_main.py:45070
 msgid "Files missing or inaccessible"
-msgstr ""
+msgstr "Bestanden ontbreken of zijn niet toegankelijk"
 
 #: src/tauon/t_modules/t_main.py:45071
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
+msgstr "Als je Flatpak gebruikt, moet je waarschijnlijk dit volgen:"
 
 #: src/tauon/t_modules/t_main.py:45079
 msgid "Bad permissions"
-msgstr ""
+msgstr "Slechte rechten"
 
 #: src/tauon/t_modules/t_main.py:45080
 msgid "We don't have permissions to access {file}"
-msgstr ""
+msgstr "We hebben geen rechten voor toegang tot {file}"
 
 #: src/tauon/t_modules/t_main.py:45088
 msgid "Can't import that"
-msgstr ""
+msgstr "Kan dat niet importeren"
 
 #: src/tauon/t_modules/t_main.py:45089
 msgid "We can't import the file {path} and we're not sure why."
-msgstr ""
+msgstr "We kunnen het bestand {path} niet importeren en weten niet zeker waarom."
 
 #: src/tauon/t_modules/t_main.py:45130
 msgid "You attempted to drop an archive."
-msgstr ""
+msgstr "Je probeerde een archief neer te zetten."
 
 #: src/tauon/t_modules/t_main.py:45131
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "Maar de functie \"archief uitpakken\" is niet ingeschakeld."
 
 #: src/tauon/t_modules/t_main.py:45141
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Te groot zipbestand overslaan (>4GB)"
 
 #: src/tauon/t_modules/t_main.py:45158 src/tauon/t_modules/t_main.py:45163
 #: src/tauon/t_modules/t_main.py:45171
 msgid "Failed to extract zip archive."
-msgstr ""
+msgstr "Ziparchief uitpakken mislukt."
 
 #: src/tauon/t_modules/t_main.py:45159
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
-msgstr ""
+msgstr "Het archief is versleuteld. Je moet het handmatig uitpakken met het wachtwoord."
 
 #: src/tauon/t_modules/t_main.py:45164 src/tauon/t_modules/t_main.py:45172
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
-msgstr ""
+msgstr "Misschien is het archief beschadigd? Heeft de schijf genoeg ruimte en schrijfrechten?"
 
 #: src/tauon/t_modules/t_main.py:45188
 msgid "Failed to extract rar archive."
-msgstr ""
+msgstr "Rar-archief uitpakken mislukt."
 
 #: src/tauon/t_modules/t_main.py:45204
 msgid "Failed to extract 7z archive."
-msgstr ""
+msgstr "7z-archief uitpakken mislukt."
 
 #: src/tauon/t_modules/t_main.py:45232
 msgid "Could not move archive to trash"
-msgstr ""
+msgstr "Kon archief niet naar prullenbak verplaatsen"
 
 #: src/tauon/t_modules/t_main.py:45329
 msgid "Permission error accessing one or more files"
-msgstr ""
+msgstr "Rechtenfout bij toegang tot een of meer bestanden"
 
 #: src/tauon/t_modules/t_main.py:45377
 msgid "Connection error"
-msgstr ""
+msgstr "Verbindingsfout"
 
 #: src/tauon/t_modules/t_main.py:45378
 msgid "We can't upload your lyrics because we can't connect to the server."
-msgstr ""
+msgstr "We kunnen je songteksten niet uploaden omdat we geen verbinding met de server kunnen maken."
 
 #: src/tauon/t_modules/t_main.py:45379
 msgid "Are you offline?"
-msgstr ""
+msgstr "Ben je offline?"
 
 #: src/tauon/t_modules/t_main.py:45399
 msgid "The following file is missing:"
-msgstr ""
+msgstr "Het volgende bestand ontbreekt:"
 
 #: src/tauon/t_modules/t_main.py:45408
 msgid "We don't have the proper permissions to run the file:"
-msgstr ""
+msgstr "We hebben niet de juiste rechten om het bestand uit te voeren:"
 
 #: src/tauon/t_modules/t_main.py:45417
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
+msgstr "We kunnen je songteksten niet uploaden en weten niet waarom."
 
 #: src/tauon/t_modules/t_main.py:45435
 msgid "Lyrics upload failed with error code: "
-msgstr ""
+msgstr "Songtekstupload mislukt met foutcode: "
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "Folder copy error."
-msgstr ""
+msgstr "Fout bij kopiëren van map."
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "The target and source are the same."
-msgstr ""
+msgstr "Doel en bron zijn hetzelfde."
 
 #: src/tauon/t_modules/t_main.py:45561
 msgid "The folder copy has failed!"
-msgstr ""
+msgstr "Map kopiëren is mislukt!"
 
 #: src/tauon/t_modules/t_main.py:45561
 msgid "Some files may have been written."
-msgstr ""
+msgstr "Sommige bestanden zijn mogelijk geschreven."
 
 #: src/tauon/t_modules/t_main.py:45570
 msgid "Something has gone horribly wrong!"
-msgstr ""
+msgstr "Er is iets vreselijk misgegaan!"
 
 #: src/tauon/t_modules/t_main.py:45570
 msgid "Could not delete {name}"
-msgstr ""
+msgstr "Kon {name} niet verwijderen"
 
 #: src/tauon/t_modules/t_main.py:45575
 msgid "Folder move complete."
-msgstr ""
+msgstr "Map verplaatsen voltooid."
 
 #: src/tauon/t_modules/t_main.py:45575 src/tauon/t_modules/t_main.py:45577
 msgid "Folder name: {name}"
-msgstr ""
+msgstr "Mapnaam: {name}"
 
 #: src/tauon/t_modules/t_main.py:45577
 msgid "Folder copy complete."
-msgstr ""
+msgstr "Map kopiëren voltooid."
 
 #: src/tauon/t_modules/t_main.py:45610
 msgid "Cleaning complete."
-msgstr ""
+msgstr "Opschonen voltooid."
 
 #: src/tauon/t_modules/t_main.py:45611
 msgid "{N} items were removed from the database."
-msgstr ""
+msgstr "{N} items zijn uit de database verwijderd."
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "Transcode failed."
-msgstr ""
+msgstr "Transcoderen mislukt."
 
 #: src/tauon/t_modules/t_main.py:45721
 msgid "An error was encountered."
-msgstr ""
+msgstr "Er is een fout opgetreden."
 
 #: src/tauon/t_modules/t_main.py:45730
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "Het transcoderen is geannuleerd voordat het voltooid was."
 
 #: src/tauon/t_modules/t_main.py:45731
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "Onvolledige bestanden blijven staan."
 
 #: src/tauon/t_modules/t_main.py:45734
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "Druk op F9 om uitvoer te tonen."
 
 #: src/tauon/t_modules/t_main.py:45736
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
-msgstr ""
+msgstr "Let op: elke bijbehorende uitvoerafbeelding is een miniatuur en geen exacte kopie."
 
 #: src/tauon/t_modules/t_main.py:45739
 msgid "Encoding complete."
-msgstr ""
+msgstr "Coderen voltooid."
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid "Some tracks could not be rescanned"
-msgstr ""
+msgstr "Sommige nummers konden niet opnieuw worden gescand"
 
 #: src/tauon/t_modules/t_main.py:45764
 msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
-msgstr ""
+msgstr "Netwerknummers opnieuw scannen wordt niet ondersteund; importeer in plaats daarvan je afspeellijst opnieuw."
 
 #: src/tauon/t_modules/t_main.py:47521
 msgid "Playlists + Queue"
@@ -5176,7 +4978,7 @@ msgstr "Artiestlijst"
 
 #: src/tauon/t_modules/t_main.py:47526
 msgid "Folder Navigator"
-msgstr ""
+msgstr "Mapnavigator"
 
 #: src/tauon/t_modules/t_main.py:47528
 msgid "Repeat OFF"
@@ -5192,21 +4994,19 @@ msgstr "Herhaal Album"
 
 #: src/tauon/t_modules/t_main.py:47534
 msgid "Shuffle Lockdown Albums"
-msgstr ""
+msgstr "Shuffle-vergrendeling albums"
 
 #: src/tauon/t_modules/t_main.py:47536
 msgid "Shuffle OFF"
-msgstr ""
+msgstr "Shuffle UIT"
 
 #: src/tauon/t_modules/t_main.py:47537
-#, fuzzy
 msgid "Shuffle Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Nummers shufflen"
 
 #: src/tauon/t_modules/t_main.py:47538
-#, fuzzy
 msgid "Random Albums"
-msgstr "Spotify Albums"
+msgstr "Willekeurige albums"
 
 #: src/tauon/t_modules/t_main.py:47540
 msgid "Close Panel"
@@ -5229,31 +5029,28 @@ msgstr "Filter naar niewe afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:47555 src/tauon/t_modules/t_main.py:47556
 #: src/tauon/t_modules/t_main.py:47723
-#, fuzzy
 msgid "Rescan Folder"
-msgstr "Open Map"
+msgstr "Map opnieuw scannen"
 
 #: src/tauon/t_modules/t_main.py:47557 src/tauon/t_modules/t_main.py:47559
 msgid "Move Playing Folder Here"
-msgstr ""
+msgstr "Afspelende map hierheen verplaatsen"
 
 #: src/tauon/t_modules/t_main.py:47563 src/tauon/t_modules/t_main.py:47905
 msgid "Collapse All"
-msgstr ""
+msgstr "Alles inklappen"
 
 #: src/tauon/t_modules/t_main.py:47565 src/tauon/t_modules/t_main.py:47906
-#, fuzzy
 msgid "lock"
-msgstr "Ontgrendel Paneel"
+msgstr "vergrendelen"
 
 #: src/tauon/t_modules/t_main.py:47569
-#, fuzzy
 msgid "Show in Playlist"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Tonen in afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:47570
 msgid "Image…"
-msgstr ""
+msgstr "Afbeelding…"
 
 #: src/tauon/t_modules/t_main.py:47571 src/tauon/t_modules/t_main.py:47888
 #: src/tauon/t_modules/t_main.py:47901
@@ -5263,624 +5060,598 @@ msgstr "Voeg Album toe aan Wachtrij"
 #: src/tauon/t_modules/t_main.py:47572 src/tauon/t_modules/t_main.py:47889
 #: src/tauon/t_modules/t_main.py:47902
 msgid "Enqueue Album Next"
-msgstr ""
+msgstr "Album als volgende in wachtrij"
 
 #: src/tauon/t_modules/t_main.py:47577 src/tauon/t_modules/t_main.py:47597
 msgid "Toggle synced"
-msgstr ""
+msgstr "Gesynchroniseerd omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47579
 msgid "Search GuitarParty"
-msgstr ""
+msgstr "GuitarParty zoeken"
 
 #: src/tauon/t_modules/t_main.py:47580
 msgid "Paste Chord Lyrics"
-msgstr ""
+msgstr "Akkoordteksten plakken"
 
 #: src/tauon/t_modules/t_main.py:47581
 msgid "Clear Chord Lyrics"
-msgstr ""
+msgstr "Akkoordteksten wissen"
 
 #: src/tauon/t_modules/t_main.py:47583 src/tauon/t_modules/t_main.py:47596
 #: src/tauon/t_modules/t_main.py:47628 src/tauon/t_modules/t_main.py:47654
 msgid "Toggle Lyrics"
-msgstr ""
+msgstr "Songteksten omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47584 src/tauon/t_modules/t_main.py:47598
 msgid "Lyrics Editor"
-msgstr ""
+msgstr "Songteksteditor"
 
 #: src/tauon/t_modules/t_main.py:47585 src/tauon/t_modules/t_main.py:47600
 #: src/tauon/t_modules/t_main.py:47734
 msgid "Misc…"
-msgstr ""
+msgstr "Diversen…"
 
 #: src/tauon/t_modules/t_main.py:47586 src/tauon/t_modules/t_main.py:47601
 msgid "Substitute Search..."
-msgstr ""
+msgstr "Vervangend zoeken..."
 
 #: src/tauon/t_modules/t_main.py:47587 src/tauon/t_modules/t_main.py:47602
 msgid "Paste Lyrics"
-msgstr ""
+msgstr "Songteksten plakken"
 
 #: src/tauon/t_modules/t_main.py:47588 src/tauon/t_modules/t_main.py:47603
 msgid "Copy Lyrics"
-msgstr ""
+msgstr "Songteksten kopiëren"
 
 #: src/tauon/t_modules/t_main.py:47589 src/tauon/t_modules/t_main.py:47604
-#, fuzzy
 msgid "Clear Lyrics"
-msgstr "Artiestnaam"
+msgstr "Songteksten wissen"
 
 #: src/tauon/t_modules/t_main.py:47590 src/tauon/t_modules/t_main.py:47605
 msgid "Clear Synced Lyrics"
-msgstr ""
+msgstr "Gesynchroniseerde songteksten wissen"
 
 #: src/tauon/t_modules/t_main.py:47591 src/tauon/t_modules/t_main.py:47606
 msgid "Toggle art panel"
-msgstr ""
+msgstr "Artworkpaneel omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47592 src/tauon/t_modules/t_main.py:47607
 msgid "Toggle art position"
-msgstr ""
+msgstr "Artworkpositie omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47610 src/tauon/t_modules/t_main.py:47659
 msgid "Open Image"
-msgstr ""
+msgstr "Afbeelding openen"
 
 #: src/tauon/t_modules/t_main.py:47612
-#, fuzzy
 msgid "Next Image"
-msgstr "Volgend Nummer"
+msgstr "Volgende afbeelding"
 
 #: src/tauon/t_modules/t_main.py:47616 src/tauon/t_modules/t_main.py:47660
 msgid "Extract Image"
-msgstr ""
+msgstr "Afbeelding extraheren"
 
 #: src/tauon/t_modules/t_main.py:47622 src/tauon/t_modules/t_main.py:47662
 msgid "Quick-Fetch Cover Art"
-msgstr ""
+msgstr "Albumhoes snel ophalen"
 
 #: src/tauon/t_modules/t_main.py:47640 src/tauon/t_modules/t_main.py:47641
 msgid "Toggle Milkdrop Visualiser"
-msgstr ""
+msgstr "Milkdrop-visualizer omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47642
 msgid "Toggle Milkdrop Auto"
-msgstr ""
+msgstr "Milkdrop automatisch omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47651
-#, fuzzy
 msgid "Open Preset Folder"
-msgstr "Open Map"
+msgstr "Presetmap openen"
 
 #: src/tauon/t_modules/t_main.py:47657
 msgid "Next"
-msgstr ""
+msgstr "Volgende"
 
 #: src/tauon/t_modules/t_main.py:47661
 msgid "Delete Image <combined>"
-msgstr ""
+msgstr "Afbeelding verwijderen <gecombineerd>"
 
 #: src/tauon/t_modules/t_main.py:47665 src/tauon/t_modules/t_main.py:47668
 #: src/tauon/t_modules/t_main.py:53016
 msgid "Rename"
-msgstr ""
+msgstr "Hernoemen"
 
 #: src/tauon/t_modules/t_main.py:47705
 msgid "Regenerate"
-msgstr ""
+msgstr "Opnieuw genereren"
 
 #: src/tauon/t_modules/t_main.py:47706
 msgid "Generate…"
-msgstr ""
+msgstr "Genereren…"
 
 #: src/tauon/t_modules/t_main.py:47707
 msgid "Edit Generator..."
-msgstr ""
+msgstr "Generator bewerken..."
 
 #: src/tauon/t_modules/t_main.py:47708
 msgid "Sort…"
-msgstr ""
+msgstr "Sorteren…"
 
 #: src/tauon/t_modules/t_main.py:47709
 msgid "From Current…"
-msgstr ""
+msgstr "Van huidige…"
 
 #: src/tauon/t_modules/t_main.py:47714
-#, fuzzy
 msgid "Sort by Imported Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Sorteren op geïmporteerde nummers"
 
 #: src/tauon/t_modules/t_main.py:47715
 msgid "Sort by Imported Folders"
-msgstr ""
+msgstr "Sorteren op geïmporteerde mappen"
 
 #: src/tauon/t_modules/t_main.py:47716
 msgid "Sort by Filepath"
-msgstr ""
+msgstr "Sorteren op bestandspad"
 
 #: src/tauon/t_modules/t_main.py:47717
 msgid "Sort Track Numbers"
-msgstr ""
+msgstr "Nummerposities sorteren"
 
 #: src/tauon/t_modules/t_main.py:47718
 msgid "Sort Year per Artist"
-msgstr ""
+msgstr "Jaar per artiest sorteren"
 
 #: src/tauon/t_modules/t_main.py:47719
 msgid "Make Playlist Auto-Sorting"
-msgstr ""
+msgstr "Afspeellijst automatisch sorterend maken"
 
 #: src/tauon/t_modules/t_main.py:47726
 msgid "Append Playing"
-msgstr ""
+msgstr "Afspelend nummer toevoegen"
 
 #: src/tauon/t_modules/t_main.py:47731
 msgid "Import/Export…"
-msgstr ""
+msgstr "Importeren/exporteren…"
 
 #: src/tauon/t_modules/t_main.py:47733
 msgid "Toggle Grouping"
-msgstr ""
+msgstr "Groepering omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47735
-#, fuzzy
 msgid "Export Playlist Stats"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Afspeellijststatistieken exporteren"
 
 #: src/tauon/t_modules/t_main.py:47736
-#, fuzzy
 msgid "Export Albums CSV"
-msgstr "Spotify Albums"
+msgstr "Albums-CSV exporteren"
 
 #: src/tauon/t_modules/t_main.py:47737
 msgid "Transcode All"
-msgstr ""
+msgstr "Alles transcoderen"
 
 #: src/tauon/t_modules/t_main.py:47738 src/tauon/t_modules/t_main.py:47863
 #: src/tauon/t_modules/t_main.py:47911 src/tauon/t_modules/t_main.py:47926
 msgid "Rescan Tags"
-msgstr ""
+msgstr "Tags opnieuw scannen"
 
 #: src/tauon/t_modules/t_main.py:47743
 msgid "Engage Gallery Quick Add"
-msgstr ""
+msgstr "Snel toevoegen in galerij activeren"
 
 #: src/tauon/t_modules/t_main.py:47746
 msgid "Set podcast mode"
-msgstr ""
+msgstr "Podcastmodus instellen"
 
 #: src/tauon/t_modules/t_main.py:47747
 msgid "Remove Duplicates"
-msgstr ""
+msgstr "Duplicaten verwijderen"
 
 #: src/tauon/t_modules/t_main.py:47748
 msgid "Toggle Console"
-msgstr ""
+msgstr "Console omschakelen"
 
 #: src/tauon/t_modules/t_main.py:47770 src/tauon/t_modules/t_main.py:47771
-#, fuzzy
 msgid "Longest Tracks"
-msgstr "Volgend Nummer"
+msgstr "Langste nummers"
 
 #: src/tauon/t_modules/t_main.py:47776 src/tauon/t_modules/t_main.py:47777
 msgid "Year by Oldest"
-msgstr ""
+msgstr "Jaar op oudste"
 
 #: src/tauon/t_modules/t_main.py:47779 src/tauon/t_modules/t_main.py:47780
 msgid "Year by Latest"
-msgstr ""
+msgstr "Jaar op nieuwste"
 
 #: src/tauon/t_modules/t_main.py:47794 src/tauon/t_modules/t_main.py:47795
-#, fuzzy
 msgid "Reverse Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Nummers omkeren"
 
 #: src/tauon/t_modules/t_main.py:47797 src/tauon/t_modules/t_main.py:47798
-#, fuzzy
 msgid "Reverse Albums"
-msgstr "Herhaal Album"
+msgstr "Albums omkeren"
 
 #: src/tauon/t_modules/t_main.py:47808 src/tauon/t_modules/t_main.py:47809
 msgid "Has Comment"
-msgstr ""
+msgstr "Heeft opmerking"
 
 #: src/tauon/t_modules/t_main.py:47816
 msgid "Track Info…"
-msgstr ""
+msgstr "Nummerinfo…"
 
 #: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
 msgid "Love"
-msgstr ""
+msgstr "Love"
 
 #: src/tauon/t_modules/t_main.py:47828
 msgid "↳ After Current Track"
-msgstr ""
+msgstr "↳ Na huidig nummer"
 
 #: src/tauon/t_modules/t_main.py:47830
 msgid "Show in Gallery"
-msgstr ""
+msgstr "Tonen in galerij"
 
 #: src/tauon/t_modules/t_main.py:47832
 msgid "Meta…"
-msgstr ""
+msgstr "Meta…"
 
 #: src/tauon/t_modules/t_main.py:47843
-#, fuzzy
 msgid "Delete Track File"
-msgstr "Herhaal Nummer"
+msgstr "Nummerbestand verwijderen"
 
 #: src/tauon/t_modules/t_main.py:47854 src/tauon/t_modules/t_main.py:47912
 #: src/tauon/t_modules/t_main.py:47927
 msgid "Edit fields…"
-msgstr ""
+msgstr "Velden bewerken…"
 
 #: src/tauon/t_modules/t_main.py:47857 src/tauon/t_modules/t_main.py:47885
 #: src/tauon/t_modules/t_main.py:47886 src/tauon/t_modules/t_main.py:47891
 msgid "Modify Folder…"
-msgstr ""
+msgstr "Map wijzigen…"
 
 #: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
-msgstr ""
+msgstr "Bewerken met"
 
 #: src/tauon/t_modules/t_main.py:47879
 msgid "Lyrics..."
-msgstr ""
+msgstr "Songteksten..."
 
 #: src/tauon/t_modules/t_main.py:47880
 msgid "Fix Mojibake"
-msgstr ""
+msgstr "Mojibake repareren"
 
 #: src/tauon/t_modules/t_main.py:47913
 msgid "Vacuum Playtimes"
-msgstr ""
+msgstr "Afspeeltijden opschonen"
 
 #: src/tauon/t_modules/t_main.py:47919
 msgid "Copy \"Artist - Album\""
-msgstr ""
+msgstr "\"Artiest - Album\" kopiëren"
 
 #: src/tauon/t_modules/t_main.py:47924
-#, fuzzy
 msgid "Add to queue"
-msgstr "Voeg Album toe aan Wachtrij"
+msgstr "Aan wachtrij toevoegen"
 
 #: src/tauon/t_modules/t_main.py:47937
 msgid "Cut"
-msgstr ""
+msgstr "Knippen"
 
 #: src/tauon/t_modules/t_main.py:47938 src/tauon/t_modules/t_main.py:47946
 #: src/tauon/t_modules/t_main.py:47947 src/tauon/t_modules/t_main.py:48213
 msgid "Remove"
-msgstr ""
+msgstr "Verwijderen"
 
 #: src/tauon/t_modules/t_main.py:47939
 msgid "Delete Files"
-msgstr ""
+msgstr "Bestanden verwijderen"
 
 #: src/tauon/t_modules/t_main.py:47949
-#, fuzzy
 msgid "Search Artist on Wikipedia"
-msgstr "Artiestnaam"
+msgstr "Artiest zoeken op Wikipedia"
 
 #: src/tauon/t_modules/t_main.py:47950
 msgid "Search Track on Genius"
-msgstr ""
+msgstr "Nummer zoeken op Genius"
 
 #: src/tauon/t_modules/t_main.py:47956
-#, fuzzy
 msgid "Search Artist on Sonemic"
-msgstr "Artiestnaam"
+msgstr "Artiest zoeken op Sonemic"
 
 #: src/tauon/t_modules/t_main.py:47963
-#, fuzzy
 msgid "Search Artist on Bandcamp"
-msgstr "Artiestnaam"
+msgstr "Artiest zoeken op Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:47967
 msgid "Copy \"Artist - Track\""
-msgstr ""
+msgstr "\"Artiest - Nummer\" kopiëren"
 
 #: src/tauon/t_modules/t_main.py:47968
 msgid "Copy TIDAL Album URL"
-msgstr ""
+msgstr "TIDAL-album-URL kopiëren"
 
 #: src/tauon/t_modules/t_main.py:47983
 msgid "Always stop after album"
-msgstr ""
+msgstr "Altijd stoppen na album"
 
 #: src/tauon/t_modules/t_main.py:47984
 msgid "Always stop after track"
-msgstr ""
+msgstr "Altijd stoppen na nummer"
 
 #: src/tauon/t_modules/t_main.py:47985
 msgid "Stop after album"
-msgstr ""
+msgstr "Stoppen na album"
 
 #: src/tauon/t_modules/t_main.py:47986
 msgid "Stop after track"
-msgstr ""
+msgstr "Stoppen na nummer"
 
 #: src/tauon/t_modules/t_main.py:47987
 msgid "Continue Play"
-msgstr ""
+msgstr "Afspelen voortzetten"
 
 #: src/tauon/t_modules/t_main.py:47989
 msgid "Minimize"
-msgstr ""
+msgstr "Minimaliseren"
 
 #: src/tauon/t_modules/t_main.py:47990
 msgid "Maximize"
-msgstr ""
+msgstr "Maximaliseren"
 
 #: src/tauon/t_modules/t_main.py:47991 src/tauon/t_modules/t_main.py:48168
 msgid "Exit"
-msgstr ""
+msgstr "Afsluiten"
 
 #: src/tauon/t_modules/t_main.py:48001
 msgid "Level Meter"
-msgstr ""
+msgstr "Niveaumeter"
 
 #: src/tauon/t_modules/t_main.py:48002
 msgid "Spectrum Visualizer"
-msgstr ""
+msgstr "Spectrumvisualizer"
 
 #: src/tauon/t_modules/t_main.py:48006
 msgid "Time"
-msgstr ""
+msgstr "Tijd"
 
 #: src/tauon/t_modules/t_main.py:48013
 msgid "Show bar"
-msgstr ""
+msgstr "Balk tonen"
 
 #: src/tauon/t_modules/t_main.py:48028
-#, fuzzy
 msgid "Import Music Folder"
-msgstr "Spotify Albums"
+msgstr "Muziekmap importeren"
 
 #: src/tauon/t_modules/t_main.py:48036
 msgid "Settings"
-msgstr ""
+msgstr "Instellingen"
 
 #: src/tauon/t_modules/t_main.py:48037
 msgid "Database…"
-msgstr ""
+msgstr "Database…"
 
 #: src/tauon/t_modules/t_main.py:48042
 msgid "Enabled saving state"
-msgstr ""
+msgstr "Status opslaan ingeschakeld"
 
 #: src/tauon/t_modules/t_main.py:48046
 msgid "Disabled saving state"
-msgstr ""
+msgstr "Status opslaan uitgeschakeld"
 
 #: src/tauon/t_modules/t_main.py:48048
 msgid "Dev Mode"
-msgstr ""
+msgstr "Ontwikkelaarsmodus"
 
 #: src/tauon/t_modules/t_main.py:48049
 msgid "Enable Saving State"
-msgstr ""
+msgstr "Status opslaan inschakelen"
 
 #: src/tauon/t_modules/t_main.py:48050
 msgid "Disable Saving State"
-msgstr ""
+msgstr "Status opslaan uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:48055
-#, fuzzy
 msgid "Export as CSV"
-msgstr "Exporteer"
+msgstr "Exporteren als CSV"
 
 #: src/tauon/t_modules/t_main.py:48056
-#, fuzzy
 msgid "Reload All Folders"
-msgstr "Open Map"
+msgstr "Alle mappen herladen"
 
 #: src/tauon/t_modules/t_main.py:48057
-#, fuzzy
 msgid "Play History to Playlist"
-msgstr "Filter naar niewe afspeellijst"
+msgstr "Afspeelgeschiedenis naar afspeellijst"
 
 #: src/tauon/t_modules/t_main.py:48058
 msgid "Reset Image Cache"
-msgstr ""
+msgstr "Afbeeldingscache resetten"
 
 #: src/tauon/t_modules/t_main.py:48059
-#, fuzzy
 msgid "Clear Artist Cache"
-msgstr "Artiestnaam"
+msgstr "Artiestcache wissen"
 
 #: src/tauon/t_modules/t_main.py:48061
-#, fuzzy
 msgid "Remove Network Tracks"
-msgstr "Herhaal Nummer"
+msgstr "Netwerknummers verwijderen"
 
 #: src/tauon/t_modules/t_main.py:48062
 msgid "Remove Missing Tracks"
-msgstr ""
+msgstr "Ontbrekende nummers verwijderen"
 
 #: src/tauon/t_modules/t_main.py:48063
 msgid "Import FMPS Ratings"
-msgstr ""
+msgstr "FMPS-beoordelingen importeren"
 
 #: src/tauon/t_modules/t_main.py:48064
 msgid "Import POPM Ratings"
-msgstr ""
+msgstr "POPM-beoordelingen importeren"
 
 #: src/tauon/t_modules/t_main.py:48065
 msgid "Reset User Ratings"
-msgstr ""
+msgstr "Gebruikersbeoordelingen resetten"
 
 #: src/tauon/t_modules/t_main.py:48066
 msgid "Find Incomplete Albums"
-msgstr ""
+msgstr "Onvolledige albums zoeken"
 
 #: src/tauon/t_modules/t_main.py:48067
 msgid "Mark Missing as Found"
-msgstr ""
+msgstr "Ontbrekende als gevonden markeren"
 
 #: src/tauon/t_modules/t_main.py:48070
-#, fuzzy
 msgid "Chromecast…"
-msgstr "Geen Chromecasts gevonden"
+msgstr "Chromecast…"
 
 #: src/tauon/t_modules/t_main.py:48078 src/tauon/t_modules/t_main.py:48090
 msgid "Tab"
-msgstr ""
+msgstr "Tabblad"
 
 #: src/tauon/t_modules/t_main.py:48079 src/tauon/t_modules/t_main.py:48091
 msgid "Mini"
-msgstr ""
+msgstr "Mini"
 
 #: src/tauon/t_modules/t_main.py:48081 src/tauon/t_modules/t_main.py:48092
 msgid "Signal"
-msgstr ""
+msgstr "Signaal"
 
 #: src/tauon/t_modules/t_main.py:48082 src/tauon/t_modules/t_main.py:48093
 msgid "Slate"
-msgstr ""
+msgstr "Slate"
 
 #: src/tauon/t_modules/t_main.py:48083 src/tauon/t_modules/t_main.py:48094
 msgid "Square"
-msgstr ""
+msgstr "Vierkant"
 
 #: src/tauon/t_modules/t_main.py:48084 src/tauon/t_modules/t_main.py:48095
-#, fuzzy
 msgid "Square Large"
-msgstr "Maak Groot"
+msgstr "Groot vierkant"
 
 #: src/tauon/t_modules/t_main.py:48087
 msgid "Copy Title to Clipboard"
-msgstr ""
+msgstr "Titel naar klembord kopiëren"
 
 #: src/tauon/t_modules/t_main.py:48089
 msgid "Mini Mode"
-msgstr ""
+msgstr "Minimodus"
 
 #: src/tauon/t_modules/t_main.py:48097
-#, fuzzy
 msgid "Random Track"
-msgstr "Herhaal Nummer"
+msgstr "Willekeurig nummer"
 
 #: src/tauon/t_modules/t_main.py:48102
 msgid "Radio Random"
-msgstr ""
+msgstr "Willekeurige radio"
 
 #: src/tauon/t_modules/t_main.py:48107
 msgid "Revert"
-msgstr ""
+msgstr "Terugzetten"
 
 #: src/tauon/t_modules/t_main.py:48124
 msgid "Global Search"
-msgstr ""
+msgstr "Globaal zoeken"
 
 #: src/tauon/t_modules/t_main.py:48125
-#, fuzzy
 msgid "Locate Artist"
-msgstr "Artiestlijst"
+msgstr "Artiest lokaliseren"
 
 #: src/tauon/t_modules/t_main.py:48126
 msgid "Go To Playing"
-msgstr ""
+msgstr "Ga naar afspelend nummer"
 
 #: src/tauon/t_modules/t_main.py:48166
 msgid "Online Manual"
-msgstr ""
+msgstr "Online handleiding"
 
 #: src/tauon/t_modules/t_main.py:48167
 msgid "Show Release Notes"
-msgstr ""
+msgstr "Releaseopmerkingen tonen"
 
 #: src/tauon/t_modules/t_main.py:48169
 msgid "Disengage Quick Add"
-msgstr ""
+msgstr "Snel toevoegen uitschakelen"
 
 #: src/tauon/t_modules/t_main.py:48197 src/tauon/t_modules/t_main.py:48212
 msgid "Visit Website"
-msgstr ""
+msgstr "Website bezoeken"
 
 #: src/tauon/t_modules/t_main.py:48201
 msgid "View..."
-msgstr ""
+msgstr "Weergave..."
 
 #: src/tauon/t_modules/t_main.py:48202
 msgid "Sort Alphabetically"
-msgstr ""
+msgstr "Alfabetisch sorteren"
 
 #: src/tauon/t_modules/t_main.py:48203
 msgid "Sort by Popularity"
-msgstr ""
+msgstr "Sorteren op populariteit"
 
 #: src/tauon/t_modules/t_main.py:48204
 msgid "Sort by Playtime"
-msgstr ""
+msgstr "Sorteren op afspeeltijd"
 
 #: src/tauon/t_modules/t_main.py:48205
 msgid "Toggle Thumbnails"
-msgstr ""
+msgstr "Miniaturen omschakelen"
 
 #: src/tauon/t_modules/t_main.py:48206
 msgid "Toggle Filter"
-msgstr ""
+msgstr "Filter omschakelen"
 
 #: src/tauon/t_modules/t_main.py:48208
 msgid "Download Artist Data"
-msgstr ""
+msgstr "Artiestgegevens downloaden"
 
 #: src/tauon/t_modules/t_main.py:48209
 msgid "Clear Bio"
-msgstr ""
+msgstr "Bio wissen"
 
 #: src/tauon/t_modules/t_main.py:48210
 msgid "Edit..."
-msgstr ""
+msgstr "Bewerken..."
 
 #: src/tauon/t_modules/t_main.py:48215
 msgid "Dismiss"
-msgstr ""
+msgstr "Sluiten"
 
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "FOUT: geen backend gevonden"
 
 #: src/tauon/t_modules/t_main.py:49508
 msgid "Enabled auto theme"
-msgstr ""
+msgstr "Automatisch thema ingeschakeld"
 
 #: src/tauon/t_modules/t_main.py:49510
 msgid "Disabled auto theme"
-msgstr ""
+msgstr "Automatisch thema uitgeschakeld"
 
 #: src/tauon/t_modules/t_main.py:49553
 msgid "First select a source track by copying it into clipboard"
-msgstr ""
+msgstr "Selecteer eerst een bronnummer door het naar het klembord te kopiëren"
 
 #: src/tauon/t_modules/t_main.py:49870
 msgid "Track already has lyrics"
-msgstr ""
+msgstr "Nummer heeft al songteksten"
 
 #: src/tauon/t_modules/t_main.py:50055
 msgid "Error loading theme file"
-msgstr ""
+msgstr "Fout bij laden van themabestand"
 
 #: src/tauon/t_modules/t_main.py:51163 src/tauon/t_modules/t_main.py:51180
-#, fuzzy
 msgid "Various Artists"
-msgstr "Artiestlijst"
+msgstr "Diverse artiesten"
 
 #: src/tauon/t_modules/t_main.py:51431
-#, fuzzy
 msgid "Rescan folders complete."
-msgstr "Open Map"
+msgstr "Mappen opnieuw scannen voltooid."
 
 #: src/tauon/t_modules/t_main.py:51470
 msgid "Auto sort skipped because playlist is locked."
-msgstr ""
+msgstr "Automatisch sorteren overgeslagen omdat de afspeellijst vergrendeld is."
 
 #: src/tauon/t_modules/t_main.py:52222
 msgid "Queue is Empty"
-msgstr ""
+msgstr "Wachtrij is leeg"
 
 #: src/tauon/t_modules/t_main.py:52651 src/tauon/t_modules/t_main.py:52670
 #: src/tauon/t_modules/t_main.py:52690 src/tauon/t_modules/t_main.py:52713
@@ -5888,73 +5659,71 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:52829 src/tauon/t_modules/t_main.py:52843
 #: src/tauon/t_modules/t_main.py:52857 src/tauon/t_modules/t_main.py:52914
 msgid "Copied text to clipboard"
-msgstr ""
+msgstr "Tekst naar klembord gekopieerd"
 
 #: src/tauon/t_modules/t_main.py:52711 src/tauon/t_modules/t_main.py:52717
 msgid "Path"
-msgstr ""
+msgstr "Pad"
 
 #: src/tauon/t_modules/t_main.py:52733
 msgid "Samplerate"
-msgstr ""
+msgstr "Samplerate"
 
 #: src/tauon/t_modules/t_main.py:52797 src/tauon/t_modules/t_main.py:52817
 msgid " of "
-msgstr ""
+msgstr " van "
 
 #: src/tauon/t_modules/t_main.py:52798 src/tauon/t_modules/t_main.py:53581
-#, fuzzy
 msgid "Track"
-msgstr "Volgend Nummer"
+msgstr "Nummer"
 
 #: src/tauon/t_modules/t_main.py:52805 src/tauon/t_modules/t_main.py:52811
 msgid "File size"
-msgstr ""
+msgstr "Bestandsgrootte"
 
 #: src/tauon/t_modules/t_main.py:52818
 msgid "Disc"
-msgstr ""
+msgstr "Schijf"
 
 #: src/tauon/t_modules/t_main.py:52883
 msgid "Play count"
-msgstr ""
+msgstr "Aantal keer afgespeeld"
 
 #: src/tauon/t_modules/t_main.py:52895
 msgid "Play time"
-msgstr ""
+msgstr "Afspeeltijd"
 
 #: src/tauon/t_modules/t_main.py:52900
 msgid "Lyrics"
-msgstr ""
+msgstr "Songteksten"
 
 #: src/tauon/t_modules/t_main.py:52998
-#, fuzzy
 msgid "Folder Modification"
-msgstr "Afspeellijsten + Wachtrij"
+msgstr "Mapwijziging"
 
 #: src/tauon/t_modules/t_main.py:53020
 msgid "Renames the physical folder based on the template"
-msgstr ""
+msgstr "Hernoemt de fysieke map op basis van de sjabloon"
 
 #: src/tauon/t_modules/t_main.py:53028
 msgid "Trash"
-msgstr ""
+msgstr "Prullenbak"
 
 #: src/tauon/t_modules/t_main.py:53029
 msgid "Moves folder to system trash"
-msgstr ""
+msgstr "Verplaatst map naar systeemprullenbak"
 
 #: src/tauon/t_modules/t_main.py:53032
 msgid "Physically deletes folder from disk"
-msgstr ""
+msgstr "Verwijdert map fysiek van schijf"
 
 #: src/tauon/t_modules/t_main.py:53052
 msgid "Raise"
-msgstr ""
+msgstr "Omhoog brengen"
 
 #: src/tauon/t_modules/t_main.py:53056
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
+msgstr "Verplaatst map 2 niveaus omhoog en verwijdert de oude containermap"
 
 #: src/tauon/t_modules/t_main.py:53068
 msgid "Deletes some unnecessary files from folder"
@@ -5962,83 +5731,81 @@ msgstr "Verwijder onnodige bestanden uit de map"
 
 #: src/tauon/t_modules/t_main.py:53073
 msgid "PATH"
-msgstr ""
+msgstr "PAD"
 
 #: src/tauon/t_modules/t_main.py:53084
 msgid "OLD"
-msgstr ""
+msgstr "OUD"
 
 #: src/tauon/t_modules/t_main.py:53091
 msgid "NEW"
-msgstr ""
+msgstr "NIEUW"
 
 #: src/tauon/t_modules/t_main.py:53179
 msgid "Folder filter mode. Enter path segment."
-msgstr ""
+msgstr "Mapfiltermodus. Voer padsegment in."
 
 #: src/tauon/t_modules/t_main.py:53187
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
-msgstr ""
+msgstr "OMHOOG / OMLAAG om te navigeren. SHIFT + RETURN voor nieuwe afspeellijst."
 
 #: src/tauon/t_modules/t_main.py:53189
 msgid "Quick find"
-msgstr ""
+msgstr "Snel zoeken"
 
 #: src/tauon/t_modules/t_main.py:53285
 msgid "Search Results"
-msgstr ""
+msgstr "Zoekresultaten"
 
 #: src/tauon/t_modules/t_main.py:53541
-#, fuzzy
 msgid "Loved track"
-msgstr "Volgend Nummer"
+msgstr "Geliefd nummer"
 
 #: src/tauon/t_modules/t_main.py:53546
-#, fuzzy
 msgid "Un-Loved track"
-msgstr "Volgend Nummer"
+msgstr "Niet meer geliefd nummer"
 
 #: src/tauon/t_modules/t_main.py:53711
 msgid "Lines copied to clipboard"
-msgstr ""
+msgstr "Regels naar klembord gekopieerd"
 
 #: src/tauon/t_modules/t_phazor.py:1140
 msgid "Error loading track"
-msgstr ""
+msgstr "Fout bij laden van nummer"
 
 #: src/tauon/t_modules/t_stream.py:142
 msgid "Failed to establish a connection"
-msgstr ""
+msgstr "Kon geen verbinding maken"
 
 #: src/tauon/t_modules/t_stream.py:559
 msgid "Data malformation detected. Stream aborted."
-msgstr ""
+msgstr "Misvormde gegevens gedetecteerd. Stream afgebroken."
 
 #: src/tauon/t_modules/t_subsonic.py:132
 msgid "Subsonic Error: "
-msgstr ""
+msgstr "Subsonic-fout: "
 
 #: src/tauon/t_modules/t_subsonic.py:393 src/tauon/t_modules/t_subsonic.py:398
 #: src/tauon/t_modules/t_subsonic.py:408 src/tauon/t_modules/t_subsonic.py:416
 #: src/tauon/t_modules/t_subsonic.py:543
 msgid "Error connecting to Airsonic server"
-msgstr ""
+msgstr "Fout bij verbinden met Airsonic-server"
 
 #: src/tauon/t_modules/t_subsonic.py:455
 msgid "Error reading Airsonic directory!"
-msgstr ""
+msgstr "Fout bij lezen van Airsonic-map!"
 
 #: src/tauon/t_modules/t_subsonic.py:597
 msgid "Airsonic Collection"
-msgstr ""
+msgstr "Airsonic-collectie"
 
 #: src/tauon/t_modules/t_tidal.py:44 src/tauon/t_modules/t_tidal.py:67
 msgid "Tidalapi package not loaded"
-msgstr ""
+msgstr "Tidalapi-pakket niet geladen"
 
 #: src/tauon/t_modules/t_tidal.py:94
 msgid "Failed to load TIDAL login, please try log in again"
-msgstr ""
+msgstr "TIDAL-login laden mislukt, probeer opnieuw in te loggen"
 
 #, fuzzy
 #~ msgid "Top panel"
