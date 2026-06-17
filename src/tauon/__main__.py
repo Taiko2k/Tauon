@@ -594,6 +594,8 @@ if __name__ == "__main__":
 		crash_logger = logging.getLogger("crash_logger")
 		crash_logger.setLevel(logging.DEBUG)
 		crash_log_path = user_directory / "tauon-crash.log"
+		with open(crash_log_path, "w"):
+			pass # only one crash should be stored in the log
 		file_handler = logging.FileHandler(crash_log_path)
 		crash_logger.addHandler(file_handler)
 		crash_logger.handlers[0].setFormatter(CustomLoggingFormatter(color=False))
