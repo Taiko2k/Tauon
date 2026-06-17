@@ -1644,6 +1644,7 @@ class TrackClass:
 		self.bpm:        float = 0.0
 		self.silence_start: float = -1.0  # seconds of silence at track start (-1 = not yet analysed)
 		self.silence_end:   float = -1.0  # seconds of silence at track end (-1 = not yet analysed)
+		self.key:           int   = -1    # musical key: 0-11 major (C-B), 12-23 minor (C-B), -1 = unknown
 		self.synced:       str = ""
 
 		self.lfm_friend_likes   = set()
@@ -46386,7 +46387,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 79
+	latest_db_version: float = 80
 
 	rename_files_previous = ""
 	rename_folder_previous = ""

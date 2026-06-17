@@ -1,4 +1,4 @@
-"""Smart Mix - Background BPM analysis and silence detection
+"""Smart Mix - Background BPM and musical key analysis
 Uses aubio to analyse the first 30s of audio.
 Designed for slow CPUs: does not block the UI.
 """
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class BpmAnalyser:
-	"""Analyses BPM and silence regions of audio tracks in a background thread.
+	"""Analyses BPM, musical key and silence of audio tracks in a background thread.
 
 	Follows the Single Responsibility Principle: this class only
 	manages the analysis queue and worker thread lifecycle.
@@ -23,14 +23,21 @@ class BpmAnalyser:
 	"""
 
 	_ANALYSIS_DURATION_S: int = 30
-	_HOP_SIZE: int = 256
+	_HOP_SIZE: int = 512
 	_WIN_SIZE: int = 512
+	_KEY_WIN_SIZE: int = 4096
 	_SAMPLE_RATE: int = 44100
 	_BPM_MIN: float = 60.0
 	_BPM_MAX: float = 200.0
 	_SLEEP_BETWEEN_TRACKS: float = 0.1
 	_SILENCE_THRESHOLD_DB: str = "-65dB"
 	_SILENCE_MIN_DURATION: str = "0.3"
+
+	# Krumhansl-Schmuckler key profiles (major and minor)
+	_MAJOR_PROFILE = (6.35, 2.23, 3.48, 2.33, 4.38, 4.09,
+	                  2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
+	_MINOR_PROFILE = (6.33, 2.68, 3.52, 5.38, 2.60, 3.53,
+	                  2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
 
 	def __init__(self) -> None:
 		self._queue: deque[int] = deque()
@@ -47,18 +54,18 @@ class BpmAnalyser:
 		save_cb: Callable | None = None,
 		notify_cb: Callable | None = None,
 	) -> None:
-		"""Queue all tracks without BPM and start the analysis thread."""
+		"""Queue all tracks without BPM or key and start the analysis thread."""
 		count = 0
 		with self._lock:
 			for track_id, track in master_library.items():
 				needs_bpm = getattr(track, "bpm", 0.0) == 0.0
-				needs_silence = getattr(track, "silence_start", -1.0) < 0
-				if needs_bpm or needs_silence:
+				needs_key = getattr(track, "key", -1) < 0
+				if needs_bpm or needs_key:
 					self._queue.append(track_id)
 					count += 1
 
 		if count == 0:
-			logging.info("t_autobpm: all tracks already have BPM")
+			logging.info("t_autobpm: all tracks already have BPM and key")
 			return
 
 		logging.info(f"t_autobpm: {count} tracks queued for analysis")
@@ -71,8 +78,10 @@ class BpmAnalyser:
 		save_cb: Callable | None = None,
 		notify_cb: Callable | None = None,
 	) -> None:
-		"""Queue a single newly imported track for BPM analysis."""
-		if getattr(track, "bpm", 0.0) > 0:
+		"""Queue a single newly imported track for analysis."""
+		needs_bpm = getattr(track, "bpm", 0.0) == 0.0
+		needs_key = getattr(track, "key", -1) < 0
+		if not needs_bpm and not needs_key:
 			return
 
 		track_id = next(
@@ -128,23 +137,31 @@ class BpmAnalyser:
 			track = master_library.get(track_id)
 			if track is None:
 				continue
+
 			needs_bpm = getattr(track, "bpm", 0.0) == 0.0
-			needs_silence = getattr(track, "silence_start", -1.0) < 0
-			if not needs_bpm and not needs_silence:
+			needs_key = getattr(track, "key", -1) < 0
+			if not needs_bpm and not needs_key:
 				continue
 
 			filepath = str(getattr(track, "fullpath", ""))
 			if not filepath or not Path(filepath).exists():
 				continue
 
-			if needs_bpm:
-				bpm = self._analyse_file(filepath)
-				if bpm > 0:
-					track.bpm = bpm
-					logging.info(f"t_autobpm: {Path(filepath).name} = {bpm} BPM")
+			bpm, key = self._analyse_file(filepath)
 
-			if needs_silence:
-				sil_start, sil_end = self._detect_silence(filepath)
+			if needs_bpm and bpm > 0:
+				track.bpm = bpm
+			if needs_key and key >= 0:
+				track.key = key
+
+			if bpm > 0 or key >= 0:
+				name = Path(filepath).name
+				logging.info(
+					f"t_autobpm: {name} = {bpm} BPM, "
+					f"key={key} ({self._key_name(key)})"
+				)
+
+			sil_start, sil_end = self._detect_silence(filepath)
 			track.silence_start = sil_start
 			track.silence_end = sil_end
 			if sil_start > 0.5 or sil_end > 0.5:
@@ -160,8 +177,13 @@ class BpmAnalyser:
 		self._notify(notify_cb, "Smart Mix: BPM analysis complete", mode="done")
 
 	@classmethod
-	def _analyse_file(cls, filepath: str) -> float:
-		"""Analyse a single audio file and return its BPM, or 0.0 on failure."""
+	def _analyse_file(cls, filepath: str) -> tuple[float, int]:
+		"""Analyse BPM and musical key in a single audio pass.
+
+		Returns (bpm, key) where:
+		  bpm: beats per minute (0.0 on failure)
+		  key: 0-11 major (C to B), 12-23 minor (C to B), -1 on failure
+		"""
 		try:
 			import aubio
 			import numpy as np
@@ -169,36 +191,82 @@ class BpmAnalyser:
 			max_frames = int(cls._SAMPLE_RATE * cls._ANALYSIS_DURATION_S / cls._HOP_SIZE)
 			src = aubio.source(filepath, cls._SAMPLE_RATE, cls._HOP_SIZE)
 			actual_rate = src.samplerate
+
+			# BPM detector
 			tempo = aubio.tempo("default", cls._WIN_SIZE, cls._HOP_SIZE, actual_rate)
+
+			# Chromagram for key detection
+			pv = aubio.pvoc(cls._KEY_WIN_SIZE, cls._HOP_SIZE)
+			n_bins = cls._KEY_WIN_SIZE // 2 + 1
+			freqs = np.arange(n_bins) * actual_rate / cls._KEY_WIN_SIZE
+			with np.errstate(divide="ignore", invalid="ignore"):
+				midi = np.where(
+					freqs > 0,
+					12.0 * np.log2(np.maximum(freqs, 1e-10) / 440.0) + 69.0,
+					-1.0,
+				)
+			valid = (freqs >= 27.5) & (freqs <= 4186.0)
+			pc_map = (np.round(midi).astype(int)) % 12
+			chroma = np.zeros(12, dtype=np.float64)
 			beats: list[float] = []
 
 			for _ in range(max_frames):
 				samples, read = src()
+
+				# BPM
 				if tempo(samples):
 					beats.append(tempo.get_last_s())
+
+				# Chromagram
+				spec = pv(samples)
+				mag = spec.norm
+				np.add.at(chroma, pc_map[valid], mag[valid])
+
 				if read < cls._HOP_SIZE:
 					break
 
-			if len(beats) < 4:
-				return 0.0
+			# --- BPM calculation ---
+			bpm = 0.0
+			if len(beats) >= 4:
+				intervals = np.diff(beats)
+				bpm = 60.0 / float(np.median(intervals))
+				while bpm < cls._BPM_MIN:
+					bpm *= 2
+				while bpm > cls._BPM_MAX:
+					bpm /= 2
+				bpm = round(bpm, 1)
 
-			bpm = 60.0 / float(np.median(np.diff(beats)))
-			while bpm < cls._BPM_MIN:
-				bpm *= 2
-			while bpm > cls._BPM_MAX:
-				bpm /= 2
-			return round(bpm, 1)
+			# --- Key calculation (Krumhansl-Schmuckler) ---
+			key = -1
+			total = np.sum(chroma)
+			if total > 0:
+				chroma /= total
+				maj = np.array(cls._MAJOR_PROFILE)
+				min_ = np.array(cls._MINOR_PROFILE)
+				maj /= maj.sum()
+				min_ /= min_.sum()
+
+				best_r = -2.0
+				for root in range(12):
+					for mode, prof in enumerate(
+						[np.roll(maj, root), np.roll(min_, root)]
+					):
+						r = float(np.corrcoef(chroma, prof)[0, 1])
+						if r > best_r:
+							best_r = r
+							key = root + mode * 12
+
+			return bpm, key
 
 		except Exception as e:
-			logging.debug(f"t_autobpm: failed analysing {filepath}: {e}")
-			return 0.0
+			logging.debug(f"t_autobpm: analysis failed for {filepath}: {e}")
+			return 0.0, -1
 
 	@classmethod
 	def _detect_silence(cls, filepath: str) -> tuple[float, float]:
 		"""Detect silence at the start and end of a track using ffmpeg.
 
 		Returns (silence_start_sec, silence_end_sec).
-		Uses ffmpeg silencedetect filter - no extra dependencies required.
 		"""
 		import subprocess
 		import re
@@ -232,17 +300,14 @@ class BpmAnalyser:
 				for x in re.findall(r"silence_end: ([\d.e+\-]+)", output)
 			]
 
-			# Silence at start: first silence region begins near 0
 			silence_start = 0.0
 			if starts and starts[0] < 0.5 and ends:
 				silence_start = ends[0]
 
-			# Silence at end: last silence extends to end of file
 			silence_end = 0.0
 			if starts:
 				last_start = starts[-1]
 				if len(ends) < len(starts):
-					# No silence_end emitted: silence runs to EOF
 					silence_end = max(0.0, duration - last_start)
 				elif ends and abs(ends[-1] - duration) < 1.5:
 					silence_end = ends[-1] - last_start
@@ -252,6 +317,18 @@ class BpmAnalyser:
 		except Exception as e:
 			logging.debug(f"t_autobpm: silence detection failed for {filepath}: {e}")
 			return 0.0, 0.0
+
+	@staticmethod
+	def _key_name(key: int) -> str:
+		"""Return human-readable key name and Camelot position."""
+		if key < 0:
+			return "unknown"
+		names = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"]
+		camelot = [8, 3, 10, 5, 12, 7, 2, 9, 4, 11, 6, 1,
+		           5, 12, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10]
+		mode = "min" if key >= 12 else "maj"
+		letter = "A" if key >= 12 else "B"
+		return f"{names[key % 12]} {mode} ({camelot[key]}{letter})"
 
 	@staticmethod
 	def _safe_call(cb: Callable | None) -> None:
@@ -274,7 +351,6 @@ class BpmAnalyser:
 
 # ---------------------------------------------------------------------------
 # Module-level singleton and convenience facade
-# Keeps call sites in t_main.py unchanged while encapsulating all state.
 # ---------------------------------------------------------------------------
 
 _analyser = BpmAnalyser()

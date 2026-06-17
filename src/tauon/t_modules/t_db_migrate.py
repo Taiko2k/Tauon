@@ -254,4 +254,16 @@ def database_migrate(
 			track.silence_end = -1.0
 
 
+	if db_version <= 79:  # noqa: PLR2004
+		logging.info("Updating database to version 80")
+		for track in master_library.values():
+			if not hasattr(track, "key"):
+				track.key = -1
+
+	if db_version <= 79:  # noqa: PLR2004
+		logging.info("Updating database to version 80")
+		for track in master_library.values():
+			if not hasattr(track, "key"):
+				track.key = -1
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

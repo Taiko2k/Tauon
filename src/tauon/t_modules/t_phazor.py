@@ -526,13 +526,37 @@ def player4(tauon: Tauon) -> None:
 		pctl.active_replaygain = g
 		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
 
+	# Camelot wheel positions for keys 0-23 (0=C major ... 23=B minor)
+	_CAMELOT = [8,3,10,5,12,7,2,9,4,11,6,1, 5,12,7,2,9,4,11,6,1,8,3,10]
+
+	@staticmethod
+	def _camelot_score(key_a: int, key_b: int) -> float:
+		"""Return harmonic compatibility score 0.0-1.0 using the Camelot wheel."""
+		if key_a < 0 or key_b < 0:
+			return 0.5  # unknown key: neutral score
+		pos_a = PhazorPipeWire._CAMELOT[key_a]
+		pos_b = PhazorPipeWire._CAMELOT[key_b]
+		mode_a = key_a >= 12  # True = minor (A), False = major (B)
+		mode_b = key_b >= 12
+		num_diff = min(abs(pos_a - pos_b), 12 - abs(pos_a - pos_b))
+		if num_diff == 0 and mode_a == mode_b:
+			return 1.00  # same key: perfect
+		if num_diff == 0 or (num_diff == 1 and mode_a == mode_b):
+			return 0.85  # relative/adjacent: excellent
+		if num_diff <= 2:
+			return 0.60  # 2 steps: good
+		if num_diff <= 3:
+			return 0.35  # 3 steps: mediocre
+		return 0.10     # 4+ steps: harsh
+
 	def smart_fade_ms(current_track, next_track) -> int:
-		"""Smart Mix: crossfade dinamico por BPM y ReplayGain.
-		Logica por zonas (como un DJ profesional):
-		  < 5 BPM diff  -> corte casi limpio (250ms)
-		  5-15 BPM diff -> fade suave (400-700ms)
-		  15-35 BPM diff -> fade notable (700-1400ms)
-		  > 35 BPM diff -> corte directo (200ms, sonar mejor que fade largo)
+		"""Smart Mix: dynamic crossfade based on BPM, Camelot key and ReplayGain.
+		Zone logic:
+		  < 5 BPM diff   -> smooth blend (250ms)
+		  5-15 BPM diff  -> soft fade (400-700ms)
+		  15-35 BPM diff -> noticeable fade (700-1400ms)
+		  > 35 BPM diff  -> direct cut (200ms, better than long harsh fade)
+		Camelot key compatibility adjusts the final duration (+/- 20%).
 		"""
 		if prefs.use_manual_crossfade:
 			return max(2000, min(15000, prefs.manual_crossfade_ms))
@@ -549,6 +573,21 @@ def player4(tauon: Tauon) -> None:
 		else:
 			bpm_diff = -1  # Unknown BPM
 
+		# Camelot key compatibility (harmonic score 0.0-1.0)
+		key_a = getattr(current_track, "key", -1)
+		key_b = getattr(next_track, "key", -1)
+		if key_a < 0 or key_b < 0:
+			key_score = 0.5
+		else:
+			_cam = [8,3,10,5,12,7,2,9,4,11,6,1, 5,12,7,2,9,4,11,6,1,8,3,10]
+			pos_a, pos_b = _cam[key_a], _cam[key_b]
+			num_diff = min(abs(pos_a - pos_b), 12 - abs(pos_a - pos_b))
+			mode_same = (key_a >= 12) == (key_b >= 12)
+			if num_diff == 0 and mode_same:   key_score = 1.00
+			elif num_diff == 0 or (num_diff == 1 and mode_same): key_score = 0.85
+			elif num_diff <= 2: key_score = 0.60
+			elif num_diff <= 3: key_score = 0.35
+			else:               key_score = 0.10
 		# ReplayGain adjustment (perceived volume difference)
 		try:
 			rg_a = float(current_track.misc.get("replaygain_track_gain", 0) or 0)
@@ -574,6 +613,10 @@ def player4(tauon: Tauon) -> None:
 			# Muy distinto: corte directo (suena mejor que fade largo)
 			base_ms = 200
 
+		# Camelot penalty: incompatible keys shorten the fade (avoid harmonic clash)
+		# Compatible keys (score > 0.8) get a slight bonus
+		key_factor = 0.7 + key_score * 0.6  # range: 0.76 (harsh) to 1.30 (perfect)
+		base_ms = int(base_ms * key_factor)
 		# Volume difference penalty (max +300ms)
 		rg_penalty = int(min(rg_diff * 20, 300))
 		final_ms = base_ms + rg_penalty
@@ -1077,7 +1120,7 @@ def player4(tauon: Tauon) -> None:
 					and not pctl.start_time_target
 					and not pctl.jump_time
 					and loaded_track
-					and 0 < remain < (17.0 if prefs.use_transition_crossfade else 5.5)
+					and 0 < remain < 5.5
 					and not loaded_track.is_cue
 					and subcommand != "now"
 				):
