@@ -1417,7 +1417,6 @@ class ColoursClass:
 		self.gallery_highlight = self.artist_playing
 
 		self.status_info_text = ColourRGBA(245, 205, 0, 255)
-		self.streaming_text = ColourRGBA(220, 75, 60, 255)
 		self.lyrics = self.grey(245)
 		self.active_lyric = ColourRGBA(255, 210, 50, 255)
 
@@ -1434,11 +1433,9 @@ class ColoursClass:
 		self.message_box_bg = self.grey(0)
 		self.message_box_text = self.grey(230)
 
-		self.sys_title = self.grey(220)
-		self.sys_title_strong = self.grey(230)
 		self.lm = False
 
-		self.pluse_colour = ColourRGBA(244, 212, 66, 255)
+		self.pulse_colour = ColourRGBA(244, 212, 66, 255)
 
 		self.mini_mode_background = ColourRGBA(19, 19, 19, 255)
 		self.mini_mode_border     = ColourRGBA(45, 45, 45, 255)
@@ -1465,7 +1462,6 @@ class ColoursClass:
 		self.box_border = rgb_add_hls(self.box_background, 0, 0.17, 0)
 		self.box_text_border = rgb_add_hls(self.box_background, 0, 0.1, 0)
 		self.box_text_label = rgb_add_hls(self.box_background, 0, 0.32, -0.1)
-		self.box_sub_highlight = rgb_add_hls(self.box_background, 0, 0.07, -0.05)  # 58, 47, 85
 		self.box_check_border = ColourRGBA(255, 255, 255, 18)
 
 		self.box_title_text = self.grey(245)
@@ -1595,7 +1591,7 @@ class ColoursClass:
 		self.message_box_border = self.grey(40)
 		self.gallery_background = self.grey(230)
 		self.gallery_artist_line = self.grey(40)
-		self.pluse_colour = ColourRGBA(212, 66, 244, 255)
+		self.pulse_colour = ColourRGBA(212, 66, 244, 255)
 
 		# tauon.view_box.off_colour = self.grey(200)
 
@@ -31022,7 +31018,7 @@ class TopPanel:
 								ay -= 6 * self.adds[k][2].get() / 0.3
 
 								ddt.text(
-									(x + tab_width - 3, round(ay), 1), "+" + str(self.adds[k][1]), colours.pluse_colour, 212, bg=bg)
+									(x + tab_width - 3, round(ay), 1), "+" + str(self.adds[k][1]), colours.pulse_colour, 212, bg=bg)
 								gui.update += 1
 
 			x += tab_width + self.tab_spacing
@@ -31170,7 +31166,7 @@ class TopPanel:
 
 			self.dl_button.render(x, y + 1 * gui.scale, colour)
 			if dl > 0:
-				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pluse_colour, 209)  # ColourRGBA(244, 223, 66, 255)
+				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pulse_colour, 209)  # ColourRGBA(244, 223, 66, 255)
 				# ColourRGBA(166, 244, 179, 255)
 
 		# LAYOUT --------------------------------
@@ -36190,8 +36186,6 @@ class RadioBox:
 			playing = self.pctl.playing_state == PlayingState.URL_STREAM and self.loaded_url == station.stream_url
 
 			if playing:
-				# bg = self.colours.box_sub_highlight
-				# self.ddt.rect(rect, bg, True)
 
 				bg = self.colours.tab_background_active
 				text_colour = self.colours.tab_text_active
@@ -36974,7 +36968,7 @@ class PlaylistBox:
 
 							ddt.text(
 								(tab_start + tab_width - 10 * gui.scale, round(ay), 1),
-								"+" + str(self.adds[k][1]), self.colours.pluse_colour, 212, bg=real_bg)
+								"+" + str(self.adds[k][1]), self.colours.pulse_colour, 212, bg=real_bg)
 							gui.update += 1
 
 							ddt.rect(
@@ -41864,9 +41858,9 @@ class EdgePulse:
 		self.ani_duration = 0.5
 
 	def render(self, x: int, y: int, w: int, h: int, r: int = 200, g: int = 120, b: int = 0) -> bool:
-		r = self.colours.pluse_colour.r
-		g = self.colours.pluse_colour.g
-		b = self.colours.pluse_colour.b
+		r = self.colours.pulse_colour.r
+		g = self.colours.pulse_colour.g
+		b = self.colours.pulse_colour.b
 		time = self.timer.get()
 		if time < self.ani_duration:
 			alpha = 255 - int(255 * (time / self.ani_duration))
@@ -41906,7 +41900,8 @@ class EdgePulse2:
 			if self.colours.lm:
 				colour = ColourRGBA(0, 0, 0, alpha)
 			else:
-				colour = ColourRGBA(255, 255, 255, alpha)
+				# colour = ColourRGBA(255, 255, 255, alpha)
+				colour = self.colours.pulse_colour
 
 			if not bottom:
 				self.ddt.rect((x, y, w, h - h_off), colour)
@@ -44362,10 +44357,10 @@ def get_theme_name(dirs: Directories, number: int) -> str:
 
 
 THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
-	(_("Window borders"), ("window_frame", "box_border", "box_check_border", "mini_mode_border", "art_box", "gallery_highlight", )),
+	(_("Window borders"), ("window_frame", "box_border", "box_check_border", "mini_mode_border", "art_box", "gallery_highlight", "box_thumb_background", )),
 	(_("Top panel BG"), ("top_panel_background",)),
 	(_("Playlist box BG"), ("playlist_box_background",)),
-	(_("Queue panel BG"), ("queue_background",)),
+	(_("Queue panel: BG"), ("queue_background",)),
 	(_("Gallery panel BG"), ("gallery_background",)),
 	(_("Info panel: BG"), ("lyrics_panel_background", "side_panel_background",)),
 	(_("Info panel: main text"), ("side_bar_line1", "active_lyric", )),
@@ -44373,44 +44368,46 @@ THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
 	(_("Artist bio: BG"), ("artist_bio_background",)),
 	(_("Artist bio: text"), ("artist_bio_text",)),
 	(_("Bottom panel: BG"), ("bottom_panel_colour",)),
-	(_("Bottom panel: text"), ("bar_title_text",)),
+	(_("Bottom panel: text"), ("bar_title_text","time_playing",)),
 	(_("List: BG"), ("playlist_panel_background",)),
 	(_("List: column bar"), ("column_bar_background",)),
-	(_("List: selected highlight"), ("row_select_highlight",)),
+	(_("List: column info"), ("column_bar_text", "column_grip",)),
+	# (_("List: artist"), ("artist_text",)),
+	# (_("List: album"), ("album_text",)),
+	# (_("List: duration"), ("bar_time",)),
+	# (_("List: other fields"), ("index_text",)),
+	(_("List: folder"), ("folder_title","folder_line",)),
+	# (_("List: folder line"), ("folder_line",)),
+	(_("List: star line"), ("star_line", "star_line_playing", )),
+	(_("List: text"), ("title_text","artist_text","album_text","bar_time","index_text",)),
+	(_("List: select highlight"), ("row_select_highlight",)),
+	(_("List: playing text"), ("title_playing","artist_playing","album_playing","time_text","index_playing",)),
+	(_("List: play highlight"), ("row_playing_highlight",)),
 	(_("List: missing track"), ("playlist_text_missing",)),
-	(_("List: title"), ("title_text",)),
-	(_("List: artist"), ("artist_text",)),
-	(_("List: album"), ("album_text",)),
-	(_("List: duration"), ("bar_time",)),
-	(_("List: other fields"), ("index_text",)),
-	(_("List: folder title"), ("folder_title",)),
-	(_("List: folder line"), ("folder_line",)),
-	(_("List: star line"), ("star_line", )),
-	(_("List: playing highlight"), ("row_playing_highlight",)),
-	(_("List: playing title"), ("title_playing",)),
-	(_("List: playing artist"), ("artist_playing",)),
-	(_("List: playing album"), ("album_playing",)),
-	(_("List: playing duration"), ("time_text",)),
-	(_("List: playing other"), ("index_playing",)),
+	# (_("List: playing artist"), ("artist_playing",)),
+	# (_("List: playing album"), ("album_playing",)),
+	# (_("List: playing duration"), ("time_text",)),
+	# (_("List: playing other"), ("index_playing",)),
 	(_("Seek/volume: fill"), ("seek_bar_fill", "volume_bar_fill", "vis_colour", )),
-	(_("Seek/volume: BG"), ("seek_bar_background", "volume_bar_background", )), # vis_bg removed because it doesn't save in themes
+	(_("Seek/volume: BG"), ("seek_bar_background", "volume_bar_background", "vis_bg", )),
 	(_("Scroll bar"), ("scroll_colour",)),
 	(_("Buttons: normal"), ("media_buttons_off", "mode_button_off", "status_text_normal", "corner_button", "window_button_icon_off", "window_button_x_off", "menu_icons", )),
 	(_("Buttons: hover"), ("media_buttons_over", "mode_button_over", "status_text_over", "window_buttons_icon_over", "window_button_x_on", )),
-	(_("Buttons: active"), ("media_buttons_active", "mode_button_active", "corner_button_active", "time_playing", "pluse_colour", )),
+	(_("Buttons: active"), ("media_buttons_active", "mode_button_active", "corner_button_active", )),
 	(_("Text btn: BG"), ("window_buttons_bg", "box_button_background", "tab_background", "menu_tab",)),
-	(_("Text btn: text"), ("box_button_text", "tab_text",  )),
+	(_("Text btn: text"), ("box_button_text", "tab_text", "link_text", )),
 	(_("Text btn: BG hover"), ( "box_button_background_highlight", "tab_highlight", )),
 	(_("Text btn: text hover"), ("window_buttons_bg_over", "box_button_text_highlight", )),
-	(_("Text btn: BG active"), ("tab_background_active",)),
-	(_("Text btn: text active"), ("tab_text_active", )),
+	(_("Tab btn: BG active"), ("tab_background_active",)),
+	(_("Tab btn: text active"), ("tab_text_active", )),
+	(_("Dynamic accents"), ("queue_drag_indicator_colour", "pulse_colour", "queue_card_background",)),
 	(_("Context menu: BG"), ("menu_background", )),
 	(_("Context menu: text"), ("menu_text", )),
 	(_("Context menu: invalid text"), ("menu_text_disabled",)),
 	(_("Context menu: highlight"), ("menu_highlight_background",)),
-	(_("Boxes: background"), ("box_background",)),
+	(_("Boxes: background"), ("box_background","message_box_bg",)),
 	(_("Boxes: title text"), ("box_title_text", "box_text_label",)),
-	(_("Boxes: body text"), ("box_text",)),
+	(_("Boxes: body text"), ("box_text", "message_box_text",)),
 	(_("Boxes: sub text"), ("box_sub_text",)),
 	(_("Boxes: input text"), ("box_input_text",)),
 	(_("Mini: BG"), ("mini_mode_background",)),

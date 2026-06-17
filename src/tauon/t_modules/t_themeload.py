@@ -130,6 +130,18 @@ THEME_SERIALISABLE_COLOURS: tuple[tuple[str, str], ...] = (
 	("column bar background", "column_bar_background"),
 	("artist bio background", "artist_bio_background"),
 	("artist bio text", "artist_bio_text"),
+	("visualizer bg", "vis_bg"),
+	("link text", "link_text"),
+	("star line normal", "star_line"),
+	("star line playing", "star_line_playing"),
+	("message box bg", "message_box_bg"),
+	("message box text", "message_box_text"),
+	("queue drag indicator", "queue_drag_indicator_colour"),
+	("pulse colour", "pulse_colour"),
+	("queue card background", "queue_card_background"),
+	("column grip", "column_grip"),
+	("column bar text", "column_bar_text"),
+	("box thumb background", "box_thumb_background"),
 )
 
 
@@ -460,6 +472,31 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				colours.artist_bio_background = get_colour_from_line(p)
 			if "artist bio text" in p:
 				colours.artist_bio_text = get_colour_from_line(p)
+
+			if "visualizer bg" in p:
+				colours.vis_bg = get_colour_from_line(p)
+			if "link text" in p:
+				colours.link_text = get_colour_from_line(p)
+			if "star line normal" in p:
+				colours.star_line = get_colour_from_line(p)
+			if "star line playing" in p:
+				colours.star_line_playing = get_colour_from_line(p)
+			if "message box bg" in p:
+				colours.message_box_bg = get_colour_from_line(p)
+			if "message box text" in p:
+				colours.message_box_text = get_colour_from_line(p)
+			if "queue drag indicator" in p:
+				colours.queue_drag_indicator_colour = get_colour_from_line(p)
+			if "pulse colour" in p:
+				colours.pulse_colour = get_colour_from_line(p)
+			if "queue card background" in p:
+				colours.queue_card_background = get_colour_from_line(p)
+			if "column grip" in p:
+				colours.column_grip = get_colour_from_line(p)
+			if "column bar text" in p:
+				colours.column_bar_text = get_colour_from_line(p)
+			if "box thumb background" in p:
+				colours.box_thumb_background = get_colour_from_line(p)
 			# if "panel button off" in p:
 			# 	colours.corner_button = get_colour_from_line(p)
 			# if "panel button on" in p:
