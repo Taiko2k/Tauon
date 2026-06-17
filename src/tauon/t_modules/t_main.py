@@ -25125,7 +25125,9 @@ class Over:
 
 		self.themes = []
 		self.theme_editor_enabled = False
-		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_selected_attr = THEME_EDITOR_COMPONENTS[0][1][0]
+		self.theme_editor_selected_attrs = THEME_EDITOR_COMPONENTS[0][1]
+		self.theme_editor_dropdown_expansions = [False] * len(THEME_EDITOR_COMPONENTS)
 		self.theme_editor_clipboard: ColourRGBA | None = None
 		self.theme_editor_list_scroll = 0.0
 		self.theme_editor_list_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
@@ -25486,7 +25488,7 @@ class Over:
 
 	def theme_editor_selected_label(self) -> str:
 		for label, attr in THEME_EDITOR_COMPONENTS:
-			if attr == self.theme_editor_selected_attr:
+			if attr[0] in self.theme_editor_selected_attrs:
 				return _(label)
 		return _("Component")
 
@@ -25684,10 +25686,11 @@ class Over:
 		self.show_message(_("Saved theme"), target_name, mode="done")
 		return True
 
-	def apply_theme_editor_colour(self, attr: str, colour: ColourRGBA) -> None:
+	def apply_theme_editor_colour(self, thing: tuple[str], colour: ColourRGBA) -> None:
 		if self.theme_editor_draft_colours is None:
 			return
-		setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
+		for attr in thing:
+			setattr(self.theme_editor_draft_colours, attr, ColourRGBA(colour.r, colour.g, colour.b, colour.a))
 		self.theme_editor_dirty = True
 		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
 
@@ -25705,7 +25708,7 @@ class Over:
 		self.theme_editor_val_value = val
 		r, g, b = colorsys.hsv_to_rgb(hue, sat, val)
 		self.apply_theme_editor_colour(
-			self.theme_editor_selected_attr,
+			self.theme_editor_selected_attrs,
 			ColourRGBA(int(r * 255), int(g * 255), int(b * 255), colour.a),
 		)
 
@@ -25714,7 +25717,7 @@ class Over:
 		alpha = min(max(alpha, 0.0), 1.0)
 		self.theme_editor_alpha_value = alpha
 		self.apply_theme_editor_colour(
-			self.theme_editor_selected_attr,
+			self.theme_editor_selected_attrs,
 			ColourRGBA(colour.r, colour.g, colour.b, int(alpha * 255)),
 		)
 
@@ -25810,7 +25813,7 @@ class Over:
 		if colour is None:
 			self.show_message(_("There is no colour in the clipboard"), mode="error")
 			return
-		self.apply_theme_editor_colour(self.theme_editor_selected_attr, colour)
+		self.apply_theme_editor_colour(self.theme_editor_selected_attrs, colour)
 		self.theme_editor_clipboard = ColourRGBA(colour.r, colour.g, colour.b, colour.a)
 		self.sync_theme_editor_controls_from_current_colour()
 		self.show_message(_("Pasted colour"), self.theme_editor_selected_label(), mode="done")
@@ -29886,11 +29889,15 @@ class Over:
 			)
 			scroll_index = int(self.theme_editor_list_scroll)
 
+		rows_count = 0
 		row_y = list_rect[1]
 		for label, attr in THEME_EDITOR_COMPONENTS[scroll_index : scroll_index + visible_rows]:
+			rows_count += 1
+			if rows_count > visible_rows:
+				break
 			row_rect = (list_rect[0], row_y, row_w, row_h)
 			hover = self.coll(row_rect)
-			active = self.theme_editor_selected_attr == attr
+			active = self.theme_editor_selected_attrs == attr
 			row_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
 			if active:
 				row_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
@@ -29901,16 +29908,76 @@ class Over:
 				row_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
 			ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
 			self.fields.add(row_rect)
-			if hover and self.click:
-				self.theme_editor_selected_attr = attr
+
+			subcolors_are_identical = True
+			if len(attr) > 1: # THEME_EDITOR_COMPONENTS is currently set up for a STATIC visible_rows value. if this value ever changes, get smarter.
+				compare_color = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				for color in attr:
+					component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+					subcolors_are_identical = subcolors_are_identical and component_colour == compare_color
+					compare_color = component_colour
+
+				dropdown_rect = (list_rect[0] + row_w - row_h, row_y, row_h, row_h)
+				# ddt.bordered_rect(dropdown_rect, row_fill, row_border, round(1 * gui.scale))
+				ddt.text(
+					(dropdown_rect[0]+ round(10*gui.scale),dropdown_rect[1]+round(4*gui.scale)),
+					"🞃" if self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] else "🞂",
+					colours.box_button_text, 12, bg=row_fill
+					)
+				if self.coll(dropdown_rect) and self.click:
+					self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] = not self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+				dropped_down = self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+				if dropped_down:
+
+					for color in attr:
+						row_y += row_step
+						rows_count += 1
+						if rows_count > visible_rows:
+							break
+
+						sub_rect = (list_rect[0] + round(10*gui.scale), row_y, row_w - round(10*gui.scale), row_h)
+						subhover = self.coll(sub_rect)
+						subactive = self.theme_editor_selected_attrs == color
+						subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
+						if subactive:
+							subrow_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
+						elif subhover:
+							subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill)
+						subrow_border = alpha_blend(ColourRGBA(255, 255, 255, 18), panel_border)
+						if subactive:
+							subrow_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
+						ddt.bordered_rect(sub_rect, subrow_fill, subrow_border, round(1 * gui.scale))
+						self.fields.add(sub_rect)
+
+						if subhover and self.click:
+							self.theme_editor_selected_attr = color
+							self.theme_editor_selected_attrs = (color,)
+							self.theme_editor_drag_target = None
+							self.sync_theme_editor_controls_from_current_colour()
+
+
+						component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+						swatch_rect = (sub_rect[0] + round(8 * gui.scale), sub_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
+						ddt.rect(swatch_rect, component_colour)
+						ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), subrow_border), round(1 * gui.scale))
+						ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), sub_rect[1] + round(4 * gui.scale)), color, colours.box_text if subactive else colours.box_button_text_highlight if subhover else colours.box_button_text, 12, bg=subrow_fill, max_w=sub_rect[2] - round(44 * gui.scale))
+
+
+
+			if hover and self.click and ("dropdown_rect" in locals() and not self.coll(dropdown_rect)):
+				self.theme_editor_selected_attr = attr[0]
+				self.theme_editor_selected_attrs = attr
 				self.theme_editor_drag_target = None
 				self.sync_theme_editor_controls_from_current_colour()
 
-			component_colour = getattr(self.theme_editor_draft_colours, attr, current_colour) if self.theme_editor_draft_colours is not None else current_colour
 			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
-			ddt.rect(swatch_rect, component_colour)
-			ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
-			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
+			if subcolors_are_identical:
+				component_colour = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				ddt.rect(swatch_rect, component_colour)
+				ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
+			else:
+				ddt.text((swatch_rect[0] + round(1*gui.scale), row_rect[1] + round(7 * gui.scale)), "~", colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 20, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
+			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
 			row_y += row_step
 
 		right_inner_x = right_rect[0] + pad
@@ -36605,7 +36672,7 @@ class PlaylistBox:
 		visible_scroll_rows = max(0, ((h - top_pad - bottom_pad - self.tab_h) / max(row_step, 1)) + 1)
 		max_scroll = max(len(pctl.multi_playlist) - visible_scroll_rows, 0)
 
-		tab_title_colour = ColourRGBA(230, 230, 230, 255)
+		tab_title_colour = self.colours.tab_text
 
 		bg_lumi = test_lumi(self.colours.playlist_box_background)
 		light_mode = False
@@ -36854,7 +36921,7 @@ class PlaylistBox:
 			# if indicator_run_x:
 			#     text_max_w = tab_width - (indicator_run_x + text_start + 17 * gui.scale + slide)
 			self.ddt.text(
-				(tab_start + text_start, yy + self.text_offset), name, tab_title_colour, 211, max_w=text_max_w, bg=real_bg)
+				(tab_start + text_start, yy + self.text_offset), name, tab_title_colour if i != pctl.active_playlist_viewing else self.colours.tab_text_active, 211, max_w=text_max_w, bg=real_bg)
 
 			# Is mouse collided with tab?
 			hit = drop_hit_rect is not None and self.coll(drop_hit_rect)
@@ -44294,46 +44361,61 @@ def get_theme_name(dirs: Directories, number: int) -> str:
 	return ""
 
 
-THEME_EDITOR_COMPONENTS: tuple[tuple[str, str], ...] = (
-	(_("Queue panel BG"), "queue_background"),
-	(_("Side panel BG"), "side_panel_background"),
-	(_("Gallery panel BG"), "gallery_background"),
-	(_("Top panel BG"), "top_panel_background"),
-	(_("Scroll bar"), "scroll_colour"),
-	(_("Window border"), "window_frame"),
-	(_("Tabs: BG"), "tab_background"),
-	(_("Tabs: text"), "tab_text"),
-	(_("Tabs: active BG"), "tab_background_active"),
-	(_("Tabs: active text"), "tab_text_active"),
-	(_("Main menu: BG"), "menu_background"),
-	(_("Main menu: text"), "menu_text"),
-	(_("Boxes: background"), "box_background"),
-	(_("Boxes: title text"), "box_title_text"),
-	(_("Boxes: body text"), "box_text"),
-	(_("Lyrics: panel BG"), "lyrics_panel_background"),
-	(_("Lyrics: text"), "lyrics"),
-	(_("Lyrics: active line"), "active_lyric"),
-	(_("List: BG"), "playlist_panel_background"),
-	(_("List: selected highlight"), "row_select_highlight"),
-	(_("List: title"), "title_text"),
-	(_("List: artist"), "artist_text"),
-	(_("List: album"), "album_text"),
-	(_("List: duration"), "bar_time"),
-	(_("List: other fields"), "index_text"),
-	(_("List: folder title"), "folder_title"),
-	(_("List: folder line"), "folder_line"),
-	(_("List: playing highlight"), "row_playing_highlight"),
-	(_("List: playing title"), "title_playing"),
-	(_("List: playing artist"), "artist_playing"),
-	(_("List: playing album"), "album_playing"),
-	(_("List: playing duration"), "time_text"),
-	(_("List: playing other"), "index_playing"),
-	(_("Bottom: BG"), "bottom_panel_colour"),
-	(_("Bottom: seek bar fill"), "seek_bar_fill"),
-	(_("Bottom: seek bar BG"), "seek_bar_background"),
-	(_("Bottom: volume fill"), "volume_bar_fill"),
-	(_("Bottom: volume BG"), "volume_bar_background"),
-	(_("Bottom: playing time"), "time_playing"),
+THEME_EDITOR_COMPONENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+	(_("Window borders"), ("window_frame", "box_border", "box_check_border", "mini_mode_border", "art_box", "gallery_highlight", )),
+	(_("Top panel BG"), ("top_panel_background",)),
+	(_("Playlist box BG"), ("playlist_box_background",)),
+	(_("Queue panel BG"), ("queue_background",)),
+	(_("Gallery panel BG"), ("gallery_background",)),
+	(_("Info panel: BG"), ("lyrics_panel_background", "side_panel_background",)),
+	(_("Info panel: main text"), ("side_bar_line1", "active_lyric", )),
+	(_("Info panel: 2nd text"), ("side_bar_line2", "lyrics", )),
+	(_("Artist bio: BG"), ("artist_bio_background",)),
+	(_("Artist bio: text"), ("artist_bio_text",)),
+	(_("Bottom panel: BG"), ("bottom_panel_colour",)),
+	(_("Bottom panel: text"), ("bar_title_text",)),
+	(_("List: BG"), ("playlist_panel_background",)),
+	(_("List: column bar"), ("column_bar_background",)),
+	(_("List: selected highlight"), ("row_select_highlight",)),
+	(_("List: missing track"), ("playlist_text_missing",)),
+	(_("List: title"), ("title_text",)),
+	(_("List: artist"), ("artist_text",)),
+	(_("List: album"), ("album_text",)),
+	(_("List: duration"), ("bar_time",)),
+	(_("List: other fields"), ("index_text",)),
+	(_("List: folder title"), ("folder_title",)),
+	(_("List: folder line"), ("folder_line",)),
+	(_("List: star line"), ("star_line", )),
+	(_("List: playing highlight"), ("row_playing_highlight",)),
+	(_("List: playing title"), ("title_playing",)),
+	(_("List: playing artist"), ("artist_playing",)),
+	(_("List: playing album"), ("album_playing",)),
+	(_("List: playing duration"), ("time_text",)),
+	(_("List: playing other"), ("index_playing",)),
+	(_("Seek/volume: fill"), ("seek_bar_fill", "volume_bar_fill", "vis_colour", )),
+	(_("Seek/volume: BG"), ("seek_bar_background", "volume_bar_background", )), # vis_bg removed because it doesn't save in themes
+	(_("Scroll bar"), ("scroll_colour",)),
+	(_("Buttons: normal"), ("media_buttons_off", "mode_button_off", "status_text_normal", "corner_button", "window_button_icon_off", "window_button_x_off", "menu_icons", )),
+	(_("Buttons: hover"), ("media_buttons_over", "mode_button_over", "status_text_over", "window_buttons_icon_over", "window_button_x_on", )),
+	(_("Buttons: active"), ("media_buttons_active", "mode_button_active", "corner_button_active", "time_playing", "pluse_colour", )),
+	(_("Text btn: BG"), ("window_buttons_bg", "box_button_background", "tab_background", "menu_tab",)),
+	(_("Text btn: text"), ("box_button_text", "tab_text",  )),
+	(_("Text btn: BG hover"), ( "box_button_background_highlight", "tab_highlight", )),
+	(_("Text btn: text hover"), ("window_buttons_bg_over", "box_button_text_highlight", )),
+	(_("Text btn: BG active"), ("tab_background_active",)),
+	(_("Text btn: text active"), ("tab_text_active", )),
+	(_("Context menu: BG"), ("menu_background", )),
+	(_("Context menu: text"), ("menu_text", )),
+	(_("Context menu: invalid text"), ("menu_text_disabled",)),
+	(_("Context menu: highlight"), ("menu_highlight_background",)),
+	(_("Boxes: background"), ("box_background",)),
+	(_("Boxes: title text"), ("box_title_text", "box_text_label",)),
+	(_("Boxes: body text"), ("box_text",)),
+	(_("Boxes: sub text"), ("box_sub_text",)),
+	(_("Boxes: input text"), ("box_input_text",)),
+	(_("Mini: BG"), ("mini_mode_background",)),
+	(_("Mini: text 1"), ("mini_mode_text_1",)),
+	(_("Mini: text 2"), ("mini_mode_text_2",)),
 )
 
 
