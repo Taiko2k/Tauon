@@ -271,9 +271,6 @@ def load_theme(colours: ColoursClass, path: Path) -> None:
 				else:
 					colours.corner_icon = ColourRGBA(255, 255, 255, 30)
 
-				if test_lumi(colours.bottom_panel_colour) < 0.2:
-					colours.corner_icon = ColourRGBA(0, 0, 0, 60)
-
 				if not colours.lm:
 					colours.corner_button = rgb_add_hls(colours.top_panel_background, 0, 0.18, 0)
 			elif "status text" in p:
