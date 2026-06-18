@@ -24824,13 +24824,9 @@ class NagBox:
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
-		("Added setting for metadata panel location", False),
-		("Added album art to columns view", False),
-		("Added built-in theme editor 🎨  ", False),
-		("Added smooth scroll support", False),
-		("Redesigned settings UI", False),
-		("Added new mini mode: Signal (Just for fun)", False),
-		("Scroll bar is on the right now!", False),
+		("Added rounded corners setting!", False),
+		("Improved network buffering performance", False),
+		("Added lyrics search to global search", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -24913,7 +24909,7 @@ class NagBox:
 		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
-		version_text = _("Tauon v{version}").format(version=self.SPLASH_VERSION)
+		version_text = "Tauon v10.2"
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
