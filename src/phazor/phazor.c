@@ -3366,6 +3366,16 @@ int load_next_inner() {
 		}
 
 		case MPG: {
+			// For network streams, stop mpg123 from seeking to the end of the
+			// file to read the ID3v1 tag on open. That end-seek makes the byte
+			// stream abandon the in-progress linear download, fetch the last
+			// 128 bytes, then restart the whole download from 0 - roughly
+			// doubling start-up time. We don't use mpg123's ID3 anyway.
+			if (is_net) {
+				mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_NO_PEEK_END, 0);
+			} else {
+				mpg123_param(mh, MPG123_REMOVE_FLAGS, MPG123_NO_PEEK_END, 0);
+			}
 			int ret = mpg123_open_handle(mh, &bs);
 			if (ret != MPG123_OK) {
 				log_msg(
@@ -3377,6 +3387,13 @@ int load_next_inner() {
 				return 1;
 			}
 			decoder_allocated = 1;
+
+			// NO_PEEK_END leaves the file size unknown; supply it so length
+			// estimation and time seeking still work
+			if (is_net) {
+				int64_t fsz = bs_length();
+				if (fsz > 0) mpg123_set_filesize(mh, (off_t) fsz);
+			}
 
 			ret = mpg123_getformat(mh, &rate, &channels, &encoding);
 			if (ret != MPG123_OK) {
@@ -4599,7 +4616,13 @@ EXPORT int get_spectrum(int n_bins, float* bins) {
 
 EXPORT int is_buffering() {
 	if (buffering == 0) return 0;
-	return (int) (get_buff_fill() / config_min_buffer * 100.0);
+	// Fill ratio as a percentage. Multiply before dividing so this isn't
+	// truncated to 0 by integer division, and keep it non-zero (truthy)
+	// for the whole time we are actually buffering.
+	int pct = (int) (get_buff_fill() * 100.0 / config_min_buffer);
+	if (pct < 1) pct = 1;
+	if (pct > 99) pct = 99;
+	return pct;
 }
 
 // How much decoded audio is waiting in the PCM buffer

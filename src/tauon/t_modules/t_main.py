@@ -28370,9 +28370,10 @@ class Over:
 		if old_tmp_cache != prefs.tmp_cache and self.tauon.cachement:
 			self.tauon.cachement.__init__(self.tauon)
 		inner_y += row_h + row_gap
-		# Applies from the next track load; when off, network tracks are
-		# fully downloaded to the cache before playing like before
-		prefs.network_stream = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.network_stream, _("Stream network tracks directly"), accent=accent)
+		# Applies from the next track load. Shown inverted: when enabled,
+		# network tracks are fully downloaded to the cache before playing
+		# (network_stream off); when disabled, they are streamed directly.
+		prefs.network_stream = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.network_stream ^ True, _("Wait for entire file"), accent=accent) ^ True
 		inner_y += row_h + row_gap
 		cache_size_gb = round(self.draw_settings_range_slider(
 			(inner_x, inner_y, inner_w, round(46 * gui.scale)),

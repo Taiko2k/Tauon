@@ -33,6 +33,7 @@ import os.path
 import shutil
 import subprocess
 import sysconfig
+import tempfile
 import threading
 import time
 from ctypes import CFUNCTYPE, POINTER, c_char, c_char_p, c_int, c_void_p, cast
@@ -123,6 +124,19 @@ class StreamFeeder:
 		self.speed = 0.0  # measured download rate in bytes/sec, 0 when not downloading
 		self._speed_bytes = 0
 		self._speed_t0 = time.monotonic()
+		# Pending request to also save a fully-streamed track to the disk cache
+		self._cache_lock = threading.Lock()
+		self._cache_request: tuple[TrackClass, str] | None = None
+		# Prefetch of the upcoming track's first few MB
+		self.prefetch_bytes = 3 * 1000 * 1000
+		self._prefetch_session = requests.Session()  # separate from the main loop's
+		self._prefetch_lock = threading.Lock()
+		self._prefetch_target: TrackClass | None = None  # track to prefetch
+		self._prefetch_url: str | None = None  # url of the held prefetch data
+		self._prefetch_data: bytes = b""
+		self._prefetch_size: int = -1  # full file size if known
+		self._prefetch_done: bool = False
+		self._prefetching: bool = False
 		try:
 			aud.net_generation.restype = ctypes.c_int
 			aud.net_get_url.restype = ctypes.c_char_p
@@ -164,6 +178,144 @@ class StreamFeeder:
 		self._speed_bytes = 0
 		self._speed_t0 = time.monotonic()
 
+	def request_cache(self, track: TrackClass, url: str) -> None:
+		"""Ask the feeder to also save this stream to the disk cache if it
+		downloads fully and contiguously. Matched to the stream by URL."""
+		with self._cache_lock:
+			self._cache_request = (track, url)
+
+	def set_prefetch(self, track: TrackClass | None) -> None:
+		"""Set the upcoming track whose start should be prefetched once the
+		current stream finishes downloading. Passing a different track (or
+		None) discards any previously prefetched data."""
+		with self._prefetch_lock:
+			if track is self._prefetch_target:
+				return
+			self._prefetch_target = track
+			self._prefetch_url = None
+			self._prefetch_data = b""
+			self._prefetch_size = -1
+			self._prefetch_done = False
+
+	def _resolve_stream_url(self, track: TrackClass) -> str | None:
+		"""Resolve a track to a single streamable http(s) URL, or None"""
+		try:
+			network_url, params = self.pctl.get_url(track)
+		except Exception:
+			logging.exception("Prefetch: failed to resolve URL")
+			return None
+		if not isinstance(network_url, str) or not network_url.startswith("http"):
+			return None
+		if params:
+			req = PreparedRequest()
+			req.prepare_url(network_url, params)
+			return req.url
+		return network_url
+
+	def _prefetch_worker(self, track: TrackClass) -> None:
+		"""Fetch the first prefetch_bytes of the upcoming track into memory"""
+		title = getattr(track, "title", None) or getattr(track, "filename", "?")
+		url = None
+		data = b""
+		size = -1
+		try:
+			# Skip if it is already fully cached on disk
+			cachement = self.tauon.cachement
+			if cachement is not None and cachement.get_local_instant(track) is not None:
+				logging.info(f"Prefetch: skip '{title}' (already cached)")
+				return
+			url = self._resolve_stream_url(track)
+			if not url:
+				logging.info(f"Prefetch: skip '{title}' (no streamable URL)")
+				return
+			logging.info(f"Prefetch: start '{title}' (up to {self.prefetch_bytes // 1000} KB)")
+			resp = self._prefetch_session.get(
+				url, headers={"Range": f"bytes=0-{self.prefetch_bytes - 1}"}, stream=True, timeout=(5, 30))
+			try:
+				if resp.status_code != HTTPStatus.PARTIAL_CONTENT:
+					# Without range support we cannot resume after the prefetch,
+					# so prefetching would not help
+					logging.info(f"Prefetch: skip '{title}' (no range support, status {resp.status_code})")
+					return
+				total = resp.headers.get("Content-Range", "").rpartition("/")[2]
+				if total.isdigit():
+					size = int(total)
+				buf = bytearray()
+				for chunk in resp.iter_content(65536):
+					# Abandon if the target changed (queue edit / skip)
+					with self._prefetch_lock:
+						if self._prefetch_target is not track:
+							logging.info(f"Prefetch: abort '{title}' (target changed) after {len(buf) // 1000} KB")
+							return
+					buf += chunk
+					if len(buf) >= self.prefetch_bytes:
+						break
+				data = bytes(buf)
+			finally:
+				resp.close()
+		except Exception:
+			logging.exception(f"Prefetch: download failed for '{title}'")
+			return
+		finally:
+			with self._prefetch_lock:
+				if self._prefetch_target is track and url and data:
+					self._prefetch_url = url
+					self._prefetch_data = data
+					self._prefetch_size = size
+					self._prefetch_done = True
+					logging.info(f"Prefetch: ready '{title}' ({len(data) // 1000} KB of {size // 1000 if size > 0 else '?'} KB)")
+				self._prefetching = False
+
+	def _maybe_start_prefetch(self) -> None:
+		"""Kick off a background prefetch of the upcoming track if pending"""
+		with self._prefetch_lock:
+			if self._prefetching or self._prefetch_done:
+				return
+			track = self._prefetch_target
+			if track is None or not getattr(track, "is_network", False):
+				return
+			self._prefetching = True
+		shoot = threading.Thread(target=self._prefetch_worker, args=(track,))
+		shoot.daemon = True
+		shoot.start()
+
+	def _cache_open(self, track: TrackClass):  # noqa: ANN202 - returns (file, temp, final) or None
+		"""Open a temp file in the cache dir for teeing a stream to disk"""
+		try:
+			cachement = self.tauon.cachement
+			if cachement is None:
+				return None
+			key = cachement.get_key(track)
+			if key in cachement.files:
+				return None  # already cached
+			final_path = os.path.join(cachement.direc, key)
+			if os.path.isfile(final_path):
+				return None
+			fd, temp = tempfile.mkstemp(dir=cachement.direc, suffix=".part")
+			return os.fdopen(fd, "wb"), temp, final_path
+		except Exception:
+			logging.exception("Stream cache: could not open temp file")
+			return None
+
+	def _cache_commit(self, track: TrackClass, temp_path: str, final_path: str, size: int) -> None:
+		"""Move a completed temp file into the cache and register it with Cachement"""
+		try:
+			cachement = self.tauon.cachement
+			os.replace(temp_path, final_path)
+			key = os.path.basename(final_path)
+			if key not in cachement.files:
+				cachement.files.append(key)
+			if key not in cachement.list:
+				cachement.list.append(key)
+			cachement.trim_cache()
+			logging.info(f"Cached streamed track to disk ({size} bytes)")
+		except Exception:
+			logging.exception("Stream cache: finalize failed")
+			try:
+				os.remove(temp_path)
+			except OSError:
+				pass
+
 	def _run(self) -> None:
 		aud = self.aud
 		gen = -1
@@ -173,6 +325,14 @@ class StreamFeeder:
 		pending = b""
 		no_range = False
 		retries = 0
+
+		# Disk-cache tee state for the current stream
+		cache_file = None
+		cache_temp = None
+		cache_final = None
+		cache_track = None
+		cache_offset = 0  # contiguous bytes written from offset 0
+		cache_ok = False
 
 		def close_response() -> None:
 			nonlocal resp, pending
@@ -184,11 +344,48 @@ class StreamFeeder:
 				resp = None
 			pending = b""
 
+		def cache_reset() -> None:
+			nonlocal cache_file, cache_temp, cache_final, cache_track, cache_offset, cache_ok
+			cache_file = None
+			cache_temp = None
+			cache_final = None
+			cache_track = None
+			cache_offset = 0
+			cache_ok = False
+
+		def cache_discard() -> None:
+			# Abandon an incomplete tee and delete its temp file
+			nonlocal cache_file, cache_temp
+			if cache_file is not None:
+				try:
+					cache_file.close()
+				except Exception:
+					logging.exception("Stream cache: close error")
+				if cache_temp:
+					try:
+						os.remove(cache_temp)
+					except OSError:
+						pass
+			cache_reset()
+
+		def cache_commit() -> None:
+			# The whole file was streamed contiguously; persist it
+			nonlocal cache_file
+			if cache_file is None:
+				return
+			try:
+				cache_file.close()
+			except Exception:
+				logging.exception("Stream cache: close error")
+			self._cache_commit(cache_track, cache_temp, cache_final, cache_offset)
+			cache_reset()
+
 		while True:
 			try:
 				g = aud.net_generation()
 				if g == -1:
 					close_response()
+					cache_discard()
 					gen = -1
 					self._speed_idle()
 					time.sleep(0.04)
@@ -196,19 +393,74 @@ class StreamFeeder:
 				if g != gen:
 					# A new stream was opened
 					close_response()
+					cache_discard()
 					gen = g
 					size = -1
 					no_range = False
 					retries = 0
+					# Adopt a pending cache request if it matches this stream
+					req = None
+					with self._cache_lock:
+						if self._cache_request is not None:
+							req = self._cache_request
+							self._cache_request = None
+					try:
+						url0 = aud.net_get_url().decode()
+					except Exception:
+						url0 = ""
+					if req is not None and req[1] == url0:
+						opened = self._cache_open(req[0])
+						if opened is not None:
+							cache_file, cache_temp, cache_final = opened
+							cache_track = req[0]
+							cache_offset = 0
+							cache_ok = True
+
+					# Inject prefetched bytes for this stream, if we have them
+					inj = None
+					with self._prefetch_lock:
+						if self._prefetch_done and self._prefetch_data and self._prefetch_url == url0:
+							inj_title = getattr(self._prefetch_target, "title", None) or "?"
+							inj = (self._prefetch_data, self._prefetch_size)
+							self._prefetch_url = None
+							self._prefetch_data = b""
+							self._prefetch_done = False
+							self._prefetch_target = None
+					if inj is not None:
+						pdata, psize = inj
+						if psize > 0:
+							aud.net_set_size(gen, psize)
+							size = psize
+						fpos = 0
+						while fpos < len(pdata):
+							fed0 = aud.net_feed(gen, fpos, pdata[fpos:], len(pdata) - fpos)
+							if fed0 <= 0:
+								break
+							if cache_file is not None and cache_ok and fpos == cache_offset:
+								try:
+									cache_file.write(pdata[fpos:fpos + fed0])
+									cache_offset += fed0
+								except Exception:
+									logging.exception("Stream cache: prefetch write error")
+									cache_discard()
+							fpos += fed0
+						offset = fpos
+						if offset > 0:
+							logging.info(f"Prefetch: used '{inj_title}' (injected {offset // 1000} KB into the stream)")
 
 				want = aud.net_want(gen)
 				if want == -2:
 					close_response()
 					continue
 				if want == -1:
-					# Buffered through to end of file, nothing to do
+					# Buffered through to end of file. If the whole file came
+					# down contiguously, persist it to the disk cache.
 					close_response()
 					self._speed_idle()
+					if cache_file is not None and cache_ok and size > 0 and cache_offset >= size:
+						cache_commit()
+					# Current track is fully buffered; prefetch the next one
+					self._maybe_start_prefetch()
 					time.sleep(0.05)
 					continue
 
@@ -254,6 +506,11 @@ class StreamFeeder:
 						aud.net_fail(gen)
 						continue
 					offset = want
+					# Don't tee files larger than the cache limit to disk
+					if cache_file is not None and size > 0:
+						limit_b = max(self.tauon.prefs.cache_limit, 0) * 1000 * 1000
+						if limit_b and size > limit_b:
+							cache_discard()
 
 				if not pending:
 					try:
@@ -272,6 +529,11 @@ class StreamFeeder:
 						close_response()
 						if size < 0 or offset >= size:
 							aud.net_eof(gen)
+							# Whole file streamed contiguously, persist it
+							if cache_file is not None and cache_ok and cache_offset == offset:
+								cache_commit()
+							else:
+								cache_discard()
 						else:
 							# Connection ended early, resume from current offset
 							retries += 1
@@ -294,6 +556,19 @@ class StreamFeeder:
 					self._speed_tick(0)
 					time.sleep(0.05)
 					continue
+				# Tee contiguous bytes to the disk cache, if enabled. A seek
+				# (offset no longer matching the write head) makes a complete
+				# file impossible, so the tee is abandoned.
+				if cache_file is not None and cache_ok:
+					if offset == cache_offset:
+						try:
+							cache_file.write(pending[:fed])
+							cache_offset += fed
+						except Exception:
+							logging.exception("Stream cache: write error")
+							cache_discard()
+					else:
+						cache_discard()
 				offset += fed
 				self._speed_tick(fed)
 				pending = pending[fed:] if fed < len(pending) else b""
@@ -856,6 +1131,12 @@ def player4(tauon: Tauon) -> None:
 		elif add_time < 0:
 			add_time = 0
 
+		# Don't advance the clock while a network stream is (re)buffering, e.g.
+		# waiting on a seek's byte range — output is silent until it fills.
+		# player_timer was still hit above, so the gap isn't counted later.
+		if loaded_track_streamed and aud.is_buffering():
+			add_time = 0
+
 		pctl.total_playtime += add_time
 
 		# Wait / speed up, if we are out of sync
@@ -1188,15 +1469,20 @@ def player4(tauon: Tauon) -> None:
 						# Stream directly; phazor pulls the data through the feeder
 						logging.info("Direct stream network track")
 						target_path = stream_url
+						# With the persistent cache enabled, also save the
+						# stream to disk if it downloads fully (tmp_cache off
+						# means the persistent cache is selected)
+						if not prefs.tmp_cache:
+							feeder.request_cache(target_object, stream_url)
 					else:
-						timer = Timer()
-						timer.set()
 						while True:
 							status, path = cachement.get_file(target_object)
 
 							if status in (0, 2):
 								break
-							if timer.get() > 0.25 and gui.buffering is False:
+							# status 1: the track is uncached and downloading,
+							# show buffering immediately
+							if gui.buffering is False:
 								gui.buffering_text = ""
 								pctl.buffering_percent = 0
 								gui.buffering = True
@@ -1262,6 +1548,15 @@ def player4(tauon: Tauon) -> None:
 				_consecutive_load_failures = 0
 				if not target_object.found:
 					pctl.reset_missing_flags()
+
+				# Tell the feeder which track to prefetch next, so its start
+				# can be injected straight into the buffer when it plays
+				if feeder.enabled and prefs.network_stream:
+					try:
+						nxt = pctl.advance(dry=True)
+						feeder.set_prefetch(pctl.get_track(nxt) if nxt is not None else None)
+					except Exception:
+						logging.exception("Failed to set prefetch target")
 
 				length: float = 0
 				remain: float = 0
@@ -1446,6 +1741,15 @@ def player4(tauon: Tauon) -> None:
 						fade = 1
 
 					logging.info("Transition jump")
+					# An uncached network stream isn't ready to play yet; show
+					# buffering immediately and keep it until the play loop sees
+					# the decoder has filled (is_buffering() clears).
+					if stream_url and gui.buffering is False:
+						gui.buffering = True
+						gui.buffering_text = ""
+						pctl.buffering_percent = 0
+						gui.update += 1
+						tauon.wake()
 					set_load_net(1 if stream_url else 0)
 					aud.start(
 						target_path.encode(errors="surrogateescape"),
@@ -1522,7 +1826,12 @@ def player4(tauon: Tauon) -> None:
 						time.sleep(0.016)
 						run_vis()
 
-					if gui.buffering:
+					# For a successful direct stream, the decoder has loaded but
+					# the PCM buffer may still be filling; leave the buffering
+					# flag for the play loop to clear once is_buffering() reports
+					# ready. Clear now for non-streamed tracks (ready already) or
+					# if the load errored/aborted (the play loop won't run).
+					if gui.buffering and (error or not loaded_track_streamed):
 						gui.buffering = False
 						gui.update += 1
 						tauon.wake()
@@ -1557,8 +1866,15 @@ def player4(tauon: Tauon) -> None:
 				if tauon.player4_state != PlayerState.STOPPED:
 					if loaded_track.is_network and loaded_track_streamed:
 						# Direct streams seek natively; the decoder requests
-						# the byte range it needs through the feeder
+						# the byte range it needs through the feeder. Show the
+						# buffering state right away — the play loop freezes the
+						# clock and clears this once the new position has filled.
 						aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
+						if gui.buffering is False:
+							gui.buffering = True
+							gui.buffering_text = ""
+							gui.update += 1
+							tauon.wake()
 					elif loaded_track.is_network:  # and loaded_track.fullpath.endswith(".ogg"):
 						timer = Timer()
 						timer.set()
@@ -1650,6 +1966,12 @@ def player4(tauon: Tauon) -> None:
 				aud.stop()
 				time.sleep(0.1)
 				aud.set_volume(int(pctl.player_volume))
+
+				# Clear any buffering indicator; the play loop will not run now
+				if gui.buffering:
+					gui.buffering = False
+					gui.update += 1
+					tauon.wake()
 
 				if subcommand == "return":
 					pctl.playerSubCommand = "stopped"
