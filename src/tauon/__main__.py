@@ -284,8 +284,10 @@ if Path(user_directory / "x11").exists():
 
 # Pysdl3 doesn't seem to find system sdl3. REF: https://github.com/Aermoss/PySDL3/issues/35 pysdl
 # As a workaround we try find it ourselves
+# find_library() can return both a filename "libSDL3.so.0" or a full path "/opt/homebrew/lib/libSDL3.dylib"
 sdl_dll_name = ctypes.util.find_library("SDL3")
 if sdl_dll_name:
+	sdl_dll_name = str(Path(sdl_dll_name).name)
 	candidates = [
 		"./" + sdl_dll_name,
 		os.path.join("/app/lib", sdl_dll_name),
