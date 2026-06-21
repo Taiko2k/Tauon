@@ -39,9 +39,9 @@ from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
-from rapidfuzz import fuzz
 
 from gi.repository import GLib
+from rapidfuzz import fuzz
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
