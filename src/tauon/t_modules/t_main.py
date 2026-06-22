@@ -28276,7 +28276,7 @@ class Over:
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
 		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start minimised in tray"), accent=accent, disabled=not prefs.use_tray)
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start in tray"), accent=accent, disabled=not prefs.use_tray)
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
 		inner_y += row_h + row_gap

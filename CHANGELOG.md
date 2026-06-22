@@ -6,6 +6,7 @@ Changelog
 
  - Reworked network streaming backend
  - Added rounded corners setting
+ - Added setting start in tray
  - Added search overlay feedback when adding results to playlists
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection
