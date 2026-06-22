@@ -6416,6 +6416,7 @@ class Tauon:
 		sdl3.SDL_SetTrayEntryCallback(prev_entry, self._tray_prev_cb, None)
 
 		self.sdl_tray_launched = True
+		self.gui.tray_active = True
 
 	def destroy_sdl_tray(self) -> None:
 		if self.sdl_tray is None:
@@ -6424,6 +6425,7 @@ class Tauon:
 		sdl3.SDL_DestroyTray(self.sdl_tray)
 		self.sdl_tray = None
 		self.sdl_tray_launched = False
+		self.gui.tray_active = False
 
 	def update_sdl_tray(self) -> None:
 		#if self.tray_releases <= 0:
@@ -18463,6 +18465,7 @@ class Tauon:
 			prefs.loaded_preset,
 			int(pctl.stop_mode),
 			pctl.stop_ref,
+			prefs.start_in_tray,  # 189
 		]
 
 		try:
@@ -19154,6 +19157,12 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.min_to_tray
 		self.prefs.min_to_tray ^= True
+		return None
+
+	def toggle_start_in_tray(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.start_in_tray
+		self.prefs.start_in_tray ^= True
 		return None
 
 	def scale2(self, mode: int = 0) -> bool | None:
@@ -28266,6 +28275,8 @@ class Over:
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start minimised in tray"), accent=accent, disabled=not prefs.use_tray)
 		inner_y += row_h + row_gap
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
 		inner_y += row_h + row_gap
@@ -47946,6 +47957,8 @@ def main(holder: Holder) -> None:
 				bag.loaded_stop_mode = save[187]
 			if len(save) > 188 and save[188] is not None:
 				bag.loaded_stop_ref = save[188]
+			if len(save) > 189 and save[189] is not None:
+				prefs.start_in_tray = save[189]
 
 			del save
 			break
@@ -49463,8 +49476,11 @@ def main(holder: Holder) -> None:
 	render_heartbeat_timer = Timer()
 
 	tauon.set_tray_icons()
-	if prefs.use_tray:
+	if prefs.use_tray or "--tray" in sys.argv:
 		tauon.show_tray()
+
+	if (prefs.start_in_tray and prefs.use_tray) or "--tray" in sys.argv:
+		tauon.min_to_tray()
 
 	while pctl.running:
 		tauon.update_sdl_tray()

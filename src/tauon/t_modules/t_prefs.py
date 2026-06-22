@@ -199,6 +199,7 @@ class Prefs:
 	discord_show: bool = False
 
 	min_to_tray: bool = False
+	start_in_tray: bool = False
 
 	guitar_chords: bool = False
 	prefer_synced_lyrics: bool = True
