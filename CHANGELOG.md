@@ -4,6 +4,7 @@ Changelog
 
 ### v10.2.0
 
+ - Added per-service toggle to disable scrobbling for streaming services
  - Reworked network streaming backend
  - Added rounded corners setting
  - Added setting start in tray

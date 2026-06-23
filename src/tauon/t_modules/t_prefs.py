@@ -370,6 +370,13 @@ class Prefs:
 
 	scrobble_hold: bool = False
 
+	# Allow Tauon to scrobble tracks played from a given streaming service.
+	# Useful to disable when the service scrobbles to Last.fm/ListenBrainz on its own.
+	scrobble_jellyfin: bool = True
+	scrobble_tidal: bool = True
+	scrobble_subsonic: bool = True
+	scrobble_plex: bool = True
+
 	artist_list_sort_mode = "alpha"
 
 	phazor_device_selected = "Default"

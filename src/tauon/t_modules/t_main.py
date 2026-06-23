@@ -4828,6 +4828,25 @@ class LastScrob:
 		self.running = False
 		self.queue: list[tuple[TrackClass, int, str]] = []
 
+	def scrobble_allowed(self, track_object: TrackClass) -> bool:
+		"""Whether Tauon may scrobble this track to Last.fm/ListenBrainz/Maloja.
+
+		Lets the user disable scrobbling per streaming service when that service
+		already scrobbles on its own (e.g. a Jellyfin plugin or an Airsonic/TIDAL
+		account linked directly to Last.fm), avoiding double scrobbles.
+		"""
+		prefs = self.prefs
+		ext = track_object.file_ext
+		if ext == "JELY":
+			return prefs.scrobble_jellyfin
+		if ext == "TIDAL":
+			return prefs.scrobble_tidal
+		if ext == "SUB":
+			return prefs.scrobble_subsonic
+		if ext == "PLEX":
+			return prefs.scrobble_plex
+		return True
+
 	def start_queue(self) -> None:
 		self.running = True
 		mini_t = threading.Thread(target=self.process_queue)
@@ -4925,6 +4944,9 @@ class LastScrob:
 		if track_object.is_network and track_object.file_ext == "SUB":
 			self.tauon.subsonic.listen(track_object, submit=False)
 
+		if track_object.is_network and not self.scrobble_allowed(track_object):
+			return
+
 		if not self.prefs.scrobble_hold:
 			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
 				mini_t = threading.Thread(target=self.tauon.lastfm.update, args=([track_object]))
@@ -4944,6 +4966,9 @@ class LastScrob:
 		if track_object.is_network:
 			if track_object.file_ext == "SUB":
 				self.queue.append((track_object, int(time.time()), "air"))
+
+		if not self.scrobble_allowed(track_object):
+			return
 
 		if not self.prefs.scrobble_hold:
 			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
@@ -29285,7 +29310,7 @@ class Over:
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
 			card1_h = round(122 * gui.scale) if two_factor else round(266 * gui.scale)
-			card2_h = round(158 * gui.scale)
+			card2_h = round(206 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -29361,11 +29386,19 @@ class Over:
 					],
 					accent,
 				)
+			inner_y += action_h + row_gap
+			prefs.scrobble_plex = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				prefs.scrobble_plex,
+				_("Allow local scrobbling"),
+				_("Disable if Plex scrobbles on its own."),
+				accent,
+			)
 			return total_h
 
 		if view == 7:
 			card1_h = round(218 * gui.scale)
-			card2_h = round(164 * gui.scale)
+			card2_h = round(212 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -29414,6 +29447,14 @@ class Over:
 				prefs.subsonic_password_plain,
 				_("Use plain text authentication"),
 				_("Needed for Nextcloud Music."),
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			prefs.scrobble_subsonic = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				prefs.scrobble_subsonic,
+				_("Allow local scrobbling"),
+				_("Disable if your server scrobbles on its own."),
 				accent,
 			)
 			inner_y += info_row_h + row_gap
@@ -29532,7 +29573,7 @@ class Over:
 			return total_h
 
 		if view == 10:
-			card1_h = round(218 * gui.scale)
+			card1_h = round(266 * gui.scale)
 			card2_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
@@ -29578,6 +29619,14 @@ class Over:
 				_("Server URL"),
 				tauon.text_jelly_ser,
 				prefs.jelly_server_url,
+				accent,
+			)
+			inner_y += field_h + row_gap
+			prefs.scrobble_jellyfin = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				prefs.scrobble_jellyfin,
+				_("Allow local scrobbling"),
+				_("Disable if Jellyfin scrobbles on its own."),
 				accent,
 			)
 
@@ -29662,7 +29711,7 @@ class Over:
 		if view == 12:
 			logged_in = os.path.isfile(tauon.tidal.save_path)
 			waiting_for_redirect = tauon.tidal.login_stage != 0 and not logged_in
-			card1_h = round(224 * gui.scale) if waiting_for_redirect else round(168 * gui.scale)
+			card1_h = round(224 * gui.scale) if waiting_for_redirect else round(216 * gui.scale)
 			card2_h = round(116 * gui.scale) if logged_in else 0
 			total_h = card1_h + (card_gap + card2_h if card2_h else 0)
 			if not draw:
@@ -29689,6 +29738,14 @@ class Over:
 					[
 						(_("Logout"), tauon.tidal.logout, True),
 					],
+					accent,
+				)
+				inner_y += action_h + row_gap
+				prefs.scrobble_tidal = self.settings_switch_row(
+					(inner_x, inner_y, inner_w, info_row_h),
+					prefs.scrobble_tidal,
+					_("Allow local scrobbling"),
+					_("Disable if TIDAL scrobbles on its own."),
 					accent,
 				)
 			elif waiting_for_redirect:
@@ -44802,6 +44859,11 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 
+	cf.update_value("scrobble-jellyfin", prefs.scrobble_jellyfin)
+	cf.update_value("scrobble-tidal", prefs.scrobble_tidal)
+	cf.update_value("scrobble-subsonic", prefs.scrobble_subsonic)
+	cf.update_value("scrobble-plex", prefs.scrobble_plex)
+
 	cf.update_value("stream-bitrate", prefs.network_stream_bitrate)
 
 	cf.update_value("display-language", prefs.ui_lang)
@@ -45378,6 +45440,16 @@ def load_prefs(bag: Bag) -> None:
 	prefs.lastfm_pull_love = cf.sync_add(
 		"bool", "lastfm-pull-love", prefs.lastfm_pull_love,
 		"Overwrite local love status on scrobble")
+
+	cf.br()
+	cf.add_text("[scrobbling]")
+	cf.add_comment(
+		"Allow Tauon to scrobble tracks played from a streaming service. Disable for "
+		"services that already scrobble on their own to avoid double scrobbles.")
+	prefs.scrobble_jellyfin = cf.sync_add("bool", "scrobble-jellyfin", prefs.scrobble_jellyfin)
+	prefs.scrobble_tidal = cf.sync_add("bool", "scrobble-tidal", prefs.scrobble_tidal)
+	prefs.scrobble_subsonic = cf.sync_add("bool", "scrobble-subsonic", prefs.scrobble_subsonic)
+	prefs.scrobble_plex = cf.sync_add("bool", "scrobble-plex", prefs.scrobble_plex)
 
 
 	cf.br()
