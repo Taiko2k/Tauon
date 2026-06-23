@@ -20735,9 +20735,10 @@ class TimedLyricsRen:
 			if side_panel:
 				if self.coll((x, y, w, h)):
 					self.scroll_position += scroll_distance
-			else:
+				self.recenter_timeout.set()
+			elif self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
 				self.scroll_position += scroll_distance
-			self.recenter_timeout.set()
+				self.recenter_timeout.set()
 
 
 		self.scroll_position = round(self.scroll_position)
