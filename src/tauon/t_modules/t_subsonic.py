@@ -480,9 +480,9 @@ class SubsonicService:
 
 					getsongs(index, item["id"], item["title"], inner=True, parent=item)
 					continue
-
 				self.gui.to_got += 1
 				song = item
+				#logging.debug(item)
 				nt = self.tauon.TrackClass()
 
 				if parent and "artist" in parent:
@@ -500,6 +500,17 @@ class SubsonicService:
 					nt.date = str(song["year"])
 				if "duration" in song:
 					nt.length = song["duration"]
+				# [{'name': 'Pop'}, {'name': 'Rap'}, {'name': 'Rock'}]
+				if "genres" in song:
+					genres: dict[str, str] = song["genres"]
+					if len(genres) == 0:
+						continue
+					genre_names = [g["name"] for g in genres if g.get("name")]
+					if not genre_names:
+						logging.warning(f"Failed to parse genres from subsonic, got: {genres}")
+					if len(genres) > 1:
+						nt.misc["genres"] = genre_names
+					nt.genre = " / ".join(genre_names)
 
 				nt.file_ext = "SUB"
 				nt.parent_folder_name = name
