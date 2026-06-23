@@ -385,16 +385,42 @@ class LoadImageAsset:
 		self.w = p_w.contents.value
 		self.h = p_h.contents.value
 
+		# Lazily created copies of this texture on other renderers (e.g. a
+		# SecondaryWindow), keyed by renderer_key(). The home renderer's texture
+		# lives in self.texture above.
+		self._alt_textures: dict[int, sdl3.LP_SDL_Texture] = {}
+
+	def _texture_for(self, renderer: sdl3.LP_SDL_Renderer | None) -> sdl3.LP_SDL_Texture:
+		if renderer is None:
+			return self.texture
+		from tauon.t_modules.t_window import renderer_key
+		key = renderer_key(renderer)
+		if key == renderer_key(self.renderer):
+			return self.texture
+		texture = self._alt_textures.get(key)
+		if texture is None:
+			raw_image = sdl3.IMG_Load(c_char_p(self.path.encode()))
+			texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
+			sdl3.SDL_DestroySurface(raw_image)
+			self._alt_textures[key] = texture
+		return texture
+
+	def _destroy_alt_textures(self) -> None:
+		for texture in self._alt_textures.values():
+			sdl3.SDL_DestroyTexture(texture)
+		self._alt_textures.clear()
+
 	def reload(self) -> None:
 		sdl3.SDL_DestroyTexture(self.texture)
+		self._destroy_alt_textures()
 		if self.scale_name:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: float, y: float, _colour: ColourRGBA | None = None) -> None:
+	def render(self, x: float, y: float, _colour: ColourRGBA | None = None, renderer: sdl3.LP_SDL_Renderer | None = None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.rect)
+		sdl3.SDL_RenderTexture(renderer or self.renderer, self._texture_for(renderer), None, self.rect)
 
 class WhiteModImageAsset:
 	# TODO(Martin): Global class var!
@@ -419,20 +445,55 @@ class WhiteModImageAsset:
 		self.w = p_w.contents.value
 		self.h = p_h.contents.value
 
+		# Lazily created copies on other renderers, with each copy's last applied
+		# colour-mod tracked separately: value is [texture, last_colour].
+		self._alt_textures: dict[int, list] = {}
+
+	def _entry_for(self, renderer: sdl3.LP_SDL_Renderer | None) -> tuple[sdl3.LP_SDL_Texture, ColourRGBA, int | None]:
+		"""Return (texture, last_colour, alt_key) for the given renderer.
+
+		alt_key is None when the home texture is used (its colour state lives in
+		self.colour); otherwise it identifies the per-renderer copy.
+		"""
+		if renderer is None:
+			return self.texture, self.colour, None
+		from tauon.t_modules.t_window import renderer_key
+		key = renderer_key(renderer)
+		if key == renderer_key(self.bag.renderer):
+			return self.texture, self.colour, None
+		entry = self._alt_textures.get(key)
+		if entry is None:
+			raw_image = sdl3.IMG_Load(self.path.encode())
+			texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
+			sdl3.SDL_DestroySurface(raw_image)
+			entry = [texture, ColourRGBA(255, 255, 255, 255)]
+			self._alt_textures[key] = entry
+		return entry[0], entry[1], key
+
+	def _destroy_alt_textures(self) -> None:
+		for entry in self._alt_textures.values():
+			sdl3.SDL_DestroyTexture(entry[0])
+		self._alt_textures.clear()
+
 	def reload(self) -> None:
 		sdl3.SDL_DestroyTexture(self.texture)
+		self._destroy_alt_textures()
 		if self.scale_name:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
 		self.__init__(bag=self.bag, path=self.path, reload=True, scale_name=self.scale_name)
 
-	def render(self, x: float, y: float, colour: ColourRGBA) -> None:
-		if colour != self.colour:
-			sdl3.SDL_SetTextureColorMod(self.texture, colour.r, colour.g, colour.b)
-			sdl3.SDL_SetTextureAlphaMod(self.texture, colour.a)
-			self.colour = colour
+	def render(self, x: float, y: float, colour: ColourRGBA, renderer: sdl3.LP_SDL_Renderer | None = None) -> None:
+		texture, last_colour, alt_key = self._entry_for(renderer)
+		if colour != last_colour:
+			sdl3.SDL_SetTextureColorMod(texture, colour.r, colour.g, colour.b)
+			sdl3.SDL_SetTextureAlphaMod(texture, colour.a)
+			if alt_key is None:
+				self.colour = colour
+			else:
+				self._alt_textures[alt_key][1] = colour
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderTexture(self.bag.renderer, self.texture, None, self.rect)
+		sdl3.SDL_RenderTexture(renderer or self.bag.renderer, texture, None, self.rect)
 
 class DConsole:
 	"""GUI console with logs"""
@@ -5062,6 +5123,48 @@ class Menu:
 		self.spring_loading_timer: Timer = Timer()
 		self.can_be_spring_clicked: bool = False
 
+		# When set (popup-menu mode), the menu draws into this SecondaryWindow's
+		# renderer/ddt instead of the main window, and self.pos is treated as
+		# local to that window. None means draw inline in the main window.
+		self.popup_window = None
+		# Screen-relative anchor (offset from the main window's top-left) where
+		# the popup window should appear, recorded at activate() time.
+		self.popup_anchor: list[int] = [0, 0]
+		# When True the anchor marks the menu's BOTTOM edge (opens upward) - used
+		# for bottom-panel menus like the playback menu.
+		self.popup_bottom_anchor: bool = False
+		# Decided in activate(): True => draw in a separate popup window (the menu
+		# or a submenu would otherwise spill outside the main window); False =>
+		# draw inline in the main window (the common case).
+		self.use_popup: bool = False
+
+	@property
+	def render_ddt(self) -> TDraw:
+		return self.popup_window.ddt if self.popup_window is not None else self.ddt
+
+	@property
+	def render_renderer(self):
+		"""Renderer to draw image assets on (None = main renderer)."""
+		return self.popup_window.renderer if self.popup_window is not None else None
+
+	@property
+	def pointer(self) -> list[int]:
+		"""Pointer position to hit-test the menu against.
+
+		In popup mode the menu is drawn (and the pointer reported) in the popup
+		window's own local pixel space, kept entirely separate from the main
+		window's inp.mouse_position. Only the popup the pointer is actually in
+		(tauon.active_pointer_window) reports a real position; the other menu
+		window reports off-screen so its items don't false-hover or false-click
+		from a stale pointer.
+		"""
+		win = self.popup_window
+		if win is not None:
+			if win is self.tauon.active_pointer_window:
+				return list(win.last_local)
+			return [-100000, -100000]
+		return self.inp.mouse_position
+
 	def deco(self, _=_) -> Decorator:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
@@ -5101,6 +5204,7 @@ class Menu:
 	def render_icon(self, x: float, y: float, icon: MenuIcon | None, selected: bool, fx: Decorator) -> None:
 		colours = self.colours
 		gui     = self.gui
+		renderer = self.render_renderer
 		if colours.lm:
 			selected = True
 
@@ -5121,7 +5225,7 @@ class Menu:
 					colour = colours.menu_icons
 					# if colours.lm:
 					#	 colour = ColourRGBA(160, 160, 160, 255)
-					icon.base_asset_mod.render(x, y, colour)
+					icon.base_asset_mod.render(x, y, colour, renderer=renderer)
 					return
 
 				if colour is None:
@@ -5129,30 +5233,30 @@ class Menu:
 					colour = colours.menu_icons  # ColourRGBA(255, 255, 255, 35)
 					# colour = ColourRGBA(50, 50, 50, 255)
 
-				icon.asset.render(x, y, colour)
+				icon.asset.render(x, y, colour, renderer=renderer)
 			else:
 				if not is_grey(colours.menu_background):
 					return  # Since these are currently pre-rendered greyscale, they are
 					# Incompatible with coloured backgrounds. Fix TODO
 				if selected and fx.text_colour == colours.menu_text_disabled:
-					icon.base_asset.render(x, y)
+					icon.base_asset.render(x, y, renderer=renderer)
 					return
 
 				# Pre-rendered mode
 				if icon.mode_callback is not None:
 					if icon.mode_callback():
-						icon.asset.render(x, y)
+						icon.asset.render(x, y, renderer=renderer)
 					else:
-						icon.base_asset.render(x, y)
+						icon.base_asset.render(x, y, renderer=renderer)
 				elif selected:
-					icon.asset.render(x, y)
+					icon.asset.render(x, y, renderer=renderer)
 				else:
-					icon.base_asset.render(x, y)
+					icon.base_asset.render(x, y, renderer=renderer)
 
 	def render(self) -> None:
 		tauon   = self.tauon
 		gui     = self.gui
-		ddt     = self.ddt
+		ddt     = self.render_ddt
 		inp     = self.inp
 		colours = self.colours
 
@@ -5183,6 +5287,14 @@ class Menu:
 
 			x_run = self.pos[0]
 
+			# In popup-window mode the window is sized to fit the menu and the
+			# compositor keeps it on-screen, so the in-window column-wrap / flip
+			# behaviour below must be disabled by using effectively-infinite bounds.
+			if self.popup_window is not None:
+				bounds = (1 << 24, 1 << 24)
+			else:
+				bounds = self.window_size
+
 			springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
 
 			for i in range(len(self.items)):
@@ -5196,7 +5308,7 @@ class Menu:
 						break_colour = rgb_add_hls(colours.menu_background, 0, 0.06, 0)
 
 					rect = (x_run, y_run, self.w, self.break_height - 1)
-					if self.coll(rect):
+					if coll_point(self.pointer, rect):
 						self.clicked = False
 
 					ddt.rect_a((x_run, y_run), (self.w, self.break_height), colours.menu_background)
@@ -5239,7 +5351,7 @@ class Menu:
 				rect = (x_run, y_run, self.w, self.h - 1)
 				self.fields.add(rect)
 
-				if coll_point(inp.mouse_position, (x_run, y_run, self.w, self.h - 1)):
+				if coll_point(self.pointer, (x_run, y_run, self.w, self.h - 1)):
 					ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
 					selected = True
 					bg = alpha_blend(colours.menu_highlight_background, bg)
@@ -5290,7 +5402,7 @@ class Menu:
 					#	 colour = ColourRGBA(150, 150, 150, 255)
 					# if self.sub_active == self.items[i][2]:
 					#	 colour = ColourRGBA(150, 150, 150, 255)
-					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour)
+					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour, renderer=self.render_renderer)
 
 				# Render the items label
 				ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
@@ -5308,96 +5420,20 @@ class Menu:
 
 				y_run += self.h
 
-				if y_run > self.window_size[1] - self.h:
+				if y_run > bounds[1] - self.h:
 					direc = 1
-					if self.pos[0] > self.window_size[0] // 2:
+					if self.pos[0] > bounds[0] // 2:
 						direc = -1
 					x_run += self.w * direc
 					y_run = self.pos[1]
 
-				# Render sub menu if active
-				if self.sub_active > -1 and self.items[i].is_sub_menu and self.sub_active == self.items[i].sub_menu_number:
-
-					# sub_pos = [x_run + self.w, self.pos[1] + i * self.h]
-					sub_pos = [x_run + self.w, self.sub_y_position]
-					sub_w = self.items[i].sub_menu_width * gui.scale
-
-					if sub_pos[0] + sub_w > self.window_size[0]:
-						sub_pos[0] = x_run - sub_w
-						if tauon.view_box.active:
-							sub_pos[0] -= tauon.view_box.w
-
-					fx = self.deco()
-
-					minY = self.window_size[1] - self.h * len(self.subs[self.sub_active]) - 15 * gui.scale
-					sub_pos[1] = min(sub_pos[1], minY)
-
-					xoff = 0
-					for i in self.subs[self.sub_active]:
-						if i.icon is not None:
-							xoff = 24 * gui.scale
-							break
-
-					for w in range(len(self.subs[self.sub_active])):
-
-						if self.subs[self.sub_active][w].show_test is not None:
-							if not self.subs[self.sub_active][w].show_test(self.reference):
-								continue
-
-						# Get item colours
-						if self.subs[self.sub_active][w].render_func is not None:
-							if self.subs[self.sub_active][w].pass_ref_deco:
-								fx = self.subs[self.sub_active][w].render_func(self.reference)
-							else:
-								fx = self.subs[self.sub_active][w].render_func()
-
-						# Item background
-						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), fx.bg_colour)
-
-						# Detect if mouse is over this item
-						rect = (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)
-						self.fields.add(rect)
-						this_select = False
-						bg = colours.menu_background
-						if coll_point(inp.mouse_position, (sub_pos[0], sub_pos[1] + w * self.h, sub_w, self.h - 1)):
-							ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (sub_w, self.h), colours.menu_highlight_background)
-							bg = alpha_blend(colours.menu_highlight_background, bg)
-							this_select = True
-
-							# Call Callback
-							if ( self.clicked or ( springing and not self.inp.right_down and not self.inp.mouse_down ) ) and not self.is_item_disabled(self.subs[self.sub_active][w]):
-								# If callback needs args
-								if self.subs[self.sub_active][w].args is not None:
-									self.subs[self.sub_active][w].func(self.reference, self.subs[self.sub_active][w].args)
-
-								# If callback just need ref
-								elif self.subs[self.sub_active][w].pass_ref:
-									self.subs[self.sub_active][w].func(self.reference)
-
-								else:
-									self.subs[self.sub_active][w].func()
-								self.close_next_frame = True
-								gui.update += 1
-
-						label = fx.text if fx.text is not None else self.subs[self.sub_active][w].title
-
-						# Show text as disabled if disable_test() passes
-						if self.is_item_disabled(self.subs[self.sub_active][w]):
-							fx.text_colour = colours.menu_text_disabled
-
-						# Render sub items icon
-						icon = self.subs[self.sub_active][w].icon
-						self.render_icon(sub_pos[0] + 11 * gui.scale, sub_pos[1] + w * self.h + 5 * gui.scale, icon, this_select, fx)
-
-						# Render the items label
-						ddt.text(
-							(sub_pos[0] + 10 * gui.scale + xoff, sub_pos[1] + ytoff + w * self.h), label, fx.text_colour, self.font, bg=bg)
-
-						# Draw tab
-						ddt.rect_a((sub_pos[0], sub_pos[1] + w * self.h), (4 * gui.scale, self.h), colours.menu_tab)
-
-						# Render the menu outline
-						# ddt.rect_a(sub_pos, (sub_w, self.h * len(self.subs[self.sub_active])), colours.grey(40))
+				# Inline mode: draw the active submenu beside its parent item here
+				# (popup mode draws it into its own window via draw_popup_menus).
+				# Inline only happens when the menu fit at its anchor, so the
+				# submenu fits to the right with no flip/clamp needed.
+				if self.popup_window is None and self.sub_active > -1 \
+						and self.items[i].is_sub_menu and self.sub_active == self.items[i].sub_menu_number:
+					self.render_submenu(int(x_run + self.w), int(self.sub_y_position))
 
 			# Process Click Actions
 			if to_call is not None and not self.is_item_disabled(self.items[to_call]):
@@ -5424,7 +5460,7 @@ class Menu:
 				# ddt.rect_a(self.pos, (self.w, self.h * len(self.items)), colours.grey(40))
 			self.can_be_spring_clicked = self.can_be_spring_clicked and ( self.inp.right_down or self.inp.mouse_down )
 
-	def activate(self, in_reference: object = 0, position: list[int] | None = None) -> None:
+	def activate(self, in_reference: object = 0, position: list[int] | None = None, bottom_anchor: bool = False) -> None:
 		Menu.active = True
 
 		if position is not None:
@@ -5435,35 +5471,174 @@ class Menu:
 		self.reference = in_reference
 		Menu.switch = self.id
 		self.sub_active = -1
+		self.popup_window = None
 
-		# Reposition the menu if it would otherwise intersect with far edge of window
-		if not position and self.pos[0] + self.w > self.window_size[0]:
-			self.pos[0] -= round(self.w + 3 * self.gui.scale)
+		# Decide placement: a menu opens down-right from the anchor (or upward for
+		# a bottom-anchored menu). If it - or its widest possible submenu - would
+		# extend past the window at that natural position, it pops out into its
+		# own popup window instead of being flipped/shifted to fit inside.
+		gui = self.gui
+		win_w, win_h = self.window_size[0], self.window_size[1]
+		box_w, box_h = self.max_bounding_box()
+		main_h = self.popup_size()[1]
+		anchor = [int(self.pos[0]), int(self.pos[1])]
+		self.popup_bottom_anchor = bottom_anchor
 
-		# Get height size of menu
-		full_h = 0
-		shown_h = 0
-		for item in self.items:
-			if item is None:
-				full_h += self.break_height
-				shown_h += self.break_height
-			else:
-				full_h += self.h
-				if self.test_item_active(item) is True:
-					shown_h += self.h
+		if bottom_anchor:
+			# Opens upward: the anchor marks the bottom edge.
+			self.use_popup = (anchor[0] + box_w > win_w) or (anchor[1] - box_h < gui.panelY)
+		else:
+			self.use_popup = (anchor[0] + box_w > win_w) or (anchor[1] + box_h > win_h)
 
-		# Flip menu up if would intersect with bottom of window
-		if self.pos[1] + full_h > self.window_size[1]:
-			self.pos[1] -= shown_h
-
-			# Prevent moving outside top of window
-			if self.pos[1] < self.gui.panelY:
-				self.pos[1] = self.gui.panelY
-				self.pos[0] += 5 * self.gui.scale
+		if self.use_popup:
+			# Popup mode: anchor the popup window at the requested point; the
+			# compositor keeps it on-screen, so no in-window repositioning needed.
+			self.popup_anchor = anchor
+			self.pos = [0, 0]
+		else:
+			# Inline mode: it fits at the natural position, so draw there as-is
+			# (no flip/shift). A bottom-anchored menu draws its column above the
+			# anchor.
+			self.pos = [anchor[0], anchor[1] - main_h if bottom_anchor else anchor[1]]
 
 		self.spring_loading_timer.set()
 		self.can_be_spring_clicked = True
 		self.active = True
+
+	def popup_size(self) -> tuple[int, int]:
+		"""Pixel size the popup window needs to fit this menu's main column.
+
+		Submenus are drawn in their own window (see submenu_size /
+		render_submenu), so they are not included here.
+		"""
+		gui = self.gui
+		w = int(self.w)
+		h = 0
+		for item in self.items:
+			if item is None:
+				h += self.break_height
+			elif self.test_item_active(item):
+				h += self.h
+
+		return max(1, w), max(1, h + round(2 * gui.scale))
+
+	def submenu_size(self) -> tuple[int, int]:
+		"""Pixel size of the currently active submenu's own popup window."""
+		gui = self.gui
+		if not (-1 < self.sub_active < len(self.subs)):
+			return 1, 1
+		sub_w = 0
+		for item in self.items:
+			if item is not None and item.is_sub_menu and item.sub_menu_number == self.sub_active:
+				sub_w = int(item.sub_menu_width * gui.scale)
+				break
+		shown = sum(
+			1 for s in self.subs[self.sub_active]
+			if s.show_test is None or s.show_test(self.reference)
+		)
+		return max(1, sub_w), max(1, shown * self.h + round(2 * gui.scale))
+
+	def max_bounding_box(self) -> tuple[int, int]:
+		"""Worst-case (w, h) this menu could occupy, including any one submenu.
+
+		A submenu opens beside the main column at its parent's y and extends
+		down, so the box is wide enough for the main column plus the widest
+		submenu, and tall enough for the main column or the lowest submenu
+		bottom - whichever is greater. Used to decide inline vs popup placement.
+		"""
+		gui = self.gui
+		main_w, main_h = self.popup_size()
+		widest_sub = 0
+		tallest_extent = 0
+		run_y = 0
+		for item in self.items:
+			if item is None:
+				run_y += self.break_height
+				continue
+			if not self.test_item_active(item):
+				continue
+			if item.is_sub_menu and 0 <= item.sub_menu_number < len(self.subs):
+				sub_w = int(item.sub_menu_width * gui.scale)
+				shown = sum(
+					1 for s in self.subs[item.sub_menu_number]
+					if s.show_test is None or s.show_test(self.reference)
+				)
+				widest_sub = max(widest_sub, sub_w)
+				tallest_extent = max(tallest_extent, run_y + shown * self.h)
+			run_y += self.h
+		return main_w + widest_sub, max(main_h, tallest_extent + round(2 * gui.scale))
+
+	def render_submenu(self, ox: int = 0, oy: int = 0) -> None:
+		"""Draw the active submenu with its top-left at (ox, oy).
+
+		Mirrors the main item rendering for the active submenu's items. For a
+		popup submenu (ox, oy) = (0, 0) (its own window's local origin); for an
+		inline submenu they are absolute coordinates in the main window beside
+		the parent item. Drawing/hit-testing follow self.render_ddt / self.pointer
+		so the same code serves both modes.
+		"""
+		if not (-1 < self.sub_active < len(self.subs)):
+			return
+
+		gui     = self.gui
+		ddt     = self.render_ddt
+		colours = self.colours
+
+		ytoff = round(self.h * 0.71 - 13 * gui.scale)
+		sub_items = self.subs[self.sub_active]
+		sub_w = self.submenu_size()[0]
+
+		springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
+
+		# Left text inset depends on whether any item in this submenu has an icon.
+		xoff = 0
+		for item in sub_items:
+			if item.icon is not None:
+				xoff = 24 * gui.scale
+				break
+
+		row = 0
+		for item in sub_items:
+			if item.show_test is not None and not item.show_test(self.reference):
+				continue
+
+			y = oy + row * self.h
+
+			if item.render_func is not None:
+				fx = item.render_func(self.reference) if item.pass_ref_deco else item.render_func()
+			else:
+				fx = self.deco()
+
+			ddt.rect_a((ox, y), (sub_w, self.h), fx.bg_colour)
+			self.fields.add((ox, y, sub_w, self.h - 1))
+
+			bg = colours.menu_background
+			this_select = False
+			if coll_point(self.pointer, (ox, y, sub_w, self.h - 1)):
+				ddt.rect_a((ox, y), (sub_w, self.h), colours.menu_highlight_background)
+				bg = alpha_blend(colours.menu_highlight_background, bg)
+				this_select = True
+
+				if (self.clicked or (springing and not self.inp.right_down and not self.inp.mouse_down)) \
+						and not self.is_item_disabled(item):
+					if item.args is not None:
+						item.func(self.reference, item.args)
+					elif item.pass_ref:
+						item.func(self.reference)
+					else:
+						item.func()
+					self.close_next_frame = True
+					gui.update += 1
+
+			label = fx.text if fx.text is not None else item.title
+			if self.is_item_disabled(item):
+				fx.text_colour = colours.menu_text_disabled
+
+			self.render_icon(ox + 11 * gui.scale, y + 5 * gui.scale, item.icon, this_select, fx)
+			ddt.text((ox + 10 * gui.scale + xoff, y + ytoff), label, fx.text_colour, self.font, bg=bg)
+			ddt.rect_a((ox, y), (4 * gui.scale, self.h), colours.menu_tab)
+
+			row += 1
 
 class GallClass:
 	def __init__(self, tauon: Tauon, size: int = 250, save_out: bool = True) -> None:
@@ -6028,6 +6203,12 @@ class Tauon:
 		self.folder_menu: Menu           = Menu(self, 193, show_icons=True)
 		self.extra_tab_menu: Menu        = Menu(self, 155, show_icons=True)
 
+		# Lazily created popup windows for context menus (see draw_popup_menus /
+		# t_window): the main column and the active submenu each get their own.
+		# active_pointer_window is whichever of them the pointer is currently in.
+		self.menu_popup = None
+		self.submenu_popup = None
+		self.active_pointer_window = None
 
 		self.smooth_scroll:                     SmoothScroll = SmoothScroll(tauon=self)
 		self.lb:                                ListenBrainz = ListenBrainz(tauon=self)
@@ -14177,6 +14358,156 @@ class Tauon:
 			if any(os.path.normpath(path) == music_path for path in item.last_folder):
 				self.gui.add_music_folder_ready = False
 				break
+
+	def active_menu(self) -> Menu | None:
+		"""The context menu currently being shown, if any."""
+		for menu in Menu.instances:
+			if menu.active and Menu.switch == menu.id:
+				return menu
+		return None
+
+	def menu_popup_for_window(self, window_id: int):
+		"""Return the menu popup (main or submenu) owning window_id, else None."""
+		for popup in (self.menu_popup, self.submenu_popup):
+			if popup is not None and popup.visible and popup.window is not None and popup.window_id() == window_id:
+				return popup
+		return None
+
+	def _destroy_secondary(self, popup) -> None:
+		"""Destroy a SecondaryWindow, dropping its icon textures from the caches.
+
+		Destroying (not hiding) removes the window as an OS event target so it
+		can't keep an event grab; the per-renderer asset textures must be dropped
+		first so nothing holds a dangling handle a future renderer could collide
+		with.
+		"""
+		if popup is None:
+			return
+		if popup.renderer is not None:
+			self._forget_renderer_textures(popup.renderer)
+		popup.destroy()
+
+	def close_submenu_popup(self) -> None:
+		"""Destroy just the submenu popup window (the main menu stays open)."""
+		if self.submenu_popup is None:
+			return
+		if self.active_pointer_window is self.submenu_popup:
+			self.active_pointer_window = self.menu_popup
+		self._destroy_secondary(self.submenu_popup)
+		self.submenu_popup = None
+
+	def close_menu_popup(self) -> None:
+		"""Destroy both menu popup windows and reset main input."""
+		if self.menu_popup is None and self.submenu_popup is None:
+			return
+		self._destroy_secondary(self.submenu_popup)
+		self.submenu_popup = None
+		self._destroy_secondary(self.menu_popup)
+		self.menu_popup = None
+		self.active_pointer_window = None
+		self.refresh_main_mouse_position()
+
+	def _forget_renderer_textures(self, renderer) -> None:
+		from tauon.t_modules.t_window import renderer_key
+		key = renderer_key(renderer)
+		for asset in (*LoadImageAsset.assets, *WhiteModImageAsset.assets):
+			alt = getattr(asset, "_alt_textures", None)
+			if alt is not None:
+				alt.pop(key, None)
+
+	def refresh_main_mouse_position(self) -> None:
+		"""Re-sync inp.mouse_position to the real cursor location in the main window.
+
+		While a menu popup is open the cursor is over the popup, so the main
+		window receives no motion events and inp.mouse_position goes stale. When
+		the menu closes by clicking an item (no main-window motion follows) the
+		main UI would keep that stale position until the mouse next moves. The
+		global cursor position is focus-independent, so (global - main window
+		origin) scaled points->pixels gives the correct main-window position
+		regardless of where the (possibly compositor-repositioned) popup was.
+		"""
+		gx, gy = ctypes.c_float(0), ctypes.c_float(0)
+		sdl3.SDL_GetGlobalMouseState(ctypes.byref(gx), ctypes.byref(gy))
+		wx, wy = ctypes.c_int(0), ctypes.c_int(0)
+		sdl3.SDL_GetWindowPosition(self.t_window, ctypes.byref(wx), ctypes.byref(wy))
+		logical = self.bag.logical_size
+		scale = (self.window_size[0] / logical[0]) if logical[0] else 1.0
+		self.inp.mouse_position[0] = int((gx.value - wx.value) * scale)
+		self.inp.mouse_position[1] = int((gy.value - wy.value) * scale)
+
+	def draw_popup_menus(self) -> None:
+		"""Render context menus, in their own popup window or inline.
+
+		Replaces the inline `for instance in Menu.instances: instance.render()`
+		pass. Each menu's render() is still called every frame (it drives click
+		handling and close logic and is a no-op when inactive). A menu that fits
+		in the window (menu.use_popup is False) is drawn inline in the main
+		window as before; one that would spill outside is pointed at its own
+		popup window(s) instead.
+		"""
+		from tauon.t_modules.t_window import SecondaryWindow
+
+		menu = self.active_menu()
+
+		# Inline menus (and the no-menu case) render straight into the main
+		# window; any popup windows from a previous popup menu are torn down.
+		if menu is None or not menu.use_popup:
+			for instance in Menu.instances:
+				instance.render()
+			self.close_menu_popup()  # no-op if nothing is open
+			return
+
+		if self.menu_popup is None:
+			self.menu_popup = SecondaryWindow(self, focusable=False)
+			self.active_pointer_window = self.menu_popup
+
+		popup = self.menu_popup
+		w, h = menu.popup_size()
+
+		# Bottom-anchored menus (e.g. the bottom-panel playback menu) open upward:
+		# the anchor marks the menu's bottom edge, so the window top is anchor - h.
+		main_top_y = menu.popup_anchor[1] - h if menu.popup_bottom_anchor else menu.popup_anchor[1]
+
+		if not popup.show(w, h, menu.popup_anchor[0], main_top_y):
+			# Popup unavailable (creation failed): fall back to drawing the menu
+			# inline in the main window, anchored where it was requested.
+			menu.popup_window = None
+			menu.pos = [menu.popup_anchor[0], main_top_y]
+			for instance in Menu.instances:
+				instance.render()
+			return
+
+		# Active submenu: render it first, into its own window beside the parent
+		# item, so a click on a submenu item is consumed before the main menu's
+		# close logic resets the click flag. sub_active/sub_y_position reflect the
+		# previous frame's main render (one-frame lag, as before).
+		if menu.sub_active > -1:
+			if self.submenu_popup is None:
+				self.submenu_popup = SecondaryWindow(self, focusable=False)
+			sub = self.submenu_popup
+			sw, sh = menu.submenu_size()
+			sx = menu.popup_anchor[0] + menu.w
+			sy = main_top_y + menu.sub_y_position
+			if sub.show(sw, sh, int(sx), int(sy)):
+				sub.begin_frame()
+				menu.popup_window = sub
+				menu.render_submenu()
+				menu.popup_window = None
+				sub.end_frame()
+		elif self.submenu_popup is not None:
+			self.close_submenu_popup()
+
+		# Main column.
+		popup.begin_frame()
+		menu.popup_window = popup
+		for instance in Menu.instances:
+			instance.render()
+		menu.popup_window = None
+		popup.end_frame()
+
+		# The menu may have closed itself during render() (item clicked / esc).
+		if not menu.active:
+			self.close_menu_popup()
 
 	def is_level_zero(self, include_menus: bool = True) -> bool:
 		if include_menus:
@@ -32045,7 +32376,7 @@ class BottomBarType1:
 					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Playback menu"))
 				rpbc = colours.mode_button_over
 				if inp.mouse_click:
-					tauon.extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
+					tauon.extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale), bottom_anchor=True)
 				elif inp.right_click:
 					tauon.mode_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
 			if tauon.extra_menu.active:
@@ -49748,10 +50079,20 @@ def main(holder: Holder) -> None:
 				gui.update += 1
 
 			elif event.type == sdl3.SDL_EVENT_MOUSE_MOTION:
-				inp.mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
-				inp.mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
-				mouse_moved = True
-				gui.mouse_unknown = False
+				mp = tauon.menu_popup_for_window(event.motion.windowID)
+				if mp is not None:
+					# Motion inside a menu popup (main or submenu): track it in that
+					# window's own local pixel space and mark it the active pointer
+					# window. It must never touch the main window's mouse_position.
+					mp.last_local = (int(event.motion.x * mp.scale), int(event.motion.y * mp.scale))
+					tauon.active_pointer_window = mp
+					gui.update += 1
+				elif event.motion.windowID == sdl3.SDL_GetWindowID(tauon.t_window):
+					inp.mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
+					inp.mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
+					mouse_moved = True
+					gui.mouse_unknown = False
+				# else: motion from a hidden/closed popup or other window - ignore.
 			elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_DOWN:
 				inp.k_input = True
 				focused = True
@@ -49760,6 +50101,17 @@ def main(holder: Holder) -> None:
 				gui.mouse_in_window = True
 
 				if ggc == 2:  # dont click on first full frame
+					continue
+
+				# Route button events for visible menu popups the same way as motion.
+				# A press inside either popup (main or submenu) drives the menu
+				# normally (falls through). A press anywhere else dismisses the menu
+				# and is swallowed, so it neither selects a menu item (the menu's
+				# pointer is in popup-local space) nor leaks into the main UI.
+				if tauon.menu_popup is not None and tauon.menu_popup.visible \
+						and tauon.menu_popup_for_window(event.button.windowID) is None:
+					close_all_menus()
+					tauon.close_menu_popup()
 					continue
 
 				if event.button.button == sdl3.SDL_BUTTON_RIGHT:
@@ -49789,7 +50141,10 @@ def main(holder: Holder) -> None:
 				if event.button.button == sdl3.SDL_BUTTON_RIGHT:
 					inp.right_down = False
 				elif event.button.button == sdl3.SDL_BUTTON_LEFT:
-					if inp.mouse_down:
+					# Only a release on the main window records a main-window mouse-up; a
+					# release inside the menu popup uses popup-local coords and must not
+					# drive main drag logic or corrupt mouse_up_position.
+					if inp.mouse_down and event.button.windowID == sdl3.SDL_GetWindowID(tauon.t_window):
 						inp.mouse_up = True
 						inp.mouse_up_position[0] = event.motion.x / logical_size[0] * window_size[0]
 						inp.mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
@@ -49980,6 +50335,14 @@ def main(holder: Holder) -> None:
 				power += 5
 				# logging.info(event.type)
 
+				# These handlers all act on the main window (resize, focus,
+				# layout, etc.). Ignore window events from secondary windows such
+				# as the menu popup - otherwise e.g. a popup resize fires
+				# WINDOW_RESIZED and overwrites the main window's logical_size,
+				# corrupting all main-window mouse-coordinate scaling.
+				if event.window.windowID != sdl3.SDL_GetWindowID(tauon.t_window):
+					continue
+
 				if event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_GAINED:
 					# logging.info("sdl3.SDL_WINDOWEVENT_FOCUS_GAINED")
 
@@ -49997,7 +50360,12 @@ def main(holder: Holder) -> None:
 					gui.update += 1
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_LOST:
+					# The menu popup is non-focusable, so showing it never steals
+					# focus from the main window; a FOCUS_LOST here is a genuine
+					# app deactivation, so close any open menu (and hide its popup
+					# so it does not linger over other apps).
 					close_all_menus()
+					tauon.close_menu_popup()  # no-op if nothing is open
 					inp.key_focused = 1
 					gui.update += 1
 
@@ -54691,8 +55059,7 @@ def main(holder: Holder) -> None:
 					)
 
 			# Render Menus-------------------------------
-			for instance in Menu.instances:
-				instance.render()
+			tauon.draw_popup_menus()
 
 			if tauon.view_box.active:
 				tauon.view_box.render()
