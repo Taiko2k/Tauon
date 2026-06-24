@@ -289,7 +289,7 @@ class TopChart:
 			context.set_source_rgb(0.9, 0.9, 0.9)
 			PangoCairo.show_layout(context, layout)
 
-		if b_text:
+		if show_lables and b_text:
 			# Setup font and prepare Pango layout
 			options = context.get_font_options()
 			options.set_antialias(cairo.ANTIALIAS_GRAY)
