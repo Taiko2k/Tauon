@@ -50164,6 +50164,10 @@ def main(holder: Holder) -> None:
 					inp.mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
 					mouse_moved = True
 					gui.mouse_unknown = False
+					# Pointer is over the main window, not a menu popup, so no menu
+					# popup is the active pointer window - prevents a popup menu from
+					# hit-testing against a stale popup-local position.
+					tauon.active_pointer_window = None
 				# else: motion from a hidden/closed popup or other window - ignore.
 			elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_DOWN:
 				inp.k_input = True
@@ -50177,14 +50181,16 @@ def main(holder: Holder) -> None:
 
 				# Route button events for visible menu popups the same way as motion.
 				# A press inside either popup (main or submenu) drives the menu
-				# normally (falls through). A press anywhere else dismisses the menu
-				# and is swallowed, so it neither selects a menu item (the menu's
-				# pointer is in popup-local space) nor leaks into the main UI.
+				# normally. A press anywhere else dismisses the menu but is allowed
+				# to fall through to the main UI - matching the original in-window
+				# menus, where clicking away also activated whatever was under the
+				# cursor (e.g. the companion view switcher). close_all_menus()
+				# deactivates the menu first, so the click-transfer block below
+				# won't feed the click to a now-closed menu.
 				if tauon.menu_popup is not None and tauon.menu_popup.visible \
 						and tauon.menu_popup_for_window(event.button.windowID) is None:
 					close_all_menus()
 					tauon.close_menu_popup()
-					continue
 
 				if event.button.button == sdl3.SDL_BUTTON_RIGHT:
 					inp.right_click = True
