@@ -14482,6 +14482,14 @@ class Tauon:
 			self.close_menu_popup()  # no-op if nothing is open
 			return
 
+		# While a menu is popped out the cursor is over the popup window, so
+		# main-window motion events stop and inp.mouse_position would freeze.
+		# Track the real cursor (in main-window coords) from the global pointer
+		# so menu-item callbacks that read inp.mouse_position - e.g. positioning
+		# the rename box - get a live value. The menu itself hit-tests against
+		# the popup-local pointer, so this does not affect menu interaction.
+		self.refresh_main_mouse_position()
+
 		if self.menu_popup is None:
 			self.menu_popup = SecondaryWindow(self, focusable=False)
 			self.active_pointer_window = self.menu_popup
@@ -36775,6 +36783,11 @@ class RenamePlaylistBox:
 
 		text_w = self.ddt.get_text_w(self.rename_text_area.text, 315)
 		min_w = max(250 * self.gui.scale, text_w + 50 * self.gui.scale)
+
+		# Keep the box on-screen horizontally - its x can come from a menu-item
+		# callback's mouse position, which may sit near (or past) the edge.
+		margin = round(10 * self.gui.scale)
+		self.x = max(margin, min(self.x, self.window_size[0] - min_w - margin))
 
 		rect = [self.x, self.y, min_w, 37 * self.gui.scale]
 		bg = ColourRGBA(40, 40, 40, 255)
