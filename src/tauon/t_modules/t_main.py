@@ -1254,6 +1254,11 @@ class Input:
 		self.click_location:      list[int] = [200, 200]
 		self.last_click_location: list[int] = [0, 0]
 		self.mouse_position:      list[int] = [0, 0]
+		# Active view transform: screen = local + view_offset. Non-zero only while
+		# something renders a sub-view in its own local coordinate space (the
+		# Custom Layout reframing a widget). Use to_screen()/to_local() to convert
+		# between that local space and real screen coordinates.
+		self.view_offset:         tuple[int, int] = (0, 0)
 		self.mouse_up_position:   list[int] = [0, 0]
 		self.touch_position:      list[int] = [0, 0]
 		self.touch_scroll_y:     float = 0
@@ -1302,6 +1307,17 @@ class Input:
 		self.media_key = ""
 		self.input_text = ""
 		self.key_focused = 0
+
+	def to_screen(self, x: float, y: float) -> tuple[float, float]:
+		"""Convert a point from the active local view space to real screen
+		coordinates. Identity unless a view transform is active."""
+		ox, oy = self.view_offset
+		return (x + ox, y + oy)
+
+	def to_local(self, x: float, y: float) -> tuple[float, float]:
+		"""Convert a real screen point into the active local view space."""
+		ox, oy = self.view_offset
+		return (x - ox, y - oy)
 
 	def test_shift(self, _: int) -> bool:
 		return self.key_shift_down or self.key_shiftr_down
@@ -5506,6 +5522,11 @@ class Menu:
 			self.pos = [position[0], position[1]]
 		else:
 			self.pos = [copy.deepcopy(self.inp.mouse_position[0]), copy.deepcopy(self.inp.mouse_position[1])]
+
+		# If activated from within a local view space (e.g. a Custom Layout widget
+		# being rendered reframed), the position is in that local space; convert it
+		# to real screen coordinates. Identity when no transform is active.
+		self.pos = list(self.inp.to_screen(self.pos[0], self.pos[1]))
 
 		self.reference = in_reference
 		Menu.switch = self.id
@@ -30753,6 +30774,11 @@ class Fields:
 		self.force = False
 
 	def add(self, rect, callback=None) -> None:
+		# Honour the active view transform so a widget rendering in a local view
+		# space registers its hover fields in real screen coordinates.
+		ox, oy = self.tauon.inp.view_offset
+		if ox or oy:
+			rect = (rect[0] + ox, rect[1] + oy, rect[2], rect[3])
 		self.field_array.append((rect, callback))
 
 	def test(self) -> bool:
@@ -53982,7 +54008,10 @@ def main(holder: Holder) -> None:
 				# NEW TOP BAR
 				# C-TBR
 
-				if gui.mode == GuiMode.MAIN:
+				# In custom mode the layout engine renders the Top Panel widget
+				# itself (reframed); skip the standard one to avoid double-rendering
+				# the same stateful TopPanel object.
+				if gui.mode == GuiMode.MAIN and not gui.custom_mode:
 					tauon.top_panel.render()
 
 				# RENDER EXTRA FRAME DOUBLE

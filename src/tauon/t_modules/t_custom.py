@@ -144,6 +144,40 @@ class ArtBoxWidget(Widget):
 		tauon.album_art_gen.display(track, [ox, oy], (side, side), fast=True)
 
 
+class TopPanelWidget(Widget):
+	"""The real Top Panel, drawn into an arbitrary rect.
+
+	The existing TopPanel.render() draws at y=0 across the full window width and
+	reads tauon.window_size[0] for layout. To place it anywhere we render it
+	through the engine's offscreen scratch texture (so output is captured from a
+	(0,0) origin and blitted to the segment) and temporarily narrow
+	window_size[0] to the segment width so its contents lay out within it.
+
+	Input is neutralised during this reframed render (mouse moved off-screen) so
+	it draws in a clean resting state and doesn't fight the engine's own input
+	handling. Live interactivity inside custom mode is a separate step (it needs
+	custom mode to own the frame's input rather than overlay it).
+	"""
+
+	kind = "top_panel"
+	name = "Top Panel"
+	lock_v = True
+	fixed_h = 30
+	min_w = 80
+	min_h = 20
+	single_instance = True
+	draws_window_controls = True
+	offscreen = True
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		# Offscreen mode: the engine has already reframed the coordinate space
+		# (window width, mouse, fields offset) and set the scratch render target,
+		# so the panel just renders at its native (0, 0) origin and is blitted to
+		# the real segment. It draws — and, in view mode, handles input — within
+		# the reframed space.
+		tauon.top_panel.render()
+
+
 class WidgetSpec:
 	"""Registry entry describing an addable widget and its sizing defaults."""
 
@@ -176,11 +210,16 @@ def _art(spec: WidgetSpec) -> Widget:
 	return ArtBoxWidget()
 
 
+def _top_panel(spec: WidgetSpec) -> Widget:
+	return TopPanelWidget()
+
+
 # Registry — the Add menu and (de)serialization are driven by this table. The
 # lock / single-instance defaults follow the agreed widget table.
 WIDGET_SPECS: list[WidgetSpec] = [
-	WidgetSpec("top_panel", "Top Panel", "Panels", _placeholder,
-		lock_v=True, fixed_h=30, draws_window_controls=True, colour=ColourRGBA(38, 38, 46, 255)),
+	WidgetSpec("top_panel", "Top Panel", "Panels", _top_panel,
+		lock_v=True, fixed_h=30, single_instance=True, draws_window_controls=True,
+		colour=ColourRGBA(38, 38, 46, 255)),
 	WidgetSpec("playback_panel", "Playback Panel", "Panels", _placeholder,
 		lock_v=True, fixed_h=64, colour=ColourRGBA(32, 32, 40, 255)),
 	WidgetSpec("tab_strip", "Playlist Tab Strip", "Panels", _placeholder,
@@ -386,21 +425,6 @@ def count_kind(root: Node, kind: str) -> int:
 	return sum(1 for leaf in iter_leaves(root) if isinstance(leaf, Leaf) and leaf.kind == kind)
 
 
-def _contains(node: Node, target: Node) -> bool:
-	if node is target:
-		return True
-	return isinstance(node, Stack) and any(_contains(c, target) for c in node.children)
-
-
-def top_level_ancestor(root: Node, target: Node) -> Node | None:
-	"""The direct child of ``root`` that is, or contains, ``target`` — i.e. the
-	topmost stack/segment the target belongs to, one level below the root."""
-	if not isinstance(root, Stack):
-		return None
-	for child in root.children:
-		if _contains(child, target):
-			return child
-	return None
 
 
 def stack_has_flex_axis(stack: Stack) -> bool:
@@ -441,6 +465,10 @@ class CustomLayout:
 		# edit-mode transient state
 		self.menu_target: Node | None = None
 		self.drag: dict | None = None          # {stack, index, axis}
+		# View-mode input handed from handle_input() to render(): the real mouse
+		# state, stashed while the underlying UI is neutralised, then restored so
+		# the custom widgets receive it during their own render.
+		self._held_mouse: tuple | None = None
 		# Native context menu (a t_main Menu instance), built by
 		# build_custom_layout_menu() in t_main and assigned here. The engine only
 		# activates it and exposes callbacks; all drawing is the native system's.
@@ -595,20 +623,26 @@ class CustomLayout:
 			self.save_slots()
 
 	def act_remove_stack(self, target: Node) -> None:
-		"""Remove the topmost stack the target segment belongs to — the direct
-		child of the root that contains it — replacing it with a single empty
-		segment. The rest of the layout (root + siblings) is left intact; this
-		never clears the entire layout.
+		"""Remove the stack the target segment is directly in — its immediate
+		parent stack — collapsing just that one row/column into a single empty
+		segment in its place. Everything outside that stack is left intact.
+
+		If the segment sits directly in the root (no enclosing sub-stack), this is
+		a no-op: there is no nested stack to remove and we never clear the whole
+		layout. (Use Remove to clear a single segment's widget.)
 		"""
 		root = self.slots[self.active_slot]
-		if not isinstance(root, Stack) or target is None or target is root:
+		if not isinstance(root, Stack) or target is None:
 			return
-		top = top_level_ancestor(root, target)
-		if top is None:
+		parent = find_parent(root, target)
+		if parent is None or parent is root:
+			return
+		grand = find_parent(root, parent)
+		if grand is None:
 			return
 		new = self._empty()
-		new.weight = top.weight
-		root.children[root.children.index(top)] = new
+		new.weight = parent.weight
+		grand.children[grand.children.index(parent)] = new
 		self.save_slots()
 
 	def act_set_lock(self, target: Node, axis: str) -> None:
@@ -661,24 +695,39 @@ class CustomLayout:
 	# -- input ---------------------------------------------------------------
 
 	def handle_input(self) -> None:
-		"""Process interaction early in the frame and consume events so the
-		underlying UI doesn't also react. Called only while custom_mode is set.
+		"""Process interaction early in the frame. Called only while custom_mode
+		is set. In edit mode this drives the layout tools (and consumes events);
+		in view mode it hands the real mouse to render() for the widgets.
 		"""
 		inp = self.tauon.inp
 		gui = self.gui
 
-		# While the native context menu or a message box (confirm dialog) is open,
-		# let those systems handle input. The main loop already routes clicks to
-		# active menus before this runs, so just stand down.
-		if (self.menu is not None and self.menu.active) or gui.message_box:
+		# While any menu or a message box (confirm dialog) is open, let those
+		# systems own input. The main loop already routes clicks to active menus
+		# before this runs (and menus need the real mouse position for hover), so
+		# stand down entirely — no neutralising.
+		from tauon.t_modules.t_main import Menu  # local import avoids cycle
+		if Menu.active or gui.message_box:
 			return
 
 		if not gui.custom_edit:
+			# View mode: the widgets handle their own input during render(), which
+			# runs later in the frame. Stash the real mouse and neutralise it so
+			# the (hidden) standard UI underneath doesn't also react; render()
+			# restores it for the widgets. Keyboard is left intact for global
+			# shortcuts.
 			if inp.key_esc_press:
 				self.exit_mode()
-			elif inp.mouse_click:
-				self._route_click(inp)
-			self._consume(inp)
+				self._consume(inp)
+				return
+			self._held_mouse = (inp.mouse_click, inp.right_click, inp.mouse_down,
+				inp.mouse_up, inp.mouse_position[0], inp.mouse_position[1])
+			inp.mouse_click = False
+			inp.right_click = False
+			inp.mouse_down = False
+			inp.mouse_up = False
+			inp.mouse_position[0] = -99999
+			inp.mouse_position[1] = -99999
 			return
 
 		# --- edit mode ---
@@ -713,15 +762,6 @@ class CustomLayout:
 		inp.mouse_up = False
 		inp.key_esc_press = False
 		inp.key_return_press = False
-
-	def _route_click(self, inp) -> None:
-		root = self.ensure_slot()
-		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], self.gui.scale)
-		seg = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
-		if isinstance(seg, Leaf) and seg.widget is not None:
-			x, y, w, h = content_rect(seg, self.gui.scale)
-			seg.widget.click(
-				self.tauon, round(inp.mouse_position[0] - x), round(inp.mouse_position[1] - y), round(w), round(h))
 
 	# -- drag ----------------------------------------------------------------
 
@@ -915,7 +955,18 @@ class CustomLayout:
 		tauon = self.tauon
 		gui = self.gui
 		ddt = self.ddt
+		inp = tauon.inp
 		ww, wh = tauon.window_size[0], tauon.window_size[1]
+
+		# View mode: restore the real mouse that handle_input() stashed, so the
+		# widgets receive it during their own render. Edit mode keeps widgets
+		# inert (the edit tools use the real mouse directly).
+		interactive = not gui.custom_edit
+		if interactive and self._held_mouse is not None:
+			mc, rc, md, mu, mx, my = self._held_mouse
+			inp.mouse_click, inp.right_click, inp.mouse_down, inp.mouse_up = mc, rc, md, mu
+			inp.mouse_position[0], inp.mouse_position[1] = mx, my
+		self._held_mouse = None
 
 		ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
 
@@ -924,7 +975,7 @@ class CustomLayout:
 
 		for leaf in iter_leaves(root):
 			if isinstance(leaf, Leaf):
-				self._draw_leaf(leaf)
+				self._draw_leaf(leaf, interactive)
 
 		# Window-controls fallback when nothing provides them.
 		if not self._provides_window_controls(root):
@@ -937,7 +988,7 @@ class CustomLayout:
 		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
 			for l in iter_leaves(root))
 
-	def _draw_leaf(self, leaf: Leaf) -> None:
+	def _draw_leaf(self, leaf: Leaf, interactive: bool) -> None:
 		tauon = self.tauon
 		gui = self.gui
 		ddt = self.ddt
@@ -963,7 +1014,7 @@ class CustomLayout:
 			if not widget.offscreen:
 				widget.draw(tauon, dx, dy, dw, dh)
 			else:
-				self._draw_offscreen(widget, dx, dy, dw, dh)
+				self._draw_offscreen(widget, dx, dy, dw, dh, interactive)
 
 		if leaf.border:
 			b = max(1, round(1 * gui.scale))
@@ -973,18 +1024,51 @@ class CustomLayout:
 			ddt.rect((cx, cy, b, ch), col)
 			ddt.rect((cx + cw - b, cy, b, ch), col)
 
-	def _draw_offscreen(self, widget: Widget, x: float, y: float, w: float, h: float) -> None:
-		renderer = self.renderer
+	def _draw_offscreen(self, widget: Widget, x: float, y: float, w: float, h: float,
+			interactive: bool) -> None:
+		"""Render an offscreen widget into the scratch texture at a (0, 0) origin,
+		then blit to (x, y). The widget draws — and, when interactive, handles
+		input — in a reframed coordinate space: window width narrowed to the
+		segment, mouse translated to the segment-local origin, and a fields offset
+		so its hover regions are registered at real screen coordinates.
+		"""
+		tauon = self.tauon
 		gui = self.gui
+		inp = tauon.inp
+		renderer = self.renderer
 		iw, ih = max(1, round(w)), max(1, round(h))
+		ox, oy = round(x), round(y)
+
+		saved_w = tauon.window_size[0]
+		saved_mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		saved_view = inp.view_offset
+		tauon.window_size[0] = iw
+		# Establish the view transform (screen = local + (ox, oy)). Fields,
+		# Menu.activate() and any widget code that calls inp.to_screen/to_local
+		# now convert correctly between this widget's local space and the screen.
+		inp.view_offset = (ox, oy)
+		if interactive:
+			inp.mouse_position[0], inp.mouse_position[1] = inp.to_local(*saved_mouse)
+		else:
+			inp.mouse_position[0] = -99999
+			inp.mouse_position[1] = -99999
+
 		prev = sdl3.SDL_GetRenderTarget(renderer)
 		sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
 		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 		sdl3.SDL_RenderClear(renderer)
-		widget.draw(self.tauon, 0, 0, iw, ih)
-		sdl3.SDL_SetRenderTarget(renderer, prev)
+		try:
+			widget.draw(tauon, 0, 0, iw, ih)
+		finally:
+			sdl3.SDL_SetRenderTarget(renderer, prev)
+			tauon.window_size[0] = saved_w
+			inp.view_offset = saved_view
+			# Restore the mouse position (but not the click flags — a widget that
+			# consumed the click should keep it consumed for later overlays).
+			inp.mouse_position[0], inp.mouse_position[1] = saved_mouse
+
 		src = sdl3.SDL_FRect(0, 0, iw, ih)
-		dst = sdl3.SDL_FRect(round(x), round(y), iw, ih)
+		dst = sdl3.SDL_FRect(ox, oy, iw, ih)
 		sdl3.SDL_RenderTexture(renderer, gui.tracklist_texture, src, dst)
 
 	def _draw_edit_overlay(self, root: Node) -> None:
