@@ -110,6 +110,13 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	database_migrate,
 	migrate_star_store_71,
 )
+from tauon.t_modules.t_custom import (  # noqa: E402
+	GUTTER_OPTIONS as CL_GUTTER_OPTIONS,
+	STACK_COUNTS as CL_STACK_COUNTS,
+	TEMPLATES as CL_TEMPLATES,
+	WIDGET_SPECS as CL_WIDGET_SPECS,
+	CustomLayout,
+)
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
 	Backend,
@@ -669,6 +676,10 @@ class GuiVar:
 		self.draw_spec4: bool = False
 
 		self.combo_mode: bool = False
+		# Custom Layout System (opt-in). When custom_mode is set the custom
+		# layout engine composites over the frame; custom_edit toggles edit mode.
+		self.custom_mode: bool = False
+		self.custom_edit: bool = False
 		self.showcase_mode: bool = False
 		self.timed_lyrics_edit_view: bool = False
 		self.timed_lyrics_editing_now: bool = False
@@ -1008,6 +1019,9 @@ class GuiVar:
 		self.cursor_hand = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_POINTER)
 		self.cursor_standard = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_DEFAULT)
 		self.cursor_shift = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_EW_RESIZE)
+		# General-purpose vertical-resize cursor, available on every platform
+		# (unlike cursor_top_side which is only NS on Windows/X11).
+		self.cursor_ns = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 		self.cursor_text = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_TEXT)
 
 		self.cursor_br_corner   = self.cursor_standard
@@ -6271,6 +6285,7 @@ class Tauon:
 		self.playlist_box:                       PlaylistBox = PlaylistBox(tauon=self)
 		self.radio_view:                           RadioView = RadioView(tauon=self)
 		self.view_box:                               ViewBox = ViewBox(tauon=self)
+		self.custom:                            CustomLayout = CustomLayout(tauon=self)
 		self.pref_box:                                  Over = Over(tauon=self)
 		self.fader:                                    Fader = Fader(tauon=self)
 		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
@@ -7938,6 +7953,25 @@ class Tauon:
 		if not self.gui.lsp:
 			return False
 		return self.prefs.left_panel_mode == "artist list"
+
+	# -- Custom Layout System slots --
+	def enter_custom_a(self) -> None:
+		self.custom.enter(0)
+
+	def enter_custom_b(self) -> None:
+		self.custom.enter(1)
+
+	def enter_custom_c(self) -> None:
+		self.custom.enter(2)
+
+	def custom_slot_test_a(self) -> bool:
+		return self.gui.custom_mode and self.custom.active_slot == 0
+
+	def custom_slot_test_b(self) -> bool:
+		return self.gui.custom_mode and self.custom.active_slot == 1
+
+	def custom_slot_test_c(self) -> bool:
+		return self.gui.custom_mode and self.custom.active_slot == 2
 
 	def toggle_left_last(self) -> None:
 		self.gui.lsp = True
@@ -48943,6 +48977,57 @@ def main(holder: Holder) -> None:
 	# . Menu entry: A side panel view layout. Alternative name: Folder Tree
 	lsp_menu.add(MenuItem(_("Folder Navigator"), tauon.enable_folder_list, disable_test=tauon.lsp_menu_test_tree))
 
+	# Custom Layout System slots.
+	lsp_menu.add(MenuItem(_("Custom A"), tauon.enter_custom_a, disable_test=tauon.custom_slot_test_a))
+	lsp_menu.add(MenuItem(_("Custom B"), tauon.enter_custom_b, disable_test=tauon.custom_slot_test_b))
+	lsp_menu.add(MenuItem(_("Custom C"), tauon.enter_custom_c, disable_test=tauon.custom_slot_test_c))
+
+	# Custom Layout edit context menu (native Menu system). Built once; its items
+	# act on tauon.custom.menu_target, set when the menu is activated on right
+	# click in edit mode.
+	cm = tauon.custom
+	if cm.menu is None:
+		cl_menu = Menu(tauon, 130)
+		cm.menu = cl_menu
+
+		cl_menu.add_sub(_("Add Vertical Stack"), 60)
+		_cl_sub_v = cl_menu.sub_number - 1
+		for _n in CL_STACK_COUNTS:
+			cl_menu.add_to_sub(_cl_sub_v, MenuItem(str(_n), cm._menu_add_stack, args=("v", _n)))
+
+		cl_menu.add_sub(_("Add Horizontal Stack"), 60)
+		_cl_sub_h = cl_menu.sub_number - 1
+		for _n in CL_STACK_COUNTS:
+			cl_menu.add_to_sub(_cl_sub_h, MenuItem(str(_n), cm._menu_add_stack, args=("h", _n)))
+
+		cl_menu.add_sub(_("Add…"), 180)
+		_cl_sub_add = cl_menu.sub_number - 1
+		for _spec in CL_WIDGET_SPECS:
+			cl_menu.add_to_sub(_cl_sub_add, MenuItem(
+				_spec.name, cm._menu_add_widget, args=_spec.kind,
+				disable_test=(lambda k=_spec.kind: cm.kind_disabled(k))))
+
+		cl_menu.add(MenuItem(_("Remove"), cm._menu_remove_widget, show_test=cm._t_has_widget))
+		cl_menu.add(MenuItem(_("Remove Stack"), cm._menu_remove_stack))
+		cl_menu.br()
+		cl_menu.add(MenuItem(_("Lock Vertical"), cm._menu_lock_v, show_test=cm._t_unlocked_v))
+		cl_menu.add(MenuItem(_("Unlock Vertical"), cm._menu_lock_v, show_test=cm._t_locked_v))
+		cl_menu.add(MenuItem(_("Lock Horizontal"), cm._menu_lock_h, show_test=cm._t_unlocked_h))
+		cl_menu.add(MenuItem(_("Unlock Horizontal"), cm._menu_lock_h, show_test=cm._t_locked_h))
+		cl_menu.add(MenuItem(_("Lock Aspect"), cm._menu_lock_aspect, show_test=cm._t_aspect_off))
+		cl_menu.add(MenuItem(_("Unlock Aspect"), cm._menu_lock_aspect, show_test=cm._t_aspect_on))
+		cl_menu.add_sub(_("Gutter…"), 60)
+		_cl_sub_g = cl_menu.sub_number - 1
+		for _g in CL_GUTTER_OPTIONS:
+			cl_menu.add_to_sub(_cl_sub_g, MenuItem(f"{_g}px", cm._menu_gutter, args=_g))
+		cl_menu.add(MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off))
+		cl_menu.add(MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on))
+		cl_menu.br()
+		cl_menu.add_sub(_("Load Template…"), 110)
+		_cl_sub_t = cl_menu.sub_number - 1
+		for _name in CL_TEMPLATES:
+			cl_menu.add_to_sub(_cl_sub_t, MenuItem(_name, cm._menu_template, args=_name))
+
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
 	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
@@ -50973,12 +51058,11 @@ def main(holder: Holder) -> None:
 			if keymaps.test("quit"):
 				tauon.exit("Quit keyboard shortcut pressed")
 
-			if keymaps.test("testkey"):  # F7: test
-				# try:
-				# 	shutil.copy(tauon.milky.projectm.loaded_preset, tauon.user_directory / "presets")
-				# except:
-				# 	pass
-				pass
+			if keymaps.test("testkey"):  # F7: toggle Custom Layout edit mode
+				# Only meaningful once a custom slot has been entered (via the
+				# top-left button menu -> Custom A/B/C). No effect otherwise.
+				if gui.custom_mode:
+					tauon.custom.toggle_edit()
 
 			if gui.mode == GuiMode.MAIN:
 				if keymaps.test("toggle-auto-theme"):
@@ -51635,6 +51719,11 @@ def main(holder: Holder) -> None:
 					ggc = 0
 					gbc.enable()
 					# logging.info("Enabling garbage collecting")
+
+			# Custom Layout System: handle edit/interaction input early and consume
+			# the events so the underlying UI doesn't also react. Inert when off.
+			if gui.custom_mode:
+				tauon.custom.handle_input()
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
@@ -53969,6 +54058,12 @@ def main(holder: Holder) -> None:
 
 				tauon.style_overlay.hole_punches.clear()
 
+				# Custom Layout System: composite over the standard layout once
+				# panel rendering is done. Overlays (toasts, menus, dialogs) below
+				# still draw on top. Inert unless custom mode is active.
+				if gui.custom_mode:
+					tauon.custom.render()
+
 				if gui.set_mode:
 					if (
 						tauon.rename_track_box.active is False
@@ -55363,6 +55458,9 @@ def main(holder: Holder) -> None:
 					sdl3.SDL_SetCursor(gui.cursor_left_side)
 				elif gui.cursor_is == 11:
 					sdl3.SDL_SetCursor(gui.cursor_bottom_side)
+				elif gui.cursor_is == 12:
+					# Vertical-resize cursor (NS) — used by the Custom Layout boundaries.
+					sdl3.SDL_SetCursor(gui.cursor_ns)
 
 			tauon.input_sdl.test_capture_mouse()
 			tauon.input_sdl.mouse_capture_want = False
