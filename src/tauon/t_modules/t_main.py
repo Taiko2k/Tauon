@@ -54072,7 +54072,12 @@ def main(holder: Holder) -> None:
 
 				ddt.text_background_colour = colours.bottom_panel_colour
 
-				if prefs.shuffle_lock:
+				# In custom mode the layout engine renders the Playback panel widget
+				# itself (reframed); skip the standard bottom bar to avoid
+				# double-rendering the same stateful bar object.
+				if gui.custom_mode:
+					pass
+				elif prefs.shuffle_lock:
 					tauon.bottom_bar_ao1.render()
 				else:
 					tauon.bottom_bar1.render()

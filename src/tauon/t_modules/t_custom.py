@@ -178,6 +178,32 @@ class TopPanelWidget(Widget):
 		tauon.top_panel.render()
 
 
+class PlaybackPanelWidget(Widget):
+	"""The real Playback panel (bottom bar), drawn into an arbitrary rect.
+
+	The bottom bar is bottom-anchored — it draws at y = window_size[1] - panelBY
+	and precomputes its layout (seek/volume bars) in update() from the window
+	size. The engine narrows window_size to the segment (so the bar lands at the
+	scratch (0, 0) origin), and we call update() here so its bars re-lay out for
+	the segment before render(). Honours prefs.shuffle_lock like the standard
+	path (the album-shuffle variant uses a different bar object).
+	"""
+
+	kind = "playback_panel"
+	name = "Playback Panel"
+	lock_v = True
+	fixed_h = 51  # = panelBY at scale 1
+	min_w = 120
+	min_h = 30
+	single_instance = True
+	offscreen = True
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		bar = tauon.bottom_bar_ao1 if tauon.prefs.shuffle_lock else tauon.bottom_bar1
+		bar.update()
+		bar.render()
+
+
 class WidgetSpec:
 	"""Registry entry describing an addable widget and its sizing defaults."""
 
@@ -214,14 +240,18 @@ def _top_panel(spec: WidgetSpec) -> Widget:
 	return TopPanelWidget()
 
 
+def _playback_panel(spec: WidgetSpec) -> Widget:
+	return PlaybackPanelWidget()
+
+
 # Registry — the Add menu and (de)serialization are driven by this table. The
 # lock / single-instance defaults follow the agreed widget table.
 WIDGET_SPECS: list[WidgetSpec] = [
 	WidgetSpec("top_panel", "Top Panel", "Panels", _top_panel,
 		lock_v=True, fixed_h=30, single_instance=True, draws_window_controls=True,
 		colour=ColourRGBA(38, 38, 46, 255)),
-	WidgetSpec("playback_panel", "Playback Panel", "Panels", _placeholder,
-		lock_v=True, fixed_h=64, colour=ColourRGBA(32, 32, 40, 255)),
+	WidgetSpec("playback_panel", "Playback Panel", "Panels", _playback_panel,
+		lock_v=True, fixed_h=51, single_instance=True, colour=ColourRGBA(32, 32, 40, 255)),
 	WidgetSpec("tab_strip", "Playlist Tab Strip", "Panels", _placeholder,
 		lock_v=True, fixed_h=28, colour=ColourRGBA(34, 34, 42, 255)),
 	WidgetSpec("tracklist", "Tracklist", "Content", _placeholder, colour=ColourRGBA(24, 24, 28, 255)),
@@ -1040,9 +1070,15 @@ class CustomLayout:
 		ox, oy = round(x), round(y)
 
 		saved_w = tauon.window_size[0]
+		saved_h = tauon.window_size[1]
 		saved_mouse = (inp.mouse_position[0], inp.mouse_position[1])
 		saved_view = inp.view_offset
+		# Narrow the window to the segment so the widget lays out within it as if
+		# it were the whole window. This also lets bottom/right-anchored widgets
+		# (e.g. the Playback panel at window_size[1] - panelBY) land at the scratch
+		# origin so the (0,0,iw,ih) blit captures them.
 		tauon.window_size[0] = iw
+		tauon.window_size[1] = ih
 		# Establish the view transform (screen = local + (ox, oy)). Fields,
 		# Menu.activate() and any widget code that calls inp.to_screen/to_local
 		# now convert correctly between this widget's local space and the screen.
@@ -1062,6 +1098,7 @@ class CustomLayout:
 		finally:
 			sdl3.SDL_SetRenderTarget(renderer, prev)
 			tauon.window_size[0] = saved_w
+			tauon.window_size[1] = saved_h
 			inp.view_offset = saved_view
 			# Restore the mouse position (but not the click flags — a widget that
 			# consumed the click should keep it consumed for later overlays).
