@@ -204,6 +204,53 @@ class PlaybackPanelWidget(Widget):
 		bar.render()
 
 
+class RectPanelWidget(Widget):
+	"""Adapter for an existing panel that already draws into a given (x, y, w, h)
+	rect (the left-side panels). It is rendered offscreen at a (0, 0) origin and
+	the engine reframes input/menus/fields, so it is fully interactive at any
+	position and size. Subclasses set the tauon attribute and method names.
+	"""
+
+	offscreen = True
+	min_w = 80
+	min_h = 60
+	single_instance = True  # these panels hold scroll/selection state
+	panel_attr = ""
+	panel_method = "draw"
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		panel = getattr(tauon, self.panel_attr)
+		getattr(panel, self.panel_method)(round(x), round(y), round(w), round(h))
+
+
+class PlaylistListWidget(RectPanelWidget):
+	kind = "playlist_list"
+	name = "Playlist List"
+	panel_attr = "playlist_box"
+	panel_method = "draw"
+
+
+class QueueWidget(RectPanelWidget):
+	kind = "queue"
+	name = "Queue"
+	panel_attr = "queue_box"
+	panel_method = "draw"
+
+
+class ArtistListWidget(RectPanelWidget):
+	kind = "artist_list"
+	name = "Artist List"
+	panel_attr = "artist_list_box"
+	panel_method = "render"
+
+
+class FolderNavWidget(RectPanelWidget):
+	kind = "folder_nav"
+	name = "Folder Navigator"
+	panel_attr = "tree_view_box"
+	panel_method = "render"
+
+
 class WidgetSpec:
 	"""Registry entry describing an addable widget and its sizing defaults."""
 
@@ -244,6 +291,22 @@ def _playback_panel(spec: WidgetSpec) -> Widget:
 	return PlaybackPanelWidget()
 
 
+def _playlist_list(spec: WidgetSpec) -> Widget:
+	return PlaylistListWidget()
+
+
+def _queue(spec: WidgetSpec) -> Widget:
+	return QueueWidget()
+
+
+def _artist_list(spec: WidgetSpec) -> Widget:
+	return ArtistListWidget()
+
+
+def _folder_nav(spec: WidgetSpec) -> Widget:
+	return FolderNavWidget()
+
+
 # Registry — the Add menu and (de)serialization are driven by this table. The
 # lock / single-instance defaults follow the agreed widget table.
 WIDGET_SPECS: list[WidgetSpec] = [
@@ -257,9 +320,14 @@ WIDGET_SPECS: list[WidgetSpec] = [
 	WidgetSpec("tracklist", "Tracklist", "Content", _placeholder, colour=ColourRGBA(24, 24, 28, 255)),
 	WidgetSpec("gallery", "Album Gallery", "Content", _placeholder, colour=ColourRGBA(26, 24, 30, 255)),
 	WidgetSpec("art", "Art Box", "Content", _art, colour=ColourRGBA(20, 20, 20, 255)),
-	WidgetSpec("folder_nav", "Folder Navigator", "Content", _placeholder, colour=ColourRGBA(24, 26, 28, 255)),
-	WidgetSpec("artist_list", "Artist List", "Content", _placeholder, colour=ColourRGBA(24, 28, 26, 255)),
-	WidgetSpec("queue", "Queue", "Content", _placeholder, colour=ColourRGBA(28, 26, 24, 255)),
+	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
+		colour=ColourRGBA(24, 26, 30, 255)),
+	WidgetSpec("folder_nav", "Folder Navigator", "Side Panels", _folder_nav, single_instance=True,
+		colour=ColourRGBA(24, 26, 28, 255)),
+	WidgetSpec("artist_list", "Artist List", "Side Panels", _artist_list, single_instance=True,
+		colour=ColourRGBA(24, 28, 26, 255)),
+	WidgetSpec("queue", "Queue", "Side Panels", _queue, single_instance=True,
+		colour=ColourRGBA(28, 26, 24, 255)),
 	WidgetSpec("lyrics", "Lyrics Box", "Content", _placeholder, colour=ColourRGBA(26, 26, 30, 255)),
 	WidgetSpec("meta_center", "Centered Metadata", "Content", _placeholder, colour=ColourRGBA(30, 30, 34, 255)),
 	WidgetSpec("meta_align", "Aligned Metadata", "Content", _placeholder, colour=ColourRGBA(30, 32, 34, 255)),

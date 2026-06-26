@@ -53771,7 +53771,10 @@ def main(holder: Holder) -> None:
 				):
 					tauon.artist_info_box.draw(gui.playlist_left, gui.panelY, gui.plw, gui.artist_panel_height)
 
-				if gui.lsp and not gui.combo_mode:
+				# In custom mode the layout engine renders these panels (queue,
+				# playlist list, artist list, folder navigator) as widgets; skip the
+				# standard left side panel to avoid double-rendering the same objects.
+				if gui.lsp and not gui.combo_mode and not gui.custom_mode:
 					# left side panel
 					h_estimate = (
 						(tauon.playlist_box.tab_h + tauon.playlist_box.gap) * gui.scale * len(pctl.multi_playlist)
