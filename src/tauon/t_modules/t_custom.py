@@ -120,28 +120,35 @@ class PlaceholderWidget(Widget):
 
 
 class ArtBoxWidget(Widget):
-	"""Real album art placed into an arbitrary rect; keeps a centred square."""
+	"""The album Art Box: a centred square in the segment. Uses the real
+	draw_showcase_art_box(), so it has the standard border/background, click to
+	cycle art source, right-click picture menu, and MilkDrop integration when
+	enabled. Drawn at real coordinates (offscreen=False) so its absolute-space
+	art/visualizer/hole-punch and input all work directly with the real mouse.
+	"""
 
 	kind = "art"
 	name = "Art Box"
 	min_w = 32
 	min_h = 32
+	single_instance = True  # draw_showcase_art_box uses singleton gui.main_art_box / milk
 	offscreen = False
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		from tauon.t_modules.t_main import draw_showcase_art_box  # lazy: avoid import cycle
 		gui = tauon.gui
 		track = tauon.pctl.playing_object()
-		if track is None:
-			tauon.ddt.rect((x, y, w, h), ColourRGBA(20, 20, 20, 255))
-			tauon.ddt.text_background_colour = ColourRGBA(20, 20, 20, 255)
-			tauon.ddt.text(
-				(round(x + w / 2), round(y + h / 2) - 9 * gui.scale, 2),
-				"No track", ColourRGBA(120, 120, 120, 255), 313)
-			return
 		side = max(1, min(round(w), round(h)))
 		ox = round(x) + (round(w) - side) // 2
 		oy = round(y) + (round(h) - side) // 2
-		tauon.album_art_gen.display(track, [ox, oy], (side, side), fast=True)
+		if track is None:
+			tauon.ddt.rect((ox, oy, side, side), ColourRGBA(20, 20, 20, 255))
+			tauon.ddt.text_background_colour = ColourRGBA(20, 20, 20, 255)
+			tauon.ddt.text(
+				(ox + side // 2, oy + side // 2 - 9 * gui.scale, 2),
+				"No track", ColourRGBA(120, 120, 120, 255), 313)
+			return
+		draw_showcase_art_box(tauon, track, ox, oy, side, side)
 
 
 class TopPanelWidget(Widget):
@@ -251,6 +258,49 @@ class FolderNavWidget(RectPanelWidget):
 	panel_method = "render"
 
 
+class TracklistWidget(Widget):
+	"""The main Tracklist (playlist view).
+
+	It owns gui.tracklist_texture as its render cache and blits to the main
+	texture itself, so it is not routed through the engine's offscreen scratch
+	(offscreen=False) and renders at real screen coordinates — its input
+	(selection, scroll, right-click menu) works with the real mouse. The renderer
+	now accepts a rect: full_render(rect) repaints into the segment when the
+	content (gui.pl_update) or the segment changed; otherwise cache_render()
+	re-blits the cached texture.
+	"""
+
+	kind = "tracklist"
+	name = "Tracklist"
+	min_w = 120
+	min_h = 80
+	single_instance = True
+	offscreen = False
+
+	def __init__(self) -> None:
+		self._last_rect: tuple | None = None
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		pr = getattr(tauon, "playlist_render", None)
+		if pr is None:
+			return
+		gui = tauon.gui
+		inp = tauon.inp
+		rect = (round(x), round(y), round(w), round(h))
+		# Input is handled inside the playlist render, so a full_render must run
+		# whenever the pointer is over the tracklist or there's a mouse event —
+		# otherwise the cheap cache_render path would swallow clicks/scroll/hover.
+		mx, my = inp.mouse_position[0], inp.mouse_position[1]
+		over = rect[0] <= mx < rect[0] + rect[2] and rect[1] <= my < rect[1] + rect[3]
+		interacting = over or inp.mouse_click or inp.right_click or inp.mouse_down or inp.mouse_wheel != 0
+		if gui.pl_update > 0 or rect != self._last_rect or interacting:
+			pr.full_render(rect=rect)
+			self._last_rect = rect
+			gui.pl_update = 0
+		else:
+			pr.cache_render()
+
+
 class WidgetSpec:
 	"""Registry entry describing an addable widget and its sizing defaults."""
 
@@ -307,6 +357,10 @@ def _folder_nav(spec: WidgetSpec) -> Widget:
 	return FolderNavWidget()
 
 
+def _tracklist(spec: WidgetSpec) -> Widget:
+	return TracklistWidget()
+
+
 # Registry — the Add menu and (de)serialization are driven by this table. The
 # lock / single-instance defaults follow the agreed widget table.
 WIDGET_SPECS: list[WidgetSpec] = [
@@ -317,9 +371,10 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		lock_v=True, fixed_h=51, single_instance=True, colour=ColourRGBA(32, 32, 40, 255)),
 	WidgetSpec("tab_strip", "Playlist Tab Strip", "Panels", _placeholder,
 		lock_v=True, fixed_h=28, colour=ColourRGBA(34, 34, 42, 255)),
-	WidgetSpec("tracklist", "Tracklist", "Content", _placeholder, colour=ColourRGBA(24, 24, 28, 255)),
+	WidgetSpec("tracklist", "Tracklist", "Content", _tracklist, single_instance=True,
+		colour=ColourRGBA(24, 24, 28, 255)),
 	WidgetSpec("gallery", "Album Gallery", "Content", _placeholder, colour=ColourRGBA(26, 24, 30, 255)),
-	WidgetSpec("art", "Art Box", "Content", _art, colour=ColourRGBA(20, 20, 20, 255)),
+	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
 	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
 		colour=ColourRGBA(24, 26, 30, 255)),
 	WidgetSpec("folder_nav", "Folder Navigator", "Side Panels", _folder_nav, single_instance=True,
@@ -567,6 +622,11 @@ class CustomLayout:
 		# state, stashed while the underlying UI is neutralised, then restored so
 		# the custom widgets receive it during their own render.
 		self._held_mouse: tuple | None = None
+		# Dedicated scratch texture for offscreen widget compositing, kept separate
+		# from gui.tracklist_texture so the Tracklist widget can keep caching into
+		# that. Created lazily and recreated if the max window texture size grows.
+		self._scratch = None
+		self._scratch_size = 0
 		# Native context menu (a t_main Menu instance), built by
 		# build_custom_layout_menu() in t_main and assigned here. The engine only
 		# activates it and exposes callbacks; all drawing is the native system's.
@@ -819,11 +879,12 @@ class CustomLayout:
 				self._consume(inp)
 				return
 			self._held_mouse = (inp.mouse_click, inp.right_click, inp.mouse_down,
-				inp.mouse_up, inp.mouse_position[0], inp.mouse_position[1])
+				inp.mouse_up, inp.mouse_wheel, inp.mouse_position[0], inp.mouse_position[1])
 			inp.mouse_click = False
 			inp.right_click = False
 			inp.mouse_down = False
 			inp.mouse_up = False
+			inp.mouse_wheel = 0
 			inp.mouse_position[0] = -99999
 			inp.mouse_position[1] = -99999
 			return
@@ -1061,8 +1122,9 @@ class CustomLayout:
 		# inert (the edit tools use the real mouse directly).
 		interactive = not gui.custom_edit
 		if interactive and self._held_mouse is not None:
-			mc, rc, md, mu, mx, my = self._held_mouse
+			mc, rc, md, mu, mw, mx, my = self._held_mouse
 			inp.mouse_click, inp.right_click, inp.mouse_down, inp.mouse_up = mc, rc, md, mu
+			inp.mouse_wheel = mw
 			inp.mouse_position[0], inp.mouse_position[1] = mx, my
 		self._held_mouse = None
 
@@ -1134,6 +1196,7 @@ class CustomLayout:
 		gui = self.gui
 		inp = tauon.inp
 		renderer = self.renderer
+		scratch = self._get_scratch()
 		iw, ih = max(1, round(w)), max(1, round(h))
 		ox, oy = round(x), round(y)
 
@@ -1158,7 +1221,7 @@ class CustomLayout:
 			inp.mouse_position[1] = -99999
 
 		prev = sdl3.SDL_GetRenderTarget(renderer)
-		sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
+		sdl3.SDL_SetRenderTarget(renderer, scratch)
 		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 		sdl3.SDL_RenderClear(renderer)
 		try:
@@ -1174,7 +1237,20 @@ class CustomLayout:
 
 		src = sdl3.SDL_FRect(0, 0, iw, ih)
 		dst = sdl3.SDL_FRect(ox, oy, iw, ih)
-		sdl3.SDL_RenderTexture(renderer, gui.tracklist_texture, src, dst)
+		sdl3.SDL_RenderTexture(renderer, scratch, src, dst)
+
+	def _get_scratch(self):
+		"""Lazily create (and resize) the offscreen scratch texture, kept separate
+		from gui.tracklist_texture (the Tracklist widget's cache)."""
+		size = self.gui.max_window_tex
+		if self._scratch is None or self._scratch_size != size:
+			if self._scratch is not None:
+				sdl3.SDL_DestroyTexture(self._scratch)
+			self._scratch = sdl3.SDL_CreateTexture(
+				self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, size, size)
+			sdl3.SDL_SetTextureBlendMode(self._scratch, sdl3.SDL_BLENDMODE_BLEND)
+			self._scratch_size = size
+		return self._scratch
 
 	def _draw_edit_overlay(self, root: Node) -> None:
 		gui = self.gui

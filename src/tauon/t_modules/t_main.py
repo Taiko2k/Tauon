@@ -34304,7 +34304,84 @@ class StandardPlaylist:
 		track = self.pctl.get_track(self.pctl.default_playlist[block_start])
 		draws.append((track, (column_x + horizontal_padding, draw_y), art_size, round(draw_height)))
 
-	def full_render(self) -> None:
+	def compute_tracklist_insets(self) -> None:
+		"""Compute the tracklist highlight/inset geometry from the current
+		gui.playlist_left / gui.plw / window size. Mirrors the inline computation
+		in update_layout_do(); used by the Custom Layout's Tracklist widget after
+		it points those vars at its segment. (The preset path keeps its own inline
+		copy untouched.)
+		"""
+		gui = self.gui
+		prefs = self.prefs
+		window_size = self.window_size
+		width = gui.plw
+
+		center_mode = True
+		if gui.lsp or gui.rsp or gui.set_mode:
+			center_mode = False
+		if gui.set_mode and window_size[0] < 600:
+			center_mode = False
+
+		gui.highlight_left = 0
+		highlight_width = width
+		inset_left = gui.highlight_left + 23 * gui.scale
+		inset_width = highlight_width - 32 * gui.scale
+		if gui.lsp and not gui.rsp:
+			inset_width -= 10 * gui.scale
+		if gui.lsp:
+			inset_left -= 10 * gui.scale
+			inset_width += 10 * gui.scale
+		if gui.rsp_on_left:
+			inset_left -= 11 * gui.scale
+			inset_width += 6 * gui.scale
+		if center_mode:
+			if gui.set_mode:
+				gui.highlight_left = int(pow((window_size[0] / gui.scale * 0.005), 2) * gui.scale)
+			else:
+				gui.highlight_left = int(pow((window_size[0] / gui.scale * 0.01), 2) * gui.scale)
+			if window_size[0] < 600 * gui.scale:
+				gui.highlight_left = 3 * gui.scale
+			highlight_width -= gui.highlight_left * 2
+			inset_left = gui.highlight_left + 18 * gui.scale
+			inset_width = highlight_width - 25 * gui.scale
+		if window_size[0] < 600 and gui.lsp:
+			inset_width = highlight_width - 18 * gui.scale
+
+		gui.tracklist_center_mode = center_mode
+		gui.tracklist_inset_left = inset_left
+		gui.tracklist_inset_width = inset_width
+		gui.tracklist_highlight_left = gui.highlight_left
+		gui.tracklist_highlight_width = highlight_width
+
+	def full_render(self, rect: tuple[float, float, float, float] | None = None) -> None:
+		"""Render the tracklist.
+
+		With rect=None (the preset path) it uses the standard gui layout vars
+		unchanged. With a rect (the Custom Layout Tracklist widget) it renders into
+		that segment by pointing the layout vars at it for the duration of the
+		render, then restoring them — the heavy body (_render_body) is shared and
+		left untouched, so preset rendering is byte-identical.
+		"""
+		if rect is None:
+			self._render_body()
+			return
+		gui = self.gui
+		window_size = self.window_size
+		saved = (gui.playlist_left, gui.plw, gui.panelY, gui.playlist_top, window_size[1], gui.show_playlist)
+		x, y, w, h = rect
+		gui.playlist_left = round(x)
+		gui.plw = round(w)
+		gui.panelY = round(y)
+		gui.playlist_top = round(y) + round(8 * gui.scale)
+		window_size[1] = round(y + h) + gui.panelBY
+		gui.show_playlist = True
+		self.compute_tracklist_insets()
+		try:
+			self._render_body()
+		finally:
+			(gui.playlist_left, gui.plw, gui.panelY, gui.playlist_top, window_size[1], gui.show_playlist) = saved
+
+	def _render_body(self) -> None:
 		tauon       = self.tauon
 		prefs       = self.prefs
 		pctl        = self.pctl
@@ -49998,6 +50075,7 @@ def main(holder: Holder) -> None:
 		)
 
 	playlist_render = StandardPlaylist(tauon, pl_bg)
+	tauon.playlist_render = playlist_render  # exposed for the Custom Layout Tracklist widget
 	meta_box = MetaBox(tauon)
 	showcase = Showcase(tauon)
 
@@ -53254,7 +53332,11 @@ def main(holder: Holder) -> None:
 					if not gui.showcase_mode:
 						showcase.timed_lyrics_edit.continuous = False
 
-					if gui.pl_update > 0:
+					if gui.custom_mode:
+						# The Custom Layout Tracklist widget renders the playlist (into
+						# its segment) and manages gui.pl_update itself.
+						pass
+					elif gui.pl_update > 0:
 						gui.rendered_playlist_position = pctl.playlist_view_position
 
 						gui.pl_update -= 1
