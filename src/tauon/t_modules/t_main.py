@@ -40981,10 +40981,12 @@ class ProjectM:
 				self.load_preset(self.load_next)
 			self.load_next = None
 
+		just_faded = False
 		fps = int(self.tauon.milky.fps.get())
 		if fps and self.tauon.prefs.auto_milk and self.auto_frames > 30 * self.tauon.milky.fps.get():
 			if self.timer.get() > 30:
 				self.random_preset(fade=True)
+				just_faded = True
 
 		# if self.first_frame:
 		# 	self.frame_timer.set()
@@ -41006,7 +41008,7 @@ class ProjectM:
 		self.lib.projectm_set_window_size(self.pm_instance, int(self.tauon.gui.main_art_box[2]), int(self.tauon.gui.main_art_box[3]))
 		#self.tauon.gui.delay_frame(0.016)
 
-		if self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+		if self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM) or just_faded:
 			try:
 				if not fps or fps < 1:
 					fps = 1
