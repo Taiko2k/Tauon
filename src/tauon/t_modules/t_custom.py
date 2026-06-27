@@ -289,14 +289,23 @@ class MetaWidget(Widget):
 
 
 class MetaCenterWidget(MetaWidget):
+	# The default side-panel metadata (prefs.side_panel_layout == 0).
 	kind = "meta_center"
-	name = "Centered Metadata"
+	name = "Metadata: Side"
 	meta_method = "draw"
 
 
+class MetaCenteredWidget(MetaWidget):
+	# The centered side-panel metadata (prefs.side_panel_layout == 1).
+	kind = "meta_centered"
+	name = "Metadata: Centered"
+	meta_method = "centered"
+
+
 class MetaAlignWidget(MetaWidget):
+	# The horizontal art + text combo (the side-panel l_panel layout).
 	kind = "meta_align"
-	name = "Aligned Metadata"
+	name = "Metadata: H combo"
 	meta_method = "l_panel"
 
 
@@ -414,6 +423,10 @@ def _meta_center(spec: WidgetSpec) -> Widget:
 	return MetaCenterWidget()
 
 
+def _meta_centered(spec: WidgetSpec) -> Widget:
+	return MetaCenteredWidget()
+
+
 def _meta_align(spec: WidgetSpec) -> Widget:
 	return MetaAlignWidget()
 
@@ -445,8 +458,9 @@ WIDGET_SPECS: list[WidgetSpec] = [
 	WidgetSpec("queue", "Queue", "Side Panels", _queue, single_instance=True,
 		colour=ColourRGBA(28, 26, 24, 255)),
 	WidgetSpec("lyrics", "Lyrics Box", "Content", _lyrics, single_instance=True, colour=ColourRGBA(26, 26, 30, 255)),
-	WidgetSpec("meta_center", "Centered Metadata", "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
-	WidgetSpec("meta_align", "Aligned Metadata", "Content", _meta_align, colour=ColourRGBA(30, 32, 34, 255)),
+	WidgetSpec("meta_center", "Metadata: Side", "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
+	WidgetSpec("meta_centered", "Metadata: Centered", "Content", _meta_centered, colour=ColourRGBA(30, 31, 35, 255)),
+	WidgetSpec("meta_align", "Metadata: H combo", "Content", _meta_align, colour=ColourRGBA(30, 32, 34, 255)),
 	WidgetSpec("milkdrop", "MilkDrop Box", "Visualizers", _placeholder,
 		single_instance=True, colour=ColourRGBA(18, 18, 28, 255), in_default=False),
 	WidgetSpec("spectrum", "Spectrum / Level Meter", "Visualizers", _placeholder,
@@ -780,7 +794,6 @@ class CustomLayout:
 		self.gui.custom_edit = False
 		self._close_menu()
 		self.ensure_slot()
-		self.tauon.show_message(_t("Custom layout — use the corner button or F7 to edit"))
 		self.gui.update = 2
 
 	def exit_mode(self) -> None:
@@ -1295,10 +1308,10 @@ class CustomLayout:
 		over = self.tauon.coll((x, y, w, h))
 		active = gui.custom_edit
 		if active:
-			ddt.rect((x, y, w, h), ColourRGBA(255, 190, 50, 60))
+			ddt.rect((x, y, w, h), ColourRGBA(170, 225, 90, 60))
 		elif over:
 			ddt.rect((x, y, w, h), ColourRGBA(255, 255, 255, 20))
-		col = ColourRGBA(255, 190, 50, 255) if active else (
+		col = ColourRGBA(170, 225, 90, 255) if active else (
 			ColourRGBA(235, 235, 235, 255) if over else ColourRGBA(165, 165, 165, 255))
 		# Same 3-panel layout glyph as the View Switcher icon, just smaller.
 		gw = round(18 * gui.scale)
@@ -1420,7 +1433,7 @@ class CustomLayout:
 		ddt = self.ddt
 		inp = self.tauon.inp
 		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
-		ddt.rect((0, 0, ww, wh), ColourRGBA(255, 190, 50, 10))
+		ddt.rect((0, 0, ww, wh), ColourRGBA(170, 225, 90, 10))
 
 		grab = 5 * gui.scale
 		# Register hover regions so the GUI repaints as the mouse moves across
@@ -1440,7 +1453,7 @@ class CustomLayout:
 			# show the dragged widget's name by the cursor.
 			gui.cursor_want = 3  # hand
 			sx, sy, sw, sh = self.widget_drag.rect
-			ddt.rect((sx, sy, sw, sh), ColourRGBA(255, 190, 50, 35))
+			ddt.rect((sx, sy, sw, sh), ColourRGBA(170, 225, 90, 35))
 			target = leaf_at(root, mx, my)
 			if isinstance(target, Leaf) and target is not self.widget_drag:
 				tx, ty, tw, th = target.rect
@@ -1473,12 +1486,12 @@ class CustomLayout:
 			# Yellow highlight on the hovered segment itself.
 			x, y, w, h = seg.rect
 			b = round(2 * gui.scale)
-			edge = ColourRGBA(255, 190, 50, 220)
+			edge = ColourRGBA(170, 225, 90, 220)
 			ddt.rect((x, y, w, b), edge)
 			ddt.rect((x, y + h - b, w, b), edge)
 			ddt.rect((x, y, b, h), edge)
 			ddt.rect((x + w - b, y, b, h), edge)
-			ddt.rect((x, y, w, h), ColourRGBA(255, 190, 50, 18))
+			ddt.rect((x, y, w, h), ColourRGBA(170, 225, 90, 18))
 
 	# -- window controls fallback -------------------------------------------
 

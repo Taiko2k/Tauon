@@ -39860,6 +39860,80 @@ class MetaBox:
 								self.prefs.show_lyrics_showcase = True
 								self.tauon.enter_showcase_view(track_id=tr.index)
 
+	def centered(self, x: int, y: int, w: int, h: int, track: TrackClass | None) -> None:
+		"""The centered side-panel metadata layout (prefs.side_panel_layout == 1):
+		centred art with the artist/title/album text centred below. Mirrors the
+		inline rendering used by the standard right side panel."""
+		ddt = self.ddt
+		colours = self.colours
+		tauon = self.tauon
+		prefs = self.prefs
+		gui = self.gui
+		inp = self.inp
+		pctl = self.pctl
+		window_size = self.tauon.window_size
+		center_info_menu = self.tauon.center_info_menu
+		radiobox = self.tauon.radiobox
+		target_track = track
+
+		ddt.clear_rect((x, y, w, h))
+		ddt.rect((x, y, w, h), colours.side_panel_background)
+		tauon.test_auto_lyrics(target_track)
+		if prefs.show_lyrics_side and target_track and target_track.lyrics:
+			if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
+				center_info_menu.activate(target_track)
+		else:
+			box_wide_w = round(w * 0.98)
+			boxx = round(min(h * 0.7, w * 0.9))
+			boxy = round(min(h * 0.7, w * 0.9))
+			bx = (x + w // 2) - (boxx // 2)
+			bx_wide = (x + w // 2) - (box_wide_w // 2)
+			by = round(h * 0.1)
+			bby = by + boxy
+			text_y = (y + by + boxy + ((h - bby) // 2) - 44 * gui.scale - round((h - bby - 94 * gui.scale) * 0.08))
+			small_mode = False
+			if window_size[1] < 550 * gui.scale:
+				small_mode = True
+				text_y = y + by + boxy + ((h - bby) // 2) - 38 * gui.scale
+			text_x = x + w // 2
+			if prefs.show_side_art:
+				gui.art_drawn_rect = None
+				default_border = (bx, by, boxx, boxy)
+				coll_border = default_border
+				tauon.art_box.draw(
+					bx_wide, by, box_wide_w, boxy, target_track=target_track,
+					tight_border=True, default_border=default_border)
+				if gui.art_drawn_rect:
+					coll_border = gui.art_drawn_rect
+				if inp.right_click and tauon.coll((x, y, w, h)) and not tauon.coll(coll_border):
+					if tauon.is_level_zero(include_menus=False) and target_track:
+						center_info_menu.activate(target_track)
+			else:
+				text_y = y + round(h * 0.40)
+				if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
+					center_info_menu.activate(target_track)
+			ww = w - 25 * gui.scale
+			gui.showed_title = True
+			if target_track:
+				ddt.text_background_colour = colours.side_panel_background
+				if pctl.playing_state == PlayingState.URL_STREAM and not radiobox.dummy_track.title:
+					title = pctl.tag_meta
+				else:
+					title = target_track.title
+					if not title:
+						title = clean_string(target_track.filename)
+				if small_mode:
+					ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 315, max_w=ww)
+					ddt.text((text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
+					line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+					ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
+				else:
+					ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+					ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+					line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+					ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
+
+
 class PictureRender:
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -41875,6 +41949,11 @@ class ViewBox:
 		refresh when you pan the mouse over it
 		"""
 		on = test()
+		# In custom mode the Custom Layout button is the active "view"; the other
+		# layout icons shouldn't stay highlighted (the columns toggle keeps its
+		# own state).
+		if self.gui.custom_mode and test not in (self.custom_layout, self.col):
+			on = False
 		rect = [
 			x - 8 * self.gui.scale,
 			y - 8 * self.gui.scale,
@@ -42034,7 +42113,12 @@ class ViewBox:
 	def custom_layout(self, hit: bool = False) -> bool | None:
 		if hit is False:
 			return self.gui.custom_mode  # active indicator
-		self.tauon.custom.enter()
+		# Toggle: clicking again exits custom mode, revealing the previous view
+		# (custom mode is an overlay, so the underlying layout is unchanged).
+		if self.gui.custom_mode:
+			self.tauon.custom.exit_mode()
+		else:
+			self.tauon.custom.enter()
 		if self.x_menu.active:
 			self.x_menu.close_next_frame = True
 		return None
@@ -42193,7 +42277,7 @@ class ViewBox:
 
 		y += 45 * gui.scale
 
-		high = ColourRGBA(255, 190, 50, 255)
+		high = ColourRGBA(170, 225, 90, 255)  # lime accent for the Custom Layout option
 		if colours.lm:
 			high = ColourRGBA(63, 63, 63, 255)
 
