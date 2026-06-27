@@ -7975,25 +7975,6 @@ class Tauon:
 			return False
 		return self.prefs.left_panel_mode == "artist list"
 
-	# -- Custom Layout System slots --
-	def enter_custom_a(self) -> None:
-		self.custom.enter(0)
-
-	def enter_custom_b(self) -> None:
-		self.custom.enter(1)
-
-	def enter_custom_c(self) -> None:
-		self.custom.enter(2)
-
-	def custom_slot_test_a(self) -> bool:
-		return self.gui.custom_mode and self.custom.active_slot == 0
-
-	def custom_slot_test_b(self) -> bool:
-		return self.gui.custom_mode and self.custom.active_slot == 1
-
-	def custom_slot_test_c(self) -> bool:
-		return self.gui.custom_mode and self.custom.active_slot == 2
-
 	def toggle_left_last(self) -> None:
 		self.gui.lsp = True
 		t = self.prefs.left_panel_mode
@@ -30969,7 +30950,7 @@ class TopPanel:
 		rect = (wwx + 9 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
 		self.fields.add(rect)
 
-		if self.coll(rect) and not prefs.shuffle_lock:
+		if self.coll(rect) and not prefs.shuffle_lock and not gui.custom_mode:
 			if inp.mouse_click:
 
 				if gui.combo_mode:
@@ -31003,7 +30984,8 @@ class TopPanel:
 			if self.coll(rect):
 				colour = colours.corner_button_active
 
-		if not prefs.shuffle_lock:
+		if not prefs.shuffle_lock and not gui.custom_mode:
+			# In custom mode the layout engine draws an edit-toggle in this corner.
 			if gui.combo_mode:
 				self.return_icon.render(wwx + 14 * gui.scale, yy + 8 * gui.scale, colour)
 			elif prefs.left_panel_mode == "artist list":
@@ -41769,6 +41751,42 @@ class ColourPulse2:
 
 		return colour_slide(low_hls, high_hls, pro, 1)
 
+def _draw_custom_layout_icon(tauon: Tauon, x: float, y: float, w: float, h: float, colour: ColourRGBA) -> None:
+	"""Draw a small 3-panel layout glyph (left column + two stacked right panels),
+	representing the Custom Layout view option."""
+	ddt = tauon.ddt
+	g = max(1, round(2 * tauon.gui.scale))
+	lw = round(w * 0.38)
+	ddt.rect((round(x), round(y), lw, round(h)), colour)
+	rx = round(x) + lw + g
+	rw = round(w) - lw - g
+	rh = round((h - g) / 2)
+	ddt.rect((rx, round(y), rw, rh), colour)
+	ddt.rect((rx, round(y) + rh + g, rw, round(h) - rh - g), colour)
+
+
+class DrawnIcon:
+	"""A programmatically-drawn icon (no SVG asset) usable with ViewBox.button.
+	Exposes scale-aware .w/.h and a render(x, y, colour) like an image asset."""
+
+	def __init__(self, tauon: Tauon, base_w: int, base_h: int, draw) -> None:
+		self.tauon = tauon
+		self.base_w = base_w
+		self.base_h = base_h
+		self._draw = draw
+
+	@property
+	def w(self) -> int:
+		return round(self.base_w * self.tauon.gui.scale)
+
+	@property
+	def h(self) -> int:
+		return round(self.base_h * self.tauon.gui.scale)
+
+	def render(self, x: float, y: float, colour: ColourRGBA, renderer=None) -> None:
+		self._draw(self.tauon, x, y, self.w, self.h, colour)
+
+
 class ViewBox:
 
 	def __init__(self, tauon: Tauon, reload: bool = False) -> None:
@@ -41783,7 +41801,7 @@ class ViewBox:
 		self.x: int = 0
 		self.y = tauon.gui.panelY
 		self.w = 52 * tauon.gui.scale
-		self.h = 260 * tauon.gui.scale  # 260
+		self.h = 305 * tauon.gui.scale  # extended for the Custom Layout option
 		self.active: bool = False
 
 		self.border = 3 * tauon.gui.scale
@@ -41798,6 +41816,7 @@ class ViewBox:
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
 		self.radio_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "radio.png", True)
 		self.col_img      = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "col.png", True)
+		self.custom_img   = DrawnIcon(tauon, 26, 19, _draw_custom_layout_icon)
 		# self.artist_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "artist.png", True)
 
 		# _ .15 0
@@ -41810,6 +41829,7 @@ class ViewBox:
 		self.editor_colour     = ColourPulse2(tauon=tauon)  # (0.7)
 		# self.gallery2_colour = ColourPulse(0.65)
 		self.col_colour        = ColourPulse2(tauon=tauon)  # (0.14)
+		self.custom_colour     = ColourPulse2(tauon=tauon)
 		self.artist_colour     = ColourPulse2(tauon=tauon)  # (0.2)
 
 		self.on_colour = ColourRGBA(255, 190, 50, 255)
@@ -42018,6 +42038,14 @@ class ViewBox:
 		self.gui.update_layout = True
 		return None
 
+	def custom_layout(self, hit: bool = False) -> bool | None:
+		if hit is False:
+			return self.gui.custom_mode  # active indicator
+		self.tauon.custom.enter()
+		if self.x_menu.active:
+			self.x_menu.close_next_frame = True
+		return None
+
 	def render(self) -> None:
 		gui     = self.gui
 		ddt     = self.ddt
@@ -42168,23 +42196,25 @@ class ViewBox:
 		if test is not None:
 			func = test
 
-		# --
+		# -- Custom Layout --
 
-		# y += 41 * gui.scale
-		#
-		# high = [198, 229, 76, 255]
-		# if colours.lm:
-		#     #high = (.2, .6, .75)
-		#     high = [63, 63, 63, 255]
-		#
-		# if gui.scale == 1.25:
-		#     x-= 1
-		#
-		# test = self.button(x + 2 * gui.scale, y, self.artist_img, self.artist_info, self.artist_colour, _("Toggle artist info"), False, low=low, high=high)
-		# if test is not None:
-		#     func = test
+		y += 45 * gui.scale
+
+		high = ColourRGBA(255, 190, 50, 255)
+		if colours.lm:
+			high = ColourRGBA(63, 63, 63, 255)
+
+		test = self.button(
+			x + 4 * gui.scale, y, self.custom_img, self.custom_layout, self.custom_colour,
+			_("Custom Layout"), low=low, high=high)
+		if test is not None:
+			func = test
 
 		if func is not None:
+			# Switching to any other layout exits custom mode. The columns toggle
+			# doesn't change the layout, and the custom button enters it.
+			if func not in (self.col, self.custom_layout) and gui.custom_mode:
+				self.tauon.custom.exit_mode()
 			func(True)
 
 		if gui.level_2_click and self.coll(vr):
@@ -49084,11 +49114,6 @@ def main(holder: Holder) -> None:
 	# . Menu entry: A side panel view layout. Alternative name: Folder Tree
 	lsp_menu.add(MenuItem(_("Folder Navigator"), tauon.enable_folder_list, disable_test=tauon.lsp_menu_test_tree))
 
-	# Custom Layout System slots.
-	lsp_menu.add(MenuItem(_("Custom A"), tauon.enter_custom_a, disable_test=tauon.custom_slot_test_a))
-	lsp_menu.add(MenuItem(_("Custom B"), tauon.enter_custom_b, disable_test=tauon.custom_slot_test_b))
-	lsp_menu.add(MenuItem(_("Custom C"), tauon.enter_custom_c, disable_test=tauon.custom_slot_test_c))
-
 	# Custom Layout edit context menu (native Menu system). Built once; its items
 	# act on tauon.custom.menu_target, set when the menu is activated on right
 	# click in edit mode.
@@ -51168,8 +51193,8 @@ def main(holder: Holder) -> None:
 				tauon.exit("Quit keyboard shortcut pressed")
 
 			if keymaps.test("testkey"):  # F7: toggle Custom Layout edit mode
-				# Only meaningful once a custom slot has been entered (via the
-				# top-left button menu -> Custom A/B/C). No effect otherwise.
+				# Only meaningful once the Custom Layout has been entered (via the
+				# View Switcher). No effect otherwise.
 				if gui.custom_mode:
 					tauon.custom.toggle_edit()
 

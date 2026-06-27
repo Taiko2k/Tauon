@@ -21,7 +21,7 @@ Implemented here:
 * A widget registry: a real album Art Box adapter and clearly-labelled
   placeholders for the heavier panels (drop-in adapters land later).
 * Window-controls fallback drawn on hover when no widget provides them.
-* Three slots (Custom A/B/C) persisted to ``custom_layouts.json``.
+* A single custom layout persisted to ``custom_layouts.json``.
 
 Deferred: pixel-faithful adapters for the heavy existing panels (Tracklist,
 Gallery, side-panel internals) — those require extracting tightly-coupled draw
@@ -644,7 +644,6 @@ def stack_has_flex_axis(stack: Stack) -> bool:
 GUTTER_OPTIONS = [0, 2, 4, 8, 16]
 STACK_COUNTS = [2, 3, 4, 5]
 TEMPLATES = ["Standard", "Art-focused", "Minimal"]
-SLOT_NAMES = ["Custom A", "Custom B", "Custom C"]
 
 
 class CustomLayout:
@@ -657,7 +656,7 @@ class CustomLayout:
 		self.gui = tauon.gui
 		self.ddt = tauon.ddt
 		self.renderer = tauon.renderer
-		self.slots: list[Node | None] = [None, None, None]
+		self.slots: list[Node | None] = [None]  # single custom layout slot
 		self.active_slot = 0
 		self._loaded = False
 
@@ -744,28 +743,28 @@ class CustomLayout:
 			p = self._path()
 			if p.is_file():
 				data = json.loads(p.read_text(encoding="utf-8"))
-				for i in range(3):
-					d = data.get(str(i))
-					self.slots[i] = node_from_dict(d) if d else None
+				d = data.get("0")
+				self.slots[0] = node_from_dict(d) if d else None
 		except Exception:
-			logging.exception("Failed to load custom layouts")
+			logging.exception("Failed to load custom layout")
 
 	def save_slots(self) -> None:
 		try:
-			data = {str(i): (n.to_dict() if n else None) for i, n in enumerate(self.slots)}
+			data = {"0": (self.slots[0].to_dict() if self.slots[0] else None)}
 			self._path().write_text(json.dumps(data, indent=1), encoding="utf-8")
 		except Exception:
-			logging.exception("Failed to save custom layouts")
+			logging.exception("Failed to save custom layout")
 
 	# -- entry / exit --------------------------------------------------------
 
-	def enter(self, slot: int) -> None:
-		self.active_slot = slot
+	def enter(self) -> None:
+		"""Enter the (single) custom layout, in view mode."""
+		self.active_slot = 0
 		self.gui.custom_mode = True
 		self.gui.custom_edit = False
 		self._close_menu()
 		self.ensure_slot()
-		self.tauon.show_message(_t("%s — press F7 to customize, Escape to return") % SLOT_NAMES[slot])
+		self.tauon.show_message(_t("Custom layout — use the corner button or F7 to edit"))
 		self.gui.update = 2
 
 	def exit_mode(self) -> None:
@@ -914,16 +913,19 @@ class CustomLayout:
 		if Menu.active or gui.message_box:
 			return
 
+		# Corner edit-toggle button — clickable in BOTH view and edit mode, so it
+		# can turn edit mode on and off. Handled before everything else.
+		if inp.mouse_click and self._corner_button_hit(inp.mouse_position[0], inp.mouse_position[1]):
+			self.toggle_edit()
+			self._consume(inp)
+			return
+
 		if not gui.custom_edit:
 			# View mode: the widgets handle their own input during render(), which
 			# runs later in the frame. Stash the real mouse and neutralise it so
 			# the (hidden) standard UI underneath doesn't also react; render()
 			# restores it for the widgets. Keyboard is left intact for global
-			# shortcuts.
-			if inp.key_esc_press:
-				self.exit_mode()
-				self._consume(inp)
-				return
+			# shortcuts. Escape no longer exits custom mode (use the View Switcher).
 			self._held_mouse = (inp.mouse_click, inp.right_click, inp.mouse_down,
 				inp.mouse_up, inp.mouse_wheel, inp.mouse_position[0], inp.mouse_position[1])
 			inp.mouse_click = False
@@ -936,8 +938,11 @@ class CustomLayout:
 			return
 
 		# --- edit mode ---
+		# Escape exits edit mode (back to custom view), not custom mode.
 		if inp.key_esc_press:
-			self.exit_mode()
+			self.gui.custom_edit = False
+			self._close_menu()
+			self.gui.update = 2
 			self._consume(inp)
 			return
 
@@ -1189,6 +1194,67 @@ class CustomLayout:
 
 		if gui.custom_edit:
 			self._draw_edit_overlay(root)
+
+		# Corner edit-toggle button, on top, in both view and edit mode.
+		self._draw_corner_edit_button()
+
+	# -- corner edit-toggle button ------------------------------------------
+
+	def _corner_rect(self) -> tuple[int, int, int, int]:
+		"""Top-left edit-toggle rect, aligned to where the standard corner panel
+		button sits (clearing the window controls)."""
+		gui = self.gui
+		tauon = self.tauon
+		scale = gui.scale
+		wwx = 0
+		if getattr(tauon.prefs, "left_window_control", False) and not gui.compact_bar:
+			if gui.macstyle:
+				wwx = 24
+				if tauon.draw_min_button:
+					wwx += 20
+				if tauon.draw_max_button:
+					wwx += 20
+			else:
+				wwx = 26
+				if tauon.draw_min_button:
+					wwx += 35
+				if tauon.draw_max_button:
+					wwx += 33
+			wwx = round(wwx * scale)
+		yy = gui.panelY - gui.panelY2
+		return (round(wwx + 9 * scale), round(yy + 4 * scale), round(34 * scale), round(25 * scale))
+
+	def _corner_button_hit(self, mx: float, my: float) -> bool:
+		if not self.gui.custom_mode:
+			return False
+		x, y, w, h = self._corner_rect()
+		return x <= mx < x + w and y <= my < y + h
+
+	def _draw_corner_edit_button(self) -> None:
+		gui = self.gui
+		ddt = self.ddt
+		x, y, w, h = self._corner_rect()
+		self.tauon.fields.add((x, y, w, h))
+		over = self.tauon.coll((x, y, w, h))
+		active = gui.custom_edit
+		if active:
+			ddt.rect((x, y, w, h), ColourRGBA(255, 190, 50, 60))
+		elif over:
+			ddt.rect((x, y, w, h), ColourRGBA(255, 255, 255, 20))
+		col = ColourRGBA(255, 190, 50, 255) if active else (
+			ColourRGBA(235, 235, 235, 255) if over else ColourRGBA(165, 165, 165, 255))
+		# A small 2x2 layout-grid glyph (represents editing the layout).
+		s = round(7 * gui.scale)
+		side = 2 * s
+		bx = x + round(w / 2) - s
+		by = y + round(h / 2) - s
+		t = max(1, round(1 * gui.scale))
+		ddt.rect((bx, by, side, t), col)
+		ddt.rect((bx, by + side - t, side, t), col)
+		ddt.rect((bx, by, t, side), col)
+		ddt.rect((bx + side - t, by, t, side), col)
+		ddt.rect((bx + round(side / 2), by, t, side), col)
+		ddt.rect((bx, by + round(side / 2), side, t), col)
 
 	def _provides_window_controls(self, root: Node) -> bool:
 		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
