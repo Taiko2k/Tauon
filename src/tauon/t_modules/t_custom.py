@@ -258,6 +258,40 @@ class FolderNavWidget(RectPanelWidget):
 	panel_method = "render"
 
 
+class MetaWidget(Widget):
+	"""Adapter for the MetaBox renderers, which take (x, y, w, h, track). The
+	track is the current "show object" (playing or selected per prefs). Rendered
+	offscreen so the engine reframes input/menus (right-click showcase menu)."""
+
+	offscreen = True
+	min_w = 80
+	min_h = 40  # the aligned metadata sizes its album art from the height
+	meta_method = "draw"
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		track = tauon.pctl.show_object()
+		getattr(tauon.meta_box, self.meta_method)(round(x), round(y), round(w), round(h), track)
+
+
+class MetaCenterWidget(MetaWidget):
+	kind = "meta_center"
+	name = "Centered Metadata"
+	meta_method = "draw"
+
+
+class MetaAlignWidget(MetaWidget):
+	kind = "meta_align"
+	name = "Aligned Metadata"
+	meta_method = "l_panel"
+
+
+class LyricsWidget(MetaWidget):
+	kind = "lyrics"
+	name = "Lyrics Box"
+	meta_method = "lyrics"
+	single_instance = True  # shared lyrics scroll state
+
+
 class TracklistWidget(Widget):
 	"""The main Tracklist (playlist view).
 
@@ -361,6 +395,18 @@ def _tracklist(spec: WidgetSpec) -> Widget:
 	return TracklistWidget()
 
 
+def _meta_center(spec: WidgetSpec) -> Widget:
+	return MetaCenterWidget()
+
+
+def _meta_align(spec: WidgetSpec) -> Widget:
+	return MetaAlignWidget()
+
+
+def _lyrics(spec: WidgetSpec) -> Widget:
+	return LyricsWidget()
+
+
 # Registry — the Add menu and (de)serialization are driven by this table. The
 # lock / single-instance defaults follow the agreed widget table.
 WIDGET_SPECS: list[WidgetSpec] = [
@@ -383,9 +429,9 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(24, 28, 26, 255)),
 	WidgetSpec("queue", "Queue", "Side Panels", _queue, single_instance=True,
 		colour=ColourRGBA(28, 26, 24, 255)),
-	WidgetSpec("lyrics", "Lyrics Box", "Content", _placeholder, colour=ColourRGBA(26, 26, 30, 255)),
-	WidgetSpec("meta_center", "Centered Metadata", "Content", _placeholder, colour=ColourRGBA(30, 30, 34, 255)),
-	WidgetSpec("meta_align", "Aligned Metadata", "Content", _placeholder, colour=ColourRGBA(30, 32, 34, 255)),
+	WidgetSpec("lyrics", "Lyrics Box", "Content", _lyrics, single_instance=True, colour=ColourRGBA(26, 26, 30, 255)),
+	WidgetSpec("meta_center", "Centered Metadata", "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
+	WidgetSpec("meta_align", "Aligned Metadata", "Content", _meta_align, colour=ColourRGBA(30, 32, 34, 255)),
 	WidgetSpec("milkdrop", "MilkDrop Box", "Visualizers", _placeholder,
 		single_instance=True, colour=ColourRGBA(18, 18, 28, 255), in_default=False),
 	WidgetSpec("spectrum", "Spectrum / Level Meter", "Visualizers", _placeholder,

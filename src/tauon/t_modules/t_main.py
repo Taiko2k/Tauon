@@ -22662,6 +22662,10 @@ class AlbumArt:
 		return None
 
 	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False) -> int | None:
+		# A non-positive box (can happen for a very short/narrow Custom Layout
+		# segment) would crash the PIL thumbnail/resize, so skip drawing.
+		if box[0] <= 0 or box[1] <= 0:
+			return None
 		index = track.index
 		filepath = track.fullpath
 
@@ -50077,6 +50081,7 @@ def main(holder: Holder) -> None:
 	playlist_render = StandardPlaylist(tauon, pl_bg)
 	tauon.playlist_render = playlist_render  # exposed for the Custom Layout Tracklist widget
 	meta_box = MetaBox(tauon)
+	tauon.meta_box = meta_box  # exposed for the Custom Layout metadata/lyrics widgets
 	showcase = Showcase(tauon)
 
 	render_heartbeat_timer = Timer()
