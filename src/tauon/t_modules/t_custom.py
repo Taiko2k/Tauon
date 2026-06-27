@@ -49,6 +49,21 @@ def _t(s: str) -> str:
 	return f(s) if callable(f) else s
 
 
+def draw_layout_glyph(ddt, scale: float, x: float, y: float, w: float, h: float, colour) -> None:
+	"""Draw the Custom Layout glyph: a left column + two stacked right panels, as
+	filled rectangles. Shared by the View Switcher icon and the corner edit
+	button so they're the same icon at different sizes."""
+	x, y, w, h = round(x), round(y), round(w), round(h)
+	g = max(1, round(2 * scale))
+	lw = round(w * 0.38)
+	ddt.rect((x, y, lw, h), colour)
+	rx = x + lw + g
+	rw = w - lw - g
+	rh = round((h - g) / 2)
+	ddt.rect((rx, y, rw, rh), colour)
+	ddt.rect((rx, y + rh + g, rw, h - rh - g), colour)
+
+
 # ---------------------------------------------------------------------------
 # Widgets
 # ---------------------------------------------------------------------------
@@ -662,7 +677,8 @@ class CustomLayout:
 
 		# edit-mode transient state
 		self.menu_target: Node | None = None
-		self.drag: dict | None = None          # {stack, index, axis}
+		self.drag: dict | None = None          # {stack, index, axis} — edge resize
+		self.widget_drag: Node | None = None   # leaf being dragged to swap
 		# View-mode input handed from handle_input() to render(): the real mouse
 		# state, stashed while the underlying UI is neutralised, then restored so
 		# the custom widgets receive it during their own render.
@@ -883,7 +899,22 @@ class CustomLayout:
 		target.border = not target.border
 		self.save_slots()
 
+	def act_swap(self, a: Node, b: Node) -> None:
+		"""Swap two leaves' widgets (and their widget-related lock/aspect state),
+		keeping each slot's position attributes (weight, gutter, border). Dragging
+		a widget onto an empty segment therefore moves it there."""
+		if a is b or not isinstance(a, Leaf) or not isinstance(b, Leaf):
+			return
+		a.widget, b.widget = b.widget, a.widget
+		a.lock_v, b.lock_v = b.lock_v, a.lock_v
+		a.lock_h, b.lock_h = b.lock_h, a.lock_h
+		a.fixed_w, b.fixed_w = b.fixed_w, a.fixed_w
+		a.fixed_h, b.fixed_h = b.fixed_h, a.fixed_h
+		a.aspect, b.aspect = b.aspect, a.aspect
+		self.save_slots()
+
 	def act_load_template(self, name: str) -> None:
+		self._loaded = True  # authored in memory; don't let a lazy load replace it
 		self.slots[self.active_slot] = self.template(name)
 		self.save_slots()
 
@@ -941,23 +972,32 @@ class CustomLayout:
 		# Escape exits edit mode (back to custom view), not custom mode.
 		if inp.key_esc_press:
 			self.gui.custom_edit = False
+			self.widget_drag = None
 			self._close_menu()
 			self.gui.update = 2
 			self._consume(inp)
 			return
 
-		# Edge-drag resize.
 		if self.drag is not None:
+			# Active edge-drag resize.
 			if inp.mouse_down:
 				self._drag_move(inp)
 			else:
 				self.drag = None
 				self.save_slots()
+		elif self.widget_drag is not None:
+			# Active widget drag — swap on release.
+			if not inp.mouse_down:
+				self._finish_widget_drag(inp)
+			else:
+				gui.update = 2  # keep repainting the drag feedback
 		elif inp.mouse_click:
-			self._try_start_drag(inp)
+			# Start an edge resize if on a boundary, else grab a widget to drag.
+			if not self._try_start_drag(inp):
+				self._try_start_widget_drag(inp)
 
-		# Right-click opens the native context menu on the segment under cursor.
-		if inp.right_click:
+		# Right-click opens the native context menu (not while dragging a widget).
+		if inp.right_click and self.widget_drag is None:
 			root = self.ensure_slot()
 			layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
 			self.menu_target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
@@ -965,6 +1005,23 @@ class CustomLayout:
 				self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
 
 		self._consume(inp)
+
+	def _try_start_widget_drag(self, inp) -> None:
+		root = self.ensure_slot()
+		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], self.gui.scale)
+		seg = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
+		if isinstance(seg, Leaf) and seg.widget is not None:
+			self.widget_drag = seg
+			self.gui.update = 2
+
+	def _finish_widget_drag(self, inp) -> None:
+		root = self.ensure_slot()
+		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], self.gui.scale)
+		target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
+		if isinstance(target, Leaf) and target is not self.widget_drag:
+			self.act_swap(self.widget_drag, target)
+		self.widget_drag = None
+		self.gui.update = 2
 
 	def _consume(self, inp) -> None:
 		inp.mouse_click = False
@@ -1243,18 +1300,12 @@ class CustomLayout:
 			ddt.rect((x, y, w, h), ColourRGBA(255, 255, 255, 20))
 		col = ColourRGBA(255, 190, 50, 255) if active else (
 			ColourRGBA(235, 235, 235, 255) if over else ColourRGBA(165, 165, 165, 255))
-		# A small 2x2 layout-grid glyph (represents editing the layout).
-		s = round(7 * gui.scale)
-		side = 2 * s
-		bx = x + round(w / 2) - s
-		by = y + round(h / 2) - s
-		t = max(1, round(1 * gui.scale))
-		ddt.rect((bx, by, side, t), col)
-		ddt.rect((bx, by + side - t, side, t), col)
-		ddt.rect((bx, by, t, side), col)
-		ddt.rect((bx + side - t, by, t, side), col)
-		ddt.rect((bx + round(side / 2), by, t, side), col)
-		ddt.rect((bx, by + round(side / 2), side, t), col)
+		# Same 3-panel layout glyph as the View Switcher icon, just smaller.
+		gw = round(18 * gui.scale)
+		gh = round(13 * gui.scale)
+		gx = x + round((w - gw) / 2)
+		gy = y + round((h - gh) / 2)
+		draw_layout_glyph(ddt, gui.scale, gx, gy, gw, gh, col)
 
 	def _provides_window_controls(self, root: Node) -> bool:
 		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
@@ -1383,6 +1434,29 @@ class CustomLayout:
 
 		menu_active = self.menu is not None and self.menu.active
 		mx, my = inp.mouse_position[0], inp.mouse_position[1]
+
+		if self.widget_drag is not None:
+			# Drag-to-swap feedback: dim the source, outline the target slot, and
+			# show the dragged widget's name by the cursor.
+			gui.cursor_want = 3  # hand
+			sx, sy, sw, sh = self.widget_drag.rect
+			ddt.rect((sx, sy, sw, sh), ColourRGBA(255, 190, 50, 35))
+			target = leaf_at(root, mx, my)
+			if isinstance(target, Leaf) and target is not self.widget_drag:
+				tx, ty, tw, th = target.rect
+				b = round(2 * gui.scale)
+				edge = ColourRGBA(120, 200, 255, 235)
+				ddt.rect((tx, ty, tw, b), edge)
+				ddt.rect((tx, ty + th - b, tw, b), edge)
+				ddt.rect((tx, ty, b, th), edge)
+				ddt.rect((tx + tw - b, ty, b, th), edge)
+				ddt.rect((tx, ty, tw, th), ColourRGBA(120, 200, 255, 28))
+			name = self.widget_drag.widget.name if self.widget_drag.widget else ""
+			ddt.text_background_colour = ColourRGBA(28, 28, 34, 255)
+			ddt.text((round(mx + 12 * gui.scale), round(my + 6 * gui.scale)), name,
+				ColourRGBA(235, 235, 235, 255), 211, bg=ColourRGBA(28, 28, 34, 255))
+			return
+
 		# While the menu is open, keep the right-clicked segment highlighted;
 		# otherwise track the segment under the cursor and show resize cursors.
 		if menu_active:
@@ -1396,6 +1470,7 @@ class CustomLayout:
 				gui.cursor_want = 12 if hit[0] == "v" else 1
 			seg = leaf_at(root, mx, my)
 		if seg is not None:
+			# Yellow highlight on the hovered segment itself.
 			x, y, w, h = seg.rect
 			b = round(2 * gui.scale)
 			edge = ColourRGBA(255, 190, 50, 220)

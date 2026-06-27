@@ -116,6 +116,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	TEMPLATES as CL_TEMPLATES,
 	WIDGET_SPECS as CL_WIDGET_SPECS,
 	CustomLayout,
+	draw_layout_glyph,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
@@ -41752,17 +41753,9 @@ class ColourPulse2:
 		return colour_slide(low_hls, high_hls, pro, 1)
 
 def _draw_custom_layout_icon(tauon: Tauon, x: float, y: float, w: float, h: float, colour: ColourRGBA) -> None:
-	"""Draw a small 3-panel layout glyph (left column + two stacked right panels),
-	representing the Custom Layout view option."""
-	ddt = tauon.ddt
-	g = max(1, round(2 * tauon.gui.scale))
-	lw = round(w * 0.38)
-	ddt.rect((round(x), round(y), lw, round(h)), colour)
-	rx = round(x) + lw + g
-	rw = round(w) - lw - g
-	rh = round((h - g) / 2)
-	ddt.rect((rx, round(y), rw, rh), colour)
-	ddt.rect((rx, round(y) + rh + g, rw, round(h) - rh - g), colour)
+	"""Draw the Custom Layout glyph for the View Switcher (shared with the corner
+	edit button)."""
+	draw_layout_glyph(tauon.ddt, tauon.gui.scale, x, y, w, h, colour)
 
 
 class DrawnIcon:
@@ -41816,7 +41809,7 @@ class ViewBox:
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
 		self.radio_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "radio.png", True)
 		self.col_img      = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "col.png", True)
-		self.custom_img   = DrawnIcon(tauon, 26, 19, _draw_custom_layout_icon)
+		self.custom_img   = DrawnIcon(tauon, 30, 19, _draw_custom_layout_icon)
 		# self.artist_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "artist.png", True)
 
 		# _ .15 0
@@ -49134,6 +49127,12 @@ def main(holder: Holder) -> None:
 
 		cl_menu.add_sub(_("Add…"), 180)
 		_cl_sub_add = cl_menu.sub_number - 1
+		# Label this submenu "Replace…" when the target segment already has a
+		# widget, "Add…" when it's an empty slot.
+		def _add_or_replace_label() -> Decorator:
+			text = _("Replace…") if cm._t_has_widget() else _("Add…")
+			return Decorator(cl_menu.colours.menu_text, cl_menu.colours.menu_background, text)
+		cl_menu.items[-1].render_func = _add_or_replace_label
 		for _spec in CL_WIDGET_SPECS:
 			cl_menu.add_to_sub(_cl_sub_add, MenuItem(
 				_spec.name, cm._menu_add_widget, args=_spec.kind,
