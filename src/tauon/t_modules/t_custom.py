@@ -352,6 +352,11 @@ class TracklistWidget(Widget):
 		over = rect[0] <= mx < rect[0] + rect[2] and rect[1] <= my < rect[1] + rect[3]
 		interacting = over or inp.mouse_click or inp.right_click or inp.mouse_down or inp.mouse_wheel != 0
 		if gui.pl_update > 0 or rect != self._last_rect or interacting:
+			# Mirror the standard path: heart_fields is repopulated by full_render,
+			# so it must be cleared first or it grows unbounded every frame (the
+			# normal loop clears it before its full_render; that path is skipped in
+			# custom mode).
+			gui.heart_fields.clear()
 			pr.full_render(rect=rect)
 			self._last_rect = rect
 			gui.pl_update = 0
@@ -800,6 +805,11 @@ class CustomLayout:
 		self.gui.custom_mode = False
 		self.gui.custom_edit = False
 		self._close_menu()
+		# Force a full preset playlist render so it repaints at full size and
+		# clears the Tracklist widget's clip rect (else cache_render would keep
+		# copying only the old segment).
+		self.gui.pl_update = 2
+		self.gui.update_layout = True
 		self.gui.update = 2
 
 	def toggle_edit(self) -> None:

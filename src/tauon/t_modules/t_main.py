@@ -34110,6 +34110,7 @@ class StandardPlaylist:
 	def __init__(self, tauon: Tauon, pl_bg: LoadImageAsset | None) -> None:
 		self.tauon         = tauon
 		self.pl_bg         = pl_bg
+		self._clip_rect    = None  # set per full_render(rect) to clip the texture blit
 		self.gui           = tauon.gui
 		self.inp           = tauon.inp
 		self.ddt           = tauon.ddt
@@ -34303,6 +34304,18 @@ class StandardPlaylist:
 		window_size = self.window_size
 		width = gui.plw
 
+		# In custom mode the Tracklist widget renders into its own segment, so use
+		# a plain default margin instead of reacting to the (hidden) preset's left/
+		# right side panels or tracks-only centering.
+		if gui.custom_mode:
+			gui.highlight_left = 0
+			gui.tracklist_center_mode = False
+			gui.tracklist_highlight_left = 0
+			gui.tracklist_highlight_width = width
+			gui.tracklist_inset_left = round(23 * gui.scale)
+			gui.tracklist_inset_width = width - round(32 * gui.scale)
+			return
+
 		center_mode = True
 		if gui.lsp or gui.rsp or gui.set_mode:
 			center_mode = False
@@ -34350,6 +34363,7 @@ class StandardPlaylist:
 		left untouched, so preset rendering is byte-identical.
 		"""
 		if rect is None:
+			self._clip_rect = None
 			self._render_body()
 			return
 		gui = self.gui
@@ -34362,6 +34376,9 @@ class StandardPlaylist:
 		gui.playlist_top = round(y) + round(8 * gui.scale)
 		window_size[1] = round(y + h) + gui.panelBY
 		gui.show_playlist = True
+		# Copy only this segment from the texture to the main texture, so the
+		# tracklist can't bleed past its region (see the final blit in _render_body).
+		self._clip_rect = (round(x), round(y), round(w), round(h))
 		self.compute_tracklist_insets()
 		try:
 			self._render_body()
@@ -35553,7 +35570,7 @@ class StandardPlaylist:
 			tauon.playlist_menu.activate()
 
 		sdl3.SDL_SetRenderTarget(self.renderer, gui.main_texture)
-		sdl3.SDL_RenderTexture(self.renderer, gui.tracklist_texture, None, gui.tracklist_texture_rect)
+		self._blit_tracklist()
 
 		if self.inp.mouse_down is False:
 			self.gui.playlist_hold = False
@@ -35561,9 +35578,20 @@ class StandardPlaylist:
 		ddt.pretty_rect = None
 		ddt.alpha_bg = False
 
+	def _blit_tracklist(self) -> None:
+		"""Copy the tracklist texture to the main texture. In the preset path the
+		whole texture is copied; with a clip rect (Custom Layout) only that segment
+		is copied so the tracklist can't draw past its region."""
+		if self._clip_rect is not None:
+			cx, cy, cw, ch = self._clip_rect
+			r = sdl3.SDL_FRect(cx, cy, cw, ch)
+			sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, r, r)
+		else:
+			sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, None, self.gui.tracklist_texture_rect)
+
 	def cache_render(self) -> None:
 		self.update_album_rating_hover()
-		sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, None, self.gui.tracklist_texture_rect)
+		self._blit_tracklist()
 
 	def update_album_rating_hover(self) -> None:
 		gui = self.gui
