@@ -3064,7 +3064,12 @@ class PlayerCtl:
 
 		if (self.prefs.album_mode or not self.gui.rsp) and (self.gui.theme_name == "Carbon" or self.prefs.colour_from_image):
 			target = self.playing_object()
-			if target and self.prefs.colour_from_image and target.parent_folder_path == self.colours.last_album:
+			# Skip only when the already-applied theme is for this album. The
+			# theme cache is keyed on album (theme_temp_current); last_album is a
+			# folder path that the cache-apply path doesn't keep in sync, so
+			# comparing against it here left stale themes after revisiting an
+			# album (issue #2205).
+			if target and self.prefs.colour_from_image and target.album == self.gui.theme_temp_current:
 				return
 
 			self.tauon.album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
