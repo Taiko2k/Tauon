@@ -375,6 +375,12 @@ int flac_got_rate = 0;
 	struct pw_stream *global_stream;
 	int enum_done = 0;
 	int pipe_set_samplerate = 48000;
+	// Last rate we asked the device to re-clock to, so we request each rate at
+	// most once and never spin in pump_decode when the device can't comply.
+	int pipe_requested_rate = 0;
+	// Set while we tear down the stream on purpose (rate switch) so the state
+	// callback doesn't mistake our own disconnect for the stream being lost.
+	volatile bool pipe_expecting_disconnect = false;
 	#define MAX_DEVICES 64
 	#define POD_BUFFER_SIZE 2048
 	struct device_info {
@@ -2408,8 +2414,31 @@ int get_audio(int max, float* buff) {
 		if (
 			state == PW_STREAM_STATE_ERROR ||
 			state == PW_STREAM_STATE_UNCONNECTED) {
+			// Ignore the transient disconnect we trigger ourselves during a
+			// rate switch; only a genuine, unexpected drop means we're lost.
+			if (pipe_expecting_disconnect) return;
 			log_msg(LOG_ERROR, "PipeWire stream lost (%s)", error ? error : "no error");
 			pulse_connected = false;
+		}
+	}
+
+	// PipeWire tells us the format it actually negotiated here. The requested
+	// rate is only a preference; the graph may settle on something else. Track
+	// the real value in sample_rate_out so the internal resampler bridges any
+	// residual gap instead of pump_decode spinning trying to force a match.
+	static void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param) {
+		if (param == NULL || id != SPA_PARAM_Format) return;
+
+		uint32_t media_type, media_subtype;
+		if (spa_format_parse(param, &media_type, &media_subtype) < 0) return;
+		if (media_type != SPA_MEDIA_TYPE_audio || media_subtype != SPA_MEDIA_SUBTYPE_raw) return;
+
+		struct spa_audio_info_raw info = { 0 };
+		if (spa_format_audio_raw_parse(param, &info) < 0) return;
+
+		if (info.rate > 0 && (int) info.rate != sample_rate_out) {
+			log_msg(LOG_INFO, "ph: PipeWire negotiated samplerate %u", info.rate);
+			sample_rate_out = info.rate;
 		}
 	}
 
@@ -2417,6 +2446,7 @@ int get_audio(int max, float* buff) {
 		PW_VERSION_STREAM_EVENTS,
 		.process = on_process,
 		.state_changed = on_stream_state_changed,
+		.param_changed = on_param_changed,
 	};
 
 
@@ -2680,6 +2710,16 @@ int disconnect_pulse() {
 			return -ENOMEM;
 		}
 
+		// When avoiding resampling, ask the graph/driver to run at our rate so
+		// the device re-clocks instead of resampling us. Without this the format
+		// rate alone just gets adapted to the running graph rate. When resampling
+		// is allowed, clear it so we don't disturb the shared graph rate.
+		if (config_resample == 0) {
+			pw_properties_setf(mutable_props, PW_KEY_NODE_RATE, "1/%d", pipe_set_samplerate);
+		} else {
+			pw_properties_set(mutable_props, PW_KEY_NODE_RATE, NULL);
+		}
+
 		// Set the target device if selected
 		if (selected_index != -1) {
 			pthread_mutex_lock(&pipe_devices_mutex);
@@ -2731,8 +2771,11 @@ int disconnect_pulse() {
 		struct spa_loop *loop, bool async, uint32_t seq,
 		const void *_data, size_t size, void *user_data) {
 
+			pipe_expecting_disconnect = true;
 			pw_stream_disconnect(global_stream);
-			return pipe_connect(loop, async, seq, _data, size, user_data);
+			int ret = pipe_connect(loop, async, seq, _data, size, user_data);
+			pipe_expecting_disconnect = false;
+			return ret;
 	}
 #endif
 
@@ -2821,10 +2864,12 @@ void connect_pulse() {
 	#endif
 
 	#ifdef PIPE
-		int set_samplerate = 48000;
 		if (sample_rate_src > 0) pipe_set_samplerate = sample_rate_src;
-		log_msg(LOG_INFO, "SET PIPE SAMPLERATE: %d", set_samplerate);
+		log_msg(LOG_INFO, "SET PIPE SAMPLERATE: %d", pipe_set_samplerate);
 		sample_rate_out = pipe_set_samplerate;
+		// We're connecting fresh at this rate, so it's already satisfied; pump
+		// only re-requests when a later track needs a different rate.
+		pipe_requested_rate = pipe_set_samplerate;
 
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_connect, SPA_ID_INVALID, NULL, 0, true, NULL);
 	#endif
@@ -3527,31 +3572,44 @@ void pump_decode() {
 	// Here we get data from the decoders to fill the main buffer
 
 	bool reconnect = false;
+
+	#ifdef MINI
 	if (config_resample == 0 && sample_rate_out != sample_rate_src) {
 		if (get_buff_fill() > 0) {
 			return;
 		}
 		log_msg(LOG_ERROR, "ph: Pump wrong samplerate");
-
-		#ifdef MINI
-			stop_out();
-			fade_fill = 0;
-			fade_position = 0;
-			reset_set_value = 0;
-			buff_reset();
-			reconnect = true;
-		#endif
-
-		#ifdef PIPE
-			fade_fill = 0;
-			fade_position = 0;
-			reset_set_value = 0;
-			buff_reset();
-			pipe_set_samplerate = sample_rate_src;
-			sample_rate_out = pipe_set_samplerate;
-			pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
-		#endif
+		stop_out();
+		fade_fill = 0;
+		fade_position = 0;
+		reset_set_value = 0;
+		buff_reset();
+		reconnect = true;
 	}
+	#endif
+
+	#ifdef PIPE
+	// Re-clock the device to the track's native rate once per rate. If the
+	// device honours it, on_param_changed leaves sample_rate_out == src and we
+	// pass through untouched; if it can't, sample_rate_out reflects the real
+	// negotiated rate and the internal resampler covers the gap. Either way we
+	// don't request the same rate again, so we never spin here.
+	if (config_resample == 0 && sample_rate_src > 0
+		&& pipe_requested_rate != sample_rate_src) {
+		if (get_buff_fill() > 0) {
+			return;
+		}
+		log_msg(LOG_INFO, "ph: Requesting device samplerate %d", sample_rate_src);
+		fade_fill = 0;
+		fade_position = 0;
+		reset_set_value = 0;
+		buff_reset();
+		pipe_requested_rate = sample_rate_src;
+		pipe_set_samplerate = sample_rate_src;
+		sample_rate_out = sample_rate_src;  // optimistic; on_param_changed corrects it
+		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
+	}
+	#endif
 
 	if (codec == WAVE) {
 		int result;
