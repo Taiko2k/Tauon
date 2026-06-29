@@ -13444,6 +13444,7 @@ class Tauon:
 		if self.mini_mode.save_position:
 			sdl3.SDL_SetWindowPosition(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
 
+		self.gui.update_layout = True
 		self.gui.update += 3
 
 	def restore_full_mode(self) -> None:
