@@ -3168,11 +3168,6 @@ class PlayerCtl:
 	def stop(self, block: bool = False, run: bool = False, update_gui: bool = True) -> int:
 		stream_proxy = getattr(self.tauon, "stream_proxy", None)
 		stream_state = stream_proxy.state_log() if stream_proxy else "unavailable"
-		logging.info(
-			f"Player stop requested block={block} run={run} update_gui={update_gui} "
-			f"playing_state={self.playing_state} player4_state={self.tauon.player4_state} "
-			f"stream_state={stream_state}"
-		)
 		self.playerCommand = "stop"
 		if run:
 			self.playerCommand = "runstop"
