@@ -40709,6 +40709,9 @@ class ProjectM:
 		self.set_frame_time_available: bool = False
 		self.lib_path: Path | None = None
 		self.glew = None
+		# Max frames projectM accepts per pcm_add_float call; refined from the
+		# library in define_function_signatures. Feeding more crashes it.
+		self.pcm_max_samples: int = 2048
 
 	def load_library(self) -> None:
 		"""Load projectM library using ctypes"""
@@ -40757,6 +40760,20 @@ class ProjectM:
 			# projectm_pcm_add_float - Add audio data
 			self.lib.projectm_pcm_add_float.argtypes = [c_void_p, POINTER(c_float), c_uint, c_uint]
 			self.lib.projectm_pcm_add_float.restype = None
+
+			# projectm_pcm_get_max_samples - Max frames accepted per add call.
+			# Feeding more than this overruns projectM's internal PCM buffer and
+			# segfaults, which happens at track start (the vis buffer has filled
+			# up) and is reached sooner at high sample rates.
+			self.pcm_max_samples = 2048
+			try:
+				self.lib.projectm_pcm_get_max_samples.argtypes = []
+				self.lib.projectm_pcm_get_max_samples.restype = ctypes.c_size_t
+				max_samples = int(self.lib.projectm_pcm_get_max_samples())
+				if max_samples > 0:
+					self.pcm_max_samples = max_samples
+			except AttributeError:
+				logging.warning("projectm_pcm_get_max_samples not found, using default of 2048")
 
 			# projectm_opengl_render_frame - Render frame
 			self.lib.projectm_opengl_render_frame.argtypes = [c_void_p]
@@ -41002,7 +41019,17 @@ class ProjectM:
 		f = aud.get_vis_side_buffer_fill()
 		if f > 200:
 			buffer_p = aud.get_vis_side_buffer()
-			self.lib.projectm_pcm_add_float(self.pm_instance, buffer_p, f // 2, 2)
+			frames = f // 2
+			if frames > self.pcm_max_samples:
+				# Feed only the most recent samples; passing more than projectM's
+				# internal PCM buffer holds overruns it and crashes. This is hit
+				# at track start (buffer has filled) and sooner at high rates.
+				offset = (frames - self.pcm_max_samples) * 2
+				buffer_p = ctypes.cast(
+					ctypes.addressof(buffer_p.contents) + offset * ctypes.sizeof(c_float),
+					POINTER(c_float))
+				frames = self.pcm_max_samples
+			self.lib.projectm_pcm_add_float(self.pm_instance, buffer_p, frames, 2)
 			aud.reset_vis_side_buffer()
 
 		self.lib.projectm_set_window_size(self.pm_instance, int(self.tauon.gui.main_art_box[2]), int(self.tauon.gui.main_art_box[3]))
