@@ -221,7 +221,7 @@ class Tidal:
 		self.tauon.gui.pl_update += 14
 		return None
 
-	def fav_albums(self, return_list: bool = False) -> list[TrackClass] | None:
+	def fav_albums(self, return_list: bool = False) -> list[int] | None:
 		self.try_load()
 		if not self.session:
 			return []
@@ -247,7 +247,7 @@ class Tidal:
 		self.tauon.show_message("Playlist load complete", mode="done")
 		return None
 
-	def fav_tracks(self, return_list: bool = False) -> list[TrackClass] | None:
+	def fav_tracks(self, return_list: bool = False) -> list[int] | None:
 		self.try_load()
 		if not self.session:
 			return []
@@ -272,7 +272,7 @@ class Tidal:
 		self.tauon.show_message("Playlist load complete", mode="done")
 		return None
 
-	def playlist(self, id: str, return_list: bool = False) -> list[TrackClass] | None:
+	def playlist(self, id: str, return_list: bool = False) -> list[int] | None:
 		self.try_load()
 		if not self.session:
 			return []
@@ -296,7 +296,7 @@ class Tidal:
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'tpl"{id}"'
 		return None
 
-	def mix(self, id: str, return_list: bool = False) -> list[TrackClass] | None:
+	def mix(self, id: str, return_list: bool = False) -> list[int] | None:
 		self.try_load()
 		if not self.session:
 			return []
@@ -321,7 +321,7 @@ class Tidal:
 		self.tauon.pctl.gen_codes[self.tauon.pl_to_id(len(self.tauon.pctl.multi_playlist) - 1)] = f'tmix"{id}"'
 		return None
 
-	def artist(self, id: str, return_list: bool = False) -> list[TrackClass] | None:
+	def artist(self, id: str, return_list: bool = False) -> list[int] | None:
 		self.try_load()
 		if not self.session:
 			return []
