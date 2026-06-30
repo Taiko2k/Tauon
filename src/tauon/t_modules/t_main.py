@@ -93,6 +93,7 @@ import mutagen.apev2
 import mutagen.flac
 import mutagen.id3
 import mutagen.mp4
+import mutagen.oggopus
 import mutagen.oggvorbis
 import requests
 import sdl3
@@ -9028,7 +9029,10 @@ class Tauon:
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
 				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
-			elif track.file_ext in ("OPUS", "OGG"):
+			elif track.file_ext == "OPUS":
+				audio = mutagen.oggopus.OggOpus(track.fullpath)
+				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
+			elif track.file_ext == "OGG":
 				audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
 				audio["SYNCEDLYRICS" if synced else "UNSYNCEDLYRICS"] = lyrics
 			elif track.file_ext in ("APE","WV","TTA"):
@@ -43397,7 +43401,11 @@ class TimedLyricsEdit:
 			audio = mutagen.flac.FLAC(track.fullpath)
 			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
 				return True
-		elif track.file_ext in ("OPUS", "OGG"):
+		elif track.file_ext == "OPUS":
+			audio = mutagen.oggopus.OggOpus(track.fullpath)
+			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
+				return True
+		elif track.file_ext == "OGG":
 			audio = mutagen.oggvorbis.OggVorbis(track.fullpath)
 			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
 				return True
