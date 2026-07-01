@@ -35656,7 +35656,7 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
@@ -35674,8 +35674,9 @@ class ArtBox:
 		box_w = w
 		box_h = h
 
-		box_w -= 17 * gui.scale  # Inset the square a bit
-		box_h -= 17 * gui.scale  # Inset the square a bit
+		if inset:  # The Custom Layout Art Box passes inset=False (its gutter spaces it)
+			box_w -= 17 * gui.scale  # Inset the square a bit
+			box_h -= 17 * gui.scale  # Inset the square a bit
 
 		box_x = x + ((w - box_w) // 2)
 		box_y = y + ((h - box_h) // 2)
@@ -35691,7 +35692,7 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
-			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag)
+			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw)
 			showc = tauon.album_art_gen.get_info(target_track)
 
 			# Milkdrop visualiser

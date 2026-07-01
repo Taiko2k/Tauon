@@ -155,8 +155,14 @@ class ArtBoxWidget(Widget):
 	offscreen = False
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		# inset=False: no outer padding in custom mode — the segment's gutter
+		# provides the spacing instead. quick_draw while an edit-mode drag
+		# (boundary resize or widget swap) is repainting every frame: same fast
+		# art path the preset uses during a side-bar drag.
+		cm = tauon.custom
+		dragging = cm.drag is not None or cm.widget_drag is not None
 		tauon.art_box.draw(round(x), round(y), round(w), round(h),
-			target_track=tauon.pctl.show_object())
+			target_track=tauon.pctl.show_object(), inset=False, quick_draw=dragging)
 
 
 class TopPanelWidget(Widget):
@@ -332,9 +338,7 @@ class TracklistWidget(Widget):
 		self._last_rect: tuple | None = None
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
-		pr = getattr(tauon, "playlist_render", None)
-		if pr is None:
-			return
+		pr = tauon.playlist_render
 		gui = tauon.gui
 		inp = tauon.inp
 		rect = (round(x), round(y), round(w), round(h))
@@ -394,9 +398,7 @@ class GalleryWidget(Widget):
 			self._dex_playlist_id = playlist.uuid_int
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
-		gallery_render = getattr(tauon, "gallery_render", None)
-		if gallery_render is None:
-			return
+		gallery_render = tauon.gallery_render
 		self._ensure_album_dex(tauon)
 		gui = tauon.gui
 		ws = tauon.window_size
@@ -526,8 +528,6 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(38, 38, 46, 255)),
 	WidgetSpec("playback_panel", "Playback Panel", "Panels", _playback_panel,
 		lock_v=True, fixed_h=51, single_instance=True, colour=ColourRGBA(32, 32, 40, 255)),
-	WidgetSpec("tab_strip", "Playlist Tab Strip", "Panels", _placeholder,
-		lock_v=True, fixed_h=28, colour=ColourRGBA(34, 34, 42, 255)),
 	WidgetSpec("tracklist", "Tracklist", "Content", _tracklist, single_instance=True,
 		colour=ColourRGBA(24, 24, 28, 255)),
 	WidgetSpec("gallery", "Album Gallery", "Content", _gallery, single_instance=True,
@@ -1458,7 +1458,7 @@ class CustomLayout:
 		tauon = self.tauon
 		scale = gui.scale
 		wwx = 0
-		if getattr(tauon.prefs, "left_window_control", False) and not gui.compact_bar:
+		if tauon.prefs.left_window_control and not gui.compact_bar:
 			if gui.macstyle:
 				wwx = 24
 				if tauon.draw_min_button:
