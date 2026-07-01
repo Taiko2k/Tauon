@@ -408,7 +408,19 @@ class GalleryWidget(Widget):
 		self._ensure_album_dex(tauon)
 		gui = tauon.gui
 		ws = tauon.window_size
-		saved = (gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist)
+		inp = tauon.inp
+		saved = (gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
+			gui.album_v_slide_value)
+		# The preset's wheel gate only checks "right of the gallery's left edge"
+		# (it always touches the window's right edge there), so in the reframed
+		# space it would also catch a cursor over widgets beside this segment.
+		# Zero the wheel for the call when the (segment-local) cursor is outside,
+		# and restore it after so other widgets still receive the event.
+		mx, my = inp.mouse_position[0], inp.mouse_position[1]
+		over = x <= mx < x + round(w) and y <= my < y + round(h)
+		saved_wheel = inp.mouse_wheel
+		if not over:
+			inp.mouse_wheel = 0
 		# The renderer right-anchors at window_size[0] - rspw and spans panelY to
 		# window_size[1] - panelBY; in the reframed space the segment IS the
 		# window, so full width and no panels puts the grid exactly in the rect.
@@ -417,10 +429,21 @@ class GalleryWidget(Widget):
 		gui.panelBY = max(0, ws[1] - round(y + h))
 		gui.lsp = False
 		gui.show_playlist = True
+		# Rows are drawn at y = render_pos - album_scroll_px with no panelY term:
+		# the preset's top slide (~50*scale) implicitly clears its ~30*scale top
+		# panel, leaving a ~20*scale visible gap. The segment has no panel above
+		# it, so keep only the visible gap or the grid sits ~30*scale too low.
+		gui.album_v_slide_value = max(0, gui.album_v_slide_value - round(30 * gui.scale))
+		# The scroll floor is -slide_value and the shared scroll position may sit
+		# below the new floor (set while the preset slide was active); lift it or
+		# the first row shows offset until the first wheel event re-clamps.
+		gui.album_scroll_px = max(gui.album_scroll_px, -gui.album_v_slide_value)
 		try:
 			gallery_render()
 		finally:
-			gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist = saved
+			(gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
+				gui.album_v_slide_value) = saved
+			inp.mouse_wheel = saved_wheel
 
 
 class WidgetSpec:
@@ -561,6 +584,10 @@ class Node:
 		self.gutter: int = 0               # inset around content, px (unscaled)
 		self.border: bool = False
 		self.rect: tuple[float, float, float, float] = (0, 0, 0, 0)
+		# The full slot allotted by the parent stack, before the gutter inset
+		# (equals rect when gutter is 0). Resize boundaries and drag math use
+		# this, so hot spots and behaviour don't shift when a gutter is set.
+		self.slot_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
 
 	# -- serialization --
 	def _base_dict(self) -> dict:
@@ -655,6 +682,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float) -> 
 	cross axis fills. Gutter insets each child's allotted slot.
 	"""
 	node.rect = (x, y, w, h)
+	node.slot_rect = (x, y, w, h)  # parent overwrites with the pre-gutter slot below
 	if not isinstance(node, Stack) or not node.children:
 		return
 
@@ -677,6 +705,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float) -> 
 		# The child's rect already accounts for its gutter inset; descendants and
 		# draw use it directly (no double inset).
 		layout(child, cx, cy, cw, ch, scale)
+		child.slot_rect = (x, cursor, w, length) if axis == "v" else (cursor, y, length, h)
 		cursor += length
 
 
@@ -739,7 +768,7 @@ def stack_has_flex_axis(stack: Stack) -> bool:
 # Engine
 # ---------------------------------------------------------------------------
 
-GUTTER_OPTIONS = [0, 2, 4, 8, 16]
+GUTTER_OPTIONS = [0, 2, 3, 4, 8, 16]
 STACK_COUNTS = [2, 3, 4, 5]
 TEMPLATES = ["Standard", "Art-focused", "Minimal"]
 
@@ -956,12 +985,14 @@ class CustomLayout:
 		if axis == "v":
 			new = not target.lock_v
 			if new:
-				target.fixed_h = max(1, round(target.rect[3] / self.gui.scale))
+				# Slot size, not the gutter-inset content size — fixed_h/w are
+				# slot lengths in the layout pass (the gutter insets within).
+				target.fixed_h = max(1, round(target.slot_rect[3] / self.gui.scale))
 			target.lock_v = new
 		elif axis == "h":
 			new = not target.lock_h
 			if new:
-				target.fixed_w = max(1, round(target.rect[2] / self.gui.scale))
+				target.fixed_w = max(1, round(target.slot_rect[2] / self.gui.scale))
 			target.lock_h = new
 		else:  # aspect
 			target.aspect = not target.aspect
@@ -1140,11 +1171,13 @@ class CustomLayout:
 		if isinstance(node, Stack):
 			for i, c in enumerate(node.children[:-1]):
 				x, y, w, h = node.rect
-				cx, cy, cw, ch = c.rect
+				# Slot rect, not the gutter-inset content rect: the hot spot sits
+				# on the true boundary between segments regardless of gutters.
+				sx, sy, sw, sh = c.slot_rect
 				if node.orient == "v":
-					yield ("v", (x, cy + ch - grab, w, grab * 2), node, i)
+					yield ("v", (x, sy + sh - grab, w, grab * 2), node, i)
 				else:
-					yield ("h", (cx + cw - grab, y, grab * 2, h), node, i)
+					yield ("h", (sx + sw - grab, y, grab * 2, h), node, i)
 			for c in node.children:
 				yield from self._iter_boundaries(c, grab)
 
@@ -1174,7 +1207,11 @@ class CustomLayout:
 		min_px = 24 * scale
 
 		def px(n: Node) -> float:
-			return n.rect[3] if axis == "v" else n.rect[2]
+			# Slot lengths, not gutter-inset content lengths: weights split slot
+			# space, so using content sizes here overshoots by the gutter total
+			# and lets the min/max clamp invert (total - min_px < min_px) into a
+			# negative weight — the boundary then jumps the opposite way.
+			return n.slot_rect[3] if axis == "v" else n.slot_rect[2]
 
 		if a_locked and not b_locked:
 			cur = (a.fixed_h if axis == "v" else a.fixed_w) * scale
@@ -1428,7 +1465,7 @@ class CustomLayout:
 
 		if leaf.border:
 			b = max(1, round(1 * gui.scale))
-			col = ColourRGBA(90, 90, 100, 255)
+			col = ColourRGBA(60, 60, 68, 255)
 			ddt.rect((cx, cy, cw, b), col)
 			ddt.rect((cx, cy + ch - b, cw, b), col)
 			ddt.rect((cx, cy, b, ch), col)
