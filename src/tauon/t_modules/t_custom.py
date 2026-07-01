@@ -136,35 +136,27 @@ class PlaceholderWidget(Widget):
 
 
 class ArtBoxWidget(Widget):
-	"""The album Art Box: a centred square in the segment. Uses the real
-	draw_showcase_art_box(), so it has the standard border/background, click to
-	cycle art source, right-click picture menu, and MilkDrop integration when
-	enabled. Drawn at real coordinates (offscreen=False) so its absolute-space
-	art/visualizer/hole-punch and input all work directly with the real mouse.
+	"""The album Art Box: the side panel's ArtBox class (tauon.art_box) drawn
+	into the segment. It takes the full rect (art is fitted inside a 17*scale
+	inset, aspect preserved), and brings the side panel's behaviour: background
+	fill, faint border, click to cycle art source, right-click picture/MilkDrop
+	menu, hover picture metadata, "Fetching image..." indicator and the MilkDrop
+	visualiser when enabled. Shows the playing-or-selected track (show_object,
+	same as the preset side panel) and handles no-track itself. Drawn at real
+	coordinates (offscreen=False) so its absolute-space art/visualizer and input
+	all work directly with the real mouse.
 	"""
 
 	kind = "art"
 	name = "Art Box"
 	min_w = 32
 	min_h = 32
-	single_instance = True  # draw_showcase_art_box uses singleton gui.main_art_box / milk
+	single_instance = True  # ArtBox writes singleton gui.main_art_box / milk state
 	offscreen = False
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
-		from tauon.t_modules.t_main import draw_showcase_art_box  # lazy: avoid import cycle
-		gui = tauon.gui
-		track = tauon.pctl.playing_object()
-		side = max(1, min(round(w), round(h)))
-		ox = round(x) + (round(w) - side) // 2
-		oy = round(y) + (round(h) - side) // 2
-		if track is None:
-			tauon.ddt.rect((ox, oy, side, side), ColourRGBA(20, 20, 20, 255))
-			tauon.ddt.text_background_colour = ColourRGBA(20, 20, 20, 255)
-			tauon.ddt.text(
-				(ox + side // 2, oy + side // 2 - 9 * gui.scale, 2),
-				"No track", ColourRGBA(120, 120, 120, 255), 313)
-			return
-		draw_showcase_art_box(tauon, track, ox, oy, side, side)
+		tauon.art_box.draw(round(x), round(y), round(w), round(h),
+			target_track=tauon.pctl.show_object())
 
 
 class TopPanelWidget(Widget):
@@ -676,10 +668,37 @@ def _fixed_on(node: Node, axis: str, scale: float) -> float | None:
 	return None
 
 
-def layout(node: Node, x: float, y: float, w: float, h: float, scale: float) -> None:
+def _eff_edge(node: Node, side: str, scale: float) -> float:
+	"""Total natural inset (scaled px) a subtree applies between its slot edge
+	and its content at ``side`` ("l"/"r"/"t"/"b"): the node's own gutter plus
+	whatever its edge children add inside. Along a stack's axis only the
+	first/last child touches that edge; across it every child does, so take the
+	minimum (a child with no gutter means content reaches that edge)."""
+	g = node.gutter * scale
+	if not isinstance(node, Stack) or not node.children:
+		return g
+	first = ("t" if node.orient == "v" else "l")
+	last = ("b" if node.orient == "v" else "r")
+	if side == first:
+		return g + _eff_edge(node.children[0], side, scale)
+	if side == last:
+		return g + _eff_edge(node.children[-1], side, scale)
+	return g + min(_eff_edge(c, side, scale) for c in node.children)
+
+
+def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
+		consumed: frozenset[str] = frozenset()) -> None:
 	"""Assign rects to ``node`` and its descendants. Locked children take fixed
 	(scaled) pixels along the parent's axis; the remainder splits by weight; the
-	cross axis fills. Gutter insets each child's allotted slot.
+	cross axis fills. Gutter insets each child's allotted slot; where the
+	subtrees on BOTH sides of an internal boundary are guttered at their facing
+	edges (per _eff_edge, so this works across nesting levels — e.g. a leaf
+	beside a stack of guttered leaves) they share the gutter: each side insets
+	max(e1, e2) / 2, so the visible gap is the larger gutter rather than the
+	sum. The shared inset is applied here in full and the edge is marked
+	``consumed`` for the child's subtree, so descendants add nothing on top.
+	Boundaries with a bare edge on either side, outer edges and the cross axis
+	keep natural (nested) gutters.
 	"""
 	node.rect = (x, y, w, h)
 	node.slot_rect = (x, y, w, h)  # parent overwrites with the pre-gutter slot below
@@ -694,17 +713,54 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float) -> 
 	weight_total = sum(c.weight for c in flex) or 1.0
 	available = max(0.0, total - locked_total)
 
+	lead_side, trail_side = ("t", "b") if axis == "v" else ("l", "r")
+	cross_sides = ("l", "r") if axis == "v" else ("t", "b")
+	n = len(node.children)
+	gutters = [c.gutter * scale for c in node.children]
+	# Per-child axis insets: the child's own gutter by default (its descendants
+	# nest inside naturally), overridden at shared boundaries and consumed edges.
+	lead = list(gutters)
+	trail = list(gutters)
+	child_consumed: list[set[str]] = [set() for _ in range(n)]
+
+	# This node's consumed edges pass through to the children touching them.
+	if lead_side in consumed:
+		lead[0] = 0.0
+		child_consumed[0].add(lead_side)
+	if trail_side in consumed:
+		trail[-1] = 0.0
+		child_consumed[-1].add(trail_side)
+
+	for i in range(n - 1):
+		e_a = _eff_edge(node.children[i], trail_side, scale)
+		e_b = _eff_edge(node.children[i + 1], lead_side, scale)
+		if e_a > 0 and e_b > 0:
+			shared = max(e_a, e_b) / 2
+			trail[i] = shared
+			lead[i + 1] = shared
+			child_consumed[i].add(trail_side)
+			child_consumed[i + 1].add(lead_side)
+
 	cursor = y if axis == "v" else x
-	for child, f in zip(node.children, fixed):
+	for i, (child, f) in enumerate(zip(node.children, fixed)):
 		length = f if f is not None else available * (child.weight / weight_total)
-		g = child.gutter * scale
+		g = gutters[i]
+		# Cross-axis insets: the child's own gutter, unless this node's edge
+		# there was consumed by a shared boundary in the grandparent.
+		c0 = 0.0 if cross_sides[0] in consumed else g
+		c1 = 0.0 if cross_sides[1] in consumed else g
+		for side in cross_sides:
+			if side in consumed:
+				child_consumed[i].add(side)
 		if axis == "v":
-			cx, cy, cw, ch = x + g, cursor + g, max(0.0, w - 2 * g), max(0.0, length - 2 * g)
+			cx, cy = x + c0, cursor + lead[i]
+			cw, ch = max(0.0, w - c0 - c1), max(0.0, length - lead[i] - trail[i])
 		else:
-			cx, cy, cw, ch = cursor + g, y + g, max(0.0, length - 2 * g), max(0.0, h - 2 * g)
+			cx, cy = cursor + lead[i], y + c0
+			cw, ch = max(0.0, length - lead[i] - trail[i]), max(0.0, h - c0 - c1)
 		# The child's rect already accounts for its gutter inset; descendants and
 		# draw use it directly (no double inset).
-		layout(child, cx, cy, cw, ch, scale)
+		layout(child, cx, cy, cw, ch, scale, frozenset(child_consumed[i]))
 		child.slot_rect = (x, cursor, w, length) if axis == "v" else (cursor, y, length, h)
 		cursor += length
 
@@ -769,6 +825,11 @@ def stack_has_flex_axis(stack: Stack) -> bool:
 # ---------------------------------------------------------------------------
 
 GUTTER_OPTIONS = [0, 2, 3, 4, 8, 16]
+# Defaults applied to a segment when a widget is first added to it (Add menu
+# and template leaves). Replacing an existing widget keeps the segment's
+# configured gutter/border.
+DEFAULT_WIDGET_GUTTER = 3
+DEFAULT_WIDGET_BORDER = True
 STACK_COUNTS = [2, 3, 4, 5]
 TEMPLATES = ["Standard", "Art-focused", "Minimal"]
 
@@ -811,7 +872,10 @@ class CustomLayout:
 		return Leaf(None)
 
 	def _leaf(self, kind: str) -> Leaf:
-		return Leaf(make_widget(kind))
+		leaf = Leaf(make_widget(kind))
+		leaf.gutter = DEFAULT_WIDGET_GUTTER
+		leaf.border = DEFAULT_WIDGET_BORDER
+		return leaf
 
 	def template(self, name: str) -> Node:
 		if name == "Minimal":
@@ -938,6 +1002,7 @@ class CustomLayout:
 			return False
 		if not isinstance(target, Leaf):
 			return False
+		was_empty = target.widget is None
 		old = (target.widget, target.lock_v, target.lock_h, target.fixed_w, target.fixed_h)
 		target.widget = spec.make()
 		target._adopt(target.widget)
@@ -947,6 +1012,11 @@ class CustomLayout:
 			target.widget, target.lock_v, target.lock_h, target.fixed_w, target.fixed_h = old
 			self.tauon.show_message(_t("Can't add: every panel in this row/column would be locked"), mode="warning")
 			return False
+		if was_empty:
+			# Fresh add: apply the widget defaults. Replace keeps the segment's
+			# configured gutter/border.
+			target.gutter = DEFAULT_WIDGET_GUTTER
+			target.border = DEFAULT_WIDGET_BORDER
 		self.save_slots()
 		return True
 
