@@ -50220,6 +50220,1098 @@ def main(holder: Holder) -> None:
 	tauon.meta_box = meta_box  # exposed for the Custom Layout metadata/lyrics widgets
 	showcase = Showcase(tauon)
 
+	def render_gallery() -> None:
+		"""Render the album gallery grid (art tiles, scrolling, input handling and
+		the power tag bar). Extracted verbatim from the main-loop album-mode block
+		so the Custom Layout's Album Gallery widget can reuse it. Geometry derives
+		from gui.rspw / gui.panelY / gui.panelBY / window_size, so a caller places
+		it by pointing those at a target rect (the preset path calls it with them
+		untouched, so preset rendering is byte-identical).
+		"""
+		nonlocal gal_up, gal_down, gal_left, gal_right, row_len
+		try:
+			# Arrow key input
+			if gal_right:
+				gal_right = False
+				tauon.gal_jump_select(False, 1)
+				tauon.goto_album(pctl.selected_in_playlist)
+				pctl.playlist_view_position = pctl.selected_in_playlist
+				logging.debug("Position changed by gallery key press")
+				gui.pl_update = 1
+			if gal_down:
+				gal_down = False
+				tauon.gal_jump_select(False, row_len)
+				tauon.goto_album(pctl.selected_in_playlist, down=True)
+				pctl.playlist_view_position = pctl.selected_in_playlist
+				logging.debug("Position changed by gallery key press")
+				gui.pl_update = 1
+			if gal_left:
+				gal_left = False
+				tauon.gal_jump_select(True, 1)
+				tauon.goto_album(pctl.selected_in_playlist)
+				pctl.playlist_view_position = pctl.selected_in_playlist
+				logging.debug("Position changed by gallery key press")
+				gui.pl_update = 1
+			if gal_up:
+				gal_up = False
+				tauon.gal_jump_select(True, row_len)
+				tauon.goto_album(pctl.selected_in_playlist)
+				pctl.playlist_view_position = pctl.selected_in_playlist
+				logging.debug("Position changed by gallery key press")
+				gui.pl_update = 1
+
+			w = gui.rspw
+
+			if window_size[0] < 750 * gui.scale:
+				w = window_size[0] - 20 * gui.scale
+				if gui.lsp:
+					w -= gui.lspw
+
+			x = window_size[0] - w
+			# sx = x
+			# sw = w
+			h = window_size[1] - gui.panelY - gui.panelBY
+
+			if not gui.show_playlist and inp.mouse_click:
+				left = gui.playlist_left
+
+				if (
+					left < inp.mouse_position[0] < left + 20 * gui.scale
+					and window_size[1] - gui.panelBY > inp.mouse_position[1] > gui.panelY
+				):
+					tauon.toggle_album_mode()
+					inp.mouse_click = False
+					inp.mouse_down = False
+
+			rect = [x, gui.panelY, w, h]
+			if not gui.show_playlist and x > gui.playlist_left:
+				ddt.rect([gui.playlist_left, gui.panelY, x - gui.playlist_left, h], colours.gallery_background)
+			ddt.rect(rect, colours.gallery_background)
+
+			# ddt.rect_r(rect, [255, 0, 0, 200], True)
+
+			area_x = w + 38 * gui.scale
+			# area_x = w - 40 * gui.scale
+
+			row_len = int((area_x - gui.album_h_gap) / (tauon.album_mode_art_size + gui.album_h_gap))
+
+			# logging.info(row_len)
+
+			compact = 40 * gui.scale
+			a_offset = 7 * gui.scale
+
+			l_area = x
+			r_area = w
+			# c_area = r_area // 2 + l_area
+
+			ddt.text_background_colour = colours.gallery_background
+
+			line1_colour = colours.gallery_artist_line
+			line2_colour = colours.grey(240)  # colours.side_bar_line1
+
+			if colours.side_panel_background != colours.gallery_background:
+				line2_colour = ColourRGBA(240, 240, 240, 255)
+				line1_colour = alpha_mod(ColourRGBA(20, 220, 220, 255), 120)
+
+			if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
+				line1_colour = colours.grey(80)
+				line2_colour = colours.grey(40)
+
+			if row_len == 0:
+				row_len = 1
+
+			dev = int((r_area - compact) / (row_len + 0))
+
+			render_pos = 0
+			album_on = 0
+
+			max_scroll = round(
+				(math.ceil((len(tauon.album_dex)) / row_len) - 1)
+				* (tauon.album_mode_art_size + gui.album_v_gap)
+			) - round(50 * gui.scale)
+
+			# Mouse wheel scrolling
+			gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
+			touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
+			use_smooth_gallery = (
+				tauon.smooth_scroll.enabled()
+				or touch_scroll
+				or tauon.smooth_scroll.active("gallery")
+			)
+			row_gallery_scroll = prefs.gallery_row_scroll and not use_smooth_gallery and not touch_scroll
+			if (
+				not tauon.search_over.active
+				and not radiobox.active
+				and inp.mouse_position[0] > window_size[0] - w
+				and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+			):
+				if inp.mouse_wheel != 0:
+					tauon.scroll_gallery_hide_timer.set()
+					gui.frame_callback_list.append(TestTimer(0.9))
+
+				if use_smooth_gallery and inp.mouse_wheel != 0:
+					tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
+				elif row_gallery_scroll:
+					gui.album_scroll_px -= inp.mouse_wheel * (
+						tauon.album_mode_art_size + gui.album_v_gap
+					)  # 90
+				else:
+					gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
+
+				if touch_scroll:
+					tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+				elif inp.touch_released:
+					tauon.smooth_scroll.release_touch("gallery")
+
+				if use_smooth_gallery:
+					gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+
+				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+					if tauon.album_dex:
+						tauon.gallery_pulse_top.pulse()
+
+				if gui.album_scroll_px > max_scroll:
+					gui.album_scroll_px = max_scroll
+					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+			elif touch_scroll:
+				tauon.scroll_gallery_hide_timer.set()
+				gui.frame_callback_list.append(TestTimer(0.9))
+				tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+				gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+				if gui.album_scroll_px > max_scroll:
+					gui.album_scroll_px = max_scroll
+					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+			elif inp.touch_released:
+				tauon.smooth_scroll.release_touch("gallery")
+				if tauon.smooth_scroll.active("gallery"):
+					gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+					if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+						gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+					if gui.album_scroll_px > max_scroll:
+						gui.album_scroll_px = max_scroll
+						gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+
+			if tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
+				not tauon.search_over.active
+				and not radiobox.active
+				and inp.mouse_position[0] > window_size[0] - w
+				and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+			):
+				gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+				if gui.album_scroll_px > max_scroll:
+					gui.album_scroll_px = max_scroll
+					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+
+			rect = (
+				gui.gallery_scroll_field_left,
+				gui.panelY,
+				window_size[0] - gui.gallery_scroll_field_left - 2,
+				h,
+			)
+
+			card_mode = False
+			if prefs.use_card_style and colours.lm and gui.gallery_show_text:
+				card_mode = True
+
+			rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
+			tauon.fields.add(rect)
+
+			# Show scroll area
+			if (
+				tauon.coll(rect)
+				or tauon.gallery_scroll.held
+				or tauon.scroll_gallery_hide_timer.get() < 0.9
+				or gui.album_tab_mode
+			):
+				if tauon.gallery_scroll.held:
+					while len(tauon.gall_ren.queue) > 2:
+						tauon.gall_ren.queue.pop()
+
+				# Draw power bar button
+				if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
+					rect = (
+						window_size[0] - (15 + 20) * gui.scale,
+						gui.panelY + 3 * gui.scale,
+						18 * gui.scale,
+						24 * gui.scale,
+					)
+					tauon.fields.add(rect)
+					colour = ColourRGBA(255, 255, 255, 35)
+					if colours.lm:
+						colour = ColourRGBA(0, 0, 0, 30)
+					if tauon.coll(rect) and not tauon.gallery_scroll.held:
+						colour = ColourRGBA(255, 220, 100, 245)
+						if colours.lm:
+							colour = ColourRGBA(250, 100, 0, 255)
+						if inp.mouse_click:
+							gui.pt = 1
+
+					gui.power_bar_icon.render(
+						rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour
+					)
+
+				# Draw scroll bar
+				if gui.pt == 0:
+					gui.album_scroll_px = (
+						tauon.gallery_scroll.draw(
+							window_size[0] - 16 * gui.scale,
+							gui.panelY,
+							15 * gui.scale,
+							window_size[1] - (gui.panelY + gui.panelBY),
+							gui.album_scroll_px + gui.album_v_slide_value,
+							max_scroll + gui.album_v_slide_value,
+							jump_distance=1400 * gui.scale,
+							r_click=inp.right_click,
+							extend_field=15 * gui.scale,
+						)
+						- gui.album_v_slide_value
+					)
+
+			if gui.last_row != row_len:
+				gui.last_row = row_len
+
+				if pctl.selected_in_playlist < len(pctl.playing_playlist()):
+					tauon.goto_album(pctl.selected_in_playlist)
+				# else:
+				# 	tauon.goto_album(pctl.playlist_playing_position)
+
+			extend = 0
+			if card_mode:  # gui.gallery_show_text:
+				extend = 40 * gui.scale
+
+			# Process inputs first
+			if (
+				inp.mouse_click or inp.right_click or inp.middle_click or inp.mouse_down or inp.mouse_up
+			) and pctl.default_playlist:
+				while render_pos < gui.album_scroll_px + window_size[1]:
+					if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
+						break
+
+					if render_pos < gui.album_scroll_px - tauon.album_mode_art_size - gui.album_v_gap:
+						# Skip row
+						render_pos += tauon.album_mode_art_size + gui.album_v_gap
+						album_on += row_len
+					else:
+						# render row
+						y = render_pos - gui.album_scroll_px
+						row_x = 0
+						for a in range(row_len):
+							if album_on > len(tauon.album_dex) - 1:
+								break
+
+							x = (
+								(l_area + dev * a)
+								- int(tauon.album_mode_art_size / 2)
+								+ int(dev / 2)
+								+ int(compact / 2)
+								- a_offset
+							)
+
+							if tauon.album_dex[album_on] >= len(pctl.default_playlist):
+								break
+
+							rect = (
+								x,
+								y,
+								tauon.album_mode_art_size,
+								tauon.album_mode_art_size + extend * gui.scale,
+							)
+							# tauon.fields.add(rect)
+							m_in = (
+								tauon.coll(rect)
+								and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+							)
+
+							# if m_in:
+							#     ddt.rect_r((x - 7, y - 7, tauon.album_mode_art_size + 14, tauon.album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
+
+							# Quick drag and drop
+							if (
+								inp.mouse_up
+								and (gui.playlist_hold and m_in)
+								and not gui.side_drag
+								and gui.shift_selection
+							):
+								info = tauon.get_album_info(tauon.album_dex[album_on])
+								if info[1]:
+									track_position = info[1][0]
+
+									if track_position > gui.shift_selection[0]:
+										track_position = info[1][-1] + 1
+
+									ref = []
+									for item in gui.shift_selection:
+										ref.append(pctl.default_playlist[item])
+
+									for item in gui.shift_selection:
+										pctl.default_playlist[item] = "old"
+
+									for item in gui.shift_selection:
+										pctl.default_playlist.insert(track_position, "new")
+
+									for b in reversed(range(len(pctl.default_playlist))):
+										if pctl.default_playlist[b] == "old":
+											del pctl.default_playlist[b]
+									gui.shift_selection = []
+									for b in range(len(pctl.default_playlist)):
+										if pctl.default_playlist[b] == "new":
+											gui.shift_selection.append(b)
+											pctl.default_playlist[b] = ref.pop(0)
+
+									pctl.selected_in_playlist = gui.shift_selection[0]
+									gui.pl_update += 1
+									gui.playlist_hold = False
+
+									tauon.reload_albums(True)
+									pctl.notify_database_changed()
+							elif not gui.side_drag and tauon.is_level_zero():
+								if (
+									coll_point(inp.click_location, rect)
+									and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+								):
+									info = tauon.get_album_info(tauon.album_dex[album_on])
+
+									if m_in and inp.mouse_up and prefs.gallery_single_click:
+										if (
+											tauon.is_level_zero()
+											and gui.d_click_ref == tauon.album_dex[album_on]
+										):
+											if info[0] == 1 and pctl.playing_state == PlayingState.PAUSED:
+												pctl.play()
+											elif (
+												info[0] == 1 and pctl.playing_state != PlayingState.STOPPED
+											):
+												pctl.playlist_view_position = tauon.album_dex[album_on]
+												logging.debug("Position changed by gallery click")
+											else:
+												pctl.playlist_view_position = tauon.album_dex[album_on]
+												logging.debug("Position changed by gallery click")
+												pctl.jump(
+													pctl.default_playlist[tauon.album_dex[album_on]],
+													tauon.album_dex[album_on],
+												)
+											pctl.show_current()
+									elif inp.mouse_down and not m_in:
+										info = tauon.get_album_info(tauon.album_dex[album_on])
+										inp.quick_drag = True
+										if (
+											not tauon.pl_is_locked(pctl.active_playlist_viewing)
+											or inp.key_shift_down
+										):
+											gui.playlist_hold = True
+										gui.shift_selection = info[1]
+										gui.pl_update += 1
+										inp.click_location = [0, 0]
+
+							if m_in:
+								info = tauon.get_album_info(tauon.album_dex[album_on])
+								if inp.mouse_click:
+									if prefs.gallery_single_click:
+										gui.d_click_ref = tauon.album_dex[album_on]
+									else:
+										if (
+											tauon.d_click_timer.get() < 0.5
+											and gui.d_click_ref == tauon.album_dex[album_on]
+										):
+											if info[0] == 1 and pctl.playing_state == PlayingState.PAUSED:
+												pctl.play()
+											elif (
+												info[0] == 1 and pctl.playing_state != PlayingState.STOPPED
+											):
+												pctl.playlist_view_position = tauon.album_dex[album_on]
+												logging.debug("Position changed by gallery click")
+											else:
+												pctl.playlist_view_position = tauon.album_dex[album_on]
+												logging.debug("Position changed by gallery click")
+												pctl.jump(
+													pctl.default_playlist[tauon.album_dex[album_on]],
+													tauon.album_dex[album_on],
+												)
+										else:
+											gui.d_click_ref = tauon.album_dex[album_on]
+											tauon.d_click_timer.set()
+
+										pctl.playlist_view_position = tauon.album_dex[album_on]
+										logging.debug("Position changed by gallery click")
+										pctl.selected_in_playlist = tauon.album_dex[album_on]
+										gui.pl_update += 1
+								elif inp.middle_click and tauon.is_level_zero():
+									# Middle click to add album to queue
+									if inp.key_ctrl_down:
+										# Add to queue ungrouped
+										album = tauon.get_album_info(tauon.album_dex[album_on])[1]
+										for item in album:
+											pctl.force_queue.append(
+												queue_item_gen(
+													pctl.default_playlist[item],
+													item,
+													pctl.pl_to_id(pctl.active_playlist_viewing),
+												)
+											)
+										tauon.queue_timer_set(plural=True)
+										if prefs.stop_end_queue:
+											pctl.stop_mode = StopMode.OFF
+									else:
+										# Add to queue grouped
+										tauon.add_album_to_queue(
+											pctl.default_playlist[tauon.album_dex[album_on]],
+											tauon.album_dex[album_on],
+											pctl.pl_to_id(pctl.active_playlist_viewing),
+										)
+								elif inp.right_click:
+									if pctl.quick_add_target:
+										pl = pctl.id_to_pl(pctl.quick_add_target)
+										if pl is not None:
+											parent = pctl.get_track(
+												pctl.default_playlist[tauon.album_dex[album_on]]
+											).parent_folder_path
+											# remove from target pl
+											if (
+												pctl.default_playlist[tauon.album_dex[album_on]]
+												in pctl.multi_playlist[pl].playlist_ids
+											):
+												for i in reversed(
+													range(len(pctl.multi_playlist[pl].playlist_ids))
+												):
+													if (
+														pctl.get_track(
+															pctl.multi_playlist[pl].playlist_ids[i]
+														).parent_folder_path
+														== parent
+													):
+														del pctl.multi_playlist[pl].playlist_ids[i]
+											else:
+												# add
+												for i in range(len(pctl.default_playlist)):
+													if (
+														pctl.get_track(
+															pctl.default_playlist[i]
+														).parent_folder_path
+														== parent
+													):
+														pctl.multi_playlist[pl].playlist_ids.append(
+															pctl.default_playlist[i]
+														)
+										tauon.reload_albums(True)
+									else:
+										pctl.selected_in_playlist = tauon.album_dex[album_on]
+										# playlist_position = pctl.playlist_selected
+										gui.shift_selection = [pctl.selected_in_playlist]
+										gallery_menu.activate(MenuTrackRef(
+											pctl.default_playlist[pctl.selected_in_playlist],
+											pctl.selected_in_playlist,
+											pctl.pl_to_id(pctl.active_playlist_viewing),
+										))
+
+										gui.shift_selection = []
+										u = pctl.selected_in_playlist
+										while (
+											u < len(pctl.default_playlist)
+											and pctl.master_library[
+												pctl.default_playlist[u]
+											].parent_folder_path
+											== pctl.master_library[
+												pctl.default_playlist[pctl.selected_in_playlist]
+											].parent_folder_path
+										):
+											gui.shift_selection.append(u)
+											u += 1
+										pctl.render_playlist()
+
+							album_on += 1
+
+						if album_on > len(tauon.album_dex):
+							break
+						render_pos += tauon.album_mode_art_size + gui.album_v_gap
+
+			render_pos = 0
+			album_on = 0
+			album_count = 0
+
+			if not pref_box.enabled or inp.mouse_wheel != 0:
+				gui.first_in_grid = None
+
+			# Render album grid
+			while render_pos < gui.album_scroll_px + window_size[1] and pctl.default_playlist:
+				if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
+					break
+
+				if render_pos < gui.album_scroll_px - tauon.album_mode_art_size - gui.album_v_gap:
+					# Skip row
+					render_pos += tauon.album_mode_art_size + gui.album_v_gap
+					album_on += row_len
+				else:
+					# render row
+					y = render_pos - gui.album_scroll_px
+
+					row_x = 0
+
+					if (
+						y > window_size[1] - gui.panelBY - 30 * gui.scale
+						and window_size[1] < 340 * gui.scale
+					):
+						break
+					# if y >
+
+					for a in range(row_len):
+						if album_on > len(tauon.album_dex) - 1:
+							break
+
+						x = (
+							(l_area + dev * a)
+							- int(tauon.album_mode_art_size / 2)
+							+ int(dev / 2)
+							+ int(compact / 2)
+							- a_offset
+						)
+
+						if tauon.album_dex[album_on] >= len(pctl.default_playlist):
+							break
+
+						track = pctl.master_library[pctl.default_playlist[tauon.album_dex[album_on]]]
+
+						info = tauon.get_album_info(tauon.album_dex[album_on])
+						album = info[1]
+						# info = (0, 0, 0)
+
+						# rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
+						# tauon.fields.add(rect)
+						# m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+
+						if (
+							gui.first_in_grid is None and y > gui.panelY
+						):  # This marks what track is the first in the grid
+							gui.first_in_grid = tauon.album_dex[album_on]
+
+						# artisttitle = colours.side_bar_line2
+						# albumtitle = colours.side_bar_line1  # grey(220)
+
+						if card_mode:
+							ddt.text_background_colour = colours.grey(250)
+							tauon.drop_shadow.render(
+								x + 3 * gui.scale,
+								y + 3 * gui.scale,
+								tauon.album_mode_art_size + 11 * gui.scale,
+								tauon.album_mode_art_size + 45 * gui.scale + 13 * gui.scale,
+							)
+							ddt.rect(
+								(
+									x,
+									y,
+									tauon.album_mode_art_size,
+									tauon.album_mode_art_size + 45 * gui.scale,
+								),
+								colours.grey(250),
+							)
+
+						# White background needs extra border
+						if colours.lm and not card_mode:
+							ddt.rect_a(
+								(x - 2, y - 2),
+								(tauon.album_mode_art_size + 4, tauon.album_mode_art_size + 4),
+								colours.grey(200),
+							)
+
+						if a == row_len - 1:
+							gui.gallery_scroll_field_left = max(
+								x + tauon.album_mode_art_size, window_size[0] - round(50 * gui.scale)
+							)
+
+						# Skip if the selection highlight is drawn over this album,
+						# so the two highlights don't show at the same time
+						selection_highlight_shown = (
+							(gui.album_tab_mode or gallery_menu.active) and info[2] is True
+						)
+						if info[0] == 1 and not selection_highlight_shown and (
+							pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
+						):
+							ddt.rect_a(
+								(x - 4, y - 4),
+								(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+								colours.gallery_highlight,
+							)
+							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
+							#            colours.gallery_background, True)
+
+						# Draw quick add highlight
+						if pctl.quick_add_target:
+							pl = pctl.id_to_pl(pctl.quick_add_target)
+							if (
+								pl is not None
+								and pctl.default_playlist[tauon.album_dex[album_on]]
+								in pctl.multi_playlist[pl].playlist_ids
+							):
+								c = ColourRGBA(110, 233, 90, 255)
+								if colours.lm:
+									c = ColourRGBA(66, 244, 66, 255)
+								ddt.rect_a(
+									(x - 4, y - 4),
+									(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+									c,
+								)
+
+						# Draw transcode highlight
+						if tauon.transcode_list and os.path.isdir(prefs.encoder_output):
+							tr = False
+
+							if encode_folder_name(track) in os.listdir(prefs.encoder_output):
+								tr = True
+							else:
+								for folder in tauon.transcode_list:
+									if (
+										pctl.get_track(folder[0]).parent_folder_path
+										== track.parent_folder_path
+									):
+										tr = True
+										break
+							if tr:
+								c = ColourRGBA(244, 212, 66, 255)
+								if colours.lm:
+									c = ColourRGBA(244, 64, 244, 255)
+								ddt.rect_a(
+									(x - 4, y - 4),
+									(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+									c,
+								)
+								# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
+								#            colours.gallery_background, True)
+
+						# Draw selection
+
+						if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
+							c = colours.gallery_highlight
+							c = ColourRGBA(c.g, c.b, c.r, c.a)
+							ddt.rect_a(
+								(x - 4, y - 4),
+								(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+								c,
+							)  # [150, 80, 222, 255]
+							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
+							#            colours.gallery_background, True)
+
+						# Draw selection animation
+						if (
+							gui.gallery_animate_highlight_on == tauon.album_dex[album_on]
+							and tauon.gallery_select_animate_timer.get() < 1.5
+						):
+							t = tauon.gallery_select_animate_timer.get()
+							c = colours.gallery_highlight
+							if t < 0.2:
+								a = int(255 * (t / 0.2))
+							elif t < 0.5:
+								a = 255
+							else:
+								a = int(255 - 255 * (t - 0.5))
+
+							c = ColourRGBA(c.g, c.b, c.r, a)
+							ddt.rect_a(
+								(x - 5, y - 5),
+								(tauon.album_mode_art_size + 10, tauon.album_mode_art_size + 10),
+								c,
+							)  # [150, 80, 222, 255]
+
+							gui.update += 1
+
+						# Draw faint outline
+						ddt.rect(
+							(x - 1, y - 1, tauon.album_mode_art_size + 2, tauon.album_mode_art_size + 2),
+							ColourRGBA(255, 255, 255, 11),
+						)
+
+						if gui.album_tab_mode or gallery_menu.active:
+							if info[2] is False and info[0] != 1 and not colours.lm:
+								ddt.rect_a(
+									(x, y),
+									(tauon.album_mode_art_size, tauon.album_mode_art_size),
+									ColourRGBA(0, 0, 0, 110),
+								)
+								albumtitle = colours.grey(160)
+
+						elif info[0] != 1 and pctl.playing_state != PlayingState.STOPPED and prefs.dim_art:
+							ddt.rect_a(
+								(x, y),
+								(tauon.album_mode_art_size, tauon.album_mode_art_size),
+								ColourRGBA(0, 0, 0, 110),
+							)
+							albumtitle = colours.grey(160)
+
+						# Determine meta info
+						singles = False
+						artists = 0
+						last_album = ""
+						last_artist = ""
+						s = 0
+						ones = 0
+						for id in album:
+							tr = pctl.get_track(pctl.default_playlist[id])
+							if tr.album != last_album:
+								if last_album:
+									s += 1
+								last_album = tr.album
+								if str(tr.track_number) == "1":
+									ones += 1
+							if tr.artist != last_artist:
+								artists += 1
+						if s > 2 or ones > 2:
+							singles = True
+
+						# Draw blank back colour
+						back_colour = ColourRGBA(40, 40, 40, 50)
+						if colours.lm:
+							back_colour = ColourRGBA(10, 10, 10, 15)
+
+						back_colour = alpha_blend(ColourRGBA(10, 10, 10, 15), colours.gallery_background)
+
+						ddt.rect_a(
+							(x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), back_colour
+						)
+
+						# Draw album art
+						if singles:
+							dia = math.sqrt(tauon.album_mode_art_size * tauon.album_mode_art_size * 2)
+							ran = dia * 0.25
+							off = (dia - ran) / 2
+							albs = min(len(album), 5)
+							spacing = ran / (albs - 1)
+							size = round(tauon.album_mode_art_size * 0.5)
+
+							i = 0
+							for p in album[:albs]:
+								pp = spacing * i
+								pp += off
+								xx = pp / math.sqrt(2)
+
+								xx -= size / 2
+								drawn_art = tauon.gall_ren.render(
+									pctl.get_track(pctl.default_playlist[p]),
+									(x + xx, y + xx),
+									size=size,
+									force_offset=0,
+								)
+								if not drawn_art:
+									g = 50 + round(100 / albs) * i
+									ddt.rect((x + xx, y + xx, size, size), ColourRGBA(g, g, g, 100))
+								drawn_art = True
+								i += 1
+						else:
+							album_count += 1
+							if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
+								tauon.gall_ren.limit = round((album_count * 1.5) + 30)
+							drawn_art = tauon.gall_ren.render(track, (x, y))
+
+						# Determine mouse collision
+						rect = (
+							x,
+							y,
+							tauon.album_mode_art_size,
+							tauon.album_mode_art_size + extend * gui.scale,
+						)
+						m_in = (
+							tauon.coll(rect)
+							and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+						)
+						tauon.fields.add(rect)
+
+						# Draw mouse-over highlight
+						if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
+							if tauon.is_level_zero():
+								ddt.rect(rect, ColourRGBA(255, 255, 255, 10))
+
+						if drawn_art is False and gui.gallery_show_text is False:
+							ddt.text(
+								(
+									x + int(tauon.album_mode_art_size / 2),
+									y + tauon.album_mode_art_size - 22 * gui.scale,
+									2,
+								),
+								pctl.master_library[
+									pctl.default_playlist[tauon.album_dex[album_on]]
+								].parent_folder_name,
+								colours.gallery_artist_line,
+								13,
+								tauon.album_mode_art_size - 15 * gui.scale,
+								bg=alpha_blend(back_colour, colours.gallery_background),
+							)
+
+						if prefs.art_bg and drawn_art:
+							rect = sdl3.SDL_FRect(
+								round(x), round(y), tauon.album_mode_art_size, tauon.album_mode_art_size
+							)
+							if rect.y < gui.panelY:
+								diff = round(gui.panelY - rect.y)
+								rect.y += diff
+								rect.h -= diff
+							elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
+								diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
+								rect.h -= diff
+
+							if rect.h > 0:
+								tauon.style_overlay.hole_punches.append(rect)
+
+						# # Drag over highlight
+						# if inp.quick_drag and gui.playlist_hold and inp.mouse_down:
+						# 	rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
+						# 	m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+						# 	if m_in:
+						# 		ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [120, 10, 255, 100], True)
+
+						if gui.gallery_show_text:
+							c_index = pctl.default_playlist[tauon.album_dex[album_on]]
+							if c_index in gui.album_artist_dict:
+								pass
+							else:
+								i = tauon.album_dex[album_on]
+								if pctl.master_library[pctl.default_playlist[i]].album_artist:
+									gui.album_artist_dict[c_index] = pctl.master_library[
+										pctl.default_playlist[i]
+									].album_artist
+								else:
+									while i < len(pctl.default_playlist):
+										if (
+											pctl.master_library[pctl.default_playlist[i]].parent_folder_name
+											!= pctl.master_library[
+												pctl.default_playlist[tauon.album_dex[album_on]]
+											].parent_folder_name
+										):
+											gui.album_artist_dict[c_index] = pctl.master_library[
+												pctl.default_playlist[tauon.album_dex[album_on]]
+											].artist
+											break
+										if (
+											pctl.master_library[pctl.default_playlist[i]].artist
+											!= pctl.master_library[
+												pctl.default_playlist[tauon.album_dex[album_on]]
+											].artist
+										):
+											gui.album_artist_dict[c_index] = _("Various Artists")
+											break
+										i += 1
+									else:
+										gui.album_artist_dict[c_index] = pctl.master_library[
+											pctl.default_playlist[tauon.album_dex[album_on]]
+										].artist
+
+							line = gui.album_artist_dict[c_index]
+							line2 = pctl.master_library[
+								pctl.default_playlist[tauon.album_dex[album_on]]
+							].album
+							if singles:
+								line2 = pctl.master_library[
+									pctl.default_playlist[tauon.album_dex[album_on]]
+								].parent_folder_name
+								if artists > 1:
+									line = _("Various Artists")
+
+							text_align = 0
+							if prefs.center_gallery_text:
+								x += tauon.album_mode_art_size // 2
+								text_align = 2
+							elif card_mode:
+								x += round(6 * gui.scale)
+
+							if card_mode:
+								if line2 == "":
+									ddt.text(
+										(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
+										line,
+										line1_colour,
+										310,
+										tauon.album_mode_art_size - 18 * gui.scale,
+									)
+								else:
+									ddt.text(
+										(x, y + tauon.album_mode_art_size + 7 * gui.scale, text_align),
+										line2,
+										line2_colour,
+										311,
+										tauon.album_mode_art_size - 18 * gui.scale,
+									)
+
+									ddt.text(
+										(
+											x,
+											y + tauon.album_mode_art_size + (10 + 14) * gui.scale,
+											text_align,
+										),
+										line,
+										line1_colour,
+										10,
+										tauon.album_mode_art_size - 18 * gui.scale,
+									)
+							elif line2 == "":
+								ddt.text(
+									(x, y + tauon.album_mode_art_size + 9 * gui.scale, text_align),
+									line,
+									line1_colour,
+									311,
+									tauon.album_mode_art_size - 5 * gui.scale,
+								)
+							else:
+								ddt.text(
+									(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
+									line2,
+									line2_colour,
+									212,
+									tauon.album_mode_art_size,
+								)
+
+								ddt.text(
+									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale, text_align),
+									line,
+									line1_colour,
+									311,
+									tauon.album_mode_art_size - 5 * gui.scale,
+								)
+
+						album_on += 1
+
+					if album_on > len(tauon.album_dex):
+						break
+					render_pos += tauon.album_mode_art_size + gui.album_v_gap
+
+			# POWER TAG BAR --------------
+
+			if gui.pt > 0:  # gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
+				top = gui.panelY
+				run_y = top + 1
+
+				hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
+				tauon.fields.add(hot_r)
+
+				if gui.pt == 0:  # mouse moves in
+					if tauon.coll(hot_r) and window_is_focused(t_window):
+						gui.pt_on.set()
+						gui.pt = 1
+				elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
+					if not tauon.coll(hot_r):
+						gui.pt = 0
+					elif gui.pt_on.get() > 0.2:
+						gui.pt = 2
+
+						off = 0
+						for item in gui.power_bar:
+							item.ani_timer.force_set(off)
+							off -= 0.005
+
+				elif gui.pt == 2:  # wait to turn off
+					if tauon.coll(hot_r):
+						gui.pt_off.set()
+					if gui.pt_off.get() > 0.6 and not lightning_menu.active:
+						gui.pt = 3
+
+						off = 0
+						for item in gui.power_bar:
+							item.ani_timer.force_set(off)
+							off -= 0.01
+
+				done = True
+				# Animate tags on
+				if gui.pt == 2:
+					for item in gui.power_bar:
+						t = item.ani_timer.get()
+						if t < 0:
+							break
+						if t > 0.2:
+							item.peak_x = 9 * gui.scale
+						else:
+							item.peak_x = (t / 0.2) * 9 * gui.scale
+
+				# Animate tags off
+				if gui.pt == 3:
+					for item in gui.power_bar:
+						t = item.ani_timer.get()
+						if t < 0:
+							done = False
+							break
+						if t > 0.2:
+							item.peak_x = 0
+						else:
+							item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
+							done = False
+					if done:
+						gui.pt = 0
+						gui.update += 1
+
+				# Keep draw loop running while on
+				if gui.pt > 0:
+					gui.update = 2
+
+				# Draw tags
+
+				block_h = round(27 * gui.scale)
+				block_gap = 1 * gui.scale
+				if gui.scale == 1.25:
+					block_gap = 1
+
+				if tauon.coll(hot_r) or gui.pt > 0:
+					for i, item in enumerate(gui.power_bar):
+						if run_y + block_h > top + h:
+							break
+
+						rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
+						i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
+						tauon.fields.add(i_rect)
+
+						if (
+							tauon.coll(i_rect)
+							or (lightning_menu.active and lightning_menu.reference == item)
+						) and item.peak_x == 9 * gui.scale:
+							if (
+								not lightning_menu.active
+								or lightning_menu.reference == item
+								or inp.right_click
+							):
+								minx = 100 * gui.scale
+								maxx = minx * 2
+
+								ww = ddt.get_text_w(item.name, 213)
+
+								w = max(minx, ww)
+								w = min(maxx, w)
+
+								ddt.rect(
+									(rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h),
+									ColourRGBA(230, 230, 230, 255),
+								)
+								ddt.text(
+									(rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1),
+									item.name,
+									ColourRGBA(5, 5, 5, 255),
+									213,
+									w,
+									bg=ColourRGBA(230, 230, 230, 255),
+								)
+
+								if inp.mouse_click:
+									tauon.goto_album(item.position)
+								if inp.right_click:
+									lightning_menu.activate(
+										item,
+										position=(
+											window_size[0] - 180 * gui.scale,
+											rect[1] + rect[3] + 5 * gui.scale,
+										),
+									)
+								if inp.middle_click:
+									tauon.path_stem_to_playlist(item.path, item.name)
+
+						ddt.rect(rect, item.colour)
+						run_y += block_h + block_gap
+
+			tauon.gallery_pulse_top.render(
+				window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale
+			)
+		except Exception:
+			logging.exception("Gallery render error!")
+		# END POWER BAR ------------------------
+
+	tauon.gallery_render = render_gallery  # exposed for the Custom Layout Album Gallery widget
+
 	render_heartbeat_timer = Timer()
 
 	tauon.set_tray_icons()
@@ -52131,1087 +53223,13 @@ def main(holder: Holder) -> None:
 				# Gallery view
 				# C-AR
 
-				if prefs.album_mode:
-					try:
-						# Arrow key input
-						if gal_right:
-							gal_right = False
-							tauon.gal_jump_select(False, 1)
-							tauon.goto_album(pctl.selected_in_playlist)
-							pctl.playlist_view_position = pctl.selected_in_playlist
-							logging.debug("Position changed by gallery key press")
-							gui.pl_update = 1
-						if gal_down:
-							gal_down = False
-							tauon.gal_jump_select(False, row_len)
-							tauon.goto_album(pctl.selected_in_playlist, down=True)
-							pctl.playlist_view_position = pctl.selected_in_playlist
-							logging.debug("Position changed by gallery key press")
-							gui.pl_update = 1
-						if gal_left:
-							gal_left = False
-							tauon.gal_jump_select(True, 1)
-							tauon.goto_album(pctl.selected_in_playlist)
-							pctl.playlist_view_position = pctl.selected_in_playlist
-							logging.debug("Position changed by gallery key press")
-							gui.pl_update = 1
-						if gal_up:
-							gal_up = False
-							tauon.gal_jump_select(True, row_len)
-							tauon.goto_album(pctl.selected_in_playlist)
-							pctl.playlist_view_position = pctl.selected_in_playlist
-							logging.debug("Position changed by gallery key press")
-							gui.pl_update = 1
-
-						w = gui.rspw
-
-						if window_size[0] < 750 * gui.scale:
-							w = window_size[0] - 20 * gui.scale
-							if gui.lsp:
-								w -= gui.lspw
-
-						x = window_size[0] - w
-						# sx = x
-						# sw = w
-						h = window_size[1] - gui.panelY - gui.panelBY
-
-						if not gui.show_playlist and inp.mouse_click:
-							left = gui.playlist_left
-
-							if (
-								left < inp.mouse_position[0] < left + 20 * gui.scale
-								and window_size[1] - gui.panelBY > inp.mouse_position[1] > gui.panelY
-							):
-								tauon.toggle_album_mode()
-								inp.mouse_click = False
-								inp.mouse_down = False
-
-						rect = [x, gui.panelY, w, h]
-						if not gui.show_playlist and x > gui.playlist_left:
-							ddt.rect([gui.playlist_left, gui.panelY, x - gui.playlist_left, h], colours.gallery_background)
-						ddt.rect(rect, colours.gallery_background)
-
-						# ddt.rect_r(rect, [255, 0, 0, 200], True)
-
-						area_x = w + 38 * gui.scale
-						# area_x = w - 40 * gui.scale
-
-						row_len = int((area_x - gui.album_h_gap) / (tauon.album_mode_art_size + gui.album_h_gap))
-
-						# logging.info(row_len)
-
-						compact = 40 * gui.scale
-						a_offset = 7 * gui.scale
-
-						l_area = x
-						r_area = w
-						# c_area = r_area // 2 + l_area
-
-						ddt.text_background_colour = colours.gallery_background
-
-						line1_colour = colours.gallery_artist_line
-						line2_colour = colours.grey(240)  # colours.side_bar_line1
-
-						if colours.side_panel_background != colours.gallery_background:
-							line2_colour = ColourRGBA(240, 240, 240, 255)
-							line1_colour = alpha_mod(ColourRGBA(20, 220, 220, 255), 120)
-
-						if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
-							line1_colour = colours.grey(80)
-							line2_colour = colours.grey(40)
-
-						if row_len == 0:
-							row_len = 1
-
-						dev = int((r_area - compact) / (row_len + 0))
-
-						render_pos = 0
-						album_on = 0
-
-						max_scroll = round(
-							(math.ceil((len(tauon.album_dex)) / row_len) - 1)
-							* (tauon.album_mode_art_size + gui.album_v_gap)
-						) - round(50 * gui.scale)
-
-						# Mouse wheel scrolling
-						gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
-						touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
-						use_smooth_gallery = (
-							tauon.smooth_scroll.enabled()
-							or touch_scroll
-							or tauon.smooth_scroll.active("gallery")
-						)
-						row_gallery_scroll = prefs.gallery_row_scroll and not use_smooth_gallery and not touch_scroll
-						if (
-							not tauon.search_over.active
-							and not radiobox.active
-							and inp.mouse_position[0] > window_size[0] - w
-							and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-						):
-							if inp.mouse_wheel != 0:
-								tauon.scroll_gallery_hide_timer.set()
-								gui.frame_callback_list.append(TestTimer(0.9))
-
-							if use_smooth_gallery and inp.mouse_wheel != 0:
-								tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
-							elif row_gallery_scroll:
-								gui.album_scroll_px -= inp.mouse_wheel * (
-									tauon.album_mode_art_size + gui.album_v_gap
-								)  # 90
-							else:
-								gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
-
-							if touch_scroll:
-								tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
-							elif inp.touch_released:
-								tauon.smooth_scroll.release_touch("gallery")
-
-							if use_smooth_gallery:
-								gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
-
-							if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
-								gui.album_scroll_px = round(gui.album_v_slide_value * -1)
-								if tauon.album_dex:
-									tauon.gallery_pulse_top.pulse()
-
-							if gui.album_scroll_px > max_scroll:
-								gui.album_scroll_px = max_scroll
-								gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
-						elif touch_scroll:
-							tauon.scroll_gallery_hide_timer.set()
-							gui.frame_callback_list.append(TestTimer(0.9))
-							tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
-							gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
-							if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
-								gui.album_scroll_px = round(gui.album_v_slide_value * -1)
-							if gui.album_scroll_px > max_scroll:
-								gui.album_scroll_px = max_scroll
-								gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
-						elif inp.touch_released:
-							tauon.smooth_scroll.release_touch("gallery")
-							if tauon.smooth_scroll.active("gallery"):
-								gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
-								if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
-									gui.album_scroll_px = round(gui.album_v_slide_value * -1)
-								if gui.album_scroll_px > max_scroll:
-									gui.album_scroll_px = max_scroll
-									gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
-
-						if tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
-							not tauon.search_over.active
-							and not radiobox.active
-							and inp.mouse_position[0] > window_size[0] - w
-							and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-						):
-							gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
-							if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
-								gui.album_scroll_px = round(gui.album_v_slide_value * -1)
-							if gui.album_scroll_px > max_scroll:
-								gui.album_scroll_px = max_scroll
-								gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
-
-						rect = (
-							gui.gallery_scroll_field_left,
-							gui.panelY,
-							window_size[0] - gui.gallery_scroll_field_left - 2,
-							h,
-						)
-
-						card_mode = False
-						if prefs.use_card_style and colours.lm and gui.gallery_show_text:
-							card_mode = True
-
-						rect = (window_size[0] - 40 * gui.scale, gui.panelY, 38 * gui.scale, h)
-						tauon.fields.add(rect)
-
-						# Show scroll area
-						if (
-							tauon.coll(rect)
-							or tauon.gallery_scroll.held
-							or tauon.scroll_gallery_hide_timer.get() < 0.9
-							or gui.album_tab_mode
-						):
-							if tauon.gallery_scroll.held:
-								while len(tauon.gall_ren.queue) > 2:
-									tauon.gall_ren.queue.pop()
-
-							# Draw power bar button
-							if gui.pt == 0 and gui.power_bar is not None and len(gui.power_bar) > 3:
-								rect = (
-									window_size[0] - (15 + 20) * gui.scale,
-									gui.panelY + 3 * gui.scale,
-									18 * gui.scale,
-									24 * gui.scale,
-								)
-								tauon.fields.add(rect)
-								colour = ColourRGBA(255, 255, 255, 35)
-								if colours.lm:
-									colour = ColourRGBA(0, 0, 0, 30)
-								if tauon.coll(rect) and not tauon.gallery_scroll.held:
-									colour = ColourRGBA(255, 220, 100, 245)
-									if colours.lm:
-										colour = ColourRGBA(250, 100, 0, 255)
-									if inp.mouse_click:
-										gui.pt = 1
-
-								gui.power_bar_icon.render(
-									rect[0] + round(5 * gui.scale), rect[1] + round(3 * gui.scale), colour
-								)
-
-							# Draw scroll bar
-							if gui.pt == 0:
-								gui.album_scroll_px = (
-									tauon.gallery_scroll.draw(
-										window_size[0] - 16 * gui.scale,
-										gui.panelY,
-										15 * gui.scale,
-										window_size[1] - (gui.panelY + gui.panelBY),
-										gui.album_scroll_px + gui.album_v_slide_value,
-										max_scroll + gui.album_v_slide_value,
-										jump_distance=1400 * gui.scale,
-										r_click=inp.right_click,
-										extend_field=15 * gui.scale,
-									)
-									- gui.album_v_slide_value
-								)
-
-						if gui.last_row != row_len:
-							gui.last_row = row_len
-
-							if pctl.selected_in_playlist < len(pctl.playing_playlist()):
-								tauon.goto_album(pctl.selected_in_playlist)
-							# else:
-							# 	tauon.goto_album(pctl.playlist_playing_position)
-
-						extend = 0
-						if card_mode:  # gui.gallery_show_text:
-							extend = 40 * gui.scale
-
-						# Process inputs first
-						if (
-							inp.mouse_click or inp.right_click or inp.middle_click or inp.mouse_down or inp.mouse_up
-						) and pctl.default_playlist:
-							while render_pos < gui.album_scroll_px + window_size[1]:
-								if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
-									break
-
-								if render_pos < gui.album_scroll_px - tauon.album_mode_art_size - gui.album_v_gap:
-									# Skip row
-									render_pos += tauon.album_mode_art_size + gui.album_v_gap
-									album_on += row_len
-								else:
-									# render row
-									y = render_pos - gui.album_scroll_px
-									row_x = 0
-									for a in range(row_len):
-										if album_on > len(tauon.album_dex) - 1:
-											break
-
-										x = (
-											(l_area + dev * a)
-											- int(tauon.album_mode_art_size / 2)
-											+ int(dev / 2)
-											+ int(compact / 2)
-											- a_offset
-										)
-
-										if tauon.album_dex[album_on] >= len(pctl.default_playlist):
-											break
-
-										rect = (
-											x,
-											y,
-											tauon.album_mode_art_size,
-											tauon.album_mode_art_size + extend * gui.scale,
-										)
-										# tauon.fields.add(rect)
-										m_in = (
-											tauon.coll(rect)
-											and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-										)
-
-										# if m_in:
-										#     ddt.rect_r((x - 7, y - 7, tauon.album_mode_art_size + 14, tauon.album_mode_art_size + extend + 55), [80, 80, 80, 80], True)
-
-										# Quick drag and drop
-										if (
-											inp.mouse_up
-											and (gui.playlist_hold and m_in)
-											and not gui.side_drag
-											and gui.shift_selection
-										):
-											info = tauon.get_album_info(tauon.album_dex[album_on])
-											if info[1]:
-												track_position = info[1][0]
-
-												if track_position > gui.shift_selection[0]:
-													track_position = info[1][-1] + 1
-
-												ref = []
-												for item in gui.shift_selection:
-													ref.append(pctl.default_playlist[item])
-
-												for item in gui.shift_selection:
-													pctl.default_playlist[item] = "old"
-
-												for item in gui.shift_selection:
-													pctl.default_playlist.insert(track_position, "new")
-
-												for b in reversed(range(len(pctl.default_playlist))):
-													if pctl.default_playlist[b] == "old":
-														del pctl.default_playlist[b]
-												gui.shift_selection = []
-												for b in range(len(pctl.default_playlist)):
-													if pctl.default_playlist[b] == "new":
-														gui.shift_selection.append(b)
-														pctl.default_playlist[b] = ref.pop(0)
-
-												pctl.selected_in_playlist = gui.shift_selection[0]
-												gui.pl_update += 1
-												gui.playlist_hold = False
-
-												tauon.reload_albums(True)
-												pctl.notify_database_changed()
-										elif not gui.side_drag and tauon.is_level_zero():
-											if (
-												coll_point(inp.click_location, rect)
-												and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-											):
-												info = tauon.get_album_info(tauon.album_dex[album_on])
-
-												if m_in and inp.mouse_up and prefs.gallery_single_click:
-													if (
-														tauon.is_level_zero()
-														and gui.d_click_ref == tauon.album_dex[album_on]
-													):
-														if info[0] == 1 and pctl.playing_state == PlayingState.PAUSED:
-															pctl.play()
-														elif (
-															info[0] == 1 and pctl.playing_state != PlayingState.STOPPED
-														):
-															pctl.playlist_view_position = tauon.album_dex[album_on]
-															logging.debug("Position changed by gallery click")
-														else:
-															pctl.playlist_view_position = tauon.album_dex[album_on]
-															logging.debug("Position changed by gallery click")
-															pctl.jump(
-																pctl.default_playlist[tauon.album_dex[album_on]],
-																tauon.album_dex[album_on],
-															)
-														pctl.show_current()
-												elif inp.mouse_down and not m_in:
-													info = tauon.get_album_info(tauon.album_dex[album_on])
-													inp.quick_drag = True
-													if (
-														not tauon.pl_is_locked(pctl.active_playlist_viewing)
-														or inp.key_shift_down
-													):
-														gui.playlist_hold = True
-													gui.shift_selection = info[1]
-													gui.pl_update += 1
-													inp.click_location = [0, 0]
-
-										if m_in:
-											info = tauon.get_album_info(tauon.album_dex[album_on])
-											if inp.mouse_click:
-												if prefs.gallery_single_click:
-													gui.d_click_ref = tauon.album_dex[album_on]
-												else:
-													if (
-														tauon.d_click_timer.get() < 0.5
-														and gui.d_click_ref == tauon.album_dex[album_on]
-													):
-														if info[0] == 1 and pctl.playing_state == PlayingState.PAUSED:
-															pctl.play()
-														elif (
-															info[0] == 1 and pctl.playing_state != PlayingState.STOPPED
-														):
-															pctl.playlist_view_position = tauon.album_dex[album_on]
-															logging.debug("Position changed by gallery click")
-														else:
-															pctl.playlist_view_position = tauon.album_dex[album_on]
-															logging.debug("Position changed by gallery click")
-															pctl.jump(
-																pctl.default_playlist[tauon.album_dex[album_on]],
-																tauon.album_dex[album_on],
-															)
-													else:
-														gui.d_click_ref = tauon.album_dex[album_on]
-														tauon.d_click_timer.set()
-
-													pctl.playlist_view_position = tauon.album_dex[album_on]
-													logging.debug("Position changed by gallery click")
-													pctl.selected_in_playlist = tauon.album_dex[album_on]
-													gui.pl_update += 1
-											elif inp.middle_click and tauon.is_level_zero():
-												# Middle click to add album to queue
-												if inp.key_ctrl_down:
-													# Add to queue ungrouped
-													album = tauon.get_album_info(tauon.album_dex[album_on])[1]
-													for item in album:
-														pctl.force_queue.append(
-															queue_item_gen(
-																pctl.default_playlist[item],
-																item,
-																pctl.pl_to_id(pctl.active_playlist_viewing),
-															)
-														)
-													tauon.queue_timer_set(plural=True)
-													if prefs.stop_end_queue:
-														pctl.stop_mode = StopMode.OFF
-												else:
-													# Add to queue grouped
-													tauon.add_album_to_queue(
-														pctl.default_playlist[tauon.album_dex[album_on]],
-														tauon.album_dex[album_on],
-														pctl.pl_to_id(pctl.active_playlist_viewing),
-													)
-											elif inp.right_click:
-												if pctl.quick_add_target:
-													pl = pctl.id_to_pl(pctl.quick_add_target)
-													if pl is not None:
-														parent = pctl.get_track(
-															pctl.default_playlist[tauon.album_dex[album_on]]
-														).parent_folder_path
-														# remove from target pl
-														if (
-															pctl.default_playlist[tauon.album_dex[album_on]]
-															in pctl.multi_playlist[pl].playlist_ids
-														):
-															for i in reversed(
-																range(len(pctl.multi_playlist[pl].playlist_ids))
-															):
-																if (
-																	pctl.get_track(
-																		pctl.multi_playlist[pl].playlist_ids[i]
-																	).parent_folder_path
-																	== parent
-																):
-																	del pctl.multi_playlist[pl].playlist_ids[i]
-														else:
-															# add
-															for i in range(len(pctl.default_playlist)):
-																if (
-																	pctl.get_track(
-																		pctl.default_playlist[i]
-																	).parent_folder_path
-																	== parent
-																):
-																	pctl.multi_playlist[pl].playlist_ids.append(
-																		pctl.default_playlist[i]
-																	)
-													tauon.reload_albums(True)
-												else:
-													pctl.selected_in_playlist = tauon.album_dex[album_on]
-													# playlist_position = pctl.playlist_selected
-													gui.shift_selection = [pctl.selected_in_playlist]
-													gallery_menu.activate(MenuTrackRef(
-														pctl.default_playlist[pctl.selected_in_playlist],
-														pctl.selected_in_playlist,
-														pctl.pl_to_id(pctl.active_playlist_viewing),
-													))
-
-													gui.shift_selection = []
-													u = pctl.selected_in_playlist
-													while (
-														u < len(pctl.default_playlist)
-														and pctl.master_library[
-															pctl.default_playlist[u]
-														].parent_folder_path
-														== pctl.master_library[
-															pctl.default_playlist[pctl.selected_in_playlist]
-														].parent_folder_path
-													):
-														gui.shift_selection.append(u)
-														u += 1
-													pctl.render_playlist()
-
-										album_on += 1
-
-									if album_on > len(tauon.album_dex):
-										break
-									render_pos += tauon.album_mode_art_size + gui.album_v_gap
-
-						render_pos = 0
-						album_on = 0
-						album_count = 0
-
-						if not pref_box.enabled or inp.mouse_wheel != 0:
-							gui.first_in_grid = None
-
-						# Render album grid
-						while render_pos < gui.album_scroll_px + window_size[1] and pctl.default_playlist:
-							if gui.b_info_bar and render_pos > gui.album_scroll_px + b_info_y:
-								break
-
-							if render_pos < gui.album_scroll_px - tauon.album_mode_art_size - gui.album_v_gap:
-								# Skip row
-								render_pos += tauon.album_mode_art_size + gui.album_v_gap
-								album_on += row_len
-							else:
-								# render row
-								y = render_pos - gui.album_scroll_px
-
-								row_x = 0
-
-								if (
-									y > window_size[1] - gui.panelBY - 30 * gui.scale
-									and window_size[1] < 340 * gui.scale
-								):
-									break
-								# if y >
-
-								for a in range(row_len):
-									if album_on > len(tauon.album_dex) - 1:
-										break
-
-									x = (
-										(l_area + dev * a)
-										- int(tauon.album_mode_art_size / 2)
-										+ int(dev / 2)
-										+ int(compact / 2)
-										- a_offset
-									)
-
-									if tauon.album_dex[album_on] >= len(pctl.default_playlist):
-										break
-
-									track = pctl.master_library[pctl.default_playlist[tauon.album_dex[album_on]]]
-
-									info = tauon.get_album_info(tauon.album_dex[album_on])
-									album = info[1]
-									# info = (0, 0, 0)
-
-									# rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
-									# tauon.fields.add(rect)
-									# m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-
-									if (
-										gui.first_in_grid is None and y > gui.panelY
-									):  # This marks what track is the first in the grid
-										gui.first_in_grid = tauon.album_dex[album_on]
-
-									# artisttitle = colours.side_bar_line2
-									# albumtitle = colours.side_bar_line1  # grey(220)
-
-									if card_mode:
-										ddt.text_background_colour = colours.grey(250)
-										tauon.drop_shadow.render(
-											x + 3 * gui.scale,
-											y + 3 * gui.scale,
-											tauon.album_mode_art_size + 11 * gui.scale,
-											tauon.album_mode_art_size + 45 * gui.scale + 13 * gui.scale,
-										)
-										ddt.rect(
-											(
-												x,
-												y,
-												tauon.album_mode_art_size,
-												tauon.album_mode_art_size + 45 * gui.scale,
-											),
-											colours.grey(250),
-										)
-
-									# White background needs extra border
-									if colours.lm and not card_mode:
-										ddt.rect_a(
-											(x - 2, y - 2),
-											(tauon.album_mode_art_size + 4, tauon.album_mode_art_size + 4),
-											colours.grey(200),
-										)
-
-									if a == row_len - 1:
-										gui.gallery_scroll_field_left = max(
-											x + tauon.album_mode_art_size, window_size[0] - round(50 * gui.scale)
-										)
-
-									# Skip if the selection highlight is drawn over this album,
-									# so the two highlights don't show at the same time
-									selection_highlight_shown = (
-										(gui.album_tab_mode or gallery_menu.active) and info[2] is True
-									)
-									if info[0] == 1 and not selection_highlight_shown and (
-										pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
-									):
-										ddt.rect_a(
-											(x - 4, y - 4),
-											(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
-											colours.gallery_highlight,
-										)
-										# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
-										#            colours.gallery_background, True)
-
-									# Draw quick add highlight
-									if pctl.quick_add_target:
-										pl = pctl.id_to_pl(pctl.quick_add_target)
-										if (
-											pl is not None
-											and pctl.default_playlist[tauon.album_dex[album_on]]
-											in pctl.multi_playlist[pl].playlist_ids
-										):
-											c = ColourRGBA(110, 233, 90, 255)
-											if colours.lm:
-												c = ColourRGBA(66, 244, 66, 255)
-											ddt.rect_a(
-												(x - 4, y - 4),
-												(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
-												c,
-											)
-
-									# Draw transcode highlight
-									if tauon.transcode_list and os.path.isdir(prefs.encoder_output):
-										tr = False
-
-										if encode_folder_name(track) in os.listdir(prefs.encoder_output):
-											tr = True
-										else:
-											for folder in tauon.transcode_list:
-												if (
-													pctl.get_track(folder[0]).parent_folder_path
-													== track.parent_folder_path
-												):
-													tr = True
-													break
-										if tr:
-											c = ColourRGBA(244, 212, 66, 255)
-											if colours.lm:
-												c = ColourRGBA(244, 64, 244, 255)
-											ddt.rect_a(
-												(x - 4, y - 4),
-												(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
-												c,
-											)
-											# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
-											#            colours.gallery_background, True)
-
-									# Draw selection
-
-									if (gui.album_tab_mode or gallery_menu.active) and info[2] is True:
-										c = colours.gallery_highlight
-										c = ColourRGBA(c.g, c.b, c.r, c.a)
-										ddt.rect_a(
-											(x - 4, y - 4),
-											(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
-											c,
-										)  # [150, 80, 222, 255]
-										# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
-										#            colours.gallery_background, True)
-
-									# Draw selection animation
-									if (
-										gui.gallery_animate_highlight_on == tauon.album_dex[album_on]
-										and tauon.gallery_select_animate_timer.get() < 1.5
-									):
-										t = tauon.gallery_select_animate_timer.get()
-										c = colours.gallery_highlight
-										if t < 0.2:
-											a = int(255 * (t / 0.2))
-										elif t < 0.5:
-											a = 255
-										else:
-											a = int(255 - 255 * (t - 0.5))
-
-										c = ColourRGBA(c.g, c.b, c.r, a)
-										ddt.rect_a(
-											(x - 5, y - 5),
-											(tauon.album_mode_art_size + 10, tauon.album_mode_art_size + 10),
-											c,
-										)  # [150, 80, 222, 255]
-
-										gui.update += 1
-
-									# Draw faint outline
-									ddt.rect(
-										(x - 1, y - 1, tauon.album_mode_art_size + 2, tauon.album_mode_art_size + 2),
-										ColourRGBA(255, 255, 255, 11),
-									)
-
-									if gui.album_tab_mode or gallery_menu.active:
-										if info[2] is False and info[0] != 1 and not colours.lm:
-											ddt.rect_a(
-												(x, y),
-												(tauon.album_mode_art_size, tauon.album_mode_art_size),
-												ColourRGBA(0, 0, 0, 110),
-											)
-											albumtitle = colours.grey(160)
-
-									elif info[0] != 1 and pctl.playing_state != PlayingState.STOPPED and prefs.dim_art:
-										ddt.rect_a(
-											(x, y),
-											(tauon.album_mode_art_size, tauon.album_mode_art_size),
-											ColourRGBA(0, 0, 0, 110),
-										)
-										albumtitle = colours.grey(160)
-
-									# Determine meta info
-									singles = False
-									artists = 0
-									last_album = ""
-									last_artist = ""
-									s = 0
-									ones = 0
-									for id in album:
-										tr = pctl.get_track(pctl.default_playlist[id])
-										if tr.album != last_album:
-											if last_album:
-												s += 1
-											last_album = tr.album
-											if str(tr.track_number) == "1":
-												ones += 1
-										if tr.artist != last_artist:
-											artists += 1
-									if s > 2 or ones > 2:
-										singles = True
-
-									# Draw blank back colour
-									back_colour = ColourRGBA(40, 40, 40, 50)
-									if colours.lm:
-										back_colour = ColourRGBA(10, 10, 10, 15)
-
-									back_colour = alpha_blend(ColourRGBA(10, 10, 10, 15), colours.gallery_background)
-
-									ddt.rect_a(
-										(x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), back_colour
-									)
-
-									# Draw album art
-									if singles:
-										dia = math.sqrt(tauon.album_mode_art_size * tauon.album_mode_art_size * 2)
-										ran = dia * 0.25
-										off = (dia - ran) / 2
-										albs = min(len(album), 5)
-										spacing = ran / (albs - 1)
-										size = round(tauon.album_mode_art_size * 0.5)
-
-										i = 0
-										for p in album[:albs]:
-											pp = spacing * i
-											pp += off
-											xx = pp / math.sqrt(2)
-
-											xx -= size / 2
-											drawn_art = tauon.gall_ren.render(
-												pctl.get_track(pctl.default_playlist[p]),
-												(x + xx, y + xx),
-												size=size,
-												force_offset=0,
-											)
-											if not drawn_art:
-												g = 50 + round(100 / albs) * i
-												ddt.rect((x + xx, y + xx, size, size), ColourRGBA(g, g, g, 100))
-											drawn_art = True
-											i += 1
-									else:
-										album_count += 1
-										if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
-											tauon.gall_ren.limit = round((album_count * 1.5) + 30)
-										drawn_art = tauon.gall_ren.render(track, (x, y))
-
-									# Determine mouse collision
-									rect = (
-										x,
-										y,
-										tauon.album_mode_art_size,
-										tauon.album_mode_art_size + extend * gui.scale,
-									)
-									m_in = (
-										tauon.coll(rect)
-										and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-									)
-									tauon.fields.add(rect)
-
-									# Draw mouse-over highlight
-									if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
-										if tauon.is_level_zero():
-											ddt.rect(rect, ColourRGBA(255, 255, 255, 10))
-
-									if drawn_art is False and gui.gallery_show_text is False:
-										ddt.text(
-											(
-												x + int(tauon.album_mode_art_size / 2),
-												y + tauon.album_mode_art_size - 22 * gui.scale,
-												2,
-											),
-											pctl.master_library[
-												pctl.default_playlist[tauon.album_dex[album_on]]
-											].parent_folder_name,
-											colours.gallery_artist_line,
-											13,
-											tauon.album_mode_art_size - 15 * gui.scale,
-											bg=alpha_blend(back_colour, colours.gallery_background),
-										)
-
-									if prefs.art_bg and drawn_art:
-										rect = sdl3.SDL_FRect(
-											round(x), round(y), tauon.album_mode_art_size, tauon.album_mode_art_size
-										)
-										if rect.y < gui.panelY:
-											diff = round(gui.panelY - rect.y)
-											rect.y += diff
-											rect.h -= diff
-										elif (rect.y + rect.h) > window_size[1] - gui.panelBY:
-											diff = round((rect.y + rect.h) - (window_size[1] - gui.panelBY))
-											rect.h -= diff
-
-										if rect.h > 0:
-											tauon.style_overlay.hole_punches.append(rect)
-
-									# # Drag over highlight
-									# if inp.quick_drag and gui.playlist_hold and inp.mouse_down:
-									# 	rect = (x, y, tauon.album_mode_art_size, tauon.album_mode_art_size + extend * gui.scale)
-									# 	m_in = tauon.coll(rect) and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
-									# 	if m_in:
-									# 		ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), [120, 10, 255, 100], True)
-
-									if gui.gallery_show_text:
-										c_index = pctl.default_playlist[tauon.album_dex[album_on]]
-										if c_index in gui.album_artist_dict:
-											pass
-										else:
-											i = tauon.album_dex[album_on]
-											if pctl.master_library[pctl.default_playlist[i]].album_artist:
-												gui.album_artist_dict[c_index] = pctl.master_library[
-													pctl.default_playlist[i]
-												].album_artist
-											else:
-												while i < len(pctl.default_playlist):
-													if (
-														pctl.master_library[pctl.default_playlist[i]].parent_folder_name
-														!= pctl.master_library[
-															pctl.default_playlist[tauon.album_dex[album_on]]
-														].parent_folder_name
-													):
-														gui.album_artist_dict[c_index] = pctl.master_library[
-															pctl.default_playlist[tauon.album_dex[album_on]]
-														].artist
-														break
-													if (
-														pctl.master_library[pctl.default_playlist[i]].artist
-														!= pctl.master_library[
-															pctl.default_playlist[tauon.album_dex[album_on]]
-														].artist
-													):
-														gui.album_artist_dict[c_index] = _("Various Artists")
-														break
-													i += 1
-												else:
-													gui.album_artist_dict[c_index] = pctl.master_library[
-														pctl.default_playlist[tauon.album_dex[album_on]]
-													].artist
-
-										line = gui.album_artist_dict[c_index]
-										line2 = pctl.master_library[
-											pctl.default_playlist[tauon.album_dex[album_on]]
-										].album
-										if singles:
-											line2 = pctl.master_library[
-												pctl.default_playlist[tauon.album_dex[album_on]]
-											].parent_folder_name
-											if artists > 1:
-												line = _("Various Artists")
-
-										text_align = 0
-										if prefs.center_gallery_text:
-											x += tauon.album_mode_art_size // 2
-											text_align = 2
-										elif card_mode:
-											x += round(6 * gui.scale)
-
-										if card_mode:
-											if line2 == "":
-												ddt.text(
-													(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
-													line,
-													line1_colour,
-													310,
-													tauon.album_mode_art_size - 18 * gui.scale,
-												)
-											else:
-												ddt.text(
-													(x, y + tauon.album_mode_art_size + 7 * gui.scale, text_align),
-													line2,
-													line2_colour,
-													311,
-													tauon.album_mode_art_size - 18 * gui.scale,
-												)
-
-												ddt.text(
-													(
-														x,
-														y + tauon.album_mode_art_size + (10 + 14) * gui.scale,
-														text_align,
-													),
-													line,
-													line1_colour,
-													10,
-													tauon.album_mode_art_size - 18 * gui.scale,
-												)
-										elif line2 == "":
-											ddt.text(
-												(x, y + tauon.album_mode_art_size + 9 * gui.scale, text_align),
-												line,
-												line1_colour,
-												311,
-												tauon.album_mode_art_size - 5 * gui.scale,
-											)
-										else:
-											ddt.text(
-												(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
-												line2,
-												line2_colour,
-												212,
-												tauon.album_mode_art_size,
-											)
-
-											ddt.text(
-												(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale, text_align),
-												line,
-												line1_colour,
-												311,
-												tauon.album_mode_art_size - 5 * gui.scale,
-											)
-
-									album_on += 1
-
-								if album_on > len(tauon.album_dex):
-									break
-								render_pos += tauon.album_mode_art_size + gui.album_v_gap
-
-						# POWER TAG BAR --------------
-
-						if gui.pt > 0:  # gui.pt > 0 or (gui.power_bar is not None and len(gui.power_bar) > 1):
-							top = gui.panelY
-							run_y = top + 1
-
-							hot_r = (window_size[0] - 47 * gui.scale, top, 45 * gui.scale, h)
-							tauon.fields.add(hot_r)
-
-							if gui.pt == 0:  # mouse moves in
-								if tauon.coll(hot_r) and window_is_focused(t_window):
-									gui.pt_on.set()
-									gui.pt = 1
-							elif gui.pt == 1:  # wait then trigger if stays, reset if goes out
-								if not tauon.coll(hot_r):
-									gui.pt = 0
-								elif gui.pt_on.get() > 0.2:
-									gui.pt = 2
-
-									off = 0
-									for item in gui.power_bar:
-										item.ani_timer.force_set(off)
-										off -= 0.005
-
-							elif gui.pt == 2:  # wait to turn off
-								if tauon.coll(hot_r):
-									gui.pt_off.set()
-								if gui.pt_off.get() > 0.6 and not lightning_menu.active:
-									gui.pt = 3
-
-									off = 0
-									for item in gui.power_bar:
-										item.ani_timer.force_set(off)
-										off -= 0.01
-
-							done = True
-							# Animate tags on
-							if gui.pt == 2:
-								for item in gui.power_bar:
-									t = item.ani_timer.get()
-									if t < 0:
-										break
-									if t > 0.2:
-										item.peak_x = 9 * gui.scale
-									else:
-										item.peak_x = (t / 0.2) * 9 * gui.scale
-
-							# Animate tags off
-							if gui.pt == 3:
-								for item in gui.power_bar:
-									t = item.ani_timer.get()
-									if t < 0:
-										done = False
-										break
-									if t > 0.2:
-										item.peak_x = 0
-									else:
-										item.peak_x = 9 * gui.scale - ((t / 0.2) * 9 * gui.scale)
-										done = False
-								if done:
-									gui.pt = 0
-									gui.update += 1
-
-							# Keep draw loop running while on
-							if gui.pt > 0:
-								gui.update = 2
-
-							# Draw tags
-
-							block_h = round(27 * gui.scale)
-							block_gap = 1 * gui.scale
-							if gui.scale == 1.25:
-								block_gap = 1
-
-							if tauon.coll(hot_r) or gui.pt > 0:
-								for i, item in enumerate(gui.power_bar):
-									if run_y + block_h > top + h:
-										break
-
-									rect = [window_size[0] - item.peak_x, run_y, 7 * gui.scale, block_h]
-									i_rect = [window_size[0] - 36 * gui.scale, run_y, 34 * gui.scale, block_h]
-									tauon.fields.add(i_rect)
-
-									if (
-										tauon.coll(i_rect)
-										or (lightning_menu.active and lightning_menu.reference == item)
-									) and item.peak_x == 9 * gui.scale:
-										if (
-											not lightning_menu.active
-											or lightning_menu.reference == item
-											or inp.right_click
-										):
-											minx = 100 * gui.scale
-											maxx = minx * 2
-
-											ww = ddt.get_text_w(item.name, 213)
-
-											w = max(minx, ww)
-											w = min(maxx, w)
-
-											ddt.rect(
-												(rect[0] - w - 25 * gui.scale, run_y, w + 26 * gui.scale, block_h),
-												ColourRGBA(230, 230, 230, 255),
-											)
-											ddt.text(
-												(rect[0] - 10 * gui.scale, run_y + 5 * gui.scale, 1),
-												item.name,
-												ColourRGBA(5, 5, 5, 255),
-												213,
-												w,
-												bg=ColourRGBA(230, 230, 230, 255),
-											)
-
-											if inp.mouse_click:
-												tauon.goto_album(item.position)
-											if inp.right_click:
-												lightning_menu.activate(
-													item,
-													position=(
-														window_size[0] - 180 * gui.scale,
-														rect[1] + rect[3] + 5 * gui.scale,
-													),
-												)
-											if inp.middle_click:
-												tauon.path_stem_to_playlist(item.path, item.name)
-
-									ddt.rect(rect, item.colour)
-									run_y += block_h + block_gap
-
-						tauon.gallery_pulse_top.render(
-							window_size[0] - gui.rspw, gui.panelY, gui.rspw - round(16 * gui.scale), 20 * gui.scale
-						)
-					except Exception:
-						logging.exception("Gallery render error!")
-					# END POWER BAR ------------------------
+				if prefs.album_mode and not gui.custom_mode:
+					# In custom mode the Album Gallery widget calls render_gallery()
+					# itself (with the geometry vars pointed at its segment); running
+					# the preset path too would fight it — each call recomputes
+					# row_len from different geometry, so gui.last_row ping-pongs and
+					# goto_album() re-locates (and resets the scroll) every frame.
+					render_gallery()
 
 				# End of gallery view
 				# --------------------------------------------------------------------------

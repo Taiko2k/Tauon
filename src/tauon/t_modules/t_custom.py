@@ -23,9 +23,10 @@ Implemented here:
 * Window-controls fallback drawn on hover when no widget provides them.
 * A single custom layout persisted to ``custom_layouts.json``.
 
-Deferred: pixel-faithful adapters for the heavy existing panels (Tracklist,
-Gallery, side-panel internals) — those require extracting tightly-coupled draw
-code and are added as registry adapters without touching the engine.
+Deferred: pixel-faithful adapters for the remaining placeholder panels
+(tab strip, spectrum, composite side panel) — those require extracting
+tightly-coupled draw code and are added as registry adapters without touching
+the engine.
 """
 from __future__ import annotations
 
@@ -364,6 +365,64 @@ class TracklistWidget(Widget):
 			pr.cache_render()
 
 
+class GalleryWidget(Widget):
+	"""The Album Gallery grid.
+
+	Reuses the main loop's gallery renderer (render_gallery in main(), exposed as
+	tauon.gallery_render), which draws — and handles input for — the grid in the
+	area described by gui.rspw / gui.panelY / gui.panelBY / window_size. The
+	engine routes this widget through the offscreen scratch texture (window
+	narrowed to the segment, mouse/fields/menus reframed), so the grid can't draw
+	out of bounds; here we just point those geometry vars at the reframed segment
+	for the duration of the call, then restore them.
+
+	The preset paths only rebuild tauon.album_dex (the album index) while
+	prefs.album_mode is on, so the widget rebuilds it itself when the viewed
+	playlist changes (or the index is missing). Content edits to the *same*
+	playlist while in custom mode aren't detected yet (same gap as elsewhere:
+	those reload hooks are album_mode-gated).
+	"""
+
+	kind = "gallery"
+	name = "Album Gallery"
+	min_w = 100
+	min_h = 80
+	single_instance = True  # shared scroll/selection state (gui.album_scroll_px, gallery_scroll)
+	offscreen = True
+
+	def __init__(self) -> None:
+		self._dex_playlist_id: int | None = None
+
+	def _ensure_album_dex(self, tauon: Tauon) -> None:
+		pctl = tauon.pctl
+		playlist = pctl.multi_playlist[pctl.active_playlist_viewing]
+		if self._dex_playlist_id != playlist.uuid_int or (
+			not tauon.album_dex and playlist.playlist_ids):
+			tauon.reload_albums(quiet=True)
+			self._dex_playlist_id = playlist.uuid_int
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		gallery_render = getattr(tauon, "gallery_render", None)
+		if gallery_render is None:
+			return
+		self._ensure_album_dex(tauon)
+		gui = tauon.gui
+		ws = tauon.window_size
+		saved = (gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist)
+		# The renderer right-anchors at window_size[0] - rspw and spans panelY to
+		# window_size[1] - panelBY; in the reframed space the segment IS the
+		# window, so full width and no panels puts the grid exactly in the rect.
+		gui.rspw = round(w)
+		gui.panelY = round(y)
+		gui.panelBY = max(0, ws[1] - round(y + h))
+		gui.lsp = False
+		gui.show_playlist = True
+		try:
+			gallery_render()
+		finally:
+			gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist = saved
+
+
 class WidgetSpec:
 	"""Registry entry describing an addable widget and its sizing defaults."""
 
@@ -424,6 +483,10 @@ def _tracklist(spec: WidgetSpec) -> Widget:
 	return TracklistWidget()
 
 
+def _gallery(spec: WidgetSpec) -> Widget:
+	return GalleryWidget()
+
+
 def _meta_center(spec: WidgetSpec) -> Widget:
 	return MetaCenterWidget()
 
@@ -452,7 +515,8 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		lock_v=True, fixed_h=28, colour=ColourRGBA(34, 34, 42, 255)),
 	WidgetSpec("tracklist", "Tracklist", "Content", _tracklist, single_instance=True,
 		colour=ColourRGBA(24, 24, 28, 255)),
-	WidgetSpec("gallery", "Album Gallery", "Content", _placeholder, colour=ColourRGBA(26, 24, 30, 255)),
+	WidgetSpec("gallery", "Album Gallery", "Content", _gallery, single_instance=True,
+		colour=ColourRGBA(26, 24, 30, 255)),
 	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
 	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
 		colour=ColourRGBA(24, 26, 30, 255)),
