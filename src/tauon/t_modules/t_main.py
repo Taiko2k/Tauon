@@ -681,6 +681,9 @@ class GuiVar:
 		# layout engine composites over the frame; custom_edit toggles edit mode.
 		self.custom_mode: bool = False
 		self.custom_edit: bool = False
+		# The Custom Layout MilkDrop Box widget owns the (singleton) visualiser:
+		# gates the ArtBox / MetaBox milk paths off so both never run at once.
+		self.milkdrop_in_widget: bool = False
 		self.showcase_mode: bool = False
 		self.timed_lyrics_edit_view: bool = False
 		self.timed_lyrics_editing_now: bool = False
@@ -18867,6 +18870,7 @@ class Tauon:
 			int(pctl.stop_mode),
 			pctl.stop_ref,
 			prefs.start_in_tray,  # 189
+			gui.custom_mode,  # 190
 		]
 
 		try:
@@ -35697,7 +35701,7 @@ class ArtBox:
 
 			# Milkdrop visualiser
 			# code mirrored in l_panel
-			if tauon.prefs.milk and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
+			if tauon.prefs.milk and not gui.milkdrop_in_widget and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
 				if self.pctl.a_time < 1.3:
 					if 1 < self.pctl.a_time < 1.3:
 						tauon.milky.render(discard=True)
@@ -35747,7 +35751,7 @@ class ArtBox:
 						self.pctl.mpris.update(force=True)
 
 		# Activate picture context menu on right click
-		if inp.right_click and tauon.prefs.milk and self.coll(rect):
+		if inp.right_click and tauon.prefs.milk and not gui.milkdrop_in_widget and self.coll(rect):
 			self.tauon.milky_menu.activate(in_reference=target_track)
 		elif tight_border and gui.art_drawn_rect:
 			if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
@@ -39636,7 +39640,7 @@ class MetaBox:
 				else:
 					self.tauon.album_art_gen.cycle_offset(track)
 				if self.inp.right_click:
-					if self.tauon.prefs.milk:
+					if self.tauon.prefs.milk and not self.gui.milkdrop_in_widget:
 						self.tauon.milky_menu.activate(in_reference=track)
 					else:
 						self.tauon.picture_menu.activate(in_reference=track)
@@ -39655,8 +39659,8 @@ class MetaBox:
 
 		self.fields.add(border_rect)
 
-		if self.tauon.prefs.milk and self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM,
-																  PlayingState.PAUSED):
+		if self.tauon.prefs.milk and not self.gui.milkdrop_in_widget and self.tauon.pctl.playing_state in (
+				PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
 			if self.pctl.a_time < 1.3:
 				if 1 < self.pctl.a_time < 1.3:
 					self.tauon.milky.render(discard=True)
@@ -48653,6 +48657,10 @@ def main(holder: Holder) -> None:
 				bag.loaded_stop_ref = save[188]
 			if len(save) > 189 and save[189] is not None:
 				prefs.start_in_tray = save[189]
+			if len(save) > 190 and save[190] is not None:
+				# Resume in the Custom Layout view. The layout itself loads
+				# lazily (ensure_slot -> load_slots) on the first render.
+				gui.custom_mode = save[190]
 
 			del save
 			break

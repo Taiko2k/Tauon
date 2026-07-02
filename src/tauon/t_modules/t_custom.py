@@ -18,15 +18,10 @@ Implemented here:
   (rejected with an error toast), and single-instance widgets are gated.
 * Offscreen render-to-rect compositing (shared ``gui.tracklist_texture`` scratch
   target, clipped blit onto the frame), plus the "Size too small" fallback.
-* A widget registry: a real album Art Box adapter and clearly-labelled
-  placeholders for the heavier panels (drop-in adapters land later).
+* A widget registry of adapters over the real panel renderers (every entry is
+  backed by real rendering; there are no placeholder widgets).
 * Window-controls fallback drawn on hover when no widget provides them.
 * A single custom layout persisted to ``custom_layouts.json``.
-
-Deferred: pixel-faithful adapters for the remaining placeholder panels
-(tab strip, spectrum, composite side panel) — those require extracting
-tightly-coupled draw code and are added as registry adapters without touching
-the engine.
 """
 from __future__ import annotations
 
@@ -37,7 +32,8 @@ from typing import TYPE_CHECKING, Callable
 
 import sdl3
 
-from tauon.t_modules.t_extra import ColourRGBA
+from tauon.t_modules.t_enums import PlayingState
+from tauon.t_modules.t_extra import ColourRGBA, get_display_time
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -92,48 +88,6 @@ class Widget:
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		raise NotImplementedError
 
-	def click(self, tauon: Tauon, local_x: int, local_y: int, w: int, h: int) -> None:
-		return None
-
-
-class PlaceholderWidget(Widget):
-	"""A labelled coloured box standing in for a not-yet-extracted panel. Carries
-	the panel's intended sizing defaults so the layout behaviour is already
-	correct; only the visual content is a placeholder. Also used to demonstrate
-	the offscreen composite path and per-widget input routing.
-	"""
-
-	def __init__(self, spec: WidgetSpec) -> None:
-		self.kind = spec.kind
-		self.name = spec.name
-		self.lock_v = spec.lock_v
-		self.lock_h = spec.lock_h
-		self.fixed_w = spec.fixed_w
-		self.fixed_h = spec.fixed_h
-		self.single_instance = spec.single_instance
-		self.draws_window_controls = spec.draws_window_controls
-		self.colour = spec.colour
-		self._flash = 0
-
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
-		gui = tauon.gui
-		ddt = tauon.ddt
-		colour = self.colour
-		if self._flash:
-			colour = ColourRGBA(
-				min(255, colour.r + 50), min(255, colour.g + 50), min(255, colour.b + 50), colour.a)
-			self._flash -= 1
-			gui.update = 2
-		ddt.rect((x, y, w, h), colour)
-		ddt.text_background_colour = colour
-		ddt.text(
-			(round(x + w / 2), round(y + h / 2) - 9 * gui.scale, 2),
-			self.name, ColourRGBA(225, 225, 225, 255), 314, max_w=round(w - 8 * gui.scale))
-
-	def click(self, tauon: Tauon, local_x: int, local_y: int, w: int, h: int) -> None:
-		self._flash = 12
-		tauon.gui.update = 2
-
 
 class ArtBoxWidget(Widget):
 	"""The album Art Box: the side panel's ArtBox class (tauon.art_box) drawn
@@ -163,6 +117,102 @@ class ArtBoxWidget(Widget):
 		dragging = cm.drag is not None or cm.widget_drag is not None
 		tauon.art_box.draw(round(x), round(y), round(w), round(h),
 			target_track=tauon.pctl.show_object(), inset=False, quick_draw=dragging)
+
+
+class MilkDropWidget(Widget):
+	"""The MilkDrop (projectM) visualiser as its own segment.
+
+	Milky renders at the singleton gui.main_art_box rect (GL framebuffer interop
+	blitted onto the current render target at real coordinates), so this widget
+	points that rect at its segment and draws offscreen=False. While it is in
+	the layout the engine sets gui.milkdrop_in_widget, which gates the ArtBox /
+	MetaBox milk paths off — the visualiser is a singleton whose GL texture is
+	recreated on any size change, so it must never be driven from two rects.
+
+	Mirrors the existing view's interactions: click cycles a random preset,
+	right-click opens the MilkDrop menu, and hovering shows the preset name /
+	Auto Cycle / FPS tags.
+	"""
+
+	kind = "milkdrop"
+	name = "MilkDrop Box"
+	min_w = 64
+	min_h = 48
+	single_instance = True
+	offscreen = False
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		gui = tauon.gui
+		ddt = tauon.ddt
+		inp = tauon.inp
+		rect = (round(x), round(y), round(w), round(h))
+		ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
+		tauon.fields.add(rect)
+		track = tauon.pctl.show_object()
+		hover = tauon.coll(rect) and tauon.is_level_zero(False)
+
+		if not tauon.prefs.milk:
+			ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
+			ddt.text(
+				(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(8 * gui.scale), 2),
+				_t("MilkDrop is disabled"), ColourRGBA(110, 110, 110, 255), 212,
+				max_w=rect[2] - round(8 * gui.scale))
+			if hover and inp.right_click:
+				tauon.milky_menu.activate(in_reference=track)
+				inp.right_click = False
+			return
+
+		gui.main_art_box = rect  # Milky renders at this singleton rect
+
+		show_vis = False
+		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
+			# Same warm-up dance as the ArtBox path: burn the album art into the
+			# visualiser shortly after playback starts, then render each frame.
+			if tauon.pctl.a_time < 1.3:
+				if 1 < tauon.pctl.a_time < 1.3:
+					tauon.milky.render(discard=True)
+					if track is not None:
+						tauon.milky.burn(track)
+			else:
+				tauon.milky.render()
+				show_vis = True
+			if tauon.pctl.playing_state != PlayingState.PAUSED:
+				gui.delay_frame(0.007)  # 60 fps
+
+		if hover:
+			if inp.mouse_click and inp.key_focused == 0 and show_vis:
+				tauon.milky.projectm.load_next = "random"
+			if inp.right_click:
+				tauon.milky_menu.activate(in_reference=track)
+				inp.right_click = False
+			if show_vis:
+				self._hover_tags(tauon, rect)
+
+	def _hover_tags(self, tauon: Tauon, rect: tuple[int, int, int, int]) -> None:
+		"""The existing view's hover overlay: preset name, Auto Cycle, FPS."""
+		gui = tauon.gui
+		ddt = tauon.ddt
+
+		def tag(line: str, yy: int, font: int, pad_w: float, colour: ColourRGBA) -> None:
+			mw = rect[2] - round(25 * gui.scale)
+			tag_w, _th = ddt.get_text_wh(line, font, max_x=mw)
+			tag_w += round(pad_w * gui.scale)
+			ddt.rect_a((xx, yy), (tag_w, 18 * gui.scale), ColourRGBA(8, 8, 8, 255))
+			ddt.text((xx + 6 * gui.scale, yy), line, colour, font,
+				bg=ColourRGBA(30, 30, 30, 255), max_w=mw)
+
+		xx = rect[0] + round(12 * gui.scale)
+		yy = rect[1] + round(25 * gui.scale)
+		tag(tauon.milky.projectm.get_current_name(), yy, 312, 17, ColourRGBA(220, 220, 220, 255))
+
+		if tauon.prefs.auto_milk:
+			yy += round(30 * gui.scale)
+			tag(_t("Auto Cycle"), yy, 12, 14, ColourRGBA(210, 210, 210, 255))
+
+		if tauon.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+			tauon.milky.fps.reset()
+		yy += round(30 * gui.scale)
+		tag(f"FPS: {round(tauon.milky.fps.get())}", yy, 12, 14, ColourRGBA(210, 210, 210, 255))
 
 
 class TopPanelWidget(Widget):
@@ -361,6 +411,110 @@ class TracklistWidget(Widget):
 			pr.cache_render()
 
 
+class DetailsWidget(Widget):
+	"""A table of the current track's metadata (playing-or-selected track, like
+	the side panel): one row per populated field with alternating row
+	backgrounds, ordered most-common-first (Title at the top). Fields without a
+	value are skipped entirely. Stateless and input-free, so duplicates are
+	allowed and it draws at real coordinates (offscreen=False); rows stop at the
+	segment bottom and text is clipped to the columns.
+	"""
+
+	kind = "details"
+	name = "Details"
+	min_w = 100
+	min_h = 40
+	offscreen = False
+
+	# (label, value getter) — most common fields first; the no-track state
+	# lists every label from this table.
+	_FIELDS: list[tuple[str, Callable]] = [
+		("Title", lambda t: t.title),
+		("Artist", lambda t: t.artist),
+		("Album", lambda t: t.album),
+		("Album Artist", lambda t: t.album_artist),
+		("Composer", lambda t: t.composer),
+		("Date", lambda t: t.date),
+		("Genre", lambda t: t.genre),
+		("Track", lambda t: f"{t.track_number}/{t.track_total}" if t.track_number and t.track_total
+			else t.track_number),
+		("Disc", lambda t: f"{t.disc_number}/{t.disc_total}" if t.disc_number and t.disc_total
+			else t.disc_number),
+		("Duration", lambda t: get_display_time(t.length) if t.length else ""),
+		("Codec", lambda t: t.file_ext),
+		("Bitrate", lambda t: f"{t.bitrate} kbps" if t.bitrate else ""),
+		("Sample rate", lambda t: f"{t.samplerate} Hz" if t.samplerate else ""),
+		("Bit depth", lambda t: f"{t.bit_depth} bit" if t.bit_depth else ""),
+		("Comment", lambda t: t.comment.splitlines()[0] if t.comment else ""),
+	]
+
+	def __init__(self) -> None:
+		self.scroll = 0  # whole rows scrolled off the top
+
+	@classmethod
+	def _rows(cls, track) -> list[tuple[str, str]]:
+		rows = [(_t(label), str(getter(track)).strip()) for label, getter in cls._FIELDS]
+		return [(label, value) for label, value in rows if value]
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		gui = tauon.gui
+		ddt = tauon.ddt
+		inp = tauon.inp
+		colours = tauon.colours
+		base = colours.side_panel_background
+		ddt.rect((x, y, w, h), base)
+		track = tauon.pctl.show_object()
+
+		# No track: keep the table furniture — every possible field name with its
+		# row background, both fading out further down the list.
+		empty = track is None
+		if empty:
+			rows = [(_t(label), "") for label, _ in self._FIELDS]
+		else:
+			rows = self._rows(track)
+
+		row_h = round(22 * gui.scale)
+		pad = round(10 * gui.scale)
+		label_w = min(round(110 * gui.scale), round(w * 0.4))
+
+		# Wheel scrolling (whole rows, so drawing stays row-aligned and in
+		# bounds). Per-instance scroll position.
+		visible = max(1, int(h // row_h))
+		max_scroll = max(0, len(rows) - visible)
+		mx, my = inp.mouse_position[0], inp.mouse_position[1]
+		if inp.mouse_wheel and x <= mx < x + w and y <= my < y + h:
+			self.scroll -= inp.mouse_wheel
+			gui.update = 2
+		self.scroll = max(0, min(self.scroll, max_scroll))
+
+		# Alternate row tint: slightly lighter on dark themes, darker on light.
+		tint_up = not colours.lm
+		ry = round(y)
+		for i in range(self.scroll, len(rows)):
+			if ry + row_h > y + h:
+				break
+			label, value = rows[i]
+			# Fade per absolute row index so the empty list dissolves downward.
+			fade = max(0.0, 1.0 - i / len(rows)) if empty else 1.0
+			if i % 2:  # parity by field, so stripes stay put when scrolled
+				a = round(9 * fade) if empty else 9
+				tint = ColourRGBA(255, 255, 255, a) if tint_up else ColourRGBA(0, 0, 0, a)
+				ddt.rect((x, ry, w, row_h), tint)
+			ddt.text_background_colour = base
+			# The text y position is the BASELINE, not the top: centre the ~11px
+			# cap height of fonts 211/212 within the 22px row (both columns share
+			# one baseline).
+			ty = ry + row_h - round(6 * gui.scale) - 1
+			lc = colours.side_bar_line2
+			if empty:
+				lc = ColourRGBA(lc.r, lc.g, lc.b, round(lc.a * fade))
+			ddt.text((round(x) + pad, ty), label, lc, 211, max_w=label_w - pad)
+			if value:
+				ddt.text((round(x) + label_w + pad, ty), value, colours.side_bar_line1, 212,
+					max_w=round(w) - label_w - pad * 2)
+			ry += row_h
+
+
 class GalleryWidget(Widget):
 	"""The Album Gallery grid.
 
@@ -446,7 +600,7 @@ class WidgetSpec:
 	def __init__(self, kind: str, name: str, category: str, factory: Callable[[WidgetSpec], Widget],
 			lock_v: bool = False, lock_h: bool = False, fixed_w: int = 0, fixed_h: int = 0,
 			single_instance: bool = False, draws_window_controls: bool = False,
-			colour: ColourRGBA | None = None, in_default: bool = True) -> None:
+			colour: ColourRGBA | None = None) -> None:
 		self.kind = kind
 		self.name = name
 		self.category = category
@@ -458,14 +612,9 @@ class WidgetSpec:
 		self.single_instance = single_instance
 		self.draws_window_controls = draws_window_controls
 		self.colour = colour or ColourRGBA(28, 28, 34, 255)
-		self.in_default = in_default
 
 	def make(self) -> Widget:
 		return self.factory(self)
-
-
-def _placeholder(spec: WidgetSpec) -> Widget:
-	return PlaceholderWidget(spec)
 
 
 def _art(spec: WidgetSpec) -> Widget:
@@ -504,6 +653,10 @@ def _gallery(spec: WidgetSpec) -> Widget:
 	return GalleryWidget()
 
 
+def _details(spec: WidgetSpec) -> Widget:
+	return DetailsWidget()
+
+
 def _meta_center(spec: WidgetSpec) -> Widget:
 	return MetaCenterWidget()
 
@@ -518,6 +671,10 @@ def _meta_align(spec: WidgetSpec) -> Widget:
 
 def _lyrics(spec: WidgetSpec) -> Widget:
 	return LyricsWidget()
+
+
+def _milkdrop(spec: WidgetSpec) -> Widget:
+	return MilkDropWidget()
 
 
 # Registry — the Add menu and (de)serialization are driven by this table. The
@@ -545,11 +702,9 @@ WIDGET_SPECS: list[WidgetSpec] = [
 	WidgetSpec("meta_center", "Metadata: Side", "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
 	WidgetSpec("meta_centered", "Metadata: Centered", "Content", _meta_centered, colour=ColourRGBA(30, 31, 35, 255)),
 	WidgetSpec("meta_align", "Metadata: H combo", "Content", _meta_align, colour=ColourRGBA(30, 32, 34, 255)),
-	WidgetSpec("milkdrop", "MilkDrop Box", "Visualizers", _placeholder,
-		single_instance=True, colour=ColourRGBA(18, 18, 28, 255), in_default=False),
-	WidgetSpec("spectrum", "Spectrum / Level Meter", "Visualizers", _placeholder,
-		lock_v=True, fixed_h=40, colour=ColourRGBA(20, 22, 26, 255), in_default=False),
-	WidgetSpec("side_panel", "Side Panel (composite)", "Panels", _placeholder, colour=ColourRGBA(28, 28, 32, 255)),
+	WidgetSpec("details", "Details", "Content", _details, colour=ColourRGBA(28, 30, 36, 255)),
+	WidgetSpec("milkdrop", "MilkDrop Box", "Visualizers", _milkdrop,
+		single_instance=True, colour=ColourRGBA(18, 18, 28, 255)),
 ]
 SPEC_BY_KIND: dict[str, WidgetSpec] = {s.kind: s for s in WIDGET_SPECS}
 
@@ -831,7 +986,7 @@ GUTTER_OPTIONS = [0, 2, 3, 4, 8, 16]
 DEFAULT_WIDGET_GUTTER = 3
 DEFAULT_WIDGET_BORDER = True
 STACK_COUNTS = [2, 3, 4, 5]
-TEMPLATES = ["Standard", "Art-focused", "Minimal"]
+TEMPLATES = ["Default"]
 
 
 class CustomLayout:
@@ -873,39 +1028,27 @@ class CustomLayout:
 
 	def _leaf(self, kind: str) -> Leaf:
 		leaf = Leaf(make_widget(kind))
-		leaf.gutter = DEFAULT_WIDGET_GUTTER
+		spec = SPEC_BY_KIND.get(kind)
+		# Fixed-size (locked-axis) widgets like the Top / Playback panels don't
+		# get the default gutter.
+		if spec is None or spec.lock_v or spec.lock_h:
+			leaf.gutter = 0
+		else:
+			leaf.gutter = DEFAULT_WIDGET_GUTTER
 		leaf.border = DEFAULT_WIDGET_BORDER
 		return leaf
 
 	def template(self, name: str) -> Node:
-		if name == "Minimal":
-			top = self._leaf("top_panel")
-			body = self._leaf("tracklist")
-			body.weight = 1.0
-			return Stack("v", [top, body])
-		if name == "Art-focused":
-			top = self._leaf("top_panel")
-			art = self._leaf("art")
-			art.weight = 1.0
-			meta = self._leaf("meta_center")
-			meta.weight = 1.0
-			body = Stack("h", [art, meta])
-			body.weight = 1.0
-			bottom = self._leaf("playback_panel")
-			return Stack("v", [top, body, bottom])
-		# "Standard" (and fallback): top / [tracklist | art over meta] / playback
+		# "Default" (the only template): top bar / blank middle / bottom bar,
+		# with the bars borderless and gutterless.
 		top = self._leaf("top_panel")
-		tracklist = self._leaf("tracklist")
-		tracklist.weight = 3.0
-		art = self._leaf("art")
-		art.weight = 2.0
-		meta = self._leaf("meta_center")
-		meta.weight = 1.0
-		side = Stack("v", [art, meta])
-		side.weight = 1.0
-		body = Stack("h", [tracklist, side])
+		top.gutter = 0
+		top.border = False
+		body = self._empty()
 		body.weight = 1.0
 		bottom = self._leaf("playback_panel")
+		bottom.gutter = 0
+		bottom.border = False
 		return Stack("v", [top, body, bottom])
 
 	def _default_tree(self) -> Node:
@@ -961,6 +1104,7 @@ class CustomLayout:
 	def exit_mode(self) -> None:
 		self.gui.custom_mode = False
 		self.gui.custom_edit = False
+		self.gui.milkdrop_in_widget = False  # hand the visualiser back to the presets
 		self._close_menu()
 		# Force a full preset playlist render so it repaints at full size and
 		# clears the Tracklist widget's clip rect (else cache_render would keep
@@ -1013,9 +1157,10 @@ class CustomLayout:
 			self.tauon.show_message(_t("Can't add: every panel in this row/column would be locked"), mode="warning")
 			return False
 		if was_empty:
-			# Fresh add: apply the widget defaults. Replace keeps the segment's
-			# configured gutter/border.
-			target.gutter = DEFAULT_WIDGET_GUTTER
+			# Fresh add: apply the widget defaults — except fixed-size
+			# (locked-axis) widgets like the Top / Playback panels, which get no
+			# gutter. Replace keeps the segment's configured gutter/border.
+			target.gutter = 0 if (spec.lock_v or spec.lock_h) else DEFAULT_WIDGET_GUTTER
 			target.border = DEFAULT_WIDGET_BORDER
 		self.save_slots()
 		return True
@@ -1434,6 +1579,12 @@ class CustomLayout:
 
 		root = self.ensure_slot()
 		layout(root, 0, 0, ww, wh, gui.scale)
+
+		# The MilkDrop Box widget owns the (singleton) visualiser while it is in
+		# the layout: gates the ArtBox / MetaBox milk paths off so both never
+		# drive it at once. Set before drawing so it holds regardless of the
+		# widgets' draw order within this frame.
+		gui.milkdrop_in_widget = count_kind(root, "milkdrop") > 0
 
 		for leaf in iter_leaves(root):
 			if isinstance(leaf, Leaf):
