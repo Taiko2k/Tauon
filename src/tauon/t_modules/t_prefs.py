@@ -185,6 +185,7 @@ class Prefs:
 	tabs_on_top: bool = True
 
 	showcase_vis: bool = True
+	spectrogram_colour: int = 0  # preset index (t_custom.SPECTRO_PRESETS)
 	show_lyrics_showcase: bool = True
 	showcase_wide_art: bool = False
 

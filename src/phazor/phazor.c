@@ -4672,6 +4672,68 @@ EXPORT int get_spectrum(int n_bins, float* bins) {
 	return 0;
 }
 
+// High-resolution spectrum path for the custom-layout spectrogram widget: a
+// 4096-sample window (double get_spectrum's) for finer frequency resolution,
+// especially in the low end. Entirely separate buffers and FFT config
+// (lazily allocated, single caller: the tauon vis thread) so the standard
+// visualiser path above is unaffected.
+#define SPEC_HI_N 4096
+kiss_fft_scalar* rbuf_hi = NULL;
+kiss_fft_cpx* cbuf_hi = NULL;
+kiss_fftr_cfg ffta_hi = NULL;
+
+EXPORT int get_spectrum_hires(int n_bins, float* bins) {
+	int samples = SPEC_HI_N;
+	static int hi_failed = 0;
+
+	if (hi_failed) return 1;
+	if (ffta_hi == NULL) {
+		rbuf_hi = (kiss_fft_scalar*) malloc(sizeof(kiss_fft_scalar) * samples);
+		cbuf_hi = (kiss_fft_cpx*) malloc(sizeof(kiss_fft_cpx) * (samples / 2 + 1));
+		ffta_hi = kiss_fftr_alloc(samples, 0, 0, 0);
+		if (rbuf_hi == NULL || cbuf_hi == NULL || ffta_hi == NULL) {
+			log_msg(LOG_ERROR, "pa: Error allocating memory for hires spectrum");
+			hi_failed = 1;
+			return 1;
+		}
+	}
+
+	int base = low;
+	int i = 0;
+	while (i < samples) {
+		if (base >= watermark) {
+			base = 0;
+		}
+		rbuf_hi[i] = bfl[base] * 0.5 * (1 - cos(2 * 3.1415926 * i / samples));
+		i++;
+		base += 1;
+	}
+
+	kiss_fftr(ffta_hi, rbuf_hi, cbuf_hi);
+
+	i = 0;
+	while (i < samples / 2) {
+		rbuf_hi[i] = sqrt((cbuf_hi[i].r * cbuf_hi[i].r) + (cbuf_hi[i].i * cbuf_hi[i].i));
+		i++;
+	}
+
+	// 11 octaves reach bin 2048 (Nyquist) for the 4096 window, as 10 did for
+	// the 2048 one.
+	int b0 = 0;
+	for (int x = 0; x < n_bins; x++) {
+		float peak = 0;
+		int b1 = pow(2, x * 11.0 / (n_bins - 1));
+		if (b1 > (samples / 2) - 1) b1 = (samples / 2) - 1;
+		if (b1 <= b0) b1 = b0 + 1;
+		for (; b0 < b1; b0++) {
+			if (peak < rbuf_hi[1 + b0]) peak = rbuf_hi[1 + b0];
+		}
+		bins[x] = sqrt(peak);
+	}
+
+	return 0;
+}
+
 EXPORT int is_buffering() {
 	if (buffering == 0) return 0;
 	// Fill ratio as a percentage. Multiply before dividing so this isn't

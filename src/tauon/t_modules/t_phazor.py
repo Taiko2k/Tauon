@@ -1113,6 +1113,18 @@ def player4(tauon: Tauon) -> None:
 				gui.level_update = True
 				if pctl.playing_time > 0.5 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 					gui.update_spec = 1
+			elif gui.vis == 6:
+				# Spectrogram widget: raw log-spaced spectrum columns, queued
+				# for SpectrogramWidget (t_custom) to colourise and scroll.
+				# Frozen while paused/stopped (the playhead isn't moving).
+				if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+					get_spectrum_spectrogram(len(bins3), bins3)
+					gui.spectrogram_buffers.append(list(bins3))
+					if len(gui.spectrogram_buffers) > 60:  # UI stalled; drop oldest
+						del gui.spectrogram_buffers[0]
+					gui.level_update = True
+					if pctl.playing_time > 0.5:
+						gui.update_spec = 1
 
 	p_sync_timer = Timer()
 
@@ -1222,6 +1234,13 @@ def player4(tauon: Tauon) -> None:
 
 	bins1 = (ctypes.c_float * 24)()
 	bins2 = (ctypes.c_float * 45)()
+	bins3 = (ctypes.c_float * gui.spectrogram_bins)()  # spectrogram widget columns
+	try:
+		# Doubled (4096-sample) analysis window, own C-side buffers — the
+		# standard get_spectrum path the other visualisers use is untouched.
+		get_spectrum_spectrogram = aud.get_spectrum_hires
+	except AttributeError:  # older libphazor build
+		get_spectrum_spectrogram = aud.get_spectrum
 
 	aud.get_level_peak_l.restype = ctypes.c_float
 	aud.get_level_peak_r.restype = ctypes.c_float
