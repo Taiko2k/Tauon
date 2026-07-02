@@ -22719,40 +22719,19 @@ class AlbumArt:
 				im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
-			if not theme_only:
-				if self.prefs.zoom_art:
-					new_size = fit_box(o_size, box)
-					try:
-						im = im.resize(new_size, Image.Resampling.LANCZOS)
-					except Exception:
-						logging.exception("Failed to resize image")
-						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
-						o_size = im.size
-						new_size = fit_box(o_size, box)
-						im = im.resize(new_size, Image.Resampling.LANCZOS)
-				else:
-					try:
-						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
-					except Exception:
-						logging.exception("Failed to convert image to thumbnail")
-						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
-						o_size = im.size
-						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
-				im.save(g, "BMP")
-				g.seek(0)
-
 			# Processing for "Carbon" theme
 			if track == self.pctl.playing_object() and self.gui.theme_name == "Carbon" and track.parent_folder_path != self.colours.last_album:
 				# Find main image colours
+				_im_theme = im.copy()
+				_im_theme.thumbnail((50, 50), Image.Resampling.LANCZOS)
 				try:
-					im.thumbnail((50, 50), Image.Resampling.LANCZOS)
+					pixels = _im_theme.getcolors(maxcolors=2500)
 				except Exception:
 					logging.exception("theme gen error")
 					if not track.is_network:
 						source_image.close()
 					g.close()
 					return None
-				pixels = im.getcolors(maxcolors=2500)
 				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
 				colour = pixels[0][1]
 
@@ -22783,10 +22762,12 @@ class AlbumArt:
 					and track.album not in self.gui.temp_themes:  # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
 				self.colours.last_album = track.parent_folder_path
 
+				_im_theme = im.copy()
+				_im_theme.thumbnail((50, 50), Image.Resampling.LANCZOS)
+
 				colours = copy.deepcopy(self.colours)
 
-				im.thumbnail((50, 50), Image.Resampling.LANCZOS)
-				pixels = im.getcolors(maxcolors=2500)
+				pixels = _im_theme.getcolors(maxcolors=2500)
 				#logging.info(pixels)
 				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
 				#logging.info(pixels)
@@ -22926,6 +22907,28 @@ class AlbumArt:
 
 				if self.prefs.transparent_mode:
 					colours.apply_transparency()
+
+			if not theme_only:
+				if self.prefs.zoom_art:
+					new_size = fit_box(o_size, box)
+					try:
+						im = im.resize(new_size, Image.Resampling.LANCZOS)
+					except Exception:
+						logging.exception("Failed to resize image")
+						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
+						o_size = im.size
+						new_size = fit_box(o_size, box)
+						im = im.resize(new_size, Image.Resampling.LANCZOS)
+				else:
+					try:
+						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
+					except Exception:
+						logging.exception("Failed to convert image to thumbnail")
+						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
+						o_size = im.size
+						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
+				im.save(g, "BMP")
+				g.seek(0)
 
 			if theme_only:
 				if not track.is_network:
