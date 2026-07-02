@@ -501,10 +501,10 @@ class DetailsWidget(Widget):
 				tint = ColourRGBA(255, 255, 255, a) if tint_up else ColourRGBA(0, 0, 0, a)
 				ddt.rect((x, ry, w, row_h), tint)
 			ddt.text_background_colour = base
-			# The text y position is the BASELINE, not the top: centre the ~11px
-			# cap height of fonts 211/212 within the 22px row (both columns share
-			# one baseline).
-			ty = ry + row_h - round(6 * gui.scale) - 1
+			# ddt.text's y is baseline-anchored internally but offset back by
+			# 13*scale in t_draw for legacy compat, so it behaves near enough to
+			# a top anchor; this centres these fonts in the 22*scale row.
+			ty = ry + round(4 * gui.scale) + 4
 			lc = colours.side_bar_line2
 			if empty:
 				lc = ColourRGBA(lc.r, lc.g, lc.b, round(lc.a * fade))
