@@ -249,6 +249,10 @@ def discord_loop_entrypoint(main) -> None:
                     consecutive_failures = 0
                     last_sent_sig        = ""
                     last_sent_at         = 0.0
+                    try:
+                        _try_clear()
+                    except Exception:
+                        pass
                     set_status("Connected")
                     log("Connected to Discord RPC")
                 except Exception as exc:
@@ -396,7 +400,8 @@ def discord_loop_entrypoint(main) -> None:
                     last_art_lookup        = now
                     cached_large_image     = "tauon-standard"
                     cached_small_image     = None
-                    if state_now != PlayingState.URL_STREAM:
+                    rapid_skip = (now - last_sent_at) < 3.0 and current_index != last_sent_track_index
+                    if state_now != PlayingState.URL_STREAM and not rapid_skip:
                         try:
                             url = main.get_album_art_url(tr)
                             if url:
@@ -414,6 +419,10 @@ def discord_loop_entrypoint(main) -> None:
                     details       = safe_text(title_for_presence, builtins._("Unknown Track"))
                     state_text    = safe_text(artist,             builtins._("Unknown Artist"))
                     details_holds = "song"
+                if not details:
+                    details = builtins._("Unknown Track")
+                if not state_text:
+                    state_text = builtins._("Unknown Artist")
 
                 member_list    = getattr(prefs, "discord_member_list_display", "song")
                 status_display = (
@@ -469,6 +478,9 @@ def discord_loop_entrypoint(main) -> None:
 
             track_changed = sig_idx >= 0 and sig_idx != last_sent_track_index
 
+            if track_changed:
+                _update_times.clear()
+
             if payload_sig != pending_sig:
                 pending_sig   = payload_sig
                 pending_since = (now - _DEBOUNCE_S) if track_changed else now
@@ -507,7 +519,12 @@ def discord_loop_entrypoint(main) -> None:
                 except Exception as exc:
                     consecutive_failures += 1
                     log(f"RPC update failed ({consecutive_failures}): {exc}; will reconnect")
+                    try:
+                        _try_clear()
+                    except Exception:
+                        pass
                     close_rpc()
+                    last_sent_sig = ""
                     next_reconnect_at = time.time() + reconnect_delay
                     reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
                     set_status(builtins._("Reconnecting to Discord..."))
