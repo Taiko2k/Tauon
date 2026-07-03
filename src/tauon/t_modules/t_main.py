@@ -22051,7 +22051,6 @@ class AlbumArt:
 			"bonus", "bk", "cover artwork", "cover art"}
 		self.source_cache: dict[int, list[tuple[int, str]]] = {}
 		self.image_cache: list[ImageObject] = []
-		self.current_wu = None
 
 		self.blur_texture = None
 		self.blur_rect = None
@@ -22060,6 +22059,13 @@ class AlbumArt:
 		self.download_in_progress: bool = False
 		self.downloaded_image = None
 		self.downloaded_track = None
+
+		# State for display(async_hold=True), see display_async()
+		self.async_lock: threading.LockType = threading.Lock()
+		self.async_loads: dict[tuple, set] = {}      # (source, offset) -> requested boxes. One disk load per art
+		self.async_results: dict[tuple, tuple] = {}  # (source, offset, box) -> (BytesIO, original size, format, time)
+		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
+		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
 
 		self.base64cache = (0, 0, "")
 		self.processing64on = None
@@ -22186,8 +22192,14 @@ class AlbumArt:
 		if found_unit is None:
 			return 1
 
-		unit = found_unit
+		self.render_fit(found_unit, location, box)
+		return 0
 
+	def render_fit(self, unit: ImageObject, location: list[int], box: tuple[int, int]) -> None:
+		"""Render a cached unit scaled to fit the given box.
+
+		Unlike render(), this handles a unit that was made for a different box
+		size, e.g. an async hold after a resize."""
 		self.temp_dest.x = round(location[0])
 		self.temp_dest.y = round(location[1])
 
@@ -22223,8 +22235,6 @@ class AlbumArt:
 		self.style_overlay.hole_punches.append(self.temp_dest)
 
 		self.gui.art_drawn_rect = (self.temp_dest.x, self.temp_dest.y, self.temp_dest.w, self.temp_dest.h)
-
-		return 0
 
 	def open_external(self, track_object: TrackClass) -> int:
 		index = track_object.index
@@ -22649,7 +22659,16 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False, async_hold: bool = False, caller_id: str | None = None) -> int | None:
+		"""Draw the art for the given track at location, sized to fit box.
+
+		Without async_hold this always blocks to return the requested art.
+		With async_hold, uncached images are loaded and resized on a worker
+		thread while the art this caller last displayed is held on screen (no
+		blank flash). Only use it for a live UI display box; thumbnailers etc.
+		want the synchronous result. Callers passing async_hold should pass a
+		unique caller_id so their previous art can be tracked for the hold.
+		"""
 		# A non-positive box (can happen for a very short/narrow Custom Layout
 		# segment) would crash the PIL thumbnail/resize, so skip drawing.
 		if box[0] <= 0 or box[1] <= 0:
@@ -22665,28 +22684,170 @@ class AlbumArt:
 		source = self.get_sources(track)
 
 		if len(source) == 0:
+			if caller_id:
+				self.caller_history.pop(caller_id, None)  # No art means blank; don't hold this later
 			return 1
 
 		offset = self.get_offset(filepath, source)
 
 		if not theme_only:
-			# Check if request matches previous
-			if self.current_wu is not None and self.current_wu.source == source[offset][1] and \
-					self.current_wu.request_size == box:
-				self.render(self.current_wu, location)
-				return 0
+			# Check cache; any unit of the same source image at the same size will do
+			for unit in self.image_cache:
+				if unit.source == source[offset][1] and unit.request_size == box:
+					self.render(unit, location)
+					if caller_id:
+						self.caller_history[caller_id] = unit
+					return 0
 
 			if fast:
 				return self.fast_display(track.index, location, box, source, offset)
 
-			# Check if cached
-			for unit in self.image_cache:
-				if unit.index == index and unit.request_size == box and unit.offset == offset:
-					self.render(unit, location)
-					return 0
+		if async_hold and not theme_only:
+			return self.display_async(track, location, box, source, offset, index, caller_id)
 
-		close = True
-		# Render new
+		# Load and render, blocking
+		r = self.load_art_image(track, source, offset, theme_only)
+		if not isinstance(r, tuple):
+			return r
+		im, o_size, image_format = r
+
+		try:
+			if theme_only:
+				self.extract_art_theme(im, track, box)
+				return None
+
+			g, o_size = self.resize_art_image(im, o_size, box)
+			self.extract_art_theme(im, track, box)
+			unit = self.create_unit_and_render(g, o_size, image_format, index, offset, box, source, location)
+			if caller_id:
+				self.caller_history[caller_id] = unit
+
+			# temp fix
+			self.inp.quick_drag = False
+			self.gui.move_on_title = False
+			self.gui.playlist_hold = False
+
+		except Exception:
+			logging.exception("Image display error")
+			logging.error(f"-- Associated track: {track.fullpath}")  # noqa: TRY400
+			return 1
+		return 0
+
+	def display_async(self, track: TrackClass, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int, index: int, caller_id: str | None) -> int | None:
+		"""Non-blocking version of the display() slow path.
+
+		The source image is loaded and resized on a worker thread; one disk
+		load is shared by every size requested of the same art. While that is
+		in flight, the art this caller last displayed is held on screen so
+		there is no blank flash. If the load fails we go straight to blank.
+		"""
+		load_key = (source[offset][1], offset)
+		key = (source[offset][1], offset, box)
+		now = time.monotonic()
+		with self.async_lock:
+			# Drop entries nothing came back for (e.g. sizes requested mid window-resize)
+			for k, r in list(self.async_results.items()):
+				if now - r[3] > 5:
+					r[0].close()
+					del self.async_results[k]
+			for k, t in list(self.async_failed.items()):
+				if now - t > 10:  # Allow an eventual retry
+					del self.async_failed[k]
+
+			if key in self.async_failed:
+				if caller_id:
+					self.caller_history.pop(caller_id, None)
+				return 1  # The load failed; show blank
+
+			pickup = self.async_results.pop(key, None)
+			if pickup is None:
+				boxes = self.async_loads.get(load_key)
+				if boxes is not None:
+					boxes.add(box)  # This art is already loading; have that load also make our size
+				elif len(self.async_loads) < 3:
+					self.async_loads[load_key] = {box}
+					shoot = threading.Thread(
+						target=self.async_prepare,
+						args=(track, source, offset, load_key))
+					shoot.daemon = True
+					shoot.start()
+
+				# Hold the art this caller last displayed while the new image loads
+				if caller_id:
+					held = self.caller_history.get(caller_id)
+					if held is not None and held in self.image_cache:
+						if held.request_size == box:
+							self.render(held, location)
+						else:
+							self.render_fit(held, location, box)
+						return 0
+				return None
+
+		g, o_size, image_format, _ = pickup
+		try:
+			unit = self.create_unit_and_render(g, o_size, image_format, index, offset, box, source, location)
+			if caller_id:
+				self.caller_history[caller_id] = unit
+		except Exception:
+			logging.exception("Image display error")
+			logging.error(f"-- Associated track: {track.fullpath}")  # noqa: TRY400
+			return 1
+		return 0
+
+	def async_prepare(self, track: TrackClass, source: list[tuple[int, str]], offset: int, load_key: tuple) -> None:
+		"""Load an art image once off the UI thread, then produce every size
+		requested of it from that single load (see display_async)"""
+		r = self.load_art_image(track, source, offset, in_worker=True)
+		if not isinstance(r, tuple):
+			# Load failed; mark every size that was waiting on it as failed
+			now = time.monotonic()
+			with self.async_lock:
+				for b in self.async_loads.pop(load_key, ()):
+					self.async_failed[(load_key[0], load_key[1], b)] = now
+			self.gui.update += 1
+			return
+
+		im, o_size, image_format = r
+		themed = False
+		try:
+			while True:
+				with self.async_lock:
+					boxes = self.async_loads.get(load_key)
+					if not boxes:
+						self.async_loads.pop(load_key, None)
+						break
+					# Peek rather than pop, so a repeat request while we resize
+					# sees the job still pending instead of starting another
+					b = next(iter(boxes))
+				g, sized_o_size = self.resize_art_image(im, o_size, b)
+				if not themed:
+					self.extract_art_theme(im, track, b)
+					themed = True
+				with self.async_lock:
+					if load_key not in self.async_loads:  # clear_cache() happened; result is stale
+						g.close()
+						break
+					self.async_results[(load_key[0], load_key[1], b)] = (g, sized_o_size, image_format, time.monotonic())
+					self.async_loads[load_key].discard(b)
+				self.gui.update += 1
+		except Exception:
+			logging.exception("Error preparing image sizes")
+			now = time.monotonic()
+			with self.async_lock:
+				for b in self.async_loads.pop(load_key, ()):
+					self.async_failed[(load_key[0], load_key[1], b)] = now
+		self.gui.update += 1
+
+	def load_art_image(self, track: TrackClass, source: list[tuple[int, str]], offset: int, theme_only: bool = False, in_worker: bool = False) -> tuple[ImageFile, tuple[int, int], str] | int | None:
+		"""Fetch and decode the source image; this is the one disk (or network)
+		load per art, which resize_art_image() can then be run against several
+		times.
+
+		Returns (image, original size, format) on success, or an int/None
+		result code for display() to pass through. This is the slow part of
+		display(); with in_worker it runs on a thread (see display_async).
+		"""
+		index = track.index
 		try:
 			# Get source IO
 			if source[offset][0] == 1:
@@ -22700,9 +22861,20 @@ class AlbumArt:
 					source_image = idea.open("rb")
 				else:
 					try:
-						close = False
 						# We want to download the image asynchronously as to not block the UI
 						if self.downloaded_image and self.downloaded_track == track:
+							source_image = self.downloaded_image
+
+						elif in_worker:
+							# Already off the UI thread, just download here
+							self.download_in_progress = True
+							try:
+								self.async_download_image(track, source[offset])
+							finally:
+								self.download_in_progress = False
+							if self.downloaded_track != track:
+								return None
+							assert self.downloaded_image
 							source_image = self.downloaded_image
 
 						elif self.download_in_progress:
@@ -22737,9 +22909,6 @@ class AlbumArt:
 				# source_image = open(source[offset][1], 'rb')
 				source_image = self.get_source_raw(0, 0, track, source[offset])
 
-			# Generate
-			g = io.BytesIO()
-			g.seek(0)
 			im = Image.open(source_image)
 			o_size = im.size
 
@@ -22756,11 +22925,61 @@ class AlbumArt:
 				if theme_only:
 					if not track.is_network:
 						source_image.close()
-					g.close()
 					return None
 				im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
+			im.load()  # Force the full decode now so the source stream can be closed
+			if not track.is_network:
+				source_image.close()
+
+		except Exception:
+			logging.exception("Image load error")
+			logging.error(f"-- Associated track: {track.fullpath}")  # noqa: TRY400
+
+			try:
+				del self.source_cache[index][offset]
+			except Exception:
+				logging.exception(" -- Error, no source cache?")
+			return 1
+		return im, o_size, format
+
+	def resize_art_image(self, im: ImageFile, o_size: tuple[int, int], box: tuple[int, int]) -> tuple[BytesIO, tuple[int, int]]:
+		"""Resize a loaded image to fit box and encode it ready for texture upload.
+
+		Non-destructive, so several sizes can be made from a single load.
+		Returns (BMP data, original size)."""
+		try:
+			if self.prefs.zoom_art:
+				new_size = fit_box(o_size, box)
+			else:
+				# Fit within box, preserving aspect, never upscaling
+				scale = min(box[0] / o_size[0], box[1] / o_size[1], 1)
+				new_size = (max(1, round(o_size[0] * scale)), max(1, round(o_size[1] * scale)))
+			im = im.resize(new_size, Image.Resampling.LANCZOS)
+		except Exception:
+			logging.exception("Failed to resize image")
+			im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
+			o_size = im.size
+			if self.prefs.zoom_art:
+				im = im.resize(fit_box(o_size, box), Image.Resampling.LANCZOS)
+			else:
+				im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
+
+		g = io.BytesIO()
+		im.save(g, "BMP")
+		g.seek(0)
+		return g, o_size
+
+	def extract_art_theme(self, im: ImageFile, track: TrackClass, box: tuple[int, int]) -> None:
+		"""Set theme colours from the image (the "Carbon" theme and the
+		"colour from image" setting).
+
+		Pass the original full-size image (colours are sampled from an internal
+		copy of it, so results don't vary with the display size). Best effort:
+		on failure the theme is simply left unchanged.
+		"""
+		try:
 			# Processing for "Carbon" theme
 			if track == self.pctl.playing_object() and self.gui.theme_name == "Carbon" and track.parent_folder_path != self.colours.last_album:
 				# Find main image colours
@@ -22770,10 +22989,7 @@ class AlbumArt:
 					pixels = _im_theme.getcolors(maxcolors=2500)
 				except Exception:
 					logging.exception("theme gen error")
-					if not track.is_network:
-						source_image.close()
-					g.close()
-					return None
+					return
 				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
 				colour = pixels[0][1]
 
@@ -22950,91 +23166,47 @@ class AlbumArt:
 				if self.prefs.transparent_mode:
 					colours.apply_transparency()
 
-			if not theme_only:
-				if self.prefs.zoom_art:
-					new_size = fit_box(o_size, box)
-					try:
-						im = im.resize(new_size, Image.Resampling.LANCZOS)
-					except Exception:
-						logging.exception("Failed to resize image")
-						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
-						o_size = im.size
-						new_size = fit_box(o_size, box)
-						im = im.resize(new_size, Image.Resampling.LANCZOS)
-				else:
-					try:
-						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
-					except Exception:
-						logging.exception("Failed to convert image to thumbnail")
-						im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
-						o_size = im.size
-						im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
-				im.save(g, "BMP")
-				g.seek(0)
-
-			if theme_only:
-				if not track.is_network:
-					source_image.close()
-				g.close()
-				return None
-
-			s_image = self.ddt.load_image(g)
-			#logging.error(IMG_GetError())
-
-			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-
-			tex_w = pointer(c_float(0))
-			tex_h = pointer(c_float(0))
-			sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
-
-			dst = sdl3.SDL_FRect(round(location[0]), round(location[1]))
-			dst.w = int(tex_w.contents.value)
-			dst.h = int(tex_h.contents.value)
-
-			# Clean uo
-			sdl3.SDL_DestroySurface(s_image)
-			if not track.is_network:
-				source_image.close()
-			g.close()
-			# if close:
-			#	 source_image.close()
-
-			unit = ImageObject()
-			unit.index = index
-			unit.texture = c
-			unit.rect = dst
-			unit.request_size = box
-			unit.original_size = o_size
-			unit.actual_size = (dst.w, dst.h)
-			unit.source = source[offset][1]
-			unit.offset = offset
-			unit.format = format
-
-			self.current_wu = unit
-			self.image_cache.append(unit)
-
-			self.render(unit, location)
-
-			if len(self.image_cache) > 5 or (self.prefs.colour_from_image and len(self.image_cache) > 1):
-				sdl3.SDL_DestroyTexture(self.image_cache[0].texture)
-				del self.image_cache[0]
-
-			# temp fix
-			self.inp.quick_drag = False
-			self.gui.move_on_title = False
-			self.gui.playlist_hold = False
-
 		except Exception:
-			logging.exception("Image load error")
-			logging.error(f"-- Associated track: {track.fullpath}")  # noqa: TRY400
+			logging.exception("Error extracting theme colours from image")
 
-			self.current_wu = None
-			try:
-				del self.source_cache[index][offset]
-			except Exception:
-				logging.exception(" -- Error, no source cache?")
-			return 1
-		return 0
+	def create_unit_and_render(self, g: BytesIO, o_size: tuple[int, int], image_format: str, index: int, offset: int, box: tuple[int, int], source: list[tuple[int, str]], location: list[int]) -> ImageObject:
+		"""Upload decoded image data as a texture, cache it and render it (main thread only)"""
+		s_image = self.ddt.load_image(g)
+
+		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
+
+		tex_w = pointer(c_float(0))
+		tex_h = pointer(c_float(0))
+		sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
+
+		dst = sdl3.SDL_FRect(round(location[0]), round(location[1]))
+		dst.w = int(tex_w.contents.value)
+		dst.h = int(tex_h.contents.value)
+
+		# Clean up
+		sdl3.SDL_DestroySurface(s_image)
+		g.close()
+
+		unit = ImageObject()
+		unit.index = index
+		unit.texture = c
+		unit.rect = dst
+		unit.request_size = box
+		unit.original_size = o_size
+		unit.actual_size = (dst.w, dst.h)
+		unit.source = source[offset][1]
+		unit.offset = offset
+		unit.format = image_format
+
+		self.image_cache.append(unit)
+
+		self.render(unit, location)
+
+		if len(self.image_cache) > 10 or (self.prefs.colour_from_image and len(self.image_cache) > 3):
+			sdl3.SDL_DestroyTexture(self.image_cache[0].texture)
+			del self.image_cache[0]
+
+		return unit
 
 	def render(self, unit, location) -> None:
 		rect = unit.rect
@@ -23056,8 +23228,15 @@ class AlbumArt:
 
 		self.image_cache.clear()
 		self.source_cache.clear()
-		self.current_wu = None
 		self.downloaded_track = None
+
+		with self.async_lock:
+			self.async_loads.clear()  # In-flight workers see their job vanish and stop
+			for r in self.async_results.values():
+				r[0].close()
+			self.async_results.clear()
+			self.async_failed.clear()
+			self.caller_history.clear()
 
 		self.base64cache = (0, 0, "")
 		self.processing64on = None
@@ -35728,7 +35907,7 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
-			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw)
+			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw, async_hold=True, caller_id="art_box")
 			showc = tauon.album_art_gen.get_info(target_track)
 
 			# Milkdrop visualiser
