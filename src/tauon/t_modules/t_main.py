@@ -121,6 +121,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	draw_layout_glyph,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
+from tauon.t_modules.t_room import DreamRoom  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
 	Backend,
 	GuiMode,
@@ -6302,6 +6303,7 @@ class Tauon:
 		self.radio_view:                           RadioView = RadioView(tauon=self)
 		self.view_box:                               ViewBox = ViewBox(tauon=self)
 		self.custom:                            CustomLayout = CustomLayout(tauon=self)
+		self.dream_room:                           DreamRoom = DreamRoom(tauon=self)
 		self.pref_box:                                  Over = Over(tauon=self)
 		self.fader:                                    Fader = Fader(tauon=self)
 		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
@@ -49955,6 +49957,7 @@ def main(holder: Holder) -> None:
 	track_menu.add_to_sub(0, MenuItem(_("Edit with"), tauon.launch_editor, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_disable_test))
 	track_menu.add_to_sub(0, MenuItem(_("Lyrics..."), tauon.show_lyrics_menu, pass_ref=True))
 	track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
+	track_menu.add_to_sub(0, MenuItem(_("Look Out the Window"), tauon.dream_room.toggle))
 	# track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
 
 	folder_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
@@ -52527,6 +52530,15 @@ def main(holder: Holder) -> None:
 					del gui.frame_callback_list[i]
 				i -= 1
 
+		# Dream Room (F7): keep frames flowing while the 3D scene animates.
+		# Vsync paces the loop. Only meaningful in the main GUI mode.
+		if tauon.dream_room.active:
+			if gui.mode != GuiMode.MAIN:
+				tauon.dream_room.close_instant()
+			else:
+				gui.update = max(gui.update, 1)
+				power = 1000
+
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
 				tauon.cursor_blink_timer.set()
@@ -52920,11 +52932,8 @@ def main(holder: Holder) -> None:
 			if keymaps.test("quit"):
 				tauon.exit("Quit keyboard shortcut pressed")
 
-			if keymaps.test("testkey"):  # F7: toggle Custom Layout edit mode
-				# Only meaningful once the Custom Layout has been entered (via the
-				# View Switcher). No effect otherwise.
-				if gui.custom_mode:
-					tauon.custom.toggle_edit()
+			if keymaps.test("testkey"):  # F7: unused
+				pass
 
 			if gui.mode == GuiMode.MAIN:
 				if keymaps.test("toggle-auto-theme"):
@@ -53057,6 +53066,12 @@ def main(holder: Holder) -> None:
 					tauon.rename_playlist(pctl.active_playlist_viewing)
 				tauon.rename_playlist_box.x = 60 * gui.scale
 				tauon.rename_playlist_box.y = 60 * gui.scale
+
+			# Dream Room: while the camera is out, intercept input before any
+			# menu/box consumer so a click reliably flies it back in, and the
+			# UI on the little monitor doesn't react to the muted mouse.
+			if tauon.dream_room.active:
+				tauon.dream_room.handle_input()
 
 			# Transfer click register to menus
 			if inp.mouse_click:
@@ -53586,6 +53601,12 @@ def main(holder: Holder) -> None:
 			# the events so the underlying UI doesn't also react. Inert when off.
 			if gui.custom_mode:
 				tauon.custom.handle_input()
+
+			# Dream Room: keep muting the mouse every frame (motion-only frames
+			# skip the input block above), so hover doesn't leak to the hidden
+			# full-size UI. Click/key exit is handled early, before menu consumers.
+			if tauon.dream_room.active:
+				tauon.dream_room.handle_input()
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
@@ -56227,7 +56248,12 @@ def main(holder: Holder) -> None:
 			gui.present = True
 
 			sdl3.SDL_SetRenderTarget(renderer, None)
-			sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+			if tauon.dream_room.active:
+				# Dream Room: compose the frame as a 3D scene with the UI on a
+				# monitor instead of blitting it fullscreen
+				tauon.dream_room.render()
+			else:
+				sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 
 			if gui.turbo:
 				gui.level_update = True
@@ -56251,7 +56277,7 @@ def main(holder: Holder) -> None:
 		# gui.vis = 5
 		# gui.level_update = True
 
-		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI:
+		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI and not tauon.dream_room.active:
 			gui.level_update = False
 
 			sdl3.SDL_SetRenderTarget(renderer, None)
