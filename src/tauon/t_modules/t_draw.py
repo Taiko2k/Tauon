@@ -157,8 +157,8 @@ class TDraw:
 		] = {}
 		self.ttl: list[tuple[int, str, int, int, int, int, int, int, int, int]] = []
 		self.text_texture_cache_bytes = 0
-		self.max_text_texture_cache_items = 96
-		self.max_text_texture_cache_bytes = 12 * 1024 * 1024
+		self.max_text_texture_cache_items = 512
+		self.max_text_texture_cache_bytes = 48 * 1024 * 1024
 		self.max_text_texture_cache_item_bytes = 256 * 1024
 		self.text_wh_cache: OrderedDict[tuple[str, int, int, bool], tuple[int, int]] = OrderedDict()
 		self.max_text_wh_cache_items = 2048
