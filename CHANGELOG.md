@@ -2,15 +2,17 @@
 Changelog
 ---------
 
-### v10.2.0
+### v11.0.0
 
+ - Moved view switchr to new left menu
+ - Added custom layout engine
  - Added per-service toggle to disable scrobbling for streaming services
- - Reworked network streaming backend
  - Added rounded corners setting
  - Added setting start in tray
  - Added search overlay feedback when adding results to playlists
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection
+ - Improved network streaming backend
  - Improved TIDAL favorites and playlists pagination
  - Fixed album rating and scrollbar interactions
  - Fixed show playing info shortcut
