@@ -2480,8 +2480,8 @@ class CustomLayout:
 			# little padding), and the text background colour set to match so the
 			# glyph anti-aliasing blends cleanly against it.
 			black = ColourRGBA(0, 0, 0, 255)
-			tx = round(mx + 12 * gui.scale)
-			ty = round(my + 6 * gui.scale)
+			tx = round(mx + 20 * gui.scale)
+			ty = round(my - 20 * gui.scale)
 			pad = round(4 * gui.scale)
 			tw = ddt.get_text_w(name, 211)
 			th = ddt.get_text_w(name, 211, height=True)
