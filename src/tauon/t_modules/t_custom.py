@@ -815,7 +815,7 @@ class DetailsWidget(Widget):
 
 		# Alternate row tint: slightly lighter on dark themes, darker on light.
 		tint_up = not colours.lm
-		ry = round(y)
+		ry = round(y + 2 * gui.scale)  # first row's top
 		for i in range(int(self.scroll), len(rows)):
 			if ry + row_h > y + h:
 				break
@@ -830,7 +830,7 @@ class DetailsWidget(Widget):
 			# ddt.text's y is baseline-anchored internally but offset back by
 			# 13*scale in t_draw for legacy compat, so it behaves near enough to
 			# a top anchor; this centres these fonts in the 22*scale row.
-			ty = ry + round(4 * gui.scale) + 2
+			ty = ry + round(2 * gui.scale)
 			lc = colours.side_bar_line2
 			if empty:
 				lc = ColourRGBA(lc.r, lc.g, lc.b, round(lc.a * fade))
