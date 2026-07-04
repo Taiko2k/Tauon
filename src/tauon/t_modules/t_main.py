@@ -12838,41 +12838,39 @@ class Tauon:
 		if not artist:
 			return None
 
-		release_id = None
-		release_group_id = None
-		if (artist, tr.album) in self.pctl.album_mbid_release_cache or (artist, tr.album) in self.pctl.album_mbid_release_group_cache:
-			release_id = self.pctl.album_mbid_release_cache[(artist, tr.album)]
-			release_group_id = self.pctl.album_mbid_release_group_cache[(artist, tr.album)]
-			if release_id is None and release_group_id is None:
-				return None
+		# Embedded MBIDs are the most accurate source, check first
+		release_id = tr.misc.get("musicbrainz_albumid")
+		release_group_id = tr.misc.get("musicbrainz_releasegroupid")
+		had_embedded_mbid = bool(release_id or release_group_id)
 
-		if not release_group_id:
-			release_group_id = tr.misc.get("musicbrainz_releasegroupid")
-
-		if not release_id:
-			release_id = tr.misc.get("musicbrainz_albumid")
+		# If no embedded MBIDs, fall back to the name-based cache
+		if not had_embedded_mbid:
+			cache_key = (artist, tr.album)
+			if cache_key in self.pctl.album_mbid_release_cache or cache_key in self.pctl.album_mbid_release_group_cache:
+				release_id = self.pctl.album_mbid_release_cache.get(cache_key)
+				release_group_id = self.pctl.album_mbid_release_group_cache.get(cache_key)
+				if release_id is None and release_group_id is None:
+					return None
 
 		if not release_group_id:
 			try:
-				#logging.info("lookup release group id")
 				s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
 				release_group_id = s["release-group-list"][0]["id"]
 				tr.misc["musicbrainz_releasegroupid"] = release_group_id
-				#logging.info("got release group id")
 			except Exception:
 				logging.exception("Error lookup mbid for discord")
-				self.pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
+				if not had_embedded_mbid:
+					self.pctl.album_mbid_release_group_cache[(artist, tr.album)] = None
 
 		if not release_id:
 			try:
-				#logging.info("lookup release id")
 				s = musicbrainzngs.search_releases(tr.album, artist=artist, limit=1)
 				release_id = s["release-list"][0]["id"]
 				tr.misc["musicbrainz_albumid"] = release_id
-				#logging.info("got release group id")
 			except Exception:
 				logging.exception("Error lookup mbid for discord")
-				self.pctl.album_mbid_release_cache[(artist, tr.album)] = None
+				if not had_embedded_mbid:
+					self.pctl.album_mbid_release_cache[(artist, tr.album)] = None
 
 		image_data = None
 		final_id = None
