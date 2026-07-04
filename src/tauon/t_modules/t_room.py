@@ -293,6 +293,36 @@ class DreamRoom:
 		self.batch.set_state(texture, additive)
 		self.batch.poly(scr)
 
+	def _textured_grid(self, corners, uvs, col, texture, nx, ny) -> None:
+		"""Draw a textured quad subdivided into an ``nx`` x ``ny`` grid of cells.
+
+		SDL_RenderGeometry maps textures affinely (no perspective correction), so a
+		single large quad viewed at an angle warps the texture and bends straight
+		lines. Splitting it into many small cells keeps each cell's affine error
+		below a pixel, so the towers stay straight. ``corners``/``uvs`` are the four
+		quad points in TL, TR, BR, BL order.
+		"""
+		p0, p1, p2, p3 = corners
+		u0, u1, u2, u3 = uvs
+
+		def bilerp(a, b, c, d, fx, fy, n):
+			# a,b = top edge (fx 0->1); d,c = bottom edge. n = component count.
+			top = tuple(a[k] + (b[k] - a[k]) * fx for k in range(n))
+			bot = tuple(d[k] + (c[k] - d[k]) * fx for k in range(n))
+			return tuple(top[k] + (bot[k] - top[k]) * fy for k in range(n))
+
+		for iy in range(ny):
+			fy0, fy1 = iy / ny, (iy + 1) / ny
+			for ix in range(nx):
+				fx0, fx1 = ix / nx, (ix + 1) / nx
+				pts = [
+					bilerp(p0, p1, p2, p3, fx0, fy0, 3), bilerp(p0, p1, p2, p3, fx1, fy0, 3),
+					bilerp(p0, p1, p2, p3, fx1, fy1, 3), bilerp(p0, p1, p2, p3, fx0, fy1, 3)]
+				cuv = [
+					bilerp(u0, u1, u2, u3, fx0, fy0, 2), bilerp(u0, u1, u2, u3, fx1, fy0, 2),
+					bilerp(u0, u1, u2, u3, fx1, fy1, 2), bilerp(u0, u1, u2, u3, fx0, fy1, 2)]
+				self._quad(pts, [col] * 4, uvs=cuv, texture=texture)
+
 	def _glow(self, centre, half_w, half_h, col, alpha, axis="z") -> None:
 		"""Soft radial glow: a fan from a bright centre vertex to transparent
 		corners, on an axis-aligned plane through ``centre``."""
@@ -332,7 +362,10 @@ class DreamRoom:
 		prev_target = sdl3.SDL_GetRenderTarget(renderer)
 
 		# --- Far layer: sky gradient, stars, distant towers ---
-		fw, fh = 1024, 256
+		# Width tracks the far quad (94 units, up from the original 34) at the same
+		# texels-per-unit as when fw was 1024, so the wider quad is filled with more
+		# buildings at their original pixel scale rather than stretched (1024*94/34).
+		fw, fh = 2831, 256
 		tex = sdl3.SDL_CreateTexture(
 			renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, fw, fh)
 		sdl3.SDL_SetTextureScaleMode(tex, sdl3.SDL_SCALEMODE_LINEAR)
@@ -358,7 +391,7 @@ class DreamRoom:
 			self._fill(0, y, fw, horizon / strips + 1, (*col, 255))
 		self._fill(0, horizon, fw, fh - horizon, (7, 6, 16, 255))
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		for _ in range(90):	# stars
+		for _ in range(round(90 * fw / 1024)):	# stars (count scales with width to keep density)
 			self._fill(rnd.uniform(0, fw), rnd.uniform(0, 140), 1, 1,
 				(200, 210, 255, rnd.randint(30, 110)))
 		window_palette = [(95, 210, 255), (255, 170, 105), (250, 120, 190), (180, 200, 255)]
@@ -384,14 +417,17 @@ class DreamRoom:
 						wx += 5
 					wy += 6
 			x += bw + rnd.uniform(0, 14)
-		for _ in range(8):	# distant neon signage
+		for _ in range(round(8 * fw / 1024)):	# distant neon signage (count scales with width)
 			c = rnd.choice([(255, 40, 180), (40, 230, 255), (150, 80, 255)])
 			self._neon(rnd.uniform(20, fw - 50), rnd.uniform(120, horizon - 12),
 				rnd.uniform(8, 26), rnd.uniform(3, 6), c)
 		self.city_far = tex
 
 		# --- Near layer: dark silhouettes, sparse bright windows, big neon ---
-		nw, nh = 1024, 320
+		# Width tracks the near quad (40 units, up from the original 14.5) at the
+		# same texels-per-unit as when nw was 1024, so the silhouette extends with
+		# more buildings at their original pixel scale rather than stretched.
+		nw, nh = 2825, 320
 		tex = sdl3.SDL_CreateTexture(
 			renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, nw, nh)
 		sdl3.SDL_SetTextureScaleMode(tex, sdl3.SDL_SCALEMODE_LINEAR)
@@ -419,12 +455,13 @@ class DreamRoom:
 			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 			x += bw + rnd.uniform(0, 26)
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		for _ in range(3):	# large neon signs
+		for _ in range(round(3 * nw / 1024)):	# large neon signs (count scales with width)
 			c = rnd.choice([(255, 40, 180), (40, 230, 255), (255, 120, 60)])
 			self._neon(rnd.uniform(40, nw - 110), rnd.uniform(70, 220),
 				rnd.uniform(30, 70), rnd.uniform(8, 14), c)
-		c = rnd.choice([(255, 40, 180), (40, 230, 255)])
-		self._neon(rnd.uniform(100, nw - 100), rnd.uniform(60, 140), 8, 60, c)	# vertical sign
+		for _ in range(round(nw / 1024)):	# vertical signs (count scales with width)
+			c = rnd.choice([(255, 40, 180), (40, 230, 255)])
+			self._neon(rnd.uniform(100, nw - 100), rnd.uniform(60, 140), 8, 60, c)
 		self.city_near = tex
 
 		sdl3.SDL_SetRenderTarget(renderer, prev_target)
@@ -509,10 +546,12 @@ class DreamRoom:
 		batch = self.batch
 
 		# ------------------------------------------------ the world outside
-		# Far skyline (sky gradient lives in the texture)
-		fcol = [(215, 212, 232, 255)] * 4
-		q([(-14, 18, -45), (20, 18, -45), (20, -6, -45), (-14, -6, -45)], fcol,
-			uvs=[(0, 0), (1, 0), (1, 1), (0, 1)], texture=self.city_far)
+		# Far skyline (sky gradient lives in the texture). Kept extra-wide so its
+		# side edges stay outside the frustum when the camera pans at an angle.
+		# Subdivided so the affine texture mapping doesn't bend the towers.
+		self._textured_grid(
+			[(-44, 18, -45), (50, 18, -45), (50, -6, -45), (-44, -6, -45)],
+			[(0, 0), (1, 0), (1, 1), (0, 1)], (215, 212, 232, 255), self.city_far, 48, 6)
 		# Pulsing beacons on the far layer
 		q3 = 60 + 55 * math.sin(T * 0.8)
 		self._glow((7.2, 5.8, -44.8), 0.9, 0.9, (255, 60, 160), int(max(0, q3)))
@@ -532,10 +571,12 @@ class DreamRoom:
 				[(255, 220, 170, 0), (255, 220, 170, 90), (255, 220, 170, 90), (255, 220, 170, 0)],
 				additive=True)
 
-		# Near skyline
-		ncol = [(190, 188, 210, 255)] * 4
-		q([(-5.5, 7, -16), (9, 7, -16), (9, -3, -16), (-5.5, -3, -16)], ncol,
-			uvs=[(0, 0), (1, 0), (1, 1), (0, 1)], texture=self.city_near)
+		# Near skyline. Widened so the silhouette doesn't end abruptly within the
+		# frustum when the camera pans at an angle (the far skyline shows through
+		# its transparent sky, so the extra width just extends the rooflines).
+		self._textured_grid(
+			[(-18, 7, -16), (22, 7, -16), (22, -3, -16), (-18, -3, -16)],
+			[(0, 0), (1, 0), (1, 1), (0, 1)], (190, 188, 210, 255), self.city_near, 32, 6)
 
 		# Rain, lit faintly by the city
 		for (x, y, z, speed, ln, drift) in self.rain:
