@@ -291,12 +291,12 @@ if sdl_dll_name:
 	candidates = [
 		"./" + sdl_dll_name,
 		os.path.join("/app/lib", sdl_dll_name),
-		os.path.join("/usr/lib", sdl_dll_name),
 		os.path.join("/usr/lib64", sdl_dll_name),
-		os.path.join("/lib", sdl_dll_name),
 		os.path.join("/lib64", sdl_dll_name),
-		os.path.join("/usr/local/lib", sdl_dll_name),
 		os.path.join("/usr/local/lib64", sdl_dll_name),
+		os.path.join("/usr/lib", sdl_dll_name),
+		os.path.join("/lib", sdl_dll_name),
+		os.path.join("/usr/local/lib", sdl_dll_name),
 	]
 else:
 	candidates = []
