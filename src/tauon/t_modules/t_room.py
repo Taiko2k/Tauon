@@ -58,6 +58,12 @@ DESK_Y = 0.72					# desk top height
 
 RAIN_N = 110
 RUNNER_N = 24
+
+# Backdrop clear colour. Matches the city sky (the far layer's lower-sky fill
+# (7, 6, 16) times the far quad's (215, 212, 232) tint) so that when the camera
+# pans at an angle and sees past the projected city quads, the exposed area
+# blends with the skyline instead of showing black.
+CITY_BACKDROP = (6, 5, 15)
 MICRO_N = 42
 MOTE_N = 12
 
@@ -495,7 +501,7 @@ class DreamRoom:
 		self._camera(eye, tgt)
 
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+		sdl3.SDL_SetRenderDrawColor(renderer, *CITY_BACKDROP, 255)
 		sdl3.SDL_RenderClear(renderer)
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 

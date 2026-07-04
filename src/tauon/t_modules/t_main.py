@@ -49578,10 +49578,12 @@ def main(holder: Holder) -> None:
 	layout_menu.br()
 
 	def _edit_mode_deco() -> Decorator:
-		text = _("Exit Edit Mode") if gui.custom_edit else _("Edit Mode")
+		# The menu only opens while not in edit mode (the corner button exits edit
+		# mode directly), so this entry always reads "Enter Edit Mode".
+		text = _("Exit Edit Mode") if gui.custom_edit else _("Enter Edit Mode")
 		return Decorator(colours.menu_text, colours.menu_background, text)
 
-	layout_menu.add(MenuItem(_("Edit Mode"), tauon.custom.toggle_edit, _edit_mode_deco,
+	layout_menu.add(MenuItem(_("Enter Edit Mode"), tauon.custom.toggle_edit, _edit_mode_deco,
 		disable_test=lambda: not gui.custom_mode))
 
 	# Right-click menu for the Spectrogram widget: colour presets.

@@ -269,15 +269,6 @@ SPECTRO_PRESETS: list[tuple[str, list[tuple[float, tuple[int, int, int]]]]] = [
 	("Inferno", [
 		(0.0, (0, 0, 4)), (0.22, (60, 10, 90)), (0.45, (150, 40, 90)),
 		(0.7, (230, 100, 30)), (0.9, (250, 200, 60)), (1.0, (255, 250, 200))]),
-	("Ocean", [
-		(0.0, (3, 5, 12)), (0.35, (10, 45, 90)), (0.65, (20, 120, 180)),
-		(0.85, (90, 210, 230)), (1.0, (235, 255, 255))]),
-	("Aurora", [
-		(0.0, (5, 8, 10)), (0.3, (12, 55, 45)), (0.6, (25, 150, 85)),
-		(0.85, (150, 230, 120)), (1.0, (245, 255, 220))]),
-	("Violet", [
-		(0.0, (8, 4, 16)), (0.4, (70, 25, 130)), (0.7, (170, 70, 200)),
-		(1.0, (255, 235, 255))]),
 	("Greyscale", [(0.0, (0, 0, 0)), (1.0, (255, 255, 255))]),
 ]
 
@@ -881,10 +872,16 @@ class GalleryWidget(Widget):
 		gallery_render = tauon.gallery_render
 		self._ensure_album_dex(tauon)
 		gui = tauon.gui
+		ddt = tauon.ddt
 		ws = tauon.window_size
 		inp = tauon.inp
 		saved = (gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
 			gui.album_v_slide_value)
+		# Match the text anti-aliasing background to the grid's fill so titles blend
+		# cleanly (render_gallery sets this too, but set it up front and restore it
+		# below so the gallery's value doesn't leak onto later widgets this frame).
+		saved_text_bg = ddt.text_background_colour
+		ddt.text_background_colour = tauon.colours.gallery_background
 		# The preset's wheel gate only checks "right of the gallery's left edge"
 		# (it always touches the window's right edge there), so in the reframed
 		# space it would also catch a cursor over widgets beside this segment.
@@ -918,6 +915,7 @@ class GalleryWidget(Widget):
 			(gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
 				gui.album_v_slide_value) = saved
 			inp.mouse_wheel = saved_wheel
+			ddt.text_background_colour = saved_text_bg
 
 
 class WidgetSpec:
@@ -1523,6 +1521,11 @@ class CustomLayout:
 		self._close_menu()
 		self.ensure_slot()
 		self.save_slots()  # persist the active slot
+		# Recompute panel geometry immediately (as exit_mode does). Without this
+		# the switch only partially applies and needs a click/scroll to finish —
+		# update_layout_do() runs at the top of the next frame from this flag.
+		self.gui.pl_update = 2
+		self.gui.update_layout = True
 		self.gui.update = 2
 
 	def exit_mode(self) -> None:
@@ -1746,6 +1749,15 @@ class CustomLayout:
 		# the shared layout menu (view options + edit-mode toggle). Handled
 		# before everything else.
 		if inp.mouse_click and self._corner_button_hit(inp.mouse_position[0], inp.mouse_position[1]):
+			# In edit mode the corner button immediately exits edit mode (back to
+			# custom view) without showing the menu.
+			if gui.custom_edit:
+				self.gui.custom_edit = False
+				self.widget_drag = None
+				self._close_menu()
+				self.gui.update = 2
+				self._consume(inp)
+				return
 			menu = getattr(self.tauon, "layout_menu", None)
 			# Skip reopening when this same click just dismissed the menu's
 			# popup window (the event loop closes it and lets the click through).
@@ -2464,9 +2476,18 @@ class CustomLayout:
 				ddt.rect((tx + tw - b, ty, b, th), edge)
 				ddt.rect((tx, ty, tw, th), ColourRGBA(120, 200, 255, 28))
 			name = self.widget_drag.widget.name if self.widget_drag.widget else ""
-			ddt.text_background_colour = ColourRGBA(28, 28, 34, 255)
-			ddt.text((round(mx + 12 * gui.scale), round(my + 6 * gui.scale)), name,
-				ColourRGBA(235, 235, 235, 255), 211, bg=ColourRGBA(28, 28, 34, 255))
+			# Black backing rectangle behind the label, sized to the text (with a
+			# little padding), and the text background colour set to match so the
+			# glyph anti-aliasing blends cleanly against it.
+			black = ColourRGBA(0, 0, 0, 255)
+			tx = round(mx + 12 * gui.scale)
+			ty = round(my + 6 * gui.scale)
+			pad = round(4 * gui.scale)
+			tw = ddt.get_text_w(name, 211)
+			th = ddt.get_text_w(name, 211, height=True)
+			ddt.rect((tx - pad, ty - pad, tw + pad * 2, th + pad * 2), black)
+			ddt.text_background_colour = black
+			ddt.text((tx, ty), name, ColourRGBA(235, 235, 235, 255), 211, bg=black)
 			return
 
 		# While the menu is open, keep the right-clicked segment highlighted;
