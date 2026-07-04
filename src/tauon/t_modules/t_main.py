@@ -25425,9 +25425,13 @@ class NagBox:
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
+		("New layout engine supporting custom layouts!", False),
 		("Added rounded corners setting!", False),
-		("Improved network buffering performance", False),
 		("Added lyrics search to global search", False),
+		("Added new widget: Spectogram", False),
+		("Added new widget: Track Details", False),
+		("Fixed network buffering performance", False),
+		("Fixed settings view performance", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
