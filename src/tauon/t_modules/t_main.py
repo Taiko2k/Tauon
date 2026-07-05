@@ -49549,7 +49549,7 @@ def main(holder: Holder) -> None:
 
 	for _vb_name, _vb_label, _vb_icon, _vb_xoff, _vb_colour in (
 		("side_normal", _("Tracks + Art"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
-		("side_reversed", _("Tracks + Art (Reversed)"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
+		("side_reversed", _("Tracks + Art (Reversed)"), "tracks+side-menu-reversed.png", 0, ColourRGBA(76, 183, 229, 255)),
 		("gallery1", _("Tracks + Gallery"), "gallery1-menu.png", 0, ColourRGBA(76, 137, 229, 255)),
 		("tracks", _("Tracks"), "tracks-menu.png", 1, ColourRGBA(76, 229, 229, 255)),
 		("lyrics", _("Art + Lyrics"), "lyrics-menu.png", 1, ColourRGBA(107, 76, 229, 255)),
