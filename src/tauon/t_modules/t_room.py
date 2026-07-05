@@ -831,6 +831,53 @@ class DreamRoom:
 						(fx1 * u1, fy1 * v1), (fx0 * u1, fy1 * v1)],
 					texture=main_tex)
 
+		# ------------------------------------------- bookshelf speakers
+		# One either side of the monitor, sitting on the desk. Camera ends up
+		# to the right and above, so only the front, right and top faces show.
+		# Drawn back-to-front (right side, front baffle, then top).
+		def disc(dx, dy, r, dz, col, n=12):
+			pts = [(dx + r * math.cos(2 * math.pi * i / n),
+				dy + r * math.sin(2 * math.pi * i / n), dz) for i in range(n)]
+			q(pts, [col] * n)
+
+		def speaker(cx):
+			hw = 0.085
+			sp_y0, sp_y1 = 0.742, 1.02
+			zb, zf = 0.13, 0.35
+			cab_side = (18, 16, 21, 255)
+			cab_front = (27, 24, 30, 255)
+			cab_front_lit = (33, 30, 37, 255)
+			cab_top = (30, 28, 35, 255)
+			cab_top_bk = (23, 21, 27, 255)
+			# faint monitor-blue spill on the desk under the speaker
+			self._glow((cx, 0.744, (zb + zf) / 2), hw * 1.6, 0.16,
+				(120, 150, 210), 20, axis="y")
+			# right side panel (faces the camera)
+			q([(cx + hw, sp_y1, zb), (cx + hw, sp_y1, zf),
+				(cx + hw, sp_y0, zf), (cx + hw, sp_y0, zb)], [cab_side] * 4)
+			# front baffle, a touch lighter toward the monitor side
+			q([(cx - hw, sp_y1, zf), (cx + hw, sp_y1, zf),
+				(cx + hw, sp_y0, zf), (cx - hw, sp_y0, zf)],
+				[cab_front_lit, cab_front, cab_front, cab_front_lit])
+			# top surface (front-most so it caps the box)
+			q([(cx - hw, sp_y1, zb), (cx + hw, sp_y1, zb),
+				(cx + hw, sp_y1, zf), (cx - hw, sp_y1, zf)],
+				[cab_top_bk, cab_top_bk, cab_top, cab_top])
+			# drivers on the baffle: woofer low, tweeter high
+			bz = zf + 0.002
+			disc(cx, sp_y0 + 0.10, 0.058, bz, (13, 12, 16, 255))		# woofer surround
+			disc(cx, sp_y0 + 0.10, 0.040, bz, (24, 22, 28, 255))		# cone
+			disc(cx, sp_y0 + 0.10, 0.014, bz, (12, 11, 15, 255))		# dust cap
+			disc(cx, sp_y1 - 0.06, 0.026, bz, (16, 15, 20, 255))		# tweeter faceplate
+			disc(cx, sp_y1 - 0.06, 0.012, bz, (34, 36, 44, 255))		# tweeter dome
+			self._glow((cx, sp_y0 + 0.10, bz + 0.001), 0.05, 0.05, (90, 120, 190), 24)
+			# power LED near the bottom of the baffle
+			self._glow((cx + hw - 0.03, sp_y0 + 0.03, bz), 0.006, 0.006,
+				(80, 210, 150), 130)
+
+		speaker(SCR_CX - 0.62)		# left of the monitor
+		speaker(SCR_CX + 0.58)		# right of the monitor
+
 		# Backlit keyboard + mouse, in front of the monitor near the desk edge
 		q([(SCR_CX - 0.24, 0.745, 0.44), (SCR_CX + 0.24, 0.745, 0.44),
 			(SCR_CX + 0.24, 0.745, 0.60), (SCR_CX - 0.24, 0.745, 0.60)],
