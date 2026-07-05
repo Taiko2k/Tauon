@@ -236,7 +236,7 @@ class SticksVisWidget(Widget):
 	"""
 
 	kind = "vis_sticks"
-	name = "Visualiser: Sticks"
+	name = "Visualiser: Bars"
 	min_w = 326  # gui.spec4_rec is a fixed 322x100 (scaled) strip
 	min_h = 60
 	single_instance = True
@@ -1038,7 +1038,7 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(30, 28, 34, 255)),
 	WidgetSpec("milkdrop", "Visualiser: Milkdrop", "Visualizers", _milkdrop,
 		single_instance=True, colour=ColourRGBA(18, 18, 28, 255)),
-	WidgetSpec("vis_sticks", "Visualiser: Sticks", "Visualizers", _vis_sticks,
+	WidgetSpec("vis_sticks", "Visualiser: Bars", "Visualizers", _vis_sticks,
 		single_instance=True, colour=ColourRGBA(16, 16, 22, 255)),
 	WidgetSpec("vis_spectrogram", "Visualiser: Spectrogram", "Visualizers", _vis_spectrogram,
 		single_instance=True, colour=ColourRGBA(12, 12, 16, 255)),
