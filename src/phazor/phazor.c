@@ -1891,33 +1891,29 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 
 	int temp_fill = 0;
 
+	// Normalise samples of any bit depth to [-1.0, 1.0). FLAC supports 4-32
+	// bits per sample; the decoded values are already sign-extended int32s
+	// scaled to the frame's bit depth, so dividing by 2^(bits-1) works for all.
+	if (frame->header.bits_per_sample < 1 || frame->header.bits_per_sample > 32) {
+		log_msg(LOG_CRITICAL, "ph: INVALID BIT DEPTH!");
+		pthread_mutex_unlock(&buffer_mutex);
+		return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
+	}
+	const double sample_divisor = ldexp(1.0, frame->header.bits_per_sample - 1);
+
 	if (resample == 0) {
 
 		// No resampling needed, transfer data to main buffer
 
 		while (i < frame->header.blocksize) {
 
-			// Read and handle 24bit audio
-			if (frame->header.bits_per_sample == 24) {
+			bfl[high] = (buffer[0][i]) / sample_divisor;
 
-				bfl[high] = (buffer[0][i]) / 8388608.0;
-
-				if (frame->header.channels == 1) {
-					bfr[high] = bfl[high];
-				} else {
-					bfr[high] = (buffer[1][i]) / 8388608.0;
-				}
-			} // end 24 bit audio
-
-				// Read 16bit audio
-			else if (frame->header.bits_per_sample == 16) {
-				bfl[high] = (buffer[0][i]) / 32768.0;
-				if (frame->header.channels == 1) {
-					bfr[high] = (buffer[0][i]) / 32768.0;
-				} else {
-					bfr[high] = (buffer[1][i]) / 32768.0;
-				}
-			} else log_msg(LOG_CRITICAL, "ph: INVALID BIT DEPTH!");
+			if (frame->header.channels == 1) {
+				bfr[high] = bfl[high];
+			} else {
+				bfr[high] = (buffer[1][i]) / sample_divisor;
+			}
 
 			fade_fx();
 
@@ -1933,23 +1929,10 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 		// Transfer data to resampler for resampling
 
 		while (i < frame->header.blocksize) {
-			// Read and handle 24bit audio
-			if (frame->header.bits_per_sample == 24) {
 
-				re_in[i * 2] = (buffer[0][i]) / (8388608.0);
-				if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
-				else re_in[(i * 2) + 1] = (buffer[1][i]) / 8388608.0;
-
-			} // end 24 bit audio
-
-				// Read 16bit audio
-			else if (frame->header.bits_per_sample == 16) {
-
-				re_in[i * 2] = (buffer[0][i]) / 32768.0;
-				if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
-				else re_in[(i * 2) + 1] = (buffer[1][i]) / 32768.0;
-
-			} else log_msg(LOG_CRITICAL, "ph: INVALID BIT DEPTH!");
+			re_in[i * 2] = (buffer[0][i]) / sample_divisor;
+			if (frame->header.channels == 1) re_in[(i * 2) + 1] = re_in[i * 2];
+			else re_in[(i * 2) + 1] = (buffer[1][i]) / sample_divisor;
 
 			temp_fill++;
 			i++;
