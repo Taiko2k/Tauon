@@ -54752,6 +54752,26 @@ def main(holder: Holder) -> None:
 				if gui.custom_mode:
 					tauon.custom.render()
 
+					# The top-panel visualiser is drawn over the custom layout at
+					# the window's far right (absolute coords). Its right-click
+					# "switch visualiser" menu is normally handled in the standard
+					# top-panel input pass, which is skipped in custom mode — and
+					# custom.handle_input() neutralised the click earlier in the
+					# frame, only restoring it inside custom.render() above. Handle
+					# it here (view mode only) so the menu works in custom layouts.
+					if (
+						not gui.custom_edit
+						and inp.right_click
+						and tauon.coll(
+							(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale, gui.panelY)
+						)
+						and not gui.top_bar_mode2
+					):
+						tauon.vis_menu.activate(
+							None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale)
+						)
+						inp.right_click = False
+
 				if gui.set_mode:
 					if (
 						tauon.rename_track_box.active is False
