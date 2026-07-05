@@ -1488,6 +1488,10 @@ class CustomLayout:
 				a = data.get("active")
 				if isinstance(a, int) and 0 <= a < len(self.slots):
 					self.active_slot = a
+			else:
+				# First run (no saved layouts): seed slot A with the Volcano
+				# template so a fresh install ships with a ready-made layout.
+				self.slots[0] = self.template("Volcano")
 		except Exception:
 			logging.exception("Failed to load custom layouts")
 
