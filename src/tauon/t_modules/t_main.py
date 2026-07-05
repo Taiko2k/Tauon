@@ -52648,6 +52648,17 @@ def main(holder: Holder) -> None:
 		if pctl.playing_state != PlayingState.STOPPED:
 			power += 400
 
+		# Keep the scrolling spectrogram at a steady frame rate. Playback alone
+		# only bumps power to 400 (below the 500 render threshold), so between the
+		# jittery level_update pulses the loop drops into the ~33fps power-save
+		# throttle and the scroll stutters. Holding power high + update set makes
+		# it render every iteration, so vsync paces it smoothly (the same reason
+		# it looks smooth while a scroll animation is running).
+		if gui.spectrogram_in_widget \
+				and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+			power = 1000
+			gui.update = max(gui.update, 1)
+
 		if prefs.milk and render_heartbeat_timer.get() > 5:
 			# workaround for invis window bug?
 			gui.pl_update = 1

@@ -311,8 +311,11 @@ class SpectrogramWidget(Widget):
 	over — when the segment size settles after a change, never mid-drag). Each
 	new column is one tiny SDL_UpdateTexture write, and the visible window is
 	at most two scaled blits per frame. Float (subpixel) dest rects + a
-	fractional offset from the measured column cadence give a continuous
-	scroll instead of a per-column step; linear filtering smooths both axes.
+	fractional offset give a continuous scroll instead of a per-column step;
+	linear filtering smooths both axes. An adaptive playout buffer consumes the
+	jittery producer queue at a smooth, self-pacing rate (holding a small column
+	backlog as a cushion), so scroll velocity stays constant and occasional late
+	frames or producer stalls are absorbed rather than shown as a lurch.
 	The newest column slides in from the right edge. Magnitude values (0-255)
 	are kept in a ring alongside the pixels so switching colour preset
 	recolourises the whole history (per-byte plane translate, C speed). State
@@ -341,8 +344,18 @@ class SpectrogramWidget(Widget):
 	_filled = 0
 	_lut: list[bytes] | None = None
 	_lut_preset = -1
-	_last_col = 0.0
-	_interval = 1 / 45   # EMA of column arrival interval
+	# Adaptive playout buffer. The producer appends columns at a jittery rate;
+	# the display consumes them at a smooth, self-pacing rate instead of draining
+	# the whole queue every frame. _col_period is seconds per on-screen column;
+	# it slowly integrates to hold ~TARGET_BACKLOG columns queued, which makes it
+	# converge on the true production rate without ever starving or piling up.
+	# _frac_accum is the sub-column scroll position (0-1), advanced by real
+	# elapsed time so velocity is constant regardless of frame/producer jitter.
+	TARGET_BACKLOG = 2      # columns to keep queued (jitter cushion)
+	ADAPT_GAIN = 0.0015     # per-frame pull of _col_period toward the target
+	_col_period = 1 / 50    # s per column (adapts to the real production rate)
+	_frac_accum = 0.0       # sub-column scroll offset, 0-1
+	_last_frame = 0.0       # monotonic time of the previous consumed frame
 	_pending_cols = 0
 	_pending_since = 0.0
 
@@ -363,8 +376,32 @@ class SpectrogramWidget(Widget):
 		bins = gui.spectrogram_bins
 		self._ensure(tauon, bins, w)
 
-		while gui.spectrogram_buffers:
-			self._push_column(gui.spectrogram_buffers.pop(0), bins)
+		playing = tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)
+
+		# Adaptive playout: consume queued columns at a smooth, self-pacing rate
+		# rather than draining the whole queue each frame. _col_period is nudged
+		# toward holding TARGET_BACKLOG columns queued, so it settles at the true
+		# production rate (no starvation, no pile-up); the sub-column remainder is
+		# the scroll offset, advanced by real elapsed time for constant velocity.
+		now = time.monotonic()
+		if playing and cls._last_frame:
+			backlog = len(gui.spectrogram_buffers)
+			# Slow integrator: more queued -> consume faster (shorter period).
+			cls._col_period *= 1.0 - (backlog - cls.TARGET_BACKLOG) * cls.ADAPT_GAIN
+			cls._col_period = min(max(cls._col_period, 0.008), 0.05)
+			cls._frac_accum += (now - cls._last_frame) / cls._col_period
+			guard = 0
+			while cls._frac_accum >= 1.0:
+				if not gui.spectrogram_buffers:
+					cls._frac_accum = 1.0  # starved: hold the newest column in view
+					break
+				self._push_column(gui.spectrogram_buffers.pop(0), bins)
+				cls._frac_accum -= 1.0
+				guard += 1
+				if guard >= 8:  # cap catch-up after a long stall (no visible lurch)
+					cls._frac_accum = min(cls._frac_accum, 1.0)
+					break
+		cls._last_frame = now
 
 		# Background in the palette's floor colour, so sparse history blends in.
 		lut0 = cls._lut[0]
@@ -372,8 +409,7 @@ class SpectrogramWidget(Widget):
 
 		if cls._filled:
 			col_px = 1.5 * gui.scale
-			frac = min((time.monotonic() - cls._last_col) / max(cls._interval, 0.001), 1.0)
-			offset = frac * col_px
+			offset = cls._frac_accum * col_px
 			visible = min(cls._filled, int(w / col_px) + 2)
 			newest = (cls._write - 1) % cls._cols
 			start = (newest - visible + 1) % cls._cols
@@ -485,11 +521,6 @@ class SpectrogramWidget(Widget):
 		sdl3.SDL_UpdateTexture(cls._tex, ctypes.byref(rect), bytes(pix), 4)
 		cls._write = (write + 1) % cls._cols
 		cls._filled = min(cls._filled + 1, cls._cols)
-		now = time.monotonic()
-		dt = now - cls._last_col
-		if 0.004 < dt < 0.5:
-			cls._interval += (dt - cls._interval) * 0.2
-		cls._last_col = now
 
 	def _recolour(self, bins: int) -> None:
 		"""Rewrite the whole texture from the magnitude ring with the current
