@@ -28554,13 +28554,6 @@ class Over:
 			accent=accent,
 		)
 		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_side_panel_side,
-			_("Metadata panel on left"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
 		old_zoom = self.prefs.zoom_art
 		self.prefs.zoom_art = self.settings_switch_row(
 			(inner_x, inner_y, inner_w, compact_row_h),
@@ -42268,6 +42261,30 @@ class ViewBox:
 		self.tauon.view_standard_meta()
 		return None
 
+	def _set_side_panel_left(self, left: bool) -> None:
+		# Flip the metadata side panel to the requested side, refreshing layout
+		# only when the value actually changes.
+		if self.prefs.side_panel_left != left:
+			self.prefs.side_panel_left = left
+			self.gui.update_layout = True
+			self.gui.update += 1
+
+	def side_normal(self, hit: bool = False) -> bool | None:
+		# "Tracks + Art" with the metadata side panel on its default (right) side.
+		if hit is False:
+			return self.side(False) and not self.prefs.side_panel_left
+		self._set_side_panel_left(False)
+		self.side(True)
+		return None
+
+	def side_reversed(self, hit: bool = False) -> bool | None:
+		# "Tracks + Art" with the metadata side panel mirrored to the left side.
+		if hit is False:
+			return self.side(False) and self.prefs.side_panel_left
+		self._set_side_panel_left(True)
+		self.side(True)
+		return None
+
 	def gallery1(self, hit: bool = False) -> bool | None:
 		if hit is False:
 			return self.prefs.album_mode is True  # and self.gui.show_playlist is True
@@ -49531,7 +49548,8 @@ def main(holder: Holder) -> None:
 		return cb
 
 	for _vb_name, _vb_label, _vb_icon, _vb_xoff, _vb_colour in (
-		("side", _("Tracks + Art"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
+		("side_normal", _("Tracks + Art"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
+		("side_reversed", _("Tracks + Art (Reversed)"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
 		("gallery1", _("Tracks + Gallery"), "gallery1-menu.png", 0, ColourRGBA(76, 137, 229, 255)),
 		("tracks", _("Tracks"), "tracks-menu.png", 1, ColourRGBA(76, 229, 229, 255)),
 		("lyrics", _("Art + Lyrics"), "lyrics-menu.png", 1, ColourRGBA(107, 76, 229, 255)),
