@@ -49565,9 +49565,9 @@ def main(holder: Holder) -> None:
 		return cb
 
 	for _slot, _slot_label, _slot_colour in (
-		(0, _("Custom Layout A"), ColourRGBA(170, 225, 90, 255)),
-		(1, _("Custom Layout B"), ColourRGBA(230, 85, 210, 255)),
-		(2, _("Custom Layout C"), ColourRGBA(255, 160, 70, 255)),
+		(0, _("Custom Slot A"), ColourRGBA(170, 225, 90, 255)),
+		(1, _("Custom Slot B"), ColourRGBA(230, 85, 210, 255)),
+		(2, _("Custom Slot C"), ColourRGBA(255, 160, 70, 255)),
 	):
 		_slot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "custom-layout-menu.png", True))
 		_slot_icon.colour = _slot_colour
