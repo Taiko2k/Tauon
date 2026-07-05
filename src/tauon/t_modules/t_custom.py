@@ -238,7 +238,7 @@ class SticksVisWidget(Widget):
 	kind = "vis_sticks"
 	name = "Visualiser: Sticks"
 	min_w = 326  # gui.spec4_rec is a fixed 322x100 (scaled) strip
-	min_h = 104
+	min_h = 60
 	single_instance = True
 	offscreen = False  # positions/defers only; real drawing is at screen coords
 
@@ -246,7 +246,11 @@ class SticksVisWidget(Widget):
 		gui = tauon.gui
 		rec = gui.spec4_rec
 		rec.x = round(x + (w - rec.w) / 2)
-		rec.y = round(y + (h - rec.h) / 2)
+		# The bars are drawn at by=50 in the 200-tall spec4_tex, which is blitted
+		# into this 100-tall rec, so the visible strip sits a quarter of the way
+		# down the rec rather than at its middle. Offset by rec.h/4 so the bars
+		# (not the empty texture) land in the segment's vertical centre.
+		rec.y = round(y + (h - rec.h) / 2 + rec.h / 4)
 		if tauon.prefs.backend != Backend.PHAZOR:
 			tauon.ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			tauon.ddt.text(
