@@ -298,8 +298,9 @@ class SpectrogramWidget(Widget):
 	"""Scrolling spectrogram, built for the custom layout (the legacy top-panel
 	spec2 one is preset-only and unfed on PHAZOR). Data: the PHAZOR vis thread
 	feeds raw log-spaced spectrum columns (gui.spectrogram_bins tall) through
-	gui.spectrogram_buffers while gui.vis == 6 (mode switched by
-	update_layout_do via gui.spectrogram_in_widget).
+	gui.spectrogram_buffers whenever gui.spectrogram_in_widget is set (flagged by
+	update_layout_do) — decoupled from gui.vis, so it runs alongside the bar
+	visualiser rather than replacing it.
 
 	Rendering: a ring texture of one column per sample, sized to the widget
 	(just enough columns to span its width; recreated — newest history carried
@@ -394,7 +395,7 @@ class SpectrogramWidget(Widget):
 			tauon.spectrogram_menu.activate()
 			tauon.inp.right_click = False
 
-		if gui.vis == 6 and tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			gui.delay_frame(0.016)  # keep frames coming for the smooth scroll
 
 	def _ensure(self, tauon: Tauon, bins: int, w: float) -> None:

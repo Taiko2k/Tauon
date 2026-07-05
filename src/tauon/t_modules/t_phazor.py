@@ -1113,18 +1113,20 @@ def player4(tauon: Tauon) -> None:
 				gui.level_update = True
 				if pctl.playing_time > 0.5 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 					gui.update_spec = 1
-			elif gui.vis == 6:
-				# Spectrogram widget: raw log-spaced spectrum columns, queued
-				# for SpectrogramWidget (t_custom) to colourise and scroll.
-				# Frozen while paused/stopped (the playhead isn't moving).
-				if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-					get_spectrum_spectrogram(len(bins3), bins3)
-					gui.spectrogram_buffers.append(list(bins3))
-					if len(gui.spectrogram_buffers) > 60:  # UI stalled; drop oldest
-						del gui.spectrogram_buffers[0]
-					gui.level_update = True
-					if pctl.playing_time > 0.5:
-						gui.update_spec = 1
+
+			# Spectrogram widget: fed independently of gui.vis (own FFT buffers)
+			# so it can run alongside the bar visualiser above. Raw log-spaced
+			# spectrum columns, queued for SpectrogramWidget (t_custom) to
+			# colourise and scroll. Frozen while paused/stopped.
+			if gui.spectrogram_in_widget \
+					and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+				get_spectrum_spectrogram(len(bins3), bins3)
+				gui.spectrogram_buffers.append(list(bins3))
+				if len(gui.spectrogram_buffers) > 60:  # UI stalled; drop oldest
+					del gui.spectrogram_buffers[0]
+				gui.level_update = True
+				if pctl.playing_time > 0.5:
+					gui.update_spec = 1
 
 	p_sync_timer = Timer()
 

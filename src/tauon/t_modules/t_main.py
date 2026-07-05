@@ -14098,10 +14098,6 @@ class Tauon:
 				and gui.mode != GuiMode.MINI and prefs.backend == Backend.PHAZOR:
 			gui.vis = 4
 			gui.turbo = True
-		elif gui.custom_mode and gui.spectrogram_in_widget \
-				and gui.mode != GuiMode.MINI and prefs.backend == Backend.PHAZOR:
-			gui.vis = 6
-			gui.turbo = True
 		elif mini_signal_vis:
 			gui.vis = 2 if prefs.backend == Backend.PHAZOR else 0
 			gui.turbo = True
@@ -14112,6 +14108,13 @@ class Tauon:
 			gui.vis = gui.vis_want
 			if gui.vis > 0:
 				gui.turbo = True
+
+		# The spectrogram widget feeds from its own C path (get_spectrum_hires,
+		# separate FFT buffers) so it runs alongside whichever gui.vis was chosen
+		# above rather than replacing it — it just needs the vis thread active.
+		if gui.custom_mode and gui.spectrogram_in_widget \
+				and gui.mode != GuiMode.MINI and prefs.backend == Backend.PHAZOR:
+			gui.turbo = True
 
 		# Disable vis when in compact view
 		if ((gui.mode == GuiMode.MINI and not mini_signal_vis) or gui.top_bar_mode2):  # or prefs.backend == Backend.GSTREAMER:
