@@ -49513,6 +49513,10 @@ def main(holder: Holder) -> None:
 		_cl_sub_g = cl_menu.sub_number - 1
 		for _g in CL_GUTTER_OPTIONS:
 			cl_menu.add_to_sub(_cl_sub_g, MenuItem(f"{_g}px", cm._menu_gutter, args=_g))
+		cl_menu.add_sub(_("Padding…"), 60)
+		_cl_sub_p = cl_menu.sub_number - 1
+		for _p in CL_GUTTER_OPTIONS:
+			cl_menu.add_to_sub(_cl_sub_p, MenuItem(f"{_p}px", cm._menu_padding, args=_p))
 		cl_menu.add(MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off))
 		cl_menu.add(MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on))
 		cl_menu.add(MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off))

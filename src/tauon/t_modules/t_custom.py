@@ -1102,7 +1102,8 @@ class Node:
 		self.fixed_h: int = 0
 		self.aspect: bool = False          # keep widget content aspect on draw
 		self.square: bool = False          # Square Max: take the parent-axis length that makes the slot square
-		self.gutter: int = 0               # inset around content, px (unscaled)
+		self.gutter: int = 0               # margin outside the border, px (unscaled)
+		self.padding: int = 0              # inset inside the border, px (unscaled)
 		self.border: bool = False
 		self.rect: tuple[float, float, float, float] = (0, 0, 0, 0)
 		# The full slot allotted by the parent stack, before the gutter inset
@@ -1116,7 +1117,7 @@ class Node:
 			"weight": self.weight, "lock_v": self.lock_v, "lock_h": self.lock_h,
 			"fixed_w": self.fixed_w, "fixed_h": self.fixed_h, "aspect": self.aspect,
 			"square": self.square,
-			"gutter": self.gutter, "border": self.border,
+			"gutter": self.gutter, "padding": self.padding, "border": self.border,
 		}
 
 	def _load_base(self, d: dict) -> None:
@@ -1128,6 +1129,7 @@ class Node:
 		self.aspect = d.get("aspect", False)
 		self.square = d.get("square", False)
 		self.gutter = d.get("gutter", 0)
+		self.padding = d.get("padding", 0)
 		self.border = d.get("border", False)
 
 
@@ -1735,6 +1737,10 @@ class CustomLayout:
 		target.gutter = px
 		self.save_slots()
 
+	def act_set_padding(self, target: Node, px: int) -> None:
+		target.padding = px
+		self.save_slots()
+
 	def act_toggle_border(self, target: Node) -> None:
 		target.border = not target.border
 		self.save_slots()
@@ -2105,6 +2111,10 @@ class CustomLayout:
 		if self.menu_target is not None:
 			self.act_set_gutter(self.menu_target, px)
 
+	def _menu_padding(self, ref, px) -> None:
+		if self.menu_target is not None:
+			self.act_set_padding(self.menu_target, px)
+
 	def _menu_template(self, ref, name) -> None:
 		self.tauon.gui.message_box_confirm_callback = self._confirm_load_template
 		self.tauon.gui.message_box_no_callback = None
@@ -2344,13 +2354,20 @@ class CustomLayout:
 		if widget is None:
 			return  # empty segment: just background
 
-		if cw < widget.min_w * gui.scale or ch < widget.min_h * gui.scale:
+		# Padding: inset the widget's drawable rect inside the border (which is
+		# drawn at cx/cy/cw/ch). Clamped so it can never invert on tiny segments.
+		pad = leaf.padding * gui.scale
+		px = min(pad, cw / 2)
+		py = min(pad, ch / 2)
+		pcx, pcy, pcw, pch = cx + px, cy + py, cw - px * 2, ch - py * 2
+
+		if pcw < widget.min_w * gui.scale or pch < widget.min_h * gui.scale:
 			ddt.rect((cx, cy, cw, ch), ColourRGBA(40, 20, 20, 255))
 			ddt.text_background_colour = ColourRGBA(40, 20, 20, 255)
 			ddt.text((round(cx + cw / 2), round(cy + ch / 2) - 8 * gui.scale, 2),
 				"Size too small", ColourRGBA(200, 120, 120, 255), 211)
 		else:
-			dx, dy, dw, dh = cx, cy, cw, ch
+			dx, dy, dw, dh = pcx, pcy, pcw, pch
 			if leaf.aspect:
 				# Keep a square content region (Art Box-style), centred.
 				side = min(dw, dh)
