@@ -38602,7 +38602,11 @@ class ArtistList:
 
 				yy += self.tab_h
 
-				if yy - y > h - 24 * self.gui.scale:
+				# Enter prefetch (stop drawing) only once the *next* card's top has
+				# passed the bottom edge of the widget. Using a 24px margin here
+				# culled cards while their top was still inside the widget, so with
+				# smooth scrolling items vanished ~24px before scrolling off.
+				if yy - y >= h:
 					prefetch_mode = True
 					continue
 
