@@ -2539,13 +2539,21 @@ class CustomLayout:
 				# Hold the resize cursor while a drag is live, even when the
 				# pointer outruns the grab band between frames.
 				gui.cursor_want = 12 if self.drag["axis"] == "v" else 1
-			else:
-				hit = self._boundary_at(root, mx, my, grab)
-				if hit is not None:
-					# 12 = custom NS-resize cursor (see dispatch in main loop); 1 =
-					# EW-resize (cursor_shift). cursor_top_side (9) isn't an NS cursor
-					# on macOS/Linux, so we use our own.
-					gui.cursor_want = 12 if hit[0] == "v" else 1
+				# A boundary drag is in progress: mark the whole draggable region
+				# with the red line, not the green segment highlight.
+				self._draw_boundary_line(self.drag["axis"], self.drag["stack"], self.drag["index"])
+				return
+			hit = self._boundary_at(root, mx, my, grab)
+			if hit is not None:
+				# 12 = custom NS-resize cursor (see dispatch in main loop); 1 =
+				# EW-resize (cursor_shift). cursor_top_side (9) isn't an NS cursor
+				# on macOS/Linux, so we use our own.
+				gui.cursor_want = 12 if hit[0] == "v" else 1
+				# Over a draggable boundary: show a solid red line spanning the
+				# whole region that would resize, and suppress the green segment
+				# highlight so the drag affordance reads unambiguously.
+				self._draw_boundary_line(hit[0], hit[1], hit[2])
+				return
 			seg = leaf_at(root, mx, my)
 		if seg is not None:
 			# Yellow highlight on the hovered segment itself.
@@ -2557,6 +2565,27 @@ class CustomLayout:
 			ddt.rect((x, y, b, h), edge)
 			ddt.rect((x + w - b, y, b, h), edge)
 			ddt.rect((x, y, w, h), ColourRGBA(170, 225, 90, 18))
+
+	def _draw_boundary_line(self, orient: str, stack: "Stack", index: int) -> None:
+		"""Solid red line over a resize boundary's hit zone, spanning the full
+		extent of the two segments that share it. Red is the green hover
+		highlight colour (170, 225, 90) with its hue rotated to 0 — same
+		saturation and value — so the drag affordance stays visually related to
+		the segment highlight while clearly meaning "this edge drags"."""
+		ddt = self.ddt
+		scale = self.gui.scale
+		child = stack.children[index]
+		sx, sy, sw, sh = child.slot_rect
+		x, y, w, h = stack.rect
+		red = ColourRGBA(225, 90, 90, 255)
+		thick = max(1, round(3 * scale))
+		inset = round(5 * scale)  # shorten the line by 5px on each end
+		if orient == "v":
+			ly = round(sy + sh - thick / 2)
+			ddt.rect((x + inset, ly, w - inset * 2, thick), red)
+		else:
+			lx = round(sx + sw - thick / 2)
+			ddt.rect((lx, y + inset, thick, h - inset * 2), red)
 
 	def _draw_widget_labels(self, root: Node) -> None:
 		"""Name tag in the top-left corner of every widget segment (edit mode),
