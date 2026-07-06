@@ -5275,6 +5275,16 @@ class Menu:
 		item.inc_plus = on_plus
 		self.items.append(item)
 
+	def add_incrementor_to_sub(self, sub_menu_index: int, title: str, get_value, on_minus, on_plus, show_test=None) -> None:
+		"""Incrementor row (see add_incrementor), appended to a submenu."""
+		item = MenuItem(title, lambda *_: None, show_test=show_test)
+		item.render_func = self.deco
+		item.incrementor = True
+		item.inc_get = get_value
+		item.inc_minus = on_minus
+		item.inc_plus = on_plus
+		self.subs[sub_menu_index].append(item)
+
 	def br(self) -> None:
 		self.items.append(None)
 
@@ -5350,10 +5360,11 @@ class Menu:
 				else:
 					icon.base_asset.render(x, y, renderer=renderer)
 
-	def draw_incrementor(self, item: MenuItem, x_run: float, y_run: float, bg: ColourRGBA, ytoff: float) -> float:
+	def draw_incrementor(self, item: MenuItem, x_run: float, y_run: float, bg: ColourRGBA, ytoff: float, width: float) -> float:
 		"""Draw an incrementor row's right side: [-] value [+]. Handles clicks on
-		the two square stepper buttons (which don't close the menu). Returns the
-		x of the left edge of the minus button so the caller can bound the label.
+		the two square stepper buttons (which don't close the menu). ``width`` is
+		the row width (main column or submenu). Returns the x of the left edge of
+		the minus button so the caller can bound the label.
 		"""
 		gui     = self.gui
 		ddt     = self.render_ddt
@@ -5362,7 +5373,7 @@ class Menu:
 
 		bs = int(self.h)                             # square button side = full row height
 		by = int(y_run)
-		plus_x  = int(x_run + self.w - bs)           # flush with the row's right edge
+		plus_x  = int(x_run + width - bs)            # flush with the row's right edge
 		num_w   = round(26 * scale)
 		num_x   = plus_x - num_w
 		minus_x = int(num_x - bs)
@@ -5551,7 +5562,7 @@ class Menu:
 
 				# Render the items label (narrowed to clear the stepper for incrementors)
 				if self.items[i].incrementor:
-					left_bound = self.draw_incrementor(self.items[i], x_run, y_run, bg, ytoff)
+					left_bound = self.draw_incrementor(self.items[i], x_run, y_run, bg, ytoff, self.w)
 					label_max_w = max(1, int(left_bound - (x_run + x) - 6 * gui.scale))
 					# Swallow any click on this row so the menu stays open: the label
 					# is inert and only the stepper buttons act (handled above in
@@ -5722,7 +5733,14 @@ class Menu:
 		colours = self.colours
 
 		ytoff = round(self.h * 0.71 - 13 * gui.scale)
-		sub_items = self.subs[self.sub_active]
+		# Snapshot which items are visible ONCE up front. A no_exit toggle fires
+		# its func mid-render, which flips its show_test pair; re-evaluating per
+		# item would then reveal the pair member later in the same pass, shifting
+		# every row below down for one frame. Freezing the list avoids that.
+		sub_items = [
+			s for s in self.subs[self.sub_active]
+			if s.show_test is None or s.show_test(self.reference)
+		]
 		sub_w = self.submenu_size()[0]
 
 		springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
@@ -5736,9 +5754,6 @@ class Menu:
 
 		row = 0
 		for item in sub_items:
-			if item.show_test is not None and not item.show_test(self.reference):
-				continue
-
 			y = oy + row * self.h
 
 			if item.render_func is not None:
@@ -5756,23 +5771,44 @@ class Menu:
 				bg = alpha_blend(colours.menu_highlight_background, bg)
 				this_select = True
 
-				if (self.clicked or (springing and not self.inp.right_down and not self.inp.mouse_down)) \
-						and not self.is_item_disabled(item):
-					if item.args is not None:
-						item.func(self.reference, item.args)
-					elif item.pass_ref:
-						item.func(self.reference)
+				if item.incrementor:
+					pass  # stepper buttons handled after the label; label/row click is inert
+				elif not self.is_item_disabled(item):
+					# no_exit items act only on a discrete click and keep the menu
+					# open (the spring-loaded path would re-fire a toggle every frame
+					# while the button is held). Normal items also fire on spring.
+					if item.no_exit:
+						fire = self.clicked
 					else:
-						item.func()
-					self.close_next_frame = True
-					gui.update += 1
+						fire = self.clicked or (springing and not self.inp.right_down and not self.inp.mouse_down)
+					if fire:
+						if item.args is not None:
+							item.func(self.reference, item.args)
+						elif item.pass_ref:
+							item.func(self.reference)
+						else:
+							item.func()
+						if item.no_exit:
+							self.clicked = False  # keep the menu (and submenu) open
+						else:
+							self.close_next_frame = True
+						gui.update += 1
 
 			label = fx.text if fx.text is not None else item.title
 			if self.is_item_disabled(item):
 				fx.text_colour = colours.menu_text_disabled
 
 			self.render_icon(ox + 11 * gui.scale, y + 5 * gui.scale, item.icon, this_select, fx)
-			ddt.text((ox + 10 * gui.scale + xoff, y + ytoff), label, fx.text_colour, self.font, bg=bg)
+			text_x = ox + 10 * gui.scale + xoff
+			if item.incrementor:
+				left_bound = self.draw_incrementor(item, ox, y, bg, ytoff, sub_w)
+				label_max_w = max(1, int(left_bound - text_x - 6 * gui.scale))
+				# Swallow any click on this row so the menu stays open (label inert).
+				if coll_point(self.pointer, (ox, y, sub_w, self.h - 1)):
+					self.clicked = False
+				ddt.text((text_x, y + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
+			else:
+				ddt.text((text_x, y + ytoff), label, fx.text_colour, self.font, bg=bg)
 			ddt.rect_a((ox, y), (4 * gui.scale, self.h), colours.menu_tab)
 
 			row += 1
@@ -49582,20 +49618,22 @@ def main(holder: Holder) -> None:
 		cl_menu.add(MenuItem(_("Remove"), cm._menu_remove_widget, show_test=cm._t_has_widget))
 		cl_menu.add(MenuItem(_("Remove Stack"), cm._menu_remove_stack))
 		cl_menu.br()
-		cl_menu.add(MenuItem(_("Lock Vertical"), cm._menu_lock_v, show_test=cm._t_unlocked_v))
-		cl_menu.add(MenuItem(_("Unlock Vertical"), cm._menu_lock_v, show_test=cm._t_locked_v))
-		cl_menu.add(MenuItem(_("Lock Horizontal"), cm._menu_lock_h, show_test=cm._t_unlocked_h))
-		cl_menu.add(MenuItem(_("Unlock Horizontal"), cm._menu_lock_h, show_test=cm._t_locked_h))
-		cl_menu.add(MenuItem(_("Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_off))
-		cl_menu.add(MenuItem(_("Remove Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_on))
-		cl_menu.add(MenuItem(_("Square Max"), cm._menu_square_max, show_test=cm._t_square_off))
-		cl_menu.add(MenuItem(_("Remove Square Max"), cm._menu_square_max, show_test=cm._t_square_on))
-		cl_menu.add_incrementor(_("Gutter"), cm._menu_gutter_value, cm._menu_gutter_minus, cm._menu_gutter_plus)
-		cl_menu.add_incrementor(_("Padding"), cm._menu_padding_value, cm._menu_padding_minus, cm._menu_padding_plus)
-		cl_menu.add(MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off))
-		cl_menu.add(MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on))
-		cl_menu.add(MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off))
-		cl_menu.add(MenuItem(_("Make Stack Not Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_on))
+		cl_menu.add_sub(_("Layout…"), 175)
+		_cl_sub_layout = cl_menu.sub_number - 1
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Lock Vertical"), cm._menu_lock_v, show_test=cm._t_unlocked_v, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Unlock Vertical"), cm._menu_lock_v, show_test=cm._t_locked_v, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Lock Horizontal"), cm._menu_lock_h, show_test=cm._t_unlocked_h, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Unlock Horizontal"), cm._menu_lock_h, show_test=cm._t_locked_h, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_off, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Remove Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_on, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Square Max"), cm._menu_square_max, show_test=cm._t_square_off, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Remove Square Max"), cm._menu_square_max, show_test=cm._t_square_on, no_exit=True))
+		cl_menu.add_incrementor_to_sub(_cl_sub_layout, _("Gutter"), cm._menu_gutter_value, cm._menu_gutter_minus, cm._menu_gutter_plus)
+		cl_menu.add_incrementor_to_sub(_cl_sub_layout, _("Padding"), cm._menu_padding_value, cm._menu_padding_minus, cm._menu_padding_plus)
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Make Stack Not Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_on, no_exit=True))
 		cl_menu.br()
 		cl_menu.add_sub(_("Load Template…"), 110)
 		_cl_sub_t = cl_menu.sub_number - 1
