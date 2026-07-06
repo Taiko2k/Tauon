@@ -12318,6 +12318,11 @@ class Tauon:
 
 		set_menu.add(MenuItem(_("Auto Resize"), self.auto_size_columns))
 		set_menu.add(MenuItem(_("Hide bar"), self.hide_set_bar))
+		# Magnet Mode: draw the next column's text immediately after this column's
+		# text (packed left, standard-layout style) instead of confining it to its
+		# own column. Only meaningful when there is a column to the right.
+		set_menu.add(MenuItem(_("Enable Magnet Mode"), self.sa_toggle_magnet, pass_ref=True, show_test=self.sa_magnet_off_test))
+		set_menu.add(MenuItem(_("Disable Magnet Mode"), self.sa_toggle_magnet, pass_ref=True, show_test=self.sa_magnet_on_test))
 		set_menu.br()
 		set_menu.add(MenuItem("- " + _("Remove This"), self.sa_remove, pass_ref=True))
 		set_menu.br()
@@ -12344,6 +12349,32 @@ class Tauon:
 			self.sa_regen_menu()
 		else:
 			self.show_message(_("Cannot remove the only column."))
+
+	def sa_magnet_eligible(self, ref: object) -> bool:
+		"""A column can hold magnet mode only if there is a column to its right."""
+		return isinstance(ref, int) and 0 <= ref < len(self.gui.pl_st) - 1
+
+	def sa_magnet_is_on(self, ref: object) -> bool:
+		if not self.sa_magnet_eligible(ref):
+			return False
+		item = self.gui.pl_st[ref]
+		return len(item) > 3 and bool(item[3])
+
+	def sa_magnet_off_test(self, ref: object) -> bool:
+		return self.sa_magnet_eligible(ref) and not self.sa_magnet_is_on(ref)
+
+	def sa_magnet_on_test(self, ref: object) -> bool:
+		return self.sa_magnet_is_on(ref)
+
+	def sa_toggle_magnet(self, ref: int) -> None:
+		if not self.sa_magnet_eligible(ref):
+			return
+		item = self.gui.pl_st[ref]
+		while len(item) < 4:
+			item.append(False)
+		item[3] = not item[3]
+		self.gui.update_layout = True
+		self.sa_regen_menu()
 
 	def sa_try_uncheck(self, field: str) -> bool:
 		unchecks = [] # you could have multiple copies of the same column
@@ -34684,6 +34715,206 @@ class StandardPlaylist:
 		gui.tracklist_highlight_left = gui.highlight_left
 		gui.tracklist_highlight_width = highlight_width
 
+	def get_column_text(self, name: str, n_track: TrackClass, p_track: int) -> str:
+		"""Return the display string for a text column (used by Magnet Mode layout
+		to pre-measure widths). Must stay in sync with the text produced in the
+		column render loop. Returns "" for widget/non-text columns."""
+		pctl = self.pctl
+		prefs = self.prefs
+		if name == "Title":
+			return n_track.title if n_track.title else n_track.filename
+		if name == "Artist":
+			return n_track.artist
+		if name == "Album":
+			return n_track.album
+		if name == "Album Artist":
+			text = n_track.album_artist
+			if not text and prefs.column_aa_fallback_artist:
+				text = n_track.artist
+			return text
+		if name == "Composer":
+			return n_track.composer
+		if name == "Comment":
+			return n_track.comment.replace("\n", " ").replace("\r", " ")
+		if name == "S":
+			return str(n_track.lfm_scrobbles) if n_track.lfm_scrobbles > 0 else ""
+		if name == "#":
+			if prefs.use_absolute_track_index and pctl.multi_playlist[pctl.active_playlist_viewing].hide_title:
+				return str(p_track)
+			return self.tauon.track_number_process(n_track.track_number)
+		if name == "Date":
+			return n_track.date
+		if name == "Filepath":
+			return clean_string(n_track.fullpath)
+		if name == "Filename":
+			return clean_string(n_track.filename)
+		if name == "Disc":
+			return str(n_track.disc_number)
+		if name == "Codec":
+			text = n_track.file_ext
+			if text == "JELY" and "container" in n_track.misc:
+				text = n_track.misc["container"]
+			return text
+		if name == "Lyrics":
+			if n_track.synced:
+				return "⧗"
+			if n_track.lyrics:
+				return "✓"
+			return ""
+		if name == "CUE":
+			return "✓" if n_track.is_cue else ""
+		if name == "Genre":
+			return n_track.genre
+		if name == "ID":
+			return str(n_track.index)
+		if name == "=/=":
+			return get_modify_date_string(n_track.modified_time)
+		if name == "Bitrate":
+			text = str(n_track.bitrate)
+			if text == "0":
+				text = ""
+			ex = n_track.file_ext
+			if n_track.misc.get("container") is not None:
+				ex = n_track.misc.get("container")
+			if ex in ("FLAC", "WAV", "APE"):
+				text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(n_track.bit_depth)
+			return text
+		if name == "Time":
+			return get_display_time(n_track.length)
+		if name == "P":
+			ratio = 0
+			total = self.star_store.get_by_object(n_track)
+			if total > 0 and n_track.length > 2:
+				if n_track.length > 15:
+					total += 2
+				ratio = total / (n_track.length - 1)
+			text = str(int(ratio))
+			if text == "0":
+				text = ""
+			return text
+		return ""
+
+	def compute_magnet_layout(self, start_run: float, end: float, n_track: TrackClass, p_track: int) -> dict[int, tuple[float, float]]:
+		"""Work out packed text positions for Magnet Mode column groups.
+
+		A magnet group is a run of magnet-on columns plus the following column
+		(magnet-off) which terminates but is still included in the group. Within a
+		group the columns' text is drawn packed left with a standard-layout gap
+		instead of each being confined to its own column. If the combined text
+		fits the group's width it is drawn at natural size; otherwise each text is
+		truncated to a share of the space proportional to its column's width.
+
+		Returns (layout, separators):
+		  - layout: column index -> (text_x, text_max_w) for columns drawn with
+		    magnet positioning. Columns absent from the map render normally.
+		  - separators: column index -> separator_x. When two magnet-packed columns
+		    that sit next to each other share the same text colour (so the eye can't
+		    tell them apart), a " - " separator is drawn after the first one, exactly
+		    as the standard tracklist does between artist and title.
+		"""
+		gui = self.gui
+		pl_st = gui.pl_st
+		ddt = self.ddt
+		colours = self.colours
+		font = gui.row_font_size
+		scale = gui.scale
+		lead = 6 * scale
+		gap = 6 * scale
+		trail = 14 * scale
+		sep_text = " - "
+		sep_w = ddt.get_text_w(sep_text, font)
+
+		def magnet_on(item: list) -> bool:
+			return len(item) > 3 and bool(item[3])
+
+		def base_colour(name: str):
+			if name in colours.column_colours:
+				return colours.column_colours[name]
+			if name == "Title":
+				return colours.title_text
+			if name == "Artist" or name == "Album Artist":
+				return colours.artist_text
+			if name == "Album":
+				return colours.album_text
+			if name == "Time":
+				return colours.bar_time
+			return colours.index_text
+
+		# Precompute the left edge (run) of each column
+		run_positions = []
+		run = start_run
+		for item in pl_st:
+			run_positions.append(run)
+			run += item[1]
+
+		layout: dict[int, tuple[float, float]] = {}
+		separators: dict[int, float] = {}
+		n = len(pl_st)
+		h = 0
+		while h < n:
+			if not magnet_on(pl_st[h]):
+				h += 1
+				continue
+			# Gather the group: magnet-on columns plus the terminating column
+			group = []
+			k = h
+			while k < n:
+				group.append(k)
+				if not magnet_on(pl_st[k]):
+					break
+				k += 1
+
+			if len(group) < 2:
+				# Nothing to the right to magnet onto (last column) - render normally
+				h = group[-1] + 1
+				continue
+
+			group_start = run_positions[group[0]]
+			sum_widths = sum(pl_st[i][1] for i in group)
+			group_end = min(group_start + sum_widths, end)
+			group_span = group_end - group_start
+
+			texts = [self.get_column_text(pl_st[i][0], n_track, p_track) for i in group]
+			nats = [ddt.get_text_w(t, font) if t else 0 for t in texts]
+			present = [idx for idx in range(len(group)) if texts[idx]]
+
+			# Decide, per gap between two adjacent present columns, whether a " - "
+			# separator is needed (same colour) or just a plain gap.
+			between = {}  # position-in-present -> width consumed between it and the next
+			for pos in range(len(present) - 1):
+				col_a = group[present[pos]]
+				col_b = group[present[pos + 1]]
+				if base_colour(pl_st[col_a][0]) == base_colour(pl_st[col_b][0]):
+					between[pos] = sep_w
+				else:
+					between[pos] = gap
+			total_between = sum(between.values())
+
+			available = group_span - lead - trail - total_between
+			available = max(0, available)
+
+			sum_nat = sum(nats)
+			if sum_nat <= available:
+				allocs = list(nats)
+			else:
+				# Truncate: share the space by column width ratio within the group
+				allocs = [available * (pl_st[group[idx]][1] / sum_widths) if sum_widths else 0 for idx in range(len(group))]
+
+			x = group_start + lead
+			for pos, idx in enumerate(present):
+				col = group[idx]
+				alloc = max(0, allocs[idx])
+				layout[col] = (x, alloc)
+				x += min(nats[idx], alloc)
+				if pos < len(present) - 1:
+					if between[pos] == sep_w:
+						separators[col] = x
+					x += between[pos]
+
+			h = group[-1] + 1
+
+		return layout, separators
+
 	def full_render(self, rect: tuple[float, float, float, float] | None = None) -> None:
 		"""Render the tracklist.
 
@@ -35585,13 +35816,17 @@ class StandardPlaylist:
 				# gui.tracklist_inset_left = inset_left - round(20 * gui.scale)
 				# gui.tracklist_inset_width = inset_width + round(20 * gui.scale)
 
+				magnet_layout, magnet_seps = self.compute_magnet_layout(start, end, n_track, p_track)
+
 				for h, item in enumerate(gui.pl_st):
 					wid = item[1] - 20 * gui.scale
 					column_width = min(item[1], end - run)
 					y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 					ry = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 
-					if run > end - 50 * gui.scale:
+					if run > end - 50 * gui.scale and h not in magnet_layout:
+						# Magnet-packed text lives within the group's clamped span, so
+						# it stays on-screen even when this column's own run does not.
 						break
 
 					if len(gui.pl_st) == h + 1:
@@ -35844,11 +36079,16 @@ class StandardPlaylist:
 							if this_line_playing and item[0] in colours.column_colours_playing:
 								colour = colours.column_colours_playing[item[0]]
 
-							if run + 6 * gui.scale + wid > end:
+							text_x = run + 6 * gui.scale
+							if h in magnet_layout:
+								# Magnet Mode: draw packed after the previous column's text
+								text_x, wid = magnet_layout[h]
+							elif run + 6 * gui.scale + wid > end:
 								wid = end - run - 40 * gui.scale
 								if center_mode:
 									wid += 25 * gui.scale
 
+							col_left = text_x - 6 * gui.scale
 							wid = max(0, wid)
 
 							# # Hacky. Places a dark background behind light text for readability over mascot
@@ -35861,19 +36101,28 @@ class StandardPlaylist:
 							# 		ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
 
 							ddt.text(
-								(run + 6 * gui.scale, y + y_off),
+								(text_x, y + y_off),
 								text,
 								colour,
 								font,
 								max_w=wid)
 
+							# Magnet Mode: draw a " - " separator after this column when
+							# the next packed column shares its colour (readability).
+							if h in magnet_seps:
+								ddt.text(
+									(magnet_seps[h], y + y_off),
+									" - ",
+									colour,
+									font)
+
 							if ddt.was_truncated:
 								#logging.info(text)
-								rect = (run, y, wid - 1, gui.playlist_row_height - 1)
+								rect = (col_left, y, wid - 1, gui.playlist_row_height - 1)
 								gui.heart_fields.append(rect)
 
 								if self.coll(rect):
-									self.tauon.columns_tool_tip.set(run - 7 * gui.scale, y, text, font, rect)
+									self.tauon.columns_tool_tip.set(col_left - 7 * gui.scale, y, text, font, rect)
 
 					run += item[1]
 
@@ -54126,6 +54375,8 @@ def main(holder: Holder) -> None:
 									gui.set_label_hold = h
 									gui.set_label_point = copy.deepcopy(inp.mouse_position)
 								if inp.right_click:
+									tauon.set_menu.reference = h
+									tauon.sa_regen_menu()
 									tauon.set_menu.activate(h)
 
 							if h != 0:
