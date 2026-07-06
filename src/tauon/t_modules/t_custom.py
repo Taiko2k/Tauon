@@ -685,7 +685,7 @@ class MetaCenterWidget(MetaWidget):
 class MetaCenteredWidget(MetaWidget):
 	# Centered track text (based on the side_panel_layout == 1 layout, no art).
 	kind = "meta_centered"
-	name = "Track: Centered"
+	name = "Track: Titles (Centred)"
 	meta_method = "centered"
 
 
@@ -1063,7 +1063,7 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(28, 26, 24, 255)),
 	WidgetSpec("lyrics", "Lyrics Box", "Content", _lyrics, single_instance=True, colour=ColourRGBA(26, 26, 30, 255)),
 	WidgetSpec("meta_center", "Track: Titles", "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
-	WidgetSpec("meta_centered", "Track: Centered", "Content", _meta_centered, colour=ColourRGBA(30, 31, 35, 255)),
+	WidgetSpec("meta_centered", "Track: Titles (Centred)", "Content", _meta_centered, colour=ColourRGBA(30, 31, 35, 255)),
 	WidgetSpec("details", "Track: Details", "Content", _details, colour=ColourRGBA(28, 30, 36, 255)),
 	WidgetSpec("artist_info", "Artist Info", "Content", _artist_info, single_instance=True,
 		colour=ColourRGBA(30, 28, 34, 255)),
