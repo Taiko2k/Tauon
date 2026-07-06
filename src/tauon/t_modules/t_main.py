@@ -35006,9 +35006,14 @@ class StandardPlaylist:
 				xx -= round(15 * gui.scale)
 			deco.draw(ddt, xx, window_size[1] - gui.panelBY, pretty_text=True)
 
-		scroll_area = (gui.playlist_left, gui.panelY, gui.plw, window_size[1] - (gui.panelBY + gui.panelY))
+		# When the artist-info panel occupies the top of the tracklist column,
+		# exclude its area so wheel/touch scrolling over the bio doesn't also
+		# scroll the tracklist underneath it.
+		artist_panel_offset = gui.artist_panel_height if gui.artist_info_panel else 0
+		scroll_top = gui.panelY + artist_panel_offset
+		scroll_area = (gui.playlist_left, scroll_top, gui.plw, window_size[1] - gui.panelBY - scroll_top)
 		mouse_scroll = inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
-			1] > gui.panelY - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
+			1] > scroll_top - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
 				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active
 		touch_scroll = (
 			inp.touch_scroll_y != 0
@@ -40555,7 +40560,9 @@ class PictureRender:
 		logging.info("Save BMP to memory")
 		self.size = im.size[0], im.size[1]
 
-	def draw(self, x: int, y: int) -> None:
+	def draw(self, x: int, y: int, w: int | None = None, h: int | None = None) -> None:
+		# w/h optionally scale the rendered image (keeping the loaded texture);
+		# when omitted the image draws at its loaded (thumbnailed) resolution.
 		if self.show is False:
 			return
 
@@ -40579,6 +40586,10 @@ class PictureRender:
 		if self.texture is not None:
 			self.srect.x = round(x)
 			self.srect.y = round(y)
+			if w is not None:
+				self.srect.w = round(w)
+			if h is not None:
+				self.srect.h = round(h)
 			sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.srect)
 			self.tauon.style_overlay.hole_punches.append(self.srect)
 
@@ -40731,22 +40742,64 @@ class ArtistInfoBox:
 			self.w = -1  # trigger text recalc
 
 		if self.status == "Ready":
-			# if self.w != w:
-			#     tw, th = self.ddt.get_text_wh(self.processed_text, 14.5, w - 250 * self.gui.scale, True)
-			#     self.th = th
-			#     self.w = w
-			p_off = round(5 * self.gui.scale)
-			if self.artist_picture_render.show and self.artist_picture_render.srect:
-				p_off += self.artist_picture_render.srect.w + round(12 * self.gui.scale)
+			scale = self.gui.scale
+			pad = round(10 * scale)
+			pic = self.artist_picture_render
+			has_pic = bool(pic.show and pic.size and pic.size[0] and pic.size[1])
 
-			text_max_w = w - (round(55 * self.gui.scale) + p_off)
+			# Stack the text under the image when the widget is taller than wide.
+			stacked = has_pic and h > w
 
-			if self.w != w:
-				tw, th = self.ddt.get_text_wh(self.processed_text, 14.5, text_max_w - (text_max_w % 20), True)
+			img_x = img_y = 0
+			img_w = img_h = 0.0
+			if has_pic:
+				img_ar = pic.size[0] / pic.size[1]
+				if stacked:
+					# Image on top; cap its height to half the widget height.
+					img_w = w - 2 * pad
+					img_h = img_w / img_ar
+					max_h = h * 0.5 - pad
+					if img_h > max_h:
+						img_h = max_h
+						img_w = img_h * img_ar
+				else:
+					# Image on the left; cap its width to half the widget width.
+					img_h = h - 2 * pad
+					img_w = img_h * img_ar
+					max_w = w * 0.5 - pad
+					if img_w > max_w:
+						img_w = max_w
+						img_h = img_w / img_ar
+				# Never upscale beyond the loaded resolution.
+				if img_w > pic.size[0]:
+					img_w = pic.size[0]
+					img_h = img_w / img_ar
+				img_x = round(x + pad)
+				img_y = round(y + pad)
+				img_w = round(img_w)
+				img_h = round(img_h)
+
+			# Text region: below the image when stacked, else to its right.
+			# Room for the link-pin column (pins sit at ~25px from the right, and
+			# shift left another 15px when the scrollbar shows) plus a small gap.
+			right_margin = round(45 * scale)
+			if stacked:
+				text_x = round(x + pad)
+				text_top = img_y + img_h + pad
+				text_area_h = (y + h) - text_top - pad
+			else:
+				text_x = (img_x + img_w + pad) if has_pic else round(x + pad)
+				text_top = round(y + 14 * scale)
+				text_area_h = h - round(22 * scale)
+			text_w = (x + w - right_margin) - text_x
+			width = int(text_w - (text_w % 20))
+
+			if self.w != width:
+				tw, th = self.ddt.get_text_wh(self.processed_text, 14.5, max(width, 20), True)
 				self.th = th
-				self.w = w
+				self.w = width
 
-			scroll_max = self.th - (h - 26)
+			scroll_max = max(self.th - text_area_h, 0)
 
 			touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, (x, y, w, h))
 			use_smooth_scroll = (
@@ -40771,21 +40824,23 @@ class ArtistInfoBox:
 
 			right = x + w - 25 * self.gui.scale
 
-			if self.th > h - 26:
+			if self.th > text_area_h:
 				self.scroll_y = self.tauon.artist_info_scroll.draw(
 					x + w - 20, y + 5, 15, h - 5,
 					self.scroll_y, scroll_max, True, jump_distance=250 * self.gui.scale)
 				right -= 15
-				# text_max_w -= 15
 
-			self.artist_picture_render.draw(x + 20 * self.gui.scale, y + 10 * self.gui.scale)
-			width = text_max_w - (text_max_w % 20)
-			if width > 20 * self.gui.scale:
+			if has_pic:
+				pic.draw(img_x, img_y, img_w, img_h)
+
+			if width > 20 * scale:
 				self.ddt.text(
-					(x + p_off + round(15 * self.gui.scale), y + 14 * self.gui.scale, 4, width, 14000), self.processed_text,
-					text_colour, 14.5, bg=background, range_height=h - 22 * self.gui.scale, range_top=self.scroll_y)
+					(text_x, text_top, 4, width, 14000), self.processed_text,
+					text_colour, 14.5, bg=background, range_height=text_area_h, range_top=self.scroll_y)
 
-			yy = y + 12
+			# Pin the link column to the top of the text region (below the image
+			# when stacked) so it never sits on top of the artwork.
+			yy = (text_top - round(2 * scale)) if stacked else (y + 12)
 			for item in self.urls:
 				rect = (right - 2, yy - 2, 16, 16)
 
@@ -50012,7 +50067,6 @@ def main(holder: Holder) -> None:
 	shuffle_menu.add(MenuItem(_("Random Albums"), tauon.menu_album_random))
 
 	artist_info_menu.add(MenuItem(_("Close Panel"), tauon.artist_info_panel_close))
-	artist_info_menu.add(MenuItem(_("Make Large"), tauon.toggle_bio_size, tauon.toggle_bio_size_deco))
 
 	gui.filter_icon.colour = ColourRGBA(43, 213, 255, 255)
 	gui.filter_icon.xoff = 1

@@ -307,7 +307,7 @@ class Prefs:
 
 	notify_include_album: bool = True
 
-	auto_dl_artist_data: bool = False
+	auto_dl_artist_data: bool = True
 
 	enable_fanart_artist: bool = False
 	enable_fanart_bg: bool = False
