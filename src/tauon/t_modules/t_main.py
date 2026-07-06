@@ -25427,12 +25427,11 @@ class NagBox:
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
 		("New layout engine supporting custom layouts!", False),
-		("Added rounded corners setting!", False),
+		("Added rounded corners setting", False),
 		("Added lyrics search to global search", False),
 		("Added new widget: Spectogram", False),
 		("Added new widget: Track Details", False),
-		("Fixed network buffering performance", False),
-		("Fixed settings view performance", False),
+		("Improvements to network buffering", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -25470,8 +25469,8 @@ class NagBox:
 		self.tauon.show_message(_("Yay! Thank you!! 🎉 ✨"), mode="done")
 
 	def draw_left_accent_gradient(self, x: int, y: int, w: int, h: int) -> None:
-		top = ColourRGBA(126, 82, 255, 255)
-		bottom = ColourRGBA(244, 65, 190, 255)
+		top = ColourRGBA(205, 226, 92, 255)
+		bottom = ColourRGBA(86, 190, 104, 255)
 		steps = max(1, round(h / max(self.gui.scale, 1)))
 		for step in range(steps):
 			ratio = step / max(steps - 1, 1)
@@ -25515,12 +25514,12 @@ class NagBox:
 		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
-		version_text = "Tauon v10.2"
+		version_text = "Tauon v11"
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("Highlights from the latest Tauon release."),
-			self.colours.box_text_label,
+			_("Taking Tauon to the next level!"),
+			self.colours.box_title_text,
 			12,
 			bg=panel_fill,
 		)
@@ -25540,7 +25539,7 @@ class NagBox:
 
 		row_y = changelog_y + round(38 * scale)
 		row_gap = round(18 * scale)
-		bullet_colour = ColourRGBA(198, 136, 255, 255)
+		bullet_colour = ColourRGBA(176, 214, 104, 255)
 		for item, removed in self.CHANGELOG_ITEMS:
 			text_colour = self.colours.box_text_label if removed else self.colours.box_text
 			self.ddt.rect(
