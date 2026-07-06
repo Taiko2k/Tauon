@@ -112,7 +112,6 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	migrate_star_store_71,
 )
 from tauon.t_modules.t_custom import (  # noqa: E402
-	GUTTER_OPTIONS as CL_GUTTER_OPTIONS,
 	SPECTRO_PRESETS as CL_SPECTRO_PRESETS,
 	STACK_COUNTS as CL_STACK_COUNTS,
 	TEMPLATES as CL_TEMPLATES,
@@ -5082,6 +5081,10 @@ class MenuItem:
 		"args",            # 12
 		"sub_menu_number", # 13
 		"sub_menu_width",  # 14
+		"incrementor",     # 15
+		"inc_get",         # 16
+		"inc_minus",       # 17
+		"inc_plus",        # 18
 	]
 	def __init__(
 		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
@@ -5102,6 +5105,14 @@ class MenuItem:
 		self.args = args
 		self.sub_menu_number: int | None = sub_menu_number
 		self.sub_menu_width: int = sub_menu_width
+		# Incrementor row: a label on the left with [-] value [+] stepper buttons
+		# on the right. inc_get(ref) returns the number to display; inc_minus(ref)
+		# / inc_plus(ref) step it. Clicking the buttons does not close the menu;
+		# clicking the label does nothing. See Menu.add_incrementor / draw_incrementor.
+		self.incrementor: bool = False
+		self.inc_get = None
+		self.inc_minus = None
+		self.inc_plus = None
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
@@ -5252,6 +5263,18 @@ class Menu:
 			menu_item.render_func = self.deco
 		self.items.append(menu_item)
 
+	def add_incrementor(self, title: str, get_value, on_minus, on_plus, show_test=None) -> None:
+		"""Add an incrementor row: label on the left, a [-] value [+] stepper on
+		the right. get_value/on_minus/on_plus are each called with the menu's
+		reference. The stepper buttons don't close the menu; the label is inert."""
+		item = MenuItem(title, lambda *_: None, show_test=show_test)
+		item.render_func = self.deco
+		item.incrementor = True
+		item.inc_get = get_value
+		item.inc_minus = on_minus
+		item.inc_plus = on_plus
+		self.items.append(item)
+
 	def br(self) -> None:
 		self.items.append(None)
 
@@ -5326,6 +5349,52 @@ class Menu:
 					icon.asset.render(x, y, renderer=renderer)
 				else:
 					icon.base_asset.render(x, y, renderer=renderer)
+
+	def draw_incrementor(self, item: MenuItem, x_run: float, y_run: float, bg: ColourRGBA, ytoff: float) -> float:
+		"""Draw an incrementor row's right side: [-] value [+]. Handles clicks on
+		the two square stepper buttons (which don't close the menu). Returns the
+		x of the left edge of the minus button so the caller can bound the label.
+		"""
+		gui     = self.gui
+		ddt     = self.render_ddt
+		colours = self.colours
+		scale   = gui.scale
+
+		bs = int(self.h)                             # square button side = full row height
+		by = int(y_run)
+		plus_x  = int(x_run + self.w - bs)           # flush with the row's right edge
+		num_w   = round(26 * scale)
+		num_x   = plus_x - num_w
+		minus_x = int(num_x - bs)
+
+		dark = not (is_light(bg) or colours.lm)
+		glyph_c = rgb_add_hls(bg, 0, 0.55 if dark else -0.55, 0)
+
+		def button(bx: int, plus: bool) -> None:
+			r = (bx, by, bs, bs)
+			self.fields.add(r)
+			hover = coll_point(self.pointer, r)
+			face = rgb_add_hls(bg, 0, (0.16 if hover else 0.09) if dark else (-0.16 if hover else -0.09), 0)
+			ddt.rect(r, face)
+			gl = round(bs * 0.44)                    # glyph arm length
+			gt = max(1, round(1.5 * scale))          # glyph thickness
+			cx, cy = bx + bs / 2, by + bs / 2
+			ddt.rect((round(cx - gl / 2), round(cy - gt / 2), gl, gt), glyph_c)
+			if plus:
+				ddt.rect((round(cx - gt / 2), round(cy - gl / 2), gt, gl), glyph_c)
+			if hover and self.clicked:
+				cb = item.inc_plus if plus else item.inc_minus
+				if cb is not None:
+					cb(self.reference)
+					gui.update += 1
+
+		button(minus_x, False)
+		button(plus_x, True)
+
+		value = item.inc_get(self.reference) if item.inc_get is not None else ""
+		ddt.text((round(num_x + num_w / 2), int(y_run + ytoff), 2), str(value), colours.menu_text, self.font, bg=bg)
+
+		return minus_x
 
 	def render(self) -> None:
 		tauon   = self.tauon
@@ -5431,7 +5500,9 @@ class Menu:
 					bg = alpha_blend(colours.menu_highlight_background, bg)
 
 					# Call menu items callback if clicked
-					if self.items[i].is_sub_menu is False:
+					if self.items[i].incrementor:
+						pass  # stepper buttons handled after the label; label/row click is inert
+					elif self.items[i].is_sub_menu is False:
 						if self.clicked or (springing and not self.inp.right_down and not self.inp.mouse_down ):
 							to_call = i
 							if self.items[i].set_ref is not None:
@@ -5478,11 +5549,21 @@ class Menu:
 					#	 colour = ColourRGBA(150, 150, 150, 255)
 					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour, renderer=self.render_renderer)
 
-				# Render the items label
-				ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=self.w - (x + 9 * gui.scale), bg=bg)
+				# Render the items label (narrowed to clear the stepper for incrementors)
+				if self.items[i].incrementor:
+					left_bound = self.draw_incrementor(self.items[i], x_run, y_run, bg, ytoff)
+					label_max_w = max(1, int(left_bound - (x_run + x) - 6 * gui.scale))
+					# Swallow any click on this row so the menu stays open: the label
+					# is inert and only the stepper buttons act (handled above in
+					# draw_incrementor), so a click anywhere else here does nothing.
+					if coll_point(self.pointer, (x_run, y_run, self.w, self.h - 1)):
+						self.clicked = False
+				else:
+					label_max_w = self.w - (x + 9 * gui.scale)
+				ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 
 				# Render the items hint
-				if self.items[i].hint is not None:
+				if self.items[i].hint is not None and not self.items[i].incrementor:
 
 					if is_light(bg) or colours.lm:
 						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
@@ -49472,7 +49553,7 @@ def main(holder: Holder) -> None:
 	# click in edit mode.
 	cm = tauon.custom
 	if cm.menu is None:
-		cl_menu = Menu(tauon, 130)
+		cl_menu = Menu(tauon, 155)
 		cm.menu = cl_menu
 
 		cl_menu.add_sub(_("Add Vertical Stack"), 60)
@@ -49509,14 +49590,8 @@ def main(holder: Holder) -> None:
 		cl_menu.add(MenuItem(_("Remove Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_on))
 		cl_menu.add(MenuItem(_("Square Max"), cm._menu_square_max, show_test=cm._t_square_off))
 		cl_menu.add(MenuItem(_("Remove Square Max"), cm._menu_square_max, show_test=cm._t_square_on))
-		cl_menu.add_sub(_("Gutter…"), 60)
-		_cl_sub_g = cl_menu.sub_number - 1
-		for _g in CL_GUTTER_OPTIONS:
-			cl_menu.add_to_sub(_cl_sub_g, MenuItem(f"{_g}px", cm._menu_gutter, args=_g))
-		cl_menu.add_sub(_("Padding…"), 60)
-		_cl_sub_p = cl_menu.sub_number - 1
-		for _p in CL_GUTTER_OPTIONS:
-			cl_menu.add_to_sub(_cl_sub_p, MenuItem(f"{_p}px", cm._menu_padding, args=_p))
+		cl_menu.add_incrementor(_("Gutter"), cm._menu_gutter_value, cm._menu_gutter_minus, cm._menu_gutter_plus)
+		cl_menu.add_incrementor(_("Padding"), cm._menu_padding_value, cm._menu_padding_minus, cm._menu_padding_plus)
 		cl_menu.add(MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off))
 		cl_menu.add(MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on))
 		cl_menu.add(MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off))

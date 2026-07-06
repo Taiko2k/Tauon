@@ -1387,7 +1387,8 @@ def count_kind(root: Node, kind: str) -> int:
 # Engine
 # ---------------------------------------------------------------------------
 
-GUTTER_OPTIONS = [0, 2, 3, 4, 8, 9, 16]
+# Upper clamp (unscaled px) for the gutter / padding incrementor steppers.
+CL_INSET_MAX = 64
 # Half-width (unscaled px) of the grab band around a stack boundary for resize
 # dragging. One constant so the drag hit-test, the hover fields and the resize
 # cursor stay aligned — a mismatch makes the cursor stick or show where a drag
@@ -2107,13 +2108,29 @@ class CustomLayout:
 		if self.menu_target is not None:
 			self.act_toggle_border(self.menu_target)
 
-	def _menu_gutter(self, ref, px) -> None:
-		if self.menu_target is not None:
-			self.act_set_gutter(self.menu_target, px)
+	# Gutter / padding incrementor rows (see Menu.add_incrementor). The getters
+	# return the current value to display; the +/- steppers adjust by 1px, clamped.
+	def _menu_gutter_value(self, ref=None) -> int:
+		return self.menu_target.gutter if self.menu_target is not None else 0
 
-	def _menu_padding(self, ref, px) -> None:
+	def _menu_gutter_minus(self, ref=None) -> None:
 		if self.menu_target is not None:
-			self.act_set_padding(self.menu_target, px)
+			self.act_set_gutter(self.menu_target, max(0, self.menu_target.gutter - 1))
+
+	def _menu_gutter_plus(self, ref=None) -> None:
+		if self.menu_target is not None:
+			self.act_set_gutter(self.menu_target, min(CL_INSET_MAX, self.menu_target.gutter + 1))
+
+	def _menu_padding_value(self, ref=None) -> int:
+		return self.menu_target.padding if self.menu_target is not None else 0
+
+	def _menu_padding_minus(self, ref=None) -> None:
+		if self.menu_target is not None:
+			self.act_set_padding(self.menu_target, max(0, self.menu_target.padding - 1))
+
+	def _menu_padding_plus(self, ref=None) -> None:
+		if self.menu_target is not None:
+			self.act_set_padding(self.menu_target, min(CL_INSET_MAX, self.menu_target.padding + 1))
 
 	def _menu_template(self, ref, name) -> None:
 		self.tauon.gui.message_box_confirm_callback = self._confirm_load_template
