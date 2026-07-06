@@ -50793,6 +50793,8 @@ def main(holder: Holder) -> None:
 			# logging.info(row_len)
 
 			compact = 40 * gui.scale
+			if gui.custom_mode:
+				compact -= 30 * gui.scale
 			a_offset = 7 * gui.scale
 
 			l_area = x
