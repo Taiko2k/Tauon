@@ -725,6 +725,13 @@ class GuiVar:
 			["Time", 53, True]]
 		self.pl_box_h: int = 0
 
+		# Leading inset before the first column in columns (set) mode. Kept as an
+		# independent variable (not an entry in pl_st) so the first grip can drag
+		# the whole column block left/right. Stored pre-scale (a base value at 1x)
+		# and multiplied by gui.scale at each use, so it persists correctly across
+		# ui-scale changes.
+		self.pl_st_left: float = 16
+
 		for item in self.pl_st:
 			item[1] = item[1] * self.scale
 
@@ -16332,9 +16339,9 @@ class Tauon:
 
 	def update_set(self) -> None:
 		"""This is used to scale columns when windows is resized or items added/removed"""
-		wid = self.gui.plw - round(16 * self.gui.scale)
+		wid = self.gui.plw - round(self.gui.pl_st_left * self.gui.scale)
 		if self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width - round(16 * self.gui.scale)
+			wid = self.gui.tracklist_highlight_width - round(self.gui.pl_st_left * self.gui.scale)
 
 		total = 0
 		for item in self.gui.pl_st:
@@ -16352,9 +16359,9 @@ class Tauon:
 	def auto_size_columns(self) -> None:
 		fixed_n = 0
 
-		wid = self.gui.plw - round(16 * self.gui.scale)
+		wid = self.gui.plw - round(self.gui.pl_st_left * self.gui.scale)
 		if self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width - round(16 * self.gui.scale)
+			wid = self.gui.tracklist_highlight_width - round(self.gui.pl_st_left * self.gui.scale)
 
 		total = wid
 		for item in self.gui.pl_st:
@@ -19024,6 +19031,7 @@ class Tauon:
 			prefs.start_in_tray,  # 189
 			gui.custom_mode,  # 190
 			prefs.spectrogram_colour,  # 191
+			gui.pl_st_left,  # 192
 		]
 
 		try:
@@ -35739,7 +35747,7 @@ class StandardPlaylist:
 						highlight_width, 3 * gui.scale], ColourRGBA(135, 145, 190, 255))
 
 				if gui.set_mode:
-					start = 18 * gui.scale
+					start = (gui.pl_st_left + 2) * gui.scale
 					if center_mode:
 						start = inset_left
 					elif gui.playlist_left:
@@ -35803,7 +35811,7 @@ class StandardPlaylist:
 				p_track = track_position
 				this_line_playing = playing
 
-				start = 18 * gui.scale
+				start = (gui.pl_st_left + 2) * gui.scale
 
 				if center_mode:
 					start = inset_left
@@ -49321,6 +49329,8 @@ def main(holder: Holder) -> None:
 				gui.custom_mode = save[190]
 			if len(save) > 191 and save[191] is not None:
 				prefs.spectrogram_colour = save[191]
+			if len(save) > 192 and save[192] is not None:
+				gui.pl_st_left = save[192]
 
 			del save
 			break
@@ -54363,7 +54373,7 @@ def main(holder: Holder) -> None:
 							width = gui.tracklist_inset_width + round(20 * gui.scale)
 
 						rect = [left, top, width, gui.set_height]
-						start = left + 16 * gui.scale
+						start = left + gui.pl_st_left * gui.scale
 						run = 0
 						in_grip = False
 
@@ -54433,7 +54443,36 @@ def main(holder: Holder) -> None:
 									tauon.sa_regen_menu()
 									tauon.set_menu.activate(h)
 
-							if h != 0:
+							if h == 0:
+								# The first grip has no column to its left; it instead
+								# drags the leading inset (gui.pl_st_left), shifting the
+								# whole column block left/right.
+								if tauon.coll(m_grip):
+									in_grip = True
+									if inp.mouse_click:
+										gui.set_hold = 0
+										gui.set_point = inp.mouse_position[0]
+										gui.set_old = gui.pl_st_left
+
+								if inp.mouse_down and gui.set_hold == 0:
+									# pl_st_left is stored pre-scale, so convert the pixel
+									# drag delta back to base units.
+									gui.pl_st_left = gui.set_old + (inp.mouse_position[0] - gui.set_point) / gui.scale
+									# Keep a small minimum so the grip stays grabbable and
+									# doesn't slip off the left edge of the window.
+									gui.pl_st_left = max(gui.pl_st_left, 2)
+
+									gui.update = 1
+
+									total = 0
+									for i in range(len(gui.pl_st) - 1):
+										total += gui.pl_st[i][1]
+
+									wid = gui.plw - round(gui.pl_st_left * gui.scale)
+									if gui.tracklist_center_mode:
+										wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
+									gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
+							else:
 								if tauon.coll(m_grip):
 									in_grip = True
 									if inp.mouse_click:
@@ -54452,9 +54491,9 @@ def main(holder: Holder) -> None:
 									for i in range(len(gui.pl_st) - 1):
 										total += gui.pl_st[i][1]
 
-									wid = gui.plw - round(16 * gui.scale)
+									wid = gui.plw - round(gui.pl_st_left * gui.scale)
 									if gui.tracklist_center_mode:
-										wid = gui.tracklist_highlight_width - round(16 * gui.scale)
+										wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
 									gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
 
 							run += item[1]
@@ -54563,8 +54602,8 @@ def main(holder: Holder) -> None:
 						else:
 							ddt.rect(rect, c_bar_background)
 
-						start = x + 16 * gui.scale
-						c_width = width - 16 * gui.scale
+						start = x + gui.pl_st_left * gui.scale
+						c_width = width - gui.pl_st_left * gui.scale
 
 						run = 0
 
