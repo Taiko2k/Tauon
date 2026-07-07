@@ -740,6 +740,15 @@ class TracklistWidget(Widget):
 			scale = gui.scale
 			hitbox = (rect[0] + rect[2] - 1 * scale - 28 * scale, rect[1], 28 * scale, rect[3])
 			tauon.tracklist_scrollbar_lock(hitbox)
+		if view and gui.set_mode:
+			# Columns header bar input, pointed at this segment. Must run before
+			# the body render so a grip resize/reorder reflects the same frame
+			# (mirrors the preset order: input, then body, then bar draw). The
+			# widget draws at real coords, so the real mouse/fields line up.
+			saved = (gui.playlist_left, gui.plw, gui.panelY)
+			gui.playlist_left, gui.plw, gui.panelY = rect[0], rect[2], rect[1]
+			tauon.column_bar_input()
+			gui.playlist_left, gui.plw, gui.panelY = saved
 		if gui.pl_update > 0 or rect != self._last_rect or interacting:
 			# Mirror the standard path: heart_fields is repopulated by full_render,
 			# so it must be cleared first or it grows unbounded every frame (the
@@ -759,6 +768,13 @@ class TracklistWidget(Widget):
 			tauon.tracklist_scrollbar_render(
 				rect[0], rect[2], rect[1], rect[1] + rect[3],
 				rect[1] + rect[3] - 22 * gui.scale)
+		if view and gui.set_mode:
+			# Columns header bar drawing (and the hover strip to re-show a hidden
+			# bar), on top of the body — pointed at this segment.
+			saved = (gui.playlist_left, gui.plw, gui.panelY)
+			gui.playlist_left, gui.plw, gui.panelY = rect[0], rect[2], rect[1]
+			tauon.column_bar_draw()
+			gui.playlist_left, gui.plw, gui.panelY = saved
 
 
 class DetailsWidget(Widget):

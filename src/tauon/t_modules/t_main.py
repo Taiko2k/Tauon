@@ -34944,6 +34944,10 @@ class StandardPlaylist:
 		gui.plw = round(w)
 		gui.panelY = round(y)
 		gui.playlist_top = round(y) + round(8 * gui.scale)
+		if gui.set_bar and gui.set_mode:
+			# Drop the body below the columns header bar (same offset the preset
+			# applies in update_layout_do) so the first rows aren't hidden under it.
+			gui.playlist_top += round(gui.set_height) - round(6 * gui.scale)
 		window_size[1] = round(y + h) + gui.panelBY
 		gui.show_playlist = True
 		# Copy only this segment from the texture to the main texture, so the
@@ -52293,6 +52297,303 @@ def main(holder: Holder) -> None:
 
 	tauon.tracklist_scrollbar_render = render_tracklist_scrollbar  # for the Tracklist widget
 
+	def render_column_bar_input() -> None:
+		# Columns (set mode) header-bar INPUT: grip resize, label drag/sort,
+		# right-click menus. Reads gui.playlist_left/plw/panelY so it can run
+		# against either the preset layout or a Tracklist widget's segment.
+		top = gui.panelY
+		if gui.artist_info_panel and not gui.custom_mode:
+			top += gui.artist_panel_height
+
+		if gui.set_mode and not gui.set_bar:
+			left = gui.playlist_left
+			rect = [left, top, gui.plw, 12 * gui.scale]
+			if inp.right_click and tauon.coll(rect):
+				tauon.set_menu_hidden.activate()
+				inp.right_click = False
+
+		width = gui.plw
+		if gui.set_bar and gui.set_mode:
+			left = gui.playlist_left
+
+			if gui.tracklist_center_mode:
+				left = gui.tracklist_inset_left - round(20 * gui.scale)
+				width = gui.tracklist_inset_width + round(20 * gui.scale)
+
+			rect = [left, top, width, gui.set_height]
+			start = left + gui.pl_st_left * gui.scale
+			run = 0
+			in_grip = False
+
+			if not inp.mouse_down and gui.set_hold != -1:
+				gui.set_hold = -1
+
+			for h, item in enumerate(gui.pl_st):
+				box = (start + run, rect[1], item[1], rect[3])
+				grip = (start + run, rect[1], 3 * gui.scale, rect[3])
+				m_grip = (grip[0] - 4 * gui.scale, grip[1], grip[2] + 8 * gui.scale, grip[3])
+				l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
+				tauon.fields.add(m_grip)
+
+				if tauon.coll(l_grip):
+					if inp.mouse_up and gui.set_label_hold != -1:
+						if point_distance(inp.mouse_position, gui.set_label_point) < 8 * gui.scale:
+							sort_direction = 0
+							if h != gui.column_d_click_on or gui.column_d_click_timer.get() > 2.5:
+								gui.column_d_click_timer.set()
+								gui.column_d_click_on = h
+
+								sort_direction = 1
+
+								gui.column_sort_ani_direction = 1
+								gui.column_sort_ani_x = start + run + item[1]
+							elif gui.column_d_click_on == h:
+								gui.column_d_click_on = -1
+								gui.column_d_click_timer.force_set(10)
+
+								sort_direction = -1
+
+								gui.column_sort_ani_direction = -1
+								gui.column_sort_ani_x = start + run + item[1]
+
+							if sort_direction:
+								if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "S", "Time", "Date"}:
+									sort_direction *= -1
+
+								if sort_direction == 1:
+									tauon.sort_ass(h)
+								else:
+									tauon.sort_ass(h, True)
+								gui.column_sort_ani_timer.set()
+						else:
+							gui.column_d_click_on = -1
+							if h != gui.set_label_hold:
+								dest = h
+								if dest > gui.set_label_hold:
+									dest += 1
+								temp = gui.pl_st[gui.set_label_hold]
+								gui.pl_st[gui.set_label_hold] = "old"
+								gui.pl_st.insert(dest, temp)
+								gui.pl_st.remove("old")
+
+								gui.pl_update = 1
+								gui.set_label_hold = -1
+								# logging.info("MOVE")
+								break
+
+							gui.set_label_hold = -1
+
+					if inp.mouse_click:
+						gui.set_label_hold = h
+						gui.set_label_point = copy.deepcopy(inp.mouse_position)
+					if inp.right_click:
+						tauon.set_menu.reference = h
+						tauon.sa_regen_menu()
+						tauon.set_menu.activate(h)
+
+				if h == 0:
+					# The first grip has no column to its left; it instead
+					# drags the leading inset (gui.pl_st_left), shifting the
+					# whole column block left/right.
+					if tauon.coll(m_grip):
+						in_grip = True
+						if inp.mouse_click:
+							gui.set_hold = 0
+							gui.set_point = inp.mouse_position[0]
+							gui.set_old = gui.pl_st_left
+
+					if inp.mouse_down and gui.set_hold == 0:
+						# pl_st_left is stored pre-scale, so convert the pixel
+						# drag delta back to base units.
+						gui.pl_st_left = gui.set_old + (inp.mouse_position[0] - gui.set_point) / gui.scale
+						# Keep a small minimum so the grip stays grabbable and
+						# doesn't slip off the left edge of the window.
+						gui.pl_st_left = max(gui.pl_st_left, 2)
+
+						gui.update = 1
+
+						total = 0
+						for i in range(len(gui.pl_st) - 1):
+							total += gui.pl_st[i][1]
+
+						wid = gui.plw - round(gui.pl_st_left * gui.scale)
+						if gui.tracklist_center_mode:
+							wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
+						gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
+				else:
+					if tauon.coll(m_grip):
+						in_grip = True
+						if inp.mouse_click:
+							gui.set_hold = h
+							gui.set_point = inp.mouse_position[0]
+							gui.set_old = gui.pl_st[h - 1][1]
+
+					if inp.mouse_down and gui.set_hold == h:
+						gui.pl_st[h - 1][1] = gui.set_old + (inp.mouse_position[0] - gui.set_point)
+						gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
+
+						gui.update = 1
+						# gui.pl_update = 1
+
+						total = 0
+						for i in range(len(gui.pl_st) - 1):
+							total += gui.pl_st[i][1]
+
+						wid = gui.plw - round(gui.pl_st_left * gui.scale)
+						if gui.tracklist_center_mode:
+							wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
+						gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
+
+				run += item[1]
+
+			if not inp.mouse_down:
+				gui.set_label_hold = -1
+			# logging.info(in_grip)
+			if gui.set_label_hold == -1:
+				if (
+					in_grip
+					and not tauon.x_menu.active
+					and not tauon.view_menu.active
+					and not tab_menu.active
+					and not tauon.set_menu.active
+				):
+					gui.cursor_want = 1
+				if gui.set_hold != -1:
+					gui.cursor_want = 1
+					gui.pl_update_on_drag = True
+	tauon.column_bar_input = render_column_bar_input
+
+	def render_column_bar_draw() -> None:
+		# Columns (set mode) header-bar DRAWING (and the hover strip that
+		# re-shows a hidden bar). Must run AFTER the tracklist body so it sits
+		# on top; the widget calls it post-body, the preset does the same.
+		top = gui.panelY
+		if gui.artist_info_panel and not gui.custom_mode:
+			top += gui.artist_panel_height
+
+		if not gui.set_bar and gui.set_mode and not gui.combo_mode:
+			width = gui.plw
+			left = gui.playlist_left
+			if gui.tracklist_center_mode:
+				left = gui.tracklist_highlight_left
+				width = gui.tracklist_highlight_width
+			rect = [left, top, width, gui.set_height // 2.5]
+			tauon.fields.add(rect)
+			gui.delay_frame(0.26)
+
+			if tauon.coll(rect) and gui.bar_hover_timer.get() > 0.25:
+				ddt.rect(rect, colours.column_bar_background)
+				if inp.mouse_click:
+					gui.set_bar = True
+					tauon.update_layout_do()
+			if not tauon.coll(rect):
+				gui.bar_hover_timer.set()
+
+		if gui.set_bar and gui.set_mode and not gui.combo_mode:
+			x = gui.playlist_left
+
+			width = gui.plw
+
+			if gui.tracklist_center_mode:
+				x = gui.tracklist_highlight_left
+				width = gui.tracklist_highlight_width
+
+			rect = [x, top, width, gui.set_height]
+
+			c_bar_background = colours.column_bar_background
+
+			# if colours.lm:
+			#     c_bar_background = [235, 110, 160, 255]
+
+			if gui.tracklist_center_mode:
+				ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background)
+			else:
+				ddt.rect(rect, c_bar_background)
+
+			start = x + gui.pl_st_left * gui.scale
+			c_width = width - gui.pl_st_left * gui.scale
+
+			run = 0
+
+			for i, item in enumerate(gui.pl_st):
+				# if run > rect[2] - 55 * gui.scale:
+				#     break
+
+				wid = item[1]
+
+				if run + wid > c_width:
+					wid = c_width - run
+
+				if run > c_width - 22 * gui.scale:
+					break
+
+				# if run > c_width - 20 * gui.scale:
+				#     run = run - 20 * gui.scale
+
+				wid = max(0, wid)
+
+				# ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
+				box = (start + run, rect[1], wid, rect[3])
+
+				grip = (start + run, rect[1], 3 * gui.scale, rect[3])
+
+				bg = c_bar_background
+
+				if tauon.coll(box) and gui.set_label_hold != -1:
+					bg = ColourRGBA(39, 39, 39, 255)
+
+				if i == gui.set_label_hold:
+					bg = ColourRGBA(22, 22, 22, 255)
+
+				ddt.rect(box, bg)
+				ddt.rect(grip, colours.column_grip)
+
+				line = _(item[0])
+				ddt.text_background_colour = bg
+
+				# # Remove columns if positioned out of view
+				# if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
+				#
+				#     if box[0] + 10 * gui.scale > start + gui.plw:
+				#         del gui.pl_st[i]
+				#
+				#     i += 1
+				#     while i < len(gui.pl_st):
+				#         del gui.pl_st[i]
+				#         i += 1
+				#
+				#     break
+				if line == "❤":
+					gui.heart_row_icon.render(
+						box[0] + 9 * gui.scale, top + 8 * gui.scale, colours.column_bar_text
+					)
+				else:
+					ddt.text(
+						(box[0] + 10 * gui.scale, top + 4 * gui.scale),
+						line,
+						colours.column_bar_text,
+						312,
+						bg=bg,
+						max_w=box[2] - 25 * gui.scale,
+					)
+
+				run += box[2]
+
+			t = gui.column_sort_ani_timer.get()
+			if t < 0.30:
+				gui.update += 1
+				x = round(gui.column_sort_ani_x - 22 * gui.scale)
+				p = t / 0.30
+
+				if gui.column_sort_ani_direction == 1:
+					y = top + 8 * p + 3 * gui.scale
+					gui.column_sort_down_icon.render(x, round(y), ColourRGBA(255, 255, 255, 90))
+				else:
+					p = 1 - p
+					y = top + 8 * p + 2 * gui.scale
+					gui.column_sort_up_icon.render(x, round(y), ColourRGBA(255, 255, 255, 90))
+	tauon.column_bar_draw = render_column_bar_draw
+
 	render_heartbeat_timer = Timer()
 
 	tauon.set_tray_icons()
@@ -54353,166 +54654,8 @@ def main(holder: Holder) -> None:
 					# MAIN PLAYLIST
 					# C-PR
 
-					top = gui.panelY
-					if gui.artist_info_panel:
-						top += gui.artist_panel_height
-
-					if gui.set_mode and not gui.set_bar:
-						left = gui.playlist_left
-						rect = [left, top, gui.plw, 12 * gui.scale]
-						if inp.right_click and tauon.coll(rect):
-							tauon.set_menu_hidden.activate()
-							inp.right_click = False
-
-					width = gui.plw
-					if gui.set_bar and gui.set_mode:
-						left = gui.playlist_left
-
-						if gui.tracklist_center_mode:
-							left = gui.tracklist_inset_left - round(20 * gui.scale)
-							width = gui.tracklist_inset_width + round(20 * gui.scale)
-
-						rect = [left, top, width, gui.set_height]
-						start = left + gui.pl_st_left * gui.scale
-						run = 0
-						in_grip = False
-
-						if not inp.mouse_down and gui.set_hold != -1:
-							gui.set_hold = -1
-
-						for h, item in enumerate(gui.pl_st):
-							box = (start + run, rect[1], item[1], rect[3])
-							grip = (start + run, rect[1], 3 * gui.scale, rect[3])
-							m_grip = (grip[0] - 4 * gui.scale, grip[1], grip[2] + 8 * gui.scale, grip[3])
-							l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
-							tauon.fields.add(m_grip)
-
-							if tauon.coll(l_grip):
-								if inp.mouse_up and gui.set_label_hold != -1:
-									if point_distance(inp.mouse_position, gui.set_label_point) < 8 * gui.scale:
-										sort_direction = 0
-										if h != gui.column_d_click_on or gui.column_d_click_timer.get() > 2.5:
-											gui.column_d_click_timer.set()
-											gui.column_d_click_on = h
-
-											sort_direction = 1
-
-											gui.column_sort_ani_direction = 1
-											gui.column_sort_ani_x = start + run + item[1]
-										elif gui.column_d_click_on == h:
-											gui.column_d_click_on = -1
-											gui.column_d_click_timer.force_set(10)
-
-											sort_direction = -1
-
-											gui.column_sort_ani_direction = -1
-											gui.column_sort_ani_x = start + run + item[1]
-
-										if sort_direction:
-											if gui.pl_st[h][0] in {"Starline", "Rating", "❤", "P", "S", "Time", "Date"}:
-												sort_direction *= -1
-
-											if sort_direction == 1:
-												tauon.sort_ass(h)
-											else:
-												tauon.sort_ass(h, True)
-											gui.column_sort_ani_timer.set()
-									else:
-										gui.column_d_click_on = -1
-										if h != gui.set_label_hold:
-											dest = h
-											if dest > gui.set_label_hold:
-												dest += 1
-											temp = gui.pl_st[gui.set_label_hold]
-											gui.pl_st[gui.set_label_hold] = "old"
-											gui.pl_st.insert(dest, temp)
-											gui.pl_st.remove("old")
-
-											gui.pl_update = 1
-											gui.set_label_hold = -1
-											# logging.info("MOVE")
-											break
-
-										gui.set_label_hold = -1
-
-								if inp.mouse_click:
-									gui.set_label_hold = h
-									gui.set_label_point = copy.deepcopy(inp.mouse_position)
-								if inp.right_click:
-									tauon.set_menu.reference = h
-									tauon.sa_regen_menu()
-									tauon.set_menu.activate(h)
-
-							if h == 0:
-								# The first grip has no column to its left; it instead
-								# drags the leading inset (gui.pl_st_left), shifting the
-								# whole column block left/right.
-								if tauon.coll(m_grip):
-									in_grip = True
-									if inp.mouse_click:
-										gui.set_hold = 0
-										gui.set_point = inp.mouse_position[0]
-										gui.set_old = gui.pl_st_left
-
-								if inp.mouse_down and gui.set_hold == 0:
-									# pl_st_left is stored pre-scale, so convert the pixel
-									# drag delta back to base units.
-									gui.pl_st_left = gui.set_old + (inp.mouse_position[0] - gui.set_point) / gui.scale
-									# Keep a small minimum so the grip stays grabbable and
-									# doesn't slip off the left edge of the window.
-									gui.pl_st_left = max(gui.pl_st_left, 2)
-
-									gui.update = 1
-
-									total = 0
-									for i in range(len(gui.pl_st) - 1):
-										total += gui.pl_st[i][1]
-
-									wid = gui.plw - round(gui.pl_st_left * gui.scale)
-									if gui.tracklist_center_mode:
-										wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
-									gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
-							else:
-								if tauon.coll(m_grip):
-									in_grip = True
-									if inp.mouse_click:
-										gui.set_hold = h
-										gui.set_point = inp.mouse_position[0]
-										gui.set_old = gui.pl_st[h - 1][1]
-
-								if inp.mouse_down and gui.set_hold == h:
-									gui.pl_st[h - 1][1] = gui.set_old + (inp.mouse_position[0] - gui.set_point)
-									gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
-
-									gui.update = 1
-									# gui.pl_update = 1
-
-									total = 0
-									for i in range(len(gui.pl_st) - 1):
-										total += gui.pl_st[i][1]
-
-									wid = gui.plw - round(gui.pl_st_left * gui.scale)
-									if gui.tracklist_center_mode:
-										wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
-									gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
-
-							run += item[1]
-
-						if not inp.mouse_down:
-							gui.set_label_hold = -1
-						# logging.info(in_grip)
-						if gui.set_label_hold == -1:
-							if (
-								in_grip
-								and not tauon.x_menu.active
-								and not tauon.view_menu.active
-								and not tab_menu.active
-								and not tauon.set_menu.active
-							):
-								gui.cursor_want = 1
-							if gui.set_hold != -1:
-								gui.cursor_want = 1
-								gui.pl_update_on_drag = True
+					if not gui.custom_mode:
+						render_column_bar_input()
 
 					# heart field test
 					if gui.heart_fields:
@@ -54563,127 +54706,8 @@ def main(holder: Holder) -> None:
 					elif gui.combo_mode and inp.key_esc_press and tauon.is_level_zero():
 						tauon.exit_combo()
 
-					if not gui.set_bar and gui.set_mode and not gui.combo_mode:
-						width = gui.plw
-						left = gui.playlist_left
-						if gui.tracklist_center_mode:
-							left = gui.tracklist_highlight_left
-							width = gui.tracklist_highlight_width
-						rect = [left, top, width, gui.set_height // 2.5]
-						tauon.fields.add(rect)
-						gui.delay_frame(0.26)
-
-						if tauon.coll(rect) and gui.bar_hover_timer.get() > 0.25:
-							ddt.rect(rect, colours.column_bar_background)
-							if inp.mouse_click:
-								gui.set_bar = True
-								tauon.update_layout_do()
-						if not tauon.coll(rect):
-							gui.bar_hover_timer.set()
-
-					if gui.set_bar and gui.set_mode and not gui.combo_mode:
-						x = gui.playlist_left
-
-						width = gui.plw
-
-						if gui.tracklist_center_mode:
-							x = gui.tracklist_highlight_left
-							width = gui.tracklist_highlight_width
-
-						rect = [x, top, width, gui.set_height]
-
-						c_bar_background = colours.column_bar_background
-
-						# if colours.lm:
-						#     c_bar_background = [235, 110, 160, 255]
-
-						if gui.tracklist_center_mode:
-							ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background)
-						else:
-							ddt.rect(rect, c_bar_background)
-
-						start = x + gui.pl_st_left * gui.scale
-						c_width = width - gui.pl_st_left * gui.scale
-
-						run = 0
-
-						for i, item in enumerate(gui.pl_st):
-							# if run > rect[2] - 55 * gui.scale:
-							#     break
-
-							wid = item[1]
-
-							if run + wid > c_width:
-								wid = c_width - run
-
-							if run > c_width - 22 * gui.scale:
-								break
-
-							# if run > c_width - 20 * gui.scale:
-							#     run = run - 20 * gui.scale
-
-							wid = max(0, wid)
-
-							# ddt.rect_r((run, 40, wid, 10), [255, 0, 0, 100])
-							box = (start + run, rect[1], wid, rect[3])
-
-							grip = (start + run, rect[1], 3 * gui.scale, rect[3])
-
-							bg = c_bar_background
-
-							if tauon.coll(box) and gui.set_label_hold != -1:
-								bg = ColourRGBA(39, 39, 39, 255)
-
-							if i == gui.set_label_hold:
-								bg = ColourRGBA(22, 22, 22, 255)
-
-							ddt.rect(box, bg)
-							ddt.rect(grip, colours.column_grip)
-
-							line = _(item[0])
-							ddt.text_background_colour = bg
-
-							# # Remove columns if positioned out of view
-							# if box[0] + 10 * gui.scale > start + (gui.plw - 25 * gui.scale):
-							#
-							#     if box[0] + 10 * gui.scale > start + gui.plw:
-							#         del gui.pl_st[i]
-							#
-							#     i += 1
-							#     while i < len(gui.pl_st):
-							#         del gui.pl_st[i]
-							#         i += 1
-							#
-							#     break
-							if line == "❤":
-								gui.heart_row_icon.render(
-									box[0] + 9 * gui.scale, top + 8 * gui.scale, colours.column_bar_text
-								)
-							else:
-								ddt.text(
-									(box[0] + 10 * gui.scale, top + 4 * gui.scale),
-									line,
-									colours.column_bar_text,
-									312,
-									bg=bg,
-									max_w=box[2] - 25 * gui.scale,
-								)
-
-							run += box[2]
-
-						t = gui.column_sort_ani_timer.get()
-						if t < 0.30:
-							gui.update += 1
-							x = round(gui.column_sort_ani_x - 22 * gui.scale)
-							p = t / 0.30
-
-							if gui.column_sort_ani_direction == 1:
-								y = top + 8 * p + 3 * gui.scale
-								gui.column_sort_down_icon.render(x, round(y), ColourRGBA(255, 255, 255, 90))
-							else:
-								p = 1 - p
-								y = top + 8 * p + 2 * gui.scale
-								gui.column_sort_up_icon.render(x, round(y), ColourRGBA(255, 255, 255, 90))
+					if not gui.custom_mode:
+						render_column_bar_draw()
 
 					# Switch Vis:
 					if (
