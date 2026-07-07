@@ -18838,6 +18838,19 @@ class Tauon:
 		for v in pctl.master_library.values():
 			trackclass_jar.append(v.__dict__)
 
+		# Columns header-bar config is per custom-slot (stored in
+		# custom_layouts.json). Persist the PRESET columns to state.p — while a
+		# custom slot is active gui holds the slot's columns, so use the backup.
+		_custom = getattr(self, "custom", None)
+		if _custom is not None:
+			_pcols = _custom.preset_columns_snapshot()
+			if gui.custom_mode:
+				# Flush any live column edits to the slot's json too.
+				_custom.save_slots()
+		else:
+			_pcols = {"pl_st": gui.pl_st, "set_bar": gui.set_bar,
+				"set_mode": gui.set_mode, "pl_st_left": gui.pl_st_left}
+
 		save = [
 			None,
 			pctl.master_count,
@@ -18881,14 +18894,14 @@ class Tauon:
 			prefs.cache_gallery,
 			prefs.playlist_font_size,
 			prefs.use_title,
-			gui.pl_st,
+			_pcols["pl_st"],
 			None,  # gui.set_mode,
 			None,
 			prefs.playlist_row_height,
 			prefs.show_wiki,
 			prefs.auto_extract,
 			prefs.colour_from_image,
-			gui.set_bar,
+			_pcols["set_bar"],
 			gui.gallery_show_text,
 			gui.bb_show_art,
 			False,  # Was show stars
@@ -18926,7 +18939,7 @@ class Tauon:
 			prefs.use_transition_crossfade,
 			prefs.show_notifications,
 			prefs.true_shuffle,
-			gui.set_mode,
+			_pcols["set_mode"],
 			None,  # prefs.show_queue, # 88
 			None,  # prefs.show_transfer,
 			tauonqueueitem_jar, # pctl.force_queue, # 90
@@ -19031,7 +19044,7 @@ class Tauon:
 			prefs.start_in_tray,  # 189
 			gui.custom_mode,  # 190
 			prefs.spectrogram_colour,  # 191
-			gui.pl_st_left,  # 192
+			_pcols["pl_st_left"],  # 192
 		]
 
 		try:

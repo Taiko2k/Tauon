@@ -1433,6 +1433,16 @@ class CustomLayout:
 		self.active_slot = 0
 		self._loaded = False
 
+		# Per-slot columns header-bar config: each slot remembers its own
+		# gui.pl_st (columns) / set_bar / set_mode / pl_st_left. The preset's
+		# columns are stashed in _preset_columns while a slot is active so
+		# exiting custom mode restores them. _columns_owner tracks whose config
+		# gui currently holds (None = preset, else a slot index). Persisted in
+		# custom_layouts.json, not the global state.p.
+		self.slot_columns: list[dict | None] = [None, None, None]
+		self._preset_columns: dict | None = None
+		self._columns_owner: int | None = None
+
 		# edit-mode transient state
 		self.menu_target: Node | None = None
 		self.drag: dict | None = None          # {stack, index, axis} — edge resize
@@ -1543,6 +1553,12 @@ class CustomLayout:
 				a = data.get("active")
 				if isinstance(a, int) and 0 <= a < len(self.slots):
 					self.active_slot = a
+				# Per-slot columns header-bar config.
+				cols = data.get("columns")
+				if isinstance(cols, dict):
+					for i in range(len(self.slot_columns)):
+						c = cols.get(str(i))
+						self.slot_columns[i] = c if isinstance(c, dict) else None
 			else:
 				# First run (no saved layouts): seed slot A with the Volcano
 				# template so a fresh install ships with a ready-made layout.
@@ -1552,11 +1568,79 @@ class CustomLayout:
 
 	def save_slots(self) -> None:
 		try:
+			# Capture the live columns into the active slot so edits made via the
+			# header bar (resize/reorder/hide) are persisted.
+			if self._columns_owner is not None and 0 <= self._columns_owner < len(self.slot_columns):
+				self.slot_columns[self._columns_owner] = self._capture_columns()
 			data = {str(i): (s.to_dict() if s else None) for i, s in enumerate(self.slots)}
 			data["active"] = self.active_slot
+			data["columns"] = {str(i): c for i, c in enumerate(self.slot_columns) if c is not None}
 			self._path().write_text(json.dumps(data, indent=1), encoding="utf-8")
 		except Exception:
 			logging.exception("Failed to save custom layouts")
+
+	# -- per-slot columns config --------------------------------------------
+
+	@staticmethod
+	def _copy_columns(cfg: dict) -> dict:
+		return {
+			"pl_st": [list(c) for c in cfg["pl_st"]],
+			"set_bar": bool(cfg["set_bar"]),
+			"set_mode": bool(cfg["set_mode"]),
+			"pl_st_left": cfg["pl_st_left"],
+		}
+
+	def _capture_columns(self) -> dict:
+		"""Snapshot the live columns header-bar config off gui."""
+		gui = self.gui
+		return {
+			"pl_st": [list(c) for c in gui.pl_st],
+			"set_bar": bool(gui.set_bar),
+			"set_mode": bool(gui.set_mode),
+			"pl_st_left": gui.pl_st_left,
+		}
+
+	def _apply_columns(self, cfg: dict) -> None:
+		"""Push a columns config onto gui and repaint the tracklist/layout."""
+		gui = self.gui
+		gui.pl_st = [list(c) for c in cfg["pl_st"]]
+		gui.set_bar = bool(cfg.get("set_bar", True))
+		gui.set_mode = bool(cfg.get("set_mode", False))
+		gui.pl_st_left = cfg.get("pl_st_left", 16)
+		gui.pl_update = 2
+		gui.update_layout = True
+		gui.update = 2
+
+	def _activate_columns(self, owner: int | None) -> None:
+		"""Swap the global columns config between the preset (owner=None) and a
+		custom slot (owner=slot index): save the outgoing owner's live config,
+		then load the incoming one. A slot with no saved config yet is seeded
+		from the preset columns."""
+		if owner == self._columns_owner:
+			return
+		cur = self._capture_columns()
+		if self._columns_owner is None:
+			self._preset_columns = cur
+		else:
+			self.slot_columns[self._columns_owner] = cur
+		if owner is None:
+			cfg = self._preset_columns
+		else:
+			cfg = self.slot_columns[owner]
+			if cfg is None:
+				cfg = self._copy_columns(self._preset_columns or cur)
+				self.slot_columns[owner] = cfg
+		if cfg is not None:
+			self._apply_columns(cfg)
+		self._columns_owner = owner
+
+	def preset_columns_snapshot(self) -> dict:
+		"""The columns config that state.p should persist as the PRESET one —
+		the backup while a slot is active, else the live gui config. Keeps a
+		custom slot's columns from leaking into the global (preset) save."""
+		if self.gui.custom_mode and self._preset_columns is not None:
+			return self._preset_columns
+		return self._capture_columns()
 
 	# -- entry / exit --------------------------------------------------------
 
@@ -1579,7 +1663,10 @@ class CustomLayout:
 		self.gui.custom_edit = False
 		self._close_menu()
 		self.ensure_slot()
-		self.save_slots()  # persist the active slot
+		# Swap in this slot's own columns header-bar config (backing up the
+		# preset columns on the first entry from a non-custom view).
+		self._activate_columns(self.active_slot)
+		self.save_slots()  # persist the active slot + its columns
 		# Recompute panel geometry immediately (as exit_mode does). Without this
 		# the switch only partially applies and needs a click/scroll to finish —
 		# update_layout_do() runs at the top of the next frame from this flag.
@@ -1588,6 +1675,10 @@ class CustomLayout:
 		self.gui.update = 2
 
 	def exit_mode(self) -> None:
+		# Save the active slot's columns and restore the preset columns before
+		# leaving, then persist so the slot config survives.
+		self._activate_columns(None)
+		self.save_slots()
 		self.gui.custom_mode = False
 		self.gui.custom_edit = False
 		self.gui.milkdrop_in_widget = False  # hand the visualisers back to the presets
@@ -2256,6 +2347,11 @@ class CustomLayout:
 		ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
 
 		root = self.ensure_slot()
+		# Make sure the active slot's columns config is applied. Covers a restart
+		# straight into custom mode (state.p restores the flag without calling
+		# enter()) and any path that changed active_slot without swapping columns.
+		if self._columns_owner != self.active_slot:
+			self._activate_columns(self.active_slot)
 		layout(root, 0, 0, ww, wh, gui.scale)
 
 		# The MilkDrop Box widget owns the (singleton) visualiser while it is in
