@@ -52460,6 +52460,14 @@ def main(holder: Holder) -> None:
 
 				run += item[1]
 
+			# A right-click on the bar was handled above (column menu on a label,
+			# otherwise ignored); consume it so the tracklist body beneath the bar
+			# doesn't also treat it as a track right-click. In the preset the bar
+			# sits above the rows so this is a no-op; in the Custom Layout Tracklist
+			# widget the bar and body share the segment.
+			if inp.right_click and tauon.coll(rect):
+				inp.right_click = False
+
 			if not inp.mouse_down:
 				gui.set_label_hold = -1
 			# logging.info(in_grip)

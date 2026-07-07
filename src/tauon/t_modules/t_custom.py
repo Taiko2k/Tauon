@@ -841,7 +841,7 @@ class DetailsWidget(Widget):
 
 		row_h = round(22 * gui.scale)
 		pad = round(10 * gui.scale)
-		label_w = min(round(110 * gui.scale), round(w * 0.4))
+		label_w = min(round(110 * gui.scale), round(w * 0.35))
 
 		# Wheel scrolling (whole rows, so drawing stays row-aligned and in
 		# bounds). Per-instance scroll position.
