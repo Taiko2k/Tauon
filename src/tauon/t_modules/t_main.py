@@ -35819,9 +35819,10 @@ class StandardPlaylist:
 					1 * gui.scale), colours.folder_line)
 
 			if not gui.set_mode:
+				left_trim = round(9 * gui.scale) if gui.custom_mode else 0
 				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
-					playing, 255, left + inset_left, inset_width, 1, line_y)
+					playing, 255, left + inset_left - left_trim, inset_width + left_trim, 1, line_y)
 			else:
 				# NEE ---------------------------------------------------------
 				n_track = tr
