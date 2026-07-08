@@ -117,6 +117,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	TEMPLATES as CL_TEMPLATES,
 	WIDGET_SPECS as CL_WIDGET_SPECS,
 	CustomLayout,
+	GridGalleryWidget,
 	draw_layout_glyph,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
@@ -692,6 +693,13 @@ class GuiVar:
 		# Ditto for the Spectrogram widget (gui.vis 6): PHAZOR pushes raw
 		# spectrum columns of spectrogram_bins values into spectrogram_buffers.
 		self.spectrogram_in_widget: bool = False
+		# When non-zero, render_gallery uses this row length instead of deriving
+		# it from album_mode_art_size, and switches to edge-to-edge placement
+		# inset by gallery_grid_margin (scaled px) on the left/right. Set (and
+		# restored) around the call by the Custom Layout's Gallery: Compact
+		# widget; 0 = preset behaviour.
+		self.gallery_forced_row_len: int = 0
+		self.gallery_grid_margin: int = 0
 		self.spectrogram_bins: int = 256
 		self.spectrogram_buffers: list[list[float]] = []
 		self.showcase_mode: bool = False
@@ -50080,6 +50088,27 @@ def main(holder: Holder) -> None:
 		spectrogram_menu.add(MenuItem(
 			_sp[0], _spectro_set_colour(_i), _spectro_preset_deco(_i, _sp[0])))
 
+	# Right-click (background) menu for the Album Grid widget. The incrementor
+	# callbacks are classmethods reading GridGalleryWidget.menu_target, which
+	# the widget sets when it opens the menu.
+	gallery_grid_menu = Menu(tauon, 190)
+	tauon.gallery_grid_menu = gallery_grid_menu
+	gallery_grid_menu.add_incrementor(
+		_("Albums per row"),
+		GridGalleryWidget.menu_per_row_value,
+		GridGalleryWidget.menu_per_row_minus,
+		GridGalleryWidget.menu_per_row_plus)
+	gallery_grid_menu.add_incrementor(
+		_("Spacing"),
+		GridGalleryWidget.menu_spacing_value,
+		GridGalleryWidget.menu_spacing_minus,
+		GridGalleryWidget.menu_spacing_plus)
+	gallery_grid_menu.add_incrementor(
+		_("Row spacing"),
+		GridGalleryWidget.menu_v_spacing_value,
+		GridGalleryWidget.menu_v_spacing_minus,
+		GridGalleryWidget.menu_v_spacing_plus)
+
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
 	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
@@ -51091,6 +51120,12 @@ def main(holder: Holder) -> None:
 				if gui.lsp:
 					w -= gui.lspw
 
+			# Gallery: Compact reframes the window to the segment and applies its
+			# own uniform margins below — the narrow-window left inset would
+			# double up on the left and be missing from the top/right.
+			if gui.gallery_forced_row_len:
+				w = gui.rspw
+
 			x = window_size[0] - w
 			# sx = x
 			# sw = w
@@ -51118,6 +51153,11 @@ def main(holder: Holder) -> None:
 			# area_x = w - 40 * gui.scale
 
 			row_len = int((area_x - gui.album_h_gap) / (tauon.album_mode_art_size + gui.album_h_gap))
+
+			# The Album Grid widget forces the row length (its art size is derived
+			# from it, so the width formula above can land one off). 0 in presets.
+			if gui.gallery_forced_row_len:
+				row_len = gui.gallery_forced_row_len
 
 			# logging.info(row_len)
 
@@ -51147,6 +51187,21 @@ def main(holder: Holder) -> None:
 				row_len = 1
 
 			dev = int((r_area - compact) / (row_len + 0))
+
+			# Gallery: Compact (forced row length): the centred preset formula
+			# below leaves asymmetric outer margins (~h_gap/2 - 2px left,
+			# ~h_gap/2 + 12px right); the grid instead lays tiles on a uniform
+			# float pitch inset by gallery_grid_margin on each side, so the
+			# left and right margins match.
+			grid_edge = False
+			grid_margin = 0
+			if gui.gallery_forced_row_len:
+				grid_edge = True
+				grid_margin = gui.gallery_grid_margin
+				dev = (r_area - grid_margin * 2 + gui.album_h_gap) / row_len
+			# The grid draws the title lines slightly closer to the art (the row
+			# pitch is unchanged — the text just sits higher within it). 0 = preset.
+			text_lift = round(4 * gui.scale) if grid_edge else 0
 
 			render_pos = 0
 			album_on = 0
@@ -51330,13 +51385,16 @@ def main(holder: Holder) -> None:
 							if album_on > len(tauon.album_dex) - 1:
 								break
 
-							x = (
-								(l_area + dev * a)
-								- int(tauon.album_mode_art_size / 2)
-								+ int(dev / 2)
-								+ int(compact / 2)
-								- a_offset
-							)
+							if grid_edge:
+								x = l_area + grid_margin + int(dev * a)
+							else:
+								x = (
+									(l_area + dev * a)
+									- int(tauon.album_mode_art_size / 2)
+									+ int(dev / 2)
+									+ int(compact / 2)
+									- a_offset
+								)
 
 							if tauon.album_dex[album_on] >= len(pctl.default_playlist):
 								break
@@ -51588,13 +51646,16 @@ def main(holder: Holder) -> None:
 						if album_on > len(tauon.album_dex) - 1:
 							break
 
-						x = (
-							(l_area + dev * a)
-							- int(tauon.album_mode_art_size / 2)
-							+ int(dev / 2)
-							+ int(compact / 2)
-							- a_offset
-						)
+						if grid_edge:
+							x = l_area + grid_margin + int(dev * a)
+						else:
+							x = (
+								(l_area + dev * a)
+								- int(tauon.album_mode_art_size / 2)
+								+ int(dev / 2)
+								+ int(compact / 2)
+								- a_offset
+							)
 
 						if tauon.album_dex[album_on] >= len(pctl.default_playlist):
 							break
@@ -51971,7 +52032,7 @@ def main(holder: Holder) -> None:
 									)
 							elif line2 == "":
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + 9 * gui.scale, text_align),
+									(x, y + tauon.album_mode_art_size + 9 * gui.scale - text_lift, text_align),
 									line,
 									line1_colour,
 									311,
@@ -51979,7 +52040,7 @@ def main(holder: Holder) -> None:
 								)
 							else:
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
+									(x, y + tauon.album_mode_art_size + 8 * gui.scale - text_lift, text_align),
 									line2,
 									line2_colour,
 									212,
@@ -51987,7 +52048,7 @@ def main(holder: Holder) -> None:
 								)
 
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale, text_align),
+									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale - text_lift, text_align),
 									line,
 									line1_colour,
 									311,

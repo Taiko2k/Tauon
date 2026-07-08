@@ -96,6 +96,14 @@ class Widget:
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		raise NotImplementedError
 
+	# Per-instance settings, persisted in the Leaf's dict as "conf" when
+	# get_config returns a non-empty dict. Widgets without settings return None.
+	def get_config(self) -> dict | None:
+		return None
+
+	def set_config(self, d: dict) -> None:
+		pass
+
 
 class ArtBoxWidget(Widget):
 	"""The album Art Box: the side panel's ArtBox class (tauon.art_box) drawn
@@ -912,7 +920,7 @@ class GalleryWidget(Widget):
 	"""
 
 	kind = "gallery"
-	name = "Album Gallery"
+	name = "Gallery: Classic"
 	min_w = 100
 	min_h = 80
 	single_instance = True  # shared scroll/selection state (gui.album_scroll_px, gallery_scroll)
@@ -970,13 +978,200 @@ class GalleryWidget(Widget):
 		# below the new floor (set while the preset slide was active); lift it or
 		# the first row shows offset until the first wheel event re-clamps.
 		gui.album_scroll_px = max(gui.album_scroll_px, -gui.album_v_slide_value)
+		# Subclass hook: the Album Grid derives art size / gaps / row count from
+		# the segment instead of the global gallery settings.
+		grid = self._grid_overrides(tauon, w)
+		saved_grid = None
+		if grid is not None:
+			art, h_gap, v_gap, n, margin = grid
+			saved_grid = (tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+				tauon.gall_ren.size, gui.gallery_forced_row_len, gui.gallery_grid_margin)
+			tauon.album_mode_art_size = art
+			gui.album_h_gap = h_gap
+			gui.album_v_gap = v_gap
+			# Thumbnails are cache-keyed by size; render them at the derived size
+			# (the default arg of gall_ren.render reads this).
+			tauon.gall_ren.size = art
+			gui.gallery_forced_row_len = n
+			gui.gallery_grid_margin = margin
+			# The top margin comes from the slide gap: the scroll floor is
+			# -slide, so at rest the first row sits `margin` below the top.
+			gui.album_v_slide_value = margin
+			gui.album_scroll_px = max(gui.album_scroll_px, -margin)
 		try:
 			gallery_render()
 		finally:
 			(gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
 				gui.album_v_slide_value) = saved
+			if saved_grid is not None:
+				(tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+					tauon.gall_ren.size, gui.gallery_forced_row_len,
+					gui.gallery_grid_margin) = saved_grid
 			inp.mouse_wheel = saved_wheel
 			ddt.text_background_colour = saved_text_bg
+		self._after_render(tauon, over)
+
+	def _grid_overrides(self, tauon: Tauon, seg_w: float) -> tuple[int, int, int, int, int] | None:
+		"""Return (art_size, h_gap, v_gap, row_len, margin) in scaled px to force
+		on the renderer for this widget, or None to use the global gallery
+		settings. ``margin`` is the uniform outer inset (left/right/top)."""
+		return None
+
+	def _after_render(self, tauon: Tauon, over: bool) -> None:
+		"""Hook run after the grid has rendered (overrides restored); ``over`` is
+		whether the (segment-local) pointer is inside the segment."""
+
+
+GRID_PER_ROW_MAX = 30
+# Uniform outer margin (px unscaled) around the Gallery: Compact grid — the
+# same inset the preset's narrow-window branch gives on the left, applied
+# deliberately on left/right/top so the edges match.
+GRID_MARGIN = 20
+
+
+class GridGalleryWidget(GalleryWidget):
+	"""Album Grid: the Album Gallery with tight, segment-derived spacing.
+
+	Instead of the global album_mode_art_size / gap settings, the row length is
+	a per-widget setting (albums per row) and the art size is computed so the
+	row fills the segment width with the configured spacing between tiles.
+	Everything else (scrolling, clicks, the album context menu, the scroll bar,
+	titles under the art) is the shared gallery renderer, driven through
+	_grid_overrides. Right-click on the background opens gallery_grid_menu
+	(built in t_main), whose incrementor rows edit this instance's settings.
+	"""
+
+	kind = "gallery_grid"
+	name = "Gallery: Compact"
+	min_w = 100
+	min_h = 80
+	single_instance = True  # same shared scroll/selection state as the gallery
+	offscreen = True
+
+	# The instance whose settings the (single) gallery_grid_menu edits, set when
+	# the menu is opened. Single-instance, so at most one candidate exists.
+	menu_target: GridGalleryWidget | None = None
+	menu_tauon: Tauon | None = None
+
+	def __init__(self) -> None:
+		super().__init__()
+		self.per_row: int = 5
+		self.spacing: int = 4    # px between tiles in a row (unscaled)
+		self.v_spacing: int = 4  # px between rows (unscaled)
+
+	# -- persistence --
+	def get_config(self) -> dict | None:
+		return {"per_row": self.per_row, "spacing": self.spacing, "v_spacing": self.v_spacing}
+
+	def set_config(self, d: dict) -> None:
+		self.per_row = min(GRID_PER_ROW_MAX, max(1, int(d.get("per_row", 5))))
+		self.spacing = min(CL_INSET_MAX, max(0, int(d.get("spacing", 4))))
+		self.v_spacing = min(CL_INSET_MAX, max(0, int(d.get("v_spacing", 4))))
+
+	# -- geometry --
+	def _grid_overrides(self, tauon: Tauon, seg_w: float) -> tuple[int, int, int, int, int] | None:
+		gui = tauon.gui
+		scale = gui.scale
+		# The renderer's narrow-window width adjustment is disabled under
+		# gallery_forced_row_len (it would double the left margin), so the
+		# drawing width is exactly the segment width.
+		w = round(seg_w)
+		n = max(1, self.per_row)
+		# With gallery_forced_row_len set, render_gallery lays tiles on the
+		# uniform float pitch (w - 2*margin + h_gap) / n starting at margin, so
+		# n tiles of art = pitch - spacing separated by `spacing` span the width
+		# between matching left/right margins.
+		margin = round(GRID_MARGIN * scale)
+		if w - margin * 2 < n * round(8 * scale):
+			margin = 0  # tiny segment: give the space to the art
+		sp = round(self.spacing * scale)
+		art = max(round(8 * scale), int((w - margin * 2 + sp) / n - sp))
+		# Keep room for the text lines under each tile when they're enabled,
+		# like the preset gaps do (update_layout_do: text adds ~41*scale;
+		# light-mode card style draws a taller card below the art).
+		allow = 0
+		if gui.gallery_show_text:
+			allow = round(41 * scale)
+			if tauon.prefs.use_card_style and tauon.colours.lm:
+				allow = round(58 * scale)
+		v_gap = round(self.v_spacing * scale) + allow
+		return art, sp, v_gap, n, margin
+
+	# -- background context menu --
+	def _after_render(self, tauon: Tauon, over: bool) -> None:
+		inp = tauon.inp
+		# A right-click on an album tile has already activated gallery_menu by
+		# now (making is_level_zero False), so this only fires on background.
+		if over and inp.right_click and tauon.is_level_zero():
+			inp.right_click = False
+			GridGalleryWidget.menu_target = self
+			GridGalleryWidget.menu_tauon = tauon
+			tauon.gallery_grid_menu.activate()
+
+	# -- incrementor callbacks (menu built in t_main; reference arg unused) --
+	@classmethod
+	def _menu_changed(cls) -> None:
+		tauon = cls.menu_tauon
+		if tauon is not None:
+			tauon.gui.update += 1
+			tauon.custom.save_slots()
+
+	@classmethod
+	def menu_per_row_value(cls, ref=None) -> int:
+		w = cls.menu_target
+		return w.per_row if w else 0
+
+	@classmethod
+	def menu_per_row_minus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.per_row > 1:
+			w.per_row -= 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_per_row_plus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.per_row < GRID_PER_ROW_MAX:
+			w.per_row += 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_spacing_value(cls, ref=None) -> int:
+		w = cls.menu_target
+		return w.spacing if w else 0
+
+	@classmethod
+	def menu_spacing_minus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.spacing > 0:
+			w.spacing -= 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_spacing_plus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.spacing < CL_INSET_MAX:
+			w.spacing += 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_v_spacing_value(cls, ref=None) -> int:
+		w = cls.menu_target
+		return w.v_spacing if w else 0
+
+	@classmethod
+	def menu_v_spacing_minus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.v_spacing > 0:
+			w.v_spacing -= 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_v_spacing_plus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.v_spacing < CL_INSET_MAX:
+			w.v_spacing += 1
+			cls._menu_changed()
 
 
 class WidgetSpec:
@@ -1042,6 +1237,10 @@ def _gallery(spec: WidgetSpec) -> Widget:
 	return GalleryWidget()
 
 
+def _gallery_grid(spec: WidgetSpec) -> Widget:
+	return GridGalleryWidget()
+
+
 def _details(spec: WidgetSpec) -> Widget:
 	return DetailsWidget()
 
@@ -1075,7 +1274,9 @@ def _vis_spectrogram(spec: WidgetSpec) -> Widget:
 WIDGET_SPECS: list[WidgetSpec] = [
 	WidgetSpec("tracklist", "Tracklist", "Content", _tracklist, single_instance=True,
 		colour=ColourRGBA(24, 24, 28, 255)),
-	WidgetSpec("gallery", "Album Gallery", "Content", _gallery, single_instance=True,
+	WidgetSpec("gallery", "Gallery: Classic", "Content", _gallery, single_instance=True,
+		colour=ColourRGBA(26, 24, 30, 255)),
+	WidgetSpec("gallery_grid", "Gallery: Compact", "Content", _gallery_grid, single_instance=True,
 		colour=ColourRGBA(26, 24, 30, 255)),
 	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
 	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
@@ -1105,6 +1306,15 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(38, 38, 46, 255)),
 ]
 SPEC_BY_KIND: dict[str, WidgetSpec] = {s.kind: s for s in WIDGET_SPECS}
+
+# Kinds that can't coexist in one layout: both gallery widgets drive the shared
+# gallery renderer (gui.album_scroll_px / gui.last_row), and two different row
+# lengths rendering each frame would ping-pong last_row and re-locate the
+# scroll every frame (same failure the preset-vs-widget custom_mode gate stops).
+KIND_CONFLICTS: dict[str, tuple[str, ...]] = {
+	"gallery": ("gallery_grid",),
+	"gallery_grid": ("gallery",),
+}
 
 
 def make_widget(kind: str) -> Widget | None:
@@ -1181,6 +1391,10 @@ class Leaf(Node):
 		d = self._base_dict()
 		d["type"] = "leaf"
 		d["kind"] = self.kind
+		if self.widget is not None:
+			conf = self.widget.get_config()
+			if conf:
+				d["conf"] = conf
 		return d
 
 	@staticmethod
@@ -1188,6 +1402,9 @@ class Leaf(Node):
 		kind = d.get("kind")
 		leaf = Leaf(make_widget(kind) if kind else None)
 		leaf._load_base(d)
+		conf = d.get("conf")
+		if leaf.widget is not None and isinstance(conf, dict):
+			leaf.widget.set_config(conf)
 		return leaf
 
 
@@ -1733,6 +1950,12 @@ class CustomLayout:
 		if spec.single_instance and count_kind(root, kind) > 0:
 			self.tauon.show_message(_t("Only one %s allowed") % spec.name, mode="warning")
 			return False
+		for other in KIND_CONFLICTS.get(kind, ()):
+			if count_kind(root, other) > 0:
+				self.tauon.show_message(
+					_t("%s can't be used together with %s") % (spec.name, SPEC_BY_KIND[other].name),
+					mode="warning")
+				return False
 		if not isinstance(target, Leaf):
 			return False
 		was_empty = target.widget is None
@@ -2326,12 +2549,16 @@ class CustomLayout:
 
 	def kind_disabled(self, kind: str) -> bool:
 		"""Disable-test for an Add-widget item: True if the (single-instance)
-		widget already exists in the active layout."""
+		widget already exists in the active layout, or a conflicting kind does."""
 		spec = SPEC_BY_KIND.get(kind)
-		if spec is None or not spec.single_instance:
+		if spec is None:
 			return False
 		root = self.slots[self.active_slot]
-		return root is not None and count_kind(root, kind) > 0
+		if root is None:
+			return False
+		if spec.single_instance and count_kind(root, kind) > 0:
+			return True
+		return any(count_kind(root, other) > 0 for other in KIND_CONFLICTS.get(kind, ()))
 
 	# -- rendering -----------------------------------------------------------
 
