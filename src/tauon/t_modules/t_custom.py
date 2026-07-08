@@ -732,13 +732,22 @@ class TracklistWidget(Widget):
 		view = not gui.custom_edit
 		if view:
 			# The standard scroll bar's interaction lock, pointed at this
-			# segment's bar hitbox (same formula as the shared render function:
-			# the hitbox's right edge is 1px scale inside the tracklist right
-			# edge). It updates gui.scrollbar_active, which the body render
-			# reads, so the bar and the album-rating stars yield to each other
-			# exactly like the preset tracklist.
+			# segment's bar hitbox (same geometry as the shared render function).
+			# It updates gui.scrollbar_active, which the body render reads, so the
+			# bar and the album-rating stars yield to each other exactly like the
+			# preset tracklist.
 			scale = gui.scale
-			hitbox = (rect[0] + rect[2] - 1 * scale - 28 * scale, rect[1], 28 * scale, rect[3])
+			hb_top = rect[1]
+			hb_h = rect[3]
+			if gui.set_bar and gui.set_mode:
+				# Drop below the columns header, matching the bar itself.
+				hb_top += gui.set_height
+				hb_h -= gui.set_height
+			if tauon.prefs.tracklist_scrollbar_left:
+				hb_x = rect[0]
+			else:
+				hb_x = rect[0] + rect[2] - 2 * scale - 28 * scale
+			hitbox = (hb_x, hb_top, 28 * scale, hb_h)
 			tauon.tracklist_scrollbar_lock(hitbox)
 		if view and gui.set_mode:
 			# Columns header bar input, pointed at this segment. Must run before
@@ -767,7 +776,7 @@ class TracklistWidget(Widget):
 			# sits on top, same as the preset frame order.
 			tauon.tracklist_scrollbar_render(
 				rect[0], rect[2], rect[1], rect[1] + rect[3],
-				rect[1] + rect[3] - 22 * gui.scale)
+				rect[1] + rect[3] - 1 * gui.scale)
 		if view and gui.set_mode:
 			# Columns header bar drawing (and the hover strip to re-show a hidden
 			# bar), on top of the body — pointed at this segment.

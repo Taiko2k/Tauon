@@ -52197,6 +52197,12 @@ def main(holder: Holder) -> None:
 		nonlocal scroll_hold, scroll_point, scroll_bpoint, sbp, sbl
 		width = 15 * gui.scale
 
+		# When the columns header bar is shown, drop the scroll bar (and its
+		# auto-hide/hover field) below the header so it doesn't overlap it. Only
+		# the top moves; the thumb travel simply shrinks from the top.
+		if gui.set_bar and gui.set_mode:
+			top += gui.set_height
+
 		if gui.set_mode and prefs.left_align_album_artist_title:
 			width = 11 * gui.scale
 		scroll_hitbox_width = 28 * gui.scale
@@ -54442,6 +54448,10 @@ def main(holder: Holder) -> None:
 				tracklist_scroll_top = gui.panelY
 				if gui.artist_info_panel:
 					tracklist_scroll_top += gui.artist_panel_height
+				if gui.set_bar and gui.set_mode:
+					# Match render_tracklist_scrollbar: the bar starts below the
+					# columns header, so its side-drag-blocking hitbox must too.
+					tracklist_scroll_top += gui.set_height
 				tracklist_scrollbar_width = 15 * gui.scale
 				if gui.set_mode and prefs.left_align_album_artist_title:
 					tracklist_scrollbar_width = 11 * gui.scale
