@@ -43404,7 +43404,7 @@ SCROLL_ANIMATION_FRAME_INTERVAL = 1.0 / SCROLL_ANIMATION_MAX_FPS
 SCROLL_PHYSICS_FIXED_TIMESTEP = 1.0 / 240.0
 SCROLL_PHYSICS_MAX_TIMESTEP = 0.05
 SCROLL_PHYSICS_ACCELERATION_BOOST = 2
-SCROLL_PHYSICS_DAMPING = 0.84
+SCROLL_PHYSICS_DAMPING = 0.95
 SCROLL_PHYSICS_FIXED_DAMPING = SCROLL_PHYSICS_DAMPING ** (SCROLL_PHYSICS_FIXED_TIMESTEP * 60)
 SCROLL_PHYSICS_MAX_VELOCITY = 2100.0
 SCROLL_PHYSICS_MIN_VELOCITY = 8.0
@@ -43413,6 +43413,7 @@ SCROLL_PHYSICS_MIN_VELOCITY = 8.0
 @dataclass
 class ScrollMotionState:
 	velocity: float = 0.0
+	last_velocity: float = 0.0
 	pending: float = 0.0
 	accumulator: float = 0.0
 	precise_buffer: float = 0.0
@@ -43626,6 +43627,7 @@ class SmoothScroll:
 			impulse = delta * px_per_unit * repeat_boost * speed
 			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
 			state.last_update = time.monotonic()
+		state.last_velocity = state.velocity
 		state.velocity = max(min(state.velocity, velocity_limit), -velocity_limit)
 		state.touching = False
 		self._log_scroll_detail(
@@ -43645,7 +43647,7 @@ class SmoothScroll:
 			pending_after=state.pending,
 			precise_before=precise_before,
 			precise_after=state.precise_buffer,
-			velocity_before=velocity_before,
+			velocity_before=state.last_velocity,
 			velocity_after=state.velocity,
 			velocity_limit=velocity_limit,
 		)
@@ -43657,7 +43659,7 @@ class SmoothScroll:
 		dt = max(now - state.last_update, 1 / 240)
 		pending_before = state.pending
 		precise_before = state.precise_buffer
-		velocity_before = state.velocity
+		state.last_velocity = state.velocity
 		state.touching = True
 		state.from_touch = True
 		state.precise_buffer = 0.0
@@ -43674,7 +43676,7 @@ class SmoothScroll:
 			pending_after=state.pending,
 			precise_before=precise_before,
 			precise_after=state.precise_buffer,
-			velocity_before=velocity_before,
+			velocity_before=state.last_velocity,
 			velocity_after=state.velocity,
 			max_velocity=max_velocity,
 		)
@@ -43684,6 +43686,9 @@ class SmoothScroll:
 			self.physics_states[source].touching = False
 			self.physics_states[source].from_touch = True
 			self.physics_states[source].last_update = time.monotonic()
+			# velocity on release should be based on the last two frames of motion
+			if self.physics_states[source].last_velocity != 0.0:
+				self.physics_states[source].velocity = (self.physics_states[source].velocity + self.physics_states[source].last_velocity) / 2
 			state = self.physics_states[source]
 			self._log_scroll_detail(
 				source,
