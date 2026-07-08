@@ -52697,11 +52697,12 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_GAMEPAD_AXIS_MOTION:
 				if not prefs.use_gamepad:
 					continue
+				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
+					rt = event.gaxis.value > 5000
+					continue
 				# Deadzone guard to prevent frequent gui refreshes
 				if abs(event.gaxis.value) <= 5000:
 					continue
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
-					rt = event.gaxis.value > 5000
 				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
 					if event.gaxis.value < -10000:
 						new = -1
