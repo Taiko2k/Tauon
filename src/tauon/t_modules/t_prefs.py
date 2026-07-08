@@ -251,6 +251,7 @@ class Prefs:
 	meta_shows_selected_always: bool = False
 
 	left_align_album_artist_title: bool = False
+	tracklist_scrollbar_left: bool = False
 	stop_notifications_mini_mode: bool = False
 	scale_want: float = 1
 	x_scale: bool = True

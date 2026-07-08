@@ -28348,6 +28348,13 @@ class Over:
 		y += chip_h + chip_gap
 
 		self.settings_toggle_chip((x, y, w, chip_h), self.tauon.toggle_append_total_time, _("Duration"), accent=accent, show_active_bar=False)
+		y += chip_h + chip_gap
+
+		old_scrollbar_left = prefs.tracklist_scrollbar_left
+		prefs.tracklist_scrollbar_left = self.settings_toggle_chip((x, y, w, chip_h), prefs.tracklist_scrollbar_left, _("Scroll bar on left"), accent=accent, show_active_bar=False)
+		if prefs.tracklist_scrollbar_left != old_scrollbar_left:
+			gui.update += 1
+			gui.pl_update = 1
 
 		x, y, w, section_h = self.draw_settings_section(
 			right_rect,
@@ -30502,7 +30509,7 @@ class Over:
 		elif index == 2:
 			body_h = self.render_settings_audio_category(x, body_y, w, accent, draw)
 		elif index == 3:
-			body_h = round(248 * self.gui.scale)
+			body_h = round(286 * self.gui.scale)
 			if draw:
 				self.config_v(x, body_y, w, body_h)
 		elif index == 4:
@@ -45934,6 +45941,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("double-digit-indices", prefs.dd_index)
 	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
+	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("import-auto-sort", prefs.auto_sort)
 
 	cf.update_value("encode-output-dir", prefs.custom_encoder_output)
@@ -46282,6 +46290,10 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "left-aligned-album-artist-title",
 		prefs.left_align_album_artist_title,
 		"Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
+	prefs.tracklist_scrollbar_left = cf.sync_add(
+		"bool", "tracklist-scrollbar-left",
+		prefs.tracklist_scrollbar_left,
+		"Position the tracklist scroll bar on the left side instead of the right.")
 	prefs.auto_sort = cf.sync_add(
 		"bool", "import-auto-sort", prefs.auto_sort,
 		"This setting is deprecated and will be removed in a future version")
@@ -52187,10 +52199,13 @@ def main(holder: Holder) -> None:
 
 		if gui.set_mode and prefs.left_align_album_artist_title:
 			width = 11 * gui.scale
-		x = left + plw - width - 2 * gui.scale
 		scroll_hitbox_width = 28 * gui.scale
-		scroll_hitbox_right = x + width + 1 * gui.scale
-		scroll_hitbox_x = scroll_hitbox_right - scroll_hitbox_width
+		if prefs.tracklist_scrollbar_left:
+			x = left + 1 * gui.scale
+			scroll_hitbox_x = x - 1 * gui.scale
+		else:
+			x = left + plw - width - 3 * gui.scale
+			scroll_hitbox_x = x + width + 1 * gui.scale - scroll_hitbox_width
 
 		gui.scroll_hide_box = (
 			scroll_hitbox_x,
@@ -54430,11 +54445,15 @@ def main(holder: Holder) -> None:
 				tracklist_scrollbar_width = 15 * gui.scale
 				if gui.set_mode and prefs.left_align_album_artist_title:
 					tracklist_scrollbar_width = 11 * gui.scale
-				tracklist_scrollbar_x = gui.playlist_left + gui.plw - tracklist_scrollbar_width - 2 * gui.scale
 				tracklist_scroll_hitbox_width = 28 * gui.scale
-				tracklist_scroll_hitbox_right = tracklist_scrollbar_x + tracklist_scrollbar_width + 1 * gui.scale
+				if prefs.tracklist_scrollbar_left:
+					tracklist_scrollbar_x = gui.playlist_left + 1 * gui.scale
+					tracklist_scroll_hitbox_left = tracklist_scrollbar_x - 1 * gui.scale
+				else:
+					tracklist_scrollbar_x = gui.playlist_left + gui.plw - tracklist_scrollbar_width - 3 * gui.scale
+					tracklist_scroll_hitbox_left = tracklist_scrollbar_x + tracklist_scrollbar_width + 1 * gui.scale - tracklist_scroll_hitbox_width
 				tracklist_scroll_hitbox = (
-					tracklist_scroll_hitbox_right - tracklist_scroll_hitbox_width,
+					tracklist_scroll_hitbox_left,
 					tracklist_scroll_top,
 					tracklist_scroll_hitbox_width,
 					window_size[1] - gui.panelBY - tracklist_scroll_top,
