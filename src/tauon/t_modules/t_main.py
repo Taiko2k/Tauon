@@ -25687,7 +25687,7 @@ class NagBox:
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("Taking Tauon to the next level!"),
+			_("Your ultimate Tauon upgrade is here!"),
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,
@@ -25725,20 +25725,29 @@ class NagBox:
 			)
 			row_y += row_gap
 
-		support_y = changelog_y + changelog_h + round(18 * scale)
+		support_y = changelog_y + changelog_h + round(16 * scale)
 		self.ddt.text((inner_x, support_y), _("Please help support me make free software. ❤️  "), self.colours.box_text, 213, bg=panel_fill)
-		donate_link = self.tauon.draw_linked_text(
+		self.ddt.text(
 			(inner_x, support_y + round(19 * scale)),
-			_("A ton of work went into this release. Please consider donating at https://github.com/sponsors/Taiko2k"),
+			_("Special thanks to everyone who donated."),
+			self.colours.box_text_label,
+			12,
+			bg=panel_fill,
+			max_w=inner_w,
+		)
+		donate_y = support_y + round(37 * scale)
+		donate_link = self.tauon.draw_linked_text(
+			(inner_x, donate_y),
+			_("If you haven't, please consider donating at https://github.com/sponsors/Taiko2k"),
 			self.colours.box_text_label,
 			12,
 			replace=_("GitHub Sponsors"),
 		)
-		self.tauon.link_activate(inner_x, support_y + round(19 * scale), donate_link, click=self.gui.level_2_click)
+		self.tauon.link_activate(inner_x, donate_y, donate_link, click=self.gui.level_2_click)
 		patreon_x = inner_x + donate_link[0] + donate_link[1] + self.ddt.get_text_w(" ", 12)
 		patreon_prefix = _("or on my ")
 		self.ddt.text(
-			(patreon_x, support_y + round(19 * scale)),
+			(patreon_x, donate_y),
 			patreon_prefix,
 			self.colours.box_text_label,
 			12,
@@ -25746,16 +25755,16 @@ class NagBox:
 		)
 		patreon_link_x = patreon_x + self.ddt.get_text_w(patreon_prefix, 12)
 		patreon_link = self.tauon.draw_linked_text(
-			(patreon_link_x, support_y + round(19 * scale)),
+			(patreon_link_x, donate_y),
 			self.PATREON_URL,
 			self.colours.box_text_label,
 			12,
 			force=True,
 			replace="Patreon.",
 		)
-		self.tauon.link_activate(patreon_link_x, support_y + round(19 * scale), patreon_link, click=self.gui.level_2_click)
+		self.tauon.link_activate(patreon_link_x, donate_y, patreon_link, click=self.gui.level_2_click)
 		self.ddt.text(
-			(inner_x, support_y + round(35 * scale)),
+			(inner_x, support_y + round(55 * scale)),
 			_("Your continued support helps keep this app alive."),
 			self.colours.box_text_label,
 			12,
@@ -25765,28 +25774,10 @@ class NagBox:
 
 		button_y = y + h - round(46 * scale)
 		button_h = round(30 * scale)
-		button_gap = round(8 * scale)
-		no_thanks_w = max(round(96 * scale), self.ddt.get_text_w(_("No thanks"), 212) + round(22 * scale))
-		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Okay, I have/will donate"), 212) + round(22 * scale))
+		close_w = max(round(96 * scale), self.ddt.get_text_w(_("Close"), 212) + round(22 * scale))
+		close_x = x + w - close_w - inner_pad
 
-		no_thanks_x = x + w - no_thanks_w - inner_pad
-		yes_donated_x = no_thanks_x - yes_donated_w - button_gap
-
-		donate_bg = alpha_blend(alpha_mod(accent_warm, 42), self.colours.box_button_background)
-		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 72), self.colours.box_button_background_highlight)
-
-		if self.drawer.button(
-			_("Yes, I have donated"),
-			yes_donated_x,
-			button_y,
-			w=yes_donated_w,
-			h=button_h,
-			background_colour=donate_bg,
-			background_highlight_colour=donate_bg_hover,
-			press=self.gui.level_2_click,
-		):
-			self.thank_donor()
-		if self.drawer.button(_("No thanks"), no_thanks_x, button_y, w=no_thanks_w, h=button_h, press=self.gui.level_2_click):
+		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
 			self.dismiss()
 
 class PowerTag:
