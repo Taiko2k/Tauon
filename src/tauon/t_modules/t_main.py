@@ -5106,10 +5106,12 @@ class MenuItem:
 		"inc_get",         # 16
 		"inc_minus",       # 17
 		"inc_plus",        # 18
+		"check_test",      # 19
 	]
 	def __init__(
 		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: object | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
+		check_test: Callable[[], bool | None] | None = None,
 	) -> None:
 		self.title: str = title
 		self.is_sub_menu: bool = is_sub_menu
@@ -5134,6 +5136,11 @@ class MenuItem:
 		self.inc_get = None
 		self.inc_minus = None
 		self.inc_plus = None
+		# Toggle / radio state indicator: a callable (no args) returning the
+		# current on/off state. When set, the row draws a small state box
+		# before the label (accent-filled when on, faint outline when off)
+		# instead of the legacy "✓ " text prefix. See Menu.draw_check_box.
+		self.check_test = check_test
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
@@ -5328,6 +5335,34 @@ class Menu:
 				return item.disable_test(self.reference)
 			return item.disable_test()
 		return None
+
+	def draw_check_box(self, item: MenuItem, x: float, y: float) -> float:
+		"""Draw the toggle/radio state box for an item with check_test at the
+		label position: a small square filled with the theme's toggle accent
+		when on, a faint outline when off (dimmed when the item is disabled).
+		Returns the width the label should shift right to clear it.
+		"""
+		gui = self.gui
+		ddt = self.render_ddt
+		colours = self.colours
+		s = round(9 * gui.scale)
+		bx = round(x)
+		by = round(y + (self.h - s) / 2)
+		disabled = bool(self.is_item_disabled(item))
+		if item.check_test():
+			c = colours.toggle_box_on
+			if disabled:
+				c = colours.menu_text_disabled
+			ddt.rect((bx, by, s, s), ColourRGBA(c.r, c.g, c.b, 150 if disabled else 255))
+		else:
+			line = colours.menu_text_disabled if disabled else colours.menu_text
+			c = ColourRGBA(line.r, line.g, line.b, 70)
+			b = max(1, round(1 * gui.scale))
+			ddt.rect((bx, by, s, b), c)
+			ddt.rect((bx, by + s - b, s, b), c)
+			ddt.rect((bx, by + b, b, s - b * 2), c)
+			ddt.rect((bx + s - b, by + b, b, s - b * 2), c)
+		return s + round(7 * gui.scale)
 
 	def render_icon(self, x: float, y: float, icon: MenuIcon | None, selected: bool, fx: Decorator) -> None:
 		colours = self.colours
@@ -5560,6 +5595,10 @@ class Menu:
 
 				if self.show_icons:
 					x += 25 * gui.scale
+
+				# Toggle / radio state box
+				if self.items[i].check_test is not None:
+					x += self.draw_check_box(self.items[i], x_run + x, y_run)
 
 				# Draw arrow icon for sub menu
 				if self.items[i].is_sub_menu is True:
@@ -5821,6 +5860,9 @@ class Menu:
 
 			self.render_icon(ox + 11 * gui.scale, y + 5 * gui.scale, item.icon, this_select, fx)
 			text_x = ox + 10 * gui.scale + xoff
+			# Toggle / radio state box
+			if item.check_test is not None:
+				text_x += self.draw_check_box(item, text_x, y)
 			if item.incrementor:
 				left_bound = self.draw_incrementor(item, ox, y, bg, ytoff, sub_w)
 				label_max_w = max(1, int(left_bound - text_x - 6 * gui.scale))
@@ -12349,18 +12391,15 @@ class Tauon:
 		set_menu.br()
 
 		for i, c in enumerate(fields):
-			if i<14:
-				if c[1] in checked:
-					set_menu.add( MenuItem("✓ " + c[0], c[2]) )
-				else:
-					set_menu.add( MenuItem("    " + c[0], c[2]) )
+			# The menu is rebuilt on each activation, so the column state can
+			# be captured at build time.
+			item = MenuItem(c[0], c[2], check_test=(lambda on=(c[1] in checked): on))
+			if i < 14:
+				set_menu.add(item)
 			if i == 14:
 				set_menu.add_sub("+ " + _("More…"), 150)
 			if i >= 14:
-				if c[1] in checked:
-					set_menu.add_to_sub(0, MenuItem( "✓ " + c[0], c[2]))
-				else:
-					set_menu.add_to_sub(0, MenuItem( "    " + c[0], c[2]))
+				set_menu.add_to_sub(0, item)
 
 
 	def sa_remove(self, h: int) -> None:
@@ -43762,31 +43801,21 @@ class TimedLyricsEdit:
 		self.menu.add_to_sub(0, MenuItem(_("Delete All Backups"), self.delete_autosaves, pass_ref=False))
 
 		self.menu.add_sub(_("When track ends..."), 165)
-		if self.prefs.synced_lyrics_editor_track_end_mode == "repeat":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Repeat track"), self.end_set_repeat ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Repeat track"), self.end_set_repeat ))
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Stop immediately"), self.end_set_stop ))
+		def end_mode_check(mode: str) -> Callable[[], bool]:
+			return lambda: self.prefs.synced_lyrics_editor_track_end_mode == mode
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "autosave":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Backup and continue"), self.end_set_autosave ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Backup and continue"), self.end_set_autosave ))
+		self.menu.add_to_sub(1, MenuItem(_("Repeat track"), self.end_set_repeat,
+			check_test=end_mode_check("repeat")))
+		self.menu.add_to_sub(1, MenuItem(_("Stop immediately"), self.end_set_stop,
+			check_test=end_mode_check("stop")))
+		self.menu.add_to_sub(1, MenuItem(_("Backup and continue"), self.end_set_autosave,
+			check_test=end_mode_check("autosave")))
+		self.menu.add_to_sub(1, MenuItem(_("Fully save and continue"), self.end_set_full_save,
+			check_test=end_mode_check("full save")))
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "full save":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_full_save ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
-
-		if self.prefs.save_synced_to_lrc:
-			lrc = "✓ "
-		else:
-			lrc = "x  "
-		self.menu.add(MenuItem( lrc + _("Save synced to .lrc"), self.toggle_lrc, pass_ref=False))
+		self.menu.add(MenuItem(_("Save synced to .lrc"), self.toggle_lrc, pass_ref=False,
+			check_test=lambda: self.prefs.save_synced_to_lrc))
 
 	def end_set_repeat(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "repeat"
@@ -49896,15 +49925,12 @@ def main(holder: Holder) -> None:
 			gui.update += 1
 		return cb
 
-	def _spectro_preset_deco(index: int, name: str) -> Callable[[], Decorator]:
-		def deco() -> Decorator:
-			text = ("✓ " if prefs.spectrogram_colour == index else "  ") + name
-			return Decorator(spectrogram_menu.colours.menu_text, spectrogram_menu.colours.menu_background, text)
-		return deco
+	def _spectro_preset_check(index: int) -> Callable[[], bool]:
+		return lambda: prefs.spectrogram_colour == index
 
 	for _i, _sp in enumerate(CL_SPECTRO_PRESETS):
 		spectrogram_menu.add(MenuItem(
-			_sp[0], _spectro_set_colour(_i), _spectro_preset_deco(_i, _sp[0])))
+			_sp[0], _spectro_set_colour(_i), check_test=_spectro_preset_check(_i)))
 
 	# Right-click (background) menu for the Album Grid widget. The incrementor
 	# callbacks are classmethods reading GridGalleryWidget.menu_target, which
@@ -49939,12 +49965,6 @@ def main(holder: Holder) -> None:
 	gallery_settings_menu = Menu(tauon, 210)
 	tauon.gallery_settings_menu = gallery_settings_menu
 
-	def _check_deco(get_state: Callable[[], bool | None], label: str) -> Callable[[], Decorator]:
-		def deco() -> Decorator:
-			text = ("✓ " if get_state() else "   ") + label
-			return Decorator(colours.menu_text, colours.menu_background, text)
-		return deco
-
 	def _gal_size_value(ref=None) -> int:
 		return int(tauon.album_mode_art_size)
 
@@ -49963,38 +49983,38 @@ def main(holder: Holder) -> None:
 		tauon.toggle_galler_text()
 
 	gallery_settings_menu.add(MenuItem(_("Show titles"), _gal_toggle_titles,
-		_check_deco(lambda: gui.gallery_show_text, _("Show titles"))))
+		check_test=lambda: gui.gallery_show_text))
 
 	def _gal_toggle_center(ref=None) -> None:
 		prefs.center_gallery_text ^= True
 		gui.update += 1
 
 	gallery_settings_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
-		_check_deco(lambda: prefs.center_gallery_text, _("Center title text"))))
+		check_test=lambda: prefs.center_gallery_text))
 
 	def _gal_toggle_click(ref=None) -> None:
 		tauon.toggle_gallery_click()
 
 	gallery_settings_menu.add(MenuItem(_("Single click to play"), _gal_toggle_click,
-		_check_deco(lambda: tauon.toggle_gallery_click(1), _("Single click to play"))))
+		check_test=lambda: tauon.toggle_gallery_click(1)))
 
 	def _gal_toggle_row_scroll(ref=None) -> None:
 		prefs.gallery_row_scroll ^= True
 
 	gallery_settings_menu.add(MenuItem(_("Scroll by row"), _gal_toggle_row_scroll,
-		_check_deco(lambda: prefs.gallery_row_scroll, _("Scroll by row"))))
+		check_test=lambda: prefs.gallery_row_scroll))
 
 	def _gal_toggle_combine(ref=None) -> None:
 		tauon.toggle_gallery_combine()
 
 	gallery_settings_menu.add(MenuItem(_("Combine multi-discs"), _gal_toggle_combine,
-		_check_deco(lambda: tauon.toggle_gallery_combine(1), _("Combine multi-discs"))))
+		check_test=lambda: tauon.toggle_gallery_combine(1)))
 
 	def _gal_toggle_thin(ref=None) -> None:
 		tauon.toggle_gallery_thin()
 
 	gallery_settings_menu.add(MenuItem(_("Prefer thinner padding"), _gal_toggle_thin,
-		_check_deco(lambda: tauon.toggle_gallery_thin(1), _("Prefer thinner padding")),
+		check_test=lambda: tauon.toggle_gallery_thin(1),
 		show_test=lambda ref=None: tauon.album_mode_art_size < 160))
 
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
@@ -50462,12 +50482,6 @@ def main(holder: Holder) -> None:
 		text = _("Hide Bar") if gui.set_bar else _("Show Bar")
 		return Decorator(colours.menu_text, colours.menu_background, text)
 
-	def _tl_check_deco(get_state: Callable[[], bool | None], label: str) -> Callable[[], Decorator]:
-		def deco() -> Decorator:
-			text = ("✓ " if get_state() else "   ") + label
-			return Decorator(colours.menu_text, colours.menu_background, text)
-		return deco
-
 	def _tl_toggle_left_align() -> None:
 		prefs.row_title_format = 1 if prefs.row_title_format == 2 else 2
 		gui.update += 1
@@ -50509,9 +50523,9 @@ def main(holder: Holder) -> None:
 		def toggle_item(label: str, func: Callable, get_state: Callable[[], bool | None]) -> None:
 			def cb(ref=None) -> None:
 				func()
-			# no_exit: checkbox-style toggles keep the submenu open (the ✓ deco
-			# flips in place), like the custom-layout Layout… submenu toggles.
-			menu.add_to_sub(sub, MenuItem(label, cb, _tl_check_deco(get_state, label), no_exit=True))
+			# no_exit: checkbox-style toggles keep the submenu open (the state
+			# box flips in place), like the custom-layout Layout… submenu toggles.
+			menu.add_to_sub(sub, MenuItem(label, cb, check_test=get_state, no_exit=True))
 
 		toggle_item(_("Loves"), tauon.heart_toggle, lambda: tauon.heart_toggle(1))
 		toggle_item(_("Track ratings"), tauon.rating_toggle, lambda: tauon.rating_toggle(1))
@@ -50532,6 +50546,7 @@ def main(holder: Holder) -> None:
 		menu.add_to_sub(sub, MenuItem(_("Thick default"), lambda: tauon.pref_box.large_preset()))
 
 	add_layout_sub(track_menu)
+	folder_menu.br()
 	add_layout_sub(folder_menu)
 
 
