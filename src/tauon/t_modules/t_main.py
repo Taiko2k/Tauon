@@ -39879,11 +39879,6 @@ class QueueBox:
 			self.ddt.rect(box_rect, ColourRGBA(255, 255, 255, 2))
 			self.ddt.text_background_colour = alpha_blend(ColourRGBA(255, 255, 255, 2), self.ddt.text_background_colour)
 
-		if self.prefs.show_playlist_list:  # draw top separator line
-			rect = (self.gui.lsp_x, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
-			self.ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
-			self.ddt.rect(rect, sep_colour)
-
 		# if y < self.gui.panelY * 2:
 		#     self.ddt.rect((x, y - 3 * self.gui.scale, w, 30 * self.gui.scale), self.colours.queue_background, True)
 
@@ -55172,6 +55167,12 @@ def main(holder: Holder) -> None:
 
 						if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
 							tauon.queue_box.draw(panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
+
+							if prefs.show_playlist_list and gui.pl_box_h:
+								# Separator line at the playlist list / queue seam
+								rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, round(gui.scale * 2))
+								ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
+								ddt.rect(rect, alpha_blend(ColourRGBA(255, 255, 255, 11), colours.queue_background))
 						elif prefs.left_panel_mode == "queue":
 							text = _("Queue is Empty")
 							rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
