@@ -700,6 +700,10 @@ class GuiVar:
 		# widget; 0 = preset behaviour.
 		self.gallery_forced_row_len: int = 0
 		self.gallery_grid_margin: int = 0
+		# Smooth-scroll momentum channel used by render_gallery. Each Gallery:
+		# Compact instance swaps in its own key so several galleries scroll
+		# independently; "gallery" = the preset / Classic widget channel.
+		self.gallery_scroll_key: str = "gallery"
 		self.spectrogram_bins: int = 256
 		self.spectrogram_buffers: list[list[float]] = []
 		self.showcase_mode: bool = False
@@ -2899,7 +2903,9 @@ class PlayerCtl:
 
 		self.render_playlist()
 
-		if self.prefs.album_mode and not quiet:
+		if not quiet and self.tauon.custom.gallery_locate(self.selected_in_playlist, highlight=highlight):
+			pass  # located in a custom-layout gallery widget instead of the preset
+		elif self.prefs.album_mode and not quiet:
 			if highlight:
 				self.gui.gallery_animate_highlight_on = self.tauon.goto_album(self.selected_in_playlist)
 				self.tauon.gallery_select_animate_timer.set()
@@ -17357,6 +17363,10 @@ class Tauon:
 				w -= self.gui.lspw
 		area_x = w + 38 * self.gui.scale
 		row_len = int((area_x - self.gui.album_h_gap) / (self.album_mode_art_size + self.gui.album_h_gap))
+		# Keep in step with render_gallery: the Gallery: Compact widget forces
+		# the row length (set around this call by CustomLayout.gallery_locate).
+		if self.gui.gallery_forced_row_len:
+			row_len = self.gui.gallery_forced_row_len
 		self.gui.last_row = row_len
 		# ----
 
@@ -25863,7 +25873,6 @@ class Over:
 			_("General"),
 			_("Connections"),
 			_("Audio"),
-			_("Tracklist"),
 			_("Theme"),
 			_("View"),
 			_("Transcode"),
@@ -27511,19 +27520,8 @@ class Over:
 				accent,
 			)
 
-			old = gui.artist_info_panel
-			new = self.settings_switch_row(
-				(x, y, w, row_h),
-				gui.artist_info_panel,
-				_("Show artist info panel"),
-				_("Also available with Ctrl+O."),
-				accent,
-			)
-			if new != old:
-				tauon.view_box.artist_info(True)
-
-			y += row_h + row_gap
-
+			# ("Show artist info panel" switch removed — the panel is toggled
+			# with its keyboard shortcut (Ctrl+O) / the View Switcher instead.)
 			self.settings_switch_row(
 				(x, y, w, row_h),
 				tauon.toggle_auto_artist_dl,
@@ -28297,118 +28295,6 @@ class Over:
 						bg=info_fill,
 					)
 
-	def config_v(self, x0: int, y0: int, w0: int, h0: int) -> None:
-		gui     = self.gui
-		ddt     = self.ddt
-		colours = self.colours
-		prefs   = self.prefs
-		accent  = ColourRGBA(226, 102, 216, 255)
-		ddt.text_background_colour = colours.box_background
-
-		column_gap = round(12 * gui.scale)
-		left_w = max(round(282 * gui.scale), min(round(w0 * 0.56), w0 - round(208 * gui.scale)))
-		right_w = w0 - left_w - column_gap
-		left_rect = (x0, y0, left_w, h0)
-		right_rect = (x0 + left_w + column_gap, y0, right_w, h0)
-
-		chip_gap = round(6 * gui.scale)
-		chip_h = round(32 * gui.scale)
-		x, y, w, section_h = self.draw_settings_section(
-			left_rect,
-			_("Tracklist items"),
-			accent=accent,
-		)
-		chip_w = (w - chip_gap) // 2
-
-		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.heart_toggle, _("Loves"), accent=accent, show_active_bar=False)
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.rating_toggle, _("Track ratings"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.album_rating_toggle, _("Album ratings"), accent=accent, show_active_bar=False)
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.star_toggle, _("Star hints"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.star_line_toggle, _("Playcount lines"), accent=accent, show_active_bar=False)
-		old_left_align = prefs.row_title_format == 2
-		left_align = self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), old_left_align, _("Left align"), accent=accent, show_active_bar=False)
-		if left_align != old_left_align:
-			prefs.row_title_format = 2 if left_align else 1
-			gui.update += 1
-			gui.pl_update = 1
-		y += chip_h + chip_gap
-
-		old_genre = prefs.row_title_genre
-		prefs.row_title_genre = self.settings_toggle_chip((x, y, chip_w, chip_h), prefs.row_title_genre, _("Genre"), accent=accent, show_active_bar=False)
-		if prefs.row_title_genre != old_genre:
-			gui.update += 1
-			gui.pl_update = 1
-
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.toggle_append_date, _("Year"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		self.settings_toggle_chip((x, y, w, chip_h), self.tauon.toggle_append_total_time, _("Duration"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		old_scrollbar_left = prefs.tracklist_scrollbar_left
-		prefs.tracklist_scrollbar_left = self.settings_toggle_chip((x, y, w, chip_h), prefs.tracklist_scrollbar_left, _("Scroll bar on left"), accent=accent, show_active_bar=False)
-		if prefs.tracklist_scrollbar_left != old_scrollbar_left:
-			gui.update += 1
-			gui.pl_update = 1
-
-		x, y, w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Sizing"),
-			accent=accent,
-		)
-		row_gap = round(6 * gui.scale)
-		row_h = round(30 * gui.scale)
-
-		prefs.playlist_font_size = self.settings_stepper_row(
-			(x, y, w, row_h),
-			_("Font size"),
-			prefs.playlist_font_size,
-			12,
-			17,
-			accent=accent,
-		)
-		y += row_h + row_gap
-		prefs.playlist_row_height = self.settings_stepper_row(
-			(x, y, w, row_h),
-			_("Row height"),
-			prefs.playlist_row_height,
-			15,
-			45,
-			units="px",
-			accent=accent,
-		)
-		y += row_h + row_gap
-		prefs.tracklist_y_text_offset = self.settings_stepper_row(
-			(x, y, w, row_h),
-			_("Text baseline"),
-			prefs.tracklist_y_text_offset,
-			-10,
-			10,
-			accent=accent,
-			formatter=lambda number: f"{number:+d}px" if number else "0px",
-		)
-		y += row_h + row_gap
-
-		tile_gap = round(8 * gui.scale)
-		tile_h = round(30 * gui.scale)
-		tile_w = (w - tile_gap) // 2
-		small_active = (
-			prefs.playlist_font_size == 15
-			and prefs.playlist_row_height == round(22 * prefs.ui_scale)
-			and prefs.tracklist_y_text_offset == 0
-		)
-		large_active = (
-			prefs.playlist_font_size == 15
-			and prefs.playlist_row_height == round(27 * prefs.ui_scale)
-		)
-		self.settings_action_tile((x, y, tile_w, tile_h), _("Thin default"), self.small_preset, accent, emphasis=small_active)
-		self.settings_action_tile((x + tile_w + tile_gap, y, tile_w, tile_h), _("Thick default"), self.large_preset, accent, emphasis=large_active)
-
-
 	def set_playlist_cycle(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.end_setting == "cycle"
@@ -28678,21 +28564,16 @@ class Over:
 	def render_settings_view_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		prefs = self.prefs
-		column_gap = round(12 * gui.scale)
 		block_gap = round(12 * gui.scale)
 		row_h = round(42 * gui.scale)
 		compact_row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
-		right_w = w - left_w - column_gap
 		view_h = round(356 * gui.scale)
 		view_h += compact_row_h + row_gap
 		if self.prefs.backend == Backend.PHAZOR:
 			view_h += compact_row_h + row_gap
-		if self.album_mode_art_size < 160:
-			view_h += compact_row_h + row_gap
 		left_rect = (x, y, left_w, view_h)
-		right_rect = (x + left_w + column_gap, y, right_w, view_h)
 		window_y = y + view_h + block_gap
 		window_h = self.render_settings_window_category(x, window_y, w, accent, draw)
 		if not draw:
@@ -28758,66 +28639,7 @@ class Over:
 				accent=accent,
 			)
 
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Gallery"),
-			_("Browsing and thumbnail layout."),
-			accent,
-		)
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_gallery_click,
-			_("Single click to play"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.prefs.gallery_row_scroll = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.prefs.gallery_row_scroll,
-			_("Scroll gallery by row"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_gallery_combine,
-			_("Combine multi-discs"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_galler_text,
-			_("Show titles"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.prefs.center_gallery_text = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.prefs.center_gallery_text,
-			_("Center title text"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.album_mode_art_size = int(self.draw_settings_range_slider(
-			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
-			_("Thumbnail size"),
-			float(self.album_mode_art_size),
-			70,
-			400,
-			10,
-			accent=accent,
-			formatter=lambda number: f"{int(number)}px",
-			callback=lambda number: self.tauon.img_slide_update_gall(int(number)),
-		))
-		if self.album_mode_art_size < 160:
-			inner_y += round(52 * gui.scale)
-			self.settings_switch_row(
-				(inner_x, inner_y, inner_w, compact_row_h),
-				self.tauon.toggle_gallery_thin,
-				_("Prefer thinner padding"),
-				accent=accent,
-			)
+		# (The Gallery section moved to the gallery's background right-click menu.)
 
 		return view_h + window_h + block_gap
 
@@ -30508,20 +30330,16 @@ class Over:
 		elif index == 2:
 			body_h = self.render_settings_audio_category(x, body_y, w, accent, draw)
 		elif index == 3:
-			body_h = round(286 * self.gui.scale)
-			if draw:
-				self.config_v(x, body_y, w, body_h)
-		elif index == 4:
 			body_h = self.render_settings_theme_category(x, body_y, w, accent, draw)
-		elif index == 5:
+		elif index == 4:
 			body_h = self.render_settings_view_category(x, body_y, w, accent, draw)
-		elif index == 6:
+		elif index == 5:
 			body_h = self.render_settings_transcode_category(x, body_y, w, accent, draw)
-		elif index == 7:
+		elif index == 6:
 			body_h = self.render_settings_services_category(x, body_y, w, accent, draw)
-		elif index == 8:
+		elif index == 7:
 			body_h = self.render_settings_func_category(4, x, body_y, w, draw)
-		elif index == 9:
+		elif index == 8:
 			body_h = self.render_settings_stats_category(x, body_y, w, accent, draw)
 		else:
 			body_h = self.render_settings_about_category(x, body_y, w, accent, draw)
@@ -50109,6 +49927,76 @@ def main(holder: Holder) -> None:
 		GridGalleryWidget.menu_v_spacing_minus,
 		GridGalleryWidget.menu_v_spacing_plus)
 
+	def _grid_titles_deco() -> Decorator:
+		text = _("Hide Titles") if GridGalleryWidget.menu_titles_value() else _("Show Titles")
+		return Decorator(colours.menu_text, colours.menu_background, text)
+
+	gallery_grid_menu.add(MenuItem(_("Hide Titles"), GridGalleryWidget.menu_toggle_titles, _grid_titles_deco))
+
+	# Right-click (background) menu for the gallery — the preset album view and
+	# the Gallery: Classic widget (the Compact grid has its own menu). Holds the
+	# gallery settings, moved here from Settings > View.
+	gallery_settings_menu = Menu(tauon, 210)
+	tauon.gallery_settings_menu = gallery_settings_menu
+
+	def _check_deco(get_state: Callable[[], bool | None], label: str) -> Callable[[], Decorator]:
+		def deco() -> Decorator:
+			text = ("✓ " if get_state() else "   ") + label
+			return Decorator(colours.menu_text, colours.menu_background, text)
+		return deco
+
+	def _gal_size_value(ref=None) -> int:
+		return int(tauon.album_mode_art_size)
+
+	def _gal_size_step(direction: int) -> Callable[..., None]:
+		def cb(ref=None) -> None:
+			new = min(400, max(70, int(tauon.album_mode_art_size) + 10 * direction))
+			if new != tauon.album_mode_art_size:
+				tauon.img_slide_update_gall(new)
+				gui.update += 1
+		return cb
+
+	gallery_settings_menu.add_incrementor(
+		_("Thumbnail size"), _gal_size_value, _gal_size_step(-1), _gal_size_step(1))
+
+	def _gal_toggle_titles(ref=None) -> None:
+		tauon.toggle_galler_text()
+
+	gallery_settings_menu.add(MenuItem(_("Show titles"), _gal_toggle_titles,
+		_check_deco(lambda: gui.gallery_show_text, _("Show titles"))))
+
+	def _gal_toggle_center(ref=None) -> None:
+		prefs.center_gallery_text ^= True
+		gui.update += 1
+
+	gallery_settings_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
+		_check_deco(lambda: prefs.center_gallery_text, _("Center title text"))))
+
+	def _gal_toggle_click(ref=None) -> None:
+		tauon.toggle_gallery_click()
+
+	gallery_settings_menu.add(MenuItem(_("Single click to play"), _gal_toggle_click,
+		_check_deco(lambda: tauon.toggle_gallery_click(1), _("Single click to play"))))
+
+	def _gal_toggle_row_scroll(ref=None) -> None:
+		prefs.gallery_row_scroll ^= True
+
+	gallery_settings_menu.add(MenuItem(_("Scroll by row"), _gal_toggle_row_scroll,
+		_check_deco(lambda: prefs.gallery_row_scroll, _("Scroll by row"))))
+
+	def _gal_toggle_combine(ref=None) -> None:
+		tauon.toggle_gallery_combine()
+
+	gallery_settings_menu.add(MenuItem(_("Combine multi-discs"), _gal_toggle_combine,
+		_check_deco(lambda: tauon.toggle_gallery_combine(1), _("Combine multi-discs"))))
+
+	def _gal_toggle_thin(ref=None) -> None:
+		tauon.toggle_gallery_thin()
+
+	gallery_settings_menu.add(MenuItem(_("Prefer thinner padding"), _gal_toggle_thin,
+		_check_deco(lambda: tauon.toggle_gallery_thin(1), _("Prefer thinner padding")),
+		show_test=lambda ref=None: tauon.album_mode_art_size < 160))
+
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
 	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
 	repeat_menu.add(MenuItem(_("Repeat Album"), tauon.menu_album_repeat))
@@ -50553,8 +50441,9 @@ def main(holder: Holder) -> None:
 	track_menu.br()
 	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 
-	# Columns toggle (moved here from the View Switcher; the ViewBox.col method
-	# stays as the shared implementation — the toggle-columns keybind uses it too).
+	# Layout submenu: the columns toggles plus the tracklist settings, moved
+	# here from Settings > Tracklist. (ViewBox.col stays as the shared columns
+	# implementation — the toggle-columns keybind uses it too.)
 	def menu_toggle_columns(ref=None) -> None:
 		tauon.view_box.col(True)
 
@@ -50564,8 +50453,86 @@ def main(holder: Holder) -> None:
 	def _columns_on_test(ref=None) -> bool:
 		return gui.set_mode
 
-	track_menu.add(MenuItem(_("Show Columns"), menu_toggle_columns, show_test=_columns_off_test))
-	track_menu.add(MenuItem(_("Hide Columns"), menu_toggle_columns, show_test=_columns_on_test))
+	def menu_toggle_set_bar(ref=None) -> None:
+		gui.set_bar ^= True
+		gui.update_layout = True
+		gui.pl_update = 1
+
+	def _bar_deco() -> Decorator:
+		text = _("Hide Bar") if gui.set_bar else _("Show Bar")
+		return Decorator(colours.menu_text, colours.menu_background, text)
+
+	def _tl_check_deco(get_state: Callable[[], bool | None], label: str) -> Callable[[], Decorator]:
+		def deco() -> Decorator:
+			text = ("✓ " if get_state() else "   ") + label
+			return Decorator(colours.menu_text, colours.menu_background, text)
+		return deco
+
+	def _tl_toggle_left_align() -> None:
+		prefs.row_title_format = 1 if prefs.row_title_format == 2 else 2
+		gui.update += 1
+		gui.pl_update = 1
+
+	def _tl_toggle_genre() -> None:
+		prefs.row_title_genre ^= True
+		gui.update += 1
+		gui.pl_update = 1
+
+	def _tl_toggle_scrollbar_left() -> None:
+		prefs.tracklist_scrollbar_left ^= True
+		gui.update += 1
+		gui.pl_update = 1
+
+	def _tl_stepper(attr: str, lo: int, hi: int) -> tuple[Callable, Callable, Callable]:
+		def value(ref=None) -> int:
+			return getattr(prefs, attr)
+		def step(direction: int) -> Callable[..., None]:
+			def cb(ref=None) -> None:
+				new = min(hi, max(lo, getattr(prefs, attr) + direction))
+				if new != getattr(prefs, attr):
+					setattr(prefs, attr, new)
+					gui.update_layout = True
+					gui.pl_update = 1
+			return cb
+		return value, step(-1), step(1)
+
+	def add_layout_sub(menu: Menu) -> None:
+		"""Append the tracklist Layout submenu to ``menu`` (fresh MenuItems per
+		menu; the callbacks/decos are shared closures above)."""
+		menu.add_sub(_("Layout"), 190)
+		sub = menu.sub_number - 1
+		menu.add_to_sub(sub, MenuItem(_("Show Columns"), menu_toggle_columns, show_test=_columns_off_test))
+		menu.add_to_sub(sub, MenuItem(_("Hide Columns"), menu_toggle_columns, show_test=_columns_on_test))
+		menu.add_to_sub(sub, MenuItem(_("Hide Bar"), menu_toggle_set_bar, _bar_deco,
+			no_exit=True, disable_test=lambda: not gui.set_mode))
+
+		def toggle_item(label: str, func: Callable, get_state: Callable[[], bool | None]) -> None:
+			def cb(ref=None) -> None:
+				func()
+			# no_exit: checkbox-style toggles keep the submenu open (the ✓ deco
+			# flips in place), like the custom-layout Layout… submenu toggles.
+			menu.add_to_sub(sub, MenuItem(label, cb, _tl_check_deco(get_state, label), no_exit=True))
+
+		toggle_item(_("Loves"), tauon.heart_toggle, lambda: tauon.heart_toggle(1))
+		toggle_item(_("Track ratings"), tauon.rating_toggle, lambda: tauon.rating_toggle(1))
+		toggle_item(_("Album ratings"), tauon.album_rating_toggle, lambda: tauon.album_rating_toggle(1))
+		toggle_item(_("Star hints"), tauon.star_toggle, lambda: tauon.star_toggle(1))
+		toggle_item(_("Playcount lines"), tauon.star_line_toggle, lambda: tauon.star_line_toggle(1))
+		toggle_item(_("Left align"), _tl_toggle_left_align, lambda: prefs.row_title_format == 2)
+		toggle_item(_("Genre"), _tl_toggle_genre, lambda: prefs.row_title_genre)
+		toggle_item(_("Year"), tauon.toggle_append_date, lambda: tauon.toggle_append_date(1))
+		toggle_item(_("Duration"), tauon.toggle_append_total_time, lambda: tauon.toggle_append_total_time(1))
+		toggle_item(_("Scroll bar on left"), _tl_toggle_scrollbar_left, lambda: prefs.tracklist_scrollbar_left)
+
+		menu.add_incrementor_to_sub(sub, _("Font size"), *_tl_stepper("playlist_font_size", 12, 17))
+		menu.add_incrementor_to_sub(sub, _("Row height"), *_tl_stepper("playlist_row_height", 15, 45))
+		menu.add_incrementor_to_sub(sub, _("Text baseline"), *_tl_stepper("tracklist_y_text_offset", -10, 10))
+
+		menu.add_to_sub(sub, MenuItem(_("Thin default"), lambda: tauon.pref_box.small_preset()))
+		menu.add_to_sub(sub, MenuItem(_("Thick default"), lambda: tauon.pref_box.large_preset()))
+
+	add_layout_sub(track_menu)
+	add_layout_sub(folder_menu)
 
 
 	# Create top menu
@@ -51211,13 +51178,17 @@ def main(holder: Holder) -> None:
 				* (tauon.album_mode_art_size + gui.album_v_gap)
 			) - round(50 * gui.scale)
 
-			# Mouse wheel scrolling
+			# Mouse wheel scrolling. The momentum channel key is per Gallery:
+			# Compact instance (swapped in around this call) so several
+			# galleries scroll independently; the preset key in gallery_scroll_key
+			# is the default.
+			scroll_key = gui.gallery_scroll_key
 			gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
 			touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
 			use_smooth_gallery = (
 				tauon.smooth_scroll.enabled()
 				or touch_scroll
-				or tauon.smooth_scroll.active("gallery")
+				or tauon.smooth_scroll.active(scroll_key)
 			)
 			row_gallery_scroll = prefs.gallery_row_scroll and not use_smooth_gallery and not touch_scroll
 			if (
@@ -51231,7 +51202,7 @@ def main(holder: Holder) -> None:
 					gui.frame_callback_list.append(TestTimer(0.9))
 
 				if use_smooth_gallery and inp.mouse_wheel != 0:
-					tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
+					tauon.smooth_scroll.add_wheel_motion(scroll_key, -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
 				elif row_gallery_scroll:
 					gui.album_scroll_px -= inp.mouse_wheel * (
 						tauon.album_mode_art_size + gui.album_v_gap
@@ -51240,12 +51211,12 @@ def main(holder: Holder) -> None:
 					gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
 
 				if touch_scroll:
-					tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+					tauon.smooth_scroll.apply_touch_drag(scroll_key, -inp.touch_scroll_y)
 				elif inp.touch_released:
-					tauon.smooth_scroll.release_touch("gallery")
+					tauon.smooth_scroll.release_touch(scroll_key)
 
 				if use_smooth_gallery:
-					gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+					gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
 
 				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
@@ -51258,30 +51229,30 @@ def main(holder: Holder) -> None:
 			elif touch_scroll:
 				tauon.scroll_gallery_hide_timer.set()
 				gui.frame_callback_list.append(TestTimer(0.9))
-				tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
-				gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				tauon.smooth_scroll.apply_touch_drag(scroll_key, -inp.touch_scroll_y)
+				gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
 				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
 				if gui.album_scroll_px > max_scroll:
 					gui.album_scroll_px = max_scroll
 					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
 			elif inp.touch_released:
-				tauon.smooth_scroll.release_touch("gallery")
-				if tauon.smooth_scroll.active("gallery"):
-					gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				tauon.smooth_scroll.release_touch(scroll_key)
+				if tauon.smooth_scroll.active(scroll_key):
+					gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
 					if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 						gui.album_scroll_px = round(gui.album_v_slide_value * -1)
 					if gui.album_scroll_px > max_scroll:
 						gui.album_scroll_px = max_scroll
 						gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
 
-			if tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
+			if tauon.smooth_scroll.active(scroll_key) and not touch_scroll and not inp.touch_released and not (
 				not tauon.search_over.active
 				and not radiobox.active
 				and inp.mouse_position[0] > window_size[0] - w
 				and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 			):
-				gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
 				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
 				if gui.album_scroll_px > max_scroll:
@@ -51612,6 +51583,21 @@ def main(holder: Holder) -> None:
 						if album_on > len(tauon.album_dex):
 							break
 						render_pos += tauon.album_mode_art_size + gui.album_v_gap
+
+			# Right-click on the gallery background: settings menu. Runs after
+			# the album input pass, so a right-click on a tile has already
+			# activated gallery_menu (making is_level_zero False). The right
+			# ~40px strip is the scroll-bar hotzone (right-click there jumps
+			# the scroll). The Compact grid widget has its own menu instead.
+			if (
+				inp.right_click
+				and not gui.gallery_forced_row_len
+				and tauon.is_level_zero()
+				and window_size[0] - w < inp.mouse_position[0] < window_size[0] - 40 * gui.scale
+				and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+			):
+				inp.right_click = False
+				gallery_settings_menu.activate()
 
 			render_pos = 0
 			album_on = 0

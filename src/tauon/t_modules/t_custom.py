@@ -926,6 +926,13 @@ class GalleryWidget(Widget):
 	single_instance = True  # shared scroll/selection state (gui.album_scroll_px, gallery_scroll)
 	offscreen = True
 
+	# The gallery-family widget currently inside its render, if any. Lets
+	# gallery_locate detect a locate triggered from within a widget's own
+	# render (gallery click → show_current): that widget's per-instance scroll
+	# is already live in the gui vars, so the swap must be skipped or the
+	# draw's save-back would overwrite the located position.
+	_rendering: GalleryWidget | None = None
+
 	def __init__(self) -> None:
 		self._dex_playlist_id: int | None = None
 
@@ -985,7 +992,9 @@ class GalleryWidget(Widget):
 		if grid is not None:
 			art, h_gap, v_gap, n, margin = grid
 			saved_grid = (tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
-				tauon.gall_ren.size, gui.gallery_forced_row_len, gui.gallery_grid_margin)
+				tauon.gall_ren.size, gui.gallery_forced_row_len, gui.gallery_grid_margin,
+				gui.gallery_show_text, gui.gallery_scroll_key, gui.album_scroll_px,
+				gui.last_row, tauon.gallery_scroll)
 			tauon.album_mode_art_size = art
 			gui.album_h_gap = h_gap
 			gui.album_v_gap = v_gap
@@ -994,6 +1003,18 @@ class GalleryWidget(Widget):
 			tauon.gall_ren.size = art
 			gui.gallery_forced_row_len = n
 			gui.gallery_grid_margin = margin
+			gui.gallery_show_text = self.titles
+			# Per-instance gallery state: own scroll position / row memory /
+			# smooth-scroll momentum channel / scroll-bar thumb, so several
+			# galleries can coexist without fighting over the shared globals
+			# (the Classic widget keeps using the globals).
+			gui.gallery_scroll_key = self._scroll_key
+			gui.album_scroll_px = self.scroll_px
+			gui.last_row = self.last_row
+			if self._scroll_box is None:
+				self._scroll_box = type(tauon.gallery_scroll)(tauon=tauon, pctl=tauon.pctl)
+			tauon.gallery_scroll = self._scroll_box
+			GalleryWidget._rendering = self
 			# The top margin comes from the slide gap: the scroll floor is
 			# -slide, so at rest the first row sits `margin` below the top.
 			gui.album_v_slide_value = margin
@@ -1004,9 +1025,14 @@ class GalleryWidget(Widget):
 			(gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
 				gui.album_v_slide_value) = saved
 			if saved_grid is not None:
+				GalleryWidget._rendering = None
+				self.scroll_px = gui.album_scroll_px
+				self.last_row = gui.last_row
 				(tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
 					tauon.gall_ren.size, gui.gallery_forced_row_len,
-					gui.gallery_grid_margin) = saved_grid
+					gui.gallery_grid_margin, gui.gallery_show_text,
+					gui.gallery_scroll_key, gui.album_scroll_px, gui.last_row,
+					tauon.gallery_scroll) = saved_grid
 			inp.mouse_wheel = saved_wheel
 			ddt.text_background_colour = saved_text_bg
 		self._after_render(tauon, over)
@@ -1030,7 +1056,7 @@ GRID_MARGIN = 20
 
 
 class GridGalleryWidget(GalleryWidget):
-	"""Album Grid: the Album Gallery with tight, segment-derived spacing.
+	"""Gallery: Compact — the Album Gallery with tight, segment-derived spacing.
 
 	Instead of the global album_mode_art_size / gap settings, the row length is
 	a per-widget setting (albums per row) and the art size is computed so the
@@ -1038,35 +1064,52 @@ class GridGalleryWidget(GalleryWidget):
 	Everything else (scrolling, clicks, the album context menu, the scroll bar,
 	titles under the art) is the shared gallery renderer, driven through
 	_grid_overrides. Right-click on the background opens gallery_grid_menu
-	(built in t_main), whose incrementor rows edit this instance's settings.
+	(built in t_main), whose rows edit this instance's settings.
+
+	NOT single-instance: each instance keeps its own scroll position, row
+	memory, smooth-scroll momentum channel and scroll-bar thumb (swapped in
+	around the render), so several Compact galleries — and the Classic one,
+	which keeps the shared globals — can be shown at the same time.
 	"""
 
 	kind = "gallery_grid"
 	name = "Gallery: Compact"
 	min_w = 100
 	min_h = 80
-	single_instance = True  # same shared scroll/selection state as the gallery
+	single_instance = False
 	offscreen = True
 
-	# The instance whose settings the (single) gallery_grid_menu edits, set when
-	# the menu is opened. Single-instance, so at most one candidate exists.
+	# The instance whose settings gallery_grid_menu edits, set by whichever
+	# instance opened the menu.
 	menu_target: GridGalleryWidget | None = None
 	menu_tauon: Tauon | None = None
+	# Monotonic id source for per-instance smooth-scroll channel keys.
+	_instance_counter: int = 0
 
 	def __init__(self) -> None:
 		super().__init__()
 		self.per_row: int = 5
 		self.spacing: int = 4    # px between tiles in a row (unscaled)
 		self.v_spacing: int = 4  # px between rows (unscaled)
+		self.titles: bool = True  # album/artist lines under the art
+		# Per-instance gallery state, swapped into the shared gui vars around
+		# the render (and by gallery_locate).
+		self.scroll_px: float = 0.0
+		self.last_row: int = 0
+		GridGalleryWidget._instance_counter += 1
+		self._scroll_key: str = f"gallery_grid_{GridGalleryWidget._instance_counter}"
+		self._scroll_box = None  # lazily-made private ScrollBox (thumb drag state)
 
 	# -- persistence --
 	def get_config(self) -> dict | None:
-		return {"per_row": self.per_row, "spacing": self.spacing, "v_spacing": self.v_spacing}
+		return {"per_row": self.per_row, "spacing": self.spacing,
+			"v_spacing": self.v_spacing, "titles": self.titles}
 
 	def set_config(self, d: dict) -> None:
 		self.per_row = min(GRID_PER_ROW_MAX, max(1, int(d.get("per_row", 5))))
 		self.spacing = min(CL_INSET_MAX, max(0, int(d.get("spacing", 4))))
 		self.v_spacing = min(CL_INSET_MAX, max(0, int(d.get("v_spacing", 4))))
+		self.titles = bool(d.get("titles", True))
 
 	# -- geometry --
 	def _grid_overrides(self, tauon: Tauon, seg_w: float) -> tuple[int, int, int, int, int] | None:
@@ -1086,11 +1129,12 @@ class GridGalleryWidget(GalleryWidget):
 			margin = 0  # tiny segment: give the space to the art
 		sp = round(self.spacing * scale)
 		art = max(round(8 * scale), int((w - margin * 2 + sp) / n - sp))
-		# Keep room for the text lines under each tile when they're enabled,
-		# like the preset gaps do (update_layout_do: text adds ~41*scale;
-		# light-mode card style draws a taller card below the art).
+		# Keep room for the text lines under each tile when this instance shows
+		# them (gui.gallery_show_text is overridden to self.titles for the
+		# render), like the preset gaps do (update_layout_do: text adds
+		# ~41*scale; light-mode card style draws a taller card below the art).
 		allow = 0
-		if gui.gallery_show_text:
+		if self.titles:
 			allow = round(41 * scale)
 			if tauon.prefs.use_card_style and tauon.colours.lm:
 				allow = round(58 * scale)
@@ -1153,6 +1197,18 @@ class GridGalleryWidget(GalleryWidget):
 		if w and w.spacing < CL_INSET_MAX:
 			w.spacing += 1
 			cls._menu_changed()
+
+	@classmethod
+	def menu_toggle_titles(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w:
+			w.titles = not w.titles
+			cls._menu_changed()
+
+	@classmethod
+	def menu_titles_value(cls, ref=None) -> bool:
+		w = cls.menu_target
+		return w.titles if w else True
 
 	@classmethod
 	def menu_v_spacing_value(cls, ref=None) -> int:
@@ -1276,7 +1332,7 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(24, 24, 28, 255)),
 	WidgetSpec("gallery", "Gallery: Classic", "Content", _gallery, single_instance=True,
 		colour=ColourRGBA(26, 24, 30, 255)),
-	WidgetSpec("gallery_grid", "Gallery: Compact", "Content", _gallery_grid, single_instance=True,
+	WidgetSpec("gallery_grid", "Gallery: Compact", "Content", _gallery_grid,
 		colour=ColourRGBA(26, 24, 30, 255)),
 	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
 	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
@@ -1306,15 +1362,6 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(38, 38, 46, 255)),
 ]
 SPEC_BY_KIND: dict[str, WidgetSpec] = {s.kind: s for s in WIDGET_SPECS}
-
-# Kinds that can't coexist in one layout: both gallery widgets drive the shared
-# gallery renderer (gui.album_scroll_px / gui.last_row), and two different row
-# lengths rendering each frame would ping-pong last_row and re-locate the
-# scroll every frame (same failure the preset-vs-widget custom_mode gate stops).
-KIND_CONFLICTS: dict[str, tuple[str, ...]] = {
-	"gallery": ("gallery_grid",),
-	"gallery_grid": ("gallery",),
-}
 
 
 def make_widget(kind: str) -> Widget | None:
@@ -1950,12 +1997,6 @@ class CustomLayout:
 		if spec.single_instance and count_kind(root, kind) > 0:
 			self.tauon.show_message(_t("Only one %s allowed") % spec.name, mode="warning")
 			return False
-		for other in KIND_CONFLICTS.get(kind, ()):
-			if count_kind(root, other) > 0:
-				self.tauon.show_message(
-					_t("%s can't be used together with %s") % (spec.name, SPEC_BY_KIND[other].name),
-					mode="warning")
-				return False
 		if not isinstance(target, Leaf):
 			return False
 		was_empty = target.widget is None
@@ -2547,18 +2588,93 @@ class CustomLayout:
 	def _t_border_off(self, ref=None) -> bool:
 		return self.menu_target is not None and not self.menu_target.border
 
-	def kind_disabled(self, kind: str) -> bool:
-		"""Disable-test for an Add-widget item: True if the (single-instance)
-		widget already exists in the active layout, or a conflicting kind does."""
-		spec = SPEC_BY_KIND.get(kind)
-		if spec is None:
+	def gallery_locate(self, playlist_no: int, highlight: bool = False, force: bool = False) -> bool:
+		"""Locate an album in a custom-layout gallery widget (Gallery: Classic /
+		Compact) the way the preset gallery's show-playing does: run
+		tauon.goto_album with the widget's segment geometry applied — and, for
+		the Compact grid, its derived art size / gaps / forced row length — so
+		the shared scroll lands on the right row, optionally with the select
+		animation. goto_album is otherwise gated behind prefs.album_mode, which
+		is the preset gallery's flag and off in custom mode. Returns True when
+		handled (a gallery widget is in the active layout and has been laid
+		out); the caller then skips the preset album_mode path.
+		"""
+		gui = self.gui
+		if not gui.custom_mode:
 			return False
 		root = self.slots[self.active_slot]
 		if root is None:
 			return False
-		if spec.single_instance and count_kind(root, kind) > 0:
-			return True
-		return any(count_kind(root, other) > 0 for other in KIND_CONFLICTS.get(kind, ()))
+		tauon = self.tauon
+		handled = False
+		result = None
+		for lf in iter_leaves(root):
+			if not (isinstance(lf, Leaf) and isinstance(lf.widget, GalleryWidget)):
+				continue
+			widget = lf.widget
+			# The widget's drawable rect: gutter-inset content rect, then the
+			# padding inset (same clamped math as _draw_leaf).
+			cx, cy, cw, ch = content_rect(lf, gui.scale)
+			pad = lf.padding * gui.scale
+			cw -= min(pad, cw / 2) * 2
+			ch -= min(pad, ch / 2) * 2
+			if cw <= 0 or ch <= 0:
+				continue  # no layout pass yet this session
+			saved_win = (tauon.window_size[0], tauon.window_size[1])
+			saved = (gui.rspw, gui.lsp, gui.album_v_slide_value,
+				tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+				gui.gallery_forced_row_len)
+			# Mirror GalleryWidget.draw's reframing: the segment is the window.
+			tauon.window_size[0] = round(cw)
+			tauon.window_size[1] = round(ch)
+			gui.rspw = round(cw)
+			gui.lsp = False
+			gui.album_v_slide_value = max(0, gui.album_v_slide_value - round(30 * gui.scale))
+			grid = widget._grid_overrides(tauon, cw)
+			# A Compact grid keeps its own scroll/row state: swap it in so
+			# goto_album moves THIS widget's view — unless the locate came from
+			# within this widget's own render (gallery click → show_current),
+			# where its state is already live and the draw saves it back.
+			own_scroll = grid is not None and widget is not GalleryWidget._rendering
+			saved_scroll = (gui.album_scroll_px, gui.last_row)
+			if grid is not None:
+				art, h_gap, v_gap, n, margin = grid
+				tauon.album_mode_art_size = art
+				gui.album_h_gap = h_gap
+				gui.album_v_gap = v_gap
+				gui.gallery_forced_row_len = n
+				gui.album_v_slide_value = margin
+				if own_scroll:
+					gui.album_scroll_px = widget.scroll_px
+					gui.last_row = widget.last_row
+			try:
+				result = tauon.goto_album(playlist_no, force=force)
+			finally:
+				if own_scroll:
+					widget.scroll_px = gui.album_scroll_px
+					widget.last_row = gui.last_row
+					gui.album_scroll_px, gui.last_row = saved_scroll
+				tauon.window_size[0], tauon.window_size[1] = saved_win
+				(gui.rspw, gui.lsp, gui.album_v_slide_value,
+					tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+					gui.gallery_forced_row_len) = saved
+			handled = True
+		if not handled:
+			return False
+		if highlight:
+			gui.gallery_animate_highlight_on = result
+			tauon.gallery_select_animate_timer.set()
+		gui.update += 1
+		return True
+
+	def kind_disabled(self, kind: str) -> bool:
+		"""Disable-test for an Add-widget item: True if the (single-instance)
+		widget already exists in the active layout."""
+		spec = SPEC_BY_KIND.get(kind)
+		if spec is None or not spec.single_instance:
+			return False
+		root = self.slots[self.active_slot]
+		return root is not None and count_kind(root, kind) > 0
 
 	# -- rendering -----------------------------------------------------------
 
