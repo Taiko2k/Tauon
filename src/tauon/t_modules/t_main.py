@@ -52768,11 +52768,7 @@ def main(holder: Holder) -> None:
 					continue
 				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
 					rt = event.gaxis.value > 5000
-					continue
-				# Deadzone guard to prevent frequent gui refreshes
-				if abs(event.gaxis.value) <= 5000:
-					continue
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
+				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
 					if event.gaxis.value < -10000:
 						new = -1
 					elif event.gaxis.value > 10000:
@@ -52781,10 +52777,10 @@ def main(holder: Holder) -> None:
 						new = 0
 					if new != c_yax:
 						c_yax_timer.force_set(1)
-					c_yax = new
-					power += 5
-					gui.update += 1
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTX:
+						c_yax = new
+						power += 5
+						gui.update += 1
+				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTX:
 					if event.gaxis.value < -15000:
 						new = -1
 					elif event.gaxis.value > 15000:
@@ -52793,10 +52789,10 @@ def main(holder: Holder) -> None:
 						new = 0
 					if new != c_xax:
 						c_xax_timer.force_set(1)
-					c_xax = new
-					power += 5
-					gui.update += 1
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTY:
+						c_xax = new
+						power += 5
+						gui.update += 1
+				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTY:
 					if event.gaxis.value < -15000:
 						new = -1
 					elif event.gaxis.value > 15000:
@@ -52805,9 +52801,9 @@ def main(holder: Holder) -> None:
 						new = 0
 					if new != c_xay:
 						c_xay_timer.force_set(1)
-					c_xay = new
-					power += 5
-					gui.update += 1
+						c_xay = new
+						power += 5
+						gui.update += 1
 			elif event.type == sdl3.SDL_EVENT_GAMEPAD_BUTTON_DOWN:
 				if not prefs.use_gamepad:
 					continue
