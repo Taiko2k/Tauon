@@ -31543,7 +31543,7 @@ class TopPanel:
 					gui.tab_menu_pl = i
 
 				# Quick drop tracks
-				elif self.inp.quick_drag is True and self.inp.mouse_up:
+				elif not gui.radio_view and self.inp.quick_drag is True and self.inp.mouse_up:
 					self.tab_d_click_ref = -1
 					self.tab_d_click_timer.force_set(100)
 					if (pctl.gen_codes.get(pctl.pl_to_id(i)) and "self" not in pctl.gen_codes[pctl.pl_to_id(i)]):
@@ -31689,16 +31689,16 @@ class TopPanel:
 						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), ColourRGBA(80, 160, 200, 255))
 					else:
 						ddt.rect((x, y, bar_highlight_size, gui.panelY2), ColourRGBA(80, 160, 200, 255))
-				elif (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
+				elif not gui.radio_view and (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(80, 200, 180, 255))
 			# Drag yellow line highlight if single track already in playlist
-			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
+			elif not gui.radio_view and self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
 					if item < len(pctl.default_playlist) and pctl.default_playlist[item] in tab.playlist_ids:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(190, 160, 20, 255))
 						break
 			# Drag red line highlight if playlist is generator playlist
-			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
+			if not gui.radio_view and self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				if not self.tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(200, 70, 50, 255))
 
