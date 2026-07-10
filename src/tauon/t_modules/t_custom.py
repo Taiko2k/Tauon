@@ -2728,6 +2728,12 @@ class CustomLayout:
 			if isinstance(leaf, Leaf):
 				self._draw_leaf(leaf, interactive)
 
+		# Widgets receive the deferred mouse-up event above so a later widget can
+		# accept a track drop. Once every widget has had that chance, end the drag
+		# just as the standard TopPanel path does.
+		if interactive and inp.mouse_up:
+			inp.quick_drag = False
+
 		# Window-controls fallback when nothing provides them.
 		if not self._provides_window_controls(root):
 			self._draw_window_controls_fallback()
