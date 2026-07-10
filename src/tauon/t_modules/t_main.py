@@ -2757,7 +2757,11 @@ class PlayerCtl:
 				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
 		elif self.playing_state == PlayingState.STOPPED and self.prefs.meta_persists_stop:
-			target_track = self.master_library[self.track_queue[self.queue_step]]
+			# A saved queue position can become stale when the queue was changed
+			# before the previous shutdown. Do not let metadata rendering prevent
+			# Tauon from starting in that case.
+			if 0 <= self.queue_step < len(self.track_queue):
+				target_track = self.master_library[self.track_queue[self.queue_step]]
 
 		if self.prefs.meta_shows_selected_always \
 		and -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
@@ -2769,7 +2773,7 @@ class PlayerCtl:
 		if self.playing_state == PlayingState.URL_STREAM:
 			return self.radiobox.dummy_track
 
-		if len(self.track_queue) > 0:
+		if 0 <= self.queue_step < len(self.track_queue):
 			return self.master_library[self.track_queue[self.queue_step]]
 		return None
 
@@ -49224,7 +49228,13 @@ def main(holder: Holder) -> None:
 		window_size = window_default_size
 		gui.rspw = 200
 
-	bag.playing_in_queue = min(bag.playing_in_queue, len(bag.track_queue) - 1)
+	# The queue and its position are persisted separately. An interrupted save
+	# or a queue edited during shutdown can leave the position out of range.
+	# Keep an empty queue at its neutral position instead of turning it into -1.
+	if bag.track_queue:
+		bag.playing_in_queue = max(0, min(bag.playing_in_queue, len(bag.track_queue) - 1))
+	else:
+		bag.playing_in_queue = 0
 
 	shoot = threading.Thread(target=keymaps.load)
 	shoot.daemon = True
