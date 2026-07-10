@@ -6422,6 +6422,9 @@ class Tauon:
 		self.tab_menu: Menu              = Menu(self, 160, show_icons=True)
 		self.playlist_menu: Menu         = Menu(self, 130)
 		self.showcase_menu: Menu         = Menu(self, 135)
+		# Showcase view's own background menu: the lyrics menu plus
+		# showcase-specific layout settings (wide mode, visualiser)
+		self.showcase_view_menu: Menu    = Menu(self, 160)
 		self.queue_menu: Menu            = Menu(self, 150)
 		self.radio_entry_menu: Menu      = Menu(self, 125)
 		self.center_info_menu: Menu      = Menu(self, 125)
@@ -27566,14 +27569,8 @@ class Over:
 				accent,
 			)
 
-			y += row_h + row_gap
-			self.settings_switch_row(
-				(x, y, w, row_h),
-				tauon.toggle_top_tabs,
-				_("Tabs in top panel"),
-				_("Show tabs in the top panel."),
-				accent,
-			)
+			# ("Tabs in top panel" switch moved to the main menu under
+			# Top Panel Layout…)
 
 			x, y, w, section_h = self.draw_settings_section(
 				right_rect,
@@ -27681,21 +27678,8 @@ class Over:
 				)
 
 		elif self.func_page == 2:
-			x, y, w, section_h = self.draw_settings_section(
-				right_rect,
-				_("Track menu extras"),
-				_("Optional items in the track menu."),
-				accent,
-			)
-			for callback, title in (
-				(tauon.toggle_wiki, _("Wikipedia artist search")),
-				(tauon.toggle_rym, _("Sonemic artist search")),
-				(tauon.toggle_band, _("Bandcamp artist search")),
-				(tauon.toggle_gen, _("Genius track search")),
-			):
-				self.settings_switch_row((x, y, w, small_row_h), callback, title, accent=accent)
-				y += small_row_h + row_gap
-
+			# (The "Track menu extras" search-provider switches moved to the
+			# track menu's Layout submenu.)
 			x, y, w, section_h = self.draw_settings_section(
 				left_rect,
 				_("Archive imports"),
@@ -28589,86 +28573,13 @@ class Over:
 		return total_h
 
 	def render_settings_view_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
-		gui = self.gui
-		prefs = self.prefs
-		block_gap = round(12 * gui.scale)
-		row_h = round(42 * gui.scale)
-		compact_row_h = round(30 * gui.scale)
-		row_gap = round(6 * gui.scale)
-		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
-		view_h = round(356 * gui.scale)
-		view_h += compact_row_h + row_gap
-		if self.prefs.backend == Backend.PHAZOR:
-			view_h += compact_row_h + row_gap
-		left_rect = (x, y, left_w, view_h)
-		window_y = y + view_h + block_gap
-		window_h = self.render_settings_window_category(x, window_y, w, accent, draw)
-		if not draw:
-			return view_h + window_h + block_gap
-
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			left_rect,
-			_("View"),
-			_("Scroll feel and side panel layout."),
-			accent,
-		)
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
-			self.tauon.toggle_smooth_scroll,
-			_("Smooth scrolling"),
-			_("Use inertial scrolling"),
-			accent=accent,
-			disabled=prefs.macos,
-		)
-		inner_y += row_h + row_gap
-		prefs.smooth_scroll_speed = self.draw_settings_range_slider(
-			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
-			_("Smooth scroll speed"),
-			prefs.smooth_scroll_speed,
-			0.25,
-			10.0,
-			0.05,
-			accent=accent,
-			formatter=lambda number: f"{number:.2f}x",
-		)
-		inner_y += round(52 * gui.scale)
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_side_panel_layout,
-			_("Centered metadata side panel"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		old_zoom = self.prefs.zoom_art
-		self.prefs.zoom_art = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.prefs.zoom_art,
-			_("Zoom album art to fit"),
-			accent=accent,
-		)
-		if self.prefs.zoom_art != old_zoom:
-			self.tauon.album_art_gen.clear_cache()
-		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_milky_settings,
-			_("MilkDrop visualiser"),
-			accent=accent,
-			disabled=not milky_ready and not self.prefs.milk,
-			disabled_click=True,
-		)
-		if self.prefs.backend == Backend.PHAZOR:
-			inner_y += compact_row_h + row_gap
-			self.settings_switch_row(
-				(inner_x, inner_y, inner_w, compact_row_h),
-				self.tauon.toggle_showcase_vis,
-				_("Showcase visualisation"),
-				accent=accent,
-			)
-
-		# (The Gallery section moved to the gallery's background right-click menu.)
-
-		return view_h + window_h + block_gap
+		# (The View card is gone: its scroll settings moved into the Window
+		# card; "Centered metadata side panel", "Zoom album art to fit" and
+		# "MilkDrop visualiser" moved to the side panel album art right-click
+		# menu; "Showcase visualisation" to the showcase view's right-click
+		# menu; the Gallery section to the gallery's background right-click
+		# menu.)
+		return self.render_settings_window_category(x, y, w, accent, draw)
 
 	def render_settings_theme_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
@@ -28836,7 +28747,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, round(360 * gui.scale))
+		left_rect = (x, y, left_w, round(500 * gui.scale))
 		right_rect = (x + left_w + column_gap, y, right_w, round(360 * gui.scale))
 		if not draw:
 			return max(left_rect[3], right_rect[3])
@@ -28846,7 +28757,7 @@ class Over:
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
 			_("Window"),
-			_("Notifications and on-screen controls."),
+			_("Notifications, on-screen controls, scrolling and scale."),
 			accent,
 		)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_notifications, _("Emit track change notifications"), accent=accent)
@@ -28880,30 +28791,30 @@ class Over:
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
 			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"))
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_level_meter, _("Top-panel visualiser"), accent=accent)
+		# ("Top-panel visualiser" switch moved to the main menu under
+		# Top Panel Layout…)
 
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Tray and scale"),
-			_("System tray and interface scaling."),
-			accent,
+		inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, round(42 * gui.scale)),
+			self.tauon.toggle_smooth_scroll,
+			_("Smooth scrolling"),
+			_("Use inertial scrolling"),
+			accent=accent,
+			disabled=prefs.macos,
 		)
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start in tray"), accent=accent, disabled=not prefs.use_tray)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
-		inner_y += row_h + row_gap
-		old_theme = prefs.tray_theme
-		mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
-		prefs.tray_theme = "gray" if mono else "pink"
-		if prefs.tray_theme != old_theme:
-			self.tauon.set_tray_icons(force=True)
-			self.show_message(_("Restart Tauon for change to take effect"))
-		inner_y += row_h + row_gap
+		inner_y += round(42 * gui.scale) + row_gap
+		prefs.smooth_scroll_speed = self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Smooth scroll speed"),
+			prefs.smooth_scroll_speed,
+			0.25,
+			10.0,
+			0.05,
+			accent=accent,
+			formatter=lambda number: f"{number:.2f}x",
+		)
+		inner_y += round(52 * gui.scale)
 
 		def normalize_scale_value(value: float) -> float:
 			scale_value = max(min(round(round(value / 0.05) * 0.05, 2), 3.5), 0.5)
@@ -28950,6 +28861,27 @@ class Over:
 			self.settings_scale_preview_value = None
 		inner_y += round(52 * gui.scale)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.toggle_x_scale, _("Auto scale"), accent=accent)
+
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			right_rect,
+			_("Tray"),
+			_("System tray options."),
+			accent,
+		)
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start in tray"), accent=accent, disabled=not prefs.use_tray)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
+		inner_y += row_h + row_gap
+		old_theme = prefs.tray_theme
+		mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
+		prefs.tray_theme = "gray" if mono else "pink"
+		if prefs.tray_theme != old_theme:
+			self.tauon.set_tray_icons(force=True)
+			self.show_message(_("Restart Tauon for change to take effect"))
 
 		return max(left_rect[3], right_rect[3])
 
@@ -42010,7 +41942,7 @@ class Showcase:
 		self.lyrics_ren:              LyricsRen = tauon.lyrics_ren
 		self.window_size:             list[int] = tauon.window_size
 		self.guitar_chords:        GuitarChords = tauon.guitar_chords
-		self.showcase_menu:                Menu = tauon.showcase_menu
+		self.showcase_view_menu:           Menu = tauon.showcase_view_menu
 		self.smooth_scroll:        SmoothScroll = tauon.smooth_scroll
 		self.timed_lyrics_edit: TimedLyricsEdit = TimedLyricsEdit(tauon=tauon)
 		#self.lastfm_artist = None
@@ -42161,7 +42093,7 @@ class Showcase:
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
-						self.showcase_menu.activate(track)
+						self.showcase_view_menu.activate(track)
 
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 100 * self.gui.scale
@@ -50063,25 +49995,48 @@ def main(holder: Holder) -> None:
 
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
-	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+	def add_showcase_lyrics_items(menu: Menu) -> None:
+		"""Add the shared lyrics items (fresh MenuItems per menu)"""
+		menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+		menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+		menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 
-	showcase_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
-		check_test=tauon.toggle_lyrics_check))
-	showcase_menu.add(MenuItem(_("Prefer Synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
-		check_test=lambda: tauon.prefs.prefer_synced_lyrics))
-	showcase_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_sub(_("Misc…"), 150)
-	showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
-	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
-		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
+		menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+			check_test=tauon.toggle_lyrics_check))
+		menu.add(MenuItem(_("Prefer Synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+			check_test=lambda: tauon.prefs.prefer_synced_lyrics))
+		menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		misc_sub = menu.sub_number
+		menu.add_sub(_("Misc…"), 150)
+		menu.add_to_sub(misc_sub, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
+		menu.add_to_sub(misc_sub, MenuItem(_("Toggle art position"),
+			tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
+
+	add_showcase_lyrics_items(showcase_menu)
+
+	# Showcase view's own background menu: the lyrics items plus showcase
+	# layout settings ("Show Showcase Visualiser" moved here from
+	# Settings > View)
+	showcase_view_menu = tauon.showcase_view_menu
+	add_showcase_lyrics_items(showcase_view_menu)
+	showcase_view_menu.br()
+	showcase_view_menu.add(MenuItem(
+		_("Enable Wide Mode"),
+		tauon.toggle_showcase_wide_art,
+		tauon.toggle_showcase_wide_art_deco,
+		pass_ref=True,
+		pass_ref_deco=True,
+	))
+	showcase_view_menu.add(MenuItem(
+		_("Show Showcase Visualiser"), tauon.toggle_showcase_vis,
+		check_test=lambda: tauon.toggle_showcase_vis(1),
+		show_test=lambda _ref=None: prefs.backend == Backend.PHAZOR))
 
 	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
@@ -50120,6 +50075,23 @@ def main(holder: Holder) -> None:
 	picture_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	picture_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
 		check_test=tauon.toggle_lyrics_check))
+	# ("Centered metadata side panel" switch moved here from Settings > View;
+	# hidden in showcase where the side panel layout doesn't apply)
+	picture_menu.add(MenuItem(
+		_("Use Centered Style"), tauon.toggle_side_panel_layout,
+		check_test=lambda: tauon.toggle_side_panel_layout(1),
+		show_test=lambda _ref: not gui.showcase_mode))
+
+	# ("Zoom album art to fit" switch moved here from Settings > View. This
+	# menu also serves the custom layout Art Box widget.)
+	def menu_toggle_zoom_art(ref=None) -> None:
+		prefs.zoom_art ^= True
+		tauon.album_art_gen.clear_cache()
+		gui.update += 1
+
+	picture_menu.add(MenuItem(
+		_("Zoom Art to Fit"), menu_toggle_zoom_art,
+		check_test=lambda: prefs.zoom_art))
 
 	picture_menu.br()
 	picture_menu.add(MenuItem(
@@ -50131,8 +50103,10 @@ def main(holder: Holder) -> None:
 		show_test=tauon.showcase_mode_show_test,
 	))
 	if milky_ready:
-		picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
+		picture_menu.add(MenuItem(_("MilkDrop Visualiser"), tauon.toggle_milky, pass_ref=True,
+			check_test=lambda: prefs.milk))
+	milky_menu.add(MenuItem(_("MilkDrop Visualiser"), tauon.toggle_milky, pass_ref=True,
+		check_test=lambda: prefs.milk))
 	milky_menu.add(MenuItem(_("Toggle Milkdrop Auto"), tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
 	milky_menu.add(MenuItem(
 		_("Enable Wide Mode"),
@@ -50549,6 +50523,13 @@ def main(holder: Holder) -> None:
 		menu.add_to_sub(sub, MenuItem(_("Thin default"), lambda: tauon.pref_box.small_preset()))
 		menu.add_to_sub(sub, MenuItem(_("Thick default"), lambda: tauon.pref_box.large_preset()))
 
+		# Optional search-provider items in the track menu, moved here from
+		# Settings > Function ("Track menu extras")
+		toggle_item(_("Wikipedia artist search"), tauon.toggle_wiki, lambda: tauon.toggle_wiki(1))
+		toggle_item(_("Sonemic artist search"), tauon.toggle_rym, lambda: tauon.toggle_rym(1))
+		toggle_item(_("Bandcamp artist search"), tauon.toggle_band, lambda: tauon.toggle_band(1))
+		toggle_item(_("Genius track search"), tauon.toggle_gen, lambda: tauon.toggle_gen(1))
+
 	add_layout_sub(track_menu)
 	folder_menu.br()
 	add_layout_sub(folder_menu)
@@ -50631,6 +50612,17 @@ def main(holder: Holder) -> None:
 		x_menu.add_sub(_("Dev Mode"), 190)
 		x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), tauon.dev_mode_enable_save_state))
 		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
+
+	# Top panel layout settings (moved here from the Settings UI)
+	top_panel_sub = x_menu.sub_number
+	x_menu.add_sub(_("Top Panel Layout…"), 180)
+	x_menu.add_to_sub(top_panel_sub, MenuItem(
+		_("Show Tabs"), tauon.toggle_top_tabs, no_exit=True,
+		check_test=lambda: tauon.toggle_top_tabs(1)))
+	x_menu.add_to_sub(top_panel_sub, MenuItem(
+		_("Show Visualiser"), tauon.toggle_level_meter, no_exit=True,
+		check_test=lambda: tauon.toggle_level_meter(1)))
+
 	x_menu.br()
 
 	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
