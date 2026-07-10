@@ -25657,6 +25657,7 @@ class NagBox:
 		("Added lyrics search to global search", False),
 		("Added new widget: Spectogram", False),
 		("Added new widget: Track Details", False),
+		("Added new widget: Compact Gallery", False),
 		("Improvements to network buffering", False),
 	)
 
