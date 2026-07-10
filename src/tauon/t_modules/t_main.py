@@ -54467,7 +54467,10 @@ def main(holder: Holder) -> None:
 
 			# Custom Layout System: handle edit/interaction input early and consume
 			# the events so the underlying UI doesn't also react. Inert when off.
-			if gui.custom_mode:
+			# MAIN mode only: the mouse it neutralises is restored in
+			# custom.render(), which mini mode never reaches — running here in
+			# mini mode left the mini modes with no mouse input at all.
+			if gui.custom_mode and gui.mode == GuiMode.MAIN:
 				tauon.custom.handle_input()
 
 			# Dream Room: keep muting the mouse every frame (motion-only frames
