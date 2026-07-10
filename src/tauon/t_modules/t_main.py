@@ -319,7 +319,7 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS
 	from tauon.t_modules.t_logging import LogHistoryHandler
-	from collections.abc import Callable
+	from collections.abc import Callable, Sequence
 	from subprocess import Popen
 
 	from mutagen.id3 import ID3
@@ -25895,6 +25895,10 @@ class Over:
 		self.settings_content_scroll = 0.0
 		self.settings_content_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.settings_scale_preview_value: float | None = None
+		# True until the first card of the settings category being rendered
+		# has drawn its accent bar; only that card gets one (see
+		# draw_settings_section / render_settings_category)
+		self.settings_accent_bar_pending: bool = True
 		self.settings_category_offsets: list[float] = []
 		self.settings_doc_texture: sdl3.LP_SDL_Texture | None = None
 		self.settings_doc_texture_size = (0, 0)
@@ -26763,8 +26767,16 @@ class Over:
 		x, y, w, h = rect
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
-		self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+		# Border drawn INSIDE the rect: the settings document texture is
+		# blitted at exactly the view rect, so bordered_rect's outside border
+		# would be cropped on cards at the document's left edge
+		border_size = round(1 * self.gui.scale)
+		self.ddt.rect(rect, border)
+		self.ddt.rect((x + border_size, y + border_size, w - border_size * 2, h - border_size * 2), fill)
+		# Accent bar only on the first card of the category
+		if self.settings_accent_bar_pending:
+			self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+			self.settings_accent_bar_pending = False
 		self.ddt.text_background_colour = fill
 
 		pad_x = round(16 * self.gui.scale)
@@ -27239,6 +27251,62 @@ class Over:
 
 		return hit
 
+	def settings_segmented_bar(
+		self,
+		pos: tuple[int, int],
+		options: Sequence[tuple[str, bool, Callable[[], None]]],
+		accent: ColourRGBA | None = None,
+		width: int | None = None,
+	) -> int:
+		"""Compact radio switcher: a single bordered bar of short-label buttons,
+		the active one filled with the accent colour. Segment widths follow the
+		labels; pass ``width`` to stretch the bar to a fixed total width (the
+		slack is shared between segments). Returns the bar height."""
+		if accent is None:
+			accent = self.settings_page_accent()
+		gui = self.gui
+		x, y = round(pos[0]), round(pos[1])
+		h = round(32 * gui.scale)
+		pad = round(16 * gui.scale)
+		font = 212
+		widths = [self.ddt.get_text_w(label, font) + pad * 2 for label, _active, _callback in options]
+		if width is not None:
+			extra = round(width) - sum(widths)
+			if extra > 0:
+				share = extra // len(widths)
+				widths = [seg_w + share for seg_w in widths]
+				widths[-1] += extra - share * len(widths)
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		self.ddt.bordered_rect((x, y, sum(widths), h), fill, border, round(1 * gui.scale))
+
+		seg_x = x
+		prev_active = False
+		for (label, active, callback), seg_w in zip(options, widths):
+			rect = (seg_x, y, seg_w, h)
+			hover = self.coll(rect)
+			self.fields.add(rect)
+			bg = fill
+			if active:
+				bg = accent
+				self.ddt.rect(rect, bg)
+			elif hover:
+				bg = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
+				self.ddt.rect(rect, bg)
+			# Separators between plain segments only; the accent block provides
+			# its own edges
+			if seg_x != x and not active and not prev_active:
+				self.ddt.rect((seg_x, y, round(1 * gui.scale), h), border)
+			text_colour = ColourRGBA(20, 20, 25, 255) if active else self.colours.box_text
+			self.ddt.text((seg_x + seg_w // 2, y + round(7 * gui.scale), 2), label, text_colour, font, bg=bg)
+			if hover and self.click and not active:
+				self.inp.global_clicked = True
+				callback()
+			prev_active = active
+			seg_x += seg_w
+
+		return h
+
 	def settings_switcher_tile(
 		self,
 		rect: tuple[int, int, int, int],
@@ -27572,6 +27640,21 @@ class Over:
 			# ("Tabs in top panel" switch moved to the main menu under
 			# Top Panel Layout…)
 
+			y += row_h + row_gap + round(4 * gui.scale)
+			ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 11)
+			y += round(20 * gui.scale)
+			self.settings_segmented_bar(
+				(x, y),
+				(
+					(_("Stop"), self.set_playlist_stop(1), self.set_playlist_stop),
+					(_("Repeat"), self.set_playlist_repeat(1), self.set_playlist_repeat),
+					(_("Next playlist"), self.set_playlist_advance(1), self.set_playlist_advance),
+					(_("Cycle all"), self.set_playlist_cycle(1), self.set_playlist_cycle),
+				),
+				accent,
+				width=w,
+			)
+
 			x, y, w, section_h = self.draw_settings_section(
 				right_rect,
 				_("Quick access"),
@@ -27589,35 +27672,9 @@ class Over:
 			self.settings_action_tile((x, y, w, tile_h), _("Open keymap file"), tauon.open_keymap_file, accent)
 
 		elif self.func_page == 1:
+			# ("End of playlist action" lives in Common settings now)
 			x, y, w, section_h = self.draw_settings_section(
 				left_rect,
-				_("End of playlist action"),
-				_("What to do when the current playlist ends."),
-				accent,
-			)
-			tile_gap = round(8 * gui.scale)
-			tile_h = round(62 * gui.scale)
-			tile_w = (w - tile_gap) // 2
-			options = (
-				(_("Stop playback"), _("Stop when the playlist ends."), self.set_playlist_stop(1), self.set_playlist_stop),
-				(_("Repeat playlist"), _("Start the same playlist again."), self.set_playlist_repeat(1), self.set_playlist_repeat),
-				(_("Play next playlist"), _("Move to the next playlist."), self.set_playlist_advance(1), self.set_playlist_advance),
-				(_("Cycle all playlists"), _("Keep cycling through playlists."), self.set_playlist_cycle(1), self.set_playlist_cycle),
-			)
-			for index, (title, subtitle, active, callback) in enumerate(options):
-				row = index // 2
-				col = index % 2
-				self.settings_choice_tile(
-					(x + col * (tile_w + tile_gap), y + row * (tile_h + tile_gap), tile_w, tile_h),
-					title,
-					subtitle,
-					active,
-					callback,
-					accent,
-				)
-
-			x, y, w, section_h = self.draw_settings_section(
-				right_rect,
 				_("Session rules"),
 				_("Playback behavior for restarts, sleep, wake and radio."),
 				accent,
@@ -27667,7 +27724,7 @@ class Over:
 			elif play_lock_old != prefs.block_suspend:
 				tauon.update_play_lock()
 
-			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
+			bottom = left_rect[1] + left_rect[3] - round(14 * gui.scale)
 			remaining_h = bottom - y - row_h
 			if prefs.auto_rec and remaining_h > round(50 * gui.scale):
 				self.draw_settings_note(
@@ -27677,11 +27734,10 @@ class Over:
 					_("Radio capture"),
 				)
 
-		elif self.func_page == 2:
 			# (The "Track menu extras" search-provider switches moved to the
 			# track menu's Layout submenu.)
 			x, y, w, section_h = self.draw_settings_section(
-				left_rect,
+				right_rect,
 				_("Archive imports"),
 				_("How Tauon handles archives and Downloads."),
 				accent,
@@ -27720,7 +27776,7 @@ class Over:
 				disabled=not extract_archives_enabled,
 			)
 
-			bottom = left_rect[1] + left_rect[3] - round(14 * gui.scale)
+			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
 			remaining_h = bottom - y - small_row_h
 			if remaining_h > round(50 * gui.scale):
 				self.draw_settings_note(
@@ -28353,8 +28409,8 @@ class Over:
 		accent_override: ColourRGBA | None = None,
 	) -> int:
 		heights = (
+			round(245 * self.gui.scale),
 			round(275 * self.gui.scale),
-			round(272 * self.gui.scale),
 			round(262 * self.gui.scale),
 			round(300 * self.gui.scale),
 			round(350 * self.gui.scale),
@@ -28368,14 +28424,14 @@ class Over:
 		return height
 
 	def render_settings_general_category(self, x: int, y: int, w: int, draw: bool = True) -> int:
+		# (func page 2 is empty now — Archive imports moved beside Session
+		# rules on page 1)
 		block_gap = round(12 * self.gui.scale)
 		general_accent = self.settings_page_accent(0)
 		general_h = self.render_settings_func_category(0, x, y, w, draw, accent_override=general_accent)
 		behaviour_y = y + general_h + block_gap
 		behaviour_h = self.render_settings_func_category(1, x, behaviour_y, w, draw, accent_override=general_accent)
-		features_y = behaviour_y + behaviour_h + block_gap
-		features_h = self.render_settings_func_category(2, x, features_y, w, draw, accent_override=general_accent)
-		return general_h + behaviour_h + features_h + block_gap * 2
+		return general_h + behaviour_h + block_gap
 
 	def render_settings_connections_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
@@ -28966,27 +29022,18 @@ class Over:
 			_("Playback loudness matching."),
 			accent,
 		)
-		tile_gap = round(8 * gui.scale)
-		tile_h = round(62 * gui.scale)
-		tile_w = (inner_w - tile_gap) // 2
-		options = (
-			(_("Off"), _("Ignore ReplayGain tags."), self.tauon.switch_rg_off(1), self.tauon.switch_rg_off),
-			(_("Auto"), _("Use the best tag available."), self.tauon.switch_rg_auto(1), self.tauon.switch_rg_auto),
-			(_("Album"), _("Preserve album dynamics."), self.tauon.switch_rg_album(1), self.tauon.switch_rg_album),
-			(_("Tracks"), _("Match track loudness."), self.tauon.switch_rg_track(1), self.tauon.switch_rg_track),
+		bar_h = self.settings_segmented_bar(
+			(inner_x, inner_y),
+			(
+				(_("Off"), self.tauon.switch_rg_off(1), self.tauon.switch_rg_off),
+				(_("Auto"), self.tauon.switch_rg_auto(1), self.tauon.switch_rg_auto),
+				(_("Album"), self.tauon.switch_rg_album(1), self.tauon.switch_rg_album),
+				(_("Tracks"), self.tauon.switch_rg_track(1), self.tauon.switch_rg_track),
+			),
+			accent,
+			width=inner_w,
 		)
-		for index, (title, subtitle, active, callback) in enumerate(options):
-			row = index // 2
-			col = index % 2
-			self.settings_choice_tile(
-				(inner_x + col * (tile_w + tile_gap), inner_y + row * (tile_h + tile_gap), tile_w, tile_h),
-				title,
-				subtitle,
-				active,
-				callback,
-				accent,
-			)
-		inner_y += tile_h * 2 + tile_gap + round(12 * gui.scale)
+		inner_y += bar_h + round(12 * gui.scale)
 		prefs.replay_preamp = int(self.settings_stepper_row(
 			(inner_x, inner_y, inner_w, round(30 * gui.scale)),
 			_("Pre-amp"),
@@ -29075,7 +29122,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		section_header_h = round(66 * gui.scale)
 		section_bottom_pad = round(14 * gui.scale)
-		row1_h = section_header_h + round(210 * gui.scale) + section_bottom_pad
+		row1_h = section_header_h + round(150 * gui.scale) + section_bottom_pad
 		if prefs.transcode_codec == "opus":
 			row1_h += round(36 * gui.scale)
 		if prefs.transcode_codec != "flac":
@@ -29097,7 +29144,7 @@ class Over:
 		left_x = inner_x
 		right_x = left_x + left_w + inner_column_gap
 		column_label_y = inner_y
-		column_subtitle_y = column_label_y + round(16 * gui.scale)
+		column_subtitle_y = column_label_y + round(16 * gui.scale) + round(2 * gui.scale)
 		column_body_y = column_label_y + round(34 * gui.scale)
 		divider_x = left_x + left_w + inner_column_gap // 2
 		divider_h = row1_rect[1] + row1_rect[3] - round(14 * gui.scale) - column_label_y
@@ -29111,29 +29158,20 @@ class Over:
 		)
 
 		inner_x = left_x
-		inner_y = column_body_y
+		inner_y = column_body_y + round(2 * gui.scale)
 		inner_w = left_w
-		tile_gap = round(8 * gui.scale)
-		tile_h = round(62 * gui.scale)
-		tile_w = (inner_w - tile_gap) // 2
-		codecs = (
-			(("FLAC"), _("Lossless output."), prefs.transcode_codec == "flac", self.tauon.switch_flac),
-			(("OPUS"), _("Small files, good quality."), prefs.transcode_codec == "opus", self.tauon.switch_opus),
-			(("OGG Vorbis"), _("Compatible lossy output."), prefs.transcode_codec == "ogg", self.tauon.switch_ogg),
-			(("MP3"), _("Universal compatibility."), prefs.transcode_codec == "mp3", self.tauon.switch_mp3),
+		bar_h = self.settings_segmented_bar(
+			(inner_x, inner_y),
+			(
+				("FLAC", prefs.transcode_codec == "flac", self.tauon.switch_flac),
+				("OPUS", prefs.transcode_codec == "opus", self.tauon.switch_opus),
+				("OGG", prefs.transcode_codec == "ogg", self.tauon.switch_ogg),
+				("MP3", prefs.transcode_codec == "mp3", self.tauon.switch_mp3),
+			),
+			accent,
+			width=inner_w,
 		)
-		for index, (title, subtitle, active, callback) in enumerate(codecs):
-			row = index // 2
-			col = index % 2
-			self.settings_choice_tile(
-				(inner_x + col * (tile_w + tile_gap), inner_y + row * (tile_h + tile_gap), tile_w, tile_h),
-				title,
-				subtitle,
-				active,
-				callback,
-				accent,
-			)
-		inner_y += tile_h * 2 + tile_gap + round(12 * gui.scale)
+		inner_y += bar_h + round(12 * gui.scale)
 		if prefs.transcode_codec == "opus":
 			self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), self.tauon.switch_opus_ogg, _("Save opus as .ogg"), accent=accent)
 			inner_y += round(36 * gui.scale)
@@ -30276,6 +30314,7 @@ class Over:
 		return heading_h
 
 	def render_settings_category(self, index: int, x: int, y: int, w: int, draw: bool = True) -> int:
+		self.settings_accent_bar_pending = True
 		accent = self.settings_tab_accent(index)
 		heading_h = round(34 * self.gui.scale)
 		if draw and index < len(self.tabs):
