@@ -34417,21 +34417,21 @@ class StandardPlaylist:
 			gui.playlist_scroll_pixels = 0
 			self.smooth_scroll.reset_motion("playlist")
 
-		if logging.getLogger().isEnabledFor(logging.DEBUG) and (
-			forward_steps
-			or backward_steps
-			or position_before != pctl.playlist_view_position
-			or abs(pixels_before - gui.playlist_scroll_pixels) >= 0.01
-		):
-			logging.debug(
-				"Playlist pixel scroll apply pos_before=%d pos_after=%d pixels_before=%.4f pixels_after=%.4f forward_steps=%d backward_steps=%d",
-				position_before,
-				pctl.playlist_view_position,
-				pixels_before,
-				gui.playlist_scroll_pixels,
-				forward_steps,
-				backward_steps,
-			)
+		# if logging.getLogger().isEnabledFor(logging.DEBUG) and (
+		# 	forward_steps
+		# 	or backward_steps
+		# 	or position_before != pctl.playlist_view_position
+		# 	or abs(pixels_before - gui.playlist_scroll_pixels) >= 0.01
+		# ):
+			# logging.debug(
+			# 	"Playlist pixel scroll apply pos_before=%d pos_after=%d pixels_before=%.4f pixels_after=%.4f forward_steps=%d backward_steps=%d",
+			# 	position_before,
+			# 	pctl.playlist_view_position,
+			# 	pixels_before,
+			# 	gui.playlist_scroll_pixels,
+			# 	forward_steps,
+			# 	backward_steps,
+			# )
 
 	def _same_album_art_block(self, track_a: TrackClass, track_b: TrackClass) -> bool:
 		return (
@@ -53173,29 +53173,29 @@ def main(holder: Holder) -> None:
 				scroll_y = raw_scroll_y if smooth_enabled else float(integer_scroll_y)
 				event_mode = "precise-smooth" if precise_input else "smooth" if smooth_enabled else "line"
 				if event_mode != inp.scroll_debug_last_mode or now - inp.scroll_debug_last_log > 1.0:
-					logging.debug(
-						"Wheel event mode=%s raw_y=%.3f integer_y=%d scroll_y=%.3f smooth_enabled=%s precise_input=%s speed=%.3f wheel_before=%.3f mouse=(%d,%d)",
-						event_mode,
-						raw_scroll_y,
-						integer_scroll_y,
-						scroll_y,
-						smooth_enabled,
-						precise_input,
-						tauon.smooth_scroll.speed(),
-						wheel_before,
-						inp.mouse_position[0],
-						inp.mouse_position[1],
-					)
+					# logging.debug(
+					# 	"Wheel event mode=%s raw_y=%.3f integer_y=%d scroll_y=%.3f smooth_enabled=%s precise_input=%s speed=%.3f wheel_before=%.3f mouse=(%d,%d)",
+					# 	event_mode,
+					# 	raw_scroll_y,
+					# 	integer_scroll_y,
+					# 	scroll_y,
+					# 	smooth_enabled,
+					# 	precise_input,
+					# 	tauon.smooth_scroll.speed(),
+					# 	wheel_before,
+					# 	inp.mouse_position[0],
+					# 	inp.mouse_position[1],
+					# )
 					inp.scroll_debug_last_mode = event_mode
 					inp.scroll_debug_last_log = now
 				inp.mouse_wheel += scroll_y
-				if logging.getLogger().isEnabledFor(logging.DEBUG):
-					logging.debug(
-						"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f",
-						event_mode,
-						scroll_y,
-						inp.mouse_wheel,
-					)
+				# if logging.getLogger().isEnabledFor(logging.DEBUG):
+				# 	logging.debug(
+				# 		"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f",
+				# 		event_mode,
+				# 		scroll_y,
+				# 		inp.mouse_wheel,
+				# 	)
 				inp.mouse_wheel_precise = precise_input
 				inp.trackpad_scroll_mode_until = 0.0
 
