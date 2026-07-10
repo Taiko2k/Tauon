@@ -8691,25 +8691,16 @@ class Tauon:
 	def showcase_mode_show_test(self, _track_object: TrackClass) -> bool:
 		return self.gui.showcase_mode
 
-	def toggle_lyrics_deco(self, track_object: TrackClass) -> Decorator:
-		colour = self.colours.menu_text
-
+	def toggle_lyrics_check(self) -> bool:
 		if self.gui.combo_mode:
-			line = _("Hide Lyrics") if self.prefs.show_lyrics_showcase else _("Show Lyrics")
-			if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
-				colour = self.colours.menu_text_disabled
-			return Decorator(colour, self.colours.menu_background, line)
+			return self.prefs.show_lyrics_showcase
+		return self.prefs.show_lyrics_side
 
-		if self.prefs.side_panel_layout == 1:  # and self.prefs.show_side_art:
-			line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
-			if (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
-				colour = self.colours.menu_text_disabled
-			return Decorator(colour, self.colours.menu_background, line)
-
-		line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
+	def toggle_lyrics_deco(self, track_object: TrackClass) -> Decorator:
+		text = _("Show Lyrics")
 		if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
-			colour = self.colours.menu_text_disabled
-		return Decorator(colour, self.colours.menu_background, line)
+			text = _("Prefer Lyrics Display")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def toggle_milky(self, _track_object: TrackClass) -> None:
 		if not self.prefs.milk:
@@ -9080,16 +9071,8 @@ class Tauon:
 		self.prefs.prefer_synced_lyrics ^= True
 
 	def toggle_synced_lyrics_deco(self, track: TrackClass) -> Decorator:
-		text = _("Show static lyrics") if self.prefs.prefer_synced_lyrics else _("Show synced lyrics")
-		if self.timed_lyrics_ren.generate(track) and track.lyrics:
-			line_colour = self.colours.menu_text
-		else:
-			line_colour = self.colours.menu_text_disabled
-			if not track.lyrics:
-				text = _("Show static lyrics")
-			if not self.timed_lyrics_ren.generate(track):
-				text = _("Show synced lyrics")
-		return Decorator(line_colour, self.colours.menu_background, text)
+		text = None
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def paste_lyrics(self, track_object: TrackClass) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -50071,13 +50054,14 @@ def main(holder: Holder) -> None:
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
 	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-
 	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 
-	showcase_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	showcase_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
+	showcase_menu.add(MenuItem(_("Prefer Synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=lambda: tauon.prefs.prefer_synced_lyrics))
 	showcase_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	showcase_menu.add_sub(_("Misc…"), 150)
 	showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
@@ -50090,8 +50074,10 @@ def main(holder: Holder) -> None:
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
 
 	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
+	center_info_menu.add(MenuItem(_("Prefer Synced Lyrics"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=lambda: tauon.prefs.prefer_synced_lyrics))
 	center_info_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	center_info_menu.add_sub(_("Misc…"), 150)
@@ -50122,7 +50108,8 @@ def main(holder: Holder) -> None:
 	# picture_menu.add(_('Toggle art box'), tauon.toggle_side_art, tauon.toggle_side_art_deco)
 
 	picture_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
 
 	picture_menu.br()
 	picture_menu.add(MenuItem(
@@ -50148,7 +50135,8 @@ def main(holder: Holder) -> None:
 	milky_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
 
 	milky_menu.br()
-	milky_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
 
 
 	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.menu_cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
