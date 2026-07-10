@@ -51183,7 +51183,8 @@ def main(holder: Holder) -> None:
 				dev = (r_area - grid_margin * 2 + gui.album_h_gap) / row_len
 			# The grid draws the title lines slightly closer to the art (the row
 			# pitch is unchanged — the text just sits higher within it). 0 = preset.
-			text_lift = round(4 * gui.scale) if grid_edge else 0
+			text_lift = round(5 * gui.scale) if grid_edge else 0
+			artist_lift = round(6 * gui.scale) if grid_edge else 0
 
 			render_pos = 0
 			album_on = 0
@@ -51715,12 +51716,13 @@ def main(holder: Holder) -> None:
 						selection_highlight_shown = (
 							(gui.album_tab_mode or gallery_menu.active) and info[2] is True
 						)
+						highlight_border = round(2 * gui.scale)
 						if info[0] == 1 and not selection_highlight_shown and (
 							pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 						):
 							ddt.rect_a(
-								(x - 4, y - 4),
-								(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+								(x - highlight_border, y - highlight_border),
+								(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 								colours.gallery_highlight,
 							)
 							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
@@ -51738,8 +51740,8 @@ def main(holder: Holder) -> None:
 								if colours.lm:
 									c = ColourRGBA(66, 244, 66, 255)
 								ddt.rect_a(
-									(x - 4, y - 4),
-									(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+									(x - highlight_border, y - highlight_border),
+									(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 									c,
 								)
 
@@ -51762,8 +51764,8 @@ def main(holder: Holder) -> None:
 								if colours.lm:
 									c = ColourRGBA(244, 64, 244, 255)
 								ddt.rect_a(
-									(x - 4, y - 4),
-									(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+									(x - highlight_border, y - highlight_border),
+									(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 									c,
 								)
 								# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
@@ -51775,8 +51777,8 @@ def main(holder: Holder) -> None:
 							c = colours.gallery_highlight
 							c = ColourRGBA(c.g, c.b, c.r, c.a)
 							ddt.rect_a(
-								(x - 4, y - 4),
-								(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+								(x - highlight_border, y - highlight_border),
+								(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 								c,
 							)  # [150, 80, 222, 255]
 							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
@@ -52044,12 +52046,12 @@ def main(holder: Holder) -> None:
 									(x, y + tauon.album_mode_art_size + 8 * gui.scale - text_lift, text_align),
 									line2,
 									line2_colour,
-									212,
+									211 if grid_edge else 212,
 									tauon.album_mode_art_size,
 								)
 
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale - text_lift, text_align),
+									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale - artist_lift, text_align),
 									line,
 									line1_colour,
 									311,
