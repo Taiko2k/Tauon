@@ -13,7 +13,9 @@ Changelog
  - Added search overlay feedback when adding results to playlists
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection
+ - Added setting magnet mode to columns menu
  - Changed splash loading screen style
+ - Tweaked setting UI layout
  - Improved network streaming backend
  - Improved TIDAL favorites and playlists pagination
  - Fixed album rating and scrollbar interactions
