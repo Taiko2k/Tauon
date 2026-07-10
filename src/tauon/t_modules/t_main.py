@@ -31740,7 +31740,12 @@ class TopPanel:
 		# -------------
 		# Other input
 		if self.inp.mouse_up:
-			self.inp.quick_drag = False
+			# In the Custom Layout the Header Bar widget renders in tree order,
+			# usually before drop targets like the Queue widget; ending the drag
+			# here would eat their drop, so the engine ends it after all widgets
+			# have drawn (CustomMode.render) instead.
+			if not gui.custom_mode:
+				self.inp.quick_drag = False
 			tauon.playlist_box.drag = False
 			tauon.radio_view.drag = None
 
@@ -52047,7 +52052,7 @@ def main(holder: Holder) -> None:
 									line2,
 									line2_colour,
 									211 if grid_edge else 212,
-									tauon.album_mode_art_size,
+									tauon.album_mode_art_size - (round(5 * gui.scale) if grid_edge else 0),
 								)
 
 								ddt.text(
