@@ -44212,7 +44212,7 @@ class TimedLyricsEdit:
 		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
-		with target.open() as lyrics_file:
+		with target.open(encoding="utf-8-sig", errors="replace") as lyrics_file:
 			self.structure = []
 			for lyric in lyrics_file.readlines():
 				stamp, time, line = lyric.strip().split(",", 2)
@@ -44950,7 +44950,7 @@ class TimedLyricsEdit:
 	def reload_lyric_file(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
 		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
-		with open(target) as lyric_file:
+		with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
 		if not new_lyrics == _("Put the lyrics in this file and save it."):
