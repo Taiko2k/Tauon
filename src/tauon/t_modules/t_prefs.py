@@ -439,5 +439,10 @@ class Prefs:
 	milk: bool = False
 	auto_milk: bool = True
 	loaded_preset = None
+	# Composite the visualiser with a screen transfer (black -> transparent)
+	# so the album art drawn beneath shows through.
+	milk_screen_blend: bool = False
+	# Favorited Milkdrop presets, as full path strings.
+	milk_favorite_presets: list[str] = field(default_factory=list)
 
 	taskbar_progress: bool = True

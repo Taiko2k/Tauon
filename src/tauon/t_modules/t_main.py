@@ -6524,6 +6524,7 @@ class Tauon:
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
+		self.milk_choose:                       MilkPresetChooser = MilkPresetChooser(tauon=self)
 		self.search_text                          = self.search_over.search_text
 		self.sync_target:                         TextBox2 = TextBox2(tauon=self)
 		self.playlist_folder_box:                 TextBox2 = TextBox2(tauon=self)
@@ -8689,12 +8690,6 @@ class Tauon:
 			text = _("Disable Milkdrop Visualiser")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def toggle_milky_auto_deco(self, _track_object: TrackClass) -> Decorator:
-		text = _("Enable Auto Cycle")
-		if self.prefs.auto_milk:
-			text = _("Disable Auto Cycle")
-		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
-
 	def toggle_showcase_wide_art_deco(self, _track_object: TrackClass) -> Decorator:
 		text = _("Disable Wide Mode") if self.prefs.showcase_wide_art else _("Enable Wide Mode")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
@@ -8904,6 +8899,27 @@ class Tauon:
 		self.milky.projectm.auto_frames = 0
 		self.milky.projectm.timer.set()
 		self.prefs.auto_milk ^= True
+
+	def toggle_milk_screen_blend(self, _track_object: TrackClass) -> None:
+		self.prefs.milk_screen_blend ^= True
+		self.gui.update += 1
+
+	def milk_preset_is_favorite(self) -> bool:
+		preset = self.milky.projectm.loaded_preset
+		return preset is not None and str(preset) in self.prefs.milk_favorite_presets
+
+	def toggle_milk_preset_favorite(self, _track_object: TrackClass) -> None:
+		preset = self.milky.projectm.loaded_preset
+		if preset is None:
+			return
+		key = str(preset)
+		if key in self.prefs.milk_favorite_presets:
+			self.prefs.milk_favorite_presets.remove(key)
+		else:
+			self.prefs.milk_favorite_presets.append(key)
+
+	def open_milk_preset_chooser(self, _track_object: TrackClass) -> None:
+		self.milk_choose.activate()
 
 	def open_preset_folder(self, _track_object: TrackClass) -> None:
 		target = self.user_directory / "presets"
@@ -14806,6 +14822,7 @@ class Tauon:
 			and not self.gui.quick_search_mode \
 			and not self.gui.rename_playlist_box \
 			and not self.search_over.active \
+			and not self.milk_choose.active \
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active
 
@@ -19100,6 +19117,8 @@ class Tauon:
 			gui.custom_mode,  # 190
 			prefs.spectrogram_colour,  # 191
 			_pcols["pl_st_left"],  # 192
+			prefs.milk_screen_blend,  # 193
+			prefs.milk_favorite_presets,  # 194
 		]
 
 		try:
@@ -41788,6 +41807,7 @@ class Milky:
 		self.framebuffer = None
 		self.loaded_size = None
 		self.fps = FPSCounter(window_size=10, min_update_interval=0.1, max_frame_time=0.5)
+		self.screen_blend_mode = None  # composed lazily on first use
 
 		self.projectm = ProjectM(tauon)
 
@@ -41917,8 +41937,166 @@ class Milky:
 		glFlush()
 		glFinish()
 		if not discard:
+			if self.tauon.prefs.milk_screen_blend:
+				# Key out the black: out = src * src + dst * (1 - src) — the
+				# source colour acts as its own per-channel matte. Black
+				# visualiser pixels leave the destination (album art) untouched
+				# and bright pixels replace it rather than add to it, so unlike a
+				# true screen transfer (src + dst * (1 - src)) it doesn't
+				# accumulate brightness over the art.
+				if self.screen_blend_mode is None:
+					self.screen_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+						sdl3.SDL_BLENDFACTOR_SRC_COLOR,
+						sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+						sdl3.SDL_BLENDOPERATION_ADD,
+						sdl3.SDL_BLENDFACTOR_ZERO,
+						sdl3.SDL_BLENDFACTOR_ONE,
+						sdl3.SDL_BLENDOPERATION_ADD)
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, self.screen_blend_mode)
+			else:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
 			sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
 		self.fps.tick()
+
+
+class MilkPresetChooser:
+	"""Full-screen Milkdrop preset picker (the MilkDrop menu's "Choose Preset").
+
+	Lists every scanned preset as compact labels in top-to-bottom columns over
+	a translucent backdrop (same look as the search overlay). Clicking a label
+	loads that preset; clicking the backdrop, Escape or right-click closes.
+	Favorited presets get a gold star in the label gutter. The mouse wheel
+	scrolls whole columns when there are more than fit the window.
+
+	Input never leaks to the UI underneath: handle_input runs early in the
+	frame (dream-room style), captures the pointer state for the overlay and
+	then mutes it, so every other component sees no clicks and an off-screen
+	cursor. It can run more than once per frame (event + motion passes), so it
+	only latches state; render() consumes the latched click/wheel.
+	"""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon: Tauon = tauon
+		self.gui:  GuiVar = tauon.gui
+		self.inp:   Input = tauon.inp
+		self.ddt:   TDraw = tauon.ddt
+		self.active: bool = False
+		self.scroll_cols: int = 0
+		self._presets: list[Path] = []  # alphabetical snapshot taken on activate
+		self._mouse: tuple[float, float] = (-1.0, -1.0)
+		self._click: bool = False
+		self._wheel: float = 0.0
+
+	def activate(self) -> None:
+		pm = self.tauon.milky.projectm
+		if not pm.presets:
+			pm.rescan_presets()
+		if not pm.presets:
+			self.tauon.show_message(_("No Milkdrop presets found"))
+			return
+		self._presets = sorted(pm.presets, key=lambda p: p.stem.casefold())
+		self.active = True
+		self.scroll_cols = 0
+		self._click = False
+		self._wheel = 0.0
+		self._mouse = (self.inp.mouse_position[0], self.inp.mouse_position[1])
+		self.gui.update = 2
+
+	def close(self) -> None:
+		self.active = False
+		self._click = False
+		self._wheel = 0.0
+		self.gui.update = 2
+
+	def handle_input(self) -> None:
+		if not self.active:
+			return
+		inp = self.inp
+		if inp.key_esc_press:
+			inp.key_esc_press = False
+			self.close()
+			return
+		if inp.right_click:
+			self.close()
+		if inp.mouse_position[0] > -2000:
+			self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		if inp.mouse_click:
+			self._click = True
+		self._wheel += inp.mouse_wheel
+		inp.mouse_click = False
+		inp.d_mouse_click = False
+		inp.right_click = False
+		inp.middle_click = False
+		inp.mouse_wheel = 0
+		inp.input_text = ""
+		inp.mouse_position[0] = -3000.0
+		inp.mouse_position[1] = -3000.0
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		gui = self.gui
+		ddt = self.ddt
+		pm = self.tauon.milky.projectm
+		presets = self._presets
+		if not presets:
+			self.close()
+			return
+
+		w = self.tauon.window_size[0]
+		h = self.tauon.window_size[1]
+		ddt.rect((0, 0, w, h), ColourRGBA(3, 3, 3, 235))
+		ddt.text_background_colour = ColourRGBA(12, 12, 12, 255)
+
+		pad = round(12 * gui.scale)
+		row_h = round(13 * gui.scale)
+		col_w = round(150 * gui.scale)
+		star_w = ddt.get_text_w("★", 10) + round(4 * gui.scale)  # label gutter, keeps columns aligned
+		rows = max(1, (h - pad * 2) // row_h)
+		n_cols = -(-len(presets) // rows)  # ceil
+		vis_cols = max(1, (w - pad) // col_w)
+
+		if self._wheel:
+			self.scroll_cols -= int(self._wheel)
+			self._wheel = 0.0
+		self.scroll_cols = max(0, min(self.scroll_cols, max(0, n_cols - vis_cols)))
+
+		mx, my = self._mouse
+		click = self._click
+		self._click = False
+		on_label = False
+
+		favorites = self.tauon.prefs.milk_favorite_presets
+		text_colour = ColourRGBA(200, 200, 200, 255)
+		hover_colour = ColourRGBA(255, 255, 255, 255)
+		gold = ColourRGBA(244, 209, 66, 255)
+
+		for col in range(vis_cols):
+			start = (self.scroll_cols + col) * rows
+			if start >= len(presets):
+				break
+			x = pad + col * col_w
+			for row, preset in enumerate(presets[start:start + rows]):
+				y = pad + row * row_h
+				rect = (x, y, col_w - round(6 * gui.scale), row_h)
+				hover = rect[0] <= mx < rect[0] + rect[2] and rect[1] <= my < rect[1] + rect[3]
+				colour = text_colour
+				if preset == pm.loaded_preset:
+					colour = gold
+				if hover:
+					colour = hover_colour
+					ddt.rect(rect, ColourRGBA(255, 255, 255, 15))
+				if str(preset) in favorites:
+					ddt.text((x + 1, y - round(1 * gui.scale)), "★", gold, 10)
+				ddt.text(
+					(x + star_w, y - round(1 * gui.scale)), preset.stem, colour, 10,
+					max_w=rect[2] - star_w - round(4 * gui.scale))
+				if click and hover:
+					pm.load_next = preset
+					on_label = True
+					self.close()
+		if click and not on_label:
+			self.close()
 
 
 def draw_showcase_art_box(
@@ -49181,6 +49359,10 @@ def main(holder: Holder) -> None:
 				prefs.spectrogram_colour = save[191]
 			if len(save) > 192 and save[192] is not None:
 				gui.pl_st_left = save[192]
+			if len(save) > 193 and save[193] is not None:
+				prefs.milk_screen_blend = save[193]
+			if len(save) > 194 and save[194] is not None:
+				prefs.milk_favorite_presets = save[194]
 
 			del save
 			break
@@ -50161,7 +50343,13 @@ def main(holder: Holder) -> None:
 			check_test=lambda: prefs.milk))
 	milky_menu.add(MenuItem(_("MilkDrop Visualiser"), tauon.toggle_milky, pass_ref=True,
 		check_test=lambda: prefs.milk))
-	milky_menu.add(MenuItem(_("Toggle Milkdrop Auto"), tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Auto Cycle"), tauon.toggle_milky_auto, pass_ref=True,
+		check_test=lambda: prefs.auto_milk))
+	milky_menu.add(MenuItem(_("Screen Blend"), tauon.toggle_milk_screen_blend, pass_ref=True,
+		check_test=lambda: prefs.milk_screen_blend))
+	milky_menu.add(MenuItem(_("Favorite This Preset"), tauon.toggle_milk_preset_favorite, pass_ref=True,
+		check_test=tauon.milk_preset_is_favorite))
+	milky_menu.add(MenuItem(_("Choose Preset"), tauon.open_milk_preset_chooser, pass_ref=True))
 	milky_menu.add(MenuItem(
 		_("Enable Wide Mode"),
 		tauon.toggle_showcase_wide_art,
@@ -53440,6 +53628,15 @@ def main(holder: Holder) -> None:
 				gui.update = max(gui.update, 1)
 				power = 1000
 
+		# Milkdrop preset chooser: keep frames flowing so hover tracking on the
+		# overlay stays live (the visualiser underneath is animating anyway).
+		if tauon.milk_choose.active:
+			if gui.mode != GuiMode.MAIN:
+				tauon.milk_choose.close()
+			else:
+				gui.update = max(gui.update, 1)
+				power = 1000
+
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
 				tauon.cursor_blink_timer.set()
@@ -53988,6 +54185,11 @@ def main(holder: Holder) -> None:
 			if tauon.dream_room.active:
 				tauon.dream_room.handle_input()
 
+			# Milkdrop preset chooser: capture then mute the pointer before any
+			# other consumer so clicks never leak through the overlay.
+			if tauon.milk_choose.active:
+				tauon.milk_choose.handle_input()
+
 			# Transfer click register to menus
 			if inp.mouse_click:
 				for instance in Menu.instances:
@@ -54525,6 +54727,9 @@ def main(holder: Holder) -> None:
 			# full-size UI. Click/key exit is handled early, before menu consumers.
 			if tauon.dream_room.active:
 				tauon.dream_room.handle_input()
+
+			if tauon.milk_choose.active:
+				tauon.milk_choose.handle_input()
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
@@ -56088,6 +56293,8 @@ def main(holder: Holder) -> None:
 
 				if radiobox.active:
 					radiobox.render()
+
+				tauon.milk_choose.render()
 
 				if gui.message_box:
 					tauon.message_box.render()

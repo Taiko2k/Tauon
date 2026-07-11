@@ -180,6 +180,11 @@ class MilkDropWidget(Widget):
 
 		gui.main_art_box = rect  # Milky renders at this singleton rect
 
+		if tauon.prefs.milk_screen_blend and track is not None:
+			# Screen Blend composites the visualiser over whatever is beneath it,
+			# so put the album art there, like the showcase / ArtBox paths do.
+			tauon.album_art_gen.display(track, (rect[0], rect[1]), (rect[2], rect[3]))
+
 		show_vis = False
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
 			# Same warm-up dance as the ArtBox path: burn the album art into the
@@ -220,7 +225,7 @@ class MilkDropWidget(Widget):
 			ddt.text((xx + 6 * gui.scale, yy), line, colour, font,
 				bg=ColourRGBA(30, 30, 30, 255), max_w=mw)
 
-		xx = rect[0] + round(12 * gui.scale)
+		xx = rect[0] + round(12 * gui.scale) - 5
 		yy = rect[1] + round(25 * gui.scale)
 		tag(tauon.milky.projectm.get_current_name(), yy, 312, 17, ColourRGBA(220, 220, 220, 255))
 
