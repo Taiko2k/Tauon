@@ -14,6 +14,9 @@ Changelog
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection
  - Added setting magnet mode to columns menu
+ - Added milkdrop cutout option
+ - Added milkdrop preset selector
+ - Added milkdrop favorites
  - Changed splash loading screen style
  - Tweaked setting UI layout
  - Improved network streaming backend
