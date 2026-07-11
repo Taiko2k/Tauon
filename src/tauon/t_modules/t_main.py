@@ -8900,8 +8900,8 @@ class Tauon:
 		self.milky.projectm.timer.set()
 		self.prefs.auto_milk ^= True
 
-	def toggle_milk_screen_blend(self, _track_object: TrackClass) -> None:
-		self.prefs.milk_screen_blend ^= True
+	def toggle_milk_cut_out(self, _track_object: TrackClass) -> None:
+		self.prefs.milk_cut_out ^= True
 		self.gui.update += 1
 
 	def milk_preset_is_favorite(self) -> bool:
@@ -19117,7 +19117,7 @@ class Tauon:
 			gui.custom_mode,  # 190
 			prefs.spectrogram_colour,  # 191
 			_pcols["pl_st_left"],  # 192
-			prefs.milk_screen_blend,  # 193
+			prefs.milk_cut_out,  # 193
 			prefs.milk_favorite_presets,  # 194
 		]
 
@@ -36249,6 +36249,9 @@ class ArtBox:
 
 				padding = round(0 * gui.scale)
 				xx = x + round(12 * gui.scale)
+				if gui.custom_mode:
+					# Match the Custom Layout Milkdrop widget's tag position
+					xx -= 5
 				yy = y + round(25 * gui.scale)
 				mw = box_w - round(25 * gui.scale)
 				tag_width, tag_height = self.ddt.get_text_wh(line, 312, max_x = mw)
@@ -41350,41 +41353,72 @@ try:
 	# Disable error checking as SDL can generate errors we do not otherwise catch, crashing PyOpenGL
 	OpenGL.ERROR_CHECKING = False
 	from OpenGL.GL import (
+		GL_ACTIVE_TEXTURE,
+		GL_BLEND,
 		GL_CLAMP_TO_EDGE,
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_BUFFER_BIT,
+		GL_COMPILE_STATUS,
+		GL_CURRENT_PROGRAM,
 		GL_DEPTH_BUFFER_BIT,
+		GL_FRAGMENT_SHADER,
 		GL_FRAMEBUFFER,
 		GL_FRAMEBUFFER_BINDING,
 		GL_FRAMEBUFFER_COMPLETE,
 		GL_LINEAR,
+		GL_LINK_STATUS,
 		GL_RGBA,
+		GL_TEXTURE0,
 		GL_TEXTURE_2D,
 		GL_TEXTURE_BINDING_2D,
 		GL_TEXTURE_MAG_FILTER,
 		GL_TEXTURE_MIN_FILTER,
 		GL_TEXTURE_WRAP_S,
 		GL_TEXTURE_WRAP_T,
+		GL_TRIANGLES,
 		GL_UNSIGNED_BYTE,
 		GL_VERSION,
+		GL_VERTEX_ARRAY_BINDING,
+		GL_VERTEX_SHADER,
 		GL_VIEWPORT,
+		glActiveTexture,
+		glAttachShader,
 		glBindFramebuffer,
 		glBindTexture,
+		glBindVertexArray,
 		glCheckFramebufferStatus,
 		glClear,
 		glClearColor,
+		glCompileShader,
 		glCopyTexSubImage2D,
+		glCreateProgram,
+		glCreateShader,
 		glDeleteFramebuffers,
+		glDeleteShader,
 		glDeleteTextures,
+		glDisable,
+		glDrawArrays,
+		glEnable,
 		glFinish,
 		glFlush,
 		glFramebufferTexture2D,
 		glGenFramebuffers,
 		glGenTextures,
+		glGenVertexArrays,
 		glGetIntegerv,
+		glGetProgramInfoLog,
+		glGetProgramiv,
+		glGetShaderInfoLog,
+		glGetShaderiv,
 		glGetString,
+		glGetUniformLocation,
+		glIsEnabled,
+		glLinkProgram,
+		glShaderSource,
 		glTexImage2D,
 		glTexParameteri,
+		glUniform1i,
+		glUseProgram,
 		glViewport,
 	)
 except ModuleNotFoundError:
@@ -41807,7 +41841,17 @@ class Milky:
 		self.framebuffer = None
 		self.loaded_size = None
 		self.fps = FPSCounter(window_size=10, min_update_interval=0.1, max_frame_time=0.5)
-		self.screen_blend_mode = None  # composed lazily on first use
+		self.cut_out_blend_mode = None  # composed lazily on first use (shader fallback)
+
+		# Cut Out key pass: a GL shader copies the visualiser frame into a
+		# second texture with alpha keyed from brightness, leaving the projectM
+		# texture untouched (it feeds back into subsequent frames).
+		self.key_texture_id = None
+		self.key_framebuffer = None
+		self.key_render_texture = None
+		self.key_program = None
+		self.key_vao = None
+		self.key_failed: bool = False  # shader unavailable, use blend-mode fallback
 
 		self.projectm = ProjectM(tauon)
 
@@ -41879,6 +41923,13 @@ class Milky:
 				sdl3.SDL_DestroyTexture(self.render_texture)
 				glDeleteTextures(1, [self.gl_texture_id])
 				glDeleteFramebuffers(1, [self.framebuffer])
+			if self.key_render_texture:
+				sdl3.SDL_DestroyTexture(self.key_render_texture)
+				glDeleteTextures(1, [self.key_texture_id])
+				glDeleteFramebuffers(1, [self.key_framebuffer])
+				self.key_render_texture = None
+				self.key_texture_id = None
+				self.key_framebuffer = None
 
 			gl_texture_id = glGenTextures(1)
 			glBindTexture(GL_TEXTURE_2D, gl_texture_id)
@@ -41933,30 +41984,179 @@ class Milky:
 			glClear(GL_COLOR_BUFFER_BIT)
 			sdl3.SDL_SetRenderTarget(self.renderer, current_target)
 
+		# Cut Out: run the key shader over the fresh frame. It samples the
+		# projectM texture (read-only — projectM feeds it back into subsequent
+		# frames) and writes a copy with alpha keyed from brightness into
+		# key_texture_id, which is blitted below instead.
+		keyed = False
+		if not discard and self.tauon.prefs.milk_cut_out and not self.key_failed:
+			keyed = self._run_key_pass(w, h)
+
 		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
 		glFlush()
 		glFinish()
 		if not discard:
-			if self.tauon.prefs.milk_screen_blend:
-				# Key out the black: out = src * src + dst * (1 - src) — the
-				# source colour acts as its own per-channel matte. Black
-				# visualiser pixels leave the destination (album art) untouched
-				# and bright pixels replace it rather than add to it, so unlike a
-				# true screen transfer (src + dst * (1 - src)) it doesn't
-				# accumulate brightness over the art.
-				if self.screen_blend_mode is None:
-					self.screen_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
-						sdl3.SDL_BLENDFACTOR_SRC_COLOR,
-						sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
-						sdl3.SDL_BLENDOPERATION_ADD,
-						sdl3.SDL_BLENDFACTOR_ZERO,
-						sdl3.SDL_BLENDFACTOR_ONE,
-						sdl3.SDL_BLENDOPERATION_ADD)
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, self.screen_blend_mode)
+			if keyed:
+				# The shader writes straight (unmultiplied) colour with a
+				# luminance alpha; premultiplied "over" keeps the visualiser's
+				# own brightness while black fades to the album art beneath.
+				sdl3.SDL_SetTextureBlendMode(self.key_render_texture, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED)
+				sdl3.SDL_RenderTexture(self.renderer, self.key_render_texture, None, srect)
 			else:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
-			sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+				if self.tauon.prefs.milk_cut_out:
+					# Shader unavailable: approximate the key in fixed function,
+					# out = src * src + dst * (1 - src) — the source colour acts
+					# as its own per-channel matte.
+					if self.cut_out_blend_mode is None:
+						self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+							sdl3.SDL_BLENDFACTOR_SRC_COLOR,
+							sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+							sdl3.SDL_BLENDOPERATION_ADD,
+							sdl3.SDL_BLENDFACTOR_ZERO,
+							sdl3.SDL_BLENDFACTOR_ONE,
+							sdl3.SDL_BLENDOPERATION_ADD)
+					sdl3.SDL_SetTextureBlendMode(self.render_texture, self.cut_out_blend_mode)
+				else:
+					sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
+				sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
 		self.fps.tick()
+
+	# ------------------------------------------------- Cut Out key pass
+
+	# Fullscreen-triangle vertex stage (no vertex buffer needed) + a fragment
+	# stage that keys out blacks and greys only: neutral pixels fade by
+	# brightness, but any hint of chroma (max - min channel) makes the pixel
+	# opaque even at low luminance, so dim coloured content still covers the
+	# art. Narrow smoothstep ramps keep the key edges from shimmering.
+	KEY_VERTEX_SRC = """
+	#version 330 core
+	out vec2 uv;
+	void main() {
+		vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+		uv = p;
+		gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+	}
+	"""
+
+	KEY_FRAGMENT_SRC = """
+	#version 330 core
+	in vec2 uv;
+	out vec4 frag;
+	uniform sampler2D tex;
+	void main() {
+		vec3 c = texture(tex, uv).rgb;
+		float hi = max(c.r, max(c.g, c.b));
+		float chroma = hi - min(c.r, min(c.g, c.b));
+		float a = max(smoothstep(0.01, 0.20, hi), smoothstep(0.02, 0.06, chroma));
+		frag = vec4(c, a);
+	}
+	"""
+
+	def _init_key_program(self) -> bool:
+		"""Compile the key shader once. On any failure mark key_failed so render
+		falls back to the fixed-function blend approximation."""
+		if self.key_program is not None:
+			return True
+		try:
+			program = glCreateProgram()
+			for source, kind in ((self.KEY_VERTEX_SRC, GL_VERTEX_SHADER), (self.KEY_FRAGMENT_SRC, GL_FRAGMENT_SHADER)):
+				shader = glCreateShader(kind)
+				glShaderSource(shader, source)
+				glCompileShader(shader)
+				if not glGetShaderiv(shader, GL_COMPILE_STATUS):
+					raise RuntimeError(f"Shader compile failed: {glGetShaderInfoLog(shader)}")
+				glAttachShader(program, shader)
+				glDeleteShader(shader)
+			glLinkProgram(program)
+			if not glGetProgramiv(program, GL_LINK_STATUS):
+				raise RuntimeError(f"Shader link failed: {glGetProgramInfoLog(program)}")
+			# Core profiles require a bound VAO to draw, even with no attributes
+			self.key_vao = glGenVertexArrays(1)
+			glUseProgram(program)
+			glUniform1i(glGetUniformLocation(program, "tex"), 0)
+			glUseProgram(0)
+			self.key_program = program
+			return True
+		except Exception:
+			logging.exception("Failed to build Milkdrop key shader, using blend-mode fallback")
+			self.key_failed = True
+			return False
+
+	def _ensure_key_target(self, w: int | float, h: int | float) -> bool:
+		"""Create the keyed copy's texture + framebuffer + SDL wrapper at the
+		current size (torn down with the main target on resize)."""
+		if self.key_render_texture:
+			return True
+		try:
+			self.key_texture_id = glGenTextures(1)
+			glBindTexture(GL_TEXTURE_2D, self.key_texture_id)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+			self.key_framebuffer = glGenFramebuffers(1)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.key_framebuffer)
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.key_texture_id, 0)
+			complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glBindTexture(GL_TEXTURE_2D, 0)
+			if not complete:
+				raise RuntimeError("Key framebuffer not complete")
+
+			props = sdl3.SDL_CreateProperties()
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, self.key_texture_id)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+			self.key_render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
+			if not self.key_render_texture:
+				raise RuntimeError(f"SDL_CreateTextureWithProperties failed: {sdl3.SDL_GetError()}")
+			return True
+		except Exception:
+			logging.exception("Failed to create Milkdrop key target, using blend-mode fallback")
+			self.key_failed = True
+			return False
+
+	def _run_key_pass(self, w: int | float, h: int | float) -> bool:
+		"""Render the keyed copy. Caller restores the framebuffer binding; all
+		other touched GL state is saved and restored here."""
+		if not self._init_key_program() or not self._ensure_key_target(w, h):
+			return False
+		saved_viewport = glGetIntegerv(GL_VIEWPORT)
+		saved_program = glGetIntegerv(GL_CURRENT_PROGRAM)
+		saved_vao = glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
+		saved_active = glGetIntegerv(GL_ACTIVE_TEXTURE)
+		blend_was_on = glIsEnabled(GL_BLEND)
+		try:
+			glBindFramebuffer(GL_FRAMEBUFFER, self.key_framebuffer)
+			glViewport(0, 0, int(w), int(h))
+			glDisable(GL_BLEND)
+			glUseProgram(self.key_program)
+			glBindVertexArray(self.key_vao)
+			glActiveTexture(GL_TEXTURE0)
+			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
+			glDrawArrays(GL_TRIANGLES, 0, 3)
+			glBindTexture(GL_TEXTURE_2D, 0)
+			return True
+		except Exception:
+			logging.exception("Milkdrop key pass failed, using blend-mode fallback")
+			self.key_failed = True
+			return False
+		finally:
+			glBindVertexArray(int(saved_vao))
+			glUseProgram(int(saved_program))
+			glActiveTexture(int(saved_active))
+			if blend_was_on:
+				glEnable(GL_BLEND)
+			glViewport(
+				int(saved_viewport[0]),
+				int(saved_viewport[1]),
+				int(saved_viewport[2]),
+				int(saved_viewport[3]),
+			)
 
 
 class MilkPresetChooser:
@@ -42080,12 +42280,11 @@ class MilkPresetChooser:
 				y = pad + row * row_h
 				rect = (x, y, col_w - round(6 * gui.scale), row_h)
 				hover = rect[0] <= mx < rect[0] + rect[2] and rect[1] <= my < rect[1] + rect[3]
-				colour = text_colour
+				# Hover highlight: just brighten the label text
 				if preset == pm.loaded_preset:
-					colour = gold
-				if hover:
-					colour = hover_colour
-					ddt.rect(rect, ColourRGBA(255, 255, 255, 15))
+					colour = ColourRGBA(255, 230, 120, 255) if hover else gold
+				else:
+					colour = hover_colour if hover else text_colour
 				if str(preset) in favorites:
 					ddt.text((x + 1, y - round(1 * gui.scale)), "★", gold, 10)
 				ddt.text(
@@ -49360,7 +49559,7 @@ def main(holder: Holder) -> None:
 			if len(save) > 192 and save[192] is not None:
 				gui.pl_st_left = save[192]
 			if len(save) > 193 and save[193] is not None:
-				prefs.milk_screen_blend = save[193]
+				prefs.milk_cut_out = save[193]
 			if len(save) > 194 and save[194] is not None:
 				prefs.milk_favorite_presets = save[194]
 
@@ -50345,8 +50544,8 @@ def main(holder: Holder) -> None:
 		check_test=lambda: prefs.milk))
 	milky_menu.add(MenuItem(_("Auto Cycle"), tauon.toggle_milky_auto, pass_ref=True,
 		check_test=lambda: prefs.auto_milk))
-	milky_menu.add(MenuItem(_("Screen Blend"), tauon.toggle_milk_screen_blend, pass_ref=True,
-		check_test=lambda: prefs.milk_screen_blend))
+	milky_menu.add(MenuItem(_("Cut Out"), tauon.toggle_milk_cut_out, pass_ref=True,
+		check_test=lambda: prefs.milk_cut_out))
 	milky_menu.add(MenuItem(_("Favorite This Preset"), tauon.toggle_milk_preset_favorite, pass_ref=True,
 		check_test=tauon.milk_preset_is_favorite))
 	milky_menu.add(MenuItem(_("Choose Preset"), tauon.open_milk_preset_chooser, pass_ref=True))

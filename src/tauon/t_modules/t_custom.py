@@ -180,8 +180,8 @@ class MilkDropWidget(Widget):
 
 		gui.main_art_box = rect  # Milky renders at this singleton rect
 
-		if tauon.prefs.milk_screen_blend and track is not None:
-			# Screen Blend composites the visualiser over whatever is beneath it,
+		if tauon.prefs.milk_cut_out and track is not None:
+			# Cut Out composites the visualiser over whatever is beneath it,
 			# so put the album art there, like the showcase / ArtBox paths do.
 			tauon.album_art_gen.display(track, (rect[0], rect[1]), (rect[2], rect[3]))
 
@@ -217,7 +217,7 @@ class MilkDropWidget(Widget):
 		gui = tauon.gui
 		ddt = tauon.ddt
 
-		def tag(line: str, yy: int, font: int, pad_w: float, colour: ColourRGBA) -> None:
+		def tag(line: str, xx: int, yy: int, font: int, pad_w: float, colour: ColourRGBA) -> None:
 			mw = rect[2] - round(25 * gui.scale)
 			tag_w, _th = ddt.get_text_wh(line, font, max_x=mw)
 			tag_w += round(pad_w * gui.scale)
@@ -225,18 +225,18 @@ class MilkDropWidget(Widget):
 			ddt.text((xx + 6 * gui.scale, yy), line, colour, font,
 				bg=ColourRGBA(30, 30, 30, 255), max_w=mw)
 
-		xx = rect[0] + round(12 * gui.scale) - 5
+		xx = rect[0] + round(5 * gui.scale)
 		yy = rect[1] + round(25 * gui.scale)
-		tag(tauon.milky.projectm.get_current_name(), yy, 312, 17, ColourRGBA(220, 220, 220, 255))
+		tag(tauon.milky.projectm.get_current_name(), xx, yy, 312, 17, ColourRGBA(220, 220, 220, 255))
 
 		if tauon.prefs.auto_milk:
 			yy += round(30 * gui.scale)
-			tag(_t("Auto Cycle"), yy, 12, 14, ColourRGBA(210, 210, 210, 255))
+			tag(_t("Auto Cycle"), xx, yy, 12, 14, ColourRGBA(210, 210, 210, 255))
 
 		if tauon.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			tauon.milky.fps.reset()
 		yy += round(30 * gui.scale)
-		tag(f"FPS: {round(tauon.milky.fps.get())}", yy, 12, 14, ColourRGBA(210, 210, 210, 255))
+		tag(f"FPS: {round(tauon.milky.fps.get())}", xx, yy, 12, 14, ColourRGBA(210, 210, 210, 255))
 
 
 class SticksVisWidget(Widget):
