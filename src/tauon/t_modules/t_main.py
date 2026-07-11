@@ -25637,7 +25637,7 @@ class PresetDownloadBox:
 				self.cancel()
 
 class NagBox:
-	SPLASH_VERSION = "10.0.0"
+	SPLASH_VERSION = "11.0.0"
 	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
@@ -25748,7 +25748,7 @@ class NagBox:
 		self.ddt.rect((inner_x, changelog_y + changelog_h - round(1 * scale), inner_w, round(1 * scale)), divider)
 		self.ddt.text(
 			(inner_x + round(16 * scale), changelog_y + round(13 * scale)),
-			_("Changelog"),
+			_("Changelog Highlights"),
 			self.colours.box_text,
 			213,
 			bg=section_fill,
@@ -29188,7 +29188,7 @@ class Over:
 			))
 
 		inner_x = right_x
-		inner_y = column_body_y
+		inner_y = column_body_y + round(2 * gui.scale)
 		inner_w = right_w
 		self.settings_action_tile((inner_x, inner_y, inner_w, round(36 * gui.scale)), _("Open output folder"), self.tauon.open_encode_out, accent)
 		inner_y += round(42 * gui.scale)
