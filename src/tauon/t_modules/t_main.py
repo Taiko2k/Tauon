@@ -41483,6 +41483,16 @@ def find_projectm_library() -> str | None:
 				path = base_dir / dll_name
 				if path.is_file():
 					return str(path)
+	if sys.platform == "darwin":
+		base_dirs = [Path(sys.executable).parent]
+		if hasattr(sys, "_MEIPASS"):
+			# PyInstaller bundle: dylibs land in Contents/Frameworks
+			base_dirs.append(Path(sys._MEIPASS))
+		for base_dir in base_dirs:
+			for dylib_name in ("libprojectM-4.4.dylib", "libprojectM-4.dylib"):
+				path = base_dir / dylib_name
+				if path.is_file():
+					return str(path)
 	for lib_name in ("projectM-4", "libprojectM-4-4", "libprojectM-4"):
 		path = ctypes.util.find_library(lib_name)
 		if path:

@@ -42,6 +42,7 @@ a = Analysis(
 		*lib_paths,
 		(str(phazor_path), "."),
 		(f"{prefix}/bin/ffmpeg", "."),
+		(str(REPO_ROOT / "build/projectm/lib/libprojectM-4.4.dylib"), "."),
 	],
 	datas=[
 		(certifi.where(), "certifi"),
