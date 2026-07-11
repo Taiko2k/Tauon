@@ -54784,7 +54784,10 @@ def main(holder: Holder) -> None:
 								gui.album_artist_dict.clear()
 							break
 
-				if gui.show_playlist:
+				# The custom layout owns the complete main canvas.  Its widgets render
+				# their own tracklists, controls and panels below, so do not draw any
+				# of the hidden preset playlist chrome first.
+				if gui.show_playlist and not gui.custom_mode:
 					# playlist hit test
 					if (
 						tauon.coll(
@@ -54819,11 +54822,7 @@ def main(holder: Holder) -> None:
 					if not gui.showcase_mode:
 						showcase.timed_lyrics_edit.continuous = False
 
-					if gui.custom_mode:
-						# The Custom Layout Tracklist widget renders the playlist (into
-						# its segment) and manages gui.pl_update itself.
-						pass
-					elif gui.pl_update > 0:
+					if gui.pl_update > 0:
 						gui.rendered_playlist_position = pctl.playlist_view_position
 
 						gui.pl_update -= 1
@@ -54902,7 +54901,11 @@ def main(holder: Holder) -> None:
 
 					# Right side panel drawing
 
-					if gui.rsp and not prefs.album_mode:
+					# Custom layouts are composited later in the frame and own their
+					# complete canvas.  Drawing the preset right-side panel here is not
+					# visible, but its ArtBox path clears its target every frame, which
+					# breaks MilkDrop's persistent render buffer in a custom widget.
+					if gui.rsp and not prefs.album_mode and not gui.custom_mode:
 						gui.showing_l_panel = False
 						target_track = pctl.show_object()
 						rsp_x = gui.rsp_x
@@ -55201,7 +55204,7 @@ def main(holder: Holder) -> None:
 										)
 
 					# Separation Line Drawing
-					if gui.rsp:
+					if gui.rsp and not gui.custom_mode:
 						# Draw Highlight when mouse over
 						if draw_sep_hl:
 							sep_x = gui.rsp_split_x + 1 * gui.scale
@@ -55312,7 +55315,8 @@ def main(holder: Holder) -> None:
 				edge_top = top
 				if gui.set_bar and gui.set_mode:
 					edge_top += gui.set_height
-				tauon.edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
+				if not gui.custom_mode:
+					tauon.edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
 
 				if not gui.custom_mode:
 					render_tracklist_scrollbar(
@@ -55330,7 +55334,7 @@ def main(holder: Holder) -> None:
 					tauon.top_panel.render()
 
 				# RENDER EXTRA FRAME DOUBLE
-				if colours.lm:
+				if colours.lm and not gui.custom_mode:
 					if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
 						ddt.rect(
 							(
