@@ -162,12 +162,12 @@ class MilkDropWidget(Widget):
 		ddt = tauon.ddt
 		inp = tauon.inp
 		rect = (round(x), round(y), round(w), round(h))
-		ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 		tauon.fields.add(rect)
 		track = tauon.pctl.show_object()
 		hover = tauon.coll(rect) and tauon.is_level_zero(False)
 
 		if not tauon.prefs.milk:
+			ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 			ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			ddt.text(
 				(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(8 * gui.scale), 2),
@@ -180,10 +180,10 @@ class MilkDropWidget(Widget):
 
 		gui.main_art_box = rect  # Milky renders at this singleton rect
 
-		if tauon.prefs.milk_cut_out and track is not None:
-			# Cut Out composites the visualiser over whatever is beneath it,
-			# so put the album art there, like the showcase / ArtBox paths do.
-			tauon.album_art_gen.display(track, (rect[0], rect[1]), (rect[2], rect[3]))
+		# No background fill: the segment stays fully transparent beneath the
+		# visualiser, including through the keyed pixels with Cut Out. Album
+		# art under the vis is the Art Box widget's job; this dedicated widget
+		# never draws it.
 
 		show_vis = False
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
