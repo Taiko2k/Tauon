@@ -53129,7 +53129,8 @@ def main(holder: Holder) -> None:
 	tauon.column_bar_draw = render_column_bar_draw
 
 	render_heartbeat_timer = Timer()
-	spectro_pace_timer = Timer()
+	vis_pace_timer = Timer()
+	pace_vis = False
 
 	tauon.set_tray_icons()
 	if prefs.use_tray or "--tray" in sys.argv:
@@ -53824,13 +53825,14 @@ def main(holder: Holder) -> None:
 				i -= 1
 
 		# Dream Room (F7): keep frames flowing while the 3D scene animates.
-		# Vsync paces the loop. Only meaningful in the main GUI mode.
+		# Only meaningful in the main GUI mode.
 		if tauon.dream_room.active:
 			if gui.mode != GuiMode.MAIN:
 				tauon.dream_room.close_instant()
 			else:
 				gui.update = max(gui.update, 1)
 				power = 1000
+				pace_vis = True
 
 		# Milkdrop preset chooser: keep frames flowing so hover tracking on the
 		# overlay stays live (the visualiser underneath is animating anyway).
@@ -53840,6 +53842,7 @@ def main(holder: Holder) -> None:
 			else:
 				gui.update = max(gui.update, 1)
 				power = 1000
+				pace_vis = True
 
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
@@ -53894,8 +53897,12 @@ def main(holder: Holder) -> None:
 			power = 1000
 			gui.update += 1
 
+		# The level_update partial-present path (top-panel spectrum/level meter)
+		# re-arms itself every iteration while playing, so it presents at the
+		# loop rate — pace it below like the other continuous visuals.
 		if gui.level_update and not album_scroll_hold and not scroll_hold:
 			power = 500
+			pace_vis = True
 
 		# if gui.vis == 3 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 		# 	power = 500
@@ -53929,17 +53936,23 @@ def main(holder: Holder) -> None:
 		# only bumps power to 400 (below the 500 render threshold), so between the
 		# jittery level_update pulses the loop drops into the ~33fps power-save
 		# throttle and the scroll stutters. Holding power high + update set makes
-		# it render every iteration. Sleep off whatever part of the frame budget
-		# the present's vsync block didn't absorb: no-op while vsync paces the
-		# loop, a refresh-rate cap when it silently stops blocking.
+		# it render every iteration.
 		if gui.spectrogram_in_widget \
 				and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			power = 1000
 			gui.update = max(gui.update, 1)
-			excess = tauon.frame_pace() - spectro_pace_timer.get()
+			pace_vis = True
+
+		# Pace the continuously animating visuals above by sleeping off whatever
+		# part of the frame budget the present's vsync block didn't absorb: a
+		# no-op while vsync paces the loop, a refresh-rate cap when it silently
+		# stops blocking (driver override, occluded window).
+		if pace_vis:
+			pace_vis = False
+			excess = tauon.frame_pace() - vis_pace_timer.get()
 			if excess > 0:
 				time.sleep(excess)
-			spectro_pace_timer.set()
+		vis_pace_timer.set()
 
 		if prefs.milk and render_heartbeat_timer.get() > 5:
 			# workaround for invis window bug?
