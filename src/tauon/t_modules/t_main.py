@@ -41410,6 +41410,7 @@ try:
 		GL_FRAMEBUFFER_COMPLETE,
 		GL_LINEAR,
 		GL_LINK_STATUS,
+		GL_PACK_ALIGNMENT,
 		GL_RGBA,
 		GL_TEXTURE0,
 		GL_TEXTURE_2D,
@@ -41457,6 +41458,8 @@ try:
 		glGetUniformLocation,
 		glIsEnabled,
 		glLinkProgram,
+		glPixelStorei,
+		glReadPixels,
 		glShaderSource,
 		glTexImage2D,
 		glTexParameteri,
@@ -41513,6 +41516,11 @@ class ProjectM:
 		self.set_frame_time_available: bool = False
 		self.lib_path: Path | None = None
 		self.glew = None
+		# macOS: the SDL renderer's GL context is a 2.1 compatibility profile,
+		# but projectM needs 3.3+ core, so it renders in its own context and
+		# frames are read back to the renderer in Milky.render_readback.
+		self.own_gl_context = None
+		self.renderer_gl_context = None
 		# Max frames projectM accepts per pcm_add_float call; refined from the
 		# library in define_function_signatures. Feeding more crashes it.
 		self.pcm_max_samples: int = 2048
@@ -41668,6 +41676,25 @@ class ProjectM:
 			self.lib.projectm_set_texture_search_paths(self.pm_instance, path_array, len(path_bytes))
 			logging.info(f"Set projectm texture paths: {path_bytes}")
 
+	def create_own_context(self) -> bool:
+		self.renderer_gl_context = sdl3.SDL_GL_GetCurrentContext()
+		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_MAJOR_VERSION, 3)
+		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_MINOR_VERSION, 3)
+		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_PROFILE_MASK, sdl3.SDL_GL_CONTEXT_PROFILE_CORE)
+		self.own_gl_context = sdl3.SDL_GL_CreateContext(self.tauon.t_window)
+		if not self.own_gl_context:
+			logging.error(f"Failed to create core profile GL context for projectM: {sdl3.SDL_GetError()}")
+			return False
+		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.own_gl_context)
+		return True
+
+	def make_own_context_current(self) -> None:
+		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.own_gl_context)
+
+	def restore_renderer_context(self) -> None:
+		if self.renderer_gl_context:
+			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.renderer_gl_context)
+
 	def init(self, width: int = 800, height: int = 600, preset_path=None) -> bool:
 		"""Initialize projectM with basic settings"""
 		if not self.lib:
@@ -41702,6 +41729,12 @@ class ProjectM:
 
 		if not (self.tauon.user_directory / "presets").exists():
 			(self.tauon.user_directory / "presets").mkdir()
+
+		if sys.platform == "darwin" and not self.create_own_context():
+			self.lib_error = True
+			self.lib = None
+			return False
+
 		# Create projectM instance
 		try:
 			logging.info("init project m...")
@@ -41731,11 +41764,18 @@ class ProjectM:
 
 				return True
 			logging.error("Failed to create projectM instance")
+			self.lib_error = True
+			self.lib = None
 			return False
 
 		except Exception as e:
 			logging.exception(f"Error initializing projectM: {e}")
+			self.lib_error = True
+			self.lib = None
 			return False
+		finally:
+			if self.own_gl_context:
+				self.restore_renderer_context()
 
 	def rescan_presets(self) -> None:
 		def scan_folder(dir: Path) -> None:
@@ -41896,12 +41936,18 @@ class Milky:
 		self.key_vao = None
 		self.key_failed: bool = False  # shader unavailable, use blend-mode fallback
 
+		self.readback_buffer = None  # CPU frame buffer for the dedicated-context path
+
 		self.projectm = ProjectM(tauon)
 
 	def burn(self, target_track: TrackClass) -> None:
 		if not self.ready:
 			return
 		if not self.projectm.burn_texture_available:
+			return
+		if self.projectm.own_gl_context:
+			# Burn needs the SDL renderer to draw into a GL-wrapped texture,
+			# which can't be shared with projectM's dedicated context
 			return
 
 		w = int(self.tauon.gui.main_art_box[2])
@@ -41950,6 +41996,10 @@ class Milky:
 			if self.projectm.lib:
 				self.ready = True
 		if self.projectm.lib_error is True:
+			return
+
+		if self.projectm.own_gl_context:
+			self.render_readback(w, h, srect, discard)
 			return
 
 		sdl3.SDL_FlushRenderer(self.renderer)
@@ -42062,6 +42112,81 @@ class Milky:
 				else:
 					sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
 				sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+		self.fps.tick()
+
+	def render_readback(self, w, h, srect, discard: bool = False) -> None:
+		"""Dedicated-context path (macOS): projectM renders into an FBO in its
+		own core profile GL context, and the frame is read back to CPU and
+		uploaded to a streaming SDL texture, since GL textures can't be shared
+		between a core context and the renderer's 2.1 compatibility context."""
+		pm = self.projectm
+		sdl3.SDL_FlushRenderer(self.renderer)
+
+		if (w, h) != self.loaded_size:
+			self.loaded_size = (w, h)
+
+			if self.render_texture:
+				sdl3.SDL_DestroyTexture(self.render_texture)
+			self.render_texture = sdl3.SDL_CreateTexture(
+				self.renderer, sdl3.SDL_PIXELFORMAT_RGBA32,
+				sdl3.SDL_TEXTUREACCESS_STREAMING, int(w), int(h))
+			self.readback_buffer = (ctypes.c_ubyte * (int(w) * int(h) * 4))()
+
+			pm.make_own_context_current()
+			if self.gl_texture_id:
+				glDeleteTextures(1, [self.gl_texture_id])
+				glDeleteFramebuffers(1, [self.framebuffer])
+
+			self.gl_texture_id = glGenTextures(1)
+			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+
+			self.framebuffer = glGenFramebuffers(1)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.gl_texture_id, 0)
+			if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+				logging.error("projectM framebuffer not complete")
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glBindTexture(GL_TEXTURE_2D, 0)
+		else:
+			pm.make_own_context_current()
+
+		try:
+			pm.render_frame(self.framebuffer)
+
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			glPixelStorei(GL_PACK_ALIGNMENT, 1)
+			glReadPixels(0, 0, int(w), int(h), GL_RGBA, GL_UNSIGNED_BYTE, self.readback_buffer)
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glFlush()
+		finally:
+			pm.restore_renderer_context()
+
+		if not discard:
+			sdl3.SDL_UpdateTexture(
+				self.render_texture, None,
+				ctypes.cast(self.readback_buffer, ctypes.c_void_p), int(w) * 4)
+			if self.tauon.prefs.milk_cut_out:
+				if self.cut_out_blend_mode is None:
+					self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+						sdl3.SDL_BLENDFACTOR_SRC_COLOR,
+						sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+						sdl3.SDL_BLENDOPERATION_ADD,
+						sdl3.SDL_BLENDFACTOR_ZERO,
+						sdl3.SDL_BLENDFACTOR_ONE,
+						sdl3.SDL_BLENDOPERATION_ADD)
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, self.cut_out_blend_mode)
+			else:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
+			# GL frames are bottom-up relative to SDL
+			sdl3.SDL_RenderTextureRotated(
+				self.renderer, self.render_texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
 		self.fps.tick()
 
 	# ------------------------------------------------- Cut Out key pass
