@@ -1057,10 +1057,10 @@ class GalleryWidget(Widget):
 
 
 GRID_PER_ROW_MAX = 30
-# Uniform outer margin (px unscaled) around the Gallery: Compact grid — the
-# same inset the preset's narrow-window branch gives on the left, applied
-# deliberately on left/right/top so the edges match.
-GRID_MARGIN = 20
+# Uniform outer margin (px unscaled) around the Gallery: Compact grid —
+# based on the inset the preset's narrow-window branch gives on the left
+# (20), pulled in slightly, applied on left/right/top so the edges match.
+GRID_MARGIN = 15
 
 
 class GridGalleryWidget(GalleryWidget):
