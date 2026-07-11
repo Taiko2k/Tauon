@@ -147,6 +147,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	alpha_blend,
 	alpha_mod,
 	archive_file_scan,
+	atomic_save,
 	check_equal,
 	clean_string,
 	colour_slide,
@@ -19121,7 +19122,7 @@ class Tauon:
 			pctl.active_playlist_playing,  # 183
 			prefs.milk,
 			prefs.auto_milk,
-			prefs.loaded_preset,
+			str(prefs.loaded_preset) if prefs.loaded_preset else None,  # 186 — as str, a pickled Path is OS-specific
 			int(pctl.stop_mode),
 			pctl.stop_ref,
 			prefs.start_in_tray,  # 189
@@ -19133,10 +19134,10 @@ class Tauon:
 		]
 
 		try:
-			with (self.user_directory / "state.p.backup").open("wb") as file:
+			with atomic_save(self.user_directory / "state.p.backup") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 			# if not pctl.running:
-			with (self.user_directory / "state.p").open("wb") as file:
+			with atomic_save(self.user_directory / "state.p") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 			old_position = self.old_window_position
@@ -19153,10 +19154,10 @@ class Tauon:
 			]
 
 			if not self.fs_mode:
-				with (self.user_directory / "window.p").open("wb") as file:
+				with atomic_save(self.user_directory / "window.p") as file:
 					pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-			with (self.user_directory / "lyrics_substitutions.json").open("w", encoding="utf-8") as file:
+			with atomic_save(self.user_directory / "lyrics_substitutions.json", "w") as file:
 				json.dump(prefs.lyrics_subs, file)
 
 			save_prefs(bag=self.bag)
@@ -48902,7 +48903,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 76
+	latest_db_version: float = 77
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -49547,7 +49548,9 @@ def main(holder: Holder) -> None:
 			if len(save) > 185 and save[185] is not None:
 				prefs.auto_milk = save[185]
 			if len(save) > 186 and save[186] is not None:
-				prefs.loaded_preset = save[186]
+				# Stored as str since v77 (pre-77 saves pickled a Path); Path()
+				# normalises either form to the runtime type.
+				prefs.loaded_preset = Path(save[186])
 			if len(save) > 187 and save[187] is not None:
 				bag.loaded_stop_mode = save[187]
 			if len(save) > 188 and save[188] is not None:
@@ -57759,7 +57762,7 @@ def main(holder: Holder) -> None:
 			try:
 				if bag.should_save_state:
 					logging.info("Auto save playtime")
-					with (user_directory / "star.p").open("wb") as file:
+					with atomic_save(user_directory / "star.p") as file:
 						pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 				else:
 					logging.info("Dev mode, skip auto saving playtime")
@@ -57808,9 +57811,9 @@ def main(holder: Holder) -> None:
 		prefs.reload_state = None
 
 	if bag.should_save_state:
-		with (user_directory / "star.p").open("wb") as file:
+		with atomic_save(user_directory / "star.p") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-		with (user_directory / "album-star.p").open("wb") as file:
+		with atomic_save(user_directory / "album-star.p") as file:
 			pickle.dump(tauon.album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 	gui.gallery_positions[pctl.pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
@@ -57818,9 +57821,9 @@ def main(holder: Holder) -> None:
 
 	date = datetime.date.today()
 	if bag.should_save_state:
-		with (user_directory / "star.p.backup").open("wb") as file:
+		with atomic_save(user_directory / "star.p.backup") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-		with (user_directory / f"star.p.backup{date.month!s}").open("wb") as file:
+		with atomic_save(user_directory / f"star.p.backup{date.month!s}") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 	if tauon.stream_proxy and tauon.stream_proxy.download_running:

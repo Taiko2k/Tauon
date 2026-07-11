@@ -21,6 +21,7 @@ Changelog
  - Tweaked setting UI layout
  - Improved network streaming backend
  - Improved TIDAL favorites and playlists pagination
+ - Improved DB corruption avoidance
  - Fixed album rating and scrollbar interactions
  - Fixed show playing info shortcut
  - Fixed resume on restart state handling

@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Callable
 import sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
-from tauon.t_modules.t_extra import ColourRGBA, get_display_time
+from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -1853,7 +1853,8 @@ class CustomLayout:
 			data = {str(i): (s.to_dict() if s else None) for i, s in enumerate(self.slots)}
 			data["active"] = self.active_slot
 			data["columns"] = {str(i): c for i, c in enumerate(self.slot_columns) if c is not None}
-			self._path().write_text(json.dumps(data, indent=1), encoding="utf-8")
+			with atomic_save(self._path(), "w") as file:
+				file.write(json.dumps(data, indent=1))
 		except Exception:
 			logging.exception("Failed to save custom layouts")
 
