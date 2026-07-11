@@ -511,10 +511,13 @@ class DConsole:
 
 	def __init__(self) -> None:
 		self.show: bool = False
+		self.fps = FPSCounter(window_size=20, min_update_interval=0.12, max_frame_time=0.5)
 
 	def toggle(self) -> None:
 		"""Toggle the GUI console with logs on and off"""
 		self.show ^= True
+		if self.show:
+			self.fps.reset()
 
 class GuiVar:
 	"""Use to hold any variables for use in relation to UI"""
@@ -650,6 +653,11 @@ class GuiVar:
 		self.show_bottom_title: bool = False
 		# self.show_top_title: bool = True
 		self.search_error: bool = False
+
+		# Whether SDL vsync is active on the renderer (set from Holder at startup).
+		# When True, visualisers render every frame and vsync paces the loop;
+		# when False they self-cap at ~60fps since nothing else limits them.
+		self.vsync: bool = True
 
 		self.level_update: bool = False
 		self.level_time: Timer = Timer()
@@ -36145,7 +36153,10 @@ class ArtBox:
 					show_vis = True
 				if self.tauon.pctl.playing_state != PlayingState.PAUSED:
 					#gui.update += 1
-					gui.delay_frame(0.007)  # 60 fps
+					if gui.vsync:
+						gui.delay_frame(0)  # full speed, vsync paces the loop
+					else:
+						gui.delay_frame(1 / 60)  # no vsync to pace us, cap at 60fps
 
 		# Draw faint border on album art
 		if tight_border and not show_vis:
@@ -40102,7 +40113,10 @@ class MetaBox:
 				self.tauon.milky.render()
 			if self.tauon.pctl.playing_state != PlayingState.PAUSED:
 				# gui.update += 1
-				self.gui.delay_frame(0.007)  # 60 fps
+				if self.gui.vsync:
+					self.gui.delay_frame(0)  # full speed, vsync paces the loop
+				else:
+					self.gui.delay_frame(1 / 60)  # no vsync to pace us, cap at 60fps
 
 		elif self.coll(border_rect) and self.tauon.is_level_zero(True):
 			showc = self.tauon.album_art_gen.get_info(track)
@@ -48666,6 +48680,7 @@ def main(holder: Holder) -> None:
 	)
 	del max_window_tex
 
+	gui.vsync = holder.vsync
 	inp = gui.inp
 	keymaps = gui.keymaps
 	# GUI Variables -------------------------------------------------------------------------------------------
@@ -53514,11 +53529,14 @@ def main(holder: Holder) -> None:
 		# jittery level_update pulses the loop drops into the ~33fps power-save
 		# throttle and the scroll stutters. Holding power high + update set makes
 		# it render every iteration, so vsync paces it smoothly (the same reason
-		# it looks smooth while a scroll animation is running).
+		# it looks smooth while a scroll animation is running). If vsync isn't
+		# active nothing else limits the loop here, so sleep to cap at ~60fps.
 		if gui.spectrogram_in_widget \
 				and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			power = 1000
 			gui.update = max(gui.update, 1)
+			if not gui.vsync:
+				time.sleep(1 / 60)
 
 		if prefs.milk and render_heartbeat_timer.get() > 5:
 			# workaround for invis window bug?
@@ -56607,6 +56625,17 @@ def main(holder: Holder) -> None:
 			if tauon.console.show:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 				ddt.rect(rect, ColourRGBA(0, 0, 0, 245))
+
+				tauon.console.fps.tick()
+				fps_rect = (rect[0] + rect[2] + 8 * gui.scale, rect[1], 70 * gui.scale, 22 * gui.scale)
+				ddt.rect(fps_rect, ColourRGBA(0, 0, 0, 245))
+				ddt.text(
+					(fps_rect[0] + 8 * gui.scale, fps_rect[1] + 4 * gui.scale),
+					f"{int(round(tauon.console.fps.get()))} FPS",
+					ColourRGBA(120, 120, 120, 255),
+					311,
+					bg=ColourRGBA(5, 5, 5, 255),
+				)
 
 				if pctl.playing_state == PlayingState.PLAYING:
 					gui.delay_frame(0.05)

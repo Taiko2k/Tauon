@@ -43,4 +43,5 @@ class Holder:
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
 	log:                    LogHistoryHandler
+	vsync:                  bool # Whether SDL vsync was successfully enabled on the renderer
 	# fmt:on

@@ -193,7 +193,10 @@ class MilkDropWidget(Widget):
 				tauon.milky.render()
 				show_vis = True
 			if tauon.pctl.playing_state != PlayingState.PAUSED:
-				gui.delay_frame(0.007)  # 60 fps
+				if gui.vsync:
+					gui.delay_frame(0)  # full speed, vsync paces the loop
+				else:
+					gui.delay_frame(1 / 60)  # no vsync to pace us, cap at 60fps
 
 		if hover:
 			if inp.mouse_click and inp.key_focused == 0 and show_vis:
