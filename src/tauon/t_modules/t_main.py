@@ -5905,6 +5905,21 @@ class GallClass:
 		self.i: int = 0
 		self.lock: threading.LockType = threading.Lock()
 		self.limit: int = 60
+		self.frame: int = 0
+		self.frame_stamp: dict[tuple[TrackClass, int, int], int] = {}
+
+	def new_frame(self) -> None:
+		"""Advance the wanted-stamp epoch. Called once at the start of each render pass.
+
+		render() stamps every key it still wants but doesn't have; worker_render
+		drops queued keys whose stamp has gone stale, so a resize or fast scroll
+		doesn't leave hundreds of no-longer-visible sizes to thumbnail.
+		"""
+		self.frame += 1
+		if not self.frame % 600 and self.frame_stamp:
+			# Stamps for keys removed from the queue elsewhere (halt, cache
+			# clear, scroll trim) would otherwise linger forever
+			self.frame_stamp = {k: v for k, v in self.frame_stamp.items() if self.frame - v < 4}
 
 	def album_art_column_is_shown(self) -> bool:
 		return self.gui.set_mode and any(column[0] == "Album Art" for column in self.gui.pl_st)
@@ -5936,6 +5951,7 @@ class GallClass:
 
 			if self.gui.halt_image_rendering:
 				self.queue.clear()
+				self.frame_stamp.clear()
 				break
 
 			self.i += 1
@@ -5946,6 +5962,12 @@ class GallClass:
 			except Exception:
 				logging.exception("thumb queue empty")
 				break
+
+			# Flush entries no recent frame asked for (still-wanted keys are
+			# re-stamped by render() every pass); if dropped in error the next
+			# frame that wants the key just re-queues it
+			if self.frame - self.frame_stamp.pop(key, self.frame) > 2:
+				continue
 
 			if key not in self.gall:
 				order = [1, None, None, None]
@@ -6170,18 +6192,20 @@ class GallClass:
 					del self.key_list[0]
 
 				return True
-		elif key not in self.queue:
-			self.queue.append(key)
-			if self.lock.locked():
-				try:
-					self.lock.release()
-				except RuntimeError as e:
-					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked lock")  # noqa: TRY400
-					else:
-						logging.exception("Unknown RuntimeError trying to release lock")
-				except Exception:
-					logging.exception("Unknown error trying to release lock")
+		else:
+			self.frame_stamp[key] = self.frame
+			if key not in self.queue:
+				self.queue.append(key)
+				if self.lock.locked():
+					try:
+						self.lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked lock")  # noqa: TRY400
+						else:
+							logging.exception("Unknown RuntimeError trying to release lock")
+					except Exception:
+						logging.exception("Unknown error trying to release lock")
 
 		return False
 
@@ -22324,6 +22348,7 @@ class AlbumArt:
 		self.async_results: dict[tuple, tuple] = {}  # (source, offset, box) -> (BytesIO, original size, format, time)
 		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
 		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
+		self.net_art_failed: dict[str, float] = {}  # art_url_key -> monotonic time of last failed network fetch
 
 		self.base64cache = (0, 0, "")
 		self.processing64on = None
@@ -22640,6 +22665,7 @@ class AlbumArt:
 			assert pic
 			source_image = io.BytesIO(pic)
 		elif subsource[0] == 2:
+			fetching = False
 			try:
 				if track.file_ext == "RADIO" and self.pctl.radio_image_bin:
 					return self.pctl.radio_image_bin
@@ -22648,6 +22674,12 @@ class AlbumArt:
 				if os.path.isfile(cached_path):
 					source_image = open(cached_path, "rb")
 				else:
+					# Negative cache: many thumbnail sizes can queue up for the same
+					# art, so a dead server would otherwise be hit once per size
+					last_fail = self.net_art_failed.get(track.art_url_key)
+					if last_fail is not None and time.monotonic() - last_fail < 120:
+						return None
+					fetching = True
 					if track.file_ext == "SUB":
 						source_image = self.tauon.subsonic.get_cover(track)
 					elif track.file_ext == "JELY":
@@ -22659,7 +22691,12 @@ class AlbumArt:
 						with Path(cached_path).open("wb") as file:
 							file.write(source_image.read())
 						source_image.seek(0)
+						self.net_art_failed.pop(track.art_url_key, None)
+					else:
+						self.net_art_failed[track.art_url_key] = time.monotonic()
 			except Exception:
+				if fetching:
+					self.net_art_failed[track.art_url_key] = time.monotonic()
 				logging.exception("Failed to get source")
 		else:
 			source_image = open(subsource[1], "rb")
@@ -54860,6 +54897,7 @@ def main(holder: Holder) -> None:
 
 		if gui.update > 0 and not resize_mode:
 			gui.update = min(gui.update, 2)
+			tauon.gall_ren.new_frame()
 
 			if reset_render:
 				logging.info("Reset render targets!")
