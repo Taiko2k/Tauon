@@ -198,10 +198,7 @@ class MilkDropWidget(Widget):
 				tauon.milky.render()
 				show_vis = True
 			if tauon.pctl.playing_state != PlayingState.PAUSED:
-				if gui.vsync:
-					gui.delay_frame(0)  # full speed, vsync paces the loop
-				else:
-					gui.delay_frame(1 / 60)  # no vsync to pace us, cap at 60fps
+				gui.delay_frame(tauon.frame_pace())
 
 		if hover:
 			if inp.mouse_click and inp.key_focused == 0 and show_vis:
@@ -452,7 +449,7 @@ class SpectrogramWidget(Widget):
 			tauon.inp.right_click = False
 
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-			gui.delay_frame(0.016)  # keep frames coming for the smooth scroll
+			gui.delay_frame(tauon.frame_pace())  # keep frames coming for the smooth scroll
 
 	def _ensure(self, tauon: Tauon, bins: int, w: float) -> None:
 		cls = SpectrogramWidget

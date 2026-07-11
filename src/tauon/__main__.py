@@ -510,15 +510,11 @@ sdl3.SDL_RenderClear(renderer)
 
 logging.info(f"SDL window system: {sdl3.SDL_GetCurrentVideoDriver().decode()}")
 
-vsync = bool(sdl3.SDL_SetRenderVSync(
+# Vsync is not trusted for frame pacing (visualisers self-pace to the display
+# refresh rate, see Tauon.frame_pace) — enabling it just aligns frames to vblank.
+sdl3.SDL_SetRenderVSync(
 	renderer, 1
-))  # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
-if vsync:
-	vsync_state = c_int(0)
-	sdl3.SDL_GetRenderVSync(renderer, pointer(vsync_state))
-	logging.info(f"Vsync: enabled (mode {vsync_state.value})")
-else:
-	logging.warning(f"Vsync: could not be enabled, visualisers will be capped at 60fps: {sdl3.SDL_GetError()}")
+)  # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
 
 i_x = pointer(c_int(0))
 i_y = pointer(c_int(0))
@@ -597,7 +593,6 @@ holder = Holder(
 	dev_mode=dev_mode,
 	instance_lock=fp,
 	log=log,
-	vsync=vsync,
 )
 
 del flags
