@@ -2178,6 +2178,21 @@ class CustomLayout:
 		# stand down entirely — no neutralising.
 		from tauon.t_modules.t_main import Menu  # local import avoids cycle
 		if Menu.active or gui.message_box:
+			# Edit mode: right-clicking another widget while a menu is already
+			# open re-targets the layout menu there. Without this we'd stand
+			# down, and the right-click would fall through to the widget's own
+			# renderer, which doesn't test for open menus (is_level_zero(False))
+			# and would open its normal context menu instead.
+			if gui.custom_edit and inp.right_click and not gui.message_box:
+				for m in Menu.instances:
+					m.active = False
+				Menu.active = False
+				root = self.ensure_slot()
+				layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
+				self.menu_target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
+				if self.menu is not None:
+					self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
+				self._consume(inp)
 			return
 
 		# Corner layout/edit button — clickable in BOTH view and edit mode; opens
