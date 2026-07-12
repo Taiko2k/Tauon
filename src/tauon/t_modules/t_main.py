@@ -50371,7 +50371,7 @@ def main(holder: Holder) -> None:
 		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off, no_exit=True))
 		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Make Stack Not Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_on, no_exit=True))
 		cl_menu.br()
-		cl_menu.add_sub(_("Load Template…"), 110)
+		cl_menu.add_sub(_("Load Template…"), 185)
 		_cl_sub_t = cl_menu.sub_number - 1
 		for _name in CL_TEMPLATES:
 			cl_menu.add_to_sub(_cl_sub_t, MenuItem(_name, cm._menu_template, args=_name))

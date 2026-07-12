@@ -1694,7 +1694,7 @@ BOUNDARY_GRAB = 5
 DEFAULT_WIDGET_GUTTER = 3
 DEFAULT_WIDGET_BORDER = True
 STACK_COUNTS = [2, 3, 4, 5]
-TEMPLATES = ["Blank", "Volcano"]
+TEMPLATES = ["Blank", "Volcano", "Tracks + Gallery (Compact)"]
 
 
 class CustomLayout:
@@ -1762,6 +1762,8 @@ class CustomLayout:
 	def template(self, name: str) -> Node:
 		if name == "Volcano":
 			return self._template_volcano()
+		if name == "Tracks + Gallery (Compact)":
+			return self._template_tracks_gallery_compact()
 		return self._template_blank()
 
 	def _bars(self, body: Node) -> Stack:
@@ -1801,15 +1803,34 @@ class CustomLayout:
 		body.weight = 1.0
 		return self._bars(body)
 
-	def _default_tree(self) -> Node:
-		"""An unconfigured slot starts as the Blank template."""
+	def _template_tracks_gallery_compact(self) -> Node:
+		# "Tracks + Gallery (Compact)": a resizable split of the tracklist
+		# beside a compact gallery (3 albums per row).
+		tracks = self._leaf("tracklist")
+		tracks.weight = 0.81
+		gallery = self._leaf("gallery_grid")
+		gallery.weight = 1.19
+		if gallery.widget is not None:
+			gallery.widget.set_config({"per_row": 3, "spacing": 4, "v_spacing": 4, "titles": True})
+		body = Stack("h", [tracks, gallery])
+		body.weight = 1.0
+		body.resizable = True
+		return self._bars(body)
+
+	def _default_tree(self, slot: int) -> Node:
+		"""What an unconfigured slot starts as. Slot A gets Volcano, slot B the
+		tracks + compact-gallery split; slot C starts Blank."""
+		if slot == 0:
+			return self.template("Volcano")
+		if slot == 1:
+			return self.template("Tracks + Gallery (Compact)")
 		return self.template("Blank")
 
 	def ensure_slot(self) -> Node:
 		if not self._loaded:
 			self.load_slots()
 		if self.slots[self.active_slot] is None:
-			self.slots[self.active_slot] = self._default_tree()
+			self.slots[self.active_slot] = self._default_tree(self.active_slot)
 		return self.slots[self.active_slot]
 
 	# -- persistence ---------------------------------------------------------
