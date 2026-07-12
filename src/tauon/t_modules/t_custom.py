@@ -2315,6 +2315,13 @@ class CustomLayout:
 		inp = self.tauon.inp
 		gui = self.gui
 
+		# Full-screen overlays (Milkdrop preset chooser, Dream Room) capture and
+		# mute the pointer themselves later in the frame. Stand down entirely so we
+		# don't neutralise the mouse first — otherwise they only ever see the muted
+		# position and hover tracking (e.g. the preset chooser's highlight) breaks.
+		if self.tauon.milk_choose.active or self.tauon.dream_room.active:
+			return
+
 		# While any menu or a message box (confirm dialog) is open, let those
 		# systems own input. The main loop already routes clicks to active menus
 		# before this runs (and menus need the real mouse position for hover), so
