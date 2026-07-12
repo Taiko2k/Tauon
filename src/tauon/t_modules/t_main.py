@@ -26107,10 +26107,10 @@ class Over:
 		if use_smooth_scroll:
 			if self.coll(scroll_area) and wheel_delta:
 				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -wheel_delta, row_height)
-			if touch_scroll:
-				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
-			elif self.inp.touch_released:
+			if self.inp.touch_released:
 				self.tauon.smooth_scroll.release_touch(scroll_source)
+			elif touch_scroll:
+				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
 			self.settings_nav_scroll += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_height, 1)
 		elif self.coll(scroll_area) and wheel_delta:
 			self.settings_nav_scroll -= wheel_delta
@@ -26725,10 +26725,10 @@ class Over:
 		if use_smooth_scroll:
 			if self.coll(scroll_area) and wheel_delta:
 				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -wheel_delta, scroll_step)
-			if touch_scroll:
-				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
-			elif self.inp.touch_released:
+			if self.inp.touch_released:
 				self.tauon.smooth_scroll.release_touch(scroll_source)
+			elif touch_scroll:
+				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
 			self.settings_content_scroll += self.tauon.smooth_scroll.step_motion(scroll_source)
 		elif self.coll(scroll_area) and wheel_delta:
 			self.settings_content_scroll -= wheel_delta * scroll_step
@@ -34980,10 +34980,11 @@ class StandardPlaylist:
 				self.smooth_scroll.add_wheel_motion(
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
-			if touch_scroll:
-				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
-			elif inp.touch_released:
+			
+			if inp.touch_released:
 				self.smooth_scroll.release_touch("playlist")
+			elif touch_scroll:
+				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
 
 			gui.playlist_scroll_pixels += self.smooth_scroll.step_motion("playlist")
 			self._apply_tracklist_pixel_scroll()
@@ -37778,10 +37779,10 @@ class PlaylistBox:
 		if use_smooth_scroll:
 			if self.inp.mouse_wheel != 0 and self.coll(scroll_area):
 				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, row_step)
-			if touch_scroll:
-				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
-			elif self.inp.touch_released:
+			if self.inp.touch_released:
 				self.tauon.smooth_scroll.release_touch(scroll_source)
+			elif touch_scroll:
+				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
 			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_step, 1)
 		elif self.inp.mouse_wheel != 0 and self.coll(scroll_area):
 			self.scroll_on -= self.inp.mouse_wheel
@@ -38831,10 +38832,10 @@ class ArtistList:
 				if self.prefs.artist_list_style == 2:
 					mx = 3
 				self.smooth_scroll.add_wheel_motion("artist list", -self.inp.mouse_wheel, item_height * mx)
-			if touch_scroll:
-				self.smooth_scroll.apply_touch_drag("artist list", -self.inp.touch_scroll_y)
-			elif self.inp.touch_released:
+			if self.inp.touch_released:
 				self.smooth_scroll.release_touch("artist list")
+			elif touch_scroll:
+				self.smooth_scroll.apply_touch_drag("artist list", -self.inp.touch_scroll_y)
 			self.scroll_position += self.smooth_scroll.step_motion("artist list") / max(item_height, 1)
 		elif self.coll(area) and self.inp.mouse_wheel:
 			mx = 1
@@ -39140,10 +39141,10 @@ class TreeView:
 		if use_smooth_scroll:
 			if mouse_in and self.inp.mouse_wheel:
 				self.smooth_scroll.add_wheel_motion("tree view", -self.inp.mouse_wheel, spacing * 2)
-			if touch_scroll:
-				self.smooth_scroll.apply_touch_drag("tree view", -self.inp.touch_scroll_y)
-			elif self.inp.touch_released:
+			if self.inp.touch_released:
 				self.smooth_scroll.release_touch("tree view")
+			elif touch_scroll:
+				self.smooth_scroll.apply_touch_drag("tree view", -self.inp.touch_scroll_y)
 			scroll_position += self.smooth_scroll.step_motion("tree view") / max(spacing, 1)
 			scroll_position = max(scroll_position, 0)
 			scroll_position = min(scroll_position, max_scroll)
@@ -40738,10 +40739,10 @@ class ArtistInfoBox:
 			if use_smooth_scroll:
 				if self.coll((x, y, w, h)) and self.inp.mouse_wheel:
 					self.smooth_scroll.add_wheel_motion("artistinfo", -self.inp.mouse_wheel, artistinfo_scroll_step)
-				if touch_scroll:
-					self.smooth_scroll.apply_touch_drag("artistinfo", -self.inp.touch_scroll_y)
-				elif self.inp.touch_released:
+				if self.inp.touch_released:
 					self.smooth_scroll.release_touch("artistinfo")
+				elif touch_scroll:
+					self.smooth_scroll.apply_touch_drag("artistinfo", -self.inp.touch_scroll_y)
 				self.scroll_y += self.smooth_scroll.step_motion("artistinfo")
 			elif self.coll((x, y, w, h)):
 				scroll_distance = self.smooth_scroll.scroll("artistinfo", artistinfo_scroll_step)
@@ -41226,10 +41227,10 @@ class RadioView:
 				if gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
 				and self.inp.mouse_position[0] < w + round(70 * gui.scale) and self.inp.mouse_wheel:
 					self.smooth_scroll.add_wheel_motion("radios", -self.inp.mouse_wheel, h + gap)
-				if touch_scroll:
-					self.smooth_scroll.apply_touch_drag("radios", -self.inp.touch_scroll_y)
-				elif self.inp.touch_released:
+				if self.inp.touch_released:
 					self.smooth_scroll.release_touch("radios")
+				elif touch_scroll:
+					self.smooth_scroll.apply_touch_drag("radios", -self.inp.touch_scroll_y)
 				scroll += self.smooth_scroll.step_motion("radios") / max(h + gap, 1)
 			elif gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
 			and self.inp.mouse_position[0] < w + round(70 * gui.scale):
@@ -43795,7 +43796,7 @@ SCROLL_ANIMATION_FRAME_INTERVAL = 1.0 / SCROLL_ANIMATION_MAX_FPS
 SCROLL_PHYSICS_FIXED_TIMESTEP = 1.0 / 240.0
 SCROLL_PHYSICS_MAX_TIMESTEP = 0.05
 SCROLL_PHYSICS_ACCELERATION_BOOST = 2
-SCROLL_PHYSICS_DAMPING = 0.84
+SCROLL_PHYSICS_DAMPING = 0.95
 SCROLL_PHYSICS_FIXED_DAMPING = SCROLL_PHYSICS_DAMPING ** (SCROLL_PHYSICS_FIXED_TIMESTEP * 60)
 SCROLL_PHYSICS_MAX_VELOCITY = 2100.0
 SCROLL_PHYSICS_MIN_VELOCITY = 8.0
@@ -43804,6 +43805,7 @@ SCROLL_PHYSICS_MIN_VELOCITY = 8.0
 @dataclass
 class ScrollMotionState:
 	velocity: float = 0.0
+	last_velocity: float = 0.0
 	pending: float = 0.0
 	accumulator: float = 0.0
 	precise_buffer: float = 0.0
@@ -44017,6 +44019,7 @@ class SmoothScroll:
 			impulse = delta * px_per_unit * repeat_boost * speed
 			state.velocity += impulse * SCROLL_PHYSICS_WHEEL_VELOCITY * boost
 			state.last_update = time.monotonic()
+		state.last_velocity = state.velocity
 		state.velocity = max(min(state.velocity, velocity_limit), -velocity_limit)
 		state.touching = False
 		self._log_scroll_detail(
@@ -44036,7 +44039,7 @@ class SmoothScroll:
 			pending_after=state.pending,
 			precise_before=precise_before,
 			precise_after=state.precise_buffer,
-			velocity_before=velocity_before,
+			velocity_before=state.last_velocity,
 			velocity_after=state.velocity,
 			velocity_limit=velocity_limit,
 		)
@@ -44048,7 +44051,7 @@ class SmoothScroll:
 		dt = max(now - state.last_update, 1 / 240)
 		pending_before = state.pending
 		precise_before = state.precise_buffer
-		velocity_before = state.velocity
+		state.last_velocity = state.velocity
 		state.touching = True
 		state.from_touch = True
 		state.precise_buffer = 0.0
@@ -44065,7 +44068,7 @@ class SmoothScroll:
 			pending_after=state.pending,
 			precise_before=precise_before,
 			precise_after=state.precise_buffer,
-			velocity_before=velocity_before,
+			velocity_before=state.last_velocity,
 			velocity_after=state.velocity,
 			max_velocity=max_velocity,
 		)
@@ -44075,6 +44078,9 @@ class SmoothScroll:
 			self.physics_states[source].touching = False
 			self.physics_states[source].from_touch = True
 			self.physics_states[source].last_update = time.monotonic()
+			# velocity on release should be based on the last two frames of motion
+			if self.physics_states[source].last_velocity != 0.0:
+				self.physics_states[source].velocity = (self.physics_states[source].velocity + self.physics_states[source].last_velocity) / 2
 			state = self.physics_states[source]
 			self._log_scroll_detail(
 				source,
@@ -51842,10 +51848,11 @@ def main(holder: Holder) -> None:
 				else:
 					gui.album_scroll_px -= inp.mouse_wheel * prefs.gallery_scroll_wheel_px
 
-				if touch_scroll:
-					tauon.smooth_scroll.apply_touch_drag(scroll_key, -inp.touch_scroll_y)
-				elif inp.touch_released:
-					tauon.smooth_scroll.release_touch(scroll_key)
+
+				if inp.touch_released:
+					tauon.smooth_scroll.release_touch("gallery")
+				elif touch_scroll:
+					tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
 
 				if use_smooth_gallery:
 					gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
@@ -51858,25 +51865,25 @@ def main(holder: Holder) -> None:
 				if gui.album_scroll_px > max_scroll:
 					gui.album_scroll_px = max_scroll
 					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
-			elif touch_scroll:
-				tauon.scroll_gallery_hide_timer.set()
-				gui.frame_callback_list.append(TestTimer(0.9))
-				tauon.smooth_scroll.apply_touch_drag(scroll_key, -inp.touch_scroll_y)
-				gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
-				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
-					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
-				if gui.album_scroll_px > max_scroll:
-					gui.album_scroll_px = max_scroll
-					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
 			elif inp.touch_released:
-				tauon.smooth_scroll.release_touch(scroll_key)
-				if tauon.smooth_scroll.active(scroll_key):
-					gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
+				tauon.smooth_scroll.release_touch("gallery")
+				if tauon.smooth_scroll.active("gallery"):
+					gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
 					if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 						gui.album_scroll_px = round(gui.album_v_slide_value * -1)
 					if gui.album_scroll_px > max_scroll:
 						gui.album_scroll_px = max_scroll
 						gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
+			elif touch_scroll:
+				tauon.scroll_gallery_hide_timer.set()
+				gui.frame_callback_list.append(TestTimer(0.9))
+				tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
+				gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
+					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
+				if gui.album_scroll_px > max_scroll:
+					gui.album_scroll_px = max_scroll
+					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
 
 			if tauon.smooth_scroll.active(scroll_key) and not touch_scroll and not inp.touch_released and not (
 				not tauon.search_over.active
