@@ -50466,7 +50466,7 @@ def main(holder: Holder) -> None:
 	# the panel button by the TopPanel normally; by the custom engine while in
 	# custom mode, where the panel button is hidden). Mirrors the View Switcher
 	# options (same labels as its tooltips), plus the custom-layout edit toggle.
-	layout_menu = Menu(tauon, 175, show_icons=True)
+	layout_menu = Menu(tauon, 200, show_icons=True)
 	tauon.layout_menu = layout_menu
 
 	def _layout_menu_pick(name: str) -> Callable[[], None]:
