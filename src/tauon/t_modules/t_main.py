@@ -6372,6 +6372,7 @@ class Tauon:
 		self.albums:            list[int] = []
 		self.added:             list[int] = []
 		self.album_dex:         list[int] = []
+		self.album_dex_pl_uuid:       int = -1  # uuid_int of the playlist album_dex was built for
 		self.to_scan:           list[int] = []
 		self.after_scan: list[TrackClass] = []
 		self.quick_import_done: list[str] = []
@@ -17722,7 +17723,10 @@ class Tauon:
 		if return_playlist > -1 or custom_list is not None:
 			return dex
 
-		self.album_dex = dex
+		# In-place so aliases stay live (pctl.album_dex is this same list —
+		# purge_track clears it through that name to invalidate the index)
+		self.album_dex[:] = dex
+		self.album_dex_pl_uuid = self.pctl.multi_playlist[target_pl_no].uuid_int
 		self.album_info_cache.clear()
 		self.gui.update += 2
 		self.gui.pl_update = 1
@@ -20459,7 +20463,17 @@ class Tauon:
 		if position in self.album_info_cache:
 			return self.album_info_cache[position]
 
-		if self.album_dex and prefs.album_mode and (pl is None or pl == pctl.active_playlist_viewing):
+		# album_dex is kept current while the preset gallery is on (album_mode)
+		# or a custom-layout gallery widget is drawing (it rebuilds the dex per
+		# playlist — see GalleryWidget._ensure_album_dex). In custom mode
+		# album_mode is just whatever the previous preset left behind, so gate
+		# on the dex's own playlist instead — otherwise every cache miss here
+		# rebuilds the full album index (a whole-playlist scan per visible tile).
+		viewing_pl = pctl.active_playlist_viewing if pl is None else pl
+		if self.album_dex and viewing_pl == pctl.active_playlist_viewing and (
+			prefs.album_mode
+			or (self.gui.custom_mode and self.album_dex_pl_uuid == pctl.multi_playlist[viewing_pl].uuid_int)
+		):
 			dex = self.album_dex
 		else:
 			dex = self.reload_albums(custom_list=playlist)
