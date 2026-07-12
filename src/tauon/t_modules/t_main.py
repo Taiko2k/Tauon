@@ -25869,7 +25869,7 @@ class NagBox:
 		self.ddt.text(
 			(inner_x, support_y + round(19 * scale)),
 			_("Special thanks to everyone who donated."),
-			self.colours.box_text_label,
+			self.colours.box_text,
 			12,
 			bg=panel_fill,
 			max_w=inner_w,
@@ -25878,7 +25878,7 @@ class NagBox:
 		donate_link = self.tauon.draw_linked_text(
 			(inner_x, donate_y),
 			_("If you haven't, please consider donating at https://github.com/sponsors/Taiko2k"),
-			self.colours.box_text_label,
+			self.colours.box_text,
 			12,
 			replace=_("GitHub Sponsors"),
 		)
@@ -25888,7 +25888,7 @@ class NagBox:
 		self.ddt.text(
 			(patreon_x, donate_y),
 			patreon_prefix,
-			self.colours.box_text_label,
+			self.colours.box_text,
 			12,
 			bg=panel_fill,
 		)
@@ -25896,7 +25896,7 @@ class NagBox:
 		patreon_link = self.tauon.draw_linked_text(
 			(patreon_link_x, donate_y),
 			self.PATREON_URL,
-			self.colours.box_text_label,
+			self.colours.box_text,
 			12,
 			force=True,
 			replace="Patreon.",
@@ -25905,7 +25905,7 @@ class NagBox:
 		self.ddt.text(
 			(inner_x, support_y + round(55 * scale)),
 			_("Your continued support helps keep this app alive."),
-			self.colours.box_text_label,
+			self.colours.box_text,
 			12,
 			bg=panel_fill,
 			max_w=inner_w,
@@ -43262,6 +43262,64 @@ class ViewBox:
 			self.x_menu.close_next_frame = True
 		return None
 
+	def _custom_cycle_slots(self) -> list[int]:
+		"""Slot indexes worth cycling through: the non-blank custom layouts."""
+		custom = self.tauon.custom
+		if not custom._loaded:
+			custom.load_slots()
+		return [i for i, s in enumerate(custom.slots) if not custom._is_blank_tree(s)]
+
+	def cycle(self, reverse: bool = False) -> None:
+		"""Step to the next/previous layout: Tracks → Tracks + Art → Gallery →
+		Showcase → each (non-blank) custom layout slot → back to Tracks."""
+		custom = self.tauon.custom
+		slots = self._custom_cycle_slots()
+
+		if self.gui.custom_mode:
+			try:
+				idx = slots.index(custom.active_slot)
+			except ValueError:
+				idx = -1  # active slot is blank: step out of custom either way
+			if not reverse:
+				if idx != -1 and idx + 1 < len(slots):
+					custom.enter(slots[idx + 1])
+					return
+				custom.exit_mode()
+				self.tracks(True)
+			else:
+				if idx > 0:
+					custom.enter(slots[idx - 1])
+					return
+				custom.exit_mode()
+				# The underlying preset may already be showcase (custom mode is
+				# an overlay); lyrics(True) would toggle it back off.
+				if not self.lyrics():
+					self.lyrics(True)
+			return
+
+		if not reverse:
+			if self.tracks():
+				self.side(True)
+			elif self.side():
+				self.gallery1(True)
+			elif self.gallery1():
+				self.lyrics(True)
+			elif self.lyrics() and slots:
+				custom.enter(slots[0])
+			else:
+				self.tracks(True)
+		elif self.tracks():
+			if slots:
+				custom.enter(slots[-1])
+			else:
+				self.lyrics(True)
+		elif self.lyrics():
+			self.gallery1(True)
+		elif self.gallery1():
+			self.side(True)
+		else:
+			self.tracks(True)
+
 	def render(self) -> None:
 		gui     = self.gui
 		ddt     = self.ddt
@@ -49106,7 +49164,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 77
+	latest_db_version: float = 78
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -54564,24 +54622,10 @@ def main(holder: Holder) -> None:
 					gui.update += 1
 
 				if keymaps.test("cycle-layouts"):
-					if tauon.view_box.tracks():
-						tauon.view_box.side(True)
-					elif tauon.view_box.side():
-						tauon.view_box.gallery1(True)
-					elif tauon.view_box.gallery1():
-						tauon.view_box.lyrics(True)
-					else:
-						tauon.view_box.tracks(True)
+					tauon.view_box.cycle()
 
 				if keymaps.test("cycle-layouts-reverse"):
-					if tauon.view_box.tracks():
-						tauon.view_box.lyrics(True)
-					elif tauon.view_box.lyrics():
-						tauon.view_box.gallery1(True)
-					elif tauon.view_box.gallery1():
-						tauon.view_box.side(True)
-					else:
-						tauon.view_box.tracks(True)
+					tauon.view_box.cycle(reverse=True)
 
 				if keymaps.test("toggle-columns"):
 					tauon.view_box.col(True)

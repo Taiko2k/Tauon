@@ -240,4 +240,31 @@ def database_migrate(
 		# now; the loader normalises either form, so this bump only forces the
 		# post-migration save to rewrite state.p in the new format.
 
+	if db_version <= 77:  # noqa: PLR2004
+		logging.info("Updating database to version 78")
+		# The default MB4/MB5 bindings changed from toggle-gallery /
+		# toggle-right-panel to layout cycling. Edit just those lines in the
+		# user's input.txt: a button the user rebound themselves stays as-is.
+		keymap_file = config_directory / "input.txt"
+		if install_directory != config_directory and keymap_file.is_file():
+			try:
+				lines = keymap_file.read_text(encoding="utf_8").splitlines()
+				tokens = [line.split() for line in lines]
+				new_binds = []
+				if ["toggle-right-panel", "MB5"] in tokens and ["cycle-layouts", "MB5"] not in tokens:
+					lines[tokens.index(["toggle-right-panel", "MB5"])] = "toggle-right-panel"
+					new_binds.append("cycle-layouts MB5")
+				if ["toggle-gallery", "MB4"] in tokens and ["cycle-layouts-reverse", "MB4"] not in tokens:
+					lines[tokens.index(["toggle-gallery", "MB4"])] = "toggle-gallery"
+					new_binds.append("cycle-layouts-reverse MB4")
+				if new_binds:
+					keymap_file.write_text("\n".join([*lines, *new_binds]) + "\n", encoding="utf_8")
+					# The keymap loader thread starts before migrations run and
+					# has likely already read the old file — reload so the new
+					# bindings apply this launch, not just the next one.
+					gui.keymaps.maps.clear()
+					gui.keymaps.load()
+			except Exception:
+				logging.exception("Failed to update MB4/MB5 bindings in input.txt")
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

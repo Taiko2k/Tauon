@@ -78,15 +78,17 @@ regenerate-playlist R Alt
 
 toggle-left-panel ~
 toggle-last-left-panel
-toggle-right-panel MB5
-toggle-gallery MB4
+toggle-right-panel
+toggle-gallery
 toggle-gallery-keycontrol Tab
 toggle-showcase F5
 toggle-minimode F8
 toggle-columns
 toggle-artistinfo O Ctrl
 cycle-layouts ]
+cycle-layouts MB5
 cycle-layouts-reverse [
+cycle-layouts-reverse MB4
 
 playlist-toggle-breaks F1
 
