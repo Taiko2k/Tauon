@@ -4,16 +4,24 @@ Changelog
 
 ### v11.0.0
 
- - Moved view switchr to new left menu
+ - Moved view switcher to new new left menu button
  - Added custom layout engine
+ - Added widgets: Compact gallery, track details, spectogram
  - Added per-service toggle to disable scrobbling for streaming services
  - Added rounded corners setting
  - Added setting start in tray
  - Added search overlay feedback when adding results to playlists
  - Added resume on restart setting to the settings UI
  - Added Plex music library selection
+ - Added setting magnet mode to columns menu
+ - Added milkdrop cutout option
+ - Added milkdrop preset selector
+ - Added milkdrop favorites
+ - Changed splash loading screen style
+ - Tweaked setting UI layout
  - Improved network streaming backend
  - Improved TIDAL favorites and playlists pagination
+ - Improved DB corruption avoidance
  - Fixed album rating and scrollbar interactions
  - Fixed show playing info shortcut
  - Fixed resume on restart state handling

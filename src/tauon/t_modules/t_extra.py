@@ -36,6 +36,7 @@ import time
 import urllib.parse
 import zipfile
 from collections import deque
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -44,7 +45,8 @@ from gi.repository import GLib
 from rapidfuzz import fuzz
 
 if TYPE_CHECKING:
-	from collections.abc import Callable
+	from collections.abc import Callable, Iterator
+	from typing import IO
 
 	from tauon.t_modules.t_enums import QueueType
 	from tauon.t_modules.t_main import TrackClass
@@ -165,6 +167,30 @@ class TauonPlaylist:
 
 def _(m: str) -> str:
 	return m
+
+
+@contextmanager
+def atomic_save(path: Path | str, mode: str = "wb") -> Iterator[IO]:
+	"""Open a file for writing user data without risking the existing copy.
+
+	Yields a handle to a sibling ".tmp" file; on a clean exit the data is
+	flushed, fsynced and atomically renamed over the target, so a crash,
+	power loss or full disk mid-write leaves the previous file intact. On
+	error the temp file is removed and the exception propagates."""
+	path = Path(path)
+	tmp = path.with_name(path.name + ".tmp")
+	file = tmp.open(mode, encoding=None if "b" in mode else "utf-8")
+	try:
+		yield file
+		file.flush()
+		os.fsync(file.fileno())
+		file.close()
+		os.replace(tmp, path)
+	except BaseException:
+		file.close()
+		with suppress(OSError):
+			tmp.unlink()
+		raise
 
 
 class Timer:

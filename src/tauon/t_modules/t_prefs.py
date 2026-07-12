@@ -251,6 +251,7 @@ class Prefs:
 	meta_shows_selected_always: bool = False
 
 	left_align_album_artist_title: bool = False
+	tracklist_scrollbar_left: bool = False
 	stop_notifications_mini_mode: bool = False
 	scale_want: float = 1
 	x_scale: bool = True
@@ -437,6 +438,12 @@ class Prefs:
 
 	milk: bool = False
 	auto_milk: bool = True
-	loaded_preset = None
+	# Runtime type is Path; serialised to state.p as str (a pickled Path is OS-specific)
+	loaded_preset: Path | None = None
+	# Cut Out: key blacks/greys in the visualiser to transparent so the album
+	# art drawn beneath shows through.
+	milk_cut_out: bool = False
+	# Favorited Milkdrop presets, as full path strings.
+	milk_favorite_presets: list[str] = field(default_factory=list)
 
 	taskbar_progress: bool = True

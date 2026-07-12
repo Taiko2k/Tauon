@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Callable
 import sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
-from tauon.t_modules.t_extra import ColourRGBA, get_display_time
+from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -95,6 +95,14 @@ class Widget:
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		raise NotImplementedError
+
+	# Per-instance settings, persisted in the Leaf's dict as "conf" when
+	# get_config returns a non-empty dict. Widgets without settings return None.
+	def get_config(self) -> dict | None:
+		return None
+
+	def set_config(self, d: dict) -> None:
+		pass
 
 
 class ArtBoxWidget(Widget):
@@ -154,12 +162,12 @@ class MilkDropWidget(Widget):
 		ddt = tauon.ddt
 		inp = tauon.inp
 		rect = (round(x), round(y), round(w), round(h))
-		ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 		tauon.fields.add(rect)
 		track = tauon.pctl.show_object()
 		hover = tauon.coll(rect) and tauon.is_level_zero(False)
 
 		if not tauon.prefs.milk:
+			ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 			ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			ddt.text(
 				(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(8 * gui.scale), 2),
@@ -171,6 +179,11 @@ class MilkDropWidget(Widget):
 			return
 
 		gui.main_art_box = rect  # Milky renders at this singleton rect
+
+		# No background fill: the segment stays fully transparent beneath the
+		# visualiser, including through the keyed pixels with Cut Out. Album
+		# art under the vis is the Art Box widget's job; this dedicated widget
+		# never draws it.
 
 		show_vis = False
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
@@ -185,7 +198,7 @@ class MilkDropWidget(Widget):
 				tauon.milky.render()
 				show_vis = True
 			if tauon.pctl.playing_state != PlayingState.PAUSED:
-				gui.delay_frame(0.007)  # 60 fps
+				gui.delay_frame(tauon.frame_pace())
 
 		if hover:
 			if inp.mouse_click and inp.key_focused == 0 and show_vis:
@@ -201,7 +214,7 @@ class MilkDropWidget(Widget):
 		gui = tauon.gui
 		ddt = tauon.ddt
 
-		def tag(line: str, yy: int, font: int, pad_w: float, colour: ColourRGBA) -> None:
+		def tag(line: str, xx: int, yy: int, font: int, pad_w: float, colour: ColourRGBA) -> None:
 			mw = rect[2] - round(25 * gui.scale)
 			tag_w, _th = ddt.get_text_wh(line, font, max_x=mw)
 			tag_w += round(pad_w * gui.scale)
@@ -209,18 +222,18 @@ class MilkDropWidget(Widget):
 			ddt.text((xx + 6 * gui.scale, yy), line, colour, font,
 				bg=ColourRGBA(30, 30, 30, 255), max_w=mw)
 
-		xx = rect[0] + round(12 * gui.scale)
+		xx = rect[0] + round(5 * gui.scale)
 		yy = rect[1] + round(25 * gui.scale)
-		tag(tauon.milky.projectm.get_current_name(), yy, 312, 17, ColourRGBA(220, 220, 220, 255))
+		tag(tauon.milky.projectm.get_current_name(), xx, yy, 312, 17, ColourRGBA(220, 220, 220, 255))
 
 		if tauon.prefs.auto_milk:
 			yy += round(30 * gui.scale)
-			tag(_t("Auto Cycle"), yy, 12, 14, ColourRGBA(210, 210, 210, 255))
+			tag(_t("Auto Cycle"), xx, yy, 12, 14, ColourRGBA(210, 210, 210, 255))
 
 		if tauon.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			tauon.milky.fps.reset()
 		yy += round(30 * gui.scale)
-		tag(f"FPS: {round(tauon.milky.fps.get())}", yy, 12, 14, ColourRGBA(210, 210, 210, 255))
+		tag(f"FPS: {round(tauon.milky.fps.get())}", xx, yy, 12, 14, ColourRGBA(210, 210, 210, 255))
 
 
 class SticksVisWidget(Widget):
@@ -436,7 +449,7 @@ class SpectrogramWidget(Widget):
 			tauon.inp.right_click = False
 
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-			gui.delay_frame(0.016)  # keep frames coming for the smooth scroll
+			gui.delay_frame(tauon.frame_pace())  # keep frames coming for the smooth scroll
 
 	def _ensure(self, tauon: Tauon, bins: int, w: float) -> None:
 		cls = SpectrogramWidget
@@ -732,13 +745,22 @@ class TracklistWidget(Widget):
 		view = not gui.custom_edit
 		if view:
 			# The standard scroll bar's interaction lock, pointed at this
-			# segment's bar hitbox (same formula as the shared render function:
-			# the hitbox's right edge is 1px scale inside the tracklist right
-			# edge). It updates gui.scrollbar_active, which the body render
-			# reads, so the bar and the album-rating stars yield to each other
-			# exactly like the preset tracklist.
+			# segment's bar hitbox (same geometry as the shared render function).
+			# It updates gui.scrollbar_active, which the body render reads, so the
+			# bar and the album-rating stars yield to each other exactly like the
+			# preset tracklist.
 			scale = gui.scale
-			hitbox = (rect[0] + rect[2] - 1 * scale - 28 * scale, rect[1], 28 * scale, rect[3])
+			hb_top = rect[1]
+			hb_h = rect[3]
+			if gui.set_bar and gui.set_mode:
+				# Drop below the columns header, matching the bar itself.
+				hb_top += gui.set_height
+				hb_h -= gui.set_height
+			if tauon.prefs.tracklist_scrollbar_left:
+				hb_x = rect[0]
+			else:
+				hb_x = rect[0] + rect[2] - 2 * scale - 28 * scale
+			hitbox = (hb_x, hb_top, 28 * scale, hb_h)
 			tauon.tracklist_scrollbar_lock(hitbox)
 		if view and gui.set_mode:
 			# Columns header bar input, pointed at this segment. Must run before
@@ -767,7 +789,7 @@ class TracklistWidget(Widget):
 			# sits on top, same as the preset frame order.
 			tauon.tracklist_scrollbar_render(
 				rect[0], rect[2], rect[1], rect[1] + rect[3],
-				rect[1] + rect[3] - 22 * gui.scale)
+				rect[1] + rect[3] - 1 * gui.scale)
 		if view and gui.set_mode:
 			# Columns header bar drawing (and the hover strip to re-show a hidden
 			# bar), on top of the body — pointed at this segment.
@@ -903,11 +925,18 @@ class GalleryWidget(Widget):
 	"""
 
 	kind = "gallery"
-	name = "Album Gallery"
+	name = "Gallery: Classic"
 	min_w = 100
 	min_h = 80
 	single_instance = True  # shared scroll/selection state (gui.album_scroll_px, gallery_scroll)
 	offscreen = True
+
+	# The gallery-family widget currently inside its render, if any. Lets
+	# gallery_locate detect a locate triggered from within a widget's own
+	# render (gallery click → show_current): that widget's per-instance scroll
+	# is already live in the gui vars, so the swap must be skipped or the
+	# draw's save-back would overwrite the located position.
+	_rendering: GalleryWidget | None = None
 
 	def __init__(self) -> None:
 		self._dex_playlist_id: int | None = None
@@ -961,13 +990,249 @@ class GalleryWidget(Widget):
 		# below the new floor (set while the preset slide was active); lift it or
 		# the first row shows offset until the first wheel event re-clamps.
 		gui.album_scroll_px = max(gui.album_scroll_px, -gui.album_v_slide_value)
+		# Subclass hook: the Album Grid derives art size / gaps / row count from
+		# the segment instead of the global gallery settings.
+		grid = self._grid_overrides(tauon, w)
+		saved_grid = None
+		if grid is not None:
+			art, h_gap, v_gap, n, margin = grid
+			saved_grid = (tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+				tauon.gall_ren.size, gui.gallery_forced_row_len, gui.gallery_grid_margin,
+				gui.gallery_show_text, gui.gallery_scroll_key, gui.album_scroll_px,
+				gui.last_row, tauon.gallery_scroll)
+			tauon.album_mode_art_size = art
+			gui.album_h_gap = h_gap
+			gui.album_v_gap = v_gap
+			# Thumbnails are cache-keyed by size; render them at the derived size
+			# (the default arg of gall_ren.render reads this).
+			tauon.gall_ren.size = art
+			gui.gallery_forced_row_len = n
+			gui.gallery_grid_margin = margin
+			gui.gallery_show_text = self.titles
+			# Per-instance gallery state: own scroll position / row memory /
+			# smooth-scroll momentum channel / scroll-bar thumb, so several
+			# galleries can coexist without fighting over the shared globals
+			# (the Classic widget keeps using the globals).
+			gui.gallery_scroll_key = self._scroll_key
+			gui.album_scroll_px = self.scroll_px
+			gui.last_row = self.last_row
+			if self._scroll_box is None:
+				self._scroll_box = type(tauon.gallery_scroll)(tauon=tauon, pctl=tauon.pctl)
+			tauon.gallery_scroll = self._scroll_box
+			GalleryWidget._rendering = self
+			# The top margin comes from the slide gap: the scroll floor is
+			# -slide, so at rest the first row sits `margin` below the top.
+			gui.album_v_slide_value = margin
+			gui.album_scroll_px = max(gui.album_scroll_px, -margin)
 		try:
 			gallery_render()
 		finally:
 			(gui.rspw, gui.panelY, gui.panelBY, gui.lsp, gui.show_playlist,
 				gui.album_v_slide_value) = saved
+			if saved_grid is not None:
+				GalleryWidget._rendering = None
+				self.scroll_px = gui.album_scroll_px
+				self.last_row = gui.last_row
+				(tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+					tauon.gall_ren.size, gui.gallery_forced_row_len,
+					gui.gallery_grid_margin, gui.gallery_show_text,
+					gui.gallery_scroll_key, gui.album_scroll_px, gui.last_row,
+					tauon.gallery_scroll) = saved_grid
 			inp.mouse_wheel = saved_wheel
 			ddt.text_background_colour = saved_text_bg
+		self._after_render(tauon, over)
+
+	def _grid_overrides(self, tauon: Tauon, seg_w: float) -> tuple[int, int, int, int, int] | None:
+		"""Return (art_size, h_gap, v_gap, row_len, margin) in scaled px to force
+		on the renderer for this widget, or None to use the global gallery
+		settings. ``margin`` is the uniform outer inset (left/right/top)."""
+		return None
+
+	def _after_render(self, tauon: Tauon, over: bool) -> None:
+		"""Hook run after the grid has rendered (overrides restored); ``over`` is
+		whether the (segment-local) pointer is inside the segment."""
+
+
+GRID_PER_ROW_MAX = 30
+# Uniform outer margin (px unscaled) around the Gallery: Compact grid —
+# based on the inset the preset's narrow-window branch gives on the left
+# (20), pulled in slightly, applied on left/right/top so the edges match.
+GRID_MARGIN = 15
+
+
+class GridGalleryWidget(GalleryWidget):
+	"""Gallery: Compact — the Album Gallery with tight, segment-derived spacing.
+
+	Instead of the global album_mode_art_size / gap settings, the row length is
+	a per-widget setting (albums per row) and the art size is computed so the
+	row fills the segment width with the configured spacing between tiles.
+	Everything else (scrolling, clicks, the album context menu, the scroll bar,
+	titles under the art) is the shared gallery renderer, driven through
+	_grid_overrides. Right-click on the background opens gallery_grid_menu
+	(built in t_main), whose rows edit this instance's settings.
+
+	NOT single-instance: each instance keeps its own scroll position, row
+	memory, smooth-scroll momentum channel and scroll-bar thumb (swapped in
+	around the render), so several Compact galleries — and the Classic one,
+	which keeps the shared globals — can be shown at the same time.
+	"""
+
+	kind = "gallery_grid"
+	name = "Gallery: Compact"
+	min_w = 100
+	min_h = 80
+	single_instance = False
+	offscreen = True
+
+	# The instance whose settings gallery_grid_menu edits, set by whichever
+	# instance opened the menu.
+	menu_target: GridGalleryWidget | None = None
+	menu_tauon: Tauon | None = None
+	# Monotonic id source for per-instance smooth-scroll channel keys.
+	_instance_counter: int = 0
+
+	def __init__(self) -> None:
+		super().__init__()
+		self.per_row: int = 5
+		self.spacing: int = 4    # px between tiles in a row (unscaled)
+		self.v_spacing: int = 4  # px between rows (unscaled)
+		self.titles: bool = True  # album/artist lines under the art
+		# Per-instance gallery state, swapped into the shared gui vars around
+		# the render (and by gallery_locate).
+		self.scroll_px: float = 0.0
+		self.last_row: int = 0
+		GridGalleryWidget._instance_counter += 1
+		self._scroll_key: str = f"gallery_grid_{GridGalleryWidget._instance_counter}"
+		self._scroll_box = None  # lazily-made private ScrollBox (thumb drag state)
+
+	# -- persistence --
+	def get_config(self) -> dict | None:
+		return {"per_row": self.per_row, "spacing": self.spacing,
+			"v_spacing": self.v_spacing, "titles": self.titles}
+
+	def set_config(self, d: dict) -> None:
+		self.per_row = min(GRID_PER_ROW_MAX, max(1, int(d.get("per_row", 5))))
+		self.spacing = min(CL_INSET_MAX, max(0, int(d.get("spacing", 4))))
+		self.v_spacing = min(CL_INSET_MAX, max(0, int(d.get("v_spacing", 4))))
+		self.titles = bool(d.get("titles", True))
+
+	# -- geometry --
+	def _grid_overrides(self, tauon: Tauon, seg_w: float) -> tuple[int, int, int, int, int] | None:
+		gui = tauon.gui
+		scale = gui.scale
+		# The renderer's narrow-window width adjustment is disabled under
+		# gallery_forced_row_len (it would double the left margin), so the
+		# drawing width is exactly the segment width.
+		w = round(seg_w)
+		n = max(1, self.per_row)
+		# With gallery_forced_row_len set, render_gallery lays tiles on the
+		# uniform float pitch (w - 2*margin + h_gap) / n starting at margin, so
+		# n tiles of art = pitch - spacing separated by `spacing` span the width
+		# between matching left/right margins.
+		margin = round(GRID_MARGIN * scale)
+		if w - margin * 2 < n * round(8 * scale):
+			margin = 0  # tiny segment: give the space to the art
+		sp = round(self.spacing * scale)
+		art = max(round(8 * scale), int((w - margin * 2 + sp) / n - sp))
+		# Keep room for the text lines under each tile when this instance shows
+		# them (gui.gallery_show_text is overridden to self.titles for the
+		# render), like the preset gaps do (update_layout_do: text adds
+		# ~41*scale; light-mode card style draws a taller card below the art).
+		allow = 0
+		if self.titles:
+			allow = round(41 * scale)
+			if tauon.prefs.use_card_style and tauon.colours.lm:
+				allow = round(58 * scale)
+		v_gap = round(self.v_spacing * scale) + allow
+		return art, sp, v_gap, n, margin
+
+	# -- background context menu --
+	def _after_render(self, tauon: Tauon, over: bool) -> None:
+		inp = tauon.inp
+		# A right-click on an album tile has already activated gallery_menu by
+		# now (making is_level_zero False), so this only fires on background.
+		if over and inp.right_click and tauon.is_level_zero():
+			inp.right_click = False
+			GridGalleryWidget.menu_target = self
+			GridGalleryWidget.menu_tauon = tauon
+			tauon.gallery_grid_menu.activate()
+
+	# -- incrementor callbacks (menu built in t_main; reference arg unused) --
+	@classmethod
+	def _menu_changed(cls) -> None:
+		tauon = cls.menu_tauon
+		if tauon is not None:
+			tauon.gui.update += 1
+			tauon.custom.save_slots()
+
+	@classmethod
+	def menu_per_row_value(cls, ref=None) -> int:
+		w = cls.menu_target
+		return w.per_row if w else 0
+
+	@classmethod
+	def menu_per_row_minus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.per_row > 1:
+			w.per_row -= 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_per_row_plus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.per_row < GRID_PER_ROW_MAX:
+			w.per_row += 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_spacing_value(cls, ref=None) -> int:
+		w = cls.menu_target
+		return w.spacing if w else 0
+
+	@classmethod
+	def menu_spacing_minus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.spacing > 0:
+			w.spacing -= 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_spacing_plus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.spacing < CL_INSET_MAX:
+			w.spacing += 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_toggle_titles(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w:
+			w.titles = not w.titles
+			cls._menu_changed()
+
+	@classmethod
+	def menu_titles_value(cls, ref=None) -> bool:
+		w = cls.menu_target
+		return w.titles if w else True
+
+	@classmethod
+	def menu_v_spacing_value(cls, ref=None) -> int:
+		w = cls.menu_target
+		return w.v_spacing if w else 0
+
+	@classmethod
+	def menu_v_spacing_minus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.v_spacing > 0:
+			w.v_spacing -= 1
+			cls._menu_changed()
+
+	@classmethod
+	def menu_v_spacing_plus(cls, ref=None) -> None:
+		w = cls.menu_target
+		if w and w.v_spacing < CL_INSET_MAX:
+			w.v_spacing += 1
+			cls._menu_changed()
 
 
 class WidgetSpec:
@@ -1033,6 +1298,10 @@ def _gallery(spec: WidgetSpec) -> Widget:
 	return GalleryWidget()
 
 
+def _gallery_grid(spec: WidgetSpec) -> Widget:
+	return GridGalleryWidget()
+
+
 def _details(spec: WidgetSpec) -> Widget:
 	return DetailsWidget()
 
@@ -1066,7 +1335,9 @@ def _vis_spectrogram(spec: WidgetSpec) -> Widget:
 WIDGET_SPECS: list[WidgetSpec] = [
 	WidgetSpec("tracklist", "Tracklist", "Content", _tracklist, single_instance=True,
 		colour=ColourRGBA(24, 24, 28, 255)),
-	WidgetSpec("gallery", "Album Gallery", "Content", _gallery, single_instance=True,
+	WidgetSpec("gallery", "Gallery: Classic", "Content", _gallery, single_instance=True,
+		colour=ColourRGBA(26, 24, 30, 255)),
+	WidgetSpec("gallery_grid", "Gallery: Compact", "Content", _gallery_grid,
 		colour=ColourRGBA(26, 24, 30, 255)),
 	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
 	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
@@ -1172,6 +1443,10 @@ class Leaf(Node):
 		d = self._base_dict()
 		d["type"] = "leaf"
 		d["kind"] = self.kind
+		if self.widget is not None:
+			conf = self.widget.get_config()
+			if conf:
+				d["conf"] = conf
 		return d
 
 	@staticmethod
@@ -1179,6 +1454,9 @@ class Leaf(Node):
 		kind = d.get("kind")
 		leaf = Leaf(make_widget(kind) if kind else None)
 		leaf._load_base(d)
+		conf = d.get("conf")
+		if leaf.widget is not None and isinstance(conf, dict):
+			leaf.widget.set_config(conf)
 		return leaf
 
 
@@ -1575,7 +1853,8 @@ class CustomLayout:
 			data = {str(i): (s.to_dict() if s else None) for i, s in enumerate(self.slots)}
 			data["active"] = self.active_slot
 			data["columns"] = {str(i): c for i, c in enumerate(self.slot_columns) if c is not None}
-			self._path().write_text(json.dumps(data, indent=1), encoding="utf-8")
+			with atomic_save(self._path(), "w") as file:
+				file.write(json.dumps(data, indent=1))
 		except Exception:
 			logging.exception("Failed to save custom layouts")
 
@@ -1897,6 +2176,21 @@ class CustomLayout:
 		# stand down entirely — no neutralising.
 		from tauon.t_modules.t_main import Menu  # local import avoids cycle
 		if Menu.active or gui.message_box:
+			# Edit mode: right-clicking another widget while a menu is already
+			# open re-targets the layout menu there. Without this we'd stand
+			# down, and the right-click would fall through to the widget's own
+			# renderer, which doesn't test for open menus (is_level_zero(False))
+			# and would open its normal context menu instead.
+			if gui.custom_edit and inp.right_click and not gui.message_box:
+				for m in Menu.instances:
+					m.active = False
+				Menu.active = False
+				root = self.ensure_slot()
+				layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
+				self.menu_target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
+				if self.menu is not None:
+					self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
+				self._consume(inp)
 			return
 
 		# Corner layout/edit button — clickable in BOTH view and edit mode; opens
@@ -2315,6 +2609,85 @@ class CustomLayout:
 	def _t_border_off(self, ref=None) -> bool:
 		return self.menu_target is not None and not self.menu_target.border
 
+	def gallery_locate(self, playlist_no: int, highlight: bool = False, force: bool = False) -> bool:
+		"""Locate an album in a custom-layout gallery widget (Gallery: Classic /
+		Compact) the way the preset gallery's show-playing does: run
+		tauon.goto_album with the widget's segment geometry applied — and, for
+		the Compact grid, its derived art size / gaps / forced row length — so
+		the shared scroll lands on the right row, optionally with the select
+		animation. goto_album is otherwise gated behind prefs.album_mode, which
+		is the preset gallery's flag and off in custom mode. Returns True when
+		handled (a gallery widget is in the active layout and has been laid
+		out); the caller then skips the preset album_mode path.
+		"""
+		gui = self.gui
+		if not gui.custom_mode:
+			return False
+		root = self.slots[self.active_slot]
+		if root is None:
+			return False
+		tauon = self.tauon
+		handled = False
+		result = None
+		for lf in iter_leaves(root):
+			if not (isinstance(lf, Leaf) and isinstance(lf.widget, GalleryWidget)):
+				continue
+			widget = lf.widget
+			# The widget's drawable rect: gutter-inset content rect, then the
+			# padding inset (same clamped math as _draw_leaf).
+			cx, cy, cw, ch = content_rect(lf, gui.scale)
+			pad = lf.padding * gui.scale
+			cw -= min(pad, cw / 2) * 2
+			ch -= min(pad, ch / 2) * 2
+			if cw <= 0 or ch <= 0:
+				continue  # no layout pass yet this session
+			saved_win = (tauon.window_size[0], tauon.window_size[1])
+			saved = (gui.rspw, gui.lsp, gui.album_v_slide_value,
+				tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+				gui.gallery_forced_row_len)
+			# Mirror GalleryWidget.draw's reframing: the segment is the window.
+			tauon.window_size[0] = round(cw)
+			tauon.window_size[1] = round(ch)
+			gui.rspw = round(cw)
+			gui.lsp = False
+			gui.album_v_slide_value = max(0, gui.album_v_slide_value - round(30 * gui.scale))
+			grid = widget._grid_overrides(tauon, cw)
+			# A Compact grid keeps its own scroll/row state: swap it in so
+			# goto_album moves THIS widget's view — unless the locate came from
+			# within this widget's own render (gallery click → show_current),
+			# where its state is already live and the draw saves it back.
+			own_scroll = grid is not None and widget is not GalleryWidget._rendering
+			saved_scroll = (gui.album_scroll_px, gui.last_row)
+			if grid is not None:
+				art, h_gap, v_gap, n, margin = grid
+				tauon.album_mode_art_size = art
+				gui.album_h_gap = h_gap
+				gui.album_v_gap = v_gap
+				gui.gallery_forced_row_len = n
+				gui.album_v_slide_value = margin
+				if own_scroll:
+					gui.album_scroll_px = widget.scroll_px
+					gui.last_row = widget.last_row
+			try:
+				result = tauon.goto_album(playlist_no, force=force)
+			finally:
+				if own_scroll:
+					widget.scroll_px = gui.album_scroll_px
+					widget.last_row = gui.last_row
+					gui.album_scroll_px, gui.last_row = saved_scroll
+				tauon.window_size[0], tauon.window_size[1] = saved_win
+				(gui.rspw, gui.lsp, gui.album_v_slide_value,
+					tauon.album_mode_art_size, gui.album_h_gap, gui.album_v_gap,
+					gui.gallery_forced_row_len) = saved
+			handled = True
+		if not handled:
+			return False
+		if highlight:
+			gui.gallery_animate_highlight_on = result
+			tauon.gallery_select_animate_timer.set()
+		gui.update += 1
+		return True
+
 	def kind_disabled(self, kind: str) -> bool:
 		"""Disable-test for an Add-widget item: True if the (single-instance)
 		widget already exists in the active layout."""
@@ -2375,6 +2748,12 @@ class CustomLayout:
 		for leaf in iter_leaves(root):
 			if isinstance(leaf, Leaf):
 				self._draw_leaf(leaf, interactive)
+
+		# Widgets receive the deferred mouse-up event above so a later widget can
+		# accept a track drop. Once every widget has had that chance, end the drag
+		# just as the standard TopPanel path does.
+		if interactive and inp.mouse_up:
+			inp.quick_drag = False
 
 		# Window-controls fallback when nothing provides them.
 		if not self._provides_window_controls(root):

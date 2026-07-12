@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem
+from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem, atomic_save
 
 if TYPE_CHECKING:
 	from pathlib import Path
@@ -19,7 +19,7 @@ def migrate_star_store_71(tauon: Tauon) -> None:
 	backup_star_db = tauon.user_directory / "star.p.bak71"
 	if not backup_star_db.exists():
 		logging.info("Creating a backup Star database star.p.bak71")
-		with backup_star_db.open("wb") as file:
+		with atomic_save(backup_star_db) as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 	new_starstore_db: dict[tuple[str, str, str], StarRecord] = {}
@@ -39,7 +39,7 @@ def migrate_star_store_71(tauon: Tauon) -> None:
 	else:
 		tauon.star_store.db = new_starstore_db
 		logging.info("Saving newly migrated StarStore db…")
-		with (tauon.user_directory / "star.p").open("wb") as file:
+		with atomic_save(tauon.user_directory / "star.p") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -232,5 +232,12 @@ def database_migrate(
 		logging.info("Clearing search caches")
 		tauon.search_string_cache.clear()
 		tauon.search_dia_string_cache.clear()
+
+	if db_version <= 76:  # noqa: PLR2004
+		logging.info("Updating database to version 77")
+		# state.p used to pickle the loaded Milkdrop preset as a pathlib.Path,
+		# which made the save file OS-specific. It is stored as a plain string
+		# now; the loader normalises either form, so this bump only forces the
+		# post-migration save to rewrite state.p in the new format.
 
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

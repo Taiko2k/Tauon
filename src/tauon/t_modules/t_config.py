@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 import os
 
-from tauon.t_modules.t_extra import tryint
+from tauon.t_modules.t_extra import atomic_save, tryint
 
 
 class Config:
@@ -62,7 +62,7 @@ class Config:
 		# 	logging.error("Config file cannot be written")
 		# 	return
 
-		with open(path, "w", encoding="utf-8") as f:
+		with atomic_save(path, "w") as f:
 			for item in self.live:
 				if item[0] == "comment":
 					f.write(item[1])

@@ -23,7 +23,7 @@ import os
 import pickle
 import subprocess
 import sys
-from ctypes import byref, c_float, c_int, pointer
+from ctypes import c_int, pointer
 from pathlib import Path
 
 from gi.repository import GLib
@@ -510,6 +510,8 @@ sdl3.SDL_RenderClear(renderer)
 
 logging.info(f"SDL window system: {sdl3.SDL_GetCurrentVideoDriver().decode()}")
 
+# Vsync is not trusted for frame pacing (visualisers self-pace to the display
+# refresh rate, see Tauon.frame_pace) — enabling it just aligns frames to vblank.
 sdl3.SDL_SetRenderVSync(
 	renderer, 1
 )  # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
@@ -524,34 +526,46 @@ sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
-img_path = asset_directory / "loading.png"
-if not img_path.exists():
-	raise FileNotFoundError(f"{str(img_path)} not found, exiting!")
+# Loading screen: a full window grid of interconnected isometric wireframe boxes
+def draw_loading_screen() -> None:
+	box_w = round(44 * scale)  # half-width of a box top face
+	box_r = box_w // 2         # half-height of the top face (2:1 isometric)
+	box_d = round(35 * scale)  # vertical edge length
 
-if scale != 1:
-	img_path2 = user_directory / "scaled-icons" / "loading.png"
-	if img_path2.is_file():
-		img_path = img_path2
-	del img_path2
+	def polyline(points: list[tuple[float, float]]) -> None:
+		array = (sdl3.SDL_FPoint * len(points))()
+		for i, (x, y) in enumerate(points):
+			array[i].x = float(x)
+			array[i].y = float(y)
+		sdl3.SDL_RenderLines(renderer, array, len(points))
 
-sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
-sdl3.SDL_RenderFillRect(renderer, None)
+	sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
+	sdl3.SDL_RenderFillRect(renderer, None)
 
-raw_image = sdl3.IMG_Load(str(img_path).encode())
-texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
-i_x = c_float(0.0)
-i_y = c_float(0.0)
-sdl3.SDL_GetTextureSize(texture, byref(i_x), byref(i_y))
-w = i_x.value
-h = i_y.value
-rect = sdl3.SDL_FRect(window_size[0] // 2 - w // 2, window_size[1] // 2 - h // 2, w, h)
-sdl3.SDL_RenderTexture(renderer, texture, None, rect)
+	sdl3.SDL_SetRenderDrawColor(renderer, 120, 134, 150, 35)
+	# Boxes tile seamlessly: each box's bottom front edges and right vertical
+	# coincide with its neighbours' top faces and left vertical, so per box only
+	# the top face and the west + south verticals are drawn to avoid doubling up
+	cy = -box_r
+	row = 0
+	while cy < window_size[1] + box_r + box_d:
+		cx = -box_w * 2 + (box_w if row % 2 else 0)
+		while cx < window_size[0] + box_w * 2:
+			n = (cx, cy - box_r)
+			e = (cx + box_w, cy)
+			s = (cx, cy + box_r)
+			w = (cx - box_w, cy)
+			polyline([n, e, s, w, n])
+			polyline([w, (w[0], w[1] + box_d)])
+			polyline([s, (s[0], s[1] + box_d)])
+			cx += box_w * 2
+		cy += box_r + box_d
+		row += 1
+
+	sdl3.SDL_RenderPresent(renderer)
 
 
-sdl3.SDL_RenderPresent(renderer)
-
-sdl3.SDL_DestroySurface(raw_image)
-sdl3.SDL_DestroyTexture(texture)
+draw_loading_screen()
 
 holder = Holder(
 	t_window=t_window,
@@ -581,13 +595,7 @@ holder = Holder(
 	log=log,
 )
 
-del raw_image
-del texture
-del w
-del h
-del rect
 del flags
-del img_path
 
 if __name__ == "__main__":
 	try:

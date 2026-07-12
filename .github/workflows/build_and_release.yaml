@@ -118,6 +118,9 @@ jobs:
   build-macos:
     name: "macOS"
     runs-on: macos-15
+    env:
+      # Pinned projectM master for the Milkdrop visualiser library
+      PROJECTM_COMMIT: 149bfc43963e54e397ccdb42f27019d22b659098
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -205,6 +208,27 @@ jobs:
 
       - name: "[DEBUG] List all files"
         run: find .
+
+      - name: Cache projectM build
+        id: cache-projectm
+        uses: actions/cache@v5
+        with:
+          path: build/projectm
+          key: ${{ runner.os }}-${{ runner.arch }}-projectm-${{ env.PROJECTM_COMMIT }}
+
+      - name: Build projectM
+        if: steps.cache-projectm.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/projectM-visualizer/projectm.git build/projectm-src
+          git -C build/projectm-src checkout "${PROJECTM_COMMIT}"
+          git -C build/projectm-src submodule update --init --recursive
+          cmake -S build/projectm-src -B build/projectm-src/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DENABLE_SDL_UI=OFF \
+            -DCMAKE_INSTALL_PREFIX="${PWD}/build/projectm"
+          cmake --build build/projectm-src/build -j3
+          cmake --install build/projectm-src/build
 
       - name: Build macOS app with PyInstaller
         run: |

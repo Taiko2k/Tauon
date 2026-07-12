@@ -117,6 +117,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	TEMPLATES as CL_TEMPLATES,
 	WIDGET_SPECS as CL_WIDGET_SPECS,
 	CustomLayout,
+	GridGalleryWidget,
 	draw_layout_glyph,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
@@ -146,6 +147,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	alpha_blend,
 	alpha_mod,
 	archive_file_scan,
+	atomic_save,
 	check_equal,
 	clean_string,
 	colour_slide,
@@ -318,7 +320,7 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS
 	from tauon.t_modules.t_logging import LogHistoryHandler
-	from collections.abc import Callable
+	from collections.abc import Callable, Sequence
 	from subprocess import Popen
 
 	from mutagen.id3 import ID3
@@ -510,10 +512,13 @@ class DConsole:
 
 	def __init__(self) -> None:
 		self.show: bool = False
+		self.fps = FPSCounter(window_size=20, min_update_interval=0.12, max_frame_time=0.5)
 
 	def toggle(self) -> None:
 		"""Toggle the GUI console with logs on and off"""
 		self.show ^= True
+		if self.show:
+			self.fps.reset()
 
 class GuiVar:
 	"""Use to hold any variables for use in relation to UI"""
@@ -692,6 +697,17 @@ class GuiVar:
 		# Ditto for the Spectrogram widget (gui.vis 6): PHAZOR pushes raw
 		# spectrum columns of spectrogram_bins values into spectrogram_buffers.
 		self.spectrogram_in_widget: bool = False
+		# When non-zero, render_gallery uses this row length instead of deriving
+		# it from album_mode_art_size, and switches to edge-to-edge placement
+		# inset by gallery_grid_margin (scaled px) on the left/right. Set (and
+		# restored) around the call by the Custom Layout's Gallery: Compact
+		# widget; 0 = preset behaviour.
+		self.gallery_forced_row_len: int = 0
+		self.gallery_grid_margin: int = 0
+		# Smooth-scroll momentum channel used by render_gallery. Each Gallery:
+		# Compact instance swaps in its own key so several galleries scroll
+		# independently; "gallery" = the preset / Classic widget channel.
+		self.gallery_scroll_key: str = "gallery"
 		self.spectrogram_bins: int = 256
 		self.spectrogram_buffers: list[list[float]] = []
 		self.showcase_mode: bool = False
@@ -2745,7 +2761,11 @@ class PlayerCtl:
 				target_track = self.get_track(self.multi_playlist[self.active_playlist_viewing].playlist_ids[self.selected_in_playlist])
 
 		elif self.playing_state == PlayingState.STOPPED and self.prefs.meta_persists_stop:
-			target_track = self.master_library[self.track_queue[self.queue_step]]
+			# A saved queue position can become stale when the queue was changed
+			# before the previous shutdown. Do not let metadata rendering prevent
+			# Tauon from starting in that case.
+			if 0 <= self.queue_step < len(self.track_queue):
+				target_track = self.master_library[self.track_queue[self.queue_step]]
 
 		if self.prefs.meta_shows_selected_always \
 		and -1 < self.selected_in_playlist < len(self.multi_playlist[self.active_playlist_viewing].playlist_ids):
@@ -2757,7 +2777,7 @@ class PlayerCtl:
 		if self.playing_state == PlayingState.URL_STREAM:
 			return self.radiobox.dummy_track
 
-		if len(self.track_queue) > 0:
+		if 0 <= self.queue_step < len(self.track_queue):
 			return self.master_library[self.track_queue[self.queue_step]]
 		return None
 
@@ -2891,7 +2911,9 @@ class PlayerCtl:
 
 		self.render_playlist()
 
-		if self.prefs.album_mode and not quiet:
+		if not quiet and self.tauon.custom.gallery_locate(self.selected_in_playlist, highlight=highlight):
+			pass  # located in a custom-layout gallery widget instead of the preset
+		elif self.prefs.album_mode and not quiet:
 			if highlight:
 				self.gui.gallery_animate_highlight_on = self.tauon.goto_album(self.selected_in_playlist)
 				self.tauon.gallery_select_animate_timer.set()
@@ -5092,10 +5114,12 @@ class MenuItem:
 		"inc_get",         # 16
 		"inc_minus",       # 17
 		"inc_plus",        # 18
+		"check_test",      # 19
 	]
 	def __init__(
 		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: object | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
+		check_test: Callable[[], bool | None] | None = None,
 	) -> None:
 		self.title: str = title
 		self.is_sub_menu: bool = is_sub_menu
@@ -5120,6 +5144,11 @@ class MenuItem:
 		self.inc_get = None
 		self.inc_minus = None
 		self.inc_plus = None
+		# Toggle / radio state indicator: a callable (no args) returning the
+		# current on/off state. When set, the row draws a small state box
+		# before the label (accent-filled when on, faint outline when off)
+		# instead of the legacy "✓ " text prefix. See Menu.draw_check_box.
+		self.check_test = check_test
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
@@ -5314,6 +5343,34 @@ class Menu:
 				return item.disable_test(self.reference)
 			return item.disable_test()
 		return None
+
+	def draw_check_box(self, item: MenuItem, x: float, y: float) -> float:
+		"""Draw the toggle/radio state box for an item with check_test at the
+		label position: a small square filled with the theme's toggle accent
+		when on, a faint outline when off (dimmed when the item is disabled).
+		Returns the width the label should shift right to clear it.
+		"""
+		gui = self.gui
+		ddt = self.render_ddt
+		colours = self.colours
+		s = round(9 * gui.scale)
+		bx = round(x)
+		by = round(y + (self.h - s) / 2)
+		disabled = bool(self.is_item_disabled(item))
+		if item.check_test():
+			c = colours.toggle_box_on
+			if disabled:
+				c = colours.menu_text_disabled
+			ddt.rect((bx, by, s, s), ColourRGBA(c.r, c.g, c.b, 150 if disabled else 255))
+		else:
+			line = colours.menu_text_disabled if disabled else colours.menu_text
+			c = ColourRGBA(line.r, line.g, line.b, 70)
+			b = max(1, round(1 * gui.scale))
+			ddt.rect((bx, by, s, b), c)
+			ddt.rect((bx, by + s - b, s, b), c)
+			ddt.rect((bx, by + b, b, s - b * 2), c)
+			ddt.rect((bx + s - b, by + b, b, s - b * 2), c)
+		return s + round(7 * gui.scale)
 
 	def render_icon(self, x: float, y: float, icon: MenuIcon | None, selected: bool, fx: Decorator) -> None:
 		colours = self.colours
@@ -5546,6 +5603,10 @@ class Menu:
 
 				if self.show_icons:
 					x += 25 * gui.scale
+
+				# Toggle / radio state box
+				if self.items[i].check_test is not None:
+					x += self.draw_check_box(self.items[i], x_run + x, y_run)
 
 				# Draw arrow icon for sub menu
 				if self.items[i].is_sub_menu is True:
@@ -5807,6 +5868,9 @@ class Menu:
 
 			self.render_icon(ox + 11 * gui.scale, y + 5 * gui.scale, item.icon, this_select, fx)
 			text_x = ox + 10 * gui.scale + xoff
+			# Toggle / radio state box
+			if item.check_test is not None:
+				text_x += self.draw_check_box(item, text_x, y)
 			if item.incrementor:
 				left_bound = self.draw_incrementor(item, ox, y, bg, ytoff, sub_w)
 				label_max_w = max(1, int(left_bound - text_x - 6 * gui.scale))
@@ -5841,6 +5905,21 @@ class GallClass:
 		self.i: int = 0
 		self.lock: threading.LockType = threading.Lock()
 		self.limit: int = 60
+		self.frame: int = 0
+		self.frame_stamp: dict[tuple[TrackClass, int, int], int] = {}
+
+	def new_frame(self) -> None:
+		"""Advance the wanted-stamp epoch. Called once at the start of each render pass.
+
+		render() stamps every key it still wants but doesn't have; worker_render
+		drops queued keys whose stamp has gone stale, so a resize or fast scroll
+		doesn't leave hundreds of no-longer-visible sizes to thumbnail.
+		"""
+		self.frame += 1
+		if not self.frame % 600 and self.frame_stamp:
+			# Stamps for keys removed from the queue elsewhere (halt, cache
+			# clear, scroll trim) would otherwise linger forever
+			self.frame_stamp = {k: v for k, v in self.frame_stamp.items() if self.frame - v < 4}
 
 	def album_art_column_is_shown(self) -> bool:
 		return self.gui.set_mode and any(column[0] == "Album Art" for column in self.gui.pl_st)
@@ -5872,6 +5951,7 @@ class GallClass:
 
 			if self.gui.halt_image_rendering:
 				self.queue.clear()
+				self.frame_stamp.clear()
 				break
 
 			self.i += 1
@@ -5882,6 +5962,12 @@ class GallClass:
 			except Exception:
 				logging.exception("thumb queue empty")
 				break
+
+			# Flush entries no recent frame asked for (still-wanted keys are
+			# re-stamped by render() every pass); if dropped in error the next
+			# frame that wants the key just re-queues it
+			if self.frame - self.frame_stamp.pop(key, self.frame) > 2:
+				continue
 
 			if key not in self.gall:
 				order = [1, None, None, None]
@@ -6106,18 +6192,20 @@ class GallClass:
 					del self.key_list[0]
 
 				return True
-		elif key not in self.queue:
-			self.queue.append(key)
-			if self.lock.locked():
-				try:
-					self.lock.release()
-				except RuntimeError as e:
-					if str(e) == "release unlocked lock":
-						logging.error("RuntimeError: Attempted to release already unlocked lock")  # noqa: TRY400
-					else:
-						logging.exception("Unknown RuntimeError trying to release lock")
-				except Exception:
-					logging.exception("Unknown error trying to release lock")
+		else:
+			self.frame_stamp[key] = self.frame
+			if key not in self.queue:
+				self.queue.append(key)
+				if self.lock.locked():
+					try:
+						self.lock.release()
+					except RuntimeError as e:
+						if str(e) == "release unlocked lock":
+							logging.error("RuntimeError: Attempted to release already unlocked lock")  # noqa: TRY400
+						else:
+							logging.exception("Unknown RuntimeError trying to release lock")
+					except Exception:
+						logging.exception("Unknown error trying to release lock")
 
 		return False
 
@@ -6362,6 +6450,9 @@ class Tauon:
 		self.tab_menu: Menu              = Menu(self, 160, show_icons=True)
 		self.playlist_menu: Menu         = Menu(self, 130)
 		self.showcase_menu: Menu         = Menu(self, 135)
+		# Showcase view's own background menu: the lyrics menu plus
+		# showcase-specific layout settings (wide mode, visualiser)
+		self.showcase_view_menu: Menu    = Menu(self, 160)
 		self.queue_menu: Menu            = Menu(self, 150)
 		self.radio_entry_menu: Menu      = Menu(self, 125)
 		self.center_info_menu: Menu      = Menu(self, 125)
@@ -6453,6 +6544,7 @@ class Tauon:
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
+		self.milk_choose:                       MilkPresetChooser = MilkPresetChooser(tauon=self)
 		self.search_text                          = self.search_over.search_text
 		self.sync_target:                         TextBox2 = TextBox2(tauon=self)
 		self.playlist_folder_box:                 TextBox2 = TextBox2(tauon=self)
@@ -8618,12 +8710,6 @@ class Tauon:
 			text = _("Disable Milkdrop Visualiser")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
-	def toggle_milky_auto_deco(self, _track_object: TrackClass) -> Decorator:
-		text = _("Enable Auto Cycle")
-		if self.prefs.auto_milk:
-			text = _("Disable Auto Cycle")
-		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
-
 	def toggle_showcase_wide_art_deco(self, _track_object: TrackClass) -> Decorator:
 		text = _("Disable Wide Mode") if self.prefs.showcase_wide_art else _("Enable Wide Mode")
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
@@ -8635,25 +8721,16 @@ class Tauon:
 	def showcase_mode_show_test(self, _track_object: TrackClass) -> bool:
 		return self.gui.showcase_mode
 
-	def toggle_lyrics_deco(self, track_object: TrackClass) -> Decorator:
-		colour = self.colours.menu_text
-
+	def toggle_lyrics_check(self) -> bool:
 		if self.gui.combo_mode:
-			line = _("Hide Lyrics") if self.prefs.show_lyrics_showcase else _("Show Lyrics")
-			if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
-				colour = self.colours.menu_text_disabled
-			return Decorator(colour, self.colours.menu_background, line)
+			return self.prefs.show_lyrics_showcase
+		return self.prefs.show_lyrics_side
 
-		if self.prefs.side_panel_layout == 1:  # and self.prefs.show_side_art:
-			line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
-			if (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
-				colour = self.colours.menu_text_disabled
-			return Decorator(colour, self.colours.menu_background, line)
-
-		line = _("Hide Lyrics") if self.prefs.show_lyrics_side else _("Show Lyrics")
+	def toggle_lyrics_deco(self, track_object: TrackClass) -> Decorator:
+		text = _("Show Lyrics")
 		if not track_object or (track_object.lyrics == "" and not self.timed_lyrics_ren.generate(track_object)):
-			colour = self.colours.menu_text_disabled
-		return Decorator(colour, self.colours.menu_background, line)
+			text = _("Prefer Lyrics Display")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def toggle_milky(self, _track_object: TrackClass) -> None:
 		if not self.prefs.milk:
@@ -8843,6 +8920,27 @@ class Tauon:
 		self.milky.projectm.timer.set()
 		self.prefs.auto_milk ^= True
 
+	def toggle_milk_cut_out(self, _track_object: TrackClass) -> None:
+		self.prefs.milk_cut_out ^= True
+		self.gui.update += 1
+
+	def milk_preset_is_favorite(self) -> bool:
+		preset = self.milky.projectm.loaded_preset
+		return preset is not None and str(preset) in self.prefs.milk_favorite_presets
+
+	def toggle_milk_preset_favorite(self, _track_object: TrackClass) -> None:
+		preset = self.milky.projectm.loaded_preset
+		if preset is None:
+			return
+		key = str(preset)
+		if key in self.prefs.milk_favorite_presets:
+			self.prefs.milk_favorite_presets.remove(key)
+		else:
+			self.prefs.milk_favorite_presets.append(key)
+
+	def open_milk_preset_chooser(self, _track_object: TrackClass) -> None:
+		self.milk_choose.activate()
+
 	def open_preset_folder(self, _track_object: TrackClass) -> None:
 		target = self.user_directory / "presets"
 		if not target.exists():
@@ -9024,16 +9122,8 @@ class Tauon:
 		self.prefs.prefer_synced_lyrics ^= True
 
 	def toggle_synced_lyrics_deco(self, track: TrackClass) -> Decorator:
-		text = _("Show static lyrics") if self.prefs.prefer_synced_lyrics else _("Show synced lyrics")
-		if self.timed_lyrics_ren.generate(track) and track.lyrics:
-			line_colour = self.colours.menu_text
-		else:
-			line_colour = self.colours.menu_text_disabled
-			if not track.lyrics:
-				text = _("Show static lyrics")
-			if not self.timed_lyrics_ren.generate(track):
-				text = _("Show synced lyrics")
-		return Decorator(line_colour, self.colours.menu_background, text)
+		text = None
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def paste_lyrics(self, track_object: TrackClass) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -12335,18 +12425,15 @@ class Tauon:
 		set_menu.br()
 
 		for i, c in enumerate(fields):
-			if i<14:
-				if c[1] in checked:
-					set_menu.add( MenuItem("✓ " + c[0], c[2]) )
-				else:
-					set_menu.add( MenuItem("    " + c[0], c[2]) )
+			# The menu is rebuilt on each activation, so the column state can
+			# be captured at build time.
+			item = MenuItem(c[0], c[2], check_test=(lambda on=(c[1] in checked): on))
+			if i < 14:
+				set_menu.add(item)
 			if i == 14:
 				set_menu.add_sub("+ " + _("More…"), 150)
 			if i >= 14:
-				if c[1] in checked:
-					set_menu.add_to_sub(0, MenuItem( "✓ " + c[0], c[2]))
-				else:
-					set_menu.add_to_sub(0, MenuItem( "    " + c[0], c[2]))
+				set_menu.add_to_sub(0, item)
 
 
 	def sa_remove(self, h: int) -> None:
@@ -13412,6 +13499,22 @@ class Tauon:
 	def _window_is_maximized(self) -> bool:
 		flags = sdl3.SDL_GetWindowFlags(self.t_window)
 		return bool(flags & sdl3.SDL_WINDOW_MAXIMIZED)
+
+	def frame_pace(self) -> float:
+		"""Delay to schedule the next frame of a continuously animating visual
+		(delay_frame argument), paced to the window's display refresh rate.
+
+		Slightly under one refresh period: when vsync is working the present
+		absorbs the slack and frames stay locked to vblank, and when it isn't
+		(driver override, occluded window) this still caps the loop near the
+		refresh rate instead of letting it spin unbounded."""
+		hz = 0.0
+		mode = sdl3.SDL_GetCurrentDisplayMode(sdl3.SDL_GetDisplayForWindow(self.t_window))
+		if mode:
+			hz = mode.contents.refresh_rate
+		if not 0 < hz < 1000:
+			hz = 60.0
+		return 0.85 / hz
 
 	def _is_wayland_standalone_wm(self) -> bool:
 		if not self.wayland:
@@ -14755,6 +14858,7 @@ class Tauon:
 			and not self.gui.quick_search_mode \
 			and not self.gui.rename_playlist_box \
 			and not self.search_over.active \
+			and not self.milk_choose.active \
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active
 
@@ -17349,6 +17453,10 @@ class Tauon:
 				w -= self.gui.lspw
 		area_x = w + 38 * self.gui.scale
 		row_len = int((area_x - self.gui.album_h_gap) / (self.album_mode_art_size + self.gui.album_h_gap))
+		# Keep in step with render_gallery: the Gallery: Compact widget forces
+		# the row length (set around this call by CustomLayout.gallery_locate).
+		if self.gui.gallery_forced_row_len:
+			row_len = self.gui.gallery_forced_row_len
 		self.gui.last_row = row_len
 		# ----
 
@@ -19038,20 +19146,22 @@ class Tauon:
 			pctl.active_playlist_playing,  # 183
 			prefs.milk,
 			prefs.auto_milk,
-			prefs.loaded_preset,
+			str(prefs.loaded_preset) if prefs.loaded_preset else None,  # 186 — as str, a pickled Path is OS-specific
 			int(pctl.stop_mode),
 			pctl.stop_ref,
 			prefs.start_in_tray,  # 189
 			gui.custom_mode,  # 190
 			prefs.spectrogram_colour,  # 191
 			_pcols["pl_st_left"],  # 192
+			prefs.milk_cut_out,  # 193
+			prefs.milk_favorite_presets,  # 194
 		]
 
 		try:
-			with (self.user_directory / "state.p.backup").open("wb") as file:
+			with atomic_save(self.user_directory / "state.p.backup") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 			# if not pctl.running:
-			with (self.user_directory / "state.p").open("wb") as file:
+			with atomic_save(self.user_directory / "state.p") as file:
 				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 			old_position = self.old_window_position
@@ -19068,10 +19178,10 @@ class Tauon:
 			]
 
 			if not self.fs_mode:
-				with (self.user_directory / "window.p").open("wb") as file:
+				with atomic_save(self.user_directory / "window.p") as file:
 					pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-			with (self.user_directory / "lyrics_substitutions.json").open("w", encoding="utf-8") as file:
+			with atomic_save(self.user_directory / "lyrics_substitutions.json", "w") as file:
 				json.dump(prefs.lyrics_subs, file)
 
 			save_prefs(bag=self.bag)
@@ -22238,6 +22348,7 @@ class AlbumArt:
 		self.async_results: dict[tuple, tuple] = {}  # (source, offset, box) -> (BytesIO, original size, format, time)
 		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
 		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
+		self.net_art_failed: dict[str, float] = {}  # art_url_key -> monotonic time of last failed network fetch
 
 		self.base64cache = (0, 0, "")
 		self.processing64on = None
@@ -22554,6 +22665,7 @@ class AlbumArt:
 			assert pic
 			source_image = io.BytesIO(pic)
 		elif subsource[0] == 2:
+			fetching = False
 			try:
 				if track.file_ext == "RADIO" and self.pctl.radio_image_bin:
 					return self.pctl.radio_image_bin
@@ -22562,6 +22674,12 @@ class AlbumArt:
 				if os.path.isfile(cached_path):
 					source_image = open(cached_path, "rb")
 				else:
+					# Negative cache: many thumbnail sizes can queue up for the same
+					# art, so a dead server would otherwise be hit once per size
+					last_fail = self.net_art_failed.get(track.art_url_key)
+					if last_fail is not None and time.monotonic() - last_fail < 120:
+						return None
+					fetching = True
 					if track.file_ext == "SUB":
 						source_image = self.tauon.subsonic.get_cover(track)
 					elif track.file_ext == "JELY":
@@ -22573,7 +22691,12 @@ class AlbumArt:
 						with Path(cached_path).open("wb") as file:
 							file.write(source_image.read())
 						source_image.seek(0)
+						self.net_art_failed.pop(track.art_url_key, None)
+					else:
+						self.net_art_failed[track.art_url_key] = time.monotonic()
 			except Exception:
+				if fetching:
+					self.net_art_failed[track.art_url_key] = time.monotonic()
 				logging.exception("Failed to get source")
 		else:
 			source_image = open(subsource[1], "rb")
@@ -25590,7 +25713,7 @@ class PresetDownloadBox:
 				self.cancel()
 
 class NagBox:
-	SPLASH_VERSION = "10.0.0"
+	SPLASH_VERSION = "11.0.0"
 	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
@@ -25600,6 +25723,7 @@ class NagBox:
 		("Added lyrics search to global search", False),
 		("Added new widget: Spectogram", False),
 		("Added new widget: Track Details", False),
+		("Added new widget: Compact Gallery", False),
 		("Improvements to network buffering", False),
 	)
 
@@ -25687,7 +25811,7 @@ class NagBox:
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("Taking Tauon to the next level!"),
+			_("Your ultimate Tauon upgrade is here!"),
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,
@@ -25700,7 +25824,7 @@ class NagBox:
 		self.ddt.rect((inner_x, changelog_y + changelog_h - round(1 * scale), inner_w, round(1 * scale)), divider)
 		self.ddt.text(
 			(inner_x + round(16 * scale), changelog_y + round(13 * scale)),
-			_("Changelog"),
+			_("Changelog Highlights"),
 			self.colours.box_text,
 			213,
 			bg=section_fill,
@@ -25725,20 +25849,29 @@ class NagBox:
 			)
 			row_y += row_gap
 
-		support_y = changelog_y + changelog_h + round(18 * scale)
+		support_y = changelog_y + changelog_h + round(16 * scale)
 		self.ddt.text((inner_x, support_y), _("Please help support me make free software. ❤️  "), self.colours.box_text, 213, bg=panel_fill)
-		donate_link = self.tauon.draw_linked_text(
+		self.ddt.text(
 			(inner_x, support_y + round(19 * scale)),
-			_("A ton of work went into this release. Please consider donating at https://github.com/sponsors/Taiko2k"),
+			_("Special thanks to everyone who donated."),
+			self.colours.box_text_label,
+			12,
+			bg=panel_fill,
+			max_w=inner_w,
+		)
+		donate_y = support_y + round(37 * scale)
+		donate_link = self.tauon.draw_linked_text(
+			(inner_x, donate_y),
+			_("If you haven't, please consider donating at https://github.com/sponsors/Taiko2k"),
 			self.colours.box_text_label,
 			12,
 			replace=_("GitHub Sponsors"),
 		)
-		self.tauon.link_activate(inner_x, support_y + round(19 * scale), donate_link, click=self.gui.level_2_click)
+		self.tauon.link_activate(inner_x, donate_y, donate_link, click=self.gui.level_2_click)
 		patreon_x = inner_x + donate_link[0] + donate_link[1] + self.ddt.get_text_w(" ", 12)
 		patreon_prefix = _("or on my ")
 		self.ddt.text(
-			(patreon_x, support_y + round(19 * scale)),
+			(patreon_x, donate_y),
 			patreon_prefix,
 			self.colours.box_text_label,
 			12,
@@ -25746,16 +25879,16 @@ class NagBox:
 		)
 		patreon_link_x = patreon_x + self.ddt.get_text_w(patreon_prefix, 12)
 		patreon_link = self.tauon.draw_linked_text(
-			(patreon_link_x, support_y + round(19 * scale)),
+			(patreon_link_x, donate_y),
 			self.PATREON_URL,
 			self.colours.box_text_label,
 			12,
 			force=True,
 			replace="Patreon.",
 		)
-		self.tauon.link_activate(patreon_link_x, support_y + round(19 * scale), patreon_link, click=self.gui.level_2_click)
+		self.tauon.link_activate(patreon_link_x, donate_y, patreon_link, click=self.gui.level_2_click)
 		self.ddt.text(
-			(inner_x, support_y + round(35 * scale)),
+			(inner_x, support_y + round(55 * scale)),
 			_("Your continued support helps keep this app alive."),
 			self.colours.box_text_label,
 			12,
@@ -25765,28 +25898,10 @@ class NagBox:
 
 		button_y = y + h - round(46 * scale)
 		button_h = round(30 * scale)
-		button_gap = round(8 * scale)
-		no_thanks_w = max(round(96 * scale), self.ddt.get_text_w(_("No thanks"), 212) + round(22 * scale))
-		yes_donated_w = max(round(166 * scale), self.ddt.get_text_w(_("Okay, I have/will donate"), 212) + round(22 * scale))
+		close_w = max(round(96 * scale), self.ddt.get_text_w(_("Close"), 212) + round(22 * scale))
+		close_x = x + w - close_w - inner_pad
 
-		no_thanks_x = x + w - no_thanks_w - inner_pad
-		yes_donated_x = no_thanks_x - yes_donated_w - button_gap
-
-		donate_bg = alpha_blend(alpha_mod(accent_warm, 42), self.colours.box_button_background)
-		donate_bg_hover = alpha_blend(alpha_mod(accent_warm, 72), self.colours.box_button_background_highlight)
-
-		if self.drawer.button(
-			_("Yes, I have donated"),
-			yes_donated_x,
-			button_y,
-			w=yes_donated_w,
-			h=button_h,
-			background_colour=donate_bg,
-			background_highlight_colour=donate_bg_hover,
-			press=self.gui.level_2_click,
-		):
-			self.thank_donor()
-		if self.drawer.button(_("No thanks"), no_thanks_x, button_y, w=no_thanks_w, h=button_h, press=self.gui.level_2_click):
+		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
 			self.dismiss()
 
 class PowerTag:
@@ -25856,6 +25971,10 @@ class Over:
 		self.settings_content_scroll = 0.0
 		self.settings_content_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.settings_scale_preview_value: float | None = None
+		# True until the first card of the settings category being rendered
+		# has drawn its accent bar; only that card gets one (see
+		# draw_settings_section / render_settings_category)
+		self.settings_accent_bar_pending: bool = True
 		self.settings_category_offsets: list[float] = []
 		self.settings_doc_texture: sdl3.LP_SDL_Texture | None = None
 		self.settings_doc_texture_size = (0, 0)
@@ -25864,7 +25983,6 @@ class Over:
 			_("General"),
 			_("Connections"),
 			_("Audio"),
-			_("Tracklist"),
 			_("Theme"),
 			_("View"),
 			_("Transcode"),
@@ -26725,8 +26843,16 @@ class Over:
 		x, y, w, h = rect
 		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
 		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
-		self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+		# Border drawn INSIDE the rect: the settings document texture is
+		# blitted at exactly the view rect, so bordered_rect's outside border
+		# would be cropped on cards at the document's left edge
+		border_size = round(1 * self.gui.scale)
+		self.ddt.rect(rect, border)
+		self.ddt.rect((x + border_size, y + border_size, w - border_size * 2, h - border_size * 2), fill)
+		# Accent bar only on the first card of the category
+		if self.settings_accent_bar_pending:
+			self.ddt.rect((x, y, round(4 * self.gui.scale), h), accent)
+			self.settings_accent_bar_pending = False
 		self.ddt.text_background_colour = fill
 
 		pad_x = round(16 * self.gui.scale)
@@ -27201,6 +27327,62 @@ class Over:
 
 		return hit
 
+	def settings_segmented_bar(
+		self,
+		pos: tuple[int, int],
+		options: Sequence[tuple[str, bool, Callable[[], None]]],
+		accent: ColourRGBA | None = None,
+		width: int | None = None,
+	) -> int:
+		"""Compact radio switcher: a single bordered bar of short-label buttons,
+		the active one filled with the accent colour. Segment widths follow the
+		labels; pass ``width`` to stretch the bar to a fixed total width (the
+		slack is shared between segments). Returns the bar height."""
+		if accent is None:
+			accent = self.settings_page_accent()
+		gui = self.gui
+		x, y = round(pos[0]), round(pos[1])
+		h = round(32 * gui.scale)
+		pad = round(16 * gui.scale)
+		font = 212
+		widths = [self.ddt.get_text_w(label, font) + pad * 2 for label, _active, _callback in options]
+		if width is not None:
+			extra = round(width) - sum(widths)
+			if extra > 0:
+				share = extra // len(widths)
+				widths = [seg_w + share for seg_w in widths]
+				widths[-1] += extra - share * len(widths)
+		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		self.ddt.bordered_rect((x, y, sum(widths), h), fill, border, round(1 * gui.scale))
+
+		seg_x = x
+		prev_active = False
+		for (label, active, callback), seg_w in zip(options, widths):
+			rect = (seg_x, y, seg_w, h)
+			hover = self.coll(rect)
+			self.fields.add(rect)
+			bg = fill
+			if active:
+				bg = accent
+				self.ddt.rect(rect, bg)
+			elif hover:
+				bg = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
+				self.ddt.rect(rect, bg)
+			# Separators between plain segments only; the accent block provides
+			# its own edges
+			if seg_x != x and not active and not prev_active:
+				self.ddt.rect((seg_x, y, round(1 * gui.scale), h), border)
+			text_colour = ColourRGBA(20, 20, 25, 255) if active else self.colours.box_text
+			self.ddt.text((seg_x + seg_w // 2, y + round(7 * gui.scale), 2), label, text_colour, font, bg=bg)
+			if hover and self.click and not active:
+				self.inp.global_clicked = True
+				callback()
+			prev_active = active
+			seg_x += seg_w
+
+		return h
+
 	def settings_switcher_tile(
 		self,
 		rect: tuple[int, int, int, int],
@@ -27512,19 +27694,8 @@ class Over:
 				accent,
 			)
 
-			old = gui.artist_info_panel
-			new = self.settings_switch_row(
-				(x, y, w, row_h),
-				gui.artist_info_panel,
-				_("Show artist info panel"),
-				_("Also available with Ctrl+O."),
-				accent,
-			)
-			if new != old:
-				tauon.view_box.artist_info(True)
-
-			y += row_h + row_gap
-
+			# ("Show artist info panel" switch removed — the panel is toggled
+			# with its keyboard shortcut (Ctrl+O) / the View Switcher instead.)
 			self.settings_switch_row(
 				(x, y, w, row_h),
 				tauon.toggle_auto_artist_dl,
@@ -27542,13 +27713,22 @@ class Over:
 				accent,
 			)
 
-			y += row_h + row_gap
-			self.settings_switch_row(
-				(x, y, w, row_h),
-				tauon.toggle_top_tabs,
-				_("Tabs in top panel"),
-				_("Show tabs in the top panel."),
+			# ("Tabs in top panel" switch moved to the main menu under
+			# Top Panel Layout…)
+
+			y += row_h + row_gap + round(4 * gui.scale)
+			ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 11)
+			y += round(20 * gui.scale)
+			self.settings_segmented_bar(
+				(x, y),
+				(
+					(_("Stop"), self.set_playlist_stop(1), self.set_playlist_stop),
+					(_("Repeat"), self.set_playlist_repeat(1), self.set_playlist_repeat),
+					(_("Next playlist"), self.set_playlist_advance(1), self.set_playlist_advance),
+					(_("Cycle all"), self.set_playlist_cycle(1), self.set_playlist_cycle),
+				),
 				accent,
+				width=w,
 			)
 
 			x, y, w, section_h = self.draw_settings_section(
@@ -27568,35 +27748,9 @@ class Over:
 			self.settings_action_tile((x, y, w, tile_h), _("Open keymap file"), tauon.open_keymap_file, accent)
 
 		elif self.func_page == 1:
+			# ("End of playlist action" lives in Common settings now)
 			x, y, w, section_h = self.draw_settings_section(
 				left_rect,
-				_("End of playlist action"),
-				_("What to do when the current playlist ends."),
-				accent,
-			)
-			tile_gap = round(8 * gui.scale)
-			tile_h = round(62 * gui.scale)
-			tile_w = (w - tile_gap) // 2
-			options = (
-				(_("Stop playback"), _("Stop when the playlist ends."), self.set_playlist_stop(1), self.set_playlist_stop),
-				(_("Repeat playlist"), _("Start the same playlist again."), self.set_playlist_repeat(1), self.set_playlist_repeat),
-				(_("Play next playlist"), _("Move to the next playlist."), self.set_playlist_advance(1), self.set_playlist_advance),
-				(_("Cycle all playlists"), _("Keep cycling through playlists."), self.set_playlist_cycle(1), self.set_playlist_cycle),
-			)
-			for index, (title, subtitle, active, callback) in enumerate(options):
-				row = index // 2
-				col = index % 2
-				self.settings_choice_tile(
-					(x + col * (tile_w + tile_gap), y + row * (tile_h + tile_gap), tile_w, tile_h),
-					title,
-					subtitle,
-					active,
-					callback,
-					accent,
-				)
-
-			x, y, w, section_h = self.draw_settings_section(
-				right_rect,
 				_("Session rules"),
 				_("Playback behavior for restarts, sleep, wake and radio."),
 				accent,
@@ -27646,7 +27800,7 @@ class Over:
 			elif play_lock_old != prefs.block_suspend:
 				tauon.update_play_lock()
 
-			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
+			bottom = left_rect[1] + left_rect[3] - round(14 * gui.scale)
 			remaining_h = bottom - y - row_h
 			if prefs.auto_rec and remaining_h > round(50 * gui.scale):
 				self.draw_settings_note(
@@ -27656,24 +27810,10 @@ class Over:
 					_("Radio capture"),
 				)
 
-		elif self.func_page == 2:
+			# (The "Track menu extras" search-provider switches moved to the
+			# track menu's Layout submenu.)
 			x, y, w, section_h = self.draw_settings_section(
 				right_rect,
-				_("Track menu extras"),
-				_("Optional items in the track menu."),
-				accent,
-			)
-			for callback, title in (
-				(tauon.toggle_wiki, _("Wikipedia artist search")),
-				(tauon.toggle_rym, _("Sonemic artist search")),
-				(tauon.toggle_band, _("Bandcamp artist search")),
-				(tauon.toggle_gen, _("Genius track search")),
-			):
-				self.settings_switch_row((x, y, w, small_row_h), callback, title, accent=accent)
-				y += small_row_h + row_gap
-
-			x, y, w, section_h = self.draw_settings_section(
-				left_rect,
 				_("Archive imports"),
 				_("How Tauon handles archives and Downloads."),
 				accent,
@@ -27712,7 +27852,7 @@ class Over:
 				disabled=not extract_archives_enabled,
 			)
 
-			bottom = left_rect[1] + left_rect[3] - round(14 * gui.scale)
+			bottom = right_rect[1] + right_rect[3] - round(14 * gui.scale)
 			remaining_h = bottom - y - small_row_h
 			if remaining_h > round(50 * gui.scale):
 				self.draw_settings_note(
@@ -28298,111 +28438,6 @@ class Over:
 						bg=info_fill,
 					)
 
-	def config_v(self, x0: int, y0: int, w0: int, h0: int) -> None:
-		gui     = self.gui
-		ddt     = self.ddt
-		colours = self.colours
-		prefs   = self.prefs
-		accent  = ColourRGBA(226, 102, 216, 255)
-		ddt.text_background_colour = colours.box_background
-
-		column_gap = round(12 * gui.scale)
-		left_w = max(round(282 * gui.scale), min(round(w0 * 0.56), w0 - round(208 * gui.scale)))
-		right_w = w0 - left_w - column_gap
-		left_rect = (x0, y0, left_w, h0)
-		right_rect = (x0 + left_w + column_gap, y0, right_w, h0)
-
-		chip_gap = round(6 * gui.scale)
-		chip_h = round(32 * gui.scale)
-		x, y, w, section_h = self.draw_settings_section(
-			left_rect,
-			_("Tracklist items"),
-			accent=accent,
-		)
-		chip_w = (w - chip_gap) // 2
-
-		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.heart_toggle, _("Loves"), accent=accent, show_active_bar=False)
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.rating_toggle, _("Track ratings"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.album_rating_toggle, _("Album ratings"), accent=accent, show_active_bar=False)
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.star_toggle, _("Star hints"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		self.settings_toggle_chip((x, y, chip_w, chip_h), self.tauon.star_line_toggle, _("Playcount lines"), accent=accent, show_active_bar=False)
-		old_left_align = prefs.row_title_format == 2
-		left_align = self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), old_left_align, _("Left align"), accent=accent, show_active_bar=False)
-		if left_align != old_left_align:
-			prefs.row_title_format = 2 if left_align else 1
-			gui.update += 1
-			gui.pl_update = 1
-		y += chip_h + chip_gap
-
-		old_genre = prefs.row_title_genre
-		prefs.row_title_genre = self.settings_toggle_chip((x, y, chip_w, chip_h), prefs.row_title_genre, _("Genre"), accent=accent, show_active_bar=False)
-		if prefs.row_title_genre != old_genre:
-			gui.update += 1
-			gui.pl_update = 1
-
-		self.settings_toggle_chip((x + chip_w + chip_gap, y, chip_w, chip_h), self.tauon.toggle_append_date, _("Year"), accent=accent, show_active_bar=False)
-		y += chip_h + chip_gap
-
-		self.settings_toggle_chip((x, y, w, chip_h), self.tauon.toggle_append_total_time, _("Duration"), accent=accent, show_active_bar=False)
-
-		x, y, w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Sizing"),
-			accent=accent,
-		)
-		row_gap = round(6 * gui.scale)
-		row_h = round(30 * gui.scale)
-
-		prefs.playlist_font_size = self.settings_stepper_row(
-			(x, y, w, row_h),
-			_("Font size"),
-			prefs.playlist_font_size,
-			12,
-			17,
-			accent=accent,
-		)
-		y += row_h + row_gap
-		prefs.playlist_row_height = self.settings_stepper_row(
-			(x, y, w, row_h),
-			_("Row height"),
-			prefs.playlist_row_height,
-			15,
-			45,
-			units="px",
-			accent=accent,
-		)
-		y += row_h + row_gap
-		prefs.tracklist_y_text_offset = self.settings_stepper_row(
-			(x, y, w, row_h),
-			_("Text baseline"),
-			prefs.tracklist_y_text_offset,
-			-10,
-			10,
-			accent=accent,
-			formatter=lambda number: f"{number:+d}px" if number else "0px",
-		)
-		y += row_h + row_gap
-
-		tile_gap = round(8 * gui.scale)
-		tile_h = round(30 * gui.scale)
-		tile_w = (w - tile_gap) // 2
-		small_active = (
-			prefs.playlist_font_size == 15
-			and prefs.playlist_row_height == round(22 * prefs.ui_scale)
-			and prefs.tracklist_y_text_offset == 0
-		)
-		large_active = (
-			prefs.playlist_font_size == 15
-			and prefs.playlist_row_height == round(27 * prefs.ui_scale)
-		)
-		self.settings_action_tile((x, y, tile_w, tile_h), _("Thin default"), self.small_preset, accent, emphasis=small_active)
-		self.settings_action_tile((x + tile_w + tile_gap, y, tile_w, tile_h), _("Thick default"), self.large_preset, accent, emphasis=large_active)
-
-
 	def set_playlist_cycle(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.end_setting == "cycle"
@@ -28450,8 +28485,8 @@ class Over:
 		accent_override: ColourRGBA | None = None,
 	) -> int:
 		heights = (
+			round(245 * self.gui.scale),
 			round(275 * self.gui.scale),
-			round(272 * self.gui.scale),
 			round(262 * self.gui.scale),
 			round(300 * self.gui.scale),
 			round(350 * self.gui.scale),
@@ -28465,14 +28500,14 @@ class Over:
 		return height
 
 	def render_settings_general_category(self, x: int, y: int, w: int, draw: bool = True) -> int:
+		# (func page 2 is empty now — Archive imports moved beside Session
+		# rules on page 1)
 		block_gap = round(12 * self.gui.scale)
 		general_accent = self.settings_page_accent(0)
 		general_h = self.render_settings_func_category(0, x, y, w, draw, accent_override=general_accent)
 		behaviour_y = y + general_h + block_gap
 		behaviour_h = self.render_settings_func_category(1, x, behaviour_y, w, draw, accent_override=general_accent)
-		features_y = behaviour_y + behaviour_h + block_gap
-		features_h = self.render_settings_func_category(2, x, features_y, w, draw, accent_override=general_accent)
-		return general_h + behaviour_h + features_h + block_gap * 2
+		return general_h + behaviour_h + block_gap
 
 	def render_settings_connections_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
@@ -28670,150 +28705,13 @@ class Over:
 		return total_h
 
 	def render_settings_view_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
-		gui = self.gui
-		prefs = self.prefs
-		column_gap = round(12 * gui.scale)
-		block_gap = round(12 * gui.scale)
-		row_h = round(42 * gui.scale)
-		compact_row_h = round(30 * gui.scale)
-		row_gap = round(6 * gui.scale)
-		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
-		right_w = w - left_w - column_gap
-		view_h = round(356 * gui.scale)
-		view_h += compact_row_h + row_gap
-		if self.prefs.backend == Backend.PHAZOR:
-			view_h += compact_row_h + row_gap
-		if self.album_mode_art_size < 160:
-			view_h += compact_row_h + row_gap
-		left_rect = (x, y, left_w, view_h)
-		right_rect = (x + left_w + column_gap, y, right_w, view_h)
-		window_y = y + view_h + block_gap
-		window_h = self.render_settings_window_category(x, window_y, w, accent, draw)
-		if not draw:
-			return view_h + window_h + block_gap
-
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			left_rect,
-			_("View"),
-			_("Scroll feel and side panel layout."),
-			accent,
-		)
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, row_h),
-			self.tauon.toggle_smooth_scroll,
-			_("Smooth scrolling"),
-			_("Use inertial scrolling"),
-			accent=accent,
-			disabled=prefs.macos,
-		)
-		inner_y += row_h + row_gap
-		prefs.smooth_scroll_speed = self.draw_settings_range_slider(
-			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
-			_("Smooth scroll speed"),
-			prefs.smooth_scroll_speed,
-			0.25,
-			10.0,
-			0.05,
-			accent=accent,
-			formatter=lambda number: f"{number:.2f}x",
-		)
-		inner_y += round(52 * gui.scale)
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_side_panel_layout,
-			_("Centered metadata side panel"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		old_zoom = self.prefs.zoom_art
-		self.prefs.zoom_art = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.prefs.zoom_art,
-			_("Zoom album art to fit"),
-			accent=accent,
-		)
-		if self.prefs.zoom_art != old_zoom:
-			self.tauon.album_art_gen.clear_cache()
-		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_milky_settings,
-			_("MilkDrop visualiser"),
-			accent=accent,
-			disabled=not milky_ready and not self.prefs.milk,
-			disabled_click=True,
-		)
-		if self.prefs.backend == Backend.PHAZOR:
-			inner_y += compact_row_h + row_gap
-			self.settings_switch_row(
-				(inner_x, inner_y, inner_w, compact_row_h),
-				self.tauon.toggle_showcase_vis,
-				_("Showcase visualisation"),
-				accent=accent,
-			)
-
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Gallery"),
-			_("Browsing and thumbnail layout."),
-			accent,
-		)
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_gallery_click,
-			_("Single click to play"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.prefs.gallery_row_scroll = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.prefs.gallery_row_scroll,
-			_("Scroll gallery by row"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_gallery_combine,
-			_("Combine multi-discs"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.tauon.toggle_galler_text,
-			_("Show titles"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.prefs.center_gallery_text = self.settings_switch_row(
-			(inner_x, inner_y, inner_w, compact_row_h),
-			self.prefs.center_gallery_text,
-			_("Center title text"),
-			accent=accent,
-		)
-		inner_y += compact_row_h + row_gap
-		self.album_mode_art_size = int(self.draw_settings_range_slider(
-			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
-			_("Thumbnail size"),
-			float(self.album_mode_art_size),
-			70,
-			400,
-			10,
-			accent=accent,
-			formatter=lambda number: f"{int(number)}px",
-			callback=lambda number: self.tauon.img_slide_update_gall(int(number)),
-		))
-		if self.album_mode_art_size < 160:
-			inner_y += round(52 * gui.scale)
-			self.settings_switch_row(
-				(inner_x, inner_y, inner_w, compact_row_h),
-				self.tauon.toggle_gallery_thin,
-				_("Prefer thinner padding"),
-				accent=accent,
-			)
-
-		return view_h + window_h + block_gap
+		# (The View card is gone: its scroll settings moved into the Window
+		# card; "Centered metadata side panel", "Zoom album art to fit" and
+		# "MilkDrop visualiser" moved to the side panel album art right-click
+		# menu; "Showcase visualisation" to the showcase view's right-click
+		# menu; the Gallery section to the gallery's background right-click
+		# menu.)
+		return self.render_settings_window_category(x, y, w, accent, draw)
 
 	def render_settings_theme_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
@@ -28981,7 +28879,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
-		left_rect = (x, y, left_w, round(360 * gui.scale))
+		left_rect = (x, y, left_w, round(500 * gui.scale))
 		right_rect = (x + left_w + column_gap, y, right_w, round(360 * gui.scale))
 		if not draw:
 			return max(left_rect[3], right_rect[3])
@@ -28991,7 +28889,7 @@ class Over:
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			left_rect,
 			_("Window"),
-			_("Notifications and on-screen controls."),
+			_("Notifications, on-screen controls, scrolling and scale."),
 			accent,
 		)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_notifications, _("Emit track change notifications"), accent=accent)
@@ -29025,30 +28923,30 @@ class Over:
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
 			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"))
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_level_meter, _("Top-panel visualiser"), accent=accent)
+		# ("Top-panel visualiser" switch moved to the main menu under
+		# Top Panel Layout…)
 
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			right_rect,
-			_("Tray and scale"),
-			_("System tray and interface scaling."),
-			accent,
+		inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, round(42 * gui.scale)),
+			self.tauon.toggle_smooth_scroll,
+			_("Smooth scrolling"),
+			_("Use inertial scrolling"),
+			accent=accent,
+			disabled=prefs.macos,
 		)
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start in tray"), accent=accent, disabled=not prefs.use_tray)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
-		inner_y += row_h + row_gap
-		old_theme = prefs.tray_theme
-		mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
-		prefs.tray_theme = "gray" if mono else "pink"
-		if prefs.tray_theme != old_theme:
-			self.tauon.set_tray_icons(force=True)
-			self.show_message(_("Restart Tauon for change to take effect"))
-		inner_y += row_h + row_gap
+		inner_y += round(42 * gui.scale) + row_gap
+		prefs.smooth_scroll_speed = self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Smooth scroll speed"),
+			prefs.smooth_scroll_speed,
+			0.25,
+			10.0,
+			0.05,
+			accent=accent,
+			formatter=lambda number: f"{number:.2f}x",
+		)
+		inner_y += round(52 * gui.scale)
 
 		def normalize_scale_value(value: float) -> float:
 			scale_value = max(min(round(round(value / 0.05) * 0.05, 2), 3.5), 0.5)
@@ -29095,6 +28993,27 @@ class Over:
 			self.settings_scale_preview_value = None
 		inner_y += round(52 * gui.scale)
 		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.toggle_x_scale, _("Auto scale"), accent=accent)
+
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			right_rect,
+			_("Tray"),
+			_("System tray options."),
+			accent,
+		)
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_use_tray, _("Show icon in system tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_min_tray, _("Close to tray"), accent=accent)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_start_in_tray, _("Start in tray"), accent=accent, disabled=not prefs.use_tray)
+		inner_y += row_h + row_gap
+		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_text_tray, _("Show title text"), accent=accent)
+		inner_y += row_h + row_gap
+		old_theme = prefs.tray_theme
+		mono = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.tray_theme == "gray", _("Monochrome tray icon"), accent=accent)
+		prefs.tray_theme = "gray" if mono else "pink"
+		if prefs.tray_theme != old_theme:
+			self.tauon.set_tray_icons(force=True)
+			self.show_message(_("Restart Tauon for change to take effect"))
 
 		return max(left_rect[3], right_rect[3])
 
@@ -29179,27 +29098,18 @@ class Over:
 			_("Playback loudness matching."),
 			accent,
 		)
-		tile_gap = round(8 * gui.scale)
-		tile_h = round(62 * gui.scale)
-		tile_w = (inner_w - tile_gap) // 2
-		options = (
-			(_("Off"), _("Ignore ReplayGain tags."), self.tauon.switch_rg_off(1), self.tauon.switch_rg_off),
-			(_("Auto"), _("Use the best tag available."), self.tauon.switch_rg_auto(1), self.tauon.switch_rg_auto),
-			(_("Album"), _("Preserve album dynamics."), self.tauon.switch_rg_album(1), self.tauon.switch_rg_album),
-			(_("Tracks"), _("Match track loudness."), self.tauon.switch_rg_track(1), self.tauon.switch_rg_track),
+		bar_h = self.settings_segmented_bar(
+			(inner_x, inner_y),
+			(
+				(_("Off"), self.tauon.switch_rg_off(1), self.tauon.switch_rg_off),
+				(_("Auto"), self.tauon.switch_rg_auto(1), self.tauon.switch_rg_auto),
+				(_("Album"), self.tauon.switch_rg_album(1), self.tauon.switch_rg_album),
+				(_("Tracks"), self.tauon.switch_rg_track(1), self.tauon.switch_rg_track),
+			),
+			accent,
+			width=inner_w,
 		)
-		for index, (title, subtitle, active, callback) in enumerate(options):
-			row = index // 2
-			col = index % 2
-			self.settings_choice_tile(
-				(inner_x + col * (tile_w + tile_gap), inner_y + row * (tile_h + tile_gap), tile_w, tile_h),
-				title,
-				subtitle,
-				active,
-				callback,
-				accent,
-			)
-		inner_y += tile_h * 2 + tile_gap + round(12 * gui.scale)
+		inner_y += bar_h + round(12 * gui.scale)
 		prefs.replay_preamp = int(self.settings_stepper_row(
 			(inner_x, inner_y, inner_w, round(30 * gui.scale)),
 			_("Pre-amp"),
@@ -29288,7 +29198,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		section_header_h = round(66 * gui.scale)
 		section_bottom_pad = round(14 * gui.scale)
-		row1_h = section_header_h + round(210 * gui.scale) + section_bottom_pad
+		row1_h = section_header_h + round(150 * gui.scale) + section_bottom_pad
 		if prefs.transcode_codec == "opus":
 			row1_h += round(36 * gui.scale)
 		if prefs.transcode_codec != "flac":
@@ -29310,7 +29220,7 @@ class Over:
 		left_x = inner_x
 		right_x = left_x + left_w + inner_column_gap
 		column_label_y = inner_y
-		column_subtitle_y = column_label_y + round(16 * gui.scale)
+		column_subtitle_y = column_label_y + round(16 * gui.scale) + round(2 * gui.scale)
 		column_body_y = column_label_y + round(34 * gui.scale)
 		divider_x = left_x + left_w + inner_column_gap // 2
 		divider_h = row1_rect[1] + row1_rect[3] - round(14 * gui.scale) - column_label_y
@@ -29324,29 +29234,20 @@ class Over:
 		)
 
 		inner_x = left_x
-		inner_y = column_body_y
+		inner_y = column_body_y + round(2 * gui.scale)
 		inner_w = left_w
-		tile_gap = round(8 * gui.scale)
-		tile_h = round(62 * gui.scale)
-		tile_w = (inner_w - tile_gap) // 2
-		codecs = (
-			(("FLAC"), _("Lossless output."), prefs.transcode_codec == "flac", self.tauon.switch_flac),
-			(("OPUS"), _("Small files, good quality."), prefs.transcode_codec == "opus", self.tauon.switch_opus),
-			(("OGG Vorbis"), _("Compatible lossy output."), prefs.transcode_codec == "ogg", self.tauon.switch_ogg),
-			(("MP3"), _("Universal compatibility."), prefs.transcode_codec == "mp3", self.tauon.switch_mp3),
+		bar_h = self.settings_segmented_bar(
+			(inner_x, inner_y),
+			(
+				("FLAC", prefs.transcode_codec == "flac", self.tauon.switch_flac),
+				("OPUS", prefs.transcode_codec == "opus", self.tauon.switch_opus),
+				("OGG", prefs.transcode_codec == "ogg", self.tauon.switch_ogg),
+				("MP3", prefs.transcode_codec == "mp3", self.tauon.switch_mp3),
+			),
+			accent,
+			width=inner_w,
 		)
-		for index, (title, subtitle, active, callback) in enumerate(codecs):
-			row = index // 2
-			col = index % 2
-			self.settings_choice_tile(
-				(inner_x + col * (tile_w + tile_gap), inner_y + row * (tile_h + tile_gap), tile_w, tile_h),
-				title,
-				subtitle,
-				active,
-				callback,
-				accent,
-			)
-		inner_y += tile_h * 2 + tile_gap + round(12 * gui.scale)
+		inner_y += bar_h + round(12 * gui.scale)
 		if prefs.transcode_codec == "opus":
 			self.settings_switch_row((inner_x, inner_y, inner_w, round(30 * gui.scale)), self.tauon.switch_opus_ogg, _("Save opus as .ogg"), accent=accent)
 			inner_y += round(36 * gui.scale)
@@ -29363,7 +29264,7 @@ class Over:
 			))
 
 		inner_x = right_x
-		inner_y = column_body_y
+		inner_y = column_body_y + round(2 * gui.scale)
 		inner_w = right_w
 		self.settings_action_tile((inner_x, inner_y, inner_w, round(36 * gui.scale)), _("Open output folder"), self.tauon.open_encode_out, accent)
 		inner_y += round(42 * gui.scale)
@@ -30489,6 +30390,7 @@ class Over:
 		return heading_h
 
 	def render_settings_category(self, index: int, x: int, y: int, w: int, draw: bool = True) -> int:
+		self.settings_accent_bar_pending = True
 		accent = self.settings_tab_accent(index)
 		heading_h = round(34 * self.gui.scale)
 		if draw and index < len(self.tabs):
@@ -30502,20 +30404,16 @@ class Over:
 		elif index == 2:
 			body_h = self.render_settings_audio_category(x, body_y, w, accent, draw)
 		elif index == 3:
-			body_h = round(248 * self.gui.scale)
-			if draw:
-				self.config_v(x, body_y, w, body_h)
-		elif index == 4:
 			body_h = self.render_settings_theme_category(x, body_y, w, accent, draw)
-		elif index == 5:
+		elif index == 4:
 			body_h = self.render_settings_view_category(x, body_y, w, accent, draw)
-		elif index == 6:
+		elif index == 5:
 			body_h = self.render_settings_transcode_category(x, body_y, w, accent, draw)
-		elif index == 7:
+		elif index == 6:
 			body_h = self.render_settings_services_category(x, body_y, w, accent, draw)
-		elif index == 8:
+		elif index == 7:
 			body_h = self.render_settings_func_category(4, x, body_y, w, draw)
-		elif index == 9:
+		elif index == 8:
 			body_h = self.render_settings_stats_category(x, body_y, w, accent, draw)
 		else:
 			body_h = self.render_settings_about_category(x, body_y, w, accent, draw)
@@ -31680,7 +31578,7 @@ class TopPanel:
 					gui.tab_menu_pl = i
 
 				# Quick drop tracks
-				elif self.inp.quick_drag is True and self.inp.mouse_up:
+				elif not gui.radio_view and self.inp.quick_drag is True and self.inp.mouse_up:
 					self.tab_d_click_ref = -1
 					self.tab_d_click_timer.force_set(100)
 					if (pctl.gen_codes.get(pctl.pl_to_id(i)) and "self" not in pctl.gen_codes[pctl.pl_to_id(i)]):
@@ -31826,16 +31724,16 @@ class TopPanel:
 						ddt.rect((x + tab_width - bar_highlight_size, y, bar_highlight_size, gui.panelY2), ColourRGBA(80, 160, 200, 255))
 					else:
 						ddt.rect((x, y, bar_highlight_size, gui.panelY2), ColourRGBA(80, 160, 200, 255))
-				elif (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
+				elif not gui.radio_view and (self.inp.quick_drag or gui.ext_drop_mode) is True and tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(80, 200, 180, 255))
 			# Drag yellow line highlight if single track already in playlist
-			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
+			elif not gui.radio_view and self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
 					if item < len(pctl.default_playlist) and pctl.default_playlist[item] in tab.playlist_ids:
 						ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(190, 160, 20, 255))
 						break
 			# Drag red line highlight if playlist is generator playlist
-			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
+			if not gui.radio_view and self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				if not self.tauon.pl_is_mut(i):
 					ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(200, 70, 50, 255))
 
@@ -31877,7 +31775,12 @@ class TopPanel:
 		# -------------
 		# Other input
 		if self.inp.mouse_up:
-			self.inp.quick_drag = False
+			# In the Custom Layout the Header Bar widget renders in tree order,
+			# usually before drop targets like the Queue widget; ending the drag
+			# here would eat their drop, so the engine ends it after all widgets
+			# have drawn (CustomMode.render) instead.
+			if not gui.custom_mode:
+				self.inp.quick_drag = False
 			tauon.playlist_box.drag = False
 			tauon.radio_view.drag = None
 
@@ -34548,21 +34451,21 @@ class StandardPlaylist:
 			gui.playlist_scroll_pixels = 0
 			self.smooth_scroll.reset_motion("playlist")
 
-		if logging.getLogger().isEnabledFor(logging.DEBUG) and (
-			forward_steps
-			or backward_steps
-			or position_before != pctl.playlist_view_position
-			or abs(pixels_before - gui.playlist_scroll_pixels) >= 0.01
-		):
-			logging.debug(
-				"Playlist pixel scroll apply pos_before=%d pos_after=%d pixels_before=%.4f pixels_after=%.4f forward_steps=%d backward_steps=%d",
-				position_before,
-				pctl.playlist_view_position,
-				pixels_before,
-				gui.playlist_scroll_pixels,
-				forward_steps,
-				backward_steps,
-			)
+		# if logging.getLogger().isEnabledFor(logging.DEBUG) and (
+		# 	forward_steps
+		# 	or backward_steps
+		# 	or position_before != pctl.playlist_view_position
+		# 	or abs(pixels_before - gui.playlist_scroll_pixels) >= 0.01
+		# ):
+			# logging.debug(
+			# 	"Playlist pixel scroll apply pos_before=%d pos_after=%d pixels_before=%.4f pixels_after=%.4f forward_steps=%d backward_steps=%d",
+			# 	position_before,
+			# 	pctl.playlist_view_position,
+			# 	pixels_before,
+			# 	gui.playlist_scroll_pixels,
+			# 	forward_steps,
+			# 	backward_steps,
+			# )
 
 	def _same_album_art_block(self, track_a: TrackClass, track_b: TrackClass) -> bool:
 		return (
@@ -36319,7 +36222,7 @@ class ArtBox:
 					show_vis = True
 				if self.tauon.pctl.playing_state != PlayingState.PAUSED:
 					#gui.update += 1
-					gui.delay_frame(0.007)  # 60 fps
+					gui.delay_frame(self.tauon.frame_pace())
 
 		# Draw faint border on album art
 		if tight_border and not show_vis:
@@ -36393,6 +36296,9 @@ class ArtBox:
 
 				padding = round(0 * gui.scale)
 				xx = x + round(12 * gui.scale)
+				if gui.custom_mode:
+					# Match the Custom Layout Milkdrop widget's tag position
+					xx -= 5
 				yy = y + round(25 * gui.scale)
 				mw = box_w - round(25 * gui.scale)
 				tag_width, tag_height = self.ddt.get_text_wh(line, 312, max_x = mw)
@@ -39882,11 +39788,6 @@ class QueueBox:
 			self.ddt.rect(box_rect, ColourRGBA(255, 255, 255, 2))
 			self.ddt.text_background_colour = alpha_blend(ColourRGBA(255, 255, 255, 2), self.ddt.text_background_colour)
 
-		if self.prefs.show_playlist_list:  # draw top separator line
-			rect = (self.gui.lsp_x, self.gui.panelY + self.gui.pl_box_h, self.gui.lspw, round(self.gui.scale * 2))
-			self.ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
-			self.ddt.rect(rect, sep_colour)
-
 		# if y < self.gui.panelY * 2:
 		#     self.ddt.rect((x, y - 3 * self.gui.scale, w, 30 * self.gui.scale), self.colours.queue_background, True)
 
@@ -40281,7 +40182,7 @@ class MetaBox:
 				self.tauon.milky.render()
 			if self.tauon.pctl.playing_state != PlayingState.PAUSED:
 				# gui.update += 1
-				self.gui.delay_frame(0.007)  # 60 fps
+				self.gui.delay_frame(self.tauon.frame_pace())
 
 		elif self.coll(border_rect) and self.tauon.is_level_zero(True):
 			showc = self.tauon.album_art_gen.get_info(track)
@@ -41496,41 +41397,75 @@ try:
 	# Disable error checking as SDL can generate errors we do not otherwise catch, crashing PyOpenGL
 	OpenGL.ERROR_CHECKING = False
 	from OpenGL.GL import (
+		GL_ACTIVE_TEXTURE,
+		GL_BLEND,
 		GL_CLAMP_TO_EDGE,
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_BUFFER_BIT,
+		GL_COMPILE_STATUS,
+		GL_CURRENT_PROGRAM,
 		GL_DEPTH_BUFFER_BIT,
+		GL_FRAGMENT_SHADER,
 		GL_FRAMEBUFFER,
 		GL_FRAMEBUFFER_BINDING,
 		GL_FRAMEBUFFER_COMPLETE,
 		GL_LINEAR,
+		GL_LINK_STATUS,
+		GL_PACK_ALIGNMENT,
 		GL_RGBA,
+		GL_TEXTURE0,
 		GL_TEXTURE_2D,
 		GL_TEXTURE_BINDING_2D,
 		GL_TEXTURE_MAG_FILTER,
 		GL_TEXTURE_MIN_FILTER,
 		GL_TEXTURE_WRAP_S,
 		GL_TEXTURE_WRAP_T,
+		GL_TRIANGLES,
 		GL_UNSIGNED_BYTE,
 		GL_VERSION,
+		GL_VERTEX_ARRAY_BINDING,
+		GL_VERTEX_SHADER,
 		GL_VIEWPORT,
+		glActiveTexture,
+		glAttachShader,
 		glBindFramebuffer,
 		glBindTexture,
+		glBindVertexArray,
 		glCheckFramebufferStatus,
 		glClear,
 		glClearColor,
+		glCompileShader,
 		glCopyTexSubImage2D,
+		glCreateProgram,
+		glCreateShader,
 		glDeleteFramebuffers,
+		glDeleteShader,
 		glDeleteTextures,
+		glDisable,
+		glDrawArrays,
+		glEnable,
 		glFinish,
 		glFlush,
 		glFramebufferTexture2D,
 		glGenFramebuffers,
 		glGenTextures,
+		glGenVertexArrays,
 		glGetIntegerv,
+		glGetProgramInfoLog,
+		glGetProgramiv,
+		glGetShaderInfoLog,
+		glGetShaderiv,
 		glGetString,
+		glGetUniformLocation,
+		glIsEnabled,
+		glLinkProgram,
+		glPixelStorei,
+		glReadPixels,
+		glShaderSource,
 		glTexImage2D,
 		glTexParameteri,
+		glUniform1i,
+		glUseProgram,
 		glViewport,
 	)
 except ModuleNotFoundError:
@@ -41547,6 +41482,16 @@ def find_projectm_library() -> str | None:
 		for base_dir in (module_dir, Path(sys.executable).parent, Path.cwd()):
 			for dll_name in ("libprojectM-4-4.dll", "libprojectM-4.dll", "projectM-4.dll"):
 				path = base_dir / dll_name
+				if path.is_file():
+					return str(path)
+	if sys.platform == "darwin":
+		base_dirs = [Path(sys.executable).parent]
+		if hasattr(sys, "_MEIPASS"):
+			# PyInstaller bundle: dylibs land in Contents/Frameworks
+			base_dirs.append(Path(sys._MEIPASS))
+		for base_dir in base_dirs:
+			for dylib_name in ("libprojectM-4.4.dylib", "libprojectM-4.dylib"):
+				path = base_dir / dylib_name
 				if path.is_file():
 					return str(path)
 	for lib_name in ("projectM-4", "libprojectM-4-4", "libprojectM-4"):
@@ -41582,6 +41527,11 @@ class ProjectM:
 		self.set_frame_time_available: bool = False
 		self.lib_path: Path | None = None
 		self.glew = None
+		# macOS: the SDL renderer's GL context is a 2.1 compatibility profile,
+		# but projectM needs 3.3+ core, so it renders in its own context and
+		# frames are read back to the renderer in Milky.render_readback.
+		self.own_gl_context = None
+		self.renderer_gl_context = None
 		# Max frames projectM accepts per pcm_add_float call; refined from the
 		# library in define_function_signatures. Feeding more crashes it.
 		self.pcm_max_samples: int = 2048
@@ -41737,6 +41687,25 @@ class ProjectM:
 			self.lib.projectm_set_texture_search_paths(self.pm_instance, path_array, len(path_bytes))
 			logging.info(f"Set projectm texture paths: {path_bytes}")
 
+	def create_own_context(self) -> bool:
+		self.renderer_gl_context = sdl3.SDL_GL_GetCurrentContext()
+		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_MAJOR_VERSION, 3)
+		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_MINOR_VERSION, 3)
+		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_PROFILE_MASK, sdl3.SDL_GL_CONTEXT_PROFILE_CORE)
+		self.own_gl_context = sdl3.SDL_GL_CreateContext(self.tauon.t_window)
+		if not self.own_gl_context:
+			logging.error(f"Failed to create core profile GL context for projectM: {sdl3.SDL_GetError()}")
+			return False
+		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.own_gl_context)
+		return True
+
+	def make_own_context_current(self) -> None:
+		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.own_gl_context)
+
+	def restore_renderer_context(self) -> None:
+		if self.renderer_gl_context:
+			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.renderer_gl_context)
+
 	def init(self, width: int = 800, height: int = 600, preset_path=None) -> bool:
 		"""Initialize projectM with basic settings"""
 		if not self.lib:
@@ -41771,6 +41740,12 @@ class ProjectM:
 
 		if not (self.tauon.user_directory / "presets").exists():
 			(self.tauon.user_directory / "presets").mkdir()
+
+		if sys.platform == "darwin" and not self.create_own_context():
+			self.lib_error = True
+			self.lib = None
+			return False
+
 		# Create projectM instance
 		try:
 			logging.info("init project m...")
@@ -41800,11 +41775,18 @@ class ProjectM:
 
 				return True
 			logging.error("Failed to create projectM instance")
+			self.lib_error = True
+			self.lib = None
 			return False
 
 		except Exception as e:
 			logging.exception(f"Error initializing projectM: {e}")
+			self.lib_error = True
+			self.lib = None
 			return False
+		finally:
+			if self.own_gl_context:
+				self.restore_renderer_context()
 
 	def rescan_presets(self) -> None:
 		def scan_folder(dir: Path) -> None:
@@ -41953,6 +41935,19 @@ class Milky:
 		self.framebuffer = None
 		self.loaded_size = None
 		self.fps = FPSCounter(window_size=10, min_update_interval=0.1, max_frame_time=0.5)
+		self.cut_out_blend_mode = None  # composed lazily on first use (shader fallback)
+
+		# Cut Out key pass: a GL shader copies the visualiser frame into a
+		# second texture with alpha keyed from brightness, leaving the projectM
+		# texture untouched (it feeds back into subsequent frames).
+		self.key_texture_id = None
+		self.key_framebuffer = None
+		self.key_render_texture = None
+		self.key_program = None
+		self.key_vao = None
+		self.key_failed: bool = False  # shader unavailable, use blend-mode fallback
+
+		self.readback_buffer = None  # CPU frame buffer for the dedicated-context path
 
 		self.projectm = ProjectM(tauon)
 
@@ -41960,6 +41955,10 @@ class Milky:
 		if not self.ready:
 			return
 		if not self.projectm.burn_texture_available:
+			return
+		if self.projectm.own_gl_context:
+			# Burn needs the SDL renderer to draw into a GL-wrapped texture,
+			# which can't be shared with projectM's dedicated context
 			return
 
 		w = int(self.tauon.gui.main_art_box[2])
@@ -42010,6 +42009,10 @@ class Milky:
 		if self.projectm.lib_error is True:
 			return
 
+		if self.projectm.own_gl_context:
+			self.render_readback(w, h, srect, discard)
+			return
+
 		sdl3.SDL_FlushRenderer(self.renderer)
 		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
 
@@ -42024,6 +42027,13 @@ class Milky:
 				sdl3.SDL_DestroyTexture(self.render_texture)
 				glDeleteTextures(1, [self.gl_texture_id])
 				glDeleteFramebuffers(1, [self.framebuffer])
+			if self.key_render_texture:
+				sdl3.SDL_DestroyTexture(self.key_render_texture)
+				glDeleteTextures(1, [self.key_texture_id])
+				glDeleteFramebuffers(1, [self.key_framebuffer])
+				self.key_render_texture = None
+				self.key_texture_id = None
+				self.key_framebuffer = None
 
 			gl_texture_id = glGenTextures(1)
 			glBindTexture(GL_TEXTURE_2D, gl_texture_id)
@@ -42078,12 +42088,393 @@ class Milky:
 			glClear(GL_COLOR_BUFFER_BIT)
 			sdl3.SDL_SetRenderTarget(self.renderer, current_target)
 
+		# Cut Out: run the key shader over the fresh frame. It samples the
+		# projectM texture (read-only — projectM feeds it back into subsequent
+		# frames) and writes a copy with alpha keyed from brightness into
+		# key_texture_id, which is blitted below instead.
+		keyed = False
+		if not discard and self.tauon.prefs.milk_cut_out and not self.key_failed:
+			keyed = self._run_key_pass(w, h)
+
 		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
 		glFlush()
 		glFinish()
 		if not discard:
-			sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+			if keyed:
+				# The shader writes straight (unmultiplied) colour with a
+				# luminance alpha; premultiplied "over" keeps the visualiser's
+				# own brightness while black fades to the album art beneath.
+				sdl3.SDL_SetTextureBlendMode(self.key_render_texture, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED)
+				sdl3.SDL_RenderTexture(self.renderer, self.key_render_texture, None, srect)
+			else:
+				if self.tauon.prefs.milk_cut_out:
+					# Shader unavailable: approximate the key in fixed function,
+					# out = src * src + dst * (1 - src) — the source colour acts
+					# as its own per-channel matte.
+					if self.cut_out_blend_mode is None:
+						self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+							sdl3.SDL_BLENDFACTOR_SRC_COLOR,
+							sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+							sdl3.SDL_BLENDOPERATION_ADD,
+							sdl3.SDL_BLENDFACTOR_ZERO,
+							sdl3.SDL_BLENDFACTOR_ONE,
+							sdl3.SDL_BLENDOPERATION_ADD)
+					sdl3.SDL_SetTextureBlendMode(self.render_texture, self.cut_out_blend_mode)
+				else:
+					sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
+				sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
 		self.fps.tick()
+
+	def render_readback(self, w, h, srect, discard: bool = False) -> None:
+		"""Dedicated-context path (macOS): projectM renders into an FBO in its
+		own core profile GL context, and the frame is read back to CPU and
+		uploaded to a streaming SDL texture, since GL textures can't be shared
+		between a core context and the renderer's 2.1 compatibility context."""
+		pm = self.projectm
+		sdl3.SDL_FlushRenderer(self.renderer)
+
+		if (w, h) != self.loaded_size:
+			self.loaded_size = (w, h)
+
+			if self.render_texture:
+				sdl3.SDL_DestroyTexture(self.render_texture)
+			self.render_texture = sdl3.SDL_CreateTexture(
+				self.renderer, sdl3.SDL_PIXELFORMAT_RGBA32,
+				sdl3.SDL_TEXTUREACCESS_STREAMING, int(w), int(h))
+			self.readback_buffer = (ctypes.c_ubyte * (int(w) * int(h) * 4))()
+
+			pm.make_own_context_current()
+			if self.gl_texture_id:
+				glDeleteTextures(1, [self.gl_texture_id])
+				glDeleteFramebuffers(1, [self.framebuffer])
+
+			self.gl_texture_id = glGenTextures(1)
+			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+
+			self.framebuffer = glGenFramebuffers(1)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.gl_texture_id, 0)
+			if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+				logging.error("projectM framebuffer not complete")
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glBindTexture(GL_TEXTURE_2D, 0)
+		else:
+			pm.make_own_context_current()
+
+		try:
+			pm.render_frame(self.framebuffer)
+
+			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
+			glPixelStorei(GL_PACK_ALIGNMENT, 1)
+			glReadPixels(0, 0, int(w), int(h), GL_RGBA, GL_UNSIGNED_BYTE, self.readback_buffer)
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glFlush()
+		finally:
+			pm.restore_renderer_context()
+
+		if not discard:
+			sdl3.SDL_UpdateTexture(
+				self.render_texture, None,
+				ctypes.cast(self.readback_buffer, ctypes.c_void_p), int(w) * 4)
+			if self.tauon.prefs.milk_cut_out:
+				if self.cut_out_blend_mode is None:
+					self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+						sdl3.SDL_BLENDFACTOR_SRC_COLOR,
+						sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+						sdl3.SDL_BLENDOPERATION_ADD,
+						sdl3.SDL_BLENDFACTOR_ZERO,
+						sdl3.SDL_BLENDFACTOR_ONE,
+						sdl3.SDL_BLENDOPERATION_ADD)
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, self.cut_out_blend_mode)
+			else:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
+			# GL frames are bottom-up relative to SDL
+			sdl3.SDL_RenderTextureRotated(
+				self.renderer, self.render_texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
+		self.fps.tick()
+
+	# ------------------------------------------------- Cut Out key pass
+
+	# Fullscreen-triangle vertex stage (no vertex buffer needed) + a fragment
+	# stage that keys out blacks and greys only: neutral pixels fade by
+	# brightness, but any hint of chroma (max - min channel) makes the pixel
+	# opaque even at low luminance, so dim coloured content still covers the
+	# art. Narrow smoothstep ramps keep the key edges from shimmering.
+	KEY_VERTEX_SRC = """
+	#version 330 core
+	out vec2 uv;
+	void main() {
+		vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+		uv = p;
+		gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+	}
+	"""
+
+	KEY_FRAGMENT_SRC = """
+	#version 330 core
+	in vec2 uv;
+	out vec4 frag;
+	uniform sampler2D tex;
+	void main() {
+		vec3 c = texture(tex, uv).rgb;
+		float hi = max(c.r, max(c.g, c.b));
+		float chroma = hi - min(c.r, min(c.g, c.b));
+		float a = max(smoothstep(0.01, 0.20, hi), smoothstep(0.02, 0.06, chroma));
+		frag = vec4(c, a);
+	}
+	"""
+
+	def _init_key_program(self) -> bool:
+		"""Compile the key shader once. On any failure mark key_failed so render
+		falls back to the fixed-function blend approximation."""
+		if self.key_program is not None:
+			return True
+		try:
+			program = glCreateProgram()
+			for source, kind in ((self.KEY_VERTEX_SRC, GL_VERTEX_SHADER), (self.KEY_FRAGMENT_SRC, GL_FRAGMENT_SHADER)):
+				shader = glCreateShader(kind)
+				glShaderSource(shader, source)
+				glCompileShader(shader)
+				if not glGetShaderiv(shader, GL_COMPILE_STATUS):
+					raise RuntimeError(f"Shader compile failed: {glGetShaderInfoLog(shader)}")
+				glAttachShader(program, shader)
+				glDeleteShader(shader)
+			glLinkProgram(program)
+			if not glGetProgramiv(program, GL_LINK_STATUS):
+				raise RuntimeError(f"Shader link failed: {glGetProgramInfoLog(program)}")
+			# Core profiles require a bound VAO to draw, even with no attributes
+			self.key_vao = glGenVertexArrays(1)
+			glUseProgram(program)
+			glUniform1i(glGetUniformLocation(program, "tex"), 0)
+			glUseProgram(0)
+			self.key_program = program
+			return True
+		except Exception:
+			logging.exception("Failed to build Milkdrop key shader, using blend-mode fallback")
+			self.key_failed = True
+			return False
+
+	def _ensure_key_target(self, w: int | float, h: int | float) -> bool:
+		"""Create the keyed copy's texture + framebuffer + SDL wrapper at the
+		current size (torn down with the main target on resize)."""
+		if self.key_render_texture:
+			return True
+		try:
+			self.key_texture_id = glGenTextures(1)
+			glBindTexture(GL_TEXTURE_2D, self.key_texture_id)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA, int(w), int(h), 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+			self.key_framebuffer = glGenFramebuffers(1)
+			glBindFramebuffer(GL_FRAMEBUFFER, self.key_framebuffer)
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self.key_texture_id, 0)
+			complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
+			glBindTexture(GL_TEXTURE_2D, 0)
+			if not complete:
+				raise RuntimeError("Key framebuffer not complete")
+
+			props = sdl3.SDL_CreateProperties()
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, self.key_texture_id)
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
+			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+			self.key_render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
+			if not self.key_render_texture:
+				raise RuntimeError(f"SDL_CreateTextureWithProperties failed: {sdl3.SDL_GetError()}")
+			return True
+		except Exception:
+			logging.exception("Failed to create Milkdrop key target, using blend-mode fallback")
+			self.key_failed = True
+			return False
+
+	def _run_key_pass(self, w: int | float, h: int | float) -> bool:
+		"""Render the keyed copy. Caller restores the framebuffer binding; all
+		other touched GL state is saved and restored here."""
+		if not self._init_key_program() or not self._ensure_key_target(w, h):
+			return False
+		saved_viewport = glGetIntegerv(GL_VIEWPORT)
+		saved_program = glGetIntegerv(GL_CURRENT_PROGRAM)
+		saved_vao = glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
+		saved_active = glGetIntegerv(GL_ACTIVE_TEXTURE)
+		blend_was_on = glIsEnabled(GL_BLEND)
+		try:
+			glBindFramebuffer(GL_FRAMEBUFFER, self.key_framebuffer)
+			glViewport(0, 0, int(w), int(h))
+			glDisable(GL_BLEND)
+			glUseProgram(self.key_program)
+			glBindVertexArray(self.key_vao)
+			glActiveTexture(GL_TEXTURE0)
+			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
+			glDrawArrays(GL_TRIANGLES, 0, 3)
+			glBindTexture(GL_TEXTURE_2D, 0)
+			return True
+		except Exception:
+			logging.exception("Milkdrop key pass failed, using blend-mode fallback")
+			self.key_failed = True
+			return False
+		finally:
+			glBindVertexArray(int(saved_vao))
+			glUseProgram(int(saved_program))
+			glActiveTexture(int(saved_active))
+			if blend_was_on:
+				glEnable(GL_BLEND)
+			glViewport(
+				int(saved_viewport[0]),
+				int(saved_viewport[1]),
+				int(saved_viewport[2]),
+				int(saved_viewport[3]),
+			)
+
+
+class MilkPresetChooser:
+	"""Full-screen Milkdrop preset picker (the MilkDrop menu's "Choose Preset").
+
+	Lists every scanned preset as compact labels in top-to-bottom columns over
+	a translucent backdrop (same look as the search overlay). Clicking a label
+	loads that preset; clicking the backdrop, Escape or right-click closes.
+	Favorited presets get a gold star in the label gutter. The mouse wheel
+	scrolls whole columns when there are more than fit the window.
+
+	Input never leaks to the UI underneath: handle_input runs early in the
+	frame (dream-room style), captures the pointer state for the overlay and
+	then mutes it, so every other component sees no clicks and an off-screen
+	cursor. It can run more than once per frame (event + motion passes), so it
+	only latches state; render() consumes the latched click/wheel.
+	"""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon: Tauon = tauon
+		self.gui:  GuiVar = tauon.gui
+		self.inp:   Input = tauon.inp
+		self.ddt:   TDraw = tauon.ddt
+		self.active: bool = False
+		self.scroll_cols: int = 0
+		self._presets: list[Path] = []  # alphabetical snapshot taken on activate
+		self._mouse: tuple[float, float] = (-1.0, -1.0)
+		self._click: bool = False
+		self._wheel: float = 0.0
+
+	def activate(self) -> None:
+		pm = self.tauon.milky.projectm
+		if not pm.presets:
+			pm.rescan_presets()
+		if not pm.presets:
+			self.tauon.show_message(_("No Milkdrop presets found"))
+			return
+		self._presets = sorted(pm.presets, key=lambda p: p.stem.casefold())
+		self.active = True
+		self.scroll_cols = 0
+		self._click = False
+		self._wheel = 0.0
+		self._mouse = (self.inp.mouse_position[0], self.inp.mouse_position[1])
+		self.gui.update = 2
+
+	def close(self) -> None:
+		self.active = False
+		self._click = False
+		self._wheel = 0.0
+		self.gui.update = 2
+
+	def handle_input(self) -> None:
+		if not self.active:
+			return
+		inp = self.inp
+		if inp.key_esc_press:
+			inp.key_esc_press = False
+			self.close()
+			return
+		if inp.right_click:
+			self.close()
+		if inp.mouse_position[0] > -2000:
+			self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		if inp.mouse_click:
+			self._click = True
+		self._wheel += inp.mouse_wheel
+		inp.mouse_click = False
+		inp.d_mouse_click = False
+		inp.right_click = False
+		inp.middle_click = False
+		inp.mouse_wheel = 0
+		inp.input_text = ""
+		inp.mouse_position[0] = -3000.0
+		inp.mouse_position[1] = -3000.0
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		gui = self.gui
+		ddt = self.ddt
+		pm = self.tauon.milky.projectm
+		presets = self._presets
+		if not presets:
+			self.close()
+			return
+
+		w = self.tauon.window_size[0]
+		h = self.tauon.window_size[1]
+		ddt.rect((0, 0, w, h), ColourRGBA(3, 3, 3, 235))
+		ddt.text_background_colour = ColourRGBA(12, 12, 12, 255)
+
+		pad = round(12 * gui.scale)
+		row_h = round(13 * gui.scale)
+		col_w = round(150 * gui.scale)
+		star_w = ddt.get_text_w("★", 10) + round(4 * gui.scale)  # label gutter, keeps columns aligned
+		rows = max(1, (h - pad * 2) // row_h)
+		n_cols = -(-len(presets) // rows)  # ceil
+		vis_cols = max(1, (w - pad) // col_w)
+
+		if self._wheel:
+			self.scroll_cols -= int(self._wheel)
+			self._wheel = 0.0
+		self.scroll_cols = max(0, min(self.scroll_cols, max(0, n_cols - vis_cols)))
+
+		mx, my = self._mouse
+		click = self._click
+		self._click = False
+		on_label = False
+
+		favorites = self.tauon.prefs.milk_favorite_presets
+		text_colour = ColourRGBA(200, 200, 200, 255)
+		hover_colour = ColourRGBA(255, 255, 255, 255)
+		gold = ColourRGBA(244, 209, 66, 255)
+
+		for col in range(vis_cols):
+			start = (self.scroll_cols + col) * rows
+			if start >= len(presets):
+				break
+			x = pad + col * col_w
+			for row, preset in enumerate(presets[start:start + rows]):
+				y = pad + row * row_h
+				rect = (x, y, col_w - round(6 * gui.scale), row_h)
+				hover = rect[0] <= mx < rect[0] + rect[2] and rect[1] <= my < rect[1] + rect[3]
+				# Hover highlight: just brighten the label text
+				if preset == pm.loaded_preset:
+					colour = ColourRGBA(255, 230, 120, 255) if hover else gold
+				else:
+					colour = hover_colour if hover else text_colour
+				if str(preset) in favorites:
+					ddt.text((x + 1, y - round(1 * gui.scale)), "★", gold, 10)
+				ddt.text(
+					(x + star_w, y - round(1 * gui.scale)), preset.stem, colour, 10,
+					max_w=rect[2] - star_w - round(4 * gui.scale))
+				if click and hover:
+					pm.load_next = preset
+					on_label = True
+					self.close()
+		if click and not on_label:
+			self.close()
 
 
 def draw_showcase_art_box(
@@ -42160,7 +42551,7 @@ class Showcase:
 		self.lyrics_ren:              LyricsRen = tauon.lyrics_ren
 		self.window_size:             list[int] = tauon.window_size
 		self.guitar_chords:        GuitarChords = tauon.guitar_chords
-		self.showcase_menu:                Menu = tauon.showcase_menu
+		self.showcase_view_menu:           Menu = tauon.showcase_view_menu
 		self.smooth_scroll:        SmoothScroll = tauon.smooth_scroll
 		self.timed_lyrics_edit: TimedLyricsEdit = TimedLyricsEdit(tauon=tauon)
 		#self.lastfm_artist = None
@@ -42311,7 +42702,7 @@ class Showcase:
 				if self.inp.right_click:
 					# track = self.pctl.playing_object()
 					if track is not None:
-						self.showcase_menu.activate(track)
+						self.showcase_view_menu.activate(track)
 
 			gcx = x + box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 			gcx -= 100 * self.gui.scale
@@ -43949,31 +44340,21 @@ class TimedLyricsEdit:
 		self.menu.add_to_sub(0, MenuItem(_("Delete All Backups"), self.delete_autosaves, pass_ref=False))
 
 		self.menu.add_sub(_("When track ends..."), 165)
-		if self.prefs.synced_lyrics_editor_track_end_mode == "repeat":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Repeat track"), self.end_set_repeat ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Repeat track"), self.end_set_repeat ))
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "stop":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Stop immediately"), self.end_set_stop ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Stop immediately"), self.end_set_stop ))
+		def end_mode_check(mode: str) -> Callable[[], bool]:
+			return lambda: self.prefs.synced_lyrics_editor_track_end_mode == mode
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "autosave":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Backup and continue"), self.end_set_autosave ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Backup and continue"), self.end_set_autosave ))
+		self.menu.add_to_sub(1, MenuItem(_("Repeat track"), self.end_set_repeat,
+			check_test=end_mode_check("repeat")))
+		self.menu.add_to_sub(1, MenuItem(_("Stop immediately"), self.end_set_stop,
+			check_test=end_mode_check("stop")))
+		self.menu.add_to_sub(1, MenuItem(_("Backup and continue"), self.end_set_autosave,
+			check_test=end_mode_check("autosave")))
+		self.menu.add_to_sub(1, MenuItem(_("Fully save and continue"), self.end_set_full_save,
+			check_test=end_mode_check("full save")))
 
-		if self.prefs.synced_lyrics_editor_track_end_mode == "full save":
-			self.menu.add_to_sub(1, MenuItem( "✓ " + _("Fully save and continue"), self.end_set_full_save ))
-		else:
-			self.menu.add_to_sub(1, MenuItem( "    " + _("Fully save and continue"), self.end_set_full_save ))
-
-		if self.prefs.save_synced_to_lrc:
-			lrc = "✓ "
-		else:
-			lrc = "x  "
-		self.menu.add(MenuItem( lrc + _("Save synced to .lrc"), self.toggle_lrc, pass_ref=False))
+		self.menu.add(MenuItem(_("Save synced to .lrc"), self.toggle_lrc, pass_ref=False,
+			check_test=lambda: self.prefs.save_synced_to_lrc))
 
 	def end_set_repeat(self) -> None:
 		self.prefs.synced_lyrics_editor_track_end_mode = "repeat"
@@ -44365,7 +44746,7 @@ class TimedLyricsEdit:
 		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
-		with target.open() as lyrics_file:
+		with target.open(encoding="utf-8-sig", errors="replace") as lyrics_file:
 			self.structure = []
 			for lyric in lyrics_file.readlines():
 				stamp, time, line = lyric.strip().split(",", 2)
@@ -45103,7 +45484,7 @@ class TimedLyricsEdit:
 	def reload_lyric_file(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
 		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
-		with open(target) as lyric_file:
+		with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
 			new_lyrics = lyric_file.read().strip()
 		track = self.pctl.master_library[self.struct_track]
 		if not new_lyrics == _("Put the lyrics in this file and save it."):
@@ -45940,6 +46321,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("double-digit-indices", prefs.dd_index)
 	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
+	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("import-auto-sort", prefs.auto_sort)
 
 	cf.update_value("encode-output-dir", prefs.custom_encoder_output)
@@ -46288,6 +46670,10 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "left-aligned-album-artist-title",
 		prefs.left_align_album_artist_title,
 		"Show 'Album artist' in the folder/album title. Uses colour 'column-album-artist' from theme file")
+	prefs.tracklist_scrollbar_left = cf.sync_add(
+		"bool", "tracklist-scrollbar-left",
+		prefs.tracklist_scrollbar_left,
+		"Position the tracklist scroll bar on the left side instead of the right.")
 	prefs.auto_sort = cf.sync_add(
 		"bool", "import-auto-sort", prefs.auto_sort,
 		"This setting is deprecated and will be removed in a future version")
@@ -48695,7 +49081,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 76
+	latest_db_version: float = 77
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -49340,7 +49726,9 @@ def main(holder: Holder) -> None:
 			if len(save) > 185 and save[185] is not None:
 				prefs.auto_milk = save[185]
 			if len(save) > 186 and save[186] is not None:
-				prefs.loaded_preset = save[186]
+				# Stored as str since v77 (pre-77 saves pickled a Path); Path()
+				# normalises either form to the runtime type.
+				prefs.loaded_preset = Path(save[186])
 			if len(save) > 187 and save[187] is not None:
 				bag.loaded_stop_mode = save[187]
 			if len(save) > 188 and save[188] is not None:
@@ -49355,6 +49743,10 @@ def main(holder: Holder) -> None:
 				prefs.spectrogram_colour = save[191]
 			if len(save) > 192 and save[192] is not None:
 				gui.pl_st_left = save[192]
+			if len(save) > 193 and save[193] is not None:
+				prefs.milk_cut_out = save[193]
+			if len(save) > 194 and save[194] is not None:
+				prefs.milk_favorite_presets = save[194]
 
 			del save
 			break
@@ -49388,7 +49780,13 @@ def main(holder: Holder) -> None:
 		window_size = window_default_size
 		gui.rspw = 200
 
-	bag.playing_in_queue = min(bag.playing_in_queue, len(bag.track_queue) - 1)
+	# The queue and its position are persisted separately. An interrupted save
+	# or a queue edited during shutdown can leave the position out of range.
+	# Keep an empty queue at its neutral position instead of turning it into -1.
+	if bag.track_queue:
+		bag.playing_in_queue = max(0, min(bag.playing_in_queue, len(bag.track_queue) - 1))
+	else:
+		bag.playing_in_queue = 0
 
 	shoot = threading.Thread(target=keymaps.load)
 	shoot.daemon = True
@@ -50078,15 +50476,97 @@ def main(holder: Holder) -> None:
 			gui.update += 1
 		return cb
 
-	def _spectro_preset_deco(index: int, name: str) -> Callable[[], Decorator]:
-		def deco() -> Decorator:
-			text = ("✓ " if prefs.spectrogram_colour == index else "  ") + name
-			return Decorator(spectrogram_menu.colours.menu_text, spectrogram_menu.colours.menu_background, text)
-		return deco
+	def _spectro_preset_check(index: int) -> Callable[[], bool]:
+		return lambda: prefs.spectrogram_colour == index
 
 	for _i, _sp in enumerate(CL_SPECTRO_PRESETS):
 		spectrogram_menu.add(MenuItem(
-			_sp[0], _spectro_set_colour(_i), _spectro_preset_deco(_i, _sp[0])))
+			_sp[0], _spectro_set_colour(_i), check_test=_spectro_preset_check(_i)))
+
+	# Right-click (background) menu for the Album Grid widget. The incrementor
+	# callbacks are classmethods reading GridGalleryWidget.menu_target, which
+	# the widget sets when it opens the menu.
+	gallery_grid_menu = Menu(tauon, 190)
+	tauon.gallery_grid_menu = gallery_grid_menu
+	gallery_grid_menu.add_incrementor(
+		_("Albums per row"),
+		GridGalleryWidget.menu_per_row_value,
+		GridGalleryWidget.menu_per_row_minus,
+		GridGalleryWidget.menu_per_row_plus)
+	gallery_grid_menu.add_incrementor(
+		_("Spacing"),
+		GridGalleryWidget.menu_spacing_value,
+		GridGalleryWidget.menu_spacing_minus,
+		GridGalleryWidget.menu_spacing_plus)
+	gallery_grid_menu.add_incrementor(
+		_("Row spacing"),
+		GridGalleryWidget.menu_v_spacing_value,
+		GridGalleryWidget.menu_v_spacing_minus,
+		GridGalleryWidget.menu_v_spacing_plus)
+
+	def _grid_titles_deco() -> Decorator:
+		text = _("Hide Titles") if GridGalleryWidget.menu_titles_value() else _("Show Titles")
+		return Decorator(colours.menu_text, colours.menu_background, text)
+
+	gallery_grid_menu.add(MenuItem(_("Hide Titles"), GridGalleryWidget.menu_toggle_titles, _grid_titles_deco))
+
+	# Right-click (background) menu for the gallery — the preset album view and
+	# the Gallery: Classic widget (the Compact grid has its own menu). Holds the
+	# gallery settings, moved here from Settings > View.
+	gallery_settings_menu = Menu(tauon, 210)
+	tauon.gallery_settings_menu = gallery_settings_menu
+
+	def _gal_size_value(ref=None) -> int:
+		return int(tauon.album_mode_art_size)
+
+	def _gal_size_step(direction: int) -> Callable[..., None]:
+		def cb(ref=None) -> None:
+			new = min(400, max(70, int(tauon.album_mode_art_size) + 10 * direction))
+			if new != tauon.album_mode_art_size:
+				tauon.img_slide_update_gall(new)
+				gui.update += 1
+		return cb
+
+	gallery_settings_menu.add_incrementor(
+		_("Thumbnail size"), _gal_size_value, _gal_size_step(-1), _gal_size_step(1))
+
+	def _gal_toggle_titles(ref=None) -> None:
+		tauon.toggle_galler_text()
+
+	gallery_settings_menu.add(MenuItem(_("Show titles"), _gal_toggle_titles,
+		check_test=lambda: gui.gallery_show_text))
+
+	def _gal_toggle_center(ref=None) -> None:
+		prefs.center_gallery_text ^= True
+		gui.update += 1
+
+	gallery_settings_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
+		check_test=lambda: prefs.center_gallery_text))
+
+	def _gal_toggle_click(ref=None) -> None:
+		tauon.toggle_gallery_click()
+
+	gallery_settings_menu.add(MenuItem(_("Single click to play"), _gal_toggle_click,
+		check_test=lambda: tauon.toggle_gallery_click(1)))
+
+	def _gal_toggle_row_scroll(ref=None) -> None:
+		prefs.gallery_row_scroll ^= True
+
+	gallery_settings_menu.add(MenuItem(_("Scroll by row"), _gal_toggle_row_scroll,
+		check_test=lambda: prefs.gallery_row_scroll))
+
+	def _gal_toggle_combine(ref=None) -> None:
+		tauon.toggle_gallery_combine()
+
+	gallery_settings_menu.add(MenuItem(_("Combine multi-discs"), _gal_toggle_combine,
+		check_test=lambda: tauon.toggle_gallery_combine(1)))
+
+	def _gal_toggle_thin(ref=None) -> None:
+		tauon.toggle_gallery_thin()
+
+	gallery_settings_menu.add(MenuItem(_("Prefer thinner padding"), _gal_toggle_thin,
+		check_test=lambda: tauon.toggle_gallery_thin(1),
+		show_test=lambda ref=None: tauon.album_mode_art_size < 160))
 
 	repeat_menu.add(MenuItem(_("Repeat OFF"), tauon.menu_repeat_off))
 	repeat_menu.add(MenuItem(_("Repeat Track"), tauon.menu_set_repeat))
@@ -50135,28 +50615,54 @@ def main(holder: Holder) -> None:
 
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
-	showcase_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	def add_showcase_lyrics_items(menu: Menu) -> None:
+		"""Add the shared lyrics items (fresh MenuItems per menu)"""
+		menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+		menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+		menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
 
-	showcase_menu.add(MenuItem(_("Search GuitarParty"), tauon.guitar_chords.search_guitarparty, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Paste Chord Lyrics"), tauon.guitar_chords.paste_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
-	showcase_menu.add(MenuItem(_("Clear Chord Lyrics"), tauon.guitar_chords.clear_chord_lyrics, pass_ref=True, show_test=tauon.chord_lyrics_paste_show_test))
+		menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+			check_test=tauon.toggle_lyrics_check))
+		menu.add(MenuItem(_("Prefer Synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+			check_test=lambda: tauon.prefs.prefer_synced_lyrics))
+		menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		misc_sub = menu.sub_number
+		menu.add_sub(_("Misc…"), 150)
+		menu.add_to_sub(misc_sub, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
+		menu.add_to_sub(misc_sub, MenuItem(_("Toggle art position"),
+			tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
 
-	showcase_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_sub(_("Misc…"), 150)
-	showcase_menu.add_to_sub(0, MenuItem(_("Substitute Search..."), tauon.show_sub_search, pass_ref=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
-	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
-	showcase_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
-		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
+	add_showcase_lyrics_items(showcase_menu)
+
+	# Showcase view's own background menu: the lyrics items plus showcase
+	# layout settings ("Show Showcase Visualiser" moved here from
+	# Settings > View)
+	showcase_view_menu = tauon.showcase_view_menu
+	add_showcase_lyrics_items(showcase_view_menu)
+	showcase_view_menu.br()
+	showcase_view_menu.add(MenuItem(
+		_("Enable Wide Mode"),
+		tauon.toggle_showcase_wide_art,
+		tauon.toggle_showcase_wide_art_deco,
+		pass_ref=True,
+		pass_ref_deco=True,
+	))
+	showcase_view_menu.add(MenuItem(
+		_("Show Showcase Visualiser"), tauon.toggle_showcase_vis,
+		check_test=lambda: tauon.toggle_showcase_vis(1),
+		show_test=lambda _ref=None: prefs.backend == Backend.PHAZOR))
 
 	center_info_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add(MenuItem(_("Toggle synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	center_info_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
+	center_info_menu.add(MenuItem(_("Prefer Synced Lyrics"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=lambda: tauon.prefs.prefer_synced_lyrics))
 	center_info_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	center_info_menu.add_sub(_("Misc…"), 150)
@@ -50187,7 +50693,25 @@ def main(holder: Holder) -> None:
 	# picture_menu.add(_('Toggle art box'), tauon.toggle_side_art, tauon.toggle_side_art_deco)
 
 	picture_menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	picture_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	picture_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
+	# ("Centered metadata side panel" switch moved here from Settings > View;
+	# hidden in showcase where the side panel layout doesn't apply)
+	picture_menu.add(MenuItem(
+		_("Use Centered Style"), tauon.toggle_side_panel_layout,
+		check_test=lambda: tauon.toggle_side_panel_layout(1),
+		show_test=lambda _ref: not gui.showcase_mode))
+
+	# ("Zoom album art to fit" switch moved here from Settings > View. This
+	# menu also serves the custom layout Art Box widget.)
+	def menu_toggle_zoom_art(ref=None) -> None:
+		prefs.zoom_art ^= True
+		tauon.album_art_gen.clear_cache()
+		gui.update += 1
+
+	picture_menu.add(MenuItem(
+		_("Zoom Art to Fit"), menu_toggle_zoom_art,
+		check_test=lambda: prefs.zoom_art))
 
 	picture_menu.br()
 	picture_menu.add(MenuItem(
@@ -50199,9 +50723,17 @@ def main(holder: Holder) -> None:
 		show_test=tauon.showcase_mode_show_test,
 	))
 	if milky_ready:
-		picture_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem(_("Toggle Milkdrop Visualiser"), tauon.toggle_milky, tauon.toggle_milky_deco, pass_ref=True, pass_ref_deco=True))
-	milky_menu.add(MenuItem(_("Toggle Milkdrop Auto"), tauon.toggle_milky_auto, tauon.toggle_milky_auto_deco, pass_ref=True, pass_ref_deco=True))
+		picture_menu.add(MenuItem(_("MilkDrop Visualiser"), tauon.toggle_milky, pass_ref=True,
+			check_test=lambda: prefs.milk))
+	milky_menu.add(MenuItem(_("MilkDrop Visualiser"), tauon.toggle_milky, pass_ref=True,
+		check_test=lambda: prefs.milk))
+	milky_menu.add(MenuItem(_("Auto Cycle"), tauon.toggle_milky_auto, pass_ref=True,
+		check_test=lambda: prefs.auto_milk))
+	milky_menu.add(MenuItem(_("Cut Out"), tauon.toggle_milk_cut_out, pass_ref=True,
+		check_test=lambda: prefs.milk_cut_out))
+	milky_menu.add(MenuItem(_("Favorite This Preset"), tauon.toggle_milk_preset_favorite, pass_ref=True,
+		check_test=tauon.milk_preset_is_favorite))
+	milky_menu.add(MenuItem(_("Choose Preset"), tauon.open_milk_preset_chooser, pass_ref=True))
 	milky_menu.add(MenuItem(
 		_("Enable Wide Mode"),
 		tauon.toggle_showcase_wide_art,
@@ -50213,7 +50745,8 @@ def main(holder: Holder) -> None:
 	milky_menu.add(MenuItem(_("Open Preset Folder"), tauon.open_preset_folder, pass_ref=True))
 
 	milky_menu.br()
-	milky_menu.add(MenuItem(_("Toggle Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True))
+	milky_menu.add(MenuItem(_("Show Lyrics"), tauon.toggle_lyrics, tauon.toggle_lyrics_deco, pass_ref=True, pass_ref_deco=True,
+		check_test=tauon.toggle_lyrics_check))
 
 
 	gallery_menu.add_to_sub(0, MenuItem(_("Next"), tauon.menu_cycle_offset, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
@@ -50532,8 +51065,9 @@ def main(holder: Holder) -> None:
 	track_menu.br()
 	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 
-	# Columns toggle (moved here from the View Switcher; the ViewBox.col method
-	# stays as the shared implementation — the toggle-columns keybind uses it too).
+	# Layout submenu: the columns toggles plus the tracklist settings, moved
+	# here from Settings > Tracklist. (ViewBox.col stays as the shared columns
+	# implementation — the toggle-columns keybind uses it too.)
 	def menu_toggle_columns(ref=None) -> None:
 		tauon.view_box.col(True)
 
@@ -50543,8 +51077,88 @@ def main(holder: Holder) -> None:
 	def _columns_on_test(ref=None) -> bool:
 		return gui.set_mode
 
-	track_menu.add(MenuItem(_("Show Columns"), menu_toggle_columns, show_test=_columns_off_test))
-	track_menu.add(MenuItem(_("Hide Columns"), menu_toggle_columns, show_test=_columns_on_test))
+	def menu_toggle_set_bar(ref=None) -> None:
+		gui.set_bar ^= True
+		gui.update_layout = True
+		gui.pl_update = 1
+
+	def _bar_deco() -> Decorator:
+		text = _("Hide Bar") if gui.set_bar else _("Show Bar")
+		return Decorator(colours.menu_text, colours.menu_background, text)
+
+	def _tl_toggle_left_align() -> None:
+		prefs.row_title_format = 1 if prefs.row_title_format == 2 else 2
+		gui.update += 1
+		gui.pl_update = 1
+
+	def _tl_toggle_genre() -> None:
+		prefs.row_title_genre ^= True
+		gui.update += 1
+		gui.pl_update = 1
+
+	def _tl_toggle_scrollbar_left() -> None:
+		prefs.tracklist_scrollbar_left ^= True
+		gui.update += 1
+		gui.pl_update = 1
+
+	def _tl_stepper(attr: str, lo: int, hi: int) -> tuple[Callable, Callable, Callable]:
+		def value(ref=None) -> int:
+			return getattr(prefs, attr)
+		def step(direction: int) -> Callable[..., None]:
+			def cb(ref=None) -> None:
+				new = min(hi, max(lo, getattr(prefs, attr) + direction))
+				if new != getattr(prefs, attr):
+					setattr(prefs, attr, new)
+					gui.update_layout = True
+					gui.pl_update = 1
+			return cb
+		return value, step(-1), step(1)
+
+	def add_layout_sub(menu: Menu) -> None:
+		"""Append the tracklist Layout submenu to ``menu`` (fresh MenuItems per
+		menu; the callbacks/decos are shared closures above)."""
+		menu.add_sub(_("Layout"), 190)
+		sub = menu.sub_number - 1
+		menu.add_to_sub(sub, MenuItem(_("Show Columns"), menu_toggle_columns, show_test=_columns_off_test))
+		menu.add_to_sub(sub, MenuItem(_("Hide Columns"), menu_toggle_columns, show_test=_columns_on_test))
+		menu.add_to_sub(sub, MenuItem(_("Hide Bar"), menu_toggle_set_bar, _bar_deco,
+			no_exit=True, disable_test=lambda: not gui.set_mode))
+
+		def toggle_item(label: str, func: Callable, get_state: Callable[[], bool | None]) -> None:
+			def cb(ref=None) -> None:
+				func()
+			# no_exit: checkbox-style toggles keep the submenu open (the state
+			# box flips in place), like the custom-layout Layout… submenu toggles.
+			menu.add_to_sub(sub, MenuItem(label, cb, check_test=get_state, no_exit=True))
+
+		toggle_item(_("Loves"), tauon.heart_toggle, lambda: tauon.heart_toggle(1))
+		toggle_item(_("Track ratings"), tauon.rating_toggle, lambda: tauon.rating_toggle(1))
+		toggle_item(_("Album ratings"), tauon.album_rating_toggle, lambda: tauon.album_rating_toggle(1))
+		toggle_item(_("Star hints"), tauon.star_toggle, lambda: tauon.star_toggle(1))
+		toggle_item(_("Playcount lines"), tauon.star_line_toggle, lambda: tauon.star_line_toggle(1))
+		toggle_item(_("Left align"), _tl_toggle_left_align, lambda: prefs.row_title_format == 2)
+		toggle_item(_("Genre"), _tl_toggle_genre, lambda: prefs.row_title_genre)
+		toggle_item(_("Year"), tauon.toggle_append_date, lambda: tauon.toggle_append_date(1))
+		toggle_item(_("Duration"), tauon.toggle_append_total_time, lambda: tauon.toggle_append_total_time(1))
+		toggle_item(_("Scroll bar on left"), _tl_toggle_scrollbar_left, lambda: prefs.tracklist_scrollbar_left)
+
+		menu.add_incrementor_to_sub(sub, _("Font size"), *_tl_stepper("playlist_font_size", 12, 17))
+		menu.add_incrementor_to_sub(sub, _("Row height"), *_tl_stepper("playlist_row_height", 15, 45))
+		menu.add_incrementor_to_sub(sub, _("Text baseline"), *_tl_stepper("tracklist_y_text_offset", -10, 10))
+
+		menu.add_to_sub(sub, MenuItem(_("Thin default"), lambda: tauon.pref_box.small_preset()))
+		menu.add_to_sub(sub, MenuItem(_("Thick default"), lambda: tauon.pref_box.large_preset()))
+
+		# Optional search-provider items in the track menu, moved here from
+		# Settings > Function ("Track menu extras")
+		toggle_item(_("Wikipedia artist search"), tauon.toggle_wiki, lambda: tauon.toggle_wiki(1))
+		toggle_item(_("Sonemic artist search"), tauon.toggle_rym, lambda: tauon.toggle_rym(1))
+		toggle_item(_("Bandcamp artist search"), tauon.toggle_band, lambda: tauon.toggle_band(1))
+		toggle_item(_("Genius track search"), tauon.toggle_gen, lambda: tauon.toggle_gen(1))
+
+	add_layout_sub(track_menu)
+	folder_menu.br()
+	add_layout_sub(folder_menu)
 
 
 	# Create top menu
@@ -50624,6 +51238,17 @@ def main(holder: Holder) -> None:
 		x_menu.add_sub(_("Dev Mode"), 190)
 		x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), tauon.dev_mode_enable_save_state))
 		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
+
+	# Top panel layout settings (moved here from the Settings UI)
+	top_panel_sub = x_menu.sub_number
+	x_menu.add_sub(_("Top Panel Layout…"), 180)
+	x_menu.add_to_sub(top_panel_sub, MenuItem(
+		_("Show Tabs"), tauon.toggle_top_tabs, no_exit=True,
+		check_test=lambda: tauon.toggle_top_tabs(1)))
+	x_menu.add_to_sub(top_panel_sub, MenuItem(
+		_("Show Visualiser"), tauon.toggle_level_meter, no_exit=True,
+		check_test=lambda: tauon.toggle_level_meter(1)))
+
 	x_menu.br()
 
 	# x_menu.add('Toggle Side panel', tauon.toggle_combo_view, tauon.combo_deco)
@@ -51099,6 +51724,12 @@ def main(holder: Holder) -> None:
 				if gui.lsp:
 					w -= gui.lspw
 
+			# Gallery: Compact reframes the window to the segment and applies its
+			# own uniform margins below — the narrow-window left inset would
+			# double up on the left and be missing from the top/right.
+			if gui.gallery_forced_row_len:
+				w = gui.rspw
+
 			x = window_size[0] - w
 			# sx = x
 			# sw = w
@@ -51126,6 +51757,11 @@ def main(holder: Holder) -> None:
 			# area_x = w - 40 * gui.scale
 
 			row_len = int((area_x - gui.album_h_gap) / (tauon.album_mode_art_size + gui.album_h_gap))
+
+			# The Album Grid widget forces the row length (its art size is derived
+			# from it, so the width formula above can land one off). 0 in presets.
+			if gui.gallery_forced_row_len:
+				row_len = gui.gallery_forced_row_len
 
 			# logging.info(row_len)
 
@@ -51156,6 +51792,22 @@ def main(holder: Holder) -> None:
 
 			dev = int((r_area - compact) / (row_len + 0))
 
+			# Gallery: Compact (forced row length): the centred preset formula
+			# below leaves asymmetric outer margins (~h_gap/2 - 2px left,
+			# ~h_gap/2 + 12px right); the grid instead lays tiles on a uniform
+			# float pitch inset by gallery_grid_margin on each side, so the
+			# left and right margins match.
+			grid_edge = False
+			grid_margin = 0
+			if gui.gallery_forced_row_len:
+				grid_edge = True
+				grid_margin = gui.gallery_grid_margin
+				dev = (r_area - grid_margin * 2 + gui.album_h_gap) / row_len
+			# The grid draws the title lines slightly closer to the art (the row
+			# pitch is unchanged — the text just sits higher within it). 0 = preset.
+			text_lift = round(5 * gui.scale) if grid_edge else 0
+			artist_lift = round(6 * gui.scale) if grid_edge else 0
+
 			render_pos = 0
 			album_on = 0
 
@@ -51164,13 +51816,17 @@ def main(holder: Holder) -> None:
 				* (tauon.album_mode_art_size + gui.album_v_gap)
 			) - round(50 * gui.scale)
 
-			# Mouse wheel scrolling
+			# Mouse wheel scrolling. The momentum channel key is per Gallery:
+			# Compact instance (swapped in around this call) so several
+			# galleries scroll independently; the preset key in gallery_scroll_key
+			# is the default.
+			scroll_key = gui.gallery_scroll_key
 			gallery_scroll_area = (window_size[0] - w, gui.panelY, w, window_size[1] - gui.panelBY - gui.panelY)
 			touch_scroll = inp.touch_scroll_y != 0 and coll_point(inp.touch_position, gallery_scroll_area)
 			use_smooth_gallery = (
 				tauon.smooth_scroll.enabled()
 				or touch_scroll
-				or tauon.smooth_scroll.active("gallery")
+				or tauon.smooth_scroll.active(scroll_key)
 			)
 			row_gallery_scroll = prefs.gallery_row_scroll and not use_smooth_gallery and not touch_scroll
 			if (
@@ -51184,7 +51840,7 @@ def main(holder: Holder) -> None:
 					gui.frame_callback_list.append(TestTimer(0.9))
 
 				if use_smooth_gallery and inp.mouse_wheel != 0:
-					tauon.smooth_scroll.add_wheel_motion("gallery", -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
+					tauon.smooth_scroll.add_wheel_motion(scroll_key, -inp.mouse_wheel, prefs.gallery_scroll_wheel_px)
 				elif row_gallery_scroll:
 					gui.album_scroll_px -= inp.mouse_wheel * (
 						tauon.album_mode_art_size + gui.album_v_gap
@@ -51199,7 +51855,7 @@ def main(holder: Holder) -> None:
 					tauon.smooth_scroll.apply_touch_drag("gallery", -inp.touch_scroll_y)
 
 				if use_smooth_gallery:
-					gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+					gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
 
 				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
@@ -51229,13 +51885,13 @@ def main(holder: Holder) -> None:
 					gui.album_scroll_px = max_scroll
 					gui.album_scroll_px = max(gui.album_scroll_px, round(gui.album_v_slide_value * -1))
 
-			if tauon.smooth_scroll.active("gallery") and not touch_scroll and not inp.touch_released and not (
+			if tauon.smooth_scroll.active(scroll_key) and not touch_scroll and not inp.touch_released and not (
 				not tauon.search_over.active
 				and not radiobox.active
 				and inp.mouse_position[0] > window_size[0] - w
 				and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
 			):
-				gui.album_scroll_px += tauon.smooth_scroll.step_motion("gallery")
+				gui.album_scroll_px += tauon.smooth_scroll.step_motion(scroll_key)
 				if gui.album_scroll_px < round(gui.album_v_slide_value * -1):
 					gui.album_scroll_px = round(gui.album_v_slide_value * -1)
 				if gui.album_scroll_px > max_scroll:
@@ -51339,13 +51995,16 @@ def main(holder: Holder) -> None:
 							if album_on > len(tauon.album_dex) - 1:
 								break
 
-							x = (
-								(l_area + dev * a)
-								- int(tauon.album_mode_art_size / 2)
-								+ int(dev / 2)
-								+ int(compact / 2)
-								- a_offset
-							)
+							if grid_edge:
+								x = l_area + grid_margin + int(dev * a)
+							else:
+								x = (
+									(l_area + dev * a)
+									- int(tauon.album_mode_art_size / 2)
+									+ int(dev / 2)
+									+ int(compact / 2)
+									- a_offset
+								)
 
 							if tauon.album_dex[album_on] >= len(pctl.default_playlist):
 								break
@@ -51564,6 +52223,21 @@ def main(holder: Holder) -> None:
 							break
 						render_pos += tauon.album_mode_art_size + gui.album_v_gap
 
+			# Right-click on the gallery background: settings menu. Runs after
+			# the album input pass, so a right-click on a tile has already
+			# activated gallery_menu (making is_level_zero False). The right
+			# ~40px strip is the scroll-bar hotzone (right-click there jumps
+			# the scroll). The Compact grid widget has its own menu instead.
+			if (
+				inp.right_click
+				and not gui.gallery_forced_row_len
+				and tauon.is_level_zero()
+				and window_size[0] - w < inp.mouse_position[0] < window_size[0] - 40 * gui.scale
+				and gui.panelY < inp.mouse_position[1] < window_size[1] - gui.panelBY
+			):
+				inp.right_click = False
+				gallery_settings_menu.activate()
+
 			render_pos = 0
 			album_on = 0
 			album_count = 0
@@ -51597,13 +52271,16 @@ def main(holder: Holder) -> None:
 						if album_on > len(tauon.album_dex) - 1:
 							break
 
-						x = (
-							(l_area + dev * a)
-							- int(tauon.album_mode_art_size / 2)
-							+ int(dev / 2)
-							+ int(compact / 2)
-							- a_offset
-						)
+						if grid_edge:
+							x = l_area + grid_margin + int(dev * a)
+						else:
+							x = (
+								(l_area + dev * a)
+								- int(tauon.album_mode_art_size / 2)
+								+ int(dev / 2)
+								+ int(compact / 2)
+								- a_offset
+							)
 
 						if tauon.album_dex[album_on] >= len(pctl.default_playlist):
 							break
@@ -51662,12 +52339,13 @@ def main(holder: Holder) -> None:
 						selection_highlight_shown = (
 							(gui.album_tab_mode or gallery_menu.active) and info[2] is True
 						)
+						highlight_border = round(2 * gui.scale)
 						if info[0] == 1 and not selection_highlight_shown and (
 							pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 						):
 							ddt.rect_a(
-								(x - 4, y - 4),
-								(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+								(x - highlight_border, y - highlight_border),
+								(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 								colours.gallery_highlight,
 							)
 							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
@@ -51685,8 +52363,8 @@ def main(holder: Holder) -> None:
 								if colours.lm:
 									c = ColourRGBA(66, 244, 66, 255)
 								ddt.rect_a(
-									(x - 4, y - 4),
-									(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+									(x - highlight_border, y - highlight_border),
+									(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 									c,
 								)
 
@@ -51709,8 +52387,8 @@ def main(holder: Holder) -> None:
 								if colours.lm:
 									c = ColourRGBA(244, 64, 244, 255)
 								ddt.rect_a(
-									(x - 4, y - 4),
-									(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+									(x - highlight_border, y - highlight_border),
+									(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 									c,
 								)
 								# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
@@ -51722,8 +52400,8 @@ def main(holder: Holder) -> None:
 							c = colours.gallery_highlight
 							c = ColourRGBA(c.g, c.b, c.r, c.a)
 							ddt.rect_a(
-								(x - 4, y - 4),
-								(tauon.album_mode_art_size + 8, tauon.album_mode_art_size + 8),
+								(x - highlight_border, y - highlight_border),
+								(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
 								c,
 							)  # [150, 80, 222, 255]
 							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
@@ -51980,7 +52658,7 @@ def main(holder: Holder) -> None:
 									)
 							elif line2 == "":
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + 9 * gui.scale, text_align),
+									(x, y + tauon.album_mode_art_size + 9 * gui.scale - text_lift, text_align),
 									line,
 									line1_colour,
 									311,
@@ -51988,15 +52666,15 @@ def main(holder: Holder) -> None:
 								)
 							else:
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
+									(x, y + tauon.album_mode_art_size + 8 * gui.scale - text_lift, text_align),
 									line2,
 									line2_colour,
-									212,
-									tauon.album_mode_art_size,
+									211 if grid_edge else 212,
+									tauon.album_mode_art_size - (round(5 * gui.scale) if grid_edge else 0),
 								)
 
 								ddt.text(
-									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale, text_align),
+									(x, y + tauon.album_mode_art_size + (10 + 14) * gui.scale - artist_lift, text_align),
 									line,
 									line1_colour,
 									311,
@@ -52192,12 +52870,21 @@ def main(holder: Holder) -> None:
 		nonlocal scroll_hold, scroll_point, scroll_bpoint, sbp, sbl
 		width = 15 * gui.scale
 
+		# When the columns header bar is shown, drop the scroll bar (and its
+		# auto-hide/hover field) below the header so it doesn't overlap it. Only
+		# the top moves; the thumb travel simply shrinks from the top.
+		if gui.set_bar and gui.set_mode:
+			top += gui.set_height
+
 		if gui.set_mode and prefs.left_align_album_artist_title:
 			width = 11 * gui.scale
-		x = left + plw - width - 2 * gui.scale
 		scroll_hitbox_width = 28 * gui.scale
-		scroll_hitbox_right = x + width + 1 * gui.scale
-		scroll_hitbox_x = scroll_hitbox_right - scroll_hitbox_width
+		if prefs.tracklist_scrollbar_left:
+			x = left + 1 * gui.scale
+			scroll_hitbox_x = x - 1 * gui.scale
+		else:
+			x = left + plw - width - 3 * gui.scale
+			scroll_hitbox_x = x + width + 1 * gui.scale - scroll_hitbox_width
 
 		gui.scroll_hide_box = (
 			scroll_hitbox_x,
@@ -52624,6 +53311,8 @@ def main(holder: Holder) -> None:
 	tauon.column_bar_draw = render_column_bar_draw
 
 	render_heartbeat_timer = Timer()
+	vis_pace_timer = Timer()
+	pace_vis = False
 
 	tauon.set_tray_icons()
 	if prefs.use_tray or "--tray" in sys.argv:
@@ -52704,12 +53393,9 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_GAMEPAD_AXIS_MOTION:
 				if not prefs.use_gamepad:
 					continue
-				# Deadzone guard to prevent frequent gui refreshes
-				if abs(event.gaxis.value) <= 5000:
-					continue
 				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
 					rt = event.gaxis.value > 5000
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
+				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_LEFTY:
 					if event.gaxis.value < -10000:
 						new = -1
 					elif event.gaxis.value > 10000:
@@ -52718,10 +53404,10 @@ def main(holder: Holder) -> None:
 						new = 0
 					if new != c_yax:
 						c_yax_timer.force_set(1)
-					c_yax = new
-					power += 5
-					gui.update += 1
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTX:
+						c_yax = new
+						power += 5
+						gui.update += 1
+				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTX:
 					if event.gaxis.value < -15000:
 						new = -1
 					elif event.gaxis.value > 15000:
@@ -52730,10 +53416,10 @@ def main(holder: Holder) -> None:
 						new = 0
 					if new != c_xax:
 						c_xax_timer.force_set(1)
-					c_xax = new
-					power += 5
-					gui.update += 1
-				if event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTY:
+						c_xax = new
+						power += 5
+						gui.update += 1
+				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTY:
 					if event.gaxis.value < -15000:
 						new = -1
 					elif event.gaxis.value > 15000:
@@ -52742,9 +53428,9 @@ def main(holder: Holder) -> None:
 						new = 0
 					if new != c_xay:
 						c_xay_timer.force_set(1)
-					c_xay = new
-					power += 5
-					gui.update += 1
+						c_xay = new
+						power += 5
+						gui.update += 1
 			elif event.type == sdl3.SDL_EVENT_GAMEPAD_BUTTON_DOWN:
 				if not prefs.use_gamepad:
 					continue
@@ -53106,29 +53792,29 @@ def main(holder: Holder) -> None:
 				scroll_y = raw_scroll_y if smooth_enabled else float(integer_scroll_y)
 				event_mode = "precise-smooth" if precise_input else "smooth" if smooth_enabled else "line"
 				if event_mode != inp.scroll_debug_last_mode or now - inp.scroll_debug_last_log > 1.0:
-					logging.debug(
-						"Wheel event mode=%s raw_y=%.3f integer_y=%d scroll_y=%.3f smooth_enabled=%s precise_input=%s speed=%.3f wheel_before=%.3f mouse=(%d,%d)",
-						event_mode,
-						raw_scroll_y,
-						integer_scroll_y,
-						scroll_y,
-						smooth_enabled,
-						precise_input,
-						tauon.smooth_scroll.speed(),
-						wheel_before,
-						inp.mouse_position[0],
-						inp.mouse_position[1],
-					)
+					# logging.debug(
+					# 	"Wheel event mode=%s raw_y=%.3f integer_y=%d scroll_y=%.3f smooth_enabled=%s precise_input=%s speed=%.3f wheel_before=%.3f mouse=(%d,%d)",
+					# 	event_mode,
+					# 	raw_scroll_y,
+					# 	integer_scroll_y,
+					# 	scroll_y,
+					# 	smooth_enabled,
+					# 	precise_input,
+					# 	tauon.smooth_scroll.speed(),
+					# 	wheel_before,
+					# 	inp.mouse_position[0],
+					# 	inp.mouse_position[1],
+					# )
 					inp.scroll_debug_last_mode = event_mode
 					inp.scroll_debug_last_log = now
 				inp.mouse_wheel += scroll_y
-				if logging.getLogger().isEnabledFor(logging.DEBUG):
-					logging.debug(
-						"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f",
-						event_mode,
-						scroll_y,
-						inp.mouse_wheel,
-					)
+				# if logging.getLogger().isEnabledFor(logging.DEBUG):
+				# 	logging.debug(
+				# 		"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f",
+				# 		event_mode,
+				# 		scroll_y,
+				# 		inp.mouse_wheel,
+				# 	)
 				inp.mouse_wheel_precise = precise_input
 				inp.trackpad_scroll_mode_until = 0.0
 
@@ -53321,13 +54007,24 @@ def main(holder: Holder) -> None:
 				i -= 1
 
 		# Dream Room (F7): keep frames flowing while the 3D scene animates.
-		# Vsync paces the loop. Only meaningful in the main GUI mode.
+		# Only meaningful in the main GUI mode.
 		if tauon.dream_room.active:
 			if gui.mode != GuiMode.MAIN:
 				tauon.dream_room.close_instant()
 			else:
 				gui.update = max(gui.update, 1)
 				power = 1000
+				pace_vis = True
+
+		# Milkdrop preset chooser: keep frames flowing so hover tracking on the
+		# overlay stays live (the visualiser underneath is animating anyway).
+		if tauon.milk_choose.active:
+			if gui.mode != GuiMode.MAIN:
+				tauon.milk_choose.close()
+			else:
+				gui.update = max(gui.update, 1)
+				power = 1000
+				pace_vis = True
 
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
@@ -53382,8 +54079,12 @@ def main(holder: Holder) -> None:
 			power = 1000
 			gui.update += 1
 
+		# The level_update partial-present path (top-panel spectrum/level meter)
+		# re-arms itself every iteration while playing, so it presents at the
+		# loop rate — pace it below like the other continuous visuals.
 		if gui.level_update and not album_scroll_hold and not scroll_hold:
 			power = 500
+			pace_vis = True
 
 		# if gui.vis == 3 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 		# 	power = 500
@@ -53417,12 +54118,23 @@ def main(holder: Holder) -> None:
 		# only bumps power to 400 (below the 500 render threshold), so between the
 		# jittery level_update pulses the loop drops into the ~33fps power-save
 		# throttle and the scroll stutters. Holding power high + update set makes
-		# it render every iteration, so vsync paces it smoothly (the same reason
-		# it looks smooth while a scroll animation is running).
+		# it render every iteration.
 		if gui.spectrogram_in_widget \
 				and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			power = 1000
 			gui.update = max(gui.update, 1)
+			pace_vis = True
+
+		# Pace the continuously animating visuals above by sleeping off whatever
+		# part of the frame budget the present's vsync block didn't absorb: a
+		# no-op while vsync paces the loop, a refresh-rate cap when it silently
+		# stops blocking (driver override, occluded window).
+		if pace_vis:
+			pace_vis = False
+			excess = tauon.frame_pace() - vis_pace_timer.get()
+			if excess > 0:
+				time.sleep(excess)
+		vis_pace_timer.set()
 
 		if prefs.milk and render_heartbeat_timer.get() > 5:
 			# workaround for invis window bug?
@@ -53874,6 +54586,11 @@ def main(holder: Holder) -> None:
 			if tauon.dream_room.active:
 				tauon.dream_room.handle_input()
 
+			# Milkdrop preset chooser: capture then mute the pointer before any
+			# other consumer so clicks never leak through the overlay.
+			if tauon.milk_choose.active:
+				tauon.milk_choose.handle_input()
+
 			# Transfer click register to menus
 			if inp.mouse_click:
 				for instance in Menu.instances:
@@ -54322,6 +55039,7 @@ def main(holder: Holder) -> None:
 
 		if gui.update > 0 and not resize_mode:
 			gui.update = min(gui.update, 2)
+			tauon.gall_ren.new_frame()
 
 			if reset_render:
 				logging.info("Reset render targets!")
@@ -54400,7 +55118,10 @@ def main(holder: Holder) -> None:
 
 			# Custom Layout System: handle edit/interaction input early and consume
 			# the events so the underlying UI doesn't also react. Inert when off.
-			if gui.custom_mode:
+			# MAIN mode only: the mouse it neutralises is restored in
+			# custom.render(), which mini mode never reaches — running here in
+			# mini mode left the mini modes with no mouse input at all.
+			if gui.custom_mode and gui.mode == GuiMode.MAIN:
 				tauon.custom.handle_input()
 
 			# Dream Room: keep muting the mouse every frame (motion-only frames
@@ -54408,6 +55129,9 @@ def main(holder: Holder) -> None:
 			# full-size UI. Click/key exit is handled early, before menu consumers.
 			if tauon.dream_room.active:
 				tauon.dream_room.handle_input()
+
+			if tauon.milk_choose.active:
+				tauon.milk_choose.handle_input()
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
@@ -54433,14 +55157,22 @@ def main(holder: Holder) -> None:
 				tracklist_scroll_top = gui.panelY
 				if gui.artist_info_panel:
 					tracklist_scroll_top += gui.artist_panel_height
+				if gui.set_bar and gui.set_mode:
+					# Match render_tracklist_scrollbar: the bar starts below the
+					# columns header, so its side-drag-blocking hitbox must too.
+					tracklist_scroll_top += gui.set_height
 				tracklist_scrollbar_width = 15 * gui.scale
 				if gui.set_mode and prefs.left_align_album_artist_title:
 					tracklist_scrollbar_width = 11 * gui.scale
-				tracklist_scrollbar_x = gui.playlist_left + gui.plw - tracklist_scrollbar_width - 2 * gui.scale
 				tracklist_scroll_hitbox_width = 28 * gui.scale
-				tracklist_scroll_hitbox_right = tracklist_scrollbar_x + tracklist_scrollbar_width + 1 * gui.scale
+				if prefs.tracklist_scrollbar_left:
+					tracklist_scrollbar_x = gui.playlist_left + 1 * gui.scale
+					tracklist_scroll_hitbox_left = tracklist_scrollbar_x - 1 * gui.scale
+				else:
+					tracklist_scrollbar_x = gui.playlist_left + gui.plw - tracklist_scrollbar_width - 3 * gui.scale
+					tracklist_scroll_hitbox_left = tracklist_scrollbar_x + tracklist_scrollbar_width + 1 * gui.scale - tracklist_scroll_hitbox_width
 				tracklist_scroll_hitbox = (
-					tracklist_scroll_hitbox_right - tracklist_scroll_hitbox_width,
+					tracklist_scroll_hitbox_left,
 					tracklist_scroll_top,
 					tracklist_scroll_hitbox_width,
 					window_size[1] - gui.panelBY - tracklist_scroll_top,
@@ -54659,7 +55391,10 @@ def main(holder: Holder) -> None:
 								gui.album_artist_dict.clear()
 							break
 
-				if gui.show_playlist:
+				# The custom layout owns the complete main canvas.  Its widgets render
+				# their own tracklists, controls and panels below, so do not draw any
+				# of the hidden preset playlist chrome first.
+				if gui.show_playlist and not gui.custom_mode:
 					# playlist hit test
 					if (
 						tauon.coll(
@@ -54694,11 +55429,7 @@ def main(holder: Holder) -> None:
 					if not gui.showcase_mode:
 						showcase.timed_lyrics_edit.continuous = False
 
-					if gui.custom_mode:
-						# The Custom Layout Tracklist widget renders the playlist (into
-						# its segment) and manages gui.pl_update itself.
-						pass
-					elif gui.pl_update > 0:
+					if gui.pl_update > 0:
 						gui.rendered_playlist_position = pctl.playlist_view_position
 
 						gui.pl_update -= 1
@@ -54777,7 +55508,11 @@ def main(holder: Holder) -> None:
 
 					# Right side panel drawing
 
-					if gui.rsp and not prefs.album_mode:
+					# Custom layouts are composited later in the frame and own their
+					# complete canvas.  Drawing the preset right-side panel here is not
+					# visible, but its ArtBox path clears its target every frame, which
+					# breaks MilkDrop's persistent render buffer in a custom widget.
+					if gui.rsp and not prefs.album_mode and not gui.custom_mode:
 						gui.showing_l_panel = False
 						target_track = pctl.show_object()
 						rsp_x = gui.rsp_x
@@ -55076,7 +55811,7 @@ def main(holder: Holder) -> None:
 										)
 
 					# Separation Line Drawing
-					if gui.rsp:
+					if gui.rsp and not gui.custom_mode:
 						# Draw Highlight when mouse over
 						if draw_sep_hl:
 							sep_x = gui.rsp_split_x + 1 * gui.scale
@@ -55158,6 +55893,12 @@ def main(holder: Holder) -> None:
 
 						if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
 							tauon.queue_box.draw(panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
+
+							if prefs.show_playlist_list and gui.pl_box_h:
+								# Separator line at the playlist list / queue seam
+								rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, round(gui.scale * 2))
+								ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
+								ddt.rect(rect, alpha_blend(ColourRGBA(255, 255, 255, 11), colours.queue_background))
 						elif prefs.left_panel_mode == "queue":
 							text = _("Queue is Empty")
 							rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
@@ -55181,7 +55922,8 @@ def main(holder: Holder) -> None:
 				edge_top = top
 				if gui.set_bar and gui.set_mode:
 					edge_top += gui.set_height
-				tauon.edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
+				if not gui.custom_mode:
+					tauon.edge_playlist2.render(gui.playlist_left, edge_top, gui.plw, 25 * gui.scale)
 
 				if not gui.custom_mode:
 					render_tracklist_scrollbar(
@@ -55199,7 +55941,7 @@ def main(holder: Holder) -> None:
 					tauon.top_panel.render()
 
 				# RENDER EXTRA FRAME DOUBLE
-				if colours.lm:
+				if colours.lm and not gui.custom_mode:
 					if gui.lsp and not gui.combo_mode and not gui.compact_artist_list:
 						ddt.rect(
 							(
@@ -55954,6 +56696,8 @@ def main(holder: Holder) -> None:
 				if radiobox.active:
 					radiobox.render()
 
+				tauon.milk_choose.render()
+
 				if gui.message_box:
 					tauon.message_box.render()
 
@@ -56494,6 +57238,17 @@ def main(holder: Holder) -> None:
 			if tauon.console.show:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)
 				ddt.rect(rect, ColourRGBA(0, 0, 0, 245))
+
+				tauon.console.fps.tick()
+				fps_rect = (rect[0] + rect[2] + 8 * gui.scale, rect[1], 70 * gui.scale, 22 * gui.scale)
+				ddt.rect(fps_rect, ColourRGBA(0, 0, 0, 245))
+				ddt.text(
+					(fps_rect[0] + 8 * gui.scale, fps_rect[1] + 4 * gui.scale),
+					f"{int(round(tauon.console.fps.get()))} FPS",
+					ColourRGBA(120, 120, 120, 255),
+					311,
+					bg=ColourRGBA(5, 5, 5, 255),
+				)
 
 				if pctl.playing_state == PlayingState.PLAYING:
 					gui.delay_frame(0.05)
@@ -57187,7 +57942,7 @@ def main(holder: Holder) -> None:
 			try:
 				if bag.should_save_state:
 					logging.info("Auto save playtime")
-					with (user_directory / "star.p").open("wb") as file:
+					with atomic_save(user_directory / "star.p") as file:
 						pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 				else:
 					logging.info("Dev mode, skip auto saving playtime")
@@ -57236,9 +57991,9 @@ def main(holder: Holder) -> None:
 		prefs.reload_state = None
 
 	if bag.should_save_state:
-		with (user_directory / "star.p").open("wb") as file:
+		with atomic_save(user_directory / "star.p") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-		with (user_directory / "album-star.p").open("wb") as file:
+		with atomic_save(user_directory / "album-star.p") as file:
 			pickle.dump(tauon.album_star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 	gui.gallery_positions[pctl.pl_to_id(pctl.active_playlist_viewing)] = gui.album_scroll_px
@@ -57246,9 +58001,9 @@ def main(holder: Holder) -> None:
 
 	date = datetime.date.today()
 	if bag.should_save_state:
-		with (user_directory / "star.p.backup").open("wb") as file:
+		with atomic_save(user_directory / "star.p.backup") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
-		with (user_directory / f"star.p.backup{date.month!s}").open("wb") as file:
+		with atomic_save(user_directory / f"star.p.backup{date.month!s}") as file:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 	if tauon.stream_proxy and tauon.stream_proxy.download_running:
