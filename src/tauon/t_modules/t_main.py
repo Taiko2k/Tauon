@@ -17578,6 +17578,7 @@ class Tauon:
 
 	def rename_playlist(self, index, generator: bool = False) -> None:
 		self.gui.rename_playlist_box = True
+		self.rename_playlist_box.done_callback = None
 		self.rename_playlist_box.edit_generator = False
 		self.rename_playlist_box.playlist_index = index
 		self.rename_playlist_box.x = self.inp.mouse_position[0]
@@ -37419,6 +37420,11 @@ class RenamePlaylistBox:
 		self.playlist_index = 0
 
 		self.edit_generator = False
+		# When set, the box renames something other than a playlist: on commit
+		# the callback receives the entered text (skipped when empty) and the
+		# playlist paths are bypassed. Cleared after every commit and whenever
+		# the box opens for a playlist. Used by the Custom Layout slot rename.
+		self.done_callback: Callable[[str], None] | None = None
 
 	def toggle_edit_gen(self) -> None:
 		self.edit_generator ^= True
@@ -37449,7 +37455,7 @@ class RenamePlaylistBox:
 			self.inp.mouse_click = True
 		self.gui.level_2_click = False
 
-		if self.inp.key_tab_press:
+		if self.inp.key_tab_press and self.done_callback is None:
 			self.toggle_edit_gen()
 
 		text_w = self.ddt.get_text_w(self.rename_text_area.text, 315)
@@ -37677,7 +37683,12 @@ class RenamePlaylistBox:
 				or ((self.inp.mouse_click or self.inp.level_2_right_click) and not self.coll(rect)):
 			self.gui.rename_playlist_box = False
 
-			if self.edit_generator:
+			if self.done_callback is not None:
+				cb = self.done_callback
+				self.done_callback = None
+				if len(self.rename_text_area.text) > 0:
+					cb(self.rename_text_area.text)
+			elif self.edit_generator:
 				pass
 			elif len(self.rename_text_area.text) > 0:
 				if self.gui.radio_view:
@@ -50375,6 +50386,9 @@ def main(holder: Holder) -> None:
 		_cl_sub_t = cl_menu.sub_number - 1
 		for _name in CL_TEMPLATES:
 			cl_menu.add_to_sub(_cl_sub_t, MenuItem(_name, cm._menu_template, args=_name))
+		cl_menu.add(MenuItem(_("Rename Layout…"), cm._menu_rename))
+		cl_menu.add(MenuItem(_("Delete Slot"), cm._menu_delete_slot))
+		cl_menu.add(MenuItem(_("New Slot"), cm._menu_new_slot))
 
 	# Corner layout menu: opened by the corner layout/edit button (drawn after
 	# the panel button by the TopPanel normally; by the custom engine while in
@@ -50421,9 +50435,12 @@ def main(holder: Holder) -> None:
 		_vb_menu_icon.yoff = 1
 		layout_menu.add(MenuItem(_vb_label, _layout_menu_pick(_vb_name), icon=_vb_menu_icon))
 
-	# Custom Layout slots A/B/C: same glyph, per-slot accent. Picking the
-	# already-active slot toggles custom mode off (same as the old single
-	# entry); picking another slot switches to it.
+	# Custom layout slots: one entry per slot (any number), named by the slot
+	# (rename / template loads set names; unnamed empty slots read "Empty
+	# Slot"), same glyph with a cycled per-slot accent. Picking the
+	# already-active slot toggles custom mode off; picking another switches to
+	# it. The slot section is rebuilt (tauon.rebuild_layout_menu) whenever
+	# slots are created, deleted or renamed.
 	def _layout_menu_pick_custom(slot: int) -> Callable[[], None]:
 		def cb() -> None:
 			if gui.custom_mode and tauon.custom.active_slot == slot:
@@ -50441,27 +50458,45 @@ def main(holder: Holder) -> None:
 			return None
 		return cb
 
-	for _slot, _slot_label, _slot_colour in (
-		(0, _("Custom Slot A"), ColourRGBA(170, 225, 90, 255)),
-		(1, _("Custom Slot B"), ColourRGBA(230, 85, 210, 255)),
-		(2, _("Custom Slot C"), ColourRGBA(255, 160, 70, 255)),
-	):
-		_slot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "custom-layout-menu.png", True))
-		_slot_icon.colour = _slot_colour
-		_slot_icon.colour_callback = _layout_menu_custom_colour(_slot, _slot_colour)
-		_slot_icon.xoff = 1
-		_slot_icon.yoff = 1
-		layout_menu.add(MenuItem(_slot_label, _layout_menu_pick_custom(_slot), icon=_slot_icon))
-	layout_menu.br()
-
 	def _edit_mode_deco() -> Decorator:
 		# The menu only opens while not in edit mode (the corner button exits edit
 		# mode directly), so this entry always reads "Enter Edit Mode".
 		text = _("Exit Edit Mode") if gui.custom_edit else _("Enter Edit Mode")
 		return Decorator(colours.menu_text, colours.menu_background, text)
 
-	layout_menu.add(MenuItem(_("Enter Edit Mode"), tauon.custom.toggle_edit, _edit_mode_deco,
-		disable_test=lambda: not gui.custom_mode))
+	_layout_menu_head = list(layout_menu.items)  # the fixed preset entries above
+	_slot_accents = (
+		ColourRGBA(170, 225, 90, 255),   # lime
+		ColourRGBA(230, 85, 210, 255),   # magenta
+		ColourRGBA(255, 160, 70, 255),   # orange
+		ColourRGBA(85, 205, 235, 255),   # cyan
+		ColourRGBA(255, 110, 120, 255),  # coral
+		ColourRGBA(235, 200, 80, 255),   # gold
+		ColourRGBA(165, 105, 255, 255),  # violet
+		ColourRGBA(100, 145, 255, 255),  # blue
+	)
+
+	def rebuild_layout_menu() -> None:
+		layout_menu.items[:] = _layout_menu_head
+		for _slot in range(len(tauon.custom.slots)):
+			_slot_colour = _slot_accents[_slot % len(_slot_accents)]
+			_slot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "custom-layout-menu.png", True))
+			_slot_icon.colour = _slot_colour
+			_slot_icon.colour_callback = _layout_menu_custom_colour(_slot, _slot_colour)
+			_slot_icon.xoff = 1
+			_slot_icon.yoff = 1
+			layout_menu.add(MenuItem(
+				tauon.custom.slot_title(_slot), _layout_menu_pick_custom(_slot), icon=_slot_icon))
+		layout_menu.br()
+		layout_menu.add(MenuItem(_("Enter Edit Mode"), tauon.custom.toggle_edit, _edit_mode_deco,
+			disable_test=lambda: not gui.custom_mode))
+
+	tauon.rebuild_layout_menu = rebuild_layout_menu
+	# Slot names/count are needed for the entries, so load the slots now
+	# (cheap; also restores the last-active slot early).
+	if not tauon.custom._loaded:
+		tauon.custom.load_slots()
+	rebuild_layout_menu()
 
 	# Right-click menu for the Spectrogram widget: colour presets.
 	spectrogram_menu = Menu(tauon, 150)
