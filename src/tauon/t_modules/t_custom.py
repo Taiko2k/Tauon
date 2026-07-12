@@ -3044,6 +3044,13 @@ class CustomLayout:
 		gui = self.gui
 		ddt = self.ddt
 		cx, cy, cw, ch = content_rect(leaf, gui.scale)
+		# Snap to whole pixels up front so the border (drawn below at these exact
+		# coords) and the widget's own draw rect land on the same edges. Widgets
+		# like the Art Box round their rect independently (and blit the visualiser
+		# at those rounded coords); with a fractional cx/cy that rounding pushed the
+		# art/visualiser a pixel past the float border — flush at padding 0, but a
+		# 1px overhang here, a 1px gap once padded.
+		cx, cy, cw, ch = round(cx), round(cy), round(cw), round(ch)
 		widget = leaf.widget
 
 		if widget is None:
