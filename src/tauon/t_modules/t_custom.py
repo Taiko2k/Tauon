@@ -1715,6 +1715,11 @@ class CustomLayout:
 		self.slot_names: list[str | None] = [None]
 		self.active_slot = 0
 		self._loaded = False
+		# Guards save_slots(): only True after load_slots() succeeded (or seeded
+		# a first run). While False, saving would serialise the placeholder
+		# defaults above and destroy the user's file — e.g. exiting the app from
+		# mini mode with custom_mode restored from state.p but never rendered.
+		self._save_ok = False
 
 		# Per-slot columns header-bar config: each slot remembers its own
 		# gui.pl_st (columns) / set_bar / set_mode / pl_st_left. The preset's
@@ -1917,11 +1922,17 @@ class CustomLayout:
 				]
 				self.slot_names = ["Volcano", "Tracks + Gallery (Compact)", None]
 				self.slot_columns = [None, None, None]
+			self._save_ok = True
 		except Exception:
+			# _save_ok stays False: the file may hold layouts we couldn't read,
+			# so refuse to overwrite it for the rest of the session.
 			logging.exception("Failed to load custom layouts")
 		self._refresh_layout_menu()
 
 	def save_slots(self) -> None:
+		if not self._save_ok:
+			logging.warning("Refusing to save custom layouts: current file was never successfully loaded")
+			return
 		try:
 			# Capture the live columns into the active slot so edits made via the
 			# header bar (resize/reorder/hide) are persisted.
