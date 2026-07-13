@@ -23098,6 +23098,7 @@ class AlbumArt:
 			# Check cache; any unit of the same source image at the same size will do
 			for unit in self.image_cache:
 				if unit.source == source[offset][1] and unit.request_size == box:
+					self.touch_cache_unit(unit)
 					self.render(unit, location)
 					if caller_id:
 						self.caller_history[caller_id] = unit
@@ -23180,6 +23181,7 @@ class AlbumArt:
 				if caller_id:
 					held = self.caller_history.get(caller_id)
 					if held is not None and held in self.image_cache:
+						self.touch_cache_unit(held)
 						if held.request_size == box:
 							self.render(held, location)
 						else:
@@ -23573,6 +23575,14 @@ class AlbumArt:
 		except Exception:
 			logging.exception("Error extracting theme colours from image")
 
+	def touch_cache_unit(self, unit: ImageObject) -> None:
+		"""Move a cached unit to the back so eviction stays least-recently-used."""
+		try:
+			self.image_cache.remove(unit)
+		except ValueError:
+			return
+		self.image_cache.append(unit)
+
 	def create_unit_and_render(self, g: BytesIO, o_size: tuple[int, int], image_format: str, index: int, offset: int, box: tuple[int, int], source: list[tuple[int, str]], location: list[int]) -> ImageObject:
 		"""Upload decoded image data as a texture, cache it and render it (main thread only)"""
 		s_image = self.ddt.load_image(g)
@@ -23606,7 +23616,7 @@ class AlbumArt:
 
 		self.render(unit, location)
 
-		if len(self.image_cache) > 10 or (self.prefs.colour_from_image and len(self.image_cache) > 3):
+		if len(self.image_cache) > 3:
 			sdl3.SDL_DestroyTexture(self.image_cache[0].texture)
 			del self.image_cache[0]
 
