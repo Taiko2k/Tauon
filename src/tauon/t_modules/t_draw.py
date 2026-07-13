@@ -151,13 +151,21 @@ class TDraw:
 		self.force_gray: bool = False
 		self.f_dict: dict[float, tuple[str, int, float]] = {}
 		self.font_desc_cache: dict[float, Pango.FontDescription] = {}
-		self.ttc: dict[
+		# Rendered-text textures, in LRU order (oldest first).
+		self.ttc: OrderedDict[
 			tuple[int, str, int, int, int, int, int, int, int, int],
 			list[sdl3.SDL_FRect | sdl3.LP_SDL_Texture | int | bool],
-		] = {}
-		self.ttl: list[tuple[int, str, int, int, int, int, int, int, int, int]] = []
+		] = OrderedDict()
 		self.text_texture_cache_bytes = 0
-		self.max_text_texture_cache_items = 512
+		# The item cap is recomputed every frame (see new_frame) to fit the text
+		# actually on screen rather than a fixed guess. The main UI and the track
+		# list are counted separately because the track list re-renders on its own
+		# cadence (only when gui.pl_update fires); the cap is their sum plus 50%
+		# headroom. max_text_texture_cache_bytes still bounds memory.
+		self._frame_text_draws = 0      # non-track-list cacheable draws this frame
+		self._tracklist_text_draws = 0  # cacheable draws in the last track-list render
+		self._counting_tracklist = False
+		self.max_text_texture_cache_items = 0
 		self.max_text_texture_cache_bytes = 48 * 1024 * 1024
 		self.max_text_texture_cache_item_bytes = 256 * 1024
 		self.text_wh_cache: OrderedDict[tuple[str, int, int, bool], tuple[int, int]] = OrderedDict()
@@ -276,14 +284,32 @@ class TDraw:
 		return x
 
 	def clear_text_cache(self) -> None:
-		for key in self.ttl:
-			so = self.ttc[key]
+		for so in self.ttc.values():
 			sdl3.SDL_DestroyTexture(so[1])
 
 		self.ttc.clear()
-		self.ttl.clear()
 		self.text_texture_cache_bytes = 0
 		self.text_wh_cache.clear()
+
+	def new_frame(self) -> None:
+		"""Resize the text-texture cache to fit the text on screen.
+
+		Called once at the start of each rendered frame. The cap is the number
+		of cacheable text draws in the main UI last frame plus the track list's
+		last render, with 50% headroom, so everything visible stays cached
+		instead of thrashing against a fixed limit. The byte ceiling still
+		bounds memory."""
+		self.max_text_texture_cache_items = int((self._frame_text_draws + self._tracklist_text_draws) * 1.5)
+		self._frame_text_draws = 0
+		self._counting_tracklist = False
+
+	def begin_tracklist_count(self) -> None:
+		"""Start counting track-list text draws separately (see new_frame)."""
+		self._tracklist_text_draws = 0
+		self._counting_tracklist = True
+
+	def end_tracklist_count(self) -> None:
+		self._counting_tracklist = False
 
 	def prime_font(self, name: str, size: float, user_handle: float, offset: int = 0) -> None:
 		self.f_dict[user_handle] = (name + " " + str(size * self.scale), offset, size * self.scale)
@@ -451,15 +477,17 @@ class TDraw:
 			key = (max_x, text, font, colour.r, colour.g, colour.b, colour.a, bg.r, bg.g, bg.b)
 
 		if not real_bg or force_cache:
+			if self._counting_tracklist:
+				self._tracklist_text_draws += 1
+			else:
+				self._frame_text_draws += 1
 			sd = self.ttc.get(key)
 			if sd:
-				sd = self.ttc[key]
 				sd[0].x = round(x)
 				sd[0].y = round(y) - sd[2]
 
 				self.__render_text(sd, x, y, range_top, range_height, align)
-				self.ttl.remove(key)
-				self.ttl.append(key)
+				self.ttc.move_to_end(key)
 
 				if wrap:
 					return sd[0].h
@@ -668,20 +696,16 @@ class TDraw:
 			if cache_texture:
 				pack.append(cache_item_bytes)
 				self.ttc[key] = pack
-				self.ttl.append(key)
 				self.text_texture_cache_bytes += cache_item_bytes
 				texture_cached = True
-				while (
-					len(self.ttl) > self.max_text_texture_cache_items
+				while self.ttc and (
+					len(self.ttc) > self.max_text_texture_cache_items
 					or self.text_texture_cache_bytes > self.max_text_texture_cache_bytes
 				):
-					key = self.ttl[0]
-					so = self.ttc[key]
+					old_key, so = self.ttc.popitem(last=False)
 					sdl3.SDL_DestroyTexture(so[1])
 					if len(so) > 4:
 						self.text_texture_cache_bytes -= so[4]
-					del self.ttc[key]
-					del self.ttl[0]
 		finally:
 			if c is not None and not texture_cached:
 				sdl3.SDL_DestroyTexture(c)

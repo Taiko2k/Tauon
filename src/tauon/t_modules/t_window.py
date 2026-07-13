@@ -226,6 +226,8 @@ class SecondaryWindow:
 		sdl3.SDL_SetRenderTarget(self.renderer, None)
 		sdl3.SDL_SetRenderDrawColor(self.renderer, clear.r, clear.g, clear.b, clear.a)
 		sdl3.SDL_RenderClear(self.renderer)
+		if self.ddt is not None:
+			self.ddt.new_frame()
 
 	def end_frame(self) -> None:
 		sdl3.SDL_RenderPresent(self.renderer)

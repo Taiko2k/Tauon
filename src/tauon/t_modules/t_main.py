@@ -55208,6 +55208,7 @@ def main(holder: Holder) -> None:
 		if gui.update > 0 and not resize_mode:
 			gui.update = min(gui.update, 2)
 			tauon.gall_ren.new_frame()
+			ddt.new_frame()
 
 			if reset_render:
 				logging.info("Reset render targets!")
@@ -55611,7 +55612,9 @@ def main(holder: Holder) -> None:
 							#     combo_pl_render.full_render()
 						else:
 							gui.heart_fields.clear()
+							ddt.begin_tracklist_count()
 							playlist_render.full_render()
+							ddt.end_tracklist_count()
 					elif gui.combo_mode:
 						if gui.radio_view:
 							tauon.radio_view.render()
