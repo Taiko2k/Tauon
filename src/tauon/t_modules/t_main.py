@@ -52520,7 +52520,7 @@ def main(holder: Holder) -> None:
 						selection_highlight_shown = (
 							(gui.album_tab_mode or gallery_menu.active) and info[2] is True
 						)
-						highlight_border = round(2 * gui.scale)
+						highlight_border = round(3 * gui.scale)
 						if info[0] == 1 and not selection_highlight_shown and (
 							pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 						):
@@ -52603,7 +52603,7 @@ def main(holder: Holder) -> None:
 								a = int(255 - 255 * (t - 0.5))
 
 							c = ColourRGBA(c.g, c.b, c.r, a)
-							animate_border = round(5 * gui.scale)
+							animate_border = round(3 * gui.scale)
 							ddt.rect_a(
 								(x - animate_border, y - animate_border),
 								(tauon.album_mode_art_size + animate_border * 2, tauon.album_mode_art_size + animate_border * 2),
