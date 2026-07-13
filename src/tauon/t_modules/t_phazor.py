@@ -999,10 +999,10 @@ def player4(tauon: Tauon) -> None:
 		p = 1
 
 		if track is not None:
-			tg = track.misc.get("replaygain_track_gain")
-			tp = track.misc.get("replaygain_track_peak")
-			ag = track.misc.get("replaygain_album_gain")
-			ap = track.misc.get("replaygain_album_peak")
+			tg = track.replaygain_track_gain
+			tp = track.replaygain_track_peak
+			ag = track.replaygain_album_gain
+			ap = track.replaygain_album_peak
 
 			if prefs.replay_gain > 0:
 				if prefs.replay_gain == 3 and tg is not None and ag is not None:

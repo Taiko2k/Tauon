@@ -1196,9 +1196,9 @@ class StarStore:
 					tags["FMPS_Rating"] = f"{value / 10:.2f}"
 					audio.save()
 
-			tr.misc["FMPS_Rating"] = float(value / 10)
+			tr.FMPS_Rating = float(value / 10)
 			if value == 0:
-				del tr.misc["FMPS_Rating"]
+				tr.FMPS_Rating = None
 
 	def get_by_object(self, track: TrackClass) -> float:
 		return self.db.get(self.object_key(track), StarRecord()).playtime
@@ -1723,8 +1723,37 @@ class ColoursClass:
 
 		# tauon.view_box.off_colour = self.grey(200)
 
+_MISC_TO_FIELD = {
+	"album_artists": "album_artists", "artists": "artists", "artist_sort": "artist_sort",
+	"codec": "codec", "container": "container", "FMPS_Rating": "FMPS_Rating", "genres": "genres",
+	"musicbrainz_albumid": "musicbrainz_albumid", "musicbrainz_artistids": "musicbrainz_artistids",
+	"musicbrainz_recordingid": "musicbrainz_recordingid",
+	"musicbrainz_releasegroupid": "musicbrainz_releasegroupid",
+	"musicbrainz_trackid": "musicbrainz_trackid",
+	"parent-length": "parent_length", "parent-size": "parent_size", "POPM": "POPM",
+	"position": "position", "rdat": "rdat",
+	"replaygain_album_gain": "replaygain_album_gain", "replaygain_album_peak": "replaygain_album_peak",
+	"replaygain_track_gain": "replaygain_track_gain", "replaygain_track_peak": "replaygain_track_peak",
+	"subsonic-folder-id": "subsonic_folder_id", "tidal_album": "tidal_album",
+}
+
 class TrackClass:
 	"""The fundamental object/data structure of a track"""
+
+	__slots__ = [
+		"index", "subtrack", "fullpath", "filename", "parent_folder_path", "parent_folder_name",
+		"file_ext", "size", "modified_time",
+		"is_network", "url_key", "art_url_key",
+		"artist", "album_artist", "title", "composer", "length", "bitrate", "samplerate", "bit_depth",
+		"album", "date", "track_number", "track_total", "start_time", "is_cue", "is_embed_cue",
+		"cue_sheet", "genre", "found", "skips", "comment", "disc_number", "disc_total", "lyrics", "synced",
+		"lfm_friend_likes", "lfm_scrobbles",
+		"album_artists", "artists", "artist_sort", "codec", "container", "FMPS_Rating", "genres",
+		"musicbrainz_albumid", "musicbrainz_artistids", "musicbrainz_recordingid",
+		"musicbrainz_releasegroupid", "musicbrainz_trackid", "parent_length", "parent_size", "POPM",
+		"position", "rdat", "replaygain_album_gain", "replaygain_album_peak",
+		"replaygain_track_gain", "replaygain_track_peak", "subsonic_folder_id", "tidal_album",
+	]
 
 	def __init__(self) -> None:
 		self.index:              int = 0
@@ -1768,7 +1797,30 @@ class TrackClass:
 
 		self.lfm_friend_likes   = set()
 		self.lfm_scrobbles: int = 0
-		self.misc: dict[str, list[str] | str | int | float] = {}
+
+		self.album_artists = None
+		self.artists = None
+		self.artist_sort = None
+		self.codec = None
+		self.container = None
+		self.FMPS_Rating = None
+		self.genres = None
+		self.musicbrainz_albumid = None
+		self.musicbrainz_artistids = None
+		self.musicbrainz_recordingid = None
+		self.musicbrainz_releasegroupid = None
+		self.musicbrainz_trackid = None
+		self.parent_length = None
+		self.parent_size = None
+		self.POPM = None
+		self.position = None
+		self.rdat = None
+		self.replaygain_album_gain = None
+		self.replaygain_album_peak = None
+		self.replaygain_track_gain = None
+		self.replaygain_track_peak = None
+		self.subsonic_folder_id = None
+		self.tidal_album = None
 
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
@@ -3082,7 +3134,7 @@ class PlayerCtl:
 			self.tauon.stream_proxy.stop()
 
 		if self.multi_playlist[self.active_playlist_playing].persist_time_positioning:
-			t = target.misc.get("position", 0)
+			t = (target.position if target.position is not None else 0)
 			if t:
 				self.playing_time = 0
 				self.decode_time = 0
@@ -3470,7 +3522,7 @@ class PlayerCtl:
 		if self.playing_state == PlayingState.PLAYING and self.multi_playlist[self.active_playlist_playing].persist_time_positioning:
 			tr = self.playing_object()
 			if tr:
-				tr.misc["position"] = self.decode_time
+				tr.position = self.decode_time
 
 		if self.playing_state == PlayingState.PLAYING and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
@@ -4775,20 +4827,20 @@ class ListenBrainz:
 		additional: dict[str, str] = {}
 
 		# MusicBrainz Artist IDs
-		if "musicbrainz_artistids" in track_object.misc:
-			additional["artist_mbids"] = track_object.misc["musicbrainz_artistids"]
+		if track_object.musicbrainz_artistids is not None:
+			additional["artist_mbids"] = track_object.musicbrainz_artistids
 
 		# MusicBrainz Release ID
-		if "musicbrainz_albumid" in track_object.misc:
-			additional["release_mbid"] = track_object.misc["musicbrainz_albumid"]
+		if track_object.musicbrainz_albumid is not None:
+			additional["release_mbid"] = track_object.musicbrainz_albumid
 
 		# MusicBrainz Recording ID
-		if "musicbrainz_recordingid" in track_object.misc:
-			additional["recording_mbid"] = track_object.misc["musicbrainz_recordingid"]
+		if track_object.musicbrainz_recordingid is not None:
+			additional["recording_mbid"] = track_object.musicbrainz_recordingid
 
 		# MusicBrainz Track ID
-		if "musicbrainz_trackid" in track_object.misc:
-			additional["track_mbid"] = track_object.misc["musicbrainz_trackid"]
+		if track_object.musicbrainz_trackid is not None:
+			additional["track_mbid"] = track_object.musicbrainz_trackid
 
 		if additional:
 			metadata["additional_info"] = additional
@@ -4827,20 +4879,20 @@ class ListenBrainz:
 		additional: dict[str, str] = {}
 
 		# MusicBrainz Artist IDs
-		if "musicbrainz_artistids" in track_object.misc:
-			additional["artist_mbids"] = track_object.misc["musicbrainz_artistids"]
+		if track_object.musicbrainz_artistids is not None:
+			additional["artist_mbids"] = track_object.musicbrainz_artistids
 
 		# MusicBrainz Release ID
-		if "musicbrainz_albumid" in track_object.misc:
-			additional["release_mbid"] = track_object.misc["musicbrainz_albumid"]
+		if track_object.musicbrainz_albumid is not None:
+			additional["release_mbid"] = track_object.musicbrainz_albumid
 
 		# MusicBrainz Recording ID
-		if "musicbrainz_recordingid" in track_object.misc:
-			additional["recording_mbid"] = track_object.misc["musicbrainz_recordingid"]
+		if track_object.musicbrainz_recordingid is not None:
+			additional["recording_mbid"] = track_object.musicbrainz_recordingid
 
 		# MusicBrainz Track ID
-		if "musicbrainz_trackid" in track_object.misc:
-			additional["track_mbid"] = track_object.misc["musicbrainz_trackid"]
+		if track_object.musicbrainz_trackid is not None:
+			additional["track_mbid"] = track_object.musicbrainz_trackid
 
 		if track_object.track_number:
 			try:
@@ -9481,8 +9533,7 @@ class Tauon:
 		try:
 			self.show_message(_("Looking up MusicBrainz ID..."))
 
-			if "musicbrainz_releasegroupid" not in tr.misc or "musicbrainz_artistids" not in tr.misc or not tr.misc[
-				"musicbrainz_artistids"]:
+			if tr.musicbrainz_releasegroupid is None or tr.musicbrainz_artistids is None or not tr.musicbrainz_artistids:
 
 				logging.info("MusicBrainz ID lookup...")
 
@@ -9500,8 +9551,8 @@ class Tauon:
 				logging.info(f"Found release group ID: {album_id}")
 				logging.info(f"Found artist ID: {artist_id}")
 			else:
-				album_id = tr.misc["musicbrainz_releasegroupid"]
-				artist_id = tr.misc["musicbrainz_artistids"][0]
+				album_id = tr.musicbrainz_releasegroupid
+				artist_id = tr.musicbrainz_artistids[0]
 
 				logging.info(f"Using tagged release group ID: {album_id}")
 				logging.info(f"Using tagged artist ID: {artist_id}")
@@ -10946,7 +10997,7 @@ class Tauon:
 		playlist: list[int] = []
 
 		for item in self.pctl.multi_playlist[pl].playlist_ids:
-			if self.pctl.master_library[item].misc.get("replaygain_track_gain"):
+			if self.pctl.master_library[item].replaygain_track_gain:
 				playlist.append(item)
 
 		if len(playlist) > 0:
@@ -12843,11 +12894,11 @@ class Tauon:
 		for playlist in self.pctl.multi_playlist:
 			for id in playlist.playlist_ids:
 				tr = self.pctl.get_track(id)
-				if "FMPS_Rating" in tr.misc:
-					if tr.misc["FMPS_Rating"] > 1 or tr.misc["FMPS_Rating"] < 0:
-						logging.warning(f"Nonstandard FMPS_RATING in track, skipping {tr.fullpath}: {tr.misc['FMPS_Rating']}")
+				if tr.FMPS_Rating is not None:
+					if tr.FMPS_Rating > 1 or tr.FMPS_Rating < 0:
+						logging.warning(f"Nonstandard FMPS_RATING in track, skipping {tr.fullpath}: {tr.FMPS_Rating}")
 						continue
-					rating = round(tr.misc["FMPS_Rating"] * 10)
+					rating = round(tr.FMPS_Rating * 10)
 					self.star_store.set_rating(tr.index, rating)
 					unique.add(tr.index)
 
@@ -12861,8 +12912,8 @@ class Tauon:
 		for playlist in self.pctl.multi_playlist:
 			for id in playlist.playlist_ids:
 				tr = self.pctl.get_track(id)
-				if "POPM" in tr.misc:
-					rating = tr.misc["POPM"]
+				if tr.POPM is not None:
+					rating = tr.POPM
 					t_rating = 0
 					if rating <= 1:
 						t_rating = 2
@@ -13082,8 +13133,8 @@ class Tauon:
 			return None
 
 		# Embedded MBIDs are the most accurate source, check first
-		release_id = tr.misc.get("musicbrainz_albumid")
-		release_group_id = tr.misc.get("musicbrainz_releasegroupid")
+		release_id = tr.musicbrainz_albumid
+		release_group_id = tr.musicbrainz_releasegroupid
 		had_embedded_mbid = bool(release_id or release_group_id)
 
 		# If no embedded MBIDs, fall back to the name-based cache
@@ -13099,7 +13150,7 @@ class Tauon:
 			try:
 				s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
 				release_group_id = s["release-group-list"][0]["id"]
-				tr.misc["musicbrainz_releasegroupid"] = release_group_id
+				tr.musicbrainz_releasegroupid = release_group_id
 			except Exception:
 				logging.exception("Error lookup mbid for discord")
 				if not had_embedded_mbid:
@@ -13109,7 +13160,7 @@ class Tauon:
 			try:
 				s = musicbrainzngs.search_releases(tr.album, artist=artist, limit=1)
 				release_id = s["release-list"][0]["id"]
-				tr.misc["musicbrainz_albumid"] = release_id
+				tr.musicbrainz_albumid = release_id
 			except Exception:
 				logging.exception("Error lookup mbid for discord")
 				if not had_embedded_mbid:
@@ -15214,7 +15265,7 @@ class Tauon:
 		index = ref.track_id
 		t = self.pctl.master_library.get(index)
 		if t and t.file_ext == "TIDAL":
-			id = t.misc.get("tidal_album")
+			id = t.tidal_album
 			if id:
 				url = "https://listen.tidal.com/album/" + str(id)
 				copy_to_clipboard(url)
@@ -15364,7 +15415,7 @@ class Tauon:
 					genre = t.genre.lower().replace("-", "")
 					genre_nospace = genre.replace(" ", "")
 					filename = t.filename.lower().replace("-", "")
-					sartist = t.misc.get("artist_sort", "").lower()
+					sartist = (t.artist_sort if t.artist_sort is not None else "").lower()
 					stem_raw = os.path.dirname(t.parent_folder_path)
 					stem_search = stem_raw.lower().replace("-", "")
 					lyrics = t.lyrics.lower().replace("-", "") + " " + t.synced.lower().replace("-", "")
@@ -15486,8 +15537,8 @@ class Tauon:
 							years[year] = 1000
 
 				if search_magic_local(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist):
-					if t.misc.get("artists"):
-						for a in t.misc["artists"]:
+					if t.artists:
+						for a in t.artists:
 							a_lower = a.lower()
 							if search_magic_local(s_text, a_lower):
 								value = 1
@@ -17407,11 +17458,11 @@ class Tauon:
 		for i in range(len(self.pctl.default_playlist)):
 			track = self.pctl.get_track(self.pctl.default_playlist[i])
 			if current is False:
-				if artist in (track.artist, track.album_artist) or ("artists" in track.misc and artist in track.misc["artists"]):
+				if artist in (track.artist, track.album_artist) or (track.artists is not None and artist in track.artists):
 					block_starts.append(i)
 					current = True
 			elif (artist not in (track.artist, track.album_artist)) and not (
-					"artists" in track.misc and artist in track.misc["artists"]):
+					track.artists is not None and artist in track.artists):
 				current = False
 
 		if block_starts:
@@ -18071,7 +18122,8 @@ class Tauon:
 				nt.found = False
 				return nt
 
-			nt.misc.clear()
+			for _mk in _MISC_TO_FIELD.values():
+				setattr(nt, _mk, None)
 			nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 
 			if nt.file_ext.lower() in self.formats.GME and self.gme:
@@ -18161,7 +18213,10 @@ class Tauon:
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
 					nt.cue_sheet = audio.cue_sheet
-					nt.misc = audio.misc
+					for _mk, _mv in audio.misc.items():
+						_f = _MISC_TO_FIELD.get(_mk)
+						if _f is not None:
+							setattr(nt, _f, _mv)
 			elif nt.file_ext == "WAV":
 				with Wav(nt.fullpath) as audio:
 					try:
@@ -18209,7 +18264,10 @@ class Tauon:
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
-					nt.misc = audio.misc
+					for _mk, _mv in audio.misc.items():
+						_f = _MISC_TO_FIELD.get(_mk)
+						if _f is not None:
+							setattr(nt, _f, _mv)
 					if nt.bitrate == 0 and nt.length > 0:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 			elif nt.file_ext == "APE":
@@ -18255,7 +18313,10 @@ class Tauon:
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
-					nt.misc = audio.misc
+					for _mk, _mv in audio.misc.items():
+						_f = _MISC_TO_FIELD.get(_mk)
+						if _f is not None:
+							setattr(nt, _f, _mv)
 			elif nt.file_ext in ("WV", "TTA"):
 				with Ape(nt.fullpath) as audio:
 					audio.read()
@@ -18281,7 +18342,10 @@ class Tauon:
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
-					nt.misc = audio.misc
+					for _mk, _mv in audio.misc.items():
+						_f = _MISC_TO_FIELD.get(_mk)
+						if _f is not None:
+							setattr(nt, _f, _mv)
 			else:
 				# Use MUTAGEN
 				try:
@@ -18347,40 +18411,40 @@ class Tauon:
 								nt.disc_total = str(t[1])
 
 						if "----:com.apple.iTunes:replaygain_track_gain" in tags:
-							nt.misc["replaygain_track_gain"] = float(in_get(
+							nt.replaygain_track_gain = float(in_get(
 								"----:com.apple.iTunes:replaygain_track_gain",
 								tags).decode().lower().strip(" db"))
 						if "----:com.apple.iTunes:replaygain_track_peak" in tags:
-							nt.misc["replaygain_track_peak"] = float(in_get(
+							nt.replaygain_track_peak = float(in_get(
 								"----:com.apple.iTunes:replaygain_track_peak",
 								tags).decode())
 						if "----:com.apple.iTunes:replaygain_album_gain" in tags:
-							nt.misc["replaygain_album_gain"] = float(in_get(
+							nt.replaygain_album_gain = float(in_get(
 								"----:com.apple.iTunes:replaygain_album_gain",
 								tags).decode().lower().strip(" db"))
 						if "----:com.apple.iTunes:replaygain_album_peak" in tags:
-							nt.misc["replaygain_album_peak"] = float(in_get(
+							nt.replaygain_album_peak = float(in_get(
 								"----:com.apple.iTunes:replaygain_album_peak",
 								tags).decode())
 
 						if "----:com.apple.iTunes:MusicBrainz Track Id" in tags:
-							nt.misc["musicbrainz_recordingid"] = in_get(
+							nt.musicbrainz_recordingid = in_get(
 								"----:com.apple.iTunes:MusicBrainz Track Id",
 								tags).decode()
 						if "----:com.apple.iTunes:MusicBrainz Release Track Id" in tags:
-							nt.misc["musicbrainz_trackid"] = in_get(
+							nt.musicbrainz_trackid = in_get(
 								"----:com.apple.iTunes:MusicBrainz Release Track Id",
 								tags).decode()
 						if "----:com.apple.iTunes:MusicBrainz Album Id" in tags:
-							nt.misc["musicbrainz_albumid"] = in_get(
+							nt.musicbrainz_albumid = in_get(
 								"----:com.apple.iTunes:MusicBrainz Album Id",
 								tags).decode()
 						if "----:com.apple.iTunes:MusicBrainz Release Group Id" in tags:
-							nt.misc["musicbrainz_releasegroupid"] = in_get(
+							nt.musicbrainz_releasegroupid = in_get(
 								"----:com.apple.iTunes:MusicBrainz Release Group Id",
 								tags).decode()
 						if "----:com.apple.iTunes:MusicBrainz Artist Id" in tags:
-							nt.misc["musicbrainz_artistids"] = [x.decode() for x in
+							nt.musicbrainz_artistids = [x.decode() for x in
 								tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
 
 
@@ -18399,10 +18463,10 @@ class Tauon:
 				for a in artists:
 					a = a.strip()
 					if a:
-						if "artists" not in nt.misc:
-							nt.misc["artists"] = []
-						if a not in nt.misc["artists"]:
-							nt.misc["artists"].append(a)
+						if nt.artists is None:
+							nt.artists = []
+						if a not in nt.artists:
+							nt.artists.append(a)
 			find_synced_lyric_data(nt, reload=True) # populates track.synced if it succeeds
 		except Exception:
 			try:
@@ -18949,7 +19013,7 @@ class Tauon:
 		for v in pctl.force_queue:
 			tauonqueueitem_jar.append(v.__dict__)
 		for v in pctl.master_library.values():
-			trackclass_jar.append(v.__dict__)
+			trackclass_jar.append({k: getattr(v, k) for k in v.__slots__})
 
 		# Columns header-bar config is per custom-slot (stored in
 		# custom_layouts.json). Persist the PRESET columns to state.p — while a
@@ -19364,7 +19428,7 @@ class Tauon:
 
 		for i in range(len(playlist)):
 			tr = self.pctl.master_library[playlist[i]]
-			track_date = tr.misc.get("rdat", tr.date)
+			track_date = (tr.rdat if tr.rdat is not None else tr.date)
 			if i == 0:
 				albums.append(i)
 				current_folder = tr.parent_folder_path
@@ -24737,7 +24801,7 @@ class SearchOverlay:
 				n = name.lower()
 				if tr.artist.lower() == n \
 						or tr.album_artist.lower() == n \
-						or ("artists" in tr.misc and name in tr.misc["artists"]):
+						or (tr.artists is not None and name in tr.artists):
 					if item not in playlist:
 						playlist.append(item)
 
@@ -34691,8 +34755,8 @@ class StandardPlaylist:
 			return str(n_track.disc_number)
 		if name == "Codec":
 			text = n_track.file_ext
-			if text == "JELY" and "container" in n_track.misc:
-				text = n_track.misc["container"]
+			if text == "JELY" and n_track.container is not None:
+				text = n_track.container
 			return text
 		if name == "Lyrics":
 			if n_track.synced:
@@ -34713,8 +34777,8 @@ class StandardPlaylist:
 			if text == "0":
 				text = ""
 			ex = n_track.file_ext
-			if n_track.misc.get("container") is not None:
-				ex = n_track.misc.get("container")
+			if n_track.container is not None:
+				ex = n_track.container
 			if ex in ("FLAC", "WAV", "APE"):
 				text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(n_track.bit_depth)
 			return text
@@ -35901,8 +35965,8 @@ class StandardPlaylist:
 								colour = colours.index_playing
 						elif item[0] == "Codec":
 							text = n_track.file_ext
-							if text == "JELY" and "container" in tr.misc:
-								text = tr.misc["container"]
+							if text == "JELY" and tr.container is not None:
+								text = tr.container
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:
@@ -35949,8 +36013,8 @@ class StandardPlaylist:
 								text = ""
 
 							ex = n_track.file_ext
-							if n_track.misc.get("container") is not None:
-								ex = n_track.misc.get("container")
+							if n_track.container is not None:
+								ex = n_track.container
 							if ex in ("FLAC", "WAV", "APE"):
 								text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(
 									n_track.bit_depth)
@@ -38285,8 +38349,8 @@ class ArtistList:
 
 				track = self.pctl.get_track(item)
 
-				if "artists" in track.misc:
-					artists = track.misc["artists"]
+				if track.artists is not None:
+					artists = track.artists
 				else:
 					if self.prefs.artist_list_prefer_album_artist and track.album_artist:
 						artists = track.album_artist
@@ -38382,7 +38446,7 @@ class ArtistList:
 
 	def locate_artist(self, track: TrackClass) -> None:
 		for i, item in enumerate(self.current_artists):
-			if item in (track.artist, track.album_artist) or ("artists" in track.misc and item in track.misc["artists"]):
+			if item in (track.artist, track.album_artist) or (track.artists is not None and item in track.artists):
 				self.scroll_position = i
 				break
 
@@ -38645,7 +38709,7 @@ class ArtistList:
 				for i in range(len(self.pctl.default_playlist)):
 					track = self.pctl.get_track(self.pctl.default_playlist[i])
 					if track.artist.casefold() == this_artist or track.album_artist.casefold() == this_artist or (
-							"artists" in track.misc and artist in track.misc["artists"]):
+							track.artists is not None and artist in track.artists):
 						# Matching artist
 						if not in_artist:
 							in_artist = True
@@ -38674,12 +38738,12 @@ class ArtistList:
 				# 	track = self.pctl.get_track(self.pctl.default_playlist[i])
 				# 	if current is False:
 				# 		if track.artist == artist or track.album_artist == artist or (
-				# 				'artists' in track.misc and artist in track.misc['artists']):
+				# 				track.artists is not None and artist in track.artists):
 				# 			block_starts.append(i)
 				# 			current = True
 				# 	else:
 				# 		if track.artist != artist and track.album_artist != artist or (
-				# 				'artists' in track.misc and artist in track.misc['artists']):
+				# 				track.artists is not None and artist in track.artists):
 				# 			current = False
 				#
 				# if not block_starts:
@@ -40373,8 +40437,8 @@ class MetaBox:
 			ext = tr.file_ext
 			if ext == "JELY":
 				ext = "Jellyfin"
-				if "container" in tr.misc:
-					ext = tr.misc.get("container", "") + " | Jellyfin"
+				if tr.container is not None:
+					ext = (tr.container if tr.container is not None else "") + " | Jellyfin"
 			if tr.lyrics:
 				ext += ","
 			date = tr.date
@@ -47101,7 +47165,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 		for frame in frames:
 			if frame.rating:
 				rating = frame.rating
-				nt.misc["POPM"] = frame.rating
+				nt.POPM = frame.rating
 
 	if len(nt.comment) > 4 and nt.comment[2] == "+":
 		nt.comment = ""
@@ -47126,7 +47190,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 			for t in frame.text:
 				d.append(t)
 		if len(d) > 1:
-			nt.misc["artists"] = d
+			nt.artists = d
 			nt.artist = "; ".join(d)
 
 	frames = tag.getall("TCON")
@@ -47136,7 +47200,7 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 			for t in frame.text:
 				d.append(t)
 		if len(d) > 1:
-			nt.misc["genres"] = d
+			nt.genres = d
 		nt.genre = " / ".join(d)
 
 	track_no = natural_get(tags, None, "TRCK", None)
@@ -47165,45 +47229,45 @@ def use_id3(tags: ID3, nt: TrackClass) -> None:
 	if tx:
 		for item in tx:
 			if item.owner == "http://musicbrainz.org":
-				nt.misc["musicbrainz_recordingid"] = item.data.decode()
+				nt.musicbrainz_recordingid = item.data.decode()
 
 	tx = tags.getall("TSOP")
 	if tx:
-		nt.misc["artist_sort"] = tx[0].text[0]
+		nt.artist_sort = tx[0].text[0]
 
 	tx = tags.getall("TXXX")
 	if tx:
 		for item in tx:
 			if item.desc == "MusicBrainz Release Track Id":
-				nt.misc["musicbrainz_trackid"] = item.text[0]
+				nt.musicbrainz_trackid = item.text[0]
 			if item.desc == "MusicBrainz Album Id":
-				nt.misc["musicbrainz_albumid"] = item.text[0]
+				nt.musicbrainz_albumid = item.text[0]
 			if item.desc == "MusicBrainz Release Group Id":
-				nt.misc["musicbrainz_releasegroupid"] = item.text[0]
+				nt.musicbrainz_releasegroupid = item.text[0]
 			if item.desc == "MusicBrainz Artist Id":
 				artist_id_list: list[str] = []
 				for uuid in item.text:
 					split_uuids = uuid.split("/") # UUIDs can be split by a special character
 					for split_uuid in split_uuids:
 						artist_id_list.append(split_uuid)
-				nt.misc["musicbrainz_artistids"] = artist_id_list
+				nt.musicbrainz_artistids = artist_id_list
 
 			try:
 				desc = item.desc.lower()
 				if desc == "replaygain_track_gain":
-					nt.misc["replaygain_track_gain"] = float(item.text[0].strip(" dB"))
+					nt.replaygain_track_gain = float(item.text[0].strip(" dB"))
 				if desc == "replaygain_track_peak":
-					nt.misc["replaygain_track_peak"] = float(item.text[0])
+					nt.replaygain_track_peak = float(item.text[0])
 				if desc == "replaygain_album_gain":
-					nt.misc["replaygain_album_gain"] = float(item.text[0].strip(" dB"))
+					nt.replaygain_album_gain = float(item.text[0].strip(" dB"))
 				if desc == "replaygain_album_peak":
-					nt.misc["replaygain_album_peak"] = float(item.text[0])
+					nt.replaygain_album_peak = float(item.text[0])
 			except Exception:
 				logging.exception("Tag Scan: Read Replay Gain MP3 error")
 				logging.debug(nt.fullpath)
 
 			if item.desc == "FMPS_RATING":
-				nt.misc["FMPS_Rating"] = float(item.text[0])
+				nt.FMPS_Rating = float(item.text[0])
 
 def encode_track_name(track_object: TrackClass) -> str:
 	if track_object.is_cue or not track_object.filename:
@@ -47780,7 +47844,7 @@ def worker1(tauon: Tauon) -> None:
 					nt.track_number = int(line.strip())
 					if nt.track_number == 1:
 						nt.size = os.path.getsize(nt.fullpath)
-					nt.misc["parent-size"] = os.path.getsize(nt.fullpath)
+					nt.parent_size = os.path.getsize(nt.fullpath)
 
 					while True:
 						i += 1
@@ -47828,7 +47892,7 @@ def worker1(tauon: Tauon) -> None:
 					track.samplerate = end_track.samplerate
 					track.bitrate = end_track.bitrate
 					track.bit_depth = end_track.bit_depth
-					track.misc["parent-length"] = end_track.length
+					track.parent_length = end_track.length
 					last_end = track.start_time
 
 					# inherit missing metadata
@@ -49757,8 +49821,18 @@ def main(holder: Holder) -> None:
 				trackclass_jar = save[162]
 				for d in trackclass_jar:
 					nt = TrackClass()
-					nt.__dict__.update(d)
-					bag.master_library[d["index"]] = nt
+					old_misc = d.pop("misc", None)
+					for k, v in d.items():
+						try:
+							setattr(nt, k, v)
+						except AttributeError:
+							pass
+					if old_misc:
+						for mk, mv in old_misc.items():
+							field = _MISC_TO_FIELD.get(mk)
+							if field is not None:
+								setattr(nt, field, mv)
+					bag.master_library[nt.index] = nt
 			if len(save) > 163 and save[163] is not None:
 				prefs.premium = save[163]
 			if len(save) > 164 and save[164] is not None:
@@ -56270,8 +56344,8 @@ def main(holder: Holder) -> None:
 
 						if tc.file_ext in ("JELY", "TIDAL"):
 							e_colour = ColourRGBA(130, 130, 130, 255)
-							if "container" in tc.misc:
-								line = tc.misc["container"].upper()
+							if tc.container is not None:
+								line = tc.container.upper()
 								if line in tauon.formats.colours:
 									e_colour = tauon.formats.colours[line]
 
@@ -56473,10 +56547,10 @@ def main(holder: Holder) -> None:
 
 						y1 += int(15 * gui.scale)
 						# logging.info(tc.size)
-						if tc.is_cue and tc.misc.get("parent-length", 0) > 0 and tc.misc.get("parent-size", 0) > 0:
+						if tc.is_cue and (tc.parent_length if tc.parent_length is not None else 0) > 0 and (tc.parent_size if tc.parent_size is not None else 0) > 0:
 							ddt.text((x1, y1), _("File size"), key_colour_off, 212, max_w=70 * gui.scale)
-							estimate = (tc.length / tc.misc.get("parent-length")) * tc.misc.get("parent-size")
-							line = f"≈{get_filesize_string(estimate, rounding=0)} / {get_filesize_string(tc.misc.get('parent-size'))}"
+							estimate = (tc.length / tc.parent_length) * tc.parent_size
+							line = f"≈{get_filesize_string(estimate, rounding=0)} / {get_filesize_string(tc.parent_size)}"
 							ddt.text((x2, y1), line, value_colour, value_font)
 
 						elif tc.size != 0:
@@ -56954,7 +57028,7 @@ def main(holder: Holder) -> None:
 											tr.composer,
 											tr.comment,
 											tr.album_artist,
-											tr.misc.get("artist_sort", ""),
+											(tr.artist_sort if tr.artist_sort is not None else ""),
 										]
 									).lower()
 
@@ -57011,7 +57085,7 @@ def main(holder: Holder) -> None:
 										tr.composer,
 										tr.comment,
 										tr.album_artist,
-										tr.misc.get("artist_sort", ""),
+										(tr.artist_sort if tr.artist_sort is not None else ""),
 									]
 								).lower()
 

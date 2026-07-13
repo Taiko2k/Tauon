@@ -311,7 +311,7 @@ class SubsonicService:
 		return True
 
 	def set_album_rating(self, track_object: TrackClass, rating: int) -> bool:
-		id = track_object.misc.get("subsonic-folder-id")
+		id = track_object.subsonic_folder_id
 		if id is not None:
 			try:
 				a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
@@ -368,7 +368,7 @@ class SubsonicService:
 		return True
 
 	def star_album(self, track_object: TrackClass) -> bool:
-		id = track_object.misc.get("subsonic-folder-id")
+		id = track_object.subsonic_folder_id
 		if id is not None:
 			try:
 				a = self.r("star", p={"id": id})
@@ -509,7 +509,7 @@ class SubsonicService:
 					if not genre_names:
 						logging.warning(f"Failed to parse genres from subsonic, got: {genres}")
 					if len(genres) > 1:
-						nt.misc["genres"] = genre_names
+						nt.genres = genre_names
 					nt.genre = " / ".join(genre_names)
 
 				nt.file_ext = "SUB"
@@ -520,7 +520,7 @@ class SubsonicService:
 				if "coverArt" in song:
 					nt.art_url_key = song["coverArt"]
 				nt.url_key = song["id"]
-				nt.misc["subsonic-folder-id"] = folder_id
+				nt.subsonic_folder_id = folder_id
 				nt.is_network = True
 
 				rating = 0

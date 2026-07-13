@@ -156,7 +156,7 @@ class Tidal:
 		logging.info(
 			f"track:{track.id}, (quality:{stream.audio_quality}, codec:{manifest.get_codecs()}, {audio_resolution[0]}bit/{audio_resolution[1]}Hz)"
 		)
-		tr.misc["container"] = manifest.get_codecs().upper()
+		tr.container = manifest.get_codecs().upper()
 		tr.samplerate = str(audio_resolution[1])
 		tr.bit_depth = audio_resolution[0]
 		if stream.is_mpd:
@@ -193,7 +193,7 @@ class Tidal:
 		nt.album = track.album.name
 		nt.length = track.duration
 		nt.album_artist = track.album.artist.name
-		nt.misc["tidal_album"] = track.album.id
+		nt.tidal_album = track.album.id
 
 		parent = (nt.album_artist + " - " + nt.album).strip("- ")
 		nt.parent_folder_path = parent

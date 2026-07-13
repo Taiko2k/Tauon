@@ -1010,8 +1010,8 @@ def filename_to_metadata(filename: str) -> tuple[str, str]:
 
 def get_artist_strip_feat(track_object: TrackClass) -> str:
 	artist_name = track_object.artist  # .lower()
-	if track_object.misc.get("artists"):
-		artist_name = track_object.misc["artists"][0]
+	if track_object.artists:
+		artist_name = track_object.artists[0]
 	elif track_object.album_artist:
 		if (
 			"feat." in artist_name
@@ -1051,8 +1051,8 @@ def get_first_artist(artist: str) -> str:
 
 
 def get_split_artists(track: TrackClass) -> list[str]:
-	if "artists" in track.misc:
-		return track.misc["artists"]
+	if track.artists is not None:
+		return track.artists
 	artist = track.artist.split("feat")[0].strip()
 	return re.split(r"; |, |& ", artist)
 
@@ -1181,14 +1181,14 @@ def shooter(func: Callable[..., None], args: tuple = ()) -> None:
 
 
 def d_date_display(track: TrackClass) -> str:
-	if "rdat" in track.misc and str(track.date) != track.misc["rdat"]:
-		return str(track.date) + " → " + track.misc["rdat"]
+	if track.rdat is not None and str(track.date) != track.rdat:
+		return str(track.date) + " → " + track.rdat
 	return str(track.date)
 
 
 def d_date_display2(track: TrackClass) -> str:
-	if "rdat" in track.misc and str(get_year_from_string(track.date)) != get_year_from_string(track.misc["rdat"]):
-		return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.misc["rdat"])
+	if track.rdat is not None and str(get_year_from_string(track.date)) != get_year_from_string(track.rdat):
+		return str(get_year_from_string(track.date)) + " → " + get_year_from_string(track.rdat)
 	return str(get_year_from_string(track.date))
 
 
@@ -1204,7 +1204,7 @@ def process_odat(nt: TrackFile, odat: str) -> None:
 		if not nt.date:
 			nt.date = odat
 		else:
-			nt.misc["rdat"] = nt.date
+			nt.rdat = nt.date
 			nt.date = odat
 
 

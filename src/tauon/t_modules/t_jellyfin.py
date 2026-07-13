@@ -531,11 +531,11 @@ class Jellyfin:
 				artists = track.get("Artists", [])
 				nt.artist = "; ".join(artists)
 				if len(artists) > 1:
-					nt.misc["artists"] = artists
+					nt.artists = artists
 				nt.album_artist = track.get("AlbumArtist", "")
 				replay_gain = track.get("NormalizationGain", "")
 				if replay_gain:
-					nt.misc["replaygain_track_gain"] = float(replay_gain)
+					nt.replaygain_track_gain = float(replay_gain)
 				nt.title = track.get("Name", "")
 				nt.composer = "; ".join(d["Name"] for d in track.get("People", []) if d["Type"] == "Composer")
 				nt.length = track.get("RunTimeTicks", 0) / 10000000  # needs to be in seconds
@@ -553,13 +553,13 @@ class Jellyfin:
 							nt.samplerate = round(d.get("SampleRate", 0))
 							nt.bit_depth = d.get("BitDepth", 0)
 							nt.comment = d.get("Comment", "")
-							nt.misc["codec"] = d.get("Codec", "")
+							nt.codec = d.get("Codec", "")
 							break
 				except Exception:
 					logging.exception("Jelly exception getting audio mediastream")
 
 				try:
-					nt.misc["container"] = track.get("MediaSources")[0].get("Container", "").upper()
+					nt.container = track.get("MediaSources")[0].get("Container", "").upper()
 				except Exception:
 					logging.exception("Jelly exception get container")
 
