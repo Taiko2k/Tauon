@@ -142,7 +142,12 @@ class TDraw:
 
 		self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
 		self.context = cairo.Context(self.surf)
+		# self.layout is used for measurement (get_text_wh); self.draw_layout is a
+		# persistent layout for the render path, re-targeted per draw with
+		# PangoCairo.update_layout instead of allocating a fresh layout on every
+		# cache miss (avoids GObject alloc + GC churn while scrolling).
 		self.layout = PangoCairo.create_layout(self.context)
+		self.draw_layout = PangoCairo.create_layout(self.context)
 
 		self.text_background_colour = ColourRGBA(0, 0, 0, 255)
 		self.pretty_rect: tuple[int, int, int, int] | None = None
@@ -576,7 +581,8 @@ class TDraw:
 				options.set_antialias(cairo.ANTIALIAS_SUBPIXEL)
 				context.set_font_options(options)
 
-			layout = PangoCairo.create_layout(context)
+			layout = self.draw_layout
+			PangoCairo.update_layout(context, layout)
 			layout.set_auto_dir(False)
 
 			if max_y is not None:
