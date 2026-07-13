@@ -1822,6 +1822,35 @@ class TrackClass:
 		self.subsonic_folder_id = None
 		self.tidal_album = None
 
+# Low-cardinality string fields that repeat heavily across a library (many
+# tracks share the same album/artist/folder/etc). Interning collapses the
+# duplicates onto shared objects to save memory. High-cardinality fields
+# (title, fullpath, filename, mbids, lyrics...) are deliberately excluded:
+# they barely dedup, so interning them would just waste effort.
+_INTERN_FIELDS = (
+	"parent_folder_path", "parent_folder_name", "file_ext",
+	"artist", "album_artist", "album", "artist_sort", "composer",
+	"genre", "date", "codec", "container",
+	"track_number", "track_total", "disc_number", "disc_total",
+)
+# List-valued fields whose repeated string elements are worth deduplicating.
+_INTERN_LIST_FIELDS = ("artists", "album_artists", "genres")
+
+def intern_track_strings(tr: TrackClass) -> None:
+	"""Deduplicate repeated low-cardinality string fields via sys.intern.
+
+	Interned strings are reclaimed once no track references them, so this is
+	safe to run on every track load without leaking as the library changes.
+	"""
+	for field in _INTERN_FIELDS:
+		value = getattr(tr, field)
+		if type(value) is str and value:
+			setattr(tr, field, sys.intern(value))
+	for field in _INTERN_LIST_FIELDS:
+		value = getattr(tr, field)
+		if value:
+			setattr(tr, field, [sys.intern(v) if type(v) is str else v for v in value])
+
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
 
@@ -18477,6 +18506,7 @@ class Tauon:
 			except Exception:
 				logging.exception(f"Error printing error. Non utf8 not allowed: {nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')}")
 			return nt
+		intern_track_strings(nt)
 		if self.pctl.track_queue and nt.index == self.pctl.track_queue[self.pctl.queue_step]:
 			self.lyrics_ren_mini.to_reload = True
 		return nt
@@ -49228,7 +49258,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 78
+	latest_db_version: float = 79
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -49450,6 +49480,9 @@ def main(holder: Holder) -> None:
 	search_dia_string_cache      = {}
 	state_path1 = user_directory / "state.p"
 	state_path2 = user_directory / "state.p.backup"
+	# Legacy TrackClass.misc dicts pulled from pre-v79 saves, keyed by track
+	# index. Distributed into the new __slots__ fields by the v79 migration.
+	legacy_track_misc: dict[int, dict] = {}
 	for t in range(2):
 		#	 os.path.getsize(user_directory / "state.p") < 100
 		try:
@@ -49819,19 +49852,20 @@ def main(holder: Holder) -> None:
 				prefs.artist_list_style = save[161]
 			if len(save) > 162 and save[162] is not None:
 				trackclass_jar = save[162]
+				collect_legacy_misc = 0 < db_version <= 78  # noqa: PLR2004
 				for d in trackclass_jar:
 					nt = TrackClass()
-					old_misc = d.pop("misc", None)
 					for k, v in d.items():
 						try:
 							setattr(nt, k, v)
 						except AttributeError:
 							pass
-					if old_misc:
-						for mk, mv in old_misc.items():
-							field = _MISC_TO_FIELD.get(mk)
-							if field is not None:
-								setattr(nt, field, mv)
+					# Pre-v79 saves stored extended metadata in a "misc" dict,
+					# which is no longer a TrackClass attribute. Hold onto it so
+					# the v79 migration can spread it into the new fields.
+					if collect_legacy_misc and "misc" in d:
+						legacy_track_misc[nt.index] = d["misc"]
+					intern_track_strings(nt)
 					bag.master_library[nt.index] = nt
 			if len(save) > 163 and save[163] is not None:
 				prefs.premium = save[163]
@@ -50277,6 +50311,7 @@ def main(holder: Holder) -> None:
 				tauon=tauon,
 				db_version=db_version,
 				master_library=pctl.master_library,
+				legacy_track_misc=legacy_track_misc,
 				install_mode=install_mode,
 				multi_playlist=pctl.multi_playlist,
 				install_directory=install_directory,

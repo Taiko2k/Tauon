@@ -48,6 +48,7 @@ def database_migrate(
 	tauon: Tauon,
 	db_version: float,
 	master_library: dict[int, TrackClass],
+	legacy_track_misc: dict[int, dict],
 	install_mode: bool,
 	multi_playlist: list[str | int | bool] | list[TauonPlaylist],
 	a_cache_dir: str,
@@ -266,5 +267,21 @@ def database_migrate(
 					gui.keymaps.load()
 			except Exception:
 				logging.exception("Failed to update MB4/MB5 bindings in input.txt")
+
+	if db_version <= 78:  # noqa: PLR2004
+		logging.info("Updating database to version 79")
+		# Extended track metadata used to live in a catch-all TrackClass.misc
+		# dict; it now has dedicated __slots__ fields. Spread any misc data
+		# preserved from the old save format into those fields.
+		if legacy_track_misc:
+			from tauon.t_modules.t_main import _MISC_TO_FIELD  # noqa: PLC0415
+			for index, misc in legacy_track_misc.items():
+				track = master_library.get(index)
+				if track is None:
+					continue
+				for mk, mv in misc.items():
+					field = _MISC_TO_FIELD.get(mk)
+					if field is not None:
+						setattr(track, field, mv)
 
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
