@@ -52529,9 +52529,10 @@ def main(holder: Holder) -> None:
 								a = int(255 - 255 * (t - 0.5))
 
 							c = ColourRGBA(c.g, c.b, c.r, a)
+							animate_border = round(5 * gui.scale)
 							ddt.rect_a(
-								(x - 5, y - 5),
-								(tauon.album_mode_art_size + 10, tauon.album_mode_art_size + 10),
+								(x - animate_border, y - animate_border),
+								(tauon.album_mode_art_size + animate_border * 2, tauon.album_mode_art_size + animate_border * 2),
 								c,
 							)  # [150, 80, 222, 255]
 
