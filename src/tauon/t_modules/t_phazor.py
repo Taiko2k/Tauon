@@ -1131,7 +1131,8 @@ def player4(tauon: Tauon) -> None:
 	p_sync_timer = Timer()
 
 	def track(end: bool = True) -> None:
-		run_vis()
+		# run_vis() is now driven once per loop iteration in the main player
+		# loop (before command processing), so commands can't starve it.
 
 		if end and loaded_track and loaded_track.is_network and pctl.playing_time < 7 and aud.get_result() == 2:
 			logging.info("STALL, RETRY")
@@ -1388,6 +1389,16 @@ def player4(tauon: Tauon) -> None:
 
 			time.sleep(0.1)
 			continue
+
+		# Feed the visualisers once per loop iteration, independent of command
+		# handling. run_vis() used to run only in the play branch below (via
+		# track() / the URL_STREAM path), so a burst of commands would keep
+		# taking the command branch and starve it — most visibly, holding the
+		# volume bar fires a "volume" command every frame, which froze the
+		# spectrogram scroll. Chrome playback already returned above, so this
+		# only covers local output.
+		if tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM):
+			run_vis()
 
 		# Command processing
 		if pctl.playerCommandReady:
@@ -2052,7 +2063,7 @@ def player4(tauon: Tauon) -> None:
 		else:
 			if tauon.player4_state == PlayerState.URL_STREAM:
 				pctl.radio_progress()
-				run_vis()
+				# run_vis() runs once per iteration at the top of the loop now.
 
 				add_time = player_timer.hit()
 				pctl.playing_time += add_time
