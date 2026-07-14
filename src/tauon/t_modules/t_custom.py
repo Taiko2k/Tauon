@@ -180,11 +180,6 @@ class MilkDropWidget(Widget):
 
 		gui.main_art_box = rect  # Milky renders at this singleton rect
 
-		# No background fill: the segment stays fully transparent beneath the
-		# visualiser, including through the keyed pixels with Cut Out. Album
-		# art under the vis is the Art Box widget's job; this dedicated widget
-		# never draws it.
-
 		show_vis = False
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
 			# Same warm-up dance as the ArtBox path: burn the album art into the
@@ -199,6 +194,13 @@ class MilkDropWidget(Widget):
 				show_vis = True
 			if tauon.pctl.playing_state != PlayingState.PAUSED:
 				gui.delay_frame(tauon.frame_pace())
+
+		if not show_vis:
+			# Nothing playing yet (fresh launch), stopped, or still warming up: the
+			# visualiser isn't covering the segment, so fill an opaque background
+			# rather than leave it transparent. While the vis is live we skip this
+			# so the frame — and its keyed-transparent pixels under Cut Out — show.
+			ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 
 		if hover:
 			if inp.mouse_click and inp.key_focused == 0 and show_vis:
