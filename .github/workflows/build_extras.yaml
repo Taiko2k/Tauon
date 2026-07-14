@@ -52,7 +52,7 @@ jobs:
       #    Write-Output "##vso[task.setvariable variable=LibrespotPath]$BinPath"
 
       - name: Upload librespot.exe artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: librespot-windows
           path: C:\Users\runneradmin\.cargo\bin\librespot.exe # ${{ env.LibrespotPath }}
@@ -91,7 +91,7 @@ jobs:
           cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
 
       - name: Upload lrclib-solver.exe artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lrclib-solver-windows
           path: src/lrclib-solver/target/release/lrclib-solver.exe
@@ -159,7 +159,7 @@ jobs:
 
       # Upload TaskbarLib.tlb as artifact
       - name: Upload TaskbarLib.tlb artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TaskbarLib-tlb
           path: extra\TaskbarLib.tlb
@@ -209,7 +209,7 @@ jobs:
           Write-Host "Found: $($dll.FullName)"
 
       - name: Upload TauonSMTC.dll artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TauonSMTC-dll
           path: ${{ env.TAUON_SMTC_DLL }}
@@ -234,7 +234,7 @@ jobs:
           cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
 
       - name: Upload lrclib-solver artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lrclib-solver-linux
           path: src/lrclib-solver/target/release/lrclib-solver
@@ -259,7 +259,7 @@ jobs:
           cargo build --release --manifest-path src/lrclib-solver/Cargo.toml --bin lrclib-solver
 
       - name: Upload lrclib-solver artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lrclib-solver-macos
           path: src/lrclib-solver/target/release/lrclib-solver
