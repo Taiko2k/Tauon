@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
@@ -64,7 +64,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up MSYS2 MinGW-W64
         uses: msys2/setup-msys2@v2
@@ -103,7 +103,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Locate Windows SDK
         shell: pwsh
@@ -171,7 +171,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Locate MSBuild via vswhere and add to PATH
         shell: pwsh
@@ -221,7 +221,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -246,7 +246,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
