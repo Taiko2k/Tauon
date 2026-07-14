@@ -44025,6 +44025,21 @@ SCROLL_PHYSICS_FIXED_DAMPING = SCROLL_PHYSICS_DAMPING ** (SCROLL_PHYSICS_FIXED_T
 SCROLL_PHYSICS_MAX_VELOCITY = 2100.0
 SCROLL_PHYSICS_MIN_VELOCITY = 8.0
 
+TOUCH_LOGIC_TAP_VS_LONG_NS = 300 * 1000000
+TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK = 150
+
+@dataclass
+class TouchInputTracker:
+	is_down: bool = False
+	start_position_px: tuple[int, int] = (0, 0)
+	time_started_ns: int = 0
+	duration_so_far_ns: int = 0
+	is_scroll: bool = False
+	is_rightclick: bool = False
+	is_dragndrop: bool = False
+	has_moved: bool = False
+	is_gesture: bool = False
+	was_gesture: bool = False
 
 @dataclass
 class ScrollMotionState:
@@ -50082,6 +50097,8 @@ def main(holder: Holder) -> None:
 	if prefs.use_gamepad:
 		sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
+	active_touch: TouchInputTracker = TouchInputTracker()
+
 	if bag.windows and win_ver >= 10:
 		#logging.info(sss.info.win.window)
 		SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
@@ -54094,34 +54111,100 @@ def main(holder: Holder) -> None:
 				inp.trackpad_scroll_mode_until = 0.0
 
 				gui.update += 1
+			# this is where tap and scroll and rightclick and dragndrop happens
+			# use active_touch to track because i cant be bothered figuring out the systems we already have lol
 			elif event.type == sdl3.SDL_EVENT_FINGER_DOWN:
 				if inp.active_touch_id is None:
 					inp.active_touch_id = event.tfinger.fingerID
 				if event.tfinger.fingerID == inp.active_touch_id:
+					inp.mouse_click = False
+					inp.mouse_down = False
+					# those two have to be canceled until we're sure we want them
+					inp.mouse_up = False
 					inp.k_input = True
 					inp.touch_active = True
+					active_touch.is_down = True
+					active_touch.time_started_ns = time.monotonic_ns()
 					inp.touch_released = False
 					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
 					gui.update += 1
+				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
+					active_touch.is_gesture = True
 			elif event.type == sdl3.SDL_EVENT_FINGER_MOTION:
+				# i assume here that nobody can keep their finger totally steady
+				# if i'm wrong, touch states will need to be evaluated in a separate section
 				if inp.active_touch_id is None:
 					inp.active_touch_id = event.tfinger.fingerID
 				if event.tfinger.fingerID == inp.active_touch_id:
-					inp.k_input = True
-					inp.touch_active = True
-					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
-					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
-					inp.touch_scroll_y += event.tfinger.dy * window_size[1]
-					gui.update += 1
+					if active_touch.is_gesture:
+						pass
+					else:
+						inp.k_input = True
+						inp.touch_active = True
+						inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+						inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+						active_touch.duration_so_far_ns = time.monotonic_ns() - active_touch.time_started_ns
+
+						if active_touch.is_scroll:
+							# regular scrolling
+							inp.touch_scroll_y += event.tfinger.dy * window_size[1]
+							mouse_moved = True
+							gui.pl_update += 1
+
+						elif active_touch.has_moved or abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
+							# if touch position has MOVED,
+							active_touch.has_moved = True
+							if active_touch.duration_so_far_ns < TOUCH_LOGIC_TAP_VS_LONG_NS:
+								# it could be a scroll input
+								active_touch.is_scroll = True
+								inp.touch_scroll_y += inp.touch_position[1] - active_touch.start_position_px[1]
+								mouse_moved = True
+							elif active_touch.is_rightclick:
+								# or it could be switching from right click to dragndrop
+								active_touch.is_rightclick = False
+								active_touch.is_dragndrop = True
+								gui.set_drag_source()
+								inp.mouse_down = True
+								inp.mouse_up = False
+								inp.mouse_click = True
+								mouse_moved = True
+
+						elif active_touch.duration_so_far_ns > TOUCH_LOGIC_TAP_VS_LONG_NS and not (active_touch.is_rightclick or active_touch.is_dragndrop):
+							# if it HASN'T moved in the given time, it's at least a rightclick
+							active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
+							active_touch.is_rightclick = True
+
+						gui.update += 1
 			elif event.type in (sdl3.SDL_EVENT_FINGER_UP, sdl3.SDL_EVENT_FINGER_CANCELED):
 				if event.tfinger.fingerID == inp.active_touch_id:
 					inp.k_input = True
 					inp.touch_active = False
-					inp.touch_released = True
+					inp.mouse_up = True
 					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
 					inp.active_touch_id = None
+					if not active_touch.is_gesture:
+						if not active_touch.was_gesture:
+							if active_touch.is_rightclick:
+								inp.right_click = True
+							elif active_touch.is_dragndrop:
+								inp.mouse_down = False
+							elif active_touch.is_scroll:
+								inp.touch_released = True
+							else:
+								inp.mouse_click = True
+						active_touch = TouchInputTracker()
+					else:
+						if inp.touch_position[0] - active_touch.start_position_px[0] > TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK:
+							pctl.advance()
+						elif inp.touch_position[0] - active_touch.start_position_px[0] < -TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK:
+							pctl.back()
+						else:
+							pctl.play_pause()
+						active_touch = TouchInputTracker()
+						active_touch.was_gesture = True
 					gui.update += 1
 			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST:
 				power += 5
@@ -54342,7 +54425,7 @@ def main(holder: Holder) -> None:
 		if prefs.art_bg and tauon.core_timer.get() < 3:
 			power = 1000
 
-		if inp.mouse_down and mouse_moved:
+		if (inp.mouse_down or active_touch.is_scroll or active_touch.is_dragndrop) and mouse_moved:
 			power = 1000
 			if gui.update_on_drag:
 				gui.update += 1
