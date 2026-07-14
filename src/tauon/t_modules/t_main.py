@@ -42070,6 +42070,7 @@ class Milky:
 		self.loaded_size = None
 		self.fps = FPSCounter(window_size=10, min_update_interval=0.1, max_frame_time=0.5)
 		self.cut_out_blend_mode = None  # composed lazily on first use (shader fallback)
+		self._last_keyed = False  # whether the last real frame was blitted keyed (Cut Out shader)
 
 		# Cut Out key pass: a GL shader copies the visualiser frame into a
 		# second texture with alpha keyed from brightness, leaving the projectM
@@ -42141,6 +42142,16 @@ class Milky:
 			if self.projectm.lib:
 				self.ready = True
 		if self.projectm.lib_error is True:
+			return
+
+		# Paused: re-blit the last rendered frame instead of asking projectM for a
+		# fresh one. With playback paused there's no audio buffer driving it, so
+		# projectM hands back an empty (transparent) frame — blitted opaque, that
+		# punches a transparent hole through the segment. Re-showing the cached
+		# texture keeps the visualiser frozen on a still frame instead.
+		if not discard and self.tauon.pctl.playing_state == PlayingState.PAUSED \
+				and self.render_texture is not None and self.loaded_size == (w, h):
+			self._blit_still(srect)
 			return
 
 		if self.projectm.own_gl_context:
@@ -42229,6 +42240,8 @@ class Milky:
 		keyed = False
 		if not discard and self.tauon.prefs.milk_cut_out and not self.key_failed:
 			keyed = self._run_key_pass(w, h)
+		if not discard:
+			self._last_keyed = keyed  # remembered so a paused re-blit picks the right texture
 
 		glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo)
 		glFlush()
@@ -42242,22 +42255,49 @@ class Milky:
 				sdl3.SDL_RenderTexture(self.renderer, self.key_render_texture, None, srect)
 			else:
 				if self.tauon.prefs.milk_cut_out:
-					# Shader unavailable: approximate the key in fixed function,
-					# out = src * src + dst * (1 - src) — the source colour acts
-					# as its own per-channel matte.
-					if self.cut_out_blend_mode is None:
-						self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
-							sdl3.SDL_BLENDFACTOR_SRC_COLOR,
-							sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
-							sdl3.SDL_BLENDOPERATION_ADD,
-							sdl3.SDL_BLENDFACTOR_ZERO,
-							sdl3.SDL_BLENDFACTOR_ONE,
-							sdl3.SDL_BLENDOPERATION_ADD)
-					sdl3.SDL_SetTextureBlendMode(self.render_texture, self.cut_out_blend_mode)
+					# Shader unavailable: approximate the key in fixed function.
+					sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
 				else:
 					sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
 				sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
 		self.fps.tick()
+
+	def _ensure_cut_out_blend(self):
+		"""Lazily compose the fixed-function Cut Out blend (shader fallback):
+		out = src * src + dst * (1 - src) — the source colour acts as its own
+		per-channel matte."""
+		if self.cut_out_blend_mode is None:
+			self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+				sdl3.SDL_BLENDFACTOR_SRC_COLOR,
+				sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
+				sdl3.SDL_BLENDOPERATION_ADD,
+				sdl3.SDL_BLENDFACTOR_ZERO,
+				sdl3.SDL_BLENDFACTOR_ONE,
+				sdl3.SDL_BLENDOPERATION_ADD)
+		return self.cut_out_blend_mode
+
+	def _blit_still(self, srect) -> None:
+		"""Re-blit the last rendered visualiser frame (used while paused) without
+		asking projectM for a new one. Mirrors the blend selection of the two
+		render paths' blits so a paused frame looks identical to a live one."""
+		if self.projectm.own_gl_context:
+			# Readback path always blits render_texture (no shader key), flipped.
+			if self.tauon.prefs.milk_cut_out:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
+			else:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.SDL_RenderTextureRotated(
+				self.renderer, self.render_texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
+			return
+		if self._last_keyed and self.key_render_texture is not None:
+			sdl3.SDL_SetTextureBlendMode(self.key_render_texture, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED)
+			sdl3.SDL_RenderTexture(self.renderer, self.key_render_texture, None, srect)
+		else:
+			if self.tauon.prefs.milk_cut_out:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
+			else:
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
 
 	def render_readback(self, w, h, srect, discard: bool = False) -> None:
 		"""Dedicated-context path (macOS): projectM renders into an FBO in its
@@ -42318,15 +42358,7 @@ class Milky:
 				self.render_texture, None,
 				ctypes.cast(self.readback_buffer, ctypes.c_void_p), int(w) * 4)
 			if self.tauon.prefs.milk_cut_out:
-				if self.cut_out_blend_mode is None:
-					self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
-						sdl3.SDL_BLENDFACTOR_SRC_COLOR,
-						sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
-						sdl3.SDL_BLENDOPERATION_ADD,
-						sdl3.SDL_BLENDFACTOR_ZERO,
-						sdl3.SDL_BLENDFACTOR_ONE,
-						sdl3.SDL_BLENDOPERATION_ADD)
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, self.cut_out_blend_mode)
+				sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
 			else:
 				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
 			# GL frames are bottom-up relative to SDL
