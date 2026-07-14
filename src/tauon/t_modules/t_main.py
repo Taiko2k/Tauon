@@ -50792,6 +50792,17 @@ def main(holder: Holder) -> None:
 	gallery_settings_menu.add(MenuItem(_("Combine multi-discs"), _gal_toggle_combine,
 		check_test=lambda: tauon.toggle_gallery_combine(1)))
 
+	# Mirror the shared gallery display toggles onto the Gallery: Compact menu.
+	# These are global prefs (not per-instance), so the same callbacks apply.
+	gallery_grid_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
+		check_test=lambda: prefs.center_gallery_text))
+	gallery_grid_menu.add(MenuItem(_("Single click to play"), _gal_toggle_click,
+		check_test=lambda: tauon.toggle_gallery_click(1)))
+	gallery_grid_menu.add(MenuItem(_("Scroll by row"), _gal_toggle_row_scroll,
+		check_test=lambda: prefs.gallery_row_scroll))
+	gallery_grid_menu.add(MenuItem(_("Combine multi-discs"), _gal_toggle_combine,
+		check_test=lambda: tauon.toggle_gallery_combine(1)))
+
 	def _gal_toggle_thin(ref=None) -> None:
 		tauon.toggle_gallery_thin()
 
