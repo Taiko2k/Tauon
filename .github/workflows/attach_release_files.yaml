@@ -38,6 +38,6 @@ jobs:
           if_no_artifact_found: fail
 
       - name: Upload files to this release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/**
