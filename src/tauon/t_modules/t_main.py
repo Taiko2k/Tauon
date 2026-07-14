@@ -44049,6 +44049,7 @@ class TouchInputTracker:
 		self.x: int = 0
 		self.y: int = 0
 
+		self.rect_size: int = round(40*self.gui.scale)
 		self.rect_distance: int = round(40*self.gui.scale)
 
 	def reset(self) -> None:
@@ -44077,7 +44078,7 @@ class TouchInputTracker:
 		rect = [
 			int(self.x-0.5*self.rect_size),
 			int(self.y-self.rect_distance),
-			round(40*self.gui.scale),
+			self.rect_size,
 			round(10*self.gui.scale)
 		]
 		self.ddt.rect( rect, self.colours.media_buttons_off)
