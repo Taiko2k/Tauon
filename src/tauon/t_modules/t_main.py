@@ -6606,6 +6606,7 @@ class Tauon:
 		self.lastfm:                               LastFMapi = self.pctl.lastfm
 		self.lfm_scrobbler:                        LastScrob = self.pctl.lfm_scrobbler
 		self.artist_list_box:                     ArtistList = self.pctl.artist_list_box
+		self.touch_input_tracker:          TouchInputTracker = TouchInputTracker(tauon=self)
 		self.guitar_chords:                     GuitarChords = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
 		self.search_over:                      SearchOverlay = SearchOverlay(tauon=self)
 		self.stats_gen:                               GStats = GStats(tauon=self)
@@ -44028,18 +44029,61 @@ SCROLL_PHYSICS_MIN_VELOCITY = 8.0
 TOUCH_LOGIC_TAP_VS_LONG_NS = 300 * 1000000
 TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK = 150
 
-@dataclass
 class TouchInputTracker:
-	is_down: bool = False
-	start_position_px: tuple[int, int] = (0, 0)
-	time_started_ns: int = 0
-	duration_so_far_ns: int = 0
-	is_scroll: bool = False
-	is_rightclick: bool = False
-	is_dragndrop: bool = False
-	has_moved: bool = False
-	is_gesture: bool = False
-	was_gesture: bool = False
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon:             Tauon = tauon
+		self.gui: GuiVar              = tauon.gui
+		self.ddt: TDraw               = tauon.ddt
+		self.colours: ColoursClass    = tauon.colours
+
+		self.is_down: bool = False
+		self.start_position_px: tuple[int, int] = (0, 0)
+		self.time_started_ns: int = 0
+		self.duration_so_far_ns: int = 0
+		self.is_scroll: bool = False
+		self.is_rightclick: bool = False
+		self.is_dragndrop: bool = False
+		self.has_moved: bool = False
+		self.is_gesture: bool = False
+		self.was_gesture: bool = False
+		self.x: int = 0
+		self.y: int = 0
+
+		self.rect_distance: int = round(40*self.gui.scale)
+
+	def reset(self) -> None:
+		self.is_down: bool = False
+		self.start_position_px: tuple[int, int] = (0, 0)
+		self.time_started_ns: int = 0
+		self.duration_so_far_ns: int = 0
+		self.is_scroll: bool = False
+		self.is_rightclick: bool = False
+		self.is_dragndrop: bool = False
+		self.has_moved: bool = False
+		self.is_gesture: bool = False
+		self.was_gesture: bool = False
+
+	def draw_update(self) -> None:
+		if not self.is_down or self.is_scroll or self.is_rightclick or self.is_dragndrop or self.is_gesture or self.was_gesture:
+			return
+		if TOUCH_LOGIC_TAP_VS_LONG_NS < self.duration_so_far_ns:
+			self.is_rightclick = True
+			return
+		self.duration_so_far_ns = time.monotonic_ns() - self.time_started_ns
+		if TOUCH_LOGIC_TAP_VS_LONG_NS/2 > self.duration_so_far_ns:
+			self.gui.update += 1
+			return
+		
+		rect = [
+			int(self.x-0.5*self.rect_size),
+			int(self.y-self.rect_distance),
+			round(40*self.gui.scale),
+			round(10*self.gui.scale)
+		]
+		self.ddt.rect( rect, self.colours.media_buttons_off)
+		rect[2] *= (self.duration_so_far_ns/TOUCH_LOGIC_TAP_VS_LONG_NS)
+		self.ddt.rect( rect, self.colours.media_buttons_active)
+		self.gui.update += 1
 
 @dataclass
 class ScrollMotionState:
@@ -50097,8 +50141,6 @@ def main(holder: Holder) -> None:
 	if prefs.use_gamepad:
 		sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
 
-	active_touch: TouchInputTracker = TouchInputTracker()
-
 	if bag.windows and win_ver >= 10:
 		#logging.info(sss.info.win.window)
 		SMTC_path = install_directory / "lib" / "TauonSMTC.dll"
@@ -51801,6 +51843,7 @@ def main(holder: Holder) -> None:
 	# time.sleep(3)
 
 	sdl3.SDL_StartTextInput(t_window)
+	active_touch = tauon.touch_input_tracker
 
 	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 	# SDL_EventState(SDL_SYSWMEVENT, 1)
@@ -54127,7 +54170,9 @@ def main(holder: Holder) -> None:
 					active_touch.time_started_ns = time.monotonic_ns()
 					inp.touch_released = False
 					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+					active_touch.x = int(event.tfinger.x * window_size[0])
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+					active_touch.y = int(event.tfinger.y * window_size[1])
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
 					gui.update += 1
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
@@ -54144,7 +54189,9 @@ def main(holder: Holder) -> None:
 						inp.k_input = True
 						inp.touch_active = True
 						inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+						active_touch.x = int(event.tfinger.x * window_size[0])
 						inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+						active_touch.y = int(event.tfinger.y * window_size[1])
 						active_touch.duration_so_far_ns = time.monotonic_ns() - active_touch.time_started_ns
 
 						if active_touch.is_scroll:
@@ -54195,7 +54242,7 @@ def main(holder: Holder) -> None:
 								inp.touch_released = True
 							else:
 								inp.mouse_click = True
-						active_touch = TouchInputTracker()
+						active_touch.reset()
 					else:
 						if inp.touch_position[0] - active_touch.start_position_px[0] > TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK:
 							pctl.advance()
@@ -54203,9 +54250,14 @@ def main(holder: Holder) -> None:
 							pctl.back()
 						else:
 							pctl.play_pause()
-						active_touch = TouchInputTracker()
-						active_touch.was_gesture = True
+						gest = active_touch.was_gesture
+						active_touch.reset()
+						if not gest:
+							active_touch.was_gesture = True
 					gui.update += 1
+				else: # bugfix regarding the order you lift off your fingers during gesture
+					if active_touch.is_gesture:
+						active_touch.was_gesture = True
 			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST:
 				power += 5
 				# logging.info(event.type)
@@ -57427,6 +57479,7 @@ def main(holder: Holder) -> None:
 							pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
 							if prefs.album_mode:
 								tauon.goto_album(pctl.playlist_playing_position)
+				tauon.touch_input_tracker.draw_update()
 			elif gui.mode == GuiMode.MINI:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 					if prefs.mini_mode_mode == MiniModeMode.TAB:
