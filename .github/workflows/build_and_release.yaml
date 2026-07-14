@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: true
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.14'
           cache: 'pip'
 
       - name: Install deps
@@ -105,7 +105,7 @@ jobs:
           7z a -r -snl "${ARCHIVE_PATH}" "."
 
       - name: Upload 7Z artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TauonMusicBox-linux
           path: TauonMusicBox-linux.7z
@@ -123,12 +123,12 @@ jobs:
       PROJECTM_COMMIT: 149bfc43963e54e397ccdb42f27019d22b659098
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: true
 
       - name: Setup pip cache-key
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         if: startsWith(runner.os, 'macOS')
         with:
           path: ~/Library/Caches/pip
@@ -211,7 +211,7 @@ jobs:
 
       - name: Cache projectM build
         id: cache-projectm
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: build/projectm
           key: ${{ runner.os }}-${{ runner.arch }}-projectm-${{ env.PROJECTM_COMMIT }}
@@ -277,7 +277,7 @@ jobs:
           done
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Tauon-dmg
           path: dist/dmg/Tauon.dmg
@@ -292,12 +292,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: true
 
       - name: Setup pip cache-key
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         if: startsWith(runner.os, 'Windows')
         with:
           path: ~\AppData\Local\pip\Cache
@@ -413,7 +413,7 @@ jobs:
       #  run: find .
 
       - name: Upload 7Z artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TauonMusicBox-windows
           path: TauonMusicBox-windows.7z
@@ -429,7 +429,7 @@ jobs:
           (Get-Content extra/setup.iss) -replace "C:\\", $Drive | Set-Content extra/setup.iss
 
       - name: Compile .ISS to .EXE Installer
-        uses: C0rn3j/Inno-Setup-Action@v1.2.8
+        uses: C0rn3j/Inno-Setup-Action@v1.2.9
         with:
           path: extra/setup.iss
           options: /O+
@@ -447,7 +447,7 @@ jobs:
             "extra/Output/TauonMusicBox-windows-installer.exe"
 
       - name: Upload EXE installer
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: TauonMusicBox-windows-installer
           path: extra/Output/TauonMusicBox-windows-installer.exe
@@ -476,7 +476,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: ~/artifacts
 
@@ -490,7 +490,7 @@ jobs:
           echo "last_release_tag=$(echo "$latest_release_info" | jq -r '.tag_name')" >> $GITHUB_ENV
 
       - name: Checkout the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Process template release_body.md
         run: |
