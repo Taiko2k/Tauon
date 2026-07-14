@@ -44146,6 +44146,8 @@ class SmoothScroll:
 			return self.step_motion(scroll_source)
 		elif self.coll(scroll_area):
 			return self.scroll(scroll_source, coeff)
+		else:
+			return 0.0
 
 	def _state(self, source: str) -> ScrollMotionState:
 		if source not in self.physics_states:
