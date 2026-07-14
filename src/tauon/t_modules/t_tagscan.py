@@ -73,25 +73,25 @@ def lyrics_are_synced(lyrics: str) -> bool:
 
 def parse_mbids_from_vorbis(obj: Ape | Flac | Opus, key: str, value: str | bytes) -> bool:
 	if key == "musicbrainz_artistid":
-		if "musicbrainz_artistids" not in obj.misc:
-			obj.misc["musicbrainz_artistids"] = []
-		obj.misc["musicbrainz_artistids"].append(value)
+		if obj.musicbrainz_artistids is None:
+			obj.musicbrainz_artistids = []
+		obj.musicbrainz_artistids.append(value)
 		return True
 
 	if key == "musicbrainz_trackid":
-		obj.misc["musicbrainz_recordingid"] = value
+		obj.musicbrainz_recordingid = value
 		return True
 
 	if key == "musicbrainz_releasetrackid":
-		obj.misc["musicbrainz_trackid"] = value
+		obj.musicbrainz_trackid = value
 		return True
 
 	if key == "musicbrainz_albumid":
-		obj.misc["musicbrainz_albumid"] = value
+		obj.musicbrainz_albumid = value
 		return True
 
 	if key == "musicbrainz_releasegroupid":
-		obj.misc["musicbrainz_releasegroupid"] = value
+		obj.musicbrainz_releasegroupid = value
 		return True
 
 	return False
@@ -205,7 +205,25 @@ class TrackFile:
 		self.lyrics        = "" # Wav does not need this
 		self.synced_lyrics = ""
 		self.composer      = "" # Wav does not need this
-		self.misc: dict[str, str | float | list[str]] = {} # Wav does not need this
+
+		# Extended metadata, named to mirror the matching TrackClass fields so
+		# the importer can copy them straight across without a conversion table.
+		# Wav does not need these.
+		self.artists:                    list[str] | None = None
+		self.album_artists:              list[str] | None = None
+		self.artist_sort:                str | None = None
+		self.genres:                     list[str] | None = None
+		self.musicbrainz_artistids:      list[str] | None = None
+		self.musicbrainz_recordingid:    str | None = None
+		self.musicbrainz_trackid:        str | None = None
+		self.musicbrainz_albumid:        str | None = None
+		self.musicbrainz_releasegroupid: str | None = None
+		self.replaygain_track_gain:      float | None = None
+		self.replaygain_track_peak:      float | None = None
+		self.replaygain_album_gain:      float | None = None
+		self.replaygain_album_peak:      float | None = None
+		self.FMPS_Rating:                float | None = None
+		self.rdat:                       str | None = None
 
 		self.sample_rate = 48000 # OPUS files are always 48000
 		self.length = 0
@@ -336,23 +354,23 @@ class Flac(TrackFile):
 					elif a in ("lyrics", "syncedlyrics", "unsyncedlyrics"):
 						self.set_vorbis_lyrics(a, b)
 					elif a == "replaygain_track_gain":
-						self.misc["replaygain_track_gain"] = float(
+						self.replaygain_track_gain = float(
 							b.decode("utf-8").lower().strip(" db").replace(",", ".")
 						)
 					elif a == "replaygain_track_peak":
-						self.misc["replaygain_track_peak"] = float(b.decode("utf-8").replace(",", "."))
+						self.replaygain_track_peak = float(b.decode("utf-8").replace(",", "."))
 					elif a == "replaygain_album_gain":
-						self.misc["replaygain_album_gain"] = float(
+						self.replaygain_album_gain = float(
 							b.decode("utf-8").lower().strip(" db").replace(",", ".")
 						)
 					elif a == "replaygain_album_peak":
-						self.misc["replaygain_album_peak"] = float(b.decode("utf-8").replace(",", "."))
+						self.replaygain_album_peak = float(b.decode("utf-8").replace(",", "."))
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
 					elif a == "fmps_rating":
-						self.misc["FMPS_Rating"] = float(b.decode("utf-8"))
+						self.FMPS_Rating = float(b.decode("utf-8"))
 					elif a == "artistsort":
-						self.misc["artist_sort"] = b.decode("utf-8")
+						self.artist_sort = b.decode("utf-8")
 
 					# else:
 					# logging.info("Tag Scanner: Found unhandled FLAC Vorbis comment field: " + a)
@@ -365,15 +383,15 @@ class Flac(TrackFile):
 			# self.album_artist = "; ".join(album_artists)
 			self.album_artist = album_artists[0]
 			if len(album_artists) > 1:
-				self.misc["album_artists"] = album_artists
+				self.album_artists = album_artists
 		if artists:
 			self.artist = "; ".join(artists)
 			if len(artists) > 1:
-				self.misc["artists"] = artists
+				self.artists = artists
 		if genres:
 			self.genre = "; ".join(genres)
 			if len(genres) > 1:
-				self.misc["genres"] = genres
+				self.genres = genres
 		process_odat(self, odat)
 
 	def read_seek_table(self, f: BufferedReader) -> None:
@@ -616,13 +634,13 @@ class Opus(TrackFile):
 						# logging.info(b)
 
 					elif a == "replaygain_track_gain":
-						self.misc["replaygain_track_gain"] = float(b.decode("utf-8").lower().strip(" db"))
+						self.replaygain_track_gain = float(b.decode("utf-8").lower().strip(" db"))
 					elif a == "replaygain_track_peak":
-						self.misc["replaygain_track_peak"] = float(b.decode("utf-8"))
+						self.replaygain_track_peak = float(b.decode("utf-8"))
 					elif a == "replaygain_album_gain":
-						self.misc["replaygain_album_gain"] = float(b.decode("utf-8").lower().strip(" db"))
+						self.replaygain_album_gain = float(b.decode("utf-8").lower().strip(" db"))
 					elif a == "replaygain_album_peak":
-						self.misc["replaygain_album_peak"] = float(b.decode("utf-8"))
+						self.replaygain_album_peak = float(b.decode("utf-8"))
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
 					elif a in ("disctotal", "totaldiscs"):
@@ -632,9 +650,9 @@ class Opus(TrackFile):
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
 					elif a == "fmps_rating":
-						self.misc["FMPS_Rating"] = float(b.decode("utf-8"))
+						self.FMPS_Rating = float(b.decode("utf-8"))
 					elif a == "artistsort":
-						self.misc["artist_sort"] = b.decode("utf-8")
+						self.artist_sort = b.decode("utf-8")
 					# else:
 					# logging.info("Tag Scanner: Found unhandled Vorbis comment field: " + a)
 					# logging.info(b.decode("utf-8"))
@@ -648,15 +666,15 @@ class Opus(TrackFile):
 			# self.album_artist = "; ".join(album_artists)
 			self.album_artist = album_artists[0]
 			if len(album_artists) > 1:
-				self.misc["album_artists"] = album_artists
+				self.album_artists = album_artists
 		if artists:
 			self.artist = "; ".join(artists)
 			if len(artists) > 1:
-				self.misc["artists"] = artists
+				self.artists = artists
 		if genres:
 			self.genre = "; ".join(genres)
 			if len(genres) > 1:
-				self.misc["genres"] = genres
+				self.genres = genres
 		process_odat(self, odat)
 
 		# Find the last Ogg page from end of file to get track length
@@ -811,13 +829,13 @@ class Ape(TrackFile):
 				elif key == "lyrics":
 					self.lyrics = value
 				elif key == "replaygain_track_gain":
-					self.misc["replaygain_track_gain"] = float(value.lower().strip(" db"))
+					self.replaygain_track_gain = float(value.lower().strip(" db"))
 				elif key == "replaygain_track_peak":
-					self.misc["replaygain_track_peak"] = float(value)
+					self.replaygain_track_peak = float(value)
 				elif key == "replaygain_album_gain":
-					self.misc["replaygain_album_gain"] = float(value.lower().strip(" db"))
+					self.replaygain_album_gain = float(value.lower().strip(" db"))
 				elif key == "replaygain_album_peak":
-					self.misc["replaygain_album_peak"] = float(value)
+					self.replaygain_album_peak = float(value)
 				elif parse_mbids_from_vorbis(self, key, value):
 					pass
 				elif key == "cover art (front)":

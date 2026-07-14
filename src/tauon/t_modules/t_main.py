@@ -211,7 +211,7 @@ from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
-from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, Wav, lyrics_are_synced, parse_picture_block  # noqa: E402
+from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, TrackFile, Wav, lyrics_are_synced, parse_picture_block  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -1850,6 +1850,23 @@ def intern_track_strings(tr: TrackClass) -> None:
 		value = getattr(tr, field)
 		if value:
 			setattr(tr, field, [sys.intern(v) if type(v) is str else v for v in value])
+
+# Extended-metadata fields shared by TrackFile (the tag scanner) and
+# TrackClass. TrackFile mirrors these by name, so import copies them straight
+# across instead of remapping a "misc" dict.
+_TRACKFILE_METADATA_FIELDS = (
+	"artists", "album_artists", "artist_sort", "genres",
+	"musicbrainz_artistids", "musicbrainz_recordingid", "musicbrainz_trackid",
+	"musicbrainz_albumid", "musicbrainz_releasegroupid",
+	"replaygain_track_gain", "replaygain_track_peak",
+	"replaygain_album_gain", "replaygain_album_peak",
+	"FMPS_Rating", "rdat",
+)
+
+def copy_trackfile_metadata(nt: TrackClass, audio: TrackFile) -> None:
+	"""Copy the shared extended-metadata fields from a scanned TrackFile onto a TrackClass."""
+	for field in _TRACKFILE_METADATA_FIELDS:
+		setattr(nt, field, getattr(audio, field))
 
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
@@ -18242,10 +18259,7 @@ class Tauon:
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
 					nt.cue_sheet = audio.cue_sheet
-					for _mk, _mv in audio.misc.items():
-						_f = _MISC_TO_FIELD.get(_mk)
-						if _f is not None:
-							setattr(nt, _f, _mv)
+					copy_trackfile_metadata(nt, audio)
 			elif nt.file_ext == "WAV":
 				with Wav(nt.fullpath) as audio:
 					try:
@@ -18293,10 +18307,7 @@ class Tauon:
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
-					for _mk, _mv in audio.misc.items():
-						_f = _MISC_TO_FIELD.get(_mk)
-						if _f is not None:
-							setattr(nt, _f, _mv)
+					copy_trackfile_metadata(nt, audio)
 					if nt.bitrate == 0 and nt.length > 0:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 			elif nt.file_ext == "APE":
@@ -18342,10 +18353,7 @@ class Tauon:
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
-					for _mk, _mv in audio.misc.items():
-						_f = _MISC_TO_FIELD.get(_mk)
-						if _f is not None:
-							setattr(nt, _f, _mv)
+					copy_trackfile_metadata(nt, audio)
 			elif nt.file_ext in ("WV", "TTA"):
 				with Ape(nt.fullpath) as audio:
 					audio.read()
@@ -18371,10 +18379,7 @@ class Tauon:
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
-					for _mk, _mv in audio.misc.items():
-						_f = _MISC_TO_FIELD.get(_mk)
-						if _f is not None:
-							setattr(nt, _f, _mv)
+					copy_trackfile_metadata(nt, audio)
 			else:
 				# Use MUTAGEN
 				try:
