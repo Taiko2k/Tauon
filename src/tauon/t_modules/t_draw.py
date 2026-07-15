@@ -334,10 +334,12 @@ class TDraw:
 		cache_key = None
 		if len(text) <= 256:
 			cache_key = (text, font, max_x, wrap)
-			cached = self.text_wh_cache.get(cache_key)
-			if cached is not None:
-				self.text_wh_cache.move_to_end(cache_key)
-				return cached
+		else:
+			cache_key = (text[:255], font, max_x, wrap)
+		cached = self.text_wh_cache.get(cache_key)
+		if cached is not None:
+			self.text_wh_cache.move_to_end(cache_key)
+			return cached
 
 		self.layout.set_font_description(self._font_description(font))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
