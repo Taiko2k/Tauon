@@ -705,10 +705,47 @@ class MetaCenteredWidget(MetaWidget):
 
 
 class LyricsWidget(MetaWidget):
+	"""Static lyrics via MetaBox.lyrics, or synced (LRC) lyrics via
+	TimedLyricsRen when available — the preset side panel does this branch in
+	the main render loop, so the widget replicates it. The synced renderer's
+	side_panel mode lays out against gui.rsp_x/rspw/panelY/panelBY, so those
+	are pointed at the segment for the call (window_size is already reframed).
+	"""
+
 	kind = "lyrics"
 	name = "Lyrics Box"
 	meta_method = "lyrics"
 	single_instance = True  # shared lyrics scroll state
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		track = tauon.pctl.show_object()
+		gui = tauon.gui
+		# Synced when preferred, or when there are no static lyrics to fall
+		# back on (matching toggle_lyrics, which flips prefer_synced_lyrics on
+		# in that case).
+		synced = track is not None and (
+			tauon.prefs.prefer_synced_lyrics or not track.lyrics
+		) and tauon.timed_lyrics_ren.generate(track)
+		if not synced:
+			tauon.meta_box.lyrics(round(x), round(y), round(w), round(h), track)
+			return
+
+		# TimedLyricsRen's own right-click test is skipped at a zero origin
+		# (it requires truthy x and y), so open the showcase menu here.
+		if tauon.inp.right_click and tauon.coll((x + 10, y, w - 10, h)):
+			gui.force_showcase_index = -1
+			tauon.showcase_menu.activate(track)
+
+		saved = (gui.rsp_x, gui.rspw, gui.panelY, gui.panelBY)
+		gui.rsp_x, gui.rspw = round(x), round(w)
+		gui.panelY = round(y)
+		gui.panelBY = max(0, tauon.window_size[1] - round(y + h))
+		try:
+			tauon.timed_lyrics_ren.render(
+				track.index, round(x + 9 * gui.scale), round(y),
+				side_panel=True, w=round(w), h=round(h))
+		finally:
+			gui.rsp_x, gui.rspw, gui.panelY, gui.panelBY = saved
 
 
 class TracklistWidget(Widget):
