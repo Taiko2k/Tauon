@@ -40723,7 +40723,7 @@ class ArtistInfoBox:
 		track = self.pctl.playing_object()
 		if track is None:
 			return
-
+		
 		# Check if the artist has changed
 		artist = get_first_artist(track.artist)
 		wait = False
@@ -44049,6 +44049,7 @@ class SmoothScroll:
 		self.scroll_debug_modes: dict[str, str] = {}
 		self.scroll_debug_last_logs: dict[str, float] = {}
 		self.timeout = 0.5
+		self.start_location: tuple[int, int] = (0,0)
 
 	def _pixel_scale(self) -> float:
 		return max(self.gui.scale, 0.1)
@@ -44130,7 +44131,7 @@ class SmoothScroll:
 		return scroll_distance
 
 	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0) -> float:
-		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.start_location, scroll_area)
 		use_smooth_scroll = (
 			self.enabled()
 			or touch_scroll
@@ -44139,7 +44140,7 @@ class SmoothScroll:
 		if use_smooth_scroll:
 			if self.coll(scroll_area) and self.inp.mouse_wheel:
 				self.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, coeff)
-			if self.inp.touch_released:
+			if self.inp.touch_released and coll_point(self.start_location, scroll_area):
 				self.release_touch(scroll_source)
 			elif touch_scroll:
 				self.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
@@ -54129,6 +54130,7 @@ def main(holder: Holder) -> None:
 					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
+					tauon.smooth_scroll.start_location = active_touch.start_position_px
 					gui.update += 1
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
 					active_touch.is_gesture = True
