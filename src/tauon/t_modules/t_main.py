@@ -21305,7 +21305,7 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg, force_cache=True)
 
 class LyricsRen:
 
@@ -21333,7 +21333,7 @@ class LyricsRen:
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery background & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
+		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg, force_cache=True)
 
 class TimedLyricsToStatic:
 
@@ -35104,7 +35104,7 @@ class StandardPlaylist:
 				self.smooth_scroll.add_wheel_motion(
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
-			
+
 			if inp.touch_released:
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
@@ -40898,7 +40898,8 @@ class ArtistInfoBox:
 			if width > 20 * scale:
 				self.ddt.text(
 					(text_x, text_top, 4, width, 14000), self.processed_text,
-					text_colour, 14.5, bg=background, range_height=text_area_h, range_top=self.scroll_y)
+					text_colour, 14.5, bg=background, range_height=text_area_h,
+					range_top=self.scroll_y, force_cache=True)
 
 			# Pin the link column to the top of the text region (below the image
 			# when stacked) so it never sits on top of the artwork.
@@ -45784,7 +45785,7 @@ class TimedLyricsEdit:
 
 		self.lyrics_position = max(self.lyrics_position, th * -1 + 100 * self.gui.scale)
 		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
-		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg, force_cache=True)
 
 
 		widths = [

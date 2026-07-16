@@ -430,9 +430,9 @@ class TDraw:
 		range_height: int | None = None,
 		real_bg: bool = False,
 		key: tuple[int, str, int, int, int, int, int, int, int, int] | None = None,
+		force_cache: bool = False,
 	) -> int:
 		# perf.set()
-		force_cache = False
 		if key:
 			force_cache = True
 
@@ -732,6 +732,7 @@ class TDraw:
 		range_height: int | None = None,
 		real_bg: bool = False,
 		key: tuple[int, str, int, int, int, int, int, int, int, int] | None = None,
+		force_cache: bool = False,
 	) -> int | None:
 		# logging.info((text, font))
 
@@ -767,6 +768,7 @@ class TDraw:
 					wrap=True,
 					range_top=range_top,
 					range_height=range_height,
+					force_cache=force_cache,
 				)
 
-		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
+		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key, force_cache=force_cache)
