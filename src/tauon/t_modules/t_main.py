@@ -53603,7 +53603,6 @@ def main(holder: Holder) -> None:
 	tauon.column_bar_draw = render_column_bar_draw
 
 	render_heartbeat_timer = Timer()
-	render_frame_timer = time.monotonic_ns()
 	vis_pace_timer = Timer()
 	pace_vis = False
 
@@ -54507,9 +54506,7 @@ def main(holder: Holder) -> None:
 			if prefs.milk:
 				time.sleep(0.002)
 			else:
-				sleep_time = max(0, 0.03 - (time.monotonic_ns()-render_frame_timer)/1000000000)
-				render_frame_timer = time.monotonic_ns()
-				time.sleep(sleep_time)
+				time.sleep(0.03)
 			if (
 				(pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED))
 				and not tauon.load_orders

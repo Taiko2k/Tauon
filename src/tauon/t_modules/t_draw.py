@@ -331,11 +331,7 @@ class TDraw:
 		return font_description
 
 	def get_text_wh(self, text: str, font: int, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
-		cache_key = None
-		if len(text) <= 256:
-			cache_key = (text, font, max_x, wrap)
-		else:
-			cache_key = (text[:255], font, max_x, wrap)
+		cache_key = (text, font, max_x, wrap)
 		cached = self.text_wh_cache.get(cache_key)
 		if cached is not None:
 			self.text_wh_cache.move_to_end(cache_key)
