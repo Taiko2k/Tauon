@@ -35099,7 +35099,7 @@ class StandardPlaylist:
 				self.smooth_scroll.add_wheel_motion(
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
-			
+
 			if inp.touch_released:
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
@@ -40723,7 +40723,7 @@ class ArtistInfoBox:
 		track = self.pctl.playing_object()
 		if track is None:
 			return
-		
+
 		# Check if the artist has changed
 		artist = get_first_artist(track.artist)
 		wait = False
@@ -45761,7 +45761,7 @@ class TimedLyricsEdit:
 				self.text += line + "\n"
 
 
-	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool, w:int=0, h=int:0) -> None:
+	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
 
@@ -46029,7 +46029,7 @@ class TimedLyricsEdit:
 			if self.view_is_synced:
 				self.synced_render(track.index, gcx, y, hide_art, w, h)
 			else:
-				self.unsynced_render(x, y, box, hide_art, w, h)
+				self.unsynced_render(x, y, box, hide_art)
 
 			if self.struct_track in self.potential_uploads:
 				upload = self.potential_uploads[self.struct_track]
