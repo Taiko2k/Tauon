@@ -331,13 +331,11 @@ class TDraw:
 		return font_description
 
 	def get_text_wh(self, text: str, font: int, max_x: int, wrap: bool = False) -> tuple[int, int] | None:
-		cache_key = None
-		if len(text) <= 256:
-			cache_key = (text, font, max_x, wrap)
-			cached = self.text_wh_cache.get(cache_key)
-			if cached is not None:
-				self.text_wh_cache.move_to_end(cache_key)
-				return cached
+		cache_key = (text, font, max_x, wrap)
+		cached = self.text_wh_cache.get(cache_key)
+		if cached is not None:
+			self.text_wh_cache.move_to_end(cache_key)
+			return cached
 
 		self.layout.set_font_description(self._font_description(font))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
