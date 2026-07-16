@@ -592,7 +592,7 @@ class StreamEnc:
 				load_order.playlist = self.tauon.pctl.multi_playlist[target_pl].uuid_int
 				load_order.target = save_file
 				self.tauon.load_orders.append(copy.deepcopy(load_order))
-				self.tauon.gui.update += 1
+				self.tauon.gui.request_frame()
 
 			def save_target_if_large() -> None:
 				if target_file.exists():

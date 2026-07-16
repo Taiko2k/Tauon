@@ -570,7 +570,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 		def toggle_album_shuffle(self) -> None:
 			pctl.album_shuffle_mode ^= True
-			tauon.gui.update += 1
+			tauon.gui.request_frame()
 
 		def parse_trail(self, text: str) -> tuple[list[str], dict[str, str]]:
 			params: dict[str, str] = {}
@@ -812,7 +812,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					tauon.pctl.stop_mode = StopMode.TRACK
 				else:
 					tauon.pctl.stop_mode = StopMode.OFF
-				tauon.gui.update += 1
+				tauon.gui.request_frame()
 			elif path == "/api1/version":
 				data = {"version": 1}
 				self.send_response(200)
@@ -1073,7 +1073,7 @@ def controller(tauon: Tauon) -> None:
 				tauon.request_raise()
 			if path == "/reloadtheme":
 				tauon.gui.reload_theme = True
-				tauon.gui.update += 1
+				tauon.gui.request_frame()
 			if path == "/playpause":
 				tauon.pctl.play_pause()
 			if path == "/play":

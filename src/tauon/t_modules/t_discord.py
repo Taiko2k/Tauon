@@ -102,7 +102,7 @@ def discord_loop_entrypoint(main) -> None:
         prefs.discord_active     = False
         prefs.disconnect_discord = False
         gui.discord_status       = "Not connected"
-        gui.update += 1
+        gui.request_frame()
         if hasattr(main, "_discord_loop_guard_lock"):
             with main._discord_loop_guard_lock:
                 main._discord_loop_guard_running = False
@@ -110,7 +110,7 @@ def discord_loop_entrypoint(main) -> None:
 
     prefs.discord_active = True
     gui.discord_status   = "Standby"
-    gui.update += 1
+    gui.request_frame()
 
     wakeup: threading.Event = main.__dict__.setdefault("_discord_wakeup_event", threading.Event())
 
@@ -154,7 +154,7 @@ def discord_loop_entrypoint(main) -> None:
     def set_status(status: str) -> None:
         if gui.discord_status != status:
             gui.discord_status = status
-            gui.update += 1
+            gui.request_frame()
 
     def safe_text(text: str, fallback: str = "…") -> str:
         clean = " ".join((text or "").split()).strip() or fallback

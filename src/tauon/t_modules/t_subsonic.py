@@ -261,7 +261,7 @@ class SubsonicService:
 					self.gui.lyrics_editor_update_now[1] = True
 				if lyrics or synced:
 					logging.info(f"Found lyrics from Subsonic server for {track_object.artist} - {track_object.title}")
-					self.gui.update += 1
+					self.gui.request_frame()
 					self.tauon.lyrics_ren_mini.to_reload = True
 					self.tauon.timed_lyrics_ren.index = -1
 					self.pctl.notify_database_changed()
@@ -462,7 +462,7 @@ class SubsonicService:
 
 			items = self._as_list(d["subsonic-response"]["directory"].get("child"))
 
-			self.gui.update = 2
+			self.gui.request_frame()
 
 			for item in items:
 				if item.get("isDir"):
