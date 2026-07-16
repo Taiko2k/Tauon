@@ -40413,7 +40413,9 @@ class MetaBox:
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
-	def draw(self, x: int, y: int, w: int, h: int, track: TrackClass | None=None) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, track: TrackClass | None=None, lyrics_ui: bool = True) -> None:
+		# lyrics_ui=False (the custom-layout titles widget) drops the lyrics
+		# context menu and the "Lyrics" showcase link.
 		bg = self.colours.side_panel_background
 		self.ddt.text_background_colour = bg
 		self.ddt.clear_rect((x, y, w, h))
@@ -40424,7 +40426,7 @@ class MetaBox:
 			return
 
 		# Test for show lyric menu on right ckick
-		if self.coll((x + 10, y, w - 10, h)):
+		if lyrics_ui and self.coll((x + 10, y, w - 10, h)):
 			if self.inp.right_click:  # and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 				self.gui.force_showcase_index = -1
 				self.showcase_menu.activate(track)
@@ -40500,7 +40502,7 @@ class MetaBox:
 				ext = "Jellyfin"
 				if tr.container is not None:
 					ext = (tr.container if tr.container is not None else "") + " | Jellyfin"
-			if tr.lyrics:
+			if tr.lyrics and lyrics_ui:
 				ext += ","
 			date = tr.date
 			genre = tr.genre
@@ -40550,60 +40552,51 @@ class MetaBox:
 							(margin, block_y + 40 * self.gui.scale), ext, self.colours.side_bar_line2,
 							self.fonts.side_panel_line2, max_w=text_width)
 
-						if tr and tr.lyrics:
+						if lyrics_ui and tr and tr.lyrics:
 							if self.tauon.draw_internal_link(
 								margin + sp + 6 * self.gui.scale, block_y + 40 * self.gui.scale, "Lyrics", self.colours.side_bar_line2, self.fonts.side_panel_line2):
 								self.prefs.show_lyrics_showcase = True
 								self.tauon.enter_showcase_view(track_id=tr.index)
 
 	def centered(self, x: int, y: int, w: int, h: int, track: TrackClass | None) -> None:
-		"""Centered track text layout used by the custom-layout "Track: Centered"
-		widget: artist/title/album text centred in the box, no album art. Based on
-		the centered side-panel layout (prefs.side_panel_layout == 1)."""
+		"""Centered track text layout used by the custom-layout "Track: Titles
+		(Centred)" widget: artist/title/album text centred in the box, no album
+		art. Based on the centered side-panel layout (prefs.side_panel_layout == 1)
+		minus that layout's lyrics display and lyrics context menu — the widget
+		only ever shows the track text."""
 		ddt = self.ddt
 		colours = self.colours
-		tauon = self.tauon
-		prefs = self.prefs
 		gui = self.gui
-		inp = self.inp
 		pctl = self.pctl
 		window_size = self.tauon.window_size
-		center_info_menu = self.tauon.center_info_menu
 		radiobox = self.tauon.radiobox
 		target_track = track
 
 		ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), colours.side_panel_background)
-		tauon.test_auto_lyrics(target_track)
-		if prefs.show_lyrics_side and target_track and target_track.lyrics:
-			if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
-				center_info_menu.activate(target_track)
-		else:
-			small_mode = window_size[1] < 550 * gui.scale
-			text_y = y + round(h * 0.40)
-			text_x = x + w // 2
-			if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
-				center_info_menu.activate(target_track)
-			ww = w - 25 * gui.scale
-			gui.showed_title = True
-			if target_track:
-				ddt.text_background_colour = colours.side_panel_background
-				if pctl.playing_state == PlayingState.URL_STREAM and not radiobox.dummy_track.title:
-					title = pctl.tag_meta
-				else:
-					title = target_track.title
-					if not title:
-						title = clean_string(target_track.filename)
-				if small_mode:
-					ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 315, max_w=ww)
-					ddt.text((text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
-					line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
-					ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
-				else:
-					ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
-					ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
-					line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
-					ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
+		small_mode = window_size[1] < 550 * gui.scale
+		text_y = y + round(h * 0.40)
+		text_x = x + w // 2
+		ww = w - 25 * gui.scale
+		gui.showed_title = True
+		if target_track:
+			ddt.text_background_colour = colours.side_panel_background
+			if pctl.playing_state == PlayingState.URL_STREAM and not radiobox.dummy_track.title:
+				title = pctl.tag_meta
+			else:
+				title = target_track.title
+				if not title:
+					title = clean_string(target_track.filename)
+			if small_mode:
+				ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 315, max_w=ww)
+				ddt.text((text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
+				line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+				ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
+			else:
+				ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+				ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+				line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+				ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
 
 
 class PictureRender:

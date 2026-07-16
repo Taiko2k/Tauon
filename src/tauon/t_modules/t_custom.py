@@ -678,7 +678,8 @@ class ArtistInfoWidget(RectPanelWidget):
 class MetaWidget(Widget):
 	"""Adapter for the MetaBox renderers, which take (x, y, w, h, track). The
 	track is the current "show object" (playing or selected per prefs). Rendered
-	offscreen so the engine reframes input/menus (right-click showcase menu)."""
+	offscreen so the engine reframes input/menus (right-click showcase menu on
+	the lyrics box; the titles widgets never open the lyrics menus)."""
 
 	offscreen = True
 	min_w = 80
@@ -695,6 +696,10 @@ class MetaCenterWidget(MetaWidget):
 	kind = "meta_center"
 	name = "Track: Titles"
 	meta_method = "draw"
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		track = tauon.pctl.show_object()
+		tauon.meta_box.draw(round(x), round(y), round(w), round(h), track, lyrics_ui=False)
 
 
 class MetaCenteredWidget(MetaWidget):
@@ -720,6 +725,7 @@ class LyricsWidget(MetaWidget):
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		track = tauon.pctl.show_object()
 		gui = tauon.gui
+		tauon.test_auto_lyrics(track)
 		# Synced when preferred, or when there are no static lyrics to fall
 		# back on (matching toggle_lyrics, which flips prefer_synced_lyrics on
 		# in that case).
