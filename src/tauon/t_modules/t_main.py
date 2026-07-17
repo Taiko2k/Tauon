@@ -530,6 +530,18 @@ class GuiVar:
 	def delay_frame(self, t: float) -> None:
 		self.frame_callback_list.append(TestTimer(t))
 
+	def request_frame(self) -> None:
+		"""Request the main loop render a frame. The flag is flipped off at the
+		start of every frame, so calling this while drawing means "render
+		another frame after this one"."""
+		self.update = True
+
+	def request_tracklist_redraw(self) -> None:
+		"""Request the playlist/tracklist view re-render on the next frame. The
+		flag is flipped off as the tracklist render starts, so calling this
+		mid-render means "render the tracklist again next frame"."""
+		self.pl_update = True
+
 	def destroy_textures(self) -> None:
 		sdl3.SDL_DestroyTexture(self.spec4_tex)
 		sdl3.SDL_DestroyTexture(self.spec1_tex)
@@ -613,11 +625,11 @@ class GuiVar:
 		self.panelBY: float = 0
 
 		self.window_id = 0
-		self.update    = 2  # UPDATE
+		self.update: bool = True  # Render a frame on the next main loop pass
 		self.update_layout: bool = True
 		self.turbo:      bool = True
 		self.turbo_next = 0
-		self.pl_update  = 1
+		self.pl_update: bool = True  # Re-render the tracklist on the next frame
 		self.lowered:           bool = False
 		self.maximized:         bool = False
 		self.side_drag:         bool = False
@@ -1361,23 +1373,23 @@ class Input:
 
 	def m_key_play(self) -> None:
 		self.media_key = "Play"
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def m_key_pause(self) -> None:
 		self.media_key = "Pause"
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def m_key_stop(self) -> None:
 		self.media_key = "Stop"
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def m_key_next(self) -> None:
 		self.media_key = "Next"
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def m_key_previous(self) -> None:
 		self.media_key = "Previous"
-		self.gui.update += 1
+		self.gui.request_frame()
 
 class KeyMap:
 
@@ -2276,7 +2288,7 @@ class PlayerCtl:
 
 		self.gui.previous_playlist_id = self.multi_playlist[self.active_playlist_viewing].uuid_int
 
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 		self.gui.search_index = 0
 		self.gui.column_d_click_on = -1
 		self.gui.search_error = False
@@ -2433,8 +2445,8 @@ class PlayerCtl:
 			return
 
 		# Set screen to be redrawn
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 
 		# Backup the playlist to be deleted
 		# self.playlist_backup.append(self.multi_playlist[index])
@@ -2802,7 +2814,7 @@ class PlayerCtl:
 		return bool(self.default_playlist) and -1 < self.selected_in_playlist < len(self.default_playlist)
 
 	def render_playlist(self) -> None:
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def show_selected(self) -> int:
 		if self.gui.playlist_view_length < 1:
@@ -3060,7 +3072,7 @@ class PlayerCtl:
 		self.ab_repeat_a = -1.0
 		self.ab_repeat_b = -1.0
 		if update_gui:
-			self.tauon.gui.update += 1
+			self.tauon.gui.request_frame()
 
 	def reset_ab_repeat_on_track_change(self, track_id: int) -> None:
 		if self.ab_repeat_a < 0 and self.ab_repeat_b < 0:
@@ -3280,7 +3292,7 @@ class PlayerCtl:
 		if pl_position is not None:
 			self.playlist_playing_position = pl_position
 
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def back(self) -> None:
 
@@ -3339,7 +3351,7 @@ class PlayerCtl:
 		self.refresh_now_playing()
 		self.tauon.notify_song()
 		self.lfm_scrobbler.start_queue()
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 	def stop(self, block: bool = False, run: bool = False, update_gui: bool = True) -> int:
 		stream_proxy = getattr(self.tauon, "stream_proxy", None)
@@ -3381,7 +3393,7 @@ class PlayerCtl:
 
 			self.gui.update_spec = 0
 			# gui.update_level = True  # Allows visualiser to enter decay sequence
-			self.gui.update = True
+			self.gui.request_frame()
 			if self.prefs.update_title:
 				self.tauon.update_title_do()  # Update title bar text
 
@@ -3617,7 +3629,7 @@ class PlayerCtl:
 				if stopped is True:
 					if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
 						self.advance(play=False)
-					self.gui.update += 2
+					self.gui.request_frame()
 					return
 
 			if self.force_queue and not self.pause_queue:
@@ -3631,7 +3643,7 @@ class PlayerCtl:
 				if self.album_repeat_mode:
 					if not pp:
 						self.stop(run=True)
-						self.gui.update += 2
+						self.gui.request_frame()
 						return
 					if self.playlist_playing_position > len(pp) - 1:
 						self.playlist_playing_position = 0  # TODO(Taiko): Hack fix, race condition bug?
@@ -3726,8 +3738,8 @@ class PlayerCtl:
 				self.start_time_target = self.start_time
 				self.lfm_scrobbler.start_queue()
 
-				self.gui.update += 1
-				self.gui.pl_update = 1
+				self.gui.request_frame()
+				self.gui.request_tracklist_redraw()
 
 				if self.prefs.update_title:
 					self.tauon.update_title_do()
@@ -4147,7 +4159,7 @@ class PlayerCtl:
 					self.advance(end=end, force=True, play=play)
 					return None
 
-				self.gui.update += 3
+				self.gui.request_frame()
 
 			else:
 				if self.playlist_playing_position > len(self.playing_playlist()) - 1:
@@ -4270,7 +4282,7 @@ class PlayerCtl:
 	def reset_missing_flags(self) -> None:
 		for value in self.master_library.values():
 			value.found = True
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 class LastFMapi:
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
@@ -4478,13 +4490,13 @@ class LastFMapi:
 								touched.append(track.index)
 		except Exception:
 			logging.exception("Scanning failed. Try again?")
-			self.gui.pl_update += 1
+			self.gui.request_tracklist_redraw()
 			self.scanning_scrobbles = False
 			self.show_message(_("Scanning failed. Try again?"), mode="error")
 			return
 
 		logging.info(self.tauon.perf_timer.get())
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.scanning_scrobbles = False
 		self.tauon.bg_save()
 		self.show_message(_("Scanning scrobbles complete"), mode="done")
@@ -4624,7 +4636,7 @@ class LastFMapi:
 			# self.show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
 			logging.error("Error connecting to last.fm")
 			self.tauon.scrobble_warning_timer.set()
-			self.gui.update += 1
+			self.gui.request_frame()
 			self.gui.delay_frame(5)
 
 			return False
@@ -5031,7 +5043,7 @@ class LastScrob:
 			try:
 				tr = self.queue.pop()
 
-				self.gui.pl_update = 1
+				self.gui.request_tracklist_redraw()
 				logging.info(f"Submit Scrobble {tr[0].artist} - {tr[0].title}")
 
 				success = True
@@ -5132,7 +5144,7 @@ class LastScrob:
 	def scrob_full_track(self, track_object: TrackClass) -> None:
 		# logging.info("SCROBBLE")
 		track_object.lfm_scrobbles += 1
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 		if track_object.is_network:
 			if track_object.file_ext == "SUB":
@@ -5559,7 +5571,7 @@ class Menu:
 				cb = item.inc_plus if plus else item.inc_minus
 				if cb is not None:
 					cb(self.reference)
-					gui.update += 1
+					gui.request_frame()
 
 		button(minus_x, False)
 		button(plus_x, True)
@@ -5682,7 +5694,7 @@ class Menu:
 								self.reference = self.items[i].set_ref
 							self.inp.mouse_down = False
 							self.close_next_frame = True
-							gui.update += 1
+							gui.request_frame()
 						if springing:
 							self.sub_active = -1
 					elif self.clicked or springing:
@@ -5958,7 +5970,7 @@ class Menu:
 							self.clicked = False  # keep the menu (and submenu) open
 						else:
 							self.close_next_frame = True
-						gui.update += 1
+						gui.request_frame()
 
 			label = fx.text if fx.text is not None else item.title
 			if self.is_item_disabled(item):
@@ -6042,7 +6054,7 @@ class GallClass:
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
-				self.gui.update += 1
+				self.gui.request_frame()
 
 		while len(self.queue) > 0:
 			source_image = None
@@ -6160,9 +6172,9 @@ class GallClass:
 				order = [2, g, None, None]
 				self.gall[key] = order
 
-				self.gui.update += 1
+				self.gui.request_frame()
 				if self.album_art_column_is_shown():
-					self.gui.pl_update += 1
+					self.gui.request_tracklist_redraw()
 				if source_image:
 					source_image.close()
 					source_image = None
@@ -6174,7 +6186,7 @@ class GallClass:
 				logging.exception(f"Image load failed on track: {key[0].fullpath}")
 				order = [0, None, None, None]
 				self.gall[key] = order
-				self.gui.update += 1
+				self.gui.request_frame()
 				# del self.queue[0]
 
 			if size < 150:
@@ -6280,7 +6292,7 @@ class GallClass:
 
 				# Remove old images to conserve RAM usage
 				if len(self.key_list) > self.limit:
-					self.gui.update += 1
+					self.gui.request_frame()
 					key = self.key_list[0]
 					# while key in self.queue:
 					#	 self.queue.remove(key)
@@ -7354,7 +7366,7 @@ class Tauon:
 			if self.coll(rect) and not gui.mouse_unknown:
 				if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 					self.restore_full_mode()
-					gui.update += 2
+					gui.request_frame()
 
 		# maximize
 
@@ -7458,7 +7470,7 @@ class Tauon:
 					self.top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
 					if (inp.mouse_click or inp.ab_click) and coll_point(inp.click_location, rect):
 						self.restore_full_mode()
-						gui.update += 2
+						gui.request_frame()
 				else:
 					self.top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
 
@@ -7941,7 +7953,7 @@ class Tauon:
 		if not playlist and not stations:
 			return
 
-		self.gui.update = 1
+		self.gui.request_frame()
 
 	def read_pls(self, lines: list[str], path: str, followed: bool = False) -> None:
 		ids:         list[str] = []
@@ -8216,7 +8228,7 @@ class Tauon:
 			self.add_stations(stations, name)
 		if not stations and not playlist:
 			return
-		self.gui.update = 1
+		self.gui.request_frame()
 
 
 	def ex_tool_tip(self, x: int, y: float, text1_width: int, text: str, font: int) -> None:
@@ -8296,7 +8308,7 @@ class Tauon:
 			self.gui.last_left_panel_mode = t
 
 	def toggle_repeat(self) -> None:
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.pctl.repeat_mode ^= True
 		if self.pctl.mpris is not None:
 			self.pctl.mpris.update_loop()
@@ -8345,10 +8357,10 @@ class Tauon:
 		else:
 			self.pctl.clear_ab_repeat(update_gui=False)
 
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def toggle_random(self) -> None:
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.pctl.random_mode ^= True
 		if self.pctl.mpris is not None:
 			self.pctl.mpris.update_shuffle()
@@ -8816,7 +8828,7 @@ class Tauon:
 
 	def toggle_showcase_wide_art(self, _track_object: TrackClass) -> None:
 		self.prefs.showcase_wide_art ^= True
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def showcase_mode_show_test(self, _track_object: TrackClass) -> bool:
 		return self.gui.showcase_mode
@@ -9022,7 +9034,7 @@ class Tauon:
 
 	def toggle_milk_cut_out(self, _track_object: TrackClass) -> None:
 		self.prefs.milk_cut_out ^= True
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def milk_preset_is_favorite(self) -> bool:
 		preset = self.milky.projectm.loaded_preset
@@ -9179,7 +9191,7 @@ class Tauon:
 			self.gui.message_box = False
 			if not self.gui.showcase_mode:
 				self.prefs.show_lyrics_side = True
-			self.gui.update += 1
+			self.gui.request_frame()
 			self.lyrics_ren.lyrics_position = 0
 			self.timed_lyrics_ren.index = -1
 			self.pctl.notify_database_changed()
@@ -10001,7 +10013,7 @@ class Tauon:
 		if index == self.pctl.active_playlist_viewing:
 			self.pctl.playlist_view_position = 0
 
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def clear_current_playlist(self) -> None:
 		self.clear_playlist(self.pctl.active_playlist_viewing)
@@ -10026,7 +10038,7 @@ class Tauon:
 		reduce_paths(self.pctl.multi_playlist[pl].last_folder)
 
 		self.load_orders.append(copy.deepcopy(load_order))
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def convert_playlist(self, pl: int, get_list: bool = False) -> list[list[int]] | None:
 		if not self.test_ffmpeg():
@@ -10081,7 +10093,7 @@ class Tauon:
 	def append_playlist(self, index: int) -> None:
 		self.pctl.multi_playlist[index].playlist_ids += self.pctl.cargo
 
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 		self.reload()
 
 	#def sort_track_numbers_album_only(self, pl: int, custom_list: list[int] | None = None):
@@ -10109,7 +10121,7 @@ class Tauon:
 	def append_current_playing(self, index: int) -> None:
 		if self.pctl.playing_state != PlayingState.STOPPED and len(self.pctl.track_queue) > 0:
 			self.pctl.multi_playlist[index].playlist_ids.append(self.pctl.track_queue[self.pctl.queue_step])
-			self.gui.pl_update = 1
+			self.gui.request_tracklist_redraw()
 
 	def export_stats(self, pl: int) -> None:
 		playlist_time = 0
@@ -10422,7 +10434,7 @@ class Tauon:
 
 		# Find target path
 		self.gui.sync_progress = "Starting Sync..."
-		self.gui.update += 1
+		self.gui.request_frame()
 
 		path = Path(self.sync_target.text.strip().rstrip("/").rstrip("\\").replace("\n", "").replace("\r", ""))
 		logging.debug(f"sync_path: {path}")
@@ -10430,13 +10442,13 @@ class Tauon:
 			self.show_message(_("No target folder selected"))
 			self.gui.sync_progress = ""
 			self.gui.stop_sync = False
-			self.gui.update += 1
+			self.gui.request_frame()
 			return
 		if not path.is_dir():
 			self.show_message(_("Target folder could not be found"))
 			self.gui.sync_progress = ""
 			self.gui.stop_sync = False
-			self.gui.update += 1
+			self.gui.request_frame()
 			return
 
 		self.prefs.sync_target = str(path)
@@ -10454,7 +10466,7 @@ class Tauon:
 		if self.gui.stop_sync:
 			self.gui.sync_progress = ""
 			self.gui.stop_sync = False
-			self.gui.update += 1
+			self.gui.request_frame()
 
 		# Find the folder names the transcode function would name them
 		for folder in folders:
@@ -10475,7 +10487,7 @@ class Tauon:
 					break
 				if d_folder not in folder_names:
 					self.gui.sync_progress = _("Deleting folders...")
-					self.gui.update += 1
+					self.gui.request_frame()
 					logging.warning(f"DELETING: {d_folder}")
 					shutil.rmtree(path / d_folder)
 
@@ -10489,7 +10501,7 @@ class Tauon:
 			else:
 				logging.error(f"Already exists: {folder}")
 
-		self.gui.update += 1
+		self.gui.request_frame()
 		# -----
 		# Prepare and copy
 		for i, item in enumerate(todos):
@@ -10548,7 +10560,7 @@ class Tauon:
 				file = file.name
 				logging.info(f"Copy file {file} to {path / item}…")
 				# self.gui.sync_progress += "."
-				self.gui.update += 1
+				self.gui.request_frame()
 
 				if (encode_done / file).is_file():
 					size = os.path.getsize(encode_done / file)
@@ -10581,7 +10593,7 @@ class Tauon:
 		self.gui.sync_speed = 0
 		self.gui.sync_progress = ""
 		self.gui.stop_sync = False
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.show_message(_("Sync completed"), mode="done")
 
 	def auto_sync(self, pl: int) -> None:
@@ -11714,8 +11726,8 @@ class Tauon:
 			)
 
 	def del_selected(self, force_delete: bool = False) -> None:
-		self.gui.update += 1
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 
 		if not self.gui.shift_selection:
 			if not self.pctl.selected_ready():
@@ -11765,7 +11777,7 @@ class Tauon:
 		self.pctl.selected_in_playlist = min(self.pctl.selected_in_playlist, len(self.pctl.default_playlist) - 1)
 
 		self.gui.shift_selection = [self.pctl.selected_in_playlist]
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.pctl.notify_database_changed()
 
 	def force_del_selected(self) -> None:
@@ -11813,7 +11825,7 @@ class Tauon:
 			self.pctl.stop_mode = StopMode.OFF
 
 	def add_selected_to_queue(self) -> None:
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
 		if self.gui.album_tab_mode:
@@ -11995,7 +12007,7 @@ class Tauon:
 					mode="error")
 
 		self.tree_view_box.clear_target_pl(self.pctl.active_playlist_viewing)
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.pctl.notify_database_changed()
 
 	def rename_parent(self, index: int, template: str) -> None:
@@ -12274,8 +12286,8 @@ class Tauon:
 				logging.error("KEY ALREADY HERE?")
 
 	def intel_moji(self, ref: MenuTrackRef) -> None:
-		self.gui.pl_update += 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 
 		index = ref.track_id
 		track = self.pctl.master_library[index]
@@ -12419,7 +12431,7 @@ class Tauon:
 		if result:
 			webbrowser.open(result, new=2, autoraise=True)
 			self.gui.message_box = False
-			self.gui.update += 1
+			self.gui.request_frame()
 		else:
 			self.show_message(_("No matching artist result found"))
 
@@ -12866,7 +12878,7 @@ class Tauon:
 
 				self.pctl.playlist_view_position = 0
 				logging.debug("Position changed by sort")
-				self.gui.pl_update = 1
+				self.gui.request_tracklist_redraw()
 		elif custom_list is not None:
 			playlist.sort(key=key, reverse=invert)
 		self.reload()
@@ -12951,7 +12963,7 @@ class Tauon:
 
 		self.show_message(_("{N} ratings imported").format(N=str(len(unique))), mode="done")
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 	def import_popm(self) -> None:
 		unique = set()
@@ -12985,7 +12997,7 @@ class Tauon:
 			s += f", {len(skipped)} skipped"
 		self.show_message(s, mode="done")
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 	def clear_ratings(self) -> None:
 		if not self.inp.key_shift_down:
@@ -12997,7 +13009,7 @@ class Tauon:
 		for key, star in self.star_store.db.items():
 			star.rating = 0
 		self.album_star_store.db.clear()
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 	def find_incomplete(self) -> None:
 		self.gen_incomplete(self.pctl.active_playlist_viewing)
@@ -13024,7 +13036,7 @@ class Tauon:
 
 	def clear_queue(self) -> None:
 		self.pctl.force_queue = []
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 		self.pctl.pause_queue = False
 
 	def set_mini_mode_A1(self) -> None:
@@ -13565,8 +13577,8 @@ class Tauon:
 				num -= 1
 
 	def update_playlist_call(self) -> None:
-		self.gui.update += 2
-		self.gui.pl_update = 2
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 
 	def pl_is_mut(self, pl: int) -> bool:
 		"""Returns True if specified playlist number is modifiable/not associated with a generator i think"""
@@ -13836,7 +13848,7 @@ class Tauon:
 			sdl3.SDL_SetWindowPosition(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
 
 		self.gui.update_layout = True
-		self.gui.update += 3
+		self.gui.request_frame()
 
 	def restore_full_mode(self) -> None:
 		logging.info("RESTORE FULL")
@@ -14232,7 +14244,7 @@ class Tauon:
 		self.gui.heart_fields.append(rect)
 		self.fields.add(rect, self.update_playlist_call)
 		if self.coll(rect) and not self.gui.track_box:
-			self.gui.pl_update += 1
+			self.gui.request_tracklist_redraw()
 			w = self.ddt.get_text_w(_("You"), 13)
 			xx = (x - w) - 5 * self.gui.scale
 
@@ -14259,7 +14271,7 @@ class Tauon:
 		self.gui.heart_fields.append(rect)
 		self.fields.add(rect, self.update_playlist_call)
 		if self.coll(rect) and not self.gui.track_box:
-			self.gui.pl_update += 1
+			self.gui.request_tracklist_redraw()
 			w = self.ddt.get_text_w(name, 13)
 			xx = (x - w) - 5 * self.gui.scale
 
@@ -14661,7 +14673,7 @@ class Tauon:
 			else:
 				gui.compact_bar = False
 
-			gui.pl_update = 1
+			gui.request_tracklist_redraw()
 
 			# Tracklist sizing ----------------------------------------------------
 			left = gui.playlist_left
@@ -15114,12 +15126,12 @@ class Tauon:
 	def hide_set_bar(self) -> None:
 		self.gui.set_bar = False
 		self.gui.update_layout = True
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def show_set_bar(self) -> None:
 		self.gui.set_bar = True
 		self.gui.update_layout = True
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def force_album_view(self) -> None:
 		self.toggle_album_mode(force_on=True)
@@ -16390,7 +16402,7 @@ class Tauon:
 
 		self.tree_view_box.clear_target_pl(0, id)
 		self.pctl.regen_in_progress = False
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 		self.reload()
 		self.dropped_playlist = pl
 		self.pctl.notify_database_changed()
@@ -16503,7 +16515,7 @@ class Tauon:
 			self.gui.auto_play_import = True
 
 		self.load_orders.append(copy.deepcopy(load_order))
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def toast(self, text: str, duration: float = 1) -> None:
 		self.gui.mode_toast_text = text
@@ -16621,7 +16633,7 @@ class Tauon:
 				if not item[2]:
 					item[1] = space
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.update_set()
 
 	def set_colour(self, colour: ColourRGBA) -> None:
@@ -16670,7 +16682,7 @@ class Tauon:
 
 				self.pctl.notify_database_changed()
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.thread_manager.ready("worker")
 
 	def menu_reload_metadata(self, ref: MenuTrackRef) -> None:
@@ -16792,7 +16804,7 @@ class Tauon:
 
 		self.show_message(
 			self.prefs.tag_editor_name + " launched.", "Fields will be updated once application is closed.", mode="arrow")
-		self.gui.update = 1
+		self.gui.request_frame()
 
 		complete = subprocess.run(shlex.split(line), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
 
@@ -16842,8 +16854,8 @@ class Tauon:
 
 			self.star_store.db[new_key] = new_value
 
-		self.gui.pl_update = 1
-		self.gui.update = 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		self.pctl.notify_database_changed()
 
 	def launch_editor(self, ref: MenuTrackRef) -> bool | None:
@@ -16905,7 +16917,7 @@ class Tauon:
 				logging.error(f"Message: {line1} {line2} {line3}")
 			case _:
 				logging.error(f"Unknown mode '{mode}' for message: {line1} {line2} {line3}")
-		self.gui.update = 1
+		self.gui.request_frame()
 
 	def start_remote(self) -> None:
 		if not self.web_running:
@@ -17036,7 +17048,7 @@ class Tauon:
 			self.gui.heart_fields.append(rect)
 
 		if allow_input and input_in_bounds and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
-			self.gui.pl_update = 2
+			self.gui.request_tracklist_redraw()
 			pp = self.inp.mouse_position[0] - x
 
 			if pp < 5 * self.gui.scale:
@@ -17138,11 +17150,11 @@ class Tauon:
 
 	def toggle_playlist_break(self) -> None:
 		self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title ^= 1
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def pl_toggle_playlist_break(self, ref) -> None:
 		self.pctl.multi_playlist[ref].hide_title ^= 1
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def transcode_single(self, item: list[tuple[int, str]], manual_directory: Path | None = None, manual_name: str | None = None) -> None:
 		if manual_directory is not None:
@@ -17291,7 +17303,7 @@ class Tauon:
 		if cleanup:
 			os.remove(path)
 		self.core_use -= 1
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def cue_scan(self, content: str, tn: TrackClass) -> int | None:
 		# Get length from backend
@@ -17536,7 +17548,7 @@ class Tauon:
 			self.show_message(_("No exact matching artist could be found in this playlist"))
 
 		logging.debug("Position changed by artist locate")
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 	def goto_album(self, playlist_no: int, down: bool = False, force: bool = False) -> list | int | None:
 		logging.debug("Position set by album locate")
@@ -17595,7 +17607,7 @@ class Tauon:
 			return self.album_dex[re]
 		return 0
 
-		self.gui.update += 1 # TODO(Martin): WTF Unreachable??
+		self.gui.request_frame() # TODO(Martin): WTF Unreachable??
 		return None
 
 	def toggle_album_mode(self, force_on: bool = False) -> None:
@@ -17622,7 +17634,7 @@ class Tauon:
 
 		if self.prefs.album_mode and self.gui.set_mode and len(self.gui.pl_st) > 6 and space < 600 * self.gui.scale:
 			self.gui.set_mode = False
-			self.gui.pl_update = True
+			self.gui.request_tracklist_redraw()
 			self.gui.update_layout = True
 
 		self.reload_albums(quiet=True)
@@ -17826,8 +17838,8 @@ class Tauon:
 		self.album_dex[:] = dex
 		self.album_dex_pl_uuid = self.pctl.multi_playlist[target_pl_no].uuid_int
 		self.album_info_cache.clear()
-		self.gui.update += 2
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
 
 		if not quiet:
@@ -18015,7 +18027,7 @@ class Tauon:
 			logging.exception("There was an error parsing the data")
 			self.show_message(_("There was an error parsing the data"), mode="warning")
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.lastfm.scanning_scrobbles = False
 		self.bg_save()
 
@@ -18101,7 +18113,7 @@ class Tauon:
 		self.plex.connected = False
 		self.plex.resource = None
 		self.plex.scanning = False
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def plex_get_album_thread(self) -> None:
 		if self.plex.scanning:
@@ -18677,8 +18689,8 @@ class Tauon:
 
 		if loved:
 			time.sleep(delay)
-			self.gui.update += 1
-			self.gui.pl_update += 1
+			self.gui.request_frame()
+			self.gui.request_tracklist_redraw()
 			star.loved = True
 			self.star_store.insert(track_id, star)
 			if sync:
@@ -18700,8 +18712,8 @@ class Tauon:
 					self.subsonic.star_track(self.pctl.master_library[track_id])
 		else:
 			time.sleep(delay)
-			self.gui.update += 1
-			self.gui.pl_update += 1
+			self.gui.request_frame()
+			self.gui.request_tracklist_redraw()
 			star.loved = False
 			self.star_store.insert(track_id, star)
 			if sync:
@@ -18718,8 +18730,8 @@ class Tauon:
 				if self.pctl.master_library[track_id].file_ext == "SUB":
 					self.subsonic.unstar_track(self.pctl.master_library[track_id])
 
-		self.gui.pl_update = 2
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		if sync and self.pctl.mpris is not None:
 			self.pctl.mpris.update(force=True)
 		return None
@@ -18795,7 +18807,7 @@ class Tauon:
 						0]
 
 			if p_track >= len(self.pctl.default_playlist):
-				self.gui.pl_update += 1
+				self.gui.request_tracklist_redraw()
 				return
 
 			index = self.pctl.default_playlist[p_track]
@@ -18979,7 +18991,7 @@ class Tauon:
 			if value:
 				sdl3.SDL_DestroyTexture(value[0])
 		self.artist_list_box.thumb_cache.clear()
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def clear_track_image_cache(self, track: TrackClass) -> None:
 		self.gui.halt_image_rendering = True
@@ -19489,7 +19501,7 @@ class Tauon:
 		if len(albums) > 0:
 			playlist[albums[i]:] = sorted(playlist[albums[i]:], key=self.pctl.index_key)
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 
 	def key_filepath(self, index: int) -> tuple[str, str]:
 		track = self.pctl.master_library[index]
@@ -19582,8 +19594,8 @@ class Tauon:
 			return self.prefs.dim_art
 
 		self.prefs.dim_art ^= True
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		return None
 
 	def toggle_gallery_combine(self, mode: int = 0) -> bool | None:
@@ -19606,7 +19618,7 @@ class Tauon:
 			return self.prefs.thin_gallery_borders
 
 		self.prefs.thin_gallery_borders ^= True
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.update_layout_do()
 		return None
 
@@ -19615,7 +19627,7 @@ class Tauon:
 			return self.prefs.increase_gallery_row_spacing
 
 		self.prefs.increase_gallery_row_spacing ^= True
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.update_layout_do()
 		return None
 
@@ -19624,7 +19636,7 @@ class Tauon:
 			return self.gui.gallery_show_text
 
 		self.gui.gallery_show_text ^= True
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.update_layout_do()
 
 		# Jump to playing album
@@ -19638,7 +19650,7 @@ class Tauon:
 			return self.prefs.use_card_style
 
 		self.prefs.use_card_style ^= True
-		self.gui.update += 1
+		self.gui.request_frame()
 		return None
 
 	def toggle_side_panel(self, mode: int = 0) -> bool | None:
@@ -19679,8 +19691,8 @@ class Tauon:
 			self.prefs.transparent_mode = 1
 
 		self.gui.reload_theme = True
-		self.gui.update += 1
-		self.gui.pl_update += 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def toggle_auto_bg(self, mode: int= 0) -> bool | None:
@@ -19689,7 +19701,7 @@ class Tauon:
 		self.prefs.art_bg ^= True
 
 		if self.prefs.art_bg:
-			self.gui.update = 60
+			self.gui.request_frame()
 
 		self.style_overlay.flush()
 		self.thread_manager.ready("style")
@@ -19721,7 +19733,7 @@ class Tauon:
 		self.prefs.art_bg_stronger = 2
 		self.gui.update_layout = True
 		if self.prefs.art_bg:
-			self.gui.update = 60
+			self.gui.request_frame()
 		return None
 
 	def toggle_auto_bg_strong3(self, mode: int = 0) -> bool | None:
@@ -19730,7 +19742,7 @@ class Tauon:
 		self.prefs.art_bg_stronger = 3
 		self.gui.update_layout = True
 		if self.prefs.art_bg:
-			self.gui.update = 60
+			self.gui.request_frame()
 		return None
 
 	def toggle_auto_bg_blur(self, mode: int = 0) -> bool | None:
@@ -19809,8 +19821,8 @@ class Tauon:
 			self.gui.show_ratings = False
 			self.prefs.rating_playtime_stars = False
 
-		self.gui.update += 1
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def star_toggle(self, mode: int = 0) -> bool | None:
@@ -19822,8 +19834,8 @@ class Tauon:
 			self.gui.star_mode = "none"
 
 		# self.gui.show_ratings = False
-		self.gui.update += 1
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def heart_toggle(self, mode: int = 0) -> bool | None:
@@ -19833,8 +19845,8 @@ class Tauon:
 		self.gui.show_hearts ^= True
 		# self.gui.show_ratings = False
 
-		self.gui.update += 1
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def album_rating_toggle(self, mode: int = 0) -> bool | None:
@@ -19842,8 +19854,8 @@ class Tauon:
 			return self.gui.show_album_ratings
 
 		self.gui.show_album_ratings ^= True
-		self.gui.update += 1
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def rating_toggle(self, mode: int = 0) -> bool | None:
@@ -19859,8 +19871,8 @@ class Tauon:
 			if not self.prefs.write_ratings:
 				self.show_message(_("Note that ratings are stored in the local database and not written to tags."))
 
-		self.gui.update += 1
-		self.gui.pl_update = 1
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def toggle_titlebar_line(self, mode: int = 0) -> bool | None:
@@ -19889,7 +19901,7 @@ class Tauon:
 		else:
 			self.prefs.side_panel_layout = 1
 		self.gui.update_layout = True
-		self.gui.update += 1
+		self.gui.request_frame()
 		return None
 
 	def toggle_side_panel_side(self, mode: int = 0) -> bool | None:
@@ -19897,7 +19909,7 @@ class Tauon:
 			return self.prefs.side_panel_left
 		self.prefs.side_panel_left ^= True
 		self.gui.update_layout = True
-		self.gui.update += 1
+		self.gui.request_frame()
 		return None
 
 	def toggle_meta_shows_selected(self, mode: int = 0) -> bool | None:
@@ -19988,14 +20000,14 @@ class Tauon:
 			return self.prefs.rounded_corners
 
 		self.prefs.rounded_corners ^= True
-		self.gui.update += 1
+		self.gui.request_frame()
 		return None
 
 	def toggle_break(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.break_enable ^ True
 		self.prefs.break_enable ^= True
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def toggle_scroll(self, mode: int = 0) -> bool | None:
@@ -20003,7 +20015,7 @@ class Tauon:
 			return not self.prefs.scroll_enable
 
 		self.prefs.scroll_enable ^= True
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
 		return None
 
@@ -20015,8 +20027,8 @@ class Tauon:
 			return None
 
 		self.prefs.smooth_scroll_enable ^= True
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		return None
 
 	def toggle_hide_bar(self, mode: int = 0) -> bool | None:
@@ -20031,16 +20043,16 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.append_total_time
 		self.prefs.append_total_time ^= True
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		return None
 
 	def toggle_append_date(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.append_date
 		self.prefs.append_date ^= True
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		return None
 
 	def toggle_true_shuffle(self, mode: int = 0) -> bool | None:
@@ -20301,7 +20313,7 @@ class Tauon:
 				if x < i_x < x + wid:
 					self.gui.drop_playlist_target = tab
 					self.tab_pulse.pulse()
-					self.gui.update += 1
+					self.gui.request_frame()
 					self.gui.pl_pulse = True
 					logging.info("Direct drop")
 					break
@@ -20324,7 +20336,7 @@ class Tauon:
 				if i_y < y:
 					self.gui.drop_playlist_target = i
 					self.tab_pulse.pulse()
-					self.gui.update += 1
+					self.gui.request_frame()
 					self.gui.pl_pulse = True
 					logging.info("Direct drop")
 					break
@@ -20358,7 +20370,7 @@ class Tauon:
 					mode="bubble")
 				self.show_message(_("Path may be transient! Continue? Press \"No\" for more information."),
 					mode="confirm")
-				self.gui.update += 1
+				self.gui.request_frame()
 				self.inp.mouse_down = False
 				self.inp.drag_mode = False
 				return
@@ -20373,7 +20385,7 @@ class Tauon:
 		self.load_orders.append(copy.deepcopy(load_order))
 
 		#logging.info('dropped: ' + str(dropped_file))
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.inp.mouse_down = False
 		self.inp.drag_mode = False
 
@@ -20469,7 +20481,7 @@ class Tauon:
 			else:
 				self.append_playlist(playlist_no)
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 	def do_exit_button(self) -> None:
 		if self.inp.mouse_up or self.inp.ab_click:
 			if self.gui.tray_active and self.prefs.min_to_tray:
@@ -20719,7 +20731,7 @@ class Tauon:
 		sdl3.SDL_RaiseWindow(self.t_window)
 		sdl3.SDL_RestoreWindow(self.t_window)
 		self.gui.lowered = False
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def focus_window(self) -> None:
 		sdl3.SDL_RaiseWindow(self.t_window)
@@ -20778,7 +20790,7 @@ class PlexService:
 				_("Enter the verification code and try again."),
 				mode="warning",
 			)
-			self.gui.update += 1
+			self.gui.request_frame()
 			self.scanning = False
 			return False
 		except Exception:
@@ -20805,7 +20817,7 @@ class PlexService:
 		return None
 
 	def get_albums(self, return_list: bool = False) -> list[int] | None:
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.scanning = True
 
 		if not self.connected:
@@ -20879,8 +20891,8 @@ class PlexService:
 				playlist.append(nt.index)
 
 			self.gui.to_got += 1
-			self.gui.update += 1
-			self.gui.pl_update += 1
+			self.gui.request_frame()
+			self.gui.request_tracklist_redraw()
 
 		self.scanning = False
 
@@ -21699,7 +21711,7 @@ class TextBox2:
 		if click is False:
 			click = self.inp.mouse_click
 		if self.inp.mouse_down:
-			self.gui.update = 2  # TODO(Taiko): more elegant fix
+			self.gui.request_frame()  # TODO(Taiko): more elegant fix
 
 		rect = (x - 3, y - 2, width - 3, 21 * self.gui.scale)
 		select_rect = (x - 20 * self.gui.scale, y - 2, width + 20 * self.gui.scale, 21 * self.gui.scale)
@@ -22476,7 +22488,7 @@ class AlbumArt:
 		self.downloaded_image = self.get_source_raw(0, 0, track, subsource=subsource)
 		self.downloaded_track = track
 		self.download_in_progress = False
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def get_info(self, track_object: TrackClass) -> list[tuple[int, int, int, int, str]] | None:
 		sources = self.get_sources(track_object)
@@ -23216,7 +23228,7 @@ class AlbumArt:
 			with self.async_lock:
 				for b in self.async_loads.pop(load_key, ()):
 					self.async_failed[(load_key[0], load_key[1], b)] = now
-			self.gui.update += 1
+			self.gui.request_frame()
 			return
 
 		im, o_size, image_format = r
@@ -23241,14 +23253,14 @@ class AlbumArt:
 						break
 					self.async_results[(load_key[0], load_key[1], b)] = (g, sized_o_size, image_format, time.monotonic())
 					self.async_loads[load_key].discard(b)
-				self.gui.update += 1
+				self.gui.request_frame()
 		except Exception:
 			logging.exception("Error preparing image sizes")
 			now = time.monotonic()
 			with self.async_lock:
 				for b in self.async_loads.pop(load_key, ()):
 					self.async_failed[(load_key[0], load_key[1], b)] = now
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def load_art_image(self, track: TrackClass, source: list[tuple[int, str]], offset: int, theme_only: bool = False, in_worker: bool = False) -> tuple[ImageFile, tuple[int, int], str] | int | None:
 		"""Fetch and decode the source image; this is the one disk (or network)
@@ -23544,7 +23556,7 @@ class AlbumArt:
 				colours.album_text = colours.title_text
 				colours.album_playing = colours.title_playing
 
-				self.gui.pl_update = 1
+				self.gui.request_tracklist_redraw()
 
 				prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
 
@@ -23746,7 +23758,7 @@ class StyleOverlay:
 					return
 
 				self.stage = 1
-				self.gui.update += 1
+				self.gui.request_frame()
 				return
 
 	def flush(self) -> None:
@@ -23762,7 +23774,7 @@ class StyleOverlay:
 		self.thread_manager.ready("worker")
 		self.gui.style_worker_timer.set()
 		self.gui.delay_frame(0.25)
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def display(self) -> None:
 		if self.min_on_timer.get() < 0:
@@ -23801,7 +23813,7 @@ class StyleOverlay:
 			self.stage = 2
 			self.radio_meta = None
 
-			self.gui.update += 1
+			self.gui.request_frame()
 
 		if self.stage == 2:
 			track = self.pctl.playing_object()
@@ -23856,14 +23868,14 @@ class StyleOverlay:
 
 			if t < 0.4:
 				fade = round(t / 0.4 * 255)
-				self.gui.update += 1
+				self.gui.request_frame()
 
 			else:
 				fade = 255
 
 			if self.go_to_sleep:
 				t = self.fade_off_timer.get()
-				self.gui.update += 1
+				self.gui.request_frame()
 
 				if t < 1:
 					fade = 255
@@ -24398,7 +24410,7 @@ class TransEditBox:
 				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), ColourRGBA(245, 90, 90, 255), 312)
 
 		if self.inp.key_return_press:
-			self.gui.pl_update += 1
+			self.gui.request_tracklist_redraw()
 			if self.active_field == 0 and len(select) == 1:
 				for s in select:
 					tr = self.pctl.get_track(self.pctl.default_playlist[s])
@@ -24470,7 +24482,7 @@ class TransEditBox:
 
 					muta.save()
 					self.gui.tag_write_count += 1
-					self.gui.update += 1
+					self.gui.request_frame()
 				self.tauon.bg_save()
 				if not self.gui.message_box:
 					self.show_message(_("{N} files rewritten").format(N=self.gui.tag_write_count), mode="done")
@@ -25279,7 +25291,7 @@ class SearchOverlay:
 					self.ddt.rect((x, y, s, s), colour)
 					x += g + s
 
-				gui.update += 1
+				gui.request_frame()
 
 			# No results found message
 			elif not self.results and len(self.search_text.text) > 1:
@@ -25293,7 +25305,7 @@ class SearchOverlay:
 			if inp.input_text or inp.key_backspace_press:
 				self.input_timer.set()
 
-				gui.update += 1
+				gui.request_frame()
 			elif self.input_timer.get() >= 0.20 and \
 					(len(self.search_text.text) > 1 or (len(self.search_text.text) == 1 and ord(self.search_text.text) > 128)) \
 					and self.search_text.text != self.searched_text:
@@ -25526,7 +25538,7 @@ class SearchOverlay:
 				if self.coll(s_rect) and mouse_change:
 					if self.force_select != p:
 						self.force_select = p
-						gui.update = 2
+						gui.request_frame()
 
 					if gui.level_2_click:
 						if control_down:
@@ -25666,7 +25678,7 @@ class MessageBox:
 
 			if not inp.key_focused and self.tauon.message_box_min_timer.get() > 0.4:
 				gui.message_box = False
-				gui.update += 1
+				gui.request_frame()
 				inp.key_return_press = False
 
 		x, y, w, h = self.get_rect()
@@ -25750,20 +25762,20 @@ class PresetDownloadBox:
 		self.status = status
 		self.detail = ""
 		self.cancel_detail = cancel_detail
-		self.gui.update = max(self.gui.update, 2)
+		self.gui.request_frame()
 
 	def update(self, progress: float | None, status: str, detail: str = "") -> None:
 		if progress is not None:
 			self.progress = max(0.0, min(1.0, progress))
 		self.status = status
 		self.detail = detail
-		self.gui.update = max(self.gui.update, 2)
+		self.gui.request_frame()
 
 	def finish(self) -> None:
 		self.active = False
 		self.cancel_requested = False
 		self.done = False
-		self.gui.update = max(self.gui.update, 2)
+		self.gui.request_frame()
 
 	def complete(self, status: str, detail: str = "", toast_text: str | None = None) -> None:
 		self.progress = 1.0
@@ -25779,13 +25791,13 @@ class PresetDownloadBox:
 		self.done = True
 		self.status = status
 		self.detail = detail
-		self.gui.update = max(self.gui.update, 2)
+		self.gui.request_frame()
 
 	def cancel(self) -> None:
 		self.cancel_requested = True
 		self.status = _("Cancelling...")
 		self.detail = self.cancel_detail
-		self.gui.update = max(self.gui.update, 2)
+		self.gui.request_frame()
 
 	def render(self) -> None:
 		if not self.active:
@@ -25864,7 +25876,7 @@ class NagBox:
 
 	def dismiss(self) -> None:
 		self.prefs.show_nag = False
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.gui.level_2_click = False
 		self.inp.mouse_click = False
 		self.inp.key_return_press = False
@@ -25872,7 +25884,7 @@ class NagBox:
 
 	def show(self) -> None:
 		self.prefs.show_nag = True
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.gui.level_2_click = False
 		self.inp.mouse_click = False
 
@@ -28290,7 +28302,7 @@ class Over:
 			star.loved = False
 			self.star_store.db[key] = star
 
-		self.gui.pl_update += 1
+		self.gui.request_tracklist_redraw()
 		self.show_message(_("Cleared all loves"), mode="done")
 
 	def get_scrobble_counts(self) -> None:
@@ -29042,7 +29054,7 @@ class Over:
 		)
 		if round(new_radius) != prefs.corner_radius:
 			prefs.corner_radius = round(new_radius)
-			gui.update += 1
+			gui.request_frame()
 		inner_y += round(52 * gui.scale)
 		old_on_top = prefs.mini_mode_on_top
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
@@ -29086,7 +29098,7 @@ class Over:
 		def set_scale(value: float) -> None:
 			prefs.scale_want = normalize_scale_value(value)
 			prefs.x_scale = False
-			gui.update += 1
+			gui.request_frame()
 			gui.update_layout = True
 
 		preview_scale = float(
@@ -29291,12 +29303,12 @@ class Over:
 					if -0.1 < target < 0.1:
 						target = 0
 					prefs.eq[i] = target
-					self.gui.update += 1
+					self.gui.request_frame()
 					self.pctl.playerCommand = "seteq"
 					self.pctl.playerCommandReady = True
 				if self.right_click:
 					prefs.eq[i] = 0
-					self.gui.update += 1
+					self.gui.request_frame()
 					self.pctl.playerCommand = "seteq"
 					self.pctl.playerCommandReady = True
 
@@ -29313,7 +29325,7 @@ class Over:
 			self.prefs.eq = [0.0] * 10
 		for i in range(min(len(self.prefs.eq), 10)):
 			self.prefs.eq[i] = 0.0
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.pctl.playerCommand = "seteq"
 		self.pctl.playerCommandReady = True
 
@@ -30599,7 +30611,7 @@ class Over:
 				- self.theme_editor_window_drag_start_mouse[1]
 			)
 			self.tauon.input_sdl.mouse_capture_want = True
-			gui.update += 1
+			gui.request_frame()
 		margin = round(8 * gui.scale)
 		x = min(max(x, margin), max(margin, self.window_size[0] - round(full_width * 0.5)))
 		y = min(max(y, margin), max(margin, self.window_size[1] - round(full_height * 0.5)))
@@ -31341,16 +31353,16 @@ class TopPanel:
 					gui.lsp ^= True
 
 				gui.update_layout = True
-				gui.update += 1
+				gui.request_frame()
 			if self.inp.mouse_down and self.inp.quick_drag:
 				gui.lsp = True
 				gui.update_layout = True
-				gui.update += 1
+				gui.request_frame()
 
 			if self.inp.middle_click:
 				self.tauon.toggle_left_last()
 				gui.update_layout = True
-				gui.update += 1
+				gui.request_frame()
 
 			if inp.right_click:
 				# prefs.artist_list ^= True
@@ -31451,7 +31463,7 @@ class TopPanel:
 							#pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = True
 						else:
 							pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
-					gui.update += 1
+					gui.request_frame()
 			gui.update_on_drag = True
 
 		# List all tabs eligible to be shown
@@ -31587,17 +31599,17 @@ class TopPanel:
 					elif pctl.radio_playlist_viewing > self.prime_tab:
 						self.prime_side = 1
 					self.prime_tab = pctl.radio_playlist_viewing
-					gui.update += 1
+					gui.request_frame()
 			elif not self.inp.mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
 				if pctl.active_playlist_viewing < self.prime_tab:
 					self.prime_side = 0
 				elif pctl.active_playlist_viewing > self.prime_tab:
 					self.prime_side = 1
 				self.prime_tab = pctl.active_playlist_viewing
-				gui.update += 1
+				gui.request_frame()
 
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] > xx and inp.mouse_position[1] < gui.panelY:
-				gui.update += 1
+				gui.request_frame()
 				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and right_overflow:
 					self.drag_slide_timer.set()
 					self.prime_side = 1
@@ -31605,7 +31617,7 @@ class TopPanel:
 				if self.drag_slide_timer.get() > 1:
 					self.drag_slide_timer.set()
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] < x and inp.mouse_position[1] < gui.panelY:
-				gui.update += 1
+				gui.request_frame()
 				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and left_overflow:
 					self.drag_slide_timer.set()
 					self.prime_side = 0
@@ -31656,7 +31668,7 @@ class TopPanel:
 
 				# Click to change playlist
 				if inp.mouse_click:
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 					tauon.playlist_box.drag = True
 					tauon.playlist_box.drag_source = 0
 					tauon.playlist_box.drag_on = i
@@ -31686,7 +31698,7 @@ class TopPanel:
 								pctl.move_playlist(tauon.playlist_box.drag_on, i)
 
 					tauon.playlist_box.drag = False
-					gui.update += 1
+					gui.request_frame()
 
 				# Delete playlist on wheel click
 				elif tauon.tab_menu.active is False and self.inp.middle_click:
@@ -31710,7 +31722,7 @@ class TopPanel:
 						tauon.clear_gen_ask(pctl.pl_to_id(i))
 					self.inp.quick_drag = False
 					modified = False
-					gui.pl_update += 1
+					gui.request_tracklist_redraw()
 
 					for item in gui.shift_selection:
 						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
@@ -31874,7 +31886,7 @@ class TopPanel:
 
 								ddt.text(
 									(x + tab_width - 3, round(ay), 1), "+" + str(self.adds[k][1]), colours.pulse_colour, 212, bg=bg)
-								gui.update += 1
+								gui.request_frame()
 
 			x += tab_width + self.tab_spacing
 
@@ -31916,7 +31928,7 @@ class TopPanel:
 			pctl.cycle_playlist_pinned(self.inp.mouse_wheel)
 			# TODO (Flynn): does this one need a smooth scrolling update?
 
-			gui.pl_update = 1
+			gui.request_tracklist_redraw()
 			if not prefs.tabs_on_top:
 				if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
 					gui.mode_toast_text = pctl.multi_playlist[pctl.active_playlist_viewing].title
@@ -32009,7 +32021,7 @@ class TopPanel:
 
 							pctl.playlist_view_position = len(pctl.default_playlist)
 							logging.debug("Position changed by track import")
-							gui.update += 1
+							gui.request_frame()
 				else:
 					colour = colours.corner_button  # ColourRGBA(60, 60, 60, 255)
 					# if colours.lm:
@@ -32331,7 +32343,7 @@ class BottomBarType1:
 				pctl.seek_time(pctl.playing_time + (self.inp.mouse_wheel * 3))
 
 		if gui.seek_cur_show:
-			gui.update += 1
+			gui.request_frame()
 
 			# self.fields.add([inp.mouse_position[0] - 1, inp.mouse_position[1] - 1, 1, 1])
 			# ddt.rect_r([inp.mouse_position[0] - 1, inp.mouse_position[1] - 1, 1, 1], [255,0,0,180], True)
@@ -32525,7 +32537,7 @@ class BottomBarType1:
 				inp.global_clicked = True
 
 				if inp.mouse_click is True or self.volume_bar_being_dragged is True:
-					gui.update = 2
+					gui.request_frame()
 
 					self.volume_bar_being_dragged = True
 					volgetX = self.inp.mouse_position[0]
@@ -32623,7 +32635,7 @@ class BottomBarType1:
 
 				if self.tauon.d_click_timer.get() < 0.3 and inp.mouse_click:
 					self.tauon.set_mini_mode()
-					gui.update += 1
+					gui.request_frame()
 					return
 				self.tauon.d_click_timer.set()
 
@@ -33513,7 +33525,7 @@ class MiniMode:
 			if self.coll(text_hit_area) and self.inp.mouse_click:
 				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
-					self.gui.update += 1
+					self.gui.request_frame()
 					return
 				self.tauon.d_click_timer.set()
 
@@ -33567,7 +33579,7 @@ class MiniMode:
 
 				if self.volume_timer.get() < 0.9:
 					progress_w = self.pctl.player_volume * (seek_w - (4 * self.gui.scale)) / 100
-					self.gui.update += 1
+					self.gui.request_frame()
 					seek_colour = ColourRGBA(210, 210, 210, 255)
 					seek_r[2] = progress_w
 					seek_r[0] += 2 * self.gui.scale
@@ -33733,7 +33745,7 @@ class MiniMode2:
 			if self.coll(text_hit_area) and self.inp.mouse_click:
 				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
-					self.gui.update += 1
+					self.gui.request_frame()
 					return
 				self.tauon.d_click_timer.set()
 
@@ -33916,7 +33928,7 @@ class MiniMode3:
 			if self.coll(text_hit_area) and self.inp.mouse_click:
 				if self.tauon.d_click_timer.get() < 0.3:
 					self.tauon.restore_full_mode()
-					self.gui.update += 1
+					self.gui.request_frame()
 					return
 				self.tauon.d_click_timer.set()
 
@@ -34352,7 +34364,7 @@ class MiniModeSignal:
 			if self.tauon.d_click_timer.get() < 0.3:
 				self.ddt.alpha_bg = False
 				self.tauon.restore_full_mode()
-				self.gui.update += 1
+				self.gui.request_frame()
 				return
 			self.tauon.d_click_timer.set()
 
@@ -34514,7 +34526,7 @@ class MiniModeSignal:
 		if self.coll(tool_rect):
 			self.tauon.draw_window_tools()
 
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.ddt.alpha_bg = False
 
 class StandardPlaylist:
@@ -35255,7 +35267,7 @@ class StandardPlaylist:
 					# Detect folder title click
 					if click_title and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
 
-						gui.pl_update += 1
+						gui.request_tracklist_redraw()
 						# Add folder to queue if middle click
 						if self.inp.middle_click and self.tauon.is_level_zero():
 							if self.inp.key_ctrl_down:  # Add as ungrouped tracks
@@ -35274,7 +35286,7 @@ class StandardPlaylist:
 								self.tauon.add_album_to_queue(track_id, track_position, pctl.pl_to_id(pctl.active_playlist_viewing))
 							pctl.selected_in_playlist = track_position
 							gui.shift_selection = [pctl.selected_in_playlist]
-							gui.pl_update += 1
+							gui.request_tracklist_redraw()
 
 						# Play if double click:
 						if inp.d_mouse_click and track_position in self.gui.shift_selection and coll_point(
@@ -35294,7 +35306,7 @@ class StandardPlaylist:
 								MenuTrackRef(track_id, track_position, pctl.pl_to_id(pctl.active_playlist_viewing))
 							)
 							gui.selection_stage = 2
-							gui.pl_update = 1
+							gui.request_tracklist_redraw()
 
 							if track_position not in self.gui.shift_selection:
 								self.gui.shift_selection = []
@@ -35379,7 +35391,7 @@ class StandardPlaylist:
 				line_over = True
 				if (inp.mouse_click or inp.right_click or (self.inp.middle_click and self.tauon.is_level_zero())):
 					line_hit = True
-					gui.pl_update += 1
+					gui.request_tracklist_redraw()
 				else:
 					line_hit = False
 			else:
@@ -35417,7 +35429,7 @@ class StandardPlaylist:
 					track_position, pctl.pl_to_id(pctl.active_playlist_viewing)))
 				pctl.selected_in_playlist = track_position
 				self.gui.shift_selection = [pctl.selected_in_playlist]
-				gui.pl_update += 1
+				gui.request_tracklist_redraw()
 				self.tauon.queue_timer_set()
 				if prefs.stop_end_queue:
 					pctl.stop_mode = StopMode.OFF
@@ -35427,8 +35439,8 @@ class StandardPlaylist:
 					gui.drag_source_position, self.inp.mouse_position, 15):  # and not self.gui.playlist_hold:
 				self.gui.shift_selection = [track_position]
 				pctl.selected_in_playlist = track_position
-				gui.pl_update = 1
-				gui.update = 2
+				gui.request_tracklist_redraw()
+				gui.request_frame()
 
 			# # Begin drag block selection
 			# if self.inp.mouse_down and line_over and track_position in self.gui.shift_selection and len(self.gui.shift_selection) > 1:
@@ -35460,7 +35472,7 @@ class StandardPlaylist:
 							pctl.selected_in_playlist = pctl.default_playlist.index("new")
 							pctl.default_playlist[pctl.default_playlist.index("new")] = ref
 
-							gui.pl_update = 1
+							gui.request_tracklist_redraw()
 
 
 						else:
@@ -35488,7 +35500,7 @@ class StandardPlaylist:
 									pctl.default_playlist[b] = ref.pop(0)
 
 							pctl.selected_in_playlist = self.gui.shift_selection[0]
-							gui.pl_update += 1
+							gui.request_tracklist_redraw()
 
 						tauon.reload_albums(True)
 						pctl.notify_database_changed()
@@ -35511,8 +35523,8 @@ class StandardPlaylist:
 							pctl.pl_to_id(pctl.active_playlist_viewing),
 						)
 					)
-					gui.pl_update += 1
-					gui.update += 1
+					gui.request_tracklist_redraw()
+					gui.request_frame()
 
 					if track_position not in self.gui.shift_selection:
 						pctl.selected_in_playlist = track_position
@@ -36346,8 +36358,10 @@ class ArtBox:
 					tauon.milky.render()
 					show_vis = True
 				if self.tauon.pctl.playing_state != PlayingState.PAUSED:
-					#gui.update += 1
-					gui.delay_frame(self.tauon.frame_pace())
+					# Re-arm the next frame while the visualiser animates (the flag
+					# clears at frame start, so a mid-draw request means one more frame);
+					# the central pacer caps the rate at the display refresh rate.
+					gui.request_frame()
 
 		# Draw faint border on album art
 		if tight_border and not show_vis:
@@ -36371,7 +36385,7 @@ class ArtBox:
 				(x + int(box_w / 2), 38 * gui.scale + int(box_h / 2), 2), _("Fetching image..."),
 				colours.side_bar_line1,
 				14, bg=colours.side_panel_background)
-			gui.update = 2
+			gui.request_frame()
 
 		# Input for album art
 		if target_track:
@@ -36519,7 +36533,7 @@ class ScrollBox:
 
 		if self.coll((fx, y, fw, h)):
 			if self.inp.mouse_down:
-				self.gui.update += 1
+				self.gui.request_frame()
 
 			if r_click:
 				p = self.inp.mouse_position[1] - half - y
@@ -36589,7 +36603,7 @@ class ScrollBox:
 		if self.held:
 			self.input_sdl.mouse_capture_want = True
 			new_y = self.inp.mouse_position[1]
-			self.gui.update += 1
+			self.gui.request_frame()
 
 			offset = new_y - self.source_click_y
 
@@ -36760,7 +36774,7 @@ class RadioBox:
 			logging.info("Websocket closed")
 		self.tauon.stream_proxy.stop()
 		self.pctl.record_stream = False
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def start(self, station: RadioStation) -> None:
 		url = station.stream_url
@@ -36854,7 +36868,7 @@ class RadioBox:
 				self.load_failed_timer.set()
 				self.load_failed = True
 				self.load_connecting = False
-				self.gui.update += 1
+				self.gui.request_frame()
 				logging.error(
 					f"Starting radio failed request_id={request_id}: "
 					f"{self.tauon.stream_proxy.state_log()}"
@@ -36894,7 +36908,7 @@ class RadioBox:
 		time.sleep(0.1)
 		self.load_connecting = False
 		self.load_failed = False
-		self.gui.update += 1
+		self.gui.request_frame()
 
 		wss = ""
 		if url == "https://listen.moe/kpop/stream":
@@ -36971,7 +36985,7 @@ class RadioBox:
 							self.pctl.radio_image_bin.close()
 							self.pctl.radio_image_bin = None
 					self.gui.clear_image_cache_next += 1
-					self.gui.update += 1
+					self.gui.request_frame()
 
 			def on_error(ws: WebSocketApp, error) -> None:
 				logging.error(error)
@@ -37186,7 +37200,7 @@ class RadioBox:
 				radio.country = station["countrycode"]
 			radio.website_url = station["homepage"]
 			self.temp_list.append(radio)
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def render(self) -> None:
 		if self.edit_mode:
@@ -37410,7 +37424,7 @@ class RadioBox:
 					self.tauon.radio_view.drag = station
 					self.tauon.radio_view.click_point = copy.copy(self.inp.mouse_position)
 				if self.inp.mouse_up:  # self.gui.level_2_click:
-					self.gui.update += 1
+					self.gui.request_frame()
 					# if self.drag is not None and p != self.drag:
 					#     swap = p
 					if point_proximity_test(self.tauon.radio_view.click_point, self.inp.mouse_position, round(4 * self.gui.scale)):
@@ -38004,7 +38018,7 @@ class PlaylistBox:
 						else:
 							pctl.move_playlist(self.drag_on, i)
 
-					gui.update += 1
+					gui.request_frame()
 
 				# Double click to play
 				if self.inp.mouse_up and pctl.pl_to_id(i) == self.tauon.top_panel.tab_d_click_ref == pctl.pl_to_id(pctl.active_playlist_viewing) and \
@@ -38034,7 +38048,7 @@ class PlaylistBox:
 						self.tauon.clear_gen_ask(pctl.pl_to_id(i))
 					self.inp.quick_drag = False
 					modified = False
-					gui.pl_update += 1
+					gui.request_tracklist_redraw()
 
 					for item in self.gui.shift_selection:
 						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
@@ -38185,7 +38199,7 @@ class PlaylistBox:
 							ddt.text(
 								(tab_start + tab_width - 10 * gui.scale, round(ay), 1),
 								"+" + str(self.adds[k][1]), self.colours.pulse_colour, 212, bg=real_bg)
-							gui.update += 1
+							gui.request_frame()
 
 							ddt.rect(
 								(tab_start + tab_width, yy, self.indicate_w, self.tab_h - self.indicate_w),
@@ -38196,7 +38210,7 @@ class PlaylistBox:
 		if delete_pl is not None:
 			# delete_playlist(delete_pl)
 			self.pctl.delete_playlist_ask(delete_pl)
-			gui.update += 1
+			gui.request_frame()
 
 		# Create new playlist if drag in blank space after tabs
 		rect_y = max(yy, y)
@@ -38219,7 +38233,7 @@ class PlaylistBox:
 					if self.inp.key_ctrl_down:
 						# Duplicate playlist on ctrl
 						self.tauon.gen_dupe(tauon.playlist_box.drag_on)
-						gui.update += 2
+						gui.request_frame()
 						self.drag = False
 					else:
 						# If drag from top bar to side panel, make hidden
@@ -38227,7 +38241,7 @@ class PlaylistBox:
 							pctl.multi_playlist[self.drag_on].hidden = True
 
 						pctl.move_playlist(self.drag_on, i)
-						gui.update += 2
+						gui.request_frame()
 						self.drag = False
 				elif self.inp.key_ctrl_down:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(255, 190, 0, 255))
@@ -38467,7 +38481,7 @@ class ArtistList:
 			self.saves[viewing_pl_id].scroll_position = self.scroll_position
 
 		self.saves[current_pl.uuid_int] = save
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def locate_artist_letter(self, text: str) -> None:
 		if not text or self.prefs.artist_list_sort_mode != "alpha":
@@ -38711,7 +38725,7 @@ class ArtistList:
 					else:
 						fade = fade_max - round((t - 1.9) / 0.3 * fade_max)
 
-					self.gui.update += 1
+					self.gui.request_frame()
 					self.ddt.rect(area, ColourRGBA(50, 50, 50, fade))
 
 				bg = alpha_blend(ColourRGBA(50, 50, 50, fade), self.colours.side_panel_background)
@@ -38811,7 +38825,7 @@ class ArtistList:
 				# 			else:
 				# 				select = block_starts[block_starts.index(self.pctl.selected_in_playlist) + 1]
 
-				self.gui.pl_update += 1
+				self.gui.request_tracklist_redraw()
 
 				self.click_highlight_timer.set()
 
@@ -39191,7 +39205,7 @@ class TreeView:
 		self.scroll_positions[pl_id] = scroll_position
 
 		self.gui.update_layout = True
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def get_pl_id(self) -> int:
 		if self.lock_pl is not None:
@@ -39587,13 +39601,13 @@ class TreeView:
 		self.gen_row(tree, "", opens)
 
 		self.gui.update_layout = True
-		self.gui.update += 1
+		self.gui.request_frame()
 
 	def gen_tree(self, pl_id: int) -> None:
 		pl_no = self.pctl.id_to_pl(pl_id)
 		if pl_no is None:
 			self.background_processing = False
-			self.gui.update += 1
+			self.gui.request_frame()
 			self.tauon.wake()
 			return
 
@@ -39639,7 +39653,7 @@ class TreeView:
 		self.trees[pl_id] = tree
 		self.rows_id = ""
 		self.background_processing = False
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.tauon.wake()
 
 class QueueBox:
@@ -39826,7 +39840,7 @@ class QueueBox:
 		for u in reversed(range(len(self.pctl.force_queue))):
 			if self.pctl.force_queue[u].uuid_int == self.right_click_id:
 				del self.pctl.force_queue[u]
-				self.gui.pl_update += 1
+				self.gui.request_tracklist_redraw()
 				break
 		else:
 			self.show_message(_("Looks like it's gone now anyway"))
@@ -40039,7 +40053,7 @@ class QueueBox:
 				for u in reversed(range(len(self.pctl.force_queue))):
 					if self.pctl.force_queue[u] is None:
 						del self.pctl.force_queue[u]
-						self.gui.pl_update += 1
+						self.gui.request_tracklist_redraw()
 						continue
 
 					# Reset album in flag if not first item
@@ -40085,7 +40099,7 @@ class QueueBox:
 
 			if self.inp.middle_click and self.coll(rect):
 				self.pctl.force_queue.remove(fq[i])
-				self.gui.pl_update += 1
+				self.gui.request_tracklist_redraw()
 
 			if fq[i].uuid_int == self.dragging:
 				# self.ddt.rect_r(rect, [22, 22, 22, 255], True)
@@ -40316,8 +40330,10 @@ class MetaBox:
 			else:
 				self.tauon.milky.render()
 			if self.tauon.pctl.playing_state != PlayingState.PAUSED:
-				# gui.update += 1
-				self.gui.delay_frame(self.tauon.frame_pace())
+				# Re-arm the next frame while the visualiser animates (the flag
+				# clears at frame start, so a mid-draw request means one more frame);
+				# the central pacer caps the rate at the display refresh rate.
+				self.gui.request_frame()
 
 		elif self.coll(border_rect) and self.tauon.is_level_zero(True):
 			showc = self.tauon.album_art_gen.get_info(track)
@@ -40360,7 +40376,7 @@ class MetaBox:
 				self.lyrics_ren_mini.lyrics_position = 0
 				self.tauon.lyric_side_top_pulse.pulse()
 
-			self.gui.update += 1
+			self.gui.request_frame()
 
 		tw, th = self.ddt.get_text_wh(track.lyrics + "\n", 15, w - 50 * self.gui.scale, True)
 
@@ -40398,7 +40414,9 @@ class MetaBox:
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
-	def draw(self, x: int, y: int, w: int, h: int, track: TrackClass | None=None) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, track: TrackClass | None=None, lyrics_ui: bool = True) -> None:
+		# lyrics_ui=False (the custom-layout titles widget) drops the lyrics
+		# context menu and the "Lyrics" showcase link.
 		bg = self.colours.side_panel_background
 		self.ddt.text_background_colour = bg
 		self.ddt.clear_rect((x, y, w, h))
@@ -40409,7 +40427,7 @@ class MetaBox:
 			return
 
 		# Test for show lyric menu on right ckick
-		if self.coll((x + 10, y, w - 10, h)):
+		if lyrics_ui and self.coll((x + 10, y, w - 10, h)):
 			if self.inp.right_click:  # and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 				self.gui.force_showcase_index = -1
 				self.showcase_menu.activate(track)
@@ -40444,7 +40462,7 @@ class MetaBox:
 				# Click area to jump to current track
 				if self.inp.mouse_click:
 					self.pctl.show_current()
-					self.gui.update += 1
+					self.gui.request_frame()
 
 			title = ""
 			album = ""
@@ -40485,7 +40503,7 @@ class MetaBox:
 				ext = "Jellyfin"
 				if tr.container is not None:
 					ext = (tr.container if tr.container is not None else "") + " | Jellyfin"
-			if tr.lyrics:
+			if tr.lyrics and lyrics_ui:
 				ext += ","
 			date = tr.date
 			genre = tr.genre
@@ -40535,60 +40553,51 @@ class MetaBox:
 							(margin, block_y + 40 * self.gui.scale), ext, self.colours.side_bar_line2,
 							self.fonts.side_panel_line2, max_w=text_width)
 
-						if tr and tr.lyrics:
+						if lyrics_ui and tr and tr.lyrics:
 							if self.tauon.draw_internal_link(
 								margin + sp + 6 * self.gui.scale, block_y + 40 * self.gui.scale, "Lyrics", self.colours.side_bar_line2, self.fonts.side_panel_line2):
 								self.prefs.show_lyrics_showcase = True
 								self.tauon.enter_showcase_view(track_id=tr.index)
 
 	def centered(self, x: int, y: int, w: int, h: int, track: TrackClass | None) -> None:
-		"""Centered track text layout used by the custom-layout "Track: Centered"
-		widget: artist/title/album text centred in the box, no album art. Based on
-		the centered side-panel layout (prefs.side_panel_layout == 1)."""
+		"""Centered track text layout used by the custom-layout "Track: Titles
+		(Centred)" widget: artist/title/album text centred in the box, no album
+		art. Based on the centered side-panel layout (prefs.side_panel_layout == 1)
+		minus that layout's lyrics display and lyrics context menu — the widget
+		only ever shows the track text."""
 		ddt = self.ddt
 		colours = self.colours
-		tauon = self.tauon
-		prefs = self.prefs
 		gui = self.gui
-		inp = self.inp
 		pctl = self.pctl
 		window_size = self.tauon.window_size
-		center_info_menu = self.tauon.center_info_menu
 		radiobox = self.tauon.radiobox
 		target_track = track
 
 		ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), colours.side_panel_background)
-		tauon.test_auto_lyrics(target_track)
-		if prefs.show_lyrics_side and target_track and target_track.lyrics:
-			if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
-				center_info_menu.activate(target_track)
-		else:
-			small_mode = window_size[1] < 550 * gui.scale
-			text_y = y + round(h * 0.40)
-			text_x = x + w // 2
-			if inp.right_click and tauon.coll((x, y, w, h)) and target_track:
-				center_info_menu.activate(target_track)
-			ww = w - 25 * gui.scale
-			gui.showed_title = True
-			if target_track:
-				ddt.text_background_colour = colours.side_panel_background
-				if pctl.playing_state == PlayingState.URL_STREAM and not radiobox.dummy_track.title:
-					title = pctl.tag_meta
-				else:
-					title = target_track.title
-					if not title:
-						title = clean_string(target_track.filename)
-				if small_mode:
-					ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 315, max_w=ww)
-					ddt.text((text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
-					line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
-					ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
-				else:
-					ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
-					ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
-					line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
-					ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
+		small_mode = window_size[1] < 550 * gui.scale
+		text_y = y + round(h * 0.40)
+		text_x = x + w // 2
+		ww = w - 25 * gui.scale
+		gui.showed_title = True
+		if target_track:
+			ddt.text_background_colour = colours.side_panel_background
+			if pctl.playing_state == PlayingState.URL_STREAM and not radiobox.dummy_track.title:
+				title = pctl.tag_meta
+			else:
+				title = target_track.title
+				if not title:
+					title = clean_string(target_track.filename)
+			if small_mode:
+				ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 315, max_w=ww)
+				ddt.text((text_x, text_y + 12 * gui.scale, 2), title, colours.side_bar_line1, 216, max_w=ww)
+				line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+				ddt.text((text_x, text_y + 35 * gui.scale, 2), line, colours.side_bar_line2, 313, max_w=ww)
+			else:
+				ddt.text((text_x, text_y - 15 * gui.scale, 2), target_track.artist, colours.side_bar_line1, 317, max_w=ww)
+				ddt.text((text_x, text_y + 17 * gui.scale, 2), title, colours.side_bar_line1, 218, max_w=ww)
+				line = " | ".join(filter(None, (target_track.album, target_track.date, target_track.genre)))
+				ddt.text((text_x, text_y + 45 * gui.scale, 2), line, colours.side_bar_line2, 314, max_w=ww)
 
 
 class PictureRender:
@@ -40914,7 +40923,7 @@ class ArtistInfoBox:
 						self.gui.cursor_want = 3
 					if self.inp.mouse_click:
 						webbrowser.open(item[0], new=2, autoraise=True)
-					self.gui.pl_update += 1
+					self.gui.request_tracklist_redraw()
 					w = self.ddt.get_text_w(item[0], 13)
 					xx = (right - w) - 17 * self.gui.scale
 					self.ddt.rect(
@@ -40985,7 +40994,7 @@ class ArtistInfoBox:
 				with open(text_filepath, encoding="utf-8") as f:
 					self.text = f.read()
 				self.status = "Ready"
-				self.gui.update = 2
+				self.gui.request_frame()
 				self.artist_on = get_first_artist(artist)
 				self.lock = False
 
@@ -41005,7 +41014,7 @@ class ArtistInfoBox:
 			# . Alt: Looking up artist data
 			if not silent:
 				self.status = _("Looking up...")
-				self.gui.update += 1
+				self.gui.request_frame()
 				self.text = ""
 
 			data = self.tauon.lastfm.artist_info(artist)
@@ -41079,7 +41088,7 @@ class ArtistInfoBox:
 					break
 
 			self.status = "Ready"
-			self.gui.update = 2
+			self.gui.request_frame()
 
 			# if cover_link and 'http' in cover_link:
 			#     # Fetch cover_link
@@ -41118,7 +41127,7 @@ class ArtistInfoBox:
 		self.process_text_artist = ""
 		self.min_rq_timer.set()
 		self.lock = False
-		self.gui.update = 2
+		self.gui.request_frame()
 		return ""
 
 class RadioThumbGen:
@@ -41209,7 +41218,7 @@ class RadioThumbGen:
 			g.seek(0)
 			s_image = self.ddt.load_image(g)
 			self.cache[key] = [2, None, None, s_image]
-			self.gui.update += 1
+			self.gui.request_frame()
 
 			if src is not None:
 				src.close()
@@ -41506,7 +41515,7 @@ class RadioView:
 
 			radios[radios.index("New")] = self.drag
 			self.drag = None
-			gui.update += 1
+			gui.request_frame()
 
 
 def get_renderer_name(renderer: sdl3.LP_SDL_Renderer) -> str | None:
@@ -42546,13 +42555,13 @@ class MilkPresetChooser:
 		self._click = False
 		self._wheel = 0.0
 		self._mouse = (self.inp.mouse_position[0], self.inp.mouse_position[1])
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def close(self) -> None:
 		self.active = False
 		self._click = False
 		self._wheel = 0.0
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def handle_input(self) -> None:
 		if not self.active:
@@ -42684,7 +42693,10 @@ def draw_showcase_art_box(
 			tauon.milky.render()
 			show_vis = True
 		if tauon.pctl.playing_state != PlayingState.PAUSED:
-			gui.delay_frame(0.007)
+			# Re-arm the next frame while the visualiser animates (the flag
+			# clears at frame start, so a mid-draw request means one more frame);
+			# the central pacer caps the rate at the display refresh rate.
+			gui.request_frame()
 
 	tauon.fields.add(rect)
 	if tauon.coll(rect) and tauon.is_level_zero(False):
@@ -42980,7 +42992,7 @@ class Showcase:
 
 		if (self.pctl.playing_time < 0.5 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM))) or (
 				self.pctl.playing_state == PlayingState.STOPPED and self.gui.spec4_array.count(0) != len(self.gui.spec4_array)):
-			self.gui.update = 2
+			self.gui.request_frame()
 			self.gui.level_update = True
 
 			for i in range(len(self.gui.spec4_array)):
@@ -42988,7 +43000,7 @@ class Showcase:
 				self.gui.spec4_array[i] = max(self.gui.spec4_array[i], 0)
 
 		if not top and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
-			self.gui.update = 2
+			self.gui.request_frame()
 
 		slide = 0.7
 		for i, bar in enumerate(self.gui.spec4_array):
@@ -43075,7 +43087,7 @@ class ColourPulse2:
 				pro = 1
 			else:
 				pro = time / ani_time
-				self.gui.update = 2
+				self.gui.request_frame()
 		else:
 			time = self.out_timer.get()
 			if time <= 0:
@@ -43084,7 +43096,7 @@ class ColourPulse2:
 				pro = 0
 			else:
 				pro = 1 - (time / ani_time)
-				self.gui.update = 2
+				self.gui.request_frame()
 
 		return colour_slide(low_hls, high_hls, pro, 1)
 
@@ -43196,7 +43208,7 @@ class ViewBox:
 		self.col_force_off = False
 
 		# self.gui.level_2_click = False
-		self.gui.update = 2
+		self.gui.request_frame()
 
 		self.spring_loading_timer.set()
 		self.can_be_spring_clicked = True
@@ -43279,7 +43291,7 @@ class ViewBox:
 		if self.prefs.side_panel_left != left:
 			self.prefs.side_panel_left = left
 			self.gui.update_layout = True
-			self.gui.update += 1
+			self.gui.request_frame()
 
 	def side_normal(self, hit: bool = False) -> bool | None:
 		# "Tracks + Art" with the metadata side panel on its default (right) side.
@@ -43722,7 +43734,7 @@ class DLMon:
 
 							elif archive_file_scan(path, self.formats.DA, self.tauon.launch_prefix) >= 0.4:
 								self.ready.add(path)
-								self.gui.update += 1
+								self.gui.request_frame()
 								#logging.info("Archive detected as music")
 							else:
 								pass
@@ -43766,7 +43778,7 @@ class DLMon:
 										break
 								else:
 									self.ready.add(path)
-								self.gui.update += 1
+								self.gui.request_frame()
 							self.done.add(path)
 						else:
 							self.watching[path] = size
@@ -43788,7 +43800,7 @@ class DLMon:
 			self.ready = temp
 
 		if len(self.watching) > 0:
-			self.tauon.gui.update += 1
+			self.tauon.gui.request_frame()
 
 class Fader:
 
@@ -43818,7 +43830,7 @@ class Fader:
 		self.tauon.ddt.rect(rect, ColourRGBA(0, 0, 0, int(110 * self.a)))
 
 		if self.a not in (0, 1):
-			self.tauon.gui.update += 1
+			self.tauon.gui.request_frame()
 
 	def rise(self) -> None:
 		self.state = 1
@@ -43850,7 +43862,7 @@ class EdgePulse:
 		if time < self.ani_duration:
 			alpha = 255 - int(255 * (time / self.ani_duration))
 			self.ddt.rect((x, y, w, h), ColourRGBA(r, g, b, alpha))
-			self.gui.update = 2
+			self.gui.request_frame()
 			return True
 		return False
 
@@ -43892,7 +43904,7 @@ class EdgePulse2:
 				self.ddt.rect((x, y, w, h - h_off), colour)
 			else:
 				self.ddt.rect((x, y - (h - h_off), w, h - h_off), colour)
-			self.gui.update = 2
+			self.gui.request_frame()
 			return True
 		return False
 
@@ -43951,7 +43963,7 @@ class Undo:
 			to.lfm_scrobbles = to_scr
 			fr.lfm_scrobbles = fr_scr
 
-		self.gui.pl_update = 1
+		self.gui.request_tracklist_redraw()
 
 	def bk_playlist(self, pl_index: int) -> None:
 		self.e.append(("playlist", self.pctl.multi_playlist[pl_index]))
@@ -46169,7 +46181,8 @@ class TimedLyricsEdit:
 							self.unsynced_menu.activate(track)
 
 		# queue a frame update if the user moves over or off of any button
-		self.gui.pl_update += self.queue_next_frame
+		if self.queue_next_frame:
+			self.gui.request_tracklist_redraw()
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
 
@@ -47767,7 +47780,7 @@ def worker2(tauon: Tauon) -> None:
 		if search_over.search_text.text and not (len(search_over.search_text.text) == 1 and ord(search_over.search_text.text[0]) < 128):
 			search_over.searched_text = search_over.search_text.text
 			search_over.sip = True
-			tauon.gui.update += 1
+			tauon.gui.request_frame()
 
 			search_over.results = tauon._build_search_results(
 				search_over.search_text.text,
@@ -47776,7 +47789,7 @@ def worker2(tauon: Tauon) -> None:
 			)
 			search_over.sip = False
 			search_over.on = 0
-			tauon.gui.update += 1
+			tauon.gui.request_frame()
 			search_over.on = 0
 			search_over.force_select = 0
 			#logging.info(perf_timer.get())
@@ -48180,7 +48193,7 @@ def worker1(tauon: Tauon) -> None:
 							try:
 								b = gui.to_got
 								gui.to_got = "ex"
-								gui.update += 1
+								gui.request_frame()
 								zip_ref = zipfile.ZipFile(path, "r")
 
 								zip_ref.extractall(target_dir)
@@ -48212,7 +48225,7 @@ def worker1(tauon: Tauon) -> None:
 							b = gui.to_got
 							try:
 								gui.to_got = "ex"
-								gui.update += 1
+								gui.request_frame()
 								line = tauon.launch_prefix + "unrar x -y -p- " + shlex.quote(path) + " " + shlex.quote(
 									target_dir) + os.sep
 								result = subprocess.run(shlex.split(line), check=True)
@@ -48228,7 +48241,7 @@ def worker1(tauon: Tauon) -> None:
 							b = gui.to_got
 							try:
 								gui.to_got = "ex"
-								gui.update += 1
+								gui.request_frame()
 								line = tauon.launch_prefix + "7z x -y " + shlex.quote(path) + " -o" + shlex.quote(
 									target_dir) + os.sep
 								result = subprocess.run(shlex.split(line), check=True)
@@ -48274,7 +48287,7 @@ def worker1(tauon: Tauon) -> None:
 			return 1
 
 		gui.to_got += 1
-		gui.update = 1
+		gui.request_frame()
 
 		path = path.replace("\\", "/")
 
@@ -48347,7 +48360,7 @@ def worker1(tauon: Tauon) -> None:
 			gui.to_get += len(files)
 			if gui.im_cancel:
 				return
-			gui.update = 3
+			gui.request_frame()
 
 	def gets(direc: str, force_scan: bool = False) -> None:
 		if os.path.basename(direc) == "__MACOSX":
@@ -48509,8 +48522,8 @@ def worker1(tauon: Tauon) -> None:
 
 				tauon.tag_scan(tauon.after_scan[0])
 
-				gui.update = 2
-				gui.pl_update = 1
+				gui.request_frame()
+				gui.request_tracklist_redraw()
 				# time.sleep(0.001)
 				if pctl.running:
 					del tauon.after_scan[0]
@@ -48570,20 +48583,20 @@ def worker1(tauon: Tauon) -> None:
 		for i, upload in enumerate(tauon.lrclib_uploads):
 			if upload_to_lrclib( upload ):
 				del tauon.lrclib_uploads[i]
-				gui.update += 1
+				gui.request_frame()
 			else:
 				tauon.lrclib_uploads.reverse() # if one is broken you can still try the others
 
 		# Folder moving
 		if len(tauon.move_jobs) > 0:
-			gui.update += 1
+			gui.request_frame()
 			tauon.move_in_progress = True
 			job = tauon.move_jobs[0]
 			del tauon.move_jobs[0]
 
 			if job[0].strip("\\/") == job[1].strip("\\/"):
 				tauon.show_message(_("Folder copy error."), _("The target and source are the same."), mode="info")
-				gui.update += 1
+				gui.request_frame()
 				tauon.move_in_progress = False
 				continue
 
@@ -48592,7 +48605,7 @@ def worker1(tauon: Tauon) -> None:
 			except Exception:
 				logging.exception("Failed to copy directory")
 				tauon.move_in_progress = False
-				gui.update += 1
+				gui.request_frame()
 				tauon.show_message(_("The folder copy has failed!"), _("Some files may have been written."), mode="warning")
 				continue
 
@@ -48603,7 +48616,7 @@ def worker1(tauon: Tauon) -> None:
 				except Exception:
 					logging.exception("Failed to delete directory")
 					tauon.show_message(_("Something has gone horribly wrong!"), _("Could not delete {name}").format(name=job[0]), mode="error")
-					gui.update += 1
+					gui.request_frame()
 					tauon.move_in_progress = False
 					return
 
@@ -48613,7 +48626,7 @@ def worker1(tauon: Tauon) -> None:
 
 			tauon.move_in_progress = False
 			tauon.load_orders.append(job[4])
-			gui.update += 1
+			gui.request_frame()
 
 		# Clean database
 		if tauon.cm_clean_db is True:
@@ -48631,7 +48644,7 @@ def worker1(tauon: Tauon) -> None:
 				gui.to_got += 1
 
 				if gui.to_got % 100 == 0:
-					gui.update = 1
+					gui.request_frame()
 
 				if (prefs.remove_network_tracks is False and not track.is_network and not os.path.isfile(
 						track.fullpath)) or \
@@ -48649,8 +48662,8 @@ def worker1(tauon: Tauon) -> None:
 			if gui.combo_mode:
 				tauon.reload_albums()
 
-			gui.update = 1
-			gui.pl_update = 1
+			gui.request_frame()
+			gui.request_tracklist_redraw()
 			pctl.notify_database_changed()
 
 			tauon.search_dia_string_cache.clear()
@@ -48665,7 +48678,7 @@ def worker1(tauon: Tauon) -> None:
 		if tauon.transcode_list:
 			try:
 				tauon.transcode_state = ""
-				gui.update += 1
+				gui.request_frame()
 
 				folder_items = tauon.transcode_list[0]
 
@@ -48722,14 +48735,14 @@ def worker1(tauon: Tauon) -> None:
 								loaderThread.start()
 
 							q += 1
-							gui.update += 1
+							gui.request_frame()
 						time.sleep(0.05)
 						if gui.tc_cancel:
 							while tauon.core_use > 0:
 								time.sleep(1)
 							break
 						if q == len(folder_items) and tauon.core_use == 0:
-							gui.update += 1
+							gui.request_frame()
 							break
 				else:
 					logging.error("Codec error")
@@ -48748,13 +48761,13 @@ def worker1(tauon: Tauon) -> None:
 
 				del tauon.transcode_list[0]
 				tauon.transcode_state = ""
-				gui.update += 1
+				gui.request_frame()
 			except Exception:
 				logging.exception("Transcode failed")
 				tauon.transcode_state = "Transcode Error"
 				time.sleep(0.2)
 				tauon.show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
-				gui.update += 1
+				gui.request_frame()
 				time.sleep(0.1)
 				del tauon.transcode_list[0]
 
@@ -48791,17 +48804,17 @@ def worker1(tauon: Tauon) -> None:
 				rescanned_track = tauon.tag_scan(pctl.master_library[track])
 				if rescanned_track is None:
 					del tauon.to_scan[0]
-					gui.update += 1
+					gui.request_frame()
 					network_warn = True
 					continue
 				pctl.master_library[track] = rescanned_track
 				tauon.star_store.merge(track, star)
 				tauon.lastfm.sync_pull_love(pctl.master_library[track])
 				del tauon.to_scan[0]
-				gui.update += 1
+				gui.request_frame()
 			gui.album_artist_dict.clear()
 			pctl.notify_database_changed()
-			gui.pl_update += 1
+			gui.request_tracklist_redraw()
 			if network_warn:
 				tauon.show_message(_("Some tracks could not be rescanned"), _("Rescanning network tracks is unsupported, please reimport your playlist instead."))
 
@@ -50161,7 +50174,7 @@ def main(holder: Holder) -> None:
 						inp.media_key = "Previous"
 					if button == 5:
 						inp.media_key = "Stop"
-					gui.update += 1
+					gui.request_frame()
 					tauon.wake()
 
 				close_callback = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_int)(SMTC_button_callback)
@@ -50223,7 +50236,7 @@ def main(holder: Holder) -> None:
 					inp.media_key = "Stop"
 				else:
 					return
-				gui.update += 1
+				gui.request_frame()
 				tauon.wake()
 
 			def _mac_seek_abs(seconds: float) -> None:
@@ -50232,7 +50245,7 @@ def main(holder: Holder) -> None:
 				except Exception:
 					logging.exception("Failed to seek via macOS Now Playing")
 				else:
-					gui.update += 1
+					gui.request_frame()
 					tauon.wake()
 
 			def _mac_seek_rel(delta: float) -> None:
@@ -50241,7 +50254,7 @@ def main(holder: Holder) -> None:
 				except Exception:
 					logging.exception("Failed to seek relative via macOS Now Playing")
 				else:
-					gui.update += 1
+					gui.request_frame()
 					tauon.wake()
 
 			bag.nowplaying_helper = MacNowPlayingHelper(
@@ -50500,7 +50513,7 @@ def main(holder: Holder) -> None:
 						inp.media_key = "Previous"
 					elif event.scan_code == -176:
 						inp.media_key = "Next"
-					gui.update += 1
+					gui.request_frame()
 					tauon.wake()
 
 			keyboard.hook_key(-179, key_callback)
@@ -50796,7 +50809,7 @@ def main(holder: Holder) -> None:
 	def _spectro_set_colour(index: int) -> Callable[[], None]:
 		def cb() -> None:
 			prefs.spectrogram_colour = index
-			gui.update += 1
+			gui.request_frame()
 		return cb
 
 	def _spectro_preset_check(index: int) -> Callable[[], bool]:
@@ -50847,7 +50860,7 @@ def main(holder: Holder) -> None:
 			new = min(400, max(70, int(tauon.album_mode_art_size) + 10 * direction))
 			if new != tauon.album_mode_art_size:
 				tauon.img_slide_update_gall(new)
-				gui.update += 1
+				gui.request_frame()
 		return cb
 
 	gallery_settings_menu.add_incrementor(
@@ -50861,7 +50874,7 @@ def main(holder: Holder) -> None:
 
 	def _gal_toggle_center(ref=None) -> None:
 		prefs.center_gallery_text ^= True
-		gui.update += 1
+		gui.request_frame()
 
 	gallery_settings_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
 		check_test=lambda: prefs.center_gallery_text))
@@ -51041,7 +51054,7 @@ def main(holder: Holder) -> None:
 	def menu_toggle_zoom_art(ref=None) -> None:
 		prefs.zoom_art ^= True
 		tauon.album_art_gen.clear_cache()
-		gui.update += 1
+		gui.request_frame()
 
 	picture_menu.add(MenuItem(
 		_("Zoom Art to Fit"), menu_toggle_zoom_art,
@@ -51414,7 +51427,7 @@ def main(holder: Holder) -> None:
 	def menu_toggle_set_bar(ref=None) -> None:
 		gui.set_bar ^= True
 		gui.update_layout = True
-		gui.pl_update = 1
+		gui.request_tracklist_redraw()
 
 	def _bar_deco() -> Decorator:
 		text = _("Hide Bar") if gui.set_bar else _("Show Bar")
@@ -51422,18 +51435,18 @@ def main(holder: Holder) -> None:
 
 	def _tl_toggle_left_align() -> None:
 		prefs.row_title_format = 1 if prefs.row_title_format == 2 else 2
-		gui.update += 1
-		gui.pl_update = 1
+		gui.request_frame()
+		gui.request_tracklist_redraw()
 
 	def _tl_toggle_genre() -> None:
 		prefs.row_title_genre ^= True
-		gui.update += 1
-		gui.pl_update = 1
+		gui.request_frame()
+		gui.request_tracklist_redraw()
 
 	def _tl_toggle_scrollbar_left() -> None:
 		prefs.tracklist_scrollbar_left ^= True
-		gui.update += 1
-		gui.pl_update = 1
+		gui.request_frame()
+		gui.request_tracklist_redraw()
 
 	def _tl_stepper(attr: str, lo: int, hi: int) -> tuple[Callable, Callable, Callable]:
 		def value(ref=None) -> int:
@@ -51444,7 +51457,7 @@ def main(holder: Holder) -> None:
 				if new != getattr(prefs, attr):
 					setattr(prefs, attr, new)
 					gui.update_layout = True
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 			return cb
 		return value, step(-1), step(1)
 
@@ -51987,7 +52000,6 @@ def main(holder: Holder) -> None:
 	time_last_save = 0
 	spec_smoothing = True  # TODO(Martin): Always true
 	resize_mode = False  # TODO(Martin): Always false
-	power = 0
 	reset_render = False
 	c_yax = 0
 	c_yax_timer = Timer()
@@ -52029,28 +52041,28 @@ def main(holder: Holder) -> None:
 				tauon.goto_album(pctl.selected_in_playlist)
 				pctl.playlist_view_position = pctl.selected_in_playlist
 				logging.debug("Position changed by gallery key press")
-				gui.pl_update = 1
+				gui.request_tracklist_redraw()
 			if gal_down:
 				gal_down = False
 				tauon.gal_jump_select(False, row_len)
 				tauon.goto_album(pctl.selected_in_playlist, down=True)
 				pctl.playlist_view_position = pctl.selected_in_playlist
 				logging.debug("Position changed by gallery key press")
-				gui.pl_update = 1
+				gui.request_tracklist_redraw()
 			if gal_left:
 				gal_left = False
 				tauon.gal_jump_select(True, 1)
 				tauon.goto_album(pctl.selected_in_playlist)
 				pctl.playlist_view_position = pctl.selected_in_playlist
 				logging.debug("Position changed by gallery key press")
-				gui.pl_update = 1
+				gui.request_tracklist_redraw()
 			if gal_up:
 				gal_up = False
 				tauon.gal_jump_select(True, row_len)
 				tauon.goto_album(pctl.selected_in_playlist)
 				pctl.playlist_view_position = pctl.selected_in_playlist
 				logging.debug("Position changed by gallery key press")
-				gui.pl_update = 1
+				gui.request_tracklist_redraw()
 
 			w = gui.rspw
 
@@ -52393,7 +52405,7 @@ def main(holder: Holder) -> None:
 											pctl.default_playlist[b] = ref.pop(0)
 
 									pctl.selected_in_playlist = gui.shift_selection[0]
-									gui.pl_update += 1
+									gui.request_tracklist_redraw()
 									gui.playlist_hold = False
 
 									tauon.reload_albums(True)
@@ -52434,7 +52446,7 @@ def main(holder: Holder) -> None:
 										):
 											gui.playlist_hold = True
 										gui.shift_selection = info[1]
-										gui.pl_update += 1
+										gui.request_tracklist_redraw()
 										inp.click_location = [0, 0]
 
 							if m_in:
@@ -52468,7 +52480,7 @@ def main(holder: Holder) -> None:
 										pctl.playlist_view_position = tauon.album_dex[album_on]
 										logging.debug("Position changed by gallery click")
 										pctl.selected_in_playlist = tauon.album_dex[album_on]
-										gui.pl_update += 1
+										gui.request_tracklist_redraw()
 								elif inp.middle_click and tauon.is_level_zero():
 									# Middle click to add album to queue
 									if inp.key_ctrl_down:
@@ -52764,7 +52776,7 @@ def main(holder: Holder) -> None:
 								c,
 							)  # [150, 80, 222, 255]
 
-							gui.update += 1
+							gui.request_frame()
 
 						# Draw faint outline
 						ddt.rect(
@@ -53084,11 +53096,11 @@ def main(holder: Holder) -> None:
 							done = False
 					if done:
 						gui.pt = 0
-						gui.update += 1
+						gui.request_frame()
 
 				# Keep draw loop running while on
 				if gui.pt > 0:
-					gui.update = 2
+					gui.request_frame()
 
 				# Draw tags
 
@@ -53263,7 +53275,7 @@ def main(holder: Holder) -> None:
 					and (inp.mouse_down or inp.right_click)
 					and coll_point(inp.click_location, (scroll_hitbox_x, top, scroll_hitbox_width, ey - top))
 				):
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 					if inp.right_click:
 						sbp = inp.mouse_position[1] - int(sbl / 2)
 						if sbp + sbl > ey:
@@ -53307,7 +53319,7 @@ def main(holder: Holder) -> None:
 					scroll_hold = False
 
 				if scroll_hold and not inp.mouse_click:
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 					tauon.input_sdl.mouse_capture_want = True
 
 					sbp = inp.mouse_position[1] - (scroll_point - scroll_bpoint)
@@ -53420,7 +53432,7 @@ def main(holder: Holder) -> None:
 								gui.pl_st.insert(dest, temp)
 								gui.pl_st.remove("old")
 
-								gui.pl_update = 1
+								gui.request_tracklist_redraw()
 								gui.set_label_hold = -1
 								# logging.info("MOVE")
 								break
@@ -53454,7 +53466,7 @@ def main(holder: Holder) -> None:
 						# doesn't slip off the left edge of the window.
 						gui.pl_st_left = max(gui.pl_st_left, 2)
 
-						gui.update = 1
+						gui.request_frame()
 
 						total = 0
 						for i in range(len(gui.pl_st) - 1):
@@ -53476,7 +53488,7 @@ def main(holder: Holder) -> None:
 						gui.pl_st[h - 1][1] = gui.set_old + (inp.mouse_position[0] - gui.set_point)
 						gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
 
-						gui.update = 1
+						gui.request_frame()
 						# gui.pl_update = 1
 
 						total = 0
@@ -53633,7 +53645,7 @@ def main(holder: Holder) -> None:
 
 			t = gui.column_sort_ani_timer.get()
 			if t < 0.30:
-				gui.update += 1
+				gui.request_frame()
 				x = round(gui.column_sort_ani_x - 22 * gui.scale)
 				p = t / 0.30
 
@@ -53647,8 +53659,7 @@ def main(holder: Holder) -> None:
 	tauon.column_bar_draw = render_column_bar_draw
 
 	render_heartbeat_timer = Timer()
-	vis_pace_timer = Timer()
-	pace_vis = False
+	loop_pace_timer = Timer()
 
 	tauon.set_tray_icons()
 	if prefs.use_tray or "--tray" in sys.argv:
@@ -53658,6 +53669,14 @@ def main(holder: Holder) -> None:
 		tauon.min_to_tray()
 
 	while pctl.running:
+		# Pace the loop to the display refresh rate: sleep off whatever part of
+		# the frame budget wasn't already consumed by work, a vsync-blocked
+		# present or an idle event wait. All frame-rate pacing lives here.
+		excess = tauon.frame_pace() - loop_pace_timer.get()
+		if excess > 0:
+			time.sleep(excess)
+		loop_pace_timer.set()
+
 		tauon.update_sdl_tray()
 		# bm.get('main')
 		# time.sleep(100)
@@ -53741,8 +53760,7 @@ def main(holder: Holder) -> None:
 					if new != c_yax:
 						c_yax_timer.force_set(1)
 						c_yax = new
-						power += 5
-						gui.update += 1
+						gui.request_frame()
 				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTX:
 					if event.gaxis.value < -15000:
 						new = -1
@@ -53753,8 +53771,7 @@ def main(holder: Holder) -> None:
 					if new != c_xax:
 						c_xax_timer.force_set(1)
 						c_xax = new
-						power += 5
-						gui.update += 1
+						gui.request_frame()
 				elif event.gaxis.axis == sdl3.SDL_GAMEPAD_AXIS_RIGHTY:
 					if event.gaxis.value < -15000:
 						new = -1
@@ -53765,14 +53782,12 @@ def main(holder: Holder) -> None:
 					if new != c_xay:
 						c_xay_timer.force_set(1)
 						c_xay = new
-						power += 5
-						gui.update += 1
+						gui.request_frame()
 			elif event.type == sdl3.SDL_EVENT_GAMEPAD_BUTTON_DOWN:
 				if not prefs.use_gamepad:
 					continue
 				inp.k_input = True
-				power += 5
-				gui.update += 2
+				gui.request_frame()
 				# print(event.gbutton.button)
 				if event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
 					if rt:
@@ -53830,10 +53845,9 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
 				if not tauon.windows:
 					reset_render = True
-				gui.pl_update = 1
-				gui.update += 2
+				gui.request_tracklist_redraw()
+				gui.request_frame()
 			elif event.type == sdl3.SDL_EVENT_DROP_TEXT:
-				power += 5
 
 				link = event.drop.data.decode("utf-8", errors="surrogateescape")
 				# logging.info(link)
@@ -53867,7 +53881,7 @@ def main(holder: Holder) -> None:
 						shoot_dl.daemon = True
 						shoot_dl.start()
 
-						gui.update = True
+						gui.request_frame()
 
 				elif link.startswith("file:///"):
 					link = link.replace("\r", "")
@@ -53882,13 +53896,12 @@ def main(holder: Holder) -> None:
 				mouse_moved = True
 				gui.mouse_unknown = False
 				gui.ext_drop_mode = True
-				gui.pl_update += 1
-				gui.update += 2
+				gui.request_tracklist_redraw()
+				gui.request_frame()
 			elif event.type == sdl3.SDL_EVENT_DROP_COMPLETE:
 				gui.ext_drop_mode = False
 			elif event.type == sdl3.SDL_EVENT_DROP_FILE:
 				gui.ext_drop_mode = False
-				power += 5
 				dropped_file_sdl = event.drop.data
 				inp.mouse_position[0] = int(event.drop.x / logical_size[0] * window_size[0])
 				inp.mouse_position[1] = int(event.drop.y / logical_size[0] * window_size[0])
@@ -53902,7 +53915,6 @@ def main(holder: Holder) -> None:
 				tauon.drop_file(target)
 
 			elif event.type == sdl3.SDL_EVENT_QUIT:
-				power += 5
 
 				if gui.tray_active and prefs.min_to_tray and not inp.key_shift_down:
 					tauon.min_to_tray()
@@ -53910,13 +53922,12 @@ def main(holder: Holder) -> None:
 					tauon.exit("Window received exit signal")
 					break
 			elif event.type == sdl3.SDL_EVENT_TEXT_EDITING:
-				power += 5
 				# logging.info("edit text")
 				gui.editline = event.edit.text
 				# logging.info(gui.editline)
 				gui.editline = gui.editline.decode("utf-8", "ignore")
 				inp.k_input = True
-				gui.update += 1
+				gui.request_frame()
 
 			elif event.type == sdl3.SDL_EVENT_MOUSE_MOTION:
 				mp = tauon.menu_popup_for_window(event.motion.windowID)
@@ -53926,7 +53937,7 @@ def main(holder: Holder) -> None:
 					# window. It must never touch the main window's mouse_position.
 					mp.last_local = (int(event.motion.x * mp.scale), int(event.motion.y * mp.scale))
 					tauon.active_pointer_window = mp
-					gui.update += 1
+					gui.request_frame()
 				elif event.motion.windowID == sdl3.SDL_GetWindowID(tauon.t_window):
 					inp.mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
 					inp.mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
@@ -53940,8 +53951,7 @@ def main(holder: Holder) -> None:
 			elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_DOWN:
 				inp.k_input = True
 				focused = True
-				power += 5
-				gui.update += 1
+				gui.request_frame()
 				gui.mouse_in_window = True
 
 				if ggc == 2:  # dont click on first full frame
@@ -53982,15 +53992,14 @@ def main(holder: Holder) -> None:
 					inp.mouse_down = True
 				elif event.button.button == sdl3.SDL_BUTTON_MIDDLE:
 					inp.middle_click = True
-					gui.update += 1
+					gui.request_frame()
 				elif event.button.button == sdl3.SDL_BUTTON_X1:
 					keymaps.hits.append("MB4")
 				elif event.button.button == sdl3.SDL_BUTTON_X2:
 					keymaps.hits.append("MB5")
 			elif event.type == sdl3.SDL_EVENT_MOUSE_BUTTON_UP:
 				inp.k_input = True
-				power += 5
-				gui.update += 1
+				gui.request_frame()
 				if event.button.button == sdl3.SDL_BUTTON_RIGHT:
 					inp.right_down = False
 				elif event.button.button == sdl3.SDL_BUTTON_LEFT:
@@ -54003,13 +54012,12 @@ def main(holder: Holder) -> None:
 						inp.mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
 
 					inp.mouse_down = False
-					gui.update += 1
+					gui.request_frame()
 			elif event.type == sdl3.SDL_EVENT_KEY_DOWN:
 				if inp.key_focused != 0:
 					continue
 				inp.k_input = True
-				power += 5
-				gui.update += 2
+				gui.request_frame()
 				if prefs.use_scancodes:
 					keymaps.hits.append(event.key.scancode)
 				else:
@@ -54085,8 +54093,7 @@ def main(holder: Holder) -> None:
 
 			elif event.type == sdl3.SDL_EVENT_KEY_UP:
 				inp.k_input = True
-				power += 5
-				gui.update += 2
+				gui.request_frame()
 				if event.key.key == sdl3.SDLK_LSHIFT:
 					inp.key_shift_down = False
 				elif event.key.key == sdl3.SDLK_LCTRL:
@@ -54110,15 +54117,13 @@ def main(holder: Holder) -> None:
 
 			elif event.type == sdl3.SDL_EVENT_TEXT_INPUT:
 				inp.k_input = True
-				power += 5
 				inp.input_text += event.text.text.decode("utf-8")
 
-				gui.update += 1
+				gui.request_frame()
 				# logging.info(inp.input_text)
 
 			elif event.type == sdl3.SDL_EVENT_MOUSE_WHEEL:
 				inp.k_input = True
-				power += 6
 				now = time.monotonic()
 				wheel_before = inp.mouse_wheel
 				raw_scroll_y = event.wheel.y
@@ -54154,7 +54159,7 @@ def main(holder: Holder) -> None:
 				inp.mouse_wheel_precise = precise_input
 				inp.trackpad_scroll_mode_until = 0.0
 
-				gui.update += 1
+				gui.request_frame()
 			# this is where tap and scroll and rightclick and dragndrop happens
 			# use active_touch to track because i cant be bothered figuring out the systems we already have lol
 			elif event.type == sdl3.SDL_EVENT_FINGER_DOWN:
@@ -54175,7 +54180,7 @@ def main(holder: Holder) -> None:
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
 					active_touch.y = int(event.tfinger.y * window_size[1])
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
-					gui.update += 1
+					gui.request_frame()
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
 					active_touch.is_gesture = True
 			elif event.type == sdl3.SDL_EVENT_FINGER_MOTION:
@@ -54199,7 +54204,7 @@ def main(holder: Holder) -> None:
 							# regular scrolling
 							inp.touch_scroll_y += event.tfinger.dy * window_size[1]
 							mouse_moved = True
-							gui.pl_update += 1
+							gui.request_tracklist_redraw()
 
 						elif active_touch.has_moved or abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
 							# if touch position has MOVED,
@@ -54224,7 +54229,7 @@ def main(holder: Holder) -> None:
 							active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
 							active_touch.is_rightclick = True
 
-						gui.update += 1
+						gui.request_frame()
 			elif event.type in (sdl3.SDL_EVENT_FINGER_UP, sdl3.SDL_EVENT_FINGER_CANCELED):
 				if event.tfinger.fingerID == inp.active_touch_id:
 					inp.k_input = True
@@ -54255,12 +54260,11 @@ def main(holder: Holder) -> None:
 						active_touch.reset()
 						if not gest:
 							active_touch.was_gesture = True
-					gui.update += 1
+					gui.request_frame()
 				else: # bugfix regarding the order you lift off your fingers during gesture
 					if active_touch.is_gesture:
 						active_touch.was_gesture = True
 			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST:
-				power += 5
 				# logging.info(event.type)
 
 				# These handlers all act on the main window (resize, focus,
@@ -54284,8 +54288,8 @@ def main(holder: Holder) -> None:
 					inp.key_focused = 1
 					inp.mouse_down = False
 					gui.album_tab_mode = False
-					gui.pl_update = 1
-					gui.update += 1
+					gui.request_tracklist_redraw()
+					gui.request_frame()
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_LOST:
 					# The menu popup is non-focusable, so showing it never steals
@@ -54295,7 +54299,7 @@ def main(holder: Holder) -> None:
 					close_all_menus()
 					tauon.close_menu_popup()  # no-op if nothing is open
 					inp.key_focused = 1
-					gui.update += 1
+					gui.request_frame()
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 					# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
@@ -54308,7 +54312,7 @@ def main(holder: Holder) -> None:
 					window_size[1] = i_y.contents.value
 					auto_scale(bag)
 					gui.update_layout = True
-					gui.update = 2
+					gui.request_frame()
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
 					# sdl3.SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
 					# if event.window.data1 < 500:
@@ -54324,7 +54328,7 @@ def main(holder: Holder) -> None:
 					# 		logical_size[0] = max(300, logical_size[0])
 					# 		logical_size[1] = max(300, logical_size[1])
 
-					gui.update = 2
+					gui.request_frame()
 					logical_size[0] = event.window.data1
 					logical_size[1] = event.window.data2
 					# auto_scale(bag)
@@ -54334,7 +54338,7 @@ def main(holder: Holder) -> None:
 					# logging.info("ENTER")
 					mouse_enter_window = True
 					gui.mouse_in_window = True
-					gui.update += 1
+					gui.request_frame()
 
 				# elif event.type == sdl3.SDL_WINDOWEVENT_HIDDEN:
 				#
@@ -54351,8 +54355,8 @@ def main(holder: Holder) -> None:
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESTORED:
 					gui.lowered = False
 					gui.maximized = False
-					gui.pl_update = 1
-					gui.update += 2
+					gui.request_tracklist_redraw()
+					gui.request_frame()
 
 					if prefs.update_title:
 						tauon.update_title_do()
@@ -54360,8 +54364,8 @@ def main(holder: Holder) -> None:
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_SHOWN:
 					focused = True
-					gui.pl_update = 1
-					gui.update += 1
+					gui.request_tracklist_redraw()
+					gui.request_frame()
 
 				# elif event.type == sdl3.SDL_WINDOWEVENT_FOCUS_GAINED:
 				#     logging.info("FOCUS GAINED")
@@ -54373,29 +54377,30 @@ def main(holder: Holder) -> None:
 					if gui.mode != GuiMode.MINI:  # TODO(Taiko): workaround. sdl bug? gives event on window size set
 						gui.maximized = True
 					gui.update_layout = True
-					gui.pl_update = 1
-					gui.update += 1
+					gui.request_tracklist_redraw()
+					gui.request_frame()
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_MOUSE_LEAVE:
 					gui.mouse_in_window = False
-					gui.update += 1
-					power = 1000
+					gui.request_frame()
 
 		if mouse_moved and tauon.fields.test():
-			gui.update += 1
+			gui.request_frame()
 
 		# if tauon.thread_manager.sleeping:
 		#     if not gui.lowered:
 		#         tauon.thread_manager.wake()
 		if gui.lowered:
-			gui.update = 0
+			gui.update = False
 		# ----------------
-		# This section of code controls the internal processing speed or 'frame-rate'
-		# It's pretty messy
+		# This section decides whether this iteration runs the full frame body.
+		# run_frame is recomputed from scratch every pass; anything that wants
+		# processing or rendering this iteration sets it. Frame-rate pacing is
+		# handled centrally at the top of the loop.
 		# if not gui.pl_update and gui.rendered_playlist_position != pctl.playlist_view_position:
 		#     logging.warning("The playlist failed to render at the latest position!!!!")
 
-		power += 1
+		run_frame = False
 
 		if pctl.playerCommandReady and tauon.thread_manager.player_lock.locked():
 			try:
@@ -54412,8 +54417,8 @@ def main(holder: Holder) -> None:
 			i = len(gui.frame_callback_list) - 1
 			while i >= 0:
 				if gui.frame_callback_list[i].test():
-					gui.update = 1
-					power = 1000
+					gui.request_frame()
+					run_frame = True
 					del gui.frame_callback_list[i]
 				i -= 1
 
@@ -54423,9 +54428,8 @@ def main(holder: Holder) -> None:
 			if gui.mode != GuiMode.MAIN:
 				tauon.dream_room.close_instant()
 			else:
-				gui.update = max(gui.update, 1)
-				power = 1000
-				pace_vis = True
+				gui.request_frame()
+				run_frame = True
 
 		# Milkdrop preset chooser: keep frames flowing so hover tracking on the
 		# overlay stays live (the visualiser underneath is animating anyway).
@@ -54433,33 +54437,31 @@ def main(holder: Holder) -> None:
 			if gui.mode != GuiMode.MAIN:
 				tauon.milk_choose.close()
 			else:
-				gui.update = max(gui.update, 1)
-				power = 1000
-				pace_vis = True
+				gui.request_frame()
+				run_frame = True
 
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
 				tauon.cursor_blink_timer.set()
 				TextBox.cursor ^= True
-				gui.update = 1
+				gui.request_frame()
 
 			if inp.k_input:
 				tauon.cursor_blink_timer.set()
 				TextBox.cursor = True
 
-			sdl3.SDL_Delay(3)
-			power = 1000
+			run_frame = True
 
 		if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
-			power = 1000
+			run_frame = True
 
 		if not tauon.smooth_scroll.enabled():
 			tauon.smooth_scroll.reset_disabled_motion()
 
 		if tauon.smooth_scroll.any_active():
-			power = 1000
-			gui.pl_update = max(gui.pl_update, 1)
-			gui.update = max(gui.update, 1)
+			run_frame = True
+			gui.request_tracklist_redraw()
+			gui.request_frame()
 			now = time.monotonic()
 			if tauon.scroll_animation_deadline <= 0:
 				tauon.scroll_animation_deadline = now + SCROLL_ANIMATION_FRAME_INTERVAL
@@ -54476,35 +54478,25 @@ def main(holder: Holder) -> None:
 			tauon.scroll_animation_deadline = 0.0
 
 		if prefs.art_bg and tauon.core_timer.get() < 3:
-			power = 1000
+			run_frame = True
 
 		if (inp.mouse_down or active_touch.is_scroll or active_touch.is_dragndrop) and mouse_moved:
-			power = 1000
+			run_frame = True
 			if gui.update_on_drag:
-				gui.update += 1
+				gui.request_frame()
 			if gui.pl_update_on_drag:
-				gui.pl_update += 1
+				gui.request_tracklist_redraw()
 
 		if pctl.wake_past_time and tauon.get_real_time() > pctl.wake_past_time:
 			pctl.wake_past_time = 0
-			power = 1000
-			gui.update += 1
+			run_frame = True
+			gui.request_frame()
 
 		# The level_update partial-present path (top-panel spectrum/level meter)
 		# re-arms itself every iteration while playing, so it presents at the
-		# loop rate — pace it below like the other continuous visuals.
+		# loop rate — the central pacer caps that at the display refresh rate.
 		if gui.level_update and not album_scroll_hold and not scroll_hold:
-			power = 500
-			pace_vis = True
-
-		# if gui.vis == 3 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
-		# 	power = 500
-		# 	if len(gui.spec2_buffers) > 0 and gui.spec2_timer.get() > 0.04:
-		# 		gui.spec2_timer.set()
-		# 		gui.level_update = True
-		# 		vis_update = True
-		# 	else:
-		# 		sdl3.SDL_Delay(5)
+			run_frame = True
 
 		if not pctl.running:
 			break
@@ -54522,48 +54514,31 @@ def main(holder: Holder) -> None:
 			tauon.init_sdl_tray()
 			tauon.requested_tray = False
 
-		if pctl.playing_state != PlayingState.STOPPED:
-			power += 400
+		# Keep the frame body (seek-bar time tick, housekeeping) running while
+		# something is playing; drawing stays gated on gui.update. Paused counts
+		# as idle so the loop can drop into the deep-sleep wait below.
+		if pctl.playing_state not in (PlayingState.STOPPED, PlayingState.PAUSED):
+			run_frame = True
 
-		# Keep the scrolling spectrogram at a steady frame rate. Playback alone
-		# only bumps power to 400 (below the 500 render threshold), so between the
-		# jittery level_update pulses the loop drops into the ~33fps power-save
-		# throttle and the scroll stutters. Holding power high + update set makes
-		# it render every iteration.
+		# Keep the scrolling spectrogram rendering every frame; the central
+		# pacer holds that at the display refresh rate.
 		if gui.spectrogram_in_widget \
 				and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
-			power = 1000
-			gui.update = max(gui.update, 1)
-			pace_vis = True
-
-		# Pace the continuously animating visuals above by sleeping off whatever
-		# part of the frame budget the present's vsync block didn't absorb: a
-		# no-op while vsync paces the loop, a refresh-rate cap when it silently
-		# stops blocking (driver override, occluded window).
-		if pace_vis:
-			pace_vis = False
-			excess = tauon.frame_pace() - vis_pace_timer.get()
-			if excess > 0:
-				time.sleep(excess)
-		vis_pace_timer.set()
+			gui.request_frame()
+			run_frame = True
 
 		if prefs.milk and render_heartbeat_timer.get() > 5:
 			# workaround for invis window bug?
-			gui.pl_update = 1
-			gui.update = 1
-			power = 1000
+			gui.request_tracklist_redraw()
+			gui.request_frame()
+			run_frame = True
 			render_heartbeat_timer.set()
 
-		if power < 500:
-			# Limit FPS to 500 when Milkdrop presets are enabled, otherwise to 33
-			if prefs.milk:
-				time.sleep(0.002)
-			else:
-				time.sleep(0.03)
+		if not run_frame:
 			if (
 				(pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED))
 				and not tauon.load_orders
-				and gui.update == 0
+				and not gui.update
 				and not tauon.gall_ren.queue
 				and not tauon.transcode_list
 				and not gui.frame_callback_list
@@ -54574,9 +54549,6 @@ def main(holder: Holder) -> None:
 			if tauon.sleep_timer.get() > 2:
 				sdl3.SDL_WaitEventTimeout(None, 1000)
 			continue
-		power = 0
-
-		gui.pl_update = min(gui.pl_update, 2)
 
 		gui.new_playlist_cooldown = False
 
@@ -54731,7 +54703,7 @@ def main(holder: Holder) -> None:
 				if keymaps.test("playlist-toggle-breaks"):
 					# Toggle force off folder break for viewed playlist
 					pctl.multi_playlist[pctl.active_playlist_viewing].hide_title ^= 1
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 
 				if keymaps.test("find-playing-artist"):
 					# standard_size()
@@ -54755,7 +54727,7 @@ def main(holder: Holder) -> None:
 					inp.key_esc_press = True
 
 			if inp.key_ctrl_down:
-				gui.pl_update += 1
+				gui.request_tracklist_redraw()
 
 			if mouse_enter_window:
 				inp.key_return_press = False
@@ -54798,8 +54770,8 @@ def main(holder: Holder) -> None:
 
 					# Arrow keys to change playlist
 					if (inp.key_left_press or inp.key_right_press) and len(pctl.multi_playlist) > 1:
-						gui.pl_update = 1
-						gui.update += 1
+						gui.request_tracklist_redraw()
+						gui.request_frame()
 
 				if keymaps.test("start"):
 					if pctl.playing_time < 4:
@@ -54815,7 +54787,7 @@ def main(holder: Holder) -> None:
 					pctl.playlist_view_position = 0
 					logging.debug("Position changed by key")
 					pctl.selected_in_playlist = 0
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 
 				if keymaps.test("goto-bottom"):
 					n = len(pctl.default_playlist) - gui.playlist_view_length + 1
@@ -54823,7 +54795,7 @@ def main(holder: Holder) -> None:
 					pctl.playlist_view_position = n
 					logging.debug("Position changed by key")
 					pctl.selected_in_playlist = len(pctl.default_playlist) - 1
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 
 			if not text_entry_shortcuts_blocked and not tauon.search_over.active and not gui.box_over:
 				if gui.quick_search_mode:
@@ -54832,15 +54804,15 @@ def main(holder: Holder) -> None:
 						inp.input_text = ""
 				else:
 					if inp.key_c_press and inp.key_ctrl_down:
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						tauon.s_copy()
 
 					if inp.key_x_press and inp.key_ctrl_down:
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						tauon.s_cut()
 
 					if inp.key_v_press and inp.key_ctrl_down:
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						tauon.paste()
 
 					if keymaps.test("playpause"):
@@ -54905,7 +54877,7 @@ def main(holder: Holder) -> None:
 							tauon.star_store.insert(to.index, new)
 
 						tauon.copied_track = None
-						gui.pl_update += 1
+						gui.request_tracklist_redraw()
 						logging.info("Transferred track stats!")
 					elif tauon.copied_track is None:
 						tauon.show_message(_("First select a source track by copying it into clipboard"))
@@ -54923,7 +54895,7 @@ def main(holder: Holder) -> None:
 
 				if keymaps.test("toggle-minimode"):
 					tauon.set_mini_mode()
-					gui.update += 1
+					gui.request_frame()
 
 				if keymaps.test("cycle-layouts"):
 					tauon.view_box.cycle()
@@ -54949,7 +54921,7 @@ def main(holder: Holder) -> None:
 			elif gui.mode == GuiMode.MINI:
 				if keymaps.test("toggle-minimode"):
 					tauon.restore_full_mode()
-					gui.update += 1
+					gui.request_frame()
 
 			inp.ab_click = False
 
@@ -55057,16 +55029,16 @@ def main(holder: Holder) -> None:
 				inp.right_click = False
 
 			if inp.mouse_wheel != 0:
-				gui.update += 1
+				gui.request_frame()
 			if inp.mouse_down is True:
-				gui.update += 1
+				gui.request_frame()
 
 			if keymaps.test("pagedown"):  # key_PGD:
 				if len(pctl.default_playlist) > 10:
 					pctl.playlist_view_position += gui.playlist_view_length - 4
 					if pctl.playlist_view_position >= len(pctl.default_playlist):
 						pctl.playlist_view_position = len(pctl.default_playlist) - 2
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 					pctl.selected_in_playlist = pctl.playlist_view_position
 					logging.debug("Position changed by page key")
 					gui.shift_selection.clear()
@@ -55074,7 +55046,7 @@ def main(holder: Holder) -> None:
 				if len(pctl.default_playlist) > 0:
 					pctl.playlist_view_position -= gui.playlist_view_length - 4
 					pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
-					gui.pl_update = 1
+					gui.request_tracklist_redraw()
 					pctl.selected_in_playlist = pctl.playlist_view_position
 					logging.debug("Position changed by page key")
 					gui.shift_selection.clear()
@@ -55116,7 +55088,7 @@ def main(holder: Holder) -> None:
 						pctl.back()
 
 					if inp.key_a_press and inp.key_ctrl_down:
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						gui.shift_selection = list(range(len(pctl.default_playlist)))
 
 					if keymaps.test("revert"):
@@ -55141,7 +55113,7 @@ def main(holder: Holder) -> None:
 						pctl.set_volume()
 
 					if keymaps.test("shift-down") and len(pctl.default_playlist) > 0:
-						gui.pl_update += 1
+						gui.request_tracklist_redraw()
 						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 							pctl.selected_in_playlist = 0
 
@@ -55156,7 +55128,7 @@ def main(holder: Holder) -> None:
 								gui.shift_selection.remove(r)
 
 					if keymaps.test("shift-up") and pctl.selected_in_playlist > -1:
-						gui.pl_update += 1
+						gui.request_tracklist_redraw()
 						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist) - 1)
 
 						if not gui.shift_selection:
@@ -55337,7 +55309,7 @@ def main(holder: Holder) -> None:
 
 		if tauon.loaderCommand == LoaderCommand.DONE:
 			tauon.loaderCommand = LoaderCommand.NONE
-			gui.update += 1
+			gui.request_frame()
 			# gui.pl_update = 1
 			# pctl.loading_in_progress = False
 
@@ -55361,7 +55333,7 @@ def main(holder: Holder) -> None:
 		# THEME SWITCHER--------------------------------------------------------------------
 
 		if gui.reload_theme is True:
-			gui.pl_update = 1
+			gui.request_tracklist_redraw()
 			theme_files = get_themes(dirs)
 
 			if prefs.theme > len(theme_files):  # sic
@@ -55429,13 +55401,16 @@ def main(holder: Holder) -> None:
 		# logging.info(gui.update)
 		# logging.info(gui.lowered)
 		if gui.mode == GuiMode.MINI:
-			gui.pl_update = 0
+			gui.pl_update = False
 
 		if gui.pl_update and not gui.update:
-			gui.update = 1
+			gui.request_frame()
 
-		if gui.update > 0 and not resize_mode:
-			gui.update = min(gui.update, 2)
+		if gui.update and not resize_mode:
+			# Flip the request flag off at the start of the frame: any
+			# request_frame() made while drawing means "render another frame
+			# after this one".
+			gui.update = False
 			tauon.gall_ren.new_frame()
 			ddt.new_frame()
 
@@ -55734,8 +55709,8 @@ def main(holder: Holder) -> None:
 
 							pctl.update_shuffle_pool(pctl.multi_playlist[target_pl].uuid_int)
 
-							gui.update += 2
-							gui.pl_update += 2
+							gui.request_frame()
+							gui.request_tracklist_redraw()
 							if order.notify and gui.message_box and len(tauon.load_orders) == 1:
 								tauon.show_message(_("Rescan folders complete."), mode="done")
 							tauon.reload()
@@ -55808,10 +55783,10 @@ def main(holder: Holder) -> None:
 							or inp.mouse_down
 						)
 					):
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 
 					if gui.combo_mode and inp.mouse_wheel != 0:
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 
 					# MAIN PLAYLIST
 					# C-PR
@@ -55827,10 +55802,13 @@ def main(holder: Holder) -> None:
 					if not gui.showcase_mode:
 						showcase.timed_lyrics_edit.continuous = False
 
-					if gui.pl_update > 0:
+					if gui.pl_update:
 						gui.rendered_playlist_position = pctl.playlist_view_position
 
-						gui.pl_update -= 1
+						# Flip the request flag off at the start of the render: any
+						# request_tracklist_redraw() made during it means "render
+						# the tracklist again next frame".
+						gui.pl_update = False
 						if gui.combo_mode:
 							if gui.radio_view:
 								tauon.radio_view.render()
@@ -57290,7 +57268,7 @@ def main(holder: Holder) -> None:
 						or inp.backspace_press
 						or gui.force_search
 					):
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 
 						if gui.force_search:
 							gui.search_index = 0
@@ -57357,7 +57335,7 @@ def main(holder: Holder) -> None:
 						and not inp.key_lalt
 						and not inp.key_ralt
 					):
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						oi = gui.search_index
 
 						while gui.search_index > 1:
@@ -57389,7 +57367,7 @@ def main(holder: Holder) -> None:
 							tauon.edge_playlist2.pulse()
 
 					if inp.key_return_press is True and gui.search_index > -1:
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						pctl.jump(pctl.default_playlist[gui.search_index], gui.search_index)
 						if prefs.album_mode:
 							tauon.goto_album(pctl.playlist_playing_position)
@@ -57409,7 +57387,7 @@ def main(holder: Holder) -> None:
 						or (keymaps.test("shift-up"))
 					):
 						pctl.show_selected()
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 
 						if not keymaps.test("shift-up"):
 							if pctl.selected_in_playlist > 0:
@@ -57443,7 +57421,7 @@ def main(holder: Holder) -> None:
 						or keymaps.test("shift-down")
 					):
 						pctl.show_selected()
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 
 						if not keymaps.test("shift-down"):
 							if pctl.selected_in_playlist < len(pctl.default_playlist) - 1:
@@ -57472,7 +57450,7 @@ def main(holder: Holder) -> None:
 						and not gui.timed_lyrics_editing_now
 						and not (gui.showcase_mode and gui.timed_lyrics_edit_view)
 					):
-						gui.pl_update = 1
+						gui.request_tracklist_redraw()
 						if pctl.selected_in_playlist > len(pctl.default_playlist) - 1:
 							pctl.selected_in_playlist = 0
 							gui.shift_selection = []
@@ -57972,10 +57950,8 @@ def main(holder: Holder) -> None:
 					)
 
 			inp.input_text = ""
-			gui.update -= 1
 
 			# logging.info("FRAME " + str(tauon.core_timer.get()))
-			gui.update = min(gui.update, 1)
 			gui.present = True
 
 			sdl3.SDL_SetRenderTarget(renderer, None)
@@ -58117,9 +58093,6 @@ def main(holder: Holder) -> None:
 								if abs(gui.spec[i] - gui.s_spec[i]) > 8:
 									gui.s_spec[i] -= 1
 
-						if pctl.playing_state == PlayingState.STOPPED and check_equal(gui.s_spec):
-							gui.level_update = True
-							time.sleep(0.008)
 					else:
 						gui.s_spec = gui.spec
 				else:
@@ -58212,7 +58185,6 @@ def main(holder: Holder) -> None:
 							gui.level_peak[0] -= decay
 						elif pctl.playing_state in (PlayingState.STOPPED, PlayingState.PAUSED):
 							gui.level_update = True
-							time.sleep(0.016)
 							t = gui.level_decay_timer.hit()
 							decay = 16 * t
 							gui.level_peak[1] -= decay
@@ -58336,7 +58308,7 @@ def main(holder: Holder) -> None:
 				pctl.last_playing_time = pctl.playing_time
 				tauon.bottom_bar1.seek_time = pctl.playing_time
 				if not prefs.power_save or window_is_focused(tauon.t_window):
-					gui.update = 1
+					gui.request_frame()
 
 		# Auto save play times to disk
 		if pctl.total_playtime - time_last_save > 600:
@@ -58357,8 +58329,8 @@ def main(holder: Holder) -> None:
 		# Always render at least one frame per minute (to avoid SDL bugs I guess)
 		if tauon.min_render_timer.get() > 60:
 			tauon.min_render_timer.set()
-			gui.pl_update = 1
-			gui.update += 1
+			gui.request_tracklist_redraw()
+			gui.request_frame()
 
 		# Save power if the window is minimized
 		if gui.lowered:

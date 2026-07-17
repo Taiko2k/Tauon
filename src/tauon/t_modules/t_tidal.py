@@ -218,7 +218,7 @@ class Tidal:
 		t = self.session.track(id)
 		nt = self.new_track(t)
 		self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing].playlist_ids.append(nt.index)
-		self.tauon.gui.pl_update += 14
+		self.tauon.gui.request_tracklist_redraw()
 		return None
 
 	def fav_albums(self, return_list: bool = False) -> list[int] | None:
@@ -362,7 +362,7 @@ class Tidal:
 
 			nt = self.new_track(track)
 			self.tauon.pctl.multi_playlist[self.tauon.pctl.active_playlist_viewing].playlist_ids.append(nt.index)
-			self.tauon.gui.pl_update += 1
+			self.tauon.gui.request_tracklist_redraw()
 
 	# def test(self):
 	# 	 logging.info("Test Tidal")

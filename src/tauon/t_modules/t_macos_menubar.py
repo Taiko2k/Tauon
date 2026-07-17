@@ -488,7 +488,7 @@ class MacMenuBar:
 
 	def open_settings(self) -> None:
 		self.tauon.activate_info_box()
-		self.tauon.gui.update = 2
+		self.tauon.gui.request_frame()
 		self.refresh_states()
 
 	def open_tracks_art(self) -> None:
@@ -544,7 +544,7 @@ class MacMenuBar:
 			self.tauon.toggle_shuffle_layout()
 		elif self.tauon.prefs.album_shuffle_lock_mode:
 			self.tauon.prefs.album_shuffle_lock_mode = False
-			self.tauon.gui.update = 2
+			self.tauon.gui.request_frame()
 		self.refresh_states()
 
 	def set_shuffle_lockdown_albums(self) -> None:
@@ -552,7 +552,7 @@ class MacMenuBar:
 			self.tauon.toggle_shuffle_layout_albums()
 		elif not self.tauon.prefs.album_shuffle_lock_mode:
 			self.tauon.prefs.album_shuffle_lock_mode = True
-			self.tauon.gui.update = 2
+			self.tauon.gui.request_frame()
 		self.refresh_states()
 
 	def exit_shuffle_lockdown(self) -> None:
@@ -592,7 +592,7 @@ class MacMenuBar:
 		self.tauon.activate_info_box()
 		self.tauon.pref_box.tab_active = len(self.tauon.pref_box.tabs) - 1
 		self.tauon.pref_box.scroll = 0
-		self.tauon.gui.update = 2
+		self.tauon.gui.request_frame()
 		self.refresh_states()
 
 	def open_online_manual(self) -> None:

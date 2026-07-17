@@ -336,8 +336,8 @@ class Jellyfin:
 		self.scanning = False
 		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
 		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{playlist_id}"'
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		self.tauon.reload()
 		self.tauon.wake()
 		return None
@@ -388,13 +388,13 @@ class Jellyfin:
 
 		# The import may have updated tracks shown in the current view, so
 		# refresh the playlist and gallery
-		self.gui.pl_update = 1
-		self.gui.update += 1
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 		self.tauon.reload()
 		self.tauon.wake()
 
 	def ingest_library(self, return_list: bool = False) -> list[int] | None:
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.scanning = True
 		self.gui.to_got = 0
 
@@ -468,7 +468,7 @@ class Jellyfin:
 			total = data.get("TotalRecordCount", 0)
 			logging.info(f"Got {start_index} of {total} items...")
 			self.gui.to_got = start_index
-			self.gui.update += 1
+			self.gui.request_frame()
 			self.tauon.wake()
 			if not page or start_index >= total:
 				break
@@ -576,7 +576,7 @@ class Jellyfin:
 					fav_status[nt] = user_data.get("IsFavorite")
 
 		logging.info("Jellyfin import complete")
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.tauon.wake()
 
 		def set_favs(d: dict[TrackClass, bool]) -> None:
@@ -610,7 +610,7 @@ class Jellyfin:
 		self.tauon.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
 		self.scanning = False
-		self.gui.update += 1
+		self.gui.request_frame()
 		self.tauon.wake()
 		return None
 
