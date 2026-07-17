@@ -2952,7 +2952,14 @@ class CustomLayout:
 			inp.mouse_position[0], inp.mouse_position[1] = mx, my
 		self._held_mouse = None
 
-		ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
+		# Cover the standard layout rendered underneath. With the art
+		# background active the panel colour carries alpha and would let the
+		# standard UI ghost through, so lay down the opaque base + blurred
+		# art again and let the translucent widget fills blend over that.
+		if gui.have_art_bg:
+			tauon.style_overlay.display(background=True)
+		else:
+			ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
 
 		root = self.ensure_slot()
 		# Make sure the active slot's columns config is applied. Covers a restart
@@ -2961,6 +2968,9 @@ class CustomLayout:
 		if self._columns_owner != self.active_slot:
 			self._activate_columns(self.active_slot)
 		layout(root, 0, 0, ww, wh, gui.scale)
+
+		if gui.have_art_bg:
+			self._draw_art_bg_veil(root, ww, wh)
 
 		# The MilkDrop Box widget owns the (singleton) visualiser while it is in
 		# the layout: gates the ArtBox / MetaBox milk paths off so both never
@@ -3087,43 +3097,59 @@ class CustomLayout:
 		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
 			for l in iter_leaves(root))
 
+	def _leaf_paint_rect(self, leaf: Leaf) -> tuple[float, float, float, float] | None:
+		"""The rect the leaf's widget actually paints: the content rect snapped
+		to whole pixels, inset by padding, shrunk to a centred square for aspect
+		leaves. None when nothing paints (empty segment, or below the widget's
+		minimum size — _draw_leaf fills those itself). Shared between _draw_leaf
+		and the art-background veil so its holes can't drift from the widgets."""
+		widget = leaf.widget
+		if widget is None:
+			return None
+		gui = self.gui
+		cx, cy, cw, ch = content_rect(leaf, gui.scale)
+		# Snap to whole pixels up front so the border (drawn by _draw_leaf at
+		# these exact coords) and the widget's own draw rect land on the same
+		# edges. Widgets like the Art Box round their rect independently (and
+		# blit the visualiser at those rounded coords); with a fractional cx/cy
+		# that rounding pushed the art/visualiser a pixel past the float border
+		# — flush at padding 0, but a 1px overhang here, a 1px gap once padded.
+		cx, cy, cw, ch = round(cx), round(cy), round(cw), round(ch)
+		# Padding: inset the widget's drawable rect inside the border (which is
+		# drawn at cx/cy/cw/ch). Clamped so it can never invert on tiny segments.
+		pad = leaf.padding * gui.scale
+		px = min(pad, cw / 2)
+		py = min(pad, ch / 2)
+		dx, dy, dw, dh = cx + px, cy + py, cw - px * 2, ch - py * 2
+		if dw < widget.min_w * gui.scale or dh < widget.min_h * gui.scale:
+			return None
+		if leaf.aspect:
+			# Keep a square content region (Art Box-style), centred.
+			side = min(dw, dh)
+			dx = cx + (cw - side) / 2
+			dy = cy + (ch - side) / 2
+			dw = dh = side
+		return dx, dy, dw, dh
+
 	def _draw_leaf(self, leaf: Leaf, interactive: bool) -> None:
 		tauon = self.tauon
 		gui = self.gui
 		ddt = self.ddt
 		cx, cy, cw, ch = content_rect(leaf, gui.scale)
-		# Snap to whole pixels up front so the border (drawn below at these exact
-		# coords) and the widget's own draw rect land on the same edges. Widgets
-		# like the Art Box round their rect independently (and blit the visualiser
-		# at those rounded coords); with a fractional cx/cy that rounding pushed the
-		# art/visualiser a pixel past the float border — flush at padding 0, but a
-		# 1px overhang here, a 1px gap once padded.
 		cx, cy, cw, ch = round(cx), round(cy), round(cw), round(ch)
 		widget = leaf.widget
 
 		if widget is None:
 			return  # empty segment: just background
 
-		# Padding: inset the widget's drawable rect inside the border (which is
-		# drawn at cx/cy/cw/ch). Clamped so it can never invert on tiny segments.
-		pad = leaf.padding * gui.scale
-		px = min(pad, cw / 2)
-		py = min(pad, ch / 2)
-		pcx, pcy, pcw, pch = cx + px, cy + py, cw - px * 2, ch - py * 2
-
-		if pcw < widget.min_w * gui.scale or pch < widget.min_h * gui.scale:
+		paint = self._leaf_paint_rect(leaf)
+		if paint is None:
 			ddt.rect((cx, cy, cw, ch), ColourRGBA(40, 20, 20, 255))
 			ddt.text_background_colour = ColourRGBA(40, 20, 20, 255)
 			ddt.text((round(cx + cw / 2), round(cy + ch / 2) - 8 * gui.scale, 2),
 				"Size too small", ColourRGBA(200, 120, 120, 255), 211)
 		else:
-			dx, dy, dw, dh = pcx, pcy, pcw, pch
-			if leaf.aspect:
-				# Keep a square content region (Art Box-style), centred.
-				side = min(dw, dh)
-				dx = cx + (cw - side) / 2
-				dy = cy + (ch - side) / 2
-				dw = dh = side
+			dx, dy, dw, dh = paint
 			if not widget.offscreen:
 				widget.draw(tauon, dx, dy, dw, dh)
 			else:
@@ -3230,6 +3256,39 @@ class CustomLayout:
 		src = sdl3.SDL_FRect(0, 0, iw, ih)
 		dst = sdl3.SDL_FRect(ox, oy, iw, ih)
 		sdl3.SDL_RenderTexture(renderer, scratch, src, dst)
+
+	def _draw_art_bg_veil(self, root: Node, ww: int, wh: int) -> None:
+		"""Dim the art background between widgets. Widgets dim their own rects
+		with translucent panel fills, but the gutters, border gaps and empty
+		segments have no fill and would show the art at full brightness. Fill
+		the scratch texture with the panel colour, punch zero-alpha holes at
+		each widget's painted rect, and composite over the art — one continuous
+		veil, so the gaps match widget interiors with no bright seams.
+
+		Runs after layout() (the holes need the leaf rects) and before the
+		leaves draw, so the offscreen widgets are free to reuse the scratch
+		texture afterwards."""
+		renderer = self.renderer
+		veil = self._get_scratch()
+		sdl3.SDL_SetRenderTarget(renderer, veil)
+		# Blend NONE writes store the exact straight-alpha colour (and zeros in
+		# the holes) for the texture's BLENDMODE_BLEND composite below
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		colour = self.tauon.colours.playlist_panel_background
+		sdl3.SDL_SetRenderDrawColor(renderer, colour.r, colour.g, colour.b, colour.a)
+		area = sdl3.SDL_FRect(0, 0, ww, wh)
+		sdl3.SDL_RenderFillRect(renderer, area)
+		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		for leaf in iter_leaves(root):
+			if not isinstance(leaf, Leaf):
+				continue
+			paint = self._leaf_paint_rect(leaf)
+			if paint is None:
+				continue
+			sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(paint[0], paint[1], paint[2], paint[3]))
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderTarget(renderer, self.gui.main_texture)
+		sdl3.SDL_RenderTexture(renderer, veil, area, area)
 
 	def _get_scratch(self):
 		"""Lazily create (and resize) the offscreen scratch texture, kept separate

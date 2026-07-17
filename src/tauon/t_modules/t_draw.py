@@ -438,7 +438,7 @@ class TDraw:
 		force_gray = self.force_gray
 		# real_bg = True
 
-		if bg.a < 200:
+		if bg.a < 246:
 			alpha_bg = True
 			force_gray = True
 

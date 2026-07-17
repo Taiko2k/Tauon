@@ -788,6 +788,44 @@ def rgb_to_hls(r: float, g: float, b: float) -> tuple[float, float, float]:
 	return colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
 
 
+def hls_hue_mix(base: ColourRGBA, sample: ColourRGBA, amount: float) -> ColourRGBA:
+	"""Tint base towards the hue of sample, keeping base's lightness and alpha.
+
+	`amount` scales how much of sample's saturation is mixed in. Only
+	near-grey bases pick up the tint — adopting the sample's hue is only
+	meaningful for colours with no hue of their own, so the effect fades
+	out as the base's saturation rises and coloured accents pass through
+	unchanged."""
+	_bh, bl, bs = colorsys.rgb_to_hls(base.r / 255, base.g / 255, base.b / 255)
+	grey_factor = 1.0 - min(1.0, bs / 0.25)
+	if grey_factor <= 0:
+		return base
+	sh, _sl, ss = colorsys.rgb_to_hls(sample.r / 255, sample.g / 255, sample.b / 255)
+	s = min(1.0, bs + ss * amount * grey_factor)
+	r, g, b = colorsys.hls_to_rgb(sh, bl, s)
+	return ColourRGBA(round(r * 255), round(g * 255), round(b * 255), base.a)
+
+
+def hls_pull_contrast(base: ColourRGBA, backdrop: ColourRGBA, floor: float = 0.18, knee: float = 0.35) -> ColourRGBA:
+	"""Ensure base's lightness differs from backdrop's by at least `floor`.
+
+	Lightness deltas below `knee` are remapped linearly into [floor, knee],
+	so near-collisions become readable while the ordering of related shades
+	(a button's off/over/active states) is preserved rather than all
+	clamping to the same value. Hue, saturation and alpha are kept. Only
+	ever lightens — a base darker than the backdrop is pushed up past it,
+	never darkened further."""
+	bh, bl, bs = colorsys.rgb_to_hls(base.r / 255, base.g / 255, base.b / 255)
+	_h, kl, _s = colorsys.rgb_to_hls(backdrop.r / 255, backdrop.g / 255, backdrop.b / 255)
+	delta = abs(bl - kl)
+	if delta >= knee:
+		return base
+	new_delta = floor + delta * (knee - floor) / knee
+	nl = min(1.0, max(bl, kl + new_delta))
+	r, g, b = colorsys.hls_to_rgb(bh, nl, bs)
+	return ColourRGBA(round(r * 255), round(g * 255), round(b * 255), base.a)
+
+
 def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) -> ColourRGBA:
 	c = colorsys.rgb_to_hls(source.r / 255, source.g / 255, source.b / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))
