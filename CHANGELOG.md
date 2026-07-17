@@ -2,8 +2,10 @@
 Changelog
 ---------
 
-### v11.0.1
+### v11.1.0
 
+ - Added new Frost UI backround mode
+ - Fixed columns auto resize
  - Fixed synced lyrics not showing in lyrics widget
 
 

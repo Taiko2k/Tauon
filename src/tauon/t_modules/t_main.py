@@ -32385,6 +32385,8 @@ class TopPanel:
 					if tauon.dl_mon.ready:
 						colour = colours.corner_button_active  # ColourRGBA(60, 60, 60, 255)
 
+			colour = tauon.style_overlay.tint_from_background(
+				colour, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
 			self.dl_button.render(x, y + 1 * gui.scale, colour)
 			if dl > 0:
 				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pulse_colour, 209)  # ColourRGBA(244, 223, 66, 255)
@@ -32481,11 +32483,15 @@ class TopPanel:
 			status = False
 
 		if status:
+			bg = tauon.style_overlay.tint_from_background(
+				bg, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
 			x += ddt.text((x, y), text, bg, 311)
 			# x += ddt.get_text_w(text, 11)
 		# TODO(Taiko): list listening clients
 		elif tauon.transcode_list:
-			bg = colours.status_info_text
+			bg = tauon.style_overlay.tint_from_background(
+				colours.status_info_text, x, y + 8 * gui.scale, 0.2,
+				colours.top_panel_background)
 			# if inp.key_ctrl_down and inp.key_c_press:
 			# 	del tauon.transcode_list[1:]
 			# 	gui.tc_cancel = True

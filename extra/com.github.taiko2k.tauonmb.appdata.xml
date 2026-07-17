@@ -60,7 +60,7 @@
 
   <releases>
 
-    <release version="11.0.0" date="2026-07-11">
+    <release version="11.1.0" date="2026-07-18">
       <description>
         <ul>
           <li>Added custom layout support</li>
