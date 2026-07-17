@@ -2844,6 +2844,23 @@ class CustomLayout:
 	def _t_border_off(self, ref=None) -> bool:
 		return self.menu_target is not None and not self.menu_target.border
 
+	def tracklist_rect(self) -> tuple[int, int, int, int] | None:
+		"""The active layout's Tracklist widget segment rect as last drawn, or
+		None when custom mode is off / no tracklist is placed / it hasn't drawn
+		yet. Column sizing (Auto Resize, update_set) runs from menu callbacks
+		outside the widget's draw, where gui.plw holds the preset width — this
+		gives those the real segment geometry.
+		"""
+		if not self.gui.custom_mode:
+			return None
+		root = self.slots[self.active_slot]
+		if root is None:
+			return None
+		for lf in iter_leaves(root):
+			if isinstance(lf, Leaf) and isinstance(lf.widget, TracklistWidget):
+				return lf.widget._last_rect
+		return None
+
 	def gallery_locate(self, playlist_no: int, highlight: bool = False, force: bool = False) -> bool:
 		"""Locate an album in a custom-layout gallery widget (Gallery: Classic /
 		Compact) the way the preset gallery's show-playing does: run

@@ -16649,11 +16649,23 @@ class Tauon:
 		self.gui.message_box = False
 		self.gui.preview_artist_loading = ""
 
+	def column_area_width(self) -> int:
+		"""Width available to the tracklist columns. In custom mode this is the
+		Tracklist widget's segment, not gui.plw — sizing runs from menu
+		callbacks outside the widget's draw, where gui.plw holds the preset
+		value."""
+		wid = self.gui.plw
+		if self.gui.custom_mode:
+			rect = self.custom.tracklist_rect()
+			if rect:
+				wid = rect[2]
+		elif self.gui.tracklist_center_mode:
+			wid = self.gui.tracklist_highlight_width
+		return wid - round(self.gui.pl_st_left * self.gui.scale)
+
 	def update_set(self) -> None:
 		"""This is used to scale columns when windows is resized or items added/removed"""
-		wid = self.gui.plw - round(self.gui.pl_st_left * self.gui.scale)
-		if self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width - round(self.gui.pl_st_left * self.gui.scale)
+		wid = self.column_area_width()
 
 		total = 0
 		for item in self.gui.pl_st:
@@ -16671,9 +16683,7 @@ class Tauon:
 	def auto_size_columns(self) -> None:
 		fixed_n = 0
 
-		wid = self.gui.plw - round(self.gui.pl_st_left * self.gui.scale)
-		if self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width - round(self.gui.pl_st_left * self.gui.scale)
+		wid = self.column_area_width()
 
 		total = wid
 		for item in self.gui.pl_st:
