@@ -35105,7 +35105,7 @@ class StandardPlaylist:
 				self.smooth_scroll.add_wheel_motion(
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
-			
+
 			if inp.touch_released:
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
@@ -44072,9 +44072,9 @@ class TouchInputTracker:
 			return
 		self.duration_so_far_ns = time.monotonic_ns() - self.time_started_ns
 		if TOUCH_LOGIC_TAP_VS_LONG_NS/2 > self.duration_so_far_ns:
-			self.gui.update += 1
+			self.gui.request_frame()
 			return
-		
+
 		rect = [
 			int(self.x-0.5*self.rect_size),
 			int(self.y-self.rect_distance),
@@ -44084,7 +44084,7 @@ class TouchInputTracker:
 		self.ddt.rect( rect, self.colours.media_buttons_off)
 		rect[2] *= (self.duration_so_far_ns/TOUCH_LOGIC_TAP_VS_LONG_NS)
 		self.ddt.rect( rect, self.colours.media_buttons_active)
-		self.gui.update += 1
+		self.gui.request_frame()
 
 @dataclass
 class ScrollMotionState:
