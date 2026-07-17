@@ -239,11 +239,11 @@ class MPRIS(dbus.service.Object):
 			if property_name == "Volume":
 				self.pctl.player_volume = min(max(int(value * 100), 0), 100)
 				self.pctl.set_volume()
-				self.gui.update += 1
+				self.gui.request_frame()
 			if property_name == "Shuffle":
 				self.pctl.random_mode = bool(value)
 				self.update_shuffle()
-				self.gui.update += 1
+				self.gui.request_frame()
 			if property_name == "LoopStatus":
 				if value == "None":
 					self.tauon.menu_repeat_off()
@@ -251,7 +251,7 @@ class MPRIS(dbus.service.Object):
 					self.tauon.menu_set_repeat()
 				elif value == "Playlist":
 					self.tauon.menu_album_repeat()
-				self.gui.update += 1
+				self.gui.request_frame()
 
 		if interface_name == "org.mpris.MediaPlayer2":
 			pass
@@ -312,14 +312,14 @@ class MPRIS(dbus.service.Object):
 		if not self.tauon.love(set=False):
 			self.tauon.love(set=True, no_delay=True)
 			self.update(True)
-			self.gui.pl_update += 1
+			self.gui.request_tracklist_redraw()
 
 	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
 	def UnLovePlaying(self) -> None:
 		if self.tauon.love(set=False):
 			self.tauon.love(set=True, no_delay=True)
 			self.update(True)
-			self.gui.pl_update += 1
+			self.gui.request_tracklist_redraw()
 
 	@dbus.service.signal(dbus_interface="org.mpris.MediaPlayer2.Player")
 	def Seeked(self, position: str) -> None:
@@ -371,7 +371,7 @@ class Gnome:
 				self.tauon.inp.media_key = "Shuffle"
 
 			if self.tauon.inp.media_key:
-				gui.update = 1
+				gui.request_frame()
 
 		try:
 			# set up the glib main loop.

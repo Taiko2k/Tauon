@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v11.0.1
+
+ - Fixed synced lyrics not showing in lyrics widget
+
+
 ### v11.0.0
 
  - Moved view switcher to new new left menu button

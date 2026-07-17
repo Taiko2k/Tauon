@@ -678,7 +678,8 @@ class ArtistInfoWidget(RectPanelWidget):
 class MetaWidget(Widget):
 	"""Adapter for the MetaBox renderers, which take (x, y, w, h, track). The
 	track is the current "show object" (playing or selected per prefs). Rendered
-	offscreen so the engine reframes input/menus (right-click showcase menu)."""
+	offscreen so the engine reframes input/menus (right-click showcase menu on
+	the lyrics box; the titles widgets never open the lyrics menus)."""
 
 	offscreen = True
 	min_w = 80
@@ -696,6 +697,10 @@ class MetaCenterWidget(MetaWidget):
 	name = "Track: Titles"
 	meta_method = "draw"
 
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		track = tauon.pctl.show_object()
+		tauon.meta_box.draw(round(x), round(y), round(w), round(h), track, lyrics_ui=False)
+
 
 class MetaCenteredWidget(MetaWidget):
 	# Centered track text (based on the side_panel_layout == 1 layout, no art).
@@ -705,10 +710,48 @@ class MetaCenteredWidget(MetaWidget):
 
 
 class LyricsWidget(MetaWidget):
+	"""Static lyrics via MetaBox.lyrics, or synced (LRC) lyrics via
+	TimedLyricsRen when available — the preset side panel does this branch in
+	the main render loop, so the widget replicates it. The synced renderer's
+	side_panel mode lays out against gui.rsp_x/rspw/panelY/panelBY, so those
+	are pointed at the segment for the call (window_size is already reframed).
+	"""
+
 	kind = "lyrics"
 	name = "Lyrics Box"
 	meta_method = "lyrics"
 	single_instance = True  # shared lyrics scroll state
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		track = tauon.pctl.show_object()
+		gui = tauon.gui
+		tauon.test_auto_lyrics(track)
+		# Synced when preferred, or when there are no static lyrics to fall
+		# back on (matching toggle_lyrics, which flips prefer_synced_lyrics on
+		# in that case).
+		synced = track is not None and (
+			tauon.prefs.prefer_synced_lyrics or not track.lyrics
+		) and tauon.timed_lyrics_ren.generate(track)
+		if not synced:
+			tauon.meta_box.lyrics(round(x), round(y), round(w), round(h), track)
+			return
+
+		# TimedLyricsRen's own right-click test is skipped at a zero origin
+		# (it requires truthy x and y), so open the showcase menu here.
+		if tauon.inp.right_click and tauon.coll((x + 10, y, w - 10, h)):
+			gui.force_showcase_index = -1
+			tauon.showcase_menu.activate(track)
+
+		saved = (gui.rsp_x, gui.rspw, gui.panelY, gui.panelBY)
+		gui.rsp_x, gui.rspw = round(x), round(w)
+		gui.panelY = round(y)
+		gui.panelBY = max(0, tauon.window_size[1] - round(y + h))
+		try:
+			tauon.timed_lyrics_ren.render(
+				track.index, round(x + 9 * gui.scale), round(y),
+				side_panel=True, w=round(w), h=round(h))
+		finally:
+			gui.rsp_x, gui.rspw, gui.panelY, gui.panelBY = saved
 
 
 class TracklistWidget(Widget):
@@ -773,7 +816,11 @@ class TracklistWidget(Widget):
 			gui.playlist_left, gui.plw, gui.panelY = rect[0], rect[2], rect[1]
 			tauon.column_bar_input()
 			gui.playlist_left, gui.plw, gui.panelY = saved
-		if gui.pl_update > 0 or rect != self._last_rect or interacting:
+		if gui.pl_update or rect != self._last_rect or interacting:
+			# Flip the request flag off at the start of the render, same as the
+			# standard path: a request_tracklist_redraw() made during it means
+			# "render the tracklist again next frame".
+			gui.pl_update = False
 			# Mirror the standard path: heart_fields is repopulated by full_render,
 			# so it must be cleared first or it grows unbounded every frame (the
 			# normal loop clears it before its full_render; that path is skipped in
@@ -781,7 +828,6 @@ class TracklistWidget(Widget):
 			gui.heart_fields.clear()
 			pr.full_render(rect=rect)
 			self._last_rect = rect
-			gui.pl_update = 0
 		else:
 			pr.cache_render()
 		if view:
@@ -877,7 +923,7 @@ class DetailsWidget(Widget):
 			# fractional deltas); accumulate as float so small steps add up,
 			# but draw from a whole row below.
 			self.scroll -= inp.mouse_wheel
-			gui.update = 2
+			gui.request_frame()
 		self.scroll = max(0, min(self.scroll, max_scroll))
 
 		# Alternate row tint: slightly lighter on dark themes, darker on light.
@@ -1164,7 +1210,7 @@ class GridGalleryWidget(GalleryWidget):
 	def _menu_changed(cls) -> None:
 		tauon = cls.menu_tauon
 		if tauon is not None:
-			tauon.gui.update += 1
+			tauon.gui.request_frame()
 			tauon.custom.save_slots()
 
 	@classmethod
@@ -1977,9 +2023,9 @@ class CustomLayout:
 		gui.set_bar = bool(cfg.get("set_bar", True))
 		gui.set_mode = bool(cfg.get("set_mode", False))
 		gui.pl_st_left = cfg.get("pl_st_left", 16)
-		gui.pl_update = 2
+		gui.request_tracklist_redraw()
 		gui.update_layout = True
-		gui.update = 2
+		gui.request_frame()
 
 	def _activate_columns(self, owner: int | None) -> None:
 		"""Swap the global columns config between the preset (owner=None) and a
@@ -2040,9 +2086,9 @@ class CustomLayout:
 		# Recompute panel geometry immediately (as exit_mode does). Without this
 		# the switch only partially applies and needs a click/scroll to finish —
 		# update_layout_do() runs at the top of the next frame from this flag.
-		self.gui.pl_update = 2
+		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def exit_mode(self) -> None:
 		# Save the active slot's columns and restore the preset columns before
@@ -2059,14 +2105,14 @@ class CustomLayout:
 		# Force a full preset playlist render so it repaints at full size and
 		# clears the Tracklist widget's clip rect (else cache_render would keep
 		# copying only the old segment).
-		self.gui.pl_update = 2
+		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def toggle_edit(self) -> None:
 		self.gui.custom_edit = not self.gui.custom_edit
 		self._close_menu()
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	# -- tree actions (pure; unit-tested) -----------------------------------
 
@@ -2266,9 +2312,9 @@ class CustomLayout:
 		self._activate_columns(self.active_slot)
 		self.save_slots()
 		self._refresh_layout_menu()
-		self.gui.pl_update = 2
+		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def act_delete_slot(self) -> None:
 		"""Delete the active slot (its layout, name and columns config). The
@@ -2295,9 +2341,9 @@ class CustomLayout:
 		self._columns_owner = self.active_slot
 		self.save_slots()
 		self._refresh_layout_menu()
-		self.gui.pl_update = 2
+		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def _replace(self, root: Node, target: Node, new: Node) -> None:
 		if target is root:
@@ -2357,7 +2403,7 @@ class CustomLayout:
 				self.gui.custom_edit = False
 				self.widget_drag = None
 				self._close_menu()
-				self.gui.update = 2
+				self.gui.request_frame()
 				self._consume(inp)
 				return
 			menu = getattr(self.tauon, "layout_menu", None)
@@ -2434,7 +2480,7 @@ class CustomLayout:
 			self.gui.custom_edit = False
 			self.widget_drag = None
 			self._close_menu()
-			self.gui.update = 2
+			self.gui.request_frame()
 			self._consume(inp)
 			return
 
@@ -2450,7 +2496,7 @@ class CustomLayout:
 			if not inp.mouse_down:
 				self._finish_widget_drag(inp)
 			else:
-				gui.update = 2  # keep repainting the drag feedback
+				gui.request_frame()  # keep repainting the drag feedback
 		elif inp.mouse_click:
 			# Start an edge resize if on a boundary, else grab a widget to drag.
 			if not self._try_start_drag(inp):
@@ -2472,7 +2518,7 @@ class CustomLayout:
 		seg = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
 		if isinstance(seg, Leaf) and seg.widget is not None:
 			self.widget_drag = seg
-			self.gui.update = 2
+			self.gui.request_frame()
 
 	def _finish_widget_drag(self, inp) -> None:
 		root = self.ensure_slot()
@@ -2481,7 +2527,7 @@ class CustomLayout:
 		if isinstance(target, Leaf) and target is not self.widget_drag:
 			self.act_swap(self.widget_drag, target)
 		self.widget_drag = None
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	def _consume(self, inp) -> None:
 		inp.mouse_click = False
@@ -2598,7 +2644,7 @@ class CustomLayout:
 			new_pa = min(max(min_px, pa + delta), total_px - min_px)
 			a.weight = total_w * (new_pa / total_px)
 			b.weight = total_w - a.weight
-		self.gui.update = 2
+		self.gui.request_frame()
 
 	# -- context menu (native Menu system) ----------------------------------
 	#
@@ -2703,7 +2749,7 @@ class CustomLayout:
 		# Drop back to view mode: edit mode's input handling interferes with
 		# the rename box's text entry, and the rename doesn't need it.
 		gui.custom_edit = False
-		gui.update = 2
+		gui.request_frame()
 		box = tauon.rename_playlist_box
 		box.edit_generator = False
 		box.done_callback = self.act_rename_slot
@@ -2874,7 +2920,7 @@ class CustomLayout:
 		if highlight:
 			gui.gallery_animate_highlight_on = result
 			tauon.gallery_select_animate_timer.set()
-		gui.update += 1
+		gui.request_frame()
 		return True
 
 	def kind_disabled(self, kind: str) -> bool:

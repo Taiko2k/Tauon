@@ -142,7 +142,7 @@ class Chrome:
 
 		self.tauon.chrome_mode = True
 		self.active = True
-		self.tauon.gui.update += 1
+		self.tauon.gui.request_frame()
 		self.tauon.pctl.playerCommand = "startchrome"
 		self.tauon.pctl.playerCommandReady = True
 		self.tauon.thread_manager.ready_playback()
