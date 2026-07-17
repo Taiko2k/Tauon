@@ -92,6 +92,10 @@ class Widget:
 	# When True the engine routes the widget through the offscreen scratch
 	# texture before compositing (for widgets that may draw out of bounds).
 	offscreen: bool = True
+	# Whether the leaf hosting this widget has the engine's segment border on;
+	# set by _draw_leaf before each draw so widgets that paint their own border
+	# (e.g. the Art Box) can skip it rather than double up.
+	leaf_border: bool = False
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		raise NotImplementedError
@@ -132,7 +136,8 @@ class ArtBoxWidget(Widget):
 		cm = tauon.custom
 		dragging = cm.drag is not None or cm.widget_drag is not None
 		tauon.art_box.draw(round(x), round(y), round(w), round(h),
-			target_track=tauon.pctl.show_object(), inset=False, quick_draw=dragging)
+			target_track=tauon.pctl.show_object(), inset=False, quick_draw=dragging,
+			draw_border=not self.leaf_border)
 
 
 class MilkDropWidget(Widget):
@@ -3159,6 +3164,7 @@ class CustomLayout:
 		if widget is None:
 			return  # empty segment: just background
 
+		widget.leaf_border = leaf.border
 		paint = self._leaf_paint_rect(leaf)
 		if paint is None:
 			ddt.rect((cx, cy, cw, ch), ColourRGBA(40, 20, 20, 255))

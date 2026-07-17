@@ -36714,7 +36714,7 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
@@ -36781,7 +36781,8 @@ class ArtBox:
 			else:
 				border = rect
 		else:
-			ddt.rect_s(rect, colours.art_box, 1 * gui.scale)
+			if draw_border:  # Custom Layout passes False when the segment border is on
+				ddt.rect_s(rect, colours.art_box, 1 * gui.scale)
 			border = rect
 
 		self.fields.add(border)
