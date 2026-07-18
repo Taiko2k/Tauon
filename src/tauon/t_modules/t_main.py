@@ -45670,17 +45670,18 @@ class TimedLyricsEdit:
 										self.time_next_line(True)
 								break
 
-				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
-					(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
-					(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
-					# logging.info("exempted")
-					pass
+				# elif not self.coll((x,y,w,h)):
+					# (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
+					# 	(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
+					# 	(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
+						# logging.info("exempted")
+					# pass
 					# if self.check:
 					# 	self.check = False # if mouse is below or above relevant area, or first line is visible and mouse is above it, or last line is visible and mouse is below
 					# i'm only guessing this is more efficient than not doing it
 				else:
 					# logging.info("editing i think")
-					self.queue_next_frame = True
+					# self.queue_next_frame = True
 					self.gui.timed_lyrics_editing_now = True
 					for i, rendered_line in enumerate(line_ys):
 						if rendered_line is None:
