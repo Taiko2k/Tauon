@@ -6571,8 +6571,7 @@ class Tauon:
 		# Create top menu
 		self.view_menu: Menu             = Menu(self, 170)
 		self.set_menu_hidden: Menu       = Menu(self, 100)
-		self.vis_menu: Menu              = Menu(self, 140)
-		self.window_menu: Menu           = Menu(self, 140)
+		self.window_menu: Menu           = Menu(self, 160)
 		self.x_menu: Menu                = Menu(self, 190, show_icons=True)
 		self.set_menu: Menu              = Menu(self, 150)
 		self.field_menu: Menu            = Menu(self, 140)
@@ -19922,18 +19921,6 @@ class Tauon:
 		self.gui.update_layout = True
 		return None
 
-	def toggle_level_meter(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.gui.vis_want != 0
-
-		if self.gui.vis_want == 0:
-			self.gui.vis_want = 1
-		else:
-			self.gui.vis_want = 0
-
-		self.gui.update_layout = True
-		return None
-
 	# def toggle_force_subpixel(self, mode: int = 0) -> bool | None:
 	# 	if mode == 1:
 	# 		return self.prefs.force_subpixel_text != 0
@@ -28194,8 +28181,8 @@ class Over:
 				accent,
 			)
 
-			# ("Tabs in top panel" switch moved to the main menu under
-			# Top Panel Layout…)
+			# ("Tabs in top panel" switch moved to the top-panel right-click
+			# window menu)
 
 			y += row_h + row_gap + round(4 * gui.scale)
 			ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 11)
@@ -29499,8 +29486,8 @@ class Over:
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
 			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"))
-		# ("Top-panel visualiser" switch moved to the main menu under
-		# Top Panel Layout…)
+		# ("Top-panel visualiser" switch moved to the top-panel right-click
+		# window menu)
 
 		inner_y += row_h + row_gap
 		self.settings_switch_row(
@@ -52001,7 +51988,6 @@ def main(holder: Holder) -> None:
 	view_menu       = tauon.view_menu
 	set_menu        = tauon.set_menu
 	set_menu_hidden = tauon.set_menu_hidden
-	vis_menu        = tauon.vis_menu
 	window_menu     = tauon.window_menu
 	field_menu      = tauon.field_menu
 
@@ -52011,6 +51997,19 @@ def main(holder: Holder) -> None:
 	tauon.stop_menu.add(MenuItem(_("Stop after track"), tauon.stop_mode_track))
 	tauon.stop_menu.add(MenuItem(_("Continue Play"), tauon.stop_mode_off))
 
+	window_menu.add(MenuItem(
+		_("Show Tabs"), tauon.toggle_top_tabs, no_exit=True,
+		check_test=lambda: tauon.toggle_top_tabs(1)))
+	window_menu.br()
+	# Top-panel visualiser mode (radio items; was its own right-click menu
+	# over the visualiser area)
+	window_menu.add(MenuItem(_("Off"), tauon.vis_off, no_exit=True,
+		check_test=lambda: gui.vis_want == 0))
+	window_menu.add(MenuItem(_("Level Meter"), tauon.level_on, no_exit=True,
+		check_test=lambda: gui.vis_want == 1))
+	window_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on, no_exit=True,
+		check_test=lambda: gui.vis_want == 2))
+	window_menu.br()
 	window_menu.add(MenuItem(_("Minimize"), tauon.do_minimize_button))
 	window_menu.add(MenuItem(_("Maximize"), tauon.do_maximize_button))
 	window_menu.add(MenuItem(_("Exit"),     tauon.do_exit_button))
@@ -52021,11 +52020,6 @@ def main(holder: Holder) -> None:
 	field_menu.add(MenuItem(_("Paste"), field_paste, pass_ref=True))
 	# Clear text
 	field_menu.add(MenuItem(_("Clear"), field_clear, pass_ref=True))
-
-	vis_menu.add(MenuItem(_("Off"), tauon.vis_off))
-	vis_menu.add(MenuItem(_("Level Meter"), tauon.level_on))
-	vis_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on))
-	# vis_menu.add(_("Spectrogram"), spec2_def)
 
 	# Mark for translation
 	_("Time")
@@ -52073,16 +52067,6 @@ def main(holder: Holder) -> None:
 		x_menu.add_sub(_("Dev Mode"), 190)
 		x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), tauon.dev_mode_enable_save_state))
 		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
-
-	# Top panel layout settings (moved here from the Settings UI)
-	top_panel_sub = x_menu.sub_number
-	x_menu.add_sub(_("Top Panel Layout…"), 180)
-	x_menu.add_to_sub(top_panel_sub, MenuItem(
-		_("Show Tabs"), tauon.toggle_top_tabs, no_exit=True,
-		check_test=lambda: tauon.toggle_top_tabs(1)))
-	x_menu.add_to_sub(top_panel_sub, MenuItem(
-		_("Show Visualiser"), tauon.toggle_level_meter, no_exit=True,
-		check_test=lambda: tauon.toggle_level_meter(1)))
 
 	x_menu.br()
 
@@ -56380,23 +56364,13 @@ def main(holder: Holder) -> None:
 					if not gui.custom_mode:
 						render_column_bar_draw()
 
-					# Switch Vis:
+					# Window menu (covers the whole empty top-panel area,
+					# including the visualiser at the far right)
 					if (
-						inp.right_click
-						and tauon.coll(
-							(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale, gui.panelY)
-						)
-						and not gui.top_bar_mode2
-					):
-						tauon.vis_menu.activate(
-							None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale)
-						)
-					elif (
 						inp.right_click
 						and tauon.top_panel.tabs_right_x < inp.mouse_position[0]
 						and inp.mouse_position[1] < gui.panelY
-						and inp.mouse_position[0] > tauon.top_panel.tabs_right_x
-						and inp.mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra
+						and inp.mouse_position[0] < window_size[0] - gui.offset_extra
 					):
 						tauon.window_menu.activate(None, (inp.mouse_position[0], 30 * gui.scale))
 
@@ -56930,25 +56904,25 @@ def main(holder: Holder) -> None:
 				if gui.custom_mode:
 					tauon.custom.render()
 
-					# The top-panel visualiser is drawn over the custom layout at
-					# the window's far right (absolute coords). Its right-click
-					# "switch visualiser" menu is normally handled in the standard
-					# top-panel input pass, which is skipped in custom mode — and
+					# The window menu is normally opened in the standard top-panel
+					# input pass, which is skipped in custom mode — and
 					# custom.handle_input() neutralised the click earlier in the
 					# frame, only restoring it inside custom.render() above. Handle
-					# it here (view mode only) so the menu works in custom layouts.
-					if (
-						not gui.custom_edit
-						and inp.right_click
-						and tauon.coll(
+					# it here (view mode only): the empty Header Bar widget area
+					# right of the tabs (segment coords + reframed tabs_right_x),
+					# plus the visualiser strip, which is drawn over the layout at
+					# the window's far right (absolute coords).
+					if not gui.custom_edit and inp.right_click:
+						over_vis = tauon.coll(
 							(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale, gui.panelY)
-						)
-						and not gui.top_bar_mode2
-					):
-						tauon.vis_menu.activate(
-							None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale)
-						)
-						inp.right_click = False
+						) and not gui.top_bar_mode2
+						tpr = tauon.custom.top_panel_rect()
+						over_panel = tpr is not None and tauon.coll((
+							tpr[0] + tauon.top_panel.tabs_right_x, tpr[1],
+							tpr[2] - tauon.top_panel.tabs_right_x, tpr[3]))
+						if over_vis or over_panel:
+							tauon.window_menu.activate(None, (inp.mouse_position[0], inp.mouse_position[1]))
+							inp.right_click = False
 
 				if gui.set_mode:
 					if (

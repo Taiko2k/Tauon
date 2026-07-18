@@ -2898,6 +2898,23 @@ class CustomLayout:
 	def _t_border_off(self, ref=None) -> bool:
 		return self.menu_target is not None and not self.menu_target.border
 
+	def top_panel_rect(self) -> tuple[float, float, float, float] | None:
+		"""The active layout's Header Bar (top panel) widget content rect, or
+		None when custom mode is off / no top panel is placed. Used by the main
+		loop's window-menu right-click fallback, which needs the panel's real
+		on-screen geometry (the widget itself renders reframed to a (0,0)
+		origin).
+		"""
+		if not self.gui.custom_mode:
+			return None
+		root = self.slots[self.active_slot]
+		if root is None:
+			return None
+		for lf in iter_leaves(root):
+			if isinstance(lf, Leaf) and isinstance(lf.widget, TopPanelWidget):
+				return content_rect(lf, self.gui.scale)
+		return None
+
 	def tracklist_rect(self) -> tuple[int, int, int, int] | None:
 		"""The active layout's Tracklist widget segment rect as last drawn, or
 		None when custom mode is off / no tracklist is placed / it hasn't drawn
