@@ -44568,6 +44568,7 @@ class TimedLyricsEdit:
 		self.unsynced_menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, pass_ref=True))
 		self.unsynced_menu.add(MenuItem(_("Copy From Synced"), self.copy_from_synced, pass_ref=False))
 		self.unsynced_menu.add(MenuItem(_("Upload To LRCLIB"), self.upload_both_to_lrclib, pass_ref=False))
+		self.show_save_dialog: bool = False
 
 
 	# FUNCTIONS FROM THE RIGHT CLICK MENU
@@ -44698,6 +44699,67 @@ class TimedLyricsEdit:
 			)
 		self.reload_menu()
 
+	# SAVE DIALOG
+	def save_dialog(self) -> None:
+		"""settings we need:
+		- note that says changes always save to tauon's db
+		- note that says what type of lyrics we're currently saving
+
+		- checkbox to save edits to the disk as well
+		- grayed out chooser: synced lyrics will save to (audio file, .lrc file)
+		- checkbox for don't show again
+		"""
+		gui = self.gui
+		ddt = self.ddt
+		colours = self.colours
+		st = self.tauon.pref_box
+		chooser_bar = self.tauon.pref_box.settings_segmented_bar
+
+		w = 500 * gui.scale
+		h = 180 * gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
+
+		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), self.colours.box_border)
+		ddt.rect_a((x, y), (w, h), colours.box_background)
+		ddt.text_background_colour = colours.box_background
+
+		if self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
+				(x, y, w, h))):
+			self.show_save_dialog = False
+			gui.box_over = False
+
+		if self.view_is_synced:
+			# Title
+			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Synced Lyrics"), colours.grey(230), 213)
+
+			# Path entry
+			x += round(15 * gui.scale)
+			y += round(25 * gui.scale)
+
+
+			ww = ddt.get_text_w(_("Use relative paths"), 211)
+			if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
+				self.show_message(
+							_("Enable relative paths when keeping playlist files together with audio"),
+							_("Disable to move playlist files while keeping audio in one location"))
+
+			y += round(0 * gui.scale)
+			chooser_bar(
+				(x, y),
+				(
+					(_("Stop"), st.set_playlist_stop(1), st.set_playlist_stop),
+					(_("Repeat"), st.set_playlist_repeat(1), st.set_playlist_repeat),
+					(_("Next playlist"), st.set_playlist_advance(1), st.set_playlist_advance),
+					(_("Cycle all"), st.set_playlist_cycle(1), st.set_playlist_cycle),
+				),
+				width=w,
+			)
+			ww = ddt.get_text_w(_("Export"), 211)
+			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+
+			if self.draw.button(_("Export"), x, y - (2*gui.scale), press=gui.level_2_click):
+				self.save()
 
 
 
@@ -45199,7 +45261,7 @@ class TimedLyricsEdit:
 	def settings_for_one_line(self, line_number: int, y_pos: int) -> None:
 		"""Deals with editing and manipulating synced lines while paused"""
 		# x_posns contains in order: position for delete timestamp button, position for stamp teleport, position for text box, position for end of line
-		if self.pausing:
+		if self.pausing or self.show_save_dialog:
 			return
 
 		stamp, time, line = self.structure[line_number]
@@ -45637,16 +45699,18 @@ class TimedLyricsEdit:
 			gn = copy.deepcopy(self.colours.level_green)
 			gn.a = round(gn.a * 0.3)
 			if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-				self.save()
-			buttons_x += widths[3] + save_gap
+				#self.save()
+				self.show_save_dialog = True
+				self.inp.mouse_click = False
+			buttons_x += widths[3] + x_gap
 
-			if self.button(_("Save to .lrc"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-				self.save(save_to_lrc=True, save_to_tags=False)
-			buttons_x += widths[4] + save_gap
+			# if self.button(_("Save to .lrc"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+			# 	self.save(save_to_lrc=True, save_to_tags=False)
+			# buttons_x += widths[4] + save_gap
 
-			if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-				self.save(save_to_lrc=False, save_to_tags=True)
-			buttons_x += widths[5] + save_gap
+			# if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+			# 	self.save(save_to_lrc=False, save_to_tags=True)
+			# buttons_x += widths[5] + save_gap
 
 			rd = copy.deepcopy(self.colours.level_red)
 			rd.a = round(rd.a * 0.3)
@@ -45723,6 +45787,9 @@ class TimedLyricsEdit:
 					track = self.pctl.master_library[index]
 					self.structurize_current(track)
 					self.tauon.now_searching = "off"
+
+			if self.show_save_dialog:
+				self.save_dialog()
 
 			if self.coll((0,0,self.window_size[0],self.window_size[1])): # DIRTY - always refresh if cursor is on window
 				pass
