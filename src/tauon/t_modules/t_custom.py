@@ -1880,6 +1880,12 @@ class CustomLayout:
 		body.resizable = True
 		return self._bars(body)
 
+	def ensure_loaded(self) -> None:
+		"""Load the slot lists from disk if they haven't been yet (the settings
+		card reads and edits them without entering custom mode)."""
+		if not self._loaded:
+			self.load_slots()
+
 	def ensure_slot(self) -> Node:
 		if not self._loaded:
 			self.load_slots()
@@ -2322,10 +2328,46 @@ class CustomLayout:
 		self.gui.request_frame()
 
 	def act_delete_slot(self) -> None:
-		"""Delete the active slot (its layout, name and columns config). The
-		list never goes empty — deleting the last slot leaves one fresh empty
-		slot. Stays in custom mode, showing the next slot."""
-		i = self.active_slot
+		"""Delete the active slot. Stays in custom mode, showing the next slot."""
+		self.delete_slot(self.active_slot)
+
+	def add_slot(self) -> None:
+		"""Append a fresh empty slot without switching to it (the settings
+		card's New Empty Slot; act_new_slot is the in-custom-mode variant
+		that also switches)."""
+		self.ensure_loaded()
+		self.slots.append(None)
+		self.slot_names.append(None)
+		self.slot_columns.append(None)
+		self.save_slots()
+		self._refresh_layout_menu()
+
+	def move_slot(self, i: int, delta: int) -> None:
+		"""Swap slot ``i`` with a neighbour (reorders the layout menu).
+		active_slot and the live-columns owner follow their slots."""
+		self.ensure_loaded()
+		j = i + delta
+		if i == j or not (0 <= i < len(self.slots) and 0 <= j < len(self.slots)):
+			return
+		for lst in (self.slots, self.slot_names, self.slot_columns):
+			lst[i], lst[j] = lst[j], lst[i]
+
+		def follow(v: int) -> int:
+			return j if v == i else i if v == j else v
+		self.active_slot = follow(self.active_slot)
+		if self._columns_owner is not None:
+			self._columns_owner = follow(self._columns_owner)
+		self.save_slots()
+		self._refresh_layout_menu()
+
+	def delete_slot(self, i: int) -> None:
+		"""Delete slot ``i`` (its layout, name and columns config). The list
+		never goes empty — deleting the last slot leaves one fresh empty slot.
+		Works on any slot, in or out of custom mode."""
+		self.ensure_loaded()
+		if not 0 <= i < len(self.slots):
+			return
+		was_owner = self._columns_owner == i
 		del self.slots[i]
 		del self.slot_names[i]
 		del self.slot_columns[i]
@@ -2333,17 +2375,24 @@ class CustomLayout:
 			self.slots = [None]
 			self.slot_names = [None]
 			self.slot_columns = [None]
-		self.active_slot = min(i, len(self.slots) - 1)
-		self.ensure_slot()
-		# gui currently holds the deleted slot's columns; discard them and
-		# adopt the new active slot's directly (going through
-		# _activate_columns would stash the dead config somewhere live).
-		cfg = self.slot_columns[self.active_slot]
-		if cfg is None:
-			cfg = self._copy_columns(self._preset_columns or self._capture_columns())
-			self.slot_columns[self.active_slot] = cfg
-		self._apply_columns(cfg)
-		self._columns_owner = self.active_slot
+		if self._columns_owner is not None and self._columns_owner > i:
+			self._columns_owner -= 1
+		if self.active_slot > i:
+			self.active_slot -= 1
+		else:
+			self.active_slot = min(self.active_slot, len(self.slots) - 1)
+		if was_owner:
+			# The deleted slot was the one being viewed: gui currently holds
+			# its columns; discard them and adopt the new active slot's
+			# directly (going through _activate_columns would stash the dead
+			# config somewhere live).
+			self.ensure_slot()
+			cfg = self.slot_columns[self.active_slot]
+			if cfg is None:
+				cfg = self._copy_columns(self._preset_columns or self._capture_columns())
+				self.slot_columns[self.active_slot] = cfg
+			self._apply_columns(cfg)
+			self._columns_owner = self.active_slot
 		self.save_slots()
 		self._refresh_layout_menu()
 		self.gui.request_tracklist_redraw()

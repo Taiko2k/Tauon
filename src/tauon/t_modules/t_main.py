@@ -29192,7 +29192,110 @@ class Over:
 		# menu; "Showcase visualisation" to the showcase view's right-click
 		# menu; the Gallery section to the gallery's background right-click
 		# menu.)
-		return self.render_settings_window_category(x, y, w, accent, draw)
+		h = self.render_settings_window_category(x, y, w, accent, draw)
+		h += round(12 * self.gui.scale)
+		h += self.render_settings_layouts_card(x, y + h, w, accent, draw)
+		return h
+
+	def draw_move_up_icon(self, rect: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		x, y, w, h = rect
+		unit = max(round(1.5 * self.gui.scale), 1)
+		steps = 4
+		cx = x + w // 2
+		top = y + (h - steps * unit) // 2
+		for k in range(steps):
+			row_w = (k * 2 + 1) * unit
+			self.ddt.rect((cx - row_w // 2, top + k * unit, row_w, unit), colour)
+
+	def draw_move_down_icon(self, rect: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		x, y, w, h = rect
+		unit = max(round(1.5 * self.gui.scale), 1)
+		steps = 4
+		cx = x + w // 2
+		top = y + (h - steps * unit) // 2
+		for k in range(steps):
+			row_w = ((steps - 1 - k) * 2 + 1) * unit
+			self.ddt.rect((cx - row_w // 2, top + k * unit, row_w, unit), colour)
+
+	def request_delete_layout(self, slot: int) -> None:
+		custom = self.tauon.custom
+		self.gui.message_box_confirm_callback = custom.delete_slot
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = (slot,)
+		self.show_message(_("Delete layout '%s'?") % custom.slot_title(slot), mode="confirm")
+
+	def render_settings_layouts_card(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
+		gui = self.gui
+		custom = self.tauon.custom
+		custom.ensure_loaded()
+		row_h = round(30 * gui.scale)
+		row_gap = round(6 * gui.scale)
+		slot_count = len(custom.slots)
+		# Header + rows + the New Empty Slot tile + bottom pad
+		card_h = round(128 * gui.scale) + slot_count * (row_h + row_gap)
+		card_rect = (x, y, w, card_h)
+		if not draw:
+			return card_h
+
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			card_rect,
+			_("Custom Layouts"),
+			_("The order layouts appear in the layout menu. The current layout is highlighted."),
+			accent,
+		)
+		button_w = round(26 * gui.scale)
+		button_gap = round(4 * gui.scale)
+		buttons_x = inner_x + inner_w - (button_w * 3 + button_gap * 2) - round(6 * gui.scale)
+		for i in range(slot_count):
+			active = gui.custom_mode and i == custom.active_slot
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+			if active:
+				fill = alpha_blend(alpha_mod(accent, 26), fill)
+			border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			if active:
+				border = alpha_blend(alpha_mod(accent, 90), border)
+			self.ddt.bordered_rect((inner_x, inner_y, inner_w, row_h), fill, border, round(1 * gui.scale))
+			self.ddt.text(
+				(inner_x + round(14 * gui.scale), inner_y + round(7 * gui.scale)),
+				custom.slot_title(i),
+				self.colours.box_text,
+				212,
+				bg=fill,
+				max_w=buttons_x - inner_x - round(22 * gui.scale),
+			)
+			if i > 0:
+				self.settings_icon_button(
+					(buttons_x, inner_y, button_w, row_h),
+					lambda i=i: custom.move_slot(i, -1),
+					accent=accent,
+					draw_icon=self.draw_move_up_icon,
+					tooltip=_("Move up"),
+				)
+			if i < slot_count - 1:
+				self.settings_icon_button(
+					(buttons_x + button_w + button_gap, inner_y, button_w, row_h),
+					lambda i=i: custom.move_slot(i, 1),
+					accent=accent,
+					draw_icon=self.draw_move_down_icon,
+					tooltip=_("Move down"),
+				)
+			self.settings_icon_button(
+				(buttons_x + (button_w + button_gap) * 2, inner_y, button_w, row_h),
+				lambda i=i: self.request_delete_layout(i),
+				accent=accent,
+				icon=self.gui.delete_icon,
+				tooltip=_("Delete"),
+			)
+			inner_y += row_h + row_gap
+
+		self.settings_action_tile(
+			(inner_x, inner_y, round(200 * gui.scale), round(34 * gui.scale)),
+			_("New Empty Slot"),
+			plug=custom.add_slot,
+			accent=accent,
+			show_arrow=False,
+		)
+		return card_h
 
 	def render_settings_theme_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
