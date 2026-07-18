@@ -54698,6 +54698,18 @@ def main(holder: Holder) -> None:
 					inp.key_focused = 1
 					gui.request_frame()
 
+				elif event.type == sdl3.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+					# Alt+F4 / taskbar-close arrive as a close request on the main
+					# window. SDL never promotes that to SDL_EVENT_QUIT while an
+					# SDL tray icon is active (the app is expected to decide close
+					# behaviour itself, e.g. minimize-to-tray), so the close
+					# request must be handled here directly.
+					if gui.tray_active and prefs.min_to_tray and not inp.key_shift_down:
+						tauon.min_to_tray()
+					else:
+						tauon.exit("Main window received close request")
+						break
+
 				elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 					# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
 					pass
