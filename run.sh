@@ -75,6 +75,7 @@ clean_venv_run() {
 	python -m tools.i18n.compile_translations
 	python -m build --wheel
 	pip install --prefix ".venv" dist/*.whl --force-reinstall
+	python -c "import sdl3"
 	tauonmb # "${@}" # Passing args is broken atm
 }
 
