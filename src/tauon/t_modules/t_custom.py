@@ -171,12 +171,13 @@ class MilkDropWidget(Widget):
 		track = tauon.pctl.show_object()
 		hover = tauon.coll(rect) and tauon.is_level_zero(False)
 
-		if not tauon.prefs.milk:
+		if not tauon.prefs.milk or not tauon.milky.available:
+			text = _t("MilkDrop is disabled") if tauon.milky.available else _t("MilkDrop is unavailable")
 			ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 			ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			ddt.text(
 				(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(8 * gui.scale), 2),
-				_t("MilkDrop is disabled"), ColourRGBA(110, 110, 110, 255), 212,
+				text, ColourRGBA(110, 110, 110, 255), 212,
 				max_w=rect[2] - round(8 * gui.scale))
 			if hover and inp.right_click:
 				tauon.milky_menu.activate(in_reference=track)

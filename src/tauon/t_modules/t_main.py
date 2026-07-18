@@ -8868,6 +8868,9 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def toggle_milky(self, _track_object: TrackClass) -> None:
+		if not self.prefs.milk and not milky_ready:
+			self.show_message(_("MilkDrop visualiser is not available"), milky_error, mode="error")
+			return
 		if not self.prefs.milk:
 			self.milky.projectm.rescan_presets()
 			if not self.milky.projectm.presets:
@@ -9042,10 +9045,6 @@ class Tauon:
 	def toggle_milky_settings(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.milk
-
-		if not self.prefs.milk and not milky_ready:
-			self.show_message(_("Not supported on this platform"), mode="error")
-			return None
 
 		self.toggle_milky(self.pctl.playing_object())
 		return None
@@ -42042,6 +42041,7 @@ def renderer_name_supports_milkdrop(renderer_name: str | None) -> bool:
 
 
 milky_ready = True
+milky_error = ""
 try:
 	import OpenGL
 	# Disable error checking as SDL can generate errors we do not otherwise catch, crashing PyOpenGL
@@ -42121,9 +42121,11 @@ try:
 except ModuleNotFoundError:
 	logging.warning("PyOpenGL not found, Milkdrop visualizer will be disabled")
 	milky_ready = False
+	milky_error = "Optional module PyOpenGL is not installed"
 except Exception:
 	logging.exception("Unknown error importing PyOpenGL, Milkdrop visualizer will be disabled")
 	milky_ready = False
+	milky_error = "PyOpenGL failed to load"
 
 
 def find_projectm_library() -> str | None:
@@ -42153,6 +42155,8 @@ def find_projectm_library() -> str | None:
 
 if not find_projectm_library():
 	milky_ready = False
+	if not milky_error:
+		milky_error = "libprojectM library was not found"
 
 class ProjectM:
 	def __init__(self, tauon: Tauon) -> None:
@@ -42486,6 +42490,10 @@ class ProjectM:
 		self.loaded_preset = preset
 		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
+		if not self.lib or not self.pm_instance:
+			# Not initialised (visualiser off or unavailable); the preset is
+			# remembered in prefs and loads on next init
+			return
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
 		self.log_preset_load_event("LOADED_OK", preset, fade)
 		self.auto_frames = 0
@@ -42602,6 +42610,11 @@ class Milky:
 
 		self.projectm = ProjectM(tauon)
 
+	@property
+	def available(self) -> bool:
+		"""False when PyOpenGL/libprojectM are missing or the renderer isn't OpenGL"""
+		return milky_ready
+
 	def burn(self, target_track: TrackClass) -> None:
 		if not self.ready:
 			return
@@ -42635,6 +42648,11 @@ class Milky:
 		glFinish()
 
 	def render(self, discard: bool = False) -> None:
+		if not milky_ready:
+			# PyOpenGL missing, no libprojectM, or non-OpenGL renderer. prefs.milk
+			# can still be set (stale config); rendering would NameError on the
+			# module-level GL imports.
+			return
 		if self.projectm.lib_error is True:
 			return
 
@@ -49393,6 +49411,7 @@ def menu_is_open() -> bool:
 
 def main(holder: Holder) -> None:
 	global milky_ready
+	global milky_error
 
 	t_window               = holder.t_window
 	renderer               = holder.renderer
@@ -49425,6 +49444,8 @@ def main(holder: Holder) -> None:
 	if not renderer_name_supports_milkdrop(renderer_name):
 		logging.warning("SDL renderer is not OpenGL; disabling Milkdrop visualizer")
 		milky_ready = False
+		if not milky_error:
+			milky_error = "SDL renderer is not OpenGL"
 
 	tls_context = setup_tls(holder)
 	last_fm_enable = is_module_loaded("pylast")
