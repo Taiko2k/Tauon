@@ -45586,6 +45586,21 @@ class TimedLyricsEdit:
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y)
 		)
 		self.ddt.rect_abs(highlight_rect, self.highlight)
+		if len(self.structure) < 2:
+			tsw = self.ddt.get_text_w(_("Timestamps"), self.font, True)
+			if playing:
+				text_color = self.faded_active_color
+				time_color = self.active_color
+			else:
+				time_color = self.faded_active_color
+				text_color = self.active_color
+			possible_y = center + self.yy*(-1-self.line_active)
+			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y:
+				location[1] = round(possible_y)
+				self.ddt.text(location, _("Lyrics text"), text_color, self.font, w, bg) # line
+				location[0] = self.x_posns[1] - tsw
+				self.ddt.text(location, _("Timestamps"), time_color, self.font, 100 * self.gui.scale, bg) # timestamp
+				location[0] = self.x_posns[2]
 		for i, line in enumerate(self.structure):
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
@@ -45623,6 +45638,8 @@ class TimedLyricsEdit:
 				collider = ( round(possible_y), round(possible_y + self.yy) )
 				association = collider, line[1]
 				line_ys.append( association )
+				# logging.info((self.x_posns[4], round(possible_y-0.25*self.line_height), collider_width, self.yy))
+				# logging.info((x, round(possible_y-0.25*self.line_height), w, self.yy))
 				self.tauon.fields.add( (self.x_posns[4], round(possible_y-0.25*self.line_height), collider_width, self.yy) )
 			else:
 				line_ys.append( None )
@@ -45656,11 +45673,13 @@ class TimedLyricsEdit:
 				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
 					(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
 					(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
+					# logging.info("exempted")
 					pass
 					# if self.check:
 					# 	self.check = False # if mouse is below or above relevant area, or first line is visible and mouse is above it, or last line is visible and mouse is below
 					# i'm only guessing this is more efficient than not doing it
 				else:
+					# logging.info("editing i think")
 					self.queue_next_frame = True
 					self.gui.timed_lyrics_editing_now = True
 					for i, rendered_line in enumerate(line_ys):
