@@ -137,7 +137,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: brew update and upgrade
-        run: brew update && brew upgrade
+        run: brew untap aws/tap && brew update && brew upgrade
 
       - name: Install brew dependencies
         run: |
