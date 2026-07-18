@@ -35116,7 +35116,7 @@ class StandardPlaylist:
 				self.smooth_scroll.add_wheel_motion(
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
-			
+
 			if inp.touch_released:
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
@@ -45379,6 +45379,8 @@ class TimedLyricsEdit:
 
 		test_time = self.tauon.get_real_time()
 
+		playing = self.pctl.playing_state == PlayingState.PLAYING
+
 		# determine active lyric
 		if self.pctl.track_queue[self.pctl.queue_step] == index and self.allow_scroll:
 			self.line_active = -1
@@ -45427,6 +45429,20 @@ class TimedLyricsEdit:
 
 
 		# RENDER LINES
+		normal_color = self.colours.lyrics
+		faded_color = copy.deepcopy(normal_color)
+		faded_color.a *= 0.6
+		faded_color.a = round(faded_color.a)
+
+		active_color = self.colours.active_lyric
+		faded_active_color = copy.deepcopy(active_color)
+		faded_active_color.a *= 0.6
+		faded_active_color.a = round(faded_active_color.a)
+
+		highlight = copy.deepcopy(active_color)
+		highlight.a *= 0.1
+		highlight.a = round(highlight.a)
+
 		prev = 0.0
 		w = round( (self.x_posns[3]-self.x_posns[2]) * 0.9 )
 		location = [ self.x_posns[2], 0 ]
@@ -45435,27 +45451,47 @@ class TimedLyricsEdit:
 			maximum_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 		else:
 			maximum_y = self.window_size[1]
+		hy = center + self.yy*(0-self.line_active) - self.yy*0.8
+		highlight_y = max(hy, self.gui.panelY)
+		highlight_rect = (
+			self.x_posns[6-int(playing)],
+			highlight_y,
+			self.x_posns[6-int(playing)] + self.yy,
+			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y)
+		)
+		self.ddt.rect_abs(highlight_rect, highlight)
 		for i, line in enumerate(self.structure):
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
 
-			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y:
-				colour = self.colours.lyrics
+			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y: # if line will be visible
 
 				if i < self.line_active:
 					prev = max( prev, line[1] )
 
-				if i == self.line_active and highlight and test_time >= line[1]:
-					colour = self.colours.active_lyric
+				active = i == self.line_active and highlight and test_time >= line[1]
+
+				match (active, playing):
+					case (True, True):
+						text_color = faded_active_color
+						time_color = active_color
+					case (False, True):
+						text_color = faded_color
+						time_color = normal_color
+					case (True, False):
+						time_color = faded_active_color
+						text_color = active_color
+					case (False, False):
+						time_color = faded_color
+						text_color = normal_color
 
 				location[1] = round(possible_y)
 				text = line[2]
 				if text.rstrip() == "":
 					text = "♪♪♪"
-				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
-				self.ddt.text(location, text, colour, self.font, w, bg) # line
+				self.ddt.text(location, text, text_color, self.font, w, bg) # line
 				location[0] = self.x_posns[1]
-				self.ddt.text(location, line[0], colour, self.font, 100 * self.gui.scale, bg) # timestamp
+				self.ddt.text(location, line[0], time_color, self.font, 100 * self.gui.scale, bg) # timestamp
 				location[0] = self.x_posns[2]
 
 				collider = ( round(possible_y), round(possible_y + self.yy) )
@@ -46034,7 +46070,10 @@ class TimedLyricsEdit:
 					round( max( gcx - 100*self.gui.scale, self.yy) ),
 					round( gcx ),
 					round( max(self.window_size[0] - 90*self.gui.scale, self.window_size[0]*0.98) ),
-					round( max( gcx - 145*self.gui.scale, 0 )) ]
+					round( max( gcx - 145*self.gui.scale, 0 )),
+					round( gcx - 70*self.gui.scale ), # vertical highlight for time column while playing
+					round( gcx + 30*self.gui.scale ), # vertical highlight for text column while paused
+					]
 				self.x_posns[2] = max(self.x_posns[1] + 90*self.gui.scale, gcx)
 
 			if self.view_is_synced:

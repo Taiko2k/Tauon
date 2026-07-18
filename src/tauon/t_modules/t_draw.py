@@ -259,6 +259,24 @@ class TDraw:
 		# else:
 		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
+	def rect_abs(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		'''x1, y1, x2, y2'''
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+
+		x1 = min(rectangle[0], rectangle[2])
+		y1 = min(rectangle[1], rectangle[3])
+		x2 = max(rectangle[0], rectangle[2])
+		y2 = max(rectangle[1], rectangle[3])
+		self.sdlrect.x = float(x1)
+		self.sdlrect.y = float(y1)
+		self.sdlrect.w = float(x2-x1)
+		self.sdlrect.h = float(y2-y1)
+
+		# if fill:
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		# else:
+		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
+
 	def bordered_rect(
 		self, rectangle: tuple[int, int, int, int], fill_colour: ColourRGBA, outer_colour: ColourRGBA, border_size: int
 	) -> None:
