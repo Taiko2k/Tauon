@@ -44699,6 +44699,13 @@ class TimedLyricsEdit:
 			)
 		self.reload_menu()
 
+	def toggle_save_to_files(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.save_lyrics_changes_to_files
+		self.prefs.save_lyrics_changes_to_files ^= True
+		self.reload_menu()
+		return None
+
 	# SAVE DIALOG
 	def save_dialog(self) -> None:
 		"""settings we need:
@@ -44737,14 +44744,21 @@ class TimedLyricsEdit:
 			x += round(15 * gui.scale)
 			y += round(25 * gui.scale)
 
+			ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
+			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
+			# 	self.tauon.show_message(
+			# 		_("Enable relative paths when keeping playlist files together with audio"),
+			# 		_("Disable to move playlist files while keeping audio in one location"))
 
-			ww = ddt.get_text_w(_("Use relative paths"), 211)
-			if self.draw.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), press=gui.level_2_click):
-				self.show_message(
-							_("Enable relative paths when keeping playlist files together with audio"),
-							_("Disable to move playlist files while keeping audio in one location"))
-
-			y += round(0 * gui.scale)
+			# y += round(25 * gui.scale)
+			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 211)
+			y += round(25 * gui.scale)
+			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
+				(x,y,w,25*self.gui.scale),
+				self.prefs.save_lyrics_changes_to_files,
+				_("Also save lyrics to files on disk")
+			)
+			y += round(25*self.gui.scale)
 			chooser_bar(
 				(x, y),
 				(
