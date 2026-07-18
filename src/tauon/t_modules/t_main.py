@@ -44529,6 +44529,7 @@ class TimedLyricsEdit:
 		self.editing_line:      int = -1    # clear selection when line changes
 		self.track_time_left:   int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
 		self.repeat_mode:list[bool] = []    # save the global repeat mode yada yada track end behavior
+		self.recalculate_colors() # can't think of a better place for this
 
 		# scrolling
 		self.scroll_position: int = 0 # measured in pixels - greater means scrolled further down - 0 means centered on active line
@@ -45031,7 +45032,20 @@ class TimedLyricsEdit:
 		else:
 			subprocess.call(["xdg-open", target])
 
+	def recalculate_colors(self) -> None:
+		self.normal_color = self.colours.lyrics
+		self.faded_color = copy.deepcopy(self.normal_color)
+		self.faded_color.a *= 0.6
+		self.faded_color.a = round(self.faded_color.a)
 
+		self.active_color = self.colours.active_lyric
+		self.faded_active_color = copy.deepcopy(self.active_color)
+		self.faded_active_color.a *= 0.6
+		self.faded_active_color.a = round(self.faded_active_color.a)
+
+		self.highlight = copy.deepcopy(self.active_color)
+		self.highlight.a *= 0.1
+		self.highlight.a = round(self.highlight.a)
 
 	# SYNCED EDITING FUNCTIONS
 
@@ -45370,6 +45384,8 @@ class TimedLyricsEdit:
 
 		scroll_to = 0
 		bg = self.colours.lyrics_panel_background
+		if vars(self.normal_color) != vars(self.colours.lyrics) or vars(self.active_color) != vars(self.colours.active_lyric):
+			self.recalculate_colors()
 		spacing = round(10 * self.gui.scale)
 		y_center = self.window_size[1]/2
 
@@ -45429,20 +45445,6 @@ class TimedLyricsEdit:
 
 
 		# RENDER LINES
-		normal_color = self.colours.lyrics
-		faded_color = copy.deepcopy(normal_color)
-		faded_color.a *= 0.6
-		faded_color.a = round(faded_color.a)
-
-		active_color = self.colours.active_lyric
-		faded_active_color = copy.deepcopy(active_color)
-		faded_active_color.a *= 0.6
-		faded_active_color.a = round(faded_active_color.a)
-
-		highlight = copy.deepcopy(active_color)
-		highlight.a *= 0.1
-		highlight.a = round(highlight.a)
-
 		prev = 0.0
 		w = round( (self.x_posns[3]-self.x_posns[2]) * 0.9 )
 		location = [ self.x_posns[2], 0 ]
@@ -45459,7 +45461,7 @@ class TimedLyricsEdit:
 			self.x_posns[6-int(playing)] + self.yy,
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y)
 		)
-		self.ddt.rect_abs(highlight_rect, highlight)
+		self.ddt.rect_abs(highlight_rect, self.highlight)
 		for i, line in enumerate(self.structure):
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
@@ -45473,17 +45475,17 @@ class TimedLyricsEdit:
 
 				match (active, playing):
 					case (True, True):
-						text_color = faded_active_color
-						time_color = active_color
+						text_color = self.faded_active_color
+						time_color = self.active_color
 					case (False, True):
-						text_color = faded_color
-						time_color = normal_color
+						text_color = self.faded_color
+						time_color = self.normal_color
 					case (True, False):
-						time_color = faded_active_color
-						text_color = active_color
+						time_color = self.faded_active_color
+						text_color = self.active_color
 					case (False, False):
-						time_color = faded_color
-						text_color = normal_color
+						time_color = self.faded_color
+						text_color = self.normal_color
 
 				location[1] = round(possible_y)
 				text = line[2]
