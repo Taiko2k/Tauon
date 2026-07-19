@@ -44521,17 +44521,18 @@ class TimedLyricsEdit:
 		self.unsynced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "unsynced.png", True)
 
 		# these ones are only stored from one frame to the next
-		self.pausing:          bool = False # prevents typing a space in text box when pausing
-		self.cursor:     int | None = None  # tracks text box cursor position across frames
-		self.big_paste:        bool = False # do special things the frame after receiving a multi-line paste
-		self.continuous:       bool = True  # track change behavior should only happen if the editor wasn't closed when the track changed
-		self.queue_next_frame: bool = False # update gui when things happen
-		self.temp_line:         int = -1    # special scroll thingy when the line advances while it's offscreen
-		self.temp_w:            int = 0     # these two are used to recalculate self.x_posns when the user...
-		self.temp_scale:      float = self.gui.scale # ...resizes or rescales the window
-		self.editing_line:      int = -1    # clear selection when line changes
-		self.track_time_left:   int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
-		self.repeat_mode:list[bool] = []    # save the global repeat mode yada yada track end behavior
+		self.pausing:                   bool = False # prevents typing a space in text box when pausing
+		self.cursor:              int | None = None  # tracks text box cursor position across frames
+		self.edit_point: tuple[int,int]|None = None  # so user no longer has to hover over the text box forever
+		self.big_paste:                 bool = False # do special things the frame after receiving a multi-line paste
+		self.continuous:                bool = True  # track change behavior should only happen if the editor wasn't closed when the track changed
+		self.queue_next_frame:          bool = False # update gui when things happen
+		self.temp_line:                  int = -1    # special scroll thingy when the line advances while it's offscreen
+		self.temp_w:                     int = 0     # these two are used to recalculate self.x_posns when the user...
+		self.temp_scale:               float = self.gui.scale # ...resizes or rescales the window
+		self.editing_line:               int = -1    # clear selection when line changes
+		self.track_time_left:            int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
+		self.repeat_mode:         list[bool] = []    # save the global repeat mode yada yada track end behavior
 		self.recalculate_colors() # can't think of a better place for this
 
 		# scrolling
@@ -45483,6 +45484,25 @@ class TimedLyricsEdit:
 			self.autosave_timer.set()
 			self.autosaved = False
 
+	def update_edit_point(self, text_coll: tuple[int, int, int, int], full_coll: tuple[int, int, int, int]) -> tuple[int,int]:
+		if self.edit_point is not None:
+			logging.info("point already exists")
+		if self.inp.mouse_click:
+			if self.coll(text_coll): # set edit point if clicking in text
+				self.edit_point = copy.deepcopy(self.inp.mouse_position)
+				logging.info("edit point set")
+			elif not self.coll(full_coll): # clear edit point if clicking away
+				logging.info("point cleared")
+				self.edit_point = None
+		if self.inp.key_esc_press:
+			self.edit_point = None
+			self.inp.key_esc_press = False
+			logging.info("escaped")
+		if self.edit_point is not None:
+			logging.info("point exists")
+		return self.edit_point if self.edit_point is not None else self.inp.mouse_position
+
+
 	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> None:
 		line_ys: list[ tuple[ tuple[ int, int ], float ] | None ] = []
 		# saves collider positions alongside their respective lines
@@ -45577,6 +45597,8 @@ class TimedLyricsEdit:
 			maximum_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 		else:
 			maximum_y = self.window_size[1]
+
+		# highlight for active section
 		hy = center + self.yy*(0-self.line_active) - self.yy*0.8
 		highlight_y = max(hy, self.gui.panelY)
 		highlight_rect = (
@@ -45585,7 +45607,21 @@ class TimedLyricsEdit:
 			self.x_posns[6-int(playing)] + self.yy,
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y)
 		)
+		text_boxes_rect = (
+			self.x_posns[2],
+			highlight_y,
+			round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale,
+			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
+		)
+		full_coll_rect = (
+			self.x_posns[4],
+			highlight_y,
+			collider_width,
+			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
+		)
 		self.ddt.rect_abs(highlight_rect, self.highlight)
+
+		# column headers
 		if len(self.structure) < 2:
 			tsw = self.ddt.get_text_w(_("Timestamps"), self.font, True)
 			if playing:
@@ -45601,6 +45637,8 @@ class TimedLyricsEdit:
 				location[0] = self.x_posns[1] - tsw
 				self.ddt.text(location, _("Timestamps"), time_color, self.font, 100 * self.gui.scale, bg) # timestamp
 				location[0] = self.x_posns[2]
+
+		# render lines
 		for i, line in enumerate(self.structure):
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
@@ -45652,7 +45690,7 @@ class TimedLyricsEdit:
 			self.gui.timed_lyrics_editing_now = False
 			# click a lyric to seek to it
 			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3]:
-				if self.pctl.playing_state == PlayingState.PLAYING:
+				if playing:
 					if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
 					and (not h or y < self.inp.mouse_position[1] < y+h):
 						for i, rendered_line in enumerate(line_ys):
@@ -45683,10 +45721,12 @@ class TimedLyricsEdit:
 					# logging.info("editing i think")
 					# self.queue_next_frame = True
 					self.gui.timed_lyrics_editing_now = True
+					position = self.update_edit_point(text_boxes_rect, full_coll_rect)
+					logging.info(position)
 					for i, rendered_line in enumerate(line_ys):
 						if rendered_line is None:
 							continue
-						if (rendered_line[0][0]-0.25*self.line_height) < self.inp.mouse_position[1] < (rendered_line[0][1]-0.25*self.line_height):
+						if (rendered_line[0][0]-0.25*self.line_height) < position[1] < (rendered_line[0][1]-0.25*self.line_height):
 							self.settings_for_one_line(i, rendered_line[0][0])
 							did_one_line = True
 
@@ -46137,6 +46177,7 @@ class TimedLyricsEdit:
 			self.test_update()
 			self.lyrics_position = 0
 			self.continuous = True
+			self.edit_point = None
 			self.clicks = 0
 			self.will_overwrite = self.will_overwrite_lyrics(track)
 		if self.pctl.decode_time < 1.0 and len(self.repeat_mode) == 2:
@@ -54813,13 +54854,13 @@ def main(holder: Holder) -> None:
 		)
 
 		if inp.k_input and inp.key_focused == 0:
-			if gui.timed_lyrics_editing_now:
-				keymaps.hits.clear()
-			elif text_entry_shortcuts_blocked and keymaps.hits:
+			if text_entry_shortcuts_blocked and keymaps.hits:
 				escape_pressed = keymaps.test("escape")
 				keymaps.hits.clear()
 				if escape_pressed:
 					inp.key_esc_press = True
+			elif gui.timed_lyrics_editing_now:
+				keymaps.hits.clear()
 			if keymaps.hits:
 				n = 1
 				while n < 10:
