@@ -657,13 +657,18 @@ def colour_value(c1: ColourRGBA) -> int:
 
 
 def alpha_blend(colour: ColourRGBA, base: ColourRGBA) -> ColourRGBA:
-	"""Performs alpha blending of one colour (RGB-A) onto another (RGB)"""
+	"""Performs alpha blending of one colour (RGB-A) onto another (RGB)
+
+	If the base is itself translucent (alpha < 255, e.g. a frosted panel
+	fill), its alpha is preserved so the result stays translucent; an opaque
+	base yields an opaque result as before.
+	"""
 	alpha = colour.a / 255
 	return ColourRGBA(
 		int(alpha * colour.r + (1 - alpha) * base.r),
 		int(alpha * colour.g + (1 - alpha) * base.g),
 		int(alpha * colour.b + (1 - alpha) * base.b),
-		255,
+		base.a,
 	)
 
 
