@@ -21616,6 +21616,458 @@ class TimedLyricsRen:
 
 		return None
 
+class MultiLineTextBox:
+	# TODO(Martin): Global class var!
+	cursor = True
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon:    Tauon = tauon
+		self.coll     = tauon.coll
+		self.ddt:      TDraw = tauon.ddt
+		self.gui:     GuiVar = tauon.gui
+		self.inp:      Input = tauon.inp
+		self.fields:  Fields = tauon.fields
+		self.t_window = tauon.t_window
+		self.renderer = tauon.renderer
+		self.text: str = ""
+		self.cursor_position = 0
+		self.selection = 0
+		self.offset = 0
+		self.down_lock: bool = False
+		self.paste_text: str = ""
+
+	def initialize(self, x: int, y: int, width: int, height: int) -> None:
+		gui = self.gui
+		if width == 0:
+			width = round(2000*gui.scale)
+		if height == 0:
+			height = round(40*gui.scale)
+		self.text_box_canvas_rect = sdl3.SDL_FRect(0, 0, width, height)
+		self.text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, width, height)
+		self.text_box_canvas = sdl3.SDL_CreateTexture(
+			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
+		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+
+	def paste(self) -> None:
+		if sdl3.SDL_HasClipboardText():
+			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+			self.paste_text = clip
+
+	def copy(self) -> None:
+		text = self.get_selection()
+		if not text:
+			text = self.text
+		if text:
+			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+
+	def set_text(self, text: str) -> None:
+		self.text = text
+		if self.cursor_position > len(text):
+			self.cursor_position = 0
+			self.selection = 0
+		else:
+			self.selection = self.cursor_position
+
+	def clear(self) -> None:
+		self.text = ""
+		#self.cursor_position = 0
+		self.selection = self.cursor_position
+
+	def highlight_all(self) -> None:
+		self.selection = len(self.text)
+		self.cursor_position = 0
+
+	def eliminate_selection(self) -> None:
+		if self.selection != self.cursor_position:
+			if self.selection > self.cursor_position:
+				self.text = self.text[0: len(self.text) - self.selection] + self.text[len(self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+			else:
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
+				self.cursor_position = self.selection
+
+	def get_selection(self, p: int = 1) -> str | None:
+		if self.selection != self.cursor_position:
+			if p == 1:
+				if self.selection > self.cursor_position:
+					return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
+
+				return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
+			if p == 0:
+				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
+			if p == 2:
+				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
+			return None
+		return ""
+
+	def draw(
+			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13,
+			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False, 
+			headroom: int = 0, scroll: int = 0) -> None:
+		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
+
+		try:
+			self.text_box_canvas.x
+		except:
+			self.initialize(x,y,width,height)
+		# A little bit messy
+		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
+		# otherwise it is fixed to end
+		previous_target = sdl3.SDL_GetRenderTarget(self.renderer)
+		sdl3.SDL_SetRenderTarget(self.renderer, self.text_box_canvas)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+
+		self.text_box_canvas_rect.x = 0
+		self.text_box_canvas_rect.y = 0
+		# if height != 0:
+		# 	self.text_box_canvas_rect.h = height
+		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_rect)
+
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+
+		selection_height *= self.gui.scale
+
+		if click is False:
+			click = self.inp.mouse_click
+		if self.inp.mouse_down:
+			self.gui.request_frame()  # TODO(Taiko): more elegant fix
+
+		rect = (x - 3, y - 2, width - 3, height)
+		select_rect = (x - 20 * self.gui.scale, y - 2, width + 20 * self.gui.scale, height + 21 * self.gui.scale)
+
+		self.fields.add(rect)
+
+		# Activate Menu
+		if self.coll(rect) and (self.inp.right_click or self.inp.level_2_right_click):
+			self.tauon.field_menu.activate(self)
+
+		if width > 0 and active:
+			if click and self.tauon.field_menu.active:
+				# field_menu.click()
+				click = False
+
+			# Add text from input
+			if self.inp.input_text:
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
+					self.text) - self.cursor_position:]
+
+			def g() -> str | None:
+				if len(self.text) == 0 or self.cursor_position == len(self.text):
+					return None
+				return self.text[len(self.text) - self.cursor_position - 1]
+
+			def g2() -> str | None:
+				if len(self.text) == 0 or self.cursor_position == 0:
+					return None
+				return self.text[len(self.text) - self.cursor_position]
+
+			def d() -> None:
+				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
+					self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+
+			# Ctrl + Backspace to delete word
+			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
+					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
+				self.text):
+				while g() == " ":
+					d()
+				while g() != " " and g() is not None:
+					d()
+
+			# Ctrl + left to move cursor back a word
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_left_press:
+				while g() == " ":
+					self.cursor_position += 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position += 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+					if g() == " ":
+						self.cursor_position -= 1
+						if not self.inp.key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Ctrl + right to move cursor forward a word
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_right_press:
+				while g2() == " ":
+					self.cursor_position -= 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position -= 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+					if g2() == " ":
+						self.cursor_position += 1
+						if not self.inp.key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Handle normal backspace
+			elif self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+				while self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+					if self.selection != self.cursor_position:
+						self.eliminate_selection()
+					else:
+						self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
+							self.text) - self.cursor_position:]
+					self.inp.backspace_press -= 1
+			elif self.inp.backspace_press and len(self.get_selection()) > 0:
+				self.eliminate_selection()
+
+			# Left and right arrow keys to move cursor
+			if self.inp.key_right_press:
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.inp.key_left_press:
+				if self.cursor_position < len(self.text):
+					self.cursor_position += 1
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.paste_text:
+				if "http://" in self.text and "http://" in self.paste_text:
+					self.text = ""
+
+				self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
+				self.paste_text = self.paste_text.replace("\n", " ").replace("\r", "")
+
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
+					self.text) - self.cursor_position:]
+				self.paste_text = ""
+
+			# Paste via ctrl-v
+			if self.inp.key_ctrl_down and self.inp.key_v_press:
+				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+					self.text) - self.cursor_position:]
+
+			if self.inp.key_ctrl_down and self.inp.key_c_press:
+				self.copy()
+
+			if self.inp.key_ctrl_down and self.inp.key_x_press and len(self.get_selection()) > 0:
+				text = self.get_selection()
+				if text:
+					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+				self.eliminate_selection()
+
+			if self.inp.key_ctrl_down and self.inp.key_a_press:
+				self.cursor_position = 0
+				self.selection = len(self.text)
+
+			# self.ddt.rect(rect, [255, 50, 50, 80], True)
+			if self.coll(rect) and not self.tauon.field_menu.active:
+				self.gui.cursor_want = 2
+
+			# Delete key to remove text in front of cursor
+			if self.inp.key_del:
+				if self.selection != self.cursor_position:
+					self.eliminate_selection()
+				else:
+					self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+						self.text) - self.cursor_position + 1:]
+					if self.cursor_position > 0:
+						self.cursor_position -= 1
+					self.selection = self.cursor_position
+
+			if self.inp.key_home_press:
+				self.cursor_position = len(self.text)
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+			if self.inp.key_end_press:
+				self.cursor_position = 0
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			width -= round(15 * self.gui.scale)
+			t_len, t_wid = self.ddt.get_text_wh(self.text, font, width)
+			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
+				t_len += self.ddt.get_text_w(self.gui.editline, font)
+			if not click and not self.down_lock:
+				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
+				margin = round(15 * self.gui.scale)
+				max_offset = max(t_len - width, 0)
+				if self.cursor_position == len(self.text):
+					self.offset = 0
+				elif self.cursor_position == 0:
+					self.offset = max_offset
+				elif cursor_x < self.offset + margin:
+					self.offset = max(cursor_x - margin, 0)
+				elif cursor_x > self.offset + width:
+					self.offset = min(cursor_x - width, max_offset)
+				else:
+					self.offset = min(max(self.offset, 0), max_offset)
+
+			x -= self.offset
+
+			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
+				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
+				if click:
+					pre = 0
+					post = 0
+					if self.inp.mouse_position[0] < x + 1:
+						self.cursor_position = len(self.text)
+					else:
+						for i in range(len(self.text)):
+							post = self.ddt.get_text_w(self.text[0:i + 1], font)
+							# pre_half = int((post - pre) / 2)
+
+							if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+								diff = post - pre
+								if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+									self.cursor_position = len(self.text) - i - 1
+								else:
+									self.cursor_position = len(self.text) - i
+								break
+							pre = post
+						else:
+							self.cursor_position = 0
+					self.selection = 0
+					self.down_lock = True
+
+			if self.inp.mouse_up:
+				self.down_lock = False
+			if self.down_lock:
+				pre = 0
+				post = 0
+				text = self.text
+				if secret:
+					text = "●" * len(self.text)
+				if self.inp.mouse_position[0] < x + 1:
+					self.selection = len(text)
+				else:
+
+					for i in range(len(text)):
+						post = self.ddt.get_text_w(text[0:i + 1], font)
+						# pre_half = int((post - pre) / 2)
+
+						if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+							diff = post - pre
+
+							if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+								self.selection = len(text) - i - 1
+
+							else:
+								self.selection = len(text) - i
+
+							break
+						pre = post
+
+					else:
+						self.selection = 0
+
+			text = self.text[0: len(self.text) - self.cursor_position]
+			if secret:
+				text = "●" * len(text)
+			a = self.ddt.get_text_w(text, font)
+
+			text = self.text[0: len(self.text) - self.selection]
+			if secret:
+				text = "●" * len(text)
+			b = self.ddt.get_text_w(text, font)
+
+			top = y
+			if big:
+				top -= 12 * self.gui.scale
+
+			self.ddt.rect([a, 0, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
+
+			if self.selection != self.cursor_position:
+				inf_comp = 0
+				text = self.get_selection(0)
+				if secret:
+					text = "●" * len(text)
+				space = self.ddt.text((0, headroom-scroll), text, colour, font, max_w=width)
+				text = self.get_selection(1)
+				if secret:
+					text = "●" * len(text)
+				space += self.ddt.text((0 + space - inf_comp, headroom-scroll), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255), max_w=width)
+				text = self.get_selection(2)
+				if secret:
+					text = "●" * len(text)
+				self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, height), text, colour, font, max_w=width)
+			else:
+				text = self.text
+				if secret:
+					text = "●" * len(text)
+				self.ddt.text((0, headroom-scroll, 4, width, height), text, colour, font, max_w=width)
+
+			text = self.text[0: len(self.text) - self.cursor_position]
+			if secret:
+				text = "●" * len(text)
+			space = self.ddt.get_text_w(text, font)
+
+			if TextBox.cursor and self.selection == self.cursor_position:
+				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
+				self.ddt.rect((0 + space, 0  + headroom-scroll, 1 * self.gui.scale, 14 * self.gui.scale), colour)
+
+			if click:
+				self.selection = self.cursor_position
+		else:
+			width -= round(15 * self.gui.scale)
+			text = self.text
+			if secret:
+				text = "●" * len(text)
+			t_len, t_wid = self.ddt.get_text_wh(text, font, max_x=width)
+			self.ddt.text((0, headroom-scroll), text, colour, font, max_w=width)
+			self.offset = 0
+			if self.coll(rect) and not self.tauon.field_menu.active:
+				self.gui.cursor_want = 2
+
+		if active:
+			tw, th = self.ddt.get_text_wh(self.text, font, max_x=width)
+			# tw, th = self.ddt.get_text_wh(self.text, font, max_x=width)
+			if self.gui.editline not in ("", self.inp.input_text):
+				ex = self.ddt.text((space + round(4 * self.gui.scale), headroom-scroll), self.gui.editline, ColourRGBA(240, 230, 230, 255), font, max_w=width)
+				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
+
+			pixel_to_logical = self.tauon.pixel_to_logical
+			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
+			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
+
+		self.tauon.animate_monitor_timer.set()
+
+		self.text_box_canvas_hide_rect.x = 0
+		self.text_box_canvas_hide_rect.y = 0
+
+		# if height != 0:
+		# 	self.text_box_canvas_hide_rect.h = height
+
+		# if self.offset:
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+
+		self.text_box_canvas_hide_rect.w = round(self.offset)
+		if height != 0:
+			self.text_box_canvas_hide_rect.h = height
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_hide_rect)
+
+		self.text_box_canvas_hide_rect.w = round(t_len)
+		# self.text_box_canvas_hide_rect.h = round(t_wid)
+		self.text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * self.gui.scale))
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_hide_rect)
+
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
+
+		self.text_box_canvas_rect.x = round(x)
+		self.text_box_canvas_rect.y = round(y) - headroom
+
+		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
+
+
 class TextBox2:
 	# TODO(Martin): Global class var!
 	cursor = True
@@ -44512,6 +44964,7 @@ class TimedLyricsEdit:
 		self.structure: list[ tuple[ str, float, str] ] = [] # backbone of synced editing system
 		                                                     # each line contains a timestamp as a string, that timestamp's actual time, and the line itself
 		self.line_edit_box:                    TextBox2 = TextBox2(tauon=tauon) # there are no multi line text boxes so we have to reuse the same one for every single line
+		self.unsynced_text_box:        MultiLineTextBox = MultiLineTextBox(tauon=tauon)
 		self.x_posns:                         list[int] = [] # to display text editing buttons in the right places
 		self.line_active:                           int = 0  # which lyric is currently playing
 		self.view_is_synced:                       bool = True # which view do we display
@@ -46055,7 +46508,15 @@ class TimedLyricsEdit:
 
 		self.lyrics_position = max(self.lyrics_position, th * -1 + 100 * self.gui.scale)
 		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
-		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+		# self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+		self.unsynced_text_box.text = self.text
+		self.unsynced_text_box.draw(
+			x, y, self.colours.lyrics, True,
+			font = self.font, width = ( w ), height = h, headroom=6,
+			scroll=-self.lyrics_position
+		)
+		self.text = self.unsynced_text_box.text
+		self.gui.timed_lyrics_editing_now = True
 
 
 		widths = [
@@ -46063,9 +46524,9 @@ class TimedLyricsEdit:
 			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
 			self.ddt.get_text_w(_("Read Back"), self.font),
 			self.ddt.get_text_w(_("Cancel"), self.font),
-			self.ddt.get_text_w(_("SAVE"), self.font),
+			self.ddt.get_text_w(_("🖫"), self.font),
 			self.ddt.get_text_w(_("Save to tags"), self.font),
-			self.ddt.get_text_w(_("Discard"), self.font),
+			self.ddt.get_text_w(_("🗑"), self.font),
 			self.ddt.get_text_w(_("Reopen Editor"), self.font)
 		]
 		if hide_art:
@@ -46089,17 +46550,27 @@ class TimedLyricsEdit:
 		# SAVE AND DISCARD
 		gn = copy.deepcopy(self.colours.level_green)
 		gn.a = round(gn.a * 0.3)
-		if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-			self.save(False)
-		buttons_x += widths[4] + save_gap
+		saving = self.button( "🖫", buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
+		if saving is not None:
+			#self.save()
+			if self.prefs.show_lyrics_save_menu or saving==False:
+				self.show_save_dialog = True
+				self.inp.mouse_click = False
+				self.inp.right_click = False
+				self.inp.level_2_right_click = False
+			else:
+				self.save()
+		# if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+		# 	self.save(False)
+		buttons_x += widths[4] + x_gap
 
-		if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-			self.save(False, save_to_tags=True)
-		buttons_x += widths[5] + save_gap
+		# if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+		# 	self.save(False, save_to_tags=True)
+		# buttons_x += widths[5] + save_gap
 
 		rd = copy.deepcopy(self.colours.level_red)
 		rd.a = round(rd.a * 0.3)
-		if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
+		if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 			self.structurize_current(self.pctl.master_library[self.struct_track])
 		buttons_x += widths[6] + x_gap
 
@@ -46174,6 +46645,8 @@ class TimedLyricsEdit:
 					subprocess.call(["open", "-t", lyric_file])
 				else:
 					subprocess.call(["xdg-open", lyric_file])
+		elif self.show_save_dialog:
+			self.save_dialog()
 
 
 
