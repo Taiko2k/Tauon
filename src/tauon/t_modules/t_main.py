@@ -44524,6 +44524,7 @@ class TimedLyricsEdit:
 		self.pausing:                   bool = False # prevents typing a space in text box when pausing
 		self.cursor:              int | None = None  # tracks text box cursor position across frames
 		self.edit_point: tuple[int,int]|None = None  # so user no longer has to hover over the text box forever
+		self.text_leftovers:      str | None = None  # text typed while editing line was offscreen
 		self.big_paste:                 bool = False # do special things the frame after receiving a multi-line paste
 		self.continuous:                bool = True  # track change behavior should only happen if the editor wasn't closed when the track changed
 		self.queue_next_frame:          bool = False # update gui when things happen
@@ -45329,10 +45330,14 @@ class TimedLyricsEdit:
 
 		stamp, time, line = self.structure[line_number]
 		temp = self.structure[line_number]
+		if self.line_active == line_number:
+			text_color = self.colours.active_lyric
+		else:
+			text_color = self.colours.box_input_text
 
 		# TIMESTAMP - TELEPORT, DELETE AND SCROLL EDIT
 		if stamp != "??:??.??" and stamp != "tag":
-			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
+			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True, txt=text_color) # timestamp button
 			if time >= 0 and button:
 				self.pctl.stop()
 				self.pctl.jump_time = time + self.prefs.sync_lyrics_time_offset/1000
@@ -45380,7 +45385,7 @@ class TimedLyricsEdit:
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, height)
 		self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale) )
 		self.line_edit_box.draw(
-			self.x_posns[2], y_pos, self.colours.box_input_text, True,
+			self.x_posns[2], y_pos, text_color, True,
 			font = self.font, width = ( x ), big=True
 		)
 		line = self.line_edit_box.text
@@ -45489,10 +45494,12 @@ class TimedLyricsEdit:
 		if self.inp.mouse_click:
 			if self.coll(text_coll): # set edit point if clicking in text
 				self.edit_point = copy.deepcopy(self.inp.mouse_position)
-			# elif not self.coll(full_coll): # clear edit point if clicking away
+			elif self.coll(full_coll): # clear edit point if clicking away
+				self.edit_point = None
+				ctf = False # overengineered as fuck but now we can click a timestamp but can't instanly delete shit
 			else:
 				self.edit_point = None
-				ctf = False # we WANT to click other lines here
+				ctf = True
 		if self.inp.key_esc_press:
 			self.edit_point = None
 			self.inp.key_esc_press = False
@@ -45518,12 +45525,11 @@ class TimedLyricsEdit:
 			self.inp.key_right_press = False
 
 		# scroll
+		old_scroll_pos = self.scroll_position
 		if self.inp.mouse_wheel and not (self.inp.key_lalt or self.inp.key_ralt):
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			self.scroll_position += scroll_distance
 			self.recenter_timeout.set()
-			if self.edit_point is not None:
-				self.edit_point = (self.edit_point[0], self.edit_point[1] + scroll_distance)
 
 		highlight = True
 
@@ -45541,6 +45547,10 @@ class TimedLyricsEdit:
 		test_time = self.tauon.get_real_time()
 
 		playing = self.pctl.playing_state == PlayingState.PLAYING
+
+		if self.text_leftovers is not None:
+			self.inp.input_text = self.inp.input_text + self.text_leftovers
+			self.text_leftovers = None
 
 		# determine active lyric
 		if self.pctl.track_queue[self.pctl.queue_step] == index and self.allow_scroll:
@@ -45584,6 +45594,12 @@ class TimedLyricsEdit:
 			self.scroll_position = max( self.scroll_position, -(len(self.structure)-self.line_active)*(self.yy) - self.window_size[1]/2 +(self.yy + self.gui.panelY) )
 		self.allow_scroll = True
 
+		# edit point follows all scrolling
+		if old_scroll_pos != self.scroll_position:
+			distance = self.scroll_position - old_scroll_pos
+			if self.edit_point is not None:
+				self.edit_point = (self.edit_point[0], self.edit_point[1] + distance)
+
 		center = y_center + self.scroll_position
 		# scroll position refers to y offset (in pixels) from the active lyric
 
@@ -45615,9 +45631,9 @@ class TimedLyricsEdit:
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
 		)
 		full_coll_rect = (
-			self.x_posns[4],
+			self.x_posns[1],
 			highlight_y,
-			collider_width,
+			round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale + (self.x_posns[2]-self.x_posns[1]),# collider_width,
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
 		)
 		self.ddt.rect_abs(highlight_rect, self.highlight)
@@ -45708,28 +45724,27 @@ class TimedLyricsEdit:
 										self.line_active = i
 										self.time_next_line(True)
 								break
-
-				# elif not self.coll((x,y,w,h)):
-					# (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
-					# 	(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
-					# 	(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
-						# logging.info("exempted")
-					# pass
-					# if self.check:
-					# 	self.check = False # if mouse is below or above relevant area, or first line is visible and mouse is above it, or last line is visible and mouse is below
-					# i'm only guessing this is more efficient than not doing it
 				else:
-					# logging.info("editing i think")
-					# self.queue_next_frame = True
-					self.gui.timed_lyrics_editing_now = True
 					position, cleared_this_frame = self.update_edit_point(text_boxes_rect, full_coll_rect)
+					if self.edit_point is not None:
+						self.gui.timed_lyrics_editing_now = True
 					if not cleared_this_frame:
 						for i, rendered_line in enumerate(line_ys):
 							if rendered_line is None:
 								continue
 							if (rendered_line[0][0]-0.25*self.line_height) < position[1] < (rendered_line[0][1]-0.25*self.line_height):
 								self.settings_for_one_line(i, rendered_line[0][0])
+								self.gui.timed_lyrics_editing_now = True
 								did_one_line = True
+					# if user types, scroll to show editing line if it's off screen
+					if self.edit_point is not None and self.inp.input_text and (position[1] > self.gui.panelBY or self.gui.panelY > position[1]) and not did_one_line:
+						if position[1] > self.gui.panelBY: # scroll down
+							self.scroll_position -= max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) + self.yy
+							self.edit_point = (self.edit_point[0], self.edit_point[1] - max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) - self.yy)
+						elif self.gui.panelY > position[1]: # scroll up
+							self.scroll_position -= min(position[1] - self.gui.panelY, 0) - self.yy
+							self.edit_point = (self.edit_point[0], self.edit_point[1] - min(position[1] - self.gui.panelY, 0) + self.yy)
+						self.text_leftovers = self.inp.input_text
 
 			# KEYBOARD SHORTCUTS
 			if not did_one_line: # self.pctl.playing_state != PlayingState.PLAYING and
@@ -45922,9 +45937,6 @@ class TimedLyricsEdit:
 
 			if self.show_save_dialog:
 				self.save_dialog()
-
-			if self.coll((0,0,self.window_size[0],self.window_size[1])): # DIRTY - always refresh if cursor is on window
-				pass
 
 		# end of stuff blocked by boxes being open
 
