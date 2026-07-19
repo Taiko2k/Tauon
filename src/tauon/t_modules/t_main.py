@@ -35596,7 +35596,7 @@ class StandardPlaylist:
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
 
-			if inp.touch_released:
+			if inp.touch_released and coll_point(self.smooth_scroll.start_location, scroll_area):
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
 				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
@@ -38428,23 +38428,7 @@ class PlaylistBox:
 			tab_start = x + 4 * self.gui.scale
 
 		scroll_area = (x, y, w, h)
-		scroll_source = "playlist side pane"
-		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
-		use_smooth_scroll = (
-			self.tauon.smooth_scroll.enabled()
-			or touch_scroll
-			or self.tauon.smooth_scroll.active(scroll_source)
-		)
-		if use_smooth_scroll:
-			if self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, row_step)
-			if self.inp.touch_released:
-				self.tauon.smooth_scroll.release_touch(scroll_source)
-			elif touch_scroll:
-				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
-			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_step, 1)
-		elif self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-			self.scroll_on -= self.inp.mouse_wheel
+		self.scroll_on += self.tauon.smooth_scroll.get_scroll("playlist side pane", scroll_area, row_step)  / max(row_step, 1)
 
 		self.scroll_on = min(self.scroll_on, max_scroll)
 		self.scroll_on = max(self.scroll_on, 0)
@@ -44599,6 +44583,7 @@ class SmoothScroll:
 		self.tauon = tauon
 		self.inp = tauon.inp
 		self.gui = tauon.gui
+		self.coll = tauon.coll
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
