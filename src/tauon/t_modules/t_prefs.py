@@ -214,7 +214,7 @@ class Prefs:
 	art_bg_stronger = 1
 	art_bg_opacity = 10
 	art_bg_blur = 9
-	art_bg_always_blur: bool = False
+	art_bg_frosted: bool = True
 
 	random_mode: bool = False
 	repeat_mode: bool = False

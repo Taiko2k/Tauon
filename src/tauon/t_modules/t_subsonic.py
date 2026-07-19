@@ -501,10 +501,8 @@ class SubsonicService:
 				if "duration" in song:
 					nt.length = song["duration"]
 				# [{'name': 'Pop'}, {'name': 'Rap'}, {'name': 'Rock'}]
-				if "genres" in song:
+				if song.get("genres"):
 					genres: dict[str, str] = song["genres"]
-					if len(genres) == 0:
-						continue
 					genre_names = [g["name"] for g in genres if g.get("name")]
 					if not genre_names:
 						logging.warning(f"Failed to parse genres from subsonic, got: {genres}")

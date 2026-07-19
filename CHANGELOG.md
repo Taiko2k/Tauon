@@ -2,9 +2,14 @@
 Changelog
 ---------
 
-### v11.0.1
+### v11.1.0
 
+ - Added new Frost UI backround mode
+ - Combined visualiser and top panel menu
+ - Fixed columns auto resize
  - Fixed synced lyrics not showing in lyrics widget
+ - Fixed airsonic import
+ - Fixed visualiser stall on track advance
 
 
 ### v11.0.0
