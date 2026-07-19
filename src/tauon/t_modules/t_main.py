@@ -21689,7 +21689,8 @@ class TextBox2:
 		return ""
 
 	def draw(
-			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False) -> None:
+			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False, headroom: int = 0) -> None:
+		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
@@ -21967,20 +21968,20 @@ class TextBox2:
 				text = self.get_selection(0)
 				if secret:
 					text = "●" * len(text)
-				space = self.ddt.text((0, 0), text, colour, font)
+				space = self.ddt.text((0, headroom), text, colour, font)
 				text = self.get_selection(1)
 				if secret:
 					text = "●" * len(text)
-				space += self.ddt.text((0 + space - inf_comp, 0), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255))
+				space += self.ddt.text((0 + space - inf_comp, headroom), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255))
 				text = self.get_selection(2)
 				if secret:
 					text = "●" * len(text)
-				self.ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
+				self.ddt.text((0 + space - (inf_comp * 2), headroom), text, colour, font)
 			else:
 				text = self.text
 				if secret:
 					text = "●" * len(text)
-				self.ddt.text((0, 0), text, colour, font)
+				self.ddt.text((0, headroom), text, colour, font)
 
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
@@ -21989,7 +21990,7 @@ class TextBox2:
 
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
-				self.ddt.rect((0 + space, 0 + 2, 1 * self.gui.scale, 14 * self.gui.scale), colour)
+				self.ddt.rect((0 + space, 0  + headroom, 1 * self.gui.scale, 14 * self.gui.scale), colour)
 
 			if click:
 				self.selection = self.cursor_position
@@ -21999,7 +22000,7 @@ class TextBox2:
 			if secret:
 				text = "●" * len(text)
 			t_len = self.ddt.get_text_w(text, font)
-			self.ddt.text((0, 0), text, colour, font)
+			self.ddt.text((0, headroom), text, colour, font)
 			self.offset = 0
 			if self.coll(rect) and not self.tauon.field_menu.active:
 				self.gui.cursor_want = 2
@@ -22007,7 +22008,7 @@ class TextBox2:
 		if active:
 			tw, th = self.ddt.get_text_wh(self.gui.editline, font, max_x=2000)
 			if self.gui.editline not in ("", self.inp.input_text):
-				ex = self.ddt.text((space + round(4 * self.gui.scale), 0), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
+				ex = self.ddt.text((space + round(4 * self.gui.scale), headroom), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
 				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
 
 			pixel_to_logical = self.tauon.pixel_to_logical
@@ -22035,7 +22036,7 @@ class TextBox2:
 		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
 
 		self.tauon.text_box_canvas_rect.x = round(x)
-		self.tauon.text_box_canvas_rect.y = round(y)
+		self.tauon.text_box_canvas_rect.y = round(y) - headroom
 		sdl3.SDL_RenderTexture(self.renderer, self.tauon.text_box_canvas, None, self.tauon.text_box_canvas_rect)
 
 class TextBox:
@@ -44863,8 +44864,6 @@ class TimedLyricsEdit:
 		if self.coll(rect) and not off:
 			self.ddt.bordered_rect( rect, active_bg, self.colours.box_text_border, round(1*self.gui.scale))
 			self.ddt.text( t_rect, text, active_txt, font, bg=active_bg)
-			if tooltip:
-				self.tauon.tool_tip.test(x_pos + 15 * self.gui.scale, y_pos - 28 * self.gui.scale, tooltip)
 			if self.inp.mouse_click:
 				if return_rect:
 					return True, rect
@@ -44877,6 +44876,9 @@ class TimedLyricsEdit:
 		else:
 			self.ddt.bordered_rect( rect, bg, self.colours.box_text_border, round(1*self.gui.scale))
 			self.ddt.text( t_rect, text, txt, font, bg=bg)
+
+		if tooltip and self.coll(rect):
+			self.tauon.tool_tip.test(x_pos + 15 * self.gui.scale, y_pos - 28 * self.gui.scale, tooltip)
 		if return_rect:
 			return None, rect
 		return None, None
@@ -45392,7 +45394,8 @@ class TimedLyricsEdit:
 		self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale) )
 		self.line_edit_box.draw(
 			self.x_posns[2], y_pos, text_color, True,
-			font = self.font, width = ( x ), big=True
+			font = self.font, width = ( x ), big=True,
+			headroom=6
 		)
 		line = self.line_edit_box.text
 		full_line = ( stamp, time, line )
@@ -45739,8 +45742,8 @@ class TimedLyricsEdit:
 					# if user types, scroll to show editing line if it's off screen
 					if self.edit_point is not None and self.inp.input_text and (position[1] > self.gui.panelBY or self.gui.panelY > position[1]) and not did_one_line:
 						if position[1] > self.gui.panelBY: # scroll down
-							self.scroll_position -= max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) + self.yy
-							self.edit_point = (self.edit_point[0], self.edit_point[1] - max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) - self.yy)
+							self.scroll_position -= max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) + self.yy + int(hide_art)*self.yy
+							self.edit_point = (self.edit_point[0], self.edit_point[1] - max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) - self.yy - int(hide_art)*self.yy)
 						elif self.gui.panelY > position[1]: # scroll up
 							self.scroll_position -= min(position[1] - self.gui.panelY, 0) - self.yy
 							self.edit_point = (self.edit_point[0], self.edit_point[1] - min(position[1] - self.gui.panelY, 0) + self.yy)
@@ -45800,10 +45803,10 @@ class TimedLyricsEdit:
 				self.ddt.get_text_w("≪5", self.font),
 				self.ddt.get_text_w(_("⇧"), self.font),
 				max( self.ddt.get_text_w(_("TIME⏎"), self.big_font), self.ddt.get_text_w(_("TIME+"), self.big_font), self.ddt.get_text_w(_("TIME⇨"), self.big_font)),
-				self.ddt.get_text_w(_("SAVE"), self.font),
+				self.ddt.get_text_w("🖫", self.font),
 				self.ddt.get_text_w(_("Save to .lrc"), self.font),
 				self.ddt.get_text_w(_("Save to tags"), self.font),
-				self.ddt.get_text_w(_("Discard"), self.font),
+				self.ddt.get_text_w("🗑", self.font),
 				self.ddt.get_text_w("   ", self.font)
 			]
 			if hide_art:
@@ -45840,7 +45843,7 @@ class TimedLyricsEdit:
 			# SAVE AND DISCARD
 			gn = copy.deepcopy(self.colours.level_green)
 			gn.a = round(gn.a * 0.3)
-			saving = self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
+			saving = self.button( "🖫", buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
 			if saving is not None:
 				#self.save()
 				if self.prefs.show_lyrics_save_menu or saving==False:
@@ -45862,7 +45865,7 @@ class TimedLyricsEdit:
 
 			rd = copy.deepcopy(self.colours.level_red)
 			rd.a = round(rd.a * 0.3)
-			if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
+			if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 				self.structurize_current(self.pctl.master_library[self.struct_track])
 			buttons_x += widths[6] + x_gap
 
@@ -45874,12 +45877,13 @@ class TimedLyricsEdit:
 				bty_top = buttons_y
 
 			# BACK 5 AND PREVIOUS
-			if self.button("≪5", btx_top, bty_top, self.font)[0]:
+			if self.button("≪5", btx_top, bty_top, self.font, off=not playing,
+				tooltip=_("Go back 5 seconds"))[0]:
 				self.previous( max(test_time-5, 0) )
 			btx_top += widths[0] + x_gap
 
 			if self.button(_("⇧"), btx_top, bty_top, self.font,
-				off = ( not prev))[0]:
+				off = ( not prev or not playing ), tooltip=_("Go to previous line"))[0]:
 				self.previous(prev)
 			btx_top += widths[1] + x_gap
 
