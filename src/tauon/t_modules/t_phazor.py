@@ -2017,6 +2017,7 @@ def player4(tauon: Tauon) -> None:
 						speed = fade_time / (5 / 100)
 
 					aud.ramp_volume(0, int(speed))
+					pctl.playing_time += (fade_time + 100) / 1000
 					time.sleep((fade_time + 100) / 1000)
 				aud.pause()
 				tauon.player4_state = PlayerState.PAUSED
@@ -2029,6 +2030,7 @@ def player4(tauon: Tauon) -> None:
 					pctl.playing_time = t
 					pctl.decode_time = t
 				else:
+					player_timer.set()
 					if prefs.use_pause_fade:
 						if pctl.player_volume > 5:
 							speed = fade_time / (int(pctl.player_volume) / 100)
@@ -2037,7 +2039,6 @@ def player4(tauon: Tauon) -> None:
 
 						aud.ramp_volume(int(pctl.player_volume), int(speed))
 					aud.resume()
-					player_timer.set()
 					stall_timer.set()
 					tauon.player4_state = PlayerState.PLAYING
 
