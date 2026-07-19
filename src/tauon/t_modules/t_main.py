@@ -24389,7 +24389,7 @@ class TransEditBox:
 				self.ddt.text((x + round(2 * self.gui.scale), y), _("<Multiple selected>"), self.colours.box_text_label, 12)
 			text_box.draw(x + round(3 * self.gui.scale), y, tc, self.active_field == field_number, width=370 * self.gui.scale)
 			if changed:
-				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "⮨", self.colours.box_title_text, 214)
+				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "TIME", self.colours.box_title_text, 214)
 			return changed
 
 		changed = False
@@ -44541,6 +44541,7 @@ class TimedLyricsEdit:
 		self.lyrics_position: int = 0 # same thing but for the static view
 		self.allow_scroll:   bool = True # cancels auto scroll correction when adding & removing lines. probably doesn't actually do anything
 		self.font:            int = 20
+		self.big_font:        int = 228
 		self.line_height:     int = round(self.ddt.get_text_w("?", self.font, True))
 		self.yy:              int = self.line_height + round(10 * self.gui.scale) #line height plus spacing
 
@@ -44831,7 +44832,7 @@ class TimedLyricsEdit:
 			self, text: str, x_pos: int, y_pos: int, font: int,
 			bg: ColourRGBA | None = None, active_bg: ColourRGBA | None = None,
 			txt: ColourRGBA | None = None, active_txt: ColourRGBA | None = None,
-			tooltip: str = "", off: bool = False, return_rect: bool = False) -> tuple[ bool | None, tuple[int, int, int, int] | None ]:
+			tooltip: str = "", off: bool = False, return_rect: bool = False, big: bool = False) -> tuple[ bool | None, tuple[int, int, int, int] | None ]:
 		"""Button centered around text display. off will disable the button if the condition is true,
 		return_rect will return the rect as a second parameter. returns True for click, False for right click,
 		None for nothing
@@ -44853,7 +44854,10 @@ class TimedLyricsEdit:
 		inner_border = 7*self.gui.scale
 		width = self.ddt.get_text_w(text, font)
 		height = self.ddt.get_text_w("?", font, True) /2
-		rect = (x_pos - inner_border, y_pos - inner_border, width + 2*inner_border, height + 2*inner_border)
+		if big:
+			rect = (x_pos - inner_border, y_pos - 2.5*inner_border, width + 2*inner_border, height + 2*inner_border)
+		else:
+			rect = (x_pos - inner_border, y_pos - inner_border, width + 2*inner_border, height + 2*inner_border)
 		self.tauon.fields.add(rect)
 		t_rect = (x_pos, y_pos)
 		if self.coll(rect) and not off:
@@ -45194,10 +45198,12 @@ class TimedLyricsEdit:
 		time = self.pctl.decode_time
 		if current:
 			self.alted = True
-		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != "tag":
+		if (int(self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time) + int(current) == 1) and self.structure[self.line_active][0] != "tag":
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
 			self.structure[self.line_active] = full_line
+		elif current and self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time:
+			return # special behavior at the start of the song is confusing
 		else:
 			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == "tag"):
 				self.line_active += 1 # increment until we're not going to timestanmp a tag
@@ -45624,6 +45630,7 @@ class TimedLyricsEdit:
 			self.x_posns[6-int(playing)] + self.yy,
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y)
 		)
+		self.ddt.rect_abs(highlight_rect, self.highlight)
 		text_boxes_rect = (
 			self.x_posns[2],
 			highlight_y,
@@ -45636,7 +45643,6 @@ class TimedLyricsEdit:
 			round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale + (self.x_posns[2]-self.x_posns[1]),# collider_width,
 			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
 		)
-		self.ddt.rect_abs(highlight_rect, self.highlight)
 
 		# column headers
 		if len(self.structure) < 2:
@@ -45659,14 +45665,10 @@ class TimedLyricsEdit:
 		for i, line in enumerate(self.structure):
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
-
 			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y: # if line will be visible
-
 				if i < self.line_active:
 					prev = max( prev, line[1] )
-
 				active = i == self.line_active and highlight and test_time >= line[1]
-
 				match (active, playing):
 					case (True, True):
 						text_color = self.faded_active_color
@@ -45693,15 +45695,12 @@ class TimedLyricsEdit:
 				collider = ( round(possible_y), round(possible_y + self.yy) )
 				association = collider, line[1]
 				line_ys.append( association )
-				# logging.info((self.x_posns[4], round(possible_y-0.25*self.line_height), collider_width, self.yy))
-				# logging.info((x, round(possible_y-0.25*self.line_height), w, self.yy))
 				self.tauon.fields.add( (self.x_posns[4], round(possible_y-0.25*self.line_height), collider_width, self.yy) )
 			else:
 				line_ys.append( None )
 
 
-
-		# CLICK LINE TO SEEK or LET USER EDIT LINE
+		# all line interactions
 		did_one_line = False
 		if not (self.gui.box_over or self.tauon.pref_box.enabled or self.box_open):
 			self.gui.timed_lyrics_editing_now = False
@@ -45725,6 +45724,7 @@ class TimedLyricsEdit:
 										self.time_next_line(True)
 								break
 				else:
+					# do line editing while paused
 					position, cleared_this_frame = self.update_edit_point(text_boxes_rect, full_coll_rect)
 					if self.edit_point is not None:
 						self.gui.timed_lyrics_editing_now = True
@@ -45751,6 +45751,7 @@ class TimedLyricsEdit:
 				if (self.inp.key_lalt or self.inp.key_ralt):
 					self.scroll_timestamp(self.line_active)
 
+			# alt + up/down arrows to switch lines while playing
 			if (self.inp.key_lalt or self.inp.key_ralt) and (self.inp.key_up_press or self.inp.key_down_press):
 				if self.inp.key_up_press and self.line_active == 0:
 					pass
@@ -45797,8 +45798,8 @@ class TimedLyricsEdit:
 			# BUTTONS IN THE CORNER
 			widths = [
 				self.ddt.get_text_w("≪5", self.font),
-				self.ddt.get_text_w(_("Previous"), self.font),
-				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("ADD TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
+				self.ddt.get_text_w(_("⇧"), self.font),
+				max( self.ddt.get_text_w(_("TIME⏎"), self.big_font), self.ddt.get_text_w(_("TIME+"), self.big_font), self.ddt.get_text_w(_("TIME⇨"), self.big_font)),
 				self.ddt.get_text_w(_("SAVE"), self.font),
 				self.ddt.get_text_w(_("Save to .lrc"), self.font),
 				self.ddt.get_text_w(_("Save to tags"), self.font),
@@ -45877,39 +45878,44 @@ class TimedLyricsEdit:
 				self.previous( max(test_time-5, 0) )
 			btx_top += widths[0] + x_gap
 
-			if self.button(_("Previous"), btx_top, bty_top, self.font,
+			if self.button(_("⇧"), btx_top, bty_top, self.font,
 				off = ( not prev))[0]:
 				self.previous(prev)
 			btx_top += widths[1] + x_gap
 
 			# TIME or CURRENT or ADD TIME: click button or go to previous
 			if self.inp.key_lalt or self.inp.key_ralt:
-				text = _("CURRENT")
-				time_width = self.ddt.get_text_w(_("CURRENT"), self.font)
+				text = _("TIME⇨")
+				time_width = self.ddt.get_text_w(_("TIME⇨"), self.big_font)
 			elif self.inp.key_ctrl_down or self.inp.key_rctrl_down:
-				text = _("ADD TIME")
-				time_width = self.ddt.get_text_w(_("ADD TIME"), self.font)
+				text = _("TIME+")
+				time_width = self.ddt.get_text_w(_("TIME+"), self.big_font)
 			else:
-				text = _("TIME")
-				time_width = self.ddt.get_text_w(_("TIME"), self.font)
-			width = self.ddt.get_text_w(text, self.font)
+				text = _("TIME⏎")
+				time_width = self.ddt.get_text_w(_("TIME⏎"), self.big_font)
+			width = self.ddt.get_text_w(text, self.big_font)
 			if hide_art:
 				x_pos = btx_top + (widths[2] - width)/2
 			else:
 				x_pos = btx_top
 
-			match self.button(text, x_pos, bty_top, self.font,
-				off=self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0) )[0]:
+			off = self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0)
+			advance, advance_rect = self.button(text, x_pos, bty_top, self.big_font,
+				off=off, big=True, return_rect=True)
+
+			match advance:
 				case True:
 					self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
 				case False:
 					self.previous( max(prev, self.pctl.decode_time-5, 0) )
 				case None:
-					if not (self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0)):
+					if not off:
 						if self.inp.key_return_press:
 							self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
 						elif self.inp.key_backspace_press:
 							self.previous( max(test_time-5, 0, prev) )
+					elif self.coll(advance_rect) and self.inp.mouse_click:
+						self.pctl.play() # wht a terrible bit of code
 
 			if btx_top + widths[2] + x_gap + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
 				btx_top = (25 - 15*hide_art) * self.gui.scale
