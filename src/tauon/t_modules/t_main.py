@@ -32728,6 +32728,18 @@ class BottomBarType1:
 			self.seek_bar_position[0] + self.seek_bar_size[0] / 2,
 			self.seek_bar_position[1] + self.seek_bar_size[1] / 2,
 			panel=colours.bottom_panel_colour, boost=0.6)
+
+		# If a bright art backdrop forced the seek background lighter than its
+		# base grey, the fill (normally the lighter of the two) can be left
+		# dimmer than the boosted background. When that boost happened, pull
+		# the fill's lightness back above the background so the played portion
+		# stays distinct.
+		seek_fill = colours.seek_bar_fill
+		seek_bg_l = rgb_to_hls(seek_bg.r, seek_bg.g, seek_bg.b)[1]
+		seek_base_l = rgb_to_hls(
+			colours.seek_bar_background.r, colours.seek_bar_background.g, colours.seek_bar_background.b)[1]
+		if seek_bg_l > seek_base_l + 0.01:
+			seek_fill = hls_pull_contrast(seek_fill, seek_bg, floor=0.12)
 		volume_bg = so.tint_from_background(
 			colours.volume_bar_background,
 			self.volume_bar_position[0] + self.volume_bar_size[0] / 2,
@@ -32883,7 +32895,7 @@ class BottomBarType1:
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
 				self.seek_bar_size[1])
-			ddt.rect(gui.seek_bar_rect, colours.seek_bar_fill)
+			ddt.rect(gui.seek_bar_rect, seek_fill)
 			tauon.draw_ab_repeat_markers(
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				self.seek_bar_size[0], self.seek_bar_size[1])
