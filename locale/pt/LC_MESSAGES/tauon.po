@@ -68,7 +68,7 @@ msgstr "d"
 
 #: src/tauon/t_modules/t_extra.py:573
 msgid "wk"
-msgstr "sem."
+msgstr "sem"
 
 #: src/tauon/t_modules/t_extra.py:575
 msgid "mnth"
@@ -3915,7 +3915,7 @@ msgstr "EMBARALHAR ALBUM"
 
 #: src/tauon/t_modules/t_main.py:30304
 msgid "MENU"
-msgstr "MEMU"
+msgstr "MENU"
 
 #: src/tauon/t_modules/t_main.py:30384
 msgid "It looks like something is being downloaded..."
