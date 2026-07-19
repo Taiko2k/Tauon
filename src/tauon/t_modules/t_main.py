@@ -42679,12 +42679,18 @@ class Milky:
 		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
 
 		if not self.ready:
-			sdl3.SDL_FlushRenderer(self.renderer)
 			context = sdl3.SDL_GL_GetCurrentContext()
 			if context:
 				sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+			saved_target = sdl3.SDL_GetRenderTarget(self.renderer)
+			sdl3.SDL_SetRenderTarget(self.renderer, None)
+			sdl3.SDL_FlushRenderer(self.renderer)
+			saved_fbo_init = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
 			self.projectm.load_library()
 			self.projectm.init()
+			glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo_init)
+			sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
 			if self.projectm.lib:
 				self.ready = True
 		if self.projectm.lib_error is True:
