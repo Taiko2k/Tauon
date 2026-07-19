@@ -45419,7 +45419,7 @@ class TimedLyricsEdit:
 			self.accept_paste(line_number)
 
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, self.yy)
-		if self.coll(rect):
+		if coll_point(self.get_edit_point(), rect):
 			position = len( self.line_edit_box.text ) - self.line_edit_box.cursor_position
 			# ENTER
 			if self.inp.key_return_press:
@@ -45484,24 +45484,23 @@ class TimedLyricsEdit:
 			self.autosave_timer.set()
 			self.autosaved = False
 
-	def update_edit_point(self, text_coll: tuple[int, int, int, int], full_coll: tuple[int, int, int, int]) -> tuple[int,int]:
-		if self.edit_point is not None:
-			logging.info("point already exists")
+	def update_edit_point(self, text_coll: tuple[int, int, int, int], full_coll: tuple[int, int, int, int]) -> tuple[tuple[int,int], bool]:
+		ctf = False
 		if self.inp.mouse_click:
 			if self.coll(text_coll): # set edit point if clicking in text
 				self.edit_point = copy.deepcopy(self.inp.mouse_position)
-				logging.info("edit point set")
-			elif not self.coll(full_coll): # clear edit point if clicking away
-				logging.info("point cleared")
+			# elif not self.coll(full_coll): # clear edit point if clicking away
+			else:
 				self.edit_point = None
+				ctf = False # we WANT to click other lines here
 		if self.inp.key_esc_press:
 			self.edit_point = None
 			self.inp.key_esc_press = False
-			logging.info("escaped")
-		if self.edit_point is not None:
-			logging.info("point exists")
-		return self.edit_point if self.edit_point is not None else self.inp.mouse_position
+			ctf = True
+		return self.edit_point if self.edit_point is not None else self.inp.mouse_position, ctf
 
+	def get_edit_point(self) -> tuple[int, int]:
+		return self.edit_point if self.edit_point is not None else self.inp.mouse_position
 
 	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> None:
 		line_ys: list[ tuple[ tuple[ int, int ], float ] | None ] = []
@@ -45523,6 +45522,8 @@ class TimedLyricsEdit:
 			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 			self.scroll_position += scroll_distance
 			self.recenter_timeout.set()
+			if self.edit_point is not None:
+				self.edit_point = (self.edit_point[0], self.edit_point[1] + scroll_distance)
 
 		highlight = True
 
@@ -45689,7 +45690,7 @@ class TimedLyricsEdit:
 		if not (self.gui.box_over or self.tauon.pref_box.enabled or self.box_open):
 			self.gui.timed_lyrics_editing_now = False
 			# click a lyric to seek to it
-			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3]:
+			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3] or self.edit_point is not None:
 				if playing:
 					if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
 					and (not h or y < self.inp.mouse_position[1] < y+h):
@@ -45721,14 +45722,14 @@ class TimedLyricsEdit:
 					# logging.info("editing i think")
 					# self.queue_next_frame = True
 					self.gui.timed_lyrics_editing_now = True
-					position = self.update_edit_point(text_boxes_rect, full_coll_rect)
-					logging.info(position)
-					for i, rendered_line in enumerate(line_ys):
-						if rendered_line is None:
-							continue
-						if (rendered_line[0][0]-0.25*self.line_height) < position[1] < (rendered_line[0][1]-0.25*self.line_height):
-							self.settings_for_one_line(i, rendered_line[0][0])
-							did_one_line = True
+					position, cleared_this_frame = self.update_edit_point(text_boxes_rect, full_coll_rect)
+					if not cleared_this_frame:
+						for i, rendered_line in enumerate(line_ys):
+							if rendered_line is None:
+								continue
+							if (rendered_line[0][0]-0.25*self.line_height) < position[1] < (rendered_line[0][1]-0.25*self.line_height):
+								self.settings_for_one_line(i, rendered_line[0][0])
+								did_one_line = True
 
 			# KEYBOARD SHORTCUTS
 			if not did_one_line: # self.pctl.playing_state != PlayingState.PLAYING and
