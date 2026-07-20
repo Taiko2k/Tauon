@@ -21630,6 +21630,9 @@ class MultiLineTextBox:
 		self.t_window = tauon.t_window
 		self.renderer = tauon.renderer
 		self.text: str = ""
+		self.lines: list[str] = []
+		self.text_height: int = 0
+		self.line_ys: list[int] = 0
 		self.cursor_position = 0
 		self.selection = 0
 		self.offset = 0
@@ -21647,6 +21650,21 @@ class MultiLineTextBox:
 		self.text_box_canvas = sdl3.SDL_CreateTexture(
 			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
 		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+
+	def map_lines(self, font: int) -> None:
+		lines = self.text.split("\n")
+		self.line_ys = []
+		self.lines = []
+		throwaway, self.text_height = self.ddt.get_text_wh(_("?"), font, 200)
+		for i, line in enumerate(lines):
+			self.lines.append(line)
+			self.line_ys.append(i * self.text_height)
+
+	def which_line_by_y(self, y_position: int) -> int:
+		return min(len(self.line_ys)-1, round(y_position/self.text_height)-1) 
+
+	def which_line_by_char(self, char: int) -> int:
+		return self.text[:len(self.text)-char].count('\n')
 
 	def paste(self) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -21710,6 +21728,8 @@ class MultiLineTextBox:
 			self.text_box_canvas.x
 		except:
 			self.initialize(x,y,width,height)
+		if self.text_height == 0:
+			self.map_lines(font)
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
@@ -21881,6 +21901,15 @@ class MultiLineTextBox:
 						self.cursor_position -= 1
 					self.selection = self.cursor_position
 
+			if self.inp.key_return_press:
+				if self.selection != self.cursor_position:
+					self.eliminate_selection()
+				self.text = self.text[0:len(self.text) - self.cursor_position] + "\n" + self.text[len(
+					self.text) - self.cursor_position:]
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
+				self.selection = self.cursor_position
+
 			if self.inp.key_home_press:
 				self.cursor_position = len(self.text)
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
@@ -21916,7 +21945,8 @@ class MultiLineTextBox:
 				if click:
 					pre = 0
 					post = 0
-					if self.inp.mouse_position[0] < x + 1:
+					logging.info(f"clicked on line {self.which_line_by_y(self.inp.mouse_position[1]-headroom+scroll)}")
+					if self.inp.mouse_position[1] < y + 1:
 						self.cursor_position = len(self.text)
 					else:
 						for i in range(len(self.text)):
@@ -21981,9 +22011,13 @@ class MultiLineTextBox:
 			if big:
 				top -= 12 * self.gui.scale
 
-			self.ddt.rect([a, 0, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
+			
+			line = self.which_line_by_char(self.cursor_position)
+
+			self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
 			if self.selection != self.cursor_position:
+				# text is selected
 				inf_comp = 0
 				text = self.get_selection(0)
 				if secret:
@@ -21998,19 +22032,20 @@ class MultiLineTextBox:
 					text = "●" * len(text)
 				self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, height), text, colour, font, max_w=width)
 			else:
+				# no selection
 				text = self.text
 				if secret:
 					text = "●" * len(text)
 				self.ddt.text((0, headroom-scroll, 4, width, height), text, colour, font, max_w=width)
 
-			text = self.text[0: len(self.text) - self.cursor_position]
+			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
 			if secret:
 				text = "●" * len(text)
 			space = self.ddt.get_text_w(text, font)
 
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
-				self.ddt.rect((0 + space, 0  + headroom-scroll, 1 * self.gui.scale, 14 * self.gui.scale), colour)
+				self.ddt.rect((0 + space, line*self.text_height  + headroom-scroll, 1 * self.gui.scale, 14 * self.gui.scale), colour)
 
 			if click:
 				self.selection = self.cursor_position
@@ -46512,7 +46547,7 @@ class TimedLyricsEdit:
 		self.unsynced_text_box.text = self.text
 		self.unsynced_text_box.draw(
 			x, y, self.colours.lyrics, True,
-			font = self.font, width = ( w ), height = h, headroom=6,
+			font = self.font, width = ( w ), height = h, headroom=70*self.gui.scale,
 			scroll=-self.lyrics_position
 		)
 		self.text = self.unsynced_text_box.text
