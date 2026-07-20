@@ -21666,6 +21666,34 @@ class MultiLineTextBox:
 	def which_line_by_char(self, char: int) -> int:
 		return self.text[:len(self.text)-char].count('\n')
 
+	def set_cursor_from_click(self, headroom: int, scroll: int, font: int, x: int) -> None:
+		pre = 0
+		post = 0
+		line = self.which_line_by_y(self.inp.mouse_position[1]-headroom+scroll) -1
+		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line
+		text = self.lines[line]
+		temp = 0
+
+		for i in range(len(text)):
+			post = self.ddt.get_text_w(text[0:i + 1], font)
+			# pre_half = int((post - pre) / 2)
+
+			if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+				diff = post - pre
+				if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+					temp = len(text) - i - 1
+				else:
+					temp = len(text) - i
+				self.cursor_position = temp + temp_total
+				break
+			
+			pre = post
+		else:
+			self.cursor_position = temp_total
+		self.selection = self.cursor_position
+		
+		return pre, post
+
 	def paste(self) -> None:
 		if sdl3.SDL_HasClipboardText():
 			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
@@ -21906,8 +21934,6 @@ class MultiLineTextBox:
 					self.eliminate_selection()
 				self.text = self.text[0:len(self.text) - self.cursor_position] + "\n" + self.text[len(
 					self.text) - self.cursor_position:]
-				if self.cursor_position > 0:
-					self.cursor_position -= 1
 				self.selection = self.cursor_position
 
 			if self.inp.key_home_press:
@@ -21945,26 +21971,26 @@ class MultiLineTextBox:
 				if click:
 					pre = 0
 					post = 0
-					logging.info(f"clicked on line {self.which_line_by_y(self.inp.mouse_position[1]-headroom+scroll)}")
 					if self.inp.mouse_position[1] < y + 1:
 						self.cursor_position = len(self.text)
 					else:
-						for i in range(len(self.text)):
-							post = self.ddt.get_text_w(self.text[0:i + 1], font)
-							# pre_half = int((post - pre) / 2)
+						pre, post = self.set_cursor_from_click(headroom, scroll, font, x)
+						# for i in range(len(self.text)):
+						# 	post = self.ddt.get_text_w(self.text[0:i + 1], font)
+						# 	# pre_half = int((post - pre) / 2)
 
-							if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
-								diff = post - pre
-								if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
-									self.cursor_position = len(self.text) - i - 1
-								else:
-									self.cursor_position = len(self.text) - i
-								break
-							pre = post
-						else:
-							self.cursor_position = 0
-					self.selection = 0
-					self.down_lock = True
+						# 	if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+						# 		diff = post - pre
+						# 		if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+						# 			self.cursor_position = len(self.text) - i - 1
+						# 		else:
+						# 			self.cursor_position = len(self.text) - i
+						# 		break
+						# 	pre = post
+						# else:
+						# 	self.cursor_position = 0
+					# self.selection = 0
+					# self.down_lock = True
 
 			if self.inp.mouse_up:
 				self.down_lock = False
