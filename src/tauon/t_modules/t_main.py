@@ -1629,6 +1629,32 @@ class ColoursClass:
 		self.artist_bio_background = ColourRGBA(27, 27, 27, 255)
 		self.artist_bio_text       = ColourRGBA(230, 230, 230, 255)
 
+		# Theme-supplied alphas of the fills the art background shows through,
+		# filled in by post_config
+		self.base_alpha: dict[str, int] = {}
+
+	# The art background draws underneath the UI, so these fills are made
+	# translucent to let it show through. Panels take the bulk of it; the
+	# smaller furniture sitting on them lets less through.
+	art_bg_panel_colours = (
+		"playlist_panel_background",
+		"side_panel_background",
+		"top_panel_background",
+		"bottom_panel_colour",
+		"gallery_background",
+		"queue_background",
+		"playlist_box_background",
+		"lyrics_panel_background",
+	)
+	art_bg_element_colours = (
+		"tab_background",
+		"tab_background_active",
+		"seek_bar_background",
+		"volume_bar_background",
+		"column_bar_background",
+		"folder_line",
+	)
+
 	def apply_transparency(self, full: bool = False) -> None:
 		"""Translucent panel fills for compositor window transparency.
 
@@ -1714,6 +1740,17 @@ class ColoursClass:
 		if test_lumi(self.column_bar_background) < 0.4:
 			self.column_bar_text = ColourRGBA(40, 40, 40, 200)
 			self.column_grip     = ColourRGBA(255, 255, 255, 20)
+
+		# Snapshot the alphas the theme actually asked for. The art background
+		# scales these down each frame and must clamp against them: a theme
+		# whose seek bar or tabs are deliberately translucent (Carbon's seek
+		# background is white at alpha 60) must not be forced opaque when no
+		# art background is showing.
+		self.base_alpha = {}
+		for name in self.art_bg_panel_colours + self.art_bg_element_colours:
+			colour = getattr(self, name, None)
+			if colour is not None:
+				self.base_alpha[name] = colour.a
 
 	def light_mode(self) -> None:
 		self.lm = True
@@ -14430,29 +14467,15 @@ class Tauon:
 		# The art background draws underneath the UI, so panel fills are made
 		# translucent to let it show through; strength maps to panel alpha
 		colours = self.colours
-		panel_colour_names = (
-			"playlist_panel_background",
-			"side_panel_background",
-			"top_panel_background",
-			"bottom_panel_colour",
-			"gallery_background",
-			"queue_background",
-			"playlist_box_background",
-			"lyrics_panel_background",
-		)
-		panel_colours = [c for c in (getattr(colours, name, None) for name in panel_colour_names) if c is not None]
+		panel_colours = [
+			(name, c) for name in colours.art_bg_panel_colours
+			if (c := getattr(colours, name, None)) is not None]
 
 		# Smaller UI furniture sitting on the panels also lets the art
 		# through, but less so than the panels themselves
-		element_colour_names = (
-			"tab_background",
-			"tab_background_active",
-			"seek_bar_background",
-			"volume_bar_background",
-			"column_bar_background",
-			"folder_line",
-		)
-		element_colours = [c for c in (getattr(colours, name, None) for name in element_colour_names) if c is not None]
+		element_colours = [
+			(name, c) for name in colours.art_bg_element_colours
+			if (c := getattr(colours, name, None)) is not None]
 
 		# Menus, dialogs and their controls draw over other UI and must stay
 		# readable; de-alias any that share an object with a colour being
@@ -14460,7 +14483,7 @@ class Tauon:
 		modified_colours = panel_colours + element_colours
 		for keep_name in ("menu_background", "toggle_box_on", "sys_tab_bg", "sys_tab_hl"):
 			keep = getattr(colours, keep_name, None)
-			if keep is not None and any(keep is c for c in modified_colours):
+			if keep is not None and any(keep is c for _name, c in modified_colours):
 				setattr(colours, keep_name, ColourRGBA(keep.r, keep.g, keep.b, keep.a))
 
 		panel_alpha = 255
@@ -14473,14 +14496,17 @@ class Tauon:
 			# panel — e.g. 115 keeps ~55% extra opacity over the panel while
 			# still letting the art through
 			element_alpha = 115
-		for colour in panel_colours:
-			colour.a = panel_alpha
+		# Clamp against the theme's own alpha rather than assigning outright,
+		# so a fill the theme deliberately made translucent stays that way
+		for name, colour in panel_colours:
+			colour.a = min(colours.base_alpha.get(name, 255), panel_alpha)
 		# At frosted high strength the tracklist gets hard to read over busy
 		# art; keep its panel a touch more opaque than the others
 		if prefs.art_bg and prefs.art_bg_frosted and prefs.art_bg_stronger >= 3:
-			colours.playlist_panel_background.a = min(255, panel_alpha + 20)
-		for colour in element_colours:
-			colour.a = element_alpha
+			colours.playlist_panel_background.a = min(
+				colours.base_alpha.get("playlist_panel_background", 255), panel_alpha + 20)
+		for name, colour in element_colours:
+			colour.a = min(colours.base_alpha.get(name, 255), element_alpha)
 
 		# The frosted looks let the art show through the visualizer backing
 		# too (the vis fills draw with replace-blend so this doesn't stack)
