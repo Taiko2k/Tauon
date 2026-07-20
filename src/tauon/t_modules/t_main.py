@@ -21644,7 +21644,7 @@ class MultiLineTextBox:
 		if width == 0:
 			width = round(2000*gui.scale)
 		if height == 0:
-			height = round(40*gui.scale)
+			height = round(20000*gui.scale)
 		self.text_box_canvas_rect = sdl3.SDL_FRect(0, 0, width, height)
 		self.text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, width, height)
 		self.text_box_canvas = sdl3.SDL_CreateTexture(
@@ -21659,9 +21659,11 @@ class MultiLineTextBox:
 		for i, line in enumerate(lines):
 			self.lines.append(line)
 			self.line_ys.append(i * self.text_height)
+		logging.info(len(self.lines))
+		logging.info(len(self.line_ys))
 
 	def which_line_by_y(self, y_position: int) -> int:
-		return min(len(self.line_ys)-1, round(y_position/self.text_height)-1) 
+		return min(len(self.line_ys)-1, round(y_position/self.text_height)-1)
 
 	def which_line_by_char(self, char: int) -> int:
 		return self.text[:len(self.text)-char].count('\n')
@@ -21669,8 +21671,10 @@ class MultiLineTextBox:
 	def set_cursor_from_click(self, headroom: int, scroll: int, font: int, x: int) -> None:
 		pre = 0
 		post = 0
-		line = self.which_line_by_y(self.inp.mouse_position[1]-headroom+scroll) -1
+		line = self.which_line_by_y(self.inp.mouse_position[1]-headroom-2*self.text_height+scroll) -1
+		logging.info(f"line is {line}")
 		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line
+		logging.info(f"temp total is {temp_total}")
 		text = self.lines[line]
 		temp = 0
 
@@ -21686,12 +21690,12 @@ class MultiLineTextBox:
 					temp = len(text) - i
 				self.cursor_position = temp + temp_total
 				break
-			
+
 			pre = post
 		else:
 			self.cursor_position = temp_total
 		self.selection = self.cursor_position
-		
+
 		return pre, post
 
 	def paste(self) -> None:
@@ -21748,7 +21752,7 @@ class MultiLineTextBox:
 
 	def draw(
 			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13,
-			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False, 
+			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False,
 			headroom: int = 0, scroll: int = 0) -> None:
 		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
 
@@ -21781,8 +21785,8 @@ class MultiLineTextBox:
 		if self.inp.mouse_down:
 			self.gui.request_frame()  # TODO(Taiko): more elegant fix
 
-		rect = (x - 3, y - 2, width - 3, height)
-		select_rect = (x - 20 * self.gui.scale, y - 2, width + 20 * self.gui.scale, height + 21 * self.gui.scale)
+		rect = (x - 3, y - 2 - headroom, width - 3, height)
+		select_rect = (x - 20 * self.gui.scale, y - 2 - headroom, width + 20 * self.gui.scale, height + 21 * self.gui.scale)
 
 		self.fields.add(rect)
 
@@ -21971,7 +21975,7 @@ class MultiLineTextBox:
 				if click:
 					pre = 0
 					post = 0
-					if self.inp.mouse_position[1] < y + 1:
+					if self.inp.mouse_position[1] < y -headroom -scroll + 1:
 						self.cursor_position = len(self.text)
 					else:
 						pre, post = self.set_cursor_from_click(headroom, scroll, font, x)
@@ -22037,7 +22041,7 @@ class MultiLineTextBox:
 			if big:
 				top -= 12 * self.gui.scale
 
-			
+
 			line = self.which_line_by_char(self.cursor_position)
 
 			self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
@@ -22048,21 +22052,21 @@ class MultiLineTextBox:
 				text = self.get_selection(0)
 				if secret:
 					text = "●" * len(text)
-				space = self.ddt.text((0, headroom-scroll), text, colour, font, max_w=width)
+				space = self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
 				text = self.get_selection(1)
 				if secret:
 					text = "●" * len(text)
-				space += self.ddt.text((0 + space - inf_comp, headroom-scroll), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255), max_w=width)
+				space += self.ddt.text((0 + space - inf_comp, headroom-scroll, 4, width, 40000), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255), max_w=width)
 				text = self.get_selection(2)
 				if secret:
 					text = "●" * len(text)
-				self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, height), text, colour, font, max_w=width)
+				self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
 			else:
 				# no selection
 				text = self.text
 				if secret:
 					text = "●" * len(text)
-				self.ddt.text((0, headroom-scroll, 4, width, height), text, colour, font, max_w=width)
+				self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
 
 			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
 			if secret:
@@ -22081,7 +22085,8 @@ class MultiLineTextBox:
 			if secret:
 				text = "●" * len(text)
 			t_len, t_wid = self.ddt.get_text_wh(text, font, max_x=width)
-			self.ddt.text((0, headroom-scroll), text, colour, font, max_w=width)
+			logging.info("this")
+			self.ddt.text((0, headroom-scroll,4,2,1), text, colour, font, max_w=width)
 			self.offset = 0
 			if self.coll(rect) and not self.tauon.field_menu.active:
 				self.gui.cursor_want = 2
