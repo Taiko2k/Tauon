@@ -2,6 +2,12 @@
 Changelog
 ---------
 
+### v11.1.1
+
+ - Fixed seek and volume bars ignoring theme transparency (Carbon, Neon Love, Sunken)
+ - Fixed crash when scrolling by touch
+
+
 ### v11.1.0
 
  - Added new Frost UI backround mode
