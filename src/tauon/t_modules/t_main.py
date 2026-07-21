@@ -6955,7 +6955,9 @@ class Tauon:
 		# Create tray (no icon, just tooltip)
 		self.sdl_tray = sdl3.SDL_CreateTray(icon_surface, b"Tauon Music Box")
 		if not self.sdl_tray:
-			raise RuntimeError(f"SDL_CreateTray failed: {sdl3.SDL_GetError().decode()}")
+			logging.error(f"SDL_CreateTray failed: {sdl3.SDL_GetError().decode()}")
+			return
+
 		# Create menu
 		menu = sdl3.SDL_CreateTrayMenu(self.sdl_tray)
 		if not menu:
