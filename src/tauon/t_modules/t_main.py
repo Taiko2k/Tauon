@@ -86,6 +86,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from line_profiler import profile
+
 import certifi
 import musicbrainzngs
 import mutagen
@@ -21636,8 +21638,13 @@ class MultiLineTextBox:
 		self.cursor_position = 0
 		self.selection = 0
 		self.offset = 0
+		self.temp_x_pos: int|None = None
 		self.down_lock: bool = False
 		self.paste_text: str = ""
+
+		self.x: int
+		self.y: int
+		self.font: int
 
 	def initialize(self, x: int, y: int, width: int, height: int) -> None:
 		gui = self.gui
@@ -21651,42 +21658,44 @@ class MultiLineTextBox:
 			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
 		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 
-	def map_lines(self, font: int) -> None:
+	def map_lines(self) -> None:
 		lines = self.text.split("\n")
 		self.line_ys = []
 		self.lines = []
-		throwaway, self.text_height = self.ddt.get_text_wh(_("?"), font, 200)
+		throwaway, self.text_height = self.ddt.get_text_wh(_("?"), self.font, 200)
 		for i, line in enumerate(lines):
 			self.lines.append(line)
 			self.line_ys.append(i * self.text_height)
 
 	def which_line_by_y(self, y_position: int) -> int:
-		return min(len(self.line_ys), round(y_position/self.text_height))
+		return min(len(self.line_ys)-1, round(y_position/self.text_height))
 
 	def which_line_by_char(self, char: int) -> int:
 		return self.text[:len(self.text)-char].count('\n')
 
-	def set_cursor_from_click(self, scroll: int, font: int, x: int, y: int, selection: bool) -> None:
+	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int]|None = None) -> None:
+		if in_pos is None:
+			in_pos = self.inp.mouse_position
 		pre = 0
 		post = 0
-		line = self.which_line_by_y(self.inp.mouse_position[1] -y + scroll -0.25*self.text_height)
+		line = self.which_line_by_y(in_pos[1] -self.y + scroll -0.25*self.text_height)
 		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line-1
 		text = self.lines[line]
 		temp = 0
 
-		full = self.ddt.get_text_w(text, font)
-		if x + full <= self.inp.mouse_position[0]:
+		full = self.ddt.get_text_w(text, self.font)
+		if self.x + full <= in_pos[0]:
 			out_val = temp_total
-		elif self.inp.mouse_position[0] <= x:
+		elif in_pos[0] <= self.x:
 			out_val = temp_total + len(text)
 		else:
 			for i in range(len(text)):
-				post = self.ddt.get_text_w(text[0:i + 1], font)
+				post = self.ddt.get_text_w(text[0:i + 1], self.font)
 				# pre_half = int((post - pre) / 2)
 
-				if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+				if self.x + pre - 0 <= in_pos[0] <= self.x + post + 0:
 					diff = post - pre
-					if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+					if in_pos[0] >= self.x + pre + int(diff / 2):
 						temp = len(text) - i - 1
 					else:
 						temp = len(text) - i
@@ -21703,7 +21712,7 @@ class MultiLineTextBox:
 
 		return pre, post
 
-	def pixel_position_from_cursor_position(self, font: int, selection: bool = False) -> tuple[int, int]:
+	def pixel_position_from_cursor_position(self, selection: bool = False) -> tuple[int, int]:
 		if selection:
 			pos = self.selection
 		else:
@@ -21711,8 +21720,23 @@ class MultiLineTextBox:
 		line = self.which_line_by_char(pos)
 
 		#get substring to measure
-		width = self.ddt.get_text_w(self.text[:-pos].split('\n')[-1], font)
+		width = self.ddt.get_text_w(self.text[:-pos].split('\n')[-1], self.font)
 		return width,line*self.text_height
+
+
+	def switch_lines(self, scroll: int, up: bool) -> None:
+		pos = self.pixel_position_from_cursor_position()
+		if self.temp_x_pos is not None:
+			pos = self.temp_x_pos, pos[1]
+		else:
+			self.temp_x_pos = pos[0]
+		# this is relative
+		if up:
+			offset = -self.text_height
+		else:
+			offset = self.text_height
+		pos = pos[0] + self.x, pos[1] - scroll + self.y + offset
+		self.set_cursor_from_click(scroll, False, pos)
 
 	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int, font: int) -> None:
 		test = start_line - end_line
@@ -21726,17 +21750,18 @@ class MultiLineTextBox:
 				y = (start+i+1) * self.text_height - scroll
 				self.ddt.rect(
 					(0, y - 0.25*self.text_height, x, self.text_height),
-					self.tauon.colours.level_red
+					ColourRGBA(40, 120, 180, 255)
 				)
 
 
 	def draw_selection_highlight(self, scroll: int, font: int) -> None:
-		rect1 = self.pixel_position_from_cursor_position(font)
-		rect2 = self.pixel_position_from_cursor_position(font, True)
+		color = ColourRGBA(40, 120, 180, 255)
+		rect1 = self.pixel_position_from_cursor_position()
+		rect2 = self.pixel_position_from_cursor_position(True)
 		if rect1[1] == rect2[1]:
 			self.ddt.rect(
 				(rect1[0], rect1[1] - scroll - 0.25*self.text_height, rect2[0]-rect1[0], self.text_height),
-				self.tauon.colours.level_red
+				color
 			)
 		else:
 			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
@@ -21745,30 +21770,39 @@ class MultiLineTextBox:
 				cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
 				self.ddt.rect(
 					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
-					self.tauon.colours.level_red
+					color
 				)
 				select_line = self.which_line_by_char(self.selection)
 				select_start = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
 				select_width = self.ddt.get_text_w(self.lines[select_line], font) - select_start
 				self.ddt.rect(
 					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
-					self.tauon.colours.level_red
+					color
 				)
 			else:
 				select_line = self.which_line_by_char(self.selection)
 				select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
 				self.ddt.rect(
 					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
-					self.tauon.colours.level_red
+					color
 				)
 				cursor_line = self.which_line_by_char(self.cursor_position)
 				cursor_start = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
 				cursor_width = self.ddt.get_text_w(self.lines[cursor_line], font) - cursor_start
 				self.ddt.rect(
 					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
-					self.tauon.colours.level_red
+					color
 				)
 			self.selection_highlight_inbetweens(select_line, cursor_line, scroll, font)
+
+	def get_scroll_output(self, scroll: int, headroom: int, height: int) -> int:
+		test_y = self.pixel_position_from_cursor_position()[1] - scroll
+		scroll_output = 0
+		if test_y < -headroom: # scroll up
+			scroll_output = test_y + headroom
+		elif test_y > height-headroom: # scroll down
+			scroll_output = test_y -height+headroom
+		return scroll_output
 
 
 	def paste(self) -> None:
@@ -21826,15 +21860,20 @@ class MultiLineTextBox:
 	def draw(
 			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13,
 			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False,
-			headroom: int = 0, scroll: int = 0) -> None:
+			headroom: int = 0, scroll: int = 0) -> int:
 		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
 
 		try:
 			self.text_box_canvas.x
 		except:
 			self.initialize(x,y,width,height)
+			self.x = x
+			self.y = y
+			self.font = font
 		if self.text_height == 0:
-			self.map_lines(font)
+			self.map_lines()
+
+		autoscroll = False
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
@@ -21874,6 +21913,8 @@ class MultiLineTextBox:
 
 			# Add text from input
 			if self.inp.input_text:
+				self.temp_x_pos = None
+				autoscroll = True
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
 					self.text) - self.cursor_position:]
@@ -21892,6 +21933,11 @@ class MultiLineTextBox:
 				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
 					self.text) - self.cursor_position:]
 				self.selection = self.cursor_position
+
+			if self.inp.backspace_press or self.inp.key_right_press or \
+				self.inp.key_left_press or self.inp.key_return_press:
+				self.temp_x_pos = None
+				autoscroll = True
 
 			# Ctrl + Backspace to delete word
 			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
@@ -21948,18 +21994,35 @@ class MultiLineTextBox:
 
 			# Left and right arrow keys to move cursor
 			if self.inp.key_right_press:
+				autoscroll = True
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
 			if self.inp.key_left_press:
+				autoscroll = True
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
+			if self.inp.key_up_press:
+				autoscroll = True
+				if self.which_line_by_char(self.cursor_position) != 0:
+					self.switch_lines(scroll, True)
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.inp.key_down_press:
+				autoscroll = True
+				if self.which_line_by_char(self.cursor_position) != len(self.lines)-1:
+					self.switch_lines(scroll, False)
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
 			if self.paste_text:
+				autoscroll = True
 				if "http://" in self.text and "http://" in self.paste_text:
 					self.text = ""
 
@@ -21973,6 +22036,7 @@ class MultiLineTextBox:
 
 			# Paste via ctrl-v
 			if self.inp.key_ctrl_down and self.inp.key_v_press:
+				autoscroll = True
 				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
@@ -21982,6 +22046,7 @@ class MultiLineTextBox:
 				self.copy()
 
 			if self.inp.key_ctrl_down and self.inp.key_x_press and len(self.get_selection()) > 0:
+				autoscroll = True
 				text = self.get_selection()
 				if text:
 					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
@@ -21997,6 +22062,7 @@ class MultiLineTextBox:
 
 			# Delete key to remove text in front of cursor
 			if self.inp.key_del:
+				autoscroll = True
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
 				else:
@@ -22007,6 +22073,7 @@ class MultiLineTextBox:
 					self.selection = self.cursor_position
 
 			if self.inp.key_return_press:
+				autoscroll = True
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
 				self.text = self.text[0:len(self.text) - self.cursor_position] + "\n" + self.text[len(
@@ -22014,10 +22081,12 @@ class MultiLineTextBox:
 				self.selection = self.cursor_position
 
 			if self.inp.key_home_press:
+				autoscroll = True
 				self.cursor_position = len(self.text)
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 			if self.inp.key_end_press:
+				autoscroll = True
 				self.cursor_position = 0
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
@@ -22046,10 +22115,10 @@ class MultiLineTextBox:
 			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
 				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
 				if click:
-					if self.inp.mouse_position[1] < y -headroom -scroll + 1:
+					if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
 						self.cursor_position = len(self.text)
 					else:
-						self.set_cursor_from_click(scroll, font, x, y, False)
+						self.set_cursor_from_click(scroll, False)
 					self.down_lock = True
 
 			if self.inp.mouse_up:
@@ -22058,10 +22127,10 @@ class MultiLineTextBox:
 				text = self.text
 				if secret:
 					text = "●" * len(self.text)
-				if self.inp.mouse_position[1] < y -headroom -scroll + 1:
+				if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
 					self.cursor_position = len(self.text)
 				else:
-					self.set_cursor_from_click(scroll, font, x, y, True)
+					self.set_cursor_from_click(scroll, True)
 
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
@@ -22073,7 +22142,7 @@ class MultiLineTextBox:
 				text = "●" * len(text)
 			b = self.ddt.get_text_w(text, font)
 
-			top = y
+			top = self.y
 			if big:
 				top -= 12 * self.gui.scale
 
@@ -22104,7 +22173,7 @@ class MultiLineTextBox:
 			text = self.text
 			if secret:
 				text = "●" * len(text)
-			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
+			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
 
 			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
 			if secret:
@@ -22171,6 +22240,10 @@ class MultiLineTextBox:
 		self.text_box_canvas_rect.y = round(y) - headroom
 
 		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
+
+		if autoscroll:
+			return self.get_scroll_output(scroll, headroom, height)
+		return 0
 
 
 class TextBox2:
@@ -46601,10 +46674,10 @@ class TimedLyricsEdit:
 		offset = 20*self.gui.scale
 
 		old_pos = self.lyrics_position
-		if self.inp.key_up_press:
-			self.lyrics_position += 35 * self.gui.scale
-		if self.inp.key_down_press:
-			self.lyrics_position -= 35 * self.gui.scale
+		# if self.inp.key_up_press:
+		# 	self.lyrics_position += 35 * self.gui.scale
+		# if self.inp.key_down_press:
+		# 	self.lyrics_position -= 35 * self.gui.scale
 		if self.inp.mouse_wheel:
 			self.lyrics_position += self.scroll.scroll("timed lyrics", 30*self.gui.scale)
 		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
@@ -46615,11 +46688,12 @@ class TimedLyricsEdit:
 		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
 		# self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
 		self.unsynced_text_box.text = self.text
-		self.unsynced_text_box.draw(
+		self.lyrics_position -= self.unsynced_text_box.draw(
 			x, y, self.colours.lyrics, True,
 			font = self.font, width = ( w ), height = h, headroom=70*self.gui.scale,
 			scroll=-self.lyrics_position
 		)
+		# the draw function returns scroll info for if arrow keys move the cursor offscreen
 		self.text = self.unsynced_text_box.text
 		self.gui.timed_lyrics_editing_now = True
 
@@ -46755,7 +46829,7 @@ class TimedLyricsEdit:
 
 
 
-
+	@profile
 	def render(self) -> None:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
