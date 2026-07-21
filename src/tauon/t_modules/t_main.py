@@ -21661,15 +21661,15 @@ class MultiLineTextBox:
 			self.line_ys.append(i * self.text_height)
 
 	def which_line_by_y(self, y_position: int) -> int:
-		return min(len(self.line_ys), round(y_position/self.text_height))-1
+		return min(len(self.line_ys), round(y_position/self.text_height))
 
 	def which_line_by_char(self, char: int) -> int:
 		return self.text[:len(self.text)-char].count('\n')
 
-	def set_cursor_from_click(self, headroom: int, scroll: int, font: int, x: int, selection: bool) -> None:
+	def set_cursor_from_click(self, scroll: int, font: int, x: int, y: int, selection: bool) -> None:
 		pre = 0
 		post = 0
-		line = self.which_line_by_y(self.inp.mouse_position[1] - 2*headroom + scroll)
+		line = self.which_line_by_y(self.inp.mouse_position[1] -y + scroll -0.25*self.text_height)
 		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line-1
 		text = self.lines[line]
 		temp = 0
@@ -21677,6 +21677,8 @@ class MultiLineTextBox:
 		full = self.ddt.get_text_w(text, font)
 		if x + full <= self.inp.mouse_position[0]:
 			out_val = temp_total
+		elif self.inp.mouse_position[0] <= x:
+			out_val = temp_total + len(text)
 		else:
 			for i in range(len(text)):
 				post = self.ddt.get_text_w(text[0:i + 1], font)
@@ -21700,6 +21702,74 @@ class MultiLineTextBox:
 			self.cursor_position = out_val
 
 		return pre, post
+
+	def pixel_position_from_cursor_position(self, font: int, selection: bool = False) -> tuple[int, int]:
+		if selection:
+			pos = self.selection
+		else:
+			pos = self.cursor_position
+		line = self.which_line_by_char(pos)
+
+		#get substring to measure
+		width = self.ddt.get_text_w(self.text[:-pos].split('\n')[-1], font)
+		return width,line*self.text_height
+
+	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int, font: int) -> None:
+		test = start_line - end_line
+		if -1 <= test <= 1:
+			return
+		else:
+			start = min(start_line,end_line)
+			end = max(start_line, end_line)
+			for i, line in enumerate(self.lines[start+1:end]):
+				x = self.ddt.get_text_w(line, font)
+				y = (start+i+1) * self.text_height - scroll
+				self.ddt.rect(
+					(0, y - 0.25*self.text_height, x, self.text_height),
+					self.tauon.colours.level_red
+				)
+
+
+	def draw_selection_highlight(self, scroll: int, font: int) -> None:
+		rect1 = self.pixel_position_from_cursor_position(font)
+		rect2 = self.pixel_position_from_cursor_position(font, True)
+		if rect1[1] == rect2[1]:
+			self.ddt.rect(
+				(rect1[0], rect1[1] - scroll - 0.25*self.text_height, rect2[0]-rect1[0], self.text_height),
+				self.tauon.colours.level_red
+			)
+		else:
+			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
+				# need to get FIRST section of cursor line and SECOND section of selection line
+				cursor_line = self.which_line_by_char(self.cursor_position)
+				cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
+				self.ddt.rect(
+					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
+					self.tauon.colours.level_red
+				)
+				select_line = self.which_line_by_char(self.selection)
+				select_start = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
+				select_width = self.ddt.get_text_w(self.lines[select_line], font) - select_start
+				self.ddt.rect(
+					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
+					self.tauon.colours.level_red
+				)
+			else:
+				select_line = self.which_line_by_char(self.selection)
+				select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
+				self.ddt.rect(
+					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
+					self.tauon.colours.level_red
+				)
+				cursor_line = self.which_line_by_char(self.cursor_position)
+				cursor_start = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
+				cursor_width = self.ddt.get_text_w(self.lines[cursor_line], font) - cursor_start
+				self.ddt.rect(
+					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
+					self.tauon.colours.level_red
+				)
+			self.selection_highlight_inbetweens(select_line, cursor_line, scroll, font)
+
 
 	def paste(self) -> None:
 		if sdl3.SDL_HasClipboardText():
@@ -21976,63 +22046,22 @@ class MultiLineTextBox:
 			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
 				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
 				if click:
-					pre = 0
-					post = 0
 					if self.inp.mouse_position[1] < y -headroom -scroll + 1:
 						self.cursor_position = len(self.text)
 					else:
-						pre, post = self.set_cursor_from_click(headroom, scroll, font, x, False)
-						# for i in range(len(self.text)):
-						# 	post = self.ddt.get_text_w(self.text[0:i + 1], font)
-						# 	# pre_half = int((post - pre) / 2)
-
-						# 	if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
-						# 		diff = post - pre
-						# 		if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
-						# 			self.cursor_position = len(self.text) - i - 1
-						# 		else:
-						# 			self.cursor_position = len(self.text) - i
-						# 		break
-						# 	pre = post
-						# else:
-						# 	self.cursor_position = 0
-					# self.selection = 0
+						self.set_cursor_from_click(scroll, font, x, y, False)
 					self.down_lock = True
 
 			if self.inp.mouse_up:
 				self.down_lock = False
 			if self.down_lock:
-				pre = 0
-				post = 0
 				text = self.text
 				if secret:
 					text = "●" * len(self.text)
 				if self.inp.mouse_position[1] < y -headroom -scroll + 1:
 					self.cursor_position = len(self.text)
 				else:
-					pre, post = self.set_cursor_from_click(headroom, scroll, font, x, True)
-				# if self.inp.mouse_position[0] < x + 1:
-				# 	self.selection = len(text)
-				# else:
-
-				# 	for i in range(len(text)):
-				# 		post = self.ddt.get_text_w(text[0:i + 1], font)
-				# 		# pre_half = int((post - pre) / 2)
-
-				# 		if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
-				# 			diff = post - pre
-
-				# 			if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
-				# 				self.selection = len(text) - i - 1
-
-				# 			else:
-				# 				self.selection = len(text) - i
-
-				# 			break
-				# 		pre = post
-
-				# 	else:
-				# 		self.selection = 0
+					self.set_cursor_from_click(scroll, font, x, y, True)
 
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
@@ -22049,37 +22078,40 @@ class MultiLineTextBox:
 				top -= 12 * self.gui.scale
 
 
-			line = self.which_line_by_char(self.cursor_position)
 
 			self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
+
+			# 	inf_comp = 0
+			# 	text = self.get_selection(0)
+			# 	if secret:
+			# 		text = "●" * len(text)
+			# 	space = self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
+			# 	text = self.get_selection(1)
+			# 	if secret:
+			# 		text = "●" * len(text)
+			# 	space += self.ddt.text((0 + space - inf_comp, headroom-scroll, 4, width, 40000), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255), max_w=width)
+			# 	text = self.get_selection(2)
+			# 	if secret:
+			# 		text = "●" * len(text)
+			# 	self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
+			# else:
+				# no selection
 			if self.selection != self.cursor_position:
 				# text is selected
-				inf_comp = 0
-				text = self.get_selection(0)
-				if secret:
-					text = "●" * len(text)
-				space = self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
-				text = self.get_selection(1)
-				if secret:
-					text = "●" * len(text)
-				space += self.ddt.text((0 + space - inf_comp, headroom-scroll, 4, width, 40000), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255), max_w=width)
-				text = self.get_selection(2)
-				if secret:
-					text = "●" * len(text)
-				self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
-			else:
-				# no selection
-				text = self.text
-				if secret:
-					text = "●" * len(text)
-				self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
+				self.draw_selection_highlight(scroll - headroom, font)
+
+			text = self.text
+			if secret:
+				text = "●" * len(text)
+			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
 
 			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
 			if secret:
 				text = "●" * len(text)
 			space = self.ddt.get_text_w(text, font)
 
+			line = self.which_line_by_char(self.cursor_position)
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
 				self.ddt.rect((0 + space, line*self.text_height  + headroom-scroll, 1 * self.gui.scale, 14 * self.gui.scale), colour)
