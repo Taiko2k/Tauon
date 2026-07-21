@@ -86,8 +86,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from line_profiler import profile
-
 import certifi
 import musicbrainzngs
 import mutagen
@@ -21798,10 +21796,10 @@ class MultiLineTextBox:
 	def get_scroll_output(self, scroll: int, headroom: int, height: int) -> int:
 		test_y = self.pixel_position_from_cursor_position()[1] - scroll
 		scroll_output = 0
-		if test_y < -headroom: # scroll up
-			scroll_output = test_y + headroom
-		elif test_y > height-headroom: # scroll down
-			scroll_output = test_y -height+headroom
+		if test_y < -headroom + self.text_height: # scroll up
+			scroll_output = test_y + headroom - self.text_height
+		elif test_y > height-headroom - self.text_height: # scroll down
+			scroll_output = test_y -height+headroom + self.text_height
 		return scroll_output
 
 
@@ -46604,39 +46602,39 @@ class TimedLyricsEdit:
 
 	# UNSYNCED EDITING FUNCTIONS
 
-	def edit_static(self) -> None:
-		track_object = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
-		if not target.parent.is_dir():
-			target.parent.mkdir()
-		with open(target, "w", encoding="utf-8") as lyrics_file:
-			if self.text:
-				lyrics_file.write( self.text )
-			else:
-				lyrics_file.write( _("Put the lyrics in this file and save it."))
-		if self.tauon.windows:
-			os.startfile(target)
-		elif self.tauon.macos:
-			subprocess.call(["open", "-t", target])
-		else:
-			subprocess.call(["xdg-open", target])
+	# def edit_static(self) -> None:
+	# 	track_object = self.pctl.master_library[self.struct_track]
+	# 	target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
+	# 	if not target.parent.is_dir():
+	# 		target.parent.mkdir()
+	# 	with open(target, "w", encoding="utf-8") as lyrics_file:
+	# 		if self.text:
+	# 			lyrics_file.write( self.text )
+	# 		else:
+	# 			lyrics_file.write( _("Put the lyrics in this file and save it."))
+	# 	if self.tauon.windows:
+	# 		os.startfile(target)
+	# 	elif self.tauon.macos:
+	# 		subprocess.call(["open", "-t", target])
+	# 	else:
+	# 		subprocess.call(["xdg-open", target])
 
 
-	def reload_lyric_file(self) -> None:
-		track = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
-		with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
-			new_lyrics = lyric_file.read().strip()
-		track = self.pctl.master_library[self.struct_track]
-		if not new_lyrics == _("Put the lyrics in this file and save it."):
-			if not new_lyrics == track.lyrics:
-				self.text = new_lyrics
-				if self.inp.key_lalt or self.inp.key_ralt:
-					track.lyrics = new_lyrics
-				# self.tauon.write_lyrics(track)
-		#self.test_update()
-		target.unlink()
-		self.queue_next_frame = True
+	# def reload_lyric_file(self) -> None:
+	# 	track = self.pctl.master_library[self.struct_track]
+	# 	target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
+	# 	with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
+	# 		new_lyrics = lyric_file.read().strip()
+	# 	track = self.pctl.master_library[self.struct_track]
+	# 	if not new_lyrics == _("Put the lyrics in this file and save it."):
+	# 		if not new_lyrics == track.lyrics:
+	# 			self.text = new_lyrics
+	# 			if self.inp.key_lalt or self.inp.key_ralt:
+	# 				track.lyrics = new_lyrics
+	# 			# self.tauon.write_lyrics(track)
+	# 	#self.test_update()
+	# 	target.unlink()
+	# 	self.queue_next_frame = True
 
 
 	def test_update(self) -> None:
@@ -46670,7 +46668,8 @@ class TimedLyricsEdit:
 		x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 		x -= 100 * self.gui.scale
 		w = self.window_size[0] - x - 30 * self.gui.scale
-		h = int(self.window_size[1] - 100 * self.gui.scale)
+		y = int(self.gui.panelY)
+		h = int(self.window_size[1] - self.gui.panelBY - self.gui.panelY) #int(self.window_size[1] - 100 * self.gui.scale)
 		offset = 20*self.gui.scale
 
 		old_pos = self.lyrics_position
@@ -46690,7 +46689,7 @@ class TimedLyricsEdit:
 		self.unsynced_text_box.text = self.text
 		self.lyrics_position -= self.unsynced_text_box.draw(
 			x, y, self.colours.lyrics, True,
-			font = self.font, width = ( w ), height = h, headroom=70*self.gui.scale,
+			font = self.font, width = ( w ), height = h, headroom=0,#70*self.gui.scale,
 			scroll=-self.lyrics_position
 		)
 		# the draw function returns scroll info for if arrow keys move the cursor offscreen
@@ -46738,7 +46737,7 @@ class TimedLyricsEdit:
 				self.inp.right_click = False
 				self.inp.level_2_right_click = False
 			else:
-				self.save()
+				self.save(False)
 		# if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
 		# 	self.save(False)
 		buttons_x += widths[4] + x_gap
@@ -46760,9 +46759,9 @@ class TimedLyricsEdit:
 			btx_top = buttons_x
 			bty_top = buttons_y
 
-		if self.button(_("Edit Lyrics"), btx_top, bty_top, self.font, tooltip=_("Opens an external editor."))[0]:
-			self.edit_static()
-		btx_top += widths[1] + x_gap -7*self.gui.scale
+		# if self.button(_("Edit Lyrics"), btx_top, bty_top, self.font, tooltip=_("Opens an external editor."))[0]:
+		# 	self.edit_static()
+		# btx_top += widths[1] + x_gap -7*self.gui.scale
 
 		match self.tauon.now_searching:
 			case "off":
@@ -46781,55 +46780,54 @@ class TimedLyricsEdit:
 				self.test_update()
 				self.tauon.now_searching = "off"
 
-		if can_load and not self.box_open:
-			# measure box height
-			box_width = 400*self.gui.scale
-			drop_w, text_height = self.ddt.get_text_wh(
-					_("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""),
-					self.font,
-					box_width - 2*offset,
-					True
-				)
-			too_wide = widths[2] + widths[3] + widths[6] + 3*offset > box_width
-			if too_wide:
-				button_height = self.line_height + 28*self.gui.scale + offset/2
-			else:
-				button_height = self.line_height/2 + 14*self.gui.scale
-			box_height = text_height + button_height + offset
-			x, y = self.window_size[0]/2, self.window_size[1]/2
+		# if can_load and not self.box_open:
+		# 	# measure box height
+		# 	box_width = 400*self.gui.scale
+		# 	drop_w, text_height = self.ddt.get_text_wh(
+		# 			_("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""),
+		# 			self.font,
+		# 			box_width - 2*offset,
+		# 			True
+		# 		)
+		# 	too_wide = widths[2] + widths[3] + widths[6] + 3*offset > box_width
+		# 	if too_wide:
+		# 		button_height = self.line_height + 28*self.gui.scale + offset/2
+		# 	else:
+		# 		button_height = self.line_height/2 + 14*self.gui.scale
+		# 	box_height = text_height + button_height + offset
+		# 	x, y = self.window_size[0]/2, self.window_size[1]/2
 
-			rect = ( x - 0.5*box_width, y - 0.5*box_height, box_width, box_height)
-			self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
-			txt = self.colours.box_button_text
-			x0 = rect[0] + offset
-			y0 = rect[1] + offset
-			self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""), txt, self.font)
+		# 	rect = ( x - 0.5*box_width, y - 0.5*box_height, box_width, box_height)
+		# 	self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
+		# 	txt = self.colours.box_button_text
+		# 	x0 = rect[0] + offset
+		# 	y0 = rect[1] + offset
+		# 	self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""), txt, self.font)
 
-			y0 += text_height - 7*self.gui.scale
-			x0 = rect[0] + offset
-			if self.button(_("Read Back"), x0, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes."))[0]:
-				self.reload_lyric_file()
-			x0 += offset + widths[2]
-			if self.button(_("Cancel"), x0, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file."))[0]:
-				lyric_file.unlink()
-			if too_wide:
-				x0 = rect[0] + offset/2
-				y0 += self.line_height/2 + 14*self.gui.scale + offset
-			else:
-				x0 += offset + widths[3]
-			if self.button(_("Reopen Editor"), x0, y0, self.font, tooltip=_("In case you closed it by accident."))[0]:
-				if self.tauon.windows:
-					os.startfile(lyric_file)
-				elif self.tauon.macos:
-					subprocess.call(["open", "-t", lyric_file])
-				else:
-					subprocess.call(["xdg-open", lyric_file])
-		elif self.show_save_dialog:
+		# 	y0 += text_height - 7*self.gui.scale
+		# 	x0 = rect[0] + offset
+		# 	if self.button(_("Read Back"), x0, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes."))[0]:
+		# 		self.reload_lyric_file()
+		# 	x0 += offset + widths[2]
+		# 	if self.button(_("Cancel"), x0, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file."))[0]:
+		# 		lyric_file.unlink()
+		# 	if too_wide:
+		# 		x0 = rect[0] + offset/2
+		# 		y0 += self.line_height/2 + 14*self.gui.scale + offset
+		# 	else:
+		# 		x0 += offset + widths[3]
+		# 	if self.button(_("Reopen Editor"), x0, y0, self.font, tooltip=_("In case you closed it by accident."))[0]:
+		# 		if self.tauon.windows:
+		# 			os.startfile(lyric_file)
+		# 		elif self.tauon.macos:
+		# 			subprocess.call(["open", "-t", lyric_file])
+		# 		else:
+		# 			subprocess.call(["xdg-open", lyric_file])
+		if self.show_save_dialog:
 			self.save_dialog()
 
 
 
-	@profile
 	def render(self) -> None:
 		box = int(self.window_size[1] * 0.4 + 120 * self.gui.scale)
 		box = min(self.window_size[0] // 2, box)
