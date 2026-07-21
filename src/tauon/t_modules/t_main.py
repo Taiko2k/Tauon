@@ -21696,15 +21696,10 @@ class TimedLyricsRen:
 			self.temp_line = line_active
 
 
-		if self.inp.mouse_wheel:
-			scroll_distance = self.smooth_scroll.scroll("timed lyrics", 30*self.gui.scale)
-			if side_panel:
-				if self.coll((x, y, w, h)):
-					self.scroll_position += scroll_distance
-				self.recenter_timeout.set()
-			elif self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
-				self.scroll_position += scroll_distance
-				self.recenter_timeout.set()
+		scroll = self.scroll_position
+		self.scroll_position -= self.smooth_scroll.get_scroll("timed lyrics",(x,y,w,h),30*self.gui.scale)
+		if self.scroll_position != scroll:
+			self.recenter_timeout.set()
 
 
 		self.scroll_position = round(self.scroll_position)
@@ -35626,8 +35621,8 @@ class StandardPlaylist:
 				self.smooth_scroll.add_wheel_motion(
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
-			
-			if inp.touch_released:
+
+			if inp.touch_released and coll_point(self.smooth_scroll.start_location, scroll_area):
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
 				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
@@ -38459,23 +38454,7 @@ class PlaylistBox:
 			tab_start = x + 4 * self.gui.scale
 
 		scroll_area = (x, y, w, h)
-		scroll_source = "playlist side pane"
-		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
-		use_smooth_scroll = (
-			self.tauon.smooth_scroll.enabled()
-			or touch_scroll
-			or self.tauon.smooth_scroll.active(scroll_source)
-		)
-		if use_smooth_scroll:
-			if self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, row_step)
-			if self.inp.touch_released:
-				self.tauon.smooth_scroll.release_touch(scroll_source)
-			elif touch_scroll:
-				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
-			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_step, 1)
-		elif self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-			self.scroll_on -= self.inp.mouse_wheel
+		self.scroll_on += self.tauon.smooth_scroll.get_scroll("playlist side pane", scroll_area, row_step)  / max(row_step, 1)
 
 		self.scroll_on = min(self.scroll_on, max_scroll)
 		self.scroll_on = max(self.scroll_on, 0)
@@ -40911,8 +40890,10 @@ class MetaBox:
 				self.showcase_menu.activate(track)
 
 		# Test for scroll wheel input
-		if self.inp.mouse_wheel != 0 and self.coll((x + 10, y, w - 10, h)):
-			self.lyrics_ren_mini.lyrics_position += self.inp.mouse_wheel * 30 * self.gui.scale
+		scroll_area = (x + 10, y, w - 10, h)
+		lp = self.lyrics_ren_mini.lyrics_position
+		self.lyrics_ren_mini.lyrics_position -= self.tauon.smooth_scroll.get_scroll("sidebar lyrics", scroll_area, (30*self.gui.scale))
+		if self.lyrics_ren_mini.lyrics_position != lp:
 			if self.lyrics_ren_mini.lyrics_position > 0:
 				self.lyrics_ren_mini.lyrics_position = 0
 				self.tauon.lyric_side_top_pulse.pulse()
@@ -41415,25 +41396,8 @@ class ArtistInfoBox:
 				self.w = width
 
 			scroll_max = max(self.th - text_area_h, 0)
-
-			touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, (x, y, w, h))
-			use_smooth_scroll = (
-				self.smooth_scroll.enabled()
-				or touch_scroll
-				or self.smooth_scroll.active("artistinfo")
-			)
-			artistinfo_scroll_step = round(10 * self.gui.scale)
-			if use_smooth_scroll:
-				if self.coll((x, y, w, h)) and self.inp.mouse_wheel:
-					self.smooth_scroll.add_wheel_motion("artistinfo", -self.inp.mouse_wheel, artistinfo_scroll_step)
-				if self.inp.touch_released:
-					self.smooth_scroll.release_touch("artistinfo")
-				elif touch_scroll:
-					self.smooth_scroll.apply_touch_drag("artistinfo", -self.inp.touch_scroll_y)
-				self.scroll_y += self.smooth_scroll.step_motion("artistinfo")
-			elif self.coll((x, y, w, h)):
-				scroll_distance = self.smooth_scroll.scroll("artistinfo", artistinfo_scroll_step)
-				self.scroll_y -= scroll_distance
+			coll = (x, y, w, h)
+			self.scroll_y += self.smooth_scroll.get_scroll("artistinfo",coll,round(20*self.gui.scale))
 			self.scroll_y = max(self.scroll_y, 0)
 			self.scroll_y = min(self.scroll_y, scroll_max)
 
@@ -43479,7 +43443,8 @@ class Showcase:
 						self.guitar_chords.auto_scroll = True
 			elif True and self.prefs.show_lyrics_showcase and timed_ready:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
-				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
+				h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
+				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w, h=h)
 			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				x = int(x + box + (self.window_size[0] - x - box) / 2)
@@ -44644,12 +44609,14 @@ class SmoothScroll:
 		self.tauon = tauon
 		self.inp = tauon.inp
 		self.gui = tauon.gui
+		self.coll = tauon.coll
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
 		self.scroll_debug_modes: dict[str, str] = {}
 		self.scroll_debug_last_logs: dict[str, float] = {}
 		self.timeout = 0.5
+		self.start_location: tuple[int, int] = (0,0)
 
 	def _pixel_scale(self) -> float:
 		return max(self.gui.scale, 0.1)
@@ -44729,6 +44696,26 @@ class SmoothScroll:
 		self.scroll_timeouts[source].set()
 
 		return scroll_distance
+
+	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0) -> float:
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.start_location, scroll_area)
+		use_smooth_scroll = (
+			self.enabled()
+			or touch_scroll
+			or self.active(scroll_source)
+		)
+		if use_smooth_scroll:
+			if self.coll(scroll_area) and self.inp.mouse_wheel:
+				self.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, coeff)
+			if self.inp.touch_released and coll_point(self.start_location, scroll_area):
+				self.release_touch(scroll_source)
+			elif touch_scroll:
+				self.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
+			return self.step_motion(scroll_source)
+		elif self.coll(scroll_area):
+			return self.scroll(scroll_source, coeff)
+		else:
+			return 0.0
 
 	def _state(self, source: str) -> ScrollMotionState:
 		if source not in self.physics_states:
@@ -45931,9 +45918,8 @@ class TimedLyricsEdit:
 			self.inp.key_right_press = False
 
 		# scroll
-		if self.inp.mouse_wheel and not (self.inp.key_lalt or self.inp.key_ralt):
-			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
-			self.scroll_position += scroll_distance
+		if not (self.inp.key_lalt or self.inp.key_ralt):
+			self.scroll_position -= self.tauon.smooth_scroll.get_scroll("timed lyrics editor",(x,y,w,h),30*self.gui.scale)
 			self.recenter_timeout.set()
 
 		highlight = True
@@ -46358,8 +46344,7 @@ class TimedLyricsEdit:
 			self.lyrics_position += 35 * self.gui.scale
 		if self.inp.key_down_press:
 			self.lyrics_position -= 35 * self.gui.scale
-		if self.inp.mouse_wheel:
-			self.lyrics_position += self.scroll.scroll("timed lyrics", 30*self.gui.scale)
+		self.lyrics_position -= self.scroll.get_scroll("lyrics edit", (x,y,w,h), 30*self.gui.scale)
 		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
 
 		tw, th = self.ddt.get_text_wh(self.text + "\n", self.font, w, True)
@@ -46606,9 +46591,10 @@ class TimedLyricsEdit:
 					round( max(self.window_size[0] - 90*self.gui.scale, self.window_size[0]*0.98) ),
 					round( max( gcx - 145*self.gui.scale, 0 )) ]
 				self.x_posns[2] = max(self.x_posns[1] + 90*self.gui.scale, gcx)
+			h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
 
 			if self.view_is_synced:
-				self.synced_render(track.index, gcx, y, hide_art, w)
+				self.synced_render(track.index, gcx, y, hide_art, w, h)
 			else:
 				self.unsynced_render(x, y, box, hide_art)
 
@@ -54737,6 +54723,7 @@ def main(holder: Holder) -> None:
 					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
+					tauon.smooth_scroll.start_location = active_touch.start_position_px
 					gui.request_frame()
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
 					active_touch.is_gesture = True
