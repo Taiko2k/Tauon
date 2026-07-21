@@ -2,22 +2,17 @@
 
 ## Questions and Issues
 
-You feel free to ask questions as a new Github issue. Please do not comment in an existing or old issue unless you're the author or you're sure its directly related.
-
-You can also use the github discussions feature. If your question is implicitly a bug/feature request then please create a new issue.
+Feel free to create new Issues or Discussions. Bugs or feature requests go in Issues. Questions go in Discussions. Please do not comment in an existing or old issue unless you're the author or you're sure its directly related. If your issue is only tangentially related to an existing issue then create a new issue.
 
 ## Translations
 
-Edit applicable .po files in the /locale directory. Please do not edit the .pot file directly. Then send a PR.
+Edit applicable `.po` files in the /locale directory. Then send a PR. (Please do not edit the `.pot` file)
 
 ## Code Contributions
 
-The UI has strict minimally focused design. For contributions please try to understand the existing design language as much as possible.
+Bug fix PR's are welcome, but try to keep your PR's targeted and specific. If you're fixing muitlple issues then create multiple PR's. This requirement may be relaxed for established contributers.
 
-Large scale automated edits will likely be rejected.
+For new features please discuss with maintainers first. Unsoliceted feature PR's may be rejected.
 
-For major new features please discuss with maintainers first.
+Large scale automated edits will be rejected.
 
-## Other
-
-Other areas for contribution could include website design, promotion and documentation.
