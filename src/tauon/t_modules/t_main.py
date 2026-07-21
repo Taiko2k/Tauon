@@ -21736,30 +21736,49 @@ class MultiLineTextBox:
 		pos = pos[0] + self.x, pos[1] - scroll + self.y + offset
 		self.set_cursor_from_click(scroll, False, pos)
 
-	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int, font: int) -> None:
+	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[list, str]|None:
 		test = start_line - end_line
-		if -1 <= test <= 1:
-			return
+		if -1 < test < 1:
+			return None
+		if test in (-1, 1):
+			temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+			return [0, (min(start_line,end_line)+1) * self.text_height - scroll, 4, 0, 40000], temp
 		else:
+			highlight_color = ColourRGBA(40, 120, 180, 255)
 			start = min(start_line,end_line)
 			end = max(start_line, end_line)
 			for i, line in enumerate(self.lines[start+1:end]):
-				x = self.ddt.get_text_w(line, font)
+				x = self.ddt.get_text_w(line, self.font)
 				y = (start+i+1) * self.text_height - scroll
 				self.ddt.rect(
 					(0, y - 0.25*self.text_height, x, self.text_height),
-					ColourRGBA(40, 120, 180, 255)
+					highlight_color
 				)
 
+		text = '\n'.join(self.lines[start+1:end])
+		temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+		return [0, (start+1) * self.text_height - scroll, 4, 0, 40000], text + '\n' + temp
 
-	def draw_selection_highlight(self, scroll: int, font: int) -> None:
-		color = ColourRGBA(40, 120, 180, 255)
+
+	def draw_selection_highlight(self, scroll: int, font: int, text_color: ColourRGBA, width: int) -> None:
+		highlight_color = ColourRGBA(40, 120, 180, 255)
 		rect1 = self.pixel_position_from_cursor_position()
 		rect2 = self.pixel_position_from_cursor_position(True)
 		if rect1[1] == rect2[1]:
 			self.ddt.rect(
 				(rect1[0], rect1[1] - scroll - 0.25*self.text_height, rect2[0]-rect1[0], self.text_height),
-				color
+				highlight_color
+			)
+			point1 = max(self.selection, self.cursor_position)
+			point2 = min(self.selection, self.cursor_position)
+			hl_text = self.text[-point1:-point2]
+			xx = min(rect1[0], rect2[0])
+			self.ddt.text(
+				(xx, rect1[1] - scroll),
+				hl_text,
+				text_color,
+				self.font,
+				bg=highlight_color,
 			)
 		else:
 			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
@@ -21768,30 +21787,54 @@ class MultiLineTextBox:
 				cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
 				self.ddt.rect(
 					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
-					color
+					highlight_color
 				)
 				select_line = self.which_line_by_char(self.selection)
+				partial_temp = len(self.text[:-self.selection].split('\n')[-1])
 				select_start = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
 				select_width = self.ddt.get_text_w(self.lines[select_line], font) - select_start
+				partial_line_text = self.lines[select_line][partial_temp:]
 				self.ddt.rect(
 					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
-					color
+					highlight_color
+				)
+				self.ddt.text(
+					(select_start, rect2[1] - scroll),
+					partial_line_text,
+					text_color,
+					self.font,
+					bg=highlight_color,
 				)
 			else:
 				select_line = self.which_line_by_char(self.selection)
 				select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
 				self.ddt.rect(
 					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
-					color
+					highlight_color
 				)
 				cursor_line = self.which_line_by_char(self.cursor_position)
+				partial_temp = len(self.text[:-self.cursor_position].split('\n')[-1])
 				cursor_start = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
 				cursor_width = self.ddt.get_text_w(self.lines[cursor_line], font) - cursor_start
+				partial_line_text = self.lines[cursor_line][partial_temp:]
 				self.ddt.rect(
 					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
-					color
+					highlight_color
 				)
-			self.selection_highlight_inbetweens(select_line, cursor_line, scroll, font)
+				self.ddt.text(
+					(cursor_start, rect1[1] - scroll),
+					partial_line_text,
+					text_color,
+					self.font,
+					bg=highlight_color,
+				)
+
+			highlight_info = self.selection_highlight_inbetweens(select_line, cursor_line, scroll)
+			if highlight_info is not None:
+				highlight_info[0][3] = width
+				pos = tuple(highlight_info[0])
+				text = highlight_info[1]
+				self.ddt.text(pos, text, text_color, self.font, bg=highlight_color)
 
 	def get_scroll_output(self, scroll: int, headroom: int, height: int) -> int:
 		test_y = self.pixel_position_from_cursor_position()[1] - scroll
@@ -22164,9 +22207,7 @@ class MultiLineTextBox:
 			# 	self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
 			# else:
 				# no selection
-			if self.selection != self.cursor_position:
-				# text is selected
-				self.draw_selection_highlight(scroll - headroom, font)
+
 
 			text = self.text
 			if secret:
@@ -22185,6 +22226,10 @@ class MultiLineTextBox:
 
 			if click:
 				self.selection = self.cursor_position
+
+			if self.selection != self.cursor_position:
+				# text is selected
+				self.draw_selection_highlight(scroll - headroom, font, colour, width)
 		else:
 			width -= round(15 * self.gui.scale)
 			text = self.text
