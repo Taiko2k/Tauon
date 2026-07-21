@@ -45,6 +45,7 @@ from requests.models import PreparedRequest
 
 from tauon.t_modules.t_enums import PlayerState, PlayingState
 from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
+from tauon.t_modules.t_replaygain import replaygain_multiplier
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -991,55 +992,47 @@ def player4(tauon: Tauon) -> None:
 		pctl.pause_only()
 
 	def calc_rg(track: TrackClass | None) -> float:
-		if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
+		if prefs.replay_gain == 0 or track is None:
 			pctl.active_replaygain = 0
-			return 0
+			return replaygain_multiplier(None, None, prefs.replay_preamp)
 
-		g = 0
-		p = 1
+		g: float | None = None
+		p: float | None = None
 
-		if track is not None:
-			tg = track.replaygain_track_gain
-			tp = track.replaygain_track_peak
-			ag = track.replaygain_album_gain
-			ap = track.replaygain_album_peak
+		tg = track.replaygain_track_gain
+		tp = track.replaygain_track_peak
+		ag = track.replaygain_album_gain
+		ap = track.replaygain_album_peak
 
-			if prefs.replay_gain > 0:
-				if prefs.replay_gain == 3 and tg is not None and ag is not None:
-					gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
-					if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
-						g = tg
-						if tp is not None:
-							p = tp
-					else:
-						g = ag
-						if ap is not None:
-							p = ap
-				elif (prefs.replay_gain == 1 and tg is not None) or (
-					prefs.replay_gain == 2 and ag is None and tg is not None
-				):
-					g = tg
-					if tp is not None:
-						p = tp
-				elif ag is not None:
-					g = ag
-					if ap is not None:
-						p = ap
-				elif tg is not None and ag is None:
-					g = tg
-					if tp is not None:
-						p = tp
+		if prefs.replay_gain == 3 and tg is not None and ag is not None:
+			gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
+			if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
+				g, p = tg, tp
+			else:
+				g, p = ag, ap
+		elif (prefs.replay_gain == 1 and tg is not None) or (
+			prefs.replay_gain == 2 and ag is None and tg is not None
+		):
+			g, p = tg, tp
+		elif ag is not None:
+			g, p = ag, ap
+		elif tg is not None:
+			g, p = tg, tp
+
+		if g is None or not math.isfinite(g):
+			pctl.active_replaygain = 0
+			logging.debug("No usable ReplayGain tag detected")
+			return replaygain_multiplier(None, None, prefs.replay_preamp)
 
 		logging.debug("Detected ReplayGain")
 		logging.debug("GAIN: " + str(g))
 		logging.debug("PEAK: " + str(p))
-		logging.debug("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
-
-		if p == 0:
-			logging.warning("Detected ReplayGain peak of 0")
-			return 1
+		multiplier = replaygain_multiplier(g, p, prefs.replay_preamp)
+		logging.debug("FINAL: " + str(multiplier))
+		if p is not None and (not math.isfinite(p) or p <= 0):
+			logging.warning("Ignoring invalid ReplayGain peak: %s", p)
 		pctl.active_replaygain = g
-		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
+		return multiplier
 
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)

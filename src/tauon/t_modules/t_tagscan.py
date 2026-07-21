@@ -33,13 +33,19 @@ import wave
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import mutagen.id3
+import mutagen.mp4
+
 from tauon.t_modules.t_extra import process_odat
+from tauon.t_modules.t_replaygain import parse_r128_gain, parse_replaygain_db
 
 if TYPE_CHECKING:
 	from io import BufferedReader, BytesIO
 	from types import TracebackType
 
 	from typing_extensions import Self
+
+	from tauon.t_modules.t_main import TrackClass
 
 
 LRC_TIMESTAMP_RE = re.compile(r"\[\d+:\d{1,2}\.\d{2,3}\]")
@@ -239,6 +245,17 @@ class TrackFile:
 		self.file = Path(self.filepath).open("rb")
 		return self
 
+	@staticmethod
+	def read_mutagen_tags(tags: object, track: TrackClass) -> bool:
+		"""Dispatch a supported Mutagen tag container to its scanner."""
+		if isinstance(tags, mutagen.mp4.MP4Tags):
+			read_mp4_tags(tags, track)
+			return True
+		if isinstance(tags, mutagen.id3.ID3):
+			read_id3_tags(tags, track)
+			return True
+		return False
+
 	def __exit__(
 		self,
 		exc_type: type[BaseException] | None,
@@ -262,6 +279,191 @@ class TrackFile:
 					self.synced_lyrics = lyrics
 			elif not self.lyrics:
 				self.lyrics = lyrics
+
+
+def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
+	"""Copy ID3 metadata into a library track."""
+	def natural_get(frame: str, attr: str | None = None) -> str:
+		frames = tags.getall(frame)
+		value = str(frames[0].text[0]) if frames and frames[0].text else ""
+		if attr is not None:
+			setattr(track, attr, value)
+		return value
+
+	natural_get("TIT2", "title")
+	natural_get("TPE1", "artist")
+	natural_get("TPE2", "album_artist")
+	natural_get("TCON", "genre")
+	natural_get("TALB", "album")
+	natural_get("TDRC", "date")
+	natural_get("TCOM", "composer")
+	natural_get("COMM", "comment")
+	process_odat(track, natural_get("TDOR"))
+
+	for frame in tags.getall("POPM"):
+		if frame.rating:
+			track.POPM = frame.rating
+
+	if len(track.comment) > 4 and track.comment[2] == "+":
+		track.comment = ""
+	if track.comment.startswith("000"):
+		track.comment = ""
+
+	frames = tags.getall("USLT")
+	if frames:
+		track.lyrics = frames[0].text
+		if 0 < len(track.lyrics) < 150 and (
+			"unavailable" in track.lyrics or ".com" in track.lyrics or "www." in track.lyrics
+		):
+			track.lyrics = ""
+
+	frames = tags.getall("TPE1")
+	if frames:
+		artists = [value for frame in frames for value in frame.text]
+		if len(artists) > 1:
+			track.artists = artists
+			track.artist = "; ".join(artists)
+
+	frames = tags.getall("TCON")
+	if frames:
+		genres = [value for frame in frames for value in frame.text]
+		if len(genres) > 1:
+			track.genres = genres
+			track.genre = " / ".join(genres)
+
+	track_no = natural_get("TRCK")
+	track.track_total = ""
+	track.track_number = ""
+	if track_no and track_no != "null":
+		if "/" in track_no:
+			track.track_number, track.track_total = track_no.split("/", 1)
+		else:
+			track.track_number = track_no
+
+	disc = natural_get("TPOS")
+	track.disc_total = ""
+	track.disc_number = ""
+	if disc:
+		if "/" in disc:
+			track.disc_number, track.disc_total = disc.split("/", 1)
+		else:
+			track.disc_number = disc
+
+	for item in tags.getall("UFID"):
+		if item.owner == "http://musicbrainz.org":
+			track.musicbrainz_recordingid = item.data.decode()
+
+	frames = tags.getall("TSOP")
+	if frames:
+		track.artist_sort = frames[0].text[0]
+
+	for item in tags.getall("TXXX"):
+		if item.desc == "MusicBrainz Release Track Id":
+			track.musicbrainz_trackid = item.text[0]
+		elif item.desc == "MusicBrainz Album Id":
+			track.musicbrainz_albumid = item.text[0]
+		elif item.desc == "MusicBrainz Release Group Id":
+			track.musicbrainz_releasegroupid = item.text[0]
+		elif item.desc == "MusicBrainz Artist Id":
+			track.musicbrainz_artistids = [uuid for value in item.text for uuid in value.split("/")]
+
+		try:
+			desc = item.desc.lower()
+			if desc == "replaygain_track_gain":
+				track.replaygain_track_gain = parse_replaygain_db(item.text[0])
+			elif desc == "replaygain_track_peak":
+				track.replaygain_track_peak = float(item.text[0])
+			elif desc == "replaygain_album_gain":
+				track.replaygain_album_gain = parse_replaygain_db(item.text[0])
+			elif desc == "replaygain_album_peak":
+				track.replaygain_album_peak = float(item.text[0])
+			elif desc == "r128_track_gain" and track.replaygain_track_gain is None:
+				track.replaygain_track_gain = parse_r128_gain(item.text[0])
+			elif desc == "r128_album_gain" and track.replaygain_album_gain is None:
+				track.replaygain_album_gain = parse_r128_gain(item.text[0])
+		except (TypeError, ValueError, UnicodeError):
+			logging.exception("Tag Scan: Read ReplayGain ID3 error")
+			logging.debug(track.fullpath)
+
+		if item.desc == "FMPS_RATING":
+			track.FMPS_Rating = float(item.text[0])
+
+
+def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
+	"""Copy MP4/iTunes metadata into a library track."""
+	def get_text(key: str) -> str:
+		return str(tags[key][0]) if key in tags else ""
+
+	def get_bytes(key: str) -> bytes:
+		value = tags[key][0]
+		if isinstance(value, bytes):
+			return value
+		raise TypeError(f"Expected a binary MP4 freeform value for {key}")
+
+	def get_pair(key: str) -> tuple[int, int] | None:
+		if key not in tags:
+			return None
+		value = tags[key][0]
+		if isinstance(value, tuple) and len(value) == 2:
+			return int(value[0]), int(value[1])
+		raise TypeError(f"Expected an MP4 number pair for {key}")
+
+	track.title = get_text("\xa9nam")
+	track.album = get_text("\xa9alb")
+	track.artist = get_text("\xa9ART")
+	track.album_artist = get_text("aART")
+	track.composer = get_text("\xa9wrt")
+	track.date = get_text("\xa9day")
+	track.comment = get_text("\xa9cmt")
+	track.genre = get_text("\xa9gen")
+	if "\xa9lyr" in tags:
+		track.lyrics = get_text("\xa9lyr")
+
+	track.track_total = ""
+	track.track_number = ""
+	number = get_pair("trkn")
+	if number:
+		track.track_number = str(number[0])
+		if number[1]:
+			track.track_total = str(number[1])
+
+	track.disc_total = ""
+	track.disc_number = ""
+	number = get_pair("disk")
+	if number:
+		track.disc_number = str(number[0])
+		if number[1]:
+			track.disc_total = str(number[1])
+
+	freeform_fields = {
+		"----:com.apple.iTunes:MusicBrainz Track Id": "musicbrainz_recordingid",
+		"----:com.apple.iTunes:MusicBrainz Release Track Id": "musicbrainz_trackid",
+		"----:com.apple.iTunes:MusicBrainz Album Id": "musicbrainz_albumid",
+		"----:com.apple.iTunes:MusicBrainz Release Group Id": "musicbrainz_releasegroupid",
+	}
+	for key, attr in freeform_fields.items():
+		if key in tags:
+			setattr(track, attr, get_bytes(key).decode())
+
+	artist_ids = "----:com.apple.iTunes:MusicBrainz Artist Id"
+	if artist_ids in tags:
+		track.musicbrainz_artistids = [value.decode() for value in tags[artist_ids]]
+
+	gain_fields = {
+		"----:com.apple.iTunes:replaygain_track_gain": "replaygain_track_gain",
+		"----:com.apple.iTunes:replaygain_album_gain": "replaygain_album_gain",
+	}
+	for key, attr in gain_fields.items():
+		if key in tags:
+			setattr(track, attr, parse_replaygain_db(get_bytes(key)))
+
+	peak_fields = {
+		"----:com.apple.iTunes:replaygain_track_peak": "replaygain_track_peak",
+		"----:com.apple.iTunes:replaygain_album_peak": "replaygain_album_peak",
+	}
+	for key, attr in peak_fields.items():
+		if key in tags:
+			setattr(track, attr, float(get_bytes(key).decode()))
 
 
 class Flac(TrackFile):
@@ -354,17 +556,17 @@ class Flac(TrackFile):
 					elif a in ("lyrics", "syncedlyrics", "unsyncedlyrics"):
 						self.set_vorbis_lyrics(a, b)
 					elif a == "replaygain_track_gain":
-						self.replaygain_track_gain = float(
-							b.decode("utf-8").lower().strip(" db").replace(",", ".")
-						)
+						self.replaygain_track_gain = parse_replaygain_db(b)
 					elif a == "replaygain_track_peak":
 						self.replaygain_track_peak = float(b.decode("utf-8").replace(",", "."))
 					elif a == "replaygain_album_gain":
-						self.replaygain_album_gain = float(
-							b.decode("utf-8").lower().strip(" db").replace(",", ".")
-						)
+						self.replaygain_album_gain = parse_replaygain_db(b)
 					elif a == "replaygain_album_peak":
 						self.replaygain_album_peak = float(b.decode("utf-8").replace(",", "."))
+					elif a == "r128_track_gain" and self.replaygain_track_gain is None:
+						self.replaygain_track_gain = parse_r128_gain(b)
+					elif a == "r128_album_gain" and self.replaygain_album_gain is None:
+						self.replaygain_album_gain = parse_r128_gain(b)
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
 					elif a == "fmps_rating":
@@ -634,13 +836,17 @@ class Opus(TrackFile):
 						# logging.info(b)
 
 					elif a == "replaygain_track_gain":
-						self.replaygain_track_gain = float(b.decode("utf-8").lower().strip(" db"))
+						self.replaygain_track_gain = parse_replaygain_db(b)
 					elif a == "replaygain_track_peak":
 						self.replaygain_track_peak = float(b.decode("utf-8"))
 					elif a == "replaygain_album_gain":
-						self.replaygain_album_gain = float(b.decode("utf-8").lower().strip(" db"))
+						self.replaygain_album_gain = parse_replaygain_db(b)
 					elif a == "replaygain_album_peak":
 						self.replaygain_album_peak = float(b.decode("utf-8"))
+					elif a == "r128_track_gain" and self.replaygain_track_gain is None:
+						self.replaygain_track_gain = parse_r128_gain(b)
+					elif a == "r128_album_gain" and self.replaygain_album_gain is None:
+						self.replaygain_album_gain = parse_r128_gain(b)
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
 					elif a in ("disctotal", "totaldiscs"):
@@ -829,13 +1035,17 @@ class Ape(TrackFile):
 				elif key == "lyrics":
 					self.lyrics = value
 				elif key == "replaygain_track_gain":
-					self.replaygain_track_gain = float(value.lower().strip(" db"))
+					self.replaygain_track_gain = parse_replaygain_db(value)
 				elif key == "replaygain_track_peak":
 					self.replaygain_track_peak = float(value)
 				elif key == "replaygain_album_gain":
-					self.replaygain_album_gain = float(value.lower().strip(" db"))
+					self.replaygain_album_gain = parse_replaygain_db(value)
 				elif key == "replaygain_album_peak":
 					self.replaygain_album_peak = float(value)
+				elif key == "r128_track_gain" and self.replaygain_track_gain is None:
+					self.replaygain_track_gain = parse_r128_gain(value)
+				elif key == "r128_album_gain" and self.replaygain_album_gain is None:
+					self.replaygain_album_gain = parse_r128_gain(value)
 				elif parse_mbids_from_vorbis(self, key, value):
 					pass
 				elif key == "cover art (front)":

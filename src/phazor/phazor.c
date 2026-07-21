@@ -225,7 +225,8 @@ int reset_set_value = 0;
 int reset_set_byte = 0;
 
 int rg_byte = 0;
-float rg_value_want = 0.0;
+float rg_value_pending = 1.0;
+float rg_value_current = 1.0;
 
 
 char load_target_file[4096]; // 4069 bytes for max linux filepath
@@ -1288,9 +1289,9 @@ float ramp_step(int sample_rate, int milliseconds) {
 void fade_fx() {
 	//pthread_mutex_lock(&fade_mutex);
 
-	if (rg_value_want != 0.0 && rg_value_want != 1.0) {
-		bfr[high] *= rg_value_want;
-		bfl[high] *= rg_value_want;
+	if (rg_value_current != 1.0) {
+		bfr[high] *= rg_value_current;
+		bfl[high] *= rg_value_current;
 		if (bfl[high] > 1) bfl[high] = 1;
 		if (bfl[high] < -1) bfl[high] = -1;
 		if (bfr[high] > 1) bfr[high] = 1;
@@ -2888,6 +2889,7 @@ int load_next_inner() {
 	#endif
 
 	stop_decoder();
+	rg_value_current = rg_value_pending;
 
 	strcpy(loaded_target_file, load_target_file);
 	loaded_target_net = load_target_net;
@@ -4263,7 +4265,7 @@ EXPORT int start(char *filename, int start_ms, int fade, float rg) {
 
 	result_status = WAITING;
 
-	rg_value_want = rg;
+	rg_value_pending = rg;
 	config_fade_jump = fade;
 
 	load_target_seek = start_ms;
@@ -4292,7 +4294,7 @@ EXPORT int next(char *filename, int start_ms, float rg) {
 		load_target_seek = start_ms;
 		strcpy(load_target_file, filename);
 		load_target_net = load_target_net_pending;
-		rg_value_want = rg;
+		rg_value_pending = rg;
 		next_ready = 1;
 	}
 

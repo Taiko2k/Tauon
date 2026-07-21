@@ -98,7 +98,6 @@ import mutagen.oggvorbis
 import requests
 import sdl3
 from bs4 import BeautifulSoup
-from mutagen.easyid3 import EasyID3
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 from send2trash import send2trash
 from unidecode import unidecode
@@ -184,7 +183,6 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	mac_styles,
 	point_distance,
 	point_proximity_test,
-	process_odat,
 	reduce_paths,
 	rgb_add_hls,
 	rgb_to_hls,
@@ -213,7 +211,16 @@ from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
-from tauon.t_modules.t_tagscan import Ape, Flac, M4a, Opus, TrackFile, Wav, lyrics_are_synced, parse_picture_block  # noqa: E402
+from tauon.t_modules.t_tagscan import (  # noqa: E402
+	Ape,
+	Flac,
+	M4a,
+	Opus,
+	TrackFile,
+	Wav,
+	lyrics_are_synced,
+	parse_picture_block,
+)
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -325,7 +332,6 @@ if TYPE_CHECKING:
 	from collections.abc import Callable, Sequence
 	from subprocess import Popen
 
-	from mutagen.id3 import ID3
 	from pylast import LastFMNetwork, SessionKeyGenerator
 
 	from tauon.t_modules.t_webserve import ThreadedHTTPServer
@@ -18301,7 +18307,6 @@ class Tauon:
 			return nt
 		if nt.is_network or not nt.fullpath:
 			return None
-		EasyID3.RegisterTextKey("lyrics","USLT")
 		try:
 			try:
 				nt.modified_time = os.path.getmtime(nt.fullpath)
@@ -18427,8 +18432,8 @@ class Tauon:
 						nt.length = audio.info.length
 						nt.size = os.path.getsize(nt.fullpath)
 					audio = mutagen.File(nt.fullpath)
-					if audio.tags and type(audio.tags) == mutagen.wave._WaveID3:
-						use_id3(audio.tags, nt)
+					if audio.tags:
+						TrackFile.read_mutagen_tags(audio.tags, nt)
 			elif nt.file_ext in ("OPUS", "OGG", "OGA"):
 				#logging.info("get opus")
 				with Opus(nt.fullpath) as audio:
@@ -18557,82 +18562,7 @@ class Tauon:
 						except Exception:
 							logging.exception("FFPROBE couldn't supply a duration")
 
-					if type(audio.tags) is mutagen.mp4.MP4Tags:
-						tags = audio.tags
-
-						def in_get(key, tags):
-							if key in tags:
-								return tags[key][0]
-							return ""
-
-						nt.title = in_get("\xa9nam", tags)
-						nt.album = in_get("\xa9alb", tags)
-						nt.artist = in_get("\xa9ART", tags)
-						nt.album_artist = in_get("aART", tags)
-						nt.composer = in_get("\xa9wrt", tags)
-						nt.date = in_get("\xa9day", tags)
-						nt.comment = in_get("\xa9cmt", tags)
-						nt.genre = in_get("\xa9gen", tags)
-						if "\xa9lyr" in tags:
-							nt.lyrics = in_get("\xa9lyr", tags)
-						nt.track_total = ""
-						nt.track_number = ""
-						t = in_get("trkn", tags)
-						if t:
-							nt.track_number = str(t[0])
-							if t[1]:
-								nt.track_total = str(t[1])
-
-						nt.disc_total = ""
-						nt.disc_number = ""
-						t = in_get("disk", tags)
-						if t:
-							nt.disc_number = str(t[0])
-							if t[1]:
-								nt.disc_total = str(t[1])
-
-						if "----:com.apple.iTunes:replaygain_track_gain" in tags:
-							nt.replaygain_track_gain = float(in_get(
-								"----:com.apple.iTunes:replaygain_track_gain",
-								tags).decode().lower().strip(" db"))
-						if "----:com.apple.iTunes:replaygain_track_peak" in tags:
-							nt.replaygain_track_peak = float(in_get(
-								"----:com.apple.iTunes:replaygain_track_peak",
-								tags).decode())
-						if "----:com.apple.iTunes:replaygain_album_gain" in tags:
-							nt.replaygain_album_gain = float(in_get(
-								"----:com.apple.iTunes:replaygain_album_gain",
-								tags).decode().lower().strip(" db"))
-						if "----:com.apple.iTunes:replaygain_album_peak" in tags:
-							nt.replaygain_album_peak = float(in_get(
-								"----:com.apple.iTunes:replaygain_album_peak",
-								tags).decode())
-
-						if "----:com.apple.iTunes:MusicBrainz Track Id" in tags:
-							nt.musicbrainz_recordingid = in_get(
-								"----:com.apple.iTunes:MusicBrainz Track Id",
-								tags).decode()
-						if "----:com.apple.iTunes:MusicBrainz Release Track Id" in tags:
-							nt.musicbrainz_trackid = in_get(
-								"----:com.apple.iTunes:MusicBrainz Release Track Id",
-								tags).decode()
-						if "----:com.apple.iTunes:MusicBrainz Album Id" in tags:
-							nt.musicbrainz_albumid = in_get(
-								"----:com.apple.iTunes:MusicBrainz Album Id",
-								tags).decode()
-						if "----:com.apple.iTunes:MusicBrainz Release Group Id" in tags:
-							nt.musicbrainz_releasegroupid = in_get(
-								"----:com.apple.iTunes:MusicBrainz Release Group Id",
-								tags).decode()
-						if "----:com.apple.iTunes:MusicBrainz Artist Id" in tags:
-							nt.musicbrainz_artistids = [x.decode() for x in
-								tags.get("----:com.apple.iTunes:MusicBrainz Artist Id")]
-
-
-					elif type(audio.tags) == mutagen.id3.ID3:
-						use_id3(audio.tags, nt)
-
-
+						TrackFile.read_mutagen_tags(audio.tags, nt)
 				except Exception:
 					logging.exception("Failed loading file through Mutagen")
 					raise
@@ -47840,142 +47770,6 @@ def get_window_position(t_window: sdl3.LP_SDL_Window) -> tuple[int, int]:
 	i_x = pointer(c_int(0))
 	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
 	return i_x.contents.value, i_y.contents.value
-
-def use_id3(tags: ID3, nt: TrackClass) -> None:
-	def natural_get(tag: ID3, track: TrackClass, frame: str, attr: str) -> str | None:
-		frames = tag.getall(frame)
-		if frames and frames[0].text:
-			if track is None:
-				return str(frames[0].text[0])
-			setattr(track, attr, str(frames[0].text[0]))
-		elif track is None:
-			return ""
-		else:
-			setattr(track, attr, "")
-		return None
-
-	tag = tags
-
-	natural_get(tags, nt, "TIT2", "title")
-	natural_get(tags, nt, "TPE1", "artist")
-	natural_get(tags, nt, "TPE2", "album_artist")
-	natural_get(tags, nt, "TCON", "genre")  # content type
-	natural_get(tags, nt, "TALB", "album")
-	natural_get(tags, nt, "TDRC", "date")
-	natural_get(tags, nt, "TCOM", "composer")
-	natural_get(tags, nt, "COMM", "comment")
-
-	process_odat(nt, natural_get(tags, None, "TDOR", None))
-
-	frames = tag.getall("POPM")
-	rating = 0
-	if frames:
-		for frame in frames:
-			if frame.rating:
-				rating = frame.rating
-				nt.POPM = frame.rating
-
-	if len(nt.comment) > 4 and nt.comment[2] == "+":
-		nt.comment = ""
-	if nt.comment[0:3] == "000":
-		nt.comment = ""
-
-	frames = tag.getall("USLT")
-	if frames:
-		nt.lyrics = frames[0].text
-		if 0 < len(nt.lyrics) < 150:
-			if "unavailable" in nt.lyrics or ".com" in nt.lyrics or "www." in nt.lyrics:
-				nt.lyrics = ""
-
-	# frames = tag.getall("SYLT")
-	# if frames:
-
-
-	frames = tag.getall("TPE1")
-	if frames:
-		d = []
-		for frame in frames:
-			for t in frame.text:
-				d.append(t)
-		if len(d) > 1:
-			nt.artists = d
-			nt.artist = "; ".join(d)
-
-	frames = tag.getall("TCON")
-	if frames:
-		d = []
-		for frame in frames:
-			for t in frame.text:
-				d.append(t)
-		if len(d) > 1:
-			nt.genres = d
-		nt.genre = " / ".join(d)
-
-	track_no = natural_get(tags, None, "TRCK", None)
-	nt.track_total = ""
-	nt.track_number = ""
-	if track_no and track_no != "null":
-		if "/" in track_no:
-			a, b = track_no.split("/")
-			nt.track_number = a
-			nt.track_total = b
-		else:
-			nt.track_number = track_no
-
-	disc = natural_get(tags, None, "TPOS", None)  # set ? or ?/?
-	nt.disc_total = ""
-	nt.disc_number = ""
-	if disc:
-		if "/" in disc:
-			a, b = disc.split("/")
-			nt.disc_number = a
-			nt.disc_total = b
-		else:
-			nt.disc_number = disc
-
-	tx = tags.getall("UFID")
-	if tx:
-		for item in tx:
-			if item.owner == "http://musicbrainz.org":
-				nt.musicbrainz_recordingid = item.data.decode()
-
-	tx = tags.getall("TSOP")
-	if tx:
-		nt.artist_sort = tx[0].text[0]
-
-	tx = tags.getall("TXXX")
-	if tx:
-		for item in tx:
-			if item.desc == "MusicBrainz Release Track Id":
-				nt.musicbrainz_trackid = item.text[0]
-			if item.desc == "MusicBrainz Album Id":
-				nt.musicbrainz_albumid = item.text[0]
-			if item.desc == "MusicBrainz Release Group Id":
-				nt.musicbrainz_releasegroupid = item.text[0]
-			if item.desc == "MusicBrainz Artist Id":
-				artist_id_list: list[str] = []
-				for uuid in item.text:
-					split_uuids = uuid.split("/") # UUIDs can be split by a special character
-					for split_uuid in split_uuids:
-						artist_id_list.append(split_uuid)
-				nt.musicbrainz_artistids = artist_id_list
-
-			try:
-				desc = item.desc.lower()
-				if desc == "replaygain_track_gain":
-					nt.replaygain_track_gain = float(item.text[0].strip(" dB"))
-				if desc == "replaygain_track_peak":
-					nt.replaygain_track_peak = float(item.text[0])
-				if desc == "replaygain_album_gain":
-					nt.replaygain_album_gain = float(item.text[0].strip(" dB"))
-				if desc == "replaygain_album_peak":
-					nt.replaygain_album_peak = float(item.text[0])
-			except Exception:
-				logging.exception("Tag Scan: Read Replay Gain MP3 error")
-				logging.debug(nt.fullpath)
-
-			if item.desc == "FMPS_RATING":
-				nt.FMPS_Rating = float(item.text[0])
 
 def encode_track_name(track_object: TrackClass) -> str:
 	if track_object.is_cue or not track_object.filename:
