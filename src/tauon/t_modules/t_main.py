@@ -21659,42 +21659,45 @@ class MultiLineTextBox:
 		for i, line in enumerate(lines):
 			self.lines.append(line)
 			self.line_ys.append(i * self.text_height)
-		logging.info(len(self.lines))
-		logging.info(len(self.line_ys))
 
 	def which_line_by_y(self, y_position: int) -> int:
-		return min(len(self.line_ys)-1, round(y_position/self.text_height)-1)
+		return min(len(self.line_ys), round(y_position/self.text_height))-1
 
 	def which_line_by_char(self, char: int) -> int:
 		return self.text[:len(self.text)-char].count('\n')
 
-	def set_cursor_from_click(self, headroom: int, scroll: int, font: int, x: int) -> None:
+	def set_cursor_from_click(self, headroom: int, scroll: int, font: int, x: int, selection: bool) -> None:
 		pre = 0
 		post = 0
-		line = self.which_line_by_y(self.inp.mouse_position[1]-headroom-2*self.text_height+scroll) -1
-		logging.info(f"line is {line}")
-		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line
-		logging.info(f"temp total is {temp_total}")
+		line = self.which_line_by_y(self.inp.mouse_position[1] - 2*headroom + scroll)
+		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line-1
 		text = self.lines[line]
 		temp = 0
 
-		for i in range(len(text)):
-			post = self.ddt.get_text_w(text[0:i + 1], font)
-			# pre_half = int((post - pre) / 2)
-
-			if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
-				diff = post - pre
-				if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
-					temp = len(text) - i - 1
-				else:
-					temp = len(text) - i
-				self.cursor_position = temp + temp_total
-				break
-
-			pre = post
+		full = self.ddt.get_text_w(text, font)
+		if x + full <= self.inp.mouse_position[0]:
+			out_val = temp_total
 		else:
-			self.cursor_position = temp_total
-		self.selection = self.cursor_position
+			for i in range(len(text)):
+				post = self.ddt.get_text_w(text[0:i + 1], font)
+				# pre_half = int((post - pre) / 2)
+
+				if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+					diff = post - pre
+					if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+						temp = len(text) - i - 1
+					else:
+						temp = len(text) - i
+					out_val = temp + temp_total
+					break
+
+				pre = post
+		# else:
+		# 	self.cursor_position = temp_total
+		if selection:
+			self.selection = out_val
+		else:
+			self.cursor_position = out_val
 
 		return pre, post
 
@@ -21978,7 +21981,7 @@ class MultiLineTextBox:
 					if self.inp.mouse_position[1] < y -headroom -scroll + 1:
 						self.cursor_position = len(self.text)
 					else:
-						pre, post = self.set_cursor_from_click(headroom, scroll, font, x)
+						pre, post = self.set_cursor_from_click(headroom, scroll, font, x, False)
 						# for i in range(len(self.text)):
 						# 	post = self.ddt.get_text_w(self.text[0:i + 1], font)
 						# 	# pre_half = int((post - pre) / 2)
@@ -21994,7 +21997,7 @@ class MultiLineTextBox:
 						# else:
 						# 	self.cursor_position = 0
 					# self.selection = 0
-					# self.down_lock = True
+					self.down_lock = True
 
 			if self.inp.mouse_up:
 				self.down_lock = False
@@ -22004,28 +22007,32 @@ class MultiLineTextBox:
 				text = self.text
 				if secret:
 					text = "●" * len(self.text)
-				if self.inp.mouse_position[0] < x + 1:
-					self.selection = len(text)
+				if self.inp.mouse_position[1] < y -headroom -scroll + 1:
+					self.cursor_position = len(self.text)
 				else:
+					pre, post = self.set_cursor_from_click(headroom, scroll, font, x, True)
+				# if self.inp.mouse_position[0] < x + 1:
+				# 	self.selection = len(text)
+				# else:
 
-					for i in range(len(text)):
-						post = self.ddt.get_text_w(text[0:i + 1], font)
-						# pre_half = int((post - pre) / 2)
+				# 	for i in range(len(text)):
+				# 		post = self.ddt.get_text_w(text[0:i + 1], font)
+				# 		# pre_half = int((post - pre) / 2)
 
-						if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
-							diff = post - pre
+				# 		if x + pre - 0 <= self.inp.mouse_position[0] <= x + post + 0:
+				# 			diff = post - pre
 
-							if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
-								self.selection = len(text) - i - 1
+				# 			if self.inp.mouse_position[0] >= x + pre + int(diff / 2):
+				# 				self.selection = len(text) - i - 1
 
-							else:
-								self.selection = len(text) - i
+				# 			else:
+				# 				self.selection = len(text) - i
 
-							break
-						pre = post
+				# 			break
+				# 		pre = post
 
-					else:
-						self.selection = 0
+				# 	else:
+				# 		self.selection = 0
 
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
