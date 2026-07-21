@@ -1128,6 +1128,16 @@ def player4(tauon: Tauon) -> None:
 				if pctl.playing_time > 0.5:
 					gui.update_spec = 1
 
+	def run_levels() -> None:
+		if (tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM)) and gui.vis == 1:
+			amp = aud.get_level_peak_l()
+			l = amp * 12
+			amp = aud.get_level_peak_r()
+			r = amp * 12
+
+			tauon.level_train.append((0, l, r))
+			gui.level_update = True
+
 	p_sync_timer = Timer()
 
 	def track(end: bool = True) -> None:
@@ -1298,14 +1308,7 @@ def player4(tauon: Tauon) -> None:
 			break
 
 		# Level meter
-		if (tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM)) and gui.vis == 1:
-			amp = aud.get_level_peak_l()
-			l = amp * 12
-			amp = aud.get_level_peak_r()
-			r = amp * 12
-
-			tauon.level_train.append((0, l, r))
-			gui.level_update = True
+		run_levels()
 
 		if chrome_mode:
 			if tauon.chrome is None:
@@ -1659,6 +1662,8 @@ def player4(tauon: Tauon) -> None:
 							if pctl.commit:
 								track(end=False)
 							time.sleep(0.016)
+							run_vis()
+							run_levels()
 						aud.stop()
 
 					set_load_net(1 if stream_url else 0)
@@ -1679,6 +1684,13 @@ def player4(tauon: Tauon) -> None:
 						if pctl.commit and tauon.player4_state == PlayerState.PLAYING:
 							track(end=False)
 						time.sleep(0.016)
+						# Keep the visualisers fed while parked here for the
+						# playout of the outgoing track — the top-of-loop
+						# run_vis()/run_levels() calls don't run again until the
+						# transition completes, which froze the spectrum and
+						# starved the spectrogram queue for several seconds.
+						run_vis()
+						run_levels()
 						if pctl.playerCommandReady and pctl.playerCommand in ("open", "stop"):
 							logging.info("JANK")
 							pctl.commit = None
